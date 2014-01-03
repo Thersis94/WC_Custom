@@ -1,0 +1,248 @@
+100	0	Categories
+1AA	100	Apparel
+1AB	1AA	View All Apparel
+1AC	1AA	Tees & Sweats
+1AD	1AA	Boutique Apparel
+1AE	1AA	Outerwear
+1AF	1AA	Accessories
+1AG	1AA	Famous Characters
+1BA	100	Books, Audio &amp; DVDs
+1BB	1BA	View All Books, Audio & DVDs
+1BC	1BA	Books
+1BD	1BA	Musical Audio
+1BE	1BA	DVDs
+1BF	1BA	Spoken Word &amp; Comedy Audio
+1BG	1BA	Signed Books
+1BH	1BA	Media Storage
+1BI	1BA	Movies &amp; Television
+1CA	100	Children
+1CB	1CA	View All Children
+1CC	1CA	Children's Apparel
+1CD	1CA	Children's Books
+1CE	1CA	Keepsakes
+1CF	1CA	Toys & Games
+1DA	100	Utility Housekeeping
+1DB	1DA	View All Utility Housekeeping
+1DC	1DA	Kitchen
+1DD	1DA	Bath
+1DE	1DA	Bedroom
+1DF	1DA	Entertaining
+1DG	1DA	Storage
+1DH	1DA	Garage &amp; Auto
+1DI	1DA	Home &amp; Yard
+1DJ	1DA	Problem Solvers
+1DK	1DA	Pets
+1DL	1DA	Doormats &amp; Rugs
+1EA	100	Home & Garden
+1EB	1EA	View All Home & Garden
+1ED	1EA	Wall D&eacute;cor
+1EF	1EA	Decorative Accessories
+1EG	1EA	Garden D&eacute;cor
+1EI	1EA	Prints & Posters
+1EJ	1EA	Seasonal/Holiday
+1EK	1EA	Furniture
+1FA	100	Jewelry
+1FB	1FA	View All Jewelry
+1FC	1FA	Bracelets
+1FD	1FA	Earrings
+1FE	1FA	Jewelry Ensembles
+1FF	1FA	Watches
+1FG	1FA	Necklaces & Pendants
+1FH	1FA	Pins & Brooches
+1FI	1FA	Personal Accessories
+1FJ	1FA	Rings
+1GA	100	Travel &amp; Leisure
+1GB	1GA	View All Travel and Leisure
+1GC	1GA	Games &amp; Recreation
+1GD	1GA	Hobbies
+1GE	1GA	Sports Gifts
+1GF	1GA	Travel &amp; Adventure
+1GG	1GA	Collectibles
+1HA	100	Personalized Gifts
+1IA	100	Shop by Price
+1IB	1IA	$0 - $10
+1IC	1IA	$11 - $20
+1ID	1IA	$21 - $30
+1IE	1IA	$31 - $50
+1IF	1IA	$51 - $75
+1IG	1IA	$76 - $100
+1IH	1IA	$100+
+3AA	100	Customer Favorites
+3BA	100	New Arrivals
+9AA	100	Gift Recipient
+9BA	9AA	Him
+9BB	9AA	Her
+9BC	9AA	Baby
+9BD	9AA	Kids
+9BE	9AA	Teens
+9BF	9AA	Business Associate
+9BG	9AA	Pet Lover
+9BH	9AA	Sports Fan
+300	100	<font color=#0AEEFC><b>WEB EXCLUSIVES!</b></font>
+10AA	300	Apparel
+10AB	10AA	View All Apparel
+10AC	10AA	Tees & Sweats
+10AD	10AA	Boutique Apparel
+10AE	10AA	Outerwear
+10AF	10AA	Accessories
+10AG	10AA	Famous Characters
+10BA	300	Books
+10BB	10BA	View All Books
+10BC	10BA	Books
+10BD	10BA	Musical Audio
+10BE	10BA	DVDs
+10BF	10BA	Spoken Word &amp; Comedy Audio
+10BG	10BA	Signed Books
+10BH	10BA	Media Storage
+10BI	10BA	Movies &amp; Television
+10CA	300	Children
+10CB	10CA	View All Children
+10CC	10CA	Children's Apparel
+10CD	10CA	Children's Books
+10CE	10CA	Keepsakes
+10CF	10CA	Toys & Games
+10DA	300	Utility Housekeeping
+10DB	10DA	View All Utility Housekeeping
+10DC	10DA	Kitchen
+10DD	10DA	Bath
+10DE	10DA	Bedroom
+10DF	10DA	Entertaining
+10DG	10DA	Storage
+10DH	10DA	Garage &amp; Auto
+10DI	10DA	Home &amp; Yard
+10DJ	10DA	Problem Solvers
+10DK	10DA	Pets
+10DL	10DA	Doormats &amp; Rugs
+10EA	300	Home & Garden
+10EB	10EA	View All Home & Garden
+10ED	10EA	Wall D&eacute;cor
+10EF	10EA	Decorative Accessories
+10EG	10EA	Garden D&eacute;cor
+10EI	10EA	Prints & Posters
+10EJ	10EA	Seasonal/Holiday
+10EK	10EA	Furniture
+10FA	300	Jewelry
+10FB	10FA	View All Jewelry
+10FC	10FA	Bracelets
+10FD	10FA	Earrings
+10FE	10FA	Jewelry Ensembles
+10FF	10FA	Watches
+10FG	10FA	Necklaces & Pendants
+10FH	10FA	Pins & Brooches
+10FI	10FA	Personal Accessories
+10FJ	10FA	Rings
+10GA	300	Travel &amp; Leisure
+10GB	10GA	View All Travel and Leisure
+10GC	10GA	Games &amp; Recreation
+10GD	10GA	Hobbies
+10GE	10GA	Sports Gifts
+10GF	10GA	Travel &amp; Adventure
+10GG	10GA	Collectibles
+10HA	300	Personalized Gifts
+10IA	300	Shop by Price
+10IB	10IA	$0 - $10
+10IC	10IA	$11 - $20
+10ID	10IA	$21 - $30
+10IE	10IA	$31 - $50
+10IF	10IA	$51 - $75
+10IG	10IA	$76 - $100
+10IH	10IA	$100+
+10JA	300	Novelty Glassware
+10KA	300	Peanuts
+10LA	300	Superheroes
+10MA	300	Wizard of Oz
+10NA	300	Edward Gorey
+10OA	300	Licensed Games (Star Trek Scrabble, Simpsons. Monopoly etc)
+10PA	300	Lake Girl
+10QA	300	Animated Hoodies
+10RA	300	National Archive DVD's
+10SA	300	Crosley
+30AA	300	Customer Favorites
+200	100	OUTLET STORE
+2AA	200	View All Outlet Store Items
+2BF	200	Shop our Outlet Section by Discount %
+2BA	2BF	0% to 30% Off
+2BB	2BF	31% to 40% Off
+2BC	2BF	41% to 50% Off
+2BD	2BF	51% to 60% Off
+2BE	2BF	More Than 60% Off
+2CA	200	Almost Gone
+2DA	200	New Additions
+2EA	200	Shop our Outlet Section by Category
+20AA	2EA	Apparel
+20AB	20AA	View All Apparel
+20AC	20AA	Tees & Sweats
+20AD	20AA	Boutique Apparel
+20AE	20AA	Outerwear
+20AF	20AA	Accessories
+20AG	20AA	Famous Characters
+20BA	2EA	Books
+20BB	20BA	View All Books
+20BC	20BA	Books
+20BD	20BA	Musical Audio
+20BE	20BA	DVDs
+20BF	20BA	Spoken Word &amp; Comedy Audio
+20BG	20BA	Signed Books
+20BH	20BA	Media Storage
+20BI	20BA	Movies &amp; Television
+20CA	2EA	Children
+20CB	20CA	View All Children's
+20CC	20CA	Children's Apparel
+20CD	20CA	Children's Books
+20CE	20CA	Keepsakes
+20CF	20CA	Toys & Games
+20DA	2EA	Utility Housekeeping
+20DB	20DA	View All Utility Housekeeping
+20DC	20DA	Kitchen
+20DD	20DA	Bath
+20DE	20DA	Bedroom
+20DF	20DA	Entertaining
+20DG	20DA	Storage
+20DH	20DA	Garage &amp; Auto
+20DI	20DA	Home &amp; Yard
+20DJ	20DA	Problem Solvers
+20DK	20DA	Pets
+20DL	20DA	Doormats &amp; Rugs
+20EA	2EA	Home & Garden
+20EB	20EA	View All Home & Garden
+20ED	20EA	Wall D&eacute;cor
+20EF	20EA	Decorative Accessories
+20EG	20EA	Garden D&eacute;cor
+20EI	20EA	Prints & Posters
+20EJ	20EA	Seasonal/Holiday
+20EK	20EA	Furniture
+20FA	2EA	Jewelry
+20FB	20FA	View All Jewelry
+20FC	20FA	Bracelets
+20FD	20FA	Earrings
+20FE	20FA	Jewelry Ensembles
+20FF	20FA	Watches
+20FG	20FA	Necklaces & Pendants
+20FH	20FA	Pins & Brooches
+20FI	20FA	Personal Accessories
+20FJ	20FA	Rings
+20GA	2EA	Travel &amp; Leisure
+20GB	20GA	View All Travel and Leisure
+20GC	20GA	Games &amp; Recreation
+20GD	20GA	Hobbies
+20GE	20GA	Sports Gifts
+20GF	20GA	Travel &amp; Adventure
+20GG	20GA	Collectibles
+20HA	200	Personalized Gifts
+20IA	200	Shop our Outlet Section by Price
+20IB	20IA	Gifts under $15
+20IC	20IA	Gifts under $30
+20ID	20IA	Gifts under $50
+20IE	20IA	Gifts under $75
+20IF	20IA	Gifts under $100
+20IG	20IA	Gifts over $100
+2FA	200	Shop our Outlet Section by Gift Recipient
+20BA	2FA	Him
+20BB	2FA	Her
+20BC	2FA	Baby
+20BD	2FA	Kids
+20BE	2FA	Teens
+99ZZ	zz	<b>24 Hour Sale - May 31st!</b>
+99XX	100	Wireless Music Collection
+WS	100	Weekly Specials
+HM	100	Select Items Sale

@@ -1,0 +1,17 @@
+1	HG8512	DATA1	Name of Bookclub (14 Characters - Upper and Lower Case Letters Acceptable)	14	1
+2	HG8522	DATA1	Name of Bookclub (14 Characters - Upper and Lower Case Letters Acceptable)	14	1
+3	HA9222	DATA1	50 Proper (Mixed) Case Letters	50	1
+4	UC3552	DATA1	Name (20 Mixed Case Characters including spaces)	20	1
+5	UC4212	DATA1	Outer Circle (55 Upper Case Characters including spaces)	55	1
+6	UC4212	DATA2	Center (12 Upper Case Characters including spaces)	12	
+7	UC4662	DATA1	Outer Circle (55 Upper Case Characters including spaces)	55	1
+8	UC4662	DATA2	Center (12 Upper Case Characters including spaces)	12	
+9	HJ1402-11	DATA1	Family name (up to 12 characters - 'THE' is standard & included)	12	1
+10	HJ1402-12	DATA1	Family name (up to 12 characters - 'THE' is standard & included)	12	1
+11	HJ1402-13	DATA1	Family name (up to 12 characters - 'THE' is standard & included)	12	1
+12	HJ1402-14	DATA1	Family name (up to 12 characters - 'THE' is standard & included)	12	1
+13	HJ1402-20	DATA1	Family name (up to 12 characters - 'THE' is standard & included)	12	1
+14	HJ1402-21	DATA1	Family name (up to 12 characters - 'THE' is standard & included)	12	1
+15	HJ1402-22	DATA1	Family name (up to 12 characters - 'THE' is standard & included)	12	1
+16	HJ1402-23	DATA1	Family name (up to 12 characters - 'THE' is standard & included)	12	1
+17	HJ1402-24	DATA1	Family name (up to 12 characters - 'THE' is standard & included)	12	1

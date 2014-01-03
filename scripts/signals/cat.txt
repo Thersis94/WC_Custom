@@ -1,0 +1,278 @@
+1AZ	100	Shop By Theme
+1AA	1AZ	View All Themed Items
+1AB	1AZ	Love Friendship & Family
+1AC	1AZ	Nature
+1AD	1AZ	The Arts
+1AE	1AZ	Spritual/Inspirational
+1AF	1AZ	Pets
+1AG	1AZ	History
+1AH	1AZ	International
+1AI	1AZ	The Sciences
+1AJ	1AZ	Humor/Just For Fun
+1AK	1AZ	Celebrations
+1AL	1AZ	Holidays
+1AM	1AZ	Games Puzzles & Toys
+9AA	100	Shop By Price
+9AB	9AA	Under $20
+9AC	9AA	$20 - $30
+9AD	9AA	$30 - $50
+9AE	9AA	$50 - $75
+9AF	9AA	$75+
+1BZ	100	Personalized
+1BA	1BZ	View All Personalized Items
+1BB	1BZ	Wall D&eacute;cor
+1BC	1BZ	Jewelry
+1BD	1BZ	Home & Garden
+1BE	1BZ	Other Personalized
+1BF	1BZ	Personalized T's & Sweats
+1CA	100	T-Shirts & Sweatshirts
+1DZ	100	Books DVDs & Other Media
+1DA	1DZ	View All Books DVDs & Other Media
+1DB	1DZ	Books
+1DC	1DZ	DVDs & Blu Ray
+1DD	1DZ	Audio CDs
+1EZ	100	Home Accents
+1EA	1EZ	View All Home Accents
+1EB	1EZ	Clocks
+1EC	1EZ	Bed/Kitchen/Bath
+1ED	1EZ	Furniture & Rugs
+1EE	1EZ	Office
+1EF	1EZ	Entertaining
+1EG	1EZ	Tabletop
+1EH	1EZ	Decorative Accessories
+1FZ	100	Garden & Patio
+1FA	1FZ	View All Garden & Patio
+1FB	1FZ	Home and Garden
+1FC	1FZ	Gifts for the Gardener
+1GZ	100	Apparel
+1GA	1GZ	View All Apparel
+1GB	1GZ	T-Shirts and Sweatshirts
+1GC	1GZ	Fashion Boutique
+1GD	1GZ	Footwear
+1GE	1GZ	Fashion Accessories
+1HZ	100	Jewelry
+1HA	1HZ	View All Jewelry
+1HB	1HZ	Facets
+1HC	1HZ	Necklaces
+1HD	1HZ	Earrings
+1HE	1HZ	Bracelets
+1HF	1HZ	Rings
+1HG	1HZ	Watches
+1HH	1HZ	Pins & Brooches
+1HI	1HZ	Jewelry Storage
+1HJ	1HZ	Floriana Jewels
+1IZ	100	Wall D&eacute;cor
+1IA	1IZ	View All Wall D&eacute;cor
+1IB	1IZ	Plaques
+1IC	1IZ	Art Prints
+1ID	1IZ	Decorative Accents
+1JZ	100	Kid's Stuff
+1JA	1JZ	View All Kid's Stuff
+1JB	1JZ	Books & DVDs
+1JC	1JZ	Toys
+1JD	1JZ	Apparel
+1JE	1JZ	For Infants
+5AA	100	New Items
+6AA	100	Customer Favorites
+7AA	100	Floriana Jewelry
+1XAA	zz	Apparel
+1XBA	7AA	Birthstone Jewelry
+1XBB	1XBA	View All Birthstone Jewelry
+1XBC	1XBA	Birthstone Bracelets
+1XBD	1XBA	Birthstone Brooches
+1XBE	1XBA	Birthstone Earrings
+1XBF	1XBA	Birthstone Necklaces
+1XBG	1XBA	Birthstone Rings
+1XBH	1XBA	Birthstone Watches
+1XCA	7AA	Bracelets
+1XCB	1XCA	View All Bracelets
+1XCC	1XCA	Cuffs
+1XCD	1XCA	Gemstone
+1XCE	1XCA	Bangle
+1XCF	1XCA	Charm
+1XCG	1XCA	Leather
+1XCH	1XCA	Cord
+1XDA	7AA	Brooches
+1XEA	7AA	Earrings
+1XEB	1XEA	View All Earrings
+1XEC	1XEA	Dangle
+1XED	1XEA	Hoop
+1XEE	1XEA	Stud
+1XFA	zz	Footwear
+1XGA	zz	Hair Accessories
+1XHA	7AA	Jewelry Sets
+1XIA	7AA	Jewelry Storage
+1XJA	7AA	Message Jewelry
+1XJB	1XJA	View All Message Jewelry
+1XJC	1XJA	Message Bracelets
+1XJD	1XJA	Message Brooches
+1XJE	1XJA	Message Earrings
+1XJF	1XJA	Message Necklaces
+1XJG	1XJA	Message Rings
+1XJH	1XJA	Message Watches
+1XKA	7AA	Necklaces
+1XKB	1XKA	View All Necklaces
+1XKC	1XKA	Gemstone
+1XKD	1XKA	Pendants
+1XLA	7AA	Purses & Totes
+1XMA	7AA	Rings
+1XMB	1XMA	View All Rings
+1XMC	1XMA	All Metal Rings
+1XMD	1XMA	Gemstone Rings
+1XNA	7AA	Scarves & Shawls
+1XOA	7AA	Watches
+1XPA	7AA	All Gemstone Jewelry
+1XQA	7AA	All Metal Jewelry
+1XRA	7AA	Natural Material Jewelry
+200	100	Outlet Store
+2ZZ	200	View All Outlet Items
+29AA	200	Shop By Price
+29AB	29AA	Under $20
+29AG	29AA	0 - 30% off
+29AC	29AA	$20 - $30
+29AH	29AA	31% - 40% off
+29AD	29AA	$30 - $50
+29AI	29AA	41% - 50% off
+29AE	29AA	$50 - $75
+29AJ	29AA	51% - 60% off
+29AF	29AA	$75+
+29AK	29AA	more than 60% off
+2SA	200	Almost Gone
+2NA	200	New Additions
+2AZ	200	Shop By Theme
+2AA	2AZ	View All Themed Items
+2AB	2AZ	Friendship & Family
+2AC	2AZ	Nature
+2AD	2AZ	The Arts
+2AE	2AZ	Spritual/Inspirational
+2AF	2AZ	Pets
+2AG	2AZ	History
+2AH	2AZ	International
+2AI	2AZ	The Sciences
+2AJ	2AZ	Humor/Just For Fun
+2AK	2AZ	Celebrations
+2AL	2AZ	Holidays
+2AM	2AZ	Games Puzzles & Toys
+2BZ	200	Personalized
+2BA	2BZ	View All Personalized Items
+2BB	2BZ	Wall D&eacute;cor
+2BC	2BZ	Jewelry
+2BD	2BZ	Home & Garden
+2BE	2BZ	Other Personalized
+2CA	200	T-Shirts & Sweatshirts
+2DZ	200	Books DVDs & Other Media
+2DA	2DZ	View All Books DVDs & Other Media
+2DB	2DZ	Books
+2DC	2DZ	DVDs & Blu Ray
+2DD	2DZ	Audio CDs
+2EZ	200	Home Accents
+2EA	2EZ	View All Home Accents
+2EB	2EZ	Clocks
+2EC	2EZ	Bed/Kitchen/Bath
+2ED	2EZ	Furniture & Rugs
+2EE	2EZ	Office
+2EF	2EZ	Entertaining
+2EG	2EZ	Tabletop
+2EH	2EZ	Decorative Accessories
+2FZ	200	Garden & Patio
+2FA	2FZ	View All Garden & Patio
+2FB	2FZ	Home and Garden
+2FC	2FZ	Gifts for the Gardener
+2GZ	200	Apparel
+2GA	2GZ	View All Apparel
+2GB	2GZ	T-Shirts and Sweatshirts
+2GC	2GZ	Fashion Boutique
+2GD	2GZ	Footwear
+2GE	2GZ	Fashion Accessories
+2HZ	200	Jewelry
+2HA	2HZ	View All Jewelry
+2HB	2HZ	Facets
+2HC	2HZ	Necklaces
+2HD	2HZ	Earrings
+2HE	2HZ	Bracelets
+2HF	2HZ	Rings
+2HG	2HZ	Watches
+2HH	2HZ	Pins & Brooches
+2HI	2HZ	Jewelry Storage
+2IZ	200	Wall D&eacute;cor
+2IA	2IZ	View All Wall D&eacute;cor
+2IB	2IZ	Plaques
+2IC	2IZ	Art Prints
+2ID	2IZ	Decorative Accents
+2JZ	200	Kid's Stuff
+2JA	2JZ	View All Kid's Stuff
+2JB	2JZ	Books
+2JC	2JZ	Toys
+2JD	2JZ	Apparel
+2JE	2JZ	For Infants
+300	100	Web Exclusives
+3ZZ	300	View All Web Exclusives
+3KZ	300	Collectibles
+3AZ	300	Shop By Theme
+3AA	3AZ	View All Themed Items
+3AB	3AZ	Friendship & Family
+3AC	3AZ	Nature
+3AD	3AZ	The Arts
+3AE	3AZ	Spritual/Inspirational
+3AF	3AZ	Pets
+3AG	3AZ	History
+3AH	3AZ	International
+3AI	3AZ	The Sciences
+3AJ	3AZ	Humor/Just For Fun
+3AK	3AZ	Celebrations
+3AL	3AZ	Holidays
+3AM	3AZ	Games Puzzles & Toys
+3BZ	300	Personalized
+3BA	3BZ	View All Personalized Items
+3BB	3BZ	Wall D&eacute;cor
+3BC	3BZ	Jewelry
+3BD	3BZ	Home & Garden
+3BE	3BZ	Other Personalized
+3CA	300	T-Shirts & Sweatshirts
+3DZ	300	Books DVDs & Other Media
+3DA	3DZ	View All Books DVDs & Other Media
+3DB	3DZ	Books
+3DC	3DZ	DVDs & Blu Ray
+3DD	3DZ	Audio CDs
+3EZ	300	Home Accents
+3EA	3EZ	View All Home Accents
+3EB	3EZ	Clocks
+3EC	3EZ	Bed/Kitchen/Bath
+3ED	3EZ	Furniture & Rugs
+3EE	3EZ	Office
+3EF	3EZ	Entertaining
+3EG	3EZ	Tabletop
+3EH	3EZ	Decorative Accessories
+3FZ	300	Garden & Patio
+3FA	3FZ	View All Garden & Patio
+3FB	3FZ	Home and Garden
+3FC	3FZ	Gifts for the Gardener
+3GZ	300	Apparel
+3GA	3GZ	View All Apparel
+3GB	3GZ	T-Shirts and Sweatshirts
+3GC	3GZ	Fashion Boutique
+3GD	3GZ	Footwear
+3GE	3GZ	Fashion Accessories
+3HZ	300	Jewelry
+3HA	3HZ	View All Jewelry
+3HB	3HZ	Facets
+3HC	3HZ	Necklaces
+3HD	3HZ	Earrings
+3HE	3HZ	Bracelets
+3HF	3HZ	Rings
+3HG	3HZ	Watches
+3HH	3HZ	Pins & Brooches
+3HI	3HZ	Jewelry Storage
+3IZ	300	Wall D&eacute;cor
+3IA	3IZ	View All Wall D&eacute;cor
+3IB	3IZ	Plaques
+3IC	3IZ	Art Prints
+3ID	3IZ	Decorative Accents
+3JZ	300	Kid's Stuff
+3JA	3JZ	View All Kid's Stuff
+3JB	3JZ	Books
+3JC	3JZ	Toys
+3JD	3JZ	Apparel
+3JE	3JZ	For Infants
+99ZZ	zz	Sale - Noon June 1st - Noon June 2nd
+WS	100	Weekly Specials

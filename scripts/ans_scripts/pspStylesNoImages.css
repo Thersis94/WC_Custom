@@ -1,0 +1,73 @@
+/* Base PSP site styles for content/images
+DBargerhuff - 12/2/09
+*/
+
+#pspHomeContent {}
+
+#pspOverviewContent {}
+
+#pspLocationContent {}
+
+#pspContactUsContent {}
+
+#pspServicesContent {}
+
+#pspGenInfoContent {}
+
+/* physician profiles content styles */
+#pspPhysProfileContent {}
+
+/* type5 */
+#profileLeft {
+	width: 165px;
+	padding: 0;
+	float: left;
+}
+
+/* type5 */
+#profileRight {
+	width: 225px;
+	padding: 0;
+	float: right;
+}
+
+/* type5 */
+#profilehr {
+	width: 390px;
+	padding: 0;
+	float: left;
+}
+/* end of physician profiles content styles */
+
+#pspLinksContent {}
+
+#pspDisclaimerContent {}
+
+#pspAddress {}
+
+
+
+/* image styles */
+.pspLogoImage {}
+
+#pspHomeImages {}
+
+#pspOverviewImages {}
+
+#pspServicesImages {}
+
+#pspLinksImages {}
+
+/* location map style */
+.pspLocationMapImage {}
+
+/* phys profile image style */
+.pspProfileImage {
+	margin: 30px 10px 0 0;
+	padding: 0;
+	float: left;
+}
+
+img.pspProfileImage {
+	margin: 30px 10px 0 0;
+}

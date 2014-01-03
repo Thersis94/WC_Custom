@@ -1,0 +1,46 @@
+1AA	100	Literature
+1AB	1AA	View all Literature
+1AC	1AA	Novels
+1AD	1AA	Mysteries
+1AE	1AA	Poetry & Short Stories
+1BA	100	Non-Fiction
+1BB	1BA	View all Non-Fiction
+1BC	1BA	Life Stories
+1BD	1BA	Arts & Sciences
+1BE	1BA	History
+1BF	1BA	Spiritual Reflection
+1BG	1BA	Language & Reading
+1BH	1BA	Mental Playground
+1BI	1BA	Natural World
+1BJ	1BA	Bon Voyage!
+1BK	1BA	In the Garden
+1BL	1BA	What's Cooking
+1BM	1BA	Cats & Dogs
+1BN	1BA	Big Pretty Books
+1BO	1BA	On the Lighter Side
+1CA	100	Kids Corner
+1CB	1CA	View all items in Kids Corner
+1CC	1CA	Kids Books
+1CD	1CA	Kids Gifts
+1DA	100	Gifts
+1DB	1DA	View all Gifts
+1DC	1DA	Stationery Shop
+1DD	1DA	Reading Accoutrements
+1DE	1DA	Clothing & Accessories
+1DF	1DA	Puzzles & Games
+1DG	1DA	Audio Books, DVDs, & Music
+1DH	1DA	Tis the Season
+1DI	1DA	Cute & Clever Stuff
+2AA	100	Gift-Buying Guide!
+2AB	2AA	for him
+2AC	2AA	for her
+2AD	2AA	for baby
+2AE	2AA	for kids
+2AF	2AA	for cooks
+2AG	2AA	for nature-lovers
+2AH	2AA	for travelers
+2AI	2AA	for know-it-alls
+2AJ	2AA	for literati
+3AA	100	Bargain Basement
+3AB	3AA	Books
+3AC	3AA	Gifts

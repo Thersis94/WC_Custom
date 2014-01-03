@@ -1,0 +1,890 @@
+id	custom	data	prompt	maxlength	required	list
+1	HL4192	DATA1	City or town (30 char. max)	30	1	
+2	AL4722	DATA1	Last Name (Ex. Taylor's)	12	1	
+3	AM1012	DATA1	Last Name (Ex. Taylor's)	12	1	
+4	AQ7932	DATA1	Last Name (Ex. Taylor's)	12	1	
+5	AR0062	DATA1	Last Name (Ex. Taylor's)	12	1	
+6	AR0102	DATA1	Last Name (Ex. Taylor's)	12	1	
+7	AR9672	DATA1	Last Name (Ex. Taylor's)	12	1	
+8	HA1712	DATA1	Date (mm/dd/yyyy EX&#58; 05/25/1985)	10	1	
+9	HA1712	DATA2	City (ex. Cambridge)	55		
+10	HA1712	DATA3	State (ex. MA. If foreign then country goes here)	55		
+11	HA1712	DATA4	Add'l Message (Up to 55 characters)	55		
+12	HA1712	DATA5	From Message (Up to 55 characters)	55		
+13	HA2942	DATA1	First Name of Groom & First Name of Bride (please separate with ampersand)	25	1	
+14	HA2942	DATA2	Date Of Wedding mm/dd/yyyy EX&#58; (06/08/2010)	10	1	
+15	HA5752	DATA1	Birthdate(Month/Day)	20	1	
+16	HA6192	DATA1	Specify Boy or Girl	4	1	
+17	HA6192	DATA2	Child's First Name	15		
+18	HA6192	DATA3	Child's Last Name	15		
+19	HA6192	DATA4	Child's Birthdate (mm/dd/yy)	8		
+20	HB1082	DATA1	Individual's Full Name	35	1	
+21	HB1082	DATA2	School's Name	35		
+22	HB1082	DATA3	Graduation Year	4		
+23	HB2422	DATA1	13 Characters (Upper Case)	13	1	
+24	HB2432	DATA1	15 Upper Case Letters ALL CAPS PLEASE	15	1	
+25	HA9222	DATA1	50 Proper (Mixed) Case Letters	50	1	
+26	HB2962	DATA1	50 Proper (Mixed) Case Letters	50	1	
+27	HB1602	DATA1	First Month (in 2-digit form - ex. 06 is June)	2	1	
+28	HB1602	DATA2	Second Month (in 2-digit form - ex. 06 is June)	2		
+29	HB1602	DATA3	Third Month (in 2-digit form - ex. 06 is June)	2		
+30	HB1602	DATA4	Fourth Month (in 2-digit form - ex. 06 is June)	2		
+31	HB1602	DATA5	Fifth Month (in 2-digit form - ex. 06 is June)	2		
+32	HB1602	DATA6	Sixth Month (in 2-digit form - ex. 06 is June)	2		
+33	HB1602	DATA7	Seventh Month (in 2-digit form - ex. 06 is June)	2		
+34	HB1602	DATA8	Eighth Month (in 2-digit form - ex. 06 is June)	2		
+35	HB1602	DATA9	Nineth Month (in 2-digit form - ex. 06 is June)	2		
+36	HB1602	DATA10	Tenth Month (in 2-digit form - ex. 06 is June)	2		
+37	HB1612	DATA1	First Month (in 2-digit form - ex. 06 is June)	2	1	
+38	HB1612	DATA2	Second Month (in 2-digit form - ex. 06 is June)	2		
+39	HB1612	DATA3	Third Month (in 2-digit form - ex. 06 is June)	2		
+40	HB1612	DATA4	Fourth Month (in 2-digit form - ex. 06 is June)	2		
+41	HB1612	DATA5	Fifth Month (in 2-digit form - ex. 06 is June)	2		
+42	HB1612	DATA6	Sixth Month (in 2-digit form - ex. 06 is June)	2		
+43	HB1612	DATA7	Seventh Month (in 2-digit form - ex. 06 is June)	2		
+44	HB1612	DATA8	Eighth Month (in 2-digit form - ex. 06 is June)	2		
+45	HB1612	DATA9	Nineth Month (in 2-digit form - ex. 06 is June)	2		
+46	HB1612	DATA10	Tenth Month (in 2-digit form - ex. 06 is June)	2		
+47	HB1582	DATA1	Mothers Birth Month (in 2-digit form - ex. 08 is August)	2	1	
+48	HB1582	DATA2	First Child's Birth Month (in 2-digit form - ex. 08 is August)	2		
+49	HB1582	DATA3	Second Child's Birth Month (in 2-digit form - ex. 08 is August)	2		
+50	HB1582	DATA4	Third Child's Birth Month (in 2-digit form - ex. 08 is August)	2		
+51	HB1582	DATA5	Fourth Child's Birth Month (in 2-digit form - ex. 08 is August)	2		
+52	HB1582	DATA6	Fifth Child's Birth Month (in 2-digit form - ex. 08 is August)	2		
+53	HB1582	DATA7	Sixth Child's Birth Month (in 2-digit form - ex. 08 is August)	2		
+54	HB1582	DATA8	Seventh Child's Birth Month (in 2-digit form - ex. 08 is August)	2		
+55	HB1592	DATA1	Mothers Birth Month (in 2-digit form - ex. 08 is August)	2	1	
+56	HB1592	DATA2	First Child's Birth Month (in 2-digit form - ex. 08 is August)	2		
+57	HB1592	DATA3	Second Child's Birth Month (in 2-digit form - ex. 08 is August)	2		
+58	HB1592	DATA4	Third Child's Birth Month (in 2-digit form - ex. 08 is August)	2		
+59	HB1592	DATA5	Fourth Child's Birth Month (in 2-digit form - ex. 08 is August)	2		
+60	HB1592	DATA6	Fifth Child's Birth Month (in 2-digit form - ex. 08 is August)	2		
+61	HB1592	DATA7	Sixth Child's Birth Month (in 2-digit form - ex. 08 is August)	2		
+62	HB1592	DATA8	Seventh Child's Birth Month (in 2-digit form - ex. 08 is August)	2		
+63	HB4112	DATA1	1st Name or Initials (Up To 10 Characters)	10	1	
+64	HB4112	DATA2	2nd Name or Initials (Up To 10 Characters)	10		
+65	HB4842	DATA1	Name - Enter All Capital Letters Only (Up To 14 Characters)-The word Tavern comes standard.	14	1	
+66	HB4852	DATA1	Name - Enter All Capital Letters Only (Up To 14 Characters)-The word Tavern comes standard in the de	14	1	
+67	HB6892	DATA1	Specify Boy or Girl	4	1	
+68	HB6892	DATA2	Child's First Name	15		
+69	HB6892	DATA3	Child's Middle Name	10		
+70	HB6892	DATA4	Child's Last Name	15		
+71	HB6892	DATA5	Child's Birthdate (mm/dd/yy)	8		
+72	HB8152-SL	DATA1	Line 1	8	1	
+73	HB8152-PL	DATA1	Line 1	8	1	
+74	HB8162-SL	DATA1	Line 1	8	1	
+75	HB8162-SL	DATA2	Line 2	8		
+76	HB8162-PL	DATA1	Line 1	8	1	
+77	HB8162-PL	DATA2	Line 2	8		
+78	HB8172-SL	DATA1	Line 1	8	1	
+79	HB8172-SL	DATA2	Line 2	8		
+80	HB8172-SL	DATA3	Line 3	8		
+81	HB8172-PL	DATA1	Line 1	8	1	
+82	HB8172-PL	DATA2	Line 2	8		
+83	HB8172-PL	DATA3	Line 3	8		
+84	HB8102	DATA1	01-12 Month Number	2	1	
+85	HB8102	DATA2	01-31 Date	2	1	
+86	HB8102	DATA3	Year (1888-2008 Only)	4	1	
+87	HC4092	DATA1	5-Digit Zip Code for Longitude/Latitude calculation	5	1	
+88	HC5522	DATA1	Line 1	40	1	
+89	HC5522	DATA2	Line 2	40		
+90	HC5532	DATA1	Line 1 (40 characters)	40	1	
+91	HC5532	DATA2	Line 2 (40 characters)	40		
+92	HC6242	DATA1	Line 1 (18 characters) MUST enter personalization.	18	1	
+93	HC6512	DATA1	Monogram Letter	1	1	
+94	HC6842	DATA1	Line 1 (12 characters)	12	1	
+95	HC6852	DATA1	Line 1 (12 characters)	12	1	
+96	HC6852	DATA2	Line 2 (17 characters)	17		
+97	PH0412	DATA1	Name of School/Year of Graduation	50	1	
+98	PH0412	DATA2	Person's Name	40		
+99	HC8502	DATA1	Stone Message 1 (16 upper case characters - include 'In Memory Of' if desired.)	16	1	
+100	HC8502	DATA2	Stone Message 2 (16 upper case characters - no text is included unless specified).	16		
+101	HC9212	DATA1	Message Line 1 (18 Mixed Case Characters)	18	1	
+102	HC9212	DATA2	Message Line 2 (18 Mixed Case Characters)	18		
+103	HC9212	DATA3	Message Line 3 (18 Mixed Case Characters)	18		
+104	HC9212	DATA4	Message Line 4 (18 Mixed Case Characters)	18		
+105	HC9212	DATA5	Message Line 5 (18 Mixed Case Characters)	18		
+106	HC9212	DATA6	Message Line 6 (18 Mixed Case Characters)	18		
+107	HD2822	DATA1	Message Line 1 (18 Mixed Case Characters)	18	1	
+108	HD2822	DATA2	Message Line 2 (18 Mixed Case Characters)	18		
+109	HD2822	DATA3	Message Line 3 (18 Mixed Case Characters)	18		
+110	HD2822	DATA4	Message Line 4 (18 Mixed Case Characters)	18		
+111	HD2822	DATA5	Message Line 5 (18 Mixed Case Characters)	18		
+112	HD2822	DATA6	Message Line 6 (18 Mixed Case Characters)	18		
+113	HD0452S	DATA1	5-Digit Zip Code for Longitude/Latitude calculation	15	1	
+114	HD0452T	DATA1	5-Digit Zip Code for Longitude/Latitude calculation	15	1	
+115	HD1902S	DATA1	5-Digit Zip Code for Longitude/Latitude calculation	15	1	
+116	HD1902T	DATA1	5-Digit Zip Code for Longitude/Latitude calculation	15	1	
+117	HC9902	DATA1	Text (8 Uppercase Letters or Numbers)	8	1	
+118	HD5332	DATA1	Name	14	1	
+119	HD5442	DATA1	Street Number and Street Name (req.)	30	1	
+120	HD5442	DATA2	City (req.)	30	1	
+121	HD5442	DATA3	State (2 character abbreviation req.)	2	1	
+122	HD5442	DATA4	Zip (5 digit) or Postal Code (9 digit) (req.)	9	1	
+123	HD5442	DATA5	Country (US or CA - 2 characters req.)	2	1	
+124	HD4092	DATA1	50 Proper (Mixed) Case Letters	50	1	
+125	HD4102	DATA1	50 Proper (Mixed) Case Letters	50	1	
+126	HD4831	DATA1	Family Name	12	1	
+127	HD4831	DATA2	Version Number	3		
+128	AV3211L	DATA1	Line 1	22	1	
+129	AV3211L	DATA2	Line 2	22		
+130	AV3211T	DATA1	Line 1	22	1	
+131	AV3211T	DATA2	Line 2	22		
+132	HD7502	DATA1	Name	12	1	
+133	HD6512	DATA1	Baby's First Name	16	1	
+134	HD6512	DATA2	Birth Weight (lb. and oz.)	16		
+135	HD6512	DATA3	Birth Date (Month/Date/Year)	16		
+136	HD6512	DATA4	Exact Time Of Birth (Hour/Minute/AM or PM)	16		
+137	HD6522	DATA1	Baby's Name	16	1	
+138	HD6522	DATA2	Birth Weight (lb. and oz.)	16		
+139	HD6522	DATA3	Birth Date (Month/Date/Year)	16		
+140	HD6522	DATA4	Exact Time Of Birth (Hour/Minute/AM or PM)	16		
+141	HD9802	DATA1	Name	18	1	
+142	HD7282	DATA1	Line 1 (5 or less characters for large letters) ALL CAPS PLEASE	5	1	
+143	HD7282	DATA2	16 Smaller Characters (ex. Street Name) ALL CAPS PLEASE	16		
+144	HD7292	DATA1	5 Large Characters (ex. Street Number)	5	1	
+145	HD7292	DATA2	14 Smaller Characters (ex. Street Name) ALL CAPS PLEASE	14		
+146	HD6492	DATA1	Name	15	1	
+147	HD8322	DATA1	Name ALL CAPS PLEASE	12	1	
+148	VE8662-3	DATA1	Line 1 (3 Characters)	3	1	
+149	VE8662-4	DATA1	Line 1 (4 Characters)	4	1	
+150	VE8662-5	DATA1	Line 1 (5 Characters)	5	1	
+151	VE8662-6	DATA1	Line 1 (6 Characters)	6	1	
+152	VE8662-7	DATA1	Line 1 (7 Characters)	7	1	
+153	VE8662-8	DATA1	Line 1 (8 Characters)	8	1	
+154	VE8662-9	DATA1	Line 1 (9 Characters)	9	1	
+155	VE8662-10	DATA1	Line 1 (10 Characters)	10	1	
+156	HE5732	DATA1	Name (14 Characters - Please precede name with 'Dr.')	14	1	
+157	HE4782	DATA1	Name (Up to 12 Mixed Case Characters)	12	1	
+158	HE4782	DATA2	MM/DD/YYYY (Date)	10		
+159	HE7532-AB	DATA1	First Birthstone Month (2 Digit Month)	2	1	
+160	HE7532-AB	DATA2	Second Birthstone Month (2 Digit Month)	2	1	
+161	HE7532-AB	DATA3	Third Birthstone Month (2 Digit Month)	2		
+162	HE7532-AB	DATA4	Fourth Birthstone Month (2 Digit Month)	2		
+163	HE7532-AB	DATA5	Fifth Birthstone Month (2 Digit Month)	2		
+164	HE7532-AB	DATA6	Sixth Birthstone Month (2 Digit Month)	2		
+165	HE7532-AB	DATA7	Seventh Birthstone Month (2 Digit Month)	2		
+166	HE7532-AB	DATA8	Eighth Birthstone Month (2 Digit Month)	2		
+167	HE7532-AB	DATA9	Ninth Birthstone Month (2 Digit Month)	2		
+168	HE7532-AB	DATA10	Tenth Birthstone (2 Digit Month)	2		
+169	HE7532-AR	DATA1	First Birthstone Month (2 Digit Month)	2	1	
+170	HE7532-AR	DATA2	Second Birthstone Month (2 Digit Month)	2	1	
+171	HE7532-AR	DATA3	Third Birthstone Month (2 Digit Month)	2		
+172	HE7532-AR	DATA4	Fourth Birthstone Month (2 Digit Month)	2		
+173	HE7532-AR	DATA5	Fifth Birthstone Month (2 Digit Month)	2		
+174	HE7532-AR	DATA6	Sixth Birthstone Month (2 Digit Month)	2		
+175	HE7532-AR	DATA7	Seventh Birthstone Month (2 Digit Month)	2		
+176	HE7532-AR	DATA8	Eighth Birthstone Month (2 Digit Month)	2		
+177	HE7532-AR	DATA9	Ninth Birthstone Month (2 Digit Month)	2		
+178	HE7532-AR	DATA10	Tenth Birthstone (2 Digit Month)	2		
+179	HE6532	DATA1	Name (13 Mixed Characters - just name - 'The' & 'Family' already appear)	13	1	
+180	HE6532	DATA2	Family Est. Date (4 Digit Year)	4		
+181	HE8772	DATA1	50 Proper (Mixed) Case Letters	50	1	
+182	HE8922	DATA1	Name (up to 12 characters)	12	1	
+183	HE9362	DATA1	Name (up to 22 characters)	22	1	
+184	HE9362	DATA2	Date (mm/dd/yyyy)	22	1	
+185	HE9802	DATA1	Headline (up to 30 characters w/spaces)	30	1	
+186	HE9811L	DATA1	Headline (up to 30 characters w/spaces)	30	1	
+187	HE9811T	DATA1	Headline (up to 30 characters w/spaces)	30	1	
+188	HE9862	DATA1	Name (up to 26 characters w/spaces)	26	1	
+189	HE9862	DATA2	Birthday (mm/dd/yyyy)	16	1	
+190	HE9972	DATA1	Name (up to 30 characters)	30	1	
+191	HE9992	DATA1	Name (up to 8 characters)	8	1	
+192	HF1052	DATA1	Name (up to 17 characters) ALL CAPS PLEASE	17	1	
+193	HF1062	DATA1	Type the word 'The'	3	1	
+194	HF1062	DATA2	Name plus apostrophe S	14		
+195	HF1862	DATA1	50 Proper (Mixed) Case Letters	50	1	
+196	HF2422-A	DATA1	Name1 (up to 10 characters each)	10	1	
+197	HF2422-A	DATA2	Name2 (up to 10 characters each)	10		
+198	HF2422-A	DATA3	Name3 (up to 10 characters each)	10		
+199	HF2422-B	DATA1	Name1 (up to 10 characters each)	10	1	
+200	HF2422-B	DATA2	Name2 (up to 10 characters each)	10	1	
+201	HF2422-B	DATA3	Name3 (up to 10 characters each)	10	1	
+202	HF2422-B	DATA4	Name4 (up to 10 characters each)	10	1	
+203	HF2422-B	DATA5	Name5 (up to 10 characters each)	10		
+204	HF2422-B	DATA6	Name6 (up to 10 characters each)	10		
+205	VE5732	DATA1	Name (up to 15 characters)	15	1	
+206	VF2731L	DATA1	Name (up to 15 characters)	15	1	
+207	VF2731T	DATA1	Name (up to 15 characters)	15	1	
+208	HF3752	DATA1	Name1 (up to 10 characters)	10	1	
+209	HF3752	DATA2	Name2 (up to 10 characters)	10	1	
+210	AX1092	DATA1	Name 1 (up to 10 characters)	10	1	
+211	AX1092	DATA2	Name 2 (up to 10 characters)	10	1	
+212	AX1092	DATA3	First Child Name (up to 10 Characters)	10		
+213	AX1092	DATA4	Second Child Name (up to 10 Characters)	10		
+214	AX1092	DATA5	Third Child Name (up to 10 Characters)	10		
+215	AX1092	DATA6	Fourth Child Name (up to 10 Characters)	10		
+216	AX1092	DATA7	Fifth Child Name (up to 10 Characters)	10		
+217	AX1092	DATA8	Sixth Child Name (up to 10 Characters)	10		
+218	AX6642	DATA1	Family Name (Up to 12 mixed case letters)	12	1	
+219	AX6642	DATA2	First Name Of Person 1 (up to 10 mixed case letters)	10	1	
+220	AX6642	DATA3	First Name Of Person 2 (up to 10 mixed case letters)	10		
+221	AX6642	DATA4	First Name Of Person 3 (up to 10 mixed case letters)	10		
+222	AX6642	DATA5	First Name Of Person 4 (up to 10 mixed case letters)	10		
+223	AX6642	DATA6	First Name Of Person 5 (up to 10 mixed case letters)	10		
+224	AX6642	DATA7	First Name Of Person 6 (up to 10 mixed case letters)	10		
+225	HF5962	DATA1	Name (up to 18 characters including spaces)	18	1	
+226	HF5952	DATA1	Name (up to 18 characters including spaces)	18	1	
+227	HF4272	DATA1	Dog's name (up to 10 characters)	10	1	
+228	HF4262	DATA1	Name (up to 10 characters)	10	1	
+229	HF3152	DATA1	Name (up to 10 characters)	10	1	
+230	AW5822	DATA1	Your message line 1	10	1	
+231	AW5822	DATA2	Your message line 2	10		
+232	AL7872	DATA1	Name	12	1	
+233	AR9582	DATA1	Name	12	1	
+234	AR9642	DATA1	Name	14	1	
+235	VD0142	DATA1	Line 1 ( 17 characters) ALL CAPS PLEASE	17	1	
+236	VD0142	DATA2	Line 2 ( 17 characters) ALL CAPS PLEASE	17		
+237	VD2192	DATA1	Characters (28-All Capital Letters)	28	1	
+238	VD5132	DATA1	Name 1 Field (10 mixed case characters)	10	1	
+239	VD5132	DATA2	Name 2 Field (10 mixed case characters)	10		
+240	VD5142	DATA1	Name or Initial Line 1-(10 characters-Mixed Case)	10	1	
+241	VD5142	DATA2	Name or Initial Line 2-(10 characters-Mixed Case)	10		
+242	VD7062	DATA1	Message-(20 characters-Mixed Case)	20	1	
+243	VE8552	DATA1	Name-(55 Mixed Case Characters)	55	1	
+244	VE8882	DATA1	Line 1 ALL CAPS PLEASE	12	1	
+245	VE8882	DATA2	Line 2 ALL CAPS PLEASE	12		
+246	VF0352	DATA1	Name 1 (9 Mixed Case Characters)	9	1	
+247	VF0352	DATA2	Name 2 (9 Mixed Case Characters)	9		
+248	VF0352	DATA3	Wedding Date-(55 Mixed Case Characters)	55		
+249	HF5342	DATA1	Name or message (up to 20 characters; please include 'The' with family name)	20	1	
+250	HF9422	DATA1	Heart Inscription (3 characters)	3	1	
+251	HF9422	DATA2	Date (up to 13 characters including punctuation & spaces)	13	1	
+252	HF7802	DATA1	Godchild's name (up to 15 characters)	15	1	
+253	HF2912	DATA1	Godparent's name (up to 20 characters)	20	1	
+254	HF2912	DATA2	Godchild's name (up to 20 characters)	20	1	
+255	CA4382	DATA1	First Name (up to 15 characters)	15	1	
+256	CA4382	DATA2	Last Name (up to 15 characters)	15	1	
+257	CA4382	DATA3	Birth Date (15 character limit; Month/Date/Year EX&#58; June 10)	15	1	
+258	CA4372	DATA1	First Name (up to 15 characters)	15	1	
+259	CA4372	DATA2	Middle Name (up to 15 characters)	15	1	
+260	CA4372	DATA3	Last Name (up to 15 characters)	15	1	
+261	CA4372	DATA4	Birth Date (15 character limit; Month/Date/Year EX&#58; June 10)	15	1	
+262	CA4362	DATA1	First Name (up to 15 characters)	15	1	
+263	CA4362	DATA2	Last Name (up to 15 characters)	15	1	
+264	CA4362	DATA3	Birth Date (15 character limit; Month/Date/Year EX&#58; June 10)	15	1	
+265	CA4392	DATA1	First Name (up to 15 characters)	15	1	
+266	CA4392	DATA2	Middle Name (up to 15 characters)	15	1	
+267	CA4392	DATA3	Last Name (up to 15 characters)	15	1	
+268	CA4392	DATA4	Birth Date (15 character limit; Month/Date/Year EX&#58; June 10)	15	1	
+269	HF7492	DATA1	Family Name (up to 12 characters)	12	1	
+270	HF7492	DATA2	Role 1 (up to 10 characters)	10		
+271	HF7492	DATA3	Name 1 (up to 12 characters)	12		
+272	HF7492	DATA4	Role 2 (up to 10 characters)	10		
+273	HF7492	DATA5	Name 2 (up to 12 characters)	12		
+274	HF7492	DATA6	Role 3 (up to 10 characters)	10		
+275	HF7492	DATA7	Name 3 (up to 12 characters)	12		
+276	HF7492	DATA8	Role 4 (up to 10 characters)	10		
+277	HF7492	DATA9	Name 4 (up to 12 characters)	12		
+278	HF7492	DATA10	Role 5 (up to 10 characters)	10		
+279	HF7492	DATA11	Name 5 (up to 12 characters)	12		
+280	HF7062	DATA1	Line 1 (up to 16 characters including spaces) ALL CAPS PLEASE	16	1	
+281	HF7062	DATA2	Line 2 (up to 16 characters including spaces) ALL CAPS PLEASE	16		
+282	HF7072	DATA1	Line 1 (up to 12 characters) ALL CAPS PLEASE	12	1	
+283	HF7072	DATA2	Line 2 (up to 12 characters) ALL CAPS PLEASE	12		
+284	HC5101L	DATA1	Web address (up to 30 characters)	30	1	
+285	HC5101T	DATA1	Web address (up to 30 characters)	30	1	
+286	VC3762	DATA1	Name (15 Characters - Upper and Lower Case Letters Acceptable)	15	1	
+287	VE5012	DATA1	Name-(8-characters-All Capital Letters)	8	1	
+288	VE5012	DATA2	Date (6 digits mmddyy)	6		
+289	VD7792	DATA1	Team Name-(55 characters-Mixed Case)	55	1	
+290	VD7792	DATA2	First Name-(55 characters-Mixed Case)	55		
+291	HG4712	DATA1	Name (up to 18 characters including spaces)	18	1	
+292	HG4602	DATA1	Name (up to 10 characters including punctuation)	10	1	
+293	HG2462	DATA1	Name (up to 12 characters including apostrophe)	12	1	
+294	HG2462	DATA2	Date (EX&#58; 1992)	4	1	
+295	HG4742	DATA1	Family Name (up to 30 characters)	30	1	
+296	HG2062	DATA1	Name 1 (up to 10 characters)	10	1	
+297	HG2062	DATA2	Name 2 (up to 10 characters)	10	1	
+298	HG2062	DATA3	Date (mm-dd-yyyy)	10	1	
+299	HG1362	DATA1	Baby's name (up to 20 characters)	20	1	
+300	HG1362	DATA2	City & State (up to 20 characters)	20	1	
+301	HG1362	DATA3	Birth Weight (lb. and oz.)	8	1	
+302	HG1362	DATA4	Birth Date (mmddyyyy)	8	1	
+303	HG1362	DATA5	Birth Time (up to 7 characters EX&#58; 12&#58;32am)	7	1	
+304	HG1372	DATA1	Baby's name (up to 20 characters)	20	1	
+305	HG1372	DATA2	City & State (up to 20 characters)	20	1	
+306	HG1372	DATA3	Birth Weight (lb. and oz.)	8	1	
+307	HG1372	DATA4	Birth Date (mmddyyyy)	8	1	
+308	HG1372	DATA5	Birth Time (up to 7 characters EX&#58; 12&#58;32am)	7	1	
+309	HG5612	DATA1	Word 'The' or message (20 char.)	20	1	
+310	HG5612	DATA2	Family name (up to 20 characters)	20	1	
+311	HG5612	DATA3	Word 'Family' or message (20 char)	20	1	
+312	HG2962	DATA1	Zip Code (5 digit zip)	5	1	
+313	HG4732	DATA1	Name (up to 48 characters - include 'Chez' if you want it; it will not be included unless specified)	48	1	
+314	HG2142	DATA1	Branch name 1 (up to 10 characters)	10	1	
+315	HG2142	DATA2	Branch name 2 (up to 10 characters)	10		
+316	HG2142	DATA3	Branch name 3 (up to 10 characters)	10		
+317	HG2142	DATA4	Branch name 4 (up to 10 characters)	10		
+318	HG2142	DATA5	Branch name 5 (up to 10 characters)	10		
+319	HG2142	DATA6	Branch name 6 (up to 10 characters)	10		
+320	HG2142	DATA7	Branch name 7 (up to 10 characters)	10		
+321	HG2142	DATA8	Branch name 8 (up to 10 characters)	10		
+322	HG2142	DATA9	Trunk line 1 (up to 10 characters)	10		
+323	HG2142	DATA10	Trunk line 2 (up to 10 characters)	10		
+324	HG2142	DATA11	Family name (up to 18 characters)	18		
+325	HG5592	DATA1	Branch name 1 (up to 10 characters)	10	1	
+326	HG5592	DATA2	Branch name 2 (up to 10 characters)	10		
+327	HG5592	DATA3	Branch name 3 (up to 10 characters)	10		
+328	HG5592	DATA4	Branch name 4 (up to 10 characters)	10		
+329	HG5592	DATA5	Branch name 5 (up to 10 characters)	10		
+330	HG5592	DATA6	Branch name 6 (up to 10 characters)	10		
+331	HG5592	DATA7	Branch name 7 (up to 10 characters)	10		
+332	HG5592	DATA8	Branch name 8 (up to 10 characters)	10		
+333	HG5592	DATA9	Trunk line 1 (up to 10 characters)	10		
+334	HG5592	DATA10	Trunk line 2 (up to 10 characters)	10		
+335	HG5592	DATA11	Family name (up to 18 characters)	18		
+336	HG8621BL	DATA1	Endearment (Grandma/Mommy/Nana etc)	12	1	
+337	HG8621BL	DATA2	Number (up to 2 characters)	2	1	
+338	HG8621GR	DATA1	Endearment (Grandma/Mommy/Nana etc)	12	1	
+339	HG8621GR	DATA2	Number (up to 2 characters)	2	1	
+340	HG8621PK	DATA1	Endearment (Grandma/Mommy/Nana etc)	12	1	
+341	HG8621PK	DATA2	Number (up to 2 characters)	2	1	
+342	HG8302	DATA1	Name (up to 14 characters including apostrophe)	14	1	
+343	HG6712	DATA1	Family name (up to 12 characters)	12	1	
+344	HG7962	DATA1	Name (up to 10 letters)	10	1	
+345	HG7972	DATA1	Name (up to 10 letters)	10	1	
+346	HG8792	DATA1	Name (up to 12 characters)	12	1	
+347	HG8312	DATA1	Name (up to 20 characters including spaces)	20	1	
+348	HG8512	DATA1	Name (up to 14 characters including punctuation & spaces)	14	1	
+349	HG8522	DATA1	Name (up to 14 characters including punctuation & spaces)	14	1	
+350	HG7632	DATA1	Line 1 (up to 10 characters) ALL CAPS PLEASE	10	1	
+351	HG7632	DATA2	Line 2 (up to 10 characters) ALL CAPS PLEASE	10		
+352	HG8322	DATA1	Endearment (Grandma/Mommy/Nana etc)	11	1	
+353	HG8322	DATA2	Names at the bottom line 1 (up to 30 characters)	30	1	
+354	HG8322	DATA3	Names at the bottom line 2 (up to 30 characters)	30		
+355	HG8322	DATA4	Names at the bottom line 3 (up to 30 characters)	30		
+356	HG7292	DATA1	Family name only - 16 characters ('The' is automatically included)	16	1	
+357	HG7942	DATA1	Name (up to 15 characters)	15	1	
+358	HG7952	DATA1	Name (up to 15 characters)	15	1	
+359	HG7622	DATA1	Name (up to 12 characters)	12	1	
+360	HG8012	DATA1	Birthstone 1 (name month)	10	1	
+361	HG8012	DATA2	Birthstone 2 (name month)	10		
+362	HG8012	DATA3	Birthstone 3 (name month)	10		
+363	HG8012	DATA4	Birthstone 4 (name month)	10		
+364	HG8012	DATA5	Birthstone 5 (name month)	10		
+365	HG8012	DATA6	Birthstone 6 (name month)	10		
+366	HG8012	DATA7	Birthstone 7 (name month)	10		
+367	HG8022	DATA1	Birthstone 1 (name month)	10	1	
+368	HG8022	DATA2	Birthstone 2 (name month)	10		
+369	HG8022	DATA3	Birthstone 3 (name month)	10		
+370	HG8022	DATA4	Birthstone 4 (name month)	10		
+371	HG8022	DATA5	Birthstone 5 (name month)	10		
+372	HG8022	DATA6	Birthstone 6 (name month)	10		
+373	HG8022	DATA7	Birthstone 7 (name month)	10		
+374	AR9922	DATA1	Name (max 14 characters)	14	1	
+375	HG9422	DATA1	Name or initials (max 22 characters)	22	1	
+376	HH2462	DATA1	Letter (one character)	1	1	
+377	HH1141	DATA1	Endearment (Dad/Daddy/Uncle/etc.)	12	1	
+378	HH1141	DATA2	Number 1-99	2	1	
+379	HH1102	DATA1	Country (up to 20 characters)	20	1	
+380	HH1102	DATA2	City (up to 20 characters)	20	1	
+381	HH3512	DATA1	Line 1 (up to 15 characters) ALL CAPS PLEASE	15	1	
+382	HH3512	DATA2	Line 2 (up to 15 characters) ALL CAPS PLEASE	15		
+383	HH3042	DATA1	Line 1 (up to 9 characters)	9	1	
+384	HH3042	DATA2	Line 2 (up to 9 characters)	9		
+385	HG4722	DATA1	Up to 18 characters including spaces & punctuation	18	1	
+386	HH5482	DATA1	Family name (up to 13 characters - 'the' & 'family' are already included)	13	1	
+387	HH5392	DATA1	Name or sentiment (up to 14 characters)	14	1	
+388	HH5042	DATA1	Name (up to 12 characters - 'the' & 'center' are standard and included)	12	1	
+389	HH5972	DATA1	Name (up to 12 characters - 'the' & 'center' are standard and included)	12	1	
+390	HH5922	DATA1	Name (up to 10 characters)	10	1	
+391	HH5452	DATA1	Family Surname (up to 12 characters)	12	1	
+392	HH5452	DATA2	Person 1 First Name (up to 10 characters)	10		
+393	HH5452	DATA3	Person 2 First Name (up to 10 characters)	10		
+394	HH5452	DATA4	Person 3 First Name (up to 10 characters)	10		
+395	HH5452	DATA5	Person 4 First Name (up to 10 characters)	10		
+396	HH5452	DATA6	Person 5 First Name (up to 10 characters)	10		
+397	HH5452	DATA7	Person 6 First Name (up to 10 characters)	10		
+398	PH1542	DATA1	Name of school (40 char. max)	40	1	
+399	HH7872	DATA1	Number of children (01-99)	2	1	
+400	HH7882	DATA1	Title UPPER CASE ONLY (up to 20 characters)	20	1	
+401	HH8572	DATA1	Initials (first; middle; last - monogram will position last name initial in the center)	3	1	
+402	HH6322	DATA1	Name (include punctuation - up to 12 characters)	12	1	
+403	HH8382	DATA1	Baby's name (up to 16 characters)	12	1	
+404	HH8382	DATA2	Weight; surname; or time of birth (12 characters)	12	1	
+405	HH8382	DATA3	Date of birth - two digit month/day/year (mm/dd/yy)	8	1	
+406	HH8552	DATA1	Name (up to 12 characters)	12	1	
+407	HH7532	DATA1	Name (up to 12 characters)	12	1	
+408	AQ8202	DATA1	Name - up to 12 characters	12	1	
+409	HH8382	DATA4	Gender - Boy or Girl (max. 4 characters)	4	1	
+410	HH9962	DATA1	Pet name ALL CAPS PLEASE	8	1	
+411	HH9962	DATA2	Year of birth & year of passing (YYYY-YYYY no spaces)	9		
+412	HH9972	DATA1	Pet name ALL CAPS PLEASE	8	1	
+413	HH9972	DATA2	Year of birth & year of passing (YYYY-YYYY no spaces)	9		
+414	HJ0442	DATA1	Name (up to 35 characters including spaces)	35	1	
+415	HJ0442	DATA2	Birthday (up to 35 characters)	35	1	
+416	HJ1511L	DATA1	Name (up to 12 characters)	12	1	
+417	HJ1511T	DATA1	Name (up to 12 characters)	12	1	
+418	HJ0842	DATA1	Initial (one character only)	1	1	
+419	HJ1402	DATA1	Family name (up to 12 characters - 'THE' is standard & included)	12	1	
+420	HH9292OG1	DATA1	Up to 7 characters ALL CAPS PLEASE	7	1	
+421	HH9292OG2	DATA1	Line 1 (up to 16 characters) ALL CAPS PLEASE	16	1	
+422	HH9292BG1	DATA1	Up to 7 characters ALL CAPS PLEASE	7	1	
+423	HH9292BG2	DATA1	Line 1 (up to 16 characters) ALL CAPS PLEASE	16	1	
+424	HJ1822OG1	DATA1	Up to 7 characters ALL CAPS PLEASE	7	1	
+425	HJ1822OG2	DATA1	Line 1 (up to 16 characters) ALL CAPS PLEASE	16	1	
+426	HJ1822BG1	DATA1	Up to 7 characters ALL CAPS PLEASE	7	1	
+427	HJ1822BG2	DATA1	Line 1 (up to 16 characters) ALL CAPS PLEASE	16	1	
+428	HJ1102	DATA1	Letter (one character)	1	1	
+429	HJ1112	DATA2	Letter (one character)	1	1	
+430	HH9292OG2	DATA2	Line 2 (up to 16 characters) ALL CAPS PLEASE	16		
+431	HG9292BG2	DATA2	Line 2 (up to 16 characters)	16		
+432	HJ1822OG2	DATA2	Line 2 (up to 16 characters) ALL CAPS PLEASE	16		
+433	HJ1822BG2	DATA2	Line 2 (up to 16 characters) ALL CAPS PLEASE	16		
+434	HJ4362	DATA1	Street number & street name (req.)	30	1	
+435	HJ4362	DATA2	City (req.)	30	1	
+436	HJ4362	DATA3	State (2 character abbreviation req.)	2	1	
+437	HJ4362	DATA4	Zip Code (5 digit) (req.)	5	1	
+438	HH9292BG2	DATA2	Line 2 (up to 16 characters) ALL CAPS PLEASE	16	1	
+439	HJ2832	DATA1	Sister's name (12 characters)	12	1	
+440	HJ2832	DATA2	Your name (limit 12 characters)	12	1	
+441	HJ2842	DATA1	Names (25 characters)	25	1	
+442	HJ2842	DATA2	Date (20 characters)	20	1	
+443	HJ4998	DATA1	Relationship (up to 15 characters)	15	1	
+444	HJ4998	DATA2	Age (up to 3 characters)	3	1	
+445	HJ5078	DATA1	Age (up to 3 characters)	3	1	
+446	HJ4918	DATA1	Family name	12	1	
+447	HJ4918	DATA2	Month/Year (up to 13 characters)	13	1	
+448	HJ5198	DATA1	Name (up to 12 characters)	12	1	
+449	HJ5198	DATA2	Number (up to 2 characters)	2	1	
+450	HJ5158	DATA1	Name one (up to 12 characters - we'll add 'ology' to the name entered here)	12	1	
+451	HJ5158	DATA2	Name two (up to 12 characters - supply this name to finish the phrase 'The Study Of')	12	1	
+452	VG4271	DATA1	Profession (up to 15 characters)	15	1	
+453	HJ7258	DATA1	Hero name (up to 12 characters)	12	1	
+454	HJ7378	DATA1	Name of greatest (up to 12 characters)	12	1	
+455	HJ7388	DATA1	Where you would rather be (up to 18 characters)	18	1	
+456	HJ7418	DATA1	Up to 12 characters	12	1	
+457	HJ5312	DATA1	Full name and birth date (up to 50 characters)	50	1	
+458	HJ5322	DATA1	Last name (up to 25 characters)	25	1	
+459	HJ5322	DATA2	First names (up to 50 characters total)	50	1	
+460	HJ5552	DATA1	Zip code	6	1	
+461	HC4092	DATA2	City (25 characters)	25	1	
+462	HC4092	DATA3	State (25 characters)	25	1	
+463	HJ8882	DATA1	Names (up to 24 characters)	24	1	
+464	HJ8882	DATA2	Date	24	1	
+465	HK1142	DATA1	Place (up to 18 characters)	18	1	
+466	HJ8872	DATA1	Name 1 (10 characters)	10	1	
+467	HJ8872	DATA2	Name 2 (10 characters)	10	1	
+468	HK1822	DATA1	Line 1 (12 characters max)	12	1	
+469	HK1822	DATA2	Line 2 (12 characters max)	12		
+470	HK1822	DATA3	Line 3 (12 characters max)	12		
+471	HK1042	DATA1	Starting month	10	1	
+472	HK1042	DATA2	Starting year	4	1	
+473	HK1042	DATA3	First Name (up to 15 characters)	15		
+474	HK1042	DATA4	Last Name (optional - 14 characters)	14		
+475	HK1892	DATA1	Stone 1	8	1	
+476	HK1892	DATA2	Stone 2	8		
+477	HK1892	DATA3	Stone 3	8		
+478	HK1892	DATA4	Stone 4	8		
+479	HK1892	DATA5	Stone 5	8		
+480	HK1178	DATA1	Age	3	1	
+481	HK1188	DATA1	Age	3	1	
+482	HJ9478	DATA1	First initial	1	1	
+483	HJ9478	DATA2	Name (up to 14 characters)	14	1	
+484	HJ9478	DATA3	Color (Pink or Blue)	4	1	
+485	HJ9142	DATA1	3 Initials	3	1	
+486	HK2372	DATA1	Full name (up to 36 characters)	36	1	
+487	HK2372	DATA2	Date and time of birth (up to 36 characters)	36	1	
+488	HK2372	DATA3	Weight and length (up to 36 characters)	36	1	
+489	HK2372	DATA4	First initial	1	1	
+490	HK2372	DATA5	Middle initial	1	1	
+491	HK2372	DATA6	Last initial	1	1	
+492	HK1202	DATA1	First initial	1	1	
+493	HK1202	DATA2	Full first name (up to 15 chars)	15	1	
+494	HJ9662	DATA1	Child's first name 15 char.(all fields req. - don't enter 'none' - it will show as the word 'none')	15	1	
+495	HJ9662	DATA2	Child's last name (15 char max - required)	15	1	
+496	HJ9662	DATA3	Gender (required)	15	1	
+497	HJ9662	DATA4	Loved one name 1 (required)	30	1	
+498	HJ9662	DATA5	Loved one name 2 (required)	30	1	
+499	HJ9662	DATA6	Loved one name 3 (required)	30	1	
+500	HJ9662	DATA7	Loved one name 4 (required)	30	1	
+501	HJ9662	DATA8	Loved one name 5 (required)	30	1	
+502	HJ9662	DATA9	Loved one name 6 (required)	30	1	
+503	HJ9662	DATA10	Dedication (40 character max - required)	40	1	
+504	HJ9662	DATA11	Sender (40 character max - required)	40	1	
+505	HJ9662	DATA12	Year (4 digit - required)	4	1	
+506	HK1062	DATA1	Name (up to 13 chars)	13	1	
+507	HK1062	DATA2	Recipe line 1 (13 char. Max)	13	1	
+508	HK1062	DATA3	Recipe line 2 (13 char. Max)	13		
+509	HK1062	DATA4	Recipe line 3 (13 char. Max)	13		
+510	HK1852	DATA1	3 Initials	3	1	
+511	HJ8332	DATA1	3 Initials	3	1	
+512	HK1072	DATA1	Name (up to 25 characters)	25	1	
+513	HK1072	DATA2	Message line 1 (up to 30 chars.)	30		
+514	HK1072	DATA3	Year (4 digit)	4		
+515	HK1592-1	DATA1	Stone choice	16	1	
+516	HK1592-2	DATA1	Stone choice 1	16	1	
+517	HK1592-2	DATA2	Stone choice 2	16	1	
+518	HK1592-3	DATA1	Stone choice 1	16	1	
+519	HK1592-3	DATA2	Stone choice 2	16	1	
+520	HK1592-3	DATA3	Stone choice 3	16	1	
+521	HK1592-4	DATA1	Stone choice 1	16	1	
+522	HK1592-4	DATA2	Stone choice 2	16	1	
+523	HK1592-4	DATA3	Stone choice 3	16	1	
+524	HK1592-4	DATA4	Stone choice 4	16	1	
+525	HK1592-5	DATA1	Stone choice 1	16	1	
+526	HK1592-5	DATA2	Stone choice 2	16	1	
+527	HK1592-5	DATA3	Stone choice 3	16	1	
+528	HK1592-5	DATA4	Stone choice 4	16	1	
+529	HK1592-5	DATA5	Stone choice 5	16	1	
+530	HK2712-1	DATA1	Stone choice	16	1	
+531	HK2712-2	DATA1	Stone choice 1	16	1	
+532	HK2712-2	DATA2	Stone choice 2	16	1	
+533	HK2712-3	DATA1	Stone choice 1	16	1	
+534	HK2712-3	DATA2	Stone choice 2	16	1	
+535	HK2712-3	DATA3	Stone choice 3	16	1	
+536	HK2712-4	DATA1	Stone choice 1	16	1	
+537	HK2712-4	DATA2	Stone choice 2	16	1	
+538	HK2712-4	DATA3	Stone choice 3	16	1	
+539	HK2712-4	DATA4	Stone choice 4	16	1	
+540	HK2712-5	DATA1	Stone choice 1	16	1	
+541	HK2712-5	DATA2	Stone choice 2	16	1	
+542	HK2712-5	DATA3	Stone choice 3	16	1	
+543	HK2712-5	DATA4	Stone choice 4	16	1	
+544	HK2712-5	DATA5	Stone choice 5	16	1	
+545	HK4462	DATA1	Family name or greeting (up to 15 characters)	15	1	
+546	HJ9672	DATA1	Child's first name (required)	15	1	
+547	HJ9672	DATA2	Child's middle name (up to 15 characters)	15		
+548	HJ9672	DATA3	Child's last name (up to 15 characters)	15		
+549	HJ9672	DATA4	Gender (required)	6	1	
+550	HJ9672	DATA5	Additional family member 1 (up to 15 characters)	15		
+551	HJ9672	DATA6	Additional family member 2 (up to 15 characters)	15		
+552	HJ9672	DATA7	Additional family member 3 (up to 15 characters)	15		
+553	HJ9672	DATA8	Additional family member 4 (up to 15 characters)	15		
+554	HJ9672	DATA9	Additional family member 5 (up to 15 characters)	15		
+555	HJ9672	DATA10	Additional family member 6 (up to 15 characters)	15		
+556	HJ9672	DATA11	Additional family member 7 (up to 15 characters)	15		
+557	HJ9672	DATA12	Additional family member 8 (up to 15 characters)	15		
+558	HJ9672	DATA13	Additional family member 9 (up to 15 characters)	15		
+559	HJ9672	DATA14	Additional family member 10 (up to 15 characters)	15		
+560	HJ9672	DATA15	Additional family member 11 (up to 15 characters)	15		
+561	HJ9672	DATA16	Additional family member 12 (up to 15 characters)	15		
+562	HK5382	DATA1	Initial (one character only)	1	1	
+563	HK5592	DATA1	Initial (one character only)	1	1	
+564	HK1902	DATA1	Mom's birth month	8	1	
+565	HK1902	DATA2	Additional birth month 1	8		
+566	HK1902	DATA3	Additional birth month 2	8		
+567	HK1902	DATA4	Additional birth month 3	8		
+568	HK1902	DATA5	Additional birth month 4	8		
+569	HK1902	DATA6	Additional birth month 5	8		
+570	HK5582	DATA1	Name 1 (up to 12 characters)	12	1	
+571	HK5582	DATA2	Birthmonth 1	2	1	
+572	HK5582	DATA3	Name 2 (up to 12 characters)	12		
+573	HK5582	DATA4	Birthmonth 2	2		
+574	HK5582	DATA5	Name 3 (up to 12 characters)	12		
+575	HK5582	DATA6	Birthmonth 3	2		
+576	HK5582	DATA7	Name 4 (up to 12 characters)	12		
+577	HK5582	DATA8	Birthmonth 4	2		
+578	HJ9062	DATA1	14 characters	14	1	
+579	HJ9062	DATA2	18 characters	18		
+580	HK4688	DATA1	Name (up to 16 characters)	16	1	
+581	CE2838	DATA1	Phrase (up to 25 characters)	25	1	
+582	CE2838	DATA2	Phrase 2 (up to 25 characters)	25	1	
+583	VJ0918	DATA1	Nationality (up to 12 characters)	12	1	
+584	VJ1292	DATA1	Lake Name	30	1	
+585	VJ1292	DATA2	Family Name	30		
+586	VJ1292	DATA3	State Name	13		
+587	VH8282	DATA1	Name (Up to 16 Upper case characters and spaces)	16	1	
+588	VH4072	DATA1	Message for Top of Sign	35	1	
+589	VH4072	DATA2	Message for Bottom of Sign	55		
+590	VJ0482	DATA1	Fan or Family Name (Up to 30 characters and spaces)	30	1	
+591	VJ1452	DATA1	Fan or Family Name (Up to 30 characters and spaces)	30	1	
+592	VH8392	DATA1	Name (Up to 30 characters and spaces)	30	1	
+593	VE8892	DATA1	Line 1 (12 Characters) ALL CAPS PLEASE	12	1	
+594	VE8892	DATA2	Line 2 (9 Characters) ALL CAPS PLEASE	9		
+595	VJ5942	DATA1	Name	22	1	
+596	VJ5952	DATA1	Name	22	1	
+597	VJ6592	DATA1	Phrase 1(Specify up to 16 characters and spaces) ALL CAPS PLEASE	16	1	
+598	VJ6592	DATA2	Phrase 2(Specify up to 16 characters and spaces) ALL CAPS PLEASE	16		
+599	VJ6602	DATA1	Line 1(Specify up to 14 character and spaces) ALL CAPS PLEASE	14	1	
+600	VJ9042	DATA1	Line 1	13	1	
+601	VJ9042	DATA2	Line2	13		
+602	VJ7852	DATA1	Gender(Specify Male/Female)	6	1	
+603	VJ7852	DATA2	Name	30	1	
+604	VJ7852	DATA3	Birth Date	30	1	
+605	VJ7852	DATA4	Rest Date	30	1	
+606	VJ9522	DATA1	Fan or Family Name (Specify upto 50 Characters and spaces)	50	1	
+607	VJ7932	DATA1	Fan or Family Name (Specify upto 50 Characters and spaces)	50	1	
+608	VJ7862	DATA1	1st Name	12	1	
+609	VJ7862	DATA2	2nd Name	12	1	
+610	VJ7127	DATA1	Family Name(upto 13 Characters inside the wreath)	13	1	
+611	VJ7127	DATA2	Name1 (Specify up to 9 Characters)	9		
+612	VJ7127	DATA3	Name2 (Specify up to 9 Characters)	9		
+613	VJ7127	DATA4	Name3 (Specify up to 9 Characters)	9		
+614	VJ7127	DATA5	Name4 (Specify up to 9 Characters)	9		
+615	VJ7127	DATA6	Name5 (Specify up to 9 Characters)	9		
+616	VJ7127	DATA7	Name6 (Specify up to 9 Characters)	9		
+617	VJ7127	DATA8	Name7 (Specify up to 9 Characters)	9		
+618	VK0202	DATA1	Family Name(up to 13 Characters inside the wreath)	13	1	
+619	VK0202	DATA2	Name1 (Specify up to 9 Characters)	9		
+620	VK0202	DATA3	Name2 (Specify up to 9 Characters)	9		
+621	VK0202	DATA4	Name3 (Specify up to 9 Characters)	9		
+622	VK0202	DATA5	Name4 (Specify up to 9 Characters)	9		
+623	VK0202	DATA6	Name5 (Specify up to 9 Characters)	9		
+624	VK0202	DATA7	Name6 (Specify up to 9 Characters)	9		
+625	VK0202	DATA8	Name7 (Specify up to 9 Characters)	9		
+626	CD3652	DATA1	Family Name (Up to 32 Mixed Case Characters)	32	1	
+627	CD3662	DATA1	Family Name (Up to 32 Mixed Case Characters)	32	1	
+628	CD3672	DATA1	Family Name (Up to 32 Mixed Case Characters)	32	1	
+629	CD5082	DATA1	Name (Up to 10 Mixed Case Characters)	10	1	
+630	CD5082	DATA2	Year (MMDDYY)	6	1	
+631	CD5092	DATA1	Name (Up to 10 Mixed Case Characters)	10	1	
+632	CD5092	DATA2	Year (MMDDYY)	6	1	
+633	CB6442	DATA1	First Parent Name (Up to 10 Upper Case Characters)	10	1	
+634	CB6442	DATA2	Second Parent Name (Up to 10 Upper Case Characters)	10	1	
+635	CB6442	DATA3	First Child's Name (Up to 10 Upper Case Characters)	10	1	
+636	CB6442	DATA4	Second Child's Name (Up to 10 Upper Case Characters)	10	1	
+637	CB6442	DATA5	Third Child's Name (Up to 10 Upper Case Characters)	10	1	
+638	CB6442	DATA6	Fourth Child's Name (Up to 10 Upper Case Characters)	10	1	
+639	CB6442	DATA7	Family Name (Up to 12 Upper Case Characters)	12	1	
+640	CC2862	DATA1	Lake Name (Up to 25 Upper Case Characters)	25	1	
+641	CC2862	DATA2	State (Up to 25 Upper Case Characters)	25		
+642	CC2882	DATA1	Name (Up to 25 Upper Case Characters)	25	1	
+643	CC2882	DATA2	City & State (Up to 30 Upper Case Characters)	30		
+644	CC5912	DATA1	First Person's Name (10 Upper Case Characters)	10	1	
+645	CC5912	DATA2	Second Person's Name (Up to 10 Mixed Case Characters)	10		
+646	CC6222	DATA1	Name (12 Characters)	12	1	
+647	CD5102	DATA1	Name1 (Up to 8 Mixed Case Characters)	8	1	
+648	CD5102	DATA2	Name2 (Up to 8 Mixed Case Characters)	8		
+649	CD5102	DATA3	Name3 (Up to 8 Mixed Case Characters)	8		
+650	CD5102	DATA4	Name4 (Up to 8 Mixed Case Characters)	8		
+651	CD5102	DATA5	Name5 (Up to 8 Mixed Case Characters)	8		
+652	CD5102	DATA6	Name6 (Up to 8 Mixed Case Characters)	8		
+653	CD5102	DATA7	Name7 (Up to 8 Mixed Case Characters)	8		
+654	CD5102	DATA8	Name8 (Up to 8 Mixed Case Characters)	8		
+655	CD5102	DATA9	Name9 (Up to 8 Mixed Case Characters)	8		
+656	CD5102	DATA10	Name10 (Up to 8 Mixed Case Characters)	8		
+657	CD5882	DATA1	Name (Up to 15 Upper Case Characters)	15	1	
+658	CD5882	DATA2	Location (Up to 15 Upper Case Characters)	15	1	
+659	CD5932	DATA1	Chef Name (Up to 12 Upper Case Characters)	12	1	
+660	VK0272	DATA1	Family Name( Specify up to 30 Characters and Spaces)	30	1	
+661	VK0322	DATA1	Name( Specify up to 30 Characters and Spaces)	30	1	
+662	VK0332	DATA1	Name or Family Name( Specify up to 30 Characters and Spaces)	30	1	
+663	VK0342	DATA1	Name or Trail Name(Specify up to 30 Characters and Spaces)	30	1	
+664	VK0342	DATA2	City or State Line(Specify up to 30 Characters and Spaces)	30	1	
+665	VK0352	DATA1	Name( Specify up to 30 Characters and Spaces)	30	1	
+666	VK0362	DATA1	Name( Specify up to 30 Characters and Spaces)	30	1	
+667	VK0622	DATA1	State Name (Specify up to 30 Characters and Spaces)	30	1	
+668	VK0622	DATA2	Water Body Name (Specify up to 30 Character and Spaces)	30	1	
+669	VK1732	DATA1	State Name (Specify up to 30 Characters and Spaces)	30	1	
+670	VK1732	DATA2	Water Body Name (Specify up to 30 Character and Spaces)	30	1	
+671	VK1742	DATA1	State Name (Specify up to 30 Characters and Spaces)	30	1	
+672	VK1742	DATA2	Water Body Name (Specify up to 30 Character and Spaces)	30	1	
+673	VK1752	DATA1	State Name (Specify up to 30 Characters and Spaces)	30	1	
+674	VK1752	DATA2	Water Body Name (Specify up to 30 Character and Spaces)	30	1	
+675	VK0652	DATA1	Name 1(Specify up to 30 Characters and Spaces)	30	1	
+676	VK0652	DATA2	Name 2(Specify up to 30 Characters and Spaces)	30	1	
+677	VK0602	DATA1	Specify family Name(up to 30 Characters and Spaces)	30	1	
+678	VK0602	DATA2	Specify Tavern Name	30		
+679	VK0582	DATA1	Specify family Name(up to 30 Characters and Spaces each)	30	1	
+680	VK0582	DATA2	Specify location Name(up to 30 Characters and Spaces each)	30		
+681	VK0592	DATA1	Specify location Name(up to 30 Characters and Spaces each)	30	1	
+682	VK0592	DATA2	Specify family Name(up to 30 Characters and Spaces)	30	1	
+683	VK0462	DATA1	Specify location Name(up to 30 Characters and Spaces each)	30	1	
+684	VK0462	DATA2	Specify family Name(up to 30 Characters and Spaces)	30	1	
+685	VK2012	DATA1	Specify individual or day care name (up to 30 Characters and spaces)	30	1	
+686	VK0632	DATA1	Specify individual or day care name (up to 30 Characters and spaces)	30	1	
+687	VH2062S	DATA1	Name of Choice (or specify NO NAME)	16	1	
+688	VH2062T	DATA1	Name of Choice (or specify NO NAME)	16	1	
+689	VJ0938	DATA1	Family Name	15	1	
+690	VH1822S	DATA1	Name of Choice (or specify NO NAME)	16	1	
+691	VH1822T	DATA1	Name of Choice (or specify NO NAME)	16	1	
+692	VH1832	DATA1	Name of Choice (or specify NO NAME)	16	1	
+693	VJ3488	DATA1	Name	25	1	
+694	VJ4142	DATA1	Name	16	1	
+695	CE2548	DATA1	Name (Up to 12 Characters)	12	1	
+696	CE2508	DATA1	Name (Up to 12 Characters)	12	1	
+697	CE2378	DATA1	Name (Up to 12 Characters)	12	1	
+698	CE2461	DATA1	Name (Up to 12 Characters)	12	1	
+699	CE2528	DATA1	Name (Up to 12 Characters)	12	1	
+700	CE2361	DATA1	Name (Up to 12 Characters)	12	1	
+701	CE2361	DATA2	Ink Color (<font color=red>RED</font> or <font color=green>GREEN</font> only please)	5	1	
+702	CE2628	DATA1	Name (Up to 12 Characters)	12	1	
+703	CE2408	DATA1	Name (Up to 12 Characters)	12	1	
+704	CE2518	DATA1	Name (Up to 12 Characters)	12	1	
+705	CE2568	DATA1	Name (Up to 12 Characters)	12	1	
+706	CE2428	DATA1	Name (Up to 12 Characters)	12	1	
+707	CE2558	DATA1	Name (Up to 12 Characters)	12	1	
+708	CE2498	DATA1	Name (Up to 12 Characters)	12	1	
+709	CE2438	DATA1	Name (Up to 12 Characters)	12	1	
+710	CE2388	DATA1	Name (Up to 12 Characters)	12	1	
+711	CE2448	DATA1	Name (Up to 12 Characters)	12	1	
+712	CE2538	DATA1	Name (Up to 12 Characters)	12	1	
+713	CE2488	DATA1	Name (Up to 12 Characters)	12	1	
+714	CE2398	DATA1	Name (Up to 12 Characters)	12	1	
+715	CE2578	DATA1	Honoree's Name (Up to 12 Characters)	12	1	
+716	CE2578	DATA2	Relationship (Up to 12 Characters)	12		
+717	VJ0958	DATA1	Name or phrase (max 19 characters)	19	1	
+718	HK8838	DATA1	Your name (15 characters)	15	1	
+719	HK8838	DATA2	Return to name (15 characters)	15	1	
+720	HK9312	DATA1	Name one (up to ten characters)	10	1	
+721	HK9312	DATA2	Name two (up to ten characters)	10	1	
+722	HK9302	DATA1	Line one (up to 30 characters)	30	1	
+723	HK9302	DATA2	Line two (up to 30 characters)	30		
+724	HK8888	DATA1	Year (4-digit)	4	1	
+725	HK8768	DATA1	Name (up to 15 characters)	15	1	
+726	HK8768	DATA2	Color (specify GRAY or PINK)	4	1	
+727	HK8202	DATA1	Name (up to 14 characters)	14	1	
+728	HK9102	DATA1	City or town (30 characters)	30	1	
+729	HK9102	DATA2	State (2 character abbreviation)	2	1	
+730	HK7642	DATA1	Three uppercase letters	3	1	
+731	HK8828	DATA1	City or place (15 characters or less)	15	1	
+732	HK8132	DATA1	Name - up to 30 characters	30	1	
+733	HL3762	DATA1	Street address (up to 30 characters)	30	1	
+734	HL3762	DATA2	City (up to 30 characters)	30	1	
+735	HL3762	DATA3	State (2 character abbreviation)	2	1	
+736	HL3762	DATA4	Zip code (5 digit)	5	1	
+737	HL3762	DATA5	Personal message (up to 40 characters)	40	1	
+738	HL1972	DATA1	Street Number and Street Name	30	1	
+739	HL1972	DATA2	City	30	1	
+740	HL1972	DATA3	State (2 character abbreviation)	2	1	
+741	HL1972	DATA4	Zip or Postal Code (9 digit)	9	1	
+742	HL1972	DATA5	Country (US or CA - 2 characters)	2	1	
+743	HL3722	DATA1	Personal message (up to 15 characters)	15	1	
+744	HL3722	DATA2	Street Number and Street Name	30	1	
+745	HL3722	DATA3	City	30	1	
+746	HL3722	DATA4	State (2 character abbreviation)	2	1	
+747	HL3722	DATA5	Zip or Postal Code (9 digit)	9	1	
+748	HL2282	DATA1	Single initial	1	1	
+749	HL2662	DATA1	Name of school (up to 40 characters)	40	1	
+750	HL2672	DATA1	Name of school (up to 40 characters)	40	1	
+751	HL2358	DATA1	Phrase (up to 18 characters)	18	1	
+752	HL2348	DATA1	Word or phrase (18 character limit)	18	1	
+753	HL1492	DATA1	Phrase (Up to 40 characters)	40	1	
+754	HL1492	DATA2	Font Choice	16	1	Baskerville;Monotype Corsiva;Script MT Bold;Trajan Bold
+755	HL1492	DATA3	Ink Color	6	1	Gold;Silver
+756	HL1492	DATA4	Icon Choice	6	1	Doves;Hearts;None
+757	HL5678	DATA1	Endearment (Grandma/Mommy/Nana etc. - 12 char. limit)	12	1	
+758	HL5678	DATA2	Number (up to 2 digits)	2	1	
+759	HH2546E	DATA1	Initials (3 char max)	3	1	
+760	HL6432	DATA1	Line 1 (12 character max.)	12	1	
+761	HL6432	DATA1	Line 2 (12 character max.)	12		
+762	HL5978	DATA1	Age	3	1	
+763	HL5988	DATA1	Endearment (Grandma/Mommy/Nana etc. - 12 char. limit)	12	1	
+764	HL5592	DATA1	Up to 20 characters	20	1	
+765	HK9754E	DATA1	Line 1 (24 characters)	24	1	
+766	HK9754E	DATA2	Line 2 (24 characters)	24	1	
+767	LA1016E	DATA1	Personalization Line	18	1	
+768	VH3842E	DATA1	Personalization Line	18	1	
+769	HL4192	DATA2	State (2 character abbreviation)	2	1	
+770	HL4192	DATA3	Zip code (5 digit)	5	1	
+771	HL3384E	DATA1	Initials (3 char max)	3	1	
+772	HH2705E	DATA1	Initials (3 char max)	3	1	
+773	HL8552	DATA1	Initials (3 char max)	3	1	
+774	HL7512	DATA1	Line one (up to 6 characters)	6	1	
+775	HL7512	DATA2	Line two (up to 13 characters)	13		
+776	HL7512	DATA3	Line three (up to 13 characters)	13		
+777	HL8878	DATA1	Name (up to 12 characters)	12	1	
+778	HL9512	DATA1	Name (up to 25 characters)	25	1	
+779	HL8838	DATA1	Place (up to 18 characters)	18	1	
+780	HL8988	DATA1	Up to 24 characters including spaces	24	1	
+781	HL7522	DATA1	House number or name (up to 14 characters)	14	1	
+782	HL8532	DATA1	Initials (3 char max)	3	1	
+783	HL8522	DATA1	Initials (3 char max)	3	1	
+784	HL8562	DATA1	Initials (3 char max)	3	1	
+785	HL6992	DATA1	First name - Who the book is for (15 char max - required)	15	1	
+786	HL6992	DATA2	Child Gender (all fields required)	15	1	
+787	HL6992	DATA3	Younger sibling first name (15 character max - required)	15	1	
+788	HL6992	DATA4	Sibling Gender - required	15	1	
+789	HL7002	DATA1	First name - Who the book is for (15 char. max - required)	15	1	
+790	HL7002	DATA2	Child Gender (all fields required)	15	1	
+791	HL7002	DATA3	Younger sibling first name (15 char. max - required)	15	1	
+792	HL7002	DATA4	Sibling Gender - required	15	1	
+793	VK2022	DATA1	Lake (up to 30 characters)	30	1	
+794	VK2022	DATA2	County (up to 30 characters)	30	1	
+795	VK2022	DATA3	State (2 character abbreviation)	2	1	
+796	KA1754	DATA1	Line 1	10	1	
+797	KA1754	DATA2	Line 2	10		
+798	KA1754	DATA3	Line 3	10		
+799	KA1784	DATA1	Line 1	10	1	
+800	KA1764	DATA1	Line 1	10	1	
+801	KA1774	DATA1	Line 1	3	1	
+802	KA0634E	DATA1	Initials (1-3 characters)	3	1	
+803	VL3778	DATA1	City or town (up to 16 characters including spaces)	16	1	
+804	VH4382	DATA1	Address Number	5	1	
+805	VH4382	DATA2	Street Name (Upper Case Characters only)	17		
+806	VH4392	DATA1	Address Number	5	1	
+807	VH4392	DATA2	Street Name	17		
+808	VH4402	DATA1	Address Number	6	1	
+809	VH4402	DATA2	Street Name (Upper Case Characters only)	16		
+810	VH4412	DATA1	Name (Upper Case Characters only)	17	1	
+811	VH4412	DATA2	Address Number	5		
+812	VH4412	DATA3	Street Name (Upper Case Characters only)	17		
+813	VH4422	DATA1	Name (Upper Case Characters only)	14	1	
+814	VH4422	DATA2	Address Number	5		
+815	VH4422	DATA3	Street Name (Upper Case Characters only)	14		
+816	VH4432	DATA1	Address Number	5	1	
+817	VH4442	DATA1	Address Number	5	1	
+818	HM1792	DATA1	First name or initials (up to 10 characters)	10	1	
+819	HM1792	DATA2	Second name or initials (up to 10 characters)	10	1	
+820	HM2678	DATA1	Third line (up to 12 characters)	12	1	
+821	HM1682	DATA1	Family name (up to 16 characters)	16	1	
+822	HM1682	DATA2	Individual 1 (up to 12 characters)	12		
+823	HM1682	DATA3	Individual 2 (up to 12 characters)	12		
+824	HM1682	DATA4	Individual 3 (up to 12 characters)	12		
+825	HM1682	DATA5	Individual 4 (up to 12 characters)	12		
+826	HM1682	DATA6	Individual 5 (up to 12 characters)	12		
+827	HM1682	DATA7	Individual 6 (up to 12 characters)	12		
+828	HM1682	DATA8	Individual 7 (up to 12 characters)	12		
+829	HM1682	DATA9	Individual 8 (up to 12 characters)	12		
+830	HM1682	DATA10	Individual 9 (up to 12 characters)	12		
+831	HM1682	DATA11	Individual 10 (up to 12 characters)	12		
+832	HM1682	DATA12	Individual 11 (up to 12 characters)	12		
+833	HM1682	DATA13	Individual 12 (up to 12 characters)	12		
+834	HM1682	DATA14	Individual 13 (up to 12 characters)	12		
+835	HM1682	DATA15	Individual 14 (up to 12 characters)	12		
+836	HM1682	DATA16	Individual 15 (up to 12 characters)	12		
+837	HM1682	DATA17	Individual 16 (up to 12 characters)	12		
+838	HM1682	DATA18	Individual 17 (up to 12 characters)	12		
+839	HM1682	DATA19	Individual 18 (up to 12 characters)	12		
+840	HM3332MG	DATA1	3 initial monogram	3	1	
+841	HM2768	DATA1	Age	12	1	
+842	HM1772	DATA1	First name or initials (up to 12 characters)	12	1	
+843	HM1772	DATA2	Second name or initials (up to 12 characters)	12	1	
+844	HM1092	DATA1	First name or initials (up to 10 characters)	10	1	
+845	HM1092	DATA2	Second name or initials (up to 10 characters)	10	1	
+846	HM1692	DATA1	2 character initials first set	2	1	
+847	HM1692	DATA2	2 character initials second set	2	1	
+848	HM2442	DATA1	Day of month	2	1	
+850	HM333201	DATA1	Line 1 (up to 14 characters)	14	1	
+851	HM333202	DATA1	Line 1 (up to 14 characters)	14	1	
+852	HM333202	DATA2	Line 2 (up to 14 characters)	14	1	
+853	HM333203	DATA1	Line 1 (up to 14 characters)	14	1	
+854	HM333203	DATA2	Line 2 (up to 14 characters)	14	1	
+855	HM333203	DATA3	Line 3 (up to 14 characters)	14	1	
+856	HM3182	DATA1	Name (up to 10 characters)	10	1	
+857	HM3182	DATA2	Year (4 digit - required)	4	1	
+858	HY0112	DATA1	Line 1 (up to 60 characters)	60	1	
+859	HY0112	DATA2	Line 2 (up to 60 characters)	60		
+860	HY0112	DATA3	Line 3 (up to 60 characters)	60		
+861	HY0112	DATA4	Line 4 (up to 60 characters)	60		
+862	HY0112	DATA5	Line 5 (up to 60 characters)	60		
+863	HM4848	DATA1	Last line (up to 24 characters including spaces)	24	1	
+864	HM3762	DATA1	Two first names (up to 22 characters total)	22	1	
+865	HM3762	DATA2	"Month	D		20
+866	HM4808	DATA1	Profession or calling (up to 22 characters)	22	1	
+867	HM2142	DATA1	Initial (one character only)	1	1	
+868	HM4838	DATA1	Profession or calling (up to 22 characters)	22	1	
+869	HM659801	DATA1	Line one (up to 10 characters)	10	1	
+870	HM659802	DATA1	Line one (up to 10 characters)	10	1	
+871	HM659802	DATA2	Line two (up to 10 characters)	10	1	
+872	HM659803	DATA1	Line one (up to 10 characters)	10	1	
+873	HM659803	DATA2	Line two (up to 10 characters)	10	1	
+874	HM659803	DATA3	Line three (up to 10 characters)	10	1	
+875	HM660801	DATA1	Line one (up to 22 characters)	22	1	
+876	HM660802	DATA1	Line one (up to 22 characters)	22	1	
+877	HM660802	DATA2	Line two (up to 22 characters)	22	1	
+878	HM660803	DATA1	Line one (up to 22 characters)	22	1	
+879	HM660803	DATA2	Line two (up to 22 characters)	22	1	
+880	HM660803	DATA3	Line three (up to 22 characters)	22	1	
+881	HM1052MG	DATA1	3 letter monogram	3	1	
+882	HM105201	DATA1	Line 1 (16 character max)	16	1	
+883	HM105202	DATA1	Line 1 (16 character max)	16	1	
+884	HM105202	DATA2	Line 2 (16 character max)	16	1	
+885	HM105203	DATA1	Line 1 (16 character max)	16	1	
+886	HM105203	DATA2	Line 2 (16 character max)	16	1	
+887	HM105203	DATA3	Line 3 (16 character max)	16	1	
+888	HM4052	DATA1	Lake Name (Up to 25 characters)	25	1	
+889	HM4052	DATA2	County (up to 25 characters)	25	1	
+890	HM4052	DATA3	State	25	1	

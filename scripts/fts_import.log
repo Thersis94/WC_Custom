@@ -1,0 +1,13 @@
+2010-12-17 07:15:04,125 1    [main] ERROR com.fastsigns.util.UserDataImport:488 - Could not establish a database connection. 
+com.siliconmtn.exception.DatabaseException: Unable to connect to the database using jdbc:sqlserver://sql_server_db:1433 | sitebuilder_sb_user/sqll0gin
+	at com.siliconmtn.db.DatabaseConnection.getConnection(DatabaseConnection.java:94)
+	at com.fastsigns.util.UserDataImport.getDBConnection(UserDataImport.java:485)
+	at com.fastsigns.util.UserDataImport.main(UserDataImport.java:76)
+2010-12-17 07:15:04,128 4    [main] ERROR com.fastsigns.util.UserDataImport:78 - Could not obtain db connection.
+java.lang.Exception: com.siliconmtn.exception.DatabaseException: Unable to connect to the database using jdbc:sqlserver://sql_server_db:1433 | sitebuilder_sb_user/sqll0gin
+	at com.fastsigns.util.UserDataImport.getDBConnection(UserDataImport.java:489)
+	at com.fastsigns.util.UserDataImport.main(UserDataImport.java:76)
+Caused by: com.siliconmtn.exception.DatabaseException: Unable to connect to the database using jdbc:sqlserver://sql_server_db:1433 | sitebuilder_sb_user/sqll0gin
+	at com.siliconmtn.db.DatabaseConnection.getConnection(DatabaseConnection.java:94)
+	at com.fastsigns.util.UserDataImport.getDBConnection(UserDataImport.java:485)
+	... 1 more

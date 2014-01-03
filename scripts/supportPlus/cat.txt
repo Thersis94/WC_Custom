@@ -1,0 +1,603 @@
+4AA	100	<font color=#1686cf>Support Plus Savers Club</font>
+4AB	zz	<font color=#1686cf>Savers Club Specials</font>
+5AA	100	<font color=#1686cf>New Forty</font>
+6AA	100	<font color=#c80000>Auto Ship</font>
+1AA	100	Shop By Brand
+1AC	1AA	Bauer & Black
+1AD	1AA	Clinic
+1AE	1AA	Dignity
+1AF	1AA	Drew
+1AS	1AA	Fly Flot
+1AT	1AA	Foamtreads
+1AG	1AA	Futuro
+1AH	1AA	Health Dri by Salk
+1AI	1AA	Jobst
+1AU	1AA	Orthaheel
+1AJ	1AA	Old Friend
+1AK	1AA	NOW Nutrition for Optimal Wellness
+1AL	1AA	Pedifix
+1AM	1AA	Propet
+1AN	1AA	Spira
+1AO	1AA	Softspots
+1AR	1AA	Stride in Style
+1AP	1AA	Support Plus
+1AQ	1AA	Wigwam
+1BA	100	Shop by Condition
+1BB	1BA	Achilles Tendonitis
+1BC	1BA	Arch Pain
+1BD	1BA	Arthritis
+1BE	1BA	Bunions
+1BF	1BA	Calluses
+1BG	1BA	Carpal Tunnel Syndrome
+1BH	1BA	Claw Toes
+1BI	1BA	Corns
+1BJ	1BA	Deep Vein Thrombosis (DVT)
+1BK	1BA	Diabetes
+1BL	1BA	Ecomony Class Syndrome (ECS)
+1BM	1BA	Hammer Toe
+1BN	1BA	Heel Pain
+1BO	1BA	Heel Spurs
+1BP	1BA	Incontinence
+1BQ	1BA	Ingrown Toenails
+1BR	1BA	Mallet Toes
+1BS	1BA	Metatarsalgia
+1BT	1BA	Morton's Neuroma
+1BU	1BA	Morton's Toe
+1B3	1BA	Neuropathy
+1BV	1BA	Over-Pronation
+1BW	1BA	Overlapping Toes
+1BX	1BA	Plantar Fasciitis
+1BY	1BA	Post-Tib Tendonitis
+1BZ	1BA	Restless Leg Syndrome
+1B1	1BA	Sesamoiditis
+1B2	1BA	Sinus Conditions
+1CA	100	Medical Support Hose
+1CB	1CA	Women's Medical Support Hose
+1CC	1CB	View All Women's Medical Support Hose
+1CD	1CB	By Brand
+1CE	1CD	Jobst
+1CF	1CD	Futuro
+1CG	1CD	Bauer & Black
+1CH	1CD	Support Plus
+1CI	1CB	By Compression
+1CJ	1CI	Mild (8-15)
+1CK	1CI	Moderate (15-20)
+1CL	1CI	Firm (20-30)
+1CM	1CI	Very Firm (30+)
+1CN	1CB	By Style
+1CO	1CN	Knee-High
+1CP	1CN	Thigh-High
+1CQ	1CN	Pantyhose
+1CR	1CN	Below Knee
+1CS	1CN	Above Knee
+1DA	1CA	Men's Medical Support Hose
+1DB	1DA	View All Men's Medical Support Hose
+1DC	1DA	By Brand
+1DD	1DC	Jobst
+1DE	1DC	Futuro
+1DF	1DC	Bauer & Black
+1DG	1DC	Support Plus
+1DH	1DA	By Compression
+1DI	1DH	Mild (8-15)
+1DJ	1DH	Moderate (15-20)
+1DK	1DH	Firm (20-30)
+1DL	1DH	Very Firm (30+)
+1DM	1DA	By Style
+1DN	1DM	Knee-High
+1DO	1DM	Thigh-High
+1DP	1DM	Below Knee
+1DQ	1DM	Above Knee
+1EA	1CA	Stocking Care & Accessories
+1FA	100	Therapeutic Socks
+1FB	1FA	View All Therapeutic Socks
+1FC	1FA	For Diabetes
+1FD	1FA	Athletic
+1FE	1FA	Casual
+1FF	1FA	Dress
+1FG	1FA	Wide Calf
+1FH	1FA	Super Stretch
+1FI	1FA	Moisture Wicking
+1FJ	1FA	Non-chafing
+1FK	1FA	Extra Cushioning
+1FL	1FA	Non-Therapeutic Socks
+1GA	100	Footwear
+1GB	1GA	Women's Shoes/Footwear
+1GC	1GB	View All Women's Shoes/Footwear
+1GD	1GB	By Brand
+1GE	1GD	Alegria
+1GF	1GD	Drew
+1GG	1GD	Clinic/Footthrills
+1GH	1GD	Lowell/Softspots
+1GI	1GD	Propet
+1GK	1GD	Old Friend
+1GL	1GB	By Style
+1GM	1GL	Sandals
+1GN	1GL	Boot
+1GO	1GL	Casual
+1GP	1GL	Dress
+1GQ	1GL	Slipper
+1GR	1GL	Therapeutic
+1HA	1GA	Men's Shoes/Footwear
+1HB	1HA	View All Men's Shoes/Footwear
+1HC	1HA	By Brand
+1HD	1HC	Drew
+1HE	1HC	Hush Puppies
+1HF	1HC	New Balance
+1HG	1HC	Lowell/Softspots
+1HH	1HC	Old Friend
+1HI	1HC	Propet
+1HJ	1HA	By Style
+1HK	1HJ	Sandal
+1HL	1HJ	Boot
+1HM	1HJ	Casual
+1HN	1HJ	Dress
+1HO	1HJ	Slipper
+1HP	1HJ	Therapeutic
+1HQ	1GA	Shoe Care & Accessories
+1VA	100	Pain Management
+1IA	100	Diabetes Care
+1IB	1IA	View All Diabetes Care
+1IC	1IA	Socks
+1ID	1IA	Footwear
+1IE	1IA	Skin Care
+1JA	100	Foot Care
+1JB	1JA	View All Foot Care
+1JC	1JA	Insoles-Arch
+1JD	1JA	Toe Care
+1JE	1JA	Ball of Foot Care
+1JH	1JA	Heel Care
+1JF	1JA	Skin Care
+1JG	1JA	Nail Care
+1KA	100	Braces & Support
+1KB	1KA	View All Braces & Support Garments
+1KC	1KA	Braces
+1KD	1KA	Posture Supports
+1KF	1KA	Bras & Undergarments
+1KE	1KA	Girdles/Garters
+1LA	100	Daily Living Aids
+1LB	1LA	View All Daily Living Aids
+1LC	1LA	Around The House
+1LD	1LA	Arthritis & Dexterity
+1LE	1LA	Bathroom
+1LF	1LA	Bedroom
+1LG	1LA	Caregiving
+1LH	1LA	Hearing
+1LI	1LA	Kitchen
+1LJ	1LA	Memory
+1LK	1LA	Mobility
+1LM	1LA	Out & About
+1LN	1LA	Vision
+1MA	100	Health & Beauty
+1MB	1MA	View All Health & Beauty
+1MC	1MA	General Health
+1MD	1MA	Arthritis Care
+1ME	1MA	Blood Pressure Monitors
+1MF	1MA	Cosmetic Aids
+1MG	1MA	Health & Beauty Skin Care
+1MH	1MA	Health & Fitness
+1MI	100	Intimate Health
+1MJ	1MA	Moist Heat Therapy & Pain Relief
+1MK	1MA	Nail Care
+1ML	1MA	Sleep Solutions & Specialty Pillows
+1NA	100	Incontinence
+1OA	100	Glasses
+1OB	1OA	View All Glasses
+1OC	1OA	Sunglasses
+1OD	1OA	Reading Glasses
+1OE	1OA	Miscellaneous Visual Aids
+1PA	100	Thinning Hair
+1QA	100	Seasonal Living
+1QB	1QA	Warm Weather
+1QC	1QA	Cold Weather
+1RA	100	Travel Aids
+1SA	100	Apparel & Accessories
+1SB	1SA	View All Apparel & Accessories
+1SC	1SA	Activewear
+1SD	1SA	Hats and Accessories
+1SE	1SA	Intimates
+1SF	1SA	Casual Wear
+1SG	1SA	Moisture Wicking
+1SH	1SA	Loungewear
+1SI	1SA	Tees and Sweatshirts
+1TA	100	Healing Gifts
+1UA	100	Pet Supplies
+200	100	<font color=#1686cf>Online Exclusives</font>
+2A1	200	View All Online Exclusives
+2AA	200	Shop By Brand
+2AB	2AA	Alegria
+2AC	2AA	Bauer & Black
+2AD	2AA	Clinic
+2AE	2AA	Dignity
+2AF	2AA	Drew
+2AS	2AA	Fly Flot
+2AT	2AA	Foamtreads
+2AG	2AA	Futuro
+2AH	2AA	Health Dri by Salk
+2AI	2AA	Jobst
+2AJ	2AA	Old Friend
+2AU	2AA	Orthaheel
+2AK	2AA	NOW Nutrition for Optimal Wellness
+2AL	2AA	Pedifix
+2AM	2AA	Propet
+2AN	2AA	Spira
+2AO	2AA	Softspots
+2AR	2AA	Stride in Style
+2AP	2AA	Support Plus
+2AQ	2AA	Wigwam
+2BA	200	Shop by Condition
+2BB	2BA	Achilles Tendonitis
+2BC	2BA	Arch Pain
+2BD	2BA	Arthritis
+2BE	2BA	Bunions
+2BF	2BA	Calluses
+2BG	2BA	Carpal Tunnel Syndrome
+2BH	2BA	Claw Toes
+2BI	2BA	Corns
+2BJ	2BA	Deep Vein Thrombosis (DVT)
+2BK	2BA	Diabetes
+2BL	2BA	Ecomony Class Syndrome (ECS)
+2BM	2BA	Hammer Toe
+2BN	2BA	Heel Pain
+2BO	2BA	Heel Spurs
+2BP	2BA	Incontinence
+2BQ	2BA	Ingrown Toenails
+2BR	2BA	Mallet Toes
+2BS	2BA	Metatarsalgia
+2BT	2BA	Morton's Neuroma
+2BU	2BA	Morton's Toe
+2BV	2BA	Over-Pronation
+2BW	2BA	Overlapping Toes
+2BX	2BA	Plantar Fasciitis
+2BY	2BA	Post-Tib Tendonitis
+2BZ	2BA	Restless Leg Syndrome
+2B2	2BA	Sesamoiditis
+2B3	2BA	Sinus Conditions
+2CA	200	Medical Support Hose
+2CB	2CA	Women's Medical Support Hose
+2CC	2CB	View All Women's Medical Support Hose
+2CD	2CB	By Brand
+2CE	2CD	Jobst
+2CF	2CD	Futuro
+2CG	2CD	Bauer & Black
+2CH	2CD	Support Plus
+2CI	2CB	By Compression
+2CJ	2CI	Mild (8-15)
+2CK	2CI	Moderate (15-20)
+2CL	2CI	Firm (20-30)
+2CM	2CI	Very Firm (30+)
+2CN	2CB	By Style
+2CO	2CN	Knee-High
+2CP	2CN	Thigh-High
+2CQ	2CN	Pantyhose
+2CR	2CN	Below Knee
+2CS	2CN	Above Knee
+2DA	2CA	Men's Medical Support Hose
+2DB	2DA	View All Men's Medical Support Hose
+2DC	2DA	By Brand
+2DD	2DC	Jobst
+2DE	2DC	Futuro
+2DF	2DC	Bauer & Black
+2DG	2DC	Support Plus
+2DH	2DA	By Compression
+2DI	2DH	Mild (8-15)
+2DJ	2DH	Moderate (15-20)
+2DK	2DH	Firm (20-30)
+2DL	2DH	Very Firm (30+)
+2DM	2DA	By Style
+2DN	2DM	Knee-High
+2DO	2DM	Thigh-High
+2DP	2DM	Below Knee
+2DQ	2DM	Above Knee
+2EA	2CA	Stocking Care & Accessories
+2FA	200	Therapeutic Socks
+2FB	2FA	View All Therapeutic Socks
+2FC	2FA	For Diabetes
+2FD	2FA	Athletic
+2FE	2FA	Casual
+2FF	2FA	Dress
+2FG	2FA	Wide Calf
+2FH	2FA	Super Stretch
+2FI	2FA	Moisture Wicking
+2FJ	2FA	Non-chafing
+2FK	2FA	Extra Cushioning
+2FL	2FA	Non-Therapeutic Socks
+2GA	200	Footwear
+2GB	2GA	Women's Shoes/Footwear
+2GC	2GB	View All Women's Shoes/Footwear
+2GD	2GB	By Brand
+2GE	2GD	Alegria
+2GF	2GD	Drew
+2GG	2GD	Clinic/Footthrills
+2GH	2GD	Lowell/Softspots
+2GI	2GD	Propet
+2GK	2GD	Old Friend
+2GL	2GB	By Style
+2GM	2GL	Sandals
+2GN	2GL	Boot
+2GO	2GL	Casual
+2GP	2GL	Dress
+2GQ	2GL	Slipper
+2GR	2GL	Therapeutic
+2HA	2GA	Men's Shoes/Footwear
+2HB	2HA	View All Men's Shoes/Footwear
+2HC	2HA	By Brand
+2HD	2HC	Drew
+2HE	2HC	Hush Puppies
+2HF	2HC	New Balance
+2HG	2HC	Lowell/Softspots
+2HH	2HC	Old Friend
+2HI	2HC	Propet
+2HJ	2HA	By Style
+2HK	2HJ	Sandal
+2HL	2HJ	Boot
+2HM	2HJ	Casual
+2HN	2HJ	Dress
+2HO	2HJ	Slipper
+2HP	2HJ	Therapeutic
+2HQ	2GA	Shoe Care & Accessories
+2IA	200	Diabetes Care
+2IB	2IA	View All Diabetes Care
+2IC	2IA	Socks
+2ID	2IA	Footwear
+2IE	2IA	Skin Care
+2JA	200	Foot Care
+2JB	2JA	View All Foot Care
+2JC	2JA	Insoles-Arch
+2JD	2JA	Toe Care
+2JE	2JA	Ball of Foot Care
+2JH	2JA	Heel Care
+2JF	2JA	Skin Care
+2JG	2JA	Nail Care
+2KA	200	Braces & Support
+2KB	2KA	View All Braces & Support Garments
+2KC	2KA	Braces
+2KD	2KA	Posture Supports
+2KF	2KA	Bras & Undergarments
+2KE	2KA	Girdles/Garters
+2LA	200	Daily Living Aids
+2LB	2LA	View All Daily Living Aids
+2LC	2LA	Around The House
+2LD	2LA	Arthritis & Dexterity
+2LE	2LA	Bathroom
+2LF	2LA	Bedroom
+2LG	2LA	Caregiving
+2LH	2LA	Hearing
+2LI	2LA	Kitchen
+2LJ	2LA	Memory
+2LK	2LA	Mobility
+2LM	2LA	Out & About
+2LN	2LA	Vision
+2MA	200	Health & Beauty
+2MB	2MA	View All Health & Beauty
+2MC	2MA	General Health
+2MD	2MA	Arthritis Care
+2ME	2MA	Blood Pressure Monitors
+2MF	2MA	Cosmetic Aids
+2MG	2MA	Health & Beauty Skin Care
+2MH	2MA	Health & Fitness
+2MI	200	Intimate Health
+2MJ	2MA	Moist Heat Therapy & Pain Relief
+2MK	2MA	Nail Care
+2ML	2MA	Sleep Solutions & Specialty Pillows
+2NA	200	Incontinence
+2OA	200	Glasses
+2OB	2OA	View All Glasses
+2OC	2OA	Sunglasses
+2OD	2OA	Reading Glasses
+2OE	2OA	Miscellaneous Visual Aids
+2PA	200	Thinning Hair
+2QA	200	Seasonal Living
+2QB	2QA	Warm Weather
+2QC	2QA	Cold Weather
+2RA	200	Travel Aids
+2SA	200	Apparel & Accessories
+2SB	2SA	View All Apparel & Accessories
+2SC	2SA	Activewear
+2SD	2SA	Hats and Accessories
+2SE	2SA	Intimates
+2SF	2SA	Casual Wear
+2SG	2SA	Moisture Wicking
+2SH	2SA	Loungewear
+2SI	2SA	Tees and Sweatshirts
+2TA	200	Healing Gifts
+2UA	100	Pet Supplies
+300	100	<font color=#c80000>Clearance</font>
+3A1	300	View All Clearance
+3AA	300	Shop By Brand
+3AB	3AA	Alegria
+3AC	3AA	Bauer & Black
+3AD	3AA	Clinic
+3AE	3AA	Dignity
+3AF	3AA	Drew
+3AS	3AA	Fly Flot
+3AT	3AA	Foamtreads
+3AG	3AA	Futuro
+3AH	3AA	Health Dri by Salk
+3AI	3AA	Jobst
+3AJ	3AA	Old Friend
+3AU	3AA	Orthaheel
+3AK	3AA	NOW Nutrition for Optimal Wellness
+3AL	3AA	Pedifix
+3AM	3AA	Propet
+3AN	3AA	Spira
+3AO	3AA	Softspots
+3AR	3AA	Stride in Style
+3AP	3AA	Support Plus
+3AQ	3AA	Wigwam
+3BA	300	Shop by Condition
+3BB	3BA	Achilles Tendonitis
+3BC	3BA	Arch Pain
+3BD	3BA	Arthritis
+3BE	3BA	Bunions
+3BF	3BA	Calluses
+3BG	3BA	Carpal Tunnel Syndrome
+3BH	3BA	Claw Toes
+3BI	3BA	Corns
+3BJ	3BA	Deep Vein Thrombosis (DVT)
+3BK	3BA	Diabetes
+3BL	3BA	Ecomony Class Syndrome (ECS)
+3BM	3BA	Hammer Toe
+3BN	3BA	Heel Pain
+3BO	3BA	Heel Spurs
+3BP	3BA	Incontinence
+3BQ	3BA	Ingrown Toenails
+3BR	3BA	Mallet Toes
+3BS	3BA	Metatarsalgia
+3BT	3BA	Morton's Neuroma
+3BU	3BA	Morton's Toe
+3BV	3BA	Over-Pronation
+3BW	3BA	Overlapping Toes
+3BX	3BA	Plantar Fasciitis
+3BY	3BA	Post-Tib Tendonitis
+3BZ	3BA	Restless Leg Syndrome
+3B3	3BA	Sesamoiditis
+3B3	3BA	Sinus Conditions
+3CA	300	Medical Support Hose
+3CB	3CA	Women's Medical Support Hose
+3CC	3CB	View All Women's Medical Support Hose
+3CD	3CB	By Brand
+3CE	3CD	Jobst
+3CF	3CD	Futuro
+3CG	3CD	Bauer & Black
+3CH	3CD	Support Plus
+3CI	3CB	By Compression
+3CJ	3CI	Mild (8-15)
+3CK	3CI	Moderate (15-20)
+3CL	3CI	Firm (20-30)
+3CM	3CI	Very Firm (30+)
+3CN	3CB	By Style
+3CO	3CN	Knee-High
+3CP	3CN	Thigh-High
+3CQ	3CN	Pantyhose
+3CR	3CN	Below Knee
+3CS	3CN	Above Knee
+3DA	3CA	Men's Medical Support Hose
+3DB	3DA	View All Men's Medical Support Hose
+3DC	3DA	By Brand
+3DD	3DC	Jobst
+3DE	3DC	Futuro
+3DF	3DC	Bauer & Black
+3DG	3DC	Support Plus
+3DH	3DA	By Compression
+3DI	3DH	Mild (8-15)
+3DJ	3DH	Moderate (15-20)
+3DK	3DH	Firm (20-30)
+3DL	3DH	Very Firm (30+)
+3DM	3DA	By Style
+3DN	3DM	Knee-High
+3DO	3DM	Thigh-High
+3DP	3DM	Below Knee
+3DQ	3DM	Above Knee
+3EA	3CA	Stocking Care & Accessories
+3FA	300	Therapeutic Socks
+3FB	3FA	View All Therapeutic Socks
+3FC	3FA	For Diabetes
+3FD	3FA	Athletic
+3FE	3FA	Casual
+3FF	3FA	Dress
+3FG	3FA	Wide Calf
+3FH	3FA	Super Stretch
+3FI	3FA	Moisture Wicking
+3FJ	3FA	Non-chafing
+3FK	3FA	Extra Cushioning
+3FL	3FA	Non-Therapeutic Socks
+3GA	300	Footwear
+3GB	3GA	Women's Shoes/Footwear
+3GC	3GB	View All Women's Shoes/Footwear
+3GD	3GB	By Brand
+3GE	3GD	Alegria
+3GF	3GD	Drew
+3GG	3GD	Clinic/Footthrills
+3GH	3GD	Lowell/Softspots
+3GI	3GD	Propet
+3GK	3GD	Old Friend
+3GL	3GB	By Style
+3GM	3GL	Sandals
+3GN	3GL	Boot
+3GO	3GL	Casual
+3GP	3GL	Dress
+3GQ	3GL	Slipper
+3GR	3GL	Therapeutic
+3HA	3GA	Men's Shoes/Footwear
+3HB	3HA	View All Men's Shoes/Footwear
+3HC	3HA	By Brand
+3HD	3HC	Drew
+3HE	3HC	Hush Puppies
+3HF	3HC	New Balance
+3HG	3HC	Lowell/Softspots
+3HH	3HC	Old Friend
+3HI	3HC	Propet
+3HJ	3HA	By Style
+3HK	3HJ	Sandal
+3HL	3HJ	Boot
+3HM	3HJ	Casual
+3HN	3HJ	Dress
+3HO	3HJ	Slipper
+3HP	3HJ	Therapeutic
+3HQ	3GA	Shoe Care & Accessories
+3IA	300	Diabetes Care
+3IB	3IA	View All Diabetes Care
+3IC	3IA	Socks
+3ID	3IA	Footwear
+3IE	3IA	Skin Care
+3JA	300	Foot Care
+3JB	3JA	View All Foot Care
+3JC	3JA	Insoles-Arch
+3JD	3JA	Toe Care
+3JE	3JA	Ball of Foot Care
+3JH	3JA	Heel Care
+3JF	3JA	Skin Care
+3JG	3JA	Nail Care
+3KA	300	Braces & Support
+3KB	3KA	View All Braces & Support Garments
+3KC	3KA	Braces
+3KD	3KA	Posture Supports
+3KF	3KA	Bras & Undergarments
+3KE	3KA	Girdles/Garters
+3LA	300	Daily Living Aids
+3LB	3LA	View All Daily Living Aids
+3LC	3LA	Around The House
+3LD	3LA	Arthritis & Dexterity
+3LE	3LA	Bathroom
+3LF	3LA	Bedroom
+3LG	3LA	Caregiving
+3LH	3LA	Hearing
+3LI	3LA	Kitchen
+3LJ	3LA	Memory
+3LK	3LA	Mobility
+3LM	3LA	Out & About
+3LN	3LA	Vision
+3MA	300	Health & Beauty
+3MB	3MA	View All Health & Beauty
+3MC	3MA	General Health
+3MD	3MA	Arthritis Care
+3ME	3MA	Blood Pressure Monitors
+3MF	3MA	Cosmetic Aids
+3MG	3MA	Health & Beauty Skin Care
+3MH	3MA	Health & Fitness
+3MI	300	Intimate Health
+3MJ	3MA	Moist Heat Therapy & Pain Relief
+3MK	3MA	Nail Care
+3ML	3MA	Sleep Solutions & Specialty Pillows
+3NA	300	Incontinence
+3OA	300	Glasses
+3OB	3OA	View All Glasses
+3OC	3OA	Sunglasses
+3OD	3OA	Reading Glasses
+3OE	3OA	Miscellaneous Visual Aids
+3PA	300	Thinning Hair
+3QA	300	Seasonal Living
+3QB	3QA	Warm Weather
+3QC	3QA	Cold Weather
+3RA	300	Travel Aids
+3SA	300	Apparel & Accessories
+3SB	3SA	View All Apparel & Accessories
+3SC	3SA	Activewear
+3SD	3SA	Hats and Accessories
+3SE	3SA	Intimates
+3SF	3SA	Casual Wear
+3SG	3SA	Moisture Wicking
+3SH	3SA	Loungewear
+3SI	3SA	Tees and Sweatshirts
+3TA	300	Healing Gifts
+WS	100	Weekly Specials

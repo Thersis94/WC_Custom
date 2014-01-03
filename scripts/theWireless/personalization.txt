@@ -1,0 +1,970 @@
+1	HD5442	DATA1	Street Number and Street Name	30	1
+2	HD5442	DATA2	City	30	1
+3	HD5442	DATA3	State	2	1
+4	HD5442	DATA4	Zip or Postal Code (max 9 digits)	9	1
+5	HD5442	DATA5	Country (Specify US or CA)	2	1
+6	HJ4362	DATA1	Street Number and Street Name	30	1
+7	HJ4362	DATA2	City	30	
+8	HJ4362	DATA3	State	2	
+9	HJ4362	DATA4	Zip Code	5	
+10	VH1892	DATA1	City or Town Name	50	1
+11	VJ1442	DATA1	Name (Specify upto 15 characters and spaces)	15	1
+12	VJ1292	DATA1	Lake Name (Enter word LAKE with lake name if you want it with personalization)	30	1
+13	VJ1292	DATA2	Family Name (Enter word THE with family name if you want it with personalization)	30	
+14	VJ1292	DATA3	State Name	22	
+15	VE6882	DATA1	Lake Name/County/Zip Code	55	1
+16	VH6572	DATA1	Lake Name/County/Zip Code	55	1
+17	VH6562	DATA1	Lake Name/County/Zip Code	55	1
+18	VF9972	DATA1	Lake Name/County/Zip Code	55	1
+19	VE5732	DATA1	Name-(15-characters-All Capital Letters)	15	1
+20	VF2731L	DATA1	Name (15 Upper Case Characters)	15	1
+21	VF2731T	DATA1	Name (15 Upper Case Characters)	15	1
+22	VJ0918	DATA1	Nationality (Up to 12 characters and spaces)	12	1
+23	VH2062S	DATA1	Name of Choice (or specify NO NAME)	16	1
+24	VH2062T	DATA1	Name of Choice (or specify NO NAME)	16	1
+25	CB5582	DATA1	Name (8 Upper Case Characters)	8	1
+26	HB4852	DATA1	Name (14 Characters - All Capital Letters) The word TAVERN comes standard.	14	1
+27	HB4842	DATA1	Name (14 Characters - All Capital Letters) The word TAVERN comes standard.	14	1
+28	VJ0938	DATA1	Family Name	15	1
+29	VH8282	DATA1	Name (Up to 16 Upper case characters and spaces)	16	1
+30	VJ1302	DATA1	Message (Up to 30 Mixed Case Characters and Spaces)	30	1
+31	VJ0948	DATA1	Name	12	1
+32	VH1822S	DATA1	Name of Choice (or specify NO NAME)	16	1
+33	VH1822T	DATA1	Name of Choice (or specify NO NAME)	16	1
+34	VH1832	DATA1	Name of Choice (or specify NO NAME)	16	1
+35	VJ1128T	DATA1	Name (Up to 15 characters and spaces)	15	1
+36	VJ1138T	DATA1	Name (Up to 15 characters and spaces)	15	1
+37	VJ1148T	DATA1	Name (Up to 15 characters and spaces)	15	1
+38	VH4072	DATA1	Message for Top of Sign	35	1
+39	VH4072	DATA2	Message for Bottom of Sign	50	
+40	VJ0482COL	DATA1	Fan or Family Name (Up to 30 characters and spaces)	30	1
+41	VJ0482MLB	DATA1	Fan or Family Name (Up to 30 characters and spaces)	30	1
+42	VJ0482NFL	DATA1	Fan or Family Name (Up to 30 characters and spaces)	30	1
+43	VJ1452COL	DATA1	Fan or Family Name (Up to 30 characters and spaces)	30	1
+44	VJ1452MLB	DATA1	Fan or Family Name (Up to 30 characters and spaces)	30	1
+45	VJ1452NFL	DATA1	Fan or Family Name (Up to 30 characters and spaces)	30	1
+46	VJ0492	DATA1	Name 1 (Up to 19 characters and spaces)	19	1
+47	VJ0492	DATA2	For Score 1 Specify -/+	1	
+48	VJ0492	DATA3	Score 1 (Up to 3 Digits)	3	
+49	VJ0492	DATA4	Name 2 (Up to 19 characters and spaces)	19	
+50	VJ0492	DATA5	For Score 2 Specify -/+	1	
+51	VJ0492	DATA6	Score 2 (Up to 3 Digits)	3	
+52	VJ0492	DATA7	Name 3 (Up to 19 characters and spaces)	19	
+53	VJ0492	DATA8	For Score 3 Specify -/+	1	
+54	VJ0492	DATA9	Score 3 (Up to 3 Digits)	3	
+55	VJ0492	DATA10	Name 4 (Up to 19 characters and spaces)	19	
+56	VJ0492	DATA11	For Score 4 Specify -/+	1	
+57	VJ0492	DATA12	Score 4 (Up to 3 Digits)	3	
+58	VJ0492	DATA13	Course or Tournament Name	25	
+59	VJ1462	DATA1	Name 1 (Up to 19 characters and spaces)	19	1
+60	VJ1462	DATA2	Specify -/+	1	
+61	VJ1462	DATA3	Score (Up to 3 Digits)	3	
+62	VJ1462	DATA4	Name 2 (Up to 19 characters and spaces)	19	
+63	VJ1462	DATA5	Specify -/+	1	
+64	VJ1462	DATA6	Score (Up to 3 Digits)	3	
+65	VJ1462	DATA7	Name 3 (Up to 19 characters and spaces)	19	
+66	VJ1462	DATA8	Specify -/+	1	
+67	VJ1462	DATA9	Score (Up to 3 Digits)	3	
+68	VJ1462	DATA10	Name 4 (Up to 19 characters and spaces)	19	
+69	VJ1462	DATA11	Specify -/+	1	
+70	VJ1462	DATA12	Score (Up to 3 Digits)	3	
+71	VJ1462	DATA13	Course or Tournament Name	25	
+72	VE8552	DATA1	Name-(25 Mixed Case Characters)	25	1
+73	VJ0958	DATA1	Name or Phrase (Up to 19 characters and spaces)	19	1
+74	VH8392	DATA1	Name (Up to 25 characters and spaces)	25	1
+75	VH3862	DATA1	Name or Message Line 1	10	1
+76	VH3862	DATA2	Name or Message Line 2	10	
+77	VH4382	DATA1	Address Number	5	1
+78	VH4382	DATA2	Street Name (Upper Case Characters only)	17	
+79	VH4392	DATA1	Address Number	5	1
+80	VH4392	DATA2	Street Name	17	
+81	VH4402	DATA1	Address Number	6	1
+82	VH4402	DATA2	Street Name (Upper Case Characters only)	16	
+83	VH4412	DATA1	Name (Upper Case Characters only)	17	1
+84	VH4412	DATA2	Address Number	5	
+85	VH4412	DATA3	Street Name (Upper Case Characters only)	17	
+86	VH4422	DATA1	Name (Upper Case Characters only)	14	1
+87	VH4422	DATA2	Address Number	5	
+88	VH4422	DATA3	Street Name (Upper Case Characters only)	14	
+89	VH4432	DATA1	Address Number	5	1
+90	VH4442	DATA1	Address Number	5	1
+91	VH6392	DATA1	NAME / VEHICLE/MESSAGE (Upper Case Characters only) ie. JOHN'S TRUCK	25	1
+92	VH7152	DATA1	Personalized Message (Up to 50 characters and spaces)	50	1
+93	VH6352	DATA1	Personalized Message (Up to 50 characters and spaces)	50	1
+94	VH5332S	DATA1	Select 1 Monogram Letter Initial	1	1
+95	VH5332M	DATA1	Select 1 Monogram Letter Initial	1	1
+96	VH6452	DATA1	3 Upper Case Initials (in this order - First Middle Last)	3	
+97	VH2242S	DATA1	Name of Choice (or specify NO NAME)	16	1
+98	VH2242T	DATA1	Name of Choice (or specify NO NAME)	16	1
+99	VH6382	DATA1	Couple's Names for the Left Photo Frame	21	1
+100	VH6382	DATA2	Date for the Left Photo Frame	17	
+101	VH6382	DATA3	Couple's Names for the Middle Photo Frame	21	
+102	VH6382	DATA4	Date for the Middle Photo Frame	17	
+103	VH6382	DATA5	Couple's Names for the Right Photo Frame	21	
+104	VH6382	DATA6	Date for the Right Photo Frame	17	
+105	VH6372	DATA1	Friend Name 1	9	1
+106	VH6372	DATA2	Friend Name 2	9	
+107	VH5011L	DATA1	Pet Name	17	1
+108	VH5011T	DATA1	Pet Name	17	1
+109	VH5021L	DATA1	Pet Name	17	1
+110	VH5021T	DATA1	Pet Name	17	1
+111	VH5222	DATA1	TEACHER NAME (Up to 20 Upper Case Letters and spaces)	20	1
+112	VH7102	DATA1	FAMILY NAME (Up to 12 Upper Case Characters)	12	1
+113	VF0922COL-AA	DATA1	Name (12 Upper Case Characters)	12	1
+114	VF0922COL-AB	DATA1	Name (12 Upper Case Characters)	12	1
+115	VF0922COL-AD	DATA1	Name (12 Upper Case Characters)	12	1
+116	VF0922COL-AE	DATA1	Name (12 Upper Case Characters)	12	1
+117	VF0922COL-AF	DATA1	Name (12 Upper Case Characters)	12	1
+118	VF0922COL-AG	DATA1	Name (12 Upper Case Characters)	12	1
+119	VF0922COL-AH	DATA1	Name (12 Upper Case Characters)	12	1
+120	VF0922COL-AJ	DATA1	Name (12 Upper Case Characters)	12	1
+121	VF0922COL-AK	DATA1	Name (12 Upper Case Characters)	12	1
+122	VF0922COL-AL	DATA1	Name (12 Upper Case Characters)	12	1
+123	VF0922COL-AN	DATA1	Name (12 Upper Case Characters)	12	1
+124	VF0922COL-AO	DATA1	Name (12 Upper Case Characters)	12	1
+125	VF0922COL-AR	DATA1	Name (12 Upper Case Characters)	12	1
+126	VF0922COL-AV	DATA1	Name (12 Upper Case Characters)	12	1
+127	VF0922COL-AX	DATA1	Name (12 Upper Case Characters)	12	1
+128	VF0922COL-AY	DATA1	Name (12 Upper Case Characters)	12	1
+129	VF0922COL-BA	DATA1	Name (12 Upper Case Characters)	12	1
+130	VF0922COL-BB	DATA1	Name (12 Upper Case Characters)	12	1
+131	VF0922COL-BD	DATA1	Name (12 Upper Case Characters)	12	1
+132	VF0922COL-BR	DATA1	Name (12 Upper Case Characters)	12	1
+133	VF0922MLB-AA	DATA1	Name (12 Upper Case Characters)	12	1
+134	VF0922MLB-AB	DATA1	Name (12 Upper Case Characters)	12	1
+135	VF0922MLB-AC	DATA1	Name (12 Upper Case Characters)	12	1
+136	VF0922MLB-AD	DATA1	Name (12 Upper Case Characters)	12	1
+137	VF0922MLB-AE	DATA1	Name (12 Upper Case Characters)	12	1
+138	VF0922MLB-AF	DATA1	Name (12 Upper Case Characters)	12	1
+139	VF0922MLB-AG	DATA1	Name (12 Upper Case Characters)	12	1
+140	VF0922MLB-AH	DATA1	Name (12 Upper Case Characters)	12	1
+141	VF0922MLB-AI	DATA1	Name (12 Upper Case Characters)	12	1
+142	VF0922MLB-AJ	DATA1	Name (12 Upper Case Characters)	12	1
+143	VF0922MLB-AK	DATA1	Name (12 Upper Case Characters)	12	1
+144	VF0922MLB-AL	DATA1	Name (12 Upper Case Characters)	12	1
+145	VF0922MLB-AM	DATA1	Name (12 Upper Case Characters)	12	1
+146	VF0922MLB-AN	DATA1	Name (12 Upper Case Characters)	12	1
+147	VF0922MLB-AO	DATA1	Name (12 Upper Case Characters)	12	1
+148	VF0922MLB-AP	DATA1	Name (12 Upper Case Characters)	12	1
+149	VF0922MLB-AQ	DATA1	Name (12 Upper Case Characters)	12	1
+150	VF0922MLB-AR	DATA1	Name (12 Upper Case Characters)	12	1
+151	VF0922MLB-AS	DATA1	Name (12 Upper Case Characters)	12	1
+152	VF0922MLB-AT	DATA1	Name (12 Upper Case Characters)	12	1
+153	VF0922MLB-AU	DATA1	Name (12 Upper Case Characters)	12	1
+154	VF0922MLB-AV	DATA1	Name (12 Upper Case Characters)	12	1
+155	VF0922MLB-AW	DATA1	Name (12 Upper Case Characters)	12	1
+156	VF0922MLB-AX	DATA1	Name (12 Upper Case Characters)	12	1
+157	VF0922MLB-AY	DATA1	Name (12 Upper Case Characters)	12	1
+158	VF0922MLB-AZ	DATA1	Name (12 Upper Case Characters)	12	1
+159	VF0922MLB-BA	DATA1	Name (12 Upper Case Characters)	12	1
+160	VF0922MLB-BB	DATA1	Name (12 Upper Case Characters)	12	1
+161	VF0922MLB-BC	DATA1	Name (12 Upper Case Characters)	12	1
+162	VF0922MLB-BD	DATA1	Name (12 Upper Case Characters)	12	1
+163	VF0922NFL-AA	DATA1	Name (12 Upper Case Characters)	12	1
+164	VF0922NFL-AB	DATA1	Name (12 Upper Case Characters)	12	1
+165	VF0922NFL-AC	DATA1	Name (12 Upper Case Characters)	12	1
+166	VF0922NFL-AD	DATA1	Name (12 Upper Case Characters)	12	1
+167	VF0922NFL-AE	DATA1	Name (12 Upper Case Characters)	12	1
+168	VF0922NFL-AF	DATA1	Name (12 Upper Case Characters)	12	1
+169	VF0922NFL-AG	DATA1	Name (12 Upper Case Characters)	12	1
+170	VF0922NFL-AH	DATA1	Name (12 Upper Case Characters)	12	1
+171	VF0922NFL-AI	DATA1	Name (12 Upper Case Characters)	12	1
+172	VF0922NFL-AJ	DATA1	Name (12 Upper Case Characters)	12	1
+173	VF0922NFL-AK	DATA1	Name (12 Upper Case Characters)	12	1
+174	VF0922NFL-AL	DATA1	Name (12 Upper Case Characters)	12	1
+175	VF0922NFL-AM	DATA1	Name (12 Upper Case Characters)	12	1
+176	VF0922NFL-AN	DATA1	Name (12 Upper Case Characters)	12	1
+177	VF0922NFL-AO	DATA1	Name (12 Upper Case Characters)	12	1
+178	VF0922NFL-AP	DATA1	Name (12 Upper Case Characters)	12	1
+179	VF0922NFL-AQ	DATA1	Name (12 Upper Case Characters)	12	1
+180	VF0922NFL-AR	DATA1	Name (12 Upper Case Characters)	12	1
+181	VF0922NFL-AS	DATA1	Name (12 Upper Case Characters)	12	1
+182	VF0922NFL-AT	DATA1	Name (12 Upper Case Characters)	12	1
+183	VF0922NFL-AU	DATA1	Name (12 Upper Case Characters)	12	1
+184	VF0922NFL-AV	DATA1	Name (12 Upper Case Characters)	12	1
+185	VF0922NFL-AX	DATA1	Name (12 Upper Case Characters)	12	1
+186	VF0922NFL-AY	DATA1	Name (12 Upper Case Characters)	12	1
+187	VF0922NFL-AZ	DATA1	Name (12 Upper Case Characters)	12	1
+188	VF0922NFL-BA	DATA1	Name (12 Upper Case Characters)	12	1
+189	VF0922NFL-BB	DATA1	Name (12 Upper Case Characters)	12	1
+190	VF0922NFL-BC	DATA1	Name (12 Upper Case Characters)	12	1
+191	VF0922NFL-BD	DATA1	Name (12 Upper Case Characters)	12	1
+192	VF0922NFL-BE	DATA1	Name (12 Upper Case Characters)	12	1
+193	VF0922NFL-BF	DATA1	Name (12 Upper Case Characters)	12	1
+194	VF0922NFL-BG	DATA1	Name (12 Upper Case Characters)	12	1
+195	VF0922NHL-AA	DATA1	Name (12 Upper Case Characters)	12	1
+196	VF0922NHL-AB	DATA1	Name (12 Upper Case Characters)	12	1
+197	VF0922NHL-AC	DATA1	Name (12 Upper Case Characters)	12	1
+198	VF0922NHL-AD	DATA1	Name (12 Upper Case Characters)	12	1
+199	VF0922NHL-AE	DATA1	Name (12 Upper Case Characters)	12	1
+200	VF0922NHL-AF	DATA1	Name (12 Upper Case Characters)	12	1
+201	VF0922NHL-AG	DATA1	Name (12 Upper Case Characters)	12	1
+202	VF0922NHL-AH	DATA1	Name (12 Upper Case Characters)	12	1
+203	VF0922NHL-AI	DATA1	Name (12 Upper Case Characters)	12	1
+204	VF0922NHL-AJ	DATA1	Name (12 Upper Case Characters)	12	1
+205	VF0922NHL-AK	DATA1	Name (12 Upper Case Characters)	12	1
+206	VF0922NHL-AL	DATA1	Name (12 Upper Case Characters)	12	1
+207	VF0922NHL-AM	DATA1	Name (12 Upper Case Characters)	12	1
+208	VF0922NHL-AN	DATA1	Name (12 Upper Case Characters)	12	1
+209	VF0922NHL-AP	DATA1	Name (12 Upper Case Characters)	12	1
+210	VF0922NHL-AQ	DATA1	Name (12 Upper Case Characters)	12	1
+211	VF0922NHL-AR	DATA1	Name (12 Upper Case Characters)	12	1
+212	VF0922NHL-AS	DATA1	Name (12 Upper Case Characters)	12	1
+213	VF0922NHL-AT	DATA1	Name (12 Upper Case Characters)	12	1
+214	VF0922NHL-AU	DATA1	Name (12 Upper Case Characters)	12	1
+215	VF0922NHL-AV	DATA1	Name (12 Upper Case Characters)	12	1
+216	VF0922NHL-AW	DATA1	Name (12 Upper Case Characters)	12	1
+217	VF0922NHL-AX	DATA1	Name (12 Upper Case Characters)	12	1
+218	VF0922NHL-AY	DATA1	Name (12 Upper Case Characters)	12	1
+219	VF0922NHL-AZ	DATA1	Name (12 Upper Case Characters)	12	1
+220	VF0922NHL-BA	DATA1	Name (12 Upper Case Characters)	12	1
+221	VF0922NHL-BB	DATA1	Name (12 Upper Case Characters)	12	1
+222	VF0922NHL-BC	DATA1	Name (12 Upper Case Characters)	12	1
+223	VF0922NHL-BD	DATA1	Name (12 Upper Case Characters)	12	1
+224	VF0922NHL-SO	DATA1	Name (12 Upper Case Characters)	12	1
+225	HA9222	DATA1	50 Proper (Mixed) Case Letters	50	1
+226	HB2962	DATA1	50 Proper (Mixed) Case Letters	50	1
+227	HF1862	DATA1	Message 1 (50 Mixed Case Characters)	50	1
+228	HE8772	DATA1	Message 1 (50 Mixed Case Characters)	50	1
+229	VF8242	DATA1	Name (14 Upper Case Characters)	14	1
+230	VF8252	DATA1	Name (14 Upper Case Characters)	14	1
+231	VH3852	DATA1	Parent 1	9	1
+232	VH3852	DATA2	Daughter	9	
+233	VH3852	DATA3	Parent 2	9	
+234	PP3212-YAB	DATA1	Pet Name (8 Upper Case Characters)	8	1
+235	PP3212-YBP	DATA1	Pet Name (8 Upper Case Characters)	8	1
+236	PP3212-YBQ	DATA1	Pet Name (8 Upper Case Characters)	8	1
+237	PP3212-YBR	DATA1	Pet Name (8 Upper Case Characters)	8	1
+238	PP3212-YCH	DATA1	Pet Name (8 Upper Case Characters)	8	1
+239	AL3412	DATA1	Initials (3 Uppercase characters)	3	1
+240	AL4722	DATA1	Last Name	12	1
+241	AL7872	DATA1	Name	12	1
+242	AM1012	DATA1	Name (12 Characters)	12	1
+243	AQ7932	DATA1	Name (12 Characters)	12	1
+244	AR0062	DATA1	Last Name (Ex. Taylor's)	12	1
+245	AR0102	DATA1	Last Name (Ex. Taylor's)	12	1
+246	AR8821L	DATA1	Name (12 Mixed Case Characters)	12	1
+247	AR8821T	DATA1	Name (12 Mixed Case Characters)	12	1
+248	AR9582	DATA1	Name	12	1
+249	AR9642	DATA1	Name	14	1
+250	AR9672	DATA1	Name	12	1
+251	AR9922	DATA1	Name	14	1
+252	HA1712	DATA1	Date (Ex. 05/25/1985)	10	1
+253	HA1712	DATA2	City (ex. Cambridge)	55	
+254	HA1712	DATA3	State (ex. MA - if foreign city and country go here)	55	
+255	HA1712	DATA4	Add'l Message (Up to 55 characters)	55	
+256	HA1712	DATA5	From Message (Up to 55 characters)	55	
+257	HB1602	DATA1	First Month (in 2-digit form - ex. 06 is June)	2	1
+258	HB1602	DATA2	Second Month (in 2-digit form - ex. 06 is June)	2	
+259	HB1602	DATA3	Third Month (in 2-digit form - ex. 06 is June)	2	
+260	HB1602	DATA4	Fourth Month (in 2-digit form - ex. 06 is June)	2	
+261	HB1602	DATA5	Fifth Month (in 2-digit form - ex. 06 is June)	2	
+262	HB1602	DATA6	Sixth Month (in 2-digit form - ex. 06 is June)	2	
+263	HB1602	DATA7	Seventh Month (in 2-digit form - ex. 06 is June)	2	
+264	HB1602	DATA8	Eighth Month (in 2-digit form - ex. 06 is June)	2	
+265	HB1602	DATA9	Ninth Month (in 2-digit form - ex. 06 is June)	2	
+266	HB1602	DATA10	Tenth Month (in 2-digit form - ex. 06 is June)	2	
+267	HB1612	DATA1	First Month (in 2-digit form - ex. 06 is June)	2	1
+268	HB1612	DATA2	Second Month (in 2-digit form - ex. 06 is June)	2	
+269	HB1612	DATA3	Third Month (in 2-digit form - ex. 06 is June)	2	
+270	HB1612	DATA4	Fourth Month (in 2-digit form - ex. 06 is June)	2	
+271	HB1612	DATA5	Fifth Month (in 2-digit form - ex. 06 is June)	2	
+272	HB1612	DATA6	Sixth Month (in 2-digit form - ex. 06 is June)	2	
+273	HB1612	DATA7	Seventh Month (in 2-digit form - ex. 06 is June)	2	
+274	HB1612	DATA8	Eighth Month (in 2-digit form - ex. 06 is June)	2	
+275	HB1612	DATA9	Ninth Month (in 2-digit form - ex. 06 is June)	2	
+276	HB1612	DATA10	Tenth Month (in 2-digit form - ex. 06 is June)	2	
+277	HB8102	DATA1	Month (0-12)	2	1
+278	HB8102	DATA2	Date (01-31)	2	1
+279	HB8102	DATA3	Year-(1888-2008 Only)	4	1
+280	HE9802	DATA1	Headline (30 Upper Case Characters)	30	1
+281	HE9811L	DATA1	Headline (30 Upper Case Characters)	30	1
+282	HE9811T	DATA1	Headline (30 Upper Case Characters)	30	1
+283	HF9422	DATA1	Heart Letters (3 Upper Case Characters)	3	1
+284	HF9422	DATA2	Date (13 Upper Case Characters Month/ Day/Year Ex. May 24	13	1
+285	HG7942	DATA1	Name (15 Upper Case Characters)	15	1
+286	HG7952	DATA1	Name (15 Upper Case Characters)	15	1
+287	PK0182	DATA1	Line 1	18	1
+288	PK0182	DATA2	Line 2	18	
+289	PK0182	DATA3	Line 3	18	
+290	PK0192	DATA1	Line 1	18	1
+291	PK0192	DATA2	Line 2	18	
+292	PK0192	DATA3	Line 3	18	
+293	PK4952	DATA1	Line 1	18	1
+294	PK4952	DATA2	Line 2	18	
+295	PK4952	DATA3	Line 3	18	
+296	VC3752	DATA1	Name (10 Characters - Upper and Lower Case Letters Acceptable)	10	1
+297	VC3762	DATA1	Name (15 Characters - Upper and Lower Case Letters Acceptable)	15	1
+298	VD0142	DATA1	Line 1 ( 17 characters-All Capital Letters)	17	1
+299	VD0142	DATA2	Line 2 ( 17 characters-All Capital Letters)	17	
+300	VD2192	DATA1	Characters (28-All Capital Letters)	28	1
+301	VD4732	DATA1	Beach or State Name-(20 mixed case characters)	20	1
+302	VD4732	DATA2	Your Message-(12 mixed case characters)	12	
+303	VD4732	DATA3	Your Message 2-(14 mixed case characters)	14	
+304	VD4732	DATA4	Your Message-(14 mixed case characters)	14	
+305	VD5132	DATA1	Name 1 Field (10 mixed case characters)	10	1
+306	VD5132	DATA2	Name 2 Field (10 mixed case characters)	10	
+307	VD5142	DATA1	Name or Initial Line 1-(10 characters-Mixed Case)	10	1
+308	VD5142	DATA2	Name or Initial Line 2-(10 characters-Mixed Case)	10	
+309	VD7062	DATA1	Message-(20 characters-Mixed Case)	20	1
+310	VD8581L	DATA1	Last Word-(12 characters-Mixed Case)	12	1
+311	VD8581T	DATA1	Last Word-(12 characters-Mixed Case)	12	1
+312	VE5012	DATA1	Name-(8-characters-All Capital Letters)	8	1
+313	VE5012	DATA2	Date-(6 digits-ex-00/00/00)	6	
+314	VE6252A	DATA1	Message 1 (All Upper Case-3 inch high letter)	5	1
+315	VE6252A	DATA2	Message 2 (All Upper Case-1.25 inches high)	12	
+316	VE6252B	DATA1	Message 1 (All Upper Case-1.25 inches high)	12	1
+317	VE6252B	DATA2	Message 2 (All Upper Case-1.25 inches high)	12	
+318	VE6262A	DATA1	Message 1 (All Upper Case-3 inch high letter)	5	1
+319	VE6262A	DATA2	Message 2 (All Upper Case-1.25 inches high)	12	
+320	VE6262B	DATA1	Message 1 (All Upper Case-1.25 inches high)	12	1
+321	VE6262B	DATA2	Message 2 (All Upper Case-1.25 inches high)	12	
+322	VE6272A	DATA1	Message 1 (All Upper Case-3 inch high letter)	5	1
+323	VE6272A	DATA2	Message 2 (All Upper Case-1.25 inches high)	12	
+324	VE6272B	DATA1	Message 1 (All Upper Case-1.25 inches high)	12	1
+325	VE6272B	DATA2	Message 2 (All Upper Case-1.25 inches high)	12	
+326	VE8472	DATA1	Line 1 (15 Mixed Case Characters)	15	1
+327	VE8472	DATA2	Line 2 (15 Mixed Case Characters)	15	
+328	VE8492	DATA1	Wedding Date (Month/ Day/Year Ex. July 5 1999)	55	1
+329	VE8512	DATA1	Line 1 (12 Mixed Case Characters)	12	1
+330	VE8562	DATA1	Name-(55 Mixed Case Characters	55	1
+331	VE8802	DATA1	Name-(20 Mixed Case Characters)	20	1
+332	VE8802	DATA2	Year-(4 Characters)	4	
+333	VE8832	DATA1	Name-(20 Mixed Case Characters)	20	1
+334	VE8832	DATA2	Year-(4 Characters)	4	
+335	VE8882	DATA1	Line 1 (12 Upper Case Characters)	12	1
+336	VE8882	DATA2	Line 2 (12 Upper Case Characters)	12	
+337	VE8892	DATA1	Line 1 (12 Upper Case Characters)	12	1
+338	VE8892	DATA2	Line 2 (9 Upper Case Characters)	9	
+339	VF0352	DATA1	Name 1 (9 Mixed Case Characters)	9	1
+340	VF0352	DATA2	Name 2 (9 Mixed Case Characters)	9	
+341	VF0352	DATA3	Wedding Date-(55 Mixed Case Characters)	55	
+342	VF2751L	DATA1	Name (15 Upper Case Characters)	15	1
+343	VF2751T	DATA1	Name (15 Upper Case Characters)	15	1
+344	VF3922	DATA1	Name Only (20 Upper Case Characters) Please do not type word ZONE with personalization.	20	1
+345	VF4132	DATA1	Name (15 Upper Case Characters)	15	1
+346	VF4142	DATA1	Name (12 Mixed Case Characters)	12	1
+347	VF6822	DATA1	Name (20 Upper Case Characters)	20	1
+348	VF6822	DATA2	Wedding Date (Month/ Day/Year Ex. July 5 1999)	55	1
+349	VF7072	DATA1	Name (8 Upper Case Characters)	8	1
+350	VF7082	DATA1	Name (8 Upper Case Characters)	8	1
+351	VF8212	DATA1	Name (30 Mixed Case Characters)	30	1
+352	VF8262	DATA1	Name (17 Upper Case Characters)	17	1
+353	VF8272	DATA1	Top Line (16 Upper Case Characters)	16	1
+354	VF8272	DATA2	Bottom Line (16 Upper Case Characters)	16	
+355	VF9122	DATA1	Name (9 Upper Case Characters)	9	1
+356	VF9401L	DATA1	Name (12 Upper Case Characters)	12	1
+357	VF9401T	DATA1	Name (12 Upper Case Characters)	12	1
+358	VG0042	DATA1	1st Month Birthstone (type in name of month up to 10 characters)	10	1
+359	VG0042	DATA2	2nd Month Birthstone	10	
+360	VG0042	DATA3	3rd Month Birthstone	10	
+361	VG0042	DATA4	4th Month Birthstone	10	
+362	VG0042	DATA5	5th Month Birthstone	10	
+363	VG2202	DATA1	Name (55 Mixed Case Characters)	55	1
+364	VG2212	DATA1	Name (55 Mixed Case Characters)	55	1
+365	VG2222	DATA1	Name (55 Mixed Case Characters)	55	1
+366	VG2572	DATA1	Name (20 Mixed Case Characters)	20	1
+367	VG2732	DATA1	Name 1(10 Upper Case Characters)	10	1
+368	VG2732	DATA2	Name 2 (10 Upper Case Characters)	10	
+369	VG2732	DATA3	Name 3 (10 Upper Case Characters)	10	
+370	VG2732	DATA4	Name 4 (10 Upper Case Characters)	10	
+371	VG2732	DATA5	Name 5(10 Upper Case Characters)	10	
+372	VG2732	DATA6	Name 6 (10 Upper Case Characters)	10	
+373	VG2742	DATA1	First Name (12 Upper Case Characters)	12	1
+374	VG2742	DATA2	Last Name (12 Upper Case Characters)	12	1
+375	VG2752	DATA1	First Name (12 Upper Case Characters)	12	1
+376	VG2752	DATA2	Last Name (12 Upper Case Characters)	12	1
+377	VG3032	DATA1	Name (20 Mixed Case Characters)	20	1
+378	VG3032	DATA2	Date (25 Mixed Case Characters. Ex. Born September 18th 2008)	25	1
+379	VG3042	DATA1	Message (20 Mixed Case Characters)	20	1
+380	VG3042	DATA2	Family Name (20 Mixed Case Characters)	20	1
+381	VG3052	DATA1	Name (30 Mixed Case Characters)	30	1
+382	VG3062	DATA1	Name (10 Mixed Case Characters)	10	1
+383	VG3062	DATA2	Message (12 Mixed Case Characters)	12	1
+384	VG3062	DATA3	Message (20 Mixed Case Characters)	20	1
+385	VG3072	DATA1	Message (30 Mixed Case Characters)	30	1
+386	VG3622	DATA1	Family Name (12 Upper Case Characters)	12	1
+387	VG3622	DATA2	Four-Digit Year (4 Upper Case Characters Ex. 2008)	4	1
+388	VG3732MLB	DATA1	Pub Name (12 Upper Case Characters)	12	1
+389	VG3732MLB	DATA2	Proprietor Name (18 Mixed Case Characters)	18	1
+390	VG3732NFL	DATA1	Pub Name (12 Upper Case Characters)	12	1
+391	VG3732NFL	DATA2	Proprietor Name (18 Mixed Case Characters)	18	1
+392	VG3732NHL	DATA1	Pub Name (12 Upper Case Characters)	12	1
+393	VG3732NHL	DATA2	Proprietor Name (18 Mixed Case Characters)	18	1
+394	VG3742	DATA1	Name (18 Upper Case Characters)	18	1
+395	VG3752	DATA1	First and Last Name (18 Upper Case Characters)	18	1
+396	VG3901L	DATA1	Name (15 Upper Case Characters)	15	1
+397	VG3901T	DATA1	Name (15 Upper Case Characters)	15	1
+398	VG3911L	DATA1	Name (11 Upper Case Characters)	11	1
+399	VG3911T	DATA1	Name (11 Upper Case Characters)	11	1
+400	VG4271L	DATA1	Name (15 Upper Case Characters)	15	1
+401	VG4271T	DATA1	Name (15 Upper Case Characters)	15	1
+402	VG4301L	DATA1	Name (15 Mixed Case Characters)	15	1
+403	VG4301T	DATA1	Name (15 Mixed Case Characters)	15	1
+404	VG4592	DATA1	Name (17 Upper Case Characters)	17	1
+405	VG4592	DATA2	Message (17 Upper Case Characters	17	1
+406	VG4802	DATA1	Name (17 Upper Case Characters)	17	1
+407	VG4802	DATA2	Message (17 Upper Case Characters	17	1
+408	VG4812	DATA1	Name (10 Upper Case Characters)	10	1
+409	VG5872	DATA1	Name (15 Upper Case Characters)	15	1
+410	VG5932	DATA1	Line 1 (17 Upper Case Characters)	17	1
+411	VG5932	DATA2	Line 2 (17 Upper Case Characters)	17	1
+412	VG6152	DATA1	Name On Airplane (15 Mixed Case Characters)	15	1
+413	VG6152	DATA2	Name of Flying School (35 Mixed Case Characters)	35	1
+414	VG6152	DATA3	Name Local Airport (27 Mixed Case Characters)	27	1
+415	VG6192	DATA1	Name (18 Mixed Case Characters	18	1
+416	VG6202-2	DATA1	Sister 1 Name (10 Mixed Case Characters)	10	1
+417	VG6202-2	DATA2	Sister 1 Hair/Skin Combination	2	1
+418	VG6202-2	DATA3	Sister 2 Name (10 Mixed Case Characters)	20	1
+419	VG6202-2	DATA4	Sister 2 Hair/Skin Combination	2	1
+420	VG6202-3	DATA1	Sister 1 Name (10 Mixed Case Characters)	10	1
+421	VG6202-3	DATA2	Sister 1 Hair/Skin Combination	2	1
+422	VG6202-3	DATA3	Sister 2 Name (10 Mixed Case Characters)	20	1
+423	VG6202-3	DATA4	Sister 2 Hair/Skin Combination	2	1
+424	VG6202-3	DATA5	Sister 3 Name (10 Mixed Case Characters)	20	1
+425	VG6202-3	DATA6	Sister 3 Hair/Skin Combination	2	1
+426	VG6202-4	DATA1	Sister 1 Name (10 Mixed Case Characters)	10	1
+427	VG6202-4	DATA2	Sister 1 Hair/Skin Combination	2	1
+428	VG6202-4	DATA3	Sister 2 Name (10 Mixed Case Characters)	20	1
+429	VG6202-4	DATA4	Sister 2 Hair/Skin Combination	2	1
+430	VG6202-4	DATA5	Sister 3 Name (10 Mixed Case Characters)	20	1
+431	VG6202-4	DATA6	Sister 3 Hair/Skin Combination	2	1
+432	VG6202-4	DATA7	Sister 4 Name (10 Mixed Case Characters)	20	1
+433	VG6202-4	DATA8	Sister 4 Hair/Skin Combination	2	1
+434	VG6202-5	DATA1	Sister 1 Name (10 Mixed Case Characters)	10	1
+435	VG6202-5	DATA2	Sister 1 Hair/Skin Combination	2	1
+436	VG6202-5	DATA3	Sister 2 Name (10 Mixed Case Characters)	20	1
+437	VG6202-5	DATA4	Sister 2 Hair/Skin Combination	2	1
+438	VG6202-5	DATA5	Sister 3 Name (10 Mixed Case Characters)	20	1
+439	VG6202-5	DATA6	Sister 3 Hair/Skin Combination	2	1
+440	VG6202-5	DATA7	Sister 4 Name (10 Mixed Case Characters)	20	1
+441	VG6202-5	DATA8	Sister 4 Hair/Skin Combination	2	1
+442	VG6202-5	DATA9	Sister 5 Name (10 Mixed Case Characters)	20	1
+443	VG6202-5	DATA10	Sister 5 Hair/Skin Combination	2	1
+444	VG6202-6	DATA1	Sister 1 Name (10 Mixed Case Characters)	10	1
+445	VG6202-6	DATA2	Sister 1 Hair/Skin Combination	2	1
+446	VG6202-6	DATA3	Sister 2 Name (10 Mixed Case Characters)	20	1
+447	VG6202-6	DATA4	Sister 2 Hair/Skin Combination	2	1
+448	VG6202-6	DATA5	Sister 3 Name (10 Mixed Case Characters)	20	1
+449	VG6202-6	DATA6	Sister 3 Hair/Skin Combination	2	1
+450	VG6202-6	DATA7	Sister 4 Name (10 Mixed Case Characters)	20	1
+451	VG6202-6	DATA8	Sister 4 Hair/Skin Combination	2	1
+452	VG6202-6	DATA9	Sister 5 Name (10 Mixed Case Characters)	20	1
+453	VG6202-6	DATA10	Sister 5 Hair/Skin Combination	2	1
+454	VG6202-6	DATA11	Sister 6 Name (10 Mixed Case Characters)	20	1
+455	VG6202-6	DATA12	Sister 6 Hair/Skin Combination	2	1
+456	VG6562	DATA1	Line 1 (17 Upper Case Characters)	17	1
+457	VG6562	DATA2	Line 2 (17 Upper Case Characters)	17	
+458	VG7012	DATA1	Last Name (20 Mixed Case Characters)	20	1
+459	VG7742	DATA1	Name (18 Mixed Case Characters	18	1
+460	HG2062	DATA1	Name 1 (Up to 10 Mixed Case Characters)	10	1
+461	HG2062	DATA2	Name 2 (Up to 10 Mixed Case Characters)	10	1
+462	HG2062	DATA3	MM-DD-YYYY (Date in Numerical Format)	10	1
+463	HG2962-AA	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+464	HG2962-AB	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+465	HG2962-AC	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+466	HG2962-AD	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+467	HG2962-AE	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+468	HG2962-AF	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+469	HG2962-AG	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+470	HG2962-AH	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+471	HG2962-AI	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+472	HG2962-AJ	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+473	HG2962-AK	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+474	HG2962-AL	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+475	HG2962-AM	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+476	HG2962-AN	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+477	HG2962-AO	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+478	HG2962-AP	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+479	HG2962-AQ	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+480	HG2962-AR	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+481	HG2962-AS	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+482	HG2962-AT	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+483	HG2962-AU	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+484	HG2962-AV	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+485	HG2962-AW	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+486	HG2962-AX	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+487	HG2962-AY	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+488	HG2962-AZ	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+489	HG2962-BA	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+490	HG2962-BB	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+491	HG2962-BC	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+492	HG2962-BD	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+493	HG2962-BE	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+494	HG2962-BF	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+495	HG2962-BG	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+496	HG2962-BH	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+497	HG2962-BI	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+498	HG2962-BJ	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+499	HG2962-BK	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+500	HG2962-BL	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+501	HG2962-BM	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+502	HG2962-BN	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+503	HG2962-BO	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+504	HG2962-BP	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+505	HG2962-BQ	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+506	HG2962-BR	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+507	HG2962-BS	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+508	HG2962-BT	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+509	HG2962-BU	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+510	HG2962-BV	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+511	HG2962-BW	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+512	HG2962-BX	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+513	HG2962-BY	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+514	HG2962-BZ	DATA1	5-Digit Zip Code (Up to 5 Numerical Characters)	5	1
+515	VH0732	DATA1	Message for the Bottle (35 Mixed Case Characters)	35	1
+516	VH0792	DATA1	First Month (in 2-digit form - ex. 06 is June)	2	1
+517	VH0792	DATA2	Second Month (in 2-digit form - ex. 06 is June)	2	
+518	VH0792	DATA3	Third Month (in 2-digit form - ex. 06 is June)	2	
+519	VH0792	DATA4	Fourth Month (in 2-digit form - ex. 06 is June)	2	
+520	VH0792	DATA5	Fifth Month (in 2-digit form - ex. 06 is June)	2	
+521	VH0792	DATA6	Sixth Month (in 2-digit form - ex. 06 is June)	2	
+522	VH0792	DATA7	Seventh Month (in 2-digit form - ex. 06 is June)	2	
+523	VG9201	DATA1	Name of the Normal Family (14 Mixed Case Characters)	14	1
+524	VG9211T	DATA1	Name of the Normal Family (14 Mixed Case Characters)	14	1
+525	VG9211L	DATA1	Name of the Normal Family (14 Mixed Case Characters)	14	1
+526	VH1342	DATA1	Family Name (15 Upper Case Characters)	15	1
+527	VH0932-BU	DATA1	Line 1 of Personalization	10	1
+528	VH0932-BU	DATA2	Line 2 of Personalization	10	
+529	VH0932-PK	DATA1	Line 1 of Personalization	10	1
+530	VH0932-PK	DATA2	Line 2 of Personalization	10	
+531	VH1352	DATA1	Family Name (16 Upper Case Characters)	16	1
+532	VH0782	DATA1	First Person Name (Up to 10 Mixed Case Characters)	10	1
+533	VH0782	DATA2	First Person Birthmonth (in 2-digit form - ex. 06 is June)	2	
+534	VH0782	DATA3	Second Person Name (Up to 10 Mixed Case Characters)	10	
+535	VH0782	DATA4	Second Person Birthmonth (in 2-digit form - ex. 06 is June)	2	
+536	VH0782	DATA5	Third Person Name (Up to 10 Mixed Case Characters)	10	
+537	VH0782	DATA6	Third Person Birthmonth (in 2-digit form - ex. 06 is June)	2	
+538	VH0782	DATA7	Fourth Person Name (Up to 10 Mixed Case Characters)	10	
+539	VH0782	DATA8	Fourth Person Birthmonth (in 2-digit form - ex. 06 is June)	2	
+540	VH0782	DATA9	Fifth Person Name (Up to 10 Mixed Case Characters)	10	
+541	VH0782	DATA10	Fifth Person Birthmonth (in 2-digit form - ex. 06 is June)	2	
+542	VG9182	DATA1	Personalization Line 1 (Up to 12 Mixed Case Characters)	12	1
+543	VG9182	DATA2	Personalization Line 2 (Up to 12 Mixed Case Characters)	12	
+544	CE2838	DATA1	LINE 1 (Up to 25 Characters)	25	1
+545	CE2838	DATA2	LINE 2 (Up to 25 Characters)	25	
+546	VJ6008	DATA1	Country of Choice or Phrase	16	1
+547	VJ3982	DATA1	Name	15	1
+548	VJ5432	DATA1	Name	15	1
+549	VJ3488	DATA1	Name	25	1
+550	VJ5442	DATA1	Name	15	1
+551	VJ4142	DATA1	Name	16	1
+552	VJ3072	DATA1	Specify Name 1 (Upto 12 Characters and Spaces)	12	1
+553	VJ3072	DATA2	Specify Name 2 (Upto 12 Characters and Spaces)	12	1
+554	VJ5992	DATA1	Specify Name 1 (Upto 12 Characters and Spaces)	12	1
+555	VJ5992	DATA2	Specify Name 2 (Upto 12 Characters and Spaces)	12	1
+556	VJ4862	DATA1	Name 1	13	1
+557	VJ4862	DATA2	Name 2	13	
+558	VJ3468	DATA1	Name	16	1
+559	VJ3468	DATA2	Age	3	
+560	VJ4892	DATA1	Name 1	12	1
+561	VJ4892	DATA2	Name 2	12	
+562	VJ3438	DATA1	Name (UPPER CASE LETTERS ONLY)	16	1
+563	VJ3438	DATA2	Year	4	
+564	VJ3388	DATA1	Name	16	1
+565	VJ6018	DATA1	Name	16	1
+566	VJ1892L	DATA1	Name (Specify in Mixed/Proper Case only)	12	1
+567	VJ1892L	DATA2	Color Choice (Specify Primary Jewels or Pastels)	7	
+568	VJ1892S	DATA1	Name (Specify in Mixed/Proper case only)	6	
+569	VJ1892S	DATA2	Color Choice (Specify Primary Jewels or Pastels)	7	
+570	VJ5532	DATA1	Birth Month	9	1
+571	VJ5532	DATA2	Month Two or say NONE if no other stone desired	9	
+572	VJ5532	DATA3	Month Three or say NONE if no other stone desired	9	
+573	VJ5532	DATA4	Month Four or say NONE if no other stone desired	9	
+574	VJ5532	DATA5	Month Five or say NONE if no other stone desired	9	
+575	VJ3992	DATA1	Name	15	1
+576	VJ5292	DATA1	Name	15	1
+577	VJ3428	DATA1	Name Or Phrase	16	1
+578	VJ3408	DATA1	Name Or Phrase	16	1
+579	VJ5942	DATA1	Name	22	1
+580	VJ5952	DATA1	Name	22	1
+581	VJ2252	DATA1	Name	14	1
+582	VJ2262	DATA1	Name	14	1
+583	VJ8882	DATA1	Name	12	1
+584	VJ2612	DATA1	Name	15	1
+585	VJ1338	DATA1	Name(specify upto 16 characters and spaces)	16	1
+586	VJ6592	DATA1	Phrase 1(Specify upto 16 upper case characters and spaces)	16	1
+587	VJ6592	DATA2	Phrase 2(Specify upto 16 upper case characters and spaces)	16	
+588	VJ6602	DATA1	Line 1(Specify upto 14 upper case character and spaces)	14	1
+589	VJ9042	DATA1	Line 1	13	1
+590	VJ9042	DATA2	Line2	13	
+591	VJ7852	DATA1	Gender(Specify Male/Female)	6	1
+592	VJ7852	DATA2	Name	30	1
+593	VJ7852	DATA3	Birth Date	30	1
+594	VJ7852	DATA4	Rest Date	30	1
+595	VJ8522	DATA1	Name	5	1
+596	VJ8532	DATA2	Name	5	1
+597	VJ9812	DATA1	Name(Specify upto 12 characters and spaces)	12	1
+598	VJ9522	DATA1	Fan or Family Name (Specify upto 50 Characters and spaces)	50	1
+599	VJ7932	DATA1	Fan or Family Name (Specify upto 50 Characters and spaces)	50	1
+600	VJ7862	DATA1	1st Name	12	1
+601	VJ7862	DATA2	2nd Name	12	1
+602	VJ9782	DATA1	Name(Specify upto 12 characters and spaces)	12	1
+603	VJ7127	DATA1	Family Name(upto 13 Characters inside the wreath)	13	1
+604	VJ7127	DATA2	Name1 (Specify upto 9 Characters)	9	
+605	VJ7127	DATA3	Name2 (Specify upto 9 Characters)	9	
+606	VJ7127	DATA4	Name3 (Specify upto 9 Characters)	9	
+607	VJ7127	DATA5	Name4 (Specify upto 9 Characters)	9	
+608	VJ7127	DATA6	Name5 (Specify upto 9 Characters)	9	
+609	VJ7127	DATA7	Name6 (Specify upto 9 Characters)	9	
+610	VJ7127	DATA8	Name7 (Specify upto 9 Characters)	9	
+611	VK0202	DATA1	Family Name(upto 13 Characters inside the wreath)	13	1
+612	VK0202	DATA2	Name1 (Specify upto 9 Characters)	9	
+613	VK0202	DATA3	Name2 (Specify upto 9 Characters)	9	
+614	VK0202	DATA4	Name3 (Specify upto 9 Characters)	9	
+615	VK0202	DATA5	Name4 (Specify upto 9 Characters)	9	
+616	VK0202	DATA6	Name5 (Specify upto 9 Characters)	9	
+617	VK0202	DATA7	Name6 (Specify upto 9 Characters)	9	
+618	VK0202	DATA8	Name7 (Specify upto 9 Characters)	9	
+619	VJ9738	DATA1	Customized Text (Specify upto 16 Characters and Spaces)	16	1
+620	VK4302-AW	DATA1	Family Name( Specify upto 30 Characters and Spaces)	30	1
+621	VK4302-AX	DATA1	Family Name( Specify upto 30 Characters and Spaces)	30	1
+622	VK4302-AY	DATA1	Family Name( Specify upto 30 Characters and Spaces)	30	1
+623	VK4302-AZ	DATA1	Family Name( Specify upto 30 Characters and Spaces)	30	1
+624	VK4302-BA	DATA1	Family Name( Specify upto 30 Characters and Spaces)	30	1
+625	VK4302-BB	DATA1	Family Name( Specify upto 30 Characters and Spaces)	30	1
+626	VK0322	DATA1	Name( Specify upto 30 Characters and Spaces)	30	1
+627	VK0332	DATA1	Name or Family Name( Specify upto 30 Characters and Spaces)	30	1
+628	VK0342	DATA1	Name or Trail Name(Specify upto 30 Characters and Spaces)	30	1
+629	VK0342	DATA2	City or State Line(Specify upto 30 Characters and Spaces)	30	1
+630	VK0352	DATA1	Name( Specify upto 30 Characters and Spaces)	30	1
+631	VK0362	DATA1	Name( Specify upto 30 Characters and Spaces)	30	1
+632	VK0292	DATA1	Name (Specify upto 12 Characters and Spaces)	12	1
+633	HJ9662	DATA1	Child's first name 15 char. (All fields req.-don't enter 'none' - it will show as the word 'none')	15	1
+634	HJ9662	DATA2	Child's last name (15 char max - required)	15	1
+635	HJ9662	DATA3	Gender (required)	15	1
+636	HJ9662	DATA4	Loved one name 1 (required )	30	1
+637	HJ9662	DATA5	Loved one name 2 (required )	30	1
+638	HJ9662	DATA6	Loved one name 3 (required )	30	1
+639	HJ9662	DATA7	Loved one name 4 (required )	30	1
+640	HJ9662	DATA8	Loved one name 5 (required )	30	1
+641	HJ9662	DATA9	Loved one name 6 (required )	30	1
+642	HJ9662	DATA10	Dedication (Upto 40 mixed characters and spaces)	40	
+643	HJ9662	DATA11	Sender's Name (Upto 40 mixed characters and spaces)	40	1
+644	HJ9662	DATA12	Year (In 4-digit)	4	1
+645	VK0622TARPOPN-C	DATA1	State Name (Specify upto 30 Characters and Spaces)	30	1
+646	VK0622TARPON-CB	DATA2	Water Body Name (Specify upto 30 Character and Spaces)	30	1
+647	VK0622TARPON-CC	DATA2	Water Body Name (Specify upto 30 Character and Spaces)	30	1
+648	VK0622TARPON-CD	DATA2	Water Body Name (Specify upto 30 Character and Spaces)	30	1
+649	VK0622TARPON-CE	DATA2	Water Body Name (Specify upto 30 Character and Spaces)	30	1
+650	VK1732-CB	DATA1	State Name (Specify upto 30 Characters and Spaces)	30	1
+651	VK1732-CB	DATA2	Water Body Name (Specify upto 30 Character and Spaces)	30	1
+652	VK1732-CC	DATA1	State Name (Specify upto 30 Characters and Spaces)	30	1
+653	VK1732-CC	DATA2	Water Body Name (Specify upto 30 Character and Spaces)	30	1
+654	VK1732-CD	DATA1	State Name (Specify upto 30 Characters and Spaces)	30	1
+655	VK1732-CD	DATA2	Water Body Name (Specify upto 30 Character and Spaces)	30	1
+656	VK1732-CE	DATA1	State Name (Specify upto 30 Characters and Spaces)	30	1
+657	VK1732-CE	DATA2	Water Body Name (Specify upto 30 Character and Spaces)	30	1
+658	VK1742-CB	DATA1	State Name (Specify upto 30 Characters and Spaces)	30	1
+659	VK1742-CB	DATA2	Water Body Name (Specify upto 30 Character and Spaces)	30	1
+660	VK1742-CC	DATA1	State Name (Specify upto 30 Characters and Spaces)	30	1
+661	VK1742-CC	DATA2	Water Body Name (Specify upto 30 Character and Spaces)	30	1
+662	VK1742-CD	DATA1	State Name (Specify upto 30 Characters and Spaces)	30	1
+663	VK1742-CD	DATA2	Water Body Name (Specify upto 30 Character and Spaces)	30	1
+664	VK1742-CE	DATA1	State Name (Specify upto 30 Characters and Spaces)	30	1
+665	VK1742-CE	DATA2	Water Body Name (Specify upto 30 Character and Spaces)	30	1
+666	VK1752-CB	DATA1	State Name (Specify upto 30 Characters and Spaces)	30	1
+667	VK1752-CB	DATA2	Water Body Name (Specify upto 30 Character and Spaces)	30	1
+668	VK1752-CC	DATA1	State Name (Specify upto 30 Characters and Spaces)	30	1
+669	VK1752-CC	DATA2	Water Body Name (Specify upto 30 Character and Spaces)	30	1
+670	VK1752-CD	DATA1	State Name (Specify upto 30 Characters and Spaces)	30	1
+671	VK1752-CD	DATA2	Water Body Name (Specify upto 30 Character and Spaces)	30	1
+672	VK1752-CE	DATA1	State Name (Specify upto 30 Characters and Spaces)	30	1
+673	VK1752-CE	DATA2	Water Body Name (Specify upto 30 Character and Spaces)	30	1
+674	VK0652-CD	DATA1	Name 1(Specify upto 30 Characters and Spaces)	30	1
+675	VK0652-CD	DATA2	Name 2(Specify upto 30 Characters and Spaces)	30	1
+676	VK0652-CE	DATA1	Name 1(Specify upto 30 Characters and Spaces)	30	1
+677	VK0652-CE	DATA2	Name 2(Specify upto 30 Characters and Spaces)	30	1
+678	VK0602-CB	DATA1	Specify family Name(Upto 30 Characters and Spaces)	30	1
+679	VK0602-CB	DATA2	Specify Tavern Name	30	
+680	VK0602-CC	DATA1	Specify family Name(Upto 30 Characters and Spaces)	30	1
+681	VK0602-CC	DATA2	Specify Tavern Name	30	
+682	VK0602-CD	DATA1	Specify family Name(Upto 30 Characters and Spaces)	30	1
+683	VK0602-CD	DATA2	Specify Tavern Name	30	
+684	VK0602-CE	DATA1	Specify family Name(Upto 30 Characters and Spaces)	30	1
+685	VK0602-CE	DATA2	Specify Tavern Name	30	
+686	VK0582-CB	DATA1	Specify family Name(Upto 30 Characters and Spaces each)	30	1
+688	VK0582-CC	DATA1	Specify family Name(Upto 30 Characters and Spaces each)	30	1
+690	VK0582-CD	DATA1	Specify family Name(Upto 30 Characters and Spaces each)	30	1
+692	VK0582-CE	DATA1	Specify family Name(Upto 30 Characters and Spaces each)	30	1
+694	VK0592-CB	DATA1	Specify location Name(Upto 30 Characters and Spaces each)	30	1
+695	VK0592-CB	DATA2	Specify family Name(Upto 30 Characters and Spaces)	30	1
+696	VK0592-CC	DATA1	Specify location Name(Upto 30 Characters and Spaces each)	30	1
+697	VK0592-CC	DATA2	Specify family Name(Upto 30 Characters and Spaces)	30	1
+698	VK0592-CD	DATA1	Specify location Name(Upto 30 Characters and Spaces each)	30	1
+699	VK0592-CD	DATA2	Specify family Name(Upto 30 Characters and Spaces)	30	1
+700	VK0592-CE	DATA1	Specify location Name(Upto 30 Characters and Spaces each)	30	1
+701	VK0592-CE	DATA2	Specify family Name(Upto 30 Characters and Spaces)	30	1
+702	VK0462-CB	DATA1	Specify location Name(Upto 30 Characters and Spaces each)	30	1
+703	VK0462-CB	DATA2	Specify family Name(Upto 30 Characters and Spaces)	30	1
+704	VK0462-CC	DATA1	Specify location Name(Upto 30 Characters and Spaces each)	30	1
+705	VK0462-CC	DATA2	Specify family Name(Upto 30 Characters and Spaces)	30	1
+706	VK0462-CD	DATA1	Specify location Name(Upto 30 Characters and Spaces each)	30	1
+707	VK0462-CD	DATA2	Specify family Name(Upto 30 Characters and Spaces)	30	1
+708	VK0462-CE	DATA1	Specify location Name(Upto 30 Characters and Spaces each)	30	1
+709	VK0462-CE	DATA2	Specify family Name(Upto 30 Characters and Spaces)	30	1
+710	VK0632-BY	DATA1	Specify individual or day care name (upto 30 Characters and spaces)	30	1
+711	VK0632-BZ	DATA1	Specify individual or day care name (upto 30 Characters and spaces)	30	1
+712	VK0632-CA	DATA1	Specify individual or day care name (upto 30 Characters and spaces)	30	1
+713	VK2012-BY	DATA1	Specify individual or day care name (upto 30 Characters and spaces)	30	1
+714	VK2012-BZ	DATA1	Specify individual or day care name (upto 30 Characters and spaces)	30	1
+715	VK2012-CA	DATA1	Specify individual or day care name (upto 30 Characters and spaces)	30	1
+716	CD6002	DATA1	Name (Up to 12 Upper Case Characters)	12	1
+717	CD5282	DATA1	Name (Up to 12 Upper Case Characters)	12	1
+718	CB7072	DATA1	Name (Up to 8 Upper Case Characters)	8	1
+719	CD3022	DATA1	Name (Up to 8 Upper Case Characters)	8	1
+720	AY7602	DATA1	Name/Club/Team (20 characters)	20	1
+721	CB9592	DATA1	Name (Up to 30 Mixed Case Characters)	30	1
+722	CC2862	DATA1	Lake Name (Up to 25 Upper Case Characters)	25	1
+723	CC2862	DATA2	State (Up to 25 Upper Case Characters)	25	
+724	CC2882	DATA1	Name (Up to 25 Upper Case Characters)	25	1
+725	CC2882	DATA2	City & State (Up to 30 Upper Case Characters)	30	
+726	CD5942	DATA1	Mr/Mrs/Ms/Miss and Teacher Name (Up to 15 Upper Case Characters)	15	1
+727	CD5102	DATA1	Name1 (Up to 8 Mixed Case Characters)	8	1
+728	CD5102	DATA2	Name2 (Up to 8 Mixed Case Characters)	8	
+729	CD5102	DATA3	Name3 (Up to 8 Mixed Case Characters)	8	
+730	CD5102	DATA4	Name4 (Up to 8 Mixed Case Characters)	8	
+731	CD5102	DATA5	Name5 (Up to 8 Mixed Case Characters)	8	
+732	CD5102	DATA6	Name6 (Up to 8 Mixed Case Characters)	8	
+733	CD5102	DATA7	Name7 (Up to 8 Mixed Case Characters)	8	
+734	CD5102	DATA8	Name8 (Up to 8 Mixed Case Characters)	8	
+735	CD5102	DATA9	Name9 (Up to 8 Mixed Case Characters)	8	
+736	CD5102	DATA10	Name10 (Up to 8 Mixed Case Characters)	8	
+737	CD5882	DATA1	Name (Up to 15 Upper Case Characters)	15	1
+738	CD5882	DATA2	Location (Up to 15 Upper Case Characters)	15	1
+739	CD5992	DATA1	Name (Up to 12 Upper Case Characters)	12	1
+740	CD6022	DATA1	Pet Name1 (Up to 10 Mixed Case Characters)	10	1
+741	CD6022	DATA2	Pet Name2 (Up to 10 Mixed Case Characters)	10	
+742	CD6022	DATA3	Pet Name3 (Up to 10 Mixed Case Characters)	10	
+743	HH9292OG1	DATA1	Up to 7 upper case characters	7	1
+744	HH9292OG2	DATA1	Line 1 (up to 16 upper case characters)	16	1
+745	HH9292BG1	DATA1	Up to 7 upper case characters	7	1
+746	HH9292BG2	DATA1	Line 1 (up to 16 upper case characters)	16	1
+747	HJ1822OG1	DATA1	Up to 7 upper case characters	7	1
+748	HJ1822OG2	DATA1	Line 1 (up to 16 upper case characters)	16	1
+749	HJ1822BG1	DATA1	Up to 7 upper case characters	7	1
+750	HJ1822BG2	DATA1	Line 1 (up to 16 upper case characters)	16	1
+751	HH3512	DATA1	Line 1 (up to 15 upper case characters)	15	1
+752	HG4732	DATA1	Name (up to 48 characters - include 'Chez' if you want it; it will not be included unless specified)	48	1
+753	HG7632	DATA1	Line 1 (up to 10 Upper Case characters)	10	1
+754	HG4742	DATA1	Family Name (up to 30 characters)	30	1
+755	HF7072	DATA1	Line 1 (up to 12 Upper Case characters)	12	1
+756	HF7072	DATA2	Line 2 (up to 12 Upper Case characters)	12	
+757	HB2432	DATA1	15 Upper Case Letters	15	1
+758	HF1052	DATA1	Name (up to 17 Upper Case characters)	17	1
+759	HD7502	DATA1	Name	12	1
+760	HD7282	DATA1	5 Large Upper Case Characters (ex. Street Number)	5	1
+761	HD7282	DATA2	16 Smaller Upper Case Characters (ex. Street Name)	16	
+762	HD7292	DATA1	5 Large Upper Case Characters (ex. Street Number)	5	1
+763	HD7292	DATA2	14 Smaller Upper Case Characters (ex. Street Name)	14	
+764	HD8322	DATA1	Name (UPPER CASE LETTERS ONLY)	12	1
+765	HB2422	DATA1	13 Upper Case Letters	13	1
+766	CE2628	DATA1	Name (Up to 12 Characters)	12	1
+767	CE2408	DATA1	Name (Up to 12 Characters)	12	1
+768	CE2378	DATA1	Name (Up to 12 Characters)	12	1
+769	CE2438	DATA1	Name (Up to 12 Characters)	12	1
+770	CE2388	DATA1	Name (Up to 12 Characters)	12	1
+771	CE2548	DATA1	Name (Up to 12 Characters)	12	1
+772	CE2448	DATA1	Name (Up to 12 Characters)	12	1
+773	CE2558	DATA1	Name (Up to 12 Characters)	12	1
+774	CE2538	DATA1	Name (Up to 12 Characters)	12	1
+775	CE2428	DATA1	Name (Up to 12 Characters)	12	1
+776	CE2518	DATA1	Name (Up to 12 Characters)	12	1
+777	CE2488	DATA1	Name (Up to 12 Characters)	12	1
+778	CE2398	DATA1	Name (Up to 12 Characters)	12	1
+779	CE2528	DATA1	Name (Up to 12 Characters)	12	1
+780	CE2568	DATA1	Name (Up to 12 Characters)	12	1
+781	CE2508	DATA1	Name (Up to 12 Characters)	12	1
+782	CE2498	DATA1	Name (Up to 12 Characters)	12	1
+783	CE2578	DATA1	Name (Up to 12 Characters)	12	1
+784	CE2361	DATA1	Name (Up to 12 Characters)	12	1
+785	CE2361	DATA2	Specify ink color (Red or Green)	5	1
+786	CE2461	DATA1	Name (Up to 12 Characters)	12	1
+787	VK4262	DATA1	Name (Up to 8 Characters)	8	1
+788	VK4282	DATA1	Name (Up to 8 Characters)	8	1
+789	VK4272	DATA1	Name (Up to 12 Characters)	12	1
+790	VK4292	DATA1	Name (Up to 12 Characters)	12	1
+791	VK2832	DATA1	Name (Up to 8 Characters and Spaces)	8	1
+792	VK2682	DATA1	Name (Up to 12 Characters and Spaces)	12	1
+793	VK4422	DATA1	Name (Up to 12 Characters and Spaces)	12	1
+794	VK4432	DATA1	Name (Up to 12 Characters and Spaces)	12	1
+795	VK4442	DATA1	Name (Up to 12 Characters and Spaces)	12	1
+796	VK4452	DATA1	Name (Up to 12 Characters and Spaces)	12	1
+797	VK4462	DATA1	Name (Up to 12 Characters and Spaces)	12	1
+798	VK4472	DATA1	Name (Up to 12 Characters and Spaces)	12	1
+799	VK4482	DATA1	Name (Up to 12 Characters and Spaces)	12	1
+800	VK4492	DATA1	Name (Up to 12 Characters and Spaces)	12	1
+801	VK4502	DATA1	Name (Up to 12 Characters and Spaces)	12	1
+802	VK4512	DATA1	Name (Up to 12 Characters and Spaces)	12	1
+803	VK4522	DATA1	Name (Up to 12 Characters and Spaces)	12	1
+804	VK4092	DATA1	Specify Mom's Initials (Up to 3 Letters)	3	1
+805	VK4092	DATA2	Specify upto 5 Child names (Up to 50 Characters and Spaces)	50	1
+806	VK3958	DATA1	Specify phrase (Up to 12 Characters and Spaces)	12	1
+807	VK3682	DATA1	Name (Up to 16 Upper Case Characters and Spaces)	16	1
+808	VK3938	DATA1	Line 1 Specify location or activity (Up to 22 mixed characters and spaces)	22	1
+809	VK3938	DATA2	Line 2 Specify location or activity (Up to 22 mixed characters and spaces)	22	
+810	VK3948	DATA1	Specify job's name (Up to 12 Characters and Spaces)	12	1
+811	VK3968	DATA1	Specify Nationality (Up to 12 Characters and Spaces)	12	1
+812	VK3542	DATA1	Line 1 (Up to 14 Upper Case Characters and Spaces)	14	1
+813	VK3542	DATA2	Line 2 (Up to 14 Upper Case Characters and Spaces)	14	1
+814	VK3502	DATA1	Specify Name or Lake Name (Up to 25 Characters and Spaces)	25	1
+815	VK3512	DATA1	Specify Name or Lake Name (Up to 25 Characters and Spaces)	25	1
+816	VK2308	DATA1	Name (Up to 16 mixed case characters and spaces)	16	1
+817	VK2308	DATA2	Specify Lake Name (Up to 20 mixed case characters and spaces)	20	1
+818	VK2022H	DATA1	Specify Lake Name (from the list - Up to 30 mixed case characters and spaces)	30	1
+819	VK2022H	DATA2	Specify County Name (Up to 30 mixed case characters and spaces)	30	1
+820	VK2022H	DATA3	Specify State Name (Up to 2 Characters) or enter CN for Canada	2	1
+821	VK2022H	DATA4	Specify Lake ID (from the list - 4 numbers)	4	1
+822	VK2032S	DATA1	Specify Lake Name (from the list - Up to 30 mixed case characters and spaces)	30	1
+823	VK2032S	DATA2	Specify County Name (Up to 30 mixed case characters and spaces)	30	1
+824	VK2032S	DATA3	Specify State Name (Up to 2 Characters) or enter CN for Canada	2	1
+825	VK2032S	DATA4	Specify Lake ID (from the list - 4 numbers)	4	1
+826	VK2042T	DATA1	Specify Lake Name (from the list - Up to 30 mixed case characters and spaces)	30	1
+827	VK2042T	DATA2	Specify County Name (Up to 30 mixed case characters and spaces)	30	1
+828	VK2042T	DATA3	Specify State Name (Up to 2 Characters) or enter CN for Canada	2	1
+829	VK2042T	DATA4	Specify Lake ID (from the list - 4 numbers)	4	1
+830	VK2052	DATA1	Specify Lake Name (from the list - Up to 30 mixed case characters and spaces)	30	1
+831	VK2052	DATA2	Specify County Name (Up to 30 mixed case characters and spaces)	30	1
+832	VK2052	DATA3	Specify State Name (Up to 2 Characters) or enter CN for Canada	2	1
+833	VK2052	DATA4	Specify Lake ID (from the list - 4 numbers)	4	1
+834	VK7772	DATA1	Line 1 Specify Personalization (up to 12 character and spaces)	12	1
+835	VK7772	DATA2	Line 2 Specify Personalization (up to 12 character and spaces)	12	
+836	VK7772	DATA3	Line 3 Specify Personalization (up to 12 character and spaces)	12	
+837	VK7802	DATA1	Line 1 Specify Personalization (up to 12 character and spaces)	12	1
+838	VK7802	DATA2	Line 2 Specify Personalization (up to 12 character and spaces)	12	
+839	VK7802	DATA3	Line 3 Specify Personalization (up to 12 character and spaces)	12	
+840	VK7108	DATA1	Specify phrase (Up to 16 characters and spaces)	16	1
+841	VK7722	DATA1	Specify Personalization (Up to 20 Characters and Spaces)	20	1
+842	VK7712	DATA1	Specify Name (Up to 20 Characters and Spaces)	20	1
+843	VK7712	DATA2	Specify City and State (Up to 20 Characters and Spaces)	20	1
+844	VK7712	DATA3	Specify Establishment Date (Up to 15 characters and spaces)	15	1
+845	VK7712	DATA4	Specify Personalization (Up to 15 characters and spaces)	15	1
+846	VK8032	DATA1	Specify Personalization (Up to 20 Characters and Spaces)	20	1
+847	VK7068	DATA1	Specify phrase (Up to 16 characters and spaces)	16	1
+848	VK7438	DATA1	Specify Personalization (Up to 12 Mixed Characters and Spaces)	12	1
+849	VK6592	DATA1	Specify Name (Up to 12 Characters and Spaces)	12	1
+850	VK7078	DATA1	Specify Family Name (Up to 16 Characters and Spaces)	16	1
+851	VK6878	DATA1	Specify phrase (Up to 16 characters and spaces)	16	1
+852	VK6908	DATA1	Specify Name (Up to 16 mixed case characters and spaces)	16	1
+853	VK7058	DATA1	Specify phrase 1 (Up to 16 mixed case characters and spaces)	16	1
+854	VK7058	DATA2	Specify phrase 2 (Up to 16 mixed case characters and spaces)	16	1
+855	VK5692	DATA1	Line 1 Specify Name (Up to 25 characters and spaces)	25	1
+856	VK5692	DATA2	Line 2 Specify Name (Up to 25 characters and spaces)	25	
+857	VK8052	DATA1	Line 1 Specify Name (Up to 25 characters and spaces)	25	1
+858	VK8052	DATA2	Line 2 Specify Name (Up to 25 characters and spaces)	25	
+859	VK7952	DATA1	Specify Name 1 (Up to 13 Characters and Spaces)	13	1
+860	VK7952	DATA2	Specify Name 2 (Up to 13 Characters and Spaces)	13	
+861	VK9552T	DATA1	Specify Lake Name (from the list - Up to 30 mixed case characters and spaces)	30	1
+862	VK9552T	DATA2	Specify County Name (Up to 30 mixed case characters and spaces)	30	1
+863	VK9552T	DATA3	Specify State Name (Up to 2 Characters) or enter CN for Canada	2	1
+864	VK9552T	DATA4	Specify Lake ID (from the list - 4 numbers)	4	1
+865	VK9602	DATA1	Specify Lake Name (from the list - Up to 30 mixed case characters and spaces)	30	1
+866	VK9602	DATA2	Specify County Name (Up to 30 mixed case characters and spaces)	30	1
+867	VK9602	DATA3	Specify State Name (Up to 2 Characters) or enter CN for Canada	2	1
+868	VK9602	DATA4	Specify Lake ID (from the list - 4 numbers)	4	1
+869	VK9592	DATA1	Specify Lake Name (from the list - Up to 30 mixed case characters and spaces)	30	1
+870	VK9592	DATA2	Specify County Name (Up to 30 mixed case characters and spaces)	30	1
+871	VK9592	DATA3	Specify State Name (Up to 2 Characters) or enter CN for Canada	2	1
+872	VK9592	DATA4	Specify Lake ID (from the list - 4 numbers)	4	1
+873	VK9562	DATA1	Specify Lake Name (from the list - Up to 30 mixed case characters and spaces)	30	1
+874	VK9562	DATA2	Specify County Name (Up to 30 mixed case characters and spaces)	30	1
+875	VK9562	DATA3	Specify State Name (Up to 2 Characters) or enter CN for Canada	2	1
+876	VK9562	DATA4	Specify Lake ID (from the list - 4 numbers)	4	1
+877	VK9572	DATA1	Specify Lake Name (from the list - Up to 30 mixed case characters and spaces)	30	1
+878	VK9572	DATA2	Specify County Name (Up to 30 mixed case characters and spaces)	30	1
+879	VK9572	DATA3	Specify State Name (Up to 2 Characters) or enter CN for Canada	2	1
+880	VK9572	DATA4	Specify Lake ID (from the list - 4 numbers)	4	1
+881	VK9622	DATA1	Specify Lake Name (from the list - Up to 30 mixed case characters and spaces)	30	1
+882	VK9622	DATA2	Specify County Name (Up to 30 mixed case characters and spaces)	30	1
+883	VK9622	DATA3	Specify State Name (Up to 2 Characters) or enter CN for Canada	2	1
+884	VK9622	DATA4	Specify Lake ID (from the list - 4 numbers)	4	1
+885	VK9612	DATA1	Specify Lake Name (from the list - Up to 30 mixed case characters and spaces)	30	1
+886	VK9612	DATA2	Specify County Name (Up to 30 mixed case characters and spaces)	30	1
+887	VK9612	DATA3	Specify State Name (Up to 2 Characters) or enter CN for Canada	2	1
+888	VK9612	DATA4	Specify Lake ID (from the list - 4 numbers)	4	1
+889	VK9582	DATA1	Specify Lake Name (from the list - Up to 30 mixed case characters and spaces)	30	1
+890	VK9582	DATA2	Specify County Name (Up to 30 mixed case characters and spaces)	30	1
+891	VK9582	DATA3	Specify State Name (Up to 2 Characters) or enter CN for Canada	2	1
+892	VK9582	DATA4	Specify Lake ID (from the list - 4 numbers)	4	1
+893	VK9892	DATA1	Specify Year from 1980-now (up to 4 characters)	4	1
+894	VK9892	DATA2	Specify Personalized Message (up to 60 mixed case characters and spaces)	60	1
+895	VK8312	DATA1	Specify First Name (Up to 10 Characters and Spaces)	10	1
+896	VK8312	DATA2	Specify Last Name (Up to 14 Characters and Spaces)	14	1
+897	VL3778	DATA1	Specify City or Town Name (Up to 16 Upper Case Character and Spaces)	16	1
+898	VL3728	DATA1	Specify Nationality (Up to 14 Upper Case Characters and Spaces)	14	1
+899	VL3728	DATA2	Specify Color of Printing (Red/ White/Yellow/Blue/Black/Green)	6	1
+900	VL2012	DATA1	Specify Birth Month (Up to 12 mixed case characters and spaces)	12	1
+901	VL2012	DATA2	Specify Date (Up to 2 digits)	2	1
+902	VL2012	DATA3	Specify Year (Up to 4 digits)	4	1
+903	VL2012	DATA4	Specify Name (Up to 22 Characters and Spaces)	22	1
+904	VL3808	DATA1	Specify phrase (up to 12 Upper Case Characters and Spaces)	12	1
+905	VL3938	DATA1	Specify Age (up to 3 digits 0-999)	3	1
+906	VL3798	DATA1	Specify up to 14 Upper Case Characters and Spaces	14	1
+907	VK8362	DATA1	Specify Address/Street Name (up to 30 characters and spaces)	30	1
+908	VK8362	DATA2	Specify City Name (up to 30 characters and spaces)	30	1
+909	VK8362	DATA3	Specify State Name (Up to 2 Characters)	2	1
+910	VK8362	DATA4	Specify US Zip Code (Up to 6 digits)	6	1
+911	VK8302	DATA1	Specify exact date in the format MM/DD/YYYY	8	1
+912	LA1016E	DATA1	Engrave up to 18 characters	18	1
+913	VH3842E	DATA1	Engrave up to 18 characters	18	1
+914	VL8148	DATA1	Specify phrase (up to 12 upper case characters and spaces)	12	1
+915	VL8168	DATA1	Specify phrase (up to 12 mixed case characters and spaces)	12	1
+916	VL8138	DATA1	Specify name (up to 12 mixed case characters and spaces)	12	1
+917	VL8198	DATA1	Specify phrase (up to 12 Upper Case Characters and Spaces)	12	1
+918	VL8158	DATA1	Specify phrase (up to 22 Upper Case Characters and Spaces)	22	1
+919	VL8188	DATA1	Specify phrase (up to 16 upper case characers and spaces)	16	1
+920	VL8868	DATA1	LINE 1 Specify phrase (up to 13 mixed case character and spaces)	13	1
+921	VL8868	DATA2	LINE2 Specify phrase (up to 13 mixed case character and spaces)	13	1
+922	VL5158	DATA1	Specify phrase (up to 16 upper case characers and spaces)	16	1
+923	VL6652	DATA1	LINE 1 Specify phrase (up to 25 characters and spaces)	25	1
+924	VL6652	DATA2	LINE 2 Specify phrase (up to 25 characters and spaces)	25	
+925	VL6652	DATA3	Line 3 Please specify BLOCK or SCRIPT text	6	1
+926	VL8752	DATA1	LINE 1 Specify phrase (up to 25 characters and spaces)	25	1
+927	VL8752	DATA2	LINE 2 Specify phrase (up to 25 characters and spaces)	25	
+928	VL8752	DATA3	Line 3 Please specify BLOCK or SCRIPT text	6	1
+929	VM0672	DATA1	Specify Name 1 (Up to 12 character & spaces)	12	1
+930	VM0672	DATA2	Specify Name 2 (Up to 12 character & spaces)	12	1
+931	VM2168	DATA1	Specify Name (Up to 12 Characters and Spaces)	12	1
+932	HE9362	DATA1	Specify Name (Up to 22 upper case characters and spaces)	22	1
+933	HE9362	DATA2	Specify Birthdate (in MONTH/DD/YYYY format)	22	1
+934	VM0702	DATA1	Specify last name (Up to 12 mixed case character and spaces)	12	1
+935	VM2312	DATA1	Specify last name (Up to 12 mixed case character and spaces)	12	1
+936	VM3472	DATA1	Specify first line (up to 24 characters and spaces)	24	1
+937	VM3472	DATA2	Specify second line (up to 24 characters and spaces)	24	1
+938	VM5658	DATA1	Specify personalization in upper case (up to 18 characters and spaces)	18	1
+939	VM5978	DATA1	Specify personalization in one line (up to 20 characters and spaces)	20	1
+940	VM5988	DATA1	Specify personalization in one line (up to 20 characters and spaces)	20	1
+941	VM5998	DATA1	Specify personalization in one line (up to 20 characters and spaces)	20	1
+942	VM5282	DATA1	Specify personalization in one line (up to 30 characters and spaces)	30	1
+943	VM5578	DATA1	Specify Name (up to 12 mixed case charaters and spaces)	12	1
+944	VM3512	DATA1	Specify Lake Name (up to 16 characters and spaces)	16	1
+945	HL8878	DATA1	Specify Name (Up to 12 upper case characters and spaces)	12	1
+946	VM596801	DATA1	Specify first line of personalization (up to 24 characters and spaces)	24	1
+947	VM596802	DATA1	Specify first line of personalization (up to 24 characters and spaces)	24	1
+948	VM596802	DATA2	Specify second line of personalization (up to 24 characters and spaces)	24	1
+949	VM596803	DATA1	Specify first line of personalization (up to 24 characters and spaces)	24	1
+950	VM596803	DATA2	Specify second line of personalization (up to 24 characters and spaces)	24	1
+951	VM596803	DATA3	Specify third line of personalization (up to 24 characters and spaces)	24	1
+952	VM596804	DATA1	Specify first line of personalization (up to 24 characters and spaces)	24	1
+953	VM596804	DATA2	Specify second line of personalization (up to 24 characters and spaces)	24	1
+954	VM596804	DATA3	Specify third line of personalization (up to 24 characters and spaces)	24	1
+955	VM596804	DATA4	Specify fourth line of personalization (up to 24 characters and spaces)	24	1
+956	VL595801	DATA1	Specify first line of personalization (up to 24 characters and spaces)	24	1
+957	VL595802	DATA1	Specify first line of personalization (up to 24 characters and spaces)	24	1
+958	VL595802	DATA2	Specify second line of personalization (up to 24 characters and spaces)	24	1
+959	VL595803	DATA1	Specify first line of personalization (up to 24 characters and spaces)	24	1
+960	VL595803	DATA2	Specify second line of personalization (up to 24 characters and spaces)	24	1
+961	VL595803	DATA3	Specify third line of personalization (up to 24 characters and spaces)	24	1
+962	VL595804	DATA1	Specify first line of personalization (up to 24 characters and spaces)	24	1
+963	VL595804	DATA2	Specify second line of personalization (up to 24 characters and spaces)	24	1
+964	VL595804	DATA3	Specify third line of personalization (up to 24 characters and spaces)	24	1
+965	VL595804	DATA4	Specify fourth line of personalization (up to 24 characters and spaces)	24	1
+966	VM3792	DATA1	Specify Name (up to 14 character and spaces)	14	1
+967	VM3792	DATA2	Specify Address Number (up to 5 characters)	5	1
+968	VM3792	DATA3	Specify street name (up to 14 characters and spaces)	14	1
+969	VM5932	DATA1	Specify Name (up to 14 character and spaces)	14	1
+970	VM5932	DATA2	Specify Address Number (up to 5 characters)	5	1
+971	VM5932	DATA3	Specify street name (up to 14 characters and spaces)	14	1
+972	VM5942	DATA1	Specify Name (up to 14 character and spaces)	14	1
+973	VM5942	DATA2	Specify Address Number (up to 5 characters)	5	1
+974	VM5942	DATA3	Specify street name (up to 14 characters and spaces)	14	1

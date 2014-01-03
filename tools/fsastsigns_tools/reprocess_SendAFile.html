@@ -1,0 +1,22 @@
+<h3>Paste SAF encoded output here:<br/>
+<textarea style="width:800px;height:400px;" id="safInput"></textarea>
+
+<br/>
+<form action="http://www.fastsigns.com/smt_saf_postback" method="post" enctype="multipart/form-data">
+<input type="hidden" name="xml_response" />
+<input type="button" name="btn" value="Submit SAF Postback" onclick="process(this.form);"/>
+</form>
+
+<script type="text/javascript">
+function process(form) {
+	var newVal = unescape(document.getElementById('safInput').value).replace(/\+/g,' ');
+	document.getElementById('safInput').value = newVal;
+	form.xml_response.value = newVal;
+	if (confirm("Submit?")) {
+		form.btn.value = "Processing...";
+		form.submit();
+	}
+}
+</script>
+
+<h4>You will get a response from the server of "OK, XML received" if the submission is successful.</h4>
