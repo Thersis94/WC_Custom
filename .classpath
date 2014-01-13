@@ -8,8 +8,30 @@
 	<classpathentry kind="lib" path="/SMTAppLibraries/lib/dom4j-1.6.1.jar"/>
 	<classpathentry kind="lib" path="/SMTAppLibraries/lib/commons-codec-1.3.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jst.j2ee.internal.module.container"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="/SMTAppLibraries/lib/lucene-core-4.4.0.jar"/>
-	<classpathentry kind="con" path="org.eclipse.jst.server.core.container/org.eclipse.jst.server.tomcat.runtimeTarget/Apache Tomcat v7.0"/>
+	<classpathentry kind="con" path="org.eclipse.jst.server.core.container/org.eclipse.jst.server.tomcat.runtimeTarget/Apache Tomcat v7.0">
+		<attributes>
+			<attribute name="owner.project.facets" value="jst.utility;#system#"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="/SMTAppLibraries/lib/jcaptcha-all-1.0-RC6.jar"/>
+	<classpathentry kind="lib" path="/SMTAppLibraries/lib/json-lib-2.2.3-jdk15.jar"/>
+	<classpathentry kind="lib" path="/SMTAppLibraries/lib/sitebuilder.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.launching.macosx.MacOSXType/Java SE 8 [1.8.0]">
+		<attributes>
+			<attribute name="owner.project.facets" value="java"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="/SMTAppLibraries/lib"/>
+	<classpathentry kind="lib" path="/SMTAppLibraries/lib/datafeed.jar"/>
+	<classpathentry kind="lib" path="/SMTAppLibraries/lib/iText-2.1.1.jar"/>
+	<classpathentry kind="lib" path="/SMTAppLibraries/lib/oscache-2.4.1.jar"/>
+	<classpathentry kind="lib" path="/SMTAppLibraries/lib/freemarker.jar"/>
+	<classpathentry kind="lib" path="/SMTAppLibraries/lib/jtidy-r938.jar"/>
+	<classpathentry kind="lib" path="/SMTAppLibraries/lib/jdom.jar"/>
+	<classpathentry kind="lib" path="/SMTAppLibraries/lib/core-renderer.jar"/>
+	<classpathentry kind="lib" path="/SMTAppLibraries/lib/commons-lang-2.4.jar"/>
+	<classpathentry kind="lib" path="/SMTAppLibraries/lib/xercesImpl.jar"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/ProxyServer"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
