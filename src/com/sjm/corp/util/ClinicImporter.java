@@ -134,6 +134,7 @@ public class ClinicImporter {
 			}
 		}
 		
+		bf.close();
 		return data;
 	}
 	

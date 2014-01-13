@@ -36,7 +36,8 @@ public class ContentWithOutImages extends AbstractPspContent {
     	orgBinaryDocPath = ORG_PATH + siteData.getSbSiteId() + "/doc/";
     }
     
-    public PSPContent createContent(ContentType c) {
+    @SuppressWarnings("incomplete-switch")
+	public PSPContent createContent(ContentType c) {
     	PSPContent pc = null; 
     	
     	boolean useTitles = false;

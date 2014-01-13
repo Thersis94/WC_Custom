@@ -66,6 +66,7 @@ public class PageModuleApprovalAction extends ApprovalTemplateAction {
 				ps.setString(1, pmvo.getPageId());
 				ps.setString(2, pmvo.getComponentId());
 				ps.executeUpdate();
+				ps.close();
 				
 				//Delete old Page Modules
 				ps = dbConn.prepareStatement(getApproveDelete());
@@ -101,6 +102,7 @@ public class PageModuleApprovalAction extends ApprovalTemplateAction {
 				ps = dbConn.prepareStatement(getDenySBActionDelete());
 				ps.setString(1, pmvo.getComponentId());
 				ps.executeUpdate();
+				ps.close();
 				
 				//Deleting Page Module
 				ps = dbConn.prepareStatement(getDenyPageModDelete());

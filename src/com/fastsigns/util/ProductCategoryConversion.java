@@ -75,8 +75,9 @@ public class ProductCategoryConversion {
 			 */
 			String oldL = null;
 			String newL = null;
+			Scanner s = null;
 			try{
-				Scanner s = new Scanner(new FileReader(importFile));
+				s = new Scanner(new FileReader(importFile));
 				while(s.hasNext()){
 					oldL = s.next();
 					newL = s.next();
@@ -94,6 +95,8 @@ public class ProductCategoryConversion {
 				System.err.println("Error, IOException thrown for: " + oldL + " " + newL);
 				e.printStackTrace();
 				log.debug(e);
+			} finally {
+				s.close();
 			}
 			
 			/*Iterator<UserDataVO> iter = profiles.iterator();
