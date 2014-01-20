@@ -42,6 +42,11 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
     private Map<String, Integer> eventCodes = new HashMap<String, Integer>();
     private String adType = null;
     
+    //added for Seminars site rewrite, Jan 2014. - JM
+    private String contactName = null;
+    private String contactEmail = null;
+    private String instructionsText = null;
+    
     private Integer surgeonStatusFlg = null; //the surgeon must approve CFSEM independently of the Rep
     private String surgeonName = null;
     private String surgeonTitle = null;
@@ -79,6 +84,13 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
     	adDatesText= req.getParameter("adDatesText");
     	territoryNo = req.getParameter("territoryNo");
     	adType = req.getParameter("adType");
+    	if (req.hasParameter("adStatusFlg"))
+    			statusFlg = Convert.formatInteger(req.getParameter("adStatusFlg"), 0);
+    	
+    	//added for Seminars site rewrite, Jan 2014. - JM
+    	setContactName(req.getParameter("contactName"));
+    	setContactEmail(req.getParameter("contactEmail"));
+    	setInstructionsText(req.getParameter("instructionsText"));
     	
     	//adFileUrl will get set by the file upload
     	//statusFlg will get set by the action
@@ -113,6 +125,9 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
     	adDatesText= db.getStringVal("run_dates_txt", rs);
     	territoryNo = db.getStringVal("territory_no", rs);
     	adType = db.getStringVal("ad_type_txt", rs);
+    	contactName = db.getStringVal("contact_nm", rs);
+    	contactEmail = db.getStringVal("contact_email_txt", rs);
+    	instructionsText = db.getStringVal("instructions_txt", rs);
 
     	surgeonStatusFlg = db.getIntegerVal("surgeon_status_flg", rs);
     	surgeonName = db.getStringVal("surgeon_nm", rs);
@@ -360,6 +375,30 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 
 	public void setSurgeonStatusFlg(Integer surgeonStatusFlg) {
 		this.surgeonStatusFlg = surgeonStatusFlg;
+	}
+
+	public String getInstructionsText() {
+		return instructionsText;
+	}
+
+	public void setInstructionsText(String instructionsText) {
+		this.instructionsText = instructionsText;
+	}
+	
+	public String getContactName() {
+		return contactName;
+	}
+
+	public void setContactName(String contactName) {
+		this.contactName = contactName;
+	}
+
+	public String getContactEmail() {
+		return contactEmail;
+	}
+
+	public void setContactEmail(String contactEmail) {
+		this.contactEmail = contactEmail;
 	}
 
 }

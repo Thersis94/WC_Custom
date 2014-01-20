@@ -1,4 +1,4 @@
-package com.depuy.events.vo.report;
+package com.depuy.events_v2.vo.report;
 
 // JDK 1.5.0
 import java.util.List;

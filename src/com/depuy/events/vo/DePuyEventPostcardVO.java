@@ -1,7 +1,6 @@
 package com.depuy.events.vo;
 
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -54,9 +53,8 @@ public class DePuyEventPostcardVO extends EventPostcardVO {
      * Assigns the event data retrieved from the database to the appropriate
      * variables
      * @param rs
-     * @throws SQLException
      */
-    public void setData(ResultSet rs) throws SQLException {
+    public void setData(ResultSet rs) {
     	DBUtil db = new DBUtil();
     	
     	super.setData(rs);

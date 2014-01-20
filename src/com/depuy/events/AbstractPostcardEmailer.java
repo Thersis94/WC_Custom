@@ -7,6 +7,7 @@ import java.util.Map;
 import org.apache.log4j.Logger;
 
 import com.depuy.events.vo.DePuyEventPostcardVO;
+import com.depuy.events_v2.DePuyPostcardEmailerV2;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.UserDataVO;
 
@@ -86,10 +87,13 @@ public abstract class AbstractPostcardEmailer  {
 	}
 	
 	public static AbstractPostcardEmailer newInstance(String productId, Map<String, Object> attribs, Connection dbConn) {
-		if (DePuyEventPostcardVO.PROD_ORTHOVISC.equals(productId)) {
-			return new MitekPostcardEmailer(attribs, dbConn);
-		} else {
+//		if (DePuyEventPostcardVO.PROD_ORTHOVISC.equals(productId)) {
+//			return new MitekPostcardEmailer(attribs, dbConn);
+//		} else {
+			if (productId == null) 
+				return new DePuyPostcardEmailerV2(attribs, dbConn);
+			
 			return new DePuyPostcardEmailer(attribs, dbConn);
-		}
+//		}
 	}
 }

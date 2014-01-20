@@ -102,47 +102,48 @@ public class DePuyEventManageAction extends SimpleActionAdapter {
 	@Override
     public void retrieve(SMTServletRequest req) throws ActionException {
 		String ft = req.getParameter(AdminConstants.FACADE_TYPE);
-    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
-    	String facadeActionId = actionInit.getActionId();
-    	actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
-    	
-    	//Retrieve the postcard Data
+		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
+		String facadeActionId = actionInit.getActionId();
+		actionInit.setActionId((String) mod.getAttribute(ModuleVO.ATTRIBUTE_1));
+
+		// Retrieve the postcard Data
 		SMTActionInterface eg = null;
-    	Object data = null;
+		Object data = null;
 
 		if ("rsvp".equals(ft)) {
 			eg = new EventRSVPAction(this.actionInit);
-	    	eg.setAttributes(this.attributes);
-	    	eg.setDBConnection(dbConn);
-	    	eg.retrieve(req);
-	    	log.info("Retrieved Event RSVP Data");
-	    	data = req.getAttribute(EventRSVPAction.RETR_EVENTS);
-	    	
-	    	if (req.hasParameter("signin")) { 
-	    		//generate a sign-in sheet using the data returned from the RSVPAction
-	    		SigninReportVO rpt = new SigninReportVO(req);
-	    		rpt.setData(data);
-	    		req.setAttribute(Constants.BINARY_DOCUMENT, rpt);
-	    	}
-	    	
+			eg.setAttributes(this.attributes);
+			eg.setDBConnection(dbConn);
+			eg.retrieve(req);
+			log.info("Retrieved Event RSVP Data");
+			data = req.getAttribute(EventRSVPAction.RETR_EVENTS);
+
+			if (req.hasParameter("signin")) {
+				// generate a sign-in sheet using the data returned from the
+				// RSVPAction
+				SigninReportVO rpt = new SigninReportVO(req);
+				rpt.setData(data);
+				req.setAttribute(Constants.BINARY_DOCUMENT, rpt);
+			}
 		} else {
 			// Retrieve the Group Data
 			eg = new EventGroupAction(this.actionInit);
-	    	eg.setAttributes(this.attributes);
-	    	eg.setDBConnection(dbConn);
-	    	eg.retrieve(req);
-	    	log.info("Retrieved Group Data");
-	    	
-    		//retrieve event/postcard data
+			eg.setAttributes(this.attributes);
+			eg.setDBConnection(dbConn);
+			eg.retrieve(req);
+			log.info("Retrieved Group Data");
+
+			// retrieve event/postcard data
 			eg = new PostcardSelect(this.actionInit);
-	    	eg.setAttributes(this.attributes);
-	    	eg.setDBConnection(dbConn);
-	    	eg.retrieve(req);
-	    	log.info("Retrieved Postcard Data ");
-	    	data = req.getAttribute(PostcardSelect.RETR_EVENTS);
+			eg.setAttributes(this.attributes);
+			eg.setDBConnection(dbConn);
+			eg.retrieve(req);
+			log.info("Retrieved Postcard Data ");
+			data = req.getAttribute(PostcardSelect.RETR_EVENTS);
 		}
-		
-		// Store the retrieved data in the ModuleVO.actionData and replace into the Map
+
+		// Store the retrieved data in the ModuleVO.actionData and replace
+		// into the Map
 		super.putModuleData(data);
 		actionInit.setActionId(facadeActionId);
     }

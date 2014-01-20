@@ -68,7 +68,8 @@ public class DePuyLeadReportEmail {
 		try {
 			dlre = new DePuyLeadReportEmail();
 			log.debug("Starting DePuy Report");
-			
+			log.error(dlre.getSQLQuery());
+			System.exit(0);
 			List<ReportVO> data = dlre.buildReport();
 			s = dlre.formatReport(data);
 			
@@ -144,11 +145,11 @@ public class DePuyLeadReportEmail {
 		StringBuilder s = new StringBuilder();
 		s.append("select '7/1/2011 to ' + convert(varchar, getdate(), 101), ");
 		s.append("sum(case when PRODUCT_CD = 'KNEE' and LEAD_TYPE_ID = 5 then 1 else 0 end) as knee_lead, ");
-		s.append("sum(case when PRODUCT_CD = 'KNEE' and LEAD_TYPE_ID = 10 and ATTEMPT_DT > '2012-010-01' then 1 else 0 end) as knee_qualified_lead_345, ");
-		s.append("sum(case when PRODUCT_CD = 'KNEE' and LEAD_TYPE_ID = 10 and ATTEMPT_DT < '2012-010-01' then 1 else 0 end) as knee_qualified_lead_45, ");
+		s.append("sum(case when PRODUCT_CD = 'KNEE' and LEAD_TYPE_ID = 10 and ATTEMPT_DT > '2012-01-01' then 1 else 0 end) as knee_qualified_lead_345, ");
+		s.append("sum(case when PRODUCT_CD = 'KNEE' and LEAD_TYPE_ID = 10 and ATTEMPT_DT < '2012-01-01' then 1 else 0 end) as knee_qualified_lead_45, ");
 		s.append("sum(case when PRODUCT_CD = 'HIP' and LEAD_TYPE_ID = 5 then 1 else 0 end) as hip_lead, ");
-		s.append("sum(case when PRODUCT_CD = 'HIP' and LEAD_TYPE_ID = 10 and ATTEMPT_DT > '2012-010-01' then 1 else 0 end) as hip_qualified_lead_345, ");
-		s.append("sum(case when PRODUCT_CD = 'HIP' and LEAD_TYPE_ID = 10 and ATTEMPT_DT < '2012-010-01' then 1 else 0 end) as hip_qualified_lead_45 ");
+		s.append("sum(case when PRODUCT_CD = 'HIP' and LEAD_TYPE_ID = 10 and ATTEMPT_DT > '2012-01-01' then 1 else 0 end) as hip_qualified_lead_345, ");
+		s.append("sum(case when PRODUCT_CD = 'HIP' and LEAD_TYPE_ID = 10 and ATTEMPT_DT < '2012-01-01' then 1 else 0 end) as hip_qualified_lead_45 ");
 		s.append("from data_feed.dbo.customer ");
 		s.append("where attempt_dt > '2011-07-01' and LEAD_TYPE_ID > = 5 and PRODUCT_CD in ('HIP', 'KNEE') ");
 		s.append("union ");
@@ -175,32 +176,31 @@ public class DePuyLeadReportEmail {
 			// Build the email message
 			EmailMessageVO msg = new EmailMessageVO(); 
 			List<String> recips = Arrays.asList(props.getProperty("adminEmail").split(","));
-			for (int i=0; i< recips.size(); i++) {
+			for (int i=0; i < recips.size(); i++) {
 				log.debug("Recipient: " + recips.get(i));
 				msg.addRecipient(recips.get(i));
 			}
 			
-			msg.setSubject("MediaBin Import");
-			msg.setFrom("no-reply@admintool.webcrescendo.com");
+			msg.setSubject("DePuy CRM Leads Report");
+			msg.setFrom("appsupport@siliconmtn.com");
 			
 			StringBuilder html= new StringBuilder();
-			html.append("<h3>Lead / Qualified Lead Report</h3>");
+			html.append("<h3>Leads / Qualified Leads Report</h3>");
 			html.append(report.toString());
 			
 			// loop the errors and display them
-			for (int i=0; i < failures.size(); i++) {
-				if (i == 0) 
-					html.append("<h4>Report failed to load due to the errors:<br/>");
-				
-				html.append(failures.get(i).getMessage());
+			if (failures != null && failures.size() > 0) {
+				html.append("<b>Report failed to load due to these errors:</b><ol>");
+				for (int i=0; i < failures.size(); i++)
+					html.append("<li>").append(failures.get(i).getMessage()).append("</li>");
+				html.append("</ol>");
 			}
-			html.append("</h4>");
 			msg.setHtmlBody(html.toString());
 			
 			MailTransportAgentIntfc mail = MailHandlerFactory.getDefaultMTA(props);
 			mail.sendMessage(msg);
 		} catch (Exception e) {
-			log.error("Could not send completion email, ", e);
+			log.error("Could not send report email, ", e);
 		}
 	}
 	

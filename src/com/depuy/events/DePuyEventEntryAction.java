@@ -38,52 +38,24 @@ public class DePuyEventEntryAction extends SBActionAdapter {
 		super(arg0);
 	}
 
-	/* (non-Javadoc)
-	 * @see com.siliconmtn.action.AbstractActionController#delete(com.siliconmtn.http.SMTServletRequest)
-	 */
-	@Override
-	public void delete(SMTServletRequest req) throws ActionException {
-        
-        StringBuilder sb = new StringBuilder();
-        sb.append("delete from depuy_event_entry where event_entry_id=?");
-        
-        PreparedStatement ps = null;
-        try {
-            ps = dbConn.prepareStatement(sb.toString());
-            ps.setString(1, req.getParameter("eventEntryId"));
-            ps.executeUpdate();
-            
-            //delete the core event data too
-            EventEntryAction ac = new EventEntryAction(actionInit);
-    		ac.setAttributes(this.attributes);
-        	ac.setDBConnection(dbConn);
-        	ac.delete(req);
-        	ac = null;
-        } catch (SQLException sqle) {
-            log.error("Error deleting DePuyEventEntry", sqle);
-        } finally {
-        	if (ps != null) {
-	        	try {
-	        		ps.close();
-	        	} catch(Exception e) {}
-        	}
-        }
-        
-	}
 
 	public void update(SMTServletRequest req) throws ActionException {
 		//call EventEntryAction for the core-table insertion
 		DePuyEventEntryVO vo = new DePuyEventEntryVO(req);
 		vo.setEventGroupId(actionInit.getActionId());
+		
+		//save the core data to the core table, via the core action
 		EventEntryAction ac = new EventEntryAction(actionInit);
 		ac.setAttributes(this.attributes);
     	ac.setDBConnection(dbConn);
     	vo.setActionId(ac.update(req, vo));
     	ac = null;
+    	
     	StringBuilder sql = new StringBuilder();
     	PreparedStatement ps = null;
-    	Boolean insertRecord = Boolean.TRUE;
-    	
+    	boolean insertRecord = true;
+
+    	//first test to see if the entry has already been created; this prevented dupliates in v1 of Events site
 		sql.append("select event_entry_id from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("DEPUY_EVENT_ENTRY where event_entry_id=?");
 		try {
@@ -91,7 +63,7 @@ public class DePuyEventEntryAction extends SBActionAdapter {
 			ps.setString(1, vo.getActionId());
 			ResultSet rs = ps.executeQuery();
 			if (rs.next()) {
-				insertRecord = Boolean.FALSE;
+				insertRecord = false;
 			}
 		} catch (SQLException sqle) {
 			log.error("Error Deleting DePuyEventEntry", sqle);

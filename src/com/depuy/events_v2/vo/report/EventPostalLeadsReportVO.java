@@ -1,33 +1,33 @@
-package com.depuy.events.vo.report;
+package com.depuy.events_v2.vo.report;
 
 import java.util.Date;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Iterator;
 
-import com.depuy.events.vo.DePuyEventEntryVO;
-import com.depuy.events.vo.DePuyEventPostcardVO;
+import com.depuy.events_v2.vo.DePuyEventSeminarVO;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
+import com.smt.sitebuilder.action.event.vo.EventEntryVO;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
 /*****************************************************************************
- <p><b>Title</b>: EventPostalLeadsReportVO.java</p>
+ <p><b>Title</b>: EventPostalLeadsReportVO</p>
  <p>compiles leads data for postal and email sends</p>
- <p>Copyright: Copyright (c) 2000 - 2006 SMT, All Rights Reserved</p>
+ <p>Copyright: Copyright (c) 2000 - 2014 SMT, All Rights Reserved</p>
  <p>Company: Silicon Mountain Technologies</p>
  @author James McKain
  @version 1.0
- @since Nov 6, 2006
+ @since Jan 20, 2014
  ***************************************************************************/
 
 public class EventPostalLeadsReportVO extends AbstractSBReportVO {
     private static final long serialVersionUID = 1l;
-    private List<DePuyEventEntryVO> events = new ArrayList<DePuyEventEntryVO>();
+    private List<EventEntryVO> events = new ArrayList<EventEntryVO>();
     private List<UserDataVO> leads = new ArrayList<UserDataVO>();
-    private Date rsvpDate = new Date();
+    private Date rsvpDate = null;;
+    private String lalbelText = "";
 
     /**
      * 
@@ -46,34 +46,20 @@ public class EventPostalLeadsReportVO extends AbstractSBReportVO {
      * @throws SQLException
      */
     public void setData(Object o) {
-    	DePuyEventPostcardVO postcard = (DePuyEventPostcardVO) o;
-    	this.events = postcard.getDePuyEvents();
+    	DePuyEventSeminarVO postcard = (DePuyEventSeminarVO) o;
+    	this.events = postcard.getEvents();
     	this.leads = postcard.getLeadsData();
     	rsvpDate = postcard.getRSVPDate();
+    	lalbelText = postcard.getLabelText();
     }
     
 	public byte[] generateReport() {
 		log.debug("starting generateReport()");
 		StringBuilder rpt = new StringBuilder(this.getHeader(events.size()));
-		Iterator<UserDataVO> iter = leads.iterator();
-		UserDataVO vo = null;
 		String eventsData = this.buildEvents(); //only needs called once
 		String rsvpDateStr = Convert.formatDate(rsvpDate, "EEEE, MMMM dd, yyyy");
-		List<String> dupls = new ArrayList<String>(leads.size());
-
-		while (iter.hasNext()) {
-			vo = (UserDataVO) iter.next();
-			String key = "";
-			try {
-				key = vo.getFirstName().concat(vo.getLastName()).concat(vo.getAddress());
-			} catch (Exception e) {}
-			
-			if (dupls.contains(key)) {
-				continue;
-			} else {
-				dupls.add(key);
-			}
-			
+		
+		for (UserDataVO vo : leads) {
 			rpt.append("<tr><td>").append(StringUtil.checkVal(vo.getPrefixName())).append("</td>");
 			rpt.append("<td>").append(StringUtil.checkVal(vo.getFirstName())).append("</td>");
 			rpt.append("<td>").append(StringUtil.checkVal(vo.getLastName())).append("</td>");
@@ -129,10 +115,7 @@ public class EventPostalLeadsReportVO extends AbstractSBReportVO {
 	private String buildEvents() {
 		StringBuilder row = new StringBuilder();
 		StringEncoder se = new StringEncoder();
-		DePuyEventEntryVO event = null;
-		Iterator<DePuyEventEntryVO> iter = this.events.iterator();
-		while (iter.hasNext()) {
-			event = (DePuyEventEntryVO) iter.next();
+		for (EventEntryVO event : this.events) {
 			row.append("<td>").append(Convert.formatDate(event.getStartDate(), "EEEE, MMMM dd, yyyy")).append("</td>");
 			row.append("<td>").append(se.decodeValue(event.getLocationDesc())).append("</td>");
 			row.append("<td>").append(se.decodeValue(event.getEventName())).append("</td>");
@@ -141,7 +124,7 @@ public class EventPostalLeadsReportVO extends AbstractSBReportVO {
 			row.append("<td>").append(se.decodeValue(event.getCityName())).append("</td>");
 			row.append("<td>").append(event.getStateCode()).append("</td>");
 			row.append("<td>").append(event.getZipCode()).append("</td>");
-			row.append("<td>").append(event.getEventDescFinal()).append("</td>");
+			row.append("<td>").append(lalbelText).append("</td>");
 			row.append("<td>").append(event.getRSVPCode()).append("</td>");
 		}
 		return row.toString();

@@ -7,6 +7,7 @@ import java.util.Map;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.commerce.catalog.ProductAttributeContainer;
 import com.siliconmtn.commerce.catalog.ProductAttributeVO;
 import com.siliconmtn.commerce.catalog.ProductCategoryContainer;
@@ -17,9 +18,11 @@ import com.siliconmtn.data.Tree;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.smt.sitebuilder.action.menu.MenuBuilder;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.SBUserRole;
 
 /****************************************************************************
  * <b>Title</b>: AjaxMenuLoader.java<p/>
@@ -55,12 +58,15 @@ public class AjaxMenuLoader extends SimpleActionAdapter {
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		log.info("Starting menu loader - retrieve");
 
-		// retrieve the module VO
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
  		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
+		
+		if (req.hasParameter(Constants.AJAX_MODULE_ID) && req.getParameter(Constants.AJAX_MODULE_ID).startsWith("providers_")) {
+			loadSitePageMenu(req, site, mod);
+			return;
+		}
+
  		Map<String, ProductCategoryContainer> catalogs = new HashMap<String, ProductCategoryContainer>();
-   		
- 		
  		ProductCatalogUtil pc = new ProductCatalogUtil(this.actionInit);
 		pc.setDBConnection(dbConn);
 		pc.setAttributes(attributes);
@@ -188,6 +194,44 @@ public class AjaxMenuLoader extends SimpleActionAdapter {
 		return procTree;
 	}
 
+	/**
+	 * load the site's menus instead of a product catalog.  This is used in the Providers section.
+	 * Ajax calls don't naturally put the site menus on the request, so we need to retrieve them ourselves.
+	 * @param req
+	 * @param site
+	 * @param mod
+	 */
+	private void loadSitePageMenu(SMTServletRequest req, SiteVO site, ModuleVO mod) {
+		log.debug("loading site-page menus");
+		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
+		if (role == null) role = new SBUserRole(site.getSiteId());
+		
+		//AI is being hard-coded because the ajax servlet only runs at the parent-site level, and we're trying to load a sub-sites menus. - JM 01-13-14
+		ActionInitVO ai = new ActionInitVO();
+		ai.setServiceUrl("providers");
+		ai.setActionId("DPY_SYN_3");
+		log.debug("parPath=" + site.getAliasPathName());
+		log.debug("siteId=" + site.getSiteId());
+		ModuleVO menuMod = new ModuleVO(null, role.getCachePmid(site.getSiteId()), true, "MENU");
+		attributes.put(Constants.MODULE_DATA, menuMod);
+		SMTActionInterface ac = null;
+		try {
+			ac = new MenuBuilder(ai);
+			ac.setAttributes(attributes);
+			ac.setDBConnection(dbConn);
+			ac.retrieve(req);
+			menuMod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
+			
+		} catch (ActionException ae) {
+			log.error("could not load menus", ae);
+			
+		} finally {
+			mod.addCacheGroup(site.getSiteId());
+			mod.setActionData(menuMod.getActionData());
+			attributes.put(Constants.MODULE_DATA, mod);
+			ac = null;
+		}
+	}
 	
 	public void list(SMTServletRequest req) throws ActionException {
 		super.retrieve(req);
