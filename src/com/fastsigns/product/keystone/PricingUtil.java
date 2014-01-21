@@ -126,7 +126,7 @@ public class PricingUtil {
 							mod.setUnit_cost(m.getDouble("unit_cost"));
 						}
 					} catch (Exception e) {
-						log.warn("could not parse modifier", e);
+						log.error("could not parse modifier", e);
 					}
 				}
 				

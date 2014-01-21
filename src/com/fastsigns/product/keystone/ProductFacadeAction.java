@@ -111,6 +111,7 @@ public class ProductFacadeAction extends SimpleActionAdapter {
 		try {
 			val = ReqType.valueOf(req.getParameter("display"));
 		} catch (Exception e) {
+			log.error(e);
 			//ignore malicious/mischievous requests
 		}
 		return val;

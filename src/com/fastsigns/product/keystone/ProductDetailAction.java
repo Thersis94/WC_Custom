@@ -6,6 +6,7 @@ import java.util.Set;
 
 import net.sf.json.JSONObject;
 
+import com.fastsigns.action.franchise.CenterPageAction;
 import com.fastsigns.product.keystone.vo.ImageVO;
 import com.fastsigns.product.keystone.vo.ModifierVO;
 import com.fastsigns.product.keystone.vo.ModifierVO.AttributeVO;
@@ -56,9 +57,10 @@ public class ProductDetailAction extends AbstractBaseAction {
 			sca.build(req);
 		}
 		else {
-			//TODO turn on caching
-			KeystoneProxy proxy = new CachingKeystoneProxy(attributes, 1440);
-			//KeystoneProxy proxy = new KeystoneProxy(attributes);
+			//Use Cached action and set necessary pieces for cache groups to be used. 
+			attributes.put("siteData", req.getAttribute(Constants.SITE_DATA));
+			attributes.put("wcFranchiseId", CenterPageAction.getFranchiseId(req));
+			KeystoneProxy proxy = new CachingKeystoneProxy(attributes);
 			proxy.setSessionCookie(req.getCookie(Constants.JSESSIONID));
 			proxy.setModule("products");
 			proxy.setAction("getProductDetails");
@@ -78,7 +80,7 @@ public class ProductDetailAction extends AbstractBaseAction {
 				mod.setActionData(formatData(byteData));
 				
 			} catch (InvalidDataException e) {
-				log.debug(e);
+				log.error(e);
 				mod.setError(e);
 				mod.setErrorMessage("Unable to load Product Details");
 			}

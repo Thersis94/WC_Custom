@@ -7,8 +7,10 @@ import com.opensymphony.oscache.general.GeneralCacheAdministrator;
 import com.opensymphony.oscache.web.filter.ExpiresRefreshPolicy;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.common.ModuleController;
 import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -23,7 +25,11 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class CachingKeystoneProxy extends KeystoneProxy {
 
+	public static final String TIMEOUT = "keystoneProxyTimeout";
 	private GeneralCacheAdministrator cache = null;
+	private String organizationId = null; 
+	private String siteId = null;
+	private String wcFranchiseId = null;
 	protected int osCacheTimeout = 0;
 	protected String[] cacheGroups = null;
 	
@@ -34,6 +40,11 @@ public class CachingKeystoneProxy extends KeystoneProxy {
 		ModuleVO mod = (ModuleVO) attribs.get(Constants.MODULE_DATA);
 		this.cacheGroups = mod.getCacheGroups();
 		mod = null;
+		this.osCacheTimeout = Convert.formatInteger((String) attribs.get(TIMEOUT)) * 60;
+		SiteVO site = ((SiteVO)attribs.get(Constants.SITE_DATA));
+		this.organizationId = site.getOrganizationId();
+		this.siteId = site.getSiteId();
+		this.wcFranchiseId = (String) attribs.get("wcFranchiseId");
 	}
 	
 	/*
@@ -59,7 +70,7 @@ public class CachingKeystoneProxy extends KeystoneProxy {
 			
 		} catch (NeedsRefreshException e) {
 			cache.cancelUpdate(cacheKey);
-			
+			//log.error(e);
 			//retrieve the data from the superclass (http call to Keystone)
 			data = super.getData();
 			
@@ -92,7 +103,7 @@ public class CachingKeystoneProxy extends KeystoneProxy {
 		for (String p : getPostData().keySet()) {
 			key.append(",").append(p).append("=").append(getPostData().get(p));
 		}
-				
+		
 		log.debug("cacheKey=" + key.toString());
 		//log.debug("hash=" + key.hashCode() + " strHash=" + key.toString().hashCode());
 		return key.toString();
@@ -106,7 +117,7 @@ public class CachingKeystoneProxy extends KeystoneProxy {
 	 * @return String[] groups
 	 */
 	protected String[] buildCacheGroups() {
-		//log.debug("cacheGroups = " + StringUtil.getToString(cacheGroups, false, true, ","));
+		cacheGroups = new String [] {getWcFranchiseId(), getWcFranchiseId() + "_KEYSTONE", getOrganizationId(), getSiteId()};
 		return cacheGroups;
 	}
 	
@@ -128,6 +139,30 @@ public class CachingKeystoneProxy extends KeystoneProxy {
 		} else {
 			return ModuleController.CACHE_REFRESH_TIMEOUT;
 		}
+	}
+
+	public String getOrganizationId() {
+		return organizationId;
+	}
+
+	public void setOrganizationId(String organizationId) {
+		this.organizationId = organizationId;
+	}
+
+	public String getSiteId() {
+		return siteId;
+	}
+
+	public void setSiteId(String siteId) {
+		this.siteId = siteId;
+	}
+
+	public String getWcFranchiseId() {
+		return wcFranchiseId;
+	}
+
+	public void setWcFranchiseId(String wcFranchiseId) {
+		this.wcFranchiseId = wcFranchiseId;
 	}
 
 }

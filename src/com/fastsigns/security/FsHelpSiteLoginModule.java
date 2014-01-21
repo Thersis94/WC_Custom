@@ -2,9 +2,12 @@ package com.fastsigns.security;
 
 // JDK 1.6.x
 import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.sql.Connection;
 import java.util.Date;
 import java.util.Map;
+
+
 
 // SMT Base Libs
 import com.siliconmtn.common.constants.GlobalConfig;
@@ -37,10 +40,32 @@ import com.smt.sitebuilder.security.UserLogin;
 
 public class FsHelpSiteLoginModule extends AbstractLoginModule {
 	private final String loginApiKey = "";
-	private final String passPhrase = "ae790270-42d1-4663-adf8-46d5980c71c1";
-	private final String saltValue = "5cd444b2-48e6-4a0b-aa7f-766e8d6de614";
-	private final String initVector = "3144f1059fac47f5";
+	private final static String passPhrase = "ae790270-42d1-4663-adf8-46d5980c71c1";
+	private final static String saltValue = "5cd444b2-48e6-4a0b-aa7f-766e8d6de614";
+	private final static String initVector = "3144f1059fac47f5";
 	private final String param1 = "sharedToken";
+	//private final String param2 = "date";
+	public static void main(String [] args) {
+		AESKey key = new AESKey();
+		key.setPassPhrase(passPhrase);
+		key.setSaltValue(saltValue);
+		key.setVector(initVector);
+		try {
+			String aes = AESEncryption.encryptString("sharedToken=EF3478A623204C86A6DF|param2=" + Convert.formatDate(new Date(), "yyyy-MM-dd HH:mm:ss"), key, 256);
+			System.out.println(aes);
+			System.out.println(AESEncryption.decryptString(URLDecoder.decode("%2fPlau9uhZd12WvOwEc%2fpTWikWjXn094ERPpclnRB%2b4XYpNDibq5MAwUMD60Ey7LX1cqTaphXSbRZSc8meu7hoQ%3d%3d", "UTF-8"), key, 256));
+		} catch (Exception e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		try {
+			System.out.println("password=pass&emailAddress=" + URLEncoder.encode(AESEncryption.encryptString("sharedToken=EF3478A623204C86A6DF|param2=" + Convert.formatDate(new Date(), "yyyy-MM-dd HH:mm:ss"), key, 256), "UTF-8"));
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+	}
 	//private final String param2 = "date";
     public FsHelpSiteLoginModule() {
         super();
@@ -76,7 +101,7 @@ public class FsHelpSiteLoginModule extends AbstractLoginModule {
 	    	SMTServletRequest req = (SMTServletRequest) this.getInitVals().get(GlobalConfig.HTTP_REQUEST);
 	    	log.debug("Retrieved Request Object");
 	        String p = req.getQueryString().replace("password=pass&emailAddress=", "").replace("%25", "%");
-	        log.debug("emailAddressStr = " + p);
+	        log.error("emailAddressStr = " + p);
 			String output = null;
 			
 	    	AESKey key = new AESKey();
@@ -84,10 +109,9 @@ public class FsHelpSiteLoginModule extends AbstractLoginModule {
 			key.setSaltValue(saltValue);
 			key.setVector(initVector);
 			String decodedVal = URLDecoder.decode(p, "UTF-8");
-			log.debug("URLdecoded String: " + decodedVal);
+			log.error("URLdecoded String: " + decodedVal);
 			output = AESEncryption.decryptString(decodedVal, key, 256);
-			
-			log.debug("Decrypted value: " + output);
+			log.error("Decrypted value: " + output);
 			String p1 = "";
 			Date p2 = null;
 			
@@ -101,14 +125,14 @@ public class FsHelpSiteLoginModule extends AbstractLoginModule {
 				}
 			}
 			if(p2 == null)
-				log.debug("Problem Parsing Date");
-			log.debug(Convert.getCurrentTimestamp().getTime() - p2.getTime());
+				log.error("Problem Parsing Date");
+			log.error(Convert.getCurrentTimestamp().getTime() - p2.getTime());
 			if(Convert.getCurrentTimestamp().getTime() - p2.getTime() < Long.parseLong("60000") && p1.equals("EF3478A623204C86A6DF")){
 				return true;
 			} else if(Convert.getCurrentTimestamp().getTime() - p2.getTime() > Long.parseLong("60000")) {
-				log.debug("Problem with timestamp : " + p2.toString());
+				log.error("Problem with timestamp : " + p2.toString());
 			} else if (!p1.equals("EF3478A623204C86A6DF")){
-				log.debug("Problem with sharedToken : " + p1);
+				log.error("Problem with sharedToken : " + p1);
 			}
 			//log.debug(p1);
 		} catch (NullPointerException e){

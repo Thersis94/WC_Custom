@@ -408,7 +408,7 @@ public class OrderSubmissionCoordinator {
 		address.accumulate("lat", sd.getLatitude());
 		address.accumulate("lng", sd.getLongitude());
 		address.accumulate("address_type", "Shipping");
-		address.accumulate("address_id", sd.getAttributes().get("addressId"));
+		address.accumulate("address_id", StringUtil.checkVal(sd.getAttributes().get("addressId")));
 		return address;
 	}
 	

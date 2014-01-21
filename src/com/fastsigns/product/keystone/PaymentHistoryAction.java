@@ -65,6 +65,7 @@ public class PaymentHistoryAction extends AbstractBaseAction {
 			mod.setActionData(formatData(byteData));
 			
 		} catch (InvalidDataException e) {
+			log.error(e);
 			mod.setError(e);
 			mod.setErrorMessage("Unable to load Payment History");
 		}

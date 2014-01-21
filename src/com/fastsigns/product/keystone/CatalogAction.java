@@ -11,6 +11,7 @@ import net.sf.json.JSONObject;
 import net.sf.json.JsonConfig;
 import net.sf.json.util.PropertySetStrategy;
 
+import com.fastsigns.action.franchise.CenterPageAction;
 import com.fastsigns.product.keystone.vo.CatalogVO;
 import com.fastsigns.product.keystone.vo.CategoryVO;
 import com.fastsigns.product.keystone.vo.ImageVO;
@@ -50,9 +51,10 @@ public class CatalogAction extends AbstractBaseAction {
 		FastsignsSessVO sessVo = (FastsignsSessVO) req.getSession().getAttribute(KeystoneProxy.FRAN_SESS_VO);
 		String webId = (String)req.getSession().getAttribute(FastsignsSessVO.FRANCHISE_ID);
 		
-		//TODO reactivate caching proxy
-		//KeystoneProxy proxy = new CachingKeystoneProxy(attributes);
-		KeystoneProxy proxy = new CachingKeystoneProxy(attributes, 1440);
+		//Use Cached action and set necessary pieces for cache groups to be used. 
+		attributes.put("siteData", req.getAttribute(Constants.SITE_DATA));
+		attributes.put("wcFranchiseId", CenterPageAction.getFranchiseId(req));
+		KeystoneProxy proxy = new CachingKeystoneProxy(attributes);
 		proxy.setSessionCookie(req.getCookie(Constants.JSESSIONID));
 		proxy.setModule("products");
 		proxy.setAction("getCatalogProducts");
@@ -68,6 +70,7 @@ public class CatalogAction extends AbstractBaseAction {
 			mod.setActionData(formatData(byteData));
 			
 		} catch (InvalidDataException e) {
+			log.error(e);
 			mod.setError(e);
 			mod.setErrorMessage("Unable to load Product Catalogs");
 		}

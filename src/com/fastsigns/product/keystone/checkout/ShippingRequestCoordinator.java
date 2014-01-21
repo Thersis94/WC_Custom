@@ -47,64 +47,69 @@ public class ShippingRequestCoordinator {
 	}
 	
 	public ShoppingCartVO retrieveShippingOptions(ShoppingCartVO cart) {
-		ShippingRequestVO shippingInfo = buildShippingRequest(cart);
-		String strShipReq = JSONObject.fromObject(shippingInfo).toString();
-		log.debug("shipping request as String: " + strShipReq);
-		proxy.addPostData("shippingRequest", strShipReq);
-		byte[] data = proxy.getData();
-		//DecimalFormat twoDForm = new DecimalFormat("#.##");
-		
-		//parse the response
-		JSONObject raw = JSONObject.fromObject(new String(data));
-		Map<String, ShippingInfoVO> opts = new LinkedHashMap<String, ShippingInfoVO>();
-		
-		if (!raw.containsKey("isSuccess")) {
+		try {
+			ShippingRequestVO shippingInfo = buildShippingRequest(cart);
+			String strShipReq = JSONObject.fromObject(shippingInfo).toString();
+			log.debug("shipping request as String: " + strShipReq);
+			proxy.addPostData("shippingRequest", strShipReq);
+			byte[] data = proxy.getData();
+			//DecimalFormat twoDForm = new DecimalFormat("#.##");
 			
-			//Add option for instore pickup after proxy returns all the options.
-			ShippingInfoVO newVo = new ShippingInfoVO();
-			newVo.setShippingMethodId("instore");
-			newVo.setShippingMethodName("Instore Pickup");
-			newVo.setShippingTime("0");
-			newVo.setShippingCost(0);
-			opts.put(newVo.getShippingMethodId(), newVo);
+			//parse the response
+			JSONObject raw = JSONObject.fromObject(new String(data));
+			Map<String, ShippingInfoVO> opts = new LinkedHashMap<String, ShippingInfoVO>();
 			
-			for (ShippingAccountVO acct : shippingInfo.getAccounts()) {
-				// parse the rates response 
-				JSONObject rates = raw.getJSONObject("ratesResponse");
+			if (!raw.containsKey("isSuccess")) {
 				
-				if (! rates.isNullObject() && ! rates.isEmpty()) {
-					JSONArray jsonArr = rates.getJSONArray(acct.getShippingAccountType());
-					for (int x=0; x < jsonArr.size(); x++) {
-						JSONObject option = jsonArr.getJSONObject(x);
-	
-						//build a WC-coherent ShippingInfoVO
-						newVo = new ShippingInfoVO();
-						newVo.setShippingMethodId(option.optString("shippingMethodId"));
-						newVo.setShippingMethodName(option.optString("shippingMethodName"));
-						newVo.setShippingTime(option.optString("shippingTime"));
-						
-						Double rate = Convert.formatDouble(option.getJSONObject("shippingCosts").getDouble("NEGOTIATED"));
-						rate = rate + (rate*.10);//bump costs by 10%
-						newVo.setShippingCost(rate);
-						
-						opts.put(newVo.getShippingMethodId(), newVo);
+				//Add option for instore pickup after proxy returns all the options.
+				ShippingInfoVO newVo = new ShippingInfoVO();
+				newVo.setShippingMethodId("instore");
+				newVo.setShippingMethodName("Instore Pickup");
+				newVo.setShippingTime("0");
+				newVo.setShippingCost(0);
+				opts.put(newVo.getShippingMethodId(), newVo);
+				
+				for (ShippingAccountVO acct : shippingInfo.getAccounts()) {
+					// parse the rates response 
+					JSONObject rates = raw.getJSONObject("ratesResponse");
+					
+					if (! rates.isNullObject() && ! rates.isEmpty()) {
+						JSONArray jsonArr = rates.getJSONArray(acct.getShippingAccountType());
+						for (int x=0; x < jsonArr.size(); x++) {
+							JSONObject option = jsonArr.getJSONObject(x);
+		
+							//build a WC-coherent ShippingInfoVO
+							newVo = new ShippingInfoVO();
+							newVo.setShippingMethodId(option.optString("shippingMethodId"));
+							newVo.setShippingMethodName(option.optString("shippingMethodName"));
+							newVo.setShippingTime(option.optString("shippingTime"));
+							
+							Double rate = Convert.formatDouble(option.getJSONObject("shippingCosts").getDouble("NEGOTIATED"));
+							rate = rate + (rate*.10);//bump costs by 10%
+							newVo.setShippingCost(rate);
+							
+							opts.put(newVo.getShippingMethodId(), newVo);
+						}
 					}
 				}
+				
 			}
-			
-		}
 		
 		cart.setShippingOptions(opts);
+		} catch(Exception e){
+			log.error("Error Retrieving Shipping", e);
+		}
 		return cart;
 	}
 	
 	private ShippingRequestVO buildShippingRequest(ShoppingCartVO cart) {
 		FranchiseVO franchise = (FranchiseVO) attributes.get("franchise");
 		log.debug("franchise=" + franchise);
-		
+		log.debug("Building Shipping Source");
 		ShippingLocation source = buildShippingLocation(franchise.getLocation());
+		log.debug("Shipping source Built, building shipping Destination");
 		ShippingLocation destn = buildShippingLocation(cart.getShippingInfo().getLocation());
-		
+		log.debug("Shipping destination built, adding accounts.");
 		//this could be changed to a List<ShippingAccountVO> to support multiple couriers
 		List<ShippingAccountVO> accounts = buildShippingAccounts(franchise);
 		PackageVO pkg = loadPackage(cart);
