@@ -10,11 +10,14 @@ import java.util.Map;
 import java.util.Set;
 
 import com.depuy.events.vo.CoopAdVO;
+import com.depuy.events.vo.LeadCityVO;
 import com.depuy.events_v2.vo.DePuyEventSurgeonVO;
 import com.depuy.events_v2.vo.PersonVO.Role;
 import com.depuy.events.vo.DePuyEventLeadSourceVO;
 import com.siliconmtn.db.DBUtil;
+import com.siliconmtn.gis.Location;
 import com.siliconmtn.security.UserDataVO;
+import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.event.vo.EventEntryVO;
 import com.smt.sitebuilder.action.event.vo.EventPostcardVO;
 
@@ -44,7 +47,9 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	private String baseUrl = null; //used in reports to give AbsURLs to urls in the Excel files.
 	
 	private Map<String, Integer> rsvpReferralSources = null; 
-
+	
+	private Map<Location, LeadCityVO> targetLeads = null;
+	private int totalSelectedLeads = 0;
     
     public DePuyEventSeminarVO() {
 	    super();
@@ -373,5 +378,34 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 		this.rsvpReferralSources = rsvpReferralSources;
 	}
 
+	public Map<Location, LeadCityVO> getTargetLeads() {
+		return targetLeads;
+	}
+
+	public void setTargetLeads(Map<Location, LeadCityVO> targetLeads) {
+		this.targetLeads = targetLeads;
+	}
+	
+	
+	public int getTotalSelectedLeads() {
+		//calculate the total based on targetLeads selected.  This is used on the leads page
+		if (totalSelectedLeads == 0 && targetLeads != null) {
+			for (Location loc : targetLeads.keySet()) {
+				LeadCityVO vo = targetLeads.get(loc);
+				if (vo.getTierFourChecked()) totalSelectedLeads += vo.getTierFour();
+				else if (vo.getTierThreeChecked()) totalSelectedLeads += vo.getTierThree();
+				else if (vo.getTierTwoChecked()) totalSelectedLeads += vo.getTierTwo();
+				else if (vo.getTierOneChecked()) totalSelectedLeads += vo.getTierOne();
+			}
+		} else {
+			totalSelectedLeads = Convert.formatInteger(super.getPcAttribute1(), 0);
+		}
+		
+		return totalSelectedLeads;
+	}
+
+	public String getLeadSortType() {
+		return super.getPcAttribute2();
+	}
 
 }

@@ -4,8 +4,10 @@ package com.depuy.events_v2;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
-import java.util.StringTokenizer;
+
+
 
 // SMT BaseLibs
 import com.siliconmtn.action.ActionException;
@@ -32,6 +34,7 @@ import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.depuy.events.AbstractPostcardEmailer;
 import com.depuy.events.LeadsDataTool;
+import com.depuy.events_v2.LeadsDataToolV2.SortType;
 import com.depuy.events_v2.vo.DePuyEventSeminarVO;
 import com.depuy.events_v2.vo.PersonVO.Role;
 
@@ -50,7 +53,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 
 	// transaction types understood by this action
 	public enum ReqType {
-		eventInfo, submitSeminar, srcApproveSeminar, approveSeminar, 
+		eventInfo, submitSeminar, srcApproveSeminar, approveSeminar, leads,
 		cancelSeminar, orderBox, uploadPostcard, approvePostcardFile, uploadAdFile, approveNewspaperAd
 	}
 
@@ -85,6 +88,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		 String eventPostcardId = (req.hasParameter("eventPostcardId")) ? req.getParameter("eventPostcardId") : null;
 		 boolean isNewSeminar = (eventPostcardId == null);
 		 
+		 
 		 /**
 		  * This switch statement provides good OO structuring by using an enum.
 		  * The sequence of transactions within each step, combined with the throwing of SQLException
@@ -99,11 +103,11 @@ public class PostcardInsertV2 extends SBActionAdapter {
 						req.setParameter("eventPostcardId", eventPostcardId);
 						saveEventPostcardAssoc(eventPostcardId, eventEntryId);
 						saveLocatorXr(eventPostcardId, req);
+						nextPage = "leads";
 					}
 					saveEventPersonXr(eventPostcardId, req);
 					saveNewspaperAd(eventPostcardId, req);
 					saveEventSurgeon(eventPostcardId, req, site);
-					if (nextPage.length() == 0) nextPage = "summary";
 					break;
 					
 				case submitSeminar:
@@ -139,25 +143,16 @@ public class PostcardInsertV2 extends SBActionAdapter {
 				case approvePostcardFile:
 					this.approvePostcardFile(req, eventPostcardId);
 					break;
+				
+				case leads:
+					this.deleteSavedLeadCities(eventPostcardId);
+					this.saveLeadCities(req, eventPostcardId, user, null);
+					break;
 			}
 		} catch (SQLException e) {
 			log.error("could not save transaction " + reqType + ", " + e.getMessage(), e);
 			throw new ActionException();
 		}
-
-		/*
-		 * 
-		 * } else if (reqType.equals("postcardLeads")) { SBUserRole roles =
-		 * (SBUserRole) ses.getAttribute(Constants.ROLE_DATA); Integer roleId
-		 * = Convert.formatInteger(roles.getRoleId());
-		 * 
-		 * this.saveLeads(req, eventPostcardId, user, roleId);
-		 * 
-		 * } else if (reqType.startsWith("coopAds") ||
-		 * reqType.startsWith("radioAds")) { SMTActionInterface ac = new
-		 * CoopAdsAction(this.actionInit); ac.setDBConnection(dbConn);
-		 * ac.setAttributes(this.attributes); ac.build(req); }
-		 */
 
 		// setup the redirect url
 		StringBuilder redirectPg = new StringBuilder();
@@ -544,6 +539,26 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	
 
 	/**
+	 * delete the old records to avoid the hassles of an update query
+	 * @param eventPostcardId
+	 * @throws ActionException
+	 */
+	private void deleteSavedLeadCities( String eventPostcardId) throws SQLException {
+		PreparedStatement ps = null;
+		StringBuilder sql = new StringBuilder();
+		sql.append("delete from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("depuy_event_leads_datasource where event_postcard_id=?");
+		log.debug(sql);
+		try {
+			ps = dbConn.prepareStatement(sql.toString());
+			ps.setString(1, eventPostcardId);
+			ps.executeUpdate();
+
+		} finally {
+			try { ps.close();	} catch (Exception e) { }
+		}
+	}
+	/**
 	 * delete old leads-table entries and re-insert the new values. Call
 	 * LeadsDataTool to get an count on the of leads for each zip (city counts
 	 * come in on the req)
@@ -551,142 +566,84 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void saveLeads(SMTServletRequest req, String eventPostcardId,
-			UserDataVO user, Integer roleId) throws ActionException {
+	private void saveLeadCities(SMTServletRequest req, String eventPostcardId,
+			UserDataVO user, Integer roleId) throws SQLException {
 		message = "Leads Saved Successfully";
-		PreparedStatement ps = null;
-		String stateCd = StringUtil.checkVal(req.getParameter("state_cd"));
-
-		// delete the old records to avoid the hassles of an update query
-		StringBuilder sql = new StringBuilder();
-		sql.append("delete from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("depuy_event_leads_datasource where event_postcard_id=? and state_cd=?");
-		log.info("EventLeadsDeleteSQL: " + sql);
-		try {
-			ps = dbConn.prepareStatement(sql.toString());
-			ps.setString(1, eventPostcardId);
-			ps.setString(2, stateCd);
-			ps.executeUpdate();
-
-		} catch (SQLException sqle) {
-			log.error("error", sqle);
-		} finally {
-			try {
-				ps.close();
-			} catch (Exception e) {
-			}
-		}
-
+		
 		// loop the cities on the request and insert each record
-		sql = new StringBuilder();
-		sql.append("insert into ").append(
-				getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		StringBuilder sql = new StringBuilder();
+		sql.append("insert into ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("depuy_event_leads_datasource (event_lead_source_id, ");
 		sql.append("event_postcard_id, state_cd, city_nm, zip_cd, ");
-		sql.append("est_leads_no, create_dt) values (?,?,?,?,?,?,?)");
-		log.info("EventLeadsInsertSQL: " + sql);
+		sql.append("product_cd, max_age_no, create_dt) values (?,?,?,?,?,?,?,?)");
+		log.debug(sql);
 
-		int psCnt = 0;
+		int batchCnt = 0;
+		PreparedStatement ps = null;
 		try {
 			ps = dbConn.prepareStatement(sql.toString());
 		} catch (Exception e) {
-			log.error("turning off auto-commit", e);
+			log.error("could not open PS to start batch query", e);
 		}
 
-		String[] cities = req.getParameterValues("city");
+		//iterate the request to find the fields we need to save.  They have ugly parameterNames!
+		//"leads|${loc.state}|${loc.city}|${loc.zipCode}|${loc.address}|${loc.locationId}"
+		Enumeration<String> reqParams = req.getParameterNames();
+		UUIDGenerator uuid = new UUIDGenerator();
+		int totalLeadCnt = 0; //gets insert into the event_postcard table later.
+		SortType sortType = null;
 		try {
-			for (int x = 0; cities != null && x < cities.length; x++) {
-				String val = StringUtil.checkVal(cities[x]);
-				String cityNm = val.substring(0, val.lastIndexOf("|"));
-				int leadCnt = Convert.formatInteger(val.substring(val
-						.lastIndexOf("|") + 1));
-
-				// log.debug("city=" + cityNm + " size=" + leadCnt);
+			sortType = SortType.valueOf(req.getParameter("sortType")); 
+		} catch (Exception e) {
+			sortType = SortType.city;
+		}
+		try {
+			while (reqParams.hasMoreElements()) {
+				String param = reqParams.nextElement();
+				if (!param.startsWith("leads|")) continue;  //not one we want!
+				
+				String[] tokens = param.split("\\|");
+				String[] vals = req.getParameter(param).split("\\|");
+				if (tokens.length != 6 || vals.length != 2) {
+					log.error("nonconfirmist: param: " + param + " val: " + req.getParameter(param));
+					log.error(StringUtil.getToString(tokens, false, false, "|"));
+					continue;
+				}
+				
 				try {
-					ps.setString(1, new UUIDGenerator().getUUID());
+					ps.setString(1, uuid.getUUID());
 					ps.setString(2, eventPostcardId);
-					ps.setString(3, stateCd);
-					ps.setString(4, cityNm);
-					ps.setString(5, null);
-					ps.setInt(6, leadCnt);
-					ps.setTimestamp(7, Convert.getCurrentTimestamp());
+					ps.setString(3, tokens[1]); //state
+					ps.setString(4, (SortType.zip == sortType) ? null : tokens[2]); //city
+					ps.setString(5, (SortType.zip != sortType) ? null : tokens[3]); //zip
+					ps.setString(6, tokens[4].toUpperCase()); //product
+					ps.setInt(7, Convert.formatInteger(vals[1], 240));
+					ps.setTimestamp(8, Convert.getCurrentTimestamp());
 
 					ps.addBatch();
-					++psCnt;
+					++batchCnt;
 
-					if (psCnt == Constants.MAX_SQL_BATCH_SIZE) { // occasionally
-														// commit
-														// the
-														// transaction
+					// occasionally commit the transaction
+					if (batchCnt == Constants.MAX_SQL_BATCH_SIZE) { 
 						ps.executeBatch();
-						log.debug("COMITTED AT " + psCnt);
-						psCnt = 0;
+						batchCnt= 0;
 					}
+					totalLeadCnt += Convert.formatInteger(vals[0]);
+					
 				} catch (SQLException sqle) {
 					log.error("could not save lead city", sqle);
 					message = "Could not save all lead cities";
 				}
 
 			}
-			if (psCnt > 0) {
+			if (batchCnt > 0)
 				ps.executeBatch();
-				log.debug("COMITTED AT " + psCnt);
-			}
-		} catch (SQLException sqle) {
-			log.error("could not save all lead cities", sqle);
-			message = "Could not save lead cities";
+
 		} finally {
-			if (ps != null) {
-				try {
-					ps.close();
-				} catch (Exception e) {
-				}
-			}
+			try { ps.close(); } catch (Exception e) { }
 		}
-
-		// setup zipCodes SQL for insert
-		String zipString = StringUtil.replace(req.getParameter("zipcodes"),
-				"\r\n", ",");
-		StringTokenizer zips = new StringTokenizer(zipString, ",");
-		LeadsDataTool edt = new LeadsDataTool(actionInit);
-		edt.setAttributes(this.attributes);
-		edt.setDBConnection(dbConn);
-		while (zips.hasMoreTokens()) {
-			String zip = StringUtil.checkVal(zips.nextToken()).trim();
-			log.debug("found zip " + zip);
-			if (zip.length() == 0 || zip.length() > 10)
-				continue; // skip empty or malformed
-
-			Integer leadCnt = edt.countLeadsByZip(zip,
-					req.getParameter("groupCd"), stateCd, user, roleId);
-			try {
-				// this stmt uses the same sql as the cities (above)
-				ps = dbConn.prepareStatement(sql.toString());
-				ps.setString(1, new UUIDGenerator().getUUID());
-				ps.setString(2, eventPostcardId);
-				ps.setString(3, stateCd);
-				ps.setString(4, null);
-				ps.setString(5, zip);
-				ps.setInt(6, leadCnt);
-				ps.setTimestamp(7, Convert.getCurrentTimestamp());
-				ps.executeUpdate();
-				// NOTE: We do not batch these statements because rarely are
-				// there more than a handful of zips (if any)
-			} catch (SQLException sqle) {
-				log.error("could not save lead zips", sqle);
-				message = "Could not save lead Zips";
-			} finally {
-				try {
-					dbConn.commit();
-					ps.close();
-				} catch (Exception e) {
-				}
-			}
-
-		}
-
-		edt = null;
-		return;
+		
+		this.updatePostcardLeadsStats(totalLeadCnt, eventPostcardId, sortType);
 	}
 
 	/**
@@ -972,6 +929,38 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		//epe.orderConsumableBox(req);
 		message = "Email sent successfully";
 		return;
+	}
+	
+	
+	/**
+	 * updates the EVENT_POSTCARD table with some stats about the leads, 
+	 * so we don't need to re-retrieve all that bulky data on each load.
+	 * @param leadCnt
+	 * @param eventPostcardId
+	 * @param sortType
+	 * @throws ActionException
+	 */
+	private void updatePostcardLeadsStats(int leadCnt, String eventPostcardId, SortType sortType)
+			throws SQLException {
+		PreparedStatement ps = null;
+		StringBuilder sql = new StringBuilder();
+		sql.append("update event_postcard set attrib_1_txt=?, attrib_2_txt=?, ");
+		sql.append("update_dt=? where event_postcard_id=?");
+		log.debug(sql);
+		try {
+			ps = dbConn.prepareStatement(sql.toString());
+			ps.setString(1, Integer.valueOf(leadCnt).toString());
+			ps.setString(2, sortType.toString());
+			ps.setTimestamp(3, Convert.getCurrentTimestamp());
+			ps.setString(4, eventPostcardId);
+			ps.executeUpdate();
+
+		} finally {
+			try {
+				ps.close();
+			} catch (Exception e) {
+			}
+		}
 	}
 
 }

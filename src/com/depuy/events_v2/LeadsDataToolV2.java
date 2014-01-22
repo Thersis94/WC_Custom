@@ -6,9 +6,15 @@ import java.sql.SQLException;
 import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
+
+
+
 
 
 
@@ -18,17 +24,21 @@ import com.depuy.events_v2.vo.DePuyEventSeminarVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.security.UserDataVO;
-import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.gis.parser.GeoLocation;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.UUIDGenerator;
+import com.siliconmtn.common.html.SMTStateListFactory;
+import com.siliconmtn.common.html.StateList;
+import com.siliconmtn.db.DBUtil;
+import com.siliconmtn.gis.Location;
+import com.siliconmtn.gis.parser.GeoLocation;
+
 // SiteBuilder libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.event.vo.EventEntryVO;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.constants.Constants;
-
 
 /****************************************************************************
  * <b>Title</b>: LeadsDataTool.java<p/>
@@ -43,8 +53,11 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class LeadsDataToolV2 extends SBActionAdapter {
 	
-	private final double MAX_DISTANCE = 100.00; //miles a lead would drive to a Seminar
+	private Map<String, String> usStates = null; 
 	
+	private final double MAX_DISTANCE = 62.00; //radians a lead would drive to a Seminar  ~50mi
+	
+	private static final int TARGET_LEADS = 2;
 	public static final int POSTCARD_SUMMARY_PULL = 4;
 	public static final int MAILING_LIST_BY_DATE_PULL = 5;
 	//public static final int LOCATOR_REPORT = 6; //not used here
@@ -52,6 +65,9 @@ public class LeadsDataToolV2 extends SBActionAdapter {
 	public static final int EVENT_ROLLUP_REPORT = 8; //not used here
 	public static final int RSVP_BREAKDOWN_REPORT = 9; //not used here
 	//public static final int LEAD_AGING_REPORT = 10;
+	
+	public enum SortType { city, county, zip }
+	private UUIDGenerator uuid = null;
 	
 	public LeadsDataToolV2() {
 		super();
@@ -80,15 +96,16 @@ public class LeadsDataToolV2 extends SBActionAdapter {
 		Map<String, GeoLocation> coords = points.boundingCoordinates(MAX_DISTANCE);
 		log.debug("event=" + event.getLatitude() + " " +  event.getLongitude());
 		StringBuilder sql = new StringBuilder();
-		sql.append("select a.*, lds.max_age_no ");
-		sql.append("from (select * from DEPUY_SEMINARS_VIEW where (latitude_no between ? and ?) and (longitude_no between ? and ?)) as a ");
-		sql.append("inner join ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("DEPUY_EVENT_LEADS_DATASOURCE lds on (a.city_nm=lds.city_nm and a.state_cd=lds.state_cd) or a.zip_cd=lds.zip_cd ");
+		sql.append("select a.*, lds.max_age_no, lds.event_lead_source_id ");
+		sql.append("from (select * from DEPUY_SEMINARS_VIEW where valid_address_flg=1 and (latitude_no between ? and ?) and (longitude_no between ? and ?)) as a ");
+		//when targetting leads we may not have data the in _DATASOURCE table; use the join to denote 'checked' radio buttons.
+		sql.append((type == TARGET_LEADS) ? "left outer" : "inner").append(" join ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("DEPUY_EVENT_LEADS_DATASOURCE lds on a.state_cd=lds.state_cd and (a.city_nm=lds.city_nm or a.zip_cd=lds.zip_cd) ");
+		sql.append("and a.product_cd=lds.PRODUCT_CD and lds.event_postcard_id=? ");
 		sql.append("where  a.product_cd in (");
-		for (String joint : sem.getJoints())
+		for (@SuppressWarnings("unused") String joint : sem.getJoints())
 			sql.append("?,");
 		sql.replace(sql.length() - 1, sql.length(), ")"); // remove trailing comma
-		sql.append(" and lds.event_postcard_id=?");
 		log.debug(sql);
 
 		int x = 1;
@@ -99,32 +116,40 @@ public class LeadsDataToolV2 extends SBActionAdapter {
 			ps.setDouble(x++, coords.get(GeoLocation.MAX_BOUNDING_LOC).getLatitudeInDegrees());
 			ps.setDouble(x++, coords.get(GeoLocation.MIN_BOUNDING_LOC).getLongitudeInDegrees());
 			ps.setDouble(x++, coords.get(GeoLocation.MAX_BOUNDING_LOC).getLongitudeInDegrees());
+			ps.setString(x++, sem.getEventPostcardId());
 			for (String joint : sem.getJoints()) {
 				ps.setString(x++, sem.getJointName(joint));
 			}
-			ps.setString(x++, sem.getEventPostcardId());
 			
 			ResultSet rs = ps.executeQuery();
 			DBUtil db = new DBUtil();
 			ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
 			while (rs.next()) {
+//				String geo = rs.getString("geo_match_cd");
+//				if ("noMatch".equals(geo)) continue;  //we don't want these, but they're too taxing to remove in the query
+				
 				//before we capture each record, determine if it falls within the date requirement. (<3mos, 3-6mos, <1yr, all)
 				Date createDt = db.getDateVal("attempt_dt", rs);
 				if (createDt == null) createDt = new Date();
 				
-				//if we've been asked for "newer than a certain date" leads, filter the old ones out first.
-				if (startDt != null && startDt.after(createDt)) continue; 
-						
-				int maxAgeMos = rs.getInt("max_age_no");
-				if (maxAgeMos == 0) maxAgeMos = 240; //20yrs of historical data
-				Calendar cal = Calendar.getInstance();
-				cal.add(Calendar.MONTH, -maxAgeMos); //subtract month limit from today
-				
-				//if the lead is not newer than the defined limit, skip it.
-				if (!cal.getTime().before(createDt)) continue;
+				//no date filters on the targetLeads page.  This is only used in reports:
+				if (type != TARGET_LEADS) {
+					//if we've been asked for "newer than a certain date" leads, filter the old ones out first.
+					if (startDt != null && startDt.after(createDt)) continue; 
+							
+					int maxAgeMos = rs.getInt("max_age_no");
+					if (maxAgeMos == 0) maxAgeMos = 240; //20yrs of historical data
+					Calendar cal = Calendar.getInstance();
+					cal.add(Calendar.MONTH, -maxAgeMos); //subtract month limit from today
+					
+					//if the lead is not newer than the defined limit, skip it.
+					//bypass this for scoping leads, which needs a count for each date range.
+					if (!cal.getTime().before(createDt)) continue;
+				}
 				
 				UserDataVO vo = new UserDataVO();
 				vo.setBirthDate(createDt);
+				vo.setPrefixName(pm.getStringValue("PREFIX_NM", db.getStringVal("prefix_nm", rs)));
 				vo.setFirstName(pm.getStringValue("FIRST_NM", db.getStringVal("first_nm", rs)));
 				vo.setLastName(pm.getStringValue("LAST_NM", db.getStringVal("last_nm", rs)));
 				vo.setSuffixName(pm.getStringValue("SUFFIX_NM", db.getStringVal("suffix_nm", rs)));
@@ -133,8 +158,19 @@ public class LeadsDataToolV2 extends SBActionAdapter {
 				vo.setCity(pm.getStringValue("CITY_NM", db.getStringVal("city_nm", rs)));
 				vo.setState(pm.getStringValue("STATE_CD", db.getStringVal("state_cd", rs)));
 				vo.setZipCode(pm.getStringValue("ZIP_CD", db.getStringVal("zip_cd", rs)));
-				vo.setEmailAddress(pm.getStringValue("EMAIL_ADDRESS_TXT", db.getStringVal( "email_address_txt", rs)));
-				vo.setPrefixName(pm.getStringValue("PREFIX_NM", db.getStringVal("prefix_nm", rs)));
+				
+				//grab some extras we need for display cosmetics
+				if (type == TARGET_LEADS) {
+					//we don't want max-age here (as an upper-limit), we want the LEAD'S age
+					vo.setBirthYear(bucketizeLeadAge(differenceInMonths(createDt)));
+					vo.setAliasName(rs.getString("event_lead_source_id"));
+					vo.setCounty(rs.getString("COUNTY_NM"));
+					vo.setPassword(rs.getString("product_cd"));
+					vo.addAttribute("savedMaxAge", rs.getInt("max_age_no"));
+				}
+
+//				if (vo.getState().equals("TX"))
+//					log.debug(vo.getLocation());
 				data.add(vo);
 			}
 		} catch (SQLException sqle) {
@@ -178,149 +214,158 @@ public class LeadsDataToolV2 extends SBActionAdapter {
 	
 	
 	/**
-	 * pulls potential-leads info from the view (profile tables) for this postcard/mailing
-	 * limits non-admins to leads within "x" miles of their location
+	 * Loads the same list of leads we'd mail to, then we sort them differently for display purposes
+	 * The Comparator handles sorting the list so we can iterate it into html tables in the View.
 	 * @param leads
 	 * @throws ActionException
 	 */
-	public List<LeadCityVO> scopeLeads(DePuyEventSeminarVO sem) {
-		log.debug("starting scopeLeads");
-		List<LeadCityVO> data = new ArrayList<LeadCityVO>();
-		EventEntryVO event = sem.getEvents().get(0);
-		GeoLocation geoLoc = GeoLocation.fromDegrees(event.getLatitude(), event.getLongitude());
-		Map<String, GeoLocation> coords = geoLoc.boundingCoordinates(MAX_DISTANCE);
-		GeoLocation minCoords = coords.get(GeoLocation.MIN_BOUNDING_LOC);
-		GeoLocation maxCoords = coords.get(GeoLocation.MAX_BOUNDING_LOC);
-
-		StringBuilder sql = new StringBuilder();
-		sql.append("select count(*), product_cd, count_nm, state_cd, city_nm, attempt_year_no, attempt_month_no ");
-		sql.append("from depuy_seminars_view where  product_cd in (");
-		for (String joint : sem.getJoints())
-			sql.append("?,");
-		sql.replace(sql.length() - 1, sql.length(), ")"); // remove trailing comma
-		sql.append("and valid_address_flg=1 and latitude_no between ? and ? and longitude_no between ? and ? ");
-		sql.append("group by product_cd, count_nm, state_cd, city_nm, attempt_year_no, attempt_month_no ");
-		log.debug(sql);
-
-		int x = 1;
-		DBUtil db = new DBUtil();
-		LeadCityVO vo;
-		PreparedStatement ps = null;
+	public void targetLeads(DePuyEventSeminarVO sem, String sort) throws ActionException {
+		log.debug("starting targetLeads");
+		SortType sortType = null;
 		try {
-			ps = dbConn.prepareStatement(sql.toString());
-			for (String joint : sem.getJoints())
-				ps.setString(x++, joint);
-			ps.setDouble(x++, minCoords.getLatitudeInDegrees());
-			ps.setDouble(x++, maxCoords.getLatitudeInDegrees());
-			ps.setDouble(x++, minCoords.getLongitudeInDegrees());
-			ps.setDouble(x++, maxCoords.getLongitudeInDegrees());
-			ResultSet rs = ps.executeQuery();
-			while (rs.next()) {
-				vo = new LeadCityVO();
-				vo.setStateCd(db.getStringVal("state_cd", rs));
-				vo.setCountyNm(db.getStringVal("county_nm", rs));
-				vo.setCityNm(StringUtil.checkVal(db.getStringVal("city_nm", rs)).toLowerCase());
-				vo.setLeadsCnt(db.getIntegerVal("cnt", rs));
-				data.add(vo);
-			}
-		} catch (SQLException sqle) {
-			log.error("pulling scope leads data", sqle);
-		} finally {
-			try {
-				ps.close();
-			} catch (Exception e) {
-			}
+			sortType = SortType.valueOf(sort);
+		} catch (Exception e) {
+			sortType = SortType.county;
 		}
-
-		log.debug("data size=" + data.size());
-		return data;
+		
+		//we'll need this later, intitialize it
+		uuid = new UUIDGenerator();
+		
+		//load the user base
+		List<UserDataVO> leads = this.pullLeads(sem, TARGET_LEADS, null);
+		
+		//define data containers
+		Map<Location, LeadCityVO> locnData  = new TreeMap<Location, LeadCityVO>(new LocationComparator());
+		
+		//put each user into the city bucket they belong in.
+		for (UserDataVO user : leads) {
+			Location loc = this.polishAddressData(user, sortType);
+			LeadCityVO vo = locnData.get(loc);
+			if (vo == null) vo = new LeadCityVO();
+			vo.addLead(user.getBirthYear(), 1, isSelected(user)); //Alias holds 'checked' state, from the _XR table);  //holds maxAgeNo (range)
+//			if (loc.getCity().equals("Ohio City"))
+//				log.error("found: " + user.getPassword() + " " + user.getBirthYear() + " " +  user.getAttributes().get("savedMaxAge") + " " + user.getAliasName() + " " + isSelected(user));
+			locnData.put(loc, vo);
+		}
+		
+		log.debug("data size: " + locnData.size());
+		sem.setTargetLeads(locnData);
 	}
 	
-//	
-//	/**
-//	 * pulls potential-leads info from the view (profile tables) for this postcard/mailing
-//	 * limits non-admins to leads within 150mi of their location
-//	 * @param leads
-//	 * @throws ActionException
-//	 */
-//	public List<String> getSelected(String postcardId, String productNm, String stateCd, String column) {
-//        log.debug("starting getSelected for " + column);
-//        List<String> data = new ArrayList<String>();
-//        StringBuilder sql = new StringBuilder();
-//        column = (column.equals("city")) ? "city_nm" : "zip_cd";
-//       	sql.append("select ").append(column).append(" as val from ");
-//        sql.append((String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
-//        sql.append("DEPUY_EVENT_LEADS_DATASOURCE where event_postcard_id=? ");
-//        sql.append("and ").append(column).append(" is not null ");
-//        if (stateCd != null) sql.append("and state_cd=? ");
-//        
-//        log.debug("sql=" + sql + " postcardId=" + postcardId);
-//        PreparedStatement ps = null;
-//        ResultSet rs = null;
-//        try {
-//        	ps = dbConn.prepareStatement(sql.toString());
-//        	ps.setString(1, postcardId);
-//        	if (stateCd != null) ps.setString(2, stateCd);
-//        	rs = ps.executeQuery();
-//        	DBUtil db = new DBUtil();
-//        	while (rs.next())
-//        		data.add(db.getStringVal("val", rs).toUpperCase());
-//
-//        } catch (SQLException sqle) {
-//        	log.error("pulling lead Zip data", sqle);
-//        } finally {
-//        	try {
-//        		ps.close();
-//        	} catch (Exception e) { }
-//        }
-//        
-//        log.debug(column + " size=" + data.size());
-//    	return data;
-//	}
-//	
+	/**
+	 * determines if the given user's record should be checked on the form.
+	 * @param user
+	 * @return
+	 */
+	private boolean isSelected(UserDataVO user) {
+		boolean haveXR = user.getAliasName() != null;
+		Integer age = (Integer) user.getAttributes().get("savedMaxAge");
+		boolean ageMeetsSelection = (user.getBirthYear().intValue() == age.intValue());
+		
+		return haveXR && ageMeetsSelection;
+	}
 	
 	
 	/**
-	 * pulls potential-leads info from the view (profile tables) for this postcard/mailing
-	 * limits non-admins to leads within 150mi of their location
-	 * @param leads
-	 * @throws ActionException
+	 * normalizes text-case for the various address parts, so they're comparable by the Map's Comparator
+	 * @param user
+	 * @return
 	 */
-	public Integer countLeadsByZip(String zip, String productNm, String stateCd, UserDataVO user, int roleId) {
-        log.debug("starting countLeadsByZip");
-        Integer count = 0;
-        StringBuilder sql = new StringBuilder();
-        sql.append("select count(*) from ").append(productNm);
-        sql.append("_postcard_events_view where zip_cd=? and state_cd=? and valid_address_flg=1 ");
-        
-        //add 350mi distance limitation for users, 600 for directors
-        if (roleId  < 30) {
-        	sql.append("and round((sqrt(power(? - latitude_no,2) + "); 
-        	sql.append("power(? - longitude_no,2)) /3.14159265)*180,2) < ? ");
-        }
-        
-        log.info("sql=" + sql + " zip=" + zip);
-        PreparedStatement stmt = null;
-        try {
-        	int i = 0;
-        	stmt = dbConn.prepareStatement(sql.toString());
-        	stmt.setString(++i, zip);
-        	stmt.setString(++i, stateCd);
-        	
-        ResultSet rs = stmt.executeQuery();
-        	if (rs.next()) {
-        		count = rs.getInt(1);
-        	}
-        } catch (SQLException sqle) {
-        	log.error("pulling leads zip total", sqle);
-        } finally {
-        	try {
-        		stmt.close();
-        	} catch (Exception e) {}
-        }
-        
-        log.debug("zips total=" + count);
-    	return Convert.formatInteger(count);
+	private Location polishAddressData(UserDataVO user, SortType sort) {
+		Location loc = new Location();
+		loc.setAddress(StringUtil.capitalizePhrase(user.getPassword())); //product
+		loc.setCity(StringUtil.capitalizePhrase(user.getCity()));
+		loc.setState(user.getState()); 
+		
+		//need to preserve stateCode for the form submission
+		loc.setCountryName(getStateNameFromCode(user.getState()));
+		
+		//tweak some data depending on the SortType requested
+		if (SortType.county == sort) {
+			loc.setCounty(StringUtil.capitalizePhrase(user.getCounty()));
+			if (loc.getCounty().length() == 0) loc.setCounty("Unknown");
+		} else if (SortType.zip == sort) {
+			//stuff the zip into the city so the natural ordering of the rows is "by zip"
+			loc.setCity(user.getZipCode());
+		}
+		
+		loc.setLocationId(uuid.getUUID());
+		loc.setZipCode(user.getZipCode());
+		
+		return loc;
+	}
+	
+	/**
+	 * returns the capitalized full name of the state for the code passed.  IN=>Indiana 
+	 * @param cd
+	 * @return
+	 */
+	private String getStateNameFromCode(String cd) {
+		//reverse the state list, but only once
+		if (usStates == null) {
+			usStates = new HashMap<String, String>(55, 100);
+			StateList sl = SMTStateListFactory.getStateList("US");
+			Map<Object, Object> lst = sl.getStateList();
+			for (Object nm : lst.keySet())
+				usStates.put((String)lst.get(nm), (String)nm);
+
+		}
+		return usStates.get(cd);
+	}
+	
+	
+	/**
+	 * takes the age of the lead in months and returns one of four bucketed 
+	 * values we're using to render the data.
+	 * @param monthsOld
+	 * @return
+	 */
+	private int bucketizeLeadAge(int monthsOld) {
+		if (monthsOld < 3) return 3;
+		else if (monthsOld < 6) return 6;
+		else if (monthsOld < 12) return 12;
+		else return 240; //20yrs, which is the catch-all bucket
+	}
+	
+	
+	/**
+	 * steps the attempt date forward in time to today, counting the # of months along the way
+	 * @param attemptDt
+	 * @return
+	 */
+	private int differenceInMonths(Date attemptDt) {
+		Calendar today = Calendar.getInstance();
+		Calendar c1 = Calendar.getInstance();
+		c1.setTime(attemptDt);
+		
+		int diff = 0;
+		while (today.after(c1)) {
+			c1.add(Calendar.MONTH, 1);
+			if (today.after(c1))
+				diff++;
+		}
+		return diff;
 	}
 
+	/**
+	 * **************************************************************************
+	 * <b>Title</b>: LeadsDataToolV2.LocationComparator.java<p/>
+	 * <b>Description: compares Location objects using their complete address.
+	 * NOTE: loc1 & loc2 are specifically built in this hierarchy to ensure colation and alphabetical listing on the website.</b> 
+	 * <p/>
+	 * <b>Copyright:</b> Copyright (c) 2014<p/>
+	 * <b>Company:</b> Silicon Mountain Technologies<p/>
+	 * @author James McKain
+	 * @version 1.0
+	 * @since Jan 21, 2014
+	 ***************************************************************************
+	 */
+	public class LocationComparator implements Comparator<Location> {
+		@Override
+		public int compare(Location l1, Location l2) {
+			String loc1 = l1.getState() + l1.getCounty() + l1.getCity() + l1.getAddress();
+			String loc2 = l2.getState() + l2.getCounty() + l2.getCity() + l2.getAddress();
+			return loc1.compareTo(loc2);
+		}
+	}
 }
