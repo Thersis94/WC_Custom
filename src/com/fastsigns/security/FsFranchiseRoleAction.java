@@ -81,6 +81,10 @@ public class FsFranchiseRoleAction extends SBActionAdapter {
 			currLocId = dealerLocId;
 		}
 		
+		// If the user has a center we redirect the user to their center instead of the main site.
+		// We need to set this in the session because at this point it is the only place we will pull a redirect url from
+		if(req.hasParameter("isLogin") && currLocId != null) req.getSession().setAttribute("destUrl", "/"+currLocId);
+		
 		//populate the session
 		this.updateFranchiseSessionData(req, currLocId, schema);
 		

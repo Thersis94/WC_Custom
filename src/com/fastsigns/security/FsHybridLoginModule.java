@@ -29,14 +29,18 @@ public class FsHybridLoginModule extends AbstractLoginModule {
     }
 	
 	private void initAlm() {
-		SMTServletRequest req = (SMTServletRequest)this.initVals.get(AbstractRoleModule.HTTP_REQUEST);
-		if(req.hasParameter("type") && req.getParameter("type").equals("ecomm")){
-			alm = new FsKeystoneLoginModule(initVals);
-			super.setUserProfile(true);
-			req.getSession().setAttribute(Constants.USER_DATA, null);
-		} else {
-			alm = new FsDBLoginModule(initVals);
-		}		
+		try {
+			SMTServletRequest req = (SMTServletRequest)this.initVals.get(AbstractRoleModule.HTTP_REQUEST);
+			if(req.hasParameter("type") && req.getParameter("type").equals("ecomm")){
+				alm = new FsKeystoneLoginModule(initVals);
+				super.setUserProfile(true);
+				req.getSession().setAttribute(Constants.USER_DATA, null);
+			} else {
+				alm = new FsDBLoginModule(initVals);
+			}	
+		} catch(Exception e) {
+			log.debug(e);
+		}
 	}
 
 	@Override
@@ -89,23 +93,32 @@ public class FsHybridLoginModule extends AbstractLoginModule {
 		klm.init(initVals);
 		AbstractLoginModule flm = new FsDBLoginModule();
 		flm.init(initVals);
-		boolean k, f;
+		boolean k = false, f = false;
+		UserDataVO kUser = null;
+		
 		try {
-			k = klm.resetPassword(pwd, user);
-			if(k){
-				SMTServletRequest req = (SMTServletRequest)this.initVals.get(AbstractRoleModule.HTTP_REQUEST);
-				req.setParameter("type", "ecomm");
-				user = klm.retrieveUserData(user.getEmailAddress(), pwd);
-				req.getSession().setAttribute(Constants.USER_DATA, user);
+			try {
+				k = klm.resetPassword(pwd, user);
+			} catch(Exception e) {
+				k = false;
+				log.debug("Could not log into Keystone.", e);
 			}
-			
+			try {
+				f = flm.resetPassword(pwd, user);
+			} catch(Exception e) {
+				f = false;
+				log.debug("Could not log into Fastsigns.", e);
+			}
+			SMTServletRequest req = (SMTServletRequest)this.initVals.get(AbstractRoleModule.HTTP_REQUEST);
+			String type = (String) req.getSession().getAttribute("isEcommType");
+			if(k && type != null && type.equals("ecomm")){
+				req.setParameter("type", "ecomm");
+				kUser = klm.retrieveUserData(user.getEmailAddress(), pwd);
+				req.getSession().setAttribute(Constants.USER_DATA, kUser);
+			}
 		} catch(Exception e) {
-			k = false;
-		}
-		try {
-			f = flm.resetPassword(pwd, user);
-		} catch(Exception e) {
-			f = false;
+			log.debug("Could not reset password");
+			return f;
 		}
 		return (k || f);
 	}

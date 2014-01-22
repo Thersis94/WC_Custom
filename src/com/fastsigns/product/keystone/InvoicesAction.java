@@ -76,6 +76,7 @@ public class InvoicesAction extends AbstractBaseAction {
 				req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, Boolean.TRUE);
 				req.setAttribute(Constants.BINARY_DOCUMENT, rpt);
 			} catch (InvalidDataException e) {
+				log.error(e);
 				mod.setError(e);
 				mod.setErrorMessage("Unable to load Invoices");
 			}
@@ -98,6 +99,7 @@ public class InvoicesAction extends AbstractBaseAction {
 			mod.setActionData(formatDisplayData(byteData));
 		
 		} catch (InvalidDataException e) {
+			log.error(e);
 			mod.setError(e);
 			mod.setErrorMessage("Unable to load Invoices");
 		}

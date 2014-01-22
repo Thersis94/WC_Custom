@@ -40,7 +40,7 @@ public class CheckoutProxy {
 		smtProxyUrl = servletPath;
 		postData = new HashMap<String, String>();
 		//this.servletPath = servletPath;
-		log.info(this.getClass() + " created with proxyUrl=" + smtProxyUrl);
+		log.debug(this.getClass() + " created with proxyUrl=" + smtProxyUrl);
 	}
 	
 	

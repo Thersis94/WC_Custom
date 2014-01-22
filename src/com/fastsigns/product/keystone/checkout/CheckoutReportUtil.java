@@ -56,6 +56,7 @@ public class CheckoutReportUtil {
 		try {
 			EmailMessageVO msg = new EmailMessageVO();
 			msg.addRecipient(cart.getBillingInfo().getEmailAddress());
+			msg.setFrom(franId + "@fastsigns.com");
 			//msg.addRecipient("billy.siliconmtn.com");
 			msg.setSubject("FASTSIGNS Online Order Confirmation");
 			msg.setHtmlBody(getHtmlBody(cart, franId, designatorNm));

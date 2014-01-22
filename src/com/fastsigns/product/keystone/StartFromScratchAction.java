@@ -34,7 +34,10 @@ public class StartFromScratchAction extends SBActionAdapter {
 		FastsignsSessVO sessVo = (FastsignsSessVO) req.getSession().getAttribute(KeystoneProxy.FRAN_SESS_VO);
 		String webId = (String)req.getSession().getAttribute(FastsignsSessVO.FRANCHISE_ID);
 		
-		KeystoneProxy proxy = new CachingKeystoneProxy(attributes, 1440);
+		//Use Cached action and set necessary pieces for cache groups to be used. 
+		attributes.put("siteData", req.getAttribute(Constants.SITE_DATA));
+		attributes.put("wcFranchiseId", CenterPageAction.getFranchiseId(req));
+		KeystoneProxy proxy = new CachingKeystoneProxy(attributes);
 		proxy.setSessionCookie(req.getCookie(Constants.JSESSIONID));
 		proxy.setModule("products");
 		proxy.setAction("getDsolMaterials");
@@ -62,6 +65,7 @@ public class StartFromScratchAction extends SBActionAdapter {
 			byte[] byteData = proxy.getData();
 			mod.setActionData(formatMaterials(byteData));
 		} catch (InvalidDataException e) {
+			log.error(e);
 			mod.setError(e);
 			mod.setErrorMessage("Unable to load Materials list");
 		}

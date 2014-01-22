@@ -16,7 +16,6 @@
 	</classpathentry>
 	<classpathentry kind="lib" path="/SMTAppLibraries/lib/jcaptcha-all-1.0-RC6.jar"/>
 	<classpathentry kind="lib" path="/SMTAppLibraries/lib/json-lib-2.2.3-jdk15.jar"/>
-	<classpathentry kind="lib" path="/SMTAppLibraries/lib/sitebuilder.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.launching.macosx.MacOSXType/Java SE 8 [1.8.0]">
 		<attributes>
 			<attribute name="owner.project.facets" value="java"/>
@@ -33,5 +32,6 @@
 	<classpathentry kind="lib" path="/SMTAppLibraries/lib/commons-lang-2.4.jar"/>
 	<classpathentry kind="lib" path="/SMTAppLibraries/lib/xercesImpl.jar"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/ProxyServer"/>
+	<classpathentry kind="lib" path="/WebCrescendo/build/classes"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

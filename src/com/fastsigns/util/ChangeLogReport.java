@@ -249,8 +249,6 @@ public class ChangeLogReport {
 		try{
 				ps = dbConn.prepareStatement(orphanPagesRemoval());
 				ps.execute();
-				ps.close();
-				
 				log.debug("Pages Removed");
 				ps = dbConn.prepareStatement(orphanModuleRemoval());
 				ps.execute();

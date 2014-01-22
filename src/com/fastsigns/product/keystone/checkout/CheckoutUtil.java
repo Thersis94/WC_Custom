@@ -132,7 +132,7 @@ public class CheckoutUtil {
 		UserDataVO shipping = new UserDataVO(req);
 		shipping.setProfileId(user.getProfileId());
 		shipping.addAttribute("companyNm", req.getParameter("company"));
-		shipping.addAttribute("addressId", req.getParameter("addressId"));
+		shipping.addAttribute("addressId", req.getParameter("address_id"));
 		cart.setShippingInfo(shipping);
 		
 		//save the billing info to the cart
@@ -141,7 +141,7 @@ public class CheckoutUtil {
 		if (Convert.formatBoolean(req.getParameter("sameShippingBilling"))) {
 			billing.setData(req);
 			billing.addAttribute("companyNm", req.getParameter("company"));
-			billing.addAttribute("addressId", req.getParameter("address_id"));
+			billing.addAttribute("addressId", req.getParameter("b_address_id"));
 
 		} else {
 			billing.setFirstName(req.getParameter("b_firstName"));
@@ -174,7 +174,7 @@ public class CheckoutUtil {
 	 */
 	private ShoppingCartVO loadConfirmScreen(SMTServletRequest req, ShoppingCartVO cart)
 	throws ActionException {
-		log.info("loading confirm screen");
+		log.debug("loading confirm screen");
 		
 		FastsignsSessVO sessVo = (FastsignsSessVO) req.getSession().getAttribute(KeystoneProxy.FRAN_SESS_VO);
 		String webId = (String)req.getSession().getAttribute(FastsignsSessVO.FRANCHISE_ID);
@@ -189,7 +189,7 @@ public class CheckoutUtil {
 				throw new ActionException("could not load franchise info", e);
 			}
 		}
-			
+		log.debug("loaded Session Data, retrieving shipping options.");
 		
 		attributes.put("franchise", sessVo.getFranchise(webId));
 		attributes.put(KeystoneProxy.FRAN_SESS_VO, sessVo);
@@ -198,6 +198,7 @@ public class CheckoutUtil {
 		ShippingRequestCoordinator src = new ShippingRequestCoordinator(attributes);
 		try {
 			cart = src.retrieveShippingOptions(cart);
+			log.debug("retrieved shipping options.");
 			if(cart.getShippingOptions().size() == 0){
 				req.setParameter("nextStep", "");
 				PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
@@ -210,7 +211,7 @@ public class CheckoutUtil {
 			log.error("could not load shipping", e);
 			throw new ActionException(e.getMessage());
 		}
-		
+		log.debug("Retrieving Tax Information");
 		//create a Tax call to the SMTProxy
 		TaxationRequestCoordinator tax = new TaxationRequestCoordinator(attributes);
 		try {
@@ -230,7 +231,7 @@ public class CheckoutUtil {
 			log.error(e);
 			throw new ActionException(e.getMessage());
 		}
-		
+		log.debug("Retrieved Tax Information, returning cart.");
 		return cart;
 	}
 	
@@ -246,6 +247,7 @@ public class CheckoutUtil {
 			try {
 				sessVo = this.loadFranchiseVO(sessVo, webId);
 			} catch (Exception e) {
+				log.error(e);
 				throw new ActionException("could not load franchise info", e);
 			}
 		}
@@ -320,6 +322,8 @@ public class CheckoutUtil {
 				attributes.put("nextStep", "checkout");
 				throw new ActionException(cart.getErrors().get("message"));
 			//}
+		} else {
+			cart.getErrors().put("Complete", "true");
 		}
 		attributes.put("nextStep", "complete");
 		return cart;
@@ -481,6 +485,7 @@ public class CheckoutUtil {
 			log.debug("matched user to franchise=" + sessVo.getFranchise(user.getWebId()));
 			
 		} catch (Exception e) {
+			log.error(e);
 			throw new ActionException(e.getMessage(), e); //the error message will contain something 'friendly' sent from Keystone
 		}
 		

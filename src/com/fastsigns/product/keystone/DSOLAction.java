@@ -27,6 +27,7 @@ import com.siliconmtn.commerce.ShoppingCartVO;
 import com.siliconmtn.commerce.cart.storage.Storage;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.io.FileManagerFactoryImpl;
 import com.siliconmtn.json.PropertyStrategyWrapper;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.databean.FilePartDataBean;
@@ -246,7 +247,7 @@ public class DSOLAction extends SBActionAdapter {
 				String[] s = req.getParameter("dimensions").split(" x ");
 				data.addProdAttribute("widthPixels", Integer.parseInt(s[0]) * 72);
 				data.addProdAttribute("heightPixels", Integer.parseInt(s[1]) * 72);
-			} catch (Exception e) {} //possible Null, Arithmetic, or IndexOutOfBounds
+			} catch (Exception e) {log.error(e);} //possible Null, Arithmetic, or IndexOutOfBounds
 		}
 		
 		if (req.hasParameter("dsolProdDesc"))
@@ -290,6 +291,7 @@ public class DSOLAction extends SBActionAdapter {
 				data = (KeystoneProductVO) formatTemplates(byteData);
 				mod.setActionData(data);
 			} catch (InvalidDataException ide) {
+				log.error(ide);
 				mod.setError(ide);
 				mod.setErrorMessage("Unable to load DSOL Templates");
 			}
@@ -307,6 +309,7 @@ public class DSOLAction extends SBActionAdapter {
 				req.setAttribute("materials", mats);
 				mod.setActionData(mats);
 			} catch (InvalidDataException ide) {
+				log.error(ide);
 				mod.setError(ide);
 				mod.setErrorMessage("Unable to load DSOL Materials");
 			}
@@ -372,7 +375,7 @@ public class DSOLAction extends SBActionAdapter {
 			hrdoc.add(img);
 	        hrdoc.close();
 		} catch (Exception e) {
-			log.debug("Could not write pdf file.", e);
+			log.error("Could not write pdf file.", e);
 		}
 		
 		return baos.toByteArray();
@@ -381,8 +384,8 @@ public class DSOLAction extends SBActionAdapter {
 
 	public static String writeDsolFile(byte [] data, String name, Map<String, Object> attributes, String ran1, String ran2){
 		FileLoader fl  = null;
-		attributes.put("fileManagerType", "1");
-		
+		attributes.put(FileManagerFactoryImpl.CONFIG_FILE_MANAGER_TYPE, attributes.get(FileManagerFactoryImpl.CONFIG_THECUS_MANAGER_TYPE));
+		log.debug("Creating FileLoader of type: " + attributes.get(FileManagerFactoryImpl.CONFIG_FILE_MANAGER_TYPE));
 		FilePartDataBean fpdb = new FilePartDataBean();
 		fpdb.setCanonicalPath((String) attributes.get("keystoneDsolTempFilePath") + ran1 + ran2);
 		log.debug("path=" + fpdb.getCanonicalPath());
@@ -400,7 +403,8 @@ public class DSOLAction extends SBActionAdapter {
 			name2 = ran1 + ran2 + fl.writeFiles();
 			log.debug(name2);
 		} catch (Exception e) {
-			log.debug("There was a problem writing the File: ", e);
+			log.error("There was a problem writing the File: ", e);
+			return "";
 		}
 		return name2;
 	}

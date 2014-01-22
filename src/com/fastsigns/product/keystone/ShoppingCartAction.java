@@ -156,7 +156,7 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 	public void build(SMTServletRequest req) throws ActionException {
 		log.info("managing shopping cart");
 		Storage container = loadCartStorage(req);
-		ShoppingCartVO cart = container.load();
+		ShoppingCartVO cart = getCartData(container, req);
 		String msg = "";
 		String nextStep = null;
 				
@@ -169,20 +169,21 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 				cart = checkout.build(req, cart);
 				nextStep = (String) getAttribute("nextStep");
 				/*
-				 * If we have successfully placed and order, update the object_stor row with the job_id
-				 * we recieved from keystone to make lookup easier.  Also add profileId so we know who
+				 * If we have successfully placed and order, try to update the object_stor row with the job_id
+				 * we received from keystone to make lookup easier.  Also add profileId so we know who
 				 * these are tied to.
 				 */
-				if(nextStep != null && nextStep.equals("complete") && Convert.formatBoolean(cart.getErrors().get("success"))){
+				if(nextStep != null && StringUtil.checkVal(cart.getErrors().get("jobId")).length() > 0) {
 					String objectId = StringUtil.checkVal(req.getSession().getAttribute("CART_OBJ"));
 					String jobId = cart.getErrors().get("jobId");
 					StringBuilder sb = new StringBuilder();
 					sb.append("update object_stor set object_id=?, update_dt=?, profile_id=? where object_id=? ");
 
-					// Send a message summary of the order to the user who placed it. 
-					CheckoutReportUtil util = new CheckoutReportUtil(attributes, dbConn);
-					util.sendSummary(cart, CenterPageAction.getFranchiseId(req), (String)req.getSession().getAttribute("FranchiseLocationName"));
-					
+					// Send a message summary of the order to the user who placed it If payment succeeds. 
+					if(nextStep.equals("complete") && Convert.formatBoolean(cart.getErrors().get("success"))) {
+						CheckoutReportUtil util = new CheckoutReportUtil(attributes, dbConn);
+						util.sendSummary(cart, CenterPageAction.getFranchiseId(req), (String)req.getSession().getAttribute("FranchiseLocationName"));
+					}
 					PreparedStatement ps = null;
 					try {
 						ps = dbConn.prepareStatement(sb.toString());
@@ -194,11 +195,11 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 						log.debug("update obj_id=" + objectId + " to job_id=" + jobId);
 						container.flush();
 					} catch (Exception e){
-						log.debug("Could not update shopping cart storage.", e);
+						log.error("Could not update shopping cart storage.", e);
 					} finally {
 						try{
 							ps.close();
-						} catch(Exception e){}
+						} catch(Exception e){log.error(e);}
 					}
 				}
 			} catch (Exception ae) {
@@ -226,6 +227,7 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 					try {
 						newVo = vo.clone();
 					} catch (CloneNotSupportedException e) {
+						log.error(e);
 						newVo = new ShoppingCartItemVO();
 					}
 					newVo.setProduct(vo.getProduct());
@@ -237,6 +239,7 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 			try {
 				cart = addToCart(req, cart);
 			} catch (InvalidDataException ide) {
+				log.error(ide);
 				msg = ide.getMessage();
 			}
 		}
@@ -266,6 +269,8 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 			if (nextStep != null) url.append("&step=").append(nextStep);
 			if(req.hasParameter("startOver")){	
 				container.flush();
+				//need to flush the jobId in the event they've submitted but are dropping the cart.
+				req.removeAttribute("jobId");
 				req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
 				req.setAttribute(Constants.REDIRECT_URL, "/" + CenterPageAction.getFranchiseId(req) + "/store");
 			} else {
@@ -309,6 +314,26 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 		
 		return cart;
 	}
+	
+	/**
+	 * We need to ensure that when we reload a cart for reorder that we clear out
+	 * the errors map for it.  If we don't then we'll have problems with future
+	 * orders not saving to the correct job.
+	 */
+	private ShoppingCartVO getCartData(Storage s, SMTServletRequest req) {
+		boolean clearErrors = req.hasParameter("job_id");
+		ShoppingCartVO cart = null;
+		try {
+			cart = s.load();
+			if(clearErrors)
+				cart.setErrors(new HashMap<String, String>());
+		} catch (Exception e) {
+			log.error(e);
+		}
+		return cart;
+		
+		
+	}
 
 	
 	/* (non-Javadoc)
@@ -318,7 +343,7 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		log.info("loading cart object for display");
 		Storage container = loadCartStorage(req);
-		ShoppingCartVO cart = container.load();
+		ShoppingCartVO cart = getCartData(container, req);
 //		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 //		if((cart.getBillingInfo() != null && user == null) ||(cart.getBillingInfo() != null && !user.getProfileId().equals(cart.getBillingInfo().getProfileId()))){
 //			container.flush();
@@ -326,8 +351,13 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 //			cart.setBillingInfo(null);
 //			return;
 //		}
-		String step = req.getParameter("step");
-		if (req.hasParameter("step") && !"checkout".equals(step)) {
+		String step = req.getParameter("step"), create = req.getParameter("create");
+		boolean stepExists = req.hasParameter("step");
+		if(req.hasParameter("create") && create.equals("1") && cart.getItems().size() == 0) {
+			super.adminRedirect(req, "", "/" + req.getSession().getAttribute("FranchiseAliasId") + "/store");
+			return;
+		}
+		else if (stepExists && !"checkout".equals(step)) {
 			//these are "checkout" screens, not cart-mgmt related
 			CheckoutUtil checkout = new CheckoutUtil(attributes);
 			try {
@@ -377,13 +407,13 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 					req.getSession().setAttribute("CART_OBJ", guid);
 				super.sendRedirect("/cart", "Cart successfully reloaded", req);
 			} catch(SQLException e){
-				log.debug("unable to clone shopping cart storage.", e);
+				log.error("unable to clone shopping cart storage.", e);
 				String redir = "/" + CenterPageAction.getFranchiseId(req) + "/store?display=orders";
 				super.sendRedirect(redir, "Cart could not be loaded.  No Order information was found.", req);
 			} finally{
 				try{
 					ps.close();
-				} catch(Exception e){}
+				} catch(Exception e){log.error(e);}
 			}
 
 		}
@@ -393,6 +423,7 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 		try {
 			container = StorageFactory.getInstance(StorageFactory.PERSISTENT_STORAGE, attrs);
 		} catch (Exception e) {
+			log.error(e);
 			throw new ActionException(e);
 		}
         
