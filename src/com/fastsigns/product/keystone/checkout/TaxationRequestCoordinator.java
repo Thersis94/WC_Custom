@@ -87,7 +87,6 @@ public class TaxationRequestCoordinator {
 			taxReq.addTaxLocations(buildLocation(franchise.getLocation(), "src"));
 			taxReq.addTaxLocations(buildLocation(cart.getShippingInfo().getLocation(), "destn"));
 			taxReq = this.addLineItems(taxReq, cart);
-		log.debug("WINNING");
 		return taxReq;
 	}
 	
