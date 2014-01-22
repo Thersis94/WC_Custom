@@ -2,7 +2,10 @@ package com.depuy.events.vo;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
 /*****************************************************************************
@@ -29,8 +32,16 @@ public class LeadCityVO implements Serializable {
     private Date lastMailingDt = null;
     private int maxAgeNo = 0;
     
+    private Map<Integer, Integer> leads = null;
+    private boolean checkedTierOne = false;
+    private boolean checkedTierTwo = false;
+    private boolean checkedTierThree = false;
+    private boolean checkedTierFour = false;
+    
+    
     public LeadCityVO() {
     	super();
+    	setLeads(new HashMap<Integer, Integer>());
     }
     
 	public String getCityNm() {
@@ -99,4 +110,88 @@ public class LeadCityVO implements Serializable {
 	public void setMaxAgeNo(int maxAgeNo) {
 		this.maxAgeNo = maxAgeNo;
 	}
+
+	public Map<Integer, Integer> getLeads() {
+		return leads;
+	}
+
+	public void setLeads(Map<Integer, Integer> leads) {
+		this.leads = leads;
+	}
+
+	public void addLead(Integer range, Integer leadCnt, boolean checked) {
+		Integer cnt = this.leads.get(range);
+		if (cnt == null) cnt = 0;
+		cnt += leadCnt;
+		this.leads.put(range, cnt);
+		if (checked) this.setChecked(range, checked); //they're already false, only change to true
+	}
+	
+	/**
+	 * returns all leads <3mos.
+	 * NOTE in these 4 methods; the lead only fits in ONE of them when we load the data,
+	 * so when returning "all through X date", we must also combine the newer buckets
+	 * e.g. "all <12mos" =  all3mos + all6mos + all12mos.
+	 * @return
+	 */
+	public Integer getTierOne() {
+		return Convert.formatInteger(leads.get(3));
+	}
+	
+	/**
+	 * returns all leads <6mos.  sum all smaller (newer) buckets
+	 * @return
+	 */
+	public Integer getTierTwo() {
+		return Convert.formatInteger(leads.get(6)) + getTierOne();
+	}
+	
+	/**
+	 * returns all leads <12mos.  sum all smaller (newer) buckets
+	 * tier 2 already includes 1+2
+	 * @return
+	 */
+	public Integer getTierThree() {
+		return Convert.formatInteger(leads.get(12)) + getTierTwo();
+	}
+	
+	/**
+	 * returns all leads, regardless of age.  sum all 4 buckets
+	 * tier 3 already includes 1+2
+	 * @return
+	 */
+	public Integer getTierFour() {
+		return Convert.formatInteger(leads.get(240)) + getTierThree();
+	}
+
+	public boolean getTierOneChecked() {
+		return checkedTierOne;
+	}
+
+	public boolean getTierTwoChecked() {
+		return checkedTierTwo;
+	}
+
+	public boolean getTierThreeChecked() {
+		return checkedTierThree;
+	}
+
+	public boolean getTierFourChecked() {
+		return checkedTierFour;
+	}
+
+	public void setChecked(Integer range, boolean checked) {
+		if (range == null) return;
+		switch (range) {
+			case 3:
+				this.checkedTierOne = checked; break;
+			case 6:
+				this.checkedTierTwo = checked; break;
+			case 12:
+				this.checkedTierThree = checked; break;
+			case 240:
+				this.checkedTierFour = checked; break;
+		}
+	}
+	
 }
