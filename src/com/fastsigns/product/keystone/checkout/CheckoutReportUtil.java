@@ -143,6 +143,7 @@ public class CheckoutReportUtil {
 		}
 		sb.append("Subtitle: ").append(String.format("%.2f", cart.getSubTotal())).append("\n");
 		sb.append("Tax: ").append(String.format("%.2f", cart.getTaxAmount())).append("\n");
+		sb.append("Shipping: ").append(String.format("%.2f", cart.getShipping().getShippingCost())).append("\n");
 		sb.append("Order Total: ").append(String.format("%.2f", cart.getCartTotal()));
 		return sb.toString();
 	}
@@ -296,6 +297,7 @@ public class CheckoutReportUtil {
 		}
 		sb.append("<tr><td class='hide'></td><td colspan='2' align='right' style='background:#DDE2E6;padding:.75pt .75pt .75pt .75pt; text-align: right;'><strong>Subtitle:</strong></td><td align='right' style='background:#DDE2E6;padding:.75pt .75pt .75pt .75pt; text-align: right;'><strong>").append(String.format("%.2f", cart.getSubTotal())).append("</strong></td></tr>");
 		sb.append("<tr><td class='hide'></td><td colspan='2' align='right' style='background:#DDE2E6;padding:.75pt .75pt .75pt .75pt; text-align: right;'><strong>Tax:</strong></td><td align='right' style='background:#DDE2E6;padding:.75pt .75pt .75pt .75pt; text-align: right;'><strong>").append(String.format("%.2f", cart.getTaxAmount())).append("</strong></td></tr>");
+		sb.append("<tr><td class='hide'></td><td colspan='2' align='right' style='background:#DDE2E6;padding:.75pt .75pt .75pt .75pt; text-align: right;'><strong>Shipping:</strong></td><td align='right' style='background:#DDE2E6;padding:.75pt .75pt .75pt .75pt; text-align: right;'><strong>").append(String.format("%.2f", cart.getShipping().getShippingCost())).append("</strong></td></tr>");
 		sb.append("<tr><td class='hide'></td><td colspan='2' align='right' style='background:#DDE2E6;padding:.75pt .75pt .75pt .75pt; text-align: right;'><strong>Order Total:</strong></td><td align='right' style='background:#DDE2E6;padding:.75pt .75pt .75pt .75pt; text-align: right;'><strong>").append(String.format("%.2f", cart.getCartTotal())).append("</strong></td></tr>");
 		sb.append("</table>");
 		return sb.toString();
@@ -364,12 +366,12 @@ public class CheckoutReportUtil {
 			shipping.append("<strong>").append(cart.getShipping().getShippingMethodName()).append(": ");
 			shipping.append(String.format("%.2f", cart.getShipping().getShippingCost())).append("</strong>");
 		}
-		double tax = cart.getTaxAmount() / cart.getSubTotal() * cart.getShipping().getShippingCost();
+		//double tax = cart.getTaxAmount() / cart.getSubTotal() * cart.getShipping().getShippingCost();
 
 		shipping.append("</td></tr>");
-		shipping.append("<tr><td>Tax</td><td><strong id='taxTotal'>").append(String.format("%.2f", tax)).append("</strong></td></tr>");
+		//shipping.append("<tr><td>Tax</td><td><strong id='taxTotal'>").append(String.format("%.2f", tax)).append("</strong></td></tr>");
 		shipping.append("<tr><td>Total</td><td><strong id='costTotal'>");
-		shipping.append(String.format("%.2f", cart.getShipping().getShippingCost() + tax));
+		shipping.append(String.format("%.2f", cart.getShipping().getShippingCost()));
 		shipping.append("</strong></td></tr><tbody></table>");
 		return shipping.toString();
 	}
