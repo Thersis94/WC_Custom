@@ -66,7 +66,8 @@ public class CachingKeystoneProxy extends KeystoneProxy {
 		// Check the cache to see if our data already exists
     	try {
     		data = (byte[]) cache.getFromCache(cacheKey);
-			log.debug("Retrieved from cache: " + new String(data));
+    		log.debug("Retrieved data from cache");
+			//log.debug("Retrieved from cache: " + new String(data));
 			
 		} catch (NeedsRefreshException e) {
 			cache.cancelUpdate(cacheKey);
