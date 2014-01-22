@@ -73,7 +73,8 @@ public class ProductSearchAction extends AbstractBaseAction {
 				saveProds = new ArrayList<KeystoneProductVO>();
 				for (KeystoneProductVO prod : cat.getProducts()) {
 					if (StringUtil.checkVal(prod.getWeb_description()).toLowerCase().contains(searchTerm) ||
-							StringUtil.checkVal(prod.getDisplay_name()).toLowerCase().contains(searchTerm)) {
+							StringUtil.checkVal(prod.getDisplay_name()).toLowerCase().contains(searchTerm) ||
+							StringUtil.checkVal(prod.getName()).toLowerCase().contains(searchTerm)) {
 						saveProds.add(prod);
 					}
 				}
