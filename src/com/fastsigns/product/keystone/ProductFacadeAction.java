@@ -55,7 +55,7 @@ public class ProductFacadeAction extends SimpleActionAdapter {
 		ReqType type = null;
 		boolean first = req.hasParameter("firstEcommCall");
 		String franId = null;
-		if(!first && !req.hasParameter("amid")) {
+		if(!first && !req.hasParameter("amid") && !page.getAliasName().equals("cart")) {
 			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 			franId = site.getSiteId().replaceAll("^(.*)_([\\d]{1,5})_(.*)$", "$2");
 			req.getSession().setAttribute("FranchiseId", franId);
