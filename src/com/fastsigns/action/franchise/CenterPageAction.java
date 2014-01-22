@@ -8,6 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+
 // SMT Base Libs
 import com.fastsigns.action.franchise.centerpage.FranchiseInfoAction;
 import com.fastsigns.action.franchise.centerpage.FranchiseLocationInfoAction;
@@ -511,11 +512,11 @@ public class CenterPageAction extends SimpleActionAdapter {
 	public static String getFranchiseId(SMTServletRequest req) {
 		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 		String franId = null;
-		
+		PageVO page = (PageVO)req.getAttribute(Constants.PAGE_DATA);
 		if (site.getAliasPathName() != null && site.getAliasPathName().equals("webedit")) {
 			franId =  (String) req.getSession().getAttribute("webeditFranId");
 		}
-		if (franId == null) {
+		if (franId == null && !page.getAliasName().equals("store")) {
 			franId =  (String) req.getSession().getAttribute("FranchiseId");
 		}
 		if (franId == null) {
@@ -526,6 +527,14 @@ public class CenterPageAction extends SimpleActionAdapter {
 			franId = site.getSiteId().replaceAll("^(.*)_([\\d]{1,5})_(.*)$", "$2");
 			
 		}
+		if(page.getAliasName().equals("store")) {
+			//On the Ecommerce pages, if we go directly to a store page from another 
+			//center we will fail on all the links on the page.  Must set FranchiseID
+			//Also set AliasPath for Cart.
+			req.getSession().setAttribute("FranchiseId", franId);
+			req.getSession().setAttribute("EcommAliasPath", site.getAliasPathName());
+		}
+		log.debug(franId);
 		return franId;
 	}
 }
