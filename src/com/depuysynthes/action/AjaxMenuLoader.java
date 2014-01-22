@@ -227,6 +227,7 @@ public class AjaxMenuLoader extends SimpleActionAdapter {
 			
 		} finally {
 			mod.addCacheGroup(site.getSiteId());
+			if (site.getAliasPathParentId() != null) mod.addCacheGroup(site.getAliasPathParentId());
 			mod.setActionData(menuMod.getActionData());
 			attributes.put(Constants.MODULE_DATA, mod);
 			ac = null;

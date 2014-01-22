@@ -66,6 +66,7 @@ public class PageModuleApprovalAction extends ApprovalTemplateAction {
 				ps.setString(1, pmvo.getPageId());
 				ps.setString(2, pmvo.getComponentId());
 				ps.executeUpdate();
+				try { ps.close(); } catch (Exception e) { }
 				
 				//Delete old Page Modules
 				ps = dbConn.prepareStatement(getApproveDelete());
@@ -80,9 +81,11 @@ public class PageModuleApprovalAction extends ApprovalTemplateAction {
 				updateStatus(vos, AbstractChangeLogVO.Status.APPROVED.ordinal());
 				logger.logChange(req, vos);
 			}
-		} catch (Exception e) { log.debug("Error Approving Page Module Occured", e);} 
-		finally {try {ps.close();} catch (Exception e) {}}
-		
+		} catch (Exception e) { 
+			log.error("Error Approving Page Module Occured", e);
+		} finally {
+			try { ps.close(); } catch (Exception e) { }
+		}
 	}
 
 	/**
@@ -94,13 +97,16 @@ public class PageModuleApprovalAction extends ApprovalTemplateAction {
 			throws ActionException {
 		log.debug("Beginning Page Module Approval Process...");
 		PreparedStatement ps = null;
-		for(AbstractChangeLogVO vo : vos){
+		
+		for (AbstractChangeLogVO vo : vos) {
 			PageModuleLogVO pmvo = (PageModuleLogVO) vo;
+			
 			try {
 				//Deleting SBAction
 				ps = dbConn.prepareStatement(getDenySBActionDelete());
 				ps.setString(1, pmvo.getComponentId());
 				ps.executeUpdate();
+				try { ps.close(); } catch (Exception e) { }
 				
 				//Deleting Page Module
 				ps = dbConn.prepareStatement(getDenyPageModDelete());
@@ -108,12 +114,11 @@ public class PageModuleApprovalAction extends ApprovalTemplateAction {
 				ps.executeUpdate();
 				updateStatus(vos, AbstractChangeLogVO.Status.DENIED.ordinal());
 				logger.logChange(req, vos);
+				
 			} catch (SQLException e) {
 				log.error(e);
 			} finally {
-				try {
-					ps.close();
-				} catch (Exception e) {}
+				try { ps.close(); } catch (Exception e) { }
 			}
 		}
 		
