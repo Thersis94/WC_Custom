@@ -209,6 +209,20 @@ public class KeystoneProfileManager {
 				throw new InvalidDataException(msg);
 			}
 			
+			if(req.hasParameter("password")) {
+				proxy = new KeystoneProxy(attributes);
+				proxy.setModule("userContact");
+				proxy.setAction("eCommSetPassword");
+				proxy.addPostData("username", user.getEmailAddress());
+				proxy.addPostData("password", req.getParameter("password"));
+				byteData = proxy.getData();
+				jsonObject = JSONObject.fromObject(new String(byteData));
+				if (!jsonObject.optBoolean("success")) {
+					msg = "Password could not be saved.";
+					throw new SecurityException("Password could not be saved.");
+				}
+			}
+			
 		} catch (Exception e) {
 			if (msg == null) msg = "Error Saving Changes";
 			throw new InvalidDataException(msg);

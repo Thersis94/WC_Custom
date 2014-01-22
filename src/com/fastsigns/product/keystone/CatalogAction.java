@@ -49,7 +49,7 @@ public class CatalogAction extends AbstractBaseAction {
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		FastsignsSessVO sessVo = (FastsignsSessVO) req.getSession().getAttribute(KeystoneProxy.FRAN_SESS_VO);
-		String webId = (String)req.getSession().getAttribute(FastsignsSessVO.FRANCHISE_ID);
+		String webId = CenterPageAction.getFranchiseId(req);
 		
 		//Use Cached action and set necessary pieces for cache groups to be used. 
 		attributes.put("siteData", req.getAttribute(Constants.SITE_DATA));

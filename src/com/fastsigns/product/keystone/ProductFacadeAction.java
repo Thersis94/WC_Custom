@@ -13,6 +13,7 @@ import com.siliconmtn.http.SMTServletRequest;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -52,15 +53,25 @@ public class ProductFacadeAction extends SimpleActionAdapter {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		ReqType type = null;
-		
+		boolean first = req.hasParameter("firstEcommCall");
+		String franId = null;
+		if(!first && !req.hasParameter("amid") && !page.getAliasName().equals("cart")) {
+			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+			franId = site.getSiteId().replaceAll("^(.*)_([\\d]{1,5})_(.*)$", "$2");
+			req.getSession().setAttribute("FranchiseId", franId);
+			if(site.getAliasPathName() != null)
+				req.getSession().setAttribute("EcommAliasPath", site.getAliasPathName());
+			req.setParameter("firstEcommCall", "true");
+		} else
+			franId = CenterPageAction.getFranchiseId(req);
 		//verify we have some basic information in session.  All child actions are banking on this!
 		if (req.getSession().getAttribute(KeystoneProxy.FRAN_SESS_VO) == null) {
 			loadDefaultSession(req, true, attributes);
-		} else if(((FastsignsSessVO)req.getSession().getAttribute(KeystoneProxy.FRAN_SESS_VO)).getFranchise(CenterPageAction.getFranchiseId(req)) == null) {
+		} else if(((FastsignsSessVO)req.getSession().getAttribute(KeystoneProxy.FRAN_SESS_VO)).getFranchise(franId) == null) {
 			loadDefaultSession(req, false, attributes);
-		} else if (req.getSession().getAttribute(FastsignsSessVO.FRANCHISE_ID) == null) {
+		} else if (franId == null) {
 			//ensure we have a webId; almost all transactions revolve around this value
-			req.getSession().setAttribute(FastsignsSessVO.FRANCHISE_ID, CenterPageAction.getFranchiseId(req));
+			req.getSession().setAttribute(FastsignsSessVO.FRANCHISE_ID, franId);
 		}
 		
 		//since multiple actions can co-exist on a page, only honor request parameters 
