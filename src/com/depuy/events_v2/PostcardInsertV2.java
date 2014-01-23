@@ -9,6 +9,7 @@ import java.util.List;
 
 
 
+
 // SMT BaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -30,6 +31,7 @@ import com.smt.sitebuilder.action.event.vo.EventEntryVO;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.depuy.events.AbstractPostcardEmailer;
@@ -156,7 +158,8 @@ public class PostcardInsertV2 extends SBActionAdapter {
 
 		// setup the redirect url
 		StringBuilder redirectPg = new StringBuilder();
-		redirectPg.append(req.getRequestURI()).append("?reqType=").append(nextPage);
+		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+		redirectPg.append(page.getRequestURI()).append("?reqType=").append(nextPage);
 		redirectPg.append("&eventPostcardId=").append(eventPostcardId);
 		redirectPg.append("&msg=").append(message);
 		log.debug("redirUrl=" + redirectPg);

@@ -1,9 +1,5 @@
 package com.fastsigns.action.wizard.ecommerce;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-
-import com.fastsigns.action.franchise.CenterPageAction;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;

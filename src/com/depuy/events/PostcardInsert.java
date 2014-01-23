@@ -8,6 +8,7 @@ import java.util.StringTokenizer;
 
 import javax.servlet.http.HttpSession;
 
+
 // SMT BaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -23,6 +24,7 @@ import com.siliconmtn.util.databean.FilePartDataBean;
 import com.smt.sitebuilder.action.FileLoader;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.event.EventFacadeAction;
+import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
@@ -164,7 +166,8 @@ public class PostcardInsert extends SBActionAdapter {
 		}
 		
 		StringBuilder redirectPg = new StringBuilder();
-		redirectPg.append(req.getRequestURI()).append("?facadeType=postcard&reqType=");
+		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+		redirectPg.append(page.getRequestURI()).append("?facadeType=postcard&reqType=");
 		redirectPg.append(nextPage).append("&eventEntryId=");
 		redirectPg.append(StringUtil.checkVal(eventEntryId));
 		redirectPg.append("&eventPostcardId=").append(StringUtil.checkVal(eventPostcardId));

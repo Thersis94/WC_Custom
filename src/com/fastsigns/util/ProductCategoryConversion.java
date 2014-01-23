@@ -75,8 +75,9 @@ public class ProductCategoryConversion {
 			 */
 			String oldL = null;
 			String newL = null;
-			try{
-				Scanner s = new Scanner(new FileReader(importFile));
+			Scanner s = null;
+			try {
+				s = new Scanner(new FileReader(importFile));
 				while(s.hasNext()){
 					oldL = s.next();
 					newL = s.next();
@@ -85,15 +86,17 @@ public class ProductCategoryConversion {
 					buildQuery(bos, oldT, newT, oldT.countTokens());
 					oldL = null;
 					newL = null;
-					
 				}
+				
 			} catch (FileNotFoundException e){
-				System.err.println("Error, File: \"" + importFile + "\" not found.");
-				log.debug(e);
+//				System.err.println("Error, File: \"" + importFile + "\" not found.");
+				log.error(e);
 			} catch (IOException e) {
-				System.err.println("Error, IOException thrown for: " + oldL + " " + newL);
-				e.printStackTrace();
-				log.debug(e);
+//				System.err.println("Error, IOException thrown for: " + oldL + " " + newL);
+//				e.printStackTrace();
+				log.error(e);
+			} finally {
+				try { s.close(); } catch (Exception e) { }
 			}
 			
 			/*Iterator<UserDataVO> iter = profiles.iterator();

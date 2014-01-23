@@ -389,14 +389,17 @@ public class LogAction extends SBActionAdapter{
 		try{
 				ps = dbConn.prepareStatement(orphanPagesRemoval());
 				ps.execute();
+				try { ps.close(); } catch (Exception e) { }
 				log.debug(ps.getUpdateCount() + " Pages Removed");
+				
 				ps = dbConn.prepareStatement(orphanModuleRemoval());
 				ps.execute();
 				log.debug(ps.getUpdateCount() + " Modules Removed");
-		} catch(Exception e){
-			e.printStackTrace();
-		} finally{
-			try{ps.close();}catch(Exception e){}
+				
+		} catch(Exception e) {
+			log.error(e);
+		} finally {
+			try { ps.close(); } catch (Exception e) { }
 		}
 	}
 }
