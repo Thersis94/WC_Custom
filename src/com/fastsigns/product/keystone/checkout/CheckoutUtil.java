@@ -15,6 +15,7 @@ import com.fastsigns.product.keystone.KeystoneProxy;
 import com.fastsigns.product.keystone.MyProfileAction;
 import com.fastsigns.product.keystone.vo.KeystoneProductVO;
 import com.fastsigns.security.FastsignsSessVO;
+import com.fastsigns.security.FsKeystoneLoginModule;
 import com.fastsigns.security.KeystoneProfileManager;
 import com.fastsigns.security.KeystoneUserDataVO;
 import com.siliconmtn.action.ActionException;
@@ -26,6 +27,7 @@ import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.AbstractRoleModule;
+import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
@@ -426,11 +428,10 @@ public class CheckoutUtil {
 		KeystoneProfileManager pm = new KeystoneProfileManager(attributes);
 		FastsignsSessVO sessVo = (FastsignsSessVO) req.getSession().getAttribute(KeystoneProxy.FRAN_SESS_VO);
 		if (sessVo == null) sessVo = new FastsignsSessVO();
-		
 		KeystoneUserDataVO user = new KeystoneUserDataVO();
 		user.setData(req);
 		user.setUserId(mpa.ensureId(null)); //invalid GUID ensures a new account will get created at Keystone
-		
+
 		//if the user is logged in we need to pass their user_login_id.
 		//This scenario creates a Franchise account and attaches it to the login_account.
 		if (sessVo.getProfiles().size() > 0) {
@@ -454,6 +455,7 @@ public class CheckoutUtil {
 		log.debug("created userVO: " + user);
 		try {
 			user = pm.submitProfileToKeystone(user, req);
+			//req.getSession().setAttribute(Constants.USER_DATA, user);
 			
 			//log this user in, now that they have a valid account
 			try {
@@ -465,12 +467,14 @@ public class CheckoutUtil {
 					encProfileId = URLEncoder.encode(encProfileId, "UTF-8");
 				} catch (Exception e) {}
 				log.debug("encProfileId=" + encProfileId + " decProfileId=" + user.getProfileId());
-				req.setParameter("type", "ecomm");
-				SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+				//req.setParameter("type", "ecomm");
+				//SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 				attributes.put(AbstractRoleModule.HTTP_REQUEST, req);
-				SecurityController sc = new SecurityController(site.getLoginModule(), site.getRoleModule(), attributes);
-				sc.loadUserFromCookie(encProfileId, (String)attributes.get(Constants.ENCRYPT_KEY), 
-						(Connection)attributes.get(GlobalConfig.KEY_DB_CONN), req, site.getSiteId());
+				//SecurityController sc = new SecurityController(site.getLoginModule(), site.getRoleModule(), attributes);
+				//sc.loadUserFromCookie(encProfileId, (String)attributes.get(Constants.ENCRYPT_KEY), (Connection)attributes.get(GlobalConfig.KEY_DB_CONN), req, site.getSiteId());
+				FsKeystoneLoginModule klm = new FsKeystoneLoginModule(attributes);
+				user = (KeystoneUserDataVO) klm.retrieveUserData(encProfileId);
+				req.getSession().setAttribute(Constants.USER_DATA, user);
 				
 			} catch (Exception e) {
 				log.error("unable to log-in user transparently", e);
