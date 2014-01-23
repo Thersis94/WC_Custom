@@ -186,9 +186,9 @@ public class KeystoneProfileManager {
 		proxy.addPostData("first_name", user.getFirstName());
 		proxy.addPostData("last_name", user.getLastName());
 		if (attribs.get("divisionName") != null) proxy.addPostData("division_name", (String) attribs.get("divisionName"));
-		if (req.hasParameter("emailAddress")) proxy.addPostData("username", user.getEmailAddress());
+		if (req.hasParameter("emailAddress") || StringUtil.checkVal(user.getEmailAddress()).length() > 0) proxy.addPostData("username", user.getEmailAddress());
 		if (attribs.get("origUserName") != null) proxy.addPostData("orig_username", (String)attribs.get("origUserName")); 
-		if (req.hasParameter("password")) proxy.addPostData("password", user.getPassword());
+		if (req.hasParameter("password") || StringUtil.checkVal(user.getPassword()).length() > 0) proxy.addPostData("password", user.getPassword());
 		proxy.addPostData("phone", formatJSONPhones(user));
 		proxy.addPostData("multi_email", formatJSONEmails(user));
 		proxy.addPostData("company", user.getFullName());
