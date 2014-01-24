@@ -387,7 +387,7 @@ public class DSOLAction extends SBActionAdapter {
 		attributes.put(FileManagerFactoryImpl.CONFIG_FILE_MANAGER_TYPE, attributes.get("dsolFileManagerType"));
 		log.debug("Creating FileLoader of type: " + attributes.get(FileManagerFactoryImpl.CONFIG_FILE_MANAGER_TYPE));
 		FilePartDataBean fpdb = new FilePartDataBean();
-		fpdb.setCanonicalPath((String) attributes.get("keystoneDsolTempFilePath") + ran1 + ran2);
+		fpdb.setCanonicalPath((String) attributes.get("keystoneDsolTemplateFilePath") + ran1 + ran2);
 		log.debug("path=" + fpdb.getCanonicalPath());
 		String name2 = "";
 		fpdb.setFileName(name);
