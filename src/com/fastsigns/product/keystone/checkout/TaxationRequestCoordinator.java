@@ -50,7 +50,7 @@ public class TaxationRequestCoordinator {
 		TaxationRequestVO taxInfo = buildTaxRequest(cart);
 		proxy.addPostData("type", "json");
 		JsonConfig jsonConfig = new JsonConfig();
-		jsonConfig.setExcludes(new String[]{"data", "singleLineAddress"});
+		jsonConfig.setExcludes(new String[]{"data", "singleLineAddress", "matchCode"});
 		jsonConfig.setIgnoreDefaultExcludes(false);
 		jsonConfig.setCycleDetectionStrategy(CycleDetectionStrategy.LENIENT);
 		JSONObject jso = JSONObject.fromObject(taxInfo, jsonConfig);
