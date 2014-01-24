@@ -234,7 +234,7 @@ public class OrderSubmissionCoordinator {
 
 	public String moveFile(String path, Map<String, Object> attributes){
 		FileLoader fl  = null;
-		attributes.put("fileManagerType", "1");
+		attributes.put("fileManagerType", attributes.get("dsolFileManagerType"));
 		log.debug("path=" + (String) attributes.get("keystoneDsolTempFilePath") + path);
 		try {
 			fl = new FileLoader(attributes);
