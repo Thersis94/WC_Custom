@@ -384,7 +384,7 @@ public class DSOLAction extends SBActionAdapter {
 
 	public static String writeDsolFile(byte [] data, String name, Map<String, Object> attributes, String ran1, String ran2){
 		FileLoader fl  = null;
-		attributes.put(FileManagerFactoryImpl.CONFIG_FILE_MANAGER_TYPE, attributes.get(FileManagerFactoryImpl.CONFIG_THECUS_MANAGER_TYPE));
+		attributes.put(FileManagerFactoryImpl.CONFIG_FILE_MANAGER_TYPE, attributes.get("dsolFileManagerType"));
 		log.debug("Creating FileLoader of type: " + attributes.get(FileManagerFactoryImpl.CONFIG_FILE_MANAGER_TYPE));
 		FilePartDataBean fpdb = new FilePartDataBean();
 		fpdb.setCanonicalPath((String) attributes.get("keystoneDsolTempFilePath") + ran1 + ran2);
