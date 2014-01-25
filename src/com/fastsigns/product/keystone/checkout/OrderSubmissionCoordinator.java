@@ -27,8 +27,8 @@ import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-import com.smt.http.AbstractWebServiceServlet.TaxationServiceType;
 import com.smt.sitebuilder.action.FileLoader;
+import com.smt.taxation.TaxationRequestVO;
 
 
 /****************************************************************************
@@ -121,11 +121,14 @@ public class OrderSubmissionCoordinator {
 		FranchiseVO franchise = (FranchiseVO) attributes.get("franchise");
 		JSONObject order = new JSONObject();
 		
-		//determine the tax service we'll use; this comes from Keystone
-		TaxationServiceType taxType = TaxationServiceType.valueOf((String) franchise.getAttributes().get("ecomm_tax_service"));
-		order.accumulate("default_tax_service",taxType);
-		String taxIdKey = (TaxationServiceType.AVALARA.equals(taxType)) ? "avalara_tax_id" : "default_tax_service";
-		order.accumulate("customerTaxId", (String) franchise.getAttributes().get(taxIdKey));  //avalara_tax_id -or- default_tax_service
+		//call to the business rules to configure taxType, taxId, and keystoneEnvironment
+		TaxationRequestVO taxReq = new TaxationRequestVO();
+		taxReq = TaxationRequestCoordinator.configureTaxParameters(attributes, franchise, taxReq);
+		order.accumulate("default_tax_service", taxReq.getProviderType());
+		order.accumulate("customerTaxId", taxReq.getCustomerTaxId());
+		//not sure if this is needed, but... -JM 01.24.14
+		order.accumulate("environment", taxReq.getEnvironment());
+		
 		order.accumulate("products", buildProducts(cart));
 		return order;
 	}

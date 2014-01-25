@@ -16,6 +16,7 @@ import com.siliconmtn.commerce.ShoppingCartItemVO;
 import com.siliconmtn.commerce.ShoppingCartVO;
 import com.siliconmtn.gis.Location;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.UUIDGenerator;
 import com.smt.http.AbstractWebServiceServlet.TaxationServiceType;
 import com.smt.taxation.LineItemVO;
 import com.smt.taxation.TaxLocationVO;
@@ -74,11 +75,11 @@ public class TaxationRequestCoordinator {
 		FastsignsSessVO fran = (FastsignsSessVO) attributes.get(KeystoneProxy.FRAN_SESS_VO);
 		FranchiseVO franchise = (FranchiseVO) attributes.get("franchise");
 		log.debug("franchise: " + StringUtil.getToString(franchise));
-		log.debug("franchiseAttrs: " + StringUtil.getToString(franchise.getAttributes()));
+		log.debug("franchiseAttrs: " + franchise.getAttributes());
 		
 		TaxationRequestVO taxReq = new TaxationRequestVO();
 		taxReq.setPurchaseOrderNumber(cart.getPurchaseOrderNo());  //comes off request
-		taxReq.setReferenceCode(cart.getInvoiceNo()); //needs to be a jobID or cartId
+		taxReq.setReferenceCode(new UUIDGenerator().getUUID()); //needs to be a jobID or cartId --using a GUID for lack of something better -JM 1/24/14
 		log.debug("invoiceNo=" + cart.getInvoiceNo());
 		taxReq.setCompanyCode(franchise.getFranchiseId()); //franchiseId
 		taxReq.setCustomerId(franchise.getFranchiseId()); //franchiseId
@@ -90,14 +91,51 @@ public class TaxationRequestCoordinator {
 		taxReq.setAccountId(StringUtil.checkVal(franchise.getAttributes().get("avalara_tax_id"))); //franchise attrs: avalara_tax_id
 		taxReq.setExemptionNumber(StringUtil.checkVal(fran.getProfile(franchise.getWebId()).getAttributes().get("taxExempt")));
 		
+		//leverage business rules to configure taxType, taxId, and keystoneEnvironment
+		taxReq = configureTaxParameters(attributes, franchise, taxReq);
 		
+		
+		taxReq.addTaxLocations(buildLocation(franchise.getLocation(), "src"));
+		taxReq.addTaxLocations(buildLocation(cart.getShippingInfo().getLocation(), "destn"));
+		taxReq = this.addLineItems(taxReq, cart);
+		return taxReq;
+	}
+	
+	
+	
+	/**
+	 * reusable builder of TaxLocationVO from the passed LocationVO
+	 * @param l
+	 * @param locationId
+	 * @return
+	 */
+	private TaxLocationVO buildLocation(Location l, String locationId) {
+		TaxLocationVO loc = new TaxLocationVO();
+		loc.setLocationId(locationId);
+		loc.setAddress(l.getAddress());
+		loc.setCity(l.getCity());
+		loc.setState(l.getState());
+		loc.setZipCode(l.getZipCode());
+		return loc;
+	}
+	
+	
+	/**
+	 * leverages business rules to configure the tax parameters.  -JM 01-24-14
+	 * @param attributes
+	 * @param franchise
+	 * @param taxReq
+	 * @return
+	 */
+	protected static TaxationRequestVO configureTaxParameters(Map<String, Object> attributes, 
+			FranchiseVO franchise, TaxationRequestVO taxReq) {
 		//use WC config value to determine which Environment to set, PRODUCTION=PRODUCTION, always.
 		//STAGING = SANDBOX when using AVALARA, STAGING=MIGRATION where using FASTSIGNS_CUSTOM taxProvider
 		//one of [PRODUCTION, SANDBOX when in staging AND AVALARA, MIGRATION when in staging and custom]
 		String instanceNm = StringUtil.checkVal(attributes.get("keystoneEnvironment"));
 		
 		//determine the tax service we'll use; this comes from Keystone
-		//try-catch here because "ecomm_tax_service" is a GUID if != AVALARA.  -JM 01-24-14
+		//try-catch here because "ecomm_tax_service" is a GUID if != AVALARA.
 		TaxationServiceType taxType = null;
 		try {
 			taxType = TaxationServiceType.valueOf(franchise.getAttributes().get("ecomm_tax_service").toString());
@@ -117,21 +155,7 @@ public class TaxationRequestCoordinator {
 			taxReq.setEnvironment("STAGING".equalsIgnoreCase(instanceNm) ? "MIGRATION" : "PRODUCTION");
 		}
 		
-		taxReq.addTaxLocations(buildLocation(franchise.getLocation(), "src"));
-		taxReq.addTaxLocations(buildLocation(cart.getShippingInfo().getLocation(), "destn"));
-		taxReq = this.addLineItems(taxReq, cart);
 		return taxReq;
-	}
-	
-	
-	private TaxLocationVO buildLocation(Location l, String locationId) {
-		TaxLocationVO loc = new TaxLocationVO();
-		loc.setLocationId(locationId);
-		loc.setAddress(l.getAddress());
-		loc.setCity(l.getCity());
-		loc.setState(l.getState());
-		loc.setZipCode(l.getZipCode());
-		return loc;
 	}
 	
 	
