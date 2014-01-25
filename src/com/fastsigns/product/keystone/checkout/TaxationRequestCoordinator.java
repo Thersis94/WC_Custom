@@ -148,7 +148,7 @@ public class TaxationRequestCoordinator {
 		if (TaxationServiceType.AVALARA.equals(taxType)) {
 			//When Avalara: providerType="AVALARA", customerTaxId = "AVALARA"
 			taxReq.setCustomerTaxId(TaxationServiceType.AVALARA.toString());
-			taxReq.setEnvironment("STAGING".equalsIgnoreCase(instanceNm) ? "AVALARA" : "PRODUCTION");
+			taxReq.setEnvironment("STAGING".equalsIgnoreCase(instanceNm) ? "SANDBOX" : "PRODUCTION");
 		} else {
 			//When Custom: providerType="FASTSIGNS_CUSTOM", customerTaxId = "SOME Guid"
 			taxReq.setCustomerTaxId((String) franchise.getAttributes().get("default_tax_service"));
