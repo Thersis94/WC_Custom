@@ -234,13 +234,13 @@ public class OrderSubmissionCoordinator {
 
 	public String moveFile(String path, Map<String, Object> attributes){
 		FileLoader fl  = null;
-		attributes.put("fileManagerType", "1");
-		log.debug("path=" + (String) attributes.get("keystoneDsolTempFilePath") + path);
+		attributes.put("fileManagerType", attributes.get("dsolFileManagerType"));
+		log.debug("path=" + (String) attributes.get("keystoneDsolTemplateFilePath") + path);
 		try {
 			fl = new FileLoader(attributes);
-			String source = (String) attributes.get("keystoneDsolTempFilePath") + path, dest = (String) attributes.get("keystoneDsolFilePath") + path;
+			String source = (String) attributes.get("keystoneDsolTemplateFilePath") + path, dest = (String) attributes.get("keystoneDsolFilePath") + path;
 			fl.copy(source, dest);
-			fl.deleteFile((String) attributes.get("keystoneDsolTempFilePath") + path);
+			fl.deleteFile((String) attributes.get("keystoneDsolTemplateFilePath") + path);
 			return path;
 		} catch (Exception e) {
 			log.error("exception", e);

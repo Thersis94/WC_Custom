@@ -3,6 +3,8 @@ package com.fastsigns.product.keystone.checkout;
 import java.util.Map;
 
 import net.sf.json.JSONObject;
+import net.sf.json.JsonConfig;
+import net.sf.json.util.CycleDetectionStrategy;
 
 import org.apache.log4j.Logger;
 
@@ -47,7 +49,13 @@ public class TaxationRequestCoordinator {
 		try {
 		TaxationRequestVO taxInfo = buildTaxRequest(cart);
 		proxy.addPostData("type", "json");
-		proxy.addPostData("xmlData", JSONObject.fromObject(taxInfo).toString());
+		JsonConfig jsonConfig = new JsonConfig();
+		jsonConfig.setExcludes(new String[]{"data", "singleLineAddress", "matchCode"});
+		jsonConfig.setIgnoreDefaultExcludes(false);
+		jsonConfig.setCycleDetectionStrategy(CycleDetectionStrategy.LENIENT);
+		JSONObject jso = JSONObject.fromObject(taxInfo, jsonConfig);
+		log.debug(jso);
+		proxy.addPostData("xmlData", jso.toString());
 		byte[] data = proxy.getData();
 		log.debug(new String(data));
 		
