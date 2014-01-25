@@ -72,29 +72,35 @@ public class TaxationRequestCoordinator {
 	
 	private TaxationRequestVO buildTaxRequest(ShoppingCartVO cart) {
 		FranchiseVO franchise = (FranchiseVO) attributes.get("franchise");
-		log.debug("franchise=" + franchise);
-			FastsignsSessVO fran = (FastsignsSessVO) attributes.get(KeystoneProxy.FRAN_SESS_VO);
-			TaxationRequestVO taxReq = new TaxationRequestVO();
-			taxReq.setPurchaseOrderNumber("Cust PO Num");
-			taxReq.setReferenceCode("Keystone XML Test Invoice");
-			taxReq.setCompanyCode("smt");
-			taxReq.setCustomerId("fs_loc_1"); //franchiseId
-			taxReq.setCustomerCode(cart.getBillingInfo().getProfileId());
-			taxReq.setDetailLevel("Line");
-			taxReq.setDocumentType("SalesOrder");
-			taxReq.setCommitFlag(0);
-			taxReq.setLicenseId("F6B84F7ECD531A2F");
-			taxReq.setEnvironment("SANDBOX");
-			taxReq.setAccountId("1100090458");
-			taxReq.setExemptionNumber(StringUtil.checkVal(fran.getProfile(franchise.getWebId()).getAttributes().get("taxExempt")));
+		log.debug("franchise=" + StringUtil.getToString(franchise));
+		FastsignsSessVO fran = (FastsignsSessVO) attributes.get(KeystoneProxy.FRAN_SESS_VO);
+		TaxationRequestVO taxReq = new TaxationRequestVO();
+		taxReq.setPurchaseOrderNumber("Cust PO Num");
+		taxReq.setReferenceCode("Keystone XML Test Invoice");
+		taxReq.setCompanyCode("smt");
+		taxReq.setCustomerId("fs_loc_1"); //franchiseId
+		taxReq.setCustomerCode(cart.getBillingInfo().getProfileId());
+		taxReq.setDetailLevel("Line");
+		taxReq.setDocumentType("SalesOrder");
+		taxReq.setCommitFlag(0);
+		taxReq.setLicenseId("F6B84F7ECD531A2F");
+		taxReq.setEnvironment("SANDBOX");
+		taxReq.setAccountId("1100090458");
+		taxReq.setExemptionNumber(StringUtil.checkVal(fran.getProfile(franchise.getWebId()).getAttributes().get("taxExempt")));
 		//determine the tax service we'll use; this comes from Keystone
-			TaxationServiceType taxType = TaxationServiceType.valueOf(franchise.getAttributes().get("ecomm_tax_service").toString());
-			taxReq.setProviderType(taxType); //ecomm_tax_service
-			String taxIdKey = (TaxationServiceType.AVALARA.equals(taxType)) ? "avalara_tax_id" : "default_tax_service";
-			taxReq.setCustomerTaxId((String) franchise.getAttributes().get(taxIdKey));  //avalara_tax_id -or- default_tax_service
-			taxReq.addTaxLocations(buildLocation(franchise.getLocation(), "src"));
-			taxReq.addTaxLocations(buildLocation(cart.getShippingInfo().getLocation(), "destn"));
-			taxReq = this.addLineItems(taxReq, cart);
+		TaxationServiceType taxType = TaxationServiceType.valueOf(franchise.getAttributes().get("ecomm_tax_service").toString());
+		taxReq.setProviderType(taxType); //ecomm_tax_service
+		//String taxIdKey = (TaxationServiceType.AVALARA.equals(taxType)) ? "avalara_tax_id" : "default_tax_service";
+		if (TaxationServiceType.AVALARA.equals(taxType)) {
+			//When Avalara: providerType="AVALARA", customerTaxId = "AVALARA"
+			taxReq.setCustomerTaxId(TaxationServiceType.AVALARA.toString());
+		} else {
+			//When Custom: providerType="FASTSIGNS_CUSTOM", customerTaxId = "SOME Guid"
+			taxReq.setCustomerTaxId((String) franchise.getAttributes().get("default_tax_service"));  //avalara_tax_id -or- default_tax_service
+		}
+		taxReq.addTaxLocations(buildLocation(franchise.getLocation(), "src"));
+		taxReq.addTaxLocations(buildLocation(cart.getShippingInfo().getLocation(), "destn"));
+		taxReq = this.addLineItems(taxReq, cart);
 		return taxReq;
 	}
 	
