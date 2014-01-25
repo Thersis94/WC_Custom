@@ -71,22 +71,30 @@ public class TaxationRequestCoordinator {
 	}
 	
 	private TaxationRequestVO buildTaxRequest(ShoppingCartVO cart) {
-		FranchiseVO franchise = (FranchiseVO) attributes.get("franchise");
-		log.debug("franchise=" + StringUtil.getToString(franchise));
 		FastsignsSessVO fran = (FastsignsSessVO) attributes.get(KeystoneProxy.FRAN_SESS_VO);
+		FranchiseVO franchise = (FranchiseVO) attributes.get("franchise");
+		log.debug("franchise: " + StringUtil.getToString(franchise));
+		log.debug("franchiseAttrs: " + StringUtil.getToString(franchise.getAttributes()));
+		
 		TaxationRequestVO taxReq = new TaxationRequestVO();
-		taxReq.setPurchaseOrderNumber("Cust PO Num");
-		taxReq.setReferenceCode("Keystone XML Test Invoice");
-		taxReq.setCompanyCode("smt");
-		taxReq.setCustomerId("fs_loc_1"); //franchiseId
+		taxReq.setPurchaseOrderNumber(cart.getPurchaseOrderNo());  //comes off request
+		taxReq.setReferenceCode(cart.getInvoiceNo()); //needs to be a jobID or cartId
+		log.debug("invoiceNo=" + cart.getInvoiceNo());
+		taxReq.setCompanyCode(franchise.getFranchiseId()); //franchiseId
+		taxReq.setCustomerId(franchise.getFranchiseId()); //franchiseId
 		taxReq.setCustomerCode(cart.getBillingInfo().getProfileId());
-		taxReq.setDetailLevel("Line");
-		taxReq.setDocumentType("SalesOrder");
-		taxReq.setCommitFlag(0);
-		taxReq.setLicenseId("F6B84F7ECD531A2F");
-		taxReq.setEnvironment("SANDBOX");
-		taxReq.setAccountId("1100090458");
+		taxReq.setDetailLevel("Line"); //constant
+		taxReq.setDocumentType("SalesOrder"); //constant
+		taxReq.setCommitFlag(0); //constant for ecomm
+		taxReq.setLicenseId(StringUtil.checkVal(franchise.getAttributes().get("avalara_license_id"))); //franchise attrs: avalara_license_id
+		taxReq.setAccountId(StringUtil.checkVal(franchise.getAttributes().get("avalara_tax_id"))); //franchise attrs: avalara_tax_id
 		taxReq.setExemptionNumber(StringUtil.checkVal(fran.getProfile(franchise.getWebId()).getAttributes().get("taxExempt")));
+		
+		
+		//use WC config value to determine which Environment to set, PRODUCTION=PRODUCTION, always.
+		//STAGING = SANDBOX when using AVALARA, STAGING=MIGRATION where using FASTSIGNS_CUSTOM taxProvider
+		//one of [PRODUCTION, SANDBOX when in staging AND AVALARA, MIGRATION when in staging and custom]
+		String instanceNm = StringUtil.checkVal(attributes.get("keystoneEnvironment"));
 		
 		//determine the tax service we'll use; this comes from Keystone
 		//try-catch here because "ecomm_tax_service" is a GUID if != AVALARA.  -JM 01-24-14
@@ -98,13 +106,15 @@ public class TaxationRequestCoordinator {
 		}
 		taxReq.setProviderType(taxType);
 		
-		//String taxIdKey = (TaxationServiceType.AVALARA.equals(taxType)) ? "avalara_tax_id" : "default_tax_service";
+		//set the taxId and Environment according to the taxType
 		if (TaxationServiceType.AVALARA.equals(taxType)) {
 			//When Avalara: providerType="AVALARA", customerTaxId = "AVALARA"
 			taxReq.setCustomerTaxId(TaxationServiceType.AVALARA.toString());
+			taxReq.setEnvironment("STAGING".equalsIgnoreCase(instanceNm) ? "AVALARA" : "PRODUCTION");
 		} else {
 			//When Custom: providerType="FASTSIGNS_CUSTOM", customerTaxId = "SOME Guid"
 			taxReq.setCustomerTaxId((String) franchise.getAttributes().get("default_tax_service"));
+			taxReq.setEnvironment("STAGING".equalsIgnoreCase(instanceNm) ? "MIGRATION" : "PRODUCTION");
 		}
 		
 		taxReq.addTaxLocations(buildLocation(franchise.getLocation(), "src"));
