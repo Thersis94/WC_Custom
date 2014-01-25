@@ -87,19 +87,26 @@ public class TaxationRequestCoordinator {
 		taxReq.setEnvironment("SANDBOX");
 		taxReq.setAccountId("1100090458");
 		taxReq.setExemptionNumber(StringUtil.checkVal(fran.getProfile(franchise.getWebId()).getAttributes().get("taxExempt")));
+		
 		//determine the tax service we'll use; this comes from Keystone
-		TaxationServiceType taxType = TaxationServiceType.valueOf(franchise.getAttributes().get("ecomm_tax_service").toString());
+		//try-catch here because "ecomm_tax_service" is a GUID if != AVALARA.  -JM 01-24-14
+		TaxationServiceType taxType = null;
+		try {
+			taxType = TaxationServiceType.valueOf(franchise.getAttributes().get("ecomm_tax_service").toString());
+		} catch (Exception e) {
+			taxType = TaxationServiceType.FASTSIGNS_CUSTOM;
+		}
+		taxReq.setProviderType(taxType);
 		
 		//String taxIdKey = (TaxationServiceType.AVALARA.equals(taxType)) ? "avalara_tax_id" : "default_tax_service";
 		if (TaxationServiceType.AVALARA.equals(taxType)) {
 			//When Avalara: providerType="AVALARA", customerTaxId = "AVALARA"
-			taxReq.setProviderType(TaxationServiceType.AVALARA);
 			taxReq.setCustomerTaxId(TaxationServiceType.AVALARA.toString());
 		} else {
 			//When Custom: providerType="FASTSIGNS_CUSTOM", customerTaxId = "SOME Guid"
-			taxReq.setProviderType(TaxationServiceType.FASTSIGNS_CUSTOM);
-			taxReq.setCustomerTaxId((String) franchise.getAttributes().get("default_tax_service"));  //avalara_tax_id -or- default_tax_service
+			taxReq.setCustomerTaxId((String) franchise.getAttributes().get("default_tax_service"));
 		}
+		
 		taxReq.addTaxLocations(buildLocation(franchise.getLocation(), "src"));
 		taxReq.addTaxLocations(buildLocation(cart.getShippingInfo().getLocation(), "destn"));
 		taxReq = this.addLineItems(taxReq, cart);
