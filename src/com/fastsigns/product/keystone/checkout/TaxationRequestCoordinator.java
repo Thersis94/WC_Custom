@@ -81,18 +81,18 @@ public class TaxationRequestCoordinator {
 		taxReq.setPurchaseOrderNumber(cart.getPurchaseOrderNo());  //comes off request
 		taxReq.setReferenceCode(new UUIDGenerator().getUUID()); //needs to be a jobID or cartId --using a GUID for lack of something better -JM 1/24/14
 		log.debug("invoiceNo=" + cart.getInvoiceNo());
-//		taxReq.setCompanyCode(franchise.getFranchiseId()); //franchiseId
-//		taxReq.setCustomerId(franchise.getFranchiseId()); //franchiseId
-	taxReq.setCompanyCode("FSI0479");	
-	taxReq.setCustomerId("FSI0479");
+		taxReq.setCompanyCode(franchise.getFranchiseId()); //franchiseId
+		taxReq.setCustomerId(franchise.getFranchiseId()); //franchiseId
+//	taxReq.setCompanyCode("FSI0479");	
+//	taxReq.setCustomerId("FSI0479");
 		taxReq.setCustomerCode(cart.getBillingInfo().getProfileId());
 		taxReq.setDetailLevel("Line"); //constant
 		taxReq.setDocumentType("SalesOrder"); //constant
 		taxReq.setCommitFlag(0); //constant for ecomm
-//		taxReq.setLicenseId(StringUtil.checkVal(franchise.getAttributes().get("avalara_license_id"))); //franchise attrs: avalara_license_id
-	taxReq.setLicenseId("FB589952A0E356A9");
-//		taxReq.setAccountId(StringUtil.checkVal(franchise.getAttributes().get("avalara_tax_id"))); //franchise attrs: avalara_tax_id
-	taxReq.setAccountId("1100131557");
+		taxReq.setLicenseId(StringUtil.checkVal(franchise.getAttributes().get("avalara_license_id"))); //franchise attrs: avalara_license_id
+//	taxReq.setLicenseId("FB589952A0E356A9");
+		taxReq.setAccountId(StringUtil.checkVal(franchise.getAttributes().get("avalara_tax_id"))); //franchise attrs: avalara_tax_id
+//	taxReq.setAccountId("1100131557");
 		taxReq.setExemptionNumber(StringUtil.checkVal(fran.getProfile(franchise.getWebId()).getAttributes().get("taxExempt")));
 		
 		//leverage business rules to configure taxType, taxId, and keystoneEnvironment
@@ -152,8 +152,8 @@ public class TaxationRequestCoordinator {
 		if (TaxationServiceType.AVALARA.equals(taxType)) {
 			//When Avalara: providerType="AVALARA", customerTaxId = "AVALARA"
 			taxReq.setCustomerTaxId(TaxationServiceType.AVALARA.toString());
-//			taxReq.setEnvironment("STAGING".equalsIgnoreCase(instanceNm) ? "SANDBOX" : "PRODUCTION");
-		taxReq.setEnvironment("PRODUCTION");
+			taxReq.setEnvironment("STAGING".equalsIgnoreCase(instanceNm) ? "SANDBOX" : "PRODUCTION");
+//		taxReq.setEnvironment("PRODUCTION");
 		} else {
 			//When Custom: providerType="FASTSIGNS_CUSTOM", customerTaxId = "SOME Guid"
 			taxReq.setCustomerTaxId((String) franchise.getAttributes().get("default_tax_service"));

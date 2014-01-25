@@ -1,7 +1,6 @@
 package com.fastsigns.product.keystone.checkout;
 
 import java.net.URLEncoder;
-import java.sql.Connection;
 import java.util.Map;
 
 import javax.servlet.http.Cookie;
@@ -27,16 +26,13 @@ import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.AbstractRoleModule;
-import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.PageVO;
-import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.common.constants.ErrorCodes;
-import com.smt.sitebuilder.security.SecurityController;
 
 /****************************************************************************
  * <b>Title</b>: CheckoutUtil.java<p/>
