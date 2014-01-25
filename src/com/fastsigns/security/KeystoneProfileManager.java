@@ -135,6 +135,7 @@ public class KeystoneProfileManager {
 		franVo.addAttribute("ups_account",franObj.opt("ups_account"));
 		franVo.addAttribute("default_tax_service",franObj.opt("default_tax_service"));
 		franVo.addAttribute("avalara_tax_id",franObj.opt("avalara_tax_id"));
+		franVo.addAttribute("avalara_license_id",franObj.opt("avalara_license_id"));
 		Object ecomTaxServ = franObj.opt("ecomm_tax_service");
 		if(ecomTaxServ == null)
 			throw new InvalidDataException("Ecommerce not active for franchise");
