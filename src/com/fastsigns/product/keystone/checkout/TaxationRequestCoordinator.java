@@ -83,7 +83,7 @@ public class TaxationRequestCoordinator {
 		log.debug("invoiceNo=" + cart.getInvoiceNo());
 //		taxReq.setCompanyCode(franchise.getFranchiseId()); //franchiseId
 //		taxReq.setCustomerId(franchise.getFranchiseId()); //franchiseId
-	taxReq.setCompanyCode("FSI0479");
+	taxReq.setCompanyCode("FSI0479");	
 	taxReq.setCustomerId("FSI0479");
 		taxReq.setCustomerCode(cart.getBillingInfo().getProfileId());
 		taxReq.setDetailLevel("Line"); //constant
