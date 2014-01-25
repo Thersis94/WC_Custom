@@ -89,13 +89,15 @@ public class TaxationRequestCoordinator {
 		taxReq.setExemptionNumber(StringUtil.checkVal(fran.getProfile(franchise.getWebId()).getAttributes().get("taxExempt")));
 		//determine the tax service we'll use; this comes from Keystone
 		TaxationServiceType taxType = TaxationServiceType.valueOf(franchise.getAttributes().get("ecomm_tax_service").toString());
-		taxReq.setProviderType(taxType); //ecomm_tax_service
+		
 		//String taxIdKey = (TaxationServiceType.AVALARA.equals(taxType)) ? "avalara_tax_id" : "default_tax_service";
 		if (TaxationServiceType.AVALARA.equals(taxType)) {
 			//When Avalara: providerType="AVALARA", customerTaxId = "AVALARA"
+			taxReq.setProviderType(TaxationServiceType.AVALARA);
 			taxReq.setCustomerTaxId(TaxationServiceType.AVALARA.toString());
 		} else {
 			//When Custom: providerType="FASTSIGNS_CUSTOM", customerTaxId = "SOME Guid"
+			taxReq.setProviderType(TaxationServiceType.FASTSIGNS_CUSTOM);
 			taxReq.setCustomerTaxId((String) franchise.getAttributes().get("default_tax_service"));  //avalara_tax_id -or- default_tax_service
 		}
 		taxReq.addTaxLocations(buildLocation(franchise.getLocation(), "src"));
