@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.depuy.events_v2;
 
 import java.sql.PreparedStatement;
@@ -13,10 +10,12 @@ import java.util.Map;
 
 import com.depuy.events_v2.vo.DePuyEventSeminarVO;
 import com.depuy.events_v2.vo.RsvpBreakdownVO;
+import com.depuy.events_v2.vo.report.ComplianceReportVO;
 import com.depuy.events_v2.vo.report.EventPostalLeadsReportVO;
 import com.depuy.events_v2.vo.report.EventRollupReportVO;
 import com.depuy.events_v2.vo.report.PostcardSummaryReportVO;
 import com.depuy.events_v2.vo.report.RsvpBreakdownReportVO;
+import com.depuy.events_v2.vo.report.RsvpSummaryReportVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
@@ -24,6 +23,8 @@ import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.action.event.EventRSVPAction;
+import com.smt.sitebuilder.action.event.vo.EventEntryVO;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.SiteVO;
@@ -40,6 +41,10 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @since Jan 19, 2014
  ****************************************************************************/
 public class ReportBuilder extends SBActionAdapter {
+	
+	public enum ReportType {
+		mailingList, summary, locator, leads, rsvpSummary,  seminarRollup, rsvpBreakdown, /* leadAging, */ compliance;
+	}
 
 	public ReportBuilder(ActionInitVO actionInit) {
 		super(actionInit);
@@ -49,39 +54,52 @@ public class ReportBuilder extends SBActionAdapter {
 		super();
 	}
 
+	@SuppressWarnings("incomplete-switch")
 	public void generateReport(SMTServletRequest req, Object data) throws ActionException {
-		int type = Convert.formatInteger(req.getParameter("rptType"));
+		ReportType type = null;
+		try {
+			type= ReportType.valueOf(req.getParameter("rptType"));
+		} catch (Exception e) {
+			throw new ActionException("unknown report type", e);
+		}
+		
 		AbstractSBReportVO rpt = null;
+		DePuyEventSeminarVO sem = null;
 		
 		switch (type) {
-			case 4:
-				DePuyEventSeminarVO vo = (DePuyEventSeminarVO) data;
-				SiteVO site = (SiteVO ) req.getAttribute(Constants.SITE_DATA);
-				vo.setBaseUrl(site.getFullSiteAlias() + "/binary/org/DEPUY/" + site.getSiteId());
-				rpt = generateSeminarSummaryReport(vo);
+			case compliance:
+				sem = (DePuyEventSeminarVO) data;
+				rpt = generateComplianceReport(sem);
 				break;
-			case 5:
-			case 2:
-			case 1:
-				DePuyEventSeminarVO sem = (DePuyEventSeminarVO) data; 
+			case summary:
+				sem = (DePuyEventSeminarVO) data;
+				SiteVO site = (SiteVO ) req.getAttribute(Constants.SITE_DATA);
+				sem.setBaseUrl(site.getFullSiteAlias() + "/binary/org/DEPUY/" + site.getSiteId());
+				rpt = generateSeminarSummaryReport(sem);
+				break;
+			case mailingList:
+				sem = (DePuyEventSeminarVO) data; 
 				rpt = this.generatePostcardRecipientsReport(sem, Convert.formatDate(req.getParameter("startDate")));
 				break;
-			case 8:
-				rpt = this.generateSeminarRollupReport(Convert.formatDate(req.getParameter("rptStartDate")), Convert.formatDate(req.getParameter("rptEndDate")));
+			case seminarRollup:
+				//TODO
+//				rpt = this.generateSeminarRollupReport(Convert.formatDate(req.getParameter("rptStartDate")), Convert.formatDate(req.getParameter("rptEndDate")));
 				break;
-			case 9:
+			case rsvpBreakdown:
 				rpt = this.generateRSVPBreakdownReport(
 							Convert.formatDate(Convert.DATE_SLASH_PATTERN, req.getParameter("rptStartDate2")), 
 							Convert.formatDate(Convert.DATE_SLASH_PATTERN, req.getParameter("rptEndDate2")));
 				break;
-//			case 10:
+			case rsvpSummary:
+				rpt = this.generateRSVPSummaryReport(data);
+				break;
+//			case leadAging:
 //				rpt = this.generateLeadsAgingReport();
 //				break;
 		}
 		
 		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, Boolean.TRUE);
 		req.setAttribute(Constants.BINARY_DOCUMENT, rpt);
-		
 	}
 	
 	
@@ -163,9 +181,9 @@ public class ReportBuilder extends SBActionAdapter {
 		Object data = null;
 		EventRollupReportVO rpt = new EventRollupReportVO();
 		rpt.setData(data);
-		return null;
+		return rpt;
 	}
-	
+
 	
 	/**
 	 * returns a report of patient leads with their mailing address, to be sent postcards.
@@ -180,7 +198,7 @@ public class ReportBuilder extends SBActionAdapter {
 		ldt.setAttributes(attributes);
 		ldt.setDBConnection(dbConn);
 		
-		sem.setLeadsData(ldt.pullLeads(sem, 5, start));
+		sem.setLeadsData(ldt.pullLeads(sem, ReportType.mailingList, start));
 		AbstractSBReportVO rpt = new EventPostalLeadsReportVO();
 		rpt.setData(sem);
 		return rpt;
@@ -195,6 +213,41 @@ public class ReportBuilder extends SBActionAdapter {
 	public AbstractSBReportVO generateSeminarSummaryReport(Object data) {
 		PostcardSummaryReportVO rpt = new PostcardSummaryReportVO();
 		rpt.setData(data);
+		return rpt;
+	}
+	
+	
+	/**
+	 * generates a PDF version of the compliance form, customized for the Seminar
+	 * @param data
+	 * @return
+	 */
+	public AbstractSBReportVO generateComplianceReport(Object data) {
+		AbstractSBReportVO rpt = new ComplianceReportVO();
+		rpt.setData(data);
+		return rpt;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public AbstractSBReportVO generateRSVPSummaryReport(Object data) {
+		RsvpSummaryReportVO rpt = new RsvpSummaryReportVO();
+		List<EventEntryVO> eventsList = new ArrayList<EventEntryVO>();
+		List<DePuyEventSeminarVO> seminars = (List<DePuyEventSeminarVO>) data;
+		
+		EventRSVPAction rsvpAction = new EventRSVPAction(this.actionInit);
+		rsvpAction.setAttributes(this.attributes);
+		rsvpAction.setDBConnection(dbConn);
+		
+		for (DePuyEventSeminarVO sem : seminars) {
+			for (EventEntryVO  event: sem.getEvents()) {
+				//call the RSVP action for summations by event
+				event.setContactName(sem.getOwner().getFirstName() + " " + sem.getOwner().getLastName());
+				event.setRsvpSummary(rsvpAction.rsvpSummary(event.getActionId()));
+				eventsList.add(event);
+			}
+		}
+		rpt.setData(eventsList);
+		
 		return rpt;
 	}
 	

@@ -13,8 +13,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+
 // SMT BaseLibs
 import com.depuy.events.vo.LeadCityVO;
+import com.depuy.events_v2.ReportBuilder.ReportType;
 import com.depuy.events_v2.vo.DePuyEventSeminarVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -51,15 +53,6 @@ public class LeadsDataToolV2 extends SBActionAdapter {
 	
 	private final double MAX_DISTANCE = 62.00; //radians a lead would drive to a Seminar  ~50mi
 	
-	private static final int TARGET_LEADS = 2;
-	public static final int POSTCARD_SUMMARY_PULL = 4;
-	public static final int MAILING_LIST_BY_DATE_PULL = 5;
-	//public static final int LOCATOR_REPORT = 6; //not used here
-	public static final int RSVP_SUMMARY_REPORT = 7; //comes from WC core
-	public static final int EVENT_ROLLUP_REPORT = 8; //not used here
-	public static final int RSVP_BREAKDOWN_REPORT = 9; //not used here
-	//public static final int LEAD_AGING_REPORT = 10;
-	
 	public enum SortType { city, county, zip }
 	private UUIDGenerator uuid = null;
 	
@@ -81,7 +74,7 @@ public class LeadsDataToolV2 extends SBActionAdapter {
 	 * @param leads
 	 * @throws ActionException
 	 */
-	protected List<UserDataVO> pullLeads(DePuyEventSeminarVO sem, int type,
+	protected List<UserDataVO> pullLeads(DePuyEventSeminarVO sem, ReportType type,
 			Date startDt) throws ActionException {
 		log.debug("starting LeadsDataTool::pullLeads()");
 		List<UserDataVO> data = new ArrayList<UserDataVO>();
@@ -93,7 +86,7 @@ public class LeadsDataToolV2 extends SBActionAdapter {
 		sql.append("select a.*, lds.max_age_no, lds.event_lead_source_id ");
 		sql.append("from (select * from DEPUY_SEMINARS_VIEW where valid_address_flg=1 and (latitude_no between ? and ?) and (longitude_no between ? and ?)) as a ");
 		//when targetting leads we may not have data the in _DATASOURCE table; use the join to denote 'checked' radio buttons.
-		sql.append((type == TARGET_LEADS) ? "left outer" : "inner").append(" join ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		sql.append((ReportType.leads == type) ? "left outer" : "inner").append(" join ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("DEPUY_EVENT_LEADS_DATASOURCE lds on a.state_cd=lds.state_cd and (a.city_nm=lds.city_nm or a.zip_cd=lds.zip_cd) ");
 		sql.append("and a.product_cd=lds.PRODUCT_CD and lds.event_postcard_id=? ");
 		sql.append("where  a.product_cd in (");
@@ -127,7 +120,7 @@ public class LeadsDataToolV2 extends SBActionAdapter {
 				if (createDt == null) createDt = new Date();
 				
 				//no date filters on the targetLeads page.  This is only used in reports:
-				if (type != TARGET_LEADS) {
+				if (ReportType.leads != type) {
 					//if we've been asked for "newer than a certain date" leads, filter the old ones out first.
 					if (startDt != null && startDt.after(createDt)) continue; 
 							
@@ -154,7 +147,7 @@ public class LeadsDataToolV2 extends SBActionAdapter {
 				vo.setZipCode(pm.getStringValue("ZIP_CD", db.getStringVal("zip_cd", rs)));
 				
 				//grab some extras we need for display cosmetics
-				if (type == TARGET_LEADS) {
+				if (ReportType.leads == type) {
 					//we don't want max-age here (as an upper-limit), we want the LEAD'S age
 					vo.setBirthYear(bucketizeLeadAge(differenceInMonths(createDt)));
 					vo.setAliasName(rs.getString("event_lead_source_id"));
@@ -226,7 +219,7 @@ public class LeadsDataToolV2 extends SBActionAdapter {
 		uuid = new UUIDGenerator();
 		
 		//load the user base
-		List<UserDataVO> leads = this.pullLeads(sem, TARGET_LEADS, null);
+		List<UserDataVO> leads = this.pullLeads(sem, ReportType.leads, null);
 		
 		//define data containers
 		Map<Location, LeadCityVO> locnData  = new TreeMap<Location, LeadCityVO>(new LocationComparator());

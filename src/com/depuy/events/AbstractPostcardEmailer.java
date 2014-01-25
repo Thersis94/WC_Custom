@@ -52,6 +52,12 @@ public abstract class AbstractPostcardEmailer  {
 	 * @param req
 	 */
 	public abstract void sendApprovalRequest(SMTServletRequest req);
+
+	/**
+	 * sends event approval request to AMD for SRC approval.
+	 * @param req
+	 */
+	public abstract void sendSRCApprovalRequest(SMTServletRequest req);
 	
 	/**
 	 * sends event owner notification their event/postcard was approved

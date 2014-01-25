@@ -95,9 +95,9 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 		rpt.append("<tr><td>Surgeon/Office Email(s):</td><td align='center'>").append(surg.getPractEmail()).append("</td></tr>\r");
 		rpt.append("<tr><td>Secondary Contact:</td><td align='center'>").append(surg.getSecPhone()).append("</td></tr>\r");
 		rpt.append("<tr><td>Secondary Contact Email:</td><td align='center'>").append(surg.getSecEmail()).append("</td></tr>\r");
-		rpt.append("<tr><td>Practice Website:</td><td align='center'>").append(surg.getPractWebsite()).append("</td></tr>\r");
+		rpt.append("<tr><td>Practice Website:</td><td align='center'>").append(StringUtil.checkVal(surg.getPractWebsite())).append("</td></tr>\r");
 		rpt.append("<tr><td>Surgeon Photo:</td><td align='center'>").append(surg.getLogoFileUrl()).append("</td></tr>\r");
-		rpt.append("<tr><td>Surgeon Bio:</td><td align='center'>").append(surg.getSurgeonBio()).append("</td></tr>\r");
+		rpt.append("<tr><td>Surgeon Bio:</td><td align='center'>").append(StringUtil.checkVal(surg.getSurgeonBio())).append("</td></tr>\r");
 		rpt.append("<tr><td colspan='2'>&nbsp;</td></tr>\r");
 		
 		
@@ -108,7 +108,7 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 			CoopAdVO ad = sem.getNewspaperAd();
 			rpt.append("<tr><td colspan='2'>&nbsp;</td></tr>\r");
 			rpt.append("<tr><td colspan='2' style='background-color: #ccc;'><b>Newspaper Ad</td></tr>\r");
-			rpt.append("<tr><td>Ad Type:</td><td align='center'>").append(ad.getAdType()).append("</td></tr>\r");
+			rpt.append("<tr><td>Ad Type:</td><td align='center'>").append(StringUtil.checkVal(ad.getAdType())).append("</td></tr>\r");
 			rpt.append("<tr><td>Sponsored Newspaper:</td><td align='center'>").append(StringUtil.checkVal(ad.getNewspaper1Text())).append(" (").append(ad.getNewspaper1Phone()).append(")</td></tr>\r");
 			rpt.append("<tr><td>Co-Op Ad Approved:</td><td align='center'>").append((ad.getStatusFlg() == 3) ? "Yes" : "No").append("</td></tr>\r");
 			rpt.append("<tr><td>Approved Paper:</td><td align='center'>").append(StringUtil.checkVal(ad.getApprovedPaperName())).append("</td></tr>\r");

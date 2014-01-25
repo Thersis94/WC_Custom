@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
 
+
 // SMT BaseLibs
 import com.depuy.events.vo.DePuyEventEntryVO;
 import com.depuy.events.vo.DePuyEventPostcardVO;
@@ -337,5 +338,15 @@ public class DePuyPostcardEmailer extends AbstractPostcardEmailer {
     	
     	log.debug("done sending cancellation email");
 		return;
+	}
+	
+
+
+	/* (non-Javadoc)
+	 * @see com.depuy.events.AbstractPostcardEmailer#sendSRCApprovalRequest(com.siliconmtn.http.SMTServletRequest)
+	 */
+	@Override
+	public void sendSRCApprovalRequest(SMTServletRequest req) {
+		//not used here
 	}
 }

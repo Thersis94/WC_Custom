@@ -251,4 +251,13 @@ public class MitekPostcardEmailer extends AbstractPostcardEmailer {
     	log.debug("done sending cancellation email");
 		return;
 	}
+
+
+	/* (non-Javadoc)
+	 * @see com.depuy.events.AbstractPostcardEmailer#sendSRCApprovalRequest(com.siliconmtn.http.SMTServletRequest)
+	 */
+	@Override
+	public void sendSRCApprovalRequest(SMTServletRequest req) {
+		//not used here
+	}
 }

@@ -10,6 +10,8 @@ import java.util.List;
 
 
 
+
+
 // SMT BaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -33,10 +35,11 @@ import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
+import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.depuy.events.AbstractPostcardEmailer;
-import com.depuy.events.LeadsDataTool;
 import com.depuy.events_v2.LeadsDataToolV2.SortType;
+import com.depuy.events_v2.ReportBuilder.ReportType;
 import com.depuy.events_v2.vo.DePuyEventSeminarVO;
 import com.depuy.events_v2.vo.PersonVO.Role;
 
@@ -181,11 +184,12 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder();
 		if (pkId != null) {
 			sql.append("update event_postcard set update_dt=?, quantity_no=?, ");
-			sql.append("mailing_addr_txt=?, label_txt=?, content_no=? where event_postcard_id=?");
+			sql.append("mailing_addr_txt=?, label_txt=?, content_no=?, territory_no=? ");
+			sql.append("where event_postcard_id=?");
 		} else {
 			sql.append("insert into event_postcard (organization_id, profile_id, ");
 			sql.append("create_dt, quantity_no, mailing_addr_txt, label_txt, content_no, ");
-			sql.append("event_postcard_id) values (?,?,?,?,?,?,?,?)");
+			sql.append("territory_no, event_postcard_id) values (?,?,?,?,?,?,?,?,?)");
 		}
 		log.debug("saving event postcard: " + sql);
 
@@ -203,6 +207,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 			ps.setString(x++, req.getParameter("postcardMailingAddress"));
 			ps.setString(x++, req.getParameter("postcardLabel"));
 			ps.setString(x++, req.getParameter("contentNo"));
+			ps.setInt(x++, Convert.formatInteger(req.getParameter("territoryNumber")));
 			ps.setString(x++, pkId);
 
 			if (ps.executeUpdate() < 1)
@@ -663,15 +668,17 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		message = "Seminar Submitted Successfully";
 
 		// get the postcard data for emailing & approving each event
-		req.setParameter("reqType", "report");
-		req.setParameter("rptType", Integer.valueOf(	LeadsDataTool.POSTCARD_SUMMARY_PULL).toString());
-		
-		DePuyEventSeminarVO sem = fetchSeminar(req);
+		DePuyEventSeminarVO sem = fetchSeminar(req, ReportType.summary);
 		req.setAttribute("postcard", sem);
 		
 		// send approval request email
 		AbstractPostcardEmailer epe = AbstractPostcardEmailer.newInstance(null, attributes, dbConn);
 		epe.sendApprovalRequest(req);
+		
+		//reload the seminar with complaince form report
+		sem = fetchSeminar(req, ReportType.compliance);
+		req.setAttribute("postcard", sem);
+		epe.sendSRCApprovalRequest(req);
 
 		return;
 	}
@@ -731,10 +738,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		message = "The Seminar was Approved";
 
 		// get the postcard data for emailing & approving each event
-		req.setParameter("reqType", "report");
-		req.setParameter("rptType", Integer.valueOf(LeadsDataTool.POSTCARD_SUMMARY_PULL).toString());
-		
-		DePuyEventSeminarVO sem = fetchSeminar(req);
+		DePuyEventSeminarVO sem = fetchSeminar(req, ReportType.summary);
 		req.setAttribute("postcard", sem);
 //
 //		// send notification emails w/postcard data
@@ -764,14 +768,15 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	private DePuyEventSeminarVO fetchSeminar(SMTServletRequest req) {
-		PostcardSelectV2 epsa = new PostcardSelectV2(actionInit);
+	private DePuyEventSeminarVO fetchSeminar(SMTServletRequest req, ReportType reportType) {
+		DePuyEventManageActionV2 epsa = new DePuyEventManageActionV2(actionInit);
 		epsa.setDBConnection(dbConn);
-		epsa.setActionInit(actionInit);
 		epsa.setAttributes(attributes);
 		DePuyEventSeminarVO sem = null;
 		try {
-			epsa.retrieve(req);
+			req.setParameter(AdminConstants.FACADE_TYPE, "report");
+			req.setParameter("rptType", reportType.toString());
+			epsa.build(req);
 			ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 			sem = (DePuyEventSeminarVO) mod.getActionData();
 		} catch (ActionException ae) {
@@ -851,10 +856,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		message = "The Seminar was Cancelled";
 
 		// get the postcard data for emailing & approving each event
-		req.setParameter("reqType", "report");
-		req.setParameter("rptType", Integer.valueOf(LeadsDataTool.POSTCARD_SUMMARY_PULL).toString());
-		
-		DePuyEventSeminarVO sem = fetchSeminar(req);
+		DePuyEventSeminarVO sem = fetchSeminar(req, ReportType.summary);
 		req.setAttribute("postcard", sem);
 		
 		// send notification email to the admins

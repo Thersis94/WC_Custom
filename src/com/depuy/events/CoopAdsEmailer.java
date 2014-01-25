@@ -131,20 +131,20 @@ public class CoopAdsEmailer extends SBActionAdapter {
 		msg.append("Thank You,\rEvents.depuy.com Administrator\r\r");
 		
 		try {
-    		// Create the mail object and send
+			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(rcptEmail);
-    		mail.setSubject("Co-Op Ad approval required for Seminar(s) " + vo.getEventCodes());
-    		mail.setFrom(site.getMainEmail());
-    		mail.setTextBody(msg.toString());
-    		
-    		MessageSender ms = new MessageSender(attributes, dbConn);
-    		ms.sendMessage(mail);
-    		
-    		log.debug("Co-Op Ad requestClientApproval Email Sent");
-    	} catch (Exception me) {
-    		log.error("Co-Op Ad requestClientApproval", me);
-    	}
+	    		mail.setSubject("Co-Op Ad approval required for Seminar(s) " + vo.getEventCodes());
+	    		mail.setFrom(site.getMainEmail());
+	    		mail.setTextBody(msg.toString());
+	    		
+	    		MessageSender ms = new MessageSender(attributes, dbConn);
+	    		ms.sendMessage(mail);
+	    		
+	    		log.debug("Co-Op Ad requestClientApproval Email Sent");
+	    	} catch (Exception me) {
+	    		log.error("Co-Op Ad requestClientApproval", me);
+	    	}
 	}
 	
 	
@@ -186,23 +186,24 @@ public class CoopAdsEmailer extends SBActionAdapter {
 			surgeonEmails = vo.getSurgeonEmail().split(",");
 		
 		try {
-    		// Create the mail object and send
+			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipients(surgeonEmails);  //surgeonEmail could also include the Office Manager
-    		mail.addCC(site.getAdminEmail());
-    		mail.addCC(coordinatorsEmail);
-    		mail.addCC("kelly.westafer@hmktgroup.com");
-    		mail.addCC("admgt@hmktgroup.com");
-    		mail.setSubject("Approval Required: Promotion for " + productNm + " seminar on " + Convert.formatDate(eventDt, Convert.DATE_SLASH_PATTERN));
-    		mail.setFrom(site.getMainEmail(), "DePuy Synthes Joint Reconstruction patient education seminars");
-    		mail.setHtmlBody(msg.toString());
-
-    		MessageSender ms = new MessageSender(attributes, dbConn);
-    		ms.sendMessage(mail);    		
-    		log.debug("Co-Op Ad requestClientApprovalOfSurgeon Email Sent");
-    	} catch (Exception me) {
-    		log.error("Co-Op Ad requestClientApprovalOfSurgeon", me);
-    	}
+	    		mail.addCC(site.getAdminEmail());
+	    		mail.addCC(coordinatorsEmail);
+	    		mail.addCC("kelly.westafer@hmktgroup.com");
+	    		mail.addCC("amy.zimmerman@hmktgroup.com");
+	    		mail.addCC("admgt@hmktgroup.com");
+	    		mail.setSubject("Approval Required: Promotion for " + productNm + " seminar on " + Convert.formatDate(eventDt, Convert.DATE_SLASH_PATTERN));
+	    		mail.setFrom(site.getMainEmail(), "DePuy Synthes Joint Reconstruction patient education seminars");
+	    		mail.setHtmlBody(msg.toString());
+	
+	    		MessageSender ms = new MessageSender(attributes, dbConn);
+	    		ms.sendMessage(mail);    		
+	    		log.debug("Co-Op Ad requestClientApprovalOfSurgeon Email Sent");
+	    	} catch (Exception me) {
+	    		log.error("Co-Op Ad requestClientApprovalOfSurgeon", me);
+	    	}
 	}
 	
 	
@@ -217,22 +218,23 @@ public class CoopAdsEmailer extends SBActionAdapter {
 		}
 		
 		try {
-    		// Create the mail object and send
+			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(site.getAdminEmail());
 			mail.addRecipient("dfox@hmktgroup.com");
 			mail.addRecipient("barb.goley@hmktgroup.com");
 			mail.addRecipient("kelly.westafer@hmktgroup.com");
-    		mail.setSubject("Co-Op Ad Approved for Seminar(s) " + vo.getEventCodes());
-    		mail.setFrom(site.getMainEmail());
-    		mail.setTextBody(msg.toString());
-
-    		MessageSender ms = new MessageSender(attributes, dbConn);
-    		ms.sendMessage(mail);
-    		log.debug("Co-Op Ad Approved Email Sent");
-    	} catch (Exception me) {
-    		log.error("Co-Op Ad Approved", me);
-    	}
+	    		mail.addRecipient("amy.zimmerman@hmktgroup.com");
+	    		mail.setSubject("Co-Op Ad Approved for Seminar(s) " + vo.getEventCodes());
+	    		mail.setFrom(site.getMainEmail());
+	    		mail.setTextBody(msg.toString());
+	
+	    		MessageSender ms = new MessageSender(attributes, dbConn);
+	    		ms.sendMessage(mail);
+	    		log.debug("Co-Op Ad Approved Email Sent");
+	    	} catch (Exception me) {
+	    		log.error("Co-Op Ad Approved", me);
+	    	}
 	}
 	
 	
@@ -252,21 +254,22 @@ public class CoopAdsEmailer extends SBActionAdapter {
 		msg.append("<p>Thank You,<br/>Events.depuy.com Administrator</p><br/>");
 		
 		try {
-    		// Create the mail object and send
+			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient("kelly.westafer@hmktgroup.com");
 			mail.addRecipient("admgt@hmktgroup.com");
-    		mail.addCC(site.getAdminEmail());
-    		mail.setSubject("Surgeon approval of newspaper ad and cost for " + vo.getEventCodes());
-    		mail.setFrom(site.getMainEmail());
-    		mail.setHtmlBody(msg.toString());
-    		
-    		MessageSender ms = new MessageSender(attributes, dbConn);
-    		ms.sendMessage(mail);
-    		log.debug("Co-Op Ad Approved Email Sent");
-    	} catch (Exception me) {
-    		log.error("Co-Op Ad Approved", me);
-    	}
+			mail.addRecipient("amy.zimmerman@hmktgroup.com");
+			mail.addCC(site.getAdminEmail());
+			mail.setSubject("Surgeon approval of newspaper ad and cost for " + vo.getEventCodes());
+			mail.setFrom(site.getMainEmail());
+			mail.setHtmlBody(msg.toString());
+			
+			MessageSender ms = new MessageSender(attributes, dbConn);
+			ms.sendMessage(mail);
+			log.debug("Co-Op Ad Approved Email Sent");
+	    	} catch (Exception me) {
+	    		log.error("Co-Op Ad Approved", me);
+	    	}
 	}
 	
 	
@@ -287,21 +290,22 @@ public class CoopAdsEmailer extends SBActionAdapter {
 		msg.append("<p>Thank You,<br/>Events.depuy.com Administrator</p><br/>");
 		
 		try {
-    		// Create the mail object and send
+			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient("kelly.westafer@hmktgroup.com");
 			mail.addRecipient("admgt@hmktgroup.com");
-    		mail.addCC(site.getAdminEmail());
-    		mail.setSubject("Surgeon approval of newspaper ad and cost for " + vo.getEventCodes());
-    		mail.setFrom(site.getMainEmail());
-    		mail.setHtmlBody(msg.toString());
-
-    		MessageSender ms = new MessageSender(attributes, dbConn);
-    		ms.sendMessage(mail);
-    		log.debug("Co-Op Ad Approved Email Sent");
-    	} catch (Exception me) {
-    		log.error("Co-Op Ad Approved", me);
-    	}
+			mail.addRecipient("amy.zimmerman@hmktgroup.com");
+			mail.addCC(site.getAdminEmail());
+			mail.setSubject("Surgeon approval of newspaper ad and cost for " + vo.getEventCodes());
+			mail.setFrom(site.getMainEmail());
+			mail.setHtmlBody(msg.toString());
+			
+			MessageSender ms = new MessageSender(attributes, dbConn);
+			ms.sendMessage(mail);
+			log.debug("Co-Op Ad Approved Email Sent");
+	    	} catch (Exception me) {
+	    		log.error("Co-Op Ad Approved", me);
+	    	}
 	}
 	
 	
@@ -317,19 +321,19 @@ public class CoopAdsEmailer extends SBActionAdapter {
 		msg.append(vo.getEventCodes()).append(".\r\r");
 		
 		try {
-    		// Create the mail object and send
+			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(site.getAdminEmail());
-    		mail.setSubject("Harmony confirmation for seminar(s) " + vo.getEventCodes());
-    		mail.setFrom(site.getMainEmail());
-    		mail.setTextBody(msg.toString());
-
-    		MessageSender ms = new MessageSender(attributes, dbConn);
-    		ms.sendMessage(mail);    		
-    		log.debug("Co-Op Ad Payment Received Email Sent");
-    	} catch (Exception me) {
-    		log.error("Co-Op Ad Payment Received", me);
-    	}
+			mail.setSubject("Harmony confirmation for seminar(s) " + vo.getEventCodes());
+			mail.setFrom(site.getMainEmail());
+			mail.setTextBody(msg.toString());
+			
+			MessageSender ms = new MessageSender(attributes, dbConn);
+			ms.sendMessage(mail);    		
+			log.debug("Co-Op Ad Payment Received Email Sent");
+		} catch (Exception me) {
+			log.error("Co-Op Ad Payment Received", me);
+		}
 	}
 	
 }

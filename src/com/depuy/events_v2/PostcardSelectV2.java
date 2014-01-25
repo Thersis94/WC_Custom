@@ -7,7 +7,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -67,24 +66,14 @@ public class PostcardSelectV2 extends SBActionAdapter {
 	 * these are intentionally lower-case to match the incoming query string parameter.
 	 */
 	public enum SortOrder {
-		type		(TypeComparator.class),
-		product	(ProductComparator.class),
-		rsvp		(RSVPComparator.class), 
-		date		(DateComparator.class), 
-		status	(StatusComparator.class), 
-		owner	(OwnerComparator.class);
+		type	{  Comparator<DePuyEventSeminarVO> getComparator() { return new SeminarComparator().new TypeComparator(); } },
+		product	{  Comparator<DePuyEventSeminarVO> getComparator() { return new SeminarComparator().new ProductComparator(); } },
+		rsvp	{  Comparator<DePuyEventSeminarVO> getComparator() { return new SeminarComparator().new RSVPComparator(); } },
+		date	{  Comparator<DePuyEventSeminarVO> getComparator() { return new SeminarComparator().new DateComparator(); } },
+		status	{  Comparator<DePuyEventSeminarVO> getComparator() { return new SeminarComparator().new StatusComparator(); } },
+		owner	{  Comparator<DePuyEventSeminarVO> getComparator() { return new SeminarComparator().new OwnerComparator(); } };
 		
-		private Comparator<DePuyEventSeminarVO> comp  = null;
-		public Comparator<DePuyEventSeminarVO> getComparator() { return comp; }
-		private SortOrder(Class<? extends Comparator<DePuyEventSeminarVO>> comp) {
-			try {
-				this.comp = comp.newInstance();
-			} catch (InstantiationException e) {
-				log.error("could not load Comparator", e);
-			} catch (IllegalAccessException e) {
-				log.error("could not access Comparator", e);
-			}
-		}
+		abstract Comparator<DePuyEventSeminarVO> getComparator();
 	};
 	
 	public PostcardSelectV2() {
@@ -153,11 +142,11 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder();
 		sql.append("select distinct event_entry_id, RSVP_CODE_TXT, start_dt, type_nm, profile_id, ");
 		sql.append("surgeon_nm, event_nm, city_nm, state_cd, status_flg, event_postcard_id, ");
-		sql.append("rsvp_no, [4] as 'hip', [5] as 'knee', [6] as 'shoulder' ");  //in a PIVOT, we're turning the data (values) into column headings.  hence the square brackets.
+		sql.append("rsvp_no, [4] as 'hip', [5] as 'knee', [6] as 'shoulder', run_dates_txt ");  //in a PIVOT, we're turning the data (values) into column headings.  hence the square brackets.
 		//sql.append(" ");
 		sql.append("from (select e.event_entry_id, e.RSVP_CODE_TXT, e.start_dt, et.type_nm, ep.event_postcard_id, ");
 		sql.append("ep.PROFILE_ID, s.surgeon_nm, e.event_nm, e.city_nm, e.state_cd, ");
-		sql.append("ep.status_flg, lxr.JOINT_ID, COUNT(rsvp.EVENT_RSVP_ID) as 'rsvp_no' ");
+		sql.append("ep.status_flg, lxr.JOINT_ID, COUNT(rsvp.EVENT_RSVP_ID) as 'rsvp_no', cad.run_dates_txt ");
 		sql.append("from EVENT_ENTRY e ");
 		sql.append("inner join EVENT_TYPE et on e.EVENT_TYPE_ID=et.EVENT_TYPE_ID ");
 		sql.append("inner join EVENT_GROUP eg on et.ACTION_ID=eg.ACTION_ID ");
@@ -167,6 +156,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		sql.append("left outer join EVENT_RSVP rsvp on e.EVENT_ENTRY_ID=rsvp.EVENT_ENTRY_ID ");
 		sql.append("left outer join ").append(customDb).append("DEPUY_EVENT_SURGEON s on ep.EVENT_POSTCARD_ID=s.EVENT_POSTCARD_ID ");
 		sql.append("left outer join ").append(customDb).append("DEPUY_EVENT_SPECIALTY_XR lxr on ep.EVENT_POSTCARD_ID=lxr.EVENT_POSTCARD_ID ");
+		sql.append("left outer join ").append(customDb).append("DEPUY_EVENT_COOP_AD cad on ep.EVENT_POSTCARD_ID=cad.EVENT_POSTCARD_ID and cad.ad_type_txt != 'radio' ");
 		//--conditionally grab only the events this non-admin is affiliated with -- 
 		if (profileId != null) {
 			sql.append("left outer join ").append(customDb).append("DEPUY_EVENT_PERSON_XR pxr on ep.EVENT_POSTCARD_ID=pxr.EVENT_POSTCARD_ID ");
@@ -180,7 +170,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 			sql.append("and e.start_dt >= getDate()-2");
 		}
 		sql.append("group by e.event_entry_id, ep.event_postcard_id, e.RSVP_CODE_TXT, e.start_dt, et.type_nm, ep.PROFILE_ID, ");
-		sql.append("e.event_nm, s.surgeon_nm, e.city_nm, e.state_cd, ep.status_flg, lxr.JOINT_ID ");
+		sql.append("e.event_nm, s.surgeon_nm, e.city_nm, e.state_cd, ep.status_flg, lxr.JOINT_ID, cad.run_dates_txt ");
 		sql.append(") baseQry ");
 		sql.append("pivot (count(joint_id) for joint_id in ([4],[5],[6])) as pvtQry "); //PIVOT is an implicit group-by
 		log.debug(sql);
@@ -225,7 +215,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		}
 		
 		//If we have a sortType, ensure we sort the data.
-		if(sortType != null && sortType.length() > 0 && data.size() > 1)
+		if(data.size() > 1)
 			data = sortData(data, sortType);
 		
 		log.debug("loaded " + data.size() + " Seminars");
@@ -240,14 +230,11 @@ public class PostcardSelectV2 extends SBActionAdapter {
 	 * @return
 	 */
 	private List<DePuyEventSeminarVO> sortData(List<DePuyEventSeminarVO> data, String sortType) {
-		if (sortType == null || sortType.length() == 0) sortType = "rsvp";
+		if (sortType == null || sortType.length() == 0) sortType = "date";
 		try {
 			Collections.sort(data, SortOrder.valueOf(sortType).getComparator());
-		//} catch (IllegalArgumentException iae) {
-			//malformed enum passed, default to rsvp (highest->lowest)
-		//	Collections.sort(data, SortOrder.rsvp.getComparator());
 		} catch (Exception e) {
-			log.debug("could not sort Seminars", e);
+			
 		}
 		log.debug("data sorted");
 		return data;
@@ -410,106 +397,4 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		return;
 	}
 	
-	/*
-	 * simple Date Comparator that returns the INVERSE of natural date ordering
-	 * postcards are listed latest->earliest (not naturally, earliest->latest)
-	 */
-	public class PostcardComparator implements Comparator<Date> {
-		public int compare(Date o1, Date o2) {
-			if (o1.before(o2)) return 1;
-			else if (o1.after(o2)) return -1;
-			else if (o1.equals(o2)) return 0;
-			else return -1;
-		}
-		public int compare(String o1, String o2) {
-			return -1;
-		}
-		
-	}
-	
-	/*
-	 * Simple String Comparator that sorts based on the Seminars Joint Label
-	 */
-	public class ProductComparator implements Comparator<DePuyEventSeminarVO> {
-
-		@Override
-		public int compare(DePuyEventSeminarVO o1, DePuyEventSeminarVO o2) {
-			log.debug("comparing by product");
-			return o1.getJointLabel().compareTo(o2.getJointLabel());
-		}
-		
-	}
-	
-	/*
-	 * Simple String Comparator that sorts based on the Events Joint RSVP Code
-	 */
-	public class RSVPComparator implements Comparator<DePuyEventSeminarVO> {
-
-		@Override
-		public int compare(DePuyEventSeminarVO o1, DePuyEventSeminarVO o2) {
-			log.debug("comparing rsvp codes");
-			return o1.getRSVPCodes().compareTo(o2.getRSVPCodes());
-		}
-		
-	}
-	
-	/*
-	 * Simple Date Comparator that sorts based on the Events Start Date
-	 */
-	public class DateComparator implements Comparator<DePuyEventSeminarVO> {
-
-		@Override
-		public int compare(DePuyEventSeminarVO o1, DePuyEventSeminarVO o2) {
-			Date d1 = o1.getEvents().get(0).getStartDate();
-			Date d2 = o2.getEvents().get(0).getStartDate();
-			if (d1.before(d2)) return 1;
-			else if (d1.after(d2)) return -1;
-			else if (d1.equals(d2)) return 0;
-			else return -1;
-		}
-		
-	}
-	
-	/*
-	 * Simple String Comparator that sorts based on the Events Type Code
-	 */
-	public class TypeComparator implements Comparator<DePuyEventSeminarVO> {
-
-		@Override
-		public int compare(DePuyEventSeminarVO o1, DePuyEventSeminarVO o2) {
-			return o1.getEvents().get(0).getEventTypeCd().compareTo(o2.getEvents().get(0).getEventTypeCd());
-
-		}
-		
-	}
-	
-	/*
-	 * Simple String Comparator that sorts based on the Events Status Flag
-	 */
-	public class StatusComparator implements Comparator<DePuyEventSeminarVO> {
-
-		@Override
-		public int compare(DePuyEventSeminarVO o1, DePuyEventSeminarVO o2) {
-			int s1 = o1.getEvents().get(0).getStatusFlg();
-			int s2 = o2.getEvents().get(0).getStatusFlg();
-			if (s1 > s2) return 1;
-			else if (s1 < s2) return -1;
-			else if (s1 ==s2) return 0;
-			else return -1;
-		}
-		
-	}
-	
-	/*
-	 * Simple String Comparator that sorts based on the Seminars Owners Full Name
-	 */
-	public class OwnerComparator implements Comparator<DePuyEventSeminarVO> {
-
-		@Override
-		public int compare(DePuyEventSeminarVO o1, DePuyEventSeminarVO o2) {
-			return o1.getOwner().getFullName().compareTo(o2.getOwner().getFullName());
-
-		}
-		
-	}
 }

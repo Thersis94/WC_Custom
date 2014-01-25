@@ -84,12 +84,20 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 		vo = retrieve(vo.getCoopAdId(), vo.getEventPostcardId()).get(0);
 
 		// radio ads send no emails.
-		if ("radio".equalsIgnoreCase(vo.getAdType()))
+		if ("radio".equalsIgnoreCase(vo.getAdType()) || "eventInfo".equals(req.getParameter("reqType")))
 			return;
 
 		// avoid nulls ahead when we compare statusFlgs
 		if (vo.getStatusFlg() == null)
 			vo.setStatusFlg(0);
+
+		sendNotificationEmail(vo, reqType, site, user, req);
+		
+		return;
+	}
+	
+	private void sendNotificationEmail(CoopAdVO vo, String reqType, SiteVO site, 
+			UserDataVO user, SMTServletRequest req ) {
 
 		// send appropriate notification emails
 		CoopAdsEmailer emailer = new CoopAdsEmailer(actionInit);
@@ -97,11 +105,11 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 		emailer.setDBConnection(dbConn);
 
 		if (reqType.equals("coopAdsSurgeonApproval")) { 
-			// intercept this first since it doesn't use our statusFlg
+			// intercept this first since it doesn't used our statusFlg
 			log.debug("sending surgeon approved email");
 			if ("5".equals(req.getParameter("surgeonStatusFlg"))) {
 				// surgeon declined ad
-				emailer.notifyAdminOfSurgeonsDecline(vo, site,req.getParameter("notesText"));
+				emailer.notifyAdminOfSurgeonsDecline(vo, site, req.getParameter("notesText"));
 			} else {
 				// surgeon approved ad
 				emailer.notifyAdminOfSurgeonsApproval(vo, site);
@@ -123,7 +131,8 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 			}
 
 			// ask the Rep to approve their portion
-			emailer.requestClientApproval(vo, site, req.getParameter("ownersEmail"));
+			emailer.requestClientApproval(vo, site,
+					req.getParameter("ownersEmail"));
 
 		} else if (CLIENT_APPROVED_AD == vo.getStatusFlg()) {
 			log.debug("sending client approved email");
@@ -137,7 +146,6 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 			log.debug("sending payment recieved email");
 			emailer.notifyAdminOfAdPaymentRecd(vo, site, user);
 		}
-		return;
 	}
 
 	
