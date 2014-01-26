@@ -73,6 +73,7 @@ public class ProductDetailParser extends KeystoneDataParser {
 					attrVo.setAttribute_type(attrObj.getString("attribute_type"));
 					attrVo.setModifiers_attribute_id(attrObj.getString("modifiers_attributes_id"));
 					attrVo.setAttribute_required(attrObj.getInt("attribute_required"));
+					attrVo.setPositioning(attrObj.getString("positioning"));
 
 					JSONObject optionsObj = attrObj.getJSONObject("options");
 					Set<?> options = optionsObj.keySet();

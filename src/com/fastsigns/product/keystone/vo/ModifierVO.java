@@ -102,6 +102,7 @@ public class ModifierVO implements Serializable {
 		private String attribute_type = null;
 		private String attribute_name = null;
 		private String value = null;
+		private String positioning = null;
 		private int attribute_required = 0;
 		private Map<String, OptionVO> options = null;
 		
@@ -146,6 +147,15 @@ public class ModifierVO implements Serializable {
 		}
 		public void setValue(String value) {
 			this.value = value;
+		}
+
+
+
+		public String getPositioning() {
+			return positioning;
+		}
+		public void setPositioning(String positioning) {
+			this.positioning = positioning;
 		}
 
 
