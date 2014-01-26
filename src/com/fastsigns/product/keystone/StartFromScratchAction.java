@@ -8,6 +8,7 @@ import com.fastsigns.security.FastsignsSessVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.AbstractBaseAction;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -26,9 +27,10 @@ public class StartFromScratchAction extends AbstractBaseAction {
 		//Clear out old template data that may exist.
 		HttpSession sess = req.getSession();
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
-		String franchiseId = (String)sess.getAttribute(FastsignsSessVO.FRANCHISE_ID);
+		FastsignsSessVO franVo = (FastsignsSessVO)sess.getAttribute(KeystoneProxy.FRAN_SESS_VO);
+		String webId = StringUtil.checkVal(sess.getAttribute(FastsignsSessVO.FRANCHISE_ID));
 		
-		if (franchiseId == null)
+		if (franVo.getFranchise(webId).getFranchiseId() == null)
 			ProductFacadeAction.configureSession(sess, req, attributes);
 		
 		//Use Cached action and set necessary pieces for cache groups to be used. 
@@ -38,12 +40,14 @@ public class StartFromScratchAction extends AbstractBaseAction {
 		proxy.setSessionCookie(req.getCookie(Constants.JSESSIONID));
 		proxy.setModule("products");
 		proxy.setAction("getDsolMaterials");
-		proxy.addPostData("franchiseId", franchiseId);
 		proxy.setParserType(KeystoneDataParser.DataParserType.FromScratch);
 		
 		
 		//tell the proxy to go get our data
 		try {
+			//this was moved down here because of the potential NPE on getFranchiseId():
+			proxy.addPostData("franchiseId", franVo.getFranchise(webId).getFranchiseId());
+			
 			mod.setActionData(proxy.getData().getActionData());
 			
 		} catch (Exception e) {
