@@ -7,7 +7,6 @@ import com.opensymphony.oscache.general.GeneralCacheAdministrator;
 import com.opensymphony.oscache.web.filter.ExpiresRefreshPolicy;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.common.ModuleController;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
@@ -25,65 +24,71 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class CachingKeystoneProxy extends KeystoneProxy {
 
+	/**
+	 * default timeout actions that cache personal data will cache for.  This overrides
+	 * the value set in sb_config, which is cache timeout for the Franchise's data. (many hours or days long)
+	 */
+	public static final int ACCOUNT_DATA_TIMEOUT = 10; //mins
+	
 	public static final String TIMEOUT = "keystoneProxyTimeout";
 	private GeneralCacheAdministrator cache = null;
 	private String organizationId = null; 
 	private String siteId = null;
 	private String wcFranchiseId = null;
-	protected int osCacheTimeout = 0;
+	protected int osCacheTimeout = 0;  //in seconds
 	protected String[] cacheGroups = null;
 	
-	public CachingKeystoneProxy(Map<String, Object> attribs) {
+	/*
+	 * overloaded constructor allows for customizing the cacheTimeout
+	 */
+	public CachingKeystoneProxy(Map<String, Object> attribs, int cacheTimeoutMins) {
 		super(attribs);
 		this.cache =  (GeneralCacheAdministrator) attribs.get(GlobalConfig.OSCACHE);
-		
+		this.osCacheTimeout = cacheTimeoutMins * 60; //convert to seconds, OSCache wants seconds
+				
 		ModuleVO mod = (ModuleVO) attribs.get(Constants.MODULE_DATA);
 		this.cacheGroups = mod.getCacheGroups();
 		mod = null;
-		this.osCacheTimeout = Convert.formatInteger((String) attribs.get(TIMEOUT)) * 60;
+
 		SiteVO site = ((SiteVO)attribs.get(Constants.SITE_DATA));
 		this.organizationId = site.getOrganizationId();
 		this.siteId = site.getSiteId();
 		this.wcFranchiseId = (String) attribs.get("wcFranchiseId");
 	}
 	
-	/*
-	 * overloaded constructor allows for customizing the cacheTimeout
-	 */
-	public CachingKeystoneProxy(Map<String, Object> attribs, int cacheTimeoutMins) {
-		this(attribs);
-		this.osCacheTimeout = cacheTimeoutMins * 60;
-	}
-	
 	
 	/**
 	 * intercept the http call, check for this object in cache first.
+	 * return a new ModuleVO, NOT the one we retrieved from cache. 
+	 * The potencial for cache poisoning exists if we don't do this.
 	 */
-	public byte[] getData() throws InvalidDataException {
-		byte[] data = null;
+	public ModuleVO getData() throws InvalidDataException {
+		ModuleVO mod = new ModuleVO();
+		ModuleVO cachedMod = null;
 		String cacheKey = this.buildCacheKey();
 		
 		// Check the cache to see if our data already exists
-    	try {
-    		data = (byte[]) cache.getFromCache(cacheKey);
-    		log.debug("Retrieved data from cache");
+		try {
+	    		cachedMod = (ModuleVO) cache.getFromCache(cacheKey);
+	    		log.debug("Retrieved data from cache");
 			//log.debug("Retrieved from cache: " + new String(data));
 			
 		} catch (NeedsRefreshException e) {
 			cache.cancelUpdate(cacheKey);
 			//log.error(e);
 			//retrieve the data from the superclass (http call to Keystone)
-			data = super.getData();
+			cachedMod = super.getData();
 			
 			//store the retrieved data back into the cache for next time.
-			cache.putInCache(cacheKey, data, this.buildCacheGroups(), new ExpiresRefreshPolicy(buildCacheTimeout()));
+			cache.putInCache(cacheKey, cachedMod, this.buildCacheGroups(), new ExpiresRefreshPolicy(buildCacheTimeout()));
 			
 		} catch (Exception e) {
 			log.error("error loading keystone data", e);
-			data = super.getData();
+			cachedMod = super.getData();
 		}
     	
-    	return data;
+		mod.setActionData(cachedMod.getActionData());
+    		return mod;
 	}
 	
 	
@@ -102,7 +107,7 @@ public class CachingKeystoneProxy extends KeystoneProxy {
 		
 		//append any runtime requests of the calling class.  (login would pass username & password here)
 		for (String p : getPostData().keySet()) {
-			key.append(",").append(p).append("=").append(getPostData().get(p));
+			key.append("-").append(p).append("-").append(getPostData().get(p));
 		}
 		
 		log.debug("cacheKey=" + key.toString());
@@ -164,6 +169,16 @@ public class CachingKeystoneProxy extends KeystoneProxy {
 
 	public void setWcFranchiseId(String wcFranchiseId) {
 		this.wcFranchiseId = wcFranchiseId;
+	}
+
+
+	public int getOsCacheTimeout() {
+		return osCacheTimeout;
+	}
+
+
+	public void setOsCacheTimeout(int osCacheTimeout) {
+		this.osCacheTimeout = osCacheTimeout;
 	}
 
 }

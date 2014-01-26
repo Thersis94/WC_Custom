@@ -7,14 +7,12 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 
+import javax.servlet.http.HttpSession;
+
 import org.apache.commons.codec.binary.Base64;
 
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-import net.sf.json.JsonConfig;
-import net.sf.json.util.PropertySetStrategy;
-
 import com.fastsigns.action.franchise.CenterPageAction;
+import com.fastsigns.product.keystone.parser.KeystoneDataParser;
 import com.fastsigns.product.keystone.vo.KeystoneProductVO;
 import com.fastsigns.security.FastsignsSessVO;
 import com.lowagie.text.Document;
@@ -25,10 +23,8 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.commerce.ShoppingCartVO;
 import com.siliconmtn.commerce.cart.storage.Storage;
-import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.io.FileManagerFactoryImpl;
-import com.siliconmtn.json.PropertyStrategyWrapper;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.databean.FilePartDataBean;
 import com.smt.sitebuilder.action.FileLoader;
@@ -79,6 +75,7 @@ public class DSOLAction extends SBActionAdapter {
 		super(avo);
 	}
 	
+	//TODO needs code cleanup and review
 	public void build(SMTServletRequest req) throws ActionException {
 		log.info("DSOL Build Method");
 		KeystoneProductVO vo = new KeystoneProductVO(req);
@@ -111,7 +108,7 @@ public class DSOLAction extends SBActionAdapter {
 					byte [] bPdf = getPdfData(bHrd);
 					byte [] bSvg = URLDecoder.decode(svg, "UTF-8").getBytes();
 					//Generate random folders
-					String ran1 =  getDirectoryPath();
+					String ran1 = getDirectoryPath();
 					String ran2 = getDirectoryPath();
 					
 					String pdf = writeDsolFile(bPdf, UUID.randomUUID() + ".pdf", attributes, ran1, ran2);
@@ -202,15 +199,14 @@ public class DSOLAction extends SBActionAdapter {
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		log.info("Entered DSOL Retrieve");
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
+		HttpSession ses = req.getSession();
 		KeystoneProductVO data = null;
 		
-		if(req.hasParameter("flush")){
-			req.getSession().setAttribute("DSOLVO", null);
-		}
+		if (req.hasParameter("flush"))
+			ses.setAttribute("DSOLVO", null);
 		
 		if (!req.hasParameter("sfs")) //if we're not starting from scratch, retrieve the exists object from session
-			data = (KeystoneProductVO) req.getSession().getAttribute("DSOLVO");
-		
+			data = (KeystoneProductVO) ses.getAttribute("DSOLVO");
 		
 		/*
 		 * If we are not re-editing a cart item, load Data from keystone.  
@@ -220,7 +216,7 @@ public class DSOLAction extends SBActionAdapter {
 			this.loadDataFromKeystone(req, data, mod);
 		}
 		
-		if(req.hasParameter("itemId") && !req.hasParameter("flush") && !req.hasParameter("showDetail")) {
+		if (req.hasParameter("itemId") && !req.hasParameter("flush") && !req.hasParameter("showDetail")) {
 			ShoppingCartAction sca = new ShoppingCartAction();
 			sca.setDBConnection(dbConn);
 			sca.setAttributes(attributes);
@@ -228,7 +224,6 @@ public class DSOLAction extends SBActionAdapter {
 			ShoppingCartVO cart = s.load();
 			data = (KeystoneProductVO) cart.getItems().get(req.getParameter("itemId")).getProduct();
 			req.setParameter("dimensions", data.getSizes().get(0).getHeight() + " x " + data.getSizes().get(0).getWidth());
-			
 		}
 		
 		//if we did not load or build a data object, initialize a new one
@@ -247,16 +242,19 @@ public class DSOLAction extends SBActionAdapter {
 				String[] s = req.getParameter("dimensions").split(" x ");
 				data.addProdAttribute("widthPixels", Integer.parseInt(s[0]) * 72);
 				data.addProdAttribute("heightPixels", Integer.parseInt(s[1]) * 72);
-			} catch (Exception e) {log.error(e);} //possible Null, Arithmetic, or IndexOutOfBounds
+			} catch (Exception e) {
+				//possible Null, Arithmetic, or IndexOutOfBounds
+				log.error(e);
+			} 
 		}
 		
 		if (req.hasParameter("dsolProdDesc"))
 			data.setDescription(req.getParameter("dsolProdDesc"));
 		
-		if(req.hasParameter("materialName"))
+		if (req.hasParameter("materialName"))
 			data.addProdAttribute("materialName", req.getParameter("materialName"));
 		
-		req.getSession().setAttribute("DSOLVO", data);
+		ses.setAttribute("DSOLVO", data);
 		setAttribute(Constants.MODULE_DATA, mod);
 
 	}
@@ -270,100 +268,82 @@ public class DSOLAction extends SBActionAdapter {
 	 */
 	private void loadDataFromKeystone(SMTServletRequest req, KeystoneProductVO data, ModuleVO mod) {
 		FastsignsSessVO fsvo = (FastsignsSessVO) req.getSession().getAttribute(KeystoneProxy.FRAN_SESS_VO);
-		byte[] byteData = null;
+
+		//TODO this call is uncached, perhaps blend with StartFromScratchAction, or use data from ProductDetailsAction?
 		KeystoneProxy proxy = new KeystoneProxy(attributes);
 		proxy.setSessionCookie(req.getCookie(Constants.JSESSIONID));
 		proxy.addPostData("ecommerce_size_id", req.getParameter("ecommerce_size_id"));
 		proxy.addPostData("franchise_id", fsvo.getFranchise(CenterPageAction.getFranchiseId(req)).getFranchiseId());
+		
 		if (!Convert.formatBoolean(req.getParameter("showDetail"))) {
-			proxy.setModule("dsolFiles");
-			proxy.setAction("getTemplateData");
-			if(req.hasParameter("dsolItemId"))
-			proxy.addPostData("dsolItemId", req.getParameter("dsolItemId"));
-			else if(req.hasParameter("dsolProductId"))
-				proxy.addPostData("dsolItemId", req.getParameter("dsolProductId"));
-	
-			try {
-				//tell the proxy to go get our data
-				byteData = proxy.getData();
-			
-				//transform the response into something meaningful to WC
-				data = (KeystoneProductVO) formatTemplates(byteData);
-				mod.setActionData(data);
-			} catch (InvalidDataException ide) {
-				log.error(ide);
-				mod.setError(ide);
-				mod.setErrorMessage("Unable to load DSOL Templates");
-			}
+			//this call adds the parsed response directly to our ModuleVO mod
+			sendTemplatesRequest(req, mod, proxy);
 			
 		} else {
-			proxy.setModule("productsSizes");
-			proxy.setAction("getProductsByEcommSizeId");
+			setMaterialsRequest(req, mod, proxy);
+		}
+	}
+	
+	
+	/**
+	 * sends the call for materials off to the proxy, expects a parsed response back
+	 * See DSOLMaterialsParser
+	 * @param req
+	 * @param mod
+	 * @param proxy
+	 */
+	private void setMaterialsRequest(SMTServletRequest req, ModuleVO mod, KeystoneProxy proxy) {
+		proxy.setModule("productsSizes");
+		proxy.setAction("getProductsByEcommSizeId");
+		proxy.setParserType(KeystoneDataParser.DataParserType.DSOLMaterials);
+		
+		try {
+			//transform the response into something meaningful to WC
+			Object obj = proxy.getData().getActionData();
+			req.setAttribute("materials", obj);  //obj is actually a Map<String, String>
+			mod.setActionData(obj);
 			
-			try {
-				//tell the proxy to go get our data
-				byteData = proxy.getData();
-				
-				//transform the response into something meaningful to WC
-				Map<String, String> mats = formatMaterials(byteData);
-				req.setAttribute("materials", mats);
-				mod.setActionData(mats);
-			} catch (InvalidDataException ide) {
-				log.error(ide);
-				mod.setError(ide);
-				mod.setErrorMessage("Unable to load DSOL Materials");
-			}
+		} catch (Exception ide) {
+			log.error(ide);
+			mod.setError(ide);
+			mod.setErrorMessage("Unable to load DSOL Materials");
 		}
-		
 	}
 	
 	
 	/**
-	 * parse the Keystone-returned Materials JSON into a usable WC object
-	 * @param byteData
-	 * @return
-	 * @throws InvalidDataException
+	 * sends a call for templates off to the proxy.  Expects a parsed response back.
+	 * See DSOLTemplatesParser
+	 * @param req
+	 * @param mod
+	 * @param proxy
 	 */
-	private Map<String, String> formatMaterials(byte [] byteData) throws InvalidDataException {
-		log.info("formatting materialsData using: " + byteData);
-		
-		Map<String, String> mats = new HashMap<String, String>();
-		try {
-			JSONArray jsobj = JSONArray.fromObject(new String(byteData));
-			for (int i = 0; i < jsobj.size(); i++) {
-				JSONObject obj = jsobj.getJSONObject(i);
-				mats.put((String)obj.get("product_id"), (String)obj.get("display_name"));
-			}
-		} catch (Exception e) {
-			log.error("could not parse JSON", e);
-			throw new InvalidDataException(e);
+	private void sendTemplatesRequest(SMTServletRequest req, ModuleVO mod, KeystoneProxy proxy) {
+		proxy.setModule("dsolFiles");
+		proxy.setAction("getTemplateData");
+		proxy.setParserType(KeystoneDataParser.DataParserType.DSOLTemplates);
+		if (req.hasParameter("dsolItemId")) {
+			proxy.addPostData("dsolItemId", req.getParameter("dsolItemId"));
+		} else if (req.hasParameter("dsolProductId")) {
+			proxy.addPostData("dsolItemId", req.getParameter("dsolProductId"));
 		}
-		return mats;
-	}
 
-
-	/**
-	 * Parse the Keystone-returned Template JSON into a usable WC object
-	 * @param byteData
-	 * @return
-	 * @throws InvalidDataException
-	 */
-	private Object formatTemplates(byte[] byteData) throws InvalidDataException {
-		log.info("formatting templates using: " + byteData);
-		
-		JsonConfig cfg = new JsonConfig();
-		cfg.setPropertySetStrategy(new PropertyStrategyWrapper(PropertySetStrategy.DEFAULT));
-		cfg.setRootClass(KeystoneProductVO.class);
-		
 		try {
-			JSONObject jsobj = JSONObject.fromObject(new String(byteData));
-			return JSONObject.toBean(jsobj, cfg);
-		} catch (Exception e) {
-			log.error("could not parse JSON", e);
-			throw new InvalidDataException(e);
+			//tell the proxy to go get our data
+			mod.setActionData(proxy.getData().getActionData());
+		} catch (Exception ide) {
+			log.error(ide);
+			mod.setError(ide);
+			mod.setErrorMessage("Unable to load DSOL Templates");
 		}
 	}
 	
+	
+	/**
+	 * turns the customized DSOL image into a PDF file.
+	 * @param data
+	 * @return
+	 */
 	public static byte [] getPdfData(byte [] data) {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		try {
@@ -382,17 +362,28 @@ public class DSOLAction extends SBActionAdapter {
 	
 	}
 
-	public static String writeDsolFile(byte [] data, String name, Map<String, Object> attributes, String ran1, String ran2){
-		FileLoader fl  = null;
+	/**
+	 * writes the customized image to the file system
+	 * @param data
+	 * @param name
+	 * @param attributes
+	 * @param ran1
+	 * @param ran2
+	 * @return
+	 */
+	public String writeDsolFile(byte [] data, String name, Map<String, Object> attributes, String ran1, String ran2){
 		attributes.put(FileManagerFactoryImpl.CONFIG_FILE_MANAGER_TYPE, attributes.get("dsolFileManagerType"));
 		log.debug("Creating FileLoader of type: " + attributes.get(FileManagerFactoryImpl.CONFIG_FILE_MANAGER_TYPE));
+		
 		FilePartDataBean fpdb = new FilePartDataBean();
 		fpdb.setCanonicalPath((String) attributes.get("keystoneDsolTemplateFilePath") + ran1 + ran2);
 		log.debug("path=" + fpdb.getCanonicalPath());
+		
 		String name2 = "";
 		fpdb.setFileName(name);
 		fpdb.setFileData(data);
 		
+		FileLoader fl  = null;
 		try {
 			fl = new FileLoader(attributes);
 			fl.setFileName(fpdb.getFileName());
@@ -403,7 +394,7 @@ public class DSOLAction extends SBActionAdapter {
 			name2 = ran1 + ran2 + fl.writeFiles();
 			log.debug(name2);
 		} catch (Exception e) {
-			log.error("There was a problem writing the File: ", e);
+			log.error("There was a problem writing the file: ", e);
 			return "";
 		}
 		return name2;

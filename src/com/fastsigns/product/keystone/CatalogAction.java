@@ -1,28 +1,11 @@
 package com.fastsigns.product.keystone;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-import net.sf.json.JsonConfig;
-import net.sf.json.util.PropertySetStrategy;
-
 import com.fastsigns.action.franchise.CenterPageAction;
-import com.fastsigns.product.keystone.vo.CatalogVO;
-import com.fastsigns.product.keystone.vo.CategoryVO;
-import com.fastsigns.product.keystone.vo.ImageVO;
-import com.fastsigns.product.keystone.vo.KeystoneProductVO;
-import com.fastsigns.product.keystone.vo.SizeVO;
+import com.fastsigns.product.keystone.parser.KeystoneDataParser;
 import com.fastsigns.security.FastsignsSessVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.SMTServletRequest;
-import com.siliconmtn.json.PropertyStrategyWrapper;
 import com.smt.sitebuilder.action.AbstractBaseAction;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -52,24 +35,25 @@ public class CatalogAction extends AbstractBaseAction {
 		String webId = CenterPageAction.getFranchiseId(req);
 		
 		//Use Cached action and set necessary pieces for cache groups to be used. 
-		attributes.put("siteData", req.getAttribute(Constants.SITE_DATA));
+		attributes.put(Constants.SITE_DATA, req.getAttribute(Constants.SITE_DATA));
 		attributes.put("wcFranchiseId", CenterPageAction.getFranchiseId(req));
-		KeystoneProxy proxy = new CachingKeystoneProxy(attributes);
+		KeystoneProxy proxy = KeystoneProxy.newInstance(attributes);
 		proxy.setSessionCookie(req.getCookie(Constants.JSESSIONID));
 		proxy.setModule("products");
 		proxy.setAction("getCatalogProducts");
 		proxy.setFranchiseId(sessVo.getFranchise(webId).getFranchiseId());
 		proxy.setAccountId(sessVo.getProfile(webId).getAccountId());
 		proxy.addPostData("webId", webId);
+		proxy.setParserType(KeystoneDataParser.DataParserType.Catalog);
 		
 		try {
 			//tell the proxy to go get our data
-			byte[] byteData = proxy.getData();
+			ModuleVO mod2 = proxy.getData();
 			
-			//transform the response into something meaningful to WC
-			mod.setActionData(formatData(byteData));
+			//copy the data out of the potentially-cached object into our own.
+			mod.setActionData(mod2.getActionData());
 			
-		} catch (InvalidDataException e) {
+		} catch (Exception e) {
 			log.error(e);
 			mod.setError(e);
 			mod.setErrorMessage("Unable to load Product Catalogs");
@@ -80,53 +64,7 @@ public class CatalogAction extends AbstractBaseAction {
 		setAttribute(Constants.MODULE_DATA, mod);
 	}
 	
-	@SuppressWarnings("unchecked")
-	private List<CatalogVO> formatData(byte[] byteData) throws InvalidDataException {
-		List<CatalogVO> myCatalogs = new ArrayList<CatalogVO>();
-		Map<String, Class<?>> dMap = new HashMap<String, Class<?>>();
-		dMap.put("sizes", SizeVO.class);
-		dMap.put("images", ImageVO.class);
-		
-		JsonConfig cfg = new JsonConfig();
-		cfg.setPropertySetStrategy(new PropertyStrategyWrapper(PropertySetStrategy.DEFAULT));
-		cfg.setRootClass(KeystoneProductVO.class);
-		cfg.setClassMap(dMap);
-		
-		try {
-			JSONObject jsonObj = JSONObject.fromObject(new String(byteData));
-			Set<?> catalogNms = jsonObj.keySet();
-			
-			//iterate the catalogs found in the JSON response
-			for (Object catalogNm : catalogNms) {
-				//log.debug("catalog=" + catalogNm);
-				JSONObject category = JSONObject.fromObject(jsonObj.get(catalogNm));
-				if (category == null || category.size() == 0) continue;
-				
-				Set<?> categoryNms = category.keySet();
-				List<CategoryVO> myCategories = new ArrayList<CategoryVO>();
-				
-				//iterate the categories within this catalog
-				for (Object categoryNm : categoryNms) {
-					//log.debug("category=" + categoryNm);
-					JSONArray jsonArr = JSONArray.fromObject(category.get(categoryNm));
-					if (jsonArr == null || jsonArr.size() == 0) continue;
-					
-					//iterate the products within this category into a Collection<ProductVO>
-					myCategories.add(new CategoryVO(categoryNm, JSONArray.toCollection(jsonArr, cfg)));
-				}
-				myCatalogs.add(new CatalogVO(catalogNm, myCategories));
-			}
-		} catch (Exception e) {
-			log.error("could not parse JSON", e);
-			throw new InvalidDataException(e);
-		}
-		
-		log.debug("catalogCnt=" + myCatalogs.size());
-		return myCatalogs;
-	}
 	
-	
-
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.action.SMTActionInterface#delete(com.siliconmtn.http.SMTServletRequest)
 	 */

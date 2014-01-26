@@ -12,6 +12,7 @@ import net.sf.json.JSONObject;
 
 import com.fastsigns.product.keystone.KeystoneProxy;
 import com.fastsigns.product.keystone.MyProfileAction;
+import com.fastsigns.product.keystone.parser.KeystoneDataParser;
 import com.fastsigns.product.keystone.vo.KeystoneProductVO;
 import com.fastsigns.security.FastsignsSessVO;
 import com.fastsigns.security.FsKeystoneLoginModule;
@@ -397,17 +398,22 @@ public class CheckoutUtil {
 	 */
 	public FastsignsSessVO loadFranchiseVO(FastsignsSessVO sessVo, String webId) throws InvalidDataException {
 		log.info("loading franchise account for webId=" + webId);
-		
+		KeystoneProfileManager pm = new KeystoneProfileManager();
 		KeystoneProxy proxy = new KeystoneProxy(attributes);
 		proxy.setModule("franchises");
 		proxy.setAction("getFranchiseByWebNumber");
 		proxy.addPostData("webNumber", webId);
-		byte[] data = proxy.getData();
+		proxy.setParserType(KeystoneDataParser.DataParserType.DoNothing);
 		
-		JSONObject franObj = JSONObject.fromObject(new String(data));
+		try {
+			byte[] data = (byte[]) proxy.getData().getActionData();
 		
-		KeystoneProfileManager pm = new KeystoneProfileManager();
-		sessVo.addFranchise(pm.loadFranchiseFromJSON(franObj));
+			JSONObject franObj = JSONObject.fromObject(new String(data));
+			sessVo.addFranchise(pm.loadFranchiseFromJSON(franObj));
+			
+		} catch (Exception e) {
+			log.error("could not load franchise data", e);
+		}
 		pm = null;
 		
 		return sessVo;

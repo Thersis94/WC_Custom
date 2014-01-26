@@ -1,7 +1,6 @@
 package com.fastsigns.security;
 
 import java.net.URLDecoder;
-
 import java.sql.Connection;
 import java.util.Map;
 
@@ -9,6 +8,7 @@ import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
 import com.fastsigns.product.keystone.KeystoneProxy;
+import com.fastsigns.product.keystone.parser.KeystoneDataParser;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.SMTServletRequest;
@@ -98,6 +98,7 @@ public class FsKeystoneLoginModule extends AbstractLoginModule {
         	proxy.setSessionCookie(req.getCookie(Constants.JSESSIONID));
         	proxy.setModule("user");
         	proxy.setAction("eCommLogin");
+        	proxy.setParserType(KeystoneDataParser.DataParserType.DoNothing);
         	
         	//set whether we're logging in by ID, or by user/pswd
         	if (profileId == null) {
@@ -107,7 +108,7 @@ public class FsKeystoneLoginModule extends AbstractLoginModule {
             	proxy.addPostData("usersId", profileId);
         	}
         	
-        	byte[] byteData = proxy.getData();
+        	byte[] byteData = (byte[]) proxy.getData().getActionData();
         	
     		JSONObject jsonObject = JSONObject.fromObject(new String(byteData));
     		
@@ -283,8 +284,10 @@ public class FsKeystoneLoginModule extends AbstractLoginModule {
 		proxy.setAction("eCommSetPassword");
 		proxy.addPostData("username", user.getEmailAddress());
 		proxy.addPostData("password", pwd);
+		proxy.setParserType(KeystoneDataParser.DataParserType.DoNothing);
+		
 		try {
-			byte[] byteData = proxy.getData();
+			byte[] byteData = (byte[]) proxy.getData().getActionData();
 			JSONObject jsonObject = JSONObject.fromObject(new String(byteData));
 			
 			if (jsonObject.optBoolean("success")) {
@@ -299,8 +302,7 @@ public class FsKeystoneLoginModule extends AbstractLoginModule {
 				return false;
 			}
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			log.debug(e);
+			log.error("could not process password reset", e);
 		}
 		
 		return false;

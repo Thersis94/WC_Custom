@@ -10,6 +10,7 @@ import net.sf.json.JSONObject;
 
 import com.fastsigns.action.franchise.vo.FranchiseVO;
 import com.fastsigns.product.keystone.KeystoneProxy;
+import com.fastsigns.product.keystone.parser.KeystoneDataParser;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.PhoneVO;
@@ -193,11 +194,13 @@ public class KeystoneProfileManager {
 		proxy.addPostData("phone", formatJSONPhones(user));
 		proxy.addPostData("multi_email", formatJSONEmails(user));
 		proxy.addPostData("company", user.getFullName());
+		proxy.setParserType(KeystoneDataParser.DataParserType.DoNothing);
+		
 		//tell the proxy to submit our data and get a response back
 		String msg = null;
 		//log.debug(user);
 		try {
-			byte[] byteData = proxy.getData();
+			byte[] byteData = (byte[]) proxy.getData().getActionData();
 			JSONObject jsonObject = JSONObject.fromObject(new String(byteData));
 			
 			if (jsonObject.optBoolean("success")) {
@@ -216,8 +219,10 @@ public class KeystoneProfileManager {
 				proxy.setAction("eCommSetPassword");
 				proxy.addPostData("username", user.getEmailAddress());
 				proxy.addPostData("password", req.getParameter("password"));
-				byteData = proxy.getData();
+				
+				byteData = (byte[]) proxy.getData().getActionData();
 				jsonObject = JSONObject.fromObject(new String(byteData));
+				
 				if (!jsonObject.optBoolean("success")) {
 					msg = "Password could not be saved.";
 					throw new SecurityException("Password could not be saved.");

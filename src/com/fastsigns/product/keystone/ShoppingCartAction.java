@@ -558,7 +558,7 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 					String value = req.getParameter(param);
 					String[] values = value.split("~");
 					attr.setValue(values[0]);
-					if(values.length > 1){
+					if(values.length > 1){//TODO exception on product details page
 						OptionVO opt = attr.new OptionVO();
 						opt.setOption_name(values[1]);
 						opt.setModifiers_attributes_options_id(values[2]);

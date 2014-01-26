@@ -1,31 +1,20 @@
 package com.fastsigns.product.keystone;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-
-import net.sf.json.JSONObject;
 
 import com.fastsigns.action.franchise.CenterPageAction;
-import com.fastsigns.product.keystone.vo.ImageVO;
-import com.fastsigns.product.keystone.vo.ModifierVO;
-import com.fastsigns.product.keystone.vo.ModifierVO.AttributeVO;
-import com.fastsigns.product.keystone.vo.ModifierVO.AttributeVO.OptionVO;
-import com.fastsigns.product.keystone.vo.ProductDetailVO;
-import com.fastsigns.product.keystone.vo.SizeVO;
+import com.fastsigns.product.keystone.parser.KeystoneDataParser;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.commerce.ShoppingCartItemVO;
 import com.siliconmtn.commerce.ShoppingCartVO;
 import com.siliconmtn.commerce.cart.storage.Storage;
-import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.smt.sitebuilder.action.AbstractBaseAction;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
- * <b>Title</b>: ProductAction.java<p/>
+ * <b>Title</b>: ProductDetailAction.java<p/>
  * <b>Description: </b> 
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2012<p/>
@@ -49,22 +38,24 @@ public class ProductDetailAction extends AbstractBaseAction {
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
-		if(req.hasParameter("pricing") && !req.hasParameter("pricingComplete")){
+		
+		if (req.hasParameter("pricing") && !req.hasParameter("pricingComplete")) {
 			req.setParameter("pricingComplete", "true");
 			ShoppingCartAction sca = new ShoppingCartAction(actionInit);
 			sca.setAttributes(attributes);
 			sca.setDBConnection(dbConn);
 			sca.build(req);
-		}
-		else {
+			
+		} else {
 			//Use Cached action and set necessary pieces for cache groups to be used. 
-			attributes.put("siteData", req.getAttribute(Constants.SITE_DATA));
+			attributes.put(Constants.SITE_DATA, req.getAttribute(Constants.SITE_DATA));
 			attributes.put("wcFranchiseId", CenterPageAction.getFranchiseId(req));
-			KeystoneProxy proxy = new CachingKeystoneProxy(attributes);
+			KeystoneProxy proxy = KeystoneProxy.newInstance(attributes);
 			proxy.setSessionCookie(req.getCookie(Constants.JSESSIONID));
 			proxy.setModule("products");
 			proxy.setAction("getProductDetails");
 			proxy.addPostData("productId", req.getParameter("product"));
+			proxy.setParserType(KeystoneDataParser.DataParserType.ProductDetail);
 			
 			if (req.hasParameter("material")) {
 				proxy.addPostData("material", "true");
@@ -73,28 +64,25 @@ public class ProductDetailAction extends AbstractBaseAction {
 			}
 			
 			try {
-				//tell the proxy to go get our data
-				byte[] byteData = proxy.getData();
+				//call the proxy
+				mod.setActionData(proxy.getData().getActionData());
 				
-				//transform the response into something meaningful to WC
-				mod.setActionData(formatData(byteData));
-				
-			} catch (InvalidDataException e) {
+			} catch (Exception e) {
 				log.error(e);
 				mod.setError(e);
 				mod.setErrorMessage("Unable to load Product Details");
 			}
-			if(req.hasParameter("itemId")){
+			
+			if (req.hasParameter("itemId")) {
 				ShoppingCartAction sca = new ShoppingCartAction(this.actionInit);
 				sca.setDBConnection(dbConn);
 				sca.setAttributes(attributes);
 				Storage container = sca.loadCartStorage(req);
 				ShoppingCartVO cart = container.load();		
 				ShoppingCartItemVO vo = cart.getItems().get(req.getParameter("itemId"));
-				if(vo != null)
+				if (vo != null)
 					req.setAttribute("cartItem", vo);
 			}
-				
 			
 			//set APIKey for the browser to use to call for pricing.
 			req.setAttribute("keystoneApiKey", proxy.buildApiKey());
@@ -103,75 +91,6 @@ public class ProductDetailAction extends AbstractBaseAction {
 	}
 	
 	
-	private ProductDetailVO formatData(byte[] byteData) throws InvalidDataException {
-		//define a Map of object types for each of the different Object variables in the bean
-		Map<String, Class<?>> dMap = new HashMap<String, Class<?>>();
-		dMap.put("sizes", SizeVO.class);
-		dMap.put("images", ImageVO.class);
-		ProductDetailVO vo = null;
-		
-		try {
-			//pass the definition Map and base bean Class to the static toBean generator
-			JSONObject jsonObj = JSONObject.fromObject(new String(byteData));
-			vo = (ProductDetailVO) JSONObject.toBean(jsonObj, ProductDetailVO.class, dMap);
-	
-			//now we need to iterate the modifiers and sublevels
-			JSONObject modsObj = jsonObj.getJSONObject("modifiers");
-			Set<?> modifiers = modsObj.keySet();
-			for (Object modifier : modifiers) {
-				JSONObject modObj = JSONObject.fromObject(modsObj.get(modifier));
-				ModifierVO modVo = new ModifierVO();
-				modVo.setDescription(modObj.getString("description"));
-				modVo.setModifier_id(modObj.getString("modifier_id"));
-				modVo.setModifier_name(modObj.getString("modifier_name"));
-				
-				JSONObject attrsObj = modObj.getJSONObject("attributes");
-				Set<?> attributes = attrsObj.keySet();
-				for (Object attribute : attributes) {
-					JSONObject attrObj = JSONObject.fromObject(attrsObj.get(attribute));
-					AttributeVO attrVo = modVo.new AttributeVO();
-					attrVo.setAttribute_name(attrObj.getString("attribute_name"));
-					attrVo.setAttribute_type(attrObj.getString("attribute_type"));
-					attrVo.setModifiers_attribute_id(attrObj.getString("modifiers_attributes_id"));
-					attrVo.setAttribute_required(attrObj.getInt("attribute_required"));
-					
-					JSONObject optionsObj = attrObj.getJSONObject("options");
-					Set<?> options = optionsObj.keySet();
-					for (Object option : options) {
-						JSONObject optObj = JSONObject.fromObject(optionsObj.get(option));
-						OptionVO optVo = attrVo.new OptionVO();
-						optVo.setModifiers_attributes_options_id(optObj.getString("modifiers_attributes_options_id"));
-						optVo.setOption_name(optObj.getString("option_name"));
-						optVo.setOption_value(optObj.getString("option_value"));
-						attrVo.addOption(optVo);
-					}
-					modVo.addAttribute(attrVo);
-				}
-				vo.addModifier(modVo);
-			}
-		} catch (Exception e) {
-			log.error("could not parse JSON", e);
-			throw new InvalidDataException(e);
-		}
-		
-		return vo;
-	}	
-	
-	
-	/* (non-Javadoc)
-	 * @see com.siliconmtn.action.SMTActionInterface#delete(com.siliconmtn.http.SMTServletRequest)
-	 */
-	@Override
-	public void delete(SMTServletRequest req) throws ActionException {
-	}
-
-	/* (non-Javadoc)
-	 * @see com.siliconmtn.action.SMTActionInterface#update(com.siliconmtn.http.SMTServletRequest)
-	 */
-	@Override
-	public void update(SMTServletRequest req) throws ActionException {
-	}
-
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.action.SMTActionInterface#build(com.siliconmtn.http.SMTServletRequest)
 	 */
@@ -205,6 +124,20 @@ public class ProductDetailAction extends AbstractBaseAction {
 			
 			req.setAttribute(Constants.REDIRECT_URL, goodUrl.toString());
 		}
+	}
+	
+	/* (non-Javadoc)
+	 * @see com.siliconmtn.action.SMTActionInterface#delete(com.siliconmtn.http.SMTServletRequest)
+	 */
+	@Override
+	public void delete(SMTServletRequest req) throws ActionException {
+	}
+
+	/* (non-Javadoc)
+	 * @see com.siliconmtn.action.SMTActionInterface#update(com.siliconmtn.http.SMTServletRequest)
+	 */
+	@Override
+	public void update(SMTServletRequest req) throws ActionException {
 	}
 
 	/* (non-Javadoc)

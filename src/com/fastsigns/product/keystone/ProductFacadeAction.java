@@ -2,6 +2,8 @@ package com.fastsigns.product.keystone;
 
 import java.util.Map;
 
+import javax.servlet.http.HttpSession;
+
 import com.fastsigns.action.franchise.CenterPageAction;
 import com.fastsigns.product.keystone.checkout.CheckoutUtil;
 import com.fastsigns.security.FastsignsSessVO;
@@ -45,34 +47,39 @@ public class ProductFacadeAction extends SimpleActionAdapter {
 		catalog, orders, assets, account, profile, invoices, history, dsol, product, search
 	}
 	
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.http.SMTServletRequest)
+	 */
 	public void list(SMTServletRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 	
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
+	 */
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		ReqType type = null;
-		boolean first = req.hasParameter("firstEcommCall");
 		String franId = null;
-		if(!first && !req.hasParameter("amid") && !page.getAliasName().equals("cart")) {
+		HttpSession ses = req.getSession();
+		
+		//TODO - ask billy
+		/**
+		 * I have no idea what this does or why it's here!  -JM
+		 */
+		boolean first = req.hasParameter("firstEcommCall");
+		if (!first && !req.hasParameter("amid") && !page.getAliasName().equals("cart")) {
 			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 			franId = site.getSiteId().replaceAll("^(.*)_([\\d]{1,5})_(.*)$", "$2");
-			req.getSession().setAttribute("FranchiseId", franId);
-			if(site.getAliasPathName() != null)
-				req.getSession().setAttribute("EcommAliasPath", site.getAliasPathName());
+			ses.setAttribute(FastsignsSessVO.FRANCHISE_ID, franId);
 			req.setParameter("firstEcommCall", "true");
-		} else
-			franId = CenterPageAction.getFranchiseId(req);
-		//verify we have some basic information in session.  All child actions are banking on this!
-		if (req.getSession().getAttribute(KeystoneProxy.FRAN_SESS_VO) == null) {
-			loadDefaultSession(req, true, attributes);
-		} else if(((FastsignsSessVO)req.getSession().getAttribute(KeystoneProxy.FRAN_SESS_VO)).getFranchise(franId) == null) {
-			loadDefaultSession(req, false, attributes);
-		} else if (franId == null) {
-			//ensure we have a webId; almost all transactions revolve around this value
-			req.getSession().setAttribute(FastsignsSessVO.FRANCHISE_ID, franId);
+			if (site.getAliasPathName() != null)
+				ses.setAttribute("EcommAliasPath", site.getAliasPathName());
 		}
+		
+		configureSession(ses, req, attributes);
+		
 		
 		//since multiple actions can co-exist on a page, only honor request parameters 
 		// for the action in the main column.
@@ -87,22 +94,18 @@ public class ProductFacadeAction extends SimpleActionAdapter {
 		ai.setDBConnection(dbConn);
 		ai.setAttributes(attributes);
 		ai.retrieve(req);
-		
 	}
 	
+	
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
+	 */
 	public void build(SMTServletRequest req) throws ActionException {
+		HttpSession ses = req.getSession();
 		ReqType type = getReqType(req);
 		log.debug("display=" + type);
 		
-		//verify we have some basic information in session.  All child actions are banking on this!
-		if (req.getSession().getAttribute(KeystoneProxy.FRAN_SESS_VO) == null) {
-			loadDefaultSession(req, true, attributes);
-		} else if(((FastsignsSessVO)req.getSession().getAttribute(KeystoneProxy.FRAN_SESS_VO)).getFranchise(CenterPageAction.getFranchiseId(req)) == null) {
-			loadDefaultSession(req, false, attributes);
-		} else if (req.getSession().getAttribute(FastsignsSessVO.FRANCHISE_ID) == null) {
-			//ensure we have a webId; almost all transactions revolve around this value
-			req.getSession().setAttribute(FastsignsSessVO.FRANCHISE_ID, CenterPageAction.getFranchiseId(req));
-		}
+		configureSession(ses, req, attributes);
 				
 		SMTActionInterface ai = loadAction(type);
 		ai.setDBConnection(dbConn);
@@ -173,23 +176,41 @@ public class ProductFacadeAction extends SimpleActionAdapter {
 	
 	
 	/**
+	 * validates basic information exists in session, calls to load it if not.
+	 * @param ses
+	 * @param req
+	 */
+	protected static void configureSession(HttpSession ses, SMTServletRequest req, Map<String, Object> attributes) {
+		String franchiseId = CenterPageAction.getFranchiseId(req);
+		FastsignsSessVO franSessVo = (FastsignsSessVO)ses.getAttribute(KeystoneProxy.FRAN_SESS_VO);
+		
+		//if the request does not have franchiseInfo for this Franchise, load it.
+		if (franSessVo == null || franSessVo.getFranchise(franchiseId) == null) {
+			loadDefaultSession(req, franSessVo, franchiseId, attributes);
+			
+		} else if (ses.getAttribute(FastsignsSessVO.FRANCHISE_ID) == null) {
+			//ensure we have a webId; almost all transactions revolve around this value
+			ses.setAttribute(FastsignsSessVO.FRANCHISE_ID, franchiseId);
+		}
+	}
+	
+	
+	/**
 	 * helper method that set ups the default FastsignsSessVO object on session.
 	 * This is done here (at the parent level) because most nested actions will rely on it.
 	 * @param req
 	 */
-	public static void loadDefaultSession(SMTServletRequest req, boolean createSessVo, Map<String, Object> attributes) {
-		
+	public static void loadDefaultSession(SMTServletRequest req, FastsignsSessVO sessVo, String webId, Map<String, Object> attributes) {
 		CheckoutUtil util = new CheckoutUtil(attributes);
-		String webId = CenterPageAction.getFranchiseId(req);
-		FastsignsSessVO sessVo = null;
-		if(createSessVo)
+		if (sessVo == null)
 			sessVo = new FastsignsSessVO();
-		else
-			sessVo = (FastsignsSessVO) req.getSession().getAttribute(KeystoneProxy.FRAN_SESS_VO);
+		
 		try {
 			sessVo = util.loadFranchiseVO(sessVo, webId);
 		} catch (InvalidDataException e) {
 			log.error(e);
+		} finally {
+			util = null;
 		}
 		req.getSession().setAttribute(KeystoneProxy.FRAN_SESS_VO, sessVo);
 		req.getSession().setAttribute(FastsignsSessVO.FRANCHISE_ID, webId);

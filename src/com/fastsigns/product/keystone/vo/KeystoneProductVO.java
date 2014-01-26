@@ -40,7 +40,7 @@ public class KeystoneProductVO extends ProductVO implements Serializable {
 	private int dsolable = 0;
     //private String sku = null;
     //private String upc = null;
-    //private int default_unit = 0;
+    private int default_unit = 0;
 	//private String catalog_type = null;
 	private int tax_code_id = 0;
 	private String usageId = null;
@@ -290,5 +290,13 @@ public class KeystoneProductVO extends ProductVO implements Serializable {
 
 	public double getDiscount() {
 		return discount;
+	}
+
+	public int getDefault_unit() {
+		return default_unit;
+	}
+
+	public void setDefault_unit(int default_unit) {
+		this.default_unit = default_unit;
 	}
 }

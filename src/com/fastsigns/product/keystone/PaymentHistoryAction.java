@@ -1,18 +1,10 @@
 package com.fastsigns.product.keystone;
 
-import java.util.Collection;
-
-import net.sf.json.JSONArray;
-import net.sf.json.JsonConfig;
-import net.sf.json.util.PropertySetStrategy;
-
-import com.fastsigns.product.keystone.vo.PaymentHistoryVO;
+import com.fastsigns.product.keystone.parser.KeystoneDataParser;
 import com.fastsigns.security.FastsignsSessVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.SMTServletRequest;
-import com.siliconmtn.json.PropertyStrategyWrapper;
 import com.smt.sitebuilder.action.AbstractBaseAction;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -49,22 +41,19 @@ public class PaymentHistoryAction extends AbstractBaseAction {
 			return; //not logged in, or no account to retrieve
 		}
 		
-		//TODO reactivate caching proxy
 		//KeystoneProxy proxy = new CachingKeystoneProxy(attributes, 10);
-		KeystoneProxy proxy = new KeystoneProxy(attributes);
+		KeystoneProxy proxy = KeystoneProxy.newInstance(attributes);
 		proxy.setSessionCookie(req.getCookie(Constants.JSESSIONID));
 		proxy.setModule("payments");
 		proxy.setAction("get_payments_by_account_id");
 		proxy.setAccountId(sessVo.getProfile(webId).getAccountId());
+		proxy.setParserType(KeystoneDataParser.DataParserType.PaymentHistory);
 		
 		try {
 			//tell the proxy to go get our data
-			byte[] byteData = proxy.getData();
+			mod.setActionData(proxy.getData().getActionData());
 			
-			//transform the response into something meaningful to WC
-			mod.setActionData(formatData(byteData));
-			
-		} catch (InvalidDataException e) {
+		} catch (Exception e) {
 			log.error(e);
 			mod.setError(e);
 			mod.setErrorMessage("Unable to load Payment History");
@@ -72,24 +61,6 @@ public class PaymentHistoryAction extends AbstractBaseAction {
 
 		setAttribute(Constants.MODULE_DATA, mod);
 	}
-	
-	
-	private Collection<?> formatData(byte[] byteData) throws InvalidDataException {
-		JsonConfig cfg = new JsonConfig();
-		cfg.setPropertySetStrategy(new PropertyStrategyWrapper(PropertySetStrategy.DEFAULT));
-		cfg.setRootClass(PaymentHistoryVO.class);
-		
-		try {
-			JSONArray jsonArr = JSONArray.fromObject(new String(byteData));
-			return JSONArray.toCollection(jsonArr, cfg);
-			
-		} catch (Exception e) {
-			log.error("could not parse JSON", e);
-			throw new InvalidDataException(e);
-		}
-		
-	}
-
 	
 
 	/* (non-Javadoc)

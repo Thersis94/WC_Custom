@@ -8,6 +8,7 @@ import org.apache.log4j.Logger;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
+import com.fastsigns.product.keystone.parser.KeystoneDataParser;
 import com.fastsigns.product.keystone.vo.KeystoneProductVO;
 import com.fastsigns.product.keystone.vo.ModifierVO;
 import com.fastsigns.product.keystone.vo.ModifierVO.AttributeVO;
@@ -44,7 +45,6 @@ public class PricingUtil {
 	}
 	
 	public ShoppingCartVO loadPricing(SMTServletRequest req, ShoppingCartVO cart) {
-		
 		FastsignsSessVO sessVo = (FastsignsSessVO) req.getSession().getAttribute(KeystoneProxy.FRAN_SESS_VO);
 		String webId = (String)req.getSession().getAttribute(FastsignsSessVO.FRANCHISE_ID);
 		String franId = sessVo.getFranchise(webId).getFranchiseId();
@@ -60,9 +60,13 @@ public class PricingUtil {
 		proxy.addPostData("products", formatJSONReq(cart));
 		proxy.setAccountId(sessVo.getProfile(webId).getAccountId());
 		
+		//have proxy return the unaltered response from Keystone.  We'll parse it ourselves.
+		//Since pricing calls aren't cacheable, this is perfectly fine.
+		proxy.setParserType(KeystoneDataParser.DataParserType.DoNothing);
+		
 		try {
 			//tell the proxy to go get our data
-			byte[] byteData = proxy.getData();
+			byte[] byteData = (byte[]) proxy.getData().getActionData();
 		
 			//transform the response into something meaningful to WC
 			formatData(byteData, cart);

@@ -1,22 +1,17 @@
 package com.fastsigns.product.keystone;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
-import net.sf.json.JsonConfig;
-import net.sf.json.util.PropertySetStrategy;
 
+import com.fastsigns.product.keystone.parser.KeystoneDataParser;
 import com.fastsigns.product.keystone.vo.InvoiceReportVO;
-import com.fastsigns.product.keystone.vo.InvoiceVO;
 import com.fastsigns.security.FastsignsSessVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.SMTServletRequest;
-import com.siliconmtn.json.PropertyStrategyWrapper;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.AbstractBaseAction;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
@@ -26,7 +21,7 @@ import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
- * <b>Title</b>: CatalogAction.java<p/>
+ * <b>Title</b>: InvoicesAction.java<p/>
  * <b>Description: </b> 
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2012<p/>
@@ -56,25 +51,10 @@ public class InvoicesAction extends AbstractBaseAction {
 			mod.setErrorMessage("Not authorized or no data to display");
 			return; //not logged in, or no account to retrieve
 		}
-		if(req.hasParameter("invoice_id")) {
-			String name = req.getParameter("invoice_id");
-			Map<String, String> postData = new HashMap<String, String>();
-			postData.put("doAjax", "true");
-			postData.put("invoice_id", name);
-			
-			KeystoneProxy proxy = new KeystoneProxy(attributes);
-			proxy.setSessionCookie(req.getCookie(Constants.JSESSIONID));
-			proxy.setModule("invoices");
-			proxy.setAction("get_print_invoice");
-			proxy.setPostData(postData);
-			
+		
+		if (req.hasParameter("invoice_id")) {
 			try {
-				byte [] byteData = proxy.getData();
-				AbstractSBReportVO rpt = new InvoiceReportVO();
-				rpt.setData(byteData);
-				rpt.setFileName(name + ".pdf");
-				req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, Boolean.TRUE);
-				req.setAttribute(Constants.BINARY_DOCUMENT, rpt);
+				formatPDFInvoice(req);
 			} catch (InvalidDataException e) {
 				log.error(e);
 				mod.setError(e);
@@ -83,22 +63,19 @@ public class InvoicesAction extends AbstractBaseAction {
 			return ;
 		}
 		
-		//TODO reactivate caching proxy
 		//KeystoneProxy proxy = new CachingKeystoneProxy(attributes, 10);
-		KeystoneProxy proxy = new KeystoneProxy(attributes);
+		KeystoneProxy proxy = KeystoneProxy.newInstance(attributes, 10);
 		proxy.setSessionCookie(req.getCookie(Constants.JSESSIONID));
 		proxy.setModule("invoicesAccounts");
 		proxy.setAction("getByAccountId");
 		proxy.setAccountId(sessVo.getProfile(webId).getAccountId());
+		proxy.setParserType(KeystoneDataParser.DataParserType.Invoices);
 		
 		try {
 			//tell the proxy to go get our data
-			byte[] byteData = proxy.getData();
-			
-			//transform the response into something meaningful to WC
-			mod.setActionData(formatDisplayData(byteData));
+			mod.setActionData(proxy.getData().getActionData());
 		
-		} catch (InvalidDataException e) {
+		} catch (Exception e) {
 			log.error(e);
 			mod.setError(e);
 			mod.setErrorMessage("Unable to load Invoices");
@@ -108,19 +85,32 @@ public class InvoicesAction extends AbstractBaseAction {
 	}
 	
 	
-	private Collection<?> formatDisplayData(byte[] byteData) throws InvalidDataException {
-		JsonConfig cfg = new JsonConfig();
-		cfg.setPropertySetStrategy(new PropertyStrategyWrapper(PropertySetStrategy.DEFAULT));
-		cfg.setRootClass(InvoiceVO.class);
+	/**
+	 * retrieves a PDF copy of the requested invoice from Keystone and returns it as a WC report
+	 * @param req
+	 * @throws InvalidDataException
+	 */
+	private void formatPDFInvoice(SMTServletRequest req) throws InvalidDataException {
+		String name = req.getParameter("invoice_id");
+		Map<String, String> postData = new HashMap<String, String>();
+		postData.put("doAjax", "true");
+		postData.put("invoice_id", name);
 		
-		try {
-			JSONArray jsonArr = JSONArray.fromObject(new String(byteData));
-			return JSONArray.toCollection(jsonArr, cfg);
-
-		} catch (Exception e) {
-			log.error("could not parse JSON", e);
-			throw new InvalidDataException(e);
-		}
+		//this call is never cached, because the same PDF is rarely downloaded 
+		//multiple times from the same person within the timeout period.
+		KeystoneProxy proxy = new KeystoneProxy(attributes);
+		proxy.setSessionCookie(req.getCookie(Constants.JSESSIONID));
+		proxy.setModule("invoices");
+		proxy.setAction("get_print_invoice");
+		proxy.setPostData(postData);
+		proxy.setParserType(KeystoneDataParser.DataParserType.DoNothing);
+		
+		byte [] byteData = (byte[]) proxy.getData().getActionData();
+		AbstractSBReportVO rpt = new InvoiceReportVO();
+		rpt.setData(byteData);
+		rpt.setFileName(name + ".pdf");
+		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, Boolean.TRUE);
+		req.setAttribute(Constants.BINARY_DOCUMENT, rpt);
 	}
 	
 	
@@ -137,6 +127,7 @@ public class InvoicesAction extends AbstractBaseAction {
 		Object msg = null;
 		try {
 			KeystoneProxy proxy = new KeystoneProxy(attributes);
+			proxy.setParserType(KeystoneDataParser.DataParserType.DoNothing);
 			proxy.setTimeout(45000); //allow 45 seconds, which gives us 15secs to process the WC-side before we lose the browser
 			proxy.setSessionCookie(req.getCookie(Constants.JSESSIONID));
 			proxy.setModule("payments");
@@ -155,8 +146,7 @@ public class InvoicesAction extends AbstractBaseAction {
 			proxy.addPostData("ccInfo[ccZip]", StringUtil.removeNonNumeric(req.getParameter("billingZip")));
 			
 			//submit the transaction
-			byte[] byteData = proxy.getData();
-			JSONObject resp = JSONObject.fromObject(new String(byteData));
+			JSONObject resp = JSONObject.fromObject(proxy.getData().getActionData());
 			log.debug("resp=" + resp);
 			
 			//evaluate the response

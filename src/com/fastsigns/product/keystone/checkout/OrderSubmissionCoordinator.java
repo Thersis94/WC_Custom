@@ -10,6 +10,7 @@ import org.apache.log4j.Logger;
 
 import com.fastsigns.action.franchise.vo.FranchiseVO;
 import com.fastsigns.product.keystone.KeystoneProxy;
+import com.fastsigns.product.keystone.parser.KeystoneDataParser;
 import com.fastsigns.product.keystone.vo.KeystoneProductVO;
 import com.fastsigns.product.keystone.vo.ModifierVO;
 import com.fastsigns.product.keystone.vo.ModifierVO.AttributeVO;
@@ -48,12 +49,10 @@ public class OrderSubmissionCoordinator {
 	
 	protected static Logger log;
 	private Map<String, Object> attributes;
-	private KeystoneProxy proxy = null;
 
 	public OrderSubmissionCoordinator(Map<String, Object> attributes) {
 		log = Logger.getLogger(CheckoutUtil.class);
 		this.attributes = attributes;
-		proxy = new KeystoneProxy(attributes);
 	}
 	
 	/**
@@ -69,10 +68,12 @@ public class OrderSubmissionCoordinator {
 		attributes.put("franchise", sessVo.getFranchise(webId));
 		
 		//Build Proxy Call
+		KeystoneProxy proxy = new KeystoneProxy(attributes);
 		proxy.setModule("jobs");
 		proxy.setUserId(sessVo.getProfile(webId).getUserId());
 		proxy.addPostData("eComm", "true");
 		proxy.setFranchiseId(sessVo.getFranchise(webId).getFranchiseId());
+		proxy.setParserType(KeystoneDataParser.DataParserType.DoNothing);
 
 		/*
 		 *  If we have a jobId, this is a payment resubmit, otherwise we are 
@@ -91,7 +92,7 @@ public class OrderSubmissionCoordinator {
 		proxy.addPostData("paymentDetails", buildPaymentDetails(cart).toString());
 		
 		try {
-			byte[] data = proxy.getData();
+			byte[] data = (byte[]) proxy.getData().getActionData();
 
 			/*
 			 * Place JSON Response data on the error map of the cart

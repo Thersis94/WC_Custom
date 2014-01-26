@@ -10,11 +10,14 @@ import javax.servlet.http.Cookie;
 
 import org.apache.log4j.Logger;
 
-
+import com.fastsigns.product.keystone.parser.KeystoneDataParser;
+import com.fastsigns.product.keystone.parser.KeystoneDataParser.DataParserType;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
 import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.StringEncrypter;
+import com.siliconmtn.util.Convert;
+import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -48,6 +51,15 @@ public class KeystoneProxy {
 	private boolean doJson = true;
 	private Map<String, String> postData = null;
 	
+	
+	/**
+	 * DataParserType defines which class is responsible for parsing the response data for the calling action.
+	 * the action will set this variable, so tell us how to parse the data, so we can return it cleanly as a ModuleVO
+	 * ModuleVO is then able to be cached by WC, without WC having to re-process the entire byte[] from it's raw form. 
+	 */
+	DataParserType parserType = null;
+	
+	
 	public KeystoneProxy(Map<String, Object> attribs) {
 		log = Logger.getLogger(this.getClass());
 		keystoneApiUrl = (String) attribs.get("keystoneApiUrl");
@@ -57,13 +69,44 @@ public class KeystoneProxy {
 		log.info(this.getClass() + " created with apiUrl=" + keystoneApiUrl);
 	}
 	
+	/**
+	 * static class loader for KeystoneProxy; facades cacheable config.
+	 * This method will favor a caching proxy based on appConfig, so don't
+	 * call it if you specifically need a non-caching version.
+	 * @param attribs
+	 * @return
+	 */
+	public static KeystoneProxy newInstance(Map<String, Object> attribs) {
+		Integer cacheTimeout = Convert.formatInteger((String)attribs.get("keystoneApiCacheTimeout"), 0);
+		if (cacheTimeout > 0) {
+			return new CachingKeystoneProxy(attribs, cacheTimeout);
+		} else {
+			return new KeystoneProxy(attribs);
+		}
+	}
+	
+	/**
+	 * assuming cache is used (defined in WC config as >0), this method allows the invoking class to alter the cache timeout.
+	 * This is practice for things like MyAssets, which we want to keep around for ~10mins while the user is active.
+	 * @param attribs
+	 * @param timeoutOverride
+	 * @return
+	 */
+	public static KeystoneProxy newInstance(Map<String, Object> attribs, int timeoutOverrideMins) {
+		KeystoneProxy proxy = newInstance(attribs);
+		if (proxy instanceof CachingKeystoneProxy)
+			((CachingKeystoneProxy)proxy).setOsCacheTimeout(timeoutOverrideMins);
+		
+		return proxy;
+	}
+	
 	
 	/**
 	 * calling this method actually fires the http call to Keystone.
 	 * Be sure all setters have been done prior to this.
 	 * @return
 	 */
-	public byte[] getData() throws InvalidDataException {
+	public ModuleVO getData() throws InvalidDataException {
 		byte[] data = null;
 		try {
 			conn = new SMTHttpConnectionManager();
@@ -89,7 +132,7 @@ public class KeystoneProxy {
 		}
 		
 		log.debug("retrieved data=" + new String(data));
-		return data;
+		return KeystoneDataParser.newInstance(parserType).formatData(data);
 	}
 	
 	
@@ -249,5 +292,14 @@ public class KeystoneProxy {
 		this.httpConnectionTimeout = timeout;
 	}
 	public int getTimeout() { return httpConnectionTimeout; }
+
+	
+	public DataParserType getParserType() {
+		return parserType;
+	}
+
+	public void setParserType(DataParserType parserType) {
+		this.parserType = parserType;
+	}
 	
 }
