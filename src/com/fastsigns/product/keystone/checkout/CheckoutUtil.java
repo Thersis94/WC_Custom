@@ -201,22 +201,27 @@ public class CheckoutUtil {
 		attributes.put(KeystoneProxy.FRAN_SESS_VO, sessVo);
 		
 		//create a ShippingCost call to the SMTProxy.
-		ShippingRequestCoordinator src = new ShippingRequestCoordinator(attributes);
-		try {
-			cart = src.retrieveShippingOptions(cart);
-			log.debug("retrieved shipping options.");
-			if(cart.getShippingOptions().size() == 0){
-				req.setParameter("nextStep", "");
-				PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
-				StringBuilder url = new StringBuilder(page.getFullPath());
-				url.append("?msg=" + "Error Retrieving Shipping Information, please see cart.");
-				req.setAttribute(Constants.REDIRECT_REQUEST, true);
-				req.setAttribute(Constants.REDIRECT_URL, url.toString());
+		//do not load shipping if we already have it.  This causes the chosen shipping option to be lost.
+		if (cart.getShippingOptions() == null && cart.getShippingOptions().size() == 0) {
+			ShippingRequestCoordinator src = new ShippingRequestCoordinator(attributes);
+			try {
+				cart = src.retrieveShippingOptions(cart);
+				log.debug("retrieved shipping options.");
+				if(cart.getShippingOptions().size() == 0){
+					req.setParameter("nextStep", "");
+					PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+					StringBuilder url = new StringBuilder(page.getFullPath());
+					url.append("?msg=" + "Error Retrieving Shipping Information, please see cart.");
+					req.setAttribute(Constants.REDIRECT_REQUEST, true);
+					req.setAttribute(Constants.REDIRECT_URL, url.toString());
+				}
+			} catch (Exception e) {
+				log.error("could not load shipping", e);
+				throw new ActionException(e.getMessage());
 			}
-		} catch (Exception e) {
-			log.error("could not load shipping", e);
-			throw new ActionException(e.getMessage());
 		}
+		
+		
 		log.debug("Retrieving Tax Information");
 		//create a Tax call to the SMTProxy
 		TaxationRequestCoordinator tax = new TaxationRequestCoordinator(attributes);
@@ -310,6 +315,7 @@ public class CheckoutUtil {
 		cart.setPayment(payment);
 		
 		//Save the selected Shipping Method.
+		log.debug("shipping=" + req.getParameter("shippingMethod"));
 		cart.setShipping(req.getParameter("shippingMethod"));
 		FastsignsSessVO sessVo = (FastsignsSessVO) req.getSession().getAttribute(KeystoneProxy.FRAN_SESS_VO);
 		attributes.put(KeystoneProxy.FRAN_SESS_VO, sessVo);
@@ -320,6 +326,7 @@ public class CheckoutUtil {
 		//we must pass that back to Keystone on the retry attempt!
 		OrderSubmissionCoordinator coord = new OrderSubmissionCoordinator(attributes);
 		cart = coord.submitOrder(cart);
+		
 		if (!Convert.formatBoolean(cart.getErrors().get("success"))) {
 			req.getSession().setAttribute("jobId", cart.getErrors().get("jobId"));
 			req.setParameter("step", "confirm");
@@ -492,15 +499,17 @@ public class CheckoutUtil {
 				//just ignore these, there's nothing we can do (now) and don't want 
 				//to confuse the user by throwing an exception
 			}
-
-			//now we need to add the users 'new' profile to our eComm session object, for Checkout to leverage.
-			user.setWebId((String)req.getSession().getAttribute(FastsignsSessVO.FRANCHISE_ID));
-			sessVo.addProfile(user);
-			req.getSession().setAttribute(KeystoneProxy.FRAN_SESS_VO, sessVo);
-			log.debug("matched user to franchise=" + sessVo.getFranchise(user.getWebId()));
 			
 		} catch (Exception e) {
 			throw new ActionException(e.getMessage(), e); //the error message will contain something 'friendly' sent from Keystone
+			
+		} finally {
+			//now we need to add the users 'new' profile to our eComm session object, for Checkout to leverage.
+			user.setWebId((String)req.getSession().getAttribute(FastsignsSessVO.FRANCHISE_ID));
+			sessVo.addProfile(user);
+			req.getSession().setAttribute(Constants.USER_DATA, user);
+			req.getSession().setAttribute(KeystoneProxy.FRAN_SESS_VO, sessVo);
+			log.debug("matched user to franchise=" + sessVo.getFranchise(user.getWebId()));
 		}
 		
 		attributes.put("nextStep", "checkout");

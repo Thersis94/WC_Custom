@@ -25,7 +25,7 @@ public class StartFromScratchAction extends AbstractBaseAction {
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		//add to the attributes map first, incase a downstream Proxy call is made.
 		attributes.put(Constants.SITE_DATA, req.getAttribute(Constants.SITE_DATA));
-		attributes.put("wcFranchiseId", CenterPageAction.getFranchiseId(req));
+		//attributes.put("wcFranchiseId", CenterPageAction.getFranchiseId(req));
 		
 		HttpSession sess = req.getSession();
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
@@ -50,10 +50,10 @@ public class StartFromScratchAction extends AbstractBaseAction {
 		proxy.setAction("getDsolMaterials");
 		proxy.setParserType(KeystoneDataParser.DataParserType.FromScratch);
 		
-		
 		//tell the proxy to go get our data
 		try {
 			//this was moved down here because of the potential NPE on getFranchiseId():
+			proxy.setFranchiseId(sessVo.getFranchise(webId).getFranchiseId());
 			proxy.addPostData("franchiseId", sessVo.getFranchise(webId).getFranchiseId());
 			
 			mod.setActionData(proxy.getData().getActionData());

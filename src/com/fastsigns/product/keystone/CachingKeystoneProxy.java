@@ -7,6 +7,7 @@ import com.opensymphony.oscache.general.GeneralCacheAdministrator;
 import com.opensymphony.oscache.web.filter.ExpiresRefreshPolicy;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.ModuleController;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
@@ -124,6 +125,15 @@ public class CachingKeystoneProxy extends KeystoneProxy {
 	 */
 	protected String[] buildCacheGroups() {
 		cacheGroups = new String [] {getWcFranchiseId(), getWcFranchiseId() + "_KEYSTONE", getOrganizationId(), getSiteId()};
+		
+		//we can't have nulls here, must strip them
+		for (int x=0; x < cacheGroups.length; x++) {
+			if (cacheGroups[x] == null || cacheGroups[x].length() == 0) {
+				cacheGroups[x] = "SMT_ADMIN";
+				//until we trace this down...
+				log.error("NULL CACHE GROUP! " + StringUtil.getToString(cacheGroups, true, 0, ",") + " | "  + this.getModule() + " | " + this.getAction());
+			}
+		}
 		return cacheGroups;
 	}
 	

@@ -270,14 +270,14 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 			if (req.hasParameter("category")) url.append("&category=").append(req.getParameter("category"));
 			//nextStep gets set by the CheckoutUtil
 			if (nextStep != null) url.append("&step=").append(nextStep);
-			if(req.hasParameter("startOver")){	
+			if(req.hasParameter("startOver")) {	
 				container.flush();
 				//need to flush the jobId in the event they've submitted but are dropping the cart.
 				req.removeAttribute("jobId");
 				req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
 				req.setAttribute(Constants.REDIRECT_URL, "/" + CenterPageAction.getFranchiseId(req) + "/store");
 			} else {
-				req.setAttribute(Constants.REDIRECT_REQUEST, true);
+				req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
 				req.setAttribute(Constants.REDIRECT_URL, url.toString());
 			}
 		} else {
