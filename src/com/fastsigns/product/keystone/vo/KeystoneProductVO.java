@@ -21,7 +21,7 @@ import com.siliconmtn.util.Convert;
  * @version 1.0
  * @since Oct 23, 2012
  ****************************************************************************/
-public class KeystoneProductVO extends ProductVO implements Serializable {
+public class KeystoneProductVO extends ProductVO implements Serializable, Cloneable {
 	private static final long serialVersionUID = 2308239428232094613L;
 	//private String product_id = null;
 	private String franchise_id = null;
@@ -298,5 +298,27 @@ public class KeystoneProductVO extends ProductVO implements Serializable {
 
 	public void setDefault_unit(int default_unit) {
 		this.default_unit = default_unit;
+	}
+	
+	public KeystoneProductVO clone() throws CloneNotSupportedException {
+		KeystoneProductVO kpv = (KeystoneProductVO) super.clone();
+		
+		if(sizes != null) {
+			List<SizeVO> sL = new ArrayList<SizeVO>();
+			for(SizeVO s : sizes)
+				sL.add(s.clone());
+			kpv.setSizes(sL);
+		}
+		if(images != null) {
+			List<ImageVO> iL = new ArrayList<ImageVO>();
+			for(ImageVO i : images)
+				iL.add(i.clone());
+			kpv.setImages(iL);
+		}
+		if(modifiers != null)
+			for(String k : modifiers.keySet())
+				kpv.addModifier(modifiers.get(k).clone());
+		
+		return kpv;
 	}
 }

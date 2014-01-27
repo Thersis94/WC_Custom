@@ -15,7 +15,7 @@ import java.io.Serializable;
  * @version 1.0
  * @since Dec 21, 2012
  ****************************************************************************/
-public class ImageVO implements Serializable {
+public class ImageVO implements Serializable, Cloneable {
 	private static final long serialVersionUID = -6697112278546959621L;
 	
 	private String imageThumbUrl = null;
@@ -33,6 +33,10 @@ public class ImageVO implements Serializable {
 	}
 	public void setImageUrl(String imageUrl) {
 		this.imageUrl = imageUrl;
+	}
+	
+	public ImageVO clone() throws CloneNotSupportedException {
+		return (ImageVO) super.clone();
 	}
 
 }

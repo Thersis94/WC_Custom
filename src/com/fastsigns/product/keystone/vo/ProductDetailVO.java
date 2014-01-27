@@ -11,7 +11,7 @@ package com.fastsigns.product.keystone.vo;
  * @version 1.0
  * @since Nov 9, 2012
  ****************************************************************************/
-public class ProductDetailVO extends KeystoneProductVO {
+public class ProductDetailVO extends KeystoneProductVO implements Cloneable{
 	private static final long serialVersionUID = 13254321L;
 	private String dimensions = null;
 	private String webId = null;
@@ -54,5 +54,9 @@ public class ProductDetailVO extends KeystoneProductVO {
 
 	public void setWebId(String webId) {
 		this.webId = webId;
+	}
+	
+	public ProductDetailVO clone() throws CloneNotSupportedException {
+		return (ProductDetailVO) super.clone();
 	}
 }

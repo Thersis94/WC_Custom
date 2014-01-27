@@ -449,15 +449,21 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 		ai.retrieve(req);
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		prod = (ProductDetailVO) mod.getActionData();
-		if (prod == null) throw new ActionException("Product Not Found");
+		ProductDetailVO prod2 = null;
+		try {
+			prod2 = prod.clone();
+		} catch (CloneNotSupportedException e) {
+			log.debug("Clone of Product Failed", e);
+		}
+		if (prod2 == null) throw new ActionException("Product Not Found");
 		req.setValidateInput(Boolean.FALSE);
 
 		//add the modifiers and customizations to the product (object) before we commit it to the cart
-		this.customizeProduct(prod, req);
+		this.customizeProduct(prod2, req);
 		
 		//If this is a DSOL call, make sure to assign the custom data attached.
 		if(Convert.formatBoolean(req.getParameter("isDsol")) && req.hasParameter("highResData")){
-					Map<String, Object> attr = prod.getProdAttributes();
+					Map<String, Object> attr = prod2.getProdAttributes();
 					KeystoneProductVO vo = (KeystoneProductVO) req.getSession().getAttribute("DSOLVO");
 
 					//Move attributes from dsol session variable to the cart product variable.
@@ -476,8 +482,8 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 		}
 		req.setValidateInput(Boolean.TRUE);
 
-		log.debug("loadedProduct=" + prod);
-		return prod;
+		log.debug("loadedProduct=" + prod2);
+		return prod2;
 	}
 	
 	

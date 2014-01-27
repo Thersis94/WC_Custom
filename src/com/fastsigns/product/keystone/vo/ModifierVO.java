@@ -14,7 +14,7 @@ import java.util.Map;
  * @version 1.0
  * @since Dec 19, 2012
  ****************************************************************************/
-public class ModifierVO implements Serializable {
+public class ModifierVO implements Serializable, Cloneable {
 	private static final long serialVersionUID = 2368209900381889160L;
 	private String modifier_id = null;
 	private String modifier_name = null;
@@ -94,9 +94,18 @@ public class ModifierVO implements Serializable {
 		return quantity;
 	}
 
+	public ModifierVO clone() throws CloneNotSupportedException {
+		ModifierVO mvo = (ModifierVO) super.clone();
+		if(attributes != null)
+			for(String k : attributes.keySet()) {
+				AttributeVO avo = (AttributeVO) attributes.get(k).clone(); 
+				mvo.addAttribute(avo);
+			}
+		return mvo;
+		
+	}
 
-
-	public class AttributeVO implements Serializable {
+	public class AttributeVO implements Serializable, Cloneable {
 		private static final long serialVersionUID = 5998788902822458889L;
 		private String modifiers_attribute_id = null;
 		private String attribute_type = null;
@@ -158,9 +167,18 @@ public class ModifierVO implements Serializable {
 			this.positioning = positioning;
 		}
 
+		public AttributeVO clone() throws CloneNotSupportedException {
+			AttributeVO avo = (AttributeVO) super.clone();
+			if(options != null)
+				for(String k : options.keySet()) {
+					OptionVO o = options.get(k).clone();
+					avo.addOption(o);
+				}
+			return avo;
+			
+		}
 
-
-		public class OptionVO implements Serializable {
+		public class OptionVO implements Serializable, Cloneable {
 			private static final long serialVersionUID = 4447668517756887511L;
 			private String modifiers_attributes_options_id = null;
 			private String option_name = null;
@@ -185,6 +203,11 @@ public class ModifierVO implements Serializable {
 			}
 			public void setOption_value(String option_value) {
 				this.option_value = option_value;
+			}
+			
+			public OptionVO clone() throws CloneNotSupportedException {
+				OptionVO ovo = (OptionVO) super.clone();
+				return ovo;
 			}
 		}
 	}

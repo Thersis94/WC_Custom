@@ -15,7 +15,7 @@ import java.io.Serializable;
  * @version 1.0
  * @since Dec 19, 2012
  ****************************************************************************/
-public class SizeVO implements Serializable {
+public class SizeVO implements Serializable, Cloneable {
 	private static final long serialVersionUID = 7227613056523385825L;
 	private String products_sizes_id = null;
 	private String ecommerce_size_id = null;
@@ -112,4 +112,8 @@ public class SizeVO implements Serializable {
 	public int getHeight() {
 		return height;
 	}	
+	
+	public SizeVO clone() throws CloneNotSupportedException {
+		return (SizeVO) super.clone();
+	}
 }

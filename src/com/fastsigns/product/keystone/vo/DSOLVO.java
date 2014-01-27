@@ -7,7 +7,7 @@ import java.util.List;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 
-public class DSOLVO extends ProductDetailVO implements Serializable{
+public class DSOLVO extends ProductDetailVO implements Serializable, Cloneable{
 	
 	private static final long serialVersionUID = -308115322150643672L;
 	
@@ -134,5 +134,9 @@ public class DSOLVO extends ProductDetailVO implements Serializable{
 	
 	public void setTemplate_data(String template_data) {
 		addProdAttribute("jsonData", template_data);
+	}
+	
+	public DSOLVO clone() throws CloneNotSupportedException {
+		return (DSOLVO) super.clone();
 	}
 }
