@@ -79,6 +79,11 @@ public class DSOLAction extends SBActionAdapter {
 	public void build(SMTServletRequest req) throws ActionException {
 		log.info("DSOL Build Method");
 		KeystoneProductVO vo = new KeystoneProductVO(req);
+		
+		//If we are editing an item from the cart, preserve the modifiers moving forward.
+		if(req.hasParameter("itemId")) {
+			vo.setModifiers(((KeystoneProductVO)req.getSession().getAttribute("DSOLVO")).getModifiers());
+		}
 		req.setValidateInput(false);
 			/*
 			 * Write the image data now so we don't have to carry around so much
