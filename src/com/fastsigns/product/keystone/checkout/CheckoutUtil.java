@@ -122,41 +122,48 @@ public class CheckoutUtil {
 	 */
 	private ShoppingCartVO processCheckoutScreen(SMTServletRequest req, ShoppingCartVO cart)
 	throws ActionException {
-		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
-		log.debug(user.getProfileId());
 		log.info("saving checkoutScreen");
+		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 		FastsignsSessVO sessVo = (FastsignsSessVO) req.getSession().getAttribute(KeystoneProxy.FRAN_SESS_VO);
 		String webId = (String)req.getSession().getAttribute(FastsignsSessVO.FRANCHISE_ID);
-		//save the shipping info to the cart
-		UserDataVO shipping = new UserDataVO(req);
-		shipping.setProfileId(user.getProfileId());
-		shipping.addAttribute("companyNm", req.getParameter("company"));
-		shipping.addAttribute("addressId", req.getParameter("address_id"));
-		cart.setShippingInfo(shipping);
 		
 		//save the billing info to the cart
-		UserDataVO billing = new UserDataVO();
+		UserDataVO billing = new UserDataVO(req);
 		billing.setProfileId(user.getProfileId());
+		billing.addAttribute("companyNm", req.getParameter("company"));
+		billing.addAttribute("addressId", req.getParameter("address_id"));
+		cart.setBillingInfo(billing);
+		
+		//save the shipping info to the cart
+		UserDataVO shipping = new UserDataVO();
+		shipping.setProfileId(user.getProfileId());
 		if (Convert.formatBoolean(req.getParameter("sameShippingBilling"))) {
-			billing.setData(req);
-			billing.addAttribute("companyNm", req.getParameter("company"));
-			billing.addAttribute("addressId", req.getParameter("b_address_id"));
+			cart.setUseBillingForShipping(true);
+			shipping.setData(req);
+			shipping.addAttribute("companyNm", req.getParameter("company"));
+			shipping.addAttribute("addressId", req.getParameter("address_id"));
 
 		} else {
-			billing.setFirstName(req.getParameter("b_firstName"));
-			billing.setLastName(req.getParameter("b_lastName"));
-			billing.setAddress(req.getParameter("b_address"));
-			billing.setAddress2(req.getParameter("b_address2"));
-			billing.setCity(req.getParameter("b_city"));
-			billing.setState(req.getParameter("b_state"));
-			billing.setZipCode(req.getParameter("b_zipCode"));
-			billing.setMainPhone(req.getParameter("b_mainPhone"));
-			billing.addAttribute("companyNm", req.getParameter("b_company"));
-			billing.addAttribute("addressId", req.getParameter("b_address_id"));
+			cart.setUseBillingForShipping(false);
+			shipping.setFirstName(req.getParameter("s_firstName"));
+			shipping.setLastName(req.getParameter("s_lastName"));
+			shipping.setAddress(req.getParameter("s_address"));
+			shipping.setAddress2(req.getParameter("s_address2"));
+			shipping.setCity(req.getParameter("s_city"));
+			shipping.setState(req.getParameter("s_state"));
+			shipping.setZipCode(req.getParameter("s_zipCode"));
+			shipping.setMainPhone(req.getParameter("s_mainPhone"));
+			shipping.addAttribute("companyNm", req.getParameter("s_company"));
+			shipping.addAttribute("addressId", req.getParameter("s_address_id"));
 		}
-		billing.setEmailAddress(sessVo.getProfile(webId).getEmailAddress());
-		billing.setProfileId(sessVo.getProfile(webId).getUserId());
-		cart.setBillingInfo(billing);
+		boolean inStore = Convert.formatBoolean(req.getParameter("inStorePickup"));
+		req.getSession().setAttribute("inStorePickup", (inStore) ? "true" : "");
+			
+		
+		shipping.setEmailAddress(sessVo.getProfile(webId).getEmailAddress());
+		shipping.setProfileId(user.getProfileId());
+		cart.setShippingInfo(shipping);
+		
 		attributes.put("nextStep", "confirm");
 		return cart;
 	}

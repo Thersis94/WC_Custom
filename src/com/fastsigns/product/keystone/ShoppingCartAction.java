@@ -173,14 +173,15 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 				 * we received from keystone to make lookup easier.  Also add profileId so we know who
 				 * these are tied to.
 				 */
-				if(nextStep != null && StringUtil.checkVal(cart.getErrors().get("jobId")).length() > 0) {
+				//TODO should be in a sub-method, not here!
+				if (nextStep != null && StringUtil.checkVal(cart.getErrors().get("jobId")).length() > 0) {
 					String objectId = StringUtil.checkVal(req.getSession().getAttribute(Storage.CART_OBJ));
 					String jobId = cart.getErrors().get("jobId");
 					StringBuilder sb = new StringBuilder();
 					sb.append("update object_stor set object_id=?, update_dt=?, profile_id=? where object_id=? ");
 
 					// Send a message summary of the order to the user who placed it If payment succeeds. 
-					if(nextStep.equals("complete") && Convert.formatBoolean(cart.getErrors().get("success"))) {
+					if (nextStep.equals("complete") && Convert.formatBoolean(cart.getErrors().get("success"))) {
 						CheckoutReportUtil util = new CheckoutReportUtil(attributes, dbConn);
 						util.sendSummary(cart, CenterPageAction.getFranchiseId(req), (String)req.getSession().getAttribute("FranchiseLocationName"));
 					}
@@ -194,14 +195,13 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 						ps.execute();
 						log.debug("update obj_id=" + objectId + " to job_id=" + jobId);
 						container.flush();
-					} catch (Exception e){
+					} catch (Exception e) {
 						log.error("Could not update shopping cart storage.", e);
 					} finally {
-						try{
-							ps.close();
-						} catch(Exception e){log.error(e);}
+						try { ps.close(); } catch(Exception e) { }
 					}
 				}
+				
 			} catch (Exception ae) {
 				msg = ae.getMessage();
 				//log everything but duplicate account issues

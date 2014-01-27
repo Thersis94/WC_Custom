@@ -96,9 +96,9 @@ public class CheckoutReportUtil {
 		customer.append("Shipping Information\n");
 		customer.append("First Name: ").append(user.getFirstName()).append("\n");
 		customer.append("Last Name: ").append(user.getLastName()).append("\n");
-		customer.append("Company: ").append(StringUtil.checkVal(user.getAttributes().get("compnayNm"))).append("\n");
+		customer.append("Company: ").append(StringUtil.checkVal(user.getAttributes().get("companyNm"))).append("\n");
 		customer.append("Shipping Address: ").append(user.getAddress()).append("\n");
-		customer.append("Shipping Address 2: ").append(user.getAddress2()).append("\n");
+		customer.append("Suite/Apt #: ").append(user.getAddress2()).append("\n");
 		customer.append("City: ").append(user.getCity()).append("\n");
 		customer.append("State: ").append(user.getState()).append("\n");
 		customer.append("Zip Code: ").append(user.getZipCode()).append("\n");
@@ -248,7 +248,7 @@ public class CheckoutReportUtil {
 		customer.append("<table class='table table-bordered table-striped' id='shippingDetails'><h3 style='font-size:11.0pt;font-family:'Calibri','sans-serif';color:#1F497D'>Shipping Information</h3>");
 		customer.append("<tbody><tr><td>First Name:</td><td style='color:#1F497D'>").append(user.getFirstName()).append("</td></tr>");
 		customer.append("<tr><td>Last Name:</td><td style='color:#1F497D'>").append(user.getLastName()).append("</td></tr>");
-		customer.append("<tr><td>Company:</td><td style='color:#1F497D'>").append(StringUtil.checkVal(user.getAttributes().get("compnayNm"))).append("</td></tr>");
+		customer.append("<tr><td>Company:</td><td style='color:#1F497D'>").append(StringUtil.checkVal(user.getAttributes().get("companyNm"))).append("</td></tr>");
 		customer.append("<tr><td>Billing Address:</td><td style='color:#1F497D'>").append(user.getAddress()).append("</td></tr>");
 		customer.append("<tr><td>Billing Address 2:</td><td style='color:#1F497D'>").append(user.getAddress2()).append("</td></tr>");
 		customer.append("<tr><td>City:</td><td style='color:#1F497D'>").append(user.getCity()).append("</td></tr>");
