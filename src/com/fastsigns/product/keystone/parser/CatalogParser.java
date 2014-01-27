@@ -58,7 +58,6 @@ public class CatalogParser extends KeystoneDataParser {
 		cfg.setRootClass(KeystoneProductVO.class);
 		cfg.setClassMap(dMap);
 		
-		
 		try {
 			JSONObject jsonObj = JSONObject.fromObject(new String(byteData));
 			Set<?> catalogNms = jsonObj.keySet();
@@ -86,13 +85,14 @@ public class CatalogParser extends KeystoneDataParser {
 					
 					myCategories.add(new CategoryVO(categoryNm, prods));
 				}
+				Collections.sort(myCategories, new CategoryComparator());
+
 				myCatalogs.add(new CatalogVO(catalogNm, myCategories));
 			}
 		} catch (Exception e) {
 			log.error("could not parse JSON", e);
 			throw new InvalidDataException(e);
 		}
-		
 		log.debug("catalogCnt=" + myCatalogs.size());
 		mod.setActionData(myCatalogs);
 		mod.setDataSize(myCatalogs.size());
@@ -105,6 +105,15 @@ public class CatalogParser extends KeystoneDataParser {
 		@Override
 		public int compare(KeystoneProductVO o1, KeystoneProductVO o2) {
 			return o1.getDisplay_name().trim().compareTo(o2.getDisplay_name().trim());
+		}
+		
+	}
+	
+	private class CategoryComparator implements Comparator<CategoryVO> {
+
+		@Override
+		public int compare(CategoryVO o1, CategoryVO o2) {
+			return o1.getCategoryNm().trim().compareTo(o2.getCategoryNm().trim());
 		}
 		
 	}
