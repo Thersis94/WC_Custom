@@ -202,7 +202,7 @@ public class CheckoutUtil {
 		
 		//create a ShippingCost call to the SMTProxy.
 		//do not load shipping if we already have it.  This causes the chosen shipping option to be lost.
-		if (cart.getShippingOptions() == null && cart.getShippingOptions().size() == 0) {
+		if (cart.getShippingOptions() == null || cart.getShippingOptions().size() == 0) {
 			ShippingRequestCoordinator src = new ShippingRequestCoordinator(attributes);
 			try {
 				cart = src.retrieveShippingOptions(cart);
