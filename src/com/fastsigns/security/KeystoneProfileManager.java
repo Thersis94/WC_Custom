@@ -250,8 +250,8 @@ public class KeystoneProfileManager {
 		
 		//loop the phone #s
 		for (PhoneVO vo : user.getPhoneNumbers()) {
-			if (vo.getPhoneNumber() == null || "null".equalsIgnoreCase(vo.getPhoneNumber()))
-					continue;
+			if (vo.getPhoneNumber() != null && "null".equalsIgnoreCase(vo.getPhoneNumber()))
+				vo.setPhoneNumber("");
 			
 			log.debug(vo + " id=" + vo.getPhoneNumberId());
 			String typeNm = StringUtil.checkVal(vo.getPhoneType(), PhoneVO.HOME_PHONE);
