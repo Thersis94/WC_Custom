@@ -1,10 +1,15 @@
 package com.fastsigns.product.keystone.parser;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+
+
 
 
 import net.sf.json.JSONArray;
@@ -48,9 +53,11 @@ public class CatalogParser extends KeystoneDataParser {
 		dMap.put("images", ImageVO.class);
 		
 		JsonConfig cfg = new JsonConfig();
-		cfg.setPropertySetStrategy(new PropertyStrategyWrapper(PropertySetStrategy.DEFAULT));
+		PropertySetStrategy pss = new PropertyStrategyWrapper(PropertySetStrategy.DEFAULT);
+		cfg.setPropertySetStrategy(pss);
 		cfg.setRootClass(KeystoneProductVO.class);
 		cfg.setClassMap(dMap);
+		
 		
 		try {
 			JSONObject jsonObj = JSONObject.fromObject(new String(byteData));
@@ -70,9 +77,14 @@ public class CatalogParser extends KeystoneDataParser {
 					//log.debug("category=" + categoryNm);
 					JSONArray jsonArr = JSONArray.fromObject(category.get(categoryNm));
 					if (jsonArr == null || jsonArr.size() == 0) continue;
-					
+
 					//iterate the products within this category into a Collection<ProductVO>
-					myCategories.add(new CategoryVO(categoryNm, JSONArray.toCollection(jsonArr, cfg)));
+					//and sort them.
+					
+					List<KeystoneProductVO> prods = new ArrayList<KeystoneProductVO>(JSONArray.toCollection(jsonArr, cfg));
+					Collections.sort(prods, new ProductComparator());
+					
+					myCategories.add(new CategoryVO(categoryNm, prods));
 				}
 				myCatalogs.add(new CatalogVO(catalogNm, myCategories));
 			}
@@ -88,4 +100,12 @@ public class CatalogParser extends KeystoneDataParser {
 		return mod;
 	}
 
+	private class ProductComparator implements Comparator<KeystoneProductVO> {
+
+		@Override
+		public int compare(KeystoneProductVO o1, KeystoneProductVO o2) {
+			return o1.getDisplay_name().trim().compareTo(o2.getDisplay_name().trim());
+		}
+		
+	}
 }
