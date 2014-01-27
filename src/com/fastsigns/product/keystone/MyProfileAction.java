@@ -12,6 +12,7 @@ import com.siliconmtn.security.PhoneVO;
 import com.siliconmtn.util.RandomAlphaNumeric;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.AbstractBaseAction;
+import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -135,6 +136,12 @@ public class MyProfileAction extends AbstractBaseAction {
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		FastsignsSessVO sessVo = (FastsignsSessVO) req.getSession().getAttribute(KeystoneProxy.FRAN_SESS_VO);
 		String webId = (String)req.getSession().getAttribute(FastsignsSessVO.FRANCHISE_ID);
+		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
+		
+		if (sessVo == null || sessVo.getProfile(webId).getAccountId() == null) {
+			mod.setErrorMessage("Not authorized or no data to display");
+			return; //not logged in, or no account to retrieve
+		}
 		
 		//give the user the profile that matches the Store they're on (to edit)
 		super.putModuleData(sessVo.getProfile(webId));

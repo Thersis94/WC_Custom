@@ -36,7 +36,7 @@ public class MyOrdersAction extends AbstractBaseAction {
 		FastsignsSessVO sessVo = (FastsignsSessVO) req.getSession().getAttribute(KeystoneProxy.FRAN_SESS_VO);
 		String webId = (String)req.getSession().getAttribute(FastsignsSessVO.FRANCHISE_ID);
 		
-		if (sessVo.getProfile(webId).getAccountId() == null) {
+		if (sessVo == null || sessVo.getProfile(webId).getAccountId() == null) {
 			mod.setErrorMessage("Not authorized or no data to display");
 			return; //not logged in, or no account to retrieve
 		}
