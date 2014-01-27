@@ -171,8 +171,8 @@ public class DSOLAction extends SBActionAdapter {
 //		}
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		StringBuilder url = new StringBuilder(page.getRequestURI());
-		url.append("?pmid=").append(req.getParameter("pmid"));
-		url.append("&ecommerce_size_id=").append(req.getParameter("ecommerce_size_id"));
+		//url.append("?pmid=").append(req.getParameter("pmid"));
+		url.append("?ecommerce_size_id=").append(req.getParameter("ecommerce_size_id"));
 		url.append("&display=").append(req.getParameter("display"));
 		url.append("&catalog=").append(req.getParameter("catalog"));
 		url.append("&category=").append(req.getParameter("category"));
