@@ -85,7 +85,7 @@ public class DSOLAction extends SBActionAdapter {
 			 * data on the request and risk blowing up a browser.   
 			 */
 			try {
-				if(req.hasParameter("highResData")){
+				if(req.hasParameter("highResData")) {
 					String svg = req.getParameter("svgData");
 					Map<String, Object> attr = vo.getProdAttributes();
 					attr.put("jsonData", req.getParameter("jsonData"));
@@ -100,17 +100,18 @@ public class DSOLAction extends SBActionAdapter {
 					hrd = hrd.substring(start + 1);
 					start = lrd.indexOf(",");  
 					lrd = lrd.substring(start + 1);
-					//Works but uses sun libraries = BAD!
-					//BASE64Decoder decoder = new BASE64Decoder();
-					//imgData = decoder.decodeBuffer(data);
+					
+					//Store the Byte Arrays
 					byte [] bHrd = Base64.decodeBase64(hrd.getBytes());
 					byte [] bLrd = Base64.decodeBase64(lrd.getBytes());
 					byte [] bPdf = getPdfData(bHrd);
 					byte [] bSvg = URLDecoder.decode(svg, "UTF-8").getBytes();
+					
 					//Generate random folders
 					String ran1 = getDirectoryPath();
 					String ran2 = getDirectoryPath();
 					
+					//Write the Files
 					String pdf = writeDsolFile(bPdf, UUID.randomUUID() + ".pdf", attributes, ran1, ran2);
 					svg = writeDsolFile(bSvg, UUID.randomUUID() + ".svg", attributes, ran1, ran2);
 					hrd = writeDsolFile(bHrd, UUID.randomUUID() + ".jpeg", attributes, ran1, ran2);
@@ -118,8 +119,7 @@ public class DSOLAction extends SBActionAdapter {
 					lrd = writeDsolFile(bLrd, UUID.randomUUID() + ".jpeg", attributes, ran1, ran2);
 					log.debug("lrd = " + lrd);
 					
-					
-					
+					//Store the File Data
 					if(pdf != null && pdf.length() > 0) {
 						vo.addProdAttribute("pdfPath", pdf);
 						vo.addProdAttribute("pdfSize", bPdf.length);
@@ -147,7 +147,6 @@ public class DSOLAction extends SBActionAdapter {
 					}
 					attr.put("highResData", hrd);
 					attr.put("thumbnailData", lrd);
-					//String lowResPath = DSOLAction.writeBase64File((String) prod.getProdAttributes().get("thumbnailData"), "thumbnailData.png", attributes, ran1, ran2);
 					log.debug("Done Writing files");
 				}
 			} catch (Exception e) {
@@ -156,22 +155,8 @@ public class DSOLAction extends SBActionAdapter {
 		
 		req.getSession().setAttribute("DSOLVO", vo);
 		
-		/*
-		 * TODO
-		 * Save data somewhere until we checkout.
-		 */
-//		try {
-//			DSOLAction.writeBase64File(new String(Base64.decode(req.getParameter("highResData"))), "highResImage.png", attributes);
-//			DSOLAction.writeBase64File(new String(Base64.decode(req.getParameter("thumbnailData"))), "thumbnailImage.png", attributes);
-//			DSOLAction.writeBase64File(req.getParameter("svgData"), "svgData.svg", attributes);
-//			DSOLAction.writeBase64File(req.getParameter("jsonData"), "jsonData.txt", attributes);
-//		} catch (Base64DecodingException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		StringBuilder url = new StringBuilder(page.getRequestURI());
-		//url.append("?pmid=").append(req.getParameter("pmid"));
 		url.append("?ecommerce_size_id=").append(req.getParameter("ecommerce_size_id"));
 		url.append("&display=").append(req.getParameter("display"));
 		url.append("&catalog=").append(req.getParameter("catalog"));

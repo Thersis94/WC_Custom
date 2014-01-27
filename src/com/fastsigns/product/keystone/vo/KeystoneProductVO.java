@@ -69,10 +69,13 @@ public class KeystoneProductVO extends ProductVO implements Serializable, Clonea
 		 */
 		setDescription(req.getParameter("dsolDescText"));
 		setCatalogId(req.getParameter("catalog"));
+		addProdAttribute("category", req.getParameter("category"));
 		setProductName(req.getParameter("dsolProdName"));
 		setProduct_id(req.getParameter("dsolItemId"));
+		addProdAttribute("dsolItemId", req.getParameter("dsolItemId"));
 		setProductId(req.getParameter("dsolProductId"));
-
+		setUsageId(req.getParameter("usageId"));
+		
 		/*
 		 * Special Data
 		 */

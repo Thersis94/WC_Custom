@@ -463,22 +463,19 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 		
 		//If this is a DSOL call, make sure to assign the custom data attached.
 		if(Convert.formatBoolean(req.getParameter("isDsol")) && req.hasParameter("highResData")){
-					Map<String, Object> attr = prod2.getProdAttributes();
-					KeystoneProductVO vo = (KeystoneProductVO) req.getSession().getAttribute("DSOLVO");
-
-					//Move attributes from dsol session variable to the cart product variable.
-					attr.put("highResData", vo.getProdAttributes().get("highResData"));
-					attr.put("thumbnailData", vo.getProdAttributes().get("thumbnailData"));
-					attr.put("jsonData", vo.getProdAttributes().get("jsonData"));
-					attr.put("highResPath", vo.getProdAttributes().get("highResPath"));
-					attr.put("hrdDataSize", vo.getProdAttributes().get("hrdDataSize"));
-					attr.put("pdfPath", vo.getProdAttributes().get("pdfPath"));
-					attr.put("pdfSize", vo.getProdAttributes().get("pdfSize"));
-					attr.put("svgData", vo.getProdAttributes().get("svgData"));
-					attr.put("svgSize", vo.getProdAttributes().get("svgSize"));
-					if(req.hasParameter("materialName"))
-						attr.put("materialName", req.getParameter("materialName"));
-					
+				Map<String, Object> attr = prod2.getProdAttributes();
+				KeystoneProductVO vo = (KeystoneProductVO) req.getSession().getAttribute("DSOLVO");
+				
+				//Move attributes from dsol session variable to the cart product variable.
+				prod2.setDescription(vo.getDescription());
+				prod2.setWeb_description(vo.getDescription());
+				prod2.setDisplay_name(vo.getProductName());
+				prod2.setCatalogId(vo.getCatalogId());
+				prod2.setImageThumbUrl(vo.getImageThumbUrl());
+				prod2.setImageUrl(vo.getImageUrl());
+				prod2.setProdAttributes(vo.getProdAttributes());
+				if(req.hasParameter("materialName"))
+					attr.put("materialName", req.getParameter("materialName"));
 		}
 		req.setValidateInput(Boolean.TRUE);
 
