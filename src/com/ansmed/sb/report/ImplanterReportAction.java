@@ -257,10 +257,10 @@ public class ImplanterReportAction extends SBActionAdapter {
 	        sql.append("where round((sqrt(power(").append(loc.getLatitude());
 	        sql.append("-latitude_no,2) + power(").append(loc.getLongitude());
 	        sql.append(" - longitude_no,2)) /3.14159265)*180,1) <= ").append(distance);
-			sql.append(" and Latitude_no > ").append(NumberFormat.round(lat - radDegree)).append(" and ");
-			sql.append("Latitude_no < ").append(NumberFormat.round(lat + radDegree)).append(" and ");
-			sql.append("Longitude_no > ").append(NumberFormat.round(lng - radDegree)).append(" and ");
-			sql.append("Longitude_no < ").append(NumberFormat.round(lng + radDegree));
+			sql.append(" and Latitude_no > ").append(NumberFormat.roundGeocode(lat - radDegree)).append(" and ");
+			sql.append("Latitude_no < ").append(NumberFormat.roundGeocode(lat + radDegree)).append(" and ");
+			sql.append("Longitude_no > ").append(NumberFormat.roundGeocode(lng - radDegree)).append(" and ");
+			sql.append("Longitude_no < ").append(NumberFormat.roundGeocode(lng + radDegree));
 			sql.append(" and status_id = 1 and surgeon_type_id = 0 and locator_display_flg = 1 ");
 			sql.append("order by ").append(orderBy).append(" ");
 		} else if (type == 2) {

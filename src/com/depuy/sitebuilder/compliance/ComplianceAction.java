@@ -219,10 +219,10 @@ public class ComplianceAction extends SBActionAdapter {
 		Double lng = loc.getLongitude();
 		double radDegree = 25 * .014;
 		StringBuffer sql = new StringBuffer();
-		sql.append("and Latitude_no > ").append(NumberFormat.round(lat - radDegree)).append(" and ");
-		sql.append("Latitude_no < ").append(NumberFormat.round(lat + radDegree)).append(" and ");
-		sql.append("Longitude_no > ").append(NumberFormat.round(lng - radDegree)).append(" and ");
-		sql.append("Longitude_no < ").append(NumberFormat.round(lng + radDegree));
+		sql.append("and Latitude_no > ").append(NumberFormat.roundGeocode(lat - radDegree)).append(" and ");
+		sql.append("Latitude_no < ").append(NumberFormat.roundGeocode(lat + radDegree)).append(" and ");
+		sql.append("Longitude_no > ").append(NumberFormat.roundGeocode(lng - radDegree)).append(" and ");
+		sql.append("Longitude_no < ").append(NumberFormat.roundGeocode(lng + radDegree));
 		
 		return sql.toString();
 	}

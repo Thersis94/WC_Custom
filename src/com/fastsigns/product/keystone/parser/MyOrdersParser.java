@@ -27,7 +27,6 @@ public class MyOrdersParser extends KeystoneDataParser {
 	/* (non-Javadoc)
 	 * @see com.fastsigns.product.keystone.parser.KeystoneDataParser#parseData(byte[])
 	 */
-	@SuppressWarnings("unchecked")
 	@Override
 	public ModuleVO formatData(byte[] byteData) throws InvalidDataException {
 		ModuleVO mod = new ModuleVO();

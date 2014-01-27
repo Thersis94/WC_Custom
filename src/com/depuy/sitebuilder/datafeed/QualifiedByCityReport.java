@@ -95,10 +95,10 @@ public class QualifiedByCityReport implements Report {
 		// Append the radius search for the MSA
 		log.info("Radius: " + radius);
 		double radDegree = radius * .014;
-		sql.append("and Latitude_no > ").append(NumberFormat.round(gl.getLatitude() - radDegree)).append(" and ");
-		sql.append("Latitude_no < ").append(NumberFormat.round(gl.getLatitude() + radDegree)).append(" and ");
-		sql.append("Longitude_no > ").append(NumberFormat.round(gl.getLongitude() - radDegree)).append(" and ");
-		sql.append("Longitude_no < ").append(NumberFormat.round(gl.getLongitude() + radDegree));
+		sql.append("and Latitude_no > ").append(NumberFormat.roundGeocode(gl.getLatitude() - radDegree)).append(" and ");
+		sql.append("Latitude_no < ").append(NumberFormat.roundGeocode(gl.getLatitude() + radDegree)).append(" and ");
+		sql.append("Longitude_no > ").append(NumberFormat.roundGeocode(gl.getLongitude() - radDegree)).append(" and ");
+		sql.append("Longitude_no < ").append(NumberFormat.roundGeocode(gl.getLongitude() + radDegree));
 		
 		// Add the Fulfillment SKUs
 		if (skus != null && skus.length > 0) {
