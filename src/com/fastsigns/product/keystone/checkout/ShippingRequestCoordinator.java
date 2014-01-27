@@ -64,7 +64,7 @@ public class ShippingRequestCoordinator {
 				//Add option for instore pickup after proxy returns all the options.
 				ShippingInfoVO newVo = new ShippingInfoVO();
 				newVo.setShippingMethodId("instore");
-				newVo.setShippingMethodName("Instore Pickup");
+				newVo.setShippingMethodName("In-store Pickup");
 				newVo.setShippingTime("0");
 				newVo.setShippingCost(0);
 				opts.put(newVo.getShippingMethodId(), newVo);

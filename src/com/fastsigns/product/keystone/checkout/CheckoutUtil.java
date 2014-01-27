@@ -320,14 +320,11 @@ public class CheckoutUtil {
 		//we must pass that back to Keystone on the retry attempt!
 		OrderSubmissionCoordinator coord = new OrderSubmissionCoordinator(attributes);
 		cart = coord.submitOrder(cart);
-		if(!Convert.formatBoolean(cart.getErrors().get("success"))){
+		if (!Convert.formatBoolean(cart.getErrors().get("success"))) {
 			req.getSession().setAttribute("jobId", cart.getErrors().get("jobId"));
-			//String message = cart.getErrors().get("message");
-			//if(message.equalsIgnoreCase("Payment failed.")){
-				req.setParameter("step", "checkout");
-				attributes.put("nextStep", "checkout");
-				throw new ActionException(cart.getErrors().get("message"));
-			//}
+			req.setParameter("step", "confirm");
+			attributes.put("nextStep", "confirm");
+			throw new ActionException(cart.getErrors().get("message"));
 		} else {
 			cart.getErrors().put("Complete", "true");
 		}
@@ -355,10 +352,10 @@ public class CheckoutUtil {
 		HttpServletResponse resp = (HttpServletResponse) attributes.get(GlobalConfig.HTTP_RESPONSE);
 
 		//clear the reference cookie
-    	Cookie c = new Cookie(Storage.CART_OBJ, getObjectId(req));
-    	c.setMaxAge(0);
-    	c.setPath("/");
-    	resp.addCookie(c);
+	    	Cookie c = new Cookie(Storage.CART_OBJ, getObjectId(req));
+	    	c.setMaxAge(0);
+	    	c.setPath("/");
+	    	resp.addCookie(c);
 		
 		//this should go straight to View and print what we have on the session
 		//once the data is printed, we'll purge the cart from the session
