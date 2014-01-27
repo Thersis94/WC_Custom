@@ -39,7 +39,7 @@ public class FsHybridLoginModule extends AbstractLoginModule {
 				alm = new FsDBLoginModule(initVals);
 			}	
 		} catch(Exception e) {
-			log.debug(e);
+			log.error("could not instantiate login module", e);
 		}
 	}
 

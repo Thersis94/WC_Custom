@@ -213,12 +213,13 @@ public class KeystoneProfileManager {
 				throw new InvalidDataException(msg);
 			}
 			
-			if(req.hasParameter("password")) {
+			if (req.hasParameter("password")) {
 				proxy = new KeystoneProxy(attributes);
 				proxy.setModule("userContact");
 				proxy.setAction("eCommSetPassword");
 				proxy.addPostData("username", user.getEmailAddress());
 				proxy.addPostData("password", req.getParameter("password"));
+				proxy.setParserType(KeystoneDataParser.DataParserType.DoNothing);
 				
 				byteData = (byte[]) proxy.getData().getActionData();
 				jsonObject = JSONObject.fromObject(new String(byteData));
@@ -249,6 +250,9 @@ public class KeystoneProfileManager {
 		
 		//loop the phone #s
 		for (PhoneVO vo : user.getPhoneNumbers()) {
+			if (vo.getPhoneNumber() == null || "null".equalsIgnoreCase(vo.getPhoneNumber()))
+					continue;
+			
 			log.debug(vo + " id=" + vo.getPhoneNumberId());
 			String typeNm = StringUtil.checkVal(vo.getPhoneType(), PhoneVO.HOME_PHONE);
 			int phoneType = 1; //HOME by default

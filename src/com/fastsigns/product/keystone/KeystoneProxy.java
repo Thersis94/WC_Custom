@@ -13,6 +13,7 @@ import org.apache.log4j.Logger;
 import com.fastsigns.product.keystone.parser.KeystoneDataParser;
 import com.fastsigns.product.keystone.parser.KeystoneDataParser.DataParserType;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
 import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.StringEncrypter;
@@ -162,7 +163,7 @@ public class KeystoneProxy {
 		
 		//append any runtime requests of the calling class.  (login would pass username & password here)
 		for (String p : postData.keySet()) {
-			params.append("&").append(p).append("=").append(postData.get(p));
+			params.append("&").append(p).append("=").append(StringEncoder.urlEncode(postData.get(p)));
 		}
 		
 		log.debug("post data=" + params);

@@ -67,7 +67,7 @@ public class CheckoutUtil {
 	 * @throws ActionException
 	 */
 	public ShoppingCartVO build(SMTServletRequest req, ShoppingCartVO cart) 
-	throws ActionException {
+			throws ActionException {
 		String step = req.getParameter("step");
 		log.debug("step=" + step);
 		
@@ -399,7 +399,7 @@ public class CheckoutUtil {
 	public FastsignsSessVO loadFranchiseVO(FastsignsSessVO sessVo, String webId) throws InvalidDataException {
 		log.info("loading franchise account for webId=" + webId);
 		KeystoneProfileManager pm = new KeystoneProfileManager();
-		KeystoneProxy proxy = new KeystoneProxy(attributes);
+		KeystoneProxy proxy = KeystoneProxy.newInstance(attributes);
 		proxy.setModule("franchises");
 		proxy.setAction("getFranchiseByWebNumber");
 		proxy.addPostData("webNumber", webId);
@@ -432,7 +432,7 @@ public class CheckoutUtil {
 		if (sessVo == null) sessVo = new FastsignsSessVO();
 		KeystoneUserDataVO user = new KeystoneUserDataVO();
 		user.setData(req);
-		user.setUserId(mpa.ensureId(null)); //invalid GUID ensures a new account will get created at Keystone
+		user.setUserId(mpa.ensureId(null)); //attaching invalid GUID ensures a new account will get created at Keystone
 
 		//if the user is logged in we need to pass their user_login_id.
 		//This scenario creates a Franchise account and attaches it to the login_account.
@@ -459,7 +459,10 @@ public class CheckoutUtil {
 			user = pm.submitProfileToKeystone(user, req);
 			//req.getSession().setAttribute(Constants.USER_DATA, user);
 			
-			//log this user in, now that they have a valid account
+			//log this user in, now that they have a valid account,
+			//this is done by encrypting their profileId and mimicking a "remember me"
+			//login, because it's easier to do a 'headless' login and one using email & password, 
+			//which is form-based.
 			try {
 				//encrypt the profileId (necessary for WC compatability!)
 				String encProfileId = user.getProfileId();
@@ -467,7 +470,9 @@ public class CheckoutUtil {
 					StringEncrypter se = new StringEncrypter((String)attributes.get(Constants.ENCRYPT_KEY));
 					encProfileId = se.encrypt(encProfileId);
 					encProfileId = URLEncoder.encode(encProfileId, "UTF-8");
-				} catch (Exception e) {}
+				} catch (Exception e) {
+					log.warn("could not encrypt profileId", e);
+				}
 				log.debug("encProfileId=" + encProfileId + " decProfileId=" + user.getProfileId());
 				//req.setParameter("type", "ecomm");
 				//SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
@@ -480,8 +485,8 @@ public class CheckoutUtil {
 				
 			} catch (Exception e) {
 				log.error("unable to log-in user transparently", e);
-				//just ignore these, should never happen...
-				//there's nothing we can do (now) and don't want to confuse the user by throwing an exception
+				//just ignore these, there's nothing we can do (now) and don't want 
+				//to confuse the user by throwing an exception
 			}
 
 			//now we need to add the users 'new' profile to our eComm session object, for Checkout to leverage.
@@ -491,7 +496,6 @@ public class CheckoutUtil {
 			log.debug("matched user to franchise=" + sessVo.getFranchise(user.getWebId()));
 			
 		} catch (Exception e) {
-			log.error(e);
 			throw new ActionException(e.getMessage(), e); //the error message will contain something 'friendly' sent from Keystone
 		}
 		

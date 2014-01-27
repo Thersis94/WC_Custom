@@ -60,6 +60,8 @@ public class ProductFacadeAction extends SimpleActionAdapter {
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		attributes.put(Constants.SITE_DATA, site);
 		ReqType type = null;
 		String franId = null;
 		HttpSession ses = req.getSession();
@@ -70,7 +72,6 @@ public class ProductFacadeAction extends SimpleActionAdapter {
 		 */
 		boolean first = req.hasParameter("firstEcommCall");
 		if (!first && !req.hasParameter("amid") && !page.getAliasName().equals("cart")) {
-			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 			franId = site.getSiteId().replaceAll("^(.*)_([\\d]{1,5})_(.*)$", "$2");
 			ses.setAttribute(FastsignsSessVO.FRANCHISE_ID, franId);
 			req.setParameter("firstEcommCall", "true");

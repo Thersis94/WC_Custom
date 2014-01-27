@@ -23,23 +23,27 @@ public class StartFromScratchAction extends AbstractBaseAction {
 	}
 	
 	public void retrieve(SMTServletRequest req) throws ActionException {
-		//Clear out old template data that may exist.
+		//add to the attributes map first, incase a downstream Proxy call is made.
+		attributes.put(Constants.SITE_DATA, req.getAttribute(Constants.SITE_DATA));
+		attributes.put("wcFranchiseId", CenterPageAction.getFranchiseId(req));
+		
 		HttpSession sess = req.getSession();
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		FastsignsSessVO sessVo = (FastsignsSessVO)sess.getAttribute(KeystoneProxy.FRAN_SESS_VO);
 		String webId = (String)sess.getAttribute(FastsignsSessVO.FRANCHISE_ID);
 		
 		//no webId on session, parse it from the orgId.
-		if (webId == null || webId.length() == 0) {
+		if (webId == null || webId.length() == 0)
 			webId = CenterPageAction.getFranchiseId(req);
+		
+		//no sessVo, go load one.  This contains the FranchiseVO for this Center.
+		if (sessVo == null || sessVo.getFranchise(webId) == null) {
+			ProductFacadeAction.loadDefaultSession(req, sessVo, webId, attributes);
+			sessVo = (FastsignsSessVO)sess.getAttribute(KeystoneProxy.FRAN_SESS_VO);
+			//log.debug("SessVo=" + sessVo);
 		}
 		
-		if (sessVo.getFranchise(webId).getFranchiseId() == null)
-			ProductFacadeAction.loadDefaultSession(req, sessVo, webId, attributes);
-		
 		//Use Cached action and set necessary pieces for cache groups to be used. 
-		attributes.put(Constants.SITE_DATA, req.getAttribute(Constants.SITE_DATA));
-		attributes.put("wcFranchiseId", CenterPageAction.getFranchiseId(req));
 		KeystoneProxy proxy = KeystoneProxy.newInstance(attributes);
 		proxy.setSessionCookie(req.getCookie(Constants.JSESSIONID));
 		proxy.setModule("products");

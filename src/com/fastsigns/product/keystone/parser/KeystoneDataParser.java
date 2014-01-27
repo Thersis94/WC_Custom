@@ -48,6 +48,8 @@ public abstract class KeystoneDataParser {
 	 * @return
 	 */
 	public static KeystoneDataParser newInstance(DataParserType dpt) {
+		if (dpt == null) dpt = DataParserType.DoNothing;
+		
 		switch(dpt) {
 			case Catalog: return new CatalogParser();
 			case MyOrders: return new MyOrdersParser();

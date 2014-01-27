@@ -42,6 +42,7 @@ public class AccountAction extends AbstractBaseAction {
 		}
 		
 		//KeystoneProxy proxy = new CachingKeystoneProxy(attributes, 10);
+		attributes.put(Constants.SITE_DATA, req.getAttribute(Constants.SITE_DATA));
 		KeystoneProxy proxy = KeystoneProxy.newInstance(attributes, 10);
 		proxy.setSessionCookie(req.getCookie(Constants.JSESSIONID));
 		proxy.setModule("accounts");

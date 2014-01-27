@@ -174,7 +174,7 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 				 * these are tied to.
 				 */
 				if(nextStep != null && StringUtil.checkVal(cart.getErrors().get("jobId")).length() > 0) {
-					String objectId = StringUtil.checkVal(req.getSession().getAttribute("CART_OBJ"));
+					String objectId = StringUtil.checkVal(req.getSession().getAttribute(Storage.CART_OBJ));
 					String jobId = cart.getErrors().get("jobId");
 					StringBuilder sb = new StringBuilder();
 					sb.append("update object_stor set object_id=?, update_dt=?, profile_id=? where object_id=? ");
@@ -203,8 +203,11 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 					}
 				}
 			} catch (Exception ae) {
-				log.error("error during checkout-build", ae);
 				msg = ae.getMessage();
+				//log everything but duplicate account issues
+				if (!"user name already exists".equalsIgnoreCase(msg))
+					log.error("error during checkout-build", ae);
+
 				nextStep = req.getParameter("step");
 			}
 			
@@ -344,20 +347,14 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 		log.info("loading cart object for display");
 		Storage container = loadCartStorage(req);
 		ShoppingCartVO cart = getCartData(container, req);
-//		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
-//		if((cart.getBillingInfo() != null && user == null) ||(cart.getBillingInfo() != null && !user.getProfileId().equals(cart.getBillingInfo().getProfileId()))){
-//			container.flush();
-//			cart.setShippingInfo(null);
-//			cart.setBillingInfo(null);
-//			return;
-//		}
 		String step = req.getParameter("step"), create = req.getParameter("create");
 		boolean stepExists = req.hasParameter("step");
-		if(req.hasParameter("create") && create.equals("1") && cart.getItems().size() == 0) {
+		
+		if (req.hasParameter("create") && create.equals("1") && cart.getItems().size() == 0) {
 			super.adminRedirect(req, "", "/" + req.getSession().getAttribute("FranchiseAliasId") + "/store");
 			return;
-		}
-		else if (stepExists && !"checkout".equals(step)) {
+			
+		} else if (stepExists && !"checkout".equals(step)) {
 			//these are "checkout" screens, not cart-mgmt related
 			CheckoutUtil checkout = new CheckoutUtil(attributes);
 			try {
@@ -369,10 +366,12 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 		validateCart(req, cart);
 		super.putModuleData(cart);
 		container.save(cart);
+		
 		//If we successfully got to the review screen, flush the session container.
-		if(req.hasParameter("step") && "complete".equalsIgnoreCase(step)){
+		if (req.hasParameter("step") && "complete".equalsIgnoreCase(step))
 			container.flush();
-		}
+		
+		return;
 	}
 	
 	
@@ -382,40 +381,21 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	protected Storage loadCartStorage(SMTServletRequest req) throws ActionException {
-		//retrieve the items from the cart
-		
 		//build a Map of attributes to provide to our AbstractCartController
-        Map<String, Object> attrs = new HashMap<String, Object>();
-        attrs.put(GlobalConfig.HTTP_RESPONSE, attributes.get(GlobalConfig.HTTP_RESPONSE));
-        attrs.put(GlobalConfig.HTTP_REQUEST, req);
-        attrs.put(GlobalConfig.KEY_DB_CONN, dbConn);
-		if(dbConn == null)
-			log.debug("dbconn is null!");
-        if(req.hasParameter("job_id")){
-			//clone row in Object_stor table that matches job_id and replace current cart with it.
-			StringBuilder sql = new StringBuilder();
-			sql.append("insert into OBJECT_STOR (OBJECT_ID, OBJECT, CREATE_DT) select ");
-			sql.append("? , OBJECT, getDate() from OBJECT_STOR where OBJECT_ID = ?");
-			String guid = new UUIDGenerator().getUUID();
-			PreparedStatement ps = null;
-			try{
-				ps = dbConn.prepareStatement(sql.toString());
-				ps.setString(1, guid);
-				ps.setString(2, req.getParameter("job_id"));
-				int i = ps.executeUpdate();
-				if(i == 0) throw new SQLException("Order does not exist.");
-					req.getSession().setAttribute("CART_OBJ", guid);
-				super.sendRedirect("/cart", "Cart successfully reloaded", req);
-			} catch(SQLException e){
+		Map<String, Object> attrs = new HashMap<String, Object>();
+		attrs.put(GlobalConfig.HTTP_RESPONSE, attributes.get(GlobalConfig.HTTP_RESPONSE));
+		attrs.put(GlobalConfig.HTTP_REQUEST, req);
+		attrs.put(GlobalConfig.KEY_DB_CONN, dbConn);
+
+		//TODO this code does not belong here.
+		if (req.hasParameter("job_id")) {
+			try {
+				cloneCart(req, attrs, req.getParameter("job_id"));
+			} catch (Exception e) {
 				log.error("unable to clone shopping cart storage.", e);
 				String redir = "/" + CenterPageAction.getFranchiseId(req) + "/store?display=orders";
-				super.sendRedirect(redir, "Cart could not be loaded.  No Order information was found.", req);
-			} finally{
-				try{
-					ps.close();
-				} catch(Exception e){log.error(e);}
+				super.sendRedirect(redir, "Cart could not be loaded.  No order information was found.", req);
 			}
-
 		}
         
 		// Load the cart from our Storage medium.
@@ -423,13 +403,37 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 		try {
 			container = StorageFactory.getInstance(StorageFactory.PERSISTENT_STORAGE, attrs);
 		} catch (Exception e) {
-			log.error(e);
 			throw new ActionException(e);
 		}
         
         return container;
 	}
 	
+
+	//TODO the task of cloning is the responsabiltiy of the Storage API; add clone() to the interface if necessary
+	private void cloneCart(SMTServletRequest req, Map<String, Object> attrs, String jobId) throws SQLException {
+		//clone row in Object_stor table that matches job_id and replace current cart with it.
+		StringBuilder sql = new StringBuilder();
+		sql.append("insert into OBJECT_STOR (OBJECT_ID, OBJECT, CREATE_DT) select ");
+		sql.append("? , OBJECT, getDate() from OBJECT_STOR where OBJECT_ID = ?");
+		String guid = new UUIDGenerator().getUUID();
+		PreparedStatement ps = null;
+		try {
+			ps = dbConn.prepareStatement(sql.toString());
+			ps.setString(1, guid);
+			ps.setString(2, jobId);
+			
+			if (ps.executeUpdate() == 0) 
+				throw new SQLException("Order does not exist.");
+			
+			req.getSession().setAttribute(Storage.CART_OBJ, guid);
+			super.sendRedirect("/cart", "Cart successfully reloaded", req);
+			
+		} finally {
+			try { ps.close(); } catch (Exception e) { }
+		}
+		
+	}
 	
 	/**
 	 * call the ProductAction to get the complete ProductVO, so we can add it to the
@@ -469,25 +473,6 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 					if(req.hasParameter("materialName"))
 						attr.put("materialName", req.getParameter("materialName"));
 					
-//					String hrd = req.getParameter("highResData");
-//					//Trim the pre-amble off the data string.
-//					int start = hrd.indexOf(",");  
-//					hrd = hrd.substring(start + 1);
-//					//Works but uses sun libraries = BAD!
-//					//BASE64Decoder decoder = new BASE64Decoder();
-//					//imgData = decoder.decodeBuffer(data);
-//					byte [] bHrd = Base64.decodeBase64(hrd.getBytes());
-//
-//					//Generate random folders
-//					String ran1 =  getDirectoryPath();
-//					String ran2 = getDirectoryPath();
-//					hrd = DSOLAction.writeBase64File(bHrd, UUID.randomUUID() + ".jpeg", attributes, ran1, ran2);
-//					if(hrd != null && hrd.length() > 0) {
-//						prod.addProdAttribute("highResPath", hrd);
-//						prod.addProdAttribute("hrdDataSize", bHrd.length);
-//					}
-//					//String lowResPath = DSOLAction.writeBase64File((String) prod.getProdAttributes().get("thumbnailData"), "thumbnailData.png", attributes, ran1, ran2);
-//					log.debug("Done Writing files");
 		}
 		req.setValidateInput(Boolean.TRUE);
 
@@ -495,15 +480,6 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 		return prod;
 	}
 	
-//	private String getDirectoryPath() {
-//		Random r = new Random();
-//		String i = r.nextInt(1000) + "";
-//		while(i.length() != 3){
-//			i = "0" + i;
-//		}
-//		i +="/";
-//		return i;
-//	}
 	
 	/**
 	 * Parse through the modifiers/dimensions passed in on the html form and insert them into the
