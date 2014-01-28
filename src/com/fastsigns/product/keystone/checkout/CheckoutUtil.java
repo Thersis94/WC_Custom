@@ -1,6 +1,5 @@
 package com.fastsigns.product.keystone.checkout;
 
-import java.net.URLEncoder;
 import java.util.Map;
 
 import javax.servlet.http.Cookie;
@@ -16,6 +15,7 @@ import com.fastsigns.product.keystone.parser.KeystoneDataParser;
 import com.fastsigns.product.keystone.vo.KeystoneProductVO;
 import com.fastsigns.security.FastsignsSessVO;
 import com.fastsigns.security.FsKeystoneLoginModule;
+import com.fastsigns.security.FsKeystoneRoleModule;
 import com.fastsigns.security.KeystoneProfileManager;
 import com.fastsigns.security.KeystoneUserDataVO;
 import com.siliconmtn.action.ActionException;
@@ -27,11 +27,12 @@ import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.AbstractRoleModule;
-import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
+import com.siliconmtn.security.UserRoleVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.PageVO;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.common.constants.ErrorCodes;
 
@@ -52,7 +53,7 @@ public class CheckoutUtil {
 	private Map<String, Object> attributes;
 
 	public CheckoutUtil(Map<String, Object> attributes) {
-		log = Logger.getLogger(CheckoutUtil.class);
+		log = Logger.getLogger(this.getClass());
 		this.attributes = attributes;
 	}
 	
@@ -438,13 +439,18 @@ public class CheckoutUtil {
 	 */
 	protected void processCreateAccount(SMTServletRequest req, ShoppingCartVO cart) throws ActionException {
 		MyProfileAction mpa = new MyProfileAction();
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA); 
 		KeystoneProfileManager pm = new KeystoneProfileManager(attributes);
 		FastsignsSessVO sessVo = (FastsignsSessVO) req.getSession().getAttribute(KeystoneProxy.FRAN_SESS_VO);
 		if (sessVo == null) sessVo = new FastsignsSessVO();
 		KeystoneUserDataVO user = new KeystoneUserDataVO();
 		user.setData(req);
-		user.setUserId(mpa.ensureId(null)); //attaching invalid GUID ensures a new account will get created at Keystone
+		user.setUserId(mpa.ensureId(null)); //attaching an invalid GUID ensures a new account will get created at Keystone
 
+		/**
+		 * this code is unreachable.  Someone creating an account could never be logged-in
+		 * -JM 01-27-14
+		 * 
 		//if the user is logged in we need to pass their user_login_id.
 		//This scenario creates a Franchise account and attaches it to the login_account.
 		if (sessVo.getProfiles().size() > 0) {
@@ -453,6 +459,7 @@ public class CheckoutUtil {
 				break;
 			}
 		}
+		 */
 		
 		//we need to tie a FranchiseId to this user.  We can do so by grabbing this value from the first product in the cart.
 		//orders can only be placed to one franchise at a time, so we know all products will have the same franchise_id value (set).
@@ -468,31 +475,18 @@ public class CheckoutUtil {
 		log.debug("created userVO: " + user);
 		try {
 			user = pm.submitProfileToKeystone(user, req);
-			//req.getSession().setAttribute(Constants.USER_DATA, user);
 			
-			//log this user in, now that they have a valid account,
-			//this is done by encrypting their profileId and mimicking a "remember me"
-			//login, because it's easier to do a 'headless' login and one using email & password, 
-			//which is form-based.
+			//this try block logs the user into WC, it's unreachable if the above line fails to create their account.
 			try {
-				//encrypt the profileId (necessary for WC compatability!)
-				String encProfileId = user.getProfileId();
-				try {
-					StringEncrypter se = new StringEncrypter((String)attributes.get(Constants.ENCRYPT_KEY));
-					encProfileId = se.encrypt(encProfileId);
-					encProfileId = URLEncoder.encode(encProfileId, "UTF-8");
-				} catch (Exception e) {
-					log.warn("could not encrypt profileId", e);
-				}
-				log.debug("encProfileId=" + encProfileId + " decProfileId=" + user.getProfileId());
-				//req.setParameter("type", "ecomm");
-				//SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+				//log this user in, now that they have a valid account,
 				attributes.put(AbstractRoleModule.HTTP_REQUEST, req);
-				//SecurityController sc = new SecurityController(site.getLoginModule(), site.getRoleModule(), attributes);
-				//sc.loadUserFromCookie(encProfileId, (String)attributes.get(Constants.ENCRYPT_KEY), (Connection)attributes.get(GlobalConfig.KEY_DB_CONN), req, site.getSiteId());
 				FsKeystoneLoginModule klm = new FsKeystoneLoginModule(attributes);
-				user = (KeystoneUserDataVO) klm.retrieveUserData(encProfileId);
-				req.getSession().setAttribute(Constants.USER_DATA, user);
+				klm.loginUserToKeystone(null, null, user.getProfileId());
+				
+				//login succeeded, so let's setup their WC role
+				FsKeystoneRoleModule krm = new FsKeystoneRoleModule(attributes);
+				UserRoleVO role = krm.getUserRole(user.getProfileId(), site.getSiteId());
+				req.getSession().setAttribute(Constants.ROLE_DATA, role);
 				
 			} catch (Exception e) {
 				log.error("unable to log-in user transparently", e);

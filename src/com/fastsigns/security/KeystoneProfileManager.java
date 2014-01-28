@@ -212,7 +212,7 @@ public class KeystoneProfileManager {
 				msg = jsonObject.getString("responseText");
 				throw new InvalidDataException(msg);
 			}
-			
+			//TODO redundant?
 			if (req.hasParameter("password")) {
 				proxy = new KeystoneProxy(attributes);
 				proxy.setModule("userContact");
