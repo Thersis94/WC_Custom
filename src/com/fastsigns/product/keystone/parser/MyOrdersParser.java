@@ -1,14 +1,21 @@
 package com.fastsigns.product.keystone.parser;
 
 
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Map;
+
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import net.sf.json.JsonConfig;
 import net.sf.json.util.PropertySetStrategy;
 
 import com.fastsigns.product.keystone.vo.OrderVO;
+import com.google.gson.reflect.TypeToken;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.json.PropertyStrategyWrapper;
+import com.siliconmtn.util.SMTSerializer;
 import com.smt.sitebuilder.common.ModuleVO;
 
 /****************************************************************************
@@ -30,16 +37,12 @@ public class MyOrdersParser extends KeystoneDataParser {
 	@Override
 	public ModuleVO formatData(byte[] byteData) throws InvalidDataException {
 		ModuleVO mod = new ModuleVO();
-		
-		JsonConfig cfg = new JsonConfig();
-		cfg.setPropertySetStrategy(new PropertyStrategyWrapper(PropertySetStrategy.DEFAULT));
-		cfg.setRootClass(OrderVO.class);
-		
+		log.info("Data: " + new String(byteData) );
 		try {
-			JSONObject data = JSONObject.fromObject(new String(byteData));
-			JSONArray jsonArr = JSONArray.fromObject(data.get("data"));
+			Type type = new TypeToken<Map<String, String>>(){}.getType();
 			
-			mod.setActionData(JSONArray.toCollection(jsonArr, cfg));
+			Map<String, Object> assets = SMTSerializer.fromJson(new String(byteData), type);
+			mod.setActionData(assets);
 
 		} catch (Exception e) {
 			log.error("could not parse JSON", e);

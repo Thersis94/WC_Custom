@@ -53,7 +53,6 @@ public class MyAssetsAction extends AbstractBaseAction {
 		try {
 			//tell the proxy to go get our data
 			mod.setActionData(proxy.getData().getActionData());
-			
 		} catch (Exception e) {
 			log.error(e);
 			mod.setError(e);

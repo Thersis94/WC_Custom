@@ -259,7 +259,7 @@ public class PhysicianClinicAction extends SBActionAdapter {
 			ps.setString(11, vo.getMatchCode().toString());
 			ps.setInt(12, vo.getLocationTypeId());
 			ps.setInt(13, vo.getLocatorDisplay());
-			ps.setInt(14, vo.getCassValidated());
+			ps.setInt(14, vo.isCassValidated() ? 1 : 0);
 			ps.setInt(15, manualGeocodeFlag);
 			ps.setTimestamp(16, Convert.getCurrentTimestamp());
 			ps.setString(17, clinicId);

@@ -103,7 +103,7 @@ public class ClinicVO extends GeocodeLocation {
 		this.setCity(loc.getCity());
 		this.setState(loc.getState());
 		this.setZipCode(loc.getZipCode());
-		this.setCassValidated(loc.getCassValidated());
+		this.setCassValidated(loc.isCassValidated() ? 1 : 0);
 	}
 	
 	/**

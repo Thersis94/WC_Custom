@@ -3,13 +3,14 @@
  */
 package com.fastsigns.product.keystone.parser;
 
-import net.sf.json.JSONArray;
-import net.sf.json.JsonConfig;
-import net.sf.json.util.PropertySetStrategy;
+// JDK 1.7.x
+import java.util.ArrayList;
 
-import com.fastsigns.product.keystone.vo.AssetVO;
+// SMT Base Libs
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.json.PropertyStrategyWrapper;
+import com.siliconmtn.util.SMTSerializer;
+
+// WC Libs
 import com.smt.sitebuilder.common.ModuleVO;
 
 /****************************************************************************
@@ -30,14 +31,9 @@ public class MyAssetsParser extends KeystoneDataParser {
 	@Override
 	public ModuleVO formatData(byte[] byteData) throws InvalidDataException {
 		ModuleVO mod = new ModuleVO();
-		JsonConfig cfg = new JsonConfig();
-		cfg.setPropertySetStrategy(new PropertyStrategyWrapper(PropertySetStrategy.DEFAULT));
-		cfg.setRootClass(AssetVO.class);
-		
 		try {
-			JSONArray jsonArr = JSONArray.fromObject(new String(byteData));
-			mod.setActionData(JSONArray.toCollection(jsonArr, cfg));
-	
+			ArrayList<?> assets = (ArrayList<?>)SMTSerializer.fromJson(new String(byteData), ArrayList.class);
+			mod.setActionData(assets);
 		} catch (Exception e) {
 			log.error("could not parse JSON", e);
 			throw new InvalidDataException(e);

@@ -134,7 +134,7 @@ public class BatchCassValidator {
 			ps.setString(2, gl.getCity());
 			ps.setString(3, gl.getState());
 			ps.setString(4, gl.getZipCode());
-			ps.setInt(5, gl.getCassValidated());
+			ps.setInt(5, gl.isCassValidated() ? 1 : 0);
 			ps.setString(6, clinicId);
 			ps.executeUpdate();
 		} catch (Exception e) {

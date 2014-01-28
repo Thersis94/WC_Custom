@@ -33,5 +33,6 @@
 	<classpathentry kind="lib" path="/SMTAppLibraries/lib/xercesImpl.jar"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/ProxyServer"/>
 	<classpathentry kind="lib" path="/WebCrescendo/build/classes" sourcepath="/WebCrescendo/src"/>
+	<classpathentry kind="lib" path="/SMTAppLibraries/lib/gson-2.2.4.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
