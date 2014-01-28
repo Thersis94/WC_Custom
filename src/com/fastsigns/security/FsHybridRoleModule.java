@@ -2,13 +2,19 @@ package com.fastsigns.security;
 
 import java.util.Map;
 
-import com.fastsigns.security.FsHybridLoginModule.LoginModule;
 import com.siliconmtn.security.AbstractRoleModule;
 import com.siliconmtn.security.AuthorizationException;
 import com.siliconmtn.security.UserRoleContainer;
 import com.siliconmtn.security.UserRoleVO;
 
 public class FsHybridRoleModule extends AbstractRoleModule {
+	
+	/*
+	 * enum constant for the types of RoleModules this object facades
+	 */
+	public enum RoleModule {
+		Keystone, WebCrescendo
+	}
 	
 	public FsHybridRoleModule() {
 		super();
@@ -26,12 +32,14 @@ public class FsHybridRoleModule extends AbstractRoleModule {
 	 * @param lm
 	 * @return
 	 */
-	private AbstractRoleModule loadModule() {
-			if (initVals.containsKey("LoginModule") && LoginModule.Keystone == initVals.get("LoginModule")) {
-				log.debug("discovered Keystone login module was used");
-				return new FsKeystoneRoleModule(initVals);
-			} else { 
-				return new FsDBRoleModule(initVals);
+	private AbstractRoleModule loadModule(RoleModule roleModule) {
+			switch (roleModule) {
+				case WebCrescendo:
+					return new FsDBRoleModule(initVals);
+				
+				case Keystone:
+				default:
+					return new FsKeystoneRoleModule(initVals);
 			}
 	}
 	
@@ -39,13 +47,23 @@ public class FsHybridRoleModule extends AbstractRoleModule {
 	@Override
 	public UserRoleVO getUserRole(String profileId, String siteId)
 			throws AuthorizationException {
-		return loadModule().getUserRole(profileId, siteId);
+		try {
+			return loadModule(RoleModule.WebCrescendo).getUserRole(profileId, siteId);
+		} catch (AuthorizationException ae) {
+			log.warn("USER NOT FOUND IN WC, TRYING KEYSTONE");
+			return loadModule(RoleModule.Keystone).getUserRole(profileId, siteId);
+		}
 	}
 
 	@Override
 	public UserRoleContainer getUserRoles(String profileId)
 			throws AuthorizationException {
-		return loadModule().getUserRoles(profileId);
+		try {
+			return loadModule(RoleModule.WebCrescendo).getUserRoles(profileId);
+		} catch (AuthorizationException ae) {
+			log.warn("USER NOT FOUND IN WC, TRYING KEYSTONE");
+			return loadModule(RoleModule.Keystone).getUserRoles(profileId);
+		}
 	}
 	
 	@Override

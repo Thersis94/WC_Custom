@@ -9,7 +9,6 @@ import net.sf.json.JSONObject;
 
 import com.fastsigns.product.keystone.KeystoneProxy;
 import com.fastsigns.product.keystone.parser.KeystoneDataParser;
-import com.fastsigns.security.FsHybridLoginModule.LoginModule;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.SMTServletRequest;
@@ -128,10 +127,6 @@ public class FsKeystoneLoginModule extends AbstractLoginModule {
 			log.debug("FSSessVO=" + sessVo.toString());
 			req.getSession().setAttribute(KeystoneProxy.FRAN_SESS_VO, sessVo);
 			// end Keystone integration code
-			
-			//put something on the attributes map, so when we go looking for Roles 
-			//we know this was a Keystone login
-			initVals.put("LoginModule", LoginModule.Keystone);
 
 		} catch (Exception e) {
 			throw new AuthenticationException(ErrorCodes.ERR_INVALID_LOGIN);

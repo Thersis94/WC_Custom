@@ -59,9 +59,8 @@ public class FsDBRoleModule extends AbstractRoleModule {
 	 */
 	public UserRoleVO getUserRole(String profileId, String siteId)
 	throws AuthorizationException {
-		
 		DBRoleModule drm = new DBRoleModule(initVals);
-		UserRoleVO vo = new UserRoleVO();
+		UserRoleVO vo = null;
 		
 		try {
 			vo = drm.getUserRole(profileId, siteId);

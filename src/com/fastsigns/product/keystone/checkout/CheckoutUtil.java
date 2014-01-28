@@ -4,6 +4,7 @@ import java.util.Map;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 import org.apache.log4j.Logger;
 
@@ -439,27 +440,26 @@ public class CheckoutUtil {
 	 */
 	protected void processCreateAccount(SMTServletRequest req, ShoppingCartVO cart) throws ActionException {
 		MyProfileAction mpa = new MyProfileAction();
+		HttpSession ses = req.getSession();
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA); 
 		KeystoneProfileManager pm = new KeystoneProfileManager(attributes);
-		FastsignsSessVO sessVo = (FastsignsSessVO) req.getSession().getAttribute(KeystoneProxy.FRAN_SESS_VO);
+		FastsignsSessVO sessVo = (FastsignsSessVO) ses.getAttribute(KeystoneProxy.FRAN_SESS_VO);
 		if (sessVo == null) sessVo = new FastsignsSessVO();
 		KeystoneUserDataVO user = new KeystoneUserDataVO();
 		user.setData(req);
-		user.setUserId(mpa.ensureId(null)); //attaching an invalid GUID ensures a new account will get created at Keystone
-
-		/**
-		 * this code is unreachable.  Someone creating an account could never be logged-in
-		 * -JM 01-27-14
-		 * 
-		//if the user is logged in we need to pass their user_login_id.
-		//This scenario creates a Franchise account and attaches it to the login_account.
-		if (sessVo.getProfiles().size() > 0) {
-			for (String profileId : sessVo.getProfiles().keySet()) {
-				user.setAuthenticationId(sessVo.getProfile(profileId).getAuthenticationId());
-				break;
-			}
-		}
-		 */
+		
+		//if the user is already logged into WC but does not have a Keystone account,
+		//make the "createAccount" request contain their existing WC profileId.
+		//this gives us a 1=1 mapping of UUIDs across the systems and allows 
+		//Keystone to own the login account while WC owns the roles.
+		/**  Keystone won't acknowledge WC guids that are not exactly 32 chars, 
+		 * so this code is disabled until that is resolved.  -JM 01-28-14 
+		UserRoleVO role = (UserRoleVO) ses.getAttribute(Constants.ROLE_DATA);
+		String guid = role.getProfileId();
+		if (guid == null) guid = mpa.ensureId(null);
+		**/
+		String guid = mpa.ensureId(null);
+		user.setUserId(guid); //attaching an invalid GUID ensures a new account will get created at Keystone
 		
 		//we need to tie a FranchiseId to this user.  We can do so by grabbing this value from the first product in the cart.
 		//orders can only be placed to one franchise at a time, so we know all products will have the same franchise_id value (set).
@@ -486,7 +486,7 @@ public class CheckoutUtil {
 				//login succeeded, so let's setup their WC role
 				FsKeystoneRoleModule krm = new FsKeystoneRoleModule(attributes);
 				UserRoleVO role = krm.getUserRole(user.getProfileId(), site.getSiteId());
-				req.getSession().setAttribute(Constants.ROLE_DATA, role);
+				ses.setAttribute(Constants.ROLE_DATA, role);
 				
 			} catch (Exception e) {
 				log.error("unable to log-in user transparently", e);
@@ -499,10 +499,10 @@ public class CheckoutUtil {
 			
 		} finally {
 			//now we need to add the users 'new' profile to our eComm session object, for Checkout to leverage.
-			user.setWebId((String)req.getSession().getAttribute(FastsignsSessVO.FRANCHISE_ID));
+			user.setWebId((String) ses.getAttribute(FastsignsSessVO.FRANCHISE_ID));
 			sessVo.addProfile(user);
-			req.getSession().setAttribute(Constants.USER_DATA, user);
-			req.getSession().setAttribute(KeystoneProxy.FRAN_SESS_VO, sessVo);
+			ses.setAttribute(Constants.USER_DATA, user);
+			ses.setAttribute(KeystoneProxy.FRAN_SESS_VO, sessVo);
 			log.debug("matched user to franchise=" + sessVo.getFranchise(user.getWebId()));
 		}
 		
