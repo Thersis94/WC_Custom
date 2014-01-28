@@ -220,12 +220,7 @@ public class OrderSubmissionCoordinator {
 				String svg = moveFile((String) prod.getProdAttributes().get("svgData"), this.attributes);
 				if(svg != null && svg.length() > 0)
 				p.accumulate("svgData", generateFileData(svg, "image/svg+xml", (Integer) prod.getProdAttributes().get("svgSize")));
-				
-//				//String lowResPath = DSOLAction.writeBase64File((String) prod.getProdAttributes().get("thumbnailData"), "thumbnailData.png", attributes, ran1, ran2);
-//				String svg = DSOLAction.writeBase64File((byte[]) prod.getProdAttributes().get("svgData"), UUID.randomUUID() + ".txt", attributes, ran1, ran2);
-//				if(svg != null && svg.length() > 0)
-//					p.accumulate("svgData", generateFileData(svg, "text/rtf", prod.getProdAttributes().get("svgData")));
-//				//String jsonPath = DSOLAction.writeBase64File((String) prod.getProdAttributes().get("jsonData"), "jsonData.txt", attributes, ran1, ran2);
+
 				log.debug("Done Writing files");		
 			}
 				
@@ -236,6 +231,12 @@ public class OrderSubmissionCoordinator {
 		return prods;
 	}
 
+	/**
+	 * Move dsol files from their temp location to their final resting place.
+	 * @param path
+	 * @param attributes
+	 * @return
+	 */
 	public String moveFile(String path, Map<String, Object> attributes){
 		FileLoader fl  = null;
 		attributes.put("fileManagerType", attributes.get("dsolFileManagerType"));
@@ -244,10 +245,11 @@ public class OrderSubmissionCoordinator {
 			fl = new FileLoader(attributes);
 			String source = (String) attributes.get("keystoneDsolTemplateFilePath") + path, dest = (String) attributes.get("keystoneDsolFilePath") + path;
 			fl.copy(source, dest);
-			fl.deleteFile((String) attributes.get("keystoneDsolTemplateFilePath") + path);
+			//On reorder the product is still pointed to this file so if we remove you move it.
+			//fl.deleteFile((String) attributes.get("keystoneDsolTemplateFilePath") + path);
 			return path;
 		} catch (Exception e) {
-			log.error("exception", e);
+			log.debug("Failed to Write File: " + path, e);
 		}
 		return "";
 	}
