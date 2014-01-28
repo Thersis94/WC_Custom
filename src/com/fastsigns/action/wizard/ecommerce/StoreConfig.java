@@ -74,7 +74,7 @@ public class StoreConfig {
 	
 	public String getJsText() {
 		StringBuilder sb = new StringBuilder();
-		sb.append("<script type='text/javascript' src='/binary/org/FTS/bootstrap.js'></script>");
+		sb.append("<script type='text/javascript' src='/binary/themes/FAST_SIGNS_2/scripts/bootstrap.js'></script>");
 		sb.append("<link href='/binary/themes/FAST_SIGNS_2/scripts/bootstrap.css' type='text/css' rel='stylesheet'/>");
 		return sb.toString();
 	}
