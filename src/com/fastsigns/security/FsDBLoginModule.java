@@ -6,7 +6,6 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Map;
 
-
 // SMTBaseLibs 2.0
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.exception.DatabaseException;
@@ -20,7 +19,8 @@ import com.siliconmtn.security.SHAEncrypt;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.RandomAlphaNumeric;
-
+import com.smt.sitebuilder.action.user.ProfileManager;
+import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 // WebCrescendo 2.0
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.common.constants.ErrorCodes;
@@ -138,56 +138,63 @@ public class FsDBLoginModule extends AbstractLoginModule {
         Connection dbConn = (Connection)initVals.get(GlobalConfig.KEY_DB_CONN);
         String encKey = (String)initVals.get(Constants.ENCRYPT_KEY);
         UserLogin ul = new UserLogin(dbConn, encKey);
+        
         /*
          * Check user credentials and return a UserDataVO (vo).  
          * The vo is empty (not null) if the user does not exist and is populated with authentication 
          * data if the user does exist.  If the vo is not empty, a flag is set signifying 
          * whether or not the user was authenticated.
          */
-       	UserDataVO authUser = ul.checkExistingCredentials(user, pwd);        
+       	UserDataVO authUser = ul.checkExistingCredentials(user, pwd);   
+       	
         if (authUser == null) {
-        	// specified user does not exist in the authentication table.
-        	throw new AuthenticationException(ErrorCodes.ERR_INVALID_LOGIN);	
+			// specified user does not exist in the authentication table.
+			throw new AuthenticationException(ErrorCodes.ERR_INVALID_LOGIN);	
         }
         
-        // If user exists but standard auth pwd failed, try auth using pwd encrypted in SHA-1
-        if (! authUser.isAuthenticated()) {
-        	log.debug("std auth failed, attempting auth using SHA-1 pwd");
-        	
-        	SHAEncrypt sha = new SHAEncrypt();
-        	String shaPwd = null;
-        	try {
-        		shaPwd = sha.encrypt(pwd);
-        		log.debug("SHA-1 encrypted password: " + shaPwd);
-        	} catch (Exception e) {
-        		log.error("Error encrypting user pwd using SHA-1, " + e);
-        	}
-        	
-        	String authId = null;
-        	if (shaPwd != null) {
-	        	try {
-	        		authId = ul.checkEncryptedCredentials(user, shaPwd);
-	        	} catch (NotAuthorizedException nae) {
-	        		log.error("Error checking encrypted credentials during user login, ", nae);
-	        	}
-        	}
-        	
-    		// if successful auth using SHA-1 pwd, user is authenticated so update user's 
-        	// auth password using standard encryption.
-        	if (authId != null) {
-        		authUser.setAuthenticated(true);
-        		try {
-        			this.manageUser(authId, user, pwd, 0);
-        		} catch (InvalidDataException ide) {
-        			log.error("Error updating user's auth credentials to use standard password encryption." ,ide);
-        		}
-        	}
-        }
+		// If user exists but standard auth pwd failed, try auth using pwd
+		// encrypted in SHA-1
+		if (!authUser.isAuthenticated()) {
+			log.debug("std auth failed, attempting auth using SHA-1 pwd");
 
-        // Return user authentication data
-        return authUser;
-		
+			SHAEncrypt sha = new SHAEncrypt();
+			String shaPwd = null;
+			try {
+				shaPwd = sha.encrypt(pwd);
+				log.debug("SHA-1 encrypted password: " + shaPwd);
+			} catch (Exception e) {
+				log.error("Error encrypting user pwd using SHA-1, " + e);
+			}
+
+			String authId = null;
+			if (shaPwd != null) {
+				try {
+					authId = ul.checkEncryptedCredentials(user, shaPwd);
+				} catch (NotAuthorizedException nae) {
+					log.error("Error checking encrypted credentials during user login, ", nae);
+				}
+			}
+
+			// if successful auth using SHA-1 pwd, user is authenticated so
+			// update user's auth password using standard encryption.
+			if (authId != null) {
+				authUser.setAuthenticated(true);
+				try {
+					this.manageUser(authId, user, pwd, 0);
+				} catch (InvalidDataException ide) {
+					log.error("Error updating user's auth credentials to use standard password encryption.", ide);
+				}
+				
+			} else {
+				//authId is null
+				throw new AuthenticationException(ErrorCodes.ERR_INVALID_LOGIN);
+			}
+		}
+
+		// Return user authentication data
+		return authUser;
 	}
+	
     
     /**
      * Manages the user information for the authentication system
@@ -383,12 +390,42 @@ public class FsDBLoginModule extends AbstractLoginModule {
 		}
 	}
 
+	/**
+	 * this method is build specifically to support FsHybridLoginModule, which supports
+	 * independant profile management (to Keystone).  Since that module advertises
+	 * "I'll get you use the user's profile", we must do the same (even though we're within 
+	 * WC and don't have to)
+	 */
 	@Override
 	public UserDataVO retrieveUserData(String loginName, String password)
 			throws AuthenticationException {
-		return null;
+		
+		UserDataVO authData = this.authenticateUser(loginName, password);
+		UserDataVO newUser = null;
+		
+		if (authData.isAuthenticated()) {
+			//Retrieve the full profile by authentication ID lookup
+			ProfileManager pm = ProfileManagerFactory.getInstance(initVals);
+			try {
+				Connection dbConn = (Connection)initVals.get(GlobalConfig.KEY_DB_CONN);
+				newUser = pm.getProfile(authData.getAuthenticationId(), dbConn, ProfileManager.AUTH_ID_LOOKUP);
+				newUser.setAuthenticated(authData.isAuthenticated());
+				newUser.setAuthenticationLogId(authData.getAuthenticationLogId());
+				newUser.setPasswordResetFlag(authData.getPasswordResetFlag());
+				
+				if (authData.getPasswordResetFlag() == 1)
+					newUser.setPasswordHistory(authData.getPasswordHistory());
+
+				log.debug("user password history: " + newUser.getPasswordHistory());
+			} catch(Exception e) {
+				log.debug("Unable to retrieve profile: " + e.getMessage());
+			}
+			
+		}
+		return newUser;
 	}
 
+	
 	@Override
 	public UserDataVO retrieveUserData(String encProfileId)
 			throws AuthenticationException {

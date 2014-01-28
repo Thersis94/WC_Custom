@@ -9,6 +9,7 @@ import net.sf.json.JSONObject;
 
 import com.fastsigns.product.keystone.KeystoneProxy;
 import com.fastsigns.product.keystone.parser.KeystoneDataParser;
+import com.fastsigns.security.FsHybridLoginModule.LoginModule;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.SMTServletRequest;
@@ -37,8 +38,8 @@ import com.smt.sitebuilder.security.UserLogin;
 public class FsKeystoneLoginModule extends AbstractLoginModule {
 
     public FsKeystoneLoginModule() {
-        super();
-        super.setUserProfile(true);
+	    super();
+        super.setUserProfile(Boolean.TRUE);
     }
 
     /**
@@ -46,6 +47,7 @@ public class FsKeystoneLoginModule extends AbstractLoginModule {
      */
     public FsKeystoneLoginModule(Map<String, Object> arg0) {
         super(arg0);
+        super.setUserProfile(Boolean.TRUE);
     }
 
     /* (non-Javadoc)
@@ -55,10 +57,12 @@ public class FsKeystoneLoginModule extends AbstractLoginModule {
     @Override
     public UserDataVO retrieveUserData(String encProfileId) 
     throws AuthenticationException {
-    	String profileId = this.retrieveAuthIdByCookie(encProfileId);
-    	log.debug("Starting user login: " + profileId);
-    	if (profileId == null) throw new AuthenticationException(ErrorCodes.ERR_INVALID_LOGIN);
-    	return loginUserToKeystone(null, null, profileId);
+		String profileId = this.retrieveAuthIdByCookie(encProfileId);
+		log.debug("Starting user login: " + profileId);
+		if (profileId == null)
+			throw new AuthenticationException(ErrorCodes.ERR_INVALID_LOGIN);
+
+		return loginUserToKeystone(null, null, profileId);
     }
     
     /* (non-Javadoc)
@@ -68,14 +72,16 @@ public class FsKeystoneLoginModule extends AbstractLoginModule {
     @Override
     public UserDataVO retrieveUserData(String email, String pwd) 
     throws AuthenticationException {
-        log.debug("Starting user login: " + email + "/" + pwd);
-        if (email == null || pwd == null) throw new AuthenticationException(ErrorCodes.ERR_INVALID_LOGIN);
-        UserDataVO user = this.loginUserToKeystone(email, pwd, null);
-        if (user == null) {
-        	user = new UserDataVO();
-        	user.setAuthenticationId(email);
-        }
-        return user;
+		log.debug("Starting user login: " + email + "/" + pwd);
+		if (email == null || pwd == null)
+			throw new AuthenticationException(ErrorCodes.ERR_INVALID_LOGIN);
+		
+		UserDataVO user = this.loginUserToKeystone(email, pwd, null);
+		if (user == null) {
+			user = new UserDataVO();
+			user.setAuthenticationId(email);
+		}
+		return user;
     }
     
 
@@ -90,52 +96,57 @@ public class FsKeystoneLoginModule extends AbstractLoginModule {
     public UserDataVO loginUserToKeystone(String username, String pswd, String profileId) 
     throws AuthenticationException {
         	
-        FastsignsSessVO sessVo = new FastsignsSessVO();
-        try {
-        	//log the user into Keystone
-    		SMTServletRequest req = (SMTServletRequest)this.initVals.get(AbstractRoleModule.HTTP_REQUEST);
-        	KeystoneProxy proxy = new KeystoneProxy(initVals);
-        	proxy.setSessionCookie(req.getCookie(Constants.JSESSIONID));
-        	proxy.setModule("user");
-        	proxy.setAction("eCommLogin");
-        	proxy.setParserType(KeystoneDataParser.DataParserType.DoNothing);
-        	
-        	//set whether we're logging in by ID, or by user/pswd
-        	if (profileId == null) {
-	        	proxy.addPostData("username", username);
-	        	proxy.addPostData("password", pswd);
-        	} else {
-            	proxy.addPostData("usersId", profileId);
-        	}
-        	
-        	byte[] byteData = (byte[]) proxy.getData().getActionData();
-        	
-    		JSONObject jsonObject = JSONObject.fromObject(new String(byteData));
-    		
-    		if (jsonObject != null && jsonObject.optBoolean("success")) {
-    			this.parseKeystoneFranchises(jsonObject.getJSONObject("data"), sessVo);
-    			this.parseKeystoneProfiles(jsonObject.getJSONObject("data"), sessVo);
-    		} else {
-    			throw new AuthenticationException(ErrorCodes.ERR_INVALID_LOGIN);
-    		}
-    		
-    		log.debug("FSSessVO=" + sessVo.toString());
-    		req.getSession().setAttribute(KeystoneProxy.FRAN_SESS_VO, sessVo);
-    		//end Keystone integration code
-    		
-        } catch (Exception e) {
-        	throw new AuthenticationException(ErrorCodes.ERR_INVALID_LOGIN);
-        }
+		FastsignsSessVO sessVo = new FastsignsSessVO();
+		try {
+			// log the user into Keystone
+			SMTServletRequest req = (SMTServletRequest) this.initVals.get(AbstractRoleModule.HTTP_REQUEST);
+			KeystoneProxy proxy = new KeystoneProxy(initVals);
+			proxy.setSessionCookie(req.getCookie(Constants.JSESSIONID));
+			proxy.setModule("user");
+			proxy.setAction("eCommLogin");
+			proxy.setParserType(KeystoneDataParser.DataParserType.DoNothing);
 
-        // Return the first UserDataVO on the Map.
-        //We have no idea which should be the favored 'default'.  (nor should it matter)
-        for (UserDataVO vo : sessVo.getProfiles().values()) {
-        	// set certain fields so logging can take place
-        	vo.setAuthenticationId(username == null ? profileId : username);
-        	vo.setAuthenticated(true);
-        	return vo;
-        }
-        return null;
+			// set whether we're logging in by ID, or by user/pswd
+			if (profileId == null) {
+				proxy.addPostData("username", username);
+				proxy.addPostData("password", pswd);
+			} else {
+				proxy.addPostData("usersId", profileId);
+			}
+
+			byte[] byteData = (byte[]) proxy.getData().getActionData();
+			JSONObject jsonObject = JSONObject.fromObject(new String(byteData));
+
+			if (jsonObject != null && jsonObject.optBoolean("success")) {
+				this.parseKeystoneFranchises(jsonObject.getJSONObject("data"), sessVo);
+				this.parseKeystoneProfiles(jsonObject.getJSONObject("data"), sessVo);
+			} else {
+				throw new AuthenticationException(
+						ErrorCodes.ERR_INVALID_LOGIN);
+			}
+
+			log.debug("FSSessVO=" + sessVo.toString());
+			req.getSession().setAttribute(KeystoneProxy.FRAN_SESS_VO, sessVo);
+			// end Keystone integration code
+			
+			//put something on the attributes map, so when we go looking for Roles 
+			//we know this was a Keystone login
+			initVals.put("LoginModule", LoginModule.Keystone);
+
+		} catch (Exception e) {
+			throw new AuthenticationException(ErrorCodes.ERR_INVALID_LOGIN);
+		}
+
+		// Return the first UserDataVO on the Map.
+		// We have no idea which should be the favored 'default'. (nor should
+		// it matter)
+		for (UserDataVO vo : sessVo.getProfiles().values()) {
+			// set certain fields so logging can take place
+			vo.setAuthenticationId(username == null ? profileId : username);
+			vo.setAuthenticated(true);
+			return vo;
+		}
+		return null;
     }
     
     /**

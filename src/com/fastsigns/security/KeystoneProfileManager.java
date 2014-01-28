@@ -181,7 +181,7 @@ public class KeystoneProfileManager {
 		KeystoneProxy proxy = new KeystoneProxy(attributes);
 		proxy.setSessionCookie(req.getCookie(Constants.JSESSIONID));
 		proxy.setModule("userContact");
-		proxy.setAction("updateUser");
+		proxy.setAction("ecommCombineUser");
 		proxy.addPostData("users_id", user.getUserId());
 		if (user.getAuthenticationId() != null) proxy.addPostData("userLoginId", user.getAuthenticationId());
 		if (attribs.get("franchise_id") != null) proxy.addPostData("franchise_id", (String)attribs.get("franchise_id"));
@@ -211,23 +211,6 @@ public class KeystoneProfileManager {
 			} else {
 				msg = jsonObject.getString("responseText");
 				throw new InvalidDataException(msg);
-			}
-			//TODO redundant?
-			if (req.hasParameter("password")) {
-				proxy = new KeystoneProxy(attributes);
-				proxy.setModule("userContact");
-				proxy.setAction("eCommSetPassword");
-				proxy.addPostData("username", user.getEmailAddress());
-				proxy.addPostData("password", req.getParameter("password"));
-				proxy.setParserType(KeystoneDataParser.DataParserType.DoNothing);
-				
-				byteData = (byte[]) proxy.getData().getActionData();
-				jsonObject = JSONObject.fromObject(new String(byteData));
-				
-				if (!jsonObject.optBoolean("success")) {
-					msg = "Password could not be saved.";
-					throw new SecurityException("Password could not be saved.");
-				}
 			}
 			
 		} catch (Exception e) {
