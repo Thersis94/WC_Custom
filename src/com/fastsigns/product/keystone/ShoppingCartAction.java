@@ -21,6 +21,7 @@ import com.fastsigns.security.FastsignsSessVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.commerce.ShippingInfoVO;
 import com.siliconmtn.commerce.ShoppingCartItemVO;
 import com.siliconmtn.commerce.ShoppingCartVO;
 import com.siliconmtn.commerce.cart.storage.Storage;
@@ -86,10 +87,26 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 				}
 			}
 		}
+		
+		//We're changing the state of the cart so flush the jobId attached to it.
+		flushCartJobData(cart, req);
 		return cart;
 	}
 	
-	
+	/**
+	 * We need a way to ensure that a job thats been submitted does not get resubmitted
+	 * with different products or shipping.  We flush the jobId to ensure we place a new
+	 * order with the updated data when this occurs.  We also flush the shipping options
+	 * because when the cart changes you get different types of shipping.
+	 * @param cart
+	 * @param req
+	 */
+	private void flushCartJobData(ShoppingCartVO cart, SMTServletRequest req) {
+		cart.setShippingOptions(new HashMap<String, ShippingInfoVO>());
+		req.getSession().setAttribute("jobId", "");
+		cart.setErrors(new HashMap<String, String>());		
+	}
+
 	/**
 	 * adds an item to the cart.  Notice we're not saving the cart at this step, 
 	 * just adding an item to it.
@@ -130,6 +147,9 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 					throw new InvalidDataException("You cannot add products from multiple franchises to your cart, please empty your cart before adding this product.");
 				}
 			}
+
+			//We're changing the state of the cart so flush the jobId attached to it.
+			flushCartJobData(cart, req);
 		}
 		prod.addProdAttribute("oldProductId", oldProductId);
 		//transpose the ProductVO into a generic type
@@ -328,8 +348,9 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 		ShoppingCartVO cart = null;
 		try {
 			cart = s.load();
-			if(clearErrors)
-				cart.setErrors(new HashMap<String, String>());
+			if(clearErrors) {
+				flushCartJobData(cart, req);
+			}
 		} catch (Exception e) {
 			log.error(e);
 		}
