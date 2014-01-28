@@ -1,22 +1,23 @@
-/**
- * 
- */
 package com.fastsigns.product.keystone.parser;
 
+/** JDK 1.7.x **/
 import java.lang.reflect.Type;
 import java.util.List;
 
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-import net.sf.json.JsonConfig;
-import net.sf.json.util.PropertySetStrategy;
-
-import com.fastsigns.product.keystone.vo.AccountVO;
+/** Gson 2.2.4 **/
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
+
+/** SMT Base Libs **/
 import com.siliconmtn.data.Node;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.json.PropertyStrategyWrapper;
 import com.siliconmtn.util.SMTSerializer;
+
+/** WC Libs **/
+import com.fastsigns.product.keystone.vo.AccountVO;
 import com.smt.sitebuilder.common.ModuleVO;
 
 /****************************************************************************
@@ -41,16 +42,25 @@ public class AccountParser extends KeystoneDataParser {
 	 * @see
 	 * com.fastsigns.product.keystone.parser.KeystoneDataParser#formatData(byte[])
 	 */
-	@SuppressWarnings("unchecked")
 	@Override
 	public ModuleVO formatData(byte[] byteData) throws InvalidDataException {
 		ModuleVO mod = new ModuleVO();
-		log.info("^^^^^ " + new String(byteData));
+		String val = new String(byteData);
+		log.info("^^^^^ " + val);
 		try {
 			Type type = new TypeToken<List<Node>>(){}.getType();
-			List<Node> data = SMTSerializer.fromJson(new String(byteData), type);
-			
-			System.out.println(data.get(0).getUserObject());
+			List<Node> data = SMTSerializer.fromJson(new String(val), type);
+			JsonParser jsonparser = new JsonParser();
+			JsonArray values = (JsonArray)jsonparser.parse(val);
+
+	        for(int i=0; i< values.size(); i++){
+	        	JsonObject value = (JsonObject)values.get(i);
+	        	JsonObject typeInfo = (JsonObject)value.get("userObject");
+	        	Gson g = new Gson();
+	        	AccountVO o = g.fromJson(typeInfo.toString(), AccountVO.class);
+	        	data.get(i).setUserObject(o);
+	        }
+	        
 			mod.setActionData(data);
 		} catch (Exception e) {
 			log.error("could not parse JSON", e);

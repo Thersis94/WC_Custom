@@ -3,6 +3,7 @@ package com.fastsigns.product.keystone.parser;
 import java.lang.reflect.Type;
 import java.util.List;
 
+import com.fastsigns.product.keystone.vo.PaymentHistoryVO;
 import com.google.gson.reflect.TypeToken;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.SMTSerializer;
@@ -28,8 +29,8 @@ public class PaymentHistoryParser extends KeystoneDataParser {
 		ModuleVO mod = new ModuleVO();
 		
 		try {
-			Type type = new TypeToken<List<PaymentHistoryParser>>(){}.getType();
-			List<PaymentHistoryParser> data = SMTSerializer.fromJson(new String(byteData), type);
+			Type type = new TypeToken<List<PaymentHistoryVO>>(){}.getType();
+			List<PaymentHistoryVO> data = SMTSerializer.fromJson(new String(byteData), type);
 			mod.setActionData(data);
 			
 		} catch (Exception e) {
