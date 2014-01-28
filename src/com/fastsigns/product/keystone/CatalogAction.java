@@ -1,10 +1,15 @@
 package com.fastsigns.product.keystone;
 
+import java.util.List;
+
 import com.fastsigns.action.franchise.CenterPageAction;
 import com.fastsigns.product.keystone.parser.KeystoneDataParser;
+import com.fastsigns.product.keystone.vo.CatalogVO;
+import com.fastsigns.product.keystone.vo.CategoryVO;
 import com.fastsigns.security.FastsignsSessVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.http.SMTServletRequest;
 import com.smt.sitebuilder.action.AbstractBaseAction;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -61,10 +66,39 @@ public class CatalogAction extends AbstractBaseAction {
 		
 		//need to supply this for image calls, which go to Keystone directly from the browser
 		req.setAttribute("apiKey", proxy.buildApiKey());
+		
+		//If we're calling for a dsol template only return that product.
+		if(req.hasParameter("altId")) {
+			retrieveProduct(mod, req);
+		}
 		setAttribute(Constants.MODULE_DATA, mod);
 	}
 	
-	
+	/**
+	 * Return just the product when we're calling for a dsol template.
+	 * @param mod
+	 * @param req
+	 */
+	@SuppressWarnings("unchecked")
+	private void retrieveProduct(ModuleVO mod, SMTServletRequest req) {
+		List<CatalogVO> cats = (List<CatalogVO>)mod.getActionData();
+		for(CatalogVO cat : cats) {
+			if(cat.getCatalogNm().equals(req.getParameter("catalog"))) {
+			List<CategoryVO> cg = (List<CategoryVO>) cat.getCategories();
+			for(CategoryVO c : cg) {
+				if(c.getCategoryNm().equals(req.getParameter("category"))) {
+					for(ProductVO p : c.getProducts()) {
+						if(p.getProductId().equals(req.getParameter("product"))) {
+							mod.setActionData(p);
+							return;
+						}
+					}
+				}
+			}
+			}
+		}		
+	}
+
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.action.SMTActionInterface#delete(com.siliconmtn.http.SMTServletRequest)
 	 */
