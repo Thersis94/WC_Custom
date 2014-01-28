@@ -202,8 +202,16 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 
 					// Send a message summary of the order to the user who placed it If payment succeeds. 
 					if (nextStep.equals("complete") && Convert.formatBoolean(cart.getErrors().get("success"))) {
+						String designatorNm = (String)req.getSession().getAttribute("FranchiseLocationName");
+						String webId = CenterPageAction.getFranchiseId(req);
+						if (designatorNm == null) {
+							try { //don't risk the emailing failing over this...
+								FastsignsSessVO sessVo = (FastsignsSessVO) req.getSession().getAttribute(KeystoneProxy.FRAN_SESS_VO);
+								designatorNm = sessVo.getFranchise(webId).getLocationName();
+							} catch (Exception e) {}
+						}
 						CheckoutReportUtil util = new CheckoutReportUtil(attributes, dbConn);
-						util.sendSummary(cart, CenterPageAction.getFranchiseId(req), (String)req.getSession().getAttribute("FranchiseLocationName"));
+						util.sendSummary(cart, webId, designatorNm);
 					}
 					PreparedStatement ps = null;
 					try {

@@ -80,8 +80,8 @@ public class CheckoutReportUtil {
 		//body.append(getTextBillingInfo(cart.getBillingInfo()));
 		body.append(getTextItemizedCart(cart));
 		body.append(getTextShippingInfo(cart, franId));
-		body.append("Thank you for placing your order with FASTSIGNS " + designatorNm + ".\n");
-		body.append("This is an automated message, for questions please contact " + franId + "@fastsigns.com.\n");
+		body.append("Thank you for placing your order with FASTSIGNS").append(designatorNm != null ? designatorNm : "").append(".\n");
+		body.append("This is an automated message, for questions please contact ").append(franId).append("@fastsigns.com.\n");
 		return body.toString();
 	}
 
@@ -233,8 +233,8 @@ public class CheckoutReportUtil {
 		//body.append(getHtmlBillingInfo(cart.getBillingInfo()));
 		body.append(getHtmlShippingInfo(cart));
 		body.append("</div>");
-		body.append("<h1>Thank you for placing your order with <span  style='color:#1F497D'>FASTSIGNS " + designatorNm + "</span>.</h1>");
-		body.append("<h2>This is an automated message, <span style='color:#1F497D'>for questions please contact</span> " + franId + "@fastsigns.com.</h2>");
+		body.append("<h1>Thank you for placing your order with <span  style='color:#1F497D'>FASTSIGNS").append(designatorNm != null ? designatorNm : "").append("</span>.</h1>");
+		body.append("<h2>This is an automated message, <span style='color:#1F497D'>for questions please contact</span> ").append(franId).append("@fastsigns.com.</h2>");
 		return body.toString();	
 	}
 
