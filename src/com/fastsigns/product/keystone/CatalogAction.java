@@ -86,7 +86,6 @@ public class CatalogAction extends AbstractBaseAction {
 			if(cat.getCatalogNm().equals(req.getParameter("catalog"))) {
 			List<CategoryVO> cg = (List<CategoryVO>) cat.getCategories();
 			for(CategoryVO c : cg) {
-				if(c.getCategoryNm().equals(req.getParameter("category"))) {
 					for(ProductVO p : c.getProducts()) {
 						if(p.getProductId().equals(req.getParameter("product"))) {
 							mod.setActionData(p);
@@ -94,7 +93,6 @@ public class CatalogAction extends AbstractBaseAction {
 						}
 					}
 				}
-			}
 			}
 		}		
 	}
