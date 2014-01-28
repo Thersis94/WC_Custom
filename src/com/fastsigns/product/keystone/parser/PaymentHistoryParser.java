@@ -1,12 +1,11 @@
 package com.fastsigns.product.keystone.parser;
 
-import net.sf.json.JSONArray;
-import net.sf.json.JsonConfig;
-import net.sf.json.util.PropertySetStrategy;
+import java.lang.reflect.Type;
+import java.util.List;
 
-import com.fastsigns.product.keystone.vo.PaymentHistoryVO;
+import com.google.gson.reflect.TypeToken;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.json.PropertyStrategyWrapper;
+import com.siliconmtn.util.SMTSerializer;
 import com.smt.sitebuilder.common.ModuleVO;
 
 /****************************************************************************
@@ -28,13 +27,10 @@ public class PaymentHistoryParser extends KeystoneDataParser {
 	public ModuleVO formatData(byte[] byteData) throws InvalidDataException {
 		ModuleVO mod = new ModuleVO();
 		
-		JsonConfig cfg = new JsonConfig();
-		cfg.setPropertySetStrategy(new PropertyStrategyWrapper(PropertySetStrategy.DEFAULT));
-		cfg.setRootClass(PaymentHistoryVO.class);
-		
 		try {
-			JSONArray jsonArr = JSONArray.fromObject(new String(byteData));
-			mod.setActionData(JSONArray.toCollection(jsonArr, cfg));
+			Type type = new TypeToken<List<PaymentHistoryParser>>(){}.getType();
+			List<PaymentHistoryParser> data = SMTSerializer.fromJson(new String(byteData), type);
+			mod.setActionData(data);
 			
 		} catch (Exception e) {
 			log.error("could not parse JSON", e);

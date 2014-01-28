@@ -1,22 +1,19 @@
 package com.fastsigns.product.keystone.parser;
 
-
+// JDK 1.7.
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Map;
+import java.util.List;
 
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-import net.sf.json.JsonConfig;
-import net.sf.json.util.PropertySetStrategy;
-
+// WC Libs
 import com.fastsigns.product.keystone.vo.OrderVO;
-import com.google.gson.reflect.TypeToken;
-import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.json.PropertyStrategyWrapper;
-import com.siliconmtn.util.SMTSerializer;
 import com.smt.sitebuilder.common.ModuleVO;
+
+// Gson 2.2.4
+import com.google.gson.reflect.TypeToken;
+
+// SMT Base libs
+import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.util.SMTSerializer;
 
 /****************************************************************************
  * <b>Title</b>: MyOrdersParser.java<p/>
@@ -39,10 +36,9 @@ public class MyOrdersParser extends KeystoneDataParser {
 		ModuleVO mod = new ModuleVO();
 		log.info("Data: " + new String(byteData) );
 		try {
-			Type type = new TypeToken<Map<String, String>>(){}.getType();
-			
-			Map<String, Object> assets = SMTSerializer.fromJson(new String(byteData), type);
-			mod.setActionData(assets);
+			Type type = new TypeToken<List<OrderVO>>(){}.getType();
+			List<?> orders = (List<?>)SMTSerializer.fromJson(new String(byteData), type);
+			mod.setActionData(orders);
 
 		} catch (Exception e) {
 			log.error("could not parse JSON", e);

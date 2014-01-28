@@ -48,6 +48,7 @@ public class AccountAction extends AbstractBaseAction {
 		proxy.setModule("accounts");
 		proxy.setAction("viewRollupData");
 		proxy.setParserType(KeystoneDataParser.DataParserType.Account);
+		proxy.addPostData("simpleView", "true");
 		if (req.hasParameter("groupId")) {
 			//get all the accounts in this hierarchy
 			proxy.addPostData("groupId",req.getParameter("groupId"));

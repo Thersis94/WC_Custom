@@ -1,12 +1,18 @@
 package com.fastsigns.product.keystone.parser;
 
-import net.sf.json.JSONArray;
-import net.sf.json.JsonConfig;
-import net.sf.json.util.PropertySetStrategy;
+// JDK 1.7.x
+import java.lang.reflect.Type;
+import java.util.List;
 
-import com.fastsigns.product.keystone.vo.InvoiceVO;
+// Gson 2.2.4
+import com.google.gson.reflect.TypeToken;
+
+// SMT Base Libs
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.json.PropertyStrategyWrapper;
+import com.siliconmtn.util.SMTSerializer;
+
+// WC Libs
+import com.fastsigns.product.keystone.vo.InvoiceVO;
 import com.smt.sitebuilder.common.ModuleVO;
 
 /****************************************************************************
@@ -27,14 +33,12 @@ public class InvoicesParser extends KeystoneDataParser {
 	@Override
 	public ModuleVO formatData(byte[] byteData) throws InvalidDataException {
 		ModuleVO mod = new ModuleVO();
-		JsonConfig cfg = new JsonConfig();
-		cfg.setPropertySetStrategy(new PropertyStrategyWrapper(PropertySetStrategy.DEFAULT));
-		cfg.setRootClass(InvoiceVO.class);
 		
 		try {
-			JSONArray jsonArr = JSONArray.fromObject(new String(byteData));
-			mod.setActionData(JSONArray.toCollection(jsonArr, cfg));
-
+			Type type = new TypeToken<List<InvoiceVO>>(){}.getType();
+			List<InvoiceVO> data = SMTSerializer.fromJson(new String(byteData), type);
+			mod.setActionData(data);
+			
 		} catch (Exception e) {
 			log.error("could not parse JSON", e);
 			throw new InvalidDataException(e);
