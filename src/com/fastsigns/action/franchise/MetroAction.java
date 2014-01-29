@@ -138,10 +138,14 @@ public class MetroAction extends SBActionAdapter {
 			if(productAlias != null && productAlias.length() > 0) {
 				PageVO p = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 				MetroProductVO mpv = mcvo.getProductPages().get(productAlias);
-				p.setTitleName(mpv.getTitleTxt());
-				p.setMetaDesc(mpv.getMetaDesc());
-				//p.setMetaKeyword(mpv.getMetaKywd());
-				
+				if (mpv != null) {
+					p.setTitleName(mpv.getTitleTxt());
+					p.setMetaDesc(mpv.getMetaDesc());
+					//p.setMetaKeyword(mpv.getMetaKywd());
+				} else {
+					log.warn("No product for that alias.  Redirecting to metro page.");
+					super.sendRedirect("/metro-" + mcvo.getAreaAlias(), null, req);
+				}
 			}
 			this.putModuleData(mcvo, mcvo.getResults().size(), false);
 			// If the metro area isn't found, redirect to the locator page
