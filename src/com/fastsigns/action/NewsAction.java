@@ -72,7 +72,7 @@ public class NewsAction extends SBActionAdapter {
 		if(isRss){
 		sb.append("select BLOG_URL as item_action_id, TITLE_NM as item_action_nm, SHORT_DESC_TXT as item_action_desc, ");
 		sb.append("BLOG_TXT as item_article_txt, PUBLISH_DT as item_create_dt, 'BLOG' as attribute1Text from blog ");
-		sb.append("where action_id = (select action_id from SB_ACTION where MODULE_TYPE_ID = 'BLOG' and ORGANIZATION_ID= ? ) and approval_flg=1 ");
+		sb.append("where action_id = (select action_id from SB_ACTION where MODULE_TYPE_ID = 'BLOG' and ORGANIZATION_ID= ? and PENDING_SYNC_FLG = 0 ) and approval_flg=1 ");
 		sb.append("union ");
 		}
 		sb.append("select cast(CP_MODULE_OPTION_ID as nvarchar(32)) as item_action_id, OPTION_NM as item_action_nm, OPTION_DESC as item_action_desc, ");
