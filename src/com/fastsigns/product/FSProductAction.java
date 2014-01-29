@@ -478,11 +478,13 @@ public class FSProductAction extends SBActionAdapter {
 				if (rs.getInt("product_rank") == 2) children.add(new ProductVO(rs));
 				
 			}
-			if(children.size() > 0)
+			
+			if (children.size() > 0)
 				req.setAttribute("fsChildren", children);
 			
 			// Get the parent product name and add it to the request
-			req.setAttribute("fsParentName", getParentName(data.get(0).getParentId()));
+			if (data.size() == 0)
+				req.setAttribute("fsParentName", getParentName(data.get(0).getParentId()));
 			
 			//Create a data tree and add it to the module container
 			this.putModuleData(data, data.size(), false);
