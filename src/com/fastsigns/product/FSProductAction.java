@@ -143,7 +143,10 @@ public class FSProductAction extends SBActionAdapter {
 		// Assign the page title and other data
 		this.assignPageInfo(req, mod);
 		
-		req.setParameter(Constants.CANONICAL_TAG, req.getParameter("prefix")+prodChildKey.toLowerCase());
+		if (pId.length() > 0) {
+			PageVO page = (PageVO)req.getAttribute(Constants.PAGE_DATA);
+			page.setCanonicalPageUrl("/" + req.getParameter("prefix")+pId.toLowerCase());
+		}
 	}
 	
 	/**
