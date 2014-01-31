@@ -191,7 +191,7 @@ public class CoopAdsEmailer extends SBActionAdapter {
 			mail.addRecipients(surgeonEmails);  //surgeonEmail could also include the Office Manager
 	    		mail.addCC(site.getAdminEmail());
 	    		mail.addCC(coordinatorsEmail);
-	    		mail.addCC("kelly.westafer@hmktgroup.com");
+	    		//mail.addCC("kelly.westafer@hmktgroup.com");
 	    		mail.addCC("amy.zimmerman@hmktgroup.com");
 	    		mail.addCC("admgt@hmktgroup.com");
 	    		mail.setSubject("Approval Required: Promotion for " + productNm + " seminar on " + Convert.formatDate(eventDt, Convert.DATE_SLASH_PATTERN));
@@ -223,7 +223,7 @@ public class CoopAdsEmailer extends SBActionAdapter {
 			mail.addRecipient(site.getAdminEmail());
 			mail.addRecipient("dfox@hmktgroup.com");
 			mail.addRecipient("barb.goley@hmktgroup.com");
-			mail.addRecipient("kelly.westafer@hmktgroup.com");
+//			mail.addRecipient("kelly.westafer@hmktgroup.com");
 	    		mail.addRecipient("amy.zimmerman@hmktgroup.com");
 	    		mail.setSubject("Co-Op Ad Approved for Seminar(s) " + vo.getEventCodes());
 	    		mail.setFrom(site.getMainEmail());
@@ -256,7 +256,7 @@ public class CoopAdsEmailer extends SBActionAdapter {
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipient("kelly.westafer@hmktgroup.com");
+//			mail.addRecipient("kelly.westafer@hmktgroup.com");
 			mail.addRecipient("admgt@hmktgroup.com");
 			mail.addRecipient("amy.zimmerman@hmktgroup.com");
 			mail.addCC(site.getAdminEmail());
@@ -292,7 +292,7 @@ public class CoopAdsEmailer extends SBActionAdapter {
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipient("kelly.westafer@hmktgroup.com");
+//			mail.addRecipient("kelly.westafer@hmktgroup.com");
 			mail.addRecipient("admgt@hmktgroup.com");
 			mail.addRecipient("amy.zimmerman@hmktgroup.com");
 			mail.addCC(site.getAdminEmail());

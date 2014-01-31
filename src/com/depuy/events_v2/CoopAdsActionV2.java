@@ -7,7 +7,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.depuy.events.CoopAdsEmailer;
+import com.depuy.events_v2.CoopAdsEmailer;
+import com.depuy.events_v2.vo.DePuyEventSeminarVO;
 // SMT BaseLibs
 import com.depuy.events.vo.CoopAdVO;
 import com.siliconmtn.action.ActionException;
@@ -98,7 +99,9 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 	
 	private void sendNotificationEmail(CoopAdVO vo, String reqType, SiteVO site, 
 			UserDataVO user, SMTServletRequest req ) {
-
+		
+		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
+		
 		// send appropriate notification emails
 		CoopAdsEmailer emailer = new CoopAdsEmailer(actionInit);
 		emailer.setAttributes(attributes);
@@ -109,10 +112,10 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 			log.debug("sending surgeon approved email");
 			if ("5".equals(req.getParameter("surgeonStatusFlg"))) {
 				// surgeon declined ad
-				emailer.notifyAdminOfSurgeonsDecline(vo, site, req.getParameter("notesText"));
+				emailer.notifyAdminOfSurgeonsDecline(sem, site, req.getParameter("notesText"));
 			} else {
 				// surgeon approved ad
-				emailer.notifyAdminOfSurgeonsApproval(vo, site);
+				emailer.notifyAdminOfSurgeonsApproval(sem, site);
 			}
 
 		} else if (CLIENT_SUBMITTED == vo.getStatusFlg()) {
@@ -123,28 +126,23 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 			log.debug("sending client's approval notice email");
 			if ("CFSEM".equalsIgnoreCase(req.getParameter("eventTypeCd"))) {
 				// ask the Surgeon to approve their portion
-				emailer.requestAdApprovalOfSurgeon(vo, site,
-						req.getParameter("ownersEmail"),
-						req.getParameter("product"),
-						req.getParameter("eventName"),
-						req.getParameter("eventDt"));
+				emailer.requestAdApprovalOfSurgeon(sem, site);
 			}
 
 			// ask the Rep to approve their portion
-			emailer.requestClientApproval(vo, site,
-					req.getParameter("ownersEmail"));
+			emailer.requestCoordinatorApproval(sem, site);
 
 		} else if (CLIENT_APPROVED_AD == vo.getStatusFlg()) {
 			log.debug("sending client approved email");
-			emailer.notifyAdminOfAdApproval(vo, site, user);
+			emailer.notifyAdminOfAdApproval(sem, site, user);
 
 		} else if (CLIENT_DECLINED_AD == vo.getStatusFlg()) {
 			log.debug("sending admin declined email");
-			emailer.notifyAdminOfAdDeclined(vo, site, user);
+			emailer.notifyAdminOfAdDeclined(sem, site, user);
 
 		} else if (CLIENT_PAYMENT_RECD == vo.getStatusFlg()) {
 			log.debug("sending payment recieved email");
-			emailer.notifyAdminOfAdPaymentRecd(vo, site, user);
+			emailer.notifyAdminOfAdPaymentRecd(sem, site, user);
 		}
 	}
 

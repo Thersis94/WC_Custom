@@ -3,6 +3,8 @@ package com.depuy.events_v2.vo.report;
 // JDK 1.5.0
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.w3c.dom.Document;
 
@@ -13,7 +15,14 @@ import org.xhtmlrenderer.pdf.ITextRenderer;
 // Log4j 1.2.8
 import org.apache.log4j.Logger;
 
+import com.depuy.events_v2.vo.DePuyEventSeminarVO;
+import com.depuy.events_v2.vo.PersonVO;
+import com.depuy.events_v2.vo.PersonVO.Role;
+import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
+import com.smt.sitebuilder.action.event.vo.EventEntryVO;
+import com.smt.sitebuilder.util.MessageParser;
+import com.smt.sitebuilder.util.ParseException;
 
 /****************************************************************************
  * <b>Title</b>: ComplianceReportVO.java
@@ -33,6 +42,7 @@ import com.smt.sitebuilder.action.AbstractSBReportVO;
 public class ComplianceReportVO extends AbstractSBReportVO {
 	private static final long serialVersionUID = 1l;
 	private static Logger log = null;
+	private DePuyEventSeminarVO sem = null;
 
 	/**
 	 * 
@@ -46,25 +56,54 @@ public class ComplianceReportVO extends AbstractSBReportVO {
 	}
 
 	public void setData(Object o) {
-
+		this.sem = (DePuyEventSeminarVO) o;
 	}
 
 	public byte[] generateReport() {
 		// load the proper html-formated report
-		StringBuilder doc = getHeader();
 		
 		//substitute in the replacement items using FreeMarker
+		AbstractSBReportVO rpt = null;
+		EventEntryVO event = sem.getEvents().get(0);
+		if (event.getEventTypeCd().equalsIgnoreCase("CFSEM")) {
+			rpt = new CFSEMReportVO();
+		} else if (event.getEventTypeCd().equalsIgnoreCase("CPSEM")) {
+			rpt = new CPSEMReportVO();
+		} else {
+			rpt = new ESEMReportVO();
+		}
+		//run Freemarker replacements to populate the compliance form for this seminar
+		Map<String, Object> data = new HashMap<String, Object>();
+		data.put("eventDt", Convert.formatDate(event.getStartDate(), Convert.DATE_LONG));
+		data.put("eventTime", event.getLocationDesc());
+		data.put("admSignature", "_____________________");
+		data.put("approvalDt", "_______");
+		data.put("ownerName", sem.getOwner().getFullName());
+		data.put("territoryNo", sem.getTerritoryNumber());
+		for (PersonVO p : sem.getPeople()) {
+			if (p.getRoleCode() == Role.TGM) continue;
+			data.put("repName", p.getFullName()); //just take the first affiliated rep
+			break;
+		}
+		
+		StringBuffer buf = null;
+		try {
+			buf = MessageParser.getParsedMessage(rpt.generateReport().toString(), data, event.getEventTypeCd());
+		} catch (ParseException e) {
+			log.error("could not generate PDF for Seminar", e);
+			buf = new StringBuffer("The compliance form could not be populated.  Please contact the site administrator for assistance");
+		}
 
 		//convert the html to a PDF, and return it
-		return makeIntoPDF(doc);
+		return makeIntoPDF(buf.toString().getBytes());
 	}
 
-	private byte[] makeIntoPDF(StringBuilder sb) {
+	private byte[] makeIntoPDF(byte[] bytes) {
 		ByteArrayOutputStream os = new ByteArrayOutputStream();
 		Tidy tidy = new Tidy(); // obtain a new Tidy instance
 		tidy.setXHTML(true);
 		try {
-			ByteArrayInputStream bais = new ByteArrayInputStream(sb.toString().getBytes());
+			ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
 			Document doc = tidy.parseDOM(bais, new ByteArrayOutputStream());
 
 			ITextRenderer renderer = new ITextRenderer();
@@ -78,7 +117,4 @@ public class ComplianceReportVO extends AbstractSBReportVO {
 		return os.toByteArray();
 	}
 
-	private StringBuilder getHeader() {
-		return new StringBuilder("this should be a report in PDF format");
-	}
 }

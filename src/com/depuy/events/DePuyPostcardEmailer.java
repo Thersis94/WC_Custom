@@ -312,13 +312,12 @@ public class DePuyPostcardEmailer extends AbstractPostcardEmailer {
 		msg.append("https://").append(site.getSiteAlias()).append("\r");
 		
 		//get the recipients from the config file
-		String[] emails = new String[6];
+		String[] emails = new String[5];
 		emails[0] = site.getAdminEmail();  //the DePuy intern in charge
 		emails[1] = "KAlfano@its.jnj.com"; //Kristi Alfano
 		emails[2] = "amy.zimmerman@hmktgroup.com";
 		emails[3] = "admgt@hmktgroup.com"; //Barb Goley & Shari Slough
 		emails[4] = "Jenn.Davis@hmktgroup.com"; //Jenn Parrish-Davis
-		emails[5] = "kelly.westafer@hmktgroup.com"; 
 		
 		try {
     		// Create the mail object and send
@@ -338,15 +337,5 @@ public class DePuyPostcardEmailer extends AbstractPostcardEmailer {
     	
     	log.debug("done sending cancellation email");
 		return;
-	}
-	
-
-
-	/* (non-Javadoc)
-	 * @see com.depuy.events.AbstractPostcardEmailer#sendSRCApprovalRequest(com.siliconmtn.http.SMTServletRequest)
-	 */
-	@Override
-	public void sendSRCApprovalRequest(SMTServletRequest req) {
-		//not used here
 	}
 }

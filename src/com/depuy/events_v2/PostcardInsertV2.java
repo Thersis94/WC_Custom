@@ -5,16 +5,16 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
-
-
-
+import java.util.Map;
 
 
 
 // SMT BaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.http.SMTServletRequest;
@@ -37,7 +37,6 @@ import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
-import com.depuy.events.AbstractPostcardEmailer;
 import com.depuy.events_v2.LeadsDataToolV2.SortType;
 import com.depuy.events_v2.ReportBuilder.ReportType;
 import com.depuy.events_v2.vo.DePuyEventSeminarVO;
@@ -69,6 +68,17 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	public PostcardInsertV2(ActionInitVO arg0) {
 		super(arg0);
 	}
+	
+	/**
+	 * this override is in place so we can redirect all outbound emails to the person
+	 * testing the system.  Remove this for launch, as well as this line in the build method:
+	 * attributes.put(GlobalConfig.KEY_ADMIN_EMAIL, user.getEmailAddress());
+	 */
+	public void setAttributes(Map<String, Object> attrs) {
+		this.attributes = new HashMap<String, Object>(attrs.size());
+		attributes.putAll(attrs);
+		attributes.put(AdminConstants.APP_NM, "DEVELOP");
+	}
 
 	/*
 	 * (non-Javadoc)
@@ -92,8 +102,9 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 		 String eventPostcardId = (req.hasParameter("eventPostcardId")) ? req.getParameter("eventPostcardId") : null;
 		 boolean isNewSeminar = (eventPostcardId == null);
-		 
-		 
+
+		attributes.put(GlobalConfig.KEY_ADMIN_EMAIL, user.getEmailAddress());
+			
 		 /**
 		  * This switch statement provides good OO structuring by using an enum.
 		  * The sequence of transactions within each step, combined with the throwing of SQLException
@@ -108,7 +119,6 @@ public class PostcardInsertV2 extends SBActionAdapter {
 						req.setParameter("eventPostcardId", eventPostcardId);
 						saveEventPostcardAssoc(eventPostcardId, eventEntryId);
 						saveLocatorXr(eventPostcardId, req);
-						nextPage = "leads";
 					}
 					saveEventPersonXr(eventPostcardId, req);
 					saveNewspaperAd(eventPostcardId, req);
@@ -120,7 +130,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 					break;
 					
 				case approveSeminar:
-					this.approvePostcard(req, eventPostcardId);
+					this.advApprovePostcard(req, eventPostcardId);
 					break;
 					
 				case srcApproveSeminar:
@@ -244,7 +254,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	    		vo.setShortDesc(req.getParameter("eventDescAffirmation"));
 	    	}
 	    	vo.setEventGroupId(actionInit.getActionId());
-	    	vo.setContactName(null); //overlaps paramNm from CoopAds. not used here.
+	    	vo.setContactName(null); //conflicts with paramNm from CoopAds. not used here.
 	    	
 		try {
 			return ac.update(req, vo);
@@ -395,7 +405,9 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		user.setEmailAddress(email);
 		user.setName(name);
 		try {
+			//get the profileId for this person, we won't alter their account.
 			user.setProfileId(pm.checkProfile(user, dbConn));
+			//if the person doesn't exist in WC, add them.  This should rarely occur once the program ramps up.
 			if (user.getProfileId() == null) pm.updateProfile(user, dbConn);
 		} catch (DatabaseException de) {
 			log.error("could not save person's profile to WC", de);
@@ -411,6 +423,10 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	 * @throws SQLException
 	 */
 	private void saveNewspaperAd(String eventPostcardId, SMTServletRequest req) throws SQLException {
+		//pass the seminar along with this, so emails can be sent.
+		DePuyEventSeminarVO sem = fetchSeminar(req, ReportType.summary);
+		req.setAttribute("postcard", sem);
+		
 		CoopAdsActionV2 caa = new CoopAdsActionV2();
 		caa.setAttributes(attributes);
 		caa.setDBConnection(dbConn);
@@ -672,20 +688,48 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		req.setAttribute("postcard", sem);
 		
 		// send approval request email
-		AbstractPostcardEmailer epe = AbstractPostcardEmailer.newInstance(null, attributes, dbConn);
-		epe.sendApprovalRequest(req);
+		PostcardEmailer epe = new PostcardEmailer(attributes, dbConn);
+		epe.sendApprovalRequest(req); //notification to site admin
 		
 		//reload the seminar with complaince form report
 		sem = fetchSeminar(req, ReportType.compliance);
 		req.setAttribute("postcard", sem);
-		epe.sendSRCApprovalRequest(req);
+		epe.sendAdvApprovalRequest(req); //request for approval from ASM (Adv. team leaders)
 
 		return;
 	}
 	
+
 	/**
 	 * called when the admin approves a postcard/events
-	 * 
+	 *  ADV-team approval - they do this themselves after reviewing the 
+	 *  compliance PDF we emailed during submitPostcard()
+	 * @param req
+	 * @param eventPostcardId
+	 * @throws ActionException
+	 */
+	private void advApprovePostcard(SMTServletRequest req, String eventPostcardId)
+			throws ActionException {
+		// change the postcard status to approved
+		this.changePostcardStatus(EventFacadeAction.STATUS_PENDING_PREV_ATT, eventPostcardId);
+		message = "The Seminar was Approved";
+
+
+		// get the postcard data for emailing & approving each event
+		DePuyEventSeminarVO sem = fetchSeminar(req, ReportType.summary);
+		req.setAttribute("postcard", sem);
+		
+		// send approval request email
+		PostcardEmailer epe = new PostcardEmailer(attributes, dbConn);
+		epe.sendAdvApproved(req);
+
+		return;
+	}
+	
+	
+	/**
+	 * called when the SRC admin approves a postcard/events
+	 * The site admin inputs this approval, which fires an email announcing the milestone
 	 * @param req
 	 * @param eventPostcardId
 	 * @throws ActionException
@@ -695,68 +739,14 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		// change the postcard status to approved
 		this.changePostcardStatus(EventFacadeAction.STATUS_APPROVED, eventPostcardId);
 		message = "The Seminar was approved by SRC";
-//
-//		// get the postcard data for emailing & approving each event
-//		req.setParameter("reqType", "report");
-//		req.setParameter("rptType", Integer.valueOf(LeadsDataTool.POSTCARD_SUMMARY_PULL).toString());
-//		
-//		DePuyEventSeminarVO sem = fetchSeminar(req);
-//		req.setAttribute("postcard", sem);
-//
-//		// send notification emails w/postcard data
-//		AbstractPostcardEmailer epe = AbstractPostcardEmailer.newInstance(null, attributes, dbConn);
-//
-//		// send owner "event approved" response email
-//		log.debug("starting rep notification email");
-//		epe.sendApprovedResponse(req);
-//
-//		// email vendor, also sends to DePuy proj managers (CC: on email)
-//		log.debug("starting vendor notification email");
-//		epe.sendVendorSummary(req);
-//		log.debug("completed vendor notification email");
-//
-//		// email territory admin and rep the pre-auth paperwork
-//		log.debug("starting pre-auth documents email");
-//		epe.sendPreAuthPaperwork(req);
-//		log.debug("completed pre-auth documents email");
-
-		return;
-	}
-	
-
-	/**
-	 * called when the admin approves a postcard/events
-	 * 
-	 * @param req
-	 * @param eventPostcardId
-	 * @throws ActionException
-	 */
-	private void approvePostcard(SMTServletRequest req, String eventPostcardId)
-			throws ActionException {
-		// change the postcard status to approved
-		this.changePostcardStatus(EventFacadeAction.STATUS_PENDING_PREV_ATT, eventPostcardId);
-		message = "The Seminar was Approved";
-
+		
 		// get the postcard data for emailing & approving each event
 		DePuyEventSeminarVO sem = fetchSeminar(req, ReportType.summary);
 		req.setAttribute("postcard", sem);
-//
-//		// send notification emails w/postcard data
-//		AbstractPostcardEmailer epe = AbstractPostcardEmailer.newInstance(null, attributes, dbConn);
-//
-//		// send owner "event approved" response email
-//		log.debug("starting rep notification email");
-//		epe.sendApprovedResponse(req);
-//
-//		// email vendor, also sends to DePuy proj managers (CC: on email)
-//		log.debug("starting vendor notification email");
-//		epe.sendVendorSummary(req);
-//		log.debug("completed vendor notification email");
-//
-//		// email territory admin and rep the pre-auth paperwork
-//		log.debug("starting pre-auth documents email");
-//		epe.sendPreAuthPaperwork(req);
-//		log.debug("completed pre-auth documents email");
+		
+		// send approval request email
+		PostcardEmailer epe = new PostcardEmailer(attributes, dbConn);
+		epe.sendSrcApproved(req); //captured by the site admin clicking a button that SRC has approved the Seminar
 
 		return;
 	}
@@ -782,6 +772,9 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		} catch (ActionException ae) {
 			log.error("retrievingPostcardInfoForEmails", ae);
 		}
+		
+		//NOTE: we're returning the Seminar VO, but any requested report was
+		//placed on the request object directly.  (See AbstractReportVO intfc)
 		return sem;
 	}
 
@@ -861,7 +854,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		
 		// send notification email to the admins
 		log.debug("starting cancellation email");
-		AbstractPostcardEmailer epe = AbstractPostcardEmailer.newInstance(null, attributes, dbConn);
+		PostcardEmailer epe = new PostcardEmailer(attributes, dbConn);
 		epe.sendPostcardCancellation(req);
 
 		return;
@@ -892,6 +885,15 @@ public class PostcardInsertV2 extends SBActionAdapter {
 			} catch (Exception e) {
 			}
 		}
+
+		// get the postcard data for emailing & approving each event
+		DePuyEventSeminarVO sem = fetchSeminar(req, ReportType.summary);
+		req.setAttribute("postcard", sem);
+		
+		//send an email to the coordinator here...
+		PostcardEmailer epe = new PostcardEmailer(attributes, dbConn);
+		epe.requestPostcardApproval(req);
+		
 	}
 	
 	private void approvePostcardFile(SMTServletRequest req, String eventPostcardId)
@@ -912,11 +914,17 @@ public class PostcardInsertV2 extends SBActionAdapter {
 			message = "Transaction Failed";
 			throw new ActionException(sqle);
 		} finally {
-			try {
-				ps.close();
-			} catch (Exception e) {
-			}
+			try { ps.close(); } catch (Exception e) { }
 		}
+		
+		// get the postcard data for emailing & approving each event
+		DePuyEventSeminarVO sem = fetchSeminar(req, ReportType.summary);
+		req.setAttribute("postcard", sem);
+		
+		//send an email to the Admins and Harmony here...
+		PostcardEmailer epe = new PostcardEmailer(attributes, dbConn);
+		epe.sendPostcardApproved(req);
+		
 	}
 	
 	
@@ -930,8 +938,13 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	private void orderBox(SMTServletRequest req, String eventPostcardId)
 			throws ActionException {
 		log.debug("starting consumable box email");
-		AbstractPostcardEmailer epe = AbstractPostcardEmailer.newInstance(null, attributes, dbConn);
-		//epe.orderConsumableBox(req);
+
+		// get the postcard data for emailing
+		DePuyEventSeminarVO sem = fetchSeminar(req, ReportType.summary);
+		req.setAttribute("postcard", sem);
+		
+		PostcardEmailer epe = new PostcardEmailer(attributes, dbConn);
+		epe.orderConsumableBox(req);
 		message = "Email sent successfully";
 		return;
 	}
@@ -961,10 +974,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 			ps.executeUpdate();
 
 		} finally {
-			try {
-				ps.close();
-			} catch (Exception e) {
-			}
+			try { ps.close(); } catch (Exception e) { }
 		}
 	}
 

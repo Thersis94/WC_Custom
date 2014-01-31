@@ -252,12 +252,4 @@ public class MitekPostcardEmailer extends AbstractPostcardEmailer {
 		return;
 	}
 
-
-	/* (non-Javadoc)
-	 * @see com.depuy.events.AbstractPostcardEmailer#sendSRCApprovalRequest(com.siliconmtn.http.SMTServletRequest)
-	 */
-	@Override
-	public void sendSRCApprovalRequest(SMTServletRequest req) {
-		//not used here
-	}
 }

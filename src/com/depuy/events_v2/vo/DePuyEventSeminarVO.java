@@ -403,6 +403,18 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 		
 		return totalSelectedLeads;
 	}
+	
+	public boolean isDayOf() {
+		Calendar cal = Calendar.getInstance();
+		System.out.println("dayof=" + this.getEarliestEventDate());
+		System.out.println("today=" + cal.getTime());
+		return this.getEarliestEventDate().equals(cal.getTime());
+	}
+	
+	public boolean isComplete() {
+		Calendar cal = Calendar.getInstance();
+		return cal.after(this.getEarliestEventDate());
+	}
 
 	public String getLeadSortType() {
 		return super.getPcAttribute2();
