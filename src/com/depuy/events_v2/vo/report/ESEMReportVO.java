@@ -15,11 +15,16 @@ import com.smt.sitebuilder.action.AbstractSBReportVO;
  ***************************************************************************/
 public class ESEMReportVO extends AbstractSBReportVO {
 
+	public static void main(String [] args) {
+		System.out.println(new String(new ESEMReportVO().generateReport()));
+	}
+	
 	private static final long serialVersionUID = 8396753231530938375L;
 
 	@Override
 	public byte[] generateReport() {
 		StringBuilder sb = new StringBuilder();
+		//Build Header
 		sb.append("<!DOCTYPE html><html><head></head><body>");
 		sb.append("rev. 4/22/13<br/>");
 		sb.append("<center>");
@@ -27,10 +32,10 @@ public class ESEMReportVO extends AbstractSBReportVO {
 		sb.append("Patient Education Seminar<br/>");
 		sb.append("Compliance Acknowledgment</h4>");
 		sb.append("</center>");
-		
+		//Requirements Preamble
 		sb.append("<p>To the best of my knowledge, the <i>DePuy Synthes Joint Reconstruction</i> Patient ");
 		sb.append("Education Seminar scheduled for at ${eventDate} at ${eventTime} will comply with the following requirements.</p>");
-		
+		//Paragraph 1
 		sb.append("<br/><br/><u>Seminar Marketing:</u><br/>");
 		sb.append("<ul><li>No modifications will be made to the seminar marketing templates with the exception of adding the location, date, time, ");
 		sb.append("reservation code and speaker information. Only company created and approved marketing collateral may be used.</li>");
@@ -39,7 +44,7 @@ public class ESEMReportVO extends AbstractSBReportVO {
 		sb.append("<li>Surgeon speaker may send the <i>DePuy Synthes Joint Reconstruction</i> pre-approved and pre-printed postcard invitations to ");
 		sb.append("their own referral list. The surgeon speaker is responsible for ensuring that any such outreach to their own referral base ");
 		sb.append("complies with the HIPAA law and all other applicable legal requirements.</li></ul>");
-		
+		//Paragraph 2
 		sb.append("<br/><br/><u>The Speaker:</u><br/>");
 		sb.append("<ul><li>To the best of my knowledge this person has not been asked to speak as a reward, or encouragement to use <i>DePuy Synthes ");
 		sb.append("Joint Reconstruction</i> products.</li>");
@@ -61,8 +66,8 @@ public class ESEMReportVO extends AbstractSBReportVO {
 			sb.append("well as other surgeons in the area who use <i>DePuy Synthes Joint Reconstruction</i> products.</li></ul></li>");
 		sb.append("<li>The surgeon speaker can talk about the procedures and technologies that he/she uses, provided those uses are <b>not off-");
 		sb.append("label</b> for our products.</li></ul>");
-		
-		sb.append("<br/><br/><u>The Seminar:</u>");
+		//Paragraph 3
+		sb.append("<br/><br/><u>The Seminar:</u><br/>");
 		sb.append("<ul><li>If using a hospital location for the seminar venue the hospital may not be reimbursed for use of a conference room, nor for ");
 		sb.append("food or catering services.</li>");
 		sb.append("<li>During the opening remarks, the <i>DePuy Synthes Joint Reconstruction</i> representative may introduce the surgeon speaker by ");
@@ -75,12 +80,12 @@ public class ESEMReportVO extends AbstractSBReportVO {
 		sb.append("partake in the refreshments provided at the seminar.</li>");
 		sb.append("<li>A meal service will not be provided, but refreshments such as cookies and coffee are acceptable. The refreshment spending ");
 		sb.append("limit is $10 per attendee, which includes the $3 First Aid kit.</li></ul>");
-		
+		//Footer
 		sb.append("<br/><br/>");
 		sb.append("Area Marketing Director's Signature: ${admSignature} Date: ${approvalDt}<br/>");
 		sb.append("I have read and understand the requirements and have reviewed the Surgeon Guideline document with the surgeon speaker.<br/>");
 		sb.append("Seminar Coordinator's Name: ${ownerName} Territory #: ${territoryNo}<br/>");
-		sb.append("Sales representative's Name: ${repName}");
+		sb.append("Sales representative's Name: ${repName}<br/>");
 		sb.append("</body></html>");
 		
 		return sb.toString().getBytes();
