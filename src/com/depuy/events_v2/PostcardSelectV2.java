@@ -165,10 +165,10 @@ public class PostcardSelectV2 extends SBActionAdapter {
 			sql.append("left outer join ").append(customDb).append("DEPUY_EVENT_PERSON_XR pxr on ep.EVENT_POSTCARD_ID=pxr.EVENT_POSTCARD_ID ");
 			sql.append("where (pxr.PROFILE_ID=? or ep.PROFILE_ID=?) and sb.action_group_id=? ");
 		} else {
-			sql.append("where sb.action_group_id=? and ep.status_flg != 0");  //exclude any that haven't been submitted yet.
+			sql.append("where sb.action_group_id=? and ep.status_flg != 0 ");  //exclude any that haven't been submitted yet.
 		}
 		if (ReqType.completed == reqType) {
-			sql.append("and ep.status_flg == ").append(EventFacadeAction.STATUS_COMPLETE).append(" ");
+			sql.append("and ep.status_flg = ").append(EventFacadeAction.STATUS_COMPLETE).append(" ");
 		} else {
 			sql.append("and ep.status_flg != ").append(EventFacadeAction.STATUS_COMPLETE).append(" ");
 		}
