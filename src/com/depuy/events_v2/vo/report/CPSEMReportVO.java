@@ -19,16 +19,15 @@ public class CPSEMReportVO extends AbstractSBReportVO {
 	public static void main(String [] Args) {
 		System.out.println(new String(new CPSEMReportVO().generateReport()));
 	}
-	/**
-	 * 
-	 */
+
 	private static final long serialVersionUID = -1902614724466857758L;
 
 	@Override
 	public byte[] generateReport() {
 		StringBuilder sb = new StringBuilder();
 		//Build Header
-		sb.append("<!DOCTYPE html><html><head></head><body>");
+		sb.append("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">");
+		sb.append("<html><head><title>Compliance Form</title></head><body>");
 		sb.append("rev. 4/22/13");
 		sb.append("<center>");
 		sb.append("<h4><i>DePuy Synthes Joint Reconstruction</i><br/>");
@@ -56,18 +55,17 @@ public class CPSEMReportVO extends AbstractSBReportVO {
 		sb.append("Synthes Joint Reconstruction</i>.</li>");
 		sb.append("<li>The surgeon speaker will not make any modifications to the pre-approved presentation slide deck. The additional slides ");
 		sb.append("within the deck (i.e. female knee, computer assisted surgery, Anterior Approach) may be used or not used, based on ");
-		sb.append("relevance to the surgeon speaker's knowledge.</li>");
+		sb.append("relevance to the surgeon speaker's knowledge.<br/>");
 			//subIndent
-			sb.append("<ul><li>NOTE: The presentation slide deck will be provided to the surgeon speaker to prepare for the seminar, but the ");
-			sb.append("presentation that will be used during the seminar will be supplied by the Seminar Coordinator the day of the seminar.</li></ul>");
-		sb.append("<li>The speaker will not market him/herself, his/her practice or his/her hospital during the seminar. For Example:</li>");
+			sb.append("NOTE: The presentation slide deck will be provided to the surgeon speaker to prepare for the seminar, but the ");
+			sb.append("presentation that will be used during the seminar will be supplied by the Seminar Coordinator the day of the seminar.</li>");
+		sb.append("<li>The speaker will not market him/herself, his/her practice or his/her hospital during the seminar. For Example:<br/>");
 			//subIndent
 			sb.append("<ul><li>The speaker will not have practice/hospital brochures at the seminar.</li>");
-			sb.append("<li>The speaker will not hand out business cards to attendees</li>");
-				//sub-subIndent
-				sb.append("<ul><li>Note: The speaker may not hand out a business card, even if asked by an attendee. However, the ");
-				sb.append("attendee may be directed to the <i>DePuy Synthes Joint Reconstruction</i> Surgeon Locator list which will include the ");
-				sb.append("speaking surgeon as well as other surgeons in the area who use <i>DePuy Synthes Joint Reconstruction</i> products.</li></ul></ul>");
+			sb.append("<li>The speaker will not hand out business cards to attendees<br/>");
+			sb.append("Note: The speaker may not hand out a business card, even if asked by an attendee. However, the ");
+			sb.append("attendee may be directed to the <i>DePuy Synthes Joint Reconstruction</i> Surgeon Locator list which will include the ");
+			sb.append("speaking surgeon as well as other surgeons in the area who use <i>DePuy Synthes Joint Reconstruction</i> products.</li></ul></li>");
 		
 		sb.append("<li>The surgeon speaker can talk about the procedures and technologies that he/she uses, provided those uses are <b>not off-");
 		sb.append("label</b> for our products.</li></ul>");
@@ -91,7 +89,7 @@ public class CPSEMReportVO extends AbstractSBReportVO {
 		sb.append("<br/><br/>");
 		sb.append("Area Marketing Director's Signature: ${admSignature} Date: ${approvalDt}<br/>");
 		sb.append("I have read and understand the requirements and have reviewed the Surgeon Guideline document with the surgeon speaker.<br/>");
-		sb.append("Seminar Coordinator's Name: ${ownerName} Territory #: ${territoryNo} <br/>");
+		sb.append("Seminar Coordinator's Name: ${ownerName}<br/>Territory #: ${territoryNo} <br/>");
 		sb.append("Sales representative's Name: ${repName}<br/>");
 		sb.append("</body></html>");
 		return sb.toString().getBytes();

@@ -25,7 +25,8 @@ public class ESEMReportVO extends AbstractSBReportVO {
 	public byte[] generateReport() {
 		StringBuilder sb = new StringBuilder();
 		//Build Header
-		sb.append("<!DOCTYPE html><html><head></head><body>");
+		sb.append("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">");
+		sb.append("<html><head><title>Compliance Form</title></head><body>");
 		sb.append("rev. 4/22/13<br/>");
 		sb.append("<center>");
 		sb.append("<h4><i>DePuy Synthes Joint Reconstruction</i><br/>");
@@ -84,7 +85,7 @@ public class ESEMReportVO extends AbstractSBReportVO {
 		sb.append("<br/><br/>");
 		sb.append("Area Marketing Director's Signature: ${admSignature} Date: ${approvalDt}<br/>");
 		sb.append("I have read and understand the requirements and have reviewed the Surgeon Guideline document with the surgeon speaker.<br/>");
-		sb.append("Seminar Coordinator's Name: ${ownerName} Territory #: ${territoryNo}<br/>");
+		sb.append("Seminar Coordinator's Name: ${ownerName}<br/>Territory #: ${territoryNo}<br/>");
 		sb.append("Sales representative's Name: ${repName}<br/>");
 		sb.append("</body></html>");
 		

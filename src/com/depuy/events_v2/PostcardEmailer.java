@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.apache.log4j.Logger;
 
+
 // SMT BaseLibs
 import com.depuy.events_v2.vo.DePuyEventSeminarVO;
 import com.depuy.events_v2.vo.DePuyEventSurgeonVO;
@@ -17,8 +18,8 @@ import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
-import com.siliconmtn.util.StringUtil;
 
+import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -209,6 +210,7 @@ public class PostcardEmailer {
 
 		// build the attachment
 		AbstractSBReportVO rpt = (AbstractSBReportVO) req.getAttribute(Constants.BINARY_DOCUMENT);
+		AbstractSBReportVO compliance = (AbstractSBReportVO) req.getAttribute("complianceForm");
 
 		try {
 			// Create the mail object and send
@@ -222,6 +224,7 @@ public class PostcardEmailer {
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
 			mail.addAttachment(rpt.getFileName(), rpt.generateReport());
+			mail.addAttachment(compliance.getFileName(), compliance.generateReport());
 
 			MessageSender ms = new MessageSender(attributes, dbConn);
 			ms.sendMessage(mail);
@@ -257,11 +260,12 @@ public class PostcardEmailer {
 		msg.append(surg.getSurgeonName()).append("\r\r");
 		msg.append(event.getEventName()).append("\r");
 		msg.append(event.getAddressText()).append("\r");
-		msg.append(event.getAddress2Text()).append("\r");
+		if (StringUtil.checkVal(event.getAddress2Text()).length() > 0) 
+			msg.append(event.getAddress2Text()).append("\r");
 		msg.append(event.getCityName()).append(" ").append(event.getStateCode());
 		msg.append(", ").append(event.getZipCode()).append("\r\r");
-		msg.append("If you have any questions please contact ").append(site.getAdminName());
-		msg.append(" at 303-945-5184 or ").append(site.getAdminEmail()).append("\r\r");
+		msg.append("If you have any questions please contact Stefanie Sax ");
+		msg.append("at 303-945-5184 or stef@siliconmtn.com\r\r");
 		
 		// build the attachment
 		AbstractSBReportVO rpt = (AbstractSBReportVO) req.getAttribute(Constants.BINARY_DOCUMENT);
@@ -303,42 +307,72 @@ public class PostcardEmailer {
 		StringBuilder subject = new StringBuilder();
 		subject.append("Consumable Box request - Seminar " + sem.getRSVPCodes());
 
-		// build the attachment
-		AbstractSBReportVO rpt = (AbstractSBReportVO) req.getAttribute(Constants.BINARY_DOCUMENT);
-		
 		StringBuilder msg = new StringBuilder();
 		msg.append("The Seminar Coordinator for DePuy ").append(sem.getJointLabel());
 		msg.append(" Seminar #").append(sem.getEvents().get(0).getRSVPCode());
-		msg.append(" has submitted a request for a Consumable Box. ");
-		msg.append("Please ship a Consumable Box to the address provided below.\r\r");
-		msg.append("Type(s) Needed:\r");
-		msg.append(StringUtil.getToString(req.getParameterValues("boxType"), false, true, ", "));
+		msg.append(" has submitted a request for a Consumable Box.  ");
+		msg.append("Please ship the requested seminar supplies to the person listed  below. \r\r");
+		msg.append("Seminar #: ").append(sem.getRSVPCodes()).append("\r");
+		msg.append("Seminar Date: ").append(sem.getEarliestEventDate()).append("\r");
+		msg.append("Seminar Type: ").append(sem.getEvents().get(0).getEventTypeDesc()).append("\r\r");
+		msg.append("Consumable Type(s) Requested:\r");
+		String[] vals = req.getParameterValues("boxType");
+		for (int i=0; i < vals.length; i++) {
+			if (i > 0) msg.append(", ");
+			msg.append(vals[i]);
+		}
 		msg.append("\r\rMailing Address:\r");
 		msg.append(req.getParameter("mailingAddress")).append("\r\r");
 		msg.append("For more information about this Seminar please visit the website.\r");
 		msg.append(site.getFullSiteAlias()).append("/?reqType=summary&eventPostcardId=");
 		msg.append(sem.getEventPostcardId()).append("\r\r");
 
-
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			mail.addCC(sem.getOwner().getEmailAddress());
+			mail.addRecipient("tkumfer@printlinc.net"); // Terrie
 			mail.addCC(site.getAdminEmail());
 			mail.addCC("nbeasle@its.jnj.com");
-			mail.addRecipient("Jenn.Davis@hmktgroup.com"); // Jenn Parrish-Davis);
-			mail.addRecipient("sterling.hoham@hmktgroup.com"); // Sterling Hoham
-			mail.addRecipient("amy.zimmerman@hmktgroup.com");
 			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
-			mail.addAttachment(rpt.getFileName(), rpt.generateReport());
 
 			MessageSender ms = new MessageSender(attributes, dbConn);
 			ms.sendMessage(mail);
 			log.debug("EventPostcardSubmit Admin Email Sent");
 		} catch (Exception me) {
 			log.error("EventPostcardSubmitEmail", me);
+		}
+		return;
+	}
+	
+	
+	protected void orderConsumableBoxConfirmation(SMTServletRequest req) {
+		// send email to site admin
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
+		StringBuilder subject = new StringBuilder();
+		subject.append("Consumable Box request confirmation - Seminar " + sem.getRSVPCodes());
+		
+		StringBuilder msg = new StringBuilder();
+		msg.append("Your order for Seminar Supplies has been sent. You should ");
+		msg.append("plan to receive your order within 7-10 days. Should you need ");
+		msg.append("it before then, please contact Terrie Kumfer at Lincoln Printing; ");
+		msg.append("tkumfer@printlinc.net or 260-414-8368.\r\r");
+		
+		try {
+			// Create the mail object and send
+			EmailMessageVO mail = new EmailMessageVO();
+			mail.addRecipient(sem.getOwner().getEmailAddress());
+			mail.setSubject(subject.toString());
+			mail.setFrom(site.getMainEmail());
+			mail.setTextBody(msg.toString());
+
+			MessageSender ms = new MessageSender(attributes, dbConn);
+			ms.sendMessage(mail);
+			log.debug("orderConsumableBoxConfirmation Email Sent");
+		} catch (Exception me) {
+			log.error("orderConsumableBoxConfirmationEmail", me);
 		}
 		return;
 	}

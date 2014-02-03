@@ -12,8 +12,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+
 // J2EE 1.4.0 Libs
 import javax.servlet.http.HttpSession;
+
 
 //wc-depuy libs
 import com.depuy.events.vo.CoopAdVO;
@@ -30,6 +32,7 @@ import com.siliconmtn.security.UserDataVO;
 
 // SB Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.action.event.EventFacadeAction;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -165,9 +168,9 @@ public class PostcardSelectV2 extends SBActionAdapter {
 			sql.append("where sb.action_group_id=? and ep.status_flg != 0");  //exclude any that haven't been submitted yet.
 		}
 		if (ReqType.completed == reqType) {
-			sql.append("and e.start_dt < getDate()-2");
+			sql.append("and ep.status_flg == ").append(EventFacadeAction.STATUS_COMPLETE).append(" ");
 		} else {
-			sql.append("and e.start_dt >= getDate()-2");
+			sql.append("and ep.status_flg != ").append(EventFacadeAction.STATUS_COMPLETE).append(" ");
 		}
 		sql.append("group by e.event_entry_id, ep.event_postcard_id, e.RSVP_CODE_TXT, e.start_dt, et.type_nm, ep.PROFILE_ID, ");
 		sql.append("e.event_nm, s.surgeon_nm, e.city_nm, e.state_cd, ep.status_flg, lxr.JOINT_ID, cad.run_dates_txt ");
@@ -256,7 +259,8 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		DePuyEventSeminarVO vo = null;
 		
 		StringBuilder sql = new StringBuilder();
-		sql.append("select *, ep.profile_id as owner_profile_id, pxr.profile_id as person_profile_id, ep.status_flg as pc_status_flg  ");
+		sql.append("select *, ep.profile_id as owner_profile_id, pxr.profile_id as person_profile_id, ");
+		sql.append("ep.status_flg as pc_status_flg, pxr.create_dt as approval_dt  ");
 		sql.append("from EVENT_ENTRY e ");
 		sql.append("inner join EVENT_TYPE et on e.EVENT_TYPE_ID=et.EVENT_TYPE_ID ");
 		sql.append("inner join EVENT_GROUP eg on et.ACTION_ID=eg.ACTION_ID ");
@@ -289,8 +293,9 @@ public class PostcardSelectV2 extends SBActionAdapter {
 					vo.setProfileId(rs.getString("owner_profile_id"));
 					profileIds.add(vo.getProfileId());
 				}
-				//REP & TGM will need to be retrieved from ProfileManager
+				//REP, TGM & ADV (approver) will need to be retrieved from ProfileManager
 				PersonVO p = new PersonVO(rs.getString("postcard_role_cd"), rs.getString("person_profile_id"));
+				p.setApproveDate(rs.getDate("approval_dt"));
 				vo.addPerson(p);
 				profileIds.add(rs.getString("person_profile_id"));
 				

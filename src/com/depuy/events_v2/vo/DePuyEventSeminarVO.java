@@ -406,8 +406,10 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	
 	public boolean isDayOf() {
 		Calendar cal = Calendar.getInstance();
-		System.out.println("dayof=" + this.getEarliestEventDate());
-		System.out.println("today=" + cal.getTime());
+		cal.set(Calendar.HOUR, 0);
+		cal.set(Calendar.MINUTE, 0);
+		cal.set(Calendar.SECOND, 0);
+		cal.set(Calendar.MILLISECOND, 0);
 		return this.getEarliestEventDate().equals(cal.getTime());
 	}
 	

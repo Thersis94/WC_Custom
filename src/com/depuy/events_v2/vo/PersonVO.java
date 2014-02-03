@@ -1,5 +1,7 @@
 package com.depuy.events_v2.vo;
 
+import java.util.Date;
+
 import com.siliconmtn.security.UserDataVO;
 
 /****************************************************************************
@@ -16,9 +18,10 @@ public class PersonVO extends UserDataVO {
 	
 	private static final long serialVersionUID = 388704499390927423L;
 
-	public enum Role { TGM, REP }
+	public enum Role { TGM, REP, ADV }
 	
 	private Role roleCode = null;
+	private Date approveDate = null; //this only matters for the ADV roles
 	
 	public PersonVO() {
 		super();
@@ -79,5 +82,13 @@ public class PersonVO extends UserDataVO {
 	public String getEmailAddressUsername() {
 		if (emailAddress == null) return null;
 		return emailAddress.substring(0, emailAddress.indexOf("@"));
+	}
+
+	public Date getApproveDate() {
+		return approveDate;
+	}
+
+	public void setApproveDate(Date approveDate) {
+		this.approveDate = approveDate;
 	}
 }

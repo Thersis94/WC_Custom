@@ -23,7 +23,8 @@ public class CFSEMReportVO extends AbstractSBReportVO {
 	public byte[] generateReport() {
 		StringBuilder sb = new StringBuilder();
 		//Build header
-		sb.append("<!DOCTYPE html><html><head></head><body>");
+		sb.append("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">");
+		sb.append("<html><head><title>Compliance Form</title></head><body>");
 		sb.append("rev. 4/22/13");
 		sb.append("<center>");
 		sb.append("<h4><i>DePuy Synthes Joint Reconstruction</i><br/>");
@@ -57,11 +58,11 @@ public class CFSEMReportVO extends AbstractSBReportVO {
 		sb.append("<li>The surgeon speaker meets the requirements needed to speak at the seminar.</li>");
 		sb.append("<li>The surgeon speaker will not make any modifications to the pre-approved presentation slide deck. The additional slides ");
 		sb.append("within the deck (i.e. female knee, computer assisted surgery, Anterior Approach) may be used or not used, based on ");
-		sb.append("relevance to the surgeon speaker's knowledge.</li>");
+		sb.append("relevance to the surgeon speaker's knowledge.<br/>");
 			//indented sub list
-			sb.append("<ul><li>NOTE: The presentation slide deck will be provided to the surgeon speaker to prepare for the seminar, but the ");
+			sb.append("NOTE: The presentation slide deck will be provided to the surgeon speaker to prepare for the seminar, but the ");
 			sb.append("presentation that will be used during the seminar will be supplied by the Seminar Coordinator the day of the ");
-			sb.append("seminar.</li></ul>");
+			sb.append("seminar.</li>");
 		sb.append("<li>The surgeon speaker can talk about the procedures and technologies that he/she uses, provided those uses are <b>not off-");
 		sb.append("label</b> for our products.</li></ul>");
 
@@ -84,7 +85,7 @@ public class CFSEMReportVO extends AbstractSBReportVO {
 		sb.append("<br/><br/>");
 		sb.append("Area Marketing Director's Signature: ${admSignature} Date: ${approvalDt} <br/>");
 		sb.append("I have read and understand the requirements and have reviewed the Surgeon Guideline document with the surgeon speaker.<br/>");
-		sb.append("Seminar Coordinator's Name: ${ownerName} Territory #: ${territoryNo} <br/>");
+		sb.append("Seminar Coordinator's Name: ${ownerName}<br/>Territory #: ${territoryNo} <br/>");
 		sb.append("Sales representative's Name: ${repName} <br/>");
 		sb.append("</body></html>");
 	

@@ -57,14 +57,22 @@ public class ComplianceReportVO extends AbstractSBReportVO {
 
 	public void setData(Object o) {
 		this.sem = (DePuyEventSeminarVO) o;
+		setFileName("Seminar " + sem.getRSVPCodes() + " Compliance Form.pdf");
 	}
 
 	public byte[] generateReport() {
-		// load the proper html-formated report
-		
-		//substitute in the replacement items using FreeMarker
 		AbstractSBReportVO rpt = null;
 		EventEntryVO event = sem.getEvents().get(0);
+		log.debug("printing PDF for "+ event.getEventTypeCd());
+		
+		PersonVO adv = null;
+		for (PersonVO p : sem.getPeople()) {
+			if (p.getRoleCode() != Role.ADV) continue;
+			adv = p;
+			break;
+		}
+		
+		// load the proper html-formated report
 		if (event.getEventTypeCd().equalsIgnoreCase("CFSEM")) {
 			rpt = new CFSEMReportVO();
 		} else if (event.getEventTypeCd().equalsIgnoreCase("CPSEM")) {
@@ -72,23 +80,26 @@ public class ComplianceReportVO extends AbstractSBReportVO {
 		} else {
 			rpt = new ESEMReportVO();
 		}
+		
 		//run Freemarker replacements to populate the compliance form for this seminar
 		Map<String, Object> data = new HashMap<String, Object>();
-		data.put("eventDt", Convert.formatDate(event.getStartDate(), Convert.DATE_LONG));
+		data.put("eventDate", Convert.formatDate(event.getStartDate(), Convert.DATE_LONG));
 		data.put("eventTime", event.getLocationDesc());
-		data.put("admSignature", "_____________________");
-		data.put("approvalDt", "_______");
+		data.put("admSignature", "<u>&nbsp; &nbsp;" + adv.getFullName() + "&nbsp; &nbsp;</u>");
+		data.put("approvalDt", "<u>&nbsp; &nbsp;" + adv.getApproveDate() + "&nbsp; &nbsp;</u>");
 		data.put("ownerName", sem.getOwner().getFullName());
 		data.put("territoryNo", sem.getTerritoryNumber());
 		for (PersonVO p : sem.getPeople()) {
 			if (p.getRoleCode() == Role.TGM) continue;
-			data.put("repName", p.getFullName()); //just take the first affiliated rep
-			break;
+			//combine both reps into one String
+			String rep =  p.getFullName();
+			if (data.containsKey("repName")) 	rep += ", " + data.get("repName");
+			data.put("repName", rep);
 		}
 		
 		StringBuffer buf = null;
 		try {
-			buf = MessageParser.getParsedMessage(rpt.generateReport().toString(), data, event.getEventTypeCd());
+			buf = MessageParser.getParsedMessage(new String(rpt.generateReport()), data, event.getEventTypeCd());
 		} catch (ParseException e) {
 			log.error("could not generate PDF for Seminar", e);
 			buf = new StringBuffer("The compliance form could not be populated.  Please contact the site administrator for assistance");
