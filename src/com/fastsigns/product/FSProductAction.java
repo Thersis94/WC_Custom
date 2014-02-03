@@ -143,9 +143,19 @@ public class FSProductAction extends SBActionAdapter {
 		// Assign the page title and other data
 		this.assignPageInfo(req, mod);
 		
+		// We only set the canonical url if we do have a page that we want it to be set too
 		if (pId.length() > 0) {
 			PageVO page = (PageVO)req.getAttribute(Constants.PAGE_DATA);
-			page.setCanonicalPageUrl("/" + req.getParameter("prefix")+pId.toLowerCase());
+			// This set of if/else tests determines how deep we are in the product structure.
+			// pId -> prodChildKey -> catImageKey
+			if (prodChildKey != null && prodChildKey.length() > 0) {
+				if (catImageKey != null && catImageKey.length() > 0)
+					page.setCanonicalPageUrl("/" + req.getParameter("prefix")+prodChildKey.toLowerCase() + "/" + catImageKey.toLowerCase());
+				else
+					page.setCanonicalPageUrl("/" + req.getParameter("prefix")+prodChildKey.toLowerCase());
+			}
+			else
+				page.setCanonicalPageUrl("/" + req.getParameter("prefix")+pId.toLowerCase());
 		}
 	}
 	
