@@ -350,7 +350,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		
 		//start by deleting the old data, since this is an _XR table this is easier than a double-cross-reference to do updates.
 		sql.append("delete from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("DEPUY_EVENT_PERSON_XR where postcard_role_cd in ('TGM,'REP') and event_postcard_id=?");
+		sql.append("DEPUY_EVENT_PERSON_XR where postcard_role_cd in ('TGM','REP') and event_postcard_id=?");
 		log.debug(sql + "|" + eventPostcardId);
 		try {
 			ps = dbConn.prepareStatement(sql.toString());
@@ -391,8 +391,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 				ps.setTimestamp(5, Convert.getCurrentTimestamp());
 				ps.addBatch();
 			}
-			if (ps.executeBatch().length < 1) 
-				throw new SQLException(ps.getWarnings());
+			ps.executeBatch();
 
 		} finally {
 			try { ps.close(); } catch (Exception e) { }
@@ -418,7 +417,8 @@ public class PostcardInsertV2 extends SBActionAdapter {
 			//if the person doesn't exist in WC, add them.  This should rarely occur once the program ramps up.
 			if (user.getProfileId() == null) pm.updateProfile(user, dbConn);
 		} catch (DatabaseException de) {
-			log.error("could not save person's profile to WC", de);
+			//these are recoverable, so don't sweat them too much.
+			log.warn("could not save person's profile to WC");
 		}
 		return new GenericVO(user.getProfileId(), roleCd);
 	}

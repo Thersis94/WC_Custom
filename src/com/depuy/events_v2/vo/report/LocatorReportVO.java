@@ -13,6 +13,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+
 // DOM4J libs
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
@@ -23,6 +24,7 @@ import org.dom4j.io.SAXReader;
 // Log4j 1.2.8
 import org.apache.log4j.Logger;
 
+import com.depuy.events_v2.vo.DePuyEventSeminarVO;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.PhoneNumberFormat;
@@ -35,20 +37,18 @@ import com.smt.sitebuilder.action.event.vo.EventEntryVO;
  * <b>Description: Makes a call to the AAMD surgeon locator web service and
  * downloads the appropriate information in XML format.  The data is formatted and returned</b> 
  * <p/>
- * <b>Copyright:</b> Copyright (c) 2006<p/>
+ * <b>Copyright:</b> Copyright (c) 2014<p/>
  * <b>Company:</b> Silicon Mountain Technologies<p/>
- * @author James Camire
+ * @author James McKain
  * @version 2.0
- * @since Oct 3, 2006
+ * @since Feb 3, 2014
  ****************************************************************************/
-@Deprecated
 public class LocatorReportVO extends AbstractSBReportVO {
     private static final long serialVersionUID = 6l;
 	private static Logger log = null;
 	public static final int DEFAULT_RADIUS = 50;  //miles
+	private DePuyEventSeminarVO sem = null;
 	private EventEntryVO event = null;
-	private String productId = "";
-	private Integer radius = DEFAULT_RADIUS;
 	
 	/**
 	 * 
@@ -62,10 +62,8 @@ public class LocatorReportVO extends AbstractSBReportVO {
 	}
 	
 	public void setData(Object o) {
-		EventEntryVO event = (EventEntryVO) o;
-		this.event = event;
-		this.productId = (String) event.getAttribute("groupCd");
-		this.radius = Convert.formatInteger((String)event.getAttribute("radius"), DEFAULT_RADIUS);
+		sem = (DePuyEventSeminarVO) o;
+		event = sem.getEvents().get(0);
 	}
 
 	
@@ -81,7 +79,7 @@ public class LocatorReportVO extends AbstractSBReportVO {
 	public byte[] generateReport() {
 		
 		// Retrieve the XML Data
-		StringBuffer doc = getHeader();
+		StringBuilder doc = getHeader();
 		try {
 			doc.append(formatDisplay(connect(buildUrl())));
 			
@@ -95,8 +93,8 @@ public class LocatorReportVO extends AbstractSBReportVO {
 	}
 	
 	
-	private StringBuffer getHeader() {
-		StringBuffer sb = new StringBuffer();
+	private StringBuilder getHeader() {
+		StringBuilder sb = new StringBuilder();
 		sb.append("<html><head><title>Surgeon Locator Report</title></head><body>");
 		sb.append("<u>Today's Seminar:</u><br/>"); 
 		sb.append(Convert.formatDate(event.getStartDate(),Convert.DATE_LONG)).append("<br/>");
@@ -119,7 +117,7 @@ public class LocatorReportVO extends AbstractSBReportVO {
 	}
 	
 	@SuppressWarnings("rawtypes")
-	private StringBuffer formatDisplay(StringBuffer xml) throws DocumentException {
+	private StringBuilder formatDisplay(StringBuilder xml) throws DocumentException {
 		// Parse out the XML Data and create the root element
 		ByteArrayInputStream bais = null;
 		try {
@@ -132,7 +130,7 @@ public class LocatorReportVO extends AbstractSBReportVO {
 		//Element e = doc.getRootElement();
 		
 		// Create an html formatted table structure
-		StringBuffer out = new StringBuffer();
+		StringBuilder out = new StringBuilder();
 		out.append("<table border=\"0\"><tr><td colspan='3'>");
 		out.append("(Orthopaedic Surgeons are listed in alphabetical order)</td></tr>");
 		
@@ -203,14 +201,14 @@ public class LocatorReportVO extends AbstractSBReportVO {
 		out.append("<tr><td colspan='3'><p>&nbsp;</p></td></tr>\n");
 		out.append("<tr><td colspan='3'>To learn more about joint replacement, ");
 		out.append("or to find additional surgeons in your area, please visit ");
-		if (productId.equals("4")) {
-			out.append("www.hipreplacement.com");
-		} else if (productId.equals("6")) {
-			out.append("www.shoulderpainsolutions.com");
-		} else {
-			out.append("www.kneereplacement.com");
-		}
-		out.append(" or www.aaos.org.</td></tr>\n");
+//		if (productId.equals("4")) {
+//			out.append("www.hipreplacement.com");
+//		} else if (productId.equals("6")) {
+//			out.append("www.shoulderpainsolutions.com");
+//		} else {
+//			out.append("www.kneereplacement.com");
+//		}
+		out.append("www.reallifetested.com or www.aaos.org.</td></tr>\n");
 		out.append("</table>");
 		return out;
 	}
@@ -221,8 +219,8 @@ public class LocatorReportVO extends AbstractSBReportVO {
 	 * @return
 	 * @throws IOException
 	 */
-	private StringBuffer connect(String actionUrl) throws IOException {
-        StringBuffer sb = new StringBuffer();
+	private StringBuilder connect(String actionUrl) throws IOException {
+        StringBuilder sb = new StringBuilder();
         HttpURLConnection conn = null;
         URL url = null;
         try {
@@ -239,7 +237,7 @@ public class LocatorReportVO extends AbstractSBReportVO {
             	}
             }
             
-            // Retrieve the data coming back from MapQuest and Store it in a StringBuffer
+            // Retrieve the data coming back from MapQuest and Store it in a StringBuilder
             BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
             String temp = "";
             while ((temp = in.readLine()) != null) {
@@ -265,7 +263,7 @@ public class LocatorReportVO extends AbstractSBReportVO {
 	 */
 	private String buildUrl() {
 
-		StringBuffer s = new StringBuffer();
+		StringBuilder s = new StringBuilder();
 		s.append("http://www.allaboutmydoc.com/AAMD/locator?");
 		s.append("display_template=/xml_display.jsp&company=1");
 		s.append("&site_location=PATIENT_ACTIVATION&accept=true&country=US&language=en");
@@ -274,11 +272,11 @@ public class LocatorReportVO extends AbstractSBReportVO {
 		s.append("&state=").append(encode(event.getStateCode()));
 		s.append("&zip=").append(encode(event.getZipCode()));
 		//if (productId.equals("4")) { //hip events query by specialty, knee by product
-			s.append("&product=&specialty=").append(productId);
+			s.append("&product=&specialty=").append(sem.getJointCodes());
 		//} else {
 			//s.append("&specialty=&product=").append(productId);
 		//}
-		s.append("&radius=").append(radius);
+		s.append("&radius=").append(DEFAULT_RADIUS);
 		s.append("&order=last");
 		s.append("&resultCount=10");
 		

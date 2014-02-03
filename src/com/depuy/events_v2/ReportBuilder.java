@@ -13,6 +13,7 @@ import com.depuy.events_v2.vo.RsvpBreakdownVO;
 import com.depuy.events_v2.vo.report.ComplianceReportVO;
 import com.depuy.events_v2.vo.report.EventPostalLeadsReportVO;
 import com.depuy.events_v2.vo.report.EventRollupReportVO;
+import com.depuy.events_v2.vo.report.LocatorReportVO;
 import com.depuy.events_v2.vo.report.PostcardSummaryReportVO;
 import com.depuy.events_v2.vo.report.RsvpBreakdownReportVO;
 import com.depuy.events_v2.vo.report.RsvpSummaryReportVO;
@@ -43,7 +44,8 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class ReportBuilder extends SBActionAdapter {
 	
 	public enum ReportType {
-		mailingList, summary, locator, leads, rsvpSummary,  seminarRollup, rsvpBreakdown, /* leadAging, */ compliance;
+		mailingList, summary, locator, leads, rsvpSummary,  seminarRollup, 
+		rsvpBreakdown, /* leadAging, */ compliance
 	}
 
 	public ReportBuilder(ActionInitVO actionInit) {
@@ -96,6 +98,10 @@ public class ReportBuilder extends SBActionAdapter {
 //			case leadAging:
 //				rpt = this.generateLeadsAgingReport();
 //				break;
+			
+			case locator: 
+				rpt = this.generateLocatorReport(data);
+				break;
 		}
 		
 		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, Boolean.TRUE);
@@ -248,6 +254,13 @@ public class ReportBuilder extends SBActionAdapter {
 		}
 		rpt.setData(eventsList);
 		
+		return rpt;
+	}
+	
+	
+	public AbstractSBReportVO generateLocatorReport(Object data) {
+		LocatorReportVO rpt = new LocatorReportVO();
+		rpt.setData(data);
 		return rpt;
 	}
 	
