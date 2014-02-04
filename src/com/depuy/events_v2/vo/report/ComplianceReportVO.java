@@ -65,7 +65,7 @@ public class ComplianceReportVO extends AbstractSBReportVO {
 		EventEntryVO event = sem.getEvents().get(0);
 		log.debug("printing PDF for "+ event.getEventTypeCd());
 		
-		PersonVO adv = null;
+		PersonVO adv = new PersonVO(); //if there isn't one yet, we'll need this VO
 		for (PersonVO p : sem.getPeople()) {
 			if (p.getRoleCode() != Role.ADV) continue;
 			adv = p;
