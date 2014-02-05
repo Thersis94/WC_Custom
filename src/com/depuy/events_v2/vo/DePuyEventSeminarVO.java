@@ -109,6 +109,12 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	    	if (db.getIntVal("shoulder", rs) > 0) joints.add("6");
 	    	
 	    	rsvpCount = db.getIntVal("rsvp_no", rs);
+	    	
+	    	String runDates = db.getStringVal("run_dates_txt", rs);
+	    	if (runDates != null) {
+	    		this.newspaperAd = new CoopAdVO();
+	    		this.newspaperAd.setAdDatesText(runDates);
+	    	}
 	    db = null;
 	    return this;
     }
