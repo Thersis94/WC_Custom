@@ -82,13 +82,13 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 		}
 		req.setAttribute("coopAdId", vo.getCoopAdId());
 
-		// grab the full VO from the database for use in the emails below...
-		vo = retrieve(vo.getCoopAdId(), vo.getEventPostcardId()).get(0);
-
 		// radio ads send no emails.
 		if ("radio".equalsIgnoreCase(vo.getAdType()) || "eventInfo".equals(req.getParameter("reqType")))
 			return;
 
+		// grab the full VO from the database for use in the emails below...
+		vo = retrieve(vo.getCoopAdId(), vo.getEventPostcardId()).get(0);
+		
 		// avoid nulls ahead when we compare statusFlgs
 		if (vo.getStatusFlg() == null)
 			vo.setStatusFlg(0);
@@ -123,9 +123,9 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 			// log.debug("sending client submitted email");
 			// emailer.notifyAdminOfAdSubmittal(vo, site, user, req);
 
-		} else if (reqType.equals("coopAdsSendApproval")) {
+		} else if (PENDING_CLIENT_APPROVAL == vo.getStatusFlg()) {
 			log.debug("sending client's approval notice email");
-			if ("CFSEM".equalsIgnoreCase(req.getParameter("eventTypeCd"))) {
+			if ("CFSEM".equalsIgnoreCase(sem.getEvents().get(0).getEventTypeCd())) {
 				// ask the Surgeon to approve their portion
 				emailer.requestAdApprovalOfSurgeon(sem, site);
 			}

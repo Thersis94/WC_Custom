@@ -61,7 +61,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	public enum ReqType {
 		eventInfo, submitSeminar, srcApproveSeminar, approveSeminar, leads,
 		cancelSeminar, orderBox, uploadPostcard, approvePostcardFile, uploadAdFile, 
-		approveNewspaperAd, postseminar
+		approveNewspaperAd, postseminar, coopAdsSurgeonApproval
 	}
 
 	public PostcardInsertV2() {
@@ -130,6 +130,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 					
 				case submitSeminar:
 					this.submitPostcard(req, eventPostcardId);
+					nextPage = "status";
 					break;
 					
 				case approveSeminar:
@@ -146,6 +147,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 					
 				case uploadAdFile:
 				case approveNewspaperAd:
+				case coopAdsSurgeonApproval:
 					saveNewspaperAd(eventPostcardId, req);
 					break;
 				
@@ -200,6 +202,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	 */
 	private String saveEventPostcard(SMTServletRequest req, SiteVO site, UserDataVO user, String pkId) throws SQLException {
 		StringBuilder sql = new StringBuilder();
+		String label = req.getParameter("postcardLabel");
 		if (pkId != null) {
 			sql.append("update event_postcard set update_dt=?, quantity_no=?, ");
 			sql.append("mailing_addr_txt=?, label_txt=?, content_no=?, territory_no=? ");
@@ -208,6 +211,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 			sql.append("insert into event_postcard (organization_id, profile_id, ");
 			sql.append("create_dt, quantity_no, mailing_addr_txt, label_txt, content_no, ");
 			sql.append("territory_no, event_postcard_id) values (?,?,?,?,?,?,?,?,?)");
+			if (label == null || label.length() == 0) label = "Local Orthopaedic Surgeon";
 		}
 		log.debug("saving event postcard: " + sql);
 
@@ -223,7 +227,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 			ps.setTimestamp(x++, Convert.getCurrentTimestamp());
 			ps.setInt(x++, Convert.formatInteger(req.getParameter("postcardQuantity"), 0));
 			ps.setString(x++, req.getParameter("postcardMailingAddress"));
-			ps.setString(x++, req.getParameter("postcardLabel"));
+			ps.setString(x++, label);
 			ps.setString(x++, req.getParameter("contentNo"));
 			ps.setInt(x++, Convert.formatInteger(req.getParameter("territoryNumber")));
 			ps.setString(x++, pkId);
