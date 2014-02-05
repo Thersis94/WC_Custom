@@ -86,7 +86,7 @@ public class ComplianceReportVO extends AbstractSBReportVO {
 		data.put("eventDate", Convert.formatDate(event.getStartDate(), Convert.DATE_LONG));
 		data.put("eventTime", event.getLocationDesc());
 		data.put("admSignature", "<u>&nbsp; &nbsp;" + adv.getFullName() + "&nbsp; &nbsp;</u>");
-		data.put("approvalDt", "<u>&nbsp; &nbsp;" + adv.getApproveDate() + "&nbsp; &nbsp;</u>");
+		data.put("approvalDt", "<u>&nbsp; &nbsp;" + Convert.formatDate(adv.getApproveDate(), Convert.DATE_SLASH_PATTERN) + "&nbsp; &nbsp;</u>");
 		data.put("ownerName", sem.getOwner().getFullName());
 		data.put("territoryNo", sem.getTerritoryNumber());
 		for (PersonVO p : sem.getPeople()) {

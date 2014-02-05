@@ -66,7 +66,8 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 		CoopAdVO vo = new CoopAdVO(req);
 
 		// record the transaction
-		if (reqType.equals("coopAdsApproval")) {
+		if (reqType.equals("approveNewspaperAd")) {
+			req.setParameter("adStatusFlg", "" + CLIENT_APPROVED_AD);
 			this.saveAdApproval(req);
 		} else if (reqType.equals("coopAdsSurgeonApproval")) {
 			this.saveSurgeonsAdApproval(req);
