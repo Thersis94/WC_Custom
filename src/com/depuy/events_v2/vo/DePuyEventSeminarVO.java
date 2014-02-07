@@ -88,6 +88,7 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	    super.setProfileId(db.getStringVal("profile_id", rs));
 	    super.setPostcardTypeFlg(db.getIntegerVal("content_no", rs));
 	    super.setAuthorizationText(db.getStringVal("authorization_txt", rs));
+	    super.setPostcardFileStatusFlg(db.getIntVal("postcard_file_status_no", rs));
 	    
 	    List<EventEntryVO> lst = new ArrayList<EventEntryVO>();
 	    EventEntryVO event = new EventEntryVO();
@@ -111,11 +112,11 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	    	rsvpCount = db.getIntVal("rsvp_no", rs);
 	    	
 	    	String runDates = db.getStringVal("run_dates_txt", rs);
-	    	if (runDates != null) {
-	    		this.newspaperAd = new CoopAdVO();
-	    		this.newspaperAd.setAdDatesText(runDates);
-	    	}
-	    db = null;
+    		this.newspaperAd = new CoopAdVO();
+    		this.newspaperAd.setAdDatesText(runDates);
+    		this.newspaperAd.setStatusFlg(db.getIntVal("ad_status_flg", rs));
+    		
+    		db = null;
 	    return this;
     }
 
@@ -426,6 +427,15 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 
 	public String getLeadSortType() {
 		return super.getPcAttribute2();
+	}
+	
+	public boolean isPromotePgCompleted() {
+		//CPSEM does not use the Ads system, so they get a free pass here
+		boolean adApproved = ("CPSEM".equalsIgnoreCase(getEvents().get(0).getEventTypeCd()));
+		if (!adApproved) 
+			adApproved = (newspaperAd != null && newspaperAd.getStatusFlg() != null &&  newspaperAd.getStatusFlg() == 3);
+		
+		return getPostcardFileStatusFlg() == 3 && adApproved;
 	}
 
 }

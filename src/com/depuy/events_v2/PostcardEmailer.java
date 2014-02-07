@@ -448,5 +448,48 @@ public class PostcardEmailer {
 		}
 		return;
 	}
+	
+	
+	protected void sendMedicalAffairsApprovedNotice(SMTServletRequest req) {
+		// send email to site admin
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
+		StringBuilder subject = new StringBuilder();
+		subject.append("Surgeon Speaker Contract Received - Seminar " + sem.getRSVPCodes());
+
+		StringBuilder msg = new StringBuilder();
+		msg.append("Medical Affairs has received and approved the Surgeon Speaker's signed contract for Seminar #").append(sem.getRSVPCodes());
+		msg.append(".  This Seminar is now fully approved.  Please proceed with ad buys, postcard creation, and ");
+		msg.append("other necessary tasks to prepare for the event.\r\r");
+		msg.append("More information can be found on the website.\r");
+		msg.append(site.getFullSiteAlias()).append("/?reqType=promote&eventPostcardId=");
+		msg.append(sem.getEventPostcardId()).append("\r\r");
+
+		try {
+			// Create the mail object and send
+			EmailMessageVO mail = new EmailMessageVO();
+			mail.addRecipient("Jenn.Davis@hmktgroup.com"); // Jenn Parrish-Davis);
+			mail.addRecipient("sterling.hoham@hmktgroup.com"); // Sterling Hoham
+			mail.addRecipient("amy.zimmerman@hmktgroup.com");
+			mail.addCC(site.getAdminEmail());
+			mail.addCC("nbeasle@its.jnj.com");
+
+			for (PersonVO p : sem.getPeople()) {
+				if (! StringUtil.isValidEmail(p.getEmailAddress())) continue;
+				mail.addCC(p.getEmailAddress());
+			}
+			mail.addCC(sem.getOwner().getEmailAddress());
+			mail.setSubject(subject.toString());
+			mail.setFrom(site.getMainEmail());
+			mail.setTextBody(msg.toString());
+
+			MessageSender ms = new MessageSender(attributes, dbConn);
+			ms.sendMessage(mail);
+			log.debug("sendMedicalAffairsApprovedNotice Admin Email Sent");
+		} catch (Exception me) {
+			log.error("sendMedicalAffairsApprovedNotice", me);
+		}
+		return;
+	}
 
 }

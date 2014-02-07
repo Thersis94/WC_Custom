@@ -144,12 +144,13 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		
 		StringBuilder sql = new StringBuilder();
 		sql.append("select distinct event_entry_id, RSVP_CODE_TXT, start_dt, type_nm, profile_id, ");
-		sql.append("surgeon_nm, event_nm, city_nm, state_cd, status_flg, event_postcard_id, ");
-		sql.append("rsvp_no, [4] as 'hip', [5] as 'knee', [6] as 'shoulder', run_dates_txt ");  //in a PIVOT, we're turning the data (values) into column headings.  hence the square brackets.
+		sql.append("surgeon_nm, event_nm, city_nm, state_cd, status_flg, event_postcard_id, postcard_file_status_no, ");
+		sql.append("rsvp_no, [4] as 'hip', [5] as 'knee', [6] as 'shoulder', run_dates_txt, ad_status_flg ");  //in a PIVOT, we're turning the data (values) into column headings.  hence the square brackets.
 		//sql.append(" ");
 		sql.append("from (select e.event_entry_id, e.RSVP_CODE_TXT, e.start_dt, et.type_nm, ep.event_postcard_id, ");
-		sql.append("ep.PROFILE_ID, s.surgeon_nm, e.event_nm, e.city_nm, e.state_cd, ");
-		sql.append("ep.status_flg, lxr.JOINT_ID, COUNT(rsvp.EVENT_RSVP_ID) as 'rsvp_no', cad.run_dates_txt ");
+		sql.append("ep.PROFILE_ID, ep.postcard_file_status_no, s.surgeon_nm, e.event_nm, e.city_nm, ");
+		sql.append("e.state_cd, ep.status_flg, lxr.JOINT_ID, COUNT(rsvp.EVENT_RSVP_ID) as 'rsvp_no', ");
+		sql.append("cad.run_dates_txt, cad.status_flg as ad_status_flg ");
 		sql.append("from EVENT_ENTRY e ");
 		sql.append("inner join EVENT_TYPE et on e.EVENT_TYPE_ID=et.EVENT_TYPE_ID ");
 		sql.append("inner join EVENT_GROUP eg on et.ACTION_ID=eg.ACTION_ID ");
@@ -172,8 +173,9 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		} else {
 			sql.append("and ep.status_flg != ").append(EventFacadeAction.STATUS_COMPLETE).append(" ");
 		}
-		sql.append("group by e.event_entry_id, ep.event_postcard_id, e.RSVP_CODE_TXT, e.start_dt, et.type_nm, ep.PROFILE_ID, ");
-		sql.append("e.event_nm, s.surgeon_nm, e.city_nm, e.state_cd, ep.status_flg, lxr.JOINT_ID, cad.run_dates_txt ");
+		sql.append("group by e.event_entry_id, ep.event_postcard_id, e.RSVP_CODE_TXT, e.start_dt, ");
+		sql.append("et.type_nm, ep.PROFILE_ID, ep.postcard_file_status_no, e.event_nm, s.surgeon_nm, ");
+		sql.append("e.city_nm, e.state_cd, ep.status_flg, lxr.JOINT_ID, cad.run_dates_txt, cad.status_flg ");
 		sql.append(") baseQry ");
 		sql.append("pivot (count(joint_id) for joint_id in ([4],[5],[6])) as pvtQry "); //PIVOT is an implicit group-by
 		log.debug(sql);

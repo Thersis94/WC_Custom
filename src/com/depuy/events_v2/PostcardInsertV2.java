@@ -59,9 +59,12 @@ public class PostcardInsertV2 extends SBActionAdapter {
 
 	// transaction types understood by this action
 	public enum ReqType {
-		eventInfo, submitSeminar, srcApproveSeminar, approveSeminar, leads,
+		eventInfo, leads,
 		cancelSeminar, orderBox, uploadPostcard, approvePostcardFile, uploadAdFile, 
-		approveNewspaperAd, postseminar, coopAdsSurgeonApproval
+		approveNewspaperAd, postseminar, coopAdsSurgeonApproval,
+		//status levels
+		//submittedByCoord, approvedByAFD, approvedBySRC, pendingSurgeon, approvedMedAffairs
+		submitSeminar, approveSeminar, srcApproveSeminar, pendingSurgeonReview, approvedMedAffairs
 	}
 
 	public PostcardInsertV2() {
@@ -139,6 +142,14 @@ public class PostcardInsertV2 extends SBActionAdapter {
 					
 				case srcApproveSeminar:
 					this.srcApprovePostcard(req, eventPostcardId);
+					break;
+				
+				case pendingSurgeonReview:
+					this.pendingSurgeonReview(req, eventPostcardId);
+					break;
+				
+				case approvedMedAffairs:
+					this.approvedMedAffairs(req, eventPostcardId);
 					break;
 						
 				case cancelSeminar:
@@ -788,7 +799,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	private void srcApprovePostcard(SMTServletRequest req, String eventPostcardId)
 			throws ActionException {
 		// change the postcard status to approved
-		this.changePostcardStatus(EventFacadeAction.STATUS_APPROVED, eventPostcardId);
+		this.changePostcardStatus(EventFacadeAction.STATUS_APPROVED_SRC, eventPostcardId);
 		message = "The Seminar was approved by SRC";
 		
 		// get the postcard data for emailing & approving each event
@@ -799,6 +810,48 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		PostcardEmailer epe = new PostcardEmailer(attributes, dbConn);
 		epe.sendSrcApproved(req); //captured by the site admin clicking a button that SRC has approved the Seminar
 
+		return;
+	}
+	
+	/**
+	 * called when the admin moves the status to pending surgeon review
+	 * The site admin inputs this approval
+	 * @param req
+	 * @param eventPostcardId
+	 * @throws ActionException
+	 */
+	private void pendingSurgeonReview(SMTServletRequest req, String eventPostcardId)
+			throws ActionException {
+		// change the postcard status to approved
+		this.changePostcardStatus(EventFacadeAction.STATUS_PENDING_SURG, eventPostcardId);
+		message = "The Seminar was updated successfully";
+		
+		return;
+	}
+	
+	
+	/**
+	 * called when the SRC admin approves a postcard/events
+	 * The site admin inputs this approval, which fires an email announcing the milestone
+	 * @param req
+	 * @param eventPostcardId
+	 * @throws ActionException
+	 */
+	private void approvedMedAffairs(SMTServletRequest req, String eventPostcardId)
+			throws ActionException {
+		// change the postcard status to approved
+		this.changePostcardStatus(EventFacadeAction.STATUS_APPROVED, eventPostcardId);
+		message = "The Seminar was updated successfully";
+		
+		// get the postcard data for emailing & approving each event
+		DePuyEventSeminarVO sem = fetchSeminar(req, ReportType.summary);
+		req.setAttribute("postcard", sem);
+		
+		// send notification email to the admins
+		log.debug("starting approval email");
+		PostcardEmailer epe = new PostcardEmailer(attributes, dbConn);
+		epe.sendMedicalAffairsApprovedNotice(req);
+		
 		return;
 	}
 	
