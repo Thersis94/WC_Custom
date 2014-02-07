@@ -210,7 +210,7 @@ public class ANSEventAction extends SBActionAdapter {
 		List<ANSEventVO> data = new ArrayList<ANSEventVO>();
     	try {
     		ps = dbConn.prepareStatement(sql.toString());
-    		ps.setString(1, EventFacadeAction.STATUS_PENDING.toString());
+    		ps.setString(1, Integer.valueOf(EventFacadeAction.STATUS_PENDING).toString());
     		ResultSet rs = ps.executeQuery();
     		ANSEventVO vo = null;
     		while (rs.next()) {
@@ -262,7 +262,7 @@ public class ANSEventAction extends SBActionAdapter {
 					/* Dave - commented out, but saving in case we need to replace STATUS_APPROVED with the prev line.
 					//if (Convert.formatInteger(status).intValue() != EventFacadeAction.STATUS_PENDING_PREV_ATT.intValue())
 					*/
-					if (Convert.formatInteger(status).intValue() != EventFacadeAction.STATUS_APPROVED.intValue())
+					if (Convert.formatInteger(status).intValue() != EventFacadeAction.STATUS_APPROVED)
 						purgeRsvps.add(id);
 					
 					ps.setString(1, status);
