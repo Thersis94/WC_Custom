@@ -422,7 +422,11 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	
 	public boolean isComplete() {
 		Calendar cal = Calendar.getInstance();
-		return cal.after(this.getEarliestEventDate());
+		cal.set(Calendar.HOUR, 0);
+		cal.set(Calendar.MINUTE, 0);
+		cal.set(Calendar.SECOND, 0);
+		cal.set(Calendar.MILLISECOND, 0);
+		return this.getEarliestEventDate().before(cal.getTime());
 	}
 
 	public String getLeadSortType() {
