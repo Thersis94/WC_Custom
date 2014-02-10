@@ -149,12 +149,13 @@ public class FsKeystoneLoginModule extends AbstractLoginModule {
      */
     public String manageUser(String authId, String userName, String password, Integer resetFlag)  
     throws InvalidDataException {
-        if (userName == null || userName.length() == 0 || password == null || password.length() == 0)
-        	throw new InvalidDataException();
+    	
+    	// Currently this immediatly throws an invalidDataException in order
+    	// to redirect the manageUser request to the fastsigns login class
+    	// This will be removed when manageUser here is actually functioning.
+        throw new InvalidDataException();
         
         //TODO interface to Keystone
-        
-        return null;
     }
     
     /**
