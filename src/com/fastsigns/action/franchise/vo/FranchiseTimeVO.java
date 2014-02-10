@@ -91,12 +91,36 @@ public class FranchiseTimeVO implements Serializable {
 	private void sortTimes() {
 		Map<String, String> combinedTimes = sortedTimes;
 		sortedTimes = new LinkedHashMap<String, String>();
+		boolean newSet = false;
+		boolean continuous = false;
+		
 		for (String s : combinedTimes.keySet()) {
 			String key = combinedTimes.get(s);
 			if (sortedTimes.containsKey(key)) {
-				sortedTimes.put(key, sortedTimes.get(key) + "," + s);
+				String day = sortedTimes.get(key);				
+				// Check see if we are starting a new series of days.
+				// This ensures that each set of days will remain separated by commas
+				if ((!continuous || day.substring(day.lastIndexOf(",")+1, day.length()).contains("-")) && newSet) {
+					sortedTimes.put(key, day + "," + s);
+					newSet = true;
+				} else if (newSet){
+					// If we are working with a new set of days we need to add this to the key
+					// with a dash to indicate the continuity of the days
+					sortedTimes.put(key, day + "-" + s);
+					newSet = false;
+				} else {
+					// Since we are not dealing with a new set of days we need to take all but
+					// the last day of the current set and replace the old last day with the one
+					// we are working with right now.
+					sortedTimes.put(key, day.substring(0,day.lastIndexOf('-')+1) + s);
+					newSet = false;
+				}
+				continuous = true;
 			} else {
 				sortedTimes.put(key, s);
+				
+				continuous = !newSet;
+				newSet = true;
 			}
 		}
 	}
