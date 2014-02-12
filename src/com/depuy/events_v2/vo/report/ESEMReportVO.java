@@ -35,7 +35,7 @@ public class ESEMReportVO extends AbstractSBReportVO {
 		sb.append("</center>");
 		//Requirements Preamble
 		sb.append("<p>To the best of my knowledge, the <i>DePuy Synthes Joint Reconstruction</i> Patient ");
-		sb.append("Education Seminar scheduled for at ${eventDate} at ${eventTime} will comply with the following requirements.</p>");
+		sb.append("Education Seminar scheduled for at ${eventDate} at ${eventLocation} will comply with the following requirements.</p>");
 		//Paragraph 1
 		sb.append("<br/><br/><u>Seminar Marketing:</u><br/>");
 		sb.append("<ul><li>No modifications will be made to the seminar marketing templates with the exception of adding the location, date, time, ");

@@ -37,7 +37,7 @@ public class CPSEMReportVO extends AbstractSBReportVO {
 		
 		//Requirements Preamble
 		sb.append("<p>To the best of my knowledge, the <i>DePuy Synthes Joint Reconstruction Patient</i> Community Physician Education Seminar scheduled for ");
-		sb.append("${eventDate} at ${eventTime} will comply with the following requirements.</p>");
+		sb.append("${eventDate} at ${eventLocation} will comply with the following requirements.</p>");
 		
 		//Paragraph 1
 		sb.append("<br/><br/><u>Seminar Marketing:</u><br/>");

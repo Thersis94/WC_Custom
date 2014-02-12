@@ -82,11 +82,18 @@ public class ComplianceReportVO extends AbstractSBReportVO {
 		}
 		
 		//run Freemarker replacements to populate the compliance form for this seminar
+		//if the signature is missing, print a bunch of spaces to make it look like a line capable of being signed.
+		//same for approval date
+		String admSig = adv.getFullName();
+		if (admSig.length() == 0) admSig = "&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;";
+		String apprDt = Convert.formatDate(adv.getApproveDate(), Convert.DATE_SLASH_PATTERN);
+		if (apprDt.length() == 0) apprDt =  "&nbsp; &nbsp; &nbsp; &nbsp;";
+		
 		Map<String, Object> data = new HashMap<String, Object>();
 		data.put("eventDate", Convert.formatDate(event.getStartDate(), Convert.DATE_LONG));
-		data.put("eventTime", event.getLocationDesc());
-		data.put("admSignature", "<u>&nbsp; &nbsp;" + adv.getFullName() + "&nbsp; &nbsp;</u>");
-		data.put("approvalDt", "<u>&nbsp; &nbsp;" + Convert.formatDate(adv.getApproveDate(), Convert.DATE_SLASH_PATTERN) + "&nbsp; &nbsp;</u>");
+		data.put("eventLocation", event.getEventName() + " " + event.getAddressText() + " " + event.getCityName() + ", " + event.getStateCode() + " " + event.getZipCode());
+		data.put("admSignature", "<u>&nbsp; &nbsp;" + admSig + "&nbsp; &nbsp;</u>");
+		data.put("approvalDt", "<u>&nbsp; &nbsp;" + apprDt + "&nbsp; &nbsp;</u>");
 		data.put("ownerName", sem.getOwner().getFullName());
 		data.put("territoryNo", sem.getTerritoryNumber());
 		for (PersonVO p : sem.getPeople()) {
