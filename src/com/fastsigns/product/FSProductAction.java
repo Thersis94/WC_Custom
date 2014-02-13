@@ -91,9 +91,6 @@ public class FSProductAction extends SBActionAdapter {
 		String catalogId = catArr[0];
 		String categoryId = catArr[1];
 		
-		for (String key : req.getParameterMap().keySet() )
-			log.debug(key+"|"+req.getParameter(key));
-		
 		boolean hasSubCat = Convert.formatBoolean(mod.getAttribute(SBModuleVO.ATTRIBUTE_2));
 		String pId = StringUtil.checkVal(req.getParameter(SMTServletRequest.PARAMETER_KEY + "1"));
 		String prodChildKey = StringUtil.checkVal(req.getParameter(SMTServletRequest.PARAMETER_KEY + "2"));
@@ -150,7 +147,7 @@ public class FSProductAction extends SBActionAdapter {
 		// We only set the canonical url if we do have a page that we want it to be set too
 		if (pId.length() > 0) {
 			PageVO page = (PageVO)req.getAttribute(Constants.PAGE_DATA);
-			log.debug(page);
+			
 			// This set of if/else tests determines how deep we are in the product structure.
 			// pId -> prodChildKey -> catImageKey
 			if (prodChildKey != null && prodChildKey.length() > 0) {
