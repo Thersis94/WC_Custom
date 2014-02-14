@@ -2,11 +2,10 @@ package com.fastsigns.security;
 
 // JDK 1.6.x
 import java.net.URLDecoder;
-import java.net.URLEncoder;
-import java.sql.Connection;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
-
+import java.util.TimeZone;
 
 
 // SMT Base Libs
@@ -18,221 +17,280 @@ import com.siliconmtn.security.AESKey;
 import com.siliconmtn.security.AbstractLoginModule;
 import com.siliconmtn.security.AuthenticationException;
 import com.siliconmtn.security.EmailAddressNotFoundException;
-import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
-
-// Web Crescendo Libs
-import com.smt.sitebuilder.common.constants.Constants;
-import com.smt.sitebuilder.security.UserLogin;
+import com.siliconmtn.util.StringUtil;
 
 /*****************************************************************************
- <p><b>Title</b>: FsKeystoneLoginModule.java</p>
- <p><b>Description: </b>
- 	Logs the user into WC using Keystone for authentication and data retrieval.
- 	
- <p>Copyright: Copyright (c) 2000 - 2012 SMT, All Rights Reserved</p>
- <p>Company: Silicon Mountain Technologies</p>
- @author James McKain
- @version 1.0
- @since Dec 14, 2012
+ * <b>Title</b>: FsHelpSiteLoginModule.java</p>
+ * <b>Description: </b> Logs the user into WC using credentials passed from support.fastsigns.com
+ * <p>Copyright: Copyright (c) 2000 - 2014 SMT, All Rights Reserved</p>
+ * <p>Company: Silicon Mountain Technologies</p>
+ * 
+ * @author James McKain
+ * @version 1.0
+ * @since Feb 13, 2014
  ***************************************************************************/
 
 public class FsHelpSiteLoginModule extends AbstractLoginModule {
-	private final String loginApiKey = "";
-	private final static String passPhrase = "ae790270-42d1-4663-adf8-46d5980c71c1";
-	private final static String saltValue = "5cd444b2-48e6-4a0b-aa7f-766e8d6de614";
-	private final static String initVector = "3144f1059fac47f5";
-	private final String param1 = "sharedToken";
-	//private final String param2 = "date";
-	public static void main(String [] args) {
-		AESKey key = new AESKey();
-		key.setPassPhrase(passPhrase);
-		key.setSaltValue(saltValue);
-		key.setVector(initVector);
+	
+	private final static String SHARED_SECRET = "EF3478A623204C86A6DF";
+	private final static String TOKEN_NM = "sharedToken";
+	private final AESKey  aesKey;
+	private final long DATE_THRES_MILLIS = 60000;
+
+	public FsHelpSiteLoginModule() {
+		super();
+		super.setUserProfile(true);
+
+		//these hard-coded values were predefined in conjuction with FS.  Do not change!
+		aesKey = new AESKey();
+		aesKey.setPassPhrase("ae790270-42d1-4663-adf8-46d5980c71c1");
+		aesKey.setSaltValue("5cd444b2-48e6-4a0b-aa7f-766e8d6de614");
+		aesKey.setVector("3144f1059fac47f5");
+	}
+
+	/**
+	 * @param arg0
+	 */
+	public FsHelpSiteLoginModule(Map<String, Object> arg0) {
+		this();
+		super.setInitVals(arg0);
+	}
+	
+	/**
+	 * main method, for testing purposes only.
+	 * @param args
+	 */
+	public static void main(String[] args) {
+		FsHelpSiteLoginModule lm = new FsHelpSiteLoginModule();
+		org.apache.log4j.PropertyConfigurator.configure("/data/log4j.properties");
+		String[] tokenArr = new String[2];
 		try {
-			String aes = AESEncryption.encryptString("sharedToken=EF3478A623204C86A6DF|param2=" + Convert.formatDate(new Date(), "yyyy-MM-dd HH:mm:ss"), key, 256);
-			System.out.println(aes);
-			System.out.println(AESEncryption.decryptString(URLDecoder.decode("%2fPlau9uhZd12WvOwEc%2fpTWikWjXn094ERPpclnRB%2b4XYpNDibq5MAwUMD60Ey7LX1cqTaphXSbRZSc8meu7hoQ%3d%3d", "UTF-8"), key, 256));
-		} catch (Exception e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-		try {
-			System.out.println("password=pass&emailAddress=" + URLEncoder.encode(AESEncryption.encryptString("sharedToken=EF3478A623204C86A6DF|param2=" + Convert.formatDate(new Date(), "yyyy-MM-dd HH:mm:ss"), key, 256), "UTF-8"));
+			//String phonyPayload = AESEncryption.encryptString(TOKEN_NM + "=" + SHARED_SECRET + "|date=" + Convert.formatDate(new Date(), Convert.DATE_TIME_DASH_PATTERN), lm.aesKey, 256);
+			String phonyPayload = "password=pass&emailAddress=%2fPlau9uhZd12WvOwEc%2fpTWikWjXn094ERPpclnRB%2b4UctNLcd3x4uEwMvsSas2Orft4uQ1OaCqvlxwv5oWdxmw%3d%3d";
+			tokenArr = lm.dissectTokenFromString(phonyPayload);
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
-	}
-	//private final String param2 = "date";
-    public FsHelpSiteLoginModule() {
-        super();
-        super.setUserProfile(true);
-    }
-
-    /**
-     * @param arg0
-     */
-    public FsHelpSiteLoginModule(Map<String, Object> arg0) {
-        super(arg0);
-    }
-
-    /* (non-Javadoc)
-     * @see com.siliconmtn.security.AbstractLoginModule#authenticate(java.lang.String, java.lang.String)
-     * "Login by cookie" method
-     */
-    @Override
-    public UserDataVO retrieveUserData(String encProfileId) 
-    throws AuthenticationException {
-    	if(verifiedConnection()){
-    		UserDataVO user = new UserDataVO();
-    		user.setAuthenticationId("allowed");
-    		user.setAuthenticated(true);
-    		return user;
-    	}
-    	return null;
-    }
-    
-    private boolean verifiedConnection() {
+		
 		try {
-			log.debug("Verifying Login");
-	    	SMTServletRequest req = (SMTServletRequest) this.getInitVals().get(GlobalConfig.HTTP_REQUEST);
-	    	log.debug("Retrieved Request Object");
-	        String p = req.getQueryString().replace("password=pass&emailAddress=", "").replace("%25", "%");
-	        log.error("emailAddressStr = " + p);
-			String output = null;
-			
-	    	AESKey key = new AESKey();
-			key.setPassPhrase(passPhrase);
-			key.setSaltValue(saltValue);
-			key.setVector(initVector);
-			String decodedVal = URLDecoder.decode(p, "UTF-8");
-			log.error("URLdecoded String: " + decodedVal);
-			output = AESEncryption.decryptString(decodedVal, key, 256);
-			log.error("Decrypted value: " + output);
-			String p1 = "";
-			Date p2 = null;
-			
-			String [] o = output.split("\\|");
-			for(int i = 0; i < o.length; i++){
-				if(o[i].contains(param1)){
-					p1 = o[i].split("=")[1];
-				} else {
-					String temp =  o[i].split("=")[1];
-					p2 = Convert.formatDate("yyyy-MM-dd HH:mm:ss", temp);
-				}
-			}
-			if(p2 == null)
-				log.error("Problem Parsing Date");
-			log.error(Convert.getCurrentTimestamp().getTime() - p2.getTime());
-			if(Convert.getCurrentTimestamp().getTime() - p2.getTime() < Long.parseLong("60000") && p1.equals("EF3478A623204C86A6DF")){
-				return true;
-			} else if(Convert.getCurrentTimestamp().getTime() - p2.getTime() > Long.parseLong("60000")) {
-				log.error("Problem with timestamp : " + p2.toString());
-			} else if (!p1.equals("EF3478A623204C86A6DF")){
-				log.error("Problem with sharedToken : " + p1);
-			}
-			//log.debug(p1);
-		} catch (NullPointerException e){
-			log.debug("User not authorized");
-			return false;
-		} catch (Exception e) {
-			log.error(e);
-			return false;
+			boolean passed = lm.verifiedConnection(tokenArr);
+			System.out.println("Login passed?" + passed);
+		} catch (Exception e1) {
+			e1.printStackTrace();
 		}
 		
-		return false;
 	}
 
-	/* (non-Javadoc)
-     * @see com.siliconmtn.security.AbstractLoginModule#authenticate(java.lang.String, java.lang.String)
-     * "Login by form (username & password)" method.
-     */
-    @Override
-    public UserDataVO retrieveUserData(String email, String pwd) 
-    throws AuthenticationException {
-       log.debug("In : public UserDataVO retrieveUserData(String email, String pwd){}");
-       if(verifiedConnection()){
-    	   UserDataVO user = new UserDataVO();
-   			user.setAuthenticationId("allowed");
-   			user.setAuthenticated(true);
-   			return user;   		
-   		}
-        return null;
-    }
-    
-   
-    /**
-     * Retrieves a password based upon the user name.
-     */
-    public String retrievePassword(String emailAddress)
-    throws EmailAddressNotFoundException {
-        return null;
-    }
-    
-    public String retrieveAuthIdByCookie(String encProfileId) {
-		log.debug("encProfileId=" + encProfileId);
-        try {
-			encProfileId = URLDecoder.decode(encProfileId, "UTF-8");
-			StringEncrypter se = new StringEncrypter(loginApiKey);
-			return se.decrypt(encProfileId);
-		} catch (Exception e) {
-			return null;
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * com.siliconmtn.security.AbstractLoginModule#authenticate(java.lang.String
+	 * , java.lang.String) "Login by cookie" method
+	 */
+	@Override
+	public UserDataVO retrieveUserData(String encProfileId) throws AuthenticationException {
+		throw new AuthenticationException("not supported");
+	}
+
+	private boolean verifiedConnection(String[] tokenArr) throws AuthenticationException {
+		log.debug("Verifying Login");
+		String passPhrase = "";
+		Date peerDate = null;
+
+		//quick sanity check, we can't proceed successfully without 2 args
+		if (tokenArr == null || tokenArr.length < 2) 
+			throw new AuthenticationException("missing tokens");
+		
+		for (int i = 0; i < tokenArr.length; i++) {
+			if (tokenArr[i] == null) continue;
+			log.debug("arr[x]: " + tokenArr[i]);
+			
+			if (tokenArr[i].indexOf(TOKEN_NM) > -1) {
+				passPhrase = tokenArr[i].split("=")[1];
+				log.debug("found passPhrase: " + passPhrase);
+			} else {
+				String temp = tokenArr[i].split("=")[1]; //"date="
+				try {
+					//convert the date from UTC time zone, to our time zone
+					SimpleDateFormat isoFormat = new SimpleDateFormat(Convert.DATE_TIME_DASH_PATTERN);
+					isoFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+					peerDate = isoFormat.parse(temp);
+					log.debug("peerDate: " + peerDate);
+				} catch (Exception e) { 
+					e.printStackTrace();
+				}
+			}
 		}
-    }
-    
-    /* (non-Javadoc)
-	 * @see com.siliconmtn.security.AbstractLoginModule#retrievePasswordAge(java.lang.String)
+		
+		//fail-fast if we're missing critical info 
+		if (peerDate == null || passPhrase == null) {
+			log.error("tokenArr=" + StringUtil.getToString(tokenArr, false, false, ","));
+			throw new AuthenticationException("missing payload data");
+		}
+		
+		//test the secret first; this is easier than a Date comparison.
+		if (!passPhrase.equals(SHARED_SECRET)) {
+			log.error("shared secrets do not match, user provided: " + passPhrase);
+			throw new AuthenticationException("secrets don't match");
+		}
+		
+		//if the passed time is more than a minute old, fail the login 
+		if (peerDate.getTime() < (System.currentTimeMillis() - DATE_THRES_MILLIS)) {
+			log.error("login expired by date, user said: " + peerDate.getTime() + ", we're at: " + (System.currentTimeMillis()-DATE_THRES_MILLIS));
+			throw new AuthenticationException("date mismatch");
+		}
+		
+		//all tests passed, the user is logged in
+		return true;
+	}
+	
+	
+	/**
+	 * takes the incoming string and goes 4 things:
+	 * 1) isolate it from other query string params
+	 * 2) URLDecode it
+	 * 3) Decrypt it (AES)
+	 * 4) Split the decrypted token into a String[] of passed args
+	 * @param token
+	 * @return String[]
+	 */
+	private String[] dissectTokenFromString(String token) {
+		String[] tokenArr = new String[2];
+		
+		//retrieve the token from the query string - we must parse it out because of possible ampersands in the token
+		token = token.replaceAll("&?password=pass&?", "");
+		log.debug("token with no password= " + token);
+		token = token.replace("emailAddress=", "");
+		log.debug("token ready for decoding " + token);
+		
+		try {
+			token = URLDecoder.decode(token, "UTF-8");
+			log.debug("URLdecoded String: " + token);
+		} catch (Exception e) {
+			//EncodingNotSupportedException
+			log.warn("could not decode token", e);
+		}
+		
+		
+		try {
+			log.debug(aesKey.getPassPhrase());
+			token = AESEncryption.decryptString(token, aesKey, 256);
+			log.debug("Decrypted value: " + token);
+		} catch (Exception e) {
+			//token not decryptable
+			log.error("passed token not decryptable", e);
+			return tokenArr;
+		}
+		
+		//if we've made it this far, split the token into separate arguments 
+		tokenArr = token.split("\\|");
+		
+		return tokenArr;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * com.siliconmtn.security.AbstractLoginModule#authenticate(java.lang.String
+	 * , java.lang.String) "Login by form (username & password)" method.
+	 */
+	@Override
+	public UserDataVO retrieveUserData(String email, String pwd)
+			throws AuthenticationException {
+		SMTServletRequest req = (SMTServletRequest) this.getInitVals().get(GlobalConfig.HTTP_REQUEST);
+		String[] tokenArr = dissectTokenFromString(req.getQueryString());
+		
+		if (verifiedConnection(tokenArr)) {
+			UserDataVO user = new UserDataVO();
+			user.setAuthenticationId("allowed");
+			user.setAuthenticated(true);
+			return user;
+		}
+		return null;
+	}
+
+	/**
+	 * Retrieves a password based upon the user name.
+	 */
+	public String retrievePassword(String emailAddress)
+			throws EmailAddressNotFoundException {
+		return null;
+	}
+
+	public String retrieveAuthIdByCookie(String encProfileId) {
+		return null;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * com.siliconmtn.security.AbstractLoginModule#retrievePasswordAge(java
+	 * .lang.String)
 	 */
 	@Override
 	public Long retrievePasswordAge(String authenticationId) {
-        // Get the database Connection
-        Connection dbConn = (Connection)initVals.get(GlobalConfig.KEY_DB_CONN);
-        String encKey = (String)initVals.get(Constants.ENCRYPT_KEY);
-        UserLogin ul = new UserLogin(dbConn, encKey);
-        return ul.getPasswordAge(authenticationId);      
-    }
+		return null;
+	}
 
-	/* (non-Javadoc)
-	 * @see com.siliconmtn.security.AbstractLoginModule#deleteUser(java.lang.String)
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * com.siliconmtn.security.AbstractLoginModule#deleteUser(java.lang.String)
 	 */
 	@Override
 	public boolean deleteUser(String authId) {
 		return false;
 	}
 
-	/* (non-Javadoc)
-	 * @see com.siliconmtn.security.AbstractLoginModule#retrieveAuthenticationId(java.lang.String)
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * com.siliconmtn.security.AbstractLoginModule#retrieveAuthenticationId
+	 * (java.lang.String)
 	 */
 	@Override
 	public String retrieveAuthenticationId(String userName) {
 		return null;
 	}
 
-	/* (non-Javadoc)
-	 * @see com.siliconmtn.security.AbstractLoginModule#authenticate(java.lang.String, java.lang.String)
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * com.siliconmtn.security.AbstractLoginModule#authenticate(java.lang.String
+	 * , java.lang.String)
 	 */
 	@Override
 	public String authenticate(String loginName, String password)
-	throws AuthenticationException {
-		//this will throw Exceptions long before we risk a null pointer here...
-		return this.retrieveUserData(loginName, password).getProfileId();
+			throws AuthenticationException {
+		throw new AuthenticationException("not suported");
 	}
-	
-    /* (non-Javadoc)
-     * @see com.siliconmtn.security.AbstractLoginModule#authenticateUser(java.lang.String, java.lang.String)
-     */
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * com.siliconmtn.security.AbstractLoginModule#authenticateUser(java.lang
+	 * .String, java.lang.String)
+	 */
 	@Override
 	public UserDataVO authenticateUser(String userName, String password)
 			throws AuthenticationException {
-		return this.retrieveUserData(userName, password);
+		throw new AuthenticationException("not suported");
 	}
 
 	@Override
 	public String manageUser(String authId, String emailAddress,
-			String password, Integer pwdResetFlag) throws InvalidDataException {
+			String password, Integer pwdResetFlag)
+			throws InvalidDataException {
 		return null;
 	}
 

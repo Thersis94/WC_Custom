@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.fastsigns.action;
 
 import java.util.ArrayList;
@@ -25,21 +22,21 @@ import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.common.SiteVO;
 
 /****************************************************************************
- * <b>Title</b>: RequestAQuoteReport.java<p/>
- * <b>Description: </b> 
+ * <b>Title</b>: TVSpotReport.java<p/>
+ * <b>Description: Handles reporting and user-contact for the TV Spot ads run in Q1-2 2014.</b> 
  * <p/>
- * <b>Copyright:</b> Copyright (c) 2011<p/>
+ * <b>Copyright:</b> Copyright (c) 2014<p/>
  * <b>Company:</b> Silicon Mountain Technologies<p/>
  * @author James McKain
  * @version 1.0
- * @since Mar 25, 2011
+ * @since Feb 12, 2014
  ****************************************************************************/
-public class RequestAQuoteReport extends SimpleActionAdapter {
+public class TVSpotDlrContactCRM extends SimpleActionAdapter {
 		
-	public RequestAQuoteReport() {
+	public TVSpotDlrContactCRM() {
 	}
 
-	public RequestAQuoteReport(ActionInitVO arg0) {
+	public TVSpotDlrContactCRM(ActionInitVO arg0) {
 		super(arg0);
 	}
 	
@@ -50,8 +47,9 @@ public class RequestAQuoteReport extends SimpleActionAdapter {
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		String franchiseId = CenterPageAction.getFranchiseId(req);
 		if (franchiseId == null || franchiseId.length() == 0) return;
-		String country = ((SiteVO)req.getAttribute(Constants.SITE_DATA)).getCountryCode();
-		SAFConfig safConfig = SAFConfig.getInstance(country);
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
+		
 		
 		//shift today's date by a negative integer to find the starting point for this report.
 		//default is "past 24 hours"
@@ -68,14 +66,14 @@ public class RequestAQuoteReport extends SimpleActionAdapter {
 		
 		req.setParameter("dealerLocationId", franchiseId);
 		req.setParameter("orderBy", "dateDesc");
-		req.setParameter("contactId", safConfig.getContactUsActionId() + "|Request a Quote/Send a File");
+		req.setParameter("contactId", mod.getAttribute(ModuleVO.ATTRIBUTE_1) + "|TV Spot CRM Report");
 
 		ContactDataAction cda = new ContactDataAction(this.actionInit);
 		cda.setAttributes(attributes);
 		cda.setDBConnection(dbConn);
 		cda.update(req);
 		
-		ModuleVO mod = (ModuleVO) super.getAttribute(Constants.MODULE_DATA);
+		mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		ContactDataContainer cdc = (ContactDataContainer) mod.getActionData();
 		
 		
@@ -85,22 +83,9 @@ public class RequestAQuoteReport extends SimpleActionAdapter {
 			if (req.getParameter("status") == null) req.setParameter("status", complete);
 			String status = req.getParameter("status");
 			
-			if (status.length() > 0) {
-				List<ContactDataModuleVO> newData = new ArrayList<ContactDataModuleVO>();
-				
-				//loop the submissions and remove any that don't meet our criteria
-				for (ContactDataModuleVO vo : cdc.getData()) {
-					String stage = StringUtil.checkVal(vo.getExtData().get(safConfig.getTransactionStageFieldId()));
-					if (status.equals(complete) && stage.equalsIgnoreCase(complete)) {
-						newData.add(vo);
-					} else if (status.equals("inprogress") && !stage.equalsIgnoreCase(complete)) {
-						newData.add(vo);
-					}
-				}
-				
-				//replace the old list of submissions with the filtered ones
-				cdc.setData(newData);
-			}
+			if (status.length() > 0)
+				cdc = filterData(cdc);
+			
 		}
 		
 
@@ -114,4 +99,22 @@ public class RequestAQuoteReport extends SimpleActionAdapter {
 		
 	}
 	
+	private ContactDataContainer filterData(ContactDataContainer cdc, String filterType) {
+		List<ContactDataModuleVO> newData = new ArrayList<ContactDataModuleVO>();
+		
+		//loop the submissions and remove any that don't meet our criteria
+		for (ContactDataModuleVO vo : cdc.getData()) {
+			String stage = StringUtil.checkVal(vo.getExtData().get(safConfig.getTransactionStageFieldId()));
+			if (filterType.equals(complete) && stage.equalsIgnoreCase(complete)) {
+				newData.add(vo);
+			} else if (status.equals("inprogress") && !stage.equalsIgnoreCase(complete)) {
+				newData.add(vo);
+			}
+		}
+		
+		//replace the old list of submissions with the filtered ones
+		cdc.setData(newData);
+		
+		return cdc;
+	}
 }
