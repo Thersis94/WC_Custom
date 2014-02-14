@@ -26,7 +26,7 @@ public class FsHelpSiteRoleModule extends AbstractRoleModule {
 	 * @see com.siliconmtn.security.AbstractRoleModule#getUserRole(java.lang.String,java.lang.String)
 	 */
 	public UserRoleVO getUserRole(String profileId, String siteId)
-	throws AuthorizationException {
+			throws AuthorizationException {
 		
 		SMTServletRequest req = (SMTServletRequest) super.initVals.get(HTTP_REQUEST);
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
@@ -48,7 +48,6 @@ public class FsHelpSiteRoleModule extends AbstractRoleModule {
 	@Override
 	public UserRoleContainer getUserRoles(String profileId)
 			throws AuthorizationException {
-		// TODO Do we need to integrate this with Keystone?
 		return null;
 	}
 }
