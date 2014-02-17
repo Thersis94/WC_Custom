@@ -83,16 +83,12 @@ public class TaxationRequestCoordinator {
 		log.debug("invoiceNo=" + cart.getInvoiceNo());
 		taxReq.setCompanyCode(franchise.getFranchiseId()); //franchiseId
 		taxReq.setCustomerId(franchise.getFranchiseId()); //franchiseId
-//	taxReq.setCompanyCode("FSI0479");	
-//	taxReq.setCustomerId("FSI0479");
 		taxReq.setCustomerCode(cart.getBillingInfo().getProfileId());
 		taxReq.setDetailLevel("Line"); //constant
 		taxReq.setDocumentType("SalesOrder"); //constant
 		taxReq.setCommitFlag(0); //constant for ecomm
 		taxReq.setLicenseId(StringUtil.checkVal(franchise.getAttributes().get("avalara_license_id"))); //franchise attrs: avalara_license_id
-//	taxReq.setLicenseId("FB589952A0E356A9");
 		taxReq.setAccountId(StringUtil.checkVal(franchise.getAttributes().get("avalara_tax_id"))); //franchise attrs: avalara_tax_id
-//	taxReq.setAccountId("1100131557");
 		taxReq.setExemptionNumber(StringUtil.checkVal(fran.getProfile(franchise.getWebId()).getAttributes().get("taxExempt")));
 		
 		//leverage business rules to configure taxType, taxId, and keystoneEnvironment

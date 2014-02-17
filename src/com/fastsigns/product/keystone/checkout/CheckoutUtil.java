@@ -80,7 +80,8 @@ public class CheckoutUtil {
 		} else if ("confirm".equalsIgnoreCase(step)) {
 			cart = submitOrder(req, cart);
 		} else if ("shippingtax".equalsIgnoreCase(step)) {
-			req.setParameter("shippingTax", StringUtil.checkVal(getShippingTax(req, cart)));
+			cart.setTaxAmount(getShippingTax(req, cart));
+			req.setParameter("shippingTax", StringUtil.checkVal(cart.getTaxAmount()));
 		}
 		
 		return cart;
@@ -182,7 +183,11 @@ public class CheckoutUtil {
 	 */
 	private ShoppingCartVO loadConfirmScreen(SMTServletRequest req, ShoppingCartVO cart)
 	throws ActionException {
-		log.debug("loading confirm screen");
+		log.debug("loading confirm screen, tax=" + cart.getTaxAmount());
+		
+		//if we've already calculated tax and shipping, do nothing.  
+		//This scenario presents when the user gets an error submitting their order (the confirm page is reloaded)
+		if (cart.getTaxAmount() > 0 && cart.getShippingOptions().size() > 0) return cart;
 		
 		FastsignsSessVO sessVo = (FastsignsSessVO) req.getSession().getAttribute(KeystoneProxy.FRAN_SESS_VO);
 		String webId = (String)req.getSession().getAttribute(FastsignsSessVO.FRANCHISE_ID);
@@ -249,7 +254,8 @@ public class CheckoutUtil {
 	}
 	
 	private double getShippingTax(SMTServletRequest req, ShoppingCartVO cart) throws ActionException {
-		if(cart.getItems().size() > 0){
+		if (cart.getItems().size() == 0) return 0.0;
+		
 		FastsignsSessVO sessVo = (FastsignsSessVO) req.getSession().getAttribute(KeystoneProxy.FRAN_SESS_VO);
 		String webId = (String)req.getSession().getAttribute(FastsignsSessVO.FRANCHISE_ID);
 		if (sessVo.getProfile(webId).getUserId() == null) {
@@ -287,7 +293,6 @@ public class CheckoutUtil {
 			log.error("Could not retrieve shipping tax: ", e);
 			throw new ActionException(e.getMessage());
 		}
-		}
 		return cart.getTaxAmount();
 	}
 	
@@ -319,6 +324,15 @@ public class CheckoutUtil {
 		//Save the selected Shipping Method.
 		log.debug("shipping=" + req.getParameter("shippingMethod"));
 		cart.setShipping(req.getParameter("shippingMethod"));
+		
+//		//add the tax amount for the Shipping
+//		log.debug("addingTax=" + req.getParameter("shippingTaxAmt") + " to " + cart.getTaxAmount());
+//		double taxAmt = cart.getTaxAmount();
+//		Double shippingTax = Convert.formatDouble(req.getParameter("shippingTaxAmt"));
+//		if (shippingTax != null && shippingTax > 0) taxAmt += shippingTax;
+//		cart.setTaxAmount(taxAmt);
+//		log.debug("newTax=" + cart.getTaxAmount());
+		
 		FastsignsSessVO sessVo = (FastsignsSessVO) req.getSession().getAttribute(KeystoneProxy.FRAN_SESS_VO);
 		attributes.put(KeystoneProxy.FRAN_SESS_VO, sessVo);
 		attributes.put("jobId", req.getSession().getAttribute("jobId"));

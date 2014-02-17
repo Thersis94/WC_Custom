@@ -12,6 +12,8 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.security.EncryptionException;
+import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.AbstractBaseAction;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
@@ -124,6 +126,13 @@ public class InvoicesAction extends AbstractBaseAction {
 		FastsignsSessVO sessVo = (FastsignsSessVO) req.getSession().getAttribute(KeystoneProxy.FRAN_SESS_VO);
 		String webId = (String)req.getSession().getAttribute(FastsignsSessVO.FRANCHISE_ID);
 		
+		StringEncrypter se = null;
+		try {
+			se = new StringEncrypter((String)attributes.get(Constants.ENCRYPT_KEY));
+		} catch (EncryptionException ee) {
+			log.error("could not create StringEncryper", ee);
+		}
+		
 		Object msg = null;
 		try {
 			KeystoneProxy proxy = new KeystoneProxy(attributes);
@@ -138,7 +147,7 @@ public class InvoicesAction extends AbstractBaseAction {
 			proxy.addPostData("payment_method_id", "73a61696f100b3858511e212a3feea6b");
 			proxy.addPostData("invoice_id", req.getParameter("invoice_id"));
 			proxy.addPostData("amount", StringUtil.removeNonNumericExceptDecimal(req.getParameter("amount")));
-			proxy.addPostData("ccInfo[ccNum]", StringUtil.removeNonNumeric(req.getParameter("cardNumber")));
+			proxy.addPostData("ccInfo[ccNum]", se.encrypt(StringUtil.removeNonNumeric(req.getParameter("cardNumber"))));
 			proxy.addPostData("ccInfo[ccExpMo]", StringUtil.removeNonNumeric(req.getParameter("cardMonth")));
 			proxy.addPostData("ccInfo[ccExpYear]", StringUtil.removeNonNumeric(req.getParameter("cardYear")));
 			proxy.addPostData("ccInfo[ccName]", req.getParameter("cardName"));

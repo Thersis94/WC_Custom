@@ -202,14 +202,13 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 
 					// Send a message summary of the order to the user who placed it If payment succeeds. 
 					if (nextStep.equals("complete") && Convert.formatBoolean(cart.getErrors().get("success"))) {
-						String designatorNm = (String)req.getSession().getAttribute("FranchiseLocationName");
+						String designatorNm = null;
 						String webId = CenterPageAction.getFranchiseId(req);
-						if (designatorNm == null) {
-							try { //don't risk the emailing failing over this...
+						try { //don't risk the emailing failing over this NPE...
 								FastsignsSessVO sessVo = (FastsignsSessVO) req.getSession().getAttribute(KeystoneProxy.FRAN_SESS_VO);
 								designatorNm = sessVo.getFranchise(webId).getLocationName();
-							} catch (Exception e) {}
-						}
+						} catch (Exception e) { }
+						
 						CheckoutReportUtil util = new CheckoutReportUtil(attributes, dbConn);
 						util.sendSummary(cart, webId, designatorNm);
 					}
@@ -311,6 +310,15 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 		} else {
 			//set the cart into a retrievable location for the invoking class to use.
 			//at this point no changes to the cart have been made that affect the order.  (We did not write any changes to the Container)
+			if ("shippingtax".equals(req.getParameter("step"))) {
+					//save the cart to the Storage container of we've added/changed shipping method
+					//this affects tax amounts, so we need to caputure it in a place where the end user can't manipulate it. (server-side)
+					try {
+						container.save(cart);
+					} catch (Exception ae) {
+						log.error("could not save cart", ae);
+					}
+			}
 			validateCart(req, cart);
 			super.putModuleData(cart);
 		}
@@ -325,6 +333,7 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 	 */
 	private void validateCart(SMTServletRequest req, ShoppingCartVO cart) {
 		//Map<String, String> errors = new HashMap<String, String>();
+		/*
 		for(ShoppingCartItemVO vo : cart.getItems().values()){
 			KeystoneProductVO prod = (KeystoneProductVO)vo.getProduct();
 			double weight = prod.getWeight() * prod.getSizes().get(0).getSquareInches() * vo.getQuantity();
@@ -333,6 +342,7 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 			//if (weight > 150)
 			//	errors.put(vo.getProductId(), "Package exceeds weight limits, please lower quantity and try again.");
 		}
+		*/
 		//if(errors.size() > 0)
 		//	req.setAttribute("errors", errors);
 	}
