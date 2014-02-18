@@ -1,5 +1,16 @@
 package com.fastsigns.action.wizard.ecommerce;
 
+/****************************************************************************
+ * <b>Title</b>: USStoreConfig.java <p/>
+ * <b>Project</b>: SB_FastSigns <p/>
+ * <b>Description: </b> All necessary store configuration for a US Ecommerce Store.  
+ * <p/>
+ * <b>Copyright:</b> Copyright (c) 2011<p/>
+ * <b>Company:</b> Silicon Mountain Technologies<p/>
+ * @author Billy Larsen
+ * @version 1.0
+ * @since Dec 2013<p/>
+ ****************************************************************************/
 public class USStoreConfig extends StoreConfig{
 	
 	public USStoreConfig(){

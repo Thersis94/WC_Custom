@@ -21,6 +21,19 @@ import com.smt.sitebuilder.admin.action.data.PageModuleVO;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
+/****************************************************************************
+ * <b>Title</b>: StorePageWizardAction.java <p/>
+ * <b>Project</b>: SB_FastSigns <p/>
+ * <b>Description: </b> Config based wizard for creating Ecommerce Store Pages.
+ * Depending on the country, we supply this with a configuration file that holds
+ * all country dependent data so that we only need one code instance of the wizard.
+ * <p/>
+ * <b>Copyright:</b> Copyright (c) 2011<p/>
+ * <b>Company:</b> Silicon Mountain Technologies<p/>
+ * @author Billy Larsen
+ * @version 1.0
+ * @since Dec 2013<p/>
+ ****************************************************************************/
 public class StorePageWizardAction extends SBActionAdapter{
 	private StoreConfig conf = null;
 	private List<PageModuleVO> modules = new LinkedList<PageModuleVO>();
@@ -37,6 +50,14 @@ public class StorePageWizardAction extends SBActionAdapter{
 		
 	}
 	
+	/**
+	 * Here we define all that needs to happen to add or remove a store page.
+	 * We turn off validation so we can write the javascript without complaints.
+	 * We create the template and add the Id on the request to be used throughout.
+	 * We determine if we're adding or removing the page and then call add/remove appropriately
+	 * We update all necessary secondary tables, flush cache and then redirect the user back to the wizard page.
+	 */
+	@Override
 	public void build(SMTServletRequest req) throws ActionException {
 		try{
 			req.setValidateInput(false);
@@ -61,18 +82,37 @@ public class StorePageWizardAction extends SBActionAdapter{
 			this.sendRedirect(page.getFullPath(), msg, req);
 	}
 	
+	/**
+	 * Workflow for adding an ecommerce Page.  We build the page and then add the
+	 * Page Modules.
+	 * @param req
+	 * @throws ActionException
+	 */
 	public void addEcommerce(SMTServletRequest req) throws ActionException {
 		buildPage(req);
 		addPageModules(req);
 		msg = "Ecommerce Successfully added to website.";
 	}
 	
+	/**
+	 * Workflow for removing an Ecommerce Page.  We delete the page and then delete 
+	 * the layout.  We want a clean slate if we add them again.
+	 * @param req
+	 * @throws ActionException
+	 */
 	public void removeEcommerce(SMTServletRequest req) throws ActionException {
 		removePage(req);
 		removeLayout(req);		
 		msg = "Ecommerce Successfully removed from the website.";
 	}
 	
+	/**
+	 * This method is used to update the location table.
+	 * If we are adding a store we update Attribute1_txt for the green button to work.
+	 * If we are removing a store we delete the value in attribute1_txt.
+	 * @param req
+	 * @param isDel
+	 */
 	public void updateLocationTable(SMTServletRequest req, boolean isDel) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("update DEALER_LOCATION set ATTRIB1_TXT = ");
@@ -95,6 +135,12 @@ public class StorePageWizardAction extends SBActionAdapter{
 		}
 	}
 	
+	/**
+	 * The rollout table holds which centers currently have a store page.  This is used to define
+	 * if we can add or remove store functionality.
+	 * @param req
+	 * @param isDel
+	 */
 	public void updateRolloutTable(SMTServletRequest req, boolean isDel) {
 		StringBuilder sb = new StringBuilder();
 		String customDb = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
@@ -120,6 +166,12 @@ public class StorePageWizardAction extends SBActionAdapter{
 		}
 	}
 	
+	/**
+	 * If we are adding a Store, attempt to delete a potential previous site redirect.
+	 * If we are removing a store, add a site redirect so we don't have a broken page.
+	 * @param req
+	 * @param isDel
+	 */
 	public void updateRedirect(SMTServletRequest req, boolean isDel) {
 		StringBuilder sb = new StringBuilder();
 		String franId = CenterPageAction.getFranchiseId(req);
@@ -154,6 +206,11 @@ public class StorePageWizardAction extends SBActionAdapter{
 		}
 	}
 	
+	/**
+	 * Return the Franchise Alias for redirect purposes
+	 * @param franId
+	 * @return
+	 */
 	private String getFranchiseAliasPath(String franId) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("select LOCATION_ALIAS_NM from DEALER_LOCATION ");
@@ -172,6 +229,12 @@ public class StorePageWizardAction extends SBActionAdapter{
 		return null;
 	}
 
+	/**
+	 * Set all the parameters on the request that we need to create a page and then send through to
+	 * SitePageAction to actually build it.
+	 * @param req
+	 * @throws ActionException
+	 */
 	public void buildPage(SMTServletRequest req) throws ActionException {
 		SitePageAction spa = new SitePageAction(actionInit);
 		spa.setDBConnection(dbConn);
@@ -195,6 +258,12 @@ public class StorePageWizardAction extends SBActionAdapter{
 		spa.update(req);
 	}
 	
+	/**
+	 * We get the pageId based on alias and siteId and then forward the 
+	 * call to SitePageAction where we delete it.
+	 * @param req
+	 * @throws ActionException
+	 */
 	public void removePage(SMTServletRequest req) throws ActionException {
 		StringBuilder sb = new StringBuilder();
 		sb.append("select * from PAGE where PAGE_ALIAS_NM='store' and SITE_ID=?");
@@ -211,6 +280,8 @@ public class StorePageWizardAction extends SBActionAdapter{
 		} finally{
 			try{ps.close();} catch(Exception e){}
 		}
+		
+		//Delete the page
 		if(pageId != null) {
 			log.debug("deleting page: " + pageId);
 			req.setParameter("pageId", pageId);
@@ -221,6 +292,11 @@ public class StorePageWizardAction extends SBActionAdapter{
 		}
 	}
 	
+	/**
+	 * Delete the layout from the center when we remove ecommerce from their site.
+	 * @param req
+	 * @throws ActionException
+	 */
 	public void removeLayout(SMTServletRequest req) throws ActionException {
 		StringBuilder sb = new StringBuilder();
 		sb.append("delete from TEMPLATE where LAYOUT_NM='eStore Layout' and SITE_ID=?");
@@ -237,7 +313,13 @@ public class StorePageWizardAction extends SBActionAdapter{
 		}
 	}
 
+	/**
+	 * We create the list of page modules and then bind them to the page.
+	 * @param req
+	 */
 	public void addPageModules(SMTServletRequest req) {
+		
+		//Generate list of ModuleVOs
 		makeModules(CenterPageAction.getFranchiseId(req));
 		for (PageModuleVO vo : modules) {
 			
@@ -248,6 +330,7 @@ public class StorePageWizardAction extends SBActionAdapter{
             sb.append("order_no, module_action_nm, param_nm, create_dt, page_module_id) ");
             sb.append("values (?,?,?,?,?,?,?,?,?)");
 			
+            //Build the Page Module
 			PreparedStatement ps = null;
 	        try {
 	            ps = dbConn.prepareStatement(sb.toString());
@@ -266,7 +349,7 @@ public class StorePageWizardAction extends SBActionAdapter{
 	    		sql.append("insert into page_module_role(page_module_role_id, page_module_id, role_id, create_dt) ");
 	    		sql.append("values (?,?,?,?)");
 	    		
-	    		
+	    		//Set the permissions
 	            for (String role : vo.getRoles().keySet()) {
 	            	ps = dbConn.prepareStatement(sql.toString());
 	                ps.setString(1, new UUIDGenerator().getUUID());
@@ -289,6 +372,10 @@ public class StorePageWizardAction extends SBActionAdapter{
 		this.conf = conf;
 	}
 	
+	/**
+	 * Make all the modules for the ecommerce Page
+	 * @param centerId
+	 */
 	public void makeModules(String centerId) {
 		modules.add(makePageModule("FTS_CENTER_PAGE_" + centerId, "c0a80247cf108e96173ab0fd1f615e6e", null, 2, 1));					// Center Page Portlet Center Page Portlet
 		modules.add(makePageModule("FTS_CENTER_PAGE_" + centerId, "c0a80247628640b3c9be22729ba3fa2", null, 1, 2));					// Center Page Portlet Center Page Portlet
@@ -306,6 +393,10 @@ public class StorePageWizardAction extends SBActionAdapter{
 		
 	}
 	
+	/**
+	 * We return all roles
+	 * @return
+	 */
 	public Map<String, Integer> makeRoles() {
 		Map<String, Integer> roles = new HashMap<String, Integer>();
 		roles.put("0", 0);
@@ -316,6 +407,11 @@ public class StorePageWizardAction extends SBActionAdapter{
 		return roles;
 	}
 	
+	/**
+	 * We return either public or a list of roles.
+	 * @param isPrivate
+	 * @return
+	 */
 	public Map<String, Integer> makeRoles(boolean isPrivate) {
 		Map<String, Integer> roles = new HashMap<String, Integer>();
 		if(!isPrivate){
@@ -330,6 +426,15 @@ public class StorePageWizardAction extends SBActionAdapter{
 		return roles;
 	}
 
+	/**
+	 * Build a page Module with all roles
+	 * @param actionId
+	 * @param displayPgId
+	 * @param paramNm
+	 * @param col
+	 * @param order
+	 * @return
+	 */
 	public PageModuleVO makePageModule(String actionId, String displayPgId, String paramNm, int col, int order) {
 		PageModuleVO pm = new PageModuleVO();
 		pm.setActionId(actionId);
@@ -341,6 +446,16 @@ public class StorePageWizardAction extends SBActionAdapter{
 		return pm;
 	}
 	
+	/**
+	 * Build a PageModule with only public or private Roles.
+	 * @param actionId
+	 * @param displayPgId
+	 * @param paramNm
+	 * @param col
+	 * @param order
+	 * @param isPrivate
+	 * @return
+	 */
 	public PageModuleVO makePageModule(String actionId, String displayPgId, String paramNm, int col, int order, boolean isPrivate) {
 		PageModuleVO pm = new PageModuleVO();
 		pm.setActionId(actionId);
