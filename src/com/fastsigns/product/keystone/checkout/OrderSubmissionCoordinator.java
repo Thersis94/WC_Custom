@@ -51,7 +51,7 @@ public class OrderSubmissionCoordinator {
 	private Map<String, Object> attributes;
 
 	public OrderSubmissionCoordinator(Map<String, Object> attributes) {
-		log = Logger.getLogger(CheckoutUtil.class);
+		log = Logger.getLogger(this.getClass());
 		this.attributes = attributes;
 	}
 	
@@ -243,7 +243,8 @@ public class OrderSubmissionCoordinator {
 		log.debug("path=" + (String) attributes.get("keystoneDsolTemplateFilePath") + path);
 		try {
 			fl = new FileLoader(attributes);
-			String source = (String) attributes.get("keystoneDsolTemplateFilePath") + path, dest = (String) attributes.get("keystoneDsolFilePath") + path;
+			String source = (String) attributes.get("keystoneDsolTemplateFilePath") + path; 
+			String dest = (String) attributes.get("keystoneDsolFilePath") + path;
 			fl.copy(source, dest);
 			//On reorder the product is still pointed to this file so if we remove you move it.
 			//fl.deleteFile((String) attributes.get("keystoneDsolTemplateFilePath") + path);
@@ -350,7 +351,7 @@ public class OrderSubmissionCoordinator {
 	 */
 	private double roundTwoDecimals(double d) {
         DecimalFormat twoDForm = new DecimalFormat("#.##");
-    return Double.valueOf(twoDForm.format(d));
+        return Double.valueOf(twoDForm.format(d));
 }
 
 	/**
@@ -361,7 +362,7 @@ public class OrderSubmissionCoordinator {
 	private JSONObject buildPaymentDetails(ShoppingCartVO cart) {
 		PaymentVO p = cart.getPayment();
 		JSONObject pymt = new JSONObject();
-		if(StringUtil.checkVal(cart.getPurchaseOrderNo()).length() > 0) {
+		if (StringUtil.checkVal(cart.getPurchaseOrderNo()).length() > 0) {
 			pymt.accumulate("payment_method", "po");
 			pymt.accumulate("po_number", cart.getPurchaseOrderNo());
 		} else {
@@ -388,12 +389,18 @@ public class OrderSubmissionCoordinator {
 	private JSONObject buildShippingDetails(ShoppingCartVO cart) {
 		JSONObject ship = new JSONObject();
 		ShippingInfoVO si = cart.getShipping();
-		if(si != null){
-			ship.accumulate("address", buildAddressDetails(cart));
-			ship.accumulate("shippingTotal", roundTwoDecimals(si.getShippingCost()));
-			ship.accumulate("carrier_name", "UPS");
-			ship.accumulate("class_of_service", si.getShippingMethodName());
-		}
+		if (si == null) return ship;
+		
+		ship.accumulate("address", buildAddressDetails(cart));
+		ship.accumulate("shippingTotal", roundTwoDecimals(si.getShippingCost()));
+		ship.accumulate("carrier_name", "UPS");
+		ship.accumulate("class_of_service", si.getShippingMethodName());
+		
+		//add shipping tax & rate
+		double taxRate = cart.getTaxAmount() / cart.getSubTotal();
+		ship.accumulate("shippingTax", si.getShippingCost() * taxRate);
+		ship.accumulate("shippingTaxRate", taxRate);
+		
 		return ship;
 	}
 	

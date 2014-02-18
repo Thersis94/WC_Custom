@@ -27,6 +27,7 @@ import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.commerce.catalog.ProductCategoryVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -99,7 +100,26 @@ public class FSProductAction extends SBActionAdapter {
 			prodChildKey = catImageKey;
 			catImageKey = StringUtil.checkVal(req.getParameter(SMTServletRequest.PARAMETER_KEY + "4"));
 		}
-
+		
+		// Start building the mobile url if we are not on a mobile site.
+		StringBuilder mobileUrl = new StringBuilder();
+		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
+		boolean notMobile = !Convert.formatBoolean(site.getMobileFlag());
+		if(notMobile) mobileUrl.append("http://"+site.getMobileSiteUrl());
+		
+		// Start building the canonical and mobile urls for this product page.
+		StringBuilder canonicalUrl = new StringBuilder();
+		boolean byProduct;
+		
+		if (req.hasParameter("prefix")) {
+			canonicalUrl.append("/" + req.getParameter("prefix"));
+			if(notMobile) mobileUrl.append(req.getParameter("prefix"));
+			byProduct = true;
+		} else {
+			canonicalUrl.append(req.getRequestURI().substring(req.getRequestURI().lastIndexOf('/')) + "-");
+			byProduct = false;
+		}
+		
 		log.debug("Has Sub Cat: " + hasSubCat + "|" + pId + "|" + prodChildKey + "|" + catImageKey + "|");
 		log.debug("Module: " + mod);
 		
@@ -113,12 +133,32 @@ public class FSProductAction extends SBActionAdapter {
 				} else if (pId.length() > 1 && prodChildKey.length() == 0) {
 					log.debug("products by category");
 					this.getProdBySubCat(req, pId, catalogId);
+					canonicalUrl.append(pId.toLowerCase());
+					if(notMobile && byProduct) mobileUrl.append(pId.toLowerCase());
+					else if(notMobile) mobileUrl.append("products"+
+							req.getRequestURI().substring(req.getRequestURI().lastIndexOf('/'))+"/qs/"+pId);
 				} else if (catImageKey.length() > 0) {
 					log.debug("product info");
 					this.getProdImages(req, catImageKey, prodChildKey, catalogId);
+					if (byProduct) {
+						canonicalUrl.append(prodChildKey.toLowerCase() + "/" + catImageKey.toLowerCase());
+						if(notMobile) mobileUrl.append(prodChildKey.toLowerCase() + "/" + catImageKey.toLowerCase());
+					} else {
+						canonicalUrl.append(pId.toLowerCase());
+						if(notMobile) mobileUrl.append("products" +	req.getRequestURI().substring(req.getRequestURI().lastIndexOf('/'))
+								+ "/qs/" + pId + "/" + prodChildKey+ "/" + catImageKey);
+					}
 				} else {
 					log.debug("child products");
 					this.getChildProducts(prodChildKey, catalogId, req);
+					if (byProduct) {
+						canonicalUrl.append(prodChildKey.toLowerCase());
+						if(notMobile) mobileUrl.append(prodChildKey.toLowerCase());
+					} else {
+						canonicalUrl.append(pId.toLowerCase());
+						if(notMobile) mobileUrl.append("products" +
+								req.getRequestURI().substring(req.getRequestURI().lastIndexOf('/')) + "/qs/" + pId + "/" + prodChildKey);
+					}
 //					if(mod.getDataSize() == 0){
 //						
 //						this.sendRedirect("/" + reverseMap.get(pId) + pId, "", req);
@@ -144,21 +184,18 @@ public class FSProductAction extends SBActionAdapter {
 		this.assignPageInfo(req, mod);
 		
 		
-		// We only set the canonical url if we do have a page that we want it to be set too
+		PageVO page = (PageVO)req.getAttribute(Constants.PAGE_DATA);
+		log.debug(page);
 		if (pId.length() > 0) {
-			PageVO page = (PageVO)req.getAttribute(Constants.PAGE_DATA);
-			
-			// This set of if/else tests determines how deep we are in the product structure.
-			// pId -> prodChildKey -> catImageKey
-			if (prodChildKey != null && prodChildKey.length() > 0) {
-				if (catImageKey != null && catImageKey.length() > 0)
-					page.setCanonicalPageUrl("/" + req.getParameter("prefix")+prodChildKey.toLowerCase() + "/" + catImageKey.toLowerCase());
-				else
-					page.setCanonicalPageUrl("/" + req.getParameter("prefix")+prodChildKey.toLowerCase());
-			}
-			else
-				page.setCanonicalPageUrl("/" + req.getParameter("prefix")+pId.toLowerCase());
+			// Set the canonical url for this page.
+			page.setCanonicalPageUrl(canonicalUrl.toString());
+		} else {
+			page.setCanonicalPageUrl(req.getRequestURI().substring(req.getRequestURI().lastIndexOf('/')));
+			//TODO FInd out the best way to resolve the products/products issue
+			if(notMobile) mobileUrl.append("products" + req.getRequestURI().substring(req.getRequestURI().lastIndexOf('/')));
 		}
+		
+		if(notMobile) page.setCanonicalMobileUrl(mobileUrl.toString());
 	}
 	
 	/**

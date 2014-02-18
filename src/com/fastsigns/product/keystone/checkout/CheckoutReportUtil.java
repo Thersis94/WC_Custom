@@ -233,7 +233,7 @@ public class CheckoutReportUtil {
 		//body.append(getHtmlBillingInfo(cart.getBillingInfo()));
 		body.append(getHtmlShippingInfo(cart));
 		body.append("</div>");
-		body.append("<h1>Thank you for placing your order with <span  style='color:#1F497D'>FASTSIGNS").append(designatorNm != null ? designatorNm : "").append("</span>.</h1>");
+		body.append("<h1>Thank you for placing your order with <span  style='color:#1F497D'>").append(designatorNm != null ? designatorNm : "FASTSIGNS").append("</span>.</h1>");
 		body.append("<h2>This is an automated message, <span style='color:#1F497D'>for questions please contact</span> ").append(franId).append("@fastsigns.com.</h2>");
 		return body.toString();	
 	}
