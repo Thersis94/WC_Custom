@@ -65,7 +65,7 @@ public class CipherKey {
 	}
 	
 	/**
-	 * Returns the encrypted pin code, offercode, short CipherKey and long CipherKey – also
+	 * Returns the encrypted pin code, offercode, short CipherKey and long CipherKey also
 	 * known as the CPT parameter.  Uses the defailt offer code, short key and long key.
 	 * Also uses the pin code assigned to the getter
 	 * @return encoded value.  Null if no pin code
@@ -76,7 +76,7 @@ public class CipherKey {
 	}
 	
 	/**
-	 * Returns the encrypted pin code, offercode, short CipherKey and long CipherKey – also
+	 * Returns the encrypted pin code, offercode, short CipherKey and long CipherKey also
 	 * known as the CPT parameter.  Uses the defailt offer code, short key and long key
 	 * @param pinCode
 	 * @return
@@ -87,9 +87,9 @@ public class CipherKey {
 	}
 
 	/**
-	 * Returns the encrypted pin code, offercode, short CipherKey and long CipherKey – also
+	 * Returns the encrypted pin code, offercode, short CipherKey and long CipherKey also
 	 * known as the CPT parameter.
-	 * @param pinCode User’s unique identifier, as assigned by the client.
+	 * @param pinCode User's unique identifier, as assigned by the client.
 	 * @param iOfferCode Offer code for the coupon, as assigned by Coupons, Inc..
 	 * @param sShortKey Short CipherKey for the coupon, as assigned by Coupons, Inc..
 	 * @param sLongKey Long CipherKey for the coupon, as assigned by Coupons, Inc..

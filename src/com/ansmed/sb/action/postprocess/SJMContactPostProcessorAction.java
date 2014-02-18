@@ -291,7 +291,7 @@ public class SJMContactPostProcessorAction extends SimpleActionAdapter {
 	    	site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 	    	String subject = "";
 	    	if (contactForm == SJMFormId.c0a8024121202bfe526d209c678fdd5b) {
-	    		subject = "Ambassador Request—Field";
+	    		subject = "Ambassador Request Field";
 	    	} else {
 	    		subject = contactForm.getFormName() + " Submission";	
 	    	}

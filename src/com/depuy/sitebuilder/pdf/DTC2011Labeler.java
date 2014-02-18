@@ -283,7 +283,7 @@ public class DTC2011Labeler extends AbstractLabelPDF {
 		s.append("she consulted doctors and surgeons in the hospital, and decided ");
 		s.append("on her first (and later her other) hip replacement from DePuy ");
 		s.append("Orthopaedics. Now she's back to moving freely, without pain. ");
-		s.append("Every day she tests her hips Ñ and her DePuy Orthopaedics hips ");
+		s.append("Every day she tests her hips and her DePuy Orthopaedics hips ");
 		s.append("are helping her stand up to the tests of her life.");
 		
 		Paragraph par = new Paragraph(new Chunk(s.toString(), baseFont));
@@ -332,8 +332,8 @@ public class DTC2011Labeler extends AbstractLabelPDF {
 		s.append("was so bad that she had to take pain pills to get through the day. ");
 		s.append("When she finally had her first (and later her other) knee replaced, ");
 		s.append("she wished she hadn't waited so long. It allowed her to get back to ");
-		s.append("running the farm Ñ something she loves. Every day she tests her ");
-		s.append("knees Ñ and her DePuy Orthopaedics knees are helping her stand up to the tests of her life.");
+		s.append("running the farm something she loves. Every day she tests her ");
+		s.append("knees and her DePuy Orthopaedics knees are helping her stand up to the tests of her life.");
 		
 		Paragraph par = new Paragraph(new Chunk(s.toString(), baseFont));
 		par.setAlignment(Element.ALIGN_JUSTIFIED);
@@ -379,7 +379,7 @@ public class DTC2011Labeler extends AbstractLabelPDF {
 		Font cFont = new Font(largeTitleFont);
 		cFont.setStyle(Font.NORMAL);
 		cFont.setSize(8);
-		Chunk c = new Chunk("¨ ", cFont);
+		Chunk c = new Chunk("\u00A8 ", cFont);
 		c.setTextRise(5);
 		par.add(c);
 		par.add(new Chunk("Hips", largeTitleFont));
@@ -452,7 +452,7 @@ public class DTC2011Labeler extends AbstractLabelPDF {
 		
 		/*
 		s = new StringBuilder();
-		s.append("*SIGMA¨ Knees are an evolution of the P.F.C.¨ and P.F.C. SIGMA Knee systems");
+		s.append("*SIGMA\u00A8 Knees are an evolution of the P.F.C.\u00A8 and P.F.C. SIGMA Knee systems");
 		par = new Paragraph(new Chunk(s.toString(), baseFont));
 		par.setAlignment(Element.ALIGN_JUSTIFIED);
 		par.setSpacingBefore(182);
@@ -475,7 +475,7 @@ public class DTC2011Labeler extends AbstractLabelPDF {
 		Font cFont = new Font(largeTitleFont);
 		cFont.setStyle(Font.NORMAL);
 		cFont.setSize(8);
-		Chunk c = new Chunk("¨ ", cFont);
+		Chunk c = new Chunk("\u00A8 ", cFont);
 		c.setTextRise(5);
 		par.add(c);
 		par.add(new Chunk("Knees", largeTitleFont));
@@ -487,10 +487,10 @@ public class DTC2011Labeler extends AbstractLabelPDF {
 		
 		s = new StringBuilder();
 		s.append("When traditional treatment options are no longer effective, ");
-		s.append("knee replacement surgery may be an appropriate solution. P.F.C."); //¨ SIGMA ");
+		s.append("knee replacement surgery may be an appropriate solution. P.F.C."); //\u00A8 SIGMA ");
 		par = new Paragraph(new Chunk(s.toString(), baseFont));
 		
-		c = new Chunk("¨ ", baseFont);
+		c = new Chunk("\u00A8 ", baseFont);
 		c.setTextRise(5);
 		par.add(c);
 		
@@ -555,7 +555,7 @@ public class DTC2011Labeler extends AbstractLabelPDF {
 		
 		/*
 		s = new StringBuilder();
-		s.append("*SIGMA¨ Knees are an evolution of the P.F.C.¨ and P.F.C. SIGMA Knee systems");
+		s.append("*SIGMA\u00A8 Knees are an evolution of the P.F.C.\u00A8 and P.F.C. SIGMA Knee systems");
 		par = new Paragraph(new Chunk(s.toString(), baseFont));
 		par.setAlignment(Element.ALIGN_JUSTIFIED);
 		par.setSpacingBefore(182);

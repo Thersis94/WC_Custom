@@ -190,9 +190,9 @@ public class DTC2011LocatorLabeler extends AbstractLabelPDF {
 		s = new StringBuilder();
 		s.append("Schedule an appointment today with an orthopaedic surgeon to learn more about ");
 		if ("knee".equalsIgnoreCase(type)) {
-			s.append("SIGMA¨ Knees.");
+			s.append("SIGMA\u00A8 Knees.");
 		} else {
-			s.append("PINNACLE¨ Hips.");
+			s.append("PINNACLE\u00A8 Hips.");
 		}
 		
 		par = new Paragraph(new Chunk(s.toString(), baseFont));

@@ -1058,7 +1058,7 @@ public class TrackerMailFormatter extends TrackerAction {
 		Map<String, String> cVals = new HashMap<String, String>();
 		String doctor = "n/a";
 		String shareInfo = "n/a";
-		String urgency = "Normal—to be completed within 3-5 business days";
+		String urgency = "Normal to be completed within 3-5 business days";
 		String summary = "n/a";
 		String requestedBy = "n/a";
 		if (patient.getPatientSourceFormId() != null) {
@@ -1089,14 +1089,14 @@ public class TrackerMailFormatter extends TrackerAction {
 									shareInfo = StringUtil.checkVal(vo.getExtData().get("c0a8024120f279b3148f9bf14d3e4315"));
 									if (shareInfo.length() == 0) shareInfo = "No";
 									urgency = StringUtil.checkVal(vo.getExtData().get("c0a802412105ba75916efe71c9f6576"));
-									if (urgency.length() == 0) urgency = "Normal—to be completed within 3-5 business days";
+									if (urgency.length() == 0) urgency = "Normal to be completed within 3-5 business days";
 									summary = vo.getExtData().get("c0a802412106e1fce34ca96fe26ae5a4");
 									requestedBy = "Customer Service";
 								} else if (formId.equals("c0a8024121202bfe526d209c678fdd5b")) { // SalesNet Field Rep form
 									doctor = "n/a";
 									shareInfo = "n/a";
 									urgency = StringUtil.checkVal(vo.getExtData().get("c0a802412105ba75916efe71c9f6576"));
-									if (urgency.length() == 0) urgency = "Normal—to be completed within 3-5 business days";
+									if (urgency.length() == 0) urgency = "Normal to be completed within 3-5 business days";
 									summary = vo.getExtData().get("c0a802412106e1fce34ca96fe26ae5a4");
 									requestedBy = "SJM Representative";
 								}
