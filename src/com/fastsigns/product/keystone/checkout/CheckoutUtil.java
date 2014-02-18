@@ -204,7 +204,7 @@ public class CheckoutUtil {
 		}
 		log.debug("loaded Session Data, retrieving shipping options.");
 		
-		attributes.put("franchise", sessVo.getFranchise(webId));
+		attributes.put(KeystoneProxy.FRANCHISE, sessVo.getFranchise(webId));
 		attributes.put(KeystoneProxy.FRAN_SESS_VO, sessVo);
 		
 		//create a ShippingCost call to the SMTProxy.

@@ -33,6 +33,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class KeystoneProxy {
 	public static final String FRAN_SESS_VO = "franchiseSessVo";
+	public static final String FRANCHISE = "franchise";
 	
 	//interaction constants
 	private String keystoneApiUrl = null;

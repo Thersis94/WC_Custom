@@ -12,6 +12,7 @@ import net.sf.json.JSONObject;
 import org.apache.log4j.Logger;
 
 import com.fastsigns.action.franchise.vo.FranchiseVO;
+import com.fastsigns.product.keystone.KeystoneProxy;
 import com.fastsigns.product.keystone.vo.KeystoneProductVO;
 import com.fastsigns.product.keystone.vo.SizeVO;
 import com.siliconmtn.commerce.ShippingInfoVO;
@@ -47,6 +48,9 @@ public class ShippingRequestCoordinator {
 	}
 	
 	public ShoppingCartVO retrieveShippingOptions(ShoppingCartVO cart) {
+		FranchiseVO franchise = (FranchiseVO) attributes.get(KeystoneProxy.FRANCHISE);
+		log.debug("franchise=" + franchise);
+		
 		try {
 			ShippingRequestVO shippingInfo = buildShippingRequest(cart);
 			String strShipReq = JSONObject.fromObject(shippingInfo).toString();
@@ -85,7 +89,12 @@ public class ShippingRequestCoordinator {
 							newVo.setShippingTime(option.optString("shippingTime"));
 							
 							Double rate = Convert.formatDouble(option.getJSONObject("shippingCosts").getDouble("NEGOTIATED"));
-							rate = rate + (rate*.10);//bump costs by 10%
+							
+							//get shipping markup from the Franchise data in keystone
+							Integer markup = Convert.formatInteger((String)franchise.getAttributes().get("shipping_markup"), 0);
+							//log.debug("UPS rate for " + newVo.getShippingMethodName() + "=" + rate );
+							if (markup > 0) rate = rate * (1 + (markup * .01)); //bump costs by whatever is defined in Keystone
+							//log.debug("markup rate=" + rate + " markup=" + markup);
 							newVo.setShippingCost(rate);
 							
 							opts.put(newVo.getShippingMethodId(), newVo);
@@ -103,7 +112,7 @@ public class ShippingRequestCoordinator {
 	}
 	
 	private ShippingRequestVO buildShippingRequest(ShoppingCartVO cart) {
-		FranchiseVO franchise = (FranchiseVO) attributes.get("franchise");
+		FranchiseVO franchise = (FranchiseVO) attributes.get(KeystoneProxy.FRANCHISE);
 		log.debug("franchise=" + franchise);
 		log.debug("Building Shipping Source");
 		ShippingLocation source = buildShippingLocation(franchise.getLocation());
