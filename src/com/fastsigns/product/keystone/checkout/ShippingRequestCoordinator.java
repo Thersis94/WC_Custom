@@ -88,7 +88,11 @@ public class ShippingRequestCoordinator {
 							newVo.setShippingMethodName(option.optString("shippingMethodName"));
 							newVo.setShippingTime(option.optString("shippingTime"));
 							
-							Double rate = Convert.formatDouble(option.getJSONObject("shippingCosts").getDouble("NEGOTIATED"));
+							//TODO Ensure this is the proper rateKey to use for FEDEX.  Multiple are sent back, this one was common to all.
+							String rateKey = "NEGOTIATED";
+							if(franchise.getAttributes().get("ecomm_shipping_service").equals("FEDEX"))
+								rateKey = "PAYOR_ACCOUNT_PACKAGE";
+							Double rate = Convert.formatDouble(option.getJSONObject("shippingCosts").getDouble(rateKey));
 							
 							//get shipping markup from the Franchise data in keystone
 							Integer markup = Convert.formatInteger((String)franchise.getAttributes().get("shipping_markup"), 0);
@@ -192,8 +196,20 @@ public class ShippingRequestCoordinator {
 	 */
 	private List<ShippingAccountVO> buildShippingAccounts(FranchiseVO fran) {
 		List<ShippingAccountVO> data = new ArrayList<ShippingAccountVO>();
+		ShippingAccountVO acct = new ShippingAccountVO();
 		
 		Map<String,String> accounts = new HashMap<String, String>();
+		String shipService = (String) fran.getAttributes().get("ecomm_shipping_service");
+		acct.setShippingAccountType(shipService);
+		if(shipService.equals("FEDEX")) {
+			accounts.put("FRANCHISE_ACCOUNT_KEY", (String) fran.getAttributes().get("fedex_account"));
+			acct.setMeterNumber((String) fran.getAttributes().get("fedex_meter_number"));
+		} else if(shipService.equals("UPS")) {
+			accounts.put("FRANCHISE_ACCOUNT_KEY", (String) fran.getAttributes().get("ups_account"));
+			acct.setAccountServiceKey((String) fran.getAttributes().get("ups_account_service_key"));
+			acct.setAccountLoginId((String) fran.getAttributes().get("ups_account_login_id"));
+			acct.setAccountPassword((String) fran.getAttributes().get("ups_account_login_password"));
+		}
 		//accounts.put(ShippingAccountVO.FRANCHISE_ACCOUNT_KEY, (String)fran.getAttributes().get("ups_account"));
 		//TODO THIS NEEDS UPDATED ONCE KEYSTONE GETS FIXED
 		//accounts.put(ShippingAccountVO.FRANCHISE_ACCOUNT_KEY, "3C9AB736B863D3C8");
@@ -201,8 +217,6 @@ public class ShippingRequestCoordinator {
 		//TODO USE THIS INSTEAD
 		//acct.setShippingAccountType((String)fran.getAttributes().get("ecomm_shipping_service"));
 		
-		ShippingAccountVO acct = new ShippingAccountVO();
-		acct.setShippingAccountType("UPS");
 		acct.setAccountName(fran.getLocationName());
 		//TODO THIS NEEDS UPDATED, RIGHT NOW UPS IS BROKEN!
 		//	acct.setAccountLoginId("jcamire");

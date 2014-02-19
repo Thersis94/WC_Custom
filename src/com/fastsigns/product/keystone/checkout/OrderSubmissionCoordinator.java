@@ -85,7 +85,7 @@ public class OrderSubmissionCoordinator {
 		} else {
 			proxy.setAction("createEJob");
 			proxy.addPostData("jobInfo", buildJobInfo(cart).toString());
-			proxy.addPostData("shippingDetails", buildShippingDetails(cart).toString());
+			proxy.addPostData("shippingDetails", buildShippingDetails(cart, (String) sessVo.getFranchise(webId).getAttributes().get("ecomm_shipping_service")).toString());
 			proxy.addPostData("shipping", cart.getShipping().getShippingMethodId().equals("instore") ? "false" : "true");
 		}
 		
@@ -383,14 +383,14 @@ public class OrderSubmissionCoordinator {
 	 * @param cart
 	 * @return
 	 */
-	private JSONObject buildShippingDetails(ShoppingCartVO cart) {
+	private JSONObject buildShippingDetails(ShoppingCartVO cart, String shippingService) {
 		JSONObject ship = new JSONObject();
 		ShippingInfoVO si = cart.getShipping();
 		if (si == null) return ship;
 		
 		ship.accumulate("address", buildAddressDetails(cart));
 		ship.accumulate("shippingTotal", roundTwoDecimals(si.getShippingCost()));
-		ship.accumulate("carrier_name", "UPS"); //TODO set as dynamic value from ecomm_shipping_service
+		ship.accumulate("carrier_name", shippingService); 
 		ship.accumulate("class_of_service", si.getShippingMethodName());
 		
 		//add shipping tax & rate
