@@ -113,7 +113,7 @@ public class FSProductAction extends SBActionAdapter {
 		
 		if (req.hasParameter("prefix")) {
 			canonicalUrl.append("/" + req.getParameter("prefix"));
-			if(notMobile) mobileUrl.append(req.getParameter("prefix"));
+			if(notMobile) mobileUrl.append("/" + req.getParameter("prefix"));
 			byProduct = true;
 		} else {
 			canonicalUrl.append(req.getRequestURI().substring(req.getRequestURI().lastIndexOf('/')) + "-");
@@ -135,7 +135,7 @@ public class FSProductAction extends SBActionAdapter {
 					this.getProdBySubCat(req, pId, catalogId);
 					canonicalUrl.append(pId.toLowerCase());
 					if(notMobile && byProduct) mobileUrl.append(pId.toLowerCase());
-					else if(notMobile) mobileUrl.append("products"+
+					else if(notMobile) mobileUrl.append("/products"+
 							req.getRequestURI().substring(req.getRequestURI().lastIndexOf('/'))+"/qs/"+pId);
 				} else if (catImageKey.length() > 0) {
 					log.debug("product info");
@@ -145,7 +145,7 @@ public class FSProductAction extends SBActionAdapter {
 						if(notMobile) mobileUrl.append(prodChildKey.toLowerCase() + "/" + catImageKey.toLowerCase());
 					} else {
 						canonicalUrl.append(pId.toLowerCase());
-						if(notMobile) mobileUrl.append("products" +	req.getRequestURI().substring(req.getRequestURI().lastIndexOf('/'))
+						if(notMobile) mobileUrl.append("/products" +	req.getRequestURI().substring(req.getRequestURI().lastIndexOf('/'))
 								+ "/qs/" + pId + "/" + prodChildKey+ "/" + catImageKey);
 					}
 				} else {
@@ -156,7 +156,7 @@ public class FSProductAction extends SBActionAdapter {
 						if(notMobile) mobileUrl.append(prodChildKey.toLowerCase());
 					} else {
 						canonicalUrl.append(pId.toLowerCase());
-						if(notMobile) mobileUrl.append("products" +
+						if(notMobile) mobileUrl.append("/products" +
 								req.getRequestURI().substring(req.getRequestURI().lastIndexOf('/')) + "/qs/" + pId + "/" + prodChildKey);
 					}
 //					if(mod.getDataSize() == 0){
@@ -191,8 +191,12 @@ public class FSProductAction extends SBActionAdapter {
 			page.setCanonicalPageUrl(canonicalUrl.toString());
 		} else {
 			page.setCanonicalPageUrl(req.getRequestURI().substring(req.getRequestURI().lastIndexOf('/')));
-			//TODO FInd out the best way to resolve the products/products issue
-			if(notMobile) mobileUrl.append("products" + req.getRequestURI().substring(req.getRequestURI().lastIndexOf('/')));
+			
+			if(notMobile) {
+				if (!req.getRequestURI().contains("products"))
+					mobileUrl.append("/products");
+				mobileUrl.append(req.getRequestURI().substring(req.getRequestURI().lastIndexOf('/')));
+			}
 		}
 		
 		if(notMobile) page.setCanonicalMobileUrl(mobileUrl.toString());
