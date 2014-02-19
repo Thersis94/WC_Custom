@@ -33,6 +33,8 @@ import com.smt.taxation.TaxationDataParser;
  * @author James McKain
  * @version 1.0
  * @since Jan 10, 2013
+ * @updates
+ * 		-JM added parsing of tax line items and passing of each one's tax rate back to it's peer in the cart.
  ****************************************************************************/
 public class TaxationRequestCoordinator {
 	
@@ -48,23 +50,34 @@ public class TaxationRequestCoordinator {
 	
 	public ShoppingCartVO retrieveTaxOptions(ShoppingCartVO cart) {
 		try {
-		TaxationRequestVO taxInfo = buildTaxRequest(cart);
-		proxy.addPostData("type", "json");
-		JsonConfig jsonConfig = new JsonConfig();
-		jsonConfig.setExcludes(new String[]{"data", "singleLineAddress", "matchCode"});
-		jsonConfig.setIgnoreDefaultExcludes(false);
-		jsonConfig.setCycleDetectionStrategy(CycleDetectionStrategy.LENIENT);
-		JSONObject jso = JSONObject.fromObject(taxInfo, jsonConfig);
-		log.debug(jso);
-		proxy.addPostData("xmlData", jso.toString());
-		byte[] data = proxy.getData();
-		log.debug(new String(data));
-		
-		//parse the response
-		TaxationDataParser tdp = new TaxationDataParser();
-		TaxationResponseVO taxes = tdp.parseResponseData(data, "json");
-		cart.setTaxAmount(taxes.getTotalTax());
-		log.debug("Total Taxes" + taxes.getTotalTax());
+			TaxationRequestVO taxInfo = buildTaxRequest(cart);
+			proxy.addPostData("type", "json");
+			JsonConfig jsonConfig = new JsonConfig();
+			jsonConfig.setExcludes(new String[]{"data", "singleLineAddress", "matchCode"});
+			jsonConfig.setIgnoreDefaultExcludes(false);
+			jsonConfig.setCycleDetectionStrategy(CycleDetectionStrategy.LENIENT);
+			JSONObject jso = JSONObject.fromObject(taxInfo, jsonConfig);
+			log.debug(jso);
+			proxy.addPostData("xmlData", jso.toString());
+			byte[] data = proxy.getData();
+			log.debug(new String(data));
+			
+			//parse the response back into the cart object
+			Map<String, ShoppingCartItemVO> items = cart.getItems();
+			TaxationDataParser tdp = new TaxationDataParser();
+			TaxationResponseVO taxes = tdp.parseResponseData(data, "json");
+			for (LineItemVO lineVo : taxes.getLineItems()) {
+				ShoppingCartItemVO item = items.get(lineVo.getLineItemId());
+				if (item == null) continue;
+				item.setTaxRate(lineVo.getTaxrate());
+				item.setTaxAmount(lineVo.getTaxAmount());
+				log.debug("matched up tax for " + lineVo.getLineItemId() + " to " +
+								item.getProductId() + ", and set taxRate=" + item.getTaxRate());
+			}
+			cart.setItems(items);
+			cart.setTaxAmount(taxes.getTotalTax());
+			log.debug("Total Taxes: " + taxes.getTotalTax());
+			
 		} catch(Exception e) {
 			log.error("TAXATION HAS FAILED", e);
 		}
@@ -73,7 +86,7 @@ public class TaxationRequestCoordinator {
 	
 	private TaxationRequestVO buildTaxRequest(ShoppingCartVO cart) {
 		FastsignsSessVO fran = (FastsignsSessVO) attributes.get(KeystoneProxy.FRAN_SESS_VO);
-		FranchiseVO franchise = (FranchiseVO) attributes.get("franchise");
+		FranchiseVO franchise = (FranchiseVO) attributes.get(KeystoneProxy.FRANCHISE);
 		log.debug("franchise: " + StringUtil.getToString(franchise));
 		log.debug("franchiseAttrs: " + franchise.getAttributes());
 		
@@ -93,8 +106,7 @@ public class TaxationRequestCoordinator {
 		
 		//leverage business rules to configure taxType, taxId, and keystoneEnvironment
 		taxReq = configureTaxParameters(attributes, franchise, taxReq);
-		
-		
+
 		taxReq.addTaxLocations(buildLocation(franchise.getLocation(), "src"));
 		taxReq.addTaxLocations(buildLocation(cart.getShippingInfo().getLocation(), "destn"));
 		taxReq = this.addLineItems(taxReq, cart);
@@ -129,13 +141,17 @@ public class TaxationRequestCoordinator {
 	 */
 	protected static TaxationRequestVO configureTaxParameters(Map<String, Object> attributes, 
 			FranchiseVO franchise, TaxationRequestVO taxReq) {
-		//use WC config value to determine which Environment to set, PRODUCTION=PRODUCTION, always.
-		//STAGING = SANDBOX when using AVALARA, STAGING=MIGRATION where using FASTSIGNS_CUSTOM taxProvider
-		//one of [PRODUCTION, SANDBOX when in staging AND AVALARA, MIGRATION when in staging and custom]
+		/**
+		 * use WC config value to determine which Environment to set, PRODUCTION=PRODUCTION, always.
+		 * STAGING = SANDBOX when using AVALARA, STAGING=MIGRATION where using FASTSIGNS_CUSTOM taxProvider
+		 * one of [PRODUCTION, SANDBOX when in staging AND AVALARA, MIGRATION when in staging and custom]
+		 **/
 		String instanceNm = StringUtil.checkVal(attributes.get("keystoneEnvironment"));
 		
-		//determine the tax service we'll use; this comes from Keystone
-		//try-catch here because "ecomm_tax_service" is a GUID if != AVALARA.
+		/**
+		 * determine the tax service we'll use; this comes from Keystone
+		 * try-catch here because "ecomm_tax_service" is a GUID if != AVALARA.
+		 **/
 		TaxationServiceType taxType = null;
 		try {
 			taxType = TaxationServiceType.valueOf(franchise.getAttributes().get("ecomm_tax_service").toString());
@@ -149,7 +165,6 @@ public class TaxationRequestCoordinator {
 			//When Avalara: providerType="AVALARA", customerTaxId = "AVALARA"
 			taxReq.setCustomerTaxId(TaxationServiceType.AVALARA.toString());
 			taxReq.setEnvironment("PRODUCTION".equalsIgnoreCase(instanceNm) ? "PRODUCTION" : "SANDBOX");
-//		taxReq.setEnvironment("PRODUCTION");
 		} else {
 			//When Custom: providerType="FASTSIGNS_CUSTOM", customerTaxId = "SOME Guid"
 			taxReq.setCustomerTaxId((String) franchise.getAttributes().get("default_tax_service"));
@@ -169,23 +184,17 @@ public class TaxationRequestCoordinator {
 		
 		for (ShoppingCartItemVO item : cart.getItems().values()) {
 			KeystoneProductVO prod = (KeystoneProductVO) item.getProduct();
-			//log.debug("item=" + item);
 			LineItemVO li = new LineItemVO();
 			li.setAmount(item.getBasePrice()*item.getQuantity());
 			li.setDestinationLocationId("destn"); //destination is where the item is being sent 
-			if(item.getProductId().equals("shipping"))
-				li.setItemCode("FR");
-			else
-				li.setItemCode("Product");
+			li.setItemCode( (item.getProductId().equals("shipping")) ? "FR" : "Product");
 			li.setLineItemId(item.getProductId());
 			li.setOriginLocationId("src"); //src is where the item is being purchased from
 			li.setQuantity(item.getQuantity());
 			li.setUnitPrice(item.getBasePrice());
-			//li.setTaxAmount(item.getBasePrice());
 			li.setUsageType("USAGE"); //arbitrary
 			li.setTaxCode(evalTaxCode(prod.getTax_code_id()));
 			
-			//log.debug("lineItem=" + li);
 			taxReq.addLineItem(li);
 		}
 
@@ -198,7 +207,7 @@ public class TaxationRequestCoordinator {
 	 * @param id
 	 * @return
 	 */
-	private String evalTaxCode(int id) {
+	protected final String evalTaxCode(int id) {
 		switch (id) {
 			case 1: return "P0000000";
 			case 2: return "P0000000";
@@ -206,7 +215,7 @@ public class TaxationRequestCoordinator {
 			case 4: return "P0000000";
 			case 6: return "FR";
 			case 5: 
-			default:return "P0000000";
+			default: return "P0000000";
 		}
 	}
 	

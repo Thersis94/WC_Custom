@@ -152,9 +152,9 @@ public class OrderSubmissionCoordinator {
 			KeystoneProductVO prod = (KeystoneProductVO) item.getProduct();
 			log.debug("item=" + item);
 			
-			//calculate tax amount and rates for the order. 
-			double taxRate = cart.getTaxAmount() / cart.getSubTotal();
-			double tax = roundTwoDecimals(taxRate * ((prod.getMsrpCostNo() * item.getQuantity()) - prod.getDiscount()));
+			//calculate tax amount and rates for the order.
+			double taxRate = item.getTaxRate();
+			//double tax = roundTwoDecimals(taxRate * ((prod.getMsrpCostNo() * item.getQuantity()) - prod.getDiscount()));
 
 			// build the product object
 			JSONObject p = new JSONObject();
@@ -181,13 +181,9 @@ public class OrderSubmissionCoordinator {
 			JSONArray modifiers = new JSONArray();
 			if(prod.getModifiers() != null){
 				for (ModifierVO mod : prod.getModifiers().values()) {
-					
 					//calculate the modifier tax
-					double mTax = roundTwoDecimals((mod.getPrice() * mod.getQuantity() - mod.getDiscount()) * (cart.getTaxAmount() / cart.getSubTotal()));
+					double mTax = roundTwoDecimals((mod.getPrice() * mod.getQuantity() - mod.getDiscount()) * taxRate);
 					
-					//remove the modifier tax from the order tax for keystone.
-					//tax-=mTax;
-
 					//Add the modifier					
 					modifiers.add(getModifier(mod, mTax, taxRate));
 				}
@@ -202,24 +198,27 @@ public class OrderSubmissionCoordinator {
 			 * Add tax information once all modifiers have been calculated and
 			 * their individual taxes deducted from the total. 
 			 */
-			p.accumulate("tax", tax);
+			p.accumulate("tax", item.getTaxAmount());
 			
 			/*
 			 * If we have a dsolItem, move the data to the permanent fileSystem.
 			 */
-			if(prod.getProdAttributes().containsKey("highResPath") && attributes.get("keystoneDsolFilePath") != null){
+			if (prod.getProdAttributes().containsKey("highResPath") && attributes.get("keystoneDsolFilePath") != null) {
+				attributes.put("fileManagerType", attributes.get("dsolFileManagerType"));
+				FileLoader fl = new FileLoader(attributes);
+					
 				//Generate random folders
-				String hrd = moveFile((String) prod.getProdAttributes().get("highResPath"), this.attributes);
-				if(hrd != null && hrd.length() > 0)
-				p.accumulate("highResImage", generateFileData(hrd, "image/jpeg", (Integer) prod.getProdAttributes().get("hrdDataSize")));
+				String hrd = moveFile(fl, (String) prod.getProdAttributes().get("highResPath"), this.attributes);
+				if (hrd != null && hrd.length() > 0)
+					p.accumulate("highResImage", generateFileData(hrd, "image/jpeg", (Integer) prod.getProdAttributes().get("hrdDataSize")));
 				
-				String pdf = moveFile((String) prod.getProdAttributes().get("pdfPath"), this.attributes);
-				if(pdf != null && pdf.length() > 0)
-				p.accumulate("pdfData", generateFileData(pdf, "application/pdf", (Integer) prod.getProdAttributes().get("pdfSize")));
+				String pdf = moveFile(fl, (String) prod.getProdAttributes().get("pdfPath"), this.attributes);
+				if (pdf != null && pdf.length() > 0)
+					p.accumulate("pdfData", generateFileData(pdf, "application/pdf", (Integer) prod.getProdAttributes().get("pdfSize")));
 				
-				String svg = moveFile((String) prod.getProdAttributes().get("svgData"), this.attributes);
-				if(svg != null && svg.length() > 0)
-				p.accumulate("svgData", generateFileData(svg, "image/svg+xml", (Integer) prod.getProdAttributes().get("svgSize")));
+				String svg = moveFile(fl, (String) prod.getProdAttributes().get("svgData"), this.attributes);
+				if (svg != null && svg.length() > 0)
+					p.accumulate("svgData", generateFileData(svg, "image/svg+xml", (Integer) prod.getProdAttributes().get("svgSize")));
 
 				log.debug("Done Writing files");		
 			}
@@ -237,22 +236,19 @@ public class OrderSubmissionCoordinator {
 	 * @param attributes
 	 * @return
 	 */
-	public String moveFile(String path, Map<String, Object> attributes){
-		FileLoader fl  = null;
-		attributes.put("fileManagerType", attributes.get("dsolFileManagerType"));
-		log.debug("path=" + (String) attributes.get("keystoneDsolTemplateFilePath") + path);
+	private String moveFile(FileLoader fl, String path, Map<String, Object> attributes) {
 		try {
-			fl = new FileLoader(attributes);
 			String source = (String) attributes.get("keystoneDsolTemplateFilePath") + path; 
 			String dest = (String) attributes.get("keystoneDsolFilePath") + path;
+			log.debug("source=" + source);
+			log.debug("dest=" + dest);
+			//we don't move or delete the original so it's still available for re-orders.
 			fl.copy(source, dest);
-			//On reorder the product is still pointed to this file so if we remove you move it.
-			//fl.deleteFile((String) attributes.get("keystoneDsolTemplateFilePath") + path);
 			return path;
 		} catch (Exception e) {
-			log.debug("Failed to Write File: " + path, e);
+			log.error("Failed to Write DSOL File: " + path, e);
+			return null;
 		}
-		return "";
 	}
 	/**
 	 * Helper method that takes a file and writes the JSONObject data for it.
@@ -292,7 +288,7 @@ public class OrderSubmissionCoordinator {
 		/*
 		 * Loop over the attributes and add them to the order.
 		 */
-		if(mod.getAttributes() != null){
+		if (mod.getAttributes() != null) {
 			for (AttributeVO avo : mod.getAttributes().values()) {
 				a.add(getAttribute(avo));
 			}
@@ -315,12 +311,13 @@ public class OrderSubmissionCoordinator {
 		attr.accumulate("value", roundTwoDecimals(Convert.formatDouble(avo.getValue())));
 		
 		// add selected option to attribute
-		if(avo.getOptions() != null){
+		if (avo.getOptions() != null) {
 			for (OptionVO ovo : avo.getOptions().values()) {
 				attr.accumulate("option_id", ovo.getModifiers_attributes_options_id());
 				attr.accumulate("option_name", ovo.getOption_name());
 			}
-		}		return attr;
+		}
+		return attr;
 	}
 
 	/**
@@ -397,9 +394,8 @@ public class OrderSubmissionCoordinator {
 		ship.accumulate("class_of_service", si.getShippingMethodName());
 		
 		//add shipping tax & rate
-		double taxRate = cart.getTaxAmount() / cart.getSubTotal();
-		ship.accumulate("shippingTax", si.getShippingCost() * taxRate);
-		ship.accumulate("shippingTaxRate", taxRate);
+		ship.accumulate("shippingTax", si.getShippingTax());
+		ship.accumulate("shippingTaxRate", si.getShippingTaxRate());
 		
 		return ship;
 	}

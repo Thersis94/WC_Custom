@@ -54,6 +54,8 @@ public class KeystoneProductVO extends ProductVO implements Serializable, Clonea
     private List<ImageVO> images = null;
     private Map<String, ModifierVO> modifiers = null;
     
+    private double taxRate = 0.0;
+    
     
     public KeystoneProductVO() {
     }
@@ -323,5 +325,13 @@ public class KeystoneProductVO extends ProductVO implements Serializable, Clonea
 				kpv.addModifier(modifiers.get(k).clone());
 		
 		return kpv;
+	}
+
+	public double getTaxRate() {
+		return taxRate;
+	}
+
+	public void setTaxRate(double taxRate) {
+		this.taxRate = taxRate;
 	}
 }

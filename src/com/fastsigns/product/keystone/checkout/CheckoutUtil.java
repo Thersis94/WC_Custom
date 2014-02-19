@@ -133,6 +133,7 @@ public class CheckoutUtil {
 		//save the billing info to the cart
 		UserDataVO billing = new UserDataVO(req);
 		billing.setProfileId(user.getProfileId());
+		billing.setEmailAddress(user.getEmailAddress());
 		billing.addAttribute("companyNm", req.getParameter("company"));
 		billing.addAttribute("addressId", req.getParameter("address_id"));
 		cart.setBillingInfo(billing);
@@ -272,14 +273,16 @@ public class CheckoutUtil {
 		}
 			
 		attributes.put(KeystoneProxy.FRAN_SESS_VO, sessVo);
-		attributes.put("franchise", sessVo.getFranchise(webId));
+		attributes.put(KeystoneProxy.FRANCHISE, sessVo.getFranchise(webId));
+		
 		//create a Tax call to the SMTProxy
 		TaxationRequestCoordinator tax = new TaxationRequestCoordinator(attributes);
-		log.debug("Shipping Cost: " + Convert.formatDouble(req.getParameter("shippingCost")));
+		double shippingCost = Convert.formatDouble(req.getParameter("shippingCost")).doubleValue();
+		log.debug("Shipping Cost: " + shippingCost);
 		try {
 			ShoppingCartItemVO ship = new ShoppingCartItemVO();
 			ship.setProductId("shipping");
-			ship.setBasePrice(Convert.formatDouble(req.getParameter("shippingCost")));
+			ship.setBasePrice(shippingCost);
 			ship.setQuantity(1);
 			KeystoneProductVO shipVo = new KeystoneProductVO();
 			shipVo.setTax_code_id(6);
@@ -288,10 +291,18 @@ public class CheckoutUtil {
 			cart.setSubTotal(cart.getSubTotal() + ship.getBasePrice());
 			cart.add(ship);
 			cart = tax.retrieveTaxOptions(cart);
-			cart.remove("shipping");
+			
+			ship = cart.getItems().get("shipping");
+			cart.getShipping().setShippingTaxRate(ship.getTaxRate());
+			cart.getShipping().setShippingTax(ship.getTaxAmount());
+			cart.getShipping().setShippingCost(shippingCost);
+			
 		} catch (Exception e) {
 			log.error("Could not retrieve shipping tax: ", e);
 			throw new ActionException(e.getMessage());
+		} finally {
+			//this must be purged from the cart, no matter what happens above
+			cart.remove("shipping");
 		}
 		return cart.getTaxAmount();
 	}
