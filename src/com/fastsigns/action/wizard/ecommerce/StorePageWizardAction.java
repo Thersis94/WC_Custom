@@ -249,7 +249,7 @@ public class StorePageWizardAction extends SBActionAdapter{
 		req.setParameter("titleName", "Keystone-driven Product Store");
 		req.setParameter("metaKeyword", "");
 		req.setParameter("metaDesc", "");
-		req.setParameter("visible", "1");
+		req.setParameter("visible", "0");
 		req.setParameter("defaultPage", "0");
 		req.setParameter("orderNumber", "1");
 		req.setParameter("externalPageUrl", "");
