@@ -198,6 +198,9 @@ public class ShippingRequestCoordinator {
 		//TODO THIS NEEDS UPDATED ONCE KEYSTONE GETS FIXED
 		//accounts.put(ShippingAccountVO.FRANCHISE_ACCOUNT_KEY, "3C9AB736B863D3C8");
 		
+		//TODO USE THIS INSTEAD
+		//acct.setShippingAccountType((String)fran.getAttributes().get("ecomm_shipping_service"));
+		
 		ShippingAccountVO acct = new ShippingAccountVO();
 		acct.setShippingAccountType("UPS");
 		acct.setAccountName(fran.getLocationName());

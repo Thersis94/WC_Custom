@@ -390,7 +390,7 @@ public class OrderSubmissionCoordinator {
 		
 		ship.accumulate("address", buildAddressDetails(cart));
 		ship.accumulate("shippingTotal", roundTwoDecimals(si.getShippingCost()));
-		ship.accumulate("carrier_name", "UPS");
+		ship.accumulate("carrier_name", "UPS"); //TODO set as dynamic value from ecomm_shipping_service
 		ship.accumulate("class_of_service", si.getShippingMethodName());
 		
 		//add shipping tax & rate

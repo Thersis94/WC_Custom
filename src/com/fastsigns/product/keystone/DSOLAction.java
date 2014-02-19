@@ -238,12 +238,14 @@ public class DSOLAction extends SBActionAdapter {
 			} 
 		}
 		
+		req.setValidateInput(false);
 		if (req.hasParameter("dsolProdDesc"))
 			data.setDescription(req.getParameter("dsolProdDesc"));
 		
 		if (req.hasParameter("materialName"))
 			data.addProdAttribute("materialName", req.getParameter("materialName"));
 		
+		req.setValidateInput(true);
 		ses.setAttribute("DSOLVO", data);
 		setAttribute(Constants.MODULE_DATA, mod);
 

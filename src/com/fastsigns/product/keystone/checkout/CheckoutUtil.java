@@ -80,7 +80,7 @@ public class CheckoutUtil {
 		} else if ("confirm".equalsIgnoreCase(step)) {
 			cart = submitOrder(req, cart);
 		} else if ("shippingtax".equalsIgnoreCase(step)) {
-			cart.setTaxAmount(getShippingTax(req, cart));
+			getShippingTax(req, cart);
 			req.setParameter("shippingTax", StringUtil.checkVal(cart.getTaxAmount()));
 		}
 		
@@ -293,6 +293,7 @@ public class CheckoutUtil {
 			cart = tax.retrieveTaxOptions(cart);
 			
 			ship = cart.getItems().get("shipping");
+			cart.setShipping(req.getParameter("shippingMethod"));
 			cart.getShipping().setShippingTaxRate(ship.getTaxRate());
 			cart.getShipping().setShippingTax(ship.getTaxAmount());
 			cart.getShipping().setShippingCost(shippingCost);
@@ -331,18 +332,6 @@ public class CheckoutUtil {
 		payment.setPaymentType(StringUtil.checkVal(req.getParameter("cardType")));
 		cart.setPurchaseOrderNo(StringUtil.checkVal(req.getParameter("purchaseOrderNo")));
 		cart.setPayment(payment);
-		
-		//Save the selected Shipping Method.
-		log.debug("shipping=" + req.getParameter("shippingMethod"));
-		cart.setShipping(req.getParameter("shippingMethod"));
-		
-//		//add the tax amount for the Shipping
-//		log.debug("addingTax=" + req.getParameter("shippingTaxAmt") + " to " + cart.getTaxAmount());
-//		double taxAmt = cart.getTaxAmount();
-//		Double shippingTax = Convert.formatDouble(req.getParameter("shippingTaxAmt"));
-//		if (shippingTax != null && shippingTax > 0) taxAmt += shippingTax;
-//		cart.setTaxAmount(taxAmt);
-//		log.debug("newTax=" + cart.getTaxAmount());
 		
 		FastsignsSessVO sessVo = (FastsignsSessVO) req.getSession().getAttribute(KeystoneProxy.FRAN_SESS_VO);
 		attributes.put(KeystoneProxy.FRAN_SESS_VO, sessVo);

@@ -312,7 +312,7 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 			//at this point no changes to the cart have been made that affect the order.  (We did not write any changes to the Container)
 			if ("shippingtax".equals(req.getParameter("step"))) {
 					//save the cart to the Storage container of we've added/changed shipping method
-					//this affects tax amounts, so we need to caputure it in a place where the end user can't manipulate it. (server-side)
+					//this affects tax amounts, so we need to caputure it server-side where the end user can't manipulate it. (server-side)
 					try {
 						container.save(cart);
 					} catch (Exception ae) {
