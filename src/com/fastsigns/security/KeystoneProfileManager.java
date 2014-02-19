@@ -132,8 +132,19 @@ public class KeystoneProfileManager {
 		franVo.setWebId(franObj.optString("web_number"));
 		franVo.setFranchiseId(franObj.optString("franchise_id"));
 		franVo.setLocationName(franObj.optString("franchise_name"));
+		
+		//Set the Shipping Service and attempt to store any credentials that are passed.
+		Object ecomShipServ = franObj.opt("ecomm_shipping_service");
+		if(ecomShipServ == null)
+			throw new InvalidDataException("Ecommerce not active for franchise");
+		franVo.addAttribute("ecomm_shipping_service", ecomShipServ);
 		franVo.addAttribute("fedex_account",franObj.opt("fedex_account"));
+		franVo.addAttribute("fedex_meter_number",franObj.opt("fedex_meter_number"));
 		franVo.addAttribute("ups_account",franObj.opt("ups_account"));
+		franVo.addAttribute("ups_account_service_key",franObj.opt("ups_account_service_key"));
+		franVo.addAttribute("ups_account_login_id",franObj.opt("ups_account_login_id"));
+		franVo.addAttribute("ups_account_login_password",franObj.opt("ups_account_login_password"));
+		
 		franVo.addAttribute("default_tax_service",franObj.opt("default_tax_service"));
 		franVo.addAttribute("avalara_tax_id",franObj.opt("avalara_tax_id"));
 		franVo.addAttribute("avalara_license_id",franObj.opt("avalara_license_id"));
