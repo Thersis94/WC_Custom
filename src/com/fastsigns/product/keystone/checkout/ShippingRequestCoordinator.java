@@ -51,6 +51,19 @@ public class ShippingRequestCoordinator {
 		FranchiseVO franchise = (FranchiseVO) attributes.get(KeystoneProxy.FRANCHISE);
 		log.debug("franchise=" + franchise);
 		
+		/*
+		 * Moved this code out of the try catch so that in event of an error retrieving 
+		 * shipping options, we can still return instore pickup and the user can still 
+		 * checkout.
+		 */
+		Map<String, ShippingInfoVO> opts = new LinkedHashMap<String, ShippingInfoVO>();
+		ShippingInfoVO newVo = new ShippingInfoVO();
+		newVo.setShippingMethodId("instore");
+		newVo.setShippingMethodName("In-store Pickup");
+		newVo.setShippingTime("0");
+		newVo.setShippingCost(0);
+		opts.put(newVo.getShippingMethodId(), newVo);
+		
 		try {
 			ShippingRequestVO shippingInfo = buildShippingRequest(cart);
 			String strShipReq = JSONObject.fromObject(shippingInfo).toString();
@@ -61,18 +74,8 @@ public class ShippingRequestCoordinator {
 			
 			//parse the response
 			JSONObject raw = JSONObject.fromObject(new String(data));
-			Map<String, ShippingInfoVO> opts = new LinkedHashMap<String, ShippingInfoVO>();
 			
-			if (!raw.containsKey("isSuccess")) {
-				
-				//Add option for instore pickup after proxy returns all the options.
-				ShippingInfoVO newVo = new ShippingInfoVO();
-				newVo.setShippingMethodId("instore");
-				newVo.setShippingMethodName("In-store Pickup");
-				newVo.setShippingTime("0");
-				newVo.setShippingCost(0);
-				opts.put(newVo.getShippingMethodId(), newVo);
-				
+			if (!raw.containsKey("isSuccess")) {				
 				for (ShippingAccountVO acct : shippingInfo.getAccounts()) {
 					// parse the rates response 
 					JSONObject rates = raw.getJSONObject("ratesResponse");
@@ -89,9 +92,7 @@ public class ShippingRequestCoordinator {
 							newVo.setShippingTime(option.optString("shippingTime"));
 							
 							//TODO Ensure this is the proper rateKey to use for FEDEX.  Multiple are sent back, this one was common to all.
-							String rateKey = "NEGOTIATED";
-							if(franchise.getAttributes().get("ecomm_shipping_service").equals("FEDEX"))
-								rateKey = "PAYOR_ACCOUNT_PACKAGE";
+							String rateKey = com.smt.shipping.http.ShippingInfoVO.COST_KEY_NEGOTIATED;
 							Double rate = Convert.formatDouble(option.getJSONObject("shippingCosts").getDouble(rateKey));
 							
 							//get shipping markup from the Franchise data in keystone
@@ -105,13 +106,12 @@ public class ShippingRequestCoordinator {
 						}
 					}
 				}
-				
 			}
-		
-		cart.setShippingOptions(opts);
 		} catch(Exception e){
 			log.error("Error Retrieving Shipping", e);
 		}
+		cart.setShippingOptions(opts);
+
 		return cart;
 	}
 	
