@@ -5,17 +5,11 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-
-
-
 
 // SMT BaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.http.SMTServletRequest;
@@ -75,17 +69,6 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		super(arg0);
 	}
 	
-	/**
-	 * this override is in place so we can redirect all outbound emails to the person
-	 * testing the system.  Remove this for launch, as well as this line in the build method:
-	 * attributes.put(GlobalConfig.KEY_ADMIN_EMAIL, user.getEmailAddress());
-	 */
-	public void setAttributes(Map<String, Object> attrs) {
-		this.attributes = new HashMap<String, Object>(attrs.size());
-		attributes.putAll(attrs);
-		attributes.put(AdminConstants.APP_NM, "DEVELOP");
-	}
-
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -107,9 +90,6 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 		 String eventPostcardId = (req.hasParameter("eventPostcardId")) ? req.getParameter("eventPostcardId") : null;
-		 boolean isNewSeminar = (eventPostcardId == null);
-
-		attributes.put(GlobalConfig.KEY_ADMIN_EMAIL, user.getEmailAddress());
 			
 		 /**
 		  * This switch statement provides good OO structuring by using an enum.
@@ -121,7 +101,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 				case eventInfo:
 					eventPostcardId = saveEventPostcard(req, site, user, eventPostcardId);
 					String eventEntryId = saveEventEntry(req);
-					if (isNewSeminar) {
+					if (eventPostcardId == null) { //isNewSeminar
 						req.setParameter("eventPostcardId", eventPostcardId);
 						saveEventPostcardAssoc(eventPostcardId, eventEntryId);
 						saveLocatorXr(eventPostcardId, req);
