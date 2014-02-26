@@ -172,7 +172,6 @@ public class PostcardEmailer {
 			mail.addRecipient("WWilder@its.jnj.com");
 			mail.addRecipient("RSmith68@its.jnj.com");
 			mail.addCC(site.getAdminEmail());
-			mail.addCC("nbeasle@its.jnj.com");
 			mail.addCC(sem.getOwner().getEmailAddress());
 			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
@@ -216,7 +215,6 @@ public class PostcardEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addCC(site.getAdminEmail());
-			mail.addCC("nbeasle@its.jnj.com");
 			mail.addRecipient("Jenn.Davis@hmktgroup.com"); // Jenn Parrish-Davis);
 			mail.addRecipient("sterling.hoham@hmktgroup.com"); // Sterling Hoham
 			mail.addRecipient("amy.zimmerman@hmktgroup.com");
@@ -275,7 +273,6 @@ public class PostcardEmailer {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(sem.getOwner().getEmailAddress());
 			mail.addRecipient(site.getAdminEmail());
-			mail.addRecipient("nbeasle@its.jnj.com");
 			mail.addRecipient("Jenn.Davis@hmktgroup.com"); // Jenn Parrish-Davis);
 			mail.addRecipient("sterling.hoham@hmktgroup.com"); // Sterling Hoham
 			mail.addRecipient("amy.zimmerman@hmktgroup.com");
@@ -332,7 +329,6 @@ public class PostcardEmailer {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient("tkumfer@printlinc.net"); // Terrie
 			mail.addCC(site.getAdminEmail());
-			mail.addCC("nbeasle@its.jnj.com");
 			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
@@ -397,7 +393,6 @@ public class PostcardEmailer {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(sem.getOwner().getEmailAddress());
 			mail.addCC(site.getAdminEmail());
-			mail.addCC("nbeasle@its.jnj.com");
 			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
@@ -434,7 +429,6 @@ public class PostcardEmailer {
 			mail.addRecipient("sterling.hoham@hmktgroup.com"); // Sterling Hoham
 			mail.addRecipient("amy.zimmerman@hmktgroup.com");
 			mail.addRecipient(site.getAdminEmail());
-			mail.addRecipient("nbeasle@its.jnj.com");
 			mail.addCC(sem.getOwner().getEmailAddress());
 			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
@@ -472,7 +466,6 @@ public class PostcardEmailer {
 			mail.addRecipient("sterling.hoham@hmktgroup.com"); // Sterling Hoham
 			mail.addRecipient("amy.zimmerman@hmktgroup.com");
 			mail.addCC(site.getAdminEmail());
-			mail.addCC("nbeasle@its.jnj.com");
 
 			for (PersonVO p : sem.getPeople()) {
 				if (! StringUtil.isValidEmail(p.getEmailAddress())) continue;

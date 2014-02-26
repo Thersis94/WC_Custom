@@ -125,10 +125,6 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 
 		} else if (PENDING_CLIENT_APPROVAL == vo.getStatusFlg()) {
 			log.debug("sending client's approval notice email");
-			if ("CFSEM".equalsIgnoreCase(sem.getEvents().get(0).getEventTypeCd())) {
-				// ask the Surgeon to approve their portion
-				emailer.requestAdApprovalOfSurgeon(sem, site);
-			}
 
 			// ask the Rep to approve their portion
 			emailer.requestCoordinatorApproval(sem, site);
@@ -136,6 +132,12 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 		} else if (CLIENT_APPROVED_AD == vo.getStatusFlg()) {
 			log.debug("sending client approved email");
 			emailer.notifyAdminOfAdApproval(sem, site, user);
+			
+			//email the surgeon to approve their portion of the ad
+			if ("CFSEM".equalsIgnoreCase(sem.getEvents().get(0).getEventTypeCd())) {
+				// ask the Surgeon to approve their portion
+				emailer.requestAdApprovalOfSurgeon(sem, site);
+			}
 
 		} else if (CLIENT_DECLINED_AD == vo.getStatusFlg()) {
 			log.debug("sending admin declined email");
