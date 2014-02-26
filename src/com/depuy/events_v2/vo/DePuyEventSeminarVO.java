@@ -152,16 +152,16 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 		if (firstEventDate == null) {  //only need to iterator once to set the member variable
 			if (super.getEventCount() == 1) {
 				firstEventDate = super.getEvents().get(0).getStartDate();
-				return firstEventDate;
-			}
-			
-			try {
-				for (EventEntryVO event : super.getEvents()) {
-					if (firstEventDate == null || event.getStartDate().before(firstEventDate))
-						firstEventDate = event.getStartDate();
+				
+			} else {
+				try {
+					for (EventEntryVO event : super.getEvents()) {
+						if (firstEventDate == null || event.getStartDate().before(firstEventDate))
+							firstEventDate = event.getStartDate();
+					}
+				} catch (Exception e) {
+					firstEventDate = Calendar.getInstance().getTime();
 				}
-			} catch (Exception e) {
-				firstEventDate = Calendar.getInstance().getTime();
 			}
 		}
 		

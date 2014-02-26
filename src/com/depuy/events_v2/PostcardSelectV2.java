@@ -171,7 +171,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		if (ReqType.completed == reqType) {
 			sql.append("and ep.status_flg = ").append(EventFacadeAction.STATUS_COMPLETE).append(" ");
 		} else {
-			sql.append("and ep.status_flg != ").append(EventFacadeAction.STATUS_COMPLETE).append(" ");
+			sql.append("and (ep.status_flg != ").append(EventFacadeAction.STATUS_COMPLETE).append(" or ep.status_flg is null) ");
 		}
 		sql.append("group by e.event_entry_id, ep.event_postcard_id, e.RSVP_CODE_TXT, e.start_dt, ");
 		sql.append("et.type_nm, ep.PROFILE_ID, ep.postcard_file_status_no, e.event_nm, s.surgeon_nm, ");
