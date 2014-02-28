@@ -89,27 +89,27 @@ public class TVSpotDlrContactCRMAction extends SimpleActionAdapter {
 	 * @param req
 	 */
 	private void setupDataFilters(String franId, ModuleVO mod, SMTServletRequest req) {
-		//shift today's date by a negative integer to find the starting point for this report.
-		//default is "past 24 hours"
-		if (!req.hasParameter("contactSubmittalId")) {
-			int dayShift = -1;
-			if (req.hasParameter("range"))
-				dayShift = Integer.valueOf(req.getParameter("range"));
-			
-			log.debug("shift=" + dayShift);
-			Calendar c = Calendar.getInstance();
-			c.add(Calendar.DAY_OF_YEAR, dayShift);
-			req.setParameter("startDate", Convert.formatDate(c.getTime(), Convert.DATE_SLASH_PATTERN));
-			
-			//default status filter
-			if (!req.hasParameter("range")) 
-				req.setParameter("status", TVSpotUtil.Status.initiated.toString());
-			
-		}
-		
 		req.setParameter("dealerLocationId", franId);
 		req.setParameter("orderBy", "dateDesc");
 		req.setParameter("contactId", mod.getAttribute(ModuleVO.ATTRIBUTE_1) + "|TV Spot CRM Report");
+
+		if (req.hasParameter("contactSubmittalId")) return;
+		
+		//shift today's date by a negative integer to find the starting point for this report.
+		//default is "past 24 hours"
+		int dayShift = -1;
+		if (req.hasParameter("range"))
+			dayShift = Integer.valueOf(req.getParameter("range"));
+		
+		log.debug("shift=" + dayShift);
+		Calendar c = Calendar.getInstance();
+		c.add(Calendar.DAY_OF_YEAR, dayShift);
+		req.setParameter("startDate", Convert.formatDate(c.getTime(), Convert.DATE_SLASH_PATTERN));
+		
+		//default status filter when no other filters are passed
+		if (req.getQueryString() == null) 
+			req.setParameter("status", TVSpotUtil.Status.initiated.toString());
+		
 	}
 	
 	
