@@ -143,7 +143,7 @@ public class ShippingRequestCoordinator {
 	 */
 	private PackageVO loadPackage(ShoppingCartVO cart) {
 		PackageVO pkg = new PackageVO();
-		int maxHeight = 0;
+		int maxLength = 0;
 		int maxWidth = 0;
 		double weight = 0;
 		
@@ -151,12 +151,25 @@ public class ShippingRequestCoordinator {
 			KeystoneProductVO prod = (KeystoneProductVO) item.getProduct();
 			if (prod.getSizes() == null || prod.getSizes().size() == 0) continue;
 			
+			
+			/*
+			 * TODO:  We need to have Fastsigns come back to us to add smarter algorithms here
+			 * for size calculation.  Example Rolling, folding, etc.  Per Camire.
+			 * We need to perform some better size calculation here.  
+			 * Width by height is not the optimal measurement as the shipping carriers assume
+			 * length to be the longest side in their calculations.  Here we are transposing
+			 * the larger of the values to a length and the smaller to the width.  From there
+			 * we save the largest of the orders lengths and widths as the package dimensions.
+			 */
 			SizeVO size = prod.getSizes().get(0);
-			if (size.getHeight() > maxHeight) maxHeight = size.getHeight();
-			if (size.getWidth() > maxWidth) maxWidth = size.getWidth();
+			int l = Math.max(size.getHeight(), size.getWidth());
+			int w = Math.min(size.getHeight(), size.getWidth());
+			
+			if (l > maxLength) maxLength = l;
+			if (w > maxWidth) maxWidth = w;
 			
 			//increment the weight of the package accordingly
-			weight = prod.getWeight()*size.getSquareInches()*item.getQuantity();
+			weight += prod.getWeight()*size.getSquareInches()*item.getQuantity();
 			log.debug("weight = " + weight);
 			size = null;
 		}
@@ -166,8 +179,12 @@ public class ShippingRequestCoordinator {
 		//todo fix shipping caps, see also ShoppingCartAction
 		if (weight > 150) weight = 150;
 		
-		pkg.setHeight(maxHeight);
-		pkg.setWidth(maxWidth);
+		/*
+		 * We're capping the length on the Package per Camires direction.  
+		 * Most larger signs are vinyl and will be rolled or something and will take up less space
+		 */
+		pkg.setLength(Math.min(maxLength, 96));
+		pkg.setWidth(Math.min(maxWidth, 48));
 		pkg.setWeight(weight);
 		return pkg;
 		
