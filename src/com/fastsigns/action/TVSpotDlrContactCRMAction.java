@@ -22,8 +22,8 @@ import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.common.SiteVO;
 
 /****************************************************************************
- * <b>Title</b>: TVSpotReport.java<p/>
- * <b>Description: Handles reporting and user-contact for the TV Spot ads run in Q1-2 2014.</b> 
+ * <b>Title</b>: TVSpotDlrContactCRMAction.java<p/>
+ * <b>Description: Handles reporting and user-contact (CRM) for the TV Spot ads run in Q2 2014.</b> 
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2014<p/>
  * <b>Company:</b> Silicon Mountain Technologies<p/>
@@ -32,6 +32,8 @@ import com.smt.sitebuilder.common.SiteVO;
  * @since Feb 12, 2014
  ****************************************************************************/
 public class TVSpotDlrContactCRMAction extends SimpleActionAdapter {
+	
+	private static final String TRANS_STEP_FIELD_ID = "";
 		
 	public TVSpotDlrContactCRMAction() {
 	}
@@ -51,6 +53,39 @@ public class TVSpotDlrContactCRMAction extends SimpleActionAdapter {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		
 		
+		//setup data filters needed for data retrieval
+		setupDataFilters(franchiseId, mod, req);
+
+		//load the report data
+		ContactDataAction cda = new ContactDataAction(this.actionInit);
+		cda.setAttributes(attributes);
+		cda.setDBConnection(dbConn);
+		cda.update(req);
+		mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
+		ContactDataContainer cdc = (ContactDataContainer) mod.getActionData();
+		
+		//if we're not getting a single record, apply some post-data-loading filters.
+		if (!req.hasParameter("contactSubmittalId"))
+			cdc = filterData(cdc, req);
+		
+
+		//drop to Excel report if desired
+		if (cdc.getData().size() == 1 && "excel".equalsIgnoreCase(req.getParameter("type"))) {
+			AbstractSBReportVO rpt = new SAFReportVO();
+			rpt.setData(cdc.getData().get(0));
+			req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, Boolean.TRUE);
+			req.setAttribute(Constants.BINARY_DOCUMENT, rpt);
+		}
+		
+	}
+	
+	
+	/**
+	 * add req params before we call ContactDataAction, to load the data set. 
+	 * @param mod
+	 * @param req
+	 */
+	private void setupDataFilters(String franId, ModuleVO mod, SMTServletRequest req) {
 		//shift today's date by a negative integer to find the starting point for this report.
 		//default is "past 24 hours"
 		if (!req.hasParameter("contactSubmittalId")) {
@@ -64,42 +99,20 @@ public class TVSpotDlrContactCRMAction extends SimpleActionAdapter {
 			req.setParameter("startDate", Convert.formatDate(c.getTime(), Convert.DATE_SLASH_PATTERN));
 		}
 		
-		req.setParameter("dealerLocationId", franchiseId);
+		req.setParameter("dealerLocationId", franId);
 		req.setParameter("orderBy", "dateDesc");
 		req.setParameter("contactId", mod.getAttribute(ModuleVO.ATTRIBUTE_1) + "|TV Spot CRM Report");
-
-		ContactDataAction cda = new ContactDataAction(this.actionInit);
-		cda.setAttributes(attributes);
-		cda.setDBConnection(dbConn);
-		cda.update(req);
-		
-		mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
-		ContactDataContainer cdc = (ContactDataContainer) mod.getActionData();
-		
-		
-		if (!req.hasParameter("contactSubmittalId")) {
-			//filter the results by TransactionStage.  Default is "complete"
-			String complete = TransactionStep.complete.toString();
-			if (req.getParameter("status") == null) req.setParameter("status", complete);
-			String status = req.getParameter("status");
-			
-			if (status.length() > 0)
-				cdc = filterData(cdc, status);
-			
-		}
-		
-
-		//drop to Excel report if desired
-		if (cdc.getData().size() == 1 && "excel".equalsIgnoreCase(req.getParameter("type"))) {
-			AbstractSBReportVO rpt = new SAFReportVO();
-			rpt.setData(cdc.getData().get(0));
-			req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, Boolean.TRUE);
-			req.setAttribute(Constants.BINARY_DOCUMENT, rpt);
-		}
-		
 	}
 	
-	private ContactDataContainer filterData(ContactDataContainer cdc, String filterType) {
+	
+	/**
+	 * post-filter the data after it's been loaded.  This allows us to filter the data
+	 * against the form-fields.  (not supported by ContactDataAction)
+	 * @param cdc
+	 * @param filterType
+	 * @return
+	 */
+	private ContactDataContainer filterData(ContactDataContainer cdc, SMTServletRequest req) {
 		List<ContactDataModuleVO> newData = new ArrayList<ContactDataModuleVO>();
 		
 		//loop the submissions and remove any that don't meet our criteria
@@ -108,7 +121,7 @@ public class TVSpotDlrContactCRMAction extends SimpleActionAdapter {
 //			if (filterType.equals(complete) && stage.equalsIgnoreCase(complete)) {
 //				newData.add(vo);
 //			} else if (status.equals("inprogress") && !stage.equalsIgnoreCase(complete)) {
-//				newData.add(vo);
+				newData.add(vo);
 //			}
 		}
 		

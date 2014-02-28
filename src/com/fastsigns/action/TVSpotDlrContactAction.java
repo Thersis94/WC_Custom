@@ -4,11 +4,11 @@ import java.util.List;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.util.PhoneNumberFormat;
-import com.siliconmtn.util.databean.FilePartDataBean;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.contact.ContactFacadeAction;
 import com.smt.sitebuilder.action.dealer.DealerLocationVO;
@@ -21,7 +21,8 @@ import com.smt.sitebuilder.util.MessageSender;
 
 /****************************************************************************
  * <b>Title</b>: TVSpotDlrContactAction.java<p/>
- * <b>Description: </b> 
+ * <b>Description: facades the call to ContactSubmttal to save the user data, then distributes 
+ * email confirmations. </b> 
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2014<p/>
  * <b>Company:</b> Silicon Mountain Technologies<p/>
@@ -30,7 +31,8 @@ import com.smt.sitebuilder.util.MessageSender;
  * @since Feb 19, 2014
  ****************************************************************************/
 public class TVSpotDlrContactAction extends SimpleActionAdapter {
-
+	private static final String DLR_LOCN_FIELD_ID = "con_c0a802374be51c9177a78a7b7677ea5c";
+	
 	public TVSpotDlrContactAction() {
 		super();
 	}
@@ -47,8 +49,11 @@ public class TVSpotDlrContactAction extends SimpleActionAdapter {
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
-		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
-		ContactFacadeAction cfa = new ContactFacadeAction(actionInit);
+		String contactActGrpId = (String)mod.getAttribute(ModuleVO.ATTRIBUTE_1);
+		req.setParameter("actionGroupId", contactActGrpId);
+		actionInit.setActionId(contactActGrpId);
+		
+		SMTActionInterface cfa = new ContactFacadeAction(actionInit);
 		cfa.setAttributes(attributes);
 		cfa.setDBConnection(dbConn);
 		cfa.retrieve(req);
@@ -62,21 +67,52 @@ public class TVSpotDlrContactAction extends SimpleActionAdapter {
 	public void build(SMTServletRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		
+		// this is a hook to load the dealer locations dropdown.  Invoked via PublicAjaxServlet
+		if (req.hasParameter("view")) {
+			listDealerLocations(mod, req);
+			return;
+		}
+		
+		//load the dealer info using the dealerLocationId passed on the request
+		req.setParameter(DLR_LOCN_FIELD_ID,  req.getParameter(DLR_LOCN_FIELD_ID).substring(4), true);
 		DealerLocationVO dealer = loadDesiredDealer(req);
 		
 		//the contact us portlet will send the email to the FranchiseOwner and Center for us;
-		//configure the email as needed before we call it.
+		//configure the email as needed before we invoke that class.
 		addCenterEmailParamsToReq(req, dealer);
 		
+		//invoke the Contact Us portlet to save the data and send the Franchise email
 		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
-		ContactFacadeAction cfa = new ContactFacadeAction(actionInit);
+		SMTActionInterface cfa = new ContactFacadeAction(actionInit);
 		cfa.setAttributes(attributes);
 		cfa.setDBConnection(dbConn);
 		cfa.build(req);
 		
-		//send confirmation email to the user
+		//send a confirmation email to the user
 		emailUserConfirmation(req, dealer);
 		
+		//the browser redirect occurring here was setup for us by the ContactSubmittalAction
+	}
+	
+	
+	/**
+	 * Call DealerLocatorAction to retrieve a list of dealers (Centers) nearby the
+	 * passed zipcode.  The module data is turned into JSON in the view and returned
+	 * to the browser via an AJAX call.
+	 * @param mod
+	 * @param req
+	 */
+	private void listDealerLocations(ModuleVO mod, SMTServletRequest req) {
+		//set the actionId of the locator portlet we're facading
+		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_2)); 
+		SMTActionInterface dla = new DealerLocatorAction(actionInit);
+		dla.setAttributes(attributes);
+		dla.setDBConnection(dbConn);
+		try {
+			dla.retrieve(req);
+		} catch (ActionException ae) {
+			log.error("could not load dealer list", ae);
+		}
 	}
 	
 	
@@ -92,7 +128,7 @@ public class TVSpotDlrContactAction extends SimpleActionAdapter {
 		dla.setDBConnection(dbConn);
 		List<DealerLocationVO> dealers = null;
 		try {
-			dealers = dla.getDealerInfo(req, new String[] { req.getParameter("dealerLocationId") }, null);
+			dealers = dla.getDealerInfo(req, new String[] { req.getParameter(DLR_LOCN_FIELD_ID) }, null);
 		} catch (DatabaseException de) {
 			log.error("could not load dealer list", de);
 		}
@@ -110,12 +146,39 @@ public class TVSpotDlrContactAction extends SimpleActionAdapter {
 	private void addCenterEmailParamsToReq(SMTServletRequest req, DealerLocationVO dealer) {
 		//email recipients
 		req.setParameter("contactEmailAddress", new String[]{ dealer.getEmailAddress(), dealer.getOwnerEmail() }, true);
+		req.setParameter("dealerLocationId", req.getParameter(DLR_LOCN_FIELD_ID));
 		
 		//email header
-		req.setParameter("contactEmailHeader", "<p></p>");
+		StringBuilder msg = new StringBuilder();
+		msg.append("<p>As part of our 2014 TV Spot, there is an option at the end ");
+		msg.append("of the commercial for customers to request a free consultation ");
+		msg.append("from FASTSIGNS.  The request is sent to the closest location ");
+		msg.append("based on the prospect's provided zip code.<br/>");
+		msg.append("Please be aware that a consultation request has been submitted for your center.<br/>");
+		msg.append("Review the information provided and follow up with the customer as soon as possible:</p>");
+		req.setParameter("contactEmailHeader", msg.toString());
+		
+		//email footer
+		msg = new StringBuilder();
+		msg.append("<p>It's important that you update the Consultation Request ");
+		msg.append("report at <a href=\"http://www.fastsigns.com/webedit\">http://www.fastsigns.com/webedit</a>.  ");
+		msg.append("Login to the system, select TV spot from the menu, then select \"Consultation Request\".  ");
+		msg.append("Here you will find a list of all of your consultation requests.  ");
+		msg.append("Please review and update the \"status\" column to indicate the status ");
+		msg.append("of contacting the customer.  If you do not update the status of this ");
+		msg.append("request, you will receive a second notification tomorrow.</p>");
+		msg.append("<p>For more information about the TV Spot and the process, please ");
+		msg.append("refer to the following resources or consult with your Franchise ");
+		msg.append("Business Consultant and/or your Marketing Services Manager.</p>");
+		//msg.append("<p>Watch the webinar:  support.fastsigns.com#######<br/>");
+		//msg.append("Read the overview document:  DOC ID ###<br/>"); 
+		//msg.append("Watch the TV spot: www.fastsings.com/#####</p>");
+		req.setParameter("contactEmailFooter", msg.toString());
 		
 		//email subject
-		req.setParameter("contactEmailSubject","");
+		req.setValidateInput(false);
+		req.setParameter("contactEmailSubject","TV Spot Consultation Request, " + req.getParameter("pfl_combinedName"));
+		req.setValidateInput(true);
 	}
 	
 	
@@ -155,7 +218,7 @@ public class TVSpotDlrContactAction extends SimpleActionAdapter {
 		
 		try {
 			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipient(req.getParameter("emailAddress"));
+			mail.addRecipient(req.getParameter("pfl_EMAIL_ADDRESS_TXT"));
 			mail.setSubject("Thank you for submitting your Consultation Request to FASTSIGNS.");
 			mail.setFrom(site.getMainEmail());
 			mail.setHtmlBody(msg.toString());
