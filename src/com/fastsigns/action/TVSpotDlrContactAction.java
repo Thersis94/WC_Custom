@@ -148,6 +148,10 @@ public class TVSpotDlrContactAction extends SimpleActionAdapter {
 		req.setParameter("contactEmailAddress", new String[]{ dealer.getEmailAddress(), dealer.getOwnerEmail() }, true);
 		req.setParameter("dealerLocationId", req.getParameter(DLR_LOCN_FIELD_ID));
 		
+		//set the status to 'initiated'
+		req.setParameter("con_" + TVSpotUtil.ContactField.status.id(), TVSpotUtil.Status.initiated.toString());
+		
+		
 		//email header
 		StringBuilder msg = new StringBuilder();
 		msg.append("<p>As part of our 2014 TV Spot, there is an option at the end ");

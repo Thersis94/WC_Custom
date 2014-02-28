@@ -1,12 +1,10 @@
 package com.fastsigns.action;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
-import com.fastsigns.action.RequestAQuoteSTF.TransactionStep;
-import com.fastsigns.action.franchise.CenterPageAction;
-import com.fastsigns.action.saf.SAFConfig;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
@@ -17,9 +15,12 @@ import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.contact.ContactDataAction;
 import com.smt.sitebuilder.action.contact.ContactDataContainer;
 import com.smt.sitebuilder.action.contact.ContactDataModuleVO;
+import com.smt.sitebuilder.action.contact.SubmittalDataAction;
 import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.Constants;
-import com.smt.sitebuilder.common.SiteVO;
+import com.smt.sitebuilder.security.SBUserRole;
+import com.smt.sitebuilder.security.SecurityController;
 
 /****************************************************************************
  * <b>Title</b>: TVSpotDlrContactCRMAction.java<p/>
@@ -33,8 +34,6 @@ import com.smt.sitebuilder.common.SiteVO;
  ****************************************************************************/
 public class TVSpotDlrContactCRMAction extends SimpleActionAdapter {
 	
-	private static final String TRANS_STEP_FIELD_ID = "";
-		
 	public TVSpotDlrContactCRMAction() {
 	}
 
@@ -47,12 +46,16 @@ public class TVSpotDlrContactCRMAction extends SimpleActionAdapter {
 	}
 	
 	public void retrieve(SMTServletRequest req) throws ActionException {
-		String franchiseId = CenterPageAction.getFranchiseId(req);
-		if (franchiseId == null || franchiseId.length() == 0) return;
-		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
+		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
+		String franchiseId = (String) req.getSession().getAttribute("webeditFranId");
 		
-		
+		//security test, only admins can see everything.
+		if (franchiseId == null && role.getRoleLevel() < SecurityController.ADMIN_ROLE_LEVEL) return;
+				
+		//allow admins a way to remove the franchise restriction
+		if (req.hasParameter("showAll")) req.getSession().removeAttribute("webeditFranId");
+				
 		//setup data filters needed for data retrieval
 		setupDataFilters(franchiseId, mod, req);
 
@@ -70,9 +73,9 @@ public class TVSpotDlrContactCRMAction extends SimpleActionAdapter {
 		
 
 		//drop to Excel report if desired
-		if (cdc.getData().size() == 1 && "excel".equalsIgnoreCase(req.getParameter("type"))) {
-			AbstractSBReportVO rpt = new SAFReportVO();
-			rpt.setData(cdc.getData().get(0));
+		if ("excel".equalsIgnoreCase(req.getParameter("type"))) {
+			AbstractSBReportVO rpt = new TVSpotReportVO();
+			rpt.setData(cdc);
 			req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, Boolean.TRUE);
 			req.setAttribute(Constants.BINARY_DOCUMENT, rpt);
 		}
@@ -97,6 +100,11 @@ public class TVSpotDlrContactCRMAction extends SimpleActionAdapter {
 			Calendar c = Calendar.getInstance();
 			c.add(Calendar.DAY_OF_YEAR, dayShift);
 			req.setParameter("startDate", Convert.formatDate(c.getTime(), Convert.DATE_SLASH_PATTERN));
+			
+			//default status filter
+			if (!req.hasParameter("range")) 
+				req.setParameter("status", TVSpotUtil.Status.initiated.toString());
+			
 		}
 		
 		req.setParameter("dealerLocationId", franId);
@@ -114,20 +122,67 @@ public class TVSpotDlrContactCRMAction extends SimpleActionAdapter {
 	 */
 	private ContactDataContainer filterData(ContactDataContainer cdc, SMTServletRequest req) {
 		List<ContactDataModuleVO> newData = new ArrayList<ContactDataModuleVO>();
+		boolean useStatus = req.hasParameter("status") && !(req.getParameter("status").equals("all"));
+		boolean useCustNm = req.hasParameter("customerName");
+		boolean useCompNm = req.hasParameter("companyName");
 		
 		//loop the submissions and remove any that don't meet our criteria
 		for (ContactDataModuleVO vo : cdc.getData()) {
-//			String stage = StringUtil.checkVal(vo.getExtData().get(safConfig.getTransactionStageFieldId()));
-//			if (filterType.equals(complete) && stage.equalsIgnoreCase(complete)) {
-//				newData.add(vo);
-//			} else if (status.equals("inprogress") && !stage.equalsIgnoreCase(complete)) {
-				newData.add(vo);
-//			}
+			if (useStatus) {
+				String stage = StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.status.id()));
+				if (! stage.equalsIgnoreCase(req.getParameter("status"))) continue;
+			}
+			
+			if (useCustNm) {
+				String custNm = StringUtil.checkVal(vo.getFullName()).toLowerCase();
+				if (! custNm.contains(req.getParameter("customerName").toLowerCase())) continue;
+			}
+			
+			if (useCompNm) {
+				String compNm = StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.companyNm.id())).toLowerCase();
+				if (! compNm.contains(req.getParameter("companyName").toLowerCase())) continue;
+			}
+			
+			//passed all tests, add this record to the new List
+			newData.add(vo);
 		}
 		
 		//replace the old list of submissions with the filtered ones
 		cdc.setData(newData);
 		
 		return cdc;
+	}
+
+	
+	/**
+	 * updates a single contactSubmittal's values for status and notes (contact fields)
+	 */
+	@Override
+	public void build(SMTServletRequest req) throws ActionException {
+		String csId = req.getParameter("contactSubmittalId");
+		SubmittalDataAction sda = new SubmittalDataAction(actionInit);
+		sda.setDBConnection(dbConn);
+		
+		try {
+			//save the status
+			sda.updateField(req.getParameter("transactionStatus"), csId, TVSpotUtil.ContactField.status.id());
+			
+			//save the notes
+			sda.updateField(req.getParameter("transactionNotes"), csId, TVSpotUtil.ContactField.transactionNotes.id());
+			
+		} catch (SQLException sqle) {
+			log.error("could not update contact fields", sqle);
+		}
+		
+		//redirect the browser
+		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+		StringBuilder url = new StringBuilder(page.getRequestURI());
+		//replace the search status with the one we just changed 'this' record to, so it's still visible to the user and they can see it was updated.
+		url.append("?status=").append(req.getParameter("transactionStatus"));
+		if (req.hasParameter("searchRange")) url.append("&range=").append(req.getParameter("searchRange"));
+		if (req.hasParameter("searchCustomerName")) url.append("&customerName=").append(req.getParameter("searchCustomerName"));
+		if (req.hasParameter("searchCompanyName")) url.append("&companyName=").append(req.getParameter("searchCompanyName"));
+		
+		super.sendRedirect(url.toString(), null, req);
 	}
 }
