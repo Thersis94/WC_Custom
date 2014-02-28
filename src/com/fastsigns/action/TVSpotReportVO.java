@@ -59,7 +59,12 @@ public class TVSpotReportVO extends AbstractSBReportVO {
 			rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.title.id()))).append("</td>");
 			rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.companyNm.id()))).append("</td>");
 			rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.businessChallenge.id()))).append("</td>");
-			rpt.append("<td>").append(TVSpotUtil.Status.valueOf(vo.getExtData().get(TVSpotUtil.ContactField.status.id())).getLabel()).append("</td>");
+			TVSpotUtil.Status status = TVSpotUtil.Status.valueOf(vo.getExtData().get(TVSpotUtil.ContactField.status.id()));
+			if (status == TVSpotUtil.Status.initiated) {
+				rpt.append("<td color=\"red\">").append(status.getLabel()).append("</td>");
+			} else {
+				rpt.append("<td>").append(status.getLabel()).append("</td>");
+			}
 			String notes = StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.transactionNotes.id()));
 			notes = notes.replaceAll("\\r\\n", "<br>");
 			rpt.append("<td>").append(notes).append("</td></tr>");
