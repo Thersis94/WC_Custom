@@ -218,6 +218,9 @@ public class PostcardEmailer {
 			mail.addRecipient("Jenn.Davis@hmktgroup.com"); // Jenn Parrish-Davis);
 			mail.addRecipient("sterling.hoham@hmktgroup.com"); // Sterling Hoham
 			mail.addRecipient("amy.zimmerman@hmktgroup.com");
+			if ("CFSEM".equalsIgnoreCase(sem.getEvents().get(0).getEventTypeCd())) 
+				mail.addRecipient("rita.harman@hmktgroup.com");
+			
 			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
@@ -465,6 +468,9 @@ public class PostcardEmailer {
 			mail.addRecipient("Jenn.Davis@hmktgroup.com"); // Jenn Parrish-Davis);
 			mail.addRecipient("sterling.hoham@hmktgroup.com"); // Sterling Hoham
 			mail.addRecipient("amy.zimmerman@hmktgroup.com");
+			if ("CFSEM".equalsIgnoreCase(sem.getEvents().get(0).getEventTypeCd())) 
+				mail.addRecipient("rita.harman@hmktgroup.com");
+			
 			mail.addCC(site.getAdminEmail());
 
 			for (PersonVO p : sem.getPeople()) {
