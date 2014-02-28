@@ -50,6 +50,8 @@ import com.smt.sitebuilder.security.SecurityController;
  * @author James McKain
  * @version 1.0
  * @since Dec 16, 2010
+ * @Updates
+ * James McKain, Feb 27, 2014 - relaxed recordStatus() to protected so it could be used by TVSpot actions.
  ****************************************************************************/
 public class RequestAQuoteSTF extends SBActionAdapter {
 	
@@ -538,7 +540,7 @@ public class RequestAQuoteSTF extends SBActionAdapter {
 		this.recordStatus(step.toString(), csi, safConfig.getTransactionStageFieldId());
 	}
 	
-	private final void recordStatus(String message, String csi, String fieldId) {
+	protected final void recordStatus(String message, String csi, String fieldId) {
 		// cleanup any HTML passed in the message
 		try {
 			StringEncoder se = new StringEncoder();
