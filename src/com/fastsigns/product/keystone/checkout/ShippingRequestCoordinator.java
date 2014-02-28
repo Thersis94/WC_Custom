@@ -20,10 +20,12 @@ import com.siliconmtn.commerce.ShoppingCartItemVO;
 import com.siliconmtn.commerce.ShoppingCartVO;
 import com.siliconmtn.gis.Location;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.smt.shipping.http.PackageVO;
 import com.smt.shipping.http.ShippingAccountVO;
 import com.smt.shipping.http.ShippingLocation;
 import com.smt.shipping.http.ShippingRequestVO;
+import com.smt.shipping.http.ShippingRequestVO.TransactionEnvironment;
 
 /****************************************************************************
  * <b>Title</b>: ShippingRequestCoordinator.java<p/>
@@ -93,7 +95,16 @@ public class ShippingRequestCoordinator {
 							
 							//TODO Ensure this is the proper rateKey to use for FEDEX.  Multiple are sent back, this one was common to all.
 							String rateKey = com.smt.shipping.http.ShippingInfoVO.COST_KEY_NEGOTIATED;
-							Double rate = Convert.formatDouble(option.getJSONObject("shippingCosts").getDouble(rateKey));
+							JSONObject costs = option.getJSONObject("shippingCosts");
+							Double r = costs.optDouble(rateKey);
+							Double rate; 
+							//En
+							if(!r.equals(Double.NaN))
+								rate = Convert.formatDouble(r);
+							else {
+								log.error("rate returned did not contain negotiated rate: " + costs);
+								break;
+							}
 							
 							//get shipping markup from the Franchise data in keystone
 							Integer markup = Convert.formatInteger((String)franchise.getAttributes().get("shipping_markup"), 0);
@@ -131,7 +142,8 @@ public class ShippingRequestCoordinator {
 		sVo.setRecipient(destn);
 		sVo.setAccounts(accounts);
 		sVo.addPackage(pkg);
-		
+		String instanceNm = StringUtil.checkVal(attributes.get("keystoneEnvironment"));
+		sVo.setTransactionEnvironment("PRODUCTION".equalsIgnoreCase(instanceNm) ? TransactionEnvironment.PRODUCTION : TransactionEnvironment.SANDBOX);		
 		return sVo;
 	}
 	
