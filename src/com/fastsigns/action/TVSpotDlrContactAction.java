@@ -1,6 +1,9 @@
 package com.fastsigns.action;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -9,6 +12,7 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.util.PhoneNumberFormat;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.contact.ContactFacadeAction;
 import com.smt.sitebuilder.action.dealer.DealerLocationVO;
@@ -144,8 +148,17 @@ public class TVSpotDlrContactAction extends SimpleActionAdapter {
 	 * @param req
 	 */
 	private void addCenterEmailParamsToReq(SMTServletRequest req, DealerLocationVO dealer) {
-		//email recipients
-		req.setParameter("contactEmailAddress", new String[]{ dealer.getEmailAddress(), dealer.getOwnerEmail() }, true);
+		//email message recipients
+		Set<String> emails = new HashSet<String>();
+		if (dealer.getEmailAddress() != null && dealer.getEmailAddress().contains(",")) {
+			emails.addAll(Arrays.asList(dealer.getEmailAddress().split(",")));
+		} else if (StringUtil.isValidEmail(dealer.getEmailAddress())) {
+			emails.add(dealer.getEmailAddress());
+		}
+		if (StringUtil.isValidEmail(dealer.getOwnerEmail())) 
+			emails.add(dealer.getOwnerEmail());
+		
+		req.setParameter("contactEmailAddress", emails.toArray(new String[emails.size()]), true);
 		req.setParameter("dealerLocationId", req.getParameter(DLR_LOCN_FIELD_ID));
 		
 		//set the status to 'initiated'
