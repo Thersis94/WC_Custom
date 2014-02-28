@@ -1,7 +1,6 @@
 package com.fastsigns.action;
 
 import java.sql.PreparedStatement;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
@@ -32,6 +31,7 @@ import com.smt.sitebuilder.action.SBModuleVO;
 import com.smt.sitebuilder.action.contact.ContactDataAction;
 import com.smt.sitebuilder.action.contact.ContactDataContainer;
 import com.smt.sitebuilder.action.contact.SubmittalAction;
+import com.smt.sitebuilder.action.contact.SubmittalDataAction;
 import com.smt.sitebuilder.action.dealer.DealerContactAction;
 import com.smt.sitebuilder.action.dealer.DealerLocatorAction;
 import com.smt.sitebuilder.action.user.ProfileRoleManager;
@@ -51,7 +51,8 @@ import com.smt.sitebuilder.security.SecurityController;
  * @version 1.0
  * @since Dec 16, 2010
  * @Updates
- * James McKain, Feb 27, 2014 - relaxed recordStatus() to protected so it could be used by TVSpot actions.
+ * James McKain, Feb 28, 2014 - refactored recordStatus() to move it's functionality 
+ * 		to a common/reusable location in the WC core.
  ****************************************************************************/
 public class RequestAQuoteSTF extends SBActionAdapter {
 	
@@ -62,6 +63,8 @@ public class RequestAQuoteSTF extends SBActionAdapter {
 	private static final String USER_EMAIL = "userEmail";
 	private static final String DEALER_EMAIL = "dealerEmail";
 	private static final String DEALER_LOCATION_ID = "dealerLocationId";
+	
+	
 	public RequestAQuoteSTF(ActionInitVO actionInit) {
 		super(actionInit);
 	}
@@ -540,38 +543,20 @@ public class RequestAQuoteSTF extends SBActionAdapter {
 		this.recordStatus(step.toString(), csi, safConfig.getTransactionStageFieldId());
 	}
 	
-	protected final void recordStatus(String message, String csi, String fieldId) {
+	private final void recordStatus(String message, String csi, String fieldId) {
 		// cleanup any HTML passed in the message
 		try {
 			StringEncoder se = new StringEncoder();
 			message = se.decodeValue(message);
 		} catch (Exception e) {}
 		
-		StringBuilder sql = new StringBuilder();
-		sql.append("update contact_data set value_txt=?, update_dt=? ");
-		sql.append("where contact_submittal_id=? and contact_field_id=?");
-		log.debug(sql);
-		
-		int x = 0;
-		PreparedStatement ps = null;
+		SubmittalDataAction sda = new SubmittalDataAction(actionInit);
+		sda.setDBConnection(dbConn);
 		try {
-			ps = dbConn.prepareStatement(sql.toString());
-			ps.setString(1, message);
-			ps.setTimestamp(2, Convert.getCurrentTimestamp());
-			ps.setString(3, csi);
-			ps.setString(4, fieldId);
-			x = ps.executeUpdate();
-			
+			sda.updateField(message, csi, fieldId);
 		} catch (SQLException sqle) {
-			log.error(sqle);
-			
-		} finally {
-			try { ps.close(); } catch (Exception e) {}
-
-			//write this message to the error log since DB update failed
-			if (x < 1) {
-				log.error("DB update failed for csi=" + csi + ", fieldId=" + fieldId + ", msg=" + message);
-			}
+			log.error("DB update failed for csi=" + csi + ", fieldId=" + fieldId + ", msg=" + message);
+			log.error("could not update contact field", sqle);
 		}
 	}
 	
