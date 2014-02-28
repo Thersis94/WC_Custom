@@ -244,7 +244,7 @@ public class DSMediaBinImporter {
 			
 		}
 		String tn = "", pkId = "";
-		String requiredOpCo = (type == 2) ? "INTDS.com" : "DS.com";
+		String requiredOpCo = (type == 2) ? "INTDS.com" : "USDS.com";
 		
 		// Loop the list and parse out each map item for inserting into the db
 		for (Map<String, String> row : data) {
