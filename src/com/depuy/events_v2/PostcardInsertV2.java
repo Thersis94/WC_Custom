@@ -175,11 +175,8 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		redirectPg.append(page.getRequestURI()).append("?reqType=").append(nextPage);
 		if (eventPostcardId != null) redirectPg.append("&eventPostcardId=").append(eventPostcardId);
-		redirectPg.append("&msg=").append(message);
-		log.debug("redirUrl=" + redirectPg);
-
-		req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
-		req.setAttribute(Constants.REDIRECT_URL, redirectPg.toString());
+		
+		super.sendRedirect(redirectPg.toString(), message, req);
 	}
 	
 
