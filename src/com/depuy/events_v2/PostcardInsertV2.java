@@ -101,7 +101,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 				case eventInfo:
 					eventPostcardId = saveEventPostcard(req, site, user, eventPostcardId);
 					String eventEntryId = saveEventEntry(req);
-					if (eventPostcardId == null) { //isNewSeminar
+					if (! req.hasParameter("eventPostcardId")) { //isNewSeminar
 						req.setParameter("eventPostcardId", eventPostcardId);
 						saveEventPostcardAssoc(eventPostcardId, eventEntryId);
 						saveLocatorXr(eventPostcardId, req);
