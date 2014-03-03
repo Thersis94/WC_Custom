@@ -3,24 +3,19 @@ package com.depuysynthes.scripts;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
-
-import org.apache.log4j.BasicConfigurator;
-import org.apache.log4j.Logger;
 
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.io.mail.MailHandlerFactory;
 import com.siliconmtn.io.mail.mta.MailTransportAgentIntfc;
+import com.siliconmtn.util.CommandLineUtil;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
-
 import com.depuysynthes.action.MediaBinAdminAction;
 import com.depuysynthes.action.MediaBinAssetVO;
 import com.depuysynthes.action.MediaBinLinkAction;
@@ -38,44 +33,35 @@ import com.depuysynthes.action.MediaBinLinkAction;
  * @version 1.0
  * @since Aug 30, 2013
  ****************************************************************************/
-public class MediaBinAssetFetcher {
-
-    protected static Logger log = null;
-    private Connection dbConn = null;
-    private Properties props = null;
+public class MediaBinAssetFetcher extends CommandLineUtil {
     private int downloadCnt = 0;
     private int notFoundCnt = 0;
     private int assetCnt = 0;
 	List <Exception> failures = new ArrayList<Exception>();
     
     
-    public MediaBinAssetFetcher() throws Exception {
-    	log = Logger.getLogger(this.getClass());
-		BasicConfigurator.configure();
-    	//org.apache.log4j.PropertyConfigurator.configure("/data/log4j.properties");
-		
-		/**
-		 * this script shares a config file with the other mediabin script(s);
-		 * re-use that method to load that (same) file.
-		 * same for creating the dbConn
-		 */
-		props = DSMediaBinImporter.loadProperties();
-		dbConn = DSMediaBinImporter.getDBConnection(props);
+    public MediaBinAssetFetcher(String[] args) {
+    		super(args);
+		loadProperties("scripts/MediaBin.properties");
+		loadDBConnection(props);
+    		
     }
     
 	/**
 	 * @param args
 	 * @throws Exception 
 	 */
-	public static void main(String[] args) throws Exception {
-		MediaBinAssetFetcher mf = new MediaBinAssetFetcher();
-		mf.execute();
+	public static void main(String[] args) {
+		MediaBinAssetFetcher mf = new MediaBinAssetFetcher(args);
+		mf.run();
 	}
 	
-	/**
-	 * controller method
+
+	/* (non-Javadoc)
+	 * @see com.siliconmtn.util.CommandLineUtil#run()
 	 */
-	public void execute() {
+	@Override
+	public void run() {
 		List<MediaBinAssetVO> data = loadManifest();
 		assetCnt = data.size();
 		String dropboxFolder = (String) props.get("downloadDir");
@@ -108,7 +94,6 @@ public class MediaBinAssetFetcher {
 		
 		sendStatusEmail();
 		log.info("Finished " + data.size() + " files, " + downloadCnt + " new files downloaded");
-		
 	}
 	
 	

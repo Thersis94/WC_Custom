@@ -1,7 +1,6 @@
 package com.depuysynthes.scripts;
 
 // JDK 1.6.x
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -9,20 +8,15 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.io.*;
 import java.net.URL;
 
-// Log4J 1.1.15
-import org.apache.log4j.BasicConfigurator;
-import org.apache.log4j.Logger;
-
 // SMT Base Libs
 import com.depuysynthes.action.MediaBinAdminAction;
-import com.siliconmtn.db.DatabaseConnection;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.io.mail.MailHandlerFactory;
 import com.siliconmtn.io.mail.mta.MailTransportAgentIntfc;
+import com.siliconmtn.util.CommandLineUtil;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
@@ -39,8 +33,11 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @author James McKain
  * @version 1.0
  * @since May 23, 2013
+ * @updates
+ * James McKain - 03-03-2014 - revised to support eCopy, and be backwards compatible for both file formats.
+ * 
  ****************************************************************************/
-public class DSMediaBinImporter {
+public class DSMediaBinImporter extends CommandLineUtil {
 
 	/**
 	 * Stores the URL for the US or International import file
@@ -68,9 +65,6 @@ public class DSMediaBinImporter {
 	List <Exception> failures = new ArrayList<Exception>();
 	
 	// Member Variables
-    protected static Logger log = Logger.getLogger(DSMediaBinImporter.class);
-    private Connection conn = null;
-    private Properties props = null;
     private int total = 0;
     
     
@@ -78,12 +72,11 @@ public class DSMediaBinImporter {
      * Initializes the Logger, config files and the database connection
      * @throws Exception
      */
-    public DSMediaBinImporter() throws Exception {
-		// initialize the logger
-		BasicConfigurator.configure();
-		//org.apache.log4j.PropertyConfigurator.configure("/data/log4j.properties");
-		props = loadProperties();
-		conn = getDBConnection(props);
+    public DSMediaBinImporter(String[] args) {
+	    super(args);
+		loadProperties("scripts/MediaBin.properties");
+		loadDBConnection(props);
+		
     }
 	/**
 	 * @param args
@@ -91,44 +84,58 @@ public class DSMediaBinImporter {
 	 */
 	public static void main(String[] args) throws Exception {        
 		//Create an instance of the MedianBinImporter
-		DSMediaBinImporter dmb = new DSMediaBinImporter();
-		dmb.importFile = dmb.props.getProperty("importFile");
-		
+		DSMediaBinImporter dmb = new DSMediaBinImporter(args);
+		dmb.run();
+	}
+	
+	
+	/* (non-Javadoc)
+	 * @see com.siliconmtn.util.CommandLineUtil#run()
+	 */
+	@Override
+	public void run() {
+		importFile = props.getProperty("importFile");
+
 		// Get the type (Intl (2) or US(1))
 		int type = 1;
 		if (args.length > 0 && Convert.formatInteger(args[0]) == 2) type = 2;
-		dmb.importFile = dmb.props.getProperty("importFile" + type);
-		log.info("Starting Importer for " + dmb.importFile);
+		importFile = props.getProperty("importFile" + type);
 		
-		if (args.length > 1) dmb.DEBUG_MODE = Convert.formatBoolean(args[1]);
-		
-		try {
-			//Attempt to retrieve and order the data
-			List<Map<String,String>> data = null;
-			data = dmb.parseFile(dmb.importFile);
+		log.info("Starting Importer for " + importFile);
 
-			// Make sure some data was retrieved and then delete the current records
+		if (args.length > 1)
+			DEBUG_MODE = Convert.formatBoolean(args[1]);
+
+		try {
+			// Attempt to retrieve and order the data
+			List<Map<String, String>> data = null;
+			data = parseFile(importFile);
+
+			// Make sure some data was retrieved and then delete the current
+			// records
 			log.debug("** Number of entries: " + data.size());
-			if (data.size() > 10) dmb.deleteCurrentRecords(type);
-			else throw new SQLException("Not enough records");
-			
-			//Attempt to insert the data we retrieved
-			dmb.insertData(data, type);
-			
-		} catch (Exception e) {
-			log.error("Error parsing file... " + e.getMessage(), e);
-			dmb.failures.add(new Exception("Error parsing file: " + e.getMessage(), e));
-			
-		} finally {
-			if (dmb.conn != null) {
-				try { dmb.conn.close(); } catch (Exception e) {}
+			if (data.size() > 10) {
+				deleteCurrentRecords(type);
+			} else {
+				throw new SQLException("Not enough records");
 			}
 
-			dmb.sendEmail();
+			// Attempt to insert the data we retrieved
+			insertData(data, type);
+
+		} catch (Exception e) {
+			log.error("Error parsing file... " + e.getMessage(), e);
+			failures.add(new Exception("Error parsing file: " + e.getMessage(), e));
+
+		} finally {
+			try {
+				dbConn.close();
+			} catch (Exception e) { }
+			
+			sendEmail();
 		}
-		
-		dmb = null;
 	}
+	
 	
 	/**
 	 * Delete the current rows for the provided type
@@ -137,15 +144,16 @@ public class DSMediaBinImporter {
 	 */
 	protected void deleteCurrentRecords(int type) throws SQLException {
 		StringBuilder sql = new StringBuilder();
-		sql.append("delete from ").append(props.getProperty(Constants.CUSTOM_DB_SCHEMA)); 
+		sql.append("delete from ").append(props.getProperty(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("dpy_syn_mediabin where import_file_cd = ?");
-		
-		PreparedStatement ps = conn.prepareStatement(sql.toString());
+
+		PreparedStatement ps = dbConn.prepareStatement(sql.toString());
 		ps.setInt(1, type);
 		ps.executeUpdate();
 		ps.close();
-		log.debug("SQL: " + sql);
+		log.debug("purged old records.  SQL was: " + sql);
 	}
+	
 	
 	/**
 	 * parses the import file.  Import text file format - first row contains column headers:
@@ -155,63 +163,58 @@ public class DSMediaBinImporter {
 	 * @param String importFile file path
 	 * @throws Exception
 	 */
-	public List<Map<String,String>> parseFile(String url) throws IOException {
+	public List<Map<String, String>> parseFile(String url) throws IOException {
 		log.info("starting file parser");
-		
-		//Set the importFile so we can access it for the success email
-		//append a randomized value to the URL to bypass CDN proxies
-		importFile = url + "?t=" + System.currentTimeMillis();
-		
-		URL page = new URL(importFile);
-        BufferedReader buffer = new BufferedReader(
-        						new InputStreamReader(page.openStream(), "UTF-16"));
 
-		//first row contains column names; must match UserDataVO mappings
+		// Set the importFile so we can access it for the success email
+		// append a randomized value to the URL to bypass CDN proxies
+		importFile = url + "?t=" + System.currentTimeMillis();
+
+		URL page = new URL(importFile);
+		BufferedReader buffer = new BufferedReader(new InputStreamReader(
+				page.openStream(), "UTF-16"));
+
+		// first row contains column names; must match UserDataVO mappings
 		String tokens[] = buffer.readLine().split(DELIMITER, -1);
 		String[] columns = new String[tokens.length];
-		for(int i=0; i<tokens.length; i++){
+		for (int i = 0; i < tokens.length; i++) {
 			columns[i] = tokens[i];
 		}
-		
+
 		String rowStr = null;
-		Map<String,String> entry = null;
-		List<Map<String,String>> data = new ArrayList<Map<String,String>>();
-		//Map<String,Integer> colSizes = new HashMap<String,Integer>();
-		
-		//execution in this loop WILL throw NoSuchElementException.
-		//This is not trapped so you can cleanup data issue prior to import
+		Map<String, String> entry = null;
+		List<Map<String, String>> data = new ArrayList<Map<String, String>>();
+		// Map<String,Integer> colSizes = new HashMap<String,Integer>();
+
+		// execution in this loop WILL throw NoSuchElementException.
+		// This is not trapped so you can cleanup data issue prior to import
 		for (int y = 0; (rowStr = buffer.readLine()) != null; y++) {
 			tokens = rowStr.split(DELIMITER, -1);
 			++totalRows;
-			
-			//test quality of data
+
+			// test quality of data
 			if (tokens.length != columns.length) {
 				log.error("Not loading row# " + y + " " + rowStr);
 				continue;
 			}
-			
-			entry = new HashMap<String,String>(20);
-			for (int x=0; x < tokens.length; x++) {
+
+			entry = new HashMap<String, String>(20);
+			for (int x = 0; x < tokens.length; x++) {
 				String value = StringUtil.checkVal(tokens[x].trim());
-				
-				//remove surrounding quotes if they exist
+
+				// remove surrounding quotes if they exist
 				if (value.startsWith("\"") && value.endsWith("\""))
-					value = value.substring(1, value.length()-1);
-				
+					value = value.substring(1, value.length() - 1);
+
 				if (value.equals("null")) value = null;
-				//if (y %30 == 0) log.debug(columns[x] + " = " + value);
+				
 				entry.put(columns[x], value);
-				
-				//log.debug(columns[x]);
-				//Integer len = colSizes.containsKey(columns[x]) ? colSizes.get(columns[x]) : Integer.valueOf(0);
-				//if (len < StringUtil.checkVal(value).length()) colSizes.put(columns[x], value.length());
-				
 			}
 			data.add(entry);
 			entry = null;
 		}
-		//log.error(colSizes);
-		
+		// log.error(colSizes);
+
 		log.debug("file size is " + data.size() + " rows");
 		return data;
 	}
@@ -238,11 +241,12 @@ public class DSMediaBinImporter {
 
 		int recordCnt = 0;
 		PreparedStatement ps  = null;
-		try { 
-			if (!DEBUG_MODE) ps = conn.prepareStatement(sql.toString()); 
-		} catch (Exception e) {
-			
+		if (!DEBUG_MODE) {  //open the PreparedStatement
+			try { 
+				ps = dbConn.prepareStatement(sql.toString()); 
+			} catch (Exception e) { }
 		}
+		
 		String tn = "", pkId = "";
 		String requiredOpCo = (type == 2) ? "INTDS.com" : "USDS.com";
 		
@@ -263,33 +267,36 @@ public class DSMediaBinImporter {
 						} else {
 							reason += "unauthorized opCo: " + row.get("Distribution Channel");
 						}
-						
 						log.info("skipping asset " + row.get("Asset Name") + reason);
 					}
 					continue;
 				}
-					
 				
-				// Get the tracking number
+				// load the tracking number, support eCopy and MediaBin file layouts
 				tn = StringUtil.checkVal(row.get("Tracking Number"));
-				if (tn.length() == 0) {
-					tn = StringUtil.checkVal(row.get("Name"));
-					if (tn.lastIndexOf(".") > -1) 
-						tn = tn.substring(0, tn.lastIndexOf("."));
+				if (tn.length() > 0) {
+					tn = loadLegacyTrackingNumber(tn, row, type);
+					pkId = tn;
+					if (type == 1) pkId = StringUtil.checkVal(row.get("Business Unit ID")) + pkId; //US assets get business unit as part of pKey.
 				}
-				if (tn.length() > 18 && type == 2) tn = tn.substring(0, 18); //INT assets only use the first 18chars
-				else if (tn.length() == 0)
+				
+				//no legacy#, use eCopy
+				if (tn.length() == 0) {
+					tn = StringUtil.checkVal(row.get("eCopy Tracking Number"));
+					pkId = tn;
+				}
+				
+				//still no tracking number, this asset is invalid!
+				if (tn.length() == 0)
 					throw new SQLException("Tracking number missing for " + row.get("Asset Name"));
 				
-				pkId = tn;
-				if (type == 1) pkId = StringUtil.checkVal(row.get("Business Unit ID")) + pkId; //US assets get business unit as part of pKey.
 				
 				//determine Modification Date for the record. -- displays in site-search results
 				Date modDt = Convert.formatDate(Convert.DATE_TIME_SLASH_PATTERN_FULL_12HR, row.get("Check In Time"));
 				if (modDt == null) modDt = Convert.formatDate(Convert.DATE_TIME_SLASH_PATTERN_FULL_12HR, row.get("Insertion Time"));
 				
 				// Insert the record
-				if (DEBUG_MODE) ps = conn.prepareStatement(sql.toString());
+				if (DEBUG_MODE) ps = dbConn.prepareStatement(sql.toString());
 				ps.setString(1, pkId);
 				ps.setString(2, row.get("Asset Name").replace('\\','/'));
 				ps.setString(3, StringUtil.checkVal(row.get("Asset Description"), row.get("SOUS - Literature Category")));
@@ -357,6 +364,26 @@ public class DSMediaBinImporter {
 		log.debug(total + " total items logged.");
 	}
 	
+	
+	
+	/**
+	 * parses the tracking number from the old MediaBin file format
+	 * @param data
+	 * @return
+	 */
+	//TODO this should be removed once Angie has tracking numbers populated for all legacy INT assets.
+	//They're the only ones falling-back to Name and max 18 chars.
+	private String loadLegacyTrackingNumber(String tn, Map<String, String> data, int type) {
+		if (tn.length() == 0) {
+			tn = StringUtil.checkVal(data.get("Name"));
+			if (tn.lastIndexOf(".") > -1) 
+				tn = tn.substring(0, tn.lastIndexOf("."));
+		}
+
+		if ( type == 2 && tn.length() > 18) tn = tn.substring(0, 18); //INT assets only use the first 18chars
+		return tn;
+	}
+	
 	/**
 	 * Looks at multiple columns and returns when one of the columns has data
 	 * @param row
@@ -378,37 +405,7 @@ public class DSMediaBinImporter {
 		return pf;
 	}
 	
-	/**
-	 * Load the properties file in order to get the database and email 
-	 */
-	public static Properties loadProperties() {
-		FileInputStream fis = null;
-		Properties props = new Properties();
-		try {
-			fis = new FileInputStream("scripts/MediaBin.properties");
-			props.load(fis);
-		} catch (IOException e) {
-			log.error("Could not load config file", e);
-			System.exit(-1);
-		} finally {
-			try { fis.close(); } catch (Exception e) {}
-		}
-		
-		return props;
-	}
 	
-	/**
-	 * Connects to the database based on the values in the property file
-	 * @throws Exception
-	 */
-	public static Connection getDBConnection(Properties props) throws Exception {
-		DatabaseConnection dbc = new DatabaseConnection();
-		dbc.setDriverClass((String) props.get("dbDriver"));
-		dbc.setUrl((String) props.get("dbUrl"));
-		dbc.setUserName((String) props.get("dbUser"));
-		dbc.setPassword((String) props.get("dbPassword"));
-		return dbc.getConnection();
-	}
 	
 	/**
 	 * Sends an email to the person specified in the properties file as to whether 
