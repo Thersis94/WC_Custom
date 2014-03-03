@@ -275,21 +275,21 @@ public class DSMediaBinImporter extends CommandLineUtil {
 				// load the tracking number, support eCopy and MediaBin file layouts
 				tn = StringUtil.checkVal(row.get("Tracking Number"));
 				if (tn.length() > 0) {
-					tn = loadLegacyTrackingNumber(tn, row, type);
 					pkId = tn;
 					if (type == 1) pkId = StringUtil.checkVal(row.get("Business Unit ID")) + pkId; //US assets get business unit as part of pKey.
-				}
-				
-				//no legacy#, use eCopy
-				if (tn.length() == 0) {
+					
+				} else {
+					//no legacy#, use eCopy
 					tn = StringUtil.checkVal(row.get("eCopy Tracking Number"));
 					pkId = tn;
 				}
 				
 				//for INTL, use the file name as a tracking number (final fallback).
 				//NOTE: once eCopy launch this becomes unreachable code.  All assets will have one of the two above.
-				if (type == 2 && tn.length() == 0)
-					tn  = this.loadLegacyTrackingNumber(tn, row, type);
+				if (type == 2 && tn.length() == 0) {
+					tn  = loadLegacyTrackingNumberFromFileName(row);
+					pkId = tn;
+				}
 				
 				//still no tracking number, this asset is invalid!
 				if (tn.length() == 0)
@@ -378,14 +378,12 @@ public class DSMediaBinImporter extends CommandLineUtil {
 	 */
 	//TODO this should be removed once Angie has tracking numbers populated for all legacy INT assets.
 	//They're the only ones falling-back to Name and max 18 chars.
-	private String loadLegacyTrackingNumber(String tn, Map<String, String> data, int type) {
-		if (tn.length() == 0) {
-			tn = StringUtil.checkVal(data.get("Name"));
-			if (tn.lastIndexOf(".") > -1) 
-				tn = tn.substring(0, tn.lastIndexOf("."));
-		}
-
-		if ( type == 2 && tn.length() > 18) tn = tn.substring(0, 18); //INT assets only use the first 18chars
+	private String loadLegacyTrackingNumberFromFileName(Map<String, String> data) {
+		String tn = StringUtil.checkVal(data.get("Name"));
+		if (tn.lastIndexOf(".") > -1) 
+			tn = tn.substring(0, tn.lastIndexOf("."));
+		
+		if (tn.length() > 18) tn = tn.substring(0, 18); //INT assets only use the first 18chars
 		return tn;
 	}
 	
