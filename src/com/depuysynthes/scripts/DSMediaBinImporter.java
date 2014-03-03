@@ -286,6 +286,11 @@ public class DSMediaBinImporter extends CommandLineUtil {
 					pkId = tn;
 				}
 				
+				//for INTL, use the file name as a tracking number (final fallback).
+				//NOTE: once eCopy launch this becomes unreachable code.  All assets will have one of the two above.
+				if (type == 2 && tn.length() == 0)
+					tn  = this.loadLegacyTrackingNumber(tn, row, type);
+				
 				//still no tracking number, this asset is invalid!
 				if (tn.length() == 0)
 					throw new SQLException("Tracking number missing for " + row.get("Asset Name"));
