@@ -301,8 +301,11 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 				container.flush();
 				//need to flush the jobId in the event they've submitted but are dropping the cart.
 				req.removeAttribute("jobId");
+				String storeAlias = StringUtil.checkVal(req.getSession().getAttribute(FastsignsSessVO.ECOM_ALIAS_PATH));
+				if (storeAlias.length() == 0) storeAlias = CenterPageAction.getFranchiseId(req);
+				
 				req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
-				req.setAttribute(Constants.REDIRECT_URL, "/" + CenterPageAction.getFranchiseId(req) + "/store");
+				req.setAttribute(Constants.REDIRECT_URL, "/" + storeAlias + "/store");
 			} else {
 				req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
 				req.setAttribute(Constants.REDIRECT_URL, url.toString());

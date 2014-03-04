@@ -21,6 +21,7 @@ import com.siliconmtn.util.StringUtil;
 public class FastsignsSessVO implements Serializable {
 	private static final long serialVersionUID = 1L;
 	public static final String FRANCHISE_ID = "FranchiseId"; //legacy session constant
+	public static final String ECOM_ALIAS_PATH = "EcommAliasPath"; //used between eComm and Store actions.
 	
 	private Map<String,FranchiseVO> franchiseMap = new HashMap<String, FranchiseVO>();  //key=franchiseWebId ([0-9]{3})
 	private Map<String, KeystoneUserDataVO> profileMap = new HashMap<String, KeystoneUserDataVO>(); //key = franchiseWebId ([0-9]{3})

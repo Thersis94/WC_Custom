@@ -12,6 +12,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
@@ -63,21 +64,17 @@ public class ProductFacadeAction extends SimpleActionAdapter {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		attributes.put(Constants.SITE_DATA, site);
 		ReqType type = null;
-		String franId = null;
 		HttpSession ses = req.getSession();
 		
-		//TODO - ask billy
-		/**
-		 * I have no idea what this does or why it's here!  -JM
-		 */
-		boolean first = req.hasParameter("firstEcommCall");
-		if (!first && !req.hasParameter("amid") && !page.getAliasName().equals("cart")) {
-			franId = site.getSiteId().replaceAll("^(.*)_([\\d]{1,5})_(.*)$", "$2");
-			ses.setAttribute(FastsignsSessVO.FRANCHISE_ID, franId);
-			req.setParameter("firstEcommCall", "true");
-			if (site.getAliasPathName() != null)
-				ses.setAttribute("EcommAliasPath", site.getAliasPathName());
-		}
+		//TODO - remove this block after testing passes. -JM 03-04-14
+//		boolean first = req.hasParameter("firstEcommCall");
+//		if (!first && !req.hasParameter("amid") && !page.getAliasName().equals("cart")) {
+//			franId = site.getSiteId().replaceAll("^(.*)_([\\d]{1,5})_(.*)$", "$2");
+//			ses.setAttribute(FastsignsSessVO.FRANCHISE_ID, franId);
+//			req.setParameter("firstEcommCall", "true");
+//			if (site.getAliasPathName() != null)
+//				ses.setAttribute(FastsignsSessVO.ECOM_ALIAS_PATH, site.getAliasPathName());
+//		}
 		
 		configureSession(ses, req, attributes);
 		
@@ -182,6 +179,7 @@ public class ProductFacadeAction extends SimpleActionAdapter {
 	 * @param req
 	 */
 	protected static void configureSession(HttpSession ses, SMTServletRequest req, Map<String, Object> attributes) {
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		String franchiseId = CenterPageAction.getFranchiseId(req);
 		FastsignsSessVO franSessVo = (FastsignsSessVO)ses.getAttribute(KeystoneProxy.FRAN_SESS_VO);
 		
@@ -193,6 +191,9 @@ public class ProductFacadeAction extends SimpleActionAdapter {
 			//ensure we have a webId; almost all transactions revolve around this value
 			ses.setAttribute(FastsignsSessVO.FRANCHISE_ID, franchiseId);
 		}
+		
+		if (site.getAliasPathName() != null && site.getAliasPathName() != StringUtil.checkVal(ses.getAttribute(FastsignsSessVO.ECOM_ALIAS_PATH)))
+			ses.setAttribute(FastsignsSessVO.ECOM_ALIAS_PATH, site.getAliasPathName());
 	}
 	
 	
@@ -202,6 +203,7 @@ public class ProductFacadeAction extends SimpleActionAdapter {
 	 * @param req
 	 */
 	public static void loadDefaultSession(SMTServletRequest req, FastsignsSessVO sessVo, String webId, Map<String, Object> attributes) {
+		HttpSession ses = req.getSession();
 		CheckoutUtil util = new CheckoutUtil(attributes);
 		if (sessVo == null)
 			sessVo = new FastsignsSessVO();
@@ -213,8 +215,7 @@ public class ProductFacadeAction extends SimpleActionAdapter {
 		} finally {
 			util = null;
 		}
-		req.getSession().setAttribute(KeystoneProxy.FRAN_SESS_VO, sessVo);
-		req.getSession().setAttribute(FastsignsSessVO.FRANCHISE_ID, webId);
-		
+		ses.setAttribute(KeystoneProxy.FRAN_SESS_VO, sessVo);
+		ses.setAttribute(FastsignsSessVO.FRANCHISE_ID, webId);
 	}
 }
