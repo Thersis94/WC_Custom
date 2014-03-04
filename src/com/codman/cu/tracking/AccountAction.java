@@ -25,6 +25,9 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @author Dave Bargerhuff
  * @version 1.0
  * @since Nov 02, 2010
+ * @updates
+ * James McKain - 03-04-2014 - Added "delete account" support, from build method.
+ * 		split build method into separate methods for update and delete.
  ****************************************************************************/
 public class AccountAction extends SBActionAdapter {
 		
@@ -45,13 +48,76 @@ public class AccountAction extends SBActionAdapter {
 		final String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		AccountVO avo = new AccountVO(req);
 		
-		//get the personId attached to the incoming profileId
-		UserAction ua = new UserAction(actionInit);
-		ua.setAttributes(attributes);
-		ua.setDBConnection(dbConn);
-		avo.getRep().setPersonId(ua.lookupPersonId(req.getParameter("profileId"), site.getOrganizationId()));
-		ua = null;
+		if (req.hasParameter("deleteAccount")) {
+			msg = deleteAccount(avo, customDb);
+			
+		} else {
+			// get the personId attached to the incoming profileId
+			UserAction ua = new UserAction(actionInit);
+			ua.setAttributes(attributes);
+			ua.setDBConnection(dbConn);
+			avo.getRep().setPersonId(ua.lookupPersonId(req.getParameter("profileId"), site.getOrganizationId()));
+			ua = null;
+			
+			msg = updateAccount(avo, customDb);
+		}
 		
+		// Setup the redirect
+		StringBuilder url = new StringBuilder();
+		url.append(req.getRequestURI());
+		url.append("?type=").append(req.getParameter("type"));
+		url.append("&msg=").append(msg);
+		req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
+		req.setAttribute(Constants.REDIRECT_URL, url.toString());
+		log.debug("redirUrl = " + url);
+	}
+	
+	
+	
+	/**
+	 * deletes an account from the system
+	 * foreign key constraints cascade this through the DB.
+	 * @param avo
+	 * @param customDb
+	 * @return
+	 */
+	private Object deleteAccount(AccountVO avo, String customDb) {
+		Object msg = null;
+		StringBuilder sql = new StringBuilder();
+		sql.append("delete from ").append(customDb).append("codman_cu_account ");
+		sql.append("where account_id=?");
+		log.debug(sql + " " + avo.getAccountId());
+		
+		PreparedStatement ps = null;
+		try {
+			ps = dbConn.prepareStatement(sql.toString());
+			ps.setString(1, avo.getAccountId());
+			int cnt = ps.executeUpdate();
+
+			if (cnt > 0) msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
+			else msg = getAttribute(AdminConstants.KEY_ERROR_MESSAGE);
+			
+		} catch (SQLException sqle) {
+			log.error("could not delete account", sqle);
+			msg = getAttribute(AdminConstants.KEY_ERROR_MESSAGE);
+			
+		} finally {
+			try { ps.close(); } catch (Exception e) {}
+		}
+		
+		return msg;
+	}
+	
+	
+	/**
+	 * updates an account record in the database
+	 * @param avo
+	 * @param customDb
+	 * @return
+	 * @throws SQLException
+	 */
+	private Object updateAccount(AccountVO avo, String customDb) {
+		Object msg = null;
 		StringBuilder sql = new StringBuilder();
 		if (StringUtil.checkVal(avo.getAccountId()).length() == 0) {
 			avo.setAccountId(new UUIDGenerator().getUUID());
@@ -59,7 +125,7 @@ public class AccountAction extends SBActionAdapter {
 			sql.append("(person_id, account_no, account_nm, phone_no_txt, ");
 			sql.append("address_txt, address2_txt, city_nm, state_cd, zip_cd, ");
 			sql.append("country_cd, create_dt, organization_id, account_id) ");
-			sql.append("values (?,?,?,?,?,?,?,?,?,?,?,?,?)");			
+			sql.append("values (?,?,?,?,?,?,?,?,?,?,?,?,?)");
 		} else {
 			sql.append("update ").append(customDb).append("codman_cu_account ");
 			sql.append("set person_id = ?, account_no = ?, account_nm = ?, phone_no_txt = ?, ");
@@ -68,7 +134,7 @@ public class AccountAction extends SBActionAdapter {
 		}
 		log.debug(sql + " " + avo.getAccountId());
 		log.debug(StringUtil.getToString(avo));
-				
+
 		PreparedStatement ps = null;
 		int i = 0;
 		try {
@@ -87,26 +153,19 @@ public class AccountAction extends SBActionAdapter {
 			ps.setString(++i, avo.getOrganizationId());
 			ps.setString(++i, avo.getAccountId());
 			int cnt = ps.executeUpdate();
-			
-			if (cnt > 0) msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
-			else msg = getAttribute(AdminConstants.KEY_ERROR_MESSAGE);
-			
+
+			if (cnt > 0)
+				msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
+			else
+				msg = getAttribute(AdminConstants.KEY_ERROR_MESSAGE);
+
 		} catch (SQLException sqle) {
 			log.error("error saving Account", sqle);
 			msg = getAttribute(AdminConstants.KEY_ERROR_MESSAGE);
 		} finally {
-			try {
-				ps.close();
-			} catch (Exception e) {}
+			try { ps.close(); } catch (Exception e) { }
 		}
-		
-		// Setup the redirect
-    	StringBuilder url = new StringBuilder();
-    	url.append(req.getRequestURI());
-    	url.append("?type=").append(req.getParameter("type"));
-    	url.append("&msg=").append(msg);
-    	req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
-    	req.setAttribute(Constants.REDIRECT_URL, url.toString());
-    	log.debug("redirUrl = " + url);
+	
+		return msg;
 	}
 }

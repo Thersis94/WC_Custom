@@ -207,14 +207,14 @@ public class AccountFacadeAction extends SBActionAdapter {
 					
 					acctVo = new AccountVO(rs);
 					profileIds.add(acctVo.getRep().getProfileId()); //we'll look these up later!
-					log.debug("added profileId " + acctVo.getRep().getProfileId());
+					//log.debug("added profileId " + acctVo.getRep().getProfileId());
 					lastAcctId = StringUtil.checkVal(acctVo.getAccountId());
 					//log.debug("loaded account# " + acctVo.getAccountNo());
 				}
 				if (rs.getString("physician_id") != null) {
 					acctVo.addPhysician(new PhysicianVO(rs));
 					profileIds.add(rs.getString("phys_profile_id"));
-					log.debug("added physician lookup for " + rs.getString("phys_profile_id"));
+					//log.debug("added physician lookup for " + rs.getString("phys_profile_id"));
 				}
 				
 				if (rs.getString("transaction_id") != null) {
@@ -226,7 +226,7 @@ public class AccountFacadeAction extends SBActionAdapter {
 					}
 					
 					if (rs.getString("unit_id") != null) {
-						log.debug("prodcomm=" + rs.getString("production_comments_txt"));
+						//log.debug("prodcomm=" + rs.getString("production_comments_txt"));
 						UnitVO unit = new UnitVO(rs);
 						trans.addUnit(unit);
 					}
