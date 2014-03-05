@@ -820,6 +820,22 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		this.changePostcardStatus(EventFacadeAction.STATUS_APPROVED, eventPostcardId);
 		message = "The Seminar was updated successfully";
 		
+		//change the events on this postcard to approved, so they'll be searchable on KR|HR|Shoudler
+		String sql = "update event_entry set status_flg=?, update_dt=? where event_entry_id in "
+				+ "(select event_entry_id from event_postcard_assoc where event_postcard_id=?)";
+		PreparedStatement ps = null;
+		try {
+			ps = dbConn.prepareStatement(sql);
+			ps.setInt(1, EventFacadeAction.STATUS_APPROVED);
+			ps.setTimestamp(2, Convert.getCurrentTimestamp());
+			ps.setString(3, eventPostcardId);
+			ps.executeUpdate();
+		} catch (SQLException sqle) {
+			log.error("could not set event status to approved", sqle);
+		} finally {
+			try { ps.close(); } catch (Exception e) {}
+		}
+		
 		// get the postcard data for emailing & approving each event
 		DePuyEventSeminarVO sem = fetchSeminar(req, ReportType.summary);
 		req.setAttribute("postcard", sem);
