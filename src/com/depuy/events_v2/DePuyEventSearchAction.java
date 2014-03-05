@@ -4,8 +4,11 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -43,7 +46,15 @@ public class DePuyEventSearchAction extends SimpleActionAdapter {
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {		
 		//test to ensure we're not asking for the search form; only load data if we have the params to do so!
-		if (! req.hasParameter("specialty") && ! req.hasParameter("eventEntryId") && ! req.hasParameter("rsc")) return;
+		if (! req.hasParameter("specialty") && ! req.hasParameter("eventEntryId") && 
+				! req.hasParameter("rsc") && ! req.hasParameter("locatorSubmit")) return;
+		
+		//transpose locator products to a specialty
+		if (req.hasParameter("locatorSubmit")) {
+			String specialtyId = req.getParameter("specialty");
+			if (req.hasParameter("product")) specialtyId = getSpecialty(req.getParameter("product")); 
+			req.setParameter("specialtyId", specialtyId);
+		}
 		
 		//query the system for qualifying Seminars to display
 		loadData(req);
@@ -88,6 +99,9 @@ public class DePuyEventSearchAction extends SimpleActionAdapter {
 		String distSql = eta.buildSpatialClause(req); 
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		Integer specialtyId = Convert.formatInteger(req.getParameter("specialty"));
+		if (req.hasParameter("specialtyId")) specialtyId = Convert.formatInteger(req.getParameter("specialtyId"));
+		
 		StringBuilder sql = new StringBuilder();
 		sql.append("select ee.*, et.*, ").append(distSql).append(" as distance, des.surgeon_nm as contact_nm ");
 		sql.append("from event_entry ee ");
@@ -115,7 +129,7 @@ public class DePuyEventSearchAction extends SimpleActionAdapter {
 		try {
 			ps = dbConn.prepareStatement(sql.toString());
 			ps.setString(x++, (String) mod.getAttribute(ModuleVO.ATTRIBUTE_1));
-			ps.setInt(x++, Convert.formatInteger(req.getParameter("specialty")));
+			ps.setInt(x++, specialtyId);
 			ps.setInt(x++, EventFacadeAction.STATUS_APPROVED);
 			if (req.hasParameter("eventEntryId")) {
 				ps.setString(x++, req.getParameter("eventEntryId"));
@@ -139,6 +153,31 @@ public class DePuyEventSearchAction extends SimpleActionAdapter {
 		log.debug("loaded " + mod.getDataSize() + " Seminars");
 		mod.setActionData(data);
 		setAttribute(Constants.MODULE_DATA, mod);
+	}
+	
+	
+	/**
+	 * transposes a productId into the AAMD specialty it belongs to.
+	 * These are static and driven by AAMD, see:
+	 * http://www.allaboutmydoc.com/AAMD/productList.jsp
+	 * @param productId
+	 * @return
+	 */
+	private static String getSpecialty(String productId) {
+		Set<Integer> knee = new HashSet<Integer>(Arrays.asList(new Integer[] {1,205,241,340,541,548}));
+		Set<Integer> hip = new HashSet<Integer>(Arrays.asList(new Integer[] {120,121,201,202,360,400,480,401,540}));
+		Set<Integer> shoulder = new HashSet<Integer>(Arrays.asList(new Integer[] {100,203}));
+		Set<Integer> finger = new HashSet<Integer>(Arrays.asList(new Integer[] {242,280}));
+		Set<Integer> ankle = new HashSet<Integer>(Arrays.asList(new Integer[] {240}));
+		
+		Integer id = Convert.formatInteger(productId);
+		if (knee.contains(id)) return "5";
+		if (hip.contains(id)) return "4";
+		if (shoulder.contains(id)) return "6";
+		if (finger.contains(id)) return "3";
+		if (ankle.contains(id)) return "1";
+		
+		return "";
 	}
 	
 }
