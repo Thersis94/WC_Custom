@@ -158,6 +158,7 @@ public class TaxationRequestCoordinator {
 		} catch (Exception e) {
 			taxType = TaxationServiceType.FASTSIGNS_CUSTOM;
 		}
+		log.debug("taxService=" + franchise.getAttributes().get("ecomm_tax_service"));
 		taxReq.setProviderType(taxType);
 		
 		//set the taxId and Environment according to the taxType
