@@ -456,8 +456,8 @@ public class PostcardEmailer {
 
 		StringBuilder msg = new StringBuilder();
 		msg.append("Medical Affairs has received and approved the Surgeon Speaker's signed contract for Seminar #").append(sem.getRSVPCodes());
-		msg.append(".  This Seminar is now fully approved.  Please proceed with ad buys, postcard creation, and ");
-		msg.append("other necessary tasks to prepare for the event.\r\r");
+		msg.append(".  This seminar is now fully approved.  Please proceed with ad negotiation, postcard creation, and ");
+		msg.append("other necessary tasks to prepare for the seminar.\r\r");
 		msg.append("More information can be found on the website.\r");
 		msg.append(site.getFullSiteAlias()).append("/?reqType=promote&eventPostcardId=");
 		msg.append(sem.getEventPostcardId()).append("\r\r");
