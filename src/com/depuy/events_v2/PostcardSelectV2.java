@@ -149,7 +149,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		//sql.append(" ");
 		sql.append("from (select e.event_entry_id, e.RSVP_CODE_TXT, e.start_dt, et.type_nm, ep.event_postcard_id, ");
 		sql.append("ep.PROFILE_ID, ep.postcard_file_status_no, s.surgeon_nm, e.event_nm, e.city_nm, ");
-		sql.append("e.state_cd, ep.status_flg, lxr.JOINT_ID, COUNT(rsvp.EVENT_RSVP_ID) as 'rsvp_no', ");
+		sql.append("e.state_cd, ep.status_flg, lxr.JOINT_ID, sum(rsvp.GUESTS_NO) as 'rsvp_no', ");
 		sql.append("cad.run_dates_txt, cad.status_flg as ad_status_flg ");
 		sql.append("from EVENT_ENTRY e ");
 		sql.append("inner join EVENT_TYPE et on e.EVENT_TYPE_ID=et.EVENT_TYPE_ID ");
