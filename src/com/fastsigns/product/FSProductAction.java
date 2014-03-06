@@ -5,7 +5,11 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+
+
+import java.util.Map;
 
 //SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -403,8 +407,11 @@ public class FSProductAction extends SBActionAdapter {
 			int i = 0;
 			while(rs.next()) {
 				ProductVO vo = new ProductVO(rs);
-				if(i == 0)
+				if(i == 0){
+					addVideos(vo);
+					req.setAttribute("fsProductVideos", vo.getProdAttributes());
 					req.setAttribute("fsProductName", vo);
+				}
 				i++;
 				Node n = new Node(vo.getProductId(), vo.getParentId());
 				n.setUserObject(vo);
@@ -421,6 +428,37 @@ public class FSProductAction extends SBActionAdapter {
 				ps.close();
 			} catch(Exception e){}
 		}
+	}
+	
+	/**
+	 * Check for videos from the video library related to this product
+	 */
+	private void addVideos(ProductVO product) throws SQLException {
+		StringBuilder sb = new StringBuilder();
+		Map<String, String> video;
+
+		sb.append("select * from product_attribute_xr ");
+		sb.append("where product_id = ? and attribute_id = 'FS_VIDEO_LIB' ");
+		sb.append("order by order_no");
+		log.debug(sb.toString()+"|"+product.getProductId());
+		
+		PreparedStatement ps = dbConn.prepareStatement(sb.toString());
+		
+		ps.setString(1, product.getProductId());
+		
+		ResultSet rs = ps.executeQuery();
+		
+		while (rs.next()) {
+			video = new HashMap<String, String>();
+			video.put("PRODUCT_ATTRIBUTE_ID", rs.getString("PRODUCT_ATTRIBUTE_ID"));
+			video.put("VALUE_TXT", rs.getString("VALUE_TXT"));
+			video.put("TITLE_TXT", rs.getString("TITLE_TXT"));
+			video.put("ATTRIB1_TXT", rs.getString("ATTRIB1_TXT"));
+			video.put("ATTRIB2_TXT", rs.getString("ATTRIB2_TXT"));
+			video.put("ATTRIB3_TXT", rs.getString("ATTRIB3_TXT"));
+			product.addProdAttribute(rs.getString("product_attribute_id"), video);
+		}
+		
 	}
 	
 	/**
@@ -523,6 +561,8 @@ public class FSProductAction extends SBActionAdapter {
 								
 				if (i == 0 && rs.getInt("product_rank") == 1) {
 					ProductVO pvo =  new ProductVO(rs);
+					addVideos(pvo);
+					req.setAttribute("fsProductVideos", pvo.getProdAttributes());
 					req.setAttribute("fsProductName",pvo);
 				} else {
 					data.add(new ProductAttributeVO(rs));
