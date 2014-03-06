@@ -404,7 +404,7 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 				else if (vo.getTierTwoChecked()) totalSelectedLeads += vo.getTierTwo();
 				else if (vo.getTierOneChecked()) totalSelectedLeads += vo.getTierOne();
 			}
-		} else {
+		} else if (targetLeads == null) {
 			totalSelectedLeads = Convert.formatInteger(super.getPcAttribute1(), 0);
 		}
 		

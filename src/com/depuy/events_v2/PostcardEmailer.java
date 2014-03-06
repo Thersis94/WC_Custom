@@ -153,7 +153,7 @@ public class PostcardEmailer {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
 		StringBuilder subject = new StringBuilder();
-		subject.append("Compliance Form - Seminar " + sem.getRSVPCodes());
+		subject.append("Territory " + sem.getTerritoryNumber() + " - Compliance Form for Seminar " + sem.getRSVPCodes());
 
 		StringBuilder msg = new StringBuilder();
 		msg.append("A new DePuy ").append(sem.getJointLabel());
