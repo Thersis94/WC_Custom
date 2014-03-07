@@ -1,11 +1,12 @@
 package com.venture.cs.action;
 
 import java.sql.ResultSet;
-
 import java.util.ArrayList;
 
 import com.siliconmtn.db.DBUtil;
+import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.UserDataVO;
+import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SBModuleVO;
 import com.smt.sitebuilder.action.dealer.DealerLocationVO;
 
@@ -36,12 +37,37 @@ public class VehicleVO extends SBModuleVO {
 	private int freezeFlag;
 	private int requiresAction = 0;//The user cannot directly set this variable, a ticket that requires action needs to be added for this to be changed
 	
+	/**
+	 * Constructor - default
+	 */
 	public VehicleVO() {
 		this.setOwner(new UserDataVO());
 		this.setDealer(new DealerLocationVO());
 		this.setTickets(new ArrayList<TicketVO>());
 	}
 	
+	/**
+	 * Constructor using request parameters to populate members
+	 * @param req
+	 */
+	public VehicleVO(SMTServletRequest req) {
+		this.setVehicleId(req.getParameter("vehicleId"));
+		this.setVin(req.getParameter("vin"));
+		this.setMake(req.getParameter("make"));
+		this.setModel(req.getParameter("model"));
+		this.setYear(req.getParameter("year"));
+		this.setPurchaseYear(req.getParameter("purchaseDate"));
+		this.setFreezeFlag(Convert.formatInteger(req.getParameter("freezeFlag")));
+		this.setOwner(new UserDataVO(req));
+		this.setDealer(new DealerLocationVO(req));
+		this.setTickets(new ArrayList<TicketVO>());
+		this.setActivity(new ArrayList<ActivityVO>());
+	}
+	
+	/**
+	 * Constructor using ResultSet to populate members
+	 * @param rs
+	 */
 	public VehicleVO(ResultSet rs) {
 		DBUtil db = new DBUtil();
 		this.setVehicleId(db.getStringVal("VENTURE_VEHICLE_ID", rs));

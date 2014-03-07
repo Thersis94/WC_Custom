@@ -71,43 +71,43 @@ public class ProductImporter {
 	Set<String> misMatchProdOptions = new HashSet<String>();
 	Set<String> misMatchProdCustom = new HashSet<String>();
 	Set<String> misMatchAttrib = new HashSet<String>();
+
+	private CatalogImport cImp;
+	
 	//private static final int BATCH_SIZE = 1000;
 	private boolean preserveCategories = false;
-	
 	/*
 	private String PRODUCT_CATALOG_ID = "9F78AAF478CE4AC79D0778D389EDEA9C";
 	private String PRODUCT_AND_CATEGORY_PREFIX = "";
 	private String CATALOG_MODEL_YEAR_ID = "USA_SIGNALS_2013";
-	private String fileLoc = "D:\\scripts\\USA_catalog_import\\signals\\";
+	private String fileLoc = "C:\\Temp\\USA_catalog_import\\signals\\";
 	*/
 	/*
 	private String PRODUCT_CATALOG_ID = "BAS_BLEU_CATALOG";
 	private String PRODUCT_AND_CATEGORY_PREFIX = "USA_5_";
 	private String CATALOG_MODEL_YEAR_ID = "BAS_BLEU_2013";
-	private String fileLoc = "D:\\scripts\\USA_catalog_import\\basBleu\\";
+	private String fileLoc = "C:\\Temp\\USA_catalog_import\\basBleu\\";
 	*/
 	/*
 	private String PRODUCT_CATALOG_ID = "SUPPORT_PLUS_CATALOG";
 	private String PRODUCT_AND_CATEGORY_PREFIX = "USA_4_";
 	private String CATALOG_MODEL_YEAR_ID = "SUPPORT_PLUS_2013";
-	private String fileLoc = "D:\\scripts\\USA_catalog_import\\supportPlus\\";
-	*/	
+	private String fileLoc = "C:\\Temp\\USA_catalog_import\\supportPlus\\";
+	*/
 	/*
 	private String PRODUCT_CATALOG_ID = "THE_WIRELESS_CATALOG";
 	private String PRODUCT_AND_CATEGORY_PREFIX = "USA_3_";
 	private String CATALOG_MODEL_YEAR_ID = "THE_WIRELESS_2013";
-	private String fileLoc = "D:\\scripts\\USA_catalog_import\\theWireless\\";
+	private String fileLoc = "C:\\Temp\\USA_catalog_import\\theWireless\\";
 	*/
 	
 	private String PRODUCT_CATALOG_ID = "WHAT_ON_EARTH_CATALOG";
 	private String PRODUCT_AND_CATEGORY_PREFIX = "USA_2_";
 	private String CATALOG_MODEL_YEAR_ID = "WHAT_ON_EARTH_2013";
-	private String fileLoc = "D:\\scripts\\USA_catalog_import\\whatOnEarth\\";
+	private String fileLoc = "C:\\Temp\\USA_catalog_import\\whatOnEarth\\";
 	
 	private String TOP_LEVEL_CATEGORY_ID = PRODUCT_AND_CATEGORY_PREFIX + "100";
 	private String SKIP_CATEGORY_ID = PRODUCT_AND_CATEGORY_PREFIX + "zz";
-	
-	private CatalogImport cImp;
 	
 	/**
 	 * @throws IOException 

@@ -111,7 +111,7 @@ public class ShareAction extends SBActionAdapter {
 			OverviewAction ticket = new OverviewAction();
 			ticket.setDBConnection(dbConn);
 			ticket.setAttributes(attributes);
-			ticket.addNotification(req, "shared this case with " + req.getParameter("rcptNm").split("\\|")[1]);
+			ticket.logActivity(req, "Shared case with: " + req.getParameter("rcptNm").split("\\|")[1]);
 
 		} catch (InvalidDataException e) {
 			log.error("Invalid email address ", e);

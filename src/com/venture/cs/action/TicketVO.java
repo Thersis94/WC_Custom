@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 import com.siliconmtn.db.DBUtil;
 
@@ -15,6 +16,8 @@ import com.siliconmtn.db.DBUtil;
  * @author Eric Damschroder
  * @version 1.0
  * @since July 23, 2013
+ * Changes:
+ * Mar 05, 2014: DBargerhuff: converted files field to List<TicketFileVO> from ArrayList<String>
  ****************************************************************************/
 
 public class TicketVO implements Serializable {
@@ -27,7 +30,7 @@ public class TicketVO implements Serializable {
 	private String comment;
 	private int actionReqFlag;
 	private Date createDt;
-	private ArrayList<String> files;
+	private List<TicketFileVO> files;
 	
 	public TicketVO(ResultSet rs) {
 		DBUtil db = new DBUtil();
@@ -38,7 +41,7 @@ public class TicketVO implements Serializable {
 		this.setComment(db.getStringVal("COMMENT", rs));
 		this.setActionReqFlag(db.getIntVal("ACTION_REQ_FLG", rs));
 		this.setCreateDt(db.getDateVal("CREATE_DT", rs));
-		this.setFiles(new ArrayList<String>());
+		this.setFiles(new ArrayList<TicketFileVO>());
 	}
 
 	public String getTicketId() {
@@ -101,15 +104,15 @@ public class TicketVO implements Serializable {
 		this.createDt = date;
 	}
 	
-	public void addFile(String file) {
+	public void addFile(TicketFileVO file) {
 		files.add(file);
 	}
 
-	public ArrayList<String> getFiles() {
+	public List<TicketFileVO> getFiles() {
 		return files;
 	}
 
-	public void setFiles(ArrayList<String> files) {
+	public void setFiles(ArrayList<TicketFileVO> files) {
 		this.files = files;
 	}
 
