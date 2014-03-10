@@ -103,7 +103,7 @@ public class DePuyEventSearchAction extends SimpleActionAdapter {
 		if (req.hasParameter("specialtyId")) specialtyId = Convert.formatInteger(req.getParameter("specialtyId"));
 		
 		StringBuilder sql = new StringBuilder();
-		sql.append("select ee.*, et.*, ").append(distSql).append(" as distance, des.surgeon_nm as contact_nm ");
+		sql.append("select ee.*, et.*, eg.header_txt, ").append(distSql).append(" as distance, des.surgeon_nm as contact_nm ");
 		sql.append("from event_entry ee ");
 		sql.append("inner join event_type et on ee.event_type_id=et.event_type_id ");
 		sql.append("inner join event_group eg on et.action_id=eg.action_id ");
@@ -141,7 +141,9 @@ public class DePuyEventSearchAction extends SimpleActionAdapter {
 			}
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
-				data.add(new EventEntryVO(rs));
+				EventEntryVO vo = new EventEntryVO(rs);
+				vo.setActionDesc(rs.getString("header_txt"));
+				data.add(vo);
 			}
 		} catch (SQLException sqle) {
 			log.error("could not load Seminars", sqle);
