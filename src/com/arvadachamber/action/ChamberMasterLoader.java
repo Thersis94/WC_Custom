@@ -246,7 +246,7 @@ public class ChamberMasterLoader {
 		// attempt login
 		String loginUrl = ChamberMasterLoader.SECURE_BASE_URL + "/Login/Authenticate";
 		StringBuilder params= new StringBuilder();
-		params.append("LandingURL=%2F&AllowExternalLogins=False&UserName=dwright&Password=dotndan&Submit=Log+In");
+		params.append("LandingURL=%2F&AllowExternalLogins=False&UserName=denise_shugarts&Password=crazykool9&Submit=Log+In");
 		httpConn.retrieveDataViaPost(loginUrl, params.toString());
 		//showConnInfo(conn);
 		return redir;
