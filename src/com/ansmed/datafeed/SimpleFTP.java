@@ -226,7 +226,8 @@ public class SimpleFTP {
     	throw new IOException("SimpleFTP was not allowed to send the file: " + response);
     }
 
-    BufferedOutputStream output = new BufferedOutputStream(dataSocket.getOutputStream());
+    BufferedOutputStream output = new BufferedOutputStream(dataSocket
+        .getOutputStream());
     byte[] buffer = new byte[4096];
     int bytesRead = 0;
     while ((bytesRead = input.read(buffer)) != -1) {
@@ -235,6 +236,8 @@ public class SimpleFTP {
     output.flush();
     output.close();
     input.close();
+    
+    // close the data socket
     dataSocket.close();
     response = readLine();
     return response.startsWith("226 ");
