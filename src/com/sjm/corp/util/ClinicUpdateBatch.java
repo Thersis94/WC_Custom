@@ -16,6 +16,7 @@ import java.util.Set;
 
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
+import org.apache.log4j.PropertyConfigurator;
 
 import com.siliconmtn.db.DatabaseConnection;
 import com.siliconmtn.exception.DatabaseException;
@@ -71,10 +72,10 @@ public class ClinicUpdateBatch {
 	 * 
 	 */
 	public ClinicUpdateBatch(String[] args) {
-		BasicConfigurator.configure();
+		PropertyConfigurator.configure("scripts/sjm_corp_log4j.properties");
 		try {
 			initializeParams(args);
-			config = PropertyParser.assignParams("scripts/ans_config.properties");
+			config = PropertyParser.assignParams("scripts/sjm_corp_config.properties");
 			conn = this.getDBConnection();
 		} catch (Exception e) {
 			e.printStackTrace();
