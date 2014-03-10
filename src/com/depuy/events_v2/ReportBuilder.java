@@ -2,6 +2,7 @@ package com.depuy.events_v2;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -12,7 +13,7 @@ import com.depuy.events_v2.vo.DePuyEventSeminarVO;
 import com.depuy.events_v2.vo.RsvpBreakdownVO;
 import com.depuy.events_v2.vo.report.ComplianceReportVO;
 import com.depuy.events_v2.vo.report.EventPostalLeadsReportVO;
-import com.depuy.events_v2.vo.report.EventRollupReportVO;
+import com.depuy.events_v2.vo.report.SeminarRollupReportVO;
 import com.depuy.events_v2.vo.report.LocatorReportVO;
 import com.depuy.events_v2.vo.report.PostcardSummaryReportVO;
 import com.depuy.events_v2.vo.report.RsvpBreakdownReportVO;
@@ -28,6 +29,7 @@ import com.smt.sitebuilder.action.event.EventRSVPAction;
 import com.smt.sitebuilder.action.event.vo.EventEntryVO;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
+import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -84,8 +86,7 @@ public class ReportBuilder extends SBActionAdapter {
 				rpt = this.generatePostcardRecipientsReport(sem, Convert.formatDate(req.getParameter("startDate")));
 				break;
 			case seminarRollup:
-				//TODO
-//				rpt = this.generateSeminarRollupReport(Convert.formatDate(req.getParameter("rptStartDate")), Convert.formatDate(req.getParameter("rptEndDate")));
+				rpt = this.generateSeminarRollupReport(data, Convert.formatDate(req.getParameter("rptStartDate")), Convert.formatDate(req.getParameter("rptEndDate")));
 				break;
 			case rsvpBreakdown:
 				rpt = this.generateRSVPBreakdownReport(
@@ -183,10 +184,34 @@ public class ReportBuilder extends SBActionAdapter {
 	 * @param end
 	 * @return
 	 */
-	public AbstractSBReportVO generateSeminarRollupReport(Date start, Date end) {
-		Object data = null;
-		EventRollupReportVO rpt = new EventRollupReportVO();
-		rpt.setData(data);
+	public AbstractSBReportVO generateSeminarRollupReport(Object listObj, Date start, Date end) {
+		@SuppressWarnings("unchecked")
+		List<DePuyEventSeminarVO> data = (List<DePuyEventSeminarVO>) listObj;
+		List<DePuyEventSeminarVO> finalData = new ArrayList<DePuyEventSeminarVO>(data.size());
+		
+		PostcardSelectV2 retriever = new PostcardSelectV2(actionInit);
+		retriever.setDBConnection(dbConn);
+		retriever.setAttributes(attributes);
+		
+		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
+		String actionId = (String) mod.getAttribute(ModuleVO.ATTRIBUTE_1);
+		
+		//loop through the events, filter by date, then load the coop-ad for each one
+		for (DePuyEventSeminarVO sem : data) {
+			Date eDate = sem.getEarliestEventDate();
+			if (eDate.before(start) || eDate.after(end)) continue;
+			
+			try {
+				DePuyEventSeminarVO semFull  = (DePuyEventSeminarVO) retriever.loadOneSeminar(sem.getEventPostcardId(), actionId, null, null, null);
+				semFull.setRsvpCount(sem.getRsvpCount()); //this only gets set on the initial query, not the detailed lookup
+				finalData.add(semFull);
+			} catch (SQLException e) {
+				log.error("could not load seminar " + sem.getEventPostcardId(), e);
+			}
+		}
+		
+		SeminarRollupReportVO rpt = new SeminarRollupReportVO();
+		rpt.setData(finalData);
 		return rpt;
 	}
 

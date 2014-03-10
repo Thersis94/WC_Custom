@@ -254,7 +254,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 	 * @return
 	 * @throws SQLException
 	 */
-	private DePuyEventSeminarVO loadOneSeminar(String eventPostcardId, String actionGroupId, 
+	protected DePuyEventSeminarVO loadOneSeminar(String eventPostcardId, String actionGroupId, 
 			ReqType reqType, String profileId, String sortOrder) throws SQLException {
 		final String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		Set<String> profileIds = new HashSet<String>();
@@ -376,7 +376,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 	 * @param vo
 	 * @throws ActionException
 	 */
-	private void retrieveCoopAds(DePuyEventSeminarVO vo) throws ActionException {
+	protected void retrieveCoopAds(DePuyEventSeminarVO vo) throws ActionException {
 		CoopAdsActionV2 caa = new CoopAdsActionV2(actionInit);
 		caa.setAttributes(attributes);
 		caa.setDBConnection(dbConn);
