@@ -107,7 +107,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		UserDataVO user = (UserDataVO) ses.getAttribute(Constants.USER_DATA);
 		SBUserRole roles = (SBUserRole) ses.getAttribute(Constants.ROLE_DATA);
 		Integer roleId = (roles != null) ? roles.getRoleLevel() : SecurityController.PUBLIC_ROLE_LEVEL;
-		String profileId = (roleId < SecurityController.ADMIN_ROLE_LEVEL) ? user.getProfileId() : null;
+		String profileId = (user != null && roleId < SecurityController.ADMIN_ROLE_LEVEL) ? user.getProfileId() : null;
 	
 		Object data = null;
 		try {
