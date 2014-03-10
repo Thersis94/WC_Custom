@@ -107,7 +107,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		UserDataVO user = (UserDataVO) ses.getAttribute(Constants.USER_DATA);
 		SBUserRole roles = (SBUserRole) ses.getAttribute(Constants.ROLE_DATA);
 		Integer roleId = (roles != null) ? roles.getRoleLevel() : SecurityController.PUBLIC_ROLE_LEVEL;
-		String profileId = (roleId < SecurityController.ADMIN_ROLE_LEVEL) ? user.getProfileId() : null;
+		String profileId = (user != null && roleId < SecurityController.ADMIN_ROLE_LEVEL) ? user.getProfileId() : null;
 	
 		Object data = null;
 		try {
@@ -254,7 +254,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 	 * @return
 	 * @throws SQLException
 	 */
-	private DePuyEventSeminarVO loadOneSeminar(String eventPostcardId, String actionGroupId, 
+	protected DePuyEventSeminarVO loadOneSeminar(String eventPostcardId, String actionGroupId, 
 			ReqType reqType, String profileId, String sortOrder) throws SQLException {
 		final String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		Set<String> profileIds = new HashSet<String>();
@@ -376,7 +376,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 	 * @param vo
 	 * @throws ActionException
 	 */
-	private void retrieveCoopAds(DePuyEventSeminarVO vo) throws ActionException {
+	protected void retrieveCoopAds(DePuyEventSeminarVO vo) throws ActionException {
 		CoopAdsActionV2 caa = new CoopAdsActionV2(actionInit);
 		caa.setAttributes(attributes);
 		caa.setDBConnection(dbConn);

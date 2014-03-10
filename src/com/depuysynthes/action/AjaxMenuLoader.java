@@ -77,7 +77,7 @@ public class AjaxMenuLoader extends SimpleActionAdapter {
 		String prodRootNode = tokens[1];
 		Tree prodTree = pc.loadCatalog(tokens[0], null, true, req);
    		
-    	// retrieve the procedure catalog from the DB
+		// retrieve the procedure catalog from the DB
    		tokens = pc.separateIds((String)mod.getAttribute(ModuleVO.ATTRIBUTE_2));
 		mod.addCacheGroup(tokens[0]); //the catalogId
 		String procRootNode = tokens[1];
@@ -92,7 +92,7 @@ public class AjaxMenuLoader extends SimpleActionAdapter {
    		procTree = mergeProductsIntoProcedures(prodTree, procTree, attributeId);
    		
    		catalogs.put("procedures", new ProductCategoryContainer(pc.pruneCatalog(procTree, procRootNode)));
-    	catalogs.put("products", new ProductCategoryContainer(pc.pruneCatalog(prodTree, prodRootNode)));
+   		catalogs.put("products", new ProductCategoryContainer(pc.pruneCatalog(prodTree, prodRootNode)));
    		
    		
         //set catalogs/data onto the original module VO.
@@ -227,7 +227,8 @@ public class AjaxMenuLoader extends SimpleActionAdapter {
 			
 		} finally {
 			mod.addCacheGroup(site.getSiteId());
-			if (site.getAliasPathParentId() != null) mod.addCacheGroup(site.getAliasPathParentId());
+			//this line of code does not work, because AJAX menus are only loaded on the parent site; there will never be a parentAlias here -JM 03-8-14
+			//if (site.getAliasPathParentId() != null) mod.addCacheGroup(site.getAliasPathParentId());
 			mod.setActionData(menuMod.getActionData());
 			attributes.put(Constants.MODULE_DATA, mod);
 			ac = null;

@@ -18,6 +18,7 @@ import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.gis.Location;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
+import com.smt.sitebuilder.action.event.EventFacadeAction;
 import com.smt.sitebuilder.action.event.vo.EventEntryVO;
 import com.smt.sitebuilder.action.event.vo.EventPostcardVO;
 
@@ -440,6 +441,24 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 			adApproved = (newspaperAd != null && newspaperAd.getStatusFlg() != null &&  newspaperAd.getStatusFlg() == 3);
 		
 		return getPostcardFileStatusFlg() == 3 && adApproved;
+	}
+	
+	
+	/**
+	 * used by reports to cosmetically label the statusNo
+	 * @return
+	 */
+	public String getStatusName() {
+		switch (getStatusFlg()) {
+			case EventFacadeAction.STATUS_PENDING: return "Pending ADV Approval";
+			case EventFacadeAction.STATUS_PENDING_PREV_ATT: return "Pending SRC Review";
+			case EventFacadeAction.STATUS_APPROVED_SRC: return "Approved by SRC";
+			case EventFacadeAction.STATUS_PENDING_SURG: return "Awaiting Signed Contract";
+			case EventFacadeAction.STATUS_APPROVED: return "Approved";
+			case EventFacadeAction.STATUS_CANCELLED: return "Cancelled";
+			case EventFacadeAction.STATUS_COMPLETE: return "Completed";
+			default: return "";
+		}
 	}
 
 }
