@@ -26,7 +26,7 @@ import com.siliconmtn.util.StringUtil;
  * @version 1.0
  * @since Nov. 15, 2010
  * Change Log:
- * May 2011 - refactored send date format to support language format
+ * May 2011 - refactored send date format to support language format.
  ****************************************************************************/
 public class PatientLetterBuilder {
 	
@@ -381,33 +381,33 @@ public class PatientLetterBuilder {
 		val = StringUtil.checkVal(val);
 		val = StringUtil.replace(val, "&", "&amp;");
 		val = StringUtil.replace(val, "'", "&apos;");
-		val = StringUtil.replace(val, "’", "&apos;");
-		val = StringUtil.replace(val, "´", "&apos;");
+		val = StringUtil.replace(val, "ï¿½", "&apos;");
+		val = StringUtil.replace(val, "ï¿½", "&apos;");
 		val = StringUtil.replace(val, "\"", "&quot;");
 		val = StringUtil.replace(val, ">", "&gt;");
 		val = StringUtil.replace(val, "<", "&lt;");
-		val = StringUtil.replace(val, "ï", "&#239;");
-		val = StringUtil.replace(val, "Ï", "&#207;");
-		val = StringUtil.replace(val, "¿", "&#191;");
-		val = StringUtil.replace(val, "¼", "&#188;");
-		val = StringUtil.replace(val, "½", "&#189;");
-		val = StringUtil.replace(val, "ã", "&#227;");
-		val = StringUtil.replace(val, "©", "&#169;");
-		val = StringUtil.replace(val, "£", "&#163;");
-		val = StringUtil.replace(val, "‰", "");
-		val = StringUtil.replace(val, "¡", "");
-		val = StringUtil.replace(val, "¨","");
-		val = StringUtil.replace(val, "º", "&#176;");
-		val = StringUtil.replace(val, "°", "&#186;");
-		val = StringUtil.replace(val, "â", "&#226;");
-		val = StringUtil.replace(val, "Â", "&#194;");
-		val = StringUtil.replace(val, "³", "&#179;");
-		val = StringUtil.replace(val, "§", "&#167;");
-		val = StringUtil.replace(val, "á", "&#225;");
-		val = StringUtil.replace(val, "é", "&#233;");
-		val = StringUtil.replace(val, "í", "&#237;");
-		val = StringUtil.replace(val, "ó", "&#243;");
-		val = StringUtil.replace(val, "ú", "&#250;");
+		val = StringUtil.replace(val, "ï¿½", "&#239;");
+		val = StringUtil.replace(val, "ï¿½", "&#207;");
+		val = StringUtil.replace(val, "ï¿½", "&#191;");
+		val = StringUtil.replace(val, "ï¿½", "&#188;");
+		val = StringUtil.replace(val, "ï¿½", "&#189;");
+		val = StringUtil.replace(val, "ï¿½", "&#227;");
+		val = StringUtil.replace(val, "ï¿½", "&#169;");
+		val = StringUtil.replace(val, "ï¿½", "&#163;");
+		val = StringUtil.replace(val, "ï¿½", "");
+		val = StringUtil.replace(val, "ï¿½", "");
+		val = StringUtil.replace(val, "ï¿½","");
+		val = StringUtil.replace(val, "ï¿½", "&#176;");
+		val = StringUtil.replace(val, "ï¿½", "&#186;");
+		val = StringUtil.replace(val, "ï¿½", "&#226;");
+		val = StringUtil.replace(val, "ï¿½", "&#194;");
+		val = StringUtil.replace(val, "ï¿½", "&#179;");
+		val = StringUtil.replace(val, "ï¿½", "&#167;");
+		val = StringUtil.replace(val, "ï¿½", "&#225;");
+		val = StringUtil.replace(val, "ï¿½", "&#233;");
+		val = StringUtil.replace(val, "ï¿½", "&#237;");
+		val = StringUtil.replace(val, "ï¿½", "&#243;");
+		val = StringUtil.replace(val, "ï¿½", "&#250;");
 		return val;
 	}
 	

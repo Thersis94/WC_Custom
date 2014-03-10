@@ -27,7 +27,7 @@ import org.apache.log4j.Logger;
  * @author David Bargerhuff
  * @version 1.0
  * @since Nov. 15, 2010
- * Change Log: June 2, 2011 - Added Spanish site (PoderSobreSuDolor) contact/info kit form processing
+ * Change Log: June 2, 2011 - Added Spanish site (PoderSobreSuDolor) contact/info kit form processing.
  ****************************************************************************/
 public class KitRequestRetriever {
 	
@@ -220,7 +220,7 @@ public class KitRequestRetriever {
 			fieldQuery.append("c.contact_submittal_id = d.contact_submittal_id "); 
 			fieldQuery.append("where c.action_id = ? and d.contact_field_id = ?) ");
 			fieldQuery.append("and (b.contact_field_id = ? and ");
-			fieldQuery.append("(CAST(b.value_txt AS nvarchar(max)) in ('inglés','español'))) ");
+			fieldQuery.append("(CAST(b.value_txt AS nvarchar(max)) in ('inglï¿½s','espaï¿½ol'))) ");
 		}
 		// add date range
 		fieldQuery.append("and (b.create_dt >= ? and b.create_dt <= ?)");
