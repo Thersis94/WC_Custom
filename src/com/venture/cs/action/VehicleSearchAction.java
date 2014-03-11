@@ -41,18 +41,18 @@ import com.smt.sitebuilder.common.constants.Constants;
  * Jan 31, 2014: DBargerhuff: Added comments, etc.
  ****************************************************************************/
 
-public class VehicleAction extends SBActionAdapter {
+public class VehicleSearchAction extends SBActionAdapter {
 	
 	public static final String SEARCH_CURRENT = "searchCurrent";
 	public static final String SEARCH_ARCHIVE = "searchArchive";
 	public static final String VENTURE_VEHICLE_ORG_ID = "VENTURE_RV";
 	public static final int VENTURE_VEHICLE_DEALER_TYPE = 10;
 	
-	public VehicleAction() {
+	public VehicleSearchAction() {
 		super();
 	}
 
-	public VehicleAction(ActionInitVO arg0) {
+	public VehicleSearchAction(ActionInitVO arg0) {
 		super(arg0);
 	}
 	
@@ -457,7 +457,7 @@ public class VehicleAction extends SBActionAdapter {
         }
         
     	StringBuffer url = new StringBuffer();
-    	url.append("/result?vehicleId=").append(tmpVehicleId);
+    	url.append("/result?vehicleId=").append(vehicle.getVehicleId());
         if (msg != null) url.append("&msg=").append(msg);
         log.debug("VehicleAction 'build' redirect url: " + url.toString());
     	req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
@@ -481,8 +481,8 @@ public class VehicleAction extends SBActionAdapter {
        	List<VehicleVO> found = this.performSearch(v.getVin(), "", "", "", sb, SEARCH_CURRENT, false);
        	if (found.size() > 0) {
        		id = found.get(0).getVehicleId();
+           	log.debug("found vehicle with ID: " + id);
        	}
-       	log.debug("found vehicle with ID: " + id);
        	return id;
 	}
     

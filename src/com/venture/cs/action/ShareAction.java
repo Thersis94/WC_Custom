@@ -108,7 +108,7 @@ public class ShareAction extends SBActionAdapter {
 			ms.sendMessage(msg);
 			log.debug(msg.getHtmlBody());
 			log.debug(msg.getTextBody());
-			OverviewAction ticket = new OverviewAction();
+			OverviewFacadeAction ticket = new OverviewFacadeAction();
 			ticket.setDBConnection(dbConn);
 			ticket.setAttributes(attributes);
 			ticket.logActivity(req, "Shared case with: " + req.getParameter("rcptNm").split("\\|")[1]);

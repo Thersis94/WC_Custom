@@ -23,35 +23,33 @@ import com.siliconmtn.util.databean.FilePartDataBean;
 // WebCrescendo 2.0
 import com.smt.sitebuilder.action.FileLoader;
 import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.action.dealer.DealerInfoAction;
 import com.smt.sitebuilder.action.dealer.DealerLocationVO;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
-import com.smt.sitebuilder.action.user.SBProfileManager;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
- *<b>Title</b>: TicketAction<p/>
- * Gathers all the information related to a vehicle's tickets.
- * This includes the owner, the vehicle, the dealer it is associated with,
- * all files related to the tickets, and the list of all actions taken on
- * the associated vehicle. <p/>
- *Copyright: Copyright (c) 2013<p/>
+ *<b>Title</b>: ManageTicketAction<p/>
+ * Manages information related to a vehicle's tickets.  This includes the owner, the vehicle, the dealer 
+ * associated with the tickets, files associated with the tickets, etc.<p/>
+ *Copyright: Copyright (c) 2014<p/>
  *Company: SiliconMountain Technologies<p/>
- * @author Eric Damschroder
+ * @author David Bargerhuff
  * @version 1.0
- * @since July 23, 2013
+ * @since Mar 11, 2014
+ * Changes:
+ * Mar 11, 2014: DBargerhuff: created class.
  ****************************************************************************/
 
-public class OverviewAction extends SBActionAdapter {
+public class ManageTicketAction extends SBActionAdapter {
 	
-	public OverviewAction() {
+	public ManageTicketAction() {
 		super();
 	}
 
-	public OverviewAction(ActionInitVO arg0) {
+	public ManageTicketAction(ActionInitVO arg0) {
 		super(arg0);
 	}
 	
@@ -59,7 +57,7 @@ public class OverviewAction extends SBActionAdapter {
      * Retrieves the action data for a specified action id
      */
     public void retrieve(SMTServletRequest req) throws ActionException {
-    	log.debug("OverviewAction retrieve...");
+    	log.debug("TicketAction retrieve...");
     	String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
     	String vehicleId = req.getParameter("vehicleId");
 
@@ -110,7 +108,7 @@ public class OverviewAction extends SBActionAdapter {
         sql.append("WHERE vat.VENTURE_VEHICLE_ID = ? ");
         sql.append("ORDER BY RANK, CREATE_DT ASC ");
         
-        log.info("OverviewAction retrieve SQL: " + sql + "|" + vehicleId);
+        log.info("TicketAction retrieve SQL: " + sql + "|" + vehicleId);
         PreparedStatement ps = null;
         VehicleVO vo = new VehicleVO();
         try {
@@ -183,67 +181,20 @@ public class OverviewAction extends SBActionAdapter {
      */
     public void build(SMTServletRequest req) throws ActionException {
     	String reqType = StringUtil.checkVal(req.getParameter("reqType"));
-    	log.debug("OverviewAction build..., reqType: " + reqType);
-    	String activityMsg = null;
+    	log.debug("TicketAction build..., reqType: " + reqType);
     	
     	if (reqType.equals("manageTicket")) {
     		manageTicket(req);
-    		activityMsg = "Added ticket";
-    		
-    	} else if (reqType.equals("freeze")) {
-    		freezeCase(req);
-    		if ("1".equals(req.getParameter("freezeFlag"))) {
-    			activityMsg = "Froze case";
-    		} else {
-    			activityMsg = "Unfroze case";
-    		}
-    		
-    	} else if (reqType.equals("follow")) {
-    		followCase(req);
-    		activityMsg = "Followed case";
     		
     	} else if (reqType.equals("updateComments")) {
     		updateTicketComments(req);
-    		activityMsg = "Updated ticket comments";
     		
     	} else if (reqType.equals("deleteFile")) {
     		deleteFile(req);
-    		activityMsg = "Deleted file";
     		
     	} else if (reqType.equals("closeTicket")) {
     		closeTicket(req);
-    		activityMsg = "Closed ticket";
-    		
-    	} else if (reqType.equals("editOwner")) {
-    		editOwner(req);
-    		activityMsg = "Updated owner";
-    		
-    	} else if (reqType.equals("changeOwner")) {
-    		changeOwner(req);
-    		activityMsg = "Changed owner";
-    		
-    	} else if (reqType.equals("editDealer")) {
-    		editDealer(req);
-    		activityMsg = "Updated dealer";
-    		
-    	} else if (reqType.equals("changeDealer")) {
-    		changeDealer(req);
-    		activityMsg = "Changed dealer";
-    		
-    	} 
-    	
-    	// log the msg
-    	StringBuilder url = new StringBuilder();
-    	url.append("result?vehicleId=").append(req.getParameter("vehicleId"));
-    	
-    	if (activityMsg != null) {
-    		logActivity(req, activityMsg);
-    	} else {
-    		url.append("&msg=We were unable to process your update.  Please contact your system administrator.");
     	}
-    	log.debug("redirect url: " + url.toString());    	
-        req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
-    	req.setAttribute(Constants.REDIRECT_URL, url.toString());
     	    
     }
     
@@ -253,7 +204,7 @@ public class OverviewAction extends SBActionAdapter {
      * @throws ActionException
      */
     private void manageTicket(SMTServletRequest req) throws ActionException {
-    	log.debug("OverviewAction manageTicket...");
+    	log.debug("TicketAction manageTicket...");
     	String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
         String ticketId = StringUtil.checkVal(req.getParameter("ticketId"));
         Boolean isInsert = (ticketId.length() == 0);
@@ -314,7 +265,7 @@ public class OverviewAction extends SBActionAdapter {
      * @return
      */
     private void saveFile(SMTServletRequest req, String paramNm, String ticketId) {
-		log.debug("OverviewAction saveFile...");
+		log.debug("TicketAction saveFile...");
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 
 		StringBuilder filePath =  new StringBuilder((String)getAttribute("pathToBinary"));
@@ -355,7 +306,7 @@ public class OverviewAction extends SBActionAdapter {
      * @throws ActionException
      */
     private void deleteFile(SMTServletRequest req) throws ActionException {
-		log.debug("OverviewAction deleteFile...");
+		log.debug("TicketAction deleteFile...");
         String ticketId = StringUtil.checkVal(req.getParameter("ticketId"));
 		String ticketFileId = StringUtil.checkVal(req.getParameter("ticketFileId"));
 		String fileUrl = StringUtil.checkVal(req.getParameter("fileUrl"));
@@ -466,113 +417,6 @@ public class OverviewAction extends SBActionAdapter {
     }
 
     /**
-     * Freezes the case in order to prevent people from adding tickets to it
-     * @param req
-     * @throws ActionException
-     */
-    private void freezeCase(SMTServletRequest req) throws ActionException {
-    	log.debug("freezing case...");
-    	String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-    	String vehicleId = StringUtil.checkVal(req.getParameter("vehicleId"));
-    	StringBuilder sb = new StringBuilder();
-    	sb.append("UPDATE ").append(customDb).append("VENTURE_VEHICLE ");
-    	sb.append("SET FREEZE_FLG = ? WHERE VENTURE_VEHICLE_ID = ?");
-    	
-    	try {
-			PreparedStatement ps = dbConn.prepareStatement(sb.toString());
-			ps.setString(1, req.getParameter("freezeFlag"));
-			ps.setString(2, vehicleId);
-			
-			if (ps.executeUpdate() < 1)
-                throw new SQLException("Error freezing this case.");
-			
-		} catch (SQLException e) {
-			log.error("Error freezing this case, " + vehicleId, e);
-            throw new ActionException(e.getMessage());
-		}
-    	
-    }
-    
-    /**
-     * Adds a user's profileId database along with the vehicle they wish to follow.
-     * This will allow them to be notified whenever emails related to this vehicle are sent out.
-     * @param req
-     * @throws ActionException
-     */
-    private void followCase(SMTServletRequest req) throws ActionException {
-    	log.debug("follow case...");
-    	// check to see if this user is already following this vehicle.
-    	String profileId = checkFollowers(req);
-    	if (profileId == null) {
-    		// user is not a follower of this vehicle, so add them
-	    	String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-	    	StringBuilder sb = new StringBuilder();
-	    	sb.append("INSERT INTO ").append(customDb);
-	    	sb.append("VENTURE_NOTIFICATION (VENTURE_NOTIFICATION_ID, VENTURE_VEHICLE_ID, PROFILE_ID, CREATE_DT) ");
-	    	sb.append("VALUES (?,?,?,?)");
-	    	PreparedStatement ps = null;
-	    	try {
-				ps = dbConn.prepareStatement(sb.toString());
-				ps.setString(1, new UUIDGenerator().getUUID());
-				ps.setString(2, req.getParameter("vehicleId"));
-				ps.setString(3, req.getParameter("submissionId"));
-				ps.setTimestamp(4, Convert.getCurrentTimestamp());
-				if (ps.executeUpdate() < 1)
-	                throw new ActionException("Error adding user to list followers of this case.");
-				
-			} catch (SQLException e) {
-				log.error("Error adding user to list of followers of this case, " + req.getParameter("vehicleId"), e);
-			} finally {
-				if (ps != null) {
-					try {
-						ps.close();
-					} catch (Exception e) {log.error("Error closing PreparedStatement, ", e);}
-				}
-			}
-    	}
-    }
-    
-    /**
-     * Queries the notification table to see if user is already a follower
-     * of the vehicle ID being requested.
-     * @param req
-     * @return
-     */
-    private String checkFollowers(SMTServletRequest req) {
-    	String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-    	String vehicleId = StringUtil.checkVal(req.getParameter("vehicleId"));
-    	String profileId = StringUtil.checkVal(req.getParameter("submissionId"));
-    	
-    	String tmpProfileId = null;
-    	StringBuilder sb = new StringBuilder();
-    	sb.append("select PROFILE_ID from ").append(customDb).append("VENTURE_NOTIFICATION ");
-    	sb.append("where PROFILE_ID = ? and VENTURE_VEHICLE_ID = ?");
-
-    	PreparedStatement ps = null;
-    	try {
-    		ps = dbConn.prepareStatement(sb.toString());
-    		ps.setString(1, profileId);
-    		ps.setString(2,  vehicleId);
-    		ResultSet rs = ps.executeQuery();
-    		
-    		if (rs.next()) {
-    			tmpProfileId = rs.getString(1);
-    		}
-    	} catch (SQLException sqle) {
-    		log.error("Error retrieving");
-    	} finally {
-    		if (ps != null) {
-    			try {
-    				ps.close();
-    			} catch (Exception e) {log.error("Error closing PreparedStatement, e");}
-    		}
-    	}
-    	
-    	return tmpProfileId;
-    	
-    }
-
-    /**
      * Closes a ticket for a vehicle
      * @param req
      * @throws ActionException
@@ -604,155 +448,6 @@ public class OverviewAction extends SBActionAdapter {
     }
     
     /**
-     * Edit the owner of the vehicle
-     * @param req
-     * @throws ActionException
-     */
-    private void editOwner(SMTServletRequest req) throws ActionException {
-    	log.debug("edit owner...");
-    	StringBuilder ownerSQL = new StringBuilder();
-    	ownerSQL.append("UPDATE " + attributes.get(Constants.CUSTOM_DB_SCHEMA) + "VENTURE_VEHICLE ");
-    	ownerSQL.append("SET OWNER_PROFILE_ID=? ");
-    	if (StringUtil.checkVal(req.getParameter("purchaseDate")).length() > 0) {
-    		ownerSQL.append(", PURCHASE_DT=? ");
-    	}
-    	ownerSQL.append("WHERE VENTURE_VEHICLE_ID=?");
-
-    	UserDataVO user = new UserDataVO(req);
-    	SBProfileManager sb = new SBProfileManager(attributes);
-    	PreparedStatement ps = null;
-        try {
-        	String ownerId = sb.checkProfile(user, dbConn);
-        	if (ownerId == null ) {
-        		sb.updateProfile(user, dbConn);
-        		ownerId = user.getProfileId();
-        	}
-        	
-			ps = dbConn.prepareStatement(ownerSQL.toString());
-	        ps.setString(1, ownerId);
-	        ps.setString(2, req.getParameter("purchaseDate"));
-	        ps.setString(3, req.getParameter("vehicleId"));
-	        ps.executeUpdate();
-	        
-		} catch (SQLException e) {
-			log.error("Could not create new owner ", e);
-			throw new ActionException("Could not create new owner.");
-		} catch (DatabaseException e) {
-			log.error("Could not find or create profile ", e);
-			throw new ActionException("Could not find or create owner's profile.");
-		} finally {
-			if (ps != null) {
-				try {
-					ps.close();
-				} catch (Exception e) {log.error("Error closing PreparedStatement, ", e);}
-			}
-		}
-    }
-    
-    
-    /**
-     * Edit the existing vehicle owner's profile information.
-     * @param req
-     * @throws ActionException
-     */
-    private void changeOwner(SMTServletRequest req) throws ActionException {
-    	log.debug("change owner...");
-    	// TODO 
-    	
-    	// check for existing profile
-    	// if profile found, use that profile
-    	// else create profile.
-    	// set 'new' owner profile as vehicle's owner id.
-    }
-    
-    /**
-     * Edit's the dealer's information
-     * @param req
-     * @throws ActionException
-     */
-    private void editDealer(SMTServletRequest req) throws ActionException {
-    	log.debug("editing dealer location...");
-    	DealerInfoAction sai = new DealerInfoAction(actionInit);
-    	sai.setAttributes(attributes);
-    	sai.setDBConnection(dbConn);
-    	
-    	try {
-    		sai.updateDealerLocation(req, true);
-    	} catch (DatabaseException dbe) {
-    		log.error("Error updating dealer location, ", dbe);
-    		throw new ActionException(dbe.getMessage());
-    	}
-    }
-    
-    /**
-     * Reassigns the dealer on the request to the vehicle on the request.
-     * @param req
-     * @throws ActionException
-     */
-    private void changeDealer(SMTServletRequest req) throws ActionException {
-    	log.debug("change dealer...");
-    	String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-    	String dealerId = StringUtil.checkVal(req.getParameter("dealerId"));
-    	String vehicleId = StringUtil.checkVal(req.getParameter("vehicleId"));
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("update ").append(customDb).append(" VENTURE_VEHICLE ");
-        sb.append("set DEALER_ID = ? where VENTURE_VEHICLE_ID = ?");
-        
-        PreparedStatement ps = null;
-        try {
-        	ps = dbConn.prepareStatement(sb.toString());
-        	ps.setString(1, dealerId);
-        	ps.setString(2, vehicleId);
-        	ps.executeUpdate();
-        } catch (SQLException sqle) {
-        	log.error("Error updating vehicle dealer association, ", sqle);
-        	throw new ActionException("Error changing vehicle's dealer.");
-        } finally {
-        	try {
-        		ps.close();
-        	} catch (Exception e) {}
-        }
-	
-    }
-    
-    /**
-     * Called whenever any of the other build actions this class can take are completed
-     * in order to record who did what and when.
-     * @param req
-     * @param comment
-     * @throws ActionException
-     */
-    protected void logActivity(SMTServletRequest req, String comment) throws ActionException {
-    	log.debug("logging activity...");
-    	String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-    	StringBuilder sb = new StringBuilder();
-    	
-    	sb.append("INSERT INTO ").append(customDb).append(" VENTURE_ACTIVITY_TRAIL ");
-    	sb.append("(VENTURE_ACTIVITY_TRAIL_ID, VENTURE_VEHICLE_ID, COMMENT, PROFILE_ID, CREATE_DT) ");
-    	sb.append("VALUES (?,?,?,?,GETDATE())");
-    	
-    	PreparedStatement ps = null;
-    	try {
-			ps = dbConn.prepareStatement(sb.toString());
-			ps.setString(1, new UUIDGenerator().getUUID());
-			ps.setString(2, req.getParameter("vehicleId"));
-			ps.setString(3, comment);
-			ps.setString(4, req.getParameter("submissionId"));
-			
-			if (ps.executeUpdate() < 1)
-                throw new ActionException("Error logging activity.");
-			
-		} catch (SQLException e) {
-			log.error("Error logging activity for vehicle " + req.getParameter("vehicleId"), e);
-		} finally {
-        	try {
-        		ps.close();
-        	} catch (Exception e) {}
-        }
-    }
-    
-    /**
      * Performs a profile lookup via ProfileManager and the supplied profile ID.
      * @param profileId
      * @return Populated UserDataVOe retrieved by ProfileManager or else an empty UserDataVO
@@ -772,5 +467,5 @@ public class OverviewAction extends SBActionAdapter {
     	
     	return user;
     }
- 
+     
 }
