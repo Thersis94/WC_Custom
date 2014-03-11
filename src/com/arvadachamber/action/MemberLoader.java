@@ -176,44 +176,61 @@ public class MemberLoader extends ChamberMasterLoader {
 	 * @throws IOException
 	 */
 	private List<MemberInfoVO> loadBusinessDirectory() throws IOException {
+		String url = null;
+		StringBuilder params = new StringBuilder();
+		byte[] resp = null;
 		// set connection to follow redirects
 		httpConn.setFollowRedirects(true);
-		// Call the reports screen
 		String redir = "https://secure2.chambermaster.com/directory/index.jsp?tabset=8";
-		httpConn.retrieveData(redir);
-		// call the custom reports screen
+		
+		/* 
+		 * STEP 1: call the custom reports screen
+		 * Synonymous with selecting 'Reports' from the left-hand menu on the Dashboard page, after login.
+		 */
 		httpConn.addRequestHeader("Referer", redir);
 		redir = "https://secure2.chambermaster.com/directory/jsp/reports/members/CustomReportMembers.jsp";
-		httpConn.retrieveData(redir);
+		resp = httpConn.retrieveData(redir);
 		
-		// Choose the SMT Business Directory Report
-		StringBuilder params = new StringBuilder();
+		/* 
+		 * STEP 2: Choose the SMT Business Directory Report
+		 * Synonymous with selecting "SMT Business Report' from the report pull-down.  The report
+		 * select action triggers a page load.
+		 */
+		url = "https://secure2.chambermaster.com/directory/jsp/reports/members/CustomReportMembers.jsp";
 		params.append("command=loadRpt&qualifier=&page=%2Fdirectory%2Fjsp%2Freports%2Fmembers%2FCustomReportMembers.jsp");
 		params.append("&destination=&savedFields=&savedRpts=6&sortPrimary=0&sortSecondary=0");
-		String url = "https://secure2.chambermaster.com/directory/jsp/reports/members/CustomReportMembers.jsp";
-		httpConn.retrieveDataViaPost(url, params.toString());
+		resp = httpConn.retrieveDataViaPost(url, params.toString());
+
+		/* 10-08-2013: DBargerhuff: ChamberMaster's update to the chambermaster.com site on 09-17-2013 broke our import script
+		 * Contacted ChamberMaster support to no avail.  Added following line to turn 'off' redirect following at this point in the script
+		 * and this fixed the import. 
+		 */
+		httpConn.setFollowRedirects(false);
 		
-		// Call the custom report members
+		/* 
+		 * STEP 3: Call the custom report members
+		 * Synonymous with clicking 'Continue' after having selected/loaded the 'SMT Business Report'
+		 */
 		url = "https://secure2.chambermaster.com/directory/jsp/reports/members/CustomReportMembers.jsp";
 		params = new StringBuilder();
 		params.append("command=submitRpt&qualifier=&page=%2Fdirectory%2Fjsp%2Freports%2Fmembers%2FCustomReportMembers.jsp");
 		params.append("&destination=%2Fdirectory%2Fjsp%2Freports%2Fmembers%2FCustomReportMembersCriteria.jsp");
 		params.append("&savedFields=%7C150%7C152%7C154%7C174%7C183%7C158%7C190%7C191%7C192%7C193%7C194%7C205%7C241%7C224%7C206%7C201");
-		params.append("&savedRpts=6&sortPrimary=0&sortSecondary=0&Company+Name=150");
+		params.append("&savedRpts=6&sortPrimary=183&sortSecondary=0&Company+Name=150");
 		params.append("&Primary+Phone=152&Toll-Free+Phone=154&Website=158&Join+Date=174");
 		params.append("&Member+ID=183&Displayed+Address+1=190&Displayed+Address+2=191");
 		params.append("&Displayed+City=192&Displayed+State%2FProvince=193&Displayed+Postal+Code=194");
 		params.append("&Hours+of+Operation=205&Keywords=206&Categories=224&Primary+Category=241&Member+Description=201");
-		httpConn.retrieveDataViaPost(url, params.toString());
+		resp = httpConn.retrieveDataViaPost(url, params.toString());
 		
 		// Follow the redirect
-		httpConn.retrieveData("https://secure2.chambermaster.com/directory/jsp/reports/members/CustomReportMembersCriteria.jsp");
+		resp = httpConn.retrieveData("https://secure2.chambermaster.com/directory/jsp/reports/members/CustomReportMembersCriteria.jsp");
 		
 		// Generate the report
 		url = "https://secure2.chambermaster.com/directory/jsp/reports/members/CustomReportMembersCriteria.jsp";
 		params = new StringBuilder();
 		params.append("command=deliver&qualifier=&page=%2Fdirectory%2Fjsp%2Freports%2Fmembers%2FCustomReportMembersCriteria.jsp");
-		params.append("&destination=&offset=0&addins=&template=&foundFieldValues=&overwriteReport=1");
+		params.append("&destination=&offset=0&addins=&template=&foundFieldValues=&overwriteReport=0");
 		params.append("&groupTitle=&chkStatus=2&chkStatus=4&selGroup=0&selSalesRep=0");
 		params.append("&logicalOperator=None&fieldName=-1&comparisonOperator=EqualsExactly");
 		params.append("&fieldValue=&logicalOperator=And&fieldName=-1&comparisonOperator=EqualsExactly");
@@ -222,16 +239,16 @@ public class MemberLoader extends ChamberMasterLoader {
 		params.append("&groupTitleTop=&memberRepType=1");
 		//conn.addRequestHeader("Content-Length", params.length() + "");
 		// retrieve the report response
-		byte[] resp = httpConn.retrieveDataViaPost(url, params.toString());
-
+		resp = httpConn.retrieveDataViaPost(url, params.toString());
 		// parse out the report link (dir and filename)
 		String repUrl = this.parseReportLink(new String(resp));
 		log.debug("report link Url: " + repUrl);
 		// retrieve the report data
-		 resp = httpConn.retrieveData(SECURE_BASE_URL + repUrl);
+		resp = httpConn.retrieveData(SECURE_BASE_URL + repUrl);
 		log.debug("repData size: " + resp.length);
 		//this.storeAsFile(resp);
 		return this.parseBusinessDirectory(resp);
+		
 	}
 	
 	/**
@@ -253,7 +270,7 @@ public class MemberLoader extends ChamberMasterLoader {
 	 */
 	@SuppressWarnings("unused")
 	private void storeAsFile(byte[] fileData) {
-		File f = new File("C:\\Temp\\avch\\testfile.csv");
+		File f = new File("D:\\scripts\\ArvadaChamber\\logs\\memberdata.csv");
 		FileOutputStream fOut = null;
 		try {
 			fOut = new FileOutputStream(f);

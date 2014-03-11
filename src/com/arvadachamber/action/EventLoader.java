@@ -171,7 +171,7 @@ public class EventLoader extends ChamberMasterLoader {
 	private void storeEventsAsFile(byte[] fileData) {
 		FileOutputStream fo = null;
 		try {
-			fo = new FileOutputStream("C:\\develop\\workspace_new\\WC_Custom\\logs\\EventList.csv");
+			fo = new FileOutputStream("D:\\scripts\\ArvadaChamber\\logs\\EventListAsFile.csv");
 			fo.write(fileData);
 		} catch(Exception e) {
 			log.error("Error writing file: " + e);
@@ -218,7 +218,11 @@ public class EventLoader extends ChamberMasterLoader {
 			List<String> row = data.get(i);
 			
 			loc = new Location(this.cleanTags(row.get(6)));
+			try {
 			contactAndPhone = this.parseContactAndPhone(this.cleanTags(row.get(10)));
+			} catch (Exception e) {
+				log.info("Suppressing exception; No contact/phone info in data row for event ID: " + row.get(0));
+			}
 			
 			// format dates as Timestamps so we can keep the time value.
 			Timestamp sd = Convert.formatTimestamp(Convert.DATE_TIME_SLASH_PATTERN, row.get(2));
