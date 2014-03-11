@@ -42,7 +42,8 @@ public class ChamberMasterLoader {
 	private static final Logger log = Logger.getLogger("ChamberMasterLoader");
 	public static final String BASE_URL = "http://secure2.chambermaster.com";
 	public static final String SECURE_BASE_URL = "https://secure2.chambermaster.com";
-	public static final String USER_AGENT = "User-Agent:Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_3) AppleWebKit/535.19 (KHTML, like Gecko) Chrome/18.0.1025.142 Safari/535.19";
+	//public static final String USER_AGENT = "User-Agent:Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_3) AppleWebKit/535.19 (KHTML, like Gecko) Chrome/18.0.1025.142 Safari/535.19";
+	public static final String USER_AGENT = "User-Agent:Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/29.0.1547.62 Safari/537.36";
 	public static final String LISTING_PATH = "C:\\SMT\\accounts\\Arvada Chamber\\Listing.csv";
 	public static final String EVENT_TYPE_ID = "c0a802413f97ab1153fd69d11c7e8d2";
 	public static final String EVENT_ACTION_ID = "c0a802413f9763c5797fd740a09d1fe5";
