@@ -419,9 +419,16 @@ public class FSProductAction extends SBActionAdapter {
 				nodes.add(n);
 			}
 			
-			//Create a data tree and add it to the module container
-			log.debug("Number of Products: " + nodes.size());
-			this.putModuleData(nodes, nodes.size(), false);
+			if (nodes.size() == 1) {
+				// There is only the parent product, so we treat it like we would a product at the end of the chain.
+				this.getProdImages(req, prodAlias, prodAlias, catalogId);
+				req.setParameter(SMTServletRequest.PARAMETER_KEY + "3", prodAlias);
+			} else {
+				//Create a data tree and add it to the module container
+				log.debug("Number of Products: " + nodes.size());
+				this.putModuleData(nodes, nodes.size(), false);
+			}
+			
 			
 		} finally {
 			try {
