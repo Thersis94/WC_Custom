@@ -7,9 +7,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-
-
 import java.util.Map;
+
 
 //SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -26,6 +25,7 @@ import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.SBModuleVO;
 import com.smt.sitebuilder.action.commerce.product.ProductCatalogAction;
+import com.smt.sitebuilder.action.video.VideoVO;
 import com.siliconmtn.commerce.catalog.ProductAttributeVO;
 import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.commerce.catalog.ProductCategoryVO;
@@ -442,10 +442,10 @@ public class FSProductAction extends SBActionAdapter {
 	 */
 	private void addVideos(ProductVO product) throws SQLException {
 		StringBuilder sb = new StringBuilder();
-		Map<String, String> video;
 
-		sb.append("select * from product_attribute_xr ");
-		sb.append("where product_id = ? and attribute_id = 'FS_VIDEO_LIB' ");
+		sb.append("select * from product_attribute_xr pax ");
+		sb.append("left join video v on pax.attrib3_txt = v.video_id ");
+		sb.append("where pax.product_id = ? and pax.attribute_id = 'FS_VIDEO_LIB' ");
 		sb.append("order by order_no");
 		log.debug(sb.toString()+"|"+product.getProductId());
 		
@@ -454,15 +454,12 @@ public class FSProductAction extends SBActionAdapter {
 		ps.setString(1, product.getProductId());
 		
 		ResultSet rs = ps.executeQuery();
-		
+		VideoVO video;
 		while (rs.next()) {
-			video = new HashMap<String, String>();
-			video.put("PRODUCT_ATTRIBUTE_ID", rs.getString("PRODUCT_ATTRIBUTE_ID"));
-			video.put("VALUE_TXT", rs.getString("VALUE_TXT"));
-			video.put("TITLE_TXT", rs.getString("TITLE_TXT"));
-			video.put("ATTRIB1_TXT", rs.getString("ATTRIB1_TXT"));
-			video.put("ATTRIB2_TXT", rs.getString("ATTRIB2_TXT"));
-			video.put("ATTRIB3_TXT", rs.getString("ATTRIB3_TXT"));
+			video = new VideoVO(rs);
+			video.setAspectRatioHeight(Integer.parseInt(StringUtil.checkVal(rs.getString("ATTRIB1_TXT"))));
+			video.setAspectRatioHeight(Integer.parseInt(StringUtil.checkVal(rs.getString("ATTRIB2_TXT"))));
+			
 			product.addProdAttribute(rs.getString("product_attribute_id"), video);
 		}
 		
