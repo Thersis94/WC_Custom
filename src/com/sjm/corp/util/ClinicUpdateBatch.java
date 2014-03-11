@@ -1,5 +1,6 @@
 package com.sjm.corp.util;
 
+// JDK 1.7
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -14,9 +15,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.log4j.BasicConfigurator;
+// Apache Log4j
 import org.apache.log4j.Logger;
+import org.apache.log4j.PropertyConfigurator;
 
+// SMTBaseLibs 2.0
 import com.siliconmtn.db.DatabaseConnection;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
@@ -71,10 +74,10 @@ public class ClinicUpdateBatch {
 	 * 
 	 */
 	public ClinicUpdateBatch(String[] args) {
-		BasicConfigurator.configure();
+		PropertyConfigurator.configure("scripts/sjm_corp_log4j.properties");
 		try {
 			initializeParams(args);
-			config = PropertyParser.assignParams("scripts/ans_config.properties");
+			config = PropertyParser.assignParams("scripts/sjm_corp_config.properties");
 			conn = this.getDBConnection();
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -220,25 +223,28 @@ public class ClinicUpdateBatch {
 	public Map<String, String> getCountryAdmins() 
 	throws SQLException, EncryptionException {
 		Map<String, String> admins = new HashMap<String, String>();
-		StringBuilder s = new StringBuilder();
-		int i=0; 
 		
-		for(Iterator<String> iter = countries.iterator(); iter.hasNext(); i++) {
-			if (i > 0) s.append(",");
-			s.append(StringUtil.checkVal(iter.next(), true));
-		}
-		
-		String sql = "select attrib_txt_1, email_address_txt from profile_role a ";
-		sql += "inner join profile b on a.profile_id = b.profile_id ";
-		sql += "where attrib_txt_1 in (" + s + ") ";
-		log.debug("Country Admins in: " + sql + "|" + s);
-		
-		StringEncrypter se = new StringEncrypter((String)config.get("encryptKey"));
-		PreparedStatement ps = conn.prepareStatement(sql);
-		//ps.setString(1, s.toString());
-		ResultSet rs = ps.executeQuery();
-		while (rs.next()) {
-			admins.put(rs.getString(1), se.decrypt(rs.getString(2)));
+		if (countries.size() > 0) {
+			StringBuilder s = new StringBuilder();
+			int i=0; 
+			
+			for(Iterator<String> iter = countries.iterator(); iter.hasNext(); i++) {
+				if (i > 0) s.append(",");
+				s.append(StringUtil.checkVal(iter.next(), true));
+			}
+			
+			String sql = "select attrib_txt_1, email_address_txt from profile_role a ";
+			sql += "inner join profile b on a.profile_id = b.profile_id ";
+			sql += "where attrib_txt_1 in (" + s + ") ";
+			log.debug("Country Admins in: " + sql + "|" + s);
+			
+			StringEncrypter se = new StringEncrypter((String)config.get("encryptKey"));
+			PreparedStatement ps = conn.prepareStatement(sql);
+			//ps.setString(1, s.toString());
+			ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				admins.put(rs.getString(1), se.decrypt(rs.getString(2)));
+			}
 		}
 		log.debug("Country Admin Size: " + admins);
 		return admins;
@@ -287,7 +293,7 @@ public class ClinicUpdateBatch {
 		String url = (String) config.get("dbUrl");
 		String dbUser = (String) config.get("dbUser");
 		String pwd = (String) config.get("dbPassword");
-		
+		log.debug("dbDriver|dbUrl|dbUser|dbPassword: " + driver + "|" + url + "|" + dbUser + "|" + pwd);
 		DatabaseConnection dbc = new DatabaseConnection(driver,url,dbUser,pwd);
 		
 		return dbc.getConnection();
