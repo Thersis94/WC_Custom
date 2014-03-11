@@ -1,4 +1,4 @@
-package com.venture.cs.action;
+package com.venture.cs.action.vo;
 
 // JDK 1.6
 import java.io.Serializable;

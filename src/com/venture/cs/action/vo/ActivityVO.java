@@ -1,4 +1,4 @@
-package com.venture.cs.action;
+package com.venture.cs.action.vo;
 
 import java.io.Serializable;
 import java.sql.ResultSet;
@@ -21,15 +21,26 @@ public class ActivityVO implements Serializable {
 	private static final long serialVersionUID = 1L;
 	private String firstName;
 	private String lastName;
+	private String submitterId; // typically, the profileId of the person performing the activity
 	private String comment;
 	private Date createDate;
 	
+	/**
+	 * 
+	 */
+	public ActivityVO() {}
+	
+	/**
+	 * 
+	 * @param rs
+	 */
 	public ActivityVO(ResultSet rs) {
 		DBUtil db = new DBUtil();
 		this.setFirstName(db.getStringVal("FIRST_NM", rs));
 		this.setLastName(db.getStringVal("LAST_NM", rs));
 		this.setComment(db.getStringVal("COMMENT", rs));
 		this.setCreateDate(db.getDateVal("CREATE_DT", rs));
+		
 	}
 
 	public String getFirstName() {
@@ -46,6 +57,20 @@ public class ActivityVO implements Serializable {
 
 	public void setLastName(String lastName) {
 		this.lastName = lastName;
+	}
+
+	/**
+	 * @return the submitterId
+	 */
+	public String getSubmitterId() {
+		return submitterId;
+	}
+
+	/**
+	 * @param submitterId the submitterId to set
+	 */
+	public void setSubmitterId(String submitterId) {
+		this.submitterId = submitterId;
 	}
 
 	public String getComment() {

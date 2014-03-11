@@ -1,5 +1,6 @@
 package com.venture.cs.action;
 
+// JDK 7
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -8,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+// SMTBaseLibs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.db.DBUtil;
@@ -17,29 +19,41 @@ import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
+
+// WebCrescendo 2.0
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.user.SBProfileManager;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
- *<b>Title</b>: UploadData<p/>
+ *<b>Title</b>: VehicleImportAction<p/>
  *Takes in a csv file divided by pipes and loads it into the database <p/>
  *Copyright: Copyright (c) 2013<p/>
  *Company: SiliconMountain Technologies<p/>
  * @author Eric Damschroder
  * @version 1.0
  * @since July 23, 2013
+ * Changes:
+ * July 23, 2013: Eric Damschroder: created class
+ * Mar 11, 2014: DBargerhuff: added additional comments
  ****************************************************************************/
 
-public class UploadData  extends SBActionAdapter {
+public class VehicleImportAction  extends SBActionAdapter {
 	
 	private final String DELIMITER = "\\|";
 	
-	public UploadData() {
+	/**
+	 * 
+	 */
+	public VehicleImportAction() {
 		super();
 	}
 
-	public UploadData(ActionInitVO arg0) {
+	/**
+	 * 
+	 * @param arg0
+	 */
+	public VehicleImportAction(ActionInitVO arg0) {
 		super(arg0);
 	}
 	

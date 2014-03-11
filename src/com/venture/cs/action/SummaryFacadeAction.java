@@ -5,6 +5,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+
+
 // SMTBaseLibs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -23,9 +25,11 @@ import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.venture.cs.action.vo.ActivityVO;
+import com.venture.cs.action.vo.VehicleVO;
 
 /****************************************************************************
- *<b>Title</b>: VehicleFacadeAction<p/>
+ *<b>Title</b>: SummaryFacadeAction<p/>
  * <p/>
  *Copyright: Copyright (c) 2013<p/>
  *Company: SiliconMountain Technologies<p/>
@@ -37,21 +41,59 @@ import com.smt.sitebuilder.common.constants.Constants;
  * Mar 11, 2014: DBargerhuff: refactored class into additional class.  Renamed class.
  ****************************************************************************/
 
-public class OverviewFacadeAction extends SBActionAdapter {
+public class SummaryFacadeAction extends SBActionAdapter {
 	
-	public OverviewFacadeAction() {
+	/**
+	 * Constructor
+	 */
+	public SummaryFacadeAction() {
 		super();
 	}
 
-	public OverviewFacadeAction(ActionInitVO arg0) {
+	/**
+	 * Constructor
+	 * @param arg0
+	 */
+	public SummaryFacadeAction(ActionInitVO arg0) {
 		super(arg0);
+	}
+	
+	/**
+	 * Enum encapsulating the activity type requested.  Each
+	 * ActivityType has a corresponding activity message which
+	 * is used for activity logging.
+	 *
+	 */
+	public enum ActivityType {
+		CASE_FOLLOW("Follow case."),
+		CASE_FREEZE("Freeze case."),
+		CASE_SHARE("Share case."),
+		CASE_UNFREEZE("Unfreeze case."),
+		TICKET_COMMENTS_EDIT("Edit comments."),
+		TICKET_CLOSE("Close ticket."),
+		TICKET_ADD("Add ticket."),
+		TICKET_FILE_DELETE("Delete file."),
+		OWNER_EDIT("Edit owner."),
+		OWNER_CHANGE("Change owner."),
+		DEALER_EDIT("Edit dealer."),
+		DEALER_CHANGE("Change dealer.");
+		
+		ActivityType(String msg) {
+			this.msg = msg;
+		}
+		
+		private String msg;
+		
+		public String getMessage() {
+			return msg;
+		}
 	}
 	
 	/**
      * Retrieves the action data for a specified action id
      */
     public void retrieve(SMTServletRequest req) throws ActionException {
-    	log.debug("VehicleFacadeAction retrieve...");
+    	log.debug("SummaryFacadeAction retrieve...");
     	
     	SMTActionInterface sai = new ManageTicketAction(actionInit);
     	sai.setDBConnection(dbConn);
@@ -69,7 +111,7 @@ public class OverviewFacadeAction extends SBActionAdapter {
      */
     public void build(SMTServletRequest req) throws ActionException {
     	String reqType = StringUtil.checkVal(req.getParameter("reqType"));
-    	log.debug("VehicleFacadeAction build..., reqType: " + reqType);
+    	log.debug("SummaryFacadeAction build..., reqType: " + reqType);
     	String activityMsg = null;
     	
     	if (reqType.equals("freeze")) {
@@ -125,6 +167,7 @@ public class OverviewFacadeAction extends SBActionAdapter {
     	
     	if (activityMsg != null) {
     		logActivity(req, activityMsg);
+    		notifyAdmins(req, activityMsg);
     	} else {
     		url.append("&msg=We were unable to process your update.  Please contact your system administrator.");
     		
@@ -207,8 +250,9 @@ public class OverviewFacadeAction extends SBActionAdapter {
      * of the vehicle ID being requested.
      * @param req
      * @return
+     * @throws ActionException
      */
-    private String checkFollowers(SMTServletRequest req) {
+    private String checkFollowers(SMTServletRequest req) throws ActionException {
     	String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
     	String vehicleId = StringUtil.checkVal(req.getParameter("vehicleId"));
     	String profileId = StringUtil.checkVal(req.getParameter("submissionId"));
@@ -229,7 +273,8 @@ public class OverviewFacadeAction extends SBActionAdapter {
     			tmpProfileId = rs.getString(1);
     		}
     	} catch (SQLException sqle) {
-    		log.error("Error retrieving");
+    		log.error("Error retrieving a list of followers for this case, ", sqle);
+    		throw new ActionException(sqle.getMessage());
     	} finally {
     		if (ps != null) {
     			try {
@@ -271,8 +316,8 @@ public class OverviewFacadeAction extends SBActionAdapter {
 	    		// this is an edit
 	    		pm.updateProfile(user, dbConn);
 	    	} else {
-	    		// this is an add or change to different owner
-	    		// find out if there is an existing profile for this person
+	    		// this is an add (new case or new owner for existing case)
+	    		// check for existence
 	    		profileId = pm.checkProfile(user, dbConn);
 	    		if (StringUtil.checkVal(profileId).length() > 0) {
 	    			// found a profile, use it as owner
@@ -293,9 +338,11 @@ public class OverviewFacadeAction extends SBActionAdapter {
     /**
      * Edit the owner of the vehicle
      * @param req
+     * @param owner
      * @throws ActionException
      */
-    private void updateOwner(SMTServletRequest req, UserDataVO owner) throws ActionException {
+    private void updateOwner(SMTServletRequest req, UserDataVO owner) 
+    		throws ActionException {
     	log.debug("update owner...");
     	String purchaseDate = StringUtil.checkVal(req.getParameter("purchaseDate"));
     	
@@ -416,6 +463,25 @@ public class OverviewFacadeAction extends SBActionAdapter {
         		ps.close();
         	} catch (Exception e) {}
         }
+    }
+    
+    /**
+     * Called whenever the build action is called using a valid activity type.
+     * @param req
+     * @param activityMsg
+     * @throws ActionException
+     */
+    protected void notifyAdmins(SMTServletRequest req, String activityMsg) 
+    		throws ActionException {
+    	log.debug("notifying admins of vehicle activity...");
+    	CaseNotificationAction cna = new CaseNotificationAction(attributes, dbConn);
+    	VehicleVO vehicle = new VehicleVO(req);
+    	ActivityVO activity = new ActivityVO();
+    	activity.setComment(activityMsg);
+    	activity.setSubmitterId(req.getParameter("submissionId"));
+    	vehicle.addActivity(activity);
+    	cna.notifyActivityAdmins(vehicle);
+    	
     }
      
 }

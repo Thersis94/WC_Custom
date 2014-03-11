@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 
+
+
 // SMTBaseLibs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -26,9 +28,11 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.user.SBProfileManager;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.venture.cs.action.vo.TicketVO;
+import com.venture.cs.action.vo.VehicleVO;
 
 /****************************************************************************
- *<b>Title</b>: VehicleAction<p/>
+ *<b>Title</b>: VehicleSearchAction<p/>
  * Gathers the base information about vehicles for the venture vehicle search <p/>
  *Copyright: Copyright (c) 2013<p/>
  *Company: SiliconMountain Technologies<p/>
@@ -48,10 +52,17 @@ public class VehicleSearchAction extends SBActionAdapter {
 	public static final String VENTURE_VEHICLE_ORG_ID = "VENTURE_RV";
 	public static final int VENTURE_VEHICLE_DEALER_TYPE = 10;
 	
+	/**
+	 * 
+	 */
 	public VehicleSearchAction() {
 		super();
 	}
-
+	
+	/**
+	 * 
+	 * @param arg0
+	 */
 	public VehicleSearchAction(ActionInitVO arg0) {
 		super(arg0);
 	}
@@ -475,7 +486,7 @@ public class VehicleSearchAction extends SBActionAdapter {
 	 */
 	private String checkCurrentVehicles(VehicleVO v) throws SQLException {
         // make sure this vehicle isn't already in the 'current' vehicle db.
-		log.debug("checking current vins...");
+		log.debug("checking current VINs...");
 		String id = null;
         String sb = this.buildCurrentSearchString(v.getVin(), "", "", "");
        	List<VehicleVO> found = this.performSearch(v.getVin(), "", "", "", sb, SEARCH_CURRENT, false);

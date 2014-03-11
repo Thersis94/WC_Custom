@@ -1,5 +1,6 @@
 package com.venture.cs.action;
 
+// JDK 7
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -7,29 +8,39 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Map;
 
+
+// Apache Log4j
 import org.apache.log4j.Logger;
 
+
+// SMTBaseLibs 2.0
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.Convert;
+
+// WebCrescendo 2.0
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.util.MessageSender;
+import com.venture.cs.action.vo.VehicleVO;
 
 /****************************************************************************
- *<b>Title</b>: EmailNotification<p/>
+ *<b>Title</b>: NotifyFollowersAction<p/>
  * Notifies all the users that are following vehicles <p/>
  *Copyright: Copyright (c) 2013<p/>
  *Company: SiliconMountain Technologies<p/>
  * @author Eric Damschroder
  * @version 1.0
  * @since July 23, 2013
+ * Changes:
+ * July 23, 2013: Eric Damschroder: created class
+ * Mar 11, 2014: DBargerhuff: added additional comments
  ****************************************************************************/
 
-public class EmailNotification {
-	private final int millPerDay = 86400000;
+public class CaseNotificationAction {
 	
+	private final int millPerDay = 86400000;
 	private MessageSender sndr = null;
 	protected static Logger log = null;
 	private String message = "";
@@ -38,9 +49,12 @@ public class EmailNotification {
 	private String encKey;
 	private int daysBetweenNotifications = 5;
 	
-	
-	
-	public EmailNotification(Map<String, Object> attributes, Connection dbConn) {
+	/**
+	 * Constructor
+	 * @param attributes
+	 * @param dbConn
+	 */
+	public CaseNotificationAction(Map<String, Object> attributes, Connection dbConn) {
 		sndr = new MessageSender(attributes, dbConn);
 		log = Logger.getLogger(this.getClass());
 		customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
@@ -48,11 +62,20 @@ public class EmailNotification {
 		this.dbConn = dbConn;
 	}
 	
-	public EmailNotification(Map<String, Object> attributes, Connection dbConn, String message) {
+	/**
+	 * Constructor
+	 * @param attributes
+	 * @param dbConn
+	 * @param message
+	 */
+	public CaseNotificationAction(Map<String, Object> attributes, Connection dbConn, String message) {
 		this(attributes, dbConn);
 		this.message = message;
 	}
 	
+	/**
+	 * 
+	 */
 	public void findDueTickets () {
 		StringBuilder sb = new StringBuilder();
 		
@@ -79,12 +102,12 @@ public class EmailNotification {
 			log.error("Could not decrypt submitter email address ", e);
 		}
 	}
+	
 	/**
 	 * Send notification emails to all users following this vehicle as well as to the provided email address
 	 * @param vehicleId
 	 * @param submitterEmail
 	 */
-	
 	public void sendNotifications(String vehicleId, String submitterEmail) {
 
     	try {
@@ -149,4 +172,25 @@ public class EmailNotification {
 		return list;
 		
 	}
+	
+	/**
+	 * Notifies site administrators of the activity that took place for the specified case (vehicleId).
+	 * @param vo
+	 */
+	public void notifyActivityAdmins(VehicleVO vo) {
+		// TODO finish
+		// retrieve site admins
+		
+		// format msg
+		
+		// send msg
+		
+	}
+	
+	private void retrieveSiteAdmins() {
+		// TODO finish
+		StringBuilder sb = new StringBuilder();
+		sb.append("select ");
+	}
+	
 }

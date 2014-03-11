@@ -1,4 +1,4 @@
-package com.venture.cs.action;
+package com.venture.cs.action.vo;
 
 import java.io.Serializable;
 import java.sql.ResultSet;

@@ -1,10 +1,12 @@
 package com.venture.cs.action;
 
+// JDK 7
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 
+// SMTBaseLibs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.exception.InvalidDataException;
@@ -13,6 +15,8 @@ import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
+
+// WebCrescendo 2.0
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
@@ -20,22 +24,25 @@ import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.util.MessageSender;
 
 /****************************************************************************
- *<b>Title</b>: ShareAction<p/>
+ *<b>Title</b>: ShareCaseAction<p/>
  * Sends this case to a another user on this site <p/>
  *Copyright: Copyright (c) 2013<p/>
  *Company: SiliconMountain Technologies<p/>
  * @author Eric Damschroder
  * @version 1.0
  * @since July 23, 2013
+ * Changes:
+ * July 23, 2013: Eric Damschroder: created class
+ * Mar 11, 2014: DBargerhuff: added additional comments
  ****************************************************************************/
 
-public class ShareAction extends SBActionAdapter {
+public class ShareCaseAction extends SBActionAdapter {
 	
-	public ShareAction() {
+	public ShareCaseAction() {
 		super();
 	}
 
-	public ShareAction(ActionInitVO arg0) {
+	public ShareCaseAction(ActionInitVO arg0) {
 		super(arg0);
 	}
 	
@@ -87,6 +94,9 @@ public class ShareAction extends SBActionAdapter {
         setAttribute(Constants.MODULE_DATA, modVo);
     }
 
+    /**
+     * 
+     */
     public void build(SMTServletRequest req) throws ActionException {
     	StringBuilder message = new StringBuilder();
     	StringBuilder url = new StringBuilder();
@@ -108,7 +118,7 @@ public class ShareAction extends SBActionAdapter {
 			ms.sendMessage(msg);
 			log.debug(msg.getHtmlBody());
 			log.debug(msg.getTextBody());
-			OverviewFacadeAction ticket = new OverviewFacadeAction();
+			SummaryFacadeAction ticket = new SummaryFacadeAction();
 			ticket.setDBConnection(dbConn);
 			ticket.setAttributes(attributes);
 			ticket.logActivity(req, "Shared case with: " + req.getParameter("rcptNm").split("\\|")[1]);
