@@ -156,6 +156,9 @@ public class TVSpotDlrContactAction extends SimpleActionAdapter {
 	 * @param req
 	 */
 	private void listDealerLocations(ModuleVO mod, SMTServletRequest req) {
+		//this tells the locator we only want records that are active for promotions.
+		req.setAttribute("promotionsFlg", "1");
+		
 		//set the actionId of the locator portlet we're facading
 		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_2)); 
 		SMTActionInterface dla = new DealerLocatorAction(actionInit);
