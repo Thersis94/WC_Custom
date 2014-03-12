@@ -1,5 +1,6 @@
 package com.fastsigns.action;
 
+import java.util.Calendar;
 import java.util.Date;
 
 import com.siliconmtn.util.Convert;
@@ -50,15 +51,28 @@ public class TVSpotReportVO extends AbstractSBReportVO {
 			rpt.append("<tr><td>").append(Convert.formatDate(d, Convert.DATE_SLASH_PATTERN)).append("</td>");
 			rpt.append("<td>").append(Convert.formatDate(d, Convert.TIME_LONG_PATTERN)).append("</td>");
 			rpt.append("<td>").append(vo.getDealerLocationId()).append("</td>");
+			rpt.append("<td>").append(vo.getDealerLocation().getOwnerName()).append("</td>");
 			rpt.append("<td>").append(vo.getFullName()).append("</td>");
 			rpt.append("<td>").append(vo.getEmailAddress()).append("</td>");
 			rpt.append("<td>").append(pnf.getFormattedNumber()).append("</td>");
 			rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.zipcode.id()))).append("</td>");
-			rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.industry.id()))).append("</td>");
-			rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.department.id()))).append("</td>");
-			rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.title.id()))).append("</td>");
-			rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.companyNm.id()))).append("</td>");
-			rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.businessChallenge.id()))).append("</td>");
+			rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.state.id()))).append("</td>");
+//			rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.industry.id()))).append("</td>");
+//			rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.department.id()))).append("</td>");
+//			rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.title.id()))).append("</td>");
+//			rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.companyNm.id()))).append("</td>");
+//			rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.businessChallenge.id()))).append("</td>");
+			rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.inquiry.id()))).append("</td>");
+			rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.saleAmount.id()))).append("</td>");
+			Calendar surveySentDt = Calendar.getInstance();
+			surveySentDt.setTime(vo.getSubmittalDate());
+			surveySentDt.add(Calendar.DAY_OF_YEAR, 7);
+			surveySentDt.set(Calendar.HOUR, 6); //6am is when FS email campaigns kick-off
+			surveySentDt.set(Calendar.MINUTE, 0);
+			surveySentDt.set(Calendar.SECOND, 0);
+			rpt.append("<td>").append((Calendar.getInstance().getTime().before(surveySentDt.getTime())) ? "No" : "Yes").append("</td>");
+			rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.rating.id()))).append("</td>");
+			rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.feedback.id()))).append("</td>");
 			TVSpotUtil.Status status = TVSpotUtil.Status.valueOf(vo.getExtData().get(TVSpotUtil.ContactField.status.id()));
 			if (status == TVSpotUtil.Status.initiated) {
 				rpt.append("<td color=\"red\">").append(status.getLabel()).append("</td>");
@@ -77,22 +91,29 @@ public class TVSpotReportVO extends AbstractSBReportVO {
 	
 	private void getHeader(StringBuilder hdr) {
 		hdr.append("<table border='1'>\r");
-		hdr.append("<tr><td colspan='14' style='background-color: #ccc;'><b>Commercial Consultation Report - ");
+		hdr.append("<tr><td colspan='16' style='background-color: #ccc;'><b>Commercial Consultation Report - ");
 		hdr.append(Convert.formatDate(new Date(),  Convert.DATE_SLASH_PATTERN)).append("</b></td></tr>\r");
 		hdr.append("<tr><th>Date</th>");
 		hdr.append("<th>Time</th>");
 		hdr.append("<th>Web Number</th>");
+		hdr.append("<th>Franchise Owner</th>");
 		hdr.append("<th>Prospect Name</th>");
 		hdr.append("<th>Prospect Email</th>");
 		hdr.append("<th>Phone Number</th>");
 		hdr.append("<th>Zip Code</th>");
-		hdr.append("<th>Industry</th>");
-		hdr.append("<th>Department</th>");
-		hdr.append("<th>Title</th>");
-		hdr.append("<th>Company Name</th>");
-		hdr.append("<th>Business Challenge</th>");
+		hdr.append("<th>State</th>");
+//		hdr.append("<th>Industry</th>");
+//		hdr.append("<th>Department</th>");
+//		hdr.append("<th>Title</th>");
+//		hdr.append("<th>Company Name</th>");
+//		hdr.append("<th>Business Challenge</th>");
+		hdr.append("<th>Customer Request</th>");
+		hdr.append("<th>Sale Amount</th>");
+		hdr.append("<th>Survey Sent</th>");
+		hdr.append("<th>Survey Rating</th>");
+		hdr.append("<th>Survey Feedback</th>");
 		hdr.append("<th>Status</th>");
-		hdr.append("<th>Notes</th></tr>");
+		hdr.append("<th>Notes (internal)</th></tr>");
 	}
 	
 	private void getFooter(StringBuilder sb) {

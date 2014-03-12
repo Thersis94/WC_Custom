@@ -1,5 +1,6 @@
 package com.fastsigns.action;
 
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -9,15 +10,18 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.gis.Location;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.util.PhoneNumberFormat;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.contact.ContactFacadeAction;
+import com.smt.sitebuilder.action.contact.SubmittalDataAction;
 import com.smt.sitebuilder.action.dealer.DealerLocationVO;
 import com.smt.sitebuilder.action.dealer.DealerLocatorAction;
 import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.db.DatabaseException;
@@ -35,14 +39,19 @@ import com.smt.sitebuilder.util.MessageSender;
  * @since Feb 19, 2014
  ****************************************************************************/
 public class TVSpotDlrContactAction extends SimpleActionAdapter {
-	private static final String DLR_LOCN_FIELD_ID = "con_c0a802374be51c9177a78a7b7677ea5c";
+	
+	public static final String CON_ = "con_";  //comes from ContactUs
+	
+	private final String dlrLocnField;  //runtime constant
 	
 	public TVSpotDlrContactAction() {
 		super();
+		dlrLocnField = CON_ + TVSpotUtil.ContactField.preferredLocation.id();
 	}
 
 	public TVSpotDlrContactAction(ActionInitVO arg0) {
 		super(arg0);
+		dlrLocnField = CON_ + TVSpotUtil.ContactField.preferredLocation.id();
 	}
 	
 	
@@ -54,7 +63,7 @@ public class TVSpotDlrContactAction extends SimpleActionAdapter {
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		String contactActGrpId = (String)mod.getAttribute(ModuleVO.ATTRIBUTE_1);
-		req.setParameter("actionGroupId", contactActGrpId);
+		req.setParameter(Constants.ACTION_GROUP_ID, contactActGrpId);
 		actionInit.setActionId(contactActGrpId);
 		
 		SMTActionInterface cfa = new ContactFacadeAction(actionInit);
@@ -75,10 +84,21 @@ public class TVSpotDlrContactAction extends SimpleActionAdapter {
 		if (req.hasParameter("view")) {
 			listDealerLocations(mod, req);
 			return;
+			
+		} else if (req.hasParameter("contactSubmittalId") && req.hasParameter("isSurvey")) {
+			//these are the feedback surveys.  Update the existing record with the data for these two contact fields.
+			try {
+				updateSurvey(req);
+			} catch (SQLException sqle) {
+				log.error("could not update survey response", sqle);
+				//nothing we can do about this, so let the user continue on unbeknownst.
+			}
+			return;
 		}
 		
 		//load the dealer info using the dealerLocationId passed on the request
-		req.setParameter(DLR_LOCN_FIELD_ID,  req.getParameter(DLR_LOCN_FIELD_ID).substring(4), true);
+		//remove the "dlr-" prefix we needed when we built the dropdown (ensured proper ordering, by distance)
+		req.setParameter(dlrLocnField,  req.getParameter(dlrLocnField).substring(4), true);
 		DealerLocationVO dealer = loadDesiredDealer(req);
 		
 		//the contact us portlet will send the email to the FranchiseOwner and Center for us;
@@ -96,6 +116,35 @@ public class TVSpotDlrContactAction extends SimpleActionAdapter {
 		emailUserConfirmation(req, dealer);
 		
 		//the browser redirect occurring here was setup for us by the ContactSubmittalAction
+	}
+	
+	
+	/**
+	 * updates the users original contact submittal and completes the two empty
+	 * fields for feedback and rating.  These are asked on a survey attached to an email campaign.
+	 * @param req
+	 * @throws SQLException
+	 */
+	private void updateSurvey(SMTServletRequest req) throws SQLException {
+		SubmittalDataAction sda = new SubmittalDataAction(actionInit);
+		sda.setAttributes(attributes);
+		sda.setDBConnection(dbConn);
+		String csi = req.getParameter("contactSubmittalId");
+		
+		//update survey rating
+		String key = TVSpotUtil.ContactField.rating.id();
+		sda.updateField(req.getParameter( CON_ + key), csi, key);
+		
+		//update survey feedback
+		key = TVSpotUtil.ContactField.feedback.id();
+		sda.updateField(req.getParameter(CON_ + key), csi, key);
+
+		//redirect the browser to the thank you page
+		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+		StringBuilder url = new StringBuilder();
+		url.append(page.getRequestURI()).append("?isSurveyComplete=true");
+		url.append("&contactSubmittalId=").append(csi);
+		super.sendRedirect(url.toString(), null, req);
 	}
 	
 	
@@ -132,7 +181,7 @@ public class TVSpotDlrContactAction extends SimpleActionAdapter {
 		dla.setDBConnection(dbConn);
 		List<DealerLocationVO> dealers = null;
 		try {
-			dealers = dla.getDealerInfo(req, new String[] { req.getParameter(DLR_LOCN_FIELD_ID) }, null);
+			dealers = dla.getDealerInfo(req, new String[] { req.getParameter(dlrLocnField) }, null);
 		} catch (DatabaseException de) {
 			log.error("could not load dealer list", de);
 		}
@@ -159,11 +208,14 @@ public class TVSpotDlrContactAction extends SimpleActionAdapter {
 			emails.add(dealer.getOwnerEmail());
 		
 		req.setParameter("contactEmailAddress", emails.toArray(new String[emails.size()]), true);
-		req.setParameter("dealerLocationId", req.getParameter(DLR_LOCN_FIELD_ID));
+		req.setParameter("dealerLocationId", req.getParameter(dlrLocnField));
 		
 		//set the status to 'initiated'
-		req.setParameter("con_" + TVSpotUtil.ContactField.status.id(), TVSpotUtil.Status.initiated.toString());
+		req.setParameter(CON_ + TVSpotUtil.ContactField.status.id(), TVSpotUtil.Status.initiated.toString());
 		
+		//set the users state based on their zip code
+		String state = getStateFromZip(req);
+		req.setParameter(CON_ + TVSpotUtil.ContactField.state.id(), state);
 		
 		//email header
 		StringBuilder msg = new StringBuilder();
@@ -196,6 +248,31 @@ public class TVSpotDlrContactAction extends SimpleActionAdapter {
 		req.setValidateInput(false);
 		req.setParameter("contactEmailSubject","TV Spot Consultation Request, " + req.getParameter("pfl_combinedName"));
 		req.setValidateInput(true);
+	}
+	
+	
+	/**
+	 * Does a quick geocode for the user's state using the passed zip code.
+	 * Assumes country code to be that of the Site, since it's not asked of the user..
+	 * @param zip
+	 * @return
+	 */
+	private String getStateFromZip(SMTServletRequest req) {
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		Location loc = null;
+		DealerLocatorAction dla = new DealerLocatorAction();
+		dla.setAttributes(attributes);
+		
+		try {
+			req.setParameter("zip", req.getParameter(CON_ + TVSpotUtil.ContactField.zipcode.id()));
+			req.setParameter("country", site.getCountryCode());
+			loc = dla.getGeocode(req);
+		} catch (Exception e) {
+			log.error("could not geocode zip", e);
+			loc = new Location();
+		}
+		
+		return loc.getState();
 	}
 	
 	

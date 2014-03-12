@@ -5,6 +5,9 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
+import javax.servlet.http.HttpSession;
+
+import com.fastsigns.security.FastsignsSessVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
@@ -45,16 +48,23 @@ public class TVSpotDlrContactCRMAction extends SimpleActionAdapter {
 		super.retrieve(req);
 	}
 	
+	/**
+	 * retrieves the contact submissions to display as interactive report data in WebEdit.
+	 * Similar to SAF/RAQ Reporting.
+	 */
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
-		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
-		String franchiseId = (String) req.getSession().getAttribute("webeditFranId");
+		HttpSession ses = req.getSession();
+		SBUserRole role = (SBUserRole) ses.getAttribute(Constants.ROLE_DATA);
+		String franchiseId = (String) ses.getAttribute(FastsignsSessVO.WEBEDIT_FRANCHISE_ID);
 		
-		//security test, only admins can see everything.
-		if (franchiseId == null && role.getRoleLevel() < SecurityController.ADMIN_ROLE_LEVEL) return;
+		//security checkpoint, only admins can get data without a franchiseId.
+		if (franchiseId == null && (role == null || role.getRoleLevel() < SecurityController.ADMIN_ROLE_LEVEL)) 
+			return;
 				
 		//allow admins a way to remove the franchise restriction
-		if (req.hasParameter("showAll")) req.getSession().removeAttribute("webeditFranId");
+		if (req.hasParameter("showAll")) 
+			ses.removeAttribute(FastsignsSessVO.WEBEDIT_FRANCHISE_ID);
 				
 		//setup data filters needed for data retrieval
 		setupDataFilters(franchiseId, mod, req);
@@ -124,7 +134,7 @@ public class TVSpotDlrContactCRMAction extends SimpleActionAdapter {
 		List<ContactDataModuleVO> newData = new ArrayList<ContactDataModuleVO>();
 		boolean useStatus = req.hasParameter("status") && !(req.getParameter("status").equals("all"));
 		boolean useCustNm = req.hasParameter("customerName");
-		boolean useCompNm = req.hasParameter("companyName");
+//		boolean useCompNm = req.hasParameter("companyName");
 		
 		//loop the submissions and remove any that don't meet our criteria
 		for (ContactDataModuleVO vo : cdc.getData()) {
@@ -138,10 +148,10 @@ public class TVSpotDlrContactCRMAction extends SimpleActionAdapter {
 				if (! custNm.contains(req.getParameter("customerName").toLowerCase())) continue;
 			}
 			
-			if (useCompNm) {
-				String compNm = StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.companyNm.id())).toLowerCase();
-				if (! compNm.contains(req.getParameter("companyName").toLowerCase())) continue;
-			}
+//			if (useCompNm) {
+//				String compNm = StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.companyNm.id())).toLowerCase();
+//				if (! compNm.contains(req.getParameter("companyName").toLowerCase())) continue;
+//			}
 			
 			//passed all tests, add this record to the new List
 			newData.add(vo);
@@ -170,6 +180,9 @@ public class TVSpotDlrContactCRMAction extends SimpleActionAdapter {
 			//save the notes
 			sda.updateField(req.getParameter("transactionNotes"), csId, TVSpotUtil.ContactField.transactionNotes.id());
 			
+			//save saleAmount
+			sda.updateField(req.getParameter("saleAmount"), csId, TVSpotUtil.ContactField.saleAmount.id());
+			
 		} catch (SQLException sqle) {
 			log.error("could not update contact fields", sqle);
 		}
@@ -181,7 +194,7 @@ public class TVSpotDlrContactCRMAction extends SimpleActionAdapter {
 		url.append("?status=").append(req.getParameter("transactionStatus"));
 		if (req.hasParameter("searchRange")) url.append("&range=").append(req.getParameter("searchRange"));
 		if (req.hasParameter("searchCustomerName")) url.append("&customerName=").append(req.getParameter("searchCustomerName"));
-		if (req.hasParameter("searchCompanyName")) url.append("&companyName=").append(req.getParameter("searchCompanyName"));
+//		if (req.hasParameter("searchCompanyName")) url.append("&companyName=").append(req.getParameter("searchCompanyName"));
 		
 		super.sendRedirect(url.toString(), null, req);
 	}
