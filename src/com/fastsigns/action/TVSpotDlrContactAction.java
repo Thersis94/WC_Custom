@@ -61,6 +61,8 @@ public class TVSpotDlrContactAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
+		if (req.hasParameter("isSurvey")) return; //we don't need anything addtl to render this.
+		
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		String contactActGrpId = (String)mod.getAttribute(ModuleVO.ATTRIBUTE_1);
 		req.setParameter(Constants.ACTION_GROUP_ID, contactActGrpId);
@@ -133,12 +135,14 @@ public class TVSpotDlrContactAction extends SimpleActionAdapter {
 		
 		//update survey rating
 		String key = TVSpotUtil.ContactField.rating.id();
+		//log.debug("rating=" + req.getParameter(CON_ + key));
 		sda.updateField(req.getParameter( CON_ + key), csi, key);
 		
 		//update survey feedback
 		key = TVSpotUtil.ContactField.feedback.id();
+		//log.debug("feedback=" + req.getParameter(CON_ + key));
 		sda.updateField(req.getParameter(CON_ + key), csi, key);
-
+		
 		//redirect the browser to the thank you page
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		StringBuilder url = new StringBuilder();
