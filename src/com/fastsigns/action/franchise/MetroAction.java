@@ -102,7 +102,13 @@ public class MetroAction extends SBActionAdapter {
 		String franchiseTxt = (!orgId.contains("AU")) ? "Fastsigns" : "Signwave";
 		int lastIndex = 3;
 		String metroAlias = StringUtil.checkVal(req.getParameter(SMTServletRequest.PARAMETER_KEY + "1"));
+		if (metroAlias.length() == 0) {
+			metroAlias = getMetro();
+		}
 		String productAlias = StringUtil.checkVal(req.getParameter(SMTServletRequest.PARAMETER_KEY + "2"));
+		if (productAlias.length() == 0) {
+			productAlias = StringUtil.checkVal(req.getParameter("product"));
+		}
 		Boolean isLST = Boolean.FALSE;
 		if (metroAlias.equalsIgnoreCase("LST")) {
 			metroAlias = StringUtil.checkVal(req.getParameter(SMTServletRequest.PARAMETER_KEY + "2"));
@@ -170,6 +176,30 @@ public class MetroAction extends SBActionAdapter {
 				}
 			super.sendRedirect(sb.toString(), null, req);
 		}
+	}
+	
+	/**
+	 * Gets the metro area based on the action id 
+	 */
+	private String getMetro() {
+		String customDb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder();
+		sql.append("SELECT fma.AREA_ALIAS_NM FROM SB_ACTION sb ");
+		sql.append("JOIN ").append(customDb).append("FTS_METRO_AREA fma ");
+		sql.append("on fma.METRO_AREA_ID = sb.ATTRIB1_TXT ");
+		sql.append("WHERE ACTION_ID = ?");
+		
+		try {
+			PreparedStatement ps = dbConn.prepareStatement(sql.toString());
+			ps.setString(1,actionInit.getActionId());
+			ResultSet rs = ps.executeQuery();
+			if (rs.next())
+				return rs.getString(1);
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return "";
 	}
 	
 	/*
