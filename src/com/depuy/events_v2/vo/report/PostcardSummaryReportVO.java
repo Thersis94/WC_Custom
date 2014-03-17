@@ -64,6 +64,7 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 			rpt.append("<tr><td>Product</td><td>").append(sem.getJointLabel()).append("</td></tr>\r");
 			rpt.append("<tr><td>Venue Location</td><td align='center'>").append(event.getEventDesc()).append("</td></tr>\r");
 			rpt.append("<tr><td>Venue Name</td><td align='center'>").append(event.getEventName()).append("</td></tr>\r");
+			rpt.append("<tr><td>Refreshment Choice</td><td align='center'>").append(event.getServiceText()).append("</td></tr>\r");
 			rpt.append("<tr><td>Venue Address</td><td align='center'>").append(event.getAddressText())
 						.append("<br/>").append(event.getAddress2Text())
 						.append("<br/>").append(event.getCityName()).append(" " ).append(event.getStateCode()).append(", " ).append(event.getZipCode()).append("</td></tr>\r");
