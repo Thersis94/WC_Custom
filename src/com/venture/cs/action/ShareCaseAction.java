@@ -5,23 +5,31 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.List;
+
+
+
+
 
 // SMTBaseLibs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.http.SMTServletRequest;
-import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
+import com.siliconmtn.util.StringUtil;
 
 // WebCrescendo 2.0
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.action.user.ProfileManager;
+import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.ModuleVO;
-import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
-import com.smt.sitebuilder.util.MessageSender;
+import com.venture.cs.action.SummaryFacadeAction.ActivityType;
+import com.venture.cs.action.vo.ActivityVO;
+import com.venture.cs.action.vo.VehicleVO;
 
 /****************************************************************************
  *<b>Title</b>: ShareCaseAction<p/>
@@ -98,35 +106,60 @@ public class ShareCaseAction extends SBActionAdapter {
      * 
      */
     public void build(SMTServletRequest req) throws ActionException {
-    	StringBuilder message = new StringBuilder();
-    	StringBuilder url = new StringBuilder();
-    	message.append(req.getParameter("submitter")).append(" has shared the case for vehicle ");
-    	message.append(req.getParameter("vin")).append(" with you.");
-    	url.append(req.getParameter("site"));
-    	url.append("?vehicleId=");
-    	url.append(req.getParameter("vehicleId"));
+    	// retrieve the vehicle
+    	VehicleVO vehicle = new VehicleVO(req);
     	
-    	SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-    	try {
-    		MessageSender ms = new MessageSender(attributes, dbConn);
-	    	EmailMessageVO msg = new EmailMessageVO();
-	    	msg.setHtmlBody(message.toString() + "<br/><br/><a href='http:/" + url.toString() + "'>" + url.toString() + "</a><br/><br/>" + req.getParameter("comment") + "<br/><br/>This is an automated message.  Please do not respond.");
-	    	msg.setTextBody(message.toString() + "\n\n"+ url.toString() +"\n" + req.getParameter("comment") + "\n\nThis is an automated message.  Please do not respond.");
-	    	msg.addRecipient(req.getParameter("rcptNm").split("\\|")[0]);
-	    	msg.setSubject("Venture RV Case");
-	    	msg.setFrom(site.getMainEmail());
-			ms.sendMessage(msg);
-			log.debug(msg.getHtmlBody());
-			log.debug(msg.getTextBody());
-			SummaryFacadeAction ticket = new SummaryFacadeAction();
-			ticket.setDBConnection(dbConn);
-			ticket.setAttributes(attributes);
-			ticket.logActivity(req, "Shared case with: " + req.getParameter("rcptNm").split("\\|")[1]);
-
-		} catch (InvalidDataException e) {
-			log.error("Invalid email address ", e);
+		// build the activity
+		ActivityVO activity = new ActivityVO();
+		activity.setVehicleId(vehicle.getVehicleId());
+		String submissionId = StringUtil.checkVal(req.getParameter("submissionId"));
+		log.debug("submissionId: " + submissionId);
+		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
+		if (submissionId.length() > 0) {
+			try {
+				UserDataVO user = pm.getProfile(submissionId, dbConn, "PROFILE_ID");
+				activity.setFirstName(user.getFirstName());
+				activity.setLastName(user.getLastName());
+			} catch (DatabaseException de) {
+				log.error("Error retrieving submitter's profile, ", de);
+			}
+			
 		}
-	
+		
+		// parse the shared case recipient's name from the request
+		String sharedWith = StringUtil.checkVal(req.getParameter("sharedCaseRecipient"));
+		if (sharedWith.length() > 0) {
+			int index = sharedWith.indexOf("|");
+			if (index > -1) {
+				sharedWith = sharedWith.substring(index + 1);
+			}
+		}
+		log.debug("sharedWith: " + sharedWith);
+		activity.setComment(ActivityType.CASE_SHARE.getLogMessage() + " with: " + sharedWith);
+		
+		// log and update the activity
+    	SummaryFacadeAction ticket = new SummaryFacadeAction();
+		ticket.setDBConnection(dbConn);
+		ticket.setAttributes(attributes);
+		ticket.logActivity(req, activity);
+		
+		// now add the updated activity to the vehicle
+		vehicle.addActivity(activity);
+		
+		// build the vehicle List
+    	List<VehicleVO> vehicles = new ArrayList<VehicleVO>();
+    	vehicles.add(vehicle);
+		
+    	// build the case URL for the link in the message
+    	StringBuilder caseUrl = new StringBuilder();
+    	caseUrl.append(StringUtil.checkVal(req.getParameter("site"))).append("?vehicleId=");
+    	caseUrl.append(vehicle.getVehicleId());
+		// send notification to person with whom case was shared
+		CaseNotificationManager cnm = new CaseNotificationManager(attributes, dbConn);
+		cnm.notifySharedCase(req, vehicles, caseUrl.toString());
+		
+		// send admin notification
+		cnm.notifySiteAdmins(req, vehicles);
     }
 
 }
