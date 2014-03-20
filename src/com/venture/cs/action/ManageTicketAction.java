@@ -9,6 +9,7 @@ import java.sql.SQLException;
 
 
 
+
 // SMTBaseLibs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -33,6 +34,7 @@ import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.venture.cs.action.SummaryFacadeAction.ActivityType;
 import com.venture.cs.action.vo.ActivityVO;
 import com.venture.cs.action.vo.TicketFileVO;
 import com.venture.cs.action.vo.TicketVO;
@@ -65,7 +67,7 @@ public class ManageTicketAction extends SBActionAdapter {
      * Retrieves the action data for a specified action id
      */
     public void retrieve(SMTServletRequest req) throws ActionException {
-    	log.debug("TicketAction retrieve...");
+    	log.debug("ManageTicketAction retrieve...");
     	String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
     	String vehicleId = req.getParameter("vehicleId");
 
@@ -116,7 +118,7 @@ public class ManageTicketAction extends SBActionAdapter {
         sql.append("WHERE vat.VENTURE_VEHICLE_ID = ? ");
         sql.append("ORDER BY RANK, CREATE_DT ASC ");
         
-        log.info("TicketAction retrieve SQL: " + sql + "|" + vehicleId);
+        log.info("ManageTicketAction retrieve SQL: " + sql + "|" + vehicleId);
         PreparedStatement ps = null;
         VehicleVO vo = new VehicleVO();
         try {
@@ -189,19 +191,39 @@ public class ManageTicketAction extends SBActionAdapter {
      */
     public void build(SMTServletRequest req) throws ActionException {
     	String reqType = StringUtil.checkVal(req.getParameter("reqType"));
-    	log.debug("TicketAction build..., reqType: " + reqType);
+    	log.debug("ManageTicketAction build..., reqType: " + reqType);
+    	String errorMsg = null;
+    	ActivityType actType = null;
+    	try {
+    		actType = ActivityType.valueOf(reqType);
+    	} catch (Exception e) {
+    		log.error("Illegal ActivityType requested, ", e);
+    		errorMsg = e.getMessage();
+    		throw new ActionException(errorMsg);
+    	}
     	
-    	if (reqType.equals("manageTicket")) {
-    		manageTicket(req);
+    	if (actType != null) {
+    		switch (actType) {
+	    		case TICKET_ADD:
+	        		manageTicket(req);
+	        		break;
+	        		
+	    		case TICKET_COMMENTS_EDIT:
+	    			updateTicketComments(req);
+	    			break;
+	    			
+	    		case TICKET_FILE_DELETE:
+	    			deleteFile(req);
+	    			break;
+	    			
+	    		case TICKET_CLOSE:
+	    			closeTicket(req);
+	    			break;
+	    			
+	    		default:
+	    			throw new ActionException(errorMsg);
+    		}
     		
-    	} else if (reqType.equals("updateComments")) {
-    		updateTicketComments(req);
-    		
-    	} else if (reqType.equals("deleteFile")) {
-    		deleteFile(req);
-    		
-    	} else if (reqType.equals("closeTicket")) {
-    		closeTicket(req);
     	}
     	    
     }
@@ -212,7 +234,7 @@ public class ManageTicketAction extends SBActionAdapter {
      * @throws ActionException
      */
     private void manageTicket(SMTServletRequest req) throws ActionException {
-    	log.debug("TicketAction manageTicket...");
+    	log.debug("ManageTicketAction manageTicket...");
     	String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
         String ticketId = StringUtil.checkVal(req.getParameter("ticketId"));
         Boolean isInsert = (ticketId.length() == 0);
@@ -273,7 +295,7 @@ public class ManageTicketAction extends SBActionAdapter {
      * @return
      */
     private void saveFile(SMTServletRequest req, String paramNm, String ticketId) {
-		log.debug("TicketAction saveFile...");
+		log.debug("ManageTicketAction saveFile...");
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 
 		StringBuilder filePath =  new StringBuilder((String)getAttribute("pathToBinary"));
@@ -314,7 +336,7 @@ public class ManageTicketAction extends SBActionAdapter {
      * @throws ActionException
      */
     private void deleteFile(SMTServletRequest req) throws ActionException {
-		log.debug("TicketAction deleteFile...");
+		log.debug("ManageTicketAction deleteFile...");
         String ticketId = StringUtil.checkVal(req.getParameter("ticketId"));
 		String ticketFileId = StringUtil.checkVal(req.getParameter("ticketFileId"));
 		String fileUrl = StringUtil.checkVal(req.getParameter("fileUrl"));
@@ -441,7 +463,6 @@ public class ManageTicketAction extends SBActionAdapter {
     	try {
 			ps = dbConn.prepareStatement(sb.toString());
 			ps.setString(1, req.getParameter("ticketId"));
-			
 			ps.executeUpdate();
 			
 		} catch (SQLException e) {

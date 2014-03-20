@@ -4,7 +4,10 @@ package com.venture.cs.action;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
 
 
 // SMTBaseLibs 2.0
@@ -60,33 +63,40 @@ public class SummaryFacadeAction extends SBActionAdapter {
 	
 	/**
 	 * Enum encapsulating the activity type requested.  Each
-	 * ActivityType has a corresponding activity message which
-	 * is used for activity logging.
+	 * ActivityType has a corresponding log message which is used
+	 * for activity logging and a response message which is used for informing
+	 * the view as to the result of the action.
 	 *
 	 */
 	public enum ActivityType {
-		CASE_FOLLOW("Follow case."),
-		CASE_FREEZE("Freeze case."),
-		CASE_SHARE("Share case."),
-		CASE_UNFREEZE("Unfreeze case."),
-		TICKET_COMMENTS_EDIT("Edit comments."),
-		TICKET_CLOSE("Close ticket."),
-		TICKET_ADD("Add ticket."),
-		TICKET_FILE_DELETE("Delete file."),
-		OWNER_EDIT("Edit owner."),
-		OWNER_CHANGE("Change owner."),
-		DEALER_EDIT("Edit dealer."),
-		DEALER_CHANGE("Change dealer.");
+		CASE_FOLLOW("Follow case", "been added to the list of followers for this case."),
+		CASE_FREEZE("Freeze case", "frozen this case."),
+		CASE_SHARE("Share case", "shared this case."),
+		CASE_UNFREEZE("Unfreeze case", "unfrozen this case."),
+		TICKET_COMMENTS_EDIT("Edit comments", "updated the ticket's comments."),
+		TICKET_CLOSE("Close ticket", "closed the ticket."),
+		TICKET_ADD("Add ticket", "added a ticket to this case."),
+		TICKET_FILE_DELETE("Delete file", "deleted the file."),
+		OWNER_MODIFY("Modify owner", "modified the owner information."),
+		DEALER_EDIT("Edit dealer", "edited the dealer."),
+		DEALER_CHANGE("Change dealer", "changed the dealer.");
 		
-		ActivityType(String msg) {
-			this.msg = msg;
+		ActivityType(String logMsg, String responseMsg) {
+			this.logMsg = logMsg;
+			this.responseMsg = responseMsg;
 		}
 		
-		private String msg;
+		private String logMsg;
+		private String responseMsg;
 		
-		public String getMessage() {
-			return msg;
+		public String getLogMessage() {
+			return logMsg;
 		}
+		
+		public String getResponseMessage() {
+			return responseMsg;
+		}
+		
 	}
 	
 	/**
@@ -112,66 +122,75 @@ public class SummaryFacadeAction extends SBActionAdapter {
     public void build(SMTServletRequest req) throws ActionException {
     	String reqType = StringUtil.checkVal(req.getParameter("reqType"));
     	log.debug("SummaryFacadeAction build..., reqType: " + reqType);
-    	String activityMsg = null;
+    	StringBuilder activityMsg = new StringBuilder();
+    	ActivityType actType = null;
     	
-    	if (reqType.equals("freeze")) {
-    		freezeCase(req);
-    		if ("1".equals(req.getParameter("freezeFlag"))) {
-    			activityMsg = "Froze case";
-    		} else {
-    			activityMsg = "Unfroze case";
-    		}
-    		
-    	} else if (reqType.equals("follow")) {
-    		followCase(req);
-    		activityMsg = "Followed case";
-    		
-    	} else if (reqType.equals("modifyOwner")) {
-    		modifyOwner(req);
-    		activityMsg = "Modified owner";
-    		
-    	} else if (reqType.equals("editDealer")) {
-    		editDealer(req);
-    		activityMsg = "Updated dealer";
-    		
-    	} else if (reqType.equals("changeDealer")) {
-    		changeDealer(req);
-    		activityMsg = "Changed dealer";
-    		
-    	} else {
-    		
-    		SMTActionInterface sai = new ManageTicketAction(actionInit);
-    		sai.setDBConnection(dbConn);
-    		sai.setAttributes(attributes);
-    		sai.build(req);
-    		
-    	   	if (reqType.equals("manageTicket")) {
-        		activityMsg = "Added ticket";
-        		
-        	}  else if (reqType.equals("updateComments")) {
-        		activityMsg = "Updated ticket comments";
-        		
-        	} else if (reqType.equals("deleteFile")) {
-        		activityMsg = "Deleted file";
-        		
-        	} else if (reqType.equals("closeTicket")) {
-        		activityMsg = "Closed ticket";
-        			
-        	}
-    		
+    	try {
+    		actType = ActivityType.valueOf(reqType);
+    	} catch (Exception e) {
+    		log.error("Illegal ActivityType requested, ", e);
     	}
     	
-    	// log the msg
+    	if (actType != null) {
+    		activityMsg.append("You have successfully ");
+	    	switch(actType) {
+		    	case CASE_FOLLOW:
+		    		followCase(req);
+		    		activityMsg.append(actType.getResponseMessage());
+		    		break;
+		    		
+		    	case CASE_FREEZE:
+		    	case CASE_UNFREEZE:
+		    		freezeCase(req);
+		    		if (StringUtil.checkVal(req.getParameter("freezeFlag")).equals("1")) {
+		    			activityMsg.append(actType.getResponseMessage());
+		    		} else {
+		    			activityMsg.append(ActivityType.CASE_UNFREEZE.getResponseMessage());
+		    		}
+		    		break;
+		    		
+		    	case OWNER_MODIFY:
+		    		modifyOwner(req);
+		    		activityMsg.append(actType.getResponseMessage());
+		    		break;
+		    		
+		    	case DEALER_EDIT:
+		    		editDealer(req);
+		    		activityMsg.append(actType.getResponseMessage());
+		    		break;
+		    		
+		    	case DEALER_CHANGE:
+		    		changeDealer(req);
+		    		activityMsg.append(actType.getResponseMessage());
+		    		break;
+		    		
+				case TICKET_COMMENTS_EDIT:
+				case TICKET_CLOSE:
+				case TICKET_ADD:
+				case TICKET_FILE_DELETE:
+					SMTActionInterface sai = new ManageTicketAction(actionInit);
+		    		sai.setDBConnection(dbConn);
+		    		sai.setAttributes(attributes);
+		    		sai.build(req);
+		    		activityMsg.append(actType.getResponseMessage());
+		    		break;
+		    	default:
+		    		break;
+	    	}
+	    	
+	   		ActivityVO activity = new ActivityVO();
+    		activity.setComment(actType.getLogMessage());
+    		logActivity(req, activity);
+    		notifyAdmins(req, activity);
+    	} else {
+    		activityMsg.append("We were unable to process your update.  Please contact your system administrator.");
+    	}
+    	
+    	// redirect
     	StringBuilder url = new StringBuilder();
     	url.append("result?vehicleId=").append(req.getParameter("vehicleId"));
+    	url.append("&msg=").append(activityMsg);
     	
-    	if (activityMsg != null) {
-    		logActivity(req, activityMsg);
-    		notifyAdmins(req, activityMsg);
-    	} else {
-    		url.append("&msg=We were unable to process your update.  Please contact your system administrator.");
-    		
-    	}
     	log.debug("redirect url: " + url.toString());    	
         req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
     	req.setAttribute(Constants.REDIRECT_URL, url.toString());
@@ -436,22 +455,27 @@ public class SummaryFacadeAction extends SBActionAdapter {
      * @param comment
      * @throws ActionException
      */
-    protected void logActivity(SMTServletRequest req, String comment) throws ActionException {
+    protected void logActivity(SMTServletRequest req, ActivityVO activity) throws ActionException {
     	log.debug("logging activity...");
     	String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
     	StringBuilder sb = new StringBuilder();
     	
     	sb.append("INSERT INTO ").append(customDb).append(" VENTURE_ACTIVITY_TRAIL ");
     	sb.append("(VENTURE_ACTIVITY_TRAIL_ID, VENTURE_VEHICLE_ID, COMMENT, PROFILE_ID, CREATE_DT) ");
-    	sb.append("VALUES (?,?,?,?,GETDATE())");
+    	sb.append("VALUES (?,?,?,?,?)");
     	
+    	activity.setActivityId(new UUIDGenerator().getUUID());
+    	activity.setVehicleId(StringUtil.checkVal(req.getParameter("vehicleId")));
+    	activity.setSubmissionId(StringUtil.checkVal(req.getParameter("submissionId")));
+    	activity.setCreateDate(new Date(Calendar.getInstance().getTimeInMillis()));
     	PreparedStatement ps = null;
     	try {
 			ps = dbConn.prepareStatement(sb.toString());
-			ps.setString(1, new UUIDGenerator().getUUID());
-			ps.setString(2, req.getParameter("vehicleId"));
-			ps.setString(3, comment);
-			ps.setString(4, req.getParameter("submissionId"));
+			ps.setString(1, activity.getActivityId());
+			ps.setString(2, activity.getVehicleId());
+			ps.setString(3, activity.getComment());
+			ps.setString(4, activity.getSubmissionId());
+			ps.setTimestamp(5, Convert.formatTimestamp(activity.getCreateDate()));
 			
 			if (ps.executeUpdate() < 1)
                 throw new ActionException("Error logging activity.");
@@ -471,17 +495,52 @@ public class SummaryFacadeAction extends SBActionAdapter {
      * @param activityMsg
      * @throws ActionException
      */
-    protected void notifyAdmins(SMTServletRequest req, String activityMsg) 
+    protected void notifyAdmins(SMTServletRequest req, ActivityVO activity) 
     		throws ActionException {
-    	log.debug("notifying admins of vehicle activity...");
-    	CaseNotificationAction cna = new CaseNotificationAction(attributes, dbConn);
+    	// look up the submitter's profile to get first/last name
+       	String profileId = StringUtil.checkVal(activity.getSubmissionId());
+    	ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
+    	try {
+    		UserDataVO user = pm.getProfile(profileId, dbConn, "PROFILE_ID");
+    		activity.setFirstName(user.getFirstName());
+    		activity.setLastName(user.getLastName());
+    	} catch (DatabaseException de) {
+    		log.error("Error retrieving submitter's profile, ", de);
+    	}
+    	
+    	// retrieve initial data from request
     	VehicleVO vehicle = new VehicleVO(req);
-    	ActivityVO activity = new ActivityVO();
-    	activity.setComment(activityMsg);
-    	activity.setSubmitterId(req.getParameter("submissionId"));
+    	lookupVehicle(vehicle);
     	vehicle.addActivity(activity);
-    	cna.notifyActivityAdmins(vehicle);
+    	List<VehicleVO> vehicles = new ArrayList<VehicleVO>();
+    	vehicles.add(vehicle);
+    	
+    	CaseNotificationManager cna = new CaseNotificationManager(attributes, dbConn);
+    	cna.notifySiteAdmins(req, vehicles);
     	
     }
-     
+    
+    /**
+     * Performs a lookup of a vehicle based on the vehicle ID.  Used to supply full vehicle information
+     * to the email notification process.
+     * @param vehicle
+     */
+    private void lookupVehicle(VehicleVO vehicle) {
+    	String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+    	StringBuilder sql = new StringBuilder("select * from ");
+    	sql.append(customDb).append("VENTURE_VEHICLE where VENTURE_VEHICLE_ID = ?");
+    	PreparedStatement ps = null;
+    	try {
+    		ps = dbConn.prepareStatement(sql.toString());
+    		ps.setString(1,vehicle.getVehicleId());
+    		ResultSet rs = ps.executeQuery();
+    		while (rs.next()) {
+    			vehicle.setMake(rs.getString("MAKE"));
+    			vehicle.setModel(rs.getString("MODEL"));
+    			vehicle.setYear(rs.getString("YEAR"));
+    		}
+    	} catch (SQLException sqle) {
+    		log.error("Error retrieving vehicle information, ", sqle);
+    	}
+    }
 }

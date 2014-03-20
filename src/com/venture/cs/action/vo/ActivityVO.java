@@ -19,9 +19,15 @@ import com.siliconmtn.db.DBUtil;
 public class ActivityVO implements Serializable {
 
 	private static final long serialVersionUID = 1L;
+	private String activityId;
+	private String vehicleId;
+	/**
+	 * This is the profile ID of the person submitting / performing
+	 * this activity.
+	 */
+	private String submissionId;
 	private String firstName;
 	private String lastName;
-	private String submitterId; // typically, the profileId of the person performing the activity
 	private String comment;
 	private Date createDate;
 	
@@ -36,6 +42,8 @@ public class ActivityVO implements Serializable {
 	 */
 	public ActivityVO(ResultSet rs) {
 		DBUtil db = new DBUtil();
+		this.setVehicleId(db.getStringVal("VENTURE_VEHICLE_ID", rs));
+		this.setSubmissionId(db.getStringVal("PROFILE_ID", rs));
 		this.setFirstName(db.getStringVal("FIRST_NM", rs));
 		this.setLastName(db.getStringVal("LAST_NM", rs));
 		this.setComment(db.getStringVal("COMMENT", rs));
@@ -43,34 +51,74 @@ public class ActivityVO implements Serializable {
 		
 	}
 
+	/**
+	 * @return the activityId
+	 */
+	public String getActivityId() {
+		return activityId;
+	}
+
+	/**
+	 * @param activityId the activityId to set
+	 */
+	public void setActivityId(String activityId) {
+		this.activityId = activityId;
+	}
+
+	/**
+	 * @return the vehicleId
+	 */
+	public String getVehicleId() {
+		return vehicleId;
+	}
+
+	/**
+	 * @param vehicleId the vehicleId to set
+	 */
+	public void setVehicleId(String vehicleId) {
+		this.vehicleId = vehicleId;
+	}
+
+	/**
+	 * @return the firstName
+	 */
 	public String getFirstName() {
 		return firstName;
 	}
 
+	/**
+	 * @param firstName the firstName to set
+	 */
 	public void setFirstName(String firstName) {
 		this.firstName = firstName;
 	}
 
+	/**
+	 * @return the lastName
+	 */
 	public String getLastName() {
 		return lastName;
 	}
 
+	/**
+	 * @param lastName the lastName to set
+	 */
 	public void setLastName(String lastName) {
 		this.lastName = lastName;
 	}
 
 	/**
-	 * @return the submitterId
+	 * @return the submissionId
 	 */
-	public String getSubmitterId() {
-		return submitterId;
+	public String getSubmissionId() {
+		return submissionId;
 	}
 
 	/**
-	 * @param submitterId the submitterId to set
+	 * @param submissionId the submissionId to set
 	 */
-	public void setSubmitterId(String submitterId) {
-		this.submitterId = submitterId;
+	public void setSubmissionId(String submissionId) {
+		this.submissionId = submissionId;
 	}
 
 	public String getComment() {

@@ -1,19 +1,15 @@
 package com.venture.cs.action;
 
-// JDK 1.6
+// JDK 1.7
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-
-
-
 // SMTBaseLibs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.common.constants.ErrorCode;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.EncryptionException;
@@ -135,8 +131,9 @@ public class VehicleSearchAction extends SBActionAdapter {
         	// search
         	data = performSearch(vin, owner, dealerName, dealerId, sql, type, true);
         } catch (SQLException sqle) {
-        	log.error("Error searching for vehicles, ", sqle);
-        	modVo.setError(ErrorCode.SQL_ERROR, sqle);
+        	String errMsg = "Error searching for vehicles: " + sqle.getMessage();
+        	log.error(errMsg);
+        	modVo.setError(errMsg, sqle);
         }
         
         // if this is an archive search, return vin if search returned no results, we will still
@@ -151,6 +148,7 @@ public class VehicleSearchAction extends SBActionAdapter {
 	        }
         }
         
+        log.debug("modVO errorCondition/errorMessage: " + modVo.getErrorCondition() + "/" + modVo.getErrorMessage());
         modVo.setActionData(data);
         modVo.setDataSize(data.size());
         
@@ -304,35 +302,43 @@ public class VehicleSearchAction extends SBActionAdapter {
 	        	log.error("Error instantiating StringEncrypter, ", ee);
 	        }
 	        
-	        // Each row has both the vehicle and one ticket, we set both
-	        String prevId = "";
-	        String currId = null;
-	        int actionFlag = 0;
-	        while (rs.next()) {
-	        	currId = rs.getString("VENTURE_VEHICLE_ID");
-	        	if (currId.equals(prevId)) {
-	        		// if another record for same vehicle, just check for action required
-		        	actionFlag = rs.getInt("ACTION_REQ_FLG");
-		        	if (actionFlag > vo.getRequiresAction()) {
-		        		TicketVO t = new TicketVO(rs);
-		        		vo.addTicket(t);
+	        if (type.equals(SEARCH_ARCHIVE)) {
+	        	if (rs.next()) {
+	        		vo = new VehicleVO(rs);
+	        		parseSpecificData(rs,vo,se,type);
+	        		data.add(vo);
+	        	}
+	        } else {
+		        // Each row has both the vehicle and one ticket, we set both
+		        String prevId = "";
+		        String currId = null;
+		        int actionFlag = 0;
+		        while (rs.next()) {
+		        	currId = rs.getString("VENTURE_VEHICLE_ID");
+		        	if (currId.equals(prevId)) {
+		        		// if another record for same vehicle, just check for action required
+			        	actionFlag = rs.getInt("ACTION_REQ_FLG");
+			        	if (actionFlag > vo.getRequiresAction()) {
+			        		TicketVO t = new TicketVO(rs);
+			        		vo.addTicket(t);
+			        	}
+			        	
+		        	} else {
+		        		if (vo != null) {
+		        			data.add(vo);
+		        		}
+			    		vo = new VehicleVO(rs);
+			    		parseSpecificData(rs, vo, se, type);	        		
 		        	}
 		        	
-	        	} else {
-	        		if (vo != null) {
-	        			data.add(vo);
-	        		}
-		    		vo = new VehicleVO(rs);
-		    		parseSpecificData(rs, vo, se, type);	        		
-	        	}
-	        	
-	            prevId = currId;
-	            actionFlag = 0;
-	            
+		            prevId = currId;
+		            actionFlag = 0;
+		            
+		        }
+		        
+		        // pick up the dangling record.
+		        if (vo != null) data.add(vo);
 	        }
-	        
-	        // pick up the dangling record.
-	        if (vo != null) data.add(vo);
 	        
         } finally {
         	if (ps != null) {
@@ -404,6 +410,7 @@ public class VehicleSearchAction extends SBActionAdapter {
 	 * Inserts or updates a base vehicle record.  If the vehicle already exists
 	 */
 	public void build(SMTServletRequest req) throws ActionException {
+		log.debug("VehicleSearchAction build...");
     	final String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
         String msg = null;
         
@@ -504,11 +511,12 @@ public class VehicleSearchAction extends SBActionAdapter {
      */
     private String updateProfile(SMTServletRequest req) throws SQLException, ActionException, DatabaseException {
         String profileId = StringUtil.checkVal(req.getParameter("profileId"));
+        /* TODO remove if not used
         if(!StringUtil.checkVal(req.getParameter("unitedStates")).equals(""))
     		req.setParameter("state", req.getParameter("unitedStates"));
     	else
     		req.setParameter("state", req.getParameter("canada"));
-    	
+    	*/
     	SBProfileManager sb = new SBProfileManager(attributes);
     	UserDataVO user = new UserDataVO(req);
     	
