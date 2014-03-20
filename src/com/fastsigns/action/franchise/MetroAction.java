@@ -12,6 +12,7 @@ import java.util.Map;
 
 import com.fastsigns.action.franchise.vo.MetroContainerVO;
 import com.fastsigns.action.franchise.vo.MetroProductVO;
+import com.fastsigns.action.wizard.FastsignsMetroWizard;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.exception.GeocodeException;
@@ -68,6 +69,19 @@ public class MetroAction extends SBActionAdapter {
 			super.moduleRedirect(req, getAttribute(AdminConstants.KEY_MESSAGE), 
 					(String)getAttribute(AdminConstants.ADMIN_TOOL_PATH));
 			return;
+		}
+		
+		/* TODO Delete the try catch block when Fastsigns is fully converted over
+		 * the page and module metro workflow.  Until then metro areas may be deleted that
+		 * do not yet have pages or modules.
+		 */
+		try {
+			// Make sure to delete the associated page and module for this metro area
+			FastsignsMetroWizard fmw = new FastsignsMetroWizard(actionInit, dbConn);
+			fmw.setAttributes(attributes);
+			fmw.delete(req);
+		} catch (Exception e) {
+			log.warn("There were issues deleting the module and page associated with this metro area. ", e);
 		}
 		
 		String cDb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
@@ -196,8 +210,7 @@ public class MetroAction extends SBActionAdapter {
 			if (rs.next())
 				return rs.getString(1);
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			log.error("Failed to get Metro area based on the action id. ", e);
 		}
 		return "";
 	}
@@ -310,8 +323,9 @@ public class MetroAction extends SBActionAdapter {
 		StringBuilder s = new StringBuilder();
 		String customDb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		log.debug("Location ID: " + metroAreaId + "|" + req.getParameter("latitude"));
+		boolean newMetro = metroAreaId.equalsIgnoreCase("NEW");
 		
-		if (metroAreaId.equalsIgnoreCase("NEW")) {
+		if (newMetro) {
 			metroAreaId = new UUIDGenerator().getUUID();
 			s.append("insert into ").append(customDb).append("fts_metro_area (");
 			s.append("area_nm, image_path_url, area_desc, area_lst_flg, ");
@@ -349,6 +363,19 @@ public class MetroAction extends SBActionAdapter {
 			ps.setString(16, metroAreaId);
 			
 			ps.executeUpdate();
+			
+			/* TODO Delete the try catch block when Fastsigns is fully converted over
+			 * the page and module metro workflow.  Until then metro areas may be updated that
+			 * do not yet have pages or modules.
+			 */
+			try {
+				// Now that the metro area has been created we need to create the page and module for it.
+				FastsignsMetroWizard fmw = new FastsignsMetroWizard(actionInit, dbConn);
+				fmw.updateMetroArea(req, metroAreaId, newMetro);
+			} catch (Exception e) {
+				log.warn("There were issues creating or updating the module and page associated with this metro area. ", e);
+			}
+			
 		} finally {
 			try {
 				ps.close();
