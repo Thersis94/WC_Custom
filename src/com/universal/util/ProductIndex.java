@@ -38,7 +38,7 @@ import com.smt.sitebuilder.search.lucene.DocumentMap;
 import com.smt.sitebuilder.search.lucene.custom.SMTCustomIndexIntfc;
 
 /****************************************************************************
- * <b>Title</b>: FASTSIGNSProductIndex.java <p/>
+ * <b>Title</b>: ProductIndex.java <p/>
  * <b>Project</b>: WebCrescendo <p/>
  * <b>Description: </b> Put comments here
  * <p/>
@@ -96,6 +96,7 @@ public class ProductIndex implements SMTCustomIndexIntfc {
 		        doc.add(new StringField(DocumentHandler.ROLE, "000",Field.Store.YES));
 		        doc.add(new TextField(DocumentHandler.SITE_PAGE_URL, "home" + n.getFullPath(),Field.Store.YES));
 		        doc.add(new TextField(DocumentHandler.DOCUMENT_URL, "home" + n.getFullPath(),Field.Store.YES));
+		        doc.add(new StringField(DocumentHandler.MODULE_TYPE, vo.getCatalogId(),Field.Store.YES));
 		        doc.add(new TextField(DocumentHandler.DOCUMENT_ID, vo.getProductId(),Field.Store.YES));
 		        doc.add(new TextField(DocumentHandler.FILE_NAME, vo.getProductName(),Field.Store.YES));
 		        doc.add(new TextField(DocumentHandler.TITLE, vo.getProductName(),Field.Store.YES));
