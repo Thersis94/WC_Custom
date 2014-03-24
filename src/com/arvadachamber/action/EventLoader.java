@@ -151,16 +151,21 @@ public class EventLoader extends ChamberMasterLoader {
 		log.debug("Params: " + params);
 		
 		// retrieve the report response
-		byte[] b = httpConn.retrieveDataViaPost(sUrl, params.toString());
-
+		byte[] reportData = httpConn.retrieveDataViaPost(sUrl, params.toString());
+		
+		/* 2014-03-24 DBargerhuff: Arvada Chamber site changed something and is now returning the report in the previous step
+		instead of returning a report URL.  Commenting this section out, but preserving it in case the site reverts in behavior.
+		
 		// parse out the report link (dir and filename)
-		String repUrl = this.parseReportLink(new String(b));
+		String repUrl = this.parseReportLink(new String(reportData));
 		log.debug("report link Url: " + repUrl);
-		b = null;
+		reportData = null;
 		// retrieve the report data
 		//byte[] repData = conn.retrieveData(SECURE_BASE_URL + repUrl);
-		byte[] repData = httpConn.retrieveData(BASE_URL + repUrl);
-		return repData;
+		reportData = httpConn.retrieveData(BASE_URL + repUrl);
+		*/
+		return reportData;
+		
 	}
 	
 	/**
@@ -219,7 +224,7 @@ public class EventLoader extends ChamberMasterLoader {
 			
 			loc = new Location(this.cleanTags(row.get(6)));
 			try {
-			contactAndPhone = this.parseContactAndPhone(this.cleanTags(row.get(10)));
+				contactAndPhone = this.parseContactAndPhone(this.cleanTags(row.get(10)));
 			} catch (Exception e) {
 				log.info("Suppressing exception; No contact/phone info in data row for event ID: " + row.get(0));
 			}
