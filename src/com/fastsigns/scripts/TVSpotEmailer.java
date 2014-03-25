@@ -90,6 +90,9 @@ public class TVSpotEmailer extends CommandLineUtil {
 			
 			//send reports to corporate
 			sendCorpReport(cdc);
+			
+			// Send indivudual center reports
+			sendCenterReport(cdc);
 		} catch (ActionException e) {
 			log.error("Could not create ContactDataContainer. ", e);
 		}
@@ -272,7 +275,7 @@ public class TVSpotEmailer extends CommandLineUtil {
 			try {
 				msg.addRecipient("operationconsultation@fastsigns.com");
 				msg.setSubject("The Roll Up \"Operation Consultation\" report is attached for your review");
-				msg.setHtmlBody(buildCorpReportBody());
+				msg.setHtmlBody(buildReportBody(false));
 				msg.setFrom("consultation@fastsigns.com");
 				msg.addAttachment("Consultation Report.xls", report.generateReport());
 				
@@ -282,16 +285,49 @@ public class TVSpotEmailer extends CommandLineUtil {
 			}
 	}
 	
+	private void sendCenterReport(ContactDataContainer cdc) {
+		TVSpotReportVO report = new TVSpotReportVO();
+		report.setData(cdc);
+		
+		EmailMessageVO msg;
+		
+		MessageSender ms;
+		ms = new MessageSender(sndrAttrib, dbConn);
+		Map<String, StringBuilder> byCenter = report.generateCenterReport();
+		
+		for (String email : byCenter.keySet()) {
+			try {
+				msg = new EmailMessageVO();
+				msg.addRecipient(email);
+				msg.setSubject("The Roll Up \"Operation Consultation\" report is attached for your review");
+				msg.setHtmlBody(buildReportBody(true));
+				msg.setFrom("consultation@fastsigns.com");
+				msg.addAttachment("Consultation Report.xls", byCenter.get(email).toString().getBytes());
+				
+				ms.sendMessage(msg);
+			} catch (InvalidDataException e) {
+				log.error("Could not create email for submittal: ", e);
+			}
+		}
+	}
+	
 	/**
 	 * Creates the html body for the corporate email
 	 * @return
 	 */
-	private String buildCorpReportBody() {
+	private String buildReportBody(boolean byCenter) {
 		StringBuilder body = new StringBuilder();
 		
-		body.append("Dear Corporate Employee:<br/>");
-		body.append("The attached \"Operation Consultation\" report is a record of the consultation ");
-		body.append("requests that have been received year to date for all locations. The requests ");
+		// Handle the slight verbiage change based on who gets this email
+		if (byCenter) {
+			body.append("Dear Francise Partner:<br/>");
+			body.append("The attached \"Operation Consultation\" report is a record of the consultation ");
+			body.append("requests that have been received year to date for your center. The requests ");
+		} else {
+			body.append("Dear Corporate Employee:<br/>");
+			body.append("The attached \"Operation Consultation\" report is a record of the consultation ");
+			body.append("requests that have been received year to date for all locations. The requests ");
+		}
 		body.append("are the result of a prospect seeing our TV spot or finding information about ");
 		body.append("the consultation option on fastsigns.com, and selecting your center.<br/>");
 		body.append("This report includes the following information:<br/>");
