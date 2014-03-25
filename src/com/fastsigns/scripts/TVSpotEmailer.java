@@ -187,7 +187,7 @@ public class TVSpotEmailer extends CommandLineUtil {
 				// Make sure that this is a submittal that requires a first notice to be sent out.
 				daysBetween = (int)((vo.getSubmittalDate().getTime() - now.getTimeInMillis())/ (1000 * 60 * 60 * 24));
 				status = TVSpotUtil.Status.valueOf(vo.getExtData().get(TVSpotUtil.ContactField.status.id()));
-				//if(daysBetween != 1 || status != TVSpotUtil.Status.initiated) continue;
+				if(daysBetween != 1 || status != TVSpotUtil.Status.initiated) continue;
 				
 				msg = new EmailMessageVO();
 				
