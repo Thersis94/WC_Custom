@@ -191,6 +191,8 @@ public class MemberLoader extends ChamberMasterLoader {
 		redir = "https://secure2.chambermaster.com/directory/jsp/reports/members/CustomReportMembers.jsp";
 		resp = httpConn.retrieveData(redir);
 		
+		if (isDumpMemberFiles()) log.debug("Step 1: Custom reports screen: " + new String(resp));
+		
 		/* 
 		 * STEP 2: Choose the SMT Business Directory Report
 		 * Synonymous with selecting "SMT Business Report' from the report pull-down.  The report
@@ -200,6 +202,8 @@ public class MemberLoader extends ChamberMasterLoader {
 		params.append("command=loadRpt&qualifier=&page=%2Fdirectory%2Fjsp%2Freports%2Fmembers%2FCustomReportMembers.jsp");
 		params.append("&destination=&savedFields=&savedRpts=6&sortPrimary=0&sortSecondary=0");
 		resp = httpConn.retrieveDataViaPost(url, params.toString());
+		
+		if (isDumpMemberFiles()) log.debug("Step 2: Choose SMT Business Directory Report: " + new String(resp));
 
 		/* 10-08-2013: DBargerhuff: ChamberMaster's update to the chambermaster.com site on 09-17-2013 broke our import script
 		 * Contacted ChamberMaster support to no avail.  Added following line to turn 'off' redirect following at this point in the script
@@ -226,6 +230,8 @@ public class MemberLoader extends ChamberMasterLoader {
 		// Follow the redirect
 		resp = httpConn.retrieveData("https://secure2.chambermaster.com/directory/jsp/reports/members/CustomReportMembersCriteria.jsp");
 		
+		if (isDumpMemberFiles()) log.debug("Step 3: Called custom members report: " + new String(resp));
+		
 		// Generate the report
 		url = "https://secure2.chambermaster.com/directory/jsp/reports/members/CustomReportMembersCriteria.jsp";
 		params = new StringBuilder();
@@ -240,11 +246,20 @@ public class MemberLoader extends ChamberMasterLoader {
 		//conn.addRequestHeader("Content-Length", params.length() + "");
 		// retrieve the report response
 		resp = httpConn.retrieveDataViaPost(url, params.toString());
+		
+		if (isDumpMemberFiles()) log.debug("Step 4: Report response: " + new String(resp));
+		
+		/* 2014-03-24 DBargerhuff: Some unknown change in ChamberMaster has broken our import script.  
+		Report data is now being retrieve by Step 4.  Commenting out Step 5 now, but leaving code in 
+		this class in case ChamberMaster un-does the change.
 		// parse out the report link (dir and filename)
 		String repUrl = this.parseReportLink(new String(resp));
 		log.debug("report link Url: " + repUrl);
 		// retrieve the report data
 		resp = httpConn.retrieveData(SECURE_BASE_URL + repUrl);
+		*/
+		if (isDumpMemberFiles()) log.debug("Step 5: Report data retrieved: " + new String(resp));
+		
 		log.debug("repData size: " + resp.length);
 		//this.storeAsFile(resp);
 		return this.parseBusinessDirectory(resp);

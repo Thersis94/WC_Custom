@@ -1,5 +1,6 @@
 package com.arvadachamber.action;
 
+// JDK 7
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -14,17 +15,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+// Apache log4j
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
+// SMTBaseLibs 2.0
 import com.siliconmtn.db.DatabaseConnection;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.exception.MailException;
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.SMTMail;
-import com.smt.sitebuilder.common.constants.Constants;
 
+// WebCrescendo 2.0
+import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title</b>: ChamberMasterLoader.java <p/>
@@ -52,6 +57,10 @@ public class ChamberMasterLoader {
 	protected String customDbSchema = null;
 	protected List<String> statusMessages = null;
 	private Properties config = null;
+	private boolean dumpCategoryFiles = false;
+	private boolean dumpHotDealsFiles = false;
+	private boolean dumpEventFiles = false;
+	private boolean dumpMemberFiles = false;
 	protected boolean errors = false;
 	//protected Map<String, Integer> cats = new HashMap<String, Integer>(); // used certain subclasses
 	protected Map<Integer,String> existingCats = new HashMap<Integer,String>(); // used certain subclasses
@@ -74,6 +83,10 @@ public class ChamberMasterLoader {
 		cm.login(cm.getHttpConn());
 		// Load custom schema name
 		cm.setCustomDbSchema(cm.config.getProperty("customDbSchema"));
+		cm.setDumpCategoryFiles(Convert.formatBoolean(cm.config.getProperty("dumpCategoryFiles")));
+		cm.setDumpHotDealsFiles(Convert.formatBoolean(cm.config.getProperty("dumpHotDealsFiles")));
+		cm.setDumpEventFiles(Convert.formatBoolean(cm.config.getProperty("dumpEventFiles")));
+		cm.setDumpMemberFiles(Convert.formatBoolean(cm.config.getProperty("dumpMemberFiles")));
 		long start = Calendar.getInstance().getTimeInMillis();
 		
 		// load categories
@@ -82,6 +95,7 @@ public class ChamberMasterLoader {
 		c.setConn(cm.getConn());
 		c.setHttpConn(cm.getHttpConn());
 		c.setCustomDbSchema(cm.getCustomDbSchema());
+		c.setDumpCategoryFiles(cm.isDumpCategoryFiles());
 		c.importCategories();
 		cm.showStatusMessages(c.getStatusMessages());
 		cm.addStatusMessages(c.getStatusMessages());
@@ -94,6 +108,7 @@ public class ChamberMasterLoader {
 		m.setConn(cm.getConn());
 		m.setHttpConn(cm.getHttpConn());
 		m.setCustomDbSchema(cm.getCustomDbSchema());
+		m.setDumpMemberFiles(cm.isDumpMemberFiles());
 		m.importMembers();
 		cm.showStatusMessages(m.getStatusMessages());
 		cm.addStatusMessages(m.getStatusMessages());
@@ -106,6 +121,7 @@ public class ChamberMasterLoader {
 		hd.setConn(cm.getConn());
 		hd.setHttpConn(cm.getHttpConn());
 		hd.setCustomDbSchema(cm.getCustomDbSchema());
+		hd.setDumpHotDealsFiles(cm.isDumpHotDealsFiles());
 		hd.importHotDeals();
 		cm.showStatusMessages(hd.getStatusMessages());
 		cm.addStatusMessages(hd.getStatusMessages());
@@ -118,6 +134,7 @@ public class ChamberMasterLoader {
 		el.setConn(cm.getConn());
 		el.setHttpConn(cm.getHttpConn());
 		el.setCustomDbSchema(cm.getCustomDbSchema());
+		el.setDumpEventFiles(cm.isDumpEventFiles());
 		el.importEvents();
 		cm.showStatusMessages(el.getStatusMessages());
 		cm.addStatusMessages(el.getStatusMessages());
@@ -369,5 +386,61 @@ public class ChamberMasterLoader {
 	public void setErrors(boolean errors) {
 		this.errors = errors;
 	}
-	
+
+	/**
+	 * @return the dumpCategoryFiles
+	 */
+	public boolean isDumpCategoryFiles() {
+		return dumpCategoryFiles;
+	}
+
+	/**
+	 * @param dumpCategoryFiles the dumpCategoryFiles to set
+	 */
+	public void setDumpCategoryFiles(boolean dumpCategoryFiles) {
+		this.dumpCategoryFiles = dumpCategoryFiles;
+	}
+
+	/**
+	 * @return the dumpHotDealsFiles
+	 */
+	public boolean isDumpHotDealsFiles() {
+		return dumpHotDealsFiles;
+	}
+
+	/**
+	 * @param dumpHotDealsFiles the dumpHotDealsFiles to set
+	 */
+	public void setDumpHotDealsFiles(boolean dumpHotDealsFiles) {
+		this.dumpHotDealsFiles = dumpHotDealsFiles;
+	}
+
+	/**
+	 * @return the dumpEventFiles
+	 */
+	public boolean isDumpEventFiles() {
+		return dumpEventFiles;
+	}
+
+	/**
+	 * @param dumpEventFiles the dumpEventFiles to set
+	 */
+	public void setDumpEventFiles(boolean dumpEventFiles) {
+		this.dumpEventFiles = dumpEventFiles;
+	}
+
+	/**
+	 * @return the dumpMemberFiles
+	 */
+	public boolean isDumpMemberFiles() {
+		return dumpMemberFiles;
+	}
+
+	/**
+	 * @param dumpMemberFiles the dumpMemberFiles to set
+	 */
+	public void setDumpMemberFiles(boolean dumpMemberFiles) {
+		this.dumpMemberFiles = dumpMemberFiles;
+	}
+
 }
