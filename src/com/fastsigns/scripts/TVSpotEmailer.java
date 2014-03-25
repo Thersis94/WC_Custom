@@ -164,8 +164,10 @@ public class TVSpotEmailer extends CommandLineUtil {
 		StringBuilder body = new StringBuilder();
 
 		body.append("Thank you for your recent request for a consultation from FASTSIGNS&reg;.<br/>");
-		body.append("Please take a moment to rate your satisfaction level with the consultation and tell us about your experience.  We will ask you to rate us from 1-10 regarding your satisfaction level with your FASTSIGNS consultation.<br/>");
-		body.append("<a href=\"\">Click on this survey link to continue</a>");
+		body.append("Please take a moment to rate your satisfaction level with the consultation and tell us about your experience.  ");
+		body.append("We will ask you to rate us from 1-10 regarding your satisfaction level with your FASTSIGNS consultation.<br/>");
+		body.append("<a href=http:/www.fastsigns.com/consultfastsigns?contactSubmittalId=");
+		body.append(props.get("contactFormId")).append("&isSurvey=true\">Click on this survey link to continue</a>");
 		return body.toString();
 	}
 
@@ -192,7 +194,7 @@ public class TVSpotEmailer extends CommandLineUtil {
 				
 				try {
 					msg.addRecipient(vo.getDealerLocation().getOwnerEmail());
-					msg.setSubject("LEAD FROM TV:  Enact \"Operation Consultation\" within 24 hours: " + vo.getDealerLocation().getOwnerName());
+					msg.setSubject("Reminder: Enact \"Operation Consultation\" within 24 hours: " + vo.getFullName());
 					msg.setHtmlBody(buildFirstNoticeBody(vo));
 					msg.setFrom("consultation@fastsigns.com");
 					
@@ -210,13 +212,11 @@ public class TVSpotEmailer extends CommandLineUtil {
 	 */
 	private String buildFirstNoticeBody(ContactDataModuleVO vo) {
 		StringBuilder body = new StringBuilder();
-		body.append("<p><b>Please contact the prospect below using the information provided within 24 hours; ");
-		body.append("he or she will receive an email survey in seven business days asking them to rate their ");
-		body.append("experience with your center and their FASTSIGNS&reg; consultation.</b> This prospect has chosen ");
-		body.append("your location and completed a form requesting a consultation after seeing our \"Operation ");
-		body.append("Consultation\" commercial on television, online or on our website.  We recommend that you ");
-		body.append("call and then follow up with an email if you are unable to connect with them on your initial ");
-		body.append("attempt. You can determine whether the actual consultation is via phone or in-person.</p><br/>");
+		body.append("Yesterday you received an email notifying you about a consultation request from our ");
+		body.append("TV campaign that included the prospect's contact information. The information that ");
+		body.append("was sent to you is below; if you have not already tried to contact the prospect, ");
+		body.append("please do so today. The prospect will receive a survey* in six business days to ");
+		body.append("learn about their experience with your center.<br/>");
 		body.append("<font color=\"red\">Name: </font>").append(vo.getFullName()).append("<br/>");
 		body.append("<font color=\"red\">Email: </font>").append(vo.getEmailAddress()).append("<br/>");
 		body.append("<font color=\"red\">Contact Phone: </font>").append(vo.getMainPhone()).append("<br/>");
@@ -224,22 +224,14 @@ public class TVSpotEmailer extends CommandLineUtil {
 		body.append("<font color=\"red\">Other information provided: </font>");
 		body.append(vo.getExtData().get(TVSpotUtil.ContactField.feedback.id())).append("<br/>");
 		body.append("<b>--------------------------------------</b><br/>");
-		body.append("<b>Here are six important things for you to know:</b></br>");
-		body.append("<ol>");
-		body.append("<li>This prospect chose you from nearby locations; we have provided he/she with your ");
-		body.append("center contact information and have told he/she that someone would be in touch.</li>");
-		body.append("<li>This email is being sent to both your center and Franchise Partner email accounts; a ");
-		body.append("second email reminding you to contact this prospect will be automatically sent to these ");
-		body.append("addresses at the end of the next business day.</li>");
-		body.append("<li>We will track your consultation requests and survey feedback in the Web Edit tool ");
-		body.append("(<a href=\"www.fastsigns.com/webedit\">www.fastsigns.com/webedit</a>); you'll get an email ");
-		body.append("each day you have activity (consultation requests, surveys answered, etc.).</li>");
-		body.append("<li>Periodically we will send you a request to tell us if the leads generated sales, and if ");
-		body.append("so, the sale amount.  If you would like to proactively provide this information, you can update the ");
-		body.append("\"Consultation Request\" section at <a href=\"www.fastsigns.com/webedit\">www.fastsigns.com/webedit</a>). ");
-		body.append("If you choose to, you can review and update the \"status\" column to indicate the status of contacting ");
-		body.append("the prospect and view survey results.</li>");
-		body.append("<li>This survey question will be automatically emailed to the prospect seven business days after ");
+		body.append("For more information about \"Operation Consultation\", please refer to the following resources or ");
+		body.append("consult with your Franchise Business Consultant and/or your Marketing Services Manager:<br/>");
+		body.append("<ul>");
+		body.append("<li>Watch the TV spot: <a href=\"http://www.fastsigns.com/#####\">www.fastsigns.com/###</a></li>");
+		body.append("<li>Review the overview document: DOC ID ###</li>");
+		body.append("<li>View the webinar: <a href=\"http://support.fastsigns.com#######\">support.fastsigns.com######</a></li>");
+		body.append("</ul>");
+		body.append("* This survey question will be automatically emailed to the prospect seven business days after ");
 		body.append("their initial consultation request:<br/>Thank you for your recent request for a consultation from ");
 		body.append("FASTSIGNS&reg;. Please take a moment to rate your satisfaction level with the consultation and tell ");
 		body.append("us about your experience. How satisfied were you with your consultation?<br/>Please select a ");
@@ -256,16 +248,7 @@ public class TVSpotEmailer extends CommandLineUtil {
 		body.append("<td>O9<input type=\"radio\" name=\"num\" value=\"9\"></td>");
 		body.append("<td>10<input type=\"radio\" name=\"num\" value=\"10\"></td></tr>");
 		body.append("</tbody></table><br/>");
-		body.append("If desired, please tell us more about your experience (open-ended with space for at least 250 words).</li>");
-		body.append("<li>For more information about \"Operation Consultation\", please refer to the following resources or ");
-		body.append("consult with your Franchise Business Consultant and/or your Marketing Services Manager:<br/>");
-		body.append("<ul>");
-		body.append("<li>Watch the TV spot: <a href=\"www.fastsigns.com/#####\">www.fastsigns.com/###</a></li>");
-		body.append("<li>Review the overview document: DOC ID ###</li>");
-		body.append("<li>View the webinar: <a href=\"support.fastsigns.com#######\">support.fastsigns.com######</a></li>");
-		body.append("</ul>");
-		body.append("</li>");
-		body.append("</ol>");
+		body.append("If desired, please tell us more about your experience (open-ended with space for at least 250 words).");
 		
 		return body.toString();
 	}
@@ -330,9 +313,9 @@ public class TVSpotEmailer extends CommandLineUtil {
 		body.append("Franchise Business Consultant and/or your Marketing Services Manager. Additional ");
 		body.append("information is available using the following resources:<br/>");
 		body.append("<ul>");
-		body.append("<li>Watch the TV spot: <a href=\"www.fastsigns.com/#####\">www.fastsigns.com/#####</a></li>");
+		body.append("<li>Watch the TV spot: <a href=\"http://www.fastsigns.com/#####\">www.fastsigns.com/#####</a></li>");
 		body.append("<li>Review the overview document:  DOC ID ###</li>");
-		body.append("<li>View the webinar:  <a href=\"support.fastsigns.com#######\">support.fastsigns.com#######</a></li>");
+		body.append("<li>View the webinar:  <a href=\"http://support.fastsigns.com#######\">support.fastsigns.com#######</a></li>");
 		body.append("</ul>");
 		
 		return body.toString();
