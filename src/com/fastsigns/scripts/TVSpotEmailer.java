@@ -1,7 +1,24 @@
 package com.fastsigns.scripts;
 
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.Map;
+
+import com.fastsigns.action.TVSpotReportVO;
+import com.fastsigns.action.TVSpotUtil;
+import com.siliconmtn.action.ActionException;
+import com.siliconmtn.db.pool.SMTDBConnection;
+import com.siliconmtn.exception.ApplicationException;
+import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.io.mail.EmailMessageVO;
+import com.siliconmtn.io.mail.SMTMailHandler;
 import com.siliconmtn.util.CommandLineUtil;
+import com.siliconmtn.util.Convert;
+import com.smt.sitebuilder.action.contact.ContactDataAction;
+import com.smt.sitebuilder.action.contact.ContactDataActionVO;
 import com.smt.sitebuilder.action.contact.ContactDataContainer;
+import com.smt.sitebuilder.action.contact.ContactDataModuleVO;
+import com.smt.sitebuilder.util.MessageSender;
 
 /****************************************************************************
  * <b>Title</b>: TVSpotEmailer.java<p/>
@@ -10,22 +27,39 @@ import com.smt.sitebuilder.action.contact.ContactDataContainer;
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2014<p/>
  * <b>Company:</b> Silicon Mountain Technologies<p/>
- * @author James McKain
+ * @author Eric Damschroder
  * @version 1.0
  * @since Mar 3, 2014
  ****************************************************************************/
 public class TVSpotEmailer extends CommandLineUtil {
 	
 	private boolean isSurveyRun = false;
+	private Map<String, Object> sndrAttrib;
 
 	public TVSpotEmailer(String[] args) {
 		super(args);
-		loadProperties("scripts/fts_TVSpot.properties");
-		loadDBConnection(props);
-		
-		isSurveyRun =  (args != null && args.length > 0 && "survey".equals(args[0]));
+		try {
+			loadProperties("scripts/fts_TVSpot.properties");
+			makeAttribMap();
+			loadDBConnection(props);
+			isSurveyRun =  (args != null && args.length > 0 && "survey".equals(args[0]));
+		} catch (ApplicationException e) {
+			log.error("Could not create mailer");
+		}
 	}
-	
+
+	/**
+	 * Set up the arguments for creating the Message Sender
+	 * @throws ApplicationException
+	 */
+	private void makeAttribMap() throws ApplicationException {
+		sndrAttrib = new HashMap<String, Object>();
+		sndrAttrib.put("defaultMailHandler", new SMTMailHandler(props));
+		sndrAttrib.put("instanceName", props.get("instanceName"));
+		sndrAttrib.put("appName", props.get("appName"));
+		sndrAttrib.put("adminEmail", props.get("adminEmail"));
+	}
+
 	/**
 	 * @param args
 	 */
@@ -40,55 +74,268 @@ public class TVSpotEmailer extends CommandLineUtil {
 	 */
 	public void run() {
 		//load all the inquiries that have a status of pending
-		ContactDataContainer cdc = loadContactData();
-		
-		//only send the 7-day surveys if that's what we were invoked to do. 
-		if (isSurveyRun) {
-			sendSurveys(cdc);
-			return;
+		ContactDataContainer cdc;
+		try {
+			//Attempt to create the message sender
+			cdc = loadContactData();
+			
+			//only send the 7-day surveys if that's what we were invoked to do. 
+			if (isSurveyRun) {
+				sendSurveys(cdc);
+				return;
+			}
+			
+			//for the ones that are 1 day old, send the 1-day notification
+			sendFirstNotice(cdc);
+			
+			//send reports to corporate
+			sendCorpReport(cdc);
+		} catch (ActionException e) {
+			log.error("Could not create ContactDataContainer. ", e);
 		}
-		
-		//for the ones that are 1 day old, send the 1-day notification
-		sendFirstNotice(cdc);
-		
-		//send reports to corporate
-		sendCorpReport(cdc);
 		
 	}
 	
-	
-	private ContactDataContainer loadContactData() {
+	/**
+	 * Creates the ContactDataContainer via the ContactDataAction
+	 * @return
+	 * @throws ActionException
+	 */
+	private ContactDataContainer loadContactData() throws ActionException {
 		ContactDataContainer cdc = null;
-		//leverage com.smt.sitebuilder.contact.ContactDataAction.
-		//refactor ContactDataAction to be able to load data w/o depending on a SMTServletRequest...
-		//we'll re-use this (new method) in WC3.  You can move 80% of the code in the update()
-		//method to the new method and invoke it both ways (directly, and from update for legacy code).
 		
-		//be sure you test the Contact Data Tool in the admintool after you make your changes.
+		// Create the VO that contains the information we need to send
+		// to the ContactDataAction
+		ContactDataActionVO vo = new ContactDataActionVO();
+		vo.setContactId(props.getProperty("contactFormId"));
+		vo.setEnd(Convert.getCurrentTimestamp().toString());
 		
+		// Create and set up the ContactDataAction
+		ContactDataAction cda = new ContactDataAction();
+		cda.setDBConnection(new SMTDBConnection(dbConn));
+		cda.setAttribute("encryptKey", props.get("encryptKey"));
+		cda.setAttribute("binaryDirectory", props.get("binaryDirectory"));
+		
+		cdc = cda.createCDC(vo, props.getProperty("hostName"));
+		log.debug(cdc.getData().size());
 		return cdc;
 	}
 	
+	/**
+	 * Send out any surveys for requests that are seven days old.  
+	 * Eight and nine days as well on Mondays since the script
+	 * will not be run on the weekends.
+	 * @param cdc
+	 */
 	private void sendSurveys(ContactDataContainer cdc) {
-		//loop all records and sends the survey email to records 7 days old.
-		//if today is monday, also grab records that are 8 & 9 days old (Saturday & Sunday)
-		//we don't run this script on Saturdays & Sundays.
+		Calendar now = Calendar.getInstance();
+		EmailMessageVO msg;
+		boolean isMonday = now.get(Calendar.DAY_OF_WEEK) == Calendar.MONDAY;
+		int daysBetween;
+
+		MessageSender ms;
+			ms = new MessageSender(sndrAttrib, dbConn);
+			for(ContactDataModuleVO vo : cdc.getData()) {
+				daysBetween = (int)((vo.getSubmittalDate().getTime() - now.getTimeInMillis())/ (1000 * 60 * 60 * 24));
+				switch (daysBetween) {
+				case 8:
+				case 9: if(!isMonday)continue;
+				default:
+				case 7: 
+					try {
+						msg = new EmailMessageVO();
+						msg.addRecipient(vo.getEmailAddress());
+						msg.setSubject("Please complete a one question survey about your FASTSIGNS consultation");
+						msg.setHtmlBody(buildSurveyBody());
+						msg.setFrom("consultation@fastsigns.com");
+						
+						ms.sendMessage(msg);
+					} catch (InvalidDataException e) {
+						log.error("Could not create email for submittal: " + vo.getContactSubmittalId(), e);
+					}
+				}
+			}
 	}
 	
-	private void sendFirstNotice(ContactDataContainer cdc) {
-		//if the record status (com.fastsigns.action.TVSpotUtil.ContactField.status) 
-		// is pending (com.fastsigns.action.TVSpotUtil.Status.initiated)
-		// and the record was created 'yesterday', send an email to the Center
-		// warning them they have to take action.
-		
-		// NOTE: be careful of timestamps.  You'll want to turn the Time into a Date before comparing.
-		//if 'today' is 3/24/14, this email goes out to every record stamped 3/23/14, regardless of time (8am or 11pm).
-		
+	/**
+	 * Build the html body for the survey email
+	 * @return
+	 */
+	private String buildSurveyBody() {
+		StringBuilder body = new StringBuilder();
+
+		body.append("Thank you for your recent request for a consultation from FASTSIGNS&reg;.<br/>");
+		body.append("Please take a moment to rate your satisfaction level with the consultation and tell us about your experience.  We will ask you to rate us from 1-10 regarding your satisfaction level with your FASTSIGNS consultation.<br/>");
+		body.append("<a href=\"\">Click on this survey link to continue</a>");
+		return body.toString();
 	}
 
+	/**
+	 * Run through the data we received and send first notice emails
+	 * to all franchisees that have not responded to a day old submission
+	 * @param cdc
+	 */
+	private void sendFirstNotice(ContactDataContainer cdc) {
+		Calendar now = Calendar.getInstance();
+		EmailMessageVO msg;
+		TVSpotUtil.Status status;
+		int daysBetween;
+
+		MessageSender ms;
+			ms = new MessageSender(sndrAttrib, dbConn);
+			for(ContactDataModuleVO vo : cdc.getData()) {
+				// Make sure that this is a submittal that requires a first notice to be sent out.
+				daysBetween = (int)((vo.getSubmittalDate().getTime() - now.getTimeInMillis())/ (1000 * 60 * 60 * 24));
+				status = TVSpotUtil.Status.valueOf(vo.getExtData().get(TVSpotUtil.ContactField.status.id()));
+				//if(daysBetween != 1 || status != TVSpotUtil.Status.initiated) continue;
+				
+				msg = new EmailMessageVO();
+				
+				try {
+					msg.addRecipient(vo.getDealerLocation().getOwnerEmail());
+					msg.setSubject("LEAD FROM TV:  Enact \"Operation Consultation\" within 24 hours: " + vo.getDealerLocation().getOwnerName());
+					msg.setHtmlBody(buildFirstNoticeBody(vo));
+					msg.setFrom("consultation@fastsigns.com");
+					
+					ms.sendMessage(msg);
+				} catch (InvalidDataException e) {
+					log.error("Could not create email for submittal: " + vo.getContactSubmittalId(), e);
+				}
+			}	
+	}
+
+	/**
+	 * Creates the html body for the first notice email
+	 * @param vo
+	 * @return
+	 */
+	private String buildFirstNoticeBody(ContactDataModuleVO vo) {
+		StringBuilder body = new StringBuilder();
+		body.append("<p><b>Please contact the prospect below using the information provided within 24 hours; ");
+		body.append("he or she will receive an email survey in seven business days asking them to rate their ");
+		body.append("experience with your center and their FASTSIGNS&reg; consultation.</b> This prospect has chosen ");
+		body.append("your location and completed a form requesting a consultation after seeing our \"Operation ");
+		body.append("Consultation\" commercial on television, online or on our website.  We recommend that you ");
+		body.append("call and then follow up with an email if you are unable to connect with them on your initial ");
+		body.append("attempt. You can determine whether the actual consultation is via phone or in-person.</p><br/>");
+		body.append("<font color=\"red\">Name: </font>").append(vo.getFullName()).append("<br/>");
+		body.append("<font color=\"red\">Email: </font>").append(vo.getEmailAddress()).append("<br/>");
+		body.append("<font color=\"red\">Contact Phone: </font>").append(vo.getMainPhone()).append("<br/>");
+		body.append("<font color=\"red\">Zip/Postal code: </font>").append(vo.getZipCode()).append("<br/>");
+		body.append("<font color=\"red\">Other information provided: </font>");
+		body.append(vo.getExtData().get(TVSpotUtil.ContactField.feedback.id())).append("<br/>");
+		body.append("<b>--------------------------------------</b><br/>");
+		body.append("<b>Here are six important things for you to know:</b></br>");
+		body.append("<ol>");
+		body.append("<li>This prospect chose you from nearby locations; we have provided he/she with your ");
+		body.append("center contact information and have told he/she that someone would be in touch.</li>");
+		body.append("<li>This email is being sent to both your center and Franchise Partner email accounts; a ");
+		body.append("second email reminding you to contact this prospect will be automatically sent to these ");
+		body.append("addresses at the end of the next business day.</li>");
+		body.append("<li>We will track your consultation requests and survey feedback in the Web Edit tool ");
+		body.append("(<a href=\"www.fastsigns.com/webedit\">www.fastsigns.com/webedit</a>); you'll get an email ");
+		body.append("each day you have activity (consultation requests, surveys answered, etc.).</li>");
+		body.append("<li>Periodically we will send you a request to tell us if the leads generated sales, and if ");
+		body.append("so, the sale amount.  If you would like to proactively provide this information, you can update the ");
+		body.append("\"Consultation Request\" section at <a href=\"www.fastsigns.com/webedit\">www.fastsigns.com/webedit</a>). ");
+		body.append("If you choose to, you can review and update the \"status\" column to indicate the status of contacting ");
+		body.append("the prospect and view survey results.</li>");
+		body.append("<li>This survey question will be automatically emailed to the prospect seven business days after ");
+		body.append("their initial consultation request:<br/>Thank you for your recent request for a consultation from ");
+		body.append("FASTSIGNS&reg;. Please take a moment to rate your satisfaction level with the consultation and tell ");
+		body.append("us about your experience. How satisfied were you with your consultation?<br/>Please select a ");
+		body.append("ranking between 1 (not satisfied at all) and 10 (extremely satisfied):<br/>");
+		body.append("<table  border=\"0\" cellpadding=\"0\" cellspacing=\"0\" style=\"width: 300px;\"><tbody>");
+		body.append("<tr><td>O1<input type=\"radio\" name=\"num\" value=\"1\"></td>");
+		body.append("<td>O2<input type=\"radio\" name=\"num\" value=\"2\"></td>");
+		body.append("<td>O3<input type=\"radio\" name=\"num\" value=\"3\"></td>");
+		body.append("<td>O4<input type=\"radio\" name=\"num\" value=\"4\"></td>");
+		body.append("<td>O5<input type=\"radio\" name=\"num\" value=\"5\"></td></tr>");
+		body.append("<tr><td>O6<input type=\"radio\" name=\"num\" value=\"6\"></td>");
+		body.append("<td>O7<input type=\"radio\" name=\"num\" value=\"7\"></td>");
+		body.append("<td>O8<input type=\"radio\" name=\"num\" value=\"8\"></td>");
+		body.append("<td>O9<input type=\"radio\" name=\"num\" value=\"9\"></td>");
+		body.append("<td>10<input type=\"radio\" name=\"num\" value=\"10\"></td></tr>");
+		body.append("</tbody></table><br/>");
+		body.append("If desired, please tell us more about your experience (open-ended with space for at least 250 words).</li>");
+		body.append("<li>For more information about \"Operation Consultation\", please refer to the following resources or ");
+		body.append("consult with your Franchise Business Consultant and/or your Marketing Services Manager:<br/>");
+		body.append("<ul>");
+		body.append("<li>Watch the TV spot: <a href=\"www.fastsigns.com/#####\">www.fastsigns.com/###</a></li>");
+		body.append("<li>Review the overview document: DOC ID ###</li>");
+		body.append("<li>View the webinar: <a href=\"support.fastsigns.com#######\">support.fastsigns.com######</a></li>");
+		body.append("</ul>");
+		body.append("</li>");
+		body.append("</ol>");
+		
+		return body.toString();
+	}
+
+	/**
+	 * Send an excel document containing a summary of all the information 
+	 * gathered by this contact us form to date to corporate
+	 * @param cdc
+	 */
 	private void sendCorpReport(ContactDataContainer cdc) {
-		//turn all records into a single Excel report (com.fastsigns.action.TVSpotReportVO)
-		//and email it to corporate.
+		TVSpotReportVO report = new TVSpotReportVO();
+		report.setData(cdc);
+		
+		EmailMessageVO msg;
+
+		MessageSender ms;
+			ms = new MessageSender(sndrAttrib, dbConn);
+				
+			msg = new EmailMessageVO();
+			
+			try {
+				msg.addRecipient("operationconsultation@fastsigns.com");
+				msg.setSubject("The Roll Up \"Operation Consultation\" report is attached for your review");
+				msg.setHtmlBody(buildCorpReportBody());
+				msg.setFrom("consultation@fastsigns.com");
+				msg.addAttachment("Consultation Report.xls", report.generateReport());
+				
+				ms.sendMessage(msg);
+			} catch (InvalidDataException e) {
+				log.error("Could not create email for submittal: ", e);
+			}
 	}
 	
+	/**
+	 * Creates the html body for the corporate email
+	 * @return
+	 */
+	private String buildCorpReportBody() {
+		StringBuilder body = new StringBuilder();
+		
+		body.append("Dear Corporate Employee:<br/>");
+		body.append("The attached \"Operation Consultation\" report is a record of the consultation ");
+		body.append("requests that have been received year to date for all locations. The requests ");
+		body.append("are the result of a prospect seeing our TV spot or finding information about ");
+		body.append("the consultation option on fastsigns.com, and selecting your center.<br/>");
+		body.append("This report includes the following information:<br/>");
+		body.append("<ul>");
+		body.append("<li>Date and time consultations requested</li>");
+		body.append("<li>Your center web number</li>");
+		body.append("<li>The prospect's name and contact information (email and phone number)</li>");
+		body.append("<li>The prospects location information (Zip/postal code and state/province)</li>");
+		body.append("<li>Any free form text information entered</li>");
+		body.append("<li>The status of the request if fastsigns.com/webedit is updated (by the Franchise ");
+		body.append("Partner or by us after asking the Franchise Partner) </li>");
+		body.append("<li>The sale amount if fastsigns.com/webedit is updated (by the Franchise Partner or ");
+		body.append("by us after asking) </li>");
+		body.append("<li>Prospect survey status (sent, returned, feedback if provided)</li>");
+		body.append("<li>Prospect's survey rating regarding their satisfaction with the consultation (1 is ");
+		body.append("low and 10 is high)</li>");
+		body.append("</ul>");
+		body.append("For information about \"Operation Consultation\" and the TV spot, please consult your ");
+		body.append("Franchise Business Consultant and/or your Marketing Services Manager. Additional ");
+		body.append("information is available using the following resources:<br/>");
+		body.append("<ul>");
+		body.append("<li>Watch the TV spot: <a href=\"www.fastsigns.com/#####\">www.fastsigns.com/#####</a></li>");
+		body.append("<li>Review the overview document:  DOC ID ###</li>");
+		body.append("<li>View the webinar:  <a href=\"support.fastsigns.com#######\">support.fastsigns.com#######</a></li>");
+		body.append("</ul>");
+		
+		return body.toString();
+	}
 }
