@@ -140,7 +140,6 @@ public class TVSpotEmailer extends CommandLineUtil {
 				switch (daysBetween) {
 				case 8:
 				case 9: if(!isMonday)continue;
-				default:
 				case 7: 
 					try {
 						msg = new EmailMessageVO();
