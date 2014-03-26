@@ -54,6 +54,7 @@ public class ProductIndex implements SMTCustomIndexIntfc {
 	private DocumentMap ldm;
 	
 	public static final String ORGANIZATON_ID = "USA";
+	public static final String CUSTOM_FIELD_CATALOG = "catalog";
 	
 	/**
 	 * 
@@ -96,7 +97,6 @@ public class ProductIndex implements SMTCustomIndexIntfc {
 		        doc.add(new StringField(DocumentHandler.ROLE, "000",Field.Store.YES));
 		        doc.add(new TextField(DocumentHandler.SITE_PAGE_URL, "home" + n.getFullPath(),Field.Store.YES));
 		        doc.add(new TextField(DocumentHandler.DOCUMENT_URL, "home" + n.getFullPath(),Field.Store.YES));
-		        doc.add(new StringField(DocumentHandler.MODULE_TYPE, vo.getCatalogId(),Field.Store.YES));
 		        doc.add(new TextField(DocumentHandler.DOCUMENT_ID, vo.getProductId(),Field.Store.YES));
 		        doc.add(new TextField(DocumentHandler.FILE_NAME, vo.getProductName(),Field.Store.YES));
 		        doc.add(new TextField(DocumentHandler.TITLE, vo.getProductName(),Field.Store.YES));
@@ -104,6 +104,17 @@ public class ProductIndex implements SMTCustomIndexIntfc {
 	            doc.add(new TextField(DocumentHandler.START_DATE, Convert.formatDate(start, Convert.DATE_NOSPACE_PATTERN),Field.Store.YES));
 	            doc.add(new TextField(DocumentHandler.END_DATE,Convert.formatDate(end, Convert.DATE_NOSPACE_PATTERN),Field.Store.YES));
 	            doc.add(new TextField(DocumentHandler.UPDATE_DATE,Convert.formatDate(Calendar.getInstance().getTime(), Convert.DATE_NOSPACE_PATTERN),Field.Store.YES));
+	            /* 2014-03-26: DBargerhuff: 
+	             * In order to filter searches by product catalog ID, we are adding product catalog ID to the document using a custom field 
+	             * type value that is synonymous with a meta tag in the USA CMS field template.  We will be using a CMS
+	             * dynamic list to filter searches, therefore the filter field name must be in all lowercase and the meta tag choice values must
+	             * also be in lowercase.
+	             * 
+	             * If we were to use a DocumentHandler constant (e.g. MODULE_TYPE) for the field type value, and if that constant 
+	             * was subsequently added to the 'searchableFields' array in SiteSearchAction, we would lose the ability to filter on 
+	             * product catalog ID.  We use a StringField type so that the field value is not tokenized by the Lucene search query parser.
+	             */
+		        doc.add(new StringField(CUSTOM_FIELD_CATALOG, vo.getCatalogId(),Field.Store.YES));
 		        writer.addDocument(doc);
     		} catch (Exception e) {
     			log.error("Unable to index products",e);
