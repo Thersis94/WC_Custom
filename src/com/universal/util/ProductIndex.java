@@ -114,7 +114,7 @@ public class ProductIndex implements SMTCustomIndexIntfc {
 	             * was subsequently added to the 'searchableFields' array in SiteSearchAction, we would lose the ability to filter on 
 	             * product catalog ID.  We use a StringField type so that the field value is not tokenized by the Lucene search query parser.
 	             */
-		        doc.add(new StringField(CUSTOM_FIELD_CATALOG, vo.getCatalogId(),Field.Store.YES));
+		        doc.add(new StringField(CUSTOM_FIELD_CATALOG, StringUtil.checkVal(vo.getCatalogId()).toLowerCase(),Field.Store.YES));
 		        writer.addDocument(doc);
     		} catch (Exception e) {
     			log.error("Unable to index products",e);
