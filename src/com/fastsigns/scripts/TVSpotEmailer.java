@@ -38,9 +38,9 @@ public class TVSpotEmailer extends CommandLineUtil {
 
 	public TVSpotEmailer(String[] args) {
 		super(args);
+		loadProperties("scripts/fts_TVSpot.properties");
 		loadDBConnection(props);
 		isSurveyRun =  (args != null && args.length > 0 && "survey".equals(args[0]));
-		loadProperties("scripts/fts_TVSpot.properties");
 		makeAttribMap();
 	}
 
