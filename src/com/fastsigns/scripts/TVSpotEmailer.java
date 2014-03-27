@@ -308,7 +308,7 @@ public class TVSpotEmailer extends CommandLineUtil {
 		
 		// Handle the slight verbiage change based on who gets this email
 		if (byCenter) {
-			body.append("Dear Francise Partner:");
+			body.append("Dear Franchise Partner:");
 			body.append("<p>The attached \"Operation Consultation\" report is a record of the consultation ");
 			body.append("requests that have been received year to date for your center. The requests ");
 			body.append("are the result of a prospect seeing our TV spot or finding information about ");
@@ -345,8 +345,8 @@ public class TVSpotEmailer extends CommandLineUtil {
 		body.append("information is available using the following resources:<br/>");
 		body.append("<ul>");
 		body.append("<li>Watch the TV spot: <a href=\"http://www.fastsigns.com/#####\">www.fastsigns.com/#####</a></li>");
-		body.append("<li>Review the overview document:  DOC ID ###</li>");
-		body.append("<li>View the webinar:  <a href=\"http://support.fastsigns.com#######\">support.fastsigns.com#######</a></li>");
+		body.append("<li>Review the overview document:  DOC ID ###</li>");
+		body.append("<li>View the webinar:  <a href=\"http://support.fastsigns.com#######\">support.fastsigns.com#######</a></li>");
 		body.append("</ul>");
 		
 		return body.toString();

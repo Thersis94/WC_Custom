@@ -278,7 +278,7 @@ public class TVSpotDlrContactAction extends SimpleActionAdapter {
 		msg.append("<ul>");
 		msg.append("<li>Watch the TV spot: <a href=\"http://www.fastsigns.com/#####\">www.fastsigns.com/###</a></li>");
 		msg.append("<li>Review the overview document: DOC ID ###</li>");
-		msg.append("<li>View the webinar: <a href=\"http://support.fastsigns.com#######\">support.fastsigns.com######</a></li>");
+		msg.append("<li>View the webinar:  <a href=\"http://support.fastsigns.com#######\">support.fastsigns.com######</a></li>");
 		msg.append("</ul>");
 		msg.append("</li>");
 		msg.append("</ol>");
