@@ -456,7 +456,7 @@ public class FSProductAction extends SBActionAdapter {
 		while (rs.next()) {
 			video = new VideoVO(rs);
 			video.setAspectRatioHeight(Integer.parseInt(StringUtil.checkVal(rs.getString("ATTRIB1_TXT"))));
-			video.setAspectRatioHeight(Integer.parseInt(StringUtil.checkVal(rs.getString("ATTRIB2_TXT"))));
+			video.setAspectRatioWidth(Integer.parseInt(StringUtil.checkVal(rs.getString("ATTRIB2_TXT"))));
 			video.setAttribute("position", StringUtil.checkVal(rs.getString("VALUE_TXT")));
 			
 			product.addProdAttribute(rs.getString("product_attribute_id"), video);
