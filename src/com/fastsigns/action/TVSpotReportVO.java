@@ -47,44 +47,8 @@ public class TVSpotReportVO extends AbstractSBReportVO {
 		StringBuilder rpt = new StringBuilder();
 		this.getHeader(rpt);
 		
-		for (ContactDataModuleVO vo  : cdc.getData()) {
-			Date d = vo.getSubmittalDate();
-			PhoneNumberFormat pnf = new PhoneNumberFormat(vo.getMainPhone(), PhoneNumberFormat.DASH_FORMATTING);
-			rpt.append("<tr><td>").append(Convert.formatDate(d, Convert.DATE_SLASH_PATTERN)).append("</td>");
-			rpt.append("<td>").append(Convert.formatDate(d, Convert.TIME_LONG_PATTERN)).append("</td>");
-			rpt.append("<td>").append(vo.getDealerLocationId()).append("</td>");
-			rpt.append("<td>").append(vo.getDealerLocation().getOwnerName()).append("</td>");
-			rpt.append("<td>").append(vo.getFullName()).append("</td>");
-			rpt.append("<td>").append(vo.getEmailAddress()).append("</td>");
-			rpt.append("<td>").append(pnf.getFormattedNumber()).append("</td>");
-			rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.zipcode.id()))).append("</td>");
-			rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.state.id()))).append("</td>");
-//			rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.industry.id()))).append("</td>");
-//			rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.department.id()))).append("</td>");
-//			rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.title.id()))).append("</td>");
-//			rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.companyNm.id()))).append("</td>");
-//			rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.businessChallenge.id()))).append("</td>");
-			rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.inquiry.id()))).append("</td>");
-			rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.saleAmount.id()))).append("</td>");
-			Calendar surveySentDt = Calendar.getInstance();
-			surveySentDt.setTime(vo.getSubmittalDate());
-			surveySentDt.add(Calendar.DAY_OF_YEAR, 7);
-			surveySentDt.set(Calendar.HOUR, 6); //6am is when FS email campaigns kick-off
-			surveySentDt.set(Calendar.MINUTE, 0);
-			surveySentDt.set(Calendar.SECOND, 0);
-			rpt.append("<td>").append((Calendar.getInstance().getTime().before(surveySentDt.getTime())) ? "No" : "Yes").append("</td>");
-			rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.rating.id()))).append("</td>");
-			rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.feedback.id()))).append("</td>");
-			TVSpotUtil.Status status = TVSpotUtil.Status.valueOf(vo.getExtData().get(TVSpotUtil.ContactField.status.id()));
-			if (status == TVSpotUtil.Status.initiated) {
-				rpt.append("<td color=\"red\">").append(status.getLabel()).append("</td>");
-			} else {
-				rpt.append("<td>").append(status.getLabel()).append("</td>");
-			}
-			String notes = StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.transactionNotes.id()));
-			notes = notes.replaceAll("\\r\\n", "<br>");
-			rpt.append("<td>").append(notes).append("</td></tr>");
-		}
+		for (ContactDataModuleVO vo  : cdc.getData())
+			appendRow(vo, rpt);
 
 		this.getFooter(rpt);
 		log.debug("report=" + rpt);
@@ -97,55 +61,19 @@ public class TVSpotReportVO extends AbstractSBReportVO {
 	 */
 	public Map<String, StringBuilder> generateCenterReport() {
 		log.debug("starting generateReport()");
-		StringBuilder rpt;
 		Map<String, StringBuilder> byCenter = new HashMap<String, StringBuilder>();
 		
 		for (ContactDataModuleVO vo  : cdc.getData()) {
-			// If we don't have this center in the map already put it in and set up the header.
-			if(!byCenter.containsKey(vo.getDealerLocationId())) {
-				byCenter.put(vo.getDealerLocation().getOwnerEmail(), new StringBuilder());
-				getHeader(byCenter.get(vo.getDealerLocation().getOwnerEmail()));
+			StringBuilder rpt = byCenter.get(vo.getDealerLocation().getOwnerEmail());
+			
+			// If we don't have this center in the map already start a new one..
+			if (rpt == null) {
+				rpt = new StringBuilder();
+				getHeader(rpt);
 			}
 			
-			rpt = new StringBuilder();
-			Date d = vo.getSubmittalDate();
-			PhoneNumberFormat pnf = new PhoneNumberFormat(vo.getMainPhone(), PhoneNumberFormat.DASH_FORMATTING);
-			rpt.append("<tr><td>").append(Convert.formatDate(d, Convert.DATE_SLASH_PATTERN)).append("</td>");
-			rpt.append("<td>").append(Convert.formatDate(d, Convert.TIME_LONG_PATTERN)).append("</td>");
-			rpt.append("<td>").append(vo.getDealerLocationId()).append("</td>");
-			rpt.append("<td>").append(vo.getDealerLocation().getOwnerName()).append("</td>");
-			rpt.append("<td>").append(vo.getFullName()).append("</td>");
-			rpt.append("<td>").append(vo.getEmailAddress()).append("</td>");
-			rpt.append("<td>").append(pnf.getFormattedNumber()).append("</td>");
-			rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.zipcode.id()))).append("</td>");
-			rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.state.id()))).append("</td>");
-//			rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.industry.id()))).append("</td>");
-//			rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.department.id()))).append("</td>");
-//			rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.title.id()))).append("</td>");
-//			rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.companyNm.id()))).append("</td>");
-//			rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.businessChallenge.id()))).append("</td>");
-			rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.inquiry.id()))).append("</td>");
-			rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.saleAmount.id()))).append("</td>");
-			Calendar surveySentDt = Calendar.getInstance();
-			surveySentDt.setTime(vo.getSubmittalDate());
-			surveySentDt.add(Calendar.DAY_OF_YEAR, 7);
-			surveySentDt.set(Calendar.HOUR, 6); //6am is when FS email campaigns kick-off
-			surveySentDt.set(Calendar.MINUTE, 0);
-			surveySentDt.set(Calendar.SECOND, 0);
-			rpt.append("<td>").append((Calendar.getInstance().getTime().before(surveySentDt.getTime())) ? "No" : "Yes").append("</td>");
-			rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.rating.id()))).append("</td>");
-			rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.feedback.id()))).append("</td>");
-			TVSpotUtil.Status status = TVSpotUtil.Status.valueOf(vo.getExtData().get(TVSpotUtil.ContactField.status.id()));
-			if (status == TVSpotUtil.Status.initiated) {
-				rpt.append("<td color=\"red\">").append(status.getLabel()).append("</td>");
-			} else {
-				rpt.append("<td>").append(status.getLabel()).append("</td>");
-			}
-			String notes = StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.transactionNotes.id()));
-			notes = notes.replaceAll("\\r\\n", "<br>");
-			rpt.append("<td>").append(notes).append("</td></tr>");
-			
-			byCenter.get(vo.getDealerLocation().getOwnerEmail()).append(rpt);
+			appendRow(vo, rpt);
+			byCenter.put(vo.getDealerLocation().getOwnerEmail(), rpt);
 		}
 
 		//Finish off all the center's reports
@@ -153,6 +81,53 @@ public class TVSpotReportVO extends AbstractSBReportVO {
 			this.getFooter(byCenter.get(key));
 		
 		return byCenter;
+	}
+	
+	
+	/**
+	 * appends a row to the report.
+	 * isolated to it's own method to be reusable by both the website and the batch process
+	 * @param vo
+	 * @param rpt
+	 * @return
+	 */
+	private void appendRow(ContactDataModuleVO vo, StringBuilder rpt) {
+		Date d = vo.getSubmittalDate();
+		PhoneNumberFormat pnf = new PhoneNumberFormat(vo.getMainPhone(), PhoneNumberFormat.DASH_FORMATTING);
+		rpt.append("<tr><td>").append(Convert.formatDate(d, Convert.DATE_SLASH_PATTERN)).append("</td>");
+		rpt.append("<td>").append(Convert.formatDate(d, Convert.TIME_LONG_PATTERN)).append("</td>");
+		rpt.append("<td>").append(vo.getDealerLocationId()).append("</td>");
+		rpt.append("<td>").append(vo.getDealerLocation().getOwnerName()).append("</td>");
+		rpt.append("<td>").append(vo.getFullName()).append("</td>");
+		rpt.append("<td>").append(vo.getEmailAddress()).append("</td>");
+		rpt.append("<td>").append(pnf.getFormattedNumber()).append("</td>");
+		rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.zipcode.id()))).append("</td>");
+		rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.state.id()))).append("</td>");
+//		rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.industry.id()))).append("</td>");
+//		rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.department.id()))).append("</td>");
+//		rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.title.id()))).append("</td>");
+//		rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.companyNm.id()))).append("</td>");
+//		rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.businessChallenge.id()))).append("</td>");
+		rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.inquiry.id()))).append("</td>");
+		rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.saleAmount.id()))).append("</td>");
+		Calendar surveySentDt = Calendar.getInstance();
+		surveySentDt.setTime(vo.getSubmittalDate());
+		surveySentDt.add(Calendar.DAY_OF_YEAR, 7);
+		surveySentDt.set(Calendar.HOUR, 6); //6am is when FS email campaigns kick-off
+		surveySentDt.set(Calendar.MINUTE, 0);
+		surveySentDt.set(Calendar.SECOND, 0);
+		rpt.append("<td>").append((Calendar.getInstance().getTime().before(surveySentDt.getTime())) ? "No" : "Yes").append("</td>");
+		rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.rating.id()))).append("</td>");
+		rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.feedback.id()))).append("</td>");
+		TVSpotUtil.Status status = TVSpotUtil.Status.valueOf(vo.getExtData().get(TVSpotUtil.ContactField.status.id()));
+		if (status == TVSpotUtil.Status.initiated) {
+			rpt.append("<td color=\"red\">").append(status.getLabel()).append("</td>");
+		} else {
+			rpt.append("<td>").append(status.getLabel()).append("</td>");
+		}
+		String notes = StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.transactionNotes.id()));
+		notes = notes.replaceAll("\\r\\n", "<br>");
+		rpt.append("<td>").append(notes).append("</td></tr>");
 	}
 	
 	private void getHeader(StringBuilder hdr) {

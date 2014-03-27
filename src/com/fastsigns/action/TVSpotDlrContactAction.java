@@ -228,9 +228,9 @@ public class TVSpotDlrContactAction extends SimpleActionAdapter {
 		StringBuilder msg = new StringBuilder();
 		msg.append("<p><b>Please contact the prospect below using the information provided within 24 hours; ");
 		msg.append("he or she will receive an email survey in seven business days asking them to rate their ");
-		msg.append("experience with your center and their FASTSIGNS&reg; consultation.</b> This prospect has chosen ");
+		msg.append("experience with your center and their FASTSIGNS&reg; consultation.</b><br/>This prospect has chosen ");
 		msg.append("your location and completed a form requesting a consultation after seeing our \"Operation ");
-		msg.append("Consultation\" commercial on television, online or on our website.  We recommend that you ");
+		msg.append("Consultation\" commercial on television, online or on our website.  We recommend that you ");
 		msg.append("call and then follow up with an email if you are unable to connect with them on your initial ");
 		msg.append("attempt. You can determine whether the actual consultation is via phone or in-person.</p><br/>");
 		req.setParameter("contactEmailHeader", msg.toString());
@@ -240,7 +240,7 @@ public class TVSpotDlrContactAction extends SimpleActionAdapter {
 		msg.append("<b>Here are six important things for you to know:</b></br>");
 		msg.append("<ol>");
 		msg.append("<li>This prospect chose you from nearby locations; we have provided he/she with your ");
-		msg.append("center contact information and have told he/she that someone would be in touch.</li>");
+		msg.append("center contact information and have told them that someone would be in touch.</li>");
 		msg.append("<li>This email is being sent to both your center and Franchise Partner email accounts; a ");
 		msg.append("second email reminding you to contact this prospect will be automatically sent to these ");
 		msg.append("addresses at the end of the next business day.</li>");
@@ -248,15 +248,17 @@ public class TVSpotDlrContactAction extends SimpleActionAdapter {
 		msg.append("(<a href=\"http://www.fastsigns.com/webedit\">www.fastsigns.com/webedit</a>); you'll get an email ");
 		msg.append("each day you have activity (consultation requests, surveys answered, etc.).</li>");
 		msg.append("<li>Periodically we will send you a request to tell us if the leads generated sales, and if ");
-		msg.append("so, the sale amount.  If you would like to proactively provide this information, you can update the ");
-		msg.append("\"Consultation Request\" section at <a href=\"http://www.fastsigns.com/webedit\">www.fastsigns.com/webedit</a>). ");
+		msg.append("so, the sale amount.  If you would like to proactively provide this information, you can update the ");
+		msg.append("\"Consultation Request\" section at <a href=\"http://www.fastsigns.com/webedit\">www.fastsigns.com/webedit</a>. ");
 		msg.append("If you choose to, you can review and update the \"status\" column to indicate the status of contacting ");
 		msg.append("the prospect and view survey results.</li>");
 		msg.append("<li>This survey question will be automatically emailed to the prospect seven business days after ");
-		msg.append("their initial consultation request:<br/>Thank you for your recent request for a consultation from ");
+		msg.append("their initial consultation request:<div style=\"margin:30px 0 30px 40px;\">");
+		msg.append("<i>Thank you for your recent request for a consultation from ");
 		msg.append("FASTSIGNS&reg;. Please take a moment to rate your satisfaction level with the consultation and tell ");
-		msg.append("us about your experience. How satisfied were you with your consultation?<br/>Please select a ");
-		msg.append("ranking between 1 (not satisfied at all) and 10 (extremely satisfied):<br/>");
+		msg.append("us about your experience.<ul><li>How satisfied were you with your consultation? Please select a ");
+		msg.append("ranking between 1 (not satisfied at all) and 10 (extremely satisfied)</li>");
+		/*
 		msg.append("<table  border=\"0\" cellpadding=\"0\" cellspacing=\"0\" style=\"width: 300px;\"><tbody>");
 		msg.append("<tr><td>O1<input type=\"radio\" name=\"num\" value=\"1\"></td>");
 		msg.append("<td>O2<input type=\"radio\" name=\"num\" value=\"2\"></td>");
@@ -269,7 +271,8 @@ public class TVSpotDlrContactAction extends SimpleActionAdapter {
 		msg.append("<td>O9<input type=\"radio\" name=\"num\" value=\"9\"></td>");
 		msg.append("<td>10<input type=\"radio\" name=\"num\" value=\"10\"></td></tr>");
 		msg.append("</tbody></table><br/>");
-		msg.append("If desired, please tell us more about your experience (open-ended with space for at least 250 words).</li>");
+		*/
+		msg.append("<li>If desired, please tell us more about your experience (open-ended with space for at least 250 words).</li></ul></i></div></li>");
 		msg.append("<li>For more information about \"Operation Consultation\", please refer to the following resources or ");
 		msg.append("consult with your Franchise Business Consultant and/or your Marketing Services Manager:<br/>");
 		msg.append("<ul>");
@@ -283,7 +286,7 @@ public class TVSpotDlrContactAction extends SimpleActionAdapter {
 		
 		//email subject
 		req.setValidateInput(false);
-		req.setParameter("contactEmailSubject","TV Spot Consultation Request, " + req.getParameter("pfl_combinedName"));
+		req.setParameter("contactEmailSubject","LEAD FROM TV:  Enact \"Operation Consultation\" within 24 hours: " + req.getParameter("pfl_combinedName"));
 		req.setValidateInput(true);
 	}
 	
@@ -322,36 +325,36 @@ public class TVSpotDlrContactAction extends SimpleActionAdapter {
 		PhoneNumberFormat phone = new PhoneNumberFormat(dealer.getPhone(), PhoneNumberFormat.PAREN_FORMATTING);
 		
 		StringBuilder msg = new StringBuilder();
-		msg.append("<p>Thank you for submitting your Consultation Request to FASTSIGNS&reg;.</p>");
+		msg.append("<p>Thank you for submitting your consultation request to FASTSIGNS&reg;.</p>");
 		msg.append("<p>Your request has been submitted to:</p>");
 		
-		msg.append("<p>FASTSIGNS of ").append(dealer.getLocationName()).append("<br/>");
+		msg.append("<p style='margin-left:40px;'>FASTSIGNS of ").append(dealer.getLocationName()).append("<br/>");
 		msg.append(dealer.getAddress()).append("<br/>");
 		if (dealer.getAddress2() != null && dealer.getAddress2().length() > 0) 
 			msg.append(dealer.getAddress2()).append("<br/>");
 		msg.append(dealer.getCity()).append(", ").append(dealer.getState()).append(" ").append(dealer.getZipCode()).append("<br/>");
-		msg.append(phone.getFormattedNumber()).append("</p>");
+		msg.append(phone.getFormattedNumber()).append("<br/>");
+		msg.append(dealer.getEmailAddress()).append("</p>");
 		
 		msg.append("<p>FASTSIGNS of ").append(dealer.getLocationName());
-		msg.append(" will contact you within the next few days to talk with you about your request.  ");
+		msg.append(" will contact you to discuss your visual communications needs and challenges.  You will receive a one-question survey in seven business days asking you about your experience.</p>");
 		
-		msg.append("In the meantime, if you would like to learn more about the comprehensive ");
-		msg.append("solutions that FASTSIGNS provides, download or view our ");
-		msg.append("<a target=\"_blank\" href=\"http://www.fastsigns.com/binary/org/FTS/PDF/CSG-2013_2.pdf\">guide online</a> or visit the FASTSIGNS online ");
-		msg.append("<a target=\"_blank\" href=\"http://www.fastsigns.com/LearningCenter\">Learning Center</a> to access our ");
+		msg.append("<p>In the meantime, if you would like to learn more about the comprehensive ");
+		msg.append("solutions that FASTSIGNS provides, download or view our guide online at ");
+		msg.append("<a target=\"_blank\" href=\"http://www.fastsigns.com/binary/org/FTS/PDF/CSG-2013_2.pdf\">www.fastsigns.com/binary/org/FTS/PDF/CSG-2013_2.pdf</a> ");
+		msg.append("or visit the FASTSIGNS online <a target=\"_blank\" href=\"http://www.fastsigns.com/LearningCenter\">Learning Center</a> to access our ");
 		msg.append("<a target=\"_blank\" href=\"http://www.fastsigns.com/LearningCenter/WhitePapers\">white papers</a>, and ");
 		msg.append("<a target=\"_blank\" href=\"http://www.fastsigns.com/LearningCenter/DesignTips\">helpful tips</a> and ");
-		msg.append("<a target=\"_blank\" href=\"http://www.fastsigns.com/LearningCenter/SignInformation\">information</a>.");
+		msg.append("<a target=\"_blank\" href=\"http://www.fastsigns.com/LearningCenter/SignInformation\">information</a>.</p>");
 		
-		msg.append("<p>Thank you for contacting FASTSIGNS.  We look forward to ");
-		msg.append("talking with you about your communications challenges.</p>");
-		msg.append("<img src=\"http://www.fastsigns.com/binary/org/FTS/FTS_2012/images/IMAGES-11.png\" alt=\"More ways to bring your communications to life.\" /><br/>");
+		msg.append("<p>Thank you for contacting FASTSIGNS.</p>");
+		msg.append("<p><br/>Each FASTSIGNS&reg; location is independently owned and operated.</p><br/>");
 		
 		
 		try {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(req.getParameter("pfl_EMAIL_ADDRESS_TXT"));
-			mail.setSubject("Thank you for submitting your Consultation Request to FASTSIGNS.");
+			mail.setSubject("Thank you for your consultation request from FASTSIGNS.");
 			mail.setFrom(site.getMainEmail());
 			mail.setHtmlBody(msg.toString());
 
