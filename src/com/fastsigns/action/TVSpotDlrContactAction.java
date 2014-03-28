@@ -215,6 +215,7 @@ public class TVSpotDlrContactAction extends SimpleActionAdapter {
 			emails.add(dealer.getOwnerEmail());
 		
 		req.setParameter("contactEmailAddress", emails.toArray(new String[emails.size()]), true);
+		req.setAttribute("senderEmail","consultation@fastsigns.com");
 		req.setParameter("dealerLocationId", req.getParameter(dlrLocnField));
 		
 		//set the status to 'initiated'
@@ -321,7 +322,6 @@ public class TVSpotDlrContactAction extends SimpleActionAdapter {
 	 * @param req
 	 */
 	private void emailUserConfirmation(SMTServletRequest req, DealerLocationVO dealer) {
-		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		PhoneNumberFormat phone = new PhoneNumberFormat(dealer.getPhone(), PhoneNumberFormat.PAREN_FORMATTING);
 		
 		StringBuilder msg = new StringBuilder();
@@ -354,8 +354,8 @@ public class TVSpotDlrContactAction extends SimpleActionAdapter {
 		try {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(req.getParameter("pfl_EMAIL_ADDRESS_TXT"));
-			mail.setSubject("Thank you for your consultation request from FASTSIGNS.");
-			mail.setFrom(site.getMainEmail());
+			mail.setSubject("Thank you for your consultation request from FASTSIGNS");
+			mail.setFrom("consultation@fastsigns.com");
 			mail.setHtmlBody(msg.toString());
 
 			MessageSender ms = new MessageSender(attributes, dbConn);

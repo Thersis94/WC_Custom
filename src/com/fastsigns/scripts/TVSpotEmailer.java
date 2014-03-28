@@ -14,6 +14,8 @@ import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.io.mail.SMTMailHandler;
 import com.siliconmtn.util.CommandLineUtil;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.PhoneNumberFormat;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.contact.ContactDataAction;
 import com.smt.sitebuilder.action.contact.ContactDataActionVO;
 import com.smt.sitebuilder.action.contact.ContactDataContainer;
@@ -136,10 +138,11 @@ public class TVSpotEmailer extends CommandLineUtil {
 		for (ContactDataModuleVO vo : cdc.getData()) {
 			//calculate the days between today and the date the submission was created.
 			daysBetween = (int) ((vo.getSubmittalDate().getTime() - now.getTimeInMillis()) / (1000 * 60 * 60 * 24));
+			log.debug("daysBetween=" + daysBetween);
 			switch (daysBetween) {
-				case 8:
-				case 9: if (!isMonday) 	continue;
-				case 7:
+				case -8:
+				case -9: if (!isMonday) 	continue;
+				case -7:
 					try {
 						msg = new EmailMessageVO();
 						msg.addRecipient(vo.getEmailAddress());
@@ -161,11 +164,11 @@ public class TVSpotEmailer extends CommandLineUtil {
 	 */
 	private String buildSurveyBody(String contactSubmittalId) {
 		StringBuilder body = new StringBuilder();
-		body.append("Thank you for your recent request for a consultation from FASTSIGNS&reg;.<br/>");
-		body.append("Please take a moment to rate your satisfaction level with the consultation and tell us about your experience.  ");
-		body.append("We will ask you to rate us from 1-10 regarding your satisfaction level with your FASTSIGNS consultation.<br/>");
-		body.append("<a href=http:/www.fastsigns.com/consultfastsigns?contactSubmittalId=");
-		body.append(contactSubmittalId).append("&isSurvey=true\">Click on this survey link to continue</a>");
+		body.append("<p>Thank you for your recent request for a consultation from FASTSIGNS&reg;.</p>");
+		body.append("<p>Please take a moment to rate your satisfaction level with the consultation and tell us about your experience.  ");
+		body.append("We will ask you to rate us from 1-10 regarding your satisfaction level with your FASTSIGNS consultation.</p>");
+		body.append("<a href=\"").append(props.get("surveyPageUrl")).append("?contactSubmittalId=");
+		body.append(contactSubmittalId).append("&amp;isSurvey=true\">Click on this survey link to continue</a>");
 		return body.toString();
 	}
 
@@ -184,10 +187,18 @@ public class TVSpotEmailer extends CommandLineUtil {
 		for (ContactDataModuleVO vo : cdc.getData()) {
 			// Make sure that this is a submittal that requires a first notice to be sent out.
 			daysBetween = (int) ((vo.getSubmittalDate().getTime() - now.getTimeInMillis()) / (1000 * 60 * 60 * 24));
-			status = TVSpotUtil.Status.valueOf(vo.getExtData().get(TVSpotUtil.ContactField.status.id()));
+			log.debug("notice daysBetween: " + daysBetween);
 			
-			if (daysBetween != 1 || status != TVSpotUtil.Status.initiated)
+			try {
+				status = TVSpotUtil.Status.valueOf(vo.getExtData().get(TVSpotUtil.ContactField.status.id()));
+			} catch (Exception e) {
+				log.error("could not determine status for contactSubmttalId=" + vo.getContactSubmittalId());
 				continue;
+			}
+			
+			//this email only goes out the day after the record was created, and only if the status is unchanged.
+			boolean sendEmail = (daysBetween == -1 && status == TVSpotUtil.Status.initiated);
+			if (! sendEmail) continue;
 
 			msg = new EmailMessageVO();
 			try {
@@ -208,20 +219,22 @@ public class TVSpotEmailer extends CommandLineUtil {
 	 * @return
 	 */
 	private String buildFirstNoticeBody(ContactDataModuleVO vo) {
+		PhoneNumberFormat pnf = new PhoneNumberFormat(vo.getMainPhone(), PhoneNumberFormat.PAREN_FORMATTING);
+		
 		StringBuilder body = new StringBuilder();
 		body.append("Dear Franchise Partner,");
-		body.append("<p>Yesterday you received an email notifying you about a consultation request from our ");
-		body.append("TV campaign that included the prospect's contact information. The information that ");
-		body.append("was sent to you is below; if you have not already tried to contact the prospect, ");
-		body.append("please do so today. The prospect will receive a survey* in six business days to ");
-		body.append("learn about their experience with your center.</p>");
+		body.append("<p>Yesterday you received an email notifying you about a consultation ");
+		body.append("request from our TV campaign that included the prospect's contact information.  ");
+		body.append("The information that was sent to you is below; if you have not already tried ");
+		body.append("to contact the prospect, please do so today.  The prospect will receive a survey* ");
+		body.append("in six business days to learn about their experience with your center.</p>");
 		body.append("<p style=\"margin-left:40px;\">");
 		body.append("<font color=\"red\">Name: </font>").append(vo.getFullName()).append("<br/>");
 		body.append("<font color=\"red\">Email: </font>").append(vo.getEmailAddress()).append("<br/>");
-		body.append("<font color=\"red\">Contact Phone: </font>").append(vo.getMainPhone()).append("<br/>");
+		body.append("<font color=\"red\">Contact phone: </font>").append(pnf.getFormattedNumber()).append("<br/>");
 		body.append("<font color=\"red\">Zip/Postal code: </font>").append(vo.getZipCode()).append("<br/>");
 		body.append("<font color=\"red\">Other information provided: </font>");
-		body.append(vo.getExtData().get(TVSpotUtil.ContactField.feedback.id())).append("</p>");
+		body.append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.feedback.id()),"<i>none</i>")).append("</p>");
 		body.append("<p>For more information about \"Operation Consultation\", please refer to the following resources or ");
 		body.append("consult with your Franchise Business Consultant and/or your Marketing Services Manager:</p>");
 		body.append("<ul>");
@@ -229,23 +242,23 @@ public class TVSpotEmailer extends CommandLineUtil {
 		body.append("<li>Review the overview document: DOC ID ###</li>");
 		body.append("<li>View the webinar: <a href=\"http://support.fastsigns.com#######\">support.fastsigns.com######</a></li>");
 		body.append("</ul>");
-		body.append("<p>* This survey question will be automatically emailed to the prospect seven business days after ");
-		body.append("their initial consultation request:<br/>Thank you for your recent request for a consultation from ");
-		body.append("FASTSIGNS&reg;. Please take a moment to rate your satisfaction level with the consultation and tell ");
-		body.append("us about your experience. How satisfied were you with your consultation?</p>");
-		body.append("<div style=\"margin-left:40px;width:100%;\">Please select a ");
+		body.append("<p>* This survey will be sent to this prospect in six business days: ");
+		body.append("Thank you for your recent request for a consultation from FASTSIGNS&reg;.  ");
+		body.append("Please take a moment to rate your satisfaction level with the consultation and tell ");
+		body.append("us about your experience.  How satisfied were you with your consultation?</p>");
+		body.append("<div style=\"margin-left:40px;\">Please select a ");
 		body.append("ranking between 1 (not satisfied at all) and 10 (extremely satisfied):<br/>");
-		body.append("<table  border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width='100%'><tbody>");
-		body.append("<tr><td width='10%'><input type=\"radio\" name=\"num\" value=\"1\"> 1</td>");
-		body.append("<td width='10%'><input type=\"radio\" name=\"num\" value=\"2\"> 2</td>");
-		body.append("<td width='10%'><input type=\"radio\" name=\"num\" value=\"3\"> 3</td>");
-		body.append("<td width='10%'><input type=\"radio\" name=\"num\" value=\"4\"> 4</td>");
-		body.append("<td width='10%'><input type=\"radio\" name=\"num\" value=\"5\"> 5</td>");
-		body.append("<td width='10%'><input type=\"radio\" name=\"num\" value=\"6\">6</td>");
-		body.append("<td width='10%'><input type=\"radio\" name=\"num\" value=\"7\"> 7</td>");
-		body.append("<td width='10%'><input type=\"radio\" name=\"num\" value=\"8\"> 8</td>");
-		body.append("<td width='10%'><input type=\"radio\" name=\"num\" value=\"9\"> 9</td>");
-		body.append("<td width='10%'><input type=\"radio\" name=\"num\" value=\"10\"> 10</td></tr>");
+		body.append("<table  border=\"0\" cellpadding=\"0\" cellspacing=\"0\"><tbody>");
+		body.append("<tr><td nowrap style='padding-right:15px'><input type=\"radio\" name=\"num\" value=\"1\"> 1</td>");
+		body.append("<td nowrap style='padding-right:15px'><input type=\"radio\" name=\"num\" value=\"2\"> 2</td>");
+		body.append("<td nowrap style='padding-right:15px'><input type=\"radio\" name=\"num\" value=\"3\"> 3</td>");
+		body.append("<td nowrap style='padding-right:15px'><input type=\"radio\" name=\"num\" value=\"4\"> 4</td>");
+		body.append("<td nowrap style='padding-right:15px'><input type=\"radio\" name=\"num\" value=\"5\"> 5</td>");
+		body.append("<td nowrap style='padding-right:15px'><input type=\"radio\" name=\"num\" value=\"6\">6</td>");
+		body.append("<td nowrap style='padding-right:15px'><input type=\"radio\" name=\"num\" value=\"7\"> 7</td>");
+		body.append("<td nowrap style='padding-right:15px'><input type=\"radio\" name=\"num\" value=\"8\"> 8</td>");
+		body.append("<td nowrap style='padding-right:15px'><input type=\"radio\" name=\"num\" value=\"9\"> 9</td>");
+		body.append("<td nowrap style='padding-right:15px'><input type=\"radio\" name=\"num\" value=\"10\"> 10</td></tr>");
 		body.append("</tbody></table>");
 		body.append("<p>If desired, please tell us more about your experience (open-ended with space for at least 250 words).</p></div><br/>");
 		
