@@ -161,12 +161,14 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		sql.append("left outer join ").append(customDb).append("DEPUY_EVENT_SURGEON s on ep.EVENT_POSTCARD_ID=s.EVENT_POSTCARD_ID ");
 		sql.append("left outer join ").append(customDb).append("DEPUY_EVENT_SPECIALTY_XR lxr on ep.EVENT_POSTCARD_ID=lxr.EVENT_POSTCARD_ID ");
 		sql.append("left outer join ").append(customDb).append("DEPUY_EVENT_COOP_AD cad on ep.EVENT_POSTCARD_ID=cad.EVENT_POSTCARD_ID and cad.ad_type_txt != 'radio' ");
+		sql.append("where sb.action_group_id=? ");
 		//--conditionally grab only the events this non-admin is affiliated with -- 
 		if (profileId != null) {
-			sql.append("left outer join ").append(customDb).append("DEPUY_EVENT_PERSON_XR pxr on ep.EVENT_POSTCARD_ID=pxr.EVENT_POSTCARD_ID ");
-			sql.append("where (pxr.PROFILE_ID=? or ep.PROFILE_ID=?) and sb.action_group_id=? ");
+			//this has to be a nested query to avoid duplicates in the RS - JM 03-28-14
+			sql.append("and (ep.event_postcard_id in (select event_postcard_id from ").append(customDb).append("DEPUY_EVENT_PERSON_XR where profile_id=?) or ");
+			sql.append("ep.profile_id=?) ");  //postcards I'm a part of (REPs & TGMs), or postcards that are mine (coordinators)
 		} else {
-			sql.append("where sb.action_group_id=? and ep.status_flg != 0 ");  //exclude any that haven't been submitted yet.
+			sql.append("and ep.status_flg != 0 ");  //exclude any that haven't been submitted yet.
 		}
 		if (ReqType.completed == reqType) {
 			sql.append("and ep.status_flg = ").append(EventFacadeAction.STATUS_COMPLETE).append(" ");
@@ -183,12 +185,10 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		PreparedStatement ps = null;
 		try {
 			ps = dbConn.prepareStatement(sql.toString());
+			ps.setString(1, actionGroupId);
 			if (profileId != null) {
-				ps.setString(1, profileId);
 				ps.setString(2, profileId);
-				ps.setString(3, actionGroupId);
-			} else {
-				ps.setString(1, actionGroupId);
+				ps.setString(3, profileId);
 			}
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
