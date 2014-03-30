@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.depuysynthes.action;
 
 import java.util.ArrayList;
@@ -14,7 +11,6 @@ import com.siliconmtn.commerce.catalog.ProductCategoryVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.http.SMTServletRequest;
-import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.AbstractBaseAction;
 import com.smt.sitebuilder.action.commerce.product.ProductCatalogAction;
 import com.smt.sitebuilder.action.tools.StatVO;
@@ -30,6 +26,8 @@ import com.smt.sitebuilder.action.tools.StatVO;
  * @author James McKain
  * @version 1.0
  * @since May 16, 2013
+ * @updates
+ * 	-JM 03.30.14 - rebuilt PageViewComparator because it was not transitive.
  ****************************************************************************/
 public class ProductCatalogUtil extends AbstractBaseAction {
 
@@ -208,19 +206,23 @@ public class ProductCatalogUtil extends AbstractBaseAction {
 	 */
 	public class PageViewComparator implements Comparator<Node> {
 		public int compare(Node n1, Node n2) {
-			//if #1 is empty or missing, accept the fact that #2 is greater
-			if (n1 == null) return 1;
-			ProductCategoryVO c1 = (ProductCategoryVO) n1.getUserObject();
-			if (c1 == null || c1.getNumProdAssoc() == 0) return 1;
 			
-			//if #2 is empty or missing, accept the fact that #1 is greater
-			if (n2 == null) return -1;
-			ProductCategoryVO c2 = (ProductCategoryVO) n2.getUserObject();
-			if (c2 == null || c2.getNumProdAssoc() == 0) return -1;
+			Integer cat1Cnt = Integer.valueOf(0);
+			Integer cat2Cnt = Integer.valueOf(0);
+			ProductCategoryVO cat;
 			
+			if (n1 != null && n1.getUserObject() != null) {
+				cat = (ProductCategoryVO) n1.getUserObject();
+				cat1Cnt = cat.getNumProdAssoc();
+			}
+			
+			if (n2 != null && n2.getUserObject() != null) {
+				cat = (ProductCategoryVO) n2.getUserObject();
+				cat2Cnt = cat.getNumProdAssoc();
+			}
 			
 			//if we get this far, compare them fairly.
-			return Convert.formatInteger(c2.getNumProdAssoc()).compareTo(Convert.formatInteger(c1.getNumProdAssoc()));
+			return cat1Cnt.compareTo(cat2Cnt);
 		}
 	}
 	
