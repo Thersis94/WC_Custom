@@ -82,8 +82,9 @@ public class FSProductAction extends SBActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void retrieve(SMTServletRequest req) throws ActionException {
-
+	public void retrieve(SMTServletRequest req) throws ActionException {		
+		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+		boolean isPreview = page.isPreviewMode();
 		
 		// Get the individual parameters to determine what data to retrieve
 		ModuleVO mod = ((ModuleVO) getAttribute(Constants.MODULE_DATA));
@@ -131,17 +132,17 @@ public class FSProductAction extends SBActionAdapter {
 				//log.debug("Has Sub Cat");
 				if (pId.length() == 0) {
 					log.debug("categories by type");
-					getCatByType(categoryId);
+					getCatByType(categoryId, isPreview);
 				} else if (pId.length() > 1 && prodChildKey.length() == 0) {
 					log.debug("products by category");
-					this.getProdBySubCat(req, pId, catalogId);
+					this.getProdBySubCat(req, pId, catalogId, isPreview);
 					canonicalUrl.append(pId.toLowerCase());
 					if(notMobile && byProduct) mobileUrl.append(pId.toLowerCase());
 					else if(notMobile) mobileUrl.append("/products"+
 							req.getRequestURI().substring(req.getRequestURI().lastIndexOf('/'))+"/qs/"+pId);
 				} else if (catImageKey.length() > 0) {
 					log.debug("product info");
-					this.getProdImages(req, catImageKey, prodChildKey, catalogId);
+					this.getProdImages(req, catImageKey, prodChildKey, catalogId, isPreview);
 					if (byProduct) {
 						canonicalUrl.append(prodChildKey.toLowerCase() + "/" + catImageKey.toLowerCase());
 						if(notMobile) mobileUrl.append(prodChildKey.toLowerCase() + "/" + catImageKey.toLowerCase());
@@ -152,7 +153,7 @@ public class FSProductAction extends SBActionAdapter {
 					}
 				} else {
 					log.debug("child products");
-					this.getChildProducts(prodChildKey, catalogId, req);
+					this.getChildProducts(prodChildKey, catalogId, req, isPreview);
 					if (byProduct) {
 						canonicalUrl.append(prodChildKey.toLowerCase());
 						if(notMobile) mobileUrl.append(prodChildKey.toLowerCase());
@@ -170,7 +171,7 @@ public class FSProductAction extends SBActionAdapter {
 			} else {
 				log.debug("No Sub Cat");
 				if (prodChildKey.length() > 0) {
-					this.getProdImages(req, prodChildKey, pId, catalogId);
+					this.getProdImages(req, prodChildKey, pId, catalogId, isPreview);
 				} else {
 					this.getProdByCat(req, categoryId, pId);
 				}
@@ -185,8 +186,6 @@ public class FSProductAction extends SBActionAdapter {
 		// Assign the page title and other data
 		this.assignPageInfo(req, mod);
 		
-		
-		PageVO page = (PageVO)req.getAttribute(Constants.PAGE_DATA);
 		log.debug(page);
 		if (pId.length() > 0) {
 			// Set the canonical url for this page.
@@ -262,14 +261,25 @@ public class FSProductAction extends SBActionAdapter {
 	 * @param org
 	 * @throws SQLException
 	 */
-	public void getCatByType(String categoryId) throws SQLException {
+	public void getCatByType(String categoryId, boolean isPreview) throws SQLException {
 		StringBuilder s = new StringBuilder();
-		s.append("select *, c.url_alias_txt as 'prod_url_alias' from PRODUCT_CATEGORY a ");
+		s.append("select a.*,b.*, c.*, c.url_alias_txt as 'prod_url_alias' from PRODUCT_CATEGORY a ");
 		s.append("inner join PRODUCT_CATEGORY_XR b on a.PRODUCT_CATEGORY_CD = b.PRODUCT_CATEGORY_CD ");
+		if (isPreview) s.append("or a.CATEGORY_GROUP_ID = b.PRODUCT_CATEGORY_CD ");
 		s.append("inner join PRODUCT c on b.PRODUCT_ID = c.PRODUCT_ID ");
-		s.append("where (a.parent_cd = ? or a.PRODUCT_CATEGORY_CD = ?) and a.category_group_id is null "); 
-		s.append("and a.active_flg=1 and c.status_no=5 and c.product_group_id is null "); //get active categories, and active products (ONLY!)
-		s.append("order by parent_cd, a.order_no, CATEGORY_NM");
+		if (isPreview) {
+			s.append("or b.PRODUCT_ID = c.PRODUCT_GROUP_ID ");
+			s.append("left join PRODUCT c2 on c.PRODUCT_ID = c2.PRODUCT_GROUP_ID ");
+			s.append("left join PRODUCT_CATEGORY a2 on a.PRODUCT_CATEGORY_CD = a2.CATEGORY_GROUP_ID ");
+			s.append("where (a.parent_cd = ? or a.PRODUCT_CATEGORY_CD = ? or a.category_group_id = ?) ");
+			s.append("and (a.category_group_id is not null or (a2.product_category_cd is null and a.category_group_id is null)) ");
+			s.append("and (c.product_group_id is not null or (c2.product_id is null and c.product_group_id is null)) ");
+		} else {
+			s.append("where (a.parent_cd = ? or a.PRODUCT_CATEGORY_CD = ? ) "); 
+			s.append("and a.category_group_id is null and c.product_group_id is null ");
+		}		
+		s.append("and a.active_flg=1 and c.status_no=5 "); //get active categories, and active products (ONLY!)
+		s.append("order by a.parent_cd, a.order_no, a.CATEGORY_NM");
 		log.debug("Cat By type SQL: " + s + "|" + categoryId);
 		
 		PreparedStatement ps = null;
@@ -278,6 +288,7 @@ public class FSProductAction extends SBActionAdapter {
 			ps = dbConn.prepareStatement(s.toString());
 			ps.setString(1, categoryId);
 			ps.setString(2, categoryId);
+			if(isPreview) ps.setString(3, categoryId);
 			
 			ResultSet rs = ps.executeQuery();
 			String origCatName = "";
@@ -287,7 +298,9 @@ public class FSProductAction extends SBActionAdapter {
 				if (!catName.equalsIgnoreCase(origCatName)) { //the category changed!
 					// Add the existing cat to the node list
 					if (vo != null) {
-						Node n = new Node(vo.getCategoryCode(), vo.getParentCode());
+						Node n = null;
+						if (isPreview && vo.getCategoryGroupId() != null) n = new Node(vo.getCategoryGroupId(), vo.getParentCode());
+						else n = new Node(vo.getCategoryCode(), vo.getParentCode());
 						n.setUserObject(vo);
 						n.setNodeName(vo.getCategoryName());
 						nodes.add(n);
@@ -386,13 +399,18 @@ public class FSProductAction extends SBActionAdapter {
 	 * @param org
 	 * @throws SQLException
 	 */
-	public void getChildProducts(String prodAlias, String catalogId, SMTServletRequest req) throws SQLException {
+	public void getChildProducts(String prodAlias, String catalogId, SMTServletRequest req, boolean isPreview) throws SQLException {
 		StringBuilder s = new StringBuilder();
 		s.append("select a.*, b.value_txt as 'attrib1_txt' from product a left outer join product_attribute_xr b ");
-		s.append("on b.product_id = a.product_id and b.attribute_id like '%_AD' "); 
-		s.append("where product_catalog_id=? and status_no=5 and a.product_group_id is null ");
-		s.append("and (url_alias_txt=? or parent_id in (select product_id from product where url_alias_txt=?))");
-		s.append("order by parent_id, display_order_no, product_nm");
+		s.append("on (b.product_id = a.product_id ");
+		if (isPreview) s.append("or a.product_group_id = b.product_id ");
+		s.append(") and b.attribute_id like '%_AD' "); 
+		if (isPreview)s.append("left join product a2 on a.product_id = a2.product_group_id ");
+		s.append("where a.product_catalog_id=? and a.status_no=5 ");
+		if (isPreview) s.append("and (a.product_group_id is not null or (a2.product_id is null and a.product_group_id is null)) ");
+		else s.append("and a.product_group_id is null ");
+		s.append("and (a.url_alias_txt=? or a.parent_id in (select product_id from product where url_alias_txt=?)) ");
+		s.append("order by a.parent_id, a.display_order_no, a.product_nm");
 		log.debug(s + "|" + catalogId + "|" + prodAlias);
 		PreparedStatement ps = null;
 		List<Node> nodes = new ArrayList<Node>();
@@ -419,7 +437,7 @@ public class FSProductAction extends SBActionAdapter {
 			
 			if (nodes.size() == 1) {
 				// There is only the parent product, so we treat it like we would a product at the end of the chain.
-				this.getProdImages(req, prodAlias, prodAlias, catalogId);
+				this.getProdImages(req, prodAlias, prodAlias, catalogId, isPreview);
 				req.setParameter(SMTServletRequest.PARAMETER_KEY + "3", prodAlias);
 			} else {
 				//Create a data tree and add it to the module container
@@ -472,25 +490,39 @@ public class FSProductAction extends SBActionAdapter {
 	 * @param pId
 	 * @throws SQLException
 	 */
-	public void getProdBySubCat(SMTServletRequest req, String catUrlAlias, String catalogId)
+	public void getProdBySubCat(SMTServletRequest req, String catUrlAlias, String catalogId, boolean isPreview)
 	throws SQLException {
 		StringBuilder s = new StringBuilder();
 		s.append("select a.product_id, a.parent_id, a.product_nm, a.desc_txt, a.url_alias_txt, ");
 		s.append("a.meta_kywd_txt,a.meta_desc,a.title_nm,a.short_desc, b.order_no, ");
 		s.append("a.thumbnail_url, a.image_url, a.cust_product_no, d.value_txt as 'attrib1_txt' ");
 		s.append("from product a inner join product_category_xr b on a.product_id = b.product_id ");
+		if (isPreview) s.append("or a.product_group_id = b.product_id ");
 		s.append("inner join product_category c on b.product_category_cd=c.product_category_cd ");
+		if (isPreview) s.append("or c.category_group_id = b.product_category_cd ");
 		s.append("left outer join product_attribute_xr d on d.product_id = a.product_id ");
 		s.append("and d.attribute_id like '%_AD' ");
+		if (isPreview) {
+			s.append("left join product a2 on a.product_id = a2.product_group_id ");
+			s.append("left join product_category c2 on c.product_category_cd = c2.category_group_id ");
+		}
 		s.append("where c.url_alias_txt = ? and c.product_catalog_id=? and a.status_no=5 ");
-		s.append("and a.product_group_id is null and c.category_group_id is null ");
+		if (isPreview) {
+			s.append("and (a.product_group_id is not null or (a2.product_id is null and a.product_group_id is null)) ");
+			s.append("and (c.category_group_id is not null or (c2.product_category_cd is null and c.category_group_id is null)) ");
+		} else s.append("and a.product_group_id is null and c.category_group_id is null ");
+		
 		s.append("union ");
-		s.append("select product_category_cd, parent_cd, category_nm, category_desc, ");
-		s.append("url_alias_txt, meta_kywd_txt, meta_desc, title_nm, short_desc, 0, ");
-		s.append("thumbnail_img, image_url, cust_category_id as 'cust_product_no', ");
-		s.append("attrib1_txt from product_category ");
-		s.append("where url_alias_txt = ? and product_catalog_id=? and active_flg=1 ");
-		s.append("and category_group_id is null order by order_no, product_nm ");
+		
+		s.append("select pc.product_category_cd, pc.parent_cd, pc.category_nm, pc.category_desc, ");
+		s.append("pc.url_alias_txt, pc.meta_kywd_txt, pc.meta_desc, pc.title_nm, pc.short_desc, 0, ");
+		s.append("pc.thumbnail_img, pc.image_url, pc.cust_category_id as 'cust_product_no', ");
+		s.append("pc.attrib1_txt from product_category pc ");
+		if (isPreview) s.append("left join product_category pc2 on pc.product_category_cd = pc2.category_group_id " );
+		s.append("where pc.url_alias_txt = ? and pc.product_catalog_id=? and pc.active_flg=1 ");
+		if (isPreview) s.append("and (pc.category_group_id is not null or (pc2.product_category_cd is null and pc.category_group_id is null)) ");
+		else s.append("and category_group_id is null ");
+		s.append("order by order_no, product_nm ");
 		log.debug("SubCat SQL: " + s + "|" + catUrlAlias + "|" + catalogId);
 		
 		PreparedStatement ps = null;
@@ -530,22 +562,37 @@ public class FSProductAction extends SBActionAdapter {
 	 * @param orgId
 	 * @throws SQLException
 	 */
-	private void getProdImages(SMTServletRequest req, String prodAlias, String parProdAlias, String catalogId) 
+	private void getProdImages(SMTServletRequest req, String prodAlias, String parProdAlias, String catalogId, boolean isPreview) 
 	throws SQLException {
 		StringBuilder s = new StringBuilder();
-		s.append("select '1' as product_rank, * from PRODUCT a "); 
+		s.append("select '1' as product_rank, a.*, c.*, d.* from PRODUCT a "); 
 		s.append("left outer join product_attribute_xr c on a.product_id = c.product_id "); 
+		if (isPreview) s.append("or c.product_id = a.product_group_id ");
 		s.append("left outer join product_attribute d on c.attribute_id = d.attribute_id "); 
+		if (isPreview) {
+			s.append("or c.attribute_id = d.attribute_group_id ");
+			s.append("left join product a2 on a.product_id = a2.product_group_id ");
+			s.append("left join product_attribute d2 on d2.attribute_group_id = d.attribute_id ");
+		}
 		s.append("where a.url_alias_txt in (?) "); 
-		s.append("and a.product_catalog_id=? AND a.PRODUCT_GROUP_ID IS NULL "); 
-		s.append("and a.status_no=5 and d.attribute_group_id is null "); 
+		s.append("and a.product_catalog_id=? and a.status_no=5 "); 
+		if (isPreview) {
+			s.append("and (a.product_group_id is not null or (a2.product_id is null and a.product_group_id is null)) ");
+			s.append("and (d.attribute_group_id is not null or (d2.attribute_id is null and d.attribute_group_id is null)) ");
+		} else {
+			s.append("and d.attribute_group_id is null and a.PRODUCT_GROUP_ID IS NULL "); 
+		}
+		
 		s.append("union "); 
-		s.append("select '2' as product_rank, * from PRODUCT a "); 
+		
+		s.append("select '2' as product_rank, a.*,c.*, d.* from PRODUCT a "); 
 		s.append("left outer join product_attribute_xr c on a.product_id = c.product_id "); 
 		s.append("left outer join product_attribute d on c.attribute_id = d.attribute_id "); 
+		if (isPreview) s.append ("left join product_attribute d2 on d.attribute_id = d2.attribute_group_id ");
 		s.append("where a.PARENT_ID in (select PRODUCT_ID from PRODUCT where url_alias_txt in (?) "); 
-		s.append("and product_catalog_id=? "); 
-		s.append("and status_no=5) and d.attribute_group_id is null"); 
+		s.append("and product_catalog_id=? and status_no=5) "); 
+		if (isPreview) s.append("and (d.attribute_group_id is not null or (d2.attribute_id is null and d.attribute_group_id is null)) ");
+		else s.append("and d.attribute_group_id is null "); 
 		log.debug("Image SQL: " + s + " | " + prodAlias + " | " + parProdAlias + " | " + catalogId);
 		
 		PreparedStatement ps = null;
