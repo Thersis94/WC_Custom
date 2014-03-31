@@ -1,6 +1,7 @@
 package com.depuysynthes.action;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -127,6 +128,7 @@ public class ProductCatalogUtil extends AbstractBaseAction {
 	
 	public List<Node> assignPageviewsToCatalog(List<Node> prods, Map<String, StatVO> pageViews, String pageAlias) {
 		log.debug("assigning pageViews using baseUrl: " + pageAlias);
+		if (pageViews == null) pageViews = Collections.emptyMap();
 		
 		for (Node n : prods) {
 			ProductCategoryVO cat = (ProductCategoryVO) n.getUserObject();
@@ -147,6 +149,7 @@ public class ProductCatalogUtil extends AbstractBaseAction {
 	
 	public List<Node> assignPageviewsToCatalogUsingDivision(List<Node> prods, Map<String, StatVO> pageViews, String siteAlias, boolean isProducts, boolean isFullCatalog) {
 		log.debug("assigning pageViews using baseUrl: " + siteAlias);
+		if (pageViews == null) pageViews = Collections.emptyMap();
 		String suffixUrl = (isProducts) ? "/products/qs/" : "/procedures/qs/";
 		String divisionAlias = "";
 		String prodAlias = null;

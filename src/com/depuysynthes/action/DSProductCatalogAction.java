@@ -87,15 +87,15 @@ public class DSProductCatalogAction extends SimpleActionAdapter {
 			Map<String, StatVO> pageViews = (Map<String, StatVO>)pageViewMod.getActionData();
 			
 			//merge stats into the catalog data
-			if (pageViews != null && pageViews.size() > 0) {
-				if (page.getDepthLevel() > 2) {
-					//these are 'this' page plus a query string
-					pc.assignPageviewsToCatalog(t.getPreorderList(), pageViews, page.getFullPath() + "/qs/");
-				} else {
-					// /hcp/products root level page; we'll need to use the data from the Tree to build URL strings for these...
-					pc.assignPageviewsToCatalogUsingDivision(t.getPreorderList(), pageViews, 
-							"/" + site.getAliasPathName() + "/", page.getFullPath().contains("/products"), false);
-				}
+			//NOTE: these method calls are what also assign the URLs to each product, 
+			//we must always call into them, even when there are no pageViews.  -JM 03.31.14
+			if (page.getDepthLevel() > 2) {
+				//these are 'this' page plus a query string
+				pc.assignPageviewsToCatalog(t.getPreorderList(), pageViews, page.getFullPath() + "/qs/");
+			} else {
+				// /hcp/products root level page; we'll need to use the data from the Tree to build URL strings for these...
+				pc.assignPageviewsToCatalogUsingDivision(t.getPreorderList(), pageViews, 
+						"/" + site.getAliasPathName() + "/", page.getFullPath().contains("/products"), false);
 			}
 			
 		} catch (Exception e) {
