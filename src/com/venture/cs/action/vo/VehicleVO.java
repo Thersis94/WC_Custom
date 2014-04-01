@@ -1,17 +1,21 @@
 package com.venture.cs.action.vo;
 
+// JDK 7
 import java.sql.ResultSet;
 import java.util.ArrayList;
 
+// SMTBaseLibs 2.0
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
+
+// WebCrescendo 2.0
 import com.smt.sitebuilder.action.SBModuleVO;
 import com.smt.sitebuilder.action.dealer.DealerLocationVO;
 
 /****************************************************************************
- *<b>Title</b>: OwnerVO<p/>
+ *<b>Title</b>: VehicleVO<p/>
  * Stores the information related to a vehicle <p/>
  *Copyright: Copyright (c) 2013<p/>
  *Company: SiliconMountain Technologies<p/>
