@@ -101,7 +101,7 @@ public class ReportBuilder extends SBActionAdapter {
 //				break;
 			
 			case locator: 
-				rpt = this.generateLocatorReport(data);
+				rpt = this.generateLocatorReport(data, req.getParameter("radius"));
 				break;
 		}
 		
@@ -283,9 +283,10 @@ public class ReportBuilder extends SBActionAdapter {
 	}
 	
 	
-	public AbstractSBReportVO generateLocatorReport(Object data) {
+	public AbstractSBReportVO generateLocatorReport(Object data, String radius) {
 		LocatorReportVO rpt = new LocatorReportVO();
 		rpt.setData(data);
+		rpt.setRadius(radius);
 		return rpt;
 	}
 	

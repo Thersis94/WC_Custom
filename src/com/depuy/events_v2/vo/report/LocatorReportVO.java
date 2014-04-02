@@ -47,6 +47,7 @@ public class LocatorReportVO extends AbstractSBReportVO {
     private static final long serialVersionUID = 6l;
 	private static Logger log = null;
 	public static final int DEFAULT_RADIUS = 50;  //miles
+	private int radius = DEFAULT_RADIUS;
 	private DePuyEventSeminarVO sem = null;
 	private EventEntryVO event = null;
 	
@@ -55,7 +56,7 @@ public class LocatorReportVO extends AbstractSBReportVO {
 	 */
 	public LocatorReportVO() {
 		super();
-        log = Logger.getLogger(getClass());
+		log = Logger.getLogger(getClass());
 		setContentType("application/msword");
 		isHeaderAttachment(Boolean.TRUE);
 		setFileName("Locator-Results.doc");
@@ -64,6 +65,11 @@ public class LocatorReportVO extends AbstractSBReportVO {
 	public void setData(Object o) {
 		sem = (DePuyEventSeminarVO) o;
 		event = sem.getEvents().get(0);
+	}
+	
+	public void setRadius(String radius) {
+		if (Convert.formatInteger(radius) > 0)
+			this.radius = Convert.formatInteger(radius);
 	}
 
 	
@@ -276,7 +282,7 @@ public class LocatorReportVO extends AbstractSBReportVO {
 		//} else {
 			//s.append("&specialty=&product=").append(productId);
 		//}
-		s.append("&radius=").append(DEFAULT_RADIUS);
+		s.append("&radius=").append(radius);
 		s.append("&order=last");
 		s.append("&resultCount=10");
 		
