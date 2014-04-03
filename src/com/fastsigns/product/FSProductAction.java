@@ -644,7 +644,7 @@ public class FSProductAction extends SBActionAdapter {
 		s.append("left outer join product_attribute d on c.attribute_id = d.attribute_id "); 
 		if (isPreview) s.append ("left join product_attribute d2 on d.attribute_id = d2.attribute_group_id ");
 		s.append("where a.PARENT_ID in (select PRODUCT_ID from PRODUCT where url_alias_txt in (?) "); 
-		s.append("and product_catalog_id=? and status_no=5) "); 
+		s.append("and product_catalog_id=? and status_no=5) and status_no=5 "); 
 		if (isPreview) s.append("and (d.attribute_group_id is not null or (d2.attribute_id is null and d.attribute_group_id is null)) ");
 		else s.append("and d.attribute_group_id is null "); 
 		log.debug("Image SQL: " + s + " | " + prodAlias + " | " + parProdAlias + " | " + catalogId);
