@@ -1,4 +1,4 @@
-package com.universal.util;
+package com.universal.catalog;
 
 // JDK 7
 import java.io.BufferedReader;
@@ -88,6 +88,8 @@ public class ProductsImporter extends AbstractImporter {
 	 * @throws IOException
 	 */
 	private List<ProductVO> retrieveProducts(CatalogImportVO catalog) throws FileNotFoundException, IOException {
+		// TODO remove this debug...
+		log.info("catalog is " + (catalog != null ? "not null" : "null"));
 		BufferedReader data = null;
 		String fullPath = catalog.getSourceFilePath() + catalog.getSourceFileName();
 		try {
@@ -101,10 +103,16 @@ public class ProductsImporter extends AbstractImporter {
 		List<ProductVO> prods = new ArrayList<ProductVO>();
 		String temp = null;
 		Map<String, Integer> headers = null;
+		log.info("source file delimiter: " + catalog.getSourceFileDelimiter());
 		for (int i=0; (temp = data.readLine()) != null; i++) {
 			String[] fields = temp.split(catalog.getSourceFileDelimiter());
+			//log.info("fields size: " + fields.length);
 			if (i == 0) {
 				headers = parseHeaderRow(fields);
+				log.info("headers size: " + headers.size());
+				//for (String h : headers.keySet()) {
+					//log.info("headers | index: " + h + "|" + headers.get(h));
+				//}
 				continue; // skip the header row
 			}
 
@@ -114,7 +122,9 @@ public class ProductsImporter extends AbstractImporter {
 				prod.setProductName(this.stripQuotes(fields[headers.get("NAME")])); // NAME
 				prod.setMsrpCostNo(Convert.formatDouble(fields[headers.get("PRICE")])); //PRICE
 				prod.setDescText(this.stripQuotes(fields[headers.get("DESCRIPTION")])); // DESCRIPTION
-				prod.setCustProductNo(fields[headers.get("CUSTOM")]); // CUSTOM
+				// TODO remove this after testing.
+				prod.setCustProductNo(fields[headers.get("CUSTOMN")]); // CUSTOM
+				//prod.setCustProductNo(fields[headers.get("CUSTOM")]); // CUSTOM
 				prod.setMetaKywds(this.stripQuotes(fields[headers.get("KEYWORDS")])); // KEYWORDS
 				if (catalog.getCatalogId().equals("SUPPORT_PLUS_CATALOG")) {
 					if (headers.get("IMGA") != null) {
@@ -280,7 +290,7 @@ public class ProductsImporter extends AbstractImporter {
 	private void insertProducts(CatalogImportVO catalog, List<ProductVO> prods) 
 			throws SQLException {
 		StringBuilder sb = new StringBuilder();
-		sb.append("insert into product (product_id, catalogId, parent_id, ");
+		sb.append("insert into product (product_id, product_catalog_id, parent_id, ");
 		sb.append("cust_product_no, product_nm, desc_txt, status_no, msrp_cost_no, ");
 		sb.append("create_dt, image_url, thumbnail_url, short_desc, product_url, ");
 		sb.append("currency_type_id, title_nm, meta_desc, meta_kywd_txt, url_alias_txt) ");
@@ -334,7 +344,7 @@ public class ProductsImporter extends AbstractImporter {
 		s.append("update PRODUCT set PRICE_RANGE_LOW_NO = p2.LOW, PRICE_RANGE_HIGH_NO = p2.HIGH ");
 		s.append("from product p inner join ( ");
 		s.append("select PARENT_ID, max(msrp_cost_no) AS HIGH, MIN(msrp_cost_no) AS LOW "); 
-		s.append("from product where catalogId='").append(catalog.getCatalogId()).append("' ");
+		s.append("from product where product_catalog_id='").append(catalog.getCatalogId()).append("' ");
 		s.append("and PARENT_ID is not null group by PARENT_ID ");
 		s.append(") as p2 on p.PRODUCT_ID = p2.PARENT_ID ");
 		

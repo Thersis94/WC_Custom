@@ -1,4 +1,4 @@
-package com.universal.util;
+package com.universal.catalog;
 
 // JDK 7
 import java.io.BufferedReader;
@@ -41,7 +41,7 @@ import com.siliconmtn.util.UUIDGenerator;
 public class OptionsImporter extends AbstractImporter {
 
 	private static final Logger log = Logger.getLogger(OptionsImporter.class);
-	private static final String ATTRIBUTE_PREFIX = "USA";
+	private static final String ATTRIBUTE_PREFIX = "USA_";
 	private Set<String> misMatchedOptions = null;
 	private Set<String> misMatchedAttributes = null;
 	
@@ -86,18 +86,26 @@ public class OptionsImporter extends AbstractImporter {
 		List<String> options = new ArrayList<>();
 		// read the file line by line
 		for (int i=0; (temp = data.readLine()) != null; i++) {
-			String[] fields = temp.split(USACatalogImporter.DELIMITER_SOURCE);
+			String[] fields = temp.split(CatalogImportManager.DELIMITER_SOURCE);
 			// process the header row
 			if (i == 0) {
 				headers = new HashMap<String, Integer>();
 				for (int j = 0; j < fields.length; j++) {
 					headers.put(fields[j].toUpperCase(), new Integer(j));
+					for (String h : headers.keySet()) {
+						log.info("options headers | index: " + h + "|" + headers.get(h));
+					}
 				}
 				continue;
 			}
 			
 			// grab the option value and stash it in a List if not already there
-			option = StringUtil.checkVal(fields[headers.get("TABLETYPE")]).toLowerCase();
+			try {
+				option = StringUtil.checkVal(fields[headers.get("TABLETYPE")]).toLowerCase();
+			} catch (Exception e) {
+				log.error("Data error processing options record #: " + i + ", " + e);
+				continue;
+			}
 			if (option.length() == 0) continue;
 			option = option.replace(" ", "");
 			option = option.replace("-", "");
@@ -137,7 +145,7 @@ public class OptionsImporter extends AbstractImporter {
 		PreparedStatement ps = dbConn.prepareStatement(sb.toString());
 		String optUpper = null;
 		for (String opt : options) {
-			optUpper = USACatalogImporter.ATTRIBUTE_PREFIX + opt.toUpperCase();
+			optUpper = CatalogImportManager.ATTRIBUTE_PREFIX + opt.toUpperCase();
 			try {
 				ps.setString(1, optUpper);
 				ps.setString(2, "USA");
@@ -244,7 +252,7 @@ public class OptionsImporter extends AbstractImporter {
 					misMatchedOptions.add(prodId);
 				} else if (e.getMessage().contains("column 'ATTRIBUTE_ID'")) {
 					//cause = "attribute ID foreign key not found";
-					log.error("misMatcheded attribute ID at line: " + (i + 1) + " in input file:prodId/attribId: " + prodId + "/" + attribId);
+					log.error("misMatched attribute ID at line: " + (i + 1) + " in input file:prodId/attribId: " + prodId + "/" + attribId);
 					misMatchedAttributes.add(attribId);
 				} else {
 					cause = e.getMessage();
@@ -281,6 +289,7 @@ public class OptionsImporter extends AbstractImporter {
 			newAttr = StringUtil.formatFileName(newAttr);
 			newAttr = ATTRIBUTE_PREFIX + newAttr.toUpperCase();	
 		}
+		//log.info("attrib before|after: " + attrib + "|" + newAttr);
 		return newAttr;
 	}
 

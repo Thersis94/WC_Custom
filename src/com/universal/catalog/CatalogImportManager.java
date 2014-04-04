@@ -1,4 +1,4 @@
-package com.universal.util;
+package com.universal.catalog;
 
 // JDK 7.x
 import java.io.File;
@@ -29,9 +29,9 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
- * <b>Title</b>: USACatalogImporter.java <p/>
+ * <b>Title</b>: CatalogImportManager.java <p/>
  * <b>Project</b>: WC_Custom <p/>
- * <b>Description: </b> Put comments here
+ * <b>Description: </b> Manages the import process for importing USA catalogs.
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2014<p/>
  * <b>Company:</b> Silicon Mountain Technologies<p/>
@@ -40,9 +40,10 @@ import com.siliconmtn.util.StringUtil;
  * @since Apr 01, 2014<p/>
  * <b>Changes: </b>
  * Apr 01, 2014: DBargerhuff: created class.
+ * Apr 04, 2014: DBargerhuff: refactored into modular classes.
  ****************************************************************************/
-public class USACatalogImporter {
-	private static final Logger log = Logger.getLogger(USACatalogImporter.class);
+public class CatalogImportManager {
+	private static final Logger log = Logger.getLogger(CatalogImportManager.class);
 	public static final String DELIMITER_SOURCE = "\t";
 	private final String DELIMITER_CONFIG = ",";
 	public static final String ATTRIBUTE_PREFIX = "USA_";
@@ -73,7 +74,7 @@ public class USACatalogImporter {
 	 * @throws DatabaseException 
 	 * @throws Exception
 	 */
-	public USACatalogImporter() throws IOException, DatabaseException, InvalidDataException {
+	public CatalogImportManager() throws IOException, DatabaseException, InvalidDataException {
 		// Initialize the logger
 		PropertyConfigurator.configure("scripts/USA_Auto_Importer_log4j.properties");
 		config = new Properties();
@@ -88,10 +89,10 @@ public class USACatalogImporter {
 	 */
 	public static void main(String[] args)  {
 		long start = System.currentTimeMillis();
-		USACatalogImporter uci = null;
+		CatalogImportManager uci = null;
 		
 		try {
-			uci = new USACatalogImporter();
+			uci = new CatalogImportManager();
 		} catch (IOException ioe) {
 			log.error("Fatal Error loading configuration properties file, ", ioe);
 			// sendErrorEmail(ioe.getMessage());
@@ -142,6 +143,7 @@ public class USACatalogImporter {
 		for (String catalogId : catalogIds) {
 			
 			try {
+				log.info("processing catalog ID: " + catalogId);
 				// set catalog-specific values
 				iCat.setCatalogId(catalogId);
 				iCat.setCatalogPrefix(prefixes.get(catalogId));
@@ -152,6 +154,8 @@ public class USACatalogImporter {
 				
 				// set source file path for this catalog
 				iCat.setSourceFilePath(catalogSourcePath);
+				
+				log.info("prefix|url|sourcePath: " + iCat.getCatalogPrefix() + "|" + iCat.getSourceFileUrl() + "|" + iCat.getSourceFilePath());
 				
 				// import the catalog
 				importCatalog(iCat);
