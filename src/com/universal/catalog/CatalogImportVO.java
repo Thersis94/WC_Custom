@@ -18,6 +18,7 @@ import java.util.Map;
  ****************************************************************************/
 public class CatalogImportVO {
 	
+	public static final String CATEGORY_TOP_LEVEL_PARENT_ID = "topLevelParentCategory";
 	public static final String CATEGORY_TOP_LEVEL_ID = "topLevelCategory";
 	public static final String CATEGORY_SKIP_ID = "skipCategory";
 	public static final String CATEGORY_FEATURE_ID = "featureCategory";

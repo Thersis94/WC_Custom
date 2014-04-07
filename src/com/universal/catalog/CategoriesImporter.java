@@ -40,6 +40,7 @@ public class CategoriesImporter extends AbstractImporter {
 	private static final Logger log = Logger.getLogger(CategoriesImporter.class);
 	private Set<String> misMatchedCategories = null;
 	private Set<String> misMatchedParentCategories = null;
+	private String topLevelParentCategoryId;
 	private String topLevelCategoryId;
 	private String skipCategoryId;
 	private String featureCategoryId;
@@ -64,13 +65,10 @@ public class CategoriesImporter extends AbstractImporter {
 	 * @throws SQLException
 	 */
 	public void manageCategories() throws FileNotFoundException, IOException, SQLException {
+		topLevelParentCategoryId = catalog.getAttributes().get(CatalogImportVO.CATEGORY_TOP_LEVEL_PARENT_ID);
 		topLevelCategoryId = catalog.getAttributes().get(CatalogImportVO.CATEGORY_TOP_LEVEL_ID);
 		skipCategoryId = catalog.getAttributes().get(CatalogImportVO.CATEGORY_SKIP_ID);
 		featureCategoryId = catalog.getAttributes().get(CatalogImportVO.CATEGORY_FEATURE_ID);
-		
-		log.debug("topLevelCategoryId: " + topLevelCategoryId);
-		log.debug("skipCategoryId: " + skipCategoryId);
-		log.debug("featureCategoryId: " + featureCategoryId);
 
 		// retrieve categories from source file.
 		Map<String, ProductCategoryVO> cats = retrieveCategories(catalog);
@@ -125,14 +123,10 @@ public class CategoriesImporter extends AbstractImporter {
 			*/
 			if (parentCatCode.equalsIgnoreCase(skipCategoryId)) {
 				if (! catCode.startsWith(featureCategoryId)) {
-					log.debug("skipping 'zz' category");
 					continue;
 				}
-			} else if (catCode.equals(topLevelCategoryId)) {
-				if (parentCatCode.equals("0")) {
-					log.debug("skipping top-level category with parent category of '0'");
-					continue;
-				}
+			} else if (catCode.equals(topLevelCategoryId) && (parentCatCode.equals(topLevelParentCategoryId))) {
+				continue;
 			}
 
 			url = (fields[headers.get("CATEGORY_NAME")]).replace(" ", "_");

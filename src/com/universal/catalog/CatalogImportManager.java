@@ -52,6 +52,7 @@ public class CatalogImportManager {
 	
 	private List<String> catalogIds;
 	
+	private String topLevelParentCategoryId;
 	private String topLevelCategoryId;
 	private String skipCategoryId;
 	private String featureCategoryId;
@@ -135,6 +136,7 @@ public class CatalogImportManager {
 		// configure a vo with base info
 		CatalogImportVO iCat = new CatalogImportVO();
 		iCat.setCatalogModelYear(config.getProperty("catalogModelYear"));
+		iCat.addAttribute(CatalogImportVO.CATEGORY_TOP_LEVEL_PARENT_ID, topLevelParentCategoryId);
 		iCat.addAttribute(CatalogImportVO.CATEGORY_TOP_LEVEL_ID, topLevelCategoryId);
 		iCat.addAttribute(CatalogImportVO.CATEGORY_SKIP_ID, skipCategoryId);
 		iCat.addAttribute(CatalogImportVO.CATEGORY_FEATURE_ID, featureCategoryId);
@@ -420,6 +422,7 @@ public class CatalogImportManager {
 		
 		sourceFileList = StringUtil.checkVal(config.getProperty("sourceFileList")).split(DELIMITER_CONFIG);
 
+		topLevelParentCategoryId = config.getProperty("topLevelParentCategoryId");
 		topLevelCategoryId = config.getProperty("topLevelCategoryId");
 		skipCategoryId = config.getProperty("skipCategoryId");
 		featureCategoryId = config.getProperty("featureCategoryId");
