@@ -233,7 +233,10 @@ public class ProductAction extends SBActionAdapter {
 			
 		}
 		
+		// if we found no products for a category or no attributes, initialize objects.
+		if (product == null) product = new ProductVO();
 		if(pAttributes == null)	pAttributes = new ArrayList<ProductAttributeVO>();
+		
 		// sort the product attributes by level and display order
 		Collections.sort(pAttributes, new ProductAttributeComparator());
 		// add attributes to product VO
