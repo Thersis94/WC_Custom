@@ -766,14 +766,15 @@ public class ProductImporter {
 				ps.setString(4, CATALOG_MODEL_YEAR_ID);	//model_year_no
 				ps.setString(5, fields[headerMap.get("DATA")]); 	//value_txt
 				ps.setTimestamp(6, Convert.getCurrentTimestamp());	//create_dt
-				ps.setString(7, "DOLLARS");	//currency_type_id
-				ps.setInt(8, 0);		//msrp_cost_no
-				ps.setString(9, fields[headerMap.get("PROMPT")]);							//attrib1_txt
-				ps.setString(10, fields[headerMap.get("MAXLENGTH")]);						//attrib2_txt
-				if(fields.length > 5)
-					ps.setString(11, fields[headerMap.get("REQUIRED")]);						//attrib3_txt
-				else
-					ps.setString(11, "0");						//attrib3_txt
+				ps.setString(7, "DOLLARS"); //currency_type_id
+				ps.setInt(8, 0); //msrp_cost_no
+				ps.setString(9, fields[headerMap.get("PROMPT")]); //attrib1_txt
+				if(fields.length > 5) {
+					ps.setString(10, fields[headerMap.get("REQUIRED")]); //attrib2_txt
+				} else {
+					ps.setString(10, "0"); //attrib2_txt
+				}
+				ps.setString(11, fields[headerMap.get("MAXLENGTH")]); //attrib3_txt
 				//log.debug("attr info: " + key + "|" + p.getProductId() + "|" + value + "|");
 				ps.executeUpdate();
 				ctr++;

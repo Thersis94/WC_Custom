@@ -204,7 +204,7 @@ public class ProductAction extends SBActionAdapter {
 		s.append("left outer join product_attribute_xr b on a.product_id = b.product_id ");
 		s.append("left outer join product_attribute c on b.attribute_id = c.attribute_id ");
 		s.append("where a.product_catalog_id = ? and a.product_id = ? AND a.PRODUCT_GROUP_ID IS NULL ");
-		s.append("order by a.product_id, attrib2_txt, order_no");
+		s.append("order by a.product_id, b.attribute_id, attrib2_txt, order_no");
 		log.debug("Product Detail SQL: " + s + "|" + req.getParameter(SMTServletRequest.PARAMETER_KEY + "2"));
 		
 		PreparedStatement ps = dbConn.prepareStatement(s.toString());
@@ -213,10 +213,11 @@ public class ProductAction extends SBActionAdapter {
 		String aName = null;
 		List<ProductAttributeVO> pAttributes = null;
 		ResultSet rs = ps.executeQuery();
-		ProductVO product = new ProductVO();
+		ProductVO product = null;
 		while (rs.next()) {
-			if (StringUtil.checkVal(product.getProductId()).length() == 0) 
+			if (product == null) { 
 				product = new ProductVO(rs);
+			}
 			
 			if(aName != null && !aName.equals(rs.getString("attribute_nm"))){
 				product.addProdAttribute(aName, pAttributes);
@@ -231,13 +232,13 @@ public class ProductAction extends SBActionAdapter {
 			pAttributes.add(new ProductAttributeVO(rs));
 			
 		}
+		
 		if(pAttributes == null)	pAttributes = new ArrayList<ProductAttributeVO>();
 		// sort the product attributes by level and display order
 		Collections.sort(pAttributes, new ProductAttributeComparator());
 		// add attributes to product VO
 		product.addProdAttribute(aName, pAttributes);
 		pAttributes = null;
-		
 		this.setPageData(req, product.getTitle(), product.getMetaKywds(), product.getMetaDesc());
 		return product;
 	}

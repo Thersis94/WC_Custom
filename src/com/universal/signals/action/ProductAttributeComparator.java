@@ -7,15 +7,17 @@ import com.siliconmtn.commerce.catalog.ProductAttributeVO;
 
 /****************************************************************************
  * <b>Title</b>: CartItemProductAttributeComparator.java<p/>
- * <b>Description: </b> Compares product attribute VOs.  Standare 'attribute' VOs are sorted based on 
+ * <b>Description: </b> Compares product attribute VOs.  Standard 'attribute' VOs are sorted based on 
  * whether or not they are a custom attribute.  If not a custom attribute, they are sorted based on 
  * the attribute '2' text value and on display order (order_no).
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2012<p/>
  * <b>Company:</b> Silicon Mountain Technologies<p/>
- * @author Dave Bargerhuff
+ * @author David Bargerhuff
  * @version 1.0
  * @since July 31, 2012
+ * Changes:
+ * Jul 31, 2012: DBargerhuff: Created class.
  ****************************************************************************/
 
 public class ProductAttributeComparator implements Comparator<ProductAttributeVO> {
@@ -25,10 +27,10 @@ public class ProductAttributeComparator implements Comparator<ProductAttributeVO
 		if (idVal == 0) {
 			// same type, dig deeper
 			if (a1.getAttributeId().contains("CUSTOM")) {
-				// custom attribute, compare value_txt
-				return a1.getValueText().compareTo(a2.getValueText());
+				// both are custom attributes, compare on order number
+				return a1.getDisplayOrderNo().compareTo(a2.getDisplayOrderNo());
 			} else {
-				// standard attribute, compare attribute2_txt values
+				// both are standard attributes, compare attribute2_txt values
 				int att2Val = a1.getAttribute2().compareTo(a2.getAttribute2());
 				if (att2Val == 0) {
 					// attribute2_txt vals are same, compare display_order_no

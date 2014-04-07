@@ -13,12 +13,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+
 // Log4J 1.2.15
 import org.apache.log4j.Logger;
+
 
 //SMT Base Libs
 import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 
 /****************************************************************************
@@ -63,8 +66,8 @@ public class PersonalizationImporter extends AbstractImporter {
 			throws FileNotFoundException, IOException, SQLException  {
 		StringBuilder sb = new StringBuilder();
 		sb.append("insert into product_attribute_xr (product_attribute_id, attribute_id, ");
-		sb.append("product_id, model_year_no, value_txt, create_dt, currency_type_id, msrp_cost_no, attrib1_txt, attrib2_txt, attrib3_txt) ");
-		sb.append("values (?,?,?,?,?,?,?,?,?,?,?)");
+		sb.append("product_id, model_year_no, value_txt, create_dt, currency_type_id, msrp_cost_no, attrib1_txt, attrib2_txt, attrib3_txt, order_no) ");
+		sb.append("values (?,?,?,?,?,?,?,?,?,?,?,?)");
 		
 		BufferedReader data = null;
 		String fullPath = catalog.getSourceFilePath() + catalog.getSourceFileName();
@@ -76,9 +79,12 @@ public class PersonalizationImporter extends AbstractImporter {
 			throw new FileNotFoundException(errMsg);
 		}
 
-		int ctr = 0;
 		PreparedStatement ps = dbConn.prepareStatement(sb.toString());
-		String temp = null;
+		int ctr = 0;
+		int orderNo = 0;
+		String temp;
+		String prodId;
+		String dataValue;
 		Map<String, Integer> headers = null;
 		for (int i=0; (temp = data.readLine()) != null; i++) {
 			String[] fields = temp.split(catalog.getSourceFileDelimiter());
@@ -86,7 +92,9 @@ public class PersonalizationImporter extends AbstractImporter {
 				headers = parseHeaderRow(fields);
 				continue; // skip to next row
 			}
-			String prodId = catalog.getCatalogPrefix() + fields[headers.get("CUSTOM")];
+			prodId = catalog.getCatalogPrefix() + fields[headers.get("CUSTOM")];
+			dataValue = fields[headers.get("DATA")];
+			orderNo = parseOrderNo(StringUtil.checkVal(dataValue).toUpperCase());
 			try {
 				ps.setString(1, new UUIDGenerator().getUUID());	//product_attribute_id
 				ps.setString(2, "USA_CUSTOM");	//attribute_id
@@ -97,12 +105,13 @@ public class PersonalizationImporter extends AbstractImporter {
 				ps.setString(7, "DOLLARS");	//currency_type_id
 				ps.setInt(8, 0);	//msrp_cost_no
 				ps.setString(9, fields[headers.get("PROMPT")]);		//attrib1_txt
-				ps.setString(10, fields[headers.get("MAXLENGTH")]);	//attrib2_txt
 				if(fields.length > 5) {
-					ps.setString(11, fields[headers.get("REQUIRED")]);	//attrib3_txt
+					ps.setString(10, fields[headers.get("REQUIRED")]);	//attrib2_txt
 				} else {
-					ps.setString(11, "0");	//attrib3_txt
+					ps.setString(10, "0");	//attrib2_txt
 				}
+				ps.setString(11, fields[headers.get("MAXLENGTH")]);	//attrib3_txt
+				ps.setInt(12, orderNo);
 				ps.executeUpdate();
 				ctr++;
 
@@ -129,6 +138,23 @@ public class PersonalizationImporter extends AbstractImporter {
 		}
 		log.info("Personalization options added: " + ctr);
 		
+	}
+	
+	/**
+	 * Parses the order no based on the data value passed in.  We are
+	 * expecting the data value to be a String in the format "DATAnn" where
+	 * nn is 1, 2, ..., 99, etc.  Order number is set to (n - 1) for n > 0, otherwise
+	 * order number is set to 0.
+	 * @param dataValue
+	 * @return
+	 */
+	private int parseOrderNo(String dataValue) {
+		int orderNo = 0;
+		if (dataValue.startsWith("DATA") && dataValue.length() > 4) {
+			orderNo = Convert.formatInteger(dataValue.substring(4)) - 1;
+			if (orderNo < 0) orderNo = 0;
+		}
+		return orderNo;
 	}
 
 	/**
