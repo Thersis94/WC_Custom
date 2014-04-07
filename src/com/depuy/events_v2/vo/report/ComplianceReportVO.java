@@ -1,16 +1,8 @@
 package com.depuy.events_v2.vo.report;
 
 // JDK 1.5.0
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.w3c.dom.Document;
-
-// DOM4J libs
-import org.w3c.tidy.Tidy;
-import org.xhtmlrenderer.pdf.ITextRenderer;
 
 // Log4j 1.2.8
 import org.apache.log4j.Logger;
@@ -18,6 +10,7 @@ import org.apache.log4j.Logger;
 import com.depuy.events_v2.vo.DePuyEventSeminarVO;
 import com.depuy.events_v2.vo.PersonVO;
 import com.depuy.events_v2.vo.PersonVO.Role;
+import com.siliconmtn.data.report.PDFReport;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.event.vo.EventEntryVO;
@@ -112,27 +105,10 @@ public class ComplianceReportVO extends AbstractSBReportVO {
 			buf = new StringBuffer("The compliance form could not be populated.  Please contact the site administrator for assistance");
 		}
 
+		
 		//convert the html to a PDF, and return it
-		return makeIntoPDF(buf.toString().getBytes());
+		PDFReport pdf = new PDFReport("http://events.depuy.com");
+		pdf.setData(buf.toString());
+		return pdf.generateReport();
 	}
-
-	private byte[] makeIntoPDF(byte[] bytes) {
-		ByteArrayOutputStream os = new ByteArrayOutputStream();
-		Tidy tidy = new Tidy(); // obtain a new Tidy instance
-		tidy.setXHTML(true);
-		try {
-			ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-			Document doc = tidy.parseDOM(bais, new ByteArrayOutputStream());
-
-			ITextRenderer renderer = new ITextRenderer();
-			renderer.setDocument(doc, "http://events.depuy.com");
-			renderer.layout();
-			renderer.createPDF(os);
-		} catch (Exception e) {
-			log.error("Error creating PDF File", e);
-		}
-
-		return os.toByteArray();
-	}
-
 }
