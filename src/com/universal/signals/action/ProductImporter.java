@@ -1,6 +1,6 @@
 package com.universal.signals.action;
 
-// JDK 1.6.x
+// JDK 1.7
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -22,9 +22,12 @@ import java.util.Properties;
 import java.util.Set;
 
 
+
 // Log4J 1.2.15
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
+
+
 
 // SMT Base Libs
 import com.siliconmtn.commerce.catalog.ProductCategoryVO;
@@ -39,20 +42,17 @@ import com.siliconmtn.util.UUIDGenerator;
 // WC 2.0 libs
 import com.smt.sitebuilder.action.commerce.product.ProductCatalogAction;
 
-// WC_Custom libs
-import com.universal.catalog.CatalogImport;
-import com.universal.catalog.CatalogImportFactory;
 
 /****************************************************************************
  * <b>Title</b>: ProductImporter.java <p/>
- * <b>Project</b>: WC_Misc <p/>
- * <b>Description: </b> Put comments here
+ * <b>Project</b>: WC_Custom <p/>
+ * <b>Description: </b> Custom product catalog importer for Universal Screen Arts, Inc. product catalogs.
  * <p/>
- * <b>Copyright:</b> Copyright (c) 2011<p/>
+ * <b>Copyright:</b> Copyright (c) 2014<p/>
  * <b>Company:</b> Silicon Mountain Technologies<p/>
- * @author james
+ * @author David Bargerhuff
  * @version 1.0
- * @since Jul 18, 2011<p/>
+ * @since Mar 26, 2014<p/>
  * <b>Changes: </b>
  ****************************************************************************/
 public class ProductImporter {
@@ -61,7 +61,7 @@ public class ProductImporter {
 	private String optsFileLoc = null;
 	private String persFileLoc = null;
 	private Properties config = new Properties();
-	private static final Logger log = Logger.getLogger("ProductImporter");
+	private static final Logger log = Logger.getLogger(ProductImporter.class);
 	private Connection conn = null;
 	private Map<String, Integer> headerMap = null;
 	private Map<String, String> prodCats = new LinkedHashMap<String, String>();
@@ -71,8 +71,6 @@ public class ProductImporter {
 	Set<String> misMatchProdOptions = new HashSet<String>();
 	Set<String> misMatchProdCustom = new HashSet<String>();
 	Set<String> misMatchAttrib = new HashSet<String>();
-
-	private CatalogImport cImp;
 	
 	//private static final int BATCH_SIZE = 1000;
 	private boolean preserveCategories = false;
@@ -170,22 +168,6 @@ public class ProductImporter {
 	}
 	
 	/**
-	 * Initializes the appropriate values required for processing a catalog
-	 * @param catId
-	 * @param catModYr
-	 * @param prefix
-	 * @param sourcePath
-	 */
-	@SuppressWarnings("unused")
-	private void initializeNextCatalog(String catId, String catModYr, String prefix, String sourcePath) {
-		cImp = CatalogImportFactory.getCatalogImport(catId);
-		cImp.setCatalogId(catId);
-		cImp.setCatalogModelYear(catModYr);
-		cImp.setProductAndCategoryPrefix(prefix);
-		cImp.setImportSourcePath(sourcePath);
-	}
-	
-	/**
 	 * 
 	 * @throws IOException
 	 * @throws SQLException 
@@ -268,13 +250,6 @@ public class ProductImporter {
 				ctr++;
 				try {
 					ps.executeUpdate();
-					/*
-					ps.addBatch();
-					if(ctr % BATCH_SIZE == 0){
-						log.debug("Updating product Groups: " + ctr);
-						ps.executeBatch();
-					}
-					*/
 				} catch (Exception e) {
 					log.error("Unable to Add Parent: " + parentId + "|" + prodId + "\t\t" + e.getMessage());
 				}
@@ -373,18 +348,10 @@ public class ProductImporter {
 				continue;
 			}
 			
-			//String cUrl = vo.getCategoryUrl();
-			//if (StringUtil.checkVal(vo.getParentCode()).length() > 0 && data.get(vo.getParentCode()) != null) {
-				//String parentPath = data.get(vo.getParentCode()).getCategoryUrl();
-				//cUrl = parentPath + "|" + cUrl;
-			//}
-			
 			String sDesc = this.buildShortDescription(vo, data);
-			//log.debug("sDesc: " + sDesc);
 						
 			ps.setString(1, key);
 			ps.setString(2, PRODUCT_CATALOG_ID);
-			//ps.setString(3, vo.getParentCode());
 			ps.setString(3, null);
 			ps.setString(4, vo.getCategoryName());
 			ps.setInt(5, 1);
@@ -402,18 +369,11 @@ public class ProductImporter {
 			}
 			
 			try {
-				//ps.addBatch();
 				ps.executeUpdate();
 				catParentMap.put(key, vo.getParentCode());
 				ctr++;
-				/*
-				// Execute the batch
-				if ((ctr % BATCH_SIZE) == 0) {
-					log.debug("Adding categories: " + ctr);
-					ps.executeBatch();
-				}	
-				*/		
-				} catch (Exception e) {
+
+			} catch (Exception e) {
 				log.error("Failed insert, key/parent/catname: " + key + "/" + vo.getParentCode() + "/" + vo.getCategoryName() + " ---> " + e.getMessage());
 			}
 		}
@@ -471,22 +431,13 @@ public class ProductImporter {
 			
 			try {
 				ps.executeUpdate();
-				//ps.addBatch();
 				ctr++;
-				/*
-				// Execute the batch
-				if ((ctr % BATCH_SIZE) == 0) {
-					log.debug("Updating Products: " + ctr);
-					ps.executeBatch();
-				}
-				*/
-				} catch (Exception e) {
+			} catch (Exception e) {
 				log.error("Unable to add custom product number for product: " + p.getProductId() + ", " + e.getMessage());
 			}
 		}
 		try {
 			// Update the final products
-			//ps.executeBatch();
 			conn.commit();
 			log.debug("Updating Products: " + ctr);
 			ps.close();
@@ -741,32 +692,20 @@ public class ProductImporter {
 			attribId = this.formatAttribute(attribId);
 			if (attribId == null) continue;
 			try {
-				ps.setString(1, new UUIDGenerator().getUUID());	//prodattr_id
-				ps.setString(2, attribId); //attrib_id
-				ps.setString(3, prodId);	//prod_id
+				ps.setString(1, new UUIDGenerator().getUUID());	//product_attribute_id
+				ps.setString(2, attribId); //attribute_id
+				ps.setString(3, prodId);	//product_id
 				ps.setString(4, CATALOG_MODEL_YEAR_ID);	//model_year_no
-				ps.setString(5, fields[headerMap.get("CODE")]);	//code
-				ps.setTimestamp(6, Convert.getCurrentTimestamp());	//crt_dt
+				ps.setString(5, fields[headerMap.get("CODE")]);	// value_txt
+				ps.setTimestamp(6, Convert.getCurrentTimestamp());	//create_dt
 				ps.setString(7, "dollars");	//curr_type
-				ps.setInt(8, Convert.formatInteger(fields[headerMap.get("PRICEMOD")]));		//pricemod
+				ps.setInt(8, Convert.formatInteger(fields[headerMap.get("PRICEMOD")]));		//msrp_cost_no
 				ps.setString(9, fields[headerMap.get("DESCRIPTION")]);	//attrib1
 				ps.setString(10, attribSelectLvl); //attrib2
 				ps.setInt(11, attribSelectOrder); //order_no
 				ps.executeUpdate();
 				ctr++;
-				/*
-				if (conn.isClosed())
-					try {
-						conn = this.getConnection();
-					} catch (Exception e) {}
-				ps.addBatch();
-				
-				// Execute the batch
-				if ((ctr % BATCH_SIZE) == 0) {
-					log.debug("Adding attributes: " + ctr);
-					ps.executeBatch();
-				}
-				*/
+
 			}catch (Exception e) {
 				String cause = null;
 				if (e.getMessage().contains("column 'PRODUCT_ID'")) {
@@ -786,7 +725,7 @@ public class ProductImporter {
 		
 		try {
 			data.close();
-			// Add the final attributes
+			// Add the final attributes TODO clean this up.
 			//ps.executeBatch();
 			conn.commit();
 			log.debug("Adding attributes: " + ctr);
@@ -799,7 +738,7 @@ public class ProductImporter {
 	
 	public void addCustomProductAttribute(List<ProductVO> products) throws SQLException, IOException  {
 		String s = "insert into product_attribute_xr (product_attribute_id, attribute_id, ";
-		s += "product_id, model_year_no, value_txt, create_dt, currency_type_id, msrp_cost_no, attrib1_txt, attrib3_txt, attrib2_txt) ";
+		s += "product_id, model_year_no, value_txt, create_dt, currency_type_id, msrp_cost_no, attrib1_txt, attrib2_txt, attrib3_txt) ";
 		s += "values (?,?,?,?,?,?,?,?,?,?,?)";
 		BufferedReader data = null;
 		try {
@@ -821,20 +760,20 @@ public class ProductImporter {
 			}
 			String prodId = PRODUCT_AND_CATEGORY_PREFIX + fields[headerMap.get("CUSTOM")];
 			try {
-				ps.setString(1, new UUIDGenerator().getUUID());		//prodattr_id
-				ps.setString(2, "USA_CUSTOM");	//attrib_id
-				ps.setString(3, prodId);	//prod_id
+				ps.setString(1, new UUIDGenerator().getUUID());		//product_attribute_id
+				ps.setString(2, "USA_CUSTOM");	//attribute_id
+				ps.setString(3, prodId);	//product_id
 				ps.setString(4, CATALOG_MODEL_YEAR_ID);	//model_year_no
-				ps.setString(5, fields[headerMap.get("DATA")]); 	//data
-				ps.setTimestamp(6, Convert.getCurrentTimestamp());	//crt_dt
-				ps.setString(7, "DOLLARS");	//curr_type
-				ps.setInt(8, 0);		//msrp_cost
-				ps.setString(9, fields[headerMap.get("PROMPT")]);							//prompt
-				ps.setString(10, fields[headerMap.get("MAXLENGTH")]);						//attrib2
+				ps.setString(5, fields[headerMap.get("DATA")]); 	//value_txt
+				ps.setTimestamp(6, Convert.getCurrentTimestamp());	//create_dt
+				ps.setString(7, "DOLLARS");	//currency_type_id
+				ps.setInt(8, 0);		//msrp_cost_no
+				ps.setString(9, fields[headerMap.get("PROMPT")]);							//attrib1_txt
+				ps.setString(10, fields[headerMap.get("MAXLENGTH")]);						//attrib2_txt
 				if(fields.length > 5)
-					ps.setString(11, fields[headerMap.get("REQUIRED")]);						//attrib3
+					ps.setString(11, fields[headerMap.get("REQUIRED")]);						//attrib3_txt
 				else
-					ps.setString(11, "0");						//attrib3
+					ps.setString(11, "0");						//attrib3_txt
 				//log.debug("attr info: " + key + "|" + p.getProductId() + "|" + value + "|");
 				ps.executeUpdate();
 				ctr++;
