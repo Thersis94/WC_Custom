@@ -92,9 +92,7 @@ public class OptionsImporter extends AbstractImporter {
 				headers = new HashMap<String, Integer>();
 				for (int j = 0; j < fields.length; j++) {
 					headers.put(fields[j].toUpperCase(), new Integer(j));
-					for (String h : headers.keySet()) {
-						log.info("options headers | index: " + h + "|" + headers.get(h));
-					}
+					log.info("options headers | index: " + fields[j] + "|" + j);
 				}
 				continue;
 			}

@@ -40,9 +40,9 @@ public class CategoriesImporter extends AbstractImporter {
 	private static final Logger log = Logger.getLogger(CategoriesImporter.class);
 	private Set<String> misMatchedCategories = null;
 	private Set<String> misMatchedParentCategories = null;
-	private String topLevelCategory;
-	private String skipCategory;
-	private String featureCategory;
+	private String topLevelCategoryId;
+	private String skipCategoryId;
+	private String featureCategoryId;
 	
 	public CategoriesImporter() {
 		misMatchedCategories = new HashSet<>();
@@ -64,9 +64,13 @@ public class CategoriesImporter extends AbstractImporter {
 	 * @throws SQLException
 	 */
 	public void manageCategories() throws FileNotFoundException, IOException, SQLException {
-		topLevelCategory = catalog.getAttributes().get(CatalogImportVO.CATEGORY_TOP_LEVEL_ID);
-		skipCategory = catalog.getAttributes().get(CatalogImportVO.CATEGORY_SKIP_ID);
-		featureCategory = catalog.getAttributes().get(CatalogImportVO.CATEGORY_FEATURE_ID);
+		topLevelCategoryId = catalog.getAttributes().get(CatalogImportVO.CATEGORY_TOP_LEVEL_ID);
+		skipCategoryId = catalog.getAttributes().get(CatalogImportVO.CATEGORY_SKIP_ID);
+		featureCategoryId = catalog.getAttributes().get(CatalogImportVO.CATEGORY_FEATURE_ID);
+		
+		log.debug("topLevelCategoryId: " + topLevelCategoryId);
+		log.debug("skipCategoryId: " + skipCategoryId);
+		log.debug("featureCategoryId: " + featureCategoryId);
 
 		// retrieve categories from source file.
 		Map<String, ProductCategoryVO> cats = retrieveCategories(catalog);
@@ -99,8 +103,11 @@ public class CategoriesImporter extends AbstractImporter {
 		}
 		
 		Map<String, ProductCategoryVO> cats = new LinkedHashMap<String, ProductCategoryVO>();
-		String temp;
 		Map<String, Integer> headers = null;
+		String temp;
+		String url;
+		String catCode;
+		String parentCatCode;
 		for (int i=0; (temp = data.readLine()) != null; i++) {
 			String[] fields = temp.split(catalog.getSourceFileDelimiter());
 			if (i == 0) {
@@ -108,16 +115,37 @@ public class CategoriesImporter extends AbstractImporter {
 				continue; // skip the header row
 			}
 			
-			String url = (fields[headers.get("CATEGORY_NAME")]).replace(" ", "_");
+			catCode = fields[headers.get("CATEGORY_CODE")];
+			parentCatCode = StringUtil.checkVal(fields[headers.get("CATEGORY_PARENT")]);
+			
+			/* 
+			 * filter out any 'skip' categories that are not feature 'categories', meaning the
+			 * category code does not start with 'Z'.  Also filter out any top-level categories
+			 * whose parent is "0".
+			*/
+			if (parentCatCode.equalsIgnoreCase(skipCategoryId)) {
+				if (! catCode.startsWith(featureCategoryId)) {
+					log.debug("skipping 'zz' category");
+					continue;
+				}
+			} else if (catCode.equals(topLevelCategoryId)) {
+				if (parentCatCode.equals("0")) {
+					log.debug("skipping top-level category with parent category of '0'");
+					continue;
+				}
+			}
+
+			url = (fields[headers.get("CATEGORY_NAME")]).replace(" ", "_");
 			url = url.replace("-", "_");
 			url = StringUtil.formatFileName(url);
 			url = url.replace("_", "-");
 			url = url.replace("--", "-");
 			
-			String catCode = catalog.getCatalogPrefix() + fields[headers.get("CATEGORY_CODE")];
+			// prepend the catalog prefix to the category code
+			catCode = catalog.getCatalogPrefix() + catCode;
 			ProductCategoryVO vo = new ProductCategoryVO();
 			vo.setCategoryCode(catCode);
-			vo.setParentCode(catalog.getCatalogPrefix() + fields[headers.get("CATEGORY_PARENT")]);
+			vo.setParentCode(catalog.getCatalogPrefix() + parentCatCode);
 			vo.setCategoryUrl(url);
 			vo.setCategoryName(fields[headers.get("CATEGORY_NAME")]);
 			cats.put(catCode, vo);
@@ -151,15 +179,9 @@ public class CategoriesImporter extends AbstractImporter {
 		sb.append("values(?,?,?,?,?,?,?,?,?,?,?,?)");
 		
 		PreparedStatement ps = dbConn.prepareStatement(sb.toString());
-		int ctr=0;
-
+		int ctr = 0;
 		for (String key : categoryMap.keySet()) {
 			ProductCategoryVO vo = categoryMap.get(key);
-			if (skipCategory.equalsIgnoreCase(vo.getParentCode())) {
-				log.info("Skipping 'zz' category");
-				continue;
-			}
-			
 			String sDesc = this.buildShortDescription(vo, categoryMap);						
 			ps.setString(1, key);
 			ps.setString(2, catalog.getCatalogId());
@@ -171,13 +193,8 @@ public class CategoriesImporter extends AbstractImporter {
 			ps.setString(8, "");
 			ps.setString(9, "");
 			ps.setString(10, vo.getCategoryUrl());
-			ps.setString(11, sDesc); 
-			if (key.indexOf(catalog.getCatalogPrefix()) > -1) {
-				// strip prefix from key for use as
-				ps.setString(12, key.substring(key.indexOf(catalog.getCatalogPrefix()) + catalog.getCatalogPrefix().length()));
-			} else {
-				ps.setString(12, key);
-			}
+			ps.setString(11, sDesc);
+			ps.setString(12, key);
 			
 			try {
 				ps.executeUpdate();
@@ -207,21 +224,23 @@ public class CategoriesImporter extends AbstractImporter {
 	 */
 	public void updateCategoryParents(CatalogImportVO catalog, Map<String, String> categoryParentMap) 
 			throws SQLException {
+		log.info("Updating category parents...");
 		String sql = "update product_category set parent_cd = ? where product_catalog_id = ? and product_category_cd = ?";
 		PreparedStatement ps = dbConn.prepareStatement(sql);
 		int ctr=0;
 		for (String s : categoryParentMap.keySet()) {
-			if (topLevelCategory.equals(categoryParentMap.get(s))) {
+			if (categoryParentMap.get(s).endsWith(topLevelCategoryId)) {
 				ps.setString(1, null);
 			} else {
 				ps.setString(1, categoryParentMap.get(s));
 			}
-			ps.setString(2, s);
-			ps.setString(3, catalog.getCatalogId());
+			ps.setString(2, catalog.getCatalogId());
+			ps.setString(3, s);
 			
 			try {
 				ps.executeUpdate();
 				ctr++;
+				
 			} catch (Exception e) {
 				misMatchedParentCategories.add(categoryParentMap.get(s));
 			}
@@ -245,7 +264,7 @@ public class CategoriesImporter extends AbstractImporter {
 	private String buildShortDescription(ProductCategoryVO prodCat, Map<String, ProductCategoryVO> data) {
 		String cUrl = prodCat.getCategoryUrl();
 		if (StringUtil.checkVal(prodCat.getParentCode()).length() > 0 && data.get(prodCat.getParentCode()) != null) {
-			if (! data.get(prodCat.getParentCode()).getCategoryCode().equals(topLevelCategory)) {
+			if (! data.get(prodCat.getParentCode()).getCategoryCode().endsWith(topLevelCategoryId)) {
 				String parentPath = this.buildShortDescription((data.get(prodCat.getParentCode())),data);
 				cUrl = parentPath + "|" + cUrl;
 			}
