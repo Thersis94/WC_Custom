@@ -53,7 +53,8 @@ public class TVSpotUtil {
 		saleAmount("6d000001567b18842a834a598cdeafa"),
 		feedback("6c000001567b18842a834a598cdeafa"),
 		rating("6b000001567b18842a834a598cdeafa"),
-		inquiry("6e000001567b18842a834a598cdeafa");
+		inquiry("6e000001567b18842a834a598cdeafa"),
+		consultation("c0a8022d42b780adb6b4539af9f91878");
 		
 		private String fieldId;
 		ContactField(String fieldId) {

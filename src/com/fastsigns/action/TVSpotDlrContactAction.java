@@ -143,6 +143,11 @@ public class TVSpotDlrContactAction extends SimpleActionAdapter {
 		//log.debug("feedback=" + req.getParameter(CON_ + key));
 		sda.updateField(req.getParameter(CON_ + key), csi, key);
 		
+		//update whether the consultation has been completed or not
+		key = TVSpotUtil.ContactField.consultation.id();
+		//log.debug("complete=" + req.getParameter(CON_ + key));
+		sda.updateField(req.getParameter(CON_ + key), csi, key);
+		
 		//redirect the browser to the thank you page
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		StringBuilder url = new StringBuilder();

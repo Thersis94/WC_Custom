@@ -119,6 +119,7 @@ public class TVSpotReportVO extends AbstractSBReportVO {
 		rpt.append("<td>").append((Calendar.getInstance().getTime().before(surveySentDt.getTime())) ? "No" : "Yes").append("</td>");
 		rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.rating.id()))).append("</td>");
 		rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.feedback.id()))).append("</td>");
+		rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.consultation.id()))).append("</td>");
 		TVSpotUtil.Status status = TVSpotUtil.Status.valueOf(vo.getExtData().get(TVSpotUtil.ContactField.status.id()));
 		if (status == TVSpotUtil.Status.initiated) {
 			rpt.append("<td color=\"red\">").append(status.getLabel()).append("</td>");
@@ -153,6 +154,7 @@ public class TVSpotReportVO extends AbstractSBReportVO {
 		hdr.append("<th>Survey Sent</th>");
 		hdr.append("<th>Survey Rating</th>");
 		hdr.append("<th>Survey Feedback</th>");
+		hdr.append("<th>Consultation Complete</th>");
 		hdr.append("<th>Status</th>");
 		hdr.append("<th>Notes (internal)</th></tr>");
 	}
