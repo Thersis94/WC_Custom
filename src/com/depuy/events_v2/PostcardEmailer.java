@@ -128,6 +128,7 @@ public class PostcardEmailer {
 			mail.addRecipient("amy.zimmerman@hmktgroup.com");
 			mail.addRecipient("admgt@hmktgroup.com"); // Barb Goley & Shari Slough
 			mail.addRecipient("Jenn.Davis@hmktgroup.com"); // Jenn Parrish-Davis);
+			mail.addRecipient("sterling.hoham@hmktgroup.com");
 			mail.setSubject("DePuy Community Education; Postcard Canceled " + postcard.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
