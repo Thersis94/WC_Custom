@@ -282,9 +282,15 @@ public class TVSpotDlrContactAction extends SimpleActionAdapter {
 		msg.append("<li>For more information about \"Operation Consultation\", please refer to the following resources or ");
 		msg.append("consult with your Franchise Business Consultant and/or your Marketing Services Manager:<br/>");
 		msg.append("<ul>");
-		msg.append("<li>Watch the TV spot: <a href=\"http://www.fastsigns.com/#####\">www.fastsigns.com/###</a></li>");
-		msg.append("<li>Review the overview document: DOC ID ###</li>");
-		msg.append("<li>View the webinar:  <a href=\"http://support.fastsigns.com#######\">support.fastsigns.com######</a></li>");
+		msg.append("<li>Watch the TV spot: (15 sec) <a href='https://www.youtube.com/watch?v=BDu-yuOnpmQ'>https://www.youtube.com/watch?v=BDu-yuOnpmQ</a> ");
+		msg.append("and (30 sec) <a href='https://www.youtube.com/watch?v=QhvPTqOkhZM'>https://www.youtube.com/watch?v=QhvPTqOkhZM</a></li>");
+		msg.append("<li>Review the overview document: ");
+		msg.append("<a href='http://support.fastsigns.com/search/FileViewer.aspx?ki=7430'>");
+		msg.append("http://support.fastsigns.com/search/FileViewer.aspx?ki=7430</a> (PowerPoint presentation)</li>");
+		msg.append("<li>View the webinar: ");
+		msg.append("<a href='http://support.fastsigns.com/Stream/MonthlyRecording/ConnectWithCatherine/lib/playback.html'>");
+		msg.append("http://support.fastsigns.com/Stream/MonthlyRecording/ConnectWithCatherine/lib/playback.html</a> ");
+		msg.append("(Connect with Catherine)</li>");
 		msg.append("</ul>");
 		msg.append("</li>");
 		msg.append("</ol>");
