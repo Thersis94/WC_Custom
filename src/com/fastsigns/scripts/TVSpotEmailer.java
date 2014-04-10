@@ -238,9 +238,15 @@ public class TVSpotEmailer extends CommandLineUtil {
 		body.append("<p>For more information about \"Operation Consultation\", please refer to the following resources or ");
 		body.append("consult with your Franchise Business Consultant and/or your Marketing Services Manager:</p>");
 		body.append("<ul>");
-		body.append("<li>Watch the TV spot: <a href=\"http://www.fastsigns.com/#####\">www.fastsigns.com/###</a></li>");
-		body.append("<li>Review the overview document: DOC ID ###</li>");
-		body.append("<li>View the webinar: <a href=\"http://support.fastsigns.com#######\">support.fastsigns.com######</a></li>");
+		body.append("<li>Watch the TV spot: (15 sec) <a href='https://www.youtube.com/watch?v=BDu-yuOnpmQ'>https://www.youtube.com/watch?v=BDu-yuOnpmQ</a> ");
+		body.append("and (30 sec) <a href='https://www.youtube.com/watch?v=QhvPTqOkhZM'>https://www.youtube.com/watch?v=QhvPTqOkhZM</a></li>");
+		body.append("<li>Review the overview document: ");
+		body.append("<a href='http://support.fastsigns.com/search/FileViewer.aspx?ki=7430'>");
+		body.append("http://support.fastsigns.com/search/FileViewer.aspx?ki=7430</a> (PowerPoint presentation)</li>");
+		body.append("<li>View the webinar: ");
+		body.append("<a href='http://support.fastsigns.com/Stream/MonthlyRecording/ConnectWithCatherine/lib/playback.html'>");
+		body.append("http://support.fastsigns.com/Stream/MonthlyRecording/ConnectWithCatherine/lib/playback.html</a> ");
+		body.append("(Connect with Catherine)</li>");
 		body.append("</ul>");
 		body.append("<p>* This survey will be sent to this prospect in six business days: ");
 		body.append("Thank you for your recent request for a consultation from FASTSIGNS&reg;.  ");
@@ -357,9 +363,15 @@ public class TVSpotEmailer extends CommandLineUtil {
 		body.append("Franchise Business Consultant and/or your Marketing Services Manager. Additional ");
 		body.append("information is available using the following resources:<br/>");
 		body.append("<ul>");
-		body.append("<li>Watch the TV spot: <a href=\"http://www.fastsigns.com/#####\">www.fastsigns.com/#####</a></li>");
-		body.append("<li>Review the overview document:  DOC ID ###</li>");
-		body.append("<li>View the webinar:  <a href=\"http://support.fastsigns.com#######\">support.fastsigns.com#######</a></li>");
+		body.append("<li>Watch the TV spot: (15 sec) <a href='https://www.youtube.com/watch?v=BDu-yuOnpmQ'>https://www.youtube.com/watch?v=BDu-yuOnpmQ</a> ");
+		body.append("and (30 sec) <a href='https://www.youtube.com/watch?v=QhvPTqOkhZM'>https://www.youtube.com/watch?v=QhvPTqOkhZM</a></li>");
+		body.append("<li>Review the overview document: ");
+		body.append("<a href='http://support.fastsigns.com/search/FileViewer.aspx?ki=7430'>");
+		body.append("http://support.fastsigns.com/search/FileViewer.aspx?ki=7430</a> (PowerPoint presentation)</li>");
+		body.append("<li>View the webinar: ");
+		body.append("<a href='http://support.fastsigns.com/Stream/MonthlyRecording/ConnectWithCatherine/lib/playback.html'>");
+		body.append("http://support.fastsigns.com/Stream/MonthlyRecording/ConnectWithCatherine/lib/playback.html</a> ");
+		body.append("(Connect with Catherine)</li>");
 		body.append("</ul>");
 		
 		return body.toString();
