@@ -44,6 +44,7 @@ public class CategoriesImporter extends AbstractImporter {
 	private String topLevelCategoryId;
 	private String skipCategoryId;
 	private String featureCategoryId;
+	private final String skipCategoryName = "Features";
 	
 	public CategoriesImporter() {
 		misMatchedCategories = new HashSet<>();
@@ -103,9 +104,9 @@ public class CategoriesImporter extends AbstractImporter {
 		Map<String, ProductCategoryVO> cats = new LinkedHashMap<String, ProductCategoryVO>();
 		Map<String, Integer> headers = null;
 		String temp;
-		String url;
 		String catCode;
 		String parentCatCode;
+		String catName;
 		for (int i=0; (temp = data.readLine()) != null; i++) {
 			String[] fields = temp.split(catalog.getSourceFileDelimiter());
 			if (i == 0) {
@@ -115,7 +116,7 @@ public class CategoriesImporter extends AbstractImporter {
 			
 			catCode = fields[headers.get("CATEGORY_CODE")];
 			parentCatCode = StringUtil.checkVal(fields[headers.get("CATEGORY_PARENT")]);
-			
+			catName = fields[headers.get("CATEGORY_NAME")];
 			/* 
 			 * filter out any 'skip' categories that are not feature 'categories', meaning the
 			 * category code does not start with 'Z'.  Also filter out any top-level categories
@@ -128,21 +129,10 @@ public class CategoriesImporter extends AbstractImporter {
 			} else if (catCode.equals(topLevelCategoryId) && (parentCatCode.equals(topLevelParentCategoryId))) {
 				continue;
 			}
-
-			url = (fields[headers.get("CATEGORY_NAME")]).replace(" ", "_");
-			url = url.replace("-", "_");
-			url = StringUtil.formatFileName(url);
-			url = url.replace("_", "-");
-			url = url.replace("--", "-");
 			
-			// prepend the catalog prefix to the category code
-			catCode = catalog.getCatalogPrefix() + catCode;
-			ProductCategoryVO vo = new ProductCategoryVO();
-			vo.setCategoryCode(catCode);
-			vo.setParentCode(catalog.getCatalogPrefix() + parentCatCode);
-			vo.setCategoryUrl(url);
-			vo.setCategoryName(fields[headers.get("CATEGORY_NAME")]);
-			cats.put(catCode, vo);
+			// format and add the category to the category map
+			addCategoryMapping(catCode, parentCatCode, cats, catName);
+
 		}
 		
 		try {
@@ -151,9 +141,39 @@ public class CategoriesImporter extends AbstractImporter {
 			log.error("Error closing BufferedReader, ", e);
 		}
 		
+		// format and add the 'skip category' to the category map, parent category is itself.
+		addCategoryMapping(skipCategoryId, skipCategoryId, cats, skipCategoryName);
+		
 		log.info("Categories retrieved: " + cats.size());
 		
 		return cats;
+	}
+	
+	/**
+	 * Formats a category and adds it to the categories map.
+	 * @param catCode
+	 * @param parentCatCode
+	 * @param cats
+	 * @param headers
+	 * @param fields
+	 */
+	private void addCategoryMapping(String catCode, String parentCatCode, 
+			Map<String, ProductCategoryVO> cats, String catName) {
+		String url = null;
+		url = catName.replace(" ", "_");
+		url = url.replace("-", "_");
+		url = StringUtil.formatFileName(url);
+		url = url.replace("_", "-");
+		url = url.replace("--", "-");
+		
+		// prepend the catalog prefix to the category code
+		catCode = catalog.getCatalogPrefix() + catCode;
+		ProductCategoryVO vo = new ProductCategoryVO();
+		vo.setCategoryCode(catCode);
+		vo.setParentCode(catalog.getCatalogPrefix() + parentCatCode);
+		vo.setCategoryUrl(url);
+		vo.setCategoryName(catName);
+		cats.put(catCode, vo); 
 	}
 	
 	/**
@@ -258,7 +278,8 @@ public class CategoriesImporter extends AbstractImporter {
 	private String buildShortDescription(ProductCategoryVO prodCat, Map<String, ProductCategoryVO> data) {
 		String cUrl = prodCat.getCategoryUrl();
 		if (StringUtil.checkVal(prodCat.getParentCode()).length() > 0 && data.get(prodCat.getParentCode()) != null) {
-			if (! data.get(prodCat.getParentCode()).getCategoryCode().endsWith(topLevelCategoryId)) {
+			String parentCatCode = data.get(prodCat.getParentCode()).getCategoryCode();
+			if (! parentCatCode.endsWith(topLevelCategoryId) && ! parentCatCode.endsWith(skipCategoryId)) {
 				String parentPath = this.buildShortDescription((data.get(prodCat.getParentCode())),data);
 				cUrl = parentPath + "|" + cUrl;
 			}

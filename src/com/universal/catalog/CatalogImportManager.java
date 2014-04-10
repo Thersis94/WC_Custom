@@ -68,6 +68,8 @@ public class CatalogImportManager {
 	private Set<String> misMatchedOptions = null;
 	private Set<String> misMatchedPersonalization = null;
 	private Set<String> misMatchedAttributes = null;
+	
+	private List<String> messageLog = null;
 
 	/**
 	 * 
@@ -89,6 +91,7 @@ public class CatalogImportManager {
 	 * @param args
 	 */
 	public static void main(String[] args)  {
+		boolean success = false;
 		long start = System.currentTimeMillis();
 		CatalogImportManager uci = null;
 		
@@ -96,32 +99,36 @@ public class CatalogImportManager {
 			uci = new CatalogImportManager();
 		} catch (IOException ioe) {
 			log.error("Fatal Error loading configuration properties file, ", ioe);
-			// sendErrorEmail(ioe.getMessage());
+			//uci.addMessage(ioe.getMessage());
+			//uci.sendAdminEmail(success);
 			System.exit(-1);
 		} catch (DatabaseException | InvalidDataException de) {
 			log.error("Fatal Error obtaining database connection: ", de);
-			//sendErrorEmail(de.getMessage());
+			//uci.addMessage(de.getMessage());
+			//uci.sendAdminEmail(success);
 			System.exit(-1);
 		}
 		
 		// Process the imports
 		try {
 			uci.processImports();
+			uci.logMisMatches();
+			success = true;
 		} catch (IOException ioe) {
 			log.error("Fatal Error importing catalogs, ", ioe);
-			//uci.closeDbConnection();
+			uci.addMessage(ioe.getMessage());
+			uci.sendAdminEmail(success);
 			System.exit(-1);
 		} catch (SQLException sqle) {
 			log.error("Fatal Error importing catalogs, ", sqle);
-			//uci.closeDbConnection();
+			uci.addMessage(sqle.getMessage());
+			uci.sendAdminEmail(success);
 			System.exit(-1);
 		} finally {
 			uci.closeDbConnection();
 		}
 		
-		//uci.sendEmailNotification();
-		// Display invalid cats/products/attributes
-		uci.logMisMatches();
+		uci.sendAdminEmail(success);
 		
 		long end = System.currentTimeMillis();
 		log.info("Completed Product Import in " + ((end - start) / 1000) + " seconds");
@@ -142,6 +149,7 @@ public class CatalogImportManager {
 		iCat.addAttribute(CatalogImportVO.CATEGORY_FEATURE_ID, featureCategoryId);
 		iCat.setSourceFileDelimiter(DELIMITER_SOURCE);
 		
+		// loop the catalogs by catalog ID and import.
 		for (String catalogId : catalogIds) {
 			
 			try {
@@ -342,7 +350,14 @@ public class CatalogImportManager {
 		misMatchedPersonalization.addAll(pli.getMisMatchedPersonalization());
 	}
 	
-	//private void sendAdminEmail() {}
+	/**
+	 * 
+	 * @param success
+	 * @param message
+	 */
+	private void sendAdminEmail(boolean success) {
+		
+	}
 		
 	/**
 	 * DEBUG method. Write mismatch data to the log
@@ -402,6 +417,7 @@ public class CatalogImportManager {
 		catalogIds =  new ArrayList<>();
 		prefixes = new LinkedHashMap<>();
 		sourceURLs = new LinkedHashMap<>();
+		messageLog = new ArrayList<String>();
 		misMatchedCategories = new HashSet<String>();
 		misMatchedParentCategories = new HashSet<String>();
 		misMatchedOptions = new HashSet<String>();
@@ -457,6 +473,14 @@ public class CatalogImportManager {
 				log.error("Unable to close DB connection, ", sqle);
 			}
 		}
+	}
+	
+	/**
+	 * Adds a message to the message log
+	 * @param msg
+	 */
+	public void addMessage(String msg) {
+		messageLog.add(msg);
 	}
 
 }

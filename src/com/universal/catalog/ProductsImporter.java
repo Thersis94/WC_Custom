@@ -151,7 +151,7 @@ public class ProductsImporter extends AbstractImporter {
 						fieldIndex = headers.get("RELATED");
 					}
 					if (fieldIndex > -1) {
-						log.debug("found group: " + prod.getProductId());
+						log.info("found group: " + prod.getProductId());
 						String[] children = fields[fieldIndex].split(";"); // ITEMGROUP	
 						productParents.put(prod.getProductId(), children);
 					}
@@ -332,7 +332,7 @@ public class ProductsImporter extends AbstractImporter {
 				ps.close();
 			} catch (Exception e) {log.error("Error closing PreparedStatement, ", e);}
 		}
-		log.debug("Products inserted: " + ctr);
+		log.info("Products inserted: " + ctr);
 	}
 		
 	/**
