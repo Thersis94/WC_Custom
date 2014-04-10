@@ -90,7 +90,7 @@ public class PatientContactDataRetriever {
 					count++;
 				}
 				// retrieve response data
-				vo.addExtData(rs.getString("contact_field_id"), rs.getString("value_txt"));
+				vo.addExtData(rs.getString("contact_field_id"), rs.getString("value_txt"), 0);
 				log.debug("field/value: " + rs.getString("contact_field_id") + "/" + rs.getString("value_txt"));
 			}
 			cdc.addResponse(vo);

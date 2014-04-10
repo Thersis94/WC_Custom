@@ -146,7 +146,7 @@ public class PatientContactRetriever extends SBActionAdapter {
 				//decode reserved characters
 				val = decodeValue(ser, val);
 				// log.debug("val: " + val);
-				vo.addExtData(contactFieldId, val);
+				vo.addExtData(contactFieldId, val, rs.getInt("html_type_id"));
 				// Reset the ids for comparison and increment the counter
 				csId = newCsId;
 			}
