@@ -44,7 +44,7 @@ public class CategoriesImporter extends AbstractImporter {
 	private String topLevelCategoryId;
 	private String skipCategoryId;
 	private String featureCategoryId;
-	private final String skipCategoryName = "Features";
+	private final String skipCategoryName = "Featured";
 	
 	public CategoriesImporter() {
 		misMatchedCategories = new HashSet<>();

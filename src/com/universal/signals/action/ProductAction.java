@@ -50,6 +50,8 @@ public class ProductAction extends SBActionAdapter {
 	
 	public static final String STATUS_AVAILABLE = "Available";
 	public static final String STATUS_SOLD_OUT = "Sold Out";
+	public static final String PARAM_DETAIL = "detail";
+	public static final String PARAM_FEATURED = "featured";
 
 	/**
 	 * 
@@ -66,7 +68,7 @@ public class ProductAction extends SBActionAdapter {
 	}
 	
 	public void build(SMTServletRequest req) throws ActionException {
-		log.debug("********** Building");
+
 	}
 	
 	/*
@@ -75,58 +77,82 @@ public class ProductAction extends SBActionAdapter {
 	 */
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+		// get the catalog ID from the module attributes
 		String catalogId = StringUtil.checkVal(mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 		mod = null;
+		// build the category url value that has been requested
 		String cat = this.buildCatUrlFromQueryString(req);
-		String cat1 = StringUtil.checkVal(req.getParameter(SMTServletRequest.PARAMETER_KEY + "1"));
-		log.debug("catalogId, cat: " + catalogId + ", " + cat);
+		log.debug("catalogId, catUrl: " + catalogId + ", " + cat);
+		
 		try {
-			List<ProductCategoryVO> data = this.retrieveCat(req, catalogId, cat);
-			this.putModuleData(data, data.size(), false);
-			
-			if (data.size() == 0) {
-				//if ((cat2.length() > 1 || cat3.length() > 1) && ! "detail".equalsIgnoreCase(cat1)) {
-				if ((cat.indexOf("|") > -1) && ! "detail".equalsIgnoreCase(cat1)) {
-					data = this.retrieveSubCat(req, catalogId, cat);
-					this.putModuleData(data, data.size(), false);
-					if (data.size() ==0) {
-						log.debug("retrieve product list info");
-						Collection<ProductVO> prods = this.retrieveProductList(req, catalogId, cat);
-						// if the data is still empty, get the group data
-						if (prods.size() == 0) prods = this.getGroupInfo(req, catalogId);
-						this.putModuleData(prods, prods.size(), false);
-						req.setAttribute("usaProdList", Boolean.TRUE);
-					}
-				} else {
-					// no subcats exist, check for products
-					Collection<ProductVO> prods = this.retrieveProductList(req, catalogId, cat);
-					if (prods.size() == 0) {
-						// check for group data
-						prods = this.getGroupInfo(req, catalogId);
-						if (prods.size() == 0) {
-							// if the group data is empty check for detail
-							log.debug("Retrieving product detail info...");
-							ProductVO detail = this.retrieveProductDetail(req, catalogId);
-							if (detail.getProductId() != null) {
-								this.checkAvailability(req, detail);
-								this.putModuleData(detail, 1, false);
-								req.setAttribute("usaProdDetail", Boolean.TRUE);
-							} else {
-								// no data, default to prod list
-								this.putModuleData(prods, prods.size(), false);
-								req.setAttribute("usaProdList", Boolean.TRUE);
+			String cat1 = StringUtil.checkVal(req.getParameter(SMTServletRequest.PARAMETER_KEY + "1"));
+			log.debug("paramKey1(cat1): " + cat1);
+			if (PARAM_DETAIL.equalsIgnoreCase(cat1)) {
+				// retrieve product detail
+				log.debug("retrieving product detail info...");
+				ProductVO detail = this.retrieveProductDetail(req, catalogId);
+				
+				if (detail.getProductId() != null) {
+					// found product detail, so check availability
+					this.checkAvailability(req, detail);
+				}
+				
+				this.putModuleData(detail, 1, false);
+				req.setAttribute("usaProdDetail", Boolean.TRUE);
+				
+			} else if (PARAM_FEATURED.equalsIgnoreCase(cat1)) {
+				// retrieve featured category product list
+				log.debug("retrieving featured products info...");
+				Collection<ProductVO> prods = this.retrieveProductList(req, catalogId, cat, false);
+				this.putModuleData(prods, prods.size(), false);
+				req.setAttribute("usaProdFeatured", Boolean.TRUE);
+				
+			} else {
+				// retrieve the category
+				List<ProductCategoryVO> data = this.retrieveCat(req, catalogId, cat);
+				
+				if (data.size() == 0) {
+					// no data found from retrieving category
+					if (cat.indexOf("|") > -1) {
+						// attempt to retrieve subcategories for this category
+						data = this.retrieveSubCat(req, catalogId, cat);
+						
+						if (data.size() ==0) {
+							// no subcategory data found, so look for products belonging to this category
+							log.debug("retrieve product list info");
+							Collection<ProductVO> prods = this.retrieveProductList(req, catalogId, cat, true);
+							
+							// no products were found, look for group data
+							if (prods.size() == 0) {
+								prods = this.getGroupInfo(req, catalogId);
 							}
-						} else {
 							this.putModuleData(prods, prods.size(), false);
 							req.setAttribute("usaProdList", Boolean.TRUE);
+							
+						} else {
+							// found subcategory data
+							this.putModuleData(data, data.size(), false);
+							
 						}
 					} else {
+						// no subcategories exist, check for products
+						Collection<ProductVO> prods = this.retrieveProductList(req, catalogId, cat, true);
+						
+						if (prods.size() == 0) {
+							// no products were found, so check for group data
+							prods = this.getGroupInfo(req, catalogId);
+						}
+						// return product list data
 						this.putModuleData(prods, prods.size(), false);
 						req.setAttribute("usaProdList", Boolean.TRUE);
 					}
+					
+				} else {
+					// found category data
+					this.putModuleData(data, data.size(), false);
 				}
+				log.debug("data size: " + data.size());
 			}
-			log.debug("data size: " + data.size());
 		} catch (Exception e) {
 			log.error("Unable to retrieve catalog data", e);
 		}
@@ -140,19 +166,32 @@ public class ProductAction extends SBActionAdapter {
 		super.retrieve(req);
 	}
 	
+	/**
+	 * Loops the parameter keys and builds and category URL based on those keys.
+	 * @param req
+	 * @return
+	 */
 	private String buildCatUrlFromQueryString(SMTServletRequest req) {
 		String cat = "";
 		String qsParam = null;
-		for (int i=1; i<11; i++) {
-			log.debug("evaluating cat qs param #" + i);
+		for (int i = 1; i < 11; i++) {
+			//log.debug("evaluating cat qs param #" + i);
 			qsParam = StringUtil.checkVal(req.getParameter(SMTServletRequest.PARAMETER_KEY + i));
 			if (qsParam.length() == 0) break; // if param key has no value, we're done.
 			if (i == 1) {
-				cat = qsParam;
+				// if 'detail' or 'featured' skip param 1.
+				if (qsParam.equalsIgnoreCase(PARAM_DETAIL) || 
+						qsParam.equalsIgnoreCase(PARAM_FEATURED)) {
+					continue;
+				} else {
+					cat = qsParam;
+				}
 			} else {
 				cat = cat + "|" + qsParam;
-			}	
-		}		
+			}
+		}
+		// remove the pipe if it is at position 0
+		if (cat.indexOf("|") == 0 && cat.length() > 0) cat = cat.substring(1);
 		return cat;
 	}
 	
@@ -199,17 +238,18 @@ public class ProductAction extends SBActionAdapter {
 	 * @throws SQLException
 	 */
 	public ProductVO retrieveProductDetail(SMTServletRequest req, String catalogId) throws SQLException {
+		String productId = req.getParameter(SMTServletRequest.PARAMETER_KEY + "2");
 		StringBuilder s = new StringBuilder();
 		s.append("select * from product a ");
 		s.append("left outer join product_attribute_xr b on a.product_id = b.product_id ");
 		s.append("left outer join product_attribute c on b.attribute_id = c.attribute_id ");
 		s.append("where a.product_catalog_id = ? and a.product_id = ? AND a.PRODUCT_GROUP_ID IS NULL ");
 		s.append("order by a.product_id, b.attribute_id, attrib2_txt, order_no");
-		log.debug("Product Detail SQL: " + s + "|" + req.getParameter(SMTServletRequest.PARAMETER_KEY + "2"));
+		log.debug("Product Detail SQL: " + s + "|" + productId);
 		
 		PreparedStatement ps = dbConn.prepareStatement(s.toString());
 		ps.setString(1, catalogId);
-		ps.setString(2, req.getParameter(SMTServletRequest.PARAMETER_KEY + "2"));
+		ps.setString(2, productId);
 		String aName = null;
 		List<ProductAttributeVO> pAttributes = null;
 		ResultSet rs = ps.executeQuery();
@@ -310,7 +350,7 @@ public class ProductAction extends SBActionAdapter {
 	 * @return
 	 * @throws SQLException
 	 */
-	public Collection<ProductVO> retrieveProductList(SMTServletRequest req, String catalogId, String cat) 
+	public Collection<ProductVO> retrieveProductList(SMTServletRequest req, String catalogId, String cat, boolean useNav) 
 	throws SQLException {
 		//String cat4 = StringUtil.checkVal(req.getParameter(SMTServletRequest.PARAMETER_KEY + "4"));
 		StringBuilder s = new StringBuilder();
@@ -337,18 +377,24 @@ public class ProductAction extends SBActionAdapter {
 		int ctr = 0;
 		while(rs.next()) {
 			// set the page info
-			ctr++;
-			
-			if (ctr >= start && ctr <= end) {
+			if (useNav) {
+				ctr++;
+				if (ctr >= start && ctr <= end) {
+					data.put(rs.getString("product_id"), new ProductVO(rs));
+					log.debug("Nav: " + ctr + "|" + start + "|" + end + "|" + rs.getString("product_id"));
+				}
+			} else {
 				data.put(rs.getString("product_id"), new ProductVO(rs));
-				log.debug("Nav: " + ctr + "|" + start + "|" + end + "|" + rs.getString("product_id"));
 			}
 		}
 		
 		// Get the attributes and add the nav piece
-		req.setAttribute("prodNav", new NavManager(ctr, rpp, page, req.getRequestURL() + ""));
+		if (useNav) {
+			req.setAttribute("prodNav", new NavManager(ctr, rpp, page, req.getRequestURL() + ""));
+		}
 		return data.values();
 	}
+
 	
 	/**
 	 * 
