@@ -82,7 +82,13 @@ public class FSProductAction extends SBActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void retrieve(SMTServletRequest req) throws ActionException {		
+	public void retrieve(SMTServletRequest req) throws ActionException {	
+		// If we are simply creating the menu item we skip out on most of the method.
+		if (req.hasParameter("menuItem")) {
+			prodTreeByCat(req);
+			return;
+		}
+		
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		boolean isPreview = page.isPreviewMode();
 		
@@ -257,6 +263,113 @@ public class FSProductAction extends SBActionAdapter {
 		return null;
 	}
 
+	/**
+	 * Gets the minimal amount of information needed to create a list of the 
+	 * different categories and products under them for use in the menu
+	 * @param req
+	 */
+	private void prodTreeByCat(SMTServletRequest req) {
+		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+		boolean isPreview = page.isPreviewMode();
+		String menuName = req.getParameter("menuName");
+		
+		try {
+			PreparedStatement ps = dbConn.prepareStatement(buildMenuSQL(isPreview));
+			ps.setString(1, getCategoryCd(req));
+			
+			ResultSet rs = ps.executeQuery();
+			
+			List<Node> nodes = new ArrayList<Node>();
+			Node node = null;
+			String catName = "";
+			while (rs.next()) {
+				if(!catName.equals(rs.getString("CATEGORY_NM"))) {
+					catName = rs.getString("CATEGORY_NM");
+					node = new Node();
+					node.setNodeId(rs.getString("CATEGORY_NM"));
+					node.setNodeName(rs.getString("CATEGORY_NM"));
+					node.setFullPath(rs.getString("CUST_CATEGORY_ID")+rs.getString("URL_ALIAS_TXT"));
+					node.setParentId(menuName);
+					node.setUserObject(rs.getInt("ORDER_NO"));
+					nodes.add(node);
+				}
+				node = new Node();
+				node.setNodeName(rs.getString("PRODUCT_NM"));
+				node.setFullPath(rs.getString("CUST_CATEGORY_ID")+rs.getString("prod_url_alias"));
+				node.setParentId(rs.getString("CATEGORY_NM"));
+				node.setUserObject(rs.getInt("ORDER_NO"));
+				nodes.add(node);
+			}
+			
+			// Add a root node to connect every item in the list.
+			node = new Node();
+			node.setNodeId(menuName);
+			node.setNodeName(req.getParameter("menuLink"));
+			nodes.add(node);
+			
+			// Create a data tree and add it to the module container
+			this.putModuleData(new Tree(nodes).preorderList(false), nodes.size(), false);
+		} catch (SQLException e) {
+			log.error("Unable to get product and category information from database. ", e);
+		}
+	}
+
+	/**
+	 * Create the sql query for getting the list of products for the site menu
+	 * @param isPreview
+	 * @return
+	 */
+	private String buildMenuSQL(boolean isPreview) {
+		StringBuilder sql = new StringBuilder();
+		sql.append("select CATEGORY_NM, CUST_CATEGORY_ID, pc.URL_ALIAS_TXT, p.PRODUCT_NM, p.URL_ALIAS_TXT as 'prod_url_alias', pc.ORDER_NO ");
+		sql.append("from PRODUCT_CATEGORY pc ");
+		sql.append("inner join PRODUCT_CATEGORY_XR pcx on pc.PRODUCT_CATEGORY_CD = pcx.PRODUCT_CATEGORY_CD ");
+		sql.append("inner join PRODUCT p on pcx.PRODUCT_ID = p.PRODUCT_ID ");
+		if (isPreview) {
+			sql.append("left join PRODUCT p2 on p.PRODUCT_ID = p2.PRODUCT_GROUP_ID ");
+			sql.append("left join PRODUCT_CATEGORY pc2 on pc.PRODUCT_CATEGORY_CD = pc2.PRODUCT_CATEGORY_CD ");
+		}
+		sql.append("where pc.parent_cd = ? ");
+		if (isPreview) {
+			sql.append("and (pc.category_group_id is not null or (pc2.product_category_cd is null and pc.category_group_id is null)) ");
+			sql.append("and (p.product_group_id is not null or (p2.product_id is null and pc.category_group_id is null)) ");
+		} else {
+			sql.append("and pc.category_group_id is null and p.product_group_id is null ");
+		}
+		sql.append(" and pc.active_flg=1 and p.status_no=5 ");
+		sql.append("order by pc.order_no, CATEGORY_NM");
+		
+		return sql.toString();
+	}
+	
+	/**
+	 * Gets the category we will be building this menu item from based on the
+	 * Ajax Module Id that we were given.
+	 * @param req
+	 * @return
+	 * @throws SQLException
+	 */
+	private String getCategoryCd(SMTServletRequest req) throws SQLException {
+		StringBuilder sql = new StringBuilder();
+		sql.append("SELECT pc.PRODUCT_CATEGORY_CD FROM PRODUCT_CATEGORY pc ");
+		sql.append("inner join product_catalog cat on pc.product_catalog_id = cat.product_catalog_id ");
+		sql.append("where url_alias_txt = ? and status_no = 5 and organization_id = ?");
+		
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+
+		PreparedStatement ps = dbConn.prepareStatement(sql.toString());
+		ps.setString(1, req.getParameter("amid"));
+		ps.setString(2, site.getOrganizationId());
+		
+		ResultSet rs = ps.executeQuery();
+		
+		if (rs.next())
+			return rs.getString(1);
+		
+		throw new SQLException("No parent code found for organization " + site.getOrganizationId()
+				+ " and Ajax Module " + req.getParameter("amid"));
+	}
+	
 	/**
 	 * 
 	 * @param req

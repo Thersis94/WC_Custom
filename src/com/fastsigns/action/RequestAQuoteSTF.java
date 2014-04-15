@@ -19,10 +19,10 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.exception.MailException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.http.parser.StringEncoder;
+import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.security.AbstractLoginModule;
 import com.siliconmtn.security.SecurityModuleFactoryImpl;
 import com.siliconmtn.util.Convert;
-import com.siliconmtn.util.SMTMail;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.siliconmtn.util.databean.FilePartDataBean;
@@ -40,6 +40,7 @@ import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
 import com.smt.sitebuilder.security.SecurityController;
+import com.smt.sitebuilder.util.MessageSender;
 
 /****************************************************************************
  * <b>Title</b>: RequestAQuoteSTF.java<p/>
@@ -418,19 +419,21 @@ public class RequestAQuoteSTF extends SBActionAdapter {
 	 */
 	private void sendCenterEmail(SMTServletRequest req, ContactDataContainer cdc, Boolean isSAF, SAFConfig safConfig, Map<String, String> vals) 
 	throws MailException {
-		SMTMail mail = new SMTMail((String)getAttribute(Constants.CFG_SMTP_SERVER));
-		mail.setUser((String)getAttribute(Constants.CFG_SMTP_USER));
-		mail.setPassword((String)getAttribute(Constants.CFG_SMTP_PASSWORD));
-		mail.setPort(Integer.valueOf((String)getAttribute(Constants.CFG_SMTP_PORT)));
-		mail.setRecpt(req.getParameter(DEALER_EMAIL).split(","));
-		mail.setSubject(safConfig.getEmailSubjectCenter(req.getParameter(USER_EMAIL)));
-		mail.setFrom(safConfig.getSenderEmailAddress(isSAF));
-		mail.setHtmlBody(safConfig.buildEmail(true, cdc, vals));
-		mail.postMail();
+		EmailMessageVO msg = new EmailMessageVO();
+		try {
+			msg.addRecipients(req.getParameter(DEALER_EMAIL).split(","));
+			msg.setSubject(safConfig.getEmailSubjectCenter(req.getParameter(USER_EMAIL)));
+			msg.setFrom(safConfig.getSenderEmailAddress(isSAF));
+			msg.setHtmlBody(safConfig.buildEmail(true, cdc, vals));
+		} catch (InvalidDataException e) {
+			log.error("could not send SAF Center email", e);
+			return;
+		}
 		
-		mail = null;
-    	log.info("sent Center email to " + req.getParameter(DEALER_EMAIL) + " for CSI=" + req.getParameter("csi"));
-    	
+		MessageSender ms = new MessageSender(attributes, dbConn);
+		ms.sendMessage(msg);
+		
+		log.info("sent Center email to " + req.getParameter(DEALER_EMAIL) + " for CSI=" + req.getParameter("csi"));
 	}
 	
 	
@@ -443,18 +446,20 @@ public class RequestAQuoteSTF extends SBActionAdapter {
 	 */
 	private void sendUserEmail(SMTServletRequest req, ContactDataContainer cdc, Boolean isSAF, SAFConfig safConfig, Map<String, String> vals) 
 	throws MailException {
-		SMTMail mail = new SMTMail((String)getAttribute(Constants.CFG_SMTP_SERVER));
-		mail.setUser((String)getAttribute(Constants.CFG_SMTP_USER));
-		mail.setPassword((String)getAttribute(Constants.CFG_SMTP_PASSWORD));
-		mail.setPort(Integer.valueOf((String)getAttribute(Constants.CFG_SMTP_PORT)));
-		mail.setRecpt(new String[] { req.getParameter("userEmail") });
-		mail.setSubject(safConfig.getEmailSubjectUser());
-		mail.setFrom(safConfig.getSenderEmailAddress(isSAF));
-		mail.setHtmlBody(safConfig.buildEmail(false, cdc, vals));
-		mail.postMail();
+		EmailMessageVO msg = new EmailMessageVO();
+		try {
+			msg.addRecipient(req.getParameter("userEmail"));
+			msg.setSubject(safConfig.getEmailSubjectUser());
+			msg.setFrom(safConfig.getSenderEmailAddress(isSAF));
+			msg.setHtmlBody(safConfig.buildEmail(false, cdc, vals));
+		} catch (InvalidDataException e) {
+			log.error("could not send SAF User email", e);
+			return;
+		}
 		
-		mail = null;
-    	log.info("sent User email to " + req.getParameter("userEmail") + " for CSI=" + req.getParameter("csi"));
+		MessageSender ms = new MessageSender(attributes, dbConn);
+		ms.sendMessage(msg);
+		log.info("sent User email to " + req.getParameter("userEmail") + " for CSI=" + req.getParameter("csi"));
 	}
 	
 	
