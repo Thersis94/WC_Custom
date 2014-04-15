@@ -55,6 +55,7 @@ public class ProductIndex implements SMTCustomIndexIntfc {
 	
 	public static final String ORGANIZATON_ID = "USA";
 	public static final String CUSTOM_FIELD_CATALOG = "catalog";
+	public static final String CATALOG_PAGE_URL = "catalog";
 	
 	/**
 	 * 
@@ -87,7 +88,7 @@ public class ProductIndex implements SMTCustomIndexIntfc {
     	for (int i = 0; i < nodes.size(); i++) {
     		Node n = nodes.get(i);
     		ProductVO vo = (ProductVO)n.getUserObject();
-    		log.debug("Full Path: /home" + n.getFullPath());
+    		log.debug("Full Path: " + CATALOG_PAGE_URL + "/" +  n.getFullPath());
     		try {
 	    		doc = dh.getDocument(vo.toString().getBytes());
 	    		Date start = Convert.formatDate(new java.util.Date(), Calendar.MONTH, -1);
@@ -95,8 +96,8 @@ public class ProductIndex implements SMTCustomIndexIntfc {
 		        doc.add(new StringField(DocumentHandler.ORGANIZATION, orgId,Field.Store.YES));
 		        doc.add(new StringField(DocumentHandler.LANGUAGE, "en",Field.Store.YES));
 		        doc.add(new StringField(DocumentHandler.ROLE, "000",Field.Store.YES));
-		        doc.add(new TextField(DocumentHandler.SITE_PAGE_URL, "home" + n.getFullPath(),Field.Store.YES));
-		        doc.add(new TextField(DocumentHandler.DOCUMENT_URL, "home" + n.getFullPath(),Field.Store.YES));
+		        doc.add(new TextField(DocumentHandler.SITE_PAGE_URL, CATALOG_PAGE_URL + n.getFullPath(),Field.Store.YES));
+		        doc.add(new TextField(DocumentHandler.DOCUMENT_URL, CATALOG_PAGE_URL + n.getFullPath(),Field.Store.YES));
 		        doc.add(new TextField(DocumentHandler.DOCUMENT_ID, vo.getProductId(),Field.Store.YES));
 		        doc.add(new TextField(DocumentHandler.FILE_NAME, vo.getProductName(),Field.Store.YES));
 		        doc.add(new TextField(DocumentHandler.TITLE, vo.getProductName(),Field.Store.YES));
