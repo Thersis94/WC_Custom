@@ -16,8 +16,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+
 // Log4J 1.2.15
 import org.apache.log4j.Logger;
+
 
 //SMT Base Libs
 import com.siliconmtn.commerce.catalog.ProductVO;
@@ -91,7 +93,8 @@ public class ProductsImporter extends AbstractImporter {
 		// TODO remove this debug...
 		log.info("catalog is " + (catalog != null ? "not null" : "null"));
 		BufferedReader data = null;
-		String fullPath = catalog.getSourceFilePath() + catalog.getSourceFileName();
+		//String fullPath = catalog.getSourceFilePath() + catalog.getSourceFileName();
+		String fullPath = "C:/Temp/USA_cat_test/2014-04-15/TEST/sm_products.txt";
 		try {
 			data = new BufferedReader(new FileReader(fullPath));
 		} catch (FileNotFoundException fnfe) {
@@ -103,24 +106,47 @@ public class ProductsImporter extends AbstractImporter {
 		List<ProductVO> prods = new ArrayList<ProductVO>();
 		String temp = null;
 		Map<String, Integer> headers = null;
+		String origPrice = null;
+		ProductVO prod = null;
 		log.info("source file delimiter: " + catalog.getSourceFileDelimiter());
 		for (int i=0; (temp = data.readLine()) != null; i++) {
 			String[] fields = temp.split(catalog.getSourceFileDelimiter());
-			//log.info("fields size: " + fields.length);
 			if (i == 0) {
 				headers = parseHeaderRow(fields);
 				log.info("headers size: " + headers.size());
-				//for (String h : headers.keySet()) {
-					//log.info("headers | index: " + h + "|" + headers.get(h));
-				//}
+				for (String h : headers.keySet()) {
+					log.info("headers|index: " + h + "|" + headers.get(h));
+				}
 				continue; // skip the header row
 			}
 
 			try {
-				ProductVO prod = new ProductVO();
+				//ProductVO prod = new ProductVO();
+				prod = new ProductVO();
 				prod.setProductId(catalog.getCatalogPrefix() + fields[headers.get("SKUID")]); // SKUID with prefix
 				prod.setProductName(this.stripQuotes(fields[headers.get("NAME")])); // NAME
+				
+				/*
+				 * 2014-04-14: Business rule governing pricing.  If ORIGPRICE is populated, 
+				 * ORIGPRICE represents the original price of the item and PRICE represents the 
+				 * sale price of the item.  In our views we check for emptiness on attrib1Txt to 
+				 * determine how to display pricing. 
+				 */
+				try {
+					origPrice = fields[headers.get("ORIGPRICE")]; // ORIGPRICE
+				} catch(ArrayIndexOutOfBoundsException e) {
+					// 2014-04-15: suppressing this error for now //TODO follow-up with USA
+					//log.error("Error accessing ORIGPRICE: field.length|index: " + fields.length + "|" + headers.get("ORIGPRICE"));
+				}
+				
+				if (origPrice != null) {
+					prod.setMsrpOriginalCostNo(Convert.formatDouble(origPrice));
+					origPrice = null;
+				}
+				
+				// set price
 				prod.setMsrpCostNo(Convert.formatDouble(fields[headers.get("PRICE")])); //PRICE
+
 				prod.setDescText(this.stripQuotes(fields[headers.get("DESCRIPTION")])); // DESCRIPTION
 				// TODO remove this after testing.
 				prod.setCustProductNo(fields[headers.get("CUSTOMN")]); // CUSTOM
@@ -292,33 +318,36 @@ public class ProductsImporter extends AbstractImporter {
 		StringBuilder sb = new StringBuilder();
 		sb.append("insert into product (product_id, product_catalog_id, parent_id, ");
 		sb.append("cust_product_no, product_nm, desc_txt, status_no, msrp_cost_no, ");
-		sb.append("create_dt, image_url, thumbnail_url, short_desc, product_url, ");
-		sb.append("currency_type_id, title_nm, meta_desc, meta_kywd_txt, url_alias_txt) ");
-		sb.append("values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+		sb.append("msrp_orig_cost_no, create_dt, image_url, thumbnail_url, short_desc,  ");		
+		sb.append("product_url, currency_type_id, title_nm, meta_desc, meta_kywd_txt, ");
+		sb.append("url_alias_txt) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 		
 		PreparedStatement ps = dbConn.prepareStatement(sb.toString());
 		int ctr=0;
-
+		int index = 0;
 		for (int i=0; i < prods.size(); i++) {
 			ProductVO p = prods.get(i);
-			ps.setString(1, p.getProductId());
-			ps.setString(2, catalog.getCatalogId());
-			ps.setString(3, p.getParentId());
-			ps.setString(4, p.getCustProductNo());
-			ps.setString(5, p.getProductName());
-			ps.setString(6, p.getDescText());
-			ps.setInt(7, 5);
-			ps.setDouble(8, p.getMsrpCostNo());
-			ps.setTimestamp(9, Convert.getCurrentTimestamp());
-			ps.setString(10, p.getImage());
-			ps.setString(11, p.getThumbnail());
-			ps.setString(12, p.getShortDesc());
-			ps.setString(13, p.getProductUrl());
-			ps.setString(14, "dollars");
-			ps.setString(15, p.getTitle());
-			ps.setString(16, p.getMetaDesc());
-			ps.setString(17, p.getMetaKywds());
-			ps.setString(18, p.getUrlAlias());
+			index = 1;
+			ps.setString(index++, p.getProductId());
+			ps.setString(index++, catalog.getCatalogId());
+			ps.setString(index++, p.getParentId());
+			ps.setString(index++, p.getCustProductNo());
+			ps.setString(index++, p.getProductName());
+			ps.setString(index++, p.getDescText());
+			ps.setInt(index++, 5);
+			ps.setDouble(index++, p.getMsrpCostNo());
+			ps.setDouble(index++, p.getMsrpOriginalCostNo());
+			ps.setTimestamp(index++, Convert.getCurrentTimestamp());
+			ps.setString(index++, p.getImage());
+			ps.setString(index++, p.getThumbnail());
+			ps.setString(index++, p.getShortDesc());
+			ps.setString(index++, p.getProductUrl());
+			ps.setString(index++, "dollars");
+			ps.setString(index++, p.getTitle());
+			ps.setString(index++, p.getMetaDesc());
+			ps.setString(index++, p.getMetaKywds());
+			ps.setString(index++, p.getUrlAlias());
+		
 			try {
 				ps.executeUpdate();
 				ctr++;

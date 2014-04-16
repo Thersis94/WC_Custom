@@ -52,6 +52,7 @@ public class ProductAction extends SBActionAdapter {
 	public static final String STATUS_SOLD_OUT = "Sold Out";
 	public static final String PARAM_DETAIL = "detail";
 	public static final String PARAM_FEATURED = "featured";
+	protected String catalogPrefix;
 
 	/**
 	 * 
@@ -76,6 +77,8 @@ public class ProductAction extends SBActionAdapter {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	public void retrieve(SMTServletRequest req) throws ActionException {
+		//SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		//catalogPrefix = site.getSiteId() + "_";
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		// get the catalog ID from the module attributes
 		String catalogId = StringUtil.checkVal(mod.getAttribute(ModuleVO.ATTRIBUTE_1));
@@ -202,7 +205,7 @@ public class ProductAction extends SBActionAdapter {
 	 * @return
 	 * @throws SQLException
 	 */
-	public Collection<ProductVO> getGroupInfo(SMTServletRequest req, String catalogId) 
+	private Collection<ProductVO> getGroupInfo(SMTServletRequest req, String catalogId) 
 	throws SQLException {
 		String url = StringUtil.checkVal(req.getRequestURL().toString());
 		String cat = url.substring(url.lastIndexOf("/") + 1);
@@ -215,13 +218,14 @@ public class ProductAction extends SBActionAdapter {
 
 		ResultSet rs = ps.executeQuery();
 		String inQuery = "'test'";
-
+		String prodId = null;
 		for (int i=0; rs.next(); i++) {
 			// set the page info
 			if (i == 0)
 				this.setPageData(req, rs.getString("title_nm"), rs.getString("meta_kywd_txt"), rs.getString("meta_desc"));
 			
-			String prodId = rs.getString("product_id");
+			prodId = rs.getString("product_id");
+			//prodId = StringUtil.replace(rs.getString("product_id"), catalogPrefix, "");
 			inQuery += ",'" + prodId + "'";
 			data.put(prodId, new ProductVO(rs));
 		}
@@ -237,8 +241,9 @@ public class ProductAction extends SBActionAdapter {
 	 * @return
 	 * @throws SQLException
 	 */
-	public ProductVO retrieveProductDetail(SMTServletRequest req, String catalogId) throws SQLException {
+	private ProductVO retrieveProductDetail(SMTServletRequest req, String catalogId) throws SQLException {
 		String productId = req.getParameter(SMTServletRequest.PARAMETER_KEY + "2");
+		// TODO format product ID by prefixing site_id_
 		StringBuilder s = new StringBuilder();
 		s.append("select * from product a ");
 		s.append("left outer join product_attribute_xr b on a.product_id = b.product_id ");
@@ -350,9 +355,9 @@ public class ProductAction extends SBActionAdapter {
 	 * @return
 	 * @throws SQLException
 	 */
-	public Collection<ProductVO> retrieveProductList(SMTServletRequest req, String catalogId, String cat, boolean useNav) 
+	private Collection<ProductVO> retrieveProductList(SMTServletRequest req, String catalogId, String cat, boolean useNav) 
 	throws SQLException {
-		//String cat4 = StringUtil.checkVal(req.getParameter(SMTServletRequest.PARAMETER_KEY + "4"));
+		// TODO get site_id_ prefix for product ID
 		StringBuilder s = new StringBuilder();
 		s.append("select * from product a ");
 		s.append("inner join PRODUCT_CATEGORY_XR b on a.PRODUCT_ID = b.PRODUCT_ID ");
@@ -403,7 +408,7 @@ public class ProductAction extends SBActionAdapter {
 	 * @param kywd
 	 * @param desc
 	 */
-	public void setPageData(SMTServletRequest req, String title, String kywd, String desc) {
+	private void setPageData(SMTServletRequest req, String title, String kywd, String desc) {
 		PageVO sPage = (PageVO)req.getAttribute(Constants.PAGE_DATA);
 		sPage.setTitleName(title);
 		sPage.setMetaDesc(kywd);
@@ -417,7 +422,7 @@ public class ProductAction extends SBActionAdapter {
 	 * @param inList
 	 * @throws SQLException
 	 */
-	public void getProductAttributes(Map<String, ProductVO> data, String inList)
+	private void getProductAttributes(Map<String, ProductVO> data, String inList)
 	throws SQLException {
 		StringBuilder s = new StringBuilder();
 		s.append("select * from product_attribute a inner join ");
@@ -439,7 +444,7 @@ public class ProductAction extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	public List<ProductCategoryVO> retrieveCat(SMTServletRequest req, String catalogId, String cat) 
+	private List<ProductCategoryVO> retrieveCat(SMTServletRequest req, String catalogId, String cat) 
 	throws SQLException {
 		StringBuilder s = new StringBuilder();
 		
@@ -468,7 +473,7 @@ public class ProductAction extends SBActionAdapter {
 		return data;
 	}
 	
-	public List<ProductCategoryVO> retrieveSubCat(SMTServletRequest req, String catalogId, String cat) 
+	private List<ProductCategoryVO> retrieveSubCat(SMTServletRequest req, String catalogId, String cat) 
 	throws SQLException {
 		StringBuilder s = new StringBuilder();
 		
