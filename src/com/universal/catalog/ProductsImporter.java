@@ -140,7 +140,7 @@ public class ProductsImporter extends AbstractImporter {
 				}
 				
 				if (origPrice != null) {
-					prod.setMsrpOriginalCostNo(Convert.formatDouble(origPrice));
+					prod.setDiscountedCostNo(Convert.formatDouble(origPrice));
 					origPrice = null;
 				}
 				
@@ -318,7 +318,7 @@ public class ProductsImporter extends AbstractImporter {
 		StringBuilder sb = new StringBuilder();
 		sb.append("insert into product (product_id, product_catalog_id, parent_id, ");
 		sb.append("cust_product_no, product_nm, desc_txt, status_no, msrp_cost_no, ");
-		sb.append("msrp_orig_cost_no, create_dt, image_url, thumbnail_url, short_desc,  ");		
+		sb.append("discounted_cost_no, create_dt, image_url, thumbnail_url, short_desc,  ");		
 		sb.append("product_url, currency_type_id, title_nm, meta_desc, meta_kywd_txt, ");
 		sb.append("url_alias_txt) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 		
@@ -336,7 +336,7 @@ public class ProductsImporter extends AbstractImporter {
 			ps.setString(index++, p.getDescText());
 			ps.setInt(index++, 5);
 			ps.setDouble(index++, p.getMsrpCostNo());
-			ps.setDouble(index++, p.getMsrpOriginalCostNo());
+			ps.setDouble(index++, p.getDiscountedCostNo());
 			ps.setTimestamp(index++, Convert.getCurrentTimestamp());
 			ps.setString(index++, p.getImage());
 			ps.setString(index++, p.getThumbnail());
