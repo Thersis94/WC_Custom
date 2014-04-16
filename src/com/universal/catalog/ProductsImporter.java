@@ -93,8 +93,8 @@ public class ProductsImporter extends AbstractImporter {
 		// TODO remove this debug...
 		log.info("catalog is " + (catalog != null ? "not null" : "null"));
 		BufferedReader data = null;
-		//String fullPath = catalog.getSourceFilePath() + catalog.getSourceFileName();
-		String fullPath = "C:/Temp/USA_cat_test/2014-04-15/TEST/sm_products.txt";
+		String fullPath = catalog.getSourceFilePath() + catalog.getSourceFileName();
+		//String fullPath = "C:/Temp/USA_cat_test/2014-04-15/TEST/sm_products.txt";
 		try {
 			data = new BufferedReader(new FileReader(fullPath));
 		} catch (FileNotFoundException fnfe) {

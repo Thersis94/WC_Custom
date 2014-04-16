@@ -92,8 +92,8 @@ public class CategoriesImporter extends AbstractImporter {
 	public Map<String, ProductCategoryVO> retrieveCategories(CatalogImportVO catalog) 
 			throws FileNotFoundException, IOException {
 		BufferedReader data = null;
-		//String fullPath = catalog.getSourceFilePath() + catalog.getSourceFileName();
-		String fullPath = "C:/Temp/USA_cat_test/2014-04-15/TEST/sm_categories.txt";
+		String fullPath = catalog.getSourceFilePath() + catalog.getSourceFileName();
+		//String fullPath = "C:/Temp/USA_cat_test/2014-04-15/TEST/sm_categories.txt";
 		try {
 			data = new BufferedReader(new FileReader(fullPath));
 		} catch (FileNotFoundException fnfe) {
