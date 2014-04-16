@@ -13,9 +13,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+
 // DOM4J
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
+
 
 // SMT BAse Libs
 import com.siliconmtn.action.ActionException;
@@ -662,7 +664,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 				vo.setBasePrice(rs.getDouble("msrp_cost_no"));
 				vo.setDescription(rs.getString("desc_txt"));
 				vo.setProductName(rs.getString("product_nm"));
-				vo.setProductCategory(getCategory(rs.getString("product_id")));
+				//vo.setProductCategory(getCategory(rs.getString("product_id")));
 				ProductVO product = new ProductVO(rs);
 				vo.setProduct(product);
 			}
@@ -800,6 +802,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 	 * @param productId
 	 * @return
 	 */
+	@SuppressWarnings("unused")
 	private String getCategory(String productId) {
 		StringBuilder s = new StringBuilder();
 		s.append("with categories (parent_cd, product_category_cd, category_nm, category_desc, level) as ( ");

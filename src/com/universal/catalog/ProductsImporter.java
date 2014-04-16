@@ -127,40 +127,37 @@ public class ProductsImporter extends AbstractImporter {
 				prod.setProductName(this.stripQuotes(fields[headers.get("NAME")])); // NAME
 				
 				/*
-				 * 2014-04-14: Business rule governing pricing.  If ORIGPRICE is populated, 
-				 * ORIGPRICE represents the original price of the item and PRICE represents the 
-				 * sale price of the item.  In our views we check for emptiness on attrib1Txt to 
-				 * determine how to display pricing. 
+				 * 2014-04-14: Business rule governing pricing.  If populated, ORIGPRICE represents the original price 
+				 * of the item and PRICE represents the sale price of the item.  In this case we put PRICE as the
+				 * msrp cost  number and ORIGPRICE as the discounted cost number.   In the JSTL, we check to see if
+				 * discounted cost is > 0.  If so, we display both prices to show the difference to the viewer.
 				 */
 				try {
 					origPrice = fields[headers.get("ORIGPRICE")]; // ORIGPRICE
+					prod.setDiscountedCostNo(Convert.formatDouble(origPrice));
 				} catch(ArrayIndexOutOfBoundsException e) {
 					// 2014-04-15: suppressing this error for now //TODO follow-up with USA
 					//log.error("Error accessing ORIGPRICE: field.length|index: " + fields.length + "|" + headers.get("ORIGPRICE"));
 				}
 				
-				if (origPrice != null) {
-					prod.setDiscountedCostNo(Convert.formatDouble(origPrice));
-					origPrice = null;
-				}
+				// reset origPrice
+				origPrice = null;
 				
 				// set price
 				prod.setMsrpCostNo(Convert.formatDouble(fields[headers.get("PRICE")])); //PRICE
 
 				prod.setDescText(this.stripQuotes(fields[headers.get("DESCRIPTION")])); // DESCRIPTION
-				// TODO remove this after testing.
-				prod.setCustProductNo(fields[headers.get("CUSTOMN")]); // CUSTOM
-				//prod.setCustProductNo(fields[headers.get("CUSTOM")]); // CUSTOM
-				prod.setMetaKywds(this.stripQuotes(fields[headers.get("KEYWORDS")])); // KEYWORDS
-				if (catalog.getCatalogId().equals("SUPPORT_PLUS_CATALOG")) {
-					if (headers.get("IMGA") != null) {
-						prod.setImage(fields[headers.get("IMGA")]); // IMGA	
-					} else {
-						prod.setImage(fields[headers.get("IMAGE")]); // IMAGE
-					}
+				
+				// 2014-04-16: CUSTOMN is a typo in the import file column name, adding this to transparently
+				// handle the correction to the typo by USA.  Will remove when import file is corrected.
+				if (headers.get("CUSTOMN") != null) {
+					prod.setCustProductNo(fields[headers.get("CUSTOMN")]); // CUSTOMN is a typo in the import file	
 				} else {
-					prod.setImage(fields[headers.get("IMAGE")]); // IMAGE
+					prod.setCustProductNo(fields[headers.get("CUSTOM")]); // CUSTOM
 				}
+				
+				prod.setMetaKywds(this.stripQuotes(fields[headers.get("KEYWORDS")])); // KEYWORDS
+				prod.setImage(fields[headers.get("IMAGE")]); // IMAGE
 				prod.setThumbnail(fields[headers.get("SMLIMG")]); // SMLIMG
 				prod.setUrlAlias(fields[headers.get("SKUID")]); // SKUID
 				prods.add(prod);

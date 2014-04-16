@@ -106,8 +106,8 @@ public class ProductAction extends SBActionAdapter {
 			} else if (PARAM_FEATURED.equalsIgnoreCase(cat1)) {
 				// retrieve featured category product list
 				log.debug("retrieving featured products info...");
-				Collection<ProductVO> prods = this.retrieveProductList(req, catalogId, cat, false);
-				this.putModuleData(prods, prods.size(), false);
+				ProductCategoryVO pCat = this.retrieveCategoryProductList(req, catalogId, cat, false);
+				this.putModuleData(pCat, pCat.getProducts().size(), false);
 				req.setAttribute("usaProdFeatured", Boolean.TRUE);
 				
 			} else {
@@ -120,7 +120,7 @@ public class ProductAction extends SBActionAdapter {
 						// attempt to retrieve subcategories for this category
 						data = this.retrieveSubCat(req, catalogId, cat);
 						
-						if (data.size() ==0) {
+						if (data.size() == 0) {
 							// no subcategory data found, so look for products belonging to this category
 							log.debug("retrieve product list info");
 							Collection<ProductVO> prods = this.retrieveProductList(req, catalogId, cat, true);
@@ -351,7 +351,9 @@ public class ProductAction extends SBActionAdapter {
 	/**
 	 * 
 	 * @param req
+	 * @param catalogId
 	 * @param cat
+	 * @param useNav
 	 * @return
 	 * @throws SQLException
 	 */
@@ -365,7 +367,7 @@ public class ProductAction extends SBActionAdapter {
 		s.append("inner join PRODUCT_CATALOG d on a.product_catalog_id=d.product_catalog_id and d.product_catalog_id = ? ");
 		s.append("and d.status_no = ? where c.short_desc = ? AND a.PRODUCT_GROUP_ID IS NULL ");
 		s.append("order by product_nm ");
-		log.debug("Prod List SQL: " + s + "|" + cat);
+		log.debug("Product list SQL: " + s + "|" + cat);
 		
 		int page = Convert.formatInteger(req.getParameter("page"),1); 
 		int rpp = Convert.formatInteger(req.getParameter("rpp"),10);
@@ -386,7 +388,7 @@ public class ProductAction extends SBActionAdapter {
 				ctr++;
 				if (ctr >= start && ctr <= end) {
 					data.put(rs.getString("product_id"), new ProductVO(rs));
-					log.debug("Nav: " + ctr + "|" + start + "|" + end + "|" + rs.getString("product_id"));
+					//log.debug("Nav: " + ctr + "|" + start + "|" + end + "|" + rs.getString("product_id"));
 				}
 			} else {
 				data.put(rs.getString("product_id"), new ProductVO(rs));
@@ -398,6 +400,71 @@ public class ProductAction extends SBActionAdapter {
 			req.setAttribute("prodNav", new NavManager(ctr, rpp, page, req.getRequestURL() + ""));
 		}
 		return data.values();
+	}
+	
+	/**
+	 * Retrieves the product list for a given category along with information about that category.
+	 * @param req
+	 * @param catalogId
+	 * @param cat
+	 * @param useNav
+	 * @return
+	 * @throws SQLException
+	 */
+	private ProductCategoryVO retrieveCategoryProductList(SMTServletRequest req, String catalogId, String cat, boolean useNav) 
+			throws SQLException {
+
+		StringBuilder s = new StringBuilder();
+		s.append("select a.*, c.*, c.image_url as 'category_image_url' from product a ");
+		s.append("inner join PRODUCT_CATEGORY_XR b on a.PRODUCT_ID = b.PRODUCT_ID ");
+		s.append("inner join PRODUCT_CATEGORY c on b.PRODUCT_CATEGORY_CD = c.PRODUCT_CATEGORY_CD ");
+		s.append("inner join PRODUCT_CATALOG d on a.product_catalog_id=d.product_catalog_id and d.product_catalog_id = ? ");
+		s.append("and d.status_no = ? where c.short_desc = ? AND a.PRODUCT_GROUP_ID IS NULL ");
+		s.append("order by product_nm ");
+		log.debug("Category product list SQL: " + s + "|" + cat);
+		
+		int page = Convert.formatInteger(req.getParameter("page"),1); 
+		int rpp = Convert.formatInteger(req.getParameter("rpp"),10);
+		int start = (page - 1) * rpp + 1;
+		int end = rpp * page;
+		
+		List<ProductVO> pData = new ArrayList<>();
+		ProductCategoryVO pCat = null;
+		//Map<String, ProductVO>  data = new LinkedHashMap<String, ProductVO> ();
+		PreparedStatement ps = dbConn.prepareStatement(s.toString());
+		ps.setString(1, catalogId);
+		ps.setInt(2, ProductCatalogAction.STATUS_LIVE);
+		ps.setString(3, cat);
+
+		ResultSet rs = ps.executeQuery();
+		
+		int ctr = 0;
+		while(rs.next()) {
+			// set the page info
+			if (ctr == 0) {
+				pCat = new ProductCategoryVO(rs);
+				// we need to set the category image url.
+				pCat.setImageUrl(rs.getString("category_image_url"));
+			}
+			
+			if (useNav) {
+				ctr++;
+				if (ctr >= start && ctr <= end) {
+					pData.add(new ProductVO(rs));
+					//log.debug("Nav: " + ctr + "|" + start + "|" + end + "|" + rs.getString("product_id"));
+				}
+			} else {
+				pData.add(new ProductVO(rs));
+			}
+		}
+		
+		if (pData.size() > 0) pCat.setProducts(pData);
+		
+		// Get the attributes and add the nav piece
+		if (useNav) {
+			req.setAttribute("prodNav", new NavManager(ctr, rpp, page, req.getRequestURL() + ""));
+		}
+		return pCat;
 	}
 
 	
