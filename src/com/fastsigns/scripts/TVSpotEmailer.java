@@ -233,7 +233,7 @@ public class TVSpotEmailer extends CommandLineUtil {
 		body.append("<font color=\"red\">Name: </font>").append(vo.getFullName()).append("<br/>");
 		body.append("<font color=\"red\">Email: </font>").append(vo.getEmailAddress()).append("<br/>");
 		body.append("<font color=\"red\">Contact phone: </font>").append(pnf.getFormattedNumber()).append("<br/>");
-		body.append("<font color=\"red\">Zip/Postal code: </font>").append(vo.getZipCode()).append("<br/>");
+		body.append("<font color=\"red\">Zip/Postal code: </font>").append(vo.getExtData().get(TVSpotUtil.ContactField.zipcode.id())).append("<br/>");
 		body.append("<font color=\"red\">Other information provided: </font>");
 		body.append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.feedback.id()),"<i>none</i>")).append("</p>");
 		body.append("<p>For more information about \"Operation Consultation\", please refer to the following resources or ");
