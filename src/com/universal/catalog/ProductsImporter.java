@@ -90,8 +90,6 @@ public class ProductsImporter extends AbstractImporter {
 	 * @throws IOException
 	 */
 	private List<ProductVO> retrieveProducts(CatalogImportVO catalog) throws FileNotFoundException, IOException {
-		// TODO remove this debug...
-		log.info("catalog is " + (catalog != null ? "not null" : "null"));
 		BufferedReader data = null;
 		String fullPath = catalog.getSourceFilePath() + catalog.getSourceFileName();
 		//String fullPath = "C:/Temp/USA_cat_test/2014-04-15/TEST/sm_products.txt";
@@ -402,6 +400,9 @@ public class ProductsImporter extends AbstractImporter {
 			if (value.endsWith("\"")) {
 				// remove trailing double quote
 				value = value.substring(0, (value.length() - 1));
+			}
+			if (value.contains("•")) {
+				value = value.replace("•", "&nbsp;&#8226;");
 			}
 		}
 		return value;
