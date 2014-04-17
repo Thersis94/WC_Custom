@@ -7,6 +7,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -15,8 +16,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+
 // Log4J 1.2.15
 import org.apache.log4j.Logger;
+
 
 //SMT Base Libs
 import com.siliconmtn.commerce.catalog.ProductVO;
@@ -120,12 +123,57 @@ public class OptionsImporter extends AbstractImporter {
 			log.error("Error closing BufferedReader on file: " + fullPath);
 		}
 		
+		List<String> optionsToInsert = null;
 		try {
-			insertOptions(options);
+			optionsToInsert = buildInsertList(options);
+			if (optionsToInsert.size() > 0) {
+				insertNewOptions(optionsToInsert);
+			} else {
+				log.info("No new options found to insert into the PRODUCT_ATTRIBUTE table.");
+			}
 		} catch (SQLException sqle) {
-			// log but nothing else
-			log.error("Warning: Unable to set PreparedStatement, " + sqle.getMessage());
+			log.error("Warning: Unable to check options for insertion, ", sqle);
 		}
+	}
+	
+	/**
+	 * Retrieves a list of existing options, loops the list of options found in the import and 
+	 * checks this list against the list of existing options.  If an option in the imported list is
+	 * not found in the list of existing options, that option is added to the list of options 
+	 * to import.
+	 * @param importedOptions
+	 * @return
+	 * @throws SQLException
+	 */
+	private List<String> buildInsertList(List<String> importedOptions) throws SQLException {
+		StringBuilder sb = new StringBuilder();
+		sb.append("select ATTRIBUTE_NM from PRODUCT_ATTRIBUTE where ORGANIZATION_ID = ?");
+		
+		List<String> existingOptions = new ArrayList<>();
+		PreparedStatement ps = null;
+		try {
+			ps = dbConn.prepareStatement(sb.toString());
+			ps.setString(1, "USA");
+			ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				existingOptions.add(rs.getString(1));
+			}
+		} finally {
+			if (ps != null) {
+				try {
+					ps.close();
+				} catch (Exception e) { log.error("Error closing PreparedStatement, ", e); }
+			}
+		}
+		
+		List<String> optionsToInsert = new ArrayList<>();
+		for (String opt : importedOptions) {
+			if (! existingOptions.contains(opt)) {
+				optionsToInsert.add(opt);
+			}
+		}
+
+		return optionsToInsert;
 	}
 		
 	
@@ -135,13 +183,14 @@ public class OptionsImporter extends AbstractImporter {
 	 * @param options
 	 * @throws SQLException 
 	 */
-	private void insertOptions(List<String> options) throws SQLException {
+	private void insertNewOptions(List<String> options) throws SQLException {
 		StringBuilder sb = new StringBuilder();
 		sb.append("insert into product_attribute (ATTRIBUTE_ID, ORGANIZATION_ID, ATTRIBUTE_NM, ");
 		sb.append("ACTIVE_FLG, TYPE_NM, URL_ALIAS_TXT, CREATE_DT) values (?,?,?,?,?,?,?)");
 		
 		PreparedStatement ps = dbConn.prepareStatement(sb.toString());
 		String optUpper = null;
+		int ctr = 0;
 		for (String opt : options) {
 			optUpper = CatalogImportManager.ATTRIBUTE_PREFIX + opt.toUpperCase();
 			try {
@@ -153,10 +202,14 @@ public class OptionsImporter extends AbstractImporter {
 				ps.setString(6,  optUpper);
 				ps.setTimestamp(7,Convert.getCurrentTimestamp());
 				ps.execute();
+				ctr++;
+				log.info("Added new option to product attribute table: " + opt);
 			} catch (Exception e) {
-				log.error("Option already exists, " + e.getMessage());
+				log.error("Unable to add new option to the product attribute table, " + opt + ", " + e.getMessage());
 			}
 		}
+		
+		log.info("Inserted " + ctr + " new options into the PRODUCT_ATTRIBUTE table.");
 		
 		if (ps != null) {
 			try {

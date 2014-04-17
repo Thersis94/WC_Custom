@@ -402,9 +402,6 @@ public class ProductsImporter extends AbstractImporter {
 				// remove trailing double quote
 				value = value.substring(0, (value.length() - 1));
 			}
-			//if (value.contains("•")) {
-				//value = value.replace("•", "&nbsp;&#8226;");
-			//}
 			if (value.contains(BAD_CHAR_SEQ_1)) {
 				value = value.replace(BAD_CHAR_SEQ_1, "&nbsp;&#8226;");
 			}
