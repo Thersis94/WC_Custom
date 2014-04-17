@@ -139,9 +139,10 @@ public class SendThisFileReconcile {
 	private List<DataVO> getRecords() {
 		List<DataVO> data = new ArrayList<DataVO>();
 		StringBuilder sql = new StringBuilder();
-		sql.append("select a.contact_submittal_id, b.value_txt as 'stage', a.create_dt, 1 as use_stf_flg from contact_submittal a ");
+		sql.append("select a.contact_submittal_id, b.value_txt as 'stage', a.create_dt, 1 as use_stf_flg ");
+		sql.append("from contact_submittal a ");
 		sql.append("inner join contact_data b on a.contact_submittal_id=b.contact_submittal_id ");
-		sql.append("and b.contact_field_id=? ");
+		sql.append("and b.contact_field_id=? and a.action_id=? ");
 		sql.append("where cast(b.VALUE_TXT as varchar(50)) != ? ");
 		sql.append("and a.create_dt >= ?");
 		
@@ -149,8 +150,9 @@ public class SendThisFileReconcile {
 		try {
 			ps = conn.prepareStatement(sql.toString());
 			ps.setString(1, safConfig.getTransactionStageFieldId());
-			ps.setString(2, TransactionStep.complete.toString());
-			ps.setDate(3, new java.sql.Date(startDate.getTime()));
+			ps.setString(2, safConfig.getContactUsActionId());
+			ps.setString(3, TransactionStep.complete.toString());
+			ps.setDate(4, new java.sql.Date(startDate.getTime()));
 			ResultSet rs = ps.executeQuery();
 			while (rs.next())
 				data.add(new DataVO(rs));

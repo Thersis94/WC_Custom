@@ -180,7 +180,7 @@ public class TVSpotEmailer extends CommandLineUtil {
 	private void sendFirstNotice(ContactDataContainer cdc) {
 		Calendar now = Calendar.getInstance();
 		EmailMessageVO msg;
-		TVSpotUtil.Status status;
+		TVSpotUtil.Status status = null;
 		int daysBetween;
 		MessageSender ms = new MessageSender(attributes, dbConn);
 		
@@ -189,10 +189,11 @@ public class TVSpotEmailer extends CommandLineUtil {
 			daysBetween = (int) ((vo.getSubmittalDate().getTime() - now.getTimeInMillis()) / (1000 * 60 * 60 * 24));
 			log.debug("notice daysBetween: " + daysBetween);
 			
+			String sts = vo.getExtData().get(TVSpotUtil.ContactField.status.id());
 			try {
-				status = TVSpotUtil.Status.valueOf(vo.getExtData().get(TVSpotUtil.ContactField.status.id()));
+				status = TVSpotUtil.Status.valueOf(sts);
 			} catch (Exception e) {
-				log.error("could not determine status for contactSubmttalId=" + vo.getContactSubmittalId());
+				log.error("could not determine status for contactSubmttalId=" + vo.getContactSubmittalId() + " reported: " + sts);
 				continue;
 			}
 			
