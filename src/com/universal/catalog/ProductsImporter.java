@@ -42,6 +42,7 @@ import com.siliconmtn.util.StringUtil;
 public class ProductsImporter extends AbstractImporter {
 
 	private static final Logger log = Logger.getLogger(ProductsImporter.class);
+	private final String BAD_CHAR_SEQ_1 = "\u00e2" + "\u20ac" + "\u00a2";
 	private List<ProductVO> products;
 	private Map<String, String> productCategories = null;
 	private Map<String, String[]> productParents = null;
@@ -401,8 +402,11 @@ public class ProductsImporter extends AbstractImporter {
 				// remove trailing double quote
 				value = value.substring(0, (value.length() - 1));
 			}
-			if (value.contains("•")) {
-				value = value.replace("•", "&nbsp;&#8226;");
+			//if (value.contains("•")) {
+				//value = value.replace("•", "&nbsp;&#8226;");
+			//}
+			if (value.contains(BAD_CHAR_SEQ_1)) {
+				value = value.replace(BAD_CHAR_SEQ_1, "&nbsp;&#8226;");
 			}
 		}
 		return value;
