@@ -1,6 +1,7 @@
 package com.fastsigns.scripts;
 
 import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -71,6 +72,9 @@ public class TVSpotEmailer extends CommandLineUtil {
 	 * handles script invocation, to ensure all steps are executed in the proper sequence.
 	 */
 	public void run() {
+		Date start = new Date();
+		log.info("starting TVSpotEmailer at" + start);
+		
 		//load all the inquiries that have a status of pending
 		ContactDataContainer cdc;
 		try {
@@ -95,6 +99,7 @@ public class TVSpotEmailer extends CommandLineUtil {
 			log.error("Could not create ContactDataContainer. ", e);
 		}
 		
+		log.info("finished TVSpotEmailer in " + ((System.currentTimeMillis()-start.getTime()) /1000) + " seconds");
 	}
 	
 	/**
@@ -103,6 +108,7 @@ public class TVSpotEmailer extends CommandLineUtil {
 	 * @throws ActionException
 	 */
 	private ContactDataContainer loadContactData() throws ActionException {
+		log.info("loading Contact data");
 		ContactDataContainer cdc = null;
 		
 		// Create the VO that contains the information we need to send
@@ -129,6 +135,7 @@ public class TVSpotEmailer extends CommandLineUtil {
 	 * @param cdc
 	 */
 	private void sendSurveys(ContactDataContainer cdc) {
+		log.info("sending survey emails");
 		Calendar now = Calendar.getInstance();
 		EmailMessageVO msg;
 		boolean isMonday = now.get(Calendar.DAY_OF_WEEK) == Calendar.MONDAY;
@@ -178,6 +185,7 @@ public class TVSpotEmailer extends CommandLineUtil {
 	 * @param cdc
 	 */
 	private void sendFirstNotice(ContactDataContainer cdc) {
+		log.info("sending first notice email");
 		Calendar now = Calendar.getInstance();
 		EmailMessageVO msg;
 		TVSpotUtil.Status status = null;
@@ -278,6 +286,7 @@ public class TVSpotEmailer extends CommandLineUtil {
 	 * @param cdc
 	 */
 	private void sendCorpReport(ContactDataContainer cdc) {
+		log.info("sending corp report email");
 		TVSpotReportVO report = new TVSpotReportVO();
 		report.setData(cdc);
 		
@@ -297,6 +306,7 @@ public class TVSpotEmailer extends CommandLineUtil {
 	}
 	
 	private void sendCenterReport(ContactDataContainer cdc) {
+		log.info("sending Center report emails");
 		TVSpotReportVO report = new TVSpotReportVO();
 		report.setData(cdc);
 		Map<String, StringBuilder> byCenter = report.generateCenterReport();
