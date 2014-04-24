@@ -52,7 +52,7 @@ public class ProductAction extends SBActionAdapter {
 	public static final String STATUS_SOLD_OUT = "Sold Out";
 	public static final String PARAM_DETAIL = "detail";
 	public static final String PARAM_FEATURED = "featured";
-	protected String catalogPrefix;
+	protected String sitePrefix;
 
 	/**
 	 * 
@@ -77,8 +77,9 @@ public class ProductAction extends SBActionAdapter {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	public void retrieve(SMTServletRequest req) throws ActionException {
-		//SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		//catalogPrefix = site.getSiteId() + "_";
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		sitePrefix = site.getSiteId() + "_";
+		log.debug("sitePrefix: " + sitePrefix);
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		// get the catalog ID from the module attributes
 		String catalogId = StringUtil.checkVal(mod.getAttribute(ModuleVO.ATTRIBUTE_1));
@@ -89,7 +90,7 @@ public class ProductAction extends SBActionAdapter {
 		
 		try {
 			String cat1 = StringUtil.checkVal(req.getParameter(SMTServletRequest.PARAMETER_KEY + "1"));
-			log.debug("paramKey1(cat1): " + cat1);
+			log.debug("paramKey1 (cat1): " + cat1);
 			if (PARAM_DETAIL.equalsIgnoreCase(cat1)) {
 				// retrieve product detail
 				log.debug("retrieving product detail info...");
@@ -105,7 +106,7 @@ public class ProductAction extends SBActionAdapter {
 				
 			} else if (PARAM_FEATURED.equalsIgnoreCase(cat1)) {
 				// retrieve featured category product list
-				log.debug("retrieving featured products info...");
+				log.debug("retrieving featured category product list...");
 				ProductCategoryVO pCat = this.retrieveCategoryProductList(req, catalogId, cat, false);
 				this.putModuleData(pCat, pCat.getProducts().size(), false);
 				req.setAttribute("usaProdFeatured", Boolean.TRUE);
@@ -243,7 +244,6 @@ public class ProductAction extends SBActionAdapter {
 	 */
 	private ProductVO retrieveProductDetail(SMTServletRequest req, String catalogId) throws SQLException {
 		String productId = req.getParameter(SMTServletRequest.PARAMETER_KEY + "2");
-		// TODO format product ID by prefixing site_id_
 		StringBuilder s = new StringBuilder();
 		s.append("select * from product a ");
 		s.append("left outer join product_attribute_xr b on a.product_id = b.product_id ");
@@ -254,7 +254,9 @@ public class ProductAction extends SBActionAdapter {
 		
 		PreparedStatement ps = dbConn.prepareStatement(s.toString());
 		ps.setString(1, catalogId);
-		ps.setString(2, productId);
+		// prefix product ID with site prefix as product IDs in the PRODUCT table
+		// are prefixed upon import to ensure uniqueness
+		ps.setString(2, sitePrefix + productId);
 		String aName = null;
 		List<ProductAttributeVO> pAttributes = null;
 		ResultSet rs = ps.executeQuery();
@@ -262,6 +264,8 @@ public class ProductAction extends SBActionAdapter {
 		while (rs.next()) {
 			if (product == null) { 
 				product = new ProductVO(rs);
+				// set the vo's product ID to the custom product number for JSTL use
+				product.setProductId(product.getCustProductNo());
 			}
 			
 			if(aName != null && !aName.equals(rs.getString("attribute_nm"))){
@@ -359,7 +363,6 @@ public class ProductAction extends SBActionAdapter {
 	 */
 	private Collection<ProductVO> retrieveProductList(SMTServletRequest req, String catalogId, String cat, boolean useNav) 
 	throws SQLException {
-		// TODO get site_id_ prefix for product ID
 		StringBuilder s = new StringBuilder();
 		s.append("select * from product a ");
 		s.append("inner join PRODUCT_CATEGORY_XR b on a.PRODUCT_ID = b.PRODUCT_ID ");
@@ -382,16 +385,21 @@ public class ProductAction extends SBActionAdapter {
 
 		ResultSet rs = ps.executeQuery();
 		int ctr = 0;
+		ProductVO prod = null;
 		while(rs.next()) {
 			// set the page info
 			if (useNav) {
 				ctr++;
 				if (ctr >= start && ctr <= end) {
-					data.put(rs.getString("product_id"), new ProductVO(rs));
+					prod = new ProductVO(rs);
+					prod.setProductId(prod.getCustProductNo());
+					data.put(prod.getProductId(), prod);
 					//log.debug("Nav: " + ctr + "|" + start + "|" + end + "|" + rs.getString("product_id"));
 				}
 			} else {
-				data.put(rs.getString("product_id"), new ProductVO(rs));
+				prod = new ProductVO(rs);
+				prod.setProductId(prod.getCustProductNo());
+				data.put(prod.getProductId(), prod);
 			}
 		}
 		
@@ -439,6 +447,7 @@ public class ProductAction extends SBActionAdapter {
 		ResultSet rs = ps.executeQuery();
 		
 		int ctr = 0;
+		ProductVO prod = null;
 		while(rs.next()) {
 			// set the page info
 			if (ctr == 0) {
@@ -450,11 +459,17 @@ public class ProductAction extends SBActionAdapter {
 			if (useNav) {
 				ctr++;
 				if (ctr >= start && ctr <= end) {
-					pData.add(new ProductVO(rs));
+					prod = new ProductVO(rs);
+					// swap product ID for JSTL use
+					prod.setProductId(prod.getCustProductNo());
+					pData.add(prod);
 					//log.debug("Nav: " + ctr + "|" + start + "|" + end + "|" + rs.getString("product_id"));
 				}
 			} else {
-				pData.add(new ProductVO(rs));
+				prod = new ProductVO(rs);
+				// swap product ID for JSTL use
+				prod.setProductId(prod.getCustProductNo());
+				pData.add(prod);
 			}
 		}
 		

@@ -36,6 +36,7 @@ import com.siliconmtn.util.Convert;
 public class CatalogRetriever {
 
 	private static final Logger log = Logger.getLogger(CatalogRetriever.class);
+	private final String HTTP_USER_AGENT = "User-Agent:Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/29.0.1547.62 Safari/537.36";;
 	private Properties config;
 	private String destinationPath;
 	private String today;
@@ -90,6 +91,7 @@ public class CatalogRetriever {
 		
 		SMTHttpConnectionManager hConn = new SMTHttpConnectionManager();
 		hConn.setConnectionTimeout(30000);
+		hConn.addRequestHeader("User-Agent", HTTP_USER_AGENT);
 		// loop sources enum
 		for (String fileName : fileList) {
 			fileUrl = sourceURL + fileName;

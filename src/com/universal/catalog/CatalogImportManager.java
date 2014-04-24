@@ -9,9 +9,9 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -418,11 +418,11 @@ public class CatalogImportManager {
 		prefixes = new LinkedHashMap<>();
 		sourceURLs = new LinkedHashMap<>();
 		messageLog = new ArrayList<String>();
-		misMatchedCategories = new HashSet<String>();
-		misMatchedParentCategories = new HashSet<String>();
-		misMatchedOptions = new HashSet<String>();
-		misMatchedPersonalization = new HashSet<String>();
-		misMatchedAttributes = new HashSet<String>();
+		misMatchedCategories = new LinkedHashSet<String>();
+		misMatchedParentCategories = new LinkedHashSet<String>();
+		misMatchedOptions = new LinkedHashSet<String>();
+		misMatchedPersonalization = new LinkedHashSet<String>();
+		misMatchedAttributes = new LinkedHashSet<String>();
 		
 		// load catalog, prefix, and sourceURL Lists
 		String tmpId;

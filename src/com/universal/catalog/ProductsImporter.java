@@ -17,8 +17,10 @@ import java.util.Map;
 import java.util.Set;
 
 
+
 // Log4J 1.2.15
 import org.apache.log4j.Logger;
+
 
 
 //SMT Base Libs
@@ -77,7 +79,7 @@ public class ProductsImporter extends AbstractImporter {
 		// update product groups
 		this.updateProductGroups(catalog);
 		// update products
-		this.updateProducts(products);
+		// this.updateProducts(products);
 		// add the product categories
 		this.addProductCategoryXR(catalog);
 		// Update the price ranges for the product groups
@@ -123,6 +125,7 @@ public class ProductsImporter extends AbstractImporter {
 				//ProductVO prod = new ProductVO();
 				prod = new ProductVO();
 				prod.setProductId(catalog.getCatalogPrefix() + fields[headers.get("SKUID")]); // SKUID with prefix
+				prod.setCustProductNo(fields[headers.get("SKUID")]); // SKUID, we use this as display value in JSTL
 				prod.setProductName(this.stripQuotes(fields[headers.get("NAME")])); // NAME
 				
 				/*
@@ -149,12 +152,13 @@ public class ProductsImporter extends AbstractImporter {
 				
 				// 2014-04-16: CUSTOMN is a typo in the import file column name, adding this to transparently
 				// handle the correction to the typo by USA.  Will remove when import file is corrected.
+				/*
 				if (headers.get("CUSTOMN") != null) {
 					prod.setCustProductNo(fields[headers.get("CUSTOMN")]); // CUSTOMN is a typo in the import file	
 				} else {
 					prod.setCustProductNo(fields[headers.get("CUSTOM")]); // CUSTOM
 				}
-				
+				*/
 				prod.setMetaKywds(this.stripQuotes(fields[headers.get("KEYWORDS")])); // KEYWORDS
 				prod.setImage(fields[headers.get("IMAGE")]); // IMAGE
 				prod.setThumbnail(fields[headers.get("SMLIMG")]); // SMLIMG
@@ -278,6 +282,7 @@ public class ProductsImporter extends AbstractImporter {
 	 * @param prods
 	 * @throws SQLException
 	 */
+	@SuppressWarnings("unused")
 	private void updateProducts(List<ProductVO> prods) throws SQLException {
 		String s = "update product set cust_product_no = ? where product_id = ?";
 		PreparedStatement ps = dbConn.prepareStatement(s);

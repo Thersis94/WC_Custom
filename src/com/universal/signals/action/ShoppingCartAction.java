@@ -330,10 +330,9 @@ public class ShoppingCartAction extends SBActionAdapter {
 	 */
 	private void processItem(SMTServletRequest req, ShoppingCartVO cart, String productId) 
 			throws DocumentException {
-		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		ShoppingCartItemVO item = null;
 		//attempt to retrieve item from the cart.
-		item = this.retrieveCartItemInfo(cart, productId, site.getSiteId());
+		item = this.retrieveCartItemInfo(cart, productId, catalogSiteId);
 		
 		if (item == null) {
 			//not in cart so query db for product information
@@ -656,16 +655,19 @@ public class ShoppingCartAction extends SBActionAdapter {
 		PreparedStatement ps = null;
 		try {
 			ps = dbConn.prepareStatement(s);
-			ps.setString(1, productId);
+			ps.setString(1, catalogSiteId + "_" + productId);
 			ResultSet rs = ps.executeQuery();
 			vo = new ShoppingCartItemVO();
 			if (rs.next()) {
-				vo.setProductId(rs.getString("product_id"));
+				ProductVO product = new ProductVO(rs);
+				// use custom product number which is product ID without the catalog site ID prefix
+				product.setProductId(product.getCustProductNo());
+				//vo.setProductId(rs.getString("product_id"));
+				vo.setProductId(product.getProductId());
 				vo.setBasePrice(rs.getDouble("msrp_cost_no"));
 				vo.setDescription(rs.getString("desc_txt"));
 				vo.setProductName(rs.getString("product_nm"));
 				//vo.setProductCategory(getCategory(rs.getString("product_id")));
-				ProductVO product = new ProductVO(rs);
 				vo.setProduct(product);
 			}
 		} catch (SQLException sqle) {
@@ -685,18 +687,18 @@ public class ShoppingCartAction extends SBActionAdapter {
 	 * @param siteId
 	 * @return The item that matches the productID
 	 */
-	private ShoppingCartItemVO retrieveCartItemInfo(ShoppingCartVO cart, String productID, String siteId){
-		// if productID does not contain an underscore, return null.  Did not come from cart, is new.
-		if (productID.startsWith(siteId + "_")) {
+	private ShoppingCartItemVO retrieveCartItemInfo(ShoppingCartVO cart, String productId, String siteId){
+		// if productId does not contain an underscore, return null.  Did not come from cart, is new.
+		if (productId.startsWith(siteId + "_")) {
 			int pos = siteId.length() + 1;
-			if (productID.substring(pos).indexOf("_") == -1) return null;
-		} else if (productID.indexOf("_") == -1) {
+			if (productId.substring(pos).indexOf("_") == -1) return null;
+		} else if (productId.indexOf("_") == -1) {
 			return null;
 		}
 		
 		Set<String> keys = cart.getItems().keySet();
 		for (String k : keys) {
-			if(k.startsWith(productID)) {
+			if(k.startsWith(productId)) {
 				return cart.getItems().get(k);
 			}
 		}
