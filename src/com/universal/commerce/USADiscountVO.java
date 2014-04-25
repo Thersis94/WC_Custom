@@ -33,7 +33,7 @@ import com.siliconmtn.util.XMLUtil;
 public class USADiscountVO extends DiscountVO {
 
 	private static final long serialVersionUID = -4658441889750752033L;
-	private Logger log = Logger.getLogger("USADiscountVO");
+	private transient Logger log = Logger.getLogger("USADiscountVO");
 	public static final String DEFAULT_SHIPPING_METHOD = "Standard";
 	private DiscountStatus discountStatus = DiscountStatus.UNKNOWN;
 	private DiscountType discountType = DiscountType.UNKNOWN;
