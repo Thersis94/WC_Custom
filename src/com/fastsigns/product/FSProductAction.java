@@ -568,15 +568,19 @@ public class FSProductAction extends SBActionAdapter {
 	 */
 	public void getChildProducts(String prodAlias, String catalogId, SMTServletRequest req, boolean isPreview) throws SQLException {
 		StringBuilder s = new StringBuilder();
-		s.append("select a.*, b.value_txt as 'attrib1_txt' from product a left outer join product_attribute_xr b ");
-		s.append("on (b.product_id = a.product_id ");
+		s.append("select a.*, b.value_txt as 'attrib1_txt', pax.product_id as 'imgs' from product a ");
+		s.append("left outer join product_attribute_xr b on (b.product_id = a.product_id ");
 		if (isPreview) s.append("or a.product_group_id = b.product_id ");
 		s.append(") and b.attribute_id like '%_AD' "); 
+		s.append("left join product_attribute_xr pax on pax.product_id = a.product_id and pax.attribute_id like '%_IMAGE' ");
 		if (isPreview)s.append("left join product a2 on a.product_id = a2.product_group_id ");
 		s.append("where a.product_catalog_id=? and a.status_no=5 ");
 		if (isPreview) s.append("and (a.product_group_id is not null or (a2.product_id is null and a.product_group_id is null)) ");
 		else s.append("and a.product_group_id is null ");
 		s.append("and (a.url_alias_txt=? or a.parent_id in (select product_id from product where url_alias_txt=?)) ");
+		s.append("and (pax.product_attribute_id = (SELECT TOP(1)product_attribute_id ");
+		s.append("from product_attribute_xr where product_id = a.product_id and attribute_id like '%_IMAGE') ");
+		s.append("or pax.product_attribute_id is null) ");
 		s.append("order by a.parent_id, a.display_order_no, a.product_nm");
 		log.debug(s + "|" + catalogId + "|" + prodAlias);
 		PreparedStatement ps = null;
@@ -599,6 +603,12 @@ public class FSProductAction extends SBActionAdapter {
 				Node n = new Node(vo.getProductId(), vo.getParentId());
 				n.setUserObject(vo);
 				n.setNodeName(vo.getProductName());
+				
+				if (rs.getString("imgs") == null) {
+					n.setLeaf(false);
+				} else {
+					n.setLeaf(true);
+				}
 				nodes.add(n);
 			}
 			
@@ -662,13 +672,16 @@ public class FSProductAction extends SBActionAdapter {
 		StringBuilder s = new StringBuilder();
 		s.append("select a.product_id, a.parent_id, a.product_nm, a.desc_txt, a.url_alias_txt, ");
 		s.append("a.meta_kywd_txt,a.meta_desc,a.title_nm,a.short_desc, b.order_no, ");
-		s.append("a.thumbnail_url, a.image_url, a.cust_product_no, d.value_txt as 'attrib1_txt' ");
+		s.append("a.thumbnail_url, a.image_url, a.cust_product_no, d.value_txt as 'attrib1_txt', ");
+		s.append("COALESCE(MIN(sp.product_id ), '0') as child, COALESCE(MIN(pax.product_attribute_id ), '0') as attr ");
 		s.append("from product a inner join product_category_xr b on a.product_id = b.product_id ");
 		if (isPreview) s.append("or a.product_group_id = b.product_id ");
 		s.append("inner join product_category c on b.product_category_cd=c.product_category_cd ");
 		if (isPreview) s.append("or c.category_group_id = b.product_category_cd ");
+		s.append("left join product_attribute_xr pax on a.product_id = pax.product_id and pax.attribute_id like '%_IMAGE' ");
 		s.append("left outer join product_attribute_xr d on d.product_id = a.product_id ");
 		s.append("and d.attribute_id like '%_AD' ");
+		s.append("left join product sp on sp.parent_id = a.product_id ");
 		if (isPreview) {
 			s.append("left join product a2 on a.product_id = a2.product_group_id ");
 			s.append("left join product_category c2 on c.product_category_cd = c2.category_group_id ");
@@ -678,13 +691,15 @@ public class FSProductAction extends SBActionAdapter {
 			s.append("and (a.product_group_id is not null or (a2.product_id is null and a.product_group_id is null)) ");
 			s.append("and (c.category_group_id is not null or (c2.product_category_cd is null and c.category_group_id is null)) ");
 		} else s.append("and a.product_group_id is null and c.category_group_id is null ");
+		s.append("group by a.product_id, a.parent_id, a.product_nm, a.desc_txt, a.url_alias_txt, a.meta_kywd_txt,a.meta_desc, ");
+		s.append("a.title_nm,a.short_desc, b.order_no, a.thumbnail_url, a.image_url, a.cust_product_no, d.value_txt ");
 		
 		s.append("union ");
 		
 		s.append("select pc.product_category_cd, pc.parent_cd, pc.category_nm, pc.category_desc, ");
 		s.append("pc.url_alias_txt, pc.meta_kywd_txt, pc.meta_desc, pc.title_nm, pc.short_desc, 0, ");
 		s.append("pc.thumbnail_img, pc.image_url, pc.cust_category_id as 'cust_product_no', ");
-		s.append("pc.attrib1_txt from product_category pc ");
+		s.append("pc.attrib1_txt, '0' as child, '0' as attr from product_category pc ");
 		if (isPreview) s.append("left join product_category pc2 on pc.product_category_cd = pc2.category_group_id " );
 		s.append("where pc.url_alias_txt = ? and pc.product_catalog_id=? and pc.active_flg=1 ");
 		if (isPreview) s.append("and (pc.category_group_id is not null or (pc2.product_category_cd is null and pc.category_group_id is null)) ");
@@ -711,6 +726,14 @@ public class FSProductAction extends SBActionAdapter {
 				Node n = new Node(vo.getProductId(), vo.getParentId());
 				n.setUserObject(vo);
 				n.setNodeName(vo.getProductName());
+				
+				// If this product does not have any children or attributes we set it as a leaf
+				if (!"0".equals(rs.getString("child")) || !"0".equals(rs.getString("attr"))) {
+					n.setLeaf(true);
+				} else {
+					n.setLeaf(false);
+				}
+				
 				nodes.add(n);
 			}
 			
