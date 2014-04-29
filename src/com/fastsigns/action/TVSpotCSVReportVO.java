@@ -122,6 +122,7 @@ public class TVSpotCSVReportVO extends AbstractSBReportVO {
 	}
 	
 	private void getHeader(StringBuilder hdr) {
+		hdr.append("sep=\t;");
 		hdr.append("Commercial Consultation Report - ");
 		hdr.append(Convert.formatDate(new Date(),  Convert.DATE_SLASH_PATTERN)).append("\r\n");
 		hdr.append("Date\t");
