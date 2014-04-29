@@ -5,7 +5,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.fastsigns.action.TVSpotReportVO;
+import com.fastsigns.action.TVSpotCSVReportVO;
 import com.fastsigns.action.TVSpotUtil;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.db.pool.SMTDBConnection;
@@ -93,7 +93,7 @@ public class TVSpotEmailer extends CommandLineUtil {
 			//send reports to corporate
 			sendCorpReport(cdc);
 			
-			// Send indivudual center reports
+			// Send individual center reports
 			sendCenterReport(cdc);
 		} catch (ActionException e) {
 			log.error("Could not create ContactDataContainer. ", e);
@@ -190,6 +190,7 @@ public class TVSpotEmailer extends CommandLineUtil {
 		EmailMessageVO msg;
 		TVSpotUtil.Status status = null;
 		int daysBetween;
+		boolean isMonday = now.get(Calendar.DAY_OF_WEEK) == Calendar.MONDAY;
 		MessageSender ms = new MessageSender(attributes, dbConn);
 		
 		for (ContactDataModuleVO vo : cdc.getData()) {
@@ -197,27 +198,32 @@ public class TVSpotEmailer extends CommandLineUtil {
 			daysBetween = (int) ((vo.getSubmittalDate().getTime() - now.getTimeInMillis()) / (1000 * 60 * 60 * 24));
 			log.debug("notice daysBetween: " + daysBetween);
 			
-			String sts = vo.getExtData().get(TVSpotUtil.ContactField.status.id());
-			try {
-				status = TVSpotUtil.Status.valueOf(sts);
-			} catch (Exception e) {
-				log.error("could not determine status for contactSubmttalId=" + vo.getContactSubmittalId() + " reported: " + sts);
-				continue;
-			}
-			
-			//this email only goes out the day after the record was created, and only if the status is unchanged.
-			boolean sendEmail = (daysBetween == -1 && status == TVSpotUtil.Status.initiated);
-			if (! sendEmail) continue;
-
-			msg = new EmailMessageVO();
-			try {
-				msg.addRecipient(vo.getDealerLocation().getOwnerEmail());
-				msg.setSubject("Reminder: Enact \"Operation Consultation\" within 24 hours: " + vo.getFullName());
-				msg.setHtmlBody(buildFirstNoticeBody(vo));
-				msg.setFrom(props.getProperty("senderEmailAddr"));
-				ms.sendMessage(msg);
-			} catch (InvalidDataException e) {
-				log.error("Could not create email for submittal: " + vo.getContactSubmittalId(), e);
+			switch (daysBetween) {
+				case -2:
+				case -3: if (!isMonday) 	continue;
+				case -1:
+					String sts = vo.getExtData().get(TVSpotUtil.ContactField.status.id());
+					try {
+						status = TVSpotUtil.Status.valueOf(sts);
+					} catch (Exception e) {
+						log.error("could not determine status for contactSubmttalId=" + vo.getContactSubmittalId() + " reported: " + sts);
+						continue;
+					}
+					
+					//this email only goes out the day after the record was created, and only if the status is unchanged.
+					boolean sendEmail = (status == TVSpotUtil.Status.initiated);
+					if (! sendEmail) continue;
+	
+					msg = new EmailMessageVO();
+					try {
+						msg.addRecipient(vo.getDealerLocation().getOwnerEmail());
+						msg.setSubject("Reminder: Enact \"Operation Consultation\" within 24 hours: " + vo.getFullName());
+						msg.setHtmlBody(buildFirstNoticeBody(vo));
+						msg.setFrom(props.getProperty("senderEmailAddr"));
+						ms.sendMessage(msg);
+					} catch (InvalidDataException e) {
+						log.error("Could not create email for submittal: " + vo.getContactSubmittalId(), e);
+					}
 			}
 		}
 	}
@@ -287,7 +293,7 @@ public class TVSpotEmailer extends CommandLineUtil {
 	 */
 	private void sendCorpReport(ContactDataContainer cdc) {
 		log.info("sending corp report email");
-		TVSpotReportVO report = new TVSpotReportVO();
+		TVSpotCSVReportVO report = new TVSpotCSVReportVO();
 		report.setData(cdc);
 		
 		EmailMessageVO msg = new EmailMessageVO();
@@ -297,7 +303,7 @@ public class TVSpotEmailer extends CommandLineUtil {
 			msg.setSubject("\"Operation Consultation\" report is attached for your review");
 			msg.setHtmlBody(buildReportBody(false));
 			msg.setFrom(props.getProperty("senderEmailAddr"));
-			msg.addAttachment("Consultation Report.xls", report.generateReport());
+			msg.addAttachment(report.getFileName(), report.generateReport());
 			
 			ms.sendMessage(msg);
 		} catch (InvalidDataException e) {
@@ -307,7 +313,7 @@ public class TVSpotEmailer extends CommandLineUtil {
 	
 	private void sendCenterReport(ContactDataContainer cdc) {
 		log.info("sending Center report emails");
-		TVSpotReportVO report = new TVSpotReportVO();
+		TVSpotCSVReportVO report = new TVSpotCSVReportVO();
 		report.setData(cdc);
 		Map<String, StringBuilder> byCenter = report.generateCenterReport();
 		
@@ -320,7 +326,7 @@ public class TVSpotEmailer extends CommandLineUtil {
 				msg.setSubject("\"Operation Consultation\" report is attached for your review");
 				msg.setHtmlBody(buildReportBody(true));
 				msg.setFrom(props.getProperty("senderEmailAddr"));
-				msg.addAttachment("Consultation Report.xls", byCenter.get(email).toString().getBytes());
+				msg.addAttachment(report.getFileName(), byCenter.get(email).toString().getBytes());
 				
 				ms.sendMessage(msg);
 			} catch (InvalidDataException e) {
