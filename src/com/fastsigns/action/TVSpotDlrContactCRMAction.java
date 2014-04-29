@@ -58,6 +58,9 @@ public class TVSpotDlrContactCRMAction extends SimpleActionAdapter {
 		SBUserRole role = (SBUserRole) ses.getAttribute(Constants.ROLE_DATA);
 		String franchiseId = (String) ses.getAttribute(FastsignsSessVO.WEBEDIT_FRANCHISE_ID);
 		
+		if (req.hasParameter("dealerIdOverride"))
+			franchiseId = req.getParameter("dealerIdOverride");
+		
 		//security checkpoint, only admins can get data without a franchiseId.
 		if (franchiseId == null && (role == null || role.getRoleLevel() < SecurityController.ADMIN_ROLE_LEVEL)) 
 			return;
