@@ -43,9 +43,13 @@ public class FastsignsSiteMapServlet extends SiteMapServlet {
 		// Retrieve the custom FTS Product Pages
 		List<Node> pages = this.getProducts(site);
 		
-		//load FTS metro pages, but only on the main website!
-		if ((site.getOrganizationId() + "_7").equals(site.getSiteId()))
-			pages.addAll(this.getFTSMetros(site, req));
+		// load FTS metro pages, but only on the main website!
+		// If this is the mobile site we load the metro pages slightly differently
+		if ((site.getOrganizationId() + "_7").equals(site.getSiteId())) {
+			pages.addAll(this.getFTSMetros(site, req, false));
+		} else if ((site.getOrganizationId() + "_4").equals(site.getSiteId())) {
+			pages.addAll(this.getFTSMetros(site, req, true));
+		}
 		
 		return pages;
 	}
@@ -79,7 +83,7 @@ public class FastsignsSiteMapServlet extends SiteMapServlet {
      * 
      * @return
      */
-    protected List<Node> getFTSMetros(SiteVO site, SMTServletRequest req) {
+    protected List<Node> getFTSMetros(SiteVO site, SMTServletRequest req, boolean isMobile) {
     	SMTDBConnection conn = this.getDBConnection();
     	MetroAction ma = new MetroAction(new ActionInitVO());
     	ma.setAttribute(Constants.CUSTOM_DB_SCHEMA, (String)sc.getAttribute(Constants.CUSTOM_DB_SCHEMA));
@@ -107,21 +111,23 @@ public class FastsignsSiteMapServlet extends SiteMapServlet {
     			n.setUserObject(mo);
     			data.add(n);
     			
-    			//loop and add all product pages for this metro area
-    			for (MetroProductVO prod : mc.getProductPages().values()) {
-    				mo = new MenuObj();
-    	            mo.setFullPath("/metro-" + mc.getAreaAlias() + "/" + prod.getAliasNm());
-    	            mo.setFileExtension("");
-    	            mo.setLastModified(prod.getLastUpdate());
-    	            mo.setLevel(3);
-
-
-            		n = new Node(prod.getMetroProductId(), prod.getMetroAreaId());
-        			n.setNodeName(prod.getProductNm());
-        			n.setRoot(false);
-        			n.setUserObject(mo);
-        			data.add(n);
-        			//log.debug("added metro " + n.getNodeName());
+    			//loop and add all product pages for this metro area only if we are creating the desktop map
+    			if (!isMobile) {
+	    			for (MetroProductVO prod : mc.getProductPages().values()) {
+	    				mo = new MenuObj();
+	    	            mo.setFullPath("/metro-" + mc.getAreaAlias() + "/" + prod.getAliasNm());
+	    	            mo.setFileExtension("");
+	    	            mo.setLastModified(prod.getLastUpdate());
+	    	            mo.setLevel(3);
+	
+	
+	            		n = new Node(prod.getMetroProductId(), prod.getMetroAreaId());
+	        			n.setNodeName(prod.getProductNm());
+	        			n.setRoot(false);
+	        			n.setUserObject(mo);
+	        			data.add(n);
+	        			//log.debug("added metro " + n.getNodeName());
+	    			}
     			}
         	}
     		
