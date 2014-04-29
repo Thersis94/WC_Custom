@@ -190,8 +190,35 @@ public class MetroAction extends SBActionAdapter {
 				}
 			super.sendRedirect(sb.toString(), null, req);
 		}
+		
+		if(metroAlias.length() > 0) {
+				setCanonicals(req, productAlias, metroAlias);
+		}
 	}
 	
+	/**
+	 * Set the canonical and relative urls for the page based on the product and metro aliases we are given
+	 * @param req
+	 * @param url
+	 */
+	private void setCanonicals(SMTServletRequest req, String productAlias, String metroAlias) {
+		log.debug("Setting the canonical page urls");
+		PageVO p = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+		SiteVO s = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		
+		StringBuilder url = new StringBuilder();
+		url.append("/metro-" + metroAlias);
+		if(StringUtil.checkVal(productAlias).length() > 0)
+			url.append("/" + productAlias);
+		
+		if (!Convert.formatBoolean(s.getMobileFlag())) {
+			p.setCanonicalMobileUrl("http://" + s.getMobileSiteUrl() + "/metro-" + metroAlias);
+		}
+		
+		p.setCanonicalPageUrl(url.toString());
+		
+	}
+
 	/**
 	 * Gets the metro area based on the action id 
 	 */
