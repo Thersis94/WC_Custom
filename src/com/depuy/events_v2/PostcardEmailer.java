@@ -332,6 +332,7 @@ public class PostcardEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient("tkumfer@printlinc.net"); // Terrie
+			mail.addRecipient("rwilkin7@its.jnj.com"); //Rachel Wilkinson
 			mail.addCC(site.getAdminEmail());
 			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
