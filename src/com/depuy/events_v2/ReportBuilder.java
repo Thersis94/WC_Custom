@@ -199,7 +199,7 @@ public class ReportBuilder extends SBActionAdapter {
 		//loop through the events, filter by date, then load the coop-ad for each one
 		for (DePuyEventSeminarVO sem : data) {
 			Date eDate = sem.getEarliestEventDate();
-			if (eDate.before(start) || eDate.after(end)) continue;
+			if ((start != null && eDate.before(start)) || (end != null && eDate.after(end))) continue;
 			
 			try {
 				DePuyEventSeminarVO semFull  = (DePuyEventSeminarVO) retriever.loadOneSeminar(sem.getEventPostcardId(), actionId, null, null, null);

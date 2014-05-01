@@ -61,7 +61,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		//list pages
 		active /** implied default **/, completed, 
 		//reports
-		reportForm,  rsvpBreakdown
+		reportForm,  rsvpBreakdown, report
 	}
 	
 	/*
@@ -172,7 +172,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		}
 		if (ReqType.completed == reqType) {
 			sql.append("and ep.status_flg = ").append(EventFacadeAction.STATUS_COMPLETE).append(" ");
-		} else {
+		} else if (ReqType.report != reqType){
 			sql.append("and (ep.status_flg != ").append(EventFacadeAction.STATUS_COMPLETE).append(" or ep.status_flg is null) ");
 		}
 		sql.append("group by e.event_entry_id, ep.event_postcard_id, e.RSVP_CODE_TXT, e.start_dt, ");
