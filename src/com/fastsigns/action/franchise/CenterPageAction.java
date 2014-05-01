@@ -30,6 +30,7 @@ import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.tools.EmailFriendAction;
+import com.smt.sitebuilder.admin.action.sync.SyncTransactionAction;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
@@ -319,6 +320,9 @@ public class CenterPageAction extends SimpleActionAdapter {
 		if (mod.isCacheable() && orgId.matches(".*[0-9].*")) mod.setCacheGroup(orgId + "_1");
 		else if (mod.isCacheable()) mod.setCacheGroup(orgId + "_" + id + "_1");
 		Boolean isPreview = Convert.formatBoolean(req.getAttribute(Constants.PAGE_PREVIEW), false);
+		
+        String previewApiKey = SyncTransactionAction.generatePreviewApiKey(attributes);
+        req.setParameter(Constants.PAGE_PREVIEW, previewApiKey);
 		if(req.hasParameter("reloadMenu"))
 			isPreview = Convert.formatBoolean(req.getParameter("reloadMenu"));
 		Boolean isKeystone = Convert.formatBoolean(req.getAttribute("isKeystone"), false);

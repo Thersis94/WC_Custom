@@ -1,7 +1,6 @@
 package com.fastsigns.action.franchise;
 
 import java.sql.PreparedStatement;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -37,6 +36,7 @@ import com.smt.sitebuilder.action.content.ContentVO;
 import com.smt.sitebuilder.action.menu.MenuObj;
 import com.smt.sitebuilder.admin.action.PageModuleAction;
 import com.smt.sitebuilder.admin.action.SitePageAction;
+import com.smt.sitebuilder.admin.action.sync.SyncTransactionAction;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
@@ -249,6 +249,10 @@ public class FranchisePageAction extends SBActionAdapter {
 		String pageId = StringUtil.checkVal(req.getParameter("pageId"));
 		String franId = CenterPageAction.getFranchiseId(req);
 		attributes.put("webeditFranId", franId);
+		
+        String previewApiKey = SyncTransactionAction.generatePreviewApiKey(attributes);
+        req.setParameter(Constants.PAGE_PREVIEW, previewApiKey);
+		
 		Map<String, ContentVO> contents = new HashMap<String, ContentVO>();
 		// Get the page data
 		PageContainerVO pc = this.listPages(req, pageId);

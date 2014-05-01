@@ -5,13 +5,13 @@ package com.fastsigns.action.franchise;
 
 import javax.servlet.http.HttpSession;
 
-
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.UserRoleVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.admin.action.sync.SyncTransactionAction;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -65,7 +65,8 @@ public class KeystoneCenterPageAction extends CenterPageAction {
 		//this snippet allows Keystone admins to use the Admintool's file manager
 		HttpSession ses = req.getSession();
     	SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-    	
+        String previewApiKey = SyncTransactionAction.generatePreviewApiKey(attributes);
+        req.setParameter(Constants.PAGE_PREVIEW, previewApiKey);
         SBUserRoleContainer roles = (SBUserRoleContainer) ses.getAttribute(AdminConstants.ADMIN_ROLE_DATA);
         String franOrgId = site.getOrganizationId() + "_" + StringUtil.checkVal(CenterPageAction.getFranchiseId(req));
         if (roles == null || roles.getRole(franOrgId) == null) {
@@ -96,7 +97,9 @@ public class KeystoneCenterPageAction extends CenterPageAction {
 	 * (query->all-data  -or-  query->assigned-data)
 	 */
 	protected StringBuilder formatQuery(SMTServletRequest req) {
-		req.setAttribute(Constants.PAGE_PREVIEW, Convert.formatBoolean(req.getParameter("reloadMenu"), false));
+		//set an api key for previewing pages
+        String previewApiKey = SyncTransactionAction.generatePreviewApiKey(attributes);
+		req.setAttribute(Constants.PAGE_PREVIEW, previewApiKey);
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder s = new StringBuilder();
 		String orgId = ((SiteVO)req.getAttribute("siteData")).getOrganizationId();
