@@ -62,7 +62,8 @@ public class MediaBinLinkAction extends SimpleActionAdapter {
 			req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
 			req.setAttribute(Constants.REDIRECT_URL, path);
 		} catch (Exception e) {
-			log.error("Unable to retrieve media bin file path", e);
+			//we don't care about these in production.
+			log.debug("Unable to retrieve media bin file path", e);
 			req.setAttribute(Constants.CFG_PAGE_NOT_FOUND, Boolean.TRUE);
 		}
 	}
