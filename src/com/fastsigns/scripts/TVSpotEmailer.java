@@ -1,11 +1,15 @@
 package com.fastsigns.scripts;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.fastsigns.action.TVSpotCSVReportVO;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+
+import com.fastsigns.action.TVSpotReportVO;
 import com.fastsigns.action.TVSpotUtil;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.db.pool.SMTDBConnection;
@@ -37,6 +41,7 @@ import com.smt.sitebuilder.util.MessageSender;
 public class TVSpotEmailer extends CommandLineUtil {
 	
 	private boolean isSurveyRun = false;
+	private boolean isCenter = false;
 	private Map<String, Object> attributes;
 
 	public TVSpotEmailer(String[] args) {
@@ -44,6 +49,7 @@ public class TVSpotEmailer extends CommandLineUtil {
 		loadProperties("scripts/fts_TVSpot.properties");
 		loadDBConnection(props);
 		isSurveyRun =  (args != null && args.length > 0 && "survey".equals(args[0]));
+		isCenter =  (args != null && args.length > 0 && "center".equals(args[0]));
 		makeAttribMap();
 	}
 
@@ -90,11 +96,13 @@ public class TVSpotEmailer extends CommandLineUtil {
 			//for the ones that are 1 day old, send the 1-day notification
 			sendFirstNotice(cdc);
 			
-			//send reports to corporate
-			sendCorpReport(cdc);
+			//send reports to corporate or center owners based on the command line arguments
+			if (isCenter) {
+				sendCenterReport(cdc);
+			} else {
+				sendCorpReport(cdc);
+			}
 			
-			// Send individual center reports
-			sendCenterReport(cdc);
 		} catch (ActionException e) {
 			log.error("Could not create ContactDataContainer. ", e);
 		}
@@ -293,7 +301,7 @@ public class TVSpotEmailer extends CommandLineUtil {
 	 */
 	private void sendCorpReport(ContactDataContainer cdc) {
 		log.info("sending corp report email");
-		TVSpotCSVReportVO report = new TVSpotCSVReportVO();
+		TVSpotReportVO report = new TVSpotReportVO();
 		report.setData(cdc);
 		
 		EmailMessageVO msg = new EmailMessageVO();
@@ -313,9 +321,9 @@ public class TVSpotEmailer extends CommandLineUtil {
 	
 	private void sendCenterReport(ContactDataContainer cdc) {
 		log.info("sending Center report emails");
-		TVSpotCSVReportVO report = new TVSpotCSVReportVO();
+		TVSpotReportVO report = new TVSpotReportVO();
 		report.setData(cdc);
-		Map<String, StringBuilder> byCenter = report.generateCenterReport();
+		Map<String, HSSFWorkbook> byCenter = report.generateCenterReport();
 		
 		EmailMessageVO msg;
 		MessageSender ms = new MessageSender(attributes, dbConn);
@@ -326,11 +334,17 @@ public class TVSpotEmailer extends CommandLineUtil {
 				msg.setSubject("\"Operation Consultation\" report is attached for your review");
 				msg.setHtmlBody(buildReportBody(true));
 				msg.setFrom(props.getProperty("senderEmailAddr"));
-				msg.addAttachment(report.getFileName(), byCenter.get(email).toString().getBytes());
+				
+				ByteArrayOutputStream baos = new ByteArrayOutputStream();
+				byCenter.get(email).write(baos);
+				
+				msg.addAttachment(report.getFileName(), baos.toByteArray());
 				
 				ms.sendMessage(msg);
 			} catch (InvalidDataException e) {
 				log.error("Could not create email for submittal: ", e);
+			} catch (IOException e) {
+				log.error("Could not serialize report. ", e);
 			}
 		}
 	}
@@ -368,9 +382,9 @@ public class TVSpotEmailer extends CommandLineUtil {
 		body.append("<li>The prospect's name and contact information (email and phone number)</li>");
 		body.append("<li>The prospects location information (Zip/postal code and state/province)</li>");
 		body.append("<li>Any free form text information entered</li>");
-		body.append("<li>The status of the request if fastsigns.com/webedit is updated (by the Franchise ");
+		body.append("<li>The status of the request if <a href=\"http://www.fastsigns.com/webedit?mbk=true\">www.fastsigns.com/webedit</a> is updated (by the Franchise ");
 		body.append("Partner or by us after asking the Franchise Partner) </li>");
-		body.append("<li>The sale amount if fastsigns.com/webedit is updated (by the Franchise Partner or ");
+		body.append("<li>The sale amount if <a href=\"http://www.fastsigns.com/webedit?mbk=true\">www.fastsigns.com/webedit</a> is updated (by the Franchise Partner or ");
 		body.append("by us after asking) </li>");
 		body.append("<li>Prospect survey status (sent, returned, feedback if provided)</li>");
 		body.append("<li>Prospect's survey rating regarding their satisfaction with the consultation (1 is ");
