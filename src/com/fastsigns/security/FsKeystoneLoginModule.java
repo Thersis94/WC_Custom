@@ -120,8 +120,7 @@ public class FsKeystoneLoginModule extends AbstractLoginModule {
 				this.parseKeystoneFranchises(jsonObject.getJSONObject("data"), sessVo);
 				this.parseKeystoneProfiles(jsonObject.getJSONObject("data"), sessVo);
 			} else {
-				throw new AuthenticationException(
-						ErrorCodes.ERR_INVALID_LOGIN);
+				throw new AuthenticationException(ErrorCodes.ERR_INVALID_LOGIN);
 			}
 
 			log.debug("FSSessVO=" + sessVo.toString());
@@ -141,7 +140,9 @@ public class FsKeystoneLoginModule extends AbstractLoginModule {
 			vo.setAuthenticated(true);
 			return vo;
 		}
-		return null;
+		
+		//if we haven't returned by now, the user is not logged in.
+		throw new AuthenticationException(ErrorCodes.ERR_INVALID_LOGIN);
     }
     
     /**

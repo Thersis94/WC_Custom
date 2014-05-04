@@ -25,7 +25,6 @@ public class StartFromScratchAction extends AbstractBaseAction {
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		//add to the attributes map first, incase a downstream Proxy call is made.
 		attributes.put(Constants.SITE_DATA, req.getAttribute(Constants.SITE_DATA));
-		//attributes.put("wcFranchiseId", CenterPageAction.getFranchiseId(req));
 		
 		HttpSession sess = req.getSession();
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
@@ -35,6 +34,9 @@ public class StartFromScratchAction extends AbstractBaseAction {
 		//no webId on session, parse it from the orgId.
 		if (webId == null || webId.length() == 0)
 			webId = CenterPageAction.getFranchiseId(req);
+		
+		//this is used to set the cache groups
+		attributes.put("wcFranchiseId", webId);
 		
 		//no sessVo, go load one.  This contains the FranchiseVO for this Center.
 		if (sessVo == null || sessVo.getFranchise(webId) == null) {

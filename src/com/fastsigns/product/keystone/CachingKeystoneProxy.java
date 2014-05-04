@@ -31,7 +31,6 @@ public class CachingKeystoneProxy extends KeystoneProxy {
 	 */
 	public static final int ACCOUNT_DATA_TIMEOUT = 10; //mins
 	
-	public static final String TIMEOUT = "keystoneProxyTimeout";
 	private GeneralCacheAdministrator cache = null;
 	private String organizationId = null; 
 	private String siteId = null;
@@ -124,12 +123,16 @@ public class CachingKeystoneProxy extends KeystoneProxy {
 	 * @return String[] groups
 	 */
 	protected String[] buildCacheGroups() {
-		cacheGroups = new String [] {getWcFranchiseId(), getWcFranchiseId() + "_KEYSTONE", getOrganizationId(), getSiteId()};
+		cacheGroups = new String [] {
+			"FTS_KEYSTONE",  //an common ECOMM group (common to all centers)
+			"FTS_" + getWcFranchiseId() + "_KEYSTONE",  //an ecomm group for this center (only) 
+			getOrganizationId(),  //the child-site's orgId
+			getSiteId() //the child-site's siteId
+		};
 		
 		//we can't have nulls here, must strip them
 		for (int x=0; x < cacheGroups.length; x++) {
 			if (cacheGroups[x] == null || cacheGroups[x].length() == 0) {
-				cacheGroups[x] = "SMT_ADMIN";
 				//until we trace this down...
 				log.error("NULL CACHE GROUP! " + StringUtil.getToString(cacheGroups, true, 0, ",") + " | "  + this.getModule() + " | " + this.getAction());
 			}

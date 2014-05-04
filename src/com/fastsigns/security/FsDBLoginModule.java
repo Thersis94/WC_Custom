@@ -429,6 +429,6 @@ public class FsDBLoginModule extends AbstractLoginModule {
 	@Override
 	public UserDataVO retrieveUserData(String encProfileId)
 			throws AuthenticationException {
-		return null;
+		throw new AuthenticationException(ErrorCodes.ERR_INVALID_LOGIN);
 	}
 }

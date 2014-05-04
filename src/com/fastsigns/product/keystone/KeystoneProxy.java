@@ -126,7 +126,7 @@ public class KeystoneProxy {
 				throw new IOException("Transaction Unsuccessful, code=" + conn.getResponseCode());
 			
 		} catch (IOException ioe) {
-			log.error(ioe.getMessage(), ioe);
+//			log.error(ioe.getMessage(), ioe);
 			throw new InvalidDataException(ioe);
 		} catch (Exception e) {
 			log.error(e.getMessage(), e);

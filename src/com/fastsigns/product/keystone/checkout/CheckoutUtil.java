@@ -425,6 +425,11 @@ public class CheckoutUtil {
 	 */
 	public FastsignsSessVO loadFranchiseVO(FastsignsSessVO sessVo, String webId) throws InvalidDataException {
 		log.info("loading franchise account for webId=" + webId);
+
+		//we need this for cache groups
+		if (!attributes.containsKey("wcFranchiseId"))
+			attributes.put("wcFranchiseId", webId);
+		
 		KeystoneProfileManager pm = new KeystoneProfileManager();
 		KeystoneProxy proxy = KeystoneProxy.newInstance(attributes);
 		proxy.setModule("franchises");
