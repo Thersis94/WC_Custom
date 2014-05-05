@@ -225,6 +225,8 @@ public class EventLoader extends ChamberMasterLoader {
 			loc = new Location(this.cleanTags(row.get(6)));
 			try {
 				contactAndPhone = this.parseContactAndPhone(this.cleanTags(row.get(10)));
+			} catch (NullPointerException npe) {
+				log.info("Caught a null pointer exception attempting to parse contact/phone data...");
 			} catch (Exception e) {
 				log.info("Suppressing exception; No contact/phone info in data row for event ID: " + row.get(0));
 			}
@@ -266,7 +268,11 @@ public class EventLoader extends ChamberMasterLoader {
 				validCount++;
 			} catch(SQLException sqle) {
 				addStatusMessage("error inserting event " + row.get(0) + ", " + sqle.getMessage());
-				addStatusMessage("contact/phone: " + contactAndPhone[0] + "/" + contactAndPhone[1]);
+				if (contactAndPhone != null) {
+					addStatusMessage("contact/phone: " + contactAndPhone[0] + "/" + contactAndPhone[1]);
+				} else {
+					addStatusMessage("contact/phone data is null.");
+				}
 				addStatusMessage("loc address: " + loc.getAddress());
 				addStatusMessage("loc address2: " + loc.getAddress2());
 				addStatusMessage("loc city: " + loc.getCity());
