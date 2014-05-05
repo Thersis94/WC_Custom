@@ -29,17 +29,13 @@ public class StartFromScratchAction extends AbstractBaseAction {
 		HttpSession sess = req.getSession();
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		FastsignsSessVO sessVo = (FastsignsSessVO)sess.getAttribute(KeystoneProxy.FRAN_SESS_VO);
-		String webId = (String)sess.getAttribute(FastsignsSessVO.FRANCHISE_ID);
-		
-		//no webId on session, parse it from the orgId.
-		if (webId == null || webId.length() == 0)
-			webId = CenterPageAction.getFranchiseId(req);
+		String webId = CenterPageAction.getFranchiseId(req, true);
 		
 		//this is used to set the cache groups
 		attributes.put("wcFranchiseId", webId);
 		
 		//no sessVo, go load one.  This contains the FranchiseVO for this Center.
-		if (sessVo == null || sessVo.getFranchise(webId) == null) {
+		if (sessVo == null || sessVo.getFranchise(webId).getWebId() == null) {
 			ProductFacadeAction.loadDefaultSession(req, sessVo, webId, attributes);
 			sessVo = (FastsignsSessVO)sess.getAttribute(KeystoneProxy.FRAN_SESS_VO);
 			//log.debug("SessVo=" + sessVo);

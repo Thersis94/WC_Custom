@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 
+
 // SMT Base Libs
 import com.fastsigns.action.franchise.centerpage.FranchiseInfoAction;
 import com.fastsigns.action.franchise.centerpage.FranchiseLocationInfoAction;
@@ -20,6 +21,7 @@ import com.fastsigns.action.franchise.vo.CenterModuleVO;
 import com.fastsigns.action.franchise.vo.FranchiseContainer;
 import com.fastsigns.action.franchise.vo.FranchiseTimeVO;
 import com.fastsigns.action.franchise.vo.FranchiseVO;
+import com.fastsigns.security.FastsignsSessVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
@@ -513,15 +515,15 @@ public class CenterPageAction extends SimpleActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	public static String getFranchiseId(SMTServletRequest req) {
+	public static String getFranchiseId(SMTServletRequest req, boolean skipSession) {
 		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 		String franId = null;
 		
 		if (site.getAliasPathName() != null && site.getAliasPathName().equals("webedit")) {
 			franId =  (String) req.getSession().getAttribute("webeditFranId");
 		}
-		if (franId == null) {
-			franId =  (String) req.getSession().getAttribute("FranchiseId");
+		if (franId == null && !skipSession) {
+			franId =  (String) req.getSession().getAttribute(FastsignsSessVO.FRANCHISE_ID);
 		}
 		if (franId == null) {
 			//make a final attempt via regEx against siteId
@@ -529,8 +531,17 @@ public class CenterPageAction extends SimpleActionAdapter {
 			//and replaces it with the webId it finds nested within it.
 			//The string is returning a subset of itself, basically.
 			franId = site.getSiteId().replaceAll("^(.*)_([\\d]{1,5})_(.*)$", "$2");
-			
 		}
+		
 		return franId;
+	}
+	
+	/**
+	 * overloaded to bypass session dependance.
+	 * @param req
+	 * @return
+	 */
+	public static String getFranchiseId(SMTServletRequest req) {
+		return getFranchiseId(req, false);
 	}
 }

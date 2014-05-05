@@ -184,7 +184,7 @@ public class ProductFacadeAction extends SimpleActionAdapter {
 		FastsignsSessVO franSessVo = (FastsignsSessVO)ses.getAttribute(KeystoneProxy.FRAN_SESS_VO);
 		
 		//if the request does not have franchiseInfo for this Franchise, load it.
-		if (franSessVo == null || franSessVo.getFranchise(franchiseId) == null) {
+		if (franSessVo == null || franSessVo.getFranchise(franchiseId).getWebId() == null) {
 			loadDefaultSession(req, franSessVo, franchiseId, attributes);
 			
 		} else if (ses.getAttribute(FastsignsSessVO.FRANCHISE_ID) == null) {

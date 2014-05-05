@@ -125,7 +125,7 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 		//preserve the webId and franchiseAliasPath.
 		//These are necessary evils so this action can send users back to the Franchise's website.  :(
 		prod.setWebId((String)req.getSession().getAttribute(FastsignsSessVO.FRANCHISE_ID));
-		prod.setFranchiseAliasId((String)req.getSession().getAttribute("FranchiseAliasId"));
+		prod.setFranchiseAliasId((String)req.getSession().getAttribute(FastsignsSessVO.FRANCHISE_ALIAS_PATH));
 		prod.setUsageId(req.getParameter("usageId"));
 		prod.setCatalogId(req.getParameter("catalog"));
 		
