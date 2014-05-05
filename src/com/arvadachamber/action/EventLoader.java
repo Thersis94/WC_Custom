@@ -246,8 +246,13 @@ public class EventLoader extends ChamberMasterLoader {
 			ps.setString(7, row.get(7)); // short_desc
 			ps.setString(8, row.get(5)); // location_desc
 			ps.setString(9, row.get(9)); // event_url
-			ps.setString(10, contactAndPhone[0]); // contact_nm
-			ps.setString(11, contactAndPhone[1]); // phone_txt
+			if (contactAndPhone != null) {
+				ps.setString(10, contactAndPhone[0]); // contact_nm
+				ps.setString(11, contactAndPhone[1]); // phone_txt
+			} else {
+				ps.setString(10, "");
+				ps.setString(11,  "");
+			}
 			ps.setString(12, StringUtil.capitalizeAddress(loc.getAddress())); // address_txt
 			ps.setString(13, StringUtil.capitalizeAddress(loc.getAddress2())); // address2_txt
 			ps.setString(14, StringUtil.capitalizeAddress(loc.getCity())); // city_nm
