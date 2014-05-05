@@ -251,11 +251,11 @@ public class TVSpotDlrContactAction extends SimpleActionAdapter {
 		msg.append("second email reminding you to contact this prospect will be automatically sent to these ");
 		msg.append("addresses at the end of the next business day.</li>");
 		msg.append("<li>We will track your consultation requests and survey feedback in the Web Edit tool ");
-		msg.append("(<a href=\"http://www.fastsigns.com/webedit\">www.fastsigns.com/webedit</a>); you'll get an email ");
+		msg.append("(<a href=\"http://www.fastsigns.com/webedit?mbk=true\">www.fastsigns.com/webedit</a>); you'll get an email ");
 		msg.append("each day you have activity (consultation requests, surveys answered, etc.).</li>");
 		msg.append("<li>Periodically we will send you a request to tell us if the leads generated sales, and if ");
 		msg.append("so, the sale amount.  If you would like to proactively provide this information, you can update the ");
-		msg.append("\"Consultation Request\" section at <a href=\"http://www.fastsigns.com/webedit\">www.fastsigns.com/webedit</a>. ");
+		msg.append("\"Consultation Request\" section at <a href=\"http://www.fastsigns.com/webedit?mbk=true\">www.fastsigns.com/webedit</a>. ");
 		msg.append("If you choose to, you can review and update the \"status\" column to indicate the status of contacting ");
 		msg.append("the prospect and view survey results.</li>");
 		msg.append("<li>This survey question will be automatically emailed to the prospect seven business days after ");

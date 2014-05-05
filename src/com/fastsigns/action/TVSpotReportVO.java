@@ -1,5 +1,7 @@
 package com.fastsigns.action;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -11,6 +13,13 @@ import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.contact.ContactDataContainer;
 import com.smt.sitebuilder.action.contact.ContactDataModuleVO;
+
+import org.apache.poi.hssf.usermodel.HSSFCellStyle;
+import org.apache.poi.hssf.usermodel.HSSFRow;
+import org.apache.poi.hssf.usermodel.HSSFSheet;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.hssf.util.HSSFColor;
+import org.apache.poi.ss.usermodel.Row;
 
 /*****************************************************************************
  <p><b>Title</b>: TVSpotReportVO.java</p>
@@ -43,124 +52,161 @@ public class TVSpotReportVO extends AbstractSBReportVO {
 
 	@Override
 	public byte[] generateReport() {
+		HSSFWorkbook workbook = new HSSFWorkbook();
+		HSSFSheet sheet = workbook.createSheet("Report");
 		log.debug("starting generateReport()");
-		StringBuilder rpt = new StringBuilder();
-		this.getHeader(rpt);
-		
-		for (ContactDataModuleVO vo  : cdc.getData())
-			appendRow(vo, rpt);
+		getHeader(sheet);
 
-		this.getFooter(rpt);
-		log.debug("report=" + rpt);
-		return rpt.toString().getBytes();
+		int rowNum = 2;
+		for (ContactDataModuleVO vo  : cdc.getData()) 
+			appendRow(vo, sheet.createRow(rowNum++), workbook.createCellStyle());
+		
+		setColWidths(sheet);
+		
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		try {
+			workbook.write(baos);
+		} catch (IOException e) {
+			log.error("Could not serialize workbook properly ", e);
+			return null;
+		}
+		return baos.toByteArray();
 	}
 	
+	/**
+	 * Widen the columns for easier readability
+	 * @param sheet
+	 */
+	private void setColWidths(HSSFSheet sheet) {
+		int colNum = 0;
+		sheet.setColumnWidth(colNum++, 8000);
+		sheet.setColumnWidth(colNum++, 4000);
+		sheet.setColumnWidth(colNum++, 4000);
+		sheet.setColumnWidth(colNum++, 5000);
+		sheet.setColumnWidth(colNum++, 5000);
+		sheet.setColumnWidth(colNum++, 8000);
+		sheet.setColumnWidth(colNum++, 4000);
+		sheet.setColumnWidth(colNum++, 3000);
+		sheet.setColumnWidth(colNum++, 2000);
+		sheet.setColumnWidth(colNum++, 15000);
+		sheet.setColumnWidth(colNum++, 4000);
+		sheet.setColumnWidth(colNum++, 3000);
+		sheet.setColumnWidth(colNum++, 4000);
+		sheet.setColumnWidth(colNum++, 15000);
+		sheet.setColumnWidth(colNum++, 6000);
+		sheet.setColumnWidth(colNum++, 7000);
+		sheet.setColumnWidth(colNum++, 7000);
+		sheet.setColumnWidth(colNum++, 15000);
+	}
+	
+
 	/**
 	 * Generate a map of reports for each center
 	 * @return
 	 */
-	public Map<String, StringBuilder> generateCenterReport() {
+	public Map<String, HSSFWorkbook> generateCenterReport() {
 		log.debug("starting generateReport()");
-		Map<String, StringBuilder> byCenter = new HashMap<String, StringBuilder>();
+		Map<String, HSSFWorkbook> byCenter = new HashMap<String, HSSFWorkbook>();
+		HSSFWorkbook book;
+		HSSFSheet sheet;
+		HSSFRow row;
 		
 		for (ContactDataModuleVO vo  : cdc.getData()) {
-			StringBuilder rpt = byCenter.get(vo.getDealerLocation().getOwnerEmail());
+			book = byCenter.get(vo.getDealerLocation().getOwnerEmail());
 			
 			// If we don't have this center in the map already start a new one..
-			if (rpt == null) {
-				rpt = new StringBuilder();
-				getHeader(rpt);
+			if (book == null) {
+				book = new HSSFWorkbook();
+				sheet = book.createSheet("Report");
+				getHeader(sheet);
+				setColWidths(sheet);
+				row = sheet.createRow(2);
+			} else {
+				row = book.getSheet("Report").createRow(book.getSheet("Report").getLastRowNum()+1);
 			}
 			
-			appendRow(vo, rpt);
-			byCenter.put(vo.getDealerLocation().getOwnerEmail(), rpt);
+			appendRow(vo, row, book.createCellStyle());
+			
+			byCenter.put(vo.getDealerLocation().getOwnerEmail(), book);
 		}
-
-		//Finish off all the center's reports
-		for (String key : byCenter.keySet())
-			this.getFooter(byCenter.get(key));
 		
 		return byCenter;
 	}
 	
-	
-	/**
-	 * appends a row to the report.
-	 * isolated to it's own method to be reusable by both the website and the batch process
-	 * @param vo
-	 * @param rpt
-	 * @return
-	 */
-	private void appendRow(ContactDataModuleVO vo, StringBuilder rpt) {
+	private void appendRow(ContactDataModuleVO vo, Row row, HSSFCellStyle style) {
+		int cellNum = 0;
 		Date d = vo.getSubmittalDate();
 		PhoneNumberFormat pnf = new PhoneNumberFormat(vo.getMainPhone(), PhoneNumberFormat.DASH_FORMATTING);
-		rpt.append("<tr><td>").append(Convert.formatDate(d, Convert.DATE_SLASH_PATTERN)).append("</td>");
-		rpt.append("<td>").append(Convert.formatDate(d, Convert.TIME_LONG_PATTERN)).append("</td>");
-		rpt.append("<td>").append(vo.getDealerLocationId()).append("</td>");
-		rpt.append("<td>").append(vo.getDealerLocation().getOwnerName()).append("</td>");
-		rpt.append("<td>").append(vo.getFullName()).append("</td>");
-		rpt.append("<td>").append(vo.getEmailAddress()).append("</td>");
-		rpt.append("<td>").append(pnf.getFormattedNumber()).append("</td>");
-		rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.zipcode.id()))).append("</td>");
-		rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.state.id()))).append("</td>");
-//		rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.industry.id()))).append("</td>");
-//		rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.department.id()))).append("</td>");
-//		rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.title.id()))).append("</td>");
-//		rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.companyNm.id()))).append("</td>");
-//		rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.businessChallenge.id()))).append("</td>");
-		rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.inquiry.id()))).append("</td>");
-		rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.saleAmount.id()))).append("</td>");
+		row.createCell(cellNum++).setCellValue(Convert.formatDate(d, Convert.DATE_SLASH_PATTERN));
+		row.createCell(cellNum++).setCellValue(Convert.formatDate(d, Convert.TIME_LONG_PATTERN));
+		row.createCell(cellNum++).setCellValue(vo.getDealerLocationId());
+		row.createCell(cellNum++).setCellValue(vo.getDealerLocation().getOwnerName());
+		row.createCell(cellNum++).setCellValue(vo.getFullName());
+		row.createCell(cellNum++).setCellValue(vo.getEmailAddress());
+		row.createCell(cellNum++).setCellValue(pnf.getFormattedNumber());
+		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.zipcode.id())));
+		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.state.id())));
+//		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.industry.id())));
+//		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.department.id())));
+//		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.title.id())));
+//		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.companyNm.id())));
+//		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.businessChallenge.id())));
+		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.inquiry.id())));
+		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.saleAmount.id())));
 		Calendar surveySentDt = Calendar.getInstance();
 		surveySentDt.setTime(vo.getSubmittalDate());
 		surveySentDt.add(Calendar.DAY_OF_YEAR, 7);
 		surveySentDt.set(Calendar.HOUR, 6); //6am is when FS email campaigns kick-off
 		surveySentDt.set(Calendar.MINUTE, 0);
 		surveySentDt.set(Calendar.SECOND, 0);
-		rpt.append("<td>").append((Calendar.getInstance().getTime().before(surveySentDt.getTime())) ? "No" : "Yes").append("</td>");
-		rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.rating.id()))).append("</td>");
-		rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.feedback.id()))).append("</td>");
-		rpt.append("<td>").append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.consultation.id()))).append("</td>");
+		row.createCell(cellNum++).setCellValue((Calendar.getInstance().getTime().before(surveySentDt.getTime())) ? "No" : "Yes");
+		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.rating.id())));
+		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.feedback.id())));
+		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.consultation.id())));
 		TVSpotUtil.Status status = TVSpotUtil.Status.valueOf(vo.getExtData().get(TVSpotUtil.ContactField.status.id()));
 		if (status == TVSpotUtil.Status.initiated) {
-			rpt.append("<td color=\"red\">").append(status.getLabel()).append("</td>");
+			row.createCell(cellNum).setCellValue(status.getLabel());
+			style.setFillForegroundColor(HSSFColor.RED.index);
+			row.getCell(cellNum++).setCellStyle(style);
 		} else {
-			rpt.append("<td>").append(status.getLabel()).append("</td>");
+			row.createCell(cellNum).setCellValue(status.getLabel());
+			row.getCell(cellNum++).setCellValue(status.getLabel());
 		}
+		row.createCell(cellNum++).setCellValue(status.getLabel());
 		String notes = StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.transactionNotes.id()));
-		notes = notes.replaceAll("\\r\\n", "<br>");
-		rpt.append("<td>").append(notes).append("</td></tr>");
+		row.createCell(cellNum++).setCellValue(notes);
 	}
 	
-	private void getHeader(StringBuilder hdr) {
-		hdr.append("<table border='1'>\r");
-		hdr.append("<tr><td colspan='16' style='background-color: #ccc;'><b>Commercial Consultation Report - ");
-		hdr.append(Convert.formatDate(new Date(),  Convert.DATE_SLASH_PATTERN)).append("</b></td></tr>\r");
-		hdr.append("<tr><th>Date</th>");
-		hdr.append("<th>Time</th>");
-		hdr.append("<th>Web Number</th>");
-		hdr.append("<th>Franchise Owner</th>");
-		hdr.append("<th>Prospect Name</th>");
-		hdr.append("<th>Prospect Email</th>");
-		hdr.append("<th>Phone Number</th>");
-		hdr.append("<th>Zip Code</th>");
-		hdr.append("<th>State</th>");
-//		hdr.append("<th>Industry</th>");
-//		hdr.append("<th>Department</th>");
-//		hdr.append("<th>Title</th>");
-//		hdr.append("<th>Company Name</th>");
-//		hdr.append("<th>Business Challenge</th>");
-		hdr.append("<th>Customer Request</th>");
-		hdr.append("<th>Sale Amount</th>");
-		hdr.append("<th>Survey Sent</th>");
-		hdr.append("<th>Survey Rating</th>");
-		hdr.append("<th>Survey Feedback</th>");
-		hdr.append("<th>Consultation Complete</th>");
-		hdr.append("<th>Status</th>");
-		hdr.append("<th>Notes (internal)</th></tr>");
-	}
-	
-	private void getFooter(StringBuilder sb) {
-		sb.append("</table>");
+	private void getHeader(HSSFSheet sheet) {
+		int cellNum = 0;
+		sheet.createRow(0).createCell(cellNum++).setCellValue("Commercial Consultation Report - ");
+		sheet.getRow(0).createCell(cellNum++).setCellValue(Convert.formatDate(new Date(),  Convert.DATE_SLASH_PATTERN));
+		
+		cellNum = 0;
+		Row row = sheet.createRow(1);
+		
+		row.createCell(cellNum++).setCellValue("Date");
+		row.createCell(cellNum++).setCellValue("Time");
+		row.createCell(cellNum++).setCellValue("Web Number");
+		row.createCell(cellNum++).setCellValue("Franchise Owner");
+		row.createCell(cellNum++).setCellValue("Prospect Name");
+		row.createCell(cellNum++).setCellValue("Prospect Email");
+		row.createCell(cellNum++).setCellValue("Phone Number");
+		row.createCell(cellNum++).setCellValue("Zip Code");
+		row.createCell(cellNum++).setCellValue("State");
+//		row.createCell(cellNum++).setCellValue("Industry");
+//		row.createCell(cellNum++).setCellValue("Department");
+//		row.createCell(cellNum++).setCellValue("Title");
+//		row.createCell(cellNum++).setCellValue("Company Name");
+//		row.createCell(cellNum++).setCellValue("Business Challenge");
+		row.createCell(cellNum++).setCellValue("Customer Request");
+		row.createCell(cellNum++).setCellValue("Sale Amount");
+		row.createCell(cellNum++).setCellValue("Survey Sent");
+		row.createCell(cellNum++).setCellValue("Survey Rating");
+		row.createCell(cellNum++).setCellValue("Survey Feedback");
+		row.createCell(cellNum++).setCellValue("Consultation Complete");
+		row.createCell(cellNum++).setCellValue("Status");
+		row.createCell(cellNum++).setCellValue("Notes (internal)");
 	}
 	
 }

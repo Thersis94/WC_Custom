@@ -321,7 +321,7 @@ public class FSProductAction extends SBActionAdapter {
 	 */
 	private String buildMenuSQL(boolean isPreview) {
 		StringBuilder sql = new StringBuilder();
-		sql.append("select CATEGORY_NM, CUST_CATEGORY_ID, pc.URL_ALIAS_TXT, p.PRODUCT_NM, p.URL_ALIAS_TXT as 'prod_url_alias', pc.ORDER_NO ");
+		sql.append("select pc.CATEGORY_NM, pc.CUST_CATEGORY_ID, pc.URL_ALIAS_TXT, p.PRODUCT_NM, p.URL_ALIAS_TXT as 'prod_url_alias', pc.ORDER_NO ");
 		sql.append("from PRODUCT_CATEGORY pc ");
 		sql.append("inner join PRODUCT_CATEGORY_XR pcx on pc.PRODUCT_CATEGORY_CD = pcx.PRODUCT_CATEGORY_CD ");
 		sql.append("inner join PRODUCT p on pcx.PRODUCT_ID = p.PRODUCT_ID ");
@@ -331,7 +331,7 @@ public class FSProductAction extends SBActionAdapter {
 		}
 		sql.append("where pc.parent_cd = ? ");
 		if (isPreview) {
-			sql.append("and (pc.category_group_id is not null or (pc2.product_category_cd is null and pc.category_group_id is null)) ");
+			sql.append("and (pc.category_group_id is not null or (pc2.category_group_id is null and pc.category_group_id is null)) ");
 			sql.append("and (p.product_group_id is not null or (p2.product_id is null and pc.category_group_id is null)) ");
 		} else {
 			sql.append("and pc.category_group_id is null and p.product_group_id is null ");
