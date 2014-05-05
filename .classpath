@@ -30,5 +30,6 @@
 			<attribute name="owner.project.facets" value="java"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry kind="lib" path="/SMTAppLibraries/lib/poi-3.5-FINAL-20090928.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
