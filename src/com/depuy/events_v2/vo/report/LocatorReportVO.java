@@ -105,7 +105,7 @@ public class LocatorReportVO extends AbstractSBReportVO {
 		sb.append("<u>Today's Seminar:</u><br/>"); 
 		sb.append(Convert.formatDate(event.getStartDate(),Convert.DATE_LONG)).append("<br/>");
 		sb.append(event.getLocationDesc()).append("<br/>");
-		sb.append("Speaker: ").append(event.getEventDesc()).append("<br/><br/>");
+		sb.append("Speaker: ").append(sem.getSurgeon().getSurgeonName()).append("<br/><br/>");
 		sb.append(event.getEventName()).append(", ").append(event.getCityName()).append(", ").append(event.getStateCode());
 
 		sb.append("<h1>LOCAL ORTHOPAEDIC SURGEONS</h1>\n");
