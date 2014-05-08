@@ -42,7 +42,7 @@ import com.siliconmtn.util.StringUtil;
  * 10/02/2012: David Bargerhuff; created EventLoader class to isolate the event loading methods.
  ****************************************************************************/
 public class EventLoader extends ChamberMasterLoader {
-	private static final Logger log = Logger.getLogger("EventLoader");
+	private static final Logger log = Logger.getLogger(EventLoader.class);
 	private String eventFromDate;
 	private String eventToDate;
 	
@@ -224,11 +224,13 @@ public class EventLoader extends ChamberMasterLoader {
 			
 			loc = new Location(this.cleanTags(row.get(6)));
 			try {
-				contactAndPhone = this.parseContactAndPhone(this.cleanTags(row.get(10)));
-			} catch (NullPointerException npe) {
-				log.info("Caught a null pointer exception attempting to parse contact/phone data...");
+				if (data.get(i).size() > 10)	contactAndPhone = this.parseContactAndPhone(this.cleanTags(row.get(10)));
+			//} catch (NullPointerException npe) {
+				//log.info("Caught a null pointer exception attempting to parse contact/phone data...");
 			} catch (Exception e) {
-				log.info("Suppressing exception; No contact/phone info in data row for event ID: " + row.get(0));
+				log.info("Exception parsing contact/phone data, ", e);
+				//log.info("Suppressing exception; No contact/phone info in data row for event ID: " + row.get(0));
+				log.info("contactAndPhone " + (contactAndPhone != null ? "size: " + contactAndPhone.length : "null"));
 			}
 			
 			// format dates as Timestamps so we can keep the time value.
@@ -253,7 +255,7 @@ public class EventLoader extends ChamberMasterLoader {
 				ps.setString(11, contactAndPhone[1]); // phone_txt
 			} else {
 				ps.setString(10, "");
-				ps.setString(11,  "");
+				ps.setString(11, "");
 			}
 			ps.setString(12, StringUtil.capitalizeAddress(loc.getAddress())); // address_txt
 			ps.setString(13, StringUtil.capitalizeAddress(loc.getAddress2())); // address2_txt
@@ -280,6 +282,10 @@ public class EventLoader extends ChamberMasterLoader {
 				addStatusMessage("loc zip: " + loc.getZipCode());
 				if (! isErrors()) setErrors(true);
 			}
+			
+			// reset the contact/phone array
+			contactAndPhone = null;
+			
 		}
 		if (ps != null) {
 			try {

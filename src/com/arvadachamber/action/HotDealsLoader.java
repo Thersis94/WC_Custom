@@ -38,7 +38,7 @@ import com.siliconmtn.util.StringUtil;
  * <b>Changes: </b>
  ****************************************************************************/
 public class HotDealsLoader extends ChamberMasterLoader {
-	private static final Logger log = Logger.getLogger("HotDealLoader");
+	private static final Logger log = Logger.getLogger(HotDealsLoader.class);
 	public static final String DEFAULT_REFERER = ChamberMasterLoader.SECURE_BASE_URL + "/Dashboard/Index";
 	public static final String HOT_DEALS_URL = "http://arvadachamber.chambermaster.com/directory/jsp/hotdeals/Search.jsp?ccid=342";
 	public static final String HOT_DEALS_DETAIL_URL = "http://arvadachamber.chambermaster.com/directory/jsp/hotdeals/HotDeal.jsp?ccid=342";

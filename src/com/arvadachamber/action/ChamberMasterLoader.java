@@ -44,7 +44,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * <b>Changes: </b>
  ****************************************************************************/
 public class ChamberMasterLoader {
-	private static final Logger log = Logger.getLogger("ChamberMasterLoader");
+	private static final Logger log = Logger.getLogger(ChamberMasterLoader.class);
 	public static final String BASE_URL = "http://secure2.chambermaster.com";
 	public static final String SECURE_BASE_URL = "https://secure2.chambermaster.com";
 	//public static final String USER_AGENT = "User-Agent:Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_3) AppleWebKit/535.19 (KHTML, like Gecko) Chrome/18.0.1025.142 Safari/535.19";

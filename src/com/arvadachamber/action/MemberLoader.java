@@ -44,7 +44,7 @@ import com.siliconmtn.util.StringUtil;
  * <b>Changes: </b>
  ****************************************************************************/
 public class MemberLoader extends ChamberMasterLoader {
-	private static final Logger log = Logger.getLogger("MemberLoader");
+	private static final Logger log = Logger.getLogger(MemberLoader.class);
 	Map<String,Integer> existingCatsNameMap = null;
 	
 	/**

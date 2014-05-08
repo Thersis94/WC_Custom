@@ -41,7 +41,7 @@ import com.siliconmtn.util.StringUtil;
  * <b>Changes: </b>
  ****************************************************************************/
 public class CategoryLoader extends ChamberMasterLoader {
-	private static final Logger log = Logger.getLogger("CategoryLoader");
+	private static final Logger log = Logger.getLogger(CategoryLoader.class);
 	Map<Integer,String> parentCats = new HashMap<Integer,String>();
 	Map<Integer,CategoryVO> subCats  = new HashMap<Integer,CategoryVO>();
 	private Map<String, Integer> parentCatsByName = new HashMap<String,Integer>();
