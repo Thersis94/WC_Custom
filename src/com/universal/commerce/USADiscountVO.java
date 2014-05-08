@@ -21,19 +21,18 @@ import com.siliconmtn.util.XMLUtil;
  * <b>Project</b>: WebCrescendo Custom<p/>
  * <b>Description: </b> VO that holds discount data specific to USA(Signals) promo codes. 
  * <p/>
- * <b>Copyright:</b> Copyright (c) 2012<p/>
+ * <b>Copyright:</b> Copyright (c) 2013<p/>
  * <b>Company:</b> Silicon Mountain Technologies<p/>
  * @author David Bargerhuff
  * @version 1.0
- * @since Oct 10, 2012<p/>
+ * @since Apr 15, 2013<p/>
  * Changes:
- * Mar 07, 2013:	DBargerhuff; refactored to make use of enums for discount type 
- * 						and item discount type
+ * Apr 15, 2013:	DBargerhuff: created class
  ****************************************************************************/
 public class USADiscountVO extends DiscountVO {
 
 	private static final long serialVersionUID = -4658441889750752033L;
-	private transient Logger log = Logger.getLogger("USADiscountVO");
+	private transient Logger log = Logger.getLogger(USADiscountVO.class);
 	public static final String DEFAULT_SHIPPING_METHOD = "Standard";
 	private DiscountStatus discountStatus = DiscountStatus.UNKNOWN;
 	private DiscountType discountType = DiscountType.UNKNOWN;
@@ -140,10 +139,10 @@ public class USADiscountVO extends DiscountVO {
 		setOrderMinimum(Convert.formatDouble(XMLUtil.checkVal(ele.element("OrderMinimum"),true)));
 		setDateStart(Convert.formatDate(Convert.DATE_TIME_DASH_PATTERN, XMLUtil.checkVal(ele.element("StartDate"),true)));
 		setDateEnd(Convert.formatDate(Convert.DATE_TIME_DASH_PATTERN, XMLUtil.checkVal(ele.element("EndDate"),true)));
+		// perform additional parsing if this is an ITEM discount
 		if (this.discountType.equals(DiscountType.ITEM)) {
+			// item discount type is > 0 we parse individual item discount
 			if (itemDiscountType.getIntegerType() > ItemDiscountType.DEFAULT.getIntegerType()) {
-				// Only parse item level discount if item discount type is > 0.  
-				// Item discount type of 0 indicates no discount.
 				this.parseProductDiscount(ele);
 			}
 		}
@@ -167,14 +166,14 @@ public class USADiscountVO extends DiscountVO {
 		for (Element e : ids) {
 			productId = e.attributeValue("id");
 			Element price = e.element("ProdAttr");
-			double amount = Convert.formatDouble(price.attributeValue("price"));
-			if (amount > 0) {
+			double itemAmountAfterDiscount = Convert.formatDouble(price.attributeValue("price"));
+			if (itemAmountAfterDiscount > 0) {
 				USADiscountVO uDisc = new USADiscountVO();
 				uDisc.setDiscountName(discountName);
 				uDisc.setDiscountId(productId);
 				uDisc.setItemDiscountType(itemDiscountType);
 				uDisc.setDiscountValue(getDiscountValue()); // used for item level '1'
-				uDisc.setDiscountDollarValue(amount); // used for item level '2'
+				uDisc.setDiscountDollarValue(itemAmountAfterDiscount); // used for item level '2'
 				productDiscounts.put(productId, uDisc);
 			}
 		}

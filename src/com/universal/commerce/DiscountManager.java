@@ -353,15 +353,38 @@ public class DiscountManager implements Serializable {
 		// loop items
 		log.debug("processing item discount...");
 		if (cart.getItems() != null && cart.getItems().size() > 0) {
+			double itemPrice = 0.0;
 			double itemSubTotal = 0.0;
+			
 			for (String key : cart.getItems().keySet()) {
 				ShoppingCartItemVO item = cart.getItems().get(key);
-				itemSubTotal += item.getExtendedPrice() + (item.getQuantity() * item.getAttributePrice());
+				
+				/* TODO 2014-05-07 DBargerhuff: REMOVE after testing
+				log.debug("item disc for : " + item.getProductId());
+				log.debug("base|extended prices: " + item.getBasePrice() + "|" + item.getExtendedPrice());
+				log.debug("quantity|attributePrice: " + item.getQuantity() + "|" + item.getAttributePrice());
+				*/
+				
+				itemPrice = item.getExtendedPrice() + (item.getQuantity() * item.getAttributePrice());
+				
+				//log.debug("---> item price before applying discount to this item: " + itemPrice);
 				if (item.isDiscounted()) {
+					//log.debug("-------> item is discounted...");
 					USADiscountVO disc = (USADiscountVO) item.getProduct().getDiscounts().get(0);
-					itemSubTotal -= (item.getQuantity() * disc.getDiscountDollarValue());
+					//log.debug("-------> disc type|value|dollar value: " + disc.getDiscountType() + "|" + disc.getDiscountValue() + "|" + disc.getDiscountDollarValue());	
+					itemPrice = item.getQuantity() * disc.getDiscountDollarValue();
 				}
+				
+				//log.debug("---> item price after applying discount to item: " + itemPrice);
+				itemSubTotal += itemPrice;
+				//log.debug("itemSubTotal is now: " + itemSubTotal);
+				
+				// reset itemPrice
+				itemPrice = 0.0;
 			}
+			
+			
+			log.debug("cart|item subtotals after processing item discount: " + cart.getSubTotal() + "|" + itemSubTotal);
 			BigDecimal bCartSub = BigDecimal.valueOf(cart.getSubTotal());
 			BigDecimal bItemSub = BigDecimal.valueOf(itemSubTotal);
 			BigDecimal pDisc = bCartSub.subtract(bItemSub);
