@@ -170,6 +170,8 @@ public class DSOLAction extends SBActionAdapter {
 		url.append("&showDetail=true");
 		if(req.hasParameter("materialName"))
 			url.append("&materialName=").append(req.getParameter("materialName"));
+		if(req.hasParameter("dimensions"))
+			url.append("&dimensions=").append(req.getParameter("dimensions"));
 		else if(req.getSession().getAttribute("DSOLVO") != null)
 			url.append("&materialName=").append(((KeystoneProductVO)req.getSession().getAttribute("DSOLVO")).getProdAttributes().get("materialName"));
 		log.debug("redirUrl: " + url);
