@@ -45,7 +45,7 @@ public class ProductFacadeAction extends SimpleActionAdapter {
 	 * Constants that define the transactions this Action understands
 	 */
 	protected static enum ReqType {
-		catalog, orders, assets, account, profile, invoices, history, dsol, product, search
+		catalog, orders, assets, account, profile, invoices, history, dsol, product, search, bypassDsol
 	}
 	
 	/* (non-Javadoc)
@@ -88,10 +88,27 @@ public class ProductFacadeAction extends SimpleActionAdapter {
 		}
 		log.debug("display=" + type);
 		
-		SMTActionInterface ai = loadAction(type);
-		ai.setDBConnection(dbConn);
-		ai.setAttributes(attributes);
-		ai.retrieve(req);
+		// Check if we bypassing dsol, if so we need to do two steps at once.
+		if (type == ReqType.bypassDsol) {			
+			// Set up the Dsol template
+			SMTActionInterface ai = new DSOLAction(actionInit);
+			ai.setDBConnection(dbConn);
+			ai.setAttributes(attributes);
+			ai.retrieve(req);
+			
+			// Set showDetail and immediatly move on to the next step
+			req.setParameter("showDetail", "true");
+			ai.retrieve(req);
+			
+			// Set the display type so that we end up on the correct page.
+			req.setParameter("display", "dsol");
+			
+		} else {
+			SMTActionInterface ai = loadAction(type);
+			ai.setDBConnection(dbConn);
+			ai.setAttributes(attributes);
+			ai.retrieve(req);
+		}
 	}
 	
 	
