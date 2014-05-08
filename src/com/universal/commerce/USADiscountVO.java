@@ -143,7 +143,7 @@ public class USADiscountVO extends DiscountVO {
 		if (this.discountType.equals(DiscountType.ITEM)) {
 			// item discount type is > 0 we parse individual item discount
 			if (itemDiscountType.getIntegerType() > ItemDiscountType.DEFAULT.getIntegerType()) {
-				this.parseProductDiscount(ele);
+				this.parseItemDiscount(ele);
 			}
 		}
 		// set the inherited discount type field for use in JSTL-view
@@ -154,7 +154,7 @@ public class USADiscountVO extends DiscountVO {
 	 * @param ele
 	 */
 	@SuppressWarnings("unchecked")
-	protected void parseProductDiscount(Element ele) {
+	protected void parseItemDiscount(Element ele) {
 		if (ele == null) return;
 		log.debug("parsing product discount element...");
 		productDiscounts = new HashMap<String, DiscountVO>();

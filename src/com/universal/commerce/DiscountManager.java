@@ -160,25 +160,29 @@ public class DiscountManager implements Serializable {
 	 * @param item
 	 */
 	public void manageAddItemDiscount(ShoppingCartVO cart, ShoppingCartItemVO item) {
+		log.debug("manageAddItemDiscount...");
 		if (cart.isDiscounted()) {
+
 			USADiscountVO cartDisc = (USADiscountVO) cart.getCartDiscount().get(0);
 			if (cartDisc.getEnumDiscountType().equals(DiscountType.ITEM)) {
-				log.debug("managing 'add item discount'...");
+
 				if (cartDisc.getItemDiscountType().getIntegerType() > ItemDiscountType.DEFAULT.getIntegerType()) {
 					// only process item-level discount if the item level discount type > 0.
 					try {
 						// get the discount for the item being added.
 						USADiscountVO iDisc = this.retrieveCartItemDiscount(cart, item);
+
 						if (iDisc.getProductDiscounts().containsKey(item.getProductId())) {
+
 							if (iDisc.getItemDiscountType().equals(ItemDiscountType.CLEARANCE)) {
 								double msrp = item.getProduct().getMsrpCostNo();
 								double discVal = iDisc.getDiscountDollarValue();
 								iDisc.setDiscountDollarValue(msrp - discVal);
-							} else {
-								iDisc.setDiscountDollarValue(iDisc.getDiscountValue());
 							}
-							item.getProduct().addDiscount(iDisc);
-							cartDisc.addProductDiscount(item.getProductId(), iDisc);
+
+							DiscountVO pDisc = iDisc.getProductDiscounts().get((item.getProductId()));
+							item.getProduct().addDiscount(pDisc);
+							cartDisc.addProductDiscount(item.getProductId(), pDisc);
 						}
 					} catch (DocumentException de) {
 						log.error("Error managing cart item discount, ", de);
