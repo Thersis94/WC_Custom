@@ -35,7 +35,6 @@ import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
-import com.smt.sitebuilder.common.constants.ErrorCodes;
 
 /****************************************************************************
  * <b>Title</b>: CheckoutUtil.java<p/>
@@ -132,15 +131,19 @@ public class CheckoutUtil {
 		
 		//save the billing info to the cart
 		UserDataVO billing = new UserDataVO(req);
-		billing.setProfileId(user.getProfileId());
-		billing.setEmailAddress(user.getEmailAddress());
+		if(user != null) {
+			billing.setProfileId(user.getProfileId());
+			billing.setEmailAddress(user.getEmailAddress());
+		}
 		billing.addAttribute("companyNm", req.getParameter("company"));
 		billing.addAttribute("addressId", req.getParameter("address_id"));
 		cart.setBillingInfo(billing);
 		
 		//save the shipping info to the cart
 		UserDataVO shipping = new UserDataVO();
-		shipping.setProfileId(user.getProfileId());
+		if (user != null) {
+			shipping.setProfileId(user.getProfileId());
+		}
 		if (Convert.formatBoolean(req.getParameter("sameShippingBilling"))) {
 			cart.setUseBillingForShipping(true);
 			shipping.setData(req);
@@ -163,9 +166,11 @@ public class CheckoutUtil {
 		boolean inStore = Convert.formatBoolean(req.getParameter("inStorePickup"));
 		req.getSession().setAttribute("inStorePickup", (inStore) ? "true" : "");
 			
-		
-		shipping.setEmailAddress(sessVo.getProfile(webId).getEmailAddress());
-		shipping.setProfileId(user.getProfileId());
+
+		if (user != null) {
+			shipping.setEmailAddress(sessVo.getProfile(webId).getEmailAddress());
+			shipping.setProfileId(user.getProfileId());
+		}
 		cart.setShippingInfo(shipping);
 		
 		attributes.put("nextStep", "confirm");
@@ -192,9 +197,11 @@ public class CheckoutUtil {
 		
 		FastsignsSessVO sessVo = (FastsignsSessVO) req.getSession().getAttribute(KeystoneProxy.FRAN_SESS_VO);
 		String webId = (String)req.getSession().getAttribute(FastsignsSessVO.FRANCHISE_ID);
-		if (sessVo.getProfile(webId).getUserId() == null) {
-			//not logged in, or no account to retrieve
-			throw new ActionException(ErrorCodes.ERR_NOT_AUTHORIZED);
+		if (sessVo == null) {
+			sessVo = new FastsignsSessVO();
+			if (attributes.get(Constants.SITE_DATA) == null) {
+				attributes.put(Constants.SITE_DATA, req.getParameter(Constants.SITE_DATA));
+			}
 		}
 		if (sessVo.getFranchise(webId) == null || sessVo.getFranchise(webId).getFranchiseId() == null) {
 			try {
@@ -259,10 +266,6 @@ public class CheckoutUtil {
 		
 		FastsignsSessVO sessVo = (FastsignsSessVO) req.getSession().getAttribute(KeystoneProxy.FRAN_SESS_VO);
 		String webId = (String)req.getSession().getAttribute(FastsignsSessVO.FRANCHISE_ID);
-		if (sessVo.getProfile(webId).getUserId() == null) {
-			//not logged in, or no account to retrieve
-			throw new ActionException(ErrorCodes.ERR_NOT_AUTHORIZED);
-		}
 		if (sessVo.getFranchise(webId) == null) {
 			try {
 				sessVo = this.loadFranchiseVO(sessVo, webId);
