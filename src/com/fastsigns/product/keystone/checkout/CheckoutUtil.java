@@ -134,6 +134,8 @@ public class CheckoutUtil {
 		if(user != null) {
 			billing.setProfileId(user.getProfileId());
 			billing.setEmailAddress(user.getEmailAddress());
+		} else {
+			billing.setProfileId("guest");
 		}
 		billing.addAttribute("companyNm", req.getParameter("company"));
 		billing.addAttribute("addressId", req.getParameter("address_id"));
@@ -143,6 +145,8 @@ public class CheckoutUtil {
 		UserDataVO shipping = new UserDataVO();
 		if (user != null) {
 			shipping.setProfileId(user.getProfileId());
+		} else {
+			billing.setProfileId("guest");
 		}
 		if (Convert.formatBoolean(req.getParameter("sameShippingBilling"))) {
 			cart.setUseBillingForShipping(true);
@@ -170,6 +174,8 @@ public class CheckoutUtil {
 		if (user != null) {
 			shipping.setEmailAddress(sessVo.getProfile(webId).getEmailAddress());
 			shipping.setProfileId(user.getProfileId());
+		} else {
+			shipping.setProfileId("guest");
 		}
 		cart.setShippingInfo(shipping);
 		
