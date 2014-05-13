@@ -68,52 +68,54 @@ public class ShippingRequestCoordinator {
 		
 		try {
 			ShippingRequestVO shippingInfo = buildShippingRequest(cart);
-			String strShipReq = JSONObject.fromObject(shippingInfo).toString();
-			log.debug("shipping request as String: " + strShipReq);
-			proxy.addPostData("shippingRequest", strShipReq);
-			byte[] data = proxy.getData();
-			//DecimalFormat twoDForm = new DecimalFormat("#.##");
+			if (shippingInfo != null) {
+				String strShipReq = JSONObject.fromObject(shippingInfo).toString();
+				log.debug("shipping request as String: " + strShipReq);
+				proxy.addPostData("shippingRequest", strShipReq);
+				byte[] data = proxy.getData();
+				//DecimalFormat twoDForm = new DecimalFormat("#.##");
+				
+				//parse the response
+				JSONObject raw = JSONObject.fromObject(new String(data));
+				
+				if (!raw.containsKey("isSuccess")) {				
+					for (ShippingAccountVO acct : shippingInfo.getAccounts()) {
+						// parse the rates response 
+						JSONObject rates = raw.getJSONObject("ratesResponse");
+						
+						if (! rates.isNullObject() && ! rates.isEmpty()) {
+							JSONArray jsonArr = rates.getJSONArray(acct.getShippingAccountType());
+							for (int x=0; x < jsonArr.size(); x++) {
+								JSONObject option = jsonArr.getJSONObject(x);
 			
-			//parse the response
-			JSONObject raw = JSONObject.fromObject(new String(data));
-			
-			if (!raw.containsKey("isSuccess")) {				
-				for (ShippingAccountVO acct : shippingInfo.getAccounts()) {
-					// parse the rates response 
-					JSONObject rates = raw.getJSONObject("ratesResponse");
-					
-					if (! rates.isNullObject() && ! rates.isEmpty()) {
-						JSONArray jsonArr = rates.getJSONArray(acct.getShippingAccountType());
-						for (int x=0; x < jsonArr.size(); x++) {
-							JSONObject option = jsonArr.getJSONObject(x);
-		
-							//build a WC-coherent ShippingInfoVO
-							newVo = new ShippingInfoVO();
-							newVo.setShippingMethodId(option.optString("shippingMethodId"));
-							newVo.setShippingMethodName(option.optString("shippingMethodName"));
-							newVo.setShippingTime(option.optString("shippingTime"));
-							
-							//TODO Ensure this is the proper rateKey to use for FEDEX.  Multiple are sent back, this one was common to all.
-							String rateKey = com.smt.shipping.http.ShippingInfoVO.COST_KEY_NEGOTIATED;
-							JSONObject costs = option.getJSONObject("shippingCosts");
-							Double r = costs.optDouble(rateKey);
-							Double rate; 
-							//En
-							if(!r.equals(Double.NaN))
-								rate = Convert.formatDouble(r);
-							else {
-								log.error("rate returned did not contain negotiated rate: " + costs);
-								break;
+								//build a WC-coherent ShippingInfoVO
+								newVo = new ShippingInfoVO();
+								newVo.setShippingMethodId(option.optString("shippingMethodId"));
+								newVo.setShippingMethodName(option.optString("shippingMethodName"));
+								newVo.setShippingTime(option.optString("shippingTime"));
+								
+								//TODO Ensure this is the proper rateKey to use for FEDEX.  Multiple are sent back, this one was common to all.
+								String rateKey = com.smt.shipping.http.ShippingInfoVO.COST_KEY_NEGOTIATED;
+								JSONObject costs = option.getJSONObject("shippingCosts");
+								Double r = costs.optDouble(rateKey);
+								Double rate; 
+								//En
+								if(!r.equals(Double.NaN))
+									rate = Convert.formatDouble(r);
+								else {
+									log.error("rate returned did not contain negotiated rate: " + costs);
+									break;
+								}
+								
+								//get shipping markup from the Franchise data in keystone
+								Integer markup = Convert.formatInteger((String)franchise.getAttributes().get("shipping_markup"), 0);
+								log.debug("rate for " + newVo.getShippingMethodName() + "=" + rate );
+								if (markup > 0) rate = rate * (1 + (markup * .01)); //bump costs by whatever is defined in Keystone
+								log.debug("marked-up rate=" + rate + " markup=" + markup);
+								newVo.setShippingCost(rate);
+								
+								opts.put(newVo.getShippingMethodId(), newVo);
 							}
-							
-							//get shipping markup from the Franchise data in keystone
-							Integer markup = Convert.formatInteger((String)franchise.getAttributes().get("shipping_markup"), 0);
-							log.debug("rate for " + newVo.getShippingMethodName() + "=" + rate );
-							if (markup > 0) rate = rate * (1 + (markup * .01)); //bump costs by whatever is defined in Keystone
-							log.debug("marked-up rate=" + rate + " markup=" + markup);
-							newVo.setShippingCost(rate);
-							
-							opts.put(newVo.getShippingMethodId(), newVo);
 						}
 					}
 				}
@@ -136,6 +138,10 @@ public class ShippingRequestCoordinator {
 		log.debug("Shipping destination built, adding accounts.");
 		//this could be changed to a List<ShippingAccountVO> to support multiple couriers
 		List<ShippingAccountVO> accounts = buildShippingAccounts(franchise);
+		
+		// If accounts is null we pass that up the line
+		if (accounts == null) return null;
+		
 		PackageVO pkg = loadPackage(cart);
 		ShippingRequestVO sVo = new ShippingRequestVO();
 		sVo.setShipper(source);
@@ -231,9 +237,21 @@ public class ShippingRequestCoordinator {
 		String shipService = (String) fran.getAttributes().get("ecomm_shipping_service");
 		acct.setShippingAccountType(shipService);
 		if(shipService.equals("FEDEX")) {
+			// If we didn't get the information we need return null
+			if (StringUtil.checkVal(fran.getAttributes().get("fedex_account")).length() > 1 
+					|| StringUtil.checkVal(fran.getAttributes().get("fedex_meter_number")).length() > 1)
+				return null;
+			
 			accounts.put("FRANCHISE_ACCOUNT_KEY", (String) fran.getAttributes().get("fedex_account"));
 			acct.setMeterNumber((String) fran.getAttributes().get("fedex_meter_number"));
 		} else if(shipService.equals("UPS")) {
+			// If we didn't get the information we need return null
+			if (StringUtil.checkVal(fran.getAttributes().get("ups_account")).length() > 1 
+					||StringUtil.checkVal(fran.getAttributes().get("ups_account_service_key")).length() > 1 
+					||StringUtil.checkVal(fran.getAttributes().get("ups_account_login_id")).length() > 1 
+					||StringUtil.checkVal(fran.getAttributes().get("ups_account_login_password")).length() > 1 )
+				return null;
+			
 			accounts.put("FRANCHISE_ACCOUNT_KEY", (String) fran.getAttributes().get("ups_account"));
 			acct.setAccountServiceKey((String) fran.getAttributes().get("ups_account_service_key"));
 			acct.setAccountLoginId((String) fran.getAttributes().get("ups_account_login_id"));
