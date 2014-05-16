@@ -583,11 +583,11 @@ public class MetroAction extends SBActionAdapter {
 		s.append("select * from ").append(customDb).append("fts_metro_area a ");
 		s.append("left outer join ").append(customDb).append("FTS_METRO_AREA_PRODUCT b ");
 		s.append("on a.METRO_AREA_ID = b.METRO_AREA_ID ");
-		s.append("and visible_flg = 1 and AREA_LST_FLG = 0 ");
+		s.append("and visible_flg = 1 where AREA_LST_FLG = 0 ");
 		if(!countryCd.equals("US"))
 			s.append("and a.country_cd = ? ");
 		s.append("order by area_lst_flg, area_nm, order_no ");
-		log.debug("Metro Sitemap SQL: " + s);
+		log.debug("Metro Sitemap SQL: " + s +"|"+ countryCd);
 		
 		List<MetroContainerVO> data = new ArrayList<MetroContainerVO>();
 		String id = null, currId = null;
