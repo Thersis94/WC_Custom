@@ -804,6 +804,7 @@ public class FSProductAction extends SBActionAdapter {
 					addVideos(pvo);
 					req.setAttribute("fsProductVideos", pvo.getProdAttributes());
 					req.setAttribute("fsProductName",pvo);
+					data.add(new ProductAttributeVO(rs));
 				} else {
 					data.add(new ProductAttributeVO(rs));
 				}
