@@ -93,6 +93,8 @@ public class CenterPageDealerLocatorAction extends SBActionAdapter {
 		        	tempMod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 			 		log.debug("StoredcacheId =" + pmid + franchiseId);
 			 		log.debug("tempMod ID = " + tempMod.getPageModuleId());
+			 		
+			 		tempMod.setCacheGroup(franchiseId);
 		        	
 			 		tempMod.setPageModuleId(pmid + orgId + "_" + franchiseId+"_1");
 		    		super.writeToCache(tempMod);
