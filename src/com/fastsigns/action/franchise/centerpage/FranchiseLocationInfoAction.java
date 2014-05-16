@@ -64,6 +64,8 @@ public class FranchiseLocationInfoAction extends SBActionAdapter {
 			msg = "msg.cannotUpdate";
 		}
 		
+		super.clearCacheByGroup(CenterPageAction.getFranchiseId(req));
+		
 		log.debug("Sending Redirect to: " + redir);
 		req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
 		req.setAttribute(Constants.REDIRECT_URL, redir + "msg=" + msg);
