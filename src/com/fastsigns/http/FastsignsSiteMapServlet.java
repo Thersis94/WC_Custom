@@ -114,19 +114,21 @@ public class FastsignsSiteMapServlet extends SiteMapServlet {
     			//loop and add all product pages for this metro area only if we are creating the desktop map
     			if (!isMobile) {
 	    			for (MetroProductVO prod : mc.getProductPages().values()) {
-	    				mo = new MenuObj();
-	    	            mo.setFullPath("/metro-" + mc.getAreaAlias() + "/" + prod.getAliasNm());
-	    	            mo.setFileExtension("");
-	    	            mo.setLastModified(prod.getLastUpdate());
-	    	            mo.setLevel(3);
-	
-	
-	            		n = new Node(prod.getMetroProductId(), prod.getMetroAreaId());
-	        			n.setNodeName(prod.getProductNm());
-	        			n.setRoot(false);
-	        			n.setUserObject(mo);
-	        			data.add(n);
-	        			//log.debug("added metro " + n.getNodeName());
+	    				if (mc.getAreaAlias() == null ) {
+		    				mo = new MenuObj();
+		    	            mo.setFullPath("/metro-" + mc.getAreaAlias() + "/" + prod.getAliasNm());
+		    	            mo.setFileExtension("");
+		    	            mo.setLastModified(prod.getLastUpdate());
+		    	            mo.setLevel(3);
+		
+		
+		            		n = new Node(prod.getMetroProductId(), prod.getMetroAreaId());
+		        			n.setNodeName(prod.getProductNm());
+		        			n.setRoot(false);
+		        			n.setUserObject(mo);
+		        			data.add(n);
+		        			//log.debug("added metro " + n.getNodeName());
+	    				}
 	    			}
     			}
         	}
