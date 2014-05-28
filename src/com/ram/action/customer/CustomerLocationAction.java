@@ -70,10 +70,10 @@ public class CustomerLocationAction extends SBActionAdapter {
 		String schema = (String)getAttribute("customDbSchema");
 		StringBuilder sql = new StringBuilder();
 		sql.append("select b.* from ").append(schema);
-		sql.append("RAM_CUSTOMER_LOCATION b where 1=1 ");
-		if (customerId > 0) sql.append("and CUSTOMER_ID = ? ");
-		if (customerLocationId > 0) sql.append("and CUSTOMER_LOCATION_ID = ? ");
-		sql.append("order by CUSTOMER_ID, LOCATION_NM");
+		sql.append("ram_customer_location b where 1=1 ");
+		if (customerId > 0) sql.append("and customer_id = ? ");
+		if (customerLocationId > 0) sql.append("and customer_location_id = ? ");
+		sql.append("order by location_nm");
 		log.debug("CustomerLocation retrieve SQL: " + sql.toString() + " | " + customerId + " | " + customerLocationId);
 		
 		PreparedStatement ps = null;
