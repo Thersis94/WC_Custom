@@ -7,12 +7,12 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.ram.datafeed.data.KitLayerVO;
-import com.ram.datafeed.data.ProductRecallItemVO;
 import com.ram.datafeed.data.RAMProductVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -89,7 +89,7 @@ public class ProductAction extends SBActionAdapter {
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		if(req.hasParameter("term")) {
 			list(req);
-		}else if(req.hasParameter("productId"))
+		} else if(req.hasParameter("productId"))
 			retrieveProducts(req);
 	}
 
@@ -147,37 +147,40 @@ public class ProductAction extends SBActionAdapter {
 		//Build Update Query.  We don't insert Products
 		StringBuilder sb = new StringBuilder();
 		sb.append("update ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sb.append("set CUST_PRODUCT_ID = ?, PARENT_ID = ?, CUSTOMER_ID = ?, ");
-		sb.append("PRODUCT_NM = ?, DESC_TXT = ?, SHORT_DESC = ?, ACTIVE_FLG = ?, ");
+		sb.append("RAM_PRODUCT set PRODUCT_NM = ?, SHORT_DESC = ?, ACTIVE_FLG = ?, ");
 		sb.append("LOT_CODE_FLG = ?, KIT_FLG = ?, UPDATE_DT = ?, ");
 		sb.append("EXPIREE_REQ_FLG = ? where PRODUCT_ID = ? ");
+		
+		Map<String, String> result = new HashMap<String, String>();
+		result.put("success", "true");
+		result.put("msg", "Data Successfully Updated");
 		
 		//Build PreparedStatement and set Parameters
 		PreparedStatement ps = null;
 		int i = 1;
-		
+		log.debug(req.getParameter("kitFlag"));
+		log.debug(req.getParameter("lotCodeRequired"));
 		try {
 			ps = dbConn.prepareStatement(sb.toString());
-			ps.setString(i++, req.getParameter("customerProductId"));
-			ps.setString(i++, req.getParameter("parentId"));
-			ps.setString(i++, req.getParameter("customerId"));
 			ps.setString(i++, req.getParameter("productNm"));
-			ps.setString(i++, req.getParameter("descText"));
 			ps.setString(i++, req.getParameter("shortDesc"));
-			ps.setString(i++, req.getParameter("activeFlg"));
-			ps.setString(i++, req.getParameter("lotCodeFlg"));
-			ps.setString(i++, req.getParameter("kitFlg"));
+			ps.setInt(i++, Convert.formatInteger(Convert.formatBoolean(req.getParameter("activeFlag"))));
+			ps.setInt(i++, Convert.formatInteger(Convert.formatBoolean(req.getParameter("lotCodeRequired"))));
+			ps.setInt(i++, Convert.formatInteger(Convert.formatBoolean(req.getParameter("kitFlag"))));
 			ps.setTimestamp(i++, Convert.getCurrentTimestamp());
-			ps.setString(i++, req.getParameter("expireeReqFlg"));
+			ps.setInt(i++, Convert.formatInteger(Convert.formatBoolean(req.getParameter("expireeRequired"))));
 			ps.setString(i++, req.getParameter("productId"));
 			
 			//Execute
 			ps.executeUpdate();
 		} catch(SQLException sqle) {
 			log.error("Error updating Product: " + req.getParameter("productId"), sqle);
+			result.put("success", "false");
+			result.put("msg", "Problem Saving Record");
 		}
 		
 		//Redirect User
+		super.putModuleData(result);
 	}
 
 	/* (non-Javadoc)
@@ -200,8 +203,8 @@ public class ProductAction extends SBActionAdapter {
 		try{
 			ps = dbConn.prepareStatement(sb.toString());
 			ps.setString(1, req.getParameter(KitAction.CUSTOMER_ID));
-			ps.setString(2, req.getParameter("term") + "%");
-			ps.setString(3, req.getParameter("term") + "%");
+			ps.setString(2, "%" + req.getParameter("term") + "%");
+			ps.setString(3, "%" + req.getParameter("term") + "%");
 
 			ResultSet rs = ps.executeQuery();
 			while(rs.next()) {
@@ -247,20 +250,8 @@ public class ProductAction extends SBActionAdapter {
 		json.addProperty("kitFlag", prod.getKitFlag());
 		json.addProperty("quantity", prod.getQuantity());
 		json.addProperty("msrpCostNo", prod.getMsrpCostNo());
-		
-//		
-//		//Add the Recall Items to the Object as an Array
-//		JsonArray recalls = new JsonArray();
-//		for(ProductRecallItemVO recall : recallLotNumbers)
-//			recalls.add(recall.getJson());
-//		json.add("recallLotNumbers", recalls);
-//		
-//		//Add the kit Items to the Object as an Array
-//		JsonArray kits = new JsonArray();
-//		for(KitLayerVO kit : kitLayers)
-//			kits.add(kit.getJson());
-//		json.add("kitLayers", kits);
-//		
+		json.addProperty("activeFlag", prod.getActiveFlag());
+	
 		return json;
 	}
 }
