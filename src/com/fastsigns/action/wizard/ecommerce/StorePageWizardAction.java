@@ -194,7 +194,7 @@ public class StorePageWizardAction extends SBActionAdapter{
 				ps.setString(4, "/" + aliasPathNm);
 				ps.setInt(5, 1);
 				ps.setInt(6, 0);
-				ps.setInt(7, 1);
+				ps.setInt(7, 0);
 				ps.setInt(8, 0);
 				ps.setTimestamp(9, Convert.getCurrentTimestamp());
 			}
