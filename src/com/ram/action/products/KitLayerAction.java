@@ -74,6 +74,9 @@ public class KitLayerAction extends SBActionAdapter {
 		sb.append("update ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sb.append("RAM_KIT_LAYER set ACTIVE_FLG = 0 ");
 		sb.append("where KIT_LAYER_ID = ?");
+
+		//Log sql Statement for verification
+		log.debug("sql: " + sb.toString());
 		
 		PreparedStatement ps = null;
 		
@@ -94,7 +97,7 @@ public class KitLayerAction extends SBActionAdapter {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void list(SMTServletRequest req) throws ActionException {
+	public void retrieve(SMTServletRequest req) throws ActionException {
 		
 		//If this is an add request, quick fail and return.
 		if(StringUtil.checkVal(req.getParameter(KIT_LAYER_ID)).equals(KitAction.ADD_ID))
@@ -115,6 +118,10 @@ public class KitLayerAction extends SBActionAdapter {
 		} else {
 			sb.append("PRODUCT_ID = ?");
 		}
+		
+		//Log sql Statement for verification
+		log.debug("sql: " + sb.toString());
+		
 		PreparedStatement ps = null;
 		
 		try {
@@ -122,7 +129,7 @@ public class KitLayerAction extends SBActionAdapter {
 			if(isKitLayerLookup) {
 				ps.setString(1, req.getParameter(KIT_LAYER_ID));
 			} else {
-				ps.setString(1, req.getParameter(KitAction.KIT_ID));
+				ps.setString(1, req.getParameter("productId"));
 			}
 			ResultSet rs = ps.executeQuery();
 			while(rs.next()) {
@@ -153,6 +160,9 @@ public class KitLayerAction extends SBActionAdapter {
 			sb.append("RAM_KIT_LAYER (IMAGE_PATH_URL LAYOUT_DEPTH_NO, CREATE_DT, ");
 			sb.append("ACTIVE_FLG, PRODUCT_ID) values (?,?,?,?,?)");
 		}
+
+		//Log sql Statement for verification
+		log.debug("sql: " + sb.toString());
 		
 		PreparedStatement ps = null;
 		

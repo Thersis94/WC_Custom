@@ -11,8 +11,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
 import com.ram.datafeed.data.RAMProductVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -238,31 +236,31 @@ public class ProductAction extends SBActionAdapter {
 	public void update(SMTServletRequest req) throws ActionException {
 		super.update(req);
 	}
-
-	/**
-	 * Build JSON Representation of the Object
-	 * @return
-	 */
-
-	public JsonObject getJson(RAMProductVO prod) {
-		JsonObject json = new JsonObject();
-		json.addProperty("productId", prod.getProductId());
-		json.addProperty("parentId", prod.getParentId());
-		json.addProperty("customerProductId", prod.getCustomerProductId());
-		json.addProperty("gtinProductId", prod.getGtinProductId());
-		json.addProperty("productName", prod.getProductName());
-		json.addProperty("shortDesc", prod.getShortDesc());
-		json.addProperty("customerId", prod.getCustomerId());
-		json.addProperty("customerName", prod.getCustomerName());
-		json.addProperty("lotNumber", prod.getLotNumber());
-		json.addProperty("lotCodeRequired", prod.getLotCodeRequired());
-		json.addProperty("expireeRequired", prod.getExpireeRequired());
-		json.addProperty("parLevel", prod.getParLevel());
-		json.addProperty("kitFlag", prod.getKitFlag());
-		json.addProperty("quantity", prod.getQuantity());
-		json.addProperty("msrpCostNo", prod.getMsrpCostNo());
-		json.addProperty("activeFlag", prod.getActiveFlag());
-	
-		return json;
-	}
+//
+//	/**
+//	 * Build JSON Representation of the Object
+//	 * @return
+//	 */
+//
+//	public JsonObject getJson(RAMProductVO prod) {
+//		JsonObject json = new JsonObject();
+//		json.addProperty("productId", prod.getProductId());
+//		json.addProperty("parentId", prod.getParentId());
+//		json.addProperty("customerProductId", prod.getCustomerProductId());
+//		json.addProperty("gtinProductId", prod.getGtinProductId());
+//		json.addProperty("productName", prod.getProductName());
+//		json.addProperty("shortDesc", prod.getShortDesc());
+//		json.addProperty("customerId", prod.getCustomerId());
+//		json.addProperty("customerName", prod.getCustomerName());
+//		json.addProperty("lotNumber", prod.getLotNumber());
+//		json.addProperty("lotCodeRequired", prod.getLotCodeRequired());
+//		json.addProperty("expireeRequired", prod.getExpireeRequired());
+//		json.addProperty("parLevel", prod.getParLevel());
+//		json.addProperty("kitFlag", prod.getKitFlag());
+//		json.addProperty("quantity", prod.getQuantity());
+//		json.addProperty("msrpCostNo", prod.getMsrpCostNo());
+//		json.addProperty("activeFlag", prod.getActiveFlag());
+//	
+//		return json;
+//	}
 }
