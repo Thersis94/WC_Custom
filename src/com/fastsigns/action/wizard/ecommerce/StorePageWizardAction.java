@@ -194,7 +194,7 @@ public class StorePageWizardAction extends SBActionAdapter{
 				ps.setString(4, "/" + aliasPathNm);
 				ps.setInt(5, 1);
 				ps.setInt(6, 0);
-				ps.setInt(7, 1);
+				ps.setInt(7, 0);
 				ps.setInt(8, 0);
 				ps.setTimestamp(9, Convert.getCurrentTimestamp());
 			}
@@ -378,6 +378,7 @@ public class StorePageWizardAction extends SBActionAdapter{
 	 */
 	public void makeModules(String centerId) {
 		modules.add(makePageModule("FTS_CENTER_PAGE_" + centerId, "c0a80247cf108e96173ab0fd1f615e6e", null, 2, 1));					// Center Page Portlet Center Page Portlet
+		modules.add(makePageModule("FTS_CENTER_PAGE_" + centerId, "7f000101815774c2091a02cc4e42685", null, 2, 4));					// Center Page Portlet Center Page Portlet
 		modules.add(makePageModule("FTS_CENTER_PAGE_" + centerId, "c0a80247628640b3c9be22729ba3fa2", null, 1, 2));					// Center Page Portlet Center Page Portlet
 		modules.add(makePageModule("FTS_CENTER_PAGE_" + centerId, "c0a80223d97c7188a731646267e69b08", null, 1, 9));					// Need More Options Box
 		modules.add(makePageModule(conf.getAnonHeaderId(),"c0a80a07614b3c24224dd3d77221237a", "HEADER_TOP_LEFT_CONTENT", 0, 1, false));	// World Link 2012 Anon
