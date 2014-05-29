@@ -99,8 +99,10 @@ public class DePuyEventSearchAction extends SimpleActionAdapter {
 		String distSql = eta.buildSpatialClause(req); 
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		Integer specialtyId = Convert.formatInteger(req.getParameter("specialty"));
-		if (req.hasParameter("specialtyId")) specialtyId = Convert.formatInteger(req.getParameter("specialtyId"));
+		String[] specialties = req.getParameterValues("specialty");
+		if (req.hasParameter("specialtyId"))
+			specialties = req.getParameterValues("specialtyId");
+		if (specialties == null) specialties = new String[0];
 		
 		StringBuilder sql = new StringBuilder();
 		sql.append("select ee.*, et.*, eg.header_txt, ").append(distSql).append(" as distance, des.surgeon_nm as contact_nm ");
@@ -110,7 +112,16 @@ public class DePuyEventSearchAction extends SimpleActionAdapter {
 		sql.append("inner join sb_action sb on eg.action_id=sb.action_group_id and sb.action_group_id=? ");
 		sql.append("inner join event_postcard_assoc epa on ee.event_entry_id=epa.event_entry_id ");
 		sql.append("inner join event_postcard ep on epa.event_postcard_id=ep.event_postcard_id ");
-		sql.append("inner join ").append(customDb).append("depuy_event_specialty_xr sxr on ep.event_postcard_id=sxr.event_postcard_id and sxr.joint_id=? ");
+		sql.append("inner join ").append(customDb).append("depuy_event_specialty_xr sxr on ep.event_postcard_id=sxr.event_postcard_id ");
+		if (specialties.length > 0) {
+			sql.append("and sxr.joint_id in ( ");
+			for (int x=0; x < specialties.length; x++) {
+				if (x > 0) sql.append(",");
+				sql.append("?");
+			}
+			sql.append(") ");
+		}
+		
 		sql.append("inner join ").append(customDb).append("depuy_event_surgeon des on ep.event_postcard_id=des.event_postcard_id ");
 		sql.append("where et.type_nm != 'CPSEM' and ep.status_flg=? ");
 		if (req.hasParameter("eventEntryId")) {
@@ -129,7 +140,9 @@ public class DePuyEventSearchAction extends SimpleActionAdapter {
 		try {
 			ps = dbConn.prepareStatement(sql.toString());
 			ps.setString(x++, (String) mod.getAttribute(ModuleVO.ATTRIBUTE_1));
-			ps.setInt(x++, specialtyId);
+			for (int i=0; i < specialties.length; i++) 
+				ps.setInt(x++, Convert.formatInteger(specialties[i]));
+			
 			ps.setInt(x++, EventFacadeAction.STATUS_APPROVED);
 			if (req.hasParameter("eventEntryId")) {
 				ps.setString(x++, req.getParameter("eventEntryId"));
