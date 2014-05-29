@@ -35,5 +35,6 @@
 	<classpathentry kind="lib" path="/SMTAppLibraries/lib/gson-2.2.4.jar"/>
 	<classpathentry kind="lib" path="/WebCrescendo/build/classes"/>
 	<classpathentry kind="lib" path="/SMTAppLibraries/lib/poi-3.5-FINAL-20090928.jar"/>
+	<classpathentry kind="lib" path="/SMTAppLibraries/lib/ram_data_feed.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

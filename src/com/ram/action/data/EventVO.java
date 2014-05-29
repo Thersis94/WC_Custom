@@ -27,6 +27,7 @@ import com.siliconmtn.util.StringUtil;
 public class EventVO implements Serializable {
 	// Member Variables 
 	protected String inventoryEventId = null;
+	protected String inventoryEventGroupId = null;
 	protected String auditorId = null;
 	protected String inventoryLocationId = null;
 	protected String comment = null;
@@ -69,6 +70,7 @@ public class EventVO implements Serializable {
 	public void assignData(ResultSet rs) {
 		DBUtil db = new DBUtil();
 		inventoryEventId = db.getStringVal("inventory_event_id", rs);
+		inventoryEventGroupId = db.getStringVal("inventory_event_group_id", rs);
 		auditorId = db.getStringVal("auditor_id", rs);
 		inventoryLocationId = db.getStringVal("inventory_location_id", rs);
 		comment = db.getStringVal("comment_txt", rs);
@@ -243,5 +245,21 @@ public class EventVO implements Serializable {
 	 */
 	public void setLocation(InventoryLocationVO location) {
 		this.location = location;
+	}
+
+
+	/**
+	 * @return the inventoryEventGroupId
+	 */
+	public String getInventoryEventGroupId() {
+		return inventoryEventGroupId;
+	}
+
+
+	/**
+	 * @param inventoryEventGroupId the inventoryEventGroupId to set
+	 */
+	public void setInventoryEventGroupId(String inventoryEventGroupId) {
+		this.inventoryEventGroupId = inventoryEventGroupId;
 	}
 }
