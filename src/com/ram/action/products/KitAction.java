@@ -100,16 +100,16 @@ public class KitAction extends SBActionAdapter {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void list(SMTServletRequest req) throws ActionException {
+	public void retrieve(SMTServletRequest req) throws ActionException {
 		
 		//If this is an add request, quick fail and return.
-		if(StringUtil.checkVal(req.getParameter(KIT_ID)).equals(ADD_ID))
+		if(StringUtil.checkVal(req.getParameter("productId")).equals(ADD_ID))
 			return;
 		
 		List<RAMProductVO> products = new ArrayList<RAMProductVO>();
 		
 		//Boolean for kitId check
-		boolean isKitLookup = req.hasParameter(KIT_ID);
+		boolean isKitLookup = req.hasParameter("productId");
 		
 		//Build Query
 		StringBuilder sb = new StringBuilder();
@@ -125,7 +125,7 @@ public class KitAction extends SBActionAdapter {
 		try {
 			ps = dbConn.prepareStatement(sb.toString());
 			if(isKitLookup) {
-				ps.setString(1, req.getParameter(KIT_ID));
+				ps.setString(1, req.getParameter("productId"));
 			}
 			ResultSet rs = ps.executeQuery();
 			while(rs.next()) {

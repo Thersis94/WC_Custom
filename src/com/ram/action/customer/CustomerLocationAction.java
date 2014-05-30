@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+
 // RAMDataFeed
 import com.ram.datafeed.data.CustomerLocationVO;
 
@@ -22,6 +23,7 @@ import com.siliconmtn.gis.MatchCode;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 
+import com.siliconmtn.util.StringUtil;
 // WebCrescendo 2.0
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -67,12 +69,17 @@ public class CustomerLocationAction extends SBActionAdapter {
 		log.debug("CustomerLocationAction retrieve...");
 		int customerId = Convert.formatInteger(req.getParameter("customerId"), 0);
 		int customerLocationId = Convert.formatInteger(req.getParameter("customerLocationId"), 0);
+		String customerTypeId = StringUtil.checkVal(req.getParameter("customerTypeId"));
 		String schema = (String)getAttribute("customDbSchema");
 		StringBuilder sql = new StringBuilder();
 		sql.append("select b.* from ").append(schema);
-		sql.append("ram_customer_location b where 1=1 ");
+		sql.append("ram_customer_location b ");
+		sql.append("inner join ").append(schema).append("ram_customer c on b.customer_id = c.customer_id ");
+		sql.append("where 1=1 ");
+		
 		if (customerId > 0) sql.append("and customer_id = ? ");
 		if (customerLocationId > 0) sql.append("and customer_location_id = ? ");
+		if (customerTypeId.length() > 0) sql.append("and customer_type_id = ? ");
 		sql.append("order by location_nm");
 		log.debug("CustomerLocation retrieve SQL: " + sql.toString() + " | " + customerId + " | " + customerLocationId);
 		
@@ -84,6 +91,7 @@ public class CustomerLocationAction extends SBActionAdapter {
 			
 			if (customerId > 0) ps.setInt(index++, customerId);
 			if (customerLocationId > 0) ps.setInt(index++, customerLocationId);
+			if (customerTypeId.length() > 0) ps.setString(index++, customerTypeId);
 			
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
