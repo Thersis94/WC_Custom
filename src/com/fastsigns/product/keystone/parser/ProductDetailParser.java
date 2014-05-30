@@ -63,6 +63,10 @@ public class ProductDetailParser extends KeystoneDataParser {
 				modVo.setDescription(modObj.getString("description"));
 				modVo.setModifier_id(modObj.getString("modifier_id"));
 				modVo.setModifier_name(modObj.getString("modifier_name"));
+				if (modObj.getJSONArray("images").size() > 0) {
+					modVo.addImage(modObj.getJSONArray("images").getJSONObject(0).getString("imageUrl"));
+					modVo.addImage(modObj.getJSONArray("images").getJSONObject(0).getString("imageThumbUrl"));
+				}
 
 				JSONObject attrsObj = modObj.getJSONObject("attributes");
 				Set<?> attributes = attrsObj.keySet();
