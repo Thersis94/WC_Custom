@@ -65,17 +65,10 @@ public class RamUserFacadeAction extends SBActionAdapter {
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		log.debug("RamUserFacadeAction retrieve...");
-		boolean searchSubmitted = Convert.formatBoolean(req.getParameter("searchSubmitted"));
-		if (searchSubmitted) {
-			// perform search
-			//performSearch(req);
-			log.debug("retrieve...performSearch  branch...");
-		} else {
-			SMTActionInterface sai = new RamUserAction(actionInit);
-			sai.setAttributes(attributes);
-			sai.setDBConnection(dbConn);
-			sai.retrieve(req);
-		}
+		SMTActionInterface sai = new RamUserAction(actionInit);
+		sai.setAttributes(attributes);
+		sai.setDBConnection(dbConn);
+		sai.retrieve(req);
 	}
 
 	/* (non-Javadoc)
@@ -97,12 +90,9 @@ public class RamUserFacadeAction extends SBActionAdapter {
 			retUrl.append("&srchRole=").append(req.getParameter("srchRole"));
 			retUrl.append("&srchCustomerId=").append(req.getParameter("srchCustomerId"));
 			
-			//if (msg != null) url.append("?msg=").append(msg);
-			
 			log.debug("performSearch redir: " + retUrl);
 			req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.FALSE);
 			req.setAttribute(Constants.REDIRECT_URL, retUrl.toString());
-			
 			
 		} else {
 			SMTActionInterface sai = null;
@@ -140,7 +130,7 @@ public class RamUserFacadeAction extends SBActionAdapter {
 		if (srchRole.length() > 0) sql.append("and a.ROLE_ID = ? ");
 		if (srchCustomerId.length() > 0) sql.append("and a.ATTRIB_TXT_1 = ? ");
 		
-		log.debug("Customer search SQL: " + sql.toString());
+		log.debug("User search SQL: " + sql.toString());
 		
 		PreparedStatement ps = null;
 		int index = 1;
@@ -213,21 +203,10 @@ public class RamUserFacadeAction extends SBActionAdapter {
 		// decrypt first/last name and filter by user if applicable
 		List<UserDataVO> filteredData = filterByUser(data, srchFN, srchLN);
 		
-		log.debug("data size after filterByUser: " + filteredData.size());
-				
 		// sort by user name
 		Collections.sort(filteredData, new UserDataComparator());
 		
-		log.debug("final data size: " + filteredData.size());
-		
 		putModuleData(filteredData, filteredData.size(), false, null);
-		
-		/*
-		ModuleVO modVo = (ModuleVO) attributes.get(Constants.MODULE_DATA);
-        modVo.setDataSize(filteredData.size());
-        modVo.setActionData(filteredData);
-        req.setAttribute(Constants.MODULE_DATA, modVo);
-        */
 		
 	}
 	
