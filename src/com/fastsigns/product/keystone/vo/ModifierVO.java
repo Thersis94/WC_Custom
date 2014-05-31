@@ -1,7 +1,9 @@
 package com.fastsigns.product.keystone.vo;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /****************************************************************************
@@ -24,6 +26,7 @@ public class ModifierVO implements Serializable, Cloneable {
 	private double unit_cost = 0.0;
 	private int	quantity = 0;
 	private Map<String, AttributeVO> attributes = null;
+	private List<String> images = null;
 	
 	
 	public String getModifier_id() {
@@ -45,6 +48,18 @@ public class ModifierVO implements Serializable, Cloneable {
 		this.description = description;
 	}
 	
+	public List<String> getImages() {
+		return images;
+	}
+	public void setImages(List<String> images) {
+		this.images = images;
+	}
+	public void addImage(String image) {
+		if (this.images == null) 
+			images = new ArrayList<String>();
+		
+		this.images.add(image);
+	}
 	public Map<String, AttributeVO> getAttributes() {
 		return attributes;
 	}
