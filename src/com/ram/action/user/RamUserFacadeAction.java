@@ -28,7 +28,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
 
 /****************************************************************************
- * <b>Title: </b>UserFacadeAction.java <p/>
+ * <b>Title: </b>RamUserFacadeAction.java <p/>
  * <b>Project: </b>WC_Custom <p/>
  * <b>Description: </b>
  * </p>
@@ -40,22 +40,22 @@ import com.smt.sitebuilder.security.SBUserRole;
  *<b>Changes: </b>
  * May 27, 2014: David Bargerhuff: Created class.
  ****************************************************************************/
-public class UserFacadeAction extends SBActionAdapter {
+public class RamUserFacadeAction extends SBActionAdapter {
 	
-	private final int PROFILE_STATUS_DISABLED = 5;
-	private final int PROFILE_STATUS_ACTIVE = 20;
+	public static final int PROFILE_STATUS_DISABLED = 5;
+	public static final int PROFILE_STATUS_ACTIVE = 20;
 	
 	/**
 	 * 
 	 */
-	public UserFacadeAction() {
+	public RamUserFacadeAction() {
 		super(new ActionInitVO());
 	}
 
 	/**
 	 * @param actionInit
 	 */
-	public UserFacadeAction(ActionInitVO actionInit) {
+	public RamUserFacadeAction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
 	
@@ -64,7 +64,7 @@ public class UserFacadeAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
-		log.debug("UserFacadeAction retrieve...");
+		log.debug("RamUserFacadeAction retrieve...");
 		boolean searchSubmitted = Convert.formatBoolean(req.getParameter("searchSubmitted"));
 		if (searchSubmitted) {
 			// perform search
@@ -83,7 +83,7 @@ public class UserFacadeAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(SMTServletRequest req) throws ActionException {
-		log.debug("UserFacadeAction build...");
+		log.debug("RamUserFacadeAction build...");
 		
 		boolean searchSubmitted = Convert.formatBoolean(req.getParameter("searchSubmitted"));
 		if (searchSubmitted) {
@@ -118,7 +118,7 @@ public class UserFacadeAction extends SBActionAdapter {
 	 * @param req
 	 */
 	private void performSearch(SMTServletRequest req) {
-		log.debug("UserFacadeAction performSearch...");
+		log.debug("RamUserFacadeAction performSearch...");
 		// determine the site ID we need to use for the search
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		String srchSiteId = StringUtil.checkVal(site.getAliasPathParentId());
@@ -189,8 +189,8 @@ public class UserFacadeAction extends SBActionAdapter {
 				su.setSiteId(rs.getString("SITE_ID"));
 				su.setRoleId(rs.getString("ROLE_ID"));
 				su.setStatusId(rs.getInt("STATUS_ID"));
-				// using IP Address field to hold the customer ID stored in the attribute field
-				su.setIpAddress(rs.getString("ATTRIB_TXT_1"));
+				// attrib1Txt contains the customer ID to whom this user is associated.
+				su.setAttrib1Txt(rs.getString("ATTRIB_TXT_1"));
 				
 				// set the role data on the user vo as extended data
 				user.setUserExtendedInfo(su);
