@@ -195,12 +195,15 @@ public class ProductAction extends SBActionAdapter {
 	@Override
 	public void list(SMTServletRequest req) throws ActionException {
 		List<RAMProductVO> products = new ArrayList<RAMProductVO>();
+		String schema = attributes.get(Constants.CUSTOM_DB_SCHEMA) + "";
+		int customerId = Convert.formatInteger(req.getParameter(KitAction.CUSTOMER_ID));
 		
 		//Build Query
 		StringBuilder sb = new StringBuilder();
-		sb.append("select * from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sb.append("RAM_PRODUCT where CUSTOMER_ID = ? and (PRODUCT_NM like ? ");
-		sb.append("or CUST_PRODUCT_ID like ?)");
+		sb.append("select top 25 * from ").append(schema).append("RAM_PRODUCT ");
+		sb.append("where 1=1 ");
+		if (customerId > 0) sb.append("and CUSTOMER_ID = ? ");
+		sb.append("and (PRODUCT_NM like ? or CUST_PRODUCT_ID like ?)");
 		
 		//Log sql Statement for verification
 		log.debug("sql: " + sb.toString());
@@ -208,12 +211,12 @@ public class ProductAction extends SBActionAdapter {
 		//Build PreparedStatement
 		log.debug("Retrieving Products: " + sb.toString() + " where term is " + req.getParameter("term"));
 		PreparedStatement ps = null;
-		
+		int index = 1;
 		try{
 			ps = dbConn.prepareStatement(sb.toString());
-			ps.setString(1, req.getParameter(KitAction.CUSTOMER_ID));
-			ps.setString(2, "%" + req.getParameter("term") + "%");
-			ps.setString(3, "%" + req.getParameter("term") + "%");
+			if (customerId > 0) ps.setInt(index++, customerId);
+			ps.setString(index++, "%" + req.getParameter("term") + "%");
+			ps.setString(index++, "%" + req.getParameter("term") + "%");
 
 			ResultSet rs = ps.executeQuery();
 			while(rs.next()) {
