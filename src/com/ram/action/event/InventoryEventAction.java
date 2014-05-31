@@ -66,19 +66,62 @@ public class InventoryEventAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
-
+		String inventoryEventId = StringUtil.checkVal(req.getParameter("inventoryEventId"));
+		
+		if (inventoryEventId.length() == 0) this.retrieveAll(req);
+		else if (! inventoryEventId.equalsIgnoreCase("NEW_EVENT"))
+			this.retrieveEvent(req, inventoryEventId);
+	}
+	
+	/**
+	 * Retrieves a single event data set
+	 * @param req
+	 * @param id
+	 * @throws ActionException
+	 */
+	public void retrieveEvent(SMTServletRequest req, String id) throws ActionException {
+		String schema = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder();
+		sql.append("select * from ").append(schema).append("ram_inventory_event a ");
+		sql.append("inner join ").append(schema).append("ram_customer_location b ");
+		sql.append("on a.customer_location_id = b.customer_location_id ");
+		sql.append("where a.inventory_event_id = ? ");
+		log.info("****************** " + sql);
+		PreparedStatement ps = null;
+		try {
+			ps = dbConn.prepareStatement(sql.toString());
+			ps.setString(1, id);
+			
+			ResultSet rs = ps.executeQuery();
+			if (rs.next()) {
+				this.putModuleData(new InventoryEventVO(rs, true, null));
+			}
+		} catch(SQLException sqle) {
+			throw new ActionException("", sqle);
+		} finally {
+			try { ps.close(); } catch (Exception e) {} 
+		}
+	}
+	
+	/**
+	 * Retrieves all for the data for the Events grid 
+	 * @param req
+	 * @throws ActionException
+	 */
+	public void retrieveAll(SMTServletRequest req) throws ActionException {
 		List<InventoryEventVO> items = new ArrayList<>();
 		
-		// set the date filter
+		// set the date start filter
 		Date start = Convert.formatStartDate(Convert.formatDate(new Date(), Calendar.DAY_OF_MONTH, -1));
 		if (StringUtil.checkVal(req.getParameter("from_date")).length() > 0) {
 			start = Convert.formatStartDate(req.getParameter("from_date"));
 		}
 		
+		// set the date end
 		Date end = Convert.formatEndDate(Convert.formatDate(new Date(), Calendar.DAY_OF_MONTH, 7));
 		if (StringUtil.checkVal(req.getParameter("to_date")).length() > 0) 
 			end = Convert.formatEndDate(req.getParameter("to_date"));
-		log.info("******* " + start + "|" + end);
+		
 		// Build the sql statement
 		StringBuilder sql = this.getBaseSQL();
 		sql.append(this.getListWhere(req));
@@ -123,7 +166,11 @@ public class InventoryEventAction extends SBActionAdapter {
 		this.putModuleData(data, 3, false);
 	}
 	
-	
+	/**
+	 * Builds the where clause for the Grid/select all
+	 * @param req
+	 * @return
+	 */
 	public StringBuilder getListWhere(SMTServletRequest req) {
 		StringBuilder where = new StringBuilder();
 		
