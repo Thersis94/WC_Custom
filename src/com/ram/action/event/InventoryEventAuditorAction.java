@@ -9,7 +9,8 @@ import java.util.Collections;
 import java.util.List;
 
 // RAM Data Feed
-import com.ram.datafeed.data.CustomerEventVO;
+import com.ram.datafeed.data.AuditorVO;
+import com.ram.datafeed.data.InventoryEventAuditorVO;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -22,9 +23,9 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
- * <b>Title</b>: InventoryEventCustomerAction.java <p/>
+ * <b>Title</b>: InventoryEventAuditorAction.java <p/>
  * <b>Project</b>: WC_Custom <p/>
- * <b>Description: </b>Manages information for the event returns
+ * <b>Description: </b> Manages Auditors for a given event
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2014<p/>
  * <b>Company:</b> Silicon Mountain Technologies<p/>
@@ -33,19 +34,19 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @since May 31, 2014<p/>
  * <b>Changes: </b>
  ****************************************************************************/
-public class InventoryEventCustomerAction extends SBActionAdapter {
+public class InventoryEventAuditorAction extends SBActionAdapter {
 
 	/**
 	 * 
 	 */
-	public InventoryEventCustomerAction() {
+	public InventoryEventAuditorAction() {
 		
 	}
 
 	/**
 	 * @param actionInit
 	 */
-	public InventoryEventCustomerAction(ActionInitVO actionInit) {
+	public InventoryEventAuditorAction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
 
@@ -56,20 +57,22 @@ public class InventoryEventCustomerAction extends SBActionAdapter {
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		String schema = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		String encKey = (String) attributes.get(Constants.ENCRYPT_KEY);
+		
 		StringBuilder sql = new StringBuilder();
-		sql.append("select * from ").append(schema).append("ram_customer_event_xr a ");
-		sql.append("inner join ").append(schema).append("ram_customer b ");
-		sql.append("on a.customer_id = b.customer_id and inventory_event_id = ? ");
+		sql.append("select * from ").append(schema).append("ram_inventory_event_auditor_xr a ");
+		sql.append("inner join ").append(schema).append("ram_auditor b ");
+		sql.append("on a.auditor_id = b.auditor_id and inventory_event_id = ? ");
 		
 		PreparedStatement ps = null;
-		List<CustomerEventVO> data = new ArrayList<>();
+		List<InventoryEventAuditorVO> data = new ArrayList<>();
 		try {
 			ps = dbConn.prepareStatement(sql.toString());
 			ps.setInt(1, Convert.formatInteger(req.getParameter("inventoryEventId")));
 			
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
-				data.add(new CustomerEventVO(rs, true));
+				data.add(new InventoryEventAuditorVO(rs, true, encKey));
 			}
 			
 			this.putModuleData(data, data.size(), false);
@@ -91,9 +94,9 @@ public class InventoryEventCustomerAction extends SBActionAdapter {
 		List<String> ele = this.getParameters(req);
 		for(String val : ele) {
 			boolean insert = false;
-			CustomerEventVO vo = parseData(val, inventoryEventId);
+			InventoryEventAuditorVO vo = parseData(val, inventoryEventId);
 			
-			if (vo.getCustomerEventId() == 0) {
+			if (vo.getInventoryEventAuditorId() == 0) {
 				insert = true;
 				sql = buildInsertRecord();
 			} else sql = buildUpdateRecord();
@@ -108,13 +111,16 @@ public class InventoryEventCustomerAction extends SBActionAdapter {
 	 * @param inventoryEventId
 	 * @return
 	 */
-	protected CustomerEventVO parseData(String data, int inventoryEventId) {
+	protected InventoryEventAuditorVO parseData(String data, int inventoryEventId) {
 		String[] items = data.split("\\|");
-		CustomerEventVO vo = new CustomerEventVO();
+		InventoryEventAuditorVO vo = new InventoryEventAuditorVO();
+		AuditorVO auditor = new AuditorVO();
 		vo.setInventoryEventId(inventoryEventId);
-		vo.setCustomerEventId(Convert.formatInteger(items[0]));
-		vo.setCustomerId(Convert.formatInteger(items[1]));
+		vo.setInventoryEventAuditorId(Convert.formatInteger(items[0]));
+		auditor.setAuditorId(Convert.formatInteger(items[1]));
 		vo.setActiveFlag(Convert.formatInteger(items[2]));
+		vo.setEventLeaderFlag(Convert.formatInteger(items[3]));
+		vo.setAuditor(auditor);
 		
 		return vo;
 	}
@@ -125,17 +131,18 @@ public class InventoryEventCustomerAction extends SBActionAdapter {
 	 * @param sql
 	 * @throws ActionException
 	 */
-	public void updateDatabase(CustomerEventVO vo, StringBuilder sql, boolean insert) 
+	public void updateDatabase(InventoryEventAuditorVO vo, StringBuilder sql, boolean insert) 
 	throws ActionException {
 		
 		PreparedStatement ps = null;
 		try {
 			ps = dbConn.prepareStatement(sql.toString());
 			ps.setInt(1, vo.getInventoryEventId());
-			ps.setInt(2, vo.getCustomerId());
-			ps.setInt(3, vo.getActiveFlag());
-			ps.setTimestamp(4, Convert.getCurrentTimestamp());
-			if (! insert) ps.setInt(5, vo.getCustomerEventId());
+			ps.setInt(2, vo.getAuditor().getAuditorId());
+			ps.setInt(3, vo.getEventLeaderFlag());
+			ps.setInt(4, vo.getActiveFlag());
+			ps.setTimestamp(5, Convert.getCurrentTimestamp());
+			if (! insert) ps.setInt(6, vo.getInventoryEventAuditorId());
 			
 			ps.executeUpdate();
 		} catch(SQLException sqle) {
@@ -155,7 +162,7 @@ public class InventoryEventCustomerAction extends SBActionAdapter {
 		List<String> vals = Collections.list(req.getParameterNames());
 		
 		for(String val : vals) {
-			if (val.startsWith("customerEvents_"))  data.add(req.getParameter(val));
+			if (val.startsWith("eventAuditors_"))  data.add(req.getParameter(val));
 		}
 		
 		return data;
@@ -168,9 +175,9 @@ public class InventoryEventCustomerAction extends SBActionAdapter {
 	protected StringBuilder buildInsertRecord() {
 		String schema = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder();
-		sql.append("insert into ").append(schema).append("ram_customer_event_xr ");
-		sql.append("(inventory_event_id, customer_id, active_flg, create_dt) "); 
-		sql.append("values(?,?,?,?)");
+		sql.append("insert into ").append(schema).append("ram_inventory_event_auditor_xr ");
+		sql.append("(inventory_event_id, auditor_id, event_leader_flg, ");
+		sql.append("active_flg, create_dt) values(?,?,?,?,?)");
 		
 		return sql;		
 	}
@@ -182,10 +189,10 @@ public class InventoryEventCustomerAction extends SBActionAdapter {
 	protected StringBuilder buildUpdateRecord() {
 		String schema = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder();
-		sql.append("update ").append(schema).append("ram_customer_event_xr ");
-		sql.append("set inventory_event_id = ?, customer_id = ?, ");
-		sql.append("active_flg = ?, update_dt = ? ");
-		sql.append("where customer_event_id = ?");
+		sql.append("update ").append(schema).append("ram_inventory_event_auditor_xr ");
+		sql.append("set inventory_event_id = ?, auditor_id = ?, ");
+		sql.append("event_leader_flg = ?, active_flg = ?, update_dt = ? ");
+		sql.append("where inventory_event_auditor_xr_id = ? ");
 		
 		return sql;		
 	}

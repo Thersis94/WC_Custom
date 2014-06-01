@@ -1,18 +1,18 @@
 package com.ram.action.event;
 
 // JDK 1.7.x
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
-import com.siliconmtn.action.ActionControllerFactoryImpl;
 // SMT Base Libs
+import com.siliconmtn.action.ActionControllerFactoryImpl;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.exception.ApplicationException;
 import com.siliconmtn.http.SMTServletRequest;
-
 import com.siliconmtn.util.StringUtil;
+
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 
@@ -36,15 +36,17 @@ public class InventoryEventFacadeAction extends SBActionAdapter {
 	public static final String DEFAULT_ACTION = "event";
 	
 	/**
-	 * Possible transaction types
+	 * Possible transaction types. These are placed into proper order of execution
+	 * which is why this is a linked hashmap
 	 */
-	private static final Map<String, String> transactionType = new HashMap<String, String>(){
+	private static final Map<String, String> transactionType = new LinkedHashMap<String, String>(){
 		private static final long serialVersionUID = 1l;
 		{
+			put("event_group", "com.ram.action.event.InventoryEventGroupAction");
 			put("event", "com.ram.action.event.InventoryEventAction");
 			put("event_return", "com.ram.action.event.InventoryEventReturnAction");
-			put("event_group", "com.ram.action.event.InventoryEventGroupAction");
 			put("event_customer", "com.ram.action.event.InventoryEventCustomerAction");
+			put("event_auditor", "com.ram.action.event.InventoryEventAuditorAction");
 		}
 	};
 	
@@ -80,9 +82,32 @@ public class InventoryEventFacadeAction extends SBActionAdapter {
 			sai.retrieve(req);
 			
 		} catch (ApplicationException e) {
-			throw new ActionException("Unable to retrieve data for" + transType, e);
+			throw new ActionException("Unable to retrieve data for " + transType, e);
 		}
 
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
+	 */
+	@Override
+	public void build(SMTServletRequest req) throws ActionException {
+		
+		SMTActionInterface sai = null;
+		try {
+			for (String key : transactionType.keySet()) {
+				log.info("Updating: " + key);
+				ActionInitVO ai = new ActionInitVO(transactionType.get(key));
+				ActionControllerFactoryImpl factory = new ActionControllerFactoryImpl();
+				sai = factory.getInstance(ai);
+				sai.setAttributes(getAttributes());
+				sai.setDBConnection(getDBConnection());
+				sai.update(req);
+			}
+
+		} catch (ApplicationException e) {
+			throw new ActionException("Unable to update/build event data", e);
+		}
+	}
 }

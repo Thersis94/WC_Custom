@@ -9,6 +9,7 @@ import java.sql.SQLException;
 
 import java.util.Date;
 
+
 // RAM Data Feed Libs
 import com.ram.action.data.InventoryEventGroupVO;
 
@@ -17,6 +18,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -97,14 +99,20 @@ public class InventoryEventGroupAction extends SBActionAdapter {
 	 */
 	@Override
 	public void update(SMTServletRequest req) throws ActionException {
+		boolean isGlobal = Convert.formatBoolean(req.getParameter("isGlobal"));
+		int inventoryEventId = Convert.formatInteger(req.getParameter("inventoryEventId"));
+		if (isGlobal == false && inventoryEventId > 0) return;
+
+		// Insert or update the database
 		InventoryEventGroupVO eventGroup = new InventoryEventGroupVO(req);
-		
 		try {
 			DBProcessor db = new DBProcessor(dbConn, getAttribute(Constants.CUSTOM_DB_SCHEMA) + "");
 			if (StringUtil.checkVal(eventGroup.getInventoryEventGroupId()).length() == 0) {
 				eventGroup.setCreateDate(new Date());
 				db.insert(eventGroup);
 				
+				// add the group id to the request object for further processing
+				req.setParameter("inventoryEventGroupId", db.getGeneratedPKId());
 			} else { 
 				eventGroup.setUpdateDate(new Date());
 				db.update(eventGroup);
