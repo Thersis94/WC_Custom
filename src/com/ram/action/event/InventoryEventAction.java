@@ -9,13 +9,9 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-
-
-
-
 
 
 // RAM Data Feed Libs
@@ -30,6 +26,7 @@ import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -48,6 +45,21 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class InventoryEventAction extends SBActionAdapter {
 
+	/**
+	 * Maps the extjs column names to the actual field names
+	 */
+	protected final Map<String, String> fieldMap = new LinkedHashMap<String, String>(){
+		private static final long serialVersionUID = 1l;
+		{
+			put("locationName", "location_nm");
+			put("scheduleDate", "schedule_dt");
+			put("activeFlag", "active_Flg");
+			put("inventoryCompleteDate", "location_nm");
+			put("dataLoadCompleteDate", "location_nm");
+			put("returnProducts", "location_nm");
+		}
+	};
+	
 	/**
 	 * 
 	 */
@@ -182,17 +194,28 @@ public class InventoryEventAction extends SBActionAdapter {
 		StringBuilder sql = this.getBaseSQL();
 		sql.append(this.getListWhere(req));
 		sql.append(this.getGroupBy());
-		sql.append("order by location_nm, ie.inventory_event_id ");
+		
+		String dir = StringUtil.checkVal(req.getParameter("dir"), "desc");
+		String sort = StringUtil.checkVal(req.getParameter("sort"), "scheduleDate");
+		sql.append("order by ").append(fieldMap.get(sort)).append(" " ).append(dir);
 		
 		log.info("SQL: " + sql);
 		PreparedStatement ps = null;
+		int ctr = -1;
 		try {
 			ps = dbConn.prepareStatement(sql.toString());
 			ps.setDate(1, Convert.formatSQLDate(start));
 			ps.setDate(2, Convert.formatSQLDate(end));
 			
 			ResultSet rs = ps.executeQuery();
+			int navStart = Convert.formatInteger(req.getParameter("start"), 0);
+			int navLimit = Convert.formatInteger(req.getParameter("limit"), 25);
+			int navEnd = navStart + navLimit;
+			
 			while(rs.next()) {
+				ctr ++;
+				if (! (ctr >= navStart && ctr < navEnd)) continue;
+				
 				InventoryEventVO vo = new InventoryEventVO(rs, true, attributes.get(Constants.ENCRYPT_KEY) + "");
 				String[] auditors = StringUtil.checkVal(rs.getString("auditors")).split(",");
 				for (String auditor : auditors) {
@@ -216,7 +239,7 @@ public class InventoryEventAction extends SBActionAdapter {
 		
 		
 		Map<String, Object> data = new HashMap<>();
-		data.put("count", items.size());
+		data.put("count", ctr + 1);
 		data.put("data", items);
 		data.put(GlobalConfig.SUCCESS_KEY, Boolean.TRUE);
 		this.putModuleData(data, 3, false);

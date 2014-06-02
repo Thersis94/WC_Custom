@@ -39,7 +39,7 @@ public class InventoryEventFacadeAction extends SBActionAdapter {
 	 * Possible transaction types. These are placed into proper order of execution
 	 * which is why this is a linked hashmap
 	 */
-	private static final Map<String, String> transactionType = new LinkedHashMap<String, String>(){
+	private final Map<String, String> transactionType = new LinkedHashMap<String, String>(){
 		private static final long serialVersionUID = 1l;
 		{
 			put("event_group", "com.ram.action.event.InventoryEventGroupAction");
@@ -97,7 +97,6 @@ public class InventoryEventFacadeAction extends SBActionAdapter {
 		SMTActionInterface sai = null;
 		try {
 			for (String key : transactionType.keySet()) {
-				log.info("Updating: " + key);
 				ActionInitVO ai = new ActionInitVO(transactionType.get(key));
 				ActionControllerFactoryImpl factory = new ActionControllerFactoryImpl();
 				sai = factory.getInstance(ai);
