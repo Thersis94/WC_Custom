@@ -134,7 +134,7 @@ public class AJAXUtilAction extends SBActionAdapter {
 		List<CustomerLocationVO> data = (List<CustomerLocationVO>) modVo.getActionData();
 		
 		List<GenericVO> locs = new ArrayList<>();
-		locs.add(new GenericVO("", "All"));
+		locs.add(new GenericVO("", "Please Select ..."));
 		for (CustomerLocationVO loc : data) {
 			locs.add(new GenericVO(loc.getCustomerLocationId(), loc.getLocationName()));
 		}

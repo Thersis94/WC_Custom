@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+
 // RAMDataFeed
 import com.ram.datafeed.data.CustomerVO;
 
@@ -16,6 +17,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 
+import com.siliconmtn.util.StringUtil;
 // WebCrescendo 2.0
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -57,6 +59,8 @@ public class CustomerAction extends SBActionAdapter {
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		log.debug("CustomerAction retrieve...");
+		int customerId = Convert.formatInteger(req.getParameter("customerId"), 0);
+		String customerTypeId = StringUtil.checkVal(req.getParameter("customerTypeId"));
 		
 		List<CustomerVO> data = new ArrayList<>();
 		if (! Convert.formatBoolean(req.getParameter("addCustomer"))) {
@@ -64,17 +68,19 @@ public class CustomerAction extends SBActionAdapter {
 			StringBuilder sql = new StringBuilder();
 			sql.append("select a.* from ").append(schema);
 			sql.append("RAM_CUSTOMER a ");
-			int customerId = Convert.formatInteger(req.getParameter("customerId"), 0);
-			if (customerId > 0) {
-				sql.append("where CUSTOMER_ID = ? ");
-			}
-			sql.append("order by CUSTOMER_NM");
-			log.debug("Customer retrieve SQL: " + sql.toString() + "|" + customerId);
+
+			if (customerId > 0) sql.append("where customer_id = ? ");
+			if (customerTypeId.length() > 0) sql.append("where customer_type_id = ? ");
 			
+			sql.append("order by CUSTOMER_NM");
+			
+			log.debug("Customer retrieve SQL: " + sql.toString() + "|" + customerId);
+			int index = 1;
 			PreparedStatement ps = null;
 			try {
 				ps = dbConn.prepareStatement(sql.toString());
-				if (customerId > 0) ps.setInt(1, customerId);
+				if (customerId > 0) ps.setInt(index++, customerId);
+				if (customerTypeId.length() > 0) ps.setString(index++, customerTypeId);
 				ResultSet rs = ps.executeQuery();
 				while (rs.next()) {
 					data.add(new CustomerVO(rs, false));

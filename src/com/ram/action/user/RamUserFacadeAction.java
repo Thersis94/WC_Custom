@@ -28,7 +28,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
 
 /****************************************************************************
- * <b>Title: </b>UserFacadeAction.java <p/>
+ * <b>Title: </b>RamUserFacadeAction.java <p/>
  * <b>Project: </b>WC_Custom <p/>
  * <b>Description: </b>
  * </p>
@@ -40,22 +40,22 @@ import com.smt.sitebuilder.security.SBUserRole;
  *<b>Changes: </b>
  * May 27, 2014: David Bargerhuff: Created class.
  ****************************************************************************/
-public class UserFacadeAction extends SBActionAdapter {
+public class RamUserFacadeAction extends SBActionAdapter {
 	
-	private final int PROFILE_STATUS_DISABLED = 5;
-	private final int PROFILE_STATUS_ACTIVE = 20;
+	public static final int PROFILE_STATUS_DISABLED = 5;
+	public static final int PROFILE_STATUS_ACTIVE = 20;
 	
 	/**
 	 * 
 	 */
-	public UserFacadeAction() {
+	public RamUserFacadeAction() {
 		super(new ActionInitVO());
 	}
 
 	/**
 	 * @param actionInit
 	 */
-	public UserFacadeAction(ActionInitVO actionInit) {
+	public RamUserFacadeAction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
 	
@@ -64,18 +64,11 @@ public class UserFacadeAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
-		log.debug("UserFacadeAction retrieve...");
-		boolean searchSubmitted = Convert.formatBoolean(req.getParameter("searchSubmitted"));
-		if (searchSubmitted) {
-			// perform search
-			//performSearch(req);
-			log.debug("retrieve...performSearch  branch...");
-		} else {
-			SMTActionInterface sai = new RamUserAction(actionInit);
-			sai.setAttributes(attributes);
-			sai.setDBConnection(dbConn);
-			sai.retrieve(req);
-		}
+		log.debug("RamUserFacadeAction retrieve...");
+		SMTActionInterface sai = new RamUserAction(actionInit);
+		sai.setAttributes(attributes);
+		sai.setDBConnection(dbConn);
+		sai.retrieve(req);
 	}
 
 	/* (non-Javadoc)
@@ -83,7 +76,7 @@ public class UserFacadeAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(SMTServletRequest req) throws ActionException {
-		log.debug("UserFacadeAction build...");
+		log.debug("RamUserFacadeAction build...");
 		
 		boolean searchSubmitted = Convert.formatBoolean(req.getParameter("searchSubmitted"));
 		if (searchSubmitted) {
@@ -97,12 +90,9 @@ public class UserFacadeAction extends SBActionAdapter {
 			retUrl.append("&srchRole=").append(req.getParameter("srchRole"));
 			retUrl.append("&srchCustomerId=").append(req.getParameter("srchCustomerId"));
 			
-			//if (msg != null) url.append("?msg=").append(msg);
-			
 			log.debug("performSearch redir: " + retUrl);
 			req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.FALSE);
 			req.setAttribute(Constants.REDIRECT_URL, retUrl.toString());
-			
 			
 		} else {
 			SMTActionInterface sai = null;
@@ -118,7 +108,7 @@ public class UserFacadeAction extends SBActionAdapter {
 	 * @param req
 	 */
 	private void performSearch(SMTServletRequest req) {
-		log.debug("UserFacadeAction performSearch...");
+		log.debug("RamUserFacadeAction performSearch...");
 		// determine the site ID we need to use for the search
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		String srchSiteId = StringUtil.checkVal(site.getAliasPathParentId());
@@ -140,7 +130,7 @@ public class UserFacadeAction extends SBActionAdapter {
 		if (srchRole.length() > 0) sql.append("and a.ROLE_ID = ? ");
 		if (srchCustomerId.length() > 0) sql.append("and a.ATTRIB_TXT_1 = ? ");
 		
-		log.debug("Customer search SQL: " + sql.toString());
+		log.debug("User search SQL: " + sql.toString());
 		
 		PreparedStatement ps = null;
 		int index = 1;
@@ -189,8 +179,8 @@ public class UserFacadeAction extends SBActionAdapter {
 				su.setSiteId(rs.getString("SITE_ID"));
 				su.setRoleId(rs.getString("ROLE_ID"));
 				su.setStatusId(rs.getInt("STATUS_ID"));
-				// using IP Address field to hold the customer ID stored in the attribute field
-				su.setIpAddress(rs.getString("ATTRIB_TXT_1"));
+				// attrib1Txt contains the customer ID to whom this user is associated.
+				su.setAttrib1Txt(rs.getString("ATTRIB_TXT_1"));
 				
 				// set the role data on the user vo as extended data
 				user.setUserExtendedInfo(su);
@@ -213,21 +203,10 @@ public class UserFacadeAction extends SBActionAdapter {
 		// decrypt first/last name and filter by user if applicable
 		List<UserDataVO> filteredData = filterByUser(data, srchFN, srchLN);
 		
-		log.debug("data size after filterByUser: " + filteredData.size());
-				
 		// sort by user name
 		Collections.sort(filteredData, new UserDataComparator());
 		
-		log.debug("final data size: " + filteredData.size());
-		
 		putModuleData(filteredData, filteredData.size(), false, null);
-		
-		/*
-		ModuleVO modVo = (ModuleVO) attributes.get(Constants.MODULE_DATA);
-        modVo.setDataSize(filteredData.size());
-        modVo.setActionData(filteredData);
-        req.setAttribute(Constants.MODULE_DATA, modVo);
-        */
 		
 	}
 	
