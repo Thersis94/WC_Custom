@@ -118,6 +118,7 @@ public class MetroAction extends SBActionAdapter {
 		String metroAlias = StringUtil.checkVal(req.getParameter(SMTServletRequest.PARAMETER_KEY + "1"));
 		if (metroAlias.length() == 0) {
 			metroAlias = getMetro();
+			req.setParameter("useAttrib1Txt", "false");
 		}
 		String productAlias = StringUtil.checkVal(req.getParameter(SMTServletRequest.PARAMETER_KEY + "2"));
 		if (productAlias.length() == 0) {
@@ -207,12 +208,19 @@ public class MetroAction extends SBActionAdapter {
 		SiteVO s = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		
 		StringBuilder url = new StringBuilder();
-		url.append("/metro-" + metroAlias);
+		
+		url.append("/");
+		
+		if(req.getRequestURI().contains("metro"))
+			url.append("metro-");
+		
+		url.append(metroAlias);
+		
 		if(StringUtil.checkVal(productAlias).length() > 0)
 			url.append("/" + productAlias);
 		
 		if (!Convert.formatBoolean(s.getMobileFlag())) {
-			p.setCanonicalMobileUrl("http://" + s.getMobileSiteUrl() + "/metro-" + metroAlias);
+			p.setCanonicalMobileUrl(s.getMobileSiteUrl() + "/metro-" + metroAlias);
 		}
 		
 		p.setCanonicalPageUrl(url.toString());
@@ -710,9 +718,9 @@ public class MetroAction extends SBActionAdapter {
 		int ratio = (country.equals("US") | country.equals("GB")) ? 0 : 1;
 		
 		if(req.hasParameter("zip"))
-			query = getSearchQuery(req, useAttrib1Txt, ratio);
+			query = getSearchQuery(req, useAttrib1Txt, ratio, country);
 		else
-			query = getReqularQuery(req, useAttrib1Txt, alias, ratio);
+			query = getReqularQuery(req, useAttrib1Txt, alias, ratio, country);
 		
 		PreparedStatement ps = null;
 		MetroContainerVO mcvo = new MetroContainerVO();
@@ -721,6 +729,8 @@ public class MetroAction extends SBActionAdapter {
 			ps = dbConn.prepareStatement(query);
 			ps.setString(1, StringUtil.checkVal(alias).trim());
 			ps.setInt(2, (isLST) ? 1 : 0);
+			if (!"US".equals(country))
+				ps.setString(3, country);
 			ResultSet rs = ps.executeQuery();
 			int i=0;
 			while (rs.next()) {
@@ -754,7 +764,7 @@ public class MetroAction extends SBActionAdapter {
 	/**
 	 * Returns SQL lookup Query retrieving in order of distance from provided zipcode.
 	 */
-	private String getSearchQuery(SMTServletRequest req, boolean useAttrib1Txt, int ratio){
+	private String getSearchQuery(SMTServletRequest req, boolean useAttrib1Txt, int ratio, String country){
 		req.setParameter("country", ((SiteVO)req.getAttribute("siteData")).getCountryCode());
 		String customDb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sb = new StringBuilder();
@@ -780,6 +790,8 @@ public class MetroAction extends SBActionAdapter {
 		sb.append("inner join ").append(customDb).append("fts_metro_area d ");
 		sb.append("on c.metro_area_id = d.metro_area_id ");
 		sb.append("where d.area_alias_nm = ? and d.area_lst_flg=? ");
+		if (!"US".equals(country))
+			sb.append("and a.country_cd = ? ");
 		if (useAttrib1Txt) sb.append("and ATTRIB1_TXT is not null and ATTRIB1_TXT != '' ");
 		sb.append("order by distance");
 		
@@ -812,7 +824,7 @@ public class MetroAction extends SBActionAdapter {
 	/**
 	 * Returns SQL lookup Query retrieving in order of distance from metro center.
 	 */
-	private String getReqularQuery(SMTServletRequest req, boolean useAttrib1Txt, String alias, int ratio){
+	private String getReqularQuery(SMTServletRequest req, boolean useAttrib1Txt, String alias, int ratio, String country) {
 		String customDb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder s = new StringBuilder();
 
@@ -827,6 +839,8 @@ public class MetroAction extends SBActionAdapter {
 		s.append("inner join ").append(customDb).append("fts_metro_area d ");
 		s.append("on c.metro_area_id = d.metro_area_id ");
 		s.append("where d.area_alias_nm = ? and d.area_lst_flg=? ");
+		if (!"US".equals(country))
+			s.append("and a.country_cd = ? ");
 		if (useAttrib1Txt) s.append("and ATTRIB1_TXT is not null and ATTRIB1_TXT != '' ");
 		s.append("order by distance");
 		log.debug("Metro Area SQL: " + s + "|" + alias + "|");
