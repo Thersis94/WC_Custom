@@ -118,7 +118,6 @@ public class MetroAction extends SBActionAdapter {
 		String metroAlias = StringUtil.checkVal(req.getParameter(SMTServletRequest.PARAMETER_KEY + "1"));
 		if (metroAlias.length() == 0) {
 			metroAlias = getMetro();
-			req.setParameter("useAttrib1Txt", "false");
 		}
 		String productAlias = StringUtil.checkVal(req.getParameter(SMTServletRequest.PARAMETER_KEY + "2"));
 		if (productAlias.length() == 0) {
@@ -216,8 +215,11 @@ public class MetroAction extends SBActionAdapter {
 		
 		url.append(metroAlias);
 		
-		if(StringUtil.checkVal(productAlias).length() > 0)
+		if(StringUtil.checkVal(productAlias).length() > 0 && !req.getRequestURI().contains("metro")) {
+			url.append("?product=" + productAlias);
+		} else if (StringUtil.checkVal(productAlias).length() > 0){
 			url.append("/" + productAlias);
+		}
 		
 		if (!Convert.formatBoolean(s.getMobileFlag())) {
 			p.setCanonicalMobileUrl(s.getMobileSiteUrl() + "/metro-" + metroAlias);
