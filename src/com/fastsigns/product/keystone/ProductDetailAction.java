@@ -39,14 +39,14 @@ public class ProductDetailAction extends AbstractBaseAction {
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		
-		if (req.hasParameter("pricing") && !req.hasParameter("pricingComplete")) {
-			req.setParameter("pricingComplete", "true");
-			ShoppingCartAction sca = new ShoppingCartAction(actionInit);
-			sca.setAttributes(attributes);
-			sca.setDBConnection(dbConn);
-			sca.build(req);
+//		if (req.hasParameter("pricing") && !req.hasParameter("pricingComplete")) {
+//			req.setParameter("pricingComplete", "true");
+//			ShoppingCartAction sca = new ShoppingCartAction(actionInit);
+//			sca.setAttributes(attributes);
+//			sca.setDBConnection(dbConn);
+//			sca.build(req);
 			
-		} else {
+//		} else {
 			//Use Cached action and set necessary pieces for cache groups to be used. 
 			attributes.put(Constants.SITE_DATA, req.getAttribute(Constants.SITE_DATA));
 			attributes.put("wcFranchiseId", CenterPageAction.getFranchiseId(req));
@@ -68,17 +68,19 @@ public class ProductDetailAction extends AbstractBaseAction {
 				mod.setActionData(proxy.getData().getActionData());
 				
 			} catch (Exception e) {
-				log.error(e);
+				log.error("could not load product using id=" + req.getParameter("product"), e);
 				mod.setError(e);
 				mod.setErrorMessage("Unable to load Product Details");
 			}
 			
+			// I believe this code is for re-loading the DSOL page (for edits).  //comment added by speculation -JM 06.03.14
 			if (req.hasParameter("itemId")) {
+				log.debug("loading itemId=" + req.getParameter("itemId"));
 				ShoppingCartAction sca = new ShoppingCartAction(this.actionInit);
 				sca.setDBConnection(dbConn);
 				sca.setAttributes(attributes);
 				Storage container = sca.loadCartStorage(req);
-				ShoppingCartVO cart = container.load();		
+				ShoppingCartVO cart = container.load();
 				ShoppingCartItemVO vo = cart.getItems().get(req.getParameter("itemId"));
 				if (vo != null)
 					req.setAttribute("cartItem", vo);
@@ -87,7 +89,7 @@ public class ProductDetailAction extends AbstractBaseAction {
 			//set APIKey for the browser to use to call for pricing.
 			req.setAttribute("keystoneApiKey", proxy.buildApiKey());
 			setAttribute(Constants.MODULE_DATA, mod);
-		}
+//		}
 	}
 	
 	
@@ -99,9 +101,10 @@ public class ProductDetailAction extends AbstractBaseAction {
 		//ShoppingCartAction facades all cart-related activities.
 		//ShoppingCartAction will call Keystone for pricing, on our behalf (via PricingUtil).
 		//the user's ShoppingCartVO will be put into ModuleVO for us to use when we get to the View (here)
-		if(req.hasParameter("attributes"))
+		log.debug("hasAttributes=" + req.hasParameter("attributes"));
+		if (req.hasParameter("attributes")) {
 			retrieve(req);
-		else{
+		} else {
 			ShoppingCartAction sca = new ShoppingCartAction(actionInit);
 			sca.setAttributes(attributes);
 			sca.setDBConnection(dbConn);
