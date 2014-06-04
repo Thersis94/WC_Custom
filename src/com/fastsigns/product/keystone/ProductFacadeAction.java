@@ -101,7 +101,7 @@ public class ProductFacadeAction extends SimpleActionAdapter {
 	public void build(SMTServletRequest req) throws ActionException {
 		HttpSession ses = req.getSession();
 		ReqType type = getReqType(req);
-		log.debug("display=" + type);
+		log.debug("build display=" + type);
 		
 		configureSession(ses, req, attributes);
 				

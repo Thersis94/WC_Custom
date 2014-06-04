@@ -126,8 +126,8 @@ public class CheckoutUtil {
 	throws ActionException {
 		log.info("saving checkoutScreen");
 		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
-		FastsignsSessVO sessVo = (FastsignsSessVO) req.getSession().getAttribute(KeystoneProxy.FRAN_SESS_VO);
-		String webId = (String)req.getSession().getAttribute(FastsignsSessVO.FRANCHISE_ID);
+//		FastsignsSessVO sessVo = (FastsignsSessVO) req.getSession().getAttribute(KeystoneProxy.FRAN_SESS_VO);
+//		String webId = (String)req.getSession().getAttribute(FastsignsSessVO.FRANCHISE_ID);
 		
 		//save the billing info to the cart
 		UserDataVO billing = new UserDataVO(req);
@@ -172,7 +172,8 @@ public class CheckoutUtil {
 			
 
 		if (user != null) {
-			shipping.setEmailAddress(sessVo.getProfile(webId).getEmailAddress());
+			///shipping.setEmailAddress(sessVo.getProfile(webId).getEmailAddress()); -JM 06.02.14, was throwing an NPE
+			shipping.setEmailAddress(user.getEmailAddress());
 			shipping.setProfileId(user.getProfileId());
 		} else {
 			shipping.setProfileId("guest");

@@ -234,7 +234,14 @@ public class ShippingRequestCoordinator {
 		ShippingAccountVO acct = new ShippingAccountVO();
 		
 		Map<String,String> accounts = new HashMap<String, String>();
-		String shipService = (String) fran.getAttributes().get("ecomm_shipping_service");
+		String shipService = null;
+		try {
+			//this throws a class cast instead of the expected NPE, so we'll trap it's odd behavior
+			shipService = (String) fran.getAttributes().get("ecomm_shipping_service");
+		} catch (Exception e) {
+			log.error("ecomm shipping service not set on " + StringUtil.getToString(fran.getAttributes()), e);
+			return null;
+		}
 		acct.setShippingAccountType(shipService);
 		if(shipService.equals("FEDEX")) {
 			// If we didn't get the information we need return null
