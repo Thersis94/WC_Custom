@@ -238,18 +238,18 @@ public class ShippingRequestCoordinator {
 		acct.setShippingAccountType(shipService);
 		if(shipService.equals("FEDEX")) {
 			// If we didn't get the information we need return null
-			if (StringUtil.checkVal(fran.getAttributes().get("fedex_account")).length() > 1 
-					|| StringUtil.checkVal(fran.getAttributes().get("fedex_meter_number")).length() > 1)
+			if (StringUtil.checkVal(fran.getAttributes().get("fedex_account")).length() < 1 
+					|| StringUtil.checkVal(fran.getAttributes().get("fedex_meter_number")).length() < 1)
 				return null;
 			
 			accounts.put("FRANCHISE_ACCOUNT_KEY", (String) fran.getAttributes().get("fedex_account"));
 			acct.setMeterNumber((String) fran.getAttributes().get("fedex_meter_number"));
 		} else if(shipService.equals("UPS")) {
 			// If we didn't get the information we need return null
-			if (StringUtil.checkVal(fran.getAttributes().get("ups_account")).length() > 1 
-					||StringUtil.checkVal(fran.getAttributes().get("ups_account_service_key")).length() > 1 
-					||StringUtil.checkVal(fran.getAttributes().get("ups_account_login_id")).length() > 1 
-					||StringUtil.checkVal(fran.getAttributes().get("ups_account_login_password")).length() > 1 )
+			if (StringUtil.checkVal(fran.getAttributes().get("ups_account")).length() < 1 
+					||StringUtil.checkVal(fran.getAttributes().get("ups_account_service_key")).length() < 1 
+					||StringUtil.checkVal(fran.getAttributes().get("ups_account_login_id")).length() < 1 
+					||StringUtil.checkVal(fran.getAttributes().get("ups_account_login_password")).length() < 1 )
 				return null;
 			
 			accounts.put("FRANCHISE_ACCOUNT_KEY", (String) fran.getAttributes().get("ups_account"));
