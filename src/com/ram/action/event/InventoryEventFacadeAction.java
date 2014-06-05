@@ -74,7 +74,7 @@ public class InventoryEventFacadeAction extends SBActionAdapter {
 		String transType = StringUtil.checkVal(req.getParameter("transType"), DEFAULT_ACTION);
 		ActionInitVO ai = new ActionInitVO(transactionType.get(transType));
 		ActionControllerFactoryImpl factory = new ActionControllerFactoryImpl();
-		
+		log.debug("retrieving " + transType);
 		try {
 			SMTActionInterface sai = factory.getInstance(ai);
 			sai.setAttributes(getAttributes());
@@ -97,6 +97,7 @@ public class InventoryEventFacadeAction extends SBActionAdapter {
 		SMTActionInterface sai = null;
 		try {
 			for (String key : transactionType.keySet()) {
+				log.debug("building " + key);
 				ActionInitVO ai = new ActionInitVO(transactionType.get(key));
 				ActionControllerFactoryImpl factory = new ActionControllerFactoryImpl();
 				sai = factory.getInstance(ai);
@@ -108,5 +109,13 @@ public class InventoryEventFacadeAction extends SBActionAdapter {
 		} catch (ApplicationException e) {
 			throw new ActionException("Unable to update/build event data", e);
 		}
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.http.SMTServletRequest)
+	 */
+	public void list(SMTServletRequest req) throws ActionException {
+		super.retrieve(req);
 	}
 }

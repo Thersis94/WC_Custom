@@ -10,12 +10,14 @@ import java.sql.SQLException;
 import java.util.Date;
 
 
+
 // RAM Data Feed Libs
 import com.ram.action.data.InventoryEventGroupVO;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
@@ -62,6 +64,8 @@ public class InventoryEventGroupAction extends SBActionAdapter {
 		
 		try {
 			InventoryEventGroupVO data = this.getGroupInfo(id);
+			//this date is the selected Event's schedule date, all recurring events we create will be from this date forwards.
+			data.setCreateDate(Convert.formatDate(Convert.DATE_SLASH_PATTERN, req.getParameter("eventDate")));
 			this.putModuleData(data);
 		} catch (SQLException e) {
 			throw new ActionException("unable to retrieve inventory group data", e);
@@ -99,9 +103,13 @@ public class InventoryEventGroupAction extends SBActionAdapter {
 	 */
 	@Override
 	public void update(SMTServletRequest req) throws ActionException {
-		boolean isGlobal = Convert.formatBoolean(req.getParameter("isGlobal"));
+		boolean isRecurrence = Convert.formatBoolean(req.getParameter("isRecurrence"));
 		int inventoryEventId = Convert.formatInteger(req.getParameter("inventoryEventId"));
-		if (isGlobal == false && inventoryEventId > 0) return;
+		
+		if (!isRecurrence && inventoryEventId > 0) {
+			log.debug("not saving, no group info has changed");
+			return;
+		}
 
 		// Insert or update the database
 		InventoryEventGroupVO eventGroup = new InventoryEventGroupVO(req);
@@ -113,6 +121,7 @@ public class InventoryEventGroupAction extends SBActionAdapter {
 				
 				// add the group id to the request object for further processing
 				req.setParameter("inventoryEventGroupId", db.getGeneratedPKId());
+				eventGroup.setInventoryEventGroupId(db.getGeneratedPKId());
 			} else { 
 				eventGroup.setUpdateDate(new Date());
 				db.update(eventGroup);
@@ -120,5 +129,26 @@ public class InventoryEventGroupAction extends SBActionAdapter {
 		} catch(Exception e) {
 			throw new ActionException("Unable to update Event Group", e);
 		}
+		
+		if (isRecurrence) //this code is unreachable if the above 'save' fails.
+			refactorEvents(eventGroup, req);
+		
+	}
+	
+	
+	/**
+	 * forward the request to the action responsible for iterating the events and 
+	 * updating them according to the specifed recurrence schedule. 
+	 * @param eventGroup
+	 * @param req
+	 * @throws ActionException
+	 */
+	private void refactorEvents(InventoryEventGroupVO eventGroup, SMTServletRequest req) 
+			throws ActionException {
+		attributes.put(InventoryEventRecurrenceAction.EVENT_GRP_OBJ, eventGroup);
+		SMTActionInterface action = new InventoryEventRecurrenceAction(actionInit);
+		action.setDBConnection(dbConn);
+		action.setAttributes(attributes);
+		action.update(req);
 	}
 }

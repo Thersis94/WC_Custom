@@ -88,4 +88,12 @@ public class AuditorAction extends SBActionAdapter {
 
 		log.info("Inventory Event Retrieve: " + sql);
 	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.http.SMTServletRequest)
+	 */
+	public void list(SMTServletRequest req) throws ActionException {
+		super.retrieve(req);
+	}
 }

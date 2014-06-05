@@ -8,6 +8,7 @@ import java.util.Map;
 
 
 
+
 // RAM Data Feed Libs
 import com.ram.action.customer.CustomerLocationAction;
 import com.ram.action.event.InventoryEventGroupAction;
@@ -20,7 +21,6 @@ import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.http.SMTServletRequest;
 
-import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -104,24 +104,16 @@ public class AJAXUtilAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	protected void saveEventGroup(SMTServletRequest req) throws ActionException {
-		String iegId = StringUtil.checkVal(req.getParameter("inventoryEventGroupId"));
-		
 		// Save the Event group data
 		SMTActionInterface sai = new InventoryEventGroupAction(getActionInit());
 		sai.setDBConnection(getDBConnection());
 		sai.setAttributes(getAttributes());
 		sai.update(req);
+		
+		//send a success response, since nothing above has thrown an ActionException
 		Map<String, Object> res = new HashMap<>(); 
 		res.put("success", true);
-		this.putModuleData(res);
-		
-		// update the inventory event group on the single inventoryEvent
-		if (iegId.length() == 0) {
-			String inventoryEventId = req.getParameter("inventoryEventId");
-		}
-		
-		// process the updated times by deleting the future events and recreating
-		
+		putModuleData(res);
 	}
 	
 	/**
@@ -141,6 +133,15 @@ public class AJAXUtilAction extends SBActionAdapter {
 		
 		modVo.setActionData(locs);
 		sai.setAttribute(Constants.MODULE_DATA, modVo) ;
+	}
+	
+	
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.http.SMTServletRequest)
+	 */
+	public void list(SMTServletRequest req) throws ActionException {
+		super.retrieve(req);
 	}
 
 }

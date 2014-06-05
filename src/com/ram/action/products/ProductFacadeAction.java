@@ -54,15 +54,7 @@ public class ProductFacadeAction extends SBActionAdapter {
 	@Override
 	public void build(SMTServletRequest req) throws ActionException {
 		String step = StringUtil.checkVal(req.getParameter(STEP_PARAM));
-		getAction(step).build(req);	}
-	
-	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#delete(com.siliconmtn.http.SMTServletRequest)
-	 */
-	@Override
-	public void delete(SMTServletRequest req) throws ActionException {
-		String step = StringUtil.checkVal(req.getParameter(STEP_PARAM));
-		getAction(step).delete(req);
+		getAction(step).build(req);
 	}
 	
 	/* (non-Javadoc)
@@ -70,17 +62,7 @@ public class ProductFacadeAction extends SBActionAdapter {
 	 */
 	@Override
 	public void list(SMTServletRequest req) throws ActionException {
-		String step = StringUtil.checkVal(req.getParameter(STEP_PARAM));
-		getAction(step).list(req);
-	}
-	
-	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.http.SMTServletRequest)
-	 */
-	@Override
-	public void update(SMTServletRequest req) throws ActionException {
-		String step = StringUtil.checkVal(req.getParameter(STEP_PARAM));
-		getAction(step).update(req);
+		super.retrieve(req);
 	}
 	
 	/* (non-Javadoc)

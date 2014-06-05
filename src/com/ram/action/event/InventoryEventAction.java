@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 
+
 // RAM Data Feed Libs
 import com.ram.datafeed.data.InventoryEventVO;
 import com.ram.datafeed.data.InventoryEventAuditorVO;
@@ -23,6 +24,7 @@ import com.ram.datafeed.data.InventoryEventReturnVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.common.constants.GlobalConfig;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -81,53 +83,124 @@ public class InventoryEventAction extends SBActionAdapter {
 	 */
 	@Override
 	public void update(SMTServletRequest req) throws ActionException {
-		int inventoryEventId = Convert.formatInteger(req.getParameter("inventoryEventId"));
-		String inventoryEventGroupId = req.getParameter("inventoryEventGroupId");
-		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		boolean isGlobal = Convert.formatBoolean(req.getParameter("isGlobal"));
 		
-		// Build the 2 sql statements
-		StringBuilder sql = new StringBuilder();
-		if (inventoryEventId == 0) {
-			sql.append("insert into ").append(schema).append("ram_inventory_event ");
-			sql.append("(inventory_event_group_id, customer_location_id, comment_txt, ");
-			sql.append("schedule_dt, active_flg, vendor_event_id, create_dt) ");
-			sql.append("values (?,?,?,?,?,?,?) ");
+		//build a VO off the request object, then call the reusable update(vo); method.
+		InventoryEventVO event = new InventoryEventVO();
+		event.setInventoryEventId(Convert.formatInteger(req.getParameter("inventoryEventId")));
+		event.setInventoryEventGroupId(req.getParameter("inventoryEventGroupId"));
+		event.setCustomerLocationId(Convert.formatInteger(req.getParameter("customerLocationId")));
+		event.setScheduleDate(Convert.parseDateUnknownPattern(req.getParameter("scheduleDate")));
+		event.setComment(req.getParameter("comments"));
+		event.setActiveFlag(Convert.formatInteger(req.getParameter("activeFlag")));
+		event.setVendorEventId(req.getParameter("vendorEventId"));
+		
+		//if this is a global update, take the abive fields and populate them into all events in this eventGroup
+		if (isGlobal) {
+			globalUpdate(event);
 		} else {
-			sql.append("update ").append(schema).append("ram_inventory_event ");
-			sql.append("set inventory_event_group_id = ?, customer_location_id = ?,");
-			sql.append(" comment_txt = ?, schedule_dt = ?, active_flg = ?, ");
-			sql.append("vendor_event_id = ?, create_dt = ?  ");
-			sql.append("where inventory_event_id = ?");
-		}
-		
-		// update or insert the record
-		PreparedStatement ps = null;
-		try {
-			ps = dbConn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS);
-			ps.setString(1, inventoryEventGroupId);
-			ps.setInt(2, Convert.formatInteger(req.getParameter("customerLocationId")));
-			ps.setString(3, req.getParameter("comments"));
-			ps.setTimestamp(4, Convert.formatTimestamp(Convert.parseDateUnknownPattern(req.getParameter("scheduleDate"))));
-			ps.setInt(5, Convert.formatInteger(req.getParameter("activeFlag")));
-			ps.setString(6, req.getParameter("vendorEventId"));
-			ps.setTimestamp(7, Convert.getCurrentTimestamp());
-			if (inventoryEventId > 0) ps.setInt(8, inventoryEventId);
-			ps.executeUpdate();
-			
-			// Get the identity column id on an insert
-			if (inventoryEventId == 0) {
-				ResultSet generatedKeys = ps.getGeneratedKeys();
-		        if (generatedKeys.next()) {
-		        	inventoryEventId = generatedKeys.getInt(1);
-		        	req.setParameter("inventoryEventId", inventoryEventId + "");
-		        }
-			}
-		} catch(SQLException sqle) {
-			throw new ActionException("", sqle);
-		} finally {
-			try { ps.close(); } catch (Exception e) {} 
+			//update the single record passed  on the request
+			List<InventoryEventVO> list = new ArrayList<InventoryEventVO>();
+			list.add(event);
+			this.update(list);
+			req.setParameter("inventoryEventId", "" + list.get(0).getInventoryEventId());
 		}
 	}
+
+	/**
+	 * a reusable update method that works off a VO instead of the request object.
+	 * also called from InventoryEventRecurrenceAction
+	 * @param event
+	 * @return
+	 * @throws ActionException
+	 */
+	public void update(List<InventoryEventVO> data) throws ActionException {
+		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		
+		// as the system grows this could be separated into two batch queries; one for inserts and one for updates.
+		for (InventoryEventVO event : data) {
+			if (event.getInventoryEventId() == null)
+				event.setInventoryEventId(Integer.valueOf(0));
+			
+			// Build the 2 sql statements
+			StringBuilder sql = new StringBuilder();
+			if (event.getInventoryEventId() == 0) {
+				sql.append("insert into ").append(schema).append("ram_inventory_event ");
+				sql.append("(inventory_event_group_id, customer_location_id, comment_txt, ");
+				sql.append("schedule_dt, active_flg, vendor_event_id, create_dt) ");
+				sql.append("values (?,?,?,?,?,?,?) ");
+			} else {
+				sql.append("update ").append(schema).append("ram_inventory_event ");
+				sql.append("set inventory_event_group_id = ?, customer_location_id = ?,");
+				sql.append(" comment_txt = ?, schedule_dt = ?, active_flg = ?, ");
+				sql.append("vendor_event_id = ?, update_dt = ?  ");
+				sql.append("where inventory_event_id = ?");
+			}
+			
+			// update or insert the record
+			PreparedStatement ps = null;
+			try {
+				ps = dbConn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS);
+				ps.setString(1, event.getInventoryEventGroupId());
+				ps.setInt(2, event.getCustomerLocationId());
+				ps.setString(3, event.getComment());
+				ps.setTimestamp(4, Convert.formatTimestamp(event.getScheduleDate()));
+				ps.setInt(5, event.getActiveFlag());
+				ps.setString(6, event.getVendorEventId());
+				ps.setTimestamp(7, Convert.getCurrentTimestamp());
+				if (event.getInventoryEventId() > 0) ps.setInt(8, event.getInventoryEventId());
+				ps.executeUpdate();
+				
+				// Get the identity column id on an insert
+				if (event.getInventoryEventId() == 0) {
+					ResultSet generatedKeys = ps.getGeneratedKeys();
+					if (generatedKeys.next())
+						event.setInventoryEventId(generatedKeys.getInt(1));
+				}
+			} catch(SQLException sqle) {
+				throw new ActionException(sqle);
+			} finally {
+				DBUtil.close(ps); 
+			}
+		}
+		
+		return;
+	}
+	
+
+	/**
+	 * global update performs an update of all the events in the given eventGroup to 
+	 * have the same 'base' information.
+	 * @param event
+	 * @throws ActionException
+	 */
+	private void globalUpdate(InventoryEventVO event) throws ActionException {
+		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder();
+		sql.append("update ").append(schema).append("RAM_INVENTORY_EVENT ");
+		sql.append("set schedule_dt=cast(convert(varchar,schedule_dt, 1)+? as datetime), ");
+		sql.append("vendor_event_id=?, active_flg=?, comment_txt=?, ");
+		sql.append("update_dt=? where inventory_event_group_id=?");
+		PreparedStatement ps = null;
+		try {
+			ps = dbConn.prepareStatement(sql.toString());
+			//we're going to allow time changes on the recurrences, but not the date; otherwise they'd all be on the same day
+			ps.setString(1, Convert.formatDate(event.getScheduleDate(), " HH:mm:ss"));
+			ps.setString(2, event.getVendorEventId());
+			ps.setInt(3, event.getActiveFlag());
+			ps.setString(4, event.getComment());
+			ps.setTimestamp(5, Convert.getCurrentTimestamp());
+			ps.setString(6, event.getInventoryEventGroupId());
+			int cnt = ps.executeUpdate();
+			log.debug("updated " + cnt + " event records");
+			
+		} catch(SQLException sqle) {
+			throw new ActionException(sqle);
+		} finally {
+			DBUtil.close(ps); 
+		}
+	}
+	
 	
 	/*
 	 * (non-Javadoc)
@@ -254,12 +327,11 @@ public class InventoryEventAction extends SBActionAdapter {
 		StringBuilder where = new StringBuilder();
 		
 		// Filter by the active flag
-		if (StringUtil.checkVal(req.getParameter("activeFlag")).length() > 0) {
+		if (req.hasParameter("activeFlag"))
 			where.append(" and ie.active_flg = ").append(req.getParameter("activeFlag"));
-		}
 		
 		// Filter by the customer location
-		if (StringUtil.checkVal(req.getParameter("customerLocationId")).length() > 0) {
+		if (Convert.formatInteger(req.getParameter("customerLocationId")) > 0) {
 			where.append(" and ie.customer_location_id = '");
 			where.append(req.getParameter("customerLocationId")).append("' ");
 		}

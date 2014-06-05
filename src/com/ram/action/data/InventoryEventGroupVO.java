@@ -283,5 +283,14 @@ public class InventoryEventGroupVO implements Serializable {
 	public void setCreateDate(Date createDate) {
 		this.createDate = createDate;
 	}
+	
+	
+	/**
+	 * counts how many events we need to create in this series
+	 * @return
+	 */
+	public int getRecurrenceCount() {
+		return (sundayFlag + mondayFlag + tuesdayFlag + wednesdayFlag + thursdayFlag + fridayFlag + saturdayFlag) * totalWeek;
+	}
 
 }
