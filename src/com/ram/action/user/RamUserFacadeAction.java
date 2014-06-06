@@ -8,6 +8,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+// RAM Libs
+import com.ram.datafeed.data.RAMUserVO;
+
 //SMTBaseLibs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -15,8 +18,6 @@ import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.StringEncrypter;
-import com.siliconmtn.security.UserDataComparator;
-import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
@@ -25,7 +26,6 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
-import com.smt.sitebuilder.security.SBUserRole;
 
 /****************************************************************************
  * <b>Title: </b>RamUserFacadeAction.java <p/>
@@ -65,10 +65,15 @@ public class RamUserFacadeAction extends SBActionAdapter {
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		log.debug("RamUserFacadeAction retrieve...");
-		SMTActionInterface sai = new RamUserAction(actionInit);
-		sai.setAttributes(attributes);
-		sai.setDBConnection(dbConn);
-		sai.retrieve(req);
+		boolean searchSubmitted = Convert.formatBoolean(req.getParameter("searchSubmitted"));
+		if (searchSubmitted) {
+			performSearch(req);
+		} else {
+			SMTActionInterface sai = new RamUserAction(actionInit);
+			sai.setAttributes(attributes);
+			sai.setDBConnection(dbConn);
+			sai.retrieve(req);
+		}
 	}
 
 	/* (non-Javadoc)
@@ -101,6 +106,7 @@ public class RamUserFacadeAction extends SBActionAdapter {
 			sai.setDBConnection(dbConn);
 			sai.build(req);
 		}
+				
 	}
 	
 	/**
@@ -118,41 +124,39 @@ public class RamUserFacadeAction extends SBActionAdapter {
 		log.debug("using site ID: " + srchSiteId);
 		String srchFN = StringUtil.checkVal(req.getParameter("srchFirstName"));
 		String srchLN = StringUtil.checkVal(req.getParameter("srchLastName"));
-		String srchRole = StringUtil.checkVal(req.getParameter("srchRole"));
+		String srchRole = StringUtil.checkVal(req.getParameter("srchRoleId"));
 		String srchCustomerId = StringUtil.checkVal(req.getParameter("srchCustomerId"));
-		String srchDeactivated = StringUtil.checkVal(req.getParameter("srchDeactivated"));
+		String srchStatusId = StringUtil.checkVal(req.getParameter("srchStatusId"));
+		
 		StringBuilder sql = new StringBuilder();
-		sql.append("select a.*, b.first_nm, b.last_nm ");
+		sql.append("select a.*, b.FIRST_NM, b.LAST_NM, b.EMAIL_ADDRESS_TXT, ");
+		sql.append("c.ROLE_ORDER_NO, c.ROLE_NM, d.PHONE_NUMBER_TXT ");
 		sql.append("from PROFILE_ROLE a ");
 		sql.append("inner join PROFILE b on a.PROFILE_ID = b.PROFILE_ID ");
+		sql.append("left outer join PHONE_NUMBER d on a.PROFILE_ID = d.PROFILE_ID and d.PHONE_TYPE_CD = 'HOME' ");
+		sql.append("inner join ROLE c on a.ROLE_ID = c.ROLE_ID ");
 		sql.append("where SITE_ID = ? ");
-		sql.append("and a.STATUS_ID = ? ");
+		
+		int statusId = Convert.formatInteger(srchStatusId, -1, false);
+		log.debug("srchStatusId | statusId: " + srchStatusId + " | " + statusId);
+		if (statusId > -1) sql.append("and a.STATUS_ID = ? ");
+		
 		if (srchRole.length() > 0) sql.append("and a.ROLE_ID = ? ");
 		if (srchCustomerId.length() > 0) sql.append("and a.ATTRIB_TXT_1 = ? ");
-		
+		sql.append("order by a.PROFILE_ID");
 		log.debug("User search SQL: " + sql.toString());
 		
 		PreparedStatement ps = null;
 		int index = 1;
-		List<UserDataVO> data = new ArrayList<>();
+		List<RAMUserVO> data = new ArrayList<>();
 		try {
 			ps = dbConn.prepareStatement(sql.toString());
 			ps.setString(index++, srchSiteId);
 			
 			// set status
-			if (srchDeactivated.length() > 0) {
-				log.debug("srchDeactivated: " + srchDeactivated);
-				try {
-					ps.setInt(index++, Convert.formatInteger(srchDeactivated));
-					log.debug("searching status ID of: " + srchDeactivated);
-				} catch (NumberFormatException nfe) {
-					log.error("Error converting search value to Integer, ", nfe);
-					ps.setInt(index++, PROFILE_STATUS_DISABLED);
-					log.debug("searching status ID of: " + PROFILE_STATUS_DISABLED);
-				}
-			} else {
-				ps.setInt(index++, PROFILE_STATUS_ACTIVE);
-				log.debug("searching status ID of: " + PROFILE_STATUS_ACTIVE);
+			if (statusId > -1) {
+				ps.setInt(index++, statusId);
+				log.debug("srchStatusId: " + srchStatusId);
 			}
 			
 			// set role
@@ -169,22 +173,7 @@ public class RamUserFacadeAction extends SBActionAdapter {
 			
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
-				UserDataVO user = new UserDataVO();
-				user.setProfileId(rs.getString("PROFILE_ID"));
-				user.setFirstName(rs.getString("FIRST_NM"));
-				user.setLastName(rs.getString("LAST_NM"));
-				
-				SBUserRole su = new SBUserRole();
-				su.setProfileRoleId(rs.getString("PROFILE_ROLE_ID"));
-				su.setSiteId(rs.getString("SITE_ID"));
-				su.setRoleId(rs.getString("ROLE_ID"));
-				su.setStatusId(rs.getInt("STATUS_ID"));
-				// attrib1Txt contains the customer ID to whom this user is associated.
-				su.setAttrib1Txt(rs.getString("ATTRIB_TXT_1"));
-				
-				// set the role data on the user vo as extended data
-				user.setUserExtendedInfo(su);
-				data.add(user);
+				data.add(new RAMUserVO(rs));
 			}
 			
 			log.debug("initial data size: " + data.size());
@@ -201,10 +190,10 @@ public class RamUserFacadeAction extends SBActionAdapter {
 		}
 		
 		// decrypt first/last name and filter by user if applicable
-		List<UserDataVO> filteredData = filterByUser(data, srchFN, srchLN);
+		List<RAMUserVO> filteredData = filterByUser(data, srchFN, srchLN);
 		
 		// sort by user name
-		Collections.sort(filteredData, new UserDataComparator());
+		Collections.sort(filteredData, new RAMUserComparator());
 		
 		putModuleData(filteredData, filteredData.size(), false, null);
 		
@@ -217,7 +206,7 @@ public class RamUserFacadeAction extends SBActionAdapter {
 	 * @param ln
 	 * @return
 	 */
-	private List<UserDataVO> filterByUser(List<UserDataVO> users, String fn, String ln) {
+	private List<RAMUserVO> filterByUser(List<RAMUserVO> users, String fn, String ln) {
 		StringEncrypter se = null;
 		try {
 			se = new StringEncrypter((String)attributes.get(Constants.ENCRYPT_KEY));
@@ -226,14 +215,20 @@ public class RamUserFacadeAction extends SBActionAdapter {
 			return users;
 		}
 		
-		List<UserDataVO> filteredData = new ArrayList<>();
-		for (UserDataVO user : users) {
+		List<RAMUserVO> filteredData = new ArrayList<>();
+		for (RAMUserVO user : users) {
 			try {
 				user.setFirstName(se.decrypt(user.getFirstName()));
 			} catch (Exception e) {log.error("Error decrypting first name, " + e.getMessage());}
 			try {
 				user.setLastName(se.decrypt(user.getLastName()));
 			} catch (Exception e) {log.error("Error decrypting last name, " + e.getMessage());}
+			try {
+				user.setEmailAddress(se.decrypt(user.getEmailAddress()));
+			} catch (Exception e) {log.error("Error decrypting email address, " + e.getMessage());}
+			try {
+				user.setPhoneNumber(se.decrypt(user.getPhoneNumber()));
+			} catch (Exception e) {log.error("Error decrypting telephone, " + e.getMessage());}
 			
 			if (fn.length() > 0) {
 				if (user.getFirstName().contains(fn)) {
