@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+
 // RAM Data Feed
 import com.ram.datafeed.data.AuditorVO;
 import com.ram.datafeed.data.InventoryEventAuditorVO;
@@ -60,10 +61,11 @@ public class InventoryEventAuditorAction extends SBActionAdapter {
 		String encKey = (String) attributes.get(Constants.ENCRYPT_KEY);
 		
 		StringBuilder sql = new StringBuilder();
-		sql.append("select * from ").append(schema).append("ram_inventory_event_auditor_xr a ");
+		sql.append("select *, p.first_nm, p.last_nm from ").append(schema).append("ram_inventory_event_auditor_xr a ");
 		sql.append("inner join ").append(schema).append("ram_auditor b ");
 		sql.append("on a.auditor_id = b.auditor_id and inventory_event_id = ? ");
-		
+		sql.append("inner join profile p on b.profile_id=p.profile_id");
+		log.debug(sql);
 		PreparedStatement ps = null;
 		List<InventoryEventAuditorVO> data = new ArrayList<>();
 		try {
@@ -72,12 +74,18 @@ public class InventoryEventAuditorAction extends SBActionAdapter {
 			
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
-				data.add(new InventoryEventAuditorVO(rs, true, encKey));
+				InventoryEventAuditorVO vo = new InventoryEventAuditorVO(rs, true, encKey);
+				
+				//transpose auditor name from the field that has it correctly to the one that doesn't
+				vo.setAuditorName(vo.getAuditor().getFirstName() + " " + vo.getAuditor().getLastName());
+				
+				log.debug(vo.getAuditorName());
+				data.add(vo);
 			}
 			
 			this.putModuleData(data, data.size(), false);
 		} catch(SQLException sqle) {
-			throw new ActionException("", sqle);
+			throw new ActionException("could not load auditors for Event", sqle);
 		} finally {
 			try { ps.close(); } catch (Exception e) {} 
 		}

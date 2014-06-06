@@ -9,7 +9,9 @@ import java.util.Date;
 import java.util.List;
 
 import com.ram.action.data.InventoryEventGroupVO;
+import com.ram.datafeed.data.AuditorVO;
 import com.ram.datafeed.data.CustomerEventVO;
+import com.ram.datafeed.data.InventoryEventAuditorVO;
 import com.ram.datafeed.data.InventoryEventReturnVO;
 import com.ram.datafeed.data.InventoryEventVO;
 import com.siliconmtn.action.ActionException;
@@ -110,12 +112,13 @@ public class InventoryEventRecurrenceAction extends SBActionAdapter {
 			//if we need it, calculate the event date based on the previous & schedule
 			if (thisEvent.isActive()) {
 				thisEvent.setScheduleDate(recurrence.nextDate());
+
+				//this only happens when 'no recurrence' is selected; the recurrenceUtil has no recurrences to give back to us 
+				//we have to go back to the prebuilt timestamp because thisEvent.equals(mainEvent) == true (same object!)
 				if (thisEvent.getScheduleDate() == null) 
-					//this only happens when 'no recurrence' is selected; the recurrenceUtil has none to give back 
-					//we have to go back to the built timestamp because thisEvent.equals(mainEvent) == true (same object!)
 					thisEvent.setScheduleDate(Convert.formatDate(Convert.DATE_TIME_DASH_PATTERN_12HR, newTs));
 			} else {
-				//if we don't need it set the schedule date to today, which reflects the transaciton time of the change
+				//if we don't need it set the schedule date to null, which will prevent it from appearing on the website.
 				thisEvent.setScheduleDate(null);
 			}
 			
@@ -131,37 +134,47 @@ public class InventoryEventRecurrenceAction extends SBActionAdapter {
 		sai.update(recurringEvents);
 			
 
+		//create a list of events to process child records for that excludes the master event, which already has what it needs.
+		List<InventoryEventVO> insertEvents = new ArrayList<InventoryEventVO>(recurringEvents.size());
+		for (InventoryEventVO vo : recurringEvents) {
+			if (vo.getInventoryEventId().equals(mainEvent.getInventoryEventId())) continue;
+			insertEvents.add(vo);
+		}
+				
 		//copy auditors
-		//copyAuditors(mainEvent, recurringEvents);
+		copyAuditors(mainEvent.getInventoryEventId(), insertEvents);
 		
 		//copy customers
-		copyCustomers(mainEvent.getInventoryEventId(), recurringEvents);
+		copyCustomers(mainEvent.getInventoryEventId(), insertEvents);
 		
 		//copy returns
-		copyReturns(mainEvent.getInventoryEventId(), recurringEvents);
+		copyReturns(mainEvent.getInventoryEventId(), insertEvents);
 			
 	}
 	
 	/**
-	 * performs 3 queries to 
+	 * performs queries to 
 	 * 1) retrieve the customers attached to the main event,
-	 * 2) purge all customers tied to the events we've added/re-used
-	 * 3) batch-insert the customers to all the new/active events in the recurrence
+	 * 2) find existing _xr records we can overwrite
+	 * 3) iterate all the recurrence events and bind a set of customers records to each one
+	 * 4) batch insert/update the records we need to put in the database
+	 * 5) inactivate any existing records we're not going to use (for overwrites).
 	 * 
 	 * @param masterEventId
 	 * @param recurringEvents
 	 * @throws ActionException
 	 */
-	private void copyCustomers(Integer masterEventId, List<InventoryEventVO> recurringEvents) throws ActionException {
+	private void copyCustomers(Integer masterEventId, List<InventoryEventVO> recurrenceEvents) throws ActionException {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = new StringBuilder();
-		PreparedStatement ps = null;
+		StringBuilder sql = null;
 		List<CustomerEventVO> customers = new ArrayList<CustomerEventVO>();
 		
-		//find the one master _xr record we're going to need to re-insert "X" times over.
+		//find the masterEvent's  _xr records we're going to need to re-insert "X" times over.
+		sql = new StringBuilder();
 		sql.append("select customer_id, active_flg from ").append(customDb);
 		sql.append("RAM_CUSTOMER_EVENT_XR ").append("where inventory_event_id=?");
 		log.debug(sql + "|" + masterEventId);
+		PreparedStatement ps = null;
 		try {
 			ps = dbConn.prepareStatement(sql.toString());
 			ps.setInt(1, masterEventId);
@@ -179,55 +192,119 @@ public class InventoryEventRecurrenceAction extends SBActionAdapter {
 		}
 		log.debug("found " + customers.size() + " customers to propagate");
 		
-		//batch delete
+		
+		//find records already in there we can overwrite (instead of deleting all & inserting)
 		sql = new StringBuilder();
-		sql.append("delete from ").append(customDb).append("RAM_CUSTOMER_EVENT_XR ");
-		sql.append("where inventory_event_id in (?");
-		for (@SuppressWarnings("unused") InventoryEventVO vo : recurringEvents) sql.append(",?");
+		sql.append("select customer_event_id from ").append(customDb).append("RAM_CUSTOMER_EVENT_XR ");
+		sql.append("where inventory_event_id in (0");
+		for (@SuppressWarnings("unused") InventoryEventVO vo : recurrenceEvents) 	sql.append(",?");
 		sql.append(")");
+		List<Integer> reusableIds = loadReuseableIds(sql.toString(), recurrenceEvents);
+		log.debug("found " + reusableIds.size() + " records we can reuse/replace");
+		
+		
+		//Flatten all the write transactions into a single list.  
+		//Then we'll run two batch transactions against this list; one for the updates and one for the inserts
+		List<CustomerEventVO> records = new ArrayList<CustomerEventVO>();
+		for (InventoryEventVO vo : recurrenceEvents) {
+			//don't bind to dead events
+			if (! vo.isActive()) continue;
+			
+			//copy all the customers from the master record into each recurrence event.  (double-loop)
+			for (CustomerEventVO ret : customers) {
+				CustomerEventVO newRec = new CustomerEventVO();
+				if (! reusableIds.isEmpty()) {
+					//reassign the first available pkID to this record, while removing it from the list
+					newRec.setCustomerEventId(reusableIds.remove(0));
+				}
+				newRec.setInventoryEventId(vo.getInventoryEventId()); //from the event
+				newRec.setCustomerId(ret.getCustomerId());
+				newRec.setActiveFlag(ret.getActiveFlag());
+				records.add(newRec);
+			}
+		}
+		
+		
+		if (records.size() > 0) {
+			//batch update of reused records
+			sql = new StringBuilder();
+			sql.append("update ").append(customDb).append("RAM_CUSTOMER_EVENT_XR ");
+			sql.append("set inventory_event_id=?, customer_id=?, active_flg=?, update_dt=? ");
+			sql.append("where customer_event_id=?");
+			batchCustomers(sql.toString(), false, records);
+		
+			//batch insert of new records
+			sql = new StringBuilder();
+			sql.append("insert into ").append(customDb).append("RAM_CUSTOMER_EVENT_XR ");
+			sql.append("(inventory_event_id, customer_id, active_flg, create_dt) ");
+			sql.append("values (?,?,?,?)");
+			batchCustomers(sql.toString(), true, records);
+		}
+		
+		
+		//if there are reusableIds we didn't use, leave them as-is and just mark inactive
+		if (! reusableIds.isEmpty()) {
+			sql = new StringBuilder();
+			sql.append("update ").append(customDb).append("RAM_CUSTOMER_EVENT_XR ");
+			sql.append("set active_flg=?, update_dt=? where customer_event_id in (0");
+			for (@SuppressWarnings("unused") Integer i : reusableIds) sql.append(",?");
+			sql.append(")");
+			batchInactiveSurplus(sql.toString(), reusableIds);
+		}
+	}
+	
+	
+	/**
+	 * queries the _XR tables in a generic way for a list of pkIds we can overwrite
+	 * @param sql
+	 * @param recurrenceEvents
+	 * @return
+	 * @throws ActionException
+	 */
+	private List<Integer> loadReuseableIds(String sql, List<InventoryEventVO> recurrenceEvents) 
+			throws ActionException {
+		List<Integer> reusableIds = new ArrayList<Integer>();
 		log.debug(sql);
-
 		int x = 1;
+		PreparedStatement ps = null;
 		try {
 			ps = dbConn.prepareStatement(sql.toString());
-			ps.setInt(x++, masterEventId);
-			for (InventoryEventVO vo : recurringEvents) 
+			for (InventoryEventVO vo : recurrenceEvents) 
 				ps.setInt(x++, vo.getInventoryEventId());
-			x = ps.executeUpdate();
-			log.debug("deleted " + x + " records tied to events we're overwriting");
+			ResultSet rs = ps.executeQuery();
+			while (rs.next())
+				reusableIds.add(Integer.valueOf(rs.getInt(1)));
+			
 		} catch (SQLException sqle) {
-			throw new ActionException("could not purge old customer_event_xr items", sqle);
+			throw new ActionException("could not load existing records", sqle);
 		} finally {
 			DBUtil.close(ps);
 		}
 		
-		//if there were none in the system, we've already cleaned-up the reused records...we're done
-		if (customers.size() == 0) return;
-		
-		//batch insert
-		sql = new StringBuilder();
-		sql.append("insert into ").append(customDb).append("RAM_CUSTOMER_EVENT_XR ");
-		sql.append("(inventory_event_id, customer_id, active_flg, create_dt) ");
-		sql.append("values (?,?,?,?)");
+		return reusableIds;
+	}
+	
+	
+	/**
+	 * generic method to mark _xr records as inactive
+	 * @param sql
+	 * @param reusableIds
+	 * @throws ActionException
+	 */
+	private void batchInactiveSurplus(String sql, List<Integer> reusableIds) throws ActionException {
 		log.debug(sql);
+		int x = 1;
+		PreparedStatement ps = null;
 		try {
 			ps = dbConn.prepareStatement(sql.toString());
-			for (InventoryEventVO vo : recurringEvents) {
-				if (! vo.isActive()) continue; //don't bind to dead events.
-				
-				//copy all the customers from the master record into every recurring event.  (double-loop)
-				for (CustomerEventVO ret : customers) {
-					ps.setInt(1, vo.getInventoryEventId()); //from the event
-					ps.setInt(2, ret.getCustomerId());
-					ps.setInt(3, ret.getActiveFlag());
-					ps.setTimestamp(4, Convert.getCurrentTimestamp());
-					ps.addBatch();
-				}
-			}
-			int[] cnt = ps.executeBatch();
-			log.debug("inserted " + cnt.length + " customers records");
+			ps.setInt(x++, 0);
+			ps.setTimestamp(x++, Convert.getCurrentTimestamp());
+			for (Integer id : reusableIds) 
+				ps.setInt(x++, id);
+			x = ps.executeUpdate();
+			log.debug("inactivated " + x + " surplus records");
 		} catch (SQLException sqle) {
-			throw new ActionException("could not save customers_xr items", sqle);
+			throw new ActionException("could not inactivate surplus records", sqle);
 		} finally {
 			DBUtil.close(ps);
 		}
@@ -235,26 +312,139 @@ public class InventoryEventRecurrenceAction extends SBActionAdapter {
 	
 	
 	/**
-	 * performs 3 queries to 
+	 * generically processes _customer_xr records; used by both insert and update queries
+	 * @param sql
+	 * @param isInsert
+	 * @param records
+	 * @throws ActionException
+	 */
+	private void batchCustomers(String sql, boolean isInsert, List<CustomerEventVO> records) 
+			throws ActionException {
+		log.debug(sql);
+		PreparedStatement ps = null;
+		try {
+			ps = dbConn.prepareStatement(sql);
+			for (CustomerEventVO vo : records) {
+				int pkId = Convert.formatInteger(vo.getCustomerEventId()).intValue();
+				if (! isInsert && pkId < 1) continue; //skip inserts on updates run
+				else if (isInsert && pkId > 0) continue; //skip updates on inserts run
+				
+				ps.setInt(1, vo.getInventoryEventId());
+				ps.setInt(2, vo.getCustomerId());
+				ps.setInt(3, vo.getActiveFlag());
+				ps.setTimestamp(4, Convert.getCurrentTimestamp());
+				if (! isInsert) ps.setInt(5, pkId);
+				ps.addBatch();
+			}
+			int[] cnt = ps.executeBatch();
+			log.debug((isInsert ? "inserted " : "updated ") + cnt.length + " customer_xr records");
+		} catch (SQLException sqle) {
+			throw new ActionException("could not save customer_xr items", sqle);
+		} finally {
+			DBUtil.close(ps);
+		}
+	}
+	
+	
+	/**
+	 * generically processes _return_xr records; used by both insert and update queries
+	 * @param sql
+	 * @param isInsert
+	 * @param records
+	 * @throws ActionException
+	 */
+	private void batchReturns(String sql, boolean isInsert, List<InventoryEventReturnVO> records) 
+			throws ActionException {
+		log.debug(sql);
+		PreparedStatement ps = null;
+		try {
+			ps = dbConn.prepareStatement(sql);
+			for (InventoryEventReturnVO vo : records) {
+				int pkId = Convert.formatInteger(vo.getEventReturnId()).intValue();
+				if (! isInsert && pkId < 1) continue; //skip inserts on update runs
+				else if (isInsert && pkId > 0) continue; //skip updates on insert runs
+				
+				ps.setInt(1, vo.getInventoryEventId());
+				ps.setInt(2, vo.getProductId());
+				ps.setInt(3, vo.getQuantity());
+				ps.setString(4, vo.getLotNumber());
+				ps.setInt(5, vo.getActiveFlag());
+				ps.setTimestamp(6, Convert.getCurrentTimestamp());
+				if (! isInsert) ps.setInt(7, pkId);
+				ps.addBatch();
+			}
+			int[] cnt = ps.executeBatch();
+			log.debug((isInsert ? "inserted " : "updated ") + cnt.length + " return_xr records");
+		} catch (SQLException sqle) {
+			throw new ActionException("could not save return_xr items", sqle);
+		} finally {
+			DBUtil.close(ps);
+		}
+	}
+	
+	
+	/**
+	 * generically processes _auditor_xr records; used by both insert and update queries
+	 * @param sql
+	 * @param isInsert
+	 * @param records
+	 * @throws ActionException
+	 */
+	private void batchAuditors(String sql, boolean isInsert, List<InventoryEventAuditorVO> records) 
+			throws ActionException {
+		log.debug(sql);
+		PreparedStatement ps = null;
+		try {
+			ps = dbConn.prepareStatement(sql);
+			for (InventoryEventAuditorVO vo : records) {
+				int pkId = Convert.formatInteger(vo.getInventoryEventAuditorId()).intValue();
+				if (! isInsert && pkId < 1) continue; //skip inserts on update runs
+				else if (isInsert && pkId > 0) continue; //skip updates on insert runs
+
+				ps.setInt(1, vo.getInventoryEventId());
+				ps.setInt(2, vo.getAuditor().getAuditorId());
+				ps.setInt(3, vo.getEventLeaderFlag());
+				ps.setInt(4, vo.getPerformInventoryFlag());
+				ps.setDate(5, Convert.formatSQLDate(vo.getDataLoadDate()));
+				ps.setInt(6, vo.getActiveFlag());
+				ps.setTimestamp(7, Convert.getCurrentTimestamp());
+				if (! isInsert) ps.setInt(8, pkId);
+				ps.addBatch();
+			}
+			int[] cnt = ps.executeBatch();
+			log.debug((isInsert ? "inserted " : "updated ") + cnt.length + " auditor_xr records");
+		} catch (SQLException sqle) {
+			throw new ActionException("could not save auditor_xr items", sqle);
+		} finally {
+			DBUtil.close(ps);
+		}
+	}
+	
+	
+	/**
+	 * performs queries to 
 	 * 1) retrieve the returns attached to the main event,
-	 * 2) purge all returns tied to the events we've added/re-used
-	 * 3) batch-insert the returns to all the new/active events in the recurrence
+	 * 2) find existing _xr records we can overwrite
+	 * 3) iterate all the recurrence events and bind a set of returns to each one
+	 * 4) batch insert/update the records we need to put in the database
+	 * 5) inactivate any existing records we're not going to use (for overwrites).
 	 * 
 	 * @param masterEventId
 	 * @param recurringEvents
 	 * @throws ActionException
 	 */
-	private void copyReturns(Integer masterEventId, List<InventoryEventVO> recurringEvents) throws ActionException {
+	private void copyReturns(Integer masterEventId, List<InventoryEventVO> recurrenceEvents) throws ActionException {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = new StringBuilder();
-		PreparedStatement ps = null;
+		StringBuilder sql = null;
 		List<InventoryEventReturnVO> returns = new ArrayList<InventoryEventReturnVO>();
 		
-		//find the one master _xr record we're going to need to re-insert "X" times over.
+		//find the masterEvent's  _xr records we're going to need to re-insert "X" times over.
+		sql = new StringBuilder();
 		sql.append("select product_id, quantity_no, lot_number_txt, active_flg from ");
 		sql.append(customDb).append("RAM_EVENT_RETURN_XR ");
 		sql.append("where inventory_event_id=?");
 		log.debug(sql + "|" + masterEventId);
+		PreparedStatement ps = null;
 		try {
 			ps = dbConn.prepareStatement(sql.toString());
 			ps.setInt(1, masterEventId);
@@ -274,65 +464,186 @@ public class InventoryEventRecurrenceAction extends SBActionAdapter {
 		}
 		log.debug("found " + returns.size() + " returns to propagate");
 		
-		//batch delete
+		
+		//find records already in there we can overwrite (instead of deleting all & inserting)
 		sql = new StringBuilder();
-		sql.append("delete from ").append(customDb).append("RAM_EVENT_RETURN_XR ");
-		sql.append("where inventory_event_id in (?");
-		for (@SuppressWarnings("unused") InventoryEventVO vo : recurringEvents) sql.append(",?");
+		sql.append("select event_return_id from ").append(customDb).append("RAM_EVENT_RETURN_XR ");
+		sql.append("where inventory_event_id in (0");
+		for (@SuppressWarnings("unused") InventoryEventVO vo : recurrenceEvents) 	sql.append(",?");
 		sql.append(")");
-		log.debug(sql);
-
-		int x = 1;
-		try {
-			ps = dbConn.prepareStatement(sql.toString());
-			ps.setInt(x++, masterEventId);
-			for (InventoryEventVO vo : recurringEvents) 
-				ps.setInt(x++, vo.getInventoryEventId());
-			x = ps.executeUpdate();
-			log.debug("deleted " + x + " records tied to events we're overwriting");
-		} catch (SQLException sqle) {
-			throw new ActionException("could not purge old return_xr items", sqle);
-		} finally {
-			DBUtil.close(ps);
+		List<Integer> reusableIds = loadReuseableIds(sql.toString(), recurrenceEvents);
+		log.debug("found " + reusableIds.size() + " records we can reuse/replace");
+		
+		
+		//Flatten all the write transactions into a single list.  
+		//Then we'll run two batch transactions against this list; one for the updates and one for the inserts
+		List<InventoryEventReturnVO> records = new ArrayList<InventoryEventReturnVO>();
+		for (InventoryEventVO vo : recurrenceEvents) {
+			//don't bind to dead events
+			if (! vo.isActive()) continue;
+			
+			//copy all the returns from the master record into each recurrence event.  (double-loop)
+			for (InventoryEventReturnVO ret : returns) {
+				InventoryEventReturnVO newRec = new InventoryEventReturnVO();
+				if (! reusableIds.isEmpty()) {
+					//reassign the first available pkID to this record, while removing it from the list
+					newRec.setEventReturnId(reusableIds.remove(0));
+				}
+				newRec.setInventoryEventId(vo.getInventoryEventId()); //from the event
+				newRec.setProductId(ret.getProductId());
+				newRec.setQuantity(ret.getQuantity());
+				newRec.setLotNumber(ret.getLotNumber());
+				newRec.setActiveFlag(ret.getActiveFlag());
+				records.add(newRec);
+			}
 		}
 		
-		//if there were none in the system, we've already cleaned-up the reused records...we're done
-		if (returns.size() == 0) return;
 		
-		//batch insert
-		sql = new StringBuilder();
-		sql.append("insert into ").append(customDb).append("RAM_EVENT_RETURN_XR ");
-		sql.append("(inventory_event_id, product_id, quantity_no, lot_number_txt, ");
-		sql.append("active_flg, create_dt) values (?,?,?,?,?,?)");
-		log.debug(sql);
-		try {
-			ps = dbConn.prepareStatement(sql.toString());
-			for (InventoryEventVO vo : recurringEvents) {
-				if (! vo.isActive()) continue; //don't bind to dead events.
-				
-				//copy all the returns from the master record into every recurring event.  (double-loop)
-				for (InventoryEventReturnVO ret : returns) {
-					ps.setInt(1, vo.getInventoryEventId()); //from the event
-					ps.setInt(2, ret.getProductId());
-					ps.setInt(3, ret.getQuantity());
-					ps.setString(4, ret.getLotNumber());
-					ps.setInt(5, ret.getActiveFlag());
-					ps.setTimestamp(6, Convert.getCurrentTimestamp());
-					ps.addBatch();
-				}
-			}
-			int[] cnt = ps.executeBatch();
-			log.debug("inserted " + cnt.length + " return records");
-		} catch (SQLException sqle) {
-			throw new ActionException("could not save return_xr items", sqle);
-		} finally {
-			DBUtil.close(ps);
+		if (records.size() > 0) {
+			//batch update of reused records
+			sql = new StringBuilder();
+			sql.append("update ").append(customDb).append("RAM_EVENT_RETURN_XR ");
+			sql.append("set inventory_event_id=?, product_id=?, quantity_no=?, ");
+			sql.append("lot_number_txt=?, active_flg=?, update_dt=? ");
+			sql.append("where event_return_id=?");
+			batchReturns(sql.toString(), false, records);
+		
+			//batch insert of new records
+			sql = new StringBuilder();
+			sql.append("insert into ").append(customDb).append("RAM_EVENT_RETURN_XR ");
+			sql.append("(inventory_event_id, product_id, quantity_no, lot_number_txt, ");
+			sql.append("active_flg, create_dt) values (?,?,?,?,?,?)");
+			batchReturns(sql.toString(), true, records);
+		}
+		
+		
+		//if there are reusableIds we didn't use, leave them as-is and just mark inactive
+		if (! reusableIds.isEmpty()) {
+			sql = new StringBuilder();
+			sql.append("update ").append(customDb).append("RAM_EVENT_RETURN_XR ");
+			sql.append("set active_flg=?, update_dt=? where event_return_id in (0");
+			for (@SuppressWarnings("unused") Integer i : reusableIds) sql.append(",?");
+			sql.append(")");
+			batchInactiveSurplus(sql.toString(), reusableIds);
 		}
 	}
 	
 	
 	/**
-	 * copy data from the master record into the recurrence being created
+	 * performs queries to 
+	 * 1) retrieve the auditors attached to the main event,
+	 * 2) find existing _xr records we can overwrite
+	 * 3) iterate all the recurrence events and bind a set of auditors to each one
+	 * 4) batch insert/update the records we need to put in the database
+	 * 5) inactivate any existing records we're not going to use (for overwrites).
+	 * 
+	 * @param masterEventId
+	 * @param recurringEvents
+	 * @throws ActionException
+	 */
+	private void copyAuditors(Integer masterEventId, List<InventoryEventVO> recurrenceEvents) throws ActionException {
+		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = null;
+		List<InventoryEventAuditorVO> auditors = new ArrayList<InventoryEventAuditorVO>();
+		
+		//find the masterEvent's  _xr records we're going to need to re-insert "X" times over.
+		sql = new StringBuilder();
+		sql.append("select auditor_id, event_leader_flg, perform_inventory_flg, data_load_dt, active_flg from ");
+		sql.append(customDb).append("RAM_INVENTORY_EVENT_AUDITOR_XR ");
+		sql.append("where inventory_event_id=?");
+		log.debug(sql + "|" + masterEventId);
+		PreparedStatement ps = null;
+		try {
+			ps = dbConn.prepareStatement(sql.toString());
+			ps.setInt(1, masterEventId);
+			ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				InventoryEventAuditorVO vo = new InventoryEventAuditorVO();
+				AuditorVO aud = new AuditorVO();
+				aud.setAuditorId(rs.getInt(1));
+				vo.setAuditor(aud);
+				vo.setEventLeaderFlag(rs.getInt(2));
+				vo.setPerformInventoryFlag(rs.getInt(3));
+				vo.setDataLoadDate(rs.getDate(4));
+				vo.setActiveFlag(rs.getInt(5));
+				auditors.add(vo);
+			}
+		} catch (SQLException sqle) {
+			throw new ActionException("could not select old auditor_xr items", sqle);
+		} finally {
+			DBUtil.close(ps);
+		}
+		log.debug("found " + auditors.size() + " auditors to propagate");
+		
+		
+		//find records already in there we can overwrite (instead of deleting all & inserting)
+		sql = new StringBuilder();
+		sql.append("select inventory_event_auditor_xr_id from ").append(customDb);
+		sql.append("RAM_INVENTORY_EVENT_AUDITOR_XR ");
+		sql.append("where inventory_event_id in (0");
+		for (@SuppressWarnings("unused") InventoryEventVO vo : recurrenceEvents) 	sql.append(",?");
+		sql.append(")");
+		List<Integer> reusableIds = loadReuseableIds(sql.toString(), recurrenceEvents);
+		log.debug("found " + reusableIds.size() + " records we can reuse/replace");
+		
+		
+		//Flatten all the write transactions into a single list.  
+		//Then we'll run two batch transactions against this list; one for the updates and one for the inserts
+		List<InventoryEventAuditorVO> records = new ArrayList<InventoryEventAuditorVO>();
+		for (InventoryEventVO vo : recurrenceEvents) {
+			//don't bind to dead events
+			if (! vo.isActive()) continue;
+			
+			//copy all the returns from the master record into each recurrence event.  (double-loop)
+			for (InventoryEventAuditorVO ret : auditors) {
+				InventoryEventAuditorVO newRec = new InventoryEventAuditorVO();
+				if (! reusableIds.isEmpty()) {
+					//reassign the first available pkID to this record, while removing it from the list
+					newRec.setInventoryEventAuditorId(reusableIds.remove(0));
+				}
+				newRec.setInventoryEventId(vo.getInventoryEventId()); //from the event
+				newRec.setAuditor(ret.getAuditor());
+				newRec.setEventLeaderFlag(ret.getEventLeaderFlag());
+				newRec.setPerformInventoryFlag(ret.getPerformInventoryFlag());
+				newRec.setDataLoadDate(ret.getDataLoadDate());
+				newRec.setActiveFlag(ret.getActiveFlag());
+				records.add(newRec);
+			}
+		}
+		
+		
+		if (records.size() > 0) {
+			//batch update of reused records
+			sql = new StringBuilder();
+			sql.append("update ").append(customDb).append("RAM_INVENTORY_EVENT_AUDITOR_XR ");
+			sql.append("set inventory_event_id=?, auditor_id=?,  event_leader_flg=?, ");
+			sql.append("perform_inventory_flg=?, data_load_dt=?, active_flg=?, update_dt=? ");
+			sql.append("where inventory_event_auditor_xr_id=?");
+			batchAuditors(sql.toString(), false, records);
+		
+			//batch insert of new records
+			sql = new StringBuilder();
+			sql.append("insert into ").append(customDb).append("RAM_INVENTORY_EVENT_AUDITOR_XR ");
+			sql.append("(inventory_event_id, auditor_id, event_leader_flg, perform_inventory_flg, data_load_dt, ");
+			sql.append("active_flg, create_dt) values (?,?,?,?,?,?,?)");
+			batchAuditors(sql.toString(), true, records);
+		}
+		
+		
+		//if there are reusableIds we didn't use, leave them as-is and just mark inactive
+		if (! reusableIds.isEmpty()) {
+			sql = new StringBuilder();
+			sql.append("update ").append(customDb).append("RAM_INVENTORY_EVENT_AUDITOR_XR ");
+			sql.append("set active_flg=?, update_dt=? where inventory_event_auditor_xr_id in (0");
+			for (@SuppressWarnings("unused") Integer i : reusableIds) sql.append(",?");
+			sql.append(")");
+			batchInactiveSurplus(sql.toString(), reusableIds);
+		}
+	}
+	
+	
+	/**
+	 * copy data from the master record into the event recurrence being created
 	 * @param event
 	 * @param master
 	 * @return
@@ -342,13 +653,13 @@ public class InventoryEventRecurrenceAction extends SBActionAdapter {
 		event.setInventoryEventGroupId(master.getInventoryEventGroupId());
 		event.setCustomerLocationId(master.getCustomerLocationId());
 		event.setComment(master.getComment());
-		event.setScheduleDate(master.getScheduleDate());
 		event.setInventoryCompleteDate(master.getInventoryCompleteDate());
 		event.setDataLoadCompleteDate(master.getDataLoadCompleteDate());
 		event.setVendorEventId(master.getVendorEventId());
-		event.setActiveFlag(master.getActiveFlag());
 		event.setCancellationComment(master.getCancellationComment());
 		event.setPartialInventoryFlag(master.getPartialInventoryFlag());
+		//event.setScheduleDate(master.getScheduleDate());
+		//event.setActiveFlag(master.getActiveFlag());
 		return event;
 	}
 	

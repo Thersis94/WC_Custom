@@ -180,7 +180,7 @@ public class InventoryEventAction extends SBActionAdapter {
 		sql.append("update ").append(schema).append("RAM_INVENTORY_EVENT ");
 		sql.append("set schedule_dt=cast(convert(varchar,schedule_dt, 1)+? as datetime), ");
 		sql.append("vendor_event_id=?, active_flg=?, comment_txt=?, ");
-		sql.append("update_dt=? where inventory_event_group_id=?");
+		sql.append("update_dt=? where inventory_event_group_id=? and schedule_dt >=getDate()");
 		PreparedStatement ps = null;
 		try {
 			ps = dbConn.prepareStatement(sql.toString());
