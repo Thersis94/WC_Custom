@@ -82,6 +82,8 @@ public class InventoryEventAuditorAction extends SBActionAdapter {
 			while (rs.next()) {
 				InventoryEventAuditorVO vo = new InventoryEventAuditorVO(rs, true, encKey);
 				
+				//TODO this code should be fixed inside AuditorVO.setData() and removed from here,
+				//see also com.ram.user.AuditorAction
 				//transpose auditor name from the field that has it correctly to the one that doesn't
 				try {
 					String firstNm= se.decrypt(rs.getString("first_nm"));
@@ -90,8 +92,8 @@ public class InventoryEventAuditorAction extends SBActionAdapter {
 				} catch (Exception e) {
 				     vo.setAuditorName(vo.getAuditor().getFirstName() + " " + vo.getAuditor().getLastName());
 				}
-				
 				log.debug(vo.getAuditorName());
+				
 				data.add(vo);
 			}
 			

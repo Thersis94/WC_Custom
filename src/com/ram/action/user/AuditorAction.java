@@ -7,6 +7,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+
+
 // RAM Data Feed Libs
 import com.ram.datafeed.data.AuditorVO;
 
@@ -14,6 +16,7 @@ import com.ram.datafeed.data.AuditorVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.Convert;
 
 // WC Libs
@@ -58,6 +61,10 @@ public class AuditorAction extends SBActionAdapter {
 		String encKey = (String) attributes.get(Constants.ENCRYPT_KEY);
 		int auditorId = Convert.formatInteger(req.getParameter("auditorId")); 
 		boolean activeFlag = Convert.formatBoolean(req.getParameter("activeFlag"));
+		StringEncrypter se = null;
+		try {
+			se = new StringEncrypter(encKey);
+		} catch (Exception e) {}
 		
 		// Build the SQL Statement
 		StringBuilder sql = new StringBuilder();
@@ -76,7 +83,21 @@ public class AuditorAction extends SBActionAdapter {
 			
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
-				data.add(new AuditorVO(rs, true, encKey));
+				AuditorVO vo = new AuditorVO(rs, true, encKey);
+				
+				//TODO this code should be fixed inside AuditorVO.setData() and removed from here
+				//see also com.ram.event.InventoryEventAuditorAction
+				//transpose auditor name from the field that has it correctly to the one that doesn't
+				try {
+					vo.setFirstName(se.decrypt(rs.getString("first_nm")));
+					vo.setLastName(se.decrypt(rs.getString("last_nm")));
+					
+				} catch (Exception e) {
+					vo.setFirstName(rs.getString("first_nm"));
+					vo.setLastName(rs.getString("last_nm"));
+				}
+				
+				data.add(vo);
 			}
 			
 			this.putModuleData(data, data.size(), false);
