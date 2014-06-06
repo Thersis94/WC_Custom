@@ -289,7 +289,7 @@ public class InventoryEventAction extends SBActionAdapter {
 				ctr ++;
 				if (! (ctr >= navStart && ctr < navEnd)) continue;
 				
-				InventoryEventVO vo = new InventoryEventVO(rs, true, attributes.get(Constants.ENCRYPT_KEY) + "");
+				InventoryEventVO vo = new InventoryEventVO(rs, true, (String)attributes.get(Constants.ENCRYPT_KEY));
 				String[] auditors = StringUtil.checkVal(rs.getString("auditors")).split(",");
 				for (String auditor : auditors) {
 					InventoryEventAuditorVO aud = new InventoryEventAuditorVO();

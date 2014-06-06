@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.List;
 
 
+
 // RAM Data Feed
 import com.ram.datafeed.data.AuditorVO;
 import com.ram.datafeed.data.InventoryEventAuditorVO;
@@ -17,6 +18,7 @@ import com.ram.datafeed.data.InventoryEventAuditorVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.Convert;
 
 // WC Libs
@@ -59,6 +61,10 @@ public class InventoryEventAuditorAction extends SBActionAdapter {
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		String schema = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		String encKey = (String) attributes.get(Constants.ENCRYPT_KEY);
+		StringEncrypter se = null;
+		try {
+			se = new StringEncrypter(encKey);
+		} catch (Exception e) {}
 		
 		StringBuilder sql = new StringBuilder();
 		sql.append("select *, p.first_nm, p.last_nm from ").append(schema).append("ram_inventory_event_auditor_xr a ");
@@ -77,7 +83,13 @@ public class InventoryEventAuditorAction extends SBActionAdapter {
 				InventoryEventAuditorVO vo = new InventoryEventAuditorVO(rs, true, encKey);
 				
 				//transpose auditor name from the field that has it correctly to the one that doesn't
-				vo.setAuditorName(vo.getAuditor().getFirstName() + " " + vo.getAuditor().getLastName());
+				try {
+					String firstNm= se.decrypt(rs.getString("first_nm"));
+					String lastNm = se.decrypt(rs.getString("last_nm"));
+					vo.setAuditorName(firstNm + " " + lastNm);
+				} catch (Exception e) {
+				     vo.setAuditorName(vo.getAuditor().getFirstName() + " " + vo.getAuditor().getLastName());
+				}
 				
 				log.debug(vo.getAuditorName());
 				data.add(vo);
