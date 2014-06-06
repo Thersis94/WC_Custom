@@ -12,6 +12,7 @@ import java.util.Map;
 
 
 
+
 // SMTBaseLibs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -89,12 +90,14 @@ public class RamUserAction extends SBActionAdapter {
 		String schema = (String)getAttribute("customDbSchema");
 		
 		StringBuilder sql = new StringBuilder();
-		sql.append("select a.*, b.FIRST_NM, b.LAST_NM, b.EMAIL_ADDRESS_TXT, c.ROLE_ORDER_NO, d.AUDITOR_ID ");
+		sql.append("select a.*, b.FIRST_NM, b.LAST_NM, b.EMAIL_ADDRESS_TXT, ");
+		sql.append("c.ROLE_ORDER_NO, d.PHONE_NUMBER_TXT, e.AUDITOR_ID ");
 		sql.append("from PROFILE_ROLE a ");
 		sql.append("inner join PROFILE b on a.PROFILE_ID = b.PROFILE_ID ");
 		sql.append("inner join ROLE c on a.ROLE_ID = c.ROLE_ID ");
-		sql.append("left outer join ").append(schema).append("RAM_AUDITOR d ");
-		sql.append("on a.PROFILE_ID = d.PROFILE_ID where 1 = 1 ");
+		sql.append("left outer join PHONE_NUMBER d on a.PROFILE_ID = d.PROFILE_ID and d.PHONE_TYPE_CD = 'HOME' ");
+		sql.append("left outer join ").append(schema).append("RAM_AUDITOR e ");
+		sql.append("on a.PROFILE_ID = e.PROFILE_ID where 1 = 1 ");
 		
 		// filter by site ID
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
@@ -113,7 +116,8 @@ public class RamUserAction extends SBActionAdapter {
 			profileId = retrieveNonAdminProfileId(req);
 		}
 		
-		if (profileId.length() > 0) sql.append("and a.PROFILE_ID = ?");
+		if (profileId.length() > 0) sql.append("and a.PROFILE_ID = ? ");
+		sql.append("order by a.PROFILE_ID");
 		log.debug("RamUserAction retrieve SQL: " + sql.toString() + " | " + profileId);
 		
 		PreparedStatement ps = null;
@@ -191,14 +195,12 @@ public class RamUserAction extends SBActionAdapter {
 		
 		// manage profile
 		manageProfile(req, user, isProfileInsert, msg);
-		
-		// manage role and auth
-		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		SBUserRole userRole = formatUserRoleData(req, site, user);
 
 		if (isAdmin) { // only admins can manipulate role/auth/auditor records
 			if (msg == null) { // profile added successfully, continue.
-				// manage role
+				// manage role and auth
+				SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+				SBUserRole userRole = preformatUserRoleData(req, site, user);
 				manageRole(req, userRole, isProfileInsert, msg);
 				
 				if (msg == null) { // role added successfully, continue.
@@ -233,11 +235,17 @@ public class RamUserAction extends SBActionAdapter {
 			}
 		}
 		
-		putModuleData(msg);
-		
-		log.debug("RamUserAction redir: " + url);
-		req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
-		req.setAttribute(Constants.REDIRECT_URL, url.toString());
+		boolean isJson = Convert.formatBoolean(StringUtil.checkVal(req.getParameter("amid")).length() > 0);
+		if (isJson) {
+			Map<String, Object> res = new HashMap<>(); 
+			res.put("success", true);
+			putModuleData(res);
+		} else {
+			log.debug("RamUserAction redir: " + url);
+			putModuleData(msg);
+			req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
+			req.setAttribute(Constants.REDIRECT_URL, url.toString());
+		}
 	}
 	
 	/**
@@ -249,6 +257,7 @@ public class RamUserAction extends SBActionAdapter {
 	 */
 	private void manageProfile(SMTServletRequest req, UserDataVO user, boolean isProfileInsert, Object msg) {
 		log.debug("managing user profile...");
+		user.setMainPhone(StringUtil.removeNonNumeric(req.getParameter("phoneNumber")));
 		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
 		try {
 			pm.updateProfile(user, dbConn);
@@ -267,8 +276,8 @@ public class RamUserAction extends SBActionAdapter {
 	 */
 	private void manageRole(SMTServletRequest req, SBUserRole userRole, boolean isProfileInsert, Object msg) {
 		log.debug("managing user role...");
-		ProfileRoleManager prm = new ProfileRoleManager();
 		try {
+			ProfileRoleManager prm = new ProfileRoleManager();
 			// check to see if this user already has a role
 			String profileRoleId = prm.checkRole(userRole.getProfileId(), userRole.getSiteId(), dbConn);
 			if (StringUtil.checkVal(profileRoleId).length() > 0) userRole.setProfileRoleId(profileRoleId);
@@ -540,7 +549,7 @@ public class RamUserAction extends SBActionAdapter {
 	 * @param user
 	 * @return
 	 */
-	private SBUserRole formatUserRoleData(SMTServletRequest req, SiteVO site, UserDataVO user) {
+	private SBUserRole preformatUserRoleData(SMTServletRequest req, SiteVO site, UserDataVO user) {
 		log.debug("formatUserRoleData...");
 		SBUserRole userRole = new SBUserRole();
 		userRole.setProfileId(user.getProfileId());
@@ -548,19 +557,17 @@ public class RamUserAction extends SBActionAdapter {
 		userRole.setOrganizationId(site.getOrganizationId());
 		userRole.setSiteId(site.getAliasPathParentId() != null ? site.getAliasPathParentId() : site.getSiteId());
 		userRole.setSiteName(site.getSiteName());
-		String roleVal = StringUtil.checkVal(req.getParameter("roleId"));
-		if (roleVal.indexOf(":") > -1) {
-			String[] roleVals = StringUtil.checkVal(req.getParameter("roleId")).split(":");
-			userRole.setRoleId(roleVals[0]);
-			userRole.setRoleLevel(Convert.formatInteger(roleVals[1]));	
+		String roleId = StringUtil.checkVal(req.getParameter("roleId"));
+		userRole.setRoleId(roleId);
+		String roleLevelId = StringUtil.checkVal(req.getParameter("newRoleLevel"));
+		if (roleLevelId.length() > 0) {
+			userRole.setRoleLevel(Convert.formatInteger(roleLevelId));
 			if (userRole.getRoleLevel() == ROLE_LEVEL_AUDITOR) {
 				// if Auditor, set customer association
 				userRole.setAttrib1Txt(req.getParameter("customerId"));
 				// ...and for backwards compatibility
 				userRole.addAttribute("customerId", userRole.getAttrib1Txt());
 			}
-		} else {
-			userRole.setRoleId(roleVal);
 		}
 		userRole.setStatusId(Convert.formatInteger(req.getParameter("statusId")));
 		return userRole;
