@@ -27,6 +27,7 @@ import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.io.FileWriterException;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.UUIDGenerator;
 import com.siliconmtn.util.databean.FilePartDataBean;
 import com.smt.sitebuilder.action.FileLoader;
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -123,8 +124,41 @@ public class FranchisePageAction extends SBActionAdapter {
 		List<String> ids = new ArrayList<String>();
 		ids.add(pageId);
 		lA.deleteFromChangelog(ids);
+		
+		// Insert a redirect in order to cut down on 404 errors
+		createRedirect(req);
 	}
 	
+	private void createRedirect(SMTServletRequest req) {
+		StringBuilder sql = new StringBuilder();
+		
+		String orgId = ((SiteVO)req.getAttribute("siteData")).getOrganizationId();
+		log.debug(req.getSession().getAttribute("webeditIsMobile"));
+		String siteId = orgId + "_" + CenterPageAction.getFranchiseId(req) + "_" + (StringUtil.checkVal(req.getSession().getAttribute("webeditIsMobile")).equals("true") ? 2 : 1);
+
+		
+		sql.append("INSERT INTO SITE_REDIRECT (SITE_REDIRECT_ID, SITE_ID, REDIRECT_ALIAS_TXT, ");
+		sql.append("DESTINATION_URL, ACTIVE_FLG, CREATE_DT, PERMANENT_REDIR_FLG)");
+		sql.append("SELECT ?, SITE_ID, '/'+ALIAS_PATH_NM + ?, '/'+ALIAS_PATH_NM, ?, ?, ? ");
+		sql.append("FROM SITE where SITE_ID = ?");
+
+		try {
+			PreparedStatement ps = dbConn.prepareStatement(sql.toString());
+			
+			ps.setString(1, new UUIDGenerator().getUUID());
+			ps.setString(2, req.getParameter("pageUrl"));
+			ps.setInt(3, 1);
+			ps.setTimestamp(4, Convert.getCurrentTimestamp());
+			ps.setInt(5, 0);
+			ps.setString(6, siteId);
+			
+			ps.executeUpdate();
+			
+		} catch (SQLException e) {
+			log.error("Site redirect failed when deleting page. ", e );
+		}
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
