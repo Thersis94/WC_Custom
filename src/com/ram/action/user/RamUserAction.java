@@ -10,8 +10,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-
-
+// RAMDataFeed libs
+import com.ram.datafeed.data.RAMUserVO;
 
 // SMTBaseLibs 2.0
 import com.siliconmtn.action.ActionException;
@@ -26,7 +26,6 @@ import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.PasswordException;
 import com.siliconmtn.security.SecurityModuleFactoryImpl;
 import com.siliconmtn.security.StringEncrypter;
-import com.siliconmtn.security.UserDataComparator;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -36,7 +35,6 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.action.user.ProfileRoleManager;
-import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -85,13 +83,13 @@ public class RamUserAction extends SBActionAdapter {
 		
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 		boolean isAdmin = (role.getRoleLevel() == 100);
-		List<UserDataVO> data = new ArrayList<>();
+		List<RAMUserVO> data = new ArrayList<>();
 		
 		String schema = (String)getAttribute("customDbSchema");
 		
 		StringBuilder sql = new StringBuilder();
 		sql.append("select a.*, b.FIRST_NM, b.LAST_NM, b.EMAIL_ADDRESS_TXT, ");
-		sql.append("c.ROLE_ORDER_NO, d.PHONE_NUMBER_TXT, e.AUDITOR_ID ");
+		sql.append("c.ROLE_ORDER_NO, c.ROLE_NM, d.PHONE_NUMBER_TXT, e.AUDITOR_ID ");
 		sql.append("from PROFILE_ROLE a ");
 		sql.append("inner join PROFILE b on a.PROFILE_ID = b.PROFILE_ID ");
 		sql.append("inner join ROLE c on a.ROLE_ID = c.ROLE_ID ");
@@ -127,27 +125,7 @@ public class RamUserAction extends SBActionAdapter {
 			if (profileId.length() > 0) ps.setString(2, profileId);
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
-				UserDataVO user = new UserDataVO();
-				user.setProfileId(rs.getString("PROFILE_ID"));
-				user.setFirstName(rs.getString("FIRST_NM"));
-				user.setLastName(rs.getString("LAST_NM"));
-				user.setEmailAddress(rs.getString("EMAIL_ADDRESS_TXT"));
-				
-				SBUserRole su = new SBUserRole();
-				su.setProfileRoleId(rs.getString("PROFILE_ROLE_ID"));
-				su.setSiteId(rs.getString("SITE_ID"));
-				su.setRoleId(rs.getString("ROLE_ID"));
-				su.setRoleLevel(rs.getInt("ROLE_ORDER_NO"));
-				su.setStatusId(rs.getInt("STATUS_ID"));
-				// attrib1Txt contains the customer ID to whom this user is associated.
-				su.setAttrib1Txt(rs.getString("ATTRIB_TXT_1"));
-				
-				// set the auditor ID value if present
-				su.addAttribute("auditorId", rs.getString("AUDITOR_ID"));
-				
-				// set the role data on the user vo as extended data
-				user.setUserExtendedInfo(su);
-				data.add(user);
+				data.add(new RAMUserVO(rs));
 			}
 		} catch (SQLException sqle) {
 			log.error("Error retrieving user data, ", sqle);
@@ -161,14 +139,11 @@ public class RamUserAction extends SBActionAdapter {
 		
 		formatUserData(data);
 		// sort collection by name
-		Collections.sort(data, new UserDataComparator());
+		Collections.sort(data, new RAMUserComparator());
 		
 		log.debug("user data size: " + data.size());
 		
-		ModuleVO modVo = (ModuleVO) attributes.get(Constants.MODULE_DATA);
-        modVo.setDataSize(data.size());
-        modVo.setActionData(data);
-        this.setAttribute(Constants.MODULE_DATA, modVo);
+		putModuleData(data, data.size(), false, null);
 	}
 
 	/* (non-Javadoc)
@@ -510,7 +485,7 @@ public class RamUserAction extends SBActionAdapter {
 	 * @param users
 	 * @return
 	 */
-	private void formatUserData(List<UserDataVO> users) {
+	private void formatUserData(List<RAMUserVO> users) {
 		StringEncrypter se = null;
 		try {
 			se = new StringEncrypter((String)attributes.get(Constants.ENCRYPT_KEY));
@@ -519,7 +494,7 @@ public class RamUserAction extends SBActionAdapter {
 			return;
 		}
 		
-		for (UserDataVO user : users) {
+		for (RAMUserVO user : users) {
 			try {
 				user.setFirstName(se.decrypt(user.getFirstName()));
 			} catch (Exception e) {log.error("Error decrypting first name, " + e.getMessage());}
@@ -529,6 +504,9 @@ public class RamUserAction extends SBActionAdapter {
 			try {
 				user.setEmailAddress(se.decrypt(user.getEmailAddress()));
 			} catch (Exception e) {log.error("Error decrypting email address, " + e.getMessage());}
+			try {
+				user.setPhoneNumber(se.decrypt(user.getPhoneNumber()));
+			} catch (Exception e) {log.error("Error decrypting phone number, " + e.getMessage());}
 		}	
 		return;
 	}

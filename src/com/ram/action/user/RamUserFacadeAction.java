@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-// RAM Libs
+// RAMDataFeed Libs
 import com.ram.datafeed.data.RAMUserVO;
 
 //SMTBaseLibs 2.0
@@ -23,7 +23,6 @@ import com.siliconmtn.util.StringUtil;
 
 // WebCrescendo 2.0
 import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -82,31 +81,11 @@ public class RamUserFacadeAction extends SBActionAdapter {
 	@Override
 	public void build(SMTServletRequest req) throws ActionException {
 		log.debug("RamUserFacadeAction build...");
-		
-		boolean searchSubmitted = Convert.formatBoolean(req.getParameter("searchSubmitted"));
-		if (searchSubmitted) {
-			
-			performSearch(req);
-			StringBuilder retUrl = new StringBuilder();
-			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
-			retUrl.append(page.getRequestURI());
-			retUrl.append("?srchFirstName=").append(req.getParameter("srchFirstName"));
-			retUrl.append("&srchLastName=").append(req.getParameter("srchLastName"));
-			retUrl.append("&srchRole=").append(req.getParameter("srchRole"));
-			retUrl.append("&srchCustomerId=").append(req.getParameter("srchCustomerId"));
-			
-			log.debug("performSearch redir: " + retUrl);
-			req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.FALSE);
-			req.setAttribute(Constants.REDIRECT_URL, retUrl.toString());
-			
-		} else {
-			SMTActionInterface sai = null;
-			sai = new RamUserAction(actionInit);
-			sai.setAttributes(attributes);
-			sai.setDBConnection(dbConn);
-			sai.build(req);
-		}
-				
+		SMTActionInterface sai = null;
+		sai = new RamUserAction(actionInit);
+		sai.setAttributes(attributes);
+		sai.setDBConnection(dbConn);
+		sai.build(req);		
 	}
 	
 	/**
