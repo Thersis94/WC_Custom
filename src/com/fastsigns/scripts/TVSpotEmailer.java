@@ -329,8 +329,9 @@ public class TVSpotEmailer extends CommandLineUtil {
 		MessageSender ms = new MessageSender(attributes, dbConn);
 		for (String email : byCenter.keySet()) {
 			try {
+				if (email == null) continue;
 				msg = new EmailMessageVO();
-				msg.addRecipient(email);
+				msg.addRecipients(email);
 				msg.setSubject("\"Operation Consultation\" report is attached for your review");
 				msg.setHtmlBody(buildReportBody(true));
 				msg.setFrom(props.getProperty("senderEmailAddr"));
