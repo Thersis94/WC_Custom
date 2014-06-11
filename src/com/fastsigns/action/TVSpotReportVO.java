@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.ListIterator;
 import java.util.Map;
 
 import com.siliconmtn.util.Convert;
@@ -106,16 +107,25 @@ public class TVSpotReportVO extends AbstractSBReportVO {
 	 */
 	public Map<String, HSSFWorkbook> generateCenterReport() {
 		log.debug("starting generateReport()");
+		Calendar now = Calendar.getInstance();
 		Map<String, HSSFWorkbook> byCenter = new HashMap<String, HSSFWorkbook>();
 		HSSFWorkbook book;
 		HSSFSheet sheet;
 		HSSFRow row;
 		
-		for (ContactDataModuleVO vo  : cdc.getData()) {
+		// We cycle through this list in reverse order because we only want to create reports
+		// for centers that have had a request in the last week.
+        ListIterator<ContactDataModuleVO> li = cdc.getData().listIterator(cdc.getData().size());
+        ContactDataModuleVO vo;
+		while (li.hasPrevious()) {
+			vo = li.previous();
 			book = byCenter.get(vo.getDealerLocation().getOwnerEmail());
 			
 			// If we don't have this center in the map already start a new one..
 			if (book == null) {
+				// If the center's most recent request was more than a week ago we skip them.
+				if (((vo.getSubmittalDate().getTime() - now.getTimeInMillis()) / (1000 * 60 * 60 * 24)) < -7) 
+					continue;
 				book = new HSSFWorkbook();
 				sheet = book.createSheet("Report");
 				getHeader(sheet);
