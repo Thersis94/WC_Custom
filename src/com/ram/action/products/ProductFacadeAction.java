@@ -31,7 +31,7 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 public class ProductFacadeAction extends SBActionAdapter {
 
 	public static final String STEP_PARAM = "bType";
-	public static enum KIT_STEP {PRODUCT, PRODUCTRECALL, KIT, KITLAYER, KITPRODUCT, KITCOORDINATE}
+	public static enum KIT_STEP {PRODUCT, PRODUCTRECALL, KIT, KITLAYER, KITPRODUCT, KITCOORDINATE, CUSTOMER}
 	/**
 	 * Default Constructor
 	 */
@@ -86,7 +86,7 @@ public class ProductFacadeAction extends SBActionAdapter {
 				case KITLAYER:
 					action = new KitLayerAction(actionInit);
 					break;
-				case PRODUCT:
+				case KITPRODUCT:
 					action = new KitLayerProductAction(actionInit);
 					break;
 				case KITCOORDINATE:
@@ -98,7 +98,10 @@ public class ProductFacadeAction extends SBActionAdapter {
 				case PRODUCTRECALL:
 					action = new ProductRecallAction(actionInit);
 					break;
-				case KITPRODUCT:
+				case CUSTOMER:
+					action = new CustomerProductAction(actionInit);
+					break;
+				case PRODUCT:
 				default:
 					action = new ProductAction(actionInit);
 					break;

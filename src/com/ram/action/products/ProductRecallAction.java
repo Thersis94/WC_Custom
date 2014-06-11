@@ -87,35 +87,28 @@ public class ProductRecallAction extends SBActionAdapter {
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		
 		//Instantiate List and determine lookup method.
-		List<ProductRecallItemVO> products = new ArrayList<ProductRecallItemVO>();
-		boolean isProductLookup = req.hasParameter("productRecallItemId");
-		
+		List<ProductRecallItemVO> recalls = new ArrayList<ProductRecallItemVO>();		
 		//Build query for individual or list lookup.
 		StringBuilder sb = new StringBuilder();
 		sb.append("select * from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sb.append("PRODUCT_RECALL_ITEM_ID where ");
-		if(isProductLookup)
-			sb.append("PRODUCT_RECALL_ITEM_ID = ?");
-		else
-			sb.append("PRODUCT_ID = ?");
+		sb.append("RAM_PRODUCT_RECALL_ITEM where PRODUCT_ID = ?");
 		
 		//Build the Statement for lookup
 		PreparedStatement ps = null;
 		
 		try {
 			ps = dbConn.prepareStatement(sb.toString());
-			if(isProductLookup)
-				ps.setString(1, req.getParameter("productRecallItemId"));
-			else
-				ps.setString(1, req.getParameter("productId"));
+			ps.setString(1, req.getParameter("productId"));
 			
 			//Retreive results and populate the Products List
 			ResultSet rs = ps.executeQuery();
 			while(rs.next())
-				products.add(new ProductRecallItemVO(rs, false));
+				recalls.add(new ProductRecallItemVO(rs, false));
 		} catch(SQLException sqle) {
 			log.error("Error retrieving product list", sqle);
 		}
+		//Return List to View
+		this.putModuleData(recalls);
 	}
 
 	/* (non-Javadoc)
@@ -125,8 +118,10 @@ public class ProductRecallAction extends SBActionAdapter {
 	public void build(SMTServletRequest req) throws ActionException {
 		
 		//Determine if Update or Insert
-		boolean isInsert = !req.hasParameter("productRecallItemId");
-		
+		boolean isInsert = Convert.formatBoolean(req.hasParameter("isInsert"));
+		for(String param : req.getParameterMap().keySet()) {
+			log.debug(param);
+		}
 		//Build Query
 		StringBuilder sb = new StringBuilder();
 		if(isInsert) {
