@@ -1,19 +1,24 @@
-/**
- * 
- */
 package com.ram.action.products;
 
+// JDK 1.7.x
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
+// RAM Data Feed Libs
 import com.ram.datafeed.data.ProductRecallItemVO;
+
+// SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
+
+// WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -35,6 +40,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @since May 22, 2014
  *        <p/>
  *        <b>Changes: </b>
+ *        James Camire: 6/12/2014 Modified the way the recall products were saved.
  ****************************************************************************/
 public class ProductRecallAction extends SBActionAdapter {
 
@@ -116,24 +122,46 @@ public class ProductRecallAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(SMTServletRequest req) throws ActionException {
-		
-		//Determine if Update or Insert
-		boolean isInsert = Convert.formatBoolean(req.hasParameter("isInsert"));
-		for(String param : req.getParameterMap().keySet()) {
-			log.debug(param);
+		List<String> paramNames =Collections.list(req.getParameterNames());
+		for (String name: paramNames) {
+			if (name.startsWith("productRecall_")) {
+				ProductRecallItemVO item = new ProductRecallItemVO();
+				
+				// Parse the delimited data into the vo
+				String data = req.getParameter(name);
+				String[] vals = data.split("\\|");
+				item.setProductId(Convert.formatInteger(vals[0]));
+				item.setRecallItemId(Convert.formatInteger(vals[1]));
+				item.setLotNumber(vals[2]);
+				item.setActiveFlag(Convert.formatInteger(vals[3]));
+				
+				// Only add the recall item if the lot number has been passed
+				if (StringUtil.checkVal(item.getLotNumber()).length() > 0)
+					buildItem(item);
+			}
 		}
+		
+		
+	}
+	
+	/**
+	 * Updates or inserts a record into the table
+	 * @param item
+	 */
+	protected void buildItem(ProductRecallItemVO item) {
 		//Build Query
 		StringBuilder sb = new StringBuilder();
-		if(isInsert) {
+		if(item.getRecallItemId() == 0) {
 			sb.append("insert into ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-			sb.append("RAM_PRODUCT_RECALL_ITEM (ACTIVE_FLG, CREATE_DT, LOT_NUMBER_TXT, ");
-			sb.append("PRODUCT_ID) values (?,?,?,?)");
+			sb.append("ram_product_recall_item (active_flg, create_dt, lot_number_txt, ");
+			sb.append("product_id) values (?,?,?,?)");
 			
 		} else {
 			sb.append("update ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-			sb.append("RAM_PRODUCT_RECALL_ITEM set ACTIVE_FLG = ?, UPDATE_DT = ? ");
-			sb.append("where PRODUCT_RECALL_ITEM_ID = ?");
+			sb.append("ram_product_recall_item set active_flg = ?, update_dt = ?, ");
+			sb.append("lot_number_txt = ?, product_id = ?  where product_recall_item_id = ?");
 		}
+		log.info("Product Recall SQL: " + sb);
 		
 		PreparedStatement ps = null;
 		int i = 1;
@@ -141,22 +169,17 @@ public class ProductRecallAction extends SBActionAdapter {
 		//Build PreparedStatement and set params based on isInsert Flag 
 		try {
 			ps = dbConn.prepareStatement(sb.toString());
-			ps.setString(i++, req.getParameter("activeFlg"));
+			ps.setInt(i++, item.getActiveFlag());
 			ps.setTimestamp(i++, Convert.getCurrentTimestamp());
-			if(isInsert) {
-				ps.setString(i++, req.getParameter("lotNumberTxt"));
-				ps.setString(i++, req.getParameter("productId"));
-			} else {
-				ps.setString(i++, req.getParameter("productRecallItemId"));
-			}
+			ps.setString(i++, item.getLotNumber());
+			ps.setInt(i++, item.getProductId());
+			if (item.getRecallItemId() > 0) ps.setInt(i++, item.getRecallItemId());
 			
 			//Execute
 			ps.executeUpdate();
 		} catch(SQLException sqle) {
-			log.error("Error updating Product: " + req.getParameter("productRecallItemId"), sqle);
+			log.error("Error updating Product: " + item.getRecallItemId(), sqle);
 		}
-		
-		//Redirect User to list
 	}
 
 	/* (non-Javadoc)

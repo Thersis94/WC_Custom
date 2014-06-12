@@ -139,7 +139,7 @@ public class KitLayerAction extends SBActionAdapter {
 			log.error(sqle);
 		}
 		
-		this.putModuleData(layers);
+		this.putModuleData(layers, layers.size(), false);
 	}
 
 	/* (non-Javadoc)
