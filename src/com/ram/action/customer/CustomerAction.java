@@ -67,7 +67,7 @@ public class CustomerAction extends SBActionAdapter {
 			String schema = (String)getAttribute("customDbSchema");
 			StringBuilder sql = new StringBuilder();
 			sql.append("select a.* from ").append(schema);
-			sql.append("RAM_CUSTOMER a ");
+			sql.append("ram_customer a ");
 
 			if (customerId > 0) sql.append("where customer_id = ? ");
 			if (customerTypeId.length() > 0) sql.append("where customer_type_id = ? ");

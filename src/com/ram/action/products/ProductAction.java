@@ -16,6 +16,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -88,10 +89,10 @@ public class ProductAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
-		if(req.hasParameter("term")) {
-			list(req);
-		} else if(req.hasParameter("productId"))
+		if(req.hasParameter("productId"))
 			retrieveProducts(req);
+		else
+			list(req);
 	}
 
 	/**
@@ -197,13 +198,19 @@ public class ProductAction extends SBActionAdapter {
 		List<RAMProductVO> products = new ArrayList<RAMProductVO>();
 		String schema = attributes.get(Constants.CUSTOM_DB_SCHEMA) + "";
 		int customerId = Convert.formatInteger(req.getParameter(KitAction.CUSTOMER_ID));
+		int kitFilter = Convert.formatInteger(req.getParameter("kitFilter"), -1);
+		String term = StringUtil.checkVal(req.getParameter("term"));
+		int start = Convert.formatInteger(req.getParameter("start"), 0);
+		int limit = Convert.formatInteger(req.getParameter("limit"), 25) + start;
 		
 		//Build Query
 		StringBuilder sb = new StringBuilder();
-		sb.append("select top 25 * from ").append(schema).append("RAM_PRODUCT ");
-		sb.append("where 1=1 ");
-		if (customerId > 0) sb.append("and CUSTOMER_ID = ? ");
-		sb.append("and (PRODUCT_NM like ? or CUST_PRODUCT_ID like ?)");
+		sb.append("select top ").append(limit).append(" * from ").append(schema);
+		sb.append("ram_product a ");
+		sb.append("inner join ").append(schema).append("ram_customer b ");
+		sb.append("on a.customer_id = b.customer_id ");
+		sb.append(this.getWhereClause(customerId, term, kitFilter));
+		sb.append("order by product_nm ");
 		
 		//Log sql Statement for verification
 		log.debug("sql: " + sb.toString());
@@ -211,25 +218,75 @@ public class ProductAction extends SBActionAdapter {
 		//Build PreparedStatement
 		log.debug("Retrieving Products: " + sb.toString() + " where term is " + req.getParameter("term"));
 		PreparedStatement ps = null;
-		int index = 1;
+		int index = 1, ctr = 0;
 		try{
 			ps = dbConn.prepareStatement(sb.toString());
 			if (customerId > 0) ps.setInt(index++, customerId);
-			ps.setString(index++, "%" + req.getParameter("term") + "%");
-			ps.setString(index++, "%" + req.getParameter("term") + "%");
-
+			if(kitFilter > -1) ps.setInt(index++, kitFilter);
+			if(term.length() > 0) {
+				ps.setString(index++, "%" + term + "%");
+				ps.setString(index++, "%" + term + "%");
+			}
+			
+			// Get the result sets
 			ResultSet rs = ps.executeQuery();
-			while(rs.next()) {
-				products.add(new RAMProductVO(rs));
-			}
-			} catch(SQLException sqle) {
-				log.error("Error retrieving product list", sqle);
+			for(int i=0; rs.next(); i++) {
+				if (i >= start && i < limit)
+					products.add(new RAMProductVO(rs));
 			}
 			
-		//obj.add("products", products);
-			
+			ctr = getRecordCount(customerId, term, kitFilter);
+		} catch(SQLException sqle) {
+			log.error("Error retrieving product list", sqle);
+		}
+
 		//Return the data.
-		putModuleData(products);		
+		putModuleData(products, ctr, false);		
+	}
+	
+	/**
+	 * Gets the count od the records
+	 * @param customerId
+	 * @param term
+	 * @return
+	 * @throws SQLException
+	 */
+	protected int getRecordCount(int customerId, String term, int kitFilter) 
+	throws SQLException {
+		String schema = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder s = new StringBuilder("select count(*) from ");
+		s.append(schema).append("ram_product a ");
+		s.append(this.getWhereClause(customerId, term, kitFilter));
+		
+		PreparedStatement ps = dbConn.prepareStatement(s.toString());
+		int index = 1;
+		if (customerId > 0) ps.setInt(index++, customerId);
+		if (kitFilter > -1) ps.setInt(index++, kitFilter);
+		if(term.length() > 0) {
+			ps.setString(index++, "%" + term + "%");
+			ps.setString(index++, "%" + term + "%");
+		}
+		
+		
+		ResultSet rs = ps.executeQuery();
+		rs.next();
+		
+		return rs.getInt(1);
+	}
+	
+	/**
+	 * 
+	 * @param customerId
+	 * @return
+	 */
+	protected StringBuilder getWhereClause(int customerId, String term, int kitFilter) {
+		StringBuilder sb = new StringBuilder();
+		sb.append("where 1=1 ");
+		if (customerId > 0) sb.append("and a.customer_id = ? ");
+		if(kitFilter > -1) sb.append("and kit_flg = ? ");
+		if(term.length() > 0) sb.append("and (product_nm like ? or cust_product_id like ?) ");
+		
+		return sb;
 	}
 
 	/* (non-Javadoc)
@@ -239,31 +296,4 @@ public class ProductAction extends SBActionAdapter {
 	public void update(SMTServletRequest req) throws ActionException {
 		super.update(req);
 	}
-//
-//	/**
-//	 * Build JSON Representation of the Object
-//	 * @return
-//	 */
-//
-//	public JsonObject getJson(RAMProductVO prod) {
-//		JsonObject json = new JsonObject();
-//		json.addProperty("productId", prod.getProductId());
-//		json.addProperty("parentId", prod.getParentId());
-//		json.addProperty("customerProductId", prod.getCustomerProductId());
-//		json.addProperty("gtinProductId", prod.getGtinProductId());
-//		json.addProperty("productName", prod.getProductName());
-//		json.addProperty("shortDesc", prod.getShortDesc());
-//		json.addProperty("customerId", prod.getCustomerId());
-//		json.addProperty("customerName", prod.getCustomerName());
-//		json.addProperty("lotNumber", prod.getLotNumber());
-//		json.addProperty("lotCodeRequired", prod.getLotCodeRequired());
-//		json.addProperty("expireeRequired", prod.getExpireeRequired());
-//		json.addProperty("parLevel", prod.getParLevel());
-//		json.addProperty("kitFlag", prod.getKitFlag());
-//		json.addProperty("quantity", prod.getQuantity());
-//		json.addProperty("msrpCostNo", prod.getMsrpCostNo());
-//		json.addProperty("activeFlag", prod.getActiveFlag());
-//	
-//		return json;
-//	}
 }

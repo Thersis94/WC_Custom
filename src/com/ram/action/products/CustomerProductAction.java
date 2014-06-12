@@ -52,10 +52,10 @@ public class CustomerProductAction extends SBActionAdapter {
 		List<CustomerVO> customers = new ArrayList<CustomerVO>();
 				
 		StringBuilder sb = new StringBuilder();
-		sb.append("select distinct a.customer_id, b.CUSTOMER_NM from ");
-		sb.append(customDb).append("RAM_PRODUCT a ");
-		sb.append("inner join ").append(customDb).append("RAM_CUSTOMER b ");
-		sb.append("on a.CUSTOMER_ID = b.CUSTOMER_ID");
+		sb.append("select distinct a.customer_id, b.customer_nm from ");
+		sb.append(customDb).append("ram_product a ");
+		sb.append("inner join ").append(customDb).append("ram_customer b ");
+		sb.append("on a.customer_id = b.customer_id");
 		
 		PreparedStatement ps = null;
 		

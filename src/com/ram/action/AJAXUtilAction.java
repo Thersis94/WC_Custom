@@ -7,8 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 
-
-
+import com.ram.action.customer.CustomerAction;
 // RAM Data Feed Libs
 import com.ram.action.customer.CustomerLocationAction;
 import com.ram.action.event.InventoryEventGroupAction;
@@ -39,6 +38,12 @@ import com.smt.sitebuilder.common.constants.Constants;
  * <b>Changes: </b>
  ****************************************************************************/
 public class AJAXUtilAction extends SBActionAdapter {
+	
+	/**
+	 * Codes for the customer search
+	 */
+	public static final String CUSTOMER_TYPE = "customer";
+	
 	/**
 	 * Codes for the customer location search
 	 */
@@ -49,7 +54,9 @@ public class AJAXUtilAction extends SBActionAdapter {
 	 */
 	public static final String EVENT_GROUP_TYPE = "event_group";
 	
-	
+	/**
+	 * 
+	 */
 	public static final String SAVE_EVENT_GROUP_TYPE = "save_event_group";
 	
 	/**
@@ -78,6 +85,12 @@ public class AJAXUtilAction extends SBActionAdapter {
 		
 		// Call the appropriate action
 		switch(type) {
+			case CUSTOMER_TYPE:
+				sai = new CustomerAction(getActionInit());
+				sai.setDBConnection(getDBConnection());
+				sai.setAttributes(getAttributes());
+				sai.retrieve(req);
+				break;
 			case CUSTOMER_LOCATION_TYPE:
 				sai = new CustomerLocationAction(getActionInit());
 				sai.setDBConnection(getDBConnection());
