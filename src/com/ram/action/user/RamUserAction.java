@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+
 // RAMDataFeed libs
 import com.ram.datafeed.data.RAMUserVO;
 
@@ -122,24 +123,34 @@ public class RamUserAction extends SBActionAdapter {
 		if (profileId.length() > 0) sql.append("and a.PROFILE_ID = ? ");
 		sql.append("order by a.PROFILE_ID");
 		log.debug("RamUserAction retrieve SQL: " + sql.toString() + " | " + profileId);
-		
+		boolean useNav = false;
+		if (req.getParameter("start") != null && req.getParameter("limit") != null) {
+			useNav = true;
+		}
+		int recCtr = -1;
 		PreparedStatement ps = null;
-		int ctr = -1;
 		try {
 			ps = dbConn.prepareStatement(sql.toString());
 			ps.setString(1, siteId);
 			if (profileId.length() > 0) ps.setString(2, profileId);
 			ResultSet rs = ps.executeQuery();
-			
-			int navStart = Convert.formatInteger(req.getParameter("start"), 0);
-			int navLimit = Convert.formatInteger(req.getParameter("limit"), 25);
-			int navEnd = navStart + navLimit;
-			
-			while (rs.next()) {
-				ctr ++;
-				if (! (ctr >= navStart && ctr < navEnd)) continue;
-				data.add(new RAMUserVO(rs));
+			log.debug("useNav: " + useNav);
+			if (useNav) {
+				int navStart = Convert.formatInteger(req.getParameter("start"), 0);
+				int navLimit = Convert.formatInteger(req.getParameter("limit"), 25);
+				int navEnd = navStart + navLimit;
+				
+				while (rs.next()) {
+					recCtr ++;
+					if (! (recCtr >= navStart && recCtr < navEnd)) continue;
+					data.add(new RAMUserVO(rs));
+				}	
+			} else {
+				while (rs.next()) {
+					data.add(new RAMUserVO(rs));
+				}
 			}
+			
 		} catch (SQLException sqle) {
 			log.error("Error retrieving user data, ", sqle);
 		} finally {
@@ -154,9 +165,16 @@ public class RamUserAction extends SBActionAdapter {
 		// sort collection by name
 		Collections.sort(data, new RAMUserComparator());
 		
-		log.debug("user data size: " + data.size());
+		if (useNav) {
+			Map<String, Object> rData = new HashMap<>();
+			rData.put("count", recCtr);
+			rData.put("actionData", data);
+			rData.put(GlobalConfig.SUCCESS_KEY, Boolean.TRUE);
+			this.putModuleData(rData, 3, false);
+		} else {
+			putModuleData(data, data.size(), false, null);
+		}
 		
-		putModuleData(data, data.size(), false, null);
 	}
 
 	/* (non-Javadoc)
@@ -301,7 +319,7 @@ public class RamUserAction extends SBActionAdapter {
 			
 			authId = loginModule.retrieveAuthenticationId(user.getEmailAddress());
 			
-			log.debug("authId after check: " + authId);
+			//log.debug("authId after check: " + authId);
 			if (StringUtil.checkVal(authId).length() == 0) {
 				
 				// create password for this user

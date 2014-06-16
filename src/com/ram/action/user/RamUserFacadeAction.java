@@ -104,7 +104,7 @@ public class RamUserFacadeAction extends SBActionAdapter {
 		if (srchSiteId.length() == 0) {
 			srchSiteId = site.getSiteId();
 		}
-		log.debug("using site ID: " + srchSiteId);
+		//log.debug("using site ID: " + srchSiteId);
 		String srchFN = StringUtil.checkVal(req.getParameter("srchFirstName"));
 		String srchLN = StringUtil.checkVal(req.getParameter("srchLastName"));
 		String srchRole = StringUtil.checkVal(req.getParameter("srchRoleId"));
@@ -128,7 +128,7 @@ public class RamUserFacadeAction extends SBActionAdapter {
 		sql.append("where SITE_ID = ? ");
 		
 		int statusId = Convert.formatInteger(srchStatusId, -1, false);
-		log.debug("srchStatusId | statusId: " + srchStatusId + " | " + statusId);
+		//log.debug("srchStatusId | statusId: " + srchStatusId + " | " + statusId);
 		if (statusId > -1) sql.append("and a.STATUS_ID = ? ");
 		
 		if (srchRole.length() > 0) sql.append("and a.ROLE_ID = ? ");
@@ -146,27 +146,25 @@ public class RamUserFacadeAction extends SBActionAdapter {
 			// set status
 			if (statusId > -1) {
 				ps.setInt(index++, statusId);
-				log.debug("srchStatusId: " + srchStatusId);
+				//log.debug("srchStatusId: " + srchStatusId);
 			}
 			
 			// set role
 			if (srchRole.length() > 0) {
 				ps.setString(index++, srchRole);
-				log.debug("srchRole: " + srchRole);
+				//log.debug("srchRole: " + srchRole);
 			}
 
 			// set customer ID
 			if (srchCustomerId.length() > 0) {
 				ps.setString(index++, srchCustomerId);
-				log.debug("srchCustomerId: " + srchCustomerId);
+				//log.debug("srchCustomerId: " + srchCustomerId);
 			}
 			
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				data.add(new RAMUserVO(rs));
 			}
-			
-			log.debug("initial data size: " + data.size());
 			
 		} catch (SQLException sqle) {
 			log.error("Error performing customer search, ", sqle);
@@ -178,25 +176,20 @@ public class RamUserFacadeAction extends SBActionAdapter {
 				} catch (Exception e) { log.error("Error closing PreparedStatement, ", e);}
 			}
 		}
-		log.debug("original data size: " + data.size());
 		// decrypt first/last name and filter by user if applicable
 		List<RAMUserVO> filteredData = filterByUser(req, data, srchFN, srchLN);
-		log.debug("filtered data size: " + filteredData.size());
 		// sort by user name
 		Collections.sort(filteredData, new RAMUserComparator());
 		
 		// paginate
 		List<RAMUserVO> paginatedData = paginateData(req, filteredData);
-		log.debug("paginated data size: " + paginatedData.size());
 		
 		Map<String, Object> rData = new HashMap<>();
 		rData.put("count", filteredData.size());
 		rData.put("actionData", paginatedData);
 		rData.put(GlobalConfig.SUCCESS_KEY, Boolean.TRUE);
 		this.putModuleData(rData, 3, false);
-		
-		//putModuleData(paginatedData, filteredData.size(), false, null);
-		
+				
 	}
 	
 	/**
