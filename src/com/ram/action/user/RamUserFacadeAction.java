@@ -6,7 +6,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+
+import java.util.Map;
 
 // RAMDataFeed Libs
 import com.ram.datafeed.data.RAMUserVO;
@@ -15,6 +18,7 @@ import com.ram.datafeed.data.RAMUserVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.StringEncrypter;
@@ -107,13 +111,20 @@ public class RamUserFacadeAction extends SBActionAdapter {
 		String srchCustomerId = StringUtil.checkVal(req.getParameter("srchCustomerId"));
 		String srchStatusId = StringUtil.checkVal(req.getParameter("srchStatusId"));
 		
+		String ramSchema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		
 		StringBuilder sql = new StringBuilder();
 		sql.append("select a.*, b.FIRST_NM, b.LAST_NM, b.EMAIL_ADDRESS_TXT, ");
-		sql.append("c.ROLE_ORDER_NO, c.ROLE_NM, d.PHONE_NUMBER_TXT ");
+		sql.append("c.ROLE_ORDER_NO, c.ROLE_NM, d.PHONE_NUMBER_TXT, ");
+		sql.append("e.CUSTOMER_ID, e.CUSTOMER_NM, f.AUDITOR_ID ");
 		sql.append("from PROFILE_ROLE a ");
 		sql.append("inner join PROFILE b on a.PROFILE_ID = b.PROFILE_ID ");
-		sql.append("left outer join PHONE_NUMBER d on a.PROFILE_ID = d.PROFILE_ID and d.PHONE_TYPE_CD = 'HOME' ");
 		sql.append("inner join ROLE c on a.ROLE_ID = c.ROLE_ID ");
+		sql.append("left outer join PHONE_NUMBER d on a.PROFILE_ID = d.PROFILE_ID and d.PHONE_TYPE_CD = 'HOME' ");
+		sql.append("left outer join ").append(ramSchema).append("RAM_CUSTOMER e ");
+		sql.append("on a.ATTRIB_TXT_1 = e.CUSTOMER_ID ");
+		sql.append("left outer join ").append(ramSchema).append("RAM_AUDITOR f ");
+		sql.append("on a.PROFILE_ID = f.PROFILE_ID ");
 		sql.append("where SITE_ID = ? ");
 		
 		int statusId = Convert.formatInteger(srchStatusId, -1, false);
@@ -167,14 +178,24 @@ public class RamUserFacadeAction extends SBActionAdapter {
 				} catch (Exception e) { log.error("Error closing PreparedStatement, ", e);}
 			}
 		}
-		
+		log.debug("original data size: " + data.size());
 		// decrypt first/last name and filter by user if applicable
-		List<RAMUserVO> filteredData = filterByUser(data, srchFN, srchLN);
-		
+		List<RAMUserVO> filteredData = filterByUser(req, data, srchFN, srchLN);
+		log.debug("filtered data size: " + filteredData.size());
 		// sort by user name
 		Collections.sort(filteredData, new RAMUserComparator());
 		
-		putModuleData(filteredData, filteredData.size(), false, null);
+		// paginate
+		List<RAMUserVO> paginatedData = paginateData(req, filteredData);
+		log.debug("paginated data size: " + paginatedData.size());
+		
+		Map<String, Object> rData = new HashMap<>();
+		rData.put("count", filteredData.size());
+		rData.put("actionData", paginatedData);
+		rData.put(GlobalConfig.SUCCESS_KEY, Boolean.TRUE);
+		this.putModuleData(rData, 3, false);
+		
+		//putModuleData(paginatedData, filteredData.size(), false, null);
 		
 	}
 	
@@ -185,7 +206,7 @@ public class RamUserFacadeAction extends SBActionAdapter {
 	 * @param ln
 	 * @return
 	 */
-	private List<RAMUserVO> filterByUser(List<RAMUserVO> users, String fn, String ln) {
+	private List<RAMUserVO> filterByUser(SMTServletRequest req, List<RAMUserVO> users, String fn, String ln) {
 		StringEncrypter se = null;
 		try {
 			se = new StringEncrypter((String)attributes.get(Constants.ENCRYPT_KEY));
@@ -196,6 +217,7 @@ public class RamUserFacadeAction extends SBActionAdapter {
 		
 		List<RAMUserVO> filteredData = new ArrayList<>();
 		for (RAMUserVO user : users) {
+			// decrypt certain fields
 			try {
 				user.setFirstName(se.decrypt(user.getFirstName()));
 			} catch (Exception e) {log.error("Error decrypting first name, " + e.getMessage());}
@@ -209,12 +231,15 @@ public class RamUserFacadeAction extends SBActionAdapter {
 				user.setPhoneNumber(se.decrypt(user.getPhoneNumber()));
 			} catch (Exception e) {log.error("Error decrypting telephone, " + e.getMessage());}
 			
+			String tmp = null;
 			if (fn.length() > 0) {
-				if (user.getFirstName().contains(fn)) {
+				tmp = user.getFirstName().toLowerCase();
+				if (tmp.contains(fn.toLowerCase())) {
 					// first name matches, check last name
 					if (ln.length() > 0) {
+						tmp = user.getLastName().toLowerCase();
 						// test last name
-						if (user.getLastName().contains(ln)) {
+						if (tmp.contains(ln.toLowerCase())) {
 							// last name matches also, add to final list.
 							filteredData.add(user);
 						}
@@ -224,8 +249,9 @@ public class RamUserFacadeAction extends SBActionAdapter {
 					}
 				}
 			} else if (ln.length() > 0) {
+				tmp = user.getLastName().toLowerCase();
 				// test last name
-				if (user.getLastName().contains(ln)) {
+				if (tmp.contains(ln.toLowerCase())) {
 					// last name matches, add to final list.
 					filteredData.add(user);
 				}
@@ -233,10 +259,39 @@ public class RamUserFacadeAction extends SBActionAdapter {
 				// add final list.
 				filteredData.add(user);
 			}
-			
+
 		}
 		return filteredData;
 	}
+	
+	/**
+	 * Loops the sorted list and returns a list containing the records for the page number that was requested.
+	 * @param req
+	 * @param sortedList
+	 * @return
+	 */
+	private List<RAMUserVO> paginateData(SMTServletRequest req, List<RAMUserVO> sortedList) {
+		int navStart = Convert.formatInteger(req.getParameter("start"), 0);
+		int navLimit = Convert.formatInteger(req.getParameter("limit"), 25);
+		int navEnd = navStart + navLimit;
+		int ctr = -1;
+		List<RAMUserVO> paginatedList = new ArrayList<>();
+		for (int i = 0; i < sortedList.size(); i++) {
+			ctr++;
+			// determine which records to add to the paginated list.
+			if (ctr >= navStart) {
+				if (ctr < navEnd) {
+					paginatedList.add(sortedList.get(i));
+				} else {
+					break;
+				}
+			} else {
+				continue;
+			}
+		}
+		return paginatedList;
+	}
+	
 	
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.action.AbstractActionController#list(com.siliconmtn.http.SMTServletRequest)
