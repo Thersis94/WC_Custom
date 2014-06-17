@@ -388,7 +388,7 @@ public class RamUserAction extends SBActionAdapter {
 		if (isInsert) {
 			// insert
 			sql.append("insert into ").append(schema).append("RAM_AUDITOR ");
-			sql.append("(PROFILE_ID, FIRST_NM, LAST_NM, ACTIVE_FLG, CREATE_DT)").append("values (?,?,?)");
+			sql.append("(PROFILE_ID, FIRST_NM, LAST_NM, ACTIVE_FLG, CREATE_DT)").append("values (?,?,?,?,?)");
 		} else {
 			// update
 			sql.append("update ").append(schema).append("RAM_AUDITOR ");
