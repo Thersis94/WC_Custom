@@ -216,7 +216,7 @@ public class MetroAction extends SBActionAdapter {
 		url.append(metroAlias);
 		
 		if(StringUtil.checkVal(productAlias).length() > 0 && !req.getRequestURI().contains("metro")) {
-			url.append("/product-" + productAlias);
+			url.append("/products-" + productAlias);
 		} else if (StringUtil.checkVal(productAlias).length() > 0){
 			url.append("/" + productAlias);
 		}
