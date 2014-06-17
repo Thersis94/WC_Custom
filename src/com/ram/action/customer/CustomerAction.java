@@ -61,16 +61,22 @@ public class CustomerAction extends SBActionAdapter {
 		log.debug("CustomerAction retrieve...");
 		int customerId = Convert.formatInteger(req.getParameter("customerId"), 0);
 		String customerTypeId = StringUtil.checkVal(req.getParameter("customerTypeId"));
+		String excludeTypeId = StringUtil.checkVal(req.getParameter("excludeTypeId"));
+		log.debug("excludeTypeId: " + excludeTypeId);
 		
 		List<CustomerVO> data = new ArrayList<>();
 		if (! Convert.formatBoolean(req.getParameter("addCustomer"))) {
 			String schema = (String)getAttribute("customDbSchema");
 			StringBuilder sql = new StringBuilder();
 			sql.append("select a.* from ").append(schema);
-			sql.append("ram_customer a ");
+			sql.append("ram_customer a where 1 = 1 ");
 
-			if (customerId > 0) sql.append("where customer_id = ? ");
-			if (customerTypeId.length() > 0) sql.append("where customer_type_id = ? ");
+			if (customerId > 0) sql.append("and customer_id = ? ");
+			if (customerTypeId.length() > 0) {
+				sql.append("and customer_type_id = ? ");
+			} else if (excludeTypeId.length() > 0) {
+				sql.append("and customer_type_id != ? ");
+			}
 			
 			sql.append("order by CUSTOMER_NM");
 			
@@ -80,7 +86,11 @@ public class CustomerAction extends SBActionAdapter {
 			try {
 				ps = dbConn.prepareStatement(sql.toString());
 				if (customerId > 0) ps.setInt(index++, customerId);
-				if (customerTypeId.length() > 0) ps.setString(index++, customerTypeId);
+				if (customerTypeId.length() > 0) {
+					ps.setString(index++, customerTypeId);
+				} else if (excludeTypeId.length() > 0) {
+					ps.setString(index++, excludeTypeId);
+				}
 				ResultSet rs = ps.executeQuery();
 				while (rs.next()) {
 					data.add(new CustomerVO(rs, false));

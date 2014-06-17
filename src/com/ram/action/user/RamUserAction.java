@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+
 // RAMDataFeed libs
 import com.ram.datafeed.data.RAMUserVO;
 
@@ -57,6 +58,8 @@ import com.smt.sitebuilder.security.SBUserRole;
 public class RamUserAction extends SBActionAdapter {
 	
 	private final int ROLE_LEVEL_AUDITOR = 15;
+	private final int ROLE_LEVEL_OEM = 20;
+	private final int ROLE_LEVEL_PROVIDER = 25;
 	
 	/**
 	 * 
@@ -89,13 +92,16 @@ public class RamUserAction extends SBActionAdapter {
 		
 		StringBuilder sql = new StringBuilder();
 		sql.append("select a.*, b.FIRST_NM, b.LAST_NM, b.EMAIL_ADDRESS_TXT, ");
-		sql.append("c.ROLE_ORDER_NO, c.ROLE_NM, d.PHONE_NUMBER_TXT, e.AUDITOR_ID ");
+		sql.append("c.ROLE_ORDER_NO, c.ROLE_NM, d.PHONE_NUMBER_TXT, ");
+		sql.append("e.CUSTOMER_ID, e.CUSTOMER_NM, f.AUDITOR_ID ");
 		sql.append("from PROFILE_ROLE a ");
 		sql.append("inner join PROFILE b on a.PROFILE_ID = b.PROFILE_ID ");
 		sql.append("inner join ROLE c on a.ROLE_ID = c.ROLE_ID ");
 		sql.append("left outer join PHONE_NUMBER d on a.PROFILE_ID = d.PROFILE_ID and d.PHONE_TYPE_CD = 'HOME' ");
-		sql.append("left outer join ").append(schema).append("RAM_AUDITOR e ");
-		sql.append("on a.PROFILE_ID = e.PROFILE_ID where 1 = 1 ");
+		sql.append("left outer join ").append(schema).append("RAM_CUSTOMER e ");
+		sql.append("on a.ATTRIB_TXT_1 = e.CUSTOMER_ID ");
+		sql.append("left outer join ").append(schema).append("RAM_AUDITOR f ");
+		sql.append("on a.PROFILE_ID = f.PROFILE_ID where 1 = 1 ");
 		
 		// filter by site ID
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
@@ -117,16 +123,34 @@ public class RamUserAction extends SBActionAdapter {
 		if (profileId.length() > 0) sql.append("and a.PROFILE_ID = ? ");
 		sql.append("order by a.PROFILE_ID");
 		log.debug("RamUserAction retrieve SQL: " + sql.toString() + " | " + profileId);
-		
+		boolean useNav = false;
+		if (req.getParameter("start") != null && req.getParameter("limit") != null) {
+			useNav = true;
+		}
+		int recCtr = -1;
 		PreparedStatement ps = null;
 		try {
 			ps = dbConn.prepareStatement(sql.toString());
 			ps.setString(1, siteId);
 			if (profileId.length() > 0) ps.setString(2, profileId);
 			ResultSet rs = ps.executeQuery();
-			while (rs.next()) {
-				data.add(new RAMUserVO(rs));
+			log.debug("useNav: " + useNav);
+			if (useNav) {
+				int navStart = Convert.formatInteger(req.getParameter("start"), 0);
+				int navLimit = Convert.formatInteger(req.getParameter("limit"), 25);
+				int navEnd = navStart + navLimit;
+				
+				while (rs.next()) {
+					recCtr ++;
+					if (! (recCtr >= navStart && recCtr < navEnd)) continue;
+					data.add(new RAMUserVO(rs));
+				}	
+			} else {
+				while (rs.next()) {
+					data.add(new RAMUserVO(rs));
+				}
 			}
+			
 		} catch (SQLException sqle) {
 			log.error("Error retrieving user data, ", sqle);
 		} finally {
@@ -141,9 +165,16 @@ public class RamUserAction extends SBActionAdapter {
 		// sort collection by name
 		Collections.sort(data, new RAMUserComparator());
 		
-		log.debug("user data size: " + data.size());
+		if (useNav) {
+			Map<String, Object> rData = new HashMap<>();
+			rData.put("count", recCtr);
+			rData.put("actionData", data);
+			rData.put(GlobalConfig.SUCCESS_KEY, Boolean.TRUE);
+			this.putModuleData(rData, 3, false);
+		} else {
+			putModuleData(data, data.size(), false, null);
+		}
 		
-		putModuleData(data, data.size(), false, null);
 	}
 
 	/* (non-Javadoc)
@@ -288,7 +319,7 @@ public class RamUserAction extends SBActionAdapter {
 			
 			authId = loginModule.retrieveAuthenticationId(user.getEmailAddress());
 			
-			log.debug("authId after check: " + authId);
+			//log.debug("authId after check: " + authId);
 			if (StringUtil.checkVal(authId).length() == 0) {
 				
 				// create password for this user
@@ -322,22 +353,22 @@ public class RamUserAction extends SBActionAdapter {
 		String auditorId = checkAuditor(user.getProfileId());
 		if (origRoleLevel == -1) {
 			// new auditor user, insert new record
-			updateAuditor(user.getProfileId(), auditorId, userRole.getStatusId());
+			updateAuditor(user, auditorId, userRole.getStatusId());
 		} else {
 			if (origRoleLevel != userRole.getRoleLevel()) {
 				// role changed...is it TO or FROM?
 				if (origRoleLevel == ROLE_LEVEL_AUDITOR) {
 					// changed FROM auditor so disable RAM_AUDITOR record
-					updateAuditor(user.getProfileId(), auditorId, RamUserFacadeAction.PROFILE_STATUS_DISABLED);
+					updateAuditor(user, auditorId, RamUserFacadeAction.PROFILE_STATUS_DISABLED);
 				} else if (userRole.getRoleLevel() == ROLE_LEVEL_AUDITOR) {
 					// changed TO auditor, set status according to current status
-					updateAuditor(user.getProfileId(), auditorId, userRole.getStatusId());
+					updateAuditor(user, auditorId, userRole.getStatusId());
 				}
 			} else {
 				int origStatusId = Convert.formatInteger(req.getParameter("origStatusId"), -1);
 				if (userRole.getStatusId() != origStatusId && origStatusId > -1) {
 					// role hasn't changed but status has changed, reflect that in auditor record
-					updateAuditor(user.getProfileId(), auditorId, userRole.getStatusId());
+					updateAuditor(user, auditorId, userRole.getStatusId());
 				}
 			}
 		}
@@ -349,7 +380,7 @@ public class RamUserAction extends SBActionAdapter {
 	 * @param auditorId
 	 * @param newStatusId
 	 */
-	private void updateAuditor(String profileId, String auditorId, int newStatusId) {
+	private void updateAuditor(UserDataVO user, String auditorId, int newStatusId) {
 		log.debug("updating auditor record...");
 		boolean isInsert = (StringUtil.checkVal(auditorId).length() == 0);
 		String schema = (String)getAttribute("customDbSchema");
@@ -357,11 +388,11 @@ public class RamUserAction extends SBActionAdapter {
 		if (isInsert) {
 			// insert
 			sql.append("insert into ").append(schema).append("RAM_AUDITOR ");
-			sql.append("(PROFILE_ID, ACTIVE_FLG, CREATE_DT)").append("values (?,?,?)");
+			sql.append("(PROFILE_ID, FIRST_NM, LAST_NM, ACTIVE_FLG, CREATE_DT)").append("values (?,?,?)");
 		} else {
 			// update
 			sql.append("update ").append(schema).append("RAM_AUDITOR ");
-			sql.append("set PROFILE_ID = ?, ACTIVE_FLG = ?, UPDATE_DT = ? ");
+			sql.append("set PROFILE_ID = ?, FIRST_NM = ?, LAST_NM = ?, ACTIVE_FLG = ?, UPDATE_DT = ? ");
 			sql.append("where AUDITOR_ID = ?");
 		}
 		
@@ -373,7 +404,9 @@ public class RamUserAction extends SBActionAdapter {
 		PreparedStatement ps = null;
 		try {
 			ps = dbConn.prepareStatement(sql.toString());
-			ps.setString(index++,profileId);
+			ps.setString(index++, user.getProfileId());
+			ps.setString(index++, user.getFirstName());
+			ps.setString(index++, user.getLastName());
 			ps.setInt(index++, activeFlg);
 			ps.setTimestamp(index++, Convert.getCurrentTimestamp());
 			if (! isInsert) {
@@ -540,8 +573,9 @@ public class RamUserAction extends SBActionAdapter {
 		String roleLevelId = StringUtil.checkVal(req.getParameter("newRoleLevel"));
 		if (roleLevelId.length() > 0) {
 			userRole.setRoleLevel(Convert.formatInteger(roleLevelId));
-			if (userRole.getRoleLevel() == ROLE_LEVEL_AUDITOR) {
-				// if Auditor, set customer association
+			if (userRole.getRoleLevel() == ROLE_LEVEL_OEM ||
+					userRole.getRoleLevel() == ROLE_LEVEL_PROVIDER) {
+				// if OEM or PROVIDER, set customer association
 				userRole.setAttrib1Txt(req.getParameter("customerId"));
 				// ...and for backwards compatibility
 				userRole.addAttribute("customerId", userRole.getAttrib1Txt());
