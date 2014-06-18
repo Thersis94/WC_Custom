@@ -1056,9 +1056,9 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		
 		PostcardEmailer epe = new PostcardEmailer(attributes, dbConn);
 		epe.orderConsumableBox(req);
-		epe.orderConsumableBoxConfirmation(req);
+		//epe.orderConsumableBoxConfirmation(req);
 		
-		message = "Emails sent successfully";
+		message = "Your request has been sent";
 		return;
 	}
 	
