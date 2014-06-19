@@ -306,15 +306,19 @@ public class PostcardEmailer {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
 		StringBuilder subject = new StringBuilder();
+		String ownerEmail = StringUtil.checkVal(sem.getOwner().getEmailAddress());
 		subject.append("Consumable Box request - Seminar " + sem.getRSVPCodes());
+		
+		//logged-in user:
+		//UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 
 		StringBuilder msg = new StringBuilder();
 		msg.append("The Seminar Coordinator for DePuy ").append(sem.getJointLabel());
 		msg.append(" Seminar #").append(sem.getEvents().get(0).getRSVPCode());
 		msg.append(" has submitted a request for a Consumable Box.  ");
-		msg.append("Please ship the requested seminar supplies to the person listed  below. \r\r");
+		msg.append("Please ship the requested seminar supplies to the person listed below. \r\r");
 		msg.append("Seminar #: ").append(sem.getRSVPCodes()).append("\r");
-		msg.append("Seminar Date: ").append(sem.getEarliestEventDate()).append("\r");
+		msg.append("Seminar Date: ").append(Convert.formatDate(sem.getEarliestEventDate(), Convert.DATE_FULL_MONTH)).append("\r");
 		msg.append("Seminar Type: ").append(sem.getEvents().get(0).getEventTypeDesc()).append("\r\r");
 		msg.append("Consumable Type(s) Requested:\r");
 		String[] vals = req.getParameterValues("boxType");
@@ -322,6 +326,8 @@ public class PostcardEmailer {
 			if (i > 0) msg.append(", ");
 			msg.append(vals[i]);
 		}
+		msg.append("\r\rQuantity Needed:\r");
+		msg.append(req.getParameter("qnty"));
 		msg.append("\r\rMailing Address:\r");
 		msg.append(req.getParameter("mailingAddress")).append("\r\r");
 		msg.append("For more information about this Seminar please visit the website.\r");
@@ -333,6 +339,9 @@ public class PostcardEmailer {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient("tkumfer@printlinc.net"); // Terrie
 			mail.addRecipient("rwilkin7@its.jnj.com"); //Rachel Wilkinson
+			mail.addCC(ownerEmail);
+			//if (StringUtil.isValidEmail(user.getEmailAddress()) && ownerEmail != user.getEmailAddress())
+			//	mail.addCC(user.getEmailAddress());
 			mail.addCC(site.getAdminEmail());
 			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
@@ -347,7 +356,10 @@ public class PostcardEmailer {
 		return;
 	}
 	
-	
+	/*
+	 * This confirmation email was turned off by Rachel Wilkerson, 06-17-14,
+	 * the recipient was added to the CC on the email to the admins (above)
+	 * 
 	protected void orderConsumableBoxConfirmation(SMTServletRequest req) {
 		// send email to site admin
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
@@ -377,6 +389,7 @@ public class PostcardEmailer {
 		}
 		return;
 	}
+	*/
 	
 	protected void requestPostcardApproval(SMTServletRequest req) {
 		// send email to site admin
