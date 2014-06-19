@@ -216,8 +216,12 @@ public class TVSpotDlrContactAction extends SimpleActionAdapter {
 		} else if (StringUtil.isValidEmail(dealer.getEmailAddress())) {
 			emails.add(dealer.getEmailAddress());
 		}
-		if (StringUtil.isValidEmail(dealer.getOwnerEmail())) 
+		
+		if (dealer.getOwnerEmail() != null && dealer.getOwnerEmail().contains(",")) {
+			emails.addAll(Arrays.asList(dealer.getOwnerEmail().split(",")));
+		} else if (StringUtil.isValidEmail(dealer.getOwnerEmail())) {
 			emails.add(dealer.getOwnerEmail());
+		}
 		
 		req.setParameter("contactEmailAddress", emails.toArray(new String[emails.size()]), true);
 		req.setAttribute("senderEmail","consultation@fastsigns.com");
