@@ -4,7 +4,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.ram.datafeed.data.KitLayerVO;
 import com.siliconmtn.action.ActionException;
@@ -14,7 +16,6 @@ import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
-import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -62,6 +63,55 @@ public class KitLayerAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(SMTServletRequest req) throws ActionException {
+		Map<String, String> result = new HashMap<String, String>();
+		result.put("success", "true");
+		result.put("msg", "Data Successfully Updated");
+		
+		//Build Query
+		StringBuilder sb = new StringBuilder();
+		if(req.hasParameter(KIT_LAYER_ID)) {
+			sb.append("update ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+			sb.append("RAM_KIT_LAYER set IMAGE_PATH_URL = ?, LAYOUT_DEPTH_NO = ?, ");
+			sb.append("UPDATE_DT = ?, ACTIVE_FLG = ? ");
+			sb.append("where KIT_LAYER_ID = ?");
+		}
+		else {
+			sb.append("insert into ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+			sb.append("RAM_KIT_LAYER (IMAGE_PATH_URL, LAYOUT_DEPTH_NO, CREATE_DT, ");
+			sb.append("ACTIVE_FLG, PRODUCT_ID) values (?,?,?,?,?)");
+		}
+
+		//Log sql Statement for verification
+		log.debug("sql: " + sb.toString());
+		
+		PreparedStatement ps = null;
+		
+		try {
+			ps = dbConn.prepareStatement(sb.toString());
+			ps.setString(1, req.getParameter("imagePathUrl"));
+			ps.setString(2, req.getParameter("layoutDepthNo"));
+			ps.setTimestamp(3, Convert.getCurrentTimestamp());
+			ps.setInt(4, Convert.formatInteger(Convert.formatBoolean(req.getParameter("activeFlag"))));
+			if(req.hasParameter(KIT_LAYER_ID)) {
+				ps.setInt(5, Convert.formatInteger(req.getParameter(KIT_LAYER_ID)));
+			} else {
+				ps.setInt(5, Convert.formatInteger(req.getParameter(KitAction.KIT_ID)));
+			}
+			ps.execute();
+		} catch(SQLException sqle) {
+			log.error(sqle);
+			result.put("success", "false");
+			result.put("msg", "Problem Saving Record");
+		} finally {
+			try {
+				ResultSet rs = ps.getGeneratedKeys();
+				if(rs.next())
+					result.put("kitLayerId", rs.getString(1));
+
+			} catch(Exception e) {}
+		}
+		super.putModuleData(result);
+
 	}
 
 	/* (non-Javadoc)
@@ -73,7 +123,7 @@ public class KitLayerAction extends SBActionAdapter {
 		StringBuilder sb = new StringBuilder();
 		sb.append("update ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sb.append("RAM_KIT_LAYER set ACTIVE_FLG = 0 ");
-		sb.append("where KIT_LAYER_ID = ?");
+		sb.append("where KIT_LAYER_ID = ? order by LAYER_DEPTH_NO");
 
 		//Log sql Statement for verification
 		log.debug("sql: " + sb.toString());
@@ -147,44 +197,7 @@ public class KitLayerAction extends SBActionAdapter {
 	 */
 	@Override
 	public void update(SMTServletRequest req) throws ActionException {
-		//Build Query
-		StringBuilder sb = new StringBuilder();
-		if(req.hasParameter(KIT_LAYER_ID)) {
-			sb.append("update ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-			sb.append("RAM_KIT_LAYER set IMAGE_PATH_URL = ?, LAYOUT_DEPTH_NO = ?, ");
-			sb.append("UPDATE_DT = ?, ACTIVE_FLG = ? ");
-			sb.append("where KIT_LAYER_ID = ?");
-		}
-		else {
-			sb.append("insert into ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-			sb.append("RAM_KIT_LAYER (IMAGE_PATH_URL LAYOUT_DEPTH_NO, CREATE_DT, ");
-			sb.append("ACTIVE_FLG, PRODUCT_ID) values (?,?,?,?,?)");
-		}
-
-		//Log sql Statement for verification
-		log.debug("sql: " + sb.toString());
 		
-		PreparedStatement ps = null;
-		
-		try {
-			ps = dbConn.prepareStatement(sb.toString());
-			ps.setString(1, req.getParameter("imagePathUrl"));
-			ps.setString(2, req.getParameter("layoutDepthNo"));
-			ps.setTimestamp(3, Convert.getCurrentTimestamp());
-			ps.setString(4, req.getParameter(KitAction.ACTIVE_FLG));
-			if(req.hasParameter(KIT_LAYER_ID)) {
-				ps.setString(5, req.getParameter(KIT_LAYER_ID));
-			} else {
-				ps.setString(5, KitAction.KIT_ID);
-			}
-			ps.execute();
-			((ModuleVO)attributes.get(Constants.MODULE_DATA)).setErrorMessage("Update Successful");
-		} catch(SQLException sqle) {
-			log.error(sqle);
-			((ModuleVO)attributes.get(Constants.MODULE_DATA)).setErrorMessage("Update Failed");
-		}
-		
-		//Redirect User
 	}
 	
 }

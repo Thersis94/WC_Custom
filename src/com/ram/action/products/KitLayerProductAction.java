@@ -1,9 +1,18 @@
 package com.ram.action.products;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+
+import com.ram.datafeed.data.KitLayerProductVO;
+import com.ram.datafeed.data.LayerCoordinateVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title</b>: KitLayerProductAction.java
@@ -42,6 +51,46 @@ public class KitLayerProductAction extends SBActionAdapter {
 	public KitLayerProductAction(ActionInitVO actionInit) {
 		super(actionInit);
 		
+	}
+	
+	public void retrieve(SMTServletRequest req) throws ActionException {
+		
+		List<KitLayerProductVO> layers = new ArrayList<KitLayerProductVO>();
+		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		KitLayerProductVO prodVO = null;
+
+		//Build Query
+		StringBuilder sb = new StringBuilder();
+		sb.append("select * from ").append(customDb).append("RAM_PRODUCT_LAYER_XR a ");
+		sb.append("inner join ").append(customDb).append("RAM_LAYER_COORDINATE b ");
+		sb.append("on a.PRODUCT_KIT_ID = b.PRODUCT_KIT_ID ");
+		sb.append("inner join ").append(customDb).append("RAM_PRODUCT c ");
+		sb.append("on a.product_id = c.product_id ");
+		sb.append("where a.KIT_LAYER_ID = ?");
+		
+		//Log sql Statement for verification
+		log.debug("sql: " + sb.toString());
+		
+		PreparedStatement ps = null;
+		
+		try {
+			ps = dbConn.prepareStatement(sb.toString());
+			ps.setString(1, req.getParameter("kitLayerId"));
+			ResultSet rs = ps.executeQuery();
+			while(rs.next()) {
+				if(prodVO == null) {
+					prodVO = new KitLayerProductVO(rs, false);
+				} else if(!prodVO.getProductKitId().equals(rs.getString("product_kit_id"))) {
+					layers.add(prodVO);
+					prodVO = new KitLayerProductVO(rs, false);
+				}
+				prodVO.addCoordinate(new LayerCoordinateVO(rs, false));
+			}
+		} catch(SQLException sqle) {
+			log.error(sqle);
+		}
+		
+		this.putModuleData(layers, layers.size(), false);
 	}
 	
 	/* (non-Javadoc)
