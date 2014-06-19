@@ -377,7 +377,7 @@ public class CenterPageAction extends SimpleActionAdapter {
 		log.debug("isPreview: :" + isPreview);
 		try {
 			ps = dbConn.prepareStatement(s.toString());
-			if (!isKeystone || isPreview || (isKeystone && locationId == 0)) {
+			if (!isKeystone || (isKeystone && locationId == 0)) {
 				ps.setInt(++i, Convert.formatInteger(franId));
 			} else {
 				if (locationId > 0) {
