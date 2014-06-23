@@ -5,8 +5,11 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
+
+import java.util.Map;
 
 // RAMDataFeed
 import com.ram.datafeed.data.CustomerVO;
@@ -16,7 +19,6 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
-
 import com.siliconmtn.util.StringUtil;
 // WebCrescendo 2.0
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -139,7 +141,7 @@ public class CustomerAction extends SBActionAdapter {
 			// is an update
 			sql.append("update ").append(schema).append("RAM_CUSTOMER ");
 			sql.append("set ORGANIZATION_ID = ?, CUSTOMER_TYPE_ID = ?, ");
-			sql.append("CUSTOMER_NM = ?, GTIN_NUMBER_TXT = ?, HIBC_LIC_ID = ?, ACTIVE_FLG = ?, ");
+			sql.append("CUSTOMER_NM = ?, GTIN_NUMBER_TXT = ?, HIBC_LIC_CD = ?, ACTIVE_FLG = ?, ");
 			sql.append("UPDATE_DT = ? WHERE CUSTOMER_ID = ?");
 			msgAction = "updated";
 			
@@ -147,7 +149,7 @@ public class CustomerAction extends SBActionAdapter {
 			// is an insert
 			sql.append("insert into ").append(schema).append("RAM_CUSTOMER ");
 			sql.append("(ORGANIZATION_ID, CUSTOMER_TYPE_ID, CUSTOMER_NM, GTIN_NUMBER_TXT, ");
-			sql.append("HIBC_LIC_ID, ACTIVE_FLG, CREATE_DT) values (?,?,?,?,?,?,?");
+			sql.append("HIBC_LIC_CD, ACTIVE_FLG, CREATE_DT) values (?,?,?,?,?,?,?)");
 			msgAction = "inserted";
 			
 		}
@@ -169,7 +171,7 @@ public class CustomerAction extends SBActionAdapter {
 				ps.setString(index++, vo.getCustomerTypeId());
 				ps.setString(index++, vo.getCustomerName());
 				ps.setString(index++, vo.getGtinNumber());
-				ps.setString(index++,  vo.getHibcLicCode());
+				ps.setString(index++,  vo.getHibcLicCode().trim());
 				ps.setInt(index++, vo.getActiveFlag());
 				ps.setTimestamp(index++, Convert.getCurrentTimestamp());
 				if (isUpdate) ps.setInt(index++, vo.getCustomerId());
@@ -187,17 +189,24 @@ public class CustomerAction extends SBActionAdapter {
 				} catch (Exception e) {log.error("Error closing PrepraredStatement, ", e);}
 			}
 		}
-				
-        // Build the redirect and messages
-		// Setup the redirect.
-		StringBuilder url = new StringBuilder();
-		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
-		url.append(page.getRequestURI());
-		if (msg != null) url.append("?msg=").append(msg);
 		
-		log.debug("CustomerAction redir: " + url);
-		req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
-		req.setAttribute(Constants.REDIRECT_URL, url.toString());
+		boolean isJson = Convert.formatBoolean(StringUtil.checkVal(req.getParameter("amid")).length() > 0);
+		if (isJson) {
+			Map<String, Object> res = new HashMap<>(); 
+			res.put("success", true);
+			putModuleData(res);
+		} else {
+	        // Build the redirect and messages
+			// Setup the redirect.
+			StringBuilder url = new StringBuilder();
+			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+			url.append(page.getRequestURI());
+			if (msg != null) url.append("?msg=").append(msg);
+			
+			log.debug("CustomerAction redir: " + url);
+			req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
+			req.setAttribute(Constants.REDIRECT_URL, url.toString());
+		}
 	}
 	
 }

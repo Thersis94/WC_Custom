@@ -7,9 +7,11 @@ import java.util.List;
 import java.util.Map;
 
 
+
 import com.ram.action.customer.CustomerAction;
 // RAM Data Feed Libs
 import com.ram.action.customer.CustomerLocationAction;
+import com.ram.action.customer.CustomerTypesAction;
 import com.ram.action.event.InventoryEventGroupAction;
 import com.ram.datafeed.data.CustomerLocationVO;
 
@@ -45,6 +47,11 @@ public class AJAXUtilAction extends SBActionAdapter {
 	public static final String CUSTOMER_TYPE = "customer";
 	
 	/**
+	 * Codes for customer type search
+	 */
+	public static final String CUSTOMER_TYPES_TYPE = "customer_types";
+	
+	/**
 	 * Codes for the customer location search
 	 */
 	public static final String CUSTOMER_LOCATION_TYPE = "customer_location";
@@ -58,6 +65,11 @@ public class AJAXUtilAction extends SBActionAdapter {
 	 * 
 	 */
 	public static final String SAVE_EVENT_GROUP_TYPE = "save_event_group";
+	
+	/**
+	 * 
+	 */
+	public static final String REGIONS_TYPE = "regions";
 	
 	/**
 	 * 
@@ -91,6 +103,12 @@ public class AJAXUtilAction extends SBActionAdapter {
 				sai.setAttributes(getAttributes());
 				sai.retrieve(req);
 				break;
+			case CUSTOMER_TYPES_TYPE:
+				sai = new CustomerTypesAction(getActionInit());
+				sai.setDBConnection(getDBConnection());
+				sai.setAttributes(getAttributes());
+				sai.retrieve(req);
+				break;
 			case CUSTOMER_LOCATION_TYPE:
 				sai = new CustomerLocationAction(getActionInit());
 				sai.setDBConnection(getDBConnection());
@@ -108,6 +126,13 @@ public class AJAXUtilAction extends SBActionAdapter {
 			case SAVE_EVENT_GROUP_TYPE:
 				this.saveEventGroup(req);
 				log.info("****** Saving Group Info");
+				break;
+			case REGIONS_TYPE:
+				sai = new RegionAction(getActionInit());
+				sai.setDBConnection(getDBConnection());
+				sai.setAttributes(getAttributes());
+				sai.retrieve(req);
+				break;
 		}
 	}
 	

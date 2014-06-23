@@ -5,8 +5,11 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
+
+import java.util.Map;
 
 // RAMDataFeed
 import com.ram.datafeed.data.CustomerLocationVO;
@@ -22,7 +25,6 @@ import com.siliconmtn.gis.Location;
 import com.siliconmtn.gis.MatchCode;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
-
 import com.siliconmtn.util.StringUtil;
 // WebCrescendo 2.0
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -59,8 +61,6 @@ public class CustomerLocationAction extends SBActionAdapter {
 		super(actionInit);
 	}
 	
-
-	
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.http.SMTServletRequest)
 	 */
@@ -77,9 +77,9 @@ public class CustomerLocationAction extends SBActionAdapter {
 		sql.append("inner join ").append(schema).append("ram_customer c on b.customer_id = c.customer_id ");
 		sql.append("where 1=1 ");
 		
-		if (customerId > 0) sql.append("and customer_id = ? ");
-		if (customerLocationId > 0) sql.append("and customer_location_id = ? ");
-		if (customerTypeId.length() > 0) sql.append("and customer_type_id = ? ");
+		if (customerId > 0) sql.append("and b.customer_id = ? ");
+		if (customerLocationId > 0) sql.append("and b.customer_location_id = ? ");
+		if (customerTypeId.length() > 0) sql.append("and c.customer_type_id = ? ");
 		sql.append("order by location_nm");
 		log.debug("CustomerLocation retrieve SQL: " + sql.toString() + " | " + customerId + " | " + customerLocationId);
 		
@@ -95,6 +95,7 @@ public class CustomerLocationAction extends SBActionAdapter {
 			
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
+				log.debug("activeFlag: " + rs.getString("active_flg"));
 				data.add(new CustomerLocationVO(rs, false));
 			}
 		} catch (SQLException e) {
@@ -122,7 +123,7 @@ public class CustomerLocationAction extends SBActionAdapter {
 		CustomerLocationVO vo = new CustomerLocationVO(req);
 		// geocode the location
 		getGeocode(vo);
-		
+
 		boolean isUpdate = (vo.getCustomerLocationId() > 0);
 		String msgAction = null;
 		String schema = (String)getAttribute("customDbSchema");
@@ -130,7 +131,7 @@ public class CustomerLocationAction extends SBActionAdapter {
 		if (isUpdate) {
 			sql.append("update ").append(schema).append("RAM_CUSTOMER_LOCATION ");
 			sql.append("set REGION_ID=?, LOCATION_NM=?, ADDRESS_TXT=?, ADDRESS2_TXT=?, ");
-			sql.append("CITY_NM=?, STATE_CD=?, COUNTRY_CD=?, LATITUDE_NO=?, LONGITUDE=?, ");
+			sql.append("CITY_NM=?, STATE_CD=?, ZIP_CD=?, COUNTRY_CD=?, LATITUDE_NO=?, LONGITUDE_NO=?, ");
 			sql.append("MATCH_CD=?, STOCKING_LOCATION_TXT=?, ACTIVE_FLG=?, UPDATE_DT=?, ");
 			sql.append("CUSTOMER_ID=? WHERE CUSTOMER_LOCATION_ID = ?");
 			msgAction = "updated";
@@ -138,9 +139,9 @@ public class CustomerLocationAction extends SBActionAdapter {
 			// is an insert; Note: CUSTOMER_LOCATION_ID is an auto-incrementing field.
 			sql.append("insert into ").append(schema).append("RAM_CUSTOMER_LOCATION ");
 			sql.append("(REGION_ID, LOCATION_NM, ADDRESS_TXT, ADDRESS2_TXT, CITY_NM, ");
-			sql.append("STATE_CD, COUNTRY_CD, LATITUDE_NO, LONGITUDE_NO, MATCH_CD, ");
+			sql.append("STATE_CD, ZIP_CD, COUNTRY_CD, LATITUDE_NO, LONGITUDE_NO, MATCH_CD, ");
 			sql.append("STOCKING_LOCATION_TXT, ACTIVE_FLG, CREATE_DT, CUSTOMER_ID) ");
-			sql.append("VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+			sql.append("VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 			msgAction = "inserted";			
 		}
 		log.debug("CustomerLocation build SQL: " + sql.toString() + "|" + vo.getCustomerLocationId());
@@ -156,6 +157,7 @@ public class CustomerLocationAction extends SBActionAdapter {
 			ps.setString(index++, vo.getAddress2());
 			ps.setString(index++, vo.getCity());
 			ps.setString(index++, vo.getState());
+			ps.setString(index++, vo.getZipCode());
 			ps.setString(index++, vo.getCountry());
 			ps.setDouble(index++, vo.getLatitude());
 			ps.setDouble(index++, vo.getLongitude());
@@ -181,16 +183,24 @@ public class CustomerLocationAction extends SBActionAdapter {
 			}
 		}
 		
-        // Build the redirect and messages
-		// Setup the redirect.
-		StringBuilder url = new StringBuilder();
-		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
-		url.append(page.getRequestURI());
-		if (msg != null) url.append("?msg=").append(msg);
 		
-		log.debug("CustomerLocationAction redir: " + url);
-		req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
-		req.setAttribute(Constants.REDIRECT_URL, url.toString());
+		boolean isJson = Convert.formatBoolean(StringUtil.checkVal(req.getParameter("amid")).length() > 0);
+		if (isJson) {
+			Map<String, Object> res = new HashMap<>(); 
+			res.put("success", true);
+			putModuleData(res);
+		} else {
+	        // Build the redirect and messages
+			// Setup the redirect.
+			StringBuilder url = new StringBuilder();
+			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+			url.append(page.getRequestURI());
+			if (msg != null) url.append("?msg=").append(msg);
+			
+			log.debug("CustomerLocationAction redir: " + url);
+			req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
+			req.setAttribute(Constants.REDIRECT_URL, url.toString());
+		}
 	}
 	
 	/**
