@@ -2,7 +2,6 @@ package com.fastsigns.action;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.http.SMTServletRequest;
-import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.dealer.DealerLocatorAction;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -27,22 +26,14 @@ public class FSDealerLocatorAction extends DealerLocatorAction {
 	
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		super.retrieve(req);
-		if (StringUtil.checkVal(req.getParameter(Constants.DEALER_LOCATION_ID_KEY)).length() > 0) {
+		
+		/**
+		 * this is undoucmented.  What are we doing (below), and why, and for which website?  -JM
+		 */
+		if (req.hasParameter(Constants.DEALER_LOCATION_ID_KEY)) {
 			PageVO page = (PageVO)req.getAttribute(Constants.PAGE_DATA);
 			page.setCanonicalPageUrl("/" + req.getParameter(Constants.DEALER_LOCATION_ID_KEY));
 		}
 	}
 	
-	public void delete(SMTServletRequest req) throws ActionException {
-		super.delete(req);		
-	}
-	
-	public void build(SMTServletRequest req) throws ActionException {
-		super.build(req);
-	}
-	
-	public void update(SMTServletRequest req) throws ActionException {
-		super.update(req);
-	}
-
 }

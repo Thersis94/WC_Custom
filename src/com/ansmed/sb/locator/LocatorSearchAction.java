@@ -154,8 +154,10 @@ public class LocatorSearchAction extends SBActionAdapter {
 			data = querySurgeons(2, gLoc, radius, start, rpp, req);
 		} else {
 			log.debug("Lat/Long are zero, state not specified.");
-			req.setAttribute("", "");
+			//req.setAttribute("", "");
 		}
+		
+		log.debug("count=" + ctr);
 		
 		// Add the count and the data to the container
 		int partial = ctr % rpp;
@@ -210,7 +212,7 @@ public class LocatorSearchAction extends SBActionAdapter {
 		List<SurgeonVO> data = new ArrayList<SurgeonVO>();
 		
 		String customDbSchema = (String)this.getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuffer sql = new StringBuffer();
+		StringBuilder sql = new StringBuilder();
 		sql.append("select a.surgeon_id, title_nm, first_nm, middle_nm, last_nm, ");
 		sql.append("suffix_nm, a.website_url, clinic_nm, address_txt, address2_txt, ");
 		sql.append("city_nm, state_cd, zip_cd, latitude_no, longitude_no, ");
@@ -300,7 +302,7 @@ public class LocatorSearchAction extends SBActionAdapter {
 							MapLocationVO mLoc = new MapLocationVO();
 							mLoc.setData(rs);
 							mLoc.setLocationDesc(vo.getClinic().getClinicName());
-							StringBuffer sb = new StringBuffer();
+							StringBuilder sb = new StringBuilder();
 							sb.append("?radius=").append(radius).append("&rpp=").append(rpp);
 							sb.append("&ansUserLatitude=").append(loc.getLatitude());
 							sb.append("&ansUserLongitude=").append(loc.getLongitude());
