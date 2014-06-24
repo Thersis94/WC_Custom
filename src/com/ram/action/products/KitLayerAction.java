@@ -169,6 +169,8 @@ public class KitLayerAction extends SBActionAdapter {
 			sb.append("PRODUCT_ID = ?");
 		}
 		
+		sb.append(" order by LAYOUT_DEPTH_NO, KIT_LAYER_ID");
+		
 		//Log sql Statement for verification
 		log.debug("sql: " + sb.toString());
 		
