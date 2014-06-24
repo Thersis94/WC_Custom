@@ -86,13 +86,13 @@ public class LocatorSearchAction extends SBActionAdapter {
 		if (StringUtil.checkVal(zipCode).length() == 0) {
 			useRange = false;
 		}
-		log.debug("useRange = " + useRange);
+		//log.debug("useRange = " + useRange);
 		
 		String fullAddress = StringUtil.checkVal(req.getParameter("fullAddress"));
 		GeocodeLocation gLoc = null;
 		if (fullAddress.length() > 0) {
 			gLoc = new GeocodeLocation(fullAddress);
-			log.debug("Parsing Full Address: " + gLoc.getGeocodeType());
+			//log.debug("Parsing Full Address: " + gLoc.getGeocodeType());
 		} else {
 			gLoc = new GeocodeLocation(address, city, state, zipCode);
 		}
@@ -101,17 +101,16 @@ public class LocatorSearchAction extends SBActionAdapter {
 		Integer page = Convert.formatInteger(req.getParameter("page"), 1);
 		Integer rpp = Convert.formatInteger(req.getParameter("rpp"), 10);
 		int start = (page * rpp) - rpp;
-		log.debug("Page: " + page);
+		//log.debug("Page|rpp|start: " + page + "|" + rpp + "|" + start);
 		gLoc.setLatitude(Convert.formatDouble(req.getParameter(LocatorFacadeAction.ANS_USER_LATITUDE)));
 		gLoc.setLongitude(Convert.formatDouble(req.getParameter(LocatorFacadeAction.ANS_USER_LONGITUDE)));
 
-		log.debug("Lat/Lng/State: " + gLoc.getLatitude() + "/" + gLoc.getLongitude() + "/" + gLoc.getState());
-		log.debug("Is " + gLoc.getGeocodeType() + ": " + gLoc.isMinGeocodeLevel(GeocodeType.city));
+		//log.debug("Lat/Lng/State: " + gLoc.getLatitude() + "/" + gLoc.getLongitude() + "/" + gLoc.getState());
+		//log.debug("Is " + gLoc.getGeocodeType() + ": " + gLoc.isMinGeocodeLevel(GeocodeType.city));
 		// Check and see if the lat long was already set
 		if (locatorSearchSubmitted && gLoc.isMinGeocodeLevel(GeocodeType.city)) {
 
 			// Geocode the location and add the lat/long to the request object
-			log.debug("getting geocode for surgeon search");
 			String geocodeClass = (String) this.getAttribute(GlobalConfig.GEOCODER_CLASS);
 			AbstractGeocoder ag = GeocodeFactory.getInstance(geocodeClass);
 			ag.addAttribute(AbstractGeocoder.CONNECT_URL, getAttribute(GlobalConfig.GEOCODER_URL));
@@ -150,14 +149,11 @@ public class LocatorSearchAction extends SBActionAdapter {
 				}
 			}
 		} else if (StringUtil.checkVal(gLoc.getState()).length() > 0) {
-			log.debug("State Search");
+			//log.debug("State Search");
 			data = querySurgeons(2, gLoc, radius, start, rpp, req);
-		} else {
-			log.debug("Lat/Long are zero, state not specified.");
-			//req.setAttribute("", "");
 		}
 		
-		log.debug("count=" + ctr);
+		//log.debug("count=" + ctr);
 		
 		// Add the count and the data to the container
 		int partial = ctr % rpp;
@@ -180,7 +176,7 @@ public class LocatorSearchAction extends SBActionAdapter {
 		
 		// Return the data to the user
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
-		log.debug("Pages (Start|End|Records): " + navStart + "|" + navEnd + "|" + ctr);
+		//log.debug("Pages (navStart|navEnd|Records): " + navStart + "|" + navEnd + "|" + ctr);
 		req.setAttribute("ansResultsNav",new Integer[] {navStart, navEnd});
 		req.setAttribute(LocatorFacadeAction.ANS_RESULT_PAGES, numPages);
 		
@@ -266,31 +262,33 @@ public class LocatorSearchAction extends SBActionAdapter {
 		map.setMapHeight(300);
 		map.setMapWidth(450);
 		List<String> clinics = new ArrayList<String>();
+		String prevClinicId = null;
+		String currClinicId = null;
 		try {
 			SurgeonVO vo = new SurgeonVO();
 			ps = dbConn.prepareStatement(sql.toString());
 			ResultSet rs = ps.executeQuery();
+			
 			for(; rs.next(); ctr++) {
+				// if this clinic is same as the one we just processed, do not count it, just process it for phone.
+				currClinicId = rs.getString("clinic_id");
+				if (currClinicId.equals(prevClinicId)) ctr--;
 				
 				// If using range, skip results with distance > search radius.
-
-				// useRange only true if this is a type 1 (non-State) search.
 				if (useRange && (rs.getLong("distance") > radius)) {
-					log.debug("distance: " + rs.getLong("distance") + " is greater than radius: " + radius);
 					continue;
 				} else {
 					if (ctr >= start && ctr < (start + rpp)) {
-						// If there are multiple phones, add it to the existing 
-						// Value Object
-						if (clinics.contains(rs.getString("clinic_id"))) {
+						// If there are multiple phones, add phone to the existing vo
+						if (clinics.contains(currClinicId)) {
 							PhoneVO fax = new PhoneVO();
 							fax.setPhoneNumber(rs.getString("phone_number_txt"));
 							fax.setPhoneType(rs.getString("phone_type_id"));
 							vo.getClinic().addPhone(fax);
-							ctr--;
+							//ctr--;
 						} else {
 							vo = new SurgeonVO(rs);
-							log.debug("Surgeon Info: " + vo);
+							//log.debug("Surgeon Info: " + vo);
 							data.add(vo);
 							
 							// Add the phone
@@ -318,6 +316,8 @@ public class LocatorSearchAction extends SBActionAdapter {
 						}
 					}
 				}
+				// set 'previous' clinic ID for next comparison.
+				prevClinicId = currClinicId;
 			}
 		} catch (SQLException e) {
 			log.error("Error finding surgeons",e);
