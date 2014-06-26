@@ -66,7 +66,7 @@ public class KitLayerAction extends SBActionAdapter {
 		Map<String, String> result = new HashMap<String, String>();
 		result.put("success", "true");
 		result.put("msg", "Data Successfully Updated");
-		
+		log.debug("Image Path: " + req.getParameter("imagePathUrl"));
 		//Build Query
 		StringBuilder sb = new StringBuilder();
 		if(req.hasParameter(KIT_LAYER_ID)) {
