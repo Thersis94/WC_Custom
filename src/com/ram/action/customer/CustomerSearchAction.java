@@ -61,7 +61,8 @@ public class CustomerSearchAction extends SBActionAdapter {
 		int srchCustomerId = Convert.formatInteger(req.getParameter("srchCustomerId"), 0);
 		String srchCity = StringUtil.checkVal(req.getParameter("srchCity"));
 		String srchState = StringUtil.checkVal(req.getParameter("srchState"));
-		int srchActiveFlag = Convert.formatInteger(req.getParameter("srchActiveFlag"), -1);
+		int srchActiveFlag = Convert.formatInteger(req.getParameter("srchActiveFlag"), -1, false);
+		log.debug("req param searchActiveFlag|converted val: " + req.getParameter("srchActiveFlag") + "|" + srchActiveFlag);
 		
 		List<CustomerVO> data = new ArrayList<>();
 		String schema = (String)getAttribute("customDbSchema");
@@ -79,10 +80,10 @@ public class CustomerSearchAction extends SBActionAdapter {
 		
 		sql.append("where CUSTOMER_TYPE_ID in ('OEM', 'PROVIDER') ");
 
-		if (srchCustomerId > 0) sql.append("and CUSTOMER_ID = ? ");
+		if (srchCustomerId > 0) sql.append("and a.CUSTOMER_ID = ? ");
 		if (srchCity.length() > 0) sql.append("and CITY_NM like ? ");
 		if (srchState.length() > 0) sql.append("and STATE_CD = ? ");
-		if (srchActiveFlag > -1) sql.append("and ACTIVE_FLG = ? ");
+		if (srchActiveFlag > -1) sql.append("and a.ACTIVE_FLG = ? ");
 		sql.append("order by CUSTOMER_NM");
 		
 		log.debug("CustomerSearchAction retrieve SQL: " + sql.toString() + "|" + srchCustomerId);
