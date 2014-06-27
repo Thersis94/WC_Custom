@@ -89,6 +89,9 @@ public class KitLayerProductAction extends SBActionAdapter {
 				}
 				prodVO.addCoordinate(new LayerCoordinateVO(rs, false));
 			}
+			
+			//Add final productVO
+			layers.add(prodVO);
 		} catch(SQLException sqle) {
 			log.error(sqle);
 		}
