@@ -118,7 +118,7 @@ public class ContentParser {
 			System.out.println("Get File: " + getFile + "|");
 			
 			String guid = getFile.substring(9, slashIndex);
-			if (guid.indexOf("/") > -1) guid.substring(1);
+			if (guid.indexOf("/") > -1) guid = guid.substring(1);
 			System.out.println("GUID: " + guid);
 			String name = getNameFromGuid(guid, "_");
 			

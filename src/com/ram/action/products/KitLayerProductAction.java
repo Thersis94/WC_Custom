@@ -83,7 +83,7 @@ public class KitLayerProductAction extends SBActionAdapter {
 			while(rs.next()) {
 				if(prodVO == null) {
 					prodVO = new KitLayerProductVO(rs, false);
-				} else if(!prodVO.getProductKitId().equals(rs.getString("product_kit_id"))) {
+				} else if(!prodVO.getProductKitId().equals(rs.getInt("product_kit_id"))) {
 					layers.add(prodVO);
 					prodVO = new KitLayerProductVO(rs, false);
 				}

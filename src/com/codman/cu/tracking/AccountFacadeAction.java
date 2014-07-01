@@ -78,6 +78,7 @@ public class AccountFacadeAction extends SBActionAdapter {
 			sai = new UnitTransferAction(actionInit);
 		}
 
+		if (sai == null) return;
 		//execute the action
 		sai.setAttributes(attributes);
 		sai.setDBConnection(dbConn);

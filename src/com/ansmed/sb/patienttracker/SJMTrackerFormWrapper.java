@@ -470,7 +470,7 @@ public class SJMTrackerFormWrapper extends TrackerAction {
         aac.build(req);
 
         // set contact submittal id as patient's source id
-        patient.setPatientSourceFormId(contactSubmittalId);
+        if (patient != null) patient.setPatientSourceFormId(contactSubmittalId);
         // set proxy user's profile ID as patient's source profile id if applicable.
         if (proxyUser != null) {
         	patient.setPatientSourceProfileId(proxyUser.getProfileId());

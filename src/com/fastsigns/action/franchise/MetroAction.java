@@ -717,7 +717,7 @@ public class MetroAction extends SBActionAdapter {
 		log.debug("Filtering results: " + useAttrib1Txt);
 		String query = null;
 		String country = ((SiteVO)req.getAttribute("siteData")).getCountryCode();
-		int ratio = (country.equals("US") | country.equals("GB")) ? 0 : 1;
+		int ratio = (country.equals("US") || country.equals("GB")) ? 0 : 1;
 		
 		if(req.hasParameter("zip"))
 			query = getSearchQuery(req, useAttrib1Txt, ratio, country);
@@ -773,7 +773,7 @@ public class MetroAction extends SBActionAdapter {
 		DealerLocatorAction dla = new DealerLocatorAction(this.actionInit);
 		dla.setAttributes(attributes);
 		dla.setDBConnection(dbConn);
-		GeocodeLocation l = null;
+		GeocodeLocation l = new GeocodeLocation();
 		try {
 			l = dla.getGeocode(req);
 		} catch (GeocodeException e) {

@@ -164,7 +164,7 @@ public class DePuyPostcardEmailer extends AbstractPostcardEmailer {
 		
 		StringBuffer msg = new StringBuffer();
 		msg.append(user.getFirstName()).append(" ").append(user.getLastName());
-		msg.append(" has approved your ").append(postcard.getProductName());
+		if (postcard != null) msg.append(" has approved your ").append(postcard.getProductName());
 		msg.append(" DePuy Community Education Postcard and Seminar(s).\r\r");
 		msg.append("Please visit our website to access valuable materials that ");
 		msg.append("can help you organize and manage your seminar(s).  ");

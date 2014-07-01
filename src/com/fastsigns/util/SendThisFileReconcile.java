@@ -284,7 +284,8 @@ public class SendThisFileReconcile {
 			}
 			
 		} catch (Exception e) {
-			log.error("parsing XML: " + data.toString(), e);
+			if (data == null) data = new byte[0];
+			log.error("parsing XML: " + new String(data), e);
 			vo.status = "STF Parse Error";
 		}
 	}

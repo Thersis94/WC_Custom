@@ -98,7 +98,6 @@ public class EmailCampaignReport {
 		dStart = null;
 		dEnd = null;
 		
-		log.debug("instanceIds: " + ids.toString());
 		log.debug("dStart: " + Convert.formatSQLDate(Convert.formatStartDate(dStart, "1/1/2000")));
 		log.debug("dEnd: " + Convert.formatSQLDate(Convert.formatEndDate(dEnd)));
 	

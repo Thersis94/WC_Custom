@@ -239,7 +239,7 @@ public class ImplanterReportVO extends AbstractSBReportVO {
 			sb.append("</table></td></tr><tr><td colspan=\"5\">&nbsp;</td></tr>\n");
 		}
 	
-		if ((count % 2) == 1) sb.append("<tr style=\"height:175px;\">");
+		if ((count % 2) != 0) sb.append("<tr style=\"height:175px;\">");
 		
 		// add physician data block
 		sb.append("<td style=\"width:15px;\">&nbsp;</td>");

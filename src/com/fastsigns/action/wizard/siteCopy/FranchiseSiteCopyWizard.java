@@ -28,7 +28,7 @@ import com.smt.sitebuilder.db.OrgCopyUtil;
 import com.smt.sitebuilder.util.RecordDuplicatorUtility;
 
 public abstract class FranchiseSiteCopyWizard extends SBActionAdapter {
-	public static String customDb = null;
+	public String customDb = null;
 	public String oldFranId = null;
 	public String newFranId = null;
 	public String FS_PREFIX = "FTS_";
@@ -193,7 +193,7 @@ public abstract class FranchiseSiteCopyWizard extends SBActionAdapter {
 			return true;
 		} finally {
 			try {
-				ps.close();
+				if (ps != null) ps.close();
 			} catch (SQLException e) {
 				log.debug(e);
 			}

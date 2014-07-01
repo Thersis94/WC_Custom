@@ -630,6 +630,7 @@ public class EpiducerMailFormatter {
 			case 2:
 			case 4:
 				invite = getPhysicianInvitation();
+				break;
 			case 3:
 				invite = getPhysicianSocietyInvitation();
 				break;

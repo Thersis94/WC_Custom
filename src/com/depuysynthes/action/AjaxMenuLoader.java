@@ -147,7 +147,7 @@ public class AjaxMenuLoader extends SimpleActionAdapter {
 				//if the node already has 'this' child attached, don't re-attach it
 				boolean skipRecord = false;
 				for (Node c : n.getChildren()) {
-					if (c.getNodeId() == prodVo.getNodeId()) skipRecord = true;
+					if (c != null && c.getNodeId().equals(prodVo.getNodeId())) skipRecord = true;
 				}
 				if (skipRecord) continue;
 

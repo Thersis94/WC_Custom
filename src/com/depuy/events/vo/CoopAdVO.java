@@ -257,7 +257,7 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 		return getEventCodeByOrder(2);
 	}
 
-	private String getEventCodeByOrder(Integer order) {
+	private String getEventCodeByOrder(int order) {
 		for (String key : eventCodes.keySet())
 			if (eventCodes.get(key) == order)
 				return key;

@@ -108,8 +108,7 @@ public class EpiducerReassignmentAction extends SimpleActionAdapter {
 		if (msg != null) req.setParameter("msg", msg);
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		log.debug("mod is: " + (mod != null ? "not null" : "null"));
-		mod.setActionData(user);
-		mod.setErrorMessage(msg);
+		this.putModuleData(user, 1, false, msg);
 		attributes.put(Constants.MODULE_DATA, mod);
 	}
 	

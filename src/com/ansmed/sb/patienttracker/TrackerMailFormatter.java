@@ -750,7 +750,7 @@ public class TrackerMailFormatter extends TrackerAction {
 						sb.append("<td class=\"ambFormFieldLeft\">Interaction Summary</td>");
 						sb.append("<td class=\"ambFormFieldRight\">");
 						String intSummary = ivo.getTransaction().getCustomData().get("c0a802376667f35a1ced22dabaacd93b").getResponses().get(0);
-						intSummary.replace("&amp;#39;", "'");
+						intSummary = intSummary.replace("&amp;#39;", "'");
 						sb.append(intSummary).append("</td></tr>");
 					}
 				}

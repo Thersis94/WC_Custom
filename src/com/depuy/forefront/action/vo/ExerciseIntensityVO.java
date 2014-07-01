@@ -10,6 +10,7 @@ import java.util.Map;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.HashCodeUtil;
 import com.siliconmtn.util.StringUtil;
 
 public class ExerciseIntensityVO extends ExerciseVO implements Serializable {
@@ -125,11 +126,28 @@ public class ExerciseIntensityVO extends ExerciseVO implements Serializable {
 	 * @param iVo
 	 * @return
 	 */
-	public boolean equals(ExerciseIntensityVO iVo) {
+	@Override
+	public boolean equals(Object o) {
+		ExerciseIntensityVO iVo = (ExerciseIntensityVO)o;
 		if(iVo != null && this.exerciseIntensityId != null)
-			return this.exerciseIntensityId.equals(iVo.exerciseIntensityId);
+			return this.exerciseIntensityId.equals(iVo.getExerciseIntensityId());
 		
 		return false;
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see java.lang.Object#hashCode()
+	 */
+	@Override
+	public int hashCode() {
+		int result = HashCodeUtil.SEED;
+		
+		//collect the contributions of various fields
+		result = HashCodeUtil.hash(result, exerciseIntensityId);
+		result = HashCodeUtil.hash(result, exerciseRoutineId);
+		result = HashCodeUtil.hash(result, hospitalInstId);
+		return result;
 	}
 	
 	/**
@@ -153,7 +171,7 @@ public class ExerciseIntensityVO extends ExerciseVO implements Serializable {
 	 */
 	public void removeListAttribute(ExerciseAttributeVO vo){
 		if(vo != null && listAttributes.containsKey(vo.getExerciseAttributeId()))
-			listAttributes.remove(vo);
+			listAttributes.remove(vo.getExerciseAttributeId());
 	}
 	
 	/**

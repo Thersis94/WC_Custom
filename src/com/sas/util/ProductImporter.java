@@ -117,7 +117,8 @@ public class ProductImporter {
 
 			}
 		} catch (Exception e) {
-			pi.errorLog.append("Unable to complete: ").append(e.getMessage()).append("\n<br/>");
+			if (pi != null) 
+				pi.errorLog.append("Unable to complete: ").append(e.getMessage()).append("\n<br/>");
 			log.error("Error creating product info", e);
 		}
 

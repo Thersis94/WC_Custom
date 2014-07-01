@@ -134,7 +134,7 @@ public class SJMAssignmentProcessor {
 		}
 		
 		// retrieve the logging form for assignment logging
-		FormVO logForm = null;
+		FormVO logForm = new FormVO();
 		try {
 			logForm = ap.retrieveLoggingForm(LOGGING_FORM_ID);
 		} catch (Exception e) {
@@ -143,14 +143,14 @@ public class SJMAssignmentProcessor {
 		
 		// retrieve the assignment data and ambassador/patient data associated
 		// with each assignment.
-		List<AssignmentVO> assignments = null;
+		List<AssignmentVO> assignments = new ArrayList<>();
 		try {
 			assignments = ap.retrieveAssignments();
 		} catch (AssignmentException ae) {
 			ap.exitProcessor("Could not retrieve assignments., " + ae, true, true);
 		}
 		
-		if (assignments.isEmpty()) {
+		if (assignments == null || assignments.isEmpty()) {
 			ap.exitProcessor("No assignments to process.", false, true);
 		}
 		

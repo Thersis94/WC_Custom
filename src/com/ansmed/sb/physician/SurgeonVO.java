@@ -458,7 +458,7 @@ public class SurgeonVO extends AbstractSiteBuilderVO {
 	 */
 	public void setWebsite(String website) {
 		this.website = website;
-		if (website != null) website = website.replace("http://", "");
+		if (website != null) this.website = website.replace("http://", "");
 	}
 
 	/**

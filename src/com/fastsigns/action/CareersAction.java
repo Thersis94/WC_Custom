@@ -94,7 +94,7 @@ public class CareersAction extends SBActionAdapter {
 			log.error("An error was thrown while retrieving ", sqle);
 		} finally {
 			try {
-				ps.close();
+				if (ps != null) ps.close();
 			} catch (SQLException e) {
 				log.error(e);
 			}

@@ -192,7 +192,7 @@ public class ProductFacadeAction extends SimpleActionAdapter {
 			ses.setAttribute(FastsignsSessVO.FRANCHISE_ID, franchiseId);
 		}
 		
-		if (site.getAliasPathName() != null && site.getAliasPathName() != StringUtil.checkVal(ses.getAttribute(FastsignsSessVO.ECOM_ALIAS_PATH)))
+		if (site.getAliasPathName() != null && ! site.getAliasPathName().equals(StringUtil.checkVal(ses.getAttribute(FastsignsSessVO.ECOM_ALIAS_PATH))))
 			ses.setAttribute(FastsignsSessVO.ECOM_ALIAS_PATH, site.getAliasPathName());
 	}
 	

@@ -262,7 +262,9 @@ public class EpiducerRegistrationAction extends SimpleActionAdapter {
 		if (courseRequested.equalsIgnoreCase("Wait-List")) return WAIT_LIST;
 		log.debug("surgeon group number: " + surgeon.getProductGroupNumber());
 		log.debug("actionGroupMap number: " + actionGroupMap.get(oldInitId));
-		if (surgeon.getProductGroupNumber() != actionGroupMap.get(oldInitId)) return NOT_GROUP_APPROVED;
+		if (!surgeon.getProductGroupNumber().equals(actionGroupMap.get(oldInitId))) 
+			return NOT_GROUP_APPROVED;
+		
 		// if course is not 'other' check to see if requested course is full
 		loadMaxAttendees();
 		retrieveAvailableCourses(oldInitId, contactFormId);

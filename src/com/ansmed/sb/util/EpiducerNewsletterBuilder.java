@@ -43,7 +43,9 @@ public class EpiducerNewsletterBuilder {
 		default:
 			break;
 		}
-		nl.append(getOptOutText(optOutEmail));
+		
+		StringBuffer s = getOptOutText(optOutEmail);
+		if (s!= null) nl.append(s);
 		return nl;
 	}
 	

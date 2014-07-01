@@ -89,7 +89,7 @@ public class ContactAdapterAction extends SBActionAdapter {
 			log.debug(sqle);
 		} finally {
 			try {
-				ps.close();
+				if (ps != null) ps.close();
 			} catch (SQLException e) {
 				log.debug(e);
 			}

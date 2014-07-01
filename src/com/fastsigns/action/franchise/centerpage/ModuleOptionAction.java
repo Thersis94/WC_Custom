@@ -660,7 +660,7 @@ public class ModuleOptionAction extends SBActionAdapter{
 			log.debug(e);
 		} finally {
 				try {
-					ps.close();
+					if (ps != null) ps.close();
 				} catch (SQLException e) {
 					log.debug(e);
 				}

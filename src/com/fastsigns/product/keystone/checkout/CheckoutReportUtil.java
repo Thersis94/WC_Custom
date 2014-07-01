@@ -202,7 +202,7 @@ public class CheckoutReportUtil {
 		// Check if we actually have a shipping option
 		// or if the customer will pick the order up in person
 		for (String key :cart.getShippingOptions().keySet()) {
-			if(cart.getShipping().getShippingMethodId() == key)
+			if(cart.getShipping().getShippingMethodId().equals(key))
 				freeShipping = false;
 		}
 		if (freeShipping)
@@ -357,7 +357,7 @@ public class CheckoutReportUtil {
 		// Check if we actually have a shipping option
 		// or if the customer will pick the order up in person
 		for (String key :cart.getShippingOptions().keySet()) {
-			if(cart.getShipping().getShippingMethodId() == key)
+			if(cart.getShipping().getShippingMethodId().equals(key))
 				freeShipping = false;
 		}
 		if (freeShipping)

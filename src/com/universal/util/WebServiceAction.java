@@ -546,7 +546,6 @@ public class WebServiceAction extends SBActionAdapter {
 		} catch (DocumentException de) {
 			throw de;
 		} catch (Exception e) {
-			log.error("passed data: " + data);
 			log.error("elemName: " + elemName);
 			log.error("error reading element", e);
 		}

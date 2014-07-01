@@ -79,8 +79,8 @@ public class FastsignsClosingWizard extends SBActionAdapter {
 			log.error("Could not retrieve pages for franchise " + franchiseId, e);
 		} finally {
 			try {
-				ps.close();
-				rs.close();
+				if (ps != null) ps.close();
+				if (rs != null) rs.close();
 			} catch (SQLException e) {}
 		}
 
@@ -117,8 +117,8 @@ public class FastsignsClosingWizard extends SBActionAdapter {
 			log.error("Could not determine if franchise " + franchiseId + "was open. ", e);
 		} finally {
 			try {
-				ps.close();
-				rs.close();
+				if (ps != null) ps.close();
+				if (rs != null) rs.close();
 			} catch (SQLException e) {}
 		}
 		
@@ -233,7 +233,7 @@ public class FastsignsClosingWizard extends SBActionAdapter {
 			log.error("Unable to add redirects for center " + franchiseId, e);
 		} finally {
 			try {
-				ps.close();
+				if (ps != null) ps.close();
 			} catch (SQLException e) {}
 		}
 	}
@@ -263,7 +263,7 @@ public class FastsignsClosingWizard extends SBActionAdapter {
 			log.error("Unable to update alias for site " + siteId, e);
 		} finally {
 			try {
-				ps.close();
+				if (ps != null) ps.close();
 			} catch (SQLException e) {}
 		}
 	}
@@ -291,7 +291,7 @@ public class FastsignsClosingWizard extends SBActionAdapter {
 			log.error("Unable to update dealer with id " + franchiseId, e);
 		} finally {
 			try {
-				ps.close();
+				if (ps != null) ps.close();
 			} catch (SQLException e) {}
 		}
 	}
@@ -331,7 +331,7 @@ public class FastsignsClosingWizard extends SBActionAdapter {
 			log.error("Unable to delete redirects in regarding franchise " + franchiseId, e);
 		} finally {
 			try {
-				ps.close();
+				if (ps != null) ps.close();
 			} catch (SQLException e) {}
 		}
 	}

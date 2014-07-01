@@ -87,7 +87,7 @@ public class DealerBatchGeocoder {
 				data.add(new DealerLocationVO(rs));
 			}
 		} finally {
-			ps.close();
+			if (ps != null) ps.close();
 		}
 		
 		return data;
@@ -115,7 +115,7 @@ public class DealerBatchGeocoder {
 			ps.setString(4, dlr.getDealerLocationId());
 			ps.executeUpdate();
 		} finally {
-			ps.close();
+			if (ps != null) ps.close();
 		}
 	}
 

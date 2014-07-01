@@ -175,8 +175,8 @@ public class CenterModuleOptionVO implements Serializable {
 	/**
 	 * @param attributes the attributes to set
 	 */
-	public void setAttributes(List<OptionAttributeVO> attributes) {
-		this.setAttributes(attributes);
+	public void setAttributes(Map<String, OptionAttributeVO> attributes) {
+		this.attributes = attributes;
 	}
 
 	/**

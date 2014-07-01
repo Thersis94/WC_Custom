@@ -114,7 +114,7 @@ public class PortletLoaderAction extends FacadeActionAdapter {
 		} catch (SQLException e) {
 			log.error("sql exception", e);
 		} finally {
-			try { ps.close(); } catch (SQLException e) {}
+			try { if (ps != null) ps.close(); } catch (SQLException e) {}
 		}
 		return null;
 	}

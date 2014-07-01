@@ -175,7 +175,9 @@ public class DSMediaBinImporter extends CommandLineUtil {
 				page.openStream(), "UTF-16"));
 
 		// first row contains column names; must match UserDataVO mappings
-		String tokens[] = buffer.readLine().split(DELIMITER, -1);
+		String line = StringUtil.checkVal(buffer.readLine());
+		String tokens[] = new String[0];
+		if (line != null) tokens = line.split(DELIMITER, -1);
 		String[] columns = new String[tokens.length];
 		for (int i = 0; i < tokens.length; i++) {
 			columns[i] = tokens[i];

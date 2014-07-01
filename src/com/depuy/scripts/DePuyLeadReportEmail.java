@@ -76,7 +76,7 @@ public class DePuyLeadReportEmail {
 			log.debug("Report: " + s);
 			
 		} catch (Exception e) {
-			dlre.failures.add(e);
+			if (dlre != null) dlre.failures.add(e);
 			log.error("Error generating the report", e);
 		}
 		

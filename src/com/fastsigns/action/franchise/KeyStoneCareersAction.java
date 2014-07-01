@@ -232,7 +232,7 @@ public class KeyStoneCareersAction extends SBActionAdapter {
 			log.error("An error was thrown while retrieving ", sqle);
 		} finally {
 			try {
-				ps.close();
+				if (ps != null) ps.close();
 			} catch (SQLException e) {
 				log.error(e);
 			}
@@ -438,7 +438,7 @@ public class KeyStoneCareersAction extends SBActionAdapter {
 		aA.setDBConnection(dbConn);
 		aA.setAttributes(attributes);
 		ApprovalVO avo = new ApprovalVO();
-		String [] pageIds = null;
+		String [] pageIds = new String[0];
 		if(req.hasParameter("jobPostingId")){
 			pageIds = req.getParameter("jobPostingId").split(",");
 		} else if(req.hasParameter("jobsToSubmit")){

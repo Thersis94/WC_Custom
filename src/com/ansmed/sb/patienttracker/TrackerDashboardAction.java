@@ -97,9 +97,10 @@ public class TrackerDashboardAction extends SBActionAdapter {
 				sai.setDBConnection(dbConn);
 				sai.setAttributes(attributes);
 				sai.retrieve(req);
+				TrackerDataContainer ambData =  new TrackerDataContainer();
 				mod = (ModuleVO) req.getAttribute(Constants.MODULE_DATA);
 				if (mod == null) log.debug("mod is null");
-				TrackerDataContainer ambData = (TrackerDataContainer) mod.getActionData();
+				else ambData = (TrackerDataContainer) mod.getActionData();
 				data.setAssignees(ambData.getAssignees());
 				data.setForm(ambData.getForm());
 			}

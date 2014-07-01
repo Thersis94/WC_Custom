@@ -270,7 +270,7 @@ public class ClinicImporter {
 			ps.setString(2, dlr.getLocationName());
 			ps.executeUpdate();
 		} finally {
-			ps.close();
+			if (ps != null) ps.close();
 		}
 	}
 	
@@ -333,7 +333,7 @@ public class ClinicImporter {
 			log.debug("*********************\n");
 			ps.executeUpdate();
 		} finally {
-			ps.close();
+			if (ps != null) ps.close();
 		}
 	}
 	

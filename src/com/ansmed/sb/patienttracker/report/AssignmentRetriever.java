@@ -468,7 +468,7 @@ public class AssignmentRetriever {
 			rep.append(",");
 		}
 		tmpVal = se.decodeValue(patient.getLastName());
-		tmpVal.replace(",","");
+		tmpVal = tmpVal.replace(",","");
 		rep.append(tmpVal).append(",");
 		
 		FormTransactionVO fvo = pData.get(patient.getSubmittalId());
@@ -480,7 +480,7 @@ public class AssignmentRetriever {
 		rep.append(StringUtil.checkVal(pnf.getFormattedNumber(),"n/a")).append(",");
 		rep.append(StringUtil.checkVal(profiles.get(patient.getPatientProfileId()).getEmailAddress(),"n/a")).append(",");
 		tmpVal = se.decodeValue(this.parseFieldResponse(fields.get(formFieldMap.get("phoneAlternate"))));
-		tmpVal.replace(",","");
+		tmpVal = tmpVal.replace(",","");
 		rep.append(tmpVal).append(",");
 		
 		// requested ambassador is in last initial comma first name format (e.g. S, Joe).  we have

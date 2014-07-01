@@ -46,7 +46,7 @@ import com.siliconmtn.util.UUIDGenerator;
  ****************************************************************************/
 public class WebServiceManager {
 	private static final Logger log = Logger.getLogger("WebServiceManager");
-	private String namespaceUri = null;
+	private String namespaceUri = "";
 	public static final String CONNECTION_URL = "https://www.sheetsbrand.com/soap/mobile-ws/";
 	public static final String API_KEY = "s778ss988786shdjode998d";
 	public static final String USER_AGENT = "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.4; en-US; rv:1.9.2.2) Gecko/20100316 Firefox/3.6.2";

@@ -112,6 +112,7 @@ public class PhysicianDataFacadeAction extends SimpleActionAdapter {
 		}
 		
 		// Run the action
+		if (aac == null) return;
 		aac.setAttributes(this.attributes);
         aac.setDBConnection(dbConn);
         aac.build(req);

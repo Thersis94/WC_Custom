@@ -146,7 +146,8 @@ public class DTC2011LocatorLabeler extends AbstractLabelPDF {
         // Add a new page to the document
         document.newPage();
         try {
-        	this.addLocatorResults(document, surgeons.subList(6, surgeons.size()));
+        	if (surgeons != null)
+        		this.addLocatorResults(document, surgeons.subList(6, surgeons.size()));
 		} catch (Exception e1) {
 			log.error("Unable to add text to document", e1);
 		}

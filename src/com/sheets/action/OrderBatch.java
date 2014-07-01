@@ -111,7 +111,7 @@ public class OrderBatch {
 			log.error("Unable to process order batch", e);
 			
 		} finally {
-			ob.closeDbconn();
+			if (ob != null) ob.closeDbconn();
 		}
 		
 		log.warn("Completed Order Batch");

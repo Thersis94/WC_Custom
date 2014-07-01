@@ -115,7 +115,8 @@ public class WebServiceAction extends SBActionAdapter {
 		if (data != null) xml = new String(data);
 		
 		// Parse out the Namessapce due to the JSTL Bug
-		xml = xml.replace("xmlns=\"http://schema.broadsoft.com/xsi\"", "");
+		if (xml != null)
+			xml = xml.replace("xmlns=\"http://schema.broadsoft.com/xsi\"", "");
 		
 		return xml;
 	}

@@ -122,6 +122,8 @@ public class SJMTrackerAdminWorkflow extends TrackerAction {
 		} else if (actionType.equalsIgnoreCase("adhoc")) {
 			sai = new AdhocFacadeAction(actionInit);
 		}
+		
+		if (sai == null) return;
 		log.debug("actionType: " + actionType);
 		sai.setDBConnection(dbConn);
 		sai.setAttributes(attributes);

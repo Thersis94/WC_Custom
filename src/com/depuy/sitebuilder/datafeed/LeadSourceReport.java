@@ -231,8 +231,8 @@ public class LeadSourceReport implements Report {
 				
 				if (vals.containsKey(joint)) {
 					tVals = vals.get(joint);
-					if (vals.containsKey(leadType)) {
-						tVals = vals.get(leadType);
+					if (vals.containsKey(leadType + "")) {
+						tVals = vals.get(leadType + "");
 						valTotal = total + tVals.get(leadType);
 
 					}

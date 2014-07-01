@@ -7,6 +7,7 @@ import java.util.Map;
 
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.util.HashCodeUtil;
 
 public class ExerciseAttributeVO implements Serializable {
 
@@ -142,11 +143,30 @@ public class ExerciseAttributeVO implements Serializable {
 		this.defaultValueText = defaultValueText;
 	}
 	
-	public boolean equals(ExerciseAttributeVO aVo) {
-		if(aVo != null)
-		return this.exerciseAttributeId.equals(aVo.exerciseAttributeId);
+	@Override
+	public boolean equals(Object o) {
 		
-		return false;
+		if(o != null) {
+			ExerciseAttributeVO aVo = (ExerciseAttributeVO)o; 
+			return this.exerciseAttributeId.equals(aVo.exerciseAttributeId);
+		} else {
+			return false;
+		}
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see java.lang.Object#hashCode()
+	 */
+	@Override
+	public int hashCode() {
+		int result = HashCodeUtil.SEED;
+		
+		//collect the contributions of various fields
+		result = HashCodeUtil.hash(result, exerciseAttributeId);
+		result = HashCodeUtil.hash(result, exerciseIntensityId);
+		result = HashCodeUtil.hash(result, labelText);
+		return result;
 	}
 	
 	public Map<Integer, String> getValues(){

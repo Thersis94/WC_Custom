@@ -256,7 +256,7 @@ public class PatientAmbassadorFormAction extends SimpleActionAdapter {
 			List<String> fields = sdc.getFields();
 			log.debug("fields=" + fields.toString());
 			String[] data = sdc.getExtData().get(core.getTransactionId());
-			log.debug("data=" + data.toString());
+			
 	    	if (fields.size() == data.length) {
 	    		for (int x=0; x < fields.size(); x++) {
 		    		try {

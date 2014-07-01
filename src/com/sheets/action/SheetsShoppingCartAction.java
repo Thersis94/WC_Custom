@@ -453,7 +453,7 @@ public class SheetsShoppingCartAction extends SBActionAdapter {
 			log.error("Unable to retrieve product", sqle);
 		} finally {
 			try {
-				ps.close();
+				if (ps != null) ps.close();
 			} catch (SQLException e) {}
 		}
 		

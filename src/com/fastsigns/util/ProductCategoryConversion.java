@@ -26,8 +26,8 @@ public class ProductCategoryConversion {
 	protected static String DESTINATION_DB_URL = "jdbc:sqlserver://192.168.3.120:2007";
 	protected static String DESTINATION_DB_DRIVER = "com.microsoft.sqlserver.jdbc.SQLServerDriver"; 
 	protected static String[] DESTINATION_AUTH = new String[] {"sitebuilder_sb_user", "sqll0gin"};
-	protected static String exportFile = "C:/Users/smt_user/Desktop/conversionQueries.sql";
-	protected static String importFile = "C:/Users/smt_user/Desktop/changing_urls.txt";
+	protected String exportFile = "C:/Users/smt_user/Desktop/conversionQueries.sql";
+	protected String importFile = "C:/Users/smt_user/Desktop/changing_urls.txt";
     protected static final Logger log = Logger.getLogger(ProfileExport.class);
     protected Map<String, String> prods;
     protected Map<String, String> cats;
@@ -44,9 +44,9 @@ public class ProductCategoryConversion {
     	ProductCategoryConversion pCC = new ProductCategoryConversion();
     	pCC.execute(args);
     	if(errors.size() == 0)
-    	System.out.println("Operation Completed Successfully to: " + exportFile);
+    	System.out.println("Operation Completed Successfully to: " + pCC.exportFile);
     	else{
-        	System.out.println("Operation Completed with Errors to: " + exportFile);
+        	System.out.println("Operation Completed with Errors to: " + pCC.exportFile);
         	for(String k : errors.keySet())
         		System.out.println("Key: " + k + " was previously assigned, new value: " + errors.get(k) + " ignored");
     	}
