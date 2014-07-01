@@ -11,6 +11,7 @@ import java.util.Map;
 import com.ram.datafeed.data.KitLayerVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -63,6 +64,7 @@ public class KitLayerAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(SMTServletRequest req) throws ActionException {
+		req.setValidateInput(false);
 		Map<String, String> result = new HashMap<String, String>();
 		result.put("success", "true");
 		result.put("msg", "Data Successfully Updated");
@@ -72,7 +74,7 @@ public class KitLayerAction extends SBActionAdapter {
 		if(req.hasParameter(KIT_LAYER_ID)) {
 			sb.append("update ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 			sb.append("RAM_KIT_LAYER set IMAGE_PATH_URL = ?, LAYOUT_DEPTH_NO = ?, ");
-			sb.append("UPDATE_DT = ?, ACTIVE_FLG = ? ");
+			sb.append("UPDATE_DT = ?, ACTIVE_FLG = ?, JSON_DATA = ? ");
 			sb.append("where KIT_LAYER_ID = ?");
 		}
 		else {
@@ -93,7 +95,8 @@ public class KitLayerAction extends SBActionAdapter {
 			ps.setTimestamp(3, Convert.getCurrentTimestamp());
 			ps.setInt(4, Convert.formatInteger(Convert.formatBoolean(req.getParameter("activeFlag"))));
 			if(req.hasParameter(KIT_LAYER_ID)) {
-				ps.setInt(5, Convert.formatInteger(req.getParameter(KIT_LAYER_ID)));
+				ps.setString(5, req.getParameter("jsonData"));
+				ps.setInt(6, Convert.formatInteger(req.getParameter(KIT_LAYER_ID)));
 			} else {
 				ps.setInt(5, Convert.formatInteger(req.getParameter(KitAction.KIT_ID)));
 			}
@@ -109,6 +112,12 @@ public class KitLayerAction extends SBActionAdapter {
 					result.put("kitLayerId", rs.getString(1));
 
 			} catch(Exception e) {}
+		}
+		if(req.hasParameter(KIT_LAYER_ID)) {
+			SMTActionInterface sai = new KitCoordinateParser(this.actionInit);
+			sai.setAttributes(attributes);
+			sai.setDBConnection(dbConn);
+			sai.build(req);
 		}
 		super.putModuleData(result);
 
@@ -154,7 +163,7 @@ public class KitLayerAction extends SBActionAdapter {
 			return;
 		
 		List<KitLayerVO> layers = new ArrayList<KitLayerVO>();
-		
+		KitLayerVO layer = new KitLayerVO();
 		//Boolean for kitId check
 		boolean isKitLayerLookup = req.hasParameter(KIT_LAYER_ID);
 				
@@ -185,7 +194,9 @@ public class KitLayerAction extends SBActionAdapter {
 			}
 			ResultSet rs = ps.executeQuery();
 			while(rs.next()) {
-				layers.add(new KitLayerVO(rs, false));
+				layer = new KitLayerVO(rs, false);
+				layer.setJsonData(rs.getString("JSON_DATA"));
+				layers.add(layer);
 			}
 		} catch(SQLException sqle) {
 			log.error(sqle);
