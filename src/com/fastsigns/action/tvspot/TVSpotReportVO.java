@@ -1,4 +1,4 @@
-package com.fastsigns.action;
+package com.fastsigns.action.tvspot;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.ListIterator;
 import java.util.Map;
 
+import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.PhoneNumberFormat;
 import com.siliconmtn.util.StringUtil;
@@ -16,6 +17,7 @@ import com.smt.sitebuilder.action.contact.ContactDataContainer;
 import com.smt.sitebuilder.action.contact.ContactDataModuleVO;
 
 import org.apache.poi.hssf.usermodel.HSSFCellStyle;
+import org.apache.poi.hssf.usermodel.HSSFFont;
 import org.apache.poi.hssf.usermodel.HSSFRow;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
@@ -35,6 +37,7 @@ import org.apache.poi.ss.usermodel.Row;
 public class TVSpotReportVO extends AbstractSBReportVO {
 	private static final long serialVersionUID = 1l;
 	private ContactDataContainer cdc = null;
+	private TVSpotConfig config = null;
 
 	public TVSpotReportVO() {
 		super();
@@ -48,7 +51,9 @@ public class TVSpotReportVO extends AbstractSBReportVO {
 	 */
 	@Override
 	public void setData(Object o) {
-		cdc = (ContactDataContainer) o;
+		GenericVO vo = (GenericVO) o;
+		cdc = (ContactDataContainer) vo.getKey();
+		config = (TVSpotConfig) vo.getValue();
 	}
 
 	@Override
@@ -112,6 +117,7 @@ public class TVSpotReportVO extends AbstractSBReportVO {
 		HSSFWorkbook book;
 		HSSFSheet sheet;
 		HSSFRow row;
+		HSSFCellStyle style = null;
 		
 		// We cycle through this list in reverse order because we only want to create reports
 		// for centers that have had a request in the last week.
@@ -119,23 +125,35 @@ public class TVSpotReportVO extends AbstractSBReportVO {
         ContactDataModuleVO vo;
 		while (li.hasPrevious()) {
 			vo = li.previous();
+			
 			book = byCenter.get(vo.getDealerLocation().getOwnerEmail());
 			
 			// If we don't have this center in the map already start a new one..
 			if (book == null) {
 				// If the center's most recent request was more than a week ago we skip them.
+				//this is nested where we create new Books (sheets) in the report.
 				if (((vo.getSubmittalDate().getTime() - now.getTimeInMillis()) / (1000 * 60 * 60 * 24)) < -7) 
 					continue;
+				
 				book = new HSSFWorkbook();
 				sheet = book.createSheet("Report");
 				getHeader(sheet);
 				setColWidths(sheet);
 				row = sheet.createRow(2);
+				
+				//define a red font & text color and assign it to a Style, for highlighting "initiated" status entries
+				//TODO this coloring does not work correctly, after 20+ attempts and much Googling.  -JM 07.02.14
+				style = book.createCellStyle();
+				style.setFillForegroundColor(HSSFColor.RED.index);
+				style.setFillPattern(HSSFCellStyle.SOLID_FOREGROUND);
+				HSSFFont font = book.createFont();
+				font.setColor(HSSFColor.RED.index);
+				style.setFont(font);
 			} else {
 				row = book.getSheet("Report").createRow(book.getSheet("Report").getLastRowNum()+1);
 			}
 			
-			appendRow(vo, row, book.createCellStyle());
+			appendRow(vo, row, style);
 			
 			byCenter.put(vo.getDealerLocation().getOwnerEmail(), book);
 		}
@@ -154,15 +172,15 @@ public class TVSpotReportVO extends AbstractSBReportVO {
 		row.createCell(cellNum++).setCellValue(vo.getFullName());
 		row.createCell(cellNum++).setCellValue(vo.getEmailAddress());
 		row.createCell(cellNum++).setCellValue(pnf.getFormattedNumber());
-		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.zipcode.id())));
-		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.state.id())));
-//		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.industry.id())));
-//		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.department.id())));
-//		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.title.id())));
-//		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.companyNm.id())));
-//		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.businessChallenge.id())));
-		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.inquiry.id())));
-		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.saleAmount.id())));
+		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.zipcode))));
+		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.state))));
+//		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.industry))));
+//		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.department))));
+//		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.title))));
+//		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.companyNm))));
+//		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.businessChallenge))));
+		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.inquiry))));
+		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.saleAmount))));
 		Calendar surveySentDt = Calendar.getInstance();
 		surveySentDt.setTime(vo.getSubmittalDate());
 		surveySentDt.add(Calendar.DAY_OF_YEAR, 7);
@@ -170,20 +188,18 @@ public class TVSpotReportVO extends AbstractSBReportVO {
 		surveySentDt.set(Calendar.MINUTE, 0);
 		surveySentDt.set(Calendar.SECOND, 0);
 		row.createCell(cellNum++).setCellValue((Calendar.getInstance().getTime().before(surveySentDt.getTime())) ? "No" : "Yes");
-		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.rating.id())));
-		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.feedback.id())));
-		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.consultation.id())));
-		TVSpotUtil.Status status = TVSpotUtil.Status.valueOf(vo.getExtData().get(TVSpotUtil.ContactField.status.id()));
-		if (status == TVSpotUtil.Status.initiated) {
-			row.createCell(cellNum).setCellValue(status.getLabel());
-			style.setFillForegroundColor(HSSFColor.RED.index);
-			row.getCell(cellNum++).setCellStyle(style);
-		} else {
-			row.createCell(cellNum).setCellValue(status.getLabel());
-			row.getCell(cellNum++).setCellValue(status.getLabel());
-		}
-		row.createCell(cellNum++).setCellValue(status.getLabel());
-		String notes = StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.transactionNotes.id()));
+		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.rating))));
+		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.feedback))));
+		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.consultation))));
+		Status status = Status.valueOf(vo.getExtData().get(config.getContactId(ContactField.status)));
+		
+		//status field.  if status=initiated color the cell red.
+		row.createCell(cellNum++).setCellValue(config.getStatusLabel(status));
+		if (status == Status.initiated)
+			row.getCell(cellNum-1).setCellStyle(style);
+		
+		//internal notes field
+		String notes = StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.transactionNotes)));
 		row.createCell(cellNum++).setCellValue(notes);
 	}
 	
