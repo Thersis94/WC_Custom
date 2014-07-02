@@ -12,6 +12,7 @@ import java.util.List;
 import com.ram.datafeed.data.CustomerVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.SMTServletRequest;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -21,7 +22,8 @@ import com.smt.sitebuilder.common.constants.Constants;
  * <p/>
  * <b>Project</b>: WC_Custom
  * <p/>
- * <b>Description: </b> TODO
+ * <b>Description: </b> This action returns a list of all customers that 
+ * currently have products attached to them in the system.  
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2014
  * <p/>
@@ -50,7 +52,10 @@ public class CustomerProductAction extends SBActionAdapter {
 		
 		//Instantiate List and determine lookup method.
 		List<CustomerVO> customers = new ArrayList<CustomerVO>();
-				
+		
+		/*
+		 * Build query that will return list of customers that have products. 
+		 */
 		StringBuilder sb = new StringBuilder();
 		sb.append("select distinct a.customer_id, b.customer_nm from ");
 		sb.append(customDb).append("ram_product a ");
@@ -68,10 +73,9 @@ public class CustomerProductAction extends SBActionAdapter {
 			}
 		} catch(SQLException sqle) {
 			log.error(sqle);
+			throw new ActionException(sqle);
 		} finally {
-			try {
-				ps.close();
-			} catch(Exception e){}
+			DBUtil.close(ps);
 		}
 		
 		//Return List to View

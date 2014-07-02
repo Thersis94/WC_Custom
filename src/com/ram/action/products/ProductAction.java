@@ -14,6 +14,7 @@ import java.util.Map;
 import com.ram.datafeed.data.RAMProductVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -58,8 +59,9 @@ public class ProductAction extends SBActionAdapter {
 		
 	}
 
-	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#delete(com.siliconmtn.http.SMTServletRequest)
+	/**
+	 * We can't delete anything in RAM due to sync issues so we mark items
+	 * inactive.  This handles marking a given product as inactive.
 	 */
 	@Override
 	public void delete(SMTServletRequest req) throws ActionException {
@@ -81,11 +83,15 @@ public class ProductAction extends SBActionAdapter {
 			ps.executeUpdate();
 		} catch(SQLException sqle) {
 			log.error("Error deactivating Product: " + req.getParameter("productId"), sqle);
+			throw new ActionException(sqle);
+		} finally {
+			DBUtil.close(ps);
 		}
 	}
 
-	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
+	/**
+	 * If we have a productId then retrieve that products information, otherwise
+	 * return the full list of products.
 	 */
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
@@ -100,7 +106,7 @@ public class ProductAction extends SBActionAdapter {
 	 * on the request.
 	 * @param req
 	 */
-	private void retrieveProducts(SMTServletRequest req) {			
+	private void retrieveProducts(SMTServletRequest req) throws ActionException {			
 		
 		//Instantiate the products list for results and check for lookup type.
 		List<RAMProductVO> products = new ArrayList<RAMProductVO>();
@@ -135,14 +141,18 @@ public class ProductAction extends SBActionAdapter {
 				products.add(new RAMProductVO(rs));
 		} catch(SQLException sqle) {
 			log.error("Error retrieving product list", sqle);
+			throw new ActionException(sqle);
+		} finally {
+			DBUtil.close(ps);
 		}
 		
 		//Return List to View
 		this.putModuleData(products);
 	}
 
-	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
+	/**
+	 * We can only update products.  Inserts will come from data import or datafeed.
+	 * Here we update a product record in the database.
 	 */
 	@Override
 	public void build(SMTServletRequest req) throws ActionException {
@@ -184,20 +194,27 @@ public class ProductAction extends SBActionAdapter {
 			log.error("Error updating Product: " + req.getParameter("productId"), sqle);
 			result.put("success", "false");
 			result.put("msg", "Problem Saving Record");
+			throw new ActionException(sqle);
+		} finally {
+			DBUtil.close(ps);
 		}
 		
 		//Redirect User
 		super.putModuleData(result);
 	}
 
-	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.http.SMTServletRequest)
+	/**
+	 * Retrieve an unfiltered list of products.
 	 */
 	@Override
 	public void list(SMTServletRequest req) throws ActionException {
+		
+		//Instantiate necessary items
 		List<RAMProductVO> products = new ArrayList<RAMProductVO>();
 		String schema = attributes.get(Constants.CUSTOM_DB_SCHEMA) + "";
-		int customerId = Convert.formatInteger(req.getParameter(KitAction.CUSTOMER_ID));
+		
+		//Pull relevant data off the request
+		int customerId = Convert.formatInteger(req.getParameter("customerId"));
 		int kitFilter = Convert.formatInteger(req.getParameter("kitFilter"), -1);
 		String term = StringUtil.checkVal(req.getParameter("term"));
 		int start = Convert.formatInteger(req.getParameter("start"), 0);
@@ -235,9 +252,13 @@ public class ProductAction extends SBActionAdapter {
 					products.add(new RAMProductVO(rs));
 			}
 			
+			//Retrieve the total count of products to properly show pagination 
 			ctr = getRecordCount(customerId, term, kitFilter);
 		} catch(SQLException sqle) {
 			log.error("Error retrieving product list", sqle);
+			throw new ActionException(sqle);
+		} finally {
+			DBUtil.close(ps);
 		}
 
 		//Return the data.
@@ -245,7 +266,7 @@ public class ProductAction extends SBActionAdapter {
 	}
 	
 	/**
-	 * Gets the count od the records
+	 * Gets the count of the records
 	 * @param customerId
 	 * @param term
 	 * @return
@@ -275,7 +296,7 @@ public class ProductAction extends SBActionAdapter {
 	}
 	
 	/**
-	 * 
+	 * Build the where clause for the product Retrieval
 	 * @param customerId
 	 * @return
 	 */

@@ -8,12 +8,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+
 // RAM Data Feed Libs
 import com.ram.datafeed.data.ProductRecallItemVO;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -61,8 +63,9 @@ public class ProductRecallAction extends SBActionAdapter {
 		
 	}
 
-	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#delete(com.siliconmtn.http.SMTServletRequest)
+	/**
+	 * We can't delete anything in RAM due to sync issues so we mark items
+	 * inactive.  This handles marking a given productRecall as inactive.
 	 */
 	@Override
 	public void delete(SMTServletRequest req) throws ActionException {
@@ -81,19 +84,25 @@ public class ProductRecallAction extends SBActionAdapter {
 			ps.executeUpdate();
 		} catch(SQLException sqle) {
 			log.error("Error deactivating Product Recall: " + req.getParameter("productRecallItemId"), sqle);
+			throw new ActionException(sqle);
+		} finally {
+			DBUtil.close(ps);
 		}
-		
-		//Redirect User to list
 	}
 
-	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
+	/**
+	 * Retrieve all the Product Recalls for a given ProductId
 	 */
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		
+		//Fast fail if productId is missing.
+		if(!req.hasParameter("productId"))
+			return;
+		
 		//Instantiate List and determine lookup method.
 		List<ProductRecallItemVO> recalls = new ArrayList<ProductRecallItemVO>();		
+		
 		//Build query for individual or list lookup.
 		StringBuilder sb = new StringBuilder();
 		sb.append("select * from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
@@ -106,23 +115,35 @@ public class ProductRecallAction extends SBActionAdapter {
 			ps = dbConn.prepareStatement(sb.toString());
 			ps.setString(1, req.getParameter("productId"));
 			
-			//Retreive results and populate the Products List
+			//Retrieve results and populate the Products List
 			ResultSet rs = ps.executeQuery();
 			while(rs.next())
 				recalls.add(new ProductRecallItemVO(rs, false));
+			
 		} catch(SQLException sqle) {
 			log.error("Error retrieving product list", sqle);
+			throw new ActionException(sqle);
+		} finally {
+			DBUtil.close(ps);
 		}
+		
 		//Return List to View
 		this.putModuleData(recalls);
 	}
 
-	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
+	/**
+	 * Product Recalls come back as a list of values.  Here we parse out the
+	 * values into individual recalls and send them to be saved.
 	 */
 	@Override
 	public void build(SMTServletRequest req) throws ActionException {
+		
+		//Get the List of parameter Names.
 		List<String> paramNames =Collections.list(req.getParameterNames());
+		
+		/*
+		 * Iterate over all the parameters.  If the name matches our prefix then 
+		 */
 		for (String name: paramNames) {
 			if (name.startsWith("productRecall_")) {
 				ProductRecallItemVO item = new ProductRecallItemVO();
@@ -145,10 +166,10 @@ public class ProductRecallAction extends SBActionAdapter {
 	}
 	
 	/**
-	 * Updates or inserts a record into the table
+	 * Updates or inserts a Product Recall record into the table.
 	 * @param item
 	 */
-	protected void buildItem(ProductRecallItemVO item) {
+	protected void buildItem(ProductRecallItemVO item) throws ActionException{
 		//Build Query
 		StringBuilder sb = new StringBuilder();
 		if(item.getRecallItemId() == 0) {
@@ -179,6 +200,9 @@ public class ProductRecallAction extends SBActionAdapter {
 			ps.executeUpdate();
 		} catch(SQLException sqle) {
 			log.error("Error updating Product: " + item.getRecallItemId(), sqle);
+			throw new ActionException(sqle);
+		} finally {
+			DBUtil.close(ps);
 		}
 	}
 

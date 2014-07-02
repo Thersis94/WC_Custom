@@ -9,9 +9,9 @@ import java.util.List;
 import java.util.Map;
 
 import com.ram.datafeed.data.KitLayerProductVO;
-import com.ram.datafeed.data.LayerCoordinateVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -56,17 +56,22 @@ public class KitLayerProductAction extends SBActionAdapter {
 		
 	}
 	
+	/**
+	 * Retrieve the product layer xr bound to a given kitLayer with 
+	 * associated product information.
+	 */
 	public void retrieve(SMTServletRequest req) throws ActionException {
+		
+		//Fast fail if kitLayerId is missing.
+		if(!req.hasParameter("kitLayerId"))
+			return;
 		
 		List<KitLayerProductVO> layers = new ArrayList<KitLayerProductVO>();
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		KitLayerProductVO prodVO = null;
 
 		//Build Query
 		StringBuilder sb = new StringBuilder();
 		sb.append("select * from ").append(customDb).append("RAM_PRODUCT_LAYER_XR a ");
-		sb.append("left outer join ").append(customDb).append("RAM_LAYER_COORDINATE b ");
-		sb.append("on a.PRODUCT_KIT_ID = b.PRODUCT_KIT_ID ");
 		sb.append("inner join ").append(customDb).append("RAM_PRODUCT c ");
 		sb.append("on a.product_id = c.product_id ");
 		sb.append("where a.KIT_LAYER_ID = ?");
@@ -80,49 +85,60 @@ public class KitLayerProductAction extends SBActionAdapter {
 			ps = dbConn.prepareStatement(sb.toString());
 			ps.setString(1, req.getParameter("kitLayerId"));
 			ResultSet rs = ps.executeQuery();
-			while(rs.next()) {
-				if(prodVO == null) {
-					prodVO = new KitLayerProductVO(rs, false);
-				} else if(!prodVO.getProductKitId().equals(rs.getInt("product_kit_id"))) {
-					layers.add(prodVO);
-					prodVO = new KitLayerProductVO(rs, false);
-				}
-				prodVO.addCoordinate(new LayerCoordinateVO(rs, false));
-			}
 			
-			//Add final productVO
-			layers.add(prodVO);
+			while(rs.next()) 
+				layers.add(new KitLayerProductVO(rs, false));
+			
 		} catch(SQLException sqle) {
 			log.error(sqle);
+			throw new ActionException(sqle);
+		} finally {
+			DBUtil.close(ps);
 		}
 		
 		this.putModuleData(layers, layers.size(), false);
 	}
 	
-	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
+	/**
+	 * Process the request object and pull the relevant data for Layer Products off it.  
+	 * Send the results of the processing through the relevant insert and update methods.
 	 */
 	@Override
 	public void build(SMTServletRequest req) throws ActionException {
-		Map<String, String> result = new HashMap<String, String>();
-		result.put("success", "true");
-		result.put("msg", "Data Successfully Updated");
+		
+		//Get the CustomDb
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		String [] values = null;
+
+		//Parse the request and get the map of Layer Products
+		Map<String, List<KitLayerProductVO>> changes = getChanges(req);
+		
+		//Process Kit Products requiring an insert
+		processInserts(changes.get("inserts"), customDb);
+
+		//Process Kit Products requiring an update
+		processUpdates(changes.get("updates"), customDb);
+	}
+
+	/**
+	 * This method takes the request object and extracts the Layer Product from 
+	 * of it.  The Results are sorted into lists of updates and inserts and 
+	 * returned on a map.
+	 * @param req
+	 * @return
+	 */
+	private Map<String, List<KitLayerProductVO>> getChanges(SMTServletRequest req) {
+		
+		//Build Containers
+		Map<String, List<KitLayerProductVO>> changes = new HashMap<String, List<KitLayerProductVO>>();
 		List<KitLayerProductVO> inserts = new ArrayList<KitLayerProductVO>();
 		List<KitLayerProductVO> updates = new ArrayList<KitLayerProductVO>();
 		KitLayerProductVO vo = null;
-		StringBuilder insert = new StringBuilder();
-		insert.append("insert into ").append(customDb).append("RAM_PRODUCT_LAYER_XR (PRODUCT_ID, ");
-		insert.append("KIT_LAYER_ID, COORDINATE_TYPE_CD, CREATE_DT, ACTIVE_FLG) ");
-		insert.append("values (?,?,?,?,?)");
-		
-		StringBuilder update = new StringBuilder();
-		update.append("update ").append(customDb).append("RAM_PRODUCT_LAYER_XR set PRODUCT_ID = ?, ");
-		update.append("COORDINATE_TYPE_CD = ?, UPDATE_DT = ?, ");
-		update.append("ACTIVE_FLG = ? where PRODUCT_KIT_ID = ?");
-		
-		for(String s : req.getParameterMap().keySet())
+		String [] values = null;
+
+		/*
+		 * Iterate over the req Parameters and process the properly prefixed values.
+		 */
+		for(String s : req.getParameterMap().keySet()) {
 			if(s.startsWith("kitProduct_")) {
 				values = req.getParameter(s).split("\\|");
 				vo = new KitLayerProductVO();
@@ -132,6 +148,12 @@ public class KitLayerProductAction extends SBActionAdapter {
 				vo.setCoordinateType(values[3]);
 				vo.setActiveFlag(Convert.formatInteger(values[4]));
 				
+				/*
+				 * If the user saved and there were rows with empty
+				 * products, ignore them. Else if there is a productKitId
+				 * on the vo then add it to updates.  Otherwise add the
+				 * vo to the inserts list.
+				 */
 				if(!(vo.getProductId() > 0)) {
 					//Ignore these ones.
 				}
@@ -140,22 +162,33 @@ public class KitLayerProductAction extends SBActionAdapter {
 				else
 					inserts.add(vo);	
 			}
+		}
+		
+		//Add the Lists to the map.
+		changes.put("inserts", inserts);
+		changes.put("updates", updates);
+		
+		//Return changes.
+		return changes;
+	}
+	
+	/**
+	 * This method is responsible for processing the list of KitLayerProductVOs that in
+	 * the updates list.  
+	 * @param list
+	 * @throws ActionException 
+	 */
+	private void processUpdates(List<KitLayerProductVO> updates, String customDb) throws ActionException {
+		
+		//Build sql statement.
+		StringBuilder update = new StringBuilder();
+		update.append("update ").append(customDb).append("RAM_PRODUCT_LAYER_XR set PRODUCT_ID = ?, ");
+		update.append("COORDINATE_TYPE_CD = ?, UPDATE_DT = ?, ");
+		update.append("ACTIVE_FLG = ? where PRODUCT_KIT_ID = ?");
+		
 		PreparedStatement ps = null;
-		try {
-			//Insert new Records
-			log.debug(insert);
-			ps = dbConn.prepareStatement(insert.toString());
-			for(KitLayerProductVO v : inserts) {
-				ps.setInt(1, v.getProductId());
-				ps.setInt(2, v.getKitLayerId());
-				ps.setString(3, v.getCoordinateType().name());
-				ps.setTimestamp(4, Convert.getCurrentTimestamp());
-				ps.setInt(5, v.getActiveFlag());
-				ps.addBatch();
-			}
-			ps.executeBatch();
-			ps.close();
-			
+
+		try {	
 			//Update Existing Records
 			log.debug(update.toString());
 			ps = dbConn.prepareStatement(update.toString());
@@ -170,36 +203,46 @@ public class KitLayerProductAction extends SBActionAdapter {
 			ps.executeBatch();
 		} catch(SQLException sqle) {
 			log.error("Problem inserting/updating Kit Layer Products.", sqle);
-			result.put("success", "false");
-			result.put("msg", "Problem Saving Record");
+			throw new ActionException(sqle);
 		} finally {
-			try {
-				ps.close();
-			} catch(Exception e){}
+			DBUtil.close(ps);
 		}
-		//super.putModuleData(result);
 	}
 
-	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#delete(com.siliconmtn.http.SMTServletRequest)
+	/**
+	 * This method is responsible for processing the list of KitLayerProductVOs in
+	 * the insert list.  
+	 * @param list
+	 * @throws ActionException 
 	 */
-	@Override
-	public void delete(SMTServletRequest req) throws ActionException {
+	private void processInserts(List<KitLayerProductVO> inserts, String customDb) throws ActionException {
+		
+		//Build the Sql Statement
+		StringBuilder insert = new StringBuilder();
+		insert.append("insert into ").append(customDb).append("RAM_PRODUCT_LAYER_XR (PRODUCT_ID, ");
+		insert.append("KIT_LAYER_ID, COORDINATE_TYPE_CD, CREATE_DT, ACTIVE_FLG) ");
+		insert.append("values (?,?,?,?,?)");
+		
+		PreparedStatement ps = null;
+		try {
+			//Insert new Records
+			log.debug(insert);
+			ps = dbConn.prepareStatement(insert.toString());
+			for(KitLayerProductVO v : inserts) {
+				ps.setInt(1, v.getProductId());
+				ps.setInt(2, v.getKitLayerId());
+				ps.setString(3, v.getCoordinateType().name());
+				ps.setTimestamp(4, Convert.getCurrentTimestamp());
+				ps.setInt(5, v.getActiveFlag());
+				ps.addBatch();
+			}
+			ps.executeBatch();
+		} catch(SQLException sqle) {
+			log.debug("There was an error inserting new records.", sqle);
+			throw new ActionException(sqle);
+		} finally {
+			DBUtil.close(ps);
+		}
 	}
-
-	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.http.SMTServletRequest)
-	 */
-	@Override
-	public void list(SMTServletRequest req) throws ActionException {
-	}
-
-	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.http.SMTServletRequest)
-	 */
-	@Override
-	public void update(SMTServletRequest req) throws ActionException {
-	}
-
 	
 }

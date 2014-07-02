@@ -1,12 +1,10 @@
-/**
- * 
- */
 package com.ram.action.products;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
@@ -17,6 +15,7 @@ import net.sf.json.JSONObject;
 import com.ram.datafeed.data.LayerCoordinateVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -27,7 +26,13 @@ import com.smt.sitebuilder.common.constants.Constants;
  * <p/>
  * <b>Project</b>: WC_Custom
  * <p/>
- * <b>Description: </b> TODO
+ * <b>Description: </b> This class is responsible for extracting coordinate
+ * data from the Canvas Elements JSON Data that gets returned on a Kit Layer
+ * update.  We calculate the coordinate points for each shape, dump them to a
+ * list.  Retrieve all the existing coordinates from the db.  Merge the two
+ * lists using a fuzzy match into a map of Lists containing coordinates that
+ * require update and insert.  Lastly, we take all the coordinates and 
+ * update and/or insert the changes to the db via a batch statement. 
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2014
  * <p/>
@@ -53,16 +58,27 @@ public class KitCoordinateParser extends SBActionAdapter {
 		super(init);
 	}
 	
-	@Override
+	/**
+	 * This method handles the business logic for what must happen to parse and update
+	 * the Coordinate data.
+	 */
 	public void build(SMTServletRequest req) throws ActionException {
+		
+		//If there is no jsonData, quick fail.
 		if(!req.hasParameter("jsonData"))
 			return;
+		
+		//Initial list to hold coordinate data parsed from json Data
 		List<LayerCoordinateVO> coordinates = new ArrayList<LayerCoordinateVO>();
+		
+		/*
+		 * Build JSONObject from data and iterate over it parsing the proper 
+		 * coordinate information.
+		 */
 		
 		JSONObject json = JSONObject.fromObject(req.getParameter("jsonData"));
 		for(Object obj : json.optJSONArray("objects")){
-			coordinates.add(getTopLeft((JSONObject)obj));
-			coordinates.add(getBottomRight((JSONObject)obj));
+			coordinates.addAll(getCoordinatesFromShape((JSONObject) obj));
 		}
 		
 		//We need to clear existing coordinates for this update.
@@ -74,24 +90,31 @@ public class KitCoordinateParser extends SBActionAdapter {
 		//Insert or Update Coordinates
 		updateCoordinates(changes);
 	}
-	
+
 	/**
-	 * @param existingCoordinates
+	 * Update the database with the new coordinate information.  We perform updates
+	 * and inserts on the data depending on what is required.
+	 * @param changes
+	 * @throws ActionException
 	 */
-	private void updateCoordinates(Map<String, List<LayerCoordinateVO>> changes) {
+	private void updateCoordinates(Map<String, List<LayerCoordinateVO>> changes) throws ActionException{
 		String customDb = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		
+		//Build the sql call for coordinate updates.
 		StringBuilder update = new StringBuilder();
 		update.append("update ").append(customDb).append("RAM_LAYER_COORDINATE ");
 		update.append("set UPDATE_DT = ?, ACTIVE_FLG = ?, X_POINT_NO = ?, ");
 		update.append("Y_POINT_NO = ? where LAYER_COORDINATE_ID = ?");
 		
+		//Build the sql call for coordiante inserts.
 		StringBuilder insert = new StringBuilder();
 		insert.append("insert into ").append(customDb).append("RAM_LAYER_COORDINATE ");
 		insert.append("(CREATE_DT, ACTIVE_FLG, X_POINT_NO, Y_POINT_NO, PRODUCT_KIT_ID) ");
 		insert.append("values (?,?,?,?,?)");
 		
 		PreparedStatement ps = null;
+		
+		//If we have pending updates, iterate the list into a batch call and execute.
 		if(changes.containsKey("update") && changes.get("update").size() > 0) {
 			try {
 				ps = dbConn.prepareStatement(update.toString());
@@ -106,13 +129,15 @@ public class KitCoordinateParser extends SBActionAdapter {
 				ps.executeBatch();
 			} catch (SQLException sqle) {
 				log.error("Problem Updating Layer coordinates.", sqle);
+				throw new ActionException(sqle);
 			} finally {
-				try {
-					ps.close();
-				} catch(Exception e){}
+				DBUtil.close(ps);
 			}
 		}
+		//Ensure we reset the ps
 		ps = null;
+		
+		//If we have pending inserts, iterate the list into a batch call and execute.
 		if(changes.containsKey("insert") && changes.get("insert").size() > 0) {
 			try {
 				ps = dbConn.prepareStatement(insert.toString());
@@ -127,84 +152,117 @@ public class KitCoordinateParser extends SBActionAdapter {
 				ps.executeBatch();
 			} catch (SQLException sqle) {
 				log.error("Problem Inserting Layer coordinates.", sqle);
+				throw new ActionException(sqle);
 			} finally {
-				try {
-					ps.close();
-				} catch(Exception e){}
+				DBUtil.close(ps);
 			}
 		}
 	}
 
 	/**
+	 * This method handles merging json parsed coordinates with existing coordinates
+	 * retrieved from the database.
 	 * @param coordinates
 	 * @param existingCoordinates
 	 */
 	private Map<String, List<LayerCoordinateVO>> mergeCoordinates(List<LayerCoordinateVO> nc, List<LayerCoordinateVO> ec) {
+		
+		//Build initial map and lists.
 		Map<String, List<LayerCoordinateVO>> changes = new HashMap<String, List<LayerCoordinateVO>>();
-		List<LayerCoordinateVO> merged = new ArrayList<LayerCoordinateVO>();
+		List<LayerCoordinateVO> updates = new ArrayList<LayerCoordinateVO>();
 		List<LayerCoordinateVO> inserts = new ArrayList<LayerCoordinateVO>();
+		
 		/*
 		 * Match the Coordinates based on productLayerId on a first come first served basis.
 		 * As We match them, update the existing record to preserve the coordinateId in the db,
 		 * add it to the merged records list and remove both the new and existing record from 
 		 * the other lists.
 		 */
+		
+		//Build initial iterators
 		ListIterator<LayerCoordinateVO> eci = ec.listIterator();
 		ListIterator<LayerCoordinateVO> nci;
 
+		//Loop over existing db coordinates on the outside.
 		while(eci.hasNext()) {
+			
+			//Get the next existing coordinate in the list and create iterator of new points.
 			LayerCoordinateVO v = eci.next();
 			nci = nc.listIterator();
+			
+			//Loop over new coordinates
 			while(nci.hasNext()) {
+				
+				//Get the next new coordinate from the list
 				LayerCoordinateVO n = nci.next();
-				if(v.getProductLayerId() == 32)
-					log.debug("Editing Problem");
+				
+				/*
+				 * Perform fuzzy search on KitProductId as there is no way to compare unique 
+				 * coordinate id's here.  If they match then update the existing coordinates
+				 * data with that of the new coordinates. Add the updated existing point to the
+				 * updates List and remove the current existing and new points from their respective
+				 * lists.  Break out of the loop as we've made our match.
+				 */
 				if(v.getProductLayerId() == n.getProductLayerId()) {
 					v.setHorizontalPoint(n.getHorizontalPoint());
 					v.setVerticalPoint(n.getVerticalPoint());
 					v.setActiveFlag(1);
-					merged.add(v);
+					updates.add(v);
 					eci.remove();
 					nci.remove();
 					break;
 				}
 			}
 		}
+		
+		//Reset the existing lists iterator
 		eci = ec.listIterator();
+		
 		/*
 		 * After we have made all available matches, assume that anything left in the ec list
-		 * has been removed/disabled.  Set the activeFlag to 0 and add it to the merged list.
+		 * has been removed/disabled.  Set the activeFlag to 0 and add it to the updates list.
 		 */
 		while(eci.hasNext()) {
 			LayerCoordinateVO v = eci.next();
 			v.setActiveFlag(0);
-			merged.add(v);
+			updates.add(v);
 			eci.remove();
 		}
-		changes.put("update", merged);
+		
+		//Store the updates list on the change map.
+		changes.put("update", updates);
 		
 		/*
 		 * After we have made all available matches, assume that anything left in the nc list
-		 * is a new product coordinate and add it to the list. Do a Straight add to the merged
-		 * list.
+		 * is a new product coordinate and add it to the inserts list.
 		 */
 		nci = nc.listIterator();
 		while(nci.hasNext())
 			inserts.add(nci.next());
-			
+		
+		//Store the inserts list on the change map.
 		changes.put("insert", inserts);
 		
-		//Return the list of merged Layer Coordinates.
+		//The nc and ec lists should be empty now, verify.
+		log.debug("NC Size: " + nc.size());
+		log.debug("EC Size: " + ec.size());
+		
+		//Return the map of coordinates.
 		return changes;
 	}
 
 	/**
-	 * @param parameter
+	 * This method is responsible for retrieving all the existing Coordinates for a given
+	 * kitLayer.
+	 * @param kitLayerId
 	 * @return
+	 * @throws ActionException
 	 */
-	private List<LayerCoordinateVO> getExistingCoordinates(String kitLayerId) {
+	private List<LayerCoordinateVO> getExistingCoordinates(String kitLayerId) throws ActionException{
 		List<LayerCoordinateVO> coordinates = new ArrayList<LayerCoordinateVO>();
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		
+		//Build Query
 		StringBuilder sb = new StringBuilder();
 		sb.append("select a.* from ").append(customDb);
 		sb.append("RAM_LAYER_COORDINATE a inner join ").append(customDb);
@@ -219,23 +277,47 @@ public class KitCoordinateParser extends SBActionAdapter {
 			ps.setString(1, kitLayerId);
 			ResultSet rs = ps.executeQuery();
 			
+			//Add all coordinates to list.
 			while(rs.next())
 				coordinates.add(new LayerCoordinateVO(rs, false));
 		} catch (SQLException sqle) {
 			log.error("Error retrieving Kit Layer Coordinates", sqle);
+			throw new ActionException(sqle);
 		} finally {
-			try {
-				ps.close();
-			} catch(Exception e){}
+			DBUtil.close(ps);
 		}
 		
 		return coordinates;
 	}
 
 	/**
+	 * Method responsible for properly retrieving coordinates for a given shape.  For normal shapes
+	 * a standard 2 point coordinate map is fine, however for polygons this will change so we need
+	 * to parse them differently.
 	 * @param obj
+	 * @return
 	 */
-	private LayerCoordinateVO getTopLeft(JSONObject shape) {
+	private Collection<? extends LayerCoordinateVO> getCoordinatesFromShape(JSONObject shape) {
+		List<LayerCoordinateVO> c = new ArrayList<LayerCoordinateVO>();
+		switch(shape.getString("type")) {
+		case "rect" : 
+		case "circle" :
+			c.add(getCoordinate(shape));
+			c.add(getBottomRightCoordinate(shape));
+		break;
+		case "polygon" :
+			//Retrieve coordinates for polygon.
+			break;
+		}			
+		return c;
+	}
+	
+	/**
+	 * Parse out a basic Coordinate Point from the JSONShape.
+	 * @param shape
+	 * @return
+	 */
+	private LayerCoordinateVO getCoordinate(JSONObject shape) {
 		LayerCoordinateVO coord = new LayerCoordinateVO();
 		coord.setActiveFlag(1);
 		coord.setHorizontalPoint(shape.getInt("left"));
@@ -244,7 +326,16 @@ public class KitCoordinateParser extends SBActionAdapter {
 		return coord;
 	}
 
-	public LayerCoordinateVO getBottomRight(JSONObject shape) {
+	/**
+	 * For Circles and Rectangles we have a second bottom right coordinate
+	 * that we need to parse out.  In fabric this is handled via a calculation
+	 * involving the basic coordinate and the dimension * scaleFactor.  We perform
+	 * the math to get the right points and update a new LayerCoordinateVO
+	 * accordingly.
+	 * @param shape
+	 * @return
+	 */
+	public LayerCoordinateVO getBottomRightCoordinate(JSONObject shape) {
 		LayerCoordinateVO coord = new LayerCoordinateVO();
 		coord.setActiveFlag(1);
 		int bottom = 0;

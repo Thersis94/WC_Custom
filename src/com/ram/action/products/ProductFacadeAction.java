@@ -26,12 +26,11 @@ import com.smt.sitebuilder.action.SBActionAdapter;
  * @since May 20, 2014
  *        <p/>
  *        <b>Changes: </b>
- ***************************************************************************
- */
+ ****************************************************************************/
 public class ProductFacadeAction extends SBActionAdapter {
 
 	public static final String STEP_PARAM = "bType";
-	public static enum KIT_STEP {PRODUCT, PRODUCTRECALL, KIT, KITLAYER, KITPRODUCT, KITCOORDINATE, CUSTOMER}
+	public static enum KIT_STEP {product, productRecall, kitLayer, kitProduct, customer}
 	/**
 	 * Default Constructor
 	 */
@@ -83,25 +82,19 @@ public class ProductFacadeAction extends SBActionAdapter {
 		SMTActionInterface action = null;
 		try {
 			switch(KIT_STEP.valueOf(step)) {
-				case KITLAYER:
+				case kitLayer:
 					action = new KitLayerAction(actionInit);
 					break;
-				case KITPRODUCT:
+				case kitProduct:
 					action = new KitLayerProductAction(actionInit);
 					break;
-				case KITCOORDINATE:
-					action = new KitLayerCoordinateAction(actionInit);
-					break;
-				case KIT:
-					action = new KitAction(actionInit);
-					break;
-				case PRODUCTRECALL:
+				case productRecall:
 					action = new ProductRecallAction(actionInit);
 					break;
-				case CUSTOMER:
+				case customer:
 					action = new CustomerProductAction(actionInit);
 					break;
-				case PRODUCT:
+				case product:
 				default:
 					action = new ProductAction(actionInit);
 					break;
