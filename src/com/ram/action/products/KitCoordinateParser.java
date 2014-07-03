@@ -324,9 +324,13 @@ public class KitCoordinateParser extends SBActionAdapter {
 		List<LayerCoordinateVO> pc = new ArrayList<LayerCoordinateVO>();
 		LayerCoordinateVO coord = new LayerCoordinateVO();
 		
+		//Get the Center of the shape.
 		int cy = shape.getInt("top") + shape.getInt("height") / 2;
 		int cx = shape.getInt("left") + shape.getInt("width") / 2;
 
+		/*
+		 * For each point on the shape, calculate the x and y and add it to the 
+		 */
 		JSONArray points = shape.getJSONArray("points");
 		for(Object p : points.toArray()) {
 			coord = new LayerCoordinateVO();
