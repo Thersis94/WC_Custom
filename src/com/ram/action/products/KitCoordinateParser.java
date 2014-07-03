@@ -314,6 +314,9 @@ public class KitCoordinateParser extends SBActionAdapter {
 	}
 	
 	/**
+	 * Parse out the Polygon coordinates from the points on the shape object.  The points 
+	 * are caculated from the center of the polygon so we need to perform some slight
+	 * calculation to get the real coordinates.
 	 * @param shape
 	 * @return
 	 */
