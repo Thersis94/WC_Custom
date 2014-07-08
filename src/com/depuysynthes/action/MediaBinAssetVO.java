@@ -1,14 +1,15 @@
-/**
- * 
- */
 package com.depuysynthes.action;
 
+// JDK 7
 import java.sql.ResultSet;
 import java.util.Date;
 
+// SMTBaseLibs 2.0
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+
+// WebCrescendo 2.0
 import com.smt.sitebuilder.action.SBModuleVO;
 
 /****************************************************************************
@@ -20,6 +21,8 @@ import com.smt.sitebuilder.action.SBModuleVO;
  * @author James McKain
  * @version 1.0
  * @since May 7, 2013
+ * Changes:
+ * 2014-07-01: DBargerhuff: added downloadTypeTxt, languageCode fields.
  ****************************************************************************/
 public class MediaBinAssetVO extends SBModuleVO {
 	private static final long serialVersionUID = 1L;
@@ -44,6 +47,8 @@ public class MediaBinAssetVO extends SBModuleVO {
 	private String titleTxt = null;
 	private String trackingNoTxt = null;
 	private int importFileCd = 0;
+	private String downloadTypeTxt = null;
+	private String languageCode = null;
 	
 	
 	public MediaBinAssetVO(ResultSet rs) {
@@ -66,6 +71,8 @@ public class MediaBinAssetVO extends SBModuleVO {
 		titleTxt = db.getStringVal("title_txt", rs);
 		trackingNoTxt = StringUtil.checkVal(db.getStringVal("tracking_no_txt", rs));
 		setImportFileCd(db.getIntVal("import_file_cd", rs));
+		downloadTypeTxt = db.getStringVal("download_type_txt", rs);
+		languageCode = db.getStringVal("language_cd", rs);
 		
 		String dims = db.getStringVal("dimensions_txt", rs);
 		if (dims != null && dims.indexOf("~") > 0) {
@@ -207,6 +214,38 @@ public class MediaBinAssetVO extends SBModuleVO {
 
 	public void setImportFileCd(int importFileCd) {
 		this.importFileCd = importFileCd;
+	}
+
+
+	/**
+	 * @return the downloadTypeTxt
+	 */
+	public String getDownloadTypeTxt() {
+		return downloadTypeTxt;
+	}
+
+
+	/**
+	 * @param downloadTypeTxt the downloadTypeTxt to set
+	 */
+	public void setDownloadTypeTxt(String downloadTypeTxt) {
+		this.downloadTypeTxt = downloadTypeTxt;
+	}
+
+
+	/**
+	 * @return the languageCode
+	 */
+	public String getLanguageCode() {
+		return languageCode;
+	}
+
+
+	/**
+	 * @param languageCode the languageCode to set
+	 */
+	public void setLanguageCode(String languageCode) {
+		this.languageCode = languageCode;
 	}
 	
 }
