@@ -104,7 +104,6 @@ public class MediaBinIndex implements SMTCustomIndexIntfc {
     			isVideo = true;
     		} else {
     			dh = new DocumentHandlerImpl(ldm.getClassName("pdf"));
-    			isVideo = false;
     			fileBytes = loadFile(vo, fileRepos);
     			if (fileBytes == null || fileBytes.length == 0) continue;
     		}
@@ -170,6 +169,9 @@ public class MediaBinIndex implements SMTCustomIndexIntfc {
     		} catch (Exception e) {
     			log.error("Unable to index asset " + vo.getDpySynMediaBinId(),e);
     		}
+    		
+    		// reset isVideo flag
+    		isVideo = false;
     	}
     }
     
@@ -277,11 +279,16 @@ public class MediaBinIndex implements SMTCustomIndexIntfc {
     private String parseDownloadType(String downloadType, boolean isVideo) {
     	String tmp = StringUtil.checkVal(downloadType).replace("~", ",");
     	if (isVideo) {
-    		// this is a video, add 'Video' to the type.
-    		if (tmp.length() > 0) {
-    			tmp = tmp + ",Video";
-    		} else {
+    		// this is a video, set the type as 'Video' or add 'Video' to the existing type(s).
+    		if (tmp.length() == 0) {
     			tmp = "Video";
+    		} else {
+    			if (! tmp.toLowerCase().contains("video")) tmp += ",Video";
+    		}
+    	} else {
+    		// not a video, set type as 'Other' if no type was supplied.
+    		if (tmp.length() == 0) {
+    			tmp = "Other";
     		}
     	}
     	return tmp;
