@@ -39,6 +39,8 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class DSMediaBinImporter extends CommandLineUtil {
 
+	private static final String LANG_DEFAULT = "DEFAULT";
+
 	/**
 	 * Stores the URL for the US or International import file
 	 */
@@ -64,6 +66,8 @@ public class DSMediaBinImporter extends CommandLineUtil {
 	 */
 	List <Exception> failures = new ArrayList<Exception>();
 	
+	Map<String,String> languages = new HashMap<>();
+	
 	// Member Variables
     private int total = 0;
     
@@ -76,6 +80,7 @@ public class DSMediaBinImporter extends CommandLineUtil {
 	    super(args);
 		loadProperties("scripts/MediaBin.properties");
 		loadDBConnection(props);
+		loadLanguages();
 		
     }
 	/**
@@ -231,15 +236,14 @@ public class DSMediaBinImporter extends CommandLineUtil {
 		acceptedAssets.addAll(java.util.Arrays.asList(MediaBinAdminAction.VIDEO_ASSETS));
 		acceptedAssets.addAll(java.util.Arrays.asList(MediaBinAdminAction.PDF_ASSETS));
 		
-		
 		// Build the SQL Statement
 		StringBuilder sql = new StringBuilder();
 		sql.append("insert into ").append(props.getProperty(Constants.CUSTOM_DB_SCHEMA)).append("dpy_syn_mediabin ");
 		sql.append("(dpy_syn_mediabin_id, asset_nm, asset_desc, asset_type, body_region_txt, ");
-		sql.append("business_unit_nm, business_unit_id, literature_type_txt, ");
+		sql.append("business_unit_nm, business_unit_id, download_type_txt, language_cd, literature_type_txt, ");
 		sql.append("modified_dt, file_nm, dimensions_txt, orig_file_size_no, prod_family, ");
 		sql.append("prod_nm, revision_lvl_txt, opco_nm, title_txt, tracking_no_txt, import_file_cd) ");
-		sql.append("values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)" );
+		sql.append("values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)" );
 
 		int recordCnt = 0;
 		PreparedStatement ps  = null;
@@ -311,18 +315,20 @@ public class DSMediaBinImporter extends CommandLineUtil {
 				ps.setString(5, StringUtil.checkVal(row.get("Body Region"), StringUtil.checkVal(row.get("SOUS - Body Region Spine"), row.get("SOUS - Body Region Trauma"))));
 				ps.setString(6, StringUtil.checkVal(row.get("BUSINESS UNIT"),row.get("SOUS - Business Unit")));
 				ps.setString(7, row.get("Business Unit ID"));
-				ps.setString(8, StringUtil.checkVal(row.get("Literature Type"), row.get("SOUS - Literature Category")));
-				ps.setTimestamp(9, Convert.getTimestamp(modDt, true));
-				ps.setString(10, row.get("Name"));
-				ps.setString(11, row.get("Dimensions (pixels)"));
-				ps.setInt(12, Convert.formatInteger(row.get("Original File Size")));
-				ps.setString(13, getProductFamily(row));
-				ps.setString(14, StringUtil.checkVal(row.get("Product Name"), row.get("SOUS - Product Name")));
-				ps.setString(15, StringUtil.checkVal(row.get("Revision Level"), row.get("Current Revision")));
-				ps.setString(16, row.get("Distribution Channel"));
-				ps.setString(17, row.get("Title"));
-				ps.setString(18, tn);
-				ps.setInt(19, type);
+				ps.setString(8, StringUtil.checkVal(row.get("SOUS - Literature Category"))); // download_type_txt
+				ps.setString(9, parseLanguage(StringUtil.checkVal(row.get("SOUS - Language")), type)); // language_cd
+				ps.setString(10, StringUtil.checkVal(row.get("Literature Type"), row.get("SOUS - Literature Category")));
+				ps.setTimestamp(11, Convert.getTimestamp(modDt, true));
+				ps.setString(12, row.get("Name"));
+				ps.setString(13, row.get("Dimensions (pixels)"));
+				ps.setInt(14, Convert.formatInteger(row.get("Original File Size")));
+				ps.setString(15, getProductFamily(row));
+				ps.setString(16, StringUtil.checkVal(row.get("Product Name"), row.get("SOUS - Product Name")));
+				ps.setString(17, StringUtil.checkVal(row.get("Revision Level"), row.get("Current Revision")));
+				ps.setString(18, row.get("Distribution Channel"));
+				ps.setString(19, row.get("Title"));
+				ps.setString(20, tn);
+				ps.setInt(21, type);
 				
 				if (DEBUG_MODE) {
 					ps.executeUpdate();
@@ -410,7 +416,43 @@ public class DSMediaBinImporter extends CommandLineUtil {
 		return pf;
 	}
 	
+	/**
+	 * Returns the appropriate language code for the language and type
+	 * specified.
+	 * @param lang
+	 * @param type
+	 * @return
+	 */
+	private String parseLanguage(String lang, int type) {
+		switch(type) {
+			case 2: // international
+				if (lang.length() > 0) {
+					return languages.get(lang.toUpperCase());
+				} else {
+					return "";
+				}
+			default: // default to English (i.e. "en");
+				return languages.get(LANG_DEFAULT);
+		}
+	}
 	
+	/**
+	 * Loads language map
+	 */
+	private void loadLanguages() {
+		languages.put("CZECH","cs");
+		languages.put("DUTCH","nl");
+		languages.put("ENGLISH","en");
+		languages.put("FRENCH","fr");
+		languages.put("GERMAN","de");
+		languages.put("ITALIAN","it");
+		languages.put("NORWEGIAN","no");
+		languages.put("PORTUGUESE","pt");
+		languages.put("RUSSIAN","ru");
+		languages.put("SPANISH","es");
+		languages.put("SWEDISH","sv");
+		languages.put("DEFAULT","en");
+	}
 	
 	/**
 	 * Sends an email to the person specified in the properties file as to whether 
