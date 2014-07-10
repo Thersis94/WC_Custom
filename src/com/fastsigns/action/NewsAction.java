@@ -16,9 +16,8 @@ import com.fastsigns.action.vo.NewsContainerVO;
 // SMTBaseLibs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.data.GenericVO;
-import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.exception.MailException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -32,7 +31,7 @@ import com.smt.sitebuilder.action.rss.RSSCreatorVO;
 import com.smt.sitebuilder.action.tools.EmailFriendAction;
 import com.smt.sitebuilder.action.tools.EmailFriendVO;
 import com.smt.sitebuilder.action.tools.SearchVO;
-import com.smt.sitebuilder.common.PageVO;
+import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -66,7 +65,7 @@ public class NewsAction extends SBActionAdapter {
 	 */
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		String cdb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sb = new StringBuilder();
+		StringBuilder sb = new StringBuilder(900);
 		String orgId = ((SiteVO)req.getAttribute("siteData")).getOrganizationId();
 		boolean isRss = Convert.formatBoolean(this.getActionData(actionInit.getActionId()).getAttributes().get(SBModuleVO.ATTRIBUTE_2));
 		if(isRss){
@@ -236,32 +235,30 @@ public class NewsAction extends SBActionAdapter {
 	public void build(SMTServletRequest req) throws ActionException {
 		log.debug("building - send the email-a-friend message");
 		
-		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+		SiteVO site = (SiteVO)req.getAttribute("siteData");
+		ActionInitVO ai = new ActionInitVO();
 
-		//fail-fast
-		if (StringUtil.isValidEmail(req.getParameter("rcptEml"))) {
-			EmailFriendAction efa = new EmailFriendAction(actionInit);
-			EmailFriendVO eVo = new EmailFriendVO();
-			eVo.setCommentFlag(3); //override default w/user's comments
-			eVo.setEmailSubject("News Article on " + site.getSiteAlias()); 
-			
-			try {
-				efa.processMessageSend(req, site, eVo, req.getParameter("emailFriendUrl"));
-				log.debug("sent email to " + req.getParameter("rcptEml"));
-			} catch (InvalidDataException ide) {
-				log.error(ide);
-			} catch (MailException me) {
-				log.error(me);
-			} finally {
-				efa = null;
-				eVo = null;
-			}
-		}
+		//Here we use the same actionId for all Fastsigns branded orgs.
+		ai.setActionId("c0a801653d87314d380475ef5668ddfb");
+		ai.setName("Tell Someone About Us");
 		
-		String redir = page.getFullPath();
-		req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
-		req.setAttribute(Constants.REDIRECT_URL, redir.toString());
+		//If the site is Signwave branded, use AU's ActionId.
+		if(site.getCountryCode().equals("AU"))
+			ai.setActionId("0a0014137c77504fed1c4b27b4e52892");
+		
+		ModuleVO mod = new ModuleVO();
+		EmailFriendVO eVo = new EmailFriendVO();
+		eVo.setCommentFlag(3); //override default w/user's comments
+		eVo.setEmailSubject("News Article on " + site.getSiteAlias()); 
+		eVo.setEmailMessage("");
+		mod.setActionData(eVo);
+		
+		log.debug("******** Sending Email ...");
+		
+		SMTActionInterface sai = new EmailFriendAction(ai);
+		sai.setAttributes(attributes);
+		sai.setDBConnection(dbConn);
+		sai.build(req);
 		
 	}
 }
