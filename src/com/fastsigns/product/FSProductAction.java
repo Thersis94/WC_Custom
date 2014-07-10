@@ -9,11 +9,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
 
+
 //SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-//import com.siliconmtn.commerce.ProductAttributeVO;
-//import com.siliconmtn.commerce.ProductVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.http.SMTServletRequest;
@@ -158,21 +157,20 @@ public class FSProductAction extends SBActionAdapter {
 			cachedMod = new ModuleVO();
 			cachedMod.setActionId(catalogId);
 			cachedMod.setActionData(this.loadCatalog(catalogId, page.isPreviewMode()));
-			log.debug(cachedMod.getActionData());
-	       // cachedMod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
+			
 	        if (cachedMod != null && !page.isPreviewMode()) {
 	        	cachedMod.setCacheable(true);
 	        	cachedMod.setPageModuleId(catalogId);
 	        	
-	        	// Add the cache groups so that the blog gets cleared along with page and all its other modules.
+	        	// Add the cache groups so that the catalog gets cleared along with page and all its other modules.
 	        	cachedMod.addCacheGroup(catalogId);
 	        	cachedMod.addCacheGroup(page.getPageId());
 	        	super.writeToCache(cachedMod);
 	        }
 		}
-		log.debug("Products from catalog " + catalogId + " loaded.");
+		log.debug("Products and categories from catalog " + catalogId + " loaded.");
+		
     	//cached object should be returned by copy, not reference (when leveraging cache)
-		log.debug(cachedMod.getActionData());
 		mod.setActionData(cachedMod.getActionData());
 		setAttribute(Constants.MODULE_DATA, mod);
 		log.debug(mod.getActionData());
@@ -180,7 +178,10 @@ public class FSProductAction extends SBActionAdapter {
 	}
 	
 	/**
-	 * Loads the entire catalog from the database.
+	 * Loads the entire catalog from the database. and places it into two trees.
+	 * One that contains all the categories and their products.
+	 * A second that contains all the products with their parent child relations
+	 * as well as all their attributes
 	 * @param catalogId
 	 * @param isPreview
 	 * @return
@@ -251,7 +252,8 @@ public class FSProductAction extends SBActionAdapter {
 	}
 	
 	/**
-	 * Set which products in the category list
+	 * Set which products in the category list don't have any children or images
+	 * that would be used as a gallery in leu of children
 	 * @param products
 	 * @param categories
 	 */
@@ -274,7 +276,7 @@ public class FSProductAction extends SBActionAdapter {
 	 * @return
 	 */
 	private String buildLoadCatalogSql(boolean isPreview) {
-		StringBuilder sql = new StringBuilder();
+		StringBuilder sql = new StringBuilder(2100);
 		sql.append("SELECT 1 as rank, pc.PRODUCT_CATEGORY_CD, pc.PARENT_CD, p.PRODUCT_ID, pc.CATEGORY_NM, pc.CATEGORY_DESC, pc.META_KYWD_TXT, pc.META_DESC, ");
 		sql.append("pc.TITLE_NM, pc.ORDER_NO, pc.IMAGE_URL, pc.THUMBNAIL_IMG, pc.CUST_CATEGORY_ID, pc.URL_ALIAS_TXT, pc.SHORT_DESC, pc.ATTRIB1_TXT, p.URL_ALIAS_TXT as CATEGORY_PRODUCT_URL, p.IMAGE_URL as PRODUCT_IMAGE, p.PRODUCT_NM as C_PROD_NM, p.SHORT_DESC as PRODUCT_DESCRIPTION, p.PRODUCT_NM ");
 		sql.append("FROM PRODUCT_CATEGORY pc ");
@@ -339,7 +341,7 @@ public class FSProductAction extends SBActionAdapter {
 	 * @return
 	 */
 	private Map<String, ProductAttributeContainer> loadAttributesFromDatabase(String catalogId, boolean isPreview) {
-		StringBuilder sql = new StringBuilder();
+		StringBuilder sql = new StringBuilder(800);
 		Map<String, ProductAttributeContainer> attributes = new HashMap<String, ProductAttributeContainer>();
 		String lastProductId = "";
 		Node n;
@@ -423,7 +425,7 @@ public class FSProductAction extends SBActionAdapter {
 	 * @return
 	 */
 	private String buildUrl(SMTServletRequest req, String firstItem, String secondItem, boolean isMobile) {
-		StringBuilder url = new StringBuilder();
+		StringBuilder url = new StringBuilder(200);
 		boolean byProduct = false;
 		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 		
@@ -570,7 +572,7 @@ public class FSProductAction extends SBActionAdapter {
 	 * @return
 	 */
 	private String buildMenuSQL(boolean isPreview) {
-		StringBuilder sql = new StringBuilder();
+		StringBuilder sql = new StringBuilder(1000);
 		sql.append("select pc.CATEGORY_NM, pc.CUST_CATEGORY_ID, pc.URL_ALIAS_TXT, p.PRODUCT_NM, p.URL_ALIAS_TXT as 'prod_url_alias', pc.ORDER_NO ");
 		sql.append("from PRODUCT_CATEGORY pc ");
 		sql.append("inner join PRODUCT_CATEGORY_XR pcx on pc.PRODUCT_CATEGORY_CD = pcx.PRODUCT_CATEGORY_CD ");
@@ -600,7 +602,7 @@ public class FSProductAction extends SBActionAdapter {
 	 * @throws SQLException
 	 */
 	private String getCategoryCd(SMTServletRequest req) throws SQLException {
-		StringBuilder sql = new StringBuilder();
+		StringBuilder sql = new StringBuilder(230);
 		sql.append("SELECT pc.PRODUCT_CATEGORY_CD FROM PRODUCT_CATEGORY pc ");
 		sql.append("inner join product_catalog cat on pc.product_catalog_id = cat.product_catalog_id ");
 		sql.append("where url_alias_txt = ? and status_no = 5 and organization_id = ?");
