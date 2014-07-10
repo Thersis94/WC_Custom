@@ -146,6 +146,10 @@ public class MediaBinIndex implements SMTCustomIndexIntfc {
 		        if (fileName.length() > 0 && dotIndex > -1 && (dotIndex + 1) < fileName.length()) {
 		        	doc.add(new StringField(DocumentHandler.FILE_EXTENSION, fileName.substring(++dotIndex), Field.Store.YES));	
 		        }
+		        if (isVideo) {
+		        	log.info("video duration (raw) is: " + vo.getDuration()); 
+		        	doc.add(new StringField(DocumentHandler.DURATION,  parseDuration(vo.getDuration()), Field.Store.YES));
+		        }
 		        doc.add(new TextField(DocumentHandler.TITLE, 			vo.getTitleTxt(),	Field.Store.YES));
 		        doc.add(new TextField(DocumentHandler.SUMMARY, 			summary,			Field.Store.YES));
 		        // SECTION is used for company/division name
@@ -224,6 +228,27 @@ public class MediaBinIndex implements SMTCustomIndexIntfc {
 		
 		log.info("loaded " + data.size() + " records from the meta-data");
 		return data;
+    }
+    
+    /**
+     * Parses the duration (seconds) into a String representing
+     * hours and minutes in HH:MM format.
+     * @param duration
+     * @return
+     */
+    private String parseDuration(double duration) {
+    	StringBuilder dur = new StringBuilder(5);
+    	if (duration > 0) {
+    		int hours = (int) duration/3600;
+    		int minutes = (int) duration%3600;
+    		minutes = minutes/60;
+    		if (hours < 10) dur.append("0");
+    		dur.append(hours).append(":");
+    		if (minutes < 10) dur.append("0");
+    		dur.append(minutes);
+    	}
+    	log.info("video duration parsed is: " + dur.toString());
+    	return dur.toString();
     }
     
     /**
