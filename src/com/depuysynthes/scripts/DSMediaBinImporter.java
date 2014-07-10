@@ -242,8 +242,9 @@ public class DSMediaBinImporter extends CommandLineUtil {
 		sql.append("(dpy_syn_mediabin_id, asset_nm, asset_desc, asset_type, body_region_txt, ");
 		sql.append("business_unit_nm, business_unit_id, download_type_txt, language_cd, literature_type_txt, ");
 		sql.append("modified_dt, file_nm, dimensions_txt, orig_file_size_no, prod_family, ");
-		sql.append("prod_nm, revision_lvl_txt, opco_nm, title_txt, tracking_no_txt, import_file_cd) ");
-		sql.append("values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)" );
+		sql.append("prod_nm, revision_lvl_txt, opco_nm, title_txt, tracking_no_txt, ");
+		sql.append("import_file_cd, duration_length_no) ");
+		sql.append("values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)" );
 
 		int recordCnt = 0;
 		PreparedStatement ps  = null;
@@ -329,6 +330,7 @@ public class DSMediaBinImporter extends CommandLineUtil {
 				ps.setString(19, row.get("Title"));
 				ps.setString(20, tn);
 				ps.setInt(21, type);
+				ps.setDouble(22, Convert.formatDouble(row.get("Media Play Length (secs.)")));
 				
 				if (DEBUG_MODE) {
 					ps.executeUpdate();

@@ -23,6 +23,7 @@ import com.smt.sitebuilder.action.SBModuleVO;
  * @since May 7, 2013
  * Changes:
  * 2014-07-01: DBargerhuff: added downloadTypeTxt, languageCode fields.
+ * 2014-07-10: DBargerhuff: added duration field.
  ****************************************************************************/
 public class MediaBinAssetVO extends SBModuleVO {
 	private static final long serialVersionUID = 1L;
@@ -40,6 +41,7 @@ public class MediaBinAssetVO extends SBModuleVO {
 	private Integer fileSizeNo = Integer.valueOf(0);
 	private Integer widthNo = Integer.valueOf(0);
 	private Integer heightNo = Integer.valueOf(0);
+	private Double duration = Double.valueOf(0);
 	private String prodFamilyNm = null;
 	private String prodNm = null;
 	private String revisionLvlTxt = null;
@@ -62,6 +64,7 @@ public class MediaBinAssetVO extends SBModuleVO {
 		businessUnitId = db.getIntegerVal("business_unit_id", rs);
 		literatureTypeTxt = db.getStringVal("literature_type_txt", rs);
 		fileNm = db.getStringVal("file_nm", rs);
+		duration = db.getDoubleVal("duration_length_no", rs);
 		modifiedDt = db.getDateVal("modified_dt", rs);
 		fileSizeNo = db.getIntegerVal("orig_file_size_no", rs);
 		prodFamilyNm = db.getStringVal("prod_family", rs);
@@ -204,6 +207,22 @@ public class MediaBinAssetVO extends SBModuleVO {
 
 	public void setWidthNo(Integer widthNo) {
 		this.widthNo = widthNo;
+	}
+
+
+	/**
+	 * @return the duration
+	 */
+	public Double getDuration() {
+		return duration;
+	}
+
+
+	/**
+	 * @param duration the duration to set
+	 */
+	public void setDuration(Double duration) {
+		this.duration = duration;
 	}
 
 
