@@ -249,11 +249,10 @@ public class NewsAction extends SBActionAdapter {
 		ModuleVO mod = new ModuleVO();
 		EmailFriendVO eVo = new EmailFriendVO();
 		eVo.setCommentFlag(3); //override default w/user's comments
-		eVo.setEmailSubject("News Article on " + site.getSiteAlias()); 
-		eVo.setEmailMessage("");
 		mod.setActionData(eVo);
 		
-		log.debug("******** Sending Email ...");
+		attributes.put(Constants.MODULE_DATA, mod);
+		req.setParameter("emailFriendSubject", "News Article on " + site.getSiteAlias());
 		
 		SMTActionInterface sai = new EmailFriendAction(ai);
 		sai.setAttributes(attributes);
