@@ -211,6 +211,7 @@ public class NewsAction extends SBActionAdapter {
                 module.setOrganizationId(rs.getString("organization_id"));
                 module.setAttribute(SBModuleVO.ATTRIBUTE_1, rs.getString("attrib1_txt"));
                 module.setAttribute(SBModuleVO.ATTRIBUTE_2, rs.getString("attrib2_txt"));
+                module.setActionUrl(rs.getString("action_url"));
                 module.setIntroText(rs.getString("intro_txt"));
 			}
 			
@@ -234,17 +235,15 @@ public class NewsAction extends SBActionAdapter {
 	 */
 	public void build(SMTServletRequest req) throws ActionException {
 		log.debug("building - send the email-a-friend message");
+		ModuleVO news = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		
 		SiteVO site = (SiteVO)req.getAttribute("siteData");
 		ActionInitVO ai = new ActionInitVO();
 
 		//Here we use the same actionId for all Fastsigns branded orgs.
-		ai.setActionId("c0a801653d87314d380475ef5668ddfb");
+		ai.setActionId(news.getActionUrl());
+		log.debug(ai.getActionId());
 		ai.setName("Tell Someone About Us");
-		
-		//If the site is Signwave branded, use AU's ActionId.
-		if(site.getCountryCode().equals("AU"))
-			ai.setActionId("0a0014137c77504fed1c4b27b4e52892");
 		
 		ModuleVO mod = new ModuleVO();
 		EmailFriendVO eVo = new EmailFriendVO();
