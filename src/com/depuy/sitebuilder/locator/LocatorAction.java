@@ -95,110 +95,110 @@ public class LocatorAction extends SBActionAdapter {
      */
     @Override
     public void build(SMTServletRequest req) throws ActionException {
-    	log.debug("LocatorAction build...");
-    	// Only process the survey if requested
-    	Boolean processSurvey = Convert.formatBoolean(req.getParameter("processSurvey"));
-    	Boolean processRegistration = Convert.formatBoolean(req.getParameter("processRegistration"));
-    	Boolean processPhysician = Convert.formatBoolean(req.getParameter("processPhysician"));
-    	
-    	// set the locator data
-    	LocatorSubmittalVO loc = (LocatorSubmittalVO)req.getSession().getAttribute(LOCATOR_SUBMITTAL_DATA);
-    	if (loc == null) loc = new LocatorSubmittalVO();
-    	
-    	//the page to send the user to after we process.
-    	String newUrl = loc.getRedirectUrl();
-    	
-    	log.debug("processing build: " + processRegistration + "|" + processSurvey);
-    	// If the user has submitted a survey, add the data
-    	if (processSurvey && !processPhysician) {
-    		log.debug("Process Survey" + processSurvey);
-	    	// Add the data to the survey_response
-	    	ActionInitVO newAi = this.actionInit;
-	    	newAi.setActionId(req.getParameter("surveyId"));
-	    	SurveyResponseAction sa = new SurveyResponseAction(newAi);
-	    	sa.setDBConnection(dbConn);
-	    	sa.build(req);
-	    	
-	    	// Add a session param so user does not receive the survey twice
-	    	req.getSession().setAttribute("locatorSurveySubmitted", Boolean.TRUE);
-	    	newUrl = newUrl + "&doneReg=1";
+	    log.debug("LocatorAction build...");
+	    // Only process the survey if requested
+	    Boolean processSurvey = Convert.formatBoolean(req.getParameter("processSurvey"));
+	    Boolean processRegistration = Convert.formatBoolean(req.getParameter("processRegistration"));
+	    Boolean processPhysician = Convert.formatBoolean(req.getParameter("processPhysician"));
 
-    	} else if (processRegistration && !processPhysician) {
-    		log.debug("Process Registration: " + processRegistration);
-    		
-    		try {
-		    	// Add the data to the registration submittal
-    			log.debug("Registration ID: " + req.getParameter("sbActionId"));
-    			ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
-    			mod.setActionId(req.getParameter("sbActionId"));
-    			
-    			//verify we have a valid email address, if we don't then force printed fulfillment (instead of email)
-    			//this works for knee and hip because the field names are the same across all portlets
-    			if (req.getParameter("reg_||c0a8022dd74873cf6a6706c42120cb01") != null) {
-    				String type = req.getParameter("reg_||c0a8022dd74873cf6a6706c42120cb01");
-    				String email = req.getParameter("reg_enc|EMAIL_ADDRESS_TXT|7f000001397b18842a834a598cdeafa");
-    				if (type.equalsIgnoreCase("INTERNET") && !StringUtil.isValidEmail(email)) {
-    					req.setParameter("reg_||c0a8022dd74873cf6a6706c42120cb01", "MAIL", true);
-    				}
-    			}
-		    	ActionInitVO newAi = this.actionInit;
-		    	newAi.setActionId(req.getParameter("sbActionId"));
-		    	SubmittalAction sa = new SubmittalAction(newAi);
-		    	sa.setAttributes(this.attributes);
-		    	sa.setDBConnection(dbConn);
-		    	sa.build(req);
-    		} catch (Exception e) {
-    			log.error("Error adding registrant", e);
-    		}
-	    	
-	    	// Add a Cookie so user does not receive the survey twice
-			Cookie cookie = new Cookie("locatorRegistrationSubmitted", "true");
-			cookie.setMaxAge(COOKIE_MAX_AGE);
-        	HttpServletResponse res = (HttpServletResponse) this.getAttribute(GlobalConfig.HTTP_RESPONSE);
-			cookie.setPath("/" + (String) this.getAttribute(Constants.CONTEXT_NAME));
-			res.addCookie(cookie);
-			
-	    	//req.getSession().setAttribute("locatorRegistrationSubmitted", Boolean.TRUE);
-	    	newUrl = newUrl + "&doneReg=1";
-	    	
-	    	// Send the email if user requested Internet kit (Production Codes)
-	    	//String type = StringUtil.checkVal(this.getFulfillType(req), "MAIL");
-	    	
-	    	// Dev codes
-	    	//log.debug("Request Type for fulfillment: " + type);
-	    	//log.debug("Call Target for fulfillment: " + this.getCallTarget(req));
-	    	//if ("INTERNET".equalsIgnoreCase(type)) {
-	    		//this.sendLocatorEmail(req, this.getCallTarget(req));
-	    	//}
-	    	
-    	// Process the physician by adding a single record to a DB table for tracking
-    	} else if (processPhysician) {
-    		log.debug("Update phys info");
-    		String sql = "insert into locator_survey_bypass (create_dt) values(?)";
-    		PreparedStatement ps = null;
-    		try {
-    			ps = dbConn.prepareStatement(sql);
-    			ps.setTimestamp(1, Convert.getCurrentTimestamp());
-    			ps.executeUpdate();
-    		} catch(Exception e) {
-    			log.error("Error updating locator phyician bypass");
-    		} finally {
-    			try {
-    				ps.close();
-    			} catch(Exception e) {}
-    		}
+	    // set the locator data
+	    LocatorSubmittalVO loc = (LocatorSubmittalVO)req.getSession().getAttribute(LOCATOR_SUBMITTAL_DATA);
+	    if (loc == null) loc = new LocatorSubmittalVO();
 
-	    	newUrl = newUrl + "&doneReg=1";
-    	} else if (StringUtil.checkVal(req.getParameter("emailFriendId")).length() > 0) {
-    		this.processMessageSend(req, loc);
-    		return;
-    	}
-    	
-    	// Build the redirection
-    	req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
-    	req.setAttribute(Constants.REDIRECT_URL, newUrl);
-    	log.debug("Redirect URL: " + newUrl);
-    }
+	    //the page to send the user to after we process.
+	    String newUrl = loc.getRedirectUrl();
+
+	    log.debug("processing build: " + processRegistration + "|" + processSurvey);
+	    // If the user has submitted a survey, add the data
+	    if (processSurvey && !processPhysician) {
+		    log.debug("Process Survey" + processSurvey);
+		    // Add the data to the survey_response
+		    ActionInitVO newAi = this.actionInit;
+		    newAi.setActionId(req.getParameter("surveyId"));
+		    SurveyResponseAction sa = new SurveyResponseAction(newAi);
+		    sa.setDBConnection(dbConn);
+		    sa.build(req);
+
+		    // Add a session param so user does not receive the survey twice
+		    req.getSession().setAttribute("locatorSurveySubmitted", Boolean.TRUE);
+		    newUrl = newUrl + "&doneReg=1";
+
+	    } else if (processRegistration && !processPhysician) {
+		    log.debug("Process Registration: " + processRegistration);
+
+		    try {
+			    // Add the data to the registration submittal
+			    log.debug("Registration ID: " + req.getParameter("sbActionId"));
+			    ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+			    mod.setActionId(req.getParameter("sbActionId"));
+
+			    //verify we have a valid email address, if we don't then force printed fulfillment (instead of email)
+			    //this works for knee and hip because the field names are the same across all portlets
+			    if (req.getParameter("reg_||c0a8022dd74873cf6a6706c42120cb01") != null) {
+				    String type = req.getParameter("reg_||c0a8022dd74873cf6a6706c42120cb01");
+				    String email = req.getParameter("reg_enc|EMAIL_ADDRESS_TXT|7f000001397b18842a834a598cdeafa");
+				    if (type.equalsIgnoreCase("INTERNET") && !StringUtil.isValidEmail(email)) {
+					    req.setParameter("reg_||c0a8022dd74873cf6a6706c42120cb01", "MAIL", true);
+				    }
+			    }
+			    ActionInitVO newAi = this.actionInit;
+			    newAi.setActionId(req.getParameter("sbActionId"));
+			    SubmittalAction sa = new SubmittalAction(newAi);
+			    sa.setAttributes(this.attributes);
+			    sa.setDBConnection(dbConn);
+			    sa.build(req);
+		    } catch (Exception e) {
+			    log.error("Error adding registrant", e);
+		    }
+
+		    // Add a Cookie so user does not receive the survey twice
+		    Cookie cookie = new Cookie("locatorRegistrationSubmitted", "true");
+		    cookie.setMaxAge(COOKIE_MAX_AGE);
+		    HttpServletResponse res = (HttpServletResponse) this.getAttribute(GlobalConfig.HTTP_RESPONSE);
+		    cookie.setPath("/" + (String) this.getAttribute(Constants.CONTEXT_NAME));
+		    res.addCookie(cookie);
+
+		    //req.getSession().setAttribute("locatorRegistrationSubmitted", Boolean.TRUE);
+		    newUrl = newUrl + "&doneReg=1";
+
+		    // Send the email if user requested Internet kit (Production Codes)
+		    //String type = StringUtil.checkVal(this.getFulfillType(req), "MAIL");
+
+		    // Dev codes
+		    //log.debug("Request Type for fulfillment: " + type);
+		    //log.debug("Call Target for fulfillment: " + this.getCallTarget(req));
+		    //if ("INTERNET".equalsIgnoreCase(type)) {
+		    //this.sendLocatorEmail(req, this.getCallTarget(req));
+		    //}
+
+		    // Process the physician by adding a single record to a DB table for tracking
+	    } else if (processPhysician) {
+		    log.debug("Update phys info");
+		    String sql = "insert into locator_survey_bypass (create_dt) values(?)";
+		    PreparedStatement ps = null;
+		    try {
+			    ps = dbConn.prepareStatement(sql);
+			    ps.setTimestamp(1, Convert.getCurrentTimestamp());
+			    ps.executeUpdate();
+		    } catch(Exception e) {
+			    log.error("Error updating locator phyician bypass");
+		    } finally {
+			    try {
+				    ps.close();
+			    } catch(Exception e) {}
+		    }
+		    newUrl = newUrl + "&doneReg=1";
+
+	    } else if (req.hasParameter("emailFriendId")) {
+		    this.processMessageSend(req, loc);
+		    return;
+	    }
+
+		// Build the redirection
+		req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
+		req.setAttribute(Constants.REDIRECT_URL, newUrl);
+		log.debug("Redirect URL: " + newUrl);
+	}
 
     /**
 	 * New Copy method utilizing the record Duplicator.
@@ -517,7 +517,7 @@ public class LocatorAction extends SBActionAdapter {
         		attributes.put(EmailFriendAction.MESSAGE_DATA_MAP, surgeon);
         		String origActionId = actionInit.getActionId();
         		actionInit.setActionId(req.getParameter("emailFriendId"));
-        		EmailFriendAction eaf = new EmailFriendAction(this.actionInit);
+        		EmailFriendAction eaf = new EmailFriendAction(actionInit);
         		eaf.setAttributes(attributes);
         		eaf.setDBConnection(dbConn);
         		try {
