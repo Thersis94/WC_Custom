@@ -58,11 +58,6 @@ public class TVSpotConfigGB extends TVSpotConfig {
 	 */
 	private static Map<ContactField, String> getContactFields() {
 		Map<ContactField, String> data = new HashMap<ContactField, String>();
-		//data.put(ContactField.businessChallenge, "c0a8023727e92d4c94ee061a529c7d3c");
-		//data.put(ContactField.companyNm, "c0a80237b0c703fd4020174ce3a74dfd");
-		//data.put(ContactField.industry, "c0a8022d4aa7a83def1d1f05458cc933");
-		//data.put(ContactField.department, "c0a802374ae4a1823f8e3f128a806466");
-		//data.put(ContactField.title, "c0a802374af32fa435952a608c8c3946");
 		data.put(ContactField.state,"0a00141d220adabd32be5b47dde62b07");
 		data.put(ContactField.zipcode, "0a00141d220e6334f46e53f5e9436801");
 		data.put(ContactField.preferredLocation, "0a00141d22090019e477dbed8d0953ff");
