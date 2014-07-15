@@ -323,7 +323,10 @@ public class FSProductAction extends SBActionAdapter {
 		ProductVO p;
 		for (Node n : data) {
 			p = (ProductVO) n.getUserObject();
-			if (attributes.get(p.getUrlAlias()) == null) continue;
+			if (attributes.get(p.getUrlAlias()) == null) {
+				p.setAttributes(new ProductAttributeContainer());
+				continue;
+			}
 			p.setAttributes((ProductAttributeContainer) attributes.get(p.getUrlAlias()));
 			for (Node a : ((ProductAttributeContainer) attributes.get(p.getUrlAlias())).getAllAttributes()) {
 				if (a.getNodeName().equals("IMAGE")) {
