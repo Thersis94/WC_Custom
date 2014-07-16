@@ -204,7 +204,7 @@ public class KitCoordinateParser extends SBActionAdapter {
 				 * updates List and remove the current existing and new points from their respective
 				 * lists.  Break out of the loop as we've made our match.
 				 */
-				if(v.getProductLayerId() == n.getProductLayerId()) {
+				if(v.getProductLayerId().equals(n.getProductLayerId())) {
 					v.setHorizontalPoint(n.getHorizontalPoint());
 					v.setVerticalPoint(n.getVerticalPoint());
 					v.setActiveFlag(1);
