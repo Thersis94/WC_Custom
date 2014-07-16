@@ -39,8 +39,6 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class DSMediaBinImporter extends CommandLineUtil {
 
-	private static final String LANG_DEFAULT = "DEFAULT";
-
 	/**
 	 * Stores the URL for the US or International import file
 	 */
@@ -317,7 +315,7 @@ public class DSMediaBinImporter extends CommandLineUtil {
 				ps.setString(6, StringUtil.checkVal(row.get("BUSINESS UNIT"),row.get("SOUS - Business Unit")));
 				ps.setString(7, row.get("Business Unit ID"));
 				ps.setString(8, StringUtil.checkVal(row.get("SOUS - Literature Category"))); // download_type_txt
-				ps.setString(9, parseLanguage(StringUtil.checkVal(row.get("SOUS - Language")), type)); // language_cd
+				ps.setString(9, parseLanguage(row.get("SOUS - Language"))); // language_cd
 				ps.setString(10, StringUtil.checkVal(row.get("Literature Type"), row.get("SOUS - Literature Category")));
 				ps.setTimestamp(11, Convert.getTimestamp(modDt, true));
 				ps.setString(12, row.get("Name"));
@@ -425,21 +423,15 @@ public class DSMediaBinImporter extends CommandLineUtil {
 	 * @param type
 	 * @return
 	 */
-	private String parseLanguage(String lang, int type) {
-		switch(type) {
-			case 2: // international
-				if (lang.length() > 0) {
-					return languages.get(lang.toUpperCase());
-				} else {
-					return "";
-				}
-			default: // default to English (i.e. "en");
-				return languages.get(LANG_DEFAULT);
-		}
+	private String parseLanguage(String lang) {
+		if (lang == null) return null;
+		return languages.get(lang.toUpperCase());
 	}
 	
 	/**
-	 * Loads language map
+	 * Loads language map.
+	 * These correlate to the values being passed in the EXT files at the time 
+	 * of this writing.  Add as necessary.
 	 */
 	private void loadLanguages() {
 		languages.put("CZECH","cs");
@@ -453,7 +445,6 @@ public class DSMediaBinImporter extends CommandLineUtil {
 		languages.put("RUSSIAN","ru");
 		languages.put("SPANISH","es");
 		languages.put("SWEDISH","sv");
-		languages.put("DEFAULT","en");
 	}
 	
 	/**

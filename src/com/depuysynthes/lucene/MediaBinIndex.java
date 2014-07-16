@@ -2,7 +2,6 @@ package com.depuysynthes.lucene;
 
 // JDK 1.6.x
 import java.io.File;
-import java.net.URLEncoder;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -15,9 +14,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-
-
-
 // log4j 1.2-15
 import org.apache.log4j.Logger;
 import org.apache.lucene.document.Document;
@@ -27,13 +23,11 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriter;
 
-
-
-
 // SMT Base Libs
 import com.depuysynthes.action.MediaBinAdminAction;
 import com.depuysynthes.action.MediaBinAssetVO;
 import com.siliconmtn.cms.CMSConnection;
+import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.io.FileManager;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -56,6 +50,9 @@ import com.smt.sitebuilder.search.lucene.custom.SMTCustomIndexIntfc;
  * @author James McKain
  * @version 1.0
  * @since May 19, 2013<p/>
+ * @updates:
+ * 	JM 07.16.14
+ * 		Added ASSET_LANGUAGE as a non-core language field, so we could use it in View filters w/o affecting the Indexer.
  ****************************************************************************/
 public class MediaBinIndex implements SMTCustomIndexIntfc {
 	protected Logger log = null;
@@ -106,16 +103,13 @@ public class MediaBinIndex implements SMTCustomIndexIntfc {
     			dh = new DocumentHandlerImpl(ldm.getClassName("pdf"));
     			fileBytes = loadFile(vo, fileRepos);
     			if (fileBytes == null || fileBytes.length == 0) continue;
+    			isVideo = false;
     		}
     		
     		String orgId = ORGANIZATION_IDS[vo.getImportFileCd()];
     		    		
     		//ensure click-to URLs bounce through our redirector for version control.  leading slash added by WC's View.
-    		String fileNm = vo.getFileNm();
-    		try {
-    			fileNm = URLEncoder.encode(vo.getFileNm(), "UTF-8");
-    		} catch (Exception e) {}
-    		
+    		String fileNm = StringEncoder.urlEncode(vo.getFileNm());
     		vo.setActionUrl("json?amid=MEDIA_BIN_AJAX&mbid=" + vo.getDpySynMediaBinId() + "&name=" + fileNm);
     		
     		//ensure a decent name is presented
@@ -131,53 +125,48 @@ public class MediaBinIndex implements SMTCustomIndexIntfc {
     		String fileName = StringUtil.checkVal(vo.getFileNm());
     		int dotIndex = fileName.lastIndexOf(".");
    			log.info("adding '" + vo.getAssetType() + "' to index: url=" + vo.getActionUrl() + ", org=" + orgId);
-    		try {
-	    		doc = dh.getDocument(fileBytes);
-	    		doc.add(new StringField(DocumentHandler.ORGANIZATION, 	orgId,				Field.Store.YES));
-	    		//doc.add(new StringField(DocumentHandler.COUNTRY, 		country,			Field.Store.YES));
-		        //doc.add(new StringField(DocumentHandler.LANGUAGE, 		"en",				Field.Store.YES));
-	    		doc.add(new StringField(DocumentHandler.LANGUAGE, 		vo.getLanguageCode(),				Field.Store.YES));
-		        doc.add(new StringField(DocumentHandler.ROLE, 			"000",				Field.Store.YES));
-		        doc.add(new TextField(DocumentHandler.SITE_PAGE_URL,	vo.getActionUrl(),	Field.Store.YES));
-		        //doc.add(new TextField(DocumentHandler.DOCUMENT_URL, 	vo.getActionUrl(),	Field.Store.YES));
-		        doc.add(new StringField(DocumentHandler.DOCUMENT_ID, 	vo.getDpySynMediaBinId(),	Field.Store.YES));
-		        doc.add(new TextField(DocumentHandler.FILE_NAME, 		fileName,		Field.Store.YES));
-		        doc.add(new IntField(DocumentHandler.FILE_SIZE, 		vo.getFileSizeNo(),		Field.Store.YES));
-		        if (fileName.length() > 0 && dotIndex > -1 && (dotIndex + 1) < fileName.length()) {
-		        	doc.add(new StringField(DocumentHandler.FILE_EXTENSION, fileName.substring(++dotIndex), Field.Store.YES));	
-		        }
-		        if (isVideo) {
-		        	log.info("video duration (raw) is: " + vo.getDuration()); 
-		        	doc.add(new StringField(DocumentHandler.DURATION,  parseDuration(vo.getDuration()), Field.Store.YES));
-		        }
-		        doc.add(new TextField(DocumentHandler.TITLE, 			vo.getTitleTxt(),	Field.Store.YES));
-		        doc.add(new TextField(DocumentHandler.SUMMARY, 			summary,			Field.Store.YES));
-		        // SECTION is used for company/division name
-	        	doc.add(new TextField(DocumentHandler.SECTION, parseBusinessUnit(vo.getBusinessUnitNm()), Field.Store.YES));
-		        
-		        // META_KEYWORDS is used to store download text type
-	        	doc.add(new TextField(DocumentHandler.META_KEYWORDS, 
-	        			parseDownloadType(vo.getDownloadTypeTxt(), isVideo), Field.Store.YES));
-		        
-		        doc.add(new StringField(DocumentHandler.MODULE_TYPE,	"DOWNLOAD",			Field.Store.YES));
-		        		        
-		        Date start = Convert.formatDate(Calendar.getInstance().getTime(), Calendar.MONTH, -1);
-	    		Date end = Convert.formatDate(Calendar.getInstance().getTime(), Calendar.MONTH, 1);
-		        doc.add(new TextField(DocumentHandler.START_DATE,
-		        		Convert.formatDate(start, Convert.DATE_NOSPACE_PATTERN),	Field.Store.YES));
-	            doc.add(new TextField(DocumentHandler.END_DATE,
-	            		Convert.formatDate(end, Convert.DATE_NOSPACE_PATTERN),Field.Store.YES));
-	            doc.add(new TextField(DocumentHandler.UPDATE_DATE,
-	            		Convert.formatDate(vo.getModifiedDt(),Convert.DATE_NOSPACE_PATTERN),Field.Store.YES));
-		        writer.addDocument(doc);
-    		} catch (Exception e) {
-    			log.error("Unable to index asset " + vo.getDpySynMediaBinId(),e);
-    		}
-    		
-    		// reset isVideo flag
-    		isVideo = false;
-    	}
-    }
+			try {
+				doc = dh.getDocument(fileBytes);
+				doc.add(new StringField(DocumentHandler.ORGANIZATION, orgId, Field.Store.YES));
+				// doc.add(new StringField(DocumentHandler.COUNTRY, country, Field.Store.YES));
+				doc.add(new StringField(DocumentHandler.LANGUAGE, "en", Field.Store.YES));
+				
+				//this sub-filter only applies to MediaBin assets in the DS search results/filtering of Downloads & Videos.
+				doc.add(new StringField("ASSET_LANGUAGE", StringUtil.checkVal(vo.getLanguageCode()), Field.Store.YES));
+				
+				doc.add(new StringField(DocumentHandler.ROLE, "000", Field.Store.YES));
+				doc.add(new TextField(DocumentHandler.SITE_PAGE_URL, vo.getActionUrl(), Field.Store.YES));
+				// doc.add(new TextField(DocumentHandler.DOCUMENT_URL, vo.getActionUrl(), Field.Store.YES));
+				doc.add(new StringField(DocumentHandler.DOCUMENT_ID, vo.getDpySynMediaBinId(), Field.Store.YES));
+				doc.add(new TextField(DocumentHandler.TITLE, vo.getTitleTxt(), Field.Store.YES));
+				doc.add(new TextField(DocumentHandler.SUMMARY, summary, Field.Store.YES));
+				doc.add(new TextField(DocumentHandler.FILE_NAME, fileName, Field.Store.YES));
+				doc.add(new IntField(DocumentHandler.FILE_SIZE, vo.getFileSizeNo(), Field.Store.YES));
+				if (fileName.length() > 0 && dotIndex > -1 && (dotIndex + 1) < fileName.length()) {
+					doc.add(new StringField(DocumentHandler.FILE_EXTENSION, fileName.substring(++dotIndex), Field.Store.YES));
+				}
+				if (isVideo) {
+					log.info("video duration (raw) is: " + vo.getDuration());
+					doc.add(new StringField(DocumentHandler.DURATION, parseDuration(vo.getDuration()), Field.Store.YES));
+				}
+				// SECTION is used for company/division name
+				doc.add(new TextField(DocumentHandler.SECTION, parseBusinessUnit(vo.getBusinessUnitNm()), Field.Store.YES));
+
+				// META_KEYWORDS is used to store download text type
+				doc.add(new TextField(DocumentHandler.META_KEYWORDS, parseDownloadType(vo.getDownloadTypeTxt(), isVideo), Field.Store.YES));
+				doc.add(new StringField(DocumentHandler.MODULE_TYPE, "DOWNLOAD", Field.Store.YES));
+
+				Date start = Convert.formatDate(Calendar.getInstance().getTime(), Calendar.MONTH, -1);
+				Date end = Convert.formatDate(Calendar.getInstance().getTime(), Calendar.MONTH, 1);
+				doc.add(new TextField(DocumentHandler.START_DATE, Convert.formatDate(start, Convert.DATE_NOSPACE_PATTERN), Field.Store.YES));
+				doc.add(new TextField(DocumentHandler.END_DATE, Convert.formatDate(end, Convert.DATE_NOSPACE_PATTERN), Field.Store.YES));
+				doc.add(new TextField(DocumentHandler.UPDATE_DATE, Convert.formatDate(vo.getModifiedDt(), Convert.DATE_NOSPACE_PATTERN), Field.Store.YES));
+				writer.addDocument(doc);
+			} catch (Exception e) {
+				log.error("Unable to index asset " + vo.getDpySynMediaBinId(), e);
+			}
+		}
+	}
     
     private byte[] loadFile(MediaBinAssetVO vo, String fileRepos) {
     	byte[] data = null;
