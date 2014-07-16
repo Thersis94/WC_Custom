@@ -7,9 +7,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-
-
 import java.util.Map;
+
 
 // RAMDataFeed
 import com.ram.datafeed.data.CustomerVO;
@@ -17,6 +16,7 @@ import com.ram.datafeed.data.CustomerVO;
 // SMTBaseLibs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -183,11 +183,7 @@ public class CustomerAction extends SBActionAdapter {
 			log.error("Error managing RAM customer record, ", sqle);
 			msg = "An errror occurred: The customer record was not " + msgAction;
 		} finally {
-			if (ps != null) {
-				try {
-					ps.close();
-				} catch (Exception e) {log.error("Error closing PrepraredStatement, ", e);}
-			}
+			DBUtil.close(ps);
 		}
 		
 		boolean isJson = Convert.formatBoolean(StringUtil.checkVal(req.getParameter("amid")).length() > 0);
@@ -201,7 +197,7 @@ public class CustomerAction extends SBActionAdapter {
 			StringBuilder url = new StringBuilder();
 			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 			url.append(page.getRequestURI());
-			if (msg != null) url.append("?msg=").append(msg);
+			url.append("?msg=").append(msg);
 			
 			log.debug("CustomerAction redir: " + url);
 			req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
