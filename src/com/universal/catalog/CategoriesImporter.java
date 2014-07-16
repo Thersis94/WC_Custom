@@ -108,6 +108,7 @@ public class CategoriesImporter extends AbstractImporter {
 		
 		ProductCategoryVO vo = null;
 		String catImage = null;
+		Integer catImageIndex = -1;
 		for (int i=0; (temp = data.readLine()) != null; i++) {
 			String[] fields = temp.split(catalog.getSourceFileDelimiter());
 			if (i == 0) {
@@ -128,7 +129,7 @@ public class CategoriesImporter extends AbstractImporter {
 			 * whose parent is "0".
 			*/
 			if (vo.getParentCode().equalsIgnoreCase(skipCategoryId)) {
-				if (! vo.getCategoryCode().startsWith(featureCategoryId)) {
+				if (! vo.getCategoryCode().toUpperCase().startsWith(featureCategoryId)) {
 					continue;
 				}
 			} else if (vo.getCategoryCode().equals(topLevelCategoryId) && (vo.getParentCode().equals(topLevelParentCategoryId))) {
@@ -139,7 +140,10 @@ public class CategoriesImporter extends AbstractImporter {
 			vo.setCategoryName(fields[headers.get("CATEGORY_NAME")]);
 			// attempt to get the category image
 			try {
-				catImage = fields[headers.get("CATEGORY_IMAGE")];
+				catImageIndex = headers.get("CATEGORY_IMAGE");
+				if (catImageIndex != null) {
+					catImage = fields[headers.get("CATEGORY_IMAGE")];
+				}
 			} catch(ArrayIndexOutOfBoundsException e) {
 				// 2014-04-15: //TODO follow up with USA, suppressing this exception for now
 				//log.error("Error accessing category image: field.length|index: " + fields.length + "|" + headers.get("CATEGORY_IMAGE"));
