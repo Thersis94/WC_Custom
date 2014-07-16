@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 
+import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
 import com.ram.datafeed.data.LayerCoordinateVO;
@@ -203,7 +204,7 @@ public class KitCoordinateParser extends SBActionAdapter {
 				 * updates List and remove the current existing and new points from their respective
 				 * lists.  Break out of the loop as we've made our match.
 				 */
-				if(v.getProductLayerId() == n.getProductLayerId()) {
+				if(v.getProductLayerId().equals(n.getProductLayerId())) {
 					v.setHorizontalPoint(n.getHorizontalPoint());
 					v.setVerticalPoint(n.getVerticalPoint());
 					v.setActiveFlag(1);
@@ -306,12 +307,42 @@ public class KitCoordinateParser extends SBActionAdapter {
 			c.add(getBottomRightCoordinate(shape));
 		break;
 		case "polygon" :
-			//Retrieve coordinates for polygon.
+			c.addAll(getPolyCoordinates(shape));
 			break;
 		}			
 		return c;
 	}
 	
+	/**
+	 * Parse out the Polygon coordinates from the points on the shape object.  The points 
+	 * are caculated from the center of the polygon so we need to perform some slight
+	 * calculation to get the real coordinates.
+	 * @param shape
+	 * @return
+	 */
+	private Collection<? extends LayerCoordinateVO> getPolyCoordinates(JSONObject shape) {
+		List<LayerCoordinateVO> pc = new ArrayList<LayerCoordinateVO>();
+		LayerCoordinateVO coord = new LayerCoordinateVO();
+		
+		//Get the Center of the shape.
+		int cy = shape.getInt("top") + shape.getInt("height") / 2;
+		int cx = shape.getInt("left") + shape.getInt("width") / 2;
+
+		/*
+		 * For each point on the shape, calculate the x and y and add it to the 
+		 */
+		JSONArray points = shape.getJSONArray("points");
+		for(Object p : points.toArray()) {
+			coord = new LayerCoordinateVO();
+			coord.setActiveFlag(1);
+			coord.setHorizontalPoint(cx + ((JSONObject)p).getInt("x"));
+			coord.setVerticalPoint(cy + ((JSONObject)p).getInt("y"));
+			coord.setProductLayerId(Convert.formatInteger(shape.getString("id").split("-")[1]));
+			pc.add(coord);
+		}
+		return pc;
+	}
+
 	/**
 	 * Parse out a basic Coordinate Point from the JSONShape.
 	 * @param shape

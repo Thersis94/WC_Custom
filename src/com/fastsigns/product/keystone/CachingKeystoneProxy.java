@@ -121,6 +121,7 @@ public class CachingKeystoneProxy extends KeystoneProxy {
 	 * determine the cache groups.  These need to hook into WC so cache can be
 	 * flushed from the admintool: orgId, moduleTypeId, pageModuleId
 	 * @return String[] groups
+	 * DO NOT change these cache keys, they're hard-coded over on Keystone.
 	 */
 	protected String[] buildCacheGroups() {
 		cacheGroups = new String [] {

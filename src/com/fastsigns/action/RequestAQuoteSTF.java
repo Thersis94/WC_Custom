@@ -281,15 +281,17 @@ public class RequestAQuoteSTF extends SBActionAdapter {
 		try {
 			role = (SBUserRole) ses.getAttribute(Constants.ROLE_DATA);
 		} catch (Exception e) {}
-		
 		//record account type for use on the form (the final of 'x' screens)
 		//are we creating a new account, submitting as a guest, or submitting as a registered user?:
-		if (role != null && ses.getAttribute("acctType") == null) {
+		//If we have logged in and we already have an acctType of guest we also upgrade them here
+		if (role != null && !"registered".equals(ses.getAttribute("acctType"))) {
+			log.debug("Something");
 			ses.setAttribute("acctType", "registered");
 			if (!req.hasParameter(Constants.DEALER_LOCATION_ID_KEY))
 				req.setParameter(Constants.DEALER_LOCATION_ID_KEY, StringUtil.checkVal(ses.getAttribute("franchiseId")));
 			dlrLocnId = req.getParameter(Constants.DEALER_LOCATION_ID_KEY);
 		} else if (req.hasParameter("acctType")) {
+			log.debug("Something else");
 			ses.setAttribute("acctType", req.getParameter("acctType"));
 		}
 		

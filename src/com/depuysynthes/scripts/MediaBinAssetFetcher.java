@@ -158,6 +158,7 @@ public class MediaBinAssetFetcher extends CommandLineUtil {
 		sql.append(props.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("dpy_syn_mediabin where asset_type in (null");
 		for (int a = MediaBinAdminAction.PDF_ASSETS.length; a > 0; a--) sql.append(",?");
+		for (int v = MediaBinAdminAction.VIDEO_ASSETS.length; v > 0; v--) sql.append(",?");
 		sql.append(")");
 		log.debug(sql);
 		
@@ -165,8 +166,8 @@ public class MediaBinAssetFetcher extends CommandLineUtil {
 		PreparedStatement ps = null;
 		try {
 			ps = dbConn.prepareStatement(sql.toString());
-			for (String s : MediaBinAdminAction.PDF_ASSETS)
-				ps.setString(++x, s);
+			for (String s : MediaBinAdminAction.PDF_ASSETS) ps.setString(++x, s);
+			for (String v : MediaBinAdminAction.VIDEO_ASSETS) ps.setString(++x, v);
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				MediaBinAssetVO vo = new MediaBinAssetVO(rs);
