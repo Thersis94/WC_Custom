@@ -135,8 +135,8 @@ public class MediaBinIndex implements SMTCustomIndexIntfc {
 	    		doc = dh.getDocument(fileBytes);
 	    		doc.add(new StringField(DocumentHandler.ORGANIZATION, 	orgId,				Field.Store.YES));
 	    		//doc.add(new StringField(DocumentHandler.COUNTRY, 		country,			Field.Store.YES));
-		        //doc.add(new StringField(DocumentHandler.LANGUAGE, 		"en",				Field.Store.YES));
-	    		doc.add(new StringField(DocumentHandler.LANGUAGE, 		vo.getLanguageCode(),				Field.Store.YES));
+		        doc.add(new StringField(DocumentHandler.LANGUAGE, 		"en",				Field.Store.YES));
+	    		//doc.add(new StringField(DocumentHandler.LANGUAGE, 		vo.getLanguageCode(),				Field.Store.YES));
 		        doc.add(new StringField(DocumentHandler.ROLE, 			"000",				Field.Store.YES));
 		        doc.add(new TextField(DocumentHandler.SITE_PAGE_URL,	vo.getActionUrl(),	Field.Store.YES));
 		        //doc.add(new TextField(DocumentHandler.DOCUMENT_URL, 	vo.getActionUrl(),	Field.Store.YES));
