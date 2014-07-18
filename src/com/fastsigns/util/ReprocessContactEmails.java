@@ -5,11 +5,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.common.SiteVO;
-import com.smt.sitebuilder.common.constants.Constants;
 
 import com.fastsigns.action.RequestAQuoteSTF;
-import com.fastsigns.action.RequestAQuoteSTF.TransactionStep;
 import com.fastsigns.action.saf.SAFConfig;
 
 import com.siliconmtn.action.ActionException;
@@ -23,6 +20,9 @@ import com.siliconmtn.http.SMTServletRequest;
  * It's only job is to send emails, NOT save data.
  * To run this class, add a hook to RequestAQuote that looks for a query string parameter (you name it).
  * if (req.getParameter(myParam) != null) ReprocessContactEmails.procEmails(req);
+ * 
+ * See Comments in RequestAQuoteSTF action and ContactFacadeAction for instructions on how to prep those
+ * classes for reprocessing.
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2011<p/>
  * <b>Company:</b> Silicon Mountain Technologies<p/>
@@ -42,31 +42,32 @@ public class ReprocessContactEmails extends SBActionAdapter {
 
     
 	public void procEmails(SMTServletRequest req) {
-		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		SAFConfig safConfig = SAFConfig.getInstance(site.getCountryCode());
-		
-		String sql = "select a.* from contact_submittal a ";
-		sql += "inner join contact_data b on a.contact_submittal_id=b.contact_submittal_id ";
-		sql += "and b.contact_field_id=? ";
-		sql += "where cast(b.value_txt as varchar(50))=?";
-		log.debug(sql);
+		SAFConfig safConfig = SAFConfig.getInstance("US");
+	
+		//Update this query as necessary to retrieve the proper records.
+		String sql = "select distinct contact_submittal_id from contact_submittal a ";
+		sql += "where (a.CREATE_DT between '2014-07-07 17:00:00' and '2014-07-08 09:30:00' ";
+		sql += "or a.CREATE_DT between '2014-07-04 13:00:00' and '2014-07-05 22:30:00') ";
+		sql += "and action_id=?";
 		
 		PreparedStatement ps = null;
 		try {
 			ps = dbConn.prepareStatement(sql);
-			ps.setString(1, safConfig.getTransactionStageFieldId());
-			ps.setString(2, RequestAQuoteSTF.TransactionStep.fileSaved.toString());
+			ps.setString(1, safConfig.getContactUsActionId());
+			//ps.setString(1, RequestAQuoteSTF.TransactionStep.fileSaved.toString());
+			log.debug(sql);
+
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) { //for each submittal
 				log.debug("********* processing " + rs.getString("contact_submittal_id"));
-				req.setParameter("csi", rs.getString("contact_submittal_id"));
+				req.setParameter("contactSubmittalId", rs.getString("contact_submittal_id"));
 				
 				try {
 					RequestAQuoteSTF raq = new RequestAQuoteSTF(actionInit);
 					raq.setAttributes(attributes);
 					raq.setDBConnection(dbConn);
 					raq.sendEmail(req, safConfig);
-					raq.recordStep(req.getParameter("csi"), TransactionStep.complete, safConfig);
+					//raq.recordStep(req.getParameter("csi"), TransactionStep.complete, safConfig);
 				} catch (ActionException ae) {
 					log.error(ae);
 				}
