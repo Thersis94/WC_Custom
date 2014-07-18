@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+
 // log4j 1.2-15
 import org.apache.log4j.Logger;
 import org.apache.lucene.document.Document;
@@ -22,6 +23,7 @@ import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriter;
+
 
 // SMT Base Libs
 import com.depuysynthes.action.MediaBinAdminAction;
@@ -226,20 +228,31 @@ public class MediaBinIndex implements SMTCustomIndexIntfc {
      * @return
      */
     private String parseDuration(double duration) {
-    	StringBuilder dur = new StringBuilder(5);
-    	if (duration > 0) {
-    		int hours = (int) duration/3600;
-    		int minutes = (int) duration%3600;
-    		minutes = minutes/60;
-    		if (hours < 10) dur.append("0");
-    		dur.append(hours).append(":");
-    		if (minutes < 10) dur.append("0");
-    		dur.append(minutes);
-    	}
-    	log.info("video duration parsed is: " + dur.toString());
-    	return dur.toString();
+	    if (duration == 0) return "";
+		StringBuilder dur = new StringBuilder();
+		int hours = (int) duration / 3600;
+		int minutes = (int) (duration % 3600) / 60;
+		int seconds = (int) (duration % 3600) % 60;
+
+		//only include hours if needed
+		if (hours > 0) {
+			if (hours < 10) dur.append("0");
+			dur.append(hours).append(":");
+		}
+
+		//append the minutes
+		if (minutes < 10) dur.append("0");
+		dur.append(minutes).append(":");
+
+		//append the seconds
+		if (seconds < 10) dur.append("0");
+		dur.append(seconds);
+
+		log.debug("video duration parsed is: " + dur.toString());
+		return dur.toString();
     }
-    
+
+
     /**
      * Parses the business unit name.
      * @param busUnit
