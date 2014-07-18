@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.fastsigns.util.ReprocessConsultationRequestEmails;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
@@ -37,6 +38,10 @@ import com.smt.sitebuilder.util.MessageSender;
  * @author James McKain
  * @version 1.0
  * @since Feb 19, 2014
+ * 
+ * @Update Billy Larsen July 8, 2014 - Updated the Action with directions on what to do in the event
+ * of an emailReprocess.  Search for the tag EmailReprocess to reach the relevant changes that must
+ * be made to perform this change.  Also see ContactFacadeAction for changes that must be made there. 
  ****************************************************************************/
 public class TVSpotDlrContactAction extends SimpleActionAdapter {
 	
@@ -63,6 +68,19 @@ public class TVSpotDlrContactAction extends SimpleActionAdapter {
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		if (req.hasParameter("isSurvey")) return; //we don't need anything addtl to render this.
 		
+		/*
+		 * EmailReprocess - Uncomment to enable hook to reprocess Emails.
+		 * 
+		 */
+//		if(req.hasParameter("reprocessEmails")) {
+//			req.setParameter("reprocessDealerKey", dlrLocnField);
+//			ReprocessConsultationRequestEmails rep = new ReprocessConsultationRequestEmails(this.actionInit);
+//			rep.setDBConnection(dbConn);
+//			rep.setAttributes(attributes);
+//			rep.procEmails(req);
+//			rep = null;
+//			return;
+//		}
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		String contactActGrpId = (String)mod.getAttribute(ModuleVO.ATTRIBUTE_1);
 		req.setParameter(Constants.ACTION_GROUP_ID, contactActGrpId);
@@ -100,7 +118,9 @@ public class TVSpotDlrContactAction extends SimpleActionAdapter {
 		
 		//load the dealer info using the dealerLocationId passed on the request
 		//remove the "dlr-" prefix we needed when we built the dropdown (ensured proper ordering, by distance)
+		//EmailReprocess - Comment this when running Email Reprocess, we set it in the Reprocessor Util.
 		req.setParameter(dlrLocnField,  req.getParameter(dlrLocnField).substring(4), true);
+		
 		DealerLocationVO dealer = loadDesiredDealer(req);
 		
 		//the contact us portlet will send the email to the FranchiseOwner and Center for us;

@@ -125,10 +125,13 @@ public class KitLayerAction extends SBActionAdapter {
 				 * from the PreparedStatement so that the view can work with valid
 				 * information.
 				 */
-				ResultSet rs = ps.getGeneratedKeys();
-				if(rs.next())
-					result.put("kitLayerId", rs.getString(1));
-				DBUtil.close(ps);
+				if (ps != null) {
+					ResultSet rs = ps.getGeneratedKeys();
+					if(rs.next())
+						result.put("kitLayerId", rs.getString(1));
+					
+					DBUtil.close(ps);
+				}
 			} catch(Exception e) {}
 		}
 		

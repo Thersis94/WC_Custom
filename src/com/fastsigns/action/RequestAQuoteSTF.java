@@ -54,6 +54,10 @@ import com.smt.sitebuilder.util.MessageSender;
  * @Updates
  * James McKain, Feb 28, 2014 - refactored recordStatus() to move it's functionality 
  * 		to a common/reusable location in the WC core.
+ * Billy Larsen, July 8, 2014 - added comments with instructions on what to do in the event
+ * of an email Reprocess call.  Search for for the tag EmailReprocess in this document to
+ * quickly reach relevant parts of code. Also see ContactFacadeAction for changes that need
+ * to be made there.
  ****************************************************************************/
 public class RequestAQuoteSTF extends SBActionAdapter {
 	
@@ -138,15 +142,17 @@ public class RequestAQuoteSTF extends SBActionAdapter {
 		try {
 			this.sendCenterEmail(req, cdc, isSAF, safConfig, vals);
 		} catch (MailException e) {
+			//EmailReprocess - Comment this line so we don't change status when we send
 			this.recordStatus(csi, "Center email failed. " + e.getMessage(), safConfig);
 		}
 		
 		try {
+			//EmailReprocess - Comment this line so we don't change status when we send
 			this.sendUserEmail(req, cdc, isSAF, safConfig, vals);
 		} catch (MailException e) {
 			this.recordStatus(csi, "User email failed. " + e.getMessage(), safConfig);
 		}
-
+		//EmailReprocess - Comment this line so we don't change status when we send
 		this.recordStep(csi, TransactionStep.emailSent, safConfig);
 	}
 	
@@ -253,15 +259,17 @@ public class RequestAQuoteSTF extends SBActionAdapter {
 		String dlrLocnId = StringUtil.checkVal(req.getParameter(Constants.DEALER_LOCATION_ID_KEY));
 		
 		/*
-		if (req.hasParameter("reprocessEmails")) {
-			ReprocessContactEmails rep = new ReprocessContactEmails(this.actionInit);
-			rep.setDBConnection(dbConn);
-			rep.setAttributes(attributes);
-			rep.procEmails(req);
-			rep = null;
-			return;
-		}
-		*/
+		 * EmailReprocess - Uncomment this block to enable the hook for email reprocessing.
+		 */
+//		if (req.hasParameter("reprocessEmails")) {
+//			ReprocessContactEmails rep = new ReprocessContactEmails(this.actionInit);
+//			rep.setDBConnection(dbConn);
+//			rep.setAttributes(attributes);
+//			rep.procEmails(req);
+//			rep = null;
+//			return;
+//		}
+		
 		
 		//record passed status.  This scenario is called when a firewall block occurs.
 		if (req.hasParameter("contactSubmitted") && req.hasParameter("csi") && req.hasParameter("status")) {
