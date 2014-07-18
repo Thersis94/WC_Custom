@@ -371,15 +371,14 @@ public class CatalogImportManager {
 	 * @param message
 	 */
 	private void sendAdminEmail(boolean success) {
-		//TODO finish.
 		SMTMail mail = new SMTMail();
 		mail.setSmtpServer(config.getProperty("smtpServer"));
 		mail.setPort(Convert.formatInteger(config.getProperty("smtpPort")));
 		mail.setUser(config.getProperty("smtpUser"));
 		mail.setPassword(config.getProperty("smtpPassword"));
 		try {
-			mail.addRecipient("dave@siliconmtn.com");
-			mail.setFrom("catalogImportMaster@siliconmtn.com");
+			mail.addRecipient(config.getProperty("smtpRecipient"));
+			mail.setFrom(config.getProperty("smtpSender"));
 			mail.setSubject("USA Catalog Import Results");
 			mail.setTextBody(messageLog.toString());
 			mail.postMail();
