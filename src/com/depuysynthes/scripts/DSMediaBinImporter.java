@@ -435,16 +435,22 @@ public class DSMediaBinImporter extends CommandLineUtil {
 	 */
 	private void loadLanguages() {
 		languages.put("CZECH","cs");
+		languages.put("DANISH","dk");
 		languages.put("DUTCH","nl");
 		languages.put("ENGLISH","en");
+		languages.put("GREEK","gr");
+		languages.put("FINNISH","fl");
 		languages.put("FRENCH","fr");
 		languages.put("GERMAN","de");
+		languages.put("HUNGARIAN","hu");
 		languages.put("ITALIAN","it");
 		languages.put("NORWEGIAN","no");
+		languages.put("POLISH","pl");
 		languages.put("PORTUGUESE","pt");
 		languages.put("RUSSIAN","ru");
 		languages.put("SPANISH","es");
 		languages.put("SWEDISH","sv");
+		languages.put("TURKISH","tr");
 	}
 	
 	/**

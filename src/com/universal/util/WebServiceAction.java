@@ -396,6 +396,10 @@ public class WebServiceAction extends SBActionAdapter {
 			prefix.append("www.supportplus.com");
 		} else if (siteId.equalsIgnoreCase("USA_5")) {
 			prefix.append("www.basbleu.com");
+		} else if (siteId.equalsIgnoreCase("USA_6")) {
+			prefix.append("www.florianajewels.com");
+		} else if (siteId.equalsIgnoreCase("USA_7")) {
+			prefix.append("www.catalogclassics.com");
 		} else {
 			prefix.append(StringUtil.checkVal(getAttribute(USA_BASE_URL)));
 		}

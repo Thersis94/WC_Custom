@@ -17,15 +17,21 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
+
+
 // Log4J 1.2.15
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
+
+
 
 // SMT Base Libs
 import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.db.DatabaseConnection;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.SMTMail;
 import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
@@ -80,11 +86,7 @@ public class CatalogImportManager {
 	public CatalogImportManager() throws IOException, DatabaseException, InvalidDataException {
 		// Initialize the logger
 		PropertyConfigurator.configure("scripts/USA_Auto_Importer_log4j.properties");
-		config = new Properties();
-		config.load(new FileInputStream(new File("scripts/USA_Auto_Importer.properties")));
-		initialize(config);
-		dbConn = getDbConnection();
-		
+		config = new Properties();		
 	}
 
 	/**
@@ -94,34 +96,38 @@ public class CatalogImportManager {
 		boolean success = false;
 		long start = System.currentTimeMillis();
 		CatalogImportManager uci = null;
-		
 		try {
 			uci = new CatalogImportManager();
+			uci.initialize();
 		} catch (IOException ioe) {
-			log.error("Fatal Error loading configuration properties file, ", ioe);
-			//uci.addMessage(ioe.getMessage());
-			//uci.sendAdminEmail(success);
+			log.error("Fatal Error:  Failed to load configuration properties file, ", ioe);
+			uci.addMessage(ioe.getMessage());
+			uci.sendAdminEmail(success);
 			System.exit(-1);
 		} catch (DatabaseException | InvalidDataException de) {
-			log.error("Fatal Error obtaining database connection: ", de);
-			//uci.addMessage(de.getMessage());
-			//uci.sendAdminEmail(success);
+			log.error("Fatal Error: Failed to obtain a database connection: ", de);
+			uci.addMessage(de.getMessage());
+			uci.sendAdminEmail(success);
 			System.exit(-1);
 		}
 		
 		// Process the imports
+		String errMsg = null;
 		try {
+			//String flag = uci.checkTime();
 			uci.processImports();
 			uci.logMisMatches();
 			success = true;
 		} catch (IOException ioe) {
-			log.error("Fatal Error importing catalogs, ", ioe);
-			uci.addMessage(ioe.getMessage());
+			errMsg = "Fatal Error importing catalogs, " + ioe.getMessage();
+			log.error(errMsg);
+			uci.addMessage(errMsg);
 			uci.sendAdminEmail(success);
 			System.exit(-1);
 		} catch (SQLException sqle) {
-			log.error("Fatal Error importing catalogs, ", sqle);
-			uci.addMessage(sqle.getMessage());
+			errMsg = "Fatal Error importing catalogs, " + sqle.getMessage();
+			log.error(errMsg);
+			uci.addMessage(errMsg);
 			uci.sendAdminEmail(success);
 			System.exit(-1);
 		} finally {
@@ -131,7 +137,7 @@ public class CatalogImportManager {
 		uci.sendAdminEmail(success);
 		
 		long end = System.currentTimeMillis();
-		log.info("Completed Product Import in " + ((end - start) / 1000) + " seconds");
+		uci.addMessage("Completed Product Import in " + ((end - start) / 1000) + " seconds");
 	}
 
 	/**
@@ -148,12 +154,11 @@ public class CatalogImportManager {
 		iCat.addAttribute(CatalogImportVO.CATEGORY_SKIP_ID, skipCategoryId);
 		iCat.addAttribute(CatalogImportVO.CATEGORY_FEATURE_ID, featureCategoryId);
 		iCat.setSourceFileDelimiter(DELIMITER_SOURCE);
-		
+		String errMsg = null;
 		// loop the catalogs by catalog ID and import.
 		for (String catalogId : catalogIds) {
-			
 			try {
-				log.info("processing catalog ID: " + catalogId);
+				addMessage("processing catalog ID: " + catalogId);
 				// set catalog-specific values
 				iCat.setCatalogId(catalogId);
 				iCat.setCatalogPrefix(prefixes.get(catalogId));
@@ -165,17 +170,21 @@ public class CatalogImportManager {
 				// set source file path for this catalog
 				iCat.setSourceFilePath(catalogSourcePath);
 				
-				log.info("prefix|url|sourcePath: " + iCat.getCatalogPrefix() + "|" + iCat.getSourceFileUrl() + "|" + iCat.getSourceFilePath());
+				addMessage("prefix|url|sourcePath: " + iCat.getCatalogPrefix() + "|" + iCat.getSourceFileUrl() + "|" + iCat.getSourceFilePath());
 				
 				// import the catalog
 				importCatalog(iCat);
 				
 			} catch (FileNotFoundException fnfe) {
-				log.error("IMPORT FAILED for catalog : " + catalogId + ", " + fnfe);
-				
+				errMsg = "IMPORT FAILED for catalog : " + catalogId + ", " + fnfe.getMessage();
+				log.error(errMsg);
+				addMessage(errMsg);
 			} catch (IOException | SQLException e) {
-				log.error("IMPORT FAILED for catalog : " + catalogId + ", " + e);
+				errMsg = "IMPORT FAILED for catalog : " + catalogId + ", " + e.getMessage();
+				log.error(errMsg);
+				addMessage(errMsg);
 			}
+			errMsg = null;
 		}
 	}
 	
@@ -224,7 +233,7 @@ public class CatalogImportManager {
 		// commit changes if all were successful
 		dbConn.commit();
 		dbConn.setAutoCommit(true);
-		log.info("Catalog import for " + catalog.getCatalogId() + " has completed.");
+		addMessage("Catalog import for " + catalog.getCatalogId() + " has completed.");
 
 	}
 	
@@ -256,7 +265,9 @@ public class CatalogImportManager {
 			ps.setString(1, productCatalogId);
 			ps.execute();
 		} catch (SQLException e) {
-			log.error("Error deleting USA " + tableName + " data", e);
+			String errMsg = "Error deleting USA " + tableName + " data: " + e.getMessage();
+			log.error(errMsg);
+			addMessage(errMsg);
 			throw new SQLException(e.getMessage());
 		} finally {
 			if (ps != null) {
@@ -277,6 +288,7 @@ public class CatalogImportManager {
 	private void importCategories(CatalogImportVO catalog) 
 			throws FileNotFoundException, IOException, SQLException {
 		log.info("importing categories...");
+		addMessage("importing categories...");
 		catalog.setSourceFileName(sourceFileList[0]);
 		CategoriesImporter ci = new CategoriesImporter(dbConn);
 		ci.setCatalog(catalog);
@@ -298,6 +310,7 @@ public class CatalogImportManager {
 	private List<ProductVO> importProducts(CatalogImportVO catalog) 
 		throws FileNotFoundException, IOException, SQLException {
 		log.info("importing products...");
+		addMessage("importing products...");
 		catalog.setSourceFileName(sourceFileList[1]);
 		ProductsImporter pi = new ProductsImporter(dbConn);
 		pi.setCatalog(catalog);
@@ -320,6 +333,7 @@ public class CatalogImportManager {
 	private void importOptions(CatalogImportVO catalog, List<ProductVO> products) 
 			throws FileNotFoundException, IOException, SQLException {
 		log.info("importing options...");
+		addMessage("importing options...");
 		catalog.setSourceFileName(sourceFileList[2]);
 		OptionsImporter oi = new OptionsImporter(dbConn);
 		oi.setCatalog(catalog);
@@ -341,6 +355,7 @@ public class CatalogImportManager {
 	private void importPersonalization(CatalogImportVO catalog, List<ProductVO> products) 
 			throws FileNotFoundException, IOException, SQLException {
 		log.info("importing personalization options...");
+		addMessage("importing personalization options...");
 		catalog.setSourceFileName(sourceFileList[3]);
 		PersonalizationImporter pli = new PersonalizationImporter(dbConn);
 		pli.setCatalog(catalog);
@@ -356,55 +371,92 @@ public class CatalogImportManager {
 	 * @param message
 	 */
 	private void sendAdminEmail(boolean success) {
-		
+		SMTMail mail = new SMTMail();
+		mail.setSmtpServer(config.getProperty("smtpServer"));
+		mail.setPort(Convert.formatInteger(config.getProperty("smtpPort")));
+		mail.setUser(config.getProperty("smtpUser"));
+		mail.setPassword(config.getProperty("smtpPassword"));
+		try {
+			mail.addRecipient(config.getProperty("smtpRecipient"));
+			mail.setFrom(config.getProperty("smtpSender"));
+			mail.setSubject("USA Catalog Import Results");
+			mail.setTextBody(messageLog.toString());
+			mail.postMail();
+		} catch (Exception e) {
+			log.error("Error sending admin email, ", e);
+		}
 	}
 		
 	/**
-	 * DEBUG method. Write mismatch data to the log
+	 * Writes mismatch data to the log and to the List of messages
+	 * to include in the admin email.
 	 */
 	private void logMisMatches() {
-		log.info("");
+		StringBuilder info = new StringBuilder();
+		String arrow = "---->";
+		String end = "*** end ***";
+		info.append("\n");
+		
 		if (misMatchedParentCategories.size() > 0) {
-			log.info("*** Invalid parent category references in category data file: ***");
+			info.append("*** Invalid parent category references in category data file: ***").append("\n");
 			for (Iterator<String> iter = misMatchedParentCategories.iterator(); iter.hasNext(); ) {
-				log.info("---->" + iter.next());
+				info.append(arrow).append(iter.next()).append("\n");
 			}
-			log.info("*** end ***");
-			log.info("");
+			info.append(end).append("\n");
+			info.append("\n");
 		}
+		
 		if (misMatchedCategories.size() > 0) {
-			log.info("*** Invalid category references in products data file: ***");
+			info.append("*** Invalid category references in products data file: ***").append("\n");
 			for (Iterator<String> iter = misMatchedCategories.iterator(); iter.hasNext(); ) {
-				log.info("---->" + iter.next());
+				info.append(arrow).append(iter.next()).append("\n");
 			}
-			log.info("*** end ***");
-			log.info("");
-		}			
+			info.append(end).append("\n");
+			info.append("\n");
+		}
+		
 		if (misMatchedOptions.size() > 0) {
-			log.info("*** Invalid product references in options file: ***");
+			info.append("*** Invalid product references in options file: ***").append("\n");
 			for (Iterator<String> iter = misMatchedOptions.iterator(); iter.hasNext(); ) {
-				log.info("---->" + iter.next());
+				info.append(arrow).append(iter.next()).append("\n");
 			}
-			log.info("*** end ***");
-			log.info("");
+			info.append(end).append("\n");
+			info.append("\n");
 		}
+		
 		if (misMatchedPersonalization.size() > 0) {
-			log.info("*** Invalid product ID references in personalization file: ***");
+			info.append("*** Invalid product ID references in personalization file: ***").append("\n");
 			for (Iterator<String> iter = misMatchedPersonalization.iterator(); iter.hasNext(); ) {
-				log.info("---->" + iter.next());
+				info.append(arrow).append(iter.next()).append("\n");
 			}
-			log.info("*** end ***");
-			log.info("");
+			info.append(end).append("\n");
+			info.append("\n");
 		}
+		
 		if (misMatchedAttributes.size() > 0) {
-			log.info("*** Invalid attribute references: ***");
+			info.append("*** Invalid attribute references: ***").append("\n");
 			for (Iterator<String> iter = misMatchedAttributes.iterator(); iter.hasNext(); ) {
-				log.info("---->" + iter.next());
+				info.append(arrow).append(iter.next()).append("\n");
 			}
-			log.info("*** end ***");
-			log.info("");
+			info.append(end).append("\n");
+			info.append("\n");
 		}
-
+		log.info(info);
+		addMessage(info.toString());
+	}
+	
+	/**
+	 * Calls the methods that load the properties file and that establish a database connection.
+	 * @throws FileNotFoundException
+	 * @throws IOException
+	 * @throws DatabaseException
+	 * @throws InvalidDataException
+	 */
+	private void initialize() 
+			throws FileNotFoundException, IOException, DatabaseException, InvalidDataException {
+		config.load(new FileInputStream(new File("scripts/USA_Auto_Importer.properties")));
+		loadProperties(config);
+		dbConn = getDbConnection();
 	}
 	
 	/**
@@ -412,7 +464,7 @@ public class CatalogImportManager {
 	 * local fields.
 	 * @param config
 	 */
-	private void initialize(Properties config) {
+	private void loadProperties(Properties config) {
 		// initialize Collections
 		catalogIds =  new ArrayList<>();
 		prefixes = new LinkedHashMap<>();
@@ -457,7 +509,9 @@ public class CatalogImportManager {
 		dbc.setUrl(config.getProperty("dbUrl"));
 		dbc.setUserName(config.getProperty("dbUser"));
 		dbc.setPassword(config.getProperty("dbPassword"));
-		log.info("Connecting to " + config.getProperty("dbUrl"));
+		String msg = "Connecting to " + config.getProperty("dbUrl");
+		log.info(msg);
+		addMessage(msg);
 		return dbc.getConnection();
 	}
 	
@@ -469,8 +523,11 @@ public class CatalogImportManager {
 			try {
 				log.info("Closing db connection.");
 				dbConn.close();
+				addMessage("Closed db connection.");
 			} catch (SQLException sqle) {
-				log.error("Unable to close DB connection, ", sqle);
+				String errMsg = "Unable to close db connection, " + sqle.getMessage();
+				log.error(errMsg);
+				addMessage(errMsg);
 			}
 		}
 	}
@@ -479,7 +536,7 @@ public class CatalogImportManager {
 	 * Adds a message to the message log
 	 * @param msg
 	 */
-	public void addMessage(String msg) {
+	private void addMessage(String msg) {
 		messageLog.add(msg);
 	}
 

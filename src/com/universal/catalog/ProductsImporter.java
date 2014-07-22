@@ -107,6 +107,7 @@ public class ProductsImporter extends AbstractImporter {
 		List<ProductVO> prods = new ArrayList<ProductVO>();
 		String temp = null;
 		Map<String, Integer> headers = null;
+		String origProdId = null;
 		String origPrice = null;
 		ProductVO prod = null;
 		log.info("source file delimiter: " + catalog.getSourceFileDelimiter());
@@ -120,11 +121,14 @@ public class ProductsImporter extends AbstractImporter {
 				}
 				continue; // skip the header row
 			}
-
+			
+			origProdId = fields[headers.get("SKUID")];
+			//if (origProdId.toUpperCase().endsWith("G")) continue; // skip any product whose product ID ends with "G"
+			
 			try {
 				//ProductVO prod = new ProductVO();
 				prod = new ProductVO();
-				prod.setProductId(catalog.getCatalogPrefix() + fields[headers.get("SKUID")]); // SKUID with prefix
+				prod.setProductId(catalog.getCatalogPrefix() + origProdId); // SKUID with prefix
 				prod.setCustProductNo(fields[headers.get("SKUID")]); // SKUID, we use this as display value in JSTL
 				prod.setProductName(this.stripQuotes(fields[headers.get("NAME")])); // NAME
 				
@@ -138,7 +142,7 @@ public class ProductsImporter extends AbstractImporter {
 					origPrice = fields[headers.get("ORIGPRICE")]; // ORIGPRICE
 					prod.setDiscountedCostNo(Convert.formatDouble(origPrice));
 				} catch(ArrayIndexOutOfBoundsException e) {
-					// 2014-04-15: suppressing this error for now //TODO follow-up with USA
+					// 2014-04-15: suppressing this error
 					//log.error("Error accessing ORIGPRICE: field.length|index: " + fields.length + "|" + headers.get("ORIGPRICE"));
 				}
 				
@@ -147,18 +151,7 @@ public class ProductsImporter extends AbstractImporter {
 				
 				// set price
 				prod.setMsrpCostNo(Convert.formatDouble(fields[headers.get("PRICE")])); //PRICE
-
 				prod.setDescText(this.stripQuotes(fields[headers.get("DESCRIPTION")])); // DESCRIPTION
-				
-				// 2014-04-16: CUSTOMN is a typo in the import file column name, adding this to transparently
-				// handle the correction to the typo by USA.  Will remove when import file is corrected.
-				/*
-				if (headers.get("CUSTOMN") != null) {
-					prod.setCustProductNo(fields[headers.get("CUSTOMN")]); // CUSTOMN is a typo in the import file	
-				} else {
-					prod.setCustProductNo(fields[headers.get("CUSTOM")]); // CUSTOM
-				}
-				*/
 				prod.setMetaKywds(this.stripQuotes(fields[headers.get("KEYWORDS")])); // KEYWORDS
 				prod.setImage(fields[headers.get("IMAGE")]); // IMAGE
 				prod.setThumbnail(fields[headers.get("SMLIMG")]); // SMLIMG
