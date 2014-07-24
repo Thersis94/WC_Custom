@@ -280,8 +280,8 @@ public class FSProductAction extends SBActionAdapter {
 		sql.append("SELECT 1 as rank, pc.PRODUCT_CATEGORY_CD, pc.PARENT_CD, p.PRODUCT_ID, pc.CATEGORY_NM, pc.CATEGORY_DESC, pc.META_KYWD_TXT, pc.META_DESC, ");
 		sql.append("pc.TITLE_NM, pc.ORDER_NO, pc.IMAGE_URL, pc.THUMBNAIL_IMG, pc.CUST_CATEGORY_ID, pc.URL_ALIAS_TXT, pc.SHORT_DESC, pc.ATTRIB1_TXT, p.URL_ALIAS_TXT as CATEGORY_PRODUCT_URL, p.IMAGE_URL as PRODUCT_IMAGE, p.PRODUCT_NM as C_PROD_NM, p.SHORT_DESC as PRODUCT_DESCRIPTION, p.PRODUCT_NM ");
 		sql.append("FROM PRODUCT_CATEGORY pc ");
-		sql.append("left join PRODUCT_CATEGORY_XR pcx on pc.PRODUCT_CATEGORY_CD = pcx.PRODUCT_CATEGORY_CD ");
-		sql.append("left join PRODUCT p on p.PRODUCT_ID = pcx.PRODUCT_ID and p.STATUS_NO = 5 ");
+		sql.append("inner join PRODUCT_CATEGORY_XR pcx on pc.PRODUCT_CATEGORY_CD = pcx.PRODUCT_CATEGORY_CD ");
+		sql.append("inner join PRODUCT p on p.PRODUCT_ID = pcx.PRODUCT_ID and p.STATUS_NO = 5 ");
 		sql.append("where pc.product_catalog_id=? ");
 		if (isPreview){
 			sql.append("and CATEGORY_GROUP_ID not in (select PRODUCT_CATEGORY_CD from PRODUCT_CATEGORY where CATEGORY_GROUP_ID is not null and CATEGORY_GROUP_ID != CATEGORY_GROUP_ID) ");
@@ -512,7 +512,7 @@ public class FSProductAction extends SBActionAdapter {
 	private Node getNode(List<Tree> catalog, String itemAlias, int list) {
 		Node n = catalog.get(list).findNode(itemAlias);
 		if(n == null) {
-			log.error(itemAlias + " does not exits in " + catalog.get(list));
+			log.error(itemAlias + " does not exist in " + catalog.get(list));
 			return new Node();
 		}
 		return n;
