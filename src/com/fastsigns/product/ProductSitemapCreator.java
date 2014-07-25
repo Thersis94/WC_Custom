@@ -110,7 +110,7 @@ public class ProductSitemapCreator {
 			String[] vals = config.get(SBModuleVO.ATTRIBUTE_1).split("~");
 			FSProductAction fpi = new FSProductAction(ai);
 			fpi.setDBConnection(new SMTDBConnection(conn));
-			tree = fpi.loadEntireCatalog(vals[0], false);
+			tree = fpi.loadEntireCatalog(vals[0]);
 			filterCategory = vals[1];
 
 		} catch (Exception e) {

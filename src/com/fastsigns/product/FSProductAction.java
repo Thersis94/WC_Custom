@@ -637,11 +637,11 @@ public class FSProductAction extends SBActionAdapter {
 	 * @param catalogId
 	 * @return Tree
 	 */
-	public Tree loadEntireCatalog(String catalogId, Boolean loadAttributes) {
+	public Tree loadEntireCatalog(String catalogId) {
 		ProductCatalogAction pca = new ProductCatalogAction(this.actionInit);
 		pca.setDBConnection(dbConn);
 		pca.setAttributes(attributes);
-		return pca.loadEntireCatalog(catalogId, loadAttributes, null);
+		return pca.loadEntireCatalog(catalogId, false, null);
 	}
 
 }
