@@ -399,7 +399,7 @@ public class FSProductAction extends SBActionAdapter {
 				data.add(n);
 			}
 		} catch (SQLException e) {
-			log.debug("Unable to get product attributes for catalog " + catalogId, e);
+			log.error("Unable to get product attributes for catalog " + catalogId, e);
 		}
 		
 		
@@ -408,7 +408,7 @@ public class FSProductAction extends SBActionAdapter {
 	
 	private void buildCanonicals(SMTServletRequest req, String firstItem, String secondItem, String thirdItem, Node n) {
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
-		log.debug("Creating canonical urls");
+		
 		// Check if there is an attribute that sets the urls.  If so we use that and ignore everything else
 		if (n != null && checkAttribUrl((ProductVO)n.getUserObject(), page)) return;
 
@@ -456,7 +456,7 @@ public class FSProductAction extends SBActionAdapter {
 		if (secondItem != null && byProduct) {
 			url.append("/"+secondItem);
 		}
-		log.debug(url.toString());
+		
 		return url.toString();
 	}
 	
@@ -472,6 +472,8 @@ public class FSProductAction extends SBActionAdapter {
 				ProductAttributeVO attr = (ProductAttributeVO) n.getUserObject();
 				page.setCanonicalPageUrl(attr.getAttribute1());
 				page.setCanonicalMobileUrl(attr.getAttribute2());
+				
+				log.debug("Got canonical from product attribute");
 				return true;
 				
 			}
