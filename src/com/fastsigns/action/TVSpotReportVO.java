@@ -87,6 +87,7 @@ public class TVSpotReportVO extends AbstractSBReportVO {
 		sheet.setColumnWidth(colNum++, 5000);
 		sheet.setColumnWidth(colNum++, 8000);
 		sheet.setColumnWidth(colNum++, 4000);
+		sheet.setColumnWidth(colNum++, 10000);
 		sheet.setColumnWidth(colNum++, 3000);
 		sheet.setColumnWidth(colNum++, 2000);
 		sheet.setColumnWidth(colNum++, 15000);
@@ -154,6 +155,7 @@ public class TVSpotReportVO extends AbstractSBReportVO {
 		row.createCell(cellNum++).setCellValue(vo.getFullName());
 		row.createCell(cellNum++).setCellValue(vo.getEmailAddress());
 		row.createCell(cellNum++).setCellValue(pnf.getFormattedNumber());
+		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.visitMethod.id())));
 		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.zipcode.id())));
 		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.state.id())));
 //		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.industry.id())));
@@ -202,6 +204,7 @@ public class TVSpotReportVO extends AbstractSBReportVO {
 		row.createCell(cellNum++).setCellValue("Prospect Name");
 		row.createCell(cellNum++).setCellValue("Prospect Email");
 		row.createCell(cellNum++).setCellValue("Phone Number");
+		row.createCell(cellNum++).setCellValue("Way they Reached the site");
 		row.createCell(cellNum++).setCellValue("Zip Code");
 		row.createCell(cellNum++).setCellValue("State");
 //		row.createCell(cellNum++).setCellValue("Industry");
