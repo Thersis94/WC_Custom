@@ -181,7 +181,6 @@ public class RamUserAction extends SBActionAdapter {
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.http.SMTServletRequest)
 	 */
-	@SuppressWarnings("null")
 	@Override
 	public void build(SMTServletRequest req) throws ActionException {
 		log.debug("RamUserAction build...");

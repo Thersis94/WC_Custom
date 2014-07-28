@@ -1,12 +1,13 @@
 package com.fastsigns.action;
 
+// JDK 1.6.x
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import com.fastsigns.util.ReprocessConsultationRequestEmails;
+// SMT BAse Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
@@ -16,6 +17,8 @@ import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.util.PhoneNumberFormat;
 import com.siliconmtn.util.StringUtil;
+
+// WC Libs
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.contact.ContactFacadeAction;
 import com.smt.sitebuilder.action.contact.SubmittalDataAction;
