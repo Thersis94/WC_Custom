@@ -736,12 +736,12 @@ public class ShoppingCartAction extends SBActionAdapter {
 		Map<String, String[]> p = req.getParameterMap();
 		StringBuilder sb = new StringBuilder();
 		sb.append("select * from PRODUCT_ATTRIBUTE_XR where product_id = ? order by attrib2_txt, order_no");
-		log.debug("prod attribute SQL: " + sb.toString());
+		log.debug("prod attribute SQL: " + sb.toString() + "|" + pIDAdv);
 		PreparedStatement ps = null;
 		Map<String, ProductAttributeVO> attribs = new LinkedHashMap<String, ProductAttributeVO>();
 		try{
 			ps = dbConn.prepareStatement(sb.toString());
-			ps.setString(1, pIDAdv);
+			ps.setString(1, catalogSiteId + "_" + pIDAdv);
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				ProductAttributeVO pavo = new ProductAttributeVO(rs);
