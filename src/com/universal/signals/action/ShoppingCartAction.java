@@ -750,10 +750,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 		} catch (SQLException sqle) {
 			log.error("Unable to add product attributes: " + sqle);
 		} finally { try { ps.close(); } catch (Exception e) {log.error("Error closing prepared statement, ", e);}}
-		if (attribs.isEmpty()) {
-			log.debug("no product attributes found for product ID: " + pIDAdv);
-			return;
-		}
+		if (attribs.isEmpty()) return;
 		
 		List<ProductAttributeVO> prodAttribs = new ArrayList<ProductAttributeVO>();
 		//iterate through the keys and find the attributes that were specified for this product/item.
