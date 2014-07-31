@@ -68,6 +68,7 @@ public class TVSpotConfigGB extends TVSpotConfig {
 		data.put(ContactField.rating, "0a00141d220a5090444a5cd08a412899");
 		data.put(ContactField.inquiry, "0a00141d220c122591d0a3f028690b40");
 		data.put(ContactField.consultation, "0a00141d220bdabbdc6e0498f66f631c");
+		data.put(ContactField.visitMethod, "0a00141d6a2339bcc1b10e57708ed185");
 		return data;
 	}
 
