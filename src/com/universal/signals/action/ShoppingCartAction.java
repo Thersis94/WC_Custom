@@ -736,12 +736,12 @@ public class ShoppingCartAction extends SBActionAdapter {
 		Map<String, String[]> p = req.getParameterMap();
 		StringBuilder sb = new StringBuilder();
 		sb.append("select * from PRODUCT_ATTRIBUTE_XR where product_id = ? order by attrib2_txt, order_no");
-		log.debug("prod attribute SQL: " + sb.toString());
+		log.debug("prod attribute SQL: " + sb.toString() + "|" + pIDAdv);
 		PreparedStatement ps = null;
 		Map<String, ProductAttributeVO> attribs = new LinkedHashMap<String, ProductAttributeVO>();
 		try{
 			ps = dbConn.prepareStatement(sb.toString());
-			ps.setString(1, pIDAdv);
+			ps.setString(1, catalogSiteId + "_" + pIDAdv);
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				ProductAttributeVO pavo = new ProductAttributeVO(rs);
@@ -750,7 +750,10 @@ public class ShoppingCartAction extends SBActionAdapter {
 		} catch (SQLException sqle) {
 			log.error("Unable to add product attributes: " + sqle);
 		} finally { try { ps.close(); } catch (Exception e) {log.error("Error closing prepared statement, ", e);}}
-		if (attribs.isEmpty()) return;
+		if (attribs.isEmpty()) {
+			log.debug("no product attributes found for product ID: " + pIDAdv);
+			return;
+		}
 		
 		List<ProductAttributeVO> prodAttribs = new ArrayList<ProductAttributeVO>();
 		//iterate through the keys and find the attributes that were specified for this product/item.
