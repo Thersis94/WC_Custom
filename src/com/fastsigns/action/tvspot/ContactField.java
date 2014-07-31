@@ -26,6 +26,7 @@ public enum ContactField {
 	feedback,
 	rating,
 	inquiry,
-	consultation;
+	consultation,
+	visitMethod;
 
 }
