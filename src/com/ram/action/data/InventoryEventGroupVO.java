@@ -4,7 +4,9 @@ package com.ram.action.data;
 import java.io.Serializable;
 import java.sql.ResultSet;
 import java.util.Date;
+import java.util.List;
 
+import com.ram.datafeed.data.InventoryEventVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
@@ -46,6 +48,7 @@ public class InventoryEventGroupVO implements Serializable {
 	private Date createDate = null;
 	private Date updateDate = null;
 
+	private List<InventoryEventVO> events = null;
 	/**
 	 * Default no parameter constructor
 	 */
@@ -291,6 +294,20 @@ public class InventoryEventGroupVO implements Serializable {
 	 */
 	public int getRecurrenceCount() {
 		return (sundayFlag + mondayFlag + tuesdayFlag + wednesdayFlag + thursdayFlag + fridayFlag + saturdayFlag) * totalWeek;
+	}
+
+	/**
+	 * @return the events
+	 */
+	public List<InventoryEventVO> getEvents() {
+		return events;
+	}
+
+	/**
+	 * @param events the events to set
+	 */
+	public void setEvents(List<InventoryEventVO> events) {
+		this.events = events;
 	}
 
 }
