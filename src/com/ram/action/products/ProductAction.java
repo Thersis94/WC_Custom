@@ -151,33 +151,35 @@ public class ProductAction extends SBActionAdapter {
 	}
 
 	/**
-	 * We can only update products.  Inserts will come from data import or datafeed.
-	 * Here we update a product record in the database.
+	 * Make the decision to either insert a new product or update
+	 * and existing product based on presense of a productId on the
+	 * request.
 	 */
 	@Override
 	public void build(SMTServletRequest req) throws ActionException {
+		//Build Update Query.
+		String query = null;
+		boolean isInsert = !req.hasParameter("productId");
 		
-		//Build Update Query.  We don't insert Products
-		StringBuilder sb = new StringBuilder();
-		sb.append("update ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sb.append("RAM_PRODUCT set PRODUCT_NM = ?, SHORT_DESC = ?, ACTIVE_FLG = ?, ");
-		sb.append("LOT_CODE_FLG = ?, KIT_FLG = ?, UPDATE_DT = ?, ");
-		sb.append("EXPIREE_REQ_FLG = ?, CUST_PRODUCT_ID = ? where PRODUCT_ID = ? ");
+		if(isInsert) {
+			query = getProdInsert();
+		} else {
+			query = getProdUpdate();
+		}
 		
 		//Log sql Statement for verification
-		log.debug("sql: " + sb.toString());
+		log.debug("sql: " + query);
 		
 		Map<String, String> result = new HashMap<String, String>();
 		result.put("success", "true");
 		result.put("msg", "Data Successfully Updated");
-		
 		//Build PreparedStatement and set Parameters
 		PreparedStatement ps = null;
 		int i = 1;
 		log.debug(req.getParameter("kitFlag"));
 		log.debug(req.getParameter("lotCodeRequired"));
 		try {
-			ps = dbConn.prepareStatement(sb.toString());
+			ps = dbConn.prepareStatement(query);
 			ps.setString(i++, req.getParameter("productNm"));
 			ps.setString(i++, req.getParameter("shortDesc"));
 			ps.setInt(i++, Convert.formatInteger(Convert.formatBoolean(req.getParameter("activeFlag"))));
@@ -186,8 +188,12 @@ public class ProductAction extends SBActionAdapter {
 			ps.setTimestamp(i++, Convert.getCurrentTimestamp());
 			ps.setInt(i++, Convert.formatInteger(Convert.formatBoolean(req.getParameter("expireeRequired"))));
 			ps.setString(i++, req.getParameter("customerProductId"));
-			ps.setString(i++, req.getParameter("productId"));
-			
+			if(req.hasParameter("productId")) {
+				ps.setString(i++, req.getParameter("productId"));
+			} else {
+				ps.setString(i++, req.getParameter("customerId"));
+				ps.setString(i++, req.getParameter("gtinProductId"));
+			}
 			//Execute
 			ps.executeUpdate();
 		} catch(SQLException sqle) {
@@ -316,5 +322,23 @@ public class ProductAction extends SBActionAdapter {
 	@Override
 	public void update(SMTServletRequest req) throws ActionException {
 		super.update(req);
+	}
+	
+	public String getProdInsert() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("insert into ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sb.append("RAM_PRODUCT (PRODUCT_NM, SHORT_DESC, ACTIVE_FLG, LOT_CODE_FLG, ");
+		sb.append("KIT_FLG, CREATE_DT, EXPIREE_REQ_FLG, CUST_PRODUCT_ID, ");
+		sb.append("CUSTOMER_ID, GTIN_PRODUCT_ID) values (?,?,?,?,?,?,?,?,?,?)");
+		return sb.toString();
+	}
+	
+	public String getProdUpdate() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("update ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sb.append("RAM_PRODUCT set PRODUCT_NM = ?, SHORT_DESC = ?, ACTIVE_FLG = ?, ");
+		sb.append("LOT_CODE_FLG = ?, KIT_FLG = ?, UPDATE_DT = ?, ");
+		sb.append("EXPIREE_REQ_FLG = ?, CUST_PRODUCT_ID = ? where PRODUCT_ID = ? ");
+		return sb.toString();
 	}
 }
