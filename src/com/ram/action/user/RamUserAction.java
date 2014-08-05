@@ -58,9 +58,9 @@ import com.smt.sitebuilder.security.SBUserRole;
  ****************************************************************************/
 public class RamUserAction extends SBActionAdapter {
 	
-	private final int ROLE_LEVEL_AUDITOR = 15;
-	private final int ROLE_LEVEL_OEM = 20;
-	private final int ROLE_LEVEL_PROVIDER = 25;
+	public static final int ROLE_LEVEL_AUDITOR = 15;
+	public static final int ROLE_LEVEL_OEM = 20;
+	public static final int ROLE_LEVEL_PROVIDER = 25;
 	
 	/**
 	 * 

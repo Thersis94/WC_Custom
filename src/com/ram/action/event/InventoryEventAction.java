@@ -15,6 +15,9 @@ import java.util.Map;
 
 
 
+
+
+import com.ram.action.user.RamUserAction;
 // RAM Data Feed Libs
 import com.ram.datafeed.data.InventoryEventVO;
 import com.ram.datafeed.data.InventoryEventAuditorVO;
@@ -32,6 +35,7 @@ import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.SBUserRole;
 
 /****************************************************************************
  * <b>Title</b>: InventoryEventAction.java <p/>
@@ -209,9 +213,9 @@ public class InventoryEventAction extends SBActionAdapter {
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		int inventoryEventId = Convert.formatInteger(req.getParameter("inventoryEventId"));
-		
+		SBUserRole r = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 		if (inventoryEventId == 0) this.retrieveAll(req);
-		else  this.retrieveEvent(req, inventoryEventId);
+		else if(r.getRoleLevel() != RamUserAction.ROLE_LEVEL_PROVIDER) this.retrieveEvent(req, inventoryEventId);
 	}
 	
 	/**

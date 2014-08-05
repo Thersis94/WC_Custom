@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.ram.action.user.RamUserAction;
 import com.ram.datafeed.data.RAMProductVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -20,6 +21,7 @@ import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.SBUserRole;
 
 /****************************************************************************
  * <b>Title</b>: ProductAction.java
@@ -157,6 +159,17 @@ public class ProductAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(SMTServletRequest req) throws ActionException {
+		Map<String, String> result = new HashMap<String, String>();
+		result.put("success", "true");
+		result.put("msg", "Data Successfully Updated");
+		
+		SBUserRole r = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
+		if(r.getRoleLevel() == RamUserAction.ROLE_LEVEL_PROVIDER) {
+			result.put("success", "false");
+			result.put("msg", "User has invalid permissions for this action.");
+			return;
+		}
+		
 		//Build Update Query.
 		String query = null;
 		boolean isInsert = !req.hasParameter("productId");
@@ -170,9 +183,7 @@ public class ProductAction extends SBActionAdapter {
 		//Log sql Statement for verification
 		log.debug("sql: " + query);
 		
-		Map<String, String> result = new HashMap<String, String>();
-		result.put("success", "true");
-		result.put("msg", "Data Successfully Updated");
+		
 		//Build PreparedStatement and set Parameters
 		PreparedStatement ps = null;
 		int i = 1;
