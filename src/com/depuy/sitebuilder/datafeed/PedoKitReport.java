@@ -102,20 +102,28 @@ public class PedoKitReport implements Report {
 			throws SQLException {
 		String dfSchema = ReportFacadeAction.DF_SCHEMA;
 		
-		StringBuilder sql = new StringBuilder();
+		StringBuilder sql = new StringBuilder(1950);
 		sql.append("select a.CUSTOMER_ID, a.CALL_SOURCE_CD, a.PROFILE_ID, a.PRODUCT_CD, "); 
 		sql.append("a.ATTEMPT_DT, b.PROCESS_START_DT, b.PROCESS_FAILED_DT, "); 
-		sql.append("b.PROCESS_FAIL_TXT, c.RESPONSE_TXT, d.QUESTION_CD, "); 
-		sql.append("dt.TERRITORY_NO, dt.DISTRIBUTOR_NM, dt.DIRECTORY_NM, dt.REGION_NM, dt.AVP_NM ");
+		sql.append("b.PROCESS_FAIL_TXT, c.QUESTION_MAP_ID, c.RESPONSE_TXT, d.QUESTION_CD, opc.ALLOW_COMM_FLG, "); 
+		sql.append("dt.TERRITORY_NO, dt.DISTRIBUTOR_NM, dt.DIRECTORY_NM, dt.REGION_NM, dt.AVP_NM, ");
+		sql.append("cr1.RESPONSE_TXT as SURGEON_NM, cr2.RESPONSE_TXT as HOSPITAL_NM ");
 		sql.append("from ").append(dfSchema).append("CUSTOMER a "); 
 		sql.append("inner join ").append(dfSchema).append("FULFILLMENT b on a.CUSTOMER_ID=b.CUSTOMER_ID "); 
 		sql.append("inner join ").append(dfSchema).append("CUSTOMER_RESPONSE c on a.CUSTOMER_ID=c.CUSTOMER_ID "); 
 		sql.append("inner join ").append(dfSchema).append("QUESTION_MAP d on c.QUESTION_MAP_ID=d.QUESTION_MAP_ID "); 
 		sql.append("inner join ").append(dfSchema).append("QUESTION e on d.QUESTION_ID=e.QUESTION_ID "); 
+		sql.append("left join ").append(dfSchema).append("CUSTOMER cs on a.PROFILE_ID=cs.PROFILE_ID ");
+		sql.append("and a.CREATE_DT < cs.CREATE_DT and cs.SELECTION_CD='DPYPEDOIDCARD' ");
+		sql.append("left join ").append(dfSchema).append("CUSTOMER_RESPONSE cr1 ");
+		sql.append("on cs.CUSTOMER_ID=cr1.CUSTOMER_ID and cr1.QUESTION_MAP_ID=565 ");
+		sql.append("left join ").append(dfSchema).append("CUSTOMER_RESPONSE cr2 ");
+		sql.append("on cs.CUSTOMER_ID=cr2.CUSTOMER_ID and cr2.QUESTION_MAP_ID=563 ");
 		sql.append("left join PROFILE p on p.PROFILE_ID = a.PROFILE_ID ");
 		sql.append("left join PROFILE_ADDRESS pa on pa.PROFILE_ID = p.PROFILE_ID ");
+		sql.append("left join ORG_PROFILE_COMM opc on a.PROFILE_ID=opc.PROFILE_ID ");
 		sql.append("left join ").append((String)attributes.get("customDbSchema")).append("DEPUY_TERRITORIES dt on pa.ZIP_CD = dt.ZIP_CD ");
-		sql.append("where LEAD_TYPE_ID=15 and SKU_CD in ('DPYKNEPSL1','DPYHIPPSL1','DPYSHOPSL1') ");
+		sql.append("where a.LEAD_TYPE_ID=15 and SKU_CD in ('DPYKNEPSL1','DPYHIPPSL1','DPYSHOPSL1') ");
 		sql.append("and a.attempt_dt between ? and ? order by attempt_dt");
 		log.debug(sql);
 		
@@ -136,7 +144,6 @@ public class PedoKitReport implements Report {
 				}
 				
 				vo.addResponse(rs.getString("QUESTION_CD"), rs.getString("response_txt"));
-				
 			}
 			
 			//add that trailing record to the results
@@ -234,8 +241,11 @@ public class PedoKitReport implements Report {
 		private Date kitMailDt = null;
 		private Date kitFailDt = null;
 		private String kitFailTxt = null;
+		private String hospitalNm = null;
+		private String surgeonNm = null;
 		private Map<String, String> responses = new HashMap<String, String>();
 		private UserDataVO profile = null;
+		private int allowComm = 0;
 		
 		private String lastCampaign = null;
 		private String lastQual01 = null;
@@ -263,6 +273,10 @@ public class PedoKitReport implements Report {
 			ad = util.getStringVal("DIRECTORY_NM", rs);
 			region = util.getStringVal("REGION_NM", rs);
 			avp = util.getStringVal("AVP_NM", rs);
+			allowComm = util.getIntVal("ALLOW_COMM_FLG", rs);
+			hospitalNm = util.getStringVal("HOSPITAL_NM", rs);
+			surgeonNm = util.getStringVal("SURGEON_NM", rs);
+			
 		}
 
 		public String getCustomerId() {
@@ -419,6 +433,30 @@ public class PedoKitReport implements Report {
 
 		public void setAvp(String avp) {
 			this.avp = avp;
+		}
+
+		public int getAllowComm() {
+			return allowComm;
+		}
+
+		public void setAllowComm(int allowComm) {
+			this.allowComm = allowComm;
+		}
+
+		public String getHospitalNm() {
+			return hospitalNm;
+		}
+
+		public void setHospitalNm(String hospitalNm) {
+			this.hospitalNm = hospitalNm;
+		}
+
+		public String getSurgeonNm() {
+			return surgeonNm;
+		}
+
+		public void setSurgeonNm(String surgeonNm) {
+			this.surgeonNm = surgeonNm;
 		}
 		
 	}
