@@ -233,10 +233,10 @@ public class ProductAction extends SBActionAdapter {
 		
 		//Check for providerId, providers are only allowed to see products at their locations.
 		SBUserRole r = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
-		int providerId = r.getRoleLevel() == 25 ? Convert.formatInteger((String) r.getAttribute("roleAttributeKey_1")) : 0;
+		int providerId = r.getRoleLevel() == RamUserAction.ROLE_LEVEL_PROVIDER ? Convert.formatInteger((String) r.getAttribute("roleAttributeKey_1")) : 0;
 
 		//Check for oem, oem are only allowed to see their products.
-		int customerId = r.getRoleLevel() == 20 ? Convert.formatInteger((String) r.getAttribute("roleAttributeKey_1")) : Convert.formatInteger(req.getParameter("customerId"));
+		int customerId = r.getRoleLevel() == RamUserAction.ROLE_LEVEL_OEM ? Convert.formatInteger((String) r.getAttribute("roleAttributeKey_1")) : Convert.formatInteger(req.getParameter("customerId"));
 
 		//Pull relevant data off the request
 		int kitFilter = Convert.formatInteger(req.getParameter("kitFilter"), -1);
