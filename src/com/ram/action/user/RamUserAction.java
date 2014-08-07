@@ -58,9 +58,9 @@ import com.smt.sitebuilder.security.SBUserRole;
  ****************************************************************************/
 public class RamUserAction extends SBActionAdapter {
 	
-	private final int ROLE_LEVEL_AUDITOR = 15;
-	private final int ROLE_LEVEL_OEM = 20;
-	private final int ROLE_LEVEL_PROVIDER = 25;
+	public static final int ROLE_LEVEL_AUDITOR = 15;
+	public static final int ROLE_LEVEL_OEM = 20;
+	public static final int ROLE_LEVEL_PROVIDER = 25;
 	
 	/**
 	 * 
@@ -181,7 +181,6 @@ public class RamUserAction extends SBActionAdapter {
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.http.SMTServletRequest)
 	 */
-	@SuppressWarnings("null")
 	@Override
 	public void build(SMTServletRequest req) throws ActionException {
 		log.debug("RamUserAction build...");
