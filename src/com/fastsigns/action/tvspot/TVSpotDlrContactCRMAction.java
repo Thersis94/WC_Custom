@@ -1,4 +1,4 @@
-package com.fastsigns.action;
+package com.fastsigns.action.tvspot;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -10,6 +10,7 @@ import javax.servlet.http.HttpSession;
 import com.fastsigns.security.FastsignsSessVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -21,6 +22,7 @@ import com.smt.sitebuilder.action.contact.ContactDataModuleVO;
 import com.smt.sitebuilder.action.contact.SubmittalDataAction;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
 import com.smt.sitebuilder.security.SecurityController;
@@ -57,6 +59,8 @@ public class TVSpotDlrContactCRMAction extends SimpleActionAdapter {
 		HttpSession ses = req.getSession();
 		SBUserRole role = (SBUserRole) ses.getAttribute(Constants.ROLE_DATA);
 		String franchiseId = (String) ses.getAttribute(FastsignsSessVO.WEBEDIT_FRANCHISE_ID);
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		TVSpotConfig config = TVSpotConfig.getInstance(site.getCountryCode());
 		
 		if (req.hasParameter("dealerIdOverride"))
 			franchiseId = req.getParameter("dealerIdOverride");
@@ -88,7 +92,7 @@ public class TVSpotDlrContactCRMAction extends SimpleActionAdapter {
 		//drop to Excel report if desired
 		if ("excel".equalsIgnoreCase(req.getParameter("type"))) {
 			AbstractSBReportVO rpt = new TVSpotReportVO();
-			rpt.setData(cdc);
+			rpt.setData(new GenericVO(cdc, config));
 			req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, Boolean.TRUE);
 			req.setAttribute(Constants.BINARY_DOCUMENT, rpt);
 		}
@@ -121,7 +125,7 @@ public class TVSpotDlrContactCRMAction extends SimpleActionAdapter {
 		
 		//default status filter when no other filters are passed
 		if (req.getQueryString() == null) 
-			req.setParameter("status", TVSpotUtil.Status.initiated.toString());
+			req.setParameter("status", Status.initiated.toString());
 		
 	}
 	
@@ -138,11 +142,13 @@ public class TVSpotDlrContactCRMAction extends SimpleActionAdapter {
 		boolean useStatus = req.hasParameter("status") && !(req.getParameter("status").equals("all"));
 		boolean useCustNm = req.hasParameter("customerName");
 //		boolean useCompNm = req.hasParameter("companyName");
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		TVSpotConfig config = TVSpotConfig.getInstance(site.getCountryCode());
 		
 		//loop the submissions and remove any that don't meet our criteria
 		for (ContactDataModuleVO vo : cdc.getData()) {
 			if (useStatus) {
-				String stage = StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.status.id()));
+				String stage = StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.status)));
 				if (! stage.equalsIgnoreCase(req.getParameter("status"))) continue;
 			}
 			
@@ -176,15 +182,18 @@ public class TVSpotDlrContactCRMAction extends SimpleActionAdapter {
 		SubmittalDataAction sda = new SubmittalDataAction(actionInit);
 		sda.setDBConnection(dbConn);
 		
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		TVSpotConfig config = TVSpotConfig.getInstance(site.getCountryCode());
+		
 		try {
 			//save the status
-			sda.updateField(req.getParameter("transactionStatus"), csId, TVSpotUtil.ContactField.status.id());
+			sda.updateField(req.getParameter("transactionStatus"), csId, config.getContactId(ContactField.status));
 			
 			//save the notes
-			sda.updateField(req.getParameter("transactionNotes"), csId, TVSpotUtil.ContactField.transactionNotes.id());
+			sda.updateField(req.getParameter("transactionNotes"), csId, config.getContactId(ContactField.transactionNotes));
 			
 			//save saleAmount
-			sda.updateField(req.getParameter("saleAmount"), csId, TVSpotUtil.ContactField.saleAmount.id());
+			sda.updateField(req.getParameter("saleAmount"), csId, config.getContactId(ContactField.saleAmount));
 			
 		} catch (SQLException sqle) {
 			log.error("could not update contact fields", sqle);
