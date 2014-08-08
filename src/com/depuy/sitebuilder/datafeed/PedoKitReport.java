@@ -107,7 +107,8 @@ public class PedoKitReport implements Report {
 		sql.append("a.ATTEMPT_DT, b.PROCESS_START_DT, b.PROCESS_FAILED_DT, "); 
 		sql.append("b.PROCESS_FAIL_TXT, c.QUESTION_MAP_ID, c.RESPONSE_TXT, d.QUESTION_CD, opc.ALLOW_COMM_FLG, "); 
 		sql.append("dt.TERRITORY_NO, dt.DISTRIBUTOR_NM, dt.DIRECTORY_NM, dt.REGION_NM, dt.AVP_NM, ");
-		sql.append("cr1.RESPONSE_TXT as SURGEON_NM, cr2.RESPONSE_TXT as HOSPITAL_NM ");
+		sql.append("cr1.RESPONSE_TXT as SURGEON_NM, cr2.RESPONSE_TXT as HOSPITAL_NM, ");
+		sql.append("cs.product_cd as [cardProductCd], cs.call_source_cd as [cardCallSourceCd] ");
 		sql.append("from ").append(dfSchema).append("CUSTOMER a "); 
 		sql.append("inner join ").append(dfSchema).append("FULFILLMENT b on a.CUSTOMER_ID=b.CUSTOMER_ID "); 
 		sql.append("inner join ").append(dfSchema).append("CUSTOMER_RESPONSE c on a.CUSTOMER_ID=c.CUSTOMER_ID "); 
@@ -180,11 +181,18 @@ public class PedoKitReport implements Report {
 		}
 	}
 	
+	/**
+	 * loads the person's most recent data_feed communication, exclusive of the PEDOKIT one
+	 * (which is why they're in this report to begin with!)
+	 * @param data
+	 * @param startDate
+	 * @throws Exception
+	 */
 	private void loadPreviousCampaigns(List<PedoKitVO> data, java.sql.Date startDate) throws Exception {
 		StringBuilder sql = new StringBuilder();
 		sql.append("select top 1 * from ").append(ReportFacadeAction.DF_SCHEMA);
 		sql.append("DPY_CAMPAIGN_SUBMISSIONS_VIEW  where ");
-		sql.append("PROFILE_ID=? and CUSTOMER_ID != ? and product_cd=? and LEAD_TYPE_ID > 1 ");
+		sql.append("CUSTOMER_ID != ? and PROFILE_ID=? and product_cd=? ");
 		sql.append("order by ATTEMPT_DT desc");
 		String sqlStr = sql.toString();
 		log.debug(sqlStr);
@@ -197,8 +205,8 @@ public class PedoKitReport implements Report {
 		for (PedoKitVO row : data) {
 			try {
 				ps = conn.prepareStatement(sqlStr);
-				ps.setString(1, row.getProfileId());
-				ps.setString(2, row.getCustomerId());
+				ps.setString(1, row.getCustomerId());
+				ps.setString(2, row.getProfileId());
 				ps.setString(3, row.getProductCd());
 				ResultSet rs = ps.executeQuery();
 				if (rs.next()) {
@@ -235,14 +243,16 @@ public class PedoKitReport implements Report {
 	public class PedoKitVO {
 		private String customerId = null;
 		private String callSourceCd = null;
+		private String IDCardCallSourceCd = null;
 		private String productCd = null;
+		private String IDCardProductCd = null;
 		private Date attemptDt = null;
 		private String profileId = null;
 		private Date kitMailDt = null;
 		private Date kitFailDt = null;
 		private String kitFailTxt = null;
-		private String hospitalNm = null;
-		private String surgeonNm = null;
+		private String IDCardHospitalNm = null;
+		private String IDCardSurgeonNm = null;
 		private Map<String, String> responses = new HashMap<String, String>();
 		private UserDataVO profile = null;
 		private int allowComm = 0;
@@ -274,8 +284,10 @@ public class PedoKitReport implements Report {
 			region = util.getStringVal("REGION_NM", rs);
 			avp = util.getStringVal("AVP_NM", rs);
 			allowComm = util.getIntVal("ALLOW_COMM_FLG", rs);
-			hospitalNm = util.getStringVal("HOSPITAL_NM", rs);
-			surgeonNm = util.getStringVal("SURGEON_NM", rs);
+			IDCardHospitalNm = util.getStringVal("HOSPITAL_NM", rs);
+			IDCardSurgeonNm = util.getStringVal("SURGEON_NM", rs);
+			IDCardCallSourceCd = util.getStringVal("cardCallSourceCd", rs);
+			IDCardProductCd = util.getStringVal("cardProductCd", rs);
 			
 		}
 
@@ -443,20 +455,41 @@ public class PedoKitReport implements Report {
 			this.allowComm = allowComm;
 		}
 
-		public String getHospitalNm() {
-			return hospitalNm;
+		
+		/**
+		 * The following "IDCard" variables all come from the 2nd marketing campaign
+		 */
+			
+		public String getIDCardCallSourceCd() {
+			return IDCardCallSourceCd;
 		}
 
-		public void setHospitalNm(String hospitalNm) {
-			this.hospitalNm = hospitalNm;
+		public void setIDCardCallSourceCd(String iDCardCallSourceCd) {
+			IDCardCallSourceCd = iDCardCallSourceCd;
 		}
 
-		public String getSurgeonNm() {
-			return surgeonNm;
+		public String getIDCardHospitalNm() {
+			return IDCardHospitalNm;
 		}
 
-		public void setSurgeonNm(String surgeonNm) {
-			this.surgeonNm = surgeonNm;
+		public void setIDCardHospitalNm(String iDCardHospitalNm) {
+			IDCardHospitalNm = iDCardHospitalNm;
+		}
+
+		public String getIDCardProductCd() {
+			return IDCardProductCd;
+		}
+
+		public void setIDCardProductCd(String iDCardProductCd) {
+			IDCardProductCd = iDCardProductCd;
+		}
+
+		public String getIDCardSurgeonNm() {
+			return IDCardSurgeonNm;
+		}
+
+		public void setIDCardSurgeonNm(String iDCardSurgeonNm) {
+			IDCardSurgeonNm = iDCardSurgeonNm;
 		}
 		
 	}
