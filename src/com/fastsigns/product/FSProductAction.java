@@ -281,7 +281,7 @@ public class FSProductAction extends SBActionAdapter {
 	private String buildLoadCatalogSql(boolean isPreview) {
 		StringBuilder sql = new StringBuilder(2100);
 		sql.append("SELECT 1 as rank, pc.PRODUCT_CATEGORY_CD, pc.PARENT_CD, p.PRODUCT_ID, pc.CATEGORY_NM, pc.CATEGORY_DESC, pc.META_KYWD_TXT, pc.META_DESC, ");
-		sql.append("pc.TITLE_NM, pc.ORDER_NO, pc.IMAGE_URL, pc.THUMBNAIL_IMG, pc.CUST_CATEGORY_ID, pc.URL_ALIAS_TXT, pc.SHORT_DESC, pc.ATTRIB1_TXT, p.URL_ALIAS_TXT as CATEGORY_PRODUCT_URL, p.IMAGE_URL as PRODUCT_IMAGE, p.PRODUCT_NM as C_PROD_NM, p.SHORT_DESC as PRODUCT_DESCRIPTION, p.PRODUCT_NM, p.DESC_TXT ");
+		sql.append("pc.TITLE_NM, pc.ORDER_NO, pc.IMAGE_URL, pc.THUMBNAIL_IMG, pc.CUST_CATEGORY_ID, pc.URL_ALIAS_TXT, pc.SHORT_DESC, pc.ATTRIB1_TXT, p.URL_ALIAS_TXT as CATEGORY_PRODUCT_URL, p.IMAGE_URL as PRODUCT_IMAGE, p.PRODUCT_NM as C_PROD_NM, p.SHORT_DESC as PRODUCT_DESCRIPTION, p.PRODUCT_NM, p.DESC_TXT, p.DISPLAY_ORDER_NO ");
 		sql.append("FROM PRODUCT_CATEGORY pc ");
 		sql.append("inner join PRODUCT_CATEGORY_XR pcx on pc.PRODUCT_CATEGORY_CD = pcx.PRODUCT_CATEGORY_CD ");
 		sql.append("inner join PRODUCT p on p.PRODUCT_ID = pcx.PRODUCT_ID and p.STATUS_NO = 5 ");
@@ -300,7 +300,7 @@ public class FSProductAction extends SBActionAdapter {
 		sql.append("union ");
 		
 		sql.append("SELECT 2 as rank, null, p2.URL_ALIAS_TXT as PARENT_CD, p.PRODUCT_ID, p.PRODUCT_NM as CATEGORY_NM, p.DESC_TXT as CATEGORY_DESC, p.META_KYWD_TXT, p.META_DESC, ");
-		sql.append("p.TITLE_NM, p.DISPLAY_ORDER_NO as ORDER_NO, p.IMAGE_URL, p.THUMBNAIL_URL, null as CUST_CATEGORY_ID, p.URL_ALIAS_TXT, p.SHORT_DESC, null as ATTRIB1_TXT, null as CATEGORY_PRODUCT_URL, p2.PRODUCT_NM as C_PROD_NM, null, null, null, null ");
+		sql.append("p.TITLE_NM, null, p.IMAGE_URL, p.THUMBNAIL_URL, null as CUST_CATEGORY_ID, p.URL_ALIAS_TXT, p.SHORT_DESC, null as ATTRIB1_TXT, null as CATEGORY_PRODUCT_URL, p2.PRODUCT_NM as C_PROD_NM, null, null, null, null, null ");
 		sql.append("FROM PRODUCT p ");
 		sql.append("left join PRODUCT p2 on p.PARENT_ID = p2.PRODUCT_ID ");
 		sql.append("WHERE p.product_catalog_id=? and p.status_no=5 ");
@@ -310,7 +310,7 @@ public class FSProductAction extends SBActionAdapter {
 			sql.append("and p.PRODUCT_GROUP_ID is null ");
 		}
 		
-		sql.append("ORDER BY rank, ORDER_NO, PRODUCT_CATEGORY_CD ");
+		sql.append("ORDER BY rank, ORDER_NO, PRODUCT_CATEGORY_CD, DISPLAY_ORDER_NO ");
 		
 		return sql.toString();
 	}
