@@ -119,14 +119,16 @@ public class FSProductAction extends SBActionAdapter {
 				log.debug("product info");
 				n = this.getNode(catalog, catImageKey, PRODUCTS);
 				this.putModuleData(n, ((ProductVO)n.getUserObject()).getAttributes().getAllAttributes().size() + 1, false);
-				req.setAttribute("parentName", this.getNode(catalog, prodChildKey, PRODUCTS).getNodeName());
 				buildCanonicals(req, prodChildKey, catImageKey, pId, n);
 				
 			} else {
 				log.debug("child products");
 				n = this.getNode(catalog, prodChildKey, PRODUCTS);
+				// We need to set the parent name for the product here because we are going to the
+				// category list for the current parent for the product at the time of this request
+				// since the product can be under multiple categories we do not want this to be cached
+				n.setParentName(this.getNode(catalog, pId, CATEGORIES).getNodeName());
 				this.putModuleData(n, n.getNumberChildren() + 1, false);
-				req.setAttribute("parentName", this.getNode(catalog, pId, CATEGORIES).getNodeName());
 				buildCanonicals(req, prodChildKey, null, pId, n);
 				
 			}
@@ -233,11 +235,8 @@ public class FSProductAction extends SBActionAdapter {
 					p.setProductName(rs.getString("CATEGORY_NM"));
 					p.setDescText(rs.getString("CATEGORY_DESC"));
 					
-					if (rs.getString("C_PROD_NM") != null) {
-						n.setNodeName(rs.getString("C_PROD_NM"));
-					} else {
-						n.setNodeName(rs.getString("CATEGORY_NM"));
-					}
+					n.setParentName(rs.getString("C_PROD_NM"));
+					n.setNodeName(rs.getString("CATEGORY_NM"));
 					
 					n.setUserObject(p);
 					products.add(n);
@@ -414,6 +413,9 @@ public class FSProductAction extends SBActionAdapter {
 		return attributes;
 	}
 	
+	/**
+	 * Create the canonical url for this page based on supplied strings
+	 */
 	private void buildCanonicals(SMTServletRequest req, String firstItem, String secondItem, String thirdItem, Node n) {
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		
@@ -490,7 +492,7 @@ public class FSProductAction extends SBActionAdapter {
 	}
 	
 	/**
-	 * 
+	 * Set the page info from the productVO if that is what we are dealing with
 	 * @param page
 	 * @param n
 	 */
@@ -515,7 +517,7 @@ public class FSProductAction extends SBActionAdapter {
 	}
 		
 	/**
-	 * 
+	 * Gets the requested node from the requested tree
 	 * @param catalog
 	 * @param itemAlias
 	 * @param list
@@ -526,7 +528,7 @@ public class FSProductAction extends SBActionAdapter {
 		Node n = catalog.get(list).findNode(itemAlias);
 		if(n == null) {
 			log.error(itemAlias + " does not exist in " + catalog.get(list));
-			return new Node();
+			n = new Node();
 		}
 		return n;
 	}
