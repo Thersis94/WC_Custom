@@ -119,12 +119,14 @@ public class FSProductAction extends SBActionAdapter {
 				log.debug("product info");
 				n = this.getNode(catalog, catImageKey, PRODUCTS);
 				this.putModuleData(n, ((ProductVO)n.getUserObject()).getAttributes().getAllAttributes().size() + 1, false);
+				req.setAttribute("parentName", this.getNode(catalog, prodChildKey, PRODUCTS).getNodeName());
 				buildCanonicals(req, prodChildKey, catImageKey, pId, n);
 				
 			} else {
 				log.debug("child products");
 				n = this.getNode(catalog, prodChildKey, PRODUCTS);
 				this.putModuleData(n, n.getNumberChildren() + 1, false);
+				req.setAttribute("parentName", this.getNode(catalog, pId, CATEGORIES).getNodeName());
 				buildCanonicals(req, prodChildKey, null, pId, n);
 				
 			}
@@ -214,6 +216,7 @@ public class FSProductAction extends SBActionAdapter {
 							n = new Node(rs.getString("URL_ALIAS_TXT"), rs.getString("PARENT_CD"));
 						}
 						n.setUserObject(new ProductCategoryVO(rs));
+						n.setNodeName(rs.getString("category_nm"));
 						categories.add(n);
 					}
 					p = new ProductVO();
@@ -230,7 +233,12 @@ public class FSProductAction extends SBActionAdapter {
 					p.setProductName(rs.getString("CATEGORY_NM"));
 					p.setDescText(rs.getString("CATEGORY_DESC"));
 					
-					n.setNodeName(rs.getString("C_PROD_NM"));
+					if (rs.getString("C_PROD_NM") != null) {
+						n.setNodeName(rs.getString("C_PROD_NM"));
+					} else {
+						n.setNodeName(rs.getString("CATEGORY_NM"));
+					}
+					
 					n.setUserObject(p);
 					products.add(n);
 				}
@@ -256,7 +264,7 @@ public class FSProductAction extends SBActionAdapter {
 	
 	/**
 	 * Set which products in the category list don't have any children or images
-	 * that would be used as a gallery in leu of children
+	 * that would be used as a gallery in lieu of children
 	 * @param products
 	 * @param categories
 	 */
