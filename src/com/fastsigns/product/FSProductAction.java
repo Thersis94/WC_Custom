@@ -124,6 +124,10 @@ public class FSProductAction extends SBActionAdapter {
 			} else {
 				log.debug("child products");
 				n = this.getNode(catalog, prodChildKey, PRODUCTS);
+				// We need to set the parent name for the product here because we are going to the
+				// category list for the current parent for the product at the time of this request
+				// since the product can be under multiple categories we do not want this to be cached
+				n.setParentName(this.getNode(catalog, pId, CATEGORIES).getNodeName());
 				this.putModuleData(n, n.getNumberChildren() + 1, false);
 				buildCanonicals(req, prodChildKey, null, pId, n);
 				
@@ -214,6 +218,7 @@ public class FSProductAction extends SBActionAdapter {
 							n = new Node(rs.getString("URL_ALIAS_TXT"), rs.getString("PARENT_CD"));
 						}
 						n.setUserObject(new ProductCategoryVO(rs));
+						n.setNodeName(rs.getString("category_nm"));
 						categories.add(n);
 					}
 					p = new ProductVO();
@@ -230,7 +235,9 @@ public class FSProductAction extends SBActionAdapter {
 					p.setProductName(rs.getString("CATEGORY_NM"));
 					p.setDescText(rs.getString("CATEGORY_DESC"));
 					
-					n.setNodeName(rs.getString("C_PROD_NM"));
+					n.setParentName(rs.getString("C_PROD_NM"));
+					n.setNodeName(rs.getString("CATEGORY_NM"));
+					
 					n.setUserObject(p);
 					products.add(n);
 				}
@@ -256,7 +263,7 @@ public class FSProductAction extends SBActionAdapter {
 	
 	/**
 	 * Set which products in the category list don't have any children or images
-	 * that would be used as a gallery in leu of children
+	 * that would be used as a gallery in lieu of children
 	 * @param products
 	 * @param categories
 	 */
@@ -281,7 +288,7 @@ public class FSProductAction extends SBActionAdapter {
 	private String buildLoadCatalogSql(boolean isPreview) {
 		StringBuilder sql = new StringBuilder(2100);
 		sql.append("SELECT 1 as rank, pc.PRODUCT_CATEGORY_CD, pc.PARENT_CD, p.PRODUCT_ID, pc.CATEGORY_NM, pc.CATEGORY_DESC, pc.META_KYWD_TXT, pc.META_DESC, ");
-		sql.append("pc.TITLE_NM, pc.ORDER_NO, pc.IMAGE_URL, pc.THUMBNAIL_IMG, pc.CUST_CATEGORY_ID, pc.URL_ALIAS_TXT, pc.SHORT_DESC, pc.ATTRIB1_TXT, p.URL_ALIAS_TXT as CATEGORY_PRODUCT_URL, p.IMAGE_URL as PRODUCT_IMAGE, p.PRODUCT_NM as C_PROD_NM, p.SHORT_DESC as PRODUCT_DESCRIPTION, p.PRODUCT_NM, p.DESC_TXT ");
+		sql.append("pc.TITLE_NM, pc.ORDER_NO, pc.IMAGE_URL, pc.THUMBNAIL_IMG, pc.CUST_CATEGORY_ID, pc.URL_ALIAS_TXT, pc.SHORT_DESC, pc.ATTRIB1_TXT, p.URL_ALIAS_TXT as CATEGORY_PRODUCT_URL, p.IMAGE_URL as PRODUCT_IMAGE, p.PRODUCT_NM as C_PROD_NM, p.SHORT_DESC as PRODUCT_DESCRIPTION, p.PRODUCT_NM, p.DESC_TXT, p.DISPLAY_ORDER_NO ");
 		sql.append("FROM PRODUCT_CATEGORY pc ");
 		sql.append("inner join PRODUCT_CATEGORY_XR pcx on pc.PRODUCT_CATEGORY_CD = pcx.PRODUCT_CATEGORY_CD ");
 		sql.append("inner join PRODUCT p on p.PRODUCT_ID = pcx.PRODUCT_ID and p.STATUS_NO = 5 ");
@@ -300,7 +307,7 @@ public class FSProductAction extends SBActionAdapter {
 		sql.append("union ");
 		
 		sql.append("SELECT 2 as rank, null, p2.URL_ALIAS_TXT as PARENT_CD, p.PRODUCT_ID, p.PRODUCT_NM as CATEGORY_NM, p.DESC_TXT as CATEGORY_DESC, p.META_KYWD_TXT, p.META_DESC, ");
-		sql.append("p.TITLE_NM, p.DISPLAY_ORDER_NO as ORDER_NO, p.IMAGE_URL, p.THUMBNAIL_URL, null as CUST_CATEGORY_ID, p.URL_ALIAS_TXT, p.SHORT_DESC, null as ATTRIB1_TXT, null as CATEGORY_PRODUCT_URL, p2.PRODUCT_NM as C_PROD_NM, null, null, null, null ");
+		sql.append("p.TITLE_NM, null, p.IMAGE_URL, p.THUMBNAIL_URL, null as CUST_CATEGORY_ID, p.URL_ALIAS_TXT, p.SHORT_DESC, null as ATTRIB1_TXT, null as CATEGORY_PRODUCT_URL, p2.PRODUCT_NM as C_PROD_NM, null, null, null, null, null ");
 		sql.append("FROM PRODUCT p ");
 		sql.append("left join PRODUCT p2 on p.PARENT_ID = p2.PRODUCT_ID ");
 		sql.append("WHERE p.product_catalog_id=? and p.status_no=5 ");
@@ -310,7 +317,7 @@ public class FSProductAction extends SBActionAdapter {
 			sql.append("and p.PRODUCT_GROUP_ID is null ");
 		}
 		
-		sql.append("ORDER BY rank, ORDER_NO, PRODUCT_CATEGORY_CD ");
+		sql.append("ORDER BY rank, ORDER_NO, PRODUCT_CATEGORY_CD, DISPLAY_ORDER_NO ");
 		
 		return sql.toString();
 	}
@@ -406,6 +413,9 @@ public class FSProductAction extends SBActionAdapter {
 		return attributes;
 	}
 	
+	/**
+	 * Create the canonical url for this page based on supplied strings
+	 */
 	private void buildCanonicals(SMTServletRequest req, String firstItem, String secondItem, String thirdItem, Node n) {
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		
@@ -482,7 +492,7 @@ public class FSProductAction extends SBActionAdapter {
 	}
 	
 	/**
-	 * 
+	 * Set the page info from the productVO if that is what we are dealing with
 	 * @param page
 	 * @param n
 	 */
@@ -507,7 +517,7 @@ public class FSProductAction extends SBActionAdapter {
 	}
 		
 	/**
-	 * 
+	 * Gets the requested node from the requested tree
 	 * @param catalog
 	 * @param itemAlias
 	 * @param list
@@ -518,7 +528,7 @@ public class FSProductAction extends SBActionAdapter {
 		Node n = catalog.get(list).findNode(itemAlias);
 		if(n == null) {
 			log.error(itemAlias + " does not exist in " + catalog.get(list));
-			return new Node();
+			n = new Node();
 		}
 		return n;
 	}
