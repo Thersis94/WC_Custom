@@ -12,6 +12,7 @@ import java.util.Map;
 
 
 
+
 // RAMDataFeed libs
 import com.ram.datafeed.data.RAMUserVO;
 
@@ -58,10 +59,9 @@ import com.smt.sitebuilder.security.SBUserRole;
  ****************************************************************************/
 public class RamUserAction extends SBActionAdapter {
 	
-	private final int ROLE_LEVEL_AUDITOR = 15;
-	private final int ROLE_LEVEL_OEM = 20;
-	private final int ROLE_LEVEL_PROVIDER = 25;
-	
+	public static final int ROLE_LEVEL_AUDITOR = 15;
+	public static final int ROLE_LEVEL_OEM = 20;
+	public static final int ROLE_LEVEL_PROVIDER = 25;
 	/**
 	 * 
 	 */
@@ -181,7 +181,6 @@ public class RamUserAction extends SBActionAdapter {
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.http.SMTServletRequest)
 	 */
-	@SuppressWarnings("null")
 	@Override
 	public void build(SMTServletRequest req) throws ActionException {
 		log.debug("RamUserAction build...");
@@ -226,6 +225,8 @@ public class RamUserAction extends SBActionAdapter {
 					manageAuditor(req, site, user, userRole, origRoleLevel);
 				}
 			}
+		} else {
+			// if non-admin and has changed email address, check auth record.
 		}
 			
         // Build the redirect and messages
@@ -318,22 +319,45 @@ public class RamUserAction extends SBActionAdapter {
 		String authId = null;
 		try {
 			AbstractLoginModule loginModule = SecurityModuleFactoryImpl.getLoginInstance(loginClass, lm);
-			
-			authId = loginModule.retrieveAuthenticationId(user.getEmailAddress());
-			
-			//log.debug("authId after check: " + authId);
-			if (StringUtil.checkVal(authId).length() == 0) {
-				
-				// create password for this user
-				managePassword(req, site, user);
-				
-				// create auth record.
-				authId = loginModule.manageUser(authId, user.getEmailAddress(), user.getPassword(), 1);
-				user.setAuthenticationId(authId);
-				
-				// update profile with auth record
-				updateProfileAuth(user);
+
+			/*
+			 * Determine which email address to use for checking for an auth record,
+			 * Assume the email address hasn't changed.
+			 */
+			String authEmail = user.getEmailAddress();
+			// check for an 'old' email address which indicates an existing user
+			String oldEmail = StringUtil.checkVal(req.getParameter("oldEmailAddress"));
+			if (oldEmail.length() > 0) {
+				// existing user
+				if (! oldEmail.equalsIgnoreCase(user.getEmailAddress())) {
+					// email address changed, use old email address for auth lookup
+					authEmail = oldEmail;
+				}
 			}
+			
+			// retrieve authID for this user if it exists.
+			authId = loginModule.retrieveAuthenticationId(authEmail);
+			log.debug("authId after check: " + authId);
+			boolean updateProfileAuthId = false;
+			String authPwd = StringUtil.checkVal(req.getParameter("password"));
+			log.debug("authPwd: " + authPwd);
+			if (StringUtil.checkVal(authId).length() == 0) {
+				// no existing auth record, so update profile with auth ID after auth
+				// record is created.
+				updateProfileAuthId = true;
+			}
+
+			// TODO 2014-08-01 DBargerhuff: commented out, verify that we are not
+			// generating passwords for a RAM user.
+			//managePassword(req, site, user);
+						
+			// create or update the auth record.  We are depending upon the form
+			// for password and thus we are not setting the password reset flag to true.
+			authId = loginModule.manageUser(authId, user.getEmailAddress(), authPwd, 0);
+			user.setAuthenticationId(authId);
+			
+			// update profile with auth record
+			if (updateProfileAuthId) updateProfileAuth(user);
 			
 		} catch (Exception e) {
 			log.error("Error creating Ram user authentication record, ", e);
@@ -468,6 +492,7 @@ public class RamUserAction extends SBActionAdapter {
 	 * @throws PasswordException
 	 * @throws EncryptionException 
 	 */
+	@SuppressWarnings("unused")
 	private void managePassword(SMTServletRequest req, SiteVO site, UserDataVO user) 
 			throws PasswordException, EncryptionException {
 		log.debug("managing password...");
