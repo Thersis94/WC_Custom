@@ -61,7 +61,9 @@ public class AjaxMenuLoader extends SimpleActionAdapter {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
  		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		
-		if (req.hasParameter(Constants.AJAX_MODULE_ID) && req.getParameter(Constants.AJAX_MODULE_ID).startsWith("providers_")) {
+		if (req.hasParameter(Constants.AJAX_MODULE_ID) 
+				&& !req.getParameter(Constants.AJAX_MODULE_ID).startsWith("hcp_") 
+				&& !req.getParameter(Constants.AJAX_MODULE_ID).startsWith("select_")) {
 			loadSitePageMenu(req, site, mod);
 			return;
 		}
@@ -208,8 +210,8 @@ public class AjaxMenuLoader extends SimpleActionAdapter {
 		
 		//AI is being hard-coded because the ajax servlet only runs at the parent-site level, and we're trying to load a sub-sites menus. - JM 01-13-14
 		ActionInitVO ai = new ActionInitVO();
-		ai.setServiceUrl("providers");
-		ai.setActionId("DPY_SYN_3");
+		ai.setServiceUrl(req.getParameter("loadAliasPath")); //this is significant, needs to be the subsite's site alias ("providers")
+		ai.setActionId(req.getParameter("loadSiteId")); //this is significant, needs to be the SUBSITE'S siteId
 		log.debug("parPath=" + site.getAliasPathName());
 		log.debug("siteId=" + site.getSiteId());
 		ModuleVO menuMod = new ModuleVO(null, role.getCachePmid(site.getSiteId()), true, "MENU");
