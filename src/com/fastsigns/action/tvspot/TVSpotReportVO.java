@@ -173,6 +173,7 @@ public class TVSpotReportVO extends AbstractSBReportVO {
 		row.createCell(cellNum++).setCellValue(vo.getFullName());
 		row.createCell(cellNum++).setCellValue(vo.getEmailAddress());
 		row.createCell(cellNum++).setCellValue(pnf.getFormattedNumber());
+		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.visitMethod))));
 		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.zipcode))));
 		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.state))));
 //		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.industry))));
