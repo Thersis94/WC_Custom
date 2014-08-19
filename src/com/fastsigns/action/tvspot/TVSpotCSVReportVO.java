@@ -1,10 +1,11 @@
-package com.fastsigns.action;
+package com.fastsigns.action.tvspot;
 
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.PhoneNumberFormat;
 import com.siliconmtn.util.StringUtil;
@@ -20,11 +21,14 @@ import com.smt.sitebuilder.action.contact.ContactDataModuleVO;
  @author Eric Damschroder
  @version 1.0
  @since April 28, 2014
+ @Deprecated no longer used, replaced with the more "Excel like" HSSF-API-using report. -ED 04.28.14
  ***************************************************************************/
 
+@Deprecated
 public class TVSpotCSVReportVO extends AbstractSBReportVO {
 	private static final long serialVersionUID = 1l;
 	private ContactDataContainer cdc = null;
+	private TVSpotConfig config = null;
 
 	public TVSpotCSVReportVO() {
 		super();
@@ -38,7 +42,9 @@ public class TVSpotCSVReportVO extends AbstractSBReportVO {
 	 */
 	@Override
 	public void setData(Object o) {
-		cdc = (ContactDataContainer) o;
+		GenericVO vo = (GenericVO) o;
+		cdc = (ContactDataContainer) vo.getKey();
+		config = (TVSpotConfig) vo.getValue();
 	}
 
 	@Override
@@ -96,15 +102,15 @@ public class TVSpotCSVReportVO extends AbstractSBReportVO {
 		rpt.append(vo.getFullName()).append("\t");
 		rpt.append(vo.getEmailAddress()).append("\t");
 		rpt.append(pnf.getFormattedNumber()).append("\t");
-		rpt.append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.zipcode.id()))).append("\t");
-		rpt.append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.state.id()))).append("\t");
-//		rpt.append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.industry.id()))).append("\t");
-//		rpt.append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.department.id()))).append("\t");
-//		rpt.append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.title.id()))).append("\t");
-//		rpt.append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.companyNm.id()))).append("\t");
-//		rpt.append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.businessChallenge.id()))).append("\t");
-		rpt.append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.inquiry.id()))).append("\t");
-		rpt.append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.saleAmount.id()))).append("\t");
+		rpt.append(StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.zipcode)))).append("\t");
+		rpt.append(StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.state)))).append("\t");
+//		rpt.append(StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.industry)))).append("\t");
+//		rpt.append(StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.department)))).append("\t");
+//		rpt.append(StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.title)))).append("\t");
+//		rpt.append(StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.companyNm)))).append("\t");
+//		rpt.append(StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.businessChallenge)))).append("\t");
+		rpt.append(StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.inquiry)))).append("\t");
+		rpt.append(StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.saleAmount)))).append("\t");
 		Calendar surveySentDt = Calendar.getInstance();
 		surveySentDt.setTime(vo.getSubmittalDate());
 		surveySentDt.add(Calendar.DAY_OF_YEAR, 7);
@@ -112,17 +118,16 @@ public class TVSpotCSVReportVO extends AbstractSBReportVO {
 		surveySentDt.set(Calendar.MINUTE, 0);
 		surveySentDt.set(Calendar.SECOND, 0);
 		rpt.append((Calendar.getInstance().getTime().before(surveySentDt.getTime())) ? "No" : "Yes").append("\t");
-		rpt.append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.rating.id()))).append("\t");
-		rpt.append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.feedback.id()))).append("\t");
-		rpt.append(StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.consultation.id()))).append("\t");
-		TVSpotUtil.Status status = TVSpotUtil.Status.valueOf(vo.getExtData().get(TVSpotUtil.ContactField.status.id()));
-		rpt.append(status.getLabel()).append("\t");
-		String notes = StringUtil.checkVal(vo.getExtData().get(TVSpotUtil.ContactField.transactionNotes.id()));
+		rpt.append(StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.rating)))).append("\t");
+		rpt.append(StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.feedback)))).append("\t");
+		rpt.append(StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.consultation)))).append("\t");
+		Status status = Status.valueOf(vo.getExtData().get(config.getContactId(ContactField.status)));
+		rpt.append(config.getStatusLabel(status)).append("\t");
+		String notes = StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.transactionNotes)));
 		rpt.append(notes).append("\t\r\n");
 	}
 	
 	private void getHeader(StringBuilder hdr) {
-		hdr.append("sep=\t;");
 		hdr.append("Commercial Consultation Report - ");
 		hdr.append(Convert.formatDate(new Date(),  Convert.DATE_SLASH_PATTERN)).append("\r\n");
 		hdr.append("Date\t");

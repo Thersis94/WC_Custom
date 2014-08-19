@@ -15,6 +15,9 @@ import java.util.Map;
 
 
 
+
+
+import com.ram.action.user.RamUserAction;
 // RAM Data Feed Libs
 import com.ram.datafeed.data.InventoryEventVO;
 import com.ram.datafeed.data.InventoryEventAuditorVO;
@@ -32,6 +35,7 @@ import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.SBUserRole;
 
 /****************************************************************************
  * <b>Title</b>: InventoryEventAction.java <p/>
@@ -209,9 +213,9 @@ public class InventoryEventAction extends SBActionAdapter {
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		int inventoryEventId = Convert.formatInteger(req.getParameter("inventoryEventId"));
-		
+		SBUserRole r = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 		if (inventoryEventId == 0) this.retrieveAll(req);
-		else  this.retrieveEvent(req, inventoryEventId);
+		else if(r.getRoleLevel() != RamUserAction.ROLE_LEVEL_PROVIDER) this.retrieveEvent(req, inventoryEventId);
 	}
 	
 	/**
@@ -251,7 +255,8 @@ public class InventoryEventAction extends SBActionAdapter {
 	 */
 	public void retrieveAll(SMTServletRequest req) throws ActionException {
 		List<InventoryEventVO> items = new ArrayList<>();
-		
+		SBUserRole r = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
+
 		// set the date start filter
 		Date start = Convert.formatStartDate(Convert.formatDate(new Date(), Calendar.DAY_OF_MONTH, -1));
 		if (StringUtil.checkVal(req.getParameter("from_date")).length() > 0) {
@@ -279,7 +284,8 @@ public class InventoryEventAction extends SBActionAdapter {
 			ps = dbConn.prepareStatement(sql.toString());
 			ps.setDate(1, Convert.formatSQLDate(start));
 			ps.setDate(2, Convert.formatSQLDate(end));
-			
+			if(r.getRoleLevel() == RamUserAction.ROLE_LEVEL_PROVIDER || r.getRoleLevel() == RamUserAction.ROLE_LEVEL_OEM)
+				ps.setInt(3, Convert.formatInteger((String)r.getAttribute("roleAttributeKey_1")));
 			ResultSet rs = ps.executeQuery();
 			int navStart = Convert.formatInteger(req.getParameter("start"), 0);
 			int navLimit = Convert.formatInteger(req.getParameter("limit"), 25);
@@ -324,8 +330,13 @@ public class InventoryEventAction extends SBActionAdapter {
 	 * @return
 	 */
 	public StringBuilder getListWhere(SMTServletRequest req) {
+		String schema = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		SBUserRole r = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 		StringBuilder where = new StringBuilder();
 		
+		//If role is provider filter so it's only their locations.
+		if(r.getRoleLevel() == RamUserAction.ROLE_LEVEL_PROVIDER)
+			where.append(" and cl.customer_id = ? ");
 		// Filter by the active flag
 		if (req.hasParameter("activeFlag"))
 			where.append(" and ie.active_flg = ").append(req.getParameter("activeFlag"));
@@ -335,7 +346,17 @@ public class InventoryEventAction extends SBActionAdapter {
 			where.append(" and ie.customer_location_id = '");
 			where.append(req.getParameter("customerLocationId")).append("' ");
 		}
-
+		
+		//If the user is an OEM, filter by locations by only those they have products at.
+		if(r.getRoleLevel() == RamUserAction.ROLE_LEVEL_OEM) {
+			where.append(" and cl.customer_location_id in ( ");
+			where.append("select z.customer_location_id from ").append(schema).append("RAM_CUSTOMER_LOCATION z ");
+			where.append("inner join ").append(schema).append("RAM_INVENTORY_EVENT ze on z.customer_location_id = ze.customer_location_id ");
+			where.append("inner join ").append(schema).append("RAM_INVENTORY_EVENT_AUDITOR_XR za on ze.inventory_event_id = za.inventory_event_id ");
+			where.append("inner join ").append(schema).append("RAM_INVENTORY_ITEM zi on za.inventory_Event_auditor_xr_id = za.inventory_Event_auditor_xr_id ");
+			where.append("inner join ").append(schema).append("RAM_PRODUCT zp on zi.product_id = zp.product_id ");
+			where.append("and zp.customer_id = ?)");
+		}
 		return where;
 	}
 	

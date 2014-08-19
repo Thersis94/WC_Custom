@@ -254,46 +254,52 @@ public class MediaBinIndex implements SMTCustomIndexIntfc {
 
 
     /**
-     * Parses the business unit name.
+     * Parses the source business unit name into a consistent naming schema using 
+     * based on the key/value pairs in the business unit map.  The source name is
+     * split on a tilde and each token is parsed according to the business unit map.
+     * The final result is a single or pipe-delimited value.  Empty tokens are ignored.  
      * @param busUnit
      * @return
      */
     private String parseBusinessUnit(String busUnit) {
     	String tmp = StringUtil.checkVal(busUnit).toUpperCase();
-    	String newStr = null;
+    	String[] tokens = tmp.split("~");
+    	StringBuilder newStr = new StringBuilder();
+    	
+    	for (int i = 0; i < tokens.length; i++) {
+    		// skip token if empty
+    		if (tokens[i].length() == 0) continue;
+    		
+    		// append a pipe delimiter if not first valid token
+    		if (i > 0) newStr.append("|");
+    		
+        	if (tokens[i].contains("BIO")) {
+        		newStr.append(busUnits.get("BIO"));
+        	} else if (tokens[i].contains("CMF")) {
+        		newStr.append(busUnits.get("CMF"));
+        	} else if (tokens[i].contains("CODMAN")) {
+        		newStr.append(busUnits.get("CODMAN"));
+        	} else if (tokens[i].contains("HIP")) {
+        		newStr.append(busUnits.get("HIP"));
+        	} else if (tokens[i].contains("KNEE")) {
+        		newStr.append(busUnits.get("KNEE"));
+        	} else if (tokens[i].contains("MITEK")) {
+        		newStr.append(busUnits.get("MITEK"));
+        	} else if (tokens[i].contains("POWERTOOLS")) {
+        		newStr.append(busUnits.get("TOOLS"));
+        	} else if (tokens[i].contains("SHOULDER")) {
+        		newStr.append(busUnits.get("SHOULDER"));
+        	} else if (tokens[i].contains("SPINE")) {
+        		newStr.append(busUnits.get("SPINE"));
+        	} else if (tokens[i].contains("TRAUMA")) {
+        		newStr.append(busUnits.get("TRAUMA"));
+        	} else {
+        		newStr.append(busUnits.get("OTHER"));
+        	}
 
-    	if (tmp.contains("BIO")) {
-    		newStr = busUnits.get("BIO");
-    	} else if (tmp.contains("CMF")) {
-    		newStr = busUnits.get("CMF");
-    	} else if (tmp.contains("CODMAN")) {
-    		newStr = busUnits.get("CODMAN");
-    	} else if (tmp.contains("HIP")) {
-    		newStr = busUnits.get("HIP");
-    	} else if (tmp.contains("KNEE")) {
-    		newStr = busUnits.get("KNEE");
-    	} else if (tmp.contains("MITEK")) {
-    		newStr = busUnits.get("MITEK");
-    	} else if (tmp.contains("POWERTOOLS")) {
-    		newStr = busUnits.get("TOOLS");
-    	} else if (tmp.contains("SHOULDER")) {
-    		newStr = busUnits.get("SHOULDER");
-    	} else if (tmp.contains("SPINE")) {
-    		newStr = busUnits.get("SPINE");
-    	} else if (tmp.contains("TRAUMA")) {
-    		newStr = busUnits.get("TRAUMA");
-    	} else {
-    		newStr = busUnits.get("OTHER");
     	}
-    	
-    	// call method recursively if business unit value contains multiples.
-    	if (tmp.indexOf("~") > -1) {
-    		if (tmp.length() > 1) {
-    			newStr += "|" + parseBusinessUnit(tmp.substring(tmp.indexOf("~")+1));
-    		}
-    	}
-    	
-    	return newStr;
+    	    	    	
+    	return newStr.toString();
     }
     
     /**
@@ -321,6 +327,10 @@ public class MediaBinIndex implements SMTCustomIndexIntfc {
     	return tmp;
     }
     
+    /**
+     * Helper method for loading the business units look-up map.  This map provides
+     * consistent business unit values for indexing by business unit name.
+     */
     private void loadBusUnits() {
         busUnits = new HashMap<>();
         busUnits.put("BIO", "Biomaterials");

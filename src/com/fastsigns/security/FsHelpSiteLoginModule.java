@@ -3,15 +3,19 @@ package com.fastsigns.security;
 // JDK 1.6.x
 import java.net.URLDecoder;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Map;
 import java.util.TimeZone;
+
+
 
 
 // SMT Base Libs
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.security.AESEncryption;
 import com.siliconmtn.security.AESKey;
 import com.siliconmtn.security.AbstractLoginModule;
@@ -67,8 +71,13 @@ public class FsHelpSiteLoginModule extends AbstractLoginModule {
 		org.apache.log4j.PropertyConfigurator.configure("/data/log4j.properties");
 		String[] tokenArr = new String[2];
 		try {
-			//String phonyPayload = AESEncryption.encryptString(TOKEN_NM + "=" + SHARED_SECRET + "|date=" + Convert.formatDate(new Date(), Convert.DATE_TIME_DASH_PATTERN), lm.aesKey, 256);
-			String phonyPayload = "password=pass&emailAddress=%2fPlau9uhZd12WvOwEc%2fpTWikWjXn094ERPpclnRB%2b4UctNLcd3x4uEwMvsSas2Orft4uQ1OaCqvlxwv5oWdxmw%3d%3d";
+			Calendar dt = Calendar.getInstance();
+			dt.add(Calendar.HOUR_OF_DAY, 5); //offset from Indiana to GMT
+			
+			String phonyPayload = AESEncryption.encryptString(TOKEN_NM + "=" + SHARED_SECRET + "|date=" + Convert.formatDate(dt.getTime(), Convert.DATE_TIME_DASH_PATTERN), lm.aesKey, 256);
+			phonyPayload = StringEncoder.urlEncode(phonyPayload);
+			phonyPayload = "password=pass&emailAddress=" + phonyPayload;
+			System.out.println("usable auth token: " + phonyPayload);
 			tokenArr = lm.dissectTokenFromString(phonyPayload);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -177,6 +186,7 @@ public class FsHelpSiteLoginModule extends AbstractLoginModule {
 		
 		
 		try {
+			log.debug("token=" + token);
 			log.debug(aesKey.getPassPhrase());
 			token = AESEncryption.decryptString(token, aesKey, 256);
 			log.debug("Decrypted value: " + token);
