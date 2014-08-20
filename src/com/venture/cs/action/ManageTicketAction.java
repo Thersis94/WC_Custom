@@ -486,7 +486,7 @@ public class ManageTicketAction extends SBActionAdapter {
     	if (profileId.length() > 0) {
     		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
     		try {
-    			user = pm.getProfile(profileId, dbConn, ProfileManager.PROFILE_ID_LOOKUP);
+    			user = pm.getProfile(profileId, dbConn, ProfileManager.PROFILE_ID_LOOKUP, null);
     		} catch (DatabaseException de) {
     			log.error("Error retrieving vehicle owner's profile, ", de);
     		}

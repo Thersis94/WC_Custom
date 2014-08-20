@@ -149,7 +149,7 @@ public class ChangeLogReport {
 		 // Decrypt name fields and store in the related vo.
 		for(AbstractChangeLogVO cl : vos) {
 			try {
-				UserDataVO p = pm.getProfile(cl.getSubmitterId(), dbConn, ProfileManager.PROFILE_ID_LOOKUP);
+				UserDataVO p = pm.getProfile(cl.getSubmitterId(), dbConn, ProfileManager.PROFILE_ID_LOOKUP, null);
 				cl.setSubmitterName(StringUtil.checkVal(se.decrypt(p.getFirstName())) + " " + StringUtil.checkVal(se.decrypt(p.getLastName())));
 				
 			} catch (com.siliconmtn.exception.DatabaseException e) {
