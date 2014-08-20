@@ -153,22 +153,21 @@ public class FSProductAction extends SBActionAdapter {
 		
 		log.debug("Loading Catalog with id: " + catalogId);
 		if (!page.isPreviewMode())
-			cachedMod = super.readFromCache(catalogId);
+			cachedMod = super.readFromCache("FS_CAT_"+catalogId);
 		
 		if (cachedMod == null || cachedMod.getActionData() == null) {
 			if(cachedMod != null) log.error("Something is wrong with the cached product catalog " + catalogId);
 			log.debug("Value not Cached, reading from DB!");
 			cachedMod = new ModuleVO();
-			cachedMod.setActionId(catalogId);
+			cachedMod.setActionId("FS_CAT_"+catalogId);
 			cachedMod.setActionData(this.loadCatalog(catalogId, page.isPreviewMode()));
 			
 	        if (cachedMod != null && !page.isPreviewMode()) {
 	        	cachedMod.setCacheable(true);
 	        	cachedMod.setPageModuleId(catalogId);
 	        	
-	        	// Add the cache groups so that the catalog gets cleared along with page and all its other modules.
+	        	// We only cache this with the catalogId group because even if the page changes, the data that is cached remains the same
 	        	cachedMod.addCacheGroup(catalogId);
-	        	cachedMod.addCacheGroup(page.getPageId());
 	        	super.writeToCache(cachedMod);
 	        }
 		}
@@ -424,11 +423,17 @@ public class FSProductAction extends SBActionAdapter {
 
 		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 		if (!req.hasParameter("prefix") && thirdItem != null) {
-			page.setCanonicalPageUrl(buildUrl(req, thirdItem, null, false));
+			page.setCanonicalPageUrl(buildUrl(req, thirdItem, firstItem, secondItem, false));
 		} else {
-			page.setCanonicalPageUrl(buildUrl(req, firstItem, secondItem, false));
+			page.setCanonicalPageUrl(buildUrl(req, firstItem, secondItem, null, false));
 		}
-		if (!Convert.formatBoolean(site.getMobileFlag())) page.setCanonicalMobileUrl(buildUrl(req, firstItem, secondItem, true));
+		if (!Convert.formatBoolean(site.getMobileFlag())){
+			if (req.hasParameter("prefix")) {
+				page.setCanonicalMobileUrl(buildUrl(req, firstItem, secondItem, null, true));
+			} else {
+				page.setCanonicalMobileUrl(buildUrl(req, thirdItem, firstItem, secondItem, true));
+			}
+		}
 	}
 	
 	/**
@@ -440,34 +445,46 @@ public class FSProductAction extends SBActionAdapter {
 	 * @param isMobile
 	 * @return
 	 */
-	private String buildUrl(SMTServletRequest req, String firstItem, String secondItem, boolean isMobile) {
+	private String buildUrl(SMTServletRequest req, String firstItem, String secondItem, String thirdItem, boolean isMobile) {
 		StringBuilder url = new StringBuilder(200);
-		boolean byProduct = false;
 		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 		
-		log.debug("Building URL with " + firstItem + " " +secondItem);
+		log.debug("Building URL with " + firstItem + " " +secondItem + " " + thirdItem);
 
 		if(isMobile) url.append("http://"+site.getMobileSiteUrl());
 		
 		if (req.hasParameter("prefix")) {
-			url.append("/" + req.getParameter("prefix"));
-			byProduct = true;
-		} else if (isMobile){
-			url.append("http://"+site.getMobileSiteUrl());
-			url.append("/products/");
-			url.append(req.getRequestURI().substring(req.getRequestURI().lastIndexOf('/')));
-			url.append("/qs/");
+			appendLevel(url, req.getParameter("prefix"));
+		} else if (isMobile || req.getRequestURL().indexOf("qs") > -1){
+			if(isMobile) appendLevel(url, "products");
+			appendLevel(url, req.getRequestURI().substring(req.getRequestURI().lastIndexOf('/')+1));
+			appendLevel(url, "qs/");
 		} else {
-			url.append(req.getRequestURI().substring(req.getRequestURI().lastIndexOf('/')) + "-");
+			appendLevel(url, req.getRequestURI().substring(req.getRequestURI().lastIndexOf('/')) + "-");
 		}
 		
-		url.append(firstItem);
+		appendLevel(url, firstItem);
 		
-		if (secondItem != null && byProduct) {
-			url.append("/"+secondItem);
+		appendLevel(url, secondItem);
+		
+		if (!req.hasParameter("prefix")) {
+			appendLevel(url, thirdItem);
 		}
 		
 		return url.toString();
+	}
+	
+	/**
+	 * Ensures that whatever we are trying to add to the url is not null and
+	 * end up with more or fewer slashes than there are supposed to be.
+	 * @param url
+	 * @param level
+	 */
+	private void appendLevel(StringBuilder url, String level) {
+		if (level == null) return;
+		if ((url.length() == 0 || (url.charAt(url.length()-1) != '/') && url.charAt(url.length()-1) != '-')
+				&& level.charAt(0) != '/') url.append("/");
+		url.append(level);
 	}
 	
 	/**
