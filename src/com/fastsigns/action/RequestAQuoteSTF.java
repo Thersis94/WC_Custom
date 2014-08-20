@@ -380,7 +380,7 @@ public class RequestAQuoteSTF extends SBActionAdapter {
 			user.setProfileId(profileId);
 			user.setAuthenticationId(authId);
         	SecurityController sc = new SecurityController(site.getLoginModule(), site.getRoleModule(), attributes);
-	        sc.checkRole(user, req, site.getSiteId(), dbConn);
+	        sc.checkRole(user, req, site.getSiteId(), dbConn, site.getOrganizationId());
 	        log.debug("login complete");
         } catch (Exception e) {
         	log.error("could not auto-login user after registration, profileId=" + profileId, e);
