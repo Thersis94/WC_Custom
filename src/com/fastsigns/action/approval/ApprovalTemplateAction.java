@@ -53,8 +53,8 @@ public abstract class ApprovalTemplateAction extends ApprovalAction {
 		String franchiseTxt = (!vo.getOrgId().contains("AU")) ? "FASTSIGNS" : "SIGNWAVE";
 		try {
 			ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
-			UserDataVO u = pm.getProfile(vo.getSubmitterId(), dbConn, "profile_id");
-			UserDataVO r = pm.getProfile(vo.getReviewerId(), dbConn, "profile_id");
+			UserDataVO u = pm.getProfile(vo.getSubmitterId(), dbConn, ProfileManager.PROFILE_ID_LOOKUP, null);
+			UserDataVO r = pm.getProfile(vo.getReviewerId(), dbConn, ProfileManager.PROFILE_ID_LOOKUP, null);
 			 //Build Message for the center.
 			if(u.isUserReachable() && r.isUserReachable()){
 				SMTMail mail = new SMTMail(attributes.get(Constants.CFG_SMTP_SERVER).toString());

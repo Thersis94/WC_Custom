@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+
 // SMT Base Libs 2.0
 import com.ansmed.sb.action.EpiducerMailFormatter;
 import com.ansmed.sb.security.ANSRoleFilter;
@@ -32,6 +33,7 @@ import com.siliconmtn.util.UUIDGenerator;
 // SB Libs
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteBuilderUtil;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
 
@@ -494,8 +496,9 @@ public class SurgeonSearchAction extends SBActionAdapter {
 		Map<String,Object> config = new HashMap<String,Object>();
 		config.put(Constants.ENCRYPT_KEY, getAttribute(Constants.ENCRYPT_KEY));
 		ProfileManager pm = ProfileManagerFactory.getInstance(config);
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		try {
-			rep = pm.getProfile(profileId, dbConn, "PROFILE_ID");
+			rep = pm.getProfile(profileId, dbConn, ProfileManager.PROFILE_ID_LOOKUP, site.getOrganizationId());
 		} catch (DatabaseException de) {
 			log.error("Error retrieving sales rep profile, ", de);
 		}
