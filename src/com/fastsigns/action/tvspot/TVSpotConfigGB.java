@@ -126,7 +126,7 @@ public class TVSpotConfigGB extends TVSpotConfig {
 		msg.append("<li>If desired, please tell us more about your experience (open-ended with space for at least 250 words).</li></ul></i></div></li>");
 		msg.append("<li>For more information about \"Operation Consultation\", please refer to the following: <br/>");
 		msg.append("<ul>");
-		msg.append("<li>Review the overview document: < a href='http://support.fastsigns.com/search/FileViewer.aspx?ki=8281'>");
+		msg.append("<li>Review the overview document: <a href='http://support.fastsigns.com/search/FileViewer.aspx?ki=8281'>");
 		msg.append("http://support.fastsigns.com/search/FileViewer.aspx?ki=8281</a></li>");
 		msg.append("</ul>");
 		msg.append("</li>");
@@ -220,7 +220,7 @@ public class TVSpotConfigGB extends TVSpotConfig {
 		body.append("<p>For more information about \"Operation Consultation\", please refer to the following resources or ");
 		body.append("consult with your Franchise Business Consultant:</p>");
 		body.append("<ul>");
-		body.append("<li>Review the overview document: < a href='http://support.fastsigns.com/search/FileViewer.aspx?ki=8281'>");
+		body.append("<li>Review the overview document: <a href='http://support.fastsigns.com/search/FileViewer.aspx?ki=8281'>");
 		body.append("http://support.fastsigns.com/search/FileViewer.aspx?ki=8281</a></li>");
 		body.append("</ul>");
 		body.append("<p>* This survey will be sent to this prospect in six business days: ");
@@ -314,7 +314,7 @@ public class TVSpotConfigGB extends TVSpotConfig {
 		body.append("Franchise Business Consultant. Additional ");
 		body.append("information is available using the following resources:<br/>");
 		body.append("<ul>");
-		body.append("<li>Review the overview document: < a href='http://support.fastsigns.com/search/FileViewer.aspx?ki=8281'>");
+		body.append("<li>Review the overview document: <a href='http://support.fastsigns.com/search/FileViewer.aspx?ki=8281'>");
 		body.append("http://support.fastsigns.com/search/FileViewer.aspx?ki=8281</a></li>");
 		body.append("</ul>");
 		
