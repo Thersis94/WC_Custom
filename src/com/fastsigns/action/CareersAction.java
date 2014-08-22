@@ -15,6 +15,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.SBModuleVO;
 import com.smt.sitebuilder.action.contact.ContactFacadeAction;
@@ -57,11 +58,17 @@ public class CareersAction extends SBActionAdapter {
 		super.retrieve(req);
 		String orgId = ((SiteVO)req.getAttribute("siteData")).getOrganizationId();
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+		log.debug(mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 		StringBuilder sb = new StringBuilder();
 		sb.append("select a.*, b.LOCATION_NM, b.STATE_CD, b.CITY_NM, b.ATTRIB2_TXT from ");
 		sb.append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sb.append("FTS_JOB_POSTING a left outer join DEALER_LOCATION b on a.FRANCHISE_ID = b.DEALER_LOCATION_ID ");
-		sb.append("where a.ORGANIZATION_ID = ? and DATEDIFF(DAY, JOB_POST_DT, GETDATE()) < 21 ");
+		sb.append("where a.ORGANIZATION_ID = ? and ");
+		if (Convert.formatBoolean(mod.getAttribute(ModuleVO.ATTRIBUTE_1))) {
+			sb.append("DATEDIFF(DAY, JOB_POST_DT, GETDATE()) < 21 ");
+		} else {
+			sb.append("((DATEDIFF(DAY, JOB_POST_DT, GETDATE()) < 21 and a.FRANCHISE_ID is null) or a.FRANCHISE_ID is not null) ");
+		}
 		sb.append("and JOB_APPROVAL_FLG = ? order by FRANCHISE_ID, JOB_TITLE_NM");
 		PreparedStatement ps = null;
 		log.debug(sb + " | " + orgId + " | " + AbstractChangeLogVO.Status.APPROVED.ordinal());
