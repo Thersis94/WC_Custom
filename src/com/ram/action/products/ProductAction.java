@@ -316,12 +316,13 @@ public class ProductAction extends SBActionAdapter {
 			}
 			ps.setInt(index++, providerId);
 		}
-		
+		int cnt = 0;
 		//Get the count off the first row.
 		ResultSet rs = ps.executeQuery();
-		rs.next();
+		while(rs.next())
+			cnt++;
 
-		return rs.getInt(1);
+		return cnt;
 
 		
 	}
@@ -380,7 +381,7 @@ public class ProductAction extends SBActionAdapter {
 		StringBuilder sb = new StringBuilder();
 		//Wrap the intersect query in our limiting selections depending on purpuse of call.
 		if(isCount) {
-			sb.append("select COUNT(*) from (");
+			sb.append("select * from (");
 		} else {
 			sb.append("select top ").append(limit).append(" * from (");
 		}
