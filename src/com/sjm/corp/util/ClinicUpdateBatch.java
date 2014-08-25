@@ -169,9 +169,7 @@ public class ClinicUpdateBatch {
 		mail.setSubject("Weekly Clinic Updates for St. Jude Medical International Clinic Locator");
 		mail.setReplyTo("cliniclocator@sjm.com");
 		mail.setFrom("cliniclocator@sjm.com");
-		//mail.setRecpt(new String[] {email});
-		// TODO 2014-03-10 Remove when testing finished.
-		mail.setRecpt(new String[] {"dave@siliconmtn.com"});
+		mail.setRecpt(new String[] {email});
 		
 		String hVal = "<h3>The report below highlights your clinic approval/update requests for the week.</h3>";
 		hVal += "To access the St. Jude Medical Clinic Locator tool, visit ";
