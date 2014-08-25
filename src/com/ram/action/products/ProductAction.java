@@ -386,7 +386,7 @@ public class ProductAction extends SBActionAdapter {
 		}
 		
 		//Build Initial Query
-		sb.append("(select a.PRODUCT_ID, a.CUSTOMER_ID, a.CUST_PRODUCT_ID, a.PRODUCT_NM, a.DESC_TXT, a.SHORT_DESC, a.LOT_CODE_FLG, a.ACTIVE_FLG, a.EXPIREE_REQ_FLG, a.GTIN_PRODUCT_ID, b.CUSTOMER_NM from ").append(schema);
+		sb.append("(select a.PRODUCT_ID, a.CUSTOMER_ID, a.CUST_PRODUCT_ID, a.PRODUCT_NM, a.DESC_TXT, a.SHORT_DESC, a.LOT_CODE_FLG, a.ACTIVE_FLG, a.EXPIREE_REQ_FLG, a.GTIN_PRODUCT_ID, b.CUSTOMER_NM, a.KIT_FLG from ").append(schema);
 		sb.append("ram_product a ");
 		sb.append("inner join ").append(schema).append("ram_customer b ");
 		sb.append("on a.customer_id = b.customer_id ");
@@ -398,7 +398,7 @@ public class ProductAction extends SBActionAdapter {
 		//If this is for a provider, add intersect query
 		if(providerId > 0) {
 			sb.append(" intersect ");
-			sb.append("(select a.PRODUCT_ID, a.CUSTOMER_ID, a.CUST_PRODUCT_ID, a.PRODUCT_NM, a.DESC_TXT, a.SHORT_DESC, a.LOT_CODE_FLG, a.ACTIVE_FLG, a.EXPIREE_REQ_FLG, a.GTIN_PRODUCT_ID, b.CUSTOMER_NM from ").append(schema);
+			sb.append("(select a.PRODUCT_ID, a.CUSTOMER_ID, a.CUST_PRODUCT_ID, a.PRODUCT_NM, a.DESC_TXT, a.SHORT_DESC, a.LOT_CODE_FLG, a.ACTIVE_FLG, a.EXPIREE_REQ_FLG, a.GTIN_PRODUCT_ID, b.CUSTOMER_NM, a.KIT_FLG from ").append(schema);
 			sb.append("ram_product a ");
 			sb.append("inner join ").append(schema).append("ram_customer b ");
 			sb.append("on a.customer_id = b.customer_id ");
