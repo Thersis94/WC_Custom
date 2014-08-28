@@ -198,7 +198,7 @@ public class CourseCalendarVO extends EventEntryVO {
 	/**
 	 * @param rsvpCodeText the rsvpCodeText to set
 	 */
-	@Importable( name = "RSVP Code", type = DataType.STRING )
+	@Importable( name = "Event Code", type = DataType.STRING )
 	@DatabaseColumn( column = "RSVP_CODE_TXT", dataType = "nvarchar(10)", table = "EVENT_ENTRY" )
 	public void setRSVPCode(String rsvpCodeText) {
 		this.rsvpCodeText = rsvpCodeText;
