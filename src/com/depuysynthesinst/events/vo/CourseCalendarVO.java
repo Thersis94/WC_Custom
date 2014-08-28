@@ -9,6 +9,7 @@ import com.siliconmtn.annotations.DataType;
 import com.siliconmtn.annotations.DatabaseColumn;
 import com.siliconmtn.annotations.Importable;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.event.vo.EventEntryVO;
 
 /*****************************************************************************
@@ -28,6 +29,10 @@ public class CourseCalendarVO extends EventEntryVO {
 	private String eventDesc2;
 	private String eventDesc3;
 	private String eventDesc4;
+	
+	public CourseCalendarVO(){
+		super();
+	}
 
 	/**
 	 * @param rs
@@ -137,6 +142,28 @@ public class CourseCalendarVO extends EventEntryVO {
     @Importable(name = "Displayed Learning Objective #4", type = DataType.STRING)
     public void setEventDesc4(String eventDesc4) {
         this.eventDesc4 = eventDesc4;
+    }
+    
+    /**
+     * @see com.smt.sitebuilder.action.event.vo.EventEntryVO#getEventDesc()
+     */
+    public String getEventDesc(){
+    	StringBuilder sb = new StringBuilder();
+    	String[] descList = {super.getEventDesc(),eventDesc2,eventDesc3,eventDesc4};
+    	
+    	//Concatenates all eventDesc values into a single unordered list
+		sb.append("<ul>");
+		for( String s : descList ){
+			String value = StringUtil.checkVal(s);
+			if ( value.length() > 0 ){
+				sb.append("<li>");
+				sb.append(value);
+				sb.append("</li>");
+			}
+		}
+		sb.append("</ul>");
+		
+		return sb.toString();
     }
 
     /**
