@@ -95,7 +95,6 @@ public class CustomerLocationAction extends SBActionAdapter {
 			
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
-				log.debug("activeFlag: " + rs.getString("active_flg"));
 				data.add(new CustomerLocationVO(rs, false));
 			}
 		} catch (SQLException e) {

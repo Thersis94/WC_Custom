@@ -93,7 +93,7 @@ public class InventoryLocationAction extends SBActionAdapter {
 			if (data.size() == 1 && data.get(0).hasContactAssigned()) {
 				InventoryLocationVO il = data.get(0);
 				ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
-				il.setContact(pm.getProfile(il.getProfileId(), dbConn, ProfileManager.PROFILE_ID_LOOKUP));
+				il.setContact(pm.getProfile(il.getProfileId(), dbConn, ProfileManager.PROFILE_ID_LOOKUP, null));
 			}
 			
 			this.putModuleData(data, data.size(), false);

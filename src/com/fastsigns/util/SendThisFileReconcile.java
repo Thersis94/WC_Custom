@@ -47,7 +47,7 @@ public class SendThisFileReconcile {
 	
 	protected static Logger log = null;
 	private SAFConfig safConfig = null;
-	private String stfUrl = "http://www.sendthisfile.com/api/transfer/status/get-custom-transfer-status.jsp?sendthisfilecode=rHhjmUQGP8wcsiOiGc4tJdAq&custominput=custominput12243&uniqueid=";
+	private String stfUrl = "https://www.sendthisfile.com/api/transfer/status/get-custom-transfer-status.jsp?sendthisfilecode=rHhjmUQGP8wcsiOiGc4tJdAq&custominput=custominput12243&uniqueid=";
 	private Date startDate = null;
 	private Date timeoutDate = null;
 	private static final String dbDriver = "com.microsoft.sqlserver.jdbc.SQLServerDriver";

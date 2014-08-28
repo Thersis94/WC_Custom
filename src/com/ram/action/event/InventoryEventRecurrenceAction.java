@@ -38,7 +38,9 @@ public class InventoryEventRecurrenceAction extends SBActionAdapter {
 	
 	//constant for passing data between actions
 	public static final String EVENT_GRP_OBJ = "eventGroupObj";
-
+	
+	//Attribute variable that instructs action to place newly created events on passed Events List.
+	public static final String IS_UTIL_BATCH = "isUtilBatch";
 	public InventoryEventRecurrenceAction() {
 	}
 
@@ -65,8 +67,17 @@ public class InventoryEventRecurrenceAction extends SBActionAdapter {
 		
 	}
 	
-	
-	private void processRecurrences(InventoryEventGroupVO eventGroup, List<InventoryEventVO> events) 
+	/**
+	 * Take in eventGroup and list of events for the group and replicate the root event based on the
+	 * parameters of the event Group.
+	 * 
+	 * @update Billy Larsen - If IS_UTIL_BATCH parameter is on attributes map then newly created events 
+	 * are placed on the passed events list.  
+	 * @param eventGroup
+	 * @param events
+	 * @throws ActionException
+	 */
+	public void processRecurrences(InventoryEventGroupVO eventGroup, List<InventoryEventVO> events) 
 			throws ActionException {
 		//this is the event we'll re-index "X" times, as needed.  it's the only one that contains all the data we need.
 		InventoryEventVO mainEvent = events.get(0);
@@ -149,7 +160,10 @@ public class InventoryEventRecurrenceAction extends SBActionAdapter {
 		
 		//copy returns
 		copyReturns(mainEvent.getInventoryEventId(), insertEvents);
-			
+		
+		//Added for use with EventDataGeneratorUtil for bulk creation of historical transactions.
+		if(Convert.formatBoolean(attributes.get(IS_UTIL_BATCH)))
+			events.addAll(insertEvents);
 	}
 	
 	/**

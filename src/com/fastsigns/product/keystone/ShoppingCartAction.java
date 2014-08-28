@@ -392,11 +392,7 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 		String step = req.getParameter("step"), create = req.getParameter("create");
 		boolean stepExists = req.hasParameter("step");
 		
-		if (req.hasParameter("create") && create.equals("1") && cart.getItems().size() == 0) {
-			super.adminRedirect(req, "", "/" + req.getSession().getAttribute("FranchiseAliasId") + "/store");
-			return;
-			
-		} else if (stepExists && !"checkout".equals(step)) {
+		if (stepExists && !"checkout".equals(step)) {
 			//these are "checkout" screens, not cart-mgmt related
 			CheckoutUtil checkout = new CheckoutUtil(attributes);
 			try {

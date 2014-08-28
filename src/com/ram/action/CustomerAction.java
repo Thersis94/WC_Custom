@@ -85,7 +85,7 @@ public class CustomerAction extends SBActionAdapter {
 			if (data.size() == 1 && data.get(0).hasContactAssigned()) {
 				CustomerVO c = data.get(0);
 				ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
-				c.setContact(pm.getProfile(c.getProfileId(), dbConn, ProfileManager.PROFILE_ID_LOOKUP));
+				c.setContact(pm.getProfile(c.getProfileId(), dbConn, ProfileManager.PROFILE_ID_LOOKUP, null));
 			}
 			
 			this.putModuleData(data, data.size(), false);
