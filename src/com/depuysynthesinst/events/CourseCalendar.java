@@ -10,6 +10,7 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Map;
 
+import com.depuysynthesinst.events.vo.CourseCalendarVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.exception.InvalidDataException;
@@ -19,7 +20,6 @@ import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.siliconmtn.util.parser.AnnotationXlsParser;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
-import com.smt.sitebuilder.action.event.vo.EventEntryVO;
 
 /****************************************************************************
  * <b>Title</b>: CourseCalendar.java<p/>
@@ -57,7 +57,7 @@ public class CourseCalendar extends SimpleActionAdapter {
 		AnnotationXlsParser parser = new AnnotationXlsParser();
 		//Create a list of vo classnames
 		LinkedList<Class<?>> classList = new LinkedList<>();
-		classList.add(EventEntryVO.class);
+		classList.add(CourseCalendarVO.class);
 		
 		try {
 			//Gets the xls file from the request object, and passes it to the parser.
@@ -114,8 +114,8 @@ public class CourseCalendar extends SimpleActionAdapter {
 			for ( Object obj : beanList ){
 				int i = 0;
 				
-				//Casts the generic object to EventEntryVO
-				EventEntryVO vo = (EventEntryVO) obj;
+				//Casts the generic object to CourseCalendarVO
+				CourseCalendarVO vo = (CourseCalendarVO) obj;
 				
 				ps.setString(++i, new UUIDGenerator().getUUID());
 				ps.setString(++i, vo.getStateCode());
@@ -166,7 +166,7 @@ public class CourseCalendar extends SimpleActionAdapter {
 	 * @param vo
 	 * @return
 	 */
-	private String buildEventDesc(EventEntryVO vo){
+	private String buildEventDesc(CourseCalendarVO vo){
 		StringBuilder sb = new StringBuilder();
 		
 		sb.append("<ul><li>");
