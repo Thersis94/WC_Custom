@@ -67,7 +67,7 @@ public class OPLoginModule extends DBLoginModule {
 		    ProfileManager pm = ProfileManagerFactory.getInstance(this.initVals);
 	        Connection dbConn = (Connection)initVals.get(GlobalConfig.KEY_DB_CONN);
 	        try {
-	        	user = pm.getProfile(user.getAuthenticationId(), dbConn, ProfileManager.AUTH_ID_LOOKUP);
+	        	user = pm.getProfile(user.getAuthenticationId(), dbConn, ProfileManager.AUTH_ID_LOOKUP, null);
 	        	 // Retrieve the User's Extended Information
 	        	user.setUserExtendedInfo(this.getRepInfo(user.getProfileId(), dbConn));
 	        	user.setAuthenticated(true);

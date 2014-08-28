@@ -375,7 +375,7 @@ public class InventoryEventAction extends SBActionAdapter {
 		sql.append("stuff(( ");
 		sql.append("select ', ' + b.first_nm + ' ' + b.last_nm ");
 		sql.append("from ").append(schema).append("ram_inventory_event_auditor_xr a ");
-		sql.append("left outer join ").append(schema).append("ram_auditor b on a.auditor_id = b.auditor_id and b.active_flg = 1 ");
+		sql.append("left outer join ").append(schema).append("ram_auditor b on a.auditor_id = b.auditor_id ");
 		sql.append("where a.inventory_event_id = ie.inventory_event_id ");
 		sql.append("for xml path('')), 1, 1, '') as auditors ");
 		sql.append("from ").append(schema).append("ram_inventory_event ie ");

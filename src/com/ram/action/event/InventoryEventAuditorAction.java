@@ -4,9 +4,12 @@ package com.ram.action.event;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+
 
 
 
@@ -17,6 +20,7 @@ import com.ram.datafeed.data.InventoryEventAuditorVO;
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.Convert;
@@ -125,8 +129,88 @@ public class InventoryEventAuditorAction extends SBActionAdapter {
 			
 			this.updateDatabase(vo, sql, insert);
 		}
+		
+		this.checkEventComplete(inventoryEventId);
 	}
 	
+	/**
+	 * We need to check if the event has been completed when we update the auditors for an event.
+	 * We check for DataFeed Transacations on the active auditors for a given event.  If all records have
+	 * Transactions then we update the event so that it shows Inventory Complete.
+	 * @param inventoryEventId
+	 */
+	private void checkEventComplete(int inventoryEventId) {
+		String customDb = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		Timestamp end = null;
+		boolean requiresUpdate = true;
+		StringBuilder sql = new StringBuilder();
+		sql.append("select b.INVENTORY_EVENT_AUDITOR_XR_ID, c.TRANSACTION_ID, c.END_DT ");
+		sql.append("from ").append(customDb).append("RAM_INVENTORY_EVENT a ");
+		sql.append("inner join ").append(customDb).append("RAM_INVENTORY_EVENT_AUDITOR_XR b ");
+		sql.append("on a.INVENTORY_EVENT_ID = b.INVENTORY_EVENT_ID ");
+		sql.append("left outer join ").append(customDb).append("RAM_DATAFEED_TRANSACTION c ");
+		sql.append("on b.INVENTORY_EVENT_AUDITOR_XR_ID = c.INVENTORY_EVENT_AUDITOR_XR_ID ");
+		sql.append("where a.INVENTORY_EVENT_ID = ? and b.ACTIVE_FLG = 1");
+		
+		PreparedStatement ps = null;
+		try {
+			ps = dbConn.prepareStatement(sql.toString());
+			ps.setInt(1, inventoryEventId);
+			ResultSet rs = ps.executeQuery();
+			
+			/*
+			 * Loop over results.  If Transaction is present then we don't need to update and can quick fail.
+			 * Otherwise we Set the end date to the last date in the results.
+			 */
+			while(rs.next()) {
+				log.debug(rs.getString("INVENTORY_EVENT_AUDITOR_XR_ID") + " : " + rs.getString("TRANSACTION_ID"));
+				if(rs.getString("TRANSACTION_ID") == null || rs.getString("TRANSACTION_ID").length() == 0) {
+					requiresUpdate = false;
+					break;
+				} else {
+					end = (end == null || end.before(rs.getTimestamp("END_DT"))) ? rs.getTimestamp("END_DT") : end;		
+				}
+			}
+		} catch(SQLException sqle) {
+			log.error(sqle);
+		} finally {
+			DBUtil.close(ps);
+		}
+		
+		//If we need to update then call out and update with given InventoryEventId and End Date
+		if(requiresUpdate)
+			closeOutEvent(inventoryEventId, end);
+		
+	}
+
+	/**
+	 * Updates an InventoryEvent so that is shows as completed in the results list.
+	 * @param inventoryEventId
+	 * @param end 
+	 * @param start 
+	 */
+	private void closeOutEvent(int inventoryEventId, Timestamp end) {
+		log.debug("Closing out event " + inventoryEventId);
+		StringBuilder sql = new StringBuilder();
+		sql.append("update ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("RAM_INVENTORY_EVENT ");
+		sql.append("set INVENTORY_COMPLETE_DT = ?, DATA_LOAD_COMPLETE_DT = ?, UPDATE_DT = ? where INVENTORY_EVENT_ID = ?");
+		
+		PreparedStatement ps = null;
+		
+		try {
+			ps = dbConn.prepareStatement(sql.toString());
+			ps.setTimestamp(1, end);
+			ps.setTimestamp(2, end);
+			ps.setTimestamp(3, Convert.getCurrentTimestamp());
+			ps.setInt(4, inventoryEventId);
+			ps.executeUpdate();
+		} catch(SQLException sqle) {
+			log.error(sqle);
+		} finally {
+			DBUtil.close(ps);
+		}
+	}
+
 	/**
 	 * Takes the pipe delimited list of data and splits into the appropriate variables
 	 * @param data
