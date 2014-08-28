@@ -29,6 +29,7 @@ public class CourseCalendarVO extends EventEntryVO {
 	private String eventDesc2;
 	private String eventDesc3;
 	private String eventDesc4;
+	private String rsvpCodeText;
 	
 	public CourseCalendarVO(){
 		super();
@@ -185,5 +186,21 @@ public class CourseCalendarVO extends EventEntryVO {
 	 */
 	public String getEventDesc4() {
 		return eventDesc4;
+	}
+
+	/**
+	 * @return the rsvpCodeText
+	 */
+	public String getRSVPCode() {
+		return rsvpCodeText;
+	}
+
+	/**
+	 * @param rsvpCodeText the rsvpCodeText to set
+	 */
+	@Importable( name = "RSVP Code", type = DataType.STRING )
+	@DatabaseColumn( column = "RSVP_CODE_TXT", dataType = "nvarchar(10)", table = "EVENT_ENTRY" )
+	public void setRSVPCode(String rsvpCodeText) {
+		this.rsvpCodeText = rsvpCodeText;
 	}
 }
