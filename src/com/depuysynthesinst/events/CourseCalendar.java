@@ -1,12 +1,18 @@
-/**
- * 
- */
 package com.depuysynthesinst.events;
+
+import java.util.Calendar;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.util.Convert;
+import com.smt.sitebuilder.action.SBModuleVO;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.smt.sitebuilder.action.event.EventEntryAction;
+import com.smt.sitebuilder.action.event.EventFacadeAction;
+import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.PageVO;
+import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title</b>: CourseCalendar.java<p/>
@@ -45,7 +51,48 @@ public class CourseCalendar extends SimpleActionAdapter {
 		
 	}
 	
+	/**
+	 * retrieves a list of Events tied to this porlet.  Filters the list to the passed anatomy, if present. 
+	 */
 	public void retrieve(SMTServletRequest req) throws ActionException {
-		//mckain to add front-end code here
+		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
+		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+		String anatomy = null;
+		
+		//if not on the calendar page, we'll need to filter the events by anatomy
+		if (! page.getAliasName().equals("calendar")) {
+			anatomy = page.getAliasName();
+			if (anatomy.equals("resource-library")) anatomy = "nursing"; //quick-fix for nursing, where there aren't named categories
+			req.setParameter(EventEntryAction.REQ_SERVICE_OPT, anatomy);
+
+			Calendar cal = Calendar.getInstance();
+			req.setParameter(EventEntryAction.REQ_START_DT, Convert.formatDate(cal.getTime(), Convert.DATE_SLASH_PATTERN));
+		}
+		
+		
+		//load the Events
+		actionInit.setActionId((String)mod.getAttribute(SBModuleVO.ATTRIBUTE_1));
+		EventFacadeAction efa = new EventFacadeAction(actionInit);
+		efa.setAttributes(attributes);
+		efa.setDBConnection(dbConn);
+		efa.retrieve(req);
+		mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
+		mod.setCacheTimeout(86400); //24hrs
+		
+		//NOTE:
+		//the resulting ModuleVO CAN be cached, since caching is tied to the page and we've 
+		//already loaded the events pertinent to this page.  (we only needed the request object once, not every time.)
 	}
+	
+	public void build(SMTServletRequest req) throws ActionException {
+		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
+		
+		actionInit.setActionId((String)mod.getAttribute(SBModuleVO.ATTRIBUTE_1));
+		mod.setActionId(actionInit.getActionId());
+		EventFacadeAction efa = new EventFacadeAction(actionInit);
+		efa.setAttributes(attributes);
+		efa.setDBConnection(dbConn);
+		efa.build(req);
+	}
+	
 }
