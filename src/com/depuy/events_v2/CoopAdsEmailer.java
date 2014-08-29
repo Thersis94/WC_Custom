@@ -179,7 +179,8 @@ public class CoopAdsEmailer extends SBActionAdapter {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(site.getAdminEmail());
-			mail.addRecipient("dfox@hmktgroup.com");
+			mail.addRecipient("Sterling.Hoham@hmktgroup.com");
+			mail.addRecipient("becca.burton@hmktgroup.com");
 			mail.addRecipient("barb.goley@hmktgroup.com");
 			// mail.addRecipient("kelly.westafer@hmktgroup.com");
 			mail.addRecipient("amy.zimmerman@hmktgroup.com");
