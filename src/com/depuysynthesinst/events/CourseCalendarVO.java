@@ -1,7 +1,7 @@
 /**
  * 
  */
-package com.depuysynthesinst.events.vo;
+package com.depuysynthesinst.events;
 
 import java.sql.ResultSet;
 

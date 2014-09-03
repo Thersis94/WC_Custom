@@ -1,26 +1,29 @@
 package com.depuysynthesinst.events;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Map;
-import java.sql.SQLException;
+
+import com.depuysynthesinst.events.vo.CourseCalendarVO;
+import java.util.Calendar;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.util.Convert;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.parser.AnnotationXlsParser;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
-import com.smt.sitebuilder.action.SBModuleVO;
-import com.smt.sitebuilder.action.event.EventFacadeAction;
 import com.smt.sitebuilder.action.event.EventEntryAction;
-import com.smt.sitebuilder.action.event.vo.EventEntryVO;
+import com.siliconmtn.util.Convert;
+import com.smt.sitebuilder.action.SBModuleVO;
+import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.smt.sitebuilder.action.event.EventEntryAction;
+import com.smt.sitebuilder.action.event.EventFacadeAction;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
-import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -54,17 +57,14 @@ public class CourseCalendar extends SimpleActionAdapter {
 
 	
 	public void update(SMTServletRequest req) throws ActionException {
-		//split attrib1Text into the actionId & the eventTypeId.  This is easier done server side than with javascript.
-		//when we upload new events (the spreadsheet) we'll need both IDs.
-		if (req.getParameter("attrib1Text").contains("~")) {
-			String[] arr = req.getParameter("attrib1Text").split("~");
-			req.setParameter("attrib1Text", arr[0]);
-			req.setParameter("attrib2Text", arr[1]);
-		}
 		super.update(req);
 		
 		if (req.getFile("xlsFile") != null)
 			processUpload(req);
+	}
+	
+	public void retrieve(SMTServletRequest req) throws ActionException {
+		//mckain to add front-end code here
 	}
 	
 	
@@ -93,15 +93,9 @@ public class CourseCalendar extends SimpleActionAdapter {
 			//Disable the db autocommit for the insert batch
 			dbConn.setAutoCommit(false);
 			
-			for ( Class<?> className : beans.keySet() ) {
+			for ( Class<?> className : beans.keySet() ){
 				//Change the generic collection to an arrayList for the import method
 				beanList = new ArrayList<>(beans.get(className));
-				for (Object o : beanList) {
-					//set the eventTypeId for each
-					EventEntryVO vo = (EventEntryVO) o;
-					vo.setEventTypeId(req.getParameter("attrib2Text"));
-					vo.setStatusFlg(EventFacadeAction.STATUS_APPROVED);
-				}
 				
 				eventAction.importBeans(beanList, req.getParameter("attrib1Text"));
 			}
@@ -117,6 +111,7 @@ public class CourseCalendar extends SimpleActionAdapter {
 			} catch (SQLException e) {}
 		}
 	}
+<<<<<<< Updated upstream
 	
 	/**
 	 * retrieves a list of Events tied to this porlet.  Filters the list to the passed anatomy, if present. 
@@ -127,7 +122,7 @@ public class CourseCalendar extends SimpleActionAdapter {
 		String anatomy = null;
 		
 		//if not on the calendar page, we'll need to filter the events by anatomy
-		if (! page.getAliasName().equals("calendar") && ! page.getAliasName().equals("profile")) {
+		if (! page.getAliasName().equals("calendar")) {
 			anatomy = page.getAliasName();
 			if (anatomy.equals("resource-library")) anatomy = "nursing"; //quick-fix for nursing, where there aren't named categories
 			req.setParameter(EventEntryAction.REQ_SERVICE_OPT, anatomy);
@@ -139,7 +134,6 @@ public class CourseCalendar extends SimpleActionAdapter {
 		
 		//load the Events
 		actionInit.setActionId((String)mod.getAttribute(SBModuleVO.ATTRIBUTE_1));
-		mod.setActionId(actionInit.getActionId());
 		EventFacadeAction efa = new EventFacadeAction(actionInit);
 		efa.setAttributes(attributes);
 		efa.setDBConnection(dbConn);
@@ -152,25 +146,8 @@ public class CourseCalendar extends SimpleActionAdapter {
 		//already loaded the events pertinent to this page.  (we only needed the request object once, not every time.)
 	}
 	
-	
-	/**
-	 * Build gets called for creating iCal files (downloads) of the passed eventEntryId
-	 */
 	public void build(SMTServletRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
-		
-		//for event RSVP signups
-		if (req.hasParameter("userSignup")) {
-			req.setAttribute(EventFacadeAction.STATUS_OVERRIDE, EventFacadeAction.STATUS_APPROVED);
-		} else if (req.hasParameter("rptType")) { //iCal downloads - url depends on which page of the site they're on
-			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
-			if (page.getAliasName().contains("profile")) { //calendar pages are OK with the default, skip this block
-				SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-				String url = site.getFullSiteAlias() + page.getFullPath() + "?pmid=" + mod.getPageModuleId() + "&eventEntryId=";
-				req.setAttribute(EventFacadeAction.STATUS_OVERRIDE, url);
-			}
-		}
-		
 		
 		actionInit.setActionId((String)mod.getAttribute(SBModuleVO.ATTRIBUTE_1));
 		mod.setActionId(actionInit.getActionId());
@@ -180,4 +157,6 @@ public class CourseCalendar extends SimpleActionAdapter {
 		efa.build(req);
 	}
 	
+=======
+>>>>>>> Stashed changes
 }
