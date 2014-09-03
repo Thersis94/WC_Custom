@@ -25,6 +25,7 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
 import com.ram.datafeed.data.CustomerVO;
+import com.siliconmtn.db.DBUtil;
 // SMT Base Libs
 import com.siliconmtn.db.DatabaseConnection;
 import com.siliconmtn.exception.DatabaseException;
@@ -170,12 +171,10 @@ public class CustomerImporter {
 		} catch(SQLException sqle) {
 			log.error(sqle);
 		} finally {
-			try {
-				pu.close();
-				pi.close();
-				s.close();
-				conn.close();
-			}catch(Exception e){}
+			DBUtil.close(pi);
+			DBUtil.close(pu);
+			DBUtil.close(s);
+			DBUtil.close(conn);
 		}
 		log.debug("Committed " + total + " records");
 	}
