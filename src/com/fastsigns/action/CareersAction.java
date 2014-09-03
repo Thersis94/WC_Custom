@@ -69,11 +69,11 @@ public class CareersAction extends SBActionAdapter {
 		} else {
 			sb.append("((DATEDIFF(DAY, JOB_POST_DT, GETDATE()) < 21 and a.FRANCHISE_ID is null) or a.FRANCHISE_ID is not null) ");
 		}
-		sb.append("and JOB_APPROVAL_FLG = ? order by FRANCHISE_ID, JOB_TITLE_NM");
+		sb.append("and JOB_APPROVAL_FLG = ? order by JOB_POST_DT");
 		PreparedStatement ps = null;
 		log.debug(sb + " | " + orgId + " | " + AbstractChangeLogVO.Status.APPROVED.ordinal());
-		String franId = null; 
-		List<CareersVO> careers = new ArrayList<CareersVO>();
+		List<CareersVO> centerCareers = new ArrayList<CareersVO>();
+		List<CareersVO> corpCareers = new ArrayList<CareersVO>();
 		try{
 			int ctr = 1;
 			ps = dbConn.prepareStatement(sb.toString());
@@ -83,19 +83,13 @@ public class CareersAction extends SBActionAdapter {
 			ResultSet rs = ps.executeQuery();
 			while(rs.next()){
 				if(rs.getString("FRANCHISE_ID") == null){
-					careers.add(new CareersVO(rs));
-					franId = "0";
-				}
-				else if(!rs.getString("FRANCHISE_ID").equals(franId)){
-					postings.put(franId, careers);
-					franId = rs.getString("FRANCHISE_ID");
-					careers = new ArrayList<CareersVO>();
-					careers.add(new CareersVO(rs));
+					corpCareers.add(new CareersVO(rs));
 				} else {
-					careers.add(new CareersVO(rs));
+					centerCareers.add(new CareersVO(rs));
 				}
 			}
-			postings.put(franId, careers);
+			postings.put("0", corpCareers);
+			postings.put("1", centerCareers);
 			log.debug("retrieved " + postings.size() + " job postings");
 		} catch(SQLException sqle){
 			log.error("An error was thrown while retrieving ", sqle);
