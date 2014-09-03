@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.depuysynthesinst.events;
 
 import java.sql.ResultSet;
@@ -9,7 +6,6 @@ import com.siliconmtn.annotations.DataType;
 import com.siliconmtn.annotations.DatabaseColumn;
 import com.siliconmtn.annotations.Importable;
 import com.siliconmtn.http.SMTServletRequest;
-import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.event.vo.EventEntryVO;
 
 /*****************************************************************************
@@ -21,17 +17,15 @@ event description fields in the imported excel files.</p>
 <p>Company: Silicon Mountain Technologies</p>
 @author Erik Wingo
 @since Aug 28, 2014
-***************************************************************************/
+ ***************************************************************************/
 public class CourseCalendarVO extends EventEntryVO {
 
 	private static final long serialVersionUID = 1L;
+	private String objective2;
+	private String objective3;
+	private String objective4;
 
-	private String eventDesc2;
-	private String eventDesc3;
-	private String eventDesc4;
-	private String rsvpCodeText;
-	
-	public CourseCalendarVO(){
+	public CourseCalendarVO() {
 		super();
 	}
 
@@ -57,11 +51,11 @@ public class CourseCalendarVO extends EventEntryVO {
 	public void setContactName(String contactName) {
 		super.setContactName(contactName); 
 	}
-	
+
 	/**
 	 * @param eventDesc The eventDesc to set.
 	 */
-	@Importable(name = "Displayed Learning Objective #1", type = DataType.STRING)
+	@Importable(name = "Displayed Event Description", type = DataType.STRING)
 	@DatabaseColumn(column = "EVENT_DESC", dataType = "ntext", table = "EVENT_ENTRY")
 	public void setEventDesc(String eventDesc) {
 		super.setEventDesc(eventDesc);
@@ -75,16 +69,7 @@ public class CourseCalendarVO extends EventEntryVO {
 	public void setEventName(String eventName) {
 		super.setEventName(eventName);
 	}
-	
-	/**
-	 * @param locationDesc The locationDesc to set.
-	 */
-	@Importable(name = "Displayed Event Description", type = DataType.STRING)
-	@DatabaseColumn(column = "LOCATION_DESC", dataType = "nvarchar(1000)", table = "EVENT_ENTRY")
-	public void setLocationDesc(String locationDesc) {
-		super.setLocationDesc(locationDesc);
-	}
-	
+
 	/**
 	 * @param shortDesc The shortDesc to set.
 	 */
@@ -93,7 +78,7 @@ public class CourseCalendarVO extends EventEntryVO {
 	public void setShortDesc(String shortDesc) {
 		super.setShortDesc(shortDesc);
 	}
-	
+
 	/**
 	 * @param The cityName to set.
 	 */
@@ -102,7 +87,7 @@ public class CourseCalendarVO extends EventEntryVO {
 	public void setCityName(String cityName) {
 		super.setCityName(cityName);
 	}
-	
+
 	/**
 	 * @param The stateCode to set.
 	 */
@@ -111,7 +96,7 @@ public class CourseCalendarVO extends EventEntryVO {
 	public void setStateCode(String stateCode) {
 		super.setStateCode(stateCode);
 	}
-	
+
 	/**
 	 * @param The serviceText to set.
 	 */
@@ -120,87 +105,68 @@ public class CourseCalendarVO extends EventEntryVO {
 	public void setServiceText(String serviceText) {
 		super.setServiceText(serviceText);
 	}
-	
-    /**
-     * @param eventDesc The eventDesc2 to set.
-     */
-    @Importable(name = "Displayed Learning Objective #2", type = DataType.STRING)
-    public void setEventDesc2(String eventDesc2) {
-        this.eventDesc2 = eventDesc2;
-    }
-    
-    /**
-     * @param eventDesc The eventDesc3 to set.
-     */
-    @Importable(name = "Displayed Learning Objective #3", type = DataType.STRING)
-    public void setEventDesc3(String eventDesc3) {
-        this.eventDesc3 = eventDesc3;
-    }
-    
-    /**
-     * @param eventDesc The eventDesc to set.
-     */
-    @Importable(name = "Displayed Learning Objective #4", type = DataType.STRING)
-    public void setEventDesc4(String eventDesc4) {
-        this.eventDesc4 = eventDesc4;
-    }
-    
-    /**
-     * @see com.smt.sitebuilder.action.event.vo.EventEntryVO#getEventDesc()
-     */
-    public String getEventDesc(){
-    	StringBuilder sb = new StringBuilder();
-    	String[] descList = {super.getEventDesc(),eventDesc2,eventDesc3,eventDesc4};
-    	
-    	//Concatenates all eventDesc values into a single unordered list
+
+	/**
+	 * @param objective The objective2 to set.
+	 */
+	@Importable(name = "Displayed Learning Objective #1", type = DataType.STRING)
+	@DatabaseColumn(column = "OBJECTIVES_TXT", dataType = "nvarchar(4000)", table = "EVENT_ENTRY")
+	public void setObjectivesText(String objective) {
+		super.setObjectivesText(objective);
+	}
+
+	/**
+	 * @param objective The objective2 to set.
+	 */
+	@Importable(name = "Displayed Learning Objective #2", type = DataType.STRING)
+	public void setObjective2(String objective2) {
+		this.objective2 = objective2;
+	}
+
+	/**
+	 * @param objective The objective3 to set.
+	 */
+	@Importable(name = "Displayed Learning Objective #3", type = DataType.STRING)
+	public void setObjective3(String objective3) {
+		this.objective3 = objective3;
+	}
+
+	/**
+	 * @param objective The objective to set.
+	 */
+	@Importable(name = "Displayed Learning Objective #4", type = DataType.STRING)
+	public void setObjective4(String objective4) {
+		this.objective4 = objective4;
+	}
+
+	/**
+	 * @see com.smt.sitebuilder.action.event.vo.EventEntryVO#getObjective()
+	 * overloaded getter so we can contatenate the 4 fields into a <UL> when we go to insert it into the DB.
+	 */
+	public String getObjectivesText() {
+		StringBuilder sb = new StringBuilder();
+		String[] descList = {super.getObjectivesText(),objective2,objective3,objective4};
+
+		//Concatenates all objective values into a single unordered list
 		sb.append("<ul>");
-		for( String s : descList ){
-			String value = StringUtil.checkVal(s);
-			if ( value.length() > 0 ){
-				sb.append("<li>");
-				sb.append(value);
-				sb.append("</li>");
-			}
+		for ( String s : descList ) {
+			if (s == null || s.length() == 0) continue;
+			sb.append("<li>");
+			sb.append(s);
+			sb.append("</li>");
 		}
 		sb.append("</ul>");
-		
+
 		return sb.toString();
-    }
-
-    /**
-	 * @return the eventDesc2
-	 */
-	public String getEventDesc2() {
-		return eventDesc2;
 	}
 
-	/**
-	 * @return the eventDesc3
-	 */
-	public String getEventDesc3() {
-		return eventDesc3;
-	}
-
-	/**
-	 * @return the eventDesc4
-	 */
-	public String getEventDesc4() {
-		return eventDesc4;
-	}
-
-	/**
-	 * @return the rsvpCodeText
-	 */
-	public String getRSVPCode() {
-		return rsvpCodeText;
-	}
 
 	/**
 	 * @param rsvpCodeText the rsvpCodeText to set
 	 */
 	@Importable( name = "Event Code", type = DataType.STRING )
 	@DatabaseColumn( column = "RSVP_CODE_TXT", dataType = "nvarchar(10)", table = "EVENT_ENTRY" )
-	public void setRSVPCode(String rsvpCodeText) {
-		this.rsvpCodeText = rsvpCodeText;
+	public void setRSVPCode(String rsvp) {
+		super.setRSVPCode(rsvp);
 	}
 }

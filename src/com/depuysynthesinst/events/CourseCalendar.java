@@ -54,17 +54,11 @@ public class CourseCalendar extends SimpleActionAdapter {
 
 	
 	public void update(SMTServletRequest req) throws ActionException {
-		//split attrib1Text into the actionId & the eventTypeId.  This is easier done server side than with javascript.
-		//when we upload new events (the spreadsheet) we'll need both IDs.
-		if (req.getParameter("attrib1Text").contains("~")) {
-			String[] arr = req.getParameter("attrib1Text").split("~");
-			req.setParameter("attrib1Text", arr[0]);
-			req.setParameter("attrib2Text", arr[1]);
-		}
 		super.update(req);
 		
 		if (req.getFile("xlsFile") != null)
 			processUpload(req);
+		
 	}
 	
 	
@@ -99,7 +93,7 @@ public class CourseCalendar extends SimpleActionAdapter {
 				for (Object o : beanList) {
 					//set the eventTypeId for each
 					EventEntryVO vo = (EventEntryVO) o;
-					vo.setEventTypeId(req.getParameter("attrib2Text"));
+					vo.setEventTypeId(req.getParameter("eventTypeId"));
 					vo.setStatusFlg(EventFacadeAction.STATUS_APPROVED);
 				}
 				
