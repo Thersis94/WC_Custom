@@ -437,10 +437,7 @@ public class DashboardReportAction extends SBActionAdapter {
 	 * @param req
 	 */
 	public void getProductCountJoint(SMTServletRequest req) throws SQLException {
-		Object schema = attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		SBUserRole user = ((SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA));
-		Integer customerId = Convert.formatInteger(user.getAttribute(0) + "");
-		
+
 		// Add the base chart information
 		Map<String, Object> data = new HashMap<>();
 		data.put("isSuccess", Boolean.TRUE);

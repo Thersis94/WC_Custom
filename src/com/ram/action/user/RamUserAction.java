@@ -204,26 +204,22 @@ public class RamUserAction extends SBActionAdapter {
 		manageProfile(req, user, isProfileInsert, msg);
 
 		if (isAdmin) { // only admins can manipulate role/auth/auditor records
-			if (msg == null) { // profile added successfully, continue.
-				// manage role and auth
-				SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-				SBUserRole userRole = preformatUserRoleData(req, site, user);
-				manageRole(req, userRole, isProfileInsert, msg);
-				
-				if (msg == null) { // role added successfully, continue.
-					try {
-						manageAuthentication(req, site, user, userRole);
-						msg = "You have successfully " + (isProfileInsert ? "created" : "updated") + " the user.";
-					} catch (Exception e) {
-						msg = "Error creating login for Ram user.";
-					}
-				}
-				
-				// check for role change TO 'auditor' or FROM 'auditor'
-				int origRoleLevel = Convert.formatInteger(req.getParameter("origRoleLevel"), -1);
-				if (origRoleLevel == ROLE_LEVEL_AUDITOR || userRole.getRoleLevel() == ROLE_LEVEL_AUDITOR) {
-					manageAuditor(req, site, user, userRole, origRoleLevel);
-				}
+			// manage role and auth
+			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+			SBUserRole userRole = preformatUserRoleData(req, site, user);
+			manageRole(req, userRole, isProfileInsert, msg);
+			
+			try {
+				manageAuthentication(req, site, user, userRole);
+				msg = "You have successfully " + (isProfileInsert ? "created" : "updated") + " the user.";
+			} catch (Exception e) {
+				msg = "Error creating login for Ram user.";
+			}
+			
+			// check for role change TO 'auditor' or FROM 'auditor'
+			int origRoleLevel = Convert.formatInteger(req.getParameter("origRoleLevel"), -1);
+			if (origRoleLevel == ROLE_LEVEL_AUDITOR || userRole.getRoleLevel() == ROLE_LEVEL_AUDITOR) {
+				manageAuditor(req, site, user, userRole, origRoleLevel);
 			}
 		} else {
 			// if non-admin and has changed email address, check auth record.
