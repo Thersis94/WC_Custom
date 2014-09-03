@@ -1,8 +1,6 @@
 package com.fastsigns.action.franchise;
 
 import java.sql.PreparedStatement;
-
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -13,8 +11,13 @@ import java.util.Map;
 import com.fastsigns.action.franchise.vo.MetroContainerVO;
 import com.fastsigns.action.franchise.vo.MetroProductVO;
 import com.fastsigns.action.wizard.FastsignsMetroWizard;
+import com.fastsigns.product.FSProductAction;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.commerce.catalog.ProductCategoryVO;
+import com.siliconmtn.commerce.catalog.ProductVO;
+import com.siliconmtn.data.Node;
+import com.siliconmtn.data.Tree;
 import com.siliconmtn.exception.GeocodeException;
 import com.siliconmtn.gis.GeocodeLocation;
 import com.siliconmtn.http.SMTServletRequest;
@@ -260,6 +263,7 @@ public class MetroAction extends SBActionAdapter {
 		log.debug("Listing Metro Areas");
 		String id = StringUtil.checkVal(req.getParameter("metroAreaId"));
 		String type = StringUtil.checkVal(req.getParameter("type"));
+		String orgId = ((SiteVO)req.getAttribute("siteData")).getOrganizationId();
 		
 		if (type.equals("locs") && id.length() > 0) {
 			String lat = req.getParameter("latitude");
@@ -269,8 +273,8 @@ public class MetroAction extends SBActionAdapter {
 
 		} else if (type.equals("products") && id.length() > 0) {
 				MetroContainerVO mcvo = getMetroInfo(id);
-				mcvo.setProductPages(this.getProductPages(id, true, req.getParameter("metroProductId")));
-				this.putModuleData(mcvo, mcvo.getProductPages().size(), false);
+				mcvo.setProdList(getProductList(id, orgId));
+				this.putModuleData(mcvo, mcvo.getProdList().size(), false);
 				
 		} else if (id.length() > 0) {
 			MetroContainerVO mcvo = getMetroInfo(id);
@@ -317,6 +321,8 @@ public class MetroAction extends SBActionAdapter {
 				url.append("?metroAreaId=").append(req.getParameter("metroAreaId"));
 				url.append("&type=products&metroName=").append(req.getParameter("metroName"));
 				url.append("&webEdit=true&metroLocation=").append(req.getParameter("metroLocation"));
+				
+				
 				String [] ids = req.getParameterValues("productActionId");
 				for(String s : ids){
 					req.setParameter("productActionId", s);
@@ -348,6 +354,29 @@ public class MetroAction extends SBActionAdapter {
 		
 		// Redirect the browser
 		super.sendRedirect(url.toString(), msg, req);
+	}
+	
+	private void deleteMetroProducts(SMTServletRequest req) {
+		String customDb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder();
+		sql.append("DELETE ").append(customDb).append("FTS_METRO_CATEGORY ");
+		sql.append("WHERE METRO_ID = ?");
+		
+		PreparedStatement ps = null;
+		try {
+			ps = dbConn.prepareCall(sql.toString());
+			
+			ps.setString(1, req.getParameter("metroLocation"));
+			
+			ps.executeUpdate();
+			
+		} catch (SQLException e) {
+			log.error("Unable to delete all products and categories for " + req.getParameter("metroLocation"), e);
+		} finally {
+			try{
+				ps.close();
+			} catch(Exception e) {}
+		}
 	}
 	
 	/**
@@ -889,6 +918,62 @@ public class MetroAction extends SBActionAdapter {
 
 		//log.debug("loaded " + data.size() + " metro product pages");
 		return data;
+	}
+	 
+	private List<Node> getProductList(String metroId, String orgId) throws ActionException {
+		FSProductAction prod = new FSProductAction();
+		prod.setActionInit(actionInit);
+		prod.setDBConnection(dbConn);
+		Tree fullList = prod.loadEntireCatalog(getCatalogId(orgId));
+		
+		Map<String, MetroProductVO> metroProd = getProductPages(metroId, true, null);
+		List<Node> orderedList = fullList.preorderList();
+		String catUrl = "";
+		for (Node n : orderedList) {
+			ProductCategoryVO cat = (ProductCategoryVO) n.getUserObject();
+			if (cat.getProducts().size() == 0) {
+				catUrl = cat.getUrlAlias();
+			} else {
+				if (metroProd.containsKey(catUrl + "/" + cat.getUrlAlias()))
+					cat.setParentCode(metroProd.get(catUrl + "/" + cat.getUrlAlias()).getAliasNm());
+			}
+		}
+		
+		return orderedList;
+	}
+	
+	private String getCatalogId(String orgId) throws ActionException {
+		String catId = null;
+		StringBuilder sql = new StringBuilder();
+		sql.append("SELECT PRODUCT_CATALOG_ID FROM PRODUCT_CATALOG ");
+		sql.append("WHERE ORGANIZATION_ID = ? AND STATUS_NO = 5");
+		log.debug(sql+"|"+orgId);
+		
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+		ps = dbConn.prepareStatement(sql.toString());
+			
+			ps.setString(1, orgId);
+			
+			rs = ps.executeQuery();
+			
+			if (rs.next()) {
+				catId = rs.getString(1);
+			} else {
+				throw new ActionException("Unable to get catalog id for products.");
+			}
+		}  catch (SQLException e) {
+			throw new ActionException("Unable to get catalog id for products.");
+		}finally {
+			try {
+				ps.close();
+				rs.close();
+			} catch (Exception e) {}
+		}
+		
+		return catId;
+		
 	}
 	
 	
