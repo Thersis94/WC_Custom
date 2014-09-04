@@ -68,6 +68,7 @@ public class CareerApprovalAction extends ApprovalTemplateAction {
 			} catch (Exception e) {}
 		}
 		updateStatus(vos, AbstractChangeLogVO.Status.APPROVED.ordinal());
+		super.clearCacheByGroup("FTS_CAREERS");
 		logger.logChange(req, vos);	
 		}
 	/**
