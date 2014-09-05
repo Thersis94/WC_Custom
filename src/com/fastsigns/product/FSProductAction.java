@@ -162,7 +162,7 @@ public class FSProductAction extends SBActionAdapter {
 			cachedMod.setActionId(catalogId);
 			cachedMod.setActionData(this.loadCatalog(catalogId, page.isPreviewMode()));
 			
-	        if (cachedMod != null && !page.isPreviewMode()) {
+	        if (!page.isPreviewMode()) {
 	        	cachedMod.setCacheable(true);
 	        	cachedMod.setPageModuleId(catalogId);
 	        	
@@ -383,10 +383,7 @@ public class FSProductAction extends SBActionAdapter {
 			while(rs.next()) {
 				//when the productId changes, roll the data into an AttibuteContainer and store it
 				if (!lastProductId.equals(rs.getString("URL_ALIAS_TXT"))) {
-					if (data != null)  {
-						
-						attributes.put(lastProductId, new ProductAttributeContainer(data));
-					}
+					attributes.put(lastProductId, new ProductAttributeContainer(data));
 					data = new ArrayList<Node>();
 					lastProductId = StringUtil.checkVal(rs.getString("URL_ALIAS_TXT"));
 				}
