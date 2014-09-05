@@ -1,51 +1,57 @@
 package com.depuysynthes.lucene;
 
-// JDK 1.6.x
+// JDK 1.7.x
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import org.xml.sax.ContentHandler;
 
 // log4j 1.2-15
 import org.apache.log4j.Logger;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.IndexWriter;
+
+// Apche SolrJ 4.9
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.common.SolrInputDocument;
+
+// Apache Tika 1.5
+import org.apache.tika.detect.DefaultDetector;
+import org.apache.tika.detect.Detector;
+import org.apache.tika.metadata.Metadata;
+import org.apache.tika.parser.AutoDetectParser;
+import org.apache.tika.parser.ParseContext;
+import org.apache.tika.sax.BodyContentHandler;
+
 
 
 // SMT Base Libs
 import com.depuysynthes.action.MediaBinAdminAction;
 import com.depuysynthes.action.MediaBinAssetVO;
-import com.siliconmtn.cms.CMSConnection;
 import com.siliconmtn.http.parser.StringEncoder;
-import com.siliconmtn.io.FileManager;
-import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
 // WC Libs
 import com.smt.sitebuilder.common.constants.Constants;
-import com.smt.sitebuilder.search.lucene.DocumentHandler;
-import com.smt.sitebuilder.search.lucene.DocumentHandlerImpl;
-import com.smt.sitebuilder.search.lucene.DocumentMap;
-import com.smt.sitebuilder.search.SMTCustomIndexIntfc;
+import com.smt.sitebuilder.search.SMTAbstractIndex;
+import com.smt.sitebuilder.search.SearchDocumentHandler;
 
 /****************************************************************************
- * <b>Title</b>: ProductCatalogIndex.java <p/>
+ * <b>Title</b>: MediaBinSolrIndex.java <p/>
  * <b>Project</b>: WebCrescendo <p/>
- * <b>Description: </b> This class gets invoked by the Lucene Index Builder (batch)
- * It adds the DS product catalogs to the Lucene Indexes to be usable in site search.
+ * <b>Description: </b> This class gets invoked by the Solr Index Builder (batch)
+ * It adds the DS product catalogs to the Solr Indexes to be usable in site search.
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2013<p/>
  * <b>Company:</b> Silicon Mountain Technologies<p/>
@@ -55,20 +61,45 @@ import com.smt.sitebuilder.search.SMTCustomIndexIntfc;
  * @updates:
  * 	JM 07.16.14
  * 		Added ASSET_LANGUAGE as a non-core language field, so we could use it in View filters w/o affecting the Indexer.
+ * JC 09/02/14 
+ * 		Copied the file and modified for the Solr Indexer
  ****************************************************************************/
-public class MediaBinIndex implements SMTCustomIndexIntfc {
-	protected Logger log = null;
-	private DocumentMap ldm;
-	private FileManager fileManager = null;
+public class MediaBinSolrIndex extends SMTAbstractIndex {
+	// Member Variables
+	protected static final Logger log = Logger.getLogger(MediaBinSolrIndex.class);
 	private Map<String,String> busUnits = null;
 	
-	protected final String[] ORGANIZATION_IDS = new String[] { "","DPY_SYN", "DPY_SYN_EMEA" }; //array[idx] correspondes to import_file_cd in the DB
+	/**
+	 * Base url information for the redirection
+	 */
+	public static final String BASE_REDIR_URL = "json?amid=MEDIA_BIN_AJAX&mbid=";
 	
+	/**
+	 * array[idx] correspondes to import_file_cd in the DB
+	 */
+	protected final String[] ORGANIZATION_IDS = new String[] { "","DPY_SYN", "DPY_SYN_EMEA" };
 	
-	public MediaBinIndex() {
-		log = Logger.getLogger(this.getClass());
-        ldm = new DocumentMap();
-        fileManager = new FileManager();
+	/**
+	 * Index type for this index.  This value is stored in the INDEX_TYPE field
+	 */
+	public static final String INDEX_TYPE = "MEDIA_BIN";
+	
+	/**
+	 * Initializes the Business Units
+	 */
+	public MediaBinSolrIndex() {
+        this(null);
+	}
+	
+	public static void main(String[] args) {
+		SMTAbstractIndex sai = new MediaBinSolrIndex();
+		System.out.println("Test: " + sai.getIndexType());
+	}
+	/**
+	 * Initializes the Business Units
+	 */
+	public MediaBinSolrIndex(Properties config) {
+        super(config);
         loadBusUnits();
 	}
 
@@ -76,108 +107,119 @@ public class MediaBinIndex implements SMTCustomIndexIntfc {
 	 * @see com.smt.sitebuilder.search.lucene.custom.SMTCustomIndexIntfc#addIndexItems(java.sql.Connection, com.siliconmtn.cms.CMSConnection, org.apache.lucene.index.IndexWriter)
 	 */
 	@Override
-	public void addIndexItems(Connection conn, CMSConnection cmsConn, IndexWriter writer, Properties config) {
+	public void addIndexItems(HttpSolrServer server) {
 		log.info("Indexing DePuySynthes MediaBin PDF assets");
-		List<MediaBinAssetVO> metaData = loadMetaData(conn, config.getProperty(Constants.CUSTOM_DB_SCHEMA));
-		indexFiles(metaData, writer, StringUtil.checkVal(config.getProperty("mediabinFiles")));
+		List<MediaBinAssetVO> metaData = loadMetaData(dbConn, config.getProperty(Constants.CUSTOM_DB_SCHEMA));
+		indexFiles(metaData, server, StringUtil.checkVal(config.getProperty("mediabinFiles")));
 	}
 	
-    
     /**
      * Flattens out the hierarchy and stores all fields in the content fields
-     * @param conn
-     * @param orgId
-     * @param writer
+     * @param metaData Collection of meta-data corresponding to each document in the media bin repository
+     * @param server
+     * @param fileRepos
      */
-    protected void indexFiles(List<MediaBinAssetVO> metaData, IndexWriter writer, String fileRepos) {
-    	//DocumentHandler dh = new DocumentHandlerImpl(ldm.getClassName("pdf"));
-    	DocumentHandler dh = null;
-        Document doc = null;
-        boolean isVideo = false;
+    protected void indexFiles(List<MediaBinAssetVO> metaData, HttpSolrServer server, String fileRepos) {
         for (int i = 0; i < metaData.size(); i++) {
+        	SolrInputDocument doc = new SolrInputDocument();
     		MediaBinAssetVO vo = metaData.get(i);
-    		byte[] fileBytes = null;
+    		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
     		
-    		if (vo.getAssetType().toLowerCase().startsWith("multimedia")) {
-    			dh = new DocumentHandlerImpl(ldm.getClassName("video"));
-    			isVideo = true;
-    		} else {
-    			dh = new DocumentHandlerImpl(ldm.getClassName("pdf"));
-    			fileBytes = loadFile(vo, fileRepos);
-    			if (fileBytes == null || fileBytes.length == 0) continue;
-    			isVideo = false;
-    		}
-    		
+    		// Get the Organization ID
     		String orgId = ORGANIZATION_IDS[vo.getImportFileCd()];
     		    		
     		//ensure click-to URLs bounce through our redirector for version control.  leading slash added by WC's View.
-    		String fileNm = StringEncoder.urlEncode(vo.getFileNm());
-    		vo.setActionUrl("json?amid=MEDIA_BIN_AJAX&mbid=" + vo.getDpySynMediaBinId() + "&name=" + fileNm);
+    		String fileNm = "&name=" + StringEncoder.urlEncode(vo.getFileNm());
+    		vo.setActionUrl(BASE_REDIR_URL + vo.getDpySynMediaBinId() + fileNm);
     		
     		//ensure a decent name is presented
     		if (vo.getTitleTxt() == null || vo.getTitleTxt().length() == 0)
     			vo.setTitleTxt(vo.getLiteratureTypeTxt());
     		
-    		String summary = StringUtil.checkVal(vo.getAssetDesc());
-    		if (summary.length() == 0) {
-    			summary = StringUtil.checkVal(vo.getProdFamilyNm());
-    			if (summary.length() > 0) summary += " | ";
-    			summary += StringUtil.checkVal(vo.getProdNm());
-    		}
     		String fileName = StringUtil.checkVal(vo.getFileNm());
     		int dotIndex = fileName.lastIndexOf(".");
-   			log.info("adding '" + vo.getAssetType() + "' to index: url=" + vo.getActionUrl() + ", org=" + orgId);
+   			log.debug("adding '" + vo.getAssetType() + "' to index: url=" + vo.getActionUrl() + ", org=" + orgId);
 			try {
-				doc = dh.getDocument(fileBytes);
-				doc.add(new StringField(DocumentHandler.ORGANIZATION, orgId, Field.Store.YES));
-				// doc.add(new StringField(DocumentHandler.COUNTRY, country, Field.Store.YES));
-				doc.add(new StringField(DocumentHandler.LANGUAGE, "en", Field.Store.YES));
+				doc.addField(SearchDocumentHandler.INDEX_TYPE, INDEX_TYPE);
+				doc.addField(SearchDocumentHandler.ORGANIZATION, orgId);
+				doc.addField(SearchDocumentHandler.LANGUAGE, StringUtil.checkVal(vo.getLanguageCode(), "en"));
+				doc.addField(SearchDocumentHandler.ROLE, "000");
+				doc.addField(SearchDocumentHandler.SITE_PAGE_URL, vo.getActionUrl());
+				doc.addField(SearchDocumentHandler.DOCUMENT_ID, vo.getDpySynMediaBinId());
+				doc.addField(SearchDocumentHandler.TITLE, vo.getTitleTxt());
+				doc.addField(SearchDocumentHandler.SUMMARY, getSummary(vo));
+				doc.addField(SearchDocumentHandler.FILE_NAME, fileName);
+				doc.addField(SearchDocumentHandler.FILE_SIZE, vo.getFileSizeNo());
+				if (vo.isVideo()) doc.addField(SearchDocumentHandler.DURATION, parseDuration(vo.getDuration()));
+				doc.addField(SearchDocumentHandler.SECTION, parseBusinessUnit(vo.getBusinessUnitNm()));
+				doc.addField(SearchDocumentHandler.META_KEYWORDS, parseDownloadType(vo.getDownloadTypeTxt(), vo.isVideo()));
+				doc.addField(SearchDocumentHandler.MODULE_TYPE, "DOWNLOAD");
+				doc.addField(SearchDocumentHandler.UPDATE_DATE, df.format(vo.getModifiedDt()));
+				doc.addField(SearchDocumentHandler.CONTENTS, vo.isVideo() ? "" : parseFile(vo, fileRepos));
 				
-				//this sub-filter only applies to MediaBin assets in the DS search results/filtering of Downloads & Videos.
-				doc.add(new StringField("ASSET_LANGUAGE", StringUtil.checkVal(vo.getLanguageCode()), Field.Store.YES));
-				
-				doc.add(new StringField(DocumentHandler.ROLE, "000", Field.Store.YES));
-				doc.add(new TextField(DocumentHandler.SITE_PAGE_URL, vo.getActionUrl(), Field.Store.YES));
-				// doc.add(new TextField(DocumentHandler.DOCUMENT_URL, vo.getActionUrl(), Field.Store.YES));
-				doc.add(new StringField(DocumentHandler.DOCUMENT_ID, vo.getDpySynMediaBinId(), Field.Store.YES));
-				doc.add(new TextField(DocumentHandler.TITLE, vo.getTitleTxt(), Field.Store.YES));
-				doc.add(new TextField(DocumentHandler.SUMMARY, summary, Field.Store.YES));
-				doc.add(new TextField(DocumentHandler.FILE_NAME, fileName, Field.Store.YES));
-				doc.add(new IntField(DocumentHandler.FILE_SIZE, vo.getFileSizeNo(), Field.Store.YES));
 				if (fileName.length() > 0 && dotIndex > -1 && (dotIndex + 1) < fileName.length()) {
-					doc.add(new StringField(DocumentHandler.FILE_EXTENSION, fileName.substring(++dotIndex), Field.Store.YES));
+					doc.addField(SearchDocumentHandler.FILE_EXTENSION, fileName.substring(++dotIndex));
 				}
-				if (isVideo) {
-					log.info("video duration (raw) is: " + vo.getDuration());
-					doc.add(new StringField(DocumentHandler.DURATION, parseDuration(vo.getDuration()), Field.Store.YES));
+				
+				server.add(doc);
+				if ((i % 100) == 0) {
+					log.info("Committed " + i + " records");
+					server.commit();
 				}
-				// SECTION is used for company/division name
-				doc.add(new TextField(DocumentHandler.SECTION, parseBusinessUnit(vo.getBusinessUnitNm()), Field.Store.YES));
-
-				// META_KEYWORDS is used to store download text type
-				doc.add(new TextField(DocumentHandler.META_KEYWORDS, parseDownloadType(vo.getDownloadTypeTxt(), isVideo), Field.Store.YES));
-				doc.add(new StringField(DocumentHandler.MODULE_TYPE, "DOWNLOAD", Field.Store.YES));
-
-				Date start = Convert.formatDate(Calendar.getInstance().getTime(), Calendar.MONTH, -1);
-				Date end = Convert.formatDate(Calendar.getInstance().getTime(), Calendar.MONTH, 1);
-				doc.add(new TextField(DocumentHandler.START_DATE, Convert.formatDate(start, Convert.DATE_NOSPACE_PATTERN), Field.Store.YES));
-				doc.add(new TextField(DocumentHandler.END_DATE, Convert.formatDate(end, Convert.DATE_NOSPACE_PATTERN), Field.Store.YES));
-				doc.add(new TextField(DocumentHandler.UPDATE_DATE, Convert.formatDate(vo.getModifiedDt(), Convert.DATE_NOSPACE_PATTERN), Field.Store.YES));
-				writer.addDocument(doc);
 			} catch (Exception e) {
 				log.error("Unable to index asset " + vo.getDpySynMediaBinId(), e);
 			}
 		}
+        
+		// Clean up any uncommitted files
+		try {
+			server.commit();
+		} catch (Exception e) {
+			log.error("Unable to commit remaining documents", e);
+		}
 	}
     
-    private byte[] loadFile(MediaBinAssetVO vo, String fileRepos) {
-    	byte[] data = null;
+    /**
+     * Figures out the appropriate summary for the given document
+     * @param vo Document Meta-Data
+     * @return
+     */
+    private String getSummary(MediaBinAssetVO vo) {
+		String summary = StringUtil.checkVal(vo.getAssetDesc());
+		if (summary.length() == 0) {
+			summary = StringUtil.checkVal(vo.getProdFamilyNm());
+			if (summary.length() > 0) summary += " | ";
+			summary += StringUtil.checkVal(vo.getProdNm());
+		}
+		
+		return summary;
+    }
+    
+    /**
+	 * Parses the file (text or binary) into an indexable String.  This method
+	 * calls a detector (based upon the stream to the local file) and auto-detects
+	 * the correct parser based upon the file detection.  The data is converted to a 
+	 * String Object and returned to the calling class to be added to the index
+     * @param vo MediaBin meta data
+     * @param fileRepos Location of the file data
+     * @return
+     */
+    private String parseFile(MediaBinAssetVO vo, String fileRepos) {
+    	String data = "";
     	try {
     		String fileNm = StringUtil.replace(vo.getRevisionLvlTxt() + "/" + vo.getAssetNm(), "/", File.separator);
+    		InputStream input = new BufferedInputStream(new FileInputStream(new File(fileRepos + fileNm)));
     		log.debug("loading file: " + fileRepos + fileNm);
-    		data = fileManager.retrieveFile(fileRepos + fileNm);
+    		
+			Metadata metadata = new Metadata();
+			Detector detector = new DefaultDetector();
+			detector.detect(input, metadata);
+			AutoDetectParser adp = new AutoDetectParser(detector);
+			ContentHandler handler = new BodyContentHandler(1000*1024*1024);
+			adp.parse(input, handler, metadata, new ParseContext());
+			data = handler.toString();
     	} catch (Exception e) {
-    		log.error("could not load file for " + vo.getDpySynMediaBinId(), e);
+    		log.error("could not load file for " + vo.getDpySynMediaBinId() + "|" + vo.isVideo());
     	}
     	
     	return data;
@@ -345,4 +387,13 @@ public class MediaBinIndex implements SMTCustomIndexIntfc {
         busUnits.put("TRAUMA", "Trauma");
         busUnits.put("OTHER", "Other");
     }
+
+    /*
+     * (non-Javadoc)
+     * @see com.smt.sitebuilder.search.SMTAbstractIndex#getIndexType()
+     */
+	@Override
+	public String getIndexType() {
+		return MediaBinSolrIndex.INDEX_TYPE;
+	}
 }

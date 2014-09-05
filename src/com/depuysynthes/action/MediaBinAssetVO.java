@@ -51,7 +51,7 @@ public class MediaBinAssetVO extends SBModuleVO {
 	private int importFileCd = 0;
 	private String downloadTypeTxt = null;
 	private String languageCode = null;
-	
+	private boolean isVideo = false;
 	
 	public MediaBinAssetVO(ResultSet rs) {
 		DBUtil db = new DBUtil();
@@ -82,6 +82,11 @@ public class MediaBinAssetVO extends SBModuleVO {
 			int delim = dims.indexOf("~");
 			setWidthNo(Convert.formatInteger(dims.substring(0, delim)));
 			setHeightNo(Convert.formatInteger(dims.substring(delim+1)));
+		}
+		
+		// Determine if the asset is a video
+		if (StringUtil.checkVal(assetType).toLowerCase().startsWith("multimedia")) {
+			isVideo = true;
 		}
 	}
 	
@@ -265,6 +270,22 @@ public class MediaBinAssetVO extends SBModuleVO {
 	 */
 	public void setLanguageCode(String languageCode) {
 		this.languageCode = languageCode;
+	}
+
+
+	/**
+	 * @return the isVideo
+	 */
+	public boolean isVideo() {
+		return isVideo;
+	}
+
+
+	/**
+	 * @param isVideo the isVideo to set
+	 */
+	public void setVideo(boolean isVideo) {
+		this.isVideo = isVideo;
 	}
 	
 }
