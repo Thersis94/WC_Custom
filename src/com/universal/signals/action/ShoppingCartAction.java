@@ -14,9 +14,13 @@ import java.util.Map;
 import java.util.Set;
 
 
+
+
 // DOM4J
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
+
+
 
 
 // SMT BAse Libs
@@ -32,6 +36,7 @@ import com.siliconmtn.commerce.catalog.ProductAttributeVO;
 import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.commerce.payment.PaymentVO;
 import com.siliconmtn.common.constants.GlobalConfig;
+import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.security.AuthenticationException;
@@ -43,6 +48,8 @@ import com.siliconmtn.util.XMLUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.SBModuleVO;
+import com.smt.sitebuilder.action.user.ProfileManager;
+import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
@@ -69,13 +76,14 @@ import com.universal.util.WebServiceAction;
  * 06-13 and 06-26-2012: DBargerhuff;  Refactored to support multiple unique catalogs, unique catalog URLs. 
  * 10-03-2012: DBargerhuff; Refactored to reflect changes in WebServiceAction
  * 11-21-2012: DBargerhuff; Refactored to begin implementing new promo code (i.e. discount) processing.
- * 02-03-2012: DBargerhuff; Refactored to finalize implementation for new 
- * 					  promo code (i.e. discount) processing
+ * 02-03-2012: DBargerhuff; Refactored to finalize implementation for new promo code (i.e. discount) processing
+ * 2014-08-30: DBargerhuff: Added support for billing comments, support for abandoned cart tracking.
  ****************************************************************************/
 public class ShoppingCartAction extends SBActionAdapter {
 	
 	public static final int SESSION_PERSISTENCE_CART = 1;
 	public static final int COOKIE_PERSISTENCE_CART = 2;
+	public static final String BILLING_COMMENTS = "billingComments"; 
 	private String catalogSiteId = null;
 	private DiscountManager dMgr = null;
 	
@@ -217,9 +225,12 @@ public class ShoppingCartAction extends SBActionAdapter {
 		// if checking out, calculate taxes.
 		boolean checkOut = Convert.formatBoolean(req.getParameter("checkout"));
 		if (checkOut) this.calcTaxes(cart);
-
+		
 		// Resave the cart for persistence reasons
 		log.debug("saving cart...");
+		UserDataVO sessUser = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
+		if (sessUser != null) container.setProfileId(sessUser.getProfileId());
+		container.setSourceId(catalogSiteId);
 		container.save(cart);
 		
 		return cart;
@@ -394,15 +405,26 @@ public class ShoppingCartAction extends SBActionAdapter {
 	}
 	
 	/**
-	 * 
+	 * Manages user's billing or shipping information
 	 * @param cart
 	 * @param req
 	 */
 	protected void manageShippingInfo(ShoppingCartVO cart, SMTServletRequest req) {
 		String shippingType = StringUtil.checkVal(req.getParameter("shippingType"));
 		UserDataVO user = new UserDataVO(req);
+		log.debug("user req phone: " + user.getMainPhone());
 		if ("billing".equalsIgnoreCase(shippingType)) {
-			cart.setBillingInfo(user);			
+			log.debug("doing billing info...");
+			// retrieve profileId
+			retrieveProfileId(req, user);
+			
+			// get billing comments
+			String bComm = StringUtil.checkVal(req.getParameter("billingComments"));
+			if (bComm.length() > 0) user.addAttribute(BILLING_COMMENTS, bComm);
+			
+			// set billing info on cart.
+			cart.setBillingInfo(user);
+
 			// Add the user to the session
 			req.getSession().setAttribute(Constants.USER_DATA, user);
 			
@@ -423,6 +445,61 @@ public class ShoppingCartAction extends SBActionAdapter {
 		// If the user changed the shipping/billing info, have them return to the payment screen
 		if (Convert.formatBoolean(req.getParameter("edit")))
 			req.setParameter("type", "payment");
+	}
+	
+	/**
+	 * Retrieves the user profile ID based on the session data.  If that fails, attempts
+	 * to retrieve user profile ID based on the user data passed in on the request.  If
+	 * that too fails, we create a new profile based on the user data passed in on the
+	 * request.  Any profile ID found/created is set on the 'user' object passed in to 
+	 * the method.
+	 * @param req
+	 * @param user
+	 */
+	private void retrieveProfileId(SMTServletRequest req, UserDataVO user) {
+		String profileId = null;
+		ProfileManager pm = null;
+		// first try to get profileId from session
+		UserDataVO sessUser = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
+		if (sessUser != null) {
+			profileId = sessUser.getProfileId();
+		}
+		if (StringUtil.checkVal(profileId).length() > 0) {
+			user.setProfileId(profileId);
+		} else {
+			// profileId is not on sessioon, check for a profile based on user data passed in
+			if (StringUtil.checkVal(user.getEmailAddress()).length() > 0) {
+				pm = ProfileManagerFactory.getInstance(attributes);
+				try {
+					profileId = pm.checkProfile(user, dbConn);
+					if (StringUtil.checkVal(profileId).length() == 0) {
+						// no profile found, create one, profileId is set on 'user' object
+						// by profile manager.
+						pm.updateProfile(user, dbConn);
+					} else {
+						// found a profile, use the profileId found.
+						user.setProfileId(profileId);
+					}
+				} catch (DatabaseException de) {
+					log.error("Error checking/updating profile, ", de);
+				}
+			}
+		}
+		
+		// finally, if this was an 'edit' billing operation, try to update the profile
+		if (StringUtil.checkVal(req.getParameter("type")).equalsIgnoreCase("edit")) {
+			if (pm == null) pm = ProfileManagerFactory.getInstance(attributes);
+			try {
+				Map<String,Object> dMap = user.getDataMap();
+				for (String key : dMap.keySet()) {
+					log.debug("key/val: " + key + "/" + dMap.get(key));
+				}
+				pm.updateProfilePartially(attributes, user, dbConn);
+			} catch (DatabaseException de) {
+				log.error("Error updating profile, ", de);
+			}
+		}
+		
 	}
 	
 	/**
@@ -796,51 +873,6 @@ public class ShoppingCartAction extends SBActionAdapter {
 		//between two of the same item with different attributes.
 		log.debug("productId of item is now: " + pIDAdv);
 		cartItem.setProductId(pIDAdv);
-	}
-	
-	
-	/**
-	 * Retrieves the category name associated with the given product ID.
-	 * @param productId
-	 * @return
-	 */
-	@SuppressWarnings("unused")
-	private String getCategory(String productId) {
-		StringBuilder s = new StringBuilder();
-		s.append("with categories (parent_cd, product_category_cd, category_nm, category_desc, level) as ( ");
-		s.append("select parent_cd, a.product_category_cd, a.category_nm, a.category_desc, 0 ");
-		s.append("from dbo.product_category a ");
-		s.append("inner join product_category_xr b on a.product_category_cd = b.product_category_cd ");
-		s.append("where b.product_id = ? ");
-		s.append("union all ");
-		s.append("select c.parent_cd, c.product_category_cd, c.category_nm, c.category_desc, level + 1 ");
-		s.append("from product_category c ");
-		s.append("inner join categories pc on pc.parent_cd  = c.product_category_cd ");
-		s.append(") ");
-		s.append("select category_nm from categories order by level desc; ");
-		
-		PreparedStatement ps = null;
-		String category = "";
-		try {
-			ps = dbConn.prepareStatement(s.toString());
-			ps.setString(1, productId);
-			ResultSet rs = ps.executeQuery();
-			for (int i=0; rs.next(); i++) {
-				String cat = rs.getString(1);
-				if (i == 0) {
-					category += cat;
-				} else {
-					category += " > " + cat;
-				}
-			}
-		} catch (SQLException sqle) {
-			log.error("Unable to retrieve product", sqle);
-		} finally {
-			try {
-				ps.close();
-			} catch (SQLException e) {}
-		}
-		return category;
 	}
 	
 	/**

@@ -47,7 +47,8 @@ import com.smt.sitebuilder.action.SBActionAdapter;
  * @since Jul 30, 2011<p/>
  * <b>Changes: </b>
  * <b>Aug 24, 2012; David Bargerhuff: Refactored action to implement consistent XML request structure
- * and converted direct web service methods to return an object of type org.dom4j.Element. 
+ * and converted direct web service methods to return an object of type org.dom4j.Element.
+ * Aug 29, 2014: DBargerhuff: Added support for sending billing comments with order.
  ****************************************************************************/
 public class WebServiceAction extends SBActionAdapter {
 	/**
@@ -248,7 +249,7 @@ public class WebServiceAction extends SBActionAdapter {
 	@SuppressWarnings("unchecked")
 	public UserDataVO parseUserData(Element root) 
 			throws DocumentException, AuthenticationException {
-		Map<String, UserDataVO> locs = new HashMap<String, UserDataVO>();
+		//Map<String, UserDataVO> locs = new HashMap<String, UserDataVO>();
 		// Parse out the main info and member id
 		String memId = XMLUtil.checkVal(root.element("MemberID"));
 		// Make sure the member id is present.  If not, throw and exception
@@ -287,12 +288,14 @@ public class WebServiceAction extends SBActionAdapter {
 				if (user.getLastName().length() > 0)
 					completeUser.setUserExtendedInfo(user);
 			}
+			/* 2014-08-29 DBargerhuff: this appears to be unused.
 			// If the shipping info is empty, assign the billing info to the map
 			if (user.getLastName().length() == 0 && WebServiceAction.SHIPPING_USER_TYPE.equalsIgnoreCase(type)) {
 				locs.put(type, locs.get(WebServiceAction.BILLING_USER_TYPE));
 			} else {
 				locs.put(type, user);
 			}
+			*/
 		}
 		return completeUser;
 	}
@@ -331,6 +334,18 @@ public class WebServiceAction extends SBActionAdapter {
 		if (StringUtil.checkVal(eveningPhone).length() > 0) {
 			s.append("<EveningPhone>").append(eveningPhone).append("</EveningPhone>");
 		}
+		/* Mantis #9173 DBargerhuff TODO Waiting for USA to provide specific XML 
+		 * tag structure to use.*
+		 *
+		if (cart.getBillingInfo().getAttributes() != null) {
+			Object o = cart.getBillingInfo().getAttributes().get(ShoppingCartAction.BILLING_COMMENTS);
+			if (o != null) {
+				s.append("<Comments>");
+				s.append((String)o);
+				s.append("</Comments>");				
+			}
+		}
+		*/
 		s.append("</Address>");
 		s.append("<Address type=\"shipping\">");
 		s.append("<Email>").append(cart.getShippingInfo().getEmailAddress()).append("</Email>");
