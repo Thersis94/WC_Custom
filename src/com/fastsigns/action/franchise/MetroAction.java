@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.fastsigns.action.franchise.vo.MetroCategoryVO;
 import com.fastsigns.action.franchise.vo.MetroContainerVO;
 import com.fastsigns.action.franchise.vo.MetroProductVO;
 import com.fastsigns.action.wizard.FastsignsMetroWizard;
@@ -154,21 +155,13 @@ public class MetroAction extends SBActionAdapter {
 			MetroContainerVO mcvo = this.getLocations(req, metroAlias, isLST);
 			mcvo.setMapData(this.getMapData(mcvo));
 			req.setAttribute("mapAltData", null);
-			mcvo.setProductPages(this.getProductPages(mcvo.getMetroAreaId(), false, null));
+			//TODO figure out how to get these thigns on a page.
+	//		mcvo.setProductPages(this.getProductPages(mcvo.getMetroAreaId(), false, null));
 			
 			//If we're on a product page, update the title with the products title.
 			log.debug("productAlias = " + productAlias);
 			if(productAlias != null && productAlias.length() > 0) {
 				PageVO p = (PageVO) req.getAttribute(Constants.PAGE_DATA);
-				MetroProductVO mpv = mcvo.getProductPages().get(productAlias);
-				if (mpv != null) {
-					p.setTitleName(mpv.getTitleTxt());
-					p.setMetaDesc(mpv.getMetaDesc());
-					//p.setMetaKeyword(mpv.getMetaKywd());
-				} else {
-					log.warn("No product for that alias.  Redirecting to metro page.");
-					super.sendRedirect("/metro-" + mcvo.getAreaAlias(), null, req);
-				}
 			}
 			this.putModuleData(mcvo, mcvo.getResults().size(), false);
 			// If the metro area isn't found, redirect to the locator page
@@ -322,15 +315,8 @@ public class MetroAction extends SBActionAdapter {
 				url.append("&type=products&metroName=").append(req.getParameter("metroName"));
 				url.append("&webEdit=true&metroLocation=").append(req.getParameter("metroLocation"));
 				
-				
-				String [] ids = req.getParameterValues("productActionId");
-				for(String s : ids){
-					req.setParameter("productActionId", s);
-					String productId = this.addProduct(req);
-					
-					if (Convert.formatBoolean(req.getParameter("showEdit")))
-						url.append("&metroProductId=" + productId);
-				}	
+				deleteMetroProducts(req.getParameter("metroAreaId"));
+				addMetroProducts(req);
 			} else if ("editProduct".equals(reqType)) {
 				req.setValidateInput(false);
 				url.append("?metroAreaId=").append(req.getParameter("metroAreaId"));
@@ -356,27 +342,116 @@ public class MetroAction extends SBActionAdapter {
 		super.sendRedirect(url.toString(), msg, req);
 	}
 	
-	private void deleteMetroProducts(SMTServletRequest req) {
+	private void deleteMetroProducts(String metroId) {
 		String customDb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder();
 		sql.append("DELETE ").append(customDb).append("FTS_METRO_CATEGORY ");
-		sql.append("WHERE METRO_ID = ?");
+		sql.append("WHERE METRO_AREA_ID = ?");
 		
 		PreparedStatement ps = null;
 		try {
 			ps = dbConn.prepareCall(sql.toString());
 			
-			ps.setString(1, req.getParameter("metroLocation"));
+			ps.setString(1, metroId);
 			
 			ps.executeUpdate();
 			
 		} catch (SQLException e) {
-			log.error("Unable to delete all products and categories for " + req.getParameter("metroLocation"), e);
+			log.error("Unable to delete all products and categories for " + metroId, e);
 		} finally {
 			try{
 				ps.close();
 			} catch(Exception e) {}
 		}
+	}
+	
+	private void addMetroProducts(SMTServletRequest req) {
+		String customDb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		Map<String, MetroCategoryVO> prodList = buildProdMap(req);
+		
+		StringBuilder catSql = new StringBuilder(150);
+		catSql.append("INSERT INTO ").append(customDb).append("FTS_METRO_CATEGORY ");
+		catSql.append("(METRO_CATEGORY_ID, METRO_AREA_ID, CATEGORY_NM, CATEGORY_ALIAS, TITLE_TXT, ");
+		catSql.append("META_DESC, META_KEYWORDS, ORDER_NO, CREATE_DT) ");
+		catSql.append("VALUES (?,?,?,?,?,?,?,?,?)");
+		
+		StringBuilder prodSql = new StringBuilder(160);
+		prodSql.append("INSERT INTO ").append(customDb).append("FTS_METRO_PRODUCT_XR ");
+		prodSql.append("(METRO_PRODUCT_XR_ID, METRO_CATEGORY_ID, PRODUCT_ID, FULL_ALIAS, ORDER_NO, CREATE_DT) ");
+		prodSql.append("VALUES (?,?,?,?,?,?)");
+
+		PreparedStatement cat = null;
+		PreparedStatement prod = null;
+		try {
+			cat = dbConn.prepareStatement(catSql.toString());
+			prod = dbConn.prepareStatement(prodSql.toString());
+			MetroCategoryVO vo = null;
+			String catId;
+			for (String key : prodList.keySet()) {
+				vo = prodList.get(key);
+				catId = new UUIDGenerator().getUUID();
+				cat.setString(1, catId);
+				cat.setString(2, req.getParameter("metroAreaId"));
+				cat.setString(3, vo.getMetroCategoryNm());
+				cat.setString(4, key);
+				cat.setString(5, vo.getTitleTxt());
+				cat.setString(6, vo.getMetaDesc());
+				cat.setString(7, vo.getMetaKywd());
+				cat.setInt(8, vo.getOrderNo());
+				cat.setTimestamp(9, Convert.getCurrentTimestamp());
+				cat.addBatch();
+				for (ProductVO p: vo.getProducts()) {
+					prod.setString(1, new UUIDGenerator().getUUID());
+					prod.setString(2, catId);
+					prod.setString(3, p.getProductId());
+					prod.setString(4, p.getProductUrl());
+					prod.setInt(5, p.getDisplayOrderNo());
+					prod.setTimestamp(6, Convert.getCurrentTimestamp());
+					prod.addBatch();
+				}
+			}
+			int cats[] = cat.executeBatch();
+			int prods[] = prod.executeBatch();
+			
+			log.debug(cats.length +" Categories added. " + prods.length + " products added.");
+			
+		} catch (SQLException e) {
+			log.error("Unable to add items", e);
+		} finally {
+			try {
+				cat.close();
+				prod.close();
+			} catch (Exception e) {}
+		}
+	}
+	
+	private Map<String, MetroCategoryVO> buildProdMap(SMTServletRequest req) {
+		String vals[];
+		Map<String, MetroCategoryVO> prodList = new HashMap<String, MetroCategoryVO>();
+		MetroCategoryVO vo;
+		ProductVO p;
+		for (String cat : req.getParameterValues("category[]")) {
+			vals = cat.split("\\|");
+			vo = new MetroCategoryVO();
+			vo.setOrderNo(Convert.formatInteger(vals[5]));
+			vo.setMetroCategoryAlias(vals[0]);
+			vo.setMetroCategoryNm(vals[1]);
+			vo.setTitleTxt(vals[2]);
+			vo.setMetaDesc(vals[3]);
+			vo.setMetaKywd(vals[4]);
+			prodList.put(vals[0], vo);
+		}
+		
+		if (!req.hasParameter("product[]")) return prodList;
+		for(String prod : req.getParameterValues("product[]")) {
+			vals = prod.split("\\|");
+			p = new ProductVO();
+			p.setDisplayOrderNo(Convert.formatInteger(vals[3]));
+			p.setProductUrl(vals[1]);
+			p.setProductId(vals[0]);
+			prodList.get(vals[2]).addProduct(p);
+		}
+		return prodList;
 	}
 	
 	/**
@@ -638,20 +713,21 @@ public class MetroAction extends SBActionAdapter {
 				ps.setString(1, countryCd);
 			ResultSet rs = ps.executeQuery();
 			
-			for (int i=0; rs.next(); i++) {
+			//TODO Set up the sitemap product page map
+			/*for (int i=0; rs.next(); i++) {
 				id = rs.getString("metro_area_id");				
 				if (! id.equals(currId)) {
 					if (i > 0) {
 						data.add(vo);
 					}
 					vo = new MetroContainerVO(rs);
-					vo.addProductPage(new MetroProductVO(rs));
+					vo.addProductPage(new MetroCategoryVO(rs));
 				} else {
-					vo.addProductPage(new MetroProductVO(rs));
+					vo.addProductPage(new MetroCategoryVO(rs));
 				}
 				
 				currId = id;
-			}
+			}*/
 			
 			// Add the last entry to the list
 			data.add(vo);
@@ -690,7 +766,7 @@ public class MetroAction extends SBActionAdapter {
 				MetroContainerVO vo = new MetroContainerVO(rs);
 				
 				if (loadProducts)  //this was added to be called specifically from the SiteMapServlet
-					vo.setProductPages(this.getProductPages(vo.getMetroAreaId(), false, null));
+					vo.setProdList((this.getProductPages(vo.getMetroAreaId(), false, null)));
 				
 				data.add(vo);
 			}
@@ -879,45 +955,74 @@ public class MetroAction extends SBActionAdapter {
 		return s.toString();
 	}
 	
-	/**
-	 * 
-	 * @param alias
-	 * @param isLst
-	 * @return
-	 */
-	private Map<String,MetroProductVO> getProductPages(String metroAreaId, boolean isAdminReq, String metroProdId) {
-		StringBuilder s = new StringBuilder();
-		s.append("select * from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		s.append("FTS_METRO_AREA_PRODUCT ").append("where metro_area_id = ? ");
-		if (!isAdminReq) s.append("and visible_flg=1 "); //limit public's view to approved pages
-		if (metroProdId != null) s.append("and metro_product_id=? ");
-		s.append("order by order_no ");
-		//log.debug(s + "|" + metroAreaId);
-		
-		Map<String,MetroProductVO> data = new HashMap<String,MetroProductVO>();
-		log.debug("Metro SQL: " + s.toString() + " | " + metroAreaId + " | " + metroProdId);
+	private List<Node> getProductPages(String metroAreaId, boolean isAdminReq, String metroProdId) {
+		String customDb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(350);
+		sql.append("SELECT * FROM ").append(customDb).append("FTS_METRO_CATEGORY fmc ");
+		sql.append("left join ").append(customDb).append("FTS_METRO_PRODUCT_XR fmpx ");
+		sql.append("on fmpx.METRO_CATEGORY_ID = fmc.METRO_CATEGORY_ID ");
+		sql.append("left join PRODUCT p on p.PRODUCT_ID = fmpx.PRODUCT_ID ");
+		sql.append("where fmc.metro_area_id = ? ORDER BY fmc.ORDER_NO, fmpx.ORDER_NO");
+		log.debug(sql.toString()+"|"+metroAreaId);
+
 		PreparedStatement ps = null;
+		ResultSet rs = null;
+		List<Node> data = new ArrayList<Node>();
+		MetroCategoryVO vo = null;
+		ProductVO prod = null;
 		try {
-			ps = dbConn.prepareStatement(s.toString());
-			ps.setString(1, metroAreaId);
-			if (metroProdId != null) ps.setString(2, metroProdId); 
-			ResultSet rs = ps.executeQuery();
+			ps = dbConn.prepareStatement(sql.toString());
 			
+			ps.setString(1, metroAreaId);
+			
+			rs = ps.executeQuery();
+			
+			String catUrl = null;
+			Node n;
 			while (rs.next()) {
-				MetroProductVO vo = new MetroProductVO(rs);
-				data.put(vo.getAliasNm(),vo);
+				if (!StringUtil.checkVal(rs.getString("CATEGORY_ALIAS")).equals(catUrl)) {
+					if (vo != null) {
+						log.debug("Added " + vo.getMetroCategoryNm());
+						n = new Node();
+						n.setUserObject(vo);
+						data.add(n);
+					}
+					vo  = new MetroCategoryVO(rs);
+					catUrl = vo.getMetroCategoryAlias();
+					log.debug("Here it is " + vo ==null);
+				}
+				if (rs.getString("FULL_ALIAS") == null) continue;
+				prod = new ProductVO(rs);
+				prod.addProdAttribute("fullUrl", rs.getString("FULL_ALIAS"));
+				
+				prod.setParentId(parseParent(rs.getString("FULL_ALIAS")));
+				vo.addProduct(prod);
 			}
 			
-		} catch (SQLException sqle) {
-			log.error("Unable to retrieve metro products for " + metroAreaId, sqle);
+			// Add the trailing node
+			n = new Node();
+			n.setUserObject(vo);
+			data.add(n);
+			
+		} catch (SQLException e) {
+			log.error("Could not retrieve product pages", e);
 		} finally {
 			try {
+				rs.close();
 				ps.close();
 			} catch(Exception e) {}
 		}
-
-		//log.debug("loaded " + data.size() + " metro product pages");
+		
 		return data;
+	}
+	
+	private String parseParent(String url) {
+		if (url.contains("-")) {
+			return url.substring(0, url.indexOf("-")+1);
+		} else {
+			int first = url.indexOf("/")+1;
+			return url.substring(first, url.lastIndexOf("/", first)-1);
+		}
 	}
 	 
 	private List<Node> getProductList(String metroId, String orgId) throws ActionException {
@@ -926,22 +1031,39 @@ public class MetroAction extends SBActionAdapter {
 		prod.setDBConnection(dbConn);
 		Tree fullList = prod.loadEntireCatalog(getCatalogId(orgId));
 		
-		Map<String, MetroProductVO> metroProd = getProductPages(metroId, true, null);
+		List<Node> metroProd = getProductPages(metroId, true, null);
+		List<String> prodUrls = getProductUrls(metroProd);
 		List<Node> orderedList = fullList.preorderList();
 		String catUrl = "";
+		String topUrl = "";
 		for (Node n : orderedList) {
 			ProductCategoryVO cat = (ProductCategoryVO) n.getUserObject();
-			if (cat.getProducts().size() == 0) {
-				catUrl = cat.getUrlAlias();
-			} else {
-				if (metroProd.containsKey(catUrl + "/" + cat.getUrlAlias()))
-					cat.setParentCode(metroProd.get(catUrl + "/" + cat.getUrlAlias()).getAliasNm());
+			if (cat.getProducts().size() == 0 && cat.getParentCode() == null && !"signtype".equals(cat.getUrlAlias())) {
+				topUrl = cat.getUrlAlias()+"/qs/";
+			} else if (cat.getProducts().size() == 0) {
+				catUrl = cat.getCustCategoryId().contains("-") ? cat.getCustCategoryId() : cat.getUrlAlias() + "/";
+			} else if (cat.getProducts().size() > 0) {
+				if (prodUrls.contains(topUrl + catUrl + cat.getUrlAlias())) {
+					cat.setAttrib1Txt("true");
+				}
 			}
 		}
-		
+		orderedList.addAll(metroProd);
 		return orderedList;
 	}
-	
+
+	private List<String> getProductUrls(
+			List<Node> metroProd) {
+		List<String> urlList = new ArrayList<String>();
+		for(Node n : metroProd) {
+			if (n.getUserObject() == null) continue;
+			for (ProductVO p : ((MetroCategoryVO)n.getUserObject()).getProducts()) {
+				urlList.add(StringUtil.checkVal(p.getProdAttributes().get("fullUrl")));
+			}
+		}
+		return urlList;
+	}
+
 	private String getCatalogId(String orgId) throws ActionException {
 		String catId = null;
 		StringBuilder sql = new StringBuilder();
@@ -1002,68 +1124,6 @@ public class MetroAction extends SBActionAdapter {
 		
 	}
 	
-	
-	/**
-	 * retrieves the metroProduct template from the shared org, 
-	 * performs freemarker replacements as appropriate
-	 * calls to insert the record into the _metro_product table.
-	 * @param req
-	 * @return
-	 * @throws ActionException
-	 */
-	private String addProduct(SMTServletRequest req) throws ActionException {
-		log.debug("adding Metro Area Product");
-		String metroProductId = new UUIDGenerator().getUUID();
-		MetroProductVO pg = new MetroProductVO();
-
-		StringBuilder sql = new StringBuilder();
-		sql.append("select * from sb_action a inner join content b on a.action_id=b.action_id and a.action_id=?");
-
-		PreparedStatement ps = null;
-		try {
-			ps = dbConn.prepareStatement(sql.toString());
-			ps.setString(1, req.getParameter("productActionId"));
-			ResultSet rs = ps.executeQuery();
-			if (rs.next()) {
-				pg.setMetroProductId(metroProductId);
-				pg.setMetroAreaId(req.getParameter("metroAreaId"));
-				pg.setProductNm(rs.getString("action_desc"));
-				pg.setAliasNm(StringUtil.replace(rs.getString("action_nm"), "metroProductTemplate-", ""));
-				pg.setMetaDesc(rs.getString("intro_txt"));
-				pg.setBodyTxt(rs.getString("article_txt"));
-				pg.setTitleTxt(rs.getString("attrib1_txt"));
-				pg.setVisibleFlg(Boolean.TRUE);
-				
-			} else {
-				throw new SQLException();
-			}
-			
-		} catch (SQLException sqle) {
-			log.error(sqle);
-			throw new ActionException("Template not found " + req.getParameter("productActionId"));
-		} finally {
-			try { ps.close(); } catch (Exception e) {}
-		}
-		
-		//parse through Freemarker to customize the template
-		Map<String, Object> vals = new HashMap<String, Object>();
-		//add the tags that need replaced to the Map.
-		vals.put("metroAlias", req.getParameter("metroName"));
-		vals.put("metroLocation", req.getParameter("metroLocation"));
-		
-		try {
-			pg.setBodyTxt(MessageParser.getParsedMessage(pg.getBodyTxt(), vals, "metroProd_" + pg.getAliasNm() + "_body").toString());
-			pg.setMetaDesc(MessageParser.getParsedMessage(pg.getMetaDesc(), vals, "metroProd_" + pg.getAliasNm() + "_mDesc").toString());
-			pg.setTitleTxt(MessageParser.getParsedMessage(pg.getTitleTxt(), vals, "metroProd_" + pg.getAliasNm() + "_title").toString());
-		} catch (Exception e) {
-			log.error("could not make freemarker replacements", e);
-		}
-		
-		//insert the new metro product page
-		this.saveMetroProduct(pg, true);
-	
-		return metroProductId;
-	}
 	
 	/**
 	 * handles the "update" behavior when someone edits an existing metro product page

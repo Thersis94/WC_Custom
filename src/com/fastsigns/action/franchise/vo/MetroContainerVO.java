@@ -47,7 +47,6 @@ public class MetroContainerVO extends SBModuleVO {
 	private Double latitude = Double.valueOf(0);
 	private Double longitude = Double.valueOf(0);
 	private MapVO mapData = new MapVO();
-	private Map<String,MetroProductVO> productPages = new HashMap<String,MetroProductVO>();
 	private String communities = null;
 	private String locality = null;
 	private Integer mapZoomNo = Integer.valueOf(0);
@@ -307,18 +306,6 @@ public class MetroContainerVO extends SBModuleVO {
 		this.country = country;
 	}
 
-	public void setProductPages(Map<String,MetroProductVO> productPages) {
-		this.productPages = productPages;
-	}
-	
-	public void addProductPage(MetroProductVO prod) {
-		productPages.put(prod.getAliasNm(), prod);
-	}
-
-	public Map<String,MetroProductVO> getProductPages() {
-		return productPages;
-	}
-
 	public void setCommunities(String communities) {
 		this.communities = communities;
 	}
@@ -369,6 +356,10 @@ public class MetroContainerVO extends SBModuleVO {
 
 	public void setProdList(List<Node> prodList) {
 		this.prodList = prodList;
+	}
+	
+	public void addProduct(Node prod) {
+		this.prodList.add(prod);
 	}
 
 }
