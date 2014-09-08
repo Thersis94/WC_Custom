@@ -195,7 +195,13 @@ public class TVSpotReportVO extends AbstractSBReportVO {
 		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.rating))));
 		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.feedback))));
 		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.consultation))));
-		Status status = Status.valueOf(vo.getExtData().get(config.getContactId(ContactField.status)));
+		String statusTxt = StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.status)));
+		Status status = null;
+		try {
+			status = Status.valueOf(statusTxt);
+		} catch (IllegalArgumentException iae) {
+			// suppressing this exception.
+		}
 		
 		//status field.  if status=initiated color the cell red.
 		row.createCell(cellNum++).setCellValue(config.getStatusLabel(status));

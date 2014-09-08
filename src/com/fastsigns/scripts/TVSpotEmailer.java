@@ -22,6 +22,7 @@ import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.io.mail.SMTMailHandler;
 import com.siliconmtn.util.CommandLineUtil;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.contact.ContactDataAction;
 import com.smt.sitebuilder.action.contact.ContactDataActionVO;
 import com.smt.sitebuilder.action.contact.ContactDataContainer;
@@ -98,18 +99,18 @@ public class TVSpotEmailer extends CommandLineUtil {
 			
 			//only send the 7-day surveys if that's what we were invoked to do. 
 			if (isSurveyRun) {
-				sendSurveys(cdc);
+				sendConfirmationEmails(sendSurveys(cdc), 0);
 				return;
 			}
 			
 			//for the ones that are 1 day old, send the 1-day notification
-			sendFirstNotice(cdc);
+			int firstCount = sendFirstNotice(cdc);
 			
 			//send reports to corporate or center owners based on the command line arguments
 			if (isCenter) {
-				sendCenterReport(cdc);
+				sendConfirmationEmails(firstCount, sendCenterReport(cdc));
 			} else {
-				sendCorpReport(cdc);
+				sendConfirmationEmails(firstCount, sendCorpReport(cdc));
 			}
 			
 		} catch (ActionException e) {
@@ -151,12 +152,13 @@ public class TVSpotEmailer extends CommandLineUtil {
 	 * will not be run on the weekends.
 	 * @param cdc
 	 */
-	private void sendSurveys(ContactDataContainer cdc) {
+	private int sendSurveys(ContactDataContainer cdc) {
 		log.info("sending survey emails");
 		Calendar now = Calendar.getInstance();
 		EmailMessageVO msg;
 		boolean isMonday = now.get(Calendar.DAY_OF_WEEK) == Calendar.MONDAY;
 		int daysBetween;
+		int emailsSent = 0;
 
 		MessageSender ms = new MessageSender(attributes, dbConn);
 		for (ContactDataModuleVO vo : cdc.getData()) {
@@ -171,13 +173,16 @@ public class TVSpotEmailer extends CommandLineUtil {
 					try {
 						msg = config.buildSurveyEmail(vo.getContactSubmittalId());
 						msg.addRecipient(vo.getEmailAddress());
+						msg.setFrom("consultation@fastsigns.com");
 
 						ms.sendMessage(msg);
+						emailsSent++;
 					} catch (InvalidDataException e) {
 						log.error("Could not create email for submittal: " + vo.getContactSubmittalId(), e);
 					}
 			}
 		}
+		return emailsSent;
 	}
 	
 
@@ -186,12 +191,13 @@ public class TVSpotEmailer extends CommandLineUtil {
 	 * to all franchisees that have not responded to a day old submission
 	 * @param cdc
 	 */
-	private void sendFirstNotice(ContactDataContainer cdc) {
+	private int sendFirstNotice(ContactDataContainer cdc) {
 		log.info("sending first notice email");
 		Calendar now = Calendar.getInstance();
 		EmailMessageVO msg;
 		Status status = null;
 		int daysBetween;
+		int emailsSent = 0;
 		boolean isMonday = now.get(Calendar.DAY_OF_WEEK) == Calendar.MONDAY;
 		MessageSender ms = new MessageSender(attributes, dbConn);
 		
@@ -220,11 +226,13 @@ public class TVSpotEmailer extends CommandLineUtil {
 						msg = config.buildFirstNoticeEmail(vo);
 						msg.addRecipient(vo.getDealerLocation().getOwnerEmail());
 						ms.sendMessage(msg);
+						emailsSent++;
 					} catch (InvalidDataException e) {
 						log.error("Could not create email for submittal: " + vo.getContactSubmittalId(), e);
 					}
 			}
 		}
+		return emailsSent;
 	}
 
 	/**
@@ -232,9 +240,11 @@ public class TVSpotEmailer extends CommandLineUtil {
 	 * gathered by this contact us form to date to corporate
 	 * @param cdc
 	 */
-	private void sendCorpReport(ContactDataContainer cdc) {
+	private int sendCorpReport(ContactDataContainer cdc) {
 		log.info("sending corp report email");
 		TVSpotReportVO report = new TVSpotReportVO();
+		if (props.getProperty("fileName" + config.getCountryCode()) != null)
+			report.setFileName(props.getProperty("fileName" + config.getCountryCode()));
 		report.setData(new GenericVO(cdc, config));
 		
 		MessageSender ms = new MessageSender(attributes, dbConn);
@@ -242,12 +252,19 @@ public class TVSpotEmailer extends CommandLineUtil {
 			EmailMessageVO msg = config.buildCorpReportEmail();
 			msg.addAttachment(report.getFileName(), report.generateReport());
 			ms.sendMessage(msg);
+			return 1;
 		} catch (InvalidDataException e) {
 			log.error("Could not create email for submittal: ", e);
 		}
+		return 0;
 	}
 	
-	private void sendCenterReport(ContactDataContainer cdc) {
+	/**
+	 * Send reports to each center regarding all consultation requests for their center
+	 * @param cdc
+	 * @return
+	 */
+	private int sendCenterReport(ContactDataContainer cdc) {
 		log.info("sending Center report emails");
 		TVSpotReportVO report = new TVSpotReportVO();
 		report.setData(new GenericVO(cdc, config));
@@ -255,6 +272,7 @@ public class TVSpotEmailer extends CommandLineUtil {
 		
 		EmailMessageVO msg;
 		MessageSender ms = new MessageSender(attributes, dbConn);
+		int emailsSent = 0;
 		for (String email : byCenter.keySet()) {
 			try {
 				if (email == null) continue;
@@ -267,11 +285,74 @@ public class TVSpotEmailer extends CommandLineUtil {
 				
 				ms.sendMessage(msg);
 				
+				emailsSent++;				
 			} catch (InvalidDataException e) {
 				log.error("Could not create email for submittal: ", e);
 			} catch (IOException e) {
 				log.error("Could not serialize report. ", e);
 			}
 		}
+		
+		return emailsSent;
+	}
+	
+	/**
+	 * Send a confirmation email to individulas specified in the properties
+	 * file with information about what the emailer sent.
+	 */
+	private void sendConfirmationEmails(int firstCount, int secondCount) {
+		EmailMessageVO msg;
+		MessageSender ms = new MessageSender(attributes, dbConn);
+		
+		msg = buildConfirmationEmail(firstCount, secondCount);
+		
+		ms.sendMessage(msg);
+	}
+	
+	/**
+	 *Build the confirmation email
+	 */
+	private EmailMessageVO buildConfirmationEmail(int firstCount, int secondCount) {
+		EmailMessageVO email = new EmailMessageVO();
+		
+		email.setSubject("TVSpot Script Report");
+		
+		StringBuilder body = new StringBuilder();
+		
+		body.append("The TVSpot Emailer finished running for the ").append(config.getCountryCode());
+		if (isSurveyRun) {
+			body.append(" Survey ");
+		} else if (isCenter){
+			body.append(" Center Report and First Notice ");
+		} else {
+			body.append(" Corporate Report and First Notice ");
+		}
+		body.append("Emailer and sent the following emails:<br/>");
+		body.append("1) ").append(firstCount);
+		if (isSurveyRun) {
+			body.append(" survey email(s) to customers.");
+		} else {
+			body.append(" first day notice(s) to center owners.<br/>");
+			body.append("2) ").append(secondCount);
+			body.append(" email(s) containing reports were sent to ");
+			if (isCenter) {
+				body.append("center owners.");
+			} else {
+				body.append("the corporate employees.");
+			}
+		}
+		
+		email.setHtmlBody(body.toString());
+		
+		String recipients = StringUtil.checkVal(props.getProperty("noticeRecipients"));
+		for(String recipient : recipients.split(",")) {
+			try {
+				email.addRecipient(recipient);
+			} catch (InvalidDataException e) {
+				log.error("Invalid email address in properties file" + recipient, e);
+			}
+		}
+		
+		return email;
 	}
 }
