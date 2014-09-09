@@ -92,7 +92,8 @@ public class TVSpotReportVO extends AbstractSBReportVO {
 		sheet.setColumnWidth(colNum++, 5000);
 		sheet.setColumnWidth(colNum++, 8000);
 		sheet.setColumnWidth(colNum++, 4000);
-		sheet.setColumnWidth(colNum++, 10000);
+		if (config.getContactId(ContactField.visitMethod) != null)
+			sheet.setColumnWidth(colNum++, 10000);
 		sheet.setColumnWidth(colNum++, 3000);
 		sheet.setColumnWidth(colNum++, 2000);
 		sheet.setColumnWidth(colNum++, 15000);
@@ -173,6 +174,8 @@ public class TVSpotReportVO extends AbstractSBReportVO {
 		row.createCell(cellNum++).setCellValue(vo.getFullName());
 		row.createCell(cellNum++).setCellValue(vo.getEmailAddress());
 		row.createCell(cellNum++).setCellValue(pnf.getFormattedNumber());
+		if (config.getContactId(ContactField.visitMethod) != null)
+			row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.visitMethod))));
 		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.zipcode))));
 		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.state))));
 //		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.industry))));
@@ -192,7 +195,13 @@ public class TVSpotReportVO extends AbstractSBReportVO {
 		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.rating))));
 		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.feedback))));
 		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.consultation))));
-		Status status = Status.valueOf(vo.getExtData().get(config.getContactId(ContactField.status)));
+		String statusTxt = StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.status)));
+		Status status = null;
+		try {
+			status = Status.valueOf(statusTxt);
+		} catch (IllegalArgumentException iae) {
+			// suppressing this exception.
+		}
 		
 		//status field.  if status=initiated color the cell red.
 		row.createCell(cellNum++).setCellValue(config.getStatusLabel(status));
@@ -219,7 +228,8 @@ public class TVSpotReportVO extends AbstractSBReportVO {
 		row.createCell(cellNum++).setCellValue("Prospect Name");
 		row.createCell(cellNum++).setCellValue("Prospect Email");
 		row.createCell(cellNum++).setCellValue("Phone Number");
-		row.createCell(cellNum++).setCellValue("Way they Reached the site");
+		if (config.getContactId(ContactField.visitMethod) != null)
+			row.createCell(cellNum++).setCellValue("Way they Reached the site");
 		row.createCell(cellNum++).setCellValue("Zip Code");
 		row.createCell(cellNum++).setCellValue("State");
 //		row.createCell(cellNum++).setCellValue("Industry");

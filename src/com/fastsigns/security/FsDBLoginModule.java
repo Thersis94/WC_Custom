@@ -408,7 +408,7 @@ public class FsDBLoginModule extends AbstractLoginModule {
 			ProfileManager pm = ProfileManagerFactory.getInstance(initVals);
 			try {
 				Connection dbConn = (Connection)initVals.get(GlobalConfig.KEY_DB_CONN);
-				newUser = pm.getProfile(authData.getAuthenticationId(), dbConn, ProfileManager.AUTH_ID_LOOKUP);
+				newUser = pm.getProfile(authData.getAuthenticationId(), dbConn, ProfileManager.AUTH_ID_LOOKUP, null);
 				newUser.setAuthenticated(authData.isAuthenticated());
 				newUser.setAuthenticationLogId(authData.getAuthenticationLogId());
 				newUser.setPasswordResetFlag(authData.getPasswordResetFlag());
