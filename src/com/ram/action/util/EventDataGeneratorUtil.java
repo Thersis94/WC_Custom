@@ -360,7 +360,7 @@ public class EventDataGeneratorUtil {
 		t.setInventoryCount(INV_COUNT);
 		t.setTransactionEnd(Convert.getCurrentTimestamp());
 		t.setActiveFlag(1);
-		t.setCreateDate(Convert.getCurrentTimestamp());
+		//t.setCreateDate(Convert.getCurrentTimestamp());
 		return t;
 	}
 
