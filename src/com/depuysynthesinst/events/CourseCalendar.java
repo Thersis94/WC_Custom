@@ -10,6 +10,7 @@ import java.sql.SQLException;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.parser.AnnotationXlsParser;
@@ -122,8 +123,7 @@ public class CourseCalendar extends SimpleActionAdapter {
 		
 		//if not on the calendar page, we'll need to filter the events by anatomy
 		if (! page.getAliasName().equals("calendar") && ! page.getAliasName().equals("profile")) {
-			anatomy = page.getAliasName();
-			if (anatomy.equals("resource-library")) anatomy = "nursing"; //quick-fix for nursing, where there aren't named categories
+			anatomy = getAnatomyFromAlias(page.getAliasName());
 			req.setParameter(EventEntryAction.REQ_SERVICE_OPT, anatomy);
 
 			Calendar cal = Calendar.getInstance();
@@ -144,6 +144,24 @@ public class CourseCalendar extends SimpleActionAdapter {
 		//NOTE:
 		//the resulting ModuleVO CAN be cached, since caching is tied to the page and we've 
 		//already loaded the events pertinent to this page.  (we only needed the request object once, not every time.)
+	}
+	
+	
+	/**
+	 * cast the URL alias to a anotomical section (as used in the Events lists)
+	 * most of these align, but a couple needed massaging.
+	 * @param alias
+	 * @return
+	 */
+	private String getAnatomyFromAlias(String alias) {
+		alias = alias.toLowerCase();
+		
+		if (alias.equals("chest-wall")) return "Chest Wall";
+		else if (alias.indexOf("-") > 0) return StringUtil.capitalizePhrase(alias.replace("-", " & ")); //Foot & Ankle, Hand & Wrist
+		else if (alias.equals("resource-library")) return "Emerging Care Providers"; //nursing
+		else if (alias.endsWith("-animal")) return "Vet"; //both veterinary types, there aren't enough events to split them up
+		
+		return StringUtil.capitalize(alias);
 	}
 	
 	
