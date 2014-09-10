@@ -52,6 +52,8 @@ public class MediaBinAssetVO extends SBModuleVO {
 	private String downloadTypeTxt = null;
 	private String languageCode = null;
 	private boolean isVideo = false;
+	private String description = null;
+	private String anatomy = null;
 	
 	public MediaBinAssetVO(ResultSet rs) {
 		DBUtil db = new DBUtil();
@@ -76,6 +78,8 @@ public class MediaBinAssetVO extends SBModuleVO {
 		setImportFileCd(db.getIntVal("import_file_cd", rs));
 		downloadTypeTxt = db.getStringVal("download_type_txt", rs);
 		languageCode = db.getStringVal("language_cd", rs);
+		setDescription(db.getStringVal("desc_txt", rs));
+		setAnatomy(db.getStringVal("anatomy_txt", rs));
 		
 		String dims = db.getStringVal("dimensions_txt", rs);
 		if (dims != null && dims.indexOf("~") > 0) {
@@ -286,6 +290,26 @@ public class MediaBinAssetVO extends SBModuleVO {
 	 */
 	public void setVideo(boolean isVideo) {
 		this.isVideo = isVideo;
+	}
+
+
+	public String getDescription() {
+		return description;
+	}
+
+
+	public void setDescription(String description) {
+		this.description = description;
+	}
+
+
+	public String getAnatomy() {
+		return anatomy;
+	}
+
+
+	public void setAnatomy(String anatomy) {
+		this.anatomy = anatomy;
 	}
 	
 }
