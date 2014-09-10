@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.fastsigns.action.franchise.MetroAction;
+import com.fastsigns.action.franchise.vo.MetroCategoryVO;
 import com.fastsigns.action.franchise.vo.MetroContainerVO;
 import com.fastsigns.action.franchise.vo.MetroProductVO;
 import com.fastsigns.product.ProductSitemapCreator;
@@ -113,17 +114,20 @@ public class FastsignsSiteMapServlet extends SiteMapServlet {
     			
     			//loop and add all product pages for this metro area only if we are creating the desktop map
     			if (!isMobile) {
-	    			for (MetroProductVO prod : mc.getProductPages().values()) {
-	    				if (mc.getAreaAlias() == null ) {
+	    			for (Node temp : mc.getProdList()) {
+	    				log.debug("Something "+mc.getAreaAlias());
+	    				MetroCategoryVO vo = (MetroCategoryVO)temp.getUserObject();
+	    				if (vo.getMetroCategoryAlias() != null ) {
+	    					log.debug(mc.getAreaAlias() + "|" + vo.getMetroCategoryAlias());
 		    				mo = new MenuObj();
-		    	            mo.setFullPath("/metro-" + mc.getAreaAlias() + "/" + prod.getAliasNm());
+		    	            mo.setFullPath("/metro-" + mc.getAreaAlias() + "/" + vo.getMetroCategoryAlias());
 		    	            mo.setFileExtension("");
-		    	            mo.setLastModified(prod.getLastUpdate());
+		    	            mo.setLastModified(vo.getLastUpdate());
 		    	            mo.setLevel(3);
 		
 		
-		            		n = new Node(prod.getMetroProductId(), prod.getMetroAreaId());
-		        			n.setNodeName(prod.getProductNm());
+		            		n = new Node(vo.getMetroCategoryId(), vo.getMetroAreaId());
+		        			n.setNodeName(vo.getMetroCategoryNm());
 		        			n.setRoot(false);
 		        			n.setUserObject(mo);
 		        			data.add(n);
