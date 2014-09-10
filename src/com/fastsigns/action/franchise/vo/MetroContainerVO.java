@@ -86,6 +86,7 @@ public class MetroContainerVO extends SBModuleVO {
 		createDate = db.getDateVal("create_dt", rs);
 		updateDate = db.getDateVal("update_dt", rs);
 		setMapZoomNo(db.getIntegerVal("map_zoom_no", rs));
+		prodList = new ArrayList<Node>();
 	}
 	
 	/**

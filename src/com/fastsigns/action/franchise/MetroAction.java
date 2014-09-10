@@ -155,13 +155,13 @@ public class MetroAction extends SBActionAdapter {
 			MetroContainerVO mcvo = this.getLocations(req, metroAlias, isLST);
 			mcvo.setMapData(this.getMapData(mcvo));
 			req.setAttribute("mapAltData", null);
-			//TODO figure out how to get these thigns on a page.
-	//		mcvo.setProductPages(this.getProductPages(mcvo.getMetroAreaId(), false, null));
+			mcvo.setProdList(this.getProductPages(mcvo.getMetroAreaId(), true, null));
 			
 			//If we're on a product page, update the title with the products title.
 			log.debug("productAlias = " + productAlias);
 			if(productAlias != null && productAlias.length() > 0) {
 				PageVO p = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+				p.setCanonicalPageUrl("");
 			}
 			this.putModuleData(mcvo, mcvo.getResults().size(), false);
 			// If the metro area isn't found, redirect to the locator page
@@ -342,6 +342,10 @@ public class MetroAction extends SBActionAdapter {
 		super.sendRedirect(url.toString(), msg, req);
 	}
 	
+	/**
+	 * Delete all the products for a metro area
+	 * @param metroId
+	 */
 	private void deleteMetroProducts(String metroId) {
 		String customDb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder();
@@ -365,6 +369,10 @@ public class MetroAction extends SBActionAdapter {
 		}
 	}
 	
+	/**
+	 * Get the products from the request and add them to the metro area
+	 * @param req
+	 */
 	private void addMetroProducts(SMTServletRequest req) {
 		String customDb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		Map<String, MetroCategoryVO> prodList = buildProdMap(req);
@@ -425,6 +433,11 @@ public class MetroAction extends SBActionAdapter {
 		}
 	}
 	
+	/**
+	 * Builds a map of the categories and thier products.
+	 * @param req
+	 * @return
+	 */
 	private Map<String, MetroCategoryVO> buildProdMap(SMTServletRequest req) {
 		String vals[];
 		Map<String, MetroCategoryVO> prodList = new HashMap<String, MetroCategoryVO>();
@@ -695,9 +708,9 @@ public class MetroAction extends SBActionAdapter {
 		String customDb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder s = new StringBuilder();
 		s.append("select * from ").append(customDb).append("fts_metro_area a ");
-		s.append("left outer join ").append(customDb).append("FTS_METRO_AREA_PRODUCT b ");
+		s.append("left outer join ").append(customDb).append("FTS_METRO_CATEGORY b ");
 		s.append("on a.METRO_AREA_ID = b.METRO_AREA_ID ");
-		s.append("and visible_flg = 1 where AREA_LST_FLG = 0 ");
+		s.append("where AREA_LST_FLG = 0 ");
 		if(!countryCd.equals("US"))
 			s.append("and a.country_cd = ? ");
 		s.append("order by area_lst_flg, area_nm, order_no ");
@@ -706,28 +719,35 @@ public class MetroAction extends SBActionAdapter {
 		List<MetroContainerVO> data = new ArrayList<MetroContainerVO>();
 		String id = null, currId = null;
 		MetroContainerVO vo = null;
+		MetroCategoryVO cat = null;
 		PreparedStatement ps = null;
+		Node n = null;
 		try {
 			ps = dbConn.prepareStatement(s.toString());
 			if(!countryCd.equals("US"))
 				ps.setString(1, countryCd);
 			ResultSet rs = ps.executeQuery();
 			
-			//TODO Set up the sitemap product page map
-			/*for (int i=0; rs.next(); i++) {
+			for (int i=0; rs.next(); i++) {
 				id = rs.getString("metro_area_id");				
 				if (! id.equals(currId)) {
 					if (i > 0) {
 						data.add(vo);
 					}
 					vo = new MetroContainerVO(rs);
-					vo.addProductPage(new MetroCategoryVO(rs));
+					cat = new MetroCategoryVO(rs);
+					n = new Node();
+					n.setUserObject(cat);
+					vo.addProduct(n);
 				} else {
-					vo.addProductPage(new MetroCategoryVO(rs));
+					cat = new MetroCategoryVO(rs);
+					n = new Node();
+					n.setUserObject(cat);
+					vo.addProduct(n);
 				}
 				
 				currId = id;
-			}*/
+			}
 			
 			// Add the last entry to the list
 			data.add(vo);
