@@ -340,7 +340,7 @@ public class SummaryFacadeAction extends SBActionAdapter {
 	    		profileId = pm.checkProfile(user, dbConn);
 	    		if (StringUtil.checkVal(profileId).length() > 0) {
 	    			// found a profile, use it as owner
-	    			user = pm.getProfile(profileId, dbConn, "PROFILE_ID");
+	    			user = pm.getProfile(profileId, dbConn, ProfileManager.PROFILE_ID_LOOKUP, null);
 	    		} else {
 	    			// no profile found, create the profile
 	    			pm.updateProfile(user, dbConn);
@@ -501,7 +501,7 @@ public class SummaryFacadeAction extends SBActionAdapter {
        	String profileId = StringUtil.checkVal(activity.getSubmissionId());
     	ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
     	try {
-    		UserDataVO user = pm.getProfile(profileId, dbConn, "PROFILE_ID");
+    		UserDataVO user = pm.getProfile(profileId, dbConn, ProfileManager.PROFILE_ID_LOOKUP, null);
     		activity.setFirstName(user.getFirstName());
     		activity.setLastName(user.getLastName());
     	} catch (DatabaseException de) {

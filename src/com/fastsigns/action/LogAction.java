@@ -296,7 +296,7 @@ public class LogAction extends SBActionAdapter{
 				
 				AbstractChangeLogVO vo = getChangeLogVO(rs.getString("TYPE_ID"), rs);
 				try{
-					UserDataVO p = pm.getProfile(vo.getSubmitterId(), dbConn, "profile_id");
+					UserDataVO p = pm.getProfile(vo.getSubmitterId(), dbConn, ProfileManager.PROFILE_ID_LOOKUP, null);
 					vo.setSubmitterName(StringUtil.checkVal(se.decrypt(p.getFirstName())) + " " + StringUtil.checkVal(se.decrypt(p.getLastName())));
 				} catch (EncryptionException e) {
 					log.debug(e);

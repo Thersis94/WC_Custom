@@ -117,7 +117,7 @@ public class ShareCaseAction extends SBActionAdapter {
 		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
 		if (submissionId.length() > 0) {
 			try {
-				UserDataVO user = pm.getProfile(submissionId, dbConn, "PROFILE_ID");
+				UserDataVO user = pm.getProfile(submissionId, dbConn, ProfileManager.PROFILE_ID_LOOKUP, null);
 				activity.setFirstName(user.getFirstName());
 				activity.setLastName(user.getLastName());
 			} catch (DatabaseException de) {

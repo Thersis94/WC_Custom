@@ -389,14 +389,10 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 		log.info("loading cart object for display");
 		Storage container = loadCartStorage(req);
 		ShoppingCartVO cart = getCartData(container, req);
-		String step = req.getParameter("step"), create = req.getParameter("create");
+		String step = req.getParameter("step");
 		boolean stepExists = req.hasParameter("step");
 		
-		if (req.hasParameter("create") && create.equals("1") && cart.getItems().size() == 0) {
-			super.adminRedirect(req, "", "/" + req.getSession().getAttribute("FranchiseAliasId") + "/store");
-			return;
-			
-		} else if (stepExists && !"checkout".equals(step)) {
+		if (stepExists && !"checkout".equals(step)) {
 			//these are "checkout" screens, not cart-mgmt related
 			CheckoutUtil checkout = new CheckoutUtil(attributes);
 			try {
@@ -410,7 +406,7 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 		container.save(cart);
 		
 		//If we successfully got to the review screen, flush the session container.
-		if (req.hasParameter("step") && "complete".equalsIgnoreCase(step))
+		if (stepExists && "complete".equalsIgnoreCase(step))
 			container.flush();
 		
 		return;
