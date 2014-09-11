@@ -12,6 +12,7 @@ import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +34,7 @@ import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.sax.BodyContentHandler;
+
 
 
 
@@ -72,29 +74,14 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 	/**
 	 * Base url information for the redirection
 	 */
-	public static final String BASE_REDIR_URL = "json?amid=MEDIA_BIN_AJAX&mbid=";
-	
-	/**
-	 * array[idx] correspondes to import_file_cd in the DB
-	 */
-	protected final String[] ORGANIZATION_IDS = new String[] { "","DPY_SYN", "DPY_SYN_EMEA" };
+	public static final String BASE_REDIR_URL = "/json?amid=MEDIA_BIN_AJAX&mbid=";
 	
 	/**
 	 * Index type for this index.  This value is stored in the INDEX_TYPE field
 	 */
 	public static final String INDEX_TYPE = "MEDIA_BIN";
 	
-	/**
-	 * Initializes the Business Units
-	 */
-	public MediaBinSolrIndex() {
-        this(null);
-	}
-	
-	public static void main(String[] args) {
-		SMTAbstractIndex sai = new MediaBinSolrIndex();
-		System.out.println("Test: " + sai.getIndexType());
-	}
+
 	/**
 	 * Initializes the Business Units
 	 */
@@ -126,7 +113,12 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
     		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
     		
     		// Get the Organization ID
-    		String orgId = ORGANIZATION_IDS[vo.getImportFileCd()];
+    		List<String> opCoList = Arrays.asList(vo.getOpCoNm().split("~"));
+    		if (opCoList == null || opCoList.size() == 0) continue; //not authorized for any; we should never hit this.
+    		List<String> orgList  = new ArrayList<String>();
+    		if (opCoList.contains("INTDS.com")) orgList.add("DPY_SYN_EMEA");
+    		if (opCoList.contains("DSI.com")) orgList.add("DPY_SYN_INST");
+    		if (opCoList.contains("USDS.com")) orgList.add("DPY_SYN");
     		    		
     		//ensure click-to URLs bounce through our redirector for version control.  leading slash added by WC's View.
     		String fileNm = "&name=" + StringEncoder.urlEncode(vo.getFileNm());
@@ -138,28 +130,33 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
     		
     		String fileName = StringUtil.checkVal(vo.getFileNm());
     		int dotIndex = fileName.lastIndexOf(".");
-   			log.debug("adding '" + vo.getAssetType() + "' to index: url=" + vo.getActionUrl() + ", org=" + orgId);
+   			log.debug("adding '" + vo.getAssetType() + "' to index: url=" + vo.getActionUrl() + ", org=" + orgList);
 			try {
-				doc.addField(SearchDocumentHandler.INDEX_TYPE, INDEX_TYPE);
-				doc.addField(SearchDocumentHandler.ORGANIZATION, orgId);
-				doc.addField(SearchDocumentHandler.LANGUAGE, StringUtil.checkVal(vo.getLanguageCode(), "en"));
-				doc.addField(SearchDocumentHandler.ROLE, "000");
-				doc.addField(SearchDocumentHandler.SITE_PAGE_URL, vo.getActionUrl());
-				doc.addField(SearchDocumentHandler.DOCUMENT_ID, vo.getDpySynMediaBinId());
-				doc.addField(SearchDocumentHandler.TITLE, vo.getTitleTxt());
-				doc.addField(SearchDocumentHandler.SUMMARY, getSummary(vo));
-				doc.addField(SearchDocumentHandler.FILE_NAME, fileName);
-				doc.addField(SearchDocumentHandler.FILE_SIZE, vo.getFileSizeNo());
-				if (vo.isVideo()) doc.addField(SearchDocumentHandler.DURATION, parseDuration(vo.getDuration()));
-				doc.addField(SearchDocumentHandler.SECTION, parseBusinessUnit(vo.getBusinessUnitNm()));
-				doc.addField(SearchDocumentHandler.META_KEYWORDS, parseDownloadType(vo.getDownloadTypeTxt(), vo.isVideo()));
-				doc.addField(SearchDocumentHandler.MODULE_TYPE, "DOWNLOAD");
-				doc.addField(SearchDocumentHandler.UPDATE_DATE, df.format(vo.getModifiedDt()));
-				doc.addField(SearchDocumentHandler.CONTENTS, vo.isVideo() ? "" : parseFile(vo, fileRepos));
+				doc.setField(SearchDocumentHandler.INDEX_TYPE, INDEX_TYPE);
+				doc.setField(SearchDocumentHandler.ORGANIZATION, orgList); //multiValue field
+				doc.setField(SearchDocumentHandler.LANGUAGE, StringUtil.checkVal(vo.getLanguageCode(), "en"));
+				doc.setField(SearchDocumentHandler.ROLE, "000");
+				doc.setField(SearchDocumentHandler.SITE_PAGE_URL, vo.getActionUrl());
+				doc.setField(SearchDocumentHandler.DOCUMENT_ID, vo.getDpySynMediaBinId());
+				doc.setField(SearchDocumentHandler.TITLE, vo.getTitleTxt());
+				doc.setField(SearchDocumentHandler.SUMMARY, getSummary(vo));
+				doc.setField(SearchDocumentHandler.FILE_NAME, fileName);
+				doc.setField(SearchDocumentHandler.FILE_SIZE, vo.getFileSizeNo());
+				if (vo.isVideo()) doc.setField(SearchDocumentHandler.DURATION, parseDuration(vo.getDuration()));
+				doc.setField(SearchDocumentHandler.SECTION, parseBusinessUnit(vo.getBusinessUnitNm()));
+				doc.setField(SearchDocumentHandler.META_KEYWORDS, parseDownloadType(vo.getDownloadTypeTxt(), vo.isVideo()));
+				doc.setField(SearchDocumentHandler.MODULE_TYPE, "DOWNLOAD");
+				doc.setField(SearchDocumentHandler.UPDATE_DATE, df.format(vo.getModifiedDt()));
+				doc.setField(SearchDocumentHandler.CONTENTS, vo.isVideo() ? "" : parseFile(vo, fileRepos));
+				doc.setField("TrackingNumber_s", vo.getTrackingNoTxt()); //DSI uses this to align supporting images and tag favorites
+				doc.setField("AssetType_s", vo.getAssetType());
 				
-				if (fileName.length() > 0 && dotIndex > -1 && (dotIndex + 1) < fileName.length()) {
-					doc.addField(SearchDocumentHandler.FILE_EXTENSION, fileName.substring(++dotIndex));
-				}
+				//turn the flat/delimited hierarchy into a structure that PathHierarchyTokenizer will understand
+		    		for (String s : StringUtil.checkVal(vo.getAnatomy()).split("~"))
+		    			doc.addField(SearchDocumentHandler.HIERARCHY, s.replace(",", "/"));
+		    		
+				if (fileName.length() > 0 && dotIndex > -1 && (dotIndex + 1) < fileName.length())
+					doc.setField(SearchDocumentHandler.FILE_EXTENSION, fileName.substring(++dotIndex));
 				
 				server.add(doc);
 				if ((i % 100) == 0) {
@@ -185,7 +182,14 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
      * @return
      */
     private String getSummary(MediaBinAssetVO vo) {
-		String summary = StringUtil.checkVal(vo.getAssetDesc());
+	    String summary = "";
+	    //DSI work-around.  DS.com should never have been using AssetDesc, but 
+	    //since it was validated that way we can't change it.
+	    if (vo.getOpCoNm().indexOf("DSI.com") > 0) {
+		    summary = StringUtil.checkVal(vo.getDescription());
+	    }
+	    
+		if (summary.length() == 0) summary = StringUtil.checkVal(vo.getAssetDesc());
 		if (summary.length() == 0) {
 			summary = StringUtil.checkVal(vo.getProdFamilyNm());
 			if (summary.length() > 0) summary += " | ";

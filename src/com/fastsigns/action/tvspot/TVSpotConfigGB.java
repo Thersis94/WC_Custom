@@ -252,7 +252,8 @@ public class TVSpotConfigGB extends TVSpotConfig {
 	
 	public EmailMessageVO buildCorpReportEmail() throws InvalidDataException {
 		EmailMessageVO msg = new EmailMessageVO();
-		msg.addRecipient("operationconsultation@fastsigns.com");
+		msg.addRecipient("Drue.Townsend@fastsigns.com"); 
+		msg.addRecipient("E.Team@fastsigns.com;");
 		msg.addRecipient("david.callister@fastsigns.com");
 		msg.addRecipient("Garth.Allison@fastsigns.com");
 		msg.setSubject("\"Operation Consultation\" report is attached for your review");
