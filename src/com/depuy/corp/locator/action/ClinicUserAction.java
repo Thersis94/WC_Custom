@@ -318,7 +318,7 @@ public class ClinicUserAction extends SBActionAdapter {
 		if (rs.next()) {
 			sUser = new SiteUserVO(rs);
 			ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
-			sUser.setUserData(pm.getProfile(profileId, dbConn, ProfileManager.PROFILE_ID_LOOKUP));
+			sUser.setUserData(pm.getProfile(profileId, dbConn, ProfileManager.PROFILE_ID_LOOKUP, null));
 			
 			log.debug("Password: " + sUser.getPassword());
 		}

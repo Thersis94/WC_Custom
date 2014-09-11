@@ -6,8 +6,10 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.io.*;
 import java.net.URL;
 
@@ -35,6 +37,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @since May 23, 2013
  * @updates
  * James McKain - 03-03-2014 - revised to support eCopy, and be backwards compatible for both file formats.
+ * James McKain - 09.09.14 - revised for DSI.com, added support for Anatomy field
  * 
  ****************************************************************************/
 public class DSMediaBinImporter extends CommandLineUtil {
@@ -241,8 +244,8 @@ public class DSMediaBinImporter extends CommandLineUtil {
 		sql.append("business_unit_nm, business_unit_id, download_type_txt, language_cd, literature_type_txt, ");
 		sql.append("modified_dt, file_nm, dimensions_txt, orig_file_size_no, prod_family, ");
 		sql.append("prod_nm, revision_lvl_txt, opco_nm, title_txt, tracking_no_txt, ");
-		sql.append("import_file_cd, duration_length_no) ");
-		sql.append("values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)" );
+		sql.append("import_file_cd, duration_length_no, anatomy_txt, desc_txt) ");
+		sql.append("values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)" );
 
 		int recordCnt = 0;
 		PreparedStatement ps  = null;
@@ -253,7 +256,12 @@ public class DSMediaBinImporter extends CommandLineUtil {
 		}
 		
 		String tn = "", pkId = "";
-		String requiredOpCo = (type == 2) ? "INTDS.com" : "USDS.com";
+		String[] requiredOpCo = null;
+		if (type == 2) {
+			requiredOpCo = new String[]{ "INTDS.com" };
+		} else {
+			requiredOpCo = new String[]{ "USDS.com", "DSI.com" };
+		}
 		
 		// Loop the list and parse out each map item for inserting into the db
 		for (Map<String, String> row : data) {
@@ -261,7 +269,7 @@ public class DSMediaBinImporter extends CommandLineUtil {
 				// Make sure the files are for Synthes.com, and in the Types we're authorized to use.
 				if (StringUtil.checkVal(row.get("Distribution Channel")).length() == 0 ||
 						!acceptedAssets.contains(row.get("Asset Type").toLowerCase()) ||
-						!row.get("Distribution Channel").contains(requiredOpCo)) {
+						!StringUtil.stringContainsItem(row.get("Distribution Channel"), requiredOpCo)) {
 					
 					if (DEBUG_MODE) { //if we're in debug mode, report why we're skipping this record.
 						String reason = " || ";
@@ -300,6 +308,23 @@ public class DSMediaBinImporter extends CommandLineUtil {
 				if (tn.length() == 0)
 					throw new SQLException("Tracking number missing for " + row.get("Asset Name"));
 				
+				//pluck the tracking#s off the end of the Anatomy field, if data exists
+				if (StringUtil.checkVal(row.get("Anatomy")).indexOf("~") > 0) {
+					String[] vals = StringUtil.checkVal(row.get("Anatomy")).split("~");
+					Set<String> newVals = new LinkedHashSet<String>(vals.length);
+					for (String s : vals) {
+						if (s.startsWith("DSUS")) continue; //remove tracking#s
+						newVals.add(s.trim().replaceAll(", ", ","));
+					}
+					row.put("Anatomy", StringUtil.getDelimitedList(newVals.toArray(new String[newVals.size()]), false, "~"));
+				}
+				
+				//pluck the tracking#s off the end of the Description field, if data exists
+				if (StringUtil.checkVal(row.get("Description")).indexOf("DSUS") > 0) {
+					String desc = row.get("Description");
+					desc = desc.substring(0, desc.lastIndexOf("DSUS"));
+					row.put("Description", desc);
+				}
 				
 				//determine Modification Date for the record. -- displays in site-search results
 				Date modDt = Convert.formatDate(Convert.DATE_TIME_SLASH_PATTERN_FULL_12HR, row.get("Check In Time"));
@@ -329,6 +354,8 @@ public class DSMediaBinImporter extends CommandLineUtil {
 				ps.setString(20, tn);
 				ps.setInt(21, type);
 				ps.setDouble(22, Convert.formatDouble(row.get("Media Play Length (secs.)")));
+				ps.setString(23, StringUtil.checkVal(row.get("Anatomy"), null)); //used on DSI.com
+				ps.setString(24, StringUtil.checkVal(row.get("Description"), null)); //used on DSI.com
 				
 				if (DEBUG_MODE) {
 					ps.executeUpdate();

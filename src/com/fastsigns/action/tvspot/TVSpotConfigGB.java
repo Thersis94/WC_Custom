@@ -68,7 +68,7 @@ public class TVSpotConfigGB extends TVSpotConfig {
 		data.put(ContactField.rating, "0a00141d220a5090444a5cd08a412899");
 		data.put(ContactField.inquiry, "0a00141d220c122591d0a3f028690b40");
 		data.put(ContactField.consultation, "0a00141d220bdabbdc6e0498f66f631c");
-		data.put(ContactField.visitMethod, "0a00141d6a2339bcc1b10e57708ed185");
+		//data.put(ContactField.visitMethod, "0a00141d6a2339bcc1b10e57708ed185");
 		return data;
 	}
 
@@ -126,13 +126,8 @@ public class TVSpotConfigGB extends TVSpotConfig {
 		msg.append("<li>If desired, please tell us more about your experience (open-ended with space for at least 250 words).</li></ul></i></div></li>");
 		msg.append("<li>For more information about \"Operation Consultation\", please refer to the following: <br/>");
 		msg.append("<ul>");
-		msg.append("<li>Review the overview document: ");
-		msg.append("<a href='http://support.fastsigns.com/search/FileViewer.aspx?ki=7430'>");
-		msg.append("http://support.fastsigns.com/search/FileViewer.aspx?ki=7430</a> (PowerPoint presentation)</li>");
-		msg.append("<li>View the webinar: ");
-		msg.append("<a href='http://support.fastsigns.com/Stream/MonthlyRecording/ConnectWithCatherine/lib/playback.html'>");
-		msg.append("http://support.fastsigns.com/Stream/MonthlyRecording/ConnectWithCatherine/lib/playback.html</a> ");
-		msg.append("(Connect with Catherine)</li>");
+		msg.append("<li>Review the overview document: <a href='http://support.fastsigns.com/search/FileViewer.aspx?ki=8281'>");
+		msg.append("http://support.fastsigns.com/search/FileViewer.aspx?ki=8281</a></li>");
 		msg.append("</ul>");
 		msg.append("</li>");
 		msg.append("</ol>");
@@ -225,13 +220,8 @@ public class TVSpotConfigGB extends TVSpotConfig {
 		body.append("<p>For more information about \"Operation Consultation\", please refer to the following resources or ");
 		body.append("consult with your Franchise Business Consultant:</p>");
 		body.append("<ul>");
-		body.append("<li>Review the overview document: ");
-		body.append("<a href='http://support.fastsigns.com/search/FileViewer.aspx?ki=7430'>");
-		body.append("http://support.fastsigns.com/search/FileViewer.aspx?ki=7430</a> (PowerPoint presentation)</li>");
-		body.append("<li>View the webinar: ");
-		body.append("<a href='http://support.fastsigns.com/Stream/MonthlyRecording/ConnectWithCatherine/lib/playback.html'>");
-		body.append("http://support.fastsigns.com/Stream/MonthlyRecording/ConnectWithCatherine/lib/playback.html</a> ");
-		body.append("(Connect with Catherine)</li>");
+		body.append("<li>Review the overview document: <a href='http://support.fastsigns.com/search/FileViewer.aspx?ki=8281'>");
+		body.append("http://support.fastsigns.com/search/FileViewer.aspx?ki=8281</a></li>");
 		body.append("</ul>");
 		body.append("<p>* This survey will be sent to this prospect in six business days: ");
 		body.append("Thank you for your recent request for a consultation from FASTSIGNS&reg;.  ");
@@ -262,7 +252,10 @@ public class TVSpotConfigGB extends TVSpotConfig {
 	
 	public EmailMessageVO buildCorpReportEmail() throws InvalidDataException {
 		EmailMessageVO msg = new EmailMessageVO();
-		msg.addRecipient("operationconsultation@fastsigns.com");
+		msg.addRecipient("Drue.Townsend@fastsigns.com"); 
+		msg.addRecipient("E.Team@fastsigns.com;");
+		msg.addRecipient("david.callister@fastsigns.com");
+		msg.addRecipient("Garth.Allison@fastsigns.com");
 		msg.setSubject("\"Operation Consultation\" report is attached for your review");
 		msg.setHtmlBody(buildReportBody(false));
 		msg.setFrom("consultation@fastsigns.com");
@@ -322,13 +315,8 @@ public class TVSpotConfigGB extends TVSpotConfig {
 		body.append("Franchise Business Consultant. Additional ");
 		body.append("information is available using the following resources:<br/>");
 		body.append("<ul>");
-		body.append("<li>Review the overview document: ");
-		body.append("<a href='http://support.fastsigns.com/search/FileViewer.aspx?ki=7430'>");
-		body.append("http://support.fastsigns.com/search/FileViewer.aspx?ki=7430</a> (PowerPoint presentation)</li>");
-		body.append("<li>View the webinar: ");
-		body.append("<a href='http://support.fastsigns.com/Stream/MonthlyRecording/ConnectWithCatherine/lib/playback.html'>");
-		body.append("http://support.fastsigns.com/Stream/MonthlyRecording/ConnectWithCatherine/lib/playback.html</a> ");
-		body.append("(Connect with Catherine)</li>");
+		body.append("<li>Review the overview document: <a href='http://support.fastsigns.com/search/FileViewer.aspx?ki=8281'>");
+		body.append("http://support.fastsigns.com/search/FileViewer.aspx?ki=8281</a></li>");
 		body.append("</ul>");
 		
 		return body.toString();

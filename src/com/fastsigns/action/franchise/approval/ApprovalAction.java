@@ -174,8 +174,8 @@ public class ApprovalAction extends SBActionAdapter{
 		String franchiseTxt = (!orgId.contains("AU")) ? "FASTSIGNS" : "SIGNWAVE";
 		try {
 			ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
-			UserDataVO u = pm.getProfile(vo.getSubmitterId(), dbConn, "profile_id");
-			UserDataVO r = pm.getProfile(vo.getReviewerId(), dbConn, "profile_id");
+			UserDataVO u = pm.getProfile(vo.getSubmitterId(), dbConn, ProfileManager.PROFILE_ID_LOOKUP, null);
+			UserDataVO r = pm.getProfile(vo.getReviewerId(), dbConn, ProfileManager.PROFILE_ID_LOOKUP, null);
 			 //Build Message for the center.
 			if(u != null){
 				SMTMail mail = new SMTMail(attributes.get(Constants.CFG_SMTP_SERVER).toString());
@@ -259,7 +259,7 @@ public class ApprovalAction extends SBActionAdapter{
 			while(rs.next()){
 				ChangeLogVO vo = new ChangeLogVO().setData(rs);
 				try{
-					UserDataVO p = pm.getProfile(vo.getSubmitterId(), dbConn, "profile_id");
+					UserDataVO p = pm.getProfile(vo.getSubmitterId(), dbConn, ProfileManager.PROFILE_ID_LOOKUP, null);
 					vo.setSubmitterName(StringUtil.checkVal(se.decrypt(p.getFirstName())) + " " + StringUtil.checkVal(se.decrypt(p.getLastName())));
 				} catch (EncryptionException e) {
 					log.debug(e);

@@ -124,7 +124,7 @@ public class AnsADLoginModule extends AbstractLoginModule {
         		log.debug("user has passed preliminary authentication (i.e. is authenticated)...");
 	        	ProfileManager pm = ProfileManagerFactory.getInstance(initVals);
 		        try {
-		        	profile = pm.getProfile(profile.getAuthenticationId(), dbConn, ProfileManager.AUTH_ID_LOOKUP);
+		        	profile = pm.getProfile(profile.getAuthenticationId(), dbConn, ProfileManager.AUTH_ID_LOOKUP, null);
 		        } catch(Exception e) {
 		        	log.debug("Unable to retrieve profile: " + e.getMessage());
 		        }
