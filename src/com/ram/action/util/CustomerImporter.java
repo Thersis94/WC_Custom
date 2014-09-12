@@ -48,7 +48,7 @@ import com.siliconmtn.util.Convert;
 public class CustomerImporter {
 	private String customerFileLoc = null;
 	private Properties config = new Properties();
-	private static final Logger log = Logger.getLogger("CustomerImporter");
+	protected static Logger log = Logger.getLogger(CustomerImporter.class);
 	private StringBuilder errorLog = new StringBuilder();
 	private Connection conn = null;
 	
@@ -129,7 +129,7 @@ public class CustomerImporter {
 		//Turn on identity insert.
 		Statement s = conn.createStatement();
 		s.execute("set identity_insert WebCrescendo_ram_custom.dbo.ram_customer on");
-		s.close();
+		DBUtil.close(s);
 		PreparedStatement pi = null;
 		PreparedStatement pu = null;
 		int i = 0, total = 0;
@@ -171,9 +171,8 @@ public class CustomerImporter {
 		} catch(SQLException sqle) {
 			log.error(sqle);
 		} finally {
-			DBUtil.close(pi);
-			DBUtil.close(pu);
-			DBUtil.close(s);
+			if (pi != null) DBUtil.close(pi);
+			if (pu != null) DBUtil.close(pu);
 			DBUtil.close(conn);
 		}
 		log.debug("Committed " + total + " records");

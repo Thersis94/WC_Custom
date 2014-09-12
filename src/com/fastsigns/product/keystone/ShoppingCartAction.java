@@ -389,7 +389,7 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 		log.info("loading cart object for display");
 		Storage container = loadCartStorage(req);
 		ShoppingCartVO cart = getCartData(container, req);
-		String step = req.getParameter("step"), create = req.getParameter("create");
+		String step = req.getParameter("step");
 		boolean stepExists = req.hasParameter("step");
 		
 		if (stepExists && !"checkout".equals(step)) {
@@ -406,7 +406,7 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 		container.save(cart);
 		
 		//If we successfully got to the review screen, flush the session container.
-		if (req.hasParameter("step") && "complete".equalsIgnoreCase(step))
+		if (stepExists && "complete".equalsIgnoreCase(step))
 			container.flush();
 		
 		return;
