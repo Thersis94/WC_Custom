@@ -135,7 +135,7 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 				doc.setField(SearchDocumentHandler.INDEX_TYPE, INDEX_TYPE);
 				doc.setField(SearchDocumentHandler.ORGANIZATION, orgList); //multiValue field
 				doc.setField(SearchDocumentHandler.LANGUAGE, StringUtil.checkVal(vo.getLanguageCode(), "en"));
-				doc.setField(SearchDocumentHandler.ROLE, "000");
+				doc.setField(SearchDocumentHandler.ROLE, 0);
 				doc.setField(SearchDocumentHandler.SITE_PAGE_URL, vo.getActionUrl());
 				doc.setField(SearchDocumentHandler.DOCUMENT_ID, vo.getDpySynMediaBinId());
 				doc.setField(SearchDocumentHandler.TITLE, vo.getTitleTxt());
