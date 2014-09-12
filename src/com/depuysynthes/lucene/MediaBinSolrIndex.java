@@ -148,8 +148,8 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 				doc.setField(SearchDocumentHandler.MODULE_TYPE, "DOWNLOAD");
 				doc.setField(SearchDocumentHandler.UPDATE_DATE, df.format(vo.getModifiedDt()));
 				doc.setField(SearchDocumentHandler.CONTENTS, vo.isVideo() ? "" : parseFile(vo, fileRepos));
-				doc.setField("TrackingNumber_s", vo.getTrackingNoTxt()); //DSI uses this to align supporting images and tag favorites
-				doc.setField("AssetType_s", vo.getAssetType());
+				doc.setField("trackingNumber_s", vo.getTrackingNoTxt()); //DSI uses this to align supporting images and tag favorites
+				doc.setField("assetType_s", vo.getAssetType());
 				
 				//turn the flat/delimited hierarchy into a structure that PathHierarchyTokenizer will understand
 		    		for (String s : StringUtil.checkVal(vo.getAnatomy()).split("~"))
