@@ -90,6 +90,7 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	    super.setPostcardTypeFlg(db.getIntegerVal("content_no", rs));
 	    super.setAuthorizationText(db.getStringVal("authorization_txt", rs));
 	    super.setPostcardFileStatusFlg(db.getIntVal("postcard_file_status_no", rs));
+	    super.setLanguageCode( db.getStringVal("language_cd", rs) );
 	    
 	    List<EventEntryVO> lst = new ArrayList<EventEntryVO>();
 	    EventEntryVO event = new EventEntryVO();
