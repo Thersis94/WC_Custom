@@ -135,7 +135,7 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 				doc.setField(SearchDocumentHandler.INDEX_TYPE, INDEX_TYPE);
 				doc.setField(SearchDocumentHandler.ORGANIZATION, orgList); //multiValue field
 				doc.setField(SearchDocumentHandler.LANGUAGE, StringUtil.checkVal(vo.getLanguageCode(), "en"));
-				doc.setField(SearchDocumentHandler.ROLE, "000");
+				doc.setField(SearchDocumentHandler.ROLE, 0);
 				doc.setField(SearchDocumentHandler.SITE_PAGE_URL, vo.getActionUrl());
 				doc.setField(SearchDocumentHandler.DOCUMENT_ID, vo.getDpySynMediaBinId());
 				doc.setField(SearchDocumentHandler.TITLE, vo.getTitleTxt());
@@ -148,8 +148,8 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 				doc.setField(SearchDocumentHandler.MODULE_TYPE, "DOWNLOAD");
 				doc.setField(SearchDocumentHandler.UPDATE_DATE, df.format(vo.getModifiedDt()));
 				doc.setField(SearchDocumentHandler.CONTENTS, vo.isVideo() ? "" : parseFile(vo, fileRepos));
-				doc.setField("TrackingNumber_s", vo.getTrackingNoTxt()); //DSI uses this to align supporting images and tag favorites
-				doc.setField("AssetType_s", vo.getAssetType());
+				doc.setField("trackingNumber_s", vo.getTrackingNoTxt()); //DSI uses this to align supporting images and tag favorites
+				doc.setField("assetType_s", vo.getAssetType());
 				
 				//turn the flat/delimited hierarchy into a structure that PathHierarchyTokenizer will understand
 		    		for (String s : StringUtil.checkVal(vo.getAnatomy()).split("~"))
