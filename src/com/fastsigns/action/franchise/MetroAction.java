@@ -361,7 +361,7 @@ public class MetroAction extends SBActionAdapter {
 				 * If the batch process isn't run, attempt to add off just the request.
 				 */
 			} else if (connectCat && "addProduct".equals(reqType)) {
-				req.setValidateInput(false);
+				req.setValidateInput(Boolean.FALSE);
 				url.append("?metroAreaId=").append(req.getParameter("metroAreaId"));
 				url.append("&type=products&metroName=").append(req.getParameter("metroName"));
 				url.append("&webEdit=true&metroLocation=").append(req.getParameter("metroLocation"));
@@ -369,7 +369,7 @@ public class MetroAction extends SBActionAdapter {
 				mpa.deleteMetroProducts(req.getParameter("metroAreaId"));
 				mpa.addMetroProducts(req);
 			} else if ("addProduct".equals(reqType)) {
-				req.setValidateInput(false);
+				req.setValidateInput(Boolean.FALSE);
 				url.append("?metroAreaId=").append(req.getParameter("metroAreaId"));
 				url.append("&type=products&metroName=").append(req.getParameter("metroName"));
 				url.append("&webEdit=true&metroLocation=").append(req.getParameter("metroLocation"));
@@ -382,7 +382,7 @@ public class MetroAction extends SBActionAdapter {
 						url.append("&metroProductId=" + productId);
 				}
 			} else if ("editProduct".equals(reqType)) {
-				req.setValidateInput(false);
+				req.setValidateInput(Boolean.FALSE);
 				url.append("?metroAreaId=").append(req.getParameter("metroAreaId"));
 				url.append("&type=products&metroName=").append(req.getParameter("metroName"));
 				url.append("&webEdit=true&metroLocation=").append(req.getParameter("metroLocation"));
