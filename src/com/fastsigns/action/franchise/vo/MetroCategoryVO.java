@@ -11,14 +11,15 @@ import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SBModuleVO;
 
 /****************************************************************************
- * <b>Title</b>: MetroProductVO.java<p/>
- * <b>Description: </b> 
+ * <b>Title</b>: FranchiseCategoryVO.java<p/>
+ * <b>Description: Store the requisite information for a Metro category and
+ * its products</b> 
  * <p/>
- * <b>Copyright:</b> Copyright (c) 2011<p/>
+ * <b>Copyright:</b> Copyright (c) 2014<p/>
  * <b>Company:</b> Silicon Mountain Technologies<p/>
- * @author James McKain
+ * @author Eric Damschroder
  * @version 1.0
- * @since Sep 21, 2011
+ * @since Sep 15, 2014
  ****************************************************************************/
 public class MetroCategoryVO extends SBModuleVO {
 
