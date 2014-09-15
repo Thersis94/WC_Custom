@@ -47,11 +47,12 @@ public class MetroContainerVO extends SBModuleVO {
 	private Double latitude = Double.valueOf(0);
 	private Double longitude = Double.valueOf(0);
 	private MapVO mapData = new MapVO();
+	private Map<String,MetroProductVO> productPages = new HashMap<String,MetroProductVO>();
 	private String communities = null;
 	private String locality = null;
 	private Integer mapZoomNo = Integer.valueOf(0);
 	private String unitKey = null;
-	private List<Node> prodList = null;
+	private List<Node> prodList =  new ArrayList<Node>();
 	
 	public MetroContainerVO() {
 	}
@@ -86,7 +87,6 @@ public class MetroContainerVO extends SBModuleVO {
 		createDate = db.getDateVal("create_dt", rs);
 		updateDate = db.getDateVal("update_dt", rs);
 		setMapZoomNo(db.getIntegerVal("map_zoom_no", rs));
-		prodList = new ArrayList<Node>();
 	}
 	
 	/**
@@ -305,6 +305,18 @@ public class MetroContainerVO extends SBModuleVO {
 	 */
 	public void setCountry(String country) {
 		this.country = country;
+	}
+
+	public void setProductPages(Map<String,MetroProductVO> productPages) {
+		this.productPages = productPages;
+	}
+	
+	public void addProductPage(MetroProductVO prod) {
+		productPages.put(prod.getAliasNm(), prod);
+	}
+
+	public Map<String,MetroProductVO> getProductPages() {
+		return productPages;
 	}
 
 	public void setCommunities(String communities) {
