@@ -1,13 +1,12 @@
 package com.fastsigns.action.franchise.vo;
 
 import java.sql.ResultSet;
-
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.siliconmtn.data.Node;
 import com.siliconmtn.db.DBUtil;
 import com.smt.sitebuilder.action.SBModuleVO;
 import com.smt.sitebuilder.action.dealer.DealerLocationVO;
@@ -53,6 +52,7 @@ public class MetroContainerVO extends SBModuleVO {
 	private String locality = null;
 	private Integer mapZoomNo = Integer.valueOf(0);
 	private String unitKey = null;
+	private List<Node> prodList =  new ArrayList<Node>();
 	
 	public MetroContainerVO() {
 	}
@@ -361,6 +361,18 @@ public class MetroContainerVO extends SBModuleVO {
 	 */
 	public String getUnitKey() {
 		return unitKey;
+	}
+
+	public List<Node> getProdList() {
+		return prodList;
+	}
+
+	public void setProdList(List<Node> prodList) {
+		this.prodList = prodList;
+	}
+	
+	public void addProduct(Node prod) {
+		this.prodList.add(prod);
 	}
 
 }
