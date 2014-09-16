@@ -38,6 +38,8 @@ import org.apache.tika.sax.BodyContentHandler;
 
 
 
+
+
 // SMT Base Libs
 import com.depuysynthes.action.MediaBinAdminAction;
 import com.depuysynthes.action.MediaBinAssetVO;
@@ -80,6 +82,15 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 	 * Index type for this index.  This value is stored in the INDEX_TYPE field
 	 */
 	public static final String INDEX_TYPE = "MEDIA_BIN";
+	
+	public enum MediaBinField { 
+		AssetType("assetType_s"),
+		AssetDesc("assetDesc_s"),
+		TrackingNo("trackingNumber_s");
+		MediaBinField(String s) { this.metaDataField = s; }
+		private String metaDataField = null;
+		public String getField() { return metaDataField; }
+	}
 	
 
 	/**
@@ -142,14 +153,15 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 				doc.setField(SearchDocumentHandler.SUMMARY, getSummary(vo));
 				doc.setField(SearchDocumentHandler.FILE_NAME, fileName);
 				doc.setField(SearchDocumentHandler.FILE_SIZE, vo.getFileSizeNo());
-				if (vo.isVideo()) doc.setField(SearchDocumentHandler.DURATION, parseDuration(vo.getDuration()));
+				doc.setField(SearchDocumentHandler.DURATION, parseDuration(vo.getDuration()));
 				doc.setField(SearchDocumentHandler.SECTION, parseBusinessUnit(vo.getBusinessUnitNm()));
 				doc.setField(SearchDocumentHandler.META_KEYWORDS, parseDownloadType(vo.getDownloadTypeTxt(), vo.isVideo()));
 				doc.setField(SearchDocumentHandler.MODULE_TYPE, "DOWNLOAD");
 				doc.setField(SearchDocumentHandler.UPDATE_DATE, df.format(vo.getModifiedDt()));
 				doc.setField(SearchDocumentHandler.CONTENTS, vo.isVideo() ? "" : parseFile(vo, fileRepos));
-				doc.setField("trackingNumber_s", vo.getTrackingNoTxt()); //DSI uses this to align supporting images and tag favorites
-				doc.setField("assetType_s", vo.getAssetType());
+				doc.setField(MediaBinField.TrackingNo.getField(), vo.getTrackingNoTxt()); //DSI uses this to align supporting images and tag favorites
+				doc.setField(MediaBinField.AssetType.getField(), vo.getAssetType());
+				doc.setField(MediaBinField.AssetDesc.getField(), vo.getAssetDesc());
 				
 				//turn the flat/delimited hierarchy into a structure that PathHierarchyTokenizer will understand
 		    		for (String s : StringUtil.checkVal(vo.getAnatomy()).split("~"))

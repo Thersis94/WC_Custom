@@ -12,6 +12,7 @@ import java.util.Properties;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.common.SolrInputDocument;
 
+import com.depuysynthes.lucene.MediaBinSolrIndex.MediaBinField;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -76,8 +77,9 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 				doc.setField(SearchDocumentHandler.END_DATE + "_dt", df.format(vo.getEndDate()));
 				doc.setField(SearchDocumentHandler.CONTENTS, StringUtil.getToString(vo));
 				doc.setField(SearchDocumentHandler.MODULE_TYPE, "EVENT");
-				doc.setField("AssetType_s", "EVENT");
-				doc.setField("duration_i", vo.getDuration());
+				doc.setField(MediaBinField.AssetType.getField(), "EVENT");
+				doc.setField(MediaBinField.AssetDesc.getField(), "Course"); //displays on the gallery view
+				doc.setField("duration_i", vo.getDuration()); //this is an int, not a String like MediaBin uses
 				
 				for (String s : StringUtil.checkVal(vo.getServiceText()).split(","))
 					doc.addField(SearchDocumentHandler.HIERARCHY, s.trim());
