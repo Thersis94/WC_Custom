@@ -6,10 +6,14 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 // SB Libs
 import com.fastsigns.action.franchise.vo.CenterModuleOptionVO;
+import com.fastsigns.action.franchise.vo.FranchiseTimeVO;
+import com.fastsigns.action.franchise.vo.FranchiseTimeVO.DayType;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
@@ -178,6 +182,7 @@ public class NewsTestPanel extends SBActionAdapter {
 		try {
 			List<DealerLocationVO> dlrs = dla.getDealerInfo(req, new String[] { fId }, null);
 			if (dlrs.size() > 0) dlv = dlrs.get(0);
+			dlv.addAttribute("fullHours", getCenterHours(dlv));
 			
 			MapLocationVO f = dlv.getMapLocation();
 			StringBuilder s = new StringBuilder();
@@ -201,5 +206,22 @@ public class NewsTestPanel extends SBActionAdapter {
 		}
 		
 		return dlv;
+	}
+
+	/**
+	 * Get a franchise time vo in order to get the times set in webedit
+	 * @param dlv
+	 * @return
+	 */
+	private FranchiseTimeVO getCenterHours(DealerLocationVO dlv) {
+		Map<DayType, String> times = new HashMap<DayType, String>();
+		DayType day;
+		for (String key : dlv.getAttributes().keySet()) {
+			day = DayType.valueOf(key);
+			if (day != null) {
+				times.put(day, StringUtil.checkVal(dlv.getAttributes().get(key)));
+			}
+		}
+		return new FranchiseTimeVO(times);
 	}
 }
