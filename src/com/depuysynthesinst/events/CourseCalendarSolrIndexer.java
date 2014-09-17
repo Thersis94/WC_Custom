@@ -77,10 +77,10 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 				doc.setField(SearchDocumentHandler.END_DATE + "_dt", df.format(vo.getEndDate()));
 				doc.setField(SearchDocumentHandler.CONTENTS, StringUtil.getToString(vo));
 				doc.setField(SearchDocumentHandler.MODULE_TYPE, "EVENT");
-				doc.setField(MediaBinField.AssetType.getField(), "EVENT");
+				doc.setField(MediaBinField.AssetType.getField(), "Course");
 				doc.setField(MediaBinField.AssetDesc.getField(), "Course"); //displays on the gallery view
 				doc.setField("duration_i", vo.getDuration()); //this is an int, not a String like MediaBin uses
-				
+				doc.setField("eventType_s", StringUtil.checkVal(vo.getEventTypeCd()).toLowerCase());
 				for (String s : StringUtil.checkVal(vo.getServiceText()).split(","))
 					doc.addField(SearchDocumentHandler.HIERARCHY, s.trim());
 				
