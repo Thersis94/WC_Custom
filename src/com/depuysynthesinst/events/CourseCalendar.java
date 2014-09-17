@@ -156,9 +156,9 @@ public class CourseCalendar extends SimpleActionAdapter {
 		alias = alias.toLowerCase();
 		
 		if (alias.equals("chest-wall")) return "Chest Wall";
-		else if (alias.indexOf("-") > 0) return StringUtil.capitalizePhrase(alias.replace("-", " & ")); //Foot & Ankle, Hand & Wrist
-		else if (alias.equals("resource-library")) return "Emerging Care Providers"; //nursing
 		else if (alias.endsWith("-animal")) return "Vet"; //both veterinary types, there aren't enough events to split them up
+		else if (alias.equals("resource-library")) return "Emerging Care Providers"; //nursing
+		else if (alias.indexOf("-") > 0) return StringUtil.capitalizePhrase(alias.replace("-", " & ")); //Foot & Ankle, Hand & Wrist
 		
 		return StringUtil.capitalize(alias);
 	}

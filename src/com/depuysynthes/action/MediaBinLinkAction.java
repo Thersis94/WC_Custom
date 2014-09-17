@@ -17,10 +17,8 @@ import com.siliconmtn.util.Convert;
 // 
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
-import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
-import com.smt.sitebuilder.util.PageViewUDPUtil;
 
 /****************************************************************************
  * <b>Title</b>: MediaBinLinkAction.java <p/>
@@ -61,18 +59,21 @@ public class MediaBinLinkAction extends SimpleActionAdapter {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	public void retrieve(SMTServletRequest req) throws ActionException {
-		boolean success = false;
+		//boolean success = false;
 		try {
 			String path = this.getDocumentLink(req.getParameter("mbid"));
 			req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
 			req.setAttribute(Constants.REDIRECT_URL, path);
-			success = true;
+			//success = true;
 		} catch (Exception e) {
 			//we don't care about these in production.
 			log.debug("Unable to retrieve media bin file path", e);
 			req.setAttribute(Constants.CFG_PAGE_NOT_FOUND, Boolean.TRUE);
 		}
 		
+		/**
+		 * This was added for DSI, then they decided not to use it.  -JM 09.12.14
+		 * 
 		//drop a message to UDP for PageViewReporting to capture
 		//this is not done by the Filter because we're returning a 302 response header (a redirect)
 		if (success) {
@@ -85,6 +86,7 @@ public class MediaBinLinkAction extends SimpleActionAdapter {
 				log.error("could not log mediabin pageview for " + req.getParameter("mbid"), e);
 			}
 		}
+		 */
 	}
 	
 	/**

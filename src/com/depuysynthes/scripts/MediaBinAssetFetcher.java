@@ -1,5 +1,6 @@
 package com.depuysynthes.scripts;
 
+// JDK 1.7.x
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -9,13 +10,22 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+// Log4j 1.2.15
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+
+// SMT Base Libs
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.io.mail.MailHandlerFactory;
 import com.siliconmtn.io.mail.mta.MailTransportAgentIntfc;
 import com.siliconmtn.util.CommandLineUtil;
 import com.siliconmtn.util.StringUtil;
+
+// WC Libs
 import com.smt.sitebuilder.common.constants.Constants;
+
+//WC Custom Libs
 import com.depuysynthes.action.MediaBinAdminAction;
 import com.depuysynthes.action.MediaBinAssetVO;
 import com.depuysynthes.action.MediaBinLinkAction;
@@ -44,7 +54,7 @@ public class MediaBinAssetFetcher extends CommandLineUtil {
     		super(args);
 		loadProperties("scripts/MediaBin.properties");
 		loadDBConnection(props);
-    		
+		Logger.getRootLogger().setLevel(Level.INFO);
     }
     
 	/**
