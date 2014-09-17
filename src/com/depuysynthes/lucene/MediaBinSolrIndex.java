@@ -160,7 +160,7 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 				doc.setField(SearchDocumentHandler.UPDATE_DATE, df.format(vo.getModifiedDt()));
 				doc.setField(SearchDocumentHandler.CONTENTS, vo.isVideo() ? "" : parseFile(vo, fileRepos));
 				doc.setField(MediaBinField.TrackingNo.getField(), vo.getTrackingNoTxt()); //DSI uses this to align supporting images and tag favorites
-				doc.setField(MediaBinField.AssetType.getField(), vo.getAssetType());
+				doc.setField(MediaBinField.AssetType.getField(), this.getAssetType(vo));
 				doc.setField(MediaBinField.AssetDesc.getField(), vo.getAssetDesc());
 				
 				//turn the flat/delimited hierarchy into a structure that PathHierarchyTokenizer will understand
@@ -187,6 +187,14 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 			log.error("Unable to commit remaining documents", e);
 		}
 	}
+    
+    private String getAssetType(MediaBinAssetVO vo) {
+	    if ("multimedia file".equalsIgnoreCase(vo.getAssetType())) {
+		    return StringUtil.checkVal(vo.getAssetDesc()).toLowerCase();
+	    } else {
+		    return vo.getAssetType();
+	    }
+    }
     
     /**
      * Figures out the appropriate summary for the given document
