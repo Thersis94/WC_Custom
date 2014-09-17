@@ -35,7 +35,7 @@ import com.smt.sitebuilder.action.tools.StatVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.lucene.DocumentHandler;
-import com.smt.sitebuilder.search.lucene.custom.SMTCustomIndexIntfc;
+import com.smt.sitebuilder.search.SMTCustomIndexIntfc;
 
 /****************************************************************************
  * <b>Title</b>: ProductCatalogIndex.java <p/>
