@@ -99,12 +99,8 @@ public class ModuleOptionAction extends SBActionAdapter{
 					this.deleteModuleLocation(req);
 					super.clearCacheByGroup(siteId);
 					break;
-				case CenterPageAction.MODULE_OPTION_UPDATE:
-					this.updateModuleOptions(req);
-					super.clearCacheByGroup(siteId);
-					break;
 				case CenterPageAction.MODULE_ADD:
-					this.saveModuleOption(req);
+					this.saveModuleOption(req); 
 					redir += "assoc=true&locationId=" + req.getParameter("locationId") + "&moduleId=" + req.getParameter("moduleId") + "&";
 					redir += "type=" + StringEncoder.urlEncode(req.getParameter("type")) + "&";
 					
@@ -113,6 +109,9 @@ public class ModuleOptionAction extends SBActionAdapter{
 							Convert.formatInteger(req.getParameter("approvalFlag"), 0).intValue() == 100)
 						this.revokeApprovalSubmission(req);
 
+				case CenterPageAction.MODULE_OPTION_UPDATE:
+					this.updateModuleOptions(req);
+					super.clearCacheByGroup(siteId);
 					break;
 				case CenterPageAction.MODULE_REARRANGE:
 					rearrangeModuleLayout(req);
@@ -373,7 +372,7 @@ public class ModuleOptionAction extends SBActionAdapter{
 		} catch (SQLException sqle) {
 			log.error(sqle);
 		} finally {
-			try { ps.close(); } catch (Exception e) {}
+			try { ps.close(); } catch (Exception e) {} 
 		}
 		
 		return pkId;
@@ -482,6 +481,10 @@ public class ModuleOptionAction extends SBActionAdapter{
 				vo.setParentId(vo.getModuleOptionId()); //link this new entry to it's predecessor
 			log.debug("saving with parent=" + vo.getParentId());
 		//}
+			
+			for(String key : req.getParameterMap().keySet()) {
+				log.debug(key+"|"+req.getParameter(key));
+			}
 		
 		//build the query
 		if (isInsert) {
@@ -534,7 +537,8 @@ public class ModuleOptionAction extends SBActionAdapter{
 		} finally {
 			try { ps.close(); } catch (Exception e) {}
 		}
-
+		log.debug(vo.getModuleOptionId() +"||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||");
+		req.setParameter("selectedElements", vo.getModuleOptionId()+"~"+req.getParameter("modLocId"));
 		if(vo.getModuleTypeId() == 10)
 			updateModuleAttributes(req);
 	}
