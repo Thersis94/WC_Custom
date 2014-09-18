@@ -246,7 +246,7 @@ public class StorePageWizardAction extends SBActionAdapter{
 		req.setParameter("siteId", req.getParameter("siteId"));
 		req.setParameter("aliasName", "store");
 		req.setParameter("displayName", "Product Store");
-		req.setParameter("titleName", "Keystone-driven Product Store");
+		req.setParameter("titleName", "FASTSIGNS Product Store");
 		req.setParameter("metaKeyword", "");
 		req.setParameter("metaDesc", "");
 		req.setParameter("visible", "0");
