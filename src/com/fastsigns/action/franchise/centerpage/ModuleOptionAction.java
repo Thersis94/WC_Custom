@@ -537,7 +537,6 @@ public class ModuleOptionAction extends SBActionAdapter{
 		} finally {
 			try { ps.close(); } catch (Exception e) {}
 		}
-		log.debug(vo.getModuleOptionId() +"||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||");
 		req.setParameter("selectedElements", vo.getModuleOptionId()+"~"+req.getParameter("modLocId"));
 		if(vo.getModuleTypeId() == 10)
 			updateModuleAttributes(req);
