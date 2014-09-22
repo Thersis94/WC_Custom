@@ -61,38 +61,38 @@ public class SeminarRollupReportVO extends AbstractSBReportVO {
 		Integer leadsCnt = sem.getTotalSelectedLeads();
 		Integer attendCnt = 0;
 		Integer rsvpCnt = sem.getRsvpCount();
-		CoopAdVO ad = sem.getNewspaperAd();
+		for ( CoopAdVO ad : sem.getPrintAndOnlineAds() ){
 		
-		rpt.append("<tr><td>").append(sem.getJointLabel()).append("</td>");
-		rpt.append("<td>").append(vo.getEventTypeDesc()).append("</td>");
-		rpt.append("<td>").append(vo.getRSVPCode()).append("</td>");
-		rpt.append("<td>").append(sem.getStatusName()).append("</td>");
-		rpt.append("<td>").append(sem.getOwner().getFirstName()).append(" ").append(sem.getOwner().getLastName()).append("</td>");
-		rpt.append("<td>").append(vo.getEventName()).append("</td>");
-		rpt.append("<td>").append(vo.getCityName()).append("</td>");
-		rpt.append("<td>").append(vo.getStateCode()).append("</td>");
-		rpt.append("<td>").append(Convert.formatDate(vo.getStartDate(), Convert.DATE_SLASH_PATTERN)).append("</td>");
-		rpt.append("<td>").append(vo.getLocationDesc()).append("</td>");
-		rpt.append("<td>").append(sem.getSurgeon().getSurgeonName()).append("</td>");
-		rpt.append("<td>").append(rsvpCnt).append("</td>");
-		rpt.append("<td>").append(attendCnt).append("</td>");
-		rpt.append("<td>").append(Float.valueOf(attendCnt)/Float.valueOf(rsvpCnt)*100).append("%</td>");
-		rpt.append("<td>").append(Float.valueOf(attendCnt)/Float.valueOf(leadsCnt)*100).append("%</td>");
-		rpt.append("<td>").append(leadsCnt).append("</td>");
-		rpt.append("<td></td>");
-		rpt.append("<td></td>");
-		rpt.append("<td></td>");
-		rpt.append("<td>").append(ad.getStatusName()).append("</td>");
-		rpt.append("<td>").append(StringUtil.checkVal(ad.getNewspaper1Text())).append("</td>");
-		rpt.append("<td>").append(StringUtil.checkVal(ad.getNewspaper1Phone())).append("</td>");
-		rpt.append("<td>").append(StringUtil.checkVal(ad.getApprovedPaperName())).append("</td>");
-		rpt.append("<td>").append(StringUtil.checkVal(ad.getAdDatesText())).append("</td>");
-		rpt.append("<td>").append(StringUtil.checkVal(ad.getTotalCostNo())).append("</td>");
-		rpt.append("<td>").append(StringUtil.checkVal(ad.getCostToRepNo())).append("</td>");
-		rpt.append("<td>").append(StringUtil.checkVal(sem.getTerritoryNumber())).append("</td>");
-		rpt.append("<td></td>");
-		rpt.append("<td></td></tr>\r");
-		
+			rpt.append("<tr><td>").append(sem.getJointLabel()).append("</td>");
+			rpt.append("<td>").append(vo.getEventTypeDesc()).append("</td>");
+			rpt.append("<td>").append(vo.getRSVPCode()).append("</td>");
+			rpt.append("<td>").append(sem.getStatusName()).append("</td>");
+			rpt.append("<td>").append(sem.getOwner().getFirstName()).append(" ").append(sem.getOwner().getLastName()).append("</td>");
+			rpt.append("<td>").append(vo.getEventName()).append("</td>");
+			rpt.append("<td>").append(vo.getCityName()).append("</td>");
+			rpt.append("<td>").append(vo.getStateCode()).append("</td>");
+			rpt.append("<td>").append(Convert.formatDate(vo.getStartDate(), Convert.DATE_SLASH_PATTERN)).append("</td>");
+			rpt.append("<td>").append(vo.getLocationDesc()).append("</td>");
+			rpt.append("<td>").append(sem.getSurgeon().getSurgeonName()).append("</td>");
+			rpt.append("<td>").append(rsvpCnt).append("</td>");
+			rpt.append("<td>").append(attendCnt).append("</td>");
+			rpt.append("<td>").append(Float.valueOf(attendCnt)/Float.valueOf(rsvpCnt)*100).append("%</td>");
+			rpt.append("<td>").append(Float.valueOf(attendCnt)/Float.valueOf(leadsCnt)*100).append("%</td>");
+			rpt.append("<td>").append(leadsCnt).append("</td>");
+			rpt.append("<td></td>");
+			rpt.append("<td></td>");
+			rpt.append("<td></td>");
+			rpt.append("<td>").append(ad.getStatusName()).append("</td>");
+			rpt.append("<td>").append(StringUtil.checkVal(ad.getNewspaper1Text())).append("</td>");
+			rpt.append("<td>").append(StringUtil.checkVal(ad.getNewspaper1Phone())).append("</td>");
+			rpt.append("<td>").append(StringUtil.checkVal(ad.getApprovedPaperName())).append("</td>");
+			rpt.append("<td>").append(StringUtil.checkVal(ad.getAdDatesText())).append("</td>");
+			rpt.append("<td>").append(StringUtil.checkVal(ad.getTotalCostNo())).append("</td>");
+			rpt.append("<td>").append(StringUtil.checkVal(ad.getCostToRepNo())).append("</td>");
+			rpt.append("<td>").append(StringUtil.checkVal(sem.getTerritoryNumber())).append("</td>");
+			rpt.append("<td></td>");
+			rpt.append("<td></td></tr>\r");
+		}
 		return;
 	}
 

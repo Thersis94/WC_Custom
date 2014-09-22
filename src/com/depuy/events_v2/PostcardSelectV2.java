@@ -61,7 +61,9 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		//list pages
 		active /** implied default **/, completed, 
 		//reports
-		reportForm,  rsvpBreakdown, report
+		reportForm,  rsvpBreakdown, report,
+		//ordering consumables for hospital sponsored seminars
+		hospitalSponsored
 	}
 	
 	/*
@@ -150,7 +152,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		sql.append("from (select e.event_entry_id, e.RSVP_CODE_TXT, e.start_dt, et.type_nm, ep.event_postcard_id, ");
 		sql.append("ep.PROFILE_ID, ep.postcard_file_status_no, s.surgeon_nm, e.event_nm, e.city_nm, ");
 		sql.append("e.state_cd, ep.status_flg, lxr.JOINT_ID, sum(rsvp.GUESTS_NO) as 'rsvp_no', ");
-		sql.append("cad.run_dates_txt, cad.status_flg as ad_status_flg ");
+		sql.append("cad.run_dates_txt, cad.status_flg as ad_status_flg, ep.language_cd, online_flg ");
 		sql.append("from EVENT_ENTRY e ");
 		sql.append("inner join EVENT_TYPE et on e.EVENT_TYPE_ID=et.EVENT_TYPE_ID ");
 		sql.append("inner join EVENT_GROUP eg on et.ACTION_ID=eg.ACTION_ID ");
@@ -177,7 +179,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		}
 		sql.append("group by e.event_entry_id, ep.event_postcard_id, e.RSVP_CODE_TXT, e.start_dt, ");
 		sql.append("et.type_nm, ep.PROFILE_ID, ep.postcard_file_status_no, e.event_nm, s.surgeon_nm, ");
-		sql.append("e.city_nm, e.state_cd, ep.status_flg, lxr.JOINT_ID, cad.run_dates_txt, cad.status_flg ");
+		sql.append("e.city_nm, e.state_cd, ep.status_flg, lxr.JOINT_ID, cad.run_dates_txt, cad.status_flg, ep.language_cd, online_flg ");
 		sql.append(") baseQry ");
 		sql.append("pivot (count(joint_id) for joint_id in ([4],[5],[6])) as pvtQry "); //PIVOT is an implicit group-by
 		log.debug(sql);
@@ -385,7 +387,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 			if ("radio".equalsIgnoreCase(ad.getAdType())) {
 				vo.setRadioAd(ad);
 			} else {
-				vo.setNewspaperAd(ad);
+				vo.addAdvertisement(ad);
 			}
 		}
 		return;

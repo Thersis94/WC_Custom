@@ -35,7 +35,11 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 	private String newspaper3Phone = null;
 	private String adDatesText = null;
 	private Double totalCostNo = null;
+	private Double costToDepuyNo = null;
+	private Double costToHospitalNo = null;
+	private Double costToSurgeonNo = null;
 	private Double costToRepNo = null;
+	private Double costToPartyNo = null;
 	private String approvedPaperName = null;
 	private String adFileUrl = null;
 	private String territoryNo = null;
@@ -58,6 +62,16 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 	private String clinicPhone = null;
 	private String clinicHours = null;
 	private String surgicalExperience = null;
+	
+	private String languageCode = null;
+	private Integer onlineFlg = null;
+	private String hospital1Img = null;
+	private String hospital2Img = null;
+	private String hospital3Img = null;
+	private String surgeonInfo = null;
+	private String hospitalInfo = null;
+	private Integer weeksAdvance = null;
+	private Integer adCount = null;
 
 	public CoopAdVO() {
 	}
@@ -78,6 +92,9 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 		newspaper3Text = req.getParameter("newspaper3Text");
 		totalCostNo = Convert.formatDouble(StringUtil.replace(req.getParameter("totalCostNo"), ",", ""));
 		costToRepNo = Convert.formatDouble(StringUtil.replace(req.getParameter("costToRepNo"), ",", ""));
+		costToDepuyNo = Convert.formatDouble(StringUtil.replace(req.getParameter("costToRepNo"), ",", ""));
+		costToHospitalNo = Convert.formatDouble(StringUtil.replace(req.getParameter("costToHospitalNo"), ",", ""));
+		costToSurgeonNo = Convert.formatDouble(StringUtil.replace(req.getParameter("costToSurgeonNo"), ",", ""));
 		approvedPaperName = req.getParameter("approvedPaperName");
 		newspaper1Phone = req.getParameter("newspaper1Phone");
 		newspaper2Phone = req.getParameter("newspaper2Phone");
@@ -105,6 +122,16 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 		clinicPhone = req.getParameter("clinicPhone");
 		clinicHours = req.getParameter("clinicHours");
 		surgicalExperience = req.getParameter("surgicalExperience");
+		String type = StringUtil.checkVal(adType);
+		languageCode = ( type.toLowerCase().startsWith("spanish") ? "es" : "en");
+		onlineFlg = Convert.formatInteger(req.getParameter("onlineFlg"), 0 );
+		surgeonInfo = req.getParameter("surgeonInfo");
+		hospitalInfo = req.getParameter("hospitalInfo");
+		hospital1Img = req.getParameter("hospital1Img");
+		hospital2Img = req.getParameter("hospital2Img");
+		hospital3Img = req.getParameter("hospital3Img");
+		weeksAdvance = Convert.formatInteger( req.getParameter("weeksAdvance") );
+		adCount = Convert.formatInteger( req.getParameter("adCount") );
     }
     
     public void setData(ResultSet rs) {
@@ -116,6 +143,10 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 		newspaper3Text = db.getStringVal("newspaper3_txt", rs);
 		totalCostNo = db.getDoubleVal("total_cost_no", rs);
 		costToRepNo = db.getDoubleVal("cost_to_rep_no", rs);
+		costToDepuyNo = db.getDoubleVal("cost_to_depuy_no", rs);
+		costToPartyNo = db.getDoubleVal("cost_to_party_no", rs);
+		costToHospitalNo = db.getDoubleVal("cost_to_hospital_no", rs);
+		costToSurgeonNo = db.getDoubleVal("cost_to_surgeon_no",rs);
 		approvedPaperName = db.getStringVal("approved_paper_nm", rs);
 		adFileUrl = db.getStringVal("ad_file_url", rs);
 		statusFlg = db.getIntegerVal("status_flg", rs);
@@ -139,6 +170,15 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 		clinicPhone = db.getStringVal("clinic_phone_txt", rs);
 		clinicHours = db.getStringVal("clinic_hours_txt", rs);
 		surgicalExperience = db.getStringVal("surg_experience_txt", rs);
+		languageCode = db.getStringVal("language_cd", rs);
+		onlineFlg = db.getIntegerVal("online_flg", rs);
+		hospitalInfo = db.getStringVal("hospital_info_txt", rs);
+		hospital1Img = db.getStringVal("hospital1_img", rs);
+		hospital2Img = db.getStringVal("hospital2_img", rs);
+		hospital3Img = db.getStringVal("hospital3_img", rs);
+		surgeonInfo = db.getStringVal("surgeon_info_txt", rs);
+		adCount = db.getIntegerVal("ad_count_no", rs);
+		weeksAdvance = db.getIntegerVal("weeks_advance_no", rs);
 		db = null;
     }
 
@@ -435,6 +475,188 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 
 	public void setContactEmail(String contactEmail) {
 		this.contactEmail = contactEmail;
+	}
+
+	/**
+	 * @return the languageCode
+	 */
+	public String getLanguageCode() {
+		return languageCode;
+	}
+
+	/**
+	 * @param languageCode the languageCode to set
+	 */
+	public void setLanguageCode(String languageCode) {
+		this.languageCode = languageCode;
+	}
+
+	/**
+	 * @return the onlineFlg
+	 */
+	public Integer getOnlineFlg() {
+		return onlineFlg;
+	}
+
+	/**
+	 * @param onlineFlg the onlineFlg to set
+	 */
+	public void setOnlineFlg(Integer onlineFlg) {
+		this.onlineFlg = onlineFlg;
+	}
+
+	/**
+	 * @return the hospital1Img
+	 */
+	public String getHospital1Img() {
+		return hospital1Img;
+	}
+
+	/**
+	 * @param hospital1Img the hospital1Img to set
+	 */
+	public void setHospital1Img(String hospital1Img) {
+		this.hospital1Img = hospital1Img;
+	}
+
+	/**
+	 * @return the hospital2Img
+	 */
+	public String getHospital2Img() {
+		return hospital2Img;
+	}
+
+	/**
+	 * @param hospital2Img the hospital2Img to set
+	 */
+	public void setHospital2Img(String hospital2Img) {
+		this.hospital2Img = hospital2Img;
+	}
+
+	/**
+	 * @return the hospital3Img
+	 */
+	public String getHospital3Img() {
+		return hospital3Img;
+	}
+
+	/**
+	 * @param hospital3Img the hostpital3Img to set
+	 */
+	public void setHospital3Img(String hospital3Img) {
+		this.hospital3Img = hospital3Img;
+	}
+
+	/**
+	 * @return the surgeonInfo
+	 */
+	public String getSurgeonInfo() {
+		return surgeonInfo;
+	}
+
+	/**
+	 * @param surgeonInfo the surgeonInfo to set
+	 */
+	public void setSurgeonInfo(String surgeonInfo) {
+		this.surgeonInfo = surgeonInfo;
+	}
+
+	/**
+	 * @return the hospitalInfo
+	 */
+	public String getHospitalInfo() {
+		return hospitalInfo;
+	}
+
+	/**
+	 * @param hospitalInfo the hospitalInfo to set
+	 */
+	public void setHospitalInfo(String hospitalInfo) {
+		this.hospitalInfo = hospitalInfo;
+	}
+
+	/**
+	 * @return the weeksAdvance
+	 */
+	public Integer getWeeksAdvance() {
+		return weeksAdvance;
+	}
+
+	/**
+	 * @param weeksAdvance the weeksAdvance to set
+	 */
+	public void setWeeksAdvance(Integer weeksAdvance) {
+		this.weeksAdvance = weeksAdvance;
+	}
+
+	/**
+	 * @return the adCount
+	 */
+	public Integer getAdCount() {
+		return adCount;
+	}
+
+	/**
+	 * @param adCount the adCount to set
+	 */
+	public void setAdCount(Integer adCount) {
+		this.adCount = adCount;
+	}
+
+	/**
+	 * @return the costToDepuyNo
+	 */
+	public Double getCostToDepuyNo() {
+		return costToDepuyNo;
+	}
+
+	/**
+	 * @param costToDepuyNo the costToDepuyNo to set
+	 */
+	public void setCostToDepuyNo(Double costToDepuyNo) {
+		this.costToDepuyNo = costToDepuyNo;
+	}
+
+	/**
+	 * @return the costToHospitalNo
+	 */
+	public Double getCostToHospitalNo() {
+		return costToHospitalNo;
+	}
+
+	/**
+	 * @param costToHospitalNo the costToHospitalNo to set
+	 */
+	public void setCostToHospitalNo(Double costToHospitalNo) {
+		this.costToHospitalNo = costToHospitalNo;
+	}
+
+	/**
+	 * @return the costToSurgeonNo
+	 */
+	public Double getCostToSurgeonNo() {
+		return costToSurgeonNo;
+	}
+
+	/**
+	 * @param costToSurgeonNo the costToSurgeonNo to set
+	 */
+	public void setCostToSurgeonNo(Double costToSurgeonNo) {
+		this.costToSurgeonNo = costToSurgeonNo;
+	}
+
+	/**
+	 * @return the costToPartyNo
+	 */
+	public Double getCostToPartyNo() {
+		return costToPartyNo;
+	}
+
+	/**
+	 * @param costToPartyNo the costToPartyNo to set
+	 */
+	public void setCostToPartyNo(Double costToPartyNo) {
+		this.costToPartyNo = costToPartyNo;
 	}
 
 }
