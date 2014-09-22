@@ -5,6 +5,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -242,28 +243,64 @@ public class MetroProductAction extends SBActionAdapter {
 		FSProductAction prod = new FSProductAction();
 		prod.setActionInit(actionInit);
 		prod.setDBConnection(dbConn);
-		Tree fullList = prod.loadEntireCatalog(getCatalogId(orgId));
 		
+		Tree fullList = prod.loadEntireCatalog(getCatalogId(orgId));
 		List<Node> metroProd = getProductCategories(metroId);
 		List<String> prodUrls = getProductUrls(metroProd);
 		List<Node> orderedList = fullList.preorderList();
-		String catUrl = "";
-		String topUrl = "";
+		assignFullPath(orderedList);
 		for (Node n : orderedList) {
 			ProductCategoryVO cat = (ProductCategoryVO) n.getUserObject();
-			if (cat.getProducts().size() == 0 && cat.getParentCode() == null && !"signtype".equals(cat.getUrlAlias())) {
-				topUrl = cat.getUrlAlias()+"/qs/";
-			} else if (cat.getProducts().size() == 0) {
-				catUrl = StringUtil.checkVal(cat.getCustCategoryId()).contains("-") ? cat.getCustCategoryId() : cat.getUrlAlias() + "/";
-			} else if (cat.getProducts().size() > 0) {
-				if (prodUrls.contains(topUrl + catUrl + cat.getUrlAlias())) {
-					cat.setAttrib1Txt("true");
-				}
+			int levels = StringUtil.checkVal(n.getFullPath()).split("/").length;
+			Boolean hasQs = StringUtil.checkVal(n.getFullPath()).contains("/qs");
+			
+			if (((hasQs && levels == 6) || (!hasQs && levels == 3))) {
+				cat.setAttrib1Txt("secondary");
+			}
+			if (prodUrls.contains(n.getFullPath())) {
+				cat.setActiveFlag(1);
 			}
 		}
 		orderedList.addAll(metroProd);
 		return orderedList;
 	}
+	
+	 /**
+     * Assigns the full path based upon the pre-order list
+     * @param data
+     * @return
+     */
+    public void assignFullPath(List<Node> categories) {
+		String fullPath = null;
+    	Map<String, String> fp = new LinkedHashMap<String, String>();
+    	for (Node n : categories) {
+    		ProductCategoryVO cat = (ProductCategoryVO) n.getUserObject();
+    		
+    		//omit all top-level PRODUCTS. they're not used on the Page's listing directly like this
+    		if (n.getDepthLevel() == 2 && cat.getProductId() != null) 
+    			continue;
+    		
+    		if (fp.containsKey(n.getParentId())) {
+    			String prefix = fp.get(n.getParentId());
+				String catUrl = StringUtil.checkVal(cat.getCustCategoryId()).contains("-") ? cat.getCustCategoryId() : cat.getUrlAlias() + "/";
+				fullPath = prefix + catUrl;
+        		fp.put(n.getNodeId(), fullPath);
+        		
+    		} else {
+    			String preservedPath = null;
+    			if (cat.getCustCategoryId() != null) {
+    				//these are our abbreviated category URLs rewritten by Apache
+    				fullPath = "/" + cat.getCustCategoryId() + cat.getUrlAlias();
+    				preservedPath = "/" + cat.getCustCategoryId();
+    			} else {
+    				fullPath = "/" + cat.getUrlAlias() + "/qs/";
+    				preservedPath = fullPath;
+    			}
+    			fp.put(n.getNodeId(), preservedPath);
+    		}
+    		n.setFullPath(fullPath);
+    	}
+    }
 
 	/**
 	 * Get the active catalog id for the organization that we are on
@@ -378,11 +415,15 @@ public class MetroProductAction extends SBActionAdapter {
 	 * @return
 	 */
 	private String parseParent(String url) {
-		if (url.contains("-")) {
-			return url.substring(0, url.indexOf("-")+1);
-		} else {
+		int levels = url.split("/").length;
+		Boolean hasQs = url.contains("/qs");
+		if (hasQs) {
 			int first = url.indexOf("/")+1;
-			return url.substring(first, url.lastIndexOf("/", first)-1);
+			return url.substring(first, url.lastIndexOf("/", url.lastIndexOf("/")-1));
+		} else if (levels == 3){
+			return url.substring(0, url.indexOf("/", 1)+1);
+		} else {
+			return url.substring(0, url.indexOf("-")+1);
 		}
 	}
 	
