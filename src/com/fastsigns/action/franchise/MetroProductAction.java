@@ -350,7 +350,7 @@ public class MetroProductAction extends SBActionAdapter {
 	public List<Node> getProductCategories(String metroAreaId) {
 		String customDb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(350);
-		sql.append("SELECT fmc.*, fmpx.*, p.PRODUCT_NM, p.DESC_TXT, p.IMAGE_URL FROM ").append(customDb).append("FTS_METRO_CATEGORY fmc ");
+		sql.append("SELECT fmc.*, fmpx.*, p.PRODUCT_NM, p.SHORT_DESC, p.IMAGE_URL FROM ").append(customDb).append("FTS_METRO_CATEGORY fmc ");
 		sql.append("left join ").append(customDb).append("FTS_METRO_PRODUCT_XR fmpx ");
 		sql.append("on fmpx.METRO_CATEGORY_ID = fmc.METRO_CATEGORY_ID ");
 		sql.append("left join PRODUCT p on p.PRODUCT_ID = fmpx.PRODUCT_ID ");
