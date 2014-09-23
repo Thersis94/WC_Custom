@@ -15,6 +15,7 @@ import java.util.Map;
 
 
 
+
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -26,6 +27,7 @@ import com.siliconmtn.gis.Location;
 import com.siliconmtn.gis.parser.GeoLocation;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 
@@ -60,7 +62,8 @@ public class MapDataAction extends SimpleActionAdapter {
 
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		// Get the geocode for the city center
-		GeocodeLocation gl = this.getGeocode(req.getParameter("city"), req.getParameter("state"));
+		GeocodeLocation gl = this.getGeocode(req.getParameter("city"), req.getParameter("state"),
+				req.getParameter("address_text") );
 		
 		// Build the data object for the center and coordinates
 		Map<String, Object> data = new LinkedHashMap<String, Object>();
@@ -79,7 +82,8 @@ public class MapDataAction extends SimpleActionAdapter {
 		
 		try {
 			// Get the point coordinates
-			data.put("coordinates", getPointData(gl, req.getParameter("joint_cd"), start));
+			data.put("coordinates", getPointData(gl, req.getParameter("joint_cd"), start,
+					Convert.formatDouble( req.getParameter("distance") ) ));
 		} catch (SQLException sqle) {
 			log.error("Unable to retrieve point data", sqle);
 		}
@@ -94,7 +98,18 @@ public class MapDataAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	public GeocodeLocation getGeocode(String city, String state) {
-		
+		//Addresses are optional for the heatmap, so pass null if it is omitted
+		return this.getGeocode(city, state, null);
+	}
+	
+	/**
+	 * Geocode the source location
+	 * @param city
+	 * @param state
+	 * @param address
+	 * @return
+	 */
+	public GeocodeLocation getGeocode(String city, String state, String address){
 		// Initialize the geocoder
 		String geocodeClass = (String) this.getAttribute(GlobalConfig.GEOCODER_CLASS);
 		AbstractGeocoder ag = GeocodeFactory.getInstance(geocodeClass);
@@ -105,6 +120,10 @@ public class MapDataAction extends SimpleActionAdapter {
 		l.setCity(city);
 		l.setState(state);
 		
+		//if an address was passed, include it
+		if ( ! StringUtil.checkVal(address).isEmpty() )
+			l.setAddress(address);
+		
 		// Get the geocode
 		GeocodeLocation gl = ag.geocodeLocation(l).get(0);
 		return gl;
@@ -114,10 +133,10 @@ public class MapDataAction extends SimpleActionAdapter {
 	 * queries the database and retrieves a collection of lat/longs
 	 * @return
 	 */
-	private List<Double[]> getPointData(GeocodeLocation gl, String joint, Date startDate) 
+	private List<Double[]> getPointData(GeocodeLocation gl, String joint, Date startDate, Double meterRadius) 
 	throws SQLException {
 		// Get the earths mean radius and search radius (in Kilometers)
-		double radius = 18;
+		double radius = meterRadius/1000.0;
 
 		// Get the necessary calculations for the coordinates
 		GeoLocation points = GeoLocation.fromDegrees(gl.getLatitude(), gl.getLongitude());

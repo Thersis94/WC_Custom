@@ -146,7 +146,6 @@ public class CourseCalendar extends SimpleActionAdapter {
 		//already loaded the events pertinent to this page.  (we only needed the request object once, not every time.)
 	}
 	
-	
 	/**
 	 * cast the URL alias to a anotomical section (as used in the Events lists)
 	 * most of these align, but a couple needed massaging.

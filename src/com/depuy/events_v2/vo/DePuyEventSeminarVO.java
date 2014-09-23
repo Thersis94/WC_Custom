@@ -40,8 +40,9 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	private Set<String> joints = null;  //comes from DEPUY_EVENT_SPECIALTY_XR
 	private Set<PersonVO> people = null;
     
-	private CoopAdVO newspaperAd = null;
 	private CoopAdVO radioAd = null;
+	private List<CoopAdVO> newspaperAds = null;
+	private List<CoopAdVO> onlineAds = null;
 	private List<DePuyEventLeadSourceVO> leadSources = null;;
 	private List<UserDataVO> leadsData = null;
 	private int rsvpCount = 0;
@@ -56,6 +57,8 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	    super();
 	    joints = new HashSet<String>();
 	    people = new HashSet<PersonVO>();
+	    newspaperAds = new ArrayList<CoopAdVO>();
+	    onlineAds = new ArrayList<CoopAdVO>();
     }
     
     /**
@@ -90,6 +93,7 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	    super.setPostcardTypeFlg(db.getIntegerVal("content_no", rs));
 	    super.setAuthorizationText(db.getStringVal("authorization_txt", rs));
 	    super.setPostcardFileStatusFlg(db.getIntVal("postcard_file_status_no", rs));
+	    super.setLanguageCode( db.getStringVal("language_cd", rs) );
 	    
 	    List<EventEntryVO> lst = new ArrayList<EventEntryVO>();
 	    EventEntryVO event = new EventEntryVO();
@@ -113,9 +117,11 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	    	rsvpCount = db.getIntVal("rsvp_no", rs);
 	    	
 	    	String runDates = db.getStringVal("run_dates_txt", rs);
-    		this.newspaperAd = new CoopAdVO();
-    		this.newspaperAd.setAdDatesText(runDates);
-    		this.newspaperAd.setStatusFlg(db.getIntVal("ad_status_flg", rs));
+	    	newspaperAds = new ArrayList<CoopAdVO>();
+	    	CoopAdVO ad = new CoopAdVO();
+    		ad.setAdDatesText(runDates);
+    		ad.setStatusFlg(db.getIntVal("ad_status_flg", rs));
+    		newspaperAds.add(ad);
     		
     		db = null;
 	    return this;
@@ -286,12 +292,34 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 		this.surgeon = surgeon;
 	}
 
-	public CoopAdVO getNewspaperAd() {
-		return newspaperAd;
+	public List<CoopAdVO> getNewspaperAds() {
+		return newspaperAds;
 	}
 
-	public void setNewspaperAd(CoopAdVO newspaperAd) {
-		this.newspaperAd = newspaperAd;
+	public void setNewspaperAds(List<CoopAdVO> list) {
+		this.newspaperAds = list;
+	}
+	
+	public List<CoopAdVO> getOnlineAds(){
+		return onlineAds;
+	}
+	
+	public void setOnlineAds( List<CoopAdVO> list ){
+		this.onlineAds = list;
+	}
+	
+	public List<CoopAdVO> getPrintAndOnlineAds(){
+		List<CoopAdVO> list = new ArrayList<CoopAdVO>();
+		list.addAll(newspaperAds);
+		list.addAll(onlineAds);
+		return list;
+	}
+	
+	public void addAdvertisement( CoopAdVO ad ){
+		if (ad.getOnlineFlg() == 1)
+			onlineAds.add(ad);
+		else
+			newspaperAds.add(ad);
 	}
 
 	public CoopAdVO getRadioAd() {
@@ -437,9 +465,15 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	public boolean isPromotePgCompleted() {
 		//CPSEM does not use the Ads system, so they get a free pass here
 		boolean adApproved = ("CPSEM".equalsIgnoreCase(getEvents().get(0).getEventTypeCd()));
-		if (!adApproved) 
-			adApproved = (newspaperAd != null && newspaperAd.getStatusFlg() != null &&  newspaperAd.getStatusFlg() == 3);
-		
+		if (!adApproved && newspaperAds != null && !newspaperAds.isEmpty() ) {
+			//if there is a non-empty list, loop through to see if all entries are complete
+			adApproved = true;
+			//if any ad is not complete, change adApproved back to false and proceed
+			for( CoopAdVO ad : newspaperAds ){
+				if ( ad.getStatusFlg() == null || ad.getStatusFlg() != 3 )
+					adApproved = false;
+			}
+		}
 		return getPostcardFileStatusFlg() == 3 && adApproved;
 	}
 	

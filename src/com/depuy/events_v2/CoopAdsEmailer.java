@@ -5,14 +5,13 @@ import java.util.Date;
 
 import com.depuy.events_v2.vo.DePuyEventSeminarVO;
 import com.depuy.events_v2.vo.DePuyEventSurgeonVO;
-import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.action.event.vo.EventEntryVO;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.io.mail.EmailMessageVO;
+import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-import com.siliconmtn.security.UserDataVO;
-
+import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.action.event.vo.EventEntryVO;
 // SB Libs
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.util.MessageSender;
@@ -171,10 +170,9 @@ public class CoopAdsEmailer extends SBActionAdapter {
 		StringBuilder msg = new StringBuilder();
 		msg.append(user.getFirstName()).append(" ").append(user.getLastName());
 		msg.append(" (").append(user.getEmailAddress()).append(") has approved ");
-		msg.append("the newspaper ad for Seminar #").append(sem.getRSVPCodes()).append("\r\r");
-		if (sem.getNewspaperAd().getSurgeonStatusFlg() == 0)
-			msg.append("The surgeon has yet to review this ad.\r\n");
-
+		msg.append("an ad for Seminar #").append(sem.getRSVPCodes()).append("\r\r");
+		//if (ad.getSurgeonStatusFlg() == 0)
+		//	msg.append("The surgeon has yet to review this ad.\r\n");
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
