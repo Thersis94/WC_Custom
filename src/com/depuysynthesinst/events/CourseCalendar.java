@@ -1,25 +1,35 @@
-/**
- * 
- */
 package com.depuysynthesinst.events;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collection;
+import java.util.Date;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
+import java.sql.SQLException;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-import com.siliconmtn.util.UUIDGenerator;
+import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.parser.AnnotationXlsParser;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.smt.sitebuilder.action.SBModuleVO;
+import com.smt.sitebuilder.action.event.EventFacadeAction;
+import com.smt.sitebuilder.action.event.EventEntryAction;
 import com.smt.sitebuilder.action.event.vo.EventEntryVO;
+import com.smt.sitebuilder.action.event.vo.EventGroupVO;
+import com.smt.sitebuilder.action.event.vo.EventTypeVO;
+import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.PageVO;
+import com.smt.sitebuilder.common.SiteVO;
+import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title</b>: CourseCalendar.java<p/>
@@ -54,10 +64,23 @@ public class CourseCalendar extends SimpleActionAdapter {
 	public void update(SMTServletRequest req) throws ActionException {
 		super.update(req);
 		
+		if (req.getFile("xlsFile") != null)
+			processUpload(req);
+		
+	}
+	
+	
+	/**
+	 * processes the file upload and imports each row as a new event to add to the 
+	 * desired event calendar. 
+	 * @param req
+	 * @throws ActionException
+	 */
+	private void processUpload(SMTServletRequest req) throws ActionException {
 		AnnotationXlsParser parser = new AnnotationXlsParser();
 		//Create a list of vo classnames
 		LinkedList<Class<?>> classList = new LinkedList<>();
-		classList.add(EventEntryVO.class);
+		classList.add(CourseCalendarVO.class);
 		
 		try {
 			//Gets the xls file from the request object, and passes it to the parser.
@@ -66,22 +89,29 @@ public class CourseCalendar extends SimpleActionAdapter {
 					req.getFile("xlsFile").getFileData(), classList);
 			
 			ArrayList<Object> beanList = null;
+			EventEntryAction eventAction = new EventEntryAction();
+			eventAction.setDBConnection(dbConn);
 			
 			//Disable the db autocommit for the insert batch
 			dbConn.setAutoCommit(false);
 			
-			for ( Class<?> className : beans.keySet() ){
+			for ( Class<?> className : beans.keySet() ) {
 				//Change the generic collection to an arrayList for the import method
 				beanList = new ArrayList<>(beans.get(className));
+				for (Object o : beanList) {
+					//set the eventTypeId for each
+					EventEntryVO vo = (EventEntryVO) o;
+					vo.setEventTypeId(req.getParameter("eventTypeId"));
+					vo.setStatusFlg(EventFacadeAction.STATUS_APPROVED);
+				}
 				
-				importBeans(beanList, StringUtil.checkVal(req.getParameter(
-						"attribute_1_txt")) );
-				
-				//commit the current batch
-				dbConn.commit();
+				eventAction.importBeans(beanList, req.getParameter("attrib1Text"));
 			}
+			//commit only after the entire import succeeds
+			dbConn.commit();
+			
 		} catch (InvalidDataException | SQLException e) {
-			log.debug(e);
+			log.error("could not process DSI calendar import", e);
 		} finally {
 			try {
 				//restore autocommit state
@@ -90,95 +120,198 @@ public class CourseCalendar extends SimpleActionAdapter {
 		}
 	}
 	
+	/**
+	 * retrieves a list of Events tied to this porlet.  Filters the list to the passed anatomy, if present. 
+	 */
 	public void retrieve(SMTServletRequest req) throws ActionException {
-		//mckain to add front-end code here
+		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
+		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+
+		String anatomy = null;
+		boolean showFilters = (page.getAliasName().equals("calendar")); //not needed on these pages/views;
+		
+		//hook for event signup; these would come from an email and the user must login first,
+		//so we needed to keep the URLs short and redirect-able.
+		if (req.hasParameter("reqParam_2")) {
+			UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
+			if (user != null) {
+				req.setParameter("userSignup", "true");
+				req.setParameter("profileId", user.getProfileId());
+				req.setParameter("rsvpCodeText", req.getParameter("reqParam_2"));
+				build(req);
+			}
+			return;
+		}
+		
+		//if not on the calendar page, we'll need to filter the events by anatomy
+		if (! page.getAliasName().equals("calendar") && ! page.getAliasName().equals("profile")) {
+			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+			anatomy = getAnatomyFromAlias(page, site);
+			req.setParameter(EventEntryAction.REQ_SERVICE_OPT, anatomy);
+		}
+		
+		Date start = Calendar.getInstance().getTime();
+		if (req.hasParameter("start")) {
+			start = Convert.formatDate(Convert.DATE_SLASH_SHORT_PATTERN, req.getParameter("start"));
+		}
+		req.setParameter(EventEntryAction.REQ_START_DT, Convert.formatDate(start, Convert.DATE_SLASH_PATTERN));
+		
+		//load the Events
+		actionInit.setActionId((String)mod.getAttribute(SBModuleVO.ATTRIBUTE_1));
+		mod.setActionId(actionInit.getActionId());
+		EventFacadeAction efa = new EventFacadeAction(actionInit);
+		efa.setAttributes(attributes);
+		efa.setDBConnection(dbConn);
+		efa.retrieve(req);
+		mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
+		EventGroupVO vo = (EventGroupVO) mod.getActionData();
+		
+		//prepare facets/filters
+		if (showFilters) {
+			prepareFacets(req, vo);
+			req.setValidateInput(false);
+			filterDataBySpecialty(req, vo);
+			filterDataByLocation(req, vo);
+			req.setValidateInput(true);
+			super.putModuleData(vo);
+		}
 	}
 	
 	/**
-	 * Imports the beans as a set of new records to the event_entry table
-	 * @param beanList
-	 * @param actionId
-	 * @throws ActionException
+	 * prepare search filters to present to the user based on the data we're displaying
+	 * @param req
+	 * @param grpVo
 	 */
-	private void importBeans(ArrayList<Object> beanList, String actionId) throws ActionException{
-		StringBuilder sql = new StringBuilder(580);
-		sql.append("insert into EVENT_ENTRY (EVENT_ENTRY_ID, STATE_CD, ACTION_ID, ");
-		sql.append("EVENT_NM, LOCATION_DESC, EVENT_DESC, SHORT_DESC, CONTACT_NM, ");
-		sql.append("EMAIL_ADDRESS_TXT, PHONE_TXT, START_DT, END_DT, ORDER_NO, ADDRESS_TXT, ");
-		sql.append("ADDRESS2_TXT, CITY_NM, ZIP_CD, CREATE_DT, OPCO_NM, LATITUDE_NO, ");
-		sql.append("LONGITUDE_NO, RSVP_CODE_TXT, STATUS_FLG, CONTACT_FLG, MAX_USER_NO, ");
-		sql.append("APPROVAL_REQUIRED_FLG, EVENT_TYPE_ID, EVENT_URL, SERVICE_TXT,FILE_PATH_TXT) ");
-		sql.append("values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
-		
-		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())){
-			for ( Object obj : beanList ){
-				int i = 0;
-				
-				//Casts the generic object to EventEntryVO
-				EventEntryVO vo = (EventEntryVO) obj;
-				
-				ps.setString(++i, new UUIDGenerator().getUUID());
-				ps.setString(++i, vo.getStateCode());
-				ps.setString(++i, actionId);
-				ps.setString(++i, vo.getEventName());
-				ps.setString(++i, vo.getLocationDesc());
-				ps.setString(++i, buildEventDesc(vo));
-				ps.setString(++i, vo.getShortDesc());
-				ps.setString(++i, vo.getContactName());
-				ps.setString(++i, vo.getEmailAddress());
-				ps.setString(++i, vo.getPhoneText());
-				ps.setTimestamp(++i, Convert.getTimestamp(vo.getStartDate(), true));
-				ps.setTimestamp(++i, Convert.getTimestamp(vo.getEndDate(),true));
-				ps.setInt(++i, Convert.formatInteger(vo.getOrderNumber() ));
-				ps.setString(++i, vo.getAddressText());
-				ps.setString(++i, vo.getAddress2Text());
-				ps.setString(++i, vo.getCityName());
-				ps.setString(++i, vo.getZipCode());
-				ps.setTimestamp(++i, Convert.getCurrentTimestamp() );
-				ps.setString(++i, vo.getOpcoName());
-				ps.setDouble(++i, vo.getLatitude());
-				ps.setDouble(++i, vo.getLongitude());
-				ps.setString(++i, vo.getRSVPCode());
-				ps.setInt(++i,  Convert.formatInteger(vo.getStatusFlg() ) );
-				ps.setInt(++i, Convert.formatInteger(vo.getContactFlg() ) );
-				ps.setInt(++i, Convert.formatInteger( vo.getMaxNumberUsers() ) );
-				ps.setInt(++i, Convert.formatInteger( vo.getApprovableFlag() ) );
-				ps.setString(++i, actionId);
-				ps.setString(++i, vo.getEventUrl());
-				ps.setString(++i, vo.getServiceText());
-				ps.setString(++i, vo.getEventFilePath());
-				
-				//adds this record to the batch
-				ps.addBatch();
-				ps.clearParameters();
+	private void prepareFacets(SMTServletRequest req, EventGroupVO grpVo) {
+		//one for city & state, put on the request by Type
+		for (EventTypeVO typeVo : grpVo.getTypes().values()) {
+			Map<String, Integer> locations = new TreeMap<String, Integer>();
+			for (EventEntryVO vo : typeVo.getEvents()) {
+				String locn = StringUtil.checkVal(vo.getCityName()) + ", " + StringUtil.checkVal(vo.getStateCode());
+				if (locn.length() == 2) locn = "Other";
+				if (locations.containsKey(locn)) {
+					locations.put(locn, locations.get(locn)+1);
+				} else {
+					locations.put(locn, 1);
+				}
 			}
-			
-			ps.executeBatch();
-		} catch (SQLException e){
-			throw new ActionException("Error inserting records into event_entry table.",e);
+			log.debug("loaded " + locations.size() + " location filters");
+			req.setAttribute("facet_locn_" + typeVo.getTypeName(), locations);
+		}
+		
+		//one for specialties, put on the request by Type
+		for (EventTypeVO typeVo : grpVo.getTypes().values()) {
+			Map<String, Integer> specialties = new TreeMap<String, Integer>();
+			for (EventEntryVO vo : typeVo.getEvents()) {
+				String spec = StringUtil.checkVal(vo.getServiceText(), "Other");
+				if (specialties.containsKey(spec)) {
+					specialties.put(spec, specialties.get(spec)+1);
+				} else {
+					specialties.put(spec, 1);
+				}
+			}
+			log.debug("loaded " + specialties.size() + " specialty filters");
+			req.setAttribute("facet_spec_" + typeVo.getTypeName(), specialties);
+		}
+		
+	}
+	
+	/**
+	 * filter the list of events being returned to the browser to only those matching 
+	 * certain locations.  A "location" here is a String: "city, st"
+	 * @param req
+	 * @param vo
+	 */
+	@SuppressWarnings("unchecked")
+	private void filterDataByLocation(SMTServletRequest req, EventGroupVO grpVo) {
+		if (!req.hasParameter("location")) return;
+		List<String> filters = Arrays.asList(req.getParameter("location").split("~"));
+		if (filters == null || filters.size() == 0) return;
+		
+		for (EventTypeVO typeVo : grpVo.getTypes().values()) {
+			List<EventEntryVO> data = new ArrayList<EventEntryVO>();
+			for (EventEntryVO vo : typeVo.getEvents()) {
+				//check each event and only include those matching our filters
+				String locn = StringUtil.checkVal(vo.getCityName()) + ", " + StringUtil.checkVal(vo.getStateCode());
+				if (filters.contains(locn))
+					data.add(vo);
+			}
+			log.debug("removed " + (typeVo.getEvents().size() - data.size()) + " events by location, now " + data.size());
+			typeVo.setEvents(data);
 		}
 	}
-
+	
 	/**
-	 * Used to concatenate the four description fields from the imported excel 
-	 * file into a single unordered list (since there is only 1 event_desc field
-	 * in the table).
+	 * filter the list of events being returned to the browser to only those matching 
+	* certain specialties
+	 * @param req
 	 * @param vo
+	 */
+	@SuppressWarnings("unchecked")
+	private void filterDataBySpecialty(SMTServletRequest req, EventGroupVO grpVo) {
+		if (!req.hasParameter("specialty")) return;
+		List<String> filters = Arrays.asList(req.getParameter("specialty").split("~"));
+		if (filters == null || filters.size() == 0) return;
+		
+		for (EventTypeVO typeVo : grpVo.getTypes().values()) {
+			List<EventEntryVO> data = new ArrayList<EventEntryVO>();
+			for (EventEntryVO vo : typeVo.getEvents()) {
+				//check each event and only include those matching our filters
+				String spec = StringUtil.checkVal(vo.getServiceText());
+				if (filters.contains(spec))
+					data.add(vo);
+			}
+			log.debug("removed " + (typeVo.getEvents().size() - data.size()) + " events by specialty, now " + data.size());
+			typeVo.setEvents(data);
+		}
+	}
+	
+	
+	/**
+	 * cast the URL alias to a anotomical section (as used in the Events lists)
+	 * most of these align, but a couple needed massaging.
+	 * @param alias
 	 * @return
 	 */
-	private String buildEventDesc(EventEntryVO vo){
-		StringBuilder sb = new StringBuilder();
+	private String getAnatomyFromAlias(PageVO page, SiteVO site) {
+		//on the main site we don't filter
+		if (site.getAliasPathName() == null && page.isDefaultPage()) return "";
+		String alias = page.getAliasName().toLowerCase();
 		
-		sb.append("<ul><li>");
-		sb.append(StringUtil.checkVal(vo.getEventDesc()) );
-		sb.append("</li><li>");
-		sb.append(StringUtil.checkVal(vo.getEventDesc2() ));
-		sb.append("</li><li>");
-		sb.append(StringUtil.checkVal(vo.getEventDesc3() ));
-		sb.append("</li><li>");
-		sb.append(StringUtil.checkVal(vo.getEventDesc4()) );
-		sb.append("</li></ul>");
+		if (alias.equals("chest-wall")) return "Chest Wall";
+		else if ("veterinary".equals(site.getAliasPathName())) return "Vet"; //vet section
+		else if ("nurse-education".equals(site.getAliasPathName())) return "Emerging Care Providers"; //nursing section
+		else if (alias.indexOf("-") > 0) return StringUtil.capitalizePhrase(alias.replace("-", " & ")); //Foot & Ankle, Hand & Wrist
 		
-		return sb.toString();
+		return StringUtil.capitalize(alias);
 	}
+	
+	
+	/**
+	 * Build gets called for creating iCal files (downloads) of the passed eventEntryId
+	 */
+	public void build(SMTServletRequest req) throws ActionException {
+		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
+		
+		//for event RSVP signups
+		if (req.hasParameter("userSignup")) {
+			req.setAttribute(EventFacadeAction.STATUS_OVERRIDE, EventFacadeAction.STATUS_APPROVED);
+		} else if (req.hasParameter("rptType")) { //iCal downloads - url depends on which page of the site they're on
+			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+			if (page.getAliasName().contains("profile")) { //calendar pages are OK with the default, skip this block
+				SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+				String url = site.getFullSiteAlias() + page.getFullPath() + "?pmid=" + mod.getPageModuleId() + "&eventEntryId=";
+				req.setAttribute(EventFacadeAction.STATUS_OVERRIDE, url);
+			}
+		}
+		
+		
+		actionInit.setActionId((String)mod.getAttribute(SBModuleVO.ATTRIBUTE_1));
+		mod.setActionId(actionInit.getActionId());
+		EventFacadeAction efa = new EventFacadeAction(actionInit);
+		efa.setAttributes(attributes);
+		efa.setDBConnection(dbConn);
+		efa.build(req);
+	}
+	
 }

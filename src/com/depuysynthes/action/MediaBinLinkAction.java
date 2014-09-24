@@ -5,6 +5,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+
+
 // SMT BAse Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -31,6 +33,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @since Jun 13, 2013<p/>
  * <b>Changes: 
  * added baseUrlIntl, needed to serve Intl assets separely from US ones. -JM 07-11-2013
+ * added PageViewUDPUtil to track downloads/impressions as we do other PageViews -JM 09.05.14
  * </b>
  ****************************************************************************/
 public class MediaBinLinkAction extends SimpleActionAdapter {
@@ -56,16 +59,34 @@ public class MediaBinLinkAction extends SimpleActionAdapter {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	public void retrieve(SMTServletRequest req) throws ActionException {
-
+		//boolean success = false;
 		try {
 			String path = this.getDocumentLink(req.getParameter("mbid"));
 			req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
 			req.setAttribute(Constants.REDIRECT_URL, path);
+			//success = true;
 		} catch (Exception e) {
 			//we don't care about these in production.
 			log.debug("Unable to retrieve media bin file path", e);
 			req.setAttribute(Constants.CFG_PAGE_NOT_FOUND, Boolean.TRUE);
 		}
+		
+		/**
+		 * This was added for DSI, then they decided not to use it.  -JM 09.12.14
+		 * 
+		//drop a message to UDP for PageViewReporting to capture
+		//this is not done by the Filter because we're returning a 302 response header (a redirect)
+		if (success) {
+			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+			PageViewUDPUtil util = new PageViewUDPUtil();
+			byte[] data = util.buildPayload(site, null, "/mediabin/" + req.getParameter("mbid"));
+			try {
+				util.sendDatagram(data, attributes);
+			} catch (Exception e) {
+				log.error("could not log mediabin pageview for " + req.getParameter("mbid"), e);
+			}
+		}
+		 */
 	}
 	
 	/**

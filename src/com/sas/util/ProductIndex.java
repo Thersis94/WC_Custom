@@ -32,7 +32,7 @@ import com.smt.sitebuilder.action.commerce.product.ProductController;
 import com.smt.sitebuilder.search.lucene.DocumentHandler;
 import com.smt.sitebuilder.search.lucene.DocumentHandlerImpl;
 import com.smt.sitebuilder.search.lucene.DocumentMap;
-import com.smt.sitebuilder.search.lucene.custom.SMTCustomIndexIntfc;
+import com.smt.sitebuilder.search.SMTCustomIndexIntfc;
 
 /****************************************************************************
  * <b>Title</b>: FASTSIGNSProductIndex.java <p/>
