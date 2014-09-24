@@ -22,6 +22,8 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @author James McKain
  * @version 1.0
  * @since May 7, 2013
+ * @updates
+ * 		JM 09.24.14 - added DSI support and filtering by opco_nm when in the US (import_file_cd=1)
  ****************************************************************************/
 public class MediaBinAdminAction extends SimpleActionAdapter {
 
@@ -34,13 +36,16 @@ public class MediaBinAdminAction extends SimpleActionAdapter {
      */
 	public void list(SMTServletRequest req) throws ActionException {
 		String orgId = req.getParameter("organizationId");
-		int typeCd = ("DPY_SYN".equals(orgId) || "DPY_SYN_INST".equals(orgId)) ? 1 : 2; //1=US, 2=INTL - See com.depuy.scripts.DSMediaBinImporter
-		StringBuilder sql = new StringBuilder();
+		boolean isDSI = "DPY_SYN_INST".equals(orgId);
+		int typeCd = ("DPY_SYN".equals(orgId) || isDSI) ? 1 : 2; //1=US, 2=INTL - See com.depuy.scripts.DSMediaBinImporter
+		StringBuilder sql = new StringBuilder(100);
 		sql.append("select * from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("DPY_SYN_MEDIABIN where import_file_cd=?");
 		if (req.hasParameter("sDivision")) sql.append(" and business_unit_id=?");
 		if (req.hasParameter("sProduct"))  sql.append(" and (prod_family like ? or prod_nm like ?)");
 		if (req.hasParameter("sTracking")) sql.append(" and tracking_no_txt like ?");
+		//DS and DSI need to be sub-filtered here, using opco_nm
+		if (typeCd == 1) sql.append(" and opco_nm like ?");
 
 		String assetType = StringUtil.checkVal(req.getParameter("assetType"));
 		log.debug("assetType=" + assetType);
@@ -68,6 +73,9 @@ public class MediaBinAdminAction extends SimpleActionAdapter {
 				ps.setString(++i, req.getParameter("sProduct") + "%");
 			}
 			if (req.hasParameter("sTracking")) ps.setString(++i, req.getParameter("sTracking") + "%");
+			if (typeCd == 1)
+				ps.setString(++i, ((isDSI) ? "DSI.com" : "USDS.com"));
+			
 			if ("quicktime".equalsIgnoreCase(assetType)) {
 				ps.setString(++i, "video");
 				for (String at: VIDEO_ASSETS) ps.setString(++i, at);
