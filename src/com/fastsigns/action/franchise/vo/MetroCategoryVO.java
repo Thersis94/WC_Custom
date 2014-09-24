@@ -28,6 +28,7 @@ public class MetroCategoryVO extends SBModuleVO {
 	private String metroAreaId = null;
 	private String metroCategoryNm = null;
 	private String metroCategoryAlias = null;
+	private String metroCategoryDesc = null;
 	private String titleTxt = null;
 	private String metaDesc = null;
 	private String metaKywd = null;
@@ -43,6 +44,7 @@ public class MetroCategoryVO extends SBModuleVO {
 		metroAreaId = req.getParameter("metroAreaId");
 		metroCategoryNm = req.getParameter("metroCategoryNm");
 		metroCategoryAlias = req.getParameter("metroCategoryAlias");
+		metroCategoryDesc = req.getParameter("metroCategoryDesc");
 		metaDesc = req.getParameter("metaDesc");
 		metaKywd = req.getParameter("metaKywdTxt");
 		titleTxt = req.getParameter("titleTxt");
@@ -56,6 +58,7 @@ public class MetroCategoryVO extends SBModuleVO {
 		metroAreaId = db.getStringVal("metro_area_id", rs);
 		metroCategoryNm = db.getStringVal("category_nm", rs);
 		metroCategoryAlias = db.getStringVal("category_alias", rs);
+		metroCategoryDesc = db.getStringVal("category_desc", rs);
 		titleTxt = db.getStringVal("title_txt", rs);
 		metaDesc = db.getStringVal("meta_desc", rs);
 		metaKywd = db.getStringVal("meta_kywd_txt", rs);
@@ -91,6 +94,14 @@ public class MetroCategoryVO extends SBModuleVO {
 	public void setMetroCategoryNm(String metroCategoryNm) {
 		this.metroCategoryNm = metroCategoryNm;
 	}
+	public String getMetroCategoryDesc() {
+		return metroCategoryDesc;
+	}
+
+	public void setMetroCategoryDesc(String metroCategoryDesc) {
+		this.metroCategoryDesc = metroCategoryDesc;
+	}
+
 	public String getMetaDesc() {
 		return metaDesc;
 	}

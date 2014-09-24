@@ -142,9 +142,9 @@ public class MetroProductAction extends SBActionAdapter {
 		
 		StringBuilder catSql = new StringBuilder(150);
 		catSql.append("INSERT INTO ").append(customDb).append("FTS_METRO_CATEGORY ");
-		catSql.append("(METRO_CATEGORY_ID, METRO_AREA_ID, CATEGORY_NM, CATEGORY_ALIAS, TITLE_TXT, ");
+		catSql.append("(METRO_CATEGORY_ID, METRO_AREA_ID, CATEGORY_NM, CATEGORY_ALIAS, CATEGORY_DESC, TITLE_TXT, ");
 		catSql.append("META_DESC, META_KYWD_TXT, ORDER_NO, CREATE_DT) ");
-		catSql.append("VALUES (?,?,?,?,?,?,?,?,?)");
+		catSql.append("VALUES (?,?,?,?,?,?,?,?,?,?)");
 		
 		StringBuilder prodSql = new StringBuilder(160);
 		prodSql.append("INSERT INTO ").append(customDb).append("FTS_METRO_PRODUCT_XR ");
@@ -165,11 +165,12 @@ public class MetroProductAction extends SBActionAdapter {
 				cat.setString(2, req.getParameter("metroAreaId"));
 				cat.setString(3, vo.getMetroCategoryNm());
 				cat.setString(4, key);
-				cat.setString(5, vo.getTitleTxt());
-				cat.setString(6, vo.getMetaDesc());
-				cat.setString(7, vo.getMetaKywd());
-				cat.setInt(8, vo.getOrderNo());
-				cat.setTimestamp(9, Convert.getCurrentTimestamp());
+				cat.setString(5, vo.getMetroCategoryDesc());
+				cat.setString(6, vo.getTitleTxt());
+				cat.setString(7, vo.getMetaDesc());
+				cat.setString(8, vo.getMetaKywd());
+				cat.setInt(9, vo.getOrderNo());
+				cat.setTimestamp(10, Convert.getCurrentTimestamp());
 				cat.addBatch();
 				for (ProductVO p: vo.getProducts()) {
 					prod.setString(1, new UUIDGenerator().getUUID());
@@ -215,6 +216,7 @@ public class MetroProductAction extends SBActionAdapter {
 			vo.setTitleTxt(vals[2]);
 			vo.setMetaDesc(vals[3]);
 			vo.setMetaKywd(vals[4]);
+			vo.setMetroCategoryDesc(vals[5]);
 			log.debug(vo.getMetaKywd());
 			prodList.put(vals[0], vo);
 		}
