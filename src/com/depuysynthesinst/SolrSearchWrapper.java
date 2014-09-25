@@ -172,7 +172,7 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 		//for DSI, any URL containing /qs/ is proceeded by the Solr documentId, which is convenient.  :)
 		List<String> data = new ArrayList<String>(favs.size());
 		for (FavoriteVO vo : favs)
-			data.add(vo.getRelId());
+			if (vo.getRelId() != null) data.add(vo.getRelId());
 		
 		//save the favs for next time
 		req.getSession().setAttribute(FAVORITES, data);
@@ -206,10 +206,9 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 		//for DSI, any URL containing /qs/ is proceeded by the Solr documentId, which is convenient.  :)
 		Map<String, Integer> data = new HashMap<String, Integer>(stats.size());
 		for (StatVO vo : stats.values()) {
-			if (vo.getRequestUri().contains("/qs/")) {
-				String key = vo.getRequestUri();
+			String key = vo.getRequestUri();
+			if (key != null && key.contains("/qs/")) {
 				key = key.substring(key.indexOf("/qs/")+4);
-				log.debug(key);
 				if (key != null && key.length() > 0)
 					data.put(key, vo.getHitCnt());
 			}
