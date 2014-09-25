@@ -100,7 +100,7 @@ public class ModuleOptionAction extends SBActionAdapter{
 					super.clearCacheByGroup(siteId);
 					break;
 				case CenterPageAction.MODULE_ADD:
-					this.saveModuleOption(req); 
+					this.saveModuleOption(req);
 					redir += "assoc=true&locationId=" + req.getParameter("locationId") + "&moduleId=" + req.getParameter("moduleId") + "&";
 					redir += "type=" + StringEncoder.urlEncode(req.getParameter("type")) + "&";
 					
@@ -372,7 +372,7 @@ public class ModuleOptionAction extends SBActionAdapter{
 		} catch (SQLException sqle) {
 			log.error(sqle);
 		} finally {
-			try { ps.close(); } catch (Exception e) {} 
+			try { ps.close(); } catch (Exception e) {}
 		}
 		
 		return pkId;
@@ -481,10 +481,6 @@ public class ModuleOptionAction extends SBActionAdapter{
 				vo.setParentId(vo.getModuleOptionId()); //link this new entry to it's predecessor
 			log.debug("saving with parent=" + vo.getParentId());
 		//}
-			
-			for(String key : req.getParameterMap().keySet()) {
-				log.debug(key+"|"+req.getParameter(key));
-			}
 		
 		//build the query
 		if (isInsert) {
