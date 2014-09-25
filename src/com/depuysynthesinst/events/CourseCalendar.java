@@ -280,7 +280,7 @@ public class CourseCalendar extends SimpleActionAdapter {
 		
 		if (alias.equals("chest-wall")) return "Chest Wall";
 		else if ("veterinary".equals(site.getAliasPathName())) return "Vet"; //vet section
-		else if ("nurse-education".equals(site.getAliasPathName())) return "Emerging Care Providers"; //nursing section
+		else if ("nurse-education".equals(site.getAliasPathName())) return "Nurse Education"; //nursing section
 		else if (alias.indexOf("-") > 0) return StringUtil.capitalizePhrase(alias.replace("-", " & ")); //Foot & Ankle, Hand & Wrist
 		
 		return StringUtil.capitalize(alias);
