@@ -51,7 +51,9 @@ public class MediaBinAssetVO extends SBModuleVO {
 	private int importFileCd = 0;
 	private String downloadTypeTxt = null;
 	private String languageCode = null;
-	
+	private boolean isVideo = false;
+	private String description = null;
+	private String anatomy = null;
 	
 	public MediaBinAssetVO(ResultSet rs) {
 		DBUtil db = new DBUtil();
@@ -76,12 +78,19 @@ public class MediaBinAssetVO extends SBModuleVO {
 		setImportFileCd(db.getIntVal("import_file_cd", rs));
 		downloadTypeTxt = db.getStringVal("download_type_txt", rs);
 		languageCode = db.getStringVal("language_cd", rs);
+		setDescription(db.getStringVal("desc_txt", rs));
+		setAnatomy(db.getStringVal("anatomy_txt", rs));
 		
 		String dims = db.getStringVal("dimensions_txt", rs);
 		if (dims != null && dims.indexOf("~") > 0) {
 			int delim = dims.indexOf("~");
 			setWidthNo(Convert.formatInteger(dims.substring(0, delim)));
 			setHeightNo(Convert.formatInteger(dims.substring(delim+1)));
+		}
+		
+		// Determine if the asset is a video
+		if (StringUtil.checkVal(assetType).toLowerCase().startsWith("multimedia")) {
+			isVideo = true;
 		}
 	}
 	
@@ -265,6 +274,42 @@ public class MediaBinAssetVO extends SBModuleVO {
 	 */
 	public void setLanguageCode(String languageCode) {
 		this.languageCode = languageCode;
+	}
+
+
+	/**
+	 * @return the isVideo
+	 */
+	public boolean isVideo() {
+		return isVideo;
+	}
+
+
+	/**
+	 * @param isVideo the isVideo to set
+	 */
+	public void setVideo(boolean isVideo) {
+		this.isVideo = isVideo;
+	}
+
+
+	public String getDescription() {
+		return description;
+	}
+
+
+	public void setDescription(String description) {
+		this.description = description;
+	}
+
+
+	public String getAnatomy() {
+		return anatomy;
+	}
+
+
+	public void setAnatomy(String anatomy) {
+		this.anatomy = anatomy;
 	}
 	
 }
