@@ -18,6 +18,7 @@ import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -106,7 +107,7 @@ public class MetroProductAction extends SBActionAdapter {
 	}
 	
 	/**
-	 * Delete all the products for a metro area
+	 * Delete all the products for a metro area so that we can just add everything
 	 * @param metroId
 	 */
 	public void deleteMetroProducts(String metroId) {
@@ -198,7 +199,7 @@ public class MetroProductAction extends SBActionAdapter {
 	}
 	
 	/**
-	 * Builds a map of the categories and thier products.
+	 * Builds a map of the categories and their products.
 	 * @param req
 	 * @return
 	 */
@@ -207,35 +208,36 @@ public class MetroProductAction extends SBActionAdapter {
 		Map<String, MetroCategoryVO> prodList = new HashMap<String, MetroCategoryVO>();
 		MetroCategoryVO vo;
 		ProductVO p;
-		for (String cat : req.getParameterValues("category[]")) {
-			vals = cat.split("\\|");
+		StringEncoder se = new StringEncoder();
+		for(int i=1; req.hasParameter("category"+i); i++) {
+			vals = se.decode(req.getParameter("category" + i)).split("\\|");
+			
 			vo = new MetroCategoryVO();
-			vo.setOrderNo(Convert.formatInteger(vals[5]));
 			vo.setMetroCategoryAlias(vals[0]);
 			vo.setMetroCategoryNm(vals[1]);
 			vo.setTitleTxt(vals[2]);
 			vo.setMetaDesc(vals[3]);
 			vo.setMetaKywd(vals[4]);
 			vo.setMetroCategoryDesc(vals[5]);
-			log.debug(vo.getMetaKywd());
+			vo.setOrderNo(Convert.formatInteger(vals[6]));
 			prodList.put(vals[0], vo);
-		}
-		
-		if (!req.hasParameter("product[]")) return prodList;
-		for(String prod : req.getParameterValues("product[]")) {
-			vals = prod.split("\\|");
-			p = new ProductVO();
-			p.setDisplayOrderNo(Convert.formatInteger(vals[3]));
-			p.setProductUrl(vals[1]);
-			p.setProductId(vals[0]);
-			prodList.get(vals[2]).addProduct(p);
+			
+			//Grab the products for the category before we move on
+			for(int j=1; req.hasParameter("product" + j + "c" + i); j++) {
+				vals = se.decode(req.getParameter("product" + j + "c" + i)).split("\\|");
+				p = new ProductVO();
+				p.setDisplayOrderNo(Convert.formatInteger(vals[3]));
+				p.setProductUrl(vals[1]);
+				p.setProductId(vals[0]);
+				prodList.get(vals[2]).addProduct(p);
+			}
 		}
 		return prodList;
 	}
 	
 
 	/**
-	 * Prepare the list of product categories for the choosen metro area
+	 * Prepare the list of product categories for the chosen metro area
 	 * @param metroId
 	 * @param orgId
 	 * @return
@@ -256,6 +258,7 @@ public class MetroProductAction extends SBActionAdapter {
 			int levels = StringUtil.checkVal(n.getFullPath()).split("/").length;
 			Boolean hasQs = StringUtil.checkVal(n.getFullPath()).contains("/qs");
 			
+			//Set the extra values, such as whether this is a subproduct or is part of the metro area
 			if (((hasQs && levels == 6) || (!hasQs && levels == 3))) {
 				cat.setAttrib1Txt("secondary");
 			}
@@ -341,11 +344,10 @@ public class MetroProductAction extends SBActionAdapter {
 		}
 		
 		return catId;
-		
 	}
 	
 	/**
-	 * Get the list of categories and thier products for the provided metro area
+	 * Get the list of categories and their products for the provided metro area
 	 * @param metroAreaId
 	 * @return
 	 */
@@ -383,7 +385,6 @@ public class MetroProductAction extends SBActionAdapter {
 					}
 					vo  = new MetroCategoryVO(rs);
 					catUrl = vo.getMetroCategoryAlias();
-					log.debug("Here it is " + vo ==null);
 				}
 				if (rs.getString("FULL_ALIAS") == null) continue;
 				prod = new ProductVO(rs);
