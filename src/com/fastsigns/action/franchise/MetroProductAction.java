@@ -107,7 +107,7 @@ public class MetroProductAction extends SBActionAdapter {
 	}
 	
 	/**
-	 * Delete all the products for a metro area
+	 * Delete all the products for a metro area so that we can just add everything
 	 * @param metroId
 	 */
 	public void deleteMetroProducts(String metroId) {
@@ -199,7 +199,7 @@ public class MetroProductAction extends SBActionAdapter {
 	}
 	
 	/**
-	 * Builds a map of the categories and thier products.
+	 * Builds a map of the categories and their products.
 	 * @param req
 	 * @return
 	 */
@@ -220,13 +220,11 @@ public class MetroProductAction extends SBActionAdapter {
 			vo.setMetaKywd(vals[4]);
 			vo.setMetroCategoryDesc(vals[5]);
 			vo.setOrderNo(Convert.formatInteger(vals[6]));
-			log.debug(vo.getMetaKywd());
 			prodList.put(vals[0], vo);
 			
+			//Grab the products for the category before we move on
 			for(int j=1; req.hasParameter("product" + j + "c" + i); j++) {
 				vals = se.decode(req.getParameter("product" + j + "c" + i)).split("\\|");
-				for(String s : vals)
-					log.debug(s);
 				p = new ProductVO();
 				p.setDisplayOrderNo(Convert.formatInteger(vals[3]));
 				p.setProductUrl(vals[1]);
@@ -239,7 +237,7 @@ public class MetroProductAction extends SBActionAdapter {
 	
 
 	/**
-	 * Prepare the list of product categories for the choosen metro area
+	 * Prepare the list of product categories for the chosen metro area
 	 * @param metroId
 	 * @param orgId
 	 * @return
@@ -260,6 +258,7 @@ public class MetroProductAction extends SBActionAdapter {
 			int levels = StringUtil.checkVal(n.getFullPath()).split("/").length;
 			Boolean hasQs = StringUtil.checkVal(n.getFullPath()).contains("/qs");
 			
+			//Set the extra values, such as whether this is a subproduct or is part of the metro area
 			if (((hasQs && levels == 6) || (!hasQs && levels == 3))) {
 				cat.setAttrib1Txt("secondary");
 			}
@@ -345,11 +344,10 @@ public class MetroProductAction extends SBActionAdapter {
 		}
 		
 		return catId;
-		
 	}
 	
 	/**
-	 * Get the list of categories and thier products for the provided metro area
+	 * Get the list of categories and their products for the provided metro area
 	 * @param metroAreaId
 	 * @return
 	 */
@@ -387,7 +385,6 @@ public class MetroProductAction extends SBActionAdapter {
 					}
 					vo  = new MetroCategoryVO(rs);
 					catUrl = vo.getMetroCategoryAlias();
-					log.debug("Here it is " + vo ==null);
 				}
 				if (rs.getString("FULL_ALIAS") == null) continue;
 				prod = new ProductVO(rs);
