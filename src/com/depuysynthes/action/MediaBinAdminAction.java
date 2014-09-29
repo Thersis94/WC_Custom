@@ -41,7 +41,7 @@ public class MediaBinAdminAction extends SimpleActionAdapter {
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("select * from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("DPY_SYN_MEDIABIN where import_file_cd=?");
-		if (req.hasParameter("sDivision")) sql.append(" and business_unit_id=?");
+		if (req.hasParameter("sDivision")) sql.append(" and business_unit_nm like ?");
 		if (req.hasParameter("sProduct"))  sql.append(" and (prod_family like ? or prod_nm like ?)");
 		if (req.hasParameter("sTracking")) sql.append(" and tracking_no_txt like ?");
 		//DS and DSI need to be sub-filtered here, using opco_nm
@@ -67,7 +67,7 @@ public class MediaBinAdminAction extends SimpleActionAdapter {
 		try { 
 			ps = dbConn.prepareStatement(sql.toString());
 			ps.setInt(++i, typeCd); //organization/country
-			if (req.hasParameter("sDivision")) ps.setString(++i, req.getParameter("sDivision"));
+			if (req.hasParameter("sDivision")) ps.setString(++i, "%" + req.getParameter("sDivision") + "%");
 			if (req.hasParameter("sProduct")) {
 				ps.setString(++i, req.getParameter("sProduct") + "%");
 				ps.setString(++i, req.getParameter("sProduct") + "%");
