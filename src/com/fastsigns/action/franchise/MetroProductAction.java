@@ -18,6 +18,7 @@ import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -207,28 +208,31 @@ public class MetroProductAction extends SBActionAdapter {
 		Map<String, MetroCategoryVO> prodList = new HashMap<String, MetroCategoryVO>();
 		MetroCategoryVO vo;
 		ProductVO p;
-		for (String cat : req.getParameterValues("category[]")) {
-			vals = cat.split("\\|");
+		StringEncoder se = new StringEncoder();
+		for(int i=1; req.hasParameter("category"+i); i++) {
+			vals = se.decode(req.getParameter("category" + i)).split("\\|");
+			
 			vo = new MetroCategoryVO();
-			vo.setOrderNo(Convert.formatInteger(vals[5]));
 			vo.setMetroCategoryAlias(vals[0]);
 			vo.setMetroCategoryNm(vals[1]);
 			vo.setTitleTxt(vals[2]);
 			vo.setMetaDesc(vals[3]);
 			vo.setMetaKywd(vals[4]);
 			vo.setMetroCategoryDesc(vals[5]);
+			vo.setOrderNo(Convert.formatInteger(vals[6]));
 			log.debug(vo.getMetaKywd());
 			prodList.put(vals[0], vo);
-		}
-		
-		if (!req.hasParameter("product[]")) return prodList;
-		for(String prod : req.getParameterValues("product[]")) {
-			vals = prod.split("\\|");
-			p = new ProductVO();
-			p.setDisplayOrderNo(Convert.formatInteger(vals[3]));
-			p.setProductUrl(vals[1]);
-			p.setProductId(vals[0]);
-			prodList.get(vals[2]).addProduct(p);
+			
+			for(int j=1; req.hasParameter("product" + j + "c" + i); j++) {
+				vals = se.decode(req.getParameter("product" + j + "c" + i)).split("\\|");
+				for(String s : vals)
+					log.debug(s);
+				p = new ProductVO();
+				p.setDisplayOrderNo(Convert.formatInteger(vals[3]));
+				p.setProductUrl(vals[1]);
+				p.setProductId(vals[0]);
+				prodList.get(vals[2]).addProduct(p);
+			}
 		}
 		return prodList;
 	}
