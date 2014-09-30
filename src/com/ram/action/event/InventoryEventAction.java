@@ -370,7 +370,7 @@ public class InventoryEventAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder();
 		sql.append("select cl.location_nm, schedule_dt, ie.active_flg, inventory_complete_dt, ");
 		sql.append("data_load_complete_dt, ie.inventory_event_id, ");
-		sql.append("inventory_event_group_id, count(d.event_return_id) as returnProducts, ");
+		sql.append("inventory_event_group_id, count(distinct d.event_return_id) as returnProducts, ");
 		sql.append("count(e.customer_event_id) as numberCustomers, ");
 		sql.append("stuff(( ");
 		sql.append("select ', ' + b.first_nm + ' ' + b.last_nm ");
