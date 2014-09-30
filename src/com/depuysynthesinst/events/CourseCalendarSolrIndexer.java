@@ -157,7 +157,7 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 				if (subSiteAlias.length() > 0) url = "/" + subSiteAlias + url;
 				
 				//nursing events only appear on the nursing calendar page
-				if ("emergingcareproviders".equals(subSiteAlias) && !"NURSE".equals(rs.getString(3)))
+				if ("nurse-education".equals(subSiteAlias) && !"NURSE".equals(rs.getString(3)))
 					continue;
 				//vet events only appear on the vet calendar page
 				else if ("veterinary".equals(subSiteAlias) && !"VET".equals(rs.getString(3)))
