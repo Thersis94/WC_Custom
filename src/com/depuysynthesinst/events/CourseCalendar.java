@@ -1,15 +1,21 @@
 package com.depuysynthesinst.events;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.Date;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.sql.SQLException;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.parser.AnnotationXlsParser;
@@ -18,6 +24,8 @@ import com.smt.sitebuilder.action.SBModuleVO;
 import com.smt.sitebuilder.action.event.EventFacadeAction;
 import com.smt.sitebuilder.action.event.EventEntryAction;
 import com.smt.sitebuilder.action.event.vo.EventEntryVO;
+import com.smt.sitebuilder.action.event.vo.EventGroupVO;
+import com.smt.sitebuilder.action.event.vo.EventTypeVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
@@ -118,18 +126,35 @@ public class CourseCalendar extends SimpleActionAdapter {
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+
 		String anatomy = null;
+		boolean showFilters = (page.getAliasName().equals("calendar")); //not needed on these pages/views;
+		
+		//hook for event signup; these would come from an email and the user must login first,
+		//so we needed to keep the URLs short and redirect-able.
+		if (req.hasParameter("reqParam_2")) {
+			UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
+			if (user != null) {
+				req.setParameter("userSignup", "true");
+				req.setParameter("profileId", user.getProfileId());
+				req.setParameter("rsvpCodeText", req.getParameter("reqParam_2"));
+				build(req);
+			}
+			return;
+		}
 		
 		//if not on the calendar page, we'll need to filter the events by anatomy
 		if (! page.getAliasName().equals("calendar") && ! page.getAliasName().equals("profile")) {
-			anatomy = page.getAliasName();
-			if (anatomy.equals("resource-library")) anatomy = "nursing"; //quick-fix for nursing, where there aren't named categories
+			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+			anatomy = getAnatomyFromAlias(page, site);
 			req.setParameter(EventEntryAction.REQ_SERVICE_OPT, anatomy);
-
-			Calendar cal = Calendar.getInstance();
-			req.setParameter(EventEntryAction.REQ_START_DT, Convert.formatDate(cal.getTime(), Convert.DATE_SLASH_PATTERN));
 		}
 		
+		Date start = Calendar.getInstance().getTime();
+		if (req.hasParameter("start")) {
+			start = Convert.formatDate(Convert.DATE_SLASH_SHORT_PATTERN, req.getParameter("start"));
+		}
+		req.setParameter(EventEntryAction.REQ_START_DT, Convert.formatDate(start, Convert.DATE_SLASH_PATTERN));
 		
 		//load the Events
 		actionInit.setActionId((String)mod.getAttribute(SBModuleVO.ATTRIBUTE_1));
@@ -139,11 +164,126 @@ public class CourseCalendar extends SimpleActionAdapter {
 		efa.setDBConnection(dbConn);
 		efa.retrieve(req);
 		mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
-		mod.setCacheTimeout(86400); //24hrs
+		EventGroupVO vo = (EventGroupVO) mod.getActionData();
 		
-		//NOTE:
-		//the resulting ModuleVO CAN be cached, since caching is tied to the page and we've 
-		//already loaded the events pertinent to this page.  (we only needed the request object once, not every time.)
+		//prepare facets/filters
+		if (showFilters) {
+			prepareFacets(req, vo);
+			req.setValidateInput(false);
+			filterDataBySpecialty(req, vo);
+			filterDataByLocation(req, vo);
+			req.setValidateInput(true);
+			super.putModuleData(vo);
+		}
+	}
+	
+	/**
+	 * prepare search filters to present to the user based on the data we're displaying
+	 * @param req
+	 * @param grpVo
+	 */
+	private void prepareFacets(SMTServletRequest req, EventGroupVO grpVo) {
+		//one for city & state, put on the request by Type
+		for (EventTypeVO typeVo : grpVo.getTypes().values()) {
+			Map<String, Integer> locations = new TreeMap<String, Integer>();
+			for (EventEntryVO vo : typeVo.getEvents()) {
+				String locn = StringUtil.checkVal(vo.getCityName()) + ", " + StringUtil.checkVal(vo.getStateCode());
+				if (locn.length() == 2) locn = "Other";
+				if (locations.containsKey(locn)) {
+					locations.put(locn, locations.get(locn)+1);
+				} else {
+					locations.put(locn, 1);
+				}
+			}
+			log.debug("loaded " + locations.size() + " location filters");
+			req.setAttribute("facet_locn_" + typeVo.getTypeName(), locations);
+		}
+		
+		//one for specialties, put on the request by Type
+		for (EventTypeVO typeVo : grpVo.getTypes().values()) {
+			Map<String, Integer> specialties = new TreeMap<String, Integer>();
+			for (EventEntryVO vo : typeVo.getEvents()) {
+				String spec = StringUtil.checkVal(vo.getServiceText(), "Other");
+				if (specialties.containsKey(spec)) {
+					specialties.put(spec, specialties.get(spec)+1);
+				} else {
+					specialties.put(spec, 1);
+				}
+			}
+			log.debug("loaded " + specialties.size() + " specialty filters");
+			req.setAttribute("facet_spec_" + typeVo.getTypeName(), specialties);
+		}
+		
+	}
+	
+	/**
+	 * filter the list of events being returned to the browser to only those matching 
+	 * certain locations.  A "location" here is a String: "city, st"
+	 * @param req
+	 * @param vo
+	 */
+	@SuppressWarnings("unchecked")
+	private void filterDataByLocation(SMTServletRequest req, EventGroupVO grpVo) {
+		if (!req.hasParameter("location")) return;
+		List<String> filters = Arrays.asList(req.getParameter("location").split("~"));
+		if (filters == null || filters.size() == 0) return;
+		
+		for (EventTypeVO typeVo : grpVo.getTypes().values()) {
+			List<EventEntryVO> data = new ArrayList<EventEntryVO>();
+			for (EventEntryVO vo : typeVo.getEvents()) {
+				//check each event and only include those matching our filters
+				String locn = StringUtil.checkVal(vo.getCityName()) + ", " + StringUtil.checkVal(vo.getStateCode());
+				if (filters.contains(locn))
+					data.add(vo);
+			}
+			log.debug("removed " + (typeVo.getEvents().size() - data.size()) + " events by location, now " + data.size());
+			typeVo.setEvents(data);
+		}
+	}
+	
+	/**
+	 * filter the list of events being returned to the browser to only those matching 
+	* certain specialties
+	 * @param req
+	 * @param vo
+	 */
+	@SuppressWarnings("unchecked")
+	private void filterDataBySpecialty(SMTServletRequest req, EventGroupVO grpVo) {
+		if (!req.hasParameter("specialty")) return;
+		List<String> filters = Arrays.asList(req.getParameter("specialty").split("~"));
+		if (filters == null || filters.size() == 0) return;
+		
+		for (EventTypeVO typeVo : grpVo.getTypes().values()) {
+			List<EventEntryVO> data = new ArrayList<EventEntryVO>();
+			for (EventEntryVO vo : typeVo.getEvents()) {
+				//check each event and only include those matching our filters
+				String spec = StringUtil.checkVal(vo.getServiceText());
+				if (filters.contains(spec))
+					data.add(vo);
+			}
+			log.debug("removed " + (typeVo.getEvents().size() - data.size()) + " events by specialty, now " + data.size());
+			typeVo.setEvents(data);
+		}
+	}
+	
+	
+	/**
+	 * cast the URL alias to a anotomical section (as used in the Events lists)
+	 * most of these align, but a couple needed massaging.
+	 * @param alias
+	 * @return
+	 */
+	private String getAnatomyFromAlias(PageVO page, SiteVO site) {
+		//on the main site we don't filter
+		if (site.getAliasPathName() == null && page.isDefaultPage()) return "";
+		String alias = page.getAliasName().toLowerCase();
+		
+		if (alias.equals("chest-wall")) return "Chest Wall";
+		else if ("veterinary".equals(site.getAliasPathName())) return "Vet"; //vet section
+		else if ("nurse-education".equals(site.getAliasPathName())) return "Nurse Education"; //nursing section
+		else if (alias.indexOf("-") > 0) return StringUtil.capitalizePhrase(alias.replace("-", " & ")); //Foot & Ankle, Hand & Wrist
+		
+		return StringUtil.capitalize(alias);
 	}
 	
 	
