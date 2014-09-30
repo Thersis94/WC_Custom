@@ -16,6 +16,7 @@ import com.fastsigns.action.franchise.vo.FranchiseTimeVO;
 import com.fastsigns.action.franchise.vo.FranchiseTimeVO.DayType;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -183,6 +184,7 @@ public class NewsTestPanel extends SBActionAdapter {
 			List<DealerLocationVO> dlrs = dla.getDealerInfo(req, new String[] { fId }, null);
 			if (dlrs.size() > 0) dlv = dlrs.get(0);
 			dlv.addAttribute("fullHours", getCenterHours(dlv));
+			getFranchiseAttributes(dlv);
 			
 			MapLocationVO f = dlv.getMapLocation();
 			StringBuilder s = new StringBuilder();
@@ -209,6 +211,37 @@ public class NewsTestPanel extends SBActionAdapter {
 	}
 
 	/**
+	 * Gets the USE_RAQSAF flag from the franchise table.
+	 */
+	private void getFranchiseAttributes(DealerLocationVO dlv) {
+		StringBuilder sql = new StringBuilder();
+		String cdb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		sql.append("SELECT USE_RAQSAF FROM ").append(cdb).append("FTS_FRANCHISE ");
+		sql.append("WHERE FRANCHISE_ID = ?");
+		
+		// If, for some reason, the dealer does not have an id we return here.
+		if (dlv.getDealerId() == null) return;
+		String id = dlv.getDealerId().substring(3);
+		
+		log.debug(sql+"|"+id);
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			ps = dbConn.prepareStatement(sql.toString());
+			ps.setString(1, id);
+			
+			rs = ps.executeQuery();
+			if (rs.next())
+				dlv.addAttribute("useRAQSAF", rs.getInt("USE_RAQSAF"));
+		} catch (SQLException e) {
+			log.error("Unable to retrieve franchise attributes for dealer id " + id, e);
+		} finally {
+			DBUtil.close(ps);
+		}
+		
+	}
+
+	/**
 	 * Get a franchise time vo in order to get the times set in webedit
 	 * @param dlv
 	 * @return
@@ -217,6 +250,7 @@ public class NewsTestPanel extends SBActionAdapter {
 		Map<DayType, String> times = new HashMap<DayType, String>();
 		DayType day;
 		for (String key : dlv.getAttributes().keySet()) {
+			if (key == null) continue;
 			day = DayType.valueOf(key);
 			if (day != null) {
 				times.put(day, StringUtil.checkVal(dlv.getAttributes().get(key)));
