@@ -16,6 +16,7 @@ import com.fastsigns.action.franchise.vo.FranchiseTimeVO;
 import com.fastsigns.action.franchise.vo.FranchiseTimeVO.DayType;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -218,23 +219,24 @@ public class NewsTestPanel extends SBActionAdapter {
 		sql.append("SELECT USE_RAQSAF FROM ").append(cdb).append("FTS_FRANCHISE ");
 		sql.append("WHERE FRANCHISE_ID = ?");
 		
-		log.debug(sql+"|"+dlv.getDealerId().substring(3));
+		// If, for some reason, the dealer does not have an id we return here.
+		if (dlv.getDealerId() == null) return;
+		String id = dlv.getDealerId().substring(3);
+		
+		log.debug(sql+"|"+id);
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 		try {
 			ps = dbConn.prepareStatement(sql.toString());
-			ps.setString(1, dlv.getDealerId().substring(3));
+			ps.setString(1, id);
 			
 			rs = ps.executeQuery();
 			if (rs.next())
 				dlv.addAttribute("useRAQSAF", rs.getInt("USE_RAQSAF"));
 		} catch (SQLException e) {
-			log.error("Unable to retrieve franchise attributes for dealer id " + dlv.getDealerId(), e);
+			log.error("Unable to retrieve franchise attributes for dealer id " + id, e);
 		} finally {
-			try{
-				ps.close();
-				rs.close();
-			} catch (Exception e){}
+			DBUtil.close(ps);
 		}
 		
 	}
