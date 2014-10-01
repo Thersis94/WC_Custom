@@ -56,7 +56,7 @@ public class ChamberMasterLoader {
 	protected SMTHttpConnectionManager httpConn = null;
 	protected String customDbSchema = null;
 	protected List<String> statusMessages = null;
-	private Properties config = null;
+	protected Properties config = null;
 	private boolean dumpCategoryFiles = false;
 	private boolean dumpHotDealsFiles = false;
 	private boolean dumpEventFiles = false;
@@ -93,6 +93,7 @@ public class ChamberMasterLoader {
 		log.info("loading categories");
 		CategoryLoader c = new CategoryLoader();
 		c.setConn(cm.getConn());
+		c.setConfig(cm.config);
 		c.setHttpConn(cm.getHttpConn());
 		c.setCustomDbSchema(cm.getCustomDbSchema());
 		c.setDumpCategoryFiles(cm.isDumpCategoryFiles());
@@ -106,6 +107,7 @@ public class ChamberMasterLoader {
 		log.info("loading members");
 		MemberLoader m = new MemberLoader();
 		m.setConn(cm.getConn());
+		m.setConfig(cm.config);
 		m.setHttpConn(cm.getHttpConn());
 		m.setCustomDbSchema(cm.getCustomDbSchema());
 		m.setDumpMemberFiles(cm.isDumpMemberFiles());
@@ -119,6 +121,7 @@ public class ChamberMasterLoader {
 		log.info("loading hot deals");
 		HotDealsLoader hd = new HotDealsLoader();
 		hd.setConn(cm.getConn());
+		hd.setConfig(cm.config);
 		hd.setHttpConn(cm.getHttpConn());
 		hd.setCustomDbSchema(cm.getCustomDbSchema());
 		hd.setDumpHotDealsFiles(cm.isDumpHotDealsFiles());
@@ -132,6 +135,7 @@ public class ChamberMasterLoader {
 		log.info("loading events");
 		EventLoader el = new EventLoader();
 		el.setConn(cm.getConn());
+		el.setConfig(cm.config);
 		el.setHttpConn(cm.getHttpConn());
 		el.setCustomDbSchema(cm.getCustomDbSchema());
 		el.setDumpEventFiles(cm.isDumpEventFiles());
@@ -264,7 +268,10 @@ public class ChamberMasterLoader {
 		// attempt login
 		String loginUrl = ChamberMasterLoader.SECURE_BASE_URL + "/Login/Authenticate";
 		StringBuilder params= new StringBuilder();
-		params.append("LandingURL=%2F&AllowExternalLogins=False&UserName=denise_shugarts&Password=crazykool9&Submit=Log+In");
+		params.append("LandingURL=%2F&AllowExternalLogins=False");
+		params.append("&UserName=").append(config.getProperty("chamberMasterUsername"));
+		params.append("&Password=").append(config.getProperty("chamberMasterPassword"));
+		params.append("&Submit=Log+In");
 		httpConn.retrieveDataViaPost(loginUrl, params.toString());
 		//showConnInfo(conn);
 		return redir;
@@ -378,7 +385,14 @@ public class ChamberMasterLoader {
 	public void addStatusMessages(List<String> messages) {
 		this.statusMessages.addAll(messages);
 	}
-	
+
+	/**
+	 * @param config the config to set
+	 */
+	public void setConfig(Properties config) {
+		this.config = config;
+	}
+
 	public boolean isErrors() {
 		return errors;
 	}
