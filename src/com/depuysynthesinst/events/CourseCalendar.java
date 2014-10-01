@@ -203,11 +203,14 @@ public class CourseCalendar extends SimpleActionAdapter {
 		for (EventTypeVO typeVo : grpVo.getTypes().values()) {
 			Map<String, Integer> specialties = new TreeMap<String, Integer>();
 			for (EventEntryVO vo : typeVo.getEvents()) {
-				String spec = StringUtil.checkVal(vo.getServiceText(), "Other");
-				if (specialties.containsKey(spec)) {
-					specialties.put(spec, specialties.get(spec)+1);
-				} else {
-					specialties.put(spec, 1);
+				String specs = StringUtil.checkVal(vo.getServiceText(), "Other");
+				for (String spec : specs.split(",")) {
+					spec = StringUtil.checkVal(spec).trim();
+					if (specialties.containsKey(spec)) {
+						specialties.put(spec, specialties.get(spec)+1);
+					} else {
+						specialties.put(spec, 1);
+					}
 				}
 			}
 			log.debug("loaded " + specialties.size() + " specialty filters");
