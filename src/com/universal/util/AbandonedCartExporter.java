@@ -273,7 +273,6 @@ public class AbandonedCartExporter extends CommandLineUtil {
 		for (AbandonedCartVO cart : carts) {
 			email = lookupEmail(cart.getProfileId());
 			if (email.length() == 0) continue;
-			outFile.append(brandMap.get(cart.getSourceId())).append(DELIM_FIELD); // site ID
 			outFile.append(cart.getObjectId()).append(DELIM_FIELD); // cart object ID used as sessionid
 			outFile.append(DELIM_FIELD); // placeholder for Universal_uid which is not impl yet.
 			outFile.append(addProductsFromCart(cart.getCart())).append(DELIM_FIELD); // SKUS, semi-colon delimited
@@ -316,7 +315,6 @@ public class AbandonedCartExporter extends CommandLineUtil {
 	 */
 	private StringBuilder buildFileHeader() {
 		StringBuilder hdr = new StringBuilder(80);
-		hdr.append("brand").append(DELIM_FIELD);
 		hdr.append("sessionid").append(DELIM_FIELD);
 		hdr.append("Universal_uid").append(DELIM_FIELD);
 		hdr.append("skus").append(DELIM_FIELD);
