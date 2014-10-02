@@ -220,8 +220,8 @@ public class NewsTestPanel extends SBActionAdapter {
 		sql.append("WHERE FRANCHISE_ID = ?");
 		
 		// If, for some reason, the dealer does not have an id we return here.
-		if (dlv.getDealerId() == null) return;
-		String id = dlv.getDealerId().substring(3);
+		if (dlv.getDealerLocationId() == null) return;
+		String id = dlv.getDealerLocationId();
 		
 		log.debug(sql+"|"+id);
 		PreparedStatement ps = null;
