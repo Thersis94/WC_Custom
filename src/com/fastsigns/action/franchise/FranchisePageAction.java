@@ -633,10 +633,14 @@ public class FranchisePageAction extends SBActionAdapter {
         log.debug(req.getParameter("displayName"));
         req.setParameter("moduleActionName", req.getParameter("displayName"));
         if (Convert.formatBoolean(req.getParameter("makeNew"))) {        	
-        	//This method adds site admin and Franchise User roles.  This works for all Organizations b/c the
-        	//roles are in the same order and are org differentiated in the form before getting here.
-			if(!Convert.formatBoolean(req.getParameter("isGallery")))
+        	// Add the admin and custom franchisee role to the request
+			if(!Convert.formatBoolean(req.getParameter("isGallery"))) {
 				req.setParameter("roleId", "100", true);
+				for(String role : req.getParameterValues("roles")) {
+					if (role.length() > 5)
+						req.setParameter("roleId", role);
+				}
+			}
 		}
     	
         SMTActionInterface ai = new PageModuleAction(this.actionInit);
