@@ -7,6 +7,7 @@ import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 
+import com.siliconmtn.util.StringUtil;
 // WebCrescendo 2.0
 import com.smt.sitebuilder.action.SBActionAdapter;
 
@@ -25,6 +26,9 @@ import com.smt.sitebuilder.action.SBActionAdapter;
  ****************************************************************************/
 public class CustomerFacadeAction extends SBActionAdapter {
 	
+	//Used to hold type param we look for and the values that are valid.
+	public static final String STEP_PARAM = "bType";
+	public static enum CUSTOMER_TYPE {customer, location, hibc}
 	/**
 	 * 
 	 */
@@ -41,6 +45,7 @@ public class CustomerFacadeAction extends SBActionAdapter {
 	
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.http.SMTServletRequest)
+	 * updated to use getAction method.
 	 */
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
@@ -50,46 +55,43 @@ public class CustomerFacadeAction extends SBActionAdapter {
 			// perform search
 			performSearch(req);
 		} else {
-			SMTActionInterface sai = null;
-			boolean ft = Convert.formatBoolean(req.getParameter("facadeType"));
-			if (ft) {
-				// CustomerLocationAction
-				sai = new CustomerLocationAction(actionInit);
-				sai.setAttributes(attributes);
-				sai.setDBConnection(dbConn);
-				sai.retrieve(req);
-				
-			} else {
-				// CustomerAction
-				sai = new CustomerAction(actionInit);
-				sai.setAttributes(attributes);
-				sai.setDBConnection(dbConn);
-				sai.retrieve(req);
-			}
+			String bType = StringUtil.checkVal(req.getParameter(STEP_PARAM), CUSTOMER_TYPE.customer.name());
+			getAction(bType).retrieve(req);
 		}
 	}
 
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.http.SMTServletRequest)
+	 * updated to use getAction method
 	 */
 	@Override
 	public void build(SMTServletRequest req) throws ActionException {
 		log.debug("CustomerFacadeAction build...");
+		String bType = req.getParameter(STEP_PARAM);
+		getAction(bType).build(req);
+	}
+	
+	/**
+	 * Clean interface that returns the proper action we want pre populated with all the required data.
+	 * @param action
+	 * @return
+	 */
+	public SMTActionInterface getAction(String action) {
 		SMTActionInterface sai = null;
-		boolean ft = Convert.formatBoolean(req.getParameter("facadeType"));
-		if (ft) {
-			// CustomerLocationAction update
+		switch(CUSTOMER_TYPE.valueOf(action)) {
+		case location: 
 			sai = new CustomerLocationAction(actionInit);
-			sai.setAttributes(attributes);
-			sai.setDBConnection(dbConn);
-			sai.build(req);
-		} else {
-			// CustomerAction update
+			break;
+		case hibc:
+			sai = new CustomerHibcAction(actionInit);
+			break;
+		default:
 			sai = new CustomerAction(actionInit);
-			sai.setAttributes(attributes);
-			sai.setDBConnection(dbConn);
-			sai.build(req);
+			break;
 		}
+		sai.setAttributes(attributes);
+		sai.setDBConnection(dbConn);
+		return sai;
 	}
 	
 	/**
