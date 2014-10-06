@@ -132,7 +132,7 @@ public class CourseCalendar extends SimpleActionAdapter {
 		
 		//hook for event signup; these would come from an email and the user must login first,
 		//so we needed to keep the URLs short and redirect-able.
-		if (req.hasParameter("reqParam_2")) {
+		if (req.hasParameter("reqParam_2") && "ADD".equalsIgnoreCase(req.getParameter("reqParam_1"))) {
 			UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 			if (user != null) {
 				req.setParameter("userSignup", "true");
@@ -203,11 +203,14 @@ public class CourseCalendar extends SimpleActionAdapter {
 		for (EventTypeVO typeVo : grpVo.getTypes().values()) {
 			Map<String, Integer> specialties = new TreeMap<String, Integer>();
 			for (EventEntryVO vo : typeVo.getEvents()) {
-				String spec = StringUtil.checkVal(vo.getServiceText(), "Other");
-				if (specialties.containsKey(spec)) {
-					specialties.put(spec, specialties.get(spec)+1);
-				} else {
-					specialties.put(spec, 1);
+				String specs = StringUtil.checkVal(vo.getServiceText(), "Other");
+				for (String spec : specs.split(",")) {
+					spec = StringUtil.checkVal(spec).trim();
+					if (specialties.containsKey(spec)) {
+						specialties.put(spec, specialties.get(spec)+1);
+					} else {
+						specialties.put(spec, 1);
+					}
 				}
 			}
 			log.debug("loaded " + specialties.size() + " specialty filters");

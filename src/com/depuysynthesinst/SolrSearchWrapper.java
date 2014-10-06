@@ -61,19 +61,20 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 	
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		//determine if custom sort is needed
+		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		String sortType = StringUtil.checkVal(req.getParameter("fieldSort"));
 		boolean doCustomSort = "popular".equals(sortType) || "favorites".equals(sortType) ;
+		boolean isThemeLocn = StringUtil.checkVal(mod.getParamName()).length() > 0;
 		Integer pageNo = Convert.formatInteger(req.getParameter("page"));
 		
 		//reset sortOrder or Solr will bomb (unknown sortType)
-		if (doCustomSort) {
+		if (!isThemeLocn && doCustomSort) {
 			req.setParameter("fieldSort", "documentId");
 			req.setParameter("rpp", "3000");
 			req.setParameter("page", "0");
 		}
 		
 		//call SolrAction 
-		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		actionInit.setActionId((String)mod.getAttribute(SBModuleVO.ATTRIBUTE_1));
 		SolrAction sa = new SolrAction(actionInit);
 		sa.setAttributes(attributes);
@@ -81,7 +82,7 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 		sa.retrieve(req);
 		
 		//if not custom sort, we're done
-		if (!doCustomSort) return;
+		if (isThemeLocn || !doCustomSort) return;
 		
 		//get the response object back from SolrAction
 		mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
