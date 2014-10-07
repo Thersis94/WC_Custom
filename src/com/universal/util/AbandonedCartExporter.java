@@ -277,7 +277,8 @@ public class AbandonedCartExporter extends CommandLineUtil {
 			outFile.append(DELIM_FIELD); // placeholder for Universal_uid which is not impl yet.
 			outFile.append(addProductsFromCart(cart.getCart())).append(DELIM_FIELD); // SKUS, semi-colon delimited
 			outFile.append(email).append(DELIM_FIELD); // user's email address
-			outFile.append(Convert.formatDate(cart.getCreateDate(), Convert.DATE_TIME_SLASH_PATTERN)); // cart update date
+			//outFile.append(Convert.formatDate(cart.getCreateDate(), Convert.DATE_TIME_SLASH_PATTERN)); // cart update date
+			outFile.append(Convert.formatDate(cart.getCreateDate(), Convert.DATE_TIME_DASH_PATTERN)); // cart update date
 			outFile.append(NEWLINE);
 		}
 		
