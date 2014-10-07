@@ -132,7 +132,7 @@ public class CourseCalendar extends SimpleActionAdapter {
 		
 		//hook for event signup; these would come from an email and the user must login first,
 		//so we needed to keep the URLs short and redirect-able.
-		if (req.hasParameter("reqParam_2")) {
+		if (req.hasParameter("reqParam_2") && "ADD".equalsIgnoreCase(req.getParameter("reqParam_1"))) {
 			UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 			if (user != null) {
 				req.setParameter("userSignup", "true");

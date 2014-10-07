@@ -7,7 +7,6 @@ import java.util.List;
 import com.fastsigns.action.franchise.MetroAction;
 import com.fastsigns.action.franchise.vo.MetroCategoryVO;
 import com.fastsigns.action.franchise.vo.MetroContainerVO;
-import com.fastsigns.action.franchise.vo.MetroProductVO;
 import com.fastsigns.product.ProductSitemapCreator;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.data.Node;

@@ -91,6 +91,10 @@ public class FranchiseInfoAction extends SBActionAdapter {
 					updateResellerButtons(req);
 					super.clearCacheByGroup(siteId);
 					break;
+				case CenterPageAction.RAQSAF_UPDATE:
+					updateRAQSAF(req);
+					super.clearCacheByGroup(siteId);
+					break;
 			}
 		} catch(Exception e) {
 			log.error("Error Updating Center Page", e);
@@ -102,6 +106,11 @@ public class FranchiseInfoAction extends SBActionAdapter {
 		req.setAttribute(Constants.REDIRECT_URL, redir + "msg=" + msg);
 	}
 	
+	/**
+	 * Update the reseller buttons that can appear on the center's homepage
+	 * @param req
+	 * @throws SQLException
+	 */
 	private void updateResellerButtons(SMTServletRequest req) throws SQLException {
 		log.debug("Beginning Reseller Button Update.");
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
@@ -122,6 +131,31 @@ public class FranchiseInfoAction extends SBActionAdapter {
 		
 		if (ps.executeUpdate() < 1) 
 			log.error("Franchise " + franchiseId + " was unable to update it's reseller button.");
+	}
+	
+	/**
+	 * Update whether or not a center 
+	 * @param req
+	 * @throws SQLException
+	 */
+	private void updateRAQSAF(SMTServletRequest req) throws SQLException {
+		log.debug("Beginning Reseller Button Update.");
+		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder();
+		String franchiseId = CenterPageAction.getFranchiseId(req);
+		
+		sql.append("UPDATE ").append(customDb).append("FTS_FRANCHISE ");
+		sql.append("SET USE_RAQSAF = ? WHERE FRANCHISE_ID = ?");
+		
+		log.debug(sql.toString() + "|" + req.getParameter("resellerTypeId") + ", " + franchiseId);
+		
+		PreparedStatement ps = dbConn.prepareStatement(sql.toString());
+
+		ps.setString(1, req.getParameter("raqsaf"));
+		ps.setString(2, franchiseId);
+		
+		if (ps.executeUpdate() < 1) 
+			log.error("Franchise " + franchiseId + " was unable to update it's RAQ/SAF button.");
 	}
 
 	@Override
