@@ -71,6 +71,28 @@ public class CatalogAction extends AbstractBaseAction {
 		if(req.hasParameter("altId")) {
 			retrieveProduct(mod, req);
 		}
+		
+		//Use Cached action and set necessary pieces for cache groups to be used. 
+		proxy = KeystoneProxy.newInstance(attributes);
+		proxy.setSessionCookie(req.getCookie(Constants.JSESSIONID));
+		proxy.setModule("products");
+		proxy.setAction("getDsolMaterials");
+		proxy.setParserType(KeystoneDataParser.DataParserType.FromScratch);
+		
+		//tell the proxy to go get our data
+		try {
+			//this was moved down here because of the potential NPE on getFranchiseId():
+			proxy.setFranchiseId(sessVo.getFranchise(webId).getFranchiseId());
+			proxy.addPostData("franchiseId", sessVo.getFranchise(webId).getFranchiseId());
+			
+			mod.setAttribute("fromScratch", proxy.getData().getActionData());
+			
+		} catch (Exception e) {
+			log.error(e);
+			mod.setError(e);
+			mod.setErrorMessage("Unable to load Materials list");
+		}
+		
 		setAttribute(Constants.MODULE_DATA, mod);
 	}
 	

@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
-import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -132,7 +131,7 @@ public class CourseCalendar extends SimpleActionAdapter {
 		
 		//hook for event signup; these would come from an email and the user must login first,
 		//so we needed to keep the URLs short and redirect-able.
-		if (req.hasParameter("reqParam_2")) {
+		if (req.hasParameter("reqParam_2") && "ADD".equalsIgnoreCase(req.getParameter("reqParam_1"))) {
 			UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 			if (user != null) {
 				req.setParameter("userSignup", "true");
@@ -150,11 +149,7 @@ public class CourseCalendar extends SimpleActionAdapter {
 			req.setParameter(EventEntryAction.REQ_SERVICE_OPT, anatomy);
 		}
 		
-		Date start = Calendar.getInstance().getTime();
-		if (req.hasParameter("start")) {
-			start = Convert.formatDate(Convert.DATE_SLASH_SHORT_PATTERN, req.getParameter("start"));
-		}
-		req.setParameter(EventEntryAction.REQ_START_DT, Convert.formatDate(start, Convert.DATE_SLASH_PATTERN));
+		req.setParameter(EventEntryAction.REQ_START_DT, Convert.formatDate(Calendar.getInstance().getTime(), Convert.DATE_SLASH_PATTERN));
 		
 		//load the Events
 		actionInit.setActionId((String)mod.getAttribute(SBModuleVO.ATTRIBUTE_1));
@@ -203,11 +198,14 @@ public class CourseCalendar extends SimpleActionAdapter {
 		for (EventTypeVO typeVo : grpVo.getTypes().values()) {
 			Map<String, Integer> specialties = new TreeMap<String, Integer>();
 			for (EventEntryVO vo : typeVo.getEvents()) {
-				String spec = StringUtil.checkVal(vo.getServiceText(), "Other");
-				if (specialties.containsKey(spec)) {
-					specialties.put(spec, specialties.get(spec)+1);
-				} else {
-					specialties.put(spec, 1);
+				String specs = StringUtil.checkVal(vo.getServiceText(), "Other");
+				for (String spec : specs.split(",")) {
+					spec = StringUtil.checkVal(spec).trim();
+					if (specialties.containsKey(spec)) {
+						specialties.put(spec, specialties.get(spec)+1);
+					} else {
+						specialties.put(spec, 1);
+					}
 				}
 			}
 			log.debug("loaded " + specialties.size() + " specialty filters");
@@ -252,14 +250,24 @@ public class CourseCalendar extends SimpleActionAdapter {
 		if (!req.hasParameter("specialty")) return;
 		List<String> filters = Arrays.asList(req.getParameter("specialty").split("~"));
 		if (filters == null || filters.size() == 0) return;
+		//log.debug(filters);
 		
 		for (EventTypeVO typeVo : grpVo.getTypes().values()) {
 			List<EventEntryVO> data = new ArrayList<EventEntryVO>();
 			for (EventEntryVO vo : typeVo.getEvents()) {
 				//check each event and only include those matching our filters
 				String spec = StringUtil.checkVal(vo.getServiceText());
-				if (filters.contains(spec))
-					data.add(vo);
+				//log.debug("spec=" + spec);
+				boolean addIt = false;
+				for (String f : filters) {
+					if (spec.contains(f)) {
+						addIt = true;
+						break;
+					}
+				}
+				if (!addIt) continue;
+				data.add(vo);
+				//log.debug("added " + vo.getServiceText());
 			}
 			log.debug("removed " + (typeVo.getEvents().size() - data.size()) + " events by specialty, now " + data.size());
 			typeVo.setEvents(data);
@@ -279,7 +287,7 @@ public class CourseCalendar extends SimpleActionAdapter {
 		
 		if (alias.equals("chest-wall")) return "Chest Wall";
 		else if ("veterinary".equals(site.getAliasPathName())) return "Vet"; //vet section
-		else if ("nurse-education".equals(site.getAliasPathName())) return "Emerging Care Providers"; //nursing section
+		else if ("nurse-education".equals(site.getAliasPathName())) return "Nurse Education"; //nursing section
 		else if (alias.indexOf("-") > 0) return StringUtil.capitalizePhrase(alias.replace("-", " & ")); //Foot & Ankle, Hand & Wrist
 		
 		return StringUtil.capitalize(alias);

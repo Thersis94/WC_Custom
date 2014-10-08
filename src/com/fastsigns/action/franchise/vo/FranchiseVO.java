@@ -45,6 +45,7 @@ public class FranchiseVO extends DealerLocationVO {
 	private String resellerId = null;
 	private String resellerLink = null;
 	private String resellerImg = null;
+	private int useRaqSaf;
 	
 	public FranchiseVO() {
 		
@@ -79,6 +80,7 @@ public class FranchiseVO extends DealerLocationVO {
 		resellerId = db.getStringVal("reseller_button_id", rs);
 		resellerLink = db.getStringVal("reseller_button_link", rs);
 		resellerImg = db.getStringVal("reseller_button_img", rs);
+		setUseRaqSaf(db.getIntVal("USE_RAQSAF", rs));
 		
 		// Parse the [location] tag out of the description
 		StringBuilder desc = new StringBuilder(StringUtil.checkVal(getLocationDesc()));
@@ -274,6 +276,14 @@ public class FranchiseVO extends DealerLocationVO {
 
 	public void setResellerImg(String resellerImg) {
 		this.resellerImg = resellerImg;
+	}
+
+	public int getUseRaqSaf() {
+		return useRaqSaf;
+	}
+
+	public void setUseRaqSaf(int useRaqSaf) {
+		this.useRaqSaf = useRaqSaf;
 	}
 
 }

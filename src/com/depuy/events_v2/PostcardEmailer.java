@@ -170,7 +170,9 @@ public class PostcardEmailer {
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipient("rwilkin7@its.jnj.com");
+			//mail.addRecipient("WWilder@its.jnj.com");
+			//mail.addRecipient("RSmith68@its.jnj.com");
+			mail.addRecipient("rwilkin7@ITS.JNJ.COM");
 			mail.addCC(site.getAdminEmail());
 			mail.addCC(sem.getOwner().getEmailAddress());
 			mail.setSubject(subject.toString());
@@ -279,8 +281,9 @@ public class PostcardEmailer {
 			mail.addRecipient("Jenn.Davis@hmktgroup.com"); // Jenn Parrish-Davis);
 			mail.addRecipient("sterling.hoham@hmktgroup.com"); // Sterling Hoham
 			mail.addRecipient("amy.zimmerman@hmktgroup.com");
-			mail.addCC("WWilder@its.jnj.com");
-			mail.addCC("RSmith68@its.jnj.com");
+			//mail.addCC("WWilder@its.jnj.com");
+			//mail.addCC("RSmith68@its.jnj.com");
+			mail.addCC("rwilkin7@ITS.JNJ.COM");
 			for (PersonVO p : sem.getPeople()) {
 				//add only the sales reps
 				if (p.getRoleCode() == Role.TGM) continue;

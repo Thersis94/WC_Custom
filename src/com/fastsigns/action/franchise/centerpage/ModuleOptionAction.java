@@ -99,10 +99,6 @@ public class ModuleOptionAction extends SBActionAdapter{
 					this.deleteModuleLocation(req);
 					super.clearCacheByGroup(siteId);
 					break;
-				case CenterPageAction.MODULE_OPTION_UPDATE:
-					this.updateModuleOptions(req);
-					super.clearCacheByGroup(siteId);
-					break;
 				case CenterPageAction.MODULE_ADD:
 					this.saveModuleOption(req);
 					redir += "assoc=true&locationId=" + req.getParameter("locationId") + "&moduleId=" + req.getParameter("moduleId") + "&";
@@ -113,6 +109,9 @@ public class ModuleOptionAction extends SBActionAdapter{
 							Convert.formatInteger(req.getParameter("approvalFlag"), 0).intValue() == 100)
 						this.revokeApprovalSubmission(req);
 
+				case CenterPageAction.MODULE_OPTION_UPDATE:
+					this.updateModuleOptions(req);
+					super.clearCacheByGroup(siteId);
 					break;
 				case CenterPageAction.MODULE_REARRANGE:
 					rearrangeModuleLayout(req);
@@ -534,7 +533,7 @@ public class ModuleOptionAction extends SBActionAdapter{
 		} finally {
 			try { ps.close(); } catch (Exception e) {}
 		}
-
+		req.setParameter("selectedElements", vo.getModuleOptionId()+"~"+req.getParameter("modLocId"));
 		if(vo.getModuleTypeId() == 10)
 			updateModuleAttributes(req);
 	}
