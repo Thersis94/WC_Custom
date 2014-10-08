@@ -119,16 +119,21 @@ public class FranchiseInfoAction extends SBActionAdapter {
 		
 		log.debug(sql.toString() + "|" + req.getParameter("resellerTypeId") + ", " + req.getParameter("resellerLink") + ", " + franchiseId);
 		
-		PreparedStatement ps = dbConn.prepareStatement(sql.toString());
+		PreparedStatement ps = null;
 
-		ps.setString(1, req.getParameter("resellerTypeId"));
-		ps.setString(2, req.getParameter("resellerLink"));
-		ps.setString(3, franchiseId);
-		
-		if (ps.executeUpdate() < 1) 
-			log.error("Franchise " + franchiseId + " was unable to update it's reseller button.");
-		
-		ps.close();
+		try {
+			ps = dbConn.prepareStatement(sql.toString());
+			ps.setString(1, req.getParameter("resellerTypeId"));
+			ps.setString(2, req.getParameter("resellerLink"));
+			ps.setString(3, franchiseId);
+			
+			if (ps.executeUpdate() < 1) 
+				log.error("Franchise " + franchiseId + " was unable to update it's reseller button.");
+		} finally {
+			try {
+				ps.close();
+			} catch(Exception e) {}
+		}
 	}
 
 	@Override
