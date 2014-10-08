@@ -635,10 +635,9 @@ public class FranchisePageAction extends SBActionAdapter {
         if (Convert.formatBoolean(req.getParameter("makeNew"))) {        	
         	// Add the admin and custom franchisee role to the request
 			if(!Convert.formatBoolean(req.getParameter("isGallery"))) {
-				req.setParameter("roleId", "100", true);
 				for(String role : req.getParameterValues("roles")) {
 					if (role.length() > 5)
-						req.setParameter("roleId", role);
+						req.setParameter("roleId", new String[]{role, "100"}, true);
 				}
 			}
 		}
