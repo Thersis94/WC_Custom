@@ -71,7 +71,7 @@ public class CustomerAction extends SBActionAdapter {
 		if (! Convert.formatBoolean(req.getParameter("addCustomer"))) {
 			String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 			StringBuilder sql = new StringBuilder(260);
-			sql.append("select top ").append(limit).append(" a. * from ").append(schema);
+			sql.append("select top ").append(limit).append(" a.* from ").append(schema);
 			sql.append("ram_customer a ");
 			if(customerId > 0) {
 				sql.append("inner join ").append(schema).append("ram_customer_location b ");
