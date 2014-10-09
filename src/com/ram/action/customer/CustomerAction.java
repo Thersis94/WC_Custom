@@ -70,8 +70,8 @@ public class CustomerAction extends SBActionAdapter {
 		List<CustomerVO> data = new ArrayList<>();
 		if (! Convert.formatBoolean(req.getParameter("addCustomer"))) {
 			String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
-			StringBuilder sql = new StringBuilder();
-			sql.append("select top ").append(limit).append(" a.* from ").append(schema);
+			StringBuilder sql = new StringBuilder(260);
+			sql.append("select top ").append(limit).append(" a. * from ").append(schema);
 			sql.append("ram_customer a ");
 			if(customerId > 0) {
 				sql.append("inner join ").append(schema).append("ram_customer_location b ");
@@ -103,7 +103,6 @@ public class CustomerAction extends SBActionAdapter {
 				if(customerId > 0) {
 					CustomerVO c = null;
 					List<CustomerLocationVO> locs = new ArrayList<CustomerLocationVO>();
-					int i = 0;
 					while(rs.next()) {
 						c = new CustomerVO(rs, false);
 						locs.add(new CustomerLocationVO(rs, false));
@@ -145,7 +144,7 @@ public class CustomerAction extends SBActionAdapter {
 	 */
 	protected int getRecordCount() {
 		log.debug("Retrieving Total Counts");
-		StringBuilder sb = new StringBuilder();
+		StringBuilder sb = new StringBuilder(80);
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		sb.append("select count(customer_id) from ").append(schema).append("RAM_CUSTOMER");
 		int cnt = 0;
@@ -178,7 +177,7 @@ public class CustomerAction extends SBActionAdapter {
 		boolean deactivate = (Convert.formatBoolean(req.getParameter("deactivate")));
 		String msgAction;
 		String schema = (String)getAttribute("customDbSchema");
-		StringBuilder sql = new StringBuilder();
+		StringBuilder sql = new StringBuilder(220);
 		if (reactivate || deactivate) {
 			// is a re-activation or deactivation
 			sql.append("update ").append(schema).append("RAM_CUSTOMER ");
@@ -246,7 +245,7 @@ public class CustomerAction extends SBActionAdapter {
 		} else {
 	        // Build the redirect and messages
 			// Setup the redirect.
-			StringBuilder url = new StringBuilder();
+			StringBuilder url = new StringBuilder(50);
 			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 			url.append(page.getRequestURI());
 			url.append("?msg=").append(msg);

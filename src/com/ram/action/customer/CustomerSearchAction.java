@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 
+
 // RAMDataFeed
 import com.ram.datafeed.data.CustomerVO;
 
@@ -108,13 +109,13 @@ public class CustomerSearchAction extends SBActionAdapter {
 	public void build(SMTServletRequest req) throws ActionException {}
 	
 	public int getTotal(String srchCity, String srchState, int limit, int srchCustomerId, int srchActiveFlag) {
-		StringBuilder sql = new StringBuilder();
-		String schema = (String)getAttribute("customDbSchema");
+		StringBuilder sql = new StringBuilder(225);
+		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("select count(distinct a.customer_id) from ").append(schema);
 		sql.append("RAM_CUSTOMER a ");
 		sql.append("left outer join ").append(schema).append("RAM_CUSTOMER_LOCATION b ");
 		sql.append("on a.CUSTOMER_ID = b.CUSTOMER_ID ");
-		sql.append(getWhere(srchCity, srchState, limit, srchCustomerId, srchActiveFlag));
+		getWhere(sql, srchCity, srchState, limit, srchCustomerId, srchActiveFlag);
 		
 		int cnt = 0, index = 1;
 		PreparedStatement ps = null;
@@ -137,8 +138,8 @@ public class CustomerSearchAction extends SBActionAdapter {
 	}
 	
 	public String buildSql(String srchCity, String srchState, int limit, int srchCustomerId, int srchActiveFlag) {
-		StringBuilder sql = new StringBuilder();
-		String schema = (String)getAttribute("customDbSchema");
+		StringBuilder sql = new StringBuilder(225);
+		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 
 		// if city or state specified, filter by location
 		if (srchCity.length() > 0 || srchState.length() > 0) {
@@ -149,21 +150,18 @@ public class CustomerSearchAction extends SBActionAdapter {
 		} else {
 			sql.append("select top ").append(limit).append(" a.* from ").append(schema).append("RAM_CUSTOMER a ");
 		}
-		sql.append(getWhere(srchCity, srchState, limit, srchCustomerId, srchActiveFlag));
+		getWhere(sql, srchCity, srchState, limit, srchCustomerId, srchActiveFlag);
 		sql.append("order by CUSTOMER_NM");
 		
 		return sql.toString();
 	}
 	
-	public String getWhere(String srchCity, String srchState, int limit, int srchCustomerId, int srchActiveFlag) {
-		StringBuilder sql = new StringBuilder();
+	public void getWhere(StringBuilder sql, String srchCity, String srchState, int limit, int srchCustomerId, int srchActiveFlag) {
 		sql.append("where CUSTOMER_TYPE_ID in ('OEM', 'PROVIDER') ");
 
 		if (srchCustomerId > 0) sql.append("and a.CUSTOMER_ID = ? ");
 		if (srchCity.length() > 0) sql.append("and CITY_NM like ? ");
 		if (srchState.length() > 0) sql.append("and STATE_CD = ? ");
 		if (srchActiveFlag > -1) sql.append("and a.ACTIVE_FLG = ? ");
-		
-		return sql.toString();
 	}
 }
