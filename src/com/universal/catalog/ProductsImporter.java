@@ -16,12 +16,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-
-
 // Log4J 1.2.15
 import org.apache.log4j.Logger;
-
-
 
 //SMT Base Libs
 import com.siliconmtn.commerce.catalog.ProductVO;
@@ -45,6 +41,7 @@ public class ProductsImporter extends AbstractImporter {
 
 	private static final Logger log = Logger.getLogger(ProductsImporter.class);
 	private final String BAD_CHAR_SEQ_1 = "\u00e2" + "\u20ac" + "\u00a2";
+	private static final int DISPLAY_ORDER_MAX_PRODUCT = 100000;
 	private List<ProductVO> products;
 	private Map<String, String> productCategories = null;
 	private Map<String, String[]> productParents = null;
@@ -95,7 +92,7 @@ public class ProductsImporter extends AbstractImporter {
 	private List<ProductVO> retrieveProducts(CatalogImportVO catalog) throws FileNotFoundException, IOException {
 		BufferedReader data = null;
 		String fullPath = catalog.getSourceFilePath() + catalog.getSourceFileName();
-		//String fullPath = "C:/Temp/USA_cat_test/2014-04-15/TEST/sm_products.txt";
+
 		try {
 			data = new BufferedReader(new FileReader(fullPath));
 		} catch (FileNotFoundException fnfe) {
@@ -148,7 +145,6 @@ public class ProductsImporter extends AbstractImporter {
 				
 				// reset origPrice
 				origPrice = null;
-				
 				// set price
 				prod.setMsrpCostNo(Convert.formatDouble(fields[headers.get("PRICE")])); //PRICE
 				prod.setDescText(this.stripQuotes(fields[headers.get("DESCRIPTION")])); // DESCRIPTION
@@ -156,6 +152,12 @@ public class ProductsImporter extends AbstractImporter {
 				prod.setImage(fields[headers.get("IMAGE")]); // IMAGE
 				prod.setThumbnail(fields[headers.get("SMLIMG")]); // SMLIMG
 				prod.setUrlAlias(fields[headers.get("SKUID")]); // SKUID
+				
+				/* Mantis #9425: Add 'sales rank' field (i.e. SALES) to product import
+				 * to caculate the display order of the product within its category.*/
+				calculateProductDisplayOrder(fields, headers.get("SALES"), prod);
+				
+				// add to list
 				prods.add(prod);
 				
 				// Add the grouping data to a map.  If the product id ends with a "G"
@@ -190,6 +192,7 @@ public class ProductsImporter extends AbstractImporter {
 		}
 		
 		log.info("Products found: " + prods.size());
+		
 		return prods;
 	}
 	
@@ -242,13 +245,21 @@ public class ProductsImporter extends AbstractImporter {
 		int ctr=0;
 
 		// Load the categories.  If there are no categories, skip that entry
+		List<String> dupeList = null;
 		for (String prodId : productCategories.keySet()) {
 			String catIds = StringUtil.checkVal(productCategories.get(prodId)).trim();
 			if (catIds.length() == 0) continue;
 			
 			String[] cats = catIds.split(";");
+			dupeList = new ArrayList<>(cats.length);
 			for (int i=0; i < cats.length; i++) {
+				// if key is empty, continue.
 				if (StringUtil.checkVal(cats[i]).length() == 0) continue;
+				// if the category code is a duplicate, skip it.
+				if (dupeList.contains(cats[i])) continue;
+				
+				// process the category xr
+				dupeList.add(cats[i]);
 				String catCode = (catalog.getCatalogPrefix() + cats[i]);
 				ps.setString(1, catCode);
 				ps.setString(2, prodId);
@@ -314,7 +325,7 @@ public class ProductsImporter extends AbstractImporter {
 		sb.append("cust_product_no, product_nm, desc_txt, status_no, msrp_cost_no, ");
 		sb.append("discounted_cost_no, create_dt, image_url, thumbnail_url, short_desc,  ");		
 		sb.append("product_url, currency_type_id, title_nm, meta_desc, meta_kywd_txt, ");
-		sb.append("url_alias_txt) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+		sb.append("url_alias_txt, display_order_no) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 		
 		PreparedStatement ps = dbConn.prepareStatement(sb.toString());
 		int ctr=0;
@@ -341,6 +352,7 @@ public class ProductsImporter extends AbstractImporter {
 			ps.setString(index++, p.getMetaDesc());
 			ps.setString(index++, p.getMetaKywds());
 			ps.setString(index++, p.getUrlAlias());
+			ps.setInt(index++, p.getDisplayOrderNo());
 		
 			try {
 				ps.executeUpdate();
@@ -382,6 +394,26 @@ public class ProductsImporter extends AbstractImporter {
 			}
 		}
 		log.info("Price ranges updated.");
+	}
+	
+	/**
+	 * Calculates the display order number for the given product.  Defaults to 
+	 * the maximum display order number value if no value exists on the field map
+	 * or if the value found is invalid.
+	 * @param fields
+	 * @param fieldIndex
+	 * @param vo
+	 */
+	private void calculateProductDisplayOrder(String[] fields, Integer fieldIndex, ProductVO vo) {
+		int orderNo = DISPLAY_ORDER_MAX_PRODUCT;
+		if (fieldIndex != null) {
+			if (fieldIndex < fields.length) {
+				// valid index, try to get a value.
+				orderNo = Convert.formatInteger(fields[fieldIndex]);
+				orderNo = DISPLAY_ORDER_MAX_PRODUCT - orderNo;
+			}
+		}
+		vo.setDisplayOrderNo(orderNo);
 	}
 	
 	/**

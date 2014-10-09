@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
-import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -150,11 +149,7 @@ public class CourseCalendar extends SimpleActionAdapter {
 			req.setParameter(EventEntryAction.REQ_SERVICE_OPT, anatomy);
 		}
 		
-		Date start = Calendar.getInstance().getTime();
-		if (req.hasParameter("start")) {
-			start = Convert.formatDate(Convert.DATE_SLASH_SHORT_PATTERN, req.getParameter("start"));
-		}
-		req.setParameter(EventEntryAction.REQ_START_DT, Convert.formatDate(start, Convert.DATE_SLASH_PATTERN));
+		req.setParameter(EventEntryAction.REQ_START_DT, Convert.formatDate(Calendar.getInstance().getTime(), Convert.DATE_SLASH_PATTERN));
 		
 		//load the Events
 		actionInit.setActionId((String)mod.getAttribute(SBModuleVO.ATTRIBUTE_1));
@@ -255,14 +250,24 @@ public class CourseCalendar extends SimpleActionAdapter {
 		if (!req.hasParameter("specialty")) return;
 		List<String> filters = Arrays.asList(req.getParameter("specialty").split("~"));
 		if (filters == null || filters.size() == 0) return;
+		//log.debug(filters);
 		
 		for (EventTypeVO typeVo : grpVo.getTypes().values()) {
 			List<EventEntryVO> data = new ArrayList<EventEntryVO>();
 			for (EventEntryVO vo : typeVo.getEvents()) {
 				//check each event and only include those matching our filters
 				String spec = StringUtil.checkVal(vo.getServiceText());
-				if (filters.contains(spec))
-					data.add(vo);
+				//log.debug("spec=" + spec);
+				boolean addIt = false;
+				for (String f : filters) {
+					if (spec.contains(f)) {
+						addIt = true;
+						break;
+					}
+				}
+				if (!addIt) continue;
+				data.add(vo);
+				//log.debug("added " + vo.getServiceText());
 			}
 			log.debug("removed " + (typeVo.getEvents().size() - data.size()) + " events by specialty, now " + data.size());
 			typeVo.setEvents(data);
