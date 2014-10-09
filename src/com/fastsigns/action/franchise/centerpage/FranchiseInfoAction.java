@@ -102,10 +102,15 @@ public class FranchiseInfoAction extends SBActionAdapter {
 		req.setAttribute(Constants.REDIRECT_URL, redir + "msg=" + msg);
 	}
 	
+	/**
+	 * Update the reseller buttons that can appear on the center's homepage
+	 * @param req
+	 * @throws SQLException
+	 */
 	private void updateResellerButtons(SMTServletRequest req) throws SQLException {
 		log.debug("Beginning Reseller Button Update.");
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = new StringBuilder();
+		StringBuilder sql = new StringBuilder(160);
 		String franchiseId = CenterPageAction.getFranchiseId(req);
 		
 		sql.append("UPDATE ").append(customDb).append("FTS_FRANCHISE ");
@@ -114,14 +119,21 @@ public class FranchiseInfoAction extends SBActionAdapter {
 		
 		log.debug(sql.toString() + "|" + req.getParameter("resellerTypeId") + ", " + req.getParameter("resellerLink") + ", " + franchiseId);
 		
-		PreparedStatement ps = dbConn.prepareStatement(sql.toString());
+		PreparedStatement ps = null;
 
-		ps.setString(1, req.getParameter("resellerTypeId"));
-		ps.setString(2, req.getParameter("resellerLink"));
-		ps.setString(3, franchiseId);
-		
-		if (ps.executeUpdate() < 1) 
-			log.error("Franchise " + franchiseId + " was unable to update it's reseller button.");
+		try {
+			ps = dbConn.prepareStatement(sql.toString());
+			ps.setString(1, req.getParameter("resellerTypeId"));
+			ps.setString(2, req.getParameter("resellerLink"));
+			ps.setString(3, franchiseId);
+			
+			if (ps.executeUpdate() < 1) 
+				log.error("Franchise " + franchiseId + " was unable to update it's reseller button.");
+		} finally {
+			try {
+				ps.close();
+			} catch(Exception e) {}
+		}
 	}
 
 	@Override
