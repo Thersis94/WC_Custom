@@ -7,12 +7,14 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+
 // RAMDataFeed
 import com.ram.datafeed.data.CustomerVO;
 
 // SMTBaseLibs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -63,28 +65,11 @@ public class CustomerSearchAction extends SBActionAdapter {
 		String srchState = StringUtil.checkVal(req.getParameter("srchState"));
 		int srchActiveFlag = Convert.formatInteger(req.getParameter("srchActiveFlag"), -1, false);
 		log.debug("req param searchActiveFlag|converted val: " + req.getParameter("srchActiveFlag") + "|" + srchActiveFlag);
-		
+		int start = Convert.formatInteger(req.getParameter("start"), 0);
+		int limit = Convert.formatInteger(req.getParameter("limit"), 25) + start;
 		List<CustomerVO> data = new ArrayList<>();
-		String schema = (String)getAttribute("customDbSchema");
-		StringBuilder sql = new StringBuilder();
-		
-		// if city or state specified, filter by location
-		if (srchCity.length() > 0 || srchState.length() > 0) {
-			sql.append("select a.*, b.CITY_NM, b.STATE_CD ");
-			sql.append("from ").append(schema).append("RAM_CUSTOMER a ");
-			sql.append("inner join ").append(schema).append("RAM_CUSTOMER_LOCATION b ");
-			sql.append("on a.CUSTOMER_ID = b.CUSTOMER_ID ");	
-		} else {
-			sql.append("select a.* from ").append(schema).append("RAM_CUSTOMER a ");
-		}
-		
-		sql.append("where CUSTOMER_TYPE_ID in ('OEM', 'PROVIDER') ");
 
-		if (srchCustomerId > 0) sql.append("and a.CUSTOMER_ID = ? ");
-		if (srchCity.length() > 0) sql.append("and CITY_NM like ? ");
-		if (srchState.length() > 0) sql.append("and STATE_CD = ? ");
-		if (srchActiveFlag > -1) sql.append("and a.ACTIVE_FLG = ? ");
-		sql.append("order by CUSTOMER_NM");
+		String sql = buildSql(srchCity, srchState, limit, srchCustomerId, srchActiveFlag);
 		
 		log.debug("CustomerSearchAction retrieve SQL: " + sql.toString() + "|" + srchCustomerId);
 		int index = 1;
@@ -97,14 +82,9 @@ public class CustomerSearchAction extends SBActionAdapter {
 			if (srchActiveFlag > -1) ps.setInt(index++, srchActiveFlag);
 			
 			ResultSet rs = ps.executeQuery();
-			int prevId = -1;
-			int currId = -1;
-			while (rs.next()) {
-				currId = rs.getInt("CUSTOMER_ID");
-				if (currId != prevId) {
+			for(int i=0; rs.next(); i++) {
+				if (i >= start && i < limit)
 					data.add(new CustomerVO(rs, false));
-				}
-				prevId = currId;
 			}
 		} catch (SQLException e) {
 			log.error("Error retrieving RAM customer data, ", e);
@@ -116,7 +96,7 @@ public class CustomerSearchAction extends SBActionAdapter {
 		}
 
 		ModuleVO modVo = (ModuleVO) attributes.get(Constants.MODULE_DATA);
-        modVo.setDataSize(data.size());
+        modVo.setDataSize(getTotal(srchCity, srchState, limit, srchCustomerId, srchActiveFlag));
         modVo.setActionData(data);
         this.setAttribute(Constants.MODULE_DATA, modVo);
 	}
@@ -127,4 +107,63 @@ public class CustomerSearchAction extends SBActionAdapter {
 	@Override
 	public void build(SMTServletRequest req) throws ActionException {}
 	
+	public int getTotal(String srchCity, String srchState, int limit, int srchCustomerId, int srchActiveFlag) {
+		StringBuilder sql = new StringBuilder();
+		String schema = (String)getAttribute("customDbSchema");
+		sql.append("select count(distinct a.customer_id) from ").append(schema);
+		sql.append("RAM_CUSTOMER a ");
+		sql.append("left outer join ").append(schema).append("RAM_CUSTOMER_LOCATION b ");
+		sql.append("on a.CUSTOMER_ID = b.CUSTOMER_ID ");
+		sql.append(getWhere(srchCity, srchState, limit, srchCustomerId, srchActiveFlag));
+		
+		int cnt = 0, index = 1;
+		PreparedStatement ps = null;
+		try {
+			ps = dbConn.prepareStatement(sql.toString());
+			if (srchCustomerId > 0) ps.setInt(index++, srchCustomerId);
+			if (srchCity.length() > 0) ps.setString(index++, srchCity);
+			if (srchState.length() > 0) ps.setString(index++, srchState);
+			if (srchActiveFlag > -1) ps.setInt(index++, srchActiveFlag);
+			
+			ResultSet rs = ps.executeQuery();
+			if(rs.next())
+				cnt = rs.getInt(1);
+		} catch (SQLException e) {
+			log.error("Error retrieving RAM customer totals, ", e);
+		} finally {
+			DBUtil.close(ps);
+		}	
+	return cnt;	
+	}
+	
+	public String buildSql(String srchCity, String srchState, int limit, int srchCustomerId, int srchActiveFlag) {
+		StringBuilder sql = new StringBuilder();
+		String schema = (String)getAttribute("customDbSchema");
+
+		// if city or state specified, filter by location
+		if (srchCity.length() > 0 || srchState.length() > 0) {
+			sql.append("select distinct top ").append(limit).append(" a.* ");
+			sql.append("from ").append(schema).append("RAM_CUSTOMER a ");
+			sql.append("inner join ").append(schema).append("RAM_CUSTOMER_LOCATION b ");
+			sql.append("on a.CUSTOMER_ID = b.CUSTOMER_ID ");
+		} else {
+			sql.append("select top ").append(limit).append(" a.* from ").append(schema).append("RAM_CUSTOMER a ");
+		}
+		sql.append(getWhere(srchCity, srchState, limit, srchCustomerId, srchActiveFlag));
+		sql.append("order by CUSTOMER_NM");
+		
+		return sql.toString();
+	}
+	
+	public String getWhere(String srchCity, String srchState, int limit, int srchCustomerId, int srchActiveFlag) {
+		StringBuilder sql = new StringBuilder();
+		sql.append("where CUSTOMER_TYPE_ID in ('OEM', 'PROVIDER') ");
+
+		if (srchCustomerId > 0) sql.append("and a.CUSTOMER_ID = ? ");
+		if (srchCity.length() > 0) sql.append("and CITY_NM like ? ");
+		if (srchState.length() > 0) sql.append("and STATE_CD = ? ");
+		if (srchActiveFlag > -1) sql.append("and a.ACTIVE_FLG = ? ");
+		
+		return sql.toString();
+	}
 }
