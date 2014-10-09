@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -56,6 +57,7 @@ public class AbandonedCartExporter extends CommandLineUtil {
 	
 	private final String DELIM_FIELD = "|";
 	private final String DELIM_VALUE = ";";
+	private final Integer DEFAULT_SITES_LIMIT = new Integer(10);
 	private final char terminator = 0xa;
 	private final String NEWLINE = Character.toString(terminator);
 	private Date dateStart = null;
@@ -71,8 +73,7 @@ public class AbandonedCartExporter extends CommandLineUtil {
 	public AbandonedCartExporter(String[] args) {
 		super(args);
 		messageLog = new ArrayList<>();
-		brandMap = new HashMap<>();
-		loadBrandMap();
+		brandMap = new LinkedHashMap<>();
 		PropertyConfigurator.configure(logPropertiesPath);
 	}
 
@@ -86,8 +87,6 @@ public class AbandonedCartExporter extends CommandLineUtil {
 	
 	@Override
 	public void run() {
-		// format the start/end dates for this run
-		formatDates();
 		
 		// load properties
 		this.loadProperties(propertiesPath);
@@ -106,6 +105,12 @@ public class AbandonedCartExporter extends CommandLineUtil {
 			sendEmail(0,1);
 			return;
 		}
+		
+		// loads the brand map from the properties file.
+		loadBrandMap();
+		
+		// format the start/end dates for this run
+		formatDates();
 
 		// process abandoned carts
 		processCarts();
@@ -131,11 +136,10 @@ public class AbandonedCartExporter extends CommandLineUtil {
 	 */
 	protected void processCarts() {
 		log.info("processing carts...");
-		String[] siteIds = props.getProperty("sourceIds").split(",");
 		long baseTime = Calendar.getInstance().getTimeInMillis();
 		StringBuilder statusMsg = null;
 		int successCnt = 0, failCnt = 0;
-		for (String sourceId : siteIds) {
+		for (String sourceId : brandMap.keySet()) {
 			statusMsg = new StringBuilder();
 			try {
 				//1. retrieve carts
@@ -148,7 +152,7 @@ public class AbandonedCartExporter extends CommandLineUtil {
 				StringBuilder fileName = new StringBuilder();
 				fileName.append(brandMap.get(sourceId)).append("_").append(baseTime);
 				fileName.append(props.getProperty("reportFileExtension"));
-				buildReport(sourceId, fileName.toString());
+				buildExportFile(sourceId, fileName.toString());
 				
 				successCnt++;
 			} catch (SQLException sqle) {
@@ -206,7 +210,8 @@ public class AbandonedCartExporter extends CommandLineUtil {
 		sql.append("and UPDATE_DT between ? and ? ");
 		sql.append("order by SOURCE_ID, PROFILE_ID, UPDATE_DT desc");
 		log.info("Using cart query SQL: " + sql.toString());
-		log.info("sourceId|start|end: " + sourceId + "|" + Convert.formatSQLDate(dateStart) + "|" + Convert.formatSQLDate(dateEnd));
+		log.info("sourceId|start|end: " + sourceId + "|" + 
+				Convert.formatSQLDate(dateStart) + "|" + Convert.formatSQLDate(dateEnd));
 		
 		// execute query
 		PreparedStatement ps = null;
@@ -264,7 +269,7 @@ public class AbandonedCartExporter extends CommandLineUtil {
 	 * @throws FileNotFoundException
 	 * @throws IOException
 	 */
-	private void buildReport(String sourceId, String reportFileName) 
+	private void buildExportFile(String sourceId, String reportFileName) 
 			throws FileNotFoundException, IOException {
 		if (carts.isEmpty()) return;
 		StringBuilder outFile = new StringBuilder();
@@ -365,7 +370,8 @@ public class AbandonedCartExporter extends CommandLineUtil {
 	
 	/**
 	 * Sends email admin. 
-	 * @param success
+	 * @param successCnt
+	 * @param failCnt
 	 */
 	private void sendEmail(int successCnt, int failCnt) {
 		log.info("sending email...");
@@ -400,9 +406,9 @@ public class AbandonedCartExporter extends CommandLineUtil {
 	 * @throws IOException
 	 */
 	private void moveFile(byte[] data, String reportFileName) throws IOException {
-		log.info("SFTP'ing file to host: " + props.getProperty("sftpHost"));
+		log.info("SFTP'ing file to: " + props.getProperty("sftpHost"));
 		String reportFullPath = props.getProperty("sftpReportFilePath") + reportFileName;
-		log.info("SFTP file and path: " + reportFullPath);
+		
     	// Connect to the SFTP Server
     	SFTPClient s = new SFTPClient();
     	int port = Convert.formatInteger(props.getProperty("sftpPort"));
@@ -412,12 +418,16 @@ public class AbandonedCartExporter extends CommandLineUtil {
 	        
 	       	// Transfer the data
 	       	s.writeData(data, reportFullPath);
+			log.info("Successfully wrote file: " + reportFullPath);
 	       	addMessage("Successfully SFTP'd " + reportFileName + " to " + props.getProperty("sftpHost"));
     	} catch(IOException ioe) {
-    		log.error("Error SFTP'ing file, ", ioe);
+    		addMessage("Failed to SFTP " + reportFileName + " to " + props.getProperty("sftpHost"));
+    		addMessage("Error cause: " + ioe.getMessage());
+    		log.error("Error SFTP'ing file: " + reportFullPath + ", ", ioe);
     	} finally {
     		// Close the connection
     		s.disconnect();
+    		log.info("Disconnected from SFTP host.");
     	}
     }
 	
@@ -434,16 +444,23 @@ public class AbandonedCartExporter extends CommandLineUtil {
 	 * generation.
 	 */
 	private void loadBrandMap() {
-		if (brandMap == null) {
-			brandMap = new HashMap<>();
+		// retrieve the number of sites limit
+		int sitesNo = Convert.formatInteger(props.getProperty("sourceSitesNumber"),DEFAULT_SITES_LIMIT);
+		String keyPrefix = StringUtil.checkVal(props.getProperty("organizationPrefix"));
+		// loop sites source properties to load brand map
+		for (int i = 1; i <= sitesNo; i++) {
+			if (props.getProperty(keyPrefix+i) != null) {
+				brandMap.put(keyPrefix+i, props.getProperty(keyPrefix+i));
+			} else {
+				// we're done...bail
+				break;
+			}
 		}
-		brandMap.put("USA_1","Signals");
-		brandMap.put("USA_2","WhatOnEarth");
-		brandMap.put("USA_3","Wireless");
-		brandMap.put("USA_4","SupportPlus");
-		brandMap.put("USA_5","BasBleu");
-		brandMap.put("USA_6","CatalogClassics");
-		brandMap.put("USA_7","Fiorina");
+		
+		// TODO remove DEBUG after testing.
+		for (String key : brandMap.keySet()) {
+			log.debug("brandMap key/val: " + key + "|" + brandMap.get(key));
+		}
 	}
 
 }
