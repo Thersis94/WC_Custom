@@ -70,7 +70,7 @@ public class CustomerLocationAction extends SBActionAdapter {
 		int customerId = Convert.formatInteger(req.getParameter("customerId"), 0);
 		int customerLocationId = Convert.formatInteger(req.getParameter("customerLocationId"), 0);
 		String customerTypeId = StringUtil.checkVal(req.getParameter("customerTypeId"));
-		String schema = (String)getAttribute("customDbSchema");
+		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(320);
 		sql.append("select b.* from ").append(schema);
 		sql.append("ram_customer_location b ");
@@ -125,7 +125,7 @@ public class CustomerLocationAction extends SBActionAdapter {
 
 		boolean isUpdate = (vo.getCustomerLocationId() > 0);
 		String msgAction = null;
-		String schema = (String)getAttribute("customDbSchema");
+		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(300);
 		if (isUpdate) {
 			sql.append("update ").append(schema).append("RAM_CUSTOMER_LOCATION ");

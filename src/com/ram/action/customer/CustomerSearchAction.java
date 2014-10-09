@@ -115,7 +115,7 @@ public class CustomerSearchAction extends SBActionAdapter {
 		sql.append("RAM_CUSTOMER a ");
 		sql.append("left outer join ").append(schema).append("RAM_CUSTOMER_LOCATION b ");
 		sql.append("on a.CUSTOMER_ID = b.CUSTOMER_ID ");
-		getWhere(sql, srchCity, srchState, limit, srchCustomerId, srchActiveFlag);
+		appendWhere(sql, srchCity, srchState, limit, srchCustomerId, srchActiveFlag);
 		
 		int cnt = 0, index = 1;
 		PreparedStatement ps = null;
@@ -150,13 +150,13 @@ public class CustomerSearchAction extends SBActionAdapter {
 		} else {
 			sql.append("select top ").append(limit).append(" a.* from ").append(schema).append("RAM_CUSTOMER a ");
 		}
-		getWhere(sql, srchCity, srchState, limit, srchCustomerId, srchActiveFlag);
+		appendWhere(sql, srchCity, srchState, limit, srchCustomerId, srchActiveFlag);
 		sql.append("order by CUSTOMER_NM");
 		
 		return sql.toString();
 	}
 	
-	public void getWhere(StringBuilder sql, String srchCity, String srchState, int limit, int srchCustomerId, int srchActiveFlag) {
+	public void appendWhere(StringBuilder sql, String srchCity, String srchState, int limit, int srchCustomerId, int srchActiveFlag) {
 		sql.append("where CUSTOMER_TYPE_ID in ('OEM', 'PROVIDER') ");
 
 		if (srchCustomerId > 0) sql.append("and a.CUSTOMER_ID = ? ");
