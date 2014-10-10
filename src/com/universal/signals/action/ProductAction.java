@@ -369,7 +369,7 @@ public class ProductAction extends SBActionAdapter {
 		s.append("inner join PRODUCT_CATEGORY c on b.PRODUCT_CATEGORY_CD = c.PRODUCT_CATEGORY_CD ");
 		s.append("inner join PRODUCT_CATALOG d on a.product_catalog_id=d.product_catalog_id and d.product_catalog_id = ? ");
 		s.append("and d.status_no = ? where c.short_desc = ? AND a.PRODUCT_GROUP_ID IS NULL ");
-		s.append("order by product_nm ");
+		s.append("order by a.DISPLAY_ORDER_NO ");
 		log.debug("Product list SQL: " + s + "|" + cat);
 		
 		int page = Convert.formatInteger(req.getParameter("page"),1); 
