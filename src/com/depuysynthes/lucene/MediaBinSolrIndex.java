@@ -164,8 +164,15 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 				doc.setField(MediaBinField.AssetDesc.getField(), vo.getAssetDesc());
 				
 				//turn the flat/delimited hierarchy into a structure that PathHierarchyTokenizer will understand
-		    		for (String s : StringUtil.checkVal(vo.getAnatomy()).split("~"))
-		    			doc.addField(SearchDocumentHandler.HIERARCHY, s.replace(",", "/"));
+		    		for (String s : StringUtil.checkVal(vo.getAnatomy()).split("~")) {
+		    			//need to tokenize the levels and trim spaces from each, the MB team are slobs!
+		    			StringBuilder sb = new StringBuilder();
+		    			for (String subStr : s.split(",")) {
+		    				sb.append(StringUtil.checkVal(subStr).trim()).append("~");
+		    			}
+		    			if (sb.length() > 0) sb.deleteCharAt(sb.length()-1);
+		    			doc.addField(SearchDocumentHandler.HIERARCHY, sb.toString());
+		    		}
 		    		
 				if (fileName.length() > 0 && dotIndex > -1 && (dotIndex + 1) < fileName.length())
 					doc.setField(SearchDocumentHandler.FILE_EXTENSION, fileName.substring(++dotIndex));
