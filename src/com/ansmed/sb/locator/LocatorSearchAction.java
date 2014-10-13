@@ -81,6 +81,7 @@ public class LocatorSearchAction extends SBActionAdapter {
 		String city = req.getParameter("city");
 		String state = StringUtil.checkVal(req.getParameter("state"));
 		String zipCode = StringUtil.checkVal(req.getParameter("zipCode"));
+		String country = StringUtil.checkVal(req.getParameter("country"));
 		// useRange is used by the 'range' view
 		useRange = Convert.formatBoolean(req.getParameter("useRange"));
 		if (StringUtil.checkVal(zipCode).length() == 0) {
@@ -95,6 +96,7 @@ public class LocatorSearchAction extends SBActionAdapter {
 			//log.debug("Parsing Full Address: " + gLoc.getGeocodeType());
 		} else {
 			gLoc = new GeocodeLocation(address, city, state, zipCode);
+			gLoc.setCountry(country);
 		}
 		
 		// Set the paging information.  rpp stands for "results per page"
