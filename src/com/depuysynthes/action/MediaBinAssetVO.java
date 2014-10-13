@@ -54,6 +54,7 @@ public class MediaBinAssetVO extends SBModuleVO {
 	private boolean isVideo = false;
 	private String description = null;
 	private String anatomy = null;
+	private String metaKeywords = null;
 	
 	public MediaBinAssetVO(ResultSet rs) {
 		DBUtil db = new DBUtil();
@@ -80,6 +81,7 @@ public class MediaBinAssetVO extends SBModuleVO {
 		languageCode = db.getStringVal("language_cd", rs);
 		setDescription(db.getStringVal("desc_txt", rs));
 		setAnatomy(db.getStringVal("anatomy_txt", rs));
+		setMetaKeywords(db.getStringVal("meta_keywords_txt", rs));
 		
 		String dims = db.getStringVal("dimensions_txt", rs);
 		if (dims != null && dims.indexOf("~") > 0) {
@@ -310,6 +312,16 @@ public class MediaBinAssetVO extends SBModuleVO {
 
 	public void setAnatomy(String anatomy) {
 		this.anatomy = anatomy;
+	}
+
+
+	public String getMetaKeywords() {
+		return metaKeywords;
+	}
+
+
+	public void setMetaKeywords(String keywords) {
+		this.metaKeywords = keywords;
 	}
 	
 }
