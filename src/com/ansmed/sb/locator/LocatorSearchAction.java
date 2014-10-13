@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+
 // SMT Base Libs
 import com.ansmed.sb.physician.SurgeonVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -28,6 +29,7 @@ import com.smt.sitebuilder.action.gis.MapAction;
 import com.smt.sitebuilder.action.gis.MapLocationVO;
 import com.smt.sitebuilder.action.gis.MapVO;
 import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -82,6 +84,7 @@ public class LocatorSearchAction extends SBActionAdapter {
 		String state = StringUtil.checkVal(req.getParameter("state"));
 		String zipCode = StringUtil.checkVal(req.getParameter("zipCode"));
 		String country = StringUtil.checkVal(req.getParameter("country"));
+
 		// useRange is used by the 'range' view
 		useRange = Convert.formatBoolean(req.getParameter("useRange"));
 		if (StringUtil.checkVal(zipCode).length() == 0) {
@@ -96,8 +99,15 @@ public class LocatorSearchAction extends SBActionAdapter {
 			//log.debug("Parsing Full Address: " + gLoc.getGeocodeType());
 		} else {
 			gLoc = new GeocodeLocation(address, city, state, zipCode);
-			gLoc.setCountry(country);
 		}
+		
+		// set country value
+		gLoc.setCountry(country);
+		if (gLoc.getCountry().length() == 0) {
+			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+			gLoc.setCountry(site.getCountryCode());
+		}
+		log.debug("gLoc country: " + gLoc.getCountry());
 		
 		// Set the paging information.  rpp stands for "results per page"
 		Integer page = Convert.formatInteger(req.getParameter("page"), 1);
