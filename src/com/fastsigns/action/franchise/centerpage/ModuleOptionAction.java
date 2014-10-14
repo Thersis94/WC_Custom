@@ -41,6 +41,8 @@ import com.smt.sitebuilder.common.constants.Constants;
  * <b>Changes: </b>
  ****************************************************************************/
 public class ModuleOptionAction extends SBActionAdapter{
+	//This is a list of the modules that only allow one item at a time
+	final String modList = "11 12";
 	
 	public ModuleOptionAction(ActionInitVO avo){
 		super(avo);
@@ -108,7 +110,10 @@ public class ModuleOptionAction extends SBActionAdapter{
 					if (Convert.formatInteger(req.getParameter("parentId")) > 0 && 
 							Convert.formatInteger(req.getParameter("approvalFlag"), 0).intValue() == 100)
 						this.revokeApprovalSubmission(req);
-
+					
+					if (!modList.contains(req.getParameter("moduleId")))
+						req.setParameter("skipDelete", "true");
+					
 				case CenterPageAction.MODULE_OPTION_UPDATE:
 					this.updateModuleOptions(req);
 					super.clearCacheByGroup(siteId);
@@ -386,9 +391,13 @@ public class ModuleOptionAction extends SBActionAdapter{
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		String[] options = req.getParameterValues("selectedElements");
 		String locationId = req.getParameter("locationId");
+		boolean skipDelete = Convert.formatBoolean(req.getParameter("skipDelete"), false);
+		String dSql = "";
 		
-		String dSql = "delete from " + customDb + "FTS_CP_MODULE_FRANCHISE_XR ";
-		dSql += "where CP_LOCATION_MODULE_XR_ID = ? ";
+		if (!skipDelete) {
+			dSql = "delete from " + customDb + "FTS_CP_MODULE_FRANCHISE_XR ";
+			dSql += "where CP_LOCATION_MODULE_XR_ID = ? ";
+		}
 		
 		String iSql = "insert into " + customDb + "FTS_CP_MODULE_FRANCHISE_XR ";
 		iSql += "(cp_location_module_xr_id, cp_module_option_id, order_no, create_dt) ";
@@ -398,9 +407,12 @@ public class ModuleOptionAction extends SBActionAdapter{
 		PreparedStatement psDel = null;
 		try {
 			// Delete the existing records
-			psDel = dbConn.prepareStatement(dSql);
-			psDel.setString(1, locationId);
-			psDel.executeUpdate();
+			// This step will be skipped when we are adding a new asset to a module that allows multiple assets.
+			if (!skipDelete) {
+				psDel = dbConn.prepareStatement(dSql);
+				psDel.setString(1, locationId);
+				psDel.executeUpdate();
+			}
 			
 			// Add new records
 			psIns = dbConn.prepareStatement(iSql);
