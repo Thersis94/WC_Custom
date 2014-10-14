@@ -155,7 +155,9 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 				doc.setField(SearchDocumentHandler.FILE_SIZE, vo.getFileSizeNo());
 				doc.setField(SearchDocumentHandler.DURATION, parseDuration(vo.getDuration()));
 				doc.setField(SearchDocumentHandler.SECTION, parseBusinessUnit(vo.getBusinessUnitNm()));
-				doc.setField(SearchDocumentHandler.META_KEYWORDS, parseDownloadType(vo.getDownloadTypeTxt(), vo.isVideo()));
+				//TODO this keyword hack was for DS, which will need to be addressed.
+				//doc.setField(SearchDocumentHandler.META_KEYWORDS, parseDownloadType(vo.getDownloadTypeTxt(), vo.isVideo()));
+				doc.setField(SearchDocumentHandler.META_KEYWORDS, vo.getMetaKeywords());
 				doc.setField(SearchDocumentHandler.MODULE_TYPE, "DOWNLOAD");
 				doc.setField(SearchDocumentHandler.UPDATE_DATE, df.format(vo.getModifiedDt()));
 				doc.setField(SearchDocumentHandler.CONTENTS, vo.isVideo() ? "" : parseFile(vo, fileRepos));
@@ -164,8 +166,15 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 				doc.setField(MediaBinField.AssetDesc.getField(), vo.getAssetDesc());
 				
 				//turn the flat/delimited hierarchy into a structure that PathHierarchyTokenizer will understand
-		    		for (String s : StringUtil.checkVal(vo.getAnatomy()).split("~"))
-		    			doc.addField(SearchDocumentHandler.HIERARCHY, s.replace(",", "/"));
+		    		for (String s : StringUtil.checkVal(vo.getAnatomy()).split("~")) {
+		    			//need to tokenize the levels and trim spaces from each, the MB team are slobs!
+		    			StringBuilder sb = new StringBuilder();
+		    			for (String subStr : s.split(",")) {
+		    				sb.append(StringUtil.checkVal(subStr).trim()).append("~");
+		    			}
+		    			if (sb.length() > 0) sb.deleteCharAt(sb.length()-1);
+		    			doc.addField(SearchDocumentHandler.HIERARCHY, sb.toString());
+		    		}
 		    		
 				if (fileName.length() > 0 && dotIndex > -1 && (dotIndex + 1) < fileName.length())
 					doc.setField(SearchDocumentHandler.FILE_EXTENSION, fileName.substring(++dotIndex));
@@ -205,7 +214,7 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 	    String summary = "";
 	    //DSI work-around.  DS.com should never have been using AssetDesc, but 
 	    //since it was validated that way we can't change it.
-	    if (vo.getOpCoNm().indexOf("DSI.com") > 0) {
+	    if (vo.getOpCoNm().indexOf("DSI.com") > -1) {
 		    summary = StringUtil.checkVal(vo.getDescription());
 	    }
 	    
@@ -215,7 +224,7 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 			if (summary.length() > 0) summary += " | ";
 			summary += StringUtil.checkVal(vo.getProdNm());
 		}
-		
+
 		return summary;
     }
     
@@ -374,7 +383,7 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
      * @param downloadType
      * @param isVideo
      * @return
-     */
+   
     private String parseDownloadType(String downloadType, boolean isVideo) {
     	String tmp = StringUtil.checkVal(downloadType).replace("~", ",");
     	if (isVideo) {
@@ -392,6 +401,7 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
     	}
     	return tmp;
     }
+   */
     
     /**
      * Helper method for loading the business units look-up map.  This map provides

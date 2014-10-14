@@ -368,7 +368,10 @@ public class CenterPageAction extends SimpleActionAdapter {
 	public Map<String, CenterModuleVO> getModuleData(String franId, SMTServletRequest req) {
 		Boolean isKeystone = Convert.formatBoolean(req.getAttribute("isKeystone"), false);				//In Webedit
 		Boolean isPreview = Convert.formatBoolean(req.getAttribute(Constants.PAGE_PREVIEW), false);				//In Preview mode
-		if (isPreview) req.setAttribute("isKeystone", true); //this builds the query we need
+		if (isPreview) {
+			req.setAttribute("isKeystone", true); //this builds the query we need
+			isKeystone = true; //This ensures that the most recent versions of the modules will appear on the site.
+		}
 		
 		Integer locationId = Convert.formatInteger(req.getParameter("locationId"), 0);
 		StringBuilder s = formatQuery(req);
