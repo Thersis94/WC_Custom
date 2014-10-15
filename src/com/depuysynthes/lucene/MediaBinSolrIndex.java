@@ -86,7 +86,8 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 	public enum MediaBinField { 
 		AssetType("assetType_s"),
 		AssetDesc("assetDesc_s"),
-		TrackingNo("trackingNumber_s");
+		TrackingNo("trackingNumber_s"),
+		VideoChapters("videoChapters_s");
 		MediaBinField(String s) { this.metaDataField = s; }
 		private String metaDataField = null;
 		public String getField() { return metaDataField; }
@@ -155,7 +156,7 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 				doc.setField(SearchDocumentHandler.FILE_SIZE, vo.getFileSizeNo());
 				doc.setField(SearchDocumentHandler.DURATION, parseDuration(vo.getDuration()));
 				doc.setField(SearchDocumentHandler.SECTION, parseBusinessUnit(vo.getBusinessUnitNm()));
-				//TODO this keyword hack was for DS, which will need to be addressed.
+				//TODO this keyword hack for downloadType was for DS, which will need to be addressed.
 				//doc.setField(SearchDocumentHandler.META_KEYWORDS, parseDownloadType(vo.getDownloadTypeTxt(), vo.isVideo()));
 				doc.setField(SearchDocumentHandler.META_KEYWORDS, vo.getMetaKeywords());
 				doc.setField(SearchDocumentHandler.MODULE_TYPE, "DOWNLOAD");
@@ -164,6 +165,8 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 				doc.setField(MediaBinField.TrackingNo.getField(), vo.getTrackingNoTxt()); //DSI uses this to align supporting images and tag favorites
 				doc.setField(MediaBinField.AssetType.getField(), this.getAssetType(vo));
 				doc.setField(MediaBinField.AssetDesc.getField(), vo.getAssetDesc());
+				if (vo.isVideo())
+					doc.setField(MediaBinField.VideoChapters.getField(), vo.getVideoChapters());
 				
 				//turn the flat/delimited hierarchy into a structure that PathHierarchyTokenizer will understand
 		    		for (String s : StringUtil.checkVal(vo.getAnatomy()).split("~")) {
@@ -269,8 +272,9 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
     private List<MediaBinAssetVO> loadMetaData(Connection conn, String dbSchema) {
     	List<MediaBinAssetVO> data = new ArrayList<MediaBinAssetVO>();
     	StringBuilder sql = new StringBuilder();
-		sql.append("select * from ").append(dbSchema).append("DPY_SYN_MEDIABIN ");
-		sql.append("where lower(asset_type) in (null"); //loop all pdf types
+		sql.append("select * from ").append(dbSchema).append("DPY_SYN_MEDIABIN a ");
+		sql.append("left join video_meta_content b on a.dpy_syn_mediabin_id=b.asset_id and b.asset_type='MEDIABIN' ");
+		sql.append("where lower(a.asset_type) in (null"); //loop all pdf types
 		for (int x=MediaBinAdminAction.PDF_ASSETS.length; x > 0; x--) sql.append(",?");
 		for (int y=MediaBinAdminAction.VIDEO_ASSETS.length; y > 0; y--) sql.append(",?");
 		sql.append(")");
