@@ -244,8 +244,8 @@ public class DSMediaBinImporter extends CommandLineUtil {
 		sql.append("business_unit_nm, business_unit_id, download_type_txt, language_cd, literature_type_txt, ");
 		sql.append("modified_dt, file_nm, dimensions_txt, orig_file_size_no, prod_family, ");
 		sql.append("prod_nm, revision_lvl_txt, opco_nm, title_txt, tracking_no_txt, ");
-		sql.append("import_file_cd, duration_length_no, anatomy_txt, desc_txt) ");
-		sql.append("values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)" );
+		sql.append("import_file_cd, duration_length_no, anatomy_txt, desc_txt, meta_kywds_txt) ");
+		sql.append("values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)" );
 
 		int recordCnt = 0;
 		PreparedStatement ps  = null;
@@ -320,11 +320,11 @@ public class DSMediaBinImporter extends CommandLineUtil {
 				}
 				
 				//pluck the tracking#s off the end of the Description field, if data exists
-				if (StringUtil.checkVal(row.get("Description")).indexOf("DSUS") > 0) {
-					String desc = row.get("Description");
-					desc = desc.substring(0, desc.lastIndexOf("DSUS"));
-					row.put("Description", desc);
-				}
+//				if (StringUtil.checkVal(row.get("Description")).indexOf("DSUS") > 0) {
+//					String desc = row.get("Description");
+//					desc = desc.substring(0, desc.lastIndexOf("DSUS"));
+//					row.put("Description", desc);
+//				}
 				
 				//determine Modification Date for the record. -- displays in site-search results
 				Date modDt = Convert.formatDate(Convert.DATE_TIME_SLASH_PATTERN_FULL_12HR, row.get("Check In Time"));
@@ -356,6 +356,7 @@ public class DSMediaBinImporter extends CommandLineUtil {
 				ps.setDouble(22, Convert.formatDouble(row.get("Media Play Length (secs.)")));
 				ps.setString(23, StringUtil.checkVal(row.get("Anatomy"), null)); //used on DSI.com
 				ps.setString(24, StringUtil.checkVal(row.get("Description"), null)); //used on DSI.com
+				ps.setString(25, StringUtil.checkVal(row.get("Keywords"), null)); //used on DSI.com
 				
 				if (DEBUG_MODE) {
 					ps.executeUpdate();

@@ -86,7 +86,8 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 	public enum MediaBinField { 
 		AssetType("assetType_s"),
 		AssetDesc("assetDesc_s"),
-		TrackingNo("trackingNumber_s");
+		TrackingNo("trackingNumber_s"),
+		VideoChapters("videoChapters_s");
 		MediaBinField(String s) { this.metaDataField = s; }
 		private String metaDataField = null;
 		public String getField() { return metaDataField; }
@@ -155,17 +156,28 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 				doc.setField(SearchDocumentHandler.FILE_SIZE, vo.getFileSizeNo());
 				doc.setField(SearchDocumentHandler.DURATION, parseDuration(vo.getDuration()));
 				doc.setField(SearchDocumentHandler.SECTION, parseBusinessUnit(vo.getBusinessUnitNm()));
-				doc.setField(SearchDocumentHandler.META_KEYWORDS, parseDownloadType(vo.getDownloadTypeTxt(), vo.isVideo()));
+				//TODO this keyword hack for downloadType was for DS, which will need to be addressed.
+				//doc.setField(SearchDocumentHandler.META_KEYWORDS, parseDownloadType(vo.getDownloadTypeTxt(), vo.isVideo()));
+				doc.setField(SearchDocumentHandler.META_KEYWORDS, vo.getMetaKeywords());
 				doc.setField(SearchDocumentHandler.MODULE_TYPE, "DOWNLOAD");
 				doc.setField(SearchDocumentHandler.UPDATE_DATE, df.format(vo.getModifiedDt()));
 				doc.setField(SearchDocumentHandler.CONTENTS, vo.isVideo() ? "" : parseFile(vo, fileRepos));
 				doc.setField(MediaBinField.TrackingNo.getField(), vo.getTrackingNoTxt()); //DSI uses this to align supporting images and tag favorites
 				doc.setField(MediaBinField.AssetType.getField(), this.getAssetType(vo));
 				doc.setField(MediaBinField.AssetDesc.getField(), vo.getAssetDesc());
+				if (vo.isVideo())
+					doc.setField(MediaBinField.VideoChapters.getField(), vo.getVideoChapters());
 				
 				//turn the flat/delimited hierarchy into a structure that PathHierarchyTokenizer will understand
-		    		for (String s : StringUtil.checkVal(vo.getAnatomy()).split("~"))
-		    			doc.addField(SearchDocumentHandler.HIERARCHY, s.replace(",", "/"));
+		    		for (String s : StringUtil.checkVal(vo.getAnatomy()).split("~")) {
+		    			//need to tokenize the levels and trim spaces from each, the MB team are slobs!
+		    			StringBuilder sb = new StringBuilder();
+		    			for (String subStr : s.split(",")) {
+		    				sb.append(StringUtil.checkVal(subStr).trim()).append("~");
+		    			}
+		    			if (sb.length() > 0) sb.deleteCharAt(sb.length()-1);
+		    			doc.addField(SearchDocumentHandler.HIERARCHY, sb.toString());
+		    		}
 		    		
 				if (fileName.length() > 0 && dotIndex > -1 && (dotIndex + 1) < fileName.length())
 					doc.setField(SearchDocumentHandler.FILE_EXTENSION, fileName.substring(++dotIndex));
@@ -205,7 +217,7 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 	    String summary = "";
 	    //DSI work-around.  DS.com should never have been using AssetDesc, but 
 	    //since it was validated that way we can't change it.
-	    if (vo.getOpCoNm().indexOf("DSI.com") > 0) {
+	    if (vo.getOpCoNm().indexOf("DSI.com") > -1) {
 		    summary = StringUtil.checkVal(vo.getDescription());
 	    }
 	    
@@ -215,7 +227,7 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 			if (summary.length() > 0) summary += " | ";
 			summary += StringUtil.checkVal(vo.getProdNm());
 		}
-		
+
 		return summary;
     }
     
@@ -260,8 +272,9 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
     private List<MediaBinAssetVO> loadMetaData(Connection conn, String dbSchema) {
     	List<MediaBinAssetVO> data = new ArrayList<MediaBinAssetVO>();
     	StringBuilder sql = new StringBuilder();
-		sql.append("select * from ").append(dbSchema).append("DPY_SYN_MEDIABIN ");
-		sql.append("where lower(asset_type) in (null"); //loop all pdf types
+		sql.append("select * from ").append(dbSchema).append("DPY_SYN_MEDIABIN a ");
+		sql.append("left join video_meta_content b on a.dpy_syn_mediabin_id=b.asset_id and b.asset_type='MEDIABIN' ");
+		sql.append("where lower(a.asset_type) in (null"); //loop all pdf types
 		for (int x=MediaBinAdminAction.PDF_ASSETS.length; x > 0; x--) sql.append(",?");
 		for (int y=MediaBinAdminAction.VIDEO_ASSETS.length; y > 0; y--) sql.append(",?");
 		sql.append(")");
@@ -374,7 +387,7 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
      * @param downloadType
      * @param isVideo
      * @return
-     */
+   
     private String parseDownloadType(String downloadType, boolean isVideo) {
     	String tmp = StringUtil.checkVal(downloadType).replace("~", ",");
     	if (isVideo) {
@@ -392,6 +405,7 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
     	}
     	return tmp;
     }
+   */
     
     /**
      * Helper method for loading the business units look-up map.  This map provides

@@ -363,6 +363,8 @@ public class RamUserAction extends SBActionAdapter {
 	
 	/**
 	 * Manages the data record for a user of role 'Auditor'.
+	 * updated to ensure we always update theAuditor record as that has more data
+	 * on it than just active or inactive.  
 	 * @param req
 	 * @param site
 	 * @param user
@@ -371,28 +373,12 @@ public class RamUserAction extends SBActionAdapter {
 	 */
 	private void manageAuditor(SMTServletRequest req, SiteVO site, UserDataVO user, SBUserRole userRole, int origRoleLevel) {
 		log.debug("Managing auditor...");
-		// lookup auditor ID if it exists.
 		String auditorId = checkAuditor(user.getProfileId());
-		if (origRoleLevel == -1) {
-			// new auditor user, insert new record
-			updateAuditor(user, auditorId, userRole.getStatusId());
+		if (origRoleLevel != -1 && origRoleLevel != userRole.getRoleLevel() && origRoleLevel == ROLE_LEVEL_AUDITOR) {
+				// changed FROM auditor so disable RAM_AUDITOR record
+				updateAuditor(user, auditorId, RamUserFacadeAction.PROFILE_STATUS_DISABLED);
 		} else {
-			if (origRoleLevel != userRole.getRoleLevel()) {
-				// role changed...is it TO or FROM?
-				if (origRoleLevel == ROLE_LEVEL_AUDITOR) {
-					// changed FROM auditor so disable RAM_AUDITOR record
-					updateAuditor(user, auditorId, RamUserFacadeAction.PROFILE_STATUS_DISABLED);
-				} else if (userRole.getRoleLevel() == ROLE_LEVEL_AUDITOR) {
-					// changed TO auditor, set status according to current status
-					updateAuditor(user, auditorId, userRole.getStatusId());
-				}
-			} else {
-				int origStatusId = Convert.formatInteger(req.getParameter("origStatusId"), -1);
-				if (userRole.getStatusId() != origStatusId && origStatusId > -1) {
-					// role hasn't changed but status has changed, reflect that in auditor record
-					updateAuditor(user, auditorId, userRole.getStatusId());
-				}
-			}
+			updateAuditor(user, auditorId, userRole.getStatusId());
 		}
 	}
 	
