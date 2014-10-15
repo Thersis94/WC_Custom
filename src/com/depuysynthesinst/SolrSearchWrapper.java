@@ -87,7 +87,7 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 		SolrResponseVO solrResp = (SolrResponseVO) mod.getActionData();
 		if (solrResp == null || solrResp.getTotalResponses() == 0) return;
 		
-		if (solrResp.getTotalResponses() == 1)
+		if (solrResp.getTotalResponses() == 1 && req.hasParameter("reqParam_1"))
 			applyPageData(solrResp.getResultDocuments().get(0), req);
 		
 		//if not custom sort, we're done
