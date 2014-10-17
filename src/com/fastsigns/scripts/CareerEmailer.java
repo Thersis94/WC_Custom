@@ -125,7 +125,7 @@ public class CareerEmailer extends CommandLineUtil {
 		sb.append("FTS_JOB_POSTING fjp left outer join DEALER_LOCATION dl on fjp.FRANCHISE_ID = dl.DEALER_LOCATION_ID ");
 		sb.append("where fjp.ORGANIZATION_ID = ? and DATEDIFF(DAY, JOB_POST_DT, GETDATE()) != 0 ");
 		sb.append("and DATEDIFF(DAY, JOB_POST_DT, GETDATE()) % 42 = 0 and FRANCHISE_ID is not null ");
-		sb.append("and JOB_APPROVAL_FLG = 1 order by FRANCHISE_ID, JOB_TITLE_NM");
+		sb.append("and JOB_APPROVAL_FLG = 1 and ACTIVE_JOB_FLG = 1 order by FRANCHISE_ID, JOB_TITLE_NM");
 		log.debug(sb.toString()+"|"+orgId);
 		PreparedStatement ps = null;
 		ResultSet rs = null;
