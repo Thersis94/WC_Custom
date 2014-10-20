@@ -24,6 +24,7 @@ import com.smt.sitebuilder.action.tools.MyFavoritesAction;
 import com.smt.sitebuilder.action.tools.PageViewReportingAction;
 import com.smt.sitebuilder.action.tools.StatVO;
 import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 
@@ -80,14 +81,17 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 		sa.setAttributes(attributes);
 		sa.setDBConnection(dbConn);
 		sa.retrieve(req);
-		
-		//if not custom sort, we're done
-		if (isThemeLocn || !doCustomSort) return;
-		
+			
 		//get the response object back from SolrAction
 		mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		SolrResponseVO solrResp = (SolrResponseVO) mod.getActionData();
-		if (solrResp.getTotalResponses() == 0) return;
+		if (solrResp == null || solrResp.getTotalResponses() == 0) return;
+		
+		if (solrResp.getTotalResponses() == 1 && req.hasParameter("reqParam_1"))
+			applyPageData(solrResp.getResultDocuments().get(0), req);
+		
+		//if not custom sort, we're done
+		if (isThemeLocn || !doCustomSort) return;
 				
 		//call the proper sort method
 		if ("popular".equals(sortType)) {
@@ -99,6 +103,18 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 		//put the proper 'page' of results back into the SolrResponse to forward on to the View.
 		req.setParameter("fieldSort", sortType);
 		super.putModuleData(solrResp);
+	}
+	
+	
+	/**
+	 * If we're looking at a single asset (in detail), the URL is a /qs/.  We should
+	 * override the page's meta data and title with those of the asset.
+	 * @param resp
+	 * @param req
+	 */
+	private void applyPageData(SolrDocument doc, SMTServletRequest req) {
+		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+		page.setTitleName(StringUtil.checkVal(doc.getFieldValue("title"), page.getTitleName()));
 	}
 	
 	
@@ -137,12 +153,15 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 	private void sortByPopular(SolrResponseVO resp, SMTServletRequest req, Integer pageNo) 
 			throws ActionException {
 		Map<String, Integer> favs = loadPageViews(req);
+		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+		String baseUrl = page.getFullPath() + "/qs/";
+		log.debug("base=" + baseUrl);
 		
 		///iterate the solr results and encapsulate each SolrDocument with the extra fields we need for the Comparator
 		List<SolrDocument> docs = new ArrayList<SolrDocument>(Integer.valueOf(""+resp.getTotalResponses()));
 		for (SolrDocument sd : resp.getResultDocuments()) {
-			String docId = StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID));
-			sd.setField(PAGEVIEWS, (favs.containsKey(docId)) ? favs.get(docId) : 0);
+			String url = baseUrl + StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID));
+			sd.setField(PAGEVIEWS, (favs.containsKey(url)) ? favs.get(url) : 0);
 			docs.add(sd);
 		}
 		
@@ -208,10 +227,9 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 		Map<String, Integer> data = new HashMap<String, Integer>(stats.size());
 		for (StatVO vo : stats.values()) {
 			String key = vo.getRequestUri();
+			//log.debug("key=" + key);
 			if (key != null && key.contains("/qs/")) {
-				key = key.substring(key.indexOf("/qs/")+4);
-				if (key != null && key.length() > 0)
-					data.put(key, vo.getHitCnt());
+				data.put(key, vo.getHitCnt());
 			}
 		}
 		
