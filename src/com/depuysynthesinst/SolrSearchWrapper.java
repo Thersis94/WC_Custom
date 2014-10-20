@@ -153,12 +153,15 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 	private void sortByPopular(SolrResponseVO resp, SMTServletRequest req, Integer pageNo) 
 			throws ActionException {
 		Map<String, Integer> favs = loadPageViews(req);
+		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+		String baseUrl = page.getFullPath() + "/qs/";
+		log.debug("base=" + baseUrl);
 		
 		///iterate the solr results and encapsulate each SolrDocument with the extra fields we need for the Comparator
 		List<SolrDocument> docs = new ArrayList<SolrDocument>(Integer.valueOf(""+resp.getTotalResponses()));
 		for (SolrDocument sd : resp.getResultDocuments()) {
-			String docId = StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID));
-			sd.setField(PAGEVIEWS, (favs.containsKey(docId)) ? favs.get(docId) : 0);
+			String url = baseUrl + StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID));
+			sd.setField(PAGEVIEWS, (favs.containsKey(url)) ? favs.get(url) : 0);
 			docs.add(sd);
 		}
 		
@@ -224,10 +227,9 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 		Map<String, Integer> data = new HashMap<String, Integer>(stats.size());
 		for (StatVO vo : stats.values()) {
 			String key = vo.getRequestUri();
+			//log.debug("key=" + key);
 			if (key != null && key.contains("/qs/")) {
-				key = key.substring(key.indexOf("/qs/")+4);
-				if (key != null && key.length() > 0)
-					data.put(key, vo.getHitCnt());
+				data.put(key, vo.getHitCnt());
 			}
 		}
 		
