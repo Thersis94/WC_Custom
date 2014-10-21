@@ -115,6 +115,8 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 	private void applyPageData(SolrDocument doc, SMTServletRequest req) {
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		page.setTitleName(StringUtil.checkVal(doc.getFieldValue("title"), page.getTitleName()));
+		//set a canonical that points to the first proclaimed hierarchy level
+		page.setCanonicalPageUrl(this.buildDSIUrl(doc));
 	}
 	
 	
@@ -130,7 +132,7 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 		Collection<String> favs = loadFavorites(req);
 		
 		///iterate the solr results and encapsulate each SolrDocument with the extra fields we need for the Comparator
-		List<SolrDocument> docs = new ArrayList<SolrDocument>(Integer.valueOf(""+resp.getTotalResponses()));
+		List<SolrDocument> docs = new ArrayList<SolrDocument>(Long.valueOf(resp.getTotalResponses()).intValue());
 		for (SolrDocument sd : resp.getResultDocuments()) {
 			String docId = StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID));
 			sd.setField(FAVORITES, (favs.contains(docId)) ? 0 : 5); //use zero for 'like', because the compatator will put lowest #s first
@@ -158,7 +160,7 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 		log.debug("base=" + baseUrl);
 		
 		///iterate the solr results and encapsulate each SolrDocument with the extra fields we need for the Comparator
-		List<SolrDocument> docs = new ArrayList<SolrDocument>(Integer.valueOf(""+resp.getTotalResponses()));
+		List<SolrDocument> docs = new ArrayList<SolrDocument>(Long.valueOf(resp.getTotalResponses()).intValue());
 		for (SolrDocument sd : resp.getResultDocuments()) {
 			String url = baseUrl + StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID));
 			sd.setField(PAGEVIEWS, (favs.containsKey(url)) ? favs.get(url) : 0);
@@ -237,5 +239,47 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 		req.getSession().setAttribute(PAGEVIEWS, data);
 		return data;
 	} 
+	
+	
+	/**
+	     * take the first hierachy definition and turn it into a dsi-business-rules-applied URL string
+	     * This method is also used by the DePuySiteMapServlet
+	     * @param sd
+	     * @return
+	     */
+	    public String buildDSIUrl(SolrDocument sd) {
+		    String hierarchy = "";
+		    try {
+			    hierarchy= StringUtil.checkVal(sd.getFieldValues(SearchDocumentHandler.HIERARCHY).iterator().next());
+		    } catch (Exception e) {};
+		    log.debug(hierarchy);
+
+		    if (hierarchy != null && hierarchy.length() > 0) {
+			    String rootLvl = (hierarchy.indexOf("~") > 0) ? hierarchy.substring(0, hierarchy.indexOf("~")) : hierarchy;
+			    rootLvl = StringUtil.checkVal(rootLvl).toLowerCase();
+			    if ("vet".equals(rootLvl)) {
+				    int tildeIndx = rootLvl.length() +1;
+				    if (hierarchy.length() > tildeIndx) rootLvl = hierarchy.substring(tildeIndx, hierarchy.indexOf("~", tildeIndx));
+				    rootLvl = StringUtil.checkVal(rootLvl).toLowerCase();
+
+				    rootLvl = "veterinary/" + rootLvl;
+				    log.debug(rootLvl);
+			    }
+
+			    //remove ampersands and replace spaces
+			    rootLvl = StringUtil.replace(rootLvl, "& ", "");
+			    rootLvl = StringUtil.replace(rootLvl, " ", "-");
+
+			    if ("nurse-education".equals(rootLvl))
+				    rootLvl = "nurse-education/resource-library";
+
+			    log.debug(rootLvl);
+			    hierarchy = rootLvl;
+		    }
+
+		    //assemble & return the URL
+		    if (hierarchy == null || hierarchy.length() == 0) return null;
+		    return "/" + hierarchy + "/qs/" + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
+	    }
 
 }
