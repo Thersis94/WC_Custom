@@ -410,7 +410,11 @@ public class ModuleOptionAction extends SBActionAdapter{
 				if (opts.length == 2) idx = Convert.formatInteger(opts[1], idx);
 				
 				psIns.setString(1, locationId);
-				psIns.setString(2, opts[0]);
+				if (req.hasParameter("moduleParentId")) {
+					psIns.setString(2, req.getParameter("moduleParentId"));
+				} else {
+					psIns.setString(2, opts[0]);
+				}
 				psIns.setInt(3, idx);
 				psIns.setTimestamp(4, Convert.getCurrentTimestamp());
 				psIns.addBatch();
@@ -479,6 +483,7 @@ public class ModuleOptionAction extends SBActionAdapter{
 			isInsert = true;
 			if (vo.getParentId() == null || vo.getParentId() == 0) 
 				vo.setParentId(vo.getModuleOptionId()); //link this new entry to it's predecessor
+			req.setParameter("moduleParentId", StringUtil.checkVal(vo.getModuleOptionId()));
 			log.debug("saving with parent=" + vo.getParentId());
 		//}
 		
