@@ -1,6 +1,6 @@
 package com.ram.action.user;
 
-// JDK 7
+// Java 7
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -9,9 +9,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-
-
 
 // RAMDataFeed libs
 import com.ram.datafeed.data.RAMUserVO;
@@ -24,9 +21,7 @@ import com.siliconmtn.exception.ApplicationException;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.AbstractLoginModule;
-import com.siliconmtn.security.AbstractPasswordComplexity;
 import com.siliconmtn.security.EncryptionException;
-import com.siliconmtn.security.PasswordException;
 import com.siliconmtn.security.SecurityModuleFactoryImpl;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
@@ -41,7 +36,6 @@ import com.smt.sitebuilder.action.user.ProfileRoleManager;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
-import com.smt.sitebuilder.security.PasswordComplexityFactory;
 import com.smt.sitebuilder.security.SBUserRole;
 
 /****************************************************************************
@@ -464,36 +458,6 @@ public class RamUserAction extends SBActionAdapter {
 			}
 		}
 		return auditorId;
-	}
-	
-	/**
-	 * Creates a password for the new authentication record being created for a user.
-	 * @param req
-	 * @param site
-	 * @param user
-	 * @throws PasswordException
-	 * @throws EncryptionException 
-	 */
-	@SuppressWarnings("unused")
-	private void managePassword(SMTServletRequest req, SiteVO site, UserDataVO user) 
-			throws PasswordException, EncryptionException {
-		log.debug("managing password...");
-		AbstractPasswordComplexity apc = null;
-		try {
-			apc = PasswordComplexityFactory.getInstance(site.getPasswordModule(), attributes);
-		} catch (ApplicationException ae) {
-			log.error("Error instantiating password complexity module, ", ae);
-			throw new PasswordException(ae.getMessage());
-		}
-		if (apc != null) {
-			String pwd = apc.generate();
-			try {
-				user.setPassword(apc.encrypt(pwd));
-			} catch (ApplicationException pe) {
-				log.error("Error encrypting password for Ram user, ", pe);
-				throw new EncryptionException(pe.getMessage());
-			}
-		}
 	}
 	
 	/**
