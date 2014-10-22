@@ -92,8 +92,14 @@ public class PersonalizationImporter extends AbstractImporter {
 				headers = parseHeaderRow(fields);
 				continue; // skip to next row
 			}
-			prodId = catalog.getCatalogPrefix() + fields[headers.get("CUSTOM")];
-			dataValue = fields[headers.get("DATA")];
+			
+			try {
+				prodId = catalog.getCatalogPrefix() + fields[headers.get("CUSTOM")];
+				dataValue = fields[headers.get("DATA")];
+			} catch (Exception e) {
+				log.error("Error retrieving personalization data row, row appears to be invalid: " + i);
+				continue;
+			}
 			orderNo = parseOrderNo(StringUtil.checkVal(dataValue).toUpperCase());
 			try {
 				ps.setString(1, new UUIDGenerator().getUUID());	//product_attribute_id
