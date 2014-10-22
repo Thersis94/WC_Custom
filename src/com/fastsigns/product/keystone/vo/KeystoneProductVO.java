@@ -81,10 +81,6 @@ public class KeystoneProductVO extends ProductVO implements Serializable, Clonea
 		/*
 		 * Special Data
 		 */
-		if(req.hasParameter("highResData"))
-			addProdAttribute("highResData", req.getParameter("highResData").replace("data:image/png;base64,", ""));
-		if(req.hasParameter("thumbnailData"))
-			addProdAttribute("thumbnailData", req.getParameter("thumbnailData").replace("data:image/png;base64,", ""));
 		if(req.hasParameter("jsonData"))
 			addProdAttribute("jsonData", req.getParameter("jsonData"));
 		if(req.hasParameter("svgData"))
