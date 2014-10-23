@@ -18,11 +18,14 @@ import com.depuy.events_v2.vo.report.LocatorReportVO;
 import com.depuy.events_v2.vo.report.PostcardSummaryReportVO;
 import com.depuy.events_v2.vo.report.RsvpBreakdownReportVO;
 import com.depuy.events_v2.vo.report.RsvpSummaryReportVO;
+import com.depuy.events_v2.vo.report.SeminarSummaryReportVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.event.EventRSVPAction;
@@ -47,7 +50,7 @@ public class ReportBuilder extends SBActionAdapter {
 	
 	public enum ReportType {
 		mailingList, summary, locator, leads, rsvpSummary,  seminarRollup, 
-		rsvpBreakdown, /* leadAging, */ compliance
+		rsvpBreakdown, /* leadAging, */ compliance, customSummary
 	}
 
 	public ReportBuilder(ActionInitVO actionInit) {
@@ -102,6 +105,9 @@ public class ReportBuilder extends SBActionAdapter {
 			
 			case locator: 
 				rpt = this.generateLocatorReport(data, req.getParameter("radius"));
+				break;
+			case customSummary:
+				rpt = this.generateCustomSeminarReport(req, data);
 				break;
 		}
 		
@@ -177,6 +183,7 @@ public class ReportBuilder extends SBActionAdapter {
 		rpt.setData(data.values());
 		return rpt;
 	}
+	
 	
 	/**
 	 * 
@@ -290,4 +297,42 @@ public class ReportBuilder extends SBActionAdapter {
 		return rpt;
 	}
 	
+	/**
+	 * Used for building a report that summarizes all seminars with specific
+	 * fields included.
+	 * @param req
+	 * @param data
+	 * @return
+	 */
+	public AbstractSBReportVO generateCustomSeminarReport(SMTServletRequest req, Object data ){
+		SeminarSummaryAction ssa = new SeminarSummaryAction(this.actionInit);
+		ssa.setAttributes(this.attributes);
+		ssa.setDBConnection(dbConn);
+		
+		PostcardSelectV2 retriever = new PostcardSelectV2(actionInit);
+		retriever.setDBConnection(dbConn);
+		retriever.setAttributes(attributes);
+		
+		SeminarSummaryReportVO rpt = null;
+		
+		String reportId = StringUtil.checkVal( req.getParameter("reportId") );
+		if ( reportId.isEmpty() ){
+			//use current values
+			rpt = new SeminarSummaryReportVO(req);
+			rpt.setData(data);
+		} else {
+			//use saved parameters
+			try {
+				rpt = ssa.getSavedReport(reportId);
+				rpt.setData(data); 
+			} catch (InvalidDataException | SQLException e) {
+				log.error(e);
+				//Default back to parameter values
+				rpt = new SeminarSummaryReportVO(req);
+				rpt.setData(data);
+			}
+		}
+		return rpt;
+	}
+
 }

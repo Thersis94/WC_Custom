@@ -58,7 +58,7 @@ public class CustomerTypesAction extends SBActionAdapter {
 		log.debug("excludeTypeId: " + excludeTypeId);
 		
 		List<GenericVO> data = new ArrayList<>();
-		String schema = (String)getAttribute("customDbSchema");
+		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder();
 		sql.append("select a.* from ").append(schema);
 		sql.append("RAM_CUSTOMER_TYPE a where 1 = 1 ");

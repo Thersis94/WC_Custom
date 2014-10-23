@@ -1,9 +1,16 @@
 package com.depuy.http;
 
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import org.apache.solr.common.SolrDocument;
 
 import com.depuysynthes.action.ProductCatalogUtil;
+import com.depuysynthes.lucene.MediaBinSolrIndex;
+import com.depuysynthesinst.SolrSearchWrapper;
 import com.siliconmtn.commerce.catalog.ProductCategoryVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
@@ -12,8 +19,14 @@ import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.UserRoleVO;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.menu.MenuObj;
+import com.smt.sitebuilder.action.search.SolrActionIndexVO;
+import com.smt.sitebuilder.action.search.SolrActionVO;
+import com.smt.sitebuilder.action.search.SolrQueryProcessor;
+import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.common.SiteVO;
+import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.http.SiteMapServlet;
+import com.smt.sitebuilder.search.SearchDocumentHandler;
 
 /****************************************************************************
  * <b>Title</b>: DePuySiteMapServlet.java<p/>
@@ -24,6 +37,8 @@ import com.smt.sitebuilder.http.SiteMapServlet;
  * @author James McKain
  * @version 1.0
  * @since Oct 16, 2013
+ * @updates
+ * 		JM 10.15.14 - Added DSI/Solr support
  ****************************************************************************/
 public class DePuySiteMapServlet extends SiteMapServlet {
 	private static final long serialVersionUID = 44784795996815006L;
@@ -46,6 +61,8 @@ public class DePuySiteMapServlet extends SiteMapServlet {
 		} else if ((site.getOrganizationId()).equals("DPY_SYN_EMEA")) {
 			pages = this.loadDSProducts(site, req, "DS_PRODUCTS_EMEA", "/products/qs/");
 			pages.addAll(this.loadDSProducts(site, req, "DS_PROCEDURES_EMEA", "/procedures/qs/"));
+		} else if ((site.getOrganizationId()).equals("DPY_SYN_INST")) {
+			pages = this.loadDSISolrAssets(site, req);
 		} else {
 			pages = super.loadCustomLowPriPages(req, site, role);
 		}
@@ -110,5 +127,53 @@ public class DePuySiteMapServlet extends SiteMapServlet {
     		} catch(Exception e) {}
     	}
     	return data;
+    }
+    
+    /**
+     * loads a list of assets for DSI, out of Solr.
+     * Then applies business logic to determine the pageURLs for each asset, based on hierarchy.
+     * @param site
+     * @param req
+     * @return
+     */
+    protected List<Node> loadDSISolrAssets(SiteVO site, SMTServletRequest req) {
+	    List<Node> data = new ArrayList<Node>();
+	    Map<String, Object> attributes = new HashMap<String, Object>();
+	    SolrSearchWrapper solrWrapper = new SolrSearchWrapper();
+	    
+	    attributes.put(Constants.SOLR_BASE_URL, sc.getAttribute(Constants.SOLR_BASE_URL));
+	    attributes.put(Constants.SOLR_COLLECTION_NAME, sc.getAttribute(Constants.SOLR_COLLECTION_NAME));
+
+	    SolrActionVO qData = new SolrActionVO();
+	    qData.setNumberResponses(20000);
+		qData.setOrganizationId(site.getOrganizationId()); //DPY_SYN_INST only
+		qData.setRoleLevel(0); //public assets only
+		qData.addIndexType(new SolrActionIndexVO(SearchDocumentHandler.INDEX_TYPE, MediaBinSolrIndex.INDEX_TYPE));
+		SolrQueryProcessor sqp = new SolrQueryProcessor(attributes);
+		SolrResponseVO resp = sqp.processQuery(qData);
+		
+		if (resp == null || resp.getTotalResponses() == 0) return data;
+		
+		for (SolrDocument sd : resp.getResultDocuments()) {
+		    try {
+			    MenuObj mo = new MenuObj();
+			    mo.setFullPath(solrWrapper.buildDSIUrl(sd));
+			    if (mo.getFullPath() == null) continue; //asset does not have a valid DSI url and should not be promoted
+			    
+			    mo.setLastModified((Date)sd.getFieldValue(SearchDocumentHandler.UPDATE_DATE));
+			    mo.setFileExtension("");
+			    mo.setContextName(contextPath);
+	
+			    Node n = new Node();
+			    n.setUserObject(mo);
+			    data.add(n);
+
+		    } catch(Exception e) {
+			    log.error("Unable to make URL for Solr asset", e);
+		    }
+		}
+		
+		log.debug("size=" + data.size());
+	    return data;
     }
 }

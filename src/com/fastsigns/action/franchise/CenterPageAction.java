@@ -74,6 +74,7 @@ public class CenterPageAction extends SimpleActionAdapter {
 	public static final int DELETE_ALL_MODULES = 30;
 	public static final int WHITEBOARD_UPDATE = 35;
 	public static final int RESELLER_UPDATE = 17;
+	public static final int RAQSAF_UPDATE = 18;
 	/**
 	 * 
 	 */
@@ -134,6 +135,7 @@ public class CenterPageAction extends SimpleActionAdapter {
 				case FRANCHISE_SOCIAL_MEDIA_LINKS:
 				case WHITEBOARD_UPDATE:
 				case CenterPageAction.RESELLER_UPDATE:
+				case RAQSAF_UPDATE:
 					FranchiseInfoAction fia = new FranchiseInfoAction(this.actionInit);
 					fia.setDBConnection(dbConn);
 					fia.setAttributes(attributes);
@@ -366,7 +368,10 @@ public class CenterPageAction extends SimpleActionAdapter {
 	public Map<String, CenterModuleVO> getModuleData(String franId, SMTServletRequest req) {
 		Boolean isKeystone = Convert.formatBoolean(req.getAttribute("isKeystone"), false);				//In Webedit
 		Boolean isPreview = Convert.formatBoolean(req.getAttribute(Constants.PAGE_PREVIEW), false);				//In Preview mode
-		if (isPreview) req.setAttribute("isKeystone", true); //this builds the query we need
+		if (isPreview) {
+			req.setAttribute("isKeystone", true); //this builds the query we need
+			isKeystone = true; //This ensures that the most recent versions of the modules will appear on the site.
+		}
 		
 		Integer locationId = Convert.formatInteger(req.getParameter("locationId"), 0);
 		StringBuilder s = formatQuery(req);

@@ -63,7 +63,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		//reports
 		reportForm,  rsvpBreakdown, report,
 		//ordering consumables for hospital sponsored seminars
-		hospitalSponsored
+		hospitalSponsored, outstanding
 	}
 	
 	/*
