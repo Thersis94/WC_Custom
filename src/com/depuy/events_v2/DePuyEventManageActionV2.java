@@ -2,14 +2,11 @@ package com.depuy.events_v2;
 
 // DePuy SB Libs
 import com.depuy.events.vo.report.SigninReportVO;
-import com.depuy.events_v2.PostcardInsertV2;
-import com.depuy.events_v2.PostcardSelectV2;
 // SMT Base libs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.http.SMTServletRequest;
-
 import com.siliconmtn.util.StringUtil;
 // SB Libs
 import com.smt.sitebuilder.action.SimpleActionAdapter;
@@ -75,7 +72,8 @@ public class DePuyEventManageActionV2 extends SimpleActionAdapter {
 		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 		actionInit.setActionId((String) mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 
-		if ("rsvp".equals(ft)) {
+		switch (ft) {
+		case "rsvp":
 			EventRSVPAction er = new EventRSVPAction(this.actionInit);
 			er.setAttributes(this.attributes);
 			er.setDBConnection(dbConn);
@@ -92,8 +90,10 @@ public class DePuyEventManageActionV2 extends SimpleActionAdapter {
 
 			req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
 			req.setAttribute(Constants.REDIRECT_URL, redirectPg.toString());
+			
+			break;
 
-		} else if ("report".equals(ft)) {
+		case "report": 
 			// retrieve event/postcard first
 			ee = new PostcardSelectV2(this.actionInit);
 			ee.setAttributes(this.attributes);
@@ -109,12 +109,37 @@ public class DePuyEventManageActionV2 extends SimpleActionAdapter {
 			rb.setDBConnection(dbConn);
 			rb.generateReport(req, mod.getActionData());
 			
+			break;
+		case "savedReport":
+			SeminarSummaryAction ssa = new SeminarSummaryAction(this.actionInit);
+			ssa.setAttributes(this.attributes);
+			ssa.setDBConnection(dbConn);
+			ssa.list(req);
+			if ( req.hasParameter("isList"))
+				req.setParameter("isList","true");
 			
-		} else {
+			break;
+		case "delete":
+			ee = new PostcardDeleteV2( this.actionInit );
+			ee.setAttributes( this.attributes );
+			ee.setDBConnection(dbConn);
+			ee.build(req);
+			break;
+			
+		case "rsvpFile":
+			//For batch uploading
+			ee = new DePuyEventRsvpAction( this.actionInit );
+			ee.setAttributes( this.attributes );
+			ee.setDBConnection(dbConn);
+			req.setParameter("import", "true");
+			ee.build(req);
+			break;
+		default:
 			ee = new PostcardInsertV2(this.actionInit);
 			ee.setAttributes(this.attributes);
 			ee.setDBConnection(dbConn);
 			ee.build(req);
+			break;
 		}
 		log.debug("build complete");
 
@@ -138,7 +163,7 @@ public class DePuyEventManageActionV2 extends SimpleActionAdapter {
 		// Retrieve the postcard Data
 		SMTActionInterface eg = null;
 		Object data = null;
-
+		
 		if (req.hasParameter(AdminConstants.FACADE_TYPE)) {
 			eg = new EventRSVPAction(this.actionInit);
 			eg.setAttributes(this.attributes);
