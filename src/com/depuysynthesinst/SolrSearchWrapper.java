@@ -64,12 +64,16 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 		//determine if custom sort is needed
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		String sortType = StringUtil.checkVal(req.getParameter("fieldSort"));
-		boolean doCustomSort = "popular".equals(sortType) || "favorites".equals(sortType) ;
-		boolean isThemeLocn = StringUtil.checkVal(mod.getParamName()).length() > 0;
-		Integer pageNo = Convert.formatInteger(req.getParameter("page"));
+		boolean doCustomSort = "popular".equals(sortType) || "favorites".equals(sortType);
+		boolean isFeatItem = StringUtil.checkVal(req.getParameter("fmid")).equals(mod.getPageModuleId());
+		if (!isFeatItem && req.hasParameter("pmid"))
+			isFeatItem = req.getParameter("pmid").equals(mod.getPageModuleId()) && StringUtil.checkVal(mod.getParamName()).length() == 0;
+		
+		//log.debug("isFocused=" + isFeatItem);
+		//log.debug("isCustomSort=" + doCustomSort);
 		
 		//reset sortOrder or Solr will bomb (unknown sortType)
-		if (!isThemeLocn && doCustomSort) {
+		if (isFeatItem && doCustomSort) {
 			req.setParameter("fieldSort", "documentId");
 			req.setParameter("rpp", "3000");
 			req.setParameter("page", "0");
@@ -91,9 +95,10 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 			applyPageData(solrResp.getResultDocuments().get(0), req);
 		
 		//if not custom sort, we're done
-		if (isThemeLocn || !doCustomSort) return;
+		if (!isFeatItem || !doCustomSort) return;
 				
 		//call the proper sort method
+		Integer pageNo = Convert.formatInteger(req.getParameter("page"));
 		if ("popular".equals(sortType)) {
 			sortByPopular(solrResp, req, pageNo);
 		} else if ("favorites".equals(sortType)) {
@@ -156,13 +161,18 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 			throws ActionException {
 		Map<String, Integer> favs = loadPageViews(req);
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
-		String baseUrl = page.getFullPath() + "/qs/";
+		String baseUrl = ("/search".equals(page.getFullPath())) ? null : page.getFullPath() + "/qs/" ;
 		log.debug("base=" + baseUrl);
 		
 		///iterate the solr results and encapsulate each SolrDocument with the extra fields we need for the Comparator
 		List<SolrDocument> docs = new ArrayList<SolrDocument>(Long.valueOf(resp.getTotalResponses()).intValue());
 		for (SolrDocument sd : resp.getResultDocuments()) {
-			String url = baseUrl + StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID));
+			String url = "";
+			if (baseUrl == null) {
+				url = this.buildDSIUrl(sd);
+			} else {
+				url = baseUrl + StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID));
+			}
 			sd.setField(PAGEVIEWS, (favs.containsKey(url)) ? favs.get(url) : 0);
 			docs.add(sd);
 		}
@@ -252,7 +262,7 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 		    try {
 			    hierarchy= StringUtil.checkVal(sd.getFieldValues(SearchDocumentHandler.HIERARCHY).iterator().next());
 		    } catch (Exception e) {};
-		    log.debug(hierarchy);
+		    //log.debug(hierarchy);
 
 		    if (hierarchy != null && hierarchy.length() > 0) {
 			    String rootLvl = (hierarchy.indexOf("~") > 0) ? hierarchy.substring(0, hierarchy.indexOf("~")) : hierarchy;
@@ -263,7 +273,7 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 				    rootLvl = StringUtil.checkVal(rootLvl).toLowerCase();
 
 				    rootLvl = "veterinary/" + rootLvl;
-				    log.debug(rootLvl);
+				    //log.debug(rootLvl);
 			    }
 
 			    //remove ampersands and replace spaces
@@ -273,7 +283,7 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 			    if ("nurse-education".equals(rootLvl))
 				    rootLvl = "nurse-education/resource-library";
 
-			    log.debug(rootLvl);
+			    //log.debug(rootLvl);
 			    hierarchy = rootLvl;
 		    }
 
