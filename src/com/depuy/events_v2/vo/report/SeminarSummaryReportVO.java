@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.depuy.events.vo.CoopAdVO;
 import com.depuy.events_v2.vo.DePuyEventSeminarVO;
@@ -130,7 +131,8 @@ public class SeminarSummaryReportVO extends AbstractSBReportVO {
 		for( FieldList key : FieldList.values() ){
 			paramList.put(key.getFieldName(), Convert.formatInteger(
 					StringUtil.checkVal(req.getParameter(key.getFieldName()))));
-			if ( req.hasParameter("by_") ){
+			log.debug(StringUtil.checkVal(req.getParameter(key.getFieldName()),"EMPTY"));
+			if ( StringUtil.checkVal(req.getParameter(key.getFieldName()) ).equals("-1") ){
 				filterMap.put(key.getFieldName(), StringUtil.checkVal(
 						req.getParameter("by_"+key.getFieldName())));
 			}
@@ -152,12 +154,14 @@ public class SeminarSummaryReportVO extends AbstractSBReportVO {
 			}
 		}
 		
-		StringBuilder rpt = new StringBuilder();
+		StringBuilder report = new StringBuilder();
 		//create headers
-		rpt.append( getHeader() );
+		report.append( getHeader() );
 		
 		//Loop over each seminar
 		for ( DePuyEventSeminarVO vo : semList ){
+			StringBuilder rpt = new StringBuilder();
+			boolean appendIt = true;
 			rpt.append("<tr>");
 			EventEntryVO event = vo.getEvents().get(0);
 			//loop over each field to be included in the results
@@ -168,13 +172,20 @@ public class SeminarSummaryReportVO extends AbstractSBReportVO {
 				switch( fl ){
 				
 				case JOINT_FLG:
-					String joint = StringUtil.checkVal(vo.getJointLabel());
-					if( filterMap.containsKey(fl.getFieldName()) && 
-							filterMap.get(fl.getFieldName()).equalsIgnoreCase(joint) ){
-						rpt.append( vo.getJointLabel() );
-					} else if (! filterMap.containsKey(fl.getFieldName())){
-						rpt.append(StringUtil.checkVal(vo.getJointLabel()));
+					Set<String> joints = vo.getJoints();
+					joints.add("4,5");
+					boolean hasJoint = false;
+					for (String joint : joints){
+						if( !filterMap.containsKey(filterKey) || 
+								filterMap.get(filterKey).equalsIgnoreCase(joint)){
+							hasJoint = true;
+							break;
+						} 
 					}
+					if ( hasJoint )
+						rpt.append( vo.getJointLabel().substring(0, vo.getJointLabel().length()-1) );
+					else
+						appendIt = false;
 					break;
 				case SEMINAR_TYPE_FLG:
 					Map<String,String> typeMap = new HashMap<String,String>(){
@@ -187,15 +198,21 @@ public class SeminarSummaryReportVO extends AbstractSBReportVO {
 					}};
 					
 					String typeCd = StringUtil.checkVal(event.getEventTypeCd());
-					if ( (!filterMap.containsKey(filterKey)) || 
-							!filterMap.get(filterKey).equalsIgnoreCase(typeCd))
-						rpt.append(StringUtil.checkVal(typeMap.get(event.getEventTypeCd())));
+					if ( (!filterMap.containsKey(filterKey) ) || 
+							filterMap.get(filterKey).equalsIgnoreCase(typeCd)){
+						rpt.append(StringUtil.checkVal(typeMap.get(typeCd ) ));
+					} else {
+						appendIt = false;
+					}
 					break;
 				case SEMINAR_CODE_FLG:
 					String rsvpCd = StringUtil.checkVal(event.getRSVPCode());
 					if ( (!filterMap.containsKey(filterKey)) || 
-							!filterMap.get(filterKey).equalsIgnoreCase(rsvpCd))
-					rpt.append(StringUtil.checkVal(event.getRSVPCode()));
+							filterMap.get(filterKey).equalsIgnoreCase(rsvpCd)){
+						rpt.append(StringUtil.checkVal(event.getRSVPCode()));
+					} else {
+						appendIt = false;
+					}
 					break;
 				case COORDINATOR_FLG:
 					rpt.append( StringUtil.checkVal(event.getContactName() ));
@@ -203,7 +220,7 @@ public class SeminarSummaryReportVO extends AbstractSBReportVO {
 				case STATUS_FLG:
 					String status = StringUtil.checkVal(vo.getStatusName());
 					if ( (!filterMap.containsKey(filterKey)) || 
-							!filterMap.get(filterKey).equalsIgnoreCase(status))
+							filterMap.get(filterKey).equalsIgnoreCase(status))
 						rpt.append( StringUtil.checkVal(vo.getStatusName()));
 					break;
 				case START_DATE_FLG:
@@ -263,13 +280,17 @@ public class SeminarSummaryReportVO extends AbstractSBReportVO {
 				rpt.append("</td>");
 			}
 			rpt.append("</tr>\r");
+			if ( appendIt ){
+				report.append(rpt);
+			}
+			rpt = null;
 		}
 		
 		//append footer
-		rpt.append( getFooter() );
+		report.append( getFooter() );
 		
 		//Returns report as byte[]
-		return rpt.toString().getBytes();
+		return report.toString().getBytes();
 	}
 
 	/* (non-Javadoc)
