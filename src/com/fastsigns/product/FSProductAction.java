@@ -135,7 +135,7 @@ public class FSProductAction extends SBActionAdapter {
 		} catch(Exception e) {
 			log.error("Unable to retrieve catalog", e);
 		}
-		
+		req.setAttribute("fsProductName", n.getNodeName());
 		// Assign the page title and other data
 		this.assignPageInfo(page, n);
 	}

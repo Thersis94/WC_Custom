@@ -64,12 +64,16 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 		//determine if custom sort is needed
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		String sortType = StringUtil.checkVal(req.getParameter("fieldSort"));
-		boolean doCustomSort = "popular".equals(sortType) || "favorites".equals(sortType) ;
-		boolean isThemeLocn = StringUtil.checkVal(mod.getParamName()).length() > 0;
-		Integer pageNo = Convert.formatInteger(req.getParameter("page"));
+		boolean doCustomSort = "popular".equals(sortType) || "favorites".equals(sortType);
+		boolean isFeatItem = StringUtil.checkVal(req.getParameter("fmid")).equals(mod.getPageModuleId());
+		if (!isFeatItem && req.hasParameter("pmid"))
+			isFeatItem = req.getParameter("pmid").equals(mod.getPageModuleId()) && StringUtil.checkVal(mod.getParamName()).length() == 0;
+		
+		//log.debug("isFocused=" + isFeatItem);
+		//log.debug("isCustomSort=" + doCustomSort);
 		
 		//reset sortOrder or Solr will bomb (unknown sortType)
-		if (!isThemeLocn && doCustomSort) {
+		if (isFeatItem && doCustomSort) {
 			req.setParameter("fieldSort", "documentId");
 			req.setParameter("rpp", "3000");
 			req.setParameter("page", "0");
@@ -91,9 +95,10 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 			applyPageData(solrResp.getResultDocuments().get(0), req);
 		
 		//if not custom sort, we're done
-		if (isThemeLocn || !doCustomSort) return;
+		if (!isFeatItem || !doCustomSort) return;
 				
 		//call the proper sort method
+		Integer pageNo = Convert.formatInteger(req.getParameter("page"));
 		if ("popular".equals(sortType)) {
 			sortByPopular(solrResp, req, pageNo);
 		} else if ("favorites".equals(sortType)) {
@@ -115,6 +120,8 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 	private void applyPageData(SolrDocument doc, SMTServletRequest req) {
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		page.setTitleName(StringUtil.checkVal(doc.getFieldValue("title"), page.getTitleName()));
+		//set a canonical that points to the first proclaimed hierarchy level
+		page.setCanonicalPageUrl(this.buildDSIUrl(doc));
 	}
 	
 	
@@ -130,7 +137,7 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 		Collection<String> favs = loadFavorites(req);
 		
 		///iterate the solr results and encapsulate each SolrDocument with the extra fields we need for the Comparator
-		List<SolrDocument> docs = new ArrayList<SolrDocument>(Integer.valueOf(""+resp.getTotalResponses()));
+		List<SolrDocument> docs = new ArrayList<SolrDocument>(Long.valueOf(resp.getTotalResponses()).intValue());
 		for (SolrDocument sd : resp.getResultDocuments()) {
 			String docId = StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID));
 			sd.setField(FAVORITES, (favs.contains(docId)) ? 0 : 5); //use zero for 'like', because the compatator will put lowest #s first
@@ -153,12 +160,20 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 	private void sortByPopular(SolrResponseVO resp, SMTServletRequest req, Integer pageNo) 
 			throws ActionException {
 		Map<String, Integer> favs = loadPageViews(req);
+		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+		String baseUrl = ("/search".equals(page.getFullPath())) ? null : page.getFullPath() + "/qs/" ;
+		log.debug("base=" + baseUrl);
 		
 		///iterate the solr results and encapsulate each SolrDocument with the extra fields we need for the Comparator
-		List<SolrDocument> docs = new ArrayList<SolrDocument>(Integer.valueOf(""+resp.getTotalResponses()));
+		List<SolrDocument> docs = new ArrayList<SolrDocument>(Long.valueOf(resp.getTotalResponses()).intValue());
 		for (SolrDocument sd : resp.getResultDocuments()) {
-			String docId = StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID));
-			sd.setField(PAGEVIEWS, (favs.containsKey(docId)) ? favs.get(docId) : 0);
+			String url = "";
+			if (baseUrl == null) {
+				url = this.buildDSIUrl(sd);
+			} else {
+				url = baseUrl + StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID));
+			}
+			sd.setField(PAGEVIEWS, (favs.containsKey(url)) ? favs.get(url) : 0);
 			docs.add(sd);
 		}
 		
@@ -224,10 +239,9 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 		Map<String, Integer> data = new HashMap<String, Integer>(stats.size());
 		for (StatVO vo : stats.values()) {
 			String key = vo.getRequestUri();
+			//log.debug("key=" + key);
 			if (key != null && key.contains("/qs/")) {
-				key = key.substring(key.indexOf("/qs/")+4);
-				if (key != null && key.length() > 0)
-					data.put(key, vo.getHitCnt());
+				data.put(key, vo.getHitCnt());
 			}
 		}
 		
@@ -235,5 +249,47 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 		req.getSession().setAttribute(PAGEVIEWS, data);
 		return data;
 	} 
+	
+	
+	/**
+	     * take the first hierachy definition and turn it into a dsi-business-rules-applied URL string
+	     * This method is also used by the DePuySiteMapServlet
+	     * @param sd
+	     * @return
+	     */
+	    public String buildDSIUrl(SolrDocument sd) {
+		    String hierarchy = "";
+		    try {
+			    hierarchy= StringUtil.checkVal(sd.getFieldValues(SearchDocumentHandler.HIERARCHY).iterator().next());
+		    } catch (Exception e) {};
+		    //log.debug(hierarchy);
+
+		    if (hierarchy != null && hierarchy.length() > 0) {
+			    String rootLvl = (hierarchy.indexOf("~") > 0) ? hierarchy.substring(0, hierarchy.indexOf("~")) : hierarchy;
+			    rootLvl = StringUtil.checkVal(rootLvl).toLowerCase();
+			    if ("vet".equals(rootLvl)) {
+				    int tildeIndx = rootLvl.length() +1;
+				    if (hierarchy.length() > tildeIndx) rootLvl = hierarchy.substring(tildeIndx, hierarchy.indexOf("~", tildeIndx));
+				    rootLvl = StringUtil.checkVal(rootLvl).toLowerCase();
+
+				    rootLvl = "veterinary/" + rootLvl;
+				    //log.debug(rootLvl);
+			    }
+
+			    //remove ampersands and replace spaces
+			    rootLvl = StringUtil.replace(rootLvl, "& ", "");
+			    rootLvl = StringUtil.replace(rootLvl, " ", "-");
+
+			    if ("nurse-education".equals(rootLvl))
+				    rootLvl = "nurse-education/resource-library";
+
+			    //log.debug(rootLvl);
+			    hierarchy = rootLvl;
+		    }
+
+		    //assemble & return the URL
+		    if (hierarchy == null || hierarchy.length() == 0) return null;
+		    return "/" + hierarchy + "/qs/" + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
+	    }
 
 }

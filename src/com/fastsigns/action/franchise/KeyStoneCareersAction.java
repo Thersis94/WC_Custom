@@ -19,6 +19,7 @@ import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.action.SBModuleVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
@@ -178,13 +179,21 @@ public class KeyStoneCareersAction extends SBActionAdapter {
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		log.debug("Beginning retrieve method");
+		if (!req.hasParameter("sbActionId")) {
+			req.setParameter("sbActionId", actionInit.getActionId());
+		}
 		super.retrieve(req);
-		
-		//If we are adding a new one, return.  We don't need to retrieve any data here. 
-		if(req.hasParameter("add"))
+		log.debug(actionInit);
+
+		String orgId;
+		SiteVO site = (SiteVO) req.getAttribute("siteData");
+		if (site != null) {
+			orgId = site.getOrganizationId();
+		} else {
+			// If we did not recieve any site data we are in the admin tool and 
+			// we only need the sb action data, not the job postings.
 			return;
-			
-		String orgId = ((SiteVO)req.getAttribute("siteData")).getOrganizationId();
+		}
 		CareersVO cvo = new CareersVO(req);
 		List<CareersVO> postings = new ArrayList<CareersVO>();
 		int franchiseId = Convert.formatInteger((String)req.getSession().getAttribute("webeditFranId"));
@@ -196,6 +205,10 @@ public class KeyStoneCareersAction extends SBActionAdapter {
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
     	UserRoleVO r = (UserRoleVO) req.getSession().getAttribute(Constants.ROLE_DATA);
     	
+    	log.debug(mod.getActionData());
+    	SBModuleVO sbVo = (SBModuleVO)mod.getActionData();
+    	
+    	mod.setAttribute(ModuleVO.ATTRIBUTE_1, sbVo.getAttribute(ModuleVO.ATTRIBUTE_1));
     	//Retrieve all career Opportunities.
 		StringBuilder sb = new StringBuilder();
 		sb.append("select * from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
@@ -300,6 +313,7 @@ public class KeyStoneCareersAction extends SBActionAdapter {
 			ps.setString(i++, cvo.getJobCountryCd());
 			ps.setString(i++, cvo.getJobPrimaryPhoneNo());
 			ps.setInt(i++, 1);
+			ps.setInt(i++, cvo.getActiveJobFlg());
 			ps.setString(i++, cvo.getJobPostingId());
 			ps.execute();
 			
@@ -328,7 +342,7 @@ public class KeyStoneCareersAction extends SBActionAdapter {
 		redir.append("?");
 		StringBuilder sb = new StringBuilder();
 		sb.append("update ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sb.append("FTS_JOB_POSTING set JOB_POST_DT = ?, UPDATE_DT = ? ");
+		sb.append("FTS_JOB_POSTING set JOB_POST_DT = ?, ACTIVE_JOB_FLG = 1, UPDATE_DT = ? ");
 		sb.append("where JOB_POSTING_ID in( ");
 		
 		//Loop the ids into the sql script.
@@ -404,8 +418,8 @@ public class KeyStoneCareersAction extends SBActionAdapter {
 		sb.append("JOB_DSRD_SKILLS, JOB_ADTL_COMMENTS, JOB_CONTACT_EMAIL, ");
 		sb.append("JOB_POST_DT, CREATE_DT, JOB_APPROVAL_FLG, JOB_ADDRESS_TXT, ");
 		sb.append("JOB_ADDRESS2_TXT, JOB_CITY_NM, JOB_STATE_CD, JOB_ZIP_CD, JOB_COUNTRY_CD, ");
-		sb.append("JOB_PRIMARY_PHONE_NO, FRANCHISE_LINK_FLG, JOB_POSTING_ID) ");
-		sb.append("values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ");
+		sb.append("JOB_PRIMARY_PHONE_NO, FRANCHISE_LINK_FLG, ACTIVE_JOB_FLG, JOB_POSTING_ID) ");
+		sb.append("values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ");
 		return sb.toString();
 	}
 	
@@ -421,7 +435,7 @@ public class KeyStoneCareersAction extends SBActionAdapter {
 		sb.append("JOB_CONTACT_EMAIL=?, JOB_POST_DT=?, UPDATE_DT=?, ");
 		sb.append("JOB_APPROVAL_FLG=?, JOB_ADDRESS_TXT=?, JOB_ADDRESS2_TXT=?, ");
 		sb.append("JOB_CITY_NM=?, JOB_STATE_CD=?, JOB_ZIP_CD=?, JOB_COUNTRY_CD=?, ");
-		sb.append("JOB_PRIMARY_PHONE_NO=?, FRANCHISE_LINK_FLG=? where JOB_POSTING_ID=? ");
+		sb.append("JOB_PRIMARY_PHONE_NO=?, FRANCHISE_LINK_FLG=?, ACTIVE_JOB_FLG=? where JOB_POSTING_ID=? ");
 		return sb.toString();
 	}
 	

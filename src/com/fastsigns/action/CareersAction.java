@@ -56,7 +56,15 @@ public class CareersAction extends SBActionAdapter {
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		Map<String, List<CareersVO>> postings = new LinkedHashMap<String, List<CareersVO>>();
 		super.retrieve(req);
-		String orgId = ((SiteVO)req.getAttribute("siteData")).getOrganizationId();
+		String orgId;
+		SiteVO site = (SiteVO) req.getAttribute("siteData");
+		if (site != null) {
+			orgId = site.getOrganizationId();
+		} else {
+			// If we did not recieve any site data we are in the admin tool and 
+			// we only need the sb action data, not the job postings.
+			return;
+		}
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		log.debug(mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 		StringBuilder sb = new StringBuilder();
@@ -67,7 +75,7 @@ public class CareersAction extends SBActionAdapter {
 		if (Convert.formatBoolean(mod.getAttribute(ModuleVO.ATTRIBUTE_1))) {
 			sb.append("DATEDIFF(DAY, JOB_POST_DT, GETDATE()) < 21 ");
 		} else {
-			sb.append("((DATEDIFF(DAY, JOB_POST_DT, GETDATE()) < 21 and a.FRANCHISE_ID is null) or a.FRANCHISE_ID is not null) ");
+			sb.append("ACTIVE_JOB_FLG = 1 ");
 		}
 		sb.append("and JOB_APPROVAL_FLG = ? order by JOB_POST_DT");
 		PreparedStatement ps = null;

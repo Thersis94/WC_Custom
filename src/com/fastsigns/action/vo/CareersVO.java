@@ -37,6 +37,7 @@ public class CareersVO implements Serializable {
 	private Integer franchiseLinkFlg = null;
 	private Date jobPostDt = null;
 	private Integer jobApprovalFlg = 0;
+	private int activeJobFlg = 0;
 
 	public CareersVO(){
 		
@@ -67,6 +68,7 @@ public class CareersVO implements Serializable {
 		jobZipCd = req.getParameter("jobZipCd");
 		jobPrimaryPhoneNo = req.getParameter("jobPrimaryPhoneNo");
 		franchiseLinkFlg = Convert.formatInteger(req.getParameter("franchiseLinkFlg"));
+		activeJobFlg = Convert.formatInteger(req.getParameter("activeJobFlg"));
 	}
 	
 	public CareersVO(ResultSet rs){
@@ -95,6 +97,7 @@ public class CareersVO implements Serializable {
 		jobZipCd = db.getStringVal("JOB_ZIP_CD", rs);
 		jobPrimaryPhoneNo = db.getStringVal("JOB_PRIMARY_PHONE_NO", rs);
 		franchiseLinkFlg = db.getIntegerVal("FRANCHISE_LINK_FLG", rs);
+		activeJobFlg = db.getIntVal("ACTIVE_JOB_FLG", rs);
 	}
 
 	/**
@@ -425,6 +428,14 @@ public class CareersVO implements Serializable {
 
 	public String getJobCountryCd() {
 		return jobCountryCd;
+	}
+
+	public int getActiveJobFlg() {
+		return activeJobFlg;
+	}
+
+	public void setActiveJobFlg(int activeJobFlg) {
+		this.activeJobFlg = activeJobFlg;
 	}
 		
 }
