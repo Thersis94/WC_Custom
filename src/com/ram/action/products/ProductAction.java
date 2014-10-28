@@ -319,12 +319,10 @@ public class ProductAction extends SBActionAdapter {
 		int cnt = 0;
 		//Get the count off the first row.
 		ResultSet rs = ps.executeQuery();
-		while(rs.next())
-			cnt++;
+		if(rs.next())
+			cnt = rs.getInt(1);
 
 		return cnt;
-
-		
 	}
 	
 	/**
@@ -368,6 +366,10 @@ public class ProductAction extends SBActionAdapter {
 	
 	/**
 	 * Generates the queries for retrieving and counting products based on a number of input.
+	 *
+	 * Fixed query and database to use a View on the Customer Table to avoid the circular reference
+	 * that was causing problems with the Product Lookup query.  Now performance is much better as we
+	 * don't have to perform any intersects on the data.
 	 * @param customerId
 	 * @param term
 	 * @param kitFilter
@@ -379,46 +381,27 @@ public class ProductAction extends SBActionAdapter {
 	public String getProdList(int customerId, String term, int kitFilter, int providerId, boolean isCount, int limit) {
 		String schema = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sb = new StringBuilder();
-		//Wrap the intersect query in our limiting selections depending on purpuse of call.
+
 		if(isCount) {
-			sb.append("select * from (");
+			sb.append("select count(a.product_id) from ").append(schema);
 		} else {
-			sb.append("select top ").append(limit).append(" * from (");
+			sb.append("select top ").append(limit ).append("a.PRODUCT_ID, a.CUSTOMER_ID, a.CUST_PRODUCT_ID, a.PRODUCT_NM, a.DESC_TXT, a.SHORT_DESC, a.LOT_CODE_FLG, a.ACTIVE_FLG, a.EXPIREE_REQ_FLG, a.GTIN_PRODUCT_ID, b.CUSTOMER_NM, a.KIT_FLG from ").append(schema);
 		}
-		
 		//Build Initial Query
-		sb.append("(select a.PRODUCT_ID, a.CUSTOMER_ID, a.CUST_PRODUCT_ID, a.PRODUCT_NM, a.DESC_TXT, a.SHORT_DESC, a.LOT_CODE_FLG, a.ACTIVE_FLG, a.EXPIREE_REQ_FLG, a.GTIN_PRODUCT_ID, b.CUSTOMER_NM, a.KIT_FLG from ").append(schema);
+
 		sb.append("ram_product a ");
-		sb.append("inner join ").append(schema).append("ram_customer b ");
+		sb.append("inner join ").append(schema).append("RAM_OEM_CUSTOMER b ");
 		sb.append("on a.customer_id = b.customer_id ");
-		sb.append(this.getWhereClause(customerId, term, kitFilter, 0));
-		
-		//close out initial query wrapper.
-		sb.append(") ");
-		
-		//If this is for a provider, add intersect query
-		if(providerId > 0) {
-			sb.append(" intersect ");
-			sb.append("(select a.PRODUCT_ID, a.CUSTOMER_ID, a.CUST_PRODUCT_ID, a.PRODUCT_NM, a.DESC_TXT, a.SHORT_DESC, a.LOT_CODE_FLG, a.ACTIVE_FLG, a.EXPIREE_REQ_FLG, a.GTIN_PRODUCT_ID, b.CUSTOMER_NM, a.KIT_FLG from ").append(schema);
-			sb.append("ram_product a ");
-			sb.append("inner join ").append(schema).append("ram_customer b ");
-			sb.append("on a.customer_id = b.customer_id ");
-			sb.append(this.getWhereClause(0, term, kitFilter, providerId));
-			//close out provider wrapper.
-			sb.append(") ");
-		}
-		
-		//Close out our limiting select and add alias for syntax
-		sb.append(") I ");
-		
+		sb.append(this.getWhereClause(customerId, term, kitFilter, providerId));
+
 		//Lastly if this is not a count call order the results.
 		if(!isCount)
 			sb.append("order by PRODUCT_NM");
-		
+
 		log.debug(customerId + "|" + providerId + "|" + sb.toString());
 		return sb.toString();
 	}
-	
+
 	/**
 	 * Method for retrieving the insert clause for a product
 	 * @return
@@ -431,7 +414,7 @@ public class ProductAction extends SBActionAdapter {
 		sb.append("CUSTOMER_ID, GTIN_PRODUCT_ID) values (?,?,?,?,?,?,?,?,?,?)");
 		return sb.toString();
 	}
-	
+
 	/**
 	 * Method for retrieving the update clause for a product
 	 * @return
