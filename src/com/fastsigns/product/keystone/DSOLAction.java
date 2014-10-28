@@ -1,6 +1,12 @@
 package com.fastsigns.product.keystone;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.Map;
@@ -17,8 +23,8 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.commerce.ShoppingCartVO;
 import com.siliconmtn.commerce.cart.storage.Storage;
-import com.siliconmtn.graphic.SaveAsJPEG;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.image.SVGToImageConverter;
 import com.siliconmtn.io.FileManagerFactoryImpl;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.databean.FilePartDataBean;
@@ -35,6 +41,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  */
 public class DSOLAction extends SBActionAdapter {
 	
+	public static final int THUMBNAIL_WIDTH = 326;
 	/**
 	 * @param args
 	 */
@@ -102,8 +109,9 @@ public class DSOLAction extends SBActionAdapter {
 				log.debug("Done Writing files");
 				
 				String thumbPath = "";
-				SaveAsJPEG convert = new SaveAsJPEG(new File(svg), new File(thumbPath));
-				
+				InputStream is = new BufferedInputStream(new FileInputStream(new File(svg)));
+				OutputStream os = new BufferedOutputStream(new FileOutputStream(new File(thumbPath)));
+				SVGToImageConverter.convertJPEGFile(is, os, THUMBNAIL_WIDTH, 0);
 				/*
 				 * KeystoneProductVO Fields
 				 */
