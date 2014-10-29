@@ -1,6 +1,12 @@
 package com.fastsigns.product.keystone;
 
-import java.io.ByteArrayOutputStream;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.Map;
@@ -9,21 +15,16 @@ import java.util.UUID;
 
 import javax.servlet.http.HttpSession;
 
-import org.apache.commons.codec.binary.Base64;
-
 import com.fastsigns.action.franchise.CenterPageAction;
 import com.fastsigns.product.keystone.parser.KeystoneDataParser;
 import com.fastsigns.product.keystone.vo.KeystoneProductVO;
 import com.fastsigns.security.FastsignsSessVO;
-import com.lowagie.text.Document;
-import com.lowagie.text.Image;
-import com.lowagie.text.Rectangle;
-import com.lowagie.text.pdf.PdfWriter;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.commerce.ShoppingCartVO;
 import com.siliconmtn.commerce.cart.storage.Storage;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.image.SVGToImageConverter;
 import com.siliconmtn.io.FileManagerFactoryImpl;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.databean.FilePartDataBean;
@@ -40,6 +41,8 @@ import com.smt.sitebuilder.common.constants.Constants;
  */
 public class DSOLAction extends SBActionAdapter {
 	
+	//Render at 8X resolution to prevent appearance of artifacts.
+	public static final int THUMBNAIL_WIDTH = 2688;
 	/**
 	 * @param args
 	 */
@@ -85,78 +88,46 @@ public class DSOLAction extends SBActionAdapter {
 			vo.setModifiers(((KeystoneProductVO)req.getSession().getAttribute("DSOLVO")).getModifiers());
 		}
 		req.setValidateInput(false);
-			/*
-			 * Write the image data now so we don't have to carry around so much
-			 * data on the request and risk blowing up a browser.   
-			 */
-			try {
-				if(req.hasParameter("highResData")) {
-					String svg = req.getParameter("svgData");
-					Map<String, Object> attr = vo.getProdAttributes();
-					attr.put("jsonData", req.getParameter("jsonData"));
-					if(req.hasParameter("materialName"))
-						attr.put("materialName", req.getParameter("materialName"));
-					
-					String hrd = req.getParameter("highResData");
-					String lrd = req.getParameter("thumbnailData");
-					
-					//Trim the pre-amble off the data string.
-					int start = hrd.indexOf(",");  
-					hrd = hrd.substring(start + 1);
-					start = lrd.indexOf(",");  
-					lrd = lrd.substring(start + 1);
-					
-					//Store the Byte Arrays
-					byte [] bHrd = Base64.decodeBase64(hrd.getBytes());
-					byte [] bLrd = Base64.decodeBase64(lrd.getBytes());
-					byte [] bPdf = getPdfData(bHrd);
-					byte [] bSvg = URLDecoder.decode(svg, "UTF-8").getBytes();
-					
-					//Generate random folders
-					String ran1 = getDirectoryPath();
-					String ran2 = getDirectoryPath();
-					
-					//Write the Files
-					String pdf = writeDsolFile(bPdf, UUID.randomUUID() + ".pdf", attributes, ran1, ran2);
-					svg = writeDsolFile(bSvg, UUID.randomUUID() + ".svg", attributes, ran1, ran2);
-					hrd = writeDsolFile(bHrd, UUID.randomUUID() + ".jpeg", attributes, ran1, ran2);
-					log.debug("hrd = " + hrd);
-					lrd = writeDsolFile(bLrd, UUID.randomUUID() + ".jpeg", attributes, ran1, ran2);
-					log.debug("lrd = " + lrd);
-					
-					//Store the File Data
-					if(pdf != null && pdf.length() > 0) {
-						vo.addProdAttribute("pdfPath", pdf);
-						vo.addProdAttribute("pdfSize", bPdf.length);
-						attr.put("pdfPath", pdf);
-						req.setParameter("pdfPath", pdf);
-					}
-					
-					if(svg != null && svg.length() > 0) {
-						vo.addProdAttribute("svgData", svg);
-						vo.addProdAttribute("svgSize", bSvg.length);
-						attr.put("svgData", svg);
-						req.setParameter("svgData", svg);
-					}
-					
-					if(hrd != null && hrd.length() > 0) {
-						vo.addProdAttribute("highResPath", hrd);
-						vo.addProdAttribute("hrdDataSize", bHrd.length);
-						req.setParameter("highResData", hrd);
-					}
-					
-					if(lrd != null && lrd.length() > 0) {
-						vo.addProdAttribute("lowResPath", lrd);
-						vo.addProdAttribute("lrdDataSize", bLrd.length);
-						req.setParameter("thumbnailData", lrd);
-					}
-					attr.put("highResData", hrd);
-					attr.put("thumbnailData", lrd);
-					log.debug("Done Writing files");
+		
+		//Write the SVG Data to a temp file and store path on the request.
+		try {
+			if(req.hasParameter("svgData")) {
+				String svg = req.getParameter("svgData");
+				Map<String, Object> attr = vo.getProdAttributes();
+				attr.put("jsonData", req.getParameter("jsonData"));
+				if(req.hasParameter("materialName"))
+					attr.put("materialName", req.getParameter("materialName"));
+				String ran1 = getDirectoryPath(), ran2 = getDirectoryPath();
+				byte [] bSvg = URLDecoder.decode(svg, "UTF-8").getBytes();
+				svg = writeDsolFile(bSvg, UUID.randomUUID() + ".svg", attributes, ran1, ran2);
+				
+				if(svg != null && svg.length() > 0) {
+					vo.addProdAttribute("svgData", svg);
+					vo.addProdAttribute("svgSize", bSvg.length);
+					attr.put("svgData", svg);
+					req.setParameter("svgData", svg);
 				}
-			} catch (Exception e) {
-				log.debug(e);
+				String thumbPath = ran1 + ran2 + UUID.randomUUID() + ".png";
+				InputStream is = new BufferedInputStream(new FileInputStream(new File(attributes.get("keystoneDsolTemplateFilePath") + svg)));
+				OutputStream os = new BufferedOutputStream(new FileOutputStream(new File(attributes.get("keystoneDsolTemplateFilePath") + thumbPath)));
+				
+				//Assign Width cap dependant on long side.
+				if(vo.getSizes().get(0).getWidth() > vo.getSizes().get(0).getHeight())
+					SVGToImageConverter.convertPNGFile(is, os, THUMBNAIL_WIDTH, 0);
+				else
+					SVGToImageConverter.convertPNGFile(is, os, 0, THUMBNAIL_WIDTH);
+				log.debug("Done Writing files");
+				
+				/*
+				 * KeystoneProductVO Fields
+				 */
+				vo.addProdAttribute("thumbnailData", thumbPath);
+				vo.setImageUrl(thumbPath);
+				vo.setThumbnail(thumbPath);
 			}
+		} catch (Exception e) {
+			log.debug(e);
+		}
 		
 		req.getSession().setAttribute("DSOLVO", vo);
 		
@@ -232,8 +203,8 @@ public class DSOLAction extends SBActionAdapter {
 		if (req.hasParameter("dimensions")) {
 			try {
 				String[] s = req.getParameter("dimensions").split(" x ");
-				data.addProdAttribute("widthPixels", Integer.parseInt(s[0]) * 72);
-				data.addProdAttribute("heightPixels", Integer.parseInt(s[1]) * 72);
+				data.addProdAttribute("widthPixels", Integer.parseInt(s[0]) * 300);
+				data.addProdAttribute("heightPixels", Integer.parseInt(s[1]) * 300);
 			} catch (Exception e) {
 				//possible Null, Arithmetic, or IndexOutOfBounds
 				log.error(e);
@@ -330,30 +301,6 @@ public class DSOLAction extends SBActionAdapter {
 			mod.setError(ide);
 			mod.setErrorMessage("Unable to load DSOL Templates");
 		}
-	}
-	
-	
-	/**
-	 * turns the customized DSOL image into a PDF file.
-	 * @param data
-	 * @return
-	 */
-	public static byte [] getPdfData(byte [] data) {
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		try {
-			Image img = Image.getInstance(data);
-			img.setAbsolutePosition(0, 0);
-			Document hrdoc = new Document(new Rectangle(0, 0, img.getWidth(), img.getHeight()));
-			PdfWriter.getInstance(hrdoc, baos);
-			hrdoc.open();
-			hrdoc.add(img);
-	        hrdoc.close();
-		} catch (Exception e) {
-			log.error("Could not write pdf file.", e);
-		}
-		
-		return baos.toByteArray();
-	
 	}
 
 	/**

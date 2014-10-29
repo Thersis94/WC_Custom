@@ -203,19 +203,10 @@ public class OrderSubmissionCoordinator {
 			/*
 			 * If we have a dsolItem, move the data to the permanent fileSystem.
 			 */
-			if (prod.getProdAttributes().containsKey("highResPath") && attributes.get("keystoneDsolFilePath") != null) {
+			if (prod.getProdAttributes().containsKey("svgData") && attributes.get("keystoneDsolFilePath") != null) {
 				attributes.put("fileManagerType", attributes.get("dsolFileManagerType"));
 				FileLoader fl = new FileLoader(attributes);
-					
-				//Generate random folders
-				String hrd = moveFile(fl, (String) prod.getProdAttributes().get("highResPath"), this.attributes);
-				if (hrd != null && hrd.length() > 0)
-					p.accumulate("highResImage", generateFileData(hrd, "image/jpeg", (Integer) prod.getProdAttributes().get("hrdDataSize")));
-				
-				String pdf = moveFile(fl, (String) prod.getProdAttributes().get("pdfPath"), this.attributes);
-				if (pdf != null && pdf.length() > 0)
-					p.accumulate("pdfData", generateFileData(pdf, "application/pdf", (Integer) prod.getProdAttributes().get("pdfSize")));
-				
+
 				String svg = moveFile(fl, (String) prod.getProdAttributes().get("svgData"), this.attributes);
 				if (svg != null && svg.length() > 0)
 					p.accumulate("svgData", generateFileData(svg, "image/svg+xml", (Integer) prod.getProdAttributes().get("svgSize")));
