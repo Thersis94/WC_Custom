@@ -51,6 +51,9 @@ public class MediaBinVideo extends SimpleActionAdapter {
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		
+		//this portlet does not run when /qs/ is present - DSI Anatomy pages
+		if (req.hasParameter("reqParam_1")) return;
+		
 		//query Solr for the assets we need to display
 		//everything we need for the View is contained in the SolrDocument(s) returned.
 		SolrActionVO qData = new SolrActionVO();
