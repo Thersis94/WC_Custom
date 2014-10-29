@@ -41,7 +41,8 @@ import com.smt.sitebuilder.common.constants.Constants;
  */
 public class DSOLAction extends SBActionAdapter {
 	
-	public static final int THUMBNAIL_WIDTH = 336;
+	//Render at 8X resolution to prevent appearance of artifacts.
+	public static final int THUMBNAIL_WIDTH = 2688;
 	/**
 	 * @param args
 	 */
@@ -106,12 +107,17 @@ public class DSOLAction extends SBActionAdapter {
 					attr.put("svgData", svg);
 					req.setParameter("svgData", svg);
 				}
-				log.debug("Done Writing files");
-				
 				String thumbPath = ran1 + ran2 + UUID.randomUUID() + ".png";
 				InputStream is = new BufferedInputStream(new FileInputStream(new File(attributes.get("keystoneDsolTemplateFilePath") + svg)));
 				OutputStream os = new BufferedOutputStream(new FileOutputStream(new File(attributes.get("keystoneDsolTemplateFilePath") + thumbPath)));
-				SVGToImageConverter.convertJPEGFile(is, os, THUMBNAIL_WIDTH, 0);
+				
+				//Assign Width cap dependant on long side.
+				if(vo.getSizes().get(0).getWidth() > vo.getSizes().get(0).getHeight())
+					SVGToImageConverter.convertPNGFile(is, os, THUMBNAIL_WIDTH, 0);
+				else
+					SVGToImageConverter.convertPNGFile(is, os, 0, THUMBNAIL_WIDTH);
+				log.debug("Done Writing files");
+				
 				/*
 				 * KeystoneProductVO Fields
 				 */
