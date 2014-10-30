@@ -73,8 +73,7 @@ public class MediaBinAdminAction extends SimpleActionAdapter {
 				ps.setString(++i, req.getParameter("sProduct") + "%");
 			}
 			if (req.hasParameter("sTracking")) ps.setString(++i, req.getParameter("sTracking") + "%");
-			if (typeCd == 1)
-				ps.setString(++i, ((isDSI) ? "DSI.com" : "USDS.com"));
+			if (typeCd == 1) ps.setString(++i, ((isDSI) ? "%DSI.com%" : "%USDS.com%"));
 			
 			if ("quicktime".equalsIgnoreCase(assetType)) {
 				ps.setString(++i, "video");

@@ -70,8 +70,8 @@ public class CustomerLocationAction extends SBActionAdapter {
 		int customerId = Convert.formatInteger(req.getParameter("customerId"), 0);
 		int customerLocationId = Convert.formatInteger(req.getParameter("customerLocationId"), 0);
 		String customerTypeId = StringUtil.checkVal(req.getParameter("customerTypeId"));
-		String schema = (String)getAttribute("customDbSchema");
-		StringBuilder sql = new StringBuilder();
+		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(320);
 		sql.append("select b.* from ").append(schema);
 		sql.append("ram_customer_location b ");
 		sql.append("inner join ").append(schema).append("ram_customer c on b.customer_id = c.customer_id ");
@@ -125,8 +125,8 @@ public class CustomerLocationAction extends SBActionAdapter {
 
 		boolean isUpdate = (vo.getCustomerLocationId() > 0);
 		String msgAction = null;
-		String schema = (String)getAttribute("customDbSchema");
-		StringBuilder sql = new StringBuilder();
+		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(300);
 		if (isUpdate) {
 			sql.append("update ").append(schema).append("RAM_CUSTOMER_LOCATION ");
 			sql.append("set REGION_ID=?, LOCATION_NM=?, ADDRESS_TXT=?, ADDRESS2_TXT=?, ");
@@ -191,7 +191,7 @@ public class CustomerLocationAction extends SBActionAdapter {
 		} else {
 	        // Build the redirect and messages
 			// Setup the redirect.
-			StringBuilder url = new StringBuilder();
+			StringBuilder url = new StringBuilder(50);
 			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 			url.append(page.getRequestURI());
 			if (msg != null) url.append("?msg=").append(msg);

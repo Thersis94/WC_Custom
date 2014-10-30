@@ -26,8 +26,8 @@ public class SolrPageviewComparator implements Comparator<SolrDocument> {
 	 */
 	@Override
 	public int compare(SolrDocument o1, SolrDocument o2) {
-		Integer o1Views = Convert.formatInteger((Integer)o1.getFieldValue(SolrSearchWrapper.PAGEVIEWS), 0);
-		Integer o2Views = Convert.formatInteger((Integer)o2.getFieldValue(SolrSearchWrapper.PAGEVIEWS), 0);
+		int o1Views = Convert.formatInteger((Integer)o1.getFieldValue(SolrSearchWrapper.PAGEVIEWS), 0).intValue();
+		int o2Views = Convert.formatInteger((Integer)o2.getFieldValue(SolrSearchWrapper.PAGEVIEWS), 0).intValue();
 		
 		//this is an inverted .compareTo() implementation; show the ones with the highest #s first.
 		if (o1Views < o2Views) return 1;
