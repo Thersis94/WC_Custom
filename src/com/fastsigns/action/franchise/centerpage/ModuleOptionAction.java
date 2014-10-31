@@ -111,8 +111,13 @@ public class ModuleOptionAction extends SBActionAdapter{
 							Convert.formatInteger(req.getParameter("approvalFlag"), 0).intValue() == 100)
 						this.revokeApprovalSubmission(req);
 					
-					if (!modList.contains(req.getParameter("moduleId")))
+					for (String key : req.getParameterMap().keySet())
+						log.debug(key+"|"+req.getParameter(key));
+						
+					if (!modList.contains(req.getParameter("moduleId"))) {
 						req.setParameter("skipDelete", "true");
+						req.setParameter("parentModuleId", req.getParameter("optionId"));
+					}
 					
 				case CenterPageAction.MODULE_OPTION_UPDATE:
 					this.updateModuleOptions(req);
@@ -420,6 +425,9 @@ public class ModuleOptionAction extends SBActionAdapter{
 				String[] opts = options[i].split("~"); //split is key ~ order-by-index
 				int idx = i+1; //default ordering
 				if (opts.length == 2) idx = Convert.formatInteger(opts[1], idx);
+				
+				if (req.hasParameter("parentModuleId"))
+					opts[0] = req.getParameter("parentModuleId");
 				
 				psIns.setString(1, locationId);
 				psIns.setString(2, opts[0]);
