@@ -1,8 +1,6 @@
 package com.codman.cu.tracking.vo;
 
 import java.io.Serializable;
-
-
 import java.sql.ResultSet;
 import java.util.Comparator;
 import java.util.Date;
@@ -61,10 +59,20 @@ public class UnitVO implements Serializable {
 	private String modifyingUserId = null;
 	private String modifyingUserName = "";
 	private String productionCommentsText = null;
+	//For new product types
+	private ProdType productType = null;
 	
 	//this is for UnitHistoryReportVO
 	private PhysicianVO phys = null;
 	private Integer transactionType = null;
+	
+	/**
+	 * Possible unit types
+	 */
+	public enum ProdType {
+		MEDSTREAM, //The original CU type
+		ICP
+	}
 	
 	public UnitVO() {
 	}
@@ -92,6 +100,10 @@ public class UnitVO implements Serializable {
 		serviceDate = Convert.formatDate(req.getParameter("servDt"));
 		modifyingUserId = req.getParameter("modifyingUserId");
 		productionCommentsText = req.getParameter("productionCommentsText");
+		
+		String prodType = StringUtil.checkVal(req.getParameter("prodCd"));
+		if (!prodType.isEmpty())
+			productType = ProdType.valueOf(prodType);
 	}
 	
 	/**
@@ -128,6 +140,10 @@ public class UnitVO implements Serializable {
 		serviceDate = db.getDateVal("service_dt", rs);
 		modifyingUserId = db.getStringVal("modifying_user_id", rs);
 		productionCommentsText = db.getStringVal("production_comments_txt", rs);
+		
+		String prodType = StringUtil.checkVal(db.getStringVal("product_cd",rs));
+		if (!prodType.isEmpty())
+			productType = ProdType.valueOf(prodType);
 		
 		setPhys(new PhysicianVO(rs));
 		db = null;
@@ -408,8 +424,27 @@ public class UnitVO implements Serializable {
 	public void setTransactionType(Integer transactionType) {
 		this.transactionType = transactionType;
 	}
+
+	/**
+	 * @return the productType
+	 */
+	public ProdType getProductType() {
+		return productType;
+	}
+
+	/**
+	 * @param productType the productType to set
+	 */
+	public void setProductType(ProdType productType) {
+		this.productType = productType;
+	}
 	
-	
+	public String getProductCode(){
+		if ( productType == null)
+			return ProdType.MEDSTREAM.name();
+		else
+			return productType.name();
+	}
 }
 
 
@@ -427,5 +462,4 @@ class UnitComparator implements Comparator<UnitVO> {
 		return o1.getSerialNo().compareToIgnoreCase(o2.getSerialNo());
 		
 	}
-
 }

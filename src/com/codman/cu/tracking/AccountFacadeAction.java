@@ -8,6 +8,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -24,11 +27,11 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.exception.DatabaseException;
+import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.user.ProfileManager;
@@ -65,6 +68,8 @@ public class AccountFacadeAction extends SBActionAdapter {
 	 */
 	public void build(SMTServletRequest req) throws ActionException {
 		String type = StringUtil.checkVal(req.getParameter("type"));
+		String prodCd = StringUtil.checkVal( req.getParameter("prodCd"));
+		
 		log.debug("facadeType: " + type);
 		
 		SMTActionInterface sai = null;
@@ -73,7 +78,14 @@ public class AccountFacadeAction extends SBActionAdapter {
 		} else if (type.equalsIgnoreCase("physician")) {
 			sai = new PhysicianAction(actionInit);
 		} else if (type.equalsIgnoreCase("transaction")) {
-			sai = new TransAction(actionInit);
+			try{
+				//Determine the process flow based on the unit product type
+				sai = TransactionFactory.getInstance( prodCd, actionInit );
+			} catch (InvalidDataException ie){
+				log.error("Error Processing the Transaction Type.");
+				throw new ActionException(ie);
+			}
+			
 		} else if (type.equalsIgnoreCase("transUnit")) {
 			sai = new UnitTransferAction(actionInit);
 		}
@@ -96,6 +108,7 @@ public class AccountFacadeAction extends SBActionAdapter {
 		String physicianId = StringUtil.checkVal(req.getParameter("physicianId"));
 		String transactionId = StringUtil.checkVal(req.getParameter("transactionId"));
 		Boolean isNewTransaction = StringUtil.checkVal(req.getParameter("transactionId")).equals("ADD");
+		String prodCd = StringUtil.checkVal( req.getParameter("prodCd"));
 		String unitId = StringUtil.checkVal(req.getParameter("unitId"));
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
@@ -117,7 +130,7 @@ public class AccountFacadeAction extends SBActionAdapter {
 		 * Account has-a Transaction
 		 * Transaction has-a Unit
 		 */
-		StringBuffer sql = new StringBuffer();
+		StringBuilder sql = new StringBuilder();
 		sql.append("select c.profile_id as phys_profile_id, ");
 		if (!type.equals("transaction") && !type.equals("unit")) {
 			sql.append("* ");
@@ -161,6 +174,7 @@ public class AccountFacadeAction extends SBActionAdapter {
 		if (physicianId.length() > 0) sql.append("and c.physician_id=? ");
 		if (transactionId.length() > 0) sql.append("and d.transaction_id=? ");
 		if (unitId.length() > 0) sql.append("and f.unit_id=? ");
+		if (prodCd.length() > 0) sql.append("and f.product_cd=? ");
 		
 		// add any search filters
 		if (search.getStatusId() != null) sql.append("and d.status_id=? ");  //transaction status
@@ -169,8 +183,7 @@ public class AccountFacadeAction extends SBActionAdapter {
 		if (search.getSerialNoText() != null) sql.append("and f.serial_no_txt like ? ");
 		if (search.getRepId() != null) sql.append("and b.person_id=? ");
 
-		sql.append("order by b.account_id, d.request_no asc, c.physician_id, ");
-		sql.append("d.transaction_id, b.account_nm, b.account_no");
+		appendOrderBy(req,sql);
 		log.debug(sql);
 		
 		List<AccountVO> data = new ArrayList<AccountVO>();
@@ -192,6 +205,7 @@ public class AccountFacadeAction extends SBActionAdapter {
 			if (physicianId.length() > 0) ps.setString(i++, physicianId);
 			if (transactionId.length() > 0) ps.setString(i++, transactionId);
 			if (unitId.length() > 0) ps.setString(i++, unitId);
+			if (prodCd.length() > 0) ps.setString(i++, prodCd);
 			
 			// add any search filters
 			if (search.getStatusId() != null) ps.setInt(i++, search.getStatusId());
@@ -243,6 +257,8 @@ public class AccountFacadeAction extends SBActionAdapter {
 			try { ps.close(); } catch (Exception e) {}
 		}
 		
+		data = paginateList( req, data );
+		
 		//if we're adding/editing an account as an Admin, we need a list of Reps for the dropdown menu.
 		if ("account".equalsIgnoreCase(type) && role.getRoleLevel() == SecurityController.ADMIN_ROLE_LEVEL) {
 			UserAction ua = new UserAction(actionInit);
@@ -291,6 +307,12 @@ public class AccountFacadeAction extends SBActionAdapter {
 					newResults.add(vo);
 				}
 				
+				String sort = StringUtil.checkVal(req.getParameter("sortBy"));
+				Boolean isDescending = Convert.formatBoolean(req.getParameter("desc"));
+				if (sort.equals("rep")){
+					Collections.sort(newResults, new AcctRepComparator(isDescending));
+				}
+				
 				data = newResults;
 			} catch (DatabaseException de) {
 				log.error(de);
@@ -327,6 +349,53 @@ public class AccountFacadeAction extends SBActionAdapter {
 		
 	}
 	
+	/**
+	 * Used for sorting some of the values in the query
+	 * @param req
+	 * @param sql
+	 */
+	private void appendOrderBy(SMTServletRequest req, StringBuilder sql){
+		String sort = StringUtil.checkVal( req.getParameter("sortBy") );
+		Boolean isDescending = Convert.formatBoolean(req.getParameter("desc"));
+		
+		Map<String, String> sortMap = new HashMap<String,String>(){
+			private static final long serialVersionUID = 1l; 
+			{
+			put("account","b.account_nm");
+			put("accountNo", "b.account_no");
+			}};
+			
+		sql.append("order by ");
+		
+		if ( sortMap.containsKey(sort)){
+			sql.append(sortMap.get(sort));
+			if (isDescending) {sql.append(" desc"); }
+			sql.append(", d.request_no, c.physician_id, d.transaction_id");
+		} else {
+			sql.append(" b.account_id, d.request_no asc, c.physician_id, ");
+			sql.append("d.transaction_id, b.account_nm, b.account_no");
+		}
+	}
+	
+	/**
+	 * crops the list into a paginated one
+	 * @param req
+	 * @param lst List to be modified
+	 */
+	private List<AccountVO> paginateList( SMTServletRequest req, List<AccountVO> lst){
+		//current item in list
+		Integer top = Convert.formatInteger(req.getParameter("top"));
+		//results shown per page (if 0, show all)
+		Integer perPage = Convert.formatInteger(req.getParameter("perPage"), lst.size());
+		//no negative indexes
+		int first = ( top >= 0 ? top : 0 );
+		int last = ( top + perPage > lst.size() ? lst.size() : top+perPage);
+		//used in list_paginator view
+		req.setParameter("max", ""+lst.size());
+		
+		return lst.subList(first, last);	
+	}
+	
 	public void list(SMTServletRequest req) throws ActionException {
 		super.retrieve(req);
 	}
@@ -348,5 +417,25 @@ public class AccountFacadeAction extends SBActionAdapter {
 		}
 		
 		return vo;
+	}
+	
+	private class AcctRepComparator implements Comparator<AccountVO>{
+
+		private boolean desc = false;
+		
+		public AcctRepComparator( boolean isDesc ){
+			desc = isDesc;
+		}
+		public int compare(AccountVO o1, AccountVO o2) {
+			// Check the objects for null
+			if (o1 == null && o2 == null) return 0;
+			if (o1 == null) return -1;
+			else if (o2 == null) return 1;
+			
+			int result =  o1.getRep().getFullName().compareToIgnoreCase(
+					o2.getRep().getFullName());
+			return ( desc ? result *-1 : result);
+		}
+		
 	}
 }

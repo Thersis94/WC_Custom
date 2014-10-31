@@ -1,11 +1,11 @@
 package com.codman.cu.tracking;
 
 import java.sql.PreparedStatement;
-
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -33,14 +33,14 @@ import com.smt.sitebuilder.security.SBUserRole;
 import com.smt.sitebuilder.security.SecurityController;
 
 /****************************************************************************
- * <b>Title</b>: RegistrationAction.java<p/>
- * <b>Description: </b> 
+ * <b>Title</b>: UnitNameComparator.java<p/>
+ * <b>Description: Used for sorting UnitVO's by person name, since the 
+ * names aren't fetched until after the initial query.</b> 
  * <p/>
- * <b>Copyright:</b> Copyright (c) 2010<p/>
+ * <b>Copyright:</b> Copyright (c) 2014<p/>
  * <b>Company:</b> Silicon Mountain Technologies<p/>
- * @author James McKain
- * @version 1.0
- * @since Jul 26, 2010
+ * @author Erik Wingo
+ * @since Oct 30, 2014
  ****************************************************************************/
 public class UnitAction extends SBActionAdapter {
 
@@ -84,6 +84,7 @@ public class UnitAction extends SBActionAdapter {
     	} else {
     		url.append(req.getRequestURI()).append("?1=1");
     	}
+    	url.append("&prodCd=").append( StringUtil.checkVal(req.getParameter("prodCd")));
     	url.append("&msg=").append(msg);
     	req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
     	req.setAttribute(Constants.REDIRECT_URL, url.toString());
@@ -106,8 +107,8 @@ public class UnitAction extends SBActionAdapter {
 			sql.append("comments_txt, unit_status_id, create_dt, organization_id, ");
 			sql.append("parent_id, ifu_art_no, ifu_rev_no, prog_guide_art_no, prog_guide_rev_no, ");
 			sql.append("battery_type, battery_serial_no, lot_number, service_ref, service_dt, ");
-			sql.append("modifying_user_id, production_comments_txt, unit_id) ");
-			sql.append("values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+			sql.append("modifying_user_id, production_comments_txt,product_cd, unit_id) ");
+			sql.append("values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 		} else {
 			//make a copy of the existing record (for history) before updating this record
 			//parentId is only passed from the update Unit form.
@@ -122,7 +123,7 @@ public class UnitAction extends SBActionAdapter {
 			sql.append("unit_status_id=?, update_dt=?, organization_id=?, parent_id=?, ");
 			sql.append("ifu_art_no=?, ifu_rev_no=?, prog_guide_art_no=?, prog_guide_rev_no=?, ");
 			sql.append("battery_type=?, battery_serial_no=?, lot_number=?, service_ref=?, ");
-			sql.append("service_dt=?, modifying_user_id=?, production_comments_txt=? where unit_id=?");
+			sql.append("service_dt=?, modifying_user_id=?, production_comments_txt=?,product_cd=? where unit_id=?");
 			
 		}
 		log.debug(sql + "|" + vo.getUnitId() + "|" + vo.getStatusId());
@@ -148,7 +149,8 @@ public class UnitAction extends SBActionAdapter {
 			ps.setTimestamp(17, Convert.getTimestamp(vo.getServiceDate(), false));
 			ps.setString(18, vo.getModifyingUserId());
 			ps.setString(19, vo.getProductionCommentsText());
-			ps.setString(20, vo.getUnitId());
+			ps.setString(20, vo.getProductCode()); 
+			ps.setString(21, vo.getUnitId());
 			ps.executeUpdate();
 			
 		} catch (SQLException sqle) {
@@ -224,7 +226,9 @@ public class UnitAction extends SBActionAdapter {
 		final String custom_db = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		UnitSearchVO search = new UnitSearchVO(req);
 		String unitId = req.getParameter("unitId");
-		StringBuffer sql = new StringBuffer();
+		String prodCd = StringUtil.checkVal(req.getParameter("prodCd") );
+		
+		StringBuilder sql = new StringBuilder(1060);
 		sql.append("select a.*, f.status_nm, e.profile_id as phys_profile_id, ");
 		sql.append("d.account_nm, g.profile_id as rep_person_id, e.center_txt, e.department_txt, ");
 		sql.append("b.create_dt as deployed_dt, d.city_nm, d.country_cd, c.transaction_type_id ");
@@ -246,6 +250,7 @@ public class UnitAction extends SBActionAdapter {
 		if (search.getAccountName() != null) sql.append("and d.account_nm like ? ");
 		if (search.getSerialNoText() != null) sql.append("and a.serial_no_txt like ? ");
 		if (unitId != null) sql.append("and a.unit_id=? ");
+		if (!prodCd.isEmpty()) sql.append("and a.product_cd=? ");
 		
 		//limit reps to their accounts ONLY
 		//if (role.getRoleLevel() != SecurityController.ADMIN_ROLE_LEVEL)
@@ -253,7 +258,11 @@ public class UnitAction extends SBActionAdapter {
 		//if (rLevel == 10)
 		//	sql.append("and d.person_id=? ");
 		
-		sql.append("order by b.create_dt, a.serial_no_txt");
+		//sort the results based on one of the fields. Since rep and physician fields 
+		//are looked up in a separate process, the return value will be used to indicate
+		//which of them should be used to organize the unit vo's
+		appendOrderBy( req, sql );
+		
 		log.debug(sql);
 		int i = 1;
 		PreparedStatement ps = null;
@@ -266,6 +275,7 @@ public class UnitAction extends SBActionAdapter {
 			if (search.getAccountName() != null) ps.setString(i++, search.getAccountName() + "%");
 			if (search.getSerialNoText() != null) ps.setString(i++, search.getSerialNoText() + "%");
 			if (unitId != null) ps.setString(i++, unitId);
+			if (! prodCd.isEmpty() )ps.setString(i++, prodCd);
 			
 			//if (role.getRoleLevel() != SecurityController.ADMIN_ROLE_LEVEL)
 			//if (rLevel == 10)
@@ -327,11 +337,26 @@ public class UnitAction extends SBActionAdapter {
 				
 				newResults.add(vo);
 			}
+			String sort = StringUtil.checkVal(req.getParameter("sortBy"));
+			Boolean isDescending = Convert.formatBoolean(req.getParameter("desc"));
+			//If there was a request to sort by a field that didn't exist when the
+			//first query was called (profile name), do so now.
+			switch(sort){
+			case "rep":
+			case "physician":
+			case "modifier":
+			case "account":
+				Collections.sort(newResults, new UnitNameComparator(sort, isDescending));
+				break;
+			}
+			
 			
 			data = newResults;
 		} catch (Exception e) {
 			log.error("could not lookup profileIds attached to Units", e);
 		}
+		//extract paginated list if pagination is necessary
+		data = paginateList( req, data );
 		
 		mod.setActionData(data);
 		mod.setDataSize(data.size());
@@ -354,6 +379,59 @@ public class UnitAction extends SBActionAdapter {
 			req.setAttribute(Constants.BINARY_DOCUMENT, rpt);
 		}
 
+	}
+	
+	/**
+	 * Helper to append the order by clause to the retrieve statement. Some unit
+	 * fields (the names of the reps, physicians, and modifying user) are not 
+	 * fetched until after the retrieve query is done. So they will be sorted 
+	 * with a comparator in UnitVO when requested.
+	 * @param req
+	 * @param sql
+	 */
+	private void appendOrderBy( SMTServletRequest req, StringBuilder sql ){
+		String sort = StringUtil.checkVal(req.getParameter("sortBy"));
+		Boolean isDescending = Convert.formatBoolean(req.getParameter("desc"));
+		
+		//map storing possible sort fields for the retrieve query
+		Map<String, String> sortMap = new HashMap<String,String>(){
+			private static final long serialVersionUID = 1l; 
+			{
+			put("serialNo","a.serial_no_txt");
+			put("softwareRevNo","a.software_rev_no");
+			put("hardwareRevNo","a.hardware_rev_no");
+			put("deployedDate","a.deployed_dt");
+			put("status","f.status_nm");
+			}};
+		
+		sql.append("order by ");
+		//if the user chooses a sort field, use it as the first one
+		if ( sortMap.containsKey(sort) ){
+			sql.append( sortMap.get(sort) );
+			if (isDescending) { sql.append(" desc"); }
+			sql.append(", b.create_dt");
+		} else {
+			sql.append(" b.create_dt, a.serial_no_txt");
+		}
+	}
+	
+	/**
+	 * crops the list into a paginated one
+	 * @param req
+	 * @param lst List to be modified
+	 */
+	private List<UnitVO> paginateList( SMTServletRequest req, List<UnitVO> lst){
+		//current item in list
+		Integer top = Convert.formatInteger(req.getParameter("top"));
+		//results shown per page (if 0, show all)
+		Integer perPage = Convert.formatInteger(req.getParameter("perPage"), lst.size());
+		//no negative indexes
+		int first = ( top >= 0 ? top : 0 );
+		int last = ( top + perPage > lst.size() ? lst.size() : top+perPage);
+		//used in list_paginator view
+		req.setParameter("max", ""+lst.size());
+		
+		return lst.subList(first, last);	
 	}
 	
 	private void historyReport(SMTServletRequest req, int roleLevel) throws ActionException {

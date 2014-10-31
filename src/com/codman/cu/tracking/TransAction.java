@@ -1,7 +1,6 @@
 package com.codman.cu.tracking;
 
 import java.sql.PreparedStatement;
-
 import java.sql.SQLException;
 import java.util.List;
 
@@ -11,19 +10,14 @@ import com.codman.cu.tracking.vo.PhysicianVO;
 import com.codman.cu.tracking.vo.TransactionVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
-
-import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
-import com.smt.sitebuilder.security.SecurityController;
 
 /****************************************************************************
  * <b>Title</b>: TransAction.java<p/>
@@ -35,7 +29,7 @@ import com.smt.sitebuilder.security.SecurityController;
  * @version 1.0
  * @since Nov 04, 2010
  ****************************************************************************/
-public class TransAction extends SBActionAdapter {
+public class TransAction extends AbstractTransAction {
 	
 	public static final int STATUS_PENDING = 10;
 	public static final int STATUS_APPROVED = 20;
@@ -167,76 +161,6 @@ public class TransAction extends SBActionAdapter {
 		}
 		emailer = null;
 	}
-	
-	
-	/**
-	 * Retrieves admin 
-	 * @param req
-	 * @throws ActionException
-	 */
-	private List<UserDataVO> retrieveAdministrators(SMTServletRequest req) throws ActionException {
-		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		UserAction ua = new UserAction(this.actionInit);
-		ua.setAttributes(attributes);
-		ua.setDBConnection(dbConn);
-		List<UserDataVO> admins = ua.loadUserList(SecurityController.ADMIN_ROLE_LEVEL, site.getOrganizationId());
-		ua = null;
-		return admins;
-	}
-	
-	/**
-	 * Retrieves all the users with the given roleLevel
-	 * @param req
-	 * @param roleLevel The role level requested.
-	 * @return
-	 * @throws ActionException
-	 */
-	private List<UserDataVO> retrieveUsers(SMTServletRequest req, Integer roleLevel) throws ActionException {
-		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		UserAction ua = new UserAction(this.actionInit);
-		ua.setAttributes(attributes);
-		ua.setDBConnection(dbConn);
-		List<UserDataVO> users = ua.loadUserList(roleLevel, site.getOrganizationId());
-		ua = null;
-		return users;
-	}
-	
-
-	/**
-	 * retrieves the entire account record, filtered to this transaction, rep, and physician
-	 * @param req
-	 * @param trans
-	 * @return
-	 * @throws ActionException
-	 */
-	@SuppressWarnings("unchecked")
-	private AccountVO retrieveRecord(SMTServletRequest req, TransactionVO trans)
-	 throws ActionException {
-		
-		log.debug("trans=" + trans.toString());
-		req.setParameter("transactionId", trans.getTransactionId());
-		req.setParameter("physicianId", trans.getPhysician().getPhysicianId());
-		req.setParameter("accountId", trans.getAccountId());
-		req.setParameter("unfiltered", "true"); //this bypasses all search filtering that normally would apply from the SearchVO stored on session
-		
-		SMTActionInterface ai = new AccountFacadeAction(actionInit);
-		ai.setAttributes(attributes);
-		ai.setDBConnection(dbConn);
-		ai.retrieve(req);
-		
-		ModuleVO modVo = (ModuleVO) getAttribute(Constants.MODULE_DATA);
-		List<AccountVO> accounts = (List<AccountVO>) modVo.getActionData();
-		AccountVO vo = null;
-		try {
-			vo = accounts.get(0);
-		} catch (Exception e) {
-			log.error("could not retrieve transaction for emailing", e);
-			vo = new AccountVO();
-		}
-		
-		return vo;
-	}
-	
 	
 	private void insertTransaction(TransactionVO vo) throws SQLException {
 		log.debug("inserting new Transaction");
