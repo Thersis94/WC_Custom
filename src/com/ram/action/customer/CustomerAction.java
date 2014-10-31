@@ -9,10 +9,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-
+import com.ram.datafeed.data.CustomerLocationVO;
 // RAMDataFeed
 import com.ram.datafeed.data.CustomerVO;
-
 // SMTBaseLibs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -64,16 +63,23 @@ public class CustomerAction extends SBActionAdapter {
 		int customerId = Convert.formatInteger(req.getParameter("customerId"), 0);
 		String customerTypeId = StringUtil.checkVal(req.getParameter("customerTypeId"));
 		String excludeTypeId = StringUtil.checkVal(req.getParameter("excludeTypeId"));
+		int start = Convert.formatInteger(req.getParameter("start"), 0);
+		int limit = Convert.formatInteger(req.getParameter("limit"), 25) + start;
 		log.debug("excludeTypeId: " + excludeTypeId);
 		
 		List<CustomerVO> data = new ArrayList<>();
 		if (! Convert.formatBoolean(req.getParameter("addCustomer"))) {
-			String schema = (String)getAttribute("customDbSchema");
-			StringBuilder sql = new StringBuilder();
-			sql.append("select a.* from ").append(schema);
-			sql.append("ram_customer a where 1 = 1 ");
+			String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+			StringBuilder sql = new StringBuilder(260);
+			sql.append("select top ").append(limit).append(" a.* from ").append(schema);
+			sql.append("ram_customer a ");
+			if(customerId > 0) {
+				sql.append("inner join ").append(schema).append("ram_customer_location b ");
+				sql.append("on a.customer_id = b.customer_id ");
+			}
+			sql.append("where 1 = 1 ");
 
-			if (customerId > 0) sql.append("and customer_id = ? ");
+			if (customerId > 0) sql.append("and a.customer_id = ? ");
 			if (customerTypeId.length() > 0) {
 				sql.append("and customer_type_id = ? ");
 			} else if (excludeTypeId.length() > 0) {
@@ -94,9 +100,22 @@ public class CustomerAction extends SBActionAdapter {
 					ps.setString(index++, excludeTypeId);
 				}
 				ResultSet rs = ps.executeQuery();
-				while (rs.next()) {
-					data.add(new CustomerVO(rs, false));
+				if(customerId > 0) {
+					CustomerVO c = null;
+					List<CustomerLocationVO> locs = new ArrayList<CustomerLocationVO>();
+					while(rs.next()) {
+						c = new CustomerVO(rs, false);
+						locs.add(new CustomerLocationVO(rs, false));
+					}
+					c.setCustomerLocations(locs);
+					data.add(c);
+				} else {
+					for(int i=0; rs.next(); i++) {
+						if (i >= start && i < limit)
+							data.add(new CustomerVO(rs, false));
+					}
 				}
+				
 			} catch (SQLException e) {
 				log.error("Error retrieving RAM customer data, ", e);
 			} finally {
@@ -109,9 +128,41 @@ public class CustomerAction extends SBActionAdapter {
 			data.add(new CustomerVO());
 		}
 		ModuleVO modVo = (ModuleVO) attributes.get(Constants.MODULE_DATA);
-        modVo.setDataSize(data.size());
+
+		//Only go after record count if we are doing a list.
+        modVo.setDataSize((customerId > 0 ? 1 : getRecordCount()));
         modVo.setActionData(data);
         this.setAttribute(Constants.MODULE_DATA, modVo);
+	}
+	
+	/**
+	 * Gets the count of the records
+	 * @param customerId
+	 * @param term
+	 * @return
+	 * @throws SQLException
+	 */
+	protected int getRecordCount() {
+		log.debug("Retrieving Total Counts");
+		StringBuilder sb = new StringBuilder(80);
+		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		sb.append("select count(customer_id) from ").append(schema).append("RAM_CUSTOMER");
+		int cnt = 0;
+		PreparedStatement ps = null;
+		try {
+		ps = dbConn.prepareStatement(sb.toString());
+
+		//Get the count off the first row.
+		ResultSet rs = ps.executeQuery();
+		if(rs.next())
+			cnt = rs.getInt(1);
+		} catch(SQLException sqle) {
+			log.error("Error retrieving customer Count", sqle);
+		} finally {
+			DBUtil.close(ps);
+		}
+		log.debug("Count: " + cnt);
+		return cnt;		
 	}
 
 	/* (non-Javadoc)
@@ -126,7 +177,7 @@ public class CustomerAction extends SBActionAdapter {
 		boolean deactivate = (Convert.formatBoolean(req.getParameter("deactivate")));
 		String msgAction;
 		String schema = (String)getAttribute("customDbSchema");
-		StringBuilder sql = new StringBuilder();
+		StringBuilder sql = new StringBuilder(220);
 		if (reactivate || deactivate) {
 			// is a re-activation or deactivation
 			sql.append("update ").append(schema).append("RAM_CUSTOMER ");
@@ -194,7 +245,7 @@ public class CustomerAction extends SBActionAdapter {
 		} else {
 	        // Build the redirect and messages
 			// Setup the redirect.
-			StringBuilder url = new StringBuilder();
+			StringBuilder url = new StringBuilder(50);
 			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 			url.append(page.getRequestURI());
 			url.append("?msg=").append(msg);
