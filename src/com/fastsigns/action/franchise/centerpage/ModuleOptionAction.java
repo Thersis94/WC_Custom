@@ -157,6 +157,7 @@ public class ModuleOptionAction extends SBActionAdapter{
 				this.saveModuleOption(req);
 				this.sendTestimonalAnnouncement(req);
 			} catch (Exception e) {
+				log.error("BLAH!", e);
 				throw new ActionException(e);
 			}
 			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
@@ -502,6 +503,7 @@ public class ModuleOptionAction extends SBActionAdapter{
 		//build the query
 		if (isInsert) {
 			vo.setModuleOptionId(this.nextModuleOptionPkId());
+			req.setParameter("optionId", StringUtil.checkVal(vo.getModuleOptionId()));
 			sb.append("insert into ").append(customDb);
 			sb.append("FTS_CP_MODULE_OPTION (OPTION_NM, ");
 			sb.append("OPTION_DESC, ARTICLE_TXT, RANK_NO, LINK_URL, FILE_PATH_URL, THUMB_PATH_URL, VIDEO_STILLFRAME_URL, ");
