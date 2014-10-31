@@ -110,14 +110,11 @@ public class ModuleOptionAction extends SBActionAdapter{
 					if (Convert.formatInteger(req.getParameter("parentId")) > 0 && 
 							Convert.formatInteger(req.getParameter("approvalFlag"), 0).intValue() == 100)
 						this.revokeApprovalSubmission(req);
-					
-					for (String key : req.getParameterMap().keySet())
-						log.debug(key+"|"+req.getParameter(key));
 						
 					if (!modList.contains(req.getParameter("moduleId"))) {
 						req.setParameter("skipDelete", "true");
-						req.setParameter("parentModuleId", req.getParameter("optionId"));
 					}
+					req.setParameter("parentModuleId", req.getParameter("optionId"));
 					
 				case CenterPageAction.MODULE_OPTION_UPDATE:
 					this.updateModuleOptions(req);
