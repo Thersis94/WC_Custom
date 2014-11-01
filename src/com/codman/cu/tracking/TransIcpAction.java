@@ -7,8 +7,6 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.List;
 
-import com.codman.cu.tracking.vo.AccountVO;
-import com.codman.cu.tracking.vo.PersonVO;
 import com.codman.cu.tracking.vo.TransactionVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -34,7 +32,6 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class TransIcpAction extends AbstractTransAction {
 	
-	private final String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 	private Object msg = null;
 	
 	/**
@@ -209,6 +206,7 @@ public class TransIcpAction extends AbstractTransAction {
 			ps.setTimestamp(++i, Convert.getCurrentTimestamp());
 			ps.setString(++i, vo.getTransactionId());
 			ps.setString(++i, vo.getApprovorName());
+			ps.setString(++i, vo.getCreditText());
 			ps.executeUpdate();
 		}
 	}
@@ -220,13 +218,13 @@ public class TransIcpAction extends AbstractTransAction {
 	private StringBuilder makeTransInsert(){
 		
 		StringBuilder sql = new StringBuilder(440);
-		sql.append("insert into ").append(customDb).append("codman_cu_transaction ");
+		sql.append("insert into ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("codman_cu_transaction ");
 		sql.append("(transaction_type_id, status_id, account_id, physician_id, ");
 		sql.append("unit_cnt_no, dropship_flg, address_txt, address2_txt, ");
 		sql.append("city_nm, state_cd, zip_cd, country_cd, requesting_party_nm, ");
 		sql.append("ship_to_nm, notes_txt, create_dt, transaction_id, ");
-		sql.append("approving_party_nm, credit_txt, product_cd ) ");
-		sql.append("values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ");
+		sql.append("approving_party_nm, credit_txt ) ");
+		sql.append("values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ");
 		
 		return sql;
 	}
@@ -240,7 +238,7 @@ public class TransIcpAction extends AbstractTransAction {
 		
 		//build statement
 		StringBuilder sql = new StringBuilder(170);
-		sql.append("update ").append(customDb).append("CODMAN_CU_TRANSACTION ");
+		sql.append("update ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("CODMAN_CU_TRANSACTION ");
 		//The approving party is the person updating the status of the transaction
 		sql.append("set STATUS_ID=?, UPDATE_DT=?, APPROVING_PARTY_NM=?, APPROVAL_DT=?");
 		if (vo.getNotesText() != null){
@@ -285,11 +283,7 @@ public class TransIcpAction extends AbstractTransAction {
 		mailer.setAttributes(this.attributes);
 		mailer.setDBConnection(this.dbConn);
 		
-		AccountVO acct = this.retrieveRecord(req, trans);
-		trans = acct.getTransactions().get(0);
-		PersonVO rep = acct.getRep();
-		
-		mailer.sendICPMessage(req, adminList, rep, trans, acct);
+		mailer.sendICPMessage( req, adminList, trans );
 	}
 
 }

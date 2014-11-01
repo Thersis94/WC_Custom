@@ -383,6 +383,8 @@ public class AccountFacadeAction extends SBActionAdapter {
 	 * @param lst List to be modified
 	 */
 	private List<AccountVO> paginateList( SMTServletRequest req, List<AccountVO> lst){
+		if (lst == null || lst.size() <= 0) 
+			return lst;
 		//current item in list
 		Integer top = Convert.formatInteger(req.getParameter("top"));
 		//results shown per page (if 0, show all)

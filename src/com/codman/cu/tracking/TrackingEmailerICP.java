@@ -3,6 +3,10 @@
  */
 package com.codman.cu.tracking;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.codman.cu.tracking.TransIcpAction.Status;
@@ -10,11 +14,14 @@ import com.codman.cu.tracking.vo.AccountVO;
 import com.codman.cu.tracking.vo.PersonVO;
 import com.codman.cu.tracking.vo.TransactionVO;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.action.user.ProfileManager;
+import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.util.MessageSender;
@@ -46,11 +53,29 @@ public class TrackingEmailerICP extends TrackingEmailer {
 	 * @param stat new ICP status
 	 * @param acct
 	 */
-	public void sendICPMessage(SMTServletRequest req, List<UserDataVO> alloc, PersonVO rep, 
-			TransactionVO trans, AccountVO acct){
+	public void sendICPMessage(SMTServletRequest req, List<UserDataVO> alloc, TransactionVO trans){
 		
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		Status stat = Status.valueOf( StringUtil.checkVal(trans.getStatusName()));
+		String statString = StringUtil.checkVal(trans.getStatusName());
+		Status stat;
+		
+		AccountVO acct = retrieveAccount(trans.getAccountId());
+		//lookup rep information
+		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
+		List<String> pid = new ArrayList<String>();
+		pid.add(acct.getRep().getProfileId());
+		UserDataVO usr = null;
+		
+		try {
+			usr = pm.searchProfile(dbConn, pid).get(0);
+		} catch (DatabaseException | NullPointerException e) {
+			log.error(e);
+			return;
+		}
+		PersonVO rep = acct.getRep();
+		rep.setName( usr.getFullName() );
+		rep.setFirstName( usr.getFirstName() );
+		stat = (statString.isEmpty() ? Status.OLD_SENT : Status.valueOf( statString ));
 		
 		switch( stat ){
 		case OLD_SENT:
@@ -394,5 +419,34 @@ public class TrackingEmailerICP extends TrackingEmailer {
     		log.error("ICP Unit Shipped Email, ", me);
     	}
     	return;
+	}
+	
+	/**
+	 * Fetch a single account by id
+	 * @param acctId
+	 * @return
+	 */
+	protected AccountVO retrieveAccount(String acctId){
+		StringBuilder sql = new StringBuilder();
+		sql.append("select a.*,p.* from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("codman_cu_account a ");
+		sql.append("left outer join ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("codman_cu_person p on a.person_id=p.person_id ");
+		sql.append("where a.account_id=? ");
+		AccountVO vo = null;
+		
+		try( PreparedStatement ps = dbConn.prepareStatement(sql.toString())){
+			ps.setString(1, StringUtil.checkVal(acctId));
+			ResultSet rs = ps.executeQuery();
+			
+			if( rs.next() ){
+				vo = new AccountVO(rs);
+			}
+		} catch (SQLException e){
+			log.error("Failed to get account,",e);
+			vo = new AccountVO();
+		}
+		
+		return vo;
 	}
 }
