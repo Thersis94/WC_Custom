@@ -31,6 +31,7 @@ public class TransactionVO {
 	private Integer transactionTypeId = null;
 	private String accountId = null;
 	private Integer statusId = null;
+	private String statusName = null;
 	private Integer requestNo = null;
 	private Date approvalDate = null;
 	private Date completedDate = null;
@@ -45,6 +46,7 @@ public class TransactionVO {
 	private PhysicianVO physician = new PhysicianVO();
 	private Map<String, UnitVO> units = new HashMap<String,UnitVO>();
 	private String approvorName = null;
+	private String creditText = null;
 	public TransactionVO() {
 	}
 	
@@ -70,6 +72,7 @@ public class TransactionVO {
 		dropShipAddress.setState(req.getParameter("dropShipState"));
 		dropShipAddress.setZipCode(req.getParameter("dropShipZipCode"));
 		dropShipAddress.setCountry(req.getParameter("dropShipCountry"));
+		setCreditText(StringUtil.checkVal(req.getParameter("creditText")));
 	}
 
 	public TransactionVO(ResultSet rs) {
@@ -88,6 +91,7 @@ public class TransactionVO {
 		approvorName = util.getStringVal("approving_party_nm", rs);
 		notesText = util.getLargeStringVal("notes_txt", rs).toString();
 		createDate = util.getDateVal("trans_create_dt", rs);
+		setCreditText(util.getStringVal("credit_txt", rs));
 		
 		shipToName = util.getStringVal("ship_to_nm", rs);
 		dropShipAddress.setAddress(util.getStringVal("address_txt", rs));
@@ -348,6 +352,34 @@ public class TransactionVO {
 
 	public void setApprovorName(String approvorName) {
 		this.approvorName = approvorName;
+	}
+
+	/**
+	 * @return the statusName
+	 */
+	public String getStatusName() {
+		return statusName;
+	}
+
+	/**
+	 * @param statusName the statusName to set
+	 */
+	public void setStatusName(String statusName) {
+		this.statusName = statusName;
+	}
+
+	/**
+	 * @return the creditText
+	 */
+	public String getCreditText() {
+		return creditText;
+	}
+
+	/**
+	 * @param creditText the creditText to set
+	 */
+	public void setCreditText(String creditText) {
+		this.creditText = creditText;
 	}
 
 }
