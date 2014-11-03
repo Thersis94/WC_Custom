@@ -490,6 +490,7 @@ public class FSProductAction extends SBActionAdapter {
 	 * @return
 	 */
 	private boolean checkAttribUrl(ProductVO p, PageVO page) {
+		if (p == null) return false;
 		for (Node n : p.getAttributes().getAllAttributes()) {
 			if (n.getUserObject() instanceof ProductAttributeVO && 
 					"CANONURL".equals(((ProductAttributeVO) n.getUserObject()).getAttributeType())) {
