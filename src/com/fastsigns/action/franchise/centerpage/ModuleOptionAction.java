@@ -157,7 +157,6 @@ public class ModuleOptionAction extends SBActionAdapter{
 				this.saveModuleOption(req);
 				this.sendTestimonalAnnouncement(req);
 			} catch (Exception e) {
-				log.error("BLAH!", e);
 				throw new ActionException(e);
 			}
 			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
