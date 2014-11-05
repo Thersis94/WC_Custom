@@ -268,12 +268,15 @@ public class FSProductAction extends SBActionAdapter {
 	 */
 	private void setLeaves(Tree products, List<Node> categories) {
 		String s;
+		Node foundNode;
 		for (Node n : categories) {
 			for (ProductVO p : ((ProductCategoryVO)n.getUserObject()).getProducts()) {
 				s = p.getUrlAlias();
-				if (s == null ) continue;
-				if (((ProductVO) products.findNode(s).getUserObject()).getAttrib1Txt() != null ||
-						products.findNode(s).getChildren().size() > 0)
+				if (s == null) continue;
+				foundNode = products.findNode(s);
+				if (foundNode == null || foundNode.getUserObject() == null) continue;
+				if (((ProductVO) foundNode.getUserObject()).getAttrib1Txt() != null ||
+						foundNode.getChildren().size() > 0)
 					p.setAttrib1Txt("notLeaf");
 			}
 		}
@@ -291,7 +294,7 @@ public class FSProductAction extends SBActionAdapter {
 		sql.append("FROM PRODUCT_CATEGORY pc ");
 		sql.append("inner join PRODUCT_CATEGORY_XR pcx on pc.PRODUCT_CATEGORY_CD = pcx.PRODUCT_CATEGORY_CD ");
 		sql.append("inner join PRODUCT p on p.PRODUCT_ID = pcx.PRODUCT_ID and p.STATUS_NO = 5 ");
-		sql.append("where pc.product_catalog_id=? ");
+		sql.append("where pc.product_catalog_id=? and pc.active_flg = 1 ");
 		if (isPreview){
 			sql.append("and CATEGORY_GROUP_ID not in (select PRODUCT_CATEGORY_CD from PRODUCT_CATEGORY where CATEGORY_GROUP_ID is not null and CATEGORY_GROUP_ID != CATEGORY_GROUP_ID) ");
 		} else {
@@ -490,6 +493,7 @@ public class FSProductAction extends SBActionAdapter {
 	 * @return
 	 */
 	private boolean checkAttribUrl(ProductVO p, PageVO page) {
+		if (p == null) return false;
 		for (Node n : p.getAttributes().getAllAttributes()) {
 			if (n.getUserObject() instanceof ProductAttributeVO && 
 					"CANONURL".equals(((ProductAttributeVO) n.getUserObject()).getAttributeType())) {
@@ -527,7 +531,23 @@ public class FSProductAction extends SBActionAdapter {
 			if (StringUtil.checkVal(product.getMetaKywds()).length() > 0) {
 				page.setMetaKeyword(product.getMetaKywds());
 			}
-		} 
+		} else if (n.getUserObject() instanceof ProductCategoryVO) {
+			ProductCategoryVO cat = (ProductCategoryVO)n.getUserObject();
+			
+			// Set the title, meta keyword and meta desc only if we get something that will override the default
+			if (StringUtil.checkVal(cat.getTitle()).length() > 0){
+				page.setTitleName(cat.getTitle());
+			}
+
+			if (StringUtil.checkVal(cat.getMetaDesc()).length() > 0) {
+				page.setMetaDesc(cat.getMetaDesc());
+			}
+			
+			if (StringUtil.checkVal(cat.getMetaKeyword()).length() > 0) {
+				page.setMetaKeyword(cat.getMetaKeyword());
+			}
+			
+		}
 	}
 		
 	/**
