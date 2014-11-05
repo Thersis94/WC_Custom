@@ -268,12 +268,15 @@ public class FSProductAction extends SBActionAdapter {
 	 */
 	private void setLeaves(Tree products, List<Node> categories) {
 		String s;
+		Node foundNode;
 		for (Node n : categories) {
 			for (ProductVO p : ((ProductCategoryVO)n.getUserObject()).getProducts()) {
 				s = p.getUrlAlias();
-				if (s == null || products.findNode(s) == null || products.findNode(s).getUserObject() == null) continue;
-				if (((ProductVO) products.findNode(s).getUserObject()).getAttrib1Txt() != null ||
-						products.findNode(s).getChildren().size() > 0)
+				if (s == null) continue;
+				foundNode = products.findNode(s);
+				if (foundNode == null || foundNode.getUserObject() == null) continue;
+				if (((ProductVO) foundNode.getUserObject()).getAttrib1Txt() != null ||
+						foundNode.getChildren().size() > 0)
 					p.setAttrib1Txt("notLeaf");
 			}
 		}
