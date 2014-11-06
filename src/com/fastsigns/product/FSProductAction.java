@@ -102,6 +102,7 @@ public class FSProductAction extends SBActionAdapter {
 		log.debug("Gathering information for: " + pId + "|" + prodChildKey + "|" + catImageKey + "|" + categoryId);
 		
 		Node n = null;
+		int size = 0;
 		// Determine what page is being requested and get the data
 		try {
 			if (pId.length() == 0) {
@@ -112,13 +113,15 @@ public class FSProductAction extends SBActionAdapter {
 			} else if (pId.length() > 1 && prodChildKey.length() == 0) {
 				log.debug("products by category");
 				n = this.getNode(catalog, pId, CATEGORIES);
-				this.putModuleData(n, ((ProductCategoryVO)n.getUserObject()).getProducts().size() + 1, false);
+				if (n.getUserObject() != null) size = ((ProductCategoryVO)n.getUserObject()).getProducts().size() + 1;
+				this.putModuleData(n, size, false);
 				buildCanonicals(req, pId, null, null, null);
 				
 			} else if (catImageKey.length() > 0) {
 				log.debug("product info");
 				n = this.getNode(catalog, catImageKey, PRODUCTS);
-				this.putModuleData(n, ((ProductVO)n.getUserObject()).getAttributes().getAllAttributes().size() + 1, false);
+				if (n.getUserObject() != null) size = ((ProductVO)n.getUserObject()).getAttributes().getAllAttributes().size() + 1;
+				this.putModuleData(n, size, false);
 				buildCanonicals(req, prodChildKey, catImageKey, pId, n);
 				
 			} else {
