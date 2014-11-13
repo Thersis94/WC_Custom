@@ -43,6 +43,7 @@ public class DSOLAction extends SBActionAdapter {
 	
 	//Render at 8X resolution to prevent appearance of artifacts.
 	public static final int THUMBNAIL_WIDTH = 2688;
+	public static final int DPI = 150;
 	/**
 	 * @param args
 	 */
@@ -203,8 +204,8 @@ public class DSOLAction extends SBActionAdapter {
 		if (req.hasParameter("dimensions")) {
 			try {
 				String[] s = req.getParameter("dimensions").split(" x ");
-				data.addProdAttribute("widthPixels", Integer.parseInt(s[0]) * 300);
-				data.addProdAttribute("heightPixels", Integer.parseInt(s[1]) * 300);
+				data.addProdAttribute("widthPixels", Integer.parseInt(s[0]) * DPI);
+				data.addProdAttribute("heightPixels", Integer.parseInt(s[1]) * DPI);
 			} catch (Exception e) {
 				//possible Null, Arithmetic, or IndexOutOfBounds
 				log.error(e);

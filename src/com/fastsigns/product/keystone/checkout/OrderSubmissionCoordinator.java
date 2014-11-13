@@ -167,10 +167,10 @@ public class OrderSubmissionCoordinator {
 
 			// Add Size Data
 			SizeVO s = prod.getSizes().get(0);
-			p.accumulate("height", s.getWidth());
-			p.accumulate("height_unit_id", s.getWidth_unit_id());
-			p.accumulate("width", s.getHeight());
-			p.accumulate("width_unit_id", s.getHeight_unit_id());
+			p.accumulate("height", s.getHeight());
+			p.accumulate("height_unit_id", s.getHeight_unit_id());
+			p.accumulate("width", s.getWidth());
+			p.accumulate("width_unit_id", s.getWidth_unit_id());
 			p.accumulate("surfaceArea", s.getSquareInches());
 			p.accumulate("weightCoefficient", prod.getWeight());
 			p.accumulate("weight", prod.getWeight() * s.getSquareInches());
