@@ -63,7 +63,7 @@ public class MapDataAction extends SimpleActionAdapter {
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		// Get the geocode for the city center
 		GeocodeLocation gl = this.getGeocode(req.getParameter("city"), req.getParameter("state"),
-				req.getParameter("address_text") );
+				req.getParameter("address_text"), req.getParameter("zip") );
 		
 		// Build the data object for the center and coordinates
 		Map<String, Object> data = new LinkedHashMap<String, Object>();
@@ -95,21 +95,11 @@ public class MapDataAction extends SimpleActionAdapter {
 	 * Geocode the source location
 	 * @param city
 	 * @param state
-	 * @return
-	 */
-	public GeocodeLocation getGeocode(String city, String state) {
-		//Addresses are optional for the heatmap, so pass null if it is omitted
-		return this.getGeocode(city, state, null);
-	}
-	
-	/**
-	 * Geocode the source location
-	 * @param city
-	 * @param state
 	 * @param address
+	 * @param zipCode
 	 * @return
 	 */
-	public GeocodeLocation getGeocode(String city, String state, String address){
+	public GeocodeLocation getGeocode(String city, String state, String address, String zipCode){
 		// Initialize the geocoder
 		String geocodeClass = (String) this.getAttribute(GlobalConfig.GEOCODER_CLASS);
 		AbstractGeocoder ag = GeocodeFactory.getInstance(geocodeClass);
@@ -119,6 +109,7 @@ public class MapDataAction extends SimpleActionAdapter {
 		Location l = new Location();
 		l.setCity(city);
 		l.setState(state);
+		l.setZipCode(zipCode); 
 		
 		//if an address was passed, include it
 		if ( ! StringUtil.checkVal(address).isEmpty() )

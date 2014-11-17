@@ -55,7 +55,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	public enum ReqType {
 		eventInfo, leads,
 		cancelSeminar, orderBox, uploadPostcard, approvePostcardFile, uploadAdFile, 
-		approveNewspaperAd, postseminar, coopAdsSurgeonApproval,
+		approveNewspaperAd, postseminar, coopAdsSurgeonApproval, hospitalSponsored,
 		//status levels
 		//submittedByCoord, approvedByAFD, approvedBySRC, pendingSurgeon, approvedMedAffairs
 		submitSeminar, approveSeminar, srcApproveSeminar, pendingSurgeonReview, approvedMedAffairs
@@ -111,6 +111,28 @@ public class PostcardInsertV2 extends SBActionAdapter {
 					saveEventSurgeon(eventPostcardId, req, site);
 					break;
 					
+				case hospitalSponsored:
+					//Create the event
+					eventPostcardId = saveEventPostcard( req, site, user, eventPostcardId );
+					String eventId = saveEventEntry(req);
+					saveEventPostcardAssoc(eventPostcardId, eventId);
+					saveLocatorXr( eventPostcardId, req );
+					
+					changePostcardStatus(15, eventPostcardId);
+					
+					//get seminar
+					PostcardSelectV2 psa = new PostcardSelectV2(actionInit);
+					psa.setAttributes(attributes);
+					psa.setDBConnection(dbConn);
+					DePuyEventSeminarVO vo = psa.loadOneSeminar(eventPostcardId, 
+							actionInit.getActionId(), null, null, null);
+					
+					//Order the consumables
+					orderBox( req, eventPostcardId, vo );
+					
+					nextPage = "hospitalSponsored";
+					break;
+				
 				case submitSeminar:
 					this.submitPostcard(req, eventPostcardId);
 					nextPage = "status";
@@ -1039,6 +1061,9 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		
 	}
 	
+	private void orderBox(SMTServletRequest req, String eventPostcardId) throws ActionException{
+		orderBox( req, eventPostcardId, null);
+	}
 	
 	/**
 	 * sends an email to Lincon containing a PO for a consumable box.  
@@ -1047,12 +1072,17 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	 * @param eventPostcardId
 	 * @throws ActionException
 	 */
-	private void orderBox(SMTServletRequest req, String eventPostcardId)
+	private void orderBox(SMTServletRequest req, String eventPostcardId, DePuyEventSeminarVO vo)
 			throws ActionException {
 		log.debug("starting consumable box email");
 
 		// get the postcard data for emailing
-		DePuyEventSeminarVO sem = fetchSeminar(req, ReportType.summary);
+		DePuyEventSeminarVO sem = null;
+		if ( vo == null ){
+			sem = fetchSeminar(req, ReportType.summary);
+		} else {
+			sem = vo;
+		}
 		req.setAttribute("postcard", sem);
 		
 		PostcardEmailer epe = new PostcardEmailer(attributes, dbConn);

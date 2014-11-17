@@ -111,6 +111,7 @@ public class DePuyEventManageActionV2 extends SimpleActionAdapter {
 			
 			break;
 		case "savedReport":
+			log.info("Accessing saved reports");
 			SeminarSummaryAction ssa = new SeminarSummaryAction(this.actionInit);
 			ssa.setAttributes(this.attributes);
 			ssa.setDBConnection(dbConn);

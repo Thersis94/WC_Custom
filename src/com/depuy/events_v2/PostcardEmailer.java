@@ -2,24 +2,26 @@ package com.depuy.events_v2;
 
 //JDK 1.6.3
 import java.sql.Connection;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
-
 
 // SMT BaseLibs
 import com.depuy.events_v2.vo.DePuyEventSeminarVO;
 import com.depuy.events_v2.vo.DePuyEventSurgeonVO;
 import com.depuy.events_v2.vo.PersonVO;
 import com.depuy.events_v2.vo.PersonVO.Role;
-import com.smt.sitebuilder.action.AbstractSBReportVO;
-import com.smt.sitebuilder.action.event.vo.EventEntryVO;
+import com.siliconmtn.exception.ApplicationException;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.io.FileManagerFactoryImpl;
+import com.siliconmtn.io.FileManagerIntfc;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
-
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.action.AbstractSBReportVO;
+import com.smt.sitebuilder.action.event.vo.EventEntryVO;
 // WC Libs
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -150,6 +152,7 @@ public class PostcardEmailer {
 	 * @see com.depuy.events.AbstractPostcardEmailer#sendSRCApprovalRequest(com.siliconmtn.http.SMTServletRequest)
 	 */
 	public void sendAdvApprovalRequest(SMTServletRequest req) {
+		
 		// send email to site admin
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
@@ -165,8 +168,17 @@ public class PostcardEmailer {
 		msg.append(sem.getEventPostcardId()).append("\r\r");
 
 		// build the attachment
-		AbstractSBReportVO rpt = (AbstractSBReportVO) req.getAttribute(Constants.BINARY_DOCUMENT);
-
+		//AbstractSBReportVO rpt = (AbstractSBReportVO) req.getAttribute(Constants.BINARY_DOCUMENT);
+		
+		//Get the report form from the file manager
+		FileManagerIntfc fileManager = null;
+		try{
+			fileManager = FileManagerFactoryImpl.getInstance(
+					FileManagerFactoryImpl.IO_FILE_MANAGER);
+		} catch (ApplicationException e) {
+			log.error("Couldn't load the compliance form: ",e);
+		}
+		
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
@@ -176,7 +188,11 @@ public class PostcardEmailer {
 			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
-			mail.addAttachment(rpt.getFileName(), rpt.generateReport());
+			//mail.addAttachment(rpt.getFileName(), rpt.generateReport());
+			if (fileManager != null) 
+				//mail.addAttachment(fileManager.getFileName(), fileManager.getData());
+			mail.addAttachment("Compliance-Form.docx", fileManager.retrieveFile(
+					getComplianceFile(sem.getEvents().get(0).getEventTypeCd(),site) ));
 
 			MessageSender ms = new MessageSender(attributes, dbConn);
 			ms.sendMessage(mail);
@@ -185,6 +201,38 @@ public class PostcardEmailer {
 			log.error("EventPostcardSubmitEmail", me);
 		}
 		return;
+	}
+	
+	/**
+	 * Gets the path+filename for this event's compliance form
+	 * @param eventTypeCd
+	 * @param site
+	 * @return
+	 */
+	private String getComplianceFile( String eventTypeCd, SiteVO site ){
+		//map codes to form names
+		Map<String,String> nameMap = new HashMap<>();
+		nameMap.put("CPSEM","Compliance Form Community Physician 10-8-14.docx");
+		nameMap.put("ESEM","Compliance Form DePuy Funded 10-8-14.docx");
+		nameMap.put("CFSEM50","Compliance Form Co-Funded 50-50 Split 10-8-14.docx");
+		nameMap.put("CFSEM25","Compliance Form Co-Funded 50-25-25 Split 10-8-14.docx");
+		
+		//just return null if the type code is invalid
+		if (! nameMap.containsKey( StringUtil.checkVal(eventTypeCd))){
+			log.error("Invalid Event Type Code: "+StringUtil.checkVal(eventTypeCd));
+			return null;
+		}
+		
+		//Create the path to the attachment file
+		StringBuilder path = new StringBuilder();
+		path.append( (String) attributes.get(Constants.BINARY_PATH));
+		path.append( (String) attributes.get(Constants.ORGANIZATION_ALIAS));
+		path.append( site.getOrganizationId() );
+		path.append("/").append(site.getSiteId());
+		path.append("/compliance/");
+		path.append(nameMap.get(eventTypeCd));
+		
+		return path.toString();
 	}
 	
 	
@@ -209,7 +257,15 @@ public class PostcardEmailer {
 
 		// build the attachment
 		AbstractSBReportVO rpt = (AbstractSBReportVO) req.getAttribute(Constants.BINARY_DOCUMENT);
-		AbstractSBReportVO compliance = (AbstractSBReportVO) req.getAttribute("complianceForm");
+		//AbstractSBReportVO compliance = (AbstractSBReportVO) req.getAttribute("complianceForm");
+		
+		FileManagerIntfc fileManager = null;
+		try{
+			fileManager = FileManagerFactoryImpl.getInstance(
+					FileManagerFactoryImpl.IO_FILE_MANAGER);
+		} catch (ApplicationException e) {
+			log.error("Couldn't load the compliance form: ",e);
+		}
 
 		try {
 			// Create the mail object and send
@@ -225,7 +281,8 @@ public class PostcardEmailer {
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
 			mail.addAttachment(rpt.getFileName(), rpt.generateReport());
-			mail.addAttachment(compliance.getFileName(), compliance.generateReport());
+			mail.addAttachment("Compliance-Form.docx", fileManager.retrieveFile(
+					getComplianceFile(sem.getEvents().get(0).getEventTypeCd(),site)));
 
 			MessageSender ms = new MessageSender(attributes, dbConn);
 			ms.sendMessage(mail);

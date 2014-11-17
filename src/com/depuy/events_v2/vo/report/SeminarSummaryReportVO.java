@@ -11,7 +11,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import com.depuy.events.vo.CoopAdVO;
 import com.depuy.events_v2.vo.DePuyEventSeminarVO;
@@ -57,7 +56,14 @@ public class SeminarSummaryReportVO extends AbstractSBReportVO {
 		AD_COST_FLG("ad_cost_flg", "java,lang.Date", "Total Ad Cost"),
 		TERRITORY_COST_FLG("territory_cost_flg", "java.lang.Double", "Cost to Territory"),
 		SURGEON_COST_FLG("surgeon_cost_flg", "java.lang.Double","Cost to Surgeon"),
-		HOSPITAL_COST_FLG("hospital_cost_flg", "java.lang.Double", "Cost to Hospital");
+		HOSPITAL_COST_FLG("hospital_cost_flg", "java.lang.Double", "Cost to Hospital"),
+		UPFRONT_FEE_FLG("upfront_fee_flg", "java.lang.Integer", "$200 Upfront Fee"),
+		TERRITORY_NO("territory_no","java.lang.Integer","Territory No"),
+		POSTCARD_COUNT_NO("postcard_count_no","java.lang.Integer","Postcard No"),
+		INVITATION_COUNT_NO("invitation_count_no","java.lang.Integer","Invitation No"),
+		POSTCARD_COST_NO("postcard_cost_no","java.lang.Double","Total Postcard Cost"),
+		INVITATION_COST_NO("invitation_cost_no","java.lang.Double","Total Invitation Cost")
+		;
 		
 		private final String name;
 		private final String className;
@@ -111,9 +117,10 @@ public class SeminarSummaryReportVO extends AbstractSBReportVO {
 		
 		//get filters
 		String[] pairs = StringUtil.checkVal( db.getStringVal("filter_txt", rs))
-				.split(":");
-		for ( String s : pairs ){
-			String [] keyval = s.split("=");
+				.split(",");
+		for ( int i=0; i<pairs.length; i++ ){
+			String [] keyval = pairs[i].split(":");
+			if (keyval.length > 1)
 			filterMap.put(keyval[0],keyval[1]);
 		}
 	}
@@ -131,7 +138,7 @@ public class SeminarSummaryReportVO extends AbstractSBReportVO {
 		for( FieldList key : FieldList.values() ){
 			paramList.put(key.getFieldName(), Convert.formatInteger(
 					StringUtil.checkVal(req.getParameter(key.getFieldName()))));
-			log.debug(StringUtil.checkVal(req.getParameter(key.getFieldName()),"EMPTY"));
+			//log.debug(StringUtil.checkVal(req.getParameter(key.getFieldName()),"EMPTY"));
 			if ( StringUtil.checkVal(req.getParameter(key.getFieldName()) ).equals("-1") ){
 				filterMap.put(key.getFieldName(), StringUtil.checkVal(
 						req.getParameter("by_"+key.getFieldName())));
@@ -172,20 +179,18 @@ public class SeminarSummaryReportVO extends AbstractSBReportVO {
 				switch( fl ){
 				
 				case JOINT_FLG:
-					Set<String> joints = vo.getJoints();
-					joints.add("4,5");
-					boolean hasJoint = false;
-					for (String joint : joints){
-						if( !filterMap.containsKey(filterKey) || 
-								filterMap.get(filterKey).equalsIgnoreCase(joint)){
-							hasJoint = true;
-							break;
-						} 
-					}
-					if ( hasJoint )
-						rpt.append( vo.getJointLabel().substring(0, vo.getJointLabel().length()-1) );
-					else
+					//Set of joints for this seminar
+					String jointCode = vo.getJointCodes();
+					String jointCodeRev = new StringBuilder(jointCode).reverse().toString(); //In case code is 5,4 instead of 4,5
+					//if this is not a filter parameter, or if it is, but matches the filter value, include it
+					if( !filterMap.containsKey(filterKey) || 
+						filterMap.get(filterKey).equalsIgnoreCase(jointCode) ||
+						filterMap.get(filterKey).equalsIgnoreCase(jointCodeRev) ){
+						//if this joint is to be included, flag it as such
+						rpt.append( vo.getJointLabel() );
+					} else {
 						appendIt = false;
+					}
 					break;
 				case SEMINAR_TYPE_FLG:
 					Map<String,String> typeMap = new HashMap<String,String>(){
@@ -195,6 +200,7 @@ public class SeminarSummaryReportVO extends AbstractSBReportVO {
 						put("CFSEM50", "Co-Funded 50/50");
 						put("CFSEM25", "Co-Funded 50/25/25");
 						put("CPSEM", "Physician");
+						put("HSEM", "Hospital Sponsored");
 					}};
 					
 					String typeCd = StringUtil.checkVal(event.getEventTypeCd());
@@ -276,6 +282,26 @@ public class SeminarSummaryReportVO extends AbstractSBReportVO {
 				case HOSPITAL_COST_FLG:
 					printMultiVal(rpt,"getCostToHospitalNo",vo.getPrintAndOnlineAds());
 					break;
+				case INVITATION_COST_NO:
+					rpt.append(StringUtil.checkVal(vo.getCostNo()));
+					break;
+				case INVITATION_COUNT_NO:
+					rpt.append( StringUtil.checkVal(vo.getQuantityNo()));
+					break;
+				case POSTCARD_COST_NO:
+					rpt.append(StringUtil.checkVal(vo.getCostNo()));
+					break;
+				case POSTCARD_COUNT_NO:
+					rpt.append( StringUtil.checkVal(vo.getQuantityNo()));
+					break;
+				case TERRITORY_NO:
+					rpt.append(StringUtil.checkVal( vo.getTerritoryNumber() ));
+					break;
+				case UPFRONT_FEE_FLG:
+					rpt.append( ( vo.getUpfrontFeeFlg() == 1 ? "Yes" : "No") );
+					break;
+				default:
+					break;
 				}
 				rpt.append("</td>");
 			}
@@ -305,6 +331,35 @@ public class SeminarSummaryReportVO extends AbstractSBReportVO {
 			semList = (List<DePuyEventSeminarVO>) o;
 		}
 		
+	}
+	
+	/**
+	 * Get the set of fields and filters from the request object.
+	 * @param req
+	 * @param fields
+	 * @param filters
+	 */
+	public void parseParameters( SMTServletRequest req, Map<String,Integer> fields, Map<String,String>filters){
+		final String FILTER_PREFIX = "by_";
+		final int INCLUDE = 1, FILTER=-1;
+		
+		//For each valid field, check for values to be collected
+		for( FieldList fl : FieldList.values() ){
+			switch( Convert.formatInteger( req.getParameter(fl.getFieldName().toLowerCase()))){
+			case FILTER:
+				filters.put(fl.getFieldName(), StringUtil.checkVal(req.getParameter(
+						FILTER_PREFIX+fl.getFieldName())));
+				//No break, so filter params are included in the report
+			case INCLUDE:
+				fields.put(fl.name(), 1);
+				break;
+			default:
+				fields.put(fl.name(), 0);
+				break;
+			}
+		}
+		filterMap = filters;
+		paramList = fields;
 	}
 	
 	/**
@@ -417,5 +472,19 @@ public class SeminarSummaryReportVO extends AbstractSBReportVO {
 		for (String nm:paramList.keySet())
 			lst.add(nm);
 		return lst;
+	}
+
+	/**
+	 * @return the filterMap
+	 */
+	public Map<String, String> getFilterMap() {
+		return filterMap;
+	}
+
+	/**
+	 * @param filterMap the filterMap to set
+	 */
+	public void setFilterMap(Map<String, String> filterMap) {
+		this.filterMap = filterMap;
 	}
 }

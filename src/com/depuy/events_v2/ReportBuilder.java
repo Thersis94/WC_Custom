@@ -9,15 +9,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.depuy.events_v2.vo.AttendeeSurveyVO;
 import com.depuy.events_v2.vo.DePuyEventSeminarVO;
 import com.depuy.events_v2.vo.RsvpBreakdownVO;
+import com.depuy.events_v2.vo.report.AttendeeSurveyReportVO;
 import com.depuy.events_v2.vo.report.ComplianceReportVO;
 import com.depuy.events_v2.vo.report.EventPostalLeadsReportVO;
-import com.depuy.events_v2.vo.report.SeminarRollupReportVO;
 import com.depuy.events_v2.vo.report.LocatorReportVO;
 import com.depuy.events_v2.vo.report.PostcardSummaryReportVO;
 import com.depuy.events_v2.vo.report.RsvpBreakdownReportVO;
 import com.depuy.events_v2.vo.report.RsvpSummaryReportVO;
+import com.depuy.events_v2.vo.report.SeminarRollupReportVO;
 import com.depuy.events_v2.vo.report.SeminarSummaryReportVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -50,7 +52,7 @@ public class ReportBuilder extends SBActionAdapter {
 	
 	public enum ReportType {
 		mailingList, summary, locator, leads, rsvpSummary,  seminarRollup, 
-		rsvpBreakdown, /* leadAging, */ compliance, customSummary
+		rsvpBreakdown, /* leadAging, */ compliance, customSummary, attendeeSurvey
 	}
 
 	public ReportBuilder(ActionInitVO actionInit) {
@@ -79,7 +81,11 @@ public class ReportBuilder extends SBActionAdapter {
 				rpt = generateComplianceReport(sem);
 				break;
 			case summary:
-				sem = (DePuyEventSeminarVO) data;
+				//test if this is a list or a single vo
+				if ( data instanceof List )
+					sem = (DePuyEventSeminarVO) ((List<?>) data).get(0);
+				else
+					sem = (DePuyEventSeminarVO) data;
 				SiteVO site = (SiteVO ) req.getAttribute(Constants.SITE_DATA);
 				sem.setBaseUrl(site.getFullSiteAlias() + "/binary/org/DEPUY/" + site.getSiteId());
 				rpt = generateSeminarSummaryReport(sem);
@@ -108,6 +114,9 @@ public class ReportBuilder extends SBActionAdapter {
 				break;
 			case customSummary:
 				rpt = this.generateCustomSeminarReport(req, data);
+				break;
+			case attendeeSurvey:
+				rpt = generateAttendeeSurveyReport(req);
 				break;
 		}
 		
@@ -308,11 +317,6 @@ public class ReportBuilder extends SBActionAdapter {
 		SeminarSummaryAction ssa = new SeminarSummaryAction(this.actionInit);
 		ssa.setAttributes(this.attributes);
 		ssa.setDBConnection(dbConn);
-		
-		PostcardSelectV2 retriever = new PostcardSelectV2(actionInit);
-		retriever.setDBConnection(dbConn);
-		retriever.setAttributes(attributes);
-		
 		SeminarSummaryReportVO rpt = null;
 		
 		String reportId = StringUtil.checkVal( req.getParameter("reportId") );
@@ -327,12 +331,97 @@ public class ReportBuilder extends SBActionAdapter {
 				rpt.setData(data); 
 			} catch (InvalidDataException | SQLException e) {
 				log.error(e);
-				//Default back to parameter values
-				rpt = new SeminarSummaryReportVO(req);
-				rpt.setData(data);
 			}
 		}
 		return rpt;
 	}
 
+	/**
+	 * Generates a report listing survey attendees and their respective answers
+	 * to the seminar attendee survey
+	 * @param req
+	 * @return
+	 */
+	public AbstractSBReportVO generateAttendeeSurveyReport(SMTServletRequest req){
+		final String dfSchema = "DATA_FEED.dbo."; //Hard coded here because the constant in ReportFacadeAction is not visible to this class
+		List<AttendeeSurveyVO> voList = new ArrayList<>();
+		//Concatenated string of rsvp codes to include in the report.
+		//Assume all to be included if no code is specified
+		String rsvpCodeString = StringUtil.checkVal( req.getParameter("attendeeSurveySeminars") );
+		String [] rsvpCodes = rsvpCodeString.split(";");
+		Boolean selectAll = Convert.formatBoolean( req.getParameter("allAttendeeSeminars") );
+		
+		StringBuilder sql = new StringBuilder();
+		sql.append("select c.CUSTOMER_ID, c.CALL_SOURCE_CD, c.SELECTION_CD, ");
+		sql.append("cr.RESPONSE_TXT, q.QUESTION_TXT, p.FIRST_NM, p.LAST_NM, p.PROFILE_ID ");
+		sql.append("from ").append(dfSchema).append("CUSTOMER c ");
+		sql.append("inner join ").append(dfSchema).append("CUSTOMER_RESPONSE cr on c.CUSTOMER_ID=cr.CUSTOMER_ID ");
+		sql.append("inner join ").append(dfSchema).append("QUESTION_MAP qm on qm.QUESTION_MAP_ID=cr.QUESTION_MAP_ID ");
+		sql.append("inner join ").append(dfSchema).append("QUESTION q on q.QUESTION_ID=qm.QUESTION_ID ");
+		sql.append("left join PROFILE p on p.PROFILE_ID=c.PROFILE_ID ");
+		sql.append("where c.CALL_SOURCE_CD='EVENT' ");
+		
+		//set the specific events, if any exists
+		if ( selectAll ){
+			sql.append("and c.SELECTION_CD like 'EVENT_%' ");
+		} else {
+			sql.append(" and c.SELECTION_CD in ( ");
+			for ( int i = 0 ; i < rsvpCodes.length; i++ ){
+				sql.append("?");
+				if ( i+1 < rsvpCodes.length )
+					sql.append(",");
+			}
+			sql.append(" ) ");
+		}
+		sql.append("order by c.SELECTION_CD, c.CUSTOMER_ID");
+		log.debug(sql);
+
+		try( PreparedStatement ps = dbConn.prepareStatement(sql.toString() )){
+			int i = 0;
+			if (! selectAll )
+				for ( String s : rsvpCodes ){
+					ps.setString(++i, s);
+				}
+			ResultSet rs = ps.executeQuery();
+			//Needed to decrypt name values
+			ProfileManager pm = ProfileManagerFactory.getInstance(this.attributes);
+			AttendeeSurveyVO vo = null;
+			
+			String oldCust = null;
+			String newCust = null;
+			
+			while( rs.next() ){
+				newCust = rs.getString("customer_id");
+				
+				//if customer_id differs, we are on to a new person
+				if( ! StringUtil.checkVal(oldCust).equals(StringUtil.checkVal(newCust))){
+					//don't add empty vo
+					if(vo != null)
+						voList.add(vo);
+					vo = new AttendeeSurveyVO();
+					vo.setProfileId(rs.getString("profile_id"));
+					//get the rsvp code by trimming the selection_cd prefix
+					vo.setRsvpCode( StringUtil.checkVal(rs.getString("selection_cd")).replaceFirst("EVENT_", "") );
+					vo.setFirstName( StringUtil.checkVal(
+							pm.getStringValue("FIRST_NM", rs.getString("first_nm")), "N/A" ) );
+					vo.setLastName( StringUtil.checkVal(pm.getStringValue("LAST_NM", rs.getString("last_nm")), "N/A" ) );
+				} 
+				//otherwise, just add this q and a pair to the vo
+				vo.getQuestionList().add(rs.getString("question_txt"));
+				vo.getAnswerList().add(StringUtil.checkVal(rs.getString("response_txt"), "N/A" ) );
+				
+				oldCust = newCust;
+			}
+			//add trailing entry
+			if (vo != null) { voList.add(vo); }
+			
+		} catch (SQLException e){
+			log.error(e);
+			return null;
+		}
+		
+		AttendeeSurveyReportVO rpt = new AttendeeSurveyReportVO();
+		rpt.setData(voList);
+		return rpt;
+	}
 }

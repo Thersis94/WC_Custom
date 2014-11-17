@@ -12,14 +12,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-
 // J2EE 1.4.0 Libs
 import javax.servlet.http.HttpSession;
 
-
 //wc-depuy libs
 import com.depuy.events.vo.CoopAdVO;
-
 // SMT BaseLibs
 import com.depuy.events_v2.vo.DePuyEventSeminarVO;
 import com.depuy.events_v2.vo.PersonVO;
@@ -27,9 +24,8 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.http.SMTServletRequest;
-import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.security.UserDataVO;
-
+import com.siliconmtn.util.StringUtil;
 // SB Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.event.EventFacadeAction;
@@ -113,7 +109,10 @@ public class PostcardSelectV2 extends SBActionAdapter {
 	
 		Object data = null;
 		try {
-			if (eventPostcardId.length() > 0) {
+			Object outstanding = loadOutstandingItems( req, profileId, reqType);
+			if ( ReqType.outstanding == reqType ){
+				data = outstanding;
+			} else if (eventPostcardId.length() > 0) {
 				//load one postcard in it's entirety
 				data = loadOneSeminar(eventPostcardId, actionInit.getActionId(), reqType, profileId, req.getParameter("sort"));
 				
@@ -147,18 +146,21 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder();
 		sql.append("select distinct event_entry_id, RSVP_CODE_TXT, start_dt, type_nm, profile_id, ");
 		sql.append("surgeon_nm, event_nm, city_nm, state_cd, status_flg, event_postcard_id, postcard_file_status_no, ");
-		sql.append("rsvp_no, [4] as 'hip', [5] as 'knee', [6] as 'shoulder', run_dates_txt, ad_status_flg ");  //in a PIVOT, we're turning the data (values) into column headings.  hence the square brackets.
+		sql.append("rsvp_no, [4] as 'hip', [5] as 'knee', [6] as 'shoulder', run_dates_txt, ad_status_flg, ");  //in a PIVOT, we're turning the data (values) into column headings.  hence the square brackets.
+		sql.append("quantity_no, upfront_fee_flg,postcard_cost_no, territory_no "); 
 		//sql.append(" ");
 		sql.append("from (select e.event_entry_id, e.RSVP_CODE_TXT, e.start_dt, et.type_nm, ep.event_postcard_id, ");
 		sql.append("ep.PROFILE_ID, ep.postcard_file_status_no, s.surgeon_nm, e.event_nm, e.city_nm, ");
 		sql.append("e.state_cd, ep.status_flg, lxr.JOINT_ID, sum(rsvp.GUESTS_NO) as 'rsvp_no', ");
-		sql.append("cad.run_dates_txt, cad.status_flg as ad_status_flg, ep.language_cd, online_flg ");
+		sql.append("cad.run_dates_txt, cad.status_flg as ad_status_flg, ep.language_cd, online_flg, ");
+		sql.append("(ep.quantity_no+deap.postcard_qnty_no) as quantity_no, ep.upfront_fee_flg, ep.territory_no, ep.postcard_cost_no ");
 		sql.append("from EVENT_ENTRY e ");
 		sql.append("inner join EVENT_TYPE et on e.EVENT_TYPE_ID=et.EVENT_TYPE_ID ");
 		sql.append("inner join EVENT_GROUP eg on et.ACTION_ID=eg.ACTION_ID ");
 		sql.append("inner join SB_ACTION sb on eg.ACTION_ID=sb.ACTION_ID ");
 		sql.append("inner join EVENT_POSTCARD_ASSOC epa on e.EVENT_ENTRY_ID=epa.EVENT_ENTRY_ID ");
 		sql.append("inner join EVENT_POSTCARD ep on epa.EVENT_POSTCARD_ID=ep.EVENT_POSTCARD_ID ");
+		sql.append("left outer join ").append(customDb).append("DEPUY_EVENT_ADDTL_POSTCARD deap on deap.EVENT_ENTRY_ID=epa.EVENT_ENTRY_ID ");
 		sql.append("left outer join EVENT_RSVP rsvp on e.EVENT_ENTRY_ID=rsvp.EVENT_ENTRY_ID and rsvp.rsvp_status_flg=1 ");
 		sql.append("left outer join ").append(customDb).append("DEPUY_EVENT_SURGEON s on ep.EVENT_POSTCARD_ID=s.EVENT_POSTCARD_ID ");
 		sql.append("left outer join ").append(customDb).append("DEPUY_EVENT_SPECIALTY_XR lxr on ep.EVENT_POSTCARD_ID=lxr.EVENT_POSTCARD_ID ");
@@ -179,7 +181,8 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		}
 		sql.append("group by e.event_entry_id, ep.event_postcard_id, e.RSVP_CODE_TXT, e.start_dt, ");
 		sql.append("et.type_nm, ep.PROFILE_ID, ep.postcard_file_status_no, e.event_nm, s.surgeon_nm, ");
-		sql.append("e.city_nm, e.state_cd, ep.status_flg, lxr.JOINT_ID, cad.run_dates_txt, cad.status_flg, ep.language_cd, online_flg ");
+		sql.append("e.city_nm, e.state_cd, ep.status_flg, lxr.JOINT_ID, cad.run_dates_txt, cad.status_flg, ep.language_cd, online_flg, ");
+		sql.append("ep.territory_no, ep.quantity_no, postcard_cost_no, upfront_fee_flg, postcard_qnty_no ");
 		sql.append(") baseQry ");
 		sql.append("pivot (count(joint_id) for joint_id in ([4],[5],[6])) as pvtQry "); //PIVOT is an implicit group-by
 		log.debug(sql);
@@ -406,4 +409,80 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		return;
 	}
 	
+	/**
+	 * Get a list of the outstanding items for this user
+	 * @param req
+	 */
+	private List<DePuyEventSeminarVO> loadOutstandingItems( SMTServletRequest req, 
+			String profileId, ReqType reqType ) throws SQLException{
+		final String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		String actionId = actionInit.getActionId();
+		//If the view to be shown is the outstanding items jsp, load the list,
+		//otherwise, just count them
+		boolean countOnly = ( reqType != ReqType.outstanding );
+		
+		StringBuilder sql = new StringBuilder(1300);
+		//simplifies the query if all we need is a total, not event details
+		if ( countOnly ){
+			sql.append("select COUNT(distinct e.event_entry_id) as net ");
+		} else {
+			sql.append("select distinct e.event_entry_id, e.RSVP_CODE_TXT, e.start_dt, ");
+			sql.append("et.type_nm, ep.event_postcard_id, ep.PROFILE_ID, ep.postcard_file_status_no, "); 
+			sql.append("e.event_nm, e.city_nm, e.state_cd, ep.status_flg,  cad.run_dates_txt, ");
+			sql.append("cad.status_flg as ad_status_flg, ep.language_cd, online_flg "); 
+		}
+
+		sql.append("from EVENT_ENTRY e ");
+		sql.append("inner join EVENT_TYPE et on e.EVENT_TYPE_ID=et.EVENT_TYPE_ID "); 
+		sql.append("inner join EVENT_GROUP eg on et.ACTION_ID=eg.ACTION_ID ");
+		sql.append("inner join SB_ACTION sb on eg.ACTION_ID=sb.ACTION_ID ");
+		sql.append("inner join EVENT_POSTCARD_ASSOC epa on e.EVENT_ENTRY_ID=epa.EVENT_ENTRY_ID "); 
+		sql.append("inner join EVENT_POSTCARD ep on epa.EVENT_POSTCARD_ID=ep.EVENT_POSTCARD_ID "); 
+		sql.append("left outer join ").append(customDb).append("DEPUY_EVENT_COOP_AD cad on ep.EVENT_POSTCARD_ID=cad.EVENT_POSTCARD_ID "); 
+		sql.append("and cad.ad_type_txt != 'radio' and cad.status_flg in (2,3) ");
+		sql.append("left outer join ").append(customDb).append("DEPUY_EVENT_PERSON_XR pxr on ep.EVENT_POSTCARD_ID=pxr.EVENT_POSTCARD_ID ");
+		sql.append("where sb.action_group_id=? and ( ep.STATUS_FLG ");
+		//Non-admins don't need to be alerted of admin approvals
+		if ( profileId == null )
+			sql.append("in (5, 10, 13) ");
+		else
+			sql.append("= 13 ");
+		
+		sql.append("or (ep.STATUS_FLG = 15 and START_DT < CURRENT_TIMESTAMP ) ) ");
+		//Use profile id if this is not an admin request (null)
+		if ( profileId != null ){
+			sql.append("and (pxr.PROFILE_ID=? or ep.PROFILE_ID=?) ");
+		}
+		
+		//no grouping if only total row count is needed
+		if ( !countOnly ){
+			sql.append("group by e.event_entry_id, ep.event_postcard_id, e.RSVP_CODE_TXT, ");
+			sql.append("e.start_dt, et.type_nm, ep.PROFILE_ID, ep.postcard_file_status_no, ");
+			sql.append("e.event_nm, e.city_nm, e.state_cd, ep.status_flg, cad.run_dates_txt, ");
+			sql.append("cad.status_flg, ep.language_cd, online_flg ");
+		}
+		
+		log.debug(sql+" | "+actionId);
+		List<DePuyEventSeminarVO> voList = new ArrayList<>();
+		
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())){
+			int i = 0;
+			ps.setString(++i, actionId);
+			if ( profileId != null ){
+				ps.setString(++i, profileId);
+				ps.setString(++i, profileId);
+			}
+			
+			ResultSet rs = ps.executeQuery();
+			//If this was returning a count, set it to the request object
+			if ( countOnly && rs.next() ){
+				req.setParameter("net", rs.getString("net"));
+			} else { //get list of seminars
+				while (rs.next()){
+					voList.add(new DePuyEventSeminarVO().populateFromListRS(rs));
+				}
+			}
+		}
+		return voList;
+	}
 }

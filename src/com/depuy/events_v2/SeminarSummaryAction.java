@@ -7,11 +7,12 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+
+import javax.servlet.http.HttpSession;
 
 import com.depuy.events_v2.vo.report.SeminarSummaryReportVO;
 import com.depuy.events_v2.vo.report.SeminarSummaryReportVO.FieldList;
@@ -24,6 +25,7 @@ import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -39,7 +41,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class SeminarSummaryAction extends SimpleActionAdapter {
 
 	public enum ReqType{
-	 saveReport, fetchReport, fetchAllReports, setReport
+	 fetchReport, fetchAllReports, setReport, generateReport, reportForm, deleteReport
 	}
 	
 	/**
@@ -61,33 +63,55 @@ public class SeminarSummaryAction extends SimpleActionAdapter {
 	 */
 	public void list(SMTServletRequest req) throws ActionException{
 		ReqType rt = ReqType.valueOf(StringUtil.checkVal( req.getParameter("reqType")));
+		HttpSession ses = req.getSession();
+		UserDataVO usr = (UserDataVO) ses.getAttribute(Constants.USER_DATA);
+		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
+		ReportBuilder rb = null;
 		
-		SeminarSummaryReportVO vo = new SeminarSummaryReportVO(req);
-		switch(rt){
-		case saveReport:
-			req.setParameter("reqType", "saveReport");
-			break;
-		case setReport:
-			Set<String> fields = new HashSet<>();
-			Map<String,String> filters = new HashMap<>();
-			parseParameters(req,fields,filters);
-			
-			UserDataVO usr = (UserDataVO) this.attributes.get(Constants.USER_DATA);
-			try {
-				saveReport( usr.getProfileId(), fields, filters );
-			} catch (InvalidDataException | SQLException e) {
-				log.error(e);
-				throw new ActionException(e);
+		try{
+			switch(rt){
+			case fetchAllReports:
+				log.debug("Getting saved reports");
+				//get all reports for this user
+				List<SeminarSummaryReportVO> voList = getAllSavedReports( usr.getProfileId() );
+				mod.setActionData(voList); 
+				break;
+			case deleteReport:
+				deleteReport( req.getParameter("reportId") );
+				break;
+			case setReport:
+				//save the report
+				Map<String,Integer> fields = new LinkedHashMap<>();
+				Map<String,String> filters = new LinkedHashMap<>();
+				
+				parseParameters(req,fields,filters);
+				saveReport( usr.getProfileId(), fields, filters, req.getParameter("reportName") );
+				//Save button is part of the generate form, so cascade from save case to default (list) case
+			case fetchReport:
+			case generateReport:
+				req.setParameter("rptType", "customSummary");
+				req.setParameter("reqType", "report");
+				
+				//get list of seminars
+				PostcardSelectV2 retriever = new PostcardSelectV2(actionInit);
+				retriever.setDBConnection(dbConn);
+				retriever.setAttributes(attributes);
+				retriever.retrieve(req);
+				
+				//generate the report
+				rb = new ReportBuilder(this.actionInit);
+				rb.setAttributes(attributes);
+				rb.setDBConnection(dbConn);
+				rb.generateReport(req, mod.getActionData());
+				break;
+			case reportForm:
+				break;
 			}
-			break;
-		default:
-			//default back to the main report page
-			req.setParameter("reqType", "reportForm");
-			break;
+		}catch( InvalidDataException | SQLException e ){
+			log.error("Error processing report: "+e);
+			throw new ActionException(e);
 		}
-		List<SeminarSummaryReportVO> voList = new ArrayList<SeminarSummaryReportVO>();
-		voList.add(vo);
-		this.putModuleData( voList );
+		req.setParameter("reqType", "saveReport");
 	}
 	
 	/**
@@ -96,22 +120,22 @@ public class SeminarSummaryAction extends SimpleActionAdapter {
 	 * @param fields
 	 * @param filters
 	 */
-	private void parseParameters( SMTServletRequest req, Set<String> fields, Map<String,String>filters){
+	public void parseParameters( SMTServletRequest req, Map<String,Integer> fields, Map<String,String>filters){
 		final String FILTER_PREFIX = "by_";
 		final int INCLUDE = 1, FILTER=-1;
-		FieldList [] lst = FieldList.values();
 		
 		//For each valid field, check for values to be collected
-		for( FieldList fl : lst ){
-			switch( Convert.formatInteger( req.getParameter(lst.toString().toLowerCase()))){
+		for( FieldList fl : FieldList.values() ){
+			switch( Convert.formatInteger( req.getParameter(fl.getFieldName().toLowerCase()))){
 			case FILTER:
 				filters.put(fl.getFieldName(), StringUtil.checkVal(req.getParameter(
 						FILTER_PREFIX+fl.getFieldName())));
 				//No break, so filter params are included in the report
 			case INCLUDE:
-				fields.add(fl.getFieldName());
+				fields.put(fl.name(), 1);
 				break;
 			default:
+				fields.put(fl.name(), 0);
 				break;
 			}
 		}
@@ -126,18 +150,20 @@ public class SeminarSummaryAction extends SimpleActionAdapter {
 	 */
 	protected SeminarSummaryReportVO getSavedReport( String searchId )
 	throws InvalidDataException, SQLException{
+		final String customDB = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		//Requires primary key, in case of multiple saved reports
 		if ( StringUtil.checkVal(searchId).isEmpty() ){
 			log.error("No report Id.");
 			throw new InvalidDataException("Missing report id.");
 		}
 		
-		String sql = "select * from DEPUY_SEMINAR_REPORT where REPORT_ID = ?";
+		StringBuilder sql = new StringBuilder();
+		sql.append("select * from ").append(customDB).append("DEPUY_EVENT_REPORT where REPORT_ID = ?");
 		log.debug(sql+" | "+searchId);
 		
 		SeminarSummaryReportVO vo = null;
 		
-		try( PreparedStatement ps = dbConn.prepareStatement(sql)){
+		try( PreparedStatement ps = dbConn.prepareStatement(sql.toString())){
 			ps.setString(1, searchId);
 			
 			ResultSet rs = ps.executeQuery();
@@ -161,10 +187,12 @@ public class SeminarSummaryAction extends SimpleActionAdapter {
 			log.error("No report Id.");
 			throw new InvalidDataException("Missing report id.");
 		}
+		final String customDB = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		
 		//make sql statement
 		StringBuilder sql = new StringBuilder();
-		sql.append("select a.* from DEPUY_SEMINAR_REPORT a ");
-		sql.append("inner join DEPUY_SEMINAR_REPORT_ASSOC b on a.REPORT_ID=b.REPORT_ID ");
+		sql.append("select a.*, b.REPORT_NM from ").append(customDB).append("DEPUY_EVENT_REPORT a ");
+		sql.append("inner join ").append(customDB).append("DEPUY_EVENT_REPORT_ASSOC b on a.REPORT_ID=b.REPORT_ID ");
 		sql.append("where b.PROFILE_ID=?");
 		
 		log.debug(sql+" | "+profileId);
@@ -188,33 +216,37 @@ public class SeminarSummaryAction extends SimpleActionAdapter {
 	 * @throws SQLException
 	 * @throws InvalidDataException
 	 */
-	protected void saveReport( String profileId,Set<String>fields, Map<String,String>filters ) 
+	protected void saveReport( String profileId,Map<String,Integer>fields, Map<String,String>filters, String name ) 
 	throws SQLException, InvalidDataException{
+		log.info("saveReport() starting..."); 
 		//Profile Id is required
 		if (StringUtil.checkVal(profileId).isEmpty()){
 			log.error("Missing profileId.");
 			throw new InvalidDataException("Missing profileId");
 		}
 		final String reportId = new UUIDGenerator().getUUID();
+		final String customDB = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		
 		//get local field list so order is preserved
-		final FieldList [] cols = FieldList.values();
 		StringBuilder sql = new StringBuilder();
 		//build list of fields to update
-		sql.append("insert into DEPUY_SEMINAR_REPORT ( REPORT_ID, ");
-		sql.append("CREATE_DT, ");
-		for ( int i=0; i<cols.length; ++i ){
-			sql.append(cols[i]);
-			if( i < cols.length-1 ){
+		sql.append("insert into ").append(customDB).append("DEPUY_EVENT_REPORT ( REPORT_ID, ");
+		sql.append("FILTER_TXT, CREATE_DT, ");
+		
+		int fieldCount = 0;
+		for ( String key : fields.keySet() ){
+			fieldCount++;
+			sql.append(key);
+			if( fieldCount < fields.size() ){
 				sql.append(",");
 			}
 		}
 		
 		//make ? marks for prepared statement
 		sql.append(") values (");
-		for ( int i = 0; i < cols.length+2; ++i ){
+		for ( int i = 0; i < fields.size()+3; ++i ){
 			sql.append("?");
-			if (i < cols.length + 1){
+			if (i < fields.size() + 2){
 				sql.append(",");
 			}
 		}
@@ -232,15 +264,17 @@ public class SeminarSummaryAction extends SimpleActionAdapter {
 		}
 		
 		//insert into depuy_seminar_report
-		log.debug(sql.toString());
+		log.debug(sql);
+		
+		List<String> fieldNames = new ArrayList<>( fields.keySet() );
 		try( PreparedStatement ps = dbConn.prepareStatement(sql.toString() )){
 			int i = 0;
 			ps.setString(++i, reportId );
 			ps.setString(++i, filterString.toString() );
-			ps.setTimestamp(++i, Convert.formatTimestamp(null));
-			//all fields passed in will be set to 1, the rest default to 0
-			for ( int index = 0; index < cols.length; ++index ){
-				ps.setInt(++i, 1);
+			ps.setTimestamp(++i, Convert.formatTimestamp(new Date()));
+			//set all the fields, offset by the number of previously set params
+			for ( int index = 1; index <= fields.size(); ++index ){
+				ps.setInt(index+i, fields.get( fieldNames.get(index-1) ));
 			}
 			ps.executeUpdate();
 		}
@@ -248,17 +282,45 @@ public class SeminarSummaryAction extends SimpleActionAdapter {
 		
 		//insert into depuy_seminar_report_assoc
 		sql = new StringBuilder();
-		sql.append("insert into DEPUY_SEMINAR_REPORT_ASSOC (PROFILE_ID, REPORT_ID,");
-		sql.append("CREATE_DT, REPORT_ASSOC_ID ) values (?,?,?,?)");
+		sql.append("insert into ").append(customDB).append("DEPUY_EVENT_REPORT_ASSOC (PROFILE_ID, REPORT_ID,");
+		sql.append("CREATE_DT, REPORT_ASSOC_ID, REPORT_NM ) values (?,?,?,?,?)");
 		
 		try( PreparedStatement stmt = dbConn.prepareStatement(sql.toString() )){
 			int i = 0;
 			stmt.setString(++i, profileId);
 			stmt.setString(++i, reportId);
-			stmt.setTimestamp(++i, Convert.formatTimestamp(null));
+			stmt.setTimestamp(++i, Convert.formatTimestamp(new Date()));
 			stmt.setString(++i, new UUIDGenerator().getUUID());
+			stmt.setString(++i, name );
 			
 			stmt.executeUpdate();
+		}
+	}
+	
+	/**
+	 * Delete the report from the assoc table
+	 * @param reportId
+	 */
+	protected void deleteReport(String reportId) throws SQLException{		
+		final String customDb = (String) attributes.get( Constants.CUSTOM_DB_SCHEMA);
+		String rptId = StringUtil.checkVal( reportId );
+		
+		//report id is required
+		if (rptId.isEmpty()){
+			log.error("Missing Report Id");
+			return;
+		}
+		//delete the record from the table
+		StringBuilder sql = new StringBuilder();
+		sql.append("delete from ").append(customDb).append("DEPUY_EVENT_REPORT_ASSOC ");
+		sql.append("where REPORT_ID = ?");
+		
+		log.debug(sql+" | "+rptId);
+		
+		try( PreparedStatement ps = dbConn.prepareStatement(sql.toString()) ){
+			int i=0;
+			ps.setString(++i, rptId);
+			ps.executeUpdate();
 		}
 	}
 
