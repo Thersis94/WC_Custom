@@ -39,6 +39,8 @@ public class FranchiseVO extends DealerLocationVO {
 	private String twitterUrl = null;
 	private String linkedinUrl = null;
 	private String foursquareUrl = null;
+	private String pinterestUrl = null;
+	private String googlePlusUrl = null;
 	private String countryCode = null;
 	private String whiteBoardText = null;
 	private String webId = null; //a 3 or 4 digit number; In WC its the same as franchiseId, but in Keystone franchiseId is a GUID.
@@ -75,6 +77,8 @@ public class FranchiseVO extends DealerLocationVO {
 		twitterUrl = db.getStringVal("twitter_url", rs);
 		linkedinUrl = db.getStringVal("linkedin_url", rs);
 		foursquareUrl = db.getStringVal("foursquare_url", rs);
+		pinterestUrl = db.getStringVal("pinterest_url", rs);
+		googlePlusUrl = db.getStringVal("google_plus_url", rs);
 		countryCode = db.getStringVal("country_cd", rs);
 		whiteBoardText = db.getStringVal("white_board_text", rs);
 		resellerId = db.getStringVal("reseller_button_id", rs);
@@ -228,6 +232,22 @@ public class FranchiseVO extends DealerLocationVO {
 
 	public String getFoursquareUrl() {
 		return foursquareUrl;
+	}
+
+	public String getPinterestUrl() {
+		return pinterestUrl;
+	}
+
+	public void setPinterestUrl(String pinterestUrl) {
+		this.pinterestUrl = pinterestUrl;
+	}
+
+	public String getGooglePlusUrl() {
+		return googlePlusUrl;
+	}
+
+	public void setGooglePlusUrl(String googlePlusUrl) {
+		this.googlePlusUrl = googlePlusUrl;
 	}
 
 	public void setCountryCode(String countryCode) {
