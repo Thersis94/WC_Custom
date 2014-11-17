@@ -312,7 +312,7 @@ public class FranchiseInfoAction extends SBActionAdapter {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder s = new StringBuilder();
 		s.append("update ").append(customDb).append("fts_franchise set ");
-		s.append("facebook_url = ?, twitter_url=?, linkedin_url=?, foursquare_url=?, ");
+		s.append("facebook_url = ?, twitter_url=?, linkedin_url=?, foursquare_url=?, pinterest_url=?, google_plus_url=?, ");
 		s.append("update_dt = ? where franchise_id = ? ");
 		
 		PreparedStatement ps = null;
@@ -322,8 +322,10 @@ public class FranchiseInfoAction extends SBActionAdapter {
 			ps.setString(2, req.getParameter("twitterUrl"));
 			ps.setString(3, req.getParameter("linkedinUrl"));
 			ps.setString(4, req.getParameter("foursquareUrl"));
-			ps.setTimestamp(5, Convert.getCurrentTimestamp());
-			ps.setString(6, CenterPageAction.getFranchiseId(req));
+			ps.setString(5, req.getParameter("pinterestUrl"));
+			ps.setString(6, req.getParameter("googlePlusUrl"));
+			ps.setTimestamp(7, Convert.getCurrentTimestamp());
+			ps.setString(8, CenterPageAction.getFranchiseId(req));
 			ps.executeUpdate();
 		} finally {
 			try {
