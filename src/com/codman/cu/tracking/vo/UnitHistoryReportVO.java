@@ -4,11 +4,11 @@
 package com.codman.cu.tracking.vo;
 
 import java.text.DateFormat;
-
 import java.util.Date;
 import java.util.List;
 
 import com.codman.cu.tracking.UnitAction;
+import com.codman.cu.tracking.vo.UnitVO.ProdType;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.common.SiteVO;
@@ -28,13 +28,13 @@ public class UnitHistoryReportVO extends AbstractSBReportVO {
 	private static final long serialVersionUID = 1407073622234040274L;
 	protected List<UnitVO> data;
 	protected SiteVO siteVo;
-	
+
 	public UnitHistoryReportVO(SiteVO site) {
 		super();
 		this.siteVo = site;
-        setContentType("application/vnd.ms-excel");
-        isHeaderAttachment(Boolean.TRUE);
-        setFileName("Control Unit History Report.xls");
+		setContentType("application/vnd.ms-excel");
+		isHeaderAttachment(Boolean.TRUE);
+		setFileName("Control Unit History Report.xls");
 	}
 
 	/* (non-Javadoc)
@@ -44,12 +44,12 @@ public class UnitHistoryReportVO extends AbstractSBReportVO {
 	public byte[] generateReport() {
 		log.debug("starting Unit History Report");
 		StringBuilder rpt = new StringBuilder(this.getHeader(false));
-		
+
 		//loop the accounts, physians, units, and requests
 		for (UnitVO v : data) {
 			rpt.append(formatUnit(v, false));
 		}
-		
+
 		return rpt.toString().getBytes();
 	}
 
@@ -61,14 +61,15 @@ public class UnitHistoryReportVO extends AbstractSBReportVO {
 	public void setData(Object o) {
 		data = (List<UnitVO>) o;
 	}
-	
+
 	protected StringBuilder getHeader(boolean restricted) {
 		int colCnt = restricted ? 24: 31;
 		StringBuilder hdr = new StringBuilder();
 		hdr.append("<tr><td><table border='1'>\r");
-		hdr.append("<tr><td colspan='").append(colCnt).append("' style='background-color: #ccc;'><b>MedStream CU Tracking System - Unit History</b></td></tr>\r");
+		hdr.append("<tr><td colspan='").append(colCnt).append("' style='background-color: #ccc;'><b>Codman CU Tracking System - Unit History</b></td></tr>\r");
 		hdr.append("<tr><td>Date</td>");
 		hdr.append("\t<td>Status</td>");
+		hdr.append("\t<td>Unit Type</td>");
 		hdr.append("\t<td>Transaction Type</td>");
 		hdr.append("\t<td>Serial No.</td>");
 		hdr.append("\t<td>User</td>");
@@ -105,25 +106,28 @@ public class UnitHistoryReportVO extends AbstractSBReportVO {
 		hdr.append("\t<td>Zip/Postal</td>");
 		hdr.append("\t<td>Country</td>");
 		hdr.append("</tr>\r");
-		
+
 		return hdr;
 	}
 
-	
+
 	protected StringBuilder getFooter() {
 		return new StringBuilder("</table>");
 	}
-	
+
 	protected String formatUnit(UnitVO u, boolean restricted) {
 		StringBuilder rpt = new StringBuilder();
 		rpt.append("<tr>");
 		rpt.append("\t<td>").append(this.formatDate(u.getCreateDate())).append("</td>\r");
 		rpt.append("\t<td>").append(UnitAction.getStatusName(u.getStatusId())).append("</td>\r");
+		rpt.append("\t<td>").append(u.getProductType().toString()).append("</td>\r");
 		String transType = "";
 		if (u.getTransactionType() == null || u.getTransactionType() == 0) transType = "Unit Update";
+		else if (u.getTransactionType() == 2 && u.getProductType() == ProdType.ICP_EXPRESS) transType = "Return";
 		else if (u.getTransactionType() == 2) transType = "Transfer";
+		else if (u.getTransactionType() == 3) transType = "Refurbish";
 		else if (u.getTransactionType() == 1) transType = "New Request";
-		
+
 		rpt.append("\t<td>").append(transType).append("</td>\r");
 		rpt.append("\t<td>").append(StringUtil.checkVal(u.getSerialNo())).append("</td>\r");
 		rpt.append("\t<td>").append(StringUtil.checkVal(u.getModifyingUserName())).append("</td>\r");
@@ -160,16 +164,16 @@ public class UnitHistoryReportVO extends AbstractSBReportVO {
 		rpt.append("\t<td>").append(StringUtil.checkVal(u.getPhysician().getZipCode())).append("</td>\r");
 		rpt.append("\t<td>").append(StringUtil.checkVal(u.getPhysician().getCountryCode())).append("</td>\r");
 		rpt.append("</tr>\r");
-		
+
 		return rpt.toString();
 	}
-	
+
 	protected String formatDate(Date d) {
 		DateFormat df = DateFormat.getDateInstance(DateFormat.MEDIUM, siteVo.getLocale());
-		
+
 		if (d != null) return df.format(d);
 		else return "";
 	}
-	
+
 
 }

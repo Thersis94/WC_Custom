@@ -3,7 +3,6 @@ package com.codman.cu.tracking;
 import com.codman.cu.tracking.vo.UnitVO.ProdType;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: TransactionFactory.java<p/>
@@ -27,10 +26,13 @@ public class TransactionFactory {
 	 * @return Action used for submitting that product type
 	 * @throws InvalidDataException When product type is unknown
 	 */
-	public static AbstractTransAction getInstance( String type, ActionInitVO ai )
-	throws InvalidDataException{
-		
-		ProdType t = ProdType.valueOf( StringUtil.checkVal(type).toUpperCase() );
+	public static AbstractTransAction getInstance(String type, ActionInitVO ai ) {
+		ProdType t = null;
+		try {
+			t = ProdType.valueOf(type);
+		} catch (Exception e) {
+			t = ProdType.MEDSTREAM;
+		}
 		return getInstance(t, ai); 
 	}
 	
@@ -41,22 +43,18 @@ public class TransactionFactory {
 	 * @return Action used for submitting this type of product
 	 * @throws InvalidDataException When product type is unknown
 	 */
-	public static AbstractTransAction getInstance( ProdType type, ActionInitVO ai )
-	throws InvalidDataException{
+	public static AbstractTransAction getInstance(ProdType type, ActionInitVO ai ) {
 		AbstractTransAction ta = null;
-		switch ( type ){
-		
-		case MEDSTREAM:
-			//Previous implementation (for CU/MEDSTREAM unit types)
-			ta = new TransAction(ai);
-			break;
-		case ICP:
-			//ICP unit refurbishment action
-			ta = new TransIcpAction(ai);
-			break;
-			
-		default:
-			throw new InvalidDataException("Invalid Transaction Type: "+type);
+		switch (type) {
+			case ICP_EXPRESS:
+				//ICP unit refurbishment action
+				ta = new ICPExpressTransAction(ai);
+				break;
+			case MEDSTREAM:
+			default:
+				//Previous implementation (for CU/MEDSTREAM unit types)
+				ta = new MedstreamTransAction(ai);
+				break;
 		}
 		return ta;
 	}

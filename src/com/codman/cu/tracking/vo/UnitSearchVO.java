@@ -24,8 +24,8 @@ public class UnitSearchVO extends RequestSearchVO implements Serializable {
 	
 	public static final String SESSION_VAR = "CodmanCUUnitSearchVO";
 	
-	public UnitSearchVO(SMTServletRequest req) {
-		super(req, SESSION_VAR);
+	public UnitSearchVO(SMTServletRequest req, String prodCd) {
+		super(req, SESSION_VAR + prodCd);
 	}
 	
 	public String getCriteria() {

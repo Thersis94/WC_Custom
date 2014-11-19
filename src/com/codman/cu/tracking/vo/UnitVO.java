@@ -71,7 +71,7 @@ public class UnitVO implements Serializable {
 	 */
 	public enum ProdType {
 		MEDSTREAM, //The original CU type
-		ICP
+		ICP_EXPRESS
 	}
 	
 	public UnitVO() {
@@ -100,10 +100,7 @@ public class UnitVO implements Serializable {
 		serviceDate = Convert.formatDate(req.getParameter("servDt"));
 		modifyingUserId = req.getParameter("modifyingUserId");
 		productionCommentsText = req.getParameter("productionCommentsText");
-		
-		String prodType = StringUtil.checkVal(req.getParameter("prodCd"));
-		if (!prodType.isEmpty())
-			productType = ProdType.valueOf(prodType);
+		setProductType(req.getParameter("prodCd"));
 	}
 	
 	/**
@@ -140,10 +137,8 @@ public class UnitVO implements Serializable {
 		serviceDate = db.getDateVal("service_dt", rs);
 		modifyingUserId = db.getStringVal("modifying_user_id", rs);
 		productionCommentsText = db.getStringVal("production_comments_txt", rs);
+		setProductType(db.getStringVal("product_cd",rs));
 		
-		String prodType = StringUtil.checkVal(db.getStringVal("product_cd",rs));
-		if (!prodType.isEmpty())
-			productType = ProdType.valueOf(prodType);
 		
 		setPhys(new PhysicianVO(rs));
 		db = null;
@@ -438,12 +433,17 @@ public class UnitVO implements Serializable {
 	public void setProductType(ProdType productType) {
 		this.productType = productType;
 	}
+	public void setProductType(String pt) {
+		try {
+			productType = ProdType.valueOf(pt);
+		} catch (Exception e) {}
+	}
 	
-	public String getProductCode(){
+	public String getProductCode() {
 		if ( productType == null)
-			return ProdType.MEDSTREAM.name();
+			return ProdType.MEDSTREAM.toString();
 		else
-			return productType.name();
+			return productType.toString();
 	}
 }
 
