@@ -7,8 +7,12 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+
+
+import java.util.Set;
 
 // DePuy SB
 import com.codman.cu.tracking.vo.PersonVO;
@@ -444,11 +448,11 @@ public class UserAction extends SimpleActionAdapter {
 	private void sendEmail(SMTServletRequest req, SiteVO site, PersonVO vo) {
 				
 		if (msg == null && Convert.formatBoolean(req.getParameter("email"))) {
-			TrackingEmailer emailer = null;
+			MedstreamEmailer emailer = null;
 			if (site.getOrganizationId().equals("CODMAN_EU")) {
-				emailer = new TrackingEmailerEU(this.actionInit);
+				emailer = new MedstreamEmailerEU(this.actionInit);
 			} else {
-				emailer = new TrackingEmailer(this.actionInit);
+				emailer = new MedstreamEmailer(this.actionInit);
 			}
 			
 			emailer.setAttributes(attributes);
@@ -468,7 +472,7 @@ public class UserAction extends SimpleActionAdapter {
 	
 	public List<UserDataVO> loadUserList(Integer roleLvl, String organizationId) {
 		List<UserDataVO> data = new ArrayList<UserDataVO>();
-		List<String> profileIds = new ArrayList<String>();
+		Set<String> profileIds = new HashSet<String>();
 		PreparedStatement ps = null;
 		StringBuilder sql = new StringBuilder();
 		sql.append("select a.profile_id from ").append((String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
@@ -492,7 +496,7 @@ public class UserAction extends SimpleActionAdapter {
 		
 		try {
 			ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
-			data = pm.searchProfile(dbConn, profileIds);
+			data = pm.searchProfile(dbConn, new ArrayList<String>(profileIds));
 			
 			//re-order the data using the decrypted names
 	    	Collections.sort(data, new UserDataComparator());

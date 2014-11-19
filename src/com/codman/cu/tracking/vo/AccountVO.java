@@ -1,7 +1,6 @@
 package com.codman.cu.tracking.vo;
 
 import java.sql.ResultSet;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -9,7 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.codman.cu.tracking.TransAction;
+import com.codman.cu.tracking.AbstractTransAction.Status;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.UserDataComparator;
@@ -296,7 +295,7 @@ public class AccountVO implements java.io.Serializable {
 	public Integer getUnitCount() {
 		Integer cnt = Integer.valueOf(0);
 		for (TransactionVO t : transactions.values())
-			if (t.getStatusId() == TransAction.STATUS_COMPLETE)
+			if (t.getStatus() == Status.COMPLETE)
 				cnt+= t.getUnitMap().size();
 		
 		return cnt;
@@ -305,7 +304,7 @@ public class AccountVO implements java.io.Serializable {
 	public Integer getPendingRequestCount() {
 		Integer cnt = Integer.valueOf(0);
 		for (TransactionVO t : transactions.values())
-			if (t.getStatusId() == TransAction.STATUS_PENDING) 
+			if (t.getStatus() == Status.PENDING) 
 				++cnt;
 		
 		return cnt;
@@ -314,7 +313,7 @@ public class AccountVO implements java.io.Serializable {
 	public Integer getApprovedRequestCount() {
 		Integer cnt = Integer.valueOf(0);
 		for (TransactionVO t : transactions.values())
-			if (t.getStatusId() == TransAction.STATUS_APPROVED) 
+			if (t.getStatus() == Status.APPROVED) 
 				++cnt;
 		
 		return cnt;

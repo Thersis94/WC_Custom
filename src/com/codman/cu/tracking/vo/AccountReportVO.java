@@ -2,7 +2,6 @@ package com.codman.cu.tracking.vo;
 
 import java.util.List;
 
-import com.codman.cu.tracking.TransAction;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 
@@ -30,6 +29,7 @@ public class AccountReportVO extends AbstractSBReportVO {
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.AbstractSBReportVO#generateReport()
 	 */
+	@SuppressWarnings("incomplete-switch")
 	@Override
 	public byte[] generateReport() {
 		log.debug("starting Account Reports");
@@ -49,17 +49,17 @@ public class AccountReportVO extends AbstractSBReportVO {
 			//iterated the transactions and classify by status
 			int pending = 0, approved = 0, complete = 0, denied = 0;
 			for (TransactionVO v : acct.getTransactions()) {
-				switch (v.getStatusId()) {
-					case TransAction.STATUS_PENDING:
+				switch (v.getStatus()) {
+					case PENDING:
 						++pending;
 						break;
-					case TransAction.STATUS_APPROVED:
+					case APPROVED:
 						++approved;
 						break;
-					case TransAction.STATUS_COMPLETE:
+					case COMPLETE:
 						++complete;
 						break;
-					case TransAction.STATUS_DECLINED:
+					case DECLINED:
 						++denied;
 						break;
 				}
