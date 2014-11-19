@@ -2,15 +2,14 @@ package com.codman.cu.tracking;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.List;
 
 import com.codman.cu.tracking.vo.AccountVO;
 import com.codman.cu.tracking.vo.TransactionVO;
+import com.codman.cu.tracking.vo.UnitVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.SMTServletRequest;
-import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.AdminConstants;
@@ -78,6 +77,43 @@ public class ICPExpressTransAction extends AbstractTransAction {
 
 		//Send necessary Emails
 		sendEmail(req, trans);
+		
+		//if the unit has been successfully returned; unbind it from the user's account and mark it as available.
+		//this has to be done after we send the email, which depends on the unit still being attached to the account.
+		if (trans.getStatus() == Status.RTRN_REQ_RCVD) {
+			UnitReturnAction ura = new UnitReturnAction(actionInit);
+			ura.setAttributes(attributes);
+			ura.setDBConnection(dbConn);
+			try {
+				ura.updateUnitLedger(req.getParameter("unitId"));
+			} catch (SQLException sqle) {
+				log.error("could not unbind unit from account", sqle);
+			}
+			//update unit stats
+			UnitAction ua = new UnitAction(actionInit);
+			ua.setAttributes(attributes);
+			ua.setDBConnection(dbConn);
+			UnitVO unit = ua.retrieveUnit(req.getParameter("unitId"));
+			unit.setStatusId(UnitAction.STATUS_AVAILABLE);
+			try {
+				ua.saveUnit(unit);
+			} catch (SQLException sqle) {
+				log.error("could not update unit status after refurbishment", sqle);
+			}
+			ua = null;
+		} else if (trans.getStatus() == Status.SVC_REQ_SENT_EDC) {
+			//update the unit to "in-use", since service is now complete
+			UnitAction ua = new UnitAction(actionInit);
+			ua.setAttributes(attributes);
+			ua.setDBConnection(dbConn);
+			UnitVO unit = ua.retrieveUnit(req.getParameter("unitId"));
+			unit.setStatusId(UnitAction.STATUS_IN_USE);
+			try {
+				ua.saveUnit(unit);
+			} catch (SQLException sqle) {
+				log.error("could not update unit status after refurbishment", sqle);
+			}
+		}
 
 		//Redirect 
 		setupRedir(req, msg);
@@ -149,7 +185,7 @@ public class ICPExpressTransAction extends AbstractTransAction {
 	private void sendEmail(SMTServletRequest req, TransactionVO trans) 
 			throws ActionException {
 		//get admins
-		List<UserDataVO> adminList = super.retrieveAdministrators(req);
+		//List<UserDataVO> adminList = super.retrieveAdministrators(req);
 
 		AccountVO acct = super.retrieveRecord(req, trans);
 		//replace the transactionVo with one that's been fully populated from the DB
@@ -159,6 +195,6 @@ public class ICPExpressTransAction extends AbstractTransAction {
 		ICPExpressEmailer mailer = new ICPExpressEmailer(this.actionInit);
 		mailer.setAttributes(attributes);
 		mailer.setDBConnection(dbConn);
-		mailer.sendTransactionMessage(req, adminList, trans, acct);
+		mailer.sendTransactionMessage(req, trans, acct);
 	}
 }

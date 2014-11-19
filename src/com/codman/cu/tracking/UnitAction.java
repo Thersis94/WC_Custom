@@ -51,6 +51,8 @@ public class UnitAction extends SBActionAdapter {
 	public static final int STATUS_AVAILABLE = 120;
 	public static final int STATUS_BEING_SERVICED = 110;
 	public static final int STATUS_DECOMMISSIONED = 100;
+	public static final int STATUS_RETURNED = 140;
+	
 	private Object msg = null;
 
 	//map storing possible sort fields for the retrieve query
@@ -77,6 +79,7 @@ public class UnitAction extends SBActionAdapter {
 		if (id == UnitAction.STATUS_AVAILABLE) return "Available";
 		if (id == UnitAction.STATUS_BEING_SERVICED) return "Being Serviced";
 		if (id == UnitAction.STATUS_DECOMMISSIONED) return "Decommissioned";
+		if (id == UnitAction.STATUS_RETURNED) return "Returned";
 		else return "";
 	}
 
@@ -327,7 +330,7 @@ public class UnitAction extends SBActionAdapter {
 			try { ps.close(); } catch (Exception e) {}
 		}
 		
-		attachProfiles(search, data);
+		data = attachProfiles(search, data);
 
 		mod.setActionData(data);
 		mod.setDataSize(data.size());
@@ -359,7 +362,7 @@ public class UnitAction extends SBActionAdapter {
 	 * @param profileIds
 	 * @param data
 	 */
-	private void attachProfiles(RequestSearchVO search, List<UnitVO> data) {
+	private List<UnitVO> attachProfiles(RequestSearchVO search, List<UnitVO> data) {
 		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
 		Set<String> profileIds = new HashSet<String>();
 		for (UnitVO vo : data) {
@@ -368,7 +371,7 @@ public class UnitAction extends SBActionAdapter {
 			profileIds.add(vo.getModifyingUserId());
 		}
 		
-		List<UnitVO> newResults = new ArrayList<UnitVO>();
+		List<UnitVO> newResults = new ArrayList<UnitVO>(data.size());
 		try {
 			Map<String, UserDataVO> profiles = pm.searchProfileMap(dbConn, new ArrayList<String>(profileIds));
 			for (UnitVO vo : data) {
@@ -399,10 +402,10 @@ public class UnitAction extends SBActionAdapter {
 				newResults.add(vo);
 			}
 
-			data = newResults;
 		} catch (Exception e) {
 			log.error("could not lookup profileIds attached to Units", e);
 		}
+		return newResults;
 	}
 
 	/**

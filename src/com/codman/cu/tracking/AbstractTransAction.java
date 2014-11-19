@@ -59,8 +59,8 @@ public abstract class AbstractTransAction extends SBActionAdapter {
 		SVC_REQ_SENT_EDC(240,"Sent Back to EDC", false, true),
 		SVC_REQ_SENT_REP(250,"Sent Back to Rep", false, false),
 		//for ICP returns
-		RTRN_REQ(260, "Return for Credit", false, true),
-		RTRN_REQ_RCVD(270, "GMED Credits Confirmed", false, false),
+		RTRN_REQ(260, "Return for Refurbishment", false, true),
+		RTRN_REQ_RCVD(270, "Refurbishment Complete", false, false),
 		
 		//new unit transactions & Medstream transfers
 		PENDING(10, "Pending", true, true),

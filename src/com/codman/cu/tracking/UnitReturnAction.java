@@ -2,7 +2,6 @@ package com.codman.cu.tracking;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.List;
 
 import com.codman.cu.tracking.vo.AccountVO;
 import com.codman.cu.tracking.vo.TransactionVO;
@@ -11,7 +10,6 @@ import com.codman.cu.tracking.vo.UnitVO.ProdType;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
-import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -57,7 +55,7 @@ public class UnitReturnAction extends AbstractTransAction {
 		//check for unit returns, rather that refurbishments
 		if (Convert.formatBoolean(req.getParameter("returnUnit"))) {
 			tvo.setStatus(Status.RTRN_REQ);
-			tvo.setTransactionTypeId(2); //type=return, instead of refurbish
+			tvo.setTransactionTypeId(2); //type=refurb, instead of service
 		}
 
 		try {
@@ -71,14 +69,14 @@ public class UnitReturnAction extends AbstractTransAction {
 			ua.setAttributes(attributes);
 			ua.setDBConnection(dbConn);
 			UnitVO unit = ua.retrieveUnit(unitId);
-			unit.setStatusId(UnitAction.STATUS_BEING_SERVICED);
+			unit.setStatusId(tvo.getStatus() == Status.RTRN_REQ ? UnitAction.STATUS_RETURNED : UnitAction.STATUS_BEING_SERVICED);
 			ua.saveUnit(unit);
 			ua = null;
 
 			// set activeRecord=0 for all exisitng ledger entries
 			this.updateUnitLedger(unitId);
 
-			// write a new ledger entries:
+			// write a new ledger entries
 			this.writeUnitLedger(unitId, tvo.getTransactionId(), 1);
 			
 			//send notification emails
@@ -100,7 +98,7 @@ public class UnitReturnAction extends AbstractTransAction {
 	}
 
 
-	private void writeUnitLedger(String unitId, String transactionId, int activeFlg) 
+	protected void writeUnitLedger(String unitId, String transactionId, int activeFlg) 
 			throws SQLException {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuffer sql = new StringBuffer();
@@ -133,7 +131,7 @@ public class UnitReturnAction extends AbstractTransAction {
 	 * @param unitId
 	 * @throws SQLException
 	 */
-	private void updateUnitLedger(String unitId) throws SQLException {
+	protected void updateUnitLedger(String unitId) throws SQLException {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuffer sql = new StringBuffer();
 		sql.append("update ").append(customDb);
@@ -165,12 +163,12 @@ public class UnitReturnAction extends AbstractTransAction {
 		tvo = acct.getTransactionMap().get(tvo.getTransactionId());
 		
 		//get admins
-		List<UserDataVO> adminList = super.retrieveAdministrators(req);
+		//List<UserDataVO> adminList = super.retrieveAdministrators(req);
 
 		//setup mailer
 		ICPExpressEmailer mailer = new ICPExpressEmailer(this.actionInit);
 		mailer.setAttributes(attributes);
 		mailer.setDBConnection(dbConn);
-		mailer.sendTransactionMessage(req, adminList, tvo, acct);
+		mailer.sendTransactionMessage(req, tvo, acct);
 	}
 }

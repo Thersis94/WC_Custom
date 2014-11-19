@@ -32,6 +32,16 @@ import com.smt.sitebuilder.util.MessageSender;
  * @since Oct 31, 2014
  ****************************************************************************/
 public class ICPExpressEmailer extends MedstreamEmailer {
+	
+	private static List<String> adminEmails = new ArrayList<String>(){
+		private static final long serialVersionUID = 1l; 
+		{
+			add("acayssio@its.jnj.com");
+			add("efournie@ITS.JNJ.com");
+			add("cskelto@ITS.JNJ.com");
+			add("SStefan1@its.jnj.com");
+		}
+	};
 
 	/**
 	 * @param arg0
@@ -40,7 +50,7 @@ public class ICPExpressEmailer extends MedstreamEmailer {
 		super(arg0);
 	}
 
-	public void sendTransactionMessage(SMTServletRequest req, List<UserDataVO> alloc, TransactionVO trans) {
+	public void sendTransactionMessage(SMTServletRequest req, TransactionVO trans) {
 		AccountVO acct = retrieveAccount(trans.getAccountId());
 
 		//lookup rep information
@@ -60,7 +70,7 @@ public class ICPExpressEmailer extends MedstreamEmailer {
 		rep.setFirstName( usr.getFirstName() );
 		acct.setRep(rep);
 		
-		this.sendTransactionMessage(req, alloc, trans, acct);
+		this.sendTransactionMessage(req, trans, acct);
 	}
 	
 	/**
@@ -73,37 +83,37 @@ public class ICPExpressEmailer extends MedstreamEmailer {
 	 * @param acct
 	 */
 	@SuppressWarnings("incomplete-switch")
-	public void sendTransactionMessage(SMTServletRequest req, List<UserDataVO> alloc, TransactionVO trans, AccountVO acct) {
+	public void sendTransactionMessage(SMTServletRequest req, TransactionVO trans, AccountVO acct) {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		PersonVO rep = acct.getRep();
 
 		switch (trans.getStatus()) {
 			case PENDING:
-				newOrderInit(req,alloc,rep,trans,site,acct);
+				newOrderInit(req,adminEmails,rep,trans,site,acct);
 				break;
 			case COMPLETE:
-				newOrderShipped(req,alloc,rep,trans,site,acct);
+				newOrderShipped(req,adminEmails,rep,trans,site,acct);
 				break;
 			case SVC_REQ:
-				this.repairInitiated(req,alloc,rep,trans,site,acct);
+				this.repairInitiated(req,adminEmails,rep,trans,site,acct);
 				break;
 			case SVC_REQ_RCVD:
-				this.repairReceived(req,alloc,rep,trans,site,acct);
+				this.repairReceived(req,adminEmails,rep,trans,site,acct);
 				break;
 			case SVC_REQ_COMPL:
-				this.repairComplete(req,alloc,rep,trans,site,acct);
+				this.repairComplete(req,adminEmails,rep,trans,site,acct);
 				break;
 			case SVC_REQ_SENT_EDC:
-				this.repairSentToEDC(req,alloc,rep,trans,site,acct);
+				this.repairSentToEDC(req,adminEmails,rep,trans,site,acct);
 				break;
 			case SVC_REQ_SENT_REP:
-				this.repairSentToRep(req,alloc,rep,trans,site,acct);
+				this.repairSentToRep(req,adminEmails,rep,trans,site,acct);
 				break;
 			case RTRN_REQ:
-				this.repairInitiated(req,alloc,rep,trans,site,acct);
+				this.repairInitiated(req,adminEmails,rep,trans,site,acct);
 				break;
 			case RTRN_REQ_RCVD:
-				this.repairPartialRefund(req, alloc, rep, trans, site, acct);
+				this.repairPartialRefund(req, adminEmails, rep, trans, site, acct);
 				break;
 		}
 	}
@@ -117,7 +127,7 @@ public class ICPExpressEmailer extends MedstreamEmailer {
 	 * @param phys
 	 * @param trans
 	 */
-	private void newOrderInit(SMTServletRequest req, List<UserDataVO> admins, 
+	private void newOrderInit(SMTServletRequest req, List<String> admins, 
 			PersonVO rep, TransactionVO trans, SiteVO site, AccountVO acct){
 
 		StringBuilder subject = new StringBuilder();
@@ -137,10 +147,8 @@ public class ICPExpressEmailer extends MedstreamEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(rep.getEmailAddress());
-			for (UserDataVO vo : admins) {
-				if (!StringUtil.isValidEmail(vo.getEmailAddress())) continue;
-				mail.addCC(vo.getEmailAddress());
-			}
+			for (String eml : admins)
+				mail.addCC(eml);
 			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
@@ -164,7 +172,7 @@ public class ICPExpressEmailer extends MedstreamEmailer {
 	 * @param phys
 	 * @param trans
 	 */
-	private void newOrderShipped(SMTServletRequest req, List<UserDataVO> admins, PersonVO rep,
+	private void newOrderShipped(SMTServletRequest req, List<String> admins, PersonVO rep,
 			TransactionVO trans, SiteVO site, AccountVO acct){
 		StringBuilder subject = new StringBuilder();
 		subject.append("Information for your ICP Express Unit: Request# ").append(trans.getRequestNo());
@@ -185,10 +193,8 @@ public class ICPExpressEmailer extends MedstreamEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(rep.getEmailAddress());
-			for (UserDataVO vo : admins) {
-				if (!StringUtil.isValidEmail(vo.getEmailAddress())) continue;
-				mail.addCC(vo.getEmailAddress());
-			}
+			for (String eml : admins)
+				mail.addCC(eml);
 			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
@@ -212,7 +218,7 @@ public class ICPExpressEmailer extends MedstreamEmailer {
 	 * @param phys
 	 * @param trans
 	 */
-	private void repairInitiated(SMTServletRequest req, List<UserDataVO> admins, 
+	private void repairInitiated(SMTServletRequest req, List<String> admins, 
 			PersonVO rep, TransactionVO trans, SiteVO site, AccountVO acct){
 
 		if (trans.getCreateDate() == null)
@@ -235,10 +241,8 @@ public class ICPExpressEmailer extends MedstreamEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(rep.getEmailAddress());
-			for (UserDataVO vo : admins) {
-				if (!StringUtil.isValidEmail(vo.getEmailAddress())) continue;
-				mail.addCC(vo.getEmailAddress());
-			}
+			for (String eml : admins)
+				mail.addCC(eml);
 			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
@@ -262,7 +266,7 @@ public class ICPExpressEmailer extends MedstreamEmailer {
 	 * @param phys
 	 * @param trans
 	 */
-	private void repairReceived(SMTServletRequest req, List<UserDataVO> admins, 
+	private void repairReceived(SMTServletRequest req, List<String> admins, 
 			PersonVO rep, TransactionVO trans, SiteVO site, AccountVO acct) {
 
 		StringBuilder subject = new StringBuilder(200);
@@ -281,10 +285,8 @@ public class ICPExpressEmailer extends MedstreamEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(rep.getEmailAddress());
-			for (UserDataVO vo : admins) {
-				if (!StringUtil.isValidEmail(vo.getEmailAddress())) continue;
-				mail.addCC(vo.getEmailAddress());
-			}
+			for (String eml : admins)
+				mail.addCC(eml);
 			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
@@ -308,7 +310,7 @@ public class ICPExpressEmailer extends MedstreamEmailer {
 	 * @param phys
 	 * @param trans
 	 */
-	private void repairPartialRefund(SMTServletRequest req, List<UserDataVO> admins, 
+	private void repairPartialRefund(SMTServletRequest req, List<String> admins, 
 			PersonVO rep, TransactionVO trans, SiteVO site, AccountVO acct) {
 
 		StringBuilder subject = new StringBuilder(200);
@@ -327,10 +329,8 @@ public class ICPExpressEmailer extends MedstreamEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(rep.getEmailAddress());
-			for (UserDataVO vo : admins) {
-				if (!StringUtil.isValidEmail(vo.getEmailAddress())) continue;
-				mail.addCC(vo.getEmailAddress());
-			}
+			for (String eml : admins)
+				mail.addCC(eml);
 			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
@@ -354,7 +354,7 @@ public class ICPExpressEmailer extends MedstreamEmailer {
 	 * @param phys
 	 * @param trans
 	 */
-	private void repairComplete(SMTServletRequest req, List<UserDataVO> admins, 
+	private void repairComplete(SMTServletRequest req, List<String> admins, 
 			PersonVO rep, TransactionVO trans, SiteVO site, AccountVO acct) {
 
 		StringBuilder subject = new StringBuilder(200);
@@ -372,10 +372,8 @@ public class ICPExpressEmailer extends MedstreamEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(rep.getEmailAddress());
-			for (UserDataVO vo : admins) {
-				if (!StringUtil.isValidEmail(vo.getEmailAddress())) continue;
-				mail.addCC(vo.getEmailAddress());
-			}
+			for (String eml : admins)
+				mail.addCC(eml);
 			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
@@ -398,7 +396,7 @@ public class ICPExpressEmailer extends MedstreamEmailer {
 	 * @param phys
 	 * @param trans
 	 */
-	private void repairSentToEDC(SMTServletRequest req, List<UserDataVO> admins, 
+	private void repairSentToEDC(SMTServletRequest req, List<String> admins, 
 			PersonVO rep, TransactionVO trans,  SiteVO site, AccountVO acct) {
 
 		StringBuilder subject = new StringBuilder(80);
@@ -417,10 +415,8 @@ public class ICPExpressEmailer extends MedstreamEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(rep.getEmailAddress());
-			for (UserDataVO vo : admins) {
-				if (!StringUtil.isValidEmail(vo.getEmailAddress())) continue;
-				mail.addCC(vo.getEmailAddress());
-			}
+			for (String eml : admins)
+				mail.addCC(eml);
 			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
@@ -444,7 +440,7 @@ public class ICPExpressEmailer extends MedstreamEmailer {
 	 * @param phys
 	 * @param trans
 	 */
-	private void repairSentToRep(SMTServletRequest req, List<UserDataVO> admins, PersonVO rep,
+	private void repairSentToRep(SMTServletRequest req, List<String> admins, PersonVO rep,
 			TransactionVO trans, SiteVO site, AccountVO acct) {
 
 		StringBuilder subject = new StringBuilder(200);
@@ -478,10 +474,8 @@ public class ICPExpressEmailer extends MedstreamEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(rep.getEmailAddress());
-			for (UserDataVO vo : admins) {
-				if (!StringUtil.isValidEmail(vo.getEmailAddress())) continue;
-				mail.addCC(vo.getEmailAddress());
-			}
+			for (String eml : admins)
+				mail.addCC(eml);
 			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
