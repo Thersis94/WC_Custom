@@ -12,8 +12,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+
 // J2EE 1.4.0 Libs
 import javax.servlet.http.HttpSession;
+
 
 //wc-depuy libs
 import com.depuy.events.vo.CoopAdVO;
@@ -112,6 +114,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 			Object outstanding = loadOutstandingItems( req, profileId, reqType);
 			if ( ReqType.outstanding == reqType ){
 				data = outstanding;
+				//counter isn't displayed when the outstanding items view is the current view.
 			} else if (eventPostcardId.length() > 0) {
 				//load one postcard in it's entirety
 				data = loadOneSeminar(eventPostcardId, actionInit.getActionId(), reqType, profileId, req.getParameter("sort"));
@@ -416,10 +419,20 @@ public class PostcardSelectV2 extends SBActionAdapter {
 	private List<DePuyEventSeminarVO> loadOutstandingItems( SMTServletRequest req, 
 			String profileId, ReqType reqType ) throws SQLException{
 		final String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		final String COUNT_STORE = "outstanding";
 		String actionId = actionInit.getActionId();
+		List<DePuyEventSeminarVO> voList = new ArrayList<>();
+		
 		//If the view to be shown is the outstanding items jsp, load the list,
 		//otherwise, just count them
 		boolean countOnly = ( reqType != ReqType.outstanding );
+		
+		//if this is a count and the value exists in the attributes, get the value from there
+		if( countOnly &&  null != req.getSession().getAttribute(COUNT_STORE)){
+			String count = (String) req.getSession().getAttribute(COUNT_STORE);
+			req.setParameter("net", count);
+			return voList;
+		}
 		
 		StringBuilder sql = new StringBuilder(1300);
 		//simplifies the query if all we need is a total, not event details
@@ -463,7 +476,6 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		}
 		
 		log.debug(sql+" | "+actionId);
-		List<DePuyEventSeminarVO> voList = new ArrayList<>();
 		
 		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())){
 			int i = 0;
@@ -476,11 +488,17 @@ public class PostcardSelectV2 extends SBActionAdapter {
 			ResultSet rs = ps.executeQuery();
 			//If this was returning a count, set it to the request object
 			if ( countOnly && rs.next() ){
-				req.setParameter("net", rs.getString("net"));
+				String num = rs.getString("net");
+				req.setParameter("net", num);
+				//update the item count with query result
+				req.getSession().setAttribute(COUNT_STORE, num);
+				
 			} else { //get list of seminars
 				while (rs.next()){
 					voList.add(new DePuyEventSeminarVO().populateFromListRS(rs));
 				}
+				//update the item count
+				req.getSession().removeAttribute(COUNT_STORE);
 			}
 		}
 		return voList;

@@ -212,10 +212,10 @@ public class PostcardEmailer {
 	private String getComplianceFile( String eventTypeCd, SiteVO site ){
 		//map codes to form names
 		Map<String,String> nameMap = new HashMap<>();
-		nameMap.put("CPSEM","Compliance Form Community Physician 10-8-14.docx");
-		nameMap.put("ESEM","Compliance Form DePuy Funded 10-8-14.docx");
-		nameMap.put("CFSEM50","Compliance Form Co-Funded 50-50 Split 10-8-14.docx");
-		nameMap.put("CFSEM25","Compliance Form Co-Funded 50-25-25 Split 10-8-14.docx");
+		nameMap.put("CPSEM","Compliance%20Form Community%20Physician%2010-8-14.docx");
+		nameMap.put("ESEM","Compliance%20Form%20DePuy%20Funded%2010-8-14.docx");
+		nameMap.put("CFSEM50","Compliance%20Form%20Co-Funded%2050-50%20Split%2010-8-14.docx");
+		nameMap.put("CFSEM25","Compliance%20Form%20Co-Funded%2050-25-25%20Split%2010-8-14.docx");
 		
 		//just return null if the type code is invalid
 		if (! nameMap.containsKey( StringUtil.checkVal(eventTypeCd))){
