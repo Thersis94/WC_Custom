@@ -36,7 +36,7 @@ public class CPSEMReportVO extends AbstractSBReportVO {
 		sb.append("</center>");
 		
 		//Requirements Preamble
-		sb.append("<p>To the best of my knowledge, the <i>DePuy Synthes Joint Reconstruction Patient</i> Community Physician Education Seminar scheduled for ");
+		sb.append("<p>To the best of my knowledge, the <i>DePuy Synthes Joint Reconstruction</i> Community Physician Education Seminar scheduled for ");
 		sb.append("${eventDate} at ${eventLocation} will comply with the following requirements.</p>");
 		
 		//Paragraph 1
@@ -82,12 +82,12 @@ public class CPSEMReportVO extends AbstractSBReportVO {
 		sb.append("<li>A <i>DePuy Synthes Joint Reconstruction</i> Surgeon Locator list will be distributed to all attendees.</li>");
 		sb.append("<li>No payment or reimbursement of expenses will be paid for the speaker (i.e. parking, mileage). The surgeon speaker ");
 		sb.append("may partake in the refreshments provided at the seminar.</li>");
-		sb.append("<li>A meal service will not be provided, but refreshments are acceptable. The total value of the refreshments will not exceed $35 ");
+		sb.append("<li>A meal service will not be provided, but refreshments are acceptable. The total value of the refreshments will not exceed $50 ");
 		sb.append("per person.</li></ul>");
 		
 		//Footer
 		sb.append("<br/><br/>");
-		sb.append("Area Marketing Director's Signature: ${admSignature} Date: ${approvalDt}<br/>");
+		sb.append("Community Education Program Director's Signature: ${admSignature} Date: ${approvalDt}<br/>");
 		sb.append("I have read and understand the requirements and have reviewed the Surgeon Guideline document with the surgeon speaker.<br/>");
 		sb.append("Seminar Coordinator's Name: ${ownerName}<br/>Territory #: ${territoryNo} <br/>");
 		sb.append("Sales representative's Name: ${repName}<br/>");

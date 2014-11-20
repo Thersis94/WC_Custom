@@ -215,7 +215,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		String label = req.getParameter("postcardLabel");
 		if (pkId != null) {
 			sql.append("update event_postcard set update_dt=?, quantity_no=?, ");
-			sql.append("mailing_addr_txt=?, label_txt=?, content_no=?, territory_no=?, language_cd=?");
+			sql.append("mailing_addr_txt=?, label_txt=?, content_no=?, territory_no=?, language_cd=? ");
 			sql.append("where event_postcard_id=?");
 		} else {
 			sql.append("insert into event_postcard (organization_id, profile_id, ");
