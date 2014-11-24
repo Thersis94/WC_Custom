@@ -224,7 +224,7 @@ public class TVSpotEmailer extends CommandLineUtil {
 	
 					try {
 						msg = config.buildFirstNoticeEmail(vo);
-						msg.addRecipient(vo.getDealerLocation().getOwnerEmail());
+						msg.addRecipients(vo.getDealerLocation().getOwnerEmail());
 						ms.sendMessage(msg);
 						emailsSent++;
 					} catch (InvalidDataException e) {
@@ -297,7 +297,7 @@ public class TVSpotEmailer extends CommandLineUtil {
 	}
 	
 	/**
-	 * Send a confirmation email to individulas specified in the properties
+	 * Send a confirmation email to individuals specified in the properties
 	 * file with information about what the emailer sent.
 	 */
 	private void sendConfirmationEmails(int firstCount, int secondCount) {
@@ -345,12 +345,10 @@ public class TVSpotEmailer extends CommandLineUtil {
 		email.setHtmlBody(body.toString());
 		
 		String recipients = StringUtil.checkVal(props.getProperty("noticeRecipients"));
-		for(String recipient : recipients.split(",")) {
-			try {
-				email.addRecipient(recipient);
-			} catch (InvalidDataException e) {
-				log.error("Invalid email address in properties file" + recipient, e);
-			}
+		try {
+			email.addRecipients(recipients);
+		} catch (InvalidDataException e) {
+			log.error("Invalid email address in properties file" + recipients, e);
 		}
 		
 		return email;
