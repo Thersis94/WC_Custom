@@ -63,7 +63,7 @@ public class AccountAction extends SBActionAdapter {
 		}
 		
 		// Setup the redirect
-		StringBuilder url = new StringBuilder();
+		StringBuilder url = new StringBuilder(50);
 		url.append(req.getRequestURI());
 		url.append("?type=").append(req.getParameter("type"));
 		url.append("&msg=").append(msg);
@@ -124,13 +124,13 @@ public class AccountAction extends SBActionAdapter {
 			sql.append("insert into ").append(customDb).append("codman_cu_account ");
 			sql.append("(person_id, account_no, account_nm, phone_no_txt, ");
 			sql.append("address_txt, address2_txt, city_nm, state_cd, zip_cd, ");
-			sql.append("country_cd, create_dt, organization_id, account_id) ");
-			sql.append("values (?,?,?,?,?,?,?,?,?,?,?,?,?)");
+			sql.append("country_cd, create_dt, organization_id, product_cd, account_id) ");
+			sql.append("values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 		} else {
 			sql.append("update ").append(customDb).append("codman_cu_account ");
 			sql.append("set person_id = ?, account_no = ?, account_nm = ?, phone_no_txt = ?, ");
 			sql.append("address_txt = ?, address2_txt = ?, city_nm = ?, state_cd = ?, zip_cd = ?, ");
-			sql.append("country_cd = ?, update_dt = ?, organization_id=? where account_id = ?");
+			sql.append("country_cd = ?, update_dt = ?, organization_id=?, product_cd=? where account_id = ?");
 		}
 		log.debug(sql + " " + avo.getAccountId());
 		log.debug(StringUtil.getToString(avo));
@@ -151,6 +151,7 @@ public class AccountAction extends SBActionAdapter {
 			ps.setString(++i, avo.getAccountCountry());
 			ps.setTimestamp(++i, Convert.getCurrentTimestamp());
 			ps.setString(++i, avo.getOrganizationId());
+			ps.setString(++i, avo.getProductCd());
 			ps.setString(++i, avo.getAccountId());
 			int cnt = ps.executeUpdate();
 

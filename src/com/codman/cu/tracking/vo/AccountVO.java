@@ -8,7 +8,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.codman.cu.tracking.AbstractTransAction.Status;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.UserDataComparator;
@@ -41,6 +40,7 @@ public class AccountVO implements java.io.Serializable {
 	private String accountPhoneNumber = null;
 	private Date createDate = null;
 	private String organizationId = null;
+	private String productCd = null;
 	
 	private Map<String, PhysicianVO> physicians = new HashMap<String, PhysicianVO>();
 	private Map<String, TransactionVO> transactions = new HashMap<String, TransactionVO>();
@@ -61,6 +61,7 @@ public class AccountVO implements java.io.Serializable {
 		accountCountry = req.getParameter("accountCountry");
 		accountPhoneNumber = req.getParameter("accountPhoneNumber");
 		rep.setPersonId(req.getParameter("personId"));
+		productCd = req.getParameter("productCd");
 		
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		setOrganizationId(site.getOrganizationId());
@@ -80,6 +81,7 @@ public class AccountVO implements java.io.Serializable {
 		accountCountry = util.getStringVal("country_cd", rs);
 		accountPhoneNumber = util.getStringVal("phone_no_txt", rs);
 		createDate = util.getDateVal("create_dt", rs);
+		productCd = util.getStringVal("product_cd", rs);
 		rep.setProfileId(util.getStringVal("profile_id", rs));
 		rep.setPersonId(util.getStringVal("person_id", rs));
 		rep.setSampleAccountNo(util.getStringVal("sample_acct_no", rs));
@@ -292,30 +294,46 @@ public class AccountVO implements java.io.Serializable {
 		return transactions;
 	}
 	
+	@SuppressWarnings("incomplete-switch")
 	public Integer getUnitCount() {
 		Integer cnt = Integer.valueOf(0);
-		for (TransactionVO t : transactions.values())
-			if (t.getStatus() == Status.COMPLETE)
-				cnt+= t.getUnitMap().size();
-		
+		for (TransactionVO t : transactions.values()) {
+			switch (t.getStatus()) {
+				case COMPLETE:
+				case SVC_REQ:
+				case SVC_REQ_SENT_REP:
+					cnt+= t.getUnitMap().size();
+			}
+		}
 		return cnt;
 	}
 
+	@SuppressWarnings("incomplete-switch")
 	public Integer getPendingRequestCount() {
 		Integer cnt = Integer.valueOf(0);
-		for (TransactionVO t : transactions.values())
-			if (t.getStatus() == Status.PENDING) 
-				++cnt;
-		
+		for (TransactionVO t : transactions.values()) {
+			switch (t.getStatus()) {
+				case PENDING:
+					++cnt;
+			}
+		}
 		return cnt;
 	}
 	
+	@SuppressWarnings("incomplete-switch")
 	public Integer getApprovedRequestCount() {
 		Integer cnt = Integer.valueOf(0);
-		for (TransactionVO t : transactions.values())
-			if (t.getStatus() == Status.APPROVED) 
-				++cnt;
-		
+		for (TransactionVO t : transactions.values()) {
+			switch (t.getStatus()) { 
+				case APPROVED:
+				case SVC_REQ:
+				case SVC_REQ_RCVD:
+				case SVC_REQ_COMPL:
+				case SVC_REQ_SENT_EDC:
+				case RTRN_REQ:
+					++cnt;
+			}
+		}
 		return cnt;
 	}
 
@@ -325,5 +343,13 @@ public class AccountVO implements java.io.Serializable {
 
 	public String getOrganizationId() {
 		return organizationId;
+	}
+
+	public String getProductCd() {
+		return productCd;
+	}
+
+	public void setProductCd(String productCd) {
+		this.productCd = productCd;
 	}
 }

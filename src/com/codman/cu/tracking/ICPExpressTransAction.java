@@ -101,7 +101,7 @@ public class ICPExpressTransAction extends AbstractTransAction {
 				log.error("could not update unit status after refurbishment", sqle);
 			}
 			ua = null;
-		} else if (trans.getStatus() == Status.SVC_REQ_SENT_EDC) {
+		} else if (trans.getStatus() == Status.SVC_REQ_SENT_REP) {
 			//update the unit to "in-use", since service is now complete
 			UnitAction ua = new UnitAction(actionInit);
 			ua.setAttributes(attributes);
