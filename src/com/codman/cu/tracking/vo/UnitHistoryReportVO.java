@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.codman.cu.tracking.vo;
 
 import java.text.DateFormat;
@@ -43,7 +40,8 @@ public class UnitHistoryReportVO extends AbstractSBReportVO {
 	@Override
 	public byte[] generateReport() {
 		log.debug("starting Unit History Report");
-		StringBuilder rpt = new StringBuilder(this.getHeader(false));
+		boolean isMedstream = (data != null && data.size() > 0 && data.get(0).getProductType() == ProdType.MEDSTREAM);
+		StringBuilder rpt = new StringBuilder(this.getHeader(false, isMedstream));
 
 		//loop the accounts, physians, units, and requests
 		for (UnitVO v : data) {
@@ -62,7 +60,7 @@ public class UnitHistoryReportVO extends AbstractSBReportVO {
 		data = (List<UnitVO>) o;
 	}
 
-	protected StringBuilder getHeader(boolean restricted) {
+	protected StringBuilder getHeader(boolean restricted, boolean isMedStream) {
 		int colCnt = restricted ? 24: 31;
 		StringBuilder hdr = new StringBuilder();
 		hdr.append("<tr><td><table border='1'>\r");
@@ -74,19 +72,29 @@ public class UnitHistoryReportVO extends AbstractSBReportVO {
 		hdr.append("\t<td>Serial No.</td>");
 		hdr.append("\t<td>User</td>");
 		hdr.append("\t<td>Software Rev No.</td>");
-		if (!restricted) { 
+		if (!restricted && isMedStream) { 
 			hdr.append("\t<td>Hardware Rev No.</td>");
 		}
-		hdr.append("\t<td>IFU Article No.</td>");
-		hdr.append("\t<td>IFU Rev No.</td>");
-		hdr.append("\t<td>Prog Article No.</td>");
-		hdr.append("\t<td>Prog Rev No.</td>");
+		if (isMedStream) {
+			hdr.append("\t<td>IFU Article No.</td>");
+			hdr.append("\t<td>IFU Rev No.</td>");
+			hdr.append("\t<td>Prog Article No.</td>");
+			hdr.append("\t<td>Prog Rev No.</td>");
+		}
 		if (!restricted) { 
 			hdr.append("\t<td>Battery Type</td>");
-			hdr.append("\t<td>Battery Serial No.</td>");
+			if (isMedStream) {
+				hdr.append("\t<td>Battery Serial No.</td>");
+			} else {
+				hdr.append("\t<td>Battery Recharge Date.</td>");
+			}
 			hdr.append("\t<td>Lot No.</td>");
 			hdr.append("\t<td>Service/Repair No.</td>");
-			hdr.append("\t<td>Service/Repair Date</td>");
+			if (isMedStream) {
+				hdr.append("\t<td>Service/Repair Date</td>");
+			} else {
+				hdr.append("\t<td>Service/Refurb Date</td>");
+			}
 		}
 		hdr.append("\t<td>Comments</td>");
 		if (!restricted) {
@@ -116,6 +124,7 @@ public class UnitHistoryReportVO extends AbstractSBReportVO {
 	}
 
 	protected String formatUnit(UnitVO u, boolean restricted) {
+		boolean isMedstream =  (u.getProductType() == ProdType.MEDSTREAM);
 		StringBuilder rpt = new StringBuilder();
 		rpt.append("<tr>");
 		rpt.append("\t<td>").append(this.formatDate(u.getCreateDate())).append("</td>\r");
@@ -123,7 +132,7 @@ public class UnitHistoryReportVO extends AbstractSBReportVO {
 		rpt.append("\t<td>").append(u.getProductType().toString()).append("</td>\r");
 		String transType = "";
 		if (u.getTransactionType() == null || u.getTransactionType() == 0) transType = "Unit Update";
-		else if (u.getTransactionType() == 2 && u.getProductType() == ProdType.ICP_EXPRESS) transType = "Return";
+		else if (u.getTransactionType() == 2 && !isMedstream) transType = "Return for Refurb";
 		else if (u.getTransactionType() == 2) transType = "Transfer";
 		else if (u.getTransactionType() == 3) transType = "Refurbish";
 		else if (u.getTransactionType() == 1) transType = "New Request";
@@ -132,16 +141,22 @@ public class UnitHistoryReportVO extends AbstractSBReportVO {
 		rpt.append("\t<td>").append(StringUtil.checkVal(u.getSerialNo())).append("</td>\r");
 		rpt.append("\t<td>").append(StringUtil.checkVal(u.getModifyingUserName())).append("</td>\r");
 		rpt.append("\t<td>").append(StringUtil.checkVal(u.getSoftwareRevNo())).append("</td>\r");
-		if (!restricted) {
+		if (!restricted && isMedstream) {
 			rpt.append("\t<td>").append(StringUtil.checkVal(u.getHardwareRevNo())).append("</td>\r");
 		}
-		rpt.append("\t<td>").append(StringUtil.checkVal(u.getIfuArticleNo())).append("</td>\r");
-		rpt.append("\t<td>").append(StringUtil.checkVal(u.getIfuRevNo())).append("</td>\r");
-		rpt.append("\t<td>").append(StringUtil.checkVal(u.getProgramArticleNo())).append("</td>\r");
-		rpt.append("\t<td>").append(StringUtil.checkVal(u.getProgramRevNo())).append("</td>\r");
+		if (isMedstream) {
+			rpt.append("\t<td>").append(StringUtil.checkVal(u.getIfuArticleNo())).append("</td>\r");
+			rpt.append("\t<td>").append(StringUtil.checkVal(u.getIfuRevNo())).append("</td>\r");
+			rpt.append("\t<td>").append(StringUtil.checkVal(u.getProgramArticleNo())).append("</td>\r");
+			rpt.append("\t<td>").append(StringUtil.checkVal(u.getProgramRevNo())).append("</td>\r");
+		}
 		if (!restricted) {
 			rpt.append("\t<td>").append(StringUtil.checkVal(u.getBatteryType())).append("</td>\r");
-			rpt.append("\t<td>").append(StringUtil.checkVal(u.getBatterySerNo())).append("</td>\r");
+			if (isMedstream) {
+				rpt.append("\t<td>").append(StringUtil.checkVal(u.getBatterySerNo())).append("</td>\r");
+			} else {
+				rpt.append("\t<td>").append(this.formatDate(u.getBatteryRechargeDate())).append("</td>\r");
+			}
 			rpt.append("\t<td>").append(StringUtil.checkVal(u.getLotNo())).append("</td>\r");
 			rpt.append("\t<td>").append(StringUtil.checkVal(u.getServiceRefNo())).append("</td>\r");
 			rpt.append("\t<td>").append(this.formatDate(u.getServiceDate())).append("</td>\r");

@@ -52,6 +52,7 @@ public class UnitVO implements Serializable {
 	private String programArticleNo = null;
 	private String programRevNo = null;
 	private String batteryType = null;
+	private Date batteryRechargeDate = null;
 	private String batterySerNo = null;
 	private String lotNo = null; 
 	private String serviceRefNo = null;
@@ -98,6 +99,7 @@ public class UnitVO implements Serializable {
 		lotNo = req.getParameter("lotNo");
 		serviceRefNo = req.getParameter("servRefNo");
 		serviceDate = Convert.formatDate(req.getParameter("servDt"));
+		batteryRechargeDate = Convert.formatDate(req.getParameter("batteryRechargeDt"));
 		modifyingUserId = req.getParameter("modifyingUserId");
 		productionCommentsText = req.getParameter("productionCommentsText");
 		setProductType(req.getParameter("prodCd"));
@@ -115,6 +117,7 @@ public class UnitVO implements Serializable {
 		statusId = db.getIntegerVal("unit_status_id", rs);
 		statusName = db.getStringVal("status_nm", rs);
 		deployedDate = db.getDateVal("deployed_dt", rs);
+		batteryRechargeDate = db.getDateVal("battery_recharge_dt", rs);
 		physicianId = db.getStringVal("phys_profile_id", rs);
 		repId = db.getStringVal("rep_person_id", rs); //actually is rep's profile_id
 		accountName = db.getStringVal("account_nm", rs);
@@ -444,6 +447,14 @@ public class UnitVO implements Serializable {
 			return ProdType.MEDSTREAM.toString();
 		else
 			return productType.toString();
+	}
+
+	public Date getBatteryRechargeDate() {
+		return batteryRechargeDate;
+	}
+
+	public void setBatteryRechargeDate(Date batteryRechargeDate) {
+		this.batteryRechargeDate = batteryRechargeDate;
 	}
 }
 

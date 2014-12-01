@@ -93,12 +93,13 @@ public class AccountFacadeAction extends SBActionAdapter {
 	@SuppressWarnings("null")
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		final String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		String type = StringUtil.checkVal(req.getParameter("type"));
 		String accountId = StringUtil.checkVal(req.getParameter("accountId"));
 		String physicianId = StringUtil.checkVal(req.getParameter("physicianId"));
 		String transactionId = StringUtil.checkVal(req.getParameter("transactionId"));
 		Boolean isNewTransaction = StringUtil.checkVal(req.getParameter("transactionId")).equals("ADD");
-		String prodCd = StringUtil.checkVal( req.getParameter("prodCd"));
+		String prodCd = (String)mod.getAttribute(ModuleVO.ATTRIBUTE_1);
 		String unitId = StringUtil.checkVal(req.getParameter("unitId"));
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
@@ -164,7 +165,7 @@ public class AccountFacadeAction extends SBActionAdapter {
 		if (physicianId.length() > 0) sql.append("and c.physician_id=? ");
 		if (transactionId.length() > 0) sql.append("and d.transaction_id=? ");
 		if (unitId.length() > 0) sql.append("and f.unit_id=? ");
-		if (prodCd.length() > 0) sql.append("and f.product_cd=? ");
+		if (prodCd.length() > 0) sql.append("and b.product_cd=? ");
 		
 		// add any search filters
 		if (search.getStatusId() != null) sql.append("and d.status_id=? ");  //transaction status
@@ -327,7 +328,6 @@ public class AccountFacadeAction extends SBActionAdapter {
 		}
 		
 		
-		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		mod.setDataSize(data.size());
 		mod.setActionData(data);
 		log.debug("data size=" + mod.getDataSize());
