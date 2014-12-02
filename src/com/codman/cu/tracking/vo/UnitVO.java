@@ -62,6 +62,8 @@ public class UnitVO implements Serializable {
 	private String productionCommentsText = null;
 	//For new product types
 	private ProdType productType = null;
+	private String productFamily = null;
+	private int refurbishedFlg = 0;
 	
 	//this is for UnitHistoryReportVO
 	private PhysicianVO phys = null;
@@ -98,11 +100,14 @@ public class UnitVO implements Serializable {
 		batterySerNo = req.getParameter("battSerNo");
 		lotNo = req.getParameter("lotNo");
 		serviceRefNo = req.getParameter("servRefNo");
-		serviceDate = Convert.formatDate(req.getParameter("servDt"));
+		serviceDate = Convert.formatDate(req.getParameter("serviceDt"));
 		batteryRechargeDate = Convert.formatDate(req.getParameter("batteryRechargeDt"));
 		modifyingUserId = req.getParameter("modifyingUserId");
 		productionCommentsText = req.getParameter("productionCommentsText");
 		setProductType(req.getParameter("prodCd"));
+		refurbishedFlg = Convert.formatInteger(req.getParameter("refurbishedFlg"));
+		setProductFamily(req.getParameter("productFamily"));
+		
 	}
 	
 	/**
@@ -141,6 +146,8 @@ public class UnitVO implements Serializable {
 		modifyingUserId = db.getStringVal("modifying_user_id", rs);
 		productionCommentsText = db.getStringVal("production_comments_txt", rs);
 		setProductType(db.getStringVal("product_cd",rs));
+		refurbishedFlg = db.getIntVal("refurbished_flg", rs);
+		setProductFamily(db.getStringVal("PRODUCT_FAMILY_TXT", rs));
 		
 		
 		setPhys(new PhysicianVO(rs));
@@ -456,6 +463,23 @@ public class UnitVO implements Serializable {
 	public void setBatteryRechargeDate(Date batteryRechargeDate) {
 		this.batteryRechargeDate = batteryRechargeDate;
 	}
+
+	public int getRefurbishedFlg() {
+		return refurbishedFlg;
+	}
+
+	public void setRefurbishedFlg(int refurbishedFlg) {
+		this.refurbishedFlg = refurbishedFlg;
+	}
+
+	public String getProductFamily() {
+		return productFamily;
+	}
+
+	public void setProductFamily(String productFamily) {
+		this.productFamily = productFamily;
+	}
+
 }
 
 
