@@ -60,14 +60,14 @@ public class MediaBinVideo extends SimpleActionAdapter {
 		
 		SolrFieldVO field = new SolrFieldVO();
 		field.setBooleanType(BooleanType.AND);
-		field.setFieldType(FieldType.SEARCH_FIELD);
+		field.setFieldType(FieldType.SEARCH);
 		field.setFieldCode(SearchDocumentHandler.DOCUMENT_ID);
 		field.setValue((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 		qData.addSolrField(field);
 		
 		SolrFieldVO field2 = new SolrFieldVO();
 		field2.setBooleanType(BooleanType.AND);
-		field2.setFieldType(FieldType.SEARCH_FIELD);
+		field2.setFieldType(FieldType.FILTER);
 		field2.setFieldCode(SearchDocumentHandler.INDEX_TYPE);
 		field2.setValue(MediaBinSolrIndex.INDEX_TYPE);
 		qData.addSolrField(field2);
