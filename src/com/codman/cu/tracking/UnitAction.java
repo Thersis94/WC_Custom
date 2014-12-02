@@ -125,7 +125,8 @@ public class UnitAction extends SBActionAdapter {
 			sql.append("parent_id, ifu_art_no, ifu_rev_no, prog_guide_art_no, prog_guide_rev_no, ");
 			sql.append("battery_type, battery_serial_no, lot_number, service_ref, service_dt, ");
 			sql.append("modifying_user_id, production_comments_txt,product_cd, ");
-			sql.append("battery_recharge_dt, unit_id) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+			sql.append("battery_recharge_dt, refurbished_flg, product_family_txt, unit_id) ");
+			sql.append("values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 		} else {
 			//make a copy of the existing record (for history) before updating this record
 			//parentId is only passed from the update Unit form.
@@ -141,7 +142,8 @@ public class UnitAction extends SBActionAdapter {
 			sql.append("ifu_art_no=?, ifu_rev_no=?, prog_guide_art_no=?, prog_guide_rev_no=?, ");
 			sql.append("battery_type=?, battery_serial_no=?, lot_number=?, service_ref=?, ");
 			sql.append("service_dt=?, modifying_user_id=?, production_comments_txt=?, ");
-			sql.append("product_cd=?, battery_recharge_dt=? where unit_id=?");
+			sql.append("product_cd=?, battery_recharge_dt=?, refurbished_flg=?, ");
+			sql.append("product_family_txt=? where unit_id=?");
 
 		}
 		log.debug(sql + "|" + vo.getUnitId() + "|" + vo.getStatusId());
@@ -169,7 +171,9 @@ public class UnitAction extends SBActionAdapter {
 			ps.setString(19, vo.getProductionCommentsText());
 			ps.setString(20, vo.getProductCode()); 
 			ps.setDate(21, Convert.formatSQLDate(vo.getBatteryRechargeDate()));
-			ps.setString(22, vo.getUnitId());
+			ps.setInt(22, vo.getRefurbishedFlg());
+			ps.setString(23, vo.getProductFamily());
+			ps.setString(24, vo.getUnitId());
 			ps.executeUpdate();
 
 		} catch (SQLException sqle) {
