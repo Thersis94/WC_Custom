@@ -34,48 +34,63 @@ import com.smt.sitebuilder.action.event.vo.EventEntryVO;
 public class SeminarSummaryReportVO extends AbstractSBReportVO {
 
 	public static enum FieldList { 
-		JOINT_FLG("joint_flg", "java.lang.String","Joint"),
-		SEMINAR_TYPE_FLG("seminar_type_flg", "java.lang.String","Seminar Type"),
-		SEMINAR_CODE_FLG("seminar_code_flg", "java.lang.String", "Seminar Code"),
-		COORDINATOR_FLG("coordinator_flg", "java.lang.String", "Seminar Coordinator"),
-		STATUS_FLG("status_flg", "java.lang.Integer","Seminar Status"),
-		START_DATE_FLG("start_dt_flg", "java,util.Date", "Start Date"),
-		TIME_FLG("time_flg", "java.util.Date", "Start Time"),
-		SPEAKER_FLG("speaker_flg", "java.lang.String","Seminar Speaker"),
-		RSVP_COUNT_FLG("rsvp_count_flg", "java.lang.Integer", "RSVP Count"),
-		ATTENDEE_COUNT_FLG("attendee_count_flg", "java.lang.Integer", "Attendee Count"),
-		OPT_IN_FLG("opt_in_flg", "java.lang.Integer","Opt-In Count"),
-		LOCATION_NM_FLG("location_nm_flg", "java.lang.String","Location Name"),
-		CITY_NM_FLG("city_nm_flg", "java.lang.String","City"),
-		STATE_CD_FLG("state_cd_flg", "java.lang.String","State"),
-		VENUE_COST_FLG("venue_cost_flg", "java.lang.Double","Venue Cost"),
-		REFRESHMENT_COST_FLG("refreshment_cost_flg", "java.lang.Double", "Refreshment Cost"),
-		POSTCARD_DT_FLG("postcard_dt_flg", "java.util.Date", "Postcard Send Date"),
-		NEWSPAPER_NM_FLG("newspaper_nm_flg", "java.lang.String","Newspaper Name"),
-		AD_DT_FLG("ad_dt_flg", "java.util.Date", "Ad Date"),
-		AD_COST_FLG("ad_cost_flg", "java,lang.Date", "Total Ad Cost"),
-		TERRITORY_COST_FLG("territory_cost_flg", "java.lang.Double", "Cost to Territory"),
-		SURGEON_COST_FLG("surgeon_cost_flg", "java.lang.Double","Cost to Surgeon"),
-		HOSPITAL_COST_FLG("hospital_cost_flg", "java.lang.Double", "Cost to Hospital"),
-		UPFRONT_FEE_FLG("upfront_fee_flg", "java.lang.Integer", "$200 Upfront Fee"),
-		TERRITORY_NO("territory_no","java.lang.Integer","Territory No"),
-		POSTCARD_COUNT_NO("postcard_count_no","java.lang.Integer","Postcard No"),
-		INVITATION_COUNT_NO("invitation_count_no","java.lang.Integer","Invitation No"),
-		POSTCARD_COST_NO("postcard_cost_no","java.lang.Double","Total Postcard Cost"),
-		INVITATION_COST_NO("invitation_cost_no","java.lang.Double","Total Invitation Cost")
+		JOINT_FLG("joint_flg", "java.lang.String","Joint","JOINT_FLG"),
+		SEMINAR_TYPE_FLG("seminar_type_flg", "java.lang.String","Seminar Type","SEMINAR_TYPE_FLG"),
+		SEMINAR_CODE_FLG("seminar_code_flg", "java.lang.String", "Seminar Code","SEMINAR_CODE_FLG"),
+		COORDINATOR_FLG("coordinator_flg", "java.lang.String", "Seminar Coordinator","COORDINATOR_FLG"),
+		STATUS_FLG("status_flg", "java.lang.Integer","Seminar Status","STATUS_FLG"),
+		START_DATE_FLG("start_date_flg", "java,util.Date", "Start Date","START_DATE_FLG"),
+		TIME_FLG("time_flg", "java.util.Date", "Start Time","TIME_FLG"),
+		SPEAKER_FLG("speaker_flg", "java.lang.String","Seminar Speaker","SPEAKER_FLG"),
+		RSVP_COUNT_FLG("rsvp_count_flg", "java.lang.Integer", "RSVP Count","RSVP_TOTAL_FLG"),
+		ATTENDEE_COUNT_FLG("attendee_count_flg", "java.lang.Integer", "Attendee Count","ATTENDEE_TOTAL_FLG"),
+		OPT_IN_FLG("opt_in_flg", "java.lang.Integer","Opt-In","OPT_IN_FLG"),
+		LOCATION_NM_FLG("location_nm_flg", "java.lang.String","Location Name","LOCATION_FLG"),
+		CITY_NM_FLG("city_nm_flg", "java.lang.String","City","CITY_FLG"),
+		STATE_CD_FLG("state_cd_flg", "java.lang.String","State","STATE_FLG"),
+		VENUE_COST_FLG("venue_cost_flg", "java.lang.Double","Venue Cost","VENUE_COST_FLG"),
+		REFRESHMENT_COST_FLG("refreshment_cost_flg", "java.lang.Double", "Refreshment Cost","REFRESHMENT_COST_FLG"),
+		POSTCARD_DT_FLG("postcard_dt_flg", "java.util.Date", "Postcard Send Date","POSTCARD_DATE_FLG"),
+		NEWSPAPER_NM_FLG("newspaper_nm_flg", "java.lang.String","Newspaper Name","NEWSPAPER_FLG"),
+		AD_DT_FLG("ad_dt_flg", "java.util.Date", "Ad Date","AD_DATE_FLG"),
+		AD_COST_FLG("ad_cost_flg", "java,lang.Date", "Total Ad Cost","AD_COST_FLG"),
+		TERRITORY_COST_FLG("territory_cost_flg", "java.lang.Double", "Cost to Territory","TERRITORY_COST_FLG"),
+		SURGEON_COST_FLG("surgeon_cost_flg", "java.lang.Double","Cost to Surgeon","SURGEON_COST_FLG"),
+		HOSPITAL_COST_FLG("hospital_cost_flg", "java.lang.Double", "Cost to Hospital","HOSPITAL_COST_FLG"),
+		UPFRONT_FEE_FLG("upfront_fee_flg", "java.lang.Integer", "$200 Upfront Fee", "UPFRONT_FEE_FLG"),
+		TERRITORY_NO("territory_no","java.lang.Integer","Territory No","TERRITORY_FLG"),
+		POSTCARD_COUNT_NO("postcard_count_no","java.lang.Integer","Postcard No","POSTCARD_TOTAL_FLG"),
+		INVITATION_COUNT_NO("invitation_count_no","java.lang.Integer","Invitation No","INVITATION_TOTAL_FLG"),
+		POSTCARD_COST_NO("postcard_cost_no","java.lang.Double","Total Postcard Cost","POSTCARD_COST_FLG"),
+		INVITATION_COST_NO("invitation_cost_no","java.lang.Double","Total Invitation Cost","INVITATION_COST_FLG")
 		;
 		
 		private final String name;
 		private final String className;
 		private final String reportLabel;
-		FieldList(String name, String className, String reportLabel){
+		private final String dbName;
+		FieldList(String name, String className, String reportLabel, String dbName){
 			this.name=name;
 			this.className=className;
 			this.reportLabel=reportLabel;
+			this.dbName = dbName;
 		}
+		/**
+		 * @return The name of the input field.
+		 */
 		public String getFieldName(){ return name; }
+		/**
+		 * @return The class name for the field's data type.
+		 */
 		public String getClassName(){ return className; }
+		/**
+		 * @return The label used for this field in the report header.
+		 */
 		public String getReportLabel(){ return reportLabel; }
+		/**
+		 * @return The name of the DEPUY_EVENT_REPORT column corresponding to this field.
+		 */
+		public String getDbName() { return dbName; }
 	}
 	private Map<String, Integer> paramList = new LinkedHashMap<>();
 	private Map<String,String> filterMap = new HashMap<>();
@@ -112,7 +127,7 @@ public class SeminarSummaryReportVO extends AbstractSBReportVO {
 		for ( FieldList key : FieldList.values() ){
 			//get list of parameters
 			paramList.put(key.getFieldName(), Convert.formatInteger( 
-					db.getIntVal(key.getFieldName(), rs) ) );
+					db.getIntVal(key.getDbName(), rs) ) );
 		}
 		
 		//get filters

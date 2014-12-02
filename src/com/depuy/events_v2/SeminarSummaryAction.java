@@ -8,6 +8,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -70,14 +71,14 @@ public class SeminarSummaryAction extends SimpleActionAdapter {
 		
 		try{
 			switch(rt){
+			case deleteReport:
+				deleteReport( req.getParameter("reportId") );
+				//After deleting the report, fetch the list again to re-populate the view
 			case fetchAllReports:
 				log.debug("Getting saved reports");
 				//get all reports for this user
 				List<SeminarSummaryReportVO> voList = getAllSavedReports( usr.getProfileId() );
 				mod.setActionData(voList); 
-				break;
-			case deleteReport:
-				deleteReport( req.getParameter("reportId") );
 				break;
 			case setReport:
 				//save the report
@@ -227,6 +228,12 @@ public class SeminarSummaryAction extends SimpleActionAdapter {
 		final String reportId = new UUIDGenerator().getUUID();
 		final String customDB = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		
+		//Map of field name:column name
+		Map<String, String> colMap = new HashMap<>();
+		for ( FieldList f : FieldList.values() ){
+			colMap.put(f.name(), f.getDbName());
+		}
+		
 		//get local field list so order is preserved
 		StringBuilder sql = new StringBuilder();
 		//build list of fields to update
@@ -236,7 +243,8 @@ public class SeminarSummaryAction extends SimpleActionAdapter {
 		int fieldCount = 0;
 		for ( String key : fields.keySet() ){
 			fieldCount++;
-			sql.append(key);
+			//get the column name from the enum's dbName field
+			sql.append( colMap.get(key) );
 			if( fieldCount < fields.size() ){
 				sql.append(",");
 			}
