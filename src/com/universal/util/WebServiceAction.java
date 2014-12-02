@@ -1,6 +1,6 @@
 package com.universal.util;
 
-// JDK 1.6.x
+// Java 7
 import java.io.ByteArrayInputStream;
 import java.util.Collection;
 import java.util.HashMap;
@@ -216,14 +216,14 @@ public class WebServiceAction extends SBActionAdapter {
 	 * @return
 	 * @throws DocumentException
 	 */
-	public Element placeOrder(ShoppingCartVO cart, String ipAddr) 
+	public Element placeOrder(SMTServletRequest req, ShoppingCartVO cart, String ipAddr) 
 			throws DocumentException {
 		// Build the URL
 		String url = this.retrieveServiceURL(StringUtil.checkVal(getAttribute(CATALOG_SITE_ID)), "checkout", true);
 		// Get the request XML
 		StringBuilder s = null;
 		try {
-			s = this.createOrderRequest(cart, ipAddr);
+			s = this.createOrderRequest(req, cart, ipAddr);
 		} catch (EncryptionException ee) {
 			Element errElem = new DefaultElement("Error");
 			errElem.addElement("ErrorCode").setText("ERROR_ENCRYPTION");
@@ -288,14 +288,7 @@ public class WebServiceAction extends SBActionAdapter {
 				if (user.getLastName().length() > 0)
 					completeUser.setUserExtendedInfo(user);
 			}
-			/* 2014-08-29 DBargerhuff: this appears to be unused.
-			// If the shipping info is empty, assign the billing info to the map
-			if (user.getLastName().length() == 0 && WebServiceAction.SHIPPING_USER_TYPE.equalsIgnoreCase(type)) {
-				locs.put(type, locs.get(WebServiceAction.BILLING_USER_TYPE));
-			} else {
-				locs.put(type, user);
-			}
-			*/
+
 		}
 		return completeUser;
 	}
@@ -308,16 +301,10 @@ public class WebServiceAction extends SBActionAdapter {
 	 * @throws IllegalArgumentException 
 	 * @throws EncryptionException 
 	 */
-	private StringBuilder createOrderRequest(ShoppingCartVO cart, String ipAddr) 
-			throws EncryptionException, IllegalArgumentException {
+	private StringBuilder createOrderRequest(SMTServletRequest req, 
+			ShoppingCartVO cart, String ipAddr) throws EncryptionException, 
+			IllegalArgumentException {
 		// Build the XML Request
-		String expMonth = cart.getPayment().getExpirationMonth();
-		String eveningPhone = null;
-		if (expMonth.length() == 1) expMonth = "0" + expMonth;
-		int expYear = Convert.formatInteger(cart.getPayment().getExpirationYear()) - 2000;
-		for(PhoneVO p : cart.getBillingInfo().getPhoneNumbers())
-			if(p.getPhoneType().equals(PhoneVO.EVENING_PHONE))
-				eveningPhone = p.getPhoneNumber();
 		StringBuilder s = new StringBuilder();
 		s.append("xml=").append(BASE_XML_HEADER).append("<OrderRequest>");
 		s.append("<Addresses>");
@@ -331,6 +318,10 @@ public class WebServiceAction extends SBActionAdapter {
 		s.append("<State>").append(cart.getBillingInfo().getState()).append("</State>");
 		s.append("<Zip>").append(cart.getBillingInfo().getZipCode()).append("</Zip>");
 		s.append("<DayPhone>").append(cart.getBillingInfo().getMainPhone()).append("</DayPhone>");
+		String eveningPhone = null;
+		for(PhoneVO p : cart.getBillingInfo().getPhoneNumbers())
+			if(p.getPhoneType().equals(PhoneVO.EVENING_PHONE))
+				eveningPhone = p.getPhoneNumber();		
 		if (StringUtil.checkVal(eveningPhone).length() > 0) {
 			s.append("<EveningPhone>").append(eveningPhone).append("</EveningPhone>");
 		}
@@ -370,6 +361,11 @@ public class WebServiceAction extends SBActionAdapter {
 		s.append("<OrderDiscount>").append(StringUtil.checkVal(cart.getPromotionDiscount())).append("</OrderDiscount>");
 		s.append("<MemberID>").append(StringUtil.checkVal(cart.getBillingInfo().getProfileId())).append("</MemberID>");
 		s.append("<CustomerIP>").append(ipAddr).append("</CustomerIP>");
+		
+		// credit card info
+		String expMonth = cart.getPayment().getExpirationMonth();
+		if (expMonth.length() == 1) expMonth = "0" + expMonth;
+		int expYear = Convert.formatInteger(cart.getPayment().getExpirationYear()) - 2000;
 		s.append("<CreditCard>");
 		s.append("<Name>").append(cart.getPayment().getPaymentName()).append("</Name>");
 		s.append("<Number>").append(cart.getPayment().getPaymentNumber()).append("</Number>");
@@ -384,6 +380,32 @@ public class WebServiceAction extends SBActionAdapter {
 			this.addProductXML(s, cart.getItems().get(key).getProduct(), cart.getProductCountById().get(key), true);
 		}
 		s.append("</Products>");
+		// if this is a PayPal order, add tags here
+		if (req.hasParameter("paypal") && 
+				StringUtil.checkVal(req.getParameter("paypal")).equalsIgnoreCase("do")) {
+			UserDataVO buyer = cart.getBillingInfo();
+			s.append("<PayerID>");
+			s.append(buyer.getAttributes().get("PAYER_ID"));
+			s.append("</PayerID>");
+			s.append("<TransactionID>");
+			s.append(buyer.getAttributes().get("TRANSACTION_ID"));
+			s.append("</TransactionID>");
+			s.append("<Token>");
+			s.append(buyer.getAttributes().get("TOKEN"));
+			s.append("</Token>");
+			s.append("<AddressStatus>");
+			s.append(buyer.getAttributes().get("ADDRESS_STATUS"));
+			s.append("</AddressStatus>");
+			s.append("<PayerStatus>");
+			s.append(buyer.getAttributes().get("PAYER_STATUS"));
+			s.append("</PayerStatus>"); //(Y or N)
+			s.append("<CorrelationID>");
+			s.append(buyer.getAttributes().get("CORRELATION_ID"));
+			s.append("</CorrelationID>");
+			s.append("<PendingReason>");
+			s.append(buyer.getAttributes().get("PENDING_REASON"));
+			s.append("</PendingReason>");
+		}
 		s.append("</OrderRequest>");
 		log.debug("order Request: " + s);
 		

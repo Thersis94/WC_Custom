@@ -1,6 +1,6 @@
 package com.universal.signals.action;
 
-// JDK 1.6
+// Java 7
 import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -13,15 +13,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-
-
-
 // DOM4J
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
-
-
-
 
 // SMT BAse Libs
 import com.siliconmtn.action.ActionException;
@@ -37,9 +31,11 @@ import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.commerce.payment.PaymentVO;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.exception.DatabaseException;
+import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.security.AuthenticationException;
+import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -154,8 +150,8 @@ public class ShoppingCartAction extends SBActionAdapter {
 	public ShoppingCartVO manageCart(SMTServletRequest req) 
 			throws ActionException, DocumentException, IOException {
 		log.debug("managing cart...");
-		StringEncoder e = new StringEncoder();
-		String productId = e.decodeValue(StringUtil.checkVal(req.getParameter("productId")));
+		StringEncoder se = new StringEncoder();
+		String productId = se.decodeValue(StringUtil.checkVal(req.getParameter("productId")));
 		
 		// Load the cart from our Storage medium.
 		Storage container = this.retrieveContainer(req);
@@ -165,11 +161,13 @@ public class ShoppingCartAction extends SBActionAdapter {
 		cart.flushErrors();
 		if (productId.length() == 0 && container.isNewCart()) return cart;
 		
-		// check for final checkout processing
-		if (isFinalCheckout(req, productId)) {
-			// process final checkout
-			return processFinalCheckOut(req, container, cart);
+		// if this is potentially a paypal checkout process, manage it here (type=paypal).
+		if (isPayPalCheckout(req)) {
+			return processPayPalCheckout(req, container, cart);
 		}
+
+		// check for final checkout processing
+		if (isFinalCheckout(req, productId)) return processFinalCheckOut(req, container, cart);
 		
 		// attempt to load cart billing/shipping data from user session
 		this.retrieveCartUserData(req, cart);
@@ -181,9 +179,8 @@ public class ShoppingCartAction extends SBActionAdapter {
 		if (productId.length() > 0 && ! itemRemove && Convert.formatInteger(req.getParameter("qty")) > 0) {
 			// If order is complete and user is trying to add a product 
 			// to the cart (we'll assume that they are trying to create a new cart).
-			if (cart.isOrderCompleted()) {
-				cart = flushCart(container);
-			}			
+			if (cart.isOrderCompleted()) cart = flushCart(container);
+			
 			// process the item
 			this.processItem(req, cart, productId);
 			
@@ -212,19 +209,32 @@ public class ShoppingCartAction extends SBActionAdapter {
 		
 		// Finally, recalculate the cart (shipping/taxes, etc.)
 		this.manageDiscount(cart, null, "recalculate", null);
-		this.manageShipping(cart, updateShipping);
+		this.manageShipping(req, cart, updateShipping);
 		
 		// if checking out, calculate taxes.
 		boolean checkOut = Convert.formatBoolean(req.getParameter("checkout"));
 		if (checkOut) this.calcTaxes(cart);
 		
 		// Resave the cart for persistence reasons
+		saveCart(req, container, cart);
+		
+		return cart;
+	}
+	
+	/**
+	 * Persists the current state of the cart.
+	 * @param req
+	 * @param container
+	 * @param cart
+	 * @throws ActionException
+	 */
+	private void saveCart(SMTServletRequest req, Storage container, ShoppingCartVO cart) 
+			throws ActionException {
+		// Resave the cart for persistence reasons
 		UserDataVO sessUser = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 		if (sessUser != null) container.setProfileId(sessUser.getProfileId());
 		container.setSourceId(catalogSiteId);
 		container.save(cart);
-		
-		return cart;
 	}
 	
 	/**
@@ -258,6 +268,22 @@ public class ShoppingCartAction extends SBActionAdapter {
 	}
 	
 	/**
+	 * Determines if this is a PayPal checkout operation.
+	 * @param req
+	 * @return
+	 */
+	private boolean isPayPalCheckout(SMTServletRequest req) {
+		boolean doPayPal = false;
+		if (StringUtil.checkVal(req.getParameter("type")).equalsIgnoreCase("paypal")) {
+			// if this is a 'start' operation, we return false.
+			String pp = StringUtil.checkVal(req.getParameter("paypal"), null);
+			if (pp != null && ! pp.equalsIgnoreCase("start")) doPayPal = true;
+		}
+		log.debug("isPayPalCheckout: " + doPayPal);
+		return doPayPal;
+	}
+	
+	/**
 	 * Processes final checkout.  Returns true if final checkout was processed,
 	 * otherwise returns false.  If an error occurred during final checkout processing
 	 * an error message is added to the cart's errors map.
@@ -288,7 +314,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 		// format the payment
 		formatPayment(req, cart);
 		try {
-			// pay for the order via the webservice
+			// pay for the order via the webservice if not a 'paypal' order
 			payForOrder(req, cart);
 		} catch (DocumentException de) {
 			// adding SYSTEM_ERROR because a DocumentException is only thrown
@@ -308,6 +334,105 @@ public class ShoppingCartAction extends SBActionAdapter {
 		} else {
 			return cart;
 		}
+	}
+	
+	/**
+	 * @throws InvalidDataException 
+	 * Processes PayPal checkout transaction.
+	 * @param req
+	 * @param container
+	 * @param cart
+	 * @return
+	 */
+	private ShoppingCartVO processPayPalCheckout(SMTServletRequest req, 
+			Storage container, ShoppingCartVO cart) {
+		log.debug("processPayPalCheckout...");
+		String payPalAction = StringUtil.checkVal(req.getParameter("paypal"));
+		
+		if (payPalAction.equalsIgnoreCase("start")) {
+			return cart;
+		} else if (payPalAction.equalsIgnoreCase("set")) {
+			
+			SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
+			StringBuilder siteAlias = new StringBuilder(site.getFullSiteAlias());
+			siteAlias.append("/cart/");
+			
+			// set the cart cancel urls
+			cart.setCartCheckoutCancelUrl(siteAlias.toString());
+			log.debug("checkout cancel url: " + cart.getCartCheckoutCancelUrl());
+			
+			// set the return URL
+			siteAlias.append("?checkout=true&type=paypal&paypal=get");
+			cart.setCartCheckoutReturnUrl(siteAlias.toString());
+			log.debug("checkout return url: " + cart.getCartCheckoutReturnUrl());
+
+		}
+		
+		String encKey = (String)this.getAttribute(Constants.ENCRYPT_KEY);
+		log.debug("encKey: " + encKey);
+
+		// call PayPal and process based on "paypal" value.
+		PayPalCheckoutManager ppm = null;
+		
+		try {
+			ppm = new PayPalCheckoutManager(req, cart, encKey);
+			ppm.setDbConn(dbConn);
+			ppm.setCatalogSiteId(catalogSiteId);
+			ppm.processTransaction();
+
+		} catch (IOException e) {
+			log.error("Error: PayPal checkout is unavailable, ", e);
+			cart.addError("SYSTEM_ERROR", "Error: PayPal checkout is temporarily unavailable. (System)");
+		} catch (SQLException e) {
+			log.error("Error: Merchant's PayPal credentials could not be retrieved, ", e);
+			cart.addError("SYSTEM_ERROR", "Error: PayPal credentials could not be retrieved. (DB)");
+		} catch (EncryptionException e) {
+			log.error("Error: Merchant's PayPal credentials could not be decrypted, ", e);
+			cart.addError("SYSTEM_ERROR", "Error: PayPal credentials could not be decrypted. (Credentials)");
+		} catch (InvalidDataException e) {
+			log.error("Error: Invalid PayPal checkout transaction type requested, ", e);
+			cart.addError("SYSTEM_ERROR", "Error: Invalid PayPal checkout transaction requested. (Transaction Type)");
+		} catch (Exception e) {
+			log.error("Error: An unknown error occurred, ", e);
+			cart.addError("SYSTEM_ERROR", "An unknown error has occurred.");
+		}
+
+		// if errors occurred, return
+		if (cart.hasErrors()) return cart;
+		
+		// save the cart
+		try {
+			saveCart(req, container, cart);
+		} catch (ActionException e) {
+			log.error("Error: Unable to save changes to cart, ", e);
+			cart.addError("SYSTEM_ERROR", "Error: Unable to save changes to shopping cart.");
+			return cart;
+		}
+		
+		// if this was the last operation, do final checkout
+		if (payPalAction.equalsIgnoreCase("do")) {
+			try {
+				payForOrder(req, cart);
+			} catch (DocumentException de) {
+				// means error occurred submitting to USA's webservice
+				cart.addError("SYSTEM_ERROR", de.getMessage());
+				return cart;
+			}
+			
+			// if order complete, return a cart for display and flush the original cart.
+			if (cart.isOrderCompleted()) {
+				ShoppingCartVO displayCart = new ShoppingCartVO();
+				displayCart.setBillingInfo(cart.getBillingInfo());
+				displayCart.setShippingInfo(cart.getShippingInfo());
+				displayCart.setItems(cart.getItems());
+				displayCart.setOrderComplete(cart.getOrderComplete());
+				cart = flushCart(container);
+				return displayCart;
+			}
+		}
+		
+		return cart;
+
 	}
 	
 	/**
@@ -337,7 +462,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 		WebServiceAction wsa = new WebServiceAction(this.actionInit);
 		wsa.setAttributes(attributes);
 		wsa.setAttribute(WebServiceAction.CATALOG_SITE_ID, catalogSiteId);
-		Element orderElem = wsa.placeOrder(cart, req.getRemoteAddr());
+		Element orderElem = wsa.placeOrder(req, cart, req.getRemoteAddr());
 		OrderCompleteVO ocvo = this.parseOrderResponse(cart, orderElem);
 		cart.setOrderComplete(ocvo);
 	}
@@ -526,11 +651,10 @@ public class ShoppingCartAction extends SBActionAdapter {
 				try {
 					profileId = pm.checkProfile(user, dbConn);
 					if (StringUtil.checkVal(profileId).length() == 0) {
-						// no profile found, create one, profileId is set on 'user' object
-						// by profile manager.
+						// no profile found, create one.
 						pm.updateProfile(user, dbConn);
 					} else {
-						// found a profile, use the profileId found.
+						// use the profileId found.
 						user.setProfileId(profileId);
 					}
 				} catch (DatabaseException de) {
@@ -558,9 +682,22 @@ public class ShoppingCartAction extends SBActionAdapter {
 	 * @throws DocumentException
 	 */
 	@SuppressWarnings("unchecked")
-	public void manageShipping(ShoppingCartVO cart, boolean isShippingMethodUpdate) 
-			throws DocumentException {
+	public void manageShipping(SMTServletRequest req, ShoppingCartVO cart, 
+			boolean isShippingMethodUpdate) throws DocumentException {
+		log.debug("manageShipping...");
+		log.debug("isShippingMethodUpdate: " + isShippingMethodUpdate);
+		// if simply updating method selection, return.
 		if (isShippingMethodUpdate) return;
+
+		// check to see if we are initializing shipping options
+		if (Convert.formatBoolean(req.getParameter("initializeShipping"))) {
+			if (cart.getShippingInfo() == null) {
+				// no user shipping info, is a PayPal checkout.
+				UserDataVO shipInfo = new UserDataVO();
+				shipInfo.setZipCode(req.getParameter("shippingZipcode"));
+				cart.setShippingInfo(shipInfo);
+			}
+		}
 		
 		Map<String, ShippingInfoVO> shipping = null;
 		// get current shipping methodId
