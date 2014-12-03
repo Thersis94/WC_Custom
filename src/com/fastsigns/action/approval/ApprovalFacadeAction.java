@@ -1,7 +1,6 @@
 package com.fastsigns.action.approval;
 
 import java.sql.PreparedStatement;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -18,8 +17,8 @@ import com.fastsigns.action.franchise.CenterPageAction;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
-
 import com.siliconmtn.security.UserRoleVO;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.FacadeActionAdapter;
 import com.smt.sitebuilder.common.PageVO;
@@ -114,13 +113,52 @@ public class ApprovalFacadeAction extends FacadeActionAdapter {
 					String redir = page.getFullPath() + "?";
 					req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
 					req.setAttribute(Constants.REDIRECT_URL, redir + "msg=" + msg);
-					log.debug("clearing cache group for site: " + siteId);
-					super.clearCacheByGroup(siteId);
+					if (Convert.formatInteger(req.getParameter("moduleFranchiseId")) == 0 && req.hasParameter("moduleParentId")) {
+						log.debug("Clearing cache for global module");
+						clearGlobalModule(req.getParameter("moduleParentId"));
+					} else {
+						log.debug("clearing cache group for site: " + siteId);
+						super.clearCacheByGroup(siteId);
+					}
 				}
 			}
 		}
 	}
 	
+	/**
+	 * Gets all the modules that are using a particular global module and clears the cache for each of them
+	 */
+	private void clearGlobalModule(String modId) {
+		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder();
+		sql.append("SELECT ORG_ID, loc.FRANCHISE_ID FROM ").append(customDb).append("FTS_CP_MODULE_OPTION o ");
+		sql.append("left join ").append(customDb).append("FTS_CP_MODULE_FRANCHISE_XR xr on xr.CP_MODULE_OPTION_ID = o.CP_MODULE_OPTION_ID ");
+		sql.append("left join ").append(customDb).append("FTS_CP_LOCATION_MODULE_XR loc on xr.CP_LOCATION_MODULE_XR_ID = loc.CP_LOCATION_MODULE_XR_ID ");
+		sql.append("WHERE o.CP_MODULE_OPTION_ID = ?");
+		log.debug(sql+"|"+modId);
+		
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			ps = dbConn.prepareStatement(sql.toString());
+			ps.setInt(1, Convert.formatInteger(modId));
+			rs = ps.executeQuery();
+			String siteId;
+			while(rs.next()) {
+				siteId = rs.getString("ORG_ID") + "_" + rs.getString("FRANCHISE_ID") +"_1";
+				log.debug("clearing cache group for site: " + siteId);
+				super.clearCacheByGroup(siteId);
+			}
+		} catch (SQLException e) {
+			
+		} finally {
+			try{
+				ps.close();
+				rs.close();
+			} catch(Exception e){}
+		}
+	}
+
 	/**
 	 * Here we perform any verification on the vos that needs done. 
 	 * @param vos
