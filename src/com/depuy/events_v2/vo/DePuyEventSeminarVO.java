@@ -52,6 +52,8 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	
 	private Map<Location, LeadCityVO> targetLeads = null;
 	private int totalSelectedLeads = 0;
+	
+	private int upfrontFeeFlg = 0;
     
     public DePuyEventSeminarVO() {
 	    super();
@@ -94,6 +96,7 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	    super.setAuthorizationText(db.getStringVal("authorization_txt", rs));
 	    super.setPostcardFileStatusFlg(db.getIntVal("postcard_file_status_no", rs));
 	    super.setLanguageCode( db.getStringVal("language_cd", rs) );
+	    super.setTerritoryNumber( db.getIntegerVal("territory_no", rs));
 	    
 	    List<EventEntryVO> lst = new ArrayList<EventEntryVO>();
 	    EventEntryVO event = new EventEntryVO();
@@ -109,6 +112,7 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	    
 	    surgeon = new DePuyEventSurgeonVO();
 	    surgeon.setSurgeonName(db.getStringVal("surgeon_nm", rs));
+	    upfrontFeeFlg = db.getIntVal("upfront_cost_flg", rs);
 
 		if (db.getIntVal("hip", rs) > 0) joints.add("4");
 	    	if (db.getIntVal("knee", rs) > 0) joints.add("5");
@@ -124,6 +128,7 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
     		newspaperAds.add(ad);
     		
     		db = null;
+    	
 	    return this;
     }
 
@@ -493,6 +498,20 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 			case EventFacadeAction.STATUS_COMPLETE: return "Completed";
 			default: return "";
 		}
+	}
+
+	/**
+	 * @return the upfrontFeeFlg
+	 */
+	public int getUpfrontFeeFlg() {
+		return upfrontFeeFlg;
+	}
+
+	/**
+	 * @param upfrontFeeFlg the upfrontFeeFlg to set
+	 */
+	public void setUpfrontFeeFlg(int upfrontFeeFlg) {
+		this.upfrontFeeFlg = upfrontFeeFlg;
 	}
 
 }

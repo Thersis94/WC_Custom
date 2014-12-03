@@ -4,6 +4,7 @@ package com.depuy.events_v2.vo.report;
 import java.util.HashMap;
 import java.util.Map;
 
+
 // Log4j 1.2.8
 import org.apache.log4j.Logger;
 
@@ -12,6 +13,7 @@ import com.depuy.events_v2.vo.PersonVO;
 import com.depuy.events_v2.vo.PersonVO.Role;
 import com.siliconmtn.data.report.PDFReport;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.event.vo.EventEntryVO;
 import com.smt.sitebuilder.util.MessageParser;
@@ -66,12 +68,26 @@ public class ComplianceReportVO extends AbstractSBReportVO {
 		}
 		
 		// load the proper html-formated report
-		if (event.getEventTypeCd().equalsIgnoreCase("CFSEM")) {
+		switch ( StringUtil.checkVal( event.getEventTypeCd() ).toUpperCase() ){
+		case "CFSEM":
 			rpt = new CFSEMReportVO();
-		} else if (event.getEventTypeCd().equalsIgnoreCase("CPSEM")) {
+			break;
+		
+		case "CPSEM":
 			rpt = new CPSEMReportVO();
-		} else {
+			break;
+			
+		case "CFSEM50":
+			rpt = new CFSEM50ReportVO();
+			break;
+			
+		case "CFSEM25":
+			rpt = new CFSEM25ReportVO();
+			break;
+		
+		default:
 			rpt = new ESEMReportVO();
+			break;
 		}
 		
 		//run Freemarker replacements to populate the compliance form for this seminar

@@ -6,20 +6,18 @@ import java.util.Map;
 
 import org.apache.log4j.Logger;
 
-
 // SMT BaseLibs
 import com.depuy.events_v2.vo.DePuyEventSeminarVO;
 import com.depuy.events_v2.vo.DePuyEventSurgeonVO;
 import com.depuy.events_v2.vo.PersonVO;
 import com.depuy.events_v2.vo.PersonVO.Role;
-import com.smt.sitebuilder.action.AbstractSBReportVO;
-import com.smt.sitebuilder.action.event.vo.EventEntryVO;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
-
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.action.AbstractSBReportVO;
+import com.smt.sitebuilder.action.event.vo.EventEntryVO;
 // WC Libs
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -150,6 +148,7 @@ public class PostcardEmailer {
 	 * @see com.depuy.events.AbstractPostcardEmailer#sendSRCApprovalRequest(com.siliconmtn.http.SMTServletRequest)
 	 */
 	public void sendAdvApprovalRequest(SMTServletRequest req) {
+		
 		// send email to site admin
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
@@ -166,7 +165,7 @@ public class PostcardEmailer {
 
 		// build the attachment
 		AbstractSBReportVO rpt = (AbstractSBReportVO) req.getAttribute(Constants.BINARY_DOCUMENT);
-
+		
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
@@ -186,7 +185,6 @@ public class PostcardEmailer {
 		}
 		return;
 	}
-	
 	
 	/**
 	 * announcement email triggered when the ADV team member reviews the
@@ -209,7 +207,6 @@ public class PostcardEmailer {
 
 		// build the attachment
 		AbstractSBReportVO rpt = (AbstractSBReportVO) req.getAttribute(Constants.BINARY_DOCUMENT);
-		AbstractSBReportVO compliance = (AbstractSBReportVO) req.getAttribute("complianceForm");
 
 		try {
 			// Create the mail object and send
@@ -225,7 +222,6 @@ public class PostcardEmailer {
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
 			mail.addAttachment(rpt.getFileName(), rpt.generateReport());
-			mail.addAttachment(compliance.getFileName(), compliance.generateReport());
 
 			MessageSender ms = new MessageSender(attributes, dbConn);
 			ms.sendMessage(mail);

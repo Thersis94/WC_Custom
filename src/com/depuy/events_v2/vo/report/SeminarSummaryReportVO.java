@@ -34,41 +34,63 @@ import com.smt.sitebuilder.action.event.vo.EventEntryVO;
 public class SeminarSummaryReportVO extends AbstractSBReportVO {
 
 	public static enum FieldList { 
-		JOINT_FLG("joint_flg", "java.lang.String","Joint"),
-		SEMINAR_TYPE_FLG("seminar_type_flg", "java.lang.String","Seminar Type"),
-		SEMINAR_CODE_FLG("seminar_code_flg", "java.lang.String", "Seminar Code"),
-		COORDINATOR_FLG("coordinator_flg", "java.lang.String", "Seminar Coordinator"),
-		STATUS_FLG("status_flg", "java.lang.Integer","Seminar Status"),
-		START_DATE_FLG("start_dt_flg", "java,util.Date", "Start Date"),
-		TIME_FLG("time_flg", "java.util.Date", "Start Time"),
-		SPEAKER_FLG("speaker_flg", "java.lang.String","Seminar Speaker"),
-		RSVP_COUNT_FLG("rsvp_count_flg", "java.lang.Integer", "RSVP Count"),
-		ATTENDEE_COUNT_FLG("attendee_count_flg", "java.lang.Integer", "Attendee Count"),
-		OPT_IN_FLG("opt_in_flg", "java.lang.Integer","Opt-In Count"),
-		LOCATION_NM_FLG("location_nm_flg", "java.lang.String","Location Name"),
-		CITY_NM_FLG("city_nm_flg", "java.lang.String","City"),
-		STATE_CD_FLG("state_cd_flg", "java.lang.String","State"),
-		VENUE_COST_FLG("venue_cost_flg", "java.lang.Double","Venue Cost"),
-		REFRESHMENT_COST_FLG("refreshment_cost_flg", "java.lang.Double", "Refreshment Cost"),
-		POSTCARD_DT_FLG("postcard_dt_flg", "java.util.Date", "Postcard Send Date"),
-		NEWSPAPER_NM_FLG("newspaper_nm_flg", "java.lang.String","Newspaper Name"),
-		AD_DT_FLG("ad_dt_flg", "java.util.Date", "Ad Date"),
-		AD_COST_FLG("ad_cost_flg", "java,lang.Date", "Total Ad Cost"),
-		TERRITORY_COST_FLG("territory_cost_flg", "java.lang.Double", "Cost to Territory"),
-		SURGEON_COST_FLG("surgeon_cost_flg", "java.lang.Double","Cost to Surgeon"),
-		HOSPITAL_COST_FLG("hospital_cost_flg", "java.lang.Double", "Cost to Hospital");
+		JOINT_FLG("joint_flg", "java.lang.String","Joint","JOINT_FLG"),
+		SEMINAR_TYPE_FLG("seminar_type_flg", "java.lang.String","Seminar Type","SEMINAR_TYPE_FLG"),
+		SEMINAR_CODE_FLG("seminar_code_flg", "java.lang.String", "Seminar Code","SEMINAR_CODE_FLG"),
+		COORDINATOR_FLG("coordinator_flg", "java.lang.String", "Seminar Coordinator","COORDINATOR_FLG"),
+		STATUS_FLG("status_flg", "java.lang.Integer","Seminar Status","STATUS_FLG"),
+		START_DATE_FLG("start_date_flg", "java,util.Date", "Start Date","START_DATE_FLG"),
+		TIME_FLG("time_flg", "java.util.Date", "Start Time","TIME_FLG"),
+		SPEAKER_FLG("speaker_flg", "java.lang.String","Seminar Speaker","SPEAKER_FLG"),
+		RSVP_COUNT_FLG("rsvp_count_flg", "java.lang.Integer", "RSVP Count","RSVP_TOTAL_FLG"),
+		ATTENDEE_COUNT_FLG("attendee_count_flg", "java.lang.Integer", "Attendee Count","ATTENDEE_TOTAL_FLG"),
+		OPT_IN_FLG("opt_in_flg", "java.lang.Integer","Opt-In","OPT_IN_FLG"),
+		LOCATION_NM_FLG("location_nm_flg", "java.lang.String","Location Name","LOCATION_FLG"),
+		CITY_NM_FLG("city_nm_flg", "java.lang.String","City","CITY_FLG"),
+		STATE_CD_FLG("state_cd_flg", "java.lang.String","State","STATE_FLG"),
+		VENUE_COST_FLG("venue_cost_flg", "java.lang.Double","Venue Cost","VENUE_COST_FLG"),
+		REFRESHMENT_COST_FLG("refreshment_cost_flg", "java.lang.Double", "Refreshment Cost","REFRESHMENT_COST_FLG"),
+		POSTCARD_DT_FLG("postcard_dt_flg", "java.util.Date", "Postcard Send Date","POSTCARD_DATE_FLG"),
+		NEWSPAPER_NM_FLG("newspaper_nm_flg", "java.lang.String","Newspaper Name","NEWSPAPER_FLG"),
+		AD_DT_FLG("ad_dt_flg", "java.util.Date", "Ad Date","AD_DATE_FLG"),
+		AD_COST_FLG("ad_cost_flg", "java,lang.Date", "Total Ad Cost","AD_COST_FLG"),
+		TERRITORY_COST_FLG("territory_cost_flg", "java.lang.Double", "Cost to Territory","TERRITORY_COST_FLG"),
+		SURGEON_COST_FLG("surgeon_cost_flg", "java.lang.Double","Cost to Surgeon","SURGEON_COST_FLG"),
+		HOSPITAL_COST_FLG("hospital_cost_flg", "java.lang.Double", "Cost to Hospital","HOSPITAL_COST_FLG"),
+		UPFRONT_FEE_FLG("upfront_fee_flg", "java.lang.Integer", "$200 Upfront Fee", "UPFRONT_FEE_FLG"),
+		TERRITORY_NO("territory_no","java.lang.Integer","Territory No","TERRITORY_FLG"),
+		POSTCARD_COUNT_NO("postcard_count_no","java.lang.Integer","Postcard No","POSTCARD_TOTAL_FLG"),
+		INVITATION_COUNT_NO("invitation_count_no","java.lang.Integer","Invitation No","INVITATION_TOTAL_FLG"),
+		POSTCARD_COST_NO("postcard_cost_no","java.lang.Double","Total Postcard Cost","POSTCARD_COST_FLG"),
+		INVITATION_COST_NO("invitation_cost_no","java.lang.Double","Total Invitation Cost","INVITATION_COST_FLG")
+		;
 		
 		private final String name;
 		private final String className;
 		private final String reportLabel;
-		FieldList(String name, String className, String reportLabel){
+		private final String dbName;
+		FieldList(String name, String className, String reportLabel, String dbName){
 			this.name=name;
 			this.className=className;
 			this.reportLabel=reportLabel;
+			this.dbName = dbName;
 		}
+		/**
+		 * @return The name of the input field.
+		 */
 		public String getFieldName(){ return name; }
+		/**
+		 * @return The class name for the field's data type.
+		 */
 		public String getClassName(){ return className; }
+		/**
+		 * @return The label used for this field in the report header.
+		 */
 		public String getReportLabel(){ return reportLabel; }
+		/**
+		 * @return The name of the DEPUY_EVENT_REPORT column corresponding to this field.
+		 */
+		public String getDbName() { return dbName; }
 	}
 	private Map<String, Integer> paramList = new LinkedHashMap<>();
 	private Map<String,String> filterMap = new HashMap<>();
@@ -105,14 +127,15 @@ public class SeminarSummaryReportVO extends AbstractSBReportVO {
 		for ( FieldList key : FieldList.values() ){
 			//get list of parameters
 			paramList.put(key.getFieldName(), Convert.formatInteger( 
-					db.getIntVal(key.getFieldName(), rs) ) );
+					db.getIntVal(key.getDbName(), rs) ) );
 		}
 		
 		//get filters
 		String[] pairs = StringUtil.checkVal( db.getStringVal("filter_txt", rs))
-				.split(":");
-		for ( String s : pairs ){
-			String [] keyval = s.split("=");
+				.split(",");
+		for ( int i=0; i<pairs.length; i++ ){
+			String [] keyval = pairs[i].split(":");
+			if (keyval.length > 1)
 			filterMap.put(keyval[0],keyval[1]);
 		}
 	}
@@ -130,7 +153,8 @@ public class SeminarSummaryReportVO extends AbstractSBReportVO {
 		for( FieldList key : FieldList.values() ){
 			paramList.put(key.getFieldName(), Convert.formatInteger(
 					StringUtil.checkVal(req.getParameter(key.getFieldName()))));
-			if ( req.hasParameter("by_") ){
+			//log.debug(StringUtil.checkVal(req.getParameter(key.getFieldName()),"EMPTY"));
+			if ( StringUtil.checkVal(req.getParameter(key.getFieldName()) ).equals("-1") ){
 				filterMap.put(key.getFieldName(), StringUtil.checkVal(
 						req.getParameter("by_"+key.getFieldName())));
 			}
@@ -152,12 +176,14 @@ public class SeminarSummaryReportVO extends AbstractSBReportVO {
 			}
 		}
 		
-		StringBuilder rpt = new StringBuilder();
+		StringBuilder report = new StringBuilder();
 		//create headers
-		rpt.append( getHeader() );
+		report.append( getHeader() );
 		
 		//Loop over each seminar
 		for ( DePuyEventSeminarVO vo : semList ){
+			StringBuilder rpt = new StringBuilder();
+			boolean appendIt = true;
 			rpt.append("<tr>");
 			EventEntryVO event = vo.getEvents().get(0);
 			//loop over each field to be included in the results
@@ -168,12 +194,17 @@ public class SeminarSummaryReportVO extends AbstractSBReportVO {
 				switch( fl ){
 				
 				case JOINT_FLG:
-					String joint = StringUtil.checkVal(vo.getJointLabel());
-					if( filterMap.containsKey(fl.getFieldName()) && 
-							filterMap.get(fl.getFieldName()).equalsIgnoreCase(joint) ){
+					//Set of joints for this seminar
+					String jointCode = vo.getJointCodes();
+					String jointCodeRev = new StringBuilder(jointCode).reverse().toString(); //In case code is 5,4 instead of 4,5
+					//if this is not a filter parameter, or if it is, but matches the filter value, include it
+					if( !filterMap.containsKey(filterKey) || 
+						filterMap.get(filterKey).equalsIgnoreCase(jointCode) ||
+						filterMap.get(filterKey).equalsIgnoreCase(jointCodeRev) ){
+						//if this joint is to be included, flag it as such
 						rpt.append( vo.getJointLabel() );
-					} else if (! filterMap.containsKey(fl.getFieldName())){
-						rpt.append(StringUtil.checkVal(vo.getJointLabel()));
+					} else {
+						appendIt = false;
 					}
 					break;
 				case SEMINAR_TYPE_FLG:
@@ -184,18 +215,25 @@ public class SeminarSummaryReportVO extends AbstractSBReportVO {
 						put("CFSEM50", "Co-Funded 50/50");
 						put("CFSEM25", "Co-Funded 50/25/25");
 						put("CPSEM", "Physician");
+						put("HSEM", "Hospital Sponsored");
 					}};
 					
 					String typeCd = StringUtil.checkVal(event.getEventTypeCd());
-					if ( (!filterMap.containsKey(filterKey)) || 
-							!filterMap.get(filterKey).equalsIgnoreCase(typeCd))
-						rpt.append(StringUtil.checkVal(typeMap.get(event.getEventTypeCd())));
+					if ( (!filterMap.containsKey(filterKey) ) || 
+							filterMap.get(filterKey).equalsIgnoreCase(typeCd)){
+						rpt.append(StringUtil.checkVal(typeMap.get(typeCd ) ));
+					} else {
+						appendIt = false;
+					}
 					break;
 				case SEMINAR_CODE_FLG:
 					String rsvpCd = StringUtil.checkVal(event.getRSVPCode());
 					if ( (!filterMap.containsKey(filterKey)) || 
-							!filterMap.get(filterKey).equalsIgnoreCase(rsvpCd))
-					rpt.append(StringUtil.checkVal(event.getRSVPCode()));
+							filterMap.get(filterKey).equalsIgnoreCase(rsvpCd)){
+						rpt.append(StringUtil.checkVal(event.getRSVPCode()));
+					} else {
+						appendIt = false;
+					}
 					break;
 				case COORDINATOR_FLG:
 					rpt.append( StringUtil.checkVal(event.getContactName() ));
@@ -203,7 +241,7 @@ public class SeminarSummaryReportVO extends AbstractSBReportVO {
 				case STATUS_FLG:
 					String status = StringUtil.checkVal(vo.getStatusName());
 					if ( (!filterMap.containsKey(filterKey)) || 
-							!filterMap.get(filterKey).equalsIgnoreCase(status))
+							filterMap.get(filterKey).equalsIgnoreCase(status))
 						rpt.append( StringUtil.checkVal(vo.getStatusName()));
 					break;
 				case START_DATE_FLG:
@@ -259,17 +297,41 @@ public class SeminarSummaryReportVO extends AbstractSBReportVO {
 				case HOSPITAL_COST_FLG:
 					printMultiVal(rpt,"getCostToHospitalNo",vo.getPrintAndOnlineAds());
 					break;
+				case INVITATION_COST_NO:
+					rpt.append(StringUtil.checkVal(vo.getCostNo()));
+					break;
+				case INVITATION_COUNT_NO:
+					rpt.append( StringUtil.checkVal(vo.getQuantityNo()));
+					break;
+				case POSTCARD_COST_NO:
+					rpt.append(StringUtil.checkVal(vo.getCostNo()));
+					break;
+				case POSTCARD_COUNT_NO:
+					rpt.append( StringUtil.checkVal(vo.getQuantityNo()));
+					break;
+				case TERRITORY_NO:
+					rpt.append(StringUtil.checkVal( vo.getTerritoryNumber() ));
+					break;
+				case UPFRONT_FEE_FLG:
+					rpt.append( ( vo.getUpfrontFeeFlg() == 1 ? "Yes" : "No") );
+					break;
+				default:
+					break;
 				}
 				rpt.append("</td>");
 			}
 			rpt.append("</tr>\r");
+			if ( appendIt ){
+				report.append(rpt);
+			}
+			rpt = null;
 		}
 		
 		//append footer
-		rpt.append( getFooter() );
+		report.append( getFooter() );
 		
 		//Returns report as byte[]
-		return rpt.toString().getBytes();
+		return report.toString().getBytes();
 	}
 
 	/* (non-Javadoc)
@@ -284,6 +346,35 @@ public class SeminarSummaryReportVO extends AbstractSBReportVO {
 			semList = (List<DePuyEventSeminarVO>) o;
 		}
 		
+	}
+	
+	/**
+	 * Get the set of fields and filters from the request object.
+	 * @param req
+	 * @param fields
+	 * @param filters
+	 */
+	public void parseParameters( SMTServletRequest req, Map<String,Integer> fields, Map<String,String>filters){
+		final String FILTER_PREFIX = "by_";
+		final int INCLUDE = 1, FILTER=-1;
+		
+		//For each valid field, check for values to be collected
+		for( FieldList fl : FieldList.values() ){
+			switch( Convert.formatInteger( req.getParameter(fl.getFieldName().toLowerCase()))){
+			case FILTER:
+				filters.put(fl.getFieldName(), StringUtil.checkVal(req.getParameter(
+						FILTER_PREFIX+fl.getFieldName())));
+				//No break, so filter params are included in the report
+			case INCLUDE:
+				fields.put(fl.name(), 1);
+				break;
+			default:
+				fields.put(fl.name(), 0);
+				break;
+			}
+		}
+		filterMap = filters;
+		paramList = fields;
 	}
 	
 	/**
@@ -396,5 +487,19 @@ public class SeminarSummaryReportVO extends AbstractSBReportVO {
 		for (String nm:paramList.keySet())
 			lst.add(nm);
 		return lst;
+	}
+
+	/**
+	 * @return the filterMap
+	 */
+	public Map<String, String> getFilterMap() {
+		return filterMap;
+	}
+
+	/**
+	 * @param filterMap the filterMap to set
+	 */
+	public void setFilterMap(Map<String, String> filterMap) {
+		this.filterMap = filterMap;
 	}
 }
