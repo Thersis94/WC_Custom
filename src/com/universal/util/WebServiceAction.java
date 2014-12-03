@@ -236,7 +236,8 @@ public class WebServiceAction extends SBActionAdapter {
 			return errElem;
 		}
 		log.debug("*****************\nRequest : " + s);
-		return this.callWebService(url, s, "root");
+		//return this.callWebService(url, s, "root");
+		return new DefaultElement("TESTING");
 	}
 	
 	/**
@@ -363,16 +364,18 @@ public class WebServiceAction extends SBActionAdapter {
 		s.append("<CustomerIP>").append(ipAddr).append("</CustomerIP>");
 		
 		// credit card info
-		String expMonth = cart.getPayment().getExpirationMonth();
-		if (expMonth.length() == 1) expMonth = "0" + expMonth;
-		int expYear = Convert.formatInteger(cart.getPayment().getExpirationYear()) - 2000;
-		s.append("<CreditCard>");
-		s.append("<Name>").append(cart.getPayment().getPaymentName()).append("</Name>");
-		s.append("<Number>").append(cart.getPayment().getPaymentNumber()).append("</Number>");
-		s.append("<ExpMonth>").append(expMonth).append("</ExpMonth>");
-		s.append("<ExpYear>").append(expYear).append("</ExpYear>");
-		s.append("<CSC>").append(cart.getPayment().getPaymentCode()).append("</CSC>");
-		s.append("</CreditCard>");
+		if (cart.getPayment() != null) {
+			String expMonth = cart.getPayment().getExpirationMonth();
+			if (expMonth.length() == 1) expMonth = "0" + expMonth;
+			int expYear = Convert.formatInteger(cart.getPayment().getExpirationYear()) - 2000;
+			s.append("<CreditCard>");
+			s.append("<Name>").append(cart.getPayment().getPaymentName()).append("</Name>");
+			s.append("<Number>").append(cart.getPayment().getPaymentNumber()).append("</Number>");
+			s.append("<ExpMonth>").append(expMonth).append("</ExpMonth>");
+			s.append("<ExpYear>").append(expYear).append("</ExpYear>");
+			s.append("<CSC>").append(cart.getPayment().getPaymentCode()).append("</CSC>");
+			s.append("</CreditCard>");
+		}
 		
 		s.append("<Products>");
 		for(Iterator<String> iter = cart.getProductCountById().keySet().iterator(); iter.hasNext(); ) {

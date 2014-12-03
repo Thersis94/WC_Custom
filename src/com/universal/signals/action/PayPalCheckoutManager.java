@@ -6,6 +6,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.Map;
 
 // Apache Log4j
@@ -31,6 +32,7 @@ import com.siliconmtn.security.PhoneVO;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title: </b>PayPalProxyManager.java <p/>
@@ -48,9 +50,8 @@ import com.siliconmtn.util.StringUtil;
 public class PayPalCheckoutManager {
 
 	protected static final transient Logger log = Logger.getLogger(PayPalCheckoutManager.class);
-	//String smtProxyUrl = "http://proxy.starcastle.siliconmtn.com:9000/websvc/payment/process";
-	//final String smtProxyUrl = "http://proxy.starcastle.siliconmtn.com:9000/websvc/payment/process";
-	final String smtProxyUrl = "http://10.0.80.5:9000/websvc/payment/process";
+	//protected final String smtProxyUrl = "http://10.0.80.5:9000/websvc/payment/process";
+	protected String smtProxyUrl;
 	private ProcessingServiceType serviceType = ProcessingServiceType.PAY_PAL;
 	TransactionType transactionType;
 	SMTServletRequest req;
@@ -58,17 +59,18 @@ public class PayPalCheckoutManager {
 	Connection dbConn;
 	String encryptionKey;
 	String catalogSiteId;
+	Map<String,Object> attributes;
 	
 	/**
 	 * @param req
 	 * @param cart
 	 * @throws InvalidDataException
 	 */
-	public PayPalCheckoutManager(SMTServletRequest req, ShoppingCartVO cart, 
-			String encryptionKey) throws InvalidDataException {
+	public PayPalCheckoutManager(SMTServletRequest req, ShoppingCartVO cart) 
+			throws InvalidDataException {
 		this.req = req;
 		this.cart = cart;
-		this.encryptionKey = encryptionKey;
+		this.attributes = new HashMap<>();
 		init(req.getParameter("paypal"), cart);
 	}
 	
@@ -83,6 +85,9 @@ public class PayPalCheckoutManager {
 		IOException, SQLException {
 		log.debug("processTransaction...");
 		
+		// init critical values for later use.
+		encryptionKey = (String)attributes.get(Constants.ENCRYPT_KEY);
+		smtProxyUrl = (String)attributes.get(Constants.CFG_SMT_PROXY_URL);
 		// process the checkout request
 		PaymentTransactionResponseVO pRes = processCheckoutRequest();
 		
@@ -144,41 +149,29 @@ public class PayPalCheckoutManager {
 		checkErrors(rMap);
 		if (cart.hasErrors()) return;
 		
-		// set buyer data using the billing info user object
-		if (cart.getBillingInfo() == null) {
-			UserDataVO buyer = new UserDataVO();
-			buyer.setFirstName(rMap.get("FIRSTNAME"));
-			buyer.setMiddleName(rMap.get("MIDDLENAME"));
-			buyer.setLastName(rMap.get("LASTNAME"));
-			buyer.setSuffixName(rMap.get("SUFFIX"));
-			buyer.setEmailAddress(rMap.get("EMAIL"));
-			cart.setBillingInfo(buyer);
-		}
+		// make sure billing info is null so views behave properly.
+		cart.setBillingInfo(null);
 		
-		// add certain data so we have it for future use
-		cart.getBillingInfo().addAttribute("TOKEN", rMap.get("TOKEN"));
-		cart.getBillingInfo().addAttribute("CORRELATION_ID", rMap.get("CORRELATIONID"));
-		cart.getBillingInfo().addAttribute("PAYER_ID", rMap.get("PAYER_ID"));
-		cart.getBillingInfo().setCountryCode(rMap.get("COUNTRYCODE"));
-		
-		// update ship to info using the shipping info user object
-		// update the cart's 'ship To' info.
-		if (cart.getShippingInfo() == null) {
-			UserDataVO newShipTo = new UserDataVO();
-			newShipTo.setName(rMap.get("PAYMENTREQUEST_0_SHIPTONAME"));
-			newShipTo.setAddress(rMap.get("PAYMENTREQUEST_0_SHIPTOSTREET"));
-			newShipTo.setAddress2(rMap.get("PAYMENTREQUEST_0_SHIPTOSTREET2"));
-			newShipTo.setCity(rMap.get("PAYMENTREQUEST_0_SHIPTOCITY"));
-			newShipTo.setState(rMap.get("PAYMENTREQUEST_0_SHIPTOSTATE"));
-			newShipTo.setZipCode(rMap.get("PAYMENTREQUEST_0_SHIPTOZIP"));
-			newShipTo.setCountryCode(rMap.get("PAYMENTREQUEST_0_SHIPTOCOUNTRYCODE"));
-			if (StringUtil.checkVal(rMap.get("PAYMENTREQUEST_0_SHIPTOPHONENUM"),null) != null) {
-				newShipTo.addPhone(new PhoneVO(rMap.get("PAYMENTREQUEST_0_SHIPTOPHONENUM")));
-			}
-			cart.setShippingInfo(newShipTo);
+		// set 'ship to' info using the data returned from the 'get'
+		UserDataVO newShipTo = new UserDataVO();
+		newShipTo.setCountryCode(rMap.get("COUNTRYCODE"));
+		newShipTo.setName(rMap.get("PAYMENTREQUEST_0_SHIPTONAME"));
+		newShipTo.setEmailAddress(rMap.get("EMAIL"));
+		newShipTo.setAddress(rMap.get("PAYMENTREQUEST_0_SHIPTOSTREET"));
+		newShipTo.setAddress2(rMap.get("PAYMENTREQUEST_0_SHIPTOSTREET2"));
+		newShipTo.setCity(rMap.get("PAYMENTREQUEST_0_SHIPTOCITY"));
+		newShipTo.setState(rMap.get("PAYMENTREQUEST_0_SHIPTOSTATE"));
+		newShipTo.setZipCode(rMap.get("PAYMENTREQUEST_0_SHIPTOZIP"));
+		newShipTo.setCountryCode(rMap.get("PAYMENTREQUEST_0_SHIPTOCOUNTRYCODE"));
+		if (StringUtil.checkVal(rMap.get("PAYMENTREQUEST_0_SHIPTOPHONENUM"),null) != null) {
+			newShipTo.addPhone(new PhoneVO(rMap.get("PAYMENTREQUEST_0_SHIPTOPHONENUM")));
 		}
-		cart.getShippingInfo().addAttribute("ADDRESS_STATUS", 
-				StringUtil.checkVal(rMap.get("PAYMENT_REQUEST_SHIPTOADDRESSSTATUS")));
+		newShipTo.addAttribute("ADDRESS_STATUS", 
+				StringUtil.checkVal(rMap.get("PAYMENTREQUEST_0_ADDRESSSTATUS")));
+		newShipTo.addAttribute("TOKEN", rMap.get("TOKEN"));
+		newShipTo.addAttribute("CORRELATION_ID", rMap.get("CORRELATIONID"));
+		newShipTo.addAttribute("PAYER_ID", rMap.get("PAYERID"));
+		cart.setShippingInfo(newShipTo);
 		
 	}
 	
@@ -200,12 +193,12 @@ public class PayPalCheckoutManager {
 		if (cart.hasErrors()) return;
 		
 		// add additional field vals needed to send to USA's webservice.
-		UserDataVO buyer = cart.getBillingInfo();
-		buyer.addAttribute("TRANSACTION_ID", rMap.get("PAYMENTREQUEST_0_TRANSACTIONID"));
-		buyer.addAttribute("PAYMENT_STATUS",  rMap.get("PAYMENTINFO_0_PAYMENTSTATUS"));
-		buyer.addAttribute("PENDING_REASON",  rMap.get("PAYMENTINFO_0_PENDINGREASON"));
-		
-		// call final checkout on cart to process via Universal's webservice.
+		UserDataVO shipTo = cart.getShippingInfo();
+		shipTo.addAttribute("TRANSACTION_ID", rMap.get("PAYMENTREQUEST_0_TRANSACTIONID"));
+		shipTo.addAttribute("CORRELATION_ID", rMap.get("CORRELATIONID"));
+		shipTo.addAttribute("PAYMENT_STATUS",  rMap.get("PAYMENTINFO_0_PAYMENTSTATUS"));
+		shipTo.addAttribute("PENDING_REASON",  rMap.get("PAYMENTINFO_0_PENDINGREASON"));
+
 	}
 	
 	/**
@@ -251,7 +244,6 @@ public class PayPalCheckoutManager {
 		Gson g = new Gson();
 		byte[] json = g.toJson(pReq).getBytes();
 		log.debug("raw payment request obj json: " + new String(json));
-		
 		String postData = "type=json&xmlData=" + new String(json);
 		log.debug("postData: " + postData);
 		SMTHttpConnectionManager mgr = new SMTHttpConnectionManager();
@@ -342,7 +334,6 @@ public class PayPalCheckoutManager {
 	 */
 	private void init (String transaction, ShoppingCartVO cart) 
 			throws InvalidDataException {
-		
 		if (cart == null) throw new InvalidDataException("Shopping cart is invalid.");
 		
 		if (transaction.equalsIgnoreCase("set")) {
@@ -390,6 +381,13 @@ public class PayPalCheckoutManager {
 	 */
 	public void setCatalogSiteId(String catalogSiteId) {
 		this.catalogSiteId = catalogSiteId;
+	}
+
+	/**
+	 * @param attributes the attributes to set
+	 */
+	public void setAttributes(Map<String, Object> attributes) {
+		this.attributes = attributes;
 	}
 
 }

@@ -74,6 +74,7 @@ import com.universal.util.WebServiceAction;
  * 11-21-2012: DBargerhuff; Refactored to begin implementing new promo code (i.e. discount) processing.
  * 02-03-2012: DBargerhuff; Refactored to finalize implementation for new promo code (i.e. discount) processing
  * 2014-08-30: DBargerhuff: Added support for billing comments, support for abandoned cart tracking.
+ * 2014-12-01: DBargerhuff: Added support for PayPal checkout.
  ****************************************************************************/
 public class ShoppingCartAction extends SBActionAdapter {
 	
@@ -375,11 +376,28 @@ public class ShoppingCartAction extends SBActionAdapter {
 		PayPalCheckoutManager ppm = null;
 		
 		try {
-			ppm = new PayPalCheckoutManager(req, cart, encKey);
+			ppm = new PayPalCheckoutManager(req, cart);
 			ppm.setDbConn(dbConn);
+			ppm.setAttributes(attributes);
 			ppm.setCatalogSiteId(catalogSiteId);
 			ppm.processTransaction();
-
+			
+			// TODO remove after testing.
+			if (log.isDebugEnabled()) {
+				log.debug("cart's shippingInfo after operation:");
+				UserDataVO shipTo = cart.getShippingInfo();
+				if (shipTo != null) {
+					log.debug("shipTo: " + shipTo);
+					if (shipTo.getAttributes() != null) {
+						for (String key : shipTo.getAttributes().keySet()) {
+							log.debug("attr key/val: " + key + "|" + shipTo.getAttributes().get(key));
+						}
+					} else {
+						log.debug("attributes obj is null...");
+					}
+				}
+			}
+			
 		} catch (IOException e) {
 			log.error("Error: PayPal checkout is unavailable, ", e);
 			cart.addError("SYSTEM_ERROR", "Error: PayPal checkout is temporarily unavailable. (System)");
@@ -411,6 +429,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 		
 		// if this was the last operation, do final checkout
 		if (payPalAction.equalsIgnoreCase("do")) {
+			log.debug("doing paypal final checkout...");
 			try {
 				payForOrder(req, cart);
 			} catch (DocumentException de) {
@@ -421,6 +440,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 			
 			// if order complete, return a cart for display and flush the original cart.
 			if (cart.isOrderCompleted()) {
+				log.debug("order is complete...");
 				ShoppingCartVO displayCart = new ShoppingCartVO();
 				displayCart.setBillingInfo(cart.getBillingInfo());
 				displayCart.setShippingInfo(cart.getShippingInfo());
@@ -1022,7 +1042,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 	 * @return
 	 */
 	private ShoppingCartVO flushCart(Storage container) {
-		log.debug("starting flushCart...");
+		log.debug("flushCart...");
 		try {
 			container.flush();
 			return container.load();
