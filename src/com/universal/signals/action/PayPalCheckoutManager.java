@@ -50,16 +50,13 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class PayPalCheckoutManager {
 
 	protected static final transient Logger log = Logger.getLogger(PayPalCheckoutManager.class);
-	//protected final String smtProxyUrl = "http://10.0.80.5:9000/websvc/payment/process";
-	protected String smtProxyUrl;
 	private ProcessingServiceType serviceType = ProcessingServiceType.PAY_PAL;
-	TransactionType transactionType;
-	SMTServletRequest req;
-	ShoppingCartVO cart;
-	Connection dbConn;
-	String encryptionKey;
-	String catalogSiteId;
-	Map<String,Object> attributes;
+	private TransactionType transactionType;
+	private ShoppingCartVO cart;
+	private Connection dbConn;
+	private String encryptionKey;
+	private String catalogSiteId;
+	private Map<String,Object> attributes;
 	
 	/**
 	 * @param req
@@ -68,7 +65,6 @@ public class PayPalCheckoutManager {
 	 */
 	public PayPalCheckoutManager(SMTServletRequest req, ShoppingCartVO cart) 
 			throws InvalidDataException {
-		this.req = req;
 		this.cart = cart;
 		this.attributes = new HashMap<>();
 		init(req.getParameter("paypal"), cart);
@@ -87,7 +83,7 @@ public class PayPalCheckoutManager {
 		
 		// init critical values for later use.
 		encryptionKey = (String)attributes.get(Constants.ENCRYPT_KEY);
-		smtProxyUrl = (String)attributes.get(Constants.CFG_SMT_PROXY_URL);
+
 		// process the checkout request
 		PaymentTransactionResponseVO pRes = processCheckoutRequest();
 		
@@ -246,6 +242,7 @@ public class PayPalCheckoutManager {
 		log.debug("raw payment request obj json: " + new String(json));
 		String postData = "type=json&xmlData=" + new String(json);
 		log.debug("postData: " + postData);
+		String smtProxyUrl = (String)attributes.get(Constants.CFG_SMT_PROXY_URL);
 		SMTHttpConnectionManager mgr = new SMTHttpConnectionManager();
 		byte[] bytes = mgr.retrieveDataViaPost(smtProxyUrl, postData);
 		log.info("raw SMT proxy response: " + new String(bytes));
