@@ -35,7 +35,7 @@ import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
- * <b>Title: </b>PayPalProxyManager.java <p/>
+ * <b>Title: </b>PayPalCheckoutManager.java <p/>
  * <b>Project: </b>WC_Custom <p/>
  * <b>Description: </b>
  * </p>
@@ -146,7 +146,19 @@ public class PayPalCheckoutManager {
 		if (cart.hasErrors()) return;
 		
 		// make sure billing info is null so views behave properly.
-		cart.setBillingInfo(null);
+		if (cart.getBillingInfo() == null) {
+			UserDataVO buyer = new UserDataVO();
+			buyer.setEmailAddress(rMap.get("EMAIL"));
+			buyer.setFirstName(rMap.get("FIRSTNAME"));
+			buyer.setMiddleName(rMap.get("MIDDLENAME"));
+			buyer.setLastName(rMap.get("LASTNAME"));
+			buyer.setSuffixName(rMap.get("SUFFIX"));
+			buyer.addPhone(new PhoneVO(rMap.get("PHONENUM")));
+			buyer.setCountryCode(rMap.get("COUNTRYCODE"));
+			cart.setBillingInfo(buyer);
+		}
+		cart.getBillingInfo().addAttribute("PAYER_ID", rMap.get("PAYERID"));
+		cart.getBillingInfo().addAttribute("PAYER_STATUS", rMap.get("PAYERSTATUS"));
 		
 		// set 'ship to' info using the data returned from the 'get'
 		UserDataVO newShipTo = new UserDataVO();
@@ -164,9 +176,6 @@ public class PayPalCheckoutManager {
 		}
 		newShipTo.addAttribute("ADDRESS_STATUS", 
 				StringUtil.checkVal(rMap.get("PAYMENTREQUEST_0_ADDRESSSTATUS")));
-		newShipTo.addAttribute("TOKEN", rMap.get("TOKEN"));
-		newShipTo.addAttribute("CORRELATION_ID", rMap.get("CORRELATIONID"));
-		newShipTo.addAttribute("PAYER_ID", rMap.get("PAYERID"));
 		cart.setShippingInfo(newShipTo);
 		
 	}
@@ -187,13 +196,14 @@ public class PayPalCheckoutManager {
 		// check for any errors.
 		checkErrors(rMap);
 		if (cart.hasErrors()) return;
-		
+
 		// add additional field vals needed to send to USA's webservice.
-		UserDataVO shipTo = cart.getShippingInfo();
-		shipTo.addAttribute("TRANSACTION_ID", rMap.get("PAYMENTREQUEST_0_TRANSACTIONID"));
-		shipTo.addAttribute("CORRELATION_ID", rMap.get("CORRELATIONID"));
-		shipTo.addAttribute("PAYMENT_STATUS",  rMap.get("PAYMENTINFO_0_PAYMENTSTATUS"));
-		shipTo.addAttribute("PENDING_REASON",  rMap.get("PAYMENTINFO_0_PENDINGREASON"));
+		UserDataVO buyer = cart.getBillingInfo();
+		buyer.addAttribute("TOKEN", rMap.get("TOKEN"));
+		buyer.addAttribute("CORRELATION_ID", rMap.get("CORRELATIONID"));
+		buyer.addAttribute("TRANSACTION_ID", rMap.get("PAYMENTREQUEST_0_TRANSACTIONID"));
+		buyer.addAttribute("PAYMENT_STATUS",  rMap.get("PAYMENTINFO_0_PAYMENTSTATUS"));
+		buyer.addAttribute("PENDING_REASON",  rMap.get("PAYMENTINFO_0_PENDINGREASON"));		
 
 	}
 	
@@ -204,7 +214,7 @@ public class PayPalCheckoutManager {
 	private void checkErrors(Map<String,String> rMap) {
 		// if payment errors, capture and set on cart
 		String errInfo = StringUtil.checkVal(rMap.get("PAYMENTINFO_0_ACK"),null);
-		if (errInfo != null) {
+		if (errInfo != null && ! errInfo.equalsIgnoreCase("success")) {
 			// payment errors found.
 			cart.addError("PAYPAL_ERROR_CODE", rMap.get("PAYMENTINFO_0_ERRORCODE"));
 			cart.addError("PAYPAL_ERROR_CODE_SEVERITY", rMap.get("PAYMENTINFO_0_SEVERITYCODE"));
@@ -242,9 +252,11 @@ public class PayPalCheckoutManager {
 		log.debug("raw payment request obj json: " + new String(json));
 		String postData = "type=json&xmlData=" + new String(json);
 		log.debug("postData: " + postData);
-		String smtProxyUrl = (String)attributes.get(Constants.CFG_SMT_PROXY_URL);
+		StringBuilder smtProxyUrl = new StringBuilder((String)attributes.get(Constants.CFG_SMT_PROXY_URL));
+		smtProxyUrl.append("/payment/process");
+		//http://10.0.80.5:9000/websvc/payment/process
 		SMTHttpConnectionManager mgr = new SMTHttpConnectionManager();
-		byte[] bytes = mgr.retrieveDataViaPost(smtProxyUrl, postData);
+		byte[] bytes = mgr.retrieveDataViaPost(smtProxyUrl.toString(), postData);
 		log.info("raw SMT proxy response: " + new String(bytes));
 		PaymentTransactionResponseVO pRes = null;
 		Gson gson = new Gson();

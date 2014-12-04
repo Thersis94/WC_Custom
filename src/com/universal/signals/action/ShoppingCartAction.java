@@ -349,7 +349,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 			Storage container, ShoppingCartVO cart) {
 		log.debug("processPayPalCheckout...");
 		String payPalAction = StringUtil.checkVal(req.getParameter("paypal"));
-		
+		log.debug("operation is: " + payPalAction);
 		if (payPalAction.equalsIgnoreCase("start")) {
 			return cart;
 		} else if (payPalAction.equalsIgnoreCase("set")) {
@@ -416,7 +416,13 @@ public class ShoppingCartAction extends SBActionAdapter {
 		}
 
 		// if errors occurred, return
-		if (cart.hasErrors()) return cart;
+		if (cart.hasErrors()) {
+			log.debug("cart has errors:");
+			for (String err : cart.getErrors().keySet()) {
+				log.debug("err|msg: " + err + "|" + cart.getErrors().get(err));
+			}
+			return cart;
+		}
 		
 		// save the cart
 		try {
@@ -428,6 +434,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 		}
 		
 		// if this was the last operation, do final checkout
+		
 		if (payPalAction.equalsIgnoreCase("do")) {
 			log.debug("doing paypal final checkout...");
 			try {

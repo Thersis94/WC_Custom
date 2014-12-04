@@ -321,7 +321,7 @@ public class WebServiceAction extends SBActionAdapter {
 		s.append("<DayPhone>").append(cart.getBillingInfo().getMainPhone()).append("</DayPhone>");
 		String eveningPhone = null;
 		for(PhoneVO p : cart.getBillingInfo().getPhoneNumbers())
-			if(p.getPhoneType().equals(PhoneVO.EVENING_PHONE))
+			if(StringUtil.checkVal(p.getPhoneType()).equals(PhoneVO.EVENING_PHONE))
 				eveningPhone = p.getPhoneNumber();		
 		if (StringUtil.checkVal(eveningPhone).length() > 0) {
 			s.append("<EveningPhone>").append(eveningPhone).append("</EveningPhone>");
@@ -400,7 +400,7 @@ public class WebServiceAction extends SBActionAdapter {
 			s.append(buyer.getAttributes().get("ADDRESS_STATUS"));
 			s.append("</AddressStatus>");
 			s.append("<PayerStatus>");
-			s.append(buyer.getAttributes().get("PAYER_STATUS"));
+			s.append(cart.getShippingInfo().getAttributes().get("PAYER_STATUS"));
 			s.append("</PayerStatus>"); //(Y or N)
 			s.append("<CorrelationID>");
 			s.append(buyer.getAttributes().get("CORRELATION_ID"));
