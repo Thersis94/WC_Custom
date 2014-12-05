@@ -1045,6 +1045,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 		// loop the sorted prodAttribs and add their values to the item and modify the product id
 		String lookup = null;
 		String[] vals = null;
+		StringEncoder se = new StringEncoder();
 		for (ProductAttributeVO pavo : prodAttribs) {
 			//update the cartItem's attribute cost.
 			cartItem.setAttributePrice(cartItem.getAttributePrice() + pavo.getMsrpCostNo());
@@ -1063,9 +1064,15 @@ public class ShoppingCartAction extends SBActionAdapter {
 			product.addProdAttribute(lookup, pavo);
 			lookup = null;
 		}
-		//set the advanced productID to the cartItem so we can tell differences
-		//between two of the same item with different attributes.
+		/* set the advanced productID to the cartItem so we can tell differences
+		 * between two of the same item with different attributes.  We decode any
+		 * HTML-entities and then replace them so that the advanced productID
+		 * only contains alphanumeric, underscore, or dash characters.  Otherwise
+		 * the cart views do not work properly.
+		 */
+		pIDAdv = formatAdvancedProductId(se,pIDAdv);
 		cartItem.setProductId(pIDAdv);
+		log.debug("advanced productId: " + pIDAdv);
 	}
 	
 	/**
@@ -1118,5 +1125,19 @@ public class ShoppingCartAction extends SBActionAdapter {
 		dMgr = new DiscountManager();
 		dMgr.setActionInit(actionInit);
 		dMgr.setAttributes(attributes);
+	}
+	
+	/**
+	 * Formats the advanced product ID by decoding HTML entities into their
+	 * character equivalents and then removing anything that isn't alphanumeric,
+	 * an underscore, or a dash.
+	 * @param se
+	 * @param val
+	 * @return
+	 */
+	private String formatAdvancedProductId(StringEncoder se, String val) {
+		if (val == null) return val;
+		val = se.decodeValue(val);
+		return StringUtil.formatFileName(val, false);
 	}
 }

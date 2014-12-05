@@ -23,6 +23,7 @@ import com.siliconmtn.commerce.ShoppingCartVO;
 import com.siliconmtn.commerce.catalog.ProductAttributeVO;
 import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
 import com.siliconmtn.security.AuthenticationException;
 import com.siliconmtn.security.EncryptionException;
@@ -525,7 +526,7 @@ public class WebServiceAction extends SBActionAdapter {
 				s.append("<ProdAttr code=\"");
 				s.append(pAtt.getValueText()).append("\">");
 				if(pAtt.getAttributeId().equals("USA_CUSTOM")) {
-					s.append(pAtt.getAttributes().get("formVal"));
+					s.append(StringEncoder.urlEncode(pAtt.getAttributes().get("formVal")));
 				}
 				s.append("</ProdAttr>");
 			}
