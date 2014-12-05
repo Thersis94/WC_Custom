@@ -241,11 +241,10 @@ public class EMEACarouselAction extends SBActionAdapter {
 		String[] prods = req.getParameterValues("selProducts");
 		if (prods == null) prods = new String[0];
 		for (String prodId : prods) {
-			String [] prodVals = prodId.split("\\|");
 			if (prodId.length() == 0) continue;
 			ps.setString(1, uuid.getUUID());
 			ps.setString(2, actionId);
-			ps.setString(3, prodVals[0]);
+			ps.setString(3, prodId);
 			ps.setInt(4, ++cnt);
 			ps.setInt(5, 0);
 			ps.setTimestamp(6, Convert.getCurrentTimestamp());
