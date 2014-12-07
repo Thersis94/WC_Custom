@@ -53,6 +53,7 @@ public class CoopAdsEmailer extends SBActionAdapter {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(site.getAdminEmail());
+			mail.addCC("rwilkin7@its.jnj.com");
 			mail.setSubject("Newspaper Ad declined for Seminar " + sem.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
@@ -69,7 +70,7 @@ public class CoopAdsEmailer extends SBActionAdapter {
 	public void requestCoordinatorApproval(DePuyEventSeminarVO sem, SiteVO site) {
 		Calendar cal = Calendar.getInstance();
 		cal.add(Calendar.DATE, 4); // give them 4 days from today to approve the Ad
-
+		
 		StringBuilder msg = new StringBuilder();
 		msg.append("Dear Seminar Holder,\r\r");
 		msg.append("The cost and proof for your ad for Seminar ").append(sem.getRSVPCodes());
@@ -84,6 +85,8 @@ public class CoopAdsEmailer extends SBActionAdapter {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(sem.getOwner().getEmailAddress());
+			mail.addCC("rwilkin7@its.jnj.com");
+			mail.addCC(site.getAdminEmail());
 			mail.setSubject("Newspaper Ad approval required - Seminar " + sem.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
@@ -97,13 +100,14 @@ public class CoopAdsEmailer extends SBActionAdapter {
 		}
 	}
 
-	
-	/**
+	/* Replacing this method with one that adds business days instead of days, to avoid 
+	 * odd results (i.e. Fri 12/5/2014 + 3 business days should be Wed 12/10/2014
+	 * instead of Mon 12/8/2014.  -Wingo 12/5/14
+	 * 
 	 * simple date wrapper that adds business days to today + #days passed.
 	 * works around weekends.
 	 * @param addDaysToToday
 	 * @return
-	 */
 	private Date addBusinessDays(int addDaysToToday) {
 		Calendar cal = Calendar.getInstance();
 		cal.add(Calendar.DATE, addDaysToToday); // give them 5 days from today to approve the Ad
@@ -114,6 +118,37 @@ public class CoopAdsEmailer extends SBActionAdapter {
 		else if (cal.get(Calendar.DAY_OF_WEEK) == 1)
 			cal.add(Calendar.DATE, 1); // Sunday
 	
+		return cal.getTime();
+	}*/
+	
+	/**
+	 * Helper method that returns a new date, set x number of business days 
+	 * away from the current date.
+	 * @param addDaysToToday Number of days to add to the current date.
+	 * @return
+	 */
+	private Date addBusinessDays(int addDaysToToday){
+		Calendar cal = Calendar.getInstance();
+		int daysToAdd = 0; //Actual applied
+        
+        //if it's the weekend right now, move to Monday
+		if ( cal.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY )
+        	cal.add(Calendar.DATE, 2);
+		else if (cal.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY)
+			cal.add(Calendar.DATE, 1);
+		
+		//Today. Offset by 1 so that Monday is the beginning of the week instead of Sunday
+		int initial = cal.get(Calendar.DAY_OF_WEEK) - 1;
+		for ( int i = initial; i < addDaysToToday+initial; i++){ //for each day to be added
+			if ( i%5 == 0 ) //If we're adding on a Friday, increase the increment to 3, so we skip weekends
+				daysToAdd+=3;
+			else
+				daysToAdd++;
+			}
+
+		//increment Calendar date with new number
+		cal.add(Calendar.DATE, daysToAdd);
+
 		return cal.getTime();
 	}
 	
@@ -152,7 +187,8 @@ public class CoopAdsEmailer extends SBActionAdapter {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(surg.getPractEmail());
 			if (StringUtil.isValidEmail(surg.getSecEmail())) mail.addRecipient(surg.getSecEmail());
-			mail.addCC(site.getAdminEmail());
+			mail.addBCC(site.getAdminEmail());
+			mail.addBCC("rwilkin7@its.jnj.com");
 			mail.addCC(sem.getOwner().getEmailAddress());
 			mail.setSubject("Approval Required: Promotion for Seminar #" + sem.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
@@ -168,6 +204,16 @@ public class CoopAdsEmailer extends SBActionAdapter {
 
 	public void notifyAdminOfAdApproval(DePuyEventSeminarVO sem, SiteVO site,
 			UserDataVO user) {
+		//Determine if it's co-funded or DePuy funded (used for subject line and recipients)
+		String eventType = StringUtil.checkVal(sem.getEvents().get(0).getEventTypeCd());
+		boolean isCFSEM = ( eventType.toUpperCase().startsWith("CFSEM") );
+		
+		//Build the subject text
+		StringBuilder subject = new StringBuilder();
+		subject.append("Newspaper Ad approved by Coordinator for ");
+		subject.append( (isCFSEM ? "Co-Funded" : "DePuy Funded") );
+		subject.append(" Seminar #").append(sem.getRSVPCodes());
+		
 		StringBuilder msg = new StringBuilder();
 		msg.append(user.getFirstName()).append(" ").append(user.getLastName());
 		msg.append(" (").append(user.getEmailAddress()).append(") has approved ");
@@ -178,13 +224,22 @@ public class CoopAdsEmailer extends SBActionAdapter {
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipient(site.getAdminEmail());
-			mail.addRecipient("Sterling.Hoham@hmktgroup.com");
-			mail.addRecipient("becca.burton@hmktgroup.com");
-			mail.addRecipient("barb.goley@hmktgroup.com");
+			//mail.addRecipient("becca.burton@hmktgroup.com");
+			//mail.addRecipient("barb.goley@hmktgroup.com");
 			// mail.addRecipient("kelly.westafer@hmktgroup.com");
 			mail.addRecipient("amy.zimmerman@hmktgroup.com");
-			mail.setSubject("Newspaper Ad approved by Coordinator for Seminar #" 	+ sem.getRSVPCodes());
+			mail.addCC(site.getAdminEmail());
+			mail.addCC("rwilkin7@its.jnj.com");
+			mail.addCC("Sterling.Hoham@hmktgroup.com");
+			
+			if (! isCFSEM ){ //Additional recipients for DePuy Funded events
+				mail.addRecipient("lisa.maiers@novusmediainc.com");
+				mail.addCC(sem.getOwner().getEmailAddress());
+				mail.addCC("nicole.olson@novusmediainc.com");
+				mail.addCC("carly.lubert@novusmeidainc.com");
+			}
+			
+			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
 
@@ -220,10 +275,13 @@ public class CoopAdsEmailer extends SBActionAdapter {
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipient("admgt@hmktgroup.com");
+			//mail.addRecipient("admgt@hmktgroup.com");
+			//mail.addRecipient("rita.harman@hmktgroup.com");
 			mail.addRecipient("amy.zimmerman@hmktgroup.com");
-			mail.addRecipient("rita.harman@hmktgroup.com");
 			mail.addCC(site.getAdminEmail());
+			mail.addCC("rwilkin7@its.jnj.com");
+			mail.addCC("Sterling.Hoham@hmktgroup.com");
+			
 			mail.setSubject("Newspaper Ad approved by Surgeon for Seminar #" + sem.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
 			mail.setHtmlBody(msg.toString());
@@ -263,9 +321,10 @@ public class CoopAdsEmailer extends SBActionAdapter {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			// mail.addRecipient("kelly.westafer@hmktgroup.com");
-			mail.addRecipient("admgt@hmktgroup.com");
-			mail.addRecipient("amy.zimmerman@hmktgroup.com");
-			mail.addCC(site.getAdminEmail());
+			//mail.addRecipient("admgt@hmktgroup.com");
+			//mail.addRecipient("amy.zimmerman@hmktgroup.com");
+			mail.addRecipient(site.getAdminEmail());
+			mail.addCC("rwilkin7@its.jnj.com");
 			mail.setSubject("Newspaper Ad declined by Surgeon for Seminar #" + sem.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
 			mail.setHtmlBody(msg.toString());
