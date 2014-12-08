@@ -252,6 +252,13 @@ public class CategoriesImporter extends AbstractImporter {
 			} catch (Exception e) {
 				log.error("Failed insert, key/parent/catname: " + key + "/" + vo.getParentCode() + "/" + vo.getCategoryName() + " ---> " + e.getMessage());
 			}
+			
+			/*
+			 * Ensure that create time is unique so sorting by create dt is accurate
+			 */
+			try {
+				Thread.sleep(10);
+			} catch (Exception e) { log.info("Sleep thread exception: " + e.getMessage()); }
 		}
 		
 		if (ps != null) {
