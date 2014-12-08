@@ -66,6 +66,7 @@ public class CatalogImportManager {
 	private Map<String,String> prefixes; // key is catalogId
 	private Map<String,String> sourceURLs; // key is catalogId
 	private String[] sourceFileList;
+	private boolean importLocalFiles = false;
 
 	
 	// collections to capture mismatches that occur in import data.
@@ -154,6 +155,7 @@ public class CatalogImportManager {
 		iCat.addAttribute(CatalogImportVO.CATEGORY_SKIP_ID, skipCategoryId);
 		iCat.addAttribute(CatalogImportVO.CATEGORY_FEATURE_ID, featureCategoryId);
 		iCat.setSourceFileDelimiter(DELIMITER_SOURCE);
+		iCat.setUseLocalImportFiles(importLocalFiles);
 		String errMsg = null;
 		// loop the catalogs by catalog ID and import.
 		for (String catalogId : catalogIds) {
@@ -165,7 +167,7 @@ public class CatalogImportManager {
 				iCat.setSourceFileUrl(sourceURLs.get(catalogId));
 
 				// retrieve source files
-				String catalogSourcePath = retrieveSourceFiles(iCat);
+				String catalogSourcePath = retrieveSourceFiles(iCat, importLocalFiles);
 				
 				// set source file path for this catalog
 				iCat.setSourceFilePath(catalogSourcePath);
@@ -195,11 +197,12 @@ public class CatalogImportManager {
 	 * @return
 	 * @throws IOException
 	 */
-	private String retrieveSourceFiles(CatalogImportVO catalog) 
+	private String retrieveSourceFiles(CatalogImportVO catalog, boolean importLocalFiles) 
 			throws IOException {
 		//call retriever.
 		CatalogRetriever cr = new CatalogRetriever(config);
-		return cr.retrieveCatalogForImport(catalog.getCatalogId(), catalog.getSourceFileUrl(), sourceFileList);
+		return cr.retrieveCatalogForImport(catalog.getCatalogId(), 
+				catalog.getSourceFileUrl(), sourceFileList, importLocalFiles);
 	}
 		
 	/**
@@ -489,7 +492,8 @@ public class CatalogImportManager {
 		}
 		
 		sourceFileList = StringUtil.checkVal(config.getProperty("sourceFileList")).split(DELIMITER_CONFIG);
-
+		importLocalFiles = Convert.formatBoolean(StringUtil.checkVal(config.getProperty("useLocalFilesForImport")));
+		log.info("Use Local File for Import: " + importLocalFiles);
 		topLevelParentCategoryId = config.getProperty("topLevelParentCategoryId");
 		topLevelCategoryId = config.getProperty("topLevelCategoryId");
 		skipCategoryId = config.getProperty("skipCategoryId");

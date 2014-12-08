@@ -8,13 +8,16 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
+
 // Log4J 1.2.15
 import org.apache.log4j.Logger;
+
 
 //SMT Base Libs
 import com.siliconmtn.commerce.catalog.ProductCategoryVO;
@@ -43,12 +46,14 @@ public class CategoriesImporter extends AbstractImporter {
 	private String topLevelParentCategoryId;
 	private String topLevelCategoryId;
 	private String skipCategoryId;
+	private Map<String,String> skippedCategories;
 	private String featureCategoryId;
 	private final String skipCategoryName = "Featured";
 	
 	public CategoriesImporter() {
 		misMatchedCategories = new HashSet<>();
 		misMatchedParentCategories = new HashSet<>();
+		skippedCategories = new HashMap<>();
 	}
 	
 	/**
@@ -130,8 +135,13 @@ public class CategoriesImporter extends AbstractImporter {
 			*/
 			if (vo.getParentCode().equalsIgnoreCase(skipCategoryId)) {
 				if (! vo.getCategoryCode().toUpperCase().startsWith(featureCategoryId)) {
+					// if not a 'featured category' skip it.
+					skippedCategories.put(vo.getCategoryCode(), null);
 					continue;
 				}
+			} else if (skippedCategories.containsKey(vo.getParentCode())) {
+				// this categories parent was skipped, so skip this category also
+				continue;
 			} else if (vo.getCategoryCode().equals(topLevelCategoryId) && (vo.getParentCode().equals(topLevelParentCategoryId))) {
 				continue;
 			}
@@ -337,6 +347,20 @@ public class CategoriesImporter extends AbstractImporter {
 	 */
 	public void setMisMatchedParentCategories(Set<String> misMatchedParentCategories) {
 		this.misMatchedParentCategories = misMatchedParentCategories;
+	}
+
+	/**
+	 * @return the skippedCategories
+	 */
+	public Map<String, String> getSkippedCategories() {
+		return skippedCategories;
+	}
+
+	/**
+	 * @param skippedCategories the skippedCategories to set
+	 */
+	public void setSkippedCategories(Map<String, String> skippedCategories) {
+		this.skippedCategories = skippedCategories;
 	}
 	
 }
