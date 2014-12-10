@@ -216,7 +216,7 @@ public class KeyStoneCareersAction extends SBActionAdapter {
 	 * @param mod
 	 * @return
 	 */
-	private Collection<? extends CareersVO> getCareerList(SMTServletRequest req, String orgId, ModuleVO mod) {
+	private Collection<CareersVO> getCareerList(SMTServletRequest req, String orgId, ModuleVO mod) {
 		List<CareersVO> postings = new ArrayList<CareersVO>();
 		CareersVO cvo = new CareersVO(req);
 		int franchiseId = Convert.formatInteger((String)req.getSession().getAttribute("webeditFranId"));
