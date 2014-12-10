@@ -400,16 +400,16 @@ public class ShoppingCartAction extends SBActionAdapter {
 			
 		} catch (IOException e) {
 			log.error("Error: PayPal checkout is unavailable, ", e);
-			cart.addError("SYSTEM_ERROR", "Error: PayPal checkout is temporarily unavailable. (System)");
+			cart.addError("SYSTEM_ERROR", "PayPal checkout is temporarily unavailable. (System)");
 		} catch (SQLException e) {
 			log.error("Error: Merchant's PayPal credentials could not be retrieved, ", e);
-			cart.addError("SYSTEM_ERROR", "Error: PayPal credentials could not be retrieved. (DB)");
+			cart.addError("SYSTEM_ERROR", "Merchant authentication error. (Database)");
 		} catch (EncryptionException e) {
 			log.error("Error: Merchant's PayPal credentials could not be decrypted, ", e);
-			cart.addError("SYSTEM_ERROR", "Error: PayPal credentials could not be decrypted. (Credentials)");
+			cart.addError("SYSTEM_ERROR", "Merchant authentication error. (Encryption)");
 		} catch (InvalidDataException e) {
 			log.error("Error: Invalid PayPal checkout transaction type requested, ", e);
-			cart.addError("SYSTEM_ERROR", "Error: Invalid PayPal checkout transaction requested. (Transaction Type)");
+			cart.addError("SYSTEM_ERROR", "Invalid PayPal checkout request. (Transaction Type)");
 		} catch (Exception e) {
 			log.error("Error: An unknown error occurred, ", e);
 			cart.addError("SYSTEM_ERROR", "An unknown error has occurred.");
@@ -490,7 +490,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 		wsa.setAttributes(attributes);
 		wsa.setAttribute(WebServiceAction.CATALOG_SITE_ID, catalogSiteId);
 		Element orderElem = wsa.placeOrder(req, cart, req.getRemoteAddr());
-		OrderCompleteVO ocvo = this.parseOrderResponse(cart, orderElem);
+		OrderCompleteVO ocvo = parseOrderResponse(cart, orderElem);
 		cart.setOrderComplete(ocvo);
 	}
 	

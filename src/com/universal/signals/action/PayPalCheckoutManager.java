@@ -87,6 +87,9 @@ public class PayPalCheckoutManager {
 		// process the checkout request
 		PaymentTransactionResponseVO pRes = processCheckoutRequest();
 		
+		// reset cart errors
+		cart.flushErrors();
+		
 		// parse the response.
 		switch (transactionType) {
 			case EXPRESS_CHECKOUT_SET:
@@ -116,7 +119,7 @@ public class PayPalCheckoutManager {
 		if (log.isDebugEnabled()) debugResponseMap(rMap,"set");
 		
 		// check for any errors.
-		checkErrors(rMap);
+		checkCommonErrors(rMap);
 		if (cart.hasErrors()) return;
 		
 		// set the transactional TOKEN value on cart as invoice number.
@@ -142,7 +145,8 @@ public class PayPalCheckoutManager {
 		if (log.isDebugEnabled()) debugResponseMap(rMap,"get");
 		
 		// check for any errors.
-		checkErrors(rMap);
+		checkCommonErrors(rMap);
+		checkSpecificErrors(rMap);
 		if (cart.hasErrors()) return;
 		
 		// make sure billing info is null so views behave properly.
@@ -194,7 +198,8 @@ public class PayPalCheckoutManager {
 		if (log.isDebugEnabled()) debugResponseMap(rMap,"do");
 		
 		// check for any errors.
-		checkErrors(rMap);
+		checkCommonErrors(rMap);
+		checkSpecificErrors(rMap);
 		if (cart.hasErrors()) return;
 
 		// add additional field vals needed to send to USA's webservice.
@@ -211,15 +216,32 @@ public class PayPalCheckoutManager {
 	 * Check for errors returned in the response and add to cart errors map.
 	 * @param rMap
 	 */
-	private void checkErrors(Map<String,String> rMap) {
+	private void checkCommonErrors(Map<String,String> rMap) {
+		// if payment errors, capture and set on cart
+		String errInfo = StringUtil.checkVal(rMap.get("ACK"),null);
+		if (errInfo != null && ! errInfo.equalsIgnoreCase("success")) {
+			// payment errors found.
+			cart.addError("PAYPAL_ERROR_CODE", rMap.get("L_ERRORCODE0"));
+			cart.addError("PAYPAL_ERROR_CODE_SEVERITY", rMap.get("L_SEVERITYCODE0"));
+			cart.addError("PAYPAL_ERROR_TXT_SHORT", rMap.get("L_SHORTMESSAGE0"));
+			cart.addError("PAYPAL_ERROR_TXT_LONG", rMap.get("L_LONGMESSAGE0"));
+		}
+	}
+	
+	/**
+	 * Check for errors returned by the 'do express checkout' operation; add to cart
+	 * errors map.
+	 * @param rMap
+	 */
+	private void checkSpecificErrors(Map<String,String> rMap) {
 		// if payment errors, capture and set on cart
 		String errInfo = StringUtil.checkVal(rMap.get("PAYMENTINFO_0_ACK"),null);
 		if (errInfo != null && ! errInfo.equalsIgnoreCase("success")) {
 			// payment errors found.
-			cart.addError("PAYPAL_ERROR_CODE", rMap.get("PAYMENTINFO_0_ERRORCODE"));
-			cart.addError("PAYPAL_ERROR_CODE_SEVERITY", rMap.get("PAYMENTINFO_0_SEVERITYCODE"));
-			cart.addError("PAYPAL_ERROR_TXT_SHORT", rMap.get("PAYMENTINFO_0_SHORTMESSAGE"));
-			cart.addError("PAYPAL_ERROR_TXT_LONG", rMap.get("PAYMENTINFO_0_LONGMESSAGE"));
+			cart.addError("PAYPAL_ERROR_CODE_PAYMENT", rMap.get("PAYMENTINFO_0_ERRORCODE"));
+			cart.addError("PAYPAL_ERROR_CODE_SEVERITY_PAYMENT", rMap.get("PAYMENTINFO_0_SEVERITYCODE"));
+			cart.addError("PAYPAL_ERROR_TXT_SHORT_PAYMENT", rMap.get("PAYMENTINFO_0_SHORTMESSAGE"));
+			cart.addError("PAYPAL_ERROR_TXT_LONG_PAYMENT", rMap.get("PAYMENTINFO_0_LONGMESSAGE"));
 		}
 	}
 	
@@ -232,7 +254,7 @@ public class PayPalCheckoutManager {
 	 */
 	private PaymentTransactionResponseVO processCheckoutRequest() 
 			throws IOException, SQLException, EncryptionException {
-		log.debug("processCheckout...");
+		log.debug("processCheckoutRequest...");
 		PaymentTransactionRequestVO pReq = buildBasicRequest(cart);
 		pReq.setTransactionType(transactionType);
 		return callSMTProxy(pReq);
@@ -246,18 +268,21 @@ public class PayPalCheckoutManager {
 	 */
 	private PaymentTransactionResponseVO callSMTProxy(PaymentTransactionRequestVO pReq) 
 			throws IOException {
-		
+		log.debug("callSMTProxy...");
+		// JSONify the request and build the request post data
 		Gson g = new Gson();
 		byte[] json = g.toJson(pReq).getBytes();
-		log.debug("raw payment request obj json: " + new String(json));
 		String postData = "type=json&xmlData=" + new String(json);
 		log.debug("postData: " + postData);
+		
+		// build proxy URL and call proxy
 		StringBuilder smtProxyUrl = new StringBuilder((String)attributes.get(Constants.CFG_SMT_PROXY_URL));
 		smtProxyUrl.append("/payment/process");
-		//http://10.0.80.5:9000/websvc/payment/process
 		SMTHttpConnectionManager mgr = new SMTHttpConnectionManager();
 		byte[] bytes = mgr.retrieveDataViaPost(smtProxyUrl.toString(), postData);
 		log.info("raw SMT proxy response: " + new String(bytes));
+		
+		// JSONify the response
 		PaymentTransactionResponseVO pRes = null;
 		Gson gson = new Gson();
 		pRes = gson.fromJson(new String(bytes), PaymentTransactionResponseVO.class);
@@ -274,6 +299,7 @@ public class PayPalCheckoutManager {
 	 */
 	private PaymentTransactionRequestVO buildBasicRequest(ShoppingCartVO cart) 
 			throws SQLException, EncryptionException {
+		log.debug("build basic request...");
 		PaymentTransactionRequestVO pReq = new PaymentTransactionRequestVO();
 		pReq.setProcessingServiceType(ProcessingServiceType.PAY_PAL);
 		pReq.setMerchantInfo(retrieveMerchantInfo());
@@ -292,6 +318,7 @@ public class PayPalCheckoutManager {
 	 */
 	private MerchantInfoVO retrieveMerchantInfo() throws IllegalArgumentException,
 		EncryptionException, SQLException {
+		log.debug("retrieveMerchantInfo...");
 		StringEncrypter se = new StringEncrypter(encryptionKey);
 		StringBuilder sb = new StringBuilder();
 		sb.append("select ENC_MERCHANT_USER_NM, ENC_MERCHANT_PASSWORD_TXT, ");

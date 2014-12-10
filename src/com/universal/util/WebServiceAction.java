@@ -2,11 +2,13 @@ package com.universal.util;
 
 // Java 7
 import java.io.ByteArrayInputStream;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
 
 // DOM4j
 import org.dom4j.Document;
@@ -14,6 +16,7 @@ import org.dom4j.DocumentException;
 import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
 import org.dom4j.tree.DefaultElement;
+
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -238,7 +241,7 @@ public class WebServiceAction extends SBActionAdapter {
 		}
 		log.debug("*****************\nRequest : " + s);
 		//return this.callWebService(url, s, "root");
-		return new DefaultElement("TESTING");
+		return this.createDebugResponseElement(cart);
 	}
 	
 	/**
@@ -609,6 +612,62 @@ public class WebServiceAction extends SBActionAdapter {
 		err.addElement("ErrorCode").setText("SystemError");
 		err.addElement("ErrorMessage").setText("SystemError");
 		return err;
+	}
+	
+	/**
+	 * DEBUG - creates a dummy order response using the values in the cart
+	 * @param cart
+	 * @return
+	 */
+	private Element createDebugResponseElement(ShoppingCartVO cart) {
+		Element ele = new DefaultElement("OrderResponse");
+		
+		Element subEle = new DefaultElement("GrandTotal");
+		subEle.addText(safeDouble(cart.getCartTotal()));
+		ele.add(subEle);
+		
+		subEle = new DefaultElement("ProductTotal");
+		subEle.addText(safeDouble(cart.getSubTotal()));
+		ele.add(subEle);
+		
+		subEle = new DefaultElement("TaxTotal");
+		subEle.addText(safeDouble(cart.getTaxAmount()));
+		ele.add(subEle);
+		
+		subEle = new DefaultElement("ShippingTotal");
+		subEle.addText(safeDouble(cart.getShipping().getShippingCost()));
+		ele.add(subEle);
+		
+		subEle = new DefaultElement("DiscountTotal");
+		subEle.addText(safeDouble(cart.getCartDiscount().get(0).getDiscountDollarValue()));
+		ele.add(subEle);
+		
+		subEle = new DefaultElement("OrderNumber");
+		subEle.addText("DEBUG:" + Calendar.getInstance().getTimeInMillis());
+		ele.add(subEle);
+		
+		subEle = new DefaultElement("ClientID");
+		subEle.addText(cart.getInvoiceNo());
+		ele.add(subEle);
+		
+		subEle = new DefaultElement("MSG");
+		subEle.addText("DEBUG: Test order generated from cart.");
+		ele.add(subEle);
+
+		return ele;
+	}
+	
+	/**
+	 * for DEBUG
+	 * @param val
+	 * @return
+	 */
+	private String safeDouble(double val) {
+		try {
+			return new Double(val).toString();
+		} catch (NumberFormatException nfe) {
+			return "0.0";
+		}
 	}
 	
 }
