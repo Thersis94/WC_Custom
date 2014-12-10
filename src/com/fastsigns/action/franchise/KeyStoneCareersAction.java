@@ -194,66 +194,116 @@ public class KeyStoneCareersAction extends SBActionAdapter {
 			// we only need the sb action data, not the job postings.
 			return;
 		}
-		CareersVO cvo = new CareersVO(req);
-		List<CareersVO> postings = new ArrayList<CareersVO>();
-		int franchiseId = Convert.formatInteger((String)req.getSession().getAttribute("webeditFranId"));
-		
-		//Check if we have an apprFranchiseId, if we do then we are approving and we set FranchiseId to that
-		if(req.hasParameter("apprFranchiseId"))
-			franchiseId = Convert.formatInteger(req.getParameter("apprFranchiseId"));
-		
+
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
-    	UserRoleVO r = (UserRoleVO) req.getSession().getAttribute(Constants.ROLE_DATA);
-    	
-    	log.debug(mod.getActionData());
-    	SBModuleVO sbVo = (SBModuleVO)mod.getActionData();
-    	
-    	mod.setAttribute(ModuleVO.ATTRIBUTE_1, sbVo.getAttribute(ModuleVO.ATTRIBUTE_1));
-    	//Retrieve all career Opportunities.
-		StringBuilder sb = new StringBuilder();
-		sb.append("select * from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sb.append("FTS_JOB_POSTING where ORGANIZATION_ID = ? ");
-		
-		//Sub select based on role if we're not an admin
-		if(r.getRoleLevel() < 100 || req.hasParameter("apprFranchiseId"))
-			sb.append("and FRANCHISE_ID = ? ");
-		
-		//if we're editing a specific job, add id here.
-		if(cvo.getJobPostingId() != null){
-			sb.append("and JOB_POSTING_ID = ? ");
-		}
-		sb.append("order by FRANCHISE_ID, JOB_POST_DT, JOB_TITLE_NM");
-		log.debug(sb + " | " + orgId);
-		PreparedStatement ps = null;
-		
-		try{
-			int ctr = 1;
-			ps = dbConn.prepareStatement(sb.toString());
-			ps.setString(ctr++, orgId);
-			if(r.getRoleLevel() < 100 || req.hasParameter("apprFranchiseId"))
-				ps.setString(ctr++, franchiseId + "");
-			if(cvo.getJobPostingId() != null){
-				ps.setString(ctr++, cvo.getJobPostingId());
-			}
+	    	log.debug(mod.getActionData());
+		List<CareersVO> postings = new ArrayList<CareersVO>();
+		if (req.hasParameter("add")) {
+			String locationId = StringUtil.checkVal(req.getSession().getAttribute("webeditFranId"));
+			CareersVO c = getNewCareerInfo(locationId);
+			postings.add(c);
+		} else {
+			CareersVO cvo = new CareersVO(req);
+			int franchiseId = Convert.formatInteger((String)req.getSession().getAttribute("webeditFranId"));
 			
-			ResultSet rs = ps.executeQuery();
-			while(rs.next()){
-				postings.add(new CareersVO(rs));
+			//Check if we have an apprFranchiseId, if we do then we are approving and we set FranchiseId to that
+			if(req.hasParameter("apprFranchiseId"))
+				franchiseId = Convert.formatInteger(req.getParameter("apprFranchiseId"));
+			
+		    	UserRoleVO r = (UserRoleVO) req.getSession().getAttribute(Constants.ROLE_DATA);
+		    	
+		    	SBModuleVO sbVo = (SBModuleVO)mod.getActionData();
+		    	
+		    	mod.setAttribute(ModuleVO.ATTRIBUTE_1, sbVo.getAttribute(ModuleVO.ATTRIBUTE_1));
+		    	//Retrieve all career Opportunities.
+			StringBuilder sb = new StringBuilder();
+			sb.append("select * from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+			sb.append("FTS_JOB_POSTING where ORGANIZATION_ID = ? ");
+			
+			//Sub select based on role if we're not an admin
+			if(r.getRoleLevel() < 100 || req.hasParameter("apprFranchiseId"))
+				sb.append("and FRANCHISE_ID = ? ");
+			
+			//if we're editing a specific job, add id here.
+			if(cvo.getJobPostingId() != null){
+				sb.append("and JOB_POSTING_ID = ? ");
 			}
-			log.debug("Retrieved " + postings.size() + " Jobs");
-		} catch(SQLException sqle){
-			log.error("An error was thrown while retrieving ", sqle);
-		} finally {
-			try {
-				if (ps != null) ps.close();
-			} catch (SQLException e) {
-				log.error(e);
+			sb.append("order by FRANCHISE_ID, JOB_POST_DT, JOB_TITLE_NM");
+			log.debug(sb + " | " + orgId);
+			PreparedStatement ps = null;
+			
+			try{
+				int ctr = 1;
+				ps = dbConn.prepareStatement(sb.toString());
+				ps.setString(ctr++, orgId);
+				if(r.getRoleLevel() < 100 || req.hasParameter("apprFranchiseId"))
+					ps.setString(ctr++, franchiseId + "");
+				if(cvo.getJobPostingId() != null){
+					ps.setString(ctr++, cvo.getJobPostingId());
+				}
+				
+				ResultSet rs = ps.executeQuery();
+				while(rs.next()){
+					postings.add(new CareersVO(rs));
+				}
+				log.debug("Retrieved " + postings.size() + " Jobs");
+			} catch(SQLException sqle){
+				log.error("An error was thrown while retrieving ", sqle);
+			} finally {
+				try {
+					if (ps != null) ps.close();
+				} catch (SQLException e) {
+					log.error(e);
+				}
 			}
 		}
 		mod.setActionData(postings);
-		
 	}
 	
+	/**
+	 * Create a blank career vo from the dealer information for the franchise location we have selected
+	 * @param locId
+	 * @return
+	 */
+	private CareersVO getNewCareerInfo(String locId) {
+		StringBuilder sql = new StringBuilder(250);
+		sql.append("SELECT DEALER_NM, ADDRESS_TXT, ADDRESS2_TXT, CITY_NM, COUNTRY_CD, ");
+		sql.append("STATE_CD, ZIP_CD, LOCATION_OWNER_EMAIL_TXT, PRIMARY_PHONE_NO ");
+		sql.append("FROM DEALER d left join DEALER_LOCATION dl on d.DEALER_ID = dl.DEALER_ID ");
+		sql.append("WHERE DEALER_LOCATION_ID = ?");
+		log.debug(sql +"|"+locId);
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		CareersVO career = new CareersVO();
+		try {
+			ps = dbConn.prepareStatement(sql.toString());
+			ps.setString(1, locId);
+			
+			rs = ps.executeQuery();
+			
+			if (rs.next()) {
+				career.setFranchiseId(locId);
+				career.setJobLocNm(rs.getString("DEALER_NM"));
+				career.setJobAddressTxt(rs.getString("ADDRESS_TXT"));
+				career.setJobAddress2Txt(rs.getString("ADDRESS2_TXT"));
+				career.setJobCityNm(rs.getString("CITY_NM"));
+				career.setJobCountryCd(rs.getString("COUNTRY_CD"));
+				career.setJobStateCd(rs.getString("STATE_CD"));
+				career.setJobZipCd(rs.getString("ZIP_CD"));
+				career.setJobContactEmail(rs.getString("LOCATION_OWNER_EMAIL_TXT"));
+				career.setJobPrimaryPhoneNo(rs.getString("PRIMARY_PHONE_NO"));
+			}
+		} catch (SQLException e) {
+			log.error("Could not get dealer location information for franchise " + locId, e);
+		} finally {
+			try {
+				ps.close();
+				rs.close();
+			} catch (Exception e) {}
+		}
+		return career;
+	}
+
 	@Override
 	public void update(SMTServletRequest req) throws ActionException {
 		log.debug("Beginning update method");
