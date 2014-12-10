@@ -82,9 +82,9 @@ public class PersonalizationImporter extends AbstractImporter {
 		PreparedStatement ps = dbConn.prepareStatement(sb.toString());
 		int ctr = 0;
 		int orderNo = 0;
-		String temp;
-		String prodId;
-		String dataValue;
+		String temp = null;
+		String prodId = null;
+		String dataValue = null;
 		Map<String, Integer> headers = null;
 		for (int i=0; (temp = data.readLine()) != null; i++) {
 			String[] fields = temp.split(catalog.getSourceFileDelimiter());
@@ -92,9 +92,16 @@ public class PersonalizationImporter extends AbstractImporter {
 				headers = parseHeaderRow(fields);
 				continue; // skip to next row
 			}
-			prodId = catalog.getCatalogPrefix() + fields[headers.get("CUSTOM")];
-			dataValue = fields[headers.get("DATA")];
-			orderNo = parseOrderNo(StringUtil.checkVal(dataValue).toUpperCase());
+			
+			try {
+				prodId = catalog.getCatalogPrefix() + fields[headers.get("CUSTOM")];
+				dataValue = fields[headers.get("DATA")];
+				orderNo = parseOrderNo(StringUtil.checkVal(dataValue).toUpperCase());
+			} catch (Exception e) {
+				log.error("Error retrieving personalization data row, row appears to be invalid: " + i);
+				continue;
+			}
+			
 			try {
 				ps.setString(1, new UUIDGenerator().getUUID());	//product_attribute_id
 				ps.setString(2, "USA_CUSTOM");	//attribute_id
