@@ -281,6 +281,9 @@ public class OptionsImporter extends AbstractImporter {
 			}
 			attribId = this.formatAttribute(attribId);
 			if (attribId == null) continue;
+			
+			double attribCost = formatAttributeCost(fields, headers);
+			
 			try {
 				ps.setString(1, new UUIDGenerator().getUUID());	//product_attribute_id
 				ps.setString(2, attribId); //attribute_id
@@ -289,7 +292,7 @@ public class OptionsImporter extends AbstractImporter {
 				ps.setString(5, fields[headers.get("CODE")]);	// value_txt
 				ps.setTimestamp(6, Convert.getCurrentTimestamp());	//create_dt
 				ps.setString(7, "dollars");	//curr_type
-				ps.setInt(8, Convert.formatInteger(fields[headers.get("PRICEMOD")]));		//msrp_cost_no
+				ps.setDouble(8, attribCost);		//msrp_cost_no
 				ps.setString(9, fields[headers.get("DESCRIPTION")]);	//attrib1
 				ps.setString(10, attribSelectLvl); //attrib2
 				ps.setInt(11, attribSelectOrder); //order_no
@@ -342,6 +345,22 @@ public class OptionsImporter extends AbstractImporter {
 		}
 		//log.info("attrib before|after: " + attrib + "|" + newAttr);
 		return newAttr;
+	}
+	
+	/**
+	 * Determines the attribute's cost
+	 * @param aCost
+	 * @return
+	 */
+	private double formatAttributeCost(String[] fields, Map<String, Integer> headers) {
+		try {
+			if (headers.get("PRICECHANGE") == null) return 0.00;
+			return Double.parseDouble(StringUtil.checkVal(fields[headers.get("PRICECHANGE")],"0.00"));
+		} catch (ArrayIndexOutOfBoundsException ae) {
+			return 0.00;
+		} catch (NumberFormatException nfe) {
+			return 0.00;
+		}
 	}
 
 	/**
