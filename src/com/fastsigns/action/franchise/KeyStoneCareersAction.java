@@ -4,6 +4,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import com.fastsigns.action.approval.ApprovalFacadeAction;
@@ -203,63 +204,76 @@ public class KeyStoneCareersAction extends SBActionAdapter {
 			CareersVO c = getNewCareerInfo(locationId);
 			postings.add(c);
 		} else {
-			CareersVO cvo = new CareersVO(req);
-			int franchiseId = Convert.formatInteger((String)req.getSession().getAttribute("webeditFranId"));
-			
-			//Check if we have an apprFranchiseId, if we do then we are approving and we set FranchiseId to that
-			if(req.hasParameter("apprFranchiseId"))
-				franchiseId = Convert.formatInteger(req.getParameter("apprFranchiseId"));
-			
-		    	UserRoleVO r = (UserRoleVO) req.getSession().getAttribute(Constants.ROLE_DATA);
-		    	
-		    	SBModuleVO sbVo = (SBModuleVO)mod.getActionData();
-		    	
-		    	mod.setAttribute(ModuleVO.ATTRIBUTE_1, sbVo.getAttribute(ModuleVO.ATTRIBUTE_1));
-		    	//Retrieve all career Opportunities.
-			StringBuilder sb = new StringBuilder();
-			sb.append("select * from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-			sb.append("FTS_JOB_POSTING where ORGANIZATION_ID = ? ");
-			
-			//Sub select based on role if we're not an admin
-			if(r.getRoleLevel() < 100 || req.hasParameter("apprFranchiseId"))
-				sb.append("and FRANCHISE_ID = ? ");
-			
-			//if we're editing a specific job, add id here.
-			if(cvo.getJobPostingId() != null){
-				sb.append("and JOB_POSTING_ID = ? ");
-			}
-			sb.append("order by FRANCHISE_ID, JOB_POST_DT, JOB_TITLE_NM");
-			log.debug(sb + " | " + orgId);
-			PreparedStatement ps = null;
-			
-			try{
-				int ctr = 1;
-				ps = dbConn.prepareStatement(sb.toString());
-				ps.setString(ctr++, orgId);
-				if(r.getRoleLevel() < 100 || req.hasParameter("apprFranchiseId"))
-					ps.setString(ctr++, franchiseId + "");
-				if(cvo.getJobPostingId() != null){
-					ps.setString(ctr++, cvo.getJobPostingId());
-				}
-				
-				ResultSet rs = ps.executeQuery();
-				while(rs.next()){
-					postings.add(new CareersVO(rs));
-				}
-				log.debug("Retrieved " + postings.size() + " Jobs");
-			} catch(SQLException sqle){
-				log.error("An error was thrown while retrieving ", sqle);
-			} finally {
-				try {
-					if (ps != null) ps.close();
-				} catch (SQLException e) {
-					log.error(e);
-				}
-			}
+			postings.addAll(getCareerList(req, orgId, mod));
 		}
 		mod.setActionData(postings);
 	}
 	
+	/**
+	 * Get the career modules that we need from the database.
+	 * @param req
+	 * @param orgId
+	 * @param mod
+	 * @return
+	 */
+	private Collection<? extends CareersVO> getCareerList(SMTServletRequest req, String orgId, ModuleVO mod) {
+		List<CareersVO> postings = new ArrayList<CareersVO>();
+		CareersVO cvo = new CareersVO(req);
+		int franchiseId = Convert.formatInteger((String)req.getSession().getAttribute("webeditFranId"));
+		
+		//Check if we have an apprFranchiseId, if we do then we are approving and we set FranchiseId to that
+		if(req.hasParameter("apprFranchiseId"))
+			franchiseId = Convert.formatInteger(req.getParameter("apprFranchiseId"));
+		
+	    	UserRoleVO r = (UserRoleVO) req.getSession().getAttribute(Constants.ROLE_DATA);
+	    	
+	    	SBModuleVO sbVo = (SBModuleVO)mod.getActionData();
+	    	
+	    	mod.setAttribute(ModuleVO.ATTRIBUTE_1, sbVo.getAttribute(ModuleVO.ATTRIBUTE_1));
+	    	//Retrieve all career Opportunities.
+		StringBuilder sb = new StringBuilder();
+		sb.append("select * from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sb.append("FTS_JOB_POSTING where ORGANIZATION_ID = ? ");
+		
+		//Sub select based on role if we're not an admin
+		if(r.getRoleLevel() < 100 || req.hasParameter("apprFranchiseId"))
+			sb.append("and FRANCHISE_ID = ? ");
+		
+		//if we're editing a specific job, add id here.
+		if(cvo.getJobPostingId() != null){
+			sb.append("and JOB_POSTING_ID = ? ");
+		}
+		sb.append("order by FRANCHISE_ID, JOB_POST_DT, JOB_TITLE_NM");
+		log.debug(sb + " | " + orgId);
+		PreparedStatement ps = null;
+		
+		try{
+			int ctr = 1;
+			ps = dbConn.prepareStatement(sb.toString());
+			ps.setString(ctr++, orgId);
+			if(r.getRoleLevel() < 100 || req.hasParameter("apprFranchiseId"))
+				ps.setString(ctr++, franchiseId + "");
+			if(cvo.getJobPostingId() != null){
+				ps.setString(ctr++, cvo.getJobPostingId());
+			}
+			
+			ResultSet rs = ps.executeQuery();
+			while(rs.next()){
+				postings.add(new CareersVO(rs));
+			}
+			log.debug("Retrieved " + postings.size() + " Jobs");
+		} catch(SQLException sqle){
+			log.error("An error was thrown while retrieving ", sqle);
+		} finally {
+			try {
+				if (ps != null) ps.close();
+			} catch (SQLException e) {
+				log.error(e);
+			}
+		}
+		return postings;
+	}
+
 	/**
 	 * Create a blank career vo from the dealer information for the franchise location we have selected
 	 * @param locId
@@ -298,7 +312,6 @@ public class KeyStoneCareersAction extends SBActionAdapter {
 		} finally {
 			try {
 				ps.close();
-				rs.close();
 			} catch (Exception e) {}
 		}
 		return career;
