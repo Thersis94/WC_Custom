@@ -54,8 +54,8 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	// transaction types understood by this action
 	public enum ReqType {
 		eventInfo, leads,
-		cancelSeminar, orderBox, uploadPostcard, approvePostcardFile, uploadAdFile, 
-		approveNewspaperAd, postseminar, coopAdsSurgeonApproval,
+		cancelSeminar, orderBox, uploadPostcard, approvePostcardFile, declinePostcardFile,
+		uploadAdFile, uploadAdInvoice, approveNewspaperAd, postseminar, coopAdsSurgeonApproval,
 		//status levels
 		//submittedByCoord, approvedByAFD, approvedBySRC, pendingSurgeon, approvedMedAffairs
 		submitSeminar, approveSeminar, srcApproveSeminar, pendingSurgeonReview, approvedMedAffairs
@@ -135,6 +135,10 @@ public class PostcardInsertV2 extends SBActionAdapter {
 				case cancelSeminar:
 					this.cancelPostcard(req, eventPostcardId);
 					break;
+				
+				case uploadAdInvoice:
+					this.saveAdInvoice(req, site, eventPostcardId);
+					break;
 					
 				case uploadAdFile:
 				case approveNewspaperAd:
@@ -154,6 +158,9 @@ public class PostcardInsertV2 extends SBActionAdapter {
 					this.approvePostcardFile(req, eventPostcardId);
 					break;
 				
+				case declinePostcardFile:
+					this.declinePostcardFile(req, eventPostcardId);
+					break;
 				case leads:
 					this.deleteSavedLeadCities(eventPostcardId);
 					this.saveLeadCities(req, eventPostcardId, user, null);
@@ -439,6 +446,16 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		//if radio = adType, possibly trigger an email here.  There is only one submission that will be type=radio
 	}
 	
+	private void saveAdInvoice( SMTServletRequest req, SiteVO site, String eventPostcardId)
+	throws ActionException{
+		DePuyEventSeminarVO sem = fetchSeminar(req, ReportType.summary);
+		req.setAttribute("postcard", sem);
+		
+		CoopAdsActionV2 caa = new CoopAdsActionV2();
+		caa.setAttributes(attributes);
+		caa.setDBConnection(dbConn);
+		caa.saveAdInvoice(req, site, sem, req.getParameter("coopAdId"));
+	}
 	
 	/**
 	 * inserts or updates the DEPUY_EVENT_SURGEON table.
@@ -1009,24 +1026,8 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	
 	private void approvePostcardFile(SMTServletRequest req, String eventPostcardId)
 			throws ActionException {
-		PreparedStatement ps = null;
-		StringBuilder sql = new StringBuilder();
-		sql.append("update event_postcard set postcard_file_status_no=?, ");
-		sql.append("update_dt=? where event_postcard_id=?");
-		log.debug(sql);
-		try {
-			ps = dbConn.prepareStatement(sql.toString());
-			ps.setInt(1, CoopAdsActionV2.CLIENT_APPROVED_AD);
-			ps.setTimestamp(2, Convert.getCurrentTimestamp());
-			ps.setString(3, eventPostcardId);
-			ps.executeUpdate();
-		} catch (SQLException sqle) {
-			log.error("failed approving postcard file", sqle);
-			message = "Transaction Failed";
-			throw new ActionException(sqle);
-		} finally {
-			try { ps.close(); } catch (Exception e) { }
-		}
+		
+		changePostcardFileStatus(eventPostcardId, CoopAdsActionV2.CLIENT_APPROVED_AD);
 		
 		// get the postcard data for emailing & approving each event
 		DePuyEventSeminarVO sem = fetchSeminar(req, ReportType.summary);
@@ -1036,6 +1037,54 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		PostcardEmailer epe = new PostcardEmailer(attributes, dbConn);
 		epe.sendPostcardApproved(req);
 		
+	}
+	
+	/**
+	 * Execute when the coordinator declines the postcard
+	 * @param req
+	 * @param eventPostcardId
+	 * @throws ActionException
+	 */
+	private void declinePostcardFile( SMTServletRequest req, String eventPostcardId )
+	throws ActionException{
+		
+		changePostcardFileStatus( eventPostcardId, CoopAdsActionV2.CLIENT_DECLINED_AD);
+		//retrieve postcard data
+		DePuyEventSeminarVO sem = fetchSeminar(req, ReportType.summary);
+		//set it to attribute for the mailer
+		req.setAttribute("postcard", sem);
+		
+		//Send the notification
+		PostcardEmailer mailer = new PostcardEmailer(attributes, dbConn);
+		mailer.sendPostcardDeclined(req);
+	}
+	
+	/**
+	 * Helper to change the status of the postcard file used in approval and decline
+	 * @param eventPostcardId
+	 * @param statusCd
+	 * @throws ActionException
+	 */
+	private void changePostcardFileStatus(String eventPostcardId, int statusCd) 
+			throws ActionException{
+		//build statement
+		StringBuilder sql = new StringBuilder();
+		sql.append("update event_postcard set postcard_file_status_no=?, ");
+		sql.append("update_dt=? where event_postcard_id=?");
+		log.debug(sql);
+		
+		//try-with-resources
+		try ( PreparedStatement ps = dbConn.prepareStatement(sql.toString()) ) {
+			
+			ps.setInt(1, statusCd);
+			ps.setTimestamp(2, Convert.getCurrentTimestamp());
+			ps.setString(3, eventPostcardId);
+			ps.executeUpdate();
+		} catch (SQLException sqle) {
+			log.error("failed updating postcard file", sqle);
+			message = "Transaction Failed";
+			throw new ActionException(sqle);
+		} 
 	}
 	
 	

@@ -400,4 +400,47 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 		}
 		return ads;
 	}
+	
+	/**
+	 * Save the ad's invoice to binary directory and path to db, and send email notification
+	 * @param req
+	 * @param site
+	 * @param coopAdId
+	 * @throws ActionException
+	 */
+	protected void saveAdInvoice( SMTServletRequest req, SiteVO site,
+			DePuyEventSeminarVO sem, String coopAdId ) throws ActionException {
+		final String customDB = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		final String fieldName = "invoiceFile"; //parameter containing file
+		final String subPath = "/invoice/"; //sub-path to store the file in /binary
+		final String adId = StringUtil.checkVal(coopAdId);
+		if (adId.isEmpty())
+			throw new ActionException("Missing ad Id.");
+		
+		//Create prepared statement
+		StringBuilder sql = new StringBuilder(90);
+		sql.append("update ").append(customDB).append("DEPUY_EVENT_COOP_AD set INVOICE_FILE_URL=? ");
+		sql.append("where COOP_AD_ID=?");
+		log.debug(sql+" | "+adId);
+		
+		//Update path in db
+		try( PreparedStatement ps = dbConn.prepareStatement(sql.toString()) ){
+			
+			int i = 0;
+			ps.setString(++i, saveFile(req, fieldName, subPath ,site ));
+			ps.setString(++i, adId);
+			
+			ps.executeUpdate();
+			
+		} catch ( SQLException e ){
+			log.error("Failed to update invoice file path");
+			throw new ActionException(e);
+		}
+		
+		//Send notification email
+		CoopAdsEmailer mailer = new CoopAdsEmailer(actionInit);
+		mailer.setAttributes(attributes);
+		mailer.setDBConnection(dbConn);
+		mailer.notifyNovusUpload(sem , site); 
+	}
 }
