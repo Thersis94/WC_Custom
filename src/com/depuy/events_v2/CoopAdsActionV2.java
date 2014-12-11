@@ -419,7 +419,7 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 		
 		//Create prepared statement
 		StringBuilder sql = new StringBuilder(90);
-		sql.append("update ").append(customDB).append("DEPUY_EVENT_COOP_AD set INVOICE_PATH_TXT=? ");
+		sql.append("update ").append(customDB).append("DEPUY_EVENT_COOP_AD set INVOICE_FILE_URL=? ");
 		sql.append("where COOP_AD_ID=?");
 		log.debug(sql+" | "+adId);
 		

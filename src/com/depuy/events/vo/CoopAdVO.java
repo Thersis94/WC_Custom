@@ -140,7 +140,7 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 		clinicPhone = db.getStringVal("clinic_phone_txt", rs);
 		clinicHours = db.getStringVal("clinic_hours_txt", rs);
 		surgicalExperience = db.getStringVal("surg_experience_txt", rs);
-		invoiceFile = db.getStringVal("invoice_path_txt", rs);
+		invoiceFile = db.getStringVal("invoice_file_url", rs);
 		db = null;
     }
 
