@@ -523,5 +523,37 @@ public class PostcardEmailer {
 		}
 		return;
 	}
+	
+	/**
+	 * Sent when the coordinator has declined the postcard.
+	 * @param req
+	 */
+	protected void sendPostcardDeclined(SMTServletRequest req){
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
+		
+		//Create the message body
+		StringBuilder msg = new StringBuilder();
+		msg.append(sem.getOwner().getFullName()).append(" (");
+		msg.append(sem.getOwner().getEmailAddress()).append(") has declined ");
+		msg.append("the postcard for Seminar #").append(sem.getRSVPCodes()).append(".\r\r");
+		
+		try{
+			EmailMessageVO mail = new EmailMessageVO();
+			mail.addRecipient(site.getAdminEmail());
+			mail.addCC("rwilkin7@its.jnj.com");
+			mail.setSubject("Postcard Declined - Seminar "+sem.getRSVPCodes());
+			mail.setFrom(site.getMainEmail());
+			mail.setTextBody(msg.toString());
+			
+			//Send the email
+			MessageSender ms = new MessageSender(attributes,dbConn);
+			ms.sendMessage(mail);
+			log.debug("sendPostcardDeclined Sent");
+			
+		} catch (Exception e ){
+			log.error("sendPostcardDeclined",e);
+		}
+	}
 
 }

@@ -367,5 +367,42 @@ public class CoopAdsEmailer extends SBActionAdapter {
 			log.error("Co-Op Ad Payment Received", me);
 		}
 	}
+	
+	/**
+	 * Notification sent out after Novus has uploaded ad details to the portal.
+	 * @param sem
+	 * @param site
+	 */
+	public void notifyNovusUpload( DePuyEventSeminarVO sem, SiteVO site ){
+		//Message body
+		StringBuilder msg = new StringBuilder(250);
+		msg.append("Novus has uploaded all Newspaper Advertising options into ");
+		msg.append("the portal for Seminar #").append(sem.getRSVPCodes()).append(". ");
+		msg.append("Detailed information is now available for Harmony to begin ");
+		msg.append("ad creation.\r\r");
+		
+		//Email subject
+		StringBuilder subject = new StringBuilder(100);
+		subject.append("Newspaper Advertising Options Available in Portal - Seminar ");
+		subject.append(sem.getRSVPCodes());
+		
+		try{
+			EmailMessageVO mail = new EmailMessageVO();
+			mail.setSubject(subject.toString());
+			mail.setFrom(site.getMainEmail());
+			mail.addRecipient("amy.zimmerman@hmktgroup.com");
+			mail.addCC(site.getAdminEmail());
+			mail.addCC("rwilkin7@its.jnj.com");
+			mail.addCC("Sterling.Hoham@hmktgroup.com");
+			mail.setTextBody(msg.toString());
+			
+			//Send message
+			MessageSender ms = new MessageSender(attributes, dbConn);
+			ms.sendMessage(mail);
+			log.debug("Novus Upload Notification Sent");
+		} catch (Exception e){
+			log.error("Novus Upload Mailer", e);
+		}
+	}
 
 }

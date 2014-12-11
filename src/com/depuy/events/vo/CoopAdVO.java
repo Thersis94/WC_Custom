@@ -58,6 +58,7 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 	private String clinicPhone = null;
 	private String clinicHours = null;
 	private String surgicalExperience = null;
+	private String invoiceFile = null;
 
 	public CoopAdVO() {
 	}
@@ -139,6 +140,7 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 		clinicPhone = db.getStringVal("clinic_phone_txt", rs);
 		clinicHours = db.getStringVal("clinic_hours_txt", rs);
 		surgicalExperience = db.getStringVal("surg_experience_txt", rs);
+		invoiceFile = db.getStringVal("invoice_path_txt", rs);
 		db = null;
     }
 
@@ -435,6 +437,20 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 
 	public void setContactEmail(String contactEmail) {
 		this.contactEmail = contactEmail;
+	}
+
+	/**
+	 * @return the invoiceFile
+	 */
+	public String getInvoiceFile() {
+		return invoiceFile;
+	}
+
+	/**
+	 * @param invoiceFile the invoiceFile to set
+	 */
+	public void setInvoiceFile(String invoiceFile) {
+		this.invoiceFile = invoiceFile;
 	}
 
 }
