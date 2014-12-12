@@ -248,7 +248,11 @@ public class UnitAction extends SBActionAdapter {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 		if (role == null) role = new SBUserRole();
-		String join = (role.getRoleLevel() != 10) ? "left outer join " : "inner join ";
+		String prodCd = StringUtil.checkVal(mod.getAttribute(ModuleVO.ATTRIBUTE_1), UnitVO.ProdType.MEDSTREAM.toString());
+		
+		//this was a hack for the ICP team.  They want all their users to be able to see all units.  This doesn't apply to Medstream though.
+		boolean isICPOrAdmin = role.getRoleLevel() != 10 || prodCd.equals("ICP_EXPRESS");
+		String join = (isICPOrAdmin) ? "left outer join " : "inner join ";
 
 		if (req.hasParameter("historyReport")) {
 			this.historyReport(req, role.getRoleLevel());
@@ -256,7 +260,6 @@ public class UnitAction extends SBActionAdapter {
 		}
 
 		List<UnitVO> data = new ArrayList<UnitVO>();
-		String prodCd = StringUtil.checkVal(mod.getAttribute(ModuleVO.ATTRIBUTE_1), UnitVO.ProdType.MEDSTREAM.toString());
 		UnitSearchVO search = new UnitSearchVO(req, prodCd);
 		String unitId = req.getParameter("unitId");
 		boolean isReport = Convert.formatBoolean(req.getParameter("excel"));
