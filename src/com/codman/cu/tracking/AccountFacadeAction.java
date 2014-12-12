@@ -103,7 +103,7 @@ public class AccountFacadeAction extends SBActionAdapter {
 		String unitId = StringUtil.checkVal(req.getParameter("unitId"));
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		RequestSearchVO search = new RequestSearchVO(req);
+		RequestSearchVO search = new RequestSearchVO(req, (String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 		
 		if (physicianId.equals("ADD")) physicianId = "";
 		if (transactionId.equals("ADD")) transactionId = "";
@@ -172,7 +172,7 @@ public class AccountFacadeAction extends SBActionAdapter {
 		if (search.getAccountName() != null) sql.append("and b.account_nm like ? ");
 		if (search.getTerritoryId() != null) sql.append("and a.territory_id=? ");
 		if (search.getSerialNoText() != null) sql.append("and f.serial_no_txt like ? ");
-		if (search.getRepId() != null) sql.append("and a.profile_id=? ");
+		if (search.getRepId() != null) sql.append("and a.person_id=? ");
 
 		getSortOrder(search, sql);
 		log.debug(sql);
@@ -216,7 +216,7 @@ public class AccountFacadeAction extends SBActionAdapter {
 						acctVo = null;
 					}
 					++resultCnt;
-					log.debug("cnt=" + resultCnt + " " + (resultCnt < search.getStart()));
+					//log.debug("cnt=" + resultCnt + " " + (resultCnt < search.getStart()));
 					lastAcctId = StringUtil.checkVal(rs.getString("account_id"));
 					//inline pagination - one account is one row in the table.  Once we have what we need skip the rest
 					if (resultCnt < search.getStart() || resultCnt > search.getEnd()) {

@@ -38,9 +38,6 @@ public class RequestSearchVO implements Serializable {
 		this.init(req);
 		
 	}
-	public RequestSearchVO(SMTServletRequest req) {
-		this.init(req);
-	}
 	
 	private void init(SMTServletRequest req) {
 		if (req.getParameter("sBtn") != null) { //indicates a search was performed

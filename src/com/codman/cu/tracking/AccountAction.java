@@ -56,7 +56,8 @@ public class AccountAction extends SBActionAdapter {
 			UserAction ua = new UserAction(actionInit);
 			ua.setAttributes(attributes);
 			ua.setDBConnection(dbConn);
-			avo.getRep().setPersonId(ua.lookupPersonId(req.getParameter("profileId"), site.getOrganizationId()));
+			if (StringUtil.checkVal(avo.getRep().getPersonId()).length() == 0)
+				avo.getRep().setPersonId(ua.lookupPersonId(req.getParameter("profileId"), site.getOrganizationId()));
 			ua = null;
 			
 			msg = updateAccount(avo, customDb);
