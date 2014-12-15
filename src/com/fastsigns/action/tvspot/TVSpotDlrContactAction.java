@@ -15,6 +15,7 @@ import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.contact.ContactFacadeAction;
+import com.smt.sitebuilder.action.contact.ContactVO;
 import com.smt.sitebuilder.action.contact.SubmittalDataAction;
 import com.smt.sitebuilder.action.dealer.DealerLocationVO;
 import com.smt.sitebuilder.action.dealer.DealerLocatorAction;
@@ -67,6 +68,8 @@ public class TVSpotDlrContactAction extends SimpleActionAdapter {
 		cfa.setAttributes(attributes);
 		cfa.setDBConnection(dbConn);
 		cfa.retrieve(req);
+		ModuleVO m = (ModuleVO) attributes.get(Constants.MODULE_DATA);
+		mod.addCacheGroup(((ContactVO)m.getActionData()).getActionId());
 	}
 
 	
