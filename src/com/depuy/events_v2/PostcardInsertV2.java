@@ -55,7 +55,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	public enum ReqType {
 		eventInfo, leads,
 		cancelSeminar, orderBox, uploadPostcard, approvePostcardFile, declinePostcardFile,
-		uploadAdFile, uploadAdInvoice, approveNewspaperAd, postseminar, coopAdsSurgeonApproval,
+		uploadAdFile, approveNewspaperAd, postseminar, coopAdsSurgeonApproval,
 		//status levels
 		//submittedByCoord, approvedByAFD, approvedBySRC, pendingSurgeon, approvedMedAffairs
 		submitSeminar, approveSeminar, srcApproveSeminar, pendingSurgeonReview, approvedMedAffairs
@@ -134,10 +134,6 @@ public class PostcardInsertV2 extends SBActionAdapter {
 						
 				case cancelSeminar:
 					this.cancelPostcard(req, eventPostcardId);
-					break;
-				
-				case uploadAdInvoice:
-					this.saveAdInvoice(req, site, eventPostcardId);
 					break;
 					
 				case uploadAdFile:
@@ -444,17 +440,6 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		}
 		
 		//if radio = adType, possibly trigger an email here.  There is only one submission that will be type=radio
-	}
-	
-	private void saveAdInvoice( SMTServletRequest req, SiteVO site, String eventPostcardId)
-	throws ActionException{
-		DePuyEventSeminarVO sem = fetchSeminar(req, ReportType.summary);
-		req.setAttribute("postcard", sem);
-		
-		CoopAdsActionV2 caa = new CoopAdsActionV2();
-		caa.setAttributes(attributes);
-		caa.setDBConnection(dbConn);
-		caa.saveAdInvoice(req, site, sem, req.getParameter("coopAdId"));
 	}
 	
 	/**

@@ -47,6 +47,7 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 	public static final int CLIENT_APPROVED_AD = 3;
 	public static final int CLIENT_DECLINED_AD = 4;
 	public static final int CLIENT_PAYMENT_RECD = 5;
+	public static final int AD_DETAILS_RECD = 6;
 	public static final int REMIND_ME_LATER = 10;
 
 	public CoopAdsActionV2() {
@@ -146,6 +147,9 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 		} else if (CLIENT_PAYMENT_RECD == vo.getStatusFlg()) {
 			log.debug("sending payment recieved email");
 			emailer.notifyAdminOfAdPaymentRecd(sem, site, user);
+		} else if (AD_DETAILS_RECD == vo.getStatusFlg()){
+			log.debug("sending novus file received email");
+			emailer.notifyNovusUpload(sem, site);
 		}
 	}
 
@@ -204,8 +208,8 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 			sql.append("RUN_DATES_TXT, TERRITORY_NO, AD_TYPE_TXT, SURGEON_NM, SURGEON_TITLE_TXT, ");
 			sql.append("SURGEON_EMAIL_TXT, SURGEON_IMG_URL, CLINIC_NM, CLINIC_ADDRESS_TXT, ");
 			sql.append("CLINIC_PHONE_TXT, CLINIC_HOURS_TXT, SURG_EXPERIENCE_TXT, ");
-			sql.append("CONTACT_NM, CONTACT_EMAIL_TXT, INSTRUCTIONS_TXT, COOP_AD_ID) ");
-			sql.append("values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+			sql.append("CONTACT_NM, CONTACT_EMAIL_TXT, INSTRUCTIONS_TXT,INVOICE_FILE_URL, COOP_AD_ID) ");
+			sql.append("values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 
 			vo.setCoopAdId(new UUIDGenerator().getUUID());
 			vo.setStatusFlg(CLIENT_SUBMITTED);
@@ -219,13 +223,14 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 			sql.append("RUN_DATES_TXT=?, TERRITORY_NO=?, AD_TYPE_TXT=?, SURGEON_NM=?, SURGEON_TITLE_TXT=?, ");
 			sql.append("SURGEON_EMAIL_TXT=?, SURGEON_IMG_URL=?, CLINIC_NM=?, CLINIC_ADDRESS_TXT=?, ");
 			sql.append("CLINIC_PHONE_TXT=?, CLINIC_HOURS_TXT=?, SURG_EXPERIENCE_TXT=?, ");
-			sql.append("CONTACT_NM=?, CONTACT_EMAIL_TXT=?, INSTRUCTIONS_TXT=? ");
+			sql.append("CONTACT_NM=?, CONTACT_EMAIL_TXT=?, INSTRUCTIONS_TXT=?, INVOICE_FILE_URL=? ");
 			if (PENDING_CLIENT_APPROVAL == vo.getStatusFlg())
 				sql.append(", AD_SUBMIT_DT=?, SURGEON_STATUS_FLG=? ");
 			sql.append("WHERE COOP_AD_ID=?");
 
 			// upload the ad file if it exists
 			vo.setAdFileUrl(this.saveFile(req, "adFileUrl", "/ads/", site));
+			vo.setInvoiceFile(saveFile(req, "invoiceFile", "/invoice/" ,site ));
 		}
 		log.debug("Co-op Ad SQL: " + sql.toString());
 
@@ -261,6 +266,7 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 			ps.setString(++i, vo.getContactName());
 			ps.setString(++i, vo.getContactEmail());
 			ps.setString(++i, vo.getInstructionsText());
+			ps.setString(++i, vo.getInvoiceFile());
 			if (vo.getStatusFlg() == PENDING_CLIENT_APPROVAL && !insertRecord) {
 				ps.setTimestamp(++i, Convert.getCurrentTimestamp());
 				ps.setInt(++i, 0);
