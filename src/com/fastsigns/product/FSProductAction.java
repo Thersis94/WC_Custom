@@ -407,6 +407,8 @@ public class FSProductAction extends SBActionAdapter {
 				n.setNodeName(rs.getString("type_nm"));
 				data.add(n);
 			}
+			if (data.size() > 0)
+				attributes.put(lastProductId, new ProductAttributeContainer(data));
 		} catch (SQLException e) {
 			log.error("Unable to get product attributes for catalog " + catalogId, e);
 		}
