@@ -52,7 +52,6 @@ public class ProductAction extends SBActionAdapter {
 	public static final String STATUS_SOLD_OUT = "Sold Out";
 	public static final String PARAM_DETAIL = "detail";
 	public static final String PARAM_FEATURED = "featured";
-	protected String sitePrefix;
 
 	/**
 	 * 
@@ -78,7 +77,7 @@ public class ProductAction extends SBActionAdapter {
 	 */
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		sitePrefix = site.getSiteId() + "_";
+		String sitePrefix = site.getSiteId() + "_";
 		log.debug("sitePrefix: " + sitePrefix);
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		// get the catalog ID from the module attributes
@@ -94,7 +93,7 @@ public class ProductAction extends SBActionAdapter {
 			if (PARAM_DETAIL.equalsIgnoreCase(cat1)) {
 				// retrieve product detail
 				log.debug("retrieving product detail info...");
-				ProductVO detail = this.retrieveProductDetail(req, catalogId);
+				ProductVO detail = this.retrieveProductDetail(req, catalogId, sitePrefix);
 				
 				if (detail.getProductId() != null) {
 					// found product detail, so check availability
@@ -242,21 +241,22 @@ public class ProductAction extends SBActionAdapter {
 	 * @return
 	 * @throws SQLException
 	 */
-	private ProductVO retrieveProductDetail(SMTServletRequest req, String catalogId) throws SQLException {
-		String productId = req.getParameter(SMTServletRequest.PARAMETER_KEY + "2");
+	private ProductVO retrieveProductDetail(SMTServletRequest req, 
+			String catalogId, String sitePrefix) throws SQLException {
+		String siteProductId = sitePrefix + req.getParameter(SMTServletRequest.PARAMETER_KEY + "2");
 		StringBuilder s = new StringBuilder();
 		s.append("select * from product a ");
 		s.append("left outer join product_attribute_xr b on a.product_id = b.product_id ");
 		s.append("left outer join product_attribute c on b.attribute_id = c.attribute_id ");
 		s.append("where a.product_catalog_id = ? and a.product_id = ? AND a.PRODUCT_GROUP_ID IS NULL ");
 		s.append("order by a.product_id, b.attribute_id, attrib2_txt, order_no");
-		log.debug("Product Detail SQL: " + s + "|" + productId);
+		log.debug("Product Detail SQL: " + s + "|" + siteProductId);
 		
 		PreparedStatement ps = dbConn.prepareStatement(s.toString());
 		ps.setString(1, catalogId);
 		// prefix product ID with site prefix as product IDs in the PRODUCT table
 		// are prefixed upon import to ensure uniqueness
-		ps.setString(2, sitePrefix + productId);
+		ps.setString(2, siteProductId);
 		//String aName = null;
 		List<ProductAttributeVO> pAttributes = new ArrayList<>();
 		ResultSet rs = ps.executeQuery();
@@ -269,7 +269,9 @@ public class ProductAction extends SBActionAdapter {
 			}
 
 			// put all product attributes in a List for later processing.
-			pAttributes.add(new ProductAttributeVO(rs));
+			if (rs.getString("product_attribute_id") != null) {
+				pAttributes.add(new ProductAttributeVO(rs));
+			}
 		}
 
 		// if we found no products for a category, initialize an empty ProductVO
