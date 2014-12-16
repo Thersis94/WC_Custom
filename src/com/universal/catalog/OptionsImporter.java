@@ -11,17 +11,16 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-
 // Log4J 1.2.15
 import org.apache.log4j.Logger;
 
-
 //SMT Base Libs
+import com.siliconmtn.commerce.catalog.ProductAttributeVO;
 import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -40,6 +39,7 @@ import com.siliconmtn.util.UUIDGenerator;
  * @since Apr 03, 2014<p/>
  * <b>Changes: </b>
  * Apr 03, 2014: DBargerhuff: created class.
+ * Dec 11, 2014: DBargerhuff: changed source field used for importing attribute cost
  ****************************************************************************/
 public class OptionsImporter extends AbstractImporter {
 
@@ -47,10 +47,11 @@ public class OptionsImporter extends AbstractImporter {
 	private static final String ATTRIBUTE_PREFIX = "USA_";
 	private Set<String> misMatchedOptions = null;
 	private Set<String> misMatchedAttributes = null;
+	private Map<String,List<Map<String,List<String>>>> optionsIndexHierarchy = null;
 	
 	public OptionsImporter() {
-		misMatchedOptions = new HashSet<>();
-		misMatchedAttributes = new HashSet<>();
+		misMatchedOptions = new LinkedHashSet<>();
+		misMatchedAttributes = new LinkedHashSet<>();
 	}
 	
 	/**
@@ -63,12 +64,8 @@ public class OptionsImporter extends AbstractImporter {
 		
 	/**
 	 * Parses options from the options source file. 
-	 * @param products
-	 * @param catalogSourcePath
-	 * @param optionsSourceFile
 	 * @throws FileNotFoundException
 	 * @throws IOException
-	 * @throws SQLException
 	 */
 	public void manageOptions() 
 			throws FileNotFoundException, IOException  {
@@ -104,7 +101,7 @@ public class OptionsImporter extends AbstractImporter {
 			try {
 				option = StringUtil.checkVal(fields[headers.get("TABLETYPE")]).toLowerCase();
 			} catch (Exception e) {
-				log.error("Data error processing options record #: " + i + ", " + e);
+				log.error("Skipping options record #: " + i + ", " + e);
 				continue;
 			}
 			if (option.length() == 0) continue;
@@ -219,14 +216,13 @@ public class OptionsImporter extends AbstractImporter {
 	}
 	
 	/**
-	 * Inserts product-options associations into the appropriate table. 
-	 * @param products
+	 * Inserts product-options associations into the appropriate table.
 	 * @param catalogSourcePath
 	 * @throws FileNotFoundException
 	 * @throws IOException
 	 * @throws SQLException
 	 */
-	public void insertProductOptions(List<ProductVO> products) 
+	public void insertProductOptions() 
 			throws FileNotFoundException, IOException, SQLException  {
 		BufferedReader data = null;
 		String fullPath = catalog.getSourceFilePath() + catalog.getSourceFileName();
@@ -245,6 +241,7 @@ public class OptionsImporter extends AbstractImporter {
 		
 		int ctr = 0;
 		PreparedStatement ps = dbConn.prepareStatement(s.toString());
+		String guid = null;
 		String temp = null;
 		String prevSrcProdId = "";
 		String attribSelectLvl = null; //corresponds to a List index value
@@ -283,9 +280,10 @@ public class OptionsImporter extends AbstractImporter {
 			if (attribId == null) continue;
 			
 			double attribCost = formatAttributeCost(fields, headers);
-			
+			guid = new UUIDGenerator().getUUID();
+
 			try {
-				ps.setString(1, new UUIDGenerator().getUUID());	//product_attribute_id
+				ps.setString(1, guid);	//product_attribute_id
 				ps.setString(2, attribId); //attribute_id
 				ps.setString(3, prodId);	//product_id
 				ps.setString(4, catalog.getCatalogModelYear());	//model_year_no
@@ -298,7 +296,7 @@ public class OptionsImporter extends AbstractImporter {
 				ps.setInt(11, attribSelectOrder); //order_no
 				ps.executeUpdate();
 				ctr++;
-
+				
 			} catch (Exception e) {
 				String cause = null;
 				if (e.getMessage().contains("column 'PRODUCT_ID'")) {
@@ -348,7 +346,11 @@ public class OptionsImporter extends AbstractImporter {
 	}
 	
 	/**
+<<<<<<< Updated upstream
 	 * Determines the attribute's cost
+=======
+	 * Formats an attribute's cost using the specified source column value.
+>>>>>>> Stashed changes
 	 * @param aCost
 	 * @return
 	 */
@@ -377,5 +379,196 @@ public class OptionsImporter extends AbstractImporter {
 		return misMatchedAttributes;
 	}
 	
+	/**
+	 * @return the optionsIndexHierarchy
+	 */
+	public Map<String, List<Map<String, List<String>>>> getOptionsIndexHierarchy() {
+		return optionsIndexHierarchy;
+	}
+
+	/**
+	 * @param optionsIndexHierarchy the optionsIndexHierarchy to set
+	 */
+	public void setOptionsIndexHierarchy(
+			Map<String, List<Map<String, List<String>>>> optionsIndexHierarchy) {
+		this.optionsIndexHierarchy = optionsIndexHierarchy;
+	}
+
+	/**
+	 * Inserts product-options associations into the appropriate table. 
+	 * @param products
+	 * @param catalogSourcePath
+	 * @throws FileNotFoundException
+	 * @throws IOException
+	 * @throws SQLException
+	 */
+	public void insertProductOptionsNew(List<ProductVO> products) 
+			throws FileNotFoundException, IOException  {
+		BufferedReader data = null;
+		String fullPath = catalog.getSourceFilePath() + catalog.getSourceFileName();
+		try {
+			data = new BufferedReader(new FileReader(fullPath));	
+		} catch (FileNotFoundException fnfe) {
+			String errMsg = "Options source file not found!  File path is: " + fullPath;
+			log.error(errMsg);
+			throw new FileNotFoundException(errMsg);
+		}
+
+		// initialize vars
+		String temp = null;
+		String prevSrcProdId = null;
+		String srcProdId =  null;
+		String prodId = null;
+		String attribSelectLvl = null; //corresponds to a List index value
+		String prevAttribSelectLvl = null;
+		int attribSelectOrder = 0;
+		Map<String, Integer> headers = null;
+		ProductAttributeVO option = null;
+		List<Map<String, ProductAttributeVO>> hLevels = null;
+		Map<String, List<Map<String,ProductAttributeVO>>> prodHLevels = null;
+		// loop file contents and process
+		try {
+			for (int i=0; (temp = data.readLine()) != null; i++) {
+				// parse fields
+				String[] fields = temp.split(catalog.getSourceFileDelimiter());
+				
+				// parse headers
+				if (i == 0) {
+					headers = parseHeaderRow(fields);
+					continue; // skip to next row
+				}
+				
+				// format product ID and set select level
+				srcProdId = fields[headers.get("SKU")];
+				if (srcProdId.indexOf("_") > -1) {
+					attribSelectLvl = srcProdId.substring(srcProdId.length() - 1);
+					prodId = srcProdId.substring(0, (srcProdId.length() - 2));
+				} else {
+					attribSelectLvl = "0";
+					prodId = srcProdId;
+				}
+				// add prefix to prodId
+				prodId = catalog.getCatalogPrefix() + prodId;
+				
+				// compare formatted product ID against list of valid products for this catalog
+				if (! products.contains(prodId)) {
+					log.error("Options product ID mismatch: " + prodId);
+					continue;
+				}
+				
+				// format retrieve attribId
+				String attribId = null;
+				try { // enclosed in try/catch in case of index array out of bounds due to missing field val.
+					attribId = fields[headers.get("TABLETYPE")];
+				} catch (Exception e) {
+					log.error("Skipping attribute, blank source for prodId | row: " + prodId + "|" + i);
+				}
+				if (attribId == null || attribId.length() == 0) continue;
+				attribId = this.formatAttribute(attribId);
+				
+				// build the attribute VO
+				option = new ProductAttributeVO();
+				if (attribSelectLvl.equals("0") || attribSelectLvl.equals("1")) {
+					option.setProductAttributeId(new UUIDGenerator().getUUID());
+				}
+				option.setAttributeId(attribId);
+				option.setProductId(prodId);
+				option.setModelYearNo(catalog.getCatalogModelYear());
+				option.setValueText(fields[headers.get("CODE")]);
+				option.setCurrencyType("dollars");
+				option.setMsrpCostNo(formatAttributeCost(fields, headers));
+				option.setAttribute(ProductAttributeVO.ATTRIB_1, fields[headers.get("DESCRIPTION")]);
+				option.setAttribute(ProductAttributeVO.ATTRIB_2, attribSelectLvl);
+				
+				// compare prev and current prod IDs
+				if (srcProdId.equals(prevSrcProdId)) {
+					Map<String,ProductAttributeVO> aMap = new HashMap<>();
+					if (attribSelectLvl.equals(prevAttribSelectLvl)) {
+						// increment select order
+						option.setDisplayOrderNo(++attribSelectOrder);
+					} else {
+						// reset select order and level list
+						option.setDisplayOrderNo(0);
+						hLevels = new ArrayList<>();
+					}
+					
+					aMap.put(option.getValueText(), option);
+					hLevels.add(aMap);
+					
+				} else {
+					if (prodHLevels == null) { 	// first time through, initialize master map
+						prodHLevels = new HashMap<>();
+					} else {
+						// add the previous product ID to the master map
+						prodHLevels.put(prevSrcProdId, hLevels);
+					}
+					
+					// set option display order no
+					option.setDisplayOrderNo(0);
+					Map<String,ProductAttributeVO> aMap = new HashMap<>();
+					aMap.put(option.getValueText(), option);
+					hLevels = new ArrayList<>();
+					hLevels.add(aMap);
+				}
+				
+				// reset previous prod id
+				prevSrcProdId = srcProdId;
+				prevAttribSelectLvl = attribSelectLvl;
+			}
+			
+			// pick up the dangling attribute
+			if (hLevels != null) {
+				prodHLevels.put(prevSrcProdId, hLevels);
+			}
+			
+		} finally {
+			try {
+				data.close();
+			} catch (Exception e) { log.error("Error closing BufferedReader, ", e); }
+		}
+		
+		updateParentChildIds(prodHLevels);
+		
+	}
 	
+	/**
+	 * Updates the child ProductAttributeVO parentId property with the value of
+	 * the appropriate parent ProductAttributeVO productAttributeId value.
+	 * @param prodHLevels
+	 */
+	private void updateParentChildIds(Map<String,List<Map<String,ProductAttributeVO>>> prodHLevels) {
+		// loop the options index hierarchy and set parent IDs on the appropriate children
+		for (String pId : prodHLevels.keySet()) {
+			List<Map<String,ProductAttributeVO>> levels = prodHLevels.get(pId);
+			
+			// If product has only 1 level of options, skip it.  No children to worry about.
+			if (levels.size() == 1) continue;
+			
+			// get list of the index hierarchy mappings for this product
+			// e.g. BK:[T,SW,HSW], OR:[T,SW]
+			List<Map<String,List<String>>> hier = optionsIndexHierarchy.get(pId);
+			
+			// loop the levels to access the prod attr vos., start at index 1 because 
+			// we don't need to process the parents at this point.
+			for (int i = 1; i < levels.size(); i++) {
+				
+				// get parent(LVL 'i - 1') and children (level 'i') prod attribute VOs
+				Map<String,ProductAttributeVO> parents = levels.get(i - 1);
+				Map<String,ProductAttributeVO> children = levels.get(i);
+				
+				// get LVL 'i' of indexHierarchy to get the parent-child vals
+				Map<String, List<String>> pChild = hier.get(i - 1);
+				// loop the indexHierarchy
+				for (String parentVal : pChild.keySet()) {
+					ProductAttributeVO parentVO = parents.get(parentVal);
+					for (String child : pChild.get(parentVal)) {
+						ProductAttributeVO childVO = children.get(child);
+						childVO.setProductAttributeId(new UUIDGenerator().getUUID());
+						childVO.setParentId(parentVO.getProductAttributeId());
+					}
+				}
+			}
+		}
+	}
+
 }

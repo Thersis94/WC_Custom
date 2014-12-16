@@ -19,9 +19,11 @@ import java.util.Set;
 
 
 
+
 // Log4J 1.2.15
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
+
 
 
 
@@ -219,22 +221,29 @@ public class CatalogImportManager {
 		dbConn.setAutoCommit(false);
 		
 		// delete categories and products before importing
-		manageDeletes(catalog.getCatalogId());
+		//manageDeletes(catalog.getCatalogId());
 		
 		// import category data
-		importCategories(catalog);
+		//importCategories(catalog);
 		
 		// import product data
-		List<ProductVO> products = importProducts(catalog);
+		//List<ProductVO> products = importProducts(catalog);
+		
+		Map<String,List<Map<String,List<String>>>> optionsIndexHierarchy = importOptionsIndexHierarchy(catalog);
+		
+		/*
+		 * DEBUG
+		 */
+		debugOptionsIndexHierarchy(optionsIndexHierarchy);
 		
 		// import product options
-		importOptions(catalog, products);
+		//importOptions(catalog, optionsIndexHierarchy);
 		
 		// import product personalization options
-		importPersonalization(catalog, products);
+		//importPersonalization(catalog, products);
 		
 		// commit changes if all were successful
-		dbConn.commit();
+		//dbConn.commit();
 		dbConn.setAutoCommit(true);
 		addMessage("Catalog import for " + catalog.getCatalogId() + " has completed.");
 
@@ -328,23 +337,45 @@ public class CatalogImportManager {
 	/**
 	 * Reads the options file and attempts to insert options into the 
 	 * attributes table.
-	 * @param catalogSourcePath
-	 * @throws SQLException 
-	 * @throws IOException 
-	 * @throws FileNotFoundException 
+	 * @param catalog
+	 * @return
+	 * @throws FileNotFoundException
+	 * @throws IOException
+	 * @throws SQLException
 	 */
-	private void importOptions(CatalogImportVO catalog, List<ProductVO> products) 
+	private void importOptions (CatalogImportVO catalog,
+			Map<String,List<Map<String,List<String>>>> optionsIndexHierarchy) 
 			throws FileNotFoundException, IOException, SQLException {
 		log.info("importing options...");
 		addMessage("importing options...");
 		catalog.setSourceFileName(sourceFileList[2]);
 		OptionsImporter oi = new OptionsImporter(dbConn);
 		oi.setCatalog(catalog);
+		oi.setOptionsIndexHierarchy(optionsIndexHierarchy);
 		oi.manageOptions();
-		oi.insertProductOptions(products);
+		oi.insertProductOptions();
 		// add any mismatch log entries
 		misMatchedOptions.addAll(oi.getMisMatchedOptions());
-		
+	}
+	
+	/**
+	 * Loads and parses the options index file into a map of product ID to
+	 * a list of options hierarchies where the List index corresponds to the level of
+	 * the hierarchy (e.g. index 0 is the top level parent in the hierarchy).
+	 * @param catalog
+	 * @return
+	 * @throws FileNotFoundException
+	 * @throws IOException
+	 */
+	private Map<String, List<Map<String, List<String>>>> 
+		importOptionsIndexHierarchy(CatalogImportVO catalog) throws FileNotFoundException, 
+			IOException {
+		log.info("importing options index...");
+		addMessage("importing options index...");
+		catalog.setSourceFileName(sourceFileList[3]);
+		OptionsIndexImporter oii = new OptionsIndexImporter();
+		oii.setCatalog(catalog);
+		return oii.manageOptionsIndex();
 	}
 	
 	/**
@@ -359,7 +390,7 @@ public class CatalogImportManager {
 			throws FileNotFoundException, IOException, SQLException {
 		log.info("importing personalization options...");
 		addMessage("importing personalization options...");
-		catalog.setSourceFileName(sourceFileList[3]);
+		catalog.setSourceFileName(sourceFileList[4]);
 		PersonalizationImporter pli = new PersonalizationImporter(dbConn);
 		pli.setCatalog(catalog);
 		pli.managePersonalization(catalog, products);
@@ -544,4 +575,24 @@ public class CatalogImportManager {
 		messageLog.add(msg);
 	}
 
+	private void debugOptionsIndexHierarchy(Map<String,List<Map<String,List<String>>>> optionsIndexHierarchy) {
+		for (String pId : optionsIndexHierarchy.keySet()) {
+			log.debug("productId: "+ pId);
+			
+			List<Map<String,List<String>>> pChild = optionsIndexHierarchy.get(pId);
+			log.debug("hierarchy levels: " + pChild.size());
+			
+			for (int i = 0; i < pChild.size(); i++) {
+				log.debug("expanding level " + i + "...");
+				Map<String,List<String>> level = pChild.get(i);
+				for (String parent : level.keySet()) {
+					log.debug("parent val: " + parent);
+					for (String child : level.get(parent)) {
+						log.debug("----> child: " + child);
+					}
+				}
+			}
+		}
+	}
+	
 }
