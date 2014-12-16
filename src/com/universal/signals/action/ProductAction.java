@@ -52,7 +52,6 @@ public class ProductAction extends SBActionAdapter {
 	public static final String STATUS_SOLD_OUT = "Sold Out";
 	public static final String PARAM_DETAIL = "detail";
 	public static final String PARAM_FEATURED = "featured";
-	protected String sitePrefix;
 
 	/**
 	 * 
@@ -78,7 +77,7 @@ public class ProductAction extends SBActionAdapter {
 	 */
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		sitePrefix = site.getSiteId() + "_";
+		String sitePrefix = site.getSiteId() + "_";
 		log.debug("sitePrefix: " + sitePrefix);
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		// get the catalog ID from the module attributes
@@ -94,7 +93,7 @@ public class ProductAction extends SBActionAdapter {
 			if (PARAM_DETAIL.equalsIgnoreCase(cat1)) {
 				// retrieve product detail
 				log.debug("retrieving product detail info...");
-				ProductVO detail = this.retrieveProductDetail(req, catalogId);
+				ProductVO detail = this.retrieveProductDetail(req, catalogId, sitePrefix);
 				
 				if (detail.getProductId() != null) {
 					// found product detail, so check availability
@@ -242,7 +241,8 @@ public class ProductAction extends SBActionAdapter {
 	 * @return
 	 * @throws SQLException
 	 */
-	private ProductVO retrieveProductDetail(SMTServletRequest req, String catalogId) throws SQLException {
+	private ProductVO retrieveProductDetail(SMTServletRequest req, 
+			String catalogId, String sitePrefix) throws SQLException {
 		String siteProductId = sitePrefix + req.getParameter(SMTServletRequest.PARAMETER_KEY + "2");
 		StringBuilder s = new StringBuilder();
 		s.append("select * from product a ");
