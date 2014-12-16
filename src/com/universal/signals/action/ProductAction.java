@@ -257,8 +257,8 @@ public class ProductAction extends SBActionAdapter {
 		// prefix product ID with site prefix as product IDs in the PRODUCT table
 		// are prefixed upon import to ensure uniqueness
 		ps.setString(2, sitePrefix + productId);
-		String aName = null;
-		List<ProductAttributeVO> pAttributes = null;
+		//String aName = null;
+		List<ProductAttributeVO> pAttributes = new ArrayList<>();
 		ResultSet rs = ps.executeQuery();
 		ProductVO product = null;
 		while (rs.next()) {
@@ -267,32 +267,78 @@ public class ProductAction extends SBActionAdapter {
 				// set the vo's product ID to the custom product number for JSTL use
 				product.setProductId(product.getCustProductNo());
 			}
-			
-			if(aName != null && !aName.equals(rs.getString("attribute_nm"))){
-				product.addProdAttribute(aName, pAttributes);
-				pAttributes = null;
-			}
-			
-			if(pAttributes == null){ 
-				pAttributes = new ArrayList<ProductAttributeVO>();
-				aName = rs.getString("attribute_nm");
-			}
-			
+
+			// put all product attributes in a List for later processing.
 			pAttributes.add(new ProductAttributeVO(rs));
-			
 		}
-		
-		// if we found no products for a category or no attributes, initialize objects.
+
+		// if we found no products for a category, initialize an empty ProductVO
 		if (product == null) product = new ProductVO();
-		if(pAttributes == null)	pAttributes = new ArrayList<ProductAttributeVO>();
 		
-		// sort the product attributes by level and display order
-		Collections.sort(pAttributes, new ProductAttributeComparator());
-		// add attributes to product VO
-		product.addProdAttribute(aName, pAttributes);
+		/*
+		 * Process (sort) attributes and add them to the product VO according
+		 * to business rules.
+		 */
+		processProductAttributes(product, pAttributes);
+		
 		pAttributes = null;
 		this.setPageData(req, product.getTitle(), product.getMetaKywds(), product.getMetaDesc());
 		return product;
+	}
+	
+	/**
+	 * Processes product attributes for the product VO passed in.  The product
+	 * attributes master list is sorted by a custom comparator.  Then the List is
+	 * looped through to separate standard from custom attributes.   Standard attributes
+	 * are added to the product's product attribute map (key = attributeName) first
+	 * and then custom attributes are added.  Standard attributes MUST be added
+	 * first and custom attributes MUST - and both must be added in sequence (standard
+	 * attributes sequenced by attrib2_txt and then display_order_no, and custom
+	 * attributes sequenced by value_txt).  This is critical for displaying the attributes
+	 * on the JSTL view properly and for ensuring that the attributes are specified
+	 * in the correct sequence when an order request XML block is generated.
+	 * @param product
+	 * @param pAttributes
+	 */
+	private void processProductAttributes(ProductVO product, List<ProductAttributeVO> pAttributes) {
+		log.debug("processProductAttributes...");
+		
+		/* Sort to guarantee order by attrib2 text value (standard options) or
+		 * by value_txt value (custom options). */
+		Collections.sort(pAttributes, new ProductAttributeComparator());
+		List<ProductAttributeVO> custom = new ArrayList<>();
+		List<ProductAttributeVO> standard = new ArrayList<>();
+		String prevStd = null;
+		String currStd = null;
+		for (ProductAttributeVO p : pAttributes) {
+			if (p.getAttributeName().equalsIgnoreCase("custom")) {
+				custom.add(p);
+			} else {
+				currStd = p.getAttributeName();
+				if (currStd.equals(prevStd)) {
+					standard.add(p);
+				} else {
+					// add List to product attribute map, attribute name is the key
+					product.addProdAttribute(prevStd, standard);
+					// re-initialize the standard List
+					standard = new ArrayList<>();
+					// add the current attribute to the new List
+					standard.add(p);
+				}
+				prevStd = currStd;
+			}
+		}
+		
+		// clean up any dangling standard attributes and add standard option to 
+		// product attribute map, attribute name is the key.
+		if (standard.size() > 0) {
+			product.addProdAttribute(prevStd, standard);
+		}
+		
+		// now add the custom list to the product attribute map using specified key
+		if (custom.size() > 0) {
+			product.addProdAttribute("custom", custom);
+		}
 	}
 	
 	/**
