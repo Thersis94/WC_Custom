@@ -55,7 +55,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	public enum ReqType {
 		eventInfo, leads,
 		cancelSeminar, orderBox, uploadPostcard, approvePostcardFile, declinePostcardFile,
-		uploadAdFile, approveNewspaperAd, postseminar, coopAdsSurgeonApproval,
+		uploadAdFile, approveNewspaperAd, declineNewspaperAd, postseminar, coopAdsSurgeonApproval,
 		//status levels
 		//submittedByCoord, approvedByAFD, approvedBySRC, pendingSurgeon, approvedMedAffairs
 		submitSeminar, approveSeminar, srcApproveSeminar, pendingSurgeonReview, approvedMedAffairs
@@ -138,10 +138,11 @@ public class PostcardInsertV2 extends SBActionAdapter {
 					
 				case uploadAdFile:
 				case approveNewspaperAd:
+				case declineNewspaperAd:
 				case coopAdsSurgeonApproval:
 					saveNewspaperAd(eventPostcardId, req);
 					break;
-				
+
 				case orderBox: //Order Consumable Box - just fires an email
 					this.orderBox(req, eventPostcardId);
 					break;

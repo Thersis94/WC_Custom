@@ -217,9 +217,9 @@ public class PostcardEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addCC(site.getAdminEmail());
-			mail.addRecipient("Jenn.Davis@hmktgroup.com"); // Jenn Parrish-Davis);
 			mail.addRecipient("sterling.hoham@hmktgroup.com"); // Sterling Hoham
 			mail.addRecipient("amy.zimmerman@hmktgroup.com");
+			mail.addRecipient("lisa.maiers@novusmediainc.com");
 			//if ("CFSEM".equalsIgnoreCase(sem.getEvents().get(0).getEventTypeCd())) 
 			//	mail.addRecipient("rita.harman@hmktgroup.com");
 			
@@ -531,12 +531,17 @@ public class PostcardEmailer {
 	protected void sendPostcardDeclined(SMTServletRequest req){
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
+		String reason = StringUtil.checkVal( req.getParameter("notesText") );
 		
 		//Create the message body
 		StringBuilder msg = new StringBuilder();
 		msg.append(sem.getOwner().getFullName()).append(" (");
 		msg.append(sem.getOwner().getEmailAddress()).append(") has declined ");
-		msg.append("the postcard for Seminar #").append(sem.getRSVPCodes()).append(".\r\r");
+		msg.append("the postcard for Seminar #").append(sem.getRSVPCodes()).append(".\r");
+		if ( ! reason.isEmpty() ){
+			msg.append("The coordinator commented:\r\t").append(reason).append("\r");
+		}
+		msg.append("\r");
 		
 		try{
 			EmailMessageVO mail = new EmailMessageVO();
