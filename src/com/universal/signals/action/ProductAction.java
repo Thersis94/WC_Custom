@@ -243,20 +243,20 @@ public class ProductAction extends SBActionAdapter {
 	 * @throws SQLException
 	 */
 	private ProductVO retrieveProductDetail(SMTServletRequest req, String catalogId) throws SQLException {
-		String productId = req.getParameter(SMTServletRequest.PARAMETER_KEY + "2");
+		String siteProductId = sitePrefix + req.getParameter(SMTServletRequest.PARAMETER_KEY + "2");
 		StringBuilder s = new StringBuilder();
 		s.append("select * from product a ");
 		s.append("left outer join product_attribute_xr b on a.product_id = b.product_id ");
 		s.append("left outer join product_attribute c on b.attribute_id = c.attribute_id ");
 		s.append("where a.product_catalog_id = ? and a.product_id = ? AND a.PRODUCT_GROUP_ID IS NULL ");
 		s.append("order by a.product_id, b.attribute_id, attrib2_txt, order_no");
-		log.debug("Product Detail SQL: " + s + "|" + productId);
+		log.debug("Product Detail SQL: " + s + "|" + siteProductId);
 		
 		PreparedStatement ps = dbConn.prepareStatement(s.toString());
 		ps.setString(1, catalogId);
 		// prefix product ID with site prefix as product IDs in the PRODUCT table
 		// are prefixed upon import to ensure uniqueness
-		ps.setString(2, sitePrefix + productId);
+		ps.setString(2, siteProductId);
 		//String aName = null;
 		List<ProductAttributeVO> pAttributes = new ArrayList<>();
 		ResultSet rs = ps.executeQuery();
@@ -269,7 +269,9 @@ public class ProductAction extends SBActionAdapter {
 			}
 
 			// put all product attributes in a List for later processing.
-			pAttributes.add(new ProductAttributeVO(rs));
+			if (rs.getString("product_attribute_id") != null) {
+				pAttributes.add(new ProductAttributeVO(rs));
+			}
 		}
 
 		// if we found no products for a category, initialize an empty ProductVO
