@@ -65,7 +65,7 @@ public class CourseCalendarVO extends EventEntryVO {
 	 * @param eventName The eventName to set.
 	 */
 	@Importable(name = "Event Title", type = DataType.STRING)
-	@DatabaseColumn(column = "EVENT_NM", dataType = "nvarchar(100)", table = "EVENT_ENTRY")
+	@DatabaseColumn(column = "EVENT_NM", dataType = "nvarchar(150)", table = "EVENT_ENTRY")
 	public void setEventName(String eventName) {
 		super.setEventName(eventName);
 	}
