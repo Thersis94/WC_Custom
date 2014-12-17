@@ -75,12 +75,12 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 			//record the transaction
 			switch (reqType){
 			case "approveNewspaperAd":
-				req.setParameter("adStatusFlg", "" + CLIENT_APPROVED_AD);
-				this.saveAdApproval(req);
+				vo.setStatusFlg(CLIENT_APPROVED_AD);
+				this.saveAdApproval(vo, req);
 				break;
 			case "declineNewspaperAd":
-				req.setParameter("adStatusFlg", ""+CLIENT_DECLINED_AD );
-				this.saveAdApproval(req);
+				vo.setStatusFlg(CLIENT_DECLINED_AD);
+				this.saveAdApproval(vo, req);
 				break;	
 			case "coopAdsSurgeonApproval":
 				this.saveSurgeonsAdApproval(vo);
@@ -318,7 +318,7 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 			sql.append("INSERT INTO ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 			sql.append("DEPUY_EVENT_COOP_AD (EVENT_POSTCARD_ID, ");
 			sql.append("NEWSPAPER1_TXT, NEWSPAPER2_TXT, TOTAL_COST_NO, COST_TO_REP_NO, ");
-			sql.append("APPROVED_PAPER_NM, AD_FILE_URL, STATUS_FLG, CREATE_DT, ");
+			sql.append("APPROVED_PAPER_NM, AD_FILE_URL, AD_FILE2_URL, AD_FILE3_URL, STATUS_FLG, CREATE_DT, ");
 			sql.append("NEWSPAPER1_PHONE_NO, NEWSPAPER2_PHONE_NO, NEWSPAPER3_TXT, NEWSPAPER3_PHONE_NO, ");
 			sql.append("RUN_DATES_TXT, TERRITORY_NO, AD_TYPE_TXT, SURGEON_NM, SURGEON_TITLE_TXT, ");
 			sql.append("SURGEON_EMAIL_TXT, SURGEON_IMG_URL, CLINIC_NM, CLINIC_ADDRESS_TXT, ");
@@ -328,7 +328,7 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 			sql.append("HOSPITAL_INFO_TXT, WEEKS_ADVANCE_NO, AD_COUNT_NO, ");
 			sql.append("COST_TO_DEPUY_NO, COST_TO_PARTY_NO, COST_TO_HOSPITAL_NO, COST_TO_SURGEON_NO, ");
 			sql.append("INVOICE_FILE_URL, COOP_AD_ID ) ");
-			sql.append("values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+			sql.append("values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 
 			vo.setCoopAdId(new UUIDGenerator().getUUID());
 			vo.setStatusFlg(CLIENT_SUBMITTED);
@@ -337,7 +337,7 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 			sql.append("UPDATE ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 			sql.append("DEPUY_EVENT_COOP_AD set EVENT_POSTCARD_ID=?, ");
 			sql.append("NEWSPAPER1_TXT=?, NEWSPAPER2_TXT=?, TOTAL_COST_NO=?, COST_TO_REP_NO=?, ");
-			sql.append("APPROVED_PAPER_NM=?, AD_FILE_URL=?, STATUS_FLG=?, UPDATE_DT=?, ");
+			sql.append("APPROVED_PAPER_NM=?, AD_FILE_URL=?, AD_FILE2_URL=?,AD_FILE3_URL=?, STATUS_FLG=?, UPDATE_DT=?, ");
 			sql.append("NEWSPAPER1_PHONE_NO=?, NEWSPAPER2_PHONE_NO=?, NEWSPAPER3_TXT=?, NEWSPAPER3_PHONE_NO=?, ");
 			sql.append("RUN_DATES_TXT=?, TERRITORY_NO=?, AD_TYPE_TXT=?, SURGEON_NM=?, SURGEON_TITLE_TXT=?, ");
 			sql.append("SURGEON_EMAIL_TXT=?, SURGEON_IMG_URL=?, CLINIC_NM=?, CLINIC_ADDRESS_TXT=?, ");
@@ -354,6 +354,8 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 
 			// upload the ad file if it exists
 			vo.setAdFileUrl(this.saveFile(req, "adFileUrl", "/ads/", site));
+			vo.setAdFile2Url( saveFile(req, "adFile2Url", "/ads/", site) );
+			vo.setAdFile3Url( saveFile(req, "adFile3Url", "/ads/", site) );
 			vo.setInvoiceFile(saveFile(req, "invoiceFile", "/invoice/" ,site ));
 		}
 		log.debug("Co-op Ad SQL: " + sql.toString());
@@ -369,6 +371,8 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 			ps.setDouble(++i, vo.getCostToRepNo());
 			ps.setString(++i, vo.getApprovedPaperName());
 			ps.setString(++i, vo.getAdFileUrl());
+			ps.setString(++i, vo.getAdFile2Url());
+			ps.setString(++i, vo.getAdFile3Url());
 			ps.setInt(++i, vo.getStatusFlg());
 			ps.setTimestamp(++i, Convert.getCurrentTimestamp());
 			ps.setString(++i, vo.getNewspaper1Phone());
@@ -381,7 +385,7 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 			ps.setString(++i, vo.getSurgeonName());
 			ps.setString(++i, vo.getSurgeonTitle());
 			ps.setString(++i, vo.getSurgeonEmail());
-			ps.setString(++i, saveFile(req, "adFileUrl", "/ads/logos", site));
+			ps.setString(++i, saveFile(req, "surgImgUrl", "/ads/logos", site));
 			ps.setString(++i, vo.getClinicName());
 			ps.setString(++i, vo.getClinicAddress());
 			ps.setString(++i, vo.getClinicPhone());
@@ -433,9 +437,9 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void saveAdApproval(SMTServletRequest req) throws ActionException {
+	private void saveAdApproval(CoopAdVO vo, SMTServletRequest req) throws ActionException {
 		final DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
-		Integer statusLvl = Convert.formatInteger(req.getParameter("adStatusFlg"));
+		Integer statusLvl = Convert.formatInteger( vo.getStatusFlg() );
 		if ( statusLvl == CLIENT_APPROVED_AD && sem.getEvents().get(0).getEventTypeCd().startsWith("CFSEM")){
 			//Skip straight to surgeon approval for co-funded
 			statusLvl = PENDING_SURG_APPROVAL;
@@ -453,7 +457,7 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 			ps = dbConn.prepareStatement(sql.toString());
 			ps.setInt(1, statusLvl );
 			ps.setTimestamp(2, Convert.getCurrentTimestamp());
-			ps.setString(3, req.getParameter("coopAdId"));
+			ps.setString(3, vo.getCoopAdId());
 
 			if (ps.executeUpdate() < 1)
 				throw new SQLException("No Co-Op Ad status records updated");
@@ -493,7 +497,7 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 			ps.setInt(++i, (statusLvl == SURG_APPROVED_AD ? 1 : 0 ));
 			ps.setTimestamp(++i, Convert.getCurrentTimestamp());
 			ps.setInt(++i, statusLvl);
-			ps.setString(++i, req.getParameter("coopAdId"));
+			ps.setString(++i, vo.getCoopAdId());
 
 			if (ps.executeUpdate() < 1)
 				throw new SQLException("No Co-Op Ad status records updated");
