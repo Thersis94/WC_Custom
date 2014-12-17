@@ -42,12 +42,17 @@ public class CoopAdsEmailer extends SBActionAdapter {
 		super(arg0);
 	}
 
-	public void notifyAdminOfAdDeclined(DePuyEventSeminarVO sem, SiteVO site, UserDataVO user) {
+	public void notifyAdminOfAdDeclined(DePuyEventSeminarVO sem, SiteVO site, UserDataVO user, String reason) {
 		StringBuilder msg = new StringBuilder();
 		msg.append(user.getFirstName()).append(" ").append(user.getLastName());
 		msg.append(" (").append(user.getEmailAddress()).append(") has declined ");
 		msg.append("the newspaper ad offered for Seminar ");
-		msg.append(sem.getRSVPCodes()).append("\r\r");
+		msg.append(sem.getRSVPCodes()).append("\r");
+		if ( ! StringUtil.checkVal(reason).isEmpty() ){
+			msg.append("The coordinator commented:\r").append(reason).append("\r");
+		}
+		msg.append("\r");
+		
 
 		try {
 			// Create the mail object and send
