@@ -72,6 +72,7 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 	private String hospitalInfo = null;
 	private Integer weeksAdvance = null;
 	private Integer adCount = null;
+	private String invoiceFile = null;
 
 	public CoopAdVO() {
 	}
@@ -179,6 +180,7 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 		surgeonInfo = db.getStringVal("surgeon_info_txt", rs);
 		adCount = db.getIntegerVal("ad_count_no", rs);
 		weeksAdvance = db.getIntegerVal("weeks_advance_no", rs);
+		invoiceFile = db.getStringVal("invoice_file_url", rs);
 		db = null;
     }
 
@@ -657,6 +659,20 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 	 */
 	public void setCostToPartyNo(Double costToPartyNo) {
 		this.costToPartyNo = costToPartyNo;
+	}
+ 
+	/**
+	 * @return the invoiceFile
+	 */
+	public String getInvoiceFile() {
+		return invoiceFile;
+	}
+
+	/**
+	 * @param invoiceFile the invoiceFile to set
+	 */
+	public void setInvoiceFile(String invoiceFile) {
+		this.invoiceFile = invoiceFile;
 	}
 
 }
