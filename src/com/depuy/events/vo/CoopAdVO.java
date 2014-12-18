@@ -42,6 +42,8 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 	private Double costToPartyNo = null;
 	private String approvedPaperName = null;
 	private String adFileUrl = null;
+	private String adFile2Url = null;
+	private String adFile3Url = null;
 	private String territoryNo = null;
 	private Integer statusFlg = null;
 	private Map<String, Integer> eventCodes = new HashMap<String, Integer>();
@@ -72,6 +74,7 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 	private String hospitalInfo = null;
 	private Integer weeksAdvance = null;
 	private Integer adCount = null;
+	private String invoiceFile = null;
 
 	public CoopAdVO() {
 	}
@@ -149,6 +152,8 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 		costToSurgeonNo = db.getDoubleVal("cost_to_surgeon_no",rs);
 		approvedPaperName = db.getStringVal("approved_paper_nm", rs);
 		adFileUrl = db.getStringVal("ad_file_url", rs);
+		adFile2Url = db.getStringVal("ad_file2_url", rs);
+		adFile3Url = db.getStringVal("ad_file3_url", rs);
 		statusFlg = db.getIntegerVal("status_flg", rs);
 		newspaper1Phone = db.getStringVal("newspaper1_phone_no", rs);
 		newspaper2Phone = db.getStringVal("newspaper2_phone_no", rs);
@@ -179,6 +184,7 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 		surgeonInfo = db.getStringVal("surgeon_info_txt", rs);
 		adCount = db.getIntegerVal("ad_count_no", rs);
 		weeksAdvance = db.getIntegerVal("weeks_advance_no", rs);
+		invoiceFile = db.getStringVal("invoice_file_url", rs);
 		db = null;
     }
 
@@ -281,6 +287,10 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 			case CoopAdsActionV2.CLIENT_APPROVED_AD: return "Coordinator Approved Ad";
 			case CoopAdsActionV2.CLIENT_DECLINED_AD: return "Coordinator Declined Ad";
 			case CoopAdsActionV2.CLIENT_PAYMENT_RECD: return "Ad Payment Received";
+			case CoopAdsActionV2.AD_DETAILS_RECD: return "Ad Details Received";
+			case CoopAdsActionV2.PENDING_SURG_APPROVAL: return "Pending Surgeon Approval";
+			case CoopAdsActionV2.SURG_APPROVED_AD: return "Surgeon Approved Ad";
+			case CoopAdsActionV2.SURG_DECLINED_AD: return "Surgeon Declined Ad";
 			default: return "";
 		}
 	}
@@ -657,6 +667,48 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 	 */
 	public void setCostToPartyNo(Double costToPartyNo) {
 		this.costToPartyNo = costToPartyNo;
+	}
+ 
+	/**
+	 * @return the invoiceFile
+	 */
+	public String getInvoiceFile() {
+		return invoiceFile;
+	}
+
+	/**
+	 * @param invoiceFile the invoiceFile to set
+	 */
+	public void setInvoiceFile(String invoiceFile) {
+		this.invoiceFile = invoiceFile;
+	}
+
+	/**
+	 * @return the adFile2Url
+	 */
+	public String getAdFile2Url() {
+		return adFile2Url;
+	}
+
+	/**
+	 * @param adFile2Url the adFile2Url to set
+	 */
+	public void setAdFile2Url(String adFile2Url) {
+		this.adFile2Url = adFile2Url;
+	}
+
+	/**
+	 * @return the adFile3Url
+	 */
+	public String getAdFile3Url() {
+		return adFile3Url;
+	}
+
+	/**
+	 * @param adFile3Url the adFile3Url to set
+	 */
+	public void setAdFile3Url(String adFile3Url) {
+		this.adFile3Url = adFile3Url;
 	}
 
 }

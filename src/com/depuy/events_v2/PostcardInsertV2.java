@@ -53,12 +53,12 @@ public class PostcardInsertV2 extends SBActionAdapter {
 
 	// transaction types understood by this action
 	public enum ReqType {
-		eventInfo, leads,
-		cancelSeminar, orderBox, uploadPostcard, approvePostcardFile, uploadAdFile, 
-		approveNewspaperAd, postseminar, coopAdsSurgeonApproval, hospitalSponsored,
+		eventInfo, leads, cancelSeminar, orderBox, uploadPostcard, approvePostcardFile, declinePostcardFile,
+		uploadAdFile, approveNewspaperAd, declineNewspaperAd, postseminar, coopAdsSurgeonApproval, hospitalSponsored, 
 		//status levels
 		//submittedByCoord, approvedByAFD, approvedBySRC, pendingSurgeon, approvedMedAffairs
-		submitSeminar, approveSeminar, srcApproveSeminar, pendingSurgeonReview, approvedMedAffairs
+		submitSeminar, approveSeminar, srcApproveSeminar, pendingSurgeonReview, approvedMedAffairs,
+		markPostcardSent
 	}
 
 	public PostcardInsertV2() {
@@ -160,10 +160,11 @@ public class PostcardInsertV2 extends SBActionAdapter {
 					
 				case uploadAdFile:
 				case approveNewspaperAd:
+				case declineNewspaperAd:
 				case coopAdsSurgeonApproval:
 					saveNewspaperAd(eventPostcardId, req);
 					break;
-				
+
 				case orderBox: //Order Consumable Box - just fires an email
 					this.orderBox(req, eventPostcardId);
 					break;
@@ -176,6 +177,14 @@ public class PostcardInsertV2 extends SBActionAdapter {
 					this.approvePostcardFile(req, eventPostcardId);
 					break;
 				
+				case declinePostcardFile:
+					this.declinePostcardFile(req, eventPostcardId);
+					break;
+					
+				case markPostcardSent:
+					markPostcardSent(req, eventPostcardId);
+					break;
+					
 				case leads:
 					this.deleteSavedLeadCities(eventPostcardId);
 					this.saveLeadCities(req, eventPostcardId, user, null);
@@ -461,7 +470,6 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		
 		//if radio = adType, possibly trigger an email here.  There is only one submission that will be type=radio
 	}
-	
 	
 	/**
 	 * inserts or updates the DEPUY_EVENT_SURGEON table.
@@ -1026,30 +1034,19 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		
 		//send an email to the coordinator here...
 		PostcardEmailer epe = new PostcardEmailer(attributes, dbConn);
-		epe.requestPostcardApproval(req);
+		//if this is a PCP event, use the PCP email
+		if ( sem.getEvents().get(0).getEventTypeCd().equalsIgnoreCase("CPSEM") ){
+			epe.sendInvitationApprovalRequest(req);
+		} else {
+			epe.requestPostcardApproval(req);
+		}
 		
 	}
 	
 	private void approvePostcardFile(SMTServletRequest req, String eventPostcardId)
 			throws ActionException {
-		PreparedStatement ps = null;
-		StringBuilder sql = new StringBuilder();
-		sql.append("update event_postcard set postcard_file_status_no=?, ");
-		sql.append("update_dt=? where event_postcard_id=?");
-		log.debug(sql);
-		try {
-			ps = dbConn.prepareStatement(sql.toString());
-			ps.setInt(1, CoopAdsActionV2.CLIENT_APPROVED_AD);
-			ps.setTimestamp(2, Convert.getCurrentTimestamp());
-			ps.setString(3, eventPostcardId);
-			ps.executeUpdate();
-		} catch (SQLException sqle) {
-			log.error("failed approving postcard file", sqle);
-			message = "Transaction Failed";
-			throw new ActionException(sqle);
-		} finally {
-			try { ps.close(); } catch (Exception e) { }
-		}
+		
+		changePostcardFileStatus(eventPostcardId, CoopAdsActionV2.CLIENT_APPROVED_AD);
 		
 		// get the postcard data for emailing & approving each event
 		DePuyEventSeminarVO sem = fetchSeminar(req, ReportType.summary);
@@ -1057,8 +1054,100 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		
 		//send an email to the Admins and Harmony here...
 		PostcardEmailer epe = new PostcardEmailer(attributes, dbConn);
-		epe.sendPostcardApproved(req);
+		//send the PCP invitation email if this is a PCP event instead
+		if ( "CPSEM".equalsIgnoreCase( sem.getEvents().get(0).getEventTypeCd()) ){
+			epe.sendInvitationApproved(req);
+		} else {
+			epe.sendPostcardApproved(req);
+		}
 		
+	}
+	
+	/**
+	 * Execute when the coordinator declines the postcard
+	 * @param req
+	 * @param eventPostcardId
+	 * @throws ActionException
+	 */
+	private void declinePostcardFile( SMTServletRequest req, String eventPostcardId )
+	throws ActionException{
+		
+		changePostcardFileStatus( eventPostcardId, CoopAdsActionV2.CLIENT_DECLINED_AD);
+		//retrieve postcard data
+		DePuyEventSeminarVO sem = fetchSeminar(req, ReportType.summary);
+		//set it to attribute for the mailer
+		req.setAttribute("postcard", sem);
+		
+		//Send the notification
+		PostcardEmailer mailer = new PostcardEmailer(attributes, dbConn);
+		mailer.sendPostcardDeclined(req);
+	}
+	
+	/**
+	 * Helper to change the status of the postcard file used in approval and decline
+	 * @param eventPostcardId
+	 * @param statusCd
+	 * @throws ActionException
+	 */
+	private void changePostcardFileStatus(String eventPostcardId, int statusCd) 
+			throws ActionException{
+		//build statement
+		StringBuilder sql = new StringBuilder();
+		sql.append("update event_postcard set postcard_file_status_no=?, ");
+		sql.append("update_dt=? where event_postcard_id=?");
+		log.debug(sql);
+		
+		//try-with-resources
+		try ( PreparedStatement ps = dbConn.prepareStatement(sql.toString()) ) {
+			
+			ps.setInt(1, statusCd);
+			ps.setTimestamp(2, Convert.getCurrentTimestamp());
+			ps.setString(3, eventPostcardId);
+			ps.executeUpdate();
+		} catch (SQLException sqle) {
+			log.error("failed updating postcard file", sqle);
+			message = "Transaction Failed";
+			throw new ActionException(sqle);
+		} 
+	}
+	
+	/**
+	 * Change the postcard's mailing status to sent, and send email notification
+	 * @param req
+	 * @param eventPostcardId
+	 */
+	private void markPostcardSent( SMTServletRequest req, String eventPostcardId)
+	throws ActionException{
+		if( StringUtil.checkVal(eventPostcardId).isEmpty() )
+			throw new ActionException("Missing eventPostcardId");
+		
+		//build sql statement
+		StringBuilder sql = new StringBuilder(100);
+		sql.append("update EVENT_POSTCARD set MAIL_STATUS_FLG=?, UPDATE_DT=? ");
+		sql.append("where EVENT_POSTCARD_ID=?");
+		log.debug(sql + " | "+eventPostcardId);
+		
+		//Update record in db
+		try( PreparedStatement ps = dbConn.prepareStatement(sql.toString())){
+			int i = 0;
+			ps.setInt(++i, 1);
+			ps.setTimestamp(++i, Convert.getCurrentTimestamp());
+			ps.setString(++i, eventPostcardId); 
+			ps.executeUpdate();
+			
+		} catch (SQLException ex){
+			throw new ActionException(ex);
+		}
+		
+		DePuyEventSeminarVO sem = fetchSeminar(req, ReportType.summary);
+		req.setAttribute("postcard", sem); //Used by the mailer
+		//send notification email
+		PostcardEmailer mailer = new PostcardEmailer(attributes, dbConn);
+		//PCP has a different email
+		if (sem.getEvents().get(0).getEventTypeCd().equalsIgnoreCase("CPSEM"))
+			mailer.notifyInvitationSent(req);
+		else
+			mailer.notifyPostcardSent(req);
 	}
 	
 	private void orderBox(SMTServletRequest req, String eventPostcardId) throws ActionException{

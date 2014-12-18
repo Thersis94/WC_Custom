@@ -41,17 +41,23 @@ public class CoopAdsEmailer extends SBActionAdapter {
 		super(arg0);
 	}
 
-	public void notifyAdminOfAdDeclined(DePuyEventSeminarVO sem, SiteVO site, UserDataVO user) {
+	public void notifyAdminOfAdDeclined(DePuyEventSeminarVO sem, SiteVO site, UserDataVO user, String reason) {
 		StringBuilder msg = new StringBuilder();
 		msg.append(user.getFirstName()).append(" ").append(user.getLastName());
 		msg.append(" (").append(user.getEmailAddress()).append(") has declined ");
 		msg.append("the newspaper ad offered for Seminar ");
-		msg.append(sem.getRSVPCodes()).append("\r\r");
+		msg.append(sem.getRSVPCodes()).append("\r");
+		if ( ! StringUtil.checkVal(reason).isEmpty() ){
+			msg.append("The coordinator commented:\r").append(reason).append("\r");
+		}
+		msg.append("\r");
+		
 
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(site.getAdminEmail());
+			mail.addCC("rwilkin7@its.jnj.com");
 			mail.setSubject("Newspaper Ad declined for Seminar " + sem.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
@@ -66,15 +72,15 @@ public class CoopAdsEmailer extends SBActionAdapter {
 	}
 
 	public void requestCoordinatorApproval(DePuyEventSeminarVO sem, SiteVO site) {
-		Calendar cal = Calendar.getInstance();
-		cal.add(Calendar.DATE, 4); // give them 4 days from today to approve the Ad
-
+		//Allow 5 business days for response
+		Date dueDate = addBusinessDays(5);
+		
 		StringBuilder msg = new StringBuilder();
 		msg.append("Dear Seminar Holder,\r\r");
 		msg.append("The cost and proof for your ad for Seminar ").append(sem.getRSVPCodes());
 		msg.append(" is now ready for your approval.  Please visit ");
 		msg.append(site.getFullSiteAlias()).append("/?reqType=promote&eventPostcardId=").append(sem.getEventPostcardId()).append(" before ");
-		msg.append(Convert.formatDate(cal.getTime())).append(" to either accept or reject this offer.  ");
+		msg.append(Convert.formatDate(dueDate)).append(" to either accept or reject this offer.  ");
 		msg.append("If you fail to accept or reject by the given date you will ");
 		msg.append("automatically accept the offer and your territory will be billed for the expense.\r\r");
 		msg.append("Thank You,\rEvents.depuy.com Administrator\r\r");
@@ -83,6 +89,8 @@ public class CoopAdsEmailer extends SBActionAdapter {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(sem.getOwner().getEmailAddress());
+			mail.addCC("rwilkin7@its.jnj.com");
+			mail.addCC(site.getAdminEmail());
 			mail.setSubject("Newspaper Ad approval required - Seminar " + sem.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
@@ -96,13 +104,14 @@ public class CoopAdsEmailer extends SBActionAdapter {
 		}
 	}
 
-	
-	/**
+	/* Replacing this method with one that adds business days instead of days, to avoid 
+	 * odd results (i.e. Fri 12/5/2014 + 3 business days should be Wed 12/10/2014
+	 * instead of Mon 12/8/2014.  -Wingo 12/5/14
+	 * 
 	 * simple date wrapper that adds business days to today + #days passed.
 	 * works around weekends.
 	 * @param addDaysToToday
 	 * @return
-	 */
 	private Date addBusinessDays(int addDaysToToday) {
 		Calendar cal = Calendar.getInstance();
 		cal.add(Calendar.DATE, addDaysToToday); // give them 5 days from today to approve the Ad
@@ -113,6 +122,37 @@ public class CoopAdsEmailer extends SBActionAdapter {
 		else if (cal.get(Calendar.DAY_OF_WEEK) == 1)
 			cal.add(Calendar.DATE, 1); // Sunday
 	
+		return cal.getTime();
+	}*/
+	
+	/**
+	 * Helper method that returns a new date, set x number of business days 
+	 * away from the current date.
+	 * @param addDaysToToday Number of days to add to the current date.
+	 * @return
+	 */
+	private Date addBusinessDays(int addDaysToToday){
+		Calendar cal = Calendar.getInstance();
+		int daysToAdd = 0; //Actual applied
+        
+        //if it's the weekend right now, move to Monday
+		if ( cal.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY )
+        	cal.add(Calendar.DATE, 2);
+		else if (cal.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY)
+			cal.add(Calendar.DATE, 1);
+		
+		//Today. Offset by 1 so that Monday is the beginning of the week instead of Sunday
+		int initial = cal.get(Calendar.DAY_OF_WEEK) - 1;
+		for ( int i = initial; i < addDaysToToday+initial; i++){ //for each day to be added
+			if ( i%5 == 0 ) //If we're adding on a Friday, increase the increment to 3, so we skip weekends
+				daysToAdd+=3;
+			else
+				daysToAdd++;
+			}
+
+		//increment Calendar date with new number
+		cal.add(Calendar.DATE, daysToAdd);
+
 		return cal.getTime();
 	}
 	
@@ -135,9 +175,11 @@ public class CoopAdsEmailer extends SBActionAdapter {
 //			msg.append(" and postcards.  The cost of the postcards is $90");
 		msg.append(". Approval is required by ").append(
 				Convert.formatDate(approvalDt, Convert.DATE_LONG));
-		msg.append(". Approval and payment information (credit card information given to our third party agency) ");
-		msg.append("must be received by ").append(
-				Convert.formatDate(paymentDt, Convert.DATE_LONG));
+		msg.append(". Once you approve, a credit card processing system (managed ");
+		msg.append("by Harmony Marketing Group, our third party agency) will appear ");
+		msg.append("with step by step instructions on providing payment for your ");
+		msg.append("portion of the advertising/seminar expenses. Payment information ");
+		msg.append("must be received by ").append(Convert.formatDate(paymentDt, Convert.DATE_LONG));
 		msg.append(" or the seminar will be cancelled.</p>");
 		msg.append("<p><a href=\"http://").append(site.getSiteAlias())
 				.append("/approve-ad")
@@ -151,7 +193,8 @@ public class CoopAdsEmailer extends SBActionAdapter {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(surg.getPractEmail());
 			if (StringUtil.isValidEmail(surg.getSecEmail())) mail.addRecipient(surg.getSecEmail());
-			mail.addCC(site.getAdminEmail());
+			mail.addBCC(site.getAdminEmail());
+			mail.addBCC("rwilkin7@its.jnj.com");
 			mail.addCC(sem.getOwner().getEmailAddress());
 			mail.setSubject("Approval Required: Promotion for Seminar #" + sem.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
@@ -167,22 +210,46 @@ public class CoopAdsEmailer extends SBActionAdapter {
 
 	public void notifyAdminOfAdApproval(DePuyEventSeminarVO sem, SiteVO site,
 			UserDataVO user) {
-		StringBuilder msg = new StringBuilder();
+		//Determine if it's co-funded or DePuy funded (used for subject line and recipients)
+		String eventType = StringUtil.checkVal(sem.getEvents().get(0).getEventTypeCd());
+		boolean isCFSEM = ( eventType.toUpperCase().startsWith("CFSEM") );
+		
+		//Build the subject text
+		StringBuilder subject = new StringBuilder();
+		subject.append("Newspaper Ad approved by Coordinator for ");
+		subject.append( (isCFSEM ? "Co-Funded" : "DePuy Funded") );
+		subject.append(" Seminar #").append(sem.getRSVPCodes());
+		
+		StringBuilder msg = new StringBuilder(425);
 		msg.append(user.getFirstName()).append(" ").append(user.getLastName());
 		msg.append(" (").append(user.getEmailAddress()).append(") has approved ");
-		msg.append("an ad for Seminar #").append(sem.getRSVPCodes()).append("\r\r");
-		//if (ad.getSurgeonStatusFlg() == 0)
-		//	msg.append("The surgeon has yet to review this ad.\r\n");
+		msg.append("an ad for Seminar #").append(sem.getRSVPCodes()).append("\r");
+		if (isCFSEM){
+			msg.append("Harmony, please upload ad file and final invoice for the ");
+			msg.append("amount the surgeon and/or hospital is repsonsible for to ");
+			msg.append("the portal for approval.\r");
+		}
+		msg.append("\r");
+		
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipient(site.getAdminEmail());
-			mail.addRecipient("Sterling.Hoham@hmktgroup.com");
-			mail.addRecipient("becca.burton@hmktgroup.com");
-			mail.addRecipient("barb.goley@hmktgroup.com");
+			//mail.addRecipient("becca.burton@hmktgroup.com");
+			//mail.addRecipient("barb.goley@hmktgroup.com");
 			// mail.addRecipient("kelly.westafer@hmktgroup.com");
 			mail.addRecipient("amy.zimmerman@hmktgroup.com");
-			mail.setSubject("Newspaper Ad approved by Coordinator for Seminar #" 	+ sem.getRSVPCodes());
+			mail.addCC(site.getAdminEmail());
+			mail.addCC("rwilkin7@its.jnj.com");
+			mail.addCC("Sterling.Hoham@hmktgroup.com");
+			
+			if (! isCFSEM ){ //Additional recipients for DePuy Funded events
+				mail.addRecipient("lisa.maiers@novusmediainc.com");
+				mail.addCC(sem.getOwner().getEmailAddress());
+				mail.addCC("nicole.olson@novusmediainc.com");
+				mail.addCC("carly.lubert@novusmeidainc.com");
+			}
+			
+			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
 
@@ -207,21 +274,29 @@ public class CoopAdsEmailer extends SBActionAdapter {
 		
 		StringBuilder msg = new StringBuilder();
 		msg.append("<p>").append(surg.getSurgeonName());
-		msg.append(" has approved the newspaper ad and cost for Seminar #");
+		msg.append(" has approved the newspaper ad/cost and provided payment for Seminar #");
 		msg.append(sem.getRSVPCodes()).append("</p>");
-		msg.append("<p>Once you've collected payment, please enter that information ");
-		msg.append("on the website and change the status to Payment Received.</p>");
+		msg.append("<p>Harmony, please change the status on the portal to Payment Received ");
+		msg.append("by using the link below.</p>");
 		String url = site.getFullSiteAlias() + "/?reqType=promote&eventPostcardId=" + sem.getEventPostcardId();
 		msg.append("<p><a href=\"").append(url).append("\">").append(url).append("</a></p>");
+		msg.append("<p>Novus, please move forward with the newspaper ad purchases.</p>");
 		msg.append("<p>Thank You,<br/>Events.depuy.com Administrator</p><br/>");
 
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipient("admgt@hmktgroup.com");
+			//mail.addRecipient("admgt@hmktgroup.com");
+			//mail.addRecipient("rita.harman@hmktgroup.com");
 			mail.addRecipient("amy.zimmerman@hmktgroup.com");
-			mail.addRecipient("rita.harman@hmktgroup.com");
+			mail.addRecipient("lisa.maiers@novusmediainc.com");
 			mail.addCC(site.getAdminEmail());
+			mail.addCC("rwilkin7@its.jnj.com");
+			mail.addCC("Sterling.Hoham@hmktgroup.com");
+			mail.addCC(sem.getOwner().getEmailAddress());
+			mail.addCC("nicole.olson@novusmediainc.com");
+			mail.addCC("carly.lubert@novusmediainc.com");
+			
 			mail.setSubject("Newspaper Ad approved by Surgeon for Seminar #" + sem.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
 			mail.setHtmlBody(msg.toString());
@@ -261,9 +336,10 @@ public class CoopAdsEmailer extends SBActionAdapter {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			// mail.addRecipient("kelly.westafer@hmktgroup.com");
-			mail.addRecipient("admgt@hmktgroup.com");
-			mail.addRecipient("amy.zimmerman@hmktgroup.com");
-			mail.addCC(site.getAdminEmail());
+			//mail.addRecipient("admgt@hmktgroup.com");
+			//mail.addRecipient("amy.zimmerman@hmktgroup.com");
+			mail.addRecipient(site.getAdminEmail());
+			mail.addCC("rwilkin7@its.jnj.com");
 			mail.setSubject("Newspaper Ad declined by Surgeon for Seminar #" + sem.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
 			mail.setHtmlBody(msg.toString());
@@ -306,5 +382,76 @@ public class CoopAdsEmailer extends SBActionAdapter {
 			log.error("Co-Op Ad Payment Received", me);
 		}
 	}
+	
+	/**
+	 * Notification sent out after Novus has uploaded ad details to the portal.
+	 * @param sem
+	 * @param site
+	 */
+	public void notifyNovusUpload( DePuyEventSeminarVO sem, SiteVO site ){
+		//Message body
+		StringBuilder msg = new StringBuilder(250);
+		msg.append("Novus has uploaded all Newspaper Advertising options into ");
+		msg.append("the portal for Seminar #").append(sem.getRSVPCodes()).append(". ");
+		msg.append("Detailed information is now available for Harmony to begin ");
+		msg.append("ad creation.\r\r");
+		
+		//Email subject
+		StringBuilder subject = new StringBuilder(100);
+		subject.append("Newspaper Advertising Options Available in Portal - Seminar ");
+		subject.append(sem.getRSVPCodes());
+		
+		try{
+			EmailMessageVO mail = new EmailMessageVO();
+			mail.setSubject(subject.toString());
+			mail.setFrom(site.getMainEmail());
+			mail.addRecipient("amy.zimmerman@hmktgroup.com");
+			mail.addCC(site.getAdminEmail());
+			mail.addCC("rwilkin7@its.jnj.com");
+			mail.addCC("Sterling.Hoham@hmktgroup.com");
+			mail.setTextBody(msg.toString());
+			
+			//Send message
+			MessageSender ms = new MessageSender(attributes, dbConn);
+			ms.sendMessage(mail);
+			log.debug("Novus Upload Notification Sent");
+		} catch (Exception e){
+			log.error("Novus Upload Mailer", e);
+		}
+	}
 
+	/**
+	 * Notification that the ads have been placed in the newspapers.
+	 * @param sem
+	 * @param site
+	 */
+	protected void notifyAdPlacement( DePuyEventSeminarVO sem, SiteVO site ){
+		
+		StringBuilder msg = new StringBuilder(140);
+		msg.append("Newspaper Advertising for Seminar #").append(sem.getRSVPCodes());
+		msg.append(" has been sent and confirmed by the publication(s).\r\r");
+		
+		try{
+			EmailMessageVO mail = new EmailMessageVO();
+			mail.setSubject("Newspaper Advertising Placement Confirmation - Seminar "+sem.getRSVPCodes());
+			mail.setFrom(site.getMainEmail());
+			mail.setTextBody(msg.toString());
+			
+			mail.addRecipient(site.getAdminEmail());
+			mail.addRecipient("rwilkin7@its.jnj.com");
+			mail.addRecipient(sem.getOwner().getEmailAddress());
+			mail.addCC("amy.zimmerman@hmktgroup.com");
+			mail.addCC("Sterling.Hoham@hmktgroup.com");
+			mail.addCC("lisa.maiers@novusmediainc.com");
+			mail.addCC("nicole.olson@novusmediainc.com");
+			mail.addCC("carly.lubert@novusmediainc.com");
+			
+			MessageSender sender = new MessageSender(attributes,dbConn);
+			sender.sendMessage(mail);
+			log.debug("Notify Ad Placement Sent");
+			
+		} catch (Exception e){
+			log.error("Ad Placement Notification",e);
+		}
+	}
 }

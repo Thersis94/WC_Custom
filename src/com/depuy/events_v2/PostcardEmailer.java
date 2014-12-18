@@ -171,7 +171,6 @@ public class PostcardEmailer {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient("rwilkin7@its.jnj.com");
 			mail.addCC(site.getAdminEmail());
-			mail.addCC(sem.getOwner().getEmailAddress());
 			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
@@ -200,7 +199,7 @@ public class PostcardEmailer {
 
 		StringBuilder msg = new StringBuilder();
 		msg.append("A new DePuy ").append(sem.getJointLabel());
-		msg.append(" Seminar has been submitted to Medical Affairs for review. ");
+		msg.append(" Seminar has been submitted to SRC for review. ");
 		msg.append("Please use the information attached as a reference and visit ");
 		msg.append("the Community Education website for complete, up-to-date information and list pulls.\r\r");
 		msg.append(site.getFullSiteAlias()).append("\r\r");
@@ -211,12 +210,17 @@ public class PostcardEmailer {
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			mail.addCC(site.getAdminEmail());
-			mail.addRecipient("Jenn.Davis@hmktgroup.com"); // Jenn Parrish-Davis);
 			mail.addRecipient("sterling.hoham@hmktgroup.com"); // Sterling Hoham
 			mail.addRecipient("amy.zimmerman@hmktgroup.com");
-			if ("CFSEM".equalsIgnoreCase(sem.getEvents().get(0).getEventTypeCd())) 
-				mail.addRecipient("rita.harman@hmktgroup.com");
+			mail.addRecipient("lisa.maiers@novusmediainc.com");
+			//if ("CFSEM".equalsIgnoreCase(sem.getEvents().get(0).getEventTypeCd())) 
+			//	mail.addRecipient("rita.harman@hmktgroup.com");
+			
+			//Additional CC recipients
+			mail.addCC("rwilkin7@its.jnj.com");
+			mail.addCC("nicole.olson@novusmediainc.com");
+			mail.addCC("carly.lubert@novusmediainc.com");
+			mail.addCC(site.getAdminEmail());
 			
 			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
@@ -270,16 +274,18 @@ public class PostcardEmailer {
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipient(sem.getOwner().getEmailAddress());
-			mail.addRecipient(site.getAdminEmail());
-			mail.addRecipient("Jenn.Davis@hmktgroup.com"); // Jenn Parrish-Davis);
-			mail.addRecipient("sterling.hoham@hmktgroup.com"); // Sterling Hoham
-			mail.addRecipient("amy.zimmerman@hmktgroup.com");
-			mail.addCC("rwilkin7@its.jnj.com"); //Rachel Wilkinson
-			for (PersonVO p : sem.getPeople()) {
+			mail.addRecipient(sem.getOwner().getEmailAddress()); //Coordinator
+			//mail.addRecipient("Jenn.Davis@hmktgroup.com"); // Jenn Parrish-Davis);
+			//mail.addRecipient("sterling.hoham@hmktgroup.com"); // Sterling Hoham
+			//mail.addRecipient("amy.zimmerman@hmktgroup.com");
+			//mail.addCC("WWilder@its.jnj.com");
+			//mail.addCC("RSmith68@its.jnj.com");
+			mail.addCC("rwilkin7@ITS.JNJ.COM");
+			mail.addCC(site.getAdminEmail());
+			for (PersonVO p : sem.getPeople()) { 
 				//add only the sales reps
-				if (p.getRoleCode() == Role.TGM) continue;
-				mail.addCC(p.getEmailAddress());
+				if (p.getRoleCode() == Role.REP)
+					mail.addCC(p.getEmailAddress());
 			}
 			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
@@ -332,7 +338,7 @@ public class PostcardEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient("tkumfer@printlinc.net"); // Terrie
-			mail.addRecipient("rwilkin7@its.jnj.com"); //Rachel Wilkinson
+			mail.addCC("rwilkin7@its.jnj.com"); //Rachel Wilkinson
 			mail.addCC(ownerEmail);
 			//if (StringUtil.isValidEmail(user.getEmailAddress()) && ownerEmail != user.getEmailAddress())
 			//	mail.addCC(user.getEmailAddress());
@@ -405,6 +411,7 @@ public class PostcardEmailer {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(sem.getOwner().getEmailAddress());
 			mail.addCC(site.getAdminEmail());
+			mail.addCC("rwilkin7@its.jnj.com");
 			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
@@ -437,11 +444,12 @@ public class PostcardEmailer {
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipient("Jenn.Davis@hmktgroup.com"); // Jenn Parrish-Davis);
+			//mail.addRecipient("Jenn.Davis@hmktgroup.com"); // Jenn Parrish-Davis);
 			mail.addRecipient("sterling.hoham@hmktgroup.com"); // Sterling Hoham
-			mail.addRecipient("amy.zimmerman@hmktgroup.com");
-			mail.addRecipient(site.getAdminEmail());
+			mail.addCC("amy.zimmerman@hmktgroup.com");
+			mail.addCC(site.getAdminEmail());
 			mail.addCC(sem.getOwner().getEmailAddress());
+			mail.addCC("rwilkin7@its.jnj.com");
 			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
@@ -465,8 +473,9 @@ public class PostcardEmailer {
 
 		StringBuilder msg = new StringBuilder();
 		msg.append("Medical Affairs has received and approved the Surgeon Speaker's signed contract for Seminar #").append(sem.getRSVPCodes());
-		msg.append(".  This seminar is now fully approved.  Please proceed with ad negotiation, postcard creation, and ");
-		msg.append("other necessary tasks to prepare for the seminar.\r\r");
+		msg.append(".  This seminar is now fully approved.  Please proceed with ");
+		msg.append("ad purchases, postcard mailings, flyer/poster distribution, ");
+		msg.append("and other necessary tasks to prepare for the seminar.\r\r");
 		msg.append("More information can be found on the website.\r");
 		msg.append(site.getFullSiteAlias()).append("/?reqType=promote&eventPostcardId=");
 		msg.append(sem.getEventPostcardId()).append("\r\r");
@@ -474,19 +483,27 @@ public class PostcardEmailer {
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipient("Jenn.Davis@hmktgroup.com"); // Jenn Parrish-Davis);
+			//mail.addRecipient("Jenn.Davis@hmktgroup.com"); // Jenn Parrish-Davis);
 			mail.addRecipient("sterling.hoham@hmktgroup.com"); // Sterling Hoham
 			mail.addRecipient("amy.zimmerman@hmktgroup.com");
+			mail.addRecipient("lisa.maiers@novusmediainc.com");
+			mail.addRecipient(sem.getOwner().getEmailAddress());
 			if ("CFSEM".equalsIgnoreCase(sem.getEvents().get(0).getEventTypeCd())) 
 				mail.addRecipient("rita.harman@hmktgroup.com");
 			
 			mail.addCC(site.getAdminEmail());
-
+			mail.addCC("rwilkin7@its.jnj.com");
+			mail.addCC("nicole.olson@novusmediainc.com");
+			mail.addCC("carly.lubert@novusmediainc.com");
+			
 			for (PersonVO p : sem.getPeople()) {
 				if (! StringUtil.isValidEmail(p.getEmailAddress())) continue;
-				mail.addCC(p.getEmailAddress());
+				//Add only the sales rep
+				else if ( p.getRoleCode() == Role.REP ){
+					mail.addCC(p.getEmailAddress());
+					break;
+				}
 			}
-			mail.addCC(sem.getOwner().getEmailAddress());
 			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
@@ -499,5 +516,183 @@ public class PostcardEmailer {
 		}
 		return;
 	}
+	
+	/**
+	 * Sent when the coordinator has declined the postcard.
+	 * @param req
+	 */
+	protected void sendPostcardDeclined(SMTServletRequest req){
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
+		String reason = StringUtil.checkVal( req.getParameter("notesText") );
+		
+		//Create the message body
+		StringBuilder msg = new StringBuilder(340);
+		msg.append(sem.getOwner().getFullName()).append(" (");
+		msg.append(sem.getOwner().getEmailAddress()).append(") has declined ");
+		msg.append("the postcard for Seminar #").append(sem.getRSVPCodes()).append(".\r");
+		if ( ! reason.isEmpty() ){
+			msg.append("The coordinator commented:\r\t").append(reason).append("\r");
+		}
+		msg.append("\r");
+		
+		try{
+			EmailMessageVO mail = new EmailMessageVO();
+			mail.addRecipient(site.getAdminEmail());
+			mail.addCC("rwilkin7@its.jnj.com");
+			mail.setSubject("Postcard Declined - Seminar "+sem.getRSVPCodes());
+			mail.setFrom(site.getMainEmail());
+			mail.setTextBody(msg.toString());
+			
+			//Send the email
+			MessageSender ms = new MessageSender(attributes,dbConn);
+			ms.sendMessage(mail);
+			log.debug("sendPostcardDeclined Sent");
+			
+		} catch (Exception e ){
+			log.error("sendPostcardDeclined",e);
+		}
+	}
+	
+	/**
+	 * Sent when the PCP invitation is ready for approval.
+	 * @param req
+	 */
+	protected void sendInvitationApprovalRequest( SMTServletRequest req ){
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
+		
+		//Create message body
+		StringBuilder msg = new StringBuilder(415);
+		msg.append("The sample PCP Invitation for Seminar #").append(sem.getRSVPCodes());
+		msg.append(" has been uploaded to the website for approval. Please review ");
+		msg.append("the sample (PDF) and approve using the url below.\r");
+		msg.append(site.getFullSiteAlias()).append("/?reqType=promote&eventPostcardId=");
+		msg.append(sem.getEventPostcardId()).append("\r\r");
+		
+		try{
+			EmailMessageVO mail = new EmailMessageVO();
+			mail.setSubject("PCP Invitation Uploaded - Seminar "+sem.getRSVPCodes());
+			mail.setFrom(site.getMainEmail());
+			
+			//Recipients
+			mail.addRecipient( sem.getOwner().getEmailAddress() );
+			mail.addCC( site.getAdminEmail() );
+			mail.addCC("rwilkin7@its.jnj.com");
+			//set the email content
+			mail.setTextBody(msg.toString());
+			
+			//Send the message
+			MessageSender mailer = new MessageSender(attributes, dbConn);
+			mailer.sendMessage(mail);
+			log.debug("sendInvitationApprovalRequest Sent");
+			
+		} catch (Exception e){
+			log.error("sendInvitationApprovalRequest",e);
+		}
+	}
 
+	/**
+	 * Notification that the coordinator has approved the PCP invitation
+	 * @param req
+	 */
+	protected void sendInvitationApproved( SMTServletRequest req ){
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
+		
+		//Create the message
+		StringBuilder msg = new StringBuilder(130);
+		msg.append("The seminar coordinator for Seminar #").append(sem.getRSVPCodes());
+		msg.append(" has approved the sample PCP Invitation.\r\r");
+		
+		try{
+			EmailMessageVO mail = new EmailMessageVO();
+			mail.setSubject("PCP Invitation Approved - Seminar "+sem.getRSVPCodes());
+			mail.setFrom(site.getMainEmail());
+			mail.setTextBody(msg.toString());
+			
+			//Recipients
+			mail.addRecipient("sterling.hoham@hmktgroup.com");
+			mail.addCC("amy.zimmerman@hmktgroup.com");
+			mail.addCC("rwilkin7@its.jnj.com");
+			mail.addCC(site.getAdminEmail());
+			mail.addCC(sem.getOwner().getEmailAddress());
+			
+			//Send Message
+			MessageSender mailer = new MessageSender(attributes,dbConn);
+			mailer.sendMessage(mail);
+			log.debug("sendInvitationApproved Sent");
+			
+		}catch (Exception e){
+			log.error("sendInvitationApproved",e);
+		}
+	}
+	
+	/**
+	 * Notification that the PCP Invitations have been sent.
+	 * @param req
+	 */
+	protected void notifyInvitationSent( SMTServletRequest req ){
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
+		
+		StringBuilder msg = new StringBuilder(100);
+		msg.append("PCP Invitations for Seminar #").append(sem.getRSVPCodes());
+		msg.append(" have been sent.");
+		
+		try{
+			EmailMessageVO mail = new EmailMessageVO();
+			mail.setSubject("PCP Invitation Mailing Confirmation - Seminar "+sem.getRSVPCodes());
+			mail.setFrom(site.getMainEmail());
+			mail.setTextBody(msg.toString());
+			
+			//recipients
+			mail.addRecipient(site.getAdminEmail());
+			mail.addRecipient("rwilkin7@its.jnj.com");
+			mail.addRecipient(sem.getOwner().getEmailAddress());
+			mail.addCC("amy.zimmerman@hmktgroup.com");
+			mail.addCC("sterling.hoham@hmktgroup.com");
+			
+			MessageSender mailer = new MessageSender(attributes,dbConn);
+			mailer.sendMessage(mail);
+			log.debug("notifyInvitationSent Sent");
+			
+		} catch (Exception e){
+			log.error("notifyInvitationSent",e);
+		}
+	}
+	
+	/**
+	 * Notification that the Postcards have been sent.
+	 * @param req
+	 */
+	protected void notifyPostcardSent( SMTServletRequest req ){
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
+		
+		StringBuilder msg = new StringBuilder(100);
+		msg.append("Postcards for Seminar #").append(sem.getRSVPCodes());
+		msg.append(" have been sent.");
+		
+		try{
+			EmailMessageVO mail = new EmailMessageVO();
+			mail.setSubject("Postcard Mailing Confirmation - Seminar "+sem.getRSVPCodes());
+			mail.setFrom(site.getMainEmail());
+			mail.setTextBody(msg.toString());
+			
+			//recipients
+			mail.addRecipient(site.getAdminEmail());
+			mail.addRecipient("rwilkin7@its.jnj.com");
+			mail.addRecipient(sem.getOwner().getEmailAddress());
+			mail.addCC("amy.zimmerman@hmktgroup.com");
+			mail.addCC("sterling.hoham@hmktgroup.com");
+			
+			MessageSender mailer = new MessageSender(attributes,dbConn);
+			mailer.sendMessage(mail);
+			log.debug("notifyPostcardSent Sent");
+			
+		} catch (Exception e){
+			log.error("notifyPostcardSent",e);
+		}
+	}
 }
