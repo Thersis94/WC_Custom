@@ -175,6 +175,8 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 	 * @param onlineFlg 0 for print ads, 1 for online ads
 	 */
 	private void assignAdFields( SMTServletRequest req, CoopAdVO vo, int suffix, int onlineFlg ){
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		
 		vo.setNewspaper1Phone( req.getParameter("newspaper1Phone_"+suffix) );
 		vo.setNewspaper1Text( req.getParameter("newspaper1Text_"+suffix) );
 		vo.setContactName( req.getParameter("contactName_"+suffix) );
@@ -195,6 +197,16 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 		vo.setSurgeonStatusFlg( Convert.formatInteger( req.getParameter("surgeonStatusFlg_"+suffix) ));
 		vo.setApprovedPaperName( StringUtil.checkVal( req.getParameter("approvedPaperName_"+suffix)) );
 		vo.setAdDatesText( req.getParameter("adDatesText_"+suffix) );
+		
+		// upload the ad files
+		vo.setAdFileUrl(this.saveFile(req, "adFileUrl_"+suffix, "/ads/", site));
+		vo.setAdFile2Url( saveFile(req, "adFile2Url_"+suffix, "/ads/", site) );
+		vo.setAdFile3Url( saveFile(req, "adFile3Url_"+suffix, "/ads/", site) );
+		vo.setInvoiceFile(saveFile(req, "invoiceFile_"+suffix, "/invoice/" ,site ));
+		vo.setSurgeonImageUrl( saveFile(req, "surgImgUrl_"+suffix, "/ads/logos", site) );
+		vo.setHospital1Img( saveFile(req, "hospital1Logo_"+suffix, "/ads/logos", site));
+		vo.setHospital2Img(saveFile(req, "hospital2Logo_"+suffix, "/ads/logos", site));
+		vo.setHospital3Img(saveFile(req, "hospital3Logo_"+suffix, "/ads/logos", site));
 		
 		if (req.hasParameter("coopAdId_"+suffix)){
 			vo.setCoopAdId( req.getParameter("coopAdId_"+suffix));
@@ -240,6 +252,7 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 		case CLIENT_APPROVED_AD:
 			log.debug("sending client approved email");
 			emailer.notifyAdminOfAdApproval(sem, site, user);
+			break;
 			
 		case PENDING_SURG_APPROVAL:
 			//email the surgeon to approve their portion of the ad
@@ -351,12 +364,6 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 			else if (updateSurgeon)
 				sql.append(", SURGEON_STATUS_FLG=? ");//If the status is changed on promote page; ensures views that check surgeon flag won't be incorrect 
 			sql.append("WHERE COOP_AD_ID=?");
-
-			// upload the ad file if it exists
-			vo.setAdFileUrl(this.saveFile(req, "adFileUrl", "/ads/", site));
-			vo.setAdFile2Url( saveFile(req, "adFile2Url", "/ads/", site) );
-			vo.setAdFile3Url( saveFile(req, "adFile3Url", "/ads/", site) );
-			vo.setInvoiceFile(saveFile(req, "invoiceFile", "/invoice/" ,site ));
 		}
 		log.debug("Co-op Ad SQL: " + sql.toString());
 
@@ -385,7 +392,7 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 			ps.setString(++i, vo.getSurgeonName());
 			ps.setString(++i, vo.getSurgeonTitle());
 			ps.setString(++i, vo.getSurgeonEmail());
-			ps.setString(++i, saveFile(req, "surgImgUrl", "/ads/logos", site));
+			ps.setString(++i, vo.getSurgeonImageUrl());
 			ps.setString(++i, vo.getClinicName());
 			ps.setString(++i, vo.getClinicAddress());
 			ps.setString(++i, vo.getClinicPhone());
@@ -395,9 +402,9 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 			ps.setString(++i, vo.getContactEmail());
 			ps.setString(++i, vo.getInstructionsText());
 			ps.setInt(++i, vo.getOnlineFlg());
-			ps.setString(++i, saveFile(req, "hospital1Logo", "/ads/logos", site));
-			ps.setString(++i, saveFile(req, "hospital2Logo", "/ads/logos", site));
-			ps.setString(++i, saveFile(req, "hospital3Logo", "/ads/logos", site));
+			ps.setString(++i, vo.getHospital1Img());
+			ps.setString(++i, vo.getHospital2Img());
+			ps.setString(++i, vo.getHospital3Img());
 			ps.setString(++i, vo.getSurgeonInfo());
 			ps.setString(++i,  vo.getHospitalInfo());
 			ps.setInt(++i, vo.getWeeksAdvance());
@@ -438,12 +445,15 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	private void saveAdApproval(CoopAdVO vo, SMTServletRequest req) throws ActionException {
-		final DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
+		
 		Integer statusLvl = Convert.formatInteger( vo.getStatusFlg() );
+		
+		/* No longer skip to surgeon approval request per request
+		final DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
 		if ( statusLvl == CLIENT_APPROVED_AD && sem.getEvents().get(0).getEventTypeCd().startsWith("CFSEM")){
 			//Skip straight to surgeon approval for co-funded
 			statusLvl = PENDING_SURG_APPROVAL;
-		}
+		}*/
 		
 		StringBuilder sql = new StringBuilder();
 		sql.append("UPDATE ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));

@@ -72,15 +72,15 @@ public class CoopAdsEmailer extends SBActionAdapter {
 	}
 
 	public void requestCoordinatorApproval(DePuyEventSeminarVO sem, SiteVO site) {
-		Calendar cal = Calendar.getInstance();
-		cal.add(Calendar.DATE, 4); // give them 4 days from today to approve the Ad
+		//Allow 5 business days for response
+		Date dueDate = addBusinessDays(5);
 		
 		StringBuilder msg = new StringBuilder();
 		msg.append("Dear Seminar Holder,\r\r");
 		msg.append("The cost and proof for your ad for Seminar ").append(sem.getRSVPCodes());
 		msg.append(" is now ready for your approval.  Please visit ");
 		msg.append(site.getFullSiteAlias()).append("/?reqType=promote&eventPostcardId=").append(sem.getEventPostcardId()).append(" before ");
-		msg.append(Convert.formatDate(cal.getTime())).append(" to either accept or reject this offer.  ");
+		msg.append(Convert.formatDate(dueDate)).append(" to either accept or reject this offer.  ");
 		msg.append("If you fail to accept or reject by the given date you will ");
 		msg.append("automatically accept the offer and your territory will be billed for the expense.\r\r");
 		msg.append("Thank You,\rEvents.depuy.com Administrator\r\r");
@@ -175,9 +175,11 @@ public class CoopAdsEmailer extends SBActionAdapter {
 //			msg.append(" and postcards.  The cost of the postcards is $90");
 		msg.append(". Approval is required by ").append(
 				Convert.formatDate(approvalDt, Convert.DATE_LONG));
-		msg.append(". Approval and payment information (credit card information given to our third party agency) ");
-		msg.append("must be received by ").append(
-				Convert.formatDate(paymentDt, Convert.DATE_LONG));
+		msg.append(". Once you approve, a credit card processing system (managed ");
+		msg.append("by Harmony Marketing Group, our third party agency) will appear ");
+		msg.append("with step by step instructions on providing payment for your ");
+		msg.append("portion of the advertising/seminar expenses. Payment information ");
+		msg.append("must be received by ").append(Convert.formatDate(paymentDt, Convert.DATE_LONG));
 		msg.append(" or the seminar will be cancelled.</p>");
 		msg.append("<p><a href=\"http://").append(site.getSiteAlias())
 				.append("/approve-ad")
@@ -218,12 +220,17 @@ public class CoopAdsEmailer extends SBActionAdapter {
 		subject.append( (isCFSEM ? "Co-Funded" : "DePuy Funded") );
 		subject.append(" Seminar #").append(sem.getRSVPCodes());
 		
-		StringBuilder msg = new StringBuilder();
+		StringBuilder msg = new StringBuilder(425);
 		msg.append(user.getFirstName()).append(" ").append(user.getLastName());
 		msg.append(" (").append(user.getEmailAddress()).append(") has approved ");
-		msg.append("an ad for Seminar #").append(sem.getRSVPCodes()).append("\r\r");
-		//if (ad.getSurgeonStatusFlg() == 0)
-		//	msg.append("The surgeon has yet to review this ad.\r\n");
+		msg.append("an ad for Seminar #").append(sem.getRSVPCodes()).append("\r");
+		if (isCFSEM){
+			msg.append("Harmony, please upload ad file and final invoice for the ");
+			msg.append("amount the surgeon and/or hospital is repsonsible for to ");
+			msg.append("the portal for approval.\r");
+		}
+		msg.append("\r");
+		
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
@@ -267,12 +274,13 @@ public class CoopAdsEmailer extends SBActionAdapter {
 		
 		StringBuilder msg = new StringBuilder();
 		msg.append("<p>").append(surg.getSurgeonName());
-		msg.append(" has approved the newspaper ad and cost for Seminar #");
+		msg.append(" has approved the newspaper ad/cost and provided payment for Seminar #");
 		msg.append(sem.getRSVPCodes()).append("</p>");
-		msg.append("<p>Once you've collected payment, please enter that information ");
-		msg.append("on the website and change the status to Payment Received.</p>");
+		msg.append("<p>Harmony, please change the status on the portal to Payment Received ");
+		msg.append("by using the link below.</p>");
 		String url = site.getFullSiteAlias() + "/?reqType=promote&eventPostcardId=" + sem.getEventPostcardId();
 		msg.append("<p><a href=\"").append(url).append("\">").append(url).append("</a></p>");
+		msg.append("<p>Novus, please move forward with the newspaper ad purchases.</p>");
 		msg.append("<p>Thank You,<br/>Events.depuy.com Administrator</p><br/>");
 
 		try {
@@ -281,9 +289,13 @@ public class CoopAdsEmailer extends SBActionAdapter {
 			//mail.addRecipient("admgt@hmktgroup.com");
 			//mail.addRecipient("rita.harman@hmktgroup.com");
 			mail.addRecipient("amy.zimmerman@hmktgroup.com");
+			mail.addRecipient("lisa.maiers@novusmediainc.com");
 			mail.addCC(site.getAdminEmail());
 			mail.addCC("rwilkin7@its.jnj.com");
 			mail.addCC("Sterling.Hoham@hmktgroup.com");
+			mail.addCC(sem.getOwner().getEmailAddress());
+			mail.addCC("nicole.olson@novusmediainc.com");
+			mail.addCC("carly.lubert@novusmediainc.com");
 			
 			mail.setSubject("Newspaper Ad approved by Surgeon for Seminar #" + sem.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
@@ -408,4 +420,38 @@ public class CoopAdsEmailer extends SBActionAdapter {
 		}
 	}
 
+	/**
+	 * Notification that the ads have been placed in the newspapers.
+	 * @param sem
+	 * @param site
+	 */
+	protected void notifyAdPlacement( DePuyEventSeminarVO sem, SiteVO site ){
+		
+		StringBuilder msg = new StringBuilder(140);
+		msg.append("Newspaper Advertising for Seminar #").append(sem.getRSVPCodes());
+		msg.append(" has been sent and confirmed by the publication(s).\r\r");
+		
+		try{
+			EmailMessageVO mail = new EmailMessageVO();
+			mail.setSubject("Newspaper Advertising Placement Confirmation - Seminar "+sem.getRSVPCodes());
+			mail.setFrom(site.getMainEmail());
+			mail.setTextBody(msg.toString());
+			
+			mail.addRecipient(site.getAdminEmail());
+			mail.addRecipient("rwilkin7@its.jnj.com");
+			mail.addRecipient(sem.getOwner().getEmailAddress());
+			mail.addCC("amy.zimmerman@hmktgroup.com");
+			mail.addCC("Sterling.Hoham@hmktgroup.com");
+			mail.addCC("lisa.maiers@novusmediainc.com");
+			mail.addCC("nicole.olson@novusmediainc.com");
+			mail.addCC("carly.lubert@novusmediainc.com");
+			
+			MessageSender sender = new MessageSender(attributes,dbConn);
+			sender.sendMessage(mail);
+			log.debug("Notify Ad Placement Sent");
+			
+		} catch (Exception e){
+			log.error("Ad Placement Notification",e);
+		}
+	}
 }
