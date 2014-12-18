@@ -69,19 +69,21 @@ public class BatchClinicUpdaterAction extends SBActionAdapter {
 	 */
 	private void updateClinics(SMTServletRequest req, int clinicTypeId) throws ActionException {
     		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-    		
+    		String orgId = site.getOrganizationId();
     		// Delete all clinics in the database so as to start fresh with the up to date list of clinics
-		flushClinics(clinicTypeId);
+		flushClinics(clinicTypeId, orgId);
 		
 		// Set up the dealerInforAction and have it handle the upload for us
 		SMTActionInterface dia = new DealerInfoAction(actionInit);
 		dia.setDBConnection(dbConn);
 		dia.setAttributes(attributes);
 		req.setParameter("dealerImport", "true");
-    		req.setParameter("organizationId", site.getOrganizationId());
+    		req.setParameter("organizationId", orgId);
 		dia.update(req);
 		
 		req.setParameter("msg", "Dealers successfully replaced.");
+		req.removeAttribute(Constants.REDIRECT_URL);
+		req.removeAttribute(Constants.REDIRECT_REQUEST);
 	}
 
 	/**
@@ -148,14 +150,15 @@ public class BatchClinicUpdaterAction extends SBActionAdapter {
 	 * Delete all clinics of a particular type so that we can reinsert everything from scratch
 	 * @param clinicTypeId
 	 */
-	private void flushClinics(int clinicTypeId) {
-		String sql = "DELETE DEALER WHERE DEALER_TYPE_ID = ?";
-		log.debug(sql + "|" + clinicTypeId);
+	private void flushClinics(int clinicTypeId, String orgId) {
+		String sql = "DELETE DEALER WHERE DEALER_TYPE_ID = ? AND ORGANIZATION_ID = ?";
+		log.debug(sql + "|" + clinicTypeId +"|"+orgId);
 		
 		PreparedStatement ps = null;
 		try {
 			ps = dbConn.prepareStatement(sql);
 			ps.setInt(1, clinicTypeId);
+			ps.setString(2, orgId);
 			
 			ps.executeUpdate();
 		} catch (SQLException e) {
