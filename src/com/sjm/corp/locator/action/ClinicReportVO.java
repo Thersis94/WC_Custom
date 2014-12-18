@@ -24,7 +24,7 @@ public class ClinicReportVO extends AbstractSBReportVO {
 	private List<DealerVO> clinics = null;
 
 	public ClinicReportVO() {
-		setContentType("text/x-vcard");
+		setContentType("text/csv");
 		isHeaderAttachment(Boolean.TRUE);
 	}
 
