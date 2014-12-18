@@ -45,19 +45,18 @@ public class BatchClinicUpdaterAction extends SBActionAdapter {
 	
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		log.debug("Retrieve");
-		super.retrieve(req);
-	}
-	
-	public void build(SMTServletRequest req) throws ActionException  {
-		log.debug("Building");
-	    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
-	    	int clinicTypeId = Convert.formatInteger((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
-	    	
-	    	// Check if we are doing an insert or an export
-	    	if (Convert.formatBoolean(req.getParameter("dealerImport"))) {
-	    		updateClinics(req, clinicTypeId);
+		if (Convert.formatBoolean(req.getParameter("formSubmit"))) {
+		    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+		    	int clinicTypeId = Convert.formatInteger((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
+		    	
+		    	// Check if we are doing an insert or an export
+		    	if (Convert.formatBoolean(req.getParameter("dealerImport"))) {
+		    		updateClinics(req, clinicTypeId);
+			} else {
+				exportClinics(req, clinicTypeId);
+			}
 		} else {
-			exportClinics(req, clinicTypeId);
+			super.retrieve(req);
 		}
 	}
 
