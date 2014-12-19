@@ -61,7 +61,7 @@ public class ShippingRequestCoordinator {
 		Map<String, ShippingInfoVO> opts = new LinkedHashMap<String, ShippingInfoVO>();
 		ShippingInfoVO newVo = new ShippingInfoVO();
 		newVo.setShippingMethodId("instore");
-		newVo.setShippingMethodName("In-store Pickup");
+		newVo.setShippingMethodName("Pick up at Center");
 		newVo.setShippingTime("0");
 		newVo.setShippingCost(0);
 		opts.put(newVo.getShippingMethodId(), newVo);

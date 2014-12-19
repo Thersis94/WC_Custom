@@ -42,7 +42,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class ModuleOptionAction extends SBActionAdapter{
 	//This is a list of the modules that only allow one item at a time
-	final String modList = "11 12";
+	final String modList = "11 12 81";
 	
 	public ModuleOptionAction(ActionInitVO avo){
 		super(avo);
@@ -110,9 +110,16 @@ public class ModuleOptionAction extends SBActionAdapter{
 					if (Convert.formatInteger(req.getParameter("parentId")) > 0 && 
 							Convert.formatInteger(req.getParameter("approvalFlag"), 0).intValue() == 100)
 						this.revokeApprovalSubmission(req);
-					
-					if (!modList.contains(req.getParameter("moduleId")))
+						
+					if (!modList.contains(req.getParameter("moduleId"))) {
 						req.setParameter("skipDelete", "true");
+					}
+					
+					if (Convert.formatInteger(req.getParameter("parentId")) == 0) {
+						req.setParameter("parentModuleId", req.getParameter("moduleOptionId"));
+					} else {
+						req.setParameter("parentModuleId", req.getParameter("parentId"));
+					}
 					
 				case CenterPageAction.MODULE_OPTION_UPDATE:
 					this.updateModuleOptions(req);
@@ -421,12 +428,11 @@ public class ModuleOptionAction extends SBActionAdapter{
 				int idx = i+1; //default ordering
 				if (opts.length == 2) idx = Convert.formatInteger(opts[1], idx);
 				
+				if (req.hasParameter("parentModuleId"))
+					opts[0] = req.getParameter("parentModuleId");
+				
 				psIns.setString(1, locationId);
-				if (req.hasParameter("moduleParentId")) {
-					psIns.setString(2, req.getParameter("moduleParentId"));
-				} else {
-					psIns.setString(2, opts[0]);
-				}
+				psIns.setString(2, opts[0]);
 				psIns.setInt(3, idx);
 				psIns.setTimestamp(4, Convert.getCurrentTimestamp());
 				psIns.addBatch();
@@ -502,6 +508,7 @@ public class ModuleOptionAction extends SBActionAdapter{
 		//build the query
 		if (isInsert) {
 			vo.setModuleOptionId(this.nextModuleOptionPkId());
+			req.setParameter("optionId", StringUtil.checkVal(vo.getModuleOptionId()));
 			sb.append("insert into ").append(customDb);
 			sb.append("FTS_CP_MODULE_OPTION (OPTION_NM, ");
 			sb.append("OPTION_DESC, ARTICLE_TXT, RANK_NO, LINK_URL, FILE_PATH_URL, THUMB_PATH_URL, VIDEO_STILLFRAME_URL, ");
