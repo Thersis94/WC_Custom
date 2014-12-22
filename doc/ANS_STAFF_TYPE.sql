@@ -1,5 +1,0 @@
-insert into ans_staff_type values(1, 'Office Manager', '9/11/2007')
-insert into ans_staff_type values(2, 'RN', '9/11/2007')
-insert into ans_staff_type values(3, 'PA', '9/11/2007')
-insert into ans_staff_type values(4, 'Scheduler', '9/11/2007')
-insert into ans_staff_type values(5, 'Other', '9/11/2007')

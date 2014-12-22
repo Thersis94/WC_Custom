@@ -1,15 +1,13 @@
 package com.codman.cu.tracking;
 
 import java.sql.PreparedStatement;
-
-
-
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.codman.cu.tracking.vo.AccountUnitReportVO;
 import com.codman.cu.tracking.vo.AccountVO;
@@ -28,7 +26,6 @@ import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.user.ProfileManager;
@@ -65,6 +62,8 @@ public class AccountFacadeAction extends SBActionAdapter {
 	 */
 	public void build(SMTServletRequest req) throws ActionException {
 		String type = StringUtil.checkVal(req.getParameter("type"));
+		String prodCd = StringUtil.checkVal(req.getParameter("productType"),UnitVO.ProdType.MEDSTREAM.toString());
+		
 		log.debug("facadeType: " + type);
 		
 		SMTActionInterface sai = null;
@@ -73,12 +72,14 @@ public class AccountFacadeAction extends SBActionAdapter {
 		} else if (type.equalsIgnoreCase("physician")) {
 			sai = new PhysicianAction(actionInit);
 		} else if (type.equalsIgnoreCase("transaction")) {
-			sai = new TransAction(actionInit);
+			sai = TransactionFactory.getInstance(prodCd, actionInit );
 		} else if (type.equalsIgnoreCase("transUnit")) {
 			sai = new UnitTransferAction(actionInit);
+		} else if (type.equalsIgnoreCase("returnUnit")) {
+			sai = new UnitReturnAction(actionInit);
 		}
-
 		if (sai == null) return;
+		
 		//execute the action
 		sai.setAttributes(attributes);
 		sai.setDBConnection(dbConn);
@@ -89,17 +90,20 @@ public class AccountFacadeAction extends SBActionAdapter {
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.action.ActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
+	@SuppressWarnings("null")
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		final String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		String type = StringUtil.checkVal(req.getParameter("type"));
 		String accountId = StringUtil.checkVal(req.getParameter("accountId"));
 		String physicianId = StringUtil.checkVal(req.getParameter("physicianId"));
 		String transactionId = StringUtil.checkVal(req.getParameter("transactionId"));
 		Boolean isNewTransaction = StringUtil.checkVal(req.getParameter("transactionId")).equals("ADD");
+		String prodCd = (String)mod.getAttribute(ModuleVO.ATTRIBUTE_1);
 		String unitId = StringUtil.checkVal(req.getParameter("unitId"));
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		RequestSearchVO search = new RequestSearchVO(req);
+		RequestSearchVO search = new RequestSearchVO(req, (String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 		
 		if (physicianId.equals("ADD")) physicianId = "";
 		if (transactionId.equals("ADD")) transactionId = "";
@@ -117,8 +121,8 @@ public class AccountFacadeAction extends SBActionAdapter {
 		 * Account has-a Transaction
 		 * Transaction has-a Unit
 		 */
-		StringBuffer sql = new StringBuffer();
-		sql.append("select c.profile_id as phys_profile_id, ");
+		StringBuilder sql = new StringBuilder();
+		sql.append("select c.profile_id as phys_profile_id, d.product_cd as trans_product_cd, ");
 		if (!type.equals("transaction") && !type.equals("unit")) {
 			sql.append("* ");
 		} else {
@@ -161,21 +165,23 @@ public class AccountFacadeAction extends SBActionAdapter {
 		if (physicianId.length() > 0) sql.append("and c.physician_id=? ");
 		if (transactionId.length() > 0) sql.append("and d.transaction_id=? ");
 		if (unitId.length() > 0) sql.append("and f.unit_id=? ");
+		if (prodCd.length() > 0) sql.append("and b.product_cd=? ");
 		
 		// add any search filters
 		if (search.getStatusId() != null) sql.append("and d.status_id=? ");  //transaction status
 		if (search.getAccountName() != null) sql.append("and b.account_nm like ? ");
 		if (search.getTerritoryId() != null) sql.append("and a.territory_id=? ");
 		if (search.getSerialNoText() != null) sql.append("and f.serial_no_txt like ? ");
-		if (search.getRepId() != null) sql.append("and b.person_id=? ");
+		if (search.getRepId() != null) sql.append("and a.person_id=? ");
 
-		sql.append("order by b.account_id, d.request_no asc, c.physician_id, ");
-		sql.append("d.transaction_id, b.account_nm, b.account_no");
+		getSortOrder(search, sql);
 		log.debug(sql);
-		
+
+		TransactionVO trans = null;
 		List<AccountVO> data = new ArrayList<AccountVO>();
-		List<String> profileIds = new ArrayList<String>();
+		Set<String> profileIds = new HashSet<String>();
 		PreparedStatement ps = null;
+		int resultCnt = 0;
 		int i = 1;
 		String lastAcctId = "";
 		AccountVO acctVo = null;
@@ -192,6 +198,7 @@ public class AccountFacadeAction extends SBActionAdapter {
 			if (physicianId.length() > 0) ps.setString(i++, physicianId);
 			if (transactionId.length() > 0) ps.setString(i++, transactionId);
 			if (unitId.length() > 0) ps.setString(i++, unitId);
+			if (prodCd.length() > 0) ps.setString(i++, prodCd);
 			
 			// add any search filters
 			if (search.getStatusId() != null) ps.setInt(i++, search.getStatusId());
@@ -199,38 +206,54 @@ public class AccountFacadeAction extends SBActionAdapter {
 			if (search.getTerritoryId() != null) ps.setString(i++, search.getTerritoryId());
 			if (search.getSerialNoText() != null) ps.setString(i++, search.getSerialNoText() + "%");
 			if (search.getRepId() != null) ps.setString(i++, search.getRepId());
-			
+			log.debug("start=" + search.getStart() + " end=" + search.getEnd());
 			ResultSet rs = ps.executeQuery();
+			boolean skip = false;
 			while (rs.next()) {
 				if (!lastAcctId.equals(rs.getString("account_id"))) {
-					if (acctVo != null)
+					if (acctVo != null) {
 						data.add(acctVo);
+						acctVo = null;
+					}
+					++resultCnt;
+					//log.debug("cnt=" + resultCnt + " " + (resultCnt < search.getStart()));
+					lastAcctId = StringUtil.checkVal(rs.getString("account_id"));
+					//inline pagination - one account is one row in the table.  Once we have what we need skip the rest
+					if (resultCnt < search.getStart() || resultCnt > search.getEnd()) {
+						skip = true;
+						continue;
+					} else {
+						skip = false;
+					}
 					
 					acctVo = new AccountVO(rs);
 					profileIds.add(acctVo.getRep().getProfileId()); //we'll look these up later!
 					//log.debug("added profileId " + acctVo.getRep().getProfileId());
-					lastAcctId = StringUtil.checkVal(acctVo.getAccountId());
-					//log.debug("loaded account# " + acctVo.getAccountNo());
+					//lastAcctId = StringUtil.checkVal(acctVo.getAccountId());
+					log.debug("loaded account# " + acctVo.getAccountName());
+					
 				}
+				//do not load addtl data for accounts we're not loading
+				if (skip) continue;
+				
+				
 				if (rs.getString("physician_id") != null) {
 					acctVo.addPhysician(new PhysicianVO(rs));
 					profileIds.add(rs.getString("phys_profile_id"));
 					//log.debug("added physician lookup for " + rs.getString("phys_profile_id"));
 				}
 				
-				if (rs.getString("transaction_id") != null) {
-					TransactionVO trans = null;
-					if (acctVo.getTransactionMap().containsKey(rs.getString("transaction_id"))) {
-						trans = acctVo.getTransactionMap().get(rs.getString("transaction_id"));
+				String transId = rs.getString("transaction_id");
+				if (transId != null) {
+					if (acctVo.getTransactionMap().containsKey(transId)) {
+						trans = acctVo.getTransactionMap().get(transId);
 					} else {
 						trans = new TransactionVO(rs);
 					}
 					
-					if (rs.getString("unit_id") != null) {
-						//log.debug("prodcomm=" + rs.getString("production_comments_txt"));
-						UnitVO unit = new UnitVO(rs);
-						trans.addUnit(unit);
-					}
+					if (rs.getString("unit_id") != null)
+						trans.addUnit(new UnitVO(rs));
+
 					acctVo.addTransaction(trans);
 					trans = null;
 				}
@@ -243,20 +266,26 @@ public class AccountFacadeAction extends SBActionAdapter {
 			try { ps.close(); } catch (Exception e) {}
 		}
 		
+		//used in the JSP for prev/next buttons
+		log.debug("resultCnt=" + resultCnt);
+		req.setAttribute("resultCnt", resultCnt);
+		
 		//if we're adding/editing an account as an Admin, we need a list of Reps for the dropdown menu.
-		if ("account".equalsIgnoreCase(type) && role.getRoleLevel() == SecurityController.ADMIN_ROLE_LEVEL) {
+		if (role.getRoleLevel() == SecurityController.ADMIN_ROLE_LEVEL) {
 			UserAction ua = new UserAction(actionInit);
 			ua.setDBConnection(dbConn);
 			ua.setAttributes(attributes);
-			req.setAttribute(CODMAN_REPS, ua.loadUserList(SecurityController.PUBLIC_REGISTERED_LEVEL, site.getOrganizationId()));
+			if (req.getSession().getAttribute(CODMAN_REPS) == null)
+				req.getSession().setAttribute(CODMAN_REPS, ua.loadUserList(SecurityController.PUBLIC_REGISTERED_LEVEL, site.getOrganizationId()));
 			ua = null;
 			
-		} else if (profileIds.size() > 0) {
+		}
+		if (profileIds.size() > 0) {
 			//lookup the profiles for our Reps & Physicians
 			ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
-			List<AccountVO> newResults = new ArrayList<AccountVO>();
+			List<AccountVO> newResults = new ArrayList<AccountVO>(data.size());
 			try {
-				Map<String,UserDataVO> profiles = pm.searchProfileMap(dbConn, profileIds);
+				Map<String,UserDataVO> profiles = pm.searchProfileMap(dbConn, new ArrayList<String>(profileIds));
 				for (AccountVO vo: data) {
 					if (!profiles.containsKey(vo.getRep().getProfileId())) {
 						log.error("MISSING PROFILE " + vo.getRep().getProfileId() +" " + vo.getRep().getPersonId());
@@ -299,7 +328,6 @@ public class AccountFacadeAction extends SBActionAdapter {
 		}
 		
 		
-		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		mod.setDataSize(data.size());
 		mod.setActionData(data);
 		log.debug("data size=" + mod.getDataSize());
@@ -317,15 +345,15 @@ public class AccountFacadeAction extends SBActionAdapter {
 				(type.equals("transUnit") && req.getParameter("toAcctId") != null)) {
 			if (req.getParameter("toAcctId") != null)
 				req.setParameter("accountId", req.getParameter("toAcctId"));
+			
 			SMTActionInterface sai = new PhysicianAction(actionInit);
 			sai.setAttributes(attributes);
 			sai.setDBConnection(dbConn);
 			sai.retrieve(req);
 			req.setParameter("accountId", accountId);
-			
 		}
-		
 	}
+	
 	
 	public void list(SMTServletRequest req) throws ActionException {
 		super.retrieve(req);
@@ -349,4 +377,39 @@ public class AccountFacadeAction extends SBActionAdapter {
 		
 		return vo;
 	}
+	
+	/**
+	 * Helper to append the order by clause to the retrieve statement. Some unit
+	 * fields (the names of the reps, physicians, and modifying user) are not 
+	 * fetched until after the retrieve query is done. So they will be sorted 
+	 * with a comparator in UnitVO when requested.
+	 * @param req
+	 * @param sql
+	 */
+	private void getSortOrder(RequestSearchVO search, StringBuilder sql) {
+		sql.append(" order by b.account_id, ");
+		sql.append("d.request_no asc, c.physician_id, ");
+		sql.append("d.transaction_id, b.account_nm, b.account_no");
+	}
+	
+	/* with pagination in place, this no longer works -JM 11.19.14
+	private class AcctRepComparator implements Comparator<AccountVO>{
+
+		private boolean desc = false;
+		
+		public AcctRepComparator( boolean isDesc ){
+			desc = isDesc;
+		}
+		public int compare(AccountVO o1, AccountVO o2) {
+			// Check the objects for null
+			if (o1 == null && o2 == null) return 0;
+			if (o1 == null) return -1;
+			else if (o2 == null) return 1;
+			
+			int result =  o1.getRep().getFullName().compareToIgnoreCase(
+					o2.getRep().getFullName());
+			return ( desc ? result *-1 : result);
+		}
+	}
+	*/
 }
