@@ -52,7 +52,6 @@ public class ProductAction extends SBActionAdapter {
 	public static final String STATUS_SOLD_OUT = "Sold Out";
 	public static final String PARAM_DETAIL = "detail";
 	public static final String PARAM_FEATURED = "featured";
-	protected String sitePrefix;
 
 	/**
 	 * 
@@ -78,7 +77,7 @@ public class ProductAction extends SBActionAdapter {
 	 */
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		sitePrefix = site.getSiteId() + "_";
+		String sitePrefix = site.getSiteId() + "_";
 		log.debug("sitePrefix: " + sitePrefix);
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		// get the catalog ID from the module attributes
@@ -94,7 +93,7 @@ public class ProductAction extends SBActionAdapter {
 			if (PARAM_DETAIL.equalsIgnoreCase(cat1)) {
 				// retrieve product detail
 				log.debug("retrieving product detail info...");
-				ProductVO detail = this.retrieveProductDetail(req, catalogId);
+				ProductVO detail = this.retrieveProductDetail(req, catalogId, sitePrefix);
 				
 				if (detail.getProductId() != null) {
 					// found product detail, so check availability
@@ -242,23 +241,24 @@ public class ProductAction extends SBActionAdapter {
 	 * @return
 	 * @throws SQLException
 	 */
-	private ProductVO retrieveProductDetail(SMTServletRequest req, String catalogId) throws SQLException {
-		String productId = req.getParameter(SMTServletRequest.PARAMETER_KEY + "2");
+	private ProductVO retrieveProductDetail(SMTServletRequest req, 
+			String catalogId, String sitePrefix) throws SQLException {
+		String siteProductId = sitePrefix + req.getParameter(SMTServletRequest.PARAMETER_KEY + "2");
 		StringBuilder s = new StringBuilder();
 		s.append("select * from product a ");
 		s.append("left outer join product_attribute_xr b on a.product_id = b.product_id ");
 		s.append("left outer join product_attribute c on b.attribute_id = c.attribute_id ");
 		s.append("where a.product_catalog_id = ? and a.product_id = ? AND a.PRODUCT_GROUP_ID IS NULL ");
 		s.append("order by a.product_id, b.attribute_id, attrib2_txt, order_no");
-		log.debug("Product Detail SQL: " + s + "|" + productId);
+		log.debug("Product Detail SQL: " + s + "|" + siteProductId);
 		
 		PreparedStatement ps = dbConn.prepareStatement(s.toString());
 		ps.setString(1, catalogId);
 		// prefix product ID with site prefix as product IDs in the PRODUCT table
 		// are prefixed upon import to ensure uniqueness
-		ps.setString(2, sitePrefix + productId);
-		String aName = null;
-		List<ProductAttributeVO> pAttributes = null;
+		ps.setString(2, siteProductId);
+		//String aName = null;
+		List<ProductAttributeVO> pAttributes = new ArrayList<>();
 		ResultSet rs = ps.executeQuery();
 		ProductVO product = null;
 		while (rs.next()) {
@@ -267,32 +267,80 @@ public class ProductAction extends SBActionAdapter {
 				// set the vo's product ID to the custom product number for JSTL use
 				product.setProductId(product.getCustProductNo());
 			}
-			
-			if(aName != null && !aName.equals(rs.getString("attribute_nm"))){
-				product.addProdAttribute(aName, pAttributes);
-				pAttributes = null;
+
+			// put all product attributes in a List for later processing.
+			if (rs.getString("product_attribute_id") != null) {
+				pAttributes.add(new ProductAttributeVO(rs));
 			}
-			
-			if(pAttributes == null){ 
-				pAttributes = new ArrayList<ProductAttributeVO>();
-				aName = rs.getString("attribute_nm");
-			}
-			
-			pAttributes.add(new ProductAttributeVO(rs));
-			
 		}
-		
-		// if we found no products for a category or no attributes, initialize objects.
+
+		// if we found no products for a category, initialize an empty ProductVO
 		if (product == null) product = new ProductVO();
-		if(pAttributes == null)	pAttributes = new ArrayList<ProductAttributeVO>();
 		
-		// sort the product attributes by level and display order
-		Collections.sort(pAttributes, new ProductAttributeComparator());
-		// add attributes to product VO
-		product.addProdAttribute(aName, pAttributes);
+		/*
+		 * Process (sort) attributes and add them to the product VO according
+		 * to business rules.
+		 */
+		processProductAttributes(product, pAttributes);
+		
 		pAttributes = null;
 		this.setPageData(req, product.getTitle(), product.getMetaKywds(), product.getMetaDesc());
 		return product;
+	}
+	
+	/**
+	 * Processes product attributes for the product VO passed in.  The product
+	 * attributes master list is sorted by a custom comparator.  Then the List is
+	 * looped through to separate standard from custom attributes.   Standard attributes
+	 * are added to the product's product attribute map (key = attributeName) first
+	 * and then custom attributes are added.  Standard attributes MUST be added
+	 * first and custom attributes MUST - and both must be added in sequence (standard
+	 * attributes sequenced by attrib2_txt and then display_order_no, and custom
+	 * attributes sequenced by value_txt).  This is critical for displaying the attributes
+	 * on the JSTL view properly and for ensuring that the attributes are specified
+	 * in the correct sequence when an order request XML block is generated.
+	 * @param product
+	 * @param pAttributes
+	 */
+	private void processProductAttributes(ProductVO product, List<ProductAttributeVO> pAttributes) {
+		log.debug("processProductAttributes...");
+		
+		/* Sort to guarantee order by attrib2 text value (standard options) or
+		 * by value_txt value (custom options). */
+		Collections.sort(pAttributes, new ProductAttributeComparator());
+		List<ProductAttributeVO> custom = new ArrayList<>();
+		List<ProductAttributeVO> standard = new ArrayList<>();
+		String prevStd = null;
+		String currStd = null;
+		for (ProductAttributeVO p : pAttributes) {
+			if (p.getAttributeName().equalsIgnoreCase("custom")) {
+				custom.add(p);
+			} else {
+				currStd = p.getAttributeName();
+				if (currStd.equals(prevStd)) {
+					standard.add(p);
+				} else {
+					// add List to product attribute map, attribute name is the key
+					product.addProdAttribute(prevStd, standard);
+					// re-initialize the standard List
+					standard = new ArrayList<>();
+					// add the current attribute to the new List
+					standard.add(p);
+				}
+				prevStd = currStd;
+			}
+		}
+		
+		// clean up any dangling standard attributes and add standard option to 
+		// product attribute map, attribute name is the key.
+		if (standard.size() > 0) {
+			product.addProdAttribute(prevStd, standard);
+		}
+		
+		// now add the custom list to the product attribute map using specified key
+		if (custom.size() > 0) {
+			product.addProdAttribute("custom", custom);
+		}
 	}
 	
 	/**

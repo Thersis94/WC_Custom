@@ -246,7 +246,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 	 */
 	protected Storage retrieveContainer(SMTServletRequest req) 
 			throws ActionException {
-		Map<String, Object> attrs = new HashMap<String, Object>();
+		Map<String, Object> attrs = new HashMap<>();
 		attrs.put(GlobalConfig.HTTP_REQUEST, req);
 		attrs.put(GlobalConfig.HTTP_RESPONSE, attributes.get(GlobalConfig.HTTP_RESPONSE));
 		
@@ -617,6 +617,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 	 * @param req
 	 */
 	protected void manageShippingInfo(ShoppingCartVO cart, SMTServletRequest req) {
+		log.debug("manageShippingInfo...");
 		String shippingType = StringUtil.checkVal(req.getParameter("shippingType"));
 		UserDataVO user = new UserDataVO(req);
 		if ("billing".equalsIgnoreCase(shippingType)) {
@@ -662,6 +663,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 	 * @param user
 	 */
 	private void retrieveProfileId(SMTServletRequest req, UserDataVO user) {
+		log.debug("retrieving profileId...");
 		String profileId = null;
 		ProfileManager pm = null;
 		// first try to get profileId from session
@@ -678,8 +680,11 @@ public class ShoppingCartAction extends SBActionAdapter {
 				try {
 					profileId = pm.checkProfile(user, dbConn);
 					if (StringUtil.checkVal(profileId).length() == 0) {
-						// no profile found, create one.
+						// no profile found, create one, profileId is set on 'user' object
+						// by profile manager.
+						log.debug("user profile before update attempt: " + user.getProfileId());
 						pm.updateProfile(user, dbConn);
+						log.debug("user profileId after update attempt: " + user.getProfileId());
 					} else {
 						// use the profileId found.
 						user.setProfileId(profileId);
@@ -753,7 +758,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 			Element shipInfo = wsa.retrieveShippingInfo(cart.getShippingInfo().getZipCode(), cart.getItems());
 			if (! this.checkElementError(cart, shipInfo)) {
 				List<Element> sc = shipInfo.selectNodes("Method");
-				shipping = new LinkedHashMap<String, ShippingInfoVO>();
+				shipping = new LinkedHashMap<>();
 				for (int i=0; i < sc.size(); i++) {
 					ShippingInfoVO vo = new ShippingInfoVO();
 					Element ele = sc.get(i);
@@ -1003,13 +1008,18 @@ public class ShoppingCartAction extends SBActionAdapter {
 	 */
 	private void addProductAttributes(SMTServletRequest req, ShoppingCartItemVO cartItem) {
 		if (cartItem == null || cartItem.getProduct() == null) return;
+		
+		// 1: Retrieve product attributes for this product
+		StringBuilder sb = new StringBuilder();
+		sb.append("select a.*, b.attribute_nm 	from PRODUCT_ATTRIBUTE_XR a ");
+		sb.append("inner join PRODUCT_ATTRIBUTE b on a.attribute_id = b.ATTRIBUTE_ID ");
+		sb.append("where product_id = ? order by a.attrib2_txt, a.order_no ");
+		log.debug("addProductAttributes SQL: " + sb.toString());
+		
+		Map<String, ProductAttributeVO> attribs = new LinkedHashMap<>();
 		ProductVO product = cartItem.getProduct();
 		String pIDAdv = product.getProductId();
-		Map<String, String[]> p = req.getParameterMap();
-		StringBuilder sb = new StringBuilder();
-		sb.append("select * from PRODUCT_ATTRIBUTE_XR where product_id = ? order by attrib2_txt, order_no");
 		PreparedStatement ps = null;
-		Map<String, ProductAttributeVO> attribs = new LinkedHashMap<String, ProductAttributeVO>();
 		try{
 			ps = dbConn.prepareStatement(sb.toString());
 			ps.setString(1, catalogSiteId + "_" + pIDAdv);
@@ -1021,49 +1031,67 @@ public class ShoppingCartAction extends SBActionAdapter {
 		} catch (SQLException sqle) {
 			log.error("Unable to add product attributes: " + sqle);
 		} finally { try { ps.close(); } catch (Exception e) {log.error("Error closing prepared statement, ", e);}}
+		
 		if (attribs.isEmpty()) return;
 		
-		List<ProductAttributeVO> prodAttribs = new ArrayList<ProductAttributeVO>();
-		//iterate through the keys and find the attributes that were specified for this product/item.
-		String attribKey = null;
-		for(String key : p.keySet()) {
-			if (key.startsWith("attribute_")) {
+		/* 2: Iterate the request param keys to find product attribute selections that
+		 * were made for this product. This populates a List of ProductAttributeVOs
+		 * representing only the attributes chosen. */
+		List<ProductAttributeVO> prodAttribs = new ArrayList<>();
+		String prodAttribIdKey = null;
+		Map<String, String[]> paramsMap = req.getParameterMap();
+		for(String paramKey : paramsMap.keySet()) {
+			if (paramKey.startsWith("attribute_")) {
 				// custom key is the value of the 'key' on the paramaterMap
-				attribKey = p.get(key)[0]; 
-			} else if (key.startsWith("custom_")) {
+				prodAttribIdKey = paramsMap.get(paramKey)[0]; 
+			} else if (paramKey.startsWith("custom_")) {
 				// custom key is the suffix of the parameterMap 'key'
-				attribKey = StringUtil.replace(key, "custom_", "");
+				prodAttribIdKey = StringUtil.replace(paramKey, "custom_", "");
 			}
-			if (attribKey != null) {
-				prodAttribs.add(attribs.get(attribKey));
-				attribKey = null;
+			if (prodAttribIdKey != null) {
+				prodAttribs.add(attribs.get(prodAttribIdKey));
+				prodAttribIdKey = null;
 			}
 		}
 		
-		// sort the prodAttribs by attribute type and hierarchy and order
+		/* 3: Sort the product attribute selections and put them into the proper sequence.
+		 * This is critical as it ensures that the product attribute portion of an order
+		 * request is formatted in the correct order. 
+		 */
 		if (prodAttribs.size() > 1) Collections.sort(prodAttribs, new ProductAttributeComparator());
-		// loop the sorted prodAttribs and add their values to the item and modify the product id
-		String lookup = null;
+		
+		// 4:  Loop the sorted product attribute VOs, add their values to item, modify the product id
+		String pAttrId = null;
 		String[] vals = null;
+
 		StringEncoder se = new StringEncoder();
+
+		// instantiate a LinkedHashMap to hold custom attribute mappings so we can
+		// add them to the product VO last.
+		Map<String, ProductAttributeVO> custom = new LinkedHashMap<>();
+
 		for (ProductAttributeVO pavo : prodAttribs) {
 			//update the cartItem's attribute cost.
 			cartItem.setAttributePrice(cartItem.getAttributePrice() + pavo.getMsrpCostNo());
-			lookup = pavo.getProductAttributeId();
+			pAttrId = pavo.getProductAttributeId();
 			//if we have a custom field add its text to the ProdAttrVO's attributes Map so we can display it later.
 			if (pavo.getAttributeId().contains("CUSTOM")) {
-				lookup = "custom_" + lookup; // this line MUST be BEFORE the vals retrieval.
-				vals= p.get(lookup);
+				pAttrId = "custom_" + pAttrId; // this line MUST be BEFORE the vals retrieval.
+				vals= paramsMap.get(pAttrId);
 				pavo.setAttribute("formVal", vals[0]);
 				if(StringUtil.checkVal(vals[0]).length() > 0) pIDAdv += "_" + StringUtil.removeWhiteSpace(vals[0]);
+				custom.put(pAttrId, pavo);
+				pAttrId = null;
+				continue;
 			} else {
-				pIDAdv += "_" + lookup;
-				lookup = "attribute_" + lookup; // this line MUST be AFTER the pIDAdv update.
+				pIDAdv += "_" + pAttrId;
+				pAttrId = "attribute_" + pAttrId; // this line MUST be AFTER the pIDAdv update.
 			}
 			//add the attribute to the ProductVO 
-			product.addProdAttribute(lookup, pavo);
-			lookup = null;
+			product.addProdAttribute(pAttrId, pavo);
+			pAttrId = null;
 		}
+
 		/* set the advanced productID to the cartItem so we can tell differences
 		 * between two of the same item with different attributes.  We decode any
 		 * HTML-entities and then replace them so that the advanced productID
@@ -1071,6 +1099,18 @@ public class ShoppingCartAction extends SBActionAdapter {
 		 * the cart views do not work properly.
 		 */
 		pIDAdv = formatAdvancedProductId(se,pIDAdv);
+
+		/* 5: Now add the custom attributes to the product's product attribute map.
+		 * We do it this way to ensure that the custom attributes are the last in the
+		 * sequence. */
+		if (custom.size() > 0) {
+			for (String pAId : custom.keySet()) {
+				product.addProdAttribute(pAId, custom.get(pAId));
+			}
+		}
+		
+		/* 6: Set the advanced productID on the cartItem so we can differenciate
+		 * between two of the same item with different attributes.*/
 		cartItem.setProductId(pIDAdv);
 		log.debug("advanced productId: " + pIDAdv);
 	}
