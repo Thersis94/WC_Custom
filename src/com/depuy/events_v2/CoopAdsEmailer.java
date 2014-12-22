@@ -42,12 +42,17 @@ public class CoopAdsEmailer extends SBActionAdapter {
 		super(arg0);
 	}
 
-	public void notifyAdminOfAdDeclined(DePuyEventSeminarVO sem, SiteVO site, UserDataVO user) {
+	public void notifyAdminOfAdDeclined(DePuyEventSeminarVO sem, SiteVO site, UserDataVO user, String reason) {
 		StringBuilder msg = new StringBuilder();
 		msg.append(user.getFirstName()).append(" ").append(user.getLastName());
 		msg.append(" (").append(user.getEmailAddress()).append(") has declined ");
 		msg.append("the newspaper ad offered for Seminar ");
-		msg.append(sem.getRSVPCodes()).append("\r\r");
+		msg.append(sem.getRSVPCodes()).append("\r");
+		if ( ! StringUtil.checkVal(reason).isEmpty() ){
+			msg.append("The coordinator commented:\r").append(reason).append("\r");
+		}
+		msg.append("\r");
+		
 
 		try {
 			// Create the mail object and send
@@ -365,6 +370,43 @@ public class CoopAdsEmailer extends SBActionAdapter {
 			log.debug("Co-Op Ad Payment Received Email Sent");
 		} catch (Exception me) {
 			log.error("Co-Op Ad Payment Received", me);
+		}
+	}
+	
+	/**
+	 * Notification sent out after Novus has uploaded ad details to the portal.
+	 * @param sem
+	 * @param site
+	 */
+	public void notifyNovusUpload( DePuyEventSeminarVO sem, SiteVO site ){
+		//Message body
+		StringBuilder msg = new StringBuilder(250);
+		msg.append("Novus has uploaded all Newspaper Advertising options into ");
+		msg.append("the portal for Seminar #").append(sem.getRSVPCodes()).append(". ");
+		msg.append("Detailed information is now available for Harmony to begin ");
+		msg.append("ad creation.\r\r");
+		
+		//Email subject
+		StringBuilder subject = new StringBuilder(100);
+		subject.append("Newspaper Advertising Options Available in Portal - Seminar ");
+		subject.append(sem.getRSVPCodes());
+		
+		try{
+			EmailMessageVO mail = new EmailMessageVO();
+			mail.setSubject(subject.toString());
+			mail.setFrom(site.getMainEmail());
+			mail.addRecipient("amy.zimmerman@hmktgroup.com");
+			mail.addCC(site.getAdminEmail());
+			mail.addCC("rwilkin7@its.jnj.com");
+			mail.addCC("Sterling.Hoham@hmktgroup.com");
+			mail.setTextBody(msg.toString());
+			
+			//Send message
+			MessageSender ms = new MessageSender(attributes, dbConn);
+			ms.sendMessage(mail);
+			log.debug("Novus Upload Notification Sent");
+		} catch (Exception e){
+			log.error("Novus Upload Mailer", e);
 		}
 	}
 
