@@ -67,10 +67,11 @@ public class UnitReportVO extends AbstractSBReportVO {
 	protected StringBuilder getHeader() {
 		StringBuilder hdr = new StringBuilder();
 		hdr.append("<tr><td><table border='1'>\r");
-		hdr.append("<tr><td colspan='11' style='background-color: #ccc;'><b>MedStream CU Tracking System - Unit Summary</b></td></tr>\r");
+		hdr.append("<tr><td colspan='11' style='background-color: #ccc;'><b>Codman CU Tracking System - Unit Summary</b></td></tr>\r");
 		hdr.append("\t<td>Account</td>");
 		hdr.append("\t<td>Rep Name</td>");
 		hdr.append("\t<td>Physician Name</td>");
+		hdr.append("\t<td>Unit Type</td>");
 		hdr.append("\t<td>Unit Status</td>");
 		hdr.append("\t<td>Date Deployed</td>");
 		hdr.append("\t<td>Serial No.</td>");
@@ -94,6 +95,7 @@ public class UnitReportVO extends AbstractSBReportVO {
 		rpt.append("\t<td>").append(StringUtil.checkVal(u.getAccountName())).append("</td>\r");
 		rpt.append("\t<td>").append(StringUtil.checkVal(u.getRepName())).append("</td>\r");
 		rpt.append("\t<td>").append(StringUtil.checkVal(u.getPhysicianName())).append("</td>\r");
+		rpt.append("\t<td>").append(u.getProductType().toString()).append("</td>\r");
 		rpt.append("\t<td>").append(UnitAction.getStatusName(u.getStatusId())).append("</td>\r");
 		rpt.append("\t<td>").append(this.formatDate(u.getDeployedDate())).append("</td>\r");
 		rpt.append("\t<td>").append(StringUtil.checkVal(u.getSerialNo())).append("</td>\r");
