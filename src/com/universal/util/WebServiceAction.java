@@ -1,6 +1,6 @@
 package com.universal.util;
 
-// JDK 1.6.x
+// Java 7
 import java.io.ByteArrayInputStream;
 import java.util.Collection;
 import java.util.HashMap;
@@ -23,6 +23,7 @@ import com.siliconmtn.commerce.ShoppingCartVO;
 import com.siliconmtn.commerce.catalog.ProductAttributeVO;
 import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
 import com.siliconmtn.security.AuthenticationException;
 import com.siliconmtn.security.EncryptionException;
@@ -88,7 +89,7 @@ public class WebServiceAction extends SBActionAdapter {
 	public static void main(String[] args) throws Exception {
 		org.apache.log4j.BasicConfigurator.configure();
 		//WebServiceAction wsa = new WebServiceAction(null);
-		Map<String, Integer> prods = new HashMap<String, Integer>();
+		Map<String, Integer> prods = new HashMap<>();
 		prods.put("80325", 3);
 		//wsa.retrieveShippingInfo("80401", prods);
 	}
@@ -495,12 +496,14 @@ public class WebServiceAction extends SBActionAdapter {
 	private void addProductAttributesXML(StringBuilder s, ProductVO product) {
 		log.debug("adding product attributes to shipping retrieval request");
 		if (product.getProdAttributes() != null && product.getProdAttributes().size() > 0) {
+			String val = null;
 			for (String key : product.getProdAttributes().keySet()) {
 				ProductAttributeVO pAtt = (ProductAttributeVO) product.getProdAttributes().get(key);
 				s.append("<ProdAttr code=\"");
 				s.append(pAtt.getValueText()).append("\">");
 				if(pAtt.getAttributeId().equals("USA_CUSTOM")) {
-					s.append(pAtt.getAttributes().get("formVal"));
+					val = StringUtil.checkVal(pAtt.getAttributes().get("formVal"));
+					s.append(StringEncoder.urlEncode(val));
 				}
 				s.append("</ProdAttr>");
 			}
