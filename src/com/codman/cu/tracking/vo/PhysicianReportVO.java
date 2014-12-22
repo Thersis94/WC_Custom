@@ -70,7 +70,7 @@ public class PhysicianReportVO extends AbstractSBReportVO {
 	private StringBuilder getHeader() {
 		StringBuilder hdr = new StringBuilder();
 		hdr.append("<table border='1'>\r");
-		hdr.append("<tr><td colspan='10' style='background-color: #ccc;'><b>MedStream CU Tracking System - Physician Summary</b></td></tr>\r");
+		hdr.append("<tr><td colspan='10' style='background-color: #ccc;'><b>Codman CU Tracking System - Physician Summary</b></td></tr>\r");
 		hdr.append("\t<tr><td>Account</td>");
 		hdr.append("\t<td>Name</td>");
 		hdr.append("\t<td>Email</td>");

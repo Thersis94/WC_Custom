@@ -1,8 +1,6 @@
 package com.codman.cu.tracking.vo;
 
 import java.io.Serializable;
-
-
 import java.sql.ResultSet;
 import java.util.Comparator;
 import java.util.Date;
@@ -54,6 +52,7 @@ public class UnitVO implements Serializable {
 	private String programArticleNo = null;
 	private String programRevNo = null;
 	private String batteryType = null;
+	private Date batteryRechargeDate = null;
 	private String batterySerNo = null;
 	private String lotNo = null; 
 	private String serviceRefNo = null;
@@ -61,10 +60,22 @@ public class UnitVO implements Serializable {
 	private String modifyingUserId = null;
 	private String modifyingUserName = "";
 	private String productionCommentsText = null;
+	//For new product types
+	private ProdType productType = null;
+	private String productFamily = null;
+	private int refurbishedFlg = 0;
 	
 	//this is for UnitHistoryReportVO
 	private PhysicianVO phys = null;
 	private Integer transactionType = null;
+	
+	/**
+	 * Possible unit types
+	 */
+	public enum ProdType {
+		MEDSTREAM, //The original CU type
+		ICP_EXPRESS
+	}
 	
 	public UnitVO() {
 	}
@@ -89,9 +100,14 @@ public class UnitVO implements Serializable {
 		batterySerNo = req.getParameter("battSerNo");
 		lotNo = req.getParameter("lotNo");
 		serviceRefNo = req.getParameter("servRefNo");
-		serviceDate = Convert.formatDate(req.getParameter("servDt"));
+		serviceDate = Convert.formatDate(req.getParameter("serviceDt"));
+		batteryRechargeDate = Convert.formatDate(req.getParameter("batteryRechargeDt"));
 		modifyingUserId = req.getParameter("modifyingUserId");
 		productionCommentsText = req.getParameter("productionCommentsText");
+		setProductType(req.getParameter("prodCd"));
+		refurbishedFlg = Convert.formatInteger(req.getParameter("refurbishedFlg"));
+		setProductFamily(req.getParameter("productFamily"));
+		
 	}
 	
 	/**
@@ -106,6 +122,7 @@ public class UnitVO implements Serializable {
 		statusId = db.getIntegerVal("unit_status_id", rs);
 		statusName = db.getStringVal("status_nm", rs);
 		deployedDate = db.getDateVal("deployed_dt", rs);
+		batteryRechargeDate = db.getDateVal("battery_recharge_dt", rs);
 		physicianId = db.getStringVal("phys_profile_id", rs);
 		repId = db.getStringVal("rep_person_id", rs); //actually is rep's profile_id
 		accountName = db.getStringVal("account_nm", rs);
@@ -128,6 +145,10 @@ public class UnitVO implements Serializable {
 		serviceDate = db.getDateVal("service_dt", rs);
 		modifyingUserId = db.getStringVal("modifying_user_id", rs);
 		productionCommentsText = db.getStringVal("production_comments_txt", rs);
+		setProductType(db.getStringVal("product_cd",rs));
+		refurbishedFlg = db.getIntVal("refurbished_flg", rs);
+		setProductFamily(db.getStringVal("PRODUCT_FAMILY_TXT", rs));
+		
 		
 		setPhys(new PhysicianVO(rs));
 		db = null;
@@ -408,8 +429,57 @@ public class UnitVO implements Serializable {
 	public void setTransactionType(Integer transactionType) {
 		this.transactionType = transactionType;
 	}
+
+	/**
+	 * @return the productType
+	 */
+	public ProdType getProductType() {
+		return productType;
+	}
+
+	/**
+	 * @param productType the productType to set
+	 */
+	public void setProductType(ProdType productType) {
+		this.productType = productType;
+	}
+	public void setProductType(String pt) {
+		try {
+			productType = ProdType.valueOf(pt);
+		} catch (Exception e) {}
+	}
 	
-	
+	public String getProductCode() {
+		if ( productType == null)
+			return ProdType.MEDSTREAM.toString();
+		else
+			return productType.toString();
+	}
+
+	public Date getBatteryRechargeDate() {
+		return batteryRechargeDate;
+	}
+
+	public void setBatteryRechargeDate(Date batteryRechargeDate) {
+		this.batteryRechargeDate = batteryRechargeDate;
+	}
+
+	public int getRefurbishedFlg() {
+		return refurbishedFlg;
+	}
+
+	public void setRefurbishedFlg(int refurbishedFlg) {
+		this.refurbishedFlg = refurbishedFlg;
+	}
+
+	public String getProductFamily() {
+		return productFamily;
+	}
+
+	public void setProductFamily(String productFamily) {
+		this.productFamily = productFamily;
+	}
+
 }
 
 
@@ -427,5 +497,4 @@ class UnitComparator implements Comparator<UnitVO> {
 		return o1.getSerialNo().compareToIgnoreCase(o2.getSerialNo());
 		
 	}
-
 }

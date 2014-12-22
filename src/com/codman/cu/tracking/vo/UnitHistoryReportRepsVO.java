@@ -1,8 +1,6 @@
-/**
- * 
- */
 package com.codman.cu.tracking.vo;
 
+import com.codman.cu.tracking.vo.UnitVO.ProdType;
 import com.smt.sitebuilder.common.SiteVO;
 
 /****************************************************************************
@@ -29,7 +27,8 @@ public class UnitHistoryReportRepsVO extends UnitHistoryReportVO {
 	@Override
 	public byte[] generateReport() {
 		log.debug("starting Unit History Report");
-		StringBuilder rpt = new StringBuilder(getHeader(true));
+		boolean isMedstream = (data != null && data.size() > 0 && data.get(0).getProductType() == ProdType.MEDSTREAM);
+		StringBuilder rpt = new StringBuilder(getHeader(true, isMedstream));
 		
 		//loop the accounts, physians, units, and requests
 		for (UnitVO v : data) {
