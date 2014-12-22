@@ -137,10 +137,9 @@ public class CatalogImportManager {
 			uci.closeDbConnection();
 		}
 		
-		uci.sendAdminEmail(success);
-		
 		long end = System.currentTimeMillis();
 		uci.addMessage("Completed Product Import in " + ((end - start) / 1000) + " seconds");
+		//uci.sendAdminEmail(success);
 	}
 
 	/**
@@ -221,23 +220,21 @@ public class CatalogImportManager {
 		dbConn.setAutoCommit(false);
 		
 		// delete categories and products before importing
-		//manageDeletes(catalog.getCatalogId());
+		manageDeletes(catalog.getCatalogId());
 		
 		// import category data
-		//importCategories(catalog);
+		importCategories(catalog);
 		
 		// import product data
-		//List<ProductVO> products = importProducts(catalog);
+		List<ProductVO> products = importProducts(catalog);
 		
-		Map<String,List<Map<String,List<String>>>> optionsIndexHierarchy = importOptionsIndexHierarchy(catalog);
+		List<String> productFilter = buildProductFilter(products);
 		
-		/*
-		 * DEBUG
-		 */
-		debugOptionsIndexHierarchy(optionsIndexHierarchy);
+		Map<String,List<Map<String,List<String>>>> optionsIndexHierarchy = null;
+		optionsIndexHierarchy = importOptionsIndexHierarchy(catalog, productFilter);
 		
 		// import product options
-		//importOptions(catalog, optionsIndexHierarchy);
+		importOptions(catalog, productFilter, optionsIndexHierarchy);
 		
 		// import product personalization options
 		//importPersonalization(catalog, products);
@@ -343,7 +340,7 @@ public class CatalogImportManager {
 	 * @throws IOException
 	 * @throws SQLException
 	 */
-	private void importOptions (CatalogImportVO catalog,
+	private void importOptions (CatalogImportVO catalog, List<String> productFilter,
 			Map<String,List<Map<String,List<String>>>> optionsIndexHierarchy) 
 			throws FileNotFoundException, IOException, SQLException {
 		log.info("importing options...");
@@ -353,7 +350,8 @@ public class CatalogImportManager {
 		oi.setCatalog(catalog);
 		oi.setOptionsIndexHierarchy(optionsIndexHierarchy);
 		oi.manageOptions();
-		oi.insertProductOptions();
+		//oi.insertProductOptions();
+		oi.insertProductOptionsNew(productFilter);
 		// add any mismatch log entries
 		misMatchedOptions.addAll(oi.getMisMatchedOptions());
 	}
@@ -368,14 +366,14 @@ public class CatalogImportManager {
 	 * @throws IOException
 	 */
 	private Map<String, List<Map<String, List<String>>>> 
-		importOptionsIndexHierarchy(CatalogImportVO catalog) throws FileNotFoundException, 
-			IOException {
+		importOptionsIndexHierarchy(CatalogImportVO catalog, List<String> productFilter) 
+				throws FileNotFoundException, IOException {
 		log.info("importing options index...");
 		addMessage("importing options index...");
 		catalog.setSourceFileName(sourceFileList[3]);
 		OptionsIndexImporter oii = new OptionsIndexImporter();
 		oii.setCatalog(catalog);
-		return oii.manageOptionsIndex();
+		return oii.manageOptionsIndex(productFilter);
 	}
 	
 	/**
@@ -397,6 +395,27 @@ public class CatalogImportManager {
 		
 		// add any mismatch log entries
 		misMatchedPersonalization.addAll(pli.getMisMatchedPersonalization());
+	}
+	
+	/**
+	 * Returns a List of raw, non-prefixed product IDs derived from the List of 
+	 * ProductVOs that of products imported by the Product importer. We use this
+	 * to filter the options that we import.
+	 * @param products
+	 * @return
+	 */
+	private List<String> buildProductFilter(List<ProductVO> products) {
+		List<String> pIds = new ArrayList<>();
+		for (ProductVO p : products) {
+			/* 
+			 * !! NOTE: custProductNo is the raw, non-prefixed product ID.  We build 
+			 * this List to use as a filter when importing options because the import
+			 * source file is dirty (contains data for products that don't exist in the
+			 * product import source file).
+			 */
+			pIds.add(p.getCustProductNo());
+		}
+		return pIds;
 	}
 	
 	/**
@@ -573,26 +592,6 @@ public class CatalogImportManager {
 	 */
 	private void addMessage(String msg) {
 		messageLog.add(msg);
-	}
-
-	private void debugOptionsIndexHierarchy(Map<String,List<Map<String,List<String>>>> optionsIndexHierarchy) {
-		for (String pId : optionsIndexHierarchy.keySet()) {
-			log.debug("productId: "+ pId);
-			
-			List<Map<String,List<String>>> pChild = optionsIndexHierarchy.get(pId);
-			log.debug("hierarchy levels: " + pChild.size());
-			
-			for (int i = 0; i < pChild.size(); i++) {
-				log.debug("expanding level " + i + "...");
-				Map<String,List<String>> level = pChild.get(i);
-				for (String parent : level.keySet()) {
-					log.debug("parent val: " + parent);
-					for (String child : level.get(parent)) {
-						log.debug("----> child: " + child);
-					}
-				}
-			}
-		}
 	}
 	
 }

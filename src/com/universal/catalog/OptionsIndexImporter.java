@@ -1,6 +1,6 @@
 package com.universal.catalog;
 
-// JDK 7
+// Java 7
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -10,7 +10,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
 
 // Log4J 1.2.15
 import org.apache.log4j.Logger;
@@ -53,15 +52,20 @@ public class OptionsIndexImporter extends AbstractImporter {
 			
 	/**
 	 * Parses options from the options source file. 
+	 * @param productFilter
+	 * @return Map of raw product ID mapped to a List representing the options
+	 * hierarchy levels for that product's options.
 	 * @throws FileNotFoundException
 	 * @throws IOException
 	 */
-	public Map<String,List<Map<String,List<String>>>> manageOptionsIndex() 
+	public Map<String,List<Map<String,List<String>>>> manageOptionsIndex(List<String> productFilter) 
 			throws FileNotFoundException, IOException  {
 		log.info("manageOptionsIndex...");
 		// load and parse the options index file
-		Map<String, List<String[]>> optionsIndex = processOptionsIndex();
-		return parseOptionsHierarchy(optionsIndex);
+		Map<String, List<String[]>> optionsIndex = processOptionsIndex(productFilter);
+		Map<String,List<Map<String,List<String>>>> hierarchy = parseOptionsHierarchy(optionsIndex);
+		debugOptionsIndexHierarchy(hierarchy);
+		return hierarchy;
 	}
 	
 	/**
@@ -69,7 +73,8 @@ public class OptionsIndexImporter extends AbstractImporter {
 	 * @throws FileNotFoundException
 	 * @throws IOException
 	 */
-	private Map<String, List<String[]>> processOptionsIndex() throws FileNotFoundException, IOException  {
+	private Map<String, List<String[]>> processOptionsIndex(List<String> productFilter) 
+			throws FileNotFoundException, IOException  {
 		// establish a Reader on the options file.
 		log.info("loadOptionsIndex...");
 		BufferedReader data = null;
@@ -112,21 +117,23 @@ public class OptionsIndexImporter extends AbstractImporter {
 					continue;
 				}
 				
-				String[] cTokens = codeList.split(DELIMITER);
-				
-				if (prodId.equals(prevProdId)) {
-					// add to list for this product
-					hierarchy.add(cTokens);
-					
-				} else {
-					// product ID changed, do cleanup on previous product
-					if (hierarchy != null) {
-						optionsIndex.put(prevProdId, hierarchy);
+				// only process options for products that were imported upstream
+				if (productFilter.contains(prodId)) {
+					String[] cTokens = codeList.split(DELIMITER);
+					if (prodId.equals(prevProdId)) {
+						// add to list for this product
+						hierarchy.add(cTokens);
+						
+					} else {
+						// product ID changed, do cleanup on previous product
+						if (hierarchy != null) {
+							optionsIndex.put(prevProdId, hierarchy);
+						}
+						
+						// initialize hierarchy list and populate with tokens from this record
+						hierarchy = new ArrayList<>();
+						hierarchy.add(cTokens);
 					}
-					
-					// initialize hierarchy list and populate with tokens from this record
-					hierarchy = new ArrayList<>();
-					hierarchy.add(cTokens);
 				}
 				
 				prevProdId = prodId;
@@ -166,21 +173,51 @@ public class OptionsIndexImporter extends AbstractImporter {
 			List<Map<String, List<String>>> parentChildren = new ArrayList<>();
 			switch(depth) {
 				case 1:
-					continue; //if depth is only 1, there are no children, skip these.
+					// if depth is 1, there are no children, loop the Map and add an empty
+					// List to parentChildren
+					Map<String, List<String>> m = new LinkedHashMap<>();
+					for (int i = 0; i < optionsIndex.get(pId).size(); i++) {
+						m.put(optionsIndex.get(pId).get(i)[0], new ArrayList<String>(1));
+					}
+					parentChildren.add(m);
+					break;
 				case 2:
 					parentChildren.add(parseLevel(optionsIndex.get(pId),0,1));
+					addDummyMap(parentChildren, parentChildren.size() - 1);
 					break;
 				case 3:
 					parentChildren.add(parseLevel(optionsIndex.get(pId),0,1));
 					parentChildren.add(parseLevel(optionsIndex.get(pId),1,2));
+					addDummyMap(parentChildren, parentChildren.size() - 1);
 					break;
 				default:
 					continue;
 			}
+			
 			prodParentChildren.put(pId, parentChildren);
 			
 		}
 		return prodParentChildren;
+	}
+	
+	/**
+	 * Builds a Map for the children who have no children to map them to empty
+	 * ArrayLists. 
+	 * @param parentChildren
+	 * @param level
+	 */
+	private void addDummyMap(List<Map<String, List<String>>> parentChildren, int level) {
+		// add a map of empty lists for the last children who have no children
+		Map<String, List<String>> lastLevelMap = parentChildren.get(level);
+		Map<String, List<String>> dummyLevelMap = new LinkedHashMap<>(1);
+		// loop the last level map and create a map of the children who have no children
+		for (String lastLevelKey : lastLevelMap.keySet()) {
+			List<String> lastLevelList = lastLevelMap.get(lastLevelKey);
+			for (String lastVal : lastLevelList) {
+				dummyLevelMap.put(lastVal, new ArrayList<String>(1));
+			}
+		}
+		parentChildren.add(dummyLevelMap);
 	}
 	
 	/**
@@ -194,7 +231,7 @@ public class OptionsIndexImporter extends AbstractImporter {
 	private Map<String, List<String>> parseLevel(List<String[]> hierarchy, 
 			int idxParent, int idxChild) {
 		
-		Map<String, List<String>> parentChildren = new LinkedHashMap<>();
+		Map<String, List<String>> parentChildren = null;
 		List<String> children = null;
 		
 		String parent = null;
@@ -215,7 +252,11 @@ public class OptionsIndexImporter extends AbstractImporter {
 				
 			} else {
 				// map parent to children
-				parentChildren.put(prevParent, children);
+				if (parentChildren == null) {
+					parentChildren = new LinkedHashMap<>();
+				} else {
+					parentChildren.put(prevParent, children);
+				}
 				// reset children list
 				children = new ArrayList<>();
 				children.add(child);
@@ -226,8 +267,43 @@ public class OptionsIndexImporter extends AbstractImporter {
 			
 		}
 		
+		// pick up the dangling record
+		if (parentChildren != null) {
+			parentChildren.put(prevParent, children);
+		}
+		
 		return parentChildren;
 	}
 
+	/**
+	 * Utility method for debugging the options index hierarchy.
+	 * @param optionsIndexHierarchy
+	 */
+	private void debugOptionsIndexHierarchy(Map<String,List<Map<String,List<String>>>> optionsIndexHierarchy) {
+		log.debug("debugging options index hierarchy...");
+		log.debug("optionsIndexHierarchy map size is: " + optionsIndexHierarchy.size());
+		for (String pId : optionsIndexHierarchy.keySet()) {
+			if (pId.equals("CE2838")) {
+				log.debug("productId: "+ pId);
+				
+				List<Map<String,List<String>>> pChild = optionsIndexHierarchy.get(pId);
+				log.debug("hierarchy levels: " + pChild.size());
+	
+				for (int i = 0; i < pChild.size(); i++) {
+					log.debug("expanding level " + i + "...");
+					Map<String,List<String>> level = pChild.get(i);
+					log.debug("level map size is: " + level.size());
+					for (String parent : level.keySet()) {
+						log.debug("parent val: " + parent);
+						List<String> children = level.get(parent);
+						log.debug("children: " + children);
+						for (String child : level.get(parent)) {
+							log.debug("----> child: " + child);
+						}
+					}
+				}
+			}
+		}
+	}
 	
 }

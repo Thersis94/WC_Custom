@@ -11,6 +11,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -21,7 +22,6 @@ import org.apache.log4j.Logger;
 
 //SMT Base Libs
 import com.siliconmtn.commerce.catalog.ProductAttributeVO;
-import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -281,7 +281,6 @@ public class OptionsImporter extends AbstractImporter {
 			
 			double attribCost = formatAttributeCost(fields, headers);
 			guid = new UUIDGenerator().getUUID();
-
 			try {
 				ps.setString(1, guid);	//product_attribute_id
 				ps.setString(2, attribId); //attribute_id
@@ -346,11 +345,7 @@ public class OptionsImporter extends AbstractImporter {
 	}
 	
 	/**
-<<<<<<< Updated upstream
-	 * Determines the attribute's cost
-=======
 	 * Formats an attribute's cost using the specified source column value.
->>>>>>> Stashed changes
 	 * @param aCost
 	 * @return
 	 */
@@ -396,13 +391,11 @@ public class OptionsImporter extends AbstractImporter {
 
 	/**
 	 * Inserts product-options associations into the appropriate table. 
-	 * @param products
-	 * @param catalogSourcePath
+	 * @param productFilter
 	 * @throws FileNotFoundException
 	 * @throws IOException
-	 * @throws SQLException
 	 */
-	public void insertProductOptionsNew(List<ProductVO> products) 
+	public void insertProductOptionsNew(List<String> productFilter) 
 			throws FileNotFoundException, IOException  {
 		BufferedReader data = null;
 		String fullPath = catalog.getSourceFilePath() + catalog.getSourceFileName();
@@ -419,13 +412,17 @@ public class OptionsImporter extends AbstractImporter {
 		String prevSrcProdId = null;
 		String srcProdId =  null;
 		String prodId = null;
+		String prevProdId = null;
 		String attribSelectLvl = null; //corresponds to a List index value
 		String prevAttribSelectLvl = null;
 		int attribSelectOrder = 0;
 		Map<String, Integer> headers = null;
 		ProductAttributeVO option = null;
-		List<Map<String, ProductAttributeVO>> hLevels = null;
-		Map<String, List<Map<String,ProductAttributeVO>>> prodHLevels = null;
+		Map<String,ProductAttributeVO> levelMap = null;
+		List<Map<String, ProductAttributeVO>> levels = null;
+		//List<List<Map<String, ProductAttributeVO>>> hLevels = null;
+		Map<String, List<Map<String,ProductAttributeVO>>> prodAttrHierarchy = null;
+		List<String> skipList = new ArrayList<>();
 		// loop file contents and process
 		try {
 			for (int i=0; (temp = data.readLine()) != null; i++) {
@@ -447,78 +444,101 @@ public class OptionsImporter extends AbstractImporter {
 					attribSelectLvl = "0";
 					prodId = srcProdId;
 				}
-				// add prefix to prodId
-				prodId = catalog.getCatalogPrefix() + prodId;
 				
-				// compare formatted product ID against list of valid products for this catalog
-				if (! products.contains(prodId)) {
-					log.error("Options product ID mismatch: " + prodId);
-					continue;
-				}
-				
-				// format retrieve attribId
-				String attribId = null;
-				try { // enclosed in try/catch in case of index array out of bounds due to missing field val.
-					attribId = fields[headers.get("TABLETYPE")];
-				} catch (Exception e) {
-					log.error("Skipping attribute, blank source for prodId | row: " + prodId + "|" + i);
-				}
-				if (attribId == null || attribId.length() == 0) continue;
-				attribId = this.formatAttribute(attribId);
-				
-				// build the attribute VO
-				option = new ProductAttributeVO();
-				if (attribSelectLvl.equals("0") || attribSelectLvl.equals("1")) {
-					option.setProductAttributeId(new UUIDGenerator().getUUID());
-				}
-				option.setAttributeId(attribId);
-				option.setProductId(prodId);
-				option.setModelYearNo(catalog.getCatalogModelYear());
-				option.setValueText(fields[headers.get("CODE")]);
-				option.setCurrencyType("dollars");
-				option.setMsrpCostNo(formatAttributeCost(fields, headers));
-				option.setAttribute(ProductAttributeVO.ATTRIB_1, fields[headers.get("DESCRIPTION")]);
-				option.setAttribute(ProductAttributeVO.ATTRIB_2, attribSelectLvl);
-				
-				// compare prev and current prod IDs
-				if (srcProdId.equals(prevSrcProdId)) {
-					Map<String,ProductAttributeVO> aMap = new HashMap<>();
-					if (attribSelectLvl.equals(prevAttribSelectLvl)) {
-						// increment select order
-						option.setDisplayOrderNo(++attribSelectOrder);
-					} else {
-						// reset select order and level list
-						option.setDisplayOrderNo(0);
-						hLevels = new ArrayList<>();
+				// filter raw product ID against list of valid product IDs for this catalog
+				if (productFilter.contains(prodId)) {
+
+					// attribId: retrieve and format
+					String attribId = null;
+					try { // enclosed in try/catch in case of index array out of bounds due to missing field val.
+						attribId = fields[headers.get("TABLETYPE")];
+					} catch (Exception e) {
+						log.error("Skipping attribute, blank source for prodId | row: " + prodId + "|" + i);
+					}
+					if (attribId == null || attribId.length() == 0) continue;
+					attribId = this.formatAttribute(attribId);
+					
+					// attribute VO : build and populate
+					option = new ProductAttributeVO();
+					if (attribSelectLvl.equals("0") || attribSelectLvl.equals("1")) {
+						// set ID for top-level attributes
+						option.setProductAttributeId(new UUIDGenerator().getUUID());
+					}
+					option.setAttributeId(attribId);
+					option.setProductId(catalog.getCatalogPrefix() + prodId); // this is the prefixed product ID
+					option.setModelYearNo(catalog.getCatalogModelYear());
+					option.setValueText(fields[headers.get("CODE")]);
+					option.setCurrencyType("dollars");
+					option.setMsrpCostNo(formatAttributeCost(fields, headers));
+					option.setAttribute(ProductAttributeVO.ATTRIB_1, fields[headers.get("DESCRIPTION")]);
+					option.setAttribute(ProductAttributeVO.ATTRIB_2, attribSelectLvl);
+					
+					// Set option's display order number
+					if (srcProdId.equals(prevSrcProdId)) {
+						if (attribSelectLvl.equals(prevAttribSelectLvl)) {
+							// increment select order
+							option.setDisplayOrderNo(++attribSelectOrder);
+						} else {
+							// reset select order and level list
+							option.setDisplayOrderNo(0);
+						}
 					}
 					
-					aMap.put(option.getValueText(), option);
-					hLevels.add(aMap);
-					
+					// Now determine how to store the option
+					if (prodId.equals(prevProdId)) {
+						// same product, check to see if level changed
+						if (! srcProdId.equals(prevSrcProdId)) {
+							// level has changed, add current levelMap to the levels List
+							levels.add(levelMap);
+							// initialize the levelMap
+							levelMap = new LinkedHashMap<>();
+						}
+						
+						// add this option to the new levelMap
+						levelMap.put(option.getValueText(), option);						
+						
+					} else {
+						// product changed
+						if (prodAttrHierarchy == null) { // initialize map the first time through
+							log.debug("initializing prodAttrHierarchy");
+							prodAttrHierarchy = new HashMap<>();
+						} else {
+							// add the previous product ID's levels to the master map
+							//log.debug("adding levels for prodId: " + prevProdId);
+							if (! prodAttrHierarchy.containsKey(prevProdId)) {
+								levels.add(levelMap);
+								prodAttrHierarchy.put(prevProdId, levels);
+								//if (prevProdId.equals("PS9982")) log.debug("stored hierarchy for prodId|size: " + prevProdId + "|" + levels.size());
+							} else {
+								//log.debug("SKIPPING HIERARCHY: Product already processed: " + prevProdId);
+							}
+						}
+						
+						// initialize the levels List
+						levels = new ArrayList<>();
+						// initialize the levelMap
+						levelMap = new LinkedHashMap<>();
+						// add option to level map
+						levelMap.put(option.getValueText(), option);
+						
+					}
 				} else {
-					if (prodHLevels == null) { 	// first time through, initialize master map
-						prodHLevels = new HashMap<>();
-					} else {
-						// add the previous product ID to the master map
-						prodHLevels.put(prevSrcProdId, hLevels);
-					}
-					
-					// set option display order no
-					option.setDisplayOrderNo(0);
-					Map<String,ProductAttributeVO> aMap = new HashMap<>();
-					aMap.put(option.getValueText(), option);
-					hLevels = new ArrayList<>();
-					hLevels.add(aMap);
+					// skip options for products not imported for this catalog
+					//log.error("Skipping options: product ID mismatch: " + prodId);
+					if (! skipList.contains(prodId)) skipList.add(prodId);
+					continue;
 				}
 				
 				// reset previous prod id
 				prevSrcProdId = srcProdId;
+				prevProdId = prodId;
 				prevAttribSelectLvl = attribSelectLvl;
 			}
 			
 			// pick up the dangling attribute
-			if (hLevels != null) {
-				prodHLevels.put(prevSrcProdId, hLevels);
+			if (levels != null && ! levels.isEmpty()) {
+				//hLevels.add(level);
+				prodAttrHierarchy.put(prevSrcProdId, levels);
 			}
 			
 		} finally {
@@ -526,49 +546,240 @@ public class OptionsImporter extends AbstractImporter {
 				data.close();
 			} catch (Exception e) { log.error("Error closing BufferedReader, ", e); }
 		}
-		
-		updateParentChildIds(prodHLevels);
-		
+		Map<String, List<ProductAttributeVO>> voHierarchy = buildInsertVOs(prodAttrHierarchy);
+		//for (String p : skipList) { log.debug("Skipped (mismatch) product ID: " + p); }
+		//debugProductAttributeHierarchy(prodAttrHierarchy);
+		//debugVOHierarchy(voHierarchy);
+		insertProductOptions(voHierarchy);
 	}
 	
 	/**
-	 * Updates the child ProductAttributeVO parentId property with the value of
-	 * the appropriate parent ProductAttributeVO productAttributeId value.
-	 * @param prodHLevels
+	 * Loops the product options hierarchy index and builds the hierarchy using 
+	 * ProductAttributeVOs.  Child product attribute VOs are populated with the 
+	 * appropriate parent product attribute ID.
+	 * @param attribs
+	 * @return 
 	 */
-	private void updateParentChildIds(Map<String,List<Map<String,ProductAttributeVO>>> prodHLevels) {
-		// loop the options index hierarchy and set parent IDs on the appropriate children
-		for (String pId : prodHLevels.keySet()) {
-			List<Map<String,ProductAttributeVO>> levels = prodHLevels.get(pId);
+	private Map<String, List<ProductAttributeVO>> buildInsertVOs(Map<String, 
+			List<Map<String,ProductAttributeVO>>> attribs) {
+		log.debug("buildInsertVOs...");
+		// loop index
+		Map<String,List<ProductAttributeVO>> master = new HashMap<>();
+		Map<String,Integer> voCount = new LinkedHashMap<>();
+		int totalVOs = 0;
+		for (String pId : optionsIndexHierarchy.keySet()) {
+			//if (pId.equals("CE2838")) {
+			log.debug("building insert VOs for product ID: " + pId);
 			
-			// If product has only 1 level of options, skip it.  No children to worry about.
-			if (levels.size() == 1) continue;
+			// List of this product's attribute VOs for insert
+			List<ProductAttributeVO> attVOs = new ArrayList<>();
+			List<Map<String,List<String>>> oHierarchy = optionsIndexHierarchy.get(pId);
+			List<Map<String,ProductAttributeVO>> aHierarchy = null;
+			if (attribs.get(pId) == null) continue; // no attribs, skip this product. 
+			aHierarchy = attribs.get(pId);
 			
-			// get list of the index hierarchy mappings for this product
-			// e.g. BK:[T,SW,HSW], OR:[T,SW]
-			List<Map<String,List<String>>> hier = optionsIndexHierarchy.get(pId);
-			
-			// loop the levels to access the prod attr vos., start at index 1 because 
-			// we don't need to process the parents at this point.
-			for (int i = 1; i < levels.size(); i++) {
-				
-				// get parent(LVL 'i - 1') and children (level 'i') prod attribute VOs
-				Map<String,ProductAttributeVO> parents = levels.get(i - 1);
-				Map<String,ProductAttributeVO> children = levels.get(i);
-				
-				// get LVL 'i' of indexHierarchy to get the parent-child vals
-				Map<String, List<String>> pChild = hier.get(i - 1);
-				// loop the indexHierarchy
-				for (String parentVal : pChild.keySet()) {
-					ProductAttributeVO parentVO = parents.get(parentVal);
-					for (String child : pChild.get(parentVal)) {
-						ProductAttributeVO childVO = children.get(child);
-						childVO.setProductAttributeId(new UUIDGenerator().getUUID());
-						childVO.setParentId(parentVO.getProductAttributeId());
-					}
+			// loop top level options and make kids
+			Map<String, List<String>> parents = oHierarchy.get(0);
+			Map<String, ProductAttributeVO> parentsAttribs = aHierarchy.get(0);
+			for (String parentKey : parents.keySet()) {
+				log.debug("*** processing parent: " + parentKey);
+				//log.debug("oHierarchy|aHierarchy sizes: " + oHierarchy.size() + "|" + aHierarchy.size());
+				ProductAttributeVO parentVO = parentsAttribs.get(parentKey);
+				 if (parentVO == null) {
+					log.debug("skipping this parent, no ProductAttributeVO found.");
+					continue;
 				}
+				attVOs.add(parentVO);
+				//log.debug("productAttributeId: " + parentVO.getProductAttributeId());
+				List<String> children = parents.get(parentKey);
+				//log.debug("------> children: " + children);
+				if (children != null && ! children.isEmpty()) {
+					log.debug("-----------> parent has children: " + children);
+					if (oHierarchy.size() > 1 && aHierarchy.size() > 1) {
+						makeChildren(attVOs, oHierarchy, aHierarchy, 
+								oHierarchy.get(1), aHierarchy.get(1), 
+								parentVO.getProductAttributeId(), children, 1);
+					}
+					
+				}
+				
+			}
+			
+			log.debug("product's product attribute VO list size: " + attVOs.size());
+			totalVOs = totalVOs + attVOs.size();
+			master.put(pId, attVOs);
+			voCount.put(pId,  attVOs.size());
+			//}
+		}
+		log.debug("total VO size: " + totalVOs);
+		log.debug("master map size: " + master.size());
+		/*
+		for (String pId : voCount.keySet()) {
+			log.debug("product ID|vo count: " + pId + "|" + voCount.get(pId));
+		}
+		*/
+		return master;
+	}
+	
+	/**
+	 * Recursively creates the children ProductAttributeVOs for a given parent.
+	 * @param attVOs
+	 * @param oHier
+	 * @param aHier
+	 * @param productId
+	 * @param kidsOptions
+	 * @param kidsAttribs
+	 * @param currParentId
+	 * @param currOptionLevel
+	 */
+	private void makeChildren(
+			List<ProductAttributeVO> attVOs,
+			List<Map<String, List<String>>> oHier,
+			List<Map<String, ProductAttributeVO>> aHier,
+			//Map<String, String> childIdMap,
+			Map<String, List<String>> childOptions, 
+			Map<String,ProductAttributeVO> childAttribs, 
+			String currParentId, 
+			List<String> parentsChildren,
+			int currOptionLevel) {
+		log.debug("**** entering makeChildren:currOptionLevel: " + currOptionLevel);
+		if (parentsChildren != null && ! parentsChildren.isEmpty()) {
+			// loop the kids
+			log.debug("children passed in: " + parentsChildren);
+			for (String child : parentsChildren) {
+				if (childAttribs.get(child) == null) continue;
+				log.debug("-------> adding child: " + child);
+				ProductAttributeVO newChild = cloneProductAttribute(childAttribs.get(child), currParentId);
+				attVOs.add(newChild);
+			
+				// check for grandkids...
+				List<String> grandKids = childOptions.get(child);
+				if (grandKids != null && ! grandKids.isEmpty()) {
+					log.debug("---------> found children of this child: " + grandKids);
+					makeChildren(attVOs, oHier, aHier, 
+							oHier.get(currOptionLevel + 1), aHier.get(currOptionLevel + 1), 
+							newChild.getProductAttributeId(), grandKids, currOptionLevel + 1);
+				}
+			}
+			
+		}
+		log.debug("**** exiting makeChildren...");
+	}
+	
+	private void insertProductOptions(Map<String, List<ProductAttributeVO>> voHierarchy) {
+		log.debug("insertProductOptions...");
+		if (voHierarchy == null || voHierarchy.isEmpty()) return;
+		
+		StringBuilder s = new StringBuilder();
+		s.append("insert into product_attribute_xr (product_attribute_id, attribute_id, ");
+		s.append("product_id, model_year_no, value_txt, create_dt, currency_type_id, ");
+		s.append("msrp_cost_no, attrib1_txt, attrib2_txt, order_no) values (?,?,?,?,?,?,?,?,?,?,?)");
+		log.debug("product option attribute XR SQL: " + s.toString());
+		
+		PreparedStatement ps = null;
+		int recCount = 0;
+		int[] batchCount = null;
+		int pCount = 0;
+		try {
+			int idx = 1;
+			ps = dbConn.prepareStatement(s.toString());
+			for (String hKey : voHierarchy.keySet()) {
+				if (hKey.equals("CE2838")) log.debug("inserting options XR for product ID: " + hKey);
+				int limit = voHierarchy.get(hKey).size();
+				pCount = 0;
+				for (ProductAttributeVO pavo : voHierarchy.get(hKey)) {
+					if (hKey.equals("CE2838")) {
+						log.debug("building insert: productId|productAttribId|parentId|attrib2|value: " + pavo.getProductId() + "|" + pavo.getProductAttributeId() +"|"+pavo.getParentId()+"|"+pavo.getAttribute2()+"|"+pavo.getValueText());
+					}
+					idx = 1;
+					ps.setString(idx++, pavo.getProductAttributeId());
+					ps.setString(idx++, pavo.getAttributeId());
+					ps.setString(idx++, pavo.getProductId());
+					ps.setString(idx++, pavo.getModelYearNo());
+					ps.setString(idx++, pavo.getValueText());
+					ps.setTimestamp(idx++, Convert.getCurrentTimestamp());
+					ps.setString(idx++, pavo.getCurrencyType().name());
+					ps.setDouble(idx++, pavo.getMsrpCostNo());
+					ps.setString(idx++, pavo.getAttribute1());
+					ps.setString(idx++, pavo.getAttribute2());
+					ps.setInt(idx++, pavo.getDisplayOrderNo());
+					ps.addBatch();
+					pCount++;
+					recCount++;
+					//log.debug("pCount: " + pCount);
+					if (pCount == limit) {
+						try {
+							batchCount = ps.executeBatch();
+							if (hKey.equals("CE2838")) { log.debug("added records at batch count " + recCount); }
+						} catch (SQLException sqle) {
+							if (batchCount != null) {
+								int start = recCount - 200;
+								log.error("Error during options XR insert between record " + start + " and " + recCount);
+								log.error("Error message is: " + sqle.getMessage());
+								log.error("Looping batchCount[]: ");
+								for (int cnt = 0; cnt < batchCount.length; cnt++) {
+									log.debug("Record #|result: " + (start + 1) + "|" + batchCount[cnt]);
+								}
+							}
+						}
+					}
+					
+				}
+				
+			}
+			
+		} catch (SQLException sqle) {
+			log.error("Error inserting options XR records, ", sqle);
+		} finally {
+			try {
+				ps.close();
+			} catch (Exception e) { log.error("Error closing PreparedStatement, " + e.getMessage()); }
+		}
+		log.debug("inserted record count: " + recCount);
+	}
+	
+	/**
+	 * Makes a new ProductAttributeVO based on the child, setting the parent's
+	 * product attribute ID as the child's parent ID, and setting the
+	 * @param child 
+	 * @param parentId
+	 * @param productId
+	 * @return
+	 */
+	private ProductAttributeVO cloneProductAttribute(ProductAttributeVO child, String parentId) {
+		// copy the child, set parent's product attribute ID as the parent ID
+		ProductAttributeVO newVO = new ProductAttributeVO();
+		newVO.setActiveFlg(child.getActiveFlg());
+		newVO.setAttributeGroupId(child.getAttributeGroupId());
+		newVO.setAttributeId(child.getAttributeId());
+		newVO.setAttributeName(child.getAttributeName());
+		newVO.setAttributeType(child.getAttributeType());
+		newVO.setAttributes(child.getAttributes());
+		newVO.setCatalogId(child.getCatalogId());
+		newVO.setDisplayOrderNo(child.getDisplayOrderNo());
+		newVO.setModelYearNo(child.getModelYearNo());
+		newVO.setMsrpCostNo(child.getMsrpCostNo());
+		newVO.setOrganizationId(child.getOrganizationId());
+		newVO.setParentId(parentId);
+		newVO.setProductAttributeId(new UUIDGenerator().getUUID());
+		newVO.setProductId(child.getProductId());
+		newVO.setTitle(child.getTitle());
+		newVO.setUrlAlias(child.getUrlAlias());
+		newVO.setValueText(child.getValueText());
+		return newVO;
+	}
+	
+	/**
+	 * Utility method for debugging the vo parent-child relationships (IDs).
+	 * @param vos
+	 */
+	private void debugVOHierarchy(Map<String, List<ProductAttributeVO>> vos) {
+		for (String pId : vos.keySet()) {
+			log.debug("Product ID: " + pId);
+			for (ProductAttributeVO pavo : vos.get(pId)) {
+				log.debug("-----> pAttrId|parentId|level|value: " + pavo.getProductAttributeId() + "|" + pavo.getParentId() + "|" + pavo.getAttribute2() + "|" + pavo.getValueText());
 			}
 		}
 	}
-
+	
 }
