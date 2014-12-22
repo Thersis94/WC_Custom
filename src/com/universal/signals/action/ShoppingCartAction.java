@@ -13,9 +13,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+
 // DOM4J
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
+
 
 // SMT BAse Libs
 import com.siliconmtn.action.ActionException;
@@ -125,7 +127,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	public void build(SMTServletRequest req) throws ActionException {
-		log.debug("Shopping cart build....");
+		log.debug("ShoppingCartAction build....");
 		this.setCatalogSiteId(req);
 		// Retrieve the cart
 		ShoppingCartVO cart = null;
@@ -136,8 +138,15 @@ public class ShoppingCartAction extends SBActionAdapter {
 		} catch (Exception e) {
 			log.error("Unable to manage cart", e);
 		}
-		// Make sure to set the parameter for the checkout process
-		req.setParameter("checkout", "true");
+
+		// build redirect
+		StringBuilder url = new StringBuilder();
+		url.append(req.getRequestURI()).append("?");
+		url.append("checkout=true");
+		url.append("&type=payment");
+		req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
+		req.setAttribute(Constants.REDIRECT_URL, url.toString());
+		
 	}
 	
 	/**
@@ -200,11 +209,13 @@ public class ShoppingCartAction extends SBActionAdapter {
 			
 		} else if (updateShipping) {
 			String shippingId = req.getParameter("selShipping");
+			//log.debug("updateShipping is true, setting shipping to shippingId: " + shippingId);
 			cart.setShipping(shippingId);
 		}
 		
 		// If the request is for shipping manage the data
 		if (StringUtil.checkVal(req.getParameter("shippingType")).length() > 0) {
+			//log.debug("shippingType has length: " + req.getParameter("shippingType"));
 			this.manageShippingInfo(cart, req);
 		}
 		
@@ -299,6 +310,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 		if (Convert.formatBoolean(req.getParameter("finalCheckout"))) {
 			if (productId.length() == 0) isFinalCheckOut = true;
 		}
+		log.debug("isFinalCheckout: " + isFinalCheckOut);
 		return isFinalCheckOut;
 	}
 
@@ -528,11 +540,13 @@ public class ShoppingCartAction extends SBActionAdapter {
 	 * @param cart
 	 */
 	private void retrieveCartUserData(SMTServletRequest req, ShoppingCartVO cart) {
-		log.debug("processing retrieval of cart user billing/shipping data...");
+		log.debug("processing retrieval of cart user data from session...");
 		// See if there is data on the session to assign from login
 		UserDataVO user = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
 		if (user != null) {
+			//log.debug("user session data is NOT null...");
 			if (cart.getBillingInfo() == null) {
+				//log.debug("user billing info is NOT null, setting billing/shipping info from user session data.");
 				cart.setBillingInfo(user);
 				cart.setShippingInfo((UserDataVO) user.getUserExtendedInfo());
 			}
@@ -619,6 +633,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 	protected void manageShippingInfo(ShoppingCartVO cart, SMTServletRequest req) {
 		log.debug("manageShippingInfo...");
 		String shippingType = StringUtil.checkVal(req.getParameter("shippingType"));
+		log.debug("shippingType: " + shippingType);
 		UserDataVO user = new UserDataVO(req);
 		if ("billing".equalsIgnoreCase(shippingType)) {
 			// retrieve profileId
@@ -641,7 +656,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 				req.setParameter("type", "Shipping");
 			}
 		} else {
-			// Add the user to the session
+			// Add the user shipping info to the session
 			((UserDataVO)req.getSession().getAttribute(Constants.USER_DATA)).setUserExtendedInfo(user);			
 			// Update the shipping info
 			cart.setShippingInfo(user);
@@ -680,11 +695,8 @@ public class ShoppingCartAction extends SBActionAdapter {
 				try {
 					profileId = pm.checkProfile(user, dbConn);
 					if (StringUtil.checkVal(profileId).length() == 0) {
-						// no profile found, create one, profileId is set on 'user' object
-						// by profile manager.
-						log.debug("user profile before update attempt: " + user.getProfileId());
+						// no profile found, create it (profileId is set on 'user' object by profile manager).
 						pm.updateProfile(user, dbConn);
-						log.debug("user profileId after update attempt: " + user.getProfileId());
 					} else {
 						// use the profileId found.
 						user.setProfileId(profileId);
@@ -694,7 +706,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 				}
 			}
 		}
-		
+		//log.debug("user profileId: " + profileId);
 		// finally, if this was an 'edit' billing operation, try to update the profile
 		if (StringUtil.checkVal(req.getParameter("type")).equalsIgnoreCase("edit")) {
 			if (pm == null) pm = ProfileManagerFactory.getInstance(attributes);
@@ -717,7 +729,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 	public void manageShipping(SMTServletRequest req, ShoppingCartVO cart, 
 			boolean isShippingMethodUpdate) throws DocumentException {
 		log.debug("manageShipping...");
-		log.debug("isShippingMethodUpdate: " + isShippingMethodUpdate);
+		//log.debug("isShippingMethodUpdate: " + isShippingMethodUpdate);
 		// if simply updating method selection, return.
 		if (isShippingMethodUpdate) return;
 
