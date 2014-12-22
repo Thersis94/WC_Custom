@@ -444,11 +444,11 @@ public class UserAction extends SimpleActionAdapter {
 	private void sendEmail(SMTServletRequest req, SiteVO site, PersonVO vo) {
 				
 		if (msg == null && Convert.formatBoolean(req.getParameter("email"))) {
-			TrackingEmailer emailer = null;
+			MedstreamEmailer emailer = null;
 			if (site.getOrganizationId().equals("CODMAN_EU")) {
-				emailer = new TrackingEmailerEU(this.actionInit);
+				emailer = new MedstreamEmailerEU(this.actionInit);
 			} else {
-				emailer = new TrackingEmailer(this.actionInit);
+				emailer = new MedstreamEmailer(this.actionInit);
 			}
 			
 			emailer.setAttributes(attributes);
@@ -468,10 +468,10 @@ public class UserAction extends SimpleActionAdapter {
 	
 	public List<UserDataVO> loadUserList(Integer roleLvl, String organizationId) {
 		List<UserDataVO> data = new ArrayList<UserDataVO>();
-		List<String> profileIds = new ArrayList<String>();
+		Map<String, String> people = new HashMap<String, String>();
 		PreparedStatement ps = null;
 		StringBuilder sql = new StringBuilder();
-		sql.append("select a.profile_id from ").append((String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("select a.profile_id, a.person_id from ").append((String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("codman_cu_person a inner join profile_role b ");
 		sql.append("on a.profile_id=b.profile_id ");
 		sql.append("inner join role c on c.role_id = b.role_id ");
@@ -485,19 +485,24 @@ public class UserAction extends SimpleActionAdapter {
 			ps.setString(3, organizationId);
 			ResultSet rs = ps.executeQuery();
 			while (rs.next())
-				profileIds.add(rs.getString(1));
+				people.put(rs.getString(1), rs.getString(2));
 		} catch (SQLException sqle) {
 			log.error(sqle);
 		}
 		
 		try {
 			ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
-			data = pm.searchProfile(dbConn, profileIds);
+			data = pm.searchProfile(dbConn, new ArrayList<String>(people.keySet()));
 			
 			//re-order the data using the decrypted names
 	    	Collections.sort(data, new UserDataComparator());
 		} catch (DatabaseException de) {
 			log.error(de);
+		}
+		
+		//put personIds in place of profileIds, because that's what this system needs
+		for (UserDataVO vo : data) {
+			vo.setProfileId(people.get(vo.getProfileId()));
 		}
 		
 		log.info("finished loading " + data.size() + " users");

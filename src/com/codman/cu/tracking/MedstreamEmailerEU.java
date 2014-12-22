@@ -1,15 +1,11 @@
 package com.codman.cu.tracking;
 
-
-// SMT BaseLibs
-
 import java.util.List;
 
 import com.codman.cu.tracking.vo.AccountVO;
 import com.codman.cu.tracking.vo.PersonVO;
 import com.codman.cu.tracking.vo.PhysicianVO;
 import com.codman.cu.tracking.vo.TransactionVO;
-import com.smt.sitebuilder.action.SBActionAdapter;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.exception.MailException;
 import com.siliconmtn.http.SMTServletRequest;
@@ -33,12 +29,12 @@ import com.smt.sitebuilder.util.MessageSender;
  * @version 1.0
  * @since Aug 10, 2010
  ****************************************************************************/
-public class TrackingEmailer extends SBActionAdapter {
+public class MedstreamEmailerEU extends MedstreamEmailer {
 	
 	/**
 	 * @param arg0
 	 */
-	public TrackingEmailer(ActionInitVO arg0) {
+	public MedstreamEmailerEU(ActionInitVO arg0) {
 		super(arg0);
 	}
 
@@ -56,7 +52,7 @@ public class TrackingEmailer extends SBActionAdapter {
 		subject.append("MedStream Control Unit Request# ").append(trans.getRequestNo());
 		
 		StringBuffer msg = new StringBuffer();
-		msg.append("Dear ").append(site.getAdminName()).append(",\r\n");
+		msg.append("Dear Administrator,\r\n");
 		msg.append("There is a request for a MedStream Control Unit pending in your inbox.\r\n\r\n");
 		msg.append("Request #: ").append(trans.getRequestNo()).append("\r\n");
 		msg.append("Date: ").append(Convert.formatDate(trans.getCreateDate(), Convert.DATE_SLASH_PATTERN)).append("\r\n");
@@ -64,17 +60,19 @@ public class TrackingEmailer extends SBActionAdapter {
 		msg.append("Requesting Rep: ").append(trans.getRequestorName()).append("\r\n");
 		msg.append("Physician: ").append(phys.getFirstName()).append(" ").append(phys.getLastName()).append("\r\n\r\n");
 		msg.append("Please review and approve this request.\r\n");
-		msg.append("http://www.codmanpumps.com/cu");
-		msg.append("\r\n\r\nCc: Eva Casamento");
+		msg.append("http://").append(site.getSiteAlias());
+		msg.append("\r\n\r\nCc: ").append(rep.getFirstName()).append(" ").append(rep.getLastName());
 		
 		try {
     		// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.setSubject(subject.toString());
     		mail.setFrom(site.getMainEmail());
-    		mail.addRecipient(site.getAdminEmail());
-    		mail.addCC("ecasamen@its.jnj.com");
-    		mail.addCC("tflynn@its.jnj.com");
+    		//mail.addRecipient("mnikolao@its.jnj.com");
+    		//mail.addRecipient("gloughlin@its.jnj.com");
+    		mail.addRecipient(rep.getEmailAddress());
+    		for (UserDataVO vo : admins)
+    			mail.addRecipient(vo.getEmailAddress());
     		mail.setTextBody(msg.toString());
     		    		
     		MessageSender ms = new MessageSender(attributes, dbConn);
@@ -87,7 +85,6 @@ public class TrackingEmailer extends SBActionAdapter {
     	}
     	return;
 	}
-	
 	
 	/**
 	 * sends request approval to the customer service rep and admin
@@ -104,9 +101,7 @@ public class TrackingEmailer extends SBActionAdapter {
 		StringBuffer msg = new StringBuffer();
 		msg.append("Dear Customer Service Rep,\r\n");
 		msg.append("Please ship quantity ").append(trans.getUnitCount());
-		msg.append(" of MedStream Control Unit (91-4205US) and quantity ").append(trans.getUnitCount());
-		msg.append(" of MedStream Programming Guide (91-4282US) billing $0 to sample account# ");
-		msg.append(StringUtil.checkVal(rep.getSampleAccountNo())).append("\r\n\r\n");
+		msg.append(" of product code 91-4205 to account#: ").append(StringUtil.checkVal(rep.getSampleAccountNo())).append("\r\n\r\n");
 		msg.append("Please ship to:\r\n");
 		
 		//ship to address
@@ -130,17 +125,19 @@ public class TrackingEmailer extends SBActionAdapter {
 		msg.append("Thank you,\r\n");
 		msg.append(site.getAdminName()).append("\r\n");
 		msg.append(site.getAdminEmail()).append("\r\n\r\n");
-		msg.append("Cc: Eva Casamento, Tim Flynn, ").append(site.getAdminName());
+		msg.append("Cc: ").append(rep.getFirstName()).append(" ");
+		msg.append(rep.getLastName()).append(", ").append(site.getAdminName());
 		
 		try {
     		// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			mail.setSubject(subject.toString());
+			//mail.addRecipient(rep.getEmailAddress());
+    		for (UserDataVO vo : admins)
+    			mail.addRecipient(vo.getEmailAddress());
+    		mail.setSubject(subject.toString());
     		mail.setFrom(site.getMainEmail());
-    		mail.addRecipient("RA-DPYUS-dpyryopsvc@its.jnj.com");
-    		mail.addCC(new String[] { site.getAdminEmail(), "tflynn@its.jnj.com", "ecasamen@its.jnj.com" });
     		mail.setTextBody(msg.toString());
-    		    		
+    		
     		MessageSender ms = new MessageSender(attributes, dbConn);
     		ms.sendMessage(mail);
     		
@@ -152,12 +149,11 @@ public class TrackingEmailer extends SBActionAdapter {
     	return;
 	}
 	
-	
 	/**
-	 * sends request approval to the rep and admin
+	 * sends request approval to the rep and alloc
 	 * @param req
 	 */
-	public void approveRequestRep(SMTServletRequest req, List<UserDataVO> admins, PersonVO rep, 
+	public void approveRequestRep(SMTServletRequest req, List<UserDataVO> alloc, PersonVO rep, 
 			PhysicianVO phys, TransactionVO trans) {
 		//send email to site admin
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
@@ -180,11 +176,11 @@ public class TrackingEmailer extends SBActionAdapter {
 		try {
     		// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			mail.setSubject(subject.toString());
-    		mail.setFrom(site.getMainEmail());
-    		mail.addRecipient(rep.getEmailAddress());
-    		for (UserDataVO vo : admins)
+			mail.addRecipient(rep.getEmailAddress());
+    		for (UserDataVO vo : alloc)
     			mail.addRecipient(vo.getEmailAddress());
+    		mail.setSubject(subject.toString());
+    		mail.setFrom(site.getMainEmail());
     		mail.setTextBody(msg.toString());
     		
     		MessageSender ms = new MessageSender(attributes, dbConn);
@@ -241,12 +237,12 @@ public class TrackingEmailer extends SBActionAdapter {
     		// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(rep.getEmailAddress());
-    		for (UserDataVO vo : admins)
-    			mail.addRecipient(vo.getEmailAddress());
+//    		for (UserDataVO vo : admins)
+//    			mail.addRecipient(vo.getEmailAddress());
     		mail.setSubject(subject.toString());
     		mail.setFrom(site.getMainEmail());
     		mail.setTextBody(msg.toString());
-    		
+
     		MessageSender ms = new MessageSender(attributes, dbConn);
     		ms.sendMessage(mail);
     		
@@ -284,12 +280,12 @@ public class TrackingEmailer extends SBActionAdapter {
     		// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(rep.getEmailAddress());
-    		for (UserDataVO vo : admins)
-    			mail.addRecipient(vo.getEmailAddress());
+//    		for (UserDataVO vo : admins)
+//    			mail.addRecipient(vo.getEmailAddress());
     		mail.setSubject(subject.toString());
     		mail.setFrom(site.getMainEmail());
     		mail.setTextBody(msg.toString());
-    		
+
     		MessageSender ms = new MessageSender(attributes, dbConn);
     		ms.sendMessage(mail);
     		
