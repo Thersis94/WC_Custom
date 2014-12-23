@@ -229,16 +229,15 @@ public class AbandonedCartExporter extends CommandLineUtil {
 			ShoppingCartVO cart = null;
 			try {
 				ois = new ObjectInputStream(new ByteArrayInputStream(rs.getBytes("object")));
-				if (ois != null) {
-					cart = (ShoppingCartVO) ois.readObject();
-					acv.setCart(cart);
-					acv.setObjectId(rs.getString("object_id"));
-					acv.setProfileId(rs.getString("profile_id"));
-					profileIds.add(acv.getProfileId());
-					acv.setSourceId(rs.getString("source_id"));
-					acv.setCreateDate(rs.getTimestamp("update_dt"));
-					carts.add(acv);
-				}
+				cart = (ShoppingCartVO) ois.readObject();
+				acv.setCart(cart);
+				acv.setObjectId(rs.getString("object_id"));
+				acv.setProfileId(rs.getString("profile_id"));
+				profileIds.add(acv.getProfileId());
+				acv.setSourceId(rs.getString("source_id"));
+				acv.setCreateDate(rs.getTimestamp("update_dt"));
+				carts.add(acv);
+				
 			} catch (IOException ioe) {
 				addMessage("Failed to read cart for object ID: " + rs.getString("object_id"));
 			} catch (ClassNotFoundException cnfe) {

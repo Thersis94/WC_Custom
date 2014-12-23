@@ -65,7 +65,7 @@ public class CourseCalendarVO extends EventEntryVO {
 	 * @param eventName The eventName to set.
 	 */
 	@Importable(name = "Event Title", type = DataType.STRING)
-	@DatabaseColumn(column = "EVENT_NM", dataType = "nvarchar(100)", table = "EVENT_ENTRY")
+	@DatabaseColumn(column = "EVENT_NM", dataType = "nvarchar(150)", table = "EVENT_ENTRY")
 	public void setEventName(String eventName) {
 		super.setEventName(eventName);
 	}
@@ -100,7 +100,7 @@ public class CourseCalendarVO extends EventEntryVO {
 	/**
 	 * @param The serviceText to set.
 	 */
-	@Importable(name = "Anatomical Focus #1", type = DataType.STRING)
+	@Importable(name = "Anatomical Focus 1", type = DataType.STRING)
 	@DatabaseColumn(column = "SERVICE_TXT", dataType = "nvarchar(100)", table = "EVENT_ENTRY")
 	public void setServiceText(String serviceText) {
 		super.setServiceText(serviceText);
@@ -109,7 +109,7 @@ public class CourseCalendarVO extends EventEntryVO {
 	/**
 	 * @param objective The objective2 to set.
 	 */
-	@Importable(name = "Displayed Learning Objective #1", type = DataType.STRING)
+	@Importable(name = "Displayed Learning Objective 1", type = DataType.STRING)
 	@DatabaseColumn(column = "OBJECTIVES_TXT", dataType = "nvarchar(4000)", table = "EVENT_ENTRY")
 	public void setObjectivesText(String objective) {
 		super.setObjectivesText(objective);
@@ -118,7 +118,7 @@ public class CourseCalendarVO extends EventEntryVO {
 	/**
 	 * @param objective The objective2 to set.
 	 */
-	@Importable(name = "Displayed Learning Objective #2", type = DataType.STRING)
+	@Importable(name = "Displayed Learning Objective 2", type = DataType.STRING)
 	public void setObjective2(String objective2) {
 		this.objective2 = objective2;
 	}
@@ -126,7 +126,7 @@ public class CourseCalendarVO extends EventEntryVO {
 	/**
 	 * @param objective The objective3 to set.
 	 */
-	@Importable(name = "Displayed Learning Objective #3", type = DataType.STRING)
+	@Importable(name = "Displayed Learning Objective 3", type = DataType.STRING)
 	public void setObjective3(String objective3) {
 		this.objective3 = objective3;
 	}
@@ -134,7 +134,7 @@ public class CourseCalendarVO extends EventEntryVO {
 	/**
 	 * @param objective The objective to set.
 	 */
-	@Importable(name = "Displayed Learning Objective #4", type = DataType.STRING)
+	@Importable(name = "Displayed Learning Objective 4", type = DataType.STRING)
 	public void setObjective4(String objective4) {
 		this.objective4 = objective4;
 	}

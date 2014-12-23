@@ -58,7 +58,7 @@ public class PhysicianAction extends SBActionAdapter {
 		msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
 		String physicianId = req.getParameter("del");
 		String[] queries = new String[2];
-		StringBuffer sql = new StringBuffer();
+		StringBuilder sql = new StringBuilder();
 
 		//delete all transactions not tied to 'active' Unit assignments
 		sql.append("delete from ").append(customDb);
@@ -70,7 +70,7 @@ public class PhysicianAction extends SBActionAdapter {
 		queries[0] = sql.toString();
 		
 		//delete the physician
-		sql = new StringBuffer();
+		sql = new StringBuilder();
 		sql.append("delete from ").append(customDb);
 		sql.append("codman_cu_physician where physician_id = ? ");
 		queries[1] = sql.toString();
@@ -107,7 +107,7 @@ public class PhysicianAction extends SBActionAdapter {
        	this.checkPhysicianProfile(req, pm, pvo);
 		
 		final String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuffer sql = new StringBuffer();
+		StringBuilder sql = new StringBuilder();
 		
 		if (StringUtil.checkVal(pvo.getPhysicianId()).length() == 0) {
 			//insert
@@ -148,7 +148,7 @@ public class PhysicianAction extends SBActionAdapter {
 		
 
 		// Setup the redirect
-    	StringBuffer url = new StringBuffer();
+    	StringBuilder url = new StringBuilder();
     	url.append(req.getRequestURI());
     	url.append("?type=").append(req.getParameter("type"));
     	url.append("&accountId=").append(req.getParameter("accountId"));
@@ -173,7 +173,7 @@ public class PhysicianAction extends SBActionAdapter {
 		String physicianId = req.getParameter("physicianId");
 		final String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		StringBuffer sql = new StringBuffer();
+		StringBuilder sql = new StringBuilder();
 		
 		sql.append("select physician_id, account_id, profile_id, center_txt, department_txt, ");
 		sql.append("create_dt from ").append(customDb);
