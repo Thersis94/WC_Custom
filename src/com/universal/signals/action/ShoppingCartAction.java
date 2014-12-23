@@ -829,39 +829,6 @@ public class ShoppingCartAction extends SBActionAdapter {
 		String loginName = req.getParameter("emailAddress");
 		String password = StringUtil.checkVal(req.getParameter("password"));
 		
-		if (loginName.equalsIgnoreCase("test") && password.equalsIgnoreCase("user")) {
-			UserDataVO user = new UserDataVO();
-			user.setEmailAddress("debug@donotuse.com");
-			user.setFirstName("Test");
-			user.setLastName("User");
-			user.setAddress("1234 Fifth Street");
-			user.setCity("Anywhere");
-			user.setState("IN");
-			user.setZipCode("46580");
-			user.setMainPhone("8005551212");
-			user.setProfileId("999999999");
-			user.setAuthenticationId("999999999");
-			user.setAuthenticated(true);
-			
-			String type = StringUtil.checkVal(req.getParameter("type"));
-			if (WebServiceAction.BILLING_USER_TYPE.equalsIgnoreCase(type)) {
-				if (user.getUserExtendedInfo() == null)
-					user.setUserExtendedInfo(user);
-					
-			} else if (WebServiceAction.SHIPPING_USER_TYPE.equalsIgnoreCase(type)) {
-				if (user.getLastName().length() > 0)
-					user.setUserExtendedInfo(user);
-			}
-			
-			String siteId = ((SiteVO) req.getAttribute(Constants.SITE_DATA)).getSiteId();
-			USARoleModule role = new USARoleModule();
-			req.getSession().setAttribute(Constants.USER_DATA, user);
-			req.getSession().setAttribute(Constants.ROLE_DATA, role.getUserRole(user.getProfileId(), siteId));
-			
-			return;
-		}
-		
-		
 		UserDataVO user;
 		Element userElem = null;
 		WebServiceAction wsa = new WebServiceAction(this.actionInit);
