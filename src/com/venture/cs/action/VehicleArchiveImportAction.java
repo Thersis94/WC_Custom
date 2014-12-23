@@ -7,12 +7,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-
-
-
 
 // SMTBaseLibs 2.0
 import com.siliconmtn.action.ActionException;
@@ -87,14 +83,11 @@ public class VehicleArchiveImportAction  extends SBActionAdapter {
 	private void processImport(SMTServletRequest req, boolean isImport) 
 			throws ActionException {
 		log.debug("starting processImport, isImport: " + isImport);
+		
 		//We prep some lists for the Annotation Parser to give it direction.
-		List<Class<?>> classes= new LinkedList<>();
-		classes.add(VehicleArchiveImportVO.class);
-		List<String> tables = new ArrayList<>();
-		tables.add("VENTURE_VEHICLE_OWNER_ARCHIVE");
-		AnnotationCsvParser csv = new AnnotationCsvParser();
-		csv.setClassNames(classes);
-		csv.setTableNames(tables);
+		AnnotationCsvParser csv = new AnnotationCsvParser(VehicleArchiveImportVO.class, 
+				"VENTURE_VEHICLE_OWNER_ARCHIVE");
+		
 		/*
 		 * If we are not importing, put the Annotation data on the request so
 		 * that we can use it to generate our form later.
@@ -118,7 +111,7 @@ public class VehicleArchiveImportAction  extends SBActionAdapter {
 				Collection<Map<String, Object>> vals = csv.readFromFile(req.getFile("uploadFile").getFileData());
 				
 				//Convert String Values to Objects
-				Map<Class<?>, Collection<Object>> beans = csv.parseData(vals, classes);
+				Map<Class<?>, Collection<Object>> beans = csv.parseData(vals);
 				
 				//Forward data for importing.
 				errors = importData(req, beans, isImport);

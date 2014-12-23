@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -76,16 +75,13 @@ public class CourseCalendar extends SimpleActionAdapter {
 	 * @throws ActionException
 	 */
 	private void processUpload(SMTServletRequest req) throws ActionException {
-		AnnotationXlsParser parser = new AnnotationXlsParser();
-		//Create a list of vo classnames
-		LinkedList<Class<?>> classList = new LinkedList<>();
-		classList.add(CourseCalendarVO.class);
+		AnnotationXlsParser parser = new AnnotationXlsParser(CourseCalendarVO.class);
 		
 		try {
 			//Gets the xls file from the request object, and passes it to the parser.
 			//Parser then returns the list of populated beans
 			Map< Class<?>, Collection<Object>> beans = parser.readFileData(
-					req.getFile("xlsFile").getFileData(), classList);
+					req.getFile("xlsFile").getFileData());
 			
 			ArrayList<Object> beanList = null;
 			EventEntryAction eventAction = new EventEntryAction();
