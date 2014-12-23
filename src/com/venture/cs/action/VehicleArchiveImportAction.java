@@ -13,11 +13,12 @@ import java.util.Map;
 // SMTBaseLibs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-import com.siliconmtn.util.parser.AnnotationCsvParser;
-
+import com.siliconmtn.util.databean.FilePartDataBean;
+import com.siliconmtn.util.parser.AnnotationParser;
 // WebCrescendo 2.0
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.SiteBuilderUtil;
@@ -84,17 +85,20 @@ public class VehicleArchiveImportAction  extends SBActionAdapter {
 			throws ActionException {
 		log.debug("starting processImport, isImport: " + isImport);
 		
+		AnnotationParser csv = null;
 		//We prep some lists for the Annotation Parser to give it direction.
-		AnnotationCsvParser csv = new AnnotationCsvParser(VehicleArchiveImportVO.class, 
-				"VENTURE_VEHICLE_OWNER_ARCHIVE");
-		
+		try {
+			csv = new AnnotationParser(VehicleArchiveImportVO.class, "csv");
+		} catch(Exception e) {
+			log.error("Could not create Parser", e);
+		}
 		/*
 		 * If we are not importing, put the Annotation data on the request so
 		 * that we can use it to generate our form later.
 		 */
 		if (! isImport) {
 			log.debug("returning csv form...");
-			csv.setFileName("Venture-Vehicle-Import-Template.csv");
+			req.setParameter("templateFileName", "Venture-Vehicle-Import-Template.csv");
 			putModuleData(csv, 2, true);
 			req.setAttribute(Constants.REDIRECT_DATATOOL, Boolean.TRUE);
 			
@@ -106,12 +110,11 @@ public class VehicleArchiveImportAction  extends SBActionAdapter {
 			
 				/* Turn off autoCommit in case of failure */
 				dbConn.setAutoCommit(false);
-				
+				FilePartDataBean fpdb = req.getFile("uploadFile");
 				// 1. Attempt to read import file and parse String values
-				Collection<Map<String, Object>> vals = csv.readFromFile(req.getFile("uploadFile").getFileData());
 				
 				//Convert String Values to Objects
-				Map<Class<?>, Collection<Object>> beans = csv.parseData(vals);
+				Map<Class<?>, Collection<Object>> beans = csv.parseFile(fpdb, true);
 				
 				//Forward data for importing.
 				errors = importData(req, beans, isImport);
@@ -122,6 +125,8 @@ public class VehicleArchiveImportAction  extends SBActionAdapter {
 			} catch (SQLException | ActionException sqle){
 				log.error("Error importing VIN archive data file, ", sqle);
 				throw new ActionException(sqle.getMessage());
+			} catch (InvalidDataException e) {
+				throw new ActionException("Error Parsing Data from File", e);
 			}
 			
 			// build the response msg and redirect
