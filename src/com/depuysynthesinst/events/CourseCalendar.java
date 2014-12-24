@@ -79,7 +79,7 @@ public class CourseCalendar extends SimpleActionAdapter {
 		AnnotationParser parser;
 		FilePartDataBean fpdb = req.getFile("xlsFile");
 		try {
-			parser = new AnnotationParser(EventEntryVO.class, fpdb.getExtension());
+			parser = new AnnotationParser(CourseCalendarVO.class, fpdb.getExtension());
 		} catch(InvalidDataException e) {
 			throw new ActionException("could not load import file", e);
 		}
@@ -95,18 +95,15 @@ public class CourseCalendar extends SimpleActionAdapter {
 			//Disable the db autocommit for the insert batch
 			dbConn.setAutoCommit(false);
 			
-			for ( Class<?> className : beans.keySet() ) {
-				//Change the generic collection to an arrayList for the import method
-				beanList = new ArrayList<>(beans.get(className));
-				for (Object o : beanList) {
-					//set the eventTypeId for each
-					EventEntryVO vo = (EventEntryVO) o;
-					vo.setEventTypeId(req.getParameter("eventTypeId"));
-					vo.setStatusFlg(EventFacadeAction.STATUS_APPROVED);
-				}
-				
-				eventAction.importBeans(beanList, req.getParameter("attrib1Text"));
+			beanList = new ArrayList<>(beans.get(CourseCalendarVO.class));
+			for (Object o : beanList) {
+				//set the eventTypeId for each
+				CourseCalendarVO vo = (CourseCalendarVO) o;
+				vo.setEventTypeId(req.getParameter("eventTypeId"));
+				vo.setStatusFlg(EventFacadeAction.STATUS_APPROVED);
 			}
+			eventAction.importBeans(beanList, req.getParameter("attrib1Text"));
+			
 			//commit only after the entire import succeeds
 			dbConn.commit();
 			
