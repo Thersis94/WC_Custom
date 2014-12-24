@@ -10,17 +10,22 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+
+
 // SMTBaseLibs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.data.report.GenericReport;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.databean.FilePartDataBean;
 import com.siliconmtn.util.parser.AnnotationParser;
+import com.smt.sitebuilder.action.AbstractSBReportVO;
 // WebCrescendo 2.0
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.action.WebCrescendoReport;
 import com.smt.sitebuilder.common.SiteBuilderUtil;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -85,10 +90,13 @@ public class VehicleArchiveImportAction  extends SBActionAdapter {
 			throws ActionException {
 		log.debug("starting processImport, isImport: " + isImport);
 		
-		AnnotationParser csv = null;
+		AnnotationParser parser = null;
+		FilePartDataBean fpdb = req.getFile("uploadFile");
+		String format = (fpdb != null ? fpdb.getExtension() : req.getParameter("format"));
+
 		//We prep some lists for the Annotation Parser to give it direction.
 		try {
-			csv = new AnnotationParser(VehicleArchiveImportVO.class, "csv");
+			parser = new AnnotationParser(VehicleArchiveImportVO.class, format);
 		} catch(Exception e) {
 			log.error("Could not create Parser", e);
 		}
@@ -98,9 +106,11 @@ public class VehicleArchiveImportAction  extends SBActionAdapter {
 		 */
 		if (! isImport) {
 			log.debug("returning csv form...");
-			req.setParameter("templateFileName", "Venture-Vehicle-Import-Template.csv");
-			putModuleData(csv, 2, true);
-			req.setAttribute(Constants.REDIRECT_DATATOOL, Boolean.TRUE);
+			AbstractSBReportVO rpt = new WebCrescendoReport(new GenericReport());
+			rpt.setFileName("Venture-Vehicle-Import-Template." + format);
+			rpt.setData(parser.getTemplate());
+			req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, Boolean.TRUE);
+			req.setAttribute(Constants.BINARY_DOCUMENT, rpt);
 			
 		} else {
 			log.debug("importing vehicle file...");
@@ -110,11 +120,10 @@ public class VehicleArchiveImportAction  extends SBActionAdapter {
 			
 				/* Turn off autoCommit in case of failure */
 				dbConn.setAutoCommit(false);
-				FilePartDataBean fpdb = req.getFile("uploadFile");
 				// 1. Attempt to read import file and parse String values
 				
 				//Convert String Values to Objects
-				Map<Class<?>, Collection<Object>> beans = csv.parseFile(fpdb, true);
+				Map<Class<?>, Collection<Object>> beans = parser.parseFile(fpdb, true);
 				
 				//Forward data for importing.
 				errors = importData(req, beans, isImport);
