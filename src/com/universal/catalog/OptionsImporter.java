@@ -17,8 +17,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+
 // Log4J 1.2.15
 import org.apache.log4j.Logger;
+
 
 //SMT Base Libs
 import com.siliconmtn.commerce.catalog.ProductAttributeVO;
@@ -510,7 +512,7 @@ public class OptionsImporter extends AbstractImporter {
 								prodAttrHierarchy.put(prevProdId, levels);
 								//if (prevProdId.equals("PS9982")) log.debug("stored hierarchy for prodId|size: " + prevProdId + "|" + levels.size());
 							} else {
-								//log.debug("SKIPPING HIERARCHY: Product already processed: " + prevProdId);
+								log.error("ALERT: Broken hierarchy found: Product was already processed: " + prevProdId);
 							}
 						}
 						
@@ -518,6 +520,11 @@ public class OptionsImporter extends AbstractImporter {
 						levels = new ArrayList<>();
 						// initialize the levelMap
 						levelMap = new LinkedHashMap<>();
+						
+						// reset displayOrderNo
+						attribSelectOrder = 0;
+						option.setDisplayOrderNo(attribSelectOrder);
+						
 						// add option to level map
 						levelMap.put(option.getValueText(), option);
 						
@@ -569,7 +576,7 @@ public class OptionsImporter extends AbstractImporter {
 		int totalVOs = 0;
 		for (String pId : optionsIndexHierarchy.keySet()) {
 			//if (pId.equals("CE2838")) {
-			log.debug("building insert VOs for product ID: " + pId);
+			//log.debug("building insert VOs for product ID: " + pId);
 			
 			// List of this product's attribute VOs for insert
 			List<ProductAttributeVO> attVOs = new ArrayList<>();
@@ -582,11 +589,11 @@ public class OptionsImporter extends AbstractImporter {
 			Map<String, List<String>> parents = oHierarchy.get(0);
 			Map<String, ProductAttributeVO> parentsAttribs = aHierarchy.get(0);
 			for (String parentKey : parents.keySet()) {
-				log.debug("*** processing parent: " + parentKey);
+				//log.debug("*** processing parent: " + parentKey);
 				//log.debug("oHierarchy|aHierarchy sizes: " + oHierarchy.size() + "|" + aHierarchy.size());
 				ProductAttributeVO parentVO = parentsAttribs.get(parentKey);
 				 if (parentVO == null) {
-					log.debug("skipping this parent, no ProductAttributeVO found.");
+					//log.debug("skipping this parent, no ProductAttributeVO found.");
 					continue;
 				}
 				attVOs.add(parentVO);
@@ -594,7 +601,7 @@ public class OptionsImporter extends AbstractImporter {
 				List<String> children = parents.get(parentKey);
 				//log.debug("------> children: " + children);
 				if (children != null && ! children.isEmpty()) {
-					log.debug("-----------> parent has children: " + children);
+					//log.debug("-----------> parent has children: " + children);
 					if (oHierarchy.size() > 1 && aHierarchy.size() > 1) {
 						makeChildren(attVOs, oHierarchy, aHierarchy, 
 								oHierarchy.get(1), aHierarchy.get(1), 
@@ -605,7 +612,7 @@ public class OptionsImporter extends AbstractImporter {
 				
 			}
 			
-			log.debug("product's product attribute VO list size: " + attVOs.size());
+			//log.debug("product's product attribute VO list size: " + attVOs.size());
 			totalVOs = totalVOs + attVOs.size();
 			master.put(pId, attVOs);
 			voCount.put(pId,  attVOs.size());
@@ -642,20 +649,20 @@ public class OptionsImporter extends AbstractImporter {
 			String currParentId, 
 			List<String> parentsChildren,
 			int currOptionLevel) {
-		log.debug("**** entering makeChildren:currOptionLevel: " + currOptionLevel);
+		//log.debug("**** entering makeChildren:currOptionLevel: " + currOptionLevel);
 		if (parentsChildren != null && ! parentsChildren.isEmpty()) {
 			// loop the kids
-			log.debug("children passed in: " + parentsChildren);
+			//log.debug("children passed in: " + parentsChildren);
 			for (String child : parentsChildren) {
 				if (childAttribs.get(child) == null) continue;
-				log.debug("-------> adding child: " + child);
+				//log.debug("-------> adding child: " + child);
 				ProductAttributeVO newChild = cloneProductAttribute(childAttribs.get(child), currParentId);
 				attVOs.add(newChild);
 			
 				// check for grandkids...
 				List<String> grandKids = childOptions.get(child);
 				if (grandKids != null && ! grandKids.isEmpty()) {
-					log.debug("---------> found children of this child: " + grandKids);
+					//log.debug("---------> found children of this child: " + grandKids);
 					makeChildren(attVOs, oHier, aHier, 
 							oHier.get(currOptionLevel + 1), aHier.get(currOptionLevel + 1), 
 							newChild.getProductAttributeId(), grandKids, currOptionLevel + 1);
@@ -663,7 +670,7 @@ public class OptionsImporter extends AbstractImporter {
 			}
 			
 		}
-		log.debug("**** exiting makeChildren...");
+		//log.debug("**** exiting makeChildren...");
 	}
 	
 	private void insertProductOptions(Map<String, List<ProductAttributeVO>> voHierarchy) {
@@ -671,9 +678,9 @@ public class OptionsImporter extends AbstractImporter {
 		if (voHierarchy == null || voHierarchy.isEmpty()) return;
 		
 		StringBuilder s = new StringBuilder();
-		s.append("insert into product_attribute_xr (product_attribute_id, attribute_id, ");
+		s.append("insert into product_attribute_xr (product_attribute_id, parent_id, attribute_id, ");
 		s.append("product_id, model_year_no, value_txt, create_dt, currency_type_id, ");
-		s.append("msrp_cost_no, attrib1_txt, attrib2_txt, order_no) values (?,?,?,?,?,?,?,?,?,?,?)");
+		s.append("msrp_cost_no, attrib1_txt, attrib2_txt, order_no) values (?,?,?,?,?,?,?,?,?,?,?,?)");
 		log.debug("product option attribute XR SQL: " + s.toString());
 		
 		PreparedStatement ps = null;
@@ -693,6 +700,7 @@ public class OptionsImporter extends AbstractImporter {
 					}
 					idx = 1;
 					ps.setString(idx++, pavo.getProductAttributeId());
+					ps.setString(idx++, pavo.getParentId());
 					ps.setString(idx++, pavo.getAttributeId());
 					ps.setString(idx++, pavo.getProductId());
 					ps.setString(idx++, pavo.getModelYearNo());
@@ -710,7 +718,7 @@ public class OptionsImporter extends AbstractImporter {
 					if (pCount == limit) {
 						try {
 							batchCount = ps.executeBatch();
-							if (hKey.equals("CE2838")) { log.debug("added records at batch count " + recCount); }
+							//if (hKey.equals("CE2838")) { log.debug("added records at batch count " + recCount); }
 						} catch (SQLException sqle) {
 							if (batchCount != null) {
 								int start = recCount - 200;
@@ -720,6 +728,8 @@ public class OptionsImporter extends AbstractImporter {
 								for (int cnt = 0; cnt < batchCount.length; cnt++) {
 									log.debug("Record #|result: " + (start + 1) + "|" + batchCount[cnt]);
 								}
+							} else {
+								log.error("Error inserting entire batch, failure reason: " + sqle.getMessage());
 							}
 						}
 					}
@@ -773,6 +783,7 @@ public class OptionsImporter extends AbstractImporter {
 	 * Utility method for debugging the vo parent-child relationships (IDs).
 	 * @param vos
 	 */
+	@SuppressWarnings("unused")
 	private void debugVOHierarchy(Map<String, List<ProductAttributeVO>> vos) {
 		for (String pId : vos.keySet()) {
 			log.debug("Product ID: " + pId);
