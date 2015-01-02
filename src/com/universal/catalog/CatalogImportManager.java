@@ -139,7 +139,7 @@ public class CatalogImportManager {
 		
 		long end = System.currentTimeMillis();
 		uci.addMessage("Completed Product Import in " + ((end - start) / 1000) + " seconds");
-		//uci.sendAdminEmail(success);
+		uci.sendAdminEmail(success);
 	}
 
 	/**
@@ -268,13 +268,14 @@ public class CatalogImportManager {
 			throws SQLException {
 		StringBuilder sql = new StringBuilder();
 		sql.append("delete from ").append(tableName).append(" where PRODUCT_CATALOG_ID=?");
+		log.info("delete SQL: " + sql.toString() + "|" + productCatalogId);
 		PreparedStatement ps = null;
 		try {
 			ps = dbConn.prepareStatement(sql.toString());
 			ps.setString(1, productCatalogId);
 			ps.execute();
 		} catch (SQLException e) {
-			String errMsg = "Error deleting USA " + tableName + " data: " + e.getMessage();
+			String errMsg = "Error deleting USA " + tableName + " data: " + e;
 			log.error(errMsg);
 			addMessage(errMsg);
 			throw new SQLException(e.getMessage());
