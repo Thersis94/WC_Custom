@@ -186,7 +186,8 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder();
 		PreparedStatement ps = null;
 		boolean insertRecord = StringUtil.checkVal(vo.getCoopAdId()).length() == 0;
-		boolean updateSurgeon = (SURG_DECLINED_AD >= vo.getStatusFlg() && PENDING_SURG_APPROVAL <= vo.getStatusFlg());
+		boolean updateSurgeon = (SURG_DECLINED_AD >= Convert.formatInteger(vo.getStatusFlg()) 
+				&& PENDING_SURG_APPROVAL <= Convert.formatInteger(vo.getStatusFlg()));
 
 		// if inserting, double-check the DB to avoid duplicates
 		if (insertRecord) {
