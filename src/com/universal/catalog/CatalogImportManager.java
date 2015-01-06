@@ -237,10 +237,10 @@ public class CatalogImportManager {
 		importOptions(catalog, productFilter, optionsIndexHierarchy);
 		
 		// import product personalization options
-		//importPersonalization(catalog, products);
+		importPersonalization(catalog, products);
 		
 		// commit changes if all were successful
-		//dbConn.commit();
+		dbConn.commit();
 		dbConn.setAutoCommit(true);
 		addMessage("Catalog import for " + catalog.getCatalogId() + " has completed.");
 
@@ -351,8 +351,7 @@ public class CatalogImportManager {
 		oi.setCatalog(catalog);
 		oi.setOptionsIndexHierarchy(optionsIndexHierarchy);
 		oi.manageOptions();
-		//oi.insertProductOptions();
-		oi.insertProductOptionsNew(productFilter);
+		oi.insertProductOptions(productFilter);
 		// add any mismatch log entries
 		misMatchedOptions.addAll(oi.getMisMatchedOptions());
 	}

@@ -11,8 +11,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+
 // Log4J 1.2.15
 import org.apache.log4j.Logger;
+
 
 
 //SMT Base Libs
@@ -64,7 +66,7 @@ public class OptionsIndexImporter extends AbstractImporter {
 		// load and parse the options index file
 		Map<String, List<String[]>> optionsIndex = processOptionsIndex(productFilter);
 		Map<String,List<Map<String,List<String>>>> hierarchy = parseOptionsHierarchy(optionsIndex);
-		debugOptionsIndexHierarchy(hierarchy);
+		//debugOptionsIndexHierarchy(hierarchy);
 		return hierarchy;
 	}
 	
@@ -279,6 +281,7 @@ public class OptionsIndexImporter extends AbstractImporter {
 	 * Utility method for debugging the options index hierarchy.
 	 * @param optionsIndexHierarchy
 	 */
+	@SuppressWarnings("unused")
 	private void debugOptionsIndexHierarchy(Map<String,List<Map<String,List<String>>>> optionsIndexHierarchy) {
 		log.debug("debugging options index hierarchy...");
 		log.debug("optionsIndexHierarchy map size is: " + optionsIndexHierarchy.size());

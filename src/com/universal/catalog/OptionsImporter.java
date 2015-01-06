@@ -102,18 +102,19 @@ public class OptionsImporter extends AbstractImporter {
 			// grab the option value and stash it in a List if not already there
 			try {
 				option = StringUtil.checkVal(fields[headers.get("TABLETYPE")]).toLowerCase();
+				if (option.length() == 0) continue;
 			} catch (Exception e) {
-				log.error("Skipping options record #: " + i + ", " + e);
+				//log.error("Skipping doodad options record #: " + i + ", " + e);
 				continue;
 			}
-			if (option.length() == 0) continue;
+			
+			// format option value
 			option = option.replace(" ", "");
 			option = option.replace("-", "");
 			option = StringUtil.formatFileName(option);
 			
-			if (! options.contains(option)) {
-				options.add(option);
-			}
+			// add to list if not already there
+			if (! options.contains(option)) options.add(option);
 		}
 		
 		try {
@@ -224,7 +225,7 @@ public class OptionsImporter extends AbstractImporter {
 	 * @throws IOException
 	 * @throws SQLException
 	 */
-	public void insertProductOptions() 
+	public void insertProductOptionsDEPRECATED() 
 			throws FileNotFoundException, IOException, SQLException  {
 		BufferedReader data = null;
 		String fullPath = catalog.getSourceFilePath() + catalog.getSourceFileName();
@@ -397,7 +398,7 @@ public class OptionsImporter extends AbstractImporter {
 	 * @throws FileNotFoundException
 	 * @throws IOException
 	 */
-	public void insertProductOptionsNew(List<String> productFilter) 
+	public void insertProductOptions(List<String> productFilter) 
 			throws FileNotFoundException, IOException  {
 		BufferedReader data = null;
 		String fullPath = catalog.getSourceFilePath() + catalog.getSourceFileName();
@@ -455,7 +456,7 @@ public class OptionsImporter extends AbstractImporter {
 					try { // enclosed in try/catch in case of index array out of bounds due to missing field val.
 						attribId = fields[headers.get("TABLETYPE")];
 					} catch (Exception e) {
-						log.error("Skipping attribute, blank source for prodId | row: " + prodId + "|" + i);
+						log.error("WARNING: No attribute type for product | row: " + prodId + " | " + i);
 					}
 					if (attribId == null || attribId.length() == 0) continue;
 					attribId = this.formatAttribute(attribId);
@@ -475,6 +476,7 @@ public class OptionsImporter extends AbstractImporter {
 					option.setAttribute(ProductAttributeVO.ATTRIB_1, fields[headers.get("DESCRIPTION")]);
 					option.setAttribute(ProductAttributeVO.ATTRIB_2, attribSelectLvl);
 					
+					/*
 					// Set option's display order number
 					if (srcProdId.equals(prevSrcProdId)) {
 						if (attribSelectLvl.equals(prevAttribSelectLvl)) {
@@ -484,16 +486,28 @@ public class OptionsImporter extends AbstractImporter {
 							// reset select order and level list
 							option.setDisplayOrderNo(0);
 						}
-					}
+					} */
 					
 					// Now determine how to store the option
 					if (prodId.equals(prevProdId)) {
 						// same product, check to see if level changed
-						if (! srcProdId.equals(prevSrcProdId)) {
+						if (srcProdId.equals(prevSrcProdId)) {
+							if (attribSelectLvl.equals(prevAttribSelectLvl)) {
+								// increment select order
+								option.setDisplayOrderNo(++attribSelectOrder);
+							} else {
+								// reset select order
+								attribSelectOrder = 0;
+								option.setDisplayOrderNo(attribSelectOrder);
+							}
+						} else {
 							// level has changed, add current levelMap to the levels List
 							levels.add(levelMap);
 							// initialize the levelMap
 							levelMap = new LinkedHashMap<>();
+							// reset select order
+							attribSelectOrder = 0;
+							option.setDisplayOrderNo(attribSelectOrder);
 						}
 						
 						// add this option to the new levelMap
@@ -513,6 +527,8 @@ public class OptionsImporter extends AbstractImporter {
 								//if (prevProdId.equals("PS9982")) log.debug("stored hierarchy for prodId|size: " + prevProdId + "|" + levels.size());
 							} else {
 								log.error("ALERT: Broken hierarchy found: Product was already processed: " + prevProdId);
+								levels.add(levelMap);
+								processOutOfSequenceLevels(prodAttrHierarchy.get(prevProdId), levels);								
 							}
 						}
 						
@@ -558,6 +574,62 @@ public class OptionsImporter extends AbstractImporter {
 		//debugProductAttributeHierarchy(prodAttrHierarchy);
 		//debugVOHierarchy(voHierarchy);
 		insertProductOptions(voHierarchy);
+	}
+	
+	/**
+	 * Processes an out-of-sequence options hierarchy using the hierarchy for a product
+	 * that was built previously in the entire process.  Attempts to match levels and 
+	 * adds attributes to the appropriate level in the appropriate order.
+	 * @param existingLvls
+	 * @param newLvls
+	 */
+	private void processOutOfSequenceLevels(List<Map<String, ProductAttributeVO>> existingLvls, 
+			List<Map<String, ProductAttributeVO>> newLvls) {
+		int existLevelsNo = existingLvls.size();
+		int currNewLevelNo = -1;
+		
+		// loop the new levels, figure out which level sequence
+		for (Map<String, ProductAttributeVO> newLvl : newLvls) {
+						
+			// loop through the map once, get the current new level no from the
+			// first object, then break and process.
+			for (String newKey : newLvl.keySet()) {
+				ProductAttributeVO newPavo = newLvl.get(newKey);
+				// get the real level of this map of levels
+				currNewLevelNo = Integer.parseInt(newPavo.getAttribute2());
+				break;
+			}
+			log.debug("currNewLevelNo is: " + currNewLevelNo);
+			if (currNewLevelNo <= (existLevelsNo - 1)) {
+				// this level exists, get it and add to it
+				processSpecificLevel(existingLvls.get(currNewLevelNo), newLvl);
+								
+			} else {
+				// currNewLevelNo is a new level, just add it
+				existingLvls.add(newLvl);
+			}
+			
+		}
+		
+	}
+	
+	private void processSpecificLevel(Map<String, ProductAttributeVO> oldLevel, 
+			Map<String, ProductAttributeVO> newLevel) {
+		// add new level to old level
+		int cnt = 0;
+		int lastOrderNo = 0;
+		// get the highest display order level no
+		for (String key : oldLevel.keySet()) {
+			cnt++;
+			if (cnt == oldLevel.size()) {
+				lastOrderNo = oldLevel.get(key).getDisplayOrderNo();
+			}
+		}
+		// loop new level, reset display order no, add to old level map
+		for (String newKey : newLevel.keySet()) {
+			newLevel.get(newKey).setDisplayOrderNo(++lastOrderNo);
+			oldLevel.put(newKey, newLevel.get(newKey));
+		}
 	}
 	
 	/**
@@ -663,9 +735,12 @@ public class OptionsImporter extends AbstractImporter {
 				List<String> grandKids = childOptions.get(child);
 				if (grandKids != null && ! grandKids.isEmpty()) {
 					//log.debug("---------> found children of this child: " + grandKids);
-					makeChildren(attVOs, oHier, aHier, 
-							oHier.get(currOptionLevel + 1), aHier.get(currOptionLevel + 1), 
-							newChild.getProductAttributeId(), grandKids, currOptionLevel + 1);
+					currOptionLevel++; // increment current option level before recursive call
+					if (oHier.size() > currOptionLevel && aHier.size() > currOptionLevel) {
+						makeChildren(attVOs, oHier, aHier, 
+								oHier.get(currOptionLevel), aHier.get(currOptionLevel), 
+								newChild.getProductAttributeId(), grandKids, currOptionLevel);
+					}
 				}
 			}
 			
@@ -691,13 +766,13 @@ public class OptionsImporter extends AbstractImporter {
 			int idx = 1;
 			ps = dbConn.prepareStatement(s.toString());
 			for (String hKey : voHierarchy.keySet()) {
-				if (hKey.equals("CE2838")) log.debug("inserting options XR for product ID: " + hKey);
+				//if (hKey.equals("CE2838")) log.debug("inserting options XR for product ID: " + hKey);
 				int limit = voHierarchy.get(hKey).size();
 				pCount = 0;
 				for (ProductAttributeVO pavo : voHierarchy.get(hKey)) {
-					if (hKey.equals("CE2838")) {
+					/* if (hKey.equals("CE2838")) {
 						log.debug("building insert: productId|productAttribId|parentId|attrib2|value: " + pavo.getProductId() + "|" + pavo.getProductAttributeId() +"|"+pavo.getParentId()+"|"+pavo.getAttribute2()+"|"+pavo.getValueText());
-					}
+					} */
 					idx = 1;
 					ps.setString(idx++, pavo.getProductAttributeId());
 					ps.setString(idx++, pavo.getParentId());
