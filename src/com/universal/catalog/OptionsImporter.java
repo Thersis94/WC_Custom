@@ -18,8 +18,10 @@ import java.util.Map;
 import java.util.Set;
 
 
+
 // Log4J 1.2.15
 import org.apache.log4j.Logger;
+
 
 
 //SMT Base Libs
@@ -526,9 +528,9 @@ public class OptionsImporter extends AbstractImporter {
 								prodAttrHierarchy.put(prevProdId, levels);
 								//if (prevProdId.equals("PS9982")) log.debug("stored hierarchy for prodId|size: " + prevProdId + "|" + levels.size());
 							} else {
-								log.error("ALERT: Broken hierarchy found: Product was already processed: " + prevProdId);
-								levels.add(levelMap);
-								processOutOfSequenceLevels(prodAttrHierarchy.get(prevProdId), levels);								
+								log.error("ALERT: Skipping out-of-sequence options hierarchy for product: " + prevProdId);
+								//levels.add(levelMap);
+								//processOutOfSequenceLevels(prodAttrHierarchy.get(prevProdId), levels);								
 							}
 						}
 						
@@ -583,26 +585,39 @@ public class OptionsImporter extends AbstractImporter {
 	 * @param existingLvls
 	 * @param newLvls
 	 */
+	@SuppressWarnings("unused")
 	private void processOutOfSequenceLevels(List<Map<String, ProductAttributeVO>> existingLvls, 
 			List<Map<String, ProductAttributeVO>> newLvls) {
-		int existLevelsNo = existingLvls.size();
-		int currNewLevelNo = -1;
+		log.debug("processOutOfSequenceLevels...");
+		int existLevelsSize = existingLvls.size();
+		int currAttribLevel = -1;
+		log.debug("existing levels size: " + existLevelsSize);
 		
 		// loop the new levels, figure out which level sequence
 		for (Map<String, ProductAttributeVO> newLvl : newLvls) {
 						
-			// loop through the map once, get the current new level no from the
+			// loop through the map keys, get the current new level no from the
 			// first object, then break and process.
-			for (String newKey : newLvl.keySet()) {
-				ProductAttributeVO newPavo = newLvl.get(newKey);
-				// get the real level of this map of levels
-				currNewLevelNo = Integer.parseInt(newPavo.getAttribute2());
-				break;
+			if (currAttribLevel == -1) {
+				for (String newKey : newLvl.keySet()) {
+					ProductAttributeVO newPavo = newLvl.get(newKey);
+					// get the real level of this map of levels
+					currAttribLevel = Convert.formatInteger(newPavo.getAttribute2(), -1);
+					break;
+				}
+				// if we didn't find a valid val, skip this data
+				if (currAttribLevel == -1) break;
 			}
-			log.debug("currNewLevelNo is: " + currNewLevelNo);
-			if (currNewLevelNo <= (existLevelsNo - 1)) {
-				// this level exists, get it and add to it
-				processSpecificLevel(existingLvls.get(currNewLevelNo), newLvl);
+			
+			log.debug("currAttribLevel is: " + currAttribLevel);
+			if (currAttribLevel <= existLevelsSize) {
+				if (existLevelsSize == 0) {
+					// means currAttribLevel is 0, just add it
+					existingLvls.add(newLvl);
+				} else {
+					// this level exists, get it and add to it
+					processSpecificLevel(existingLvls.get(currAttribLevel - 1), newLvl);
+				}
 								
 			} else {
 				// currNewLevelNo is a new level, just add it
@@ -613,6 +628,11 @@ public class OptionsImporter extends AbstractImporter {
 		
 	}
 	
+	/**
+	 * Adds hierarchy level values to an existing hierarchy level.
+	 * @param oldLevel
+	 * @param newLevel
+	 */
 	private void processSpecificLevel(Map<String, ProductAttributeVO> oldLevel, 
 			Map<String, ProductAttributeVO> newLevel) {
 		// add new level to old level
