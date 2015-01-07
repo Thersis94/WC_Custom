@@ -4,11 +4,10 @@ package com.fastsigns.action.franchise;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-
 
 // SMT Base Libs
 import com.fastsigns.action.franchise.centerpage.FranchiseInfoAction;
@@ -75,6 +74,7 @@ public class CenterPageAction extends SimpleActionAdapter {
 	public static final int WHITEBOARD_UPDATE = 35;
 	public static final int RESELLER_UPDATE = 17;
 	public static final int RAQSAF_UPDATE = 18;
+	public static final int GLOBAL_MODULE_UPDATE = 19;
 	/**
 	 * 
 	 */
@@ -136,6 +136,7 @@ public class CenterPageAction extends SimpleActionAdapter {
 				case WHITEBOARD_UPDATE:
 				case CenterPageAction.RESELLER_UPDATE:
 				case RAQSAF_UPDATE:
+				case GLOBAL_MODULE_UPDATE:
 					FranchiseInfoAction fia = new FranchiseInfoAction(this.actionInit);
 					fia.setDBConnection(dbConn);
 					fia.setAttributes(attributes);
@@ -344,7 +345,7 @@ public class CenterPageAction extends SimpleActionAdapter {
 		fc.setMapData(fla.setMapData(f));
 		
 		// Get the module Data
-		Map<String, CenterModuleVO> modules = getModuleData(id, req);
+		Map<String, CenterModuleVO> modules = getModuleData(id, req, f.getUseGlobalMod());
 		
 		// Add the data to the module container
 		fc.setModuleData(modules);
@@ -365,7 +366,7 @@ public class CenterPageAction extends SimpleActionAdapter {
 	 * @param id
 	 * @return
 	 */
-	public Map<String, CenterModuleVO> getModuleData(String franId, SMTServletRequest req) {
+	public Map<String, CenterModuleVO> getModuleData(String franId, SMTServletRequest req, int useGlobalModules) {
 		Boolean isKeystone = Convert.formatBoolean(req.getAttribute("isKeystone"), false);				//In Webedit
 		Boolean isPreview = Convert.formatBoolean(req.getAttribute(Constants.PAGE_PREVIEW), false);				//In Preview mode
 		if (isPreview) {
@@ -432,6 +433,10 @@ public class CenterPageAction extends SimpleActionAdapter {
 			// Add the straggler
 			if (cmVo != null) data.put("MODULE_" + cmVo.getModuleLocationId(), cmVo);
 			
+			if (useGlobalModules == 1 && !req.hasParameter("edit")) {
+				appendGlobalAssets(data, isPreview);
+			}
+			
 		} catch (Exception e) {
 			log.error("Unable to get franchise info", e);
 		} finally {
@@ -450,6 +455,65 @@ public class CenterPageAction extends SimpleActionAdapter {
 
 		req.setAttribute("moduleTypeId", modTypeId);
 		return data;
+	}
+	
+	/**
+	 * Get all global assets from the database
+	 */
+	private void appendGlobalAssets(Map<String, CenterModuleVO> data, boolean preview) throws SQLException {
+		log.debug("Gathering global assets.|"+preview);
+		StringBuilder sql = new StringBuilder(430);
+		final String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		
+		sql.append("SELECT * FROM ").append(customDb).append("FTS_CP_MODULE_OPTION cmo  ");
+		sql.append("left join ").append(customDb).append("FTS_CP_MODULE_TYPE_XR mtx ");
+		sql.append("on mtx.FTS_CP_MODULE_TYPE_ID = cmo.FTS_CP_MODULE_TYPE_ID ");
+		sql.append("left join ").append(customDb).append("FTS_CP_MODULE m on m.CP_MODULE_ID = mtx.CP_MODULE_ID ");
+		sql.append("left join ").append(customDb).append("FTS_CP_MODULE_OPTION child on child.PARENT_ID = cmo.CP_MODULE_OPTION_ID ");
+		sql.append("WHERE cmo.FRANCHISE_ID = -1 and m.ORG_ID = 'FTS' ");
+		if (preview) {
+			sql.append("and ((cmo.APPROVAL_FLG = 1 and child.CP_MODULE_OPTION_ID is null) or cmo.APPROVAL_FLG = 100) ");
+		} else {
+			sql.append("and cmo.APPROVAL_FLG = 1 ");
+		}
+		sql.append("ORDER BY m.CP_MODULE_ID");
+		
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		
+		ps = dbConn.prepareStatement(sql.toString());
+		rs = ps.executeQuery();
+
+		Integer lastModTypeId = 0;
+		CenterModuleVO cmVo = null;
+		Map<Integer, CenterModuleVO> globalModules = new HashMap<Integer, CenterModuleVO>();
+		while (rs.next()) {
+			if (!lastModTypeId.equals(rs.getInt("CP_MODULE_ID"))) {
+				if (cmVo != null) globalModules.put(lastModTypeId, cmVo);
+
+				lastModTypeId = rs.getInt("CP_MODULE_ID");
+				cmVo = new CenterModuleVO();
+				cmVo.addOption(new CenterModuleOptionVO(rs));
+				log.debug(cmVo.getModuleOptions().size()+"|NEW");
+			} else {
+				cmVo.addOption(new CenterModuleOptionVO(rs));
+				log.debug(cmVo.getModuleOptions().size()+"|ESTABLISHED");
+			}
+		}
+
+		CenterModuleVO center = null;
+		CenterModuleVO globalModule = null;
+		for (String key : data.keySet()) {
+			center = data.get(key);
+			log.debug(key+"|"+center.getModuleId()+"|"+center.getModuleName());
+			globalModule = globalModules.get(center.getModuleId());
+			if (globalModule != null) {
+				for (int optionNum : globalModule.getModuleOptions().keySet()) {
+					log.debug("Added item");
+					center.addOption(globalModule.getModuleOptions().get(optionNum));
+				}
+			}
+		}
 	}
 
 	/** the query used to retrieve the module data
