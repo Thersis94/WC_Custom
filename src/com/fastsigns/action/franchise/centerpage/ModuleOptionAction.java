@@ -42,7 +42,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class ModuleOptionAction extends SBActionAdapter{
 	//This is a list of the modules that only allow one item at a time
-	final String modList = "11 12";
+	final String modList = "11 12 81";
 	
 	public ModuleOptionAction(ActionInitVO avo){
 		super(avo);
@@ -114,7 +114,12 @@ public class ModuleOptionAction extends SBActionAdapter{
 					if (!modList.contains(req.getParameter("moduleId"))) {
 						req.setParameter("skipDelete", "true");
 					}
-					req.setParameter("parentModuleId", req.getParameter("optionId"));
+					
+					if (Convert.formatInteger(req.getParameter("parentId")) == 0) {
+						req.setParameter("parentModuleId", req.getParameter("moduleOptionId"));
+					} else {
+						req.setParameter("parentModuleId", req.getParameter("parentId"));
+					}
 					
 				case CenterPageAction.MODULE_OPTION_UPDATE:
 					this.updateModuleOptions(req);
@@ -390,6 +395,9 @@ public class ModuleOptionAction extends SBActionAdapter{
 	 * @param req
 	 */
 	public void updateModuleOptions(SMTServletRequest req) throws SQLException {
+		// If we are dealing with an omnipresent global module asset we skip the assignment phase
+		if ("g".equals(req.getParameter("globalFlg"))) return;
+
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		String[] options = req.getParameterValues("selectedElements");
 		String locationId = req.getParameter("locationId");
@@ -427,11 +435,7 @@ public class ModuleOptionAction extends SBActionAdapter{
 					opts[0] = req.getParameter("parentModuleId");
 				
 				psIns.setString(1, locationId);
-				if (req.hasParameter("moduleParentId")) {
-					psIns.setString(2, req.getParameter("moduleParentId"));
-				} else {
-					psIns.setString(2, opts[0]);
-				}
+				psIns.setString(2, opts[0]);
 				psIns.setInt(3, idx);
 				psIns.setTimestamp(4, Convert.getCurrentTimestamp());
 				psIns.addBatch();
@@ -492,6 +496,7 @@ public class ModuleOptionAction extends SBActionAdapter{
 		//UserRoleVO role = (UserRoleVO) req.getSession().getAttribute(Constants.ROLE_DATA);
 		CenterModuleOptionVO vo = new CenterModuleOptionVO(req);
 		boolean isInsert = (vo.getModuleOptionId() == 0);
+		boolean globalAsset = "g".equals(req.getParameter("globalFlg"));
 		
 		//if the user is not a global admin, and this is an update to an existing module,
 		//treat it as a NEW module.  This behavior will ensure the module gets approved
@@ -542,12 +547,18 @@ public class ModuleOptionAction extends SBActionAdapter{
 			ps.setString(++i, vo.getActionId());
 			if (Convert.formatBoolean(req.getParameter("globalFlg"), false)) {
 				ps.setNull(++i, java.sql.Types.INTEGER);
+			} else if (globalAsset) {
+				ps.setInt(++i, -1);
 			} else {
 				ps.setInt(++i, franchiseId);
 			}
 			if (isInsert) {
-				 ps.setInt(++i, vo.getModuleTypeId());
-				 ps.setInt(++i, vo.getApprovalFlag());
+				 ps.setInt(++i, vo.getModuleTypeId()); 
+				 if (globalAsset) {
+					 ps.setInt(++i, 100);
+				 } else {
+					 ps.setInt(++i, vo.getApprovalFlag());
+				 }
 				 ps.setInt(++i, vo.getParentId());
 				 ps.setString(++i, orgId);
 			}
