@@ -143,7 +143,12 @@ public class ShoppingCartAction extends SBActionAdapter {
 		StringBuilder url = new StringBuilder();
 		url.append(req.getRequestURI()).append("?");
 		url.append("checkout=true");
-		url.append("&type=payment");
+		url.append("&type=");
+		if (StringUtil.checkVal(req.getParameter("type")).length() > 0) {
+			url.append(req.getParameter("type"));
+		} else {
+			url.append("payment");
+		}
 		req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
 		req.setAttribute(Constants.REDIRECT_URL, url.toString());
 		
@@ -651,21 +656,21 @@ public class ShoppingCartAction extends SBActionAdapter {
 			
 			if (Convert.formatBoolean(req.getParameter("useBilling"))) {
 				cart.setShippingInfo(user);
-				req.setParameter("type", "payment");
+				req.setParameter("type", "payment", true);
 			} else { 
-				req.setParameter("type", "Shipping");
+				req.setParameter("type", "Shipping", true);
 			}
 		} else {
 			// Add the user shipping info to the session
 			((UserDataVO)req.getSession().getAttribute(Constants.USER_DATA)).setUserExtendedInfo(user);			
 			// Update the shipping info
 			cart.setShippingInfo(user);
-			req.setParameter("type", "payment");
+			req.setParameter("type", "payment", true);
 		}
 		
 		// If the user changed the shipping/billing info, have them return to the payment screen
 		if (Convert.formatBoolean(req.getParameter("edit")))
-			req.setParameter("type", "payment");
+			req.setParameter("type", "payment", true);
 	}
 	
 	/**
