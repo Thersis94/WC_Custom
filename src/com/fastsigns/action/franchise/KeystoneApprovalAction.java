@@ -146,7 +146,7 @@ public class KeystoneApprovalAction extends SimpleActionAdapter {
 	}
 
 	/**
-	 * Get all the franchises that have approvable content
+	 * Get all the franchises that have approvable content.
 	 * @param req
 	 */
 	private void getApprovableFranchises(SMTServletRequest req) {
@@ -188,10 +188,16 @@ public class KeystoneApprovalAction extends SimpleActionAdapter {
 		putModuleData(approvalNeeded);
 	}
 	
+	/**
+	 * Create the query that gathers all centers that have modules, whiteboard changes, sub-pages,
+	 * center images, asset updates, and job postings that are awaiting approval right now.
+	 * @return
+	 */
 	private String buildFranchiseQuery() {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);	
 		StringBuilder sql = new StringBuilder();
 		
+		// Get the new whiteboard and center images
 		sql.append("SELECT 1 as QUERY, FRANCHISE_ID, null as OPTION_FRANCHISE_ID FROM ");
 		sql.append(customDb).append("FTS_FRANCHISE ");
 		sql.append("WHERE (NEW_CENTER_IMAGE_URL is not null or NEW_WHITE_BOARD_TEXT is not null) ");
@@ -199,6 +205,7 @@ public class KeystoneApprovalAction extends SimpleActionAdapter {
 		
 		sql.append("union ");
 		
+		// Get the subpages
 		sql.append("SELECT distinct 2 as QUERY, s.SITE_ID, null as OPTION_FRANCHISE_ID FROM ");
 		sql.append(customDb).append("FTS_CHANGELOG fc ");
 		sql.append("inner join PAGE_MODULE pm on fc.COMPONENT_ID = pm.PAGE_MODULE_ID ");
@@ -208,12 +215,14 @@ public class KeystoneApprovalAction extends SimpleActionAdapter {
 		
 		sql.append("union ");
 		
+		// Get the job postings
 		sql.append("SELECT distinct 3 as QUERY, FRANCHISE_ID, null as OPTION_FRANCHISE_ID FROM ");
 		sql.append(customDb).append("FTS_JOB_POSTING ");
 		sql.append("WHERE JOB_APPROVAL_FLG = 0 and ORGANIZATION_ID = ? and len(FRANCHISE_ID) > 0 ");
 		
 		sql.append("union ");
 		
+		// Get the modules and module assets 
 		sql.append("SELECT distinct 4 as QUERY, lmx.FRANCHISE_ID, cmo.FRANCHISE_ID as OPTION_FRANCHISE_ID FROM ");
 		sql.append(customDb).append("FTS_CP_MODULE_OPTION cmo ");
 		sql.append("left join ").append(customDb).append("FTS_CP_MODULE_FRANCHISE_XR cmfx on ");
@@ -224,6 +233,7 @@ public class KeystoneApprovalAction extends SimpleActionAdapter {
 		
 		sql.append("union ");
 		
+		// Get the global modules
 		sql.append("SELECT distinct 5 as QUERY, f.FRANCHISE_ID, null ");
 		sql.append("FROM ").append(customDb).append("FTS_FRANCHISE f ");
 		sql.append("inner join ").append(customDb).append("FTS_CP_MODULE_OPTION cmo on f.USE_GLOBAL_MODULES_FLG * -1 = cmo.FRANCHISE_ID ");
@@ -268,6 +278,8 @@ public class KeystoneApprovalAction extends SimpleActionAdapter {
 				fla.setDBConnection(dbConn);
 				fla.setAttributes(attributes);
 				fc.setFranchiseLocation(fla.getLocationInfo(franchiseId, true));
+				
+				// Get the module information for a particular franchise
 				CenterPageAction cpa = new CenterPageAction(actionInit);
 				cpa.setDBConnection(dbConn);
 				cpa.setAttributes(attributes);

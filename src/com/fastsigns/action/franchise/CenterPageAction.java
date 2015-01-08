@@ -433,6 +433,7 @@ public class CenterPageAction extends SimpleActionAdapter {
 			// Add the straggler
 			if (cmVo != null) data.put("MODULE_" + cmVo.getModuleLocationId(), cmVo);
 			
+			// If we are using global modules we add the global assets to the modules here.
 			if (useGlobalModules == 1 && !req.hasParameter("edit")) {
 				appendGlobalAssets(data, isPreview);
 			}
@@ -458,7 +459,7 @@ public class CenterPageAction extends SimpleActionAdapter {
 	}
 	
 	/**
-	 * Get all global assets from the database
+	 * Get all global assets from the database and append them to the list of assets
 	 */
 	private void appendGlobalAssets(Map<String, CenterModuleVO> data, boolean preview) throws SQLException {
 		log.debug("Gathering global assets.|"+preview);

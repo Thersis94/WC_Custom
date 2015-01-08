@@ -112,6 +112,8 @@ public class FranchiseInfoAction extends SBActionAdapter {
 	
 	/**
 	 * Update the USE_GLOBAL_MODULE flag for the submitted center
+	 * This flag determines whether global assets and modules (items with
+	 * franchise id of -1) should appear on the center's main page.
 	 * @param req
 	 */
 	private void updateGlobalModule(SMTServletRequest req) throws SQLException {

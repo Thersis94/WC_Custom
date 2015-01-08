@@ -129,6 +129,7 @@ public class KeystoneCenterPageAction extends CenterPageAction {
 		s.append("(c.cp_module_option_id=d.cp_module_option_id or c.parent_id=d.cp_module_option_id) ");
 		s.append("left outer join ").append(customDb).append("FTS_CP_OPTION_ATTR e on c.CP_MODULE_OPTION_ID ");
 		s.append("= e.cp_module_option_id ");
+		// Franchise Ids of -1 only appear on assets that should appear on all centers that allow global assets
 		s.append("where a.cp_module_id=? and (c.franchise_id is null or c.franchise_id = -1 or c.franchise_id = ?) and c.org_id = '");
 		s.append(orgId).append("' ");
 		if (req.getParameter("optionId") != null) 

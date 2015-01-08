@@ -115,6 +115,7 @@ public class ModuleOptionAction extends SBActionAdapter{
 						req.setParameter("skipDelete", "true");
 					}
 					
+					// Determine whether we are dealing with a edit of the original or an edit of an edit.
 					if (Convert.formatInteger(req.getParameter("parentId")) == 0) {
 						req.setParameter("parentModuleId", req.getParameter("moduleOptionId"));
 					} else {
@@ -496,6 +497,7 @@ public class ModuleOptionAction extends SBActionAdapter{
 		//UserRoleVO role = (UserRoleVO) req.getSession().getAttribute(Constants.ROLE_DATA);
 		CenterModuleOptionVO vo = new CenterModuleOptionVO(req);
 		boolean isInsert = (vo.getModuleOptionId() == 0);
+		// Determine if this is an omnipresent global asset.  These are treated differently from normal assets
 		boolean globalAsset = "g".equals(req.getParameter("globalFlg"));
 		
 		//if the user is not a global admin, and this is an update to an existing module,
