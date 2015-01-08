@@ -165,6 +165,8 @@ public class PayPalCheckoutManager {
 		}
 		cart.getBillingInfo().addAttribute("PAYER_ID", rMap.get("PAYERID"));
 		cart.getBillingInfo().addAttribute("PAYER_STATUS", rMap.get("PAYERSTATUS"));
+		cart.getBillingInfo().addAttribute("ADDRESS_STATUS", 
+				StringUtil.checkVal(rMap.get("PAYMENTREQUEST_0_ADDRESSSTATUS")));
 		
 		// set 'ship to' info using the data returned from the 'get'
 		UserDataVO newShipTo = new UserDataVO();
@@ -180,8 +182,6 @@ public class PayPalCheckoutManager {
 		if (StringUtil.checkVal(rMap.get("PAYMENTREQUEST_0_SHIPTOPHONENUM"),null) != null) {
 			newShipTo.addPhone(new PhoneVO(rMap.get("PAYMENTREQUEST_0_SHIPTOPHONENUM")));
 		}
-		newShipTo.addAttribute("ADDRESS_STATUS", 
-				StringUtil.checkVal(rMap.get("PAYMENTREQUEST_0_ADDRESSSTATUS")));
 		cart.setShippingInfo(newShipTo);
 		
 	}
@@ -208,7 +208,7 @@ public class PayPalCheckoutManager {
 		UserDataVO buyer = cart.getBillingInfo();
 		buyer.addAttribute("TOKEN", rMap.get("TOKEN"));
 		buyer.addAttribute("CORRELATION_ID", rMap.get("CORRELATIONID"));
-		buyer.addAttribute("TRANSACTION_ID", rMap.get("PAYMENTREQUEST_0_TRANSACTIONID"));
+		buyer.addAttribute("TRANSACTION_ID", rMap.get("PAYMENTINFO_0_TRANSACTIONID"));
 		buyer.addAttribute("PAYMENT_STATUS",  rMap.get("PAYMENTINFO_0_PAYMENTSTATUS"));
 		buyer.addAttribute("PENDING_REASON",  rMap.get("PAYMENTINFO_0_PENDINGREASON"));		
 

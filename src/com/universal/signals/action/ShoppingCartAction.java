@@ -345,6 +345,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 			ShoppingCartVO displayCart = new ShoppingCartVO();
 			displayCart.setBillingInfo(cart.getBillingInfo());
 			displayCart.setShippingInfo(cart.getShippingInfo());
+			displayCart.setShippingOptions(cart.getShippingOptions());
 			displayCart.setItems(cart.getItems());
 			displayCart.setOrderComplete(cart.getOrderComplete());
 			flushCart(container);
@@ -399,22 +400,6 @@ public class ShoppingCartAction extends SBActionAdapter {
 			ppm.setCatalogSiteId(catalogSiteId);
 			ppm.processTransaction();
 			
-			// TODO remove after testing.
-			if (log.isDebugEnabled()) {
-				log.debug("cart's shippingInfo after operation:");
-				UserDataVO shipTo = cart.getShippingInfo();
-				if (shipTo != null) {
-					log.debug("shipTo: " + shipTo);
-					if (shipTo.getAttributes() != null) {
-						for (String key : shipTo.getAttributes().keySet()) {
-							log.debug("attr key/val: " + key + "|" + shipTo.getAttributes().get(key));
-						}
-					} else {
-						log.debug("attributes obj is null...");
-					}
-				}
-			}
-			
 		} catch (IOException e) {
 			log.error("Error: PayPal checkout is unavailable, ", e);
 			cart.addError("SYSTEM_ERROR", "PayPal checkout is temporarily unavailable. (System)");
@@ -436,7 +421,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 		if (cart.hasErrors()) {
 			log.debug("cart has errors:");
 			for (String err : cart.getErrors().keySet()) {
-				log.debug("err|msg: " + err + "|" + cart.getErrors().get(err));
+				log.error("USA Shopping Cart error|msg: " + err + "|" + cart.getErrors().get(err));
 			}
 			return cart;
 		}
@@ -468,6 +453,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 				ShoppingCartVO displayCart = new ShoppingCartVO();
 				displayCart.setBillingInfo(cart.getBillingInfo());
 				displayCart.setShippingInfo(cart.getShippingInfo());
+				displayCart.setShippingOptions(cart.getShippingOptions());
 				displayCart.setItems(cart.getItems());
 				displayCart.setOrderComplete(cart.getOrderComplete());
 				flushCart(container);
@@ -743,7 +729,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 			if (cart.getShippingInfo() == null) {
 				// no user shipping info, is a PayPal checkout.
 				UserDataVO shipInfo = new UserDataVO();
-				shipInfo.setZipCode(req.getParameter("shippingZipcode"));
+				shipInfo.setZipCode(req.getParameter("shippingZipCode"));
 				cart.setShippingInfo(shipInfo);
 			}
 		}
