@@ -217,6 +217,7 @@ public class WebServiceAction extends SBActionAdapter {
 	
 	/**
 	 * 
+	 * @param req
 	 * @param cart
 	 * @param ipAddr
 	 * @return
@@ -241,9 +242,8 @@ public class WebServiceAction extends SBActionAdapter {
 			errElem.addElement("ErrorMessage").setText("Unable to process the order at this time.");
 			return errElem;
 		}
-		log.debug("*****************\nRequest : " + s);
-		return this.callWebService(url, s, "root");
-		//return this.createDebugResponseElement(cart);
+		//return this.callWebService(url, s, "root");
+		return this.createDebugResponseElement(cart);
 	}
 	
 	/**
@@ -406,7 +406,7 @@ public class WebServiceAction extends SBActionAdapter {
 			s.append(buyer.getAttributes().get("ADDRESS_STATUS"));
 			s.append("</AddressStatus>");
 			s.append("<PayerStatus>");
-			s.append(cart.getShippingInfo().getAttributes().get("PAYER_STATUS"));
+			s.append(buyer.getAttributes().get("PAYER_STATUS"));
 			s.append("</PayerStatus>"); //(Y or N)
 			s.append("<CorrelationID>");
 			s.append(buyer.getAttributes().get("CORRELATION_ID"));
@@ -416,7 +416,7 @@ public class WebServiceAction extends SBActionAdapter {
 			s.append("</PendingReason>");
 		}
 		s.append("</OrderRequest>");
-		log.debug("order Request: " + s);
+		log.debug("*****************\nOrder Request : " + s + "\n");
 		
 		return s;
 	}
@@ -623,17 +623,18 @@ public class WebServiceAction extends SBActionAdapter {
 	 * @param cart
 	 * @return
 	 */
-	@SuppressWarnings("unused")
 	private Element createDebugResponseElement(ShoppingCartVO cart) {
 		Element ele = new DefaultElement("OrderResponse");
 		
 		Element subEle = new DefaultElement("GrandTotal");
 		subEle.addText(safeDouble(cart.getCartTotal()));
 		ele.add(subEle);
+		log.debug("cart total: " + cart.getCartTotal());
 		
 		subEle = new DefaultElement("ProductTotal");
 		subEle.addText(safeDouble(cart.getSubTotal()));
 		ele.add(subEle);
+		log.debug("cart sub total: " + cart.getSubTotal());
 		
 		subEle = new DefaultElement("TaxTotal");
 		subEle.addText(safeDouble(cart.getTaxAmount()));
@@ -642,23 +643,30 @@ public class WebServiceAction extends SBActionAdapter {
 		subEle = new DefaultElement("ShippingTotal");
 		subEle.addText(safeDouble(cart.getShipping().getShippingCost()));
 		ele.add(subEle);
+		log.debug("cart shipping cost: " + cart.getShipping().getShippingCost());
+		
 		
 		subEle = new DefaultElement("DiscountTotal");
-		subEle.addText(safeDouble(cart.getCartDiscount().get(0).getDiscountDollarValue()));
+			if (cart.getCartDiscount() != null && ! cart.getCartDiscount().isEmpty()) {
+				subEle.addText(safeDouble(cart.getCartDiscount().get(0).getDiscountDollarValue()));
+			} else {
+				subEle.addText("0.00");
+			}
 		ele.add(subEle);
 		
 		subEle = new DefaultElement("OrderNumber");
-		subEle.addText("DEBUG:" + Calendar.getInstance().getTimeInMillis());
+		subEle.addText("DEBUG: " + Calendar.getInstance().getTimeInMillis());
 		ele.add(subEle);
 		
 		subEle = new DefaultElement("ClientID");
-		subEle.addText(cart.getInvoiceNo());
+		subEle.addText("DEBUG: " + cart.getInvoiceNo());
 		ele.add(subEle);
 		
 		subEle = new DefaultElement("MSG");
 		subEle.addText("DEBUG: Test order generated from cart.");
 		ele.add(subEle);
-
+		
+		log.debug("debug response element: " + ele.asXML());
 		return ele;
 	}
 	
@@ -671,7 +679,7 @@ public class WebServiceAction extends SBActionAdapter {
 		try {
 			return new Double(val).toString();
 		} catch (NumberFormatException nfe) {
-			return "0.0";
+			return "0.00";
 		}
 	}
 	

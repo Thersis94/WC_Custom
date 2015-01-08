@@ -2,6 +2,8 @@ package com.universal.signals.action;
 
 // Java 7
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -163,6 +165,8 @@ public class PayPalCheckoutManager {
 		}
 		cart.getBillingInfo().addAttribute("PAYER_ID", rMap.get("PAYERID"));
 		cart.getBillingInfo().addAttribute("PAYER_STATUS", rMap.get("PAYERSTATUS"));
+		cart.getBillingInfo().addAttribute("ADDRESS_STATUS", 
+				StringUtil.checkVal(rMap.get("PAYMENTREQUEST_0_ADDRESSSTATUS")));
 		
 		// set 'ship to' info using the data returned from the 'get'
 		UserDataVO newShipTo = new UserDataVO();
@@ -178,8 +182,6 @@ public class PayPalCheckoutManager {
 		if (StringUtil.checkVal(rMap.get("PAYMENTREQUEST_0_SHIPTOPHONENUM"),null) != null) {
 			newShipTo.addPhone(new PhoneVO(rMap.get("PAYMENTREQUEST_0_SHIPTOPHONENUM")));
 		}
-		newShipTo.addAttribute("ADDRESS_STATUS", 
-				StringUtil.checkVal(rMap.get("PAYMENTREQUEST_0_ADDRESSSTATUS")));
 		cart.setShippingInfo(newShipTo);
 		
 	}
@@ -206,7 +208,7 @@ public class PayPalCheckoutManager {
 		UserDataVO buyer = cart.getBillingInfo();
 		buyer.addAttribute("TOKEN", rMap.get("TOKEN"));
 		buyer.addAttribute("CORRELATION_ID", rMap.get("CORRELATIONID"));
-		buyer.addAttribute("TRANSACTION_ID", rMap.get("PAYMENTREQUEST_0_TRANSACTIONID"));
+		buyer.addAttribute("TRANSACTION_ID", rMap.get("PAYMENTINFO_0_TRANSACTIONID"));
 		buyer.addAttribute("PAYMENT_STATUS",  rMap.get("PAYMENTINFO_0_PAYMENTSTATUS"));
 		buyer.addAttribute("PENDING_REASON",  rMap.get("PAYMENTINFO_0_PENDINGREASON"));		
 
@@ -272,14 +274,25 @@ public class PayPalCheckoutManager {
 		// JSONify the request and build the request post data
 		Gson g = new Gson();
 		byte[] json = g.toJson(pReq).getBytes();
-		String postData = "type=json&xmlData=" + new String(json);
-		log.debug("postData: " + postData);
+		String postStub = "type=json&xmlData=";
+		
+		// format/URL encode the xmlData value.
+		String postData =  new String(json);
+		log.debug("raw postData: " + postData);
+		
+		try {
+			postData = URLEncoder.encode(postData,"utf-8");
+		} catch (UnsupportedEncodingException uee) {
+			log.error("Error URL encoding postData for proxy call, ", uee);
+		}
+		
+		log.debug("URL-encoded postData: " + postData);
 		
 		// build proxy URL and call proxy
 		StringBuilder smtProxyUrl = new StringBuilder((String)attributes.get(Constants.CFG_SMT_PROXY_URL));
 		smtProxyUrl.append("/payment/process");
 		SMTHttpConnectionManager mgr = new SMTHttpConnectionManager();
-		byte[] bytes = mgr.retrieveDataViaPost(smtProxyUrl.toString(), postData);
+		byte[] bytes = mgr.retrieveDataViaPost(smtProxyUrl.toString(), postStub + postData);
 		log.info("raw SMT proxy response: " + new String(bytes));
 		
 		// JSONify the response
