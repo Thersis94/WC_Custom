@@ -107,6 +107,7 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	    event.setEventTypeCd(db.getStringVal("type_nm", rs));
 	    event.setCityName(db.getStringVal("city_nm", rs));
 	    event.setStateCode(db.getStringVal("state_cd", rs));
+	    event.setEventDesc(db.getStringVal("event_desc", rs));
 	    lst.add(event);
 	    super.setEvents(lst);
 	    

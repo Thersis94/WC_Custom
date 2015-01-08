@@ -112,25 +112,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 					break;
 					
 				case hospitalSponsored:
-					//Create the event
-					eventPostcardId = saveEventPostcard( req, site, user, eventPostcardId );
-					String eventId = saveEventEntry(req);
-					saveEventPostcardAssoc(eventPostcardId, eventId);
-					saveLocatorXr( eventPostcardId, req );
-					
-					changePostcardStatus(15, eventPostcardId);
-					
-					//get seminar
-					PostcardSelectV2 psa = new PostcardSelectV2(actionInit);
-					psa.setAttributes(attributes);
-					psa.setDBConnection(dbConn);
-					DePuyEventSeminarVO vo = psa.loadOneSeminar(eventPostcardId, 
-							actionInit.getActionId(), null, null, null);
-					
-					//Order the consumables
-					orderBox( req, eventPostcardId, vo );
-					
-					nextPage = "hospitalSponsored";
+					this.saveHospitalSponsored(req, site, user);
 					break;
 				
 				case submitSeminar:
@@ -208,6 +190,37 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		if (eventPostcardId != null) redirectPg.append("&eventPostcardId=").append(eventPostcardId);
 		
 		super.sendRedirect(redirectPg.toString(), message, req);
+	}
+	
+	
+	/**
+	 * saves the hospital sponsored seminar form
+	 * @param req
+	 * @param site
+	 * @param user
+	 * @throws SQLException
+	 * @throws ActionException
+	 */
+	private void saveHospitalSponsored(SMTServletRequest req, SiteVO site, UserDataVO user) 
+			throws SQLException, ActionException {
+		//Create the event
+		String eventPostcardId = saveEventPostcard(req, site, user, null);
+		String eventId = saveEventEntry(req);
+		saveEventPostcardAssoc(eventPostcardId, eventId);
+		saveLocatorXr(eventPostcardId, req);
+		updatePostcardLeadsStats(Convert.formatInteger(req.getParameter("attendeeNo")), eventPostcardId, SortType.city);
+		
+		changePostcardStatus(EventFacadeAction.STATUS_APPROVED, eventPostcardId);
+		
+		//load the just-saved seminar
+		PostcardSelectV2 psa = new PostcardSelectV2(actionInit);
+		psa.setAttributes(attributes);
+		psa.setDBConnection(dbConn);
+		DePuyEventSeminarVO vo = psa.loadOneSeminar(eventPostcardId, 
+				actionInit.getActionId(), null, null, null);
+		
+		//Order the consumables
+		orderBox(req, eventPostcardId, vo);
 	}
 	
 
@@ -1166,13 +1179,9 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		log.debug("starting consumable box email");
 
 		// get the postcard data for emailing
-		DePuyEventSeminarVO sem = null;
-		if ( vo == null ){
-			sem = fetchSeminar(req, ReportType.summary);
-		} else {
-			sem = vo;
-		}
-		req.setAttribute("postcard", sem);
+		if (vo == null)
+			vo = fetchSeminar(req, ReportType.summary);
+		req.setAttribute("postcard", vo);
 		
 		PostcardEmailer epe = new PostcardEmailer(attributes, dbConn);
 		epe.orderConsumableBox(req);
