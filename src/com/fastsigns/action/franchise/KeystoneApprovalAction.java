@@ -1,5 +1,8 @@
 package com.fastsigns.action.franchise;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -7,6 +10,8 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 import com.fastsigns.action.LogAction;
 import com.fastsigns.action.approval.ApprovalFacadeAction;
@@ -34,6 +39,7 @@ import com.smt.sitebuilder.action.content.ContentVO;
 import com.smt.sitebuilder.action.menu.MenuObj;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -128,14 +134,122 @@ public class KeystoneApprovalAction extends SimpleActionAdapter {
 		}
 	}
 	
-	@SuppressWarnings("unchecked")
 	public void retrieve(SMTServletRequest req) throws ActionException {
+		String franchiseId = req.getParameter("apprFranchiseId");
 		if (AdminConstants.REQ_LIST.equalsIgnoreCase(req.getParameter(AdminConstants.REQUEST_TYPE))) {
 			super.retrieve(req);
-			return;
+		} else if  (franchiseId == null || franchiseId.length() == 0) {
+			getApprovableFranchises(req); 
+		}  else  {
+			getApprovalsByCenter(req, franchiseId);
 		}
-		String franchiseId = req.getParameter("apprFranchiseId");
-		if (franchiseId == null || franchiseId.length() == 0) return; //no franchise selected, yet.
+	}
+
+	/**
+	 * Get all the franchises that have approvable content.
+	 * @param req
+	 */
+	private void getApprovableFranchises(SMTServletRequest req) {
+		SiteVO siteData = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		if (siteData == null) return;
+		String orgId = siteData.getOrganizationId();
+		String countryCd = siteData.getCountryCode();
+		
+		PreparedStatement ps = null;
+		Set<String> approvalNeeded = new TreeSet<String>();
+		try {
+			ps = dbConn.prepareStatement(buildFranchiseQuery());
+			ps.setString(1, countryCd);
+			ps.setString(2, countryCd);
+			ps.setString(3, orgId);
+			ps.setString(4, orgId);
+			
+			ResultSet rs = ps.executeQuery();
+			String siteId;
+			while (rs.next()) {
+				log.debug(rs.getString(2));
+				switch(rs.getInt(1)) {
+					case 1: 
+					case 3:
+					case 4:
+					case 5:
+						approvalNeeded.add(rs.getString(2));
+						break;
+					case 2:
+						siteId = rs.getString(2);
+						siteId = rs.getString(2).substring(0, siteId.lastIndexOf('_')).replace(orgId, "");
+						approvalNeeded.add(siteId);
+						break;
+				}
+			}
+		} catch (SQLException e) {
+			log.error("Could not get list of franchises with items needing approval. ", e);
+		}
+		putModuleData(approvalNeeded);
+	}
+	
+	/**
+	 * Create the query that gathers all centers that have modules, whiteboard changes, sub-pages,
+	 * center images, asset updates, and job postings that are awaiting approval right now.
+	 * @return
+	 */
+	private String buildFranchiseQuery() {
+		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);	
+		StringBuilder sql = new StringBuilder();
+		
+		// Get the new whiteboard and center images
+		sql.append("SELECT 1 as QUERY, FRANCHISE_ID, null as OPTION_FRANCHISE_ID FROM ");
+		sql.append(customDb).append("FTS_FRANCHISE ");
+		sql.append("WHERE (NEW_CENTER_IMAGE_URL is not null or NEW_WHITE_BOARD_TEXT is not null) ");
+		sql.append("AND COUNTRY_CD = ? ");
+		
+		sql.append("union ");
+		
+		// Get the subpages
+		sql.append("SELECT distinct 2 as QUERY, s.SITE_ID, null as OPTION_FRANCHISE_ID FROM ");
+		sql.append(customDb).append("FTS_CHANGELOG fc ");
+		sql.append("inner join PAGE_MODULE pm on fc.COMPONENT_ID = pm.PAGE_MODULE_ID ");
+		sql.append("inner join PAGE p on p.PAGE_ID = pm.PAGE_ID ");
+		sql.append("inner join SITE s on p.SITE_ID = s.SITE_ID ");
+		sql.append("WHERE TYPE_ID = 'pageModule' and STATUS_NO = 0 and s.COUNTRY_CD = ? ");
+		
+		sql.append("union ");
+		
+		// Get the job postings
+		sql.append("SELECT distinct 3 as QUERY, FRANCHISE_ID, null as OPTION_FRANCHISE_ID FROM ");
+		sql.append(customDb).append("FTS_JOB_POSTING ");
+		sql.append("WHERE JOB_APPROVAL_FLG = 0 and ORGANIZATION_ID = ? and len(FRANCHISE_ID) > 0 ");
+		
+		sql.append("union ");
+		
+		// Get the modules and module assets 
+		sql.append("SELECT distinct 4 as QUERY, lmx.FRANCHISE_ID, cmo.FRANCHISE_ID as OPTION_FRANCHISE_ID FROM ");
+		sql.append(customDb).append("FTS_CP_MODULE_OPTION cmo ");
+		sql.append("left join ").append(customDb).append("FTS_CP_MODULE_FRANCHISE_XR cmfx on ");
+		sql.append("cmo.CP_MODULE_OPTION_ID = cmfx.CP_MODULE_OPTION_ID or cmo.PARENT_ID = cmfx.CP_MODULE_OPTION_ID ");
+		sql.append("left join ").append(customDb).append("FTS_CP_LOCATION_MODULE_XR lmx on ");
+		sql.append("lmx.CP_LOCATION_MODULE_XR_ID = cmfx.CP_LOCATION_MODULE_XR_ID ");
+		sql.append("WHERE cmo.APPROVAL_FLG = 100 and cmo.ORG_ID = ? and lmx.FRANCHISE_ID is not null ");
+		
+		sql.append("union ");
+		
+		// Get the global modules
+		sql.append("SELECT distinct 5 as QUERY, f.FRANCHISE_ID, null ");
+		sql.append("FROM ").append(customDb).append("FTS_FRANCHISE f ");
+		sql.append("inner join ").append(customDb).append("FTS_CP_MODULE_OPTION cmo on f.USE_GLOBAL_MODULES_FLG * -1 = cmo.FRANCHISE_ID ");
+		sql.append("WHERE APPROVAL_FLG = 100 ");
+		log.debug(sql);
+		
+		return sql.toString();
+	}
+
+	/**
+	 * Get all the approvable items related to a franchise
+	 * @param req
+	 * @throws ActionException
+	 */
+	@SuppressWarnings("unchecked")
+	private void getApprovalsByCenter(SMTServletRequest req, String franchiseId) throws ActionException {
 		
 		log.debug("retrieving");
 		req.setAttribute("isKeystone", true); //passes through to CenterPageAction
@@ -160,15 +274,19 @@ public class KeystoneApprovalAction extends SimpleActionAdapter {
 			if (p.isDefaultPage()) {
 				
 				//load the CP_MODULES that need to be approved
-				CenterPageAction cpa = new CenterPageAction(actionInit);
-				cpa.setDBConnection(dbConn);
-				cpa.setAttributes(attributes);
 				FranchiseLocationInfoAction fla = new FranchiseLocationInfoAction(actionInit);
 				fla.setDBConnection(dbConn);
 				fla.setAttributes(attributes);
-				Map<String, CenterModuleVO> ctrMod = cpa.getModuleData(franchiseId, req);
-				if (isPreview && isHomepage) fc.setModuleData(ctrMod);
 				fc.setFranchiseLocation(fla.getLocationInfo(franchiseId, true));
+				
+				// Get the module information for a particular franchise
+				CenterPageAction cpa = new CenterPageAction(actionInit);
+				cpa.setDBConnection(dbConn);
+				cpa.setAttributes(attributes);
+				req.setAttribute(Constants.PAGE_PREVIEW, true);
+				Map<String, CenterModuleVO> ctrMod = cpa.getModuleData(franchiseId, req, fc.getFranchiseLocation().getUseGlobalMod());
+				req.setAttribute(Constants.PAGE_PREVIEW, false);
+				if (isPreview && isHomepage) fc.setModuleData(ctrMod);
 				
 				cpa = null;
 				boolean pageApproval= false, needsApproval = false;

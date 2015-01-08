@@ -115,6 +115,7 @@ public class ModuleOptionAction extends SBActionAdapter{
 						req.setParameter("skipDelete", "true");
 					}
 					
+					// Determine whether we are dealing with a edit of the original or an edit of an edit.
 					if (Convert.formatInteger(req.getParameter("parentId")) == 0) {
 						req.setParameter("parentModuleId", req.getParameter("moduleOptionId"));
 					} else {
@@ -395,6 +396,9 @@ public class ModuleOptionAction extends SBActionAdapter{
 	 * @param req
 	 */
 	public void updateModuleOptions(SMTServletRequest req) throws SQLException {
+		// If we are dealing with an omnipresent global module asset we skip the assignment phase
+		if ("g".equals(req.getParameter("globalFlg"))) return;
+
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		String[] options = req.getParameterValues("selectedElements");
 		String locationId = req.getParameter("locationId");
@@ -493,6 +497,8 @@ public class ModuleOptionAction extends SBActionAdapter{
 		//UserRoleVO role = (UserRoleVO) req.getSession().getAttribute(Constants.ROLE_DATA);
 		CenterModuleOptionVO vo = new CenterModuleOptionVO(req);
 		boolean isInsert = (vo.getModuleOptionId() == 0);
+		// Determine if this is an omnipresent global asset.  These are treated differently from normal assets
+		boolean globalAsset = "g".equals(req.getParameter("globalFlg"));
 		
 		//if the user is not a global admin, and this is an update to an existing module,
 		//treat it as a NEW module.  This behavior will ensure the module gets approved
@@ -543,12 +549,18 @@ public class ModuleOptionAction extends SBActionAdapter{
 			ps.setString(++i, vo.getActionId());
 			if (Convert.formatBoolean(req.getParameter("globalFlg"), false)) {
 				ps.setNull(++i, java.sql.Types.INTEGER);
+			} else if (globalAsset) {
+				ps.setInt(++i, -1);
 			} else {
 				ps.setInt(++i, franchiseId);
 			}
 			if (isInsert) {
-				 ps.setInt(++i, vo.getModuleTypeId());
-				 ps.setInt(++i, vo.getApprovalFlag());
+				 ps.setInt(++i, vo.getModuleTypeId()); 
+				 if (globalAsset) {
+					 ps.setInt(++i, 100);
+				 } else {
+					 ps.setInt(++i, vo.getApprovalFlag());
+				 }
 				 ps.setInt(++i, vo.getParentId());
 				 ps.setString(++i, orgId);
 			}
