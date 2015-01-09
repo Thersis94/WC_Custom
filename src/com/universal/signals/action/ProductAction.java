@@ -1,6 +1,6 @@
 package com.universal.signals.action;
 
-// JDK 1.6.x
+// Java 7
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -20,6 +20,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.commerce.catalog.ProductAttributeVO;
 import com.siliconmtn.commerce.catalog.ProductCategoryVO;
 import com.siliconmtn.commerce.catalog.ProductVO;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.NavManager;
@@ -252,38 +253,61 @@ public class ProductAction extends SBActionAdapter {
 		s.append("order by a.product_id, b.attribute_id, attrib2_txt, order_no");
 		log.debug("Product Detail SQL: " + s + "|" + siteProductId);
 		
-		PreparedStatement ps = dbConn.prepareStatement(s.toString());
-		ps.setString(1, catalogId);
-		// prefix product ID with site prefix as product IDs in the PRODUCT table
-		// are prefixed upon import to ensure uniqueness
-		ps.setString(2, siteProductId);
-		//String aName = null;
-		List<ProductAttributeVO> pAttributes = new ArrayList<>();
-		ResultSet rs = ps.executeQuery();
+		PreparedStatement ps = null;
 		ProductVO product = null;
-		while (rs.next()) {
-			if (product == null) { 
-				product = new ProductVO(rs);
-				// set the vo's product ID to the custom product number for JSTL use
-				product.setProductId(product.getCustProductNo());
+		List<ProductAttributeVO> primaryAttributes = new ArrayList<>();
+		List<ProductAttributeVO> secondaryAttributes = new ArrayList<>();
+		try {
+			ps = dbConn.prepareStatement(s.toString());
+			ps.setString(1, catalogId);
+			// prefix product ID with site prefix as product IDs in the PRODUCT table
+			// are prefixed upon import to ensure uniqueness
+			ps.setString(2, siteProductId);
+			String aLevel = null;
+			ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				if (product == null) { 
+					product = new ProductVO(rs);
+					// set the vo's product ID to the custom product number for JSTL use
+					product.setProductId(product.getCustProductNo());
+				}
+	
+				// put all product attributes in a List for later processing.
+				if (rs.getString("product_attribute_id") != null) {
+					aLevel = rs.getString("attrib2_txt");
+					switch(aLevel) {
+						case "0":
+						case "1":
+							// add all level '0' or level '1' attributes
+							primaryAttributes.add(new ProductAttributeVO(rs));
+							break;
+						case "2":
+							// add ONLY 1 of the level '2' attributes so we have a placeholder
+							if (secondaryAttributes.size() == 0) {
+								secondaryAttributes.add(new ProductAttributeVO(rs));
+							}
+							break;
+						case "3":
+							// add ONLY 1 of the level '3' attributes so we have a placeholder
+							if (secondaryAttributes.size() < 2) {
+								secondaryAttributes.add(new ProductAttributeVO(rs));
+							}
+							break;
+						}
+				}
 			}
-
-			// put all product attributes in a List for later processing.
-			if (rs.getString("product_attribute_id") != null) {
-				pAttributes.add(new ProductAttributeVO(rs));
-			}
+		} finally {
+			DBUtil.close(ps);
 		}
 
 		// if we found no products for a category, initialize an empty ProductVO
 		if (product == null) product = new ProductVO();
 		
-		/*
-		 * Process (sort) attributes and add them to the product VO according
-		 * to business rules.
-		 */
-		processProductAttributes(product, pAttributes);
+		/* Sort attributes and add them to product VO according to business rules.*/
+		processProductAttributes(product, primaryAttributes, secondaryAttributes);
 		
-		pAttributes = null;
+		primaryAttributes = null;
+		secondaryAttributes = null;
 		this.setPageData(req, product.getTitle(), product.getMetaKywds(), product.getMetaDesc());
 		return product;
 	}
@@ -302,7 +326,8 @@ public class ProductAction extends SBActionAdapter {
 	 * @param product
 	 * @param pAttributes
 	 */
-	private void processProductAttributes(ProductVO product, List<ProductAttributeVO> pAttributes) {
+	private void processProductAttributes(ProductVO product, List<ProductAttributeVO> pAttributes,
+			List<ProductAttributeVO> sAttributes) {
 		log.debug("processProductAttributes...");
 		
 		/* Sort to guarantee order by attrib2 text value (standard options) or
@@ -335,12 +360,40 @@ public class ProductAction extends SBActionAdapter {
 		// product attribute map, attribute name is the key.
 		if (standard.size() > 0) {
 			product.addProdAttribute(prevStd, standard);
+			log.debug("added standard attribute key: " + prevStd);
 		}
 		
-		// now add the custom list to the product attribute map using specified key
+		/*
+		 * Loop the secondary attributes and add a key for each additional unique 
+		 * attribute.  These represent the 2nd and 3rd-level attributes which we
+		 * manipulate/populate in the JSTL.
+		 */
+		processSecondaryAttributes(product, sAttributes);
+		
+		// ALWAYS LAST! : now add the custom list to the product attribute map using specified key
 		if (custom.size() > 0) {
 			product.addProdAttribute("custom", custom);
+			log.debug("added custom attribute key: custom");
 		}
+	}
+	
+	/**
+	 * Loops the secondary attributes list and adds a key/value to the product's
+	 * product attributes map representing the additional levels of product 
+	 * attribute hierarchy for the product.
+	 * @param product
+	 * @param sAttributes
+	 */
+	private void processSecondaryAttributes(ProductVO product, List<ProductAttributeVO> sAttributes) {
+		log.debug("processSecondaryAttributes...");
+		if (sAttributes == null || sAttributes.isEmpty()) return;
+		
+		// add a mapping for each of the secondary attribute types
+		for (ProductAttributeVO pAttr : sAttributes) {
+			product.addProdAttribute(pAttr.getAttributeName(), new ArrayList<>());
+			log.debug("adding secondary attrib key: " + pAttr.getAttributeName());
+		}
+
 	}
 	
 	/**
@@ -603,6 +656,14 @@ public class ProductAction extends SBActionAdapter {
 		return data;
 	}
 	
+	/**
+	 * Retrieves subcategory data.
+	 * @param req
+	 * @param catalogId
+	 * @param cat
+	 * @return
+	 * @throws SQLException
+	 */
 	private List<ProductCategoryVO> retrieveSubCat(SMTServletRequest req, String catalogId, String cat) 
 	throws SQLException {
 		StringBuilder s = new StringBuilder();

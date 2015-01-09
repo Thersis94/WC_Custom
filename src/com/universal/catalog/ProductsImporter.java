@@ -119,7 +119,8 @@ public class ProductsImporter extends AbstractImporter {
 				continue; // skip the header row
 			}
 			
-			origProdId = fields[headers.get("SKUID")];
+			origProdId = StringUtil.checkVal(fields[headers.get("SKUID")]);
+			if (origProdId.length() == 0) continue;
 			//if (origProdId.toUpperCase().endsWith("G")) continue; // skip any product whose product ID ends with "G"
 			
 			try {
@@ -350,7 +351,7 @@ public class ProductsImporter extends AbstractImporter {
 			ps.setString(index++, "dollars");
 			ps.setString(index++, p.getTitle());
 			ps.setString(index++, p.getMetaDesc());
-			ps.setString(index++, p.getMetaKywds());
+			ps.setString(index++, StringUtil.truncate(p.getMetaKywds(), 255));
 			ps.setString(index++, p.getUrlAlias());
 			ps.setInt(index++, p.getDisplayOrderNo());
 		

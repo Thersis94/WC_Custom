@@ -19,9 +19,11 @@ import java.util.Set;
 
 
 
+
 // Log4J 1.2.15
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
+
 
 
 
@@ -66,6 +68,7 @@ public class CatalogImportManager {
 	private Map<String,String> prefixes; // key is catalogId
 	private Map<String,String> sourceURLs; // key is catalogId
 	private String[] sourceFileList;
+	private boolean importLocalFiles = false;
 
 	
 	// collections to capture mismatches that occur in import data.
@@ -134,10 +137,9 @@ public class CatalogImportManager {
 			uci.closeDbConnection();
 		}
 		
-		uci.sendAdminEmail(success);
-		
 		long end = System.currentTimeMillis();
 		uci.addMessage("Completed Product Import in " + ((end - start) / 1000) + " seconds");
+		uci.sendAdminEmail(success);
 	}
 
 	/**
@@ -154,6 +156,7 @@ public class CatalogImportManager {
 		iCat.addAttribute(CatalogImportVO.CATEGORY_SKIP_ID, skipCategoryId);
 		iCat.addAttribute(CatalogImportVO.CATEGORY_FEATURE_ID, featureCategoryId);
 		iCat.setSourceFileDelimiter(DELIMITER_SOURCE);
+		iCat.setUseLocalImportFiles(importLocalFiles);
 		String errMsg = null;
 		// loop the catalogs by catalog ID and import.
 		for (String catalogId : catalogIds) {
@@ -165,7 +168,7 @@ public class CatalogImportManager {
 				iCat.setSourceFileUrl(sourceURLs.get(catalogId));
 
 				// retrieve source files
-				String catalogSourcePath = retrieveSourceFiles(iCat);
+				String catalogSourcePath = retrieveSourceFiles(iCat, importLocalFiles);
 				
 				// set source file path for this catalog
 				iCat.setSourceFilePath(catalogSourcePath);
@@ -195,11 +198,12 @@ public class CatalogImportManager {
 	 * @return
 	 * @throws IOException
 	 */
-	private String retrieveSourceFiles(CatalogImportVO catalog) 
+	private String retrieveSourceFiles(CatalogImportVO catalog, boolean importLocalFiles) 
 			throws IOException {
 		//call retriever.
 		CatalogRetriever cr = new CatalogRetriever(config);
-		return cr.retrieveCatalogForImport(catalog.getCatalogId(), catalog.getSourceFileUrl(), sourceFileList);
+		return cr.retrieveCatalogForImport(catalog.getCatalogId(), 
+				catalog.getSourceFileUrl(), sourceFileList, importLocalFiles);
 	}
 		
 	/**
@@ -224,8 +228,13 @@ public class CatalogImportManager {
 		// import product data
 		List<ProductVO> products = importProducts(catalog);
 		
+		List<String> productFilter = buildProductFilter(products);
+		
+		Map<String,List<Map<String,List<String>>>> optionsIndexHierarchy = null;
+		optionsIndexHierarchy = importOptionsIndexHierarchy(catalog, productFilter);
+		
 		// import product options
-		importOptions(catalog, products);
+		importOptions(catalog, productFilter, optionsIndexHierarchy);
 		
 		// import product personalization options
 		importPersonalization(catalog, products);
@@ -259,13 +268,14 @@ public class CatalogImportManager {
 			throws SQLException {
 		StringBuilder sql = new StringBuilder();
 		sql.append("delete from ").append(tableName).append(" where PRODUCT_CATALOG_ID=?");
+		log.info("delete SQL: " + sql.toString() + "|" + productCatalogId);
 		PreparedStatement ps = null;
 		try {
 			ps = dbConn.prepareStatement(sql.toString());
 			ps.setString(1, productCatalogId);
 			ps.execute();
 		} catch (SQLException e) {
-			String errMsg = "Error deleting USA " + tableName + " data: " + e.getMessage();
+			String errMsg = "Error deleting USA " + tableName + " data: " + e;
 			log.error(errMsg);
 			addMessage(errMsg);
 			throw new SQLException(e.getMessage());
@@ -325,23 +335,45 @@ public class CatalogImportManager {
 	/**
 	 * Reads the options file and attempts to insert options into the 
 	 * attributes table.
-	 * @param catalogSourcePath
-	 * @throws SQLException 
-	 * @throws IOException 
-	 * @throws FileNotFoundException 
+	 * @param catalog
+	 * @return
+	 * @throws FileNotFoundException
+	 * @throws IOException
+	 * @throws SQLException
 	 */
-	private void importOptions(CatalogImportVO catalog, List<ProductVO> products) 
+	private void importOptions (CatalogImportVO catalog, List<String> productFilter,
+			Map<String,List<Map<String,List<String>>>> optionsIndexHierarchy) 
 			throws FileNotFoundException, IOException, SQLException {
 		log.info("importing options...");
 		addMessage("importing options...");
 		catalog.setSourceFileName(sourceFileList[2]);
 		OptionsImporter oi = new OptionsImporter(dbConn);
 		oi.setCatalog(catalog);
+		oi.setOptionsIndexHierarchy(optionsIndexHierarchy);
 		oi.manageOptions();
-		oi.insertProductOptions(products);
+		oi.insertProductOptions(productFilter);
 		// add any mismatch log entries
 		misMatchedOptions.addAll(oi.getMisMatchedOptions());
-		
+	}
+	
+	/**
+	 * Loads and parses the options index file into a map of product ID to
+	 * a list of options hierarchies where the List index corresponds to the level of
+	 * the hierarchy (e.g. index 0 is the top level parent in the hierarchy).
+	 * @param catalog
+	 * @return
+	 * @throws FileNotFoundException
+	 * @throws IOException
+	 */
+	private Map<String, List<Map<String, List<String>>>> 
+		importOptionsIndexHierarchy(CatalogImportVO catalog, List<String> productFilter) 
+				throws FileNotFoundException, IOException {
+		log.info("importing options index...");
+		addMessage("importing options index...");
+		catalog.setSourceFileName(sourceFileList[3]);
+		OptionsIndexImporter oii = new OptionsIndexImporter();
+		oii.setCatalog(catalog);
+		return oii.manageOptionsIndex(productFilter);
 	}
 	
 	/**
@@ -356,13 +388,34 @@ public class CatalogImportManager {
 			throws FileNotFoundException, IOException, SQLException {
 		log.info("importing personalization options...");
 		addMessage("importing personalization options...");
-		catalog.setSourceFileName(sourceFileList[3]);
+		catalog.setSourceFileName(sourceFileList[4]);
 		PersonalizationImporter pli = new PersonalizationImporter(dbConn);
 		pli.setCatalog(catalog);
 		pli.managePersonalization(catalog, products);
 		
 		// add any mismatch log entries
 		misMatchedPersonalization.addAll(pli.getMisMatchedPersonalization());
+	}
+	
+	/**
+	 * Returns a List of raw, non-prefixed product IDs derived from the List of 
+	 * ProductVOs that of products imported by the Product importer. We use this
+	 * to filter the options that we import.
+	 * @param products
+	 * @return
+	 */
+	private List<String> buildProductFilter(List<ProductVO> products) {
+		List<String> pIds = new ArrayList<>();
+		for (ProductVO p : products) {
+			/* 
+			 * !! NOTE: custProductNo is the raw, non-prefixed product ID.  We build 
+			 * this List to use as a filter when importing options because the import
+			 * source file is dirty (contains data for products that don't exist in the
+			 * product import source file).
+			 */
+			pIds.add(p.getCustProductNo());
+		}
+		return pIds;
 	}
 	
 	/**
@@ -489,7 +542,8 @@ public class CatalogImportManager {
 		}
 		
 		sourceFileList = StringUtil.checkVal(config.getProperty("sourceFileList")).split(DELIMITER_CONFIG);
-
+		importLocalFiles = Convert.formatBoolean(StringUtil.checkVal(config.getProperty("useLocalFilesForImport")));
+		log.info("Use Local File for Import: " + importLocalFiles);
 		topLevelParentCategoryId = config.getProperty("topLevelParentCategoryId");
 		topLevelCategoryId = config.getProperty("topLevelCategoryId");
 		skipCategoryId = config.getProperty("skipCategoryId");
@@ -539,5 +593,5 @@ public class CatalogImportManager {
 	private void addMessage(String msg) {
 		messageLog.add(msg);
 	}
-
+	
 }
