@@ -286,14 +286,14 @@ public class OptionsIndexImporter extends AbstractImporter {
 		log.debug("debugging options index hierarchy...");
 		log.debug("optionsIndexHierarchy map size is: " + optionsIndexHierarchy.size());
 		for (String pId : optionsIndexHierarchy.keySet()) {
-			if (pId.equals("CE2838")) {
+			//if (pId.equals("HP3418")) {
 				log.debug("productId: "+ pId);
 				
 				List<Map<String,List<String>>> pChild = optionsIndexHierarchy.get(pId);
 				log.debug("hierarchy levels: " + pChild.size());
 	
 				for (int i = 0; i < pChild.size(); i++) {
-					log.debug("expanding level " + i + "...");
+					log.debug("expanding hierarchy level " + i + "...");
 					Map<String,List<String>> level = pChild.get(i);
 					log.debug("level map size is: " + level.size());
 					for (String parent : level.keySet()) {
@@ -305,7 +305,7 @@ public class OptionsIndexImporter extends AbstractImporter {
 						}
 					}
 				}
-			}
+			//}
 		}
 	}
 	

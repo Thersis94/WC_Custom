@@ -572,8 +572,6 @@ public class OptionsImporter extends AbstractImporter {
 			} catch (Exception e) { log.error("Error closing BufferedReader, ", e); }
 		}
 		Map<String, List<ProductAttributeVO>> voHierarchy = buildInsertVOs(prodAttrHierarchy);
-		//for (String p : skipList) { log.debug("Skipped (mismatch) product ID: " + p); }
-		//debugProductAttributeHierarchy(prodAttrHierarchy);
 		//debugVOHierarchy(voHierarchy);
 		insertProductOptions(voHierarchy);
 	}
@@ -667,7 +665,6 @@ public class OptionsImporter extends AbstractImporter {
 		Map<String,Integer> voCount = new LinkedHashMap<>();
 		int totalVOs = 0;
 		for (String pId : optionsIndexHierarchy.keySet()) {
-			//if (pId.equals("CE2838")) {
 			//log.debug("building insert VOs for product ID: " + pId);
 			
 			// List of this product's attribute VOs for insert
@@ -708,15 +705,10 @@ public class OptionsImporter extends AbstractImporter {
 			totalVOs = totalVOs + attVOs.size();
 			master.put(pId, attVOs);
 			voCount.put(pId,  attVOs.size());
-			//}
 		}
 		log.debug("total VO size: " + totalVOs);
 		log.debug("master map size: " + master.size());
-		/*
-		for (String pId : voCount.keySet()) {
-			log.debug("product ID|vo count: " + pId + "|" + voCount.get(pId));
-		}
-		*/
+
 		return master;
 	}
 	
@@ -755,11 +747,10 @@ public class OptionsImporter extends AbstractImporter {
 				List<String> grandKids = childOptions.get(child);
 				if (grandKids != null && ! grandKids.isEmpty()) {
 					//log.debug("---------> found children of this child: " + grandKids);
-					currOptionLevel++; // increment current option level before recursive call
-					if (oHier.size() > currOptionLevel && aHier.size() > currOptionLevel) {
+					if (oHier.size() > (currOptionLevel + 1) && aHier.size() > (currOptionLevel + 1)) {
 						makeChildren(attVOs, oHier, aHier, 
-								oHier.get(currOptionLevel), aHier.get(currOptionLevel), 
-								newChild.getProductAttributeId(), grandKids, currOptionLevel);
+								oHier.get(currOptionLevel + 1), aHier.get(currOptionLevel + 1), 
+								newChild.getProductAttributeId(), grandKids, currOptionLevel + 1);
 					}
 				}
 			}
@@ -768,6 +759,10 @@ public class OptionsImporter extends AbstractImporter {
 		//log.debug("**** exiting makeChildren...");
 	}
 	
+	/**
+	 * Inserts product options records into the product attribute xr table.
+	 * @param voHierarchy
+	 */
 	private void insertProductOptions(Map<String, List<ProductAttributeVO>> voHierarchy) {
 		log.debug("insertProductOptions...");
 		if (voHierarchy == null || voHierarchy.isEmpty()) return;
