@@ -42,7 +42,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class ModuleOptionAction extends SBActionAdapter{
 	//This is a list of the modules that only allow one item at a time
-	final String modList = "11 12";
+	final String modList = "11 12 81";
 	
 	public ModuleOptionAction(ActionInitVO avo){
 		super(avo);
@@ -114,7 +114,12 @@ public class ModuleOptionAction extends SBActionAdapter{
 					if (!modList.contains(req.getParameter("moduleId"))) {
 						req.setParameter("skipDelete", "true");
 					}
-					req.setParameter("parentModuleId", req.getParameter("optionId"));
+					
+					if (Convert.formatInteger(req.getParameter("parentId")) == 0) {
+						req.setParameter("parentModuleId", req.getParameter("moduleOptionId"));
+					} else {
+						req.setParameter("parentModuleId", req.getParameter("parentId"));
+					}
 					
 				case CenterPageAction.MODULE_OPTION_UPDATE:
 					this.updateModuleOptions(req);
@@ -427,11 +432,7 @@ public class ModuleOptionAction extends SBActionAdapter{
 					opts[0] = req.getParameter("parentModuleId");
 				
 				psIns.setString(1, locationId);
-				if (req.hasParameter("moduleParentId")) {
-					psIns.setString(2, req.getParameter("moduleParentId"));
-				} else {
-					psIns.setString(2, opts[0]);
-				}
+				psIns.setString(2, opts[0]);
 				psIns.setInt(3, idx);
 				psIns.setTimestamp(4, Convert.getCurrentTimestamp());
 				psIns.addBatch();

@@ -136,7 +136,7 @@ public class UnitLedgerAction extends SBActionAdapter {
 				vo = new UnitVO(rs);
 
 		} catch(SQLException sqle){
-			log.debug(sqle);
+			log.error(sqle);
 		} finally {
 			try{ps.close();}catch(Exception e){}
 		}
