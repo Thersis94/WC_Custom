@@ -9,6 +9,7 @@ import java.sql.Statement;
 import java.util.LinkedList;
 import java.util.List;
 
+
 // FASTSIGNS Libs
 import com.fastsigns.action.franchise.vo.FranchiseVO;
 
@@ -66,6 +67,8 @@ public abstract class SiteWizardAction extends SBActionAdapter implements FSSite
 	public String negMsg3 = " because it already exists";
 	public String negMsg4 = "Unable to add new site, Franchise ID or Franchise Location Id contained letters: ";
 	
+	public Integer centerId = null;
+	
 	/**
 	 * Default Constructor.
 	 */
@@ -84,9 +87,12 @@ public abstract class SiteWizardAction extends SBActionAdapter implements FSSite
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	public void build(SMTServletRequest req) throws ActionException {
+		//grab the Id to identify the id of consultation portlet
+		centerId = Convert.formatInteger(req.getParameter("dealerLocationId"));
 		
 		// Assign the display types
 		this.assignTypes();
+		
 		// Store desired workflow directive
 		int workflow = Integer.parseInt(req.getParameter("subRule"));
 		String msg = negMsg1 + ": " + req.getParameter("dealerName") + negMsg3;

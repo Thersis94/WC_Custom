@@ -158,6 +158,7 @@ public class SiteWizardAction_GB extends SiteWizardAction {
 		//defDisplay.add(makePageModule(true, false, false, "0a00141332afb0be6020f5cb7842bf78","c0a80a07614b3c24224dd3d77221237a", "HEADER_TOP_LEFT_CONTENT", 0, 1));	// World Link 2012
 		defDisplay.add(makePageModule(true, false, false, "c0a80223d5a0e718bb741827283b9ef8","c0a80a07614b3c24224dd3d77221237a", "HEADER_TOP_LEFT_CONTENT", 0, 1));	// World Link 2012 updated
 		defDisplay.add(makePageModule(false, true, true, "0a00141332afb0c46020f5cb973253a9","c0a80a07614b3c24224dd3d77221237a", "HEADER_TOP_LEFT_CONTENT", 0, 1));	// World Link 2012 Logged In
+		defDisplay.add(makePageModule(true, true, false, "FTS_CENTER_PAGE_"+centerId, "0a00141d8afabb8f1d07f6377fa000a6", "HEADER_RIGHT", 0, 1));		//Consultation portlet
 		defDisplay.add(makePageModule(true, true, true, "0a00141332afb0b86020f5cb6ae7d9d3", "c0a802411c9e09843c052afd87f4bba1", "SITE_SEARCH", 1, 0));				// Site Search 2012
 		defDisplay.add(makePageModule(true, true, true, null, "c0a802234b3c124378e7a6703fa3445", null, 1, 4));														// White Board
 
@@ -168,6 +169,7 @@ public class SiteWizardAction_GB extends SiteWizardAction {
 		//secDisplay.add(makePageModule(true, false, false, "0a00141332afb0be6020f5cb7842bf78","c0a80a07614b3c24224dd3d77221237a", "HEADER_TOP_LEFT_CONTENT", 0, 1));	// World Link 2012
 		secDisplay.add(makePageModule(true, false, false, "c0a80223d5a0e718bb741827283b9ef8","c0a80a07614b3c24224dd3d77221237a", "HEADER_TOP_LEFT_CONTENT", 0, 1));	// World Link 2012 updated
 		secDisplay.add(makePageModule(false, true, true, "0a00141332afb0c46020f5cb973253a9","c0a80a07614b3c24224dd3d77221237a", "HEADER_TOP_LEFT_CONTENT", 0, 1));	// World Link 2012 Logged In
+		secDisplay.add(makePageModule(true, true, false, "FTS_CENTER_PAGE_"+centerId, "0a00141d8afabb8f1d07f6377fa000a6", "HEADER_RIGHT", 0, 1));		//Consultation Portlet
 		secDisplay.add(makePageModule(true, true, true, "0a00141332afb0b86020f5cb6ae7d9d3", "c0a802411c9e09843c052afd87f4bba1", "SITE_SEARCH", 1, 0));				// Site Search 2012
 		secDisplay.add(makePageModule(true, true, true, "45102F48BA5247C98BFBD00BBA9B8AEC", "c0a80a076e1dc62789a3565692e8803e", null, 2, 1));						// Breadcrumbs
 		secDisplay.add(makePageModule(true, true, true, null, "c0a802234b3c124378e7a6703fa3445", null, 1, 4));														// White Board
