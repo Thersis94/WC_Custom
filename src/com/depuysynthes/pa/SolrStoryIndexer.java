@@ -59,6 +59,19 @@ public class SolrStoryIndexer extends SMTAbstractIndex {
 	}
 	
 	/**
+	 * Removes a single item from the index due to a story being deleted
+	 * @param server
+	 * @param documentId
+	 */
+	public void removeSingleItem (HttpSolrServer server, String documentId) {
+		try {
+			server.deleteById(documentId);
+		} catch (Exception e) {
+			log.error("Unable to delete story with document id of " + documentId, e);
+		}
+	}
+	
+	/**
 	 * Set the fields for the solr document based on the SolrStoryVO we have been given
 	 * @param doc
 	 * @param vo
@@ -73,9 +86,11 @@ public class SolrStoryIndexer extends SMTAbstractIndex {
 		doc.setField(SearchDocumentHandler.AUTHOR, vo.getAuthor());
 		doc.setField(SearchDocumentHandler.SUMMARY, vo.getContent());
 		doc.setField(SearchDocumentHandler.MODULE_TYPE, "PATIENT_AMBASSADOR");
+		doc.setField(SearchDocumentHandler.DETAIL_IMAGE, vo.getDetailImage());
 		doc.setField(SearchDocumentHandler.STATE, vo.getState());
 		doc.setField(SearchDocumentHandler.CITY, vo.getCity());
 		doc.setField(SearchDocumentHandler.ZIP, vo.getZip());
+		doc.setField(SearchDocumentHandler.UPDATE_DATE, Convert.getCurrentTimestamp());
 		doc.setField("lat_coordinate", Convert.formatDouble(vo.getLat()));
 		doc.setField("lng_coordinate", Convert.formatDouble(vo.getLng()));
 		
