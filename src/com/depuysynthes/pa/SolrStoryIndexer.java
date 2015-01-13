@@ -38,7 +38,11 @@ public class SolrStoryIndexer extends SMTAbstractIndex {
 	public SolrStoryIndexer(Properties config) {
 		super(config);
 	}
-	
+
+	public SolrStoryIndexer() {
+		super();
+	}
+
 	/**
 	 * Add a single SolrStoryVO to the index
 	 * @param server
@@ -64,8 +68,10 @@ public class SolrStoryIndexer extends SMTAbstractIndex {
 	 * @param documentId
 	 */
 	public void removeSingleItem (HttpSolrServer server, String documentId) {
+		log.debug("removing Document: " + documentId);
 		try {
 			server.deleteById(documentId);
+			server.commit();
 		} catch (Exception e) {
 			log.error("Unable to delete story with document id of " + documentId, e);
 		}

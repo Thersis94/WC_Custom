@@ -111,7 +111,7 @@ public class SolrStoryVO extends SBModuleVO {
 		joints.add(joint);
 	}
 	
-	public void setJoints(ArrayList<String> joints) {
+	public void setJoints(List<String> joints) {
 		this.joints = joints;
 	}
 
@@ -119,7 +119,7 @@ public class SolrStoryVO extends SBModuleVO {
 		return hobbies;
 	}
 	
-	public void setHobbies(ArrayList<String> hobbies) {
+	public void setHobbies(List<String> hobbies) {
 		this.hobbies = hobbies;
 	}
 	
