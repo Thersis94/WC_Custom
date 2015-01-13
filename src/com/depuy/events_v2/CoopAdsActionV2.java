@@ -65,67 +65,64 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 		String reqType = StringUtil.checkVal(req.getParameter("reqType"));
-		
+
 		// create the VO based on the incoming request object
 		List<CoopAdVO> voList = createAdList(req);
-		
-		for( int i=0; i<voList.size(); i++ ){
+
+		for (int i=0; i < voList.size(); i++) {
 			CoopAdVO vo = voList.get(i);
-			
+
 			//record the transaction
-			switch (reqType){
-			case "approveNewspaperAd":
-				vo.setStatusFlg(CLIENT_APPROVED_AD);
-				this.saveAdApproval(vo, req);
-				break;
-			case "declineNewspaperAd":
-				vo.setStatusFlg(CLIENT_DECLINED_AD);
-				this.saveAdApproval(vo, req);
-				break;	
-			case "coopAdsSurgeonApproval":
-				this.saveSurgeonsAdApproval(vo);
-				break;
-				
-			case "coopAdsSubmit":
-				vo.setStatusFlg(CLIENT_SUBMITTED);
-				vo = this.saveAd(req, site, vo);
-				break;
-				
-			case "radioAdsSubmit":
-				vo.setStatusFlg(CLIENT_APPROVED_AD);
-				vo = this.saveAd(req, site, vo);
-				break;
-				
-			case "eventInfo":
-				this.saveAd(req,site,vo);
-				continue;
-				
-			case "uploadAdFile":
-				this.saveAd(req, site, vo);
-				break;
-				
-			default:
-				break;
+			switch(reqType) {
+				case "approveNewspaperAd":
+					vo.setStatusFlg(CLIENT_APPROVED_AD);
+					this.saveAdApproval(vo, req);
+					break;
+				case "declineNewspaperAd":
+					vo.setStatusFlg(CLIENT_DECLINED_AD);
+					this.saveAdApproval(vo, req);
+					break;	
+				case "coopAdsSurgeonApproval":
+					this.saveSurgeonsAdApproval(vo);
+					break;
+
+				case "coopAdsSubmit":
+					vo.setStatusFlg(CLIENT_SUBMITTED);
+					vo = this.saveAd(req, site, vo);
+					break;
+
+				case "radioAdsSubmit":
+					vo.setStatusFlg(CLIENT_APPROVED_AD);
+					vo = this.saveAd(req, site, vo);
+					break;
+
+				case "eventInfo":
+					this.saveAd(req,site,vo);
+					continue;
+
+				case "uploadAdFile":
+					this.saveAd(req, site, vo);
+					break;
+
+				default:
+					break;
 			}
-			
+
 			req.setAttribute("coopAdId", vo.getCoopAdId());
-	
-			// radio ads send no emails.
-			if ("radio".equalsIgnoreCase(vo.getAdType()) || "eventInfo".equals(req.getParameter("reqType")))
+
+			// radio ads send no emails
+			if ("radio".equalsIgnoreCase(vo.getAdType()))
 				continue;
-	
+
 			// grab the full VO from the database for use in the emails below...
 			vo = retrieve(vo.getCoopAdId(), vo.getEventPostcardId()).get(0);
-			
-			// avoid nulls ahead when we compare statusFlgs
-			if (vo.getStatusFlg() == null)
-				vo.setStatusFlg(0);
-	
+
 			sendNotificationEmail(vo, reqType, site, user, req, i);
 		}
-		
+
 		return;
 	}
+
 	
 	/**
 	 * Creates a list of CoopAdVO's from the seminar submission form. Used for 
@@ -133,39 +130,25 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	private List<CoopAdVO> createAdList( SMTServletRequest req ){
-		//Since the maximum number of ads (per type) is 3, and the only 2 types
-		//we have are print and online, the maximum allowed is 6
+	private List<CoopAdVO> createAdList(SMTServletRequest req) {
+		//determine how many iterations to run.  Internet ads start at #4
+		//current UI supports 3 print and 1 online.
 		final int MAX_ADS = 6;
-		List<CoopAdVO> adList = new ArrayList<CoopAdVO>();
-		//Submitted print ad count
-		Integer printAds = Convert.formatInteger( req.getParameter("printAds") );
-		//Submitted online ad count
-		Integer onlineAds = Convert.formatInteger( req.getParameter("onlineAds") );
-		
-		//Since there may be multiple ads, and they're grouped by suffix, they won't
-		//be set by passing request object to CoopAdVO(req)
-		for (int i=0; i < MAX_ADS; ++i){
-			CoopAdVO vo = null;
-			boolean hasOnlineFlg = req.hasParameter("online_flg_"+i);
-			Integer onlineFlg = Convert.formatInteger( req.getParameter("onlineFlg") );
-			
-			//0-2 for print ads
-			if ( i < printAds ){
-				vo = new CoopAdVO(req);
-				assignAdFields(req, vo, i, (hasOnlineFlg ? onlineFlg : 0 ) );
+		List<CoopAdVO> adList = new ArrayList<>();
+		CoopAdVO vo = null;
+		for (int i=0; i < MAX_ADS; ++i) {
+			int onlineFlg = (i > 4) ? 1 : 0;
+
+			vo = new CoopAdVO(req);
+			assignAdFields(req, vo, i, onlineFlg);
+			//the ad block/form was left blank and can be discarded if newspaperName was left blank
+			if (StringUtil.checkVal(vo.getNewspaper1Text()).length() > 0) 
 				adList.add(vo);
-			//3-5 for online ads
-			} else if (i < (onlineAds + (MAX_ADS/2)) && i >= (MAX_ADS/2)){
-				vo = new CoopAdVO(req);
-				assignAdFields(req, vo, i, (hasOnlineFlg ? onlineFlg : 1 ));
-				adList.add(vo);
-			}
 		}
-		
+
 		return adList;
 	}
-	
+
 	/**
 	 * Sets ad info for a CoopAdVO, using the specified suffix to identify 
 	 * values from the request object.
@@ -174,113 +157,113 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 	 * @param suffix
 	 * @param onlineFlg 0 for print ads, 1 for online ads
 	 */
-	private void assignAdFields( SMTServletRequest req, CoopAdVO vo, int suffix, int onlineFlg ){
-		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		
-		vo.setNewspaper1Phone( req.getParameter("newspaper1Phone_"+suffix) );
-		vo.setNewspaper1Text( req.getParameter("newspaper1Text_"+suffix) );
-		vo.setContactName( req.getParameter("contactName_"+suffix) );
-		vo.setAdCount( Convert.formatInteger(req.getParameter("adCount_"+suffix)) );
-		vo.setWeeksAdvance( Convert.formatInteger( req.getParameter("weeksAdvance_"+suffix)));
-		vo.setAdType( req.getParameter("adType_"+suffix) );
-		vo.setInstructionsText( req.getParameter("instructionsText_"+suffix) );
-		vo.setHospitalInfo( req.getParameter("hospitalInfo_"+suffix) );
-		vo.setSurgeonInfo( req.getParameter("surgeonInfo_"+suffix) );
-		vo.setTotalCostNo( Convert.formatDouble(req.getParameter("totalCostNo_"+suffix)));
-		vo.setCostToDepuyNo( Convert.formatDouble(req.getParameter("costToDepuyNo_"+suffix)));
-		vo.setCostToRepNo( Convert.formatDouble( req.getParameter("costToRepNo_"+suffix)));
-		vo.setCostToSurgeonNo( Convert.formatDouble( req.getParameter("costToSurgeonNo_"+suffix)));
-		vo.setCostToHospitalNo( Convert.formatDouble( req.getParameter("costToHospitalNo_"+suffix)));
-		vo.setCostToPartyNo( Convert.formatDouble( req.getParameter("costToPartyNo_"+suffix)));
-		vo.setStatusFlg( Convert.formatInteger( req.getParameter("adStatusFlg_"+suffix)));
-		vo.setOnlineFlg( onlineFlg );
-		vo.setSurgeonStatusFlg( Convert.formatInteger( req.getParameter("surgeonStatusFlg_"+suffix) ));
-		vo.setApprovedPaperName( StringUtil.checkVal( req.getParameter("approvedPaperName_"+suffix)) );
-		vo.setAdDatesText( req.getParameter("adDatesText_"+suffix) );
-		
+	private void assignAdFields(SMTServletRequest req, CoopAdVO vo, int suffix, int onlineFlg) {
+		vo.setNewspaper1Text(req.getParameter("newspaperText_"+suffix));
+		vo.setNewspaper1Phone(req.getParameter("newspaperPhone_"+suffix));
+		vo.setContactName(req.getParameter("contactName_"+suffix));
+		vo.setAdCount(Convert.formatInteger(req.getParameter("adCount_"+suffix)));
+		vo.setWeeksAdvance(Convert.formatInteger(req.getParameter("weeksAdvance_"+suffix)));
+		vo.setAdType(req.getParameter("adType"));
+//		vo.setInstructionsText( req.getParameter("instructionsText_"+suffix) );
+//		vo.setHospitalInfo( req.getParameter("hospitalInfo") );
+//		vo.setSurgeonInfo( req.getParameter("surgeonInfo") );
+//		vo.setTotalCostNo( Convert.formatDouble(req.getParameter("totalCostNo_"+suffix)));
+//		vo.setCostToDepuyNo( Convert.formatDouble(req.getParameter("costToDepuyNo_"+suffix)));
+//		vo.setCostToRepNo( Convert.formatDouble( req.getParameter("costToRepNo_"+suffix)));
+//		vo.setCostToSurgeonNo( Convert.formatDouble( req.getParameter("costToSurgeonNo_"+suffix)));
+//		vo.setCostToHospitalNo( Convert.formatDouble( req.getParameter("costToHospitalNo_"+suffix)));
+//		vo.setCostToPartyNo( Convert.formatDouble( req.getParameter("costToPartyNo_"+suffix)));
+		vo.setStatusFlg(Convert.formatInteger(req.getParameter("adStatusFlg_"+suffix), CLIENT_SUBMITTED));
+		vo.setOnlineFlg(onlineFlg);
+//		vo.setSurgeonStatusFlg( Convert.formatInteger( req.getParameter("surgeonStatusFlg_"+suffix) ));
+//		vo.setApprovedPaperName( StringUtil.checkVal( req.getParameter("approvedPaperName_"+suffix)) );
+//		vo.setAdDatesText( req.getParameter("adDatesText_"+suffix) );
+
 		// upload the ad files
-		vo.setAdFileUrl(this.saveFile(req, "adFileUrl_"+suffix, "/ads/", site));
-		vo.setAdFile2Url( saveFile(req, "adFile2Url_"+suffix, "/ads/", site) );
-		vo.setAdFile3Url( saveFile(req, "adFile3Url_"+suffix, "/ads/", site) );
-		vo.setInvoiceFile(saveFile(req, "invoiceFile_"+suffix, "/invoice/" ,site ));
-		vo.setSurgeonImageUrl( saveFile(req, "surgImgUrl_"+suffix, "/ads/logos", site) );
-		vo.setHospital1Img( saveFile(req, "hospital1Logo_"+suffix, "/ads/logos", site));
-		vo.setHospital2Img(saveFile(req, "hospital2Logo_"+suffix, "/ads/logos", site));
-		vo.setHospital3Img(saveFile(req, "hospital3Logo_"+suffix, "/ads/logos", site));
-		
-		if (req.hasParameter("coopAdId_"+suffix)){
-			vo.setCoopAdId( req.getParameter("coopAdId_"+suffix));
-		}
+//		vo.setAdFileUrl(this.saveFile(req, "adFileUrl_"+suffix, "/ads/", site));
+//		vo.setAdFile2Url( saveFile(req, "adFile2Url_"+suffix, "/ads/", site) );
+//		vo.setAdFile3Url( saveFile(req, "adFile3Url_"+suffix, "/ads/", site) );
+//		vo.setInvoiceFile(saveFile(req, "invoiceFile_"+suffix, "/invoice/" ,site ));
+//		vo.setSurgeonImageUrl( saveFile(req, "surgImgUrl_"+suffix, "/ads/logos", site) );
+//		vo.setHospital1Img( saveFile(req, "hospital1Logo_"+suffix, "/ads/logos", site));
+//		vo.setHospital2Img(saveFile(req, "hospital2Logo_"+suffix, "/ads/logos", site));
+//		vo.setHospital3Img(saveFile(req, "hospital3Logo_"+suffix, "/ads/logos", site));
+
+		//if this is an edit, grab the pkId of the ad
+		if (req.hasParameter("coopAdId_"+suffix))
+			vo.setCoopAdId(req.getParameter("coopAdId_"+suffix));
 	}
+
 	
 	private void sendNotificationEmail(CoopAdVO vo, String reqType, SiteVO site, 
 			UserDataVO user, SMTServletRequest req, int index ) {
-		
 		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
-		
+
 		// send appropriate notification emails
 		CoopAdsEmailer emailer = new CoopAdsEmailer(actionInit);
 		emailer.setAttributes(attributes);
 		emailer.setDBConnection(dbConn);
 
-		switch( vo.getStatusFlg() ){
-		
-		case SURG_DECLINED_AD:
-			// surgeon declined ad
-			log.debug("sending surgeon declined email");
-			emailer.notifyAdminOfSurgeonsDecline(sem, site, req.getParameter("notesText_"+index));
-			break;
-		
-		case SURG_APPROVED_AD:
-			// surgeon approved ad
-			log.debug("sending surgeon approved email");
-			emailer.notifyAdminOfSurgeonsApproval(sem, site);
-			break;
-		
-		case CLIENT_SUBMITTED:
-			// log.debug("sending client submitted email");
-			// emailer.notifyAdminOfAdSubmittal(vo, site, user, req);
-			break;
-			
-		case PENDING_CLIENT_APPROVAL:
-			log.debug("sending client's approval notice email");
+		// avoid nulls ahead when we compare statusFlgs
+		if (vo.getStatusFlg() == null) vo.setStatusFlg(0);
 
-			// ask the Rep to approve their portion
-			emailer.requestCoordinatorApproval(sem, site);
-			break;
-			
-		case CLIENT_APPROVED_AD:
-			log.debug("sending client approved email");
-			emailer.notifyAdminOfAdApproval(sem, site, user);
-			break;
-			
-		case PENDING_SURG_APPROVAL:
-			//email the surgeon to approve their portion of the ad
-			String eventType = sem.getEvents().get(0).getEventTypeCd();
-			if (eventType.equalsIgnoreCase("CFSEM50") || eventType.equalsIgnoreCase("CFSEM25")) {
-				// ask the Surgeon to approve their portion
-				emailer.requestAdApprovalOfSurgeon(sem, site);
-			}
-			break;
+		switch (vo.getStatusFlg()) {
+			case SURG_DECLINED_AD:
+				// surgeon declined ad
+				log.debug("sending surgeon declined email");
+				emailer.notifyAdminOfSurgeonsDecline(sem, site, req.getParameter("notesText_"+index));
+				break;
 
-		case CLIENT_DECLINED_AD:
-			log.debug("sending admin declined email");
-			emailer.notifyAdminOfAdDeclined(sem, site, user, req.getParameter("notesText_"+index));
-			break;
-			
-		case CLIENT_PAYMENT_RECD:
-			log.debug("sending payment recieved email");
-			emailer.notifyAdminOfAdPaymentRecd(sem, site, user);
-			break;
-			
-		case AD_DETAILS_RECD:
-			log.debug("sending novus file received email");
-			emailer.notifyNovusUpload(sem, site);
-			break;
+			case SURG_APPROVED_AD:
+				// surgeon approved ad
+				log.debug("sending surgeon approved email");
+				emailer.notifyAdminOfSurgeonsApproval(sem, site);
+				break;
+
+			case CLIENT_SUBMITTED:
+				// log.debug("sending client submitted email");
+				// emailer.notifyAdminOfAdSubmittal(vo, site, user, req);
+				break;
+
+			case PENDING_CLIENT_APPROVAL:
+				log.debug("sending client's approval notice email");
+
+				// ask the Rep to approve their portion
+				emailer.requestCoordinatorApproval(sem, site);
+				break;
+
+			case CLIENT_APPROVED_AD:
+				log.debug("sending client approved email");
+				emailer.notifyAdminOfAdApproval(sem, site, user);
+				break;
+
+			case PENDING_SURG_APPROVAL:
+				//email the surgeon to approve their portion of the ad
+				String eventType = sem.getEvents().get(0).getEventTypeCd();
+				if (eventType.equalsIgnoreCase("CFSEM50") || eventType.equalsIgnoreCase("CFSEM25")) {
+					// ask the Surgeon to approve their portion
+					emailer.requestAdApprovalOfSurgeon(sem, site);
+				}
+				break;
+
+			case CLIENT_DECLINED_AD:
+				log.debug("sending admin declined email");
+				emailer.notifyAdminOfAdDeclined(sem, site, user, req.getParameter("notesText_"+index));
+				break;
+
+			case CLIENT_PAYMENT_RECD:
+				log.debug("sending payment recieved email");
+				emailer.notifyAdminOfAdPaymentRecd(sem, site, user);
+				break;
+
+			case AD_DETAILS_RECD:
+				log.debug("sending novus file received email");
+				emailer.notifyNovusUpload(sem, site);
+				break;
 		}
 	}
 
-	
+
 	/**
 	 * adds or updates the enter Ad, first checking to see if this ad already exists 
 	 * for the given type and postcard. (was an issue with duplicates and people
@@ -446,16 +429,16 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	private void saveAdApproval(CoopAdVO vo, SMTServletRequest req) throws ActionException {
-		
+
 		Integer statusLvl = Convert.formatInteger( vo.getStatusFlg() );
-		
+
 		/* No longer skip to surgeon approval request per request
 		final DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
 		if ( statusLvl == CLIENT_APPROVED_AD && sem.getEvents().get(0).getEventTypeCd().startsWith("CFSEM")){
 			//Skip straight to surgeon approval for co-funded
 			statusLvl = PENDING_SURG_APPROVAL;
 		}*/
-		
+
 		StringBuilder sql = new StringBuilder();
 		sql.append("UPDATE ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("DEPUY_EVENT_COOP_AD SET STATUS_FLG=?, UPDATE_DT=? ");
@@ -566,7 +549,7 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 		}
 		return ads;
 	}
-	
+
 	/**
 	 * Save the ad's invoice to binary directory and path to db, and send email notification
 	 * @param req
@@ -582,28 +565,28 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 		final String adId = StringUtil.checkVal(coopAdId);
 		if (adId.isEmpty())
 			throw new ActionException("Missing ad Id.");
-		
+
 		//Create prepared statement
 		StringBuilder sql = new StringBuilder(90);
 		sql.append("update ").append(customDB).append("DEPUY_EVENT_COOP_AD set INVOICE_FILE_URL=?, ");
 		sql.append("UPDATE_DT=? where COOP_AD_ID=?");
 		log.debug(sql+" | "+adId);
-		
+
 		//Update path in db
 		try( PreparedStatement ps = dbConn.prepareStatement(sql.toString()) ){
-			
+
 			int i = 0;
 			ps.setString(++i, saveFile(req, fieldName, subPath ,site ));
 			ps.setTimestamp(++i, Convert.getCurrentTimestamp());
 			ps.setString(++i, adId);
-			
+
 			ps.executeUpdate();
-			
+
 		} catch ( SQLException e ){
 			log.error("Failed to update invoice file path");
 			throw new ActionException(e);
 		}
-		
+
 		//Send notification email
 		CoopAdsEmailer mailer = new CoopAdsEmailer(actionInit);
 		mailer.setAttributes(attributes);
