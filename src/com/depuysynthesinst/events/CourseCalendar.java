@@ -1,27 +1,27 @@
 package com.depuysynthesinst.events;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.sql.SQLException;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.http.SMTServletRequest;
-import com.siliconmtn.util.parser.AnnotationXlsParser;
-import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.siliconmtn.util.databean.FilePartDataBean;
+import com.siliconmtn.util.parser.AnnotationParser;
 import com.smt.sitebuilder.action.SBModuleVO;
-import com.smt.sitebuilder.action.event.EventFacadeAction;
+import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.event.EventEntryAction;
+import com.smt.sitebuilder.action.event.EventFacadeAction;
 import com.smt.sitebuilder.action.event.vo.EventEntryVO;
 import com.smt.sitebuilder.action.event.vo.EventGroupVO;
 import com.smt.sitebuilder.action.event.vo.EventTypeVO;
@@ -76,16 +76,17 @@ public class CourseCalendar extends SimpleActionAdapter {
 	 * @throws ActionException
 	 */
 	private void processUpload(SMTServletRequest req) throws ActionException {
-		AnnotationXlsParser parser = new AnnotationXlsParser();
-		//Create a list of vo classnames
-		LinkedList<Class<?>> classList = new LinkedList<>();
-		classList.add(CourseCalendarVO.class);
-		
+		AnnotationParser parser;
+		FilePartDataBean fpdb = req.getFile("xlsFile");
+		try {
+			parser = new AnnotationParser(CourseCalendarVO.class, fpdb.getExtension());
+		} catch(InvalidDataException e) {
+			throw new ActionException("could not load import file", e);
+		}
 		try {
 			//Gets the xls file from the request object, and passes it to the parser.
 			//Parser then returns the list of populated beans
-			Map< Class<?>, Collection<Object>> beans = parser.readFileData(
-					req.getFile("xlsFile").getFileData(), classList);
+			Map< Class<?>, Collection<Object>> beans = parser.parseFile(fpdb, true);
 			
 			ArrayList<Object> beanList = null;
 			EventEntryAction eventAction = new EventEntryAction();
@@ -94,18 +95,15 @@ public class CourseCalendar extends SimpleActionAdapter {
 			//Disable the db autocommit for the insert batch
 			dbConn.setAutoCommit(false);
 			
-			for ( Class<?> className : beans.keySet() ) {
-				//Change the generic collection to an arrayList for the import method
-				beanList = new ArrayList<>(beans.get(className));
-				for (Object o : beanList) {
-					//set the eventTypeId for each
-					EventEntryVO vo = (EventEntryVO) o;
-					vo.setEventTypeId(req.getParameter("eventTypeId"));
-					vo.setStatusFlg(EventFacadeAction.STATUS_APPROVED);
-				}
-				
-				eventAction.importBeans(beanList, req.getParameter("attrib1Text"));
+			beanList = new ArrayList<>(beans.get(CourseCalendarVO.class));
+			for (Object o : beanList) {
+				//set the eventTypeId for each
+				CourseCalendarVO vo = (CourseCalendarVO) o;
+				vo.setEventTypeId(req.getParameter("eventTypeId"));
+				vo.setStatusFlg(EventFacadeAction.STATUS_APPROVED);
 			}
+			eventAction.importBeans(beanList, req.getParameter("attrib1Text"));
+			
 			//commit only after the entire import succeeds
 			dbConn.commit();
 			
@@ -220,7 +218,6 @@ public class CourseCalendar extends SimpleActionAdapter {
 	 * @param req
 	 * @param vo
 	 */
-	@SuppressWarnings("unchecked")
 	private void filterDataByLocation(SMTServletRequest req, EventGroupVO grpVo) {
 		if (!req.hasParameter("location")) return;
 		List<String> filters = Arrays.asList(req.getParameter("location").split("~"));
@@ -245,7 +242,6 @@ public class CourseCalendar extends SimpleActionAdapter {
 	 * @param req
 	 * @param vo
 	 */
-	@SuppressWarnings("unchecked")
 	private void filterDataBySpecialty(SMTServletRequest req, EventGroupVO grpVo) {
 		if (!req.hasParameter("specialty")) return;
 		List<String> filters = Arrays.asList(req.getParameter("specialty").split("~"));

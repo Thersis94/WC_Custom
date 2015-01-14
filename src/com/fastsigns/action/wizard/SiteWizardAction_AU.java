@@ -158,8 +158,10 @@ public class SiteWizardAction_AU extends SiteWizardAction {
 		//defDisplay.add(makePageModule("0a00141332afb0976020f5cb8b3c98f7","c0a8022363bdd195bac696fd46636514", null, 2, 2));										// Center Page Slider 2012
 		defDisplay.add(makePageModule(true, true, true, null,"c0a8016564a89155842b990af697746c", null, 2, 5));														// Modules 2012
 		defDisplay.add(makePageModule(true, true, true, null,"c0a80165f0c0ccdaef974a12b5ee3faa", null, 3, 7));														// Right Rail 2012
-		defDisplay.add(makePageModule(true, false, false, "0a0014137c775065ed1c4b27c7710463","c0a80a07614b3c24224dd3d77221237a", "HEADER_TOP_LEFT_CONTENT", 0, 1));	// World Link 2012
+		//defDisplay.add(makePageModule(true, false, false, "0a0014137c775065ed1c4b27c7710463","c0a80a07614b3c24224dd3d77221237a", "HEADER_TOP_LEFT_CONTENT", 0, 1));	// World Link 2012
+		defDisplay.add(makePageModule(true, false, false, "c0a80223d5a1c26665696a7b4167333f","c0a80a07614b3c24224dd3d77221237a", "HEADER_TOP_LEFT_CONTENT", 0, 1));	// World Link 2012 updated
 		defDisplay.add(makePageModule(false, true, true, "0a0014137c77506aed1c4b2723bd7ce3","c0a80a07614b3c24224dd3d77221237a", "HEADER_TOP_LEFT_CONTENT", 0, 1));	// World Link 2012
+		defDisplay.add(makePageModule(true, true, false, "FTS_CENTER_PAGE_"+centerId, "0a00141d8afabb8f1d07f6377fa000a6", "HEADER_RIGHT", 0, 1)); 		//Consultation Portlet
 		defDisplay.add(makePageModule(true, true, true, "0a0014137c77505bed1c4b2714f02a51", "c0a802411c9e09843c052afd87f4bba1", "SITE_SEARCH", 1, 0));				// Site Search 2012
 		defDisplay.add(makePageModule(true, true, true, null, "c0a802234b3c124378e7a6703fa3445", null, 1, 4));														// White Board
 		
@@ -167,8 +169,10 @@ public class SiteWizardAction_AU extends SiteWizardAction {
 		secDisplay.add(makePageModule(true, true, true, null,"c0a8016564a7940e9195bd84416afd93", null, 1, 2));														// 3-Button Group below menu 2012
 		//secDisplay.add(makePageModule("7f0001016122294ce3852a7728cb4963","c0a8022363bdd195bac696fd46636514", null, 2, 4));										// Center Page Slider 2012
 		secDisplay.add(makePageModule(true, true, true, null,"c0a80165f0c0ccdaef974a12b5ee3faa", null, 3, 6));														// Right Rail 2012
-		secDisplay.add(makePageModule(true, false, false, "0a0014137c775065ed1c4b27c7710463","c0a80a07614b3c24224dd3d77221237a", "HEADER_TOP_LEFT_CONTENT", 0, 1));	// World Link 2012
+		//secDisplay.add(makePageModule(true, false, false, "0a0014137c775065ed1c4b27c7710463","c0a80a07614b3c24224dd3d77221237a", "HEADER_TOP_LEFT_CONTENT", 0, 1));	// World Link 2012
+		secDisplay.add(makePageModule(true, false, false, "c0a80223d5a1c26665696a7b4167333f","c0a80a07614b3c24224dd3d77221237a", "HEADER_TOP_LEFT_CONTENT", 0, 1));	// World Link 2012 updated
 		secDisplay.add(makePageModule(false, true, true, "0a0014137c77506aed1c4b2723bd7ce3","c0a80a07614b3c24224dd3d77221237a", "HEADER_TOP_LEFT_CONTENT", 0, 1));	// World Link 2012
+		secDisplay.add(makePageModule(true, true, false, "FTS_CENTER_PAGE_"+centerId, "0a00141d8afabb8f1d07f6377fa000a6", "HEADER_RIGHT", 0, 1));		//Consultation portlet
 		secDisplay.add(makePageModule(true, true, true, "0a0014137c77505bed1c4b2714f02a51", "c0a802411c9e09843c052afd87f4bba1", "SITE_SEARCH", 1, 0));				// Site Search 2012
 		secDisplay.add(makePageModule(true, true, true, "942F611CCBCB4E6DA20E282BCD5F63E6", "c0a80a076e1dc62789a3565692e8803e", null, 2, 1));						// Breadcrumbs
 		secDisplay.add(makePageModule(true, true, true, null, "c0a802234b3c124378e7a6703fa3445", null, 1, 4));														// White Board
