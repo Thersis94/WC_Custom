@@ -127,8 +127,8 @@ public class SolrStoryIndexer extends SMTAbstractIndex {
 	@Override
 	public void addIndexItems(HttpSolrServer server) {
 		log.debug("Indexing Patient Stories");
-		List<SolrStoryVO> data = this.loadEvents(dbConn);
-		indexEvents(server, data);
+		List<SolrStoryVO> data = this.indexEvents(dbConn);
+		indexStories(server, data);
 	}
 
 	/**
@@ -136,7 +136,7 @@ public class SolrStoryIndexer extends SMTAbstractIndex {
 	 * @param server
 	 * @param data
 	 */
-	protected void indexEvents(HttpSolrServer server, List<SolrStoryVO> data) {
+	protected void indexStories(HttpSolrServer server, List<SolrStoryVO> data) {
 		int cnt = 0;
 		for (SolrStoryVO vo : data) {
 			SolrInputDocument doc = new SolrInputDocument();
@@ -169,7 +169,7 @@ public class SolrStoryIndexer extends SMTAbstractIndex {
 	 * @param conn
 	 * @return
 	 */
-	private List<SolrStoryVO> loadEvents(Connection conn) {
+	private List<SolrStoryVO> indexEvents(Connection conn) {
 		List<SolrStoryVO> data = new ArrayList<SolrStoryVO>();
 		// TODO After storage of stories is finalized this function can be completed
 		
