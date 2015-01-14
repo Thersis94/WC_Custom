@@ -273,11 +273,7 @@ public class PayPalCheckoutManager {
 		log.debug("callSMTProxy...");
 		// JSONify the request and build the request post data
 		Gson g = new Gson();
-		byte[] json = g.toJson(pReq).getBytes();
-		String postStub = "type=json&xmlData=";
-		
-		// format/URL encode the xmlData value.
-		String postData =  new String(json);
+		String postData = g.toJson(pReq, PaymentTransactionRequestVO.class);
 		log.debug("raw postData: " + postData);
 		
 		try {
@@ -285,13 +281,14 @@ public class PayPalCheckoutManager {
 		} catch (UnsupportedEncodingException uee) {
 			log.error("Error URL encoding postData for proxy call, ", uee);
 		}
-		
 		log.debug("URL-encoded postData: " + postData);
 		
 		// build proxy URL and call proxy
 		StringBuilder smtProxyUrl = new StringBuilder((String)attributes.get(Constants.CFG_SMT_PROXY_URL));
+		log.debug("using proxy: " + smtProxyUrl.toString());
 		smtProxyUrl.append("/payment/process");
 		SMTHttpConnectionManager mgr = new SMTHttpConnectionManager();
+		String postStub = "type=json&xmlData=";
 		byte[] bytes = mgr.retrieveDataViaPost(smtProxyUrl.toString(), postStub + postData);
 		log.info("raw SMT proxy response: " + new String(bytes));
 		
