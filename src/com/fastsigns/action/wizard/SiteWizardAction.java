@@ -9,6 +9,7 @@ import java.sql.Statement;
 import java.util.LinkedList;
 import java.util.List;
 
+
 // FASTSIGNS Libs
 import com.fastsigns.action.franchise.vo.FranchiseVO;
 
@@ -46,25 +47,27 @@ import com.smt.sitebuilder.common.constants.Constants;
 public abstract class SiteWizardAction extends SBActionAdapter implements FSSiteWizardIntfc {
 	
 	// Hours, 3 Button, center image and text, Modules and Map
-	public List<PageModuleVO> defDisplay = new LinkedList<PageModuleVO>();
-	public List<PageModuleVO> secDisplay = new LinkedList<PageModuleVO>();
+	protected List<PageModuleVO> defDisplay = new LinkedList<PageModuleVO>();
+	protected List<PageModuleVO> secDisplay = new LinkedList<PageModuleVO>();
 	
 	/*
 	 * These are variables set in the localization bundles for country specific id's
 	 */
-	public String FS_SITE_ID = "FTS";
-	public String FS_GROUP = "FAST_SIGNS";
-	public String emailSuffix = "@fastsigns.com";
+	protected String FS_SITE_ID = "FTS";
+	protected String FS_GROUP = "FAST_SIGNS";
+	protected String emailSuffix = "@fastsigns.com";
 	
 	/*
 	 * These are the messages sent back to the user, set in the localization bundle for each country.
 	 */
-	public String posMsg1 = "You have successfully created the site: ";
-	public String posMsg2 = "You have successfully updated the site: ";
-	public String negMsg1 = "Unable to add new site: ";
-	public String negMsg2 = ".  Please contact the system administrator for assistance";
-	public String negMsg3 = " because it already exists";
-	public String negMsg4 = "Unable to add new site, Franchise ID or Franchise Location Id contained letters: ";
+	protected String posMsg1 = "You have successfully created the site: ";
+	protected String posMsg2 = "You have successfully updated the site: ";
+	protected String negMsg1 = "Unable to add new site: ";
+	protected String negMsg2 = ".  Please contact the system administrator for assistance";
+	protected String negMsg3 = " because it already exists";
+	protected String negMsg4 = "Unable to add new site, Franchise ID or Franchise Location Id contained letters: ";
+	
+	protected Integer centerId = null;
 	
 	/**
 	 * Default Constructor.
@@ -84,9 +87,12 @@ public abstract class SiteWizardAction extends SBActionAdapter implements FSSite
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	public void build(SMTServletRequest req) throws ActionException {
+		//grab the Id to identify the id of consultation portlet
+		centerId = Convert.formatInteger(req.getParameter("dealerLocationId"));
 		
 		// Assign the display types
 		this.assignTypes();
+		
 		// Store desired workflow directive
 		int workflow = Integer.parseInt(req.getParameter("subRule"));
 		String msg = negMsg1 + ": " + req.getParameter("dealerName") + negMsg3;

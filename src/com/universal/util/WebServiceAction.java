@@ -283,13 +283,30 @@ public class WebServiceAction extends SBActionAdapter {
 			user.setProfileId(memId);
 			user.setAuthenticationId(memId);
 			user.setAuthenticated(true);
-			// Set the billing info to the main user data and the extended info
-			// as the shipping info (if it exists)
+			// Set billing info as main user data and extended info as shipping info (if it exists)
 			String type = StringUtil.checkVal(address.attributeValue("type"));
 			if (WebServiceAction.BILLING_USER_TYPE.equalsIgnoreCase(type)) {
 				completeUser = user;
-				if (completeUser.getUserExtendedInfo() == null)
-					completeUser.setUserExtendedInfo(user);
+				if (completeUser.getUserExtendedInfo() == null) {
+					/* 2015-01-14 DBargerhuff Refactoring this to place a clone 
+					 * (different instance) of the user object on the completeUser 
+					 * object's userExtendedInfo field.  Otherwise, downstream 
+					 * JSONifying of this object will fail due to a stack overflow error.
+					 */
+					UserDataVO extUser = new UserDataVO();
+					extUser.setEmailAddress(address.element("Email").getTextTrim());
+					extUser.setFirstName(address.element("FirstName").getTextTrim());
+					extUser.setLastName(StringUtil.checkVal(address.element("LastName").getTextTrim()));
+					extUser.setAddress(address.element("Street1").getTextTrim());
+					extUser.setAddress2(address.element("Street2").getTextTrim());
+					extUser.setCity(address.element("City").getTextTrim());
+					extUser.setState(address.element("State").getTextTrim());
+					extUser.setZipCode(address.element("Zip").getTextTrim());
+					extUser.setMainPhone(address.element("DayPhone").getTextTrim());
+					extUser.addPhone(new PhoneVO(address.element("EveningPhone").getTextTrim(), PhoneVO.EVENING_PHONE, "US"));
+					extUser.setProfileId(memId);
+					completeUser.setUserExtendedInfo(extUser);
+				}
 					
 			} else if (WebServiceAction.SHIPPING_USER_TYPE.equalsIgnoreCase(type)) {
 				if (user.getLastName().length() > 0)
