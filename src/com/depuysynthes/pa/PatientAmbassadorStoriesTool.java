@@ -12,9 +12,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
-import org.apache.solr.client.solrj.impl.XMLResponseParser;
-
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.db.DBUtil;
@@ -32,6 +29,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.data.DataContainer;
 import com.smt.sitebuilder.data.vo.FormFieldVO;
 import com.smt.sitebuilder.data.vo.FormTransactionVO;
+import com.smt.sitebuilder.util.solr.SolrActionUtil;
 
 /****************************************************************************
  * <b>Title</b>: PatientAmbassadrStoriesTool.java
@@ -75,7 +73,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 	 */
 	public void delete(SMTServletRequest req) throws ActionException {
 		if(req.hasParameter("fsi"))
-			new SolrStoryIndexer().removeSingleItem(getSolrServer(), req.getParameter("fsi"));
+			new SolrActionUtil(attributes).removeDocument(req.getParameter("fsi"));
 
 		//Hide Submission from list.
 		writeStoryElement(getElement("1", req.getParameter("storyDeleteFieldId"), null), req.getParameter("fsi"));
@@ -103,7 +101,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		SolrStoryVO ssv = createStoryVO(req);
 		
 		//Submit to Solr
-		new SolrStoryIndexer().addSingleItem(getSolrServer(), ssv);
+		new SolrActionUtil(attributes).addDocument(ssv);
 	}
 	
 	/**
@@ -128,19 +126,6 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 	}
 	
 	/**
-	 * Helper method that will return an HttpSolrServer object.  Used in update
-	 * and delete.
-	 * @return
-	 */
-	private HttpSolrServer getSolrServer() {
-		String baseUrl = (String) attributes.get("solrBaseUrl");
-		String collection = (String) attributes.get("solrCollectionName");
-		HttpSolrServer server = new HttpSolrServer(baseUrl + collection);
-		server.setParser(new XMLResponseParser());
-		return server;
-	}
-	
-	/**
 	 * Helper method that calls out to FormFacadeAction for the form data, 
 	 * creates a SolrStoryVO and then stores the data from the form transaction
 	 * on the solrVO.
@@ -161,7 +146,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		Map<String, FormFieldVO> fields = trans.getCustomData();
 		
 		//Store Data on the SolrStoryVO
-		ssv.setStoryId(trans.getFormSubmittalId());
+		ssv.setDocumentId(trans.getFormSubmittalId());
 		ssv.setAuthor(trans.getFirstName());
 		ssv.setZip(trans.getZipCode());
 		ssv.setCity(trans.getCity());
@@ -170,10 +155,10 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		ssv.setLng(trans.getLongitude().toString());
 		ssv.setDetailImage(fields.get("c0a80241bbb8c55aae6fabe3fe143767").getResponses().get(0));
 		ssv.setHobbies(fields.get("c0a80241bba4e916f3c24b11c6d6c26f").getResponses());
-		ssv.setJoints(fields.get("c0a80241bba73b0a49493776bd9f999d").getResponses());
+		ssv.setHierarchies(fields.get("c0a80241bba73b0a49493776bd9f999d").getResponses());
 		ssv.setOtherHobbies(fields.get("c0a80241bf9cfab2648d4393cf3bb062").getResponses().get(0));
 		ssv.setTitle(fields.get("c0a80237dfd89c30f3b7848d499d28a0").getResponses().get(0));
-		ssv.setContent(fields.get("c0a80237dfd8ca8957bec8575c5f35e5").getResponses().get(0));
+		ssv.setSummary(fields.get("c0a80237dfd8ca8957bec8575c5f35e5").getResponses().get(0));
 		
 		return ssv;
 	}
