@@ -3,6 +3,18 @@
  */
 package com.depuysynthes.pa;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+
+import com.depuysynthes.pa.PatientAmbassadorStoriesTool.PAFConst;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.data.DataContainer;
@@ -38,64 +50,80 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 	 * 
 	 */
 	public PatientAmbassadorReportVO() {
+		super();
 	}
-
+	
+	public PatientAmbassadorReportVO(String fileName) {
+		super();
+		setFileName(fileName);
+	}
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.data.report.AbstractReport#generateReport()
 	 */
 	@Override
 	public byte[] generateReport() {
-		StringBuffer sb = new StringBuffer();
-
-		// Build the headers
-		sb.append("<table border=\"1\">");
-		sb.append("<tr><th nowrap>Author Name</th>");
-		sb.append("<th nowrap>Email</th>");
-		sb.append("<th nowrap>City</th>");
-		sb.append("<th nowrap>State</th>");
-		sb.append("<th nowrap>ZipCode</th>");
-		sb.append("<th nowrap>ImageUrl</th>");
-		sb.append("<th nowrap>Joints</th>");
-		sb.append("<th nowrap>Hobbies</th>");
-		sb.append("<th nowrap>Have a replacement?</th>");
-		sb.append("<th nowrap>Life Before?</th>");
-		sb.append("<th nowrap>Turning Point</th>");
-		sb.append("<th nowrap>Life After</th>");
-		sb.append("<th nowrap>Advice for others</th>");
-		sb.append("</tr>\r");
 		
+		//Retrieve Column Names
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+		//Build Excel File
+		Workbook wb = new HSSFWorkbook();
+		Sheet sheet = wb.createSheet("importValues");
+		
+		int c = 0, r = 0;
+		
+		Row row = sheet.createRow(r++);
+		Cell cell = null;
+		//Loop Headers and set cell values.
+		for(String n : getHeaders()) {
+			cell = row.createCell(c++);
+			cell.setCellValue(n);
+		}
+		c = 0;
+		row = sheet.createRow(r++);
 		//If there are no results then Say so.
 		if(dc.getTransactions().size() == 0) {
-			sb.append("<tr><td>No Results Found</td></tr>");
+			cell = row.createCell(c++);
+			cell.setCellValue("No Results Found");
 		}
 		
 		//Loop over transactions and print data appropriately.
 		for(FormTransactionVO vo : dc.getTransactions().values()) {
-			
-			//Add Profile Data
-			sb.append("<tr><td>").append(vo.getFirstName()).append(" ").append(vo.getLastName()).append("</td>");
-			sb.append("<td>").append(vo.getEmailAddress()).append("</td>");
-			sb.append("<td>").append(vo.getCity()).append("</td>");
-			sb.append("<td>").append(vo.getState()).append("</td>");
-			sb.append("<td>").append(vo.getZipCode()).append("</td>");
-			
+			//reset cell counter
+			c = 0;
+
+			//Add Name
+			addCell(c++, vo.getFirstName() + " " + vo.getLastName(), row);
+
+			//Add Email
+			addCell(c++, vo.getEmailAddress(), row);
+
+			//Add City
+			addCell(c++, vo.getCity(), row);
+
+			//Add State
+			addCell(c++, vo.getState(), row);
+
+			//Add Zip
+			addCell(c++, vo.getZipCode(), row);
+
 			//Set Image Url
-			sb.append("<td>").append(siteUrl).append(vo.getFieldById("c0a80241bbb8c55aae6fabe3fe143767").getResponses().get(0)).append("</td>");
-			
+			addCell(c++, siteUrl + vo.getFieldById(PAFConst.PROFILE_IMAGE_ID.getId()).getResponses().get(0), row);
+
 			//Set Joints
-			sb.append("<td>");
+			StringBuilder sb = new StringBuilder();
 			int i = 0;
-			for(String s : vo.getFieldById("c0a80241bba73b0a49493776bd9f999d").getResponses()) {
+			for(String s : vo.getFieldById(PAFConst.JOINT_ID.getId()).getResponses()) {
 				if(i > 0) sb.append(", ");
 				sb.append(s);
 				i++;
 			}
-			sb.append("</td>");
+			addCell(c++, sb.toString(), row);
 			i = 0;
-			
+
 			//Set Hobbies
-			sb.append("<td>");
-			for(String s : vo.getFieldById("c0a80241bba4e916f3c24b11c6d6c26f").getResponses()) {
+			sb = new StringBuilder();
+			for(String s : vo.getFieldById(PAFConst.HOBBIES_ID.getId()).getResponses()) {
 				if(i > 0) sb.append(", ");
 				//Skip other, we'll add it later.
 				if(!s.equals("OTHER")) {
@@ -103,34 +131,43 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 					i++;
 				}
 			}
-			
+
 			//Add Other Hobby if present.
-			if(vo.getFieldById("c0a80241bf9cfab2648d4393cf3bb062").getResponses().size() > 0 && StringUtil.checkVal(vo.getFieldById("c0a80241bf9cfab2648d4393cf3bb062").getResponses().get(0)).length() > 0) {
+			if(vo.getFieldById(PAFConst.OTHER_HOBBY_ID.getId()).getResponses().size() > 0 && StringUtil.checkVal(vo.getFieldById(PAFConst.OTHER_HOBBY_ID.getId()).getResponses().get(0)).length() > 0) {
 				if(i > 0) sb.append(", ");
-				sb.append(vo.getFieldById("c0a80241bf9cfab2648d4393cf3bb062").getResponses().get(0));
+				sb.append(vo.getFieldById(PAFConst.OTHER_HOBBY_ID.getId()).getResponses().get(0));
 			}
-			sb.append("</td>");
-			
+			addCell(c++, sb.toString(), row);
+
 			//Add Has had Replacement
-			sb.append("<td>").append(vo.getFieldById("c0a80241bba861705b540c2e91d3bf6a").getResponses().get(0)).append("</td>");
-			
+			addCell(c++, vo.getFieldById(PAFConst.HAS_REPLACED_ID.getId()).getResponses().get(0), row);
+
 			//Add Life Before
-			sb.append("<td>").append(vo.getFieldById("c0a80241bbaa0d063448036ce9a37a9d").getResponses().get(0)).append("</td>");
+			addCell(c++, vo.getFieldById(PAFConst.LIFE_BEFORE_ID.getId()).getResponses().get(0), row);
 
 			//Add Turning Point
-			sb.append("<td>").append(vo.getFieldById("c0a80241bbaaa185cd2c542570a03b69").getResponses().get(0)).append("</td>");
+			addCell(c++, vo.getFieldById(PAFConst.TURNING_POINT_ID.getId()).getResponses().get(0), row);
 
 			//Add Life After
-			sb.append("<td>").append(vo.getFieldById("c0a80241bbab26d391814dedd1b1857d").getResponses().get(0)).append("</td>");
+			addCell(c++, vo.getFieldById(PAFConst.LIFE_AFTER_ID.getId()).getResponses().get(0), row);
 
 			//Add Advice
-			sb.append("<td>").append(vo.getFieldById("c0a80241bbb2d50c11b6f3652f008aa6").getResponses().get(0)).append("</td>");
+			addCell(c++, vo.getFieldById(PAFConst.ADVICE_ID.getId()).getResponses().get(0), row);
 
 			//Close out the Transaction Row.
-			sb.append("</tr>");
+			row = sheet.createRow(r++);
 		}
 
-		return sb.toString().getBytes();
+		//Write xls to ByteStream and return.
+		try {
+			wb.write(baos);
+			return baos.toByteArray();
+		} catch (IOException e) {
+			log.error(e);
+		} finally {
+			try {baos.close();} catch (IOException e) {log.error(e);}
+		}
+		return null;
 	}
 
 	/* (non-Javadoc)
@@ -144,6 +181,29 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 	//Set the SiteUrl for image pathing.
 	public void setSiteUrl(String siteUrl) {
 		this.siteUrl = siteUrl;
+	}
+	
+	private List<String> getHeaders() {
+		List<String> headers = new ArrayList<String>();
+		headers.add("Author Name");
+		headers.add("Email");
+		headers.add("City");
+		headers.add("State");
+		headers.add("ZipCode");
+		headers.add("ImageUrl");
+		headers.add("Joints");
+		headers.add("Hobbies");
+		headers.add("Have a replacement?");
+		headers.add("Life Before?");
+		headers.add("Turning Point");
+		headers.add("Life After");
+		headers.add("Advice for others");
+		return headers;
+	}
+	
+	private void addCell(int cellPos, String value, Row r) {
+		Cell cell = r.createCell(cellPos);
+		cell.setCellValue(value);
 	}
 
 }
