@@ -7,6 +7,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+
 // FASTSIGNS Libs
 import com.fastsigns.action.franchise.vo.FranchiseVO;
 
@@ -266,5 +267,29 @@ public class SiteWizardAction_AU extends SiteWizardAction {
 		sai.update(req);
 		
 		return this.getSecondaryLayoutId(req.getParameter("siteId"), "Secondary Page Layout");
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see com.fastsigns.action.wizard.SiteWizardAction#addSingleColLayout(com.siliconmtn.http.SMTServletRequest)
+	 */
+	public String addSingleColLayout(SMTServletRequest req) throws Exception {
+		SMTActionInterface sai = new TemplateAction(this.actionInit);
+		sai.setAttributes(attributes);
+		sai.setDBConnection(dbConn);
+		req.setParameter("actionId", "TEMPLATE");
+		req.setParameter("pageModuleId", "");
+		req.setParameter("pmTemplateId", "");
+		req.setParameter("columns", "1");
+		req.setParameter("layoutName", SINGLE_COL_LABEL);
+		req.setParameter("pageTitle", "Welcome to SIGNWAVE &reg;");
+		req.setParameter("defaultFlag", "0");
+		req.setParameter("defaultColumn","1");
+		req.setParameter("numberColumns", "1");
+		req.setParameter("templateId", "");
+		req.setParameter("paramName", "");
+		sai.update(req);
+		
+		return getSecondaryLayoutId(req.getParameter("siteId"), SINGLE_COL_LABEL);
 	}
 }
