@@ -66,11 +66,11 @@ public class NLTAutoIngestPostProcessor extends SBActionAdapter {
 		msg.append("I am available to help if you request it.</p>");
 		
 		msg.append("<p>When using our ingest tool with Avid Interplay, here is a link ");
-		msg.append("to an <a href=\"http://support.autoingest.com/stream.asp?Other/SAT_AI_Direct_Installation_and_Configuration.pdf\">Avid setup guide for AutoIngest Direct</a>. ");
+		msg.append("to an <a href=\"http://support.autoingest.com/nlt/pub?Other/SAT_AI_Direct_Installation_and_Configuration.pdf\">Avid setup guide for AutoIngest Direct</a>. ");
 		msg.append("If you are not using Interplay, AutoIngest can be used directly with the Avid ");
 		msg.append("Editor by using a drag and drop to the bin, it is also simpler to setup.</p>");
 		
-		msg.append("<p>Also find the latest <a href=\"http://support.autoingest.com/stream.asp?Other/SAT_AI_Reference_Guide-beta\">AutoIngest manual</a>.</p>");
+		msg.append("<p>Also find the latest <a href=\"http://support.autoingest.com/nlt/pub?Other/SAT_AI_Reference_Guide-beta\">AutoIngest manual</a>.</p>");
 		
 		msg.append("--<br/>Best Regards,<br/>Jim McKain<br/>");
 		msg.append("Office  978 686 1700 x205<br/>Mobile 978 815 3960<br/>");
