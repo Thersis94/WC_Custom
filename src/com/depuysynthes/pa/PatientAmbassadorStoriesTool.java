@@ -125,6 +125,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 
 			//Update Status Element.
 			writeStoryElement(getElement(PAFStatus.published.name(), PAFConst.STATUS_ID.getId(), req.getParameter("storyStatusDataId")), submittalId);
+			log.debug("Status Written");
 		} else {
 
 			//Write story Title
@@ -137,6 +138,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 
 			//Update Status Element.
 			writeStoryElement(getElement(PAFStatus.saved.name(), PAFConst.STATUS_ID.getId(), req.getParameter("storyStatusDataId")), submittalId);
+			log.debug("Status Written");
 		}
 		sendRedirect(req);
 	}
@@ -485,9 +487,9 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		pg.append("&cPage=").append(req.getParameter("cPage"));
 		pg.append("&formId=").append(req.getParameter("formId"));
 		pg.append("&searchSubmitted=true");
-		pg.append("&searchJoint=").append(req.getParameter("searchJoint"));
-		pg.append("&searchCity=").append(req.getParameter("searchCity"));
-		pg.append("&searchState=").append(req.getParameter("searchState"));
+		pg.append("&searchJoint=").append(StringUtil.checkVal(req.getParameter("searchJoint")));
+		pg.append("&searchCity=").append(StringUtil.checkVal(req.getParameter("searchCity")));
+		pg.append("&searchState=").append(StringUtil.checkVal(req.getParameter("searchState")));
 
 		req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
 		req.setAttribute(Constants.REDIRECT_URL, pg.toString());
