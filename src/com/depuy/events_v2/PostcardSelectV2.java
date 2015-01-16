@@ -14,19 +14,25 @@ import java.util.Set;
 
 
 
+
+
 import javax.servlet.http.Cookie;
 // J2EE 1.4.0 Libs
 import javax.servlet.http.HttpSession;
 
 
 
+
+
 //wc-depuy libs
 import com.depuy.events.vo.CoopAdVO;
+import com.depuy.events_v2.vo.ConsigneeVO;
 // SMT BaseLibs
 import com.depuy.events_v2.vo.DePuyEventSeminarVO;
 import com.depuy.events_v2.vo.PersonVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.UserDataVO;
@@ -356,6 +362,14 @@ public class PostcardSelectV2 extends SBActionAdapter {
 			}
 		}
 		
+		if (loadConsignees(reqType)) {
+			try {
+				retrieveConsignees(vo);
+			} catch (ActionException e) {
+				log.error("could not load CoopAds for seminar " + eventPostcardId, e);
+			}
+		}
+		
 		if (loadLeads(reqType)) {
 			try {
 				retrieveLeads(vo, sortOrder);
@@ -374,6 +388,15 @@ public class PostcardSelectV2 extends SBActionAdapter {
 	 */
 	private boolean loadCoopAds(ReqType reqType) {
 		return (ReqType.reportForm != reqType);
+	}
+	
+	/**
+	 * helper to isolate the logic of whether or not we need to load the Consignees for the given request
+	 * @param reqType
+	 * @return
+	 */
+	private boolean loadConsignees(ReqType reqType) {
+		return (ReqType.eventInfo == reqType || ReqType.summary == reqType || ReqType.report == reqType);
 	}
 	
 	/**
@@ -403,6 +426,31 @@ public class PostcardSelectV2 extends SBActionAdapter {
 			}
 		}
 		return;
+	}
+	
+	/**
+	 * calls the CoopAdsAction to load Ad data for the given Seminar
+	 * @param vo
+	 * @throws ActionException
+	 */
+	protected void retrieveConsignees(DePuyEventSeminarVO vo) throws ActionException {
+		StringBuilder sql = new StringBuilder(100);
+		sql.append("select * from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("DEPUY_EVENT_POSTCARD_CONSIGNEE where event_postcard_id=?");
+		log.debug(sql + "|" + vo.getEventPostcardId());
+		PreparedStatement ps = null;
+		try {
+			ps = dbConn.prepareStatement(sql.toString());
+			ps.setString(1, vo.getEventPostcardId());
+			ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				vo.addConsignee(new ConsigneeVO(rs));
+			}
+		} catch (SQLException sqle) {
+			log.error("could not load consignees", sqle);
+		} finally {
+			DBUtil.close(ps);
+		}
 	}
 	
 	/**

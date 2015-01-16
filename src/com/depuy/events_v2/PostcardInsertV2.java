@@ -109,6 +109,14 @@ public class PostcardInsertV2 extends SBActionAdapter {
 					saveEventPersonXr(eventPostcardId, req);
 					saveNewspaperAd(eventPostcardId, req);
 					saveEventSurgeon(eventPostcardId, req, site);
+					String et = req.getParameter("eventType");
+					//save consignee for Co-Funded seminars only, 50/25/25 has two.
+					if ("CFSEM50".equals(et)) {
+						saveConsignee(eventPostcardId, 1, req);
+					} else if ("CFSEM25".equals(et)) {
+						saveConsignee(eventPostcardId, 1, req);
+						saveConsignee(eventPostcardId, 2, req);
+					}
 					break;
 					
 				case hospitalSponsored:
@@ -237,12 +245,14 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		String label = req.getParameter("postcardLabel");
 		if (pkId != null) {
 			sql.append("update event_postcard set update_dt=?, quantity_no=?, ");
-			sql.append("mailing_addr_txt=?, label_txt=?, content_no=?, territory_no=?, language_cd=? ");
+			sql.append("mailing_addr_txt=?, label_txt=?, content_no=?, territory_no=?, ");
+			sql.append("language_cd=?, postcard_style_txt=?, PSTRS_FLYRS_SPECIAL_INST_TXT=? ");
 			sql.append("where event_postcard_id=?");
 		} else {
 			sql.append("insert into event_postcard (organization_id, profile_id, ");
 			sql.append("create_dt, quantity_no, mailing_addr_txt, label_txt, content_no, ");
-			sql.append("territory_no, language_cd, event_postcard_id) values (?,?,?,?,?,?,?,?,?,?)");
+			sql.append("territory_no, language_cd, postcard_style_txt, PSTRS_FLYRS_SPECIAL_INST_TXT, ");
+			sql.append("event_postcard_id) values (?,?,?,?,?,?,?,?,?,?,?,?)");
 			if (label == null || label.length() == 0) label = "Local Orthopaedic Surgeon";
 		}
 		log.debug("saving event postcard: " + sql);
@@ -263,6 +273,8 @@ public class PostcardInsertV2 extends SBActionAdapter {
 			ps.setString(x++, req.getParameter("contentNo"));
 			ps.setInt(x++, Convert.formatInteger(req.getParameter("territoryNumber")));
 			ps.setString(x++, StringUtil.checkVal(req.getParameter("languageCode"), "en") );
+			ps.setString(x++, req.getParameter("postcardTypeText"));
+			ps.setString(x++, req.getParameter("postersFlyersInstrText"));
 			ps.setString(x++, pkId);
 
 			if (ps.executeUpdate() < 1)
@@ -477,7 +489,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		caa.setDBConnection(dbConn);
 		try {
 			caa.build(req);
-		} catch (ActionException ae) {
+		} catch (Exception ae) {
 			throw new SQLException(ae);
 		}
 		
@@ -500,7 +512,9 @@ public class PostcardInsertV2 extends SBActionAdapter {
 			sql.append("hosp_address_txt=?, exp_yrs_no=?, practice_nm=?, pract_yrs_no=?, ");
 			sql.append("pract_addr1_txt=?, pract_addr2_txt=?, pract_city_nm=?, pract_state_cd=?, ");
 			sql.append("pract_zip_cd=?, pract_phone_txt=?, pract_email_txt=?, pract_website_url=?, ");
-			sql.append("sec_phone_txt=?, sec_email_txt=?, bio_txt=?, update_dt=?, event_postcard_id=? where depuy_event_surgeon_id=?");
+			sql.append("sec_phone_txt=?, sec_email_txt=?, bio_txt=?, update_dt=?, ");
+			sql.append("event_postcard_id=?, alt_img1_url=?, alt_img2_url=?, alt_img3_url=?, ");
+			sql.append("hospital_txt=? where depuy_event_surgeon_id=?");
 		} else {
 			sql.append("insert into ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 			sql.append("DEPUY_EVENT_SURGEON (surgeon_nm, cv_file_url, ");
@@ -508,8 +522,9 @@ public class PostcardInsertV2 extends SBActionAdapter {
 			sql.append("hosp_address_txt, exp_yrs_no, practice_nm, pract_yrs_no, ");
 			sql.append("pract_addr1_txt, pract_addr2_txt, pract_city_nm, pract_state_cd, ");
 			sql.append("pract_zip_cd, pract_phone_txt, pract_email_txt, pract_website_url, ");
-			sql.append("sec_phone_txt, sec_email_txt, bio_txt, create_dt, event_postcard_id, depuy_event_surgeon_id) ");
-			sql.append("values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+			sql.append("sec_phone_txt, sec_email_txt, bio_txt, create_dt, event_postcard_id, ");
+			sql.append("alt_img1_url, alt_img2_url, alt_img3_url, hospital_txt, depuy_event_surgeon_id) ");
+			sql.append("values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 			pkId = new UUIDGenerator().getUUID();
 		}
 		log.debug(sql + "|" + pkId);
@@ -536,10 +551,63 @@ public class PostcardInsertV2 extends SBActionAdapter {
 			ps.setString(17, req.getParameter("practWebsite"));
 			ps.setString(18, req.getParameter("secPhone"));
 			ps.setString(19, req.getParameter("secEmail"));
-			ps.setString(20, req.getParameter("surgeonBio"));
+			ps.setString(20, (req.hasParameter("surgeonInfo") ? req.getParameter("surgeonInfo") : req.getParameter("surgeonBio")));  //labeled as surgeonInfo for CFSEM, bio for CPSEM
 			ps.setTimestamp(21, Convert.getCurrentTimestamp());
 			ps.setString(22, eventPostcardId);
-			ps.setString(23, pkId);
+			ps.setString(23, saveFile(req, "altImg1File", "/ad-files/", site));
+			ps.setString(24, saveFile(req, "altImg2File", "/ad-files/", site));
+			ps.setString(25, saveFile(req, "altImg3File", "/ad-files/", site));
+			ps.setString(26, req.getParameter("hospitalInfo"));
+			ps.setString(27, pkId);
+			
+			if (ps.executeUpdate() < 1)
+				throw new SQLException(ps.getWarnings());
+
+		} finally {
+			try { ps.close(); } catch (Exception e) { }
+		}
+	}
+	
+	
+	/**
+	 * inserts or updates the DEPUY_EVENT_POSTCARD_CONSIGNEE table.
+	 * These are the people defined in the "Payment Information" block who are
+	 * responsible for paying for the seminar.
+	 * @param eventPostcardId
+	 * @param req
+	 * @throws SQLException
+	 */
+	private void saveConsignee(String eventPostcardId, int type, SMTServletRequest req) throws SQLException {
+		String pkId = req.hasParameter("consigneeId" + type) ? req.getParameter("consigneeId" + type) : null;
+		StringBuilder sql = new StringBuilder();
+		if (pkId != null) {
+			sql.append("update ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+			sql.append("DEPUY_EVENT_POSTCARD_CONSIGNEE set ");
+			sql.append("event_postcard_id=?, type_no=?, party_nm=?, contact_nm=?, ");
+			sql.append("title_txt=?, phone_txt=?, email_txt=?, update_dt=? ");
+			sql.append("where consignee_id=?");
+		} else {
+			sql.append("insert into ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+			sql.append("DEPUY_EVENT_POSTCARD_CONSIGNEE ");
+			sql.append("(event_postcard_id, type_no, party_nm, contact_nm, title_txt, ");
+			sql.append("phone_txt, email_txt, create_dt, consignee_id) ");
+			sql.append("values (?,?,?,?,?,?,?,?,?)");
+			pkId = new UUIDGenerator().getUUID();
+		}
+		log.debug(sql + "|" + pkId);
+
+		PreparedStatement ps = null;
+		try {
+			ps = dbConn.prepareStatement(sql.toString());
+			ps.setString(1, eventPostcardId);
+			ps.setInt(2, type);
+			ps.setString(3, req.getParameter("consigneeParty" + type));
+			ps.setString(4, req.getParameter("consigneeName" + type));
+			ps.setString(5, req.getParameter("consigneeTitle" + type));
+			ps.setString(6, req.getParameter("consigneePhone" + type));
+			ps.setString(7, req.getParameter("consigneeEmail" + type));
+			ps.setTimestamp(8, Convert.getCurrentTimestamp());
+			ps.setString(9, pkId);
 			
 			if (ps.executeUpdate() < 1)
 				throw new SQLException(ps.getWarnings());

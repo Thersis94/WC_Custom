@@ -163,31 +163,10 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 		vo.setContactName(req.getParameter("contactName_"+suffix));
 		vo.setAdCount(Convert.formatInteger(req.getParameter("adCount_"+suffix)));
 		vo.setWeeksAdvance(Convert.formatInteger(req.getParameter("weeksAdvance_"+suffix)));
-		vo.setAdType(req.getParameter("adType"));
-//		vo.setInstructionsText( req.getParameter("instructionsText_"+suffix) );
-//		vo.setHospitalInfo( req.getParameter("hospitalInfo") );
-//		vo.setSurgeonInfo( req.getParameter("surgeonInfo") );
-//		vo.setTotalCostNo( Convert.formatDouble(req.getParameter("totalCostNo_"+suffix)));
-//		vo.setCostToDepuyNo( Convert.formatDouble(req.getParameter("costToDepuyNo_"+suffix)));
-//		vo.setCostToRepNo( Convert.formatDouble( req.getParameter("costToRepNo_"+suffix)));
-//		vo.setCostToSurgeonNo( Convert.formatDouble( req.getParameter("costToSurgeonNo_"+suffix)));
-//		vo.setCostToHospitalNo( Convert.formatDouble( req.getParameter("costToHospitalNo_"+suffix)));
-//		vo.setCostToPartyNo( Convert.formatDouble( req.getParameter("costToPartyNo_"+suffix)));
+		vo.setAdType(req.getParameter("adType")); //same for all Ads
+		vo.setInstructionsText( req.getParameter("instructionsText_"+suffix) );
 		vo.setStatusFlg(Convert.formatInteger(req.getParameter("adStatusFlg_"+suffix), CLIENT_SUBMITTED));
 		vo.setOnlineFlg(onlineFlg);
-//		vo.setSurgeonStatusFlg( Convert.formatInteger( req.getParameter("surgeonStatusFlg_"+suffix) ));
-//		vo.setApprovedPaperName( StringUtil.checkVal( req.getParameter("approvedPaperName_"+suffix)) );
-//		vo.setAdDatesText( req.getParameter("adDatesText_"+suffix) );
-
-		// upload the ad files
-//		vo.setAdFileUrl(this.saveFile(req, "adFileUrl_"+suffix, "/ads/", site));
-//		vo.setAdFile2Url( saveFile(req, "adFile2Url_"+suffix, "/ads/", site) );
-//		vo.setAdFile3Url( saveFile(req, "adFile3Url_"+suffix, "/ads/", site) );
-//		vo.setInvoiceFile(saveFile(req, "invoiceFile_"+suffix, "/invoice/" ,site ));
-//		vo.setSurgeonImageUrl( saveFile(req, "surgImgUrl_"+suffix, "/ads/logos", site) );
-//		vo.setHospital1Img( saveFile(req, "hospital1Logo_"+suffix, "/ads/logos", site));
-//		vo.setHospital2Img(saveFile(req, "hospital2Logo_"+suffix, "/ads/logos", site));
-//		vo.setHospital3Img(saveFile(req, "hospital3Logo_"+suffix, "/ads/logos", site));
 
 		//if this is an edit, grab the pkId of the ad
 		if (req.hasParameter("coopAdId_"+suffix))
@@ -282,31 +261,31 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 		boolean updateSurgeon = (SURG_DECLINED_AD >= Convert.formatInteger(vo.getStatusFlg()) 
 				&& PENDING_SURG_APPROVAL <= Convert.formatInteger(vo.getStatusFlg()));
 
-		// if inserting, double-check the DB to avoid duplicates
-		if (insertRecord) {
-			sql.append("select coop_ad_id, status_flg from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
-			sql.append("DEPUY_EVENT_COOP_AD where event_postcard_id=? and ad_type_txt=?");
-			try {
-				ps = dbConn.prepareStatement(sql.toString());
-				ps.setString(1, vo.getEventPostcardId());
-				ps.setString(2, vo.getAdType());
-				ResultSet rs = ps.executeQuery();
-				if (rs.next()) {
-					insertRecord = false;
-					vo.setCoopAdId(rs.getString(1));
-					if (vo.getStatusFlg() == null) vo.setStatusFlg(rs.getInt("status_flg"));
-				}
-			} catch (SQLException sqle) {
-				log.error("could not verify coopAd existence", sqle);
-			} finally {
-				try {
-					ps.close();
-				} catch (Exception e) {
-				}
-
-				sql = new StringBuilder();
-			}
-		}
+//		// if inserting, double-check the DB to avoid duplicates
+//		if (insertRecord) {
+//			sql.append("select coop_ad_id, status_flg from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+//			sql.append("DEPUY_EVENT_COOP_AD where event_postcard_id=? and ad_type_txt=?");
+//			try {
+//				ps = dbConn.prepareStatement(sql.toString());
+//				ps.setString(1, vo.getEventPostcardId());
+//				ps.setString(2, vo.getAdType());
+//				ResultSet rs = ps.executeQuery();
+//				if (rs.next()) {
+//					insertRecord = false;
+//					vo.setCoopAdId(rs.getString(1));
+//					if (vo.getStatusFlg() == null) vo.setStatusFlg(rs.getInt("status_flg"));
+//				}
+//			} catch (SQLException sqle) {
+//				log.error("could not verify coopAd existence", sqle);
+//			} finally {
+//				try {
+//					ps.close();
+//				} catch (Exception e) {
+//				}
+//
+//				sql = new StringBuilder();
+//			}
+//		}
 
 		if (Convert.formatInteger(req.getParameter("adStatusFlg")) > 0)
 			vo.setStatusFlg(Convert.formatInteger(req.getParameter("adStatusFlg")));
@@ -314,18 +293,16 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 		if (insertRecord) {
 			sql.append("INSERT INTO ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 			sql.append("DEPUY_EVENT_COOP_AD (EVENT_POSTCARD_ID, ");
-			sql.append("NEWSPAPER1_TXT, NEWSPAPER2_TXT, TOTAL_COST_NO, COST_TO_REP_NO, ");
-			sql.append("APPROVED_PAPER_NM, AD_FILE_URL, AD_FILE2_URL, AD_FILE3_URL, STATUS_FLG, CREATE_DT, ");
-			sql.append("NEWSPAPER1_PHONE_NO, NEWSPAPER2_PHONE_NO, NEWSPAPER3_TXT, NEWSPAPER3_PHONE_NO, ");
-			sql.append("RUN_DATES_TXT, TERRITORY_NO, AD_TYPE_TXT, SURGEON_NM, SURGEON_TITLE_TXT, ");
-			sql.append("SURGEON_EMAIL_TXT, SURGEON_IMG_URL, CLINIC_NM, CLINIC_ADDRESS_TXT, ");
-			sql.append("CLINIC_PHONE_TXT, CLINIC_HOURS_TXT, SURG_EXPERIENCE_TXT, ");
-			sql.append("CONTACT_NM, CONTACT_EMAIL_TXT, INSTRUCTIONS_TXT, ONLINE_FLG, ");
-			sql.append("HOSPITAL1_IMG, HOSPITAL2_IMG, HOSPITAL3_IMG, SURGEON_INFO_TXT, ");
-			sql.append("HOSPITAL_INFO_TXT, WEEKS_ADVANCE_NO, AD_COUNT_NO, ");
-			sql.append("COST_TO_DEPUY_NO, COST_TO_PARTY_NO, COST_TO_HOSPITAL_NO, COST_TO_SURGEON_NO, ");
+			sql.append("NEWSPAPER1_TXT, TOTAL_COST_NO, COST_TO_REP_NO, ");
+			sql.append("APPROVED_PAPER_NM, AD_FILE_URL, STATUS_FLG, CREATE_DT, ");
+			sql.append("NEWSPAPER1_PHONE_NO, ");
+			sql.append("RUN_DATES_TXT, TERRITORY_NO, AD_TYPE_TXT, ");
+			sql.append("CONTACT_NM, INSTRUCTIONS_TXT, ONLINE_FLG, ");
+			sql.append("WEEKS_ADVANCE_NO, AD_COUNT_NO, ");
+			sql.append("COST_TO_DEPUY_NO, COST_TO_PARTY_NO, ");
+			sql.append("COST_TO_HOSPITAL_NO, COST_TO_SURGEON_NO, ");
 			sql.append("INVOICE_FILE_URL, COOP_AD_ID ) ");
-			sql.append("values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+			sql.append("values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 
 			vo.setCoopAdId(new UUIDGenerator().getUUID());
 			vo.setStatusFlg(CLIENT_SUBMITTED);
@@ -333,23 +310,22 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 		} else {
 			sql.append("UPDATE ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 			sql.append("DEPUY_EVENT_COOP_AD set EVENT_POSTCARD_ID=?, ");
-			sql.append("NEWSPAPER1_TXT=?, NEWSPAPER2_TXT=?, TOTAL_COST_NO=?, COST_TO_REP_NO=?, ");
-			sql.append("APPROVED_PAPER_NM=?, AD_FILE_URL=?, AD_FILE2_URL=?,AD_FILE3_URL=?, STATUS_FLG=?, UPDATE_DT=?, ");
-			sql.append("NEWSPAPER1_PHONE_NO=?, NEWSPAPER2_PHONE_NO=?, NEWSPAPER3_TXT=?, NEWSPAPER3_PHONE_NO=?, ");
-			sql.append("RUN_DATES_TXT=?, TERRITORY_NO=?, AD_TYPE_TXT=?, SURGEON_NM=?, SURGEON_TITLE_TXT=?, ");
-			sql.append("SURGEON_EMAIL_TXT=?, SURGEON_IMG_URL=?, CLINIC_NM=?, CLINIC_ADDRESS_TXT=?, ");
-			sql.append("CLINIC_PHONE_TXT=?, CLINIC_HOURS_TXT=?, SURG_EXPERIENCE_TXT=?, ");
-			sql.append("CONTACT_NM=?, CONTACT_EMAIL_TXT=?, INSTRUCTIONS_TXT=?, ONLINE_FLG=?, ");
-			sql.append("HOSPITAL1_IMG=?, HOSPITAL2_IMG=?, HOSPITAL3_IMG=?, SURGEON_INFO_TXT=?, ");
-			sql.append("HOSPITAL_INFO_TXT=?, WEEKS_ADVANCE_NO=?, AD_COUNT_NO=?, ");
-			sql.append("COST_TO_DEPUY_NO=?,COST_TO_PARTY_NO=?,COST_TO_HOSPITAL_NO=?,COST_TO_SURGEON_NO=?, INVOICE_FILE_URL=? ");
+			sql.append("NEWSPAPER1_TXT=?, TOTAL_COST_NO=?, COST_TO_REP_NO=?, ");
+			sql.append("APPROVED_PAPER_NM=?, AD_FILE_URL=?, STATUS_FLG=?, UPDATE_DT=?, ");
+			sql.append("NEWSPAPER1_PHONE_NO=?, ");
+			sql.append("RUN_DATES_TXT=?, TERRITORY_NO=?, AD_TYPE_TXT=?, ");
+			sql.append("CONTACT_NM=?, INSTRUCTIONS_TXT=?, ONLINE_FLG=?, ");
+			sql.append("WEEKS_ADVANCE_NO=?, AD_COUNT_NO=?, ");
+			sql.append("COST_TO_DEPUY_NO=?,COST_TO_PARTY_NO=?,COST_TO_HOSPITAL_NO=?,");
+			sql.append("COST_TO_SURGEON_NO=?, INVOICE_FILE_URL=? ");
 			if (PENDING_CLIENT_APPROVAL == vo.getStatusFlg())
 				sql.append(", AD_SUBMIT_DT=?, SURGEON_STATUS_FLG=? ");
 			else if (updateSurgeon)
 				sql.append(", SURGEON_STATUS_FLG=? ");//If the status is changed on promote page; ensures views that check surgeon flag won't be incorrect 
 			sql.append("WHERE COOP_AD_ID=?");
 		}
-		log.debug("Co-op Ad SQL: " + sql.toString());
+		log.debug("Co-op Ad SQL: " + sql);
+		log.debug(vo);
 
 		// perform the execute
 		try {
@@ -357,40 +333,19 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 			ps = dbConn.prepareStatement(sql.toString());
 			ps.setString(++i, vo.getEventPostcardId());
 			ps.setString(++i, vo.getNewspaper1Text());
-			ps.setString(++i, vo.getNewspaper2Text());
 			ps.setDouble(++i, vo.getTotalCostNo());
 			ps.setDouble(++i, vo.getCostToRepNo());
 			ps.setString(++i, vo.getApprovedPaperName());
 			ps.setString(++i, vo.getAdFileUrl());
-			ps.setString(++i, vo.getAdFile2Url());
-			ps.setString(++i, vo.getAdFile3Url());
 			ps.setInt(++i, vo.getStatusFlg());
 			ps.setTimestamp(++i, Convert.getCurrentTimestamp());
 			ps.setString(++i, vo.getNewspaper1Phone());
-			ps.setString(++i, vo.getNewspaper2Phone());
-			ps.setString(++i, vo.getNewspaper3Text());
-			ps.setString(++i, vo.getNewspaper3Phone());
 			ps.setString(++i, vo.getAdDatesText());
 			ps.setString(++i, vo.getTerritoryNo());
 			ps.setString(++i, vo.getAdType());
-			ps.setString(++i, vo.getSurgeonName());
-			ps.setString(++i, vo.getSurgeonTitle());
-			ps.setString(++i, vo.getSurgeonEmail());
-			ps.setString(++i, vo.getSurgeonImageUrl());
-			ps.setString(++i, vo.getClinicName());
-			ps.setString(++i, vo.getClinicAddress());
-			ps.setString(++i, vo.getClinicPhone());
-			ps.setString(++i, vo.getClinicHours());
-			ps.setString(++i, vo.getSurgicalExperience());
 			ps.setString(++i, vo.getContactName());
-			ps.setString(++i, vo.getContactEmail());
 			ps.setString(++i, vo.getInstructionsText());
 			ps.setInt(++i, vo.getOnlineFlg());
-			ps.setString(++i, vo.getHospital1Img());
-			ps.setString(++i, vo.getHospital2Img());
-			ps.setString(++i, vo.getHospital3Img());
-			ps.setString(++i, vo.getSurgeonInfo());
-			ps.setString(++i,  vo.getHospitalInfo());
 			ps.setInt(++i, vo.getWeeksAdvance());
 			ps.setInt(++i, vo.getAdCount());
 			ps.setDouble(++i, vo.getCostToDepuyNo());
