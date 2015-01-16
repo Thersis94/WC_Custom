@@ -94,16 +94,20 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 	 * flag to the FORM_DATA for the given submission.
 	 */
 	public void delete(SMTServletRequest req) throws ActionException {
-		if(req.hasParameter("fsi"))
-			new SolrActionUtil(attributes).removeDocument(req.getParameter("fsi"));
+		String msg = "Story successfuly removed.";
+		try {
+			if(req.hasParameter("fsi"))
+				new SolrActionUtil(attributes).removeDocument(req.getParameter("fsi"));
 
-		//Hide Submission from list.
-		writeStoryElement(getElement("1", req.getParameter("storyDeleteFieldId"), null), req.getParameter("fsi"));
-		
-		//Update Status Element.
-		writeStoryElement(getElement(PAFStatus.removed.name(), PAFConst.STATUS_ID.getId(), req.getParameter("storyStatusDataId")), req.getParameter("fsi"));
+			//Hide Submission from list.
+			writeStoryElement(getElement("1", req.getParameter("storyDeleteFieldId"), null), req.getParameter("fsi"));
 
-		sendRedirect(req);
+			//Update Status Element.
+			writeStoryElement(getElement(PAFStatus.removed.name(), PAFConst.STATUS_ID.getId(), req.getParameter("storyStatusDataId")), req.getParameter("fsi"));
+		} catch (Exception e) {
+			msg = "There was an error removing the story from the site";
+		}
+		sendRedirect(req, msg);
 	}
 	
 	/**
@@ -114,18 +118,27 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 	public void update(SMTServletRequest req) throws ActionException {
 		
 		String submittalId = req.getParameter("fsi");
+		String msg = "Story Successfully Saved";
 		
 		if(req.hasParameter("publish")) {
 
 			//Create SolrStoryVO
 			SolrStoryVO ssv = createStoryVO(req);
 
-			//Submit to Solr
-			new SolrActionUtil(attributes).addDocument(ssv);
+			try {
+				//Submit to Solr
+				new SolrActionUtil(attributes).addDocument(ssv);
 
-			//Update Status Element.
-			writeStoryElement(getElement(PAFStatus.published.name(), PAFConst.STATUS_ID.getId(), req.getParameter("storyStatusDataId")), submittalId);
-			log.debug("Status Written");
+				//Update Status Element.
+				writeStoryElement(getElement(PAFStatus.published.name(), PAFConst.STATUS_ID.getId(), req.getParameter("storyStatusDataId")), submittalId);
+				log.debug("Status Written");
+
+				msg = "Story Successfully Published";
+
+			} catch(Exception e) {
+				log.error(e);
+				msg = "There was an error publishing the story.";
+			}
 		} else {
 
 			//Write story Title
@@ -140,7 +153,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 			writeStoryElement(getElement(PAFStatus.saved.name(), PAFConst.STATUS_ID.getId(), req.getParameter("storyStatusDataId")), submittalId);
 			log.debug("Status Written");
 		}
-		sendRedirect(req);
+		sendRedirect(req, msg);
 	}
 	
 	/**
@@ -478,7 +491,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		return ids;
 	}
 	//send the browser back to the appropriate page
-	private void sendRedirect(SMTServletRequest req) {
+	private void sendRedirect(SMTServletRequest req, String msg) {
 		StringBuilder pg = new StringBuilder();
 		pg.append("/").append(attributes.get(Constants.CONTEXT_NAME));
 		pg.append(getAttribute(AdminConstants.ADMIN_TOOL_PATH));
@@ -490,7 +503,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		pg.append("&searchJoint=").append(StringUtil.checkVal(req.getParameter("searchJoint")));
 		pg.append("&searchCity=").append(StringUtil.checkVal(req.getParameter("searchCity")));
 		pg.append("&searchState=").append(StringUtil.checkVal(req.getParameter("searchState")));
-
+		pg.append("&msg=").append(msg);
 		req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
 		req.setAttribute(Constants.REDIRECT_URL, pg.toString());
 	}
