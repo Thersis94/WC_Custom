@@ -2,6 +2,7 @@ package com.universal.util;
 
 // Java 7
 import java.io.ByteArrayInputStream;
+import java.sql.SQLException;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.HashMap;
@@ -40,6 +41,8 @@ import com.siliconmtn.util.XMLUtil;
 
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.common.SiteVO;
+import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title</b>: WebServiceAction.java <p/>
@@ -242,8 +245,18 @@ public class WebServiceAction extends SBActionAdapter {
 			errElem.addElement("ErrorMessage").setText("Unable to process the order at this time.");
 			return errElem;
 		}
-		//return this.callWebService(url, s, "root");
-		return this.createDebugResponseElement(cart);
+		
+		// log the order request
+		logOrderTransaction(req, cart, s, true);
+		
+		// place the order.
+		//Element orderResponse = this.callWebService(url, s, "root");
+		Element orderResponse = this.createDebugResponseElement(cart);
+		
+		// log the order response
+		logOrderTransaction(req, cart, new StringBuilder(orderResponse.asXML()), false);
+		
+		return orderResponse;
 	}
 	
 	/**
@@ -434,7 +447,6 @@ public class WebServiceAction extends SBActionAdapter {
 		}
 		s.append("</OrderRequest>");
 		log.debug("*****************\nOrder Request : " + s + "\n");
-		
 		return s;
 	}
 	
@@ -675,7 +687,7 @@ public class WebServiceAction extends SBActionAdapter {
 		subEle.addText("DEBUG: " + Calendar.getInstance().getTimeInMillis());
 		ele.add(subEle);
 		
-		subEle = new DefaultElement("ClientID");
+		subEle = new DefaultElement("TransactionID");
 		subEle.addText("DEBUG: " + cart.getInvoiceNo());
 		ele.add(subEle);
 		
@@ -697,6 +709,31 @@ public class WebServiceAction extends SBActionAdapter {
 			return new Double(val).toString();
 		} catch (NumberFormatException nfe) {
 			return "0.00";
+		}
+	}
+	
+	/**
+	 * Calls the custom transaction logger to log the order request.
+	 * @param req
+	 * @param cart
+	 * @param orderRequest
+	 * @throws SQLException 
+	 */
+	private void logOrderTransaction(SMTServletRequest req, ShoppingCartVO cart, 
+			StringBuilder orderRequest, boolean isRequest) {
+		log.debug("logging order request...");
+		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		String encryptKey = (String)getAttribute(Constants.ENCRYPT_KEY);
+		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
+		USATransactionLogger uLog = new USATransactionLogger();
+		uLog.setDbConn(dbConn);
+		uLog.setSchema(schema);
+		uLog.setEncryptionKey(encryptKey);
+		uLog.setSiteId(site.getSiteId());
+		try {
+			uLog.logTransaction(cart, orderRequest, isRequest, req.hasParameter("paypal"));
+		} catch (Exception e) {
+			log.error("Error: Unable to log transaction, ", e);
 		}
 	}
 	
