@@ -175,6 +175,10 @@ public class SiteWizardAction_GB extends SiteWizardAction {
 		secDisplay.add(makePageModule(true, true, true, "45102F48BA5247C98BFBD00BBA9B8AEC", "c0a80a076e1dc62789a3565692e8803e", null, 2, 1));						// Breadcrumbs
 		secDisplay.add(makePageModule(true, true, true, null, "c0a802234b3c124378e7a6703fa3445", null, 1, 4));														// White Board
 
+		emptyColDisplay.add(makePageModule(true, false, false, "c0a80223d5a0e718bb741827283b9ef8","c0a80a07614b3c24224dd3d77221237a", "HEADER_TOP_LEFT_CONTENT", 0, 1));	// World Link 2012 updated
+		emptyColDisplay.add(makePageModule(false, true, true, "0a00141332afb0c46020f5cb973253a9","c0a80a07614b3c24224dd3d77221237a", "HEADER_TOP_LEFT_CONTENT", 0, 1));		// World Link 2012 Logged In
+		emptyColDisplay.add(makePageModule(true, true, true, "FTS_CENTER_PAGE_"+centerId, "0a00141d8afabb8f1d07f6377fa000a6", "HEADER_RIGHT", 0, 1));						//Consultation portlet
+		emptyColDisplay.add(makePageModule(true, true, true, "0a00141332afb0b86020f5cb6ae7d9d3", "c0a802411c9e09843c052afd87f4bba1", "SITE_SEARCH", 1, 0));					// Site Search 2012
 	}
 	
 	public Map<String, Integer> makeRoles(boolean isPublic, boolean isReg, boolean isAdmin) {
@@ -276,7 +280,7 @@ public class SiteWizardAction_GB extends SiteWizardAction {
 	 * (non-Javadoc)
 	 * @see com.fastsigns.action.wizard.SiteWizardAction#addSingleColLayout(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public String addSingleColLayout(SMTServletRequest req) throws Exception {
+	public String addEmptyColLayout(SMTServletRequest req) throws Exception {
 		SMTActionInterface sai = new TemplateAction(this.actionInit);
 		sai.setAttributes(attributes);
 		sai.setDBConnection(dbConn);
@@ -284,7 +288,7 @@ public class SiteWizardAction_GB extends SiteWizardAction {
 		req.setParameter("pageModuleId", "");
 		req.setParameter("pmTemplateId", "");
 		req.setParameter("columns", "1");
-		req.setParameter("layoutName", SINGLE_COL_LABEL);
+		req.setParameter("layoutName", EMPTY_COL_LABEL);
 		req.setParameter("pageTitle", "Welcome to FASTSIGNS &reg;");
 		req.setParameter("defaultFlag", "0");
 		req.setParameter("defaultColumn","1");
@@ -293,6 +297,6 @@ public class SiteWizardAction_GB extends SiteWizardAction {
 		req.setParameter("paramName", "");
 		sai.update(req);
 		
-		return getSecondaryLayoutId(req.getParameter("siteId"), SINGLE_COL_LABEL);
+		return getSecondaryLayoutId(req.getParameter("siteId"), EMPTY_COL_LABEL);
 	}
 }

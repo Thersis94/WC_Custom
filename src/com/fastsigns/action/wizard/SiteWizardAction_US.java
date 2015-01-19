@@ -177,10 +177,10 @@ public class SiteWizardAction_US extends SiteWizardAction {
 		secDisplay.add(makePageModule(true, true, true, "24A2820B6A384AC59770CC3DA2D78290", "c0a80a076e1dc62789a3565692e8803e", null, 2, 1));						// Breadcrumbs
 		secDisplay.add(makePageModule(true, true, true, null, "c0a802234b3c124378e7a6703fa3445", null, 1, 4));														// White Board
 		
-		singleColDisplay.add(makePageModule(true, false, false, "c0a80223d5959a724563100176f76f55","c0a80a07614b3c24224dd3d77221237a", "HEADER_TOP_LEFT_CONTENT", 0, 1));	// World Link 2012 Updated
-		singleColDisplay.add(makePageModule(false, true, true, "c0a8022d5d244a5888373fbb07b1015","c0a80a07614b3c24224dd3d77221237a", "HEADER_TOP_LEFT_CONTENT", 0, 1));		// World Link 2012 Updated (logged in)
-		singleColDisplay.add(makePageModule(true, true, false, "FTS_CENTER_PAGE_"+centerId, "0a00141d8afabb8f1d07f6377fa000a6", "HEADER_RIGHT", 0, 1));						//Consultation portlet
-		singleColDisplay.add(makePageModule(true, true, true, "c0a80165fc30136bb0cef84ca2d39a5", "c0a8022d8f80712f35240b2c75ef14b2", "SITE_SEARCH", 1, 0));						// Site Search 2012
+		emptyColDisplay.add(makePageModule(true, false, false, "c0a80223d5959a724563100176f76f55","c0a80a07614b3c24224dd3d77221237a", "HEADER_TOP_LEFT_CONTENT", 0, 1));	// World Link 2012 Updated
+		emptyColDisplay.add(makePageModule(false, true, true, "c0a8022d5d244a5888373fbb07b1015","c0a80a07614b3c24224dd3d77221237a", "HEADER_TOP_LEFT_CONTENT", 0, 1));		// World Link 2012 Updated (logged in)
+		emptyColDisplay.add(makePageModule(true, true, true, "FTS_CENTER_PAGE_"+centerId, "0a00141d8afabb8f1d07f6377fa000a6", "HEADER_RIGHT", 0, 1));						//Consultation portlet
+		emptyColDisplay.add(makePageModule(true, true, true, "c0a80165fc30136bb0cef84ca2d39a5", "c0a8022d8f80712f35240b2c75ef14b2", "SITE_SEARCH", 1, 0));					// Site Search 2012
 	}
 	
 	public Map<String, Integer> makeRoles(boolean isPublic, boolean isReg, boolean isAdmin) {
@@ -281,7 +281,7 @@ public class SiteWizardAction_US extends SiteWizardAction {
 	 * (non-Javadoc)
 	 * @see com.fastsigns.action.wizard.SiteWizardAction#addSingleColLayout(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public String addSingleColLayout(SMTServletRequest req) throws Exception {
+	public String addEmptyColLayout(SMTServletRequest req) throws Exception {
 		SMTActionInterface sai = new TemplateAction(this.actionInit);
 		sai.setAttributes(attributes);
 		sai.setDBConnection(dbConn);
@@ -289,7 +289,7 @@ public class SiteWizardAction_US extends SiteWizardAction {
 		req.setParameter("pageModuleId", "");
 		req.setParameter("pmTemplateId", "");
 		req.setParameter("columns", "1");
-		req.setParameter("layoutName", SINGLE_COL_LABEL);
+		req.setParameter("layoutName", EMPTY_COL_LABEL);
 		req.setParameter("pageTitle", "Welcome to FASTSIGNS &reg;");
 		req.setParameter("defaultFlag", "0");
 		req.setParameter("defaultColumn","1");
@@ -298,6 +298,6 @@ public class SiteWizardAction_US extends SiteWizardAction {
 		req.setParameter("paramName", "");
 		sai.update(req);
 		
-		return getSecondaryLayoutId(req.getParameter("siteId"), SINGLE_COL_LABEL);
+		return getSecondaryLayoutId(req.getParameter("siteId"), EMPTY_COL_LABEL);
 	}
 }
