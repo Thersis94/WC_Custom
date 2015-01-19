@@ -211,6 +211,8 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		ssv.setOtherHobbies(fields.get(PAFConst.OTHER_HOBBY_ID.getId()).getResponses().get(0));
 		ssv.setTitle(fields.get(PAFConst.STORY_TITLE_ID.getId()).getResponses().get(0));
 		ssv.setSummary(fields.get(PAFConst.STORY_TEXT_ID.getId()).getResponses().get(0));
+		ssv.addOrganization(req.getParameter("organizationId"));
+		ssv.addRole("0");
 
 		return ssv;
 	}
