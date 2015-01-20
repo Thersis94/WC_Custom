@@ -76,7 +76,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		}
 	}
 	
-	public enum PAFStatus {saved, published, removed}
+	public enum PAFStatus {saved, published, removed, republish}
 	
 	private static final String EXPORT_FILE_NAME = "PatientStories.xls";
 	/**
@@ -149,9 +149,15 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 			writeStoryElement(getElement(req.getParameter("storyText"), req.getParameter("storyTextFieldId"), req.getParameter("storyTextDataId")), submittalId);
 			log.debug("Text Written");
 
-			//Update Status Element.
-			writeStoryElement(getElement(PAFStatus.saved.name(), PAFConst.STATUS_ID.getId(), req.getParameter("storyStatusDataId")), submittalId);
-			log.debug("Status Written");
+			if(req.hasParameter("storyStatusLevel") && req.getParameter("storyStatusLevel").equals(PAFStatus.published.name())) {
+				//Update Status Element.
+				writeStoryElement(getElement(PAFStatus.republish.name(), PAFConst.STATUS_ID.getId(), req.getParameter("storyStatusDataId")), submittalId);
+				log.debug("Status Republish Written");
+			} else {
+				//Update Status Element.
+				writeStoryElement(getElement(PAFStatus.saved.name(), PAFConst.STATUS_ID.getId(), req.getParameter("storyStatusDataId")), submittalId);
+				log.debug("Status Saved Written");
+			}
 		}
 		sendRedirect(req, msg);
 	}
@@ -322,6 +328,8 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		String stateId = StringUtil.checkVal(req.getParameter("searchState"));
 		String cityNm = StringUtil.checkVal(req.getParameter("searchCity"));
 		String joint = StringUtil.checkVal(req.getParameter("searchJoint"));
+		Date reportStart = Convert.formatSQLDate(Convert.formatStartDate(req.getParameter("reportStart"), "1/1/2015"));
+		Date reportEnd = Convert.formatSQLDate(Convert.formatEndDate(req.getParameter("reportEnd")), true);
 		String srQuery = getSubmittalRecordQuery(stateId, cityNm, joint, filterHidden);
 		log.debug("Query = " + srQuery);
 
@@ -335,6 +343,8 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 				ps.setString(i++, PAFConst.HIDDEN_ID.getId());
 			ps.setString(i++, req.getParameter("formId"));
 			ps.setString(i++, PAFConst.JOINT_ID.getId());
+			ps.setDate(i++, reportStart);
+			ps.setDate(i++, reportEnd);
 			if(stateId.length() > 0)
 				ps.setString(i++, stateId);
 			if(cityNm.length() > 0)
@@ -349,7 +359,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 			while(rs.next()) {
 				String [] data = new String []{rs.getString("Joints"), rs.getString("STATUS"), rs.getString("STATUS_ID")};
 				//Skip any results that have the Hidden flag (Have been deleted)
-				if(Convert.formatBoolean(rs.getString("HIDE")))
+				if(filterHidden && Convert.formatBoolean(rs.getString("HIDE")))
 					continue;
 				FormTransactionVO vo = new FormTransactionVO(rs);
 				vo.setUserExtendedInfo(data);
@@ -387,7 +397,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 	private String getSubmittalRecordQuery(String state, String city, String joint, boolean filterHidden) {
 		StringBuilder sb = new StringBuilder(750);
 		sb.append("select distinct a.*, ");
-		sb.append("STUFF((SELECT ', ' + cast(FD.VALUE_TXT as nvarchar) FROM FORM_DATA FD ");
+		sb.append("STUFF((SELECT distinct ', ' + replace(replace(cast(FD.VALUE_TXT as nvarchar), '/Left', ''), '/Right', '') FROM FORM_DATA FD ");
 		sb.append("WHERE (FD.FORM_SUBMITTAL_ID = a.FORM_SUBMITTAL_ID and FD.FORM_FIELD_ID = b.FORM_FIELD_ID) ");
 		sb.append("FOR XML PATH('')), 1, 1, '') Joints, cast(f.VALUE_TXT as nvarchar) as 'STATUS', f.FORM_DATA_ID as 'STATUS_ID' ");
 		if(filterHidden)
@@ -399,7 +409,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 			sb.append("left outer join FORM_DATA e on a.FORM_SUBMITTAL_ID = e.FORM_SUBMITTAL_ID and e.FORM_FIELD_ID= ? ");
 		sb.append("left outer join PROFILE c on a.PROFILE_ID = c.PROFILE_ID ");
 		sb.append("left outer join PROFILE_ADDRESS d on c.PROFILE_ID = d.PROFILE_ID ");
-		sb.append("where FORM_ID = ? and b.FORM_FIELD_ID = ? ");
+		sb.append("where FORM_ID = ? and b.FORM_FIELD_ID = ? and a.CREATE_DT between ? and ? ");
 
 		//Add Optional Params to Where Clause
 		if(state.length() > 0)
@@ -423,30 +433,29 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 	 */
 	private void exportAllSubmissions(SMTServletRequest req) {
 		DataContainer results = new DataContainer();
-		String formId = req.getParameter("formId");
-		Date startDate = Convert.formatSQLDate(Convert.formatStartDate(req.getParameter("startDate"), "1/1/2015"));
-		Date endDate = Convert.formatSQLDate(Convert.formatEndDate(req.getParameter("endDate")), true);
 
 		/*
 		 * Retrieve Form Submittal Ids.  We may be doing an individual export so
 		 * look on request for fsi param first.  If not present then get all
 		 * ids between start and end date.
 		 */
-		List<String> fsids = null;
+		List<FormTransactionVO> fsids = null;
 		if(req.hasParameter("fsi")) {
-			fsids = new ArrayList<String>();
-			fsids.add(req.getParameter("fsi"));
+			fsids = new ArrayList<FormTransactionVO>();
+			FormTransactionVO f = new FormTransactionVO();
+			f.setFormSubmittalId(req.getParameter("fsi"));
 		} else {
-			fsids = getAllSubmissionIds(formId, startDate, endDate);
+			fsids = retreiveAllSubmissions(req, false);
 		}
 		Map<String, FormTransactionVO> t = new HashMap<String, FormTransactionVO>(fsids.size());
 		
 		//Iterate over list to get FormTransactionVOs
+
 		FormFacadeAction ffa = new FormFacadeAction(actionInit);
 		ffa.setDBConnection(dbConn);
 		ffa.setAttributes(attributes);
-		for(String f : fsids) {
-			req.setParameter("fsi", f);
+		for(FormTransactionVO f : fsids) {
+			req.setParameter("fsi", f.getFormSubmittalId());
 			DataContainer dc = ffa.retrieveSubmittedForm(req);
 			t.putAll(dc.getTransactions());
 		}
@@ -461,37 +470,6 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		req.setAttribute(Constants.BINARY_DOCUMENT, report);
 	}
 	
-	/**
-	 * Helper method that retrieves all the Submittal Ids for a form in the given
-	 * date range.  
-	 * @param formId
-	 * @param startDate
-	 * @param endDate
-	 * @return
-	 */
-	private List<String> getAllSubmissionIds(String formId, Date startDate, Date endDate) {
-		List<String> ids = new ArrayList<String>();
-		StringBuilder sb = new StringBuilder(100);
-		sb.append("select FORM_SUBMITTAL_ID from FORM_SUBMITTAL where FORM_ID = ? ");
-		sb.append("and CREATE_DT between ? and ?");
-		log.debug(sb.toString() + " | " + startDate + " | " + endDate);
-		int i = 1;
-		PreparedStatement ps = null;
-		try {
-			ps = dbConn.prepareStatement(sb.toString());
-			ps.setString(i++, formId);
-			ps.setDate(i++, startDate);
-			ps.setDate(i++, endDate);
-			ResultSet rs = ps.executeQuery();
-			
-			while(rs.next())
-				ids.add(rs.getString("FORM_SUBMITTAL_ID"));
-		} catch(Exception e) {
-			log.error("Could not retrieve list of Submission Ids", e);
-		} finally {DBUtil.close(ps);}
-		
-		return ids;
-	}
 	//send the browser back to the appropriate page
 	private void sendRedirect(SMTServletRequest req, String msg) {
 		StringBuilder pg = new StringBuilder();
@@ -505,6 +483,8 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		pg.append("&searchJoint=").append(StringUtil.checkVal(req.getParameter("searchJoint")));
 		pg.append("&searchCity=").append(StringUtil.checkVal(req.getParameter("searchCity")));
 		pg.append("&searchState=").append(StringUtil.checkVal(req.getParameter("searchState")));
+		pg.append("&reportStart=").append(StringUtil.checkVal(req.getParameter("reportStart")));
+		pg.append("&reportEnd=").append(StringUtil.checkVal(req.getParameter("reportEnd")));
 		pg.append("&msg=").append(msg);
 		req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
 		req.setAttribute(Constants.REDIRECT_URL, pg.toString());
