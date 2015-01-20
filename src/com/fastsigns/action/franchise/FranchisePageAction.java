@@ -198,7 +198,7 @@ public class FranchisePageAction extends SBActionAdapter {
 					}
 					
 					this.savePage(req);
-					if(req.getParameter("pageNm").equals("gallery")){
+					if("gallery".equals(req.getParameter("pageNm"))){
 						log.debug("adding gallery page.");
 						redir.append(addPhotoGallery(req));
 					}
