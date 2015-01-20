@@ -16,6 +16,7 @@ import com.smt.sitebuilder.action.SBModuleVO;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
+import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title</b>:InstagramAction.java<p/>
@@ -57,7 +58,7 @@ public class InstagramAction extends SimpleActionAdapter {
 		super.retrieve(req);
 		
 		//Get the action data set by the super class
-		ModuleVO modVO = (ModuleVO) this.getAttribute(AdminConstants.ADMIN_MODULE_DATA);
+		ModuleVO modVO = (ModuleVO) this.getAttribute(Constants.MODULE_DATA);
 		SBModuleVO actionData = (SBModuleVO) modVO.getActionData();
 		
 		//Parse URL's, and add them to the request as a list
@@ -81,7 +82,7 @@ public class InstagramAction extends SimpleActionAdapter {
 		//Create a delimited list of instagram url's
 		for (String s : paramList){
 			if (s.startsWith(URL_FIELD)){
-				urlString.append(s);
+				urlString.append(req.getParameter(s));
 				urlString.append(URL_DELIMITER);
 			}
 		}
