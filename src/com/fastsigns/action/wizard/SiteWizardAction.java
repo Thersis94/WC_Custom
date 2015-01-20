@@ -49,6 +49,7 @@ public abstract class SiteWizardAction extends SBActionAdapter implements FSSite
 	// Hours, 3 Button, center image and text, Modules and Map
 	protected List<PageModuleVO> defDisplay = new LinkedList<PageModuleVO>();
 	protected List<PageModuleVO> secDisplay = new LinkedList<PageModuleVO>();
+	protected List<PageModuleVO> emptyColDisplay = new LinkedList<PageModuleVO>();
 	
 	/*
 	 * These are variables set in the localization bundles for country specific id's
@@ -68,6 +69,7 @@ public abstract class SiteWizardAction extends SBActionAdapter implements FSSite
 	protected String negMsg4 = "Unable to add new site, Franchise ID or Franchise Location Id contained letters: ";
 	
 	protected Integer centerId = null;
+	public static final String EMPTY_COL_LABEL = "Empty Column Layout";
 	
 	/**
 	 * Default Constructor.
@@ -364,6 +366,7 @@ public abstract class SiteWizardAction extends SBActionAdapter implements FSSite
 	throws Exception {
 			List<PageModuleVO> current = secDisplay;
 			if (type == 1) current = defDisplay;
+			if (type == 2) current = emptyColDisplay;
 			log.debug("***********************: " + secDisplay.size() + "|" + defDisplay.size() + "|" + current.size());
 			
 			for (PageModuleVO vo : current) {
@@ -427,10 +430,18 @@ public abstract class SiteWizardAction extends SBActionAdapter implements FSSite
 		ps.setString(2, name);
 		ResultSet rs = ps.executeQuery();
 		if (rs.next()) tId = rs.getString(1);
-		
 		return tId;
 
 	}
+	
+	/**
+	 * Creates the empty column layout (single col, no left or right rails) for a site
+	 * @param req
+	 * @return The templateId for that layout
+	 * @throws Exception
+	 */
+	abstract public String addEmptyColLayout(SMTServletRequest req)
+		throws Exception;
 	
 	/* (non-Javadoc)
 	 * @see com.fastsigns.action.wizard.FSSiteWizardIntfc#updateLayout(java.lang.String, java.lang.String)
@@ -446,7 +457,7 @@ public abstract class SiteWizardAction extends SBActionAdapter implements FSSite
 		if (rs.next()) tId = rs.getString(1);
 		
 		String sql = "update template set columns_no=3, default_column_no=2";
-		sql += "where template_id = '" + tId + "'";
+		sql += " where template_id = '" + tId + "'";
 		
 		s = dbConn.createStatement();
 		s.executeUpdate(sql);
@@ -573,4 +584,11 @@ public abstract class SiteWizardAction extends SBActionAdapter implements FSSite
 
 	}
 	
+	public void setCenterId(Integer val){
+		centerId = val;
+	}
+	
+	public Integer getCenterId(){
+		return centerId;
+	}
 }
