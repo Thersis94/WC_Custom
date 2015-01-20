@@ -2,6 +2,7 @@ package com.sjm.corp.locator.action;
 
 import java.util.List;
 
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.dealer.DealerLocationVO;
 import com.smt.sitebuilder.action.dealer.DealerVO;
@@ -40,20 +41,20 @@ public class ClinicReportVO extends AbstractSBReportVO {
 			for(DealerVO vo : clinics) {
 				for (String key : vo.getLocations().keySet()) {
 					DealerLocationVO loc = vo.getLocations().get(key);
-					csv.append(vo.getDealerName() + ",");
-					csv.append(vo.getDealerId() + ",");
-					csv.append(loc.getFax() + ",");
-					csv.append(loc.getWebsite() + ",");
-					csv.append(loc.getPhone() + ",");
-					csv.append(loc.getLocationName() + ",");
-					csv.append(loc.getDealerLocationId() + ",");
-					csv.append(loc.getEmailAddress() + ",");
-					csv.append(loc.getAddress() + ",");
-					csv.append(loc.getAddress2() + ",");
-					csv.append(loc.getCountry() + ",");
-					csv.append(loc.getCity() + ",");
-					csv.append(loc.getZip() + ",");
-					csv.append(loc.getState() + "\n");
+					csv.append(vo.getDealerName()).append(",");
+					csv.append(vo.getDealerId()).append(",");
+					csv.append(StringUtil.checkVal(loc.getFax())).append(",");
+					csv.append(StringUtil.checkVal(loc.getWebsite())).append(",");
+					csv.append(StringUtil.checkVal(loc.getPhone())).append(",");
+					csv.append(StringUtil.checkVal(loc.getLocationName())).append(",");
+					csv.append(StringUtil.checkVal(loc.getDealerLocationId())).append(",");
+					csv.append(StringUtil.checkVal(loc.getEmailAddress())).append(",");
+					csv.append(StringUtil.checkVal(loc.getAddress())).append(",");
+					csv.append(StringUtil.checkVal(loc.getAddress2())).append(",");
+					csv.append(StringUtil.checkVal(loc.getCountry())).append(",");
+					csv.append(StringUtil.checkVal(loc.getCity())).append(",");
+					csv.append(StringUtil.checkVal(loc.getZip())).append(",");
+					csv.append(StringUtil.checkVal(loc.getState())).append("\n");
 				}
 			}
 		}

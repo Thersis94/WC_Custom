@@ -9,6 +9,7 @@ import java.sql.Statement;
 import java.util.LinkedList;
 import java.util.List;
 
+
 // FASTSIGNS Libs
 import com.fastsigns.action.franchise.vo.FranchiseVO;
 
@@ -53,9 +54,9 @@ public abstract class SiteWizardAction extends SBActionAdapter implements FSSite
 	/*
 	 * These are variables set in the localization bundles for country specific id's
 	 */
-	public String FS_SITE_ID = "FTS";
-	public String FS_GROUP = "FAST_SIGNS";
-	public String emailSuffix = "@fastsigns.com";
+	protected String FS_SITE_ID = "FTS";
+	protected String FS_GROUP = "FAST_SIGNS";
+	protected String emailSuffix = "@fastsigns.com";
 	
 	/*
 	 * These are the messages sent back to the user, set in the localization bundle for each country.
@@ -91,9 +92,12 @@ public abstract class SiteWizardAction extends SBActionAdapter implements FSSite
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	public void build(SMTServletRequest req) throws ActionException {
+		//grab the Id to identify the id of consultation portlet
+		centerId = Convert.formatInteger(req.getParameter("dealerLocationId"));
 		
 		// Assign the display types
 		this.assignTypes();
+		
 		// Store desired workflow directive
 		int workflow = Integer.parseInt(req.getParameter("subRule"));
 		String msg = negMsg1 + ": " + req.getParameter("dealerName") + negMsg3;
