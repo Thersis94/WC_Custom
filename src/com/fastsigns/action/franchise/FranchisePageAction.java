@@ -199,13 +199,8 @@ public class FranchisePageAction extends SBActionAdapter {
 						noPageModule = true;
 					}
 					
-					//Check if the user wants to add a page with no left or right rails
-					if ( Convert.formatBoolean( req.getParameter("singleCol"), false )){
-						setSingleColLayout(req);
-					}
-					
 					this.savePage(req);
-					if(req.getParameter("pageNm").equals("gallery")){
+					if("gallery".equals(req.getParameter("pageNm"))){
 						log.debug("adding gallery page.");
 						redir.append(addPhotoGallery(req));
 					}
@@ -216,9 +211,17 @@ public class FranchisePageAction extends SBActionAdapter {
 					redir.append("pageId=").append(req.getAttribute("pageId"));
 					redir.append("&lvl=").append(lvl).append("&template=");
 					redir.append(req.getParameter("aliasName"));
+					redir.append("&selectCol=true");
 					break;
 					
 				case EDIT_PAGE_COPY:
+
+					//Check if the user wants to add a page with no left or right rails
+					if (!Convert.formatBoolean( req.getParameter("emptyCol"), false )){
+						req.setParameter("siteId", siteId);
+						setEmptyColLayout(req);
+					}
+					
 					this.savePage(req);
 					if(req.hasParameter("galleryId"))
 						updatePhotoGallery(req);
@@ -873,23 +876,38 @@ public class FranchisePageAction extends SBActionAdapter {
 	 * @param req
 	 * @throws Exception 
 	 */
-	private void setSingleColLayout(SMTServletRequest req) throws Exception{
+	private void setEmptyColLayout(SMTServletRequest req) throws Exception{
 		log.debug("Single Column Layout Selected");
 		
 		//Get the proper SiteWizardAction
 		SiteVO site = (SiteVO)req.getAttribute("siteData");
+		String siteId = StringUtil.checkVal(req.getParameter("siteId"));
 		SiteWizardFactoryAction wizardFactory = new SiteWizardFactoryAction();
 		SiteWizardAction swa = wizardFactory.retrieveWizard(site.getCountryCode());
+		swa.setAttributes(attributes);
+		swa.setDBConnection(dbConn);
 		
-		//Check if the layout was already created
-		String tId = swa.getSecondaryLayoutId(site.getSiteId(), 
-				SiteWizardAction.SINGLE_COL_LABEL);
-		
+		String tId = null;
+		try{
+			//Check if the layout was already created
+			tId = swa.getSecondaryLayoutId(siteId, SiteWizardAction.EMPTY_COL_LABEL);
+		} catch (Exception e){ 
+			log.error("Couldn't fetch layout",e); 
+			throw e;
+		}
 		//If the layout doesn't exits yet, create it
 		if (StringUtil.checkVal(tId).isEmpty()){
-			tId = swa.addSingleColLayout(req);
+			log.debug("***********Creating new "+SiteWizardAction.EMPTY_COL_LABEL);
+			tId = swa.addEmptyColLayout(req);
+			
+			//Grab the center number from the siteId
+			String[] cId = req.getParameter("organizationId").split("_");
+			swa.setCenterId(Convert.formatInteger(cId[cId.length-1]));
+			swa.assignTypes();
+			swa.associateCenterPage(tId, null, null, 2);
 		}
 		
 		req.setParameter("templateId", tId);
+		req.setParameter("displayColumn","1");
 	}
 }

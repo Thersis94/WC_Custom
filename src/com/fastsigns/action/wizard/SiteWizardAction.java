@@ -49,7 +49,7 @@ public abstract class SiteWizardAction extends SBActionAdapter implements FSSite
 	// Hours, 3 Button, center image and text, Modules and Map
 	protected List<PageModuleVO> defDisplay = new LinkedList<PageModuleVO>();
 	protected List<PageModuleVO> secDisplay = new LinkedList<PageModuleVO>();
-	protected List<PageModuleVO> singleColDisplay = new LinkedList<PageModuleVO>();
+	protected List<PageModuleVO> emptyColDisplay = new LinkedList<PageModuleVO>();
 	
 	/*
 	 * These are variables set in the localization bundles for country specific id's
@@ -69,10 +69,7 @@ public abstract class SiteWizardAction extends SBActionAdapter implements FSSite
 	protected String negMsg4 = "Unable to add new site, Franchise ID or Franchise Location Id contained letters: ";
 	
 	protected Integer centerId = null;
-	public static final String SINGLE_COL_LABEL = "Single Column Layout";
-	public static final int SECONDARY_LAYOUT = 0;
-	public static final int DEFAULT_LAYOUT = 1;
-	public static final int SINGLE_COL_LAYOUT = 2;
+	public static final String EMPTY_COL_LABEL = "Empty Column Layout";
 	
 	/**
 	 * Default Constructor.
@@ -368,7 +365,8 @@ public abstract class SiteWizardAction extends SBActionAdapter implements FSSite
 	public void associateCenterPage(String layoutId, String fId, String centerActionId, int type) 
 	throws Exception {
 			List<PageModuleVO> current = secDisplay;
-			if (type == DEFAULT_LAYOUT) current = defDisplay;
+			if (type == 1) current = defDisplay;
+			if (type == 2) current = emptyColDisplay;
 			log.debug("***********************: " + secDisplay.size() + "|" + defDisplay.size() + "|" + current.size());
 			
 			for (PageModuleVO vo : current) {
@@ -432,10 +430,18 @@ public abstract class SiteWizardAction extends SBActionAdapter implements FSSite
 		ps.setString(2, name);
 		ResultSet rs = ps.executeQuery();
 		if (rs.next()) tId = rs.getString(1);
-		
 		return tId;
 
 	}
+	
+	/**
+	 * Creates the empty column layout (single col, no left or right rails) for a site
+	 * @param req
+	 * @return The templateId for that layout
+	 * @throws Exception
+	 */
+	abstract public String addEmptyColLayout(SMTServletRequest req)
+		throws Exception;
 	
 	/* (non-Javadoc)
 	 * @see com.fastsigns.action.wizard.FSSiteWizardIntfc#updateLayout(java.lang.String, java.lang.String)
@@ -578,13 +584,11 @@ public abstract class SiteWizardAction extends SBActionAdapter implements FSSite
 
 	}
 	
-	/**
-	 * Creates a single column layout for a center, non-mobile sub-page 
-	 * (no left or right rails). 
-	 * @param req
-	 * @return layoutId
-	 * @throws Exception
-	 */
-	public abstract String addSingleColLayout(SMTServletRequest req)
-			throws Exception;
+	public void setCenterId(Integer val){
+		centerId = val;
+	}
+	
+	public Integer getCenterId(){
+		return centerId;
+	}
 }
