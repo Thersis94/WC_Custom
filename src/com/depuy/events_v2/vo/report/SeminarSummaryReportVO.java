@@ -32,6 +32,16 @@ import com.smt.sitebuilder.action.event.vo.EventEntryVO;
  * @since Oct 20, 2014
  ****************************************************************************/
 public class SeminarSummaryReportVO extends AbstractSBReportVO {
+	
+	private static Map<String, String> typeMap = new HashMap<String, String>(){
+		private static final long serialVersionUID = 1L;{
+		put("ESEM", "Patient");
+		put("CFSEM", "Co-Funded");
+		put("CFSEM50", "Co-Funded 50/50");
+		put("CFSEM25", "Co-Funded 50/25/25");
+		put("CPSEM", "Physician");
+		put("HSEM", "Hospital Sponsored");
+	}};
 
 	public static enum FieldList { 
 		JOINT_FLG("joint_flg", "java.lang.String","Joint","JOINT_FLG"),
@@ -208,16 +218,6 @@ public class SeminarSummaryReportVO extends AbstractSBReportVO {
 					}
 					break;
 				case SEMINAR_TYPE_FLG:
-					Map<String,String> typeMap = new HashMap<String,String>(){
-						private static final long serialVersionUID = 1L;{
-						put("ESEM", "Patient");
-						put("CFSEM", "Co-Funded");
-						put("CFSEM50", "Co-Funded 50/50");
-						put("CFSEM25", "Co-Funded 50/25/25");
-						put("CPSEM", "Physician");
-						put("HSEM", "Hospital Sponsored");
-					}};
-					
 					String typeCd = StringUtil.checkVal(event.getEventTypeCd());
 					if ( (!filterMap.containsKey(filterKey) ) || 
 							filterMap.get(filterKey).equalsIgnoreCase(typeCd)){
@@ -279,23 +279,23 @@ public class SeminarSummaryReportVO extends AbstractSBReportVO {
 					rpt.append( StringUtil.checkVal(vo.getPostcardSendDate()) );
 					break;
 				case NEWSPAPER_NM_FLG:
-					printMultiVal(rpt, "getNewspaper1Text",vo.getPrintAndOnlineAds());
+					printMultiVal(rpt, "getNewspaper1Text",vo.getAllAds());
 					break;
 				case AD_DT_FLG:
-					vo.getPrintAndOnlineAds().get(0).getCostToRepNo();
-					printMultiVal(rpt, "getAdDatesText",vo.getPrintAndOnlineAds());
+					vo.getAllAds().get(0).getCostToRepNo();
+					printMultiVal(rpt, "getAdDatesText",vo.getAllAds());
 					break;
 				case AD_COST_FLG:
-					printMultiVal(rpt,"getTotalCostNo",vo.getPrintAndOnlineAds());
+					printMultiVal(rpt,"getTotalCostNo",vo.getAllAds());
 					break;
 				case TERRITORY_COST_FLG:
-					printMultiVal(rpt,"getCostToRepNo", vo.getPrintAndOnlineAds());
+					printMultiVal(rpt,"getCostToRepNo", vo.getAllAds());
 					break;
 				case SURGEON_COST_FLG:
-					printMultiVal(rpt,"getCostToSurgeonNo", vo.getPrintAndOnlineAds());
+					printMultiVal(rpt,"getCostToSurgeonNo", vo.getAllAds());
 					break;
 				case HOSPITAL_COST_FLG:
-					printMultiVal(rpt,"getCostToHospitalNo",vo.getPrintAndOnlineAds());
+					printMultiVal(rpt,"getCostToHospitalNo",vo.getAllAds());
 					break;
 				case INVITATION_COST_NO:
 					rpt.append(StringUtil.checkVal(vo.getCostNo()));

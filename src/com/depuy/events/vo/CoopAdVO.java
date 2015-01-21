@@ -37,9 +37,8 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 	private Double totalCostNo = null;
 	private Double costToDepuyNo = null;
 	private Double costToHospitalNo = null;
-	private Double costToSurgeonNo = null;
+	private Double costToSurgeonNo = null; //also holds 'cost to party' for CFSEM50
 	private Double costToRepNo = null;
-	private Double costToPartyNo = null;
 	private String approvedPaperName = null;
 	private String adFileUrl = null;
 	private String territoryNo = null;
@@ -88,12 +87,11 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 		newspaper1Text = req.getParameter("newspaper1Text");
 		newspaper2Text = req.getParameter("newspaper2Text");
 		newspaper3Text = req.getParameter("newspaper3Text");
-		totalCostNo = Convert.formatDouble(StringUtil.replace(req.getParameter("totalCostNo"), ",", ""));
-		costToRepNo = Convert.formatDouble(StringUtil.replace(req.getParameter("costToRepNo"), ",", ""));
-		costToDepuyNo = Convert.formatDouble(StringUtil.replace(req.getParameter("costToDePuyNo"), ",", ""));
-		costToHospitalNo = Convert.formatDouble(StringUtil.replace(req.getParameter("costToHospitalNo"), ",", ""));
-		costToSurgeonNo = Convert.formatDouble(StringUtil.replace(req.getParameter("costToSurgeonNo"), ",", ""));
-		costToPartyNo = Convert.formatDouble(StringUtil.replace(req.getParameter("costToPartyNo"), ",", ""));
+		totalCostNo = Convert.formatDouble(StringUtil.removeNonNumericExceptDecimal(req.getParameter("totalCostNo")));
+		costToRepNo = Convert.formatDouble(StringUtil.removeNonNumericExceptDecimal(req.getParameter("costToRepNo")));
+		costToDepuyNo = Convert.formatDouble(StringUtil.removeNonNumericExceptDecimal(req.getParameter("costToDepuyNo")));
+		costToHospitalNo = Convert.formatDouble(StringUtil.removeNonNumericExceptDecimal(req.getParameter("costToHospitalNo")));
+		costToSurgeonNo = Convert.formatDouble(StringUtil.removeNonNumericExceptDecimal(req.getParameter("costToSurgeonNo")));
 		approvedPaperName = req.getParameter("approvedPaperName");
 		newspaper1Phone = req.getParameter("newspaper1Phone");
 		newspaper2Phone = req.getParameter("newspaper2Phone");
@@ -140,7 +138,6 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 		totalCostNo = db.getDoubleVal("total_cost_no", rs);
 		costToRepNo = db.getDoubleVal("cost_to_rep_no", rs);
 		costToDepuyNo = db.getDoubleVal("cost_to_depuy_no", rs);
-		costToPartyNo = db.getDoubleVal("cost_to_party_no", rs);
 		costToHospitalNo = db.getDoubleVal("cost_to_hospital_no", rs);
 		costToSurgeonNo = db.getDoubleVal("cost_to_surgeon_no",rs);
 		approvedPaperName = db.getStringVal("approved_paper_nm", rs);
@@ -601,20 +598,6 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 		this.costToSurgeonNo = costToSurgeonNo;
 	}
 
-	/**
-	 * @return the costToPartyNo
-	 */
-	public Double getCostToPartyNo() {
-		return costToPartyNo;
-	}
-
-	/**
-	 * @param costToPartyNo the costToPartyNo to set
-	 */
-	public void setCostToPartyNo(Double costToPartyNo) {
-		this.costToPartyNo = costToPartyNo;
-	}
- 
 	/**
 	 * @return the invoiceFile
 	 */

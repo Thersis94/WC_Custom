@@ -486,6 +486,38 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	
 	
 	/**
+	 * returns total Ad costs for a specific party
+	 * @param forWhom
+	 * @return
+	 */
+	public Double getAdCost(String forWhom) {
+		Double cost = 0.0;
+		
+		for (CoopAdVO ad : this.getAllAds()) {
+			switch (forWhom) {
+				case "depuy":
+					cost += ad.getCostToDepuyNo();
+					continue;
+				case "hospital":
+					cost += ad.getCostToHospitalNo();
+					continue;
+				case "surgeon":
+					cost += ad.getCostToSurgeonNo();
+					continue;
+				case "rep":
+					cost += ad.getCostToRepNo();
+					continue;
+				case "total":
+					cost += ad.getTotalCostNo();
+					continue;
+			}
+		}
+		
+		return cost;
+	}
+	
+	
+	/**
 	 * used by reports to cosmetically label the statusNo
 	 * @return
 	 */

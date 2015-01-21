@@ -160,13 +160,13 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder();
 		sql.append("select distinct event_entry_id, RSVP_CODE_TXT, start_dt, type_nm, profile_id, ");
 		sql.append("surgeon_nm, event_nm, city_nm, state_cd, status_flg, event_postcard_id, postcard_file_status_no, ");
-		sql.append("rsvp_no, [4] as 'hip', [5] as 'knee', [6] as 'shoulder', run_dates_txt, ad_status_flg, ");  //in a PIVOT, we're turning the data (values) into column headings.  hence the square brackets.
-		sql.append("quantity_no, upfront_fee_flg,postcard_cost_no, territory_no, event_desc "); 
+		sql.append("rsvp_no, [4] as 'hip', [5] as 'knee', [6] as 'shoulder', ");  //in a PIVOT, we're turning the data (values) into column headings.  hence the square brackets.
+		sql.append("quantity_no, upfront_fee_flg, postcard_cost_no, territory_no, event_desc "); 
 		//sql.append(" ");
 		sql.append("from (select e.event_entry_id, e.RSVP_CODE_TXT, e.start_dt, et.type_nm, ep.event_postcard_id, ");
 		sql.append("ep.PROFILE_ID, ep.postcard_file_status_no, s.surgeon_nm, e.event_nm, e.city_nm, ");
 		sql.append("e.state_cd, ep.status_flg, lxr.JOINT_ID, sum(rsvp.GUESTS_NO) as 'rsvp_no', ");
-		sql.append("cad.run_dates_txt, cad.status_flg as ad_status_flg, ep.language_cd, online_flg, ");
+		sql.append("ep.language_cd, ");
 		sql.append("(ep.quantity_no+deap.postcard_qnty_no) as quantity_no, ep.upfront_fee_flg, ");
 		sql.append("ep.territory_no, ep.postcard_cost_no, cast(e.event_desc as varchar(500)) as event_desc ");
 		sql.append("from EVENT_ENTRY e ");
@@ -179,7 +179,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		sql.append("left outer join EVENT_RSVP rsvp on e.EVENT_ENTRY_ID=rsvp.EVENT_ENTRY_ID and rsvp.rsvp_status_flg=1 ");
 		sql.append("left outer join ").append(customDb).append("DEPUY_EVENT_SURGEON s on ep.EVENT_POSTCARD_ID=s.EVENT_POSTCARD_ID ");
 		sql.append("left outer join ").append(customDb).append("DEPUY_EVENT_SPECIALTY_XR lxr on ep.EVENT_POSTCARD_ID=lxr.EVENT_POSTCARD_ID ");
-		sql.append("left outer join ").append(customDb).append("DEPUY_EVENT_COOP_AD cad on ep.EVENT_POSTCARD_ID=cad.EVENT_POSTCARD_ID and cad.ad_type_txt != 'radio' ");
+		//sql.append("left outer join ").append(customDb).append("DEPUY_EVENT_COOP_AD cad on ep.EVENT_POSTCARD_ID=cad.EVENT_POSTCARD_ID and cad.ad_type_txt != 'radio' ");
 		sql.append("where sb.action_group_id=? ");
 		//--conditionally grab only the events this non-admin is affiliated with -- 
 		if (profileId != null) {
@@ -196,7 +196,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		}
 		sql.append("group by e.event_entry_id, ep.event_postcard_id, e.RSVP_CODE_TXT, e.start_dt, ");
 		sql.append("et.type_nm, ep.PROFILE_ID, ep.postcard_file_status_no, e.event_nm, s.surgeon_nm, ");
-		sql.append("e.city_nm, e.state_cd, ep.status_flg, lxr.JOINT_ID, cad.run_dates_txt, cad.status_flg, ep.language_cd, online_flg, ");
+		sql.append("e.city_nm, e.state_cd, ep.status_flg, lxr.JOINT_ID, ep.language_cd, ");
 		sql.append("ep.territory_no, ep.quantity_no, postcard_cost_no, upfront_fee_flg, postcard_qnty_no, cast(e.event_desc as varchar(500)) ");
 		sql.append(") baseQry ");
 		sql.append("pivot (count(joint_id) for joint_id in ([4],[5],[6])) as pvtQry "); //PIVOT is an implicit group-by

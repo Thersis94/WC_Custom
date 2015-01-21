@@ -23,7 +23,7 @@
 <RULEDICTNAME>%dictname%</RULEDICTNAME>
 <RULEPKCONSTRAINTNAME>pk_%tablename%</RULEPKCONSTRAINTNAME>
 <RULERELNAME>%relname%</RULERELNAME>
-<IDSUBMOD>8</IDSUBMOD>
+<IDSUBMOD>2</IDSUBMOD>
 <LDRIPARUPDRESTRICT>1</LDRIPARUPDRESTRICT>
 <LDRIPARUPDCASCADE>1</LDRIPARUPDCASCADE>
 <LDRIPARUPDSETNULL>1</LDRIPARUPDSETNULL>
@@ -4365,24 +4365,24 @@ lDisabledChConstraint 0
 <USERDEF></USERDEF>
 <DESCRIPTION><![CDATA[]]></DESCRIPTION>
 <NOTES><![CDATA[]]></NOTES>
-<VARIABLES><![CDATA[lVaryingMax 0
-DefObject 
-RuleObject 
-lOverrideNullUT 0
+<VARIABLES><![CDATA[UniqueFillFactor 
 Identity 0
 IdentitySeed 
 IdentityIncrement 
-lNotForReplicationId 0
+DefObject 
+RuleObject 
 lRowGuidCol 0
-Collate 
 lUniqueClustered 0
-UniqueFillFactor 
-UniqueAkFilegroup 
+lNotForReplicationId 0
 lNotForReplicationCh 0
-lDisabledChConstraint 0
+UniqueAkFilegroup 
 lPkAttrDesc 0
 lUniqueDesc 0
+lOverrideNullUT 0
 lUniqueGenerateUIX 0
+Collate 
+lVaryingMax 0
+lDisabledChConstraint 0
 ]]></VARIABLES>
 <RELATIONFKIDS>
 </RELATIONFKIDS>
@@ -4422,24 +4422,24 @@ lUniqueGenerateUIX 0
 <USERDEF></USERDEF>
 <DESCRIPTION><![CDATA[]]></DESCRIPTION>
 <NOTES><![CDATA[]]></NOTES>
-<VARIABLES><![CDATA[lVaryingMax 0
-DefObject 
-RuleObject 
-lOverrideNullUT 0
+<VARIABLES><![CDATA[UniqueFillFactor 
 Identity 0
 IdentitySeed 
 IdentityIncrement 
-lNotForReplicationId 0
+DefObject 
+RuleObject 
 lRowGuidCol 0
-Collate 
 lUniqueClustered 0
-UniqueFillFactor 
-UniqueAkFilegroup 
+lNotForReplicationId 0
 lNotForReplicationCh 0
-lDisabledChConstraint 0
+UniqueAkFilegroup 
 lPkAttrDesc 0
 lUniqueDesc 0
+lOverrideNullUT 0
 lUniqueGenerateUIX 0
+Collate 
+lVaryingMax 0
+lDisabledChConstraint 0
 ]]></VARIABLES>
 <RELATIONFKIDS>
 </RELATIONFKIDS>
@@ -4479,24 +4479,24 @@ lUniqueGenerateUIX 0
 <USERDEF></USERDEF>
 <DESCRIPTION><![CDATA[]]></DESCRIPTION>
 <NOTES><![CDATA[]]></NOTES>
-<VARIABLES><![CDATA[lVaryingMax 0
-DefObject 
-RuleObject 
-lOverrideNullUT 0
+<VARIABLES><![CDATA[UniqueFillFactor 
 Identity 0
 IdentitySeed 
 IdentityIncrement 
-lNotForReplicationId 0
+DefObject 
+RuleObject 
 lRowGuidCol 0
-Collate 
 lUniqueClustered 0
-UniqueFillFactor 
-UniqueAkFilegroup 
+lNotForReplicationId 0
 lNotForReplicationCh 0
-lDisabledChConstraint 0
+UniqueAkFilegroup 
 lPkAttrDesc 0
 lUniqueDesc 0
+lOverrideNullUT 0
 lUniqueGenerateUIX 0
+Collate 
+lVaryingMax 0
+lDisabledChConstraint 0
 ]]></VARIABLES>
 <RELATIONFKIDS>
 </RELATIONFKIDS>
@@ -4536,24 +4536,24 @@ lUniqueGenerateUIX 0
 <USERDEF></USERDEF>
 <DESCRIPTION><![CDATA[]]></DESCRIPTION>
 <NOTES><![CDATA[]]></NOTES>
-<VARIABLES><![CDATA[lVaryingMax 0
-DefObject 
-RuleObject 
-lOverrideNullUT 0
+<VARIABLES><![CDATA[UniqueFillFactor 
 Identity 0
 IdentitySeed 
 IdentityIncrement 
-lNotForReplicationId 0
+DefObject 
+RuleObject 
 lRowGuidCol 0
-Collate 
 lUniqueClustered 0
-UniqueFillFactor 
-UniqueAkFilegroup 
+lNotForReplicationId 0
 lNotForReplicationCh 0
-lDisabledChConstraint 0
+UniqueAkFilegroup 
 lPkAttrDesc 0
 lUniqueDesc 0
+lOverrideNullUT 0
 lUniqueGenerateUIX 0
+Collate 
+lVaryingMax 0
+lDisabledChConstraint 0
 ]]></VARIABLES>
 <RELATIONFKIDS>
 </RELATIONFKIDS>
@@ -4593,24 +4593,24 @@ lUniqueGenerateUIX 0
 <USERDEF></USERDEF>
 <DESCRIPTION><![CDATA[]]></DESCRIPTION>
 <NOTES><![CDATA[]]></NOTES>
-<VARIABLES><![CDATA[lVaryingMax 0
-DefObject 
-RuleObject 
-lOverrideNullUT 0
+<VARIABLES><![CDATA[UniqueFillFactor 
 Identity 0
 IdentitySeed 
 IdentityIncrement 
-lNotForReplicationId 0
+DefObject 
+RuleObject 
 lRowGuidCol 0
-Collate 
 lUniqueClustered 0
-UniqueFillFactor 
-UniqueAkFilegroup 
+lNotForReplicationId 0
 lNotForReplicationCh 0
-lDisabledChConstraint 0
+UniqueAkFilegroup 
 lPkAttrDesc 0
 lUniqueDesc 0
+lOverrideNullUT 0
 lUniqueGenerateUIX 0
+Collate 
+lVaryingMax 0
+lDisabledChConstraint 0
 ]]></VARIABLES>
 <RELATIONFKIDS>
 </RELATIONFKIDS>
@@ -4935,24 +4935,24 @@ lDisabledChConstraint 0
 <USERDEF></USERDEF>
 <DESCRIPTION><![CDATA[]]></DESCRIPTION>
 <NOTES><![CDATA[]]></NOTES>
-<VARIABLES><![CDATA[lVaryingMax 0
-DefObject 
-RuleObject 
-lOverrideNullUT 0
+<VARIABLES><![CDATA[UniqueFillFactor 
 Identity 0
 IdentitySeed 
 IdentityIncrement 
-lNotForReplicationId 0
+DefObject 
+RuleObject 
 lRowGuidCol 0
-Collate 
 lUniqueClustered 0
-UniqueFillFactor 
-UniqueAkFilegroup 
+lNotForReplicationId 0
 lNotForReplicationCh 0
-lDisabledChConstraint 0
+UniqueAkFilegroup 
 lPkAttrDesc 0
 lUniqueDesc 0
+lOverrideNullUT 0
 lUniqueGenerateUIX 0
+Collate 
+lVaryingMax 0
+lDisabledChConstraint 0
 ]]></VARIABLES>
 <RELATIONFKIDS>
 </RELATIONFKIDS>
@@ -4992,24 +4992,24 @@ lUniqueGenerateUIX 0
 <USERDEF></USERDEF>
 <DESCRIPTION><![CDATA[]]></DESCRIPTION>
 <NOTES><![CDATA[]]></NOTES>
-<VARIABLES><![CDATA[lVaryingMax 0
-DefObject 
-RuleObject 
-lOverrideNullUT 0
+<VARIABLES><![CDATA[UniqueFillFactor 
 Identity 0
 IdentitySeed 
 IdentityIncrement 
-lNotForReplicationId 0
+DefObject 
+RuleObject 
 lRowGuidCol 0
-Collate 
 lUniqueClustered 0
-UniqueFillFactor 
-UniqueAkFilegroup 
+lNotForReplicationId 0
 lNotForReplicationCh 0
-lDisabledChConstraint 0
+UniqueAkFilegroup 
 lPkAttrDesc 0
 lUniqueDesc 0
+lOverrideNullUT 0
 lUniqueGenerateUIX 0
+Collate 
+lVaryingMax 0
+lDisabledChConstraint 0
 ]]></VARIABLES>
 <RELATIONFKIDS>
 </RELATIONFKIDS>
@@ -5049,24 +5049,24 @@ lUniqueGenerateUIX 0
 <USERDEF></USERDEF>
 <DESCRIPTION><![CDATA[]]></DESCRIPTION>
 <NOTES><![CDATA[]]></NOTES>
-<VARIABLES><![CDATA[lVaryingMax 0
-DefObject 
-RuleObject 
-lOverrideNullUT 0
+<VARIABLES><![CDATA[UniqueFillFactor 
 Identity 0
 IdentitySeed 
 IdentityIncrement 
-lNotForReplicationId 0
+DefObject 
+RuleObject 
 lRowGuidCol 0
-Collate 
 lUniqueClustered 0
-UniqueFillFactor 
-UniqueAkFilegroup 
+lNotForReplicationId 0
 lNotForReplicationCh 0
-lDisabledChConstraint 0
+UniqueAkFilegroup 
 lPkAttrDesc 0
 lUniqueDesc 0
+lOverrideNullUT 0
 lUniqueGenerateUIX 0
+Collate 
+lVaryingMax 0
+lDisabledChConstraint 0
 ]]></VARIABLES>
 <RELATIONFKIDS>
 </RELATIONFKIDS>
@@ -5106,24 +5106,24 @@ lUniqueGenerateUIX 0
 <USERDEF></USERDEF>
 <DESCRIPTION><![CDATA[]]></DESCRIPTION>
 <NOTES><![CDATA[]]></NOTES>
-<VARIABLES><![CDATA[lVaryingMax 0
-DefObject 
-RuleObject 
-lOverrideNullUT 0
+<VARIABLES><![CDATA[UniqueFillFactor 
 Identity 0
 IdentitySeed 
 IdentityIncrement 
-lNotForReplicationId 0
+DefObject 
+RuleObject 
 lRowGuidCol 0
-Collate 
 lUniqueClustered 0
-UniqueFillFactor 
-UniqueAkFilegroup 
+lNotForReplicationId 0
 lNotForReplicationCh 0
-lDisabledChConstraint 0
+UniqueAkFilegroup 
 lPkAttrDesc 0
 lUniqueDesc 0
+lOverrideNullUT 0
 lUniqueGenerateUIX 0
+Collate 
+lVaryingMax 0
+lDisabledChConstraint 0
 ]]></VARIABLES>
 <RELATIONFKIDS>
 </RELATIONFKIDS>
@@ -5163,24 +5163,24 @@ lUniqueGenerateUIX 0
 <USERDEF></USERDEF>
 <DESCRIPTION><![CDATA[]]></DESCRIPTION>
 <NOTES><![CDATA[]]></NOTES>
-<VARIABLES><![CDATA[lVaryingMax 0
-DefObject 
-RuleObject 
-lOverrideNullUT 0
+<VARIABLES><![CDATA[UniqueFillFactor 
 Identity 0
 IdentitySeed 
 IdentityIncrement 
-lNotForReplicationId 0
+DefObject 
+RuleObject 
 lRowGuidCol 0
-Collate 
 lUniqueClustered 0
-UniqueFillFactor 
-UniqueAkFilegroup 
+lNotForReplicationId 0
 lNotForReplicationCh 0
-lDisabledChConstraint 0
+UniqueAkFilegroup 
 lPkAttrDesc 0
 lUniqueDesc 0
+lOverrideNullUT 0
 lUniqueGenerateUIX 0
+Collate 
+lVaryingMax 0
+lDisabledChConstraint 0
 ]]></VARIABLES>
 <RELATIONFKIDS>
 </RELATIONFKIDS>
@@ -5220,24 +5220,24 @@ lUniqueGenerateUIX 0
 <USERDEF></USERDEF>
 <DESCRIPTION><![CDATA[]]></DESCRIPTION>
 <NOTES><![CDATA[]]></NOTES>
-<VARIABLES><![CDATA[lVaryingMax 0
-DefObject 
-RuleObject 
-lOverrideNullUT 0
+<VARIABLES><![CDATA[UniqueFillFactor 
 Identity 0
 IdentitySeed 
 IdentityIncrement 
-lNotForReplicationId 0
+DefObject 
+RuleObject 
 lRowGuidCol 0
-Collate 
 lUniqueClustered 0
-UniqueFillFactor 
-UniqueAkFilegroup 
+lNotForReplicationId 0
 lNotForReplicationCh 0
-lDisabledChConstraint 0
+UniqueAkFilegroup 
 lPkAttrDesc 0
 lUniqueDesc 0
+lOverrideNullUT 0
 lUniqueGenerateUIX 0
+Collate 
+lVaryingMax 0
+lDisabledChConstraint 0
 ]]></VARIABLES>
 <RELATIONFKIDS>
 </RELATIONFKIDS>
@@ -5277,24 +5277,24 @@ lUniqueGenerateUIX 0
 <USERDEF></USERDEF>
 <DESCRIPTION><![CDATA[]]></DESCRIPTION>
 <NOTES><![CDATA[]]></NOTES>
-<VARIABLES><![CDATA[lVaryingMax 0
-DefObject 
-RuleObject 
-lOverrideNullUT 0
+<VARIABLES><![CDATA[UniqueFillFactor 
 Identity 0
 IdentitySeed 
 IdentityIncrement 
-lNotForReplicationId 0
+DefObject 
+RuleObject 
 lRowGuidCol 0
-Collate 
 lUniqueClustered 0
-UniqueFillFactor 
-UniqueAkFilegroup 
+lNotForReplicationId 0
 lNotForReplicationCh 0
-lDisabledChConstraint 0
+UniqueAkFilegroup 
 lPkAttrDesc 0
 lUniqueDesc 0
+lOverrideNullUT 0
 lUniqueGenerateUIX 0
+Collate 
+lVaryingMax 0
+lDisabledChConstraint 0
 ]]></VARIABLES>
 <RELATIONFKIDS>
 </RELATIONFKIDS>
@@ -5334,81 +5334,24 @@ lUniqueGenerateUIX 0
 <USERDEF></USERDEF>
 <DESCRIPTION><![CDATA[]]></DESCRIPTION>
 <NOTES><![CDATA[]]></NOTES>
-<VARIABLES><![CDATA[lVaryingMax 0
-DefObject 
-RuleObject 
-lOverrideNullUT 0
+<VARIABLES><![CDATA[UniqueFillFactor 
 Identity 0
 IdentitySeed 
 IdentityIncrement 
-lNotForReplicationId 0
-lRowGuidCol 0
-Collate 
-lUniqueClustered 0
-UniqueFillFactor 
-UniqueAkFilegroup 
-lNotForReplicationCh 0
-lDisabledChConstraint 0
-lPkAttrDesc 0
-lUniqueDesc 0
-lUniqueGenerateUIX 0
-]]></VARIABLES>
-<RELATIONFKIDS>
-</RELATIONFKIDS>
-<ENTITYFKIDS>
-</ENTITYFKIDS>
-<ATTRFKIDS>
-</ATTRFKIDS>
-</ATTRIBUTE>
-<ATTRIBUTE>
-<NAME>COST_TO_PARTY_NO</NAME>
-<ID>726</ID>
-<GUID>{1CBB36AB-BEE9-4230-BF54-5A8348A97834}</GUID>
-<ENTITYID>6</ENTITYID>
-<PK>0</PK>
-<FORCEDPK>0</FORCEDPK>
-<DATATYPEID>100</DATATYPEID>
-<DICTTYPEID>0</DICTTYPEID>
-<ATTRFKID>0</ATTRFKID>
-<ENTITYFKID>0</ENTITYFKID>
-<RELATIONFKID>0</RELATIONFKID>
-<LENGTH>10</LENGTH>
-<DECIMAL>2</DECIMAL>
-<NOTNULL>0</NOTNULL>
-<UNIQUE>0</UNIQUE>
-<UNIQUECONSTRAINT></UNIQUECONSTRAINT>
-<ROLENAME></ROLENAME>
-<COLNAME>COST_TO_PARTY_NO</COLNAME>
-<DEFAULT></DEFAULT>
-<DEFAULTCONSTRAINT></DEFAULTCONSTRAINT>
-<CHECK></CHECK>
-<CHECKCONSTRAINT></CHECKCONSTRAINT>
-<OVERRIDECHECK>0</OVERRIDECHECK>
-<OVERRIDEDEFAULT>0</OVERRIDEDEFAULT>
-<DEF></DEF>
-<DEF2></DEF2>
-<USERDATATYPE></USERDATATYPE>
-<USERDEF></USERDEF>
-<DESCRIPTION><![CDATA[]]></DESCRIPTION>
-<NOTES><![CDATA[]]></NOTES>
-<VARIABLES><![CDATA[lVaryingMax 0
 DefObject 
 RuleObject 
-lOverrideNullUT 0
-Identity 0
-IdentitySeed 
-IdentityIncrement 
-lNotForReplicationId 0
 lRowGuidCol 0
-Collate 
 lUniqueClustered 0
-UniqueFillFactor 
-UniqueAkFilegroup 
+lNotForReplicationId 0
 lNotForReplicationCh 0
-lDisabledChConstraint 0
+UniqueAkFilegroup 
 lPkAttrDesc 0
 lUniqueDesc 0
+lOverrideNullUT 0
 lUniqueGenerateUIX 0
+Collate 
+lVaryingMax 0
+lDisabledChConstraint 0
 ]]></VARIABLES>
 <RELATIONFKIDS>
 </RELATIONFKIDS>
@@ -26847,63 +26790,6 @@ lDisabledChConstraint 0
 <UNIQUECONSTRAINT></UNIQUECONSTRAINT>
 <ROLENAME></ROLENAME>
 <COLNAME>COST_TO_HISPITAL_NO</COLNAME>
-<DEFAULT></DEFAULT>
-<DEFAULTCONSTRAINT></DEFAULTCONSTRAINT>
-<CHECK></CHECK>
-<CHECKCONSTRAINT></CHECKCONSTRAINT>
-<OVERRIDECHECK>0</OVERRIDECHECK>
-<OVERRIDEDEFAULT>0</OVERRIDEDEFAULT>
-<DEF></DEF>
-<DEF2></DEF2>
-<USERDATATYPE></USERDATATYPE>
-<USERDEF></USERDEF>
-<DESCRIPTION><![CDATA[]]></DESCRIPTION>
-<NOTES><![CDATA[]]></NOTES>
-<VARIABLES><![CDATA[UniqueFillFactor 
-Identity 0
-IdentitySeed 
-IdentityIncrement 
-DefObject 
-RuleObject 
-lRowGuidCol 0
-lUniqueClustered 0
-lNotForReplicationId 0
-lNotForReplicationCh 0
-UniqueAkFilegroup 
-lPkAttrDesc 0
-lUniqueDesc 0
-lOverrideNullUT 0
-lUniqueGenerateUIX 0
-Collate 
-lVaryingMax 0
-lDisabledChConstraint 0
-]]></VARIABLES>
-<RELATIONFKIDS>
-</RELATIONFKIDS>
-<ENTITYFKIDS>
-</ENTITYFKIDS>
-<ATTRFKIDS>
-</ATTRFKIDS>
-</ATTRIBUTE>
-<ATTRIBUTE>
-<NAME>COST_TO_PARTY_NO</NAME>
-<ID>745</ID>
-<GUID>{2C5E966A-E7CD-444D-B0C4-0CE780CCEE16}</GUID>
-<ENTITYID>61</ENTITYID>
-<PK>0</PK>
-<FORCEDPK>0</FORCEDPK>
-<DATATYPEID>100</DATATYPEID>
-<DICTTYPEID>0</DICTTYPEID>
-<ATTRFKID>0</ATTRFKID>
-<ENTITYFKID>0</ENTITYFKID>
-<RELATIONFKID>0</RELATIONFKID>
-<LENGTH>10</LENGTH>
-<DECIMAL>2</DECIMAL>
-<NOTNULL>0</NOTNULL>
-<UNIQUE>0</UNIQUE>
-<UNIQUECONSTRAINT></UNIQUECONSTRAINT>
-<ROLENAME></ROLENAME>
-<COLNAME>COST_TO_PARTY_NO</COLNAME>
 <DEFAULT></DEFAULT>
 <DEFAULTCONSTRAINT></DEFAULTCONSTRAINT>
 <CHECK></CHECK>
