@@ -88,6 +88,10 @@ public class InstagramAction extends ContentAction {
 				urlString.append(URL_DELIMITER);
 			}
 		}
+		//remove trailing delimiter to avoid empty entries
+		if (urlString.length() > 0)
+			urlString.deleteCharAt(urlString.length()-1);
+		
 		req.setParameter(URL_FIELD, urlString.toString());
 		super.update(req);
 	}
