@@ -19,6 +19,8 @@ import com.fastsigns.action.franchise.centerpage.FranchiseLocationInfoAction;
 import com.fastsigns.action.franchise.vo.CenterModuleOptionVO;
 import com.fastsigns.action.franchise.vo.FranchiseVO;
 import com.fastsigns.action.franchise.vo.pages.PageContainerVO;
+import com.fastsigns.action.wizard.SiteWizardAction;
+import com.fastsigns.action.wizard.SiteWizardFactoryAction;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
@@ -195,6 +197,11 @@ public class FranchisePageAction extends SBActionAdapter {
 						req.setParameter("startDate", Convert.formatDate(new java.util.Date()));
 						req.setParameter("endDate", null);
 						noPageModule = true;
+					}
+					
+					//Check if the user wants to add a page with no left or right rails
+					if ( Convert.formatBoolean( req.getParameter("singleCol"), false )){
+						setSingleColLayout(req);
 					}
 					
 					this.savePage(req);
@@ -859,5 +866,30 @@ public class FranchisePageAction extends SBActionAdapter {
 	
 	protected String stripHTML(String target) {
 		return RegexParser.regexReplace(RegexParser.Patterns.STRIP_ALL_HTML, StringUtil.checkVal(target), "");
+	}
+	
+	/**
+	 * Sets the template Id on the request to point to the single column layout
+	 * @param req
+	 * @throws Exception 
+	 */
+	private void setSingleColLayout(SMTServletRequest req) throws Exception{
+		log.debug("Single Column Layout Selected");
+		
+		//Get the proper SiteWizardAction
+		SiteVO site = (SiteVO)req.getAttribute("siteData");
+		SiteWizardFactoryAction wizardFactory = new SiteWizardFactoryAction();
+		SiteWizardAction swa = wizardFactory.retrieveWizard(site.getCountryCode());
+		
+		//Check if the layout was already created
+		String tId = swa.getSecondaryLayoutId(site.getSiteId(), 
+				SiteWizardAction.SINGLE_COL_LABEL);
+		
+		//If the layout doesn't exits yet, create it
+		if (StringUtil.checkVal(tId).isEmpty()){
+			tId = swa.addSingleColLayout(req);
+		}
+		
+		req.setParameter("templateId", tId);
 	}
 }
