@@ -12,8 +12,8 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.StringUtil;
-import com.smt.sitebuilder.action.SBModuleVO;
-import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.smt.sitebuilder.action.content.ContentAction;
+import com.smt.sitebuilder.action.content.ContentVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -28,10 +28,10 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @version 1.0
  * @since Jan 8, 2015
  ****************************************************************************/
-public class InstagramAction extends SimpleActionAdapter {
+public class InstagramAction extends ContentAction {
 
 	public static final String URL_DELIMITER = "~";
-	public static final String URL_FIELD = "attrib1Text";
+	public static final String URL_FIELD = "articleText";
 	public static final String PARAM_NAME = "urlList";
 	
 	/**
@@ -59,14 +59,16 @@ public class InstagramAction extends SimpleActionAdapter {
 		
 		//Get the action data set by the super class
 		ModuleVO modVO = (ModuleVO) this.getAttribute(Constants.MODULE_DATA);
-		SBModuleVO actionData = (SBModuleVO) modVO.getActionData();
+		ContentVO actionData = (ContentVO) modVO.getActionData();
 		
-		//Parse URL's, and add them to the request as a list
-		String urlString = (String) actionData.getAttribute(SBModuleVO.ATTRIBUTE_1);
-		List<String> urlList = parseUrlString(urlString);
-		
-		actionData.setAttribute(PARAM_NAME, urlList);
-		this.putModuleData(actionData);
+		if (actionData != null){
+			//Parse URL's, and add them to the request as a list
+			String urlString = actionData.getArticle();
+			List<String> urlList = parseUrlString(urlString);
+			
+			actionData.setAttribute(PARAM_NAME, urlList);
+			this.putModuleData(actionData);
+		}
 	}
 	
 	/*
@@ -99,11 +101,11 @@ public class InstagramAction extends SimpleActionAdapter {
 		
 		//Get the action data set by the super class
 		ModuleVO modVO = (ModuleVO) this.getAttribute(AdminConstants.ADMIN_MODULE_DATA);
-		SBModuleVO actionData = (SBModuleVO) modVO.getActionData();
+		ContentVO actionData = (ContentVO) modVO.getActionData();
 		
 		if (actionData != null){
 			//Parse URL's, and add them to the request as a list
-			String urlString = (String) actionData.getAttribute(SBModuleVO.ATTRIBUTE_1);
+			String urlString = actionData.getArticle();
 			List<String> urlList = parseUrlString(urlString);
 			
 			actionData.setAttribute(PARAM_NAME, urlList);
