@@ -908,5 +908,6 @@ public class FranchisePageAction extends SBActionAdapter {
 		}
 		
 		req.setParameter("templateId", tId);
+		req.setParameter("displayColumn","1");
 	}
 }
