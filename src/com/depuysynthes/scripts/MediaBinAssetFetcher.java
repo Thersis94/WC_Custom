@@ -165,14 +165,14 @@ public class MediaBinAssetFetcher extends CommandLineUtil {
 		List<MediaBinAssetVO> data = new ArrayList<MediaBinAssetVO>(); //at time of writing, this was enough capacity to avoid resizing
 		
 		StringBuilder sql = new StringBuilder();
-		sql.append("select dpy_syn_mediabin_id, asset_nm, revision_lvl_txt, import_file_cd from ");
+		sql.append("select dpy_syn_mediabin_id, asset_nm, revision_lvl_txt, import_file_cd, tracking_no_txt from ");
 		sql.append(props.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("dpy_syn_mediabin where asset_type in (null");
 		for (int a = MediaBinAdminAction.PDF_ASSETS.length; a > 0; a--) sql.append(",?");
 		for (int v = MediaBinAdminAction.VIDEO_ASSETS.length; v > 0; v--) sql.append(",?");
 		sql.append(")");
 		log.debug(sql);
-		
+
 		int x=0;
 		PreparedStatement ps = null;
 		try {
@@ -185,7 +185,7 @@ public class MediaBinAssetFetcher extends CommandLineUtil {
 				vo.setBusinessUnitId(rs.getInt("import_file_cd"));
 				data.add(vo);
 			}
-			
+
 		} catch (SQLException sqle) {
 			log.error("could not load manifest", sqle);
 		} finally {
@@ -212,25 +212,31 @@ public class MediaBinAssetFetcher extends CommandLineUtil {
 			html.append("<h4>Asset Count: " + assetCnt + " rows<br/>");
 			html.append("New Downloads: " + downloadCnt + " rows<br/>");
 			html.append("404's: " + notFoundCnt + "</h4>");
-			html.append("<table>");
-			int i = 1;
-			for(String url : failedVos.keySet()) {
-				MediaBinAssetVO vo = failedVos.get(url);
-				html.append("<tr><td>").append(i++).append("</td><td>").append(url);
-				html.append("</td><td>").append(vo.getRevisionLvlTxt()).append("</td><td>");
-				html.append(vo.getTrackingNoTxt()).append("</td></tr>");
+
+			if(failedVos.size() > 0) {
+				html.append("<table border='1' cellspacing='0' cellpadding='5' valign='top'>");
+				html.append("<tr><th>&nbsp;</th><th>Asset Link</th><th>Revision Level</th><th>Tracking Number</th></tr>");
+
+				int i = 1;
+				for(String url : failedVos.keySet()) {
+					MediaBinAssetVO vo = failedVos.get(url);
+					html.append("<tr><td>").append(i++).append("</td><td><a href='");
+					html.append(url).append("'>").append(vo.getAssetNm()).append("</a>");
+					html.append("</td><td>").append(vo.getRevisionLvlTxt()).append("</td><td>");
+					html.append(vo.getTrackingNoTxt()).append("</td></tr>");
+				}
+				html.append("</table>");
 			}
-			html.append("</table>");
 			if (failures.size() > 0) {
 				html.append("<b>MediaBinAssetFetcher failed with the following reasons:</b><br/><br/>");
-			
+
 				// loop the errors and display them
-				for (i=0; i < failures.size(); i++) {
+				for (int i=0; i < failures.size(); i++) {
 					html.append(failures.get(i).getMessage()).append("<hr/>\r\n");
 				}
 			}
 			msg.setHtmlBody(html.toString());
-			
+
 			MailTransportAgentIntfc mail = MailHandlerFactory.getDefaultMTA(props);
 			mail.sendMessage(msg);
 		} catch (Exception e) {
