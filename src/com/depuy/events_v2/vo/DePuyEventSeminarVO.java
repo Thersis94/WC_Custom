@@ -3,6 +3,7 @@ package com.depuy.events_v2.vo;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Date;
@@ -39,6 +40,7 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	private DePuyEventSurgeonVO surgeon = null;
 	private Set<String> joints = null;  //comes from DEPUY_EVENT_SPECIALTY_XR
 	private Set<PersonVO> people = null;
+	private Map<Long, ConsigneeVO> consignees = null; //JSTL wants us to use a Long key instead of an Integer here.
     
 	private CoopAdVO radioAd = null;
 	private List<CoopAdVO> newspaperAds = null;
@@ -52,15 +54,15 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	
 	private Map<Location, LeadCityVO> targetLeads = null;
 	private int totalSelectedLeads = 0;
-	
 	private int upfrontFeeFlg = 0;
     
     public DePuyEventSeminarVO() {
 	    super();
-	    joints = new HashSet<String>();
-	    people = new HashSet<PersonVO>();
-	    newspaperAds = new ArrayList<CoopAdVO>();
-	    onlineAds = new ArrayList<CoopAdVO>();
+	    joints = new HashSet<>();
+	    people = new HashSet<>();
+	    newspaperAds = new ArrayList<>();
+	    onlineAds = new ArrayList<>();
+	    consignees = new HashMap<>();
     }
     
     /**
@@ -107,6 +109,7 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	    event.setEventTypeCd(db.getStringVal("type_nm", rs));
 	    event.setCityName(db.getStringVal("city_nm", rs));
 	    event.setStateCode(db.getStringVal("state_cd", rs));
+	    event.setEventDesc(db.getStringVal("event_desc", rs));
 	    lst.add(event);
 	    super.setEvents(lst);
 	    
@@ -121,7 +124,7 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	    	rsvpCount = db.getIntVal("rsvp_no", rs);
 	    	
 	    	String runDates = db.getStringVal("run_dates_txt", rs);
-	    	newspaperAds = new ArrayList<CoopAdVO>();
+
 	    	CoopAdVO ad = new CoopAdVO();
     		ad.setAdDatesText(runDates);
     		ad.setStatusFlg(db.getIntVal("ad_status_flg", rs));
@@ -313,15 +316,14 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 		this.onlineAds = list;
 	}
 	
-	public List<CoopAdVO> getPrintAndOnlineAds(){
-		List<CoopAdVO> list = new ArrayList<CoopAdVO>();
-		list.addAll(newspaperAds);
+	public List<CoopAdVO> getAllAds(){
+		List<CoopAdVO> list = new ArrayList<CoopAdVO>(newspaperAds);
 		list.addAll(onlineAds);
 		return list;
 	}
 	
-	public void addAdvertisement( CoopAdVO ad ){
-		if (ad.getOnlineFlg() == 1)
+	public void addAdvertisement(CoopAdVO ad) {
+		if (ad.getOnlineFlg() != null && ad.getOnlineFlg() == 1)
 			onlineAds.add(ad);
 		else
 			newspaperAds.add(ad);
@@ -484,6 +486,38 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	
 	
 	/**
+	 * returns total Ad costs for a specific party
+	 * @param forWhom
+	 * @return
+	 */
+	public Double getAdCost(String forWhom) {
+		Double cost = 0.0;
+		
+		for (CoopAdVO ad : this.getAllAds()) {
+			switch (forWhom) {
+				case "depuy":
+					cost += ad.getCostToDepuyNo();
+					continue;
+				case "hospital":
+					cost += ad.getCostToHospitalNo();
+					continue;
+				case "surgeon":
+					cost += ad.getCostToSurgeonNo();
+					continue;
+				case "rep":
+					cost += ad.getCostToRepNo();
+					continue;
+				case "total":
+					cost += ad.getTotalCostNo();
+					continue;
+			}
+		}
+		
+		return cost;
+	}
+	
+	
+	/**
 	 * used by reports to cosmetically label the statusNo
 	 * @return
 	 */
@@ -514,4 +548,15 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 		this.upfrontFeeFlg = upfrontFeeFlg;
 	}
 
+	public Map<Long, ConsigneeVO> getConsignees() {
+		return consignees;
+	}
+
+	public void setConsignees(Map<Long, ConsigneeVO> consignees) {
+		this.consignees = consignees;
+	}
+	
+	public void addConsignee(ConsigneeVO vo) {
+		this.consignees.put(new Long(vo.getTypeNo()), vo);
+	}
 }

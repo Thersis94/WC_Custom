@@ -13,17 +13,26 @@ import java.util.Map;
 import java.util.Set;
 
 
+
+
+
+import javax.servlet.http.Cookie;
 // J2EE 1.4.0 Libs
 import javax.servlet.http.HttpSession;
 
 
+
+
+
 //wc-depuy libs
 import com.depuy.events.vo.CoopAdVO;
+import com.depuy.events_v2.vo.ConsigneeVO;
 // SMT BaseLibs
 import com.depuy.events_v2.vo.DePuyEventSeminarVO;
 import com.depuy.events_v2.vo.PersonVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.UserDataVO;
@@ -121,7 +130,9 @@ public class PostcardSelectV2 extends SBActionAdapter {
 				
 			} else {
 				//load the list of postcards (screen# 1)
-				data = loadSeminarList(actionInit.getActionId(), reqType, profileId, req.getParameter("sortType"));
+				Cookie c = req.getCookie("seminarSortType");
+				String sortType =  c != null ? c.getValue() : null;
+				data = loadSeminarList(actionInit.getActionId(), reqType, profileId, sortType);
 			}
 			
 		} catch (SQLException sqle) {
@@ -149,14 +160,15 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder();
 		sql.append("select distinct event_entry_id, RSVP_CODE_TXT, start_dt, type_nm, profile_id, ");
 		sql.append("surgeon_nm, event_nm, city_nm, state_cd, status_flg, event_postcard_id, postcard_file_status_no, ");
-		sql.append("rsvp_no, [4] as 'hip', [5] as 'knee', [6] as 'shoulder', run_dates_txt, ad_status_flg, ");  //in a PIVOT, we're turning the data (values) into column headings.  hence the square brackets.
-		sql.append("quantity_no, upfront_fee_flg,postcard_cost_no, territory_no "); 
+		sql.append("rsvp_no, [4] as 'hip', [5] as 'knee', [6] as 'shoulder', ");  //in a PIVOT, we're turning the data (values) into column headings.  hence the square brackets.
+		sql.append("quantity_no, upfront_fee_flg, postcard_cost_no, territory_no, event_desc "); 
 		//sql.append(" ");
 		sql.append("from (select e.event_entry_id, e.RSVP_CODE_TXT, e.start_dt, et.type_nm, ep.event_postcard_id, ");
 		sql.append("ep.PROFILE_ID, ep.postcard_file_status_no, s.surgeon_nm, e.event_nm, e.city_nm, ");
 		sql.append("e.state_cd, ep.status_flg, lxr.JOINT_ID, sum(rsvp.GUESTS_NO) as 'rsvp_no', ");
-		sql.append("cad.run_dates_txt, cad.status_flg as ad_status_flg, ep.language_cd, online_flg, ");
-		sql.append("(ep.quantity_no+deap.postcard_qnty_no) as quantity_no, ep.upfront_fee_flg, ep.territory_no, ep.postcard_cost_no ");
+		sql.append("ep.language_cd, ");
+		sql.append("(ep.quantity_no+deap.postcard_qnty_no) as quantity_no, ep.upfront_fee_flg, ");
+		sql.append("ep.territory_no, ep.postcard_cost_no, cast(e.event_desc as varchar(500)) as event_desc ");
 		sql.append("from EVENT_ENTRY e ");
 		sql.append("inner join EVENT_TYPE et on e.EVENT_TYPE_ID=et.EVENT_TYPE_ID ");
 		sql.append("inner join EVENT_GROUP eg on et.ACTION_ID=eg.ACTION_ID ");
@@ -167,7 +179,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		sql.append("left outer join EVENT_RSVP rsvp on e.EVENT_ENTRY_ID=rsvp.EVENT_ENTRY_ID and rsvp.rsvp_status_flg=1 ");
 		sql.append("left outer join ").append(customDb).append("DEPUY_EVENT_SURGEON s on ep.EVENT_POSTCARD_ID=s.EVENT_POSTCARD_ID ");
 		sql.append("left outer join ").append(customDb).append("DEPUY_EVENT_SPECIALTY_XR lxr on ep.EVENT_POSTCARD_ID=lxr.EVENT_POSTCARD_ID ");
-		sql.append("left outer join ").append(customDb).append("DEPUY_EVENT_COOP_AD cad on ep.EVENT_POSTCARD_ID=cad.EVENT_POSTCARD_ID and cad.ad_type_txt != 'radio' ");
+		//sql.append("left outer join ").append(customDb).append("DEPUY_EVENT_COOP_AD cad on ep.EVENT_POSTCARD_ID=cad.EVENT_POSTCARD_ID and cad.ad_type_txt != 'radio' ");
 		sql.append("where sb.action_group_id=? ");
 		//--conditionally grab only the events this non-admin is affiliated with -- 
 		if (profileId != null) {
@@ -184,8 +196,8 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		}
 		sql.append("group by e.event_entry_id, ep.event_postcard_id, e.RSVP_CODE_TXT, e.start_dt, ");
 		sql.append("et.type_nm, ep.PROFILE_ID, ep.postcard_file_status_no, e.event_nm, s.surgeon_nm, ");
-		sql.append("e.city_nm, e.state_cd, ep.status_flg, lxr.JOINT_ID, cad.run_dates_txt, cad.status_flg, ep.language_cd, online_flg, ");
-		sql.append("ep.territory_no, ep.quantity_no, postcard_cost_no, upfront_fee_flg, postcard_qnty_no ");
+		sql.append("e.city_nm, e.state_cd, ep.status_flg, lxr.JOINT_ID, ep.language_cd, ");
+		sql.append("ep.territory_no, ep.quantity_no, postcard_cost_no, upfront_fee_flg, postcard_qnty_no, cast(e.event_desc as varchar(500)) ");
 		sql.append(") baseQry ");
 		sql.append("pivot (count(joint_id) for joint_id in ([4],[5],[6])) as pvtQry "); //PIVOT is an implicit group-by
 		log.debug(sql);
@@ -350,6 +362,14 @@ public class PostcardSelectV2 extends SBActionAdapter {
 			}
 		}
 		
+		if (loadConsignees(reqType)) {
+			try {
+				retrieveConsignees(vo);
+			} catch (ActionException e) {
+				log.error("could not load CoopAds for seminar " + eventPostcardId, e);
+			}
+		}
+		
 		if (loadLeads(reqType)) {
 			try {
 				retrieveLeads(vo, sortOrder);
@@ -368,6 +388,15 @@ public class PostcardSelectV2 extends SBActionAdapter {
 	 */
 	private boolean loadCoopAds(ReqType reqType) {
 		return (ReqType.reportForm != reqType);
+	}
+	
+	/**
+	 * helper to isolate the logic of whether or not we need to load the Consignees for the given request
+	 * @param reqType
+	 * @return
+	 */
+	private boolean loadConsignees(ReqType reqType) {
+		return (ReqType.eventInfo == reqType || ReqType.summary == reqType || ReqType.report == reqType);
 	}
 	
 	/**
@@ -397,6 +426,31 @@ public class PostcardSelectV2 extends SBActionAdapter {
 			}
 		}
 		return;
+	}
+	
+	/**
+	 * calls the CoopAdsAction to load Ad data for the given Seminar
+	 * @param vo
+	 * @throws ActionException
+	 */
+	protected void retrieveConsignees(DePuyEventSeminarVO vo) throws ActionException {
+		StringBuilder sql = new StringBuilder(100);
+		sql.append("select * from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("DEPUY_EVENT_POSTCARD_CONSIGNEE where event_postcard_id=?");
+		log.debug(sql + "|" + vo.getEventPostcardId());
+		PreparedStatement ps = null;
+		try {
+			ps = dbConn.prepareStatement(sql.toString());
+			ps.setString(1, vo.getEventPostcardId());
+			ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				vo.addConsignee(new ConsigneeVO(rs));
+			}
+		} catch (SQLException sqle) {
+			log.error("could not load consignees", sqle);
+		} finally {
+			DBUtil.close(ps);
+		}
 	}
 	
 	/**

@@ -3,6 +3,7 @@ package com.depuy.events_v2;
 import java.util.Calendar;
 import java.util.Date;
 
+import com.depuy.events.vo.CoopAdVO;
 import com.depuy.events_v2.vo.DePuyEventSeminarVO;
 import com.depuy.events_v2.vo.DePuyEventSurgeonVO;
 import com.siliconmtn.action.ActionInitVO;
@@ -41,16 +42,17 @@ public class CoopAdsEmailer extends SBActionAdapter {
 		super(arg0);
 	}
 
-	public void notifyAdminOfAdDeclined(DePuyEventSeminarVO sem, SiteVO site, UserDataVO user, String reason) {
+	public void notifyAdminOfAdDeclined(DePuyEventSeminarVO sem, SiteVO site, UserDataVO user, String reason, int cnt, CoopAdVO vo) {
+		String label = (Convert.formatInteger(vo.getOnlineFlg()).intValue() == 1) ? "Online" : "Newspaper";
 		StringBuilder msg = new StringBuilder();
 		msg.append(user.getFirstName()).append(" ").append(user.getLastName());
 		msg.append(" (").append(user.getEmailAddress()).append(") has declined ");
-		msg.append("the newspaper ad offered for Seminar ");
-		msg.append(sem.getRSVPCodes()).append("\r");
+		msg.append(label).append(" Ad #").append(cnt).append(" offered for Seminar ");
+		msg.append(sem.getRSVPCodes()).append("\r\n\r\n");
 		if ( ! StringUtil.checkVal(reason).isEmpty() ){
-			msg.append("The coordinator commented:\r").append(reason).append("\r");
+			msg.append("The Coordinator commented:\r\n").append(reason).append("\r\n");
 		}
-		msg.append("\r");
+		msg.append("\r\n");
 		
 
 		try {
@@ -58,7 +60,7 @@ public class CoopAdsEmailer extends SBActionAdapter {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(site.getAdminEmail());
 			mail.addCC("rwilkin7@its.jnj.com");
-			mail.setSubject("Newspaper Ad declined for Seminar " + sem.getRSVPCodes());
+			mail.setSubject(label + " Ad #" + cnt + " declined for Seminar " + sem.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
 
@@ -71,19 +73,22 @@ public class CoopAdsEmailer extends SBActionAdapter {
 		}
 	}
 
-	public void requestCoordinatorApproval(DePuyEventSeminarVO sem, SiteVO site) {
+	public void requestCoordinatorApproval(DePuyEventSeminarVO sem, SiteVO site, int cnt, CoopAdVO vo) {
 		//Allow 5 business days for response
 		Date dueDate = addBusinessDays(5);
+		boolean isOnline = Convert.formatInteger(vo.getOnlineFlg()).intValue() == 1;
 		
 		StringBuilder msg = new StringBuilder();
 		msg.append("Dear Seminar Holder,\r\r");
-		msg.append("The cost and proof for your ad for Seminar ").append(sem.getRSVPCodes());
+		msg.append("The cost and proof for ");
+		if (isOnline) msg.append("Online ");
+		msg.append("Ad #").append(cnt).append(" for Seminar ").append(sem.getRSVPCodes());
 		msg.append(" is now ready for your approval.  Please visit ");
 		msg.append(site.getFullSiteAlias()).append("/?reqType=promote&eventPostcardId=").append(sem.getEventPostcardId()).append(" before ");
 		msg.append(Convert.formatDate(dueDate)).append(" to either accept or reject this offer.  ");
 		msg.append("If you fail to accept or reject by the given date you will ");
 		msg.append("automatically accept the offer and your territory will be billed for the expense.\r\r");
-		msg.append("Thank You,\rEvents.depuy.com Administrator\r\r");
+		msg.append("Thank You,\rEvents.DePuySynthes.com Administrator\r\r");
 
 		try {
 			// Create the mail object and send
@@ -91,7 +96,7 @@ public class CoopAdsEmailer extends SBActionAdapter {
 			mail.addRecipient(sem.getOwner().getEmailAddress());
 			mail.addCC("rwilkin7@its.jnj.com");
 			mail.addCC(site.getAdminEmail());
-			mail.setSubject("Newspaper Ad approval required - Seminar " + sem.getRSVPCodes());
+			mail.setSubject(((isOnline) ? "Online" : "Newspaper") + " Ad #" + cnt + " approval required - Seminar " + sem.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
 
@@ -164,18 +169,16 @@ public class CoopAdsEmailer extends SBActionAdapter {
 
 		StringBuilder msg = new StringBuilder();
 		msg.append("Dear ").append(surg.getSurgeonName()).append(",");
-		msg.append("<p>The newspaper ad for the ").append(sem.getJointLabel());
+		msg.append("<p>The promotional ad(s) for the ").append(sem.getJointLabel());
 		msg.append(" patient education seminar scheduled on <i>");
 		msg.append(Convert.formatDate(event.getStartDate(), Convert.DATE_LONG));
 		msg.append("</i> at <i>").append(event.getEventName())
-				.append("</i> is ready for your approval.</p>");
-		msg.append("<p>Please click the link below to view and approve the newspaper ad ");
-		msg.append("and your portion of the cost for the ad");
-//		if (!"shoulder".equalsIgnoreCase(sem.getJointLabel()))
-//			msg.append(" and postcards.  The cost of the postcards is $90");
-		msg.append(". Approval is required by ").append(
+				.append("</i> are ready for your approval.</p>");
+		msg.append("<p>Please click the link below to review the ad(s), ");
+		msg.append("and your portion of the costs.</p>");
+		msg.append("<p>Approval is required by ").append(
 				Convert.formatDate(approvalDt, Convert.DATE_LONG));
-		msg.append(". Once you approve, a credit card processing system (managed ");
+		msg.append(".<br/>Once you approve, a credit card processing system (managed ");
 		msg.append("by Harmony Marketing Group, our third party agency) will appear ");
 		msg.append("with step by step instructions on providing payment for your ");
 		msg.append("portion of the advertising/seminar expenses. Payment information ");
@@ -209,34 +212,32 @@ public class CoopAdsEmailer extends SBActionAdapter {
 	}
 
 	public void notifyAdminOfAdApproval(DePuyEventSeminarVO sem, SiteVO site,
-			UserDataVO user) {
+			UserDataVO user, int cnt, CoopAdVO vo) {
 		//Determine if it's co-funded or DePuy funded (used for subject line and recipients)
 		String eventType = StringUtil.checkVal(sem.getEvents().get(0).getEventTypeCd());
 		boolean isCFSEM = ( eventType.toUpperCase().startsWith("CFSEM") );
+		String label = (Convert.formatInteger(vo.getOnlineFlg()).intValue() == 1) ? "Online" : "Newspaper";
 		
 		//Build the subject text
 		StringBuilder subject = new StringBuilder();
-		subject.append("Newspaper Ad approved by Coordinator for ");
+		subject.append(label + " Ad #" + cnt + " approved by Coordinator for ");
 		subject.append( (isCFSEM ? "Co-Funded" : "DePuy Funded") );
 		subject.append(" Seminar #").append(sem.getRSVPCodes());
 		
 		StringBuilder msg = new StringBuilder(425);
 		msg.append(user.getFirstName()).append(" ").append(user.getLastName());
 		msg.append(" (").append(user.getEmailAddress()).append(") has approved ");
-		msg.append("an ad for Seminar #").append(sem.getRSVPCodes()).append("\r");
+		msg.append(label).append(" Ad #").append(cnt).append(" for Seminar #").append(sem.getRSVPCodes()).append("\r\n\r\n");
 		if (isCFSEM){
-			msg.append("Harmony, please upload ad file and final invoice for the ");
-			msg.append("amount the surgeon and/or hospital is repsonsible for to ");
-			msg.append("the portal for approval.\r");
+			msg.append("Harmony, please upload the final invoice and ");
+			msg.append("amount the surgeon and/or hospital is responsible for to ");
+			msg.append("the portal for their approval.\r\n");
 		}
-		msg.append("\r");
+		msg.append("\r\n");
 		
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			//mail.addRecipient("becca.burton@hmktgroup.com");
-			//mail.addRecipient("barb.goley@hmktgroup.com");
-			// mail.addRecipient("kelly.westafer@hmktgroup.com");
 			mail.addRecipient("amy.zimmerman@hmktgroup.com");
 			mail.addCC(site.getAdminEmail());
 			mail.addCC("rwilkin7@its.jnj.com");
@@ -274,20 +275,42 @@ public class CoopAdsEmailer extends SBActionAdapter {
 		
 		StringBuilder msg = new StringBuilder();
 		msg.append("<p>").append(surg.getSurgeonName());
-		msg.append(" has approved the newspaper ad/cost and provided payment for Seminar #");
-		msg.append(sem.getRSVPCodes()).append("</p>");
-		msg.append("<p>Harmony, please change the status on the portal to Payment Received ");
-		msg.append("by using the link below.</p>");
-		String url = site.getFullSiteAlias() + "/?reqType=promote&eventPostcardId=" + sem.getEventPostcardId();
-		msg.append("<p><a href=\"").append(url).append("\">").append(url).append("</a></p>");
-		msg.append("<p>Novus, please move forward with the newspaper ad purchases.</p>");
-		msg.append("<p>Thank You,<br/>Events.depuy.com Administrator</p><br/>");
+		msg.append(" has reviewed the ad(s)/cost and provided payment for Seminar #");
+		msg.append(sem.getRSVPCodes()).append(" with the following results:</p>");
+		int nCnt=0, oCnt=0;
+		boolean appr = false;
+		boolean haveUnapproved = false;
+		for (CoopAdVO vo : sem.getAllAds()) {
+			if (vo.getOnlineFlg() > 0) {
+				msg.append("Online Ad #").append(++oCnt);
+			} else {
+				msg.append("Newspaper Ad #").append(++nCnt);
+			}
+			appr = (Convert.formatInteger(vo.getStatusFlg()).equals(CoopAdsActionV2.SURG_APPROVED_AD));
+			msg.append(": ").append((appr) ? "Approved" : "Not Approved").append("<br/>");
+			if (!appr) {
+				msg.append("<div style='padding:2px 10px 10px'>Reason: <i>").append(vo.getInstructionsText()).append("</i></div><br/>");
+				haveUnapproved = true;
+			}
+		}
+		msg.append("<p>&nbsp;</p>");
+		if (!haveUnapproved) {
+			msg.append("<p>Harmony, please change the status on the portal to Payment Received ");
+			msg.append("by using the link below.</p>");
+			String url = site.getFullSiteAlias() + "/?reqType=promote&eventPostcardId=" + sem.getEventPostcardId();
+			msg.append("<p><a href=\"").append(url).append("\">").append(url).append("</a></p>");
+			msg.append("<p>Novus, please move forward with the newspaper ad purchases.</p>");
+		} else {
+			msg.append("<p>Harmony, please use the surgeon's comments to address any unapproved ads. ");
+			msg.append("The link below will take you back to the portal when you're ready to post changes.</p>");
+			String url = site.getFullSiteAlias() + "/?reqType=promote&eventPostcardId=" + sem.getEventPostcardId();
+			msg.append("<p><a href=\"").append(url).append("\">").append(url).append("</a></p>");
+		}
+		msg.append("<p>Thank You,<br/>Events.DePuySynthes.com Administrator</p><br/>");
 
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			//mail.addRecipient("admgt@hmktgroup.com");
-			//mail.addRecipient("rita.harman@hmktgroup.com");
 			mail.addRecipient("amy.zimmerman@hmktgroup.com");
 			mail.addRecipient("lisa.maiers@novusmediainc.com");
 			mail.addCC(site.getAdminEmail());
@@ -297,7 +320,7 @@ public class CoopAdsEmailer extends SBActionAdapter {
 			mail.addCC("nicole.olson@novusmediainc.com");
 			mail.addCC("carly.lubert@novusmediainc.com");
 			
-			mail.setSubject("Newspaper Ad approved by Surgeon for Seminar #" + sem.getRSVPCodes());
+			mail.setSubject("Ad(s) reviewed by Surgeon for Seminar #" + sem.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
 			mail.setHtmlBody(msg.toString());
 
@@ -318,29 +341,25 @@ public class CoopAdsEmailer extends SBActionAdapter {
 	 * @param user
 	 */
 	public void notifyAdminOfSurgeonsDecline(DePuyEventSeminarVO sem, SiteVO site,
-			String notes) {
+			String notes, int cnt, CoopAdVO vo) {
+		String label = (Convert.formatInteger(vo.getOnlineFlg()).intValue() == 1) ? "Online" : "Newspaper";
 		
 		StringBuilder msg = new StringBuilder();
 		msg.append("<p>").append(sem.getSurgeon().getSurgeonName());
-		msg.append(" has declined the newspaper ad for Seminar #")
-				.append(sem.getRSVPCodes()).append(".</p>");
-		msg.append("<p>The surgeon commented:<br/><pre>").append(notes)
-				.append("</pre></p>");
+		msg.append(" has declined ").append(label).append(" Ad #").append(cnt).append(" for Seminar #").append(sem.getRSVPCodes()).append(".</p>");
+		msg.append("<p>The surgeon commented:<br/><pre>").append(notes).append("</pre></p>");
 		msg.append("<p><br/>If possible, please take the necessary corrective actions and upload a new ad to the website.  ");
 		msg.append("Be sure to set the status to \"Pending Client Approval\" when you do.</p>");
 		String url = site.getFullSiteAlias() + "/?reqType=promote&eventPostcardId=" + sem.getEventPostcardId();
 		msg.append("<p><a href=\"").append(url).append("\">").append(url).append("</a></p>");
-		msg.append("<p>Thank You,<br/>Events.depuy.com Administrator</p><br/>");
+		msg.append("<p>Thank You,<br/>Events.DePuySynthes.com Administrator</p><br/>");
 
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			// mail.addRecipient("kelly.westafer@hmktgroup.com");
-			//mail.addRecipient("admgt@hmktgroup.com");
-			//mail.addRecipient("amy.zimmerman@hmktgroup.com");
 			mail.addRecipient(site.getAdminEmail());
 			mail.addCC("rwilkin7@its.jnj.com");
-			mail.setSubject("Newspaper Ad declined by Surgeon for Seminar #" + sem.getRSVPCodes());
+			mail.setSubject(label + " Ad #" + cnt + " declined by Surgeon for Seminar #" + sem.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
 			mail.setHtmlBody(msg.toString());
 

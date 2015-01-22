@@ -37,13 +37,10 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 	private Double totalCostNo = null;
 	private Double costToDepuyNo = null;
 	private Double costToHospitalNo = null;
-	private Double costToSurgeonNo = null;
+	private Double costToSurgeonNo = null; //also holds 'cost to party' for CFSEM50
 	private Double costToRepNo = null;
-	private Double costToPartyNo = null;
 	private String approvedPaperName = null;
 	private String adFileUrl = null;
-	private String adFile2Url = null;
-	private String adFile3Url = null;
 	private String territoryNo = null;
 	private Integer statusFlg = null;
 	private Map<String, Integer> eventCodes = new HashMap<String, Integer>();
@@ -67,9 +64,6 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 	
 	private String languageCode = null;
 	private Integer onlineFlg = null;
-	private String hospital1Img = null;
-	private String hospital2Img = null;
-	private String hospital3Img = null;
 	private String surgeonInfo = null;
 	private String hospitalInfo = null;
 	private Integer weeksAdvance = null;
@@ -93,11 +87,11 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 		newspaper1Text = req.getParameter("newspaper1Text");
 		newspaper2Text = req.getParameter("newspaper2Text");
 		newspaper3Text = req.getParameter("newspaper3Text");
-		totalCostNo = Convert.formatDouble(StringUtil.replace(req.getParameter("totalCostNo"), ",", ""));
-		costToRepNo = Convert.formatDouble(StringUtil.replace(req.getParameter("costToRepNo"), ",", ""));
-		costToDepuyNo = Convert.formatDouble(StringUtil.replace(req.getParameter("costToRepNo"), ",", ""));
-		costToHospitalNo = Convert.formatDouble(StringUtil.replace(req.getParameter("costToHospitalNo"), ",", ""));
-		costToSurgeonNo = Convert.formatDouble(StringUtil.replace(req.getParameter("costToSurgeonNo"), ",", ""));
+		totalCostNo = Convert.formatDouble(StringUtil.removeNonNumericExceptDecimal(req.getParameter("totalCostNo")));
+		costToRepNo = Convert.formatDouble(StringUtil.removeNonNumericExceptDecimal(req.getParameter("costToRepNo")));
+		costToDepuyNo = Convert.formatDouble(StringUtil.removeNonNumericExceptDecimal(req.getParameter("costToDepuyNo")));
+		costToHospitalNo = Convert.formatDouble(StringUtil.removeNonNumericExceptDecimal(req.getParameter("costToHospitalNo")));
+		costToSurgeonNo = Convert.formatDouble(StringUtil.removeNonNumericExceptDecimal(req.getParameter("costToSurgeonNo")));
 		approvedPaperName = req.getParameter("approvedPaperName");
 		newspaper1Phone = req.getParameter("newspaper1Phone");
 		newspaper2Phone = req.getParameter("newspaper2Phone");
@@ -130,9 +124,6 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 		onlineFlg = Convert.formatInteger(req.getParameter("onlineFlg"), 0 );
 		surgeonInfo = req.getParameter("surgeonInfo");
 		hospitalInfo = req.getParameter("hospitalInfo");
-		hospital1Img = req.getParameter("hospital1Img");
-		hospital2Img = req.getParameter("hospital2Img");
-		hospital3Img = req.getParameter("hospital3Img");
 		weeksAdvance = Convert.formatInteger( req.getParameter("weeksAdvance") );
 		adCount = Convert.formatInteger( req.getParameter("adCount") );
     }
@@ -147,13 +138,10 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 		totalCostNo = db.getDoubleVal("total_cost_no", rs);
 		costToRepNo = db.getDoubleVal("cost_to_rep_no", rs);
 		costToDepuyNo = db.getDoubleVal("cost_to_depuy_no", rs);
-		costToPartyNo = db.getDoubleVal("cost_to_party_no", rs);
 		costToHospitalNo = db.getDoubleVal("cost_to_hospital_no", rs);
 		costToSurgeonNo = db.getDoubleVal("cost_to_surgeon_no",rs);
 		approvedPaperName = db.getStringVal("approved_paper_nm", rs);
 		adFileUrl = db.getStringVal("ad_file_url", rs);
-		adFile2Url = db.getStringVal("ad_file2_url", rs);
-		adFile3Url = db.getStringVal("ad_file3_url", rs);
 		statusFlg = db.getIntegerVal("status_flg", rs);
 		newspaper1Phone = db.getStringVal("newspaper1_phone_no", rs);
 		newspaper2Phone = db.getStringVal("newspaper2_phone_no", rs);
@@ -178,9 +166,6 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 		languageCode = db.getStringVal("language_cd", rs);
 		onlineFlg = db.getIntegerVal("online_flg", rs);
 		hospitalInfo = db.getStringVal("hospital_info_txt", rs);
-		hospital1Img = db.getStringVal("hospital1_img", rs);
-		hospital2Img = db.getStringVal("hospital2_img", rs);
-		hospital3Img = db.getStringVal("hospital3_img", rs);
 		surgeonInfo = db.getStringVal("surgeon_info_txt", rs);
 		adCount = db.getIntegerVal("ad_count_no", rs);
 		weeksAdvance = db.getIntegerVal("weeks_advance_no", rs);
@@ -516,48 +501,6 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 	}
 
 	/**
-	 * @return the hospital1Img
-	 */
-	public String getHospital1Img() {
-		return hospital1Img;
-	}
-
-	/**
-	 * @param hospital1Img the hospital1Img to set
-	 */
-	public void setHospital1Img(String hospital1Img) {
-		this.hospital1Img = hospital1Img;
-	}
-
-	/**
-	 * @return the hospital2Img
-	 */
-	public String getHospital2Img() {
-		return hospital2Img;
-	}
-
-	/**
-	 * @param hospital2Img the hospital2Img to set
-	 */
-	public void setHospital2Img(String hospital2Img) {
-		this.hospital2Img = hospital2Img;
-	}
-
-	/**
-	 * @return the hospital3Img
-	 */
-	public String getHospital3Img() {
-		return hospital3Img;
-	}
-
-	/**
-	 * @param hospital3Img the hostpital3Img to set
-	 */
-	public void setHospital3Img(String hospital3Img) {
-		this.hospital3Img = hospital3Img;
-	}
-
-	/**
 	 * @return the surgeonInfo
 	 */
 	public String getSurgeonInfo() {
@@ -656,20 +599,6 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 	}
 
 	/**
-	 * @return the costToPartyNo
-	 */
-	public Double getCostToPartyNo() {
-		return costToPartyNo;
-	}
-
-	/**
-	 * @param costToPartyNo the costToPartyNo to set
-	 */
-	public void setCostToPartyNo(Double costToPartyNo) {
-		this.costToPartyNo = costToPartyNo;
-	}
- 
-	/**
 	 * @return the invoiceFile
 	 */
 	public String getInvoiceFile() {
@@ -682,33 +611,4 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 	public void setInvoiceFile(String invoiceFile) {
 		this.invoiceFile = invoiceFile;
 	}
-
-	/**
-	 * @return the adFile2Url
-	 */
-	public String getAdFile2Url() {
-		return adFile2Url;
-	}
-
-	/**
-	 * @param adFile2Url the adFile2Url to set
-	 */
-	public void setAdFile2Url(String adFile2Url) {
-		this.adFile2Url = adFile2Url;
-	}
-
-	/**
-	 * @return the adFile3Url
-	 */
-	public String getAdFile3Url() {
-		return adFile3Url;
-	}
-
-	/**
-	 * @param adFile3Url the adFile3Url to set
-	 */
-	public void setAdFile3Url(String adFile3Url) {
-		this.adFile3Url = adFile3Url;
-	}
-
 }

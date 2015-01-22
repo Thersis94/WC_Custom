@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.depuy.events_v2;
 
 import java.sql.PreparedStatement;
@@ -27,7 +24,7 @@ import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.siliconmtn.util.databean.FilePartDataBean;
-import com.siliconmtn.util.parser.AnnotationXlsParser;
+import com.siliconmtn.util.parser.AnnotationParser;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
@@ -137,9 +134,9 @@ public class DePuyEventRsvpAction extends SimpleActionAdapter {
 	}
 	
 	private Map<Class<?>, Collection<Object>> parseFile( FilePartDataBean file ) 
-	throws InvalidDataException{
+	throws InvalidDataException, ActionException{
 		
-		if (file == null){
+		if (file == null) {
 			log.error("Missing file data");
 			throw new InvalidDataException("Missing file data.");
 		}
@@ -148,8 +145,13 @@ public class DePuyEventRsvpAction extends SimpleActionAdapter {
 		List<Class<?>> classes= new LinkedList<Class<?>>();
 		classes.add(DePuyEventRsvpVO.class);
 		
-		AnnotationXlsParser parser = new AnnotationXlsParser();
-		return parser.readFileData( file.getFileData(), classes);
+		AnnotationParser parser;
+		try {
+			parser = new AnnotationParser(classes, file.getExtension());
+		} catch(InvalidDataException e) {
+			throw new ActionException("could not load import file", e);
+		}
+		return parser.parseFile(file, true);
 	}
 
 	/**

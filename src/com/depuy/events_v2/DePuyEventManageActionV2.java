@@ -39,8 +39,8 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class DePuyEventManageActionV2 extends SimpleActionAdapter {
 
 	/**
-     * 
-     */
+	 * 
+	 */
 	public DePuyEventManageActionV2() {
 		super();
 	}
@@ -73,74 +73,74 @@ public class DePuyEventManageActionV2 extends SimpleActionAdapter {
 		actionInit.setActionId((String) mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 
 		switch (ft) {
-		case "rsvp":
-			EventRSVPAction er = new EventRSVPAction(this.actionInit);
-			er.setAttributes(this.attributes);
-			er.setDBConnection(dbConn);
-			er.updateRSVP(req);
-			er = null;
+			case "rsvp":
+				EventRSVPAction er = new EventRSVPAction(this.actionInit);
+				er.setAttributes(this.attributes);
+				er.setDBConnection(dbConn);
+				er.updateRSVP(req);
+				er = null;
 
-			// set redirect page (used for public site redirects only)
-			StringBuilder redirectPg = new StringBuilder();
-			redirectPg.append(req.getRequestURI()).append(
-					"?facadeType=rsvp&reqType=closeModal");
-			redirectPg.append("&printerFriendlyTheme=true&hidePf=true");
-			redirectPg.append("&msg=").append(req.getAttribute("message"));
-			log.debug("nextPage=" + redirectPg);
+				// set redirect page (used for public site redirects only)
+				StringBuilder redirectPg = new StringBuilder();
+				redirectPg.append(req.getRequestURI()).append(
+						"?facadeType=rsvp&reqType=closeModal");
+				redirectPg.append("&printerFriendlyTheme=true&hidePf=true");
+				redirectPg.append("&msg=").append(req.getAttribute("message"));
+				log.debug("nextPage=" + redirectPg);
 
-			req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
-			req.setAttribute(Constants.REDIRECT_URL, redirectPg.toString());
-			
-			break;
+				req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
+				req.setAttribute(Constants.REDIRECT_URL, redirectPg.toString());
 
-		case "report": 
-			// retrieve event/postcard first
-			ee = new PostcardSelectV2(this.actionInit);
-			ee.setAttributes(this.attributes);
-			ee.setDBConnection(dbConn);
-			ee.retrieve(req);
-			log.info("Retrieved Postcard Data ");
-			
-			//the Object returned here (getActionData) could be a List<VO>, or a single VO.  Let the ReportBuilder worry about it!
-			mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
-			
-			ReportBuilder rb = new ReportBuilder(this.actionInit);
-			rb.setAttributes(attributes);
-			rb.setDBConnection(dbConn);
-			rb.generateReport(req, mod.getActionData());
-			
-			break;
-		case "savedReport":
-			log.info("Accessing saved reports");
-			SeminarSummaryAction ssa = new SeminarSummaryAction(this.actionInit);
-			ssa.setAttributes(this.attributes);
-			ssa.setDBConnection(dbConn);
-			ssa.list(req);
-			if ( req.hasParameter("isList"))
-				req.setParameter("isList","true");
-			
-			break;
-		case "delete":
-			ee = new PostcardDeleteV2( this.actionInit );
-			ee.setAttributes( this.attributes );
-			ee.setDBConnection(dbConn);
-			ee.build(req);
-			break;
-			
-		case "rsvpFile":
-			//For batch uploading
-			ee = new DePuyEventRsvpAction( this.actionInit );
-			ee.setAttributes( this.attributes );
-			ee.setDBConnection(dbConn);
-			req.setParameter("import", "true");
-			ee.build(req);
-			break;
-		default:
-			ee = new PostcardInsertV2(this.actionInit);
-			ee.setAttributes(this.attributes);
-			ee.setDBConnection(dbConn);
-			ee.build(req);
-			break;
+				break;
+
+			case "report": 
+				// retrieve event/postcard first
+				ee = new PostcardSelectV2(this.actionInit);
+				ee.setAttributes(this.attributes);
+				ee.setDBConnection(dbConn);
+				ee.retrieve(req);
+				log.info("Retrieved Postcard Data ");
+
+				//the Object returned here (getActionData) could be a List<VO>, or a single VO.  Let the ReportBuilder worry about it!
+				mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
+
+				ReportBuilder rb = new ReportBuilder(this.actionInit);
+				rb.setAttributes(attributes);
+				rb.setDBConnection(dbConn);
+				rb.generateReport(req, mod.getActionData());
+
+				break;
+			case "savedReport":
+				log.info("Accessing saved reports");
+				SeminarSummaryAction ssa = new SeminarSummaryAction(this.actionInit);
+				ssa.setAttributes(this.attributes);
+				ssa.setDBConnection(dbConn);
+				ssa.list(req);
+				if ( req.hasParameter("isList"))
+					req.setParameter("isList","true");
+
+				break;
+			case "delete":
+				ee = new PostcardDeleteV2( this.actionInit );
+				ee.setAttributes( this.attributes );
+				ee.setDBConnection(dbConn);
+				ee.build(req);
+				break;
+
+			case "rsvpFile":
+				//For batch uploading
+				ee = new DePuyEventRsvpAction( this.actionInit );
+				ee.setAttributes( this.attributes );
+				ee.setDBConnection(dbConn);
+				req.setParameter("import", "true");
+				ee.build(req);
+				break;
+			default:
+				ee = new PostcardInsertV2(this.actionInit);
+				ee.setAttributes(this.attributes);
+				ee.setDBConnection(dbConn);
+				ee.build(req);
+				break;
 		}
 		log.debug("build complete");
 
@@ -164,7 +164,7 @@ public class DePuyEventManageActionV2 extends SimpleActionAdapter {
 		// Retrieve the postcard Data
 		SMTActionInterface eg = null;
 		Object data = null;
-		
+
 		if (req.hasParameter(AdminConstants.FACADE_TYPE)) {
 			eg = new EventRSVPAction(this.actionInit);
 			eg.setAttributes(this.attributes);
