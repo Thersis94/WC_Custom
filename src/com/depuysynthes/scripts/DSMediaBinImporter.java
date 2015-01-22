@@ -489,7 +489,7 @@ public class DSMediaBinImporter extends CommandLineUtil {
 		try {
 			// Build the email message
 			EmailMessageVO msg = new EmailMessageVO(); 
-			msg.addRecipients(props.getProperty("adminEmail").split(", "));
+			msg.addRecipients(props.getProperty("adminEmail").split(","));
 			msg.setSubject("MediaBin Import");
 			msg.setFrom("appsupport@siliconmtn.com");
 			
