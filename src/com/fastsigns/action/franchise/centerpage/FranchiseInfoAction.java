@@ -95,6 +95,10 @@ public class FranchiseInfoAction extends SBActionAdapter {
 					updateRAQSAF(req);
 					super.clearCacheByGroup(siteId);
 					break;
+				case CenterPageAction.GLOBAL_MODULE_UPDATE:
+					updateGlobalModule(req);
+					super.clearCacheByGroup(siteId);
+					break;
 			}
 		} catch(Exception e) {
 			log.error("Error Updating Center Page", e);
@@ -104,6 +108,40 @@ public class FranchiseInfoAction extends SBActionAdapter {
 		log.debug("Sending Redirect to: " + redir);
 		req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
 		req.setAttribute(Constants.REDIRECT_URL, redir + "msg=" + msg);
+	}
+	
+	/**
+	 * Update the USE_GLOBAL_MODULE flag for the submitted center
+	 * This flag determines whether global assets and modules (items with
+	 * franchise id of -1) should appear on the center's main page.
+	 * @param req
+	 */
+	private void updateGlobalModule(SMTServletRequest req) throws SQLException {
+		log.debug("Beginning global module preference update");
+		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder();
+		String franchiseId = CenterPageAction.getFranchiseId(req);
+		int useGlobalModules = Convert.formatInteger(req.getParameter("useGlobalModules"));
+		
+		sql.append("UPDATE ").append(customDb).append("FTS_FRANCHISE ");
+		sql.append("SET USE_GLOBAL_MODULES_FLG = ? WHERE FRANCHISE_ID = ?");
+		log.debug(sql.toString() + "|" + useGlobalModules + "|" + franchiseId);
+		
+		PreparedStatement ps = null;
+		try {
+		ps = dbConn.prepareStatement(sql.toString());
+		
+		ps.setInt(1, useGlobalModules);
+		ps.setString(2, franchiseId);
+		
+		if (ps.executeUpdate() < 1) 
+			log.error("No centers updated when attempting to change global module preferences for center " + franchiseId);
+	
+		} finally {
+			try {
+				ps.close();
+			} catch(Exception e) {}
+		}
 	}
 	
 	/**
