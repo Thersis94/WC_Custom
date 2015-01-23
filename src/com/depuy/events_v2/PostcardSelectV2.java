@@ -161,12 +161,12 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		sql.append("select distinct event_entry_id, RSVP_CODE_TXT, start_dt, type_nm, profile_id, ");
 		sql.append("surgeon_nm, event_nm, city_nm, state_cd, status_flg, event_postcard_id, postcard_file_status_no, ");
 		sql.append("rsvp_no, [4] as 'hip', [5] as 'knee', [6] as 'shoulder', ");  //in a PIVOT, we're turning the data (values) into column headings.  hence the square brackets.
-		sql.append("quantity_no, upfront_fee_flg, postcard_cost_no, territory_no, event_desc "); 
-		//sql.append(" ");
+		sql.append("quantity_no, upfront_fee_flg, postcard_cost_no, territory_no, "); 
+		sql.append("event_desc, language_cd, postcard_mail_dt ");
 		sql.append("from (select e.event_entry_id, e.RSVP_CODE_TXT, e.start_dt, et.type_nm, ep.event_postcard_id, ");
 		sql.append("ep.PROFILE_ID, ep.postcard_file_status_no, s.surgeon_nm, e.event_nm, e.city_nm, ");
 		sql.append("e.state_cd, ep.status_flg, lxr.JOINT_ID, sum(rsvp.GUESTS_NO) as 'rsvp_no', ");
-		sql.append("ep.language_cd, ");
+		sql.append("ep.language_cd, ep.postcard_mail_dt, ");
 		sql.append("(ep.quantity_no+deap.postcard_qnty_no) as quantity_no, ep.upfront_fee_flg, ");
 		sql.append("ep.territory_no, ep.postcard_cost_no, cast(e.event_desc as varchar(500)) as event_desc ");
 		sql.append("from EVENT_ENTRY e ");
@@ -196,7 +196,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		}
 		sql.append("group by e.event_entry_id, ep.event_postcard_id, e.RSVP_CODE_TXT, e.start_dt, ");
 		sql.append("et.type_nm, ep.PROFILE_ID, ep.postcard_file_status_no, e.event_nm, s.surgeon_nm, ");
-		sql.append("e.city_nm, e.state_cd, ep.status_flg, lxr.JOINT_ID, ep.language_cd, ");
+		sql.append("e.city_nm, e.state_cd, ep.status_flg, lxr.JOINT_ID, ep.language_cd, ep.postcard_mail_dt, ");
 		sql.append("ep.territory_no, ep.quantity_no, postcard_cost_no, upfront_fee_flg, postcard_qnty_no, cast(e.event_desc as varchar(500)) ");
 		sql.append(") baseQry ");
 		sql.append("pivot (count(joint_id) for joint_id in ([4],[5],[6])) as pvtQry "); //PIVOT is an implicit group-by
@@ -215,6 +215,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 				//set aside profileIds for the event owners, these will need to be retrieved from ProfileManager
 				profileIds.add(rs.getString("profile_id"));
 				data.add(new DePuyEventSeminarVO().populateFromListRS(rs));
+				log.debug("mailed" + rs.getDate("postcard_mail_dt"));
 			}
 		} finally { 
 			try { ps.close(); } catch (Exception e) { }

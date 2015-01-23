@@ -90,12 +90,9 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 				break;
 			case "eventInfo":
 				// create the VO based on the incoming request object
-				List<CoopAdVO> voList = createAdList(req);
-
-				for (int i=0; i < voList.size(); i++) {
-					vo = voList.get(i);
-					this.saveAd(req,site,vo);
-				}
+				for (CoopAdVO v : createAdList(req))
+					this.saveAd(req,site,v);
+				
 				break;
 			case "uploadAdFile": //this gets called once per ad, from the Promote page
 				this.savePromoteAdData(req, site, vo);
@@ -105,7 +102,9 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 		req.setAttribute("coopAdId", vo.getCoopAdId());
 
 		// grab the full VO from the database for use in the emails below...
-		vo = retrieve(vo.getCoopAdId(), vo.getEventPostcardId()).get(0);
+		List<CoopAdVO> lst = retrieve(vo.getCoopAdId(), vo.getEventPostcardId());
+		if (lst == null || lst.size() == 0) return; //nothing to send emails about!
+		vo = lst.get(0);
 
 		// radio ads send no emails
 		if (!"radio".equalsIgnoreCase(vo.getAdType()))

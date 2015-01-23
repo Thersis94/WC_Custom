@@ -298,13 +298,13 @@ public class SeminarSummaryReportVO extends AbstractSBReportVO {
 					printMultiVal(rpt,"getCostToHospitalNo",vo.getAllAds());
 					break;
 				case INVITATION_COST_NO:
-					rpt.append(StringUtil.checkVal(vo.getCostNo()));
+					rpt.append(StringUtil.checkVal(vo.getPostcardCostNo()));
 					break;
 				case INVITATION_COUNT_NO:
 					rpt.append( StringUtil.checkVal(vo.getQuantityNo()));
 					break;
 				case POSTCARD_COST_NO:
-					rpt.append(StringUtil.checkVal(vo.getCostNo()));
+					rpt.append(StringUtil.checkVal(vo.getPostcardCostNo()));
 					break;
 				case POSTCARD_COUNT_NO:
 					rpt.append( StringUtil.checkVal(vo.getQuantityNo()));

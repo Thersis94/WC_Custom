@@ -99,6 +99,7 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	    super.setPostcardFileStatusFlg(db.getIntVal("postcard_file_status_no", rs));
 	    super.setLanguageCode( db.getStringVal("language_cd", rs) );
 	    super.setTerritoryNumber( db.getIntegerVal("territory_no", rs));
+	    super.setPostcardMailDate(db.getDateVal("postcard_mail_dt", rs));
 	    
 	    List<EventEntryVO> lst = new ArrayList<EventEntryVO>();
 	    EventEntryVO event = new EventEntryVO();
@@ -123,12 +124,12 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	    	
 	    	rsvpCount = db.getIntVal("rsvp_no", rs);
 	    	
-	    	String runDates = db.getStringVal("run_dates_txt", rs);
+//	    	String runDates = db.getStringVal("run_dates_txt", rs);
 
-	    	CoopAdVO ad = new CoopAdVO();
-    		ad.setAdDatesText(runDates);
-    		ad.setStatusFlg(db.getIntVal("ad_status_flg", rs));
-    		newspaperAds.add(ad);
+//	    	CoopAdVO ad = new CoopAdVO();
+//    		ad.setAdDatesText(runDates);
+//    		ad.setStatusFlg(db.getIntVal("ad_status_flg", rs));
+//    		newspaperAds.add(ad);
     		
     		db = null;
     	
