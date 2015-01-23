@@ -169,11 +169,13 @@ public abstract class SiteWizardAction extends SBActionAdapter implements FSSite
 		
 		// Update Layout information and add the secondary layout
 		String layoutId = this.updateLayout(vo.getFranchiseId(), centerActionId);
-		String secLayoutId = this.addSecondaryLayout(req);
+		String secLayoutId = this.addSecondaryLayout(req); 
+		String emptyColLayoutId = this.addEmptyColLayout(req); 
 		
 		// Associate the main modules and the center image/text to the layouts
 		associateCenterPage(layoutId, vo.getFranchiseId(), centerActionId, 1);
-		associateCenterPage(secLayoutId, vo.getFranchiseId(), centerActionId, 2);
+		associateCenterPage(emptyColLayoutId, vo.getFranchiseId(), centerActionId, 2);
+		associateCenterPage(secLayoutId, vo.getFranchiseId(), centerActionId, 3);
 		
 		// Change the theme from the default to the new theme
 		this.assignTheme(vo);
@@ -367,7 +369,7 @@ public abstract class SiteWizardAction extends SBActionAdapter implements FSSite
 			List<PageModuleVO> current = secDisplay;
 			if (type == 1) current = defDisplay;
 			if (type == 2) current = emptyColDisplay;
-			log.debug("***********************: " + secDisplay.size() + "|" + defDisplay.size() + "|" + current.size());
+			log.debug("***********************: " + secDisplay.size() + "|" + defDisplay.size() + "|" + emptyColDisplay.size() + "|" + current.size());
 			
 			for (PageModuleVO vo : current) {
 				
