@@ -19,6 +19,8 @@ import com.fastsigns.action.franchise.centerpage.FranchiseLocationInfoAction;
 import com.fastsigns.action.franchise.vo.CenterModuleOptionVO;
 import com.fastsigns.action.franchise.vo.FranchiseVO;
 import com.fastsigns.action.franchise.vo.pages.PageContainerVO;
+import com.fastsigns.action.wizard.SiteWizardAction;
+import com.fastsigns.action.wizard.SiteWizardFactoryAction;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
@@ -198,7 +200,7 @@ public class FranchisePageAction extends SBActionAdapter {
 					}
 					
 					this.savePage(req);
-					if(req.getParameter("pageNm").equals("gallery")){
+					if(StringUtil.checkVal(req.getParameter("pageNm")).equals("gallery")){
 						log.debug("adding gallery page.");
 						redir.append(addPhotoGallery(req));
 					}
@@ -209,9 +211,17 @@ public class FranchisePageAction extends SBActionAdapter {
 					redir.append("pageId=").append(req.getAttribute("pageId"));
 					redir.append("&lvl=").append(lvl).append("&template=");
 					redir.append(req.getParameter("aliasName"));
+					redir.append("&selectCol=true");
 					break;
 					
 				case EDIT_PAGE_COPY:
+
+					//Check if the user wants to add a page with no left or right rails
+					if (!Convert.formatBoolean( req.getParameter("emptyCol"), false )){
+						req.setParameter("siteId", siteId);
+						setEmptyColLayout(req);
+					}
+					
 					this.savePage(req);
 					if(req.hasParameter("galleryId"))
 						updatePhotoGallery(req);
@@ -859,5 +869,45 @@ public class FranchisePageAction extends SBActionAdapter {
 	
 	protected String stripHTML(String target) {
 		return RegexParser.regexReplace(RegexParser.Patterns.STRIP_ALL_HTML, StringUtil.checkVal(target), "");
+	}
+	
+	/**
+	 * Sets the template Id on the request to point to the single column layout
+	 * @param req
+	 * @throws Exception 
+	 */
+	private void setEmptyColLayout(SMTServletRequest req) throws Exception{
+		log.debug("Single Column Layout Selected");
+		
+		//Get the proper SiteWizardAction
+		SiteVO site = (SiteVO)req.getAttribute("siteData");
+		String siteId = StringUtil.checkVal(req.getParameter("siteId"));
+		SiteWizardFactoryAction wizardFactory = new SiteWizardFactoryAction();
+		SiteWizardAction swa = wizardFactory.retrieveWizard(site.getCountryCode());
+		swa.setAttributes(attributes);
+		swa.setDBConnection(dbConn);
+		
+		String tId = null;
+		try{
+			//Check if the layout was already created
+			tId = swa.getSecondaryLayoutId(siteId, SiteWizardAction.EMPTY_COL_LABEL);
+		} catch (Exception e){ 
+			log.error("Couldn't fetch layout",e); 
+			throw e;
+		}
+		//If the layout doesn't exits yet, create it
+		if (StringUtil.checkVal(tId).isEmpty()){
+			log.debug("***********Creating new "+SiteWizardAction.EMPTY_COL_LABEL);
+			tId = swa.addEmptyColLayout(req);
+			
+			//Grab the center number from the siteId
+			String[] cId = req.getParameter("organizationId").split("_");
+			swa.setCenterId(Convert.formatInteger(cId[cId.length-1]));
+			swa.assignTypes();
+			swa.associateCenterPage(tId, null, null, 2);
+		}
+		
+		req.setParameter("templateId", tId);
+		req.setParameter("displayColumn","1");
 	}
 }
