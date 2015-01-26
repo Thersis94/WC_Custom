@@ -176,6 +176,7 @@ public class KeystoneApprovalAction extends SimpleActionAdapter {
 						approvalNeeded.add(rs.getString(2));
 						break;
 					case 2:
+					case 6:
 						siteId = rs.getString(2);
 						siteId = rs.getString(2).substring(0, siteId.lastIndexOf('_')).replace(orgId, "");
 						approvalNeeded.add(siteId);
@@ -238,7 +239,14 @@ public class KeystoneApprovalAction extends SimpleActionAdapter {
 		sql.append("FROM ").append(customDb).append("FTS_FRANCHISE f ");
 		sql.append("inner join ").append(customDb).append("FTS_CP_MODULE_OPTION cmo on f.USE_GLOBAL_MODULES_FLG * -1 = cmo.FRANCHISE_ID ");
 		sql.append("WHERE APPROVAL_FLG = 100 ");
+		
+		sql.append("union ");
+		
+		// Get any missing subpages
+		sql.append("SELECT distinct 6 as QUERY, SITE_ID, null ");
+		sql.append("FROM PAGE WHERE live_start_dt > '2100-01-01 00:00:00.000' ");
 		log.debug(sql);
+		
 		
 		return sql.toString();
 	}
