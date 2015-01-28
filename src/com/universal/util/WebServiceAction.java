@@ -10,12 +10,14 @@ import java.util.List;
 import java.util.Map;
 
 
+
 // DOM4j
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
 import org.dom4j.tree.DefaultElement;
+
 
 
 // SMT Base Libs
@@ -242,8 +244,8 @@ public class WebServiceAction extends SBActionAdapter {
 		log.debug("*****************\nRequest : " + s);
 		
 		// place the order.
-		//Element orderResponse = this.callWebService(url, s, "root");
-		Element orderResponse = this.createDebugResponseElement(cart);
+		Element orderResponse = this.callWebService(url, s, "root");
+		//Element orderResponse = this.createDebugResponseElement(cart);
 		return orderResponse;
 		
 	}
@@ -601,6 +603,7 @@ public class WebServiceAction extends SBActionAdapter {
 	 * @param cart
 	 * @return
 	 */
+	@SuppressWarnings("unused")
 	private Element createDebugResponseElement(ShoppingCartVO cart) {
 		Element ele = new DefaultElement("OrderResponse");
 		
@@ -646,6 +649,19 @@ public class WebServiceAction extends SBActionAdapter {
 		
 		log.debug("debug response element: " + ele.asXML());
 		return ele;
+	}
+	
+	/**
+	 * for DEBUG
+	 * @param val
+	 * @return
+	 */
+	private String safeDouble(double val) {
+		try {
+			return new Double(val).toString();
+		} catch (NumberFormatException nfe) {
+			return "0.00";
+		}
 	}
 	
 }
