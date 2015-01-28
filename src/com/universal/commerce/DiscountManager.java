@@ -386,8 +386,8 @@ public class DiscountManager implements Serializable {
 				if (item.isDiscounted()) {
 					//log.debug("-------> item is discounted...");
 					USADiscountVO disc = (USADiscountVO) item.getProduct().getDiscounts().get(0);
-					//log.debug("-------> disc type|value|dollar value: " + disc.getDiscountType() + "|" + disc.getDiscountValue() + "|" + disc.getDiscountDollarValue());	
-					itemPrice = item.getQuantity() * disc.getDiscountDollarValue();
+					//log.debug("-------> disc type|value|dollar value: " + disc.getDiscountType() + "|" + disc.getDiscountValue() + "|" + disc.getDiscountDollarValue());
+					itemPrice = ( item.getQuantity() * (disc.getDiscountDollarValue() + item.getAttributePrice()) );
 				}
 				
 				//log.debug("---> item price after applying discount to item: " + itemPrice);
