@@ -2,11 +2,13 @@ package com.universal.util;
 
 // Java 7
 import java.io.ByteArrayInputStream;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
 
 // DOM4j
 import org.dom4j.Document;
@@ -14,6 +16,7 @@ import org.dom4j.DocumentException;
 import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
 import org.dom4j.tree.DefaultElement;
+
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -237,7 +240,12 @@ public class WebServiceAction extends SBActionAdapter {
 			return errElem;
 		}
 		log.debug("*****************\nRequest : " + s);
-		return this.callWebService(url, s, "root");
+		
+		// place the order.
+		//Element orderResponse = this.callWebService(url, s, "root");
+		Element orderResponse = this.createDebugResponseElement(cart);
+		return orderResponse;
+		
 	}
 	
 	/**
@@ -586,6 +594,58 @@ public class WebServiceAction extends SBActionAdapter {
 		err.addElement("ErrorCode").setText("SystemError");
 		err.addElement("ErrorMessage").setText("SystemError");
 		return err;
+	}
+	
+	/**
+	 * DEBUG - creates a dummy order response using the values in the cart
+	 * @param cart
+	 * @return
+	 */
+	private Element createDebugResponseElement(ShoppingCartVO cart) {
+		Element ele = new DefaultElement("OrderResponse");
+		
+		Element subEle = new DefaultElement("GrandTotal");
+		subEle.addText(safeDouble(cart.getCartTotal()));
+		ele.add(subEle);
+		log.debug("cart total: " + cart.getCartTotal());
+		
+		subEle = new DefaultElement("ProductTotal");
+		subEle.addText(safeDouble(cart.getSubTotal()));
+		ele.add(subEle);
+		log.debug("cart sub total: " + cart.getSubTotal());
+		
+		subEle = new DefaultElement("TaxTotal");
+		subEle.addText(safeDouble(cart.getTaxAmount()));
+		ele.add(subEle);
+		
+		subEle = new DefaultElement("ShippingTotal");
+		subEle.addText(safeDouble(cart.getShipping().getShippingCost()));
+		ele.add(subEle);
+		log.debug("cart shipping cost: " + cart.getShipping().getShippingCost());
+		
+		
+		subEle = new DefaultElement("DiscountTotal");
+			if (cart.getCartDiscount() != null && ! cart.getCartDiscount().isEmpty()) {
+				subEle.addText(safeDouble(cart.getCartDiscount().get(0).getDiscountDollarValue()));
+			} else {
+				subEle.addText("0.00");
+			}
+		ele.add(subEle);
+		
+		subEle = new DefaultElement("OrderNumber");
+		subEle.addText("DEBUG: " + Calendar.getInstance().getTimeInMillis());
+		ele.add(subEle);
+		
+		subEle = new DefaultElement("TransactionID");
+		subEle.addText("DEBUG: " + cart.getInvoiceNo());
+		ele.add(subEle);
+		
+		subEle = new DefaultElement("MSG");
+		subEle.addText("DEBUG: Test order generated from cart.");
+		ele.add(subEle);
+		
+		log.debug("debug response element: " + ele.asXML());
+		return ele;
 	}
 	
 }
