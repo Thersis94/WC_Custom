@@ -163,6 +163,7 @@ public class KeystoneApprovalAction extends SimpleActionAdapter {
 			ps.setString(2, countryCd);
 			ps.setString(3, orgId);
 			ps.setString(4, orgId);
+			ps.setString(5, countryCd);
 			
 			ResultSet rs = ps.executeQuery();
 			String siteId;
@@ -177,8 +178,9 @@ public class KeystoneApprovalAction extends SimpleActionAdapter {
 						break;
 					case 2:
 					case 6:
+
 						siteId = rs.getString(2);
-						siteId = rs.getString(2).substring(0, siteId.lastIndexOf('_')).replace(orgId, "");
+						siteId = siteId.substring(0, siteId.lastIndexOf('_')).replace(orgId + "_", "");
 						approvalNeeded.add(siteId);
 						break;
 				}
@@ -243,8 +245,9 @@ public class KeystoneApprovalAction extends SimpleActionAdapter {
 		sql.append("union ");
 		
 		// Get any missing subpages
-		sql.append("SELECT distinct 6 as QUERY, SITE_ID, null ");
-		sql.append("FROM PAGE WHERE live_start_dt > '2100-01-01 00:00:00.000' ");
+		sql.append("SELECT distinct 6 as QUERY, s.SITE_ID, null ");
+		sql.append("FROM PAGE p left join SITE s on s.SITE_ID = p.SITE_ID ");
+		sql.append(" WHERE live_start_dt > '2100-01-01 00:00:00.000'  AND s.COUNTRY_CD = ?");
 		log.debug(sql);
 		
 		

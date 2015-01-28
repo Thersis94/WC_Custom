@@ -10,16 +10,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-
-
 // DOM4j
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
 import org.dom4j.tree.DefaultElement;
-
-
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -245,7 +241,7 @@ public class WebServiceAction extends SBActionAdapter {
 			errElem.addElement("ErrorMessage").setText("Unable to process the order at this time.");
 			return errElem;
 		}
-		
+
 		// log the order request
 		logOrderTransaction(req, cart, s, true);
 		
@@ -257,6 +253,7 @@ public class WebServiceAction extends SBActionAdapter {
 		logOrderTransaction(req, cart, new StringBuilder(orderResponse.asXML()), false);
 		
 		return orderResponse;
+
 	}
 	
 	/**
