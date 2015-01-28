@@ -1,17 +1,22 @@
 package com.depuy.events_v2;
 
 // DePuy SB Libs
+import java.util.Calendar;
+
 import com.depuy.events.vo.report.SigninReportVO;
+import com.depuy.events_v2.ReportBuilder.ReportType;
 // SMT Base libs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 // SB Libs
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.event.EventGroupAction;
 import com.smt.sitebuilder.action.event.EventRSVPAction;
+import com.smt.sitebuilder.action.event.vo.EventRsvpVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -77,7 +82,15 @@ public class DePuyEventManageActionV2 extends SimpleActionAdapter {
 				EventRSVPAction er = new EventRSVPAction(this.actionInit);
 				er.setAttributes(this.attributes);
 				er.setDBConnection(dbConn);
-				er.updateRSVP(req);
+				
+				EventRsvpVO vo = new EventRsvpVO(req);
+
+				Calendar reminderDt = Calendar.getInstance();
+				reminderDt.setTime(Convert.formatDate(Convert.DATE_SLASH_PATTERN, req.getParameter("eventDt")));
+				reminderDt.add(Calendar.DATE, -7); // set reminder for 7 days before the event
+				vo.setReminderDt(reminderDt.getTime());
+				
+				er.updateRSVP(vo);
 				er = null;
 
 				// set redirect page (used for public site redirects only)
@@ -94,12 +107,21 @@ public class DePuyEventManageActionV2 extends SimpleActionAdapter {
 				break;
 
 			case "report": 
+				ReportType type = null;
+				try {
+					type = ReportType.valueOf(req.getParameter("rptType"));
+				} catch (Exception e) {
+					throw new ActionException("unknown report type", e);
+				}
+				
 				// retrieve event/postcard first
-				ee = new PostcardSelectV2(this.actionInit);
-				ee.setAttributes(this.attributes);
-				ee.setDBConnection(dbConn);
-				ee.retrieve(req);
-				log.info("Retrieved Postcard Data ");
+				if (type.requiresSeminar()) { //we don't need seminar data for certain reports
+					ee = new PostcardSelectV2(this.actionInit);
+					ee.setAttributes(this.attributes);
+					ee.setDBConnection(dbConn);
+					ee.retrieve(req);
+					log.debug("Retrieved Postcard Data ");
+				}
 
 				//the Object returned here (getActionData) could be a List<VO>, or a single VO.  Let the ReportBuilder worry about it!
 				mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
@@ -127,14 +149,15 @@ public class DePuyEventManageActionV2 extends SimpleActionAdapter {
 				ee.build(req);
 				break;
 
-			case "rsvpFile":
+			case "rsvpFileImport":
 				//For batch uploading
-				ee = new DePuyEventRsvpAction( this.actionInit );
-				ee.setAttributes( this.attributes );
-				ee.setDBConnection(dbConn);
-				req.setParameter("import", "true");
-				ee.build(req);
+				EventRSVPAction era = new EventRSVPAction(this.actionInit);
+				era.setAttributes( this.attributes );
+				era.setDBConnection(dbConn);
+				era.importFile(req);
+				era = null;
 				break;
+				
 			default:
 				ee = new PostcardInsertV2(this.actionInit);
 				ee.setAttributes(this.attributes);

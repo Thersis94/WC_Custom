@@ -5,28 +5,24 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-
-
-
-
 import javax.servlet.http.Cookie;
+
 // J2EE 1.4.0 Libs
 import javax.servlet.http.HttpSession;
-
-
-
-
 
 //wc-depuy libs
 import com.depuy.events.vo.CoopAdVO;
 import com.depuy.events_v2.vo.ConsigneeVO;
+
 // SMT BaseLibs
 import com.depuy.events_v2.vo.DePuyEventSeminarVO;
 import com.depuy.events_v2.vo.PersonVO;
@@ -37,6 +33,7 @@ import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
+
 // SB Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.event.EventFacadeAction;
@@ -49,16 +46,22 @@ import com.smt.sitebuilder.security.SecurityController;
 
 
 /****************************************************************************
- * <b>Title</b>: EventPostcardSelect.java<p/>
- * <b>Description: Manages EventActions for the SB Sites</b> 
+ * <b>Title</b>: PostcardSelectV2.java<p/>
+ * <b>Description: Manages retrieval of data for the DePuy Patient Seminars Management site.</b> 
  * <p/>
- * <b>Copyright:</b> Copyright (c) 2005<p/>
+ * <b>Copyright:</b> Copyright (c) 2014<p/>
  * <b>Company:</b> Silicon Mountain Technologies<p/>
- * @author James Camire
+ * @author James McKain
  * @version 1.0
- * @since Mar 15, 2006
+ * @since Jan 15, 2014
+ * @updates
+ * 		JM/Wingo - Q4 2014 & Q1 2015 - "phase 2" upgrades per DePuy.
  ****************************************************************************/
 public class PostcardSelectV2 extends SBActionAdapter {
+	
+	private static final String SURVEY_ACTION_ID = "c0a8021edb7fd91f57d3396eea06b0e9"; // the actionId of the Survey portlet tied to Events.
+	private static final String SURVEY_RSVP_QUEST_ID = "c0a8021edb832b385a61675da76470a2"; //the questionId holding RSVP#
+	public static final String ACTION_ITEMS_CNT = "outstanding";
 	
 	public enum ReqType {
 		//create-wizard screens
@@ -70,8 +73,11 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		//reports
 		reportForm,  rsvpBreakdown, report,
 		//ordering consumables for hospital sponsored seminars
-		hospitalSponsored, outstanding
+		hospitalSponsored, outstanding,
+		//misc utils
+		isSurveyComplete
 	}
+	
 	
 	/*
 	 * Enums for the different Comparator sorting order.
@@ -120,10 +126,15 @@ public class PostcardSelectV2 extends SBActionAdapter {
 	
 		Object data = null;
 		try {
+			//this call will fail-fast if we only need a count (and already have it loaded on session)
 			Object outstanding = loadOutstandingItems( req, profileId, reqType);
+			
 			if ( ReqType.outstanding == reqType ){
 				data = outstanding;
-				//counter isn't displayed when the outstanding items view is the current view.
+			} else if (ReqType.isSurveyComplete == reqType) {
+				verifySurveyComplete(req.getParameter("rsvpCode"));
+				return;
+				
 			} else if (eventPostcardId.length() > 0) {
 				//load one postcard in it's entirety
 				data = loadOneSeminar(eventPostcardId, actionInit.getActionId(), reqType, profileId, req.getParameter("sort"));
@@ -215,7 +226,6 @@ public class PostcardSelectV2 extends SBActionAdapter {
 				//set aside profileIds for the event owners, these will need to be retrieved from ProfileManager
 				profileIds.add(rs.getString("profile_id"));
 				data.add(new DePuyEventSeminarVO().populateFromListRS(rs));
-				log.debug("mailed" + rs.getDate("postcard_mail_dt"));
 			}
 		} finally { 
 			try { ps.close(); } catch (Exception e) { }
@@ -467,39 +477,28 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		return;
 	}
 	
+	
 	/**
 	 * Get a list of the outstanding items for this user
 	 * @param req
 	 */
-	private List<DePuyEventSeminarVO> loadOutstandingItems( SMTServletRequest req, 
-			String profileId, ReqType reqType ) throws SQLException{
-		final String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		final String COUNT_STORE = "outstanding";
-		String actionId = actionInit.getActionId();
-		List<DePuyEventSeminarVO> voList = new ArrayList<>();
-		
-		//If the view to be shown is the outstanding items jsp, load the list,
-		//otherwise, just count them
-		boolean countOnly = ( reqType != ReqType.outstanding );
-		
-		//if this is a count and the value exists in the attributes, get the value from there
-		if( countOnly &&  null != req.getSession().getAttribute(COUNT_STORE)){
-			String count = (String) req.getSession().getAttribute(COUNT_STORE);
-			req.setParameter("net", count);
-			return voList;
-		}
-		
-		StringBuilder sql = new StringBuilder(1300);
-		//simplifies the query if all we need is a total, not event details
-		if ( countOnly ){
-			sql.append("select COUNT(distinct e.event_entry_id) as net ");
-		} else {
-			sql.append("select distinct e.event_entry_id, e.RSVP_CODE_TXT, e.start_dt, ");
-			sql.append("et.type_nm, ep.event_postcard_id, ep.PROFILE_ID, ep.postcard_file_status_no, "); 
-			sql.append("e.event_nm, e.city_nm, e.state_cd, ep.status_flg,  cad.run_dates_txt, ");
-			sql.append("cad.status_flg as ad_status_flg, ep.language_cd, online_flg "); 
-		}
+	private Collection<DePuyEventSeminarVO> loadOutstandingItems(SMTServletRequest req, 
+			String profileId, ReqType reqType) {
 
+		//if this is a count and the value was already calculated, we don't have any work to do here.
+		//all pages display the count, but only one (ReqType.outstanding) needs the data.
+		if (reqType != ReqType.outstanding &&  req.getSession().getAttribute(ACTION_ITEMS_CNT) != null)
+			return null;
+		
+		final String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		String actionId = actionInit.getActionId();
+		Map<String, DePuyEventSeminarVO> data = new HashMap<>();
+
+		StringBuilder sql = new StringBuilder(1300);
+		sql.append("select distinct e.event_entry_id, e.RSVP_CODE_TXT, e.start_dt, ");
+		sql.append("et.type_nm, ep.event_postcard_id, ep.PROFILE_ID, ep.postcard_file_status_no, "); 
+		sql.append("e.event_nm, e.city_nm, e.state_cd, ep.status_flg, ep.CONSUMABLE_ORDER_DT,  ");
+		sql.append("cad.status_flg as ad_status_flg, ep.language_cd, online_flg, e.create_dt ");
 		sql.append("from EVENT_ENTRY e ");
 		sql.append("inner join EVENT_TYPE et on e.EVENT_TYPE_ID=et.EVENT_TYPE_ID "); 
 		sql.append("inner join EVENT_GROUP eg on et.ACTION_ID=eg.ACTION_ID ");
@@ -507,55 +506,94 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		sql.append("inner join EVENT_POSTCARD_ASSOC epa on e.EVENT_ENTRY_ID=epa.EVENT_ENTRY_ID "); 
 		sql.append("inner join EVENT_POSTCARD ep on epa.EVENT_POSTCARD_ID=ep.EVENT_POSTCARD_ID "); 
 		sql.append("left outer join ").append(customDb).append("DEPUY_EVENT_COOP_AD cad on ep.EVENT_POSTCARD_ID=cad.EVENT_POSTCARD_ID "); 
-		sql.append("and cad.ad_type_txt != 'radio' and cad.status_flg in (2,3) ");
+		sql.append("and cad.ad_type_txt != 'radio' and cad.status_flg in (2,7) ");
 		sql.append("left outer join ").append(customDb).append("DEPUY_EVENT_PERSON_XR pxr on ep.EVENT_POSTCARD_ID=pxr.EVENT_POSTCARD_ID ");
-		sql.append("where sb.action_group_id=? and ( ep.STATUS_FLG ");
-		//Non-admins don't need to be alerted of admin approvals
-		if ( profileId == null )
-			sql.append("in (5, 10, 13) ");
-		else
-			sql.append("= 13 ");
-		
-		sql.append("or (ep.STATUS_FLG = 15 and START_DT < CURRENT_TIMESTAMP ) ) ");
+		sql.append("where sb.action_group_id=? ");
+		sql.append("and ( ");
+		//Non-admins don't need to be alerted of pending submissions or surgeon-related stuff
+		if (profileId == null) {
+			sql.append("ep.STATUS_FLG in (5, 13) ");
+		} else {
+			sql.append("ep.STATUS_FLG=13 ");
+		}
+		//postcard file is pending
+		sql.append("or (ep.STATUS_FLG=15 and ep.postcard_file_status_no=2) ");
+		//ad issues -- gets sorted out in the JSP
+		sql.append("or (ep.STATUS_FLG=15  ) ");
+
+		sql.append(") ");
 		//Use profile id if this is not an admin request (null)
-		if ( profileId != null ){
+		if (profileId != null) {
 			sql.append("and (pxr.PROFILE_ID=? or ep.PROFILE_ID=?) ");
 		}
-		
-		//no grouping if only total row count is needed
-		if ( !countOnly ){
-			sql.append("group by e.event_entry_id, ep.event_postcard_id, e.RSVP_CODE_TXT, ");
-			sql.append("e.start_dt, et.type_nm, ep.PROFILE_ID, ep.postcard_file_status_no, ");
-			sql.append("e.event_nm, e.city_nm, e.state_cd, ep.status_flg, cad.run_dates_txt, ");
-			sql.append("cad.status_flg, ep.language_cd, online_flg ");
-		}
-		
-		log.debug(sql+" | "+actionId);
-		
-		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())){
-			int i = 0;
-			ps.setString(++i, actionId);
-			if ( profileId != null ){
-				ps.setString(++i, profileId);
-				ps.setString(++i, profileId);
+		sql.append("group by e.event_entry_id, ep.event_postcard_id, e.RSVP_CODE_TXT, ");
+		sql.append("e.start_dt, et.type_nm, ep.PROFILE_ID, ep.postcard_file_status_no, ");
+		sql.append("e.event_nm, e.city_nm, e.state_cd, ep.status_flg, ep.CONSUMABLE_ORDER_DT,  ");
+		sql.append("cad.status_flg, ep.language_cd, online_flg, e.create_dt ");
+		sql.append("order by e.create_dt, ep.event_postcard_id");
+		log.debug(sql+" | "+actionId + "|" + profileId);
+
+		String id = "";
+		DePuyEventSeminarVO vo = null;
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, actionId);
+			if (profileId != null) {
+				ps.setString(2, profileId);
+				ps.setString(3, profileId);
 			}
-			
 			ResultSet rs = ps.executeQuery();
-			//If this was returning a count, set it to the request object
-			if ( countOnly && rs.next() ){
-				String num = rs.getString("net");
-				req.setParameter("net", num);
-				//update the item count with query result
-				req.getSession().setAttribute(COUNT_STORE, num);
-				
-			} else { //get list of seminars
-				while (rs.next()){
-					voList.add(new DePuyEventSeminarVO().populateFromListRS(rs));
+			while (rs.next()) {
+				id = rs.getString("event_postcard_id");
+				if (data.containsKey(id)) {
+					vo = data.get(id);
+				} else {
+					vo = new DePuyEventSeminarVO().populateFromListRS(rs);
 				}
-				//update the item count
-				req.getSession().removeAttribute(COUNT_STORE);
+				OutstandingItems.attachActionItems(vo);
+				data.put(id, vo);
 			}
+		} catch (SQLException sqle) {
+			log.error("could not load action items", sqle);
 		}
-		return voList;
+		
+		//now that we've addressed duplicates, do a final loop and count how many items we have to report
+		int issueCnt = 0;
+		for (DePuyEventSeminarVO vo2 : data.values())
+			issueCnt += (vo2.getActionItems() != null) ? vo2.getActionItems().size() : 0;
+
+		//update the item count
+		req.getSession().setAttribute(ACTION_ITEMS_CNT, issueCnt);
+		
+		return data.values();
+	}
+	
+	
+	/**
+	 * checks the survey_response table to see if the coordinator has completed 
+	 * a survey for the given seminar.
+	 * @param rsvpCode
+	 */
+	private void verifySurveyComplete(String rsvpCode) {
+		boolean resp = false;
+		StringBuilder sql = new StringBuilder(100);
+		sql.append("select value_txt from survey_response ");
+		sql.append("where survey_question_id=? and action_id=?");
+		log.debug(sql);
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, SURVEY_RSVP_QUEST_ID);
+			ps.setString(2, SURVEY_ACTION_ID);
+			ResultSet rs = ps.executeQuery();
+			if (rs.next()) {
+				String val = StringUtil.checkVal(rs.getString(1)).toLowerCase();
+				if (val.contains(StringUtil.checkVal(rsvpCode).toLowerCase())) {
+					resp = true;
+				}
+			}
+		} catch (SQLException sqle) {
+			log.error("could not load survey complete", sqle);
+		}
+		log.debug("survey complete? " + resp);
+		super.putModuleData(resp);
 	}
 }

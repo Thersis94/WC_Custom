@@ -56,7 +56,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	public enum ReqType {
 		eventInfo, leads, cancelSeminar, orderBox, uploadPostcard, approvePostcardFile, declinePostcardFile,
 		uploadAdFile, approveAd, declineAd, postseminar, coopAdsSurgeonApproval, 
-		hospitalSponsored, uploadPosterFile, saveInvoiceFile,
+		hospitalSponsored, uploadPosterFile, saveInvoiceFile, radioAdsSubmit,
 		//status levels
 		//submittedByCoord, approvedByAFD, approvedBySRC, pendingSurgeon, approvedMedAffairs
 		submitSeminar, approveSeminar, srcApproveSeminar, pendingSurgeonReview, approvedMedAffairs,
@@ -156,6 +156,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 				case approveAd:
 				case declineAd:
 				case coopAdsSurgeonApproval:
+				case radioAdsSubmit:
 					saveNewspaperAd(eventPostcardId, req);
 					break;
 
@@ -1248,6 +1249,20 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	private void orderBox(SMTServletRequest req, String eventPostcardId, DePuyEventSeminarVO vo)
 			throws ActionException {
 		log.debug("starting consumable box email");
+		
+		//flag the record as having been ordered
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("update event_postcard set CONSUMABLE_ORDER_DT=?, ");
+		sql.append("update_dt=? where event_postcard_id=?");
+		log.debug(sql);
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setTimestamp(1, Convert.getCurrentTimestamp());
+			ps.setTimestamp(2, Convert.getCurrentTimestamp());
+			ps.setString(3, eventPostcardId);
+			ps.executeUpdate();
+		} catch (SQLException sqle) {
+			log.error("could not update consumables date", sqle);
+		}
 
 		// get the postcard data for emailing
 		if (vo == null)
