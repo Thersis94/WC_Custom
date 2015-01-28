@@ -297,7 +297,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 			displayCart.setShippingInfo(cart.getShippingInfo());
 			displayCart.setItems(cart.getItems());
 			displayCart.setOrderComplete(cart.getOrderComplete());
-			cart = flushCart(container);
+			flushCart(container);
 			return displayCart;
 		} else {
 			return cart;
