@@ -167,10 +167,10 @@ public class OrderSubmissionCoordinator {
 
 			// Add Size Data
 			SizeVO s = prod.getSizes().get(0);
-			p.accumulate("height", s.getWidth());
-			p.accumulate("height_unit_id", s.getWidth_unit_id());
-			p.accumulate("width", s.getHeight());
-			p.accumulate("width_unit_id", s.getHeight_unit_id());
+			p.accumulate("height", s.getHeight());
+			p.accumulate("height_unit_id", s.getHeight_unit_id());
+			p.accumulate("width", s.getWidth());
+			p.accumulate("width_unit_id", s.getWidth_unit_id());
 			p.accumulate("surfaceArea", s.getSquareInches());
 			p.accumulate("weightCoefficient", prod.getWeight());
 			p.accumulate("weight", prod.getWeight() * s.getSquareInches());
@@ -203,19 +203,10 @@ public class OrderSubmissionCoordinator {
 			/*
 			 * If we have a dsolItem, move the data to the permanent fileSystem.
 			 */
-			if (prod.getProdAttributes().containsKey("highResPath") && attributes.get("keystoneDsolFilePath") != null) {
+			if (prod.getProdAttributes().containsKey("svgData") && attributes.get("keystoneDsolFilePath") != null) {
 				attributes.put("fileManagerType", attributes.get("dsolFileManagerType"));
 				FileLoader fl = new FileLoader(attributes);
-					
-				//Generate random folders
-				String hrd = moveFile(fl, (String) prod.getProdAttributes().get("highResPath"), this.attributes);
-				if (hrd != null && hrd.length() > 0)
-					p.accumulate("highResImage", generateFileData(hrd, "image/jpeg", (Integer) prod.getProdAttributes().get("hrdDataSize")));
-				
-				String pdf = moveFile(fl, (String) prod.getProdAttributes().get("pdfPath"), this.attributes);
-				if (pdf != null && pdf.length() > 0)
-					p.accumulate("pdfData", generateFileData(pdf, "application/pdf", (Integer) prod.getProdAttributes().get("pdfSize")));
-				
+
 				String svg = moveFile(fl, (String) prod.getProdAttributes().get("svgData"), this.attributes);
 				if (svg != null && svg.length() > 0)
 					p.accumulate("svgData", generateFileData(svg, "image/svg+xml", (Integer) prod.getProdAttributes().get("svgSize")));

@@ -39,16 +39,8 @@ public class DSOLVO extends ProductDetailVO implements Serializable, Cloneable{
 		/*
 		 * Special Data
 		 */
-		addProdAttribute("highResData", req.getParameter("highResData").replace("data:image/png;base64,", ""));
-		addProdAttribute("thumbnailData", req.getParameter("thumbnailData").replace("data:image/png;base64,", ""));
 		addProdAttribute("jsonData", req.getParameter("jsonData"));
 		addProdAttribute("svgData", req.getParameter("svgData"));
-		
-		/*
-		 * KeystoneProductVO Fields
-		 */
-		setImageThumbUrl(req.getParameter("thumbnailData"));
-		setImageUrl(req.getParameter("thumbnailData"));
 		
 		/*
 		 * Size Data
