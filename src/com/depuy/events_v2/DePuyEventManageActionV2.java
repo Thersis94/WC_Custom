@@ -132,15 +132,12 @@ public class DePuyEventManageActionV2 extends SimpleActionAdapter {
 				rb.generateReport(req, mod.getActionData());
 
 				break;
-			case "savedReport":
-				log.info("Accessing saved reports");
-				SeminarSummaryAction ssa = new SeminarSummaryAction(this.actionInit);
-				ssa.setAttributes(this.attributes);
-				ssa.setDBConnection(dbConn);
-				ssa.list(req);
-				if ( req.hasParameter("isList"))
-					req.setParameter("isList","true");
-
+			case "customReport":
+				log.info("Managing custom report");
+				ee = new CustomReportAction(this.actionInit);
+				ee.setAttributes(this.attributes);
+				ee.setDBConnection(dbConn);
+				ee.build(req);
 				break;
 			case "delete":
 				ee = new PostcardDeleteV2( this.actionInit );

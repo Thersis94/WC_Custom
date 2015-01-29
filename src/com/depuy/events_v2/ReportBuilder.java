@@ -21,7 +21,7 @@ import com.depuy.events_v2.vo.report.PostcardSummaryReportVO;
 import com.depuy.events_v2.vo.report.RsvpBreakdownReportVO;
 import com.depuy.events_v2.vo.report.RsvpSummaryReportVO;
 import com.depuy.events_v2.vo.report.SeminarRollupReportVO;
-import com.depuy.events_v2.vo.report.SeminarSummaryReportVO;
+import com.depuy.events_v2.vo.report.CustomReportVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.exception.InvalidDataException;
@@ -51,12 +51,10 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class ReportBuilder extends SBActionAdapter {
 
-	private static final String DATA_FEED_SCHEMA = "DATA_FEED.dbo.";
-
 	public enum ReportType {
 		mailingList(true), summary(true), locator(true), leads(true), 
 		rsvpSummary(true),  seminarRollup(true), rsvpBreakdown(false), 
-		compliance(true), customSummary(true), attendeeSurvey(false);
+		compliance(true), customReport(true), attendeeSurvey(false);
 
 		//signals the controller whether we need it to load Seminar data before calling ReportBuilder
 		private boolean requiresSeminar = false;  
@@ -104,31 +102,31 @@ public class ReportBuilder extends SBActionAdapter {
 				break;
 			case mailingList:
 				sem = (DePuyEventSeminarVO) data; 
-				rpt = this.generatePostcardRecipientsReport(sem, Convert.formatDate(req.getParameter("startDate")));
+				rpt = generatePostcardRecipientsReport(sem, Convert.formatDate(req.getParameter("startDate")));
 				break;
 			case seminarRollup:
-				rpt = this.generateSeminarRollupReport(data, Convert.formatDate(req.getParameter("rptStartDate")), Convert.formatDate(req.getParameter("rptEndDate")));
+				rpt = generateSeminarRollupReport(data, Convert.formatDate(req.getParameter("rptStartDate")), Convert.formatDate(req.getParameter("rptEndDate")));
 				break;
 			case rsvpBreakdown:
-				rpt = this.generateRSVPBreakdownReport(
+				rpt = generateRSVPBreakdownReport(
 						Convert.formatDate(Convert.DATE_SLASH_PATTERN, req.getParameter("rptStartDate2")), 
 						Convert.formatDate(Convert.DATE_SLASH_PATTERN, req.getParameter("rptEndDate2")));
 				break;
 			case rsvpSummary:
-				rpt = this.generateRSVPSummaryReport(data);
+				rpt = generateRSVPSummaryReport(data);
 				break;
 				//			case leadAging:
 				//				rpt = this.generateLeadsAgingReport();
 				//				break;
 
 			case locator: 
-				rpt = this.generateLocatorReport(data, req.getParameter("radius"));
-				break;
-			case customSummary:
-				rpt = this.generateCustomSeminarReport(req, data);
+				rpt = generateLocatorReport(data, req.getParameter("radius"));
 				break;
 			case attendeeSurvey:
 				rpt = generateAttendeeSurveyReport(req);
+				break;
+			case customReport:
+				rpt = generateCustomSeminarReport(req, data);
 				break;
 		}
 
@@ -325,16 +323,16 @@ public class ReportBuilder extends SBActionAdapter {
 	 * @param data
 	 * @return
 	 */
-	public AbstractSBReportVO generateCustomSeminarReport(SMTServletRequest req, Object data ){
-		SeminarSummaryAction ssa = new SeminarSummaryAction(this.actionInit);
+	public AbstractSBReportVO generateCustomSeminarReport(SMTServletRequest req, Object data) {
+		CustomReportAction ssa = new CustomReportAction(this.actionInit);
 		ssa.setAttributes(this.attributes);
 		ssa.setDBConnection(dbConn);
-		SeminarSummaryReportVO rpt = null;
+		CustomReportVO rpt = null;
 
-		String reportId = StringUtil.checkVal( req.getParameter("reportId") );
-		if ( reportId.isEmpty() ){
+		String reportId = StringUtil.checkVal(req.getParameter("reportId"));
+		if (reportId.isEmpty()) {
 			//use current values
-			rpt = new SeminarSummaryReportVO(req);
+			rpt = new CustomReportVO(req);
 			rpt.setData(data);
 		} else {
 			//use saved parameters
@@ -342,7 +340,7 @@ public class ReportBuilder extends SBActionAdapter {
 				rpt = ssa.getSavedReport(reportId);
 				rpt.setData(data); 
 			} catch (InvalidDataException | SQLException e) {
-				log.error(e);
+				log.error("could not generate saved report", e);
 			}
 		}
 		return rpt;
@@ -350,7 +348,8 @@ public class ReportBuilder extends SBActionAdapter {
 
 	/**
 	 * Generates a report listing survey attendees and their respective answers
-	 * to the seminar attendee survey
+	 * to the seminar attendee survey.  These are the feedback surveys collected
+	 * at the seminar and mailed to TMS, then fed to SMT via the data_feed system.
 	 * @param req
 	 * @return
 	 */
@@ -364,22 +363,23 @@ public class ReportBuilder extends SBActionAdapter {
 		questionMap.put("TARGET",  "Call Target");
 		questionMap.put("GENDER",  "Gender");
 		questionMap.put("BIRTH_YR",  "Birth Year");
-		//questionMap.put("INFO_KIT",  "Has Info Kit?");
+		
+		final String dfSchema = (String)attributes.get(Constants.DATA_FEED_SCHEMA);
 
 		//Concatenated string of rsvp codes to include in the report.
 		//Assume all to be included if no code is specified
 		String [] rsvpCodes = req.getParameterValues("surveySeminars");
 		Boolean selectAll = Convert.formatBoolean(req.getParameter("allSurveySeminars"));
 
-		StringBuilder sql = new StringBuilder();
+		StringBuilder sql = new StringBuilder(500);
 		sql.append("select c.customer_id, c.SELECTION_CD, c.product_cd, p.gender_cd, p.BIRTH_YEAR_NO, ");
 		sql.append("case c.call_reason_cd when 'OTHER' then c.call_reason_other_txt else call_reason_cd end as call_reason_cd, ");
 		sql.append("c.call_target_cd, c.attempt_dt, cr.RESPONSE_TXT, qm.QUESTION_CD, q.QUESTION_TXT ");
 		//sql.append(", p.FIRST_NM, p.LAST_NM, p.PROFILE_ID ");
-		sql.append("from ").append(DATA_FEED_SCHEMA).append("CUSTOMER c ");
-		sql.append("inner join ").append(DATA_FEED_SCHEMA).append("CUSTOMER_RESPONSE cr on c.CUSTOMER_ID=cr.CUSTOMER_ID ");
-		sql.append("inner join ").append(DATA_FEED_SCHEMA).append("QUESTION_MAP qm on qm.QUESTION_MAP_ID=cr.QUESTION_MAP_ID ");
-		sql.append("inner join ").append(DATA_FEED_SCHEMA).append("QUESTION q on q.QUESTION_ID=qm.QUESTION_ID ");
+		sql.append("from ").append(dfSchema).append("CUSTOMER c ");
+		sql.append("inner join ").append(dfSchema).append("CUSTOMER_RESPONSE cr on c.CUSTOMER_ID=cr.CUSTOMER_ID ");
+		sql.append("inner join ").append(dfSchema).append("QUESTION_MAP qm on qm.QUESTION_MAP_ID=cr.QUESTION_MAP_ID ");
+		sql.append("inner join ").append(dfSchema).append("QUESTION q on q.QUESTION_ID=qm.QUESTION_ID ");
 		sql.append("left join PROFILE p on p.PROFILE_ID=c.PROFILE_ID ");
 		sql.append("where c.CALL_SOURCE_CD='EVENT' ");
 
@@ -429,7 +429,6 @@ public class ReportBuilder extends SBActionAdapter {
 					vo.addResponse("REFERER",  rs.getString("call_reason_cd"));
 					vo.addResponse("TARGET",  rs.getString("call_target_cd"));
 					vo.addResponse("GENDER", rs.getString("gender_cd"));
-					//vo.addResponse("INFO_KIT", rs.getString("info_kit"));
 					vo.addResponse("BIRTH_YR", Convert.formatInteger(rs.getInt("BIRTH_YEAR_NO")).toString());
 					//vo.setFirstName(pm.getStringValue("FIRST_NM", rs.getString("first_nm")));
 					//vo.setLastName(pm.getStringValue("LAST_NM", rs.getString("last_nm")));
