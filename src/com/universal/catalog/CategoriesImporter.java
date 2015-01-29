@@ -124,6 +124,12 @@ public class CategoriesImporter extends AbstractImporter {
 				continue; // skip the header row
 			} 
 			
+			// we need a minimum of the first 4 fields in order to import a category.
+			if (fields.length < 4) {
+				log.warn("WARNING: Skipping source record, not enough source fields. Source row: " + (i + 1));
+				continue;
+			}
+			
 			vo = new ProductCategoryVO();
 			vo.setCategoryCode(fields[headers.get("CATEGORY_CODE")]);
 			vo.setParentCode(StringUtil.checkVal(fields[headers.get("CATEGORY_PARENT")]));
