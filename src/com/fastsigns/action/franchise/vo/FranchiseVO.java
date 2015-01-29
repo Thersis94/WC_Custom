@@ -4,6 +4,7 @@ import java.sql.ResultSet;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.fastsigns.action.franchise.centerpage.FranchiseInfoAction;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.PhoneNumberFormat;
@@ -92,6 +93,15 @@ public class FranchiseVO extends DealerLocationVO {
 		StringBuilder desc = new StringBuilder(StringUtil.checkVal(getLocationDesc()));
 		int loc = desc.indexOf("[location]");
 		if (loc > -1) desc.replace(loc, loc + 10, getLocationName());
+		
+		//Parse the [telephone number] tag out of the description
+		loc = desc.indexOf(FranchiseInfoAction.PHONE_NO_HANDLE);
+		while (loc > -1){
+			desc.replace(loc, loc + FranchiseInfoAction.PHONE_NO_HANDLE.length(), 
+					getFormattedPhoneNumber(PhoneNumberFormat.NATIONAL_FORMAT));
+			loc = desc.indexOf(FranchiseInfoAction.PHONE_NO_HANDLE);
+		}
+		
 		setLocationDesc(desc.toString());
 	}
 
@@ -314,6 +324,16 @@ public class FranchiseVO extends DealerLocationVO {
 
 	public void setUseGlobalMod(int useGlobalMod) {
 		this.useGlobalMod = useGlobalMod;
+	}
+	
+	/**
+	 * Return the formatted phone number for this Franchise.
+	 * @param formatTypeId Format type. Use constants from PhoneNumberFormat
+	 * @return
+	 */
+	public String getFormattedPhoneNumber(int formatTypeId){
+		String num = new PhoneNumberFormat(this.getPhone(), formatTypeId).getFormattedNumber();
+		return StringUtil.checkVal(num);
 	}
 
 }

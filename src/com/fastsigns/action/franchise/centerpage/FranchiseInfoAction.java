@@ -14,11 +14,13 @@ import com.fastsigns.action.approval.vo.CenterImageLogVO;
 import com.fastsigns.action.approval.vo.WhiteBoardLogVO;
 import com.fastsigns.action.franchise.CenterPageAction;
 import com.fastsigns.action.franchise.vo.ButtonVO;
+import com.fastsigns.action.franchise.vo.FranchiseVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.PhoneNumberFormat;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
@@ -39,6 +41,9 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class FranchiseInfoAction extends SBActionAdapter {
 
+	public static final String LOCATION_HANDLE = "[location]";
+	public static final String PHONE_NO_HANDLE = "[telephone number]";
+	
 	public FranchiseInfoAction(ActionInitVO avo){
 		super(avo);
 	}
@@ -280,12 +285,21 @@ public class FranchiseInfoAction extends SBActionAdapter {
 		}
 		
 		/*
-		 * Update the dealer Location info.  Here we perform some replacements
-		 * on the description template to make it reflect the center data.
+		 * The phone number (and possible other info) may be put into descriptions.
+		 * Since the phone number needs to be formatted before put into the description,
+		 * grab it here.
+		 */
+		FranchiseLocationInfoAction flia = new FranchiseLocationInfoAction(actionInit);
+		flia.setAttributes(attributes);
+		flia.setDBConnection(dbConn);
+		FranchiseVO franchise = flia.getLocationInfo(CenterPageAction.getFranchiseId(req), false);
+
+		/*
+		 * Update the dealer Location info.  
 		 */
 		s = new StringBuilder();
 		s.append("update DEALER_LOCATION set ");
-		s.append("location_desc = replace(cast(DESC_TXT as nvarchar(4000)), '[location]', location_nm) ");
+		s.append("location_desc = replace(replace(cast(DESC_TXT as nvarchar(4000)),'[telephone number]',?), '[location]', location_nm) ");
 		s.append("from ").append(customDb).append("fts_franchise a ");
 		s.append("inner join ").append(customDb).append("FTS_LOCATION_DESC_OPTION b ");
 		s.append("on a.LOCATION_DESC_OPTION_ID = b.LOCATION_DESC_OPTION_ID ");
@@ -294,8 +308,10 @@ public class FranchiseInfoAction extends SBActionAdapter {
 		s.append("where FRANCHISE_ID = ? ");
 		
 		try {
+			int i = 0;
 			ps = dbConn.prepareStatement(s.toString());
-			ps.setInt(1, Convert.formatInteger(CenterPageAction.getFranchiseId(req)));
+			ps.setString(++i, franchise.getFormattedPhoneNumber(PhoneNumberFormat.NATIONAL_FORMAT));
+			ps.setInt(++i, Convert.formatInteger(CenterPageAction.getFranchiseId(req)));
 			
 			ps.executeUpdate();
 		} finally {

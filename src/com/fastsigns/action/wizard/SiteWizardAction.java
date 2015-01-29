@@ -10,6 +10,8 @@ import java.util.LinkedList;
 import java.util.List;
 
 
+
+import com.fastsigns.action.franchise.centerpage.FranchiseInfoAction;
 // FASTSIGNS Libs
 import com.fastsigns.action.franchise.vo.FranchiseVO;
 
@@ -329,7 +331,7 @@ public abstract class SiteWizardAction extends SBActionAdapter implements FSSite
 	 * Replaces [location] with the dealerName in the description.
 	 * @return
 	 */
-	public String getLocationDesc(String dealerName) throws SQLException {
+	public String getLocationDesc(SMTServletRequest req) throws SQLException {
 		String s = "select desc_txt from " + attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		s += "fts_location_desc_option where location_desc_option_id = 1";
 		log.debug("Get Loc Desc SQL: " + s);
@@ -341,7 +343,8 @@ public abstract class SiteWizardAction extends SBActionAdapter implements FSSite
 			ResultSet rs = ps.executeQuery();
 			if (rs.next()) {
 				desc = rs.getString(1);
-				desc = desc.replace("[location]", dealerName);
+				desc = desc.replace(FranchiseInfoAction.LOCATION_HANDLE, req.getParameter("dealerName"));
+				desc = desc.replace(FranchiseInfoAction.PHONE_NO_HANDLE, req.getParameter("phone"));
 			}
 		} finally {
 			try {
