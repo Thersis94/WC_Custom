@@ -11,12 +11,14 @@ import java.util.List;
 import java.util.Map;
 
 
+
 // DOM4j
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
 import org.dom4j.tree.DefaultElement;
+
 
 
 // SMT Base Libs
@@ -244,15 +246,9 @@ public class WebServiceAction extends SBActionAdapter {
 			return errElem;
 		}
 
-		// log the order request
-		logOrderTransaction(req, cart, s, true);
-		
 		// place the order.
 		Element orderResponse = this.callWebService(url, s, "root");
 		//Element orderResponse = this.createDebugResponseElement(cart);
-		
-		// log the order response
-		logOrderTransaction(req, cart, new StringBuilder(orderResponse.asXML()), false);
 		
 		return orderResponse;
 
@@ -711,30 +707,5 @@ public class WebServiceAction extends SBActionAdapter {
 			return "0.00";
 		}
 	}
-	
-	/**
-	 * Calls the custom transaction logger to log the order request.
-	 * @param req
-	 * @param cart
-	 * @param orderRequest
-	 * @throws SQLException 
-	 */
-	private void logOrderTransaction(SMTServletRequest req, ShoppingCartVO cart, 
-			StringBuilder orderRequest, boolean isRequest) {
-		log.debug("logging order request...");
-		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		String encryptKey = (String)getAttribute(Constants.ENCRYPT_KEY);
-		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
-		USATransactionLogger uLog = new USATransactionLogger();
-		uLog.setDbConn(dbConn);
-		uLog.setSchema(schema);
-		uLog.setEncryptionKey(encryptKey);
-		uLog.setSiteId(site.getSiteId());
-		try {
-			uLog.logTransaction(cart, orderRequest, isRequest, req.hasParameter("paypal"));
-		} catch (Exception e) {
-			log.error("Error: Unable to log transaction, ", e);
-		}
-	}
-	
+		
 }
