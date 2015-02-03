@@ -299,7 +299,8 @@ public class FranchiseInfoAction extends SBActionAdapter {
 		 */
 		s = new StringBuilder();
 		s.append("update DEALER_LOCATION set ");
-		s.append("location_desc = replace(replace(cast(DESC_TXT as nvarchar(4000)),'[telephone number]',?), '[location]', location_nm) ");
+		s.append("location_desc = replace(replace(cast(DESC_TXT as nvarchar(4000)),'");
+		s.append(PHONE_NO_HANDLE).append("',?), '").append(LOCATION_HANDLE).append("', location_nm) ");
 		s.append("from ").append(customDb).append("fts_franchise a ");
 		s.append("inner join ").append(customDb).append("FTS_LOCATION_DESC_OPTION b ");
 		s.append("on a.LOCATION_DESC_OPTION_ID = b.LOCATION_DESC_OPTION_ID ");
