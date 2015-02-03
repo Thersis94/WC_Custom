@@ -91,7 +91,7 @@ public class FranchiseVO extends DealerLocationVO {
 		
 		// Parse the [location] tag out of the description
 		StringBuilder desc = new StringBuilder(StringUtil.checkVal(getLocationDesc()));
-		int loc = desc.indexOf("[location]");
+		int loc = desc.indexOf(FranchiseInfoAction.LOCATION_HANDLE);
 		if (loc > -1) desc.replace(loc, loc + 10, getLocationName());
 		
 		//Parse the [telephone number] tag out of the description
