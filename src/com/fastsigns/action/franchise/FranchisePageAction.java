@@ -217,7 +217,9 @@ public class FranchisePageAction extends SBActionAdapter {
 				case EDIT_PAGE_COPY:
 
 					//Check if the user wants to add a page with no left or right rails
-					if (!Convert.formatBoolean( req.getParameter("emptyCol"), false )){
+					Boolean showMenu = Convert.formatBoolean(req.getParameter("showMenu"), true);
+					//check for null so default is not the empty layout
+					if (showMenu != null && showMenu.booleanValue() == false){
 						req.setParameter("siteId", siteId);
 						setEmptyColLayout(req);
 					}
