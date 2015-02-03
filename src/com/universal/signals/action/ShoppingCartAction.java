@@ -490,6 +490,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 	public void payForOrder(SMTServletRequest req, ShoppingCartVO cart) 
 			throws DocumentException {
 		WebServiceAction wsa = new WebServiceAction(this.actionInit);
+		wsa.setDBConnection(dbConn); // for use by transaction logger
 		wsa.setAttributes(attributes);
 		wsa.setAttribute(WebServiceAction.CATALOG_SITE_ID, catalogSiteId);
 		Element orderElem = wsa.placeOrder(req, cart, req.getRemoteAddr());

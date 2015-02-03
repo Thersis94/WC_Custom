@@ -9,16 +9,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-
-
 // DOM4j
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
 import org.dom4j.tree.DefaultElement;
-
-
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -242,8 +238,13 @@ public class WebServiceAction extends SBActionAdapter {
 			errElem.addElement("ErrorMessage").setText("Unable to process the order at this time.");
 			return errElem;
 		}
-		//return this.callWebService(url, s, "root");
-		return this.createDebugResponseElement(cart);
+
+		// place the order.
+		Element orderResponse = this.callWebService(url, s, "root");
+		//Element orderResponse = this.createDebugResponseElement(cart);
+		
+		return orderResponse;
+
 	}
 	
 	/**
@@ -434,7 +435,6 @@ public class WebServiceAction extends SBActionAdapter {
 		}
 		s.append("</OrderRequest>");
 		log.debug("*****************\nOrder Request : " + s + "\n");
-		
 		return s;
 	}
 	
@@ -640,6 +640,7 @@ public class WebServiceAction extends SBActionAdapter {
 	 * @param cart
 	 * @return
 	 */
+	@SuppressWarnings("unused")
 	private Element createDebugResponseElement(ShoppingCartVO cart) {
 		Element ele = new DefaultElement("OrderResponse");
 		
@@ -675,7 +676,7 @@ public class WebServiceAction extends SBActionAdapter {
 		subEle.addText("DEBUG: " + Calendar.getInstance().getTimeInMillis());
 		ele.add(subEle);
 		
-		subEle = new DefaultElement("ClientID");
+		subEle = new DefaultElement("TransactionID");
 		subEle.addText("DEBUG: " + cart.getInvoiceNo());
 		ele.add(subEle);
 		
@@ -699,5 +700,5 @@ public class WebServiceAction extends SBActionAdapter {
 			return "0.00";
 		}
 	}
-	
+		
 }
