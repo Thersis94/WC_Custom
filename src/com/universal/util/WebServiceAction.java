@@ -2,7 +2,6 @@ package com.universal.util;
 
 // Java 7
 import java.io.ByteArrayInputStream;
-import java.sql.SQLException;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.HashMap;
@@ -10,16 +9,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-
-
 // DOM4j
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
 import org.dom4j.tree.DefaultElement;
-
-
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -41,8 +36,6 @@ import com.siliconmtn.util.XMLUtil;
 
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.common.SiteVO;
-import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title</b>: WebServiceAction.java <p/>
