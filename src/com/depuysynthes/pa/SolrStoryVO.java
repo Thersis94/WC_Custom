@@ -23,7 +23,7 @@ public class SolrStoryVO extends SolrDocumentVO {
 		super(INDEX_TYPE);
 	}
 
-	@SolrField(name="category_other_s")
+	@SolrField(name="category_other_t")
 	public String getOtherHobbies() {
 		return otherHobby;
 	}
