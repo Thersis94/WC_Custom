@@ -30,6 +30,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.data.DataContainer;
 import com.smt.sitebuilder.data.vo.FormFieldVO;
 import com.smt.sitebuilder.data.vo.FormTransactionVO;
+import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
 
 /****************************************************************************
@@ -397,7 +398,8 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 	private String getSubmittalRecordQuery(String state, String city, String joint, boolean filterHidden) {
 		StringBuilder sb = new StringBuilder(750);
 		sb.append("select distinct a.*, ");
-		sb.append("STUFF((SELECT distinct ', ' + replace(replace(cast(FD.VALUE_TXT as nvarchar), '/Left', ''), '/Right', '') FROM FORM_DATA FD ");
+		sb.append("STUFF((SELECT distinct ', ' + replace(replace(cast(FD.VALUE_TXT as nvarchar), '").append(SearchDocumentHandler.HIERARCHY_DELIMITER);
+		sb.append("Left', ''), '").append(SearchDocumentHandler.HIERARCHY_DELIMITER).append("Right', '') FROM FORM_DATA FD ");
 		sb.append("WHERE (FD.FORM_SUBMITTAL_ID = a.FORM_SUBMITTAL_ID and FD.FORM_FIELD_ID = b.FORM_FIELD_ID) ");
 		sb.append("FOR XML PATH('')), 1, 1, '') Joints, cast(f.VALUE_TXT as nvarchar) as 'STATUS', f.FORM_DATA_ID as 'STATUS_ID' ");
 		if(filterHidden)
