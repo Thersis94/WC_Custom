@@ -397,10 +397,7 @@ public class ModuleOptionAction extends SBActionAdapter{
 	 */
 	public void updateModuleOptions(SMTServletRequest req) throws SQLException {
 		// If we are dealing with an omnipresent global module asset we skip the assignment phase
-		if ("g".equals(req.getParameter("globalFlg"))) {
-			removeAssignments(req);
-			return;
-		}
+		if ("g".equals(req.getParameter("globalFlg"))) return;
 
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		String[] options = req.getParameterValues("selectedElements");
@@ -455,31 +452,6 @@ public class ModuleOptionAction extends SBActionAdapter{
 				psIns.close();
 				psDel.close();
 			} catch(Exception e) {}
-		}
-	}
-	
-	/**
-	 * Since the asset being edited is now a omnipresent global module we need to remove 
-	 * it from any existing module orders in order to prevent it from showing up in centers
-	 * that do not have the global assets enabled and ensuring that it does not show up
-	 * twice on centers that do have them enabled.
-	 * @param req
-	 */
-	private void removeAssignments(SMTServletRequest req) {
-		log.debug("Deleting previous associations");
-		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		String optionId = req.getParameter("moduleOptionId");
-		StringBuilder sql = new StringBuilder(100);
-		
-		sql.append("DELETE ").append(customDb).append("FTS_CP_MODULE_FRANCHISE_XR ");
-		sql.append("WHERE CP_MODULE_OPTION_ID = ?");
-		
-		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, optionId);
-			
-			ps.executeUpdate();
-		} catch (Exception e) {
-			log.error("Unable to delete old associations of global asset " + optionId);
 		}
 	}
 
