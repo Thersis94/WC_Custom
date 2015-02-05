@@ -500,7 +500,7 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 		this.customizeProduct(prod2, req);
 		
 		//If this is a DSOL call, make sure to assign the custom data attached.
-		if(Convert.formatBoolean(req.getParameter("isDsol")) && req.hasParameter("highResData")){
+		if(Convert.formatBoolean(req.getParameter("isDsol")) && req.hasParameter("svgData")){
 				Map<String, Object> attr = prod2.getProdAttributes();
 				KeystoneProductVO vo = (KeystoneProductVO) req.getSession().getAttribute("DSOLVO");
 				
@@ -509,7 +509,7 @@ public class ShoppingCartAction extends SimpleActionAdapter {
 				prod2.setWeb_description(vo.getDescription());
 				prod2.setDisplay_name(vo.getProductName());
 				prod2.setCatalogId(vo.getCatalogId());
-				prod2.setImageThumbUrl(vo.getImageThumbUrl());
+				prod2.setImageThumbUrl(vo.getImageUrl());
 				prod2.setImageUrl(vo.getImageUrl());
 				prod2.setProdAttributes(vo.getProdAttributes());
 				if(req.hasParameter("materialName"))

@@ -39,6 +39,8 @@ public class FranchiseVO extends DealerLocationVO {
 	private String twitterUrl = null;
 	private String linkedinUrl = null;
 	private String foursquareUrl = null;
+	private String pinterestUrl = null;
+	private String googlePlusUrl = null;
 	private String countryCode = null;
 	private String whiteBoardText = null;
 	private String webId = null; //a 3 or 4 digit number; In WC its the same as franchiseId, but in Keystone franchiseId is a GUID.
@@ -46,6 +48,7 @@ public class FranchiseVO extends DealerLocationVO {
 	private String resellerLink = null;
 	private String resellerImg = null;
 	private int useRaqSaf;
+	private int useGlobalMod;
 	
 	public FranchiseVO() {
 		
@@ -75,12 +78,15 @@ public class FranchiseVO extends DealerLocationVO {
 		twitterUrl = db.getStringVal("twitter_url", rs);
 		linkedinUrl = db.getStringVal("linkedin_url", rs);
 		foursquareUrl = db.getStringVal("foursquare_url", rs);
+		pinterestUrl = db.getStringVal("pinterest_url", rs);
+		googlePlusUrl = db.getStringVal("google_plus_url", rs);
 		countryCode = db.getStringVal("country_cd", rs);
 		whiteBoardText = db.getStringVal("white_board_text", rs);
 		resellerId = db.getStringVal("reseller_button_id", rs);
 		resellerLink = db.getStringVal("reseller_button_link", rs);
 		resellerImg = db.getStringVal("reseller_button_img", rs);
 		setUseRaqSaf(db.getIntVal("USE_RAQSAF", rs));
+		setUseGlobalMod((db.getIntVal("USE_GLOBAL_MODULES_FLG", rs)));
 		
 		// Parse the [location] tag out of the description
 		StringBuilder desc = new StringBuilder(StringUtil.checkVal(getLocationDesc()));
@@ -230,6 +236,22 @@ public class FranchiseVO extends DealerLocationVO {
 		return foursquareUrl;
 	}
 
+	public String getPinterestUrl() {
+		return pinterestUrl;
+	}
+
+	public void setPinterestUrl(String pinterestUrl) {
+		this.pinterestUrl = pinterestUrl;
+	}
+
+	public String getGooglePlusUrl() {
+		return googlePlusUrl;
+	}
+
+	public void setGooglePlusUrl(String googlePlusUrl) {
+		this.googlePlusUrl = googlePlusUrl;
+	}
+
 	public void setCountryCode(String countryCode) {
 		this.countryCode = countryCode;
 	}
@@ -284,6 +306,14 @@ public class FranchiseVO extends DealerLocationVO {
 
 	public void setUseRaqSaf(int useRaqSaf) {
 		this.useRaqSaf = useRaqSaf;
+	}
+
+	public int getUseGlobalMod() {
+		return useGlobalMod;
+	}
+
+	public void setUseGlobalMod(int useGlobalMod) {
+		this.useGlobalMod = useGlobalMod;
 	}
 
 }

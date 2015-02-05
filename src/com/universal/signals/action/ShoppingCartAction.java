@@ -1,6 +1,6 @@
 package com.universal.signals.action;
 
-// JDK 1.6
+// Java 7
 import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -13,11 +13,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-
 // DOM4J
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
-
 
 // SMT BAse Libs
 import com.siliconmtn.action.ActionException;
@@ -32,6 +30,7 @@ import com.siliconmtn.commerce.catalog.ProductAttributeVO;
 import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.commerce.payment.PaymentVO;
 import com.siliconmtn.common.constants.GlobalConfig;
+import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.security.AuthenticationException;
@@ -43,6 +42,8 @@ import com.siliconmtn.util.XMLUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.SBModuleVO;
+import com.smt.sitebuilder.action.user.ProfileManager;
+import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
@@ -69,13 +70,14 @@ import com.universal.util.WebServiceAction;
  * 06-13 and 06-26-2012: DBargerhuff;  Refactored to support multiple unique catalogs, unique catalog URLs. 
  * 10-03-2012: DBargerhuff; Refactored to reflect changes in WebServiceAction
  * 11-21-2012: DBargerhuff; Refactored to begin implementing new promo code (i.e. discount) processing.
- * 02-03-2012: DBargerhuff; Refactored to finalize implementation for new 
- * 					  promo code (i.e. discount) processing
+ * 02-03-2012: DBargerhuff; Refactored to finalize implementation for new promo code (i.e. discount) processing
+ * 2014-08-30: DBargerhuff: Added support for billing comments, support for abandoned cart tracking.
  ****************************************************************************/
 public class ShoppingCartAction extends SBActionAdapter {
 	
 	public static final int SESSION_PERSISTENCE_CART = 1;
 	public static final int COOKIE_PERSISTENCE_CART = 2;
+	public static final String BILLING_COMMENTS = "billingComments"; 
 	private String catalogSiteId = null;
 	private DiscountManager dMgr = null;
 	
@@ -150,17 +152,18 @@ public class ShoppingCartAction extends SBActionAdapter {
 		String productId = e.decodeValue(StringUtil.checkVal(req.getParameter("productId")));
 		
 		// Load the cart from our Storage medium.
-		log.debug("retrieving cart...");
 		Storage container = this.retrieveContainer(req);
 		ShoppingCartVO cart = container.load();
 		
 		// reset cart error map
 		cart.flushErrors();
-		log.debug("Is cart new: " + container.isNewCart());
 		if (productId.length() == 0 && container.isNewCart()) return cart;
 		
 		// check for final checkout processing
-		if (this.processFinalCheckout(req, cart, productId)) return cart;
+		if (isFinalCheckout(req, productId)) {
+			// process final checkout
+			return processFinalCheckOut(req, container, cart);
+		}
 		
 		// attempt to load cart billing/shipping data from user session
 		this.retrieveCartUserData(req, cart);
@@ -170,43 +173,34 @@ public class ShoppingCartAction extends SBActionAdapter {
 		boolean itemRemove = Convert.formatBoolean(req.getParameter("itemRemove"));
 		boolean updateShipping = Convert.formatBoolean(req.getParameter("updateShipping"));
 		if (productId.length() > 0 && ! itemRemove && Convert.formatInteger(req.getParameter("qty")) > 0) {
-			log.debug("processing productId length > 0, AND not itemRemove, AND qty > 0...");
 			// If order is complete and user is trying to add a product 
 			// to the cart (we'll assume that they are trying to create a new cart).
 			if (cart.isOrderCompleted()) {
-				container.flush();
-				cart = container.load();
+				cart = flushCart(container);
 			}			
 			// process the item
 			this.processItem(req, cart, productId);
 			
 		} else if (itemRemove || StringUtil.checkVal(req.getParameter("qty")).length() > 0) {
-			log.debug("processing itemRemove OR qty > 0 (values are itemRemove/qty): " + itemRemove + "/" + req.getParameter("qty"));
 			cart.remove(productId);
 			
 		} else if (Convert.formatBoolean(req.getParameter("updatePromoCode"))) {
-			log.debug("processing retrieval of new cart discount (updatePromoCode)...");
 			// process promo code
 			this.manageDiscount(cart, null, "update", req.getParameter("promoCode"));
 			
 		} else if (Convert.formatBoolean(req.getParameter("removePromoCode"))) {
-			log.debug("processing removal of cart discount (removePromoCode)...");
 			this.manageDiscount(cart, null, "remove", null);
 			
 		} else if (Convert.formatBoolean(req.getParameter("finalCheckout"))) {	
-			log.debug("processing 'finalCheckout' where productId length > 0...");
-			this.processFinalCheckOut(req, cart);
+			return this.processFinalCheckOut(req, container, cart);
 			
 		} else if (updateShipping) {
-			log.debug("processing updateShipping: " + req.getParameter("updateShipping"));
 			String shippingId = req.getParameter("selShipping");
 			cart.setShipping(shippingId);
-			//recalculateShipping = false;
 		}
 		
 		// If the request is for shipping manage the data
 		if (StringUtil.checkVal(req.getParameter("shippingType")).length() > 0) {
-			log.debug("processing shippingType: " + req.getParameter("shippingType"));
 			this.manageShippingInfo(cart, req);
 		}
 		
@@ -217,9 +211,11 @@ public class ShoppingCartAction extends SBActionAdapter {
 		// if checking out, calculate taxes.
 		boolean checkOut = Convert.formatBoolean(req.getParameter("checkout"));
 		if (checkOut) this.calcTaxes(cart);
-
+		
 		// Resave the cart for persistence reasons
-		log.debug("saving cart...");
+		UserDataVO sessUser = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
+		if (sessUser != null) container.setProfileId(sessUser.getProfileId());
+		container.setSourceId(catalogSiteId);
 		container.save(cart);
 		
 		return cart;
@@ -233,7 +229,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 	 */
 	protected Storage retrieveContainer(SMTServletRequest req) 
 			throws ActionException {
-		Map<String, Object> attrs = new HashMap<String, Object>();
+		Map<String, Object> attrs = new HashMap<>();
 		attrs.put(GlobalConfig.HTTP_REQUEST, req);
 		attrs.put(GlobalConfig.HTTP_RESPONSE, attributes.get(GlobalConfig.HTTP_RESPONSE));
 		
@@ -264,16 +260,12 @@ public class ShoppingCartAction extends SBActionAdapter {
 	 * @param productId
 	 * @return
 	 */
-	private boolean processFinalCheckout(SMTServletRequest req, ShoppingCartVO cart, String productId) {
+	private boolean isFinalCheckout(SMTServletRequest req, String productId) {
 		log.debug("processing initial 'finalCheckout' check...");
 		boolean isFinalCheckOut = false;
 		if (Convert.formatBoolean(req.getParameter("finalCheckout"))) {
-			if (productId.length() == 0) {
-				this.processFinalCheckOut(req, cart);
-				isFinalCheckOut = true;
-			}
+			if (productId.length() == 0) isFinalCheckOut = true;
 		}
-		log.debug("is final checkout? " + isFinalCheckOut);
 		return isFinalCheckOut;
 	}
 
@@ -281,11 +273,43 @@ public class ShoppingCartAction extends SBActionAdapter {
 	 * Processes final checkout.  If an error occurred during final checkout processing
 	 * an error message is added to the cart's errors map.
 	 * @param req
+	 * @param container
 	 * @param cart
-	 * @return
 	 */
-	private void processFinalCheckOut(SMTServletRequest req, ShoppingCartVO cart) {
+	private ShoppingCartVO processFinalCheckOut(SMTServletRequest req, Storage container,
+			ShoppingCartVO cart) {
 		log.debug("processing final checkout...");
+		// format the payment
+		formatPayment(req, cart);
+		try {
+			// pay for the order via the webservice
+			payForOrder(req, cart);
+		} catch (DocumentException de) {
+			// adding SYSTEM_ERROR because a DocumentException is only thrown
+			// if the downstream WebServiceAction call fails
+			cart.addError("SYSTEM_ERROR", de.getMessage());
+		}
+		
+		// if order complete, return a cart for display and flush the original cart.
+		if (cart.isOrderCompleted()) {
+			ShoppingCartVO displayCart = new ShoppingCartVO();
+			displayCart.setBillingInfo(cart.getBillingInfo());
+			displayCart.setShippingInfo(cart.getShippingInfo());
+			displayCart.setItems(cart.getItems());
+			displayCart.setOrderComplete(cart.getOrderComplete());
+			flushCart(container);
+			return displayCart;
+		} else {
+			return cart;
+		}
+	}
+	
+	/**
+	 * Formats the payment and set it on the cart.
+	 * @param req
+	 * @param cart
+	 */
+	private void formatPayment(SMTServletRequest req, ShoppingCartVO cart) {
 		String encKey = (String)this.getAttribute(Constants.ENCRYPT_KEY);
 		PaymentVO payment = new PaymentVO(encKey);
 		payment.setExpirationMonth(req.getParameter("expMonth"));
@@ -294,14 +318,51 @@ public class ShoppingCartAction extends SBActionAdapter {
 		payment.setPaymentCode(req.getParameter("securityNumber"));
 		payment.setPaymentName(req.getParameter("nameOnCard"));
 		cart.setPayment(payment);
-		try {
-			this.payForOrder(req, cart);
-		} catch (DocumentException de) {
-			// adding SYSTEM_ERROR because a DocumentException is only thrown
-			// if the downstream WebServiceAction call fails
-			cart.addError("SYSTEM_ERROR", de.getMessage());
-		}
 	}
+	
+	/**
+	 * Places the order and sets the OrderCompleteVO on the cart.
+	 * @param req
+	 * @param cart
+	 * @throws DocumentException
+	 */
+	public void payForOrder(SMTServletRequest req, ShoppingCartVO cart) 
+			throws DocumentException {
+		WebServiceAction wsa = new WebServiceAction(this.actionInit);
+		wsa.setAttributes(attributes);
+		wsa.setAttribute(WebServiceAction.CATALOG_SITE_ID, catalogSiteId);
+		Element orderElem = wsa.placeOrder(cart, req.getRemoteAddr());
+		OrderCompleteVO ocvo = this.parseOrderResponse(cart, orderElem);
+		cart.setOrderComplete(ocvo);
+	}
+	
+	/**
+	 * Parses the order response Element into an OrderCompleteVO
+	 * @param cart
+	 * @param root
+	 * @return
+	 */
+	private OrderCompleteVO parseOrderResponse(ShoppingCartVO cart, Element root) {
+		OrderCompleteVO order = new OrderCompleteVO();
+		if (this.checkElementError(cart, root)) {
+			order.setOrderNumber("");
+		} else {
+			String orderNo = XMLUtil.checkVal(root.element("OrderNumber"));
+			if (orderNo.length() > 0) {
+				order.setOrderNumber(orderNo);
+				order.setStatus(OrderCompleteVO.ORDER_SUCCESSFULLY_COMPLETED);
+			} else {
+				order.setOrderNumber("");
+			}
+			order.setShipping(Convert.formatDouble(XMLUtil.checkVal(root.element("ShippingTotal"),true)));
+			order.setTax(Convert.formatDouble(XMLUtil.checkVal(root.element("TaxTotal"),true)));
+			order.setSubTotal(Convert.formatDouble(XMLUtil.checkVal(root.element("ProductTotal"),true)));
+			order.setDiscount(Convert.formatDouble(XMLUtil.checkVal(root.element("DiscountTotal"),true)));
+			order.setGrandTotal(Convert.formatDouble(XMLUtil.checkVal(root.element("GrandTotal"),true)));
+			order.setMsg(XMLUtil.checkVal(root.element("MSG"),true));
+		}
+		return order;
+	} 
 	
 	/**
 	 * Retrieves user billing/shipping data from the user's session for a logged-in user.
@@ -314,7 +375,6 @@ public class ShoppingCartAction extends SBActionAdapter {
 		UserDataVO user = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
 		if (user != null) {
 			if (cart.getBillingInfo() == null) {
-				log.debug("billing info is null, setting billing info using user session data...");
 				cart.setBillingInfo(user);
 				cart.setShippingInfo((UserDataVO) user.getUserExtendedInfo());
 			}
@@ -394,15 +454,25 @@ public class ShoppingCartAction extends SBActionAdapter {
 	}
 	
 	/**
-	 * 
+	 * Manages user's billing or shipping information
 	 * @param cart
 	 * @param req
 	 */
 	protected void manageShippingInfo(ShoppingCartVO cart, SMTServletRequest req) {
+		log.debug("manageShippingInfo...");
 		String shippingType = StringUtil.checkVal(req.getParameter("shippingType"));
 		UserDataVO user = new UserDataVO(req);
 		if ("billing".equalsIgnoreCase(shippingType)) {
-			cart.setBillingInfo(user);			
+			// retrieve profileId
+			retrieveProfileId(req, user);
+			
+			// get billing comments
+			String bComm = StringUtil.checkVal(req.getParameter("billingComments"));
+			if (bComm.length() > 0) user.addAttribute(BILLING_COMMENTS, bComm);
+			
+			// set billing info on cart.
+			cart.setBillingInfo(user);
+
 			// Add the user to the session
 			req.getSession().setAttribute(Constants.USER_DATA, user);
 			
@@ -426,6 +496,60 @@ public class ShoppingCartAction extends SBActionAdapter {
 	}
 	
 	/**
+	 * Retrieves the user profile ID based on the session data.  If that fails, attempts
+	 * to retrieve user profile ID based on the user data passed in on the request.  If
+	 * that too fails, we create a new profile based on the user data passed in on the
+	 * request.  Any profile ID found/created is set on the 'user' object passed in to 
+	 * the method.
+	 * @param req
+	 * @param user
+	 */
+	private void retrieveProfileId(SMTServletRequest req, UserDataVO user) {
+		log.debug("retrieving profileId...");
+		String profileId = null;
+		ProfileManager pm = null;
+		// first try to get profileId from session
+		UserDataVO sessUser = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
+		if (sessUser != null) {
+			profileId = sessUser.getProfileId();
+		}
+		if (StringUtil.checkVal(profileId).length() > 0) {
+			user.setProfileId(profileId);
+		} else {
+			// profileId is not on sessioon, check for a profile based on user data passed in
+			if (StringUtil.checkVal(user.getEmailAddress()).length() > 0) {
+				pm = ProfileManagerFactory.getInstance(attributes);
+				try {
+					profileId = pm.checkProfile(user, dbConn);
+					if (StringUtil.checkVal(profileId).length() == 0) {
+						// no profile found, create one, profileId is set on 'user' object
+						// by profile manager.
+						log.debug("user profile before update attempt: " + user.getProfileId());
+						pm.updateProfile(user, dbConn);
+						log.debug("user profileId after update attempt: " + user.getProfileId());
+					} else {
+						// found a profile, use the profileId found.
+						user.setProfileId(profileId);
+					}
+				} catch (DatabaseException de) {
+					log.error("Error checking/updating profile, ", de);
+				}
+			}
+		}
+		
+		// finally, if this was an 'edit' billing operation, try to update the profile
+		if (StringUtil.checkVal(req.getParameter("type")).equalsIgnoreCase("edit")) {
+			if (pm == null) pm = ProfileManagerFactory.getInstance(attributes);
+			try {
+				pm.updateProfilePartially(attributes, user, dbConn);
+			} catch (DatabaseException de) {
+				log.error("Error updating profile, ", de);
+			}
+		}
+		
+	}
+	
+	/**
 	 * 
 	 * @param cart
 	 * @param isShippingMethodUpdate
@@ -435,23 +559,19 @@ public class ShoppingCartAction extends SBActionAdapter {
 	public void manageShipping(ShoppingCartVO cart, boolean isShippingMethodUpdate) 
 			throws DocumentException {
 		if (isShippingMethodUpdate) return;
-		log.debug("calculating shipping costs...");
 		
 		Map<String, ShippingInfoVO> shipping = null;
 		// get current shipping methodId
 		String currShipMethodId = null;
 		if (cart.getShipping() != null) {
 			currShipMethodId = cart.getShipping().getShippingMethodId();
-			log.debug("current shipping method ID: " + currShipMethodId);
 		}		
 		
 		boolean useShippingDiscount = false;
 		double discShippingCost = -1.0;
 		if (cart.isDiscounted()) {
 			USADiscountVO uDisc = (USADiscountVO) cart.getCartDiscount().get(0);
-			log.debug("cart is discounted, type is: " + uDisc.getEnumDiscountType().name());
 			if (uDisc.getEnumDiscountType().equals(DiscountType.SHIPPING)) {
-				log.debug("cart subTotal/order minimum: " + cart.getSubTotal() + "/" + uDisc.getOrderMinimum());
 				if (cart.getSubTotal() >= uDisc.getOrderMinimum()) {
 					discShippingCost = uDisc.getDiscountValue();
 					useShippingDiscount = true;
@@ -467,7 +587,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 			Element shipInfo = wsa.retrieveShippingInfo(cart.getShippingInfo().getZipCode(), cart.getItems());
 			if (! this.checkElementError(cart, shipInfo)) {
 				List<Element> sc = shipInfo.selectNodes("Method");
-				shipping = new LinkedHashMap<String, ShippingInfoVO>();
+				shipping = new LinkedHashMap<>();
 				for (int i=0; i < sc.size(); i++) {
 					ShippingInfoVO vo = new ShippingInfoVO();
 					Element ele = sc.get(i);
@@ -511,51 +631,6 @@ public class ShoppingCartAction extends SBActionAdapter {
 		cart.setTaxAmount(taxTotal);
 	}
 	
-
-	/**
-	 * Places the order and sets the OrderCompleteVO on the cart.
-	 * @param req
-	 * @param cart
-	 * @throws DocumentException
-	 */
-	public void payForOrder(SMTServletRequest req, ShoppingCartVO cart) 
-			throws DocumentException {
-		WebServiceAction wsa = new WebServiceAction(this.actionInit);
-		wsa.setAttributes(attributes);
-		wsa.setAttribute(WebServiceAction.CATALOG_SITE_ID, catalogSiteId);
-		Element orderElem = wsa.placeOrder(cart, req.getRemoteAddr());
-		OrderCompleteVO ocvo = this.parseOrderResponse(cart, orderElem);
-		cart.setOrderComplete(ocvo);
-	}
-	
-	/**
-	 * Parses the order response Element into an OrderCompleteVO
-	 * @param cart
-	 * @param root
-	 * @return
-	 */
-	private OrderCompleteVO parseOrderResponse(ShoppingCartVO cart, Element root) {
-		OrderCompleteVO order = new OrderCompleteVO();
-		if (this.checkElementError(cart, root)) {
-			order.setOrderNumber("");
-		} else {
-			String orderNo = XMLUtil.checkVal(root.element("OrderNumber"));
-			if (orderNo.length() > 0) {
-				order.setOrderNumber(orderNo);
-				order.setStatus(OrderCompleteVO.ORDER_SUCCESSFULLY_COMPLETED);
-			} else {
-				order.setOrderNumber("");
-			}
-			order.setShipping(Convert.formatDouble(XMLUtil.checkVal(root.element("ShippingTotal"),true)));
-			order.setTax(Convert.formatDouble(XMLUtil.checkVal(root.element("TaxTotal"),true)));
-			order.setSubTotal(Convert.formatDouble(XMLUtil.checkVal(root.element("ProductTotal"),true)));
-			order.setDiscount(Convert.formatDouble(XMLUtil.checkVal(root.element("DiscountTotal"),true)));
-			order.setGrandTotal(Convert.formatDouble(XMLUtil.checkVal(root.element("GrandTotal"),true)));
-			order.setMsg(XMLUtil.checkVal(root.element("MSG"),true));
-		}
-		return order;
-	}
-	
 	/**
 	 * Calls the webservice to authenticate a user login if appropriate.
 	 * @param req
@@ -584,7 +659,6 @@ public class ShoppingCartAction extends SBActionAdapter {
 		} catch (DocumentException de) {
 			log.error("Error checking user authentication via web service...", de);
 		} catch (AuthenticationException ae) {
-			log.debug("User login not authenticated: " + ae.getMessage());
 			req.setParameter("authLoginFailed", "true");
 			req.setParameter("login", "false");
 		}
@@ -620,7 +694,6 @@ public class ShoppingCartAction extends SBActionAdapter {
 	 */
 	public SBModuleVO retrieveModuleData(String orgId, String sbActionId) throws SQLException {
 		String s = "select * from sb_action where organization_id = ? and action_id = ? ";
-		log.debug("retrieveModuleData sql: " + s + "|" + orgId + "|" + sbActionId);
 		PreparedStatement ps = dbConn.prepareStatement(s);
 		ps.setString(1, orgId);
 		ps.setString(2, sbActionId);
@@ -651,7 +724,6 @@ public class ShoppingCartAction extends SBActionAdapter {
 	private ShoppingCartItemVO getProductInfo(String productId) {
 		ShoppingCartItemVO vo = null;
 		String s = "select * from product where product_id = ? AND PRODUCT_GROUP_ID IS NULL ";
-		log.debug("product info SQL: " + s + " | " + productId + " | " + catalogSiteId);
 		PreparedStatement ps = null;
 		try {
 			ps = dbConn.prepareStatement(s);
@@ -731,14 +803,18 @@ public class ShoppingCartAction extends SBActionAdapter {
 	 */
 	private void addProductAttributes(SMTServletRequest req, ShoppingCartItemVO cartItem) {
 		if (cartItem == null || cartItem.getProduct() == null) return;
+		
+		// 1: Retrieve product attributes for this product
+		StringBuilder sb = new StringBuilder();
+		sb.append("select a.*, b.attribute_nm 	from PRODUCT_ATTRIBUTE_XR a ");
+		sb.append("inner join PRODUCT_ATTRIBUTE b on a.attribute_id = b.ATTRIBUTE_ID ");
+		sb.append("where product_id = ? order by a.attrib2_txt, a.order_no ");
+		log.debug("addProductAttributes SQL: " + sb.toString());
+		
+		Map<String, ProductAttributeVO> attribs = new LinkedHashMap<>();
 		ProductVO product = cartItem.getProduct();
 		String pIDAdv = product.getProductId();
-		Map<String, String[]> p = req.getParameterMap();
-		StringBuilder sb = new StringBuilder();
-		sb.append("select * from PRODUCT_ATTRIBUTE_XR where product_id = ? order by attrib2_txt, order_no");
-		log.debug("prod attribute SQL: " + sb.toString() + "|" + pIDAdv);
 		PreparedStatement ps = null;
-		Map<String, ProductAttributeVO> attribs = new LinkedHashMap<String, ProductAttributeVO>();
 		try{
 			ps = dbConn.prepareStatement(sb.toString());
 			ps.setString(1, catalogSiteId + "_" + pIDAdv);
@@ -750,97 +826,75 @@ public class ShoppingCartAction extends SBActionAdapter {
 		} catch (SQLException sqle) {
 			log.error("Unable to add product attributes: " + sqle);
 		} finally { try { ps.close(); } catch (Exception e) {log.error("Error closing prepared statement, ", e);}}
+		
 		if (attribs.isEmpty()) return;
 		
-		List<ProductAttributeVO> prodAttribs = new ArrayList<ProductAttributeVO>();
-		//iterate through the keys and find the attributes that were specified for this product/item.
-		String attribKey = null;
-		for(String key : p.keySet()) {
-			if (key.startsWith("attribute_")) {
+		/* 2: Iterate the request param keys to find product attribute selections that
+		 * were made for this product. This populates a List of ProductAttributeVOs
+		 * representing only the attributes chosen. */
+		List<ProductAttributeVO> prodAttribs = new ArrayList<>();
+		String prodAttribIdKey = null;
+		Map<String, String[]> paramsMap = req.getParameterMap();
+		for(String paramKey : paramsMap.keySet()) {
+			if (paramKey.startsWith("attribute_")) {
 				// custom key is the value of the 'key' on the paramaterMap
-				attribKey = p.get(key)[0]; 
-			} else if (key.startsWith("custom_")) {
+				prodAttribIdKey = paramsMap.get(paramKey)[0]; 
+			} else if (paramKey.startsWith("custom_")) {
 				// custom key is the suffix of the parameterMap 'key'
-				attribKey = StringUtil.replace(key, "custom_", "");
+				prodAttribIdKey = StringUtil.replace(paramKey, "custom_", "");
 			}
-			if (attribKey != null) {
-				prodAttribs.add(attribs.get(attribKey));
-				attribKey = null;
+			if (prodAttribIdKey != null) {
+				prodAttribs.add(attribs.get(prodAttribIdKey));
+				prodAttribIdKey = null;
 			}
 		}
 		
-		// sort the prodAttribs by attribute type and hierarchy and order
+		/* 3: Sort the product attribute selections and put them into the proper sequence.
+		 * This is critical as it ensures that the product attribute portion of an order
+		 * request is formatted in the correct order. 
+		 */
 		if (prodAttribs.size() > 1) Collections.sort(prodAttribs, new ProductAttributeComparator());
-		// loop the sorted prodAttribs and add their values to the item and modify the product id
-		String lookup = null;
+		
+		// 4:  Loop the sorted product attribute VOs, add their values to item, modify the product id
+		String pAttrId = null;
 		String[] vals = null;
+		// instantiate a LinkedHashMap to hold custom attribute mappings so we can
+		// add them to the product VO last.
+		Map<String, ProductAttributeVO> custom = new LinkedHashMap<>();
 		for (ProductAttributeVO pavo : prodAttribs) {
 			//update the cartItem's attribute cost.
 			cartItem.setAttributePrice(cartItem.getAttributePrice() + pavo.getMsrpCostNo());
-			lookup = pavo.getProductAttributeId();
+			pAttrId = pavo.getProductAttributeId();
 			//if we have a custom field add its text to the ProdAttrVO's attributes Map so we can display it later.
 			if (pavo.getAttributeId().contains("CUSTOM")) {
-				lookup = "custom_" + lookup; // this line MUST be BEFORE the vals retrieval.
-				vals= p.get(lookup);
+				pAttrId = "custom_" + pAttrId; // this line MUST be BEFORE the vals retrieval.
+				vals= paramsMap.get(pAttrId);
 				pavo.setAttribute("formVal", vals[0]);
 				if(StringUtil.checkVal(vals[0]).length() > 0) pIDAdv += "_" + StringUtil.removeWhiteSpace(vals[0]);
+				custom.put(pAttrId, pavo);
+				pAttrId = null;
+				continue;
 			} else {
-				pIDAdv += "_" + lookup;
-				lookup = "attribute_" + lookup; // this line MUST be AFTER the pIDAdv update.
+				pIDAdv += "_" + pAttrId;
+				pAttrId = "attribute_" + pAttrId; // this line MUST be AFTER the pIDAdv update.
 			}
 			//add the attribute to the ProductVO 
-			product.addProdAttribute(lookup, pavo);
-			lookup = null;
+			product.addProdAttribute(pAttrId, pavo);
+			pAttrId = null;
 		}
-		//set the advanced productID to the cartItem so we can tell differences
-		//between two of the same item with different attributes.
-		log.debug("productId of item is now: " + pIDAdv);
-		cartItem.setProductId(pIDAdv);
-	}
-	
-	
-	/**
-	 * Retrieves the category name associated with the given product ID.
-	 * @param productId
-	 * @return
-	 */
-	@SuppressWarnings("unused")
-	private String getCategory(String productId) {
-		StringBuilder s = new StringBuilder();
-		s.append("with categories (parent_cd, product_category_cd, category_nm, category_desc, level) as ( ");
-		s.append("select parent_cd, a.product_category_cd, a.category_nm, a.category_desc, 0 ");
-		s.append("from dbo.product_category a ");
-		s.append("inner join product_category_xr b on a.product_category_cd = b.product_category_cd ");
-		s.append("where b.product_id = ? ");
-		s.append("union all ");
-		s.append("select c.parent_cd, c.product_category_cd, c.category_nm, c.category_desc, level + 1 ");
-		s.append("from product_category c ");
-		s.append("inner join categories pc on pc.parent_cd  = c.product_category_cd ");
-		s.append(") ");
-		s.append("select category_nm from categories order by level desc; ");
 		
-		PreparedStatement ps = null;
-		String category = "";
-		try {
-			ps = dbConn.prepareStatement(s.toString());
-			ps.setString(1, productId);
-			ResultSet rs = ps.executeQuery();
-			for (int i=0; rs.next(); i++) {
-				String cat = rs.getString(1);
-				if (i == 0) {
-					category += cat;
-				} else {
-					category += " > " + cat;
-				}
+		/* 5: Now add the custom attributes to the product's product attribute map.
+		 * We do it this way to ensure that the custom attributes are the last in the
+		 * sequence. */
+		if (custom.size() > 0) {
+			for (String pAId : custom.keySet()) {
+				product.addProdAttribute(pAId, custom.get(pAId));
 			}
-		} catch (SQLException sqle) {
-			log.error("Unable to retrieve product", sqle);
-		} finally {
-			try {
-				ps.close();
-			} catch (SQLException e) {}
 		}
-		return category;
+		
+		/* 6: Set the advanced productID on the cartItem so we can differenciate
+		 * between two of the same item with different attributes.*/
+		cartItem.setProductId(pIDAdv);
 	}
 	
 	/**
@@ -850,6 +904,22 @@ public class ShoppingCartAction extends SBActionAdapter {
 	private void setCatalogSiteId(SMTServletRequest req) {
 		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 		catalogSiteId = site.getSiteId();
+	}
+	
+	/**
+	 * Flushes the container and returns a new cart.
+	 * @param container
+	 * @return
+	 */
+	private ShoppingCartVO flushCart(Storage container) {
+		log.debug("starting flushCart...");
+		try {
+			container.flush();
+			return container.load();
+		} catch (ActionException ae) {
+			log.error("Error flushing cart, returning new empty cart, ", ae);
+			return new ShoppingCartVO();
+		}
 	}
 	
 	/**

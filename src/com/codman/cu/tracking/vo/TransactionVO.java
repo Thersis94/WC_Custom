@@ -9,6 +9,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.codman.cu.tracking.AbstractTransAction.Status;
+import com.codman.cu.tracking.vo.UnitVO.ProdType;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.gis.Location;
 import com.siliconmtn.http.SMTServletRequest;
@@ -30,7 +32,8 @@ public class TransactionVO {
 	private String transactionId = null;
 	private Integer transactionTypeId = null;
 	private String accountId = null;
-	private Integer statusId = null;
+	private Status status = null;
+	private String statusName = null;
 	private Integer requestNo = null;
 	private Date approvalDate = null;
 	private Date completedDate = null;
@@ -45,6 +48,8 @@ public class TransactionVO {
 	private PhysicianVO physician = new PhysicianVO();
 	private Map<String, UnitVO> units = new HashMap<String,UnitVO>();
 	private String approvorName = null;
+	private String creditText = null;
+	private ProdType productType = null;
 	public TransactionVO() {
 	}
 	
@@ -53,7 +58,7 @@ public class TransactionVO {
 		transactionId = req.getParameter("transactionId");
 		transactionTypeId = Convert.formatInteger(req.getParameter("transactionTypeId"));
 		accountId = req.getParameter("accountId");
-		statusId = Convert.formatInteger(req.getParameter("statusId"));
+		setStatus(Convert.formatInteger(req.getParameter("statusId")));
 		physician.setPhysicianId(req.getParameter("physicianId"));
 		requestNo = Convert.formatInteger(req.getParameter("requestNo"));
 		approvalDate = Convert.formatDate(req.getParameter("approvalDate"));
@@ -70,6 +75,8 @@ public class TransactionVO {
 		dropShipAddress.setState(req.getParameter("dropShipState"));
 		dropShipAddress.setZipCode(req.getParameter("dropShipZipCode"));
 		dropShipAddress.setCountry(req.getParameter("dropShipCountry"));
+		setCreditText(StringUtil.checkVal(req.getParameter("creditText")));
+		setProductType(req.getParameter("productType"));
 	}
 
 	public TransactionVO(ResultSet rs) {
@@ -77,7 +84,7 @@ public class TransactionVO {
 		transactionId = util.getStringVal("transaction_id", rs);
 		transactionTypeId = util.getIntegerVal("transaction_type_id", rs);
 		accountId = util.getStringVal("account_id", rs);
-		statusId = util.getIntegerVal("status_id", rs);
+		setStatus(util.getIntegerVal("status_id", rs));
 		physician.setPhysicianId(util.getStringVal("physician_id", rs));
 		requestNo = util.getIntegerVal("request_no", rs);
 		approvalDate = util.getDateVal("approval_dt", rs);
@@ -88,6 +95,7 @@ public class TransactionVO {
 		approvorName = util.getStringVal("approving_party_nm", rs);
 		notesText = util.getLargeStringVal("notes_txt", rs).toString();
 		createDate = util.getDateVal("trans_create_dt", rs);
+		setCreditText(util.getStringVal("credit_txt", rs));
 		
 		shipToName = util.getStringVal("ship_to_nm", rs);
 		dropShipAddress.setAddress(util.getStringVal("address_txt", rs));
@@ -96,6 +104,8 @@ public class TransactionVO {
 		dropShipAddress.setState(util.getStringVal("state_cd", rs));
 		dropShipAddress.setZipCode(util.getStringVal("zip_cd", rs));
 		dropShipAddress.setCountry(util.getStringVal("country_cd", rs));
+		
+		setProductType(util.getStringVal("trans_product_cd", rs));
 
 		util = null;
 	}
@@ -150,14 +160,29 @@ public class TransactionVO {
 	 * @return the statusId
 	 */
 	public Integer getStatusId() {
-		return statusId;
+		if (status != null) return status.getStatusCode();
+		return Integer.valueOf(0);
 	}
 
 	/**
 	 * @param statusId the statusId to set
 	 */
-	public void setStatusId(Integer statusId) {
-		this.statusId = statusId;
+	public void setStatus(Integer statusId) {
+		if (statusId == null || statusId == 0) return;
+		for (Status s : Status.values()) {
+			if (s.getStatusCode() == statusId)
+				this.status = s;
+		}
+	}
+	public void setStatus(Status s) {
+		this.status = s;
+	}
+	public Status getStatus() {
+		return status;
+	}
+	public String getStatusStr() {
+		if (status != null) return status.getStatusName();
+		return null;
 	}
 
 	/**
@@ -348,6 +373,51 @@ public class TransactionVO {
 
 	public void setApprovorName(String approvorName) {
 		this.approvorName = approvorName;
+	}
+
+	/**
+	 * @return the statusName
+	 */
+	public String getStatusName() {
+		return statusName;
+	}
+
+	/**
+	 * @param statusName the statusName to set
+	 */
+	public void setStatusName(String statusName) {
+		this.statusName = statusName;
+	}
+
+	/**
+	 * @return the creditText
+	 */
+	public String getCreditText() {
+		return creditText;
+	}
+
+	/**
+	 * @param creditText the creditText to set
+	 */
+	public void setCreditText(String creditText) {
+		this.creditText = creditText;
+	}
+
+	public ProdType getProductType() {
+		return productType;
+	}
+	public String getProductTypeStr() {
+		if (productType != null) return productType.toString();
+		else return null;
+	}
+
+	public void setProductType(String productType) {
+		try {
+			this.productType = ProdType.valueOf(productType);
+		} catch (Exception e) {}
+	}
+	public void setProductType(ProdType productType) {
+		this.productType = productType;
 	}
 
 }

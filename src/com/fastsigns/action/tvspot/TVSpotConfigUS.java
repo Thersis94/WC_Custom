@@ -74,6 +74,7 @@ public class TVSpotConfigUS extends TVSpotConfig {
 		data.put(ContactField.inquiry, "6e000001567b18842a834a598cdeafa");
 		data.put(ContactField.consultation, "c0a8022d42b780adb6b4539af9f91878");
 		data.put(ContactField.visitMethod, "0a00141d5e92b12310fa5f6b2d4c9ccc");
+		data.put(ContactField.seenCommercial, "0a00141d5e92b12310fa5f6b2d4c9ccd");
 		return data;
 	}
 

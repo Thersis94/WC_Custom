@@ -42,7 +42,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class ModuleOptionAction extends SBActionAdapter{
 	//This is a list of the modules that only allow one item at a time
-	final String modList = "11 12";
+	final String modList = "11 12 81";
 	
 	public ModuleOptionAction(ActionInitVO avo){
 		super(avo);
@@ -110,9 +110,17 @@ public class ModuleOptionAction extends SBActionAdapter{
 					if (Convert.formatInteger(req.getParameter("parentId")) > 0 && 
 							Convert.formatInteger(req.getParameter("approvalFlag"), 0).intValue() == 100)
 						this.revokeApprovalSubmission(req);
-					
-					if (!modList.contains(req.getParameter("moduleId")))
+						
+					if (!modList.contains(req.getParameter("moduleId"))) {
 						req.setParameter("skipDelete", "true");
+					}
+					
+					// Determine whether we are dealing with a edit of the original or an edit of an edit.
+					if (Convert.formatInteger(req.getParameter("parentId")) == 0) {
+						req.setParameter("parentModuleId", req.getParameter("moduleOptionId"));
+					} else {
+						req.setParameter("parentModuleId", req.getParameter("parentId"));
+					}
 					
 				case CenterPageAction.MODULE_OPTION_UPDATE:
 					this.updateModuleOptions(req);
@@ -388,6 +396,9 @@ public class ModuleOptionAction extends SBActionAdapter{
 	 * @param req
 	 */
 	public void updateModuleOptions(SMTServletRequest req) throws SQLException {
+		// If we are dealing with an omnipresent global module asset we skip the assignment phase
+		if ("g".equals(req.getParameter("globalFlg"))) return;
+
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		String[] options = req.getParameterValues("selectedElements");
 		String locationId = req.getParameter("locationId");
@@ -420,6 +431,9 @@ public class ModuleOptionAction extends SBActionAdapter{
 				String[] opts = options[i].split("~"); //split is key ~ order-by-index
 				int idx = i+1; //default ordering
 				if (opts.length == 2) idx = Convert.formatInteger(opts[1], idx);
+				
+				if (req.hasParameter("parentModuleId"))
+					opts[0] = req.getParameter("parentModuleId");
 				
 				psIns.setString(1, locationId);
 				psIns.setString(2, opts[0]);
@@ -483,6 +497,8 @@ public class ModuleOptionAction extends SBActionAdapter{
 		//UserRoleVO role = (UserRoleVO) req.getSession().getAttribute(Constants.ROLE_DATA);
 		CenterModuleOptionVO vo = new CenterModuleOptionVO(req);
 		boolean isInsert = (vo.getModuleOptionId() == 0);
+		// Determine if this is an omnipresent global asset.  These are treated differently from normal assets
+		boolean globalAsset = "g".equals(req.getParameter("globalFlg"));
 		
 		//if the user is not a global admin, and this is an update to an existing module,
 		//treat it as a NEW module.  This behavior will ensure the module gets approved
@@ -491,12 +507,14 @@ public class ModuleOptionAction extends SBActionAdapter{
 			isInsert = true;
 			if (vo.getParentId() == null || vo.getParentId() == 0) 
 				vo.setParentId(vo.getModuleOptionId()); //link this new entry to it's predecessor
+			req.setParameter("moduleParentId", StringUtil.checkVal(vo.getModuleOptionId()));
 			log.debug("saving with parent=" + vo.getParentId());
 		//}
 		
 		//build the query
 		if (isInsert) {
 			vo.setModuleOptionId(this.nextModuleOptionPkId());
+			req.setParameter("optionId", StringUtil.checkVal(vo.getModuleOptionId()));
 			sb.append("insert into ").append(customDb);
 			sb.append("FTS_CP_MODULE_OPTION (OPTION_NM, ");
 			sb.append("OPTION_DESC, ARTICLE_TXT, RANK_NO, LINK_URL, FILE_PATH_URL, THUMB_PATH_URL, VIDEO_STILLFRAME_URL, ");
@@ -531,12 +549,18 @@ public class ModuleOptionAction extends SBActionAdapter{
 			ps.setString(++i, vo.getActionId());
 			if (Convert.formatBoolean(req.getParameter("globalFlg"), false)) {
 				ps.setNull(++i, java.sql.Types.INTEGER);
+			} else if (globalAsset) {
+				ps.setInt(++i, -1);
 			} else {
 				ps.setInt(++i, franchiseId);
 			}
 			if (isInsert) {
-				 ps.setInt(++i, vo.getModuleTypeId());
-				 ps.setInt(++i, vo.getApprovalFlag());
+				 ps.setInt(++i, vo.getModuleTypeId()); 
+				 if (globalAsset) {
+					 ps.setInt(++i, 100);
+				 } else {
+					 ps.setInt(++i, vo.getApprovalFlag());
+				 }
 				 ps.setInt(++i, vo.getParentId());
 				 ps.setString(++i, orgId);
 			}
