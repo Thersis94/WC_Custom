@@ -397,22 +397,26 @@ public class ModuleOptionAction extends SBActionAdapter{
 	 */
 	public void updateModuleOptions(SMTServletRequest req) throws SQLException {
 		// If we are dealing with an omnipresent global module asset we skip the assignment phase
-		if ("g".equals(req.getParameter("globalFlg"))) return;
+		if ("g".equals(req.getParameter("globalFlg"))) {
+			removeAssignments(req);
+			return;
+		}
 
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		String[] options = req.getParameterValues("selectedElements");
 		String locationId = req.getParameter("locationId");
 		boolean skipDelete = Convert.formatBoolean(req.getParameter("skipDelete"), false);
-		String dSql = "";
+		StringBuilder dSql = new StringBuilder(100);
 		
 		if (!skipDelete) {
-			dSql = "delete from " + customDb + "FTS_CP_MODULE_FRANCHISE_XR ";
-			dSql += "where CP_LOCATION_MODULE_XR_ID = ? ";
+			dSql.append("delete from " + customDb + "FTS_CP_MODULE_FRANCHISE_XR ");
+			dSql.append("where CP_LOCATION_MODULE_XR_ID = ? ");
 		}
 		
-		String iSql = "insert into " + customDb + "FTS_CP_MODULE_FRANCHISE_XR ";
-		iSql += "(cp_location_module_xr_id, cp_module_option_id, order_no, create_dt) ";
-		iSql += "values (?,?,?,?)";
+		StringBuilder iSql = new StringBuilder(170);
+		iSql.append("insert into " + customDb + "FTS_CP_MODULE_FRANCHISE_XR ");
+		iSql.append("(cp_location_module_xr_id, cp_module_option_id, order_no, create_dt) ");
+		iSql.append("values (?,?,?,?)");
 		
 		PreparedStatement psIns = null;
 		PreparedStatement psDel = null;
@@ -420,13 +424,13 @@ public class ModuleOptionAction extends SBActionAdapter{
 			// Delete the existing records
 			// This step will be skipped when we are adding a new asset to a module that allows multiple assets.
 			if (!skipDelete) {
-				psDel = dbConn.prepareStatement(dSql);
+				psDel = dbConn.prepareStatement(dSql.toString());
 				psDel.setString(1, locationId);
 				psDel.executeUpdate();
 			}
 			
 			// Add new records
-			psIns = dbConn.prepareStatement(iSql);
+			psIns = dbConn.prepareStatement(iSql.toString());
 			for (int i = 0; i < options.length; i++) {
 				String[] opts = options[i].split("~"); //split is key ~ order-by-index
 				int idx = i+1; //default ordering
@@ -451,6 +455,31 @@ public class ModuleOptionAction extends SBActionAdapter{
 				psIns.close();
 				psDel.close();
 			} catch(Exception e) {}
+		}
+	}
+	
+	/**
+	 * Since the asset being edited is now a omnipresent global module we need to remove 
+	 * it from any existing module orders in order to prevent it from showing up in centers
+	 * that do not have the global assets enabled and ensuring that it does not show up
+	 * twice on centers that do have them enabled.
+	 * @param req
+	 */
+	private void removeAssignments(SMTServletRequest req) {
+		log.debug("Deleting previous associations");
+		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		String optionId = req.getParameter("moduleOptionId");
+		StringBuilder sql = new StringBuilder(100);
+		
+		sql.append("DELETE ").append(customDb).append("FTS_CP_MODULE_FRANCHISE_XR ");
+		sql.append("WHERE CP_MODULE_OPTION_ID = ?");
+		
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, optionId);
+			
+			ps.executeUpdate();
+		} catch (Exception e) {
+			log.error("Unable to delete old associations of global asset " + optionId);
 		}
 	}
 
