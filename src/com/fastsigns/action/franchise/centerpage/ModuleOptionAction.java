@@ -406,12 +406,12 @@ public class ModuleOptionAction extends SBActionAdapter{
 		StringBuilder dSql = new StringBuilder(100);
 		
 		if (!skipDelete) {
-			dSql.append("delete from " + customDb + "FTS_CP_MODULE_FRANCHISE_XR ");
+			dSql.append("delete from ").append(customDb).append("FTS_CP_MODULE_FRANCHISE_XR ");
 			dSql.append("where CP_LOCATION_MODULE_XR_ID = ? ");
 		}
 		
 		StringBuilder iSql = new StringBuilder(170);
-		iSql.append("insert into " + customDb + "FTS_CP_MODULE_FRANCHISE_XR ");
+		iSql.append("insert into ").append(customDb).append("FTS_CP_MODULE_FRANCHISE_XR ");
 		iSql.append("(cp_location_module_xr_id, cp_module_option_id, order_no, create_dt) ");
 		iSql.append("values (?,?,?,?)");
 		
