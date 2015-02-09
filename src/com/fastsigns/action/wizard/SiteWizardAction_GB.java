@@ -222,7 +222,7 @@ public class SiteWizardAction_GB extends SiteWizardAction {
 		sai.update(req);
 		
 		// get default location desc
-		req.setParameter("locationDesc", this.getLocationDesc(req.getParameter("dealerName")));
+		req.setParameter("locationDesc", this.getLocationDesc(req));
 		
 		// Add Dealer Location
 		//req.setParameter("country", localization.substring(localization.indexOf("_")+1, localization.length()));
