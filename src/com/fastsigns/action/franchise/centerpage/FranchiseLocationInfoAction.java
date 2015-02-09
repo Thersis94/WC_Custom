@@ -131,7 +131,7 @@ public class FranchiseLocationInfoAction extends SBActionAdapter {
 		
 		// Parse out the [location] in the desc
 		StringBuilder desc = new StringBuilder(StringUtil.checkVal(locationDesc));
-		int loc = desc.indexOf("[location]");
+		int loc = desc.indexOf(FranchiseInfoAction.LOCATION_HANDLE);
 		if (loc > -1) desc.replace(loc, loc + 10, locationName);
 		
 		return desc.toString();
