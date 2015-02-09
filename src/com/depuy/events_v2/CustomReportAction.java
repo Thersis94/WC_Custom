@@ -39,8 +39,8 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class CustomReportAction extends SimpleActionAdapter {
 
 	public enum ReqType {
-		fetchReport, fetchAllReports, setReport, generateReport, 
-		reportForm, deleteReport
+		createReport, listReports, saveReport, generateReport, 
+		deleteReport
 	}
 
 	/**
@@ -73,14 +73,14 @@ public class CustomReportAction extends SimpleActionAdapter {
 					deleteReport( req.getParameter("reportId") );
 					//After deleting the report, fetch the list again to re-populate the view
 
-				case fetchAllReports:
+				case listReports:
 					log.debug("Getting saved reports");
 					//get all reports for this user
 					List<CustomReportVO> voList = getAllSavedReports( usr.getProfileId() );
 					mod.setActionData(voList); 
 					break;
 
-				case setReport:
+				case saveReport:
 					//save the report
 					Map<String,Integer> fields = new LinkedHashMap<>();
 					Map<String,String> filters = new LinkedHashMap<>();
@@ -89,7 +89,6 @@ public class CustomReportAction extends SimpleActionAdapter {
 					saveReport( usr.getProfileId(), fields, filters, req.getParameter("reportName") );
 					//Save button is part of the generate form, so cascade from save case to default (list) case
 
-				case fetchReport:
 				case generateReport:
 					req.setParameter("rptType", "customSummary");
 					req.setParameter("reqType", "report");
@@ -107,7 +106,7 @@ public class CustomReportAction extends SimpleActionAdapter {
 					rb.generateReport(req, mod.getActionData());
 					break;
 
-				case reportForm:
+				case createReport:
 				default:
 					break;
 
