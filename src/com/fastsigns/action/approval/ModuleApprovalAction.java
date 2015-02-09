@@ -150,9 +150,36 @@ public class ModuleApprovalAction extends ApprovalTemplateAction {
 	 */
 	private void removeAssignments(int optionId, String orgId) {
 		log.debug("Deleting previous associations");
+		
+		clearAssignmentCache(optionId, orgId);
+		
+		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder delete = new StringBuilder(100);
+		
+		delete.append("DELETE FROM ").append(customDb).append("FTS_CP_MODULE_FRANCHISE_XR ");
+		delete.append("WHERE CP_MODULE_OPTION_ID = ?");
+		log.debug(delete+"|"+optionId);
+		
+		try(PreparedStatement del = dbConn.prepareStatement(delete.toString())) {
+			
+			del.setInt(1, optionId);
+			
+			del.executeUpdate();
+		} catch (Exception e) {
+			log.error("Unable to delete old associations of global asset " + optionId);
+		}
+	}
+	
+	/**
+	 * Clears the cache for each franchise that uses this asset in order 
+	 * to make sure that they won't be using out of date information
+	 * @param optionId
+	 * @param orgId
+	 */
+	private void clearAssignmentCache (int optionId, String orgId) {
+		log.debug("Deleting previous associations");
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder select = new StringBuilder(330);
-		StringBuilder delete = new StringBuilder(100);
 		
 		select.append("SELECT FRANCHISE_ID FROM ").append(customDb).append("FTS_CP_MODULE_FRANCHISE_XR cmfx ");
 		select.append("left join ").append(customDb).append("FTS_CP_LOCATION_MODULE_XR clmx on ");
@@ -160,12 +187,7 @@ public class ModuleApprovalAction extends ApprovalTemplateAction {
 		select.append("WHERE CP_MODULE_OPTION_ID = ? GROUP BY FRANCHISE_ID");
 		log.debug(select+"|"+optionId);
 		
-		delete.append("DELETE ").append(customDb).append("FTS_CP_MODULE_FRANCHISE_XR ");
-		delete.append("WHERE CP_MODULE_OPTION_ID = ?");
-		log.debug(delete+"|"+optionId);
-		
-		try(PreparedStatement sel = dbConn.prepareStatement(select.toString());
-				PreparedStatement del = dbConn.prepareStatement(delete.toString())) {
+		try(PreparedStatement sel = dbConn.prepareStatement(select.toString())) {
 			
 			sel.setInt(1, optionId);
 			
@@ -177,12 +199,8 @@ public class ModuleApprovalAction extends ApprovalTemplateAction {
 				log.debug("Clearing cache for " + siteId);
 				super.clearCacheByGroup(siteId);
 			}
-			
-			del.setInt(1, optionId);
-			
-			del.executeUpdate();
 		} catch (Exception e) {
-			log.error("Unable to delete old associations of global asset " + optionId);
+			log.error("Unable to clear the cache for associations of global asset " + optionId);
 		}
 	}
 	
