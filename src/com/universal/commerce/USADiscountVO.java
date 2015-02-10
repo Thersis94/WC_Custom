@@ -28,6 +28,7 @@ import com.siliconmtn.util.XMLUtil;
  * @since Apr 15, 2013<p/>
  * Changes:
  * Apr 15, 2013:	DBargerhuff: created class
+ * Jan 27, 2015: DBargerhuff; refactored item discount parsing to resolve bug
  ****************************************************************************/
 public class USADiscountVO extends DiscountVO {
 
@@ -165,16 +166,32 @@ public class USADiscountVO extends DiscountVO {
 		String productId = null;
 		for (Element e : ids) {
 			productId = e.attributeValue("id");
-			Element price = e.element("ProdAttr");
-			double itemAmountAfterDiscount = Convert.formatDouble(price.attributeValue("price"));
-			if (itemAmountAfterDiscount > 0) {
-				USADiscountVO uDisc = new USADiscountVO();
-				uDisc.setDiscountName(discountName);
-				uDisc.setDiscountId(productId);
-				uDisc.setItemDiscountType(itemDiscountType);
-				uDisc.setDiscountValue(getDiscountValue()); // used for item level '1'
-				uDisc.setDiscountDollarValue(itemAmountAfterDiscount); // used for item level '2'
-				productDiscounts.put(productId, uDisc);
+			//log.debug("processing productId: " + productId);
+			List<Element> pAttrs = (List<Element>) e.elements("ProdAttr");
+			if (pAttrs != null) {
+				//log.debug("found product attributes...");
+				for (Element pAttr : pAttrs) {
+					// loop the product attributes and find the 'price' attribute
+					//log.debug("examining raw attribute string: " + pAttr.asXML());
+					if (pAttr.attributeValue("price") != null) {
+						//log.debug("raw XML price: " + pAttr.attributeValue("price"));
+						double itemAmountAfterDiscount = Convert.formatDouble(pAttr.attributeValue("price"));
+						//log.debug("itemAmountAfterDiscount: " + itemAmountAfterDiscount);
+						if (itemAmountAfterDiscount > 0) {
+							USADiscountVO uDisc = new USADiscountVO();
+							uDisc.setDiscountName(discountName);
+							uDisc.setDiscountId(productId);
+							uDisc.setItemDiscountType(itemDiscountType);
+							uDisc.setDiscountValue(getDiscountValue()); // used for item level '1'
+							uDisc.setDiscountDollarValue(itemAmountAfterDiscount); // used for item level '2'
+							//log.debug("adding discount to productDiscounts for productID: " + productId);
+							productDiscounts.put(productId, uDisc);
+						}
+						break;
+					} else {
+						continue;
+					}
+				}
 			}
 		}
 	}

@@ -1,6 +1,6 @@
 package com.universal.commerce;
 
-//JDK 6
+//Java 7
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -45,6 +45,8 @@ import com.universal.util.WebServiceAction;
  * Changes:
  * Jan 23, 2013: DBargerhuff; created class
  * Feb 13, 2013: DBargerhuff; added methods to class.
+ * Jan 27, 2015: DBargerhuff; refactored item discount processing to fix bug in 
+ * processing items that have options associated with them.
  ****************************************************************************/
 public class DiscountManager implements Serializable {
 	
@@ -171,18 +173,19 @@ public class DiscountManager implements Serializable {
 					try {
 						// get the discount for the item being added.
 						USADiscountVO iDisc = this.retrieveCartItemDiscount(cart, item);
-
-						if (iDisc.getProductDiscounts().containsKey(item.getProductId())) {
+						String rawProdIdKey = item.getProduct().getCustProductNo();
+						//log.debug("checking discount for item with productId key of: " + rawProdIdKey);
+						if (iDisc.getProductDiscounts().containsKey(rawProdIdKey)) {
 
 							if (iDisc.getItemDiscountType().equals(ItemDiscountType.CLEARANCE)) {
 								double msrp = item.getProduct().getMsrpCostNo();
 								double discVal = iDisc.getDiscountDollarValue();
 								iDisc.setDiscountDollarValue(msrp - discVal);
 							}
-
-							DiscountVO pDisc = iDisc.getProductDiscounts().get((item.getProductId()));
+							//log.debug("adding discount to product with productId: " + item.getProductId());
+							DiscountVO pDisc = iDisc.getProductDiscounts().get(rawProdIdKey);
 							item.getProduct().addDiscount(pDisc);
-							cartDisc.addProductDiscount(item.getProductId(), pDisc);
+							cartDisc.addProductDiscount(rawProdIdKey, pDisc);
 						}
 					} catch (DocumentException de) {
 						log.error("Error managing cart item discount, ", de);
@@ -203,7 +206,7 @@ public class DiscountManager implements Serializable {
 		if (cart.getSubTotal() == 0.0 || !cart.isDiscounted()) return;
 		// recalculate cart based on the type of discount.
 		discount = (USADiscountVO) cart.getCartDiscount().get(0);		
-		log.debug("processing discount of type: " + discount.getEnumDiscountType().name());
+		//log.debug("processing discount of type: " + discount.getEnumDiscountType().name());
 		switch (discount.getEnumDiscountType()) {
 			case DOLLAR: // dollar off order total
 				this.processDollarDiscount();
@@ -219,8 +222,8 @@ public class DiscountManager implements Serializable {
 			default:
 				break;
 		}
-		log.debug("cart subtotal: " + cart.getSubTotal());
-		log.debug("promotion discount: " + cart.getPromotionDiscount());
+		//log.debug("cart subtotal: " + cart.getSubTotal());
+		//log.debug("promotion discount: " + cart.getPromotionDiscount());
 	}
 
 	/**
@@ -230,16 +233,31 @@ public class DiscountManager implements Serializable {
 	private void refreshCartItemDiscounts(ShoppingCartVO cart) {
 		log.debug("refreshing cart item discounts");
 		USADiscountVO uDisc = (USADiscountVO)cart.getCartDiscount().get(0);
+		//log.debug("discount name is: " + uDisc.getDiscountName());
 		Map<String, ShoppingCartItemVO> items = cart.getItems();
+		//log.debug("number of cart items to check: " + items.size());
 		Map<String, DiscountVO> prodDiscounts = uDisc.getProductDiscounts();
-		// Loop items, remove the discount from each item's product.  If the item's
-		// product ID (key) exists on the product discounts map, add the discount
-		// to the product.
+		//log.debug("prodDiscounts keys: " + prodDiscounts.keySet());
+		
+		/* 2015-01-26 DBargerhuff: IMPORTANT!!
+		 * Product IDs returned by the USA webservice are NOT PREFIXED with
+		 * a catalog ID.  Therefore, we must compare based on the product's
+		 * custom product number field which is the raw, non-prefixed product ID.
+		 * 
+		 * Loop items, remove the discount from each item's product.  If the item's
+		 * raw product ID (key) exists on the product discounts map, find the 'price'
+		 * attribute and add the discount to the product.  If 'price' attribute does
+		 * not exist, skip.
+		 */
 		for (String prodKey : items.keySet()) {
 			ProductVO prod = items.get(prodKey).getProduct();
+			//log.debug("examining raw product no: " + prod.getCustProductNo());
+			// remove existing discount
 			prod.setDiscounts(null);
-			if (prodDiscounts.containsKey(prodKey)) {
-				prod.addDiscount(prodDiscounts.get(prodKey));
+			// check to see if new discount applies to this product
+			if (prodDiscounts.containsKey(prod.getCustProductNo())) {
+				//log.debug("adding product discount for product: " + prodKey);
+				prod.addDiscount(prodDiscounts.get(prod.getCustProductNo()));
 			}
 		}
 	}
@@ -362,20 +380,13 @@ public class DiscountManager implements Serializable {
 			
 			for (String key : cart.getItems().keySet()) {
 				ShoppingCartItemVO item = cart.getItems().get(key);
-				
-				/* TODO 2014-05-07 DBargerhuff: REMOVE after testing
-				log.debug("item disc for : " + item.getProductId());
-				log.debug("base|extended prices: " + item.getBasePrice() + "|" + item.getExtendedPrice());
-				log.debug("quantity|attributePrice: " + item.getQuantity() + "|" + item.getAttributePrice());
-				*/
-				
 				itemPrice = item.getExtendedPrice() + (item.getQuantity() * item.getAttributePrice());
 				
 				//log.debug("---> item price before applying discount to this item: " + itemPrice);
 				if (item.isDiscounted()) {
 					//log.debug("-------> item is discounted...");
 					USADiscountVO disc = (USADiscountVO) item.getProduct().getDiscounts().get(0);
-					//log.debug("-------> disc type|value|dollar value: " + disc.getDiscountType() + "|" + disc.getDiscountValue() + "|" + disc.getDiscountDollarValue());	
+					//log.debug("-------> disc type|value|dollar value: " + disc.getDiscountType() + "|" + disc.getDiscountValue() + "|" + disc.getDiscountDollarValue());
 					itemPrice = item.getQuantity() * disc.getDiscountDollarValue();
 				}
 				
@@ -388,7 +399,7 @@ public class DiscountManager implements Serializable {
 			}
 			
 			
-			log.debug("cart|item subtotals after processing item discount: " + cart.getSubTotal() + "|" + itemSubTotal);
+			//log.debug("cart|item subtotals after processing item discount: " + cart.getSubTotal() + "|" + itemSubTotal);
 			BigDecimal bCartSub = BigDecimal.valueOf(cart.getSubTotal());
 			BigDecimal bItemSub = BigDecimal.valueOf(itemSubTotal);
 			BigDecimal pDisc = bCartSub.subtract(bItemSub);

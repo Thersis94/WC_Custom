@@ -81,10 +81,6 @@ public class KeystoneProductVO extends ProductVO implements Serializable, Clonea
 		/*
 		 * Special Data
 		 */
-		if(req.hasParameter("highResData"))
-			addProdAttribute("highResData", req.getParameter("highResData").replace("data:image/png;base64,", ""));
-		if(req.hasParameter("thumbnailData"))
-			addProdAttribute("thumbnailData", req.getParameter("thumbnailData").replace("data:image/png;base64,", ""));
 		if(req.hasParameter("jsonData"))
 			addProdAttribute("jsonData", req.getParameter("jsonData"));
 		if(req.hasParameter("svgData"))
@@ -104,10 +100,14 @@ public class KeystoneProductVO extends ProductVO implements Serializable, Clonea
 		s.setSelected(1);
 		s.setDimensions(Convert.formatInteger(req.getParameter("heightInches")) + "x" + Convert.formatInteger(req.getParameter("widthInches")));
 		
-		String[] st = req.getParameter("dimensions").split(" x ");
-		s.setWidth_pixels(Integer.parseInt(st[0]) * 72);
-		s.setHeight_pixels(Integer.parseInt(st[1]) * 72);
-		
+		s.setDimensions(req.getParameter("dimensions"));
+		String[] st = s.getDimensions().split(" x ");
+		s.setWidth(Convert.formatInteger(st[1]));
+		s.setHeight(Convert.formatInteger(st[0]));
+		int dpi = Convert.formatInteger(req.getParameter("dpi"));
+		s.setWidth_pixels(s.getWidth() * dpi);
+		s.setHeight_pixels(s.getHeight() * dpi);
+
 		List<SizeVO> sizes = new ArrayList<SizeVO>();
 		sizes.add(s);
 		setSizes(sizes);
