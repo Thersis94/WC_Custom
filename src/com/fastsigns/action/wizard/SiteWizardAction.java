@@ -10,6 +10,8 @@ import java.util.LinkedList;
 import java.util.List;
 
 
+
+import com.fastsigns.action.franchise.centerpage.FranchiseInfoAction;
 // FASTSIGNS Libs
 import com.fastsigns.action.franchise.vo.FranchiseVO;
 
@@ -49,6 +51,7 @@ public abstract class SiteWizardAction extends SBActionAdapter implements FSSite
 	// Hours, 3 Button, center image and text, Modules and Map
 	protected List<PageModuleVO> defDisplay = new LinkedList<PageModuleVO>();
 	protected List<PageModuleVO> secDisplay = new LinkedList<PageModuleVO>();
+	protected List<PageModuleVO> emptyColDisplay = new LinkedList<PageModuleVO>();
 	
 	/*
 	 * These are variables set in the localization bundles for country specific id's
@@ -68,6 +71,7 @@ public abstract class SiteWizardAction extends SBActionAdapter implements FSSite
 	protected String negMsg4 = "Unable to add new site, Franchise ID or Franchise Location Id contained letters: ";
 	
 	protected Integer centerId = null;
+	public static final String EMPTY_COL_LABEL = "Empty Column Layout";
 	
 	/**
 	 * Default Constructor.
@@ -167,11 +171,13 @@ public abstract class SiteWizardAction extends SBActionAdapter implements FSSite
 		
 		// Update Layout information and add the secondary layout
 		String layoutId = this.updateLayout(vo.getFranchiseId(), centerActionId);
-		String secLayoutId = this.addSecondaryLayout(req);
+		String secLayoutId = this.addSecondaryLayout(req); 
+		String emptyColLayoutId = this.addEmptyColLayout(req); 
 		
 		// Associate the main modules and the center image/text to the layouts
 		associateCenterPage(layoutId, vo.getFranchiseId(), centerActionId, 1);
-		associateCenterPage(secLayoutId, vo.getFranchiseId(), centerActionId, 2);
+		associateCenterPage(emptyColLayoutId, vo.getFranchiseId(), centerActionId, 2);
+		associateCenterPage(secLayoutId, vo.getFranchiseId(), centerActionId, 3);
 		
 		// Change the theme from the default to the new theme
 		this.assignTheme(vo);
@@ -325,7 +331,7 @@ public abstract class SiteWizardAction extends SBActionAdapter implements FSSite
 	 * Replaces [location] with the dealerName in the description.
 	 * @return
 	 */
-	public String getLocationDesc(String dealerName) throws SQLException {
+	public String getLocationDesc(SMTServletRequest req) throws SQLException {
 		String s = "select desc_txt from " + attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		s += "fts_location_desc_option where location_desc_option_id = 1";
 		log.debug("Get Loc Desc SQL: " + s);
@@ -337,7 +343,8 @@ public abstract class SiteWizardAction extends SBActionAdapter implements FSSite
 			ResultSet rs = ps.executeQuery();
 			if (rs.next()) {
 				desc = rs.getString(1);
-				desc = desc.replace("[location]", dealerName);
+				desc = desc.replace(FranchiseInfoAction.LOCATION_HANDLE, req.getParameter("dealerName"));
+				desc = desc.replace(FranchiseInfoAction.PHONE_NO_HANDLE, req.getParameter("phone"));
 			}
 		} finally {
 			try {
@@ -364,7 +371,8 @@ public abstract class SiteWizardAction extends SBActionAdapter implements FSSite
 	throws Exception {
 			List<PageModuleVO> current = secDisplay;
 			if (type == 1) current = defDisplay;
-			log.debug("***********************: " + secDisplay.size() + "|" + defDisplay.size() + "|" + current.size());
+			if (type == 2) current = emptyColDisplay;
+			log.debug("***********************: " + secDisplay.size() + "|" + defDisplay.size() + "|" + emptyColDisplay.size() + "|" + current.size());
 			
 			for (PageModuleVO vo : current) {
 				
@@ -427,10 +435,18 @@ public abstract class SiteWizardAction extends SBActionAdapter implements FSSite
 		ps.setString(2, name);
 		ResultSet rs = ps.executeQuery();
 		if (rs.next()) tId = rs.getString(1);
-		
 		return tId;
 
 	}
+	
+	/**
+	 * Creates the empty column layout (single col, no left or right rails) for a site
+	 * @param req
+	 * @return The templateId for that layout
+	 * @throws Exception
+	 */
+	abstract public String addEmptyColLayout(SMTServletRequest req)
+		throws Exception;
 	
 	/* (non-Javadoc)
 	 * @see com.fastsigns.action.wizard.FSSiteWizardIntfc#updateLayout(java.lang.String, java.lang.String)
@@ -446,7 +462,7 @@ public abstract class SiteWizardAction extends SBActionAdapter implements FSSite
 		if (rs.next()) tId = rs.getString(1);
 		
 		String sql = "update template set columns_no=3, default_column_no=2";
-		sql += "where template_id = '" + tId + "'";
+		sql += " where template_id = '" + tId + "'";
 		
 		s = dbConn.createStatement();
 		s.executeUpdate(sql);
@@ -573,4 +589,11 @@ public abstract class SiteWizardAction extends SBActionAdapter implements FSSite
 
 	}
 	
+	public void setCenterId(Integer val){
+		centerId = val;
+	}
+	
+	public Integer getCenterId(){
+		return centerId;
+	}
 }
