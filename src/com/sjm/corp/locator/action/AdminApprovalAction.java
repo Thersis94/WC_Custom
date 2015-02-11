@@ -548,20 +548,24 @@ public class AdminApprovalAction extends SBActionAdapter {
 	 */
 	public String emailBodytext(boolean approve, String adminText, String reason) {
 		StringBuilder s = new StringBuilder();
-		
 		if (approve) {
-			s.append("The request to update your clinic contact information has ");
-			s.append("been approved. Visit <a href='http://www.sjmcliniclocator.com'>");
+			s.append("Your clinic contact information has been updated either ");
+			s.append("according to your request or by your SJM Clinic Locator ");
+			s.append("country administrator. Visit <a href='http://www.sjmcliniclocator.com'>");
 			s.append("www.sjmcliniclocator.com</a> to review your updated listing.  ");
 			s.append("For additional updates, please continue to access the ");
 			s.append("clinic locator admin tool at ");
 			s.append("<a href='http://www.sjmcliniclocator.com/clinic_admin'>");
 			s.append("www.sjmcliniclocator.com/clinic_admin</a>.");
-			s.append("<br/>");
-			s.append("Additional questions/comments about information submitted:");
-			s.append("<br/><br/>");
-			s.append(StringUtil.checkVal(adminText,"none"));
-			s.append("<br/><br/>");
+			
+			if (StringUtil.checkVal(adminText, null) != null) {
+				s.append("<br/>");
+				s.append("Additional questions/comments about information submitted:");
+				s.append("<br/><br/>");
+				s.append(StringUtil.checkVal(adminText));
+			}
+			
+			s.append("<br/><br/>");						
 			s.append("You may reply to this message if you have questions ");
 			s.append("about this request.");
 		} else {
