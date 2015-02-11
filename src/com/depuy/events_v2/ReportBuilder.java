@@ -24,7 +24,6 @@ import com.depuy.events_v2.vo.report.SeminarRollupReportVO;
 import com.depuy.events_v2.vo.report.CustomReportVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
@@ -324,25 +323,8 @@ public class ReportBuilder extends SBActionAdapter {
 	 * @return
 	 */
 	public AbstractSBReportVO generateCustomSeminarReport(SMTServletRequest req, Object data) {
-		CustomReportAction ssa = new CustomReportAction(this.actionInit);
-		ssa.setAttributes(this.attributes);
-		ssa.setDBConnection(dbConn);
-		CustomReportVO rpt = null;
-
-		String reportId = StringUtil.checkVal(req.getParameter("reportId"));
-		if (reportId.isEmpty()) {
-			//use current values
-			rpt = new CustomReportVO(req);
-			rpt.setData(data);
-		} else {
-			//use saved parameters
-			try {
-				rpt = ssa.getSavedReport(reportId);
-				rpt.setData(data); 
-			} catch (InvalidDataException | SQLException e) {
-				log.error("could not generate saved report", e);
-			}
-		}
+		CustomReportVO rpt = new CustomReportVO(req);
+		rpt.setData(data);
 		return rpt;
 	}
 

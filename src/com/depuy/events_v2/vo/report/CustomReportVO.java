@@ -4,6 +4,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.ResultSet;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -30,7 +31,7 @@ import com.smt.sitebuilder.action.event.vo.EventEntryVO;
  ****************************************************************************/
 public class CustomReportVO extends AbstractSBReportVO {
 
-	private static Map<String, String> typeMap = new HashMap<String, String>(){
+	private static final Map<String, String> typeMap = new HashMap<String, String>() {
 		private static final long serialVersionUID = 1L;
 		{
 			put("ESEM", "Patient");
@@ -48,18 +49,18 @@ public class CustomReportVO extends AbstractSBReportVO {
 		SEMINAR_CODE_FLG("seminar_code_flg", "java.lang.String", "Seminar Code","SEMINAR_CODE_FLG"),
 		COORDINATOR_FLG("coordinator_flg", "java.lang.String", "Seminar Coordinator","COORDINATOR_FLG"),
 		STATUS_FLG("status_flg", "java.lang.Integer","Seminar Status","STATUS_FLG"),
-		START_DATE_FLG("start_date_flg", "java,util.Date", "Start Date","START_DATE_FLG"),
-		TIME_FLG("time_flg", "java.util.Date", "Start Time","TIME_FLG"),
+		START_DATE_FLG("start_date_flg", "java,util.Date", "Seminar Date","START_DATE_FLG"),
+		TIME_FLG("time_flg", "java.util.Date", "Seminar Time","TIME_FLG"),
 		SPEAKER_FLG("speaker_flg", "java.lang.String","Seminar Speaker","SPEAKER_FLG"),
 		RSVP_COUNT_FLG("rsvp_count_flg", "java.lang.Integer", "RSVP Count","RSVP_TOTAL_FLG"),
 		ATTENDEE_COUNT_FLG("attendee_count_flg", "java.lang.Integer", "Attendee Count","ATTENDEE_TOTAL_FLG"),
-		OPT_IN_FLG("opt_in_flg", "java.lang.Integer","Opt-In","OPT_IN_FLG"),
+		//OPT_IN_FLG("opt_in_flg", "java.lang.Integer","Opt-In","OPT_IN_FLG"),
 		LOCATION_NM_FLG("location_nm_flg", "java.lang.String","Location Name","LOCATION_FLG"),
 		CITY_NM_FLG("city_nm_flg", "java.lang.String","City","CITY_FLG"),
 		STATE_CD_FLG("state_cd_flg", "java.lang.String","State","STATE_FLG"),
 		VENUE_COST_FLG("venue_cost_flg", "java.lang.Double","Venue Cost","VENUE_COST_FLG"),
 		REFRESHMENT_COST_FLG("refreshment_cost_flg", "java.lang.Double", "Refreshment Cost","REFRESHMENT_COST_FLG"),
-		POSTCARD_DT_FLG("postcard_dt_flg", "java.util.Date", "Postcard Send Date","POSTCARD_DATE_FLG"),
+		POSTCARD_DT_FLG("postcard_dt_flg", "java.util.Date", "Postcard Mail Date","POSTCARD_DATE_FLG"),
 		NEWSPAPER_NM_FLG("newspaper_nm_flg", "java.lang.String","Newspaper Name","NEWSPAPER_FLG"),
 		AD_DT_FLG("ad_dt_flg", "java.util.Date", "Ad Date","AD_DATE_FLG"),
 		AD_COST_FLG("ad_cost_flg", "java,lang.Date", "Total Ad Cost","AD_COST_FLG"),
@@ -67,11 +68,11 @@ public class CustomReportVO extends AbstractSBReportVO {
 		SURGEON_COST_FLG("surgeon_cost_flg", "java.lang.Double","Cost to Surgeon","SURGEON_COST_FLG"),
 		HOSPITAL_COST_FLG("hospital_cost_flg", "java.lang.Double", "Cost to Hospital","HOSPITAL_COST_FLG"),
 		UPFRONT_FEE_FLG("upfront_fee_flg", "java.lang.Integer", "$200 Upfront Fee", "UPFRONT_FEE_FLG"),
-		TERRITORY_NO("territory_no","java.lang.Integer","Territory No","TERRITORY_FLG"),
-		POSTCARD_COUNT_NO("postcard_count_no","java.lang.Integer","Postcard No","POSTCARD_TOTAL_FLG"),
-		INVITATION_COUNT_NO("invitation_count_no","java.lang.Integer","Invitation No","INVITATION_TOTAL_FLG"),
-		POSTCARD_COST_NO("postcard_cost_no","java.lang.Double","Total Postcard Cost","POSTCARD_COST_FLG"),
-		INVITATION_COST_NO("invitation_cost_no","java.lang.Double","Total Invitation Cost","INVITATION_COST_FLG");
+		TERRITORY_NO("territory_no","java.lang.Integer","Territory#","TERRITORY_FLG"),
+		POSTCARD_COUNT_NO("postcard_count_no","java.lang.Integer","Postcard/Invitation Qnty","POSTCARD_TOTAL_FLG"),
+		//INVITATION_COUNT_NO("invitation_count_no","java.lang.Integer","Invitation No","INVITATION_TOTAL_FLG"),
+		POSTCARD_COST_NO("postcard_cost_no","java.lang.Double","Postcard/Invitation Cost","POSTCARD_COST_FLG");
+		//INVITATION_COST_NO("invitation_cost_no","java.lang.Double","Total Invitation Cost","INVITATION_COST_FLG");
 
 		private final String name;
 		private final String className;
@@ -89,15 +90,15 @@ public class CustomReportVO extends AbstractSBReportVO {
 		/**
 		 * @return The name of the input field.
 		 */
-		public String getFieldName(){ return name; }
+		public String getFieldName() { return name; }
 		/**
 		 * @return The class name for the field's data type.
 		 */
-		public String getClassName(){ return className; }
+		public String getClassName() { return className; }
 		/**
 		 * @return The label used for this field in the report header.
 		 */
-		public String getReportLabel(){ return reportLabel; }
+		public String getReportLabel() { return reportLabel; }
 		/**
 		 * @return The name of the DEPUY_EVENT_REPORT column corresponding to this field.
 		 */
@@ -107,7 +108,7 @@ public class CustomReportVO extends AbstractSBReportVO {
 	
 	
 	private Map<String, Integer> paramList = new LinkedHashMap<>();
-	private Map<String,String> filterMap = new HashMap<>();
+	private Map<FieldList,String> filterMap = new HashMap<>();
 	private List<DePuyEventSeminarVO> semList = new ArrayList<>();
 	private String reportId = null;
 	private String reportName = null;
@@ -130,26 +131,14 @@ public class CustomReportVO extends AbstractSBReportVO {
 	public CustomReportVO(ResultSet rs) {
 		//Initialize the file information
 		this();
-
 		DBUtil db = new DBUtil();
-
 		reportId = db.getStringVal("report_id", rs);
-		reportName = db.getStringVal("report_nm", rs);
+		setReportName(db.getStringVal("report_nm", rs));
 
 		//get list of fields that should be included in the query
 		for ( FieldList key : FieldList.values() ){
 			//get list of parameters
-			paramList.put(key.getFieldName(), Convert.formatInteger( 
-					db.getIntVal(key.getDbName(), rs) ) );
-		}
-
-		//get filters
-		String[] pairs = StringUtil.checkVal( db.getStringVal("filter_txt", rs))
-				.split(",");
-		for ( int i=0; i<pairs.length; i++ ){
-			String [] keyval = pairs[i].split(":");
-			if (keyval.length > 1)
-				filterMap.put(keyval[0],keyval[1]);
+			paramList.put(key.getFieldName(), db.getIntVal(key.getDbName(), rs));
 		}
 	}
 
@@ -161,19 +150,24 @@ public class CustomReportVO extends AbstractSBReportVO {
 		this(); //for setting up file info
 
 		reportId = req.getParameter("reportId");
-		reportName = req.getParameter("reportName");
+		setReportName(req.getParameter("reportName"));
 
-		for( FieldList key : FieldList.values() ){
-			paramList.put(key.getFieldName(), Convert.formatInteger(
-					StringUtil.checkVal(req.getParameter(key.getFieldName()))));
+		for (FieldList key : FieldList.values()) {
+			paramList.put(key.getFieldName(), Convert.formatInteger(StringUtil.checkVal(req.getParameter(key.getFieldName()))));
 			//log.debug(StringUtil.checkVal(req.getParameter(key.getFieldName()),"EMPTY"));
-			if ( StringUtil.checkVal(req.getParameter(key.getFieldName()) ).equals("-1") ){
-				filterMap.put(key.getFieldName(), StringUtil.checkVal(
-						req.getParameter("by_"+key.getFieldName())));
-			}
 		}
-
+		
+		//apply runtime filters
+		if (req.hasParameter("seminarTypeFilter"))
+			filterMap.put(FieldList.SEMINAR_TYPE_FLG, req.getParameter("seminarTypeFilter"));
+		if (req.hasParameter("statusFilter"))
+			filterMap.put(FieldList.STATUS_FLG, req.getParameter("statusFilter"));
+		if (req.hasParameter("rsvpCodeFilter"))
+			filterMap.put(FieldList.SEMINAR_CODE_FLG, req.getParameter("rsvpCodeFilter"));
+		if (req.hasParameter("startDateFilter"))
+			filterMap.put(FieldList.START_DATE_FLG, req.getParameter("startDateFilter"));
 	}
+	
 
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.data.report.AbstractReport#generateReport()
@@ -182,152 +176,131 @@ public class CustomReportVO extends AbstractSBReportVO {
 	public byte[] generateReport() {
 
 		//Creates a quick list of all active fields
-		List<FieldList> lst = new ArrayList<>();
-		for ( String key : paramList.keySet() ){
-			if (paramList.get(key) ==1 || paramList.get(key) ==-1) { 
-				lst.add(FieldList.valueOf(key.toUpperCase()) ); 
-			}
+		List<FieldList> columns = new ArrayList<>(paramList.size());
+		for (String key : paramList.keySet()) {
+			if (paramList.get(key) ==1) 
+				columns.add(FieldList.valueOf(key.toUpperCase()) );
 		}
 
-		StringBuilder report = new StringBuilder();
+		StringBuilder report = new StringBuilder(10000);
 		//create headers
-		report.append( getHeader() );
+		report.append(getHeader(columns));
 
 		//Loop over each seminar
-		for ( DePuyEventSeminarVO vo : semList ){
-			StringBuilder rpt = new StringBuilder();
-			boolean appendIt = true;
-			rpt.append("<tr>");
+		for (DePuyEventSeminarVO vo : semList) {
+			StringBuilder row = new StringBuilder();
+			
+			if (!semPassesFilters(vo)) continue;
+			
+			row.append("<tr>");
 			EventEntryVO event = vo.getEvents().get(0);
 			//loop over each field to be included in the results
-			for ( FieldList fl : lst ){
-				rpt.append("<td>");
+			for (FieldList col : columns ) {
+				row.append("<td>");
 				//change information appended based on the selected field
-				String filterKey = fl.getFieldName();
-				switch( fl ){
-
+				switch(col) {
 					case JOINT_FLG:
 						//Set of joints for this seminar
-						String jointCode = vo.getJointCodes();
-						String jointCodeRev = new StringBuilder(jointCode).reverse().toString(); //In case code is 5,4 instead of 4,5
-						//if this is not a filter parameter, or if it is, but matches the filter value, include it
-						if( !filterMap.containsKey(filterKey) || 
-								filterMap.get(filterKey).equalsIgnoreCase(jointCode) ||
-								filterMap.get(filterKey).equalsIgnoreCase(jointCodeRev) ){
-							//if this joint is to be included, flag it as such
-							rpt.append( vo.getJointLabel() );
-						} else {
-							appendIt = false;
-						}
+						row.append(vo.getJointLabel());
 						break;
 					case SEMINAR_TYPE_FLG:
 						String typeCd = StringUtil.checkVal(event.getEventTypeCd());
-						if ( (!filterMap.containsKey(filterKey) ) || 
-								filterMap.get(filterKey).equalsIgnoreCase(typeCd)){
-							rpt.append(StringUtil.checkVal(typeMap.get(typeCd ) ));
-						} else {
-							appendIt = false;
-						}
+						row.append(StringUtil.checkVal(typeMap.get(typeCd ) ));
 						break;
 					case SEMINAR_CODE_FLG:
-						String rsvpCd = StringUtil.checkVal(event.getRSVPCode());
-						if ( (!filterMap.containsKey(filterKey)) || 
-								filterMap.get(filterKey).equalsIgnoreCase(rsvpCd)){
-							rpt.append(StringUtil.checkVal(event.getRSVPCode()));
-						} else {
-							appendIt = false;
-						}
+						row.append(StringUtil.checkVal(event.getRSVPCode()));
 						break;
 					case COORDINATOR_FLG:
-						rpt.append( StringUtil.checkVal(event.getContactName() ));
+						row.append( StringUtil.checkVal(vo.getOwner().getFullName()));
 						break;
 					case STATUS_FLG:
-						String status = StringUtil.checkVal(vo.getStatusName());
-						if ( (!filterMap.containsKey(filterKey)) || 
-								filterMap.get(filterKey).equalsIgnoreCase(status))
-							rpt.append( StringUtil.checkVal(vo.getStatusName()));
+						row.append( StringUtil.checkVal(vo.getStatusName()));
 						break;
 					case START_DATE_FLG:
-						rpt.append( Convert.formatDate(event.getStartDate(), Convert.DATE_LONG) );
+						row.append(Convert.formatDate(event.getStartDate(), Convert.DATE_SLASH_PATTERN) );
 						break;
 					case TIME_FLG:
-						rpt.append( Convert.formatDate(event.getStartDate(), Convert.TIME_LONG_PATTERN));
+						row.append(StringUtil.checkVal(event.getLocationDesc()));
 						break;
 					case SPEAKER_FLG:
-						rpt.append( StringUtil.checkVal(vo.getSurgeon().getSurgeonName()) );
+						row.append(StringUtil.checkVal(vo.getSurgeon().getSurgeonName()));
 						break;
 					case RSVP_COUNT_FLG:
-						rpt.append( vo.getRsvpCount() );
+						row.append( vo.getRsvpCount() ); //TODO
 						break;
 					case ATTENDEE_COUNT_FLG:
-						rpt.append(event.getRsvpTotal() );
+						row.append(event.getRsvpTotal() ); //TODO
 						break;
-					case OPT_IN_FLG:
-						rpt.append( (vo.getOptInFlag() == 1 ? "Yes" : "No") );
-						break;
+//					case OPT_IN_FLG:
+//						row.append( (vo.getOptInFlag() == 1 ? "Yes" : "No") );
+//						break;
 					case LOCATION_NM_FLG:
-						rpt.append( StringUtil.checkVal(vo.getVenueText()) );
+						if (StringUtil.checkVal(event.getShortDesc()).length() > 0) {
+							row.append(event.getShortDesc());
+						} else {
+							row.append(StringUtil.checkVal(event.getEventDesc()));
+						}
 						break;
 					case CITY_NM_FLG:
-						rpt.append(StringUtil.checkVal(event.getCityName()) );
+						row.append(StringUtil.checkVal(event.getCityName()) );
 						break;
 					case STATE_CD_FLG:
-						rpt.append(StringUtil.checkVal(event.getStateCode()));
+						row.append(StringUtil.checkVal(event.getStateCode()));
 						break;
 					case VENUE_COST_FLG:
+						//TODO
 						break;
 					case REFRESHMENT_COST_FLG:
+						//TODO
 						break;
 					case POSTCARD_DT_FLG:
-						rpt.append( StringUtil.checkVal(vo.getPostcardSendDate()) );
+						row.append( StringUtil.checkVal(vo.getPostcardMailDate()) );
 						break;
 					case NEWSPAPER_NM_FLG:
-						printMultiVal(rpt, "getNewspaper1Text",vo.getAllAds());
+						printMultiVal(row, "getNewspaper1Text",vo.getAllAds());
 						break;
 					case AD_DT_FLG:
 						vo.getAllAds().get(0).getCostToRepNo();
-						printMultiVal(rpt, "getAdDatesText",vo.getAllAds());
+						printMultiVal(row, "getAdDatesText",vo.getAllAds());
 						break;
 					case AD_COST_FLG:
-						printMultiVal(rpt,"getTotalCostNo",vo.getAllAds());
+						row.append(vo.getAdCost("total"));
 						break;
 					case TERRITORY_COST_FLG:
-						printMultiVal(rpt,"getCostToRepNo", vo.getAllAds());
+						row.append(vo.getAdCost("rep"));
 						break;
 					case SURGEON_COST_FLG:
-						printMultiVal(rpt,"getCostToSurgeonNo", vo.getAllAds());
+						row.append(vo.getAdCost("surgeon"));
 						break;
 					case HOSPITAL_COST_FLG:
-						printMultiVal(rpt,"getCostToHospitalNo",vo.getAllAds());
+						row.append(vo.getAdCost("hospital"));
 						break;
-					case INVITATION_COST_NO:
-						rpt.append(StringUtil.checkVal(vo.getPostcardCostNo()));
-						break;
-					case INVITATION_COUNT_NO:
-						rpt.append( StringUtil.checkVal(vo.getQuantityNo()));
-						break;
+//					case INVITATION_COST_NO:
+//						row.append(StringUtil.checkVal(vo.getPostcardCostNo()));
+//						break;
+//					case INVITATION_COUNT_NO:
+//						row.append( StringUtil.checkVal(vo.getQuantityNo()));
+//						break;
 					case POSTCARD_COST_NO:
-						rpt.append(StringUtil.checkVal(vo.getPostcardCostNo()));
+						row.append(StringUtil.checkVal(vo.getPostcardCostNo()));
 						break;
 					case POSTCARD_COUNT_NO:
-						rpt.append( StringUtil.checkVal(vo.getQuantityNo()));
+						row.append( StringUtil.checkVal(vo.getQuantityNo()));
 						break;
 					case TERRITORY_NO:
-						rpt.append(StringUtil.checkVal( vo.getTerritoryNumber() ));
+						row.append(StringUtil.checkVal( vo.getTerritoryNumber() ));
 						break;
 					case UPFRONT_FEE_FLG:
-						rpt.append( ( vo.getUpfrontFeeFlg() == 1 ? "Yes" : "No") );
+						row.append( ( vo.getUpfrontFeeFlg() == 1 ? "Yes" : "No") );
 						break;
 					default:
 						break;
 				}
-				rpt.append("</td>");
+				row.append("</td>");
 			}
-			rpt.append("</tr>\r");
-			if ( appendIt ){
-				report.append(rpt);
-			}
-			rpt = null;
+			row.append("</tr>\r");
+			report.append(row);
+			row = null;
 		}
 
 		//append footer
@@ -337,6 +310,7 @@ public class CustomReportVO extends AbstractSBReportVO {
 		return report.toString().getBytes();
 	}
 
+	
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.data.report.AbstractReport#setData(java.lang.Object)
 	 */
@@ -351,55 +325,53 @@ public class CustomReportVO extends AbstractSBReportVO {
 
 	}
 
-	/**
-	 * Get the set of fields and filters from the request object.
-	 * @param req
-	 * @param fields
-	 * @param filters
-	 */
-	public void parseParameters( SMTServletRequest req, Map<String,Integer> fields, Map<String,String>filters){
-		final String FILTER_PREFIX = "by_";
-		final int INCLUDE = 1, FILTER=-1;
-
-		//For each valid field, check for values to be collected
-		for( FieldList fl : FieldList.values() ){
-			switch( Convert.formatInteger( req.getParameter(fl.getFieldName().toLowerCase()))){
-				case FILTER:
-					filters.put(fl.getFieldName(), StringUtil.checkVal(req.getParameter(
-							FILTER_PREFIX+fl.getFieldName())));
-					//No break, so filter params are included in the report
-				case INCLUDE:
-					fields.put(fl.name(), 1);
-					break;
-				default:
-					fields.put(fl.name(), 0);
-					break;
-			}
+	
+	@SuppressWarnings("incomplete-switch")
+	private boolean semPassesFilters(DePuyEventSeminarVO sem) {
+		if (filterMap == null || filterMap.size() == 0) return true;
+		String value;
+		EventEntryVO event = sem.getEvents().get(0);
+		
+		if (filterMap.containsKey(FieldList.SEMINAR_TYPE_FLG)) {
+			value = filterMap.get(FieldList.SEMINAR_TYPE_FLG);
+			if (!event.getEventTypeCd().startsWith(value)) return false;
 		}
-		filterMap = filters;
-		paramList = fields;
+		if (filterMap.containsKey(FieldList.STATUS_FLG)) {
+			value = filterMap.get(FieldList.STATUS_FLG);
+			if (sem.getStatusFlg().intValue() != Convert.formatInteger(value).intValue()) return false;
+		}
+		if (filterMap.containsKey(FieldList.SEMINAR_CODE_FLG)) {
+			value = filterMap.get(FieldList.SEMINAR_CODE_FLG);
+			String[] codes = sem.getRSVPCodes().split(",");
+			if (StringUtil.stringContainsItem(value, codes)) return false;
+		}
+		if (filterMap.containsKey(FieldList.START_DATE_FLG)) {
+			value = filterMap.get(FieldList.START_DATE_FLG);
+			Date d = Convert.formatDate(Convert.DATE_SLASH_PATTERN, value);
+			if (d.after(sem.getEarliestEventDate())) return false;
+		}
+		return true;
 	}
 
 	/**
 	 * Helper to print multiple ad values for into a single column. 
-	 * @param rpt Destination for output
+	 * @param row Destination for output
 	 * @param meth Getter method that returns value to be appended
 	 * @param list List of objects with the m method.
 	 */
-	private void printMultiVal( StringBuilder rpt, String meth, List<CoopAdVO> list ){
-		for ( int i = 0; i < list.size(); i++ ){
+	private void printMultiVal(StringBuilder row, String meth, List<CoopAdVO> list) {
+		for (int i = 0; i < list.size(); i++) {
 			Object obj = list.get(i);
-
 			try {
 				Method m = CoopAdVO.class.getDeclaredMethod(StringUtil.checkVal(meth));
-				rpt.append(StringUtil.checkVal( m.invoke(obj) ));
+				row.append(StringUtil.checkVal( m.invoke(obj) ));
 			} catch (IllegalAccessException | IllegalArgumentException
 					| InvocationTargetException | NoSuchMethodException | SecurityException e) {
-				log.error(e);
+				log.error("could not append multi-val", e);
 			}
 
 			if ( i < list.size() - 1)
-				rpt.append(",");
+				row.append(",");
 		}
 	}
 
@@ -407,18 +379,13 @@ public class CustomReportVO extends AbstractSBReportVO {
 	 * Generates the header row for the report
 	 * @return
 	 */
-	private StringBuilder getHeader() {
+	private StringBuilder getHeader(List<FieldList> columns) {
 		StringBuilder hdr = new StringBuilder();
 		hdr.append("<table border='1'>\r<tr style='background-color:#ccc;'>");
 
 		//Loop through all of the parameters in the list to make a list of headers
-		for ( String key : paramList.keySet() ){
-			//if the field was marked for inclusion, append to the header string
-			if ( paramList.get(key)==1 || paramList.get(key)==-1){
-				FieldList fl = FieldList.valueOf(key.toUpperCase());
-				hdr.append("<th>").append(fl.getReportLabel());
-				hdr.append("</th>");
-			}
+		for (FieldList key : columns) {
+			hdr.append("<th>").append(key.getReportLabel()).append("</th>");
 		}
 		hdr.append("</tr>\r");
 		return hdr;
@@ -475,7 +442,9 @@ public class CustomReportVO extends AbstractSBReportVO {
 	 * @param reportName the reportName to set
 	 */
 	public void setReportName(String reportName) {
+		if (reportName == null || reportName.length() == 0) return; 
 		this.reportName = reportName;
+		setFileName(reportName + ".xls");
 	}
 
 	/**
@@ -492,17 +461,4 @@ public class CustomReportVO extends AbstractSBReportVO {
 		return lst;
 	}
 
-	/**
-	 * @return the filterMap
-	 */
-	public Map<String, String> getFilterMap() {
-		return filterMap;
-	}
-
-	/**
-	 * @param filterMap the filterMap to set
-	 */
-	public void setFilterMap(Map<String, String> filterMap) {
-		this.filterMap = filterMap;
-	}
 }

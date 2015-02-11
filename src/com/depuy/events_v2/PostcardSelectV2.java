@@ -19,6 +19,7 @@ import javax.servlet.http.Cookie;
 // J2EE 1.4.0 Libs
 import javax.servlet.http.HttpSession;
 
+
 //wc-depuy libs
 import com.depuy.events.vo.CoopAdVO;
 import com.depuy.events_v2.vo.ConsigneeVO;
@@ -139,6 +140,19 @@ public class PostcardSelectV2 extends SBActionAdapter {
 				//load one postcard in it's entirety
 				data = loadOneSeminar(eventPostcardId, actionInit.getActionId(), reqType, profileId, req.getParameter("sort"));
 				
+			} else if (ReqType.report == reqType && req.hasParameter("isCustomReport")) {
+				//need to load the list, then full details for each one.
+				data = loadSeminarList(actionInit.getActionId(), reqType, profileId, null);
+				
+				@SuppressWarnings("unchecked")
+				List<DePuyEventSeminarVO> list =(List<DePuyEventSeminarVO>) data;
+				List<DePuyEventSeminarVO> fullList = new ArrayList<>(list.size());
+				
+				for (DePuyEventSeminarVO sem: list) {
+					fullList.add(loadOneSeminar(sem.getEventPostcardId(), actionInit.getActionId(), ReqType.report, null, null));
+				}
+				data = fullList;
+			
 			} else {
 				//load the list of postcards (screen# 1)
 				Cookie c = req.getCookie("seminarSortType");
@@ -202,7 +216,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		}
 		if (ReqType.completed == reqType) {
 			sql.append("and ep.status_flg = ").append(EventFacadeAction.STATUS_COMPLETE).append(" ");
-		} else if (ReqType.report != reqType){
+		} else if (ReqType.report != reqType) {
 			sql.append("and (ep.status_flg != ").append(EventFacadeAction.STATUS_COMPLETE).append(" or ep.status_flg is null) ");
 		}
 		sql.append("group by e.event_entry_id, ep.event_postcard_id, e.RSVP_CODE_TXT, e.start_dt, ");
