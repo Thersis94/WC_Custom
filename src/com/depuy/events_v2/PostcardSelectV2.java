@@ -20,6 +20,7 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpSession;
 
 
+
 //wc-depuy libs
 import com.depuy.events.vo.CoopAdVO;
 import com.depuy.events_v2.vo.ConsigneeVO;
@@ -27,6 +28,7 @@ import com.depuy.events_v2.vo.ConsigneeVO;
 // SMT BaseLibs
 import com.depuy.events_v2.vo.DePuyEventSeminarVO;
 import com.depuy.events_v2.vo.PersonVO;
+import com.depuy.events_v2.vo.report.CustomReportVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.db.DBUtil;
@@ -148,8 +150,11 @@ public class PostcardSelectV2 extends SBActionAdapter {
 				List<DePuyEventSeminarVO> list =(List<DePuyEventSeminarVO>) data;
 				List<DePuyEventSeminarVO> fullList = new ArrayList<>(list.size());
 				
+				//use a report object so we can apply filters in advance of loading more data
+				CustomReportVO rpt = new CustomReportVO(req);
 				for (DePuyEventSeminarVO sem: list) {
-					fullList.add(loadOneSeminar(sem.getEventPostcardId(), actionInit.getActionId(), ReqType.report, null, null));
+					if (rpt.semPassesFilters(sem))
+						fullList.add(loadOneSeminar(sem.getEventPostcardId(), actionInit.getActionId(), ReqType.report, null, null));
 				}
 				data = fullList;
 			

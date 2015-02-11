@@ -227,7 +227,6 @@ public class CoopAdsEmailer extends SBActionAdapter {
 		StringBuilder msg = new StringBuilder(425);
 		msg.append(user.getFirstName()).append(" ").append(user.getLastName());
 		msg.append(" (").append(user.getEmailAddress()).append(") has approved ");
-<<<<<<< HEAD
 		msg.append(label).append(" Ad #").append(cnt).append(" for Seminar #").append(sem.getRSVPCodes()).append("\r\n\r\n");
 		if (isCFSEM){
 			msg.append("Harmony, please upload the final invoice and ");
@@ -236,13 +235,9 @@ public class CoopAdsEmailer extends SBActionAdapter {
 		}
 		msg.append("\r\n");
 		
-=======
-		msg.append("the newspaper ad for Seminar #").append(sem.getRSVPCodes()).append("\r\r");
-		
-		if (isCFSEM && sem.getNewspaperAd().getSurgeonStatusFlg() == 0)
+		if (isCFSEM && vo.getSurgeonStatusFlg() == 0)
 			msg.append("The surgeon has yet to review this ad.\r\n");
 
->>>>>>> 5350c99ae6f6109a10076b2370c698b510c2a84d
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();

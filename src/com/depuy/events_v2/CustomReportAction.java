@@ -5,7 +5,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -34,6 +33,8 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @author Erik Wingo
  * @version 1.0
  * @since Oct 20, 2014
+ * @updates
+ * 		JM 02.11.15 - completely refactored, was not extensible.
  ****************************************************************************/
 public class CustomReportAction extends SimpleActionAdapter {
 
@@ -89,7 +90,7 @@ public class CustomReportAction extends SimpleActionAdapter {
 				case saveReport:
 					//save the report
 					if (!req.hasParameter("reportId")) { //re-runs don't save the report, they just pass filters
-						Map<String,Integer> fields = new LinkedHashMap<>();
+						Map<FieldList,Integer> fields = new HashMap<>();
 						parseParameters(req,fields);
 						saveReport(usr.getProfileId(), fields, req.getParameter("reportName"));
 						//Save button is part of the generate form, so cascade from save case to default (list) case
@@ -132,50 +133,12 @@ public class CustomReportAction extends SimpleActionAdapter {
 	 * @param fields
 	 * @param filters
 	 */
-	private void parseParameters( SMTServletRequest req, Map<String,Integer> fields) {
-		//final String FILTER_PREFIX = "by_";
-		final int INCLUDE = 1;//, FILTER=-1;
-
+	private void parseParameters( SMTServletRequest req, Map<FieldList,Integer> fields) {
 		//For each valid field, check for values to be collected
 		for (FieldList fl : FieldList.values()) {
-			switch(Convert.formatInteger(req.getParameter(fl.getFieldName().toLowerCase()))) {
-				//case FILTER:
-					//filters.put(fl.getFieldName(), StringUtil.checkVal(req.getParameter(
-					//		FILTER_PREFIX+fl.getFieldName())));
-				case INCLUDE:
-					fields.put(fl.name(), 1);
-					break;
-				default:
-					//fields.put(fl.name(), 0);
-					break;
-			}
+			if (req.hasParameter(fl.getFieldName()))
+					fields.put(fl, 1); //1 = ORDER_NO - not implemented in the View.
 		}
-	}
-
-
-	/**
-	 * Get the parameters from a previous report.
-	 * @param searchId Report_id for the search
-	 * @return
-	 * @throws InvalidDataException
-	 * @throws SQLException
-	 */
-	protected CustomReportVO getSavedReport(String searchId)
-			throws InvalidDataException, SQLException {
-		final String customDB = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
-
-		StringBuilder sql = new StringBuilder(100);
-		sql.append("select * from ").append(customDB).append("DEPUY_EVENT_REPORT where REPORT_ID = ?");
-		log.debug(sql+" | "+searchId);
-
-		CustomReportVO vo = null;
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, searchId);
-			ResultSet rs = ps.executeQuery();
-			if (rs.next())
-				vo = new CustomReportVO(rs);
-		}
-		return vo;
 	}
 
 
@@ -192,9 +155,10 @@ public class CustomReportAction extends SimpleActionAdapter {
 
 		//make sql statement
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("select * from ").append(customDB).append("DEPUY_EVENT_REPORT ");
-		sql.append("where PROFILE_ID=?");
-		if (reportId != null) sql.append(" and report_id=?");
+		sql.append("select * from ").append(customDB).append("DEPUY_EVENT_REPORT  a ");
+		sql.append("left outer join ").append(customDB).append("DEPUY_EVENT_REPORT_FIELD b on a.report_id=b.report_id ");
+		sql.append("where a.PROFILE_ID=? ");
+		if (reportId != null) sql.append(" and a.report_id=?");
 		log.debug(sql+" | "+profileId);
 		
 		List<CustomReportVO> voList = new ArrayList<>();
@@ -202,8 +166,18 @@ public class CustomReportAction extends SimpleActionAdapter {
 			ps.setString(1, profileId);
 			if (reportId != null) ps.setString(2, reportId);
 			ResultSet rs = ps.executeQuery();
-			while (rs.next())
-				voList.add(new CustomReportVO(rs));
+			String lastReportId = "";
+			CustomReportVO vo = null;
+			while (rs.next()) {
+				if (!rs.getString("report_id").equals(lastReportId)) {
+					if (vo != null) voList.add(vo);
+					vo = new CustomReportVO(rs);
+					lastReportId = rs.getString("report_id");
+				}
+				vo.addField(rs);
+			}
+			//add the trailing record
+			if (vo != null) voList.add(vo);
 		}
 		
 		return voList;
@@ -218,54 +192,40 @@ public class CustomReportAction extends SimpleActionAdapter {
 	 * @throws SQLException
 	 * @throws InvalidDataException
 	 */
-	private void saveReport( String profileId, Map<String,Integer>fields, String reportName) 
+	private void saveReport(String profileId, Map<FieldList, Integer>fields, String reportName) 
 			throws SQLException, InvalidDataException {
-		log.info("saveReport() starting..."); 
-		//Profile Id is required
-		if (StringUtil.checkVal(profileId).isEmpty()){
-			log.error("Missing profileId.");
-			throw new InvalidDataException("Missing profileId");
-		}
+		if (fields == null || fields.size() == 0) return; //nothing to save, its an empty report!
+		
 		final String reportId = new UUIDGenerator().getUUID();
 		final String customDB = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
 
-		//Map of field name:column name
-		Map<String, String> colMap = new HashMap<>();
-		for ( FieldList f : FieldList.values() ){
-			colMap.put(f.name(), f.getDbName());
-		}
-
-		//get local field list so order is preserved
-		StringBuilder sql = new StringBuilder();
-		//build list of fields to update
+		//Save the report
+		StringBuilder sql = new StringBuilder(100);
 		sql.append("insert into ").append(customDB).append("DEPUY_EVENT_REPORT ");
-		sql.append("(REPORT_ID, PROFILE_ID, REPORT_NM, CREATE_DT");
-
-		for ( String key : fields.keySet()) {
-			sql.append(", ");
-			//get the column name from the enum's dbName field
-			sql.append(colMap.get(key));
-		}
-
-		//make ? marks for prepared statement
-		sql.append(") values (?,?,?,?");
-		for ( int i = 0; i < fields.size(); ++i )
-			sql.append(",?");
-		
-		sql.append(")");
-		log.debug(sql);
-
+		sql.append("(REPORT_ID, REPORT_NM, PROFILE_ID, CREATE_DT) values (?,?,?,?)");
+		log.debug(sql +"|"+ reportId + "|"+ reportName);
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			int i = 0;
-			ps.setString(++i, reportId);
-			ps.setString(++i, profileId);
-			ps.setString(++i, reportName);
-			ps.setTimestamp(++i, Convert.getCurrentTimestamp());
-			//set all the fields, offset by the number of previously set params
-			for (String field : fields.keySet())
-				ps.setInt(++i, fields.get(field));
-			
+			ps.setString(1, reportId);
+			ps.setString(2, reportName);
+			ps.setString(3, profileId);
+			ps.setTimestamp(4, Convert.getCurrentTimestamp());
 			ps.executeUpdate();
+		}
+		
+		//save the report fields
+		sql = new StringBuilder(100);
+		sql.append("insert into ").append(customDB).append("DEPUY_EVENT_REPORT_FIELD ");
+		sql.append("(REPORT_ID, COLUMN_NM, ORDER_NO, CREATE_DT) values (?,?,?,?)");
+		log.debug(sql);
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			for (FieldList fl : fields.keySet()) {
+				ps.setString(1, reportId);
+				ps.setString(2, fl.getFieldName());
+				ps.setInt(3, fields.get(fl));
+				ps.setTimestamp(4, Convert.getCurrentTimestamp());
+				ps.addBatch();
+			}
+			ps.executeBatch();
 		}
 	}
 
