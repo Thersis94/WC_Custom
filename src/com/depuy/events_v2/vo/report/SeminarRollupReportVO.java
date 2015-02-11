@@ -61,8 +61,7 @@ public class SeminarRollupReportVO extends AbstractSBReportVO {
 		Integer leadsCnt = sem.getTotalSelectedLeads();
 		Integer attendCnt = 0;
 		Integer rsvpCnt = sem.getRsvpCount();
-		for ( CoopAdVO ad : sem.getAllAds() ){
-		
+		for ( CoopAdVO ad : sem.getAllAds()) {
 			rpt.append("<tr><td>").append(sem.getJointLabel()).append("</td>");
 			rpt.append("<td>").append(vo.getEventTypeDesc()).append("</td>");
 			rpt.append("<td>").append(vo.getRSVPCode()).append("</td>");

@@ -1,8 +1,8 @@
 package com.depuy.events_v2.vo;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 /****************************************************************************
  * <b>Title</b>: AttendeeSurveyVO.java<p/>
@@ -13,50 +13,20 @@ import java.util.List;
  * @author Erik Wingo
  * @version 1.0
  * @since Nov 11, 2014
+ * @updates
+ * 		JM 1.27.15 - converted separate Lists of questions & answers to a Map(k,v) pairs.
  ****************************************************************************/
-public class AttendeeSurveyVO implements Serializable{
-	/**
-	 * 
-	 */
+public class AttendeeSurveyVO implements Serializable {
 	private static final long serialVersionUID = 1L;
 	
 	private String eventEntryId = null;
 	private String profileId = null;
-	private String customerId = null;
 	private String firstName = null;
 	private String lastName = null;
 	private String rsvpCode = null;
-	private List<String> questionList = new ArrayList<>();
-	private List<String> answerList = new ArrayList<>();
+	private Map<String, Object> responses = new HashMap<>();
 
-	public AttendeeSurveyVO(){}
-	
-	/**
-	 * @return the questionList
-	 */
-	public List<String> getQuestionList() {
-		return questionList;
-	}
-
-	/**
-	 * @param questionList the questionList to set
-	 */
-	public void setQuestionList(List<String> questionList) {
-		this.questionList = questionList;
-	}
-
-	/**
-	 * @return the answerList
-	 */
-	public List<String> getAnswerList() {
-		return answerList;
-	}
-
-	/**
-	 * @param answerList the answerList to set
-	 */
-	public void setAnswerList(List<String> answerList) {
-		this.answerList = answerList;
+	public AttendeeSurveyVO() {
 	}
 
 	/**
@@ -129,17 +99,15 @@ public class AttendeeSurveyVO implements Serializable{
 		this.lastName = lastName;
 	}
 
-	/**
-	 * @return the customerId
-	 */
-	public String getCustomerId() {
-		return customerId;
+	public Map<String, Object> getResponses() {
+		return responses;
 	}
-
-	/**
-	 * @param customerId the customerId to set
-	 */
-	public void setCustomerId(String customerId) {
-		this.customerId = customerId;
+	
+	public void setResponses(Map<String, Object> responses) {
+		this.responses = responses;
+	}
+	
+	public void addResponse(String cd, String resp) {
+		responses.put(cd, resp);
 	}
 }

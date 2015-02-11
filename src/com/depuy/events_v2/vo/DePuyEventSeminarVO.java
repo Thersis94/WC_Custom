@@ -12,6 +12,7 @@ import java.util.Set;
 
 import com.depuy.events.vo.CoopAdVO;
 import com.depuy.events.vo.LeadCityVO;
+import com.depuy.events_v2.OutstandingItems.ActionItem;
 import com.depuy.events_v2.vo.DePuyEventSurgeonVO;
 import com.depuy.events_v2.vo.PersonVO.Role;
 import com.depuy.events.vo.DePuyEventLeadSourceVO;
@@ -41,6 +42,7 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	private Set<String> joints = null;  //comes from DEPUY_EVENT_SPECIALTY_XR
 	private Set<PersonVO> people = null;
 	private Map<Long, ConsigneeVO> consignees = null; //JSTL wants us to use a Long key instead of an Integer here.
+	private Set<ActionItem> actionItems = null;
     
 	private CoopAdVO radioAd = null;
 	private List<CoopAdVO> newspaperAds = null;
@@ -99,6 +101,8 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	    super.setPostcardFileStatusFlg(db.getIntVal("postcard_file_status_no", rs));
 	    super.setLanguageCode( db.getStringVal("language_cd", rs) );
 	    super.setTerritoryNumber( db.getIntegerVal("territory_no", rs));
+	    super.setPostcardMailDate(db.getDateVal("postcard_mail_dt", rs));
+	    super.setConsumableOrderDate(db.getDateVal("CONSUMABLE_ORDER_DT", rs));
 	    
 	    List<EventEntryVO> lst = new ArrayList<EventEntryVO>();
 	    EventEntryVO event = new EventEntryVO();
@@ -123,10 +127,10 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	    	
 	    	rsvpCount = db.getIntVal("rsvp_no", rs);
 	    	
-	    	String runDates = db.getStringVal("run_dates_txt", rs);
+//	    	String runDates = db.getStringVal("run_dates_txt", rs);
 
 	    	CoopAdVO ad = new CoopAdVO();
-    		ad.setAdDatesText(runDates);
+//    		ad.setAdDatesText(runDates);
     		ad.setStatusFlg(db.getIntVal("ad_status_flg", rs));
     		newspaperAds.add(ad);
     		
@@ -456,6 +460,17 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 		return this.getEarliestEventDate().equals(cal.getTime());
 	}
 	
+	public boolean isTimeToOrderConsumables() {
+		if (this.isComplete()) return false;
+		
+		Calendar cal = Calendar.getInstance();		
+		Calendar eventDtM10 = Calendar.getInstance();
+		eventDtM10.setTime(this.getEarliestEventDate());
+		eventDtM10.add(Calendar.DATE, -10);
+		
+		return cal.getTime().after(eventDtM10.getTime());
+	}
+	
 	public boolean isComplete() {
 		Calendar cal = Calendar.getInstance();
 		cal.set(Calendar.HOUR, 0);
@@ -558,5 +573,17 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	
 	public void addConsignee(ConsigneeVO vo) {
 		this.consignees.put(new Long(vo.getTypeNo()), vo);
+	}
+
+	public Set<ActionItem> getActionItems() {
+		return actionItems;
+	}
+
+	public void setActionItems(Set<ActionItem> actionItems) {
+		this.actionItems = actionItems;
+	}
+	public void addActionItem(ActionItem actionItem) {
+		if (actionItems == null) actionItems = new HashSet<>();
+		actionItems.add(actionItem);
 	}
 }

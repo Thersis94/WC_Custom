@@ -56,7 +56,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	public enum ReqType {
 		eventInfo, leads, cancelSeminar, orderBox, uploadPostcard, approvePostcardFile, declinePostcardFile,
 		uploadAdFile, approveAd, declineAd, postseminar, coopAdsSurgeonApproval, 
-		hospitalSponsored, uploadPosterFile, saveInvoiceFile,
+		hospitalSponsored, uploadPosterFile, saveInvoiceFile, radioAdsSubmit,
 		//status levels
 		//submittedByCoord, approvedByAFD, approvedBySRC, pendingSurgeon, approvedMedAffairs
 		submitSeminar, approveSeminar, srcApproveSeminar, pendingSurgeonReview, approvedMedAffairs,
@@ -109,9 +109,11 @@ public class PostcardInsertV2 extends SBActionAdapter {
 						saveLocatorXr(eventPostcardId, req);
 					}
 					saveEventPersonXr(eventPostcardId, req);
-					saveNewspaperAd(eventPostcardId, req);
 					saveEventSurgeon(eventPostcardId, req, site);
 					String et = req.getParameter("eventType");
+					if (!"CPSEM".equals(et)) //no ads for PCPs
+						saveNewspaperAd(eventPostcardId, req);
+					
 					//save consignee for Co-Funded seminars only, 50/25/25 has two.
 					if ("CFSEM50".equals(et)) {
 						saveConsignee(eventPostcardId, 1, req);
@@ -154,6 +156,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 				case approveAd:
 				case declineAd:
 				case coopAdsSurgeonApproval:
+				case radioAdsSubmit:
 					saveNewspaperAd(eventPostcardId, req);
 					break;
 
@@ -1102,7 +1105,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 			throws ActionException, SQLException {
 		StringBuilder sql = new StringBuilder(125);
 		sql.append("update event_postcard set postcard_file_url=?, postcard_file_status_no=?, ");
-		sql.append("update_dt=? where event_postcard_id=?");
+		sql.append("postcard_cost_no=?, update_dt=? where event_postcard_id=?");
 		log.debug(sql);
 
 		PreparedStatement ps = null;
@@ -1110,8 +1113,9 @@ public class PostcardInsertV2 extends SBActionAdapter {
 			ps = dbConn.prepareStatement(sql.toString());
 			ps.setString(1, this.saveFile(req, "postcardFile", "/postcards/", site));
 			ps.setInt(2, CoopAdsActionV2.PENDING_CLIENT_APPROVAL);
-			ps.setTimestamp(3, Convert.getCurrentTimestamp());
-			ps.setString(4, eventPostcardId);
+			ps.setDouble(3, Convert.formatDouble(req.getParameter("postcardCost")));
+			ps.setTimestamp(4, Convert.getCurrentTimestamp());
+			ps.setString(5, eventPostcardId);
 			ps.executeUpdate();
 		} catch (SQLException sqle) {
 			log.error("failed deleting eventPostcard", sqle);
@@ -1208,14 +1212,15 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		//build sql statement
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("update EVENT_POSTCARD set POSTCARD_MAIL_DT=?, ");
-		sql.append("UPDATE_DT=? where EVENT_POSTCARD_ID=?");
+		sql.append("postcard_cost_no=?, UPDATE_DT=? where EVENT_POSTCARD_ID=?");
 		log.debug(sql + " | " + eventPostcardId);
 
 		//Update record in db
 		try( PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setDate(1, Convert.formatSQLDate(Convert.DATE_SLASH_PATTERN, req.getParameter("postcardMailDate")));
-			ps.setTimestamp(2, Convert.getCurrentTimestamp());
-			ps.setString(3, eventPostcardId); 
+			ps.setDouble(2, Convert.formatDouble(req.getParameter("postcardCost")));
+			ps.setTimestamp(3, Convert.getCurrentTimestamp());
+			ps.setString(4, eventPostcardId); 
 			ps.executeUpdate();
 		} //catch gets thrown
 
@@ -1244,6 +1249,20 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	private void orderBox(SMTServletRequest req, String eventPostcardId, DePuyEventSeminarVO vo)
 			throws ActionException {
 		log.debug("starting consumable box email");
+		
+		//flag the record as having been ordered
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("update event_postcard set CONSUMABLE_ORDER_DT=?, ");
+		sql.append("update_dt=? where event_postcard_id=?");
+		log.debug(sql);
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setTimestamp(1, Convert.getCurrentTimestamp());
+			ps.setTimestamp(2, Convert.getCurrentTimestamp());
+			ps.setString(3, eventPostcardId);
+			ps.executeUpdate();
+		} catch (SQLException sqle) {
+			log.error("could not update consumables date", sqle);
+		}
 
 		// get the postcard data for emailing
 		if (vo == null)
