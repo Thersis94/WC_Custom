@@ -1,7 +1,6 @@
 package com.fastsigns.product.keystone;
 
 import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -111,7 +110,13 @@ public class DSOLAction extends SBActionAdapter {
 				}
 				String thumbPath = ran1 + ran2 + UUID.randomUUID() + ".png";
 				is = new BufferedInputStream(new FileInputStream(new File(attributes.get("keystoneDsolTemplateFilePath") + svg)));
-				os = new BufferedOutputStream(new FileOutputStream(new File(attributes.get("keystoneDsolTemplateFilePath") + thumbPath)));
+
+				/*
+				 * Removed the BufferedOutputStream.  We don't use it in FileManager and that works correctly.
+				 * Also there were references in some articles I found that suggessted wrapping with the Buffer
+				 * could cause weird behavior on an NFS mount as the NFS Protocol manages it's own buffer automatically.
+				 */
+				os = new FileOutputStream(new File(attributes.get("keystoneDsolTemplateFilePath") + thumbPath));
 				
 				//Assign Width cap dependant on long side.
 				if(vo.getSizes().get(0).getWidth() > vo.getSizes().get(0).getHeight())
