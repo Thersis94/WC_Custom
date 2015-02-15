@@ -459,7 +459,7 @@ public class CenterPageAction extends SimpleActionAdapter {
 	}
 	
 	/**
-	 * Get all global assets from the database and append them to the list of assets
+	 * Get all global assets from the database and prepend them to the list of assets
 	 */
 	private void appendGlobalAssets(Map<String, CenterModuleVO> data, boolean preview) throws SQLException {
 		log.debug("Gathering global assets.|"+preview);
@@ -477,7 +477,8 @@ public class CenterPageAction extends SimpleActionAdapter {
 		} else {
 			sql.append("and cmo.APPROVAL_FLG = 1 ");
 		}
-		sql.append("ORDER BY m.CP_MODULE_ID");
+		sql.append("ORDER BY m.CP_MODULE_ID, cmo.CREATE_DT DESC");
+		log.debug(sql);
 		
 		PreparedStatement ps = null;
 		ResultSet rs = null;
@@ -504,15 +505,15 @@ public class CenterPageAction extends SimpleActionAdapter {
 
 		CenterModuleVO center = null;
 		CenterModuleVO globalModule = null;
+		Map<Integer, CenterModuleOptionVO> options;
 		for (String key : data.keySet()) {
 			center = data.get(key);
 			log.debug(key+"|"+center.getModuleId()+"|"+center.getModuleName());
 			globalModule = globalModules.get(center.getModuleId());
 			if (globalModule != null) {
-				for (int optionNum : globalModule.getModuleOptions().keySet()) {
-					log.debug("Added item");
-					center.addOption(globalModule.getModuleOptions().get(optionNum));
-				}
+				options = globalModule.getModuleOptions();
+				options.putAll(center.getModuleOptions());
+				center.setModuleOptions(options);
 			}
 		}
 	}
