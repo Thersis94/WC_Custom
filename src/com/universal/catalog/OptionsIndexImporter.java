@@ -97,6 +97,7 @@ public class OptionsIndexImporter extends AbstractImporter {
 		List<String[]> hierarchy = null;
 		Map<String, List<String[]>> optionsIndex = new HashMap<>();
 		// read the file line by line
+		int availabilityFieldNo = -1;
 		try {
 			for (int i=0; (temp = data.readLine()) != null; i++) {
 				String[] fields = temp.split(CatalogImportManager.DELIMITER_SOURCE);
@@ -105,8 +106,12 @@ public class OptionsIndexImporter extends AbstractImporter {
 					headers = new HashMap<String, Integer>();
 					for (int j = 0; j < fields.length; j++) {
 						headers.put(fields[j].toUpperCase(), new Integer(j));
+						if (fields[j].equalsIgnoreCase("NLA")) {
+							availabilityFieldNo = headers.get("NLA");
+						}
 						log.info("options index headers | index: " + fields[j] + "|" + j);
 					}
+					log.info("availabilityFieldNo: " + availabilityFieldNo);
 					continue;
 				}
 				
@@ -118,6 +123,19 @@ public class OptionsIndexImporter extends AbstractImporter {
 					log.error("Error mapping hierarchy for product | record #: " + prodId + i + ", " + e);
 					continue;
 				}
+				
+				// check availability
+				if (availabilityFieldNo > -1) {
+					try {
+						if (fields[availabilityFieldNo].equals("1")) {
+							log.debug("skipping product option combination: " + prodId + "|" + codeList);
+							continue;
+						}
+					} catch (Exception e) {
+						// log error but process entire field anyway...missing NLA value gives us no guidance.
+						log.error("Error retrieving product option availability for: " + prodId + "|" + codeList + ", " + e.getMessage());
+					}
+				}				
 				
 				// only process options for products that were imported upstream
 				if (productFilter.contains(prodId)) {
