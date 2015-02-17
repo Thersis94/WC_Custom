@@ -177,6 +177,7 @@ public class SiteWizardAction_AU extends SiteWizardAction {
 		secDisplay.add(makePageModule(true, true, true, "0a0014137c77505bed1c4b2714f02a51", "c0a802411c9e09843c052afd87f4bba1", "SITE_SEARCH", 1, 0));				// Site Search 2012
 		secDisplay.add(makePageModule(true, true, true, "942F611CCBCB4E6DA20E282BCD5F63E6", "c0a80a076e1dc62789a3565692e8803e", null, 2, 1));						// Breadcrumbs
 		secDisplay.add(makePageModule(true, true, true, null, "c0a802234b3c124378e7a6703fa3445", null, 1, 4));														// White Board
+		secDisplay.add(makePageModule(true,true, true, "FTS_CENTER_PAGE_"+centerId, "c0a80165f0c00ec5ab44b17238772bf9", null, 2, 4));								//Sub page Intro heading
 		
 		emptyColDisplay.add(makePageModule(false, true, true, "0a0014137c77506aed1c4b2723bd7ce3","c0a80a07614b3c24224dd3d77221237a", "HEADER_TOP_LEFT_CONTENT", 0, 1));	// World Link 2012
 		emptyColDisplay.add(makePageModule(true, true, true, "FTS_CENTER_PAGE_"+centerId, "0a00141d8afabb8f1d07f6377fa000a6", "HEADER_RIGHT", 0, 1)); 					//Consultation Portlet
@@ -224,7 +225,7 @@ public class SiteWizardAction_AU extends SiteWizardAction {
 		sai.update(req);
 		
 		// get default location desc
-		req.setParameter("locationDesc", this.getLocationDesc(req.getParameter("dealerName")));
+		req.setParameter("locationDesc", this.getLocationDesc(req));
 		
 		// Add Dealer Location
 		//req.setParameter("country", localization.substring(localization.indexOf("_")+1, localization.length()));

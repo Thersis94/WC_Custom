@@ -476,7 +476,7 @@ public class FSProductAction extends SBActionAdapter {
 			appendLevel(url, thirdItem);
 		}
 		
-		return url.toString();
+		return url.toString().toLowerCase();
 	}
 	
 	/**
