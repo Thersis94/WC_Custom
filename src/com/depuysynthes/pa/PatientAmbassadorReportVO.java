@@ -187,7 +187,7 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 			addCell(c++, vo.getZipCode(), row);
 
 			//Set Image Url
-			addCell(c++, siteUrl + vo.getFieldById(PAFConst.PROFILE_IMAGE_ID.getId()).getResponses().get(0), row);
+			addCell(c++, "http://" + siteUrl + vo.getFieldById(PAFConst.PROFILE_IMAGE_ID.getId()).getResponses().get(0), row);
 
 			//Set Joints
 			StringBuilder sb = new StringBuilder();
@@ -277,7 +277,7 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 
 
 		//Set Image Url
-		addRow(r++, siteUrl + vo.getFieldById(PAFConst.PROFILE_IMAGE_ID.getId()).getResponses().get(0), sheet);
+		addRow(r++, "http://" + siteUrl + vo.getFieldById(PAFConst.PROFILE_IMAGE_ID.getId()).getResponses().get(0), sheet);
 
 		//Set Joints
 		StringBuilder sb = new StringBuilder();

@@ -446,6 +446,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 			fsids = new ArrayList<FormTransactionVO>();
 			FormTransactionVO f = new FormTransactionVO();
 			f.setFormSubmittalId(req.getParameter("fsi"));
+			fsids.add(f);
 		} else {
 			fsids = retreiveAllSubmissions(req, true);
 		}
