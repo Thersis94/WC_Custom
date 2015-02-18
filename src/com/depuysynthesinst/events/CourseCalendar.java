@@ -147,7 +147,10 @@ public class CourseCalendar extends SimpleActionAdapter {
 			req.setParameter(EventEntryAction.REQ_SERVICE_OPT, anatomy);
 		}
 		
-		req.setParameter(EventEntryAction.REQ_START_DT, Convert.formatDate(Calendar.getInstance().getTime(), Convert.DATE_SLASH_PATTERN));
+		Calendar cal = Calendar.getInstance();
+		if (page.getAliasName().equals("profile"))
+			cal.add(Calendar.DATE, -90);
+		req.setParameter(EventEntryAction.REQ_START_DT, Convert.formatDate(cal.getTime(), Convert.DATE_SLASH_PATTERN));
 		
 		//load the Events
 		actionInit.setActionId((String)mod.getAttribute(SBModuleVO.ATTRIBUTE_1));
