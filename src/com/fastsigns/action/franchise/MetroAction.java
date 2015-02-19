@@ -215,7 +215,7 @@ public class MetroAction extends SBActionAdapter {
 				if(lastIndex == 3 && i == 1)
 					sb.append("metro-");
 				else if(lastIndex == 4 && i == 1)
-					sb.append("metro/qs/");
+					sb.append("metro/" + attributes.get(Constants.QS_PATH));
 				
 				sb.append(StringUtil.checkVal(req.getParameter(SMTServletRequest.PARAMETER_KEY + i)));
 				}

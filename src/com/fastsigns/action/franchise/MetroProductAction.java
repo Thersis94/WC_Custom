@@ -256,7 +256,9 @@ public class MetroProductAction extends SBActionAdapter {
 		for (Node n : orderedList) {
 			ProductCategoryVO cat = (ProductCategoryVO) n.getUserObject();
 			int levels = StringUtil.checkVal(n.getFullPath()).split("/").length;
-			Boolean hasQs = StringUtil.checkVal(n.getFullPath()).contains("/qs");
+
+			//TODO - VALIDATE THAT METRO CHECK STILL WORKS WITH QS GONE!!!!!!
+			Boolean hasQs = StringUtil.checkVal(n.getFullPath()).contains((String)attributes.get(Constants.QS_PATH));
 			
 			//Set the extra values, such as whether this is a subproduct or is part of the metro area
 			if (((hasQs && levels == 6) || (!hasQs && levels == 3))) {
@@ -298,7 +300,7 @@ public class MetroProductAction extends SBActionAdapter {
     				fullPath = "/" + cat.getCustCategoryId() + cat.getUrlAlias();
     				preservedPath = "/" + cat.getCustCategoryId();
     			} else {
-    				fullPath = "/" + cat.getUrlAlias() + "/qs/";
+    				fullPath = "/" + cat.getUrlAlias() + "/" + attributes.get(Constants.QS_PATH);
     				preservedPath = fullPath;
     			}
     			fp.put(n.getNodeId(), preservedPath);
@@ -410,16 +412,16 @@ public class MetroProductAction extends SBActionAdapter {
 		
 		return data;
 	}
-	
 
 	/**
 	 * Get the parent category url
+	 * TODO: Need to investigate effect of removing qs from the URI here.
 	 * @param url
 	 * @return
 	 */
 	private String parseParent(String url) {
 		int levels = url.split("/").length;
-		Boolean hasQs = url.contains("/qs");
+		Boolean hasQs = url.contains((String)attributes.get(Constants.QS_PATH));
 		if (hasQs) {
 			int first = url.indexOf("/")+1;
 			return url.substring(first, url.lastIndexOf("/", url.lastIndexOf("/")-1));
