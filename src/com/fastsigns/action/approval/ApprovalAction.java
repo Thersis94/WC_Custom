@@ -112,6 +112,12 @@ public abstract class ApprovalAction extends SBActionAdapter {
 	 * @param vo
 	 */
 	public abstract void sendEmail(AbstractChangeLogVO vo);
+	
+	/**
+	 * Used to notify the eteam when a request for approval is submitted in Webedit.
+	 * @param vo
+	 */
+	public abstract void sendRequestNotificationEmail(AbstractChangeLogVO vo);
 
 	/**
 	 * This method returns the Human Friendly version of the Action Type

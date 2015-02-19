@@ -102,4 +102,17 @@ public abstract class ApprovalTemplateAction extends ApprovalAction {
 			log.error(e);
 		}
 	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see com.fastsigns.action.approval.ApprovalAction#sendRequestNotificationEmail(com.fastsigns.action.approval.vo.AbstractChangeLogVO)
+	 */
+	@Override
+	public void sendRequestNotificationEmail(AbstractChangeLogVO vo){
+		final String corpName = (!vo.getOrgId().contains("AU")) ? "FASTSIGNS" : "SIGNWAVE";
+		
+		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
+		SMTMail mail = new SMTMail(attributes.get(Constants.CFG_SMTP_SERVER).toString());
+		StringBuilder msg = new StringBuilder();
+	}
 }
