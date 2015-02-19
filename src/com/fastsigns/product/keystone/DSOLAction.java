@@ -1,7 +1,6 @@
 package com.fastsigns.product.keystone;
 
 import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -89,7 +88,8 @@ public class DSOLAction extends SBActionAdapter {
 			vo.setModifiers(((KeystoneProductVO)req.getSession().getAttribute("DSOLVO")).getModifiers());
 		}
 		req.setValidateInput(false);
-		
+		InputStream is = null;
+		OutputStream os = null;
 		//Write the SVG Data to a temp file and store path on the request.
 		try {
 			if(req.hasParameter("svgData")) {
@@ -109,8 +109,14 @@ public class DSOLAction extends SBActionAdapter {
 					req.setParameter("svgData", svg);
 				}
 				String thumbPath = ran1 + ran2 + UUID.randomUUID() + ".png";
-				InputStream is = new BufferedInputStream(new FileInputStream(new File(attributes.get("keystoneDsolTemplateFilePath") + svg)));
-				OutputStream os = new BufferedOutputStream(new FileOutputStream(new File(attributes.get("keystoneDsolTemplateFilePath") + thumbPath)));
+				is = new BufferedInputStream(new FileInputStream(new File(attributes.get("keystoneDsolTemplateFilePath") + svg)));
+
+				/*
+				 * Removed the BufferedOutputStream.  We don't use it in FileManager and that works correctly.
+				 * Also there were references in some articles I found that suggessted wrapping with the Buffer
+				 * could cause weird behavior on an NFS mount as the NFS Protocol manages it's own buffer automatically.
+				 */
+				os = new FileOutputStream(new File(attributes.get("keystoneDsolTemplateFilePath") + thumbPath));
 				
 				//Assign Width cap dependant on long side.
 				if(vo.getSizes().get(0).getWidth() > vo.getSizes().get(0).getHeight())
@@ -127,7 +133,14 @@ public class DSOLAction extends SBActionAdapter {
 				vo.setThumbnail(thumbPath);
 			}
 		} catch (Exception e) {
-			log.debug(e);
+			log.error("Error Saving DSOL Template data", e);
+		} finally {
+			try {
+				is.close();
+				os.flush();
+				os.close();
+				log.debug("Closed all Buffer Streams");
+			} catch(Exception e) {}
 		}
 		
 		req.getSession().setAttribute("DSOLVO", vo);

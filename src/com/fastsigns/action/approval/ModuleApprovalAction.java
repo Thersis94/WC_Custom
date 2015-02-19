@@ -14,6 +14,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 /****************************************************************************
  * <b>Title</b>: ModuleApprovalAction.java
@@ -54,6 +55,14 @@ public class ModuleApprovalAction extends ApprovalTemplateAction {
 			int modOptId = Convert.formatInteger(v.getComponentId());
 			CenterModuleOptionVO vo = getModuleOption(modOptId, req);
 			
+			if ("-1".equals(req.getParameter("moduleFranchiseId"))) {
+				String orgId = ((SiteVO) req.getAttribute("siteData")).getOrganizationId();
+				if (Convert.formatInteger(vo.getParentId()) > 0) {
+					removeAssignments(vo.getParentId(), orgId);
+				} else {
+					removeAssignments(vo.getModuleOptionId(), orgId);
+				}
+			}
 			// update new attributes with old values (in case values have changes)
 			Map<Integer, String> vals = getAttrVals(vo.getParentId(), req);
 			
@@ -130,6 +139,72 @@ public class ModuleApprovalAction extends ApprovalTemplateAction {
 		}
 		logger.logChange(req, vos);
 	}
+	
+
+	/**
+	 * Since the asset being edited is now a omnipresent global module we need to remove 
+	 * it from any existing module orders in order to prevent it from showing up in centers
+	 * that do not have the global assets enabled and ensuring that it does not show up
+	 * twice on centers that do have them enabled.
+	 * @param req
+	 */
+	private void removeAssignments(int optionId, String orgId) {
+		log.debug("Deleting previous associations");
+		
+		clearAssignmentCache(optionId, orgId);
+		
+		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder delete = new StringBuilder(100);
+		
+		delete.append("DELETE FROM ").append(customDb).append("FTS_CP_MODULE_FRANCHISE_XR ");
+		delete.append("WHERE CP_MODULE_OPTION_ID = ?");
+		log.debug(delete+"|"+optionId);
+		
+		try(PreparedStatement del = dbConn.prepareStatement(delete.toString())) {
+			
+			del.setInt(1, optionId);
+			
+			del.executeUpdate();
+		} catch (Exception e) {
+			log.error("Unable to delete old associations of global asset " + optionId);
+		}
+	}
+	
+	/**
+	 * Clears the cache for each franchise that uses this asset in order 
+	 * to make sure that they won't be using out of date information
+	 * @param optionId
+	 * @param orgId
+	 */
+	private void clearAssignmentCache (int optionId, String orgId) {
+		log.debug("Deleting previous associations");
+		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder select = new StringBuilder(330);
+		
+		select.append("SELECT FRANCHISE_ID FROM ").append(customDb).append("FTS_CP_MODULE_FRANCHISE_XR cmfx ");
+		select.append("left join ").append(customDb).append("FTS_CP_LOCATION_MODULE_XR clmx on ");
+		select.append("clmx.CP_LOCATION_MODULE_XR_ID = cmfx.CP_LOCATION_MODULE_XR_ID ");
+		select.append("WHERE CP_MODULE_OPTION_ID = ? GROUP BY FRANCHISE_ID");
+		log.debug(select+"|"+optionId);
+		
+		try(PreparedStatement sel = dbConn.prepareStatement(select.toString())) {
+			
+			sel.setInt(1, optionId);
+			
+			ResultSet rs = sel.executeQuery();
+			
+			//Clear the caches of all the centers using this asset
+			while(rs.next()) {
+				String siteId = orgId + "_" + rs.getString(1) + "_1";
+				log.debug("Clearing cache for " + siteId);
+				super.clearCacheByGroup(siteId);
+			}
+		} catch (Exception e) {
+			log.error("Unable to clear the cache for associations of global asset " + optionId);
+		}
+	}
+	
+	
 	/**
 	 * Removes all children modules from a given parent and updates changelog.
 	 * @param req

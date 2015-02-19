@@ -28,6 +28,8 @@ import com.smt.sitebuilder.action.event.vo.EventEntryVO;
  * @author Erik Wingo
  * @version 1.0
  * @since Oct 20, 2014
+ * @updates
+ * 		JM 02.11.15 - completely refactored, was not extensible.
  ****************************************************************************/
 public class CustomReportVO extends AbstractSBReportVO {
 
@@ -44,47 +46,41 @@ public class CustomReportVO extends AbstractSBReportVO {
 	};
 
 	public static enum FieldList {
-		JOINT_FLG("joint_flg", "java.lang.String","Joint","JOINT_FLG"),
-		SEMINAR_TYPE_FLG("seminar_type_flg", "java.lang.String","Seminar Type","SEMINAR_TYPE_FLG"),
-		SEMINAR_CODE_FLG("seminar_code_flg", "java.lang.String", "Seminar Code","SEMINAR_CODE_FLG"),
-		COORDINATOR_FLG("coordinator_flg", "java.lang.String", "Seminar Coordinator","COORDINATOR_FLG"),
-		STATUS_FLG("status_flg", "java.lang.Integer","Seminar Status","STATUS_FLG"),
-		START_DATE_FLG("start_date_flg", "java,util.Date", "Seminar Date","START_DATE_FLG"),
-		TIME_FLG("time_flg", "java.util.Date", "Seminar Time","TIME_FLG"),
-		SPEAKER_FLG("speaker_flg", "java.lang.String","Seminar Speaker","SPEAKER_FLG"),
-		RSVP_COUNT_FLG("rsvp_count_flg", "java.lang.Integer", "RSVP Count","RSVP_TOTAL_FLG"),
-		ATTENDEE_COUNT_FLG("attendee_count_flg", "java.lang.Integer", "Attendee Count","ATTENDEE_TOTAL_FLG"),
-		//OPT_IN_FLG("opt_in_flg", "java.lang.Integer","Opt-In","OPT_IN_FLG"),
-		LOCATION_NM_FLG("location_nm_flg", "java.lang.String","Location Name","LOCATION_FLG"),
-		CITY_NM_FLG("city_nm_flg", "java.lang.String","City","CITY_FLG"),
-		STATE_CD_FLG("state_cd_flg", "java.lang.String","State","STATE_FLG"),
-		VENUE_COST_FLG("venue_cost_flg", "java.lang.Double","Venue Cost","VENUE_COST_FLG"),
-		REFRESHMENT_COST_FLG("refreshment_cost_flg", "java.lang.Double", "Refreshment Cost","REFRESHMENT_COST_FLG"),
-		POSTCARD_DT_FLG("postcard_dt_flg", "java.util.Date", "Postcard Mail Date","POSTCARD_DATE_FLG"),
-		NEWSPAPER_NM_FLG("newspaper_nm_flg", "java.lang.String","Newspaper Name","NEWSPAPER_FLG"),
-		AD_DT_FLG("ad_dt_flg", "java.util.Date", "Ad Date","AD_DATE_FLG"),
-		AD_COST_FLG("ad_cost_flg", "java,lang.Date", "Total Ad Cost","AD_COST_FLG"),
-		TERRITORY_COST_FLG("territory_cost_flg", "java.lang.Double", "Cost to Territory","TERRITORY_COST_FLG"),
-		SURGEON_COST_FLG("surgeon_cost_flg", "java.lang.Double","Cost to Surgeon","SURGEON_COST_FLG"),
-		HOSPITAL_COST_FLG("hospital_cost_flg", "java.lang.Double", "Cost to Hospital","HOSPITAL_COST_FLG"),
-		UPFRONT_FEE_FLG("upfront_fee_flg", "java.lang.Integer", "$200 Upfront Fee", "UPFRONT_FEE_FLG"),
-		TERRITORY_NO("territory_no","java.lang.Integer","Territory#","TERRITORY_FLG"),
-		POSTCARD_COUNT_NO("postcard_count_no","java.lang.Integer","Postcard/Invitation Qnty","POSTCARD_TOTAL_FLG"),
-		//INVITATION_COUNT_NO("invitation_count_no","java.lang.Integer","Invitation No","INVITATION_TOTAL_FLG"),
-		POSTCARD_COST_NO("postcard_cost_no","java.lang.Double","Postcard/Invitation Cost","POSTCARD_COST_FLG");
-		//INVITATION_COST_NO("invitation_cost_no","java.lang.Double","Total Invitation Cost","INVITATION_COST_FLG");
+		JOINT_FLG("joint_flg", "Joint"),
+		SEMINAR_TYPE_FLG("seminar_type_flg","Seminar Type"),
+		SEMINAR_CODE_FLG("seminar_code_flg", "Seminar Code"),
+		COORDINATOR_FLG("coordinator_flg", "Seminar Coordinator"),
+		STATUS_FLG("status_flg", "Seminar Status"),
+		START_DATE_FLG("start_date_flg", "Seminar Date"),
+		TIME_FLG("time_flg", "Seminar Time"),
+		SPEAKER_FLG("speaker_flg", "Seminar Speaker"),
+		RSVP_COUNT_FLG("rsvp_count_flg",  "RSVP Count"),
+		ATTENDEE_COUNT_FLG("attendee_count_flg",  "Attendee Count"),
+		//OPT_IN_FLG("opt_in_flg", "Opt-In"),
+		LOCATION_NM_FLG("location_nm_flg", "Location Name"),
+		CITY_NM_FLG("city_nm_flg", "City"),
+		STATE_CD_FLG("state_cd_flg", "State"),
+		VENUE_COST_FLG("venue_cost_flg", "Venue Cost"),
+		REFRESHMENT_COST_FLG("refreshment_cost_flg", "Refreshment Cost"),
+		POSTCARD_DT_FLG("postcard_dt_flg","Postcard Mail Date"),
+		NEWSPAPER_NM_FLG("newspaper_nm_flg", "Newspaper Name"),
+		AD_DT_FLG("ad_dt_flg","Ad Date"),
+		AD_COST_FLG("ad_cost_flg", "Total Ad Cost"),
+		TERRITORY_COST_FLG("territory_cost_flg", "Cost to Territory"),
+		SURGEON_COST_FLG("surgeon_cost_flg", "Cost to Surgeon"),
+		HOSPITAL_COST_FLG("hospital_cost_flg", "Cost to Hospital"),
+		UPFRONT_FEE_FLG("upfront_fee_flg",  "$200 Upfront Fee"),
+		TERRITORY_NO("territory_no","Territory#"),
+		POSTCARD_COUNT_NO("postcard_count_no","Postcard/Invitation Qnty"),
+		POSTCARD_COST_NO("postcard_cost_no","Postcard/Invitation Cost");
 
 		private final String name;
-		private final String className;
 		private final String reportLabel;
-		private final String dbName;
 		
 		//enum's Constructor
-		FieldList(String name, String className, String reportLabel, String dbName) {
+		FieldList(String name, String reportLabel) {
 			this.name=name;
-			this.className=className;
 			this.reportLabel=reportLabel;
-			this.dbName = dbName;
 		}
 		
 		/**
@@ -92,17 +88,9 @@ public class CustomReportVO extends AbstractSBReportVO {
 		 */
 		public String getFieldName() { return name; }
 		/**
-		 * @return The class name for the field's data type.
-		 */
-		public String getClassName() { return className; }
-		/**
 		 * @return The label used for this field in the report header.
 		 */
 		public String getReportLabel() { return reportLabel; }
-		/**
-		 * @return The name of the DEPUY_EVENT_REPORT column corresponding to this field.
-		 */
-		public String getDbName() { return dbName; }
 	}
 	
 	
@@ -112,16 +100,15 @@ public class CustomReportVO extends AbstractSBReportVO {
 	private List<DePuyEventSeminarVO> semList = new ArrayList<>();
 	private String reportId = null;
 	private String reportName = null;
+	private DBUtil db = null;
 
 	private static final long serialVersionUID = 1L;
 
-	/**
-	 * 
-	 */
 	public CustomReportVO() {
 		super();
 		isHeaderAttachment(Boolean.TRUE);
 		setFileName("Custom Report.xls");
+		db = new DBUtil();
 	}
 
 	/**
@@ -131,15 +118,12 @@ public class CustomReportVO extends AbstractSBReportVO {
 	public CustomReportVO(ResultSet rs) {
 		//Initialize the file information
 		this();
-		DBUtil db = new DBUtil();
 		reportId = db.getStringVal("report_id", rs);
 		setReportName(db.getStringVal("report_nm", rs));
-
-		//get list of fields that should be included in the query
-		for ( FieldList key : FieldList.values() ){
-			//get list of parameters
-			paramList.put(key.getFieldName(), db.getIntVal(key.getDbName(), rs));
-		}
+	}
+	
+	public void addField(ResultSet rs) {
+		paramList.put(db.getStringVal("COLUMN_NM",rs), 1);
 	}
 
 	/**
@@ -153,8 +137,9 @@ public class CustomReportVO extends AbstractSBReportVO {
 		setReportName(req.getParameter("reportName"));
 
 		for (FieldList key : FieldList.values()) {
-			paramList.put(key.getFieldName(), Convert.formatInteger(StringUtil.checkVal(req.getParameter(key.getFieldName()))));
-			//log.debug(StringUtil.checkVal(req.getParameter(key.getFieldName()),"EMPTY"));
+			//these are checkboxes.  They won't appear on the request unless they were checked.
+			if (! req.hasParameter(key.getFieldName())) continue;
+			paramList.put(key.getFieldName(), 1);
 		}
 		
 		//apply runtime filters
@@ -217,7 +202,7 @@ public class CustomReportVO extends AbstractSBReportVO {
 						row.append( StringUtil.checkVal(vo.getStatusName()));
 						break;
 					case START_DATE_FLG:
-						row.append(Convert.formatDate(event.getStartDate(), Convert.DATE_SLASH_PATTERN) );
+						row.append(Convert.formatDate(event.getStartDate(), Convert.DATE_SLASH_PATTERN));
 						break;
 					case TIME_FLG:
 						row.append(StringUtil.checkVal(event.getLocationDesc()));
@@ -254,7 +239,7 @@ public class CustomReportVO extends AbstractSBReportVO {
 						//TODO
 						break;
 					case POSTCARD_DT_FLG:
-						row.append( StringUtil.checkVal(vo.getPostcardMailDate()) );
+						row.append(Convert.formatDate(vo.getPostcardMailDate(), Convert.DATE_SLASH_PATTERN));
 						break;
 					case NEWSPAPER_NM_FLG:
 						printMultiVal(row, "getNewspaper1Text",vo.getAllAds());
@@ -327,7 +312,7 @@ public class CustomReportVO extends AbstractSBReportVO {
 
 	
 	@SuppressWarnings("incomplete-switch")
-	private boolean semPassesFilters(DePuyEventSeminarVO sem) {
+	public boolean semPassesFilters(DePuyEventSeminarVO sem) {
 		if (filterMap == null || filterMap.size() == 0) return true;
 		String value;
 		EventEntryVO event = sem.getEvents().get(0);
@@ -342,8 +327,9 @@ public class CustomReportVO extends AbstractSBReportVO {
 		}
 		if (filterMap.containsKey(FieldList.SEMINAR_CODE_FLG)) {
 			value = filterMap.get(FieldList.SEMINAR_CODE_FLG);
+			log.debug("filtering for seminar " + value);
 			String[] codes = sem.getRSVPCodes().split(",");
-			if (StringUtil.stringContainsItem(value, codes)) return false;
+			if (!StringUtil.stringContainsItem(value, codes)) return false;
 		}
 		if (filterMap.containsKey(FieldList.START_DATE_FLG)) {
 			value = filterMap.get(FieldList.START_DATE_FLG);

@@ -403,16 +403,17 @@ public class ModuleOptionAction extends SBActionAdapter{
 		String[] options = req.getParameterValues("selectedElements");
 		String locationId = req.getParameter("locationId");
 		boolean skipDelete = Convert.formatBoolean(req.getParameter("skipDelete"), false);
-		String dSql = "";
+		StringBuilder dSql = new StringBuilder(100);
 		
 		if (!skipDelete) {
-			dSql = "delete from " + customDb + "FTS_CP_MODULE_FRANCHISE_XR ";
-			dSql += "where CP_LOCATION_MODULE_XR_ID = ? ";
+			dSql.append("delete from ").append(customDb).append("FTS_CP_MODULE_FRANCHISE_XR ");
+			dSql.append("where CP_LOCATION_MODULE_XR_ID = ? ");
 		}
 		
-		String iSql = "insert into " + customDb + "FTS_CP_MODULE_FRANCHISE_XR ";
-		iSql += "(cp_location_module_xr_id, cp_module_option_id, order_no, create_dt) ";
-		iSql += "values (?,?,?,?)";
+		StringBuilder iSql = new StringBuilder(170);
+		iSql.append("insert into ").append(customDb).append("FTS_CP_MODULE_FRANCHISE_XR ");
+		iSql.append("(cp_location_module_xr_id, cp_module_option_id, order_no, create_dt) ");
+		iSql.append("values (?,?,?,?)");
 		
 		PreparedStatement psIns = null;
 		PreparedStatement psDel = null;
@@ -420,13 +421,13 @@ public class ModuleOptionAction extends SBActionAdapter{
 			// Delete the existing records
 			// This step will be skipped when we are adding a new asset to a module that allows multiple assets.
 			if (!skipDelete) {
-				psDel = dbConn.prepareStatement(dSql);
+				psDel = dbConn.prepareStatement(dSql.toString());
 				psDel.setString(1, locationId);
 				psDel.executeUpdate();
 			}
 			
 			// Add new records
-			psIns = dbConn.prepareStatement(iSql);
+			psIns = dbConn.prepareStatement(iSql.toString());
 			for (int i = 0; i < options.length; i++) {
 				String[] opts = options[i].split("~"); //split is key ~ order-by-index
 				int idx = i+1; //default ordering
