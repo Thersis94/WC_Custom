@@ -257,38 +257,38 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 	     * @param sd
 	     * @return
 	     */
+//TODO there is a bug in here - test once SMT-CMS is integrated
 	    public String buildDSIUrl(SolrDocument sd) {
 		    String hierarchy = "";
 		    try {
 			    hierarchy= StringUtil.checkVal(sd.getFieldValues(SearchDocumentHandler.HIERARCHY).iterator().next());
 		    } catch (Exception e) {};
+
 		    //log.debug(hierarchy);
-
-		    if (hierarchy != null && hierarchy.length() > 0) {
-			    String rootLvl = (hierarchy.indexOf("~") > 0) ? hierarchy.substring(0, hierarchy.indexOf("~")) : hierarchy;
+		    if (hierarchy == null || hierarchy.length() == 0) return null;
+		    
+		    String rootLvl = (hierarchy.indexOf("~") > 0) ? hierarchy.substring(0, hierarchy.indexOf("~")) : hierarchy;
+		    rootLvl = StringUtil.checkVal(rootLvl).toLowerCase();
+		    if ("vet".equals(rootLvl)) {
+			    int tildeIndx = rootLvl.length() +1;
+			    if (hierarchy.length() > tildeIndx) rootLvl = hierarchy.substring(tildeIndx, hierarchy.indexOf("~", tildeIndx));
 			    rootLvl = StringUtil.checkVal(rootLvl).toLowerCase();
-			    if ("vet".equals(rootLvl)) {
-				    int tildeIndx = rootLvl.length() +1;
-				    if (hierarchy.length() > tildeIndx) rootLvl = hierarchy.substring(tildeIndx, hierarchy.indexOf("~", tildeIndx));
-				    rootLvl = StringUtil.checkVal(rootLvl).toLowerCase();
 
-				    rootLvl = "veterinary/" + rootLvl;
-				    //log.debug(rootLvl);
-			    }
-
-			    //remove ampersands and replace spaces
-			    rootLvl = StringUtil.replace(rootLvl, "& ", "");
-			    rootLvl = StringUtil.replace(rootLvl, " ", "-");
-
-			    if ("nurse-education".equals(rootLvl))
-				    rootLvl = "nurse-education/resource-library";
-
+			    rootLvl = "veterinary/" + rootLvl;
 			    //log.debug(rootLvl);
-			    hierarchy = rootLvl;
 		    }
 
+		    //remove ampersands and replace spaces
+		    rootLvl = StringUtil.replace(rootLvl, "& ", "");
+		    rootLvl = StringUtil.replace(rootLvl, " ", "-");
+
+		    if ("nurse-education".equals(rootLvl))
+			    rootLvl = "nurse-education/resource-library";
+
+		    //log.debug(rootLvl);
+		    hierarchy = rootLvl;
+
 		    //assemble & return the URL
-		    if (hierarchy == null || hierarchy.length() == 0) return null;
 		    return "/" + hierarchy + "/qs/" + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
 	    }
 
