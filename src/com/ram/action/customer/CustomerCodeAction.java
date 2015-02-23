@@ -10,7 +10,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import com.ram.datafeed.data.CustomerHibcVO;
+import com.ram.datafeed.data.CustomerCodeVO;
+import com.ram.datafeed.data.CustomerCodeVO.CodeType;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.db.DBUtil;
@@ -21,7 +22,7 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
- * <b>Title</b>: CustomerHibcAction.java
+ * <b>Title</b>: CustomerCodeAction.java
  * <p/>
  * <b>Project</b>: WC_Custom
  * <p/>
@@ -39,24 +40,24 @@ import com.smt.sitebuilder.common.constants.Constants;
  *        <p/>
  *        <b>Changes: </b>
  ****************************************************************************/
-public class CustomerHibcAction extends SBActionAdapter {
+public class CustomerCodeAction extends SBActionAdapter {
 
 	/**
 	 * 
 	 */
-	public CustomerHibcAction() {
+	public CustomerCodeAction() {
 	}
 
 	/**
 	 * @param actionInit
 	 */
-	public CustomerHibcAction(ActionInitVO actionInit) {
+	public CustomerCodeAction(ActionInitVO actionInit) {
 		super(actionInit);
 
 	}
 
 	/**
-	 * Retrieve all the Customer Hibc Codes for a given CustomerId
+	 * Retrieve all the Customer Codes for a given CustomerId
 	 */
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
@@ -66,12 +67,12 @@ public class CustomerHibcAction extends SBActionAdapter {
 			return;
 		
 		//Instantiate List and determine lookup method.
-		List<CustomerHibcVO> hibcs = new ArrayList<CustomerHibcVO>();		
+		List<CustomerCodeVO> codes = new ArrayList<CustomerCodeVO>();		
 		
 		//Build query for individual or list lookup.
 		StringBuilder sb = new StringBuilder();
 		sb.append("select * from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sb.append("RAM_HIBC_CODE where CUSTOMER_ID = ?");
+		sb.append("RAM_CUSTOMER_CODE where CUSTOMER_ID = ?");
 		
 		//Build the Statement for lookup
 		PreparedStatement ps = null;
@@ -83,7 +84,7 @@ public class CustomerHibcAction extends SBActionAdapter {
 			//Retrieve results and populate the Hibc List
 			ResultSet rs = ps.executeQuery();
 			while(rs.next())
-				hibcs.add(new CustomerHibcVO(rs));
+				codes.add(new CustomerCodeVO(rs));
 			
 		} catch(SQLException sqle) {
 			log.error("Error retrieving hibc codes", sqle);
@@ -93,7 +94,7 @@ public class CustomerHibcAction extends SBActionAdapter {
 		}
 		
 		//Return List to View
-		this.putModuleData(hibcs);
+		this.putModuleData(codes);
 	}
 	
 	/**
@@ -105,25 +106,25 @@ public class CustomerHibcAction extends SBActionAdapter {
 		
 		//Get the List of parameter Names.
 		List<String> paramNames =Collections.list(req.getParameterNames());
-		CustomerHibcVO item = null;
+		CustomerCodeVO item = null;
 
 		/*
 		 * Iterate over all the parameters.  If the name matches our prefix then 
 		 */
 		for (String name: paramNames) {
-			if (name.startsWith("customerHibc_")) {
-				item = new CustomerHibcVO();
+			if (name.startsWith("customerCode_")) {
+				item = new CustomerCodeVO();
 				// Parse the delimited data into the vo
 				String data = req.getParameter(name);
 				String[] vals = data.split("\\|");
-				item.setHibcCodeId(Convert.formatInteger(vals[0]));
+				item.setCustomerCodeId(Convert.formatInteger(vals[0]));
 				item.setCustomerId(Convert.formatInteger(vals[1]));
-				item.setHibcCode(vals[2]);
+				item.setCustomerCodeValue(vals[2]);
 				item.setActiveFlag(Convert.formatInteger(vals[3]));
-				item.setCustomerHibcNm(vals[4]);
-				
-				// Only add the recall item if the lot number has been passed
-				if (StringUtil.checkVal(item.getHibcCode()).length() > 0)
+				item.setCustomerCodeNm(vals[4]);
+				item.setCodeType(CodeType.valueOf(vals[5]));
+				// Only Add the item 
+				if (StringUtil.checkVal(item.getCustomerCodeId()).length() > 0)
 					buildItem(item);
 			}
 		}
@@ -161,18 +162,18 @@ public class CustomerHibcAction extends SBActionAdapter {
 	 * Updates or inserts a Customer Hibc record into the table.
 	 * @param item
 	 */
-	protected void buildItem(CustomerHibcVO item) throws ActionException{
+	protected void buildItem(CustomerCodeVO item) throws ActionException{
 		//Build Query
 		StringBuilder sb = new StringBuilder();
-		if(item.getHibcCodeId() == 0) {
+		if(item.getCustomerCodeId() == 0) {
 			sb.append("insert into ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-			sb.append("ram_hibc_code (active_flg, create_dt, hibc_code, ");
-			sb.append("hibc_customer_nm, customer_id) values (?,?,?,?,?)");
+			sb.append("ram_customer_code (active_flg, create_dt, customer_code_value, ");
+			sb.append("customer_code_nm, code_type, customer_id) values (?,?,?,?,?,?)");
 			
 		} else {
 			sb.append("update ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-			sb.append("ram_hibc_code set active_flg = ?, update_dt = ?, ");
-			sb.append("hibc_code = ?, hibc_customer_nm = ?  where hibc_code_id = ?");
+			sb.append("ram_customer_code set active_flg = ?, update_dt = ?, ");
+			sb.append("customer_code_value = ?, customer_code_nm = ?, code_type = ? where customer_code_id = ?");
 		}
 		log.info("Customer Hibc SQL: " + sb);
 		
@@ -184,15 +185,16 @@ public class CustomerHibcAction extends SBActionAdapter {
 			ps = dbConn.prepareStatement(sb.toString());
 			ps.setInt(i++, item.getActiveFlag());
 			ps.setTimestamp(i++, Convert.getCurrentTimestamp());
-			ps.setString(i++, item.getHibcCode());
-			ps.setString(i++, item.getCustomerHibcNm());
-			if (item.getHibcCodeId() > 0) ps.setInt(i++, item.getHibcCodeId());
+			ps.setString(i++, item.getCustomerCodeValue());
+			ps.setString(i++, item.getCustomerCodeNm());
+			ps.setString(i++, item.getCodeType().name());
+			if (item.getCustomerCodeId() > 0) ps.setInt(i++, item.getCustomerCodeId());
 			else ps.setInt(i++, item.getCustomerId());
 			
 			//Execute
 			ps.executeUpdate();
 		} catch(SQLException sqle) {
-			log.error("Error updating Product: " + item.getHibcCodeId(), sqle);
+			log.error("Error updating Product: " + item.getCustomerCodeId(), sqle);
 			throw new ActionException(sqle);
 		} finally {
 			DBUtil.close(ps);
