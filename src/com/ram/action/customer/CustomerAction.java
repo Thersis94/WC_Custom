@@ -192,15 +192,15 @@ public class CustomerAction extends SBActionAdapter {
 			// is an update
 			sql.append("update ").append(schema).append("RAM_CUSTOMER ");
 			sql.append("set ORGANIZATION_ID = ?, CUSTOMER_TYPE_ID = ?, ");
-			sql.append("CUSTOMER_NM = ?, GTIN_NUMBER_TXT = ?, HIBC_LIC_CD = ?, ACTIVE_FLG = ?, ");
+			sql.append("CUSTOMER_NM = ?, ACTIVE_FLG = ?, ");
 			sql.append("UPDATE_DT = ? WHERE CUSTOMER_ID = ?");
 			msgAction = "updated";
 			
 		} else {
 			// is an insert
 			sql.append("insert into ").append(schema).append("RAM_CUSTOMER ");
-			sql.append("(ORGANIZATION_ID, CUSTOMER_TYPE_ID, CUSTOMER_NM, GTIN_NUMBER_TXT, ");
-			sql.append("HIBC_LIC_CD, ACTIVE_FLG, CREATE_DT) values (?,?,?,?,?,?,?)");
+			sql.append("(ORGANIZATION_ID, CUSTOMER_TYPE_ID, CUSTOMER_NM, ");
+			sql.append("ACTIVE_FLG, CREATE_DT) values (?,?,?,?,?)");
 			msgAction = "inserted";
 			
 		}
@@ -221,8 +221,6 @@ public class CustomerAction extends SBActionAdapter {
 				ps.setString(index++, vo.getOrganizationId());
 				ps.setString(index++, vo.getCustomerTypeId());
 				ps.setString(index++, vo.getCustomerName());
-				ps.setString(index++, vo.getGtinNumber());
-				ps.setString(index++,  vo.getHibcLicCode().trim());
 				ps.setInt(index++, vo.getActiveFlag());
 				ps.setTimestamp(index++, Convert.getCurrentTimestamp());
 				if (isUpdate) ps.setInt(index++, vo.getCustomerId());
