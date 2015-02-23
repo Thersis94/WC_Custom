@@ -84,7 +84,8 @@ public class WebServiceAction extends SBActionAdapter {
 	 */
 	public WebServiceAction(ActionInitVO actionInit) {
 		super(actionInit);
-		attributes.put(USA_BASE_URL, "www.signals.com");
+		//attributes.put(USA_BASE_URL, "www.signals.com");
+		attributes.put(USA_BASE_URL, "signals.thewhiteroom.com");
 	}
 
 	public static void main(String[] args) throws Exception {
@@ -330,21 +331,28 @@ public class WebServiceAction extends SBActionAdapter {
 			ShoppingCartVO cart, String ipAddr) throws EncryptionException, 
 			IllegalArgumentException {
 		// Build the XML Request
+		boolean isPayPal = 	Convert.formatBoolean(req.hasParameter("paypal") && 
+				StringUtil.checkVal(req.getParameter("paypal")).equalsIgnoreCase("do"));
+		
 		StringBuilder s = new StringBuilder();
 		s.append("xml=").append(BASE_XML_HEADER).append("<OrderRequest>");
 		s.append("<Addresses>");
 		s.append("<Address type=\"billing\">");
-		s.append("<Email>").append(cart.getBillingInfo().getEmailAddress()).append("</Email>");
-		s.append("<FirstName>").append(cart.getBillingInfo().getFirstName()).append("</FirstName>");
-		s.append("<LastName>").append(cart.getBillingInfo().getLastName()).append("</LastName>");
-		s.append("<Street1>").append(cart.getBillingInfo().getAddress()).append("</Street1>");
-		s.append("<Street2>").append(cart.getBillingInfo().getAddress2()).append("</Street2>");
-		s.append("<City>").append(cart.getBillingInfo().getCity()).append("</City>");
-		s.append("<State>").append(cart.getBillingInfo().getState()).append("</State>");
-		s.append("<Zip>").append(cart.getBillingInfo().getZipCode()).append("</Zip>");
-		s.append("<DayPhone>").append(cart.getBillingInfo().getMainPhone()).append("</DayPhone>");
+		/*If is PayPal, use shipping info for billing info because PayPal Express Checkout
+		 * API does not return buyer billing info.  If is not PayPal, use standard billing
+		 * info supplied by user. */
+		UserDataVO billInfo = (isPayPal ? cart.getShippingInfo() : cart.getBillingInfo());
+		s.append("<Email>").append(billInfo.getEmailAddress()).append("</Email>");
+		s.append("<FirstName>").append(billInfo.getFirstName()).append("</FirstName>");
+		s.append("<LastName>").append(billInfo.getLastName()).append("</LastName>");
+		s.append("<Street1>").append(billInfo.getAddress()).append("</Street1>");
+		s.append("<Street2>").append(billInfo.getAddress2()).append("</Street2>");
+		s.append("<City>").append(billInfo.getCity()).append("</City>");
+		s.append("<State>").append(billInfo.getState()).append("</State>");
+		s.append("<Zip>").append(billInfo.getZipCode()).append("</Zip>");
+		s.append("<DayPhone>").append(billInfo.getMainPhone()).append("</DayPhone>");
 		String eveningPhone = null;
-		for(PhoneVO p : cart.getBillingInfo().getPhoneNumbers())
+		for(PhoneVO p : billInfo.getPhoneNumbers())
 			if(StringUtil.checkVal(p.getPhoneType()).equals(PhoneVO.EVENING_PHONE))
 				eveningPhone = p.getPhoneNumber();		
 		if (StringUtil.checkVal(eveningPhone).length() > 0) {
@@ -353,8 +361,8 @@ public class WebServiceAction extends SBActionAdapter {
 		/* Mantis #9173 DBargerhuff TODO Waiting for USA to provide specific XML 
 		 * tag structure to use.*
 		 *
-		if (cart.getBillingInfo().getAttributes() != null) {
-			Object o = cart.getBillingInfo().getAttributes().get(ShoppingCartAction.BILLING_COMMENTS);
+		if (billInfo.getAttributes() != null) {
+			Object o = billInfo.getAttributes().get(ShoppingCartAction.BILLING_COMMENTS);
 			if (o != null) {
 				s.append("<Comments>");
 				s.append((String)o);
@@ -384,7 +392,7 @@ public class WebServiceAction extends SBActionAdapter {
 		s.append("<OrderSubtotal>").append(cart.getSubTotal()).append("</OrderSubtotal>");
 		s.append("<OrderTax>").append(cart.getTaxAmount()).append("</OrderTax>");
 		s.append("<OrderDiscount>").append(StringUtil.checkVal(cart.getPromotionDiscount())).append("</OrderDiscount>");
-		s.append("<MemberID>").append(StringUtil.checkVal(cart.getBillingInfo().getProfileId())).append("</MemberID>");
+		s.append("<MemberID>").append(StringUtil.checkVal(billInfo.getProfileId())).append("</MemberID>");
 		s.append("<CustomerIP>").append(ipAddr).append("</CustomerIP>");
 		
 		// credit card info
@@ -407,30 +415,29 @@ public class WebServiceAction extends SBActionAdapter {
 			this.addProductXML(s, cart.getItems().get(key).getProduct(), cart.getProductCountById().get(key), true);
 		}
 		s.append("</Products>");
-		// if this is a PayPal order, add tags here
-		if (req.hasParameter("paypal") && 
-				StringUtil.checkVal(req.getParameter("paypal")).equalsIgnoreCase("do")) {
-			UserDataVO buyer = cart.getBillingInfo();
+		// If is PayPal, get transactional info from the billing info fields.
+		if (isPayPal) {
+			billInfo = cart.getBillingInfo();
 			s.append("<PayerID>");
-			s.append(buyer.getAttributes().get("PAYER_ID"));
+			s.append(billInfo.getAttributes().get("PAYER_ID"));
 			s.append("</PayerID>");
 			s.append("<TransactionID>");
-			s.append(buyer.getAttributes().get("TRANSACTION_ID"));
+			s.append(billInfo.getAttributes().get("TRANSACTION_ID"));
 			s.append("</TransactionID>");
 			s.append("<Token>");
-			s.append(buyer.getAttributes().get("TOKEN"));
+			s.append(billInfo.getAttributes().get("TOKEN"));
 			s.append("</Token>");
 			s.append("<AddressStatus>");
-			s.append(buyer.getAttributes().get("ADDRESS_STATUS"));
+			s.append(billInfo.getAttributes().get("ADDRESS_STATUS"));
 			s.append("</AddressStatus>");
 			s.append("<PayerStatus>");
-			s.append(buyer.getAttributes().get("PAYER_STATUS"));
+			s.append(billInfo.getAttributes().get("PAYER_STATUS"));
 			s.append("</PayerStatus>"); //(Y or N)
 			s.append("<CorrelationID>");
-			s.append(buyer.getAttributes().get("CORRELATION_ID"));
+			s.append(billInfo.getAttributes().get("CORRELATION_ID"));
 			s.append("</CorrelationID>");
 			s.append("<PendingReason>");
-			s.append(buyer.getAttributes().get("PENDING_REASON"));
+			s.append(billInfo.getAttributes().get("PENDING_REASON"));
 			s.append("</PendingReason>");
 		}
 		s.append("</OrderRequest>");
