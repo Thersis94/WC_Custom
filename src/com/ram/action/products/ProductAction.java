@@ -385,7 +385,7 @@ public class ProductAction extends SBActionAdapter {
 		if(isCount) {
 			sb.append("select count(a.product_id) from ").append(schema);
 		} else {
-			sb.append("select top ").append(limit ).append("a.PRODUCT_ID, a.CUSTOMER_ID, a.CUST_PRODUCT_ID, a.PRODUCT_NM, a.DESC_TXT, a.SHORT_DESC, a.LOT_CODE_FLG, a.ACTIVE_FLG, a.EXPIREE_REQ_FLG, a.GTIN_PRODUCT_ID, b.CUSTOMER_NM, a.KIT_FLG from ").append(schema);
+			sb.append("select top ").append(limit ).append(" a.PRODUCT_ID, a.CUSTOMER_ID, a.CUST_PRODUCT_ID, a.PRODUCT_NM, a.DESC_TXT, a.SHORT_DESC, a.LOT_CODE_FLG, a.ACTIVE_FLG, a.EXPIREE_REQ_FLG, a.GTIN_PRODUCT_ID, b.CUSTOMER_NM, a.KIT_FLG from ").append(schema);
 		}
 		//Build Initial Query
 

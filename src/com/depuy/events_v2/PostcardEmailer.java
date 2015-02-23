@@ -283,8 +283,8 @@ public class PostcardEmailer {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(sem.getOwner().getEmailAddress());
 			//mail.addRecipient("Jenn.Davis@hmktgroup.com"); // Jenn Parrish-Davis);
-			//mail.addRecipient("sterling.hoham@hmktgroup.com"); // Sterling Hoham
-			//mail.addRecipient("amy.zimmerman@hmktgroup.com");
+			mail.addCC("sterling.hoham@hmktgroup.com"); // Sterling Hoham
+			mail.addCC("amy.zimmerman@hmktgroup.com");
 			//mail.addCC("WWilder@its.jnj.com");
 			//mail.addCC("RSmith68@its.jnj.com");
 			mail.addCC("rwilkin7@ITS.JNJ.COM");
