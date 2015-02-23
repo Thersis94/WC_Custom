@@ -84,7 +84,8 @@ public class WebServiceAction extends SBActionAdapter {
 	 */
 	public WebServiceAction(ActionInitVO actionInit) {
 		super(actionInit);
-		attributes.put(USA_BASE_URL, "www.signals.com");
+		//attributes.put(USA_BASE_URL, "www.signals.com");
+		attributes.put(USA_BASE_URL, "signals.thewhiteroom.com");
 	}
 
 	public static void main(String[] args) throws Exception {
