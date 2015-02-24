@@ -571,6 +571,13 @@ public class OptionsImporter extends AbstractImporter {
 				data.close();
 			} catch (Exception e) { log.error("Error closing BufferedReader, ", e); }
 		}
+
+		// If options file is empty, bail out.
+		if (prodAttrHierarchy == null || prodAttrHierarchy.isEmpty()) {
+			log.error("ERROR: Options source file is empty!  Notify Universal!");
+			throw new IOException("******* Options source file is empty! *******");
+		}
+		
 		Map<String, List<ProductAttributeVO>> voHierarchy = buildInsertVOs(prodAttrHierarchy);
 		//debugVOHierarchy(voHierarchy);
 		insertProductOptions(voHierarchy);

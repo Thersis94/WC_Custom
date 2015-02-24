@@ -114,7 +114,7 @@ public class OptionsIndexImporter extends AbstractImporter {
 					log.info("availabilityFieldNo: " + availabilityFieldNo);
 					continue;
 				}
-				
+
 				// map product ID to the flattened hierachy values 
 				try {
 					prodId = StringUtil.checkVal(fields[headers.get("SKUID")]);
