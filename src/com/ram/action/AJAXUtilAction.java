@@ -8,6 +8,7 @@ import java.util.Map;
 
 
 
+
 import com.ram.action.customer.CustomerAction;
 // RAM Data Feed Libs
 import com.ram.action.customer.CustomerLocationAction;
@@ -24,6 +25,7 @@ import com.siliconmtn.http.SMTServletRequest;
 
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.action.report.ReportDataAction;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -40,42 +42,46 @@ import com.smt.sitebuilder.common.constants.Constants;
  * <b>Changes: </b>
  ****************************************************************************/
 public class AJAXUtilAction extends SBActionAdapter {
-	
+
 	/**
 	 * Codes for the customer search
 	 */
 	public static final String CUSTOMER_TYPE = "customer";
-	
+
 	/**
 	 * Codes for customer type search
 	 */
 	public static final String CUSTOMER_TYPES_TYPE = "customer_types";
-	
+
 	/**
 	 * Codes for the customer location search
 	 */
 	public static final String CUSTOMER_LOCATION_TYPE = "customer_location";
-	
+
 	/**
 	 * Code to process the event group data
 	 */
 	public static final String EVENT_GROUP_TYPE = "event_group";
-	
+
 	/**
 	 * 
 	 */
 	public static final String SAVE_EVENT_GROUP_TYPE = "save_event_group";
-	
+
 	/**
 	 * 
 	 */
 	public static final String REGIONS_TYPE = "regions";
-	
+
+	/**
+	 * Code to handle exporting a Report to browser from JasperServer.
+	 */
+	public static final String REPORT_EXPORT = "report_export";
+
 	/**
 	 * 
 	 */
 	public AJAXUtilAction() {
-		
 	}
 
 	/**
@@ -132,6 +138,12 @@ public class AJAXUtilAction extends SBActionAdapter {
 				sai.setDBConnection(getDBConnection());
 				sai.setAttributes(getAttributes());
 				sai.retrieve(req);
+				break;
+			case REPORT_EXPORT:
+				sai = new ReportDataAction(getActionInit());
+				sai.setDBConnection(getDBConnection());
+				sai.setAttributes(getAttributes());
+				sai.build(req);
 				break;
 		}
 	}
