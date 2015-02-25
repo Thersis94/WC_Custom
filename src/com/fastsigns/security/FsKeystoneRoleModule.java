@@ -8,12 +8,15 @@ import java.util.Map;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.AbstractRoleModule;
 import com.siliconmtn.security.AuthorizationException;
+import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.security.UserRoleContainer;
 import com.siliconmtn.security.UserRoleVO;
+import com.siliconmtn.util.Convert;
 
 //WC libs
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.common.constants.ErrorCodes;
 import com.smt.sitebuilder.security.SBUserRole;
 import com.smt.sitebuilder.security.SecurityController;
 
@@ -51,6 +54,12 @@ public class FsKeystoneRoleModule extends AbstractRoleModule {
 			You'll need to pass UserDataVO on the attributes map, from SecurityController.
 		*/ 
 		
+		
+		UserDataVO user = (UserDataVO) initVals.get(Constants.USER_DATA);
+		if (!Convert.formatBoolean(user.getAttributes().get("isKeystone"))) {
+			throw new AuthorizationException(ErrorCodes.ERR_NOT_AUTHORIZED);
+		}
+
 		SMTServletRequest req = (SMTServletRequest) super.initVals.get(HTTP_REQUEST);
 		//UserDataVO user = (UserDataVO) initVals.get(Constants.USER_DATA);
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
