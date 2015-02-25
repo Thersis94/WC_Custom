@@ -7,12 +7,18 @@ import java.sql.SQLException;
 import com.fastsigns.action.approval.vo.AbstractChangeLogVO;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.exception.DatabaseException;
+import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.exception.MailException;
+import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.SMTMail;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
+import com.smt.sitebuilder.common.SiteInfoLookup;
+import com.smt.sitebuilder.common.SiteNotFoundException;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.util.MessageSender;
 
 /****************************************************************************
  * <b>Title</b>: ApprovalTemplateAction.java
@@ -100,6 +106,41 @@ public abstract class ApprovalTemplateAction extends ApprovalAction {
 			log.error(e);
 		} catch (NullPointerException e) {
 			log.error(e);
+		}
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see com.fastsigns.action.approval.ApprovalAction#sendRequestNotificationEmail(com.fastsigns.action.approval.vo.AbstractChangeLogVO)
+	 */
+	@Override
+	public void sendRequestNotificationEmail(AbstractChangeLogVO vo, String siteId){
+		log.debug("Sending Approval Pending Notification...");
+		final String corpName = (!vo.getOrgId().contains("AU")) ? "FASTSIGNS" : "SIGNWAVE";
+		
+		//Construct the message body
+		StringBuilder msg = new StringBuilder(230);
+		msg.append("An approval request for ").append(corpName).append(" Location ");
+		msg.append(vo.getFranchiseId());
+		msg.append(" has been submitted. \nPlease login to http://www.fastsigns.com/webedit ");
+		msg.append("to review the request.\n");
+		
+		EmailMessageVO mail = new EmailMessageVO();
+		
+		try{
+			SiteVO site = new SiteInfoLookup().getSiteInfo(dbConn, siteId);
+			//Construct the mail object
+			mail.addRecipient("eteam@fastsigns.com");
+			mail.setSubject("Pending " + vo.getHFriendlyType() + " request");
+			mail.setFrom(site.getAdminEmail());
+			mail.setTextBody(msg.toString());
+			
+			MessageSender ms = new MessageSender(attributes, dbConn);
+			ms.sendMessage(mail);
+			
+			log.info("Notification Sent to eteam successfully.");
+		} catch(InvalidDataException | NullPointerException | SiteNotFoundException ex) {
+			log.error("Error Sending Approval Notification Email", ex);
 		}
 	}
 }
