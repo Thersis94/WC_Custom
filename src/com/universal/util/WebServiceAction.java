@@ -85,6 +85,11 @@ public class WebServiceAction extends SBActionAdapter {
 	public WebServiceAction(ActionInitVO actionInit) {
 		super(actionInit);
 		//attributes.put(USA_BASE_URL, "www.signals.com");
+		
+		/* TODO  2015-02-24 DBargerhuff
+		 * Remove STAGING configuration, check retrieveServiceURL
+		 * method signature for SSL vals after staging testing is complete.
+		 */
 		attributes.put(USA_BASE_URL, "signals.thewhiteroom.com");
 	}
 
@@ -455,7 +460,12 @@ public class WebServiceAction extends SBActionAdapter {
 	 */
 	private String retrieveServiceURL(String siteId, String suffix, boolean useSSL) {
 		StringBuffer prefix = new StringBuffer();
-		if (useSSL) prefix.append("https://"); else prefix.append("http://");
+		/*
+		 * TODO Re-enable useSSL check after testing complete.
+		 */
+		prefix.append("http://");
+		//if (useSSL) prefix.append("https://"); else prefix.append("http://");
+		
 		if (siteId.equalsIgnoreCase("USA_1")) {
 			prefix.append(StringUtil.checkVal(getAttribute(USA_BASE_URL)));
 		} else if (siteId.equalsIgnoreCase("USA_2")) {

@@ -55,6 +55,7 @@ public class CatalogImportManager {
 	public static final String DELIMITER_SOURCE = "\t";
 	private final String DELIMITER_CONFIG = ",";
 	public static final String ATTRIBUTE_PREFIX = "USA_";
+	private final String BREAK = "\n";
 	private Properties config = null;
 	private Connection dbConn = null;
 	
@@ -78,7 +79,7 @@ public class CatalogImportManager {
 	private Set<String> misMatchedPersonalization = null;
 	private Set<String> misMatchedAttributes = null;
 	
-	private List<String> messageLog = null;
+	private StringBuilder messageBuilder = null;
 
 	/**
 	 * 
@@ -96,7 +97,7 @@ public class CatalogImportManager {
 	 * @param args
 	 */
 	public static void main(String[] args)  {
-		boolean success = false;
+		boolean isSuccess = false;
 		long start = System.currentTimeMillis();
 		CatalogImportManager uci = null;
 		try {
@@ -105,12 +106,12 @@ public class CatalogImportManager {
 		} catch (IOException ioe) {
 			log.error("Fatal Error:  Failed to load configuration properties file, ", ioe);
 			uci.addMessage(ioe.getMessage());
-			uci.sendAdminEmail(success);
+			uci.sendAdminEmail(isSuccess);
 			System.exit(-1);
 		} catch (DatabaseException | InvalidDataException de) {
 			log.error("Fatal Error: Failed to obtain a database connection: ", de);
 			uci.addMessage(de.getMessage());
-			uci.sendAdminEmail(success);
+			uci.sendAdminEmail(isSuccess);
 			System.exit(-1);
 		}
 		
@@ -118,28 +119,27 @@ public class CatalogImportManager {
 		String errMsg = null;
 		try {
 			//String flag = uci.checkTime();
-			uci.processImports();
+			isSuccess = uci.processImports();
 			uci.logMisMatches();
-			success = true;
 		} catch (IOException ioe) {
 			errMsg = "Fatal Error importing catalogs, " + ioe.getMessage();
 			log.error(errMsg);
 			uci.addMessage(errMsg);
-			uci.sendAdminEmail(success);
+			uci.sendAdminEmail(isSuccess);
 			System.exit(-1);
 		} catch (SQLException sqle) {
 			errMsg = "Fatal Error importing catalogs, " + sqle.getMessage();
 			log.error(errMsg);
 			uci.addMessage(errMsg);
-			uci.sendAdminEmail(success);
+			uci.sendAdminEmail(isSuccess);
 			System.exit(-1);
 		} finally {
 			uci.closeDbConnection();
 		}
 		
 		long end = System.currentTimeMillis();
-		uci.addMessage("Completed Product Import in " + ((end - start) / 1000) + " seconds");
-		uci.sendAdminEmail(success);
+		uci.addMessage("Completed Product Import in " + ((end - start) / 1000) + " seconds.");
+		uci.sendAdminEmail(isSuccess);
 	}
 
 	/**
@@ -147,7 +147,7 @@ public class CatalogImportManager {
 	 * @throws IOException
 	 * @throws SQLException
 	 */
-	private void processImports() throws IOException, SQLException {
+	private boolean processImports() throws IOException, SQLException {
 		// configure a vo with base info
 		CatalogImportVO iCat = new CatalogImportVO();
 		iCat.setCatalogModelYear(config.getProperty("catalogModelYear"));
@@ -158,10 +158,11 @@ public class CatalogImportManager {
 		iCat.setSourceFileDelimiter(DELIMITER_SOURCE);
 		iCat.setUseLocalImportFiles(importLocalFiles);
 		String errMsg = null;
+		boolean success = true;
 		// loop the catalogs by catalog ID and import.
 		for (String catalogId : catalogIds) {
 			try {
-				addMessage("processing catalog ID: " + catalogId);
+				addMessage(BREAK + "Processing catalog ID: " + catalogId);
 				// set catalog-specific values
 				iCat.setCatalogId(catalogId);
 				iCat.setCatalogPrefix(prefixes.get(catalogId));
@@ -173,22 +174,26 @@ public class CatalogImportManager {
 				// set source file path for this catalog
 				iCat.setSourceFilePath(catalogSourcePath);
 				
-				addMessage("prefix|url|sourcePath: " + iCat.getCatalogPrefix() + "|" + iCat.getSourceFileUrl() + "|" + iCat.getSourceFilePath());
+				addMessage("Catalog prefix: " + iCat.getCatalogPrefix());
+				addMessage("Catalog source URL: " + iCat.getSourceFileUrl());
+				addMessage("Catalog source file: " + iCat.getSourceFilePath());
 				
 				// import the catalog
 				importCatalog(iCat);
-				
 			} catch (FileNotFoundException fnfe) {
-				errMsg = "IMPORT FAILED for catalog : " + catalogId + ", " + fnfe.getMessage();
+				errMsg = "IMPORT FAILED for catalog : " + catalogId + ", " + fnfe.getMessage() + BREAK;
 				log.error(errMsg);
 				addMessage(errMsg);
+				success = false;
 			} catch (IOException | SQLException e) {
-				errMsg = "IMPORT FAILED for catalog : " + catalogId + ", " + e.getMessage();
+				errMsg = "IMPORT FAILED for catalog : " + catalogId + ", " + e.getMessage() + BREAK;
 				log.error(errMsg);
 				addMessage(errMsg);
+				success = false;
 			}
 			errMsg = null;
 		}
+		return success;
 	}
 	
 	/**
@@ -242,7 +247,7 @@ public class CatalogImportManager {
 		// commit changes if all were successful
 		dbConn.commit();
 		dbConn.setAutoCommit(true);
-		addMessage("Catalog import for " + catalog.getCatalogId() + " has completed.");
+		addMessage("Catalog import for " + catalog.getCatalogId() + " has completed.\n");
 
 	}
 	
@@ -432,8 +437,8 @@ public class CatalogImportManager {
 		try {
 			mail.addRecipient(config.getProperty("smtpRecipient"));
 			mail.setFrom(config.getProperty("smtpSender"));
-			mail.setSubject("USA Catalog Import Results");
-			mail.setTextBody(messageLog.toString());
+			mail.setSubject("USA Catalog Import Results:  " + (success ? "Success" : "Failed: Check logs!"));
+			mail.setTextBody(messageBuilder.toString());
 			mail.postMail();
 		} catch (Exception e) {
 			log.error("Error sending admin email, ", e);
@@ -448,51 +453,51 @@ public class CatalogImportManager {
 		StringBuilder info = new StringBuilder();
 		String arrow = "---->";
 		String end = "*** end ***";
-		info.append("\n");
+		info.append(BREAK);
 		
 		if (misMatchedParentCategories.size() > 0) {
-			info.append("*** Invalid parent category references in category data file: ***").append("\n");
+			info.append("*** Invalid parent category references in category data file: ***").append(BREAK);
 			for (Iterator<String> iter = misMatchedParentCategories.iterator(); iter.hasNext(); ) {
-				info.append(arrow).append(iter.next()).append("\n");
+				info.append(arrow).append(iter.next()).append(BREAK);
 			}
-			info.append(end).append("\n");
-			info.append("\n");
+			info.append(end).append(BREAK);
+			info.append(BREAK);
 		}
 		
 		if (misMatchedCategories.size() > 0) {
-			info.append("*** Invalid category references in products data file: ***").append("\n");
+			info.append("*** Invalid category references in products data file: ***").append(BREAK);
 			for (Iterator<String> iter = misMatchedCategories.iterator(); iter.hasNext(); ) {
-				info.append(arrow).append(iter.next()).append("\n");
+				info.append(arrow).append(iter.next()).append(BREAK);
 			}
-			info.append(end).append("\n");
-			info.append("\n");
+			info.append(end).append(BREAK);
+			info.append(BREAK);
 		}
 		
 		if (misMatchedOptions.size() > 0) {
-			info.append("*** Invalid product references in options file: ***").append("\n");
+			info.append("*** Invalid product references in options file: ***").append(BREAK);
 			for (Iterator<String> iter = misMatchedOptions.iterator(); iter.hasNext(); ) {
-				info.append(arrow).append(iter.next()).append("\n");
+				info.append(arrow).append(iter.next()).append(BREAK);
 			}
-			info.append(end).append("\n");
-			info.append("\n");
+			info.append(end).append(BREAK);
+			info.append(BREAK);
 		}
 		
 		if (misMatchedPersonalization.size() > 0) {
-			info.append("*** Invalid product ID references in personalization file: ***").append("\n");
+			info.append("*** Invalid product ID references in personalization file: ***").append(BREAK);
 			for (Iterator<String> iter = misMatchedPersonalization.iterator(); iter.hasNext(); ) {
-				info.append(arrow).append(iter.next()).append("\n");
+				info.append(arrow).append(iter.next()).append(BREAK);
 			}
-			info.append(end).append("\n");
-			info.append("\n");
+			info.append(end).append(BREAK);
+			info.append(BREAK);
 		}
 		
 		if (misMatchedAttributes.size() > 0) {
-			info.append("*** Invalid attribute references: ***").append("\n");
+			info.append("*** Invalid attribute references: ***").append(BREAK);
 			for (Iterator<String> iter = misMatchedAttributes.iterator(); iter.hasNext(); ) {
-				info.append(arrow).append(iter.next()).append("\n");
+				info.append(arrow).append(iter.next()).append(BREAK);
 			}
-			info.append(end).append("\n");
-			info.append("\n");
+			info.append(end).append(BREAK);
+			info.append(BREAK);
 		}
 		log.info(info);
 		addMessage(info.toString());
@@ -522,7 +527,7 @@ public class CatalogImportManager {
 		catalogIds =  new ArrayList<>();
 		prefixes = new LinkedHashMap<>();
 		sourceURLs = new LinkedHashMap<>();
-		messageLog = new ArrayList<String>();
+		messageBuilder = new StringBuilder(1000);
 		misMatchedCategories = new LinkedHashSet<String>();
 		misMatchedParentCategories = new LinkedHashSet<String>();
 		misMatchedOptions = new LinkedHashSet<String>();
@@ -563,7 +568,7 @@ public class CatalogImportManager {
 		dbc.setUrl(config.getProperty("dbUrl"));
 		dbc.setUserName(config.getProperty("dbUser"));
 		dbc.setPassword(config.getProperty("dbPassword"));
-		String msg = "Connecting to " + config.getProperty("dbUrl");
+		String msg = "DB Connection: " + config.getProperty("dbUrl");
 		log.info(msg);
 		addMessage(msg);
 		return dbc.getConnection();
@@ -591,7 +596,7 @@ public class CatalogImportManager {
 	 * @param msg
 	 */
 	private void addMessage(String msg) {
-		messageLog.add(msg);
+		messageBuilder.append(msg).append(BREAK);
 	}
 	
 }
