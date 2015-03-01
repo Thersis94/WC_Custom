@@ -137,6 +137,7 @@ public class FsKeystoneLoginModule extends AbstractLoginModule {
 		for (UserDataVO vo : sessVo.getProfiles().values()) {
 			// set certain fields so logging can take place
 			vo.setAuthenticationId(username == null ? profileId : username);
+			vo.addAttribute("isKeystone", true);
 			vo.setAuthenticated(true);
 			return vo;
 		}
