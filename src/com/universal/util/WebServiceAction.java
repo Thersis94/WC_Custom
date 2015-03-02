@@ -189,7 +189,7 @@ public class WebServiceAction extends SBActionAdapter {
 		// Build the XML Request
 		StringBuilder s = new StringBuilder();
 		s.append("xml=").append(BASE_XML_HEADER).append("<ShippingRequest>");
-		s.append("<Zip>").append(zip).append("</Zip>");
+		s.append("<Zip>").append(StringUtil.checkVal(zip)).append("</Zip>");
 		// add product XML
 		this.addProductXMLByMap(s, prods);
 		s.append("</ShippingRequest>");

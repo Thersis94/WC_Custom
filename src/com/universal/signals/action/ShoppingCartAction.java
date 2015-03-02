@@ -364,11 +364,12 @@ public class ShoppingCartAction extends SBActionAdapter {
 	 * @return
 	 */
 	private ShoppingCartVO processPayPalCheckout(SMTServletRequest req, 
-			Storage container, ShoppingCartVO cart) {
+			Storage container, ShoppingCartVO cart) throws DocumentException {
 		log.debug("processPayPalCheckout...");
 		String payPalAction = StringUtil.checkVal(req.getParameter("paypal"));
 		log.debug("operation is: " + payPalAction);
 		if (payPalAction.equalsIgnoreCase("start")) {
+			manageShipping(req, cart, false);
 			return cart;
 		} else if (payPalAction.equalsIgnoreCase("set")) {
 			
@@ -757,30 +758,29 @@ public class ShoppingCartAction extends SBActionAdapter {
 		WebServiceAction wsa = new WebServiceAction(this.actionInit);
 		wsa.setAttributes(attributes);
 		wsa.setAttribute(WebServiceAction.CATALOG_SITE_ID, catalogSiteId);
-		if (cart.getShippingInfo() != null) {
-			// get shipping info from web service
-			Element shipInfo = wsa.retrieveShippingInfo(cart.getShippingInfo().getZipCode(), cart.getItems());
-			if (! this.checkElementError(cart, shipInfo)) {
-				List<Element> sc = shipInfo.selectNodes("Method");
-				shipping = new LinkedHashMap<>();
-				for (int i=0; i < sc.size(); i++) {
-					ShippingInfoVO vo = new ShippingInfoVO();
-					Element ele = sc.get(i);
-					String type = ele.attributeValue("type");
-					vo.setShippingMethodId(type);
-					vo.setShippingMethodName(type);
-					vo.setShippingCost(Convert.formatDouble(ele.getTextTrim()));
-					if (type.equalsIgnoreCase(USADiscountVO.DEFAULT_SHIPPING_METHOD)) {
-						if (useShippingDiscount) vo.setShippingCost(discShippingCost);
-					}
-					//log.debug("Shipping: " + vo.getShippingCost() + "|" + vo.getShippingMethodId());
-					shipping.put(type,vo);
+		String zipCode = (cart.getShippingInfo() != null ? cart.getShippingInfo().getZipCode() : null);
+		// get shipping info from web service
+		Element shipInfo = wsa.retrieveShippingInfo(zipCode, cart.getItems());
+		if (! this.checkElementError(cart, shipInfo)) {
+			List<Element> sc = shipInfo.selectNodes("Method");
+			shipping = new LinkedHashMap<>();
+			for (int i=0; i < sc.size(); i++) {
+				ShippingInfoVO vo = new ShippingInfoVO();
+				Element ele = sc.get(i);
+				String type = ele.attributeValue("type");
+				vo.setShippingMethodId(type);
+				vo.setShippingMethodName(type);
+				vo.setShippingCost(Convert.formatDouble(ele.getTextTrim()));
+				if (type.equalsIgnoreCase(USADiscountVO.DEFAULT_SHIPPING_METHOD)) {
+					if (useShippingDiscount) vo.setShippingCost(discShippingCost);
 				}
-				cart.setShippingOptions(shipping);
+				//log.debug("Shipping: " + vo.getShippingCost() + "|" + vo.getShippingMethodId());
+				shipping.put(type,vo);
 			}
-			if (currShipMethodId != null) {
-				cart.setShipping(currShipMethodId);
-			}
+			cart.setShippingOptions(shipping);
+		}
+		if (currShipMethodId != null) {
+			cart.setShipping(currShipMethodId);
 		}
 	}
 	
