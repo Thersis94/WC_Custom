@@ -4,6 +4,7 @@ package com.depuysynthes.lucene;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -20,9 +21,6 @@ import java.util.Properties;
 
 import org.xml.sax.ContentHandler;
 
-// log4j 1.2-15
-import org.apache.log4j.Logger;
-
 // Apche SolrJ 4.9
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.common.SolrInputDocument;
@@ -34,11 +32,6 @@ import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.sax.BodyContentHandler;
-
-
-
-
-
 
 // SMT Base Libs
 import com.depuysynthes.action.MediaBinAdminAction;
@@ -67,10 +60,10 @@ import com.smt.sitebuilder.search.SearchDocumentHandler;
  * 		Added ASSET_LANGUAGE as a non-core language field, so we could use it in View filters w/o affecting the Indexer.
  * JC 09/02/14 
  * 		Copied the file and modified for the Solr Indexer
+ * JM 03.03.15
+ * 		Implemented purgeIndexItems method from Interface
  ****************************************************************************/
 public class MediaBinSolrIndex extends SMTAbstractIndex {
-	// Member Variables
-	protected static final Logger log = Logger.getLogger(MediaBinSolrIndex.class);
 	private Map<String,String> busUnits = null;
 	
 	/**
@@ -173,9 +166,10 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 		    			//need to tokenize the levels and trim spaces from each, the MB team are slobs!
 		    			StringBuilder sb = new StringBuilder();
 		    			for (String subStr : s.split(",")) {
-		    				sb.append(StringUtil.checkVal(subStr).trim()).append("~");
+		    				sb.append(StringUtil.checkVal(subStr).trim()).append(SearchDocumentHandler.HIERARCHY_DELIMITER);
 		    			}
-		    			if (sb.length() > 0) sb.deleteCharAt(sb.length()-1);
+		    			if (sb.length() > SearchDocumentHandler.HIERARCHY_DELIMITER.length()) 
+		    				sb.deleteCharAt(sb.length()-SearchDocumentHandler.HIERARCHY_DELIMITER.length());
 		    			doc.addField(SearchDocumentHandler.HIERARCHY, sb.toString());
 		    		}
 		    		
@@ -184,19 +178,12 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 				
 				server.add(doc);
 				if ((i % 100) == 0) {
-					log.info("Committed " + i + " records");
-					server.commit();
+					//server.commit(false, false, true);
+					log.info("Added " + i + " records");
 				}
 			} catch (Exception e) {
 				log.error("Unable to index asset " + vo.getDpySynMediaBinId(), e);
 			}
-		}
-        
-		// Clean up any uncommitted files
-		try {
-			server.commit();
-		} catch (Exception e) {
-			log.error("Unable to commit remaining documents", e);
 		}
 	}
     
@@ -433,5 +420,17 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 	@Override
 	public String getIndexType() {
 		return MediaBinSolrIndex.INDEX_TYPE;
+	}
+
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#purgeIndexItems(org.apache.solr.client.solrj.impl.HttpSolrServer)
+	 */
+	@Override
+	public void purgeIndexItems(HttpSolrServer server) throws IOException {
+		try {
+			server.deleteByQuery(SearchDocumentHandler.INDEX_TYPE + ":" + getIndexType());
+		} catch (Exception e) {
+			throw new IOException(e);
+		}
 	}
 }
