@@ -73,7 +73,7 @@ public class QuickstreamTemplate extends CMSSolrDocumentVO {
     			for (String subStr : s.split(",")) {
     				sb.append(StringUtil.checkVal(subStr).trim()).append(SearchDocumentHandler.HIERARCHY_DELIMITER);
     			}
-    			if (sb.length() > SearchDocumentHandler.HIERARCHY_DELIMITER.length())
+    			if (sb.length() >= SearchDocumentHandler.HIERARCHY_DELIMITER.length())
     				sb.deleteCharAt(sb.length()-SearchDocumentHandler.HIERARCHY_DELIMITER.length());
     			
     			super.addHierarchies(sb.toString());
