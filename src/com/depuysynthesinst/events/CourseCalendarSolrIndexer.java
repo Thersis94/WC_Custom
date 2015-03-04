@@ -1,5 +1,6 @@
 package com.depuysynthesinst.events;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -58,10 +59,9 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 
 	protected void indexEvents(HttpSolrServer server, List<EventEntryVO> data) {
 		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-		int cnt = 0;
+		
 		for (EventEntryVO vo : data) {
 			SolrInputDocument doc = new SolrInputDocument();
-			
 			try {
 				doc.setField(SearchDocumentHandler.INDEX_TYPE, INDEX_TYPE);
 				doc.setField(SearchDocumentHandler.ORGANIZATION, vo.getOrganizationId());
@@ -85,22 +85,11 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 					doc.addField(SearchDocumentHandler.HIERARCHY, s.trim());
 				
 				server.add(doc);
-				++cnt;
-				if ((cnt % 100) == 0) {
-					log.info("Committed " + cnt + " records");
-					server.commit();
-				}
 			} catch (Exception e) {
 				log.error("Unable to index course: " + StringUtil.getToString(vo), e);
 			}
 		}
 
-		// Clean up any uncommitted files
-		try {
-			server.commit();
-		} catch (Exception e) {
-			log.error("Unable to commit remaining documents", e);
-		}
 	}
 	
 	/**
@@ -194,6 +183,19 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 	@Override
 	public String getIndexType() {
 		return INDEX_TYPE;
+	}
+
+
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#purgeIndexItems(org.apache.solr.client.solrj.impl.HttpSolrServer)
+	 */
+	@Override
+	public void purgeIndexItems(HttpSolrServer server) throws IOException {
+		try {
+			server.deleteByQuery(SearchDocumentHandler.INDEX_TYPE + ":" + getIndexType());
+		} catch (Exception e) {
+			throw new IOException(e);
+		}
 	}
 
 }

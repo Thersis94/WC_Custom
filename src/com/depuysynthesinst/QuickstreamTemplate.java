@@ -30,18 +30,18 @@ public class QuickstreamTemplate extends CMSSolrDocumentVO {
 	 * @param solrIndex
 	 */
 	public QuickstreamTemplate() {
-		super("QUICKSTREAM_DSI");
-		setAssetType("external-site"); //hard coded by business rules; this is the only type of asset they can add to the site.
+		super(QuickstreamSolrIndexer.INDEX_TYPE);
 		super.setUpdateDt(Calendar.getInstance().getTime());
 	}
 	
 	/**
 	 * extension of superclass implementation; for DSI-specific template fields
 	 */
-	public void setData(Object o) { 
+	public void setData(Object o) {
 		super.setData(o);
 		CMSContentVO vo = (CMSContentVO) o;
 		TemplateFieldVOContainer templateData = vo.getTemplateData();
+		super.setSummary(StringUtil.checkVal(vo.getArticle().toString()));
 		
 		//some core fields are provided here-in:
 		for (TemplateFieldVO field : templateData.getContainerData()) {
@@ -55,6 +55,10 @@ public class QuickstreamTemplate extends CMSSolrDocumentVO {
 					break;
 				case "Tracking Number":
 					setTrackingNo(StringUtil.checkVal(field.getFieldValue()));
+					break;
+				case "Asset Type":
+					//lowercase here correlates to the JSP we use in the View "external site.jsp"
+					setAssetType(StringUtil.checkVal(field.getFieldValue()).toLowerCase()); 
 					break;
 			}
 		}
