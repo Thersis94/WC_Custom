@@ -101,13 +101,22 @@ public class ApprovalFacadeAction extends FacadeActionAdapter {
 					case DELETE_ALL_MODULES:
 						this.removePendingModules(req);
 					}
-					String siteId = getSiteId(req);
+					String siteId = StringUtil.checkVal(req.getParameter("siteId"));
+					if (StringUtil.checkVal(siteId).isEmpty())
+						siteId = getSiteId(req);
 //					// turn off string encoding since this is a secure call
 					req.setValidateInput(Boolean.FALSE);
 					//Send Emails if necessary
-					for(AbstractChangeLogVO vo: vos)
-						if (vo.getStatusNo() != AbstractChangeLogVO.Status.PENDING.ordinal())
+					for(AbstractChangeLogVO vo: vos){
+						if (vo.getStatusNo() != AbstractChangeLogVO.Status.PENDING.ordinal()){
 							aa.sendEmail(vo);
+						}
+						else {
+							//If this is a pending request, notify the eteam for approval
+							vo.setFranchiseId(CenterPageAction.getFranchiseId(req));
+							aa.sendRequestNotificationEmail(vo, siteId);
+						}
+					}
 		
 					PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 					String redir = page.getFullPath() + "?";

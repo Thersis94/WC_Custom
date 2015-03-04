@@ -118,13 +118,13 @@ public class CustomerImporter {
 		//Build SQL Statements
 		StringBuilder ins = new StringBuilder();
 		ins.append("insert into WebCrescendo_ram_custom.dbo.ram_customer (");
-		ins.append("organization_id, customer_type_id, customer_nm, gtin_number_txt, ");
-		ins.append("active_flg, create_dt, hibc_lic_cd, customer_id) values (?,?,?,?,?,?,?,?)");
+		ins.append("organization_id, customer_type_id, customer_nm, ");
+		ins.append("active_flg, create_dt, customer_id) values (?,?,?,?,?,?)");
 		
 		StringBuilder upd = new StringBuilder();
 		upd.append("update WebCrescendo_ram_custom.dbo.ram_customer set organization_id = ?, ");
-		upd.append("customer_type_id = ?, customer_nm = ?, gtin_number_txt = ?, ");
-		upd.append("active_flg = ?, update_dt = ?, hibc_lic_cd = ? where customer_id = ?");
+		upd.append("customer_type_id = ?, customer_nm = ?, ");
+		upd.append("active_flg = ?, update_dt = ?, where customer_id = ?");
 		
 		//Turn on identity insert.
 		Statement s = conn.createStatement();
@@ -189,11 +189,9 @@ public class CustomerImporter {
 		p.setString(1, c.getOrganizationId());
 		p.setString(2, c.getCustomerTypeId());
 		p.setString(3, c.getCustomerName());
-		p.setString(4, c.getGtinNumber());
-		p.setInt(5, c.getActiveFlag());
-		p.setTimestamp(6, Convert.getCurrentTimestamp());
-		p.setString(7, c.getHibcLicCode());
-		p.setInt(8, c.getCustomerId());
+		p.setInt(4, c.getActiveFlag());
+		p.setTimestamp(5, Convert.getCurrentTimestamp());
+		p.setInt(6, c.getCustomerId());
 		p.addBatch();
 	}
 	
@@ -249,8 +247,6 @@ public class CustomerImporter {
 			c.setOrganizationId(row[1].trim());
 			c.setCustomerTypeId(row[2].trim());
 			c.setCustomerName(WordUtils.capitalizeFully(row[3].replace("_", " ").trim().toLowerCase()));
-			c.setGtinNumber(row[4].trim());
-			c.setHibcLicCode(row[5].trim());
 			c.setActiveFlag(Convert.formatInteger(row[6].trim()));
 			if(row[7].trim().length() > 0)
 				c.setCreateDate(new Date());

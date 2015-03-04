@@ -28,7 +28,7 @@ public class CustomerFacadeAction extends SBActionAdapter {
 	
 	//Used to hold type param we look for and the values that are valid.
 	public static final String STEP_PARAM = "bType";
-	public static enum CUSTOMER_TYPE {customer, location, hibc}
+	public static enum CUSTOMER_TYPE {customer, location, code}
 	/**
 	 * 
 	 */
@@ -82,8 +82,8 @@ public class CustomerFacadeAction extends SBActionAdapter {
 		case location: 
 			sai = new CustomerLocationAction(actionInit);
 			break;
-		case hibc:
-			sai = new CustomerHibcAction(actionInit);
+		case code:
+			sai = new CustomerCodeAction(actionInit);
 			break;
 		default:
 			sai = new CustomerAction(actionInit);
