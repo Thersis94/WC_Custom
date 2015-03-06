@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+
 // SB_FastSigns
 import com.fastsigns.action.vo.NewsContainerVO;
 
@@ -34,6 +35,7 @@ import com.smt.sitebuilder.action.tools.SearchVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.http.PageFilter;
 
 /****************************************************************************
  * <b>Title</b>: NewsAction.java <p/>
@@ -67,6 +69,7 @@ public class NewsAction extends SBActionAdapter {
 		String cdb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sb = new StringBuilder(900);
 		String orgId = ((SiteVO)req.getAttribute("siteData")).getOrganizationId();
+		boolean isPreview = PageFilter.testPreviewMode(req, req.getServletContext());
 		boolean isRss = Convert.formatBoolean(this.getActionData(actionInit.getActionId()).getAttributes().get(SBModuleVO.ATTRIBUTE_2));
 		if(isRss){
 		sb.append("select BLOG_URL as item_action_id, TITLE_NM as item_action_nm, SHORT_DESC_TXT as item_action_desc, ");
@@ -76,7 +79,11 @@ public class NewsAction extends SBActionAdapter {
 		}
 		sb.append("select cast(CP_MODULE_OPTION_ID as nvarchar(32)) as item_action_id, OPTION_NM as item_action_nm, OPTION_DESC as item_action_desc, ");
 		sb.append("ARTICLE_TXT as item_article_txt, START_DT as item_create_dt, 'NEWS' as attribute1Text from ").append(cdb).append("fts_cp_module_option ");
-		sb.append("where fts_cp_module_type_id = 2 and franchise_id is null and START_DT is not null and approval_flg=1 and org_id = ? ");
+		sb.append("where fts_cp_module_type_id = 2 and franchise_id is null and START_DT is not null ");
+		//show pending articles if this is a preview
+		if (!isPreview)
+			sb.append("and approval_flg=1 ");
+		sb.append("and org_id = ? ");
 		sb.append("order by item_create_dt desc, item_action_nm ");
 		log.debug("SQL = " + sb.toString() + "|" + orgId);
 
