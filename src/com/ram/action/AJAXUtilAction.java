@@ -6,22 +6,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-
-
 import com.ram.action.customer.CustomerAction;
 // RAM Data Feed Libs
 import com.ram.action.customer.CustomerLocationAction;
 import com.ram.action.customer.CustomerTypesAction;
 import com.ram.action.event.InventoryEventGroupAction;
+import com.ram.action.products.ProductAction;
 import com.ram.datafeed.data.CustomerLocationVO;
-
 //SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.http.SMTServletRequest;
-
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -73,6 +70,10 @@ public class AJAXUtilAction extends SBActionAdapter {
 	
 	/**
 	 * 
+	 */
+	public static final String PRODUCT_CLONE = "productClone";
+	/**
+	 *
 	 */
 	public AJAXUtilAction() {
 		
@@ -132,6 +133,12 @@ public class AJAXUtilAction extends SBActionAdapter {
 				sai.setDBConnection(getDBConnection());
 				sai.setAttributes(getAttributes());
 				sai.retrieve(req);
+				break;
+			case PRODUCT_CLONE:
+				ProductAction pa = new ProductAction(getActionInit());
+				pa.setDBConnection(getDBConnection());
+				pa.setAttributes(getAttributes());
+				pa.copy(req);
 				break;
 		}
 	}
