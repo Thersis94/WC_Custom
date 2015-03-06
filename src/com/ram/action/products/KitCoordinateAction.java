@@ -21,6 +21,7 @@ import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.util.RecordDuplicatorUtility;
 
 /****************************************************************************
  * <b>Title</b>: KitCoordinateParser.java
@@ -46,17 +47,33 @@ import com.smt.sitebuilder.common.constants.Constants;
  *        <p/>
  *        <b>Changes: </b>
  ****************************************************************************/
-public class KitCoordinateParser extends SBActionAdapter {
+public class KitCoordinateAction extends SBActionAdapter {
 
+	public static final String KIT_COORDINATE_ID = "kitCoordinateId"; 
 	/**
 	 * 
 	 */
-	public KitCoordinateParser() {
+	public KitCoordinateAction() {
 		
 	}
 	
-	public KitCoordinateParser(ActionInitVO init) {
+	public KitCoordinateAction(ActionInitVO init) {
 		super(init);
+	}
+	
+	/**
+	 * Copy Method clones all Coordinates related to the PRODUCT_KIT_ID map on the
+	 * replaceVals Map.
+	 */
+	@Override
+	public void copy(SMTServletRequest req) throws ActionException {
+		@SuppressWarnings("unchecked")
+		Map<String, Object> replaceVals = (Map<String, Object>) attributes.get(RecordDuplicatorUtility.REPLACE_VALS);
+		RecordDuplicatorUtility rdu = new RecordDuplicatorUtility(attributes, dbConn, "RAM_LAYER_COORDINATE", "LAYER_COORDINATE_ID", true);
+		rdu.setSchemaNm((String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		rdu.addWhereListClause("PRODUCT_KIT_ID");
+		Map<String, String> kitCoordinateIds = rdu.copy();
+		replaceVals.put("KIT_COORDINATE_ID", kitCoordinateIds);
 	}
 	
 	/**
