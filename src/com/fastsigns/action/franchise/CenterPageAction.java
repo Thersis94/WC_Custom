@@ -9,6 +9,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+
 // SMT Base Libs
 import com.fastsigns.action.franchise.centerpage.FranchiseInfoAction;
 import com.fastsigns.action.franchise.centerpage.FranchiseLocationInfoAction;
@@ -37,6 +38,7 @@ import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.http.PageFilter;
 
 /****************************************************************************
  * <b>Title</b>: CenterPageAction.java <p/>
@@ -560,8 +562,8 @@ public class CenterPageAction extends SimpleActionAdapter {
 		s.append("on a.FTS_CP_MODULE_DISPLAY_ID = h.FTS_CP_MODULE_DISPLAY_ID ");
 		s.append("where a.FRANCHISE_ID = ? ");
 		
-		if (isKeystone) {
-			//ignore approval_flg within Keystone
+		if (isKeystone || PageFilter.testPreviewMode(req, req.getServletContext())) {
+			//ignore approval_flg within Keystone and when a page is in preview mode
 		} else {
 			s.append("and approval_flg=1 ");
 		}
