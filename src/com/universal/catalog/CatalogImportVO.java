@@ -29,6 +29,7 @@ public class CatalogImportVO {
 	private String catalogPrefix;
 	private String catalogModelYear;
 	private String catalogId;
+	private boolean useLocalImportFiles = false;
 	private Map<String, String> attributes;
 	
 	/**
@@ -134,6 +135,20 @@ public class CatalogImportVO {
 	 */
 	public void setCatalogId(String catalogId) {
 		this.catalogId = catalogId;
+	}
+
+	/**
+	 * @return the useLocalImportFiles
+	 */
+	public boolean isUseLocalImportFiles() {
+		return useLocalImportFiles;
+	}
+
+	/**
+	 * @param useLocalImportFiles the useLocalImportFiles to set
+	 */
+	public void setUseLocalImportFiles(boolean useLocalImportFiles) {
+		this.useLocalImportFiles = useLocalImportFiles;
 	}
 
 	/**

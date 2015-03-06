@@ -57,12 +57,13 @@ public class CatalogRetriever {
 		PropertyConfigurator.configure("scripts/USA_Auto_Importer_log4j.properties");
 		Properties config = new Properties();
 		config.put("sourceFileDestination", "C:\\Temp\\USA_cat_test\\");
-		config.put("sourceURL", "http://www.signals.com/");
+		//config.put("sourceURL", "http://www.signals.com/");
+		config.put("sourceURL", "http://www.signals.com");
 		String[] fileList = {"sm_categories.txt","sm_products.txt","sm_options.txt","sm_personalization.txt"};
 		CatalogRetriever cr = new CatalogRetriever(config);
 		try {
 			log.info("retrieving files...");
-			String destinationPath= cr.retrieveCatalogForImport("SIGNALS_CATALOG", config.getProperty("sourceURL"), fileList);
+			String destinationPath= cr.retrieveCatalogForImport("SIGNALS_CATALOG", config.getProperty("sourceURL"), fileList, false);
 			log.info("fiinished retrieving files...wrote them to: " + destinationPath);
 		} catch (IOException ioe) {
 			log.error("Error retrieving files, " + ioe.getMessage());
@@ -81,10 +82,15 @@ public class CatalogRetriever {
 	 * @throws FileNotFoundException
 	 * @throws IOException
 	 */
-	public String retrieveCatalogForImport(String catalogId, String sourceURL, String[] fileList)
-			throws FileNotFoundException, IOException {
+	public String retrieveCatalogForImport(String catalogId, String sourceURL, 
+			String[] fileList, boolean isLocalFileImport) throws FileNotFoundException, IOException {
 		log.info("retrieving catalog source files...");
+		log.info("isLocalFileImport: " + isLocalFileImport);
+		
 		buildDestinationPath(catalogId);
+		
+		// if this is a manual import, just return the path to the files.
+		if (isLocalFileImport) return destinationPath;
 				
 		String fileUrl = null;
 		byte[] fileData = null;
