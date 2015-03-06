@@ -61,7 +61,9 @@ public class MediaBinLinkAction extends SimpleActionAdapter {
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		//boolean success = false;
 		try {
+			req.setValidateInput(Boolean.FALSE);
 			String path = this.getDocumentLink(req.getParameter("mbid"));
+			req.setValidateInput(Boolean.TRUE);
 			req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
 			req.setAttribute(Constants.REDIRECT_URL, path);
 			//success = true;
