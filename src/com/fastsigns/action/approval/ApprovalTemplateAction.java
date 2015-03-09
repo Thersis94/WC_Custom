@@ -118,11 +118,28 @@ public abstract class ApprovalTemplateAction extends ApprovalAction {
 		log.debug("Sending Approval Pending Notification...");
 		final String corpName = (!vo.getOrgId().contains("AU")) ? "FASTSIGNS" : "SIGNWAVE";
 		
+		//Get submitter information
+		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
+		UserDataVO submitter = null;
+		try {
+			submitter = pm.getProfile(vo.getSubmitterId(), dbConn, ProfileManager.PROFILE_ID_LOOKUP, null);
+		} catch (DatabaseException e) {
+			//Log, and proceed to build message body without submitter info
+			log.error("Error Retrieving Submitter Info:",e);
+		}
+		
 		//Construct the message body
 		StringBuilder msg = new StringBuilder(230);
 		msg.append("An approval request for ").append(corpName).append(" Location ");
 		msg.append(vo.getFranchiseId());
-		msg.append(" has been submitted. \nPlease login to http://www.fastsigns.com/webedit ");
+		msg.append(" has been submitted");
+		if (submitter == null){
+			//Default if there was a problem getting the user data
+			msg.append(". ");
+		} else {
+			msg.append(" by ").append(submitter.getEmailAddress()).append(". "); 
+		}
+		msg.append("\nPlease login to http://www.fastsigns.com/webedit ");
 		msg.append("to review the request.\n");
 		
 		EmailMessageVO mail = new EmailMessageVO();
