@@ -118,6 +118,18 @@ public abstract class ApprovalTemplateAction extends ApprovalAction {
 		log.debug("Sending Approval Pending Notification...");
 		final String corpName = (!vo.getOrgId().contains("AU")) ? "FASTSIGNS" : "SIGNWAVE";
 		
+		//Get Site info
+		SiteVO site = null;
+		String parentPath = null;
+		try{
+			SiteInfoLookup lookup = new SiteInfoLookup();
+			site = lookup.getSiteInfo(dbConn, siteId);
+			parentPath = lookup.getSiteInfo(dbConn, site.getAliasPathParentId()).getFullSiteAlias();
+		} catch(SiteNotFoundException e){
+			log.error("Error getting site data, notification not sent.",e);
+			return;
+		}
+		
 		//Get submitter information
 		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
 		UserDataVO submitter = null;
@@ -139,13 +151,13 @@ public abstract class ApprovalTemplateAction extends ApprovalAction {
 		} else {
 			msg.append(" by ").append(submitter.getEmailAddress()).append(". "); 
 		}
-		msg.append("\nPlease login to http://www.fastsigns.com/webedit ");
+		msg.append("\nPlease login to ");
+		msg.append(parentPath).append("/webedit ");
 		msg.append("to review the request.\n");
 		
 		EmailMessageVO mail = new EmailMessageVO();
 		
 		try{
-			SiteVO site = new SiteInfoLookup().getSiteInfo(dbConn, siteId);
 			//Construct the mail object
 			mail.addRecipient("eteam@fastsigns.com");
 			mail.setSubject("Pending " + vo.getHFriendlyType() + " request");
@@ -156,7 +168,7 @@ public abstract class ApprovalTemplateAction extends ApprovalAction {
 			ms.sendMessage(mail);
 			
 			log.info("Notification Sent to eteam successfully.");
-		} catch(InvalidDataException | NullPointerException | SiteNotFoundException ex) {
+		} catch(InvalidDataException | NullPointerException ex) {
 			log.error("Error Sending Approval Notification Email", ex);
 		}
 	}
