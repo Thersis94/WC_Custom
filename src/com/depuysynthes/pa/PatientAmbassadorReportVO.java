@@ -134,6 +134,9 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 		headers.add("Story Title");
 		headers.add("Story Text");
 		headers.add("Status Text");
+		headers.add("User was emailed consent statement");
+		headers.add("User opened consent statement");
+
 		return headers;
 	}
 
@@ -245,6 +248,14 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 			if(vo.getFieldById(PAFConst.STATUS_ID.getId()) != null)
 				addCell(c++, vo.getFieldById(PAFConst.STATUS_ID.getId()).getResponses().get(0), row);
 
+			//Add Status Text
+			if(vo.getFieldById(PAFConst.EMAIL_CONSENT_ID.getId()) != null)
+				addCell(c++, vo.getFieldById(PAFConst.EMAIL_CONSENT_ID.getId()).getResponses().get(0), row);
+
+			//Add Status Text
+			if(vo.getFieldById(PAFConst.MODAL_OPENED_ID.getId()) != null)
+				addCell(c++, vo.getFieldById(PAFConst.MODAL_OPENED_ID.getId()).getResponses().get(0), row);
+
 			//Close out the Transaction Row.
 			row = sheet.createRow(r++);
 		}
@@ -331,9 +342,17 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 		if(vo.getFieldById(PAFConst.STORY_TEXT_ID.getId()) != null)
 			addRow(r++, vo.getFieldById(PAFConst.STORY_TEXT_ID.getId()).getResponses().get(0), sheet);
 
-		//Add Story Text
+		//Add Status Text
 		if(vo.getFieldById(PAFConst.STATUS_ID.getId()) != null)
 			addRow(r++, vo.getFieldById(PAFConst.STATUS_ID.getId()).getResponses().get(0), sheet);
+
+		//Add Email Consent Flag
+		if(vo.getFieldById(PAFConst.EMAIL_CONSENT_ID.getId()) != null)
+			addRow(r++, vo.getFieldById(PAFConst.EMAIL_CONSENT_ID.getId()).getResponses().get(0), sheet);
+
+		//Add Modal Opened Flag
+		if(vo.getFieldById(PAFConst.MODAL_OPENED_ID.getId()) != null)
+			addRow(r++, vo.getFieldById(PAFConst.MODAL_OPENED_ID.getId()).getResponses().get(0), sheet);
 	}
 
 	/**

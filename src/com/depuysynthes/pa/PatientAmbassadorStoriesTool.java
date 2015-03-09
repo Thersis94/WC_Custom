@@ -66,7 +66,10 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		ADVICE_ID("c0a80241bbb2d50c11b6f3652f008aa6"),
 		STORY_TITLE_ID("c0a80237dfd89c30f3b7848d499d28a0"),
 		STORY_TEXT_ID("c0a80237dfd8ca8957bec8575c5f35e5"),
-		STATUS_ID("c0a80237eaa74b1245d3a04296472ffd");
+		STATUS_ID("c0a80237eaa74b1245d3a04296472ffd"),
+		EMAIL_CONSENT_ID("c0a80237feea61107a662ea060005c35"),
+		MODAL_OPENED_ID("c0a80237fee851245d6f6f073c07573e"),
+		EMAIL_ADDRESS_TXT("7f000001397b18842a834a598cdeafa");
 
 		private final String id;
 		PAFConst(String id) {
