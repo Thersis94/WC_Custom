@@ -12,6 +12,7 @@ import com.siliconmtn.exception.MailException;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.SMTMail;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.SiteInfoLookup;
@@ -124,7 +125,13 @@ public abstract class ApprovalTemplateAction extends ApprovalAction {
 		try{
 			SiteInfoLookup lookup = new SiteInfoLookup();
 			site = lookup.getSiteInfo(dbConn, siteId);
-			parentPath = lookup.getSiteInfo(dbConn, site.getAliasPathParentId()).getFullSiteAlias();
+			String parentId = site.getAliasPathParentId();
+			
+			//if there is a parent, use its alias as the link to webedit
+			if (!StringUtil.checkVal(parentId).isEmpty()){
+				parentPath = lookup.getSiteInfo(dbConn, parentId).getFullSiteAlias();
+			}
+			
 		} catch(SiteNotFoundException e){
 			log.error("Error getting site data, notification not sent.",e);
 			return;
@@ -152,7 +159,14 @@ public abstract class ApprovalTemplateAction extends ApprovalAction {
 			msg.append(" by ").append(submitter.getEmailAddress()).append(". "); 
 		}
 		msg.append("\nPlease login to ");
-		msg.append(parentPath).append("/webedit ");
+		if (parentPath == null){
+			//tell the user to log in to webedit (without a link) if no corporate 
+			//site for the center could be established.
+			msg.append("WebEdit ");
+		}
+		else {
+			msg.append(parentPath).append("/webedit ");
+		}
 		msg.append("to review the request.\n");
 		
 		EmailMessageVO mail = new EmailMessageVO();
