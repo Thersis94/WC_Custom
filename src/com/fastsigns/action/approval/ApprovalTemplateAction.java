@@ -125,10 +125,10 @@ public abstract class ApprovalTemplateAction extends ApprovalAction {
 		try{
 			SiteInfoLookup lookup = new SiteInfoLookup();
 			site = lookup.getSiteInfo(dbConn, siteId);
-			String parentId = site.getAliasPathParentId();
+			String parentId = StringUtil.checkVal(site.getAliasPathParentId(),null);
 			
 			//if there is a parent, use its alias as the link to webedit
-			if (!StringUtil.checkVal(parentId).isEmpty()){
+			if (parentId != null){
 				parentPath = lookup.getSiteInfo(dbConn, parentId).getFullSiteAlias();
 			}
 			
