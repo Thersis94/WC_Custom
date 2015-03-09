@@ -23,6 +23,7 @@ import com.smt.sitebuilder.data.vo.FormFieldVO;
 import com.smt.sitebuilder.data.vo.FormTransactionVO;
 import com.smt.sitebuilder.search.SMTAbstractIndex;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
+import com.smt.sitebuilder.security.SecurityController;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
 
 /****************************************************************************
@@ -51,9 +52,8 @@ public class PatientAmbassadorIndexer extends SMTAbstractIndex {
 	 */
 	@Override
 	public void addIndexItems(HttpSolrServer server) {
-		List<FormTransactionVO> formVOs = retreiveAllSubmissions();
-		
 		SolrActionUtil solrUtil = new SolrActionUtil(server);
+		List<FormTransactionVO> formVOs = retreiveAllSubmissions();
 		
 		// Loop over each form transaction and turn it into a SolrStoryVO for processing
 		for (FormTransactionVO vo : formVOs) {
@@ -65,7 +65,7 @@ public class PatientAmbassadorIndexer extends SMTAbstractIndex {
 				log.error("could not create document to add to Solr", e);
 			}
 		}
-
+		solrUtil = null;
 	}
 	
 	/**
@@ -74,12 +74,11 @@ public class PatientAmbassadorIndexer extends SMTAbstractIndex {
 	 * @param vo
 	 * @return
 	 */
-	private SolrStoryVO buildSolrStoryVO(FormTransactionVO vo) {
-		SolrStoryVO ssv = new SolrStoryVO();
-		
+	private SolrStoryVO buildSolrStoryVO(FormTransactionVO vo) throws Exception {
 		Map<String, FormFieldVO> fields = vo.getCustomData();
 
 		//Store Data on the SolrStoryVO
+		SolrStoryVO ssv = new SolrStoryVO();
 		ssv.setDocumentId(vo.getFormSubmittalId());
 		ssv.setAuthor(vo.getFirstName());
 		ssv.setZip(vo.getZipCode());
@@ -94,7 +93,7 @@ public class PatientAmbassadorIndexer extends SMTAbstractIndex {
 		ssv.setTitle(fields.get(PAFConst.STORY_TITLE_ID.getId()).getResponses().get(0));
 		ssv.setSummary(fields.get(PAFConst.STORY_TEXT_ID.getId()).getResponses().get(0));
 		ssv.addOrganization(ORG_ID);
-		ssv.addRole("0");
+		ssv.addRole("" + SecurityController.PUBLIC_ROLE_LEVEL);
 
 		return ssv;
 	}
@@ -151,8 +150,10 @@ public class PatientAmbassadorIndexer extends SMTAbstractIndex {
 			}
 			
 			// Add the dangling field and vo.
-			vo.addCustomData(fieldId, field);
-			vos.add(vo);
+			if (vo != null) {
+				if (field != null) vo.addCustomData(fieldId, field);
+				vos.add(vo);
+			}
 			
 			//Loop over the Transactions and retrieve the profile data for them.
 			for(FormTransactionVO f : vos) {
@@ -199,22 +200,6 @@ public class PatientAmbassadorIndexer extends SMTAbstractIndex {
 		} catch (Exception e) {
 			throw new IOException(e);
 		}
-	}
-
-	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#isDBConnection()
-	 */
-	@Override
-	public boolean isDBConnection() {
-		return true;
-	}
-
-	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#isCMSConnection()
-	 */
-	@Override
-	public boolean isCMSConnection() {
-		return false;
 	}
 
 
