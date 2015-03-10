@@ -4,7 +4,9 @@ import java.sql.ResultSet;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.util.Convert;
 
 /****************************************************************************
  * <b>Title</b>: IFUContainer.java <p/>
@@ -48,11 +50,22 @@ public class IFUContainer {
 	}
 	
 	public void setData(SMTServletRequest req) {
-		
+		this.setIfuId(req.getParameter("ifuId"));
+		this.setIfuGroupId(req.getParameter("ifuGroupId"));
+		this.setTitle(req.getParameter("title"));
+		this.setVersion(req.getParameter("version"));
+		this.setOrderNo(Convert.formatInteger(req.getParameter("orderNo")));
+		this.setVisibleFlg(Convert.formatInteger(req.getParameter("visibleFlg")));
 	}
 	
 	public void setData(ResultSet rs) {
-		
+		DBUtil db = new DBUtil();
+		this.setIfuId(db.getStringVal("DEPUY_IFU_ID", rs));
+		this.setIfuGroupId(db.getStringVal("DEPUY_IFU_GROUP_ID", rs));
+		this.setTitle(db.getStringVal("DEPUY_TITLE_TXT", rs));
+		this.setVersion(db.getStringVal("DEPUY_VERSION_TXT", rs));
+		this.setOrderNo(db.getIntVal("ORDER_NO", rs));
+		this.setVisibleFlg(db.getIntVal("VISIBLE_FLG", rs));
 	}
 
 	public String getIfuId() {
