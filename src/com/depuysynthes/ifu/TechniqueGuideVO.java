@@ -31,10 +31,6 @@ public class TechniqueGuideVO {
 	}
 
 	public TechniqueGuideVO(SMTServletRequest req) {
-		
-	}
-	
-	public void setData(SMTServletRequest req) {
 		this.setGuideId(req.getParameter("guideId"));
 		this.setGuideNm(req.getParameter("guideNm"));
 		this.setGuideUrl(req.getParameter("guideUrl"));
@@ -42,15 +38,12 @@ public class TechniqueGuideVO {
 	}
 	
 	public TechniqueGuideVO(ResultSet rs) {
-		
-	}
-	
-	public void setData(ResultSet rs) {
 		DBUtil db = new DBUtil();
 		this.setGuideId(db.getStringVal("DEPUY_IFU_TG_ID", rs));
 		this.setGuideNm(db.getStringVal("TG_NM", rs));
 		this.setGuideUrl(db.getStringVal("URL_TXT", rs));
 		this.setMediaBinId(db.getStringVal("DPY_SYN_MEDIABIN_ID", rs));
+		db = null;
 	}
 
 	public String getGuideId() {
