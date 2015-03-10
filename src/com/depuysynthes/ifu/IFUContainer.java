@@ -38,18 +38,7 @@ public class IFUContainer {
 	}
 	
 	public IFUContainer(SMTServletRequest req) {
-		super();
-		setData(req);
-	}
-	
-
-	
-	public IFUContainer(ResultSet rs) {
-		super();
-		setData(rs);
-	}
-	
-	public void setData(SMTServletRequest req) {
+		this();
 		this.setIfuId(req.getParameter("ifuId"));
 		this.setIfuGroupId(req.getParameter("ifuGroupId"));
 		this.setTitle(req.getParameter("title"));
@@ -58,7 +47,8 @@ public class IFUContainer {
 		this.setVisibleFlg(Convert.formatInteger(req.getParameter("visibleFlg")));
 	}
 	
-	public void setData(ResultSet rs) {
+	public IFUContainer(ResultSet rs) {
+		this();
 		DBUtil db = new DBUtil();
 		this.setIfuId(db.getStringVal("DEPUY_IFU_ID", rs));
 		this.setIfuGroupId(db.getStringVal("DEPUY_IFU_GROUP_ID", rs));
@@ -66,6 +56,7 @@ public class IFUContainer {
 		this.setVersion(db.getStringVal("DEPUY_VERSION_TXT", rs));
 		this.setOrderNo(db.getIntVal("ORDER_NO", rs));
 		this.setVisibleFlg(db.getIntVal("VISIBLE_FLG", rs));
+		db = null;
 	}
 
 	public String getIfuId() {
