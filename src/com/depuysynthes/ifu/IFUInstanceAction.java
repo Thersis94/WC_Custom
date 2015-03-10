@@ -1,6 +1,8 @@
 package com.depuysynthes.ifu;
 
 import com.siliconmtn.action.ActionException;
+import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.http.SMTServletRequest;
 import com.smt.sitebuilder.action.SBActionAdapter;
 
@@ -22,6 +24,19 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 
 public class IFUInstanceAction extends SBActionAdapter {
 	
+	public IFUInstanceAction() {
+		super();
+	}
+	
+	public IFUInstanceAction(ActionInitVO actionInit) {
+		super(actionInit);
+	}
+	
+	public IFUInstanceAction(ActionInitVO actionInit, SMTDBConnection conn) {
+		super(actionInit);
+		super.setDBConnection(conn);
+	}
+
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		// Get ifu id from the request object
 		
@@ -46,6 +61,10 @@ public class IFUInstanceAction extends SBActionAdapter {
 	}
 
 	public void update(SMTServletRequest req) throws ActionException {
+		this.update(new IFUDocumentVO(req));
+	}
+	
+	public void update(IFUDocumentVO vo) throws ActionException {
 		// Check the current approval status of the record we are updating.
 		// if we are trying to update an approved item we copy it and update its status
 		
