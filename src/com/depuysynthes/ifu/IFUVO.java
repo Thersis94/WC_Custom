@@ -23,31 +23,31 @@ import com.siliconmtn.util.Convert;
  * <b>Changes: </b>
  ****************************************************************************/
 
-public class IFUContainer {
+public class IFUVO {
 	
 	private String ifuId;
 	private String ifuGroupId;
 	private String title;
 	private String version;
-	private int visibleFlg;
+	private int archiveFlg;
 	private int orderNo;
 	private Map<String, IFUDocumentVO> ifuDocuments;
 	
-	public IFUContainer() {
+	public IFUVO() {
 		ifuDocuments = new HashMap<String, IFUDocumentVO>();
 	}
 	
-	public IFUContainer(SMTServletRequest req) {
+	public IFUVO(SMTServletRequest req) {
 		this();
 		this.setIfuId(req.getParameter("ifuId"));
 		this.setIfuGroupId(req.getParameter("ifuGroupId"));
 		this.setTitle(req.getParameter("title"));
 		this.setVersion(req.getParameter("version"));
 		this.setOrderNo(Convert.formatInteger(req.getParameter("orderNo")));
-		this.setVisibleFlg(Convert.formatInteger(req.getParameter("visibleFlg")));
+		this.setArchiveFlg(Convert.formatInteger(req.getParameter("archiveFlg")));
 	}
 	
-	public IFUContainer(ResultSet rs) {
+	public IFUVO(ResultSet rs) {
 		this();
 		DBUtil db = new DBUtil();
 		this.setIfuId(db.getStringVal("DEPUY_IFU_ID", rs));
@@ -55,7 +55,7 @@ public class IFUContainer {
 		this.setTitle(db.getStringVal("DEPUY_TITLE_TXT", rs));
 		this.setVersion(db.getStringVal("DEPUY_VERSION_TXT", rs));
 		this.setOrderNo(db.getIntVal("ORDER_NO", rs));
-		this.setVisibleFlg(db.getIntVal("VISIBLE_FLG", rs));
+		this.setArchiveFlg(db.getIntVal("ARCHIVE_FLG", rs));
 		db = null;
 	}
 
@@ -91,12 +91,12 @@ public class IFUContainer {
 		this.version = version;
 	}
 
-	public int getVisibleFlg() {
-		return visibleFlg;
+	public int getArchiveFlg() {
+		return archiveFlg;
 	}
 
-	public void setVisibleFlg(int visibleFlg) {
-		this.visibleFlg = visibleFlg;
+	public void setArchiveFlg(int archiveFlg) {
+		this.archiveFlg = archiveFlg;
 	}
 
 	public int getOrderNo() {
