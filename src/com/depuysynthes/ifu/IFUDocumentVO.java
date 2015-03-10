@@ -23,12 +23,11 @@ import com.siliconmtn.http.SMTServletRequest;
  * <b>Changes: </b>
  ****************************************************************************/
 
-public class IFUDocumentVO implements Serializable{
+public class IFUDocumentVO extends IFUVO implements Serializable{
 	  private static final long serialVersionUID = -8409489653118817155L;
 	
 	private String documentId;
 	private String ifuId;
-	private String title;
 	private String url;
 	private String mediaBinId;
 	private String languageCd;
@@ -42,24 +41,23 @@ public class IFUDocumentVO implements Serializable{
 	}
 
 	public IFUDocumentVO(SMTServletRequest req) {
-		this();
+		super(req);
 		this.setDocumentId(req.getParameter("documentId"));
 		this.setDocumentId(req.getParameter("ifuId"));
-		this.setTitle(req.getParameter("title"));
 		this.setUrl(req.getParameter("url"));
 		this.setMediaBinId(req.getParameter("mediaBinId"));
 		this.setLanguageCd(req.getParameter("languageCd"));
 		this.setAtricleTxt(req.getParameter("articleTxt"));
 		this.setPartNoTxt(req.getParameter("partNo"));
 		this.setDefaultMsgTxt(req.getParameter("defaultMsgTxt"));
+		setTgList(new ArrayList<TechniqueGuideVO>());
 	}
 
 	public IFUDocumentVO(ResultSet rs) {
-		this();
+		super(rs);
 		DBUtil db = new DBUtil();
 		this.setDocumentId(db.getStringVal("DEPUY_IFU_IMPL_ID", rs));
 		this.setIfuId(db.getStringVal("DEPUY_IFU_ID", rs));
-		this.setTitle(db.getStringVal("TITLE_TXT", rs));
 		this.setUrl(db.getStringVal("URL_TXT", rs));
 		this.setMediaBinId(db.getStringVal("DPY_SYN_MEDIABIN_ID", rs));
 		this.setLanguageCd(db.getStringVal("LANGUAGE_CD", rs));
@@ -67,6 +65,7 @@ public class IFUDocumentVO implements Serializable{
 		this.setPartNoTxt(db.getStringVal("PART_NO_TXT", rs));
 		this.setDefaultMsgTxt(db.getStringVal("DEFAULT_MSG_TXT", rs));
 		db = null;
+		setTgList(new ArrayList<TechniqueGuideVO>());
 	}
 
 	public String getDocumentId() {
@@ -83,14 +82,6 @@ public class IFUDocumentVO implements Serializable{
 
 	public void setIfuId(String ifuId) {
 		this.ifuId = ifuId;
-	}
-
-	public String getTitle() {
-		return title;
-	}
-
-	public void setTitle(String title) {
-		this.title = title;
 	}
 
 	public String getUrl() {
