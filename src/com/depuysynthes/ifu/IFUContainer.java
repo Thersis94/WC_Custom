@@ -123,5 +123,9 @@ public class IFUContainer {
 	public void setIfuDocuments(Map<String, IFUDocumentVO> ifuDocuments) {
 		this.ifuDocuments = ifuDocuments;
 	}
+	
+	public void addIfuDocument(String key, IFUDocumentVO doc) {
+		ifuDocuments.put(key, doc);
+	}
 
 }
