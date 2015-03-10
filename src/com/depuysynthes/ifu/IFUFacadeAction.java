@@ -1,15 +1,12 @@
 package com.depuysynthes.ifu;
 
 import java.sql.SQLException;
-import java.util.Map;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.http.SMTServletRequest;
-import com.siliconmtn.util.Convert;
-import com.smt.sitebuilder.action.FacadeActionAdapter;
+import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.constants.AdminConstants;
-import com.smt.sitebuilder.util.RecordDuplicatorUtility;
 
 /****************************************************************************
  * <b>Title</b>: IFUInstanceFacadeAction.java <p/>
@@ -26,7 +23,7 @@ import com.smt.sitebuilder.util.RecordDuplicatorUtility;
  * <b>Changes: </b>
  ****************************************************************************/
 
-public class IFUFacadeAction extends FacadeActionAdapter {
+public class IFUFacadeAction extends SimpleActionAdapter {
 	public final String techniqueAction = "technique";
 	public final String instanceAction = "instance";
 	public final String ifuAction = "ifu";
@@ -38,8 +35,10 @@ public class IFUFacadeAction extends FacadeActionAdapter {
 		if (sai != null) {
 			sai.list(req);
 		} else {
-			throw new ActionException("Invalid action passed to facade: " + req.getParameter(AdminConstants.FACADE_TYPE));
+			log.debug("Invalid action passed to facade: " + req.getParameter(AdminConstants.FACADE_TYPE));
+			super.list(req);
 		}
+		super.retrieve(req);
 	}
 	
 	public void retrieve(SMTServletRequest req) throws ActionException {
@@ -65,7 +64,8 @@ public class IFUFacadeAction extends FacadeActionAdapter {
 		if (sai != null) {
 			sai.update(req);
 		} else {
-			throw new ActionException("Invalid action passed to facade: " + req.getParameter(AdminConstants.FACADE_TYPE));
+			log.debug("Invalid action passed to facade: " + req.getParameter(AdminConstants.FACADE_TYPE));
+			super.update(req);
 		}
 	}
 	
@@ -94,8 +94,8 @@ public class IFUFacadeAction extends FacadeActionAdapter {
 			
 			super.copy(req);
 
-			runCopy("com.depuysynthes.ifu.IFUAction", req);
-			runCopy("com.depuysynthes.ifu.IFUInstanceAction", req);
+			new IFUAction(actionInit, dbConn).copy(req);
+			new IFUInstanceAction(actionInit, dbConn).copy(req);
 			
 			dbConn.commit();
 			dbConn.setAutoCommit(true);
