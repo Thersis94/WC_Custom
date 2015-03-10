@@ -5,6 +5,7 @@ import java.sql.SQLException;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 
@@ -36,9 +37,8 @@ public class IFUFacadeAction extends SimpleActionAdapter {
 			sai.list(req);
 		} else {
 			log.debug("Invalid action passed to facade: " + req.getParameter(AdminConstants.FACADE_TYPE));
-			super.list(req);
+			super.retrieve(req);
 		}
-		super.retrieve(req);
 	}
 	
 	public void retrieve(SMTServletRequest req) throws ActionException {
@@ -55,7 +55,8 @@ public class IFUFacadeAction extends SimpleActionAdapter {
 		if (sai != null) {
 			sai.delete(req);
 		} else {
-			throw new ActionException("Invalid action passed to facade: " + req.getParameter(AdminConstants.FACADE_TYPE));
+			//throw new ActionException("Invalid action passed to facade: " + req.getParameter(AdminConstants.FACADE_TYPE));
+			super.delete(req);
 		}
 	}
 	
@@ -75,7 +76,7 @@ public class IFUFacadeAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	private SMTActionInterface getAction(String actionType) {
-		switch(actionType) {
+		switch(StringUtil.checkVal(actionType)) {
 			case ifuAction:
 				return new IFUAction(actionInit, dbConn);
 			case instanceAction:
