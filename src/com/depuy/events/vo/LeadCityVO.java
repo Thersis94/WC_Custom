@@ -135,7 +135,7 @@ public class LeadCityVO implements Serializable {
 	 * @return
 	 */
 	public Integer getTierOne() {
-		return Convert.formatInteger(leads.get(3));
+		return Convert.formatInteger(leads.get(6));
 	}
 	
 	/**
@@ -143,7 +143,7 @@ public class LeadCityVO implements Serializable {
 	 * @return
 	 */
 	public Integer getTierTwo() {
-		return Convert.formatInteger(leads.get(6)) + getTierOne();
+		return Convert.formatInteger(leads.get(12)) + getTierOne();
 	}
 	
 	/**
@@ -152,7 +152,7 @@ public class LeadCityVO implements Serializable {
 	 * @return
 	 */
 	public Integer getTierThree() {
-		return Convert.formatInteger(leads.get(12)) + getTierTwo();
+		return Convert.formatInteger(leads.get(36)) + getTierTwo();
 	}
 	
 	/**
@@ -183,11 +183,11 @@ public class LeadCityVO implements Serializable {
 	public void setChecked(Integer range, boolean checked) {
 		if (range == null) return;
 		switch (range) {
-			case 3:
-				this.checkedTierOne = checked; break;
 			case 6:
-				this.checkedTierTwo = checked; break;
+				this.checkedTierOne = checked; break;
 			case 12:
+				this.checkedTierTwo = checked; break;
+			case 36:
 				this.checkedTierThree = checked; break;
 			case 240:
 				this.checkedTierFour = checked; break;

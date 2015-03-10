@@ -308,9 +308,9 @@ public class LeadsDataToolV2 extends SBActionAdapter {
 	 * @return
 	 */
 	private int bucketizeLeadAge(int monthsOld) {
-		if (monthsOld < 3) return 3;
-		else if (monthsOld < 6) return 6;
-		else if (monthsOld < 12) return 12;
+		if (monthsOld <= 6) return 6;
+		else if (monthsOld <= 12) return 12;
+		else if (monthsOld <= 36) return 36;
 		else return 240; //20yrs, which is the catch-all bucket
 	}
 	
