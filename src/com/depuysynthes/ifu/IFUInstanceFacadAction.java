@@ -18,7 +18,7 @@ public class IFUInstanceFacadAction extends FacadeActionAdapter {
 	public void list(SMTServletRequest req) throws ActionException {
 		// TODO get all the documents for all languages from the database
 		/**
-		 * Get all documents for all languages and put them into a document contianer
+		 * Get all documents for all languages and put them into a document container
 		 * we don't care about the technique guides at this level
 		 */
 	}
@@ -46,6 +46,11 @@ public class IFUInstanceFacadAction extends FacadeActionAdapter {
 		 * If this function is called we want to update the version status of the
 		 * document based on DePuy's versioning system.
 		 */
+	}
+	
+	private String buildUpdateSql() {
+		//Build the update sql for
+		return "";
 	}
 		  
 }

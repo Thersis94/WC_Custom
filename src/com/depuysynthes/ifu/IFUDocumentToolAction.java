@@ -35,10 +35,22 @@ public class IFUDocumentToolAction extends SBActionAdapter {
 	public void update(SMTServletRequest req) throws ActionException {
 		// TODO Update the document
 		/**
-		 * Check if we are dealing with an already in progress item.
+		 * Check if we are just update the approval status, if so we go to the appropriate method
+		 * then check if we are dealing with an already in progress item.
 		 * If we are not we duplicate the record and commit the updates
 		 * Otherwise we just commit the updates.
 		 */
+	}
+	
+	private void updateApprovalStatus(SMTServletRequest req) throws ActionException {
+		/**
+		 * Updates the current IFU's approval status
+		 */
+	}
+	
+	private String buildUpdateSql() {
+		//Build the update sql for the update
+		return "";
 	}
 
 }

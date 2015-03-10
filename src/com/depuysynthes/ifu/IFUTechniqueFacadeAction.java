@@ -39,4 +39,9 @@ public class IFUTechniqueFacadeAction extends FacadeActionAdapter {
 		 * that references this IFU document
 		 */
 	}
+	
+	private String buildUpdateSql() {
+		//Build the update sql for
+		return "";
+	}
 }
