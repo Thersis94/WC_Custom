@@ -25,6 +25,7 @@ import com.siliconmtn.http.SMTServletRequest;
 public class IFUDocumentVO {
 	
 	private String documentId;
+	private String ifuId;
 	private String title;
 	private String url;
 	private String mediaBinId;
@@ -45,6 +46,7 @@ public class IFUDocumentVO {
 	
 	public void setData(SMTServletRequest req) {
 		this.setDocumentId(req.getParameter("documentId"));
+		this.setDocumentId(req.getParameter("ifuId"));
 		this.setTitle(req.getParameter("title"));
 		this.setUrl(req.getParameter("url"));
 		this.setMediaBinId(req.getParameter("mediaBinId"));
@@ -60,7 +62,8 @@ public class IFUDocumentVO {
 	
 	public void setData(ResultSet rs) {
 		DBUtil db = new DBUtil();
-		this.setDocumentId(db.getStringVal("DEPUY_IFU_ID", rs));
+		this.setDocumentId(db.getStringVal("DEPUY_IFU_IMPL_ID", rs));
+		this.setIfuId(db.getStringVal("DEPUY_IFU_ID", rs));
 		this.setTitle(db.getStringVal("TITLE_TXT", rs));
 		this.setUrl(db.getStringVal("URL_TXT", rs));
 		this.setMediaBinId(db.getStringVal("DPY_SYN_MEDIABIN_ID", rs));
@@ -76,6 +79,14 @@ public class IFUDocumentVO {
 
 	public void setDocumentId(String documentId) {
 		this.documentId = documentId;
+	}
+
+	public String getIfuId() {
+		return ifuId;
+	}
+
+	public void setIfuId(String ifuId) {
+		this.ifuId = ifuId;
 	}
 
 	public String getTitle() {
@@ -140,6 +151,10 @@ public class IFUDocumentVO {
 
 	public void setTgList(List<TechniqueGuideVO> tgList) {
 		this.tgList = tgList;
+	}
+	
+	public void addTg(TechniqueGuideVO vo) {
+		tgList.add(vo);
 	}
 
 }
