@@ -2,7 +2,7 @@ package com.depuysynthes.ifu;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.http.SMTServletRequest;
-import com.smt.sitebuilder.action.FacadeActionAdapter;
+import com.smt.sitebuilder.action.SBActionAdapter;
 
 /****************************************************************************
  * <b>Title</b>: IFUTechniqueFacadeAction.java <p/>
@@ -18,7 +18,7 @@ import com.smt.sitebuilder.action.FacadeActionAdapter;
  * <b>Changes: </b>
  ****************************************************************************/
 
-public class IFUTechniqueAction extends FacadeActionAdapter {
+public class IFUTechniqueAction extends SBActionAdapter {
 	
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		// Get document id from the request object

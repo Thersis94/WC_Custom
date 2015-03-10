@@ -7,7 +7,8 @@ import com.smt.sitebuilder.action.FacadeActionAdapter;
 /****************************************************************************
  * <b>Title</b>: IFUInstanceFacadeAction.java <p/>
  * <b>Project</b>: WebCrescendo <p/>
- * <b>Description: Handles instance specific information and metadata for the IFU documents.
+ * <b>Description: Works as the starting point for all IFU actions.  Requests
+ * are used to create the approprite action and are then handed off to that action.
  * </b> 
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2015<p/>
@@ -20,49 +21,30 @@ import com.smt.sitebuilder.action.FacadeActionAdapter;
 
 public class IFUFacadeAction extends FacadeActionAdapter {
 	
-	public void retrieve(SMTServletRequest req) throws ActionException {
-		// Get the IFU instance id from the request object
-		
-		// build the retrieve query to get the current ifu instance from
-		// the database as well as all technique guides that belong to it
-		
-		// Run the query and build the document with a list of technique guides.
-		
-		// put the document on the request object.
-	}
-	
 	public void list(SMTServletRequest req) throws ActionException {
-		// Get the IFU instance id from the request object
+		// Get the actual action we are calling from the request object
 		
-		// build the retrieve query to get the current ifu container as well
-		// as all of its instances
+		// Build an instance of that action and pass along the request object.
+	}
+
+	
+	public void retrieve(SMTServletRequest req) throws ActionException {
+		// Get the actual action we are calling from the request object
 		
-		// Run the query and build the container with a map of instances.
-		
-		// put the container on the request object.
+		// Build an instance of that action and pass along the request object.
 	}
 	
 	public void delete(SMTServletRequest req) throws ActionException {
-		// Get the current instance's id
+		// Get the actual action we are calling from the request object
 		
-		// Build the delete query.  Approval is handled higher up so we don't need to do any extra checks here
-		
-		// Execute the query and return
+		// Build an instance of that action and pass along the request object.
 	}
 
-	public void update(SMTServletRequest req) throws ActionException {
-		// build the documentvo from the request object
+	public void copy(SMTServletRequest req) throws ActionException {
+		// Get the id for the current IFU record.
 		
-		// build the update query with the build query function
+		// Create a record duplicator for this, being sure to include all instances and their technique guides
 		
-		// Set the values on the query with information on the vo
-		
-		//Execute the query and return
+		// Run the duplicator.
 	}
-	
-	private String buildUpdateSql() {
-		//Build the update sql for
-		return "";
-	}
-		  
 }
