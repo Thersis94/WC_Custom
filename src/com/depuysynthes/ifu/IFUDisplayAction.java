@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.siliconmtn.action.ActionException;
+import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -29,6 +30,10 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 
 public class IFUDisplayAction extends SBActionAdapter {
+	
+	public IFUDisplayAction(ActionInitVO init) {
+		super(init);
+	}
 
 	public void retrieve(SMTServletRequest req) throws ActionException {		
 		// Get the default language - give the user a list to choose from if one wasn't passed
