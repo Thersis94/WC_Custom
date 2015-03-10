@@ -1,5 +1,6 @@
 package com.depuysynthes.ifu;
 
+import java.io.Serializable;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,7 +23,8 @@ import com.siliconmtn.http.SMTServletRequest;
  * <b>Changes: </b>
  ****************************************************************************/
 
-public class IFUDocumentVO {
+public class IFUDocumentVO implements Serializable{
+	  private static final long serialVersionUID = -8409489653118817155L;
 	
 	private String documentId;
 	private String ifuId;
@@ -40,11 +42,7 @@ public class IFUDocumentVO {
 	}
 
 	public IFUDocumentVO(SMTServletRequest req) {
-		super();
-		
-	}
-	
-	public void setData(SMTServletRequest req) {
+		this();
 		this.setDocumentId(req.getParameter("documentId"));
 		this.setDocumentId(req.getParameter("ifuId"));
 		this.setTitle(req.getParameter("title"));
@@ -57,10 +55,7 @@ public class IFUDocumentVO {
 	}
 
 	public IFUDocumentVO(ResultSet rs) {
-		super();
-	}
-	
-	public void setData(ResultSet rs) {
+		this();
 		DBUtil db = new DBUtil();
 		this.setDocumentId(db.getStringVal("DEPUY_IFU_IMPL_ID", rs));
 		this.setIfuId(db.getStringVal("DEPUY_IFU_ID", rs));
@@ -71,6 +66,7 @@ public class IFUDocumentVO {
 		this.setAtricleTxt(db.getStringVal("ARTICLE_TXT", rs));
 		this.setPartNoTxt(db.getStringVal("PART_NO_TXT", rs));
 		this.setDefaultMsgTxt(db.getStringVal("DEFAULT_MSG_TXT", rs));
+		db = null;
 	}
 
 	public String getDocumentId() {
