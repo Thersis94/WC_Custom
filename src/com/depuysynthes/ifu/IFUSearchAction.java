@@ -7,14 +7,14 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 public class IFUSearchAction extends SBActionAdapter {
 
 	public void retrieve(SMTServletRequest req) throws ActionException {		
-		// TODO Get documents from the database that match the current search terms
-		/**
-		 * determine the default language if we are not using that right now
-		 * build query
-		 * get results
-		 * parse results into a map of IFUContainers
-		 */
+		// Get the default language
+		// build the retrieve sql 
+		// Execute the retrieve sql with any search parameter gotten from the request object
 		
+		// Build a list of container vos, before adding a document we will check if another document of that
+		// name is already in the list and skip it if already there
+		
+		// put the map on the request object
 	}
 	
 	private String buildRetrieveSQL(SMTServletRequest req){
