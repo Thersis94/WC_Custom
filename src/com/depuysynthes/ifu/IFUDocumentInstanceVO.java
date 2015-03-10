@@ -1,10 +1,13 @@
 package com.depuysynthes.ifu;
 
+import java.util.List;
+
 /****************************************************************************
- * <b>Title</b>: TechniqueGuideVO.java <p/>
+ * <b>Title</b>: IFUDocumentInstanceVO.java <p/>
  * <b>Project</b>: WebCrescendo <p/>
- * <b>Description: Holds any information specific to the technique guides that
- * cannot be ascertained from the IFUDocumentInstanceVO and IFUContainer vos.</b> 
+ * <b>Description: Containse instance specific information for an IFU document.
+ * This includes items such as the language, document alias, and any technique
+ * guides pertaining to this instance of the document</b> 
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2015<p/>
  * <b>Company:</b> Silicon Mountain Technologies<p/>
@@ -14,6 +17,12 @@ package com.depuysynthes.ifu;
  * <b>Changes: </b>
  ****************************************************************************/
 
-public class TechniqueGuideVO {
+public class IFUDocumentInstanceVO {
+	
+	private List<TechniqueGuideVO> tgList;
+	
+	public IFUDocumentInstanceVO() {
+		
+	}
 
 }

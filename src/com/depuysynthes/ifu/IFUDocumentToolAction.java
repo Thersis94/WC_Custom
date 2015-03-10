@@ -4,6 +4,22 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.smt.sitebuilder.action.SBActionAdapter;
 
+/****************************************************************************
+ * <b>Title</b>: IFUDocumentToolAction.java <p/>
+ * <b>Project</b>: WebCrescendo <p/>
+ * <b>Description: Top level action for handling the IFU documents.  This handles
+ * all the most broad metadata information pertaining to the documents and leaves
+ * handling the actual instances of the documents and their associated technique
+ * guides to the appropriate actions.</b> 
+ * <p/>
+ * <b>Copyright:</b> Copyright (c) 2015<p/>
+ * <b>Company:</b> Silicon Mountain Technologies<p/>
+ * @author Eric Damschroder
+ * @version 1.0
+ * @since March 10, 2015<p/>
+ * <b>Changes: </b>
+ ****************************************************************************/
+
 public class IFUDocumentToolAction extends SBActionAdapter {
 	
 	public void retrieve(SMTServletRequest req) throws ActionException {
@@ -44,7 +60,7 @@ public class IFUDocumentToolAction extends SBActionAdapter {
 		// run the query
 	}
 	
-	private void versionDocument(IFUDocumentVO doc) {
+	private void versionDocument(IFUDocumentInstanceVO doc) {
 		/**
 		 * If this function is called we want to update the version status of the
 		 * document based on DePuy's versioning system.

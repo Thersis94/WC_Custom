@@ -4,6 +4,22 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.smt.sitebuilder.action.SBActionAdapter;
 
+/****************************************************************************
+ * <b>Title</b>: IFUSearchAction.java <p/>
+ * <b>Project</b>: WebCrescendo <p/>
+ * <b>Description: Searches the database for all items pertaining to the given 
+ * search parameters and creates a list of IFU documents from those results.
+ * If the language being searched does not have a complete list of IFUs then 
+ * any missing documents will be loaded from the default langiage/</b> 
+ * <p/>
+ * <b>Copyright:</b> Copyright (c) 2015<p/>
+ * <b>Company:</b> Silicon Mountain Technologies<p/>
+ * @author Eric Damschroder
+ * @version 1.0
+ * @since March 10, 2015<p/>
+ * <b>Changes: </b>
+ ****************************************************************************/
+
 public class IFUSearchAction extends SBActionAdapter {
 
 	public void retrieve(SMTServletRequest req) throws ActionException {		
