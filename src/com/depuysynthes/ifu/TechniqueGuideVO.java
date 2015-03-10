@@ -1,5 +1,7 @@
 package com.depuysynthes.ifu;
 
+import com.siliconmtn.http.SMTServletRequest;
+
 /****************************************************************************
  * <b>Title</b>: TechniqueGuideVO.java <p/>
  * <b>Project</b>: WebCrescendo <p/>
@@ -15,5 +17,13 @@ package com.depuysynthes.ifu;
  ****************************************************************************/
 
 public class TechniqueGuideVO {
+	
+	public TechniqueGuideVO() {
+			
+	}
+
+	public TechniqueGuideVO(SMTServletRequest req) {
+		
+	}
 
 }

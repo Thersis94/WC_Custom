@@ -1,6 +1,8 @@
 package com.depuysynthes.ifu;
 
 import com.siliconmtn.action.ActionException;
+import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.http.SMTServletRequest;
 import com.smt.sitebuilder.action.SBActionAdapter;
 
@@ -19,6 +21,19 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 
 public class IFUAction  extends SBActionAdapter {
 	
+	public IFUAction() {
+		super();
+	}
+	
+	public IFUAction(ActionInitVO actionInit) {
+		super(actionInit);
+	}
+	
+	public IFUAction(ActionInitVO actionInit, SMTDBConnection conn) {
+		super(actionInit);
+		super.setDBConnection(conn);
+	}
+
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		// Get the IFU instance id from the request object
 		
@@ -50,13 +65,17 @@ public class IFUAction  extends SBActionAdapter {
 	}
 
 	public void update(SMTServletRequest req) throws ActionException {
-		// build the documentvo from the request object
+		this.update(new IFUContainer(req));
+	}
+	
+	public void update(IFUContainer con) throws ActionException {
 		
 		// build the update query with the build query function
 		
 		// Set the values on the query with information on the vo
 		
 		//Execute the query and return
+		
 	}
 	
 	private String buildUpdateSql() {

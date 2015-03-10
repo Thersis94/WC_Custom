@@ -2,10 +2,12 @@ package com.depuysynthes.ifu;
 
 import java.util.List;
 
+import com.siliconmtn.http.SMTServletRequest;
+
 /****************************************************************************
  * <b>Title</b>: IFUDocumentInstanceVO.java <p/>
  * <b>Project</b>: WebCrescendo <p/>
- * <b>Description: Containse instance specific information for an IFU document.
+ * <b>Description: Contains instance specific information for an IFU document.
  * This includes items such as the language, document alias, and any technique
  * guides pertaining to this instance of the document</b> 
  * <p/>
@@ -22,6 +24,10 @@ public class IFUDocumentVO {
 	private List<TechniqueGuideVO> tgList;
 	
 	public IFUDocumentVO() {
+		
+	}
+
+	public IFUDocumentVO(SMTServletRequest req) {
 		
 	}
 

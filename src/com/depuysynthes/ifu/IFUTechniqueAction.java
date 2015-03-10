@@ -1,6 +1,8 @@
 package com.depuysynthes.ifu;
 
 import com.siliconmtn.action.ActionException;
+import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.http.SMTServletRequest;
 import com.smt.sitebuilder.action.SBActionAdapter;
 
@@ -19,6 +21,19 @@ import com.smt.sitebuilder.action.SBActionAdapter;
  ****************************************************************************/
 
 public class IFUTechniqueAction extends SBActionAdapter {
+	
+	public IFUTechniqueAction() {
+		super();
+	}
+	
+	public IFUTechniqueAction(ActionInitVO actionInit) {
+		super(actionInit);
+	}
+	
+	public IFUTechniqueAction(ActionInitVO actionInit, SMTDBConnection conn) {
+		super(actionInit);
+		super.setDBConnection(conn);
+	}
 	
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		// Get document id from the request object
@@ -51,14 +66,17 @@ public class IFUTechniqueAction extends SBActionAdapter {
 	}
 
 	public void update(SMTServletRequest req) throws ActionException {
-		// Build a document vo from the request object
-		
+		this.update(new TechniqueGuideVO(req));
+	}
+	
+	public void update(TechniqueGuideVO vo ) throws ActionException {
 		// build the update sql.  Approval is habdled higher up so we 
 		// don't need to check for that
 		
 		// Set the values from the vo
 		
 		// execute and return.
+		
 	}
 	
 	private String buildUpdateSql() {
