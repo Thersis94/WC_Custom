@@ -1,11 +1,8 @@
 package com.depuysynthes.ifu;
 
-import java.sql.SQLException;
-
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.http.SMTServletRequest;
-import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 
@@ -25,28 +22,28 @@ import com.smt.sitebuilder.common.constants.AdminConstants;
  ****************************************************************************/
 
 public class IFUFacadeAction extends SimpleActionAdapter {
-	public final String techniqueAction = "technique";
-	public final String instanceAction = "instance";
-	public final String ifuAction = "ifu";
-	public final String searchAction = "search";
-	
-	
+
+	/**
+	 * ActionType - supported behaviors of this facade
+	 **/
+	private enum ActionType {
+		technique, instance, ifu, display; 
+	}
+
 	public void list(SMTServletRequest req) throws ActionException {
 		SMTActionInterface sai = getAction(req.getParameter(AdminConstants.FACADE_TYPE));
 		if (sai != null) {
 			sai.list(req);
 		} else {
-			log.debug("Invalid action passed to facade: " + req.getParameter(AdminConstants.FACADE_TYPE));
+			//list the portlet instances in the admintool
 			super.retrieve(req);
 		}
 	}
-	
+
 	public void retrieve(SMTServletRequest req) throws ActionException {
-		IFUDisplayAction sa = new IFUDisplayAction();
-		sa.setDBConnection(dbConn);
-		sa.retrieve(req);
+		getAction(ActionType.display).retrieve(req);
 	}
-	
+
 	public void delete(SMTServletRequest req) throws ActionException {
 		SMTActionInterface sai = getAction(req.getParameter(AdminConstants.FACADE_TYPE));
 		if (sai != null) {
@@ -56,33 +53,52 @@ public class IFUFacadeAction extends SimpleActionAdapter {
 			super.delete(req);
 		}
 	}
-	
+
 	public void update(SMTServletRequest req) throws ActionException {
 		SMTActionInterface sai = getAction(req.getParameter(AdminConstants.FACADE_TYPE));
 		if (sai != null) {
 			sai.update(req);
 		} else {
-			log.debug("Invalid action passed to facade: " + req.getParameter(AdminConstants.FACADE_TYPE));
+			//update the portlet config
 			super.update(req);
 		}
 	}
-	
+
+
 	/**
-	 * Determine which action should handle the request
+	 * Determine which action should handle the request based on a String value
 	 * @param actionType
 	 * @return
 	 */
 	private SMTActionInterface getAction(String actionType) {
-		SMTActionInterface ai = null;
-		switch(StringUtil.checkVal(actionType)) {
-			case ifuAction:
-				ai = new IFUAction(actionInit);
-			case instanceAction:
-				ai =  new IFUInstanceAction(actionInit);
-			case techniqueAction:
-				ai = new IFUTechniqueAction(actionInit);
+		ActionType at = null;
+		try {
+			at = ActionType.valueOf(actionType);
+		} catch (Exception e) {
+			return null;
 		}
-		
+		return getAction(at);
+	}
+
+
+	/**
+	 * Determine which action should handle the request based on an enum token
+	 * @param actionType
+	 * @return
+	 */
+	private SMTActionInterface getAction(ActionType type) {
+		SMTActionInterface ai = null;
+		switch(type) {
+			case ifu:
+				ai = new IFUAction(actionInit);
+			case instance:
+				ai =  new IFUInstanceAction(actionInit);
+			case technique:
+				ai = new IFUTechniqueAction(actionInit);
+			case display:
+				ai = new IFUDisplayAction(actionInit);
+		}
+
 		if (ai != null) {
 			ai.setAttributes(attributes);
 			ai.setDBConnection(dbConn);
@@ -90,18 +106,21 @@ public class IFUFacadeAction extends SimpleActionAdapter {
 		return ai;
 	}
 
+	//TODO this is wrong - copying the portlet should not clone all the data.
+	/**
+	 * 
 	public void copy(SMTServletRequest req) throws ActionException {
-	    	Object msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
-		
+		Object msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
+
 		try {
 			dbConn.setAutoCommit(false);
-			
+
 			super.copy(req);
-			getAction(this.ifuAction).copy(req);
-			getAction(this.instanceAction).copy(req);
-			
+			getAction(ActionType.ifu).copy(req);
+			getAction(ActionType.instance).copy(req);
+
 			dbConn.commit();
-			
+
 		} catch(Exception e) {
 			try {
 				dbConn.rollback();
@@ -117,4 +136,5 @@ public class IFUFacadeAction extends SimpleActionAdapter {
 		}
 		super.moduleRedirect(req, msg, (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH));
 	}
+	 */
 }
