@@ -42,12 +42,9 @@ public class IFUFacadeAction extends SimpleActionAdapter {
 	}
 	
 	public void retrieve(SMTServletRequest req) throws ActionException {
-		SMTActionInterface sai = getAction(req.getParameter(AdminConstants.FACADE_TYPE));
-		if (sai != null) {
-			sai.retrieve(req);
-		} else {
-			throw new ActionException("Invalid action passed to facade: " + req.getParameter(AdminConstants.FACADE_TYPE));
-		}
+		IFUDisplayAction sa = new IFUDisplayAction();
+		sa.setDBConnection(dbConn);
+		sa.retrieve(req);
 	}
 	
 	public void delete(SMTServletRequest req) throws ActionException {
@@ -55,7 +52,7 @@ public class IFUFacadeAction extends SimpleActionAdapter {
 		if (sai != null) {
 			sai.delete(req);
 		} else {
-			//throw new ActionException("Invalid action passed to facade: " + req.getParameter(AdminConstants.FACADE_TYPE));
+			//delete the Portlet instance
 			super.delete(req);
 		}
 	}
@@ -76,30 +73,34 @@ public class IFUFacadeAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	private SMTActionInterface getAction(String actionType) {
+		SMTActionInterface ai = null;
 		switch(StringUtil.checkVal(actionType)) {
 			case ifuAction:
-				return new IFUAction(actionInit, dbConn);
+				ai = new IFUAction(actionInit);
 			case instanceAction:
-				return new IFUInstanceAction(actionInit, dbConn);
+				ai =  new IFUInstanceAction(actionInit);
 			case techniqueAction:
-				return new IFUTechniqueAction(actionInit, dbConn);
+				ai = new IFUTechniqueAction(actionInit);
 		}
-		return null;
+		
+		if (ai != null) {
+			ai.setAttributes(attributes);
+			ai.setDBConnection(dbConn);
+		}
+		return ai;
 	}
 
 	public void copy(SMTServletRequest req) throws ActionException {
 	    	Object msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
 		
-		try{
+		try {
 			dbConn.setAutoCommit(false);
 			
 			super.copy(req);
-
-			new IFUAction(actionInit, dbConn).copy(req);
-			new IFUInstanceAction(actionInit, dbConn).copy(req);
+			getAction(this.ifuAction).copy(req);
+			getAction(this.instanceAction).copy(req);
 			
 			dbConn.commit();
-			dbConn.setAutoCommit(true);
 			
 		} catch(Exception e) {
 			try {
@@ -109,7 +110,11 @@ public class IFUFacadeAction extends SimpleActionAdapter {
 			}
 			msg = getAttribute(AdminConstants.KEY_ERROR_MESSAGE);
 			throw new ActionException(e);
+		} finally {
+			try {
+				dbConn.setAutoCommit(true);
+			} catch (Exception e) {}
 		}
-		sbUtil.moduleRedirect(req, msg, (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH));
+		super.moduleRedirect(req, msg, (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH));
 	}
 }
