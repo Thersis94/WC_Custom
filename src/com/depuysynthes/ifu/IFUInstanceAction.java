@@ -20,7 +20,7 @@ import com.smt.sitebuilder.action.SBActionAdapter;
  * <b>Changes: </b>
  ****************************************************************************/
 
-public class IFUDocumentToolAction extends SBActionAdapter {
+public class IFUInstanceAction extends SBActionAdapter {
 	
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		// Get ifu id from the request object
@@ -60,7 +60,7 @@ public class IFUDocumentToolAction extends SBActionAdapter {
 		// run the query
 	}
 	
-	private void versionDocument(IFUDocumentInstanceVO doc) {
+	private void versionDocument(IFUDocumentVO doc) {
 		/**
 		 * If this function is called we want to update the version status of the
 		 * document based on DePuy's versioning system.

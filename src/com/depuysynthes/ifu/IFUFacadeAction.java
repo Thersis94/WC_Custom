@@ -18,7 +18,7 @@ import com.smt.sitebuilder.action.FacadeActionAdapter;
  * <b>Changes: </b>
  ****************************************************************************/
 
-public class IFUInstanceFacadeAction extends FacadeActionAdapter {
+public class IFUFacadeAction extends FacadeActionAdapter {
 	
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		// Get the IFU instance id from the request object

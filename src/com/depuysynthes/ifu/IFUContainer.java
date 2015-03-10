@@ -19,7 +19,7 @@ import java.util.Map;
 
 public class IFUContainer {
 	
-	private Map<String, IFUDocumentInstanceVO> ifuDocuments;
+	private Map<String, IFUDocumentVO> ifuDocuments;
 	
 	public IFUContainer() {
 		

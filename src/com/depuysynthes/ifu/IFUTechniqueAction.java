@@ -18,7 +18,7 @@ import com.smt.sitebuilder.action.FacadeActionAdapter;
  * <b>Changes: </b>
  ****************************************************************************/
 
-public class IFUTechniqueFacadeAction extends FacadeActionAdapter {
+public class IFUTechniqueAction extends FacadeActionAdapter {
 	
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		// Get document id from the request object

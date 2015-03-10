@@ -17,11 +17,11 @@ import java.util.List;
  * <b>Changes: </b>
  ****************************************************************************/
 
-public class IFUDocumentInstanceVO {
+public class IFUDocumentVO {
 	
 	private List<TechniqueGuideVO> tgList;
 	
-	public IFUDocumentInstanceVO() {
+	public IFUDocumentVO() {
 		
 	}
 
