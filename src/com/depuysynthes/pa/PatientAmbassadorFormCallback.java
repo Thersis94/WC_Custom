@@ -62,10 +62,10 @@ public class PatientAmbassadorFormCallback extends SBActionAdapter {
 			if (req.getAttribute("senderEmail") != null) {
 				senderEmail = (String) req.getAttribute("senderEmail");
 			}
-			String emailAddress = trans.getFieldById(PAFConst.EMAIL_ADDRESS_TXT.getId()).getResponses().get(0);
+
 			try {
 				EmailMessageVO mail = new EmailMessageVO();
-				mail.addRecipients(emailAddress);
+				mail.addRecipients(trans.getEmailAddress());
 				mail.setSubject("Patient Ambassador Consent Document");
 				mail.setFrom(senderEmail);
 				mail.setHtmlBody(dc.getForm().getOrgConsentText());
