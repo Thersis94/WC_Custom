@@ -134,8 +134,8 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 		headers.add("Story Title");
 		headers.add("Story Text");
 		headers.add("Status Text");
-		headers.add("User was emailed consent statement");
 		headers.add("User opened consent statement");
+		headers.add("User was emailed consent statement");
 
 		return headers;
 	}
@@ -239,22 +239,32 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 			//Add Story Title
 			if(vo.getFieldById(PAFConst.STORY_TITLE_ID.getId()) != null)
 				addCell(c++, vo.getFieldById(PAFConst.STORY_TITLE_ID.getId()).getResponses().get(0), row);
+			else
+				addCell(c++, "", row);
 
 			//Add Story Text
 			if(vo.getFieldById(PAFConst.STORY_TEXT_ID.getId()) != null)
 				addCell(c++, vo.getFieldById(PAFConst.STORY_TEXT_ID.getId()).getResponses().get(0), row);
+			else
+				addCell(c++, "", row);
 
 			//Add Status Text
 			if(vo.getFieldById(PAFConst.STATUS_ID.getId()) != null)
 				addCell(c++, vo.getFieldById(PAFConst.STATUS_ID.getId()).getResponses().get(0), row);
+			else
+				addCell(c++, "", row);
 
-			//Add Status Text
-			if(vo.getFieldById(PAFConst.EMAIL_CONSENT_ID.getId()) != null)
-				addCell(c++, vo.getFieldById(PAFConst.EMAIL_CONSENT_ID.getId()).getResponses().get(0), row);
-
-			//Add Status Text
+			//Add Modal Opened Text
 			if(vo.getFieldById(PAFConst.MODAL_OPENED_ID.getId()) != null)
 				addCell(c++, vo.getFieldById(PAFConst.MODAL_OPENED_ID.getId()).getResponses().get(0), row);
+			else
+				addCell(c++, "No", row);
+
+			//Add Email Consent Text
+			if(vo.getFieldById(PAFConst.EMAIL_CONSENT_ID.getId()) != null)
+				addCell(c++, vo.getFieldById(PAFConst.EMAIL_CONSENT_ID.getId()).getResponses().get(0), row);
+			else
+				addCell(c++, "No", row);
 
 			//Close out the Transaction Row.
 			row = sheet.createRow(r++);
@@ -337,22 +347,33 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 		//Add Story Title
 		if(vo.getFieldById(PAFConst.STORY_TITLE_ID.getId()) != null)
 			addRow(r++, vo.getFieldById(PAFConst.STORY_TITLE_ID.getId()).getResponses().get(0), sheet);
+		else
+			addRow(r++, "", sheet);
 
 		//Add Story Text
 		if(vo.getFieldById(PAFConst.STORY_TEXT_ID.getId()) != null)
 			addRow(r++, vo.getFieldById(PAFConst.STORY_TEXT_ID.getId()).getResponses().get(0), sheet);
+		else
+			addRow(r++, "", sheet);
 
 		//Add Status Text
 		if(vo.getFieldById(PAFConst.STATUS_ID.getId()) != null)
 			addRow(r++, vo.getFieldById(PAFConst.STATUS_ID.getId()).getResponses().get(0), sheet);
-
-		//Add Email Consent Flag
-		if(vo.getFieldById(PAFConst.EMAIL_CONSENT_ID.getId()) != null)
-			addRow(r++, vo.getFieldById(PAFConst.EMAIL_CONSENT_ID.getId()).getResponses().get(0), sheet);
+		else
+			addRow(r++, "", sheet);
 
 		//Add Modal Opened Flag
 		if(vo.getFieldById(PAFConst.MODAL_OPENED_ID.getId()) != null)
 			addRow(r++, vo.getFieldById(PAFConst.MODAL_OPENED_ID.getId()).getResponses().get(0), sheet);
+		else
+			addRow(r++, "No", sheet);
+
+		//Add Email Consent Flag
+		if(vo.getFieldById(PAFConst.EMAIL_CONSENT_ID.getId()) != null)
+			addRow(r++, vo.getFieldById(PAFConst.EMAIL_CONSENT_ID.getId()).getResponses().get(0), sheet);
+		else
+			addRow(r++, "No", sheet);
+
 	}
 
 	/**

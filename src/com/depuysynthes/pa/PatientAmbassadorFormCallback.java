@@ -57,12 +57,6 @@ public class PatientAmbassadorFormCallback extends SBActionAdapter {
 		if(trans.getFieldById(PAFConst.EMAIL_CONSENT_ID.getId()).getResponses().get(0).equals("Yes")) {
 			SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 
-			StringBuilder sb = new StringBuilder();
-			sb.append("<p>Thank you for submitting your story to the Patient Ambassador ");
-			sb.append("program.  As requested, the consent statement has been attached as ");
-			sb.append("a downloadable link <a href='" + site.getFullSiteAlias());
-			sb.append("/binary/org/DPY_SYN/ambassador/DePuySynthesConsentAndRelease2014.pdf'>Here</a>.");
-
 			//allow actions to overwrite the source email address
 			String senderEmail = site.getMainEmail();
 			if (req.getAttribute("senderEmail") != null) {
@@ -74,7 +68,7 @@ public class PatientAmbassadorFormCallback extends SBActionAdapter {
 				mail.addRecipients(emailAddress);
 				mail.setSubject("Patient Ambassador Consent Document");
 				mail.setFrom(senderEmail);
-				mail.setHtmlBody(sb.toString());
+				mail.setHtmlBody(dc.getForm().getOrgConsentText());
 
 				MessageSender ms = new MessageSender(attributes, dbConn);
 				ms.sendMessage(mail);
