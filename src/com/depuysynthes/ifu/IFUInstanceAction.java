@@ -1,10 +1,18 @@
 package com.depuysynthes.ifu;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title</b>: IFUDocumentToolAction.java <p/>
@@ -38,26 +46,93 @@ public class IFUInstanceAction extends SBActionAdapter {
 	}
 
 	public void retrieve(SMTServletRequest req) throws ActionException {
-		// Get ifu id from the request object
+		String documentId = req.getParameter("documentId");
+		String sql = createRetrieveSql();
 		
-		// Build the sql query to get the ifu from the database
-		// Instances and technique guides are not needed at this level
+		IFUDocumentVO doc = null;
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			ps.setString(1, documentId);
+			
+			ResultSet rs = ps.executeQuery();
+			
+			while (rs.next()) {
+				if (doc == null) {
+					doc = new IFUDocumentVO(rs);
+				}
+				IFUTechniqueGuideVO tech = new IFUTechniqueGuideVO(rs);
+				tech.setDpySynMediaBinId(rs.getString("TG_MEDIABIN_ID"));
+				tech.setUrlTxt(rs.getString("TG_URL"));
+				doc.addTg(tech);
+			}
+		} catch (SQLException e) {
+			log.error("Unable to get data for document: " + documentId, e);
+		}
 		
-		// build an IFU container from the resultset and put it on the request object
+		super.putModuleData(doc);
+	}
+	
+	private String createRetrieveSql() {
+		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		
+		StringBuilder sql = new StringBuilder(400);
+		
+		sql.append("SELECT *, dit.URL_TXT as TG_URL, dit.DPY_SYN_MEDIABIN_ID as TG_MEDIABIN_ID ");
+		sql.append("FROM ").append(customDb).append("DEPUY_IFU_IMPL dii ");
+		sql.append("LEFT JOIN ").append(customDb).append("DEPUY_IFU_TG_XR ditx on ");
+		sql.append("dii.DEPUY_IFU_IMPL_ID = ditx.DEPUY_IFU_IMPL_ID ");
+		sql.append("LEFT JOIN ").append(customDb).append("DEPUY_IFU_TG dit ");
+		sql.append("ditx.DEPUY_IFU_TG_ID = dit.DEPUY_IFY_TG_ID ");
+		sql.append("WHERE dii.DEPUY_IFU_IMPL_ID = ? ");
+		
+		return sql.toString();
 	}
 	
 	public void list(SMTServletRequest req) throws ActionException {
-		// Build the sql query to get all the ifus from the database
-		// Create a list of IFU containers from the result set and put it on the request object
+		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		String ifuId = req.getParameter("ifuId");
+		StringBuilder sql = new StringBuilder(260);
+		
+		sql.append("SELECT *, dii.TITLE_TXT as IMPL_TITLE_TXT FROM ").append(customDb).append("DEPUY_IFU di");
+		sql.append("LEFT JOIN ").append(customDb).append("DEPUY_IFU_IMPL dii ");
+		sql.append("on di.DEPUY_IFU_ID = dii.DEPUY_IFU_ID ");
+		sql.append("WHERE di.DEPUY_IFU_ID = ? ");
+		
+		IFUVO con = null;
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, ifuId);
+			
+			ResultSet rs = ps.executeQuery();
+			while(rs.next()) {
+				if (con == null) {
+					con = new IFUVO(rs);
+				}
+				String docTitle = rs.getString("IMPL_TITLE_TXT");
+				IFUDocumentVO doc = new IFUDocumentVO(rs);
+				doc.setTitle(docTitle);
+				
+				con.addIfuDocument(docTitle, doc);
+			}
+		} catch (SQLException e) {
+			log.error("Unable to get instances of IFU: " + ifuId, e);
+		}
+		
+		super.putModuleData(con);
 	}
 	
 	public void delete(SMTServletRequest req) throws ActionException {
-		// Check the approval status of the item we are going to delete
-		// if this is approved then we need to submit this for deletion via the appropriate function
+		String documentId = req.getParameter("documentId");
+		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(80);
+		sql.append("DELETE ").append(customDb).append("DEPUY_IFU_IMPL WHERE DEPUY_IFU_IMPL_ID = ?");
 		
-		// Build the sql query to delete this ifu
-		
-		// execute the query and return
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, documentId);
+			
+			if (ps.executeUpdate() < 1)
+				log.warn("No records deleted with id: " + documentId);
+		} catch (SQLException e) {
+			log.error("Unable to delete document: " + documentId, e);
+		}
 	}
 
 	public void update(SMTServletRequest req) throws ActionException {
@@ -65,45 +140,47 @@ public class IFUInstanceAction extends SBActionAdapter {
 	}
 	
 	public void update(IFUDocumentVO vo) throws ActionException {
-		// Check the current approval status of the record we are updating.
-		// if we are trying to update an approved item we copy it and update its status
+		boolean isInsert = false;
+		if (StringUtil.checkVal(vo.getImplId()).length() == 0) {
+			isInsert = true;
+			vo.setimplId(new UUIDGenerator().getUUID());
+		}
 		
-		// Check if we are doing an update that calls for a version change, if so call the versionDocument function
+		String sql = buildUpdateSql(isInsert);
 		
-		// build the update sql 
-		
-		//get the ifu contianer from the request object
-		
-		// fill out the update query with the contianer
-		
-		// run the query
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			int i = 1;
+			ps.setString(i++, vo.getIfuId());
+			ps.setString(i++, vo.getTitle());
+			ps.setString(i++, vo.getLanguageCd());
+			ps.setString(i++, vo.getUrlTxt());
+			ps.setString(i++, vo.getDpySynMediaBinId());
+			ps.setString(i++, vo.getAtricleTxt());
+			ps.setString(i++, vo.getPartNoTxt());
+			ps.setString(i++, vo.getDefaultMsgTxt());
+			ps.setTimestamp(i++, Convert.getCurrentTimestamp());
+			ps.setString(i++, vo.getImplId());
+			
+		} catch (SQLException e) {
+			log.error("Unable to update document: " + vo.getImplId(), e);
+		}
 	}
 	
-	private void versionDocument(IFUDocumentVO doc) {
-		/**
-		 * If this function is called we want to update the version status of the
-		 * document based on DePuy's versioning system.
-		 */
+	private String buildUpdateSql(boolean isInsert) {
+		StringBuilder sql = new StringBuilder(300);
+		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		
+		if (isInsert) {
+			sql.append("INSERT INTO ").append(customDb).append("DEPUY_IFU_IMPL ");
+			sql.append("(DEPUY_IFU_ID, TITLE_TXT, LANGUAGE_CD, URL_TXT, DPY_SYN_MEDIABIN_ID, ");
+			sql.append("ARTICLE_TXT, PART_NO_TXT, DEFAULT_MSG_TXT, CREATE_DT, DEPUY_IMPL_ID )");
+			sql.append("VALUES(?,?,?,?,?,?,?,?,?)");
+		} else {
+			sql.append("UPDATE ").append(customDb).append("DEPUY_IFU_IMPL ");
+			sql.append("SET DEPUY_IFU_ID = ?, TITLE_TXT = ?, LANGUAGE_CD = ?, URL_TXT = ?, ");
+			sql.append("DPY_SYN_MEDIABIN_ID = ?, ARTICLE_TXT = ?, PART_NO_TXT = ?, ");
+			sql.append(" DEFAULT_MSG_TXT = ?, UPDATE_DT = ? WHERE DEPUY_IMPL_ID = ?");
+		}
+		return sql.toString();
 	}
-	
-	private void updateApprovalStatus(SMTServletRequest req) throws ActionException {
-		// Update the current records approval status
-		// Call the method to create the neccesary approval records
-	}
-	
-	private void updateApprovalRecords(SMTServletRequest req) throws ActionException {
-		// create the needed wc_sync records 
-		// update the approval status of this record
-	}
-	
-	private String buildUpdateSql() {
-		//Build the update sql for the update
-		return "";
-	}
-	
-	public void copy(SMTServletRequest req) throws ActionException {
-		// get the current ifu id
-		// set up the record duplicator to copy the current record as well as its children and grandchildren
-	}
-
 }

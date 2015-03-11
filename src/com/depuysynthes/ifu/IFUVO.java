@@ -29,7 +29,7 @@ public class IFUVO {
 	private String ifuGroupId;
 	private String title;
 	private String version;
-	private int archiveFlg;
+	private int archiveFlg = 0;
 	private int orderNo;
 	private Map<String, IFUDocumentVO> ifuDocuments;
 	
@@ -52,8 +52,8 @@ public class IFUVO {
 		DBUtil db = new DBUtil();
 		this.setIfuId(db.getStringVal("DEPUY_IFU_ID", rs));
 		this.setIfuGroupId(db.getStringVal("DEPUY_IFU_GROUP_ID", rs));
-		this.setTitle(db.getStringVal("DEPUY_TITLE_TXT", rs));
-		this.setVersion(db.getStringVal("DEPUY_VERSION_TXT", rs));
+		this.setTitle(db.getStringVal("TITLE_TXT", rs));
+		this.setVersion(db.getStringVal("VERSION_TXT", rs));
 		this.setOrderNo(db.getIntVal("ORDER_NO", rs));
 		this.setArchiveFlg(db.getIntVal("ARCHIVE_FLG", rs));
 		db = null;
