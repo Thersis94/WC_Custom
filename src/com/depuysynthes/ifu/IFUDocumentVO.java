@@ -2,8 +2,9 @@ package com.depuysynthes.ifu;
 
 import java.io.Serializable;
 import java.sql.ResultSet;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.SMTServletRequest;
@@ -27,60 +28,60 @@ public class IFUDocumentVO extends IFUVO implements Serializable{
 	  private static final long serialVersionUID = -8409489653118817155L;
 	
 	private String implId;
-	private String urlTxt;
+	private String urlText;
 	private String dpySynMediaBinId;
 	private String languageCd;
-	private String atricleTxt;
-	private String partNoTxt;
-	private String defaultMsgTxt;
-	private List<IFUTechniqueGuideVO> tgList;
+	private String articleText;
+	private String partNoText;
+	private String defaultMsgText;
+	private Map<String, IFUTechniqueGuideVO> tgList;
 	
 	public IFUDocumentVO() {
-		setTgList(new ArrayList<IFUTechniqueGuideVO>());
+		tgList = new LinkedHashMap<>();
 	}
 
 	public IFUDocumentVO(SMTServletRequest req) {
 		super(req);
-		this.setimplId(req.getParameter("implId"));
-		this.setimplId(req.getParameter("ifuId"));
-		this.setUrlTxt(req.getParameter("urlTxt"));
+		tgList = new LinkedHashMap<>();
+		this.setImplId(req.getParameter("implId"));
+		//this.setImplId(req.getParameter("ifuId"));
+		this.setUrlText(req.getParameter("urlText"));
 		this.setDpySynMediaBinId(req.getParameter("dpySynMediaBinId"));
 		this.setLanguageCd(req.getParameter("languageCd"));
-		this.setAtricleTxt(req.getParameter("articleTxt"));
-		this.setPartNoTxt(req.getParameter("partNo"));
-		this.setDefaultMsgTxt(req.getParameter("defaultMsgTxt"));
-		setTgList(new ArrayList<IFUTechniqueGuideVO>());
+		this.setArticleText(req.getParameter("articleText"));
+		this.setPartNoText(req.getParameter("partNo"));
+		this.setDefaultMsgText(req.getParameter("defaultMsgText"));
 	}
 
 	public IFUDocumentVO(ResultSet rs) {
 		super(rs);
+		tgList = new LinkedHashMap<>();
 		DBUtil db = new DBUtil();
-		this.setimplId(db.getStringVal("DEPUY_IFU_IMPL_ID", rs));
+		this.setImplId(db.getStringVal("DEPUY_IFU_IMPL_ID", rs));
 		this.setIfuId(db.getStringVal("DEPUY_IFU_ID", rs));
-		this.setUrlTxt(db.getStringVal("URL_TXT", rs));
+		this.setUrlText(db.getStringVal("URL_TXT", rs));
 		this.setDpySynMediaBinId(db.getStringVal("DPY_SYN_MEDIABIN_ID", rs));
 		this.setLanguageCd(db.getStringVal("LANGUAGE_CD", rs));
-		this.setAtricleTxt(db.getStringVal("ARTICLE_TXT", rs));
-		this.setPartNoTxt(db.getStringVal("PART_NO_TXT", rs));
-		this.setDefaultMsgTxt(db.getStringVal("DEFAULT_MSG_TXT", rs));
+		this.setArticleText(db.getStringVal("ARTICLE_TXT", rs));
+		this.setPartNoText(db.getStringVal("PART_NO_TXT", rs));
+		this.setDefaultMsgText(db.getStringVal("DEFAULT_MSG_TXT", rs));
 		db = null;
-		setTgList(new ArrayList<IFUTechniqueGuideVO>());
 	}
 
 	public String getImplId() {
 		return implId;
 	}
 
-	public void setimplId(String implId) {
+	public void setImplId(String implId) {
 		this.implId = implId;
 	}
 
-	public String getUrlTxt() {
-		return urlTxt;
+	public String getUrlText() {
+		return urlText;
 	}
 
-	public void setUrlTxt(String urlTxt) {
-		this.urlTxt = urlTxt;
+	public void setUrlText(String urlText) {
+		this.urlText = urlText;
 	}
 
 	public String getDpySynMediaBinId() {
@@ -99,40 +100,46 @@ public class IFUDocumentVO extends IFUVO implements Serializable{
 		this.languageCd = languageCd;
 	}
 
-	public String getAtricleTxt() {
-		return atricleTxt;
+	public String getArticleText() {
+		return articleText;
 	}
 
-	public void setAtricleTxt(String atricleTxt) {
-		this.atricleTxt = atricleTxt;
+	public void setArticleText(String atricleText) {
+		this.articleText = atricleText;
 	}
 
-	public String getPartNoTxt() {
-		return partNoTxt;
+	public String getPartNoText() {
+		return partNoText;
 	}
 
-	public void setPartNoTxt(String partNoTxt) {
-		this.partNoTxt = partNoTxt;
+	public void setPartNoText(String partNoText) {
+		this.partNoText = partNoText;
 	}
 
-	public String getDefaultMsgTxt() {
-		return defaultMsgTxt;
+	public String getDefaultMsgText() {
+		return defaultMsgText;
 	}
 
-	public void setDefaultMsgTxt(String defaultMsgTxt) {
-		this.defaultMsgTxt = defaultMsgTxt;
+	public void setDefaultMsgText(String defaultMsgText) {
+		this.defaultMsgText = defaultMsgText;
 	}
 
-	public List<IFUTechniqueGuideVO> getTgList() {
-		return tgList;
+	public Collection<IFUTechniqueGuideVO> getTgList() {
+		return tgList.values();
 	}
 
-	public void setTgList(List<IFUTechniqueGuideVO> tgList) {
-		this.tgList = tgList;
-	}
 	
 	public void addTg(IFUTechniqueGuideVO vo) {
-		tgList.add(vo);
+		if (vo.getTgName() != null && vo.getTgId() != null)
+			tgList.put(vo.getTgId(), vo);
+	}
+	
+	public String getPublicUrl() {
+		if (this.dpySynMediaBinId != null) {
+			return IFUFacadeAction.MEDIABIN_PATH + this.getDpySynMediaBinId();
+		} else {
+			return IFUFacadeAction.BINARY_PATH + getBusinessUnitName() + "/" + this.getUrlText();
+		}
 	}
 
 }

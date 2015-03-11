@@ -22,8 +22,8 @@ import com.siliconmtn.http.SMTServletRequest;
 public class IFUTechniqueGuideVO {
 	
 	private String tgId;
-	private String tgNM;
-	private String urlTxt;
+	private String tgName;
+	private String urlText;
 	private String dpySynMediaBinId;
 	
 	public IFUTechniqueGuideVO() {
@@ -32,17 +32,17 @@ public class IFUTechniqueGuideVO {
 
 	public IFUTechniqueGuideVO(SMTServletRequest req) {
 		this.setTgId(req.getParameter("tgId"));
-		this.setTgNM(req.getParameter("tgNM"));
-		this.setUrlTxt(req.getParameter("urlTxt"));
+		this.setTgName(req.getParameter("tgName"));
+		this.setUrlText(req.getParameter("urlText"));
 		this.setDpySynMediaBinId(req.getParameter("dpySynMediaBinId"));
 	}
 	
 	public IFUTechniqueGuideVO(ResultSet rs) {
 		DBUtil db = new DBUtil();
 		this.setTgId(db.getStringVal("DEPUY_IFU_TG_ID", rs));
-		this.setTgNM(db.getStringVal("TG_NM", rs));
-		this.setUrlTxt(db.getStringVal("URL_TXT", rs));
-		this.setDpySynMediaBinId(db.getStringVal("DPY_SYN_MEDIABIN_ID", rs));
+		this.setTgName(db.getStringVal("TG_NM", rs));
+		this.setUrlText(db.getStringVal("tg_url", rs)); //synonym used in IFUDisplayAction
+		this.setDpySynMediaBinId(db.getStringVal("tg_mediabin_id", rs)); //synonym used in IFUDisplayAction
 		db = null;
 	}
 
@@ -54,20 +54,20 @@ public class IFUTechniqueGuideVO {
 		this.tgId = tgId;
 	}
 
-	public String getTgNM() {
-		return tgNM;
+	public String getTgName() {
+		return tgName;
 	}
 
-	public void setTgNM(String tgNM) {
-		this.tgNM = tgNM;
+	public void setTgName(String tgName) {
+		this.tgName = tgName;
 	}
 
-	public String getUrlTxt() {
-		return urlTxt;
+	public String getUrlText() {
+		return urlText;
 	}
 
-	public void setUrlTxt(String urlTxt) {
-		this.urlTxt = urlTxt;
+	public void setUrlText(String urlText) {
+		this.urlText = urlText;
 	}
 
 	public String getDpySynMediaBinId() {
@@ -76,6 +76,14 @@ public class IFUTechniqueGuideVO {
 
 	public void setDpySynMediaBinId(String dpySynMediaBinId) {
 		this.dpySynMediaBinId = dpySynMediaBinId;
+	}
+	
+	public String getPublicUrl() {
+		if (this.dpySynMediaBinId != null) {
+			return IFUFacadeAction.MEDIABIN_PATH + this.getDpySynMediaBinId();
+		} else {
+			return this.getUrlText();
+		}
 	}
 
 }

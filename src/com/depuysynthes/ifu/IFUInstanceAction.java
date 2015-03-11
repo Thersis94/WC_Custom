@@ -61,7 +61,7 @@ public class IFUInstanceAction extends SBActionAdapter {
 				}
 				IFUTechniqueGuideVO tech = new IFUTechniqueGuideVO(rs);
 				tech.setDpySynMediaBinId(rs.getString("TG_MEDIABIN_ID"));
-				tech.setUrlTxt(rs.getString("TG_URL"));
+				tech.setUrlText(rs.getString("TG_URL"));
 				doc.addTg(tech);
 			}
 		} catch (SQLException e) {
@@ -108,7 +108,7 @@ public class IFUInstanceAction extends SBActionAdapter {
 				}
 				String docTitle = rs.getString("IMPL_TITLE_TXT");
 				IFUDocumentVO doc = new IFUDocumentVO(rs);
-				doc.setTitle(docTitle);
+				doc.setTitleText(docTitle);
 				
 				con.addIfuDocument(docTitle, doc);
 			}
@@ -123,7 +123,7 @@ public class IFUInstanceAction extends SBActionAdapter {
 		String documentId = req.getParameter("documentId");
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(80);
-		sql.append("DELETE ").append(customDb).append("DEPUY_IFU_IMPL WHERE DEPUY_IFU_IMPL_ID = ?");
+		sql.append("DELETE FROM ").append(customDb).append("DEPUY_IFU_IMPL WHERE DEPUY_IFU_IMPL_ID = ?");
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, documentId);
@@ -143,7 +143,7 @@ public class IFUInstanceAction extends SBActionAdapter {
 		boolean isInsert = false;
 		if (StringUtil.checkVal(vo.getImplId()).length() == 0) {
 			isInsert = true;
-			vo.setimplId(new UUIDGenerator().getUUID());
+			vo.setImplId(new UUIDGenerator().getUUID());
 		}
 		
 		String sql = buildUpdateSql(isInsert);
@@ -151,13 +151,13 @@ public class IFUInstanceAction extends SBActionAdapter {
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			int i = 1;
 			ps.setString(i++, vo.getIfuId());
-			ps.setString(i++, vo.getTitle());
+			ps.setString(i++, vo.getTitleText());
 			ps.setString(i++, vo.getLanguageCd());
-			ps.setString(i++, vo.getUrlTxt());
+			ps.setString(i++, vo.getUrlText());
 			ps.setString(i++, vo.getDpySynMediaBinId());
-			ps.setString(i++, vo.getAtricleTxt());
-			ps.setString(i++, vo.getPartNoTxt());
-			ps.setString(i++, vo.getDefaultMsgTxt());
+			ps.setString(i++, vo.getArticleText());
+			ps.setString(i++, vo.getPartNoText());
+			ps.setString(i++, vo.getDefaultMsgText());
 			ps.setTimestamp(i++, Convert.getCurrentTimestamp());
 			ps.setString(i++, vo.getImplId());
 			
