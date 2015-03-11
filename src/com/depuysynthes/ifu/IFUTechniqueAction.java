@@ -106,7 +106,7 @@ public class IFUTechniqueAction extends SBActionAdapter {
 		
 		StringBuilder sql = new StringBuilder();
 		
-		sql.append("DELETE ").append(customDb).append("DEPUY_IFU_TG WHERE DEPUY_IFU_TG_ID = ?");
+		sql.append("DELETE FROM ").append(customDb).append("DEPUY_IFU_TG WHERE DEPUY_IFU_TG_ID = ?");
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, tgId);
@@ -133,8 +133,8 @@ public class IFUTechniqueAction extends SBActionAdapter {
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			int i = 1;
-			ps.setString(i++, vo.getTgNM());
-			ps.setString(i++, vo.getUrlTxt());
+			ps.setString(i++, vo.getTgName());
+			ps.setString(i++, vo.getUrlText());
 			ps.setString(i++, vo.getDpySynMediaBinId());
 			ps.setTimestamp(i++, Convert.getCurrentTimestamp());
 			ps.setString(i++, vo.getTgId());

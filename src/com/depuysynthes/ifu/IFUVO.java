@@ -1,6 +1,7 @@
 package com.depuysynthes.ifu;
 
 import java.sql.ResultSet;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,11 +28,13 @@ public class IFUVO {
 	
 	private String ifuId;
 	private String ifuGroupId;
-	private String title;
-	private String version;
+	private String titleText;
+	private String versionText;
 	private int archiveFlg = 0;
 	private int orderNo;
 	private Map<String, IFUDocumentVO> ifuDocuments;
+	private Date createDate = null;
+	private String businessUnitName;
 	
 	public IFUVO() {
 		ifuDocuments = new HashMap<String, IFUDocumentVO>();
@@ -41,8 +44,8 @@ public class IFUVO {
 		this();
 		this.setIfuId(req.getParameter("ifuId"));
 		this.setIfuGroupId(req.getParameter("ifuGroupId"));
-		this.setTitle(req.getParameter("title"));
-		this.setVersion(req.getParameter("version"));
+		this.setTitleText(req.getParameter("titleText"));
+		this.setVersionText(req.getParameter("versionText"));
 		this.setOrderNo(Convert.formatInteger(req.getParameter("orderNo")));
 		this.setArchiveFlg(Convert.formatInteger(req.getParameter("archiveFlg")));
 	}
@@ -52,10 +55,12 @@ public class IFUVO {
 		DBUtil db = new DBUtil();
 		this.setIfuId(db.getStringVal("DEPUY_IFU_ID", rs));
 		this.setIfuGroupId(db.getStringVal("DEPUY_IFU_GROUP_ID", rs));
-		this.setTitle(db.getStringVal("TITLE_TXT", rs));
-		this.setVersion(db.getStringVal("VERSION_TXT", rs));
+		this.setTitleText(db.getStringVal("TITLE_TXT", rs));
+		this.setVersionText(db.getStringVal("VERSION_TXT", rs));
 		this.setOrderNo(db.getIntVal("ORDER_NO", rs));
 		this.setArchiveFlg(db.getIntVal("ARCHIVE_FLG", rs));
+		this.setCreateDate(db.getDateVal("CREATE_DT", rs));
+		this.setBusinessUnitName(db.getStringVal("BUSINESS_UNIT_NM", rs));
 		db = null;
 	}
 
@@ -75,20 +80,20 @@ public class IFUVO {
 		this.ifuGroupId = ifuGroupId;
 	}
 
-	public String getTitle() {
-		return title;
+	public String getTitleText() {
+		return titleText;
 	}
 
-	public void setTitle(String title) {
-		this.title = title;
+	public void setTitleText(String titleText) {
+		this.titleText = titleText;
 	}
 
-	public String getVersion() {
-		return version;
+	public String getVersionText() {
+		return versionText;
 	}
 
-	public void setVersion(String version) {
-		this.version = version;
+	public void setVersionText(String versionText) {
+		this.versionText = versionText;
 	}
 
 	public int getArchiveFlg() {
@@ -117,6 +122,22 @@ public class IFUVO {
 	
 	public void addIfuDocument(String key, IFUDocumentVO doc) {
 		ifuDocuments.put(key, doc);
+	}
+
+	public Date getCreateDate() {
+		return createDate;
+	}
+
+	public void setCreateDate(Date createDate) {
+		this.createDate = createDate;
+	}
+
+	public String getBusinessUnitName() {
+		return businessUnitName;
+	}
+
+	public void setBusinessUnitName(String businessUnitName) {
+		this.businessUnitName = businessUnitName;
 	}
 
 }

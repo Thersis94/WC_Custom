@@ -60,7 +60,7 @@ public class IFUAction  extends SBActionAdapter {
 				}
 				String docTitle = rs.getString("IMPL_TITLE_TXT");
 				IFUDocumentVO doc = new IFUDocumentVO(rs);
-				doc.setTitle(docTitle);
+				doc.setTitleText(docTitle);
 				
 				con.addIfuDocument(docTitle, doc);
 			}
@@ -138,10 +138,10 @@ public class IFUAction  extends SBActionAdapter {
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			int i = 1;
 			ps.setString(i++, vo.getIfuGroupId());
-			ps.setString(i++, vo.getTitle());
+			ps.setString(i++, vo.getTitleText());
 			ps.setInt(i++, vo.getArchiveFlg());
 			ps.setInt(i++, vo.getOrderNo());
-			ps.setString(i++, vo.getVersion());
+			ps.setString(i++, vo.getVersionText());
 			ps.setTimestamp(i++, Convert.getCurrentTimestamp());
 			ps.setString(i++, vo.getIfuId());
 			
