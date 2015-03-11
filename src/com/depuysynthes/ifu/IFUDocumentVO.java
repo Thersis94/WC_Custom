@@ -30,6 +30,7 @@ public class IFUDocumentVO extends IFUVO implements Serializable{
 	private String implId;
 	private String urlText;
 	private String dpySynMediaBinId;
+	private String dpySynAssetName;
 	private String languageCd;
 	private String articleText;
 	private String partNoText;
@@ -44,7 +45,7 @@ public class IFUDocumentVO extends IFUVO implements Serializable{
 		super(req);
 		tgList = new LinkedHashMap<>();
 		this.setImplId(req.getParameter("implId"));
-		//this.setImplId(req.getParameter("ifuId"));
+		this.setIfuId(req.getParameter("ifuId"));
 		this.setUrlText(req.getParameter("urlText"));
 		this.setDpySynMediaBinId(req.getParameter("dpySynMediaBinId"));
 		this.setLanguageCd(req.getParameter("languageCd"));
@@ -90,6 +91,14 @@ public class IFUDocumentVO extends IFUVO implements Serializable{
 
 	public void setDpySynMediaBinId(String dpySynMediaBinId) {
 		this.dpySynMediaBinId = dpySynMediaBinId;
+	}
+
+	public String getDpySynAssetName() {
+		return dpySynAssetName;
+	}
+
+	public void setDpySynAssetName(String dpySynAssetNm) {
+		this.dpySynAssetName = dpySynAssetNm;
 	}
 
 	public String getLanguageCd() {

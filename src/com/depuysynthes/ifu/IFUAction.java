@@ -14,6 +14,8 @@ import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.common.SiteBuilderUtil;
+import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -45,30 +47,32 @@ public class IFUAction  extends SBActionAdapter {
 	}
 
 	public void retrieve(SMTServletRequest req) throws ActionException {
+		log.debug("Reftriving IFUs");
 		String ifuId = req.getParameter("ifuId");
 		String sql = createRetrieveSql();
 		
-		IFUVO con = null;
+		IFUVO vo = null;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			ps.setString(1, ifuId);
 			
 			ResultSet rs = ps.executeQuery();
 			
 			while (rs.next()) {
-				if (con == null) {
-					con = new IFUVO(rs);
+				if (vo == null) {
+					vo = new IFUVO(rs);
 				}
-				String docTitle = rs.getString("IMPL_TITLE_TXT");
-				IFUDocumentVO doc = new IFUDocumentVO(rs);
-				doc.setTitleText(docTitle);
-				
-				con.addIfuDocument(docTitle, doc);
+				if (rs.getString("DEPUY_IFU_IMPL_ID") != null) {
+					IFUDocumentVO doc = new IFUDocumentVO(rs);
+					doc.setTitleText(rs.getString("IMPL_TITLE_TXT"));
+					
+					vo.addIfuDocument(doc.getImplId(), doc);
+				}
 			}
 		} catch (SQLException e) {
 			log.error("Unable to get data for document: " + ifuId, e);
 		}
 		
-		super.putModuleData(con);
+		super.putModuleData(vo);
 	}
 	
 	private String createRetrieveSql() {
@@ -85,11 +89,16 @@ public class IFUAction  extends SBActionAdapter {
 	}
 
 	public void list(SMTServletRequest req) throws ActionException {
+		if (req.hasParameter("ifuId") || req.hasParameter("add")) {
+			this.retrieve(req);
+			return;
+		}
+		log.debug("Listing all IFUs");
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		
 		StringBuilder sql = new StringBuilder(55);
-		sql.append("SELECT * FROM ").append(customDb).append("DEPUY_IFU");
+		sql.append("SELECT * FROM ").append(customDb).append("DEPUY_IFU ");
 		
+		log.debug(sql);
 		List<IFUVO> data = new ArrayList<IFUVO>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ResultSet rs = ps.executeQuery();
@@ -105,6 +114,8 @@ public class IFUAction  extends SBActionAdapter {
 	}
 	
 	public void delete(SMTServletRequest req) throws ActionException {
+		log.debug("Deleting document");
+		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		String ifuId = req.getParameter("ifuId");
 		
@@ -117,15 +128,29 @@ public class IFUAction  extends SBActionAdapter {
 			if (ps.executeUpdate() < 1)
 				log.warn("No records deleted for ifu: " + ifuId);
 		} catch (SQLException e) {
+			msg = attributes.get(AdminConstants.KEY_ERROR_MESSAGE);
 			log.error("Unable to delete ifu with id: " + ifuId);
 		}
+
+		SiteBuilderUtil util = new SiteBuilderUtil();
+		util.adminRedirect(req, msg, (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH));
 	}
 
 	public void update(SMTServletRequest req) throws ActionException {
+		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
+		try {
 		this.update(new IFUVO(req));
+		} catch (ActionException e) {
+			msg = attributes.get(AdminConstants.KEY_ERROR_MESSAGE);
+			throw e;
+		} finally {
+			SiteBuilderUtil util = new SiteBuilderUtil();
+			util.adminRedirect(req, msg, (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH));
+		}
 	}
 	
 	public void update(IFUVO vo) throws ActionException {
+		log.debug("Updating IFU Document");
 		boolean isInsert = false;
 		if (StringUtil.checkVal(vo.getIfuId()).length() == 0) {
 			isInsert = true;
@@ -134,7 +159,7 @@ public class IFUAction  extends SBActionAdapter {
 		}
 		
 		String sql = buildUpdateSql(isInsert);
-		
+		log.debug(sql+"|"+vo.getIfuGroupId()+"|"+vo.getTitleText()+"|"+vo.getArchiveFlg()+"|"+vo.getOrderNo()+"|"+vo.getVersionText()+"|"+vo.getIfuId());
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			int i = 1;
 			ps.setString(i++, vo.getIfuGroupId());
@@ -145,7 +170,7 @@ public class IFUAction  extends SBActionAdapter {
 			ps.setTimestamp(i++, Convert.getCurrentTimestamp());
 			ps.setString(i++, vo.getIfuId());
 			
-			if (ps.executeUpdate() > 1) 
+			if (ps.executeUpdate() < 1) 
 				log.warn("Nothing updated for IFU with id: " + vo.getIfuId());
 		} catch (SQLException e) {
 			log.error("Unable to update IFU with id: " + vo.getIfuId());
@@ -157,12 +182,12 @@ public class IFUAction  extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder();
 		if (isInsert) {
 			sql.append("INSERT INTO ").append(customDb).append("DEPUY_IFU (");
-			sql.append("DEPUY_IFU_GROUP_ID, TITLE_TXT, ARCHIVED_FLG, ORDER_NO, VERSION_TXT, CREATE_DT, DEPUY_IFU_ID) ");
+			sql.append("DEPUY_IFU_GROUP_ID, TITLE_TXT, ARCHIVE_FLG, ORDER_NO, VERSION_TXT, CREATE_DT, DEPUY_IFU_ID) ");
 			sql.append("VALUES(?,?,?,?,?,?,?)");
 		} else {
 			sql.append("UPDATE ").append(customDb).append("DEPUY_IFU SET ");
-			sql.append("DEPUY_IFU_GROUP_ID = ?, TITLE_TXT = ?, ARCHIVED_FLG = ?, ");
-			sql.append("ORDER_NO = ?, VERSION_TXT = ?, CREATE_DT = ? WHERE DEPUY_IFU_ID = ?) ");
+			sql.append("DEPUY_IFU_GROUP_ID = ?, TITLE_TXT = ?, ARCHIVE_FLG = ?, ");
+			sql.append("ORDER_NO = ?, VERSION_TXT = ?, UPDATE_DT = ? WHERE DEPUY_IFU_ID = ? ");
 		}
 		
 		return sql.toString();
