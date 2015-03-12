@@ -35,9 +35,9 @@ public class IFUFacadeAction extends SimpleActionAdapter {
 	}
 
 	public void list(SMTServletRequest req) throws ActionException {
-		String facadeType = StringUtil.checkVal(req.getParameter(AdminConstants.FACADE_TYPE), "ifu");
-		SMTActionInterface sai = getAction(facadeType);
-		if (sai != null) {
+		SMTActionInterface sai;
+		if (req.hasParameter("dataMod")) {
+			sai = getAction(StringUtil.checkVal(req.getParameter(AdminConstants.FACADE_TYPE), "ifu"));
 			sai.list(req);
 		} else {
 			//list the portlet instances in the admintool
