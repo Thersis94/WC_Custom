@@ -35,8 +35,13 @@ public class IFUFacadeAction extends SimpleActionAdapter {
 	}
 
 	public void list(SMTServletRequest req) throws ActionException {
-		String facadeType = StringUtil.checkVal(req.getParameter(AdminConstants.FACADE_TYPE), "ifu");
-		SMTActionInterface sai = getAction(facadeType);
+		SMTActionInterface sai;
+		if (req.hasParameter("dataMod")) {
+			sai = getAction(StringUtil.checkVal(req.getParameter(AdminConstants.FACADE_TYPE), "ifu"));
+		} else {
+			sai = getAction(req.getParameter(AdminConstants.FACADE_TYPE));
+		}
+		
 		if (sai != null) {
 			sai.list(req);
 		} else {
