@@ -21,11 +21,11 @@ import com.smt.sitebuilder.common.constants.Constants;
  * <b>Description: Searches the database for all items pertaining to the given 
  * search parameters and creates a list of IFU documents from those results.
  * If the language being searched does not have a complete list of IFUs then 
- * any missing documents will be loaded from the default langiage/</b> 
+ * any missing documents will be loaded from the default language/</b> 
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2015<p/>
  * <b>Company:</b> Silicon Mountain Technologies<p/>
- * @author Eric Damschroder
+ * @author James McKain
  * @version 1.0
  * @since March 10, 2015<p/>
  * <b>Changes: </b>
@@ -33,7 +33,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 
 public class IFUDisplayAction extends SBActionAdapter {
 	
-	private static final String DEFAULT_LANG = "en"; //we use this to run the union query when loading the list of IFUs
+	private static final String DEFAULT_LANG = "en"; //we use this to load the list of IFUs
 	
 	public IFUDisplayAction(ActionInitVO init) {
 		super(init);
@@ -72,12 +72,13 @@ public class IFUDisplayAction extends SBActionAdapter {
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			ps.setString(1, lang);
 			ps.setString(2, lang);
-			ps.setString(3, DEFAULT_LANG);
-			if (keyword.length() > 2) {
+			if (keyword.length() > 2) { //do not search the default_lang when searching keywords
+				ps.setString(3, keyword);
 				ps.setString(4, keyword);
 				ps.setString(5, keyword);
 				ps.setString(6, keyword);
-				ps.setString(7, keyword);
+			} else {
+				ps.setString(3, DEFAULT_LANG);
 			}
 
 			boolean addTg = false;
@@ -90,7 +91,7 @@ public class IFUDisplayAction extends SBActionAdapter {
 					vo = data.get(ifuId);
 					//once we have the IFU, we only want TG's attached to THAT IFU, not those in the default language
 					addTg = (StringUtil.checkVal(vo.getImplId()).equals(rs.getString("xr_impl_id")));
-					log.debug("impl=" + vo.getImplId() + " " + rs.getString("xr_impl_id") + " adding? " + addTg);
+					//log.debug("impl=" + vo.getImplId() + " " + rs.getString("xr_impl_id") + " adding? " + addTg);
 				} else {
 					vo = new IFUDocumentVO(rs);
 					addTg = true;
@@ -123,11 +124,13 @@ public class IFUDisplayAction extends SBActionAdapter {
 		sql.append("a.BUSINESS_UNIT_NM, a.order_no, a.version_txt, a.business_unit_nm,  ");
 		sql.append("isnull(a.depuy_ifu_group_id, a.depuy_ifu_id) as depuy_ifu_id, ");  //use pending records in place of approved ones
 		sql.append("b.title_txt, b.url_txt, b.dpy_syn_mediabin_id, ");
-		sql.append("b.language_cd, isnull(b.update_dt, b.create_dt) as create_dt, b.default_msg_txt, ");
+		sql.append("b.language_cd, b.create_dt, b.default_msg_txt, ");
 		sql.append("b.depuy_ifu_impl_id, xr.depuy_ifu_impl_id as xr_impl_id, ");
 		sql.append("tg.DEPUY_IFU_TG_ID, tg.tg_nm, tg.url_txt as tg_url, tg.dpy_syn_mediabin_id as tg_mediabin_id ");
 		sql.append("from ").append(customDb).append("DEPUY_IFU a ");
-		sql.append("inner join ").append(customDb).append("DEPUY_IFU_IMPL b on a.depuy_ifu_id=b.depuy_ifu_id and (b.language_cd=? or b.language_cd=?) ");
+		sql.append("inner join ").append(customDb).append("DEPUY_IFU_IMPL b on a.depuy_ifu_id=b.depuy_ifu_id and (b.language_cd=? ");
+		if (!isKeyword) sql.append(" or b.language_cd=? ");
+		sql.append(") ");
 		sql.append("left outer join ").append(customDb).append("DEPUY_IFU_TG_XR xr on b.depuy_ifu_impl_id=xr.depuy_ifu_impl_id ");
 		sql.append("left outer join ").append(customDb).append("DEPUY_IFU_TG tg on xr.depuy_ifu_tg_id=tg.depuy_ifu_tg_id ");
 		sql.append("where a.archive_flg=").append((isArchive) ? 1 : 0);
