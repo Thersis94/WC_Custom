@@ -35,8 +35,6 @@ import com.smt.sitebuilder.common.constants.Constants;
 
 public class IFUInstanceAction extends SBActionAdapter {
 	
-	private final String orgPath = "/org/DPY_SYN_EMEA/ifu_documents/";
-	
 	public IFUInstanceAction() {
 		super();
 	}
@@ -203,7 +201,7 @@ public class IFUInstanceAction extends SBActionAdapter {
 	private void writeNewFile(SMTServletRequest req) throws ActionException {
 		try {
 			FilePartDataBean file = req.getFile("instanceFile");
-			String path = (String)getAttribute(Constants.BINARY_PATH) + orgPath + req.getParameter("businessUnitName")+"/";
+			String path = (String)getAttribute(Constants.BINARY_PATH) + IFUFacadeAction.orgPath + req.getParameter("businessUnitName")+"/";
 			FileManager fm = new FileManager();
 			fm.setPath(path);
 			fm.writeFiles(file.getFileData(), path, file.getFileName(), false, true);
