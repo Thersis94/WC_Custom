@@ -375,6 +375,7 @@ public class FSProductAction extends SBActionAdapter {
 			sql.append("pa.ATTRIBUTE_GROUP_ID is null and p.product_group_id is null ");
 		}
 		sql.append("and p.status_no=5 and p.product_catalog_id=? ");
+		sql.append("order by p.url_alias_txt ");
 		log.debug(sql.toString()+"|"+catalogId);
 		try {
 			PreparedStatement ps = dbConn.prepareStatement(sql.toString());
