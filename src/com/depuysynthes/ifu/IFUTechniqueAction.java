@@ -8,7 +8,6 @@ import java.util.List;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -42,24 +41,30 @@ public class IFUTechniqueAction extends SBActionAdapter {
 		super(actionInit);
 	}
 	
-	public IFUTechniqueAction(ActionInitVO actionInit, SMTDBConnection conn) {
-		super(actionInit);
-		super.setDBConnection(conn);
+	/**
+	 * Determine if we are getting all the technique guides or just one
+	 */
+	public void list(SMTServletRequest req) throws ActionException {
+		if (req.hasParameter("tgId") || req.hasParameter("add")) {
+			getSingleTechniqueGuide(req);
+		} else {
+			getAllTechniqueGuides(req);
+		}
 	}
 	
-	public void retrieve(SMTServletRequest req) throws ActionException {
-		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+	/**
+	 * Get a single technique guide along with its parent document and the name
+	 * of its mediabin file, if any.
+	 * @param req
+	 * @throws ActionException
+	 */
+	private void getSingleTechniqueGuide(SMTServletRequest req) {
 		String tgId = req.getParameter("tgId");
+		log.debug("Getting single technique guide with id: " + tgId);
 		
-		StringBuilder sql = new StringBuilder(90);
-		
-		sql.append("SELECT *, dit.DPY_SYN_MEDIABIN_ID as tg_mediabin_id, dit.URL_TXT as tg_url FROM ");
-		sql.append(customDb).append("DEPUY_IFU_TG dit ");
-		sql.append("left join ").append(customDb).append("DEPUY_IFU_TG ditx on ");
-		sql.append("dit.DEPUY_IFU_TG_ID = ditx.DEPUY_IFU_TG_ID ");
-		sql.append("left join ").append(customDb).append("DPY_SYN_MEDIABIN dsm on ");
-		sql.append("dsm.DPY_SYN_MEDIABIN_ID = dit.DPY_SYN_MEDIABIN_ID WHERE dit.DEPUY_IFU_TG_ID = ?");
+		String sql = buildSingleGuideSql();
 		log.debug(sql+"|"+tgId);
+		
 		IFUTechniqueGuideVO tech = null;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, tgId);
@@ -75,28 +80,49 @@ public class IFUTechniqueAction extends SBActionAdapter {
 		super.putModuleData(tech);
 	}
 	
-	public void list(SMTServletRequest req) throws ActionException {
-		if (req.hasParameter("tgId") || req.hasParameter("add")) {
-			this.retrieve(req);
-			return;
-		}
+	/**
+	 * Build the sql for getting a single technique guide
+	 * @return
+	 */
+	private String buildSingleGuideSql() {
+		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(90);
 		
-		String documentId = req.getParameter("documentId");
+		sql.append("SELECT *, dit.DPY_SYN_MEDIABIN_ID as tg_mediabin_id, dit.URL_TXT as tg_url FROM ");
+		sql.append(customDb).append("DEPUY_IFU_TG dit ");
+		sql.append("left join ").append(customDb).append("DEPUY_IFU_TG_XR ditx on ");
+		sql.append("dit.DEPUY_IFU_TG_ID = ditx.DEPUY_IFU_TG_ID ");
+		sql.append("left join ").append(customDb).append("DPY_SYN_MEDIABIN dsm on ");
+		sql.append("dsm.DPY_SYN_MEDIABIN_ID = dit.DPY_SYN_MEDIABIN_ID WHERE dit.DEPUY_IFU_TG_ID = ?");
+		
+		return sql.toString();
+	}
+	
+	/**
+	 * Get all the technique guides for the current IFU document instance.
+	 * @param req
+	 */
+	private void getAllTechniqueGuides(SMTServletRequest req) {
+		String instanceId = req.getParameter("documentId");
+		log.debug("Getting all technique guides for document instance: " + instanceId);
 		String sql = buildListSql();
 		List<IFUTechniqueGuideVO> data = new ArrayList<IFUTechniqueGuideVO>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
-			ps.setString(1, documentId);
+			ps.setString(1, instanceId);
 			
 			ResultSet rs = ps.executeQuery();
 			while(rs.next()) {
 				data.add(new IFUTechniqueGuideVO(rs));
 			}
 		} catch (SQLException e) {
-			log.error("Could not get technique guides for document with id: " + documentId);
+			log.error("Could not get technique guides for document with id: " + instanceId, e);
 		} 
-		
 	}
 	
+	/**
+	 * Build the sql query for the
+	 * @return
+	 */
 	private String buildListSql() {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		
@@ -112,6 +138,9 @@ public class IFUTechniqueAction extends SBActionAdapter {
 		return sql.toString();
 	}
 	
+	/**
+	 * Delete the supplied technique guide
+	 */
 	public void delete(SMTServletRequest req) throws ActionException {
 		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
@@ -131,9 +160,14 @@ public class IFUTechniqueAction extends SBActionAdapter {
 		}
 
 		SiteBuilderUtil util = new SiteBuilderUtil();
-		util.adminRedirect(req, msg, (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH));
+		util.adminRedirect(req, msg, buildRedirect(req));
 	}
 
+	/**
+	 * Create a technique guide vo from the request object and pass it along
+	 * to a vo based update method then redirect the user to the technique guide's
+	 * parent IFU document instance
+	 */
 	public void update(SMTServletRequest req) throws ActionException {
 		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 		try {
@@ -143,10 +177,16 @@ public class IFUTechniqueAction extends SBActionAdapter {
 			throw e;
 		} finally {
 			SiteBuilderUtil util = new SiteBuilderUtil();
-			util.adminRedirect(req, msg, (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH));
+			util.adminRedirect(req, msg, buildRedirect(req));
 		}
 	}
 	
+	/**
+	 * Update method based around an IFUTechniqueGuideVO instead of the
+	 * request object.
+	 * @param vo
+	 * @throws ActionException
+	 */
 	public void update(IFUTechniqueGuideVO vo ) throws ActionException {
 		boolean isInsert = false;
 		if (StringUtil.checkVal(vo.getTgId()).length() == 0) {
@@ -167,37 +207,54 @@ public class IFUTechniqueAction extends SBActionAdapter {
 			if (ps.executeUpdate() < 1)
 				log.warn("No Technique Guides updated for id: " + vo.getTgId());
 			
-			// If we are dealing with a brand new Technique guide we need to set up the xr record
-			if (isInsert)
-				updateXR(vo);
+			updateXR(vo, isInsert);
 			
 		} catch (SQLException e) {
 			log.error("Unable to update Technique Guide with id: " + vo.getTgId(), e);
 		}
 	}
 	
-	private void updateXR(IFUTechniqueGuideVO vo) throws SQLException{
-		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = new StringBuilder();
-		
-		sql.append("INSERT INTO ").append(customDb).append("DEPUY_IFU_TG_XR (");
-		sql.append("DEPUY_IFU_TG_ID, DEPUY_IFU_IMPL_ID, ORDER_NO, CREATE_DT) ");
-		sql.append("VALUES(?,?,?,?)");
+	/**
+	 * Set up the XR record for the new technique guide.
+	 * @param vo
+	 * @throws SQLException
+	 */
+	private void updateXR(IFUTechniqueGuideVO vo, boolean isInsert) throws SQLException{
+		String sql = buildXRInsert(isInsert);
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())){
 			int i = 1;
-			ps.setString(i++, vo.getTgId());
-			ps.setString(i++, vo.getImplId());
 			ps.setInt(i++, vo.getOrderNo());
 			ps.setTimestamp(i++, Convert.getCurrentTimestamp());
+			ps.setString(i++, vo.getTgId());
+			ps.setString(i++, vo.getImplId());
 			
 			if (ps.executeUpdate() < 1) 
 				log.warn("Unable to insert xr record for instance " + vo.getImplId() + " and Technique Guide " + vo.getTgId());
 		}
+	}
+	
+	private String buildXRInsert(boolean isInsert) {
+		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder();
 		
+		if (isInsert) {
+			sql.append("INSERT INTO ").append(customDb).append("DEPUY_IFU_TG_XR (");
+			sql.append("ORDER_NO, CREATE_DT, DEPUY_IFU_TG_ID, DEPUY_IFU_IMPL_ID) ");
+			sql.append("VALUES(?,?,?,?)");
+		} else {
+			sql.append("UPDATE ").append(customDb).append("DEPUY_IFU_TG_XR SET ");
+			sql.append("ORDER_NO=?, CREATE_DT=? WHERE DEPUY_IFU_TG_ID=? AND DEPUY_IFU_IMPL_ID=? ");
+		}
 		
+		return sql.toString();
 	}
 
+	/**
+	 * Build the update or insert query for the update methods
+	 * @param isInsert
+	 * @return
+	 */
 	private String buildUpdateSql(boolean isInsert) {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder();
@@ -211,5 +268,21 @@ public class IFUTechniqueAction extends SBActionAdapter {
 			sql.append("WHERE DEPUY_IFU_TG_ID = ? ");
 		}
 		return sql.toString();
+	}
+	
+	/**
+	 * Build up the redirect url with extra parameters to make sure that
+	 * we are sent back to the IFU document instance that this technique guide
+	 * belongs to.
+	 * @param req
+	 * @return
+	 */
+	private String buildRedirect(SMTServletRequest req) {
+		StringBuilder redirect = new StringBuilder(100);
+		redirect.append(getAttribute(AdminConstants.ADMIN_TOOL_PATH));
+		redirect.append("?facadeType=instance");
+		redirect.append("&implId=").append(req.getParameter("implId"));
+		
+		return redirect.toString();
 	}
 }
