@@ -4,6 +4,7 @@ import java.sql.ResultSet;
 
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.util.Convert;
 
 /****************************************************************************
  * <b>Title</b>: TechniqueGuideVO.java <p/>
@@ -25,6 +26,9 @@ public class IFUTechniqueGuideVO {
 	private String tgName;
 	private String urlText;
 	private String dpySynMediaBinId;
+	private String dpySynAssetName;
+	private String implId;
+	private int orderNo;
 	
 	public IFUTechniqueGuideVO() {
 			
@@ -35,6 +39,8 @@ public class IFUTechniqueGuideVO {
 		this.setTgName(req.getParameter("tgName"));
 		this.setUrlText(req.getParameter("urlText"));
 		this.setDpySynMediaBinId(req.getParameter("dpySynMediaBinId"));
+		this.setImplId(req.getParameter("implId"));
+		this.setOrderNo(Convert.formatInteger(req.getParameter("orderNo")));
 	}
 	
 	public IFUTechniqueGuideVO(ResultSet rs) {
@@ -43,6 +49,9 @@ public class IFUTechniqueGuideVO {
 		this.setTgName(db.getStringVal("TG_NM", rs));
 		this.setUrlText(db.getStringVal("tg_url", rs)); //synonym used in IFUDisplayAction
 		this.setDpySynMediaBinId(db.getStringVal("tg_mediabin_id", rs)); //synonym used in IFUDisplayAction
+		this.setDpySynAssetName(db.getStringVal("TITLE_TXT", rs));
+		this.setOrderNo(db.getIntVal("ORDER_NO", rs));
+		this.setImplId(db.getStringVal("DEPUY_IFU_IMPL_ID", rs));
 		db = null;
 	}
 
@@ -77,6 +86,14 @@ public class IFUTechniqueGuideVO {
 	public void setDpySynMediaBinId(String dpySynMediaBinId) {
 		this.dpySynMediaBinId = dpySynMediaBinId;
 	}
+
+	public String getDpySynAssetName() {
+		return dpySynAssetName;
+	}
+
+	public void setDpySynAssetName(String dpySynAssetName) {
+		this.dpySynAssetName = dpySynAssetName;
+	}
 	
 	public String getPublicUrl() {
 		if (this.dpySynMediaBinId != null) {
@@ -84,6 +101,22 @@ public class IFUTechniqueGuideVO {
 		} else {
 			return this.getUrlText();
 		}
+	}
+
+	public String getImplId() {
+		return implId;
+	}
+
+	public void setImplId(String implId) {
+		this.implId = implId;
+	}
+
+	public int getOrderNo() {
+		return orderNo;
+	}
+
+	public void setOrderNo(int orderNo) {
+		this.orderNo = orderNo;
 	}
 
 }

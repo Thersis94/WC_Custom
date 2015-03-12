@@ -3,6 +3,7 @@ package com.depuysynthes.ifu;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 
@@ -34,7 +35,8 @@ public class IFUFacadeAction extends SimpleActionAdapter {
 	}
 
 	public void list(SMTServletRequest req) throws ActionException {
-		SMTActionInterface sai = getAction(req.getParameter(AdminConstants.FACADE_TYPE));
+		String facadeType = StringUtil.checkVal(req.getParameter(AdminConstants.FACADE_TYPE), "ifu");
+		SMTActionInterface sai = getAction(facadeType);
 		if (sai != null) {
 			sai.list(req);
 		} else {
@@ -58,6 +60,8 @@ public class IFUFacadeAction extends SimpleActionAdapter {
 	}
 
 	public void update(SMTServletRequest req) throws ActionException {
+		for (String key : req.getParameterMap().keySet())
+			log.debug(key+"|"+req.getParameter(key));
 		SMTActionInterface sai = getAction(req.getParameter(AdminConstants.FACADE_TYPE));
 		if (sai != null) {
 			sai.update(req);
@@ -74,10 +78,12 @@ public class IFUFacadeAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	private SMTActionInterface getAction(String actionType) {
+		log.debug("Here we go " + actionType);
 		ActionType at = null;
 		try {
 			at = ActionType.valueOf(actionType);
 		} catch (Exception e) {
+			log.warn("Not a valid action type");
 			return null;
 		}
 		return getAction(at);
@@ -91,15 +97,20 @@ public class IFUFacadeAction extends SimpleActionAdapter {
 	 */
 	private SMTActionInterface getAction(ActionType type) {
 		SMTActionInterface ai = null;
+		log.debug("Loading action " + type);
 		switch(type) {
 			case ifu:
 				ai = new IFUAction(actionInit);
+				break;
 			case instance:
 				ai =  new IFUInstanceAction(actionInit);
+				break;
 			case technique:
 				ai = new IFUTechniqueAction(actionInit);
+				break;
 			case display:
 				ai = new IFUDisplayAction(actionInit);
+				break;
 		}
 
 		if (ai != null) {
