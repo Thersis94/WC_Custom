@@ -26,6 +26,7 @@ public class IFUFacadeAction extends SimpleActionAdapter {
 
 	public static final String MEDIABIN_PATH = "/json?amid=MEDIA_BIN_AJAX&mbid=";
 	public static final String BINARY_PATH = "/binary/org/DPY_SYN_EMEA/ifu_documents/";
+	public static final String orgPath = "/org/DPY_SYN_EMEA/ifu_documents/";
 
 	/**
 	 * ActionType - supported behaviors of this facade
