@@ -32,6 +32,7 @@ public class IFUDocumentVO extends IFUVO implements Serializable{
 	private String dpySynMediaBinId;
 	private String dpySynAssetName;
 	private String languageCd;
+	private String languageName;
 	private String articleText;
 	private String partNoText;
 	private String defaultMsgText;
@@ -46,7 +47,14 @@ public class IFUDocumentVO extends IFUVO implements Serializable{
 		tgList = new LinkedHashMap<>();
 		this.setImplId(req.getParameter("implId"));
 		this.setIfuId(req.getParameter("ifuId"));
-		this.setUrlText(req.getParameter("urlText"));
+		
+		// Check if we're getting a new file that will replace the old one.
+		if (req.getFile("instanceFile") != null) {
+			this.setUrlText(req.getFile("instanceFile").getFileName());
+		} else {
+			this.setUrlText(req.getParameter("urlText"));
+		}
+		
 		this.setDpySynMediaBinId(req.getParameter("dpySynMediaBinId"));
 		this.setLanguageCd(req.getParameter("languageCd"));
 		this.setArticleText(req.getParameter("articleText"));
@@ -63,6 +71,7 @@ public class IFUDocumentVO extends IFUVO implements Serializable{
 		this.setUrlText(db.getStringVal("URL_TXT", rs));
 		this.setDpySynMediaBinId(db.getStringVal("DPY_SYN_MEDIABIN_ID", rs));
 		this.setLanguageCd(db.getStringVal("LANGUAGE_CD", rs));
+		this.setLanguageName(db.getStringVal("LANGUAGE_NM", rs));
 		this.setArticleText(db.getStringVal("ARTICLE_TXT", rs));
 		this.setPartNoText(db.getStringVal("PART_NO_TXT", rs));
 		this.setDefaultMsgText(db.getStringVal("DEFAULT_MSG_TXT", rs));
@@ -107,6 +116,14 @@ public class IFUDocumentVO extends IFUVO implements Serializable{
 
 	public void setLanguageCd(String languageCd) {
 		this.languageCd = languageCd;
+	}
+
+	public String getLanguageName() {
+		return languageName;
+	}
+
+	public void setLanguageName(String languageName) {
+		this.languageName = languageName;
 	}
 
 	public String getArticleText() {
