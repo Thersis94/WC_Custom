@@ -48,6 +48,7 @@ public class IFUVO {
 		this.setVersionText(req.getParameter("versionText"));
 		this.setOrderNo(Convert.formatInteger(req.getParameter("orderNo")));
 		this.setArchiveFlg(Convert.formatInteger(req.getParameter("archiveFlg")));
+		this.setBusinessUnitName(req.getParameter("businessUnitName"));
 	}
 	
 	public IFUVO(ResultSet rs) {
