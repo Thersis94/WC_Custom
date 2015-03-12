@@ -181,9 +181,10 @@ public class IFUInstanceAction extends SBActionAdapter {
 	public void update(SMTServletRequest req) throws ActionException {
 		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 		try {
+			IFUDocumentVO vo = new IFUDocumentVO(req);
 			if (req.getFile("instanceFile") != null)
-				writeNewFile(req);
-			this.update(new IFUDocumentVO(req));
+				vo.setUrlText(writeNewFile(req));
+			this.update(vo);
 		} catch (ActionException e) {
 			msg = attributes.get(AdminConstants.KEY_ERROR_MESSAGE);
 			throw e;
@@ -198,14 +199,16 @@ public class IFUInstanceAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException 
 	 */
-	private void writeNewFile(SMTServletRequest req) throws ActionException {
+	private String writeNewFile(SMTServletRequest req) throws ActionException {
 		try {
 			FilePartDataBean file = req.getFile("instanceFile");
 			String path = (String)getAttribute(Constants.BINARY_PATH) + IFUFacadeAction.orgPath + req.getParameter("businessUnitName")+"/";
 			FileManager fm = new FileManager();
 			fm.setPath(path);
-			fm.writeFiles(file.getFileData(), path, file.getFileName(), false, true);
-			log.debug("Wrote file to " + path + file.getFileName());
+			fm.writeFiles(file.getFileData(), path, file.getFileName(), true, false);
+			log.debug("Wrote file to " + path + fm.getFileName());
+			
+			return fm.getFileName();
 		} catch (Exception e) {
 			log.error("Unable to upload file for new IFU document instance.", e);
 			throw new ActionException(e);
