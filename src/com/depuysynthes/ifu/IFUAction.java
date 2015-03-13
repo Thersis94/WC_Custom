@@ -13,7 +13,6 @@ import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.common.SiteBuilderUtil;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -40,17 +39,18 @@ public class IFUAction  extends SBActionAdapter {
 		super(actionInit);
 	}
 
+	
 	/**
 	 * Determine whether or not we are getting a single IFU or all of them
 	 */
 	public void list(SMTServletRequest req) throws ActionException {
 		if (req.hasParameter("ifuId") || req.hasParameter("add")) {
 			getSingleIFU(req);
-			return;
 		} else {
 			getAllIFU(req);
 		}
 	}
+	
 	
 	/**
 	 * Get all IFU documents
@@ -77,6 +77,7 @@ public class IFUAction  extends SBActionAdapter {
 		super.putModuleData(data);
 	}
 
+	
 	/**
 	 * Get a single IFU document along with all it's language instances
 	 * @param req
@@ -112,6 +113,7 @@ public class IFUAction  extends SBActionAdapter {
 		super.putModuleData(vo);
 	}
 	
+	
 	/**
 	 * Creates the query to get a single IFU document and all it's language instances
 	 * @return
@@ -119,8 +121,7 @@ public class IFUAction  extends SBActionAdapter {
 	private String buildSingleIFUSql() {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		
-		StringBuilder sql = new StringBuilder();
-		
+		StringBuilder sql = new StringBuilder(150);
 		sql.append("SELECT *, dii.TITLE_TXT as IMPL_TITLE_TXT FROM ").append(customDb).append("DEPUY_IFU di ");
 		sql.append("LEFT JOIN ").append(customDb).append("DEPUY_IFU_IMPL dii on ");
 		sql.append("di.DEPUY_IFU_ID = dii.DEPUY_IFU_ID ");
@@ -129,6 +130,7 @@ public class IFUAction  extends SBActionAdapter {
 		
 		return sql.toString();
 	}
+	
 	
 	/**
 	 * Delete the supplied IFU document
@@ -152,10 +154,10 @@ public class IFUAction  extends SBActionAdapter {
 			log.error("Unable to delete ifu with id: " + ifuId, e);
 		}
 
-		SiteBuilderUtil util = new SiteBuilderUtil();
-		util.adminRedirect(req, msg, (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH));
+		super.adminRedirect(req, msg, (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH));
 	}
 
+	
 	/**
 	 * Create an IFUVO from the request object and and send it to the
 	 *  vo specific updater
@@ -168,10 +170,10 @@ public class IFUAction  extends SBActionAdapter {
 			msg = attributes.get(AdminConstants.KEY_ERROR_MESSAGE);
 			throw e;
 		} finally {
-			SiteBuilderUtil util = new SiteBuilderUtil();
-			util.adminRedirect(req, msg, (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH));
+			super.adminRedirect(req, msg, (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH));
 		}
 	}
+	
 	
 	/**
 	 * VO specific update method that updates a record with information from a 
@@ -181,15 +183,15 @@ public class IFUAction  extends SBActionAdapter {
 	 */
 	public void update(IFUVO vo) throws ActionException {
 		log.debug("Updating IFU Document");
-		boolean isInsert = false;
-		if (StringUtil.checkVal(vo.getIfuId()).length() == 0) {
-			isInsert = true;
+		boolean isInsert = (StringUtil.checkVal(vo.getIfuId()).length() == 0);
+		if  (isInsert) {
 			vo.setIfuId(new UUIDGenerator().getUUID());
 			vo.setIfuGroupId(vo.getIfuId());
 		}
 		
 		String sql = buildUpdateSql(isInsert);
-		log.debug(sql+"|"+vo.getIfuGroupId()+"|"+vo.getTitleText()+"|"+vo.getBusinessUnitName()+"|"+vo.getArchiveFlg()+"|"+vo.getOrderNo()+"|"+vo.getVersionText()+"|"+vo.getIfuId());
+		log.debug(sql+"|"+vo.getIfuGroupId()+"|"+vo.getTitleText()+"|"+vo.getBusinessUnitName()+
+				"|"+vo.getArchiveFlg()+"|"+vo.getOrderNo()+"|"+vo.getVersionText()+"|"+vo.getIfuId());
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			int i = 1;
 			ps.setString(i++, vo.getIfuGroupId());
@@ -208,6 +210,7 @@ public class IFUAction  extends SBActionAdapter {
 		}
 	}
 	
+	
 	/**
 	 * Build the update/insert query for the IFU document
 	 * @param isInsert
@@ -215,7 +218,7 @@ public class IFUAction  extends SBActionAdapter {
 	 */
 	private String buildUpdateSql(boolean isInsert) {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = new StringBuilder();
+		StringBuilder sql = new StringBuilder(150);
 		if (isInsert) {
 			sql.append("INSERT INTO ").append(customDb).append("DEPUY_IFU (");
 			sql.append("DEPUY_IFU_GROUP_ID, TITLE_TXT, ARCHIVE_FLG, BUSINESS_UNIT_NM, ORDER_NO, VERSION_TXT, CREATE_DT, DEPUY_IFU_ID) ");

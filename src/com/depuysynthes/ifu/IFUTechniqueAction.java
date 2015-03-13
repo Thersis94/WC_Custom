@@ -13,7 +13,6 @@ import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.common.SiteBuilderUtil;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -126,8 +125,7 @@ public class IFUTechniqueAction extends SBActionAdapter {
 	private String buildListSql() {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		
-		StringBuilder sql = new StringBuilder();
-		
+		StringBuilder sql = new StringBuilder(200);
 		sql.append("SELECT dit.* FROM ").append(customDb).append("DEPUY_IFU_IMPL dii ");
 		sql.append("left join ").append(customDb).append("DEPUY_IFU_TG_XR ditx on ");
 		sql.append("ditx.DEPUY_IFU_IMPL_ID = dii.DEPUY_IFU_IMPL_ID ");
@@ -159,8 +157,7 @@ public class IFUTechniqueAction extends SBActionAdapter {
 			log.error("Could not delete Technique Guide with id: " + tgId, e);
 		}
 
-		SiteBuilderUtil util = new SiteBuilderUtil();
-		util.adminRedirect(req, msg, buildRedirect(req));
+		super.adminRedirect(req, msg, buildRedirect(req));
 	}
 
 	/**
@@ -176,8 +173,7 @@ public class IFUTechniqueAction extends SBActionAdapter {
 			msg = attributes.get(AdminConstants.KEY_ERROR_MESSAGE);
 			throw e;
 		} finally {
-			SiteBuilderUtil util = new SiteBuilderUtil();
-			util.adminRedirect(req, msg, buildRedirect(req));
+			super.adminRedirect(req, msg, buildRedirect(req));
 		}
 	}
 	
@@ -188,11 +184,9 @@ public class IFUTechniqueAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	public void update(IFUTechniqueGuideVO vo ) throws ActionException {
-		boolean isInsert = false;
-		if (StringUtil.checkVal(vo.getTgId()).length() == 0) {
-			isInsert = true;
+		boolean isInsert = (StringUtil.checkVal(vo.getTgId()).length() == 0);
+		if (isInsert)
 			vo.setTgId(new UUIDGenerator().getUUID());
-		}
 		
 		String sql = buildUpdateSql(isInsert);
 		log.debug(sql+"|"+vo.getTgName()+"|"+vo.getUrlText()+"|"+vo.getDpySynMediaBinId()+"|"+vo.getTgId());
@@ -219,7 +213,7 @@ public class IFUTechniqueAction extends SBActionAdapter {
 	 * @param vo
 	 * @throws SQLException
 	 */
-	private void updateXR(IFUTechniqueGuideVO vo, boolean isInsert) throws SQLException{
+	private void updateXR(IFUTechniqueGuideVO vo, boolean isInsert) throws SQLException {
 		String sql = buildXRInsert(isInsert);
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())){
@@ -236,7 +230,7 @@ public class IFUTechniqueAction extends SBActionAdapter {
 	
 	private String buildXRInsert(boolean isInsert) {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = new StringBuilder();
+		StringBuilder sql = new StringBuilder(150);
 		
 		if (isInsert) {
 			sql.append("INSERT INTO ").append(customDb).append("DEPUY_IFU_TG_XR (");
@@ -257,7 +251,7 @@ public class IFUTechniqueAction extends SBActionAdapter {
 	 */
 	private String buildUpdateSql(boolean isInsert) {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = new StringBuilder();
+		StringBuilder sql = new StringBuilder(150);
 		if (isInsert) {
 			sql.append("INSERT INTO ").append(customDb).append("DEPUY_IFU_TG (");
 			sql.append("TG_NM, URL_TXT, DPY_SYN_MEDIABIN_ID, CREATE_DT, DEPUY_IFU_TG_ID) ");
