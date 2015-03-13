@@ -3,8 +3,12 @@ package com.depuysynthes.ifu;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.siliconmtn.action.ActionException;
@@ -50,7 +54,8 @@ public class IFUDisplayAction extends SBActionAdapter {
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		
 		//load the list of IFUs - favor the language provided
-		Collection<IFUDocumentVO> data = loadIFUs(language, req.hasParameter("archive"), page.isPreviewMode(), req.getParameter("keyword"));
+		Collection<IFUDocumentVO> data = loadIFUs(language, req.hasParameter("archive"), 
+				page.isPreviewMode(), req.getParameter("keyword"));
 				
 		//store the data and return
 		super.putModuleData(data);
@@ -63,8 +68,9 @@ public class IFUDisplayAction extends SBActionAdapter {
 	 * @param lang
 	 * @return
 	 */
-	private Collection<IFUDocumentVO> loadIFUs(String lang, boolean isArchive, boolean isPreviewMode, String keyword) {
-		Map<String, IFUDocumentVO> data = new LinkedHashMap<>();
+	private Collection<IFUDocumentVO> loadIFUs(String lang, boolean isArchive, 
+			boolean isPreviewMode, String keyword) {
+		Map<String, IFUDocumentVO> data = new HashMap<>();
 		keyword = "%" + StringUtil.checkVal(keyword).trim() + "%";
 		String sql = getIFUQuery(lang, isArchive, isPreviewMode, (keyword.length() > 2));
 		log.debug(sql);
@@ -81,7 +87,7 @@ public class IFUDisplayAction extends SBActionAdapter {
 				ps.setString(3, DEFAULT_LANG);
 			}
 
-			boolean addTg = false;
+			boolean isNativeLang = false;
 			String ifuId = null;
 			IFUDocumentVO vo = null;
 			ResultSet rs = ps.executeQuery();
@@ -89,15 +95,14 @@ public class IFUDisplayAction extends SBActionAdapter {
 				ifuId = rs.getString("depuy_ifu_id");
 				if (data.containsKey(ifuId)) {
 					vo = data.get(ifuId);
-					//once we have the IFU, we only want TG's attached to THAT IFU, not those in the default language
-					addTg = (StringUtil.checkVal(vo.getImplId()).equals(rs.getString("xr_impl_id")));
-					//log.debug("impl=" + vo.getImplId() + " " + rs.getString("xr_impl_id") + " adding? " + addTg);
 				} else {
 					vo = new IFUDocumentVO(rs);
-					addTg = true;
 				}
+				//determine if the TG belongs to the this language or the default language
+				isNativeLang = (StringUtil.checkVal(vo.getImplId()).equals(rs.getString("xr_impl_id")));
+				
 				//add the TG to the IFU
-				if (addTg) vo.addTg(new IFUTechniqueGuideVO(rs));
+				vo.addTg(new IFUTechniqueGuideVO(rs), isNativeLang);
 				data.put(ifuId,  vo);
 			}
 			
@@ -105,8 +110,10 @@ public class IFUDisplayAction extends SBActionAdapter {
 			log.error("could not load IFUs", sqle);
 		}
 		
-		log.debug("cnt=" + data.size());
-		return data.values();
+		List<IFUDocumentVO> list = new ArrayList<>(data.values());
+		Collections.sort(list, new IFUDisplayComparator());
+		log.debug("cnt=" + list.size());
+		return list;
 	}
 	
 	
@@ -117,7 +124,8 @@ public class IFUDisplayAction extends SBActionAdapter {
 	 * @param lang
 	 * @return
 	 */
-	private String getIFUQuery(String lang, boolean isArchive, boolean isPreviewMode, boolean isKeyword) {
+	private String getIFUQuery(String lang, boolean isArchive, boolean isPreviewMode, 
+			boolean isKeyword) {
 		StringBuilder sql = new StringBuilder(300);
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("select case b.language_cd when ? then 0 else 1 end as precedence, ");
