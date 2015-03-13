@@ -13,7 +13,6 @@ import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.siliconmtn.util.databean.FilePartDataBean;
 import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.common.SiteBuilderUtil;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -169,8 +168,7 @@ public class IFUInstanceAction extends SBActionAdapter {
 			msg = attributes.get(AdminConstants.KEY_ERROR_MESSAGE);
 			log.error("Unable to delete document: " + implId, e);
 		}
-		SiteBuilderUtil util = new SiteBuilderUtil();
-		util.adminRedirect(req, msg, buildRedirect(req));
+		super.adminRedirect(req, msg, buildRedirect(req));
 	}
 
 	/**
@@ -189,8 +187,7 @@ public class IFUInstanceAction extends SBActionAdapter {
 			msg = attributes.get(AdminConstants.KEY_ERROR_MESSAGE);
 			throw e;
 		} finally {
-			SiteBuilderUtil util = new SiteBuilderUtil();
-			util.adminRedirect(req, msg, buildRedirect(req));
+			super.adminRedirect(req, msg, buildRedirect(req));
 		}
 	}
 	
@@ -222,14 +219,15 @@ public class IFUInstanceAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	public void update(IFUDocumentVO vo) throws ActionException {
-		boolean isInsert = false;
-		if (StringUtil.checkVal(vo.getImplId()).length() == 0) {
-			isInsert = true;
+		boolean isInsert = (StringUtil.checkVal(vo.getImplId()).length() == 0);
+		if (isInsert)
 			vo.setImplId(new UUIDGenerator().getUUID());
-		}
 		
 		String sql = buildUpdateSql(isInsert);
-		log.debug(sql+"|"+vo.getIfuId()+"|"+vo.getTitleText()+"|"+vo.getLanguageCd()+"|"+vo.getUrlText()+"|"+vo.getDpySynMediaBinId()+"|"+vo.getArticleText()+"|"+vo.getPartNoText()+"|"+vo.getDefaultMsgText()+"|"+vo.getImplId());
+		log.debug(sql+"|"+vo.getIfuId()+"|"+vo.getTitleText()+"|"+vo.getLanguageCd()+"|"
+				+vo.getUrlText()+"|"+vo.getDpySynMediaBinId()+"|"+vo.getArticleText()+"|"
+				+vo.getPartNoText()+"|"+vo.getDefaultMsgText()+"|"+vo.getImplId());
+		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			int i = 1;
 			ps.setString(i++, vo.getIfuId());
