@@ -36,15 +36,18 @@ public class IFUDocumentVO extends IFUVO implements Serializable{
 	private String articleText;
 	private String partNoText;
 	private String defaultMsgText;
-	private Map<String, IFUTechniqueGuideVO> tgList;
+	private Map<String, IFUTechniqueGuideVO> nativeLangTgList;
+	private Map<String, IFUTechniqueGuideVO> defaultLangTgList;
 	
 	public IFUDocumentVO() {
-		tgList = new LinkedHashMap<>();
+		nativeLangTgList = new LinkedHashMap<>();
+		defaultLangTgList = new LinkedHashMap<>();
 	}
 
 	public IFUDocumentVO(SMTServletRequest req) {
 		super(req);
-		tgList = new LinkedHashMap<>();
+		nativeLangTgList = new LinkedHashMap<>();
+		defaultLangTgList = new LinkedHashMap<>();
 		this.setImplId(req.getParameter("implId"));
 		this.setIfuId(req.getParameter("ifuId"));
 		
@@ -64,7 +67,8 @@ public class IFUDocumentVO extends IFUVO implements Serializable{
 
 	public IFUDocumentVO(ResultSet rs) {
 		super(rs);
-		tgList = new LinkedHashMap<>();
+		nativeLangTgList = new LinkedHashMap<>();
+		defaultLangTgList = new LinkedHashMap<>();
 		DBUtil db = new DBUtil();
 		this.setImplId(db.getStringVal("DEPUY_IFU_IMPL_ID", rs));
 		this.setIfuId(db.getStringVal("DEPUY_IFU_ID", rs));
@@ -150,14 +154,35 @@ public class IFUDocumentVO extends IFUVO implements Serializable{
 		this.defaultMsgText = defaultMsgText;
 	}
 
+	/**
+	 * see comment below on addTg method as to why we have two maps here.
+	 * @return
+	 */
 	public Collection<IFUTechniqueGuideVO> getTgList() {
-		return tgList.values();
+		if (nativeLangTgList.size() > 0) {
+			return nativeLangTgList.values();
+		} else {
+			return defaultLangTgList.values();
+		}
 	}
 
 	
-	public void addTg(IFUTechniqueGuideVO vo) {
-		if (vo.getTgName() != null && vo.getTgId() != null)
-			tgList.put(vo.getTgId(), vo);
+	/**
+	 * hold nativeLang and defaultLang TGs in separate Maps.  
+	 * The business rules state if there are none in the native language then the
+	 * default language's TGs should appear.  They should not appear intermixed.
+	 * @param vo
+	 * @param isNativeLang
+	 */
+	public void addTg(IFUTechniqueGuideVO vo, boolean isNativeLang) {
+		if (vo.getTgName() == null || vo.getTgId() == null) return;
+			
+		if (isNativeLang) {
+			nativeLangTgList.put(vo.getTgId(), vo);
+		} else {
+			defaultLangTgList.put(vo.getTgId(), vo);
+		}
+		return;
 	}
 	
 	public String getPublicUrl() {

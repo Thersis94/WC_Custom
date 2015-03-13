@@ -76,7 +76,7 @@ public class IFUInstanceAction extends SBActionAdapter {
 				IFUTechniqueGuideVO tech = new IFUTechniqueGuideVO(rs);
 				tech.setDpySynMediaBinId(rs.getString("TG_MEDIABIN_ID"));
 				tech.setUrlText(rs.getString("TG_URL"));
-				doc.addTg(tech);
+				doc.addTg(tech, true);
 			}
 		} catch (SQLException e) {
 			log.error("Unable to get data for document: " + implId, e);
@@ -202,7 +202,7 @@ public class IFUInstanceAction extends SBActionAdapter {
 	private String writeNewFile(SMTServletRequest req) throws ActionException {
 		try {
 			FilePartDataBean file = req.getFile("instanceFile");
-			String path = (String)getAttribute(Constants.BINARY_PATH) + IFUFacadeAction.orgPath + req.getParameter("businessUnitName")+"/";
+			String path = (String)getAttribute(Constants.BINARY_PATH) + IFUFacadeAction.ORG_PATH + req.getParameter("businessUnitName")+"/";
 			FileManager fm = new FileManager();
 			fm.setPath(path);
 			fm.writeFiles(file.getFileData(), path, file.getFileName(), true, false);
