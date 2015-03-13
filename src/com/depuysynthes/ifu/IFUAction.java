@@ -168,9 +168,9 @@ public class IFUAction  extends SBActionAdapter {
 			String oldVersion = StringUtil.checkVal(req.getParameter("oldVersion"));
 			if (oldVersion.length() != 0 && !oldVersion.equals(req.getParameter("versionTxt"))) {
 				this.copy(req);
-			} else {
-				this.update(new IFUVO(req));
 			}
+			
+			this.update(new IFUVO(req));
 		} catch (ActionException e) {
 			msg = attributes.get(AdminConstants.KEY_ERROR_MESSAGE);
 			throw e;
@@ -242,12 +242,11 @@ public class IFUAction  extends SBActionAdapter {
 	 * Create a copy of the supplied IFU 
 	 */
 	public void copy(SMTServletRequest req) throws ActionException {
-		IFUVO ifu = new IFUVO(req);
 		
 		try {
 			dbConn.setAutoCommit(false);
 			
-			getImplemenatations(ifu);
+			IFUVO ifu = getImplemenatations(req);
 			archiveIFU(ifu);
 			copyIfu(ifu);
 			copyImpl(ifu);
@@ -255,6 +254,9 @@ public class IFUAction  extends SBActionAdapter {
 			addXRs(ifu);
 			
 			dbConn.commit();
+			
+			// Put the new id on the request object
+			req.setParameter("ifuId", ifu.getIfuId());
 
 		} catch(Exception e) {
 			try {
@@ -300,41 +302,54 @@ public class IFUAction  extends SBActionAdapter {
 	 * technique guides associated with those implementations
 	 * @param ifuId
 	 */
-	private void getImplemenatations(IFUVO ifu) throws SQLException {
+	private IFUVO getImplemenatations(SMTServletRequest req) throws SQLException {
+		IFUVO ifu = null;
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(340);
 		
-		sql.append("SELECT *, dit.DPY_SYN_MEDIABIN_ID as TG_MEDIABIN_ID FROM ").append(customDb).append("DEPUY_IFU_IMPL dii ");
+		sql.append("SELECT *, dii.TITLE_TXT as IMPL_TITLE_TXT, dit.DPY_SYN_MEDIABIN_ID as TG_MEDIABIN_ID FROM ");
+		sql.append(customDb).append("DEPUY_IFU di LEFT JOIN ").append(customDb).append("DEPUY_IFU_IMPL dii on ");
+		sql.append("di.DEPUY_IFU_ID = dii.DEPUY_IFU_ID ");
 		sql.append("LEFT JOIN ").append(customDb).append("DEPUY_IFU_TG_XR ditx on ditx.DEPUY_IFU_IMPL_ID = dii.DEPUY_IFU_IMPL_ID ");
 		sql.append("LEFT JOIN ").append(customDb).append("DEPUY_IFU_TG dit on dit.DEPUY_IFU_TG_ID = ditx.DEPUY_IFU_TG_ID ");
-		sql.append("WHERE DEPUY_IFU_ID = ?");
+		sql.append("WHERE di.DEPUY_IFU_ID = ?");
+		log.debug(sql+"|"+req.getParameter("ifuId"));
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, ifu.getIfuId());
+			ps.setString(1, req.getParameter("ifuId"));
 			
 			ResultSet rs = ps.executeQuery();
 			String oldId = "";
 			IFUDocumentVO doc = null;
 			
 			while(rs.next()) {
-				if (!oldId.equals(rs.getString("DEPUY_IFU_IMPL_ID"))) {
-					if (doc != null) ifu.addIfuDocument(doc.getImplId(), doc);
-					doc = new IFUDocumentVO(rs);
-					oldId = doc.getImplId();
-					doc.setImplId(new UUIDGenerator().getUUID());
+				if (ifu == null) {
+					ifu = new IFUVO(rs);
 				}
-				IFUTechniqueGuideVO tech = new IFUTechniqueGuideVO(rs);
-				tech.setTgId(new UUIDGenerator().getUUID());
-				doc.addTg(tech, true);
+				
+				if (StringUtil.checkVal(rs.getString("DEPUY_IFU_IMPL_ID")).length() > 0) {
+					if (!oldId.equals(rs.getString("DEPUY_IFU_IMPL_ID"))) {
+						if (doc != null) ifu.addIfuDocument(doc.getImplId(), doc);
+						doc = new IFUDocumentVO(rs);
+						oldId = doc.getImplId();
+						doc.setImplId(new UUIDGenerator().getUUID());
+						doc.setTitleText(rs.getString("IMPL_TITLE_TXT"));
+					}
+					IFUTechniqueGuideVO tech = new IFUTechniqueGuideVO(rs);
+					tech.setTgId(new UUIDGenerator().getUUID());
+					doc.addTg(tech, true);
+				}
 			}
 			
-			// Add the stragler
-			ifu.addIfuDocument(doc.getImplId(), doc);
+			// Add the straggler as long as it isn't null
+			if (doc != null)
+				ifu.addIfuDocument(doc.getImplId(), doc);
 			
 		} catch (SQLException e) {
-			log.error("Unable to get documents for ifu " + ifu.getIfuId(), e);
+			log.error("Unable to get documents for ifu " + req.getParameter("ifuId"), e);
 			throw e;
 		}
+		return ifu;
 	}
 	
 	
