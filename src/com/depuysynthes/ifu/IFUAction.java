@@ -282,10 +282,11 @@ public class IFUAction  extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(100);
 		
 		sql.append("UPDATE ").append(customDb).append("DEPUY_IFU ");
-		sql.append("SET ARCHIVE_FLG = 1 WHERE DEPUY_IFU_ID = ? ");
+		sql.append("SET ARCHIVE_FLG=1, UPDATE_DT=? WHERE DEPUY_IFU_ID = ? ");
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, ifu.getIfuId());
+			ps.setTimestamp(2, Convert.getCurrentTimestamp());
 			
 			if (ps.executeUpdate() < 1)
 				throw new SQLException("No records updated when attempting to archive ifu with id: " + ifu.getIfuId());
