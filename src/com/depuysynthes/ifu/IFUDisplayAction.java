@@ -38,6 +38,10 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class IFUDisplayAction extends SBActionAdapter {
 	
 	private static final String DEFAULT_LANG = "en"; //we use this to load the list of IFUs
+
+	public IFUDisplayAction() {
+		super();
+	}
 	
 	public IFUDisplayAction(ActionInitVO init) {
 		super(init);
