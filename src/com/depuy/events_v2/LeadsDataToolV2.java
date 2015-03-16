@@ -53,6 +53,12 @@ public class LeadsDataToolV2 extends SBActionAdapter {
 	
 	private final double MAX_DISTANCE = 62.00; //radians a lead would drive to a Seminar  ~50mi
 	
+	//constants for lead ages (in months); used on the Leads page to render the 4 display columns.
+	public final static int LeadTierOne = 6;
+	public final static int LeadTierTwo = 12;
+	public final static int LeadTierThree = 36;
+	public final static int LeadTierFour = 240;
+	
 	public enum SortType { city, county, zip }
 	private UUIDGenerator uuid = null;
 	
@@ -125,7 +131,7 @@ public class LeadsDataToolV2 extends SBActionAdapter {
 					if (startDt != null && startDt.after(createDt)) continue; 
 							
 					int maxAgeMos = rs.getInt("max_age_no");
-					if (maxAgeMos == 0) maxAgeMos = 240; //20yrs of historical data
+					if (maxAgeMos == 0) maxAgeMos = LeadTierFour; //20yrs of historical data
 					Calendar cal = Calendar.getInstance();
 					cal.add(Calendar.MONTH, -maxAgeMos); //subtract month limit from today
 					
@@ -308,10 +314,10 @@ public class LeadsDataToolV2 extends SBActionAdapter {
 	 * @return
 	 */
 	private int bucketizeLeadAge(int monthsOld) {
-		if (monthsOld < 3) return 3;
-		else if (monthsOld < 6) return 6;
-		else if (monthsOld < 12) return 12;
-		else return 240; //20yrs, which is the catch-all bucket
+		if (monthsOld <= LeadTierOne) return LeadTierOne;
+		else if (monthsOld <= LeadTierTwo) return LeadTierTwo;
+		else if (monthsOld <= LeadTierThree) return LeadTierThree;
+		else return LeadTierFour; //20yrs, which is the catch-all bucket
 	}
 	
 	
