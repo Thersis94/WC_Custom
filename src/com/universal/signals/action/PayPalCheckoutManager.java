@@ -332,7 +332,8 @@ public class PayPalCheckoutManager {
 		StringEncrypter se = new StringEncrypter(encryptionKey);
 		StringBuilder sb = new StringBuilder();
 		sb.append("select ENC_MERCHANT_USER_NM, ENC_MERCHANT_PASSWORD_TXT, ");
-		sb.append("ENC_MERCHANT_SIGNATURE_TXT, ENVIRONMENT_TXT, SITE_ID from MERCHANT ");
+		sb.append("ENC_MERCHANT_SIGNATURE_TXT, ENVIRONMENT_TXT, SITE_ID, ");
+		sb.append("LOGO_URL_TXT from MERCHANT ");
 		sb.append("where SITE_ID = ? and SERVICE_PROVIDER_TYPE = ?");
 		log.debug("MERCHANT sql: " + sb.toString() + "|" + catalogSiteId + "|" + serviceType.name());
 		MerchantInfoVO m = null;
@@ -350,6 +351,7 @@ public class PayPalCheckoutManager {
 				m.setTransactionKeyId(se.decrypt(rs.getString("ENC_MERCHANT_SIGNATURE_TXT")));
 				m.setEnvironmentKey(rs.getString("ENVIRONMENT_TXT"));
 				m.setSiteId(rs.getString("SITE_ID"));
+				m.setLoginId(rs.getString("LOGO_URL_TXT"));
 			}
 		} catch (SQLException sqle) {
 			log.error("Error retrieving merchant credentials for PayPal for site, ", sqle);
