@@ -351,7 +351,7 @@ public class PayPalCheckoutManager {
 				m.setTransactionKeyId(se.decrypt(rs.getString("ENC_MERCHANT_SIGNATURE_TXT")));
 				m.setEnvironmentKey(rs.getString("ENVIRONMENT_TXT"));
 				m.setSiteId(rs.getString("SITE_ID"));
-				m.setLoginId(rs.getString("LOGO_URL_TXT"));
+				m.setLogoUrl(rs.getString("LOGO_URL_TXT"));
 			}
 		} catch (SQLException sqle) {
 			log.error("Error retrieving merchant credentials for PayPal for site, ", sqle);
