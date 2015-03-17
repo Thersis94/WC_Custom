@@ -32,7 +32,7 @@ public class IFUFacadeAction extends SimpleActionAdapter {
 	 * ActionType - supported behaviors of this facade
 	 **/
 	private enum ActionType {
-		technique, instance, ifu, display; 
+		technique, instance, ifu; 
 	}
 
 	public void list(SMTServletRequest req) throws ActionException {
@@ -43,10 +43,6 @@ public class IFUFacadeAction extends SimpleActionAdapter {
 			//list the portlet instances in the admintool
 			super.retrieve(req);
 		}
-	}
-
-	public void retrieve(SMTServletRequest req) throws ActionException {
-		getAction(ActionType.display).retrieve(req);
 	}
 
 	public void delete(SMTServletRequest req) throws ActionException {
@@ -105,9 +101,6 @@ public class IFUFacadeAction extends SimpleActionAdapter {
 			case technique:
 				ai = new IFUTechniqueAction(actionInit);
 				break;
-			case display:
-				ai = new IFUDisplayAction(actionInit);
-				break;
 		}
 
 		if (ai != null) {
@@ -117,35 +110,8 @@ public class IFUFacadeAction extends SimpleActionAdapter {
 		return ai;
 	}
 
-	//TODO this is wrong - copying the portlet should not clone all the data.
-	/**
-	 * 
+
 	public void copy(SMTServletRequest req) throws ActionException {
-		Object msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
-
-		try {
-			dbConn.setAutoCommit(false);
-
-			super.copy(req);
-			getAction(ActionType.ifu).copy(req);
-			getAction(ActionType.instance).copy(req);
-
-			dbConn.commit();
-
-		} catch(Exception e) {
-			try {
-				dbConn.rollback();
-			} catch (SQLException sqle) {
-				log.error("A Problem Occured During Rollback.", sqle);
-			}
-			msg = getAttribute(AdminConstants.KEY_ERROR_MESSAGE);
-			throw new ActionException(e);
-		} finally {
-			try {
-				dbConn.setAutoCommit(true);
-			} catch (Exception e) {}
-		}
-		super.moduleRedirect(req, msg, (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH));
+		getAction(ActionType.ifu).copy(req);
 	}
-	 */
 }
