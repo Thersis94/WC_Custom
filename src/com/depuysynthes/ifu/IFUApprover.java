@@ -4,7 +4,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -12,11 +11,22 @@ import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.approval.AbstractApprover;
-import com.smt.sitebuilder.approval.ApprovalController;
 import com.smt.sitebuilder.approval.ApprovalController.SyncStatus;
 import com.smt.sitebuilder.approval.ApprovalException;
 import com.smt.sitebuilder.approval.ApprovalVO;
 import com.smt.sitebuilder.common.constants.Constants;
+
+/****************************************************************************
+ * <b>Title</b>: IFUApprover.java<p/>
+ * <b>Description: Handles all tasks related to approving/rejecting/canceling 
+ * changes to IFU documents.</b> 
+ * <p/>
+ * <b>Copyright:</b> Copyright (c) 2015<p/>
+ * <b>Company:</b> Silicon Mountain Technologies<p/>
+ * @author Eric Damschroder
+ * @version 1.0
+ * @since Mar 18, 2015
+ ****************************************************************************/
 
 public class IFUApprover extends AbstractApprover{
 	
@@ -25,6 +35,9 @@ public class IFUApprover extends AbstractApprover{
 	}
 
 
+	/**
+	 * Approve all items that have been passed to the this approved
+	 */
 	@SuppressWarnings("incomplete-switch")
 	@Override
 	public void approve(ApprovalVO... items) throws ApprovalException {
@@ -73,7 +86,9 @@ public class IFUApprover extends AbstractApprover{
 
 	
 	/**
-	 * Check if this is a new version of the old document
+	 * Check if this is a new version of the old document.  If the version text
+	 * is different between the original document and the new one we will need 
+	 * to archive the old document instead of deleting it.
 	 * @param vo
 	 * @return
 	 * @throws ApprovalException
@@ -114,39 +129,9 @@ public class IFUApprover extends AbstractApprover{
 	}
 
 	
-	public List<ApprovalVO> list(SyncStatus status, ApprovalVO... items)
-			throws ApprovalException {
-		
-		// If they've told us what they want just give it to them
-		if (items.length > 0) return Arrays.asList(items);
-		
-		List<ApprovalVO> appItems = new ArrayList<>();
-
-		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = new StringBuilder(80);
-		
-		sql.append("SELECT * FROM ").append(customDb).append("DEPUY_IFU WHERE PENDING_SYNC_FLG = ?");
-		
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setInt(1, status.intValue());
-			
-			ResultSet rs = ps.executeQuery();
-			
-			while (rs.next()) {
-				ApprovalVO app = new ApprovalVO();
-				app.setWcKeyId(rs.getString("DEPUY_IFU_ID"));
-				app.setOrigWcKeyId(rs.getString("DEPUY_IFU_GROUP_ID"));
-				appItems.add(app);
-			}
-		} catch (SQLException e) {
-			log.error("Unable to get list of IFUs for approval status: " + status.toString(), e);
-			throw new ApprovalException(e);
-		}
-		
-		return appItems;
-	}
-
-	
+	/**
+	 * Return the submitted item to in progress instead of pending
+	 */
 	@Override
 	public void reject(ApprovalVO... items) throws ApprovalException {
 		for(ApprovalVO vo : items) {
@@ -157,6 +142,9 @@ public class IFUApprover extends AbstractApprover{
 	}
 	
 	
+	/**
+	 * Delete the in progress item
+	 */
 	public void cancel(ApprovalVO... items) throws ApprovalException {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		String delete = "DELETE " + customDb + "DEPUY_IFU SET WHERE DEPUY_IFU_ID = ?";
@@ -173,6 +161,9 @@ public class IFUApprover extends AbstractApprover{
 	}
 
 
+	/**
+	 * List all ifu documents with the supplied status code
+	 */
 	@Override
 	public List<ApprovalVO> list(SyncStatus status) throws ApprovalException {
 		List<ApprovalVO> appItems = new ArrayList<>();
@@ -190,8 +181,7 @@ public class IFUApprover extends AbstractApprover{
 			ResultSet rs = ps.executeQuery();
 			
 			while (rs.next()) {
-				ApprovalVO app = new ApprovalVO(rs);
-				appItems.add(app);
+				appItems.add(new ApprovalVO(rs));
 			}
 		} catch (SQLException e) {
 			log.error("Unable to get list of IFUs for approval status: " + status.toString(), e);
