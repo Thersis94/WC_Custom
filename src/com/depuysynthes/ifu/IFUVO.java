@@ -8,6 +8,7 @@ import java.util.Map;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
+import com.smt.sitebuilder.approval.ApprovalController.SyncStatus;
 
 /****************************************************************************
  * <b>Title</b>: IFUContainer.java <p/>
@@ -35,6 +36,7 @@ public class IFUVO {
 	private Map<String, IFUDocumentVO> ifuDocuments;
 	private Date createDate = null;
 	private String businessUnitName;
+	private SyncStatus status = SyncStatus.APPROVED;
 	
 	public IFUVO() {
 		ifuDocuments = new HashMap<String, IFUDocumentVO>();
@@ -44,7 +46,7 @@ public class IFUVO {
 		this();
 		this.setIfuId(req.getParameter("ifuId"));
 		this.setIfuGroupId(req.getParameter("ifuGroupId"));
-		this.setTitleText(req.getParameter("titleText"));
+		this.setTitleText(req.getParameter("actionName"));
 		this.setVersionText(req.getParameter("versionText"));
 		this.setOrderNo(Convert.formatInteger(req.getParameter("orderNo")));
 		this.setArchiveFlg(Convert.formatInteger(req.getParameter("archiveFlg")));
@@ -62,6 +64,8 @@ public class IFUVO {
 		this.setArchiveFlg(db.getIntVal("ARCHIVE_FLG", rs));
 		this.setCreateDate(db.getDateVal("CREATE_DT", rs));
 		this.setBusinessUnitName(db.getStringVal("BUSINESS_UNIT_NM", rs));
+		if (db.getStringVal("WC_SYNC_STATUS_CD", rs) != null)
+			this.setStatus(SyncStatus.valueOf(db.getStringVal("WC_SYNC_STATUS_CD", rs)));
 		db = null;
 	}
 
@@ -139,6 +143,14 @@ public class IFUVO {
 
 	public void setBusinessUnitName(String businessUnitName) {
 		this.businessUnitName = businessUnitName;
+	}
+
+	public SyncStatus getStatus() {
+		return status;
+	}
+
+	public void setStatus(SyncStatus status) {
+		this.status = status;
 	}
 
 }
