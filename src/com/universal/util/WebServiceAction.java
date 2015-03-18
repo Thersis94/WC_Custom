@@ -56,7 +56,6 @@ public class WebServiceAction extends SBActionAdapter {
 	/**
 	 * URL of the Web Service APIs
 	 */
-	public static final String USA_BASE_URL = "usaBaseUrl";
 	public static final String CATALOG_SITE_ID = "catalogSiteId";
 	
 	/**
@@ -84,7 +83,6 @@ public class WebServiceAction extends SBActionAdapter {
 	 */
 	public WebServiceAction(ActionInitVO actionInit) {
 		super(actionInit);
-		attributes.put(USA_BASE_URL, "www.signals.com");
 	}
 
 	public static void main(String[] args) throws Exception {
