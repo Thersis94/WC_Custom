@@ -60,7 +60,11 @@ public class IFUAction  extends SBActionAdapter {
 		log.debug("Listing all IFUs");
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(55);
-		sql.append("SELECT * FROM ").append(customDb).append("DEPUY_IFU ORDER BY TITLE_TXT");
+		sql.append("SELECT * FROM ").append(customDb).append("DEPUY_IFU di ");
+	     sql.append("LEFT JOIN WC_SYNC ws on ws.WC_KEY_ID = di.DEPUY_IFU_ID ");
+	     sql.append("WHERE DEPUY_IFU_ID not in (SELECT DEPUY_IFU_GROUP_ID FROM ");
+	     sql.append(customDb).append("DEPUY_IFU di WHERE DEPUY_IFU_GROUP_ID is not null) ");
+	     sql.append("ORDER BY TITLE_TXT");
 		
 		log.debug(sql);
 		List<IFUVO> data = new ArrayList<IFUVO>();
@@ -166,7 +170,9 @@ public class IFUAction  extends SBActionAdapter {
 		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 		try {
 			String oldVersion = StringUtil.checkVal(req.getParameter("oldVersion"));
-			if (oldVersion.length() != 0 && !oldVersion.equals(req.getParameter("versionTxt"))) {
+			String groupId = StringUtil.checkVal(req.getParameter("ifuGroupId"));
+			if (groupId.length() == 0 && oldVersion.length() != 0 && !oldVersion.equals(req.getParameter("versionTxt"))) {
+				req.setParameter("archiveIfu", "true");
 				this.copy(req);
 			}
 			
@@ -247,7 +253,8 @@ public class IFUAction  extends SBActionAdapter {
 			dbConn.setAutoCommit(false);
 			
 			IFUVO ifu = getImplemenatations(req);
-			archiveIFU(ifu);
+			// If we are supposed to archive the old ifu we do so here.
+			if (req.hasParameter("archiveIfu")) archiveIFU(ifu);
 			copyIfu(ifu);
 			copyImpl(ifu);
 			copyTG(ifu);
@@ -255,8 +262,10 @@ public class IFUAction  extends SBActionAdapter {
 			
 			dbConn.commit();
 			
-			// Put the new id on the request object
+			// Put the new id on the request object for both the base and group id so that the new one is treated as in progress
 			req.setParameter("ifuId", ifu.getIfuId());
+			req.setParameter("sbActionId", ifu.getIfuId());
+			req.setParameter("ifuGroupId", ifu.getIfuGroupId());
 
 		} catch(Exception e) {
 			try {
@@ -335,9 +344,14 @@ public class IFUAction  extends SBActionAdapter {
 						oldId = doc.getImplId();
 						doc.setImplId(new UUIDGenerator().getUUID());
 						doc.setTitleText(rs.getString("IMPL_TITLE_TXT"));
+						if (oldId.equals(req.getParameter("implId")))
+							req.setParameter("implId", doc.getImplId(), true);
 					}
 					IFUTechniqueGuideVO tech = new IFUTechniqueGuideVO(rs);
+					String techId = StringUtil.checkVal(tech.getTgId());
 					tech.setTgId(new UUIDGenerator().getUUID());
+					if (techId.equals(req.getParameter("tgId")) && StringUtil.checkVal(req.getParameter("tgId")).length() > 0)
+						req.setParameter("tgId", tech.getTgId(), true);
 					doc.addTg(tech, true);
 				}
 			}
@@ -362,7 +376,8 @@ public class IFUAction  extends SBActionAdapter {
 	 */
 	private void copyIfu(IFUVO vo) throws SQLException {
 		String sql = buildUpdateSql(true);
-		
+
+		vo.setIfuGroupId(vo.getIfuId());
 		vo.setIfuId(new UUIDGenerator().getUUID());
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
