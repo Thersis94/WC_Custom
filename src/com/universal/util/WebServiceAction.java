@@ -84,13 +84,7 @@ public class WebServiceAction extends SBActionAdapter {
 	 */
 	public WebServiceAction(ActionInitVO actionInit) {
 		super(actionInit);
-		//attributes.put(USA_BASE_URL, "www.signals.com");
-		
-		/* TODO  2015-02-24 DBargerhuff
-		 * Remove STAGING configuration, check retrieveServiceURL
-		 * method signature for SSL vals after staging testing is complete.
-		 */
-		attributes.put(USA_BASE_URL, "signals.thewhiteroom.com");
+		attributes.put(USA_BASE_URL, "www.signals.com");
 	}
 
 	public static void main(String[] args) throws Exception {
