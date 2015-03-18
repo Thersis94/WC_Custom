@@ -56,7 +56,6 @@ public class WebServiceAction extends SBActionAdapter {
 	/**
 	 * URL of the Web Service APIs
 	 */
-	public static final String USA_BASE_URL = "usaBaseUrl";
 	public static final String CATALOG_SITE_ID = "catalogSiteId";
 	
 	/**
@@ -84,13 +83,6 @@ public class WebServiceAction extends SBActionAdapter {
 	 */
 	public WebServiceAction(ActionInitVO actionInit) {
 		super(actionInit);
-		//attributes.put(USA_BASE_URL, "www.signals.com");
-		
-		/* TODO  2015-02-24 DBargerhuff
-		 * Remove STAGING configuration, check retrieveServiceURL
-		 * method signature for SSL vals after staging testing is complete.
-		 */
-		attributes.put(USA_BASE_URL, "signals.thewhiteroom.com");
 	}
 
 	public static void main(String[] args) throws Exception {
@@ -141,7 +133,6 @@ public class WebServiceAction extends SBActionAdapter {
 	throws DocumentException {
 		if (prods == null || prods.size() == 0) return new DefaultElement("PromotionCodeResponse");
 		String url = this.retrieveServiceURL(StringUtil.checkVal(getAttribute(CATALOG_SITE_ID)), "promocode", true);
-		//String url = this.retrieveServiceURL(StringUtil.checkVal(getAttribute(CATALOG_SITE_ID)), "promocode", false);
 		StringBuilder s = new StringBuilder();
 		s.append("xml=").append(BASE_XML_HEADER).append("<PromotionCodeRequest>");
 		s.append("<Code>").append(pc).append("</Code>");
@@ -164,7 +155,6 @@ public class WebServiceAction extends SBActionAdapter {
 	public Element authenticateMember(String email, String pwd, String catalogSiteId) 
 	throws DocumentException, AuthenticationException {
 		String url = this.retrieveServiceURL(StringUtil.checkVal(catalogSiteId), "login", true);
-		//String url = this.retrieveServiceURL(StringUtil.checkVal(catalogSiteId), "login", false);
 		StringBuilder s = new StringBuilder();
 		s.append("xml=").append(BASE_XML_HEADER).append("<MemberRequest>");
 		s.append("<Email>").append(email).append("</Email>");
@@ -185,7 +175,6 @@ public class WebServiceAction extends SBActionAdapter {
 			throws DocumentException {
 		// Build the URL
 		String url = this.retrieveServiceURL(StringUtil.checkVal(getAttribute(CATALOG_SITE_ID)), "shipping", false);
-		log.debug("shipping info retrieval URL: " + url);
 		// Build the XML Request
 		StringBuilder s = new StringBuilder();
 		s.append("xml=").append(BASE_XML_HEADER).append("<ShippingRequest>");
@@ -193,7 +182,6 @@ public class WebServiceAction extends SBActionAdapter {
 		// add product XML
 		this.addProductXMLByMap(s, prods);
 		s.append("</ShippingRequest>");
-		log.debug("shipping retrieval XML Req: " + s);
 		return this.callWebService(url, s, "ShippingCost");
 	}
 	
@@ -451,8 +439,8 @@ public class WebServiceAction extends SBActionAdapter {
 	}
 	
 	/**
-	 * Retrieves the URL to use for retrieving catalog/product-related data.  To use an 'https' prefixed
-	 * url, pass a boolean value of 'true' for useSSL.
+	 * Retrieves the URL to use for retrieving catalog/product-related data.  To use 
+	 * an 'https' prefixed url, pass a boolean value of 'true' for useSSL.
 	 * @param siteId
 	 * @param suffix
 	 * @param useSSL
@@ -460,30 +448,9 @@ public class WebServiceAction extends SBActionAdapter {
 	 */
 	private String retrieveServiceURL(String siteId, String suffix, boolean useSSL) {
 		StringBuffer prefix = new StringBuffer();
-		/*
-		 * TODO Re-enable useSSL check after testing complete.
-		 */
-		prefix.append("http://");
-		//if (useSSL) prefix.append("https://"); else prefix.append("http://");
-		
-		if (siteId.equalsIgnoreCase("USA_1")) {
-			prefix.append(StringUtil.checkVal(getAttribute(USA_BASE_URL)));
-		} else if (siteId.equalsIgnoreCase("USA_2")) {
-			prefix.append("www.whatonearthcatalog.com");
-		} else if (siteId.equalsIgnoreCase("USA_3")) {
-			prefix.append("www.thewirelesscatalog.com");
-		} else if (siteId.equalsIgnoreCase("USA_4")) {
-			prefix.append("www.supportplus.com");
-		} else if (siteId.equalsIgnoreCase("USA_5")) {
-			prefix.append("www.basbleu.com");
-		} else if (siteId.equalsIgnoreCase("USA_6")) {
-			prefix.append("www.shopfloriana.com");
-		} else if (siteId.equalsIgnoreCase("USA_7")) {
-			prefix.append("www.catalogclassics.com");
-		} else {
-			prefix.append(StringUtil.checkVal(getAttribute(USA_BASE_URL)));
-		}
-		prefix.append("/cgi-bin/ws/").append(suffix);
+		if (useSSL) prefix.append("https://"); else prefix.append("http://");
+		prefix.append(StringUtil.checkVal(getAttribute(siteId), (String)getAttribute("USA_1")));
+		prefix.append(suffix);
 		log.debug("using serviceURL: " + prefix.toString());
 		return prefix.toString();
 	}
@@ -587,7 +554,6 @@ public class WebServiceAction extends SBActionAdapter {
 	private Element callWebService (String url, StringBuilder xmlRequest, String elem) 
 		throws DocumentException {
 		// Make the HTTP call the web service
-		log.debug("url: " + url);
 		log.debug("xmlRequest: " + xmlRequest);
 		SMTHttpConnectionManager conn = new SMTHttpConnectionManager();
 		byte[] data = null;
