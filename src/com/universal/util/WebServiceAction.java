@@ -133,7 +133,6 @@ public class WebServiceAction extends SBActionAdapter {
 	throws DocumentException {
 		if (prods == null || prods.size() == 0) return new DefaultElement("PromotionCodeResponse");
 		String url = this.retrieveServiceURL(StringUtil.checkVal(getAttribute(CATALOG_SITE_ID)), "promocode", true);
-		//String url = this.retrieveServiceURL(StringUtil.checkVal(getAttribute(CATALOG_SITE_ID)), "promocode", false);
 		StringBuilder s = new StringBuilder();
 		s.append("xml=").append(BASE_XML_HEADER).append("<PromotionCodeRequest>");
 		s.append("<Code>").append(pc).append("</Code>");
@@ -156,7 +155,6 @@ public class WebServiceAction extends SBActionAdapter {
 	public Element authenticateMember(String email, String pwd, String catalogSiteId) 
 	throws DocumentException, AuthenticationException {
 		String url = this.retrieveServiceURL(StringUtil.checkVal(catalogSiteId), "login", true);
-		//String url = this.retrieveServiceURL(StringUtil.checkVal(catalogSiteId), "login", false);
 		StringBuilder s = new StringBuilder();
 		s.append("xml=").append(BASE_XML_HEADER).append("<MemberRequest>");
 		s.append("<Email>").append(email).append("</Email>");
@@ -448,7 +446,7 @@ public class WebServiceAction extends SBActionAdapter {
 	 * @param useSSL
 	 * @return
 	 */
-	private String retrieveServiceURL(String siteId, String suffix, boolean useSSL) {		
+	private String retrieveServiceURL(String siteId, String suffix, boolean useSSL) {
 		StringBuffer prefix = new StringBuffer();
 		if (useSSL) prefix.append("https://"); else prefix.append("http://");
 		prefix.append(StringUtil.checkVal(getAttribute(siteId), (String)getAttribute("USA_1")));
