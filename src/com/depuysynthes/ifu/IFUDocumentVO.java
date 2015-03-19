@@ -58,6 +58,7 @@ public class IFUDocumentVO extends IFUVO implements Serializable{
 			this.setUrlText(req.getParameter("urlText"));
 		}
 		
+		this.setTitleText(req.getParameter("titleText"));
 		this.setDpySynMediaBinId(req.getParameter("dpySynMediaBinId"));
 		this.setLanguageCd(req.getParameter("languageCd"));
 		this.setArticleText(req.getParameter("articleText"));
