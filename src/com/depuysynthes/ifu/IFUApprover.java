@@ -153,6 +153,10 @@ public class IFUApprover extends AbstractApprover{
 			try {
 				executeQuery(delete, vo.getWcKeyId());
 				vo.setSyncCompleteDt(Convert.getCurrentTimestamp());
+				vo.setSyncStatus(SyncStatus.Declined);
+				vo.setRejectCode("Cancelled");
+				vo.setRejectReason("Cancelled");
+				
 			} catch (DatabaseException e) {
 				log.error("Unable to cancel approval with status " + vo.getSyncStatus() + " and id " + vo.getWcKeyId());
 				vo.setSyncStatus(SyncStatus.InProgress);
