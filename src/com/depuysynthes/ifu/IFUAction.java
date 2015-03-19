@@ -65,7 +65,7 @@ public class IFUAction  extends SBActionAdapter {
 	     sql.append("LEFT JOIN WC_SYNC ws on ws.WC_KEY_ID = di.DEPUY_IFU_ID and WC_SYNC_STATUS_CD not in ('Approved', 'Declined')");
 	     sql.append("WHERE DEPUY_IFU_ID not in (SELECT DEPUY_IFU_GROUP_ID FROM ");
 	     sql.append(customDb).append("DEPUY_IFU di WHERE DEPUY_IFU_GROUP_ID is not null and DEPUY_IFU_GROUP_ID != DEPUY_IFU_ID) ");
-	     sql.append("ORDER BY TITLE_TXT");
+	     sql.append("ORDER BY ORDER_NO, TITLE_TXT");
 		
 		log.debug(sql);
 		List<IFUVO> data = new ArrayList<IFUVO>();
