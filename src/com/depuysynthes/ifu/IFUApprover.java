@@ -50,6 +50,10 @@ public class IFUApprover extends AbstractApprover{
 			SyncStatus store = vo.getSyncStatus();
 			try {
 				switch (vo.getSyncStatus()) {
+					case PendingCreate:
+						executeQuery(activate, vo.getWcKeyId());
+						break;
+						
 					case PendingDelete:
 						executeQuery(delete, vo.getWcKeyId());
 						break;
