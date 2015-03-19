@@ -5,6 +5,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -16,6 +17,7 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.approval.ApprovalController;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.util.RecordDuplicatorUtility;
 
 /****************************************************************************
  * <b>Title</b>: IFUAction.java <p/>
@@ -255,288 +257,64 @@ public class IFUAction  extends SBActionAdapter {
 	/**
 	 * Create a copy of the supplied IFU 
 	 */
+	@SuppressWarnings("unchecked")
 	public void copy(SMTServletRequest req) throws ActionException {
+		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		String oldIFU = req.getParameter("ifuId");
 		
 		try {
 			dbConn.setAutoCommit(false);
 			
-			IFUVO ifu = getImplemenatations(req);
-			// If we are supposed to archive the old ifu we do so here.
-			if (req.hasParameter("archiveIfu")) archiveIFU(ifu);
-			copyIfu(ifu);
-			copyImpl(ifu);
-			copyTG(ifu);
-			addXRs(ifu);
+			// Copy the IFU
+			Map<String, Object> replaceVals = (Map<String, Object>) attributes.get(RecordDuplicatorUtility.REPLACE_VALS);
+			RecordDuplicatorUtility rdu = new RecordDuplicatorUtility(attributes, dbConn, customDb + "DEPUY_IFU", "DEPUY_IFU_ID", true);
+			rdu.addWhereClause("DEPUY_IFU_ID", oldIFU);
+			Map<String, String> ifuIds = rdu.copy();
+			replaceVals.put("DEPUY_IFU_ID", ifuIds);
+			
+			// Copy all implementations of this ifu
+			rdu = new RecordDuplicatorUtility(attributes, dbConn, customDb + "DEPUY_IFU_IMPL", "DEPUY_IFU_IMPL_ID", true);
+			rdu.addWhereListClause("DEPUY_IFU_ID");
+			Map<String, String> implIds = rdu.copy();
+			replaceVals.put("DEPUY_IFU_IMPL_ID", implIds);
+			
+			// Copy all technique guides for all implementations
+			rdu = new RecordDuplicatorUtility(attributes, dbConn, customDb + "DEPUY_IFU_TG", "DEPUY_IFU_TG_ID", true);
+			rdu.setWhereSQL("DEPUY_IFU_TG_ID in (SELECT DEPUY_IFU_TG_ID FROM " + customDb + "DEPUY_IFU_TG_XR WHERE " +rdu.buildWhereListClause("DEPUY_IFU_IMPL_ID",true)+")");
+			Map<String, String> tgIds = rdu.copy();
+			replaceVals.put("DEPUY_IFU_TG_ID", tgIds);
+			
+			// Copy all xr records for the copied implementations and their technique guides
+			rdu = new RecordDuplicatorUtility(attributes, dbConn, customDb + "DEPUY_IFU_TG_XR", "DEPUY_IFU_TG_XR_ID", true);
+			rdu.addWhereListClause("DEPUY_IFU_TG_ID");
+			rdu.addWhereListClause("DEPUY_IFU_IMPL_ID");
+			
+			rdu.copy();
+			
 			
 			dbConn.commit();
 			
+			// Get the id of the copied ifu
+			String ifuId = ifuIds.get(ifuIds.keySet().toArray()[0]);
+			
 			// Put the new id on the request object for both the base and group id so that the new one is treated as in progress
-			req.setParameter("ifuId", ifu.getIfuId());
-			req.setParameter("ifuGroupId", ifu.getIfuGroupId());
-			req.setAttribute("sbActionId", ifu.getIfuId());
-
-		} catch(Exception e) {
+			req.setParameter("ifuId", ifuId);
+			req.setParameter("ifuGroupId", oldIFU);
+			req.setAttribute("sbActionId",ifuId);
+		} catch (SQLException e) {
+			log.error("Unable to copy record " + oldIFU, e);
 			try {
 				dbConn.rollback();
-			} catch (SQLException sqle) {
-				log.error("A Problem Occured During Rollback.", sqle);
+			} catch (Exception e2) {
+				log.error("Error rolling back IFU Copy, ", e2);
 			}
-			throw new ActionException(e);
 		} finally {
 			try {
 				dbConn.setAutoCommit(true);
-			} catch (Exception e) {}
-		}
-	}
-	
-	
-	/**
-	 * Archive the current version of the IFU
-	 * @param ifu
-	 */
-	private void archiveIFU(IFUVO ifu) throws SQLException {
-		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = new StringBuilder(100);
-		
-		sql.append("UPDATE ").append(customDb).append("DEPUY_IFU ");
-		sql.append("SET ARCHIVE_FLG=1, UPDATE_DT=? WHERE DEPUY_IFU_ID = ? ");
-		
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, ifu.getIfuId());
-			ps.setTimestamp(2, Convert.getCurrentTimestamp());
-			
-			if (ps.executeUpdate() < 1)
-				throw new SQLException("No records updated when attempting to archive ifu with id: " + ifu.getIfuId());
-		} catch(SQLException e) {
-			log.error("Unable to archive ifu with id: " + ifu.getIfuId(), e);
-			throw e;
+			} catch (Exception e3) {log.error("Error resetting autocommit to 'true', ", e3);}
 		}
 		
 	}
 	
 	
-	/**
-	 * Get all the implementations of the current document as well as all
-	 * technique guides associated with those implementations
-	 * @param ifuId
-	 */
-	private IFUVO getImplemenatations(SMTServletRequest req) throws SQLException {
-		IFUVO ifu = null;
-		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = new StringBuilder(340);
-		
-		// Get id of the item that was potentially deleted to trigger this copy in order to exclude it from the new IFU
-		String excludeId = StringUtil.checkVal(req.getParameter("excludeId"));
-		
-		sql.append("SELECT *, dii.TITLE_TXT as IMPL_TITLE_TXT, dit.DPY_SYN_MEDIABIN_ID as TG_MEDIABIN_ID FROM ");
-		sql.append(customDb).append("DEPUY_IFU di LEFT JOIN ").append(customDb).append("DEPUY_IFU_IMPL dii on ");
-		sql.append("di.DEPUY_IFU_ID = dii.DEPUY_IFU_ID ");
-		sql.append("LEFT JOIN ").append(customDb).append("DEPUY_IFU_TG_XR ditx on ditx.DEPUY_IFU_IMPL_ID = dii.DEPUY_IFU_IMPL_ID ");
-		sql.append("LEFT JOIN ").append(customDb).append("DEPUY_IFU_TG dit on dit.DEPUY_IFU_TG_ID = ditx.DEPUY_IFU_TG_ID ");
-		sql.append("WHERE di.DEPUY_IFU_ID = ?");
-		log.debug(sql+"|"+req.getParameter("ifuId"));
-		
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, req.getParameter("ifuId"));
-			
-			ResultSet rs = ps.executeQuery();
-			String oldId = "";
-			IFUDocumentVO doc = null;
-			
-			while(rs.next()) {
-				if (ifu == null) {
-					ifu = new IFUVO(rs);
-				}
-				
-				if (StringUtil.checkVal(rs.getString("DEPUY_IFU_IMPL_ID")).length() > 0) {
-					if (excludeId.equals(rs.getString("DEPUY_IFU_IMPL_ID"))) continue;
-					if (!oldId.equals(rs.getString("DEPUY_IFU_IMPL_ID"))) {
-						if (doc != null) ifu.addIfuDocument(doc.getImplId(), doc);
-						doc = new IFUDocumentVO(rs);
-						oldId = doc.getImplId();
-						doc.setImplId(new UUIDGenerator().getUUID());
-						doc.setTitleText(rs.getString("IMPL_TITLE_TXT"));
-						if (oldId.equals(req.getParameter("implId")))
-							req.setParameter("implId", doc.getImplId(), true);
-					}
-					if (excludeId.equals(rs.getString("DEPUY_IFU_TG_ID"))) continue;
-					IFUTechniqueGuideVO tech = new IFUTechniqueGuideVO(rs);
-					String techId = StringUtil.checkVal(tech.getTgId());
-					tech.setTgId(new UUIDGenerator().getUUID());
-					if (techId.equals(req.getParameter("tgId")) && StringUtil.checkVal(req.getParameter("tgId")).length() > 0)
-						req.setParameter("tgId", tech.getTgId(), true);
-					doc.addTg(tech, true);
-				}
-			}
-			
-			// Add the straggler as long as it isn't null
-			if (doc != null && !excludeId.equals(doc.getImplId()))
-				ifu.addIfuDocument(doc.getImplId(), doc);
-			
-		} catch (SQLException e) {
-			log.error("Unable to get documents for ifu " + req.getParameter("ifuId"), e);
-			throw e;
-		}
-		return ifu;
-	}
-	
-	
-	/**
-	 * Generate a new id for the copy and place it into the database as the new
-	 * current version of the document.
-	 * @param vo
-	 * @throws SQLException
-	 */
-	private void copyIfu(IFUVO vo) throws SQLException {
-		String sql = buildUpdateSql(true);
-
-		vo.setIfuGroupId(vo.getIfuId());
-		vo.setIfuId(new UUIDGenerator().getUUID());
-		
-		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
-			int i = 1;
-			ps.setString(i++, vo.getIfuGroupId());
-			ps.setString(i++, vo.getTitleText());
-			ps.setInt(i++, vo.getArchiveFlg());
-			ps.setString(i++, vo.getBusinessUnitName());
-			ps.setInt(i++, vo.getOrderNo());
-			ps.setString(i++, vo.getVersionText());
-			ps.setTimestamp(i++, Convert.getCurrentTimestamp());
-			ps.setString(i++, vo.getIfuId());
-			
-			if (ps.executeUpdate() < 1)
-				throw new SQLException("Insert failed on IFU level for IFU document copy");
-		} catch (SQLException e) {
-			log.error("Unable to insert IFU copy", e);
-			throw e;
-		}
-	}
-	
-	
-	/**
-	 * Copy all the ifu documents implementations
-	 * @param ifu
-	 * @throws SQLException
-	 */
-	private void copyImpl(IFUVO ifu) throws SQLException {
-		StringBuilder sql = new StringBuilder(300);
-		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		
-		sql.append("INSERT INTO ").append(customDb).append("DEPUY_IFU_IMPL ");
-		sql.append("(DEPUY_IFU_ID, TITLE_TXT, LANGUAGE_CD, URL_TXT, DPY_SYN_MEDIABIN_ID, ");
-		sql.append("ARTICLE_TXT, PART_NO_TXT, DEFAULT_MSG_TXT, CREATE_DT, DEPUY_IFU_IMPL_ID )");
-		sql.append("VALUES(?,?,?,?,?,?,?,?,?,?)");
-		
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-
-			for (String key : ifu.getIfuDocuments().keySet()) {
-				IFUDocumentVO vo = ifu.getIfuDocuments().get(key);
-				
-				int i = 1;
-				ps.setString(i++, ifu.getIfuId());
-				ps.setString(i++, vo.getTitleText());
-				ps.setString(i++, vo.getLanguageCd());
-				ps.setString(i++, vo.getUrlText());
-				ps.setString(i++, vo.getDpySynMediaBinId());
-				ps.setString(i++, vo.getArticleText());
-				ps.setString(i++, vo.getPartNoText());
-				ps.setString(i++, vo.getDefaultMsgText());
-				ps.setTimestamp(i++, Convert.getCurrentTimestamp());
-				ps.setString(i++, vo.getImplId());
-				
-				ps.addBatch();
-			}
-			
-			ps.executeBatch();
-			
-		} catch (SQLException e) {
-			log.error("Unable to copy implementations for ifu id: " + ifu.getIfuId(), e);
-			throw e;
-		}
-	}
-	
-	
-	/**
-	 * Copies all the technique guides for all the implementations for
-	 * the current ifu
-	 * @param ifu
-	 * @throws SQLException
-	 */
-	private void copyTG(IFUVO ifu) throws SQLException {
-		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = new StringBuilder(175);
-		
-		sql.append("INSERT INTO ").append(customDb).append("DEPUY_IFU_TG (");
-		sql.append("TG_NM, URL_TXT, DPY_SYN_MEDIABIN_ID, CREATE_DT, DEPUY_IFU_TG_ID) ");
-		sql.append("VALUES(?,?,?,?,?)");
-		
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			
-			for (String key : ifu.getIfuDocuments().keySet()) {
-				IFUDocumentVO vo = ifu.getIfuDocuments().get(key);
-				
-				for (IFUTechniqueGuideVO tech : vo.getTgList()) {
-					
-					int i = 1;
-					ps.setString(i++, tech.getTgName());
-					ps.setString(i++, tech.getUrlText());
-					ps.setString(i++, tech.getDpySynMediaBinId());
-					ps.setTimestamp(i++, Convert.getCurrentTimestamp());
-					ps.setString(i++, tech.getTgId());
-					
-					ps.addBatch();
-					
-				}
-				
-			}
-			
-			ps.executeBatch();
-			
-		} catch (SQLException e) {
-			log.error("Unable to copy Technique Guides for ifu id" + ifu.getIfuId(), e);
-			throw e;
-		}
-	}
-	
-	
-	/**
-	 * Create the xrs for the implementations and their technique guides
-	 * @param ifu
-	 * @throws SQLException
-	 */
-	private void addXRs(IFUVO ifu) throws SQLException {
-		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = new StringBuilder(165);
-		
-		sql.append("INSERT INTO ").append(customDb).append("DEPUY_IFU_TG_XR (");
-		sql.append("ORDER_NO, CREATE_DT, DEPUY_IFU_TG_ID, DEPUY_IFU_IMPL_ID) ");
-		sql.append("VALUES(?,?,?,?)");
-		
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			
-			for (String key : ifu.getIfuDocuments().keySet()) {
-				IFUDocumentVO vo = ifu.getIfuDocuments().get(key);
-				
-				for (IFUTechniqueGuideVO tech : vo.getTgList()) {
-					
-					int i = 1;
-					ps.setInt(i++, tech.getOrderNo());
-					ps.setTimestamp(i++, Convert.getCurrentTimestamp());
-					ps.setString(i++, tech.getTgId());
-					ps.setString(i++, vo.getImplId());
-					
-					ps.addBatch();
-				}
-				
-			}
-			
-			ps.executeBatch();
-			
-		} catch (SQLException e) {
-			log.error("Unable to create xrs for ifu id" + ifu.getIfuId(), e);
-			throw e;
-		}
-	}
-
-
 }
