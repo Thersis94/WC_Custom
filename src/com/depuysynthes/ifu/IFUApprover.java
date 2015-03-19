@@ -178,14 +178,16 @@ public class IFUApprover extends AbstractApprover{
 		if (status != null) {
 			sql.append("WHERE WC_SYNC_STATUS_CD = ?");
 		} else {
-			sql.append("WHERE WC_SYNC_STATUS_CD like ?");
+			sql.append("WHERE WC_SYNC_STATUS_CD in (?,?,?)");
 		}
 		log.debug(sql);
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			if (status != null) {
-				ps.setString(1, status.toString());
+				ps.setString(1, status.name());
 			} else {
-				ps.setString(1, "%Pending%");
+				ps.setString(1, SyncStatus.PendingCreate.name());
+				ps.setString(2, SyncStatus.PendingDelete.name());
+				ps.setString(3, SyncStatus.PendingUpdate.name());
 			}
 			
 			ResultSet rs = ps.executeQuery();
