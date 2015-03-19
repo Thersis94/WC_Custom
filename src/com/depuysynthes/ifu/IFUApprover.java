@@ -50,6 +50,10 @@ public class IFUApprover extends AbstractApprover{
 			SyncStatus store = vo.getSyncStatus();
 			try {
 				switch (vo.getSyncStatus()) {
+					case PendingCreate:
+						executeQuery(activate, vo.getWcKeyId());
+						break;
+						
 					case PendingDelete:
 						executeQuery(delete, vo.getWcKeyId());
 						break;
@@ -153,6 +157,10 @@ public class IFUApprover extends AbstractApprover{
 			try {
 				executeQuery(delete, vo.getWcKeyId());
 				vo.setSyncCompleteDt(Convert.getCurrentTimestamp());
+				vo.setSyncStatus(SyncStatus.Declined);
+				vo.setRejectCode("Cancelled");
+				vo.setRejectReason("Cancelled");
+				
 			} catch (DatabaseException e) {
 				log.error("Unable to cancel approval with status " + vo.getSyncStatus() + " and id " + vo.getWcKeyId());
 				vo.setSyncStatus(SyncStatus.InProgress);
@@ -178,14 +186,16 @@ public class IFUApprover extends AbstractApprover{
 		if (status != null) {
 			sql.append("WHERE WC_SYNC_STATUS_CD = ?");
 		} else {
-			sql.append("WHERE WC_SYNC_STATUS_CD like ?");
+			sql.append("WHERE WC_SYNC_STATUS_CD in (?,?,?)");
 		}
 		log.debug(sql);
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			if (status != null) {
-				ps.setString(1, status.toString());
+				ps.setString(1, status.name());
 			} else {
-				ps.setString(1, "%Pending%");
+				ps.setString(1, SyncStatus.PendingCreate.name());
+				ps.setString(2, SyncStatus.PendingDelete.name());
+				ps.setString(3, SyncStatus.PendingUpdate.name());
 			}
 			
 			ResultSet rs = ps.executeQuery();
