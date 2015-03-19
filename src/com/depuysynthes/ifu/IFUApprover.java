@@ -46,14 +46,15 @@ public class IFUApprover extends AbstractApprover{
 		String activate = "UPDATE " + customDb + "DEPUY_IFU SET DEPUY_IFU_GROUP_ID = null WHERE DEPUY_IFU_ID = ?";
 		String delete = "DELETE " + customDb + "DEPUY_IFU WHERE DEPUY_IFU_ID = ?";
 		
-		for (ApprovalVO vo : items) {			
+		for (ApprovalVO vo : items) {
+			SyncStatus store = vo.getSyncStatus();
 			try {
 				switch (vo.getSyncStatus()) {
-					case DELETE:
+					case PendingDelete:
 						executeQuery(delete, vo.getWcKeyId());
 						break;
 	
-					case APPROVED:
+					case PendingUpdate:
 						// Check if the new item is a new version of the old item
 						boolean newVersion = vo.getOrigWcKeyId() == null? false : isNewVersion(vo);
 						
@@ -74,11 +75,12 @@ public class IFUApprover extends AbstractApprover{
 				}
 
 				vo.setSyncCompleteDt(Convert.getCurrentTimestamp());
+				vo.setSyncStatus(SyncStatus.Approved);
 				
 			} catch (DatabaseException e) {
 				log.error("Unable to to execute query for approval vo with status " + vo.getSyncStatus() + 
 						", key id " + vo.getWcKeyId() + ", and orig id " + vo.getOrigWcKeyId());
-				vo.setSyncStatus(SyncStatus.PENDING);
+				vo.setSyncStatus(store);
 				throw new ApprovalException(e);
 			}
 		}
@@ -130,15 +132,13 @@ public class IFUApprover extends AbstractApprover{
 
 	
 	/**
-	 * Return the submitted item to in progress instead of pending
+	 * Return the submitted item to declined for later cloning in the main controller
 	 */
 	@Override
 	public void reject(ApprovalVO... items) throws ApprovalException {
 		for(ApprovalVO vo : items) {
-			vo.setSyncStatus(SyncStatus.INPROGRESS);
+			vo.setSyncStatus(SyncStatus.Declined);
 		}
-		
-		super.cancel(items);
 	}
 	
 	
@@ -147,15 +147,16 @@ public class IFUApprover extends AbstractApprover{
 	 */
 	public void cancel(ApprovalVO... items) throws ApprovalException {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		String delete = "DELETE " + customDb + "DEPUY_IFU SET WHERE DEPUY_IFU_ID = ?";
+		String delete = "DELETE " + customDb + "DEPUY_IFU WHERE DEPUY_IFU_ID = ?";
 		
 		for (ApprovalVO vo : items) {
 			try {
 				executeQuery(delete, vo.getWcKeyId());
 				vo.setSyncCompleteDt(Convert.getCurrentTimestamp());
 			} catch (DatabaseException e) {
-				log.error("Undable to cancel approval with status " + vo.getSyncStatus() + " and id " + vo.getWcKeyId());
-				vo.setSyncStatus(SyncStatus.PENDING);
+				log.error("Unable to cancel approval with status " + vo.getSyncStatus() + " and id " + vo.getWcKeyId());
+				vo.setSyncStatus(SyncStatus.InProgress);
+				throw new ApprovalException(e);
 			}
 		}
 	}
@@ -171,17 +172,26 @@ public class IFUApprover extends AbstractApprover{
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(80);
 		
-		sql.append("SELECT * FROM ").append(customDb).append("DEPUY_IFU di ");
+		sql.append("SELECT *, FIRST_NM as admin_first, LAST_NM as admin_last FROM ").append(customDb).append("DEPUY_IFU di ");
 		sql.append("left join WC_SYNC ws on ws.WC_KEY_ID = di.DEPUY_IFU_ID ");
-		sql.append("WHERE WC_SYNC_STATUS_CD = ?");
-		
+		sql.append("left join PROFILE p on p.PROFILE_ID = ws.ADMIN_PROFILE_ID ");
+		if (status != null) {
+			sql.append("WHERE WC_SYNC_STATUS_CD = ?");
+		} else {
+			sql.append("WHERE WC_SYNC_STATUS_CD like ?");
+		}
+		log.debug(sql);
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, status.toString());
+			if (status != null) {
+				ps.setString(1, status.toString());
+			} else {
+				ps.setString(1, "%Pending%");
+			}
 			
 			ResultSet rs = ps.executeQuery();
 			
 			while (rs.next()) {
-				appItems.add(new ApprovalVO(rs));
+				appItems.add(new ApprovalVO(rs, (String) getAttribute(Constants.ENCRYPT_KEY)));
 			}
 		} catch (SQLException e) {
 			log.error("Unable to get list of IFUs for approval status: " + status.toString(), e);

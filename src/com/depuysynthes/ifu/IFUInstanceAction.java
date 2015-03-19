@@ -104,7 +104,7 @@ public class IFUInstanceAction extends SBActionAdapter {
 		sql.append("ditx.DEPUY_IFU_TG_ID = dit.DEPUY_IFU_TG_ID ");
 		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_MEDIABIN dsm on ");
 		sql.append("dsm.DPY_SYN_MEDIABIN_ID = dii.DPY_SYN_MEDIABIN_ID ");
-	     sql.append("LEFT JOIN WC_SYNC ws on ws.WC_KEY_ID = dii.DEPUY_IFU_ID ");
+	     sql.append("LEFT JOIN WC_SYNC ws on ws.WC_KEY_ID = dii.DEPUY_IFU_ID and WC_SYNC_STATUS_CD not in ('Approved', 'Declined')");
 		sql.append("WHERE dii.DEPUY_IFU_IMPL_ID = ? ");
 		sql.append("ORDER BY ditx.ORDER_NO");
 		

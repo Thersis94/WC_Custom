@@ -8,7 +8,8 @@ import java.util.Map;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
-import com.smt.sitebuilder.approval.ApprovalController.SyncStatus;
+import com.smt.sitebuilder.approval.Approvable;
+import com.smt.sitebuilder.approval.ApprovalVO;
 
 /****************************************************************************
  * <b>Title</b>: IFUContainer.java <p/>
@@ -25,7 +26,7 @@ import com.smt.sitebuilder.approval.ApprovalController.SyncStatus;
  * <b>Changes: </b>
  ****************************************************************************/
 
-public class IFUVO {
+public class IFUVO implements Approvable {
 	
 	private String ifuId;
 	private String ifuGroupId;
@@ -36,7 +37,7 @@ public class IFUVO {
 	private Map<String, IFUDocumentVO> ifuDocuments;
 	private Date createDate = null;
 	private String businessUnitName;
-	private SyncStatus status = SyncStatus.APPROVED;
+	private ApprovalVO approval;
 	
 	public IFUVO() {
 		ifuDocuments = new HashMap<String, IFUDocumentVO>();
@@ -51,6 +52,7 @@ public class IFUVO {
 		this.setOrderNo(Convert.formatInteger(req.getParameter("orderNo")));
 		this.setArchiveFlg(Convert.formatInteger(req.getParameter("archiveFlg")));
 		this.setBusinessUnitName(req.getParameter("businessUnitName"));
+		this.setSyncData(new ApprovalVO(req));
 	}
 	
 	public IFUVO(ResultSet rs) {
@@ -64,8 +66,7 @@ public class IFUVO {
 		this.setArchiveFlg(db.getIntVal("ARCHIVE_FLG", rs));
 		this.setCreateDate(db.getDateVal("CREATE_DT", rs));
 		this.setBusinessUnitName(db.getStringVal("BUSINESS_UNIT_NM", rs));
-		if (db.getStringVal("WC_SYNC_STATUS_CD", rs) != null)
-			this.setStatus(SyncStatus.valueOf(db.getStringVal("WC_SYNC_STATUS_CD", rs)));
+		this.setSyncData(new ApprovalVO(rs));
 		db = null;
 	}
 
@@ -145,12 +146,15 @@ public class IFUVO {
 		this.businessUnitName = businessUnitName;
 	}
 
-	public SyncStatus getStatus() {
-		return status;
+	@Override
+	public ApprovalVO getSyncData() {
+		return approval;
 	}
 
-	public void setStatus(SyncStatus status) {
-		this.status = status;
+	@Override
+	public void setSyncData(ApprovalVO approval) {
+		this.approval = approval;
+		
 	}
 
 }

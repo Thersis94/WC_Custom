@@ -13,6 +13,7 @@ import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.approval.ApprovalController;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -61,9 +62,9 @@ public class IFUAction  extends SBActionAdapter {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(55);
 		sql.append("SELECT * FROM ").append(customDb).append("DEPUY_IFU di ");
-	     sql.append("LEFT JOIN WC_SYNC ws on ws.WC_KEY_ID = di.DEPUY_IFU_ID ");
+	     sql.append("LEFT JOIN WC_SYNC ws on ws.WC_KEY_ID = di.DEPUY_IFU_ID and WC_SYNC_STATUS_CD not in ('Approved', 'Declined')");
 	     sql.append("WHERE DEPUY_IFU_ID not in (SELECT DEPUY_IFU_GROUP_ID FROM ");
-	     sql.append(customDb).append("DEPUY_IFU di WHERE DEPUY_IFU_GROUP_ID is not null) ");
+	     sql.append(customDb).append("DEPUY_IFU di WHERE DEPUY_IFU_GROUP_ID is not null and DEPUY_IFU_GROUP_ID != DEPUY_IFU_ID) ");
 	     sql.append("ORDER BY TITLE_TXT");
 		
 		log.debug(sql);
@@ -77,6 +78,9 @@ public class IFUAction  extends SBActionAdapter {
 		} catch (SQLException e) {
 			log.error("Could not get list of IFU containers.", e);
 		}
+		
+		String previewApiKey = ApprovalController.generatePreviewApiKey(attributes);
+	     req.setParameter(Constants.PAGE_PREVIEW, previewApiKey);
 		
 		super.putModuleData(data);
 	}
@@ -130,6 +134,7 @@ public class IFUAction  extends SBActionAdapter {
 		sql.append("LEFT JOIN ").append(customDb).append("DEPUY_IFU_IMPL dii on ");
 		sql.append("di.DEPUY_IFU_ID = dii.DEPUY_IFU_ID ");
 		sql.append("LEFT JOIN LANGUAGE l on l.LANGUAGE_CD = dii.LANGUAGE_CD ");
+	     sql.append("LEFT JOIN WC_SYNC ws on ws.WC_KEY_ID = di.DEPUY_IFU_ID and WC_SYNC_STATUS_CD not in ('Approved', 'Declined') ");
 		sql.append("WHERE di.DEPUY_IFU_ID = ? ");
 		
 		return sql.toString();
@@ -171,12 +176,15 @@ public class IFUAction  extends SBActionAdapter {
 		try {
 			String oldVersion = StringUtil.checkVal(req.getParameter("oldVersion"));
 			String groupId = StringUtil.checkVal(req.getParameter("ifuGroupId"));
-			if (groupId.length() == 0 && oldVersion.length() != 0 && !oldVersion.equals(req.getParameter("versionTxt"))) {
+			
+			if (!Convert.formatBoolean(req.getParameter("isInsert")) && groupId.length() == 0 && oldVersion.length() != 0 && !oldVersion.equals(req.getParameter("versionTxt"))) {
 				req.setParameter("archiveIfu", "true");
 				this.copy(req);
 			}
 			
-			this.update(new IFUVO(req));
+			IFUVO ifu = new IFUVO(req);
+			this.update(ifu);
+			req.setAttribute(SBActionAdapter.SB_ACTION_ID, ifu.getIfuId());
 		} catch (ActionException e) {
 			msg = attributes.get(AdminConstants.KEY_ERROR_MESSAGE);
 			throw e;
@@ -264,8 +272,8 @@ public class IFUAction  extends SBActionAdapter {
 			
 			// Put the new id on the request object for both the base and group id so that the new one is treated as in progress
 			req.setParameter("ifuId", ifu.getIfuId());
-			req.setParameter("sbActionId", ifu.getIfuId());
 			req.setParameter("ifuGroupId", ifu.getIfuGroupId());
+			req.setAttribute("sbActionId", ifu.getIfuId());
 
 		} catch(Exception e) {
 			try {
@@ -317,6 +325,9 @@ public class IFUAction  extends SBActionAdapter {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(340);
 		
+		// Get id of the item that was potentially deleted to trigger this copy in order to exclude it from the new IFU
+		String excludeId = StringUtil.checkVal(req.getParameter("excludeId"));
+		
 		sql.append("SELECT *, dii.TITLE_TXT as IMPL_TITLE_TXT, dit.DPY_SYN_MEDIABIN_ID as TG_MEDIABIN_ID FROM ");
 		sql.append(customDb).append("DEPUY_IFU di LEFT JOIN ").append(customDb).append("DEPUY_IFU_IMPL dii on ");
 		sql.append("di.DEPUY_IFU_ID = dii.DEPUY_IFU_ID ");
@@ -338,6 +349,7 @@ public class IFUAction  extends SBActionAdapter {
 				}
 				
 				if (StringUtil.checkVal(rs.getString("DEPUY_IFU_IMPL_ID")).length() > 0) {
+					if (excludeId.equals(rs.getString("DEPUY_IFU_IMPL_ID"))) continue;
 					if (!oldId.equals(rs.getString("DEPUY_IFU_IMPL_ID"))) {
 						if (doc != null) ifu.addIfuDocument(doc.getImplId(), doc);
 						doc = new IFUDocumentVO(rs);
@@ -347,6 +359,7 @@ public class IFUAction  extends SBActionAdapter {
 						if (oldId.equals(req.getParameter("implId")))
 							req.setParameter("implId", doc.getImplId(), true);
 					}
+					if (excludeId.equals(rs.getString("DEPUY_IFU_TG_ID"))) continue;
 					IFUTechniqueGuideVO tech = new IFUTechniqueGuideVO(rs);
 					String techId = StringUtil.checkVal(tech.getTgId());
 					tech.setTgId(new UUIDGenerator().getUUID());
@@ -357,7 +370,7 @@ public class IFUAction  extends SBActionAdapter {
 			}
 			
 			// Add the straggler as long as it isn't null
-			if (doc != null)
+			if (doc != null && !excludeId.equals(doc.getImplId()))
 				ifu.addIfuDocument(doc.getImplId(), doc);
 			
 		} catch (SQLException e) {
