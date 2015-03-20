@@ -270,9 +270,12 @@ public class IFUAction  extends SBActionAdapter {
 			
 			// Copy the IFU
 			Map<String, Object> replaceVals = (Map<String, Object>) attributes.get(RecordDuplicatorUtility.REPLACE_VALS);
+			
+			// Replace the group id in order to create continuity between the copy and the original
 			Map<String, String> groupId = new HashMap<>();
 			groupId.put("", oldIFU);
 			replaceVals.put("DEPUY_IFU_GROUP_ID", groupId);
+			
 			RecordDuplicatorUtility rdu = new RecordDuplicatorUtility(attributes, dbConn, customDb + "DEPUY_IFU", "DEPUY_IFU_ID", true);
 			rdu.addWhereClause("DEPUY_IFU_ID", oldIFU);
 			Map<String, String> ifuIds = rdu.copy();
@@ -281,6 +284,7 @@ public class IFUAction  extends SBActionAdapter {
 			// Copy all implementations of this ifu
 			rdu = new RecordDuplicatorUtility(attributes, dbConn, customDb + "DEPUY_IFU_IMPL", "DEPUY_IFU_IMPL_ID", true);
 			rdu.addWhereListClause("DEPUY_IFU_ID");
+			// Prevent the indicated id from being copied in order to simulate a delete of that IMPL
 			rdu.addWhereClause("DEPUY_IFU_IMPL_ID!", excludeId);
 			Map<String, String> implIds = rdu.copy();
 			replaceVals.put("DEPUY_IFU_IMPL_ID", implIds);
@@ -288,6 +292,7 @@ public class IFUAction  extends SBActionAdapter {
 			// Copy all technique guides for all implementations
 			rdu = new RecordDuplicatorUtility(attributes, dbConn, customDb + "DEPUY_IFU_TG", "DEPUY_IFU_TG_ID", true);
 			rdu.setWhereSQL("DEPUY_IFU_TG_ID in (SELECT DEPUY_IFU_TG_ID FROM " + customDb + "DEPUY_IFU_TG_XR WHERE " +rdu.buildWhereListClause("DEPUY_IFU_IMPL_ID",true)+")");
+			// Prevent the indicated id from being copied in order to simulate a delete of that TG
 			rdu.addWhereClause("DEPUY_IFU_TG_ID!", excludeId);
 			Map<String, String> tgIds = rdu.copy();
 			replaceVals.put("DEPUY_IFU_TG_ID", tgIds);
