@@ -34,6 +34,11 @@ import com.siliconmtn.security.PhoneVO;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
+
+// WebCrescendo 2.0
+import com.smt.sitebuilder.action.commerce.transaction.ServiceTransactionLogVO;
+import com.smt.sitebuilder.action.commerce.transaction.ServiceTransactionLogger;
+import com.smt.sitebuilder.action.commerce.transaction.ServiceTransactionLogVO.StreamType;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -271,31 +276,43 @@ public class PayPalCheckoutManager {
 	private PaymentTransactionResponseVO callSMTProxy(PaymentTransactionRequestVO pReq) 
 			throws IOException {
 		log.debug("callSMTProxy...");
+		
+		StringBuilder postParam = new StringBuilder("type=json&xmlData=");
+		
 		// JSONify the request and build the request post data
 		Gson g = new Gson();
 		String postData = g.toJson(pReq, PaymentTransactionRequestVO.class);
 		log.debug("raw postData: " + postData);
-		
+
 		try {
 			postData = URLEncoder.encode(postData,"utf-8");
 		} catch (UnsupportedEncodingException uee) {
 			log.error("Error URL encoding postData for proxy call, ", uee);
 		}
-		log.debug("URL-encoded postData: " + postData);
+
+		// append the encoded post data the param
+		postParam.append(postData);
 		
 		// build proxy URL and call proxy
 		StringBuilder smtProxyUrl = new StringBuilder((String)attributes.get(Constants.CFG_SMT_PROXY_URL));
-		log.debug("using proxy: " + smtProxyUrl.toString());
 		smtProxyUrl.append("/payment/process");
+				
+		// log the transaction request
+		this.logTransaction(pReq, smtProxyUrl.toString(), postParam);
+		
 		SMTHttpConnectionManager mgr = new SMTHttpConnectionManager();
-		String postStub = "type=json&xmlData=";
-		byte[] bytes = mgr.retrieveDataViaPost(smtProxyUrl.toString(), postStub + postData);
-		log.info("raw SMT proxy response: " + new String(bytes));
+		byte[] bytes = mgr.retrieveDataViaPost(smtProxyUrl.toString(), postParam.toString());
+		String resBytes = new String(bytes);
+		log.info("raw SMT proxy response: " + resBytes);
 		
 		// JSONify the response
 		PaymentTransactionResponseVO pRes = null;
 		Gson gson = new Gson();
-		pRes = gson.fromJson(new String(bytes), PaymentTransactionResponseVO.class);
+		pRes = gson.fromJson(resBytes, PaymentTransactionResponseVO.class);
+		
+		// log the response
+		this.logTransaction(pReq, pRes, resBytes);
+		
 		return pRes;
 
 	}
@@ -374,6 +391,71 @@ public class PayPalCheckoutManager {
 		}
 		
 	}
+	
+	/**
+	 * Logs a request transaction
+	 * @param pReq
+	 * @param url
+	 * @param postParam
+	 */
+	private void logTransaction(PaymentTransactionRequestVO pReq, String url, 
+			StringBuilder postParam) {
+		if (pReq == null) return;
+		ServiceTransactionLogVO vo = new ServiceTransactionLogVO();
+		vo.setProviderName(serviceType.name());
+		vo.setEnvironmentName(pReq.getTransactionEnvironment().name());
+		vo.setServiceUrl(url);
+		vo.setEncryptedData(encrypt(postParam.toString()));
+		vo.setTransactionId(pReq.getPreviousTransactionId());
+		vo.setTransactionType(transactionType.name());
+		vo.setStreamType(StreamType.REQUEST);
+		vo.setSiteId(catalogSiteId);
+		if (pReq.getShoppingCart() != null) {
+			if (pReq.getShoppingCart().getBillingInfo() != null) {
+				vo.setProfileId(pReq.getShoppingCart().getBillingInfo().getProfileId());
+			}
+		}
+		this.logTransaction(dbConn, vo);
+	}
+	
+	/**
+	 * Logs a response transaction
+	 * @param pRes
+	 */
+	private void logTransaction(PaymentTransactionRequestVO pReq, 
+			PaymentTransactionResponseVO pRes, String resBytes) {
+		if (pRes == null) return;
+		ServiceTransactionLogVO vo = new ServiceTransactionLogVO();
+		vo.setProviderName(serviceType.name());
+		vo.setEnvironmentName(pReq.getTransactionEnvironment().name());
+		vo.setEncryptedData(encrypt(resBytes));
+		vo.setTransactionId(pRes.getTransactionId());
+		vo.setTransactionType(transactionType.name());
+		vo.setStreamType(StreamType.RESPONSE);
+		vo.setResultCode(pRes.getTransactionResponseCode().name());
+		vo.setResultText(pRes.getTransactionResponseText());
+		vo.setSiteId(catalogSiteId);
+		if (pReq.getShoppingCart() != null) {
+			if (pReq.getShoppingCart().getBillingInfo() != null) {
+				vo.setProfileId(pReq.getShoppingCart().getBillingInfo().getProfileId());
+			}
+		}		
+		this.logTransaction(dbConn, vo);
+	}
+	
+	/**
+	 * Logs transaction data.
+	 * @param dbConn
+	 * @param logData
+	 */
+	private void logTransaction(Connection dbConn, ServiceTransactionLogVO logData) {
+		ServiceTransactionLogger stl = new ServiceTransactionLogger();
+		try {
+			stl.logTransaction(dbConn, logData);
+		} catch (Exception e) {
+			log.error("Error logging transaction, ", e);
+		}		
+	}
 		
 	/**
 	 * Initializes the action
@@ -395,6 +477,21 @@ public class PayPalCheckoutManager {
 			throw new InvalidDataException("Transaction type is invalid.");
 		}
 		
+	}
+	
+	/**
+	 * Encrypts the String passed in and returns the encrypted String. If encryption
+	 * fails, returns the original String.
+	 * @param dataToEncrypt
+	 * @return
+	 */
+	private String encrypt(String dataToEncrypt) {
+		try {
+			StringEncrypter se = new StringEncrypter(encryptionKey);
+			return se.encrypt(dataToEncrypt);
+		} catch (Exception e) {
+			return dataToEncrypt;
+		}
 	}
 	
 	/**
