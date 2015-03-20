@@ -191,7 +191,12 @@ public class IFUDisplayAction extends SBActionAdapter {
 		sql.append("b.depuy_ifu_impl_id, xr.depuy_ifu_impl_id as xr_impl_id, ");
 		sql.append("tg.DEPUY_IFU_TG_ID, tg.tg_nm, tg.url_txt as tg_url, tg.dpy_syn_mediabin_id as tg_mediabin_id ");
 		if (isKeyword) {
-			sql.append(", case when (a.title_txt like ? or b.title_txt like ? or b.part_no_txt like ? or tg.tg_nm like ? or b.article_txt like ?) then 1 else 0 end as keyword_matched ");
+			//sequence here is important for performance, we save evaluating article_txt (the blob) for last
+			sql.append(", case when a.title_txt like ? then 1 ");
+			sql.append("when b.title_txt like ? then 1 ");
+			sql.append("when b.part_no_txt like ? then 1 ");
+			sql.append("when tg.tg_nm like ? then 1 ");
+			sql.append("when b.article_txt like ? then 1 else 0 end as keyword_matched ");
 		}
 		sql.append("from ").append(customDb).append("DEPUY_IFU a ");
 		sql.append("inner join ").append(customDb).append("DEPUY_IFU_IMPL b on a.depuy_ifu_id=b.depuy_ifu_id and (b.language_cd=? ");
@@ -199,7 +204,7 @@ public class IFUDisplayAction extends SBActionAdapter {
 		sql.append(") ");
 		sql.append("left outer join ").append(customDb).append("DEPUY_IFU_TG_XR xr on b.depuy_ifu_impl_id=xr.depuy_ifu_impl_id ");
 		sql.append("left outer join ").append(customDb).append("DEPUY_IFU_TG tg on xr.depuy_ifu_tg_id=tg.depuy_ifu_tg_id ");
-		sql.append("where a.archive_flg=").append((isArchive) ? 1 : 0);
+		sql.append("where a.archive_flg=").append((isArchive) ? 1 : 0).append(" ");
 		if (!isPreviewMode) sql.append("and a.depuy_ifu_group_id is null ");
 		
 		//order by
