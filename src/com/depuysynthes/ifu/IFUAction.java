@@ -4,6 +4,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -261,12 +262,17 @@ public class IFUAction  extends SBActionAdapter {
 	public void copy(SMTServletRequest req) throws ActionException {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		String oldIFU = req.getParameter("ifuId");
+		// Get id of the item that was potentially deleted to trigger this copy in order to exclude it from the new IFU
+		String excludeId = StringUtil.checkVal(req.getParameter("excludeId"));
 		
 		try {
 			dbConn.setAutoCommit(false);
 			
 			// Copy the IFU
 			Map<String, Object> replaceVals = (Map<String, Object>) attributes.get(RecordDuplicatorUtility.REPLACE_VALS);
+			Map<String, String> groupId = new HashMap<>();
+			groupId.put("", oldIFU);
+			replaceVals.put("DEPUY_IFU_GROUP_ID", groupId);
 			RecordDuplicatorUtility rdu = new RecordDuplicatorUtility(attributes, dbConn, customDb + "DEPUY_IFU", "DEPUY_IFU_ID", true);
 			rdu.addWhereClause("DEPUY_IFU_ID", oldIFU);
 			Map<String, String> ifuIds = rdu.copy();
@@ -275,12 +281,14 @@ public class IFUAction  extends SBActionAdapter {
 			// Copy all implementations of this ifu
 			rdu = new RecordDuplicatorUtility(attributes, dbConn, customDb + "DEPUY_IFU_IMPL", "DEPUY_IFU_IMPL_ID", true);
 			rdu.addWhereListClause("DEPUY_IFU_ID");
+			rdu.addWhereClause("DEPUY_IFU_IMPL_ID!", excludeId);
 			Map<String, String> implIds = rdu.copy();
 			replaceVals.put("DEPUY_IFU_IMPL_ID", implIds);
 			
 			// Copy all technique guides for all implementations
 			rdu = new RecordDuplicatorUtility(attributes, dbConn, customDb + "DEPUY_IFU_TG", "DEPUY_IFU_TG_ID", true);
 			rdu.setWhereSQL("DEPUY_IFU_TG_ID in (SELECT DEPUY_IFU_TG_ID FROM " + customDb + "DEPUY_IFU_TG_XR WHERE " +rdu.buildWhereListClause("DEPUY_IFU_IMPL_ID",true)+")");
+			rdu.addWhereClause("DEPUY_IFU_TG_ID!", excludeId);
 			Map<String, String> tgIds = rdu.copy();
 			replaceVals.put("DEPUY_IFU_TG_ID", tgIds);
 			
