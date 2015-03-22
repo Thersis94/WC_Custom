@@ -38,6 +38,7 @@ public class IFUDocumentVO extends IFUVO implements Serializable{
 	private String defaultMsgText;
 	private Map<String, IFUTechniqueGuideVO> nativeLangTgList;
 	private Map<String, IFUTechniqueGuideVO> defaultLangTgList;
+	private boolean keywordMatched;
 	
 	public IFUDocumentVO() {
 		nativeLangTgList = new LinkedHashMap<>();
@@ -192,6 +193,14 @@ public class IFUDocumentVO extends IFUVO implements Serializable{
 		} else {
 			return IFUFacadeAction.BINARY_PATH + getBusinessUnitName() + "/" + this.getUrlText();
 		}
+	}
+
+	public boolean isKeywordMatched() {
+		return keywordMatched;
+	}
+
+	public void setKeywordMatched(boolean keywordMatched) {
+		this.keywordMatched = keywordMatched;
 	}
 
 }
