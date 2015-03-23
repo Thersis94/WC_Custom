@@ -235,7 +235,7 @@ public class IFUInstanceAction extends SBActionAdapter {
 			ps.setString(i++, vo.getTitleText());
 			ps.setString(i++, vo.getLanguageCd());
 			ps.setString(i++, vo.getUrlText());
-			ps.setString(i++, vo.getDpySynMediaBinId());
+			ps.setString(i++, vo.getDpySynMediaBinId().length() > 0? vo.getDpySynMediaBinId() : null);
 			ps.setString(i++, vo.getArticleText());
 			ps.setString(i++, vo.getPartNoText());
 			ps.setString(i++, vo.getDefaultMsgText());
