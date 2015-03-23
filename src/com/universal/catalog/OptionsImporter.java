@@ -571,7 +571,7 @@ public class OptionsImporter extends AbstractImporter {
 				data.close();
 			} catch (Exception e) { log.error("Error closing BufferedReader, ", e); }
 		}
-		
+
 		// If options file is empty, bail out.
 		if (prodAttrHierarchy == null || prodAttrHierarchy.isEmpty()) {
 			log.error("ERROR: Options source file is empty!  Notify Universal!");
