@@ -187,10 +187,12 @@ public class IFUDocumentVO extends IFUVO implements Serializable{
 	}
 	
 	public String getPublicUrl() {
-		if (this.dpySynMediaBinId != null) {
+		if (this.dpySynMediaBinId != null && this.dpySynMediaBinId.length() > 0) {
 			return IFUFacadeAction.MEDIABIN_PATH + this.getDpySynMediaBinId();
-		} else {
+		} else if (this.urlText != null && this.urlText.length() > 0) {
 			return IFUFacadeAction.BINARY_PATH + getBusinessUnitName() + "/" + this.getUrlText();
+		} else {
+			return "javascript:;";
 		}
 	}
 
