@@ -307,11 +307,19 @@ public class IFUAction  extends SBActionAdapter {
 			
 			dbConn.commit();
 			
-			// Get the id of the copied ifu
+			// Get the id of the copied ifu as well as any implementation or
+			// technique guide ids that we passed on the request object.
 			String ifuId = ifuIds.get(ifuIds.keySet().toArray()[0]);
+			String implId = implIds.get(req.getParameter("implId"));
+			String tgId = tgIds.get(req.getParameter("tgId"));
 			
-			// Put the new id on the request object for both the base and group id so that the new one is treated as in progress
+			// Put the new id on the request object for both the base and 
+			// group id so that the new one is treated as in progress as well
+			// as the new tg and impl ids so that we don't end up calling update
+			// on the old version of the documents.
 			req.setParameter("ifuId", ifuId);
+			req.setParameter("implId", implId);
+			req.setParameter("tgId", tgId);
 			req.setParameter("ifuGroupId", oldIFU);
 			req.setAttribute("sbActionId",ifuId);
 		} catch (SQLException e) {
