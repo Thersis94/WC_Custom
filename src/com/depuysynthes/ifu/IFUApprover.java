@@ -45,7 +45,7 @@ public class IFUApprover extends AbstractApprover {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		String archive = "UPDATE " + customDb + "DEPUY_IFU SET ARCHIVE_FLG = 1 WHERE DEPUY_IFU_ID = ?";
 		String activate = "UPDATE " + customDb + "DEPUY_IFU SET DEPUY_IFU_GROUP_ID = null WHERE DEPUY_IFU_ID = ?";
-		String delete = "DELETE " + customDb + "DEPUY_IFU WHERE DEPUY_IFU_ID = ?";
+		String delete = "DELETE FROM " + customDb + "DEPUY_IFU WHERE DEPUY_IFU_ID = ?";
 		
 		for (ApprovalVO vo : items) {
 			SyncStatus store = vo.getSyncStatus();
@@ -60,7 +60,7 @@ public class IFUApprover extends AbstractApprover {
 						break;
 	
 					case PendingUpdate:
-						// Check if the new item is a new version of the old item
+						// Check if the new item is a different version that the old item
 						boolean newVersion = vo.getOrigWcKeyId() == null? false : isNewVersion(vo);
 						
 						if (newVersion) {
@@ -102,11 +102,10 @@ public class IFUApprover extends AbstractApprover {
 	 */
 	private boolean isNewVersion(ApprovalVO vo) throws ApprovalException {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		String inProg = "";
-		String active = "";
+		String newVer = "", oldVer = "";
 		
-		StringBuilder sql = new StringBuilder();
-		sql.append("SELECT * FROM ").append(customDb).append("DEPUY_IFU ");
+		StringBuilder sql = new StringBuilder(50);
+		sql.append("SELECT DEPUY_IFU_ID, VERSION_TXT FROM ").append(customDb).append("DEPUY_IFU ");
 		sql.append("WHERE DEPUY_IFU_ID in (?,?)");
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -117,9 +116,9 @@ public class IFUApprover extends AbstractApprover {
 			
 			while (rs.next()) {
 				if (rs.getString("DEPUY_IFU_ID").equals(vo.getWcKeyId())) {
-					inProg = rs.getString("VERSION_TXT");
+					newVer = rs.getString("VERSION_TXT");
 				} else {
-					active = rs.getString("VERSION_TXT");
+					oldVer = rs.getString("VERSION_TXT");
 				}
 			}
 			
@@ -128,11 +127,7 @@ public class IFUApprover extends AbstractApprover {
 			throw new ApprovalException(e);
 		}
 		
-		if (inProg.equals(active)) {
-			return false;
-		} else {
-			return true;
-		}
+		return !oldVer.equalsIgnoreCase(newVer);
 	}
 	
 	
