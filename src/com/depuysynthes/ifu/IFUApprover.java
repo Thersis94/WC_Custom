@@ -12,7 +12,6 @@ import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.approval.AbstractApprover;
 import com.smt.sitebuilder.approval.ApprovalController.SyncStatus;
-import com.smt.sitebuilder.approval.ApprovalController.SyncTransaction;
 import com.smt.sitebuilder.approval.ApprovalException;
 import com.smt.sitebuilder.approval.ApprovalVO;
 import com.smt.sitebuilder.common.constants.Constants;
