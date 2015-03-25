@@ -161,7 +161,7 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 			throws ActionException {
 		Map<String, Integer> favs = loadPageViews(req);
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
-		String baseUrl = ("/search".equals(page.getFullPath())) ? null : page.getFullPath() + "/qs/" ;
+		String baseUrl = ("/search".equals(page.getFullPath())) ? null : page.getFullPath() + "/" + attributes.get(Constants.QS_PATH) ;
 		log.debug("base=" + baseUrl);
 		
 		///iterate the solr results and encapsulate each SolrDocument with the extra fields we need for the Comparator
@@ -240,7 +240,7 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 		for (StatVO vo : stats.values()) {
 			String key = vo.getRequestUri();
 			//log.debug("key=" + key);
-			if (key != null && key.contains("/qs/")) {
+			if (key != null && key.contains("/" + attributes.get(Constants.QS_PATH))) {
 				data.put(key, vo.getHitCnt());
 			}
 		}
@@ -289,7 +289,8 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 		    hierarchy = rootLvl;
 
 		    //assemble & return the URL
-		    return "/" + hierarchy + "/qs/" + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
+		    if (hierarchy == null || hierarchy.length() == 0) return null;
+		    return "/" + hierarchy + "/" + attributes.get(Constants.QS_PATH) + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
 	    }
 
 }
