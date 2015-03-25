@@ -12,6 +12,7 @@ import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.approval.AbstractApprover;
 import com.smt.sitebuilder.approval.ApprovalController.SyncStatus;
+import com.smt.sitebuilder.approval.ApprovalController.SyncTransaction;
 import com.smt.sitebuilder.approval.ApprovalException;
 import com.smt.sitebuilder.approval.ApprovalVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -131,17 +132,6 @@ public class IFUApprover extends AbstractApprover{
 			return false;
 		} else {
 			return true;
-		}
-	}
-
-	
-	/**
-	 * Return the submitted item to declined for later cloning in the main controller
-	 */
-	@Override
-	public void reject(ApprovalVO... items) throws ApprovalException {
-		for(ApprovalVO vo : items) {
-			vo.setSyncStatus(SyncStatus.Declined);
 		}
 	}
 	
