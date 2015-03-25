@@ -133,17 +133,6 @@ public class IFUApprover extends AbstractApprover {
 			return true;
 		}
 	}
-
-	
-	/**
-	 * Return the submitted item to declined for later cloning in the main controller
-	 */
-	@Override
-	public void reject(ApprovalVO... items) throws ApprovalException {
-		for(ApprovalVO vo : items) {
-			vo.setSyncStatus(SyncStatus.Declined);
-		}
-	}
 	
 	
 	/**
