@@ -11,6 +11,7 @@ import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.approval.AbstractApprover;
+import com.smt.sitebuilder.approval.ApprovalController.ModuleType;
 import com.smt.sitebuilder.approval.ApprovalController.SyncStatus;
 import com.smt.sitebuilder.approval.ApprovalException;
 import com.smt.sitebuilder.approval.ApprovalVO;
@@ -176,20 +177,22 @@ public class IFUApprover extends AbstractApprover {
 		sql.append(customDb).append("DEPUY_IFU di ");
 		sql.append("left join WC_SYNC ws on ws.WC_KEY_ID = di.DEPUY_IFU_ID ");
 		sql.append("left join PROFILE p on p.PROFILE_ID = ws.ADMIN_PROFILE_ID ");
+		sql.append("where ws.module_type_id=? ");
 		if (status != null) {
-			sql.append("WHERE WC_SYNC_STATUS_CD = ?");
+			sql.append("and WC_SYNC_STATUS_CD = ?");
 		} else {
-			sql.append("WHERE WC_SYNC_STATUS_CD in (?,?,?)");
+			sql.append("and WC_SYNC_STATUS_CD in (?,?,?)");
 		}
 		log.debug(sql);
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, ModuleType.DePuyIFU.name());
 			if (status != null) {
-				ps.setString(1, status.name());
+				ps.setString(2, status.name());
 			} else {
-				ps.setString(1, SyncStatus.PendingCreate.name());
-				ps.setString(2, SyncStatus.PendingDelete.name());
-				ps.setString(3, SyncStatus.PendingUpdate.name());
+				ps.setString(2, SyncStatus.PendingCreate.name());
+				ps.setString(3, SyncStatus.PendingDelete.name());
+				ps.setString(4, SyncStatus.PendingUpdate.name());
 			}
 			
 			ResultSet rs = ps.executeQuery();
