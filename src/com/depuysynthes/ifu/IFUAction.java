@@ -177,14 +177,6 @@ public class IFUAction  extends SBActionAdapter {
 	public void update(SMTServletRequest req) throws ActionException {
 		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 		try {
-			String oldVersion = StringUtil.checkVal(req.getParameter("oldVersion"));
-			String groupId = StringUtil.checkVal(req.getParameter("ifuGroupId"));
-			
-			if (!Convert.formatBoolean(req.getParameter("isInsert")) && groupId.length() == 0 && oldVersion.length() != 0 && !oldVersion.equals(req.getParameter("versionTxt"))) {
-				req.setParameter("archiveIfu", "true");
-				this.copy(req);
-			}
-			
 			IFUVO ifu = new IFUVO(req);
 			this.update(ifu);
 			req.setAttribute(SBActionAdapter.SB_ACTION_ID, ifu.getIfuId());
