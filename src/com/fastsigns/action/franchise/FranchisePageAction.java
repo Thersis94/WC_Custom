@@ -39,7 +39,7 @@ import com.smt.sitebuilder.action.content.ContentVO;
 import com.smt.sitebuilder.action.menu.MenuObj;
 import com.smt.sitebuilder.admin.action.PageModuleAction;
 import com.smt.sitebuilder.admin.action.SitePageAction;
-import com.smt.sitebuilder.admin.action.sync.SyncTransactionAction;
+import com.smt.sitebuilder.approval.ApprovalController;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
@@ -296,7 +296,7 @@ public class FranchisePageAction extends SBActionAdapter {
 		String franId = CenterPageAction.getFranchiseId(req);
 		attributes.put("webeditFranId", franId);
 		
-        String previewApiKey = SyncTransactionAction.generatePreviewApiKey(attributes);
+        String previewApiKey = ApprovalController.generatePreviewApiKey(attributes);
         req.setParameter(Constants.PAGE_PREVIEW, previewApiKey);
 		
 		Map<String, ContentVO> contents = new HashMap<String, ContentVO>();

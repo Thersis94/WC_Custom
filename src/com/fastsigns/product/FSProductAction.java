@@ -457,12 +457,13 @@ public class FSProductAction extends SBActionAdapter {
 
 		if(isMobile) url.append("http://"+site.getMobileSiteUrl());
 		
+		//TODO -- TEST THAT PRODUCTS STILL WORK AFTER MODIFYING QS STRING TO ATTRIBUTES VALUE!
 		if (req.hasParameter("prefix")) {
 			appendLevel(url, req.getParameter("prefix"));
-		} else if (isMobile || req.getRequestURL().indexOf("qs") > -1){
+		} else if (isMobile || req.getRequestURL().indexOf((String)attributes.get(Constants.QS_PATH)) > -1){
 			if(isMobile) appendLevel(url, "products");
 			appendLevel(url, req.getRequestURI().substring(req.getRequestURI().lastIndexOf('/')+1));
-			appendLevel(url, "qs/");
+			appendLevel(url, (String)attributes.get(Constants.QS_PATH));
 		} else {
 			appendLevel(url, req.getRequestURI().substring(req.getRequestURI().lastIndexOf('/')) + "-");
 		}

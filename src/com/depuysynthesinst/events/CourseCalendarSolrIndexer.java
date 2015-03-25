@@ -18,6 +18,7 @@ import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.event.vo.EventEntryVO;
+import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SMTAbstractIndex;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 
@@ -140,7 +141,7 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 			ps.setTimestamp(2, Convert.getCurrentTimestamp());
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
-				String url = rs.getString(2) + "/qs/";
+				String url = rs.getString(2) + "/" + config.getProperty(Constants.QS_PATH);
 				//ensure pages on subsites are aliased properly.
 				String subSiteAlias = StringUtil.checkVal(rs.getString(1));
 				if (subSiteAlias.length() > 0) url = "/" + subSiteAlias + url;
