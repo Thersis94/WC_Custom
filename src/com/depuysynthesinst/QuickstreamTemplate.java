@@ -40,12 +40,28 @@ public class QuickstreamTemplate extends CMSSolrDocumentVO {
 	public void setData(Object o) {
 		super.setData(o);
 		CMSContentVO vo = (CMSContentVO) o;
+		//this is for debugging; trying to track down an NPE - JM 03.26.15
+		if (vo == null) {
+			log.error("passed a null vo, figure out why.");
+			return;
+		}
+		
 		TemplateFieldVOContainer templateData = vo.getTemplateData();
-		super.setSummary(StringUtil.checkVal(vo.getArticle().toString()));
+		//this is for debugging; trying to track down an NPE - JM 03.26.15
+		if (templateData == null) {
+			log.error("no template data passed on VO");
+			return;
+		}
+		
+		if (vo.getArticle() != null)
+			super.setSummary(StringUtil.checkVal(vo.getArticle().toString()));
+		
+		
 		
 		//some core fields are provided here-in:
 		for (TemplateFieldVO field : templateData.getContainerData()) {
-			//log.debug(field.getFieldName() + "=" + field.getFieldValue());
+			if (field == null || field.getFieldName() == null) continue;
+
 			switch (field.getFieldName()) {
 				case "Hierarchy":
 					this.parseHierarchies(StringUtil.checkVal(field.getFieldValue()));
