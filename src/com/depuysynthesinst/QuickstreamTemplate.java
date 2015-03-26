@@ -60,7 +60,8 @@ public class QuickstreamTemplate extends CMSSolrDocumentVO {
 		
 		//some core fields are provided here-in:
 		for (TemplateFieldVO field : templateData.getContainerData()) {
-			//log.debug(field.getFieldName() + "=" + field.getFieldValue());
+			if (field == null || field.getFieldName() == null) continue;
+
 			switch (field.getFieldName()) {
 				case "Hierarchy":
 					this.parseHierarchies(StringUtil.checkVal(field.getFieldValue()));
