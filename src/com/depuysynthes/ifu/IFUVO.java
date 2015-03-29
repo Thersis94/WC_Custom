@@ -8,6 +8,8 @@ import java.util.Map;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
+import com.smt.sitebuilder.approval.Approvable;
+import com.smt.sitebuilder.approval.ApprovalVO;
 
 /****************************************************************************
  * <b>Title</b>: IFUContainer.java <p/>
@@ -24,7 +26,7 @@ import com.siliconmtn.util.Convert;
  * <b>Changes: </b>
  ****************************************************************************/
 
-public class IFUVO {
+public class IFUVO implements Approvable {
 	
 	private String ifuId;
 	private String ifuGroupId;
@@ -35,6 +37,7 @@ public class IFUVO {
 	private Map<String, IFUDocumentVO> ifuDocuments;
 	private Date createDate = null;
 	private String businessUnitName;
+	private ApprovalVO approval;
 	
 	public IFUVO() {
 		ifuDocuments = new HashMap<String, IFUDocumentVO>();
@@ -44,11 +47,12 @@ public class IFUVO {
 		this();
 		this.setIfuId(req.getParameter("ifuId"));
 		this.setIfuGroupId(req.getParameter("ifuGroupId"));
-		this.setTitleText(req.getParameter("titleText"));
+		this.setTitleText(req.getParameter("actionName"));
 		this.setVersionText(req.getParameter("versionText"));
 		this.setOrderNo(Convert.formatInteger(req.getParameter("orderNo")));
 		this.setArchiveFlg(Convert.formatInteger(req.getParameter("archiveFlg")));
 		this.setBusinessUnitName(req.getParameter("businessUnitName"));
+		this.setSyncData(new ApprovalVO(req));
 	}
 	
 	public IFUVO(ResultSet rs) {
@@ -62,6 +66,7 @@ public class IFUVO {
 		this.setArchiveFlg(db.getIntVal("ARCHIVE_FLG", rs));
 		this.setCreateDate(db.getDateVal("CREATE_DT", rs));
 		this.setBusinessUnitName(db.getStringVal("BUSINESS_UNIT_NM", rs));
+		this.setSyncData(new ApprovalVO(rs));
 		db = null;
 	}
 
@@ -139,6 +144,17 @@ public class IFUVO {
 
 	public void setBusinessUnitName(String businessUnitName) {
 		this.businessUnitName = businessUnitName;
+	}
+
+	@Override
+	public ApprovalVO getSyncData() {
+		return approval;
+	}
+
+	@Override
+	public void setSyncData(ApprovalVO approval) {
+		this.approval = approval;
+		
 	}
 
 }
