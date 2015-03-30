@@ -177,14 +177,6 @@ public class IFUAction  extends SBActionAdapter {
 	public void update(SMTServletRequest req) throws ActionException {
 		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 		try {
-			String oldVersion = StringUtil.checkVal(req.getParameter("oldVersion"));
-			String groupId = StringUtil.checkVal(req.getParameter("ifuGroupId"));
-			
-			if (!Convert.formatBoolean(req.getParameter("isInsert")) && groupId.length() == 0 && oldVersion.length() != 0 && !oldVersion.equals(req.getParameter("versionTxt"))) {
-				req.setParameter("archiveIfu", "true");
-				this.copy(req);
-			}
-			
 			IFUVO ifu = new IFUVO(req);
 			this.update(ifu);
 			req.setAttribute(SBActionAdapter.SB_ACTION_ID, ifu.getIfuId());
@@ -307,11 +299,19 @@ public class IFUAction  extends SBActionAdapter {
 			
 			dbConn.commit();
 			
-			// Get the id of the copied ifu
+			// Get the id of the copied ifu as well as any implementation or
+			// technique guide ids that we passed on the request object.
 			String ifuId = ifuIds.get(ifuIds.keySet().toArray()[0]);
+			String implId = implIds.get(req.getParameter("implId"));
+			String tgId = tgIds.get(req.getParameter("tgId"));
 			
-			// Put the new id on the request object for both the base and group id so that the new one is treated as in progress
+			// Put the new id on the request object for both the base and 
+			// group id so that the new one is treated as in progress as well
+			// as the new tg and impl ids so that we don't end up calling update
+			// on the old version of the documents.
 			req.setParameter("ifuId", ifuId);
+			req.setParameter("implId", implId);
+			req.setParameter("tgId", tgId);
 			req.setParameter("ifuGroupId", oldIFU);
 			req.setAttribute("sbActionId",ifuId);
 		} catch (SQLException e) {

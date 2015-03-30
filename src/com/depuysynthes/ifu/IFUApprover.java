@@ -11,6 +11,7 @@ import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.approval.AbstractApprover;
+import com.smt.sitebuilder.approval.ApprovalController.ModuleType;
 import com.smt.sitebuilder.approval.ApprovalController.SyncStatus;
 import com.smt.sitebuilder.approval.ApprovalException;
 import com.smt.sitebuilder.approval.ApprovalVO;
@@ -28,7 +29,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @since Mar 18, 2015
  ****************************************************************************/
 
-public class IFUApprover extends AbstractApprover{
+public class IFUApprover extends AbstractApprover {
 	
 	public IFUApprover(SMTDBConnection conn, Map<String, Object> attributes) {
 		super(conn, attributes);
@@ -44,7 +45,7 @@ public class IFUApprover extends AbstractApprover{
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		String archive = "UPDATE " + customDb + "DEPUY_IFU SET ARCHIVE_FLG = 1 WHERE DEPUY_IFU_ID = ?";
 		String activate = "UPDATE " + customDb + "DEPUY_IFU SET DEPUY_IFU_GROUP_ID = null WHERE DEPUY_IFU_ID = ?";
-		String delete = "DELETE " + customDb + "DEPUY_IFU WHERE DEPUY_IFU_ID = ?";
+		String delete = "DELETE FROM " + customDb + "DEPUY_IFU WHERE DEPUY_IFU_ID = ?";
 		
 		for (ApprovalVO vo : items) {
 			SyncStatus store = vo.getSyncStatus();
@@ -59,7 +60,7 @@ public class IFUApprover extends AbstractApprover{
 						break;
 	
 					case PendingUpdate:
-						// Check if the new item is a new version of the old item
+						// Check if the new item is a different version that the old item
 						boolean newVersion = vo.getOrigWcKeyId() == null? false : isNewVersion(vo);
 						
 						if (newVersion) {
@@ -101,11 +102,10 @@ public class IFUApprover extends AbstractApprover{
 	 */
 	private boolean isNewVersion(ApprovalVO vo) throws ApprovalException {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		String inProg = "";
-		String active = "";
+		String newVer = "", oldVer = "";
 		
-		StringBuilder sql = new StringBuilder();
-		sql.append("SELECT * FROM ").append(customDb).append("DEPUY_IFU ");
+		StringBuilder sql = new StringBuilder(50);
+		sql.append("SELECT DEPUY_IFU_ID, VERSION_TXT FROM ").append(customDb).append("DEPUY_IFU ");
 		sql.append("WHERE DEPUY_IFU_ID in (?,?)");
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -116,9 +116,9 @@ public class IFUApprover extends AbstractApprover{
 			
 			while (rs.next()) {
 				if (rs.getString("DEPUY_IFU_ID").equals(vo.getWcKeyId())) {
-					inProg = rs.getString("VERSION_TXT");
+					newVer = rs.getString("VERSION_TXT");
 				} else {
-					active = rs.getString("VERSION_TXT");
+					oldVer = rs.getString("VERSION_TXT");
 				}
 			}
 			
@@ -127,22 +127,7 @@ public class IFUApprover extends AbstractApprover{
 			throw new ApprovalException(e);
 		}
 		
-		if (inProg.equals(active)) {
-			return false;
-		} else {
-			return true;
-		}
-	}
-
-	
-	/**
-	 * Return the submitted item to declined for later cloning in the main controller
-	 */
-	@Override
-	public void reject(ApprovalVO... items) throws ApprovalException {
-		for(ApprovalVO vo : items) {
-			vo.setSyncStatus(SyncStatus.Declined);
-		}
+		return !oldVer.equalsIgnoreCase(newVer);
 	}
 	
 	
@@ -151,15 +136,19 @@ public class IFUApprover extends AbstractApprover{
 	 */
 	public void cancel(ApprovalVO... items) throws ApprovalException {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		String delete = "DELETE " + customDb + "DEPUY_IFU WHERE DEPUY_IFU_ID = ?";
+		String delete = "DELETE FROM " + customDb + "DEPUY_IFU WHERE DEPUY_IFU_ID = ?";
 		
 		for (ApprovalVO vo : items) {
 			try {
-				executeQuery(delete, vo.getWcKeyId());
+				// If we are not rejecting a delete, delete the associated IFU record.
+				if (vo.getSyncStatus() != SyncStatus.PendingDelete)
+					executeQuery(delete, vo.getWcKeyId());
+				
 				vo.setSyncCompleteDt(Convert.getCurrentTimestamp());
 				vo.setSyncStatus(SyncStatus.Declined);
 				vo.setRejectCode("Cancelled");
 				vo.setRejectReason("Cancelled");
+				
 				
 			} catch (DatabaseException e) {
 				log.error("Unable to cancel approval with status " + vo.getSyncStatus() + " and id " + vo.getWcKeyId());
@@ -176,40 +165,40 @@ public class IFUApprover extends AbstractApprover{
 	@Override
 	public List<ApprovalVO> list(SyncStatus status) throws ApprovalException {
 		List<ApprovalVO> appItems = new ArrayList<>();
-
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(80);
-		
-		sql.append("SELECT *, FIRST_NM as admin_first, LAST_NM as admin_last FROM ").append(customDb).append("DEPUY_IFU di ");
+		sql.append("SELECT di.title_txt as PORTLET_NM, ws.*, FIRST_NM as admin_first, ");
+		sql.append("LAST_NM as admin_last FROM ");
+		sql.append(customDb).append("DEPUY_IFU di ");
 		sql.append("left join WC_SYNC ws on ws.WC_KEY_ID = di.DEPUY_IFU_ID ");
 		sql.append("left join PROFILE p on p.PROFILE_ID = ws.ADMIN_PROFILE_ID ");
+		sql.append("where ws.module_type_id=? ");
 		if (status != null) {
-			sql.append("WHERE WC_SYNC_STATUS_CD = ?");
+			sql.append("and WC_SYNC_STATUS_CD = ?");
 		} else {
-			sql.append("WHERE WC_SYNC_STATUS_CD in (?,?,?)");
+			sql.append("and WC_SYNC_STATUS_CD in (?,?,?)");
 		}
 		log.debug(sql);
+		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, ModuleType.DePuyIFU.name());
 			if (status != null) {
-				ps.setString(1, status.name());
+				ps.setString(2, status.name());
 			} else {
-				ps.setString(1, SyncStatus.PendingCreate.name());
-				ps.setString(2, SyncStatus.PendingDelete.name());
-				ps.setString(3, SyncStatus.PendingUpdate.name());
+				ps.setString(2, SyncStatus.PendingCreate.name());
+				ps.setString(3, SyncStatus.PendingDelete.name());
+				ps.setString(4, SyncStatus.PendingUpdate.name());
 			}
 			
 			ResultSet rs = ps.executeQuery();
 			
-			while (rs.next()) {
+			while (rs.next())
 				appItems.add(new ApprovalVO(rs, (String) getAttribute(Constants.ENCRYPT_KEY)));
-			}
+			
 		} catch (SQLException e) {
 			log.error("Unable to get list of IFUs for approval status: " + status.toString(), e);
 			throw new ApprovalException(e);
 		}
-		
 		return appItems;
 	}
-	
-	
 }
