@@ -168,7 +168,7 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	}
 	
 	public Date getEarliestEventDate() {
-		if (firstEventDate == null) {  //only need to iterator once to set the member variable
+		if (firstEventDate == null) {  //only need to iterate once to set the member variable
 			if (super.getEventCount() == 1) {
 				firstEventDate = super.getEvents().get(0).getStartDate();
 				
@@ -183,7 +183,6 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 				}
 			}
 		}
-		
 		if (firstEventDate == null) firstEventDate = Calendar.getInstance().getTime();
 		return firstEventDate;
 	}
@@ -478,6 +477,15 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 		cal.set(Calendar.SECOND, 0);
 		cal.set(Calendar.MILLISECOND, 0);
 		return this.getEarliestEventDate().before(cal.getTime());
+	}
+	
+	public boolean isMinDaysAway(int days) {
+		Calendar milestone = Calendar.getInstance();
+		milestone.setTime(this.getEarliestEventDate());
+		milestone.add(Calendar.DAY_OF_YEAR, (0 - days));
+
+		//true if the today is greater-than or equal to the milestone
+		return Calendar.getInstance().getTime().compareTo(milestone.getTime()) > -1;
 	}
 
 	public String getLeadSortType() {

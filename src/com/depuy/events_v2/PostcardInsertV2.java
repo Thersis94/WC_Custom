@@ -55,12 +55,12 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	// transaction types understood by this action
 	public enum ReqType {
 		eventInfo, leads, cancelSeminar, orderBox, uploadPostcard, approvePostcardFile, declinePostcardFile,
-		uploadAdFile, approveAd, declineAd, postseminar, coopAdsSurgeonApproval, 
+		uploadAdFile, approveAd, declineAd, postseminar, coopAdsSurgeonApproval, optionFeedback,
 		hospitalSponsored, uploadPosterFile, saveInvoiceFile, radioAdsSubmit,
 		//status levels
 		//submittedByCoord, approvedByAFD, approvedBySRC, pendingSurgeon, approvedMedAffairs
 		submitSeminar, approveSeminar, srcApproveSeminar, pendingSurgeonReview, approvedMedAffairs,
-		markPostcardSent
+		markPostcardSent, outstandingItems;
 	}
 
 	public PostcardInsertV2() {
@@ -157,6 +157,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 				case declineAd:
 				case coopAdsSurgeonApproval:
 				case radioAdsSubmit:
+				case optionFeedback:
 					saveNewspaperAd(eventPostcardId, req);
 					break;
 
@@ -202,12 +203,18 @@ public class PostcardInsertV2 extends SBActionAdapter {
 				case saveInvoiceFile: //this is really part of Ads, but is tied to the postcard (level), encapsulating all ads.
 					this.saveInvoiceFile(req, site, eventPostcardId);
 					break;
+				
+				case outstandingItems:
+					this.saveCompletedItem(req.getParameter("completedItem"), eventPostcardId);
+					break;
 			}
 		} catch (SQLException e) {
 			log.error("could not save transaction " + reqType + ", " + e.getMessage(), e);
 			throw new ActionException();
 		}
 
+		if (req.hasParameter("json")) return; //do not redirect
+		
 		// setup the redirect url
 		StringBuilder redirectPg = new StringBuilder();
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
@@ -1378,5 +1385,23 @@ public class PostcardInsertV2 extends SBActionAdapter {
 			log.error("Failed to update invoice file path");
 			throw new ActionException(e);
 		}
+	}
+	
+	
+	/**
+	 * writes a completed task entry to the ledger for this seminar
+	 * See OutstandingItems object for more
+	 * @param action
+	 * @param eventPostcardId
+	 * @throws SQLException
+	 */
+	private void saveCompletedItem(String action, String eventPostcardId) throws SQLException {
+		String sql = "insert into event_postcard_action_item (event_postcard_id, action_item_cd, complete_dt) values (?,?,?)";
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			ps.setString(1, eventPostcardId);
+			ps.setString(2, action);
+			ps.setTimestamp(3, Convert.getCurrentTimestamp());
+			ps.executeUpdate();
+		} //throw the catch
 	}
 }

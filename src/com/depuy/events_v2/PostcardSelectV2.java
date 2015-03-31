@@ -554,6 +554,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 
 		String id = "";
 		DePuyEventSeminarVO vo = null;
+		OutstandingItems oa = new OutstandingItems(dbConn);
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, actionId);
 			if (profileId != null) {
@@ -568,7 +569,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 				} else {
 					vo = new DePuyEventSeminarVO().populateFromListRS(rs);
 				}
-				OutstandingItems.attachActionItems(vo);
+				oa.attachActionItems(vo);
 				data.put(id, vo);
 			}
 		} catch (SQLException sqle) {

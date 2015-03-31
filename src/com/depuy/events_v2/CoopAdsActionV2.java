@@ -44,6 +44,7 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 	public static final int NO_ADS = 15;
 	public static final int CLIENT_SUBMITTED = 1;
 	public static final int PENDING_CLIENT_APPROVAL = 2;
+	public static final int PENDING_AD_OPTIONS = 11;
 	public static final int CLIENT_APPROVED_AD = 3;
 	public static final int CLIENT_DECLINED_AD = 4;
 	public static final int CLIENT_PAYMENT_RECD = 5;
@@ -96,6 +97,9 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 				break;
 			case "uploadAdFile": //this gets called once per ad, from the Promote page
 				this.savePromoteAdData(req, site, vo);
+				break;
+			case "optionFeedback":
+				this.saveAdOptionFeedback(vo);
 				break;
 		}
 
@@ -204,6 +208,16 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 
 				// ask the Rep to approve their portion
 				emailer.requestCoordinatorApproval(sem, site, Convert.formatInteger(req.getParameter("adCount"), 1), vo);
+				break;
+				
+			case PENDING_AD_OPTIONS:
+				log.debug("sending ad options email");
+				// ask the Rep to review their ad options
+				if ("optionFeedback".equals(reqType)) {
+					emailer.feedbackAdOptions(sem, site, vo, Convert.formatInteger(req.getParameter("adCount"), 1));
+				} else {
+					emailer.reviewAdOptions(sem, site, vo, Convert.formatInteger(req.getParameter("adCount"), 1));
+				}
 				break;
 
 			case CLIENT_APPROVED_AD:
@@ -457,6 +471,36 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 		}
 	}
 	
+	
+	/**
+	 * captures the coordinator's ad option feedback
+	 * 
+	 * @param req
+	 * @throws ActionException
+	 */
+	private void saveAdOptionFeedback(CoopAdVO vo) throws ActionException {		
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("UPDATE ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("DEPUY_EVENT_COOP_AD SET ");
+		sql.append("OPTION_FEEDBACK_TXT=?, UPDATE_DT=? ");
+		sql.append("where COOP_AD_ID=?");
+		log.debug(sql);
+
+		// perform the execute
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, vo.getOptionFeedbackText());
+			ps.setTimestamp(2, Convert.getCurrentTimestamp());
+			ps.setString(3, vo.getCoopAdId());
+
+			if (ps.executeUpdate() < 1)
+				throw new SQLException("No Co-Op Ad status records updated");
+		} catch (SQLException sqle) {
+			log.error("Error saving Co-op Ad option feedback", sqle);
+			throw new ActionException(sqle);
+		}
+	}
+	
+	
 
 	/**
 	 * simple facade to our standard file upload util.
@@ -525,7 +569,7 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 		//Create prepared statement
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("update ").append(customDB).append("DEPUY_EVENT_COOP_AD ");
-		sql.append("set ad_file_url=?, approved_paper_nm=?, run_dates_txt=?, ");
+		sql.append("set ad_file_url=?, option_file_url=?, approved_paper_nm=?, run_dates_txt=?, ");
 		sql.append("total_cost_no=?, cost_to_depuy_no=?, cost_to_rep_no=?, ");
 		sql.append("cost_to_surgeon_no=?, cost_to_hospital_no=?, status_flg=?, ");
 		sql.append("UPDATE_DT=? where COOP_AD_ID=?");
@@ -535,6 +579,7 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			int i = 0;
 			ps.setString(++i, saveFile(req, "adFileUrl", "/ads/" ,site ));
+			ps.setString(++i, saveFile(req, "optionFileUrl", "/ads/" ,site ));
 			ps.setString(++i, vo.getApprovedPaperName());
 			ps.setString(++i, vo.getAdDatesText());
 			ps.setDouble(++i, vo.getTotalCostNo());

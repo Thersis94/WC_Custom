@@ -72,13 +72,98 @@ public class CoopAdsEmailer extends SBActionAdapter {
 			log.error("Co-Op Ad declined", me);
 		}
 	}
+	
+	/**
+	 * sends a notification to the coordinator about their ad options. (an uploaded file)
+	 * @param sem
+	 * @param site
+	 * @param cnt
+	 * @param vo
+	 */
+	public void reviewAdOptions(DePuyEventSeminarVO sem, SiteVO site, CoopAdVO vo, int adNo) {
+		boolean isOnline = Convert.formatInteger(vo.getOnlineFlg()).intValue() == 1;
+		
+		StringBuilder msg = new StringBuilder(500);
+		msg.append("Dear Seminar Holder,\r\r");
+		msg.append("The Newspaper Ad Options are now ready for your review/approval. ");
+		msg.append("Please visit ");
+		msg.append(site.getFullSiteAlias()).append("/?reqType=promote&eventPostcardId=").append(sem.getEventPostcardId());
+		msg.append(" to review all options and select newspaper(s), run dates, and pricing.  Once you are ready to submit, ");
+		msg.append("click the \"Submit Ad Options\" button at the bottom of the page.  Within 24-48hrs you'll be receiving ");
+		msg.append("a Final Newspaper Ad Approval Email with the run dates and pricing you chose and the final ad file for your review.\n\n");
+		msg.append("Thank You,\rEvents.DePuySynthes.com Administrator\r\r");
+
+		try {
+			// Create the mail object and send
+			EmailMessageVO mail = new EmailMessageVO();
+			mail.addRecipient(sem.getOwner().getEmailAddress());
+			mail.addCC("rwilkin7@its.jnj.com");
+			mail.addCC(site.getAdminEmail());
+			mail.setSubject(((isOnline) ? "Online" : "Newspaper") + " Ad #" + adNo + " Options - Seminar " + sem.getRSVPCodes());
+			mail.setFrom(site.getMainEmail());
+			mail.setTextBody(msg.toString());
+
+			MessageSender ms = new MessageSender(attributes, dbConn);
+			ms.sendMessage(mail);
+
+			log.debug("Co-Op Ad options Email Sent");
+		} catch (Exception me) {
+			log.error("Co-Op Ad options", me);
+		}
+	}
+	
+	
+	/**
+	 * sends a notification to Harmony with Ad option feedback from the coordinator
+	 * @param sem
+	 * @param site
+	 * @param cnt
+	 * @param vo
+	 */
+	public void feedbackAdOptions(DePuyEventSeminarVO sem, SiteVO site, CoopAdVO vo, int adNo) {
+		boolean isOnline = Convert.formatInteger(vo.getOnlineFlg()).intValue() == 1;
+		String eventType = StringUtil.checkVal(sem.getEvents().get(0).getEventTypeCd());
+		boolean isCFSEM = ( eventType.toUpperCase().startsWith("CFSEM") );
+		
+		StringBuilder msg = new StringBuilder(500);
+		msg.append("The seminar coordinator has chosen their Newspaper Ad Options and they are listed below:\r\r\r");
+		msg.append(vo.getOptionFeedbackText()).append("\r\r\r");
+		msg.append("Harmony, please upload the chosen Newspaper Ad Details to the portal along with the final Ad Files ");
+		msg.append("and change status to \"Pending Client Approval\".\r\r");
+		msg.append("Thank You,\rEvents.DePuySynthes.com Administrator\r\r");
+
+		try {
+			// Create the mail object and send
+			EmailMessageVO mail = new EmailMessageVO();
+			mail.addRecipient("amy.zimmerman@hmktgroup.com");
+			mail.addCC(site.getAdminEmail());
+			mail.addCC("rwilkin7@its.jnj.com");
+			mail.addCC("Sterling.Hoham@hmktgroup.com");
+			if (! isCFSEM ){ //Additional recipients for DePuy Funded events
+				mail.addRecipient("lisa.maiers@novusmediainc.com");
+				mail.addCC("nicole.olson@novusmediainc.com");
+				mail.addCC("carly.lubert@novusmeidainc.com");
+			}
+			mail.setSubject(((isOnline) ? "Online" : "Newspaper") + " Ad #" + adNo + " Options Confirmed - Seminar " + sem.getRSVPCodes());
+			mail.setFrom(site.getMainEmail());
+			mail.setTextBody(msg.toString());
+
+			MessageSender ms = new MessageSender(attributes, dbConn);
+			ms.sendMessage(mail);
+
+			log.debug("Co-Op Ad options feedback email sent");
+		} catch (Exception me) {
+			log.error("Co-Op Ad options feedback", me);
+		}
+	}
+	
 
 	public void requestCoordinatorApproval(DePuyEventSeminarVO sem, SiteVO site, int cnt, CoopAdVO vo) {
 		//Allow 5 business days for response
 		Date dueDate = addBusinessDays(5);
 		boolean isOnline = Convert.formatInteger(vo.getOnlineFlg()).intValue() == 1;
 		
-		StringBuilder msg = new StringBuilder();
+		StringBuilder msg = new StringBuilder(500);
 		msg.append("Dear Seminar Holder,\r\r");
 		msg.append("The cost and proof for ");
 		if (isOnline) msg.append("Online ");

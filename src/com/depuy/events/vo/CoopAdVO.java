@@ -41,6 +41,8 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 	private Double costToRepNo = null;
 	private String approvedPaperName = null;
 	private String adFileUrl = null;
+	private String optionFileUrl = null;
+	private String optionFeedbackText = null;
 	private String territoryNo = null;
 	private Integer statusFlg = null;
 	private Map<String, Integer> eventCodes = new HashMap<String, Integer>();
@@ -126,6 +128,8 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 		hospitalInfo = req.getParameter("hospitalInfo");
 		weeksAdvance = Convert.formatInteger( req.getParameter("weeksAdvance") );
 		adCount = Convert.formatInteger( req.getParameter("adCount") );
+		
+		optionFeedbackText = req.getParameter("optionFeedbackText");
     }
     
     public void setData(ResultSet rs) {
@@ -142,6 +146,8 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 		costToSurgeonNo = db.getDoubleVal("cost_to_surgeon_no",rs);
 		approvedPaperName = db.getStringVal("approved_paper_nm", rs);
 		adFileUrl = db.getStringVal("ad_file_url", rs);
+		optionFileUrl = db.getStringVal("option_file_url", rs);
+		optionFeedbackText = db.getStringVal("option_feedback_txt", rs);
 		statusFlg = db.getIntegerVal("status_flg", rs);
 		newspaper1Phone = db.getStringVal("newspaper1_phone_no", rs);
 		newspaper2Phone = db.getStringVal("newspaper2_phone_no", rs);
@@ -610,5 +616,21 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 	 */
 	public void setInvoiceFile(String invoiceFile) {
 		this.invoiceFile = invoiceFile;
+	}
+
+	public String getOptionFileUrl() {
+		return optionFileUrl;
+	}
+
+	public void setOptionFileUrl(String optionFileUrl) {
+		this.optionFileUrl = optionFileUrl;
+	}
+
+	public String getOptionFeedbackText() {
+		return optionFeedbackText;
+	}
+
+	public void setOptionFeedbackText(String optionFeedbackText) {
+		this.optionFeedbackText = optionFeedbackText;
 	}
 }
