@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 
+
 // SMT BaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -505,10 +506,13 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	 */
 	private void saveNewspaperAd(String eventPostcardId, SMTServletRequest req) throws SQLException {
 		//pass the seminar along with this, so emails can be sent.
-		DePuyEventSeminarVO sem = fetchSeminar(req, ReportType.summary);
-		req.setAttribute("postcard", sem);
-
-		CoopAdsActionV2 caa = new CoopAdsActionV2();
+//		String oldReqType = req.getParameter("reqType");
+//		req.setParameter("reqType", PostcardSelectV2.ReqType.summary.name());
+//		DePuyEventSeminarVO sem = fetchSeminar(req, ReportType.summary);
+//		req.setAttribute("postcard", sem);
+//		req.setParameter("reqType", oldReqType);
+		
+		CoopAdsActionV2 caa = new CoopAdsActionV2(actionInit);
 		caa.setAttributes(attributes);
 		caa.setDBConnection(dbConn);
 		try {
@@ -516,8 +520,6 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		} catch (Exception ae) {
 			throw new SQLException(ae);
 		}
-
-		//if radio = adType, possibly trigger an email here.  There is only one submission that will be type=radio
 	}
 
 	/**
@@ -1385,6 +1387,16 @@ public class PostcardInsertV2 extends SBActionAdapter {
 			log.error("Failed to update invoice file path");
 			throw new ActionException(e);
 		}
+		
+		// get the postcard data for emailing & approving each event
+		req.setParameter("reqType", PostcardSelectV2.ReqType.summary.name());
+		DePuyEventSeminarVO sem = fetchSeminar(req, ReportType.summary);
+
+		// send approval request email
+		CoopAdsEmailer emailer = new CoopAdsEmailer(actionInit);
+		emailer.setAttributes(attributes);
+		emailer.setDBConnection(dbConn);
+		emailer.requestAdApprovalOfConsignee(sem, site, false);
 	}
 	
 	

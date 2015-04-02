@@ -580,7 +580,7 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	}
 	
 	public void addConsignee(ConsigneeVO vo) {
-		this.consignees.put(new Long(vo.getTypeNo()), vo);
+		this.consignees.put(Long.valueOf(vo.getTypeNo()), vo);
 	}
 
 	public Set<ActionItem> getActionItems() {

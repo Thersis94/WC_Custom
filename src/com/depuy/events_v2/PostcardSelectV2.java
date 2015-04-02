@@ -19,8 +19,6 @@ import javax.servlet.http.Cookie;
 // J2EE 1.4.0 Libs
 import javax.servlet.http.HttpSession;
 
-
-
 //wc-depuy libs
 import com.depuy.events.vo.CoopAdVO;
 import com.depuy.events_v2.vo.ConsigneeVO;
@@ -31,7 +29,6 @@ import com.depuy.events_v2.vo.PersonVO;
 import com.depuy.events_v2.vo.report.CustomReportVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.UserDataVO;
@@ -310,7 +307,8 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		Set<String> profileIds = new HashSet<String>();
 		DePuyEventSeminarVO vo = null;
 		
-		StringBuilder sql = new StringBuilder();
+		log.debug("reqType=" + reqType);
+		StringBuilder sql = new StringBuilder(1000);
 		sql.append("select *, ep.profile_id as owner_profile_id, pxr.profile_id as person_profile_id, ");
 		sql.append("ep.status_flg as pc_status_flg, pxr.create_dt as approval_dt  ");
 		sql.append("from EVENT_ENTRY e ");
@@ -329,9 +327,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		}
 		log.debug(sql + "|" + actionGroupId + "|" + eventPostcardId + "|" + profileId);
 		
-		PreparedStatement ps = null;
-		try {
-			ps = dbConn.prepareStatement(sql.toString());
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, actionGroupId);
 			ps.setString(2, eventPostcardId);
 			if (profileId != null) {
@@ -355,8 +351,6 @@ public class PostcardSelectV2 extends SBActionAdapter {
 				vo.addJoint(rs.getString("joint_id"));
 				
 			}
-		} finally { 
-			try { ps.close(); } catch (Exception e) { }
 		}
 		
 		//retrieve the profiles for the names we need to display
@@ -448,13 +442,9 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		caa.setAttributes(attributes);
 		caa.setDBConnection(dbConn);
 		List<CoopAdVO> ads = caa.retrieve(null, vo.getEventPostcardId());
-		for (CoopAdVO ad : ads) {
-			if ("radio".equalsIgnoreCase(ad.getAdType())) {
-				vo.setRadioAd(ad);
-			} else {
+		for (CoopAdVO ad : ads)
 				vo.addAdvertisement(ad);
-			}
-		}
+		
 		return;
 	}
 	
@@ -468,18 +458,16 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		sql.append("select * from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("DEPUY_EVENT_POSTCARD_CONSIGNEE where event_postcard_id=?");
 		log.debug(sql + "|" + vo.getEventPostcardId());
-		PreparedStatement ps = null;
-		try {
-			ps = dbConn.prepareStatement(sql.toString());
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, vo.getEventPostcardId());
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				vo.addConsignee(new ConsigneeVO(rs));
+				log.debug("added " + rs.getString("contact_nm"));
 			}
 		} catch (SQLException sqle) {
 			log.error("could not load consignees", sqle);
-		} finally {
-			DBUtil.close(ps);
 		}
 	}
 	

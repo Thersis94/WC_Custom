@@ -54,6 +54,7 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 	private String instructionsText = null;
 
 	private Integer surgeonStatusFlg = null; // the surgeon must approve CFSEM independently of the Rep
+	private Integer hospitalStatusFlg = null; // the surgeon must approve CFSEM25 independently of the Rep
 	private String surgeonName = null;
 	private String surgeonTitle = null;
 	private String surgeonEmail = null; // used to send approval notification email
@@ -112,6 +113,7 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 		// adFileUrl will get set by the file upload
 		// statusFlg will get set by the action
 		surgeonStatusFlg = Convert.formatInteger(req.getParameter("surgeonStatusFlag"));
+		hospitalStatusFlg = Convert.formatInteger(req.getParameter("hospitalStatusFlag"));
 		surgeonName = req.getParameter("surgeonName");
 		surgeonTitle = req.getParameter("surgeonTitle");
 		setSurgeonEmail(req.getParameter("surgeonEmail"));
@@ -160,6 +162,7 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 		instructionsText = db.getStringVal("instructions_txt", rs);
 
 		surgeonStatusFlg = db.getIntegerVal("surgeon_status_flg", rs);
+		hospitalStatusFlg = db.getIntegerVal("hospital_status_flg", rs);
 		surgeonName = db.getStringVal("surgeon_nm", rs);
 		surgeonTitle = db.getStringVal("surgeon_title_txt", rs);
 		setSurgeonEmail(db.getStringVal("surgeon_email_txt", rs));
@@ -256,13 +259,13 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 	}
 
 	public String getEventCodes() {
-		StringBuffer codes = new StringBuffer();
+		StringBuilder codes = new StringBuilder();
 
 		for (String key : eventCodes.keySet())
 			codes.append(key).append(", ");
 
 		if (codes.length() > 2)
-			codes = new StringBuffer(codes.substring(0, codes.length() - 2));
+			codes = new StringBuilder(codes.substring(0, codes.length() - 2));
 
 		return codes.toString();
 	}
@@ -277,11 +280,14 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 			case CoopAdsActionV2.PENDING_CLIENT_APPROVAL: return "Pending Coordinator Approval";
 			case CoopAdsActionV2.CLIENT_APPROVED_AD: return "Coordinator Approved Ad";
 			case CoopAdsActionV2.CLIENT_DECLINED_AD: return "Coordinator Declined Ad";
-			case CoopAdsActionV2.CLIENT_PAYMENT_RECD: return "Ad Payment Received";
-			case CoopAdsActionV2.AD_DETAILS_RECD: return "Ad Details Received";
-			case CoopAdsActionV2.PENDING_SURG_APPROVAL: return "Pending Surgeon Approval";
+//			case CoopAdsActionV2.CLIENT_PAYMENT_RECD: return "Ad Payment Received";
+//			case CoopAdsActionV2.AD_DETAILS_RECD: return "Ad Details Received";
+//			case CoopAdsActionV2.PENDING_SURG_APPROVAL: return "Pending Surgeon Approval";
 			case CoopAdsActionV2.SURG_APPROVED_AD: return "Surgeon Approved Ad";
 			case CoopAdsActionV2.SURG_DECLINED_AD: return "Surgeon Declined Ad";
+//			case CoopAdsActionV2.PENDING_HOSP_APPROVAL: return "Pending Hospital Approval";
+			case CoopAdsActionV2.HOSP_APPROVED_AD: return "Hospital Approved Ad";
+			case CoopAdsActionV2.HOSP_DECLINED_AD: return "Hospital Declined Ad";
 			default: return "";
 		}
 	}
@@ -632,5 +638,13 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 
 	public void setOptionFeedbackText(String optionFeedbackText) {
 		this.optionFeedbackText = optionFeedbackText;
+	}
+
+	public Integer getHospitalStatusFlg() {
+		return hospitalStatusFlg;
+	}
+
+	public void setHospitalStatusFlg(Integer hospitalStatusFlg) {
+		this.hospitalStatusFlg = hospitalStatusFlg;
 	}
 }

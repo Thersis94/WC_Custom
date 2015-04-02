@@ -218,8 +218,8 @@ public class PostcardEmailer {
 			
 			//Additional CC recipients
 			mail.addCC("rwilkin7@its.jnj.com");
-			mail.addCC("nicole.olson@novusmediainc.com");
-			mail.addCC("carly.lubert@novusmediainc.com");
+			mail.addCC("anna.schwanz@novusmediainc.com");
+			mail.addCC("taylor.larson@novusmediainc.com");
 			mail.addCC(site.getAdminEmail());
 			
 			mail.setSubject(subject.toString());
@@ -356,40 +356,6 @@ public class PostcardEmailer {
 		return;
 	}
 	
-	/*
-	 * This confirmation email was turned off by Rachel Wilkerson, 06-17-14,
-	 * the recipient was added to the CC on the email to the admins (above)
-	 * 
-	protected void orderConsumableBoxConfirmation(SMTServletRequest req) {
-		// send email to site admin
-		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
-		StringBuilder subject = new StringBuilder();
-		subject.append("Consumable Box request confirmation - Seminar " + sem.getRSVPCodes());
-		
-		StringBuilder msg = new StringBuilder();
-		msg.append("Your order for Seminar Supplies has been sent. You should ");
-		msg.append("plan to receive your order within 7-10 days. Should you need ");
-		msg.append("it before then, please contact Terrie Kumfer at Lincoln Printing; ");
-		msg.append("tkumfer@printlinc.net or 260-414-8368.\r\r");
-		
-		try {
-			// Create the mail object and send
-			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipient(sem.getOwner().getEmailAddress());
-			mail.setSubject(subject.toString());
-			mail.setFrom(site.getMainEmail());
-			mail.setTextBody(msg.toString());
-
-			MessageSender ms = new MessageSender(attributes, dbConn);
-			ms.sendMessage(mail);
-			log.debug("orderConsumableBoxConfirmation Email Sent");
-		} catch (Exception me) {
-			log.error("orderConsumableBoxConfirmationEmail", me);
-		}
-		return;
-	}
-	*/
 	
 	protected void requestPostcardApproval(SMTServletRequest req) {
 		// send email to site admin
@@ -399,7 +365,7 @@ public class PostcardEmailer {
 		subject.append("Postcard uploaded - Seminar " + sem.getRSVPCodes());
 		
 		StringBuilder msg = new StringBuilder();
-		msg.append("The sample postcard for DePuy ").append(sem.getJointLabel());
+		msg.append("The sample postcard for DePuy Synthes ").append(sem.getJointLabel());
 		msg.append(" Seminar #").append(sem.getEvents().get(0).getRSVPCode());
 		msg.append(" has been uploaded to the website. ");
 		msg.append("Please review the sample (PDF) and approve it using the URL below.\r\r");
@@ -493,8 +459,8 @@ public class PostcardEmailer {
 			
 			mail.addCC(site.getAdminEmail());
 			mail.addCC("rwilkin7@its.jnj.com");
-			mail.addCC("nicole.olson@novusmediainc.com");
-			mail.addCC("carly.lubert@novusmediainc.com");
+			mail.addCC("anna.schwanz@novusmediainc.com");
+			mail.addCC("taylor.larson@novusmediainc.com");
 			
 			for (PersonVO p : sem.getPeople()) {
 				if (! StringUtil.isValidEmail(p.getEmailAddress())) continue;
