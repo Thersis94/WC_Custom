@@ -22,6 +22,7 @@ public class DePuyEventSurgeonVO implements Serializable {
 	private String surgeonId = null;
 	private String eventPostcardId = null;
 	private String surgeonName = null;
+	private String surgeonTitle = null;
 	private String cvFileUrl = null;
 	private String logoFileUrl = null;
 	private int seenGuidelinesFlg = 0;
@@ -52,6 +53,7 @@ public class DePuyEventSurgeonVO implements Serializable {
 		 surgeonId = db.getStringVal("depuy_event_surgeon_id", rs);
 		 eventPostcardId = db.getStringVal("event_postcard_id", rs);
 		surgeonName = db.getStringVal("surgeon_nm", rs);
+		surgeonTitle = db.getStringVal("title_txt", rs);
 		cvFileUrl = db.getStringVal("cv_file_url", rs);
 		logoFileUrl = db.getStringVal("logo_file_url", rs);
 		seenGuidelinesFlg = db.getIntVal("seen_guidelines_flg", rs);
@@ -220,6 +222,14 @@ public class DePuyEventSurgeonVO implements Serializable {
 
 	public void setHospitalText(String hospitalText) {
 		this.hospitalText = hospitalText;
+	}
+
+	public String getSurgeonTitle() {
+		return surgeonTitle;
+	}
+
+	public void setSurgeonTitle(String surgeonTitle) {
+		this.surgeonTitle = surgeonTitle;
 	}
 	
 }

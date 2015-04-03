@@ -25,7 +25,7 @@ public class CFSEM50ReportVO extends AbstractSBReportVO {
 		//Build header
 		sb.append("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">");
 		sb.append("<html><head><title>Compliance Form</title></head><body>");
-		sb.append("rev. 4/22/13");
+		sb.append("rev. 4/2/15");
 		sb.append("<center>");
 		sb.append("<h4><i>DePuy Synthes Joint Reconstruction</i><br/>");
 		sb.append("Patient Education Seminar<br/>");
@@ -80,7 +80,7 @@ public class CFSEM50ReportVO extends AbstractSBReportVO {
 		sb.append("<li>No payment or reimbursement of expenses will be paid for the speaker (i.e. parking, mileage). The surgeon speaker ");
 		sb.append("may enjoy the refreshments provided at the seminar.</li>");
 		sb.append("<li>A meal service will not be provided, but refreshments such as cookies and coffee are acceptable. The refreshment spending ");
-		sb.append("limit is $13 per attendee, which includes the $3 First Aid kit.</li></ul>");
+		sb.append("limit is $10 per attendee, which includes the $3 First Aid kit.</li></ul>");
 
 		//Footer
 		sb.append("<br/><br/>");

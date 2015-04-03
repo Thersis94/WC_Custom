@@ -69,21 +69,21 @@ public class ComplianceReportVO extends AbstractSBReportVO {
 		
 		// load the proper html-formated report
 		switch ( StringUtil.checkVal( event.getEventTypeCd() ).toUpperCase() ){
-		case "CFSEM":
-			rpt = new CFSEMReportVO();
-			break;
-		
 		case "CPSEM":
 			rpt = new CPSEMReportVO();
 			break;
 			
+		case "CFSEM":
+//			rpt = new CFSEMReportVO();
+//			break;
+		
 		case "CFSEM50":
 			rpt = new CFSEM50ReportVO();
 			break;
 			
-		case "CFSEM25":
-			rpt = new CFSEM25ReportVO();
-			break;
+//		case "CFSEM25":
+//			rpt = new CFSEM25ReportVO();
+//			break;
 		
 		default:
 			rpt = new ESEMReportVO();
@@ -123,7 +123,7 @@ public class ComplianceReportVO extends AbstractSBReportVO {
 
 		
 		//convert the html to a PDF, and return it
-		PDFReport pdf = new PDFReport("http://events.depuy.com");
+		PDFReport pdf = new PDFReport("http://events.depuysynthes.com");
 		pdf.setData(buf.toString());
 		return pdf.generateReport();
 	}

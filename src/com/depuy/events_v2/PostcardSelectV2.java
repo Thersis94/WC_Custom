@@ -19,12 +19,14 @@ import javax.servlet.http.Cookie;
 // J2EE 1.4.0 Libs
 import javax.servlet.http.HttpSession;
 
+
 //wc-depuy libs
 import com.depuy.events.vo.CoopAdVO;
 import com.depuy.events_v2.vo.ConsigneeVO;
 
 // SMT BaseLibs
 import com.depuy.events_v2.vo.DePuyEventSeminarVO;
+import com.depuy.events_v2.vo.DePuyEventSurgeonVO;
 import com.depuy.events_v2.vo.PersonVO;
 import com.depuy.events_v2.vo.report.CustomReportVO;
 import com.siliconmtn.action.ActionException;
@@ -229,9 +231,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		sql.append("pivot (count(joint_id) for joint_id in ([4],[5],[6])) as pvtQry "); //PIVOT is an implicit group-by
 		log.debug(sql);
 		
-		PreparedStatement ps = null;
-		try {
-			ps = dbConn.prepareStatement(sql.toString());
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, actionGroupId);
 			if (profileId != null) {
 				ps.setString(2, profileId);
@@ -243,8 +243,6 @@ public class PostcardSelectV2 extends SBActionAdapter {
 				profileIds.add(rs.getString("profile_id"));
 				data.add(new DePuyEventSeminarVO().populateFromListRS(rs));
 			}
-		} finally { 
-			try { ps.close(); } catch (Exception e) { }
 		}
 		
 		//retrieve the profiles for the names we need to display
@@ -317,7 +315,6 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		sql.append("inner join SB_ACTION sb on eg.ACTION_ID=sb.ACTION_ID ");
 		sql.append("inner join EVENT_POSTCARD_ASSOC epa on e.EVENT_ENTRY_ID=epa.EVENT_ENTRY_ID ");
 		sql.append("inner join EVENT_POSTCARD ep on epa.EVENT_POSTCARD_ID=ep.EVENT_POSTCARD_ID ");
-		sql.append("left outer join ").append(customDb).append("DEPUY_EVENT_SURGEON s on ep.EVENT_POSTCARD_ID=s.EVENT_POSTCARD_ID ");
 		sql.append("left outer join ").append(customDb).append("DEPUY_EVENT_SPECIALTY_XR lxr on ep.EVENT_POSTCARD_ID=lxr.EVENT_POSTCARD_ID ");
 		sql.append("left outer join ").append(customDb).append("DEPUY_EVENT_PERSON_XR pxr on ep.EVENT_POSTCARD_ID=pxr.EVENT_POSTCARD_ID ");
 		sql.append("where sb.action_group_id=? and ep.event_postcard_id=? ");
@@ -377,6 +374,14 @@ public class PostcardSelectV2 extends SBActionAdapter {
 			log.error("could not attach user profiles " + npe.getMessage());
 		}
 		
+		if (loadSurgeons(reqType)) {
+			try {
+				retrieveSurgeons(vo);
+			} catch (ActionException ae) {
+				log.error("could not load surgeons", ae);
+			}
+		}
+		
 		//load CoopAds (newspaper & radio)
 		if (loadCoopAds(reqType)) {
 			try {
@@ -413,6 +418,15 @@ public class PostcardSelectV2 extends SBActionAdapter {
 	private boolean loadCoopAds(ReqType reqType) {
 		return (ReqType.reportForm != reqType);
 	}
+		
+	/**
+	 * helper to isolate the logic of whether or not we need to load the Consignees for the given request
+	 * @param reqType
+	 * @return
+	 */
+	private boolean loadSurgeons(ReqType reqType) {
+		return (ReqType.eventInfo == reqType || ReqType.summary == reqType || ReqType.report == reqType);
+	}
 	
 	/**
 	 * helper to isolate the logic of whether or not we need to load the Consignees for the given request
@@ -448,8 +462,33 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		return;
 	}
 	
+	
 	/**
-	 * calls the CoopAdsAction to load Ad data for the given Seminar
+	 * load the surgeon/speakers for this seminar
+	 * @param vo
+	 * @throws ActionException
+	 */
+	protected void retrieveSurgeons(DePuyEventSeminarVO vo) throws ActionException {
+		StringBuilder sql = new StringBuilder(100);
+		sql.append("select * from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("DEPUY_EVENT_SURGEON where event_postcard_id=? order by order_no");
+		log.debug(sql + "|" + vo.getEventPostcardId());
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, vo.getEventPostcardId());
+			ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				vo.addSurgeon(new DePuyEventSurgeonVO(rs));
+				log.debug("added " + rs.getString("surgeon_nm"));
+			}
+		} catch (SQLException sqle) {
+			log.error("could not load consignees", sqle);
+		}
+	}
+	
+	
+	/**
+	 * load the cosignees for this seminar
 	 * @param vo
 	 * @throws ActionException
 	 */
