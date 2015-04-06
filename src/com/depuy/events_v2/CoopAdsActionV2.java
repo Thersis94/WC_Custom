@@ -49,6 +49,7 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 	public static final int PENDING_AD_OPTIONS = 11;
 	public static final int CLIENT_APPROVED_AD = 3;
 	public static final int CLIENT_DECLINED_AD = 4;
+	public static final int AD_BUY_COMPLETE = 50;
 	//public static final int CLIENT_PAYMENT_RECD = 5;
 	//public static final int AD_DETAILS_RECD = 6;
 	//public static final int PENDING_SURG_APPROVAL = 7;
@@ -80,22 +81,26 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 				vo.setStatusFlg(CLIENT_APPROVED_AD);
 				this.updateAdStatus(vo, req);
 				break;
+				
 			case "declineAd":
 				vo.setStatusFlg(CLIENT_DECLINED_AD);
 				this.updateAdStatus(vo, req);
-				break;	
+				break;
+				
 			case "coopAdsSurgeonApproval":
 				// create the VO based on the incoming request object
 				for (CoopAdVO v : createAdList(req)) {
 					this.saveSurgeonsAdApproval(v);
 				}
 				break;
+				
 			case "coopAdsHospitalApproval":
 				// create the VO based on the incoming request object
 				for (CoopAdVO v : createAdList(req)) {
 					this.saveHospitalAdApproval(v);
 				}
 				break;
+				
 			case "eventInfo":
 				// create the VO based on the incoming request object
 				for (CoopAdVO v : createAdList(req))
@@ -106,8 +111,13 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 			case "uploadAdFile": //this gets called once per ad, from the Promote page
 				this.savePromoteAdData(req, site, vo);
 				break;
+				
 			case "optionFeedback":
 				this.saveAdOptionFeedback(vo);
+				break;
+			
+			case "markAdsComplete":
+				this.markAdsComplete(req.getParameter("eventPostcardId"));
 				break;
 		}
 
@@ -258,6 +268,10 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 //				log.debug("sending payment recieved email");
 //				emailer.notifyAdminOfAdPaymentRecd(sem, site, user);
 //				break;
+
+			case AD_BUY_COMPLETE:
+				log.debug("sending ad-buy-complete email");
+				emailer.allAdsComplete(sem, site);
 		}
 	}
 	
@@ -616,6 +630,28 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 		} catch (SQLException e) {
 			log.error("Failed to update ad from promote page", e);
 			throw new ActionException(e);
+		}
+	}
+	
+	
+	private void markAdsComplete(String eventPostcardId) throws ActionException {
+		final String customDB = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		
+		//Create prepared statement
+		StringBuilder sql = new StringBuilder(200);
+		sql.append("update ").append(customDB).append("DEPUY_EVENT_COOP_AD ");
+		sql.append("set status_flg=?, UPDATE_DT=? where EVENT_POSTCARD_ID=?");
+		log.debug(sql);
+
+		//Update path in db
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setInt(1, AD_BUY_COMPLETE);
+			ps.setTimestamp(2, Convert.getCurrentTimestamp());
+			ps.setString(3, eventPostcardId);
+			ps.executeUpdate();
+			
+		} catch (SQLException sqle) {
+			throw new ActionException(sqle);
 		}
 	}
 }

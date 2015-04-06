@@ -548,8 +548,7 @@ public class CoopAdsEmailer extends SBActionAdapter {
 	 * @param sem
 	 * @param site
 	 */
-	protected void notifyAdPlacement( DePuyEventSeminarVO sem, SiteVO site ){
-		
+	protected void allAdsComplete(DePuyEventSeminarVO sem, SiteVO site) {
 		StringBuilder msg = new StringBuilder(140);
 		msg.append("Newspaper Advertising for Seminar #").append(sem.getRSVPCodes());
 		msg.append(" has been sent and confirmed by the publication(s).\r\r");
