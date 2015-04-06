@@ -38,7 +38,7 @@ import com.smt.sitebuilder.action.event.vo.EventPostcardVO;
 public class DePuyEventSeminarVO extends EventPostcardVO {
 	private static final long serialVersionUID = 1l;
     
-	private DePuyEventSurgeonVO surgeon = null;
+	private List<DePuyEventSurgeonVO> surgeons = null;
 	private Set<String> joints = null;  //comes from DEPUY_EVENT_SPECIALTY_XR
 	private Set<PersonVO> people = null;
 	private Map<Long, ConsigneeVO> consignees = null; //JSTL wants us to use a Long key instead of an Integer here.
@@ -65,6 +65,7 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	    newspaperAds = new ArrayList<>();
 	    onlineAds = new ArrayList<>();
 	    consignees = new HashMap<>();
+	    surgeons = new ArrayList<>();
     }
     
     /**
@@ -81,9 +82,6 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	    List<EventEntryVO> lst = new ArrayList<EventEntryVO>();
 	    lst.add(new EventEntryVO(rs));
 	    super.setEvents(lst);
-	    
-	    //add the Surgeon
-	    surgeon = new DePuyEventSurgeonVO(rs);
     }
     
     /**
@@ -117,8 +115,10 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	    lst.add(event);
 	    super.setEvents(lst);
 	    
-	    surgeon = new DePuyEventSurgeonVO();
+	    DePuyEventSurgeonVO surgeon = new DePuyEventSurgeonVO();
 	    surgeon.setSurgeonName(db.getStringVal("surgeon_nm", rs));
+	    addSurgeon(surgeon);
+	    
 	    upfrontFeeFlg = db.getIntVal("upfront_cost_flg", rs);
 
 		if (db.getIntVal("hip", rs) > 0) joints.add("4");
@@ -168,7 +168,7 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	}
 	
 	public Date getEarliestEventDate() {
-		if (firstEventDate == null) {  //only need to iterator once to set the member variable
+		if (firstEventDate == null) {  //only need to iterate once to set the member variable
 			if (super.getEventCount() == 1) {
 				firstEventDate = super.getEvents().get(0).getStartDate();
 				
@@ -183,7 +183,6 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 				}
 			}
 		}
-		
 		if (firstEventDate == null) firstEventDate = Calendar.getInstance().getTime();
 		return firstEventDate;
 	}
@@ -297,11 +296,15 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	}
 
 	public DePuyEventSurgeonVO getSurgeon() {
-		return surgeon;
+		return (surgeons != null && surgeons.size() > 0) ? surgeons.get(0) : null;
+	}
+	
+	public List<DePuyEventSurgeonVO> getSurgeonList() {
+		return surgeons;
 	}
 
-	public void setSurgeon(DePuyEventSurgeonVO surgeon) {
-		this.surgeon = surgeon;
+	public void addSurgeon(DePuyEventSurgeonVO surgeon) {
+		this.surgeons.add(surgeon);
 	}
 
 	public List<CoopAdVO> getNewspaperAds() {
@@ -479,6 +482,15 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 		cal.set(Calendar.MILLISECOND, 0);
 		return this.getEarliestEventDate().before(cal.getTime());
 	}
+	
+	public boolean isMinDaysAway(int days) {
+		Calendar milestone = Calendar.getInstance();
+		milestone.setTime(this.getEarliestEventDate());
+		milestone.add(Calendar.DAY_OF_YEAR, (0 - days));
+
+		//true if the today is greater-than or equal to the milestone
+		return Calendar.getInstance().getTime().compareTo(milestone.getTime()) > -1;
+	}
 
 	public String getLeadSortType() {
 		return super.getPcAttribute2();
@@ -572,7 +584,7 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	}
 	
 	public void addConsignee(ConsigneeVO vo) {
-		this.consignees.put(new Long(vo.getTypeNo()), vo);
+		this.consignees.put(Long.valueOf(vo.getTypeNo()), vo);
 	}
 
 	public Set<ActionItem> getActionItems() {

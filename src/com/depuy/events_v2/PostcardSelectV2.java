@@ -20,18 +20,17 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpSession;
 
 
-
 //wc-depuy libs
 import com.depuy.events.vo.CoopAdVO;
 import com.depuy.events_v2.vo.ConsigneeVO;
 
 // SMT BaseLibs
 import com.depuy.events_v2.vo.DePuyEventSeminarVO;
+import com.depuy.events_v2.vo.DePuyEventSurgeonVO;
 import com.depuy.events_v2.vo.PersonVO;
 import com.depuy.events_v2.vo.report.CustomReportVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.UserDataVO;
@@ -232,9 +231,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		sql.append("pivot (count(joint_id) for joint_id in ([4],[5],[6])) as pvtQry "); //PIVOT is an implicit group-by
 		log.debug(sql);
 		
-		PreparedStatement ps = null;
-		try {
-			ps = dbConn.prepareStatement(sql.toString());
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, actionGroupId);
 			if (profileId != null) {
 				ps.setString(2, profileId);
@@ -246,8 +243,6 @@ public class PostcardSelectV2 extends SBActionAdapter {
 				profileIds.add(rs.getString("profile_id"));
 				data.add(new DePuyEventSeminarVO().populateFromListRS(rs));
 			}
-		} finally { 
-			try { ps.close(); } catch (Exception e) { }
 		}
 		
 		//retrieve the profiles for the names we need to display
@@ -310,7 +305,8 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		Set<String> profileIds = new HashSet<String>();
 		DePuyEventSeminarVO vo = null;
 		
-		StringBuilder sql = new StringBuilder();
+		log.debug("reqType=" + reqType);
+		StringBuilder sql = new StringBuilder(1000);
 		sql.append("select *, ep.profile_id as owner_profile_id, pxr.profile_id as person_profile_id, ");
 		sql.append("ep.status_flg as pc_status_flg, pxr.create_dt as approval_dt  ");
 		sql.append("from EVENT_ENTRY e ");
@@ -319,7 +315,6 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		sql.append("inner join SB_ACTION sb on eg.ACTION_ID=sb.ACTION_ID ");
 		sql.append("inner join EVENT_POSTCARD_ASSOC epa on e.EVENT_ENTRY_ID=epa.EVENT_ENTRY_ID ");
 		sql.append("inner join EVENT_POSTCARD ep on epa.EVENT_POSTCARD_ID=ep.EVENT_POSTCARD_ID ");
-		sql.append("left outer join ").append(customDb).append("DEPUY_EVENT_SURGEON s on ep.EVENT_POSTCARD_ID=s.EVENT_POSTCARD_ID ");
 		sql.append("left outer join ").append(customDb).append("DEPUY_EVENT_SPECIALTY_XR lxr on ep.EVENT_POSTCARD_ID=lxr.EVENT_POSTCARD_ID ");
 		sql.append("left outer join ").append(customDb).append("DEPUY_EVENT_PERSON_XR pxr on ep.EVENT_POSTCARD_ID=pxr.EVENT_POSTCARD_ID ");
 		sql.append("where sb.action_group_id=? and ep.event_postcard_id=? ");
@@ -329,9 +324,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		}
 		log.debug(sql + "|" + actionGroupId + "|" + eventPostcardId + "|" + profileId);
 		
-		PreparedStatement ps = null;
-		try {
-			ps = dbConn.prepareStatement(sql.toString());
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, actionGroupId);
 			ps.setString(2, eventPostcardId);
 			if (profileId != null) {
@@ -355,8 +348,6 @@ public class PostcardSelectV2 extends SBActionAdapter {
 				vo.addJoint(rs.getString("joint_id"));
 				
 			}
-		} finally { 
-			try { ps.close(); } catch (Exception e) { }
 		}
 		
 		//retrieve the profiles for the names we need to display
@@ -381,6 +372,14 @@ public class PostcardSelectV2 extends SBActionAdapter {
 			log.error("could not load user profiles " + e.getMessage());
 		} catch (NullPointerException npe) {
 			log.error("could not attach user profiles " + npe.getMessage());
+		}
+		
+		if (loadSurgeons(reqType)) {
+			try {
+				retrieveSurgeons(vo);
+			} catch (ActionException ae) {
+				log.error("could not load surgeons", ae);
+			}
 		}
 		
 		//load CoopAds (newspaper & radio)
@@ -419,6 +418,15 @@ public class PostcardSelectV2 extends SBActionAdapter {
 	private boolean loadCoopAds(ReqType reqType) {
 		return (ReqType.reportForm != reqType);
 	}
+		
+	/**
+	 * helper to isolate the logic of whether or not we need to load the Consignees for the given request
+	 * @param reqType
+	 * @return
+	 */
+	private boolean loadSurgeons(ReqType reqType) {
+		return (ReqType.eventInfo == reqType || ReqType.summary == reqType || ReqType.report == reqType);
+	}
 	
 	/**
 	 * helper to isolate the logic of whether or not we need to load the Consignees for the given request
@@ -448,18 +456,39 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		caa.setAttributes(attributes);
 		caa.setDBConnection(dbConn);
 		List<CoopAdVO> ads = caa.retrieve(null, vo.getEventPostcardId());
-		for (CoopAdVO ad : ads) {
-			if ("radio".equalsIgnoreCase(ad.getAdType())) {
-				vo.setRadioAd(ad);
-			} else {
+		for (CoopAdVO ad : ads)
 				vo.addAdvertisement(ad);
-			}
-		}
+		
 		return;
 	}
 	
+	
 	/**
-	 * calls the CoopAdsAction to load Ad data for the given Seminar
+	 * load the surgeon/speakers for this seminar
+	 * @param vo
+	 * @throws ActionException
+	 */
+	protected void retrieveSurgeons(DePuyEventSeminarVO vo) throws ActionException {
+		StringBuilder sql = new StringBuilder(100);
+		sql.append("select * from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("DEPUY_EVENT_SURGEON where event_postcard_id=? order by order_no");
+		log.debug(sql + "|" + vo.getEventPostcardId());
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, vo.getEventPostcardId());
+			ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				vo.addSurgeon(new DePuyEventSurgeonVO(rs));
+				log.debug("added " + rs.getString("surgeon_nm"));
+			}
+		} catch (SQLException sqle) {
+			log.error("could not load consignees", sqle);
+		}
+	}
+	
+	
+	/**
+	 * load the cosignees for this seminar
 	 * @param vo
 	 * @throws ActionException
 	 */
@@ -468,18 +497,16 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		sql.append("select * from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("DEPUY_EVENT_POSTCARD_CONSIGNEE where event_postcard_id=?");
 		log.debug(sql + "|" + vo.getEventPostcardId());
-		PreparedStatement ps = null;
-		try {
-			ps = dbConn.prepareStatement(sql.toString());
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, vo.getEventPostcardId());
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				vo.addConsignee(new ConsigneeVO(rs));
+				log.debug("added " + rs.getString("contact_nm"));
 			}
 		} catch (SQLException sqle) {
 			log.error("could not load consignees", sqle);
-		} finally {
-			DBUtil.close(ps);
 		}
 	}
 	
@@ -554,6 +581,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 
 		String id = "";
 		DePuyEventSeminarVO vo = null;
+		OutstandingItems oa = new OutstandingItems(dbConn);
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, actionId);
 			if (profileId != null) {
@@ -568,7 +596,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 				} else {
 					vo = new DePuyEventSeminarVO().populateFromListRS(rs);
 				}
-				OutstandingItems.attachActionItems(vo);
+				oa.attachActionItems(vo);
 				data.put(id, vo);
 			}
 		} catch (SQLException sqle) {

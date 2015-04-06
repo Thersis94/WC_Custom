@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 
+
 // SMT BaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -55,12 +56,12 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	// transaction types understood by this action
 	public enum ReqType {
 		eventInfo, leads, cancelSeminar, orderBox, uploadPostcard, approvePostcardFile, declinePostcardFile,
-		uploadAdFile, approveAd, declineAd, postseminar, coopAdsSurgeonApproval, 
-		hospitalSponsored, uploadPosterFile, saveInvoiceFile, radioAdsSubmit,
+		uploadAdFile, approveAd, declineAd, postseminar, coopAdsSurgeonApproval, optionFeedback,
+		hospitalSponsored, uploadPosterFile, saveInvoiceFile, radioAdsSubmit, markAdsComplete,
 		//status levels
 		//submittedByCoord, approvedByAFD, approvedBySRC, pendingSurgeon, approvedMedAffairs
 		submitSeminar, approveSeminar, srcApproveSeminar, pendingSurgeonReview, approvedMedAffairs,
-		markPostcardSent
+		markPostcardSent, outstandingItems;
 	}
 
 	public PostcardInsertV2() {
@@ -157,6 +158,8 @@ public class PostcardInsertV2 extends SBActionAdapter {
 				case declineAd:
 				case coopAdsSurgeonApproval:
 				case radioAdsSubmit:
+				case optionFeedback:
+				case markAdsComplete:
 					saveNewspaperAd(eventPostcardId, req);
 					break;
 
@@ -202,12 +205,18 @@ public class PostcardInsertV2 extends SBActionAdapter {
 				case saveInvoiceFile: //this is really part of Ads, but is tied to the postcard (level), encapsulating all ads.
 					this.saveInvoiceFile(req, site, eventPostcardId);
 					break;
+				
+				case outstandingItems:
+					this.saveCompletedItem(req.getParameter("completedItem"), eventPostcardId);
+					break;
 			}
 		} catch (SQLException e) {
 			log.error("could not save transaction " + reqType + ", " + e.getMessage(), e);
 			throw new ActionException();
 		}
 
+		if (req.hasParameter("json")) return; //do not redirect
+		
 		// setup the redirect url
 		StringBuilder redirectPg = new StringBuilder();
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
@@ -496,12 +505,8 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	 * @param req
 	 * @throws SQLException
 	 */
-	private void saveNewspaperAd(String eventPostcardId, SMTServletRequest req) throws SQLException {
-		//pass the seminar along with this, so emails can be sent.
-		DePuyEventSeminarVO sem = fetchSeminar(req, ReportType.summary);
-		req.setAttribute("postcard", sem);
-
-		CoopAdsActionV2 caa = new CoopAdsActionV2();
+	private void saveNewspaperAd(String eventPostcardId, SMTServletRequest req) throws SQLException {		
+		CoopAdsActionV2 caa = new CoopAdsActionV2(actionInit);
 		caa.setAttributes(attributes);
 		caa.setDBConnection(dbConn);
 		try {
@@ -509,19 +514,29 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		} catch (Exception ae) {
 			throw new SQLException(ae);
 		}
-
-		//if radio = adType, possibly trigger an email here.  There is only one submission that will be type=radio
 	}
 
+	
+	/**
+	 * loops around the surgeon's existing on the request, saving each one
+	 * @param eventPostcardId
+	 * @param req
+	 * @throws SQLException
+	 */
+	private void saveEventSurgeon(String eventPostcardId, SMTServletRequest req, SiteVO site) throws SQLException {
+		for (int x=1; req.hasParameter("surgeonName_" + x); x++)
+				this.saveEventSurgeon(eventPostcardId, req, site, x);
+	}
+	
 	/**
 	 * inserts or updates the DEPUY_EVENT_SURGEON table.
 	 * @param eventPostcardId
 	 * @param req
 	 * @throws SQLException
 	 */
-	private void saveEventSurgeon(String eventPostcardId, SMTServletRequest req, SiteVO site) throws SQLException {
-		String pkId = req.hasParameter("surgeonId") ? req.getParameter("surgeonId") : null;
-		StringBuilder sql = new StringBuilder();
+	private void saveEventSurgeon(String eventPostcardId, SMTServletRequest req, SiteVO site, int cnt) throws SQLException {
+		String pkId = req.hasParameter("surgeonId_" + cnt) ? req.getParameter("surgeonId_" + cnt) : null;
+		StringBuilder sql = new StringBuilder(350);
 		if (pkId != null) {
 			sql.append("update ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 			sql.append("DEPUY_EVENT_SURGEON set surgeon_nm=?, cv_file_url=?, ");
@@ -531,7 +546,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 			sql.append("pract_zip_cd=?, pract_phone_txt=?, pract_email_txt=?, pract_website_url=?, ");
 			sql.append("sec_phone_txt=?, sec_email_txt=?, bio_txt=?, update_dt=?, ");
 			sql.append("event_postcard_id=?, alt_img1_url=?, alt_img2_url=?, alt_img3_url=?, ");
-			sql.append("hospital_txt=? where depuy_event_surgeon_id=?");
+			sql.append("hospital_txt=?, title_txt=?, order_no=? where depuy_event_surgeon_id=?");
 		} else {
 			sql.append("insert into ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 			sql.append("DEPUY_EVENT_SURGEON (surgeon_nm, cv_file_url, ");
@@ -540,48 +555,46 @@ public class PostcardInsertV2 extends SBActionAdapter {
 			sql.append("pract_addr1_txt, pract_addr2_txt, pract_city_nm, pract_state_cd, ");
 			sql.append("pract_zip_cd, pract_phone_txt, pract_email_txt, pract_website_url, ");
 			sql.append("sec_phone_txt, sec_email_txt, bio_txt, create_dt, event_postcard_id, ");
-			sql.append("alt_img1_url, alt_img2_url, alt_img3_url, hospital_txt, depuy_event_surgeon_id) ");
-			sql.append("values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+			sql.append("alt_img1_url, alt_img2_url, alt_img3_url, hospital_txt, title_txt, order_no, ");
+			sql.append("depuy_event_surgeon_id) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 			pkId = new UUIDGenerator().getUUID();
 		}
 		log.debug(sql + "|" + pkId);
 
-		PreparedStatement ps = null;
-		try {
-			ps = dbConn.prepareStatement(sql.toString());
-			ps.setString(1, req.getParameter("surgeonName"));
-			ps.setString(2, saveFile(req, "cvFile", "/cv-files/", site));
-			ps.setString(3, saveFile(req, "logoFile", "/logos/", site));
-			ps.setInt(4, Convert.formatInteger(req.getParameter("seenGuidelines"), 0));
-			ps.setInt(5, Convert.formatInteger(req.getParameter("hospEmployee"), 0));
-			ps.setString(6, req.getParameter("hospAddress"));
-			ps.setInt(7, Convert.formatInteger(req.getParameter("experienceYears"), 0));
-			ps.setString(8, req.getParameter("practName"));
-			ps.setInt(9, Convert.formatInteger(req.getParameter("practYears"), 0));
-			ps.setString(10, req.getParameter("practAddr1"));
-			ps.setString(11, req.getParameter("practAddr2"));
-			ps.setString(12, req.getParameter("practCity"));
-			ps.setString(13, req.getParameter("practState"));
-			ps.setString(14, req.getParameter("practZip"));
-			ps.setString(15, req.getParameter("practPhone"));
-			ps.setString(16, req.getParameter("practEmail"));
-			ps.setString(17, req.getParameter("practWebsite"));
-			ps.setString(18, req.getParameter("secPhone"));
-			ps.setString(19, req.getParameter("secEmail"));
-			ps.setString(20, (req.hasParameter("surgeonInfo") ? req.getParameter("surgeonInfo") : req.getParameter("surgeonBio")));  //labeled as surgeonInfo for CFSEM, bio for CPSEM
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, req.getParameter("surgeonName_" + cnt));
+			ps.setString(2, saveFile(req, "cvFile_" + cnt, "/cv-files/", site));
+			ps.setString(3, saveFile(req, "logoFile_" + cnt, "/logos/", site));
+			ps.setInt(4, Convert.formatInteger(req.getParameter("seenGuidelines_" + cnt), 0));
+			ps.setInt(5, Convert.formatInteger(req.getParameter("hospEmployee_" + cnt), 0));
+			ps.setString(6, req.getParameter("hospAddress_" + cnt));
+			ps.setInt(7, Convert.formatInteger(req.getParameter("experienceYears_" + cnt), 0));
+			ps.setString(8, req.getParameter("practName_" + cnt));
+			ps.setInt(9, Convert.formatInteger(req.getParameter("practYears_" + cnt), 0));
+			ps.setString(10, req.getParameter("practAddr1_" + cnt));
+			ps.setString(11, req.getParameter("practAddr2_" + cnt));
+			ps.setString(12, req.getParameter("practCity_" + cnt));
+			ps.setString(13, req.getParameter("practState_" + cnt));
+			ps.setString(14, req.getParameter("practZip_" + cnt));
+			ps.setString(15, req.getParameter("practPhone_" + cnt));
+			ps.setString(16, req.getParameter("practEmail_" + cnt));
+			ps.setString(17, req.getParameter("practWebsite_" + cnt));
+			ps.setString(18, req.getParameter("secPhone_" + cnt));
+			ps.setString(19, req.getParameter("secEmail_" + cnt));
+			ps.setString(20, (req.hasParameter("surgeonInfo_" + cnt) ? req.getParameter("surgeonInfo_" + cnt) : req.getParameter("surgeonBio_" + cnt)));  //labeled as surgeonInfo for CFSEM, bio for CPSEM
 			ps.setTimestamp(21, Convert.getCurrentTimestamp());
 			ps.setString(22, eventPostcardId);
-			ps.setString(23, saveFile(req, "altImg1File", "/ad-files/", site));
-			ps.setString(24, saveFile(req, "altImg2File", "/ad-files/", site));
-			ps.setString(25, saveFile(req, "altImg3File", "/ad-files/", site));
-			ps.setString(26, req.getParameter("hospitalInfo"));
-			ps.setString(27, pkId);
+			ps.setString(23, saveFile(req, "altImg1File_" + cnt, "/ad-files/", site));
+			ps.setString(24, saveFile(req, "altImg2File_" + cnt, "/ad-files/", site));
+			ps.setString(25, saveFile(req, "altImg3File_" + cnt, "/ad-files/", site));
+			ps.setString(26, req.getParameter("hospitalInfo_" + cnt));
+			ps.setString(27, req.getParameter("surgeonTitle_" + cnt));
+			ps.setInt(28, cnt);
+			ps.setString(29, pkId);
 
 			if (ps.executeUpdate() < 1)
 				throw new SQLException(ps.getWarnings());
 
-		} finally {
-			try { ps.close(); } catch (Exception e) { }
 		}
 	}
 
@@ -1378,5 +1391,33 @@ public class PostcardInsertV2 extends SBActionAdapter {
 			log.error("Failed to update invoice file path");
 			throw new ActionException(e);
 		}
+		
+		// get the postcard data for emailing & approving each event
+		req.setParameter("reqType", PostcardSelectV2.ReqType.summary.name());
+		DePuyEventSeminarVO sem = fetchSeminar(req, ReportType.summary);
+
+		// send approval request email
+		CoopAdsEmailer emailer = new CoopAdsEmailer(actionInit);
+		emailer.setAttributes(attributes);
+		emailer.setDBConnection(dbConn);
+		emailer.requestAdApprovalOfConsignee(sem, site, false);
+	}
+	
+	
+	/**
+	 * writes a completed task entry to the ledger for this seminar
+	 * See OutstandingItems object for more
+	 * @param action
+	 * @param eventPostcardId
+	 * @throws SQLException
+	 */
+	private void saveCompletedItem(String action, String eventPostcardId) throws SQLException {
+		String sql = "insert into event_postcard_action_item (event_postcard_id, action_item_cd, complete_dt) values (?,?,?)";
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			ps.setString(1, eventPostcardId);
+			ps.setString(2, action);
+			ps.setTimestamp(3, Convert.getCurrentTimestamp());
+			ps.executeUpdate();
+		} //throw the catch
 	}
 }

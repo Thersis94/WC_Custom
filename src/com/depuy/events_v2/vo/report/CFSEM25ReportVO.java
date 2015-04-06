@@ -13,6 +13,7 @@ import com.smt.sitebuilder.action.AbstractSBReportVO;
  * @version 1.0
  * @since Jan 31, 2014
  ***************************************************************************/
+@Deprecated
 public class CFSEM25ReportVO extends AbstractSBReportVO {
 	public static void main(String [] Args) {
 		System.out.println(new String(new CFSEM25ReportVO().generateReport()));
