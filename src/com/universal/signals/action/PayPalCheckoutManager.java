@@ -210,7 +210,7 @@ public class PayPalCheckoutManager {
 		buyer.addAttribute("CORRELATION_ID", rMap.get("CORRELATIONID"));
 		buyer.addAttribute("TRANSACTION_ID", rMap.get("PAYMENTINFO_0_TRANSACTIONID"));
 		buyer.addAttribute("PAYMENT_STATUS",  rMap.get("PAYMENTINFO_0_PAYMENTSTATUS"));
-		buyer.addAttribute("PENDING_REASON",  rMap.get("PAYMENTINFO_0_PENDINGREASON"));		
+		buyer.addAttribute("PENDING_REASON",  rMap.get("PAYMENTINFO_0_PENDINGREASON"));
 
 	}
 	
@@ -333,7 +333,7 @@ public class PayPalCheckoutManager {
 		StringBuilder sb = new StringBuilder();
 		sb.append("select ENC_MERCHANT_USER_NM, ENC_MERCHANT_PASSWORD_TXT, ");
 		sb.append("ENC_MERCHANT_SIGNATURE_TXT, ENVIRONMENT_TXT, SITE_ID, ");
-		sb.append("LOGO_URL_TXT from MERCHANT ");
+		sb.append("LOGO_URL_TXT, EMAIL_ADDRESS_TXT from MERCHANT ");
 		sb.append("where SITE_ID = ? and SERVICE_PROVIDER_TYPE = ?");
 		log.debug("MERCHANT sql: " + sb.toString() + "|" + catalogSiteId + "|" + serviceType.name());
 		MerchantInfoVO m = null;
@@ -348,6 +348,7 @@ public class PayPalCheckoutManager {
 				m = new MerchantInfoVO();
 				m.setLoginId(se.decrypt(rs.getString("ENC_MERCHANT_USER_NM")));
 				m.setMerchantPassword(se.decrypt(rs.getString("ENC_MERCHANT_PASSWORD_TXT")));
+				m.setMerchantEmailAddress(rs.getString("EMAIL_ADDRESS_TXT"));
 				m.setTransactionKeyId(se.decrypt(rs.getString("ENC_MERCHANT_SIGNATURE_TXT")));
 				m.setEnvironmentKey(rs.getString("ENVIRONMENT_TXT"));
 				m.setSiteId(rs.getString("SITE_ID"));
