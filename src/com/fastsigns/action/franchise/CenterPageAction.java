@@ -9,8 +9,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-
-
 // SMT Base Libs
 import com.fastsigns.action.franchise.centerpage.FranchiseInfoAction;
 import com.fastsigns.action.franchise.centerpage.FranchiseLocationInfoAction;
@@ -34,6 +32,8 @@ import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.tools.EmailFriendAction;
 import com.smt.sitebuilder.approval.ApprovalController;
+import com.smt.sitebuilder.approval.ApprovalVO;
+import com.smt.sitebuilder.approval.ApprovalController.SyncStatus;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
@@ -387,6 +387,8 @@ public class CenterPageAction extends SimpleActionAdapter {
 		try {
 			ps = dbConn.prepareStatement(s.toString());
 			if (!isKeystone || (isKeystone && locationId == 0)) {
+				ps.setString(++i, SyncStatus.Approved.toString());
+				ps.setString(++i, SyncStatus.Declined.toString());
 				ps.setInt(++i, Convert.formatInteger(franId));
 			} else {
 				if (locationId > 0) {
@@ -417,7 +419,11 @@ public class CenterPageAction extends SimpleActionAdapter {
 						cmVo = new CenterModuleVO(rs, isKeystone);
 						
 					} else {
-						cmVo.addOption(new CenterModuleOptionVO(rs));
+						CenterModuleOptionVO opt = new CenterModuleOptionVO(rs);
+						// If we are in webedit we add the sync data
+						if (isKeystone) opt.setSyncData(new ApprovalVO(rs));
+						cmVo.addOption(opt);
+						
 //						for(CenterModuleOptionVO vo : cmVo.getModuleOptions().values())
 //						log.debug(vo.getApprovalFlag());
 					}
@@ -561,7 +567,9 @@ public class CenterPageAction extends SimpleActionAdapter {
 		s.append("on c.FTS_CP_MODULE_TYPE_ID = e.FTS_CP_MODULE_TYPE_ID ");
 		s.append("left outer join ").append(customDb).append("FTS_CP_MODULE_DISPLAY h ");
 		s.append("on a.FTS_CP_MODULE_DISPLAY_ID = h.FTS_CP_MODULE_DISPLAY_ID ");
-		s.append("where a.FRANCHISE_ID = ? ");
+		s.append("left join WC_SYNC ws on (CAST(c.CP_MODULE_OPTION_ID AS NVARCHAR(32)) =  WC_KEY_ID or ");
+		s.append("(CAST(c.PARENT_ID AS NVARCHAR(32)) =  WC_ORIG_KEY_ID and WC_ORIG_KEY_ID != '0')) and WC_SYNC_STATUS_CD not in (?,?) ");
+		s.append("where a.FRANCHISE_ID = ? "); 
 		
 		if (isKeystone || PageFilter.testPreviewMode(req, req.getServletContext())) {
 			//ignore approval_flg within Keystone and when a page is in preview mode

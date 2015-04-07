@@ -7,20 +7,24 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import com.fastsigns.action.approval.ApprovalFacadeAction;
-import com.fastsigns.action.approval.vo.AbstractChangeLogVO;
-import com.fastsigns.action.approval.vo.ApprovalVO;
-import com.fastsigns.action.approval.vo.CareerLogVO;
+import com.fastsigns.action.approval.WebeditApprover.WebeditType;
 import com.fastsigns.action.vo.CareersVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.security.UserRoleVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.SBModuleVO;
+import com.smt.sitebuilder.approval.ApprovalController;
+import com.smt.sitebuilder.approval.ApprovalException;
+import com.smt.sitebuilder.approval.ApprovalController.ModuleType;
+import com.smt.sitebuilder.approval.ApprovalController.SyncStatus;
+import com.smt.sitebuilder.approval.ApprovalController.SyncTransaction;
+import com.smt.sitebuilder.approval.ApprovalVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
@@ -161,9 +165,6 @@ public class KeyStoneCareersAction extends SBActionAdapter {
 			case DELETE_JOB:
 				this.delete(req);
 				break;
-			case SUBMIT_JOB:
-				this.submitJobs(req);
-				break;
 			case COPY_JOB:
 				this.copy(req);
 				break;
@@ -233,8 +234,9 @@ public class KeyStoneCareersAction extends SBActionAdapter {
 	    	//Retrieve all career Opportunities.
 		StringBuilder sb = new StringBuilder();
 		sb.append("select * from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sb.append("FTS_JOB_POSTING where ORGANIZATION_ID = ? ");
-		
+		sb.append("FTS_JOB_POSTING jp left join WC_SYNC ws on jp.JOB_POSTING_ID = ws.WC_KEY_ID and WC_SYNC_STATUS_CD not in (?,?) "); 
+		sb.append("where jp.ORGANIZATION_ID = ? ");
+		 
 		//Sub select based on role if we're not an admin
 		if(r.getRoleLevel() < 100 || req.hasParameter("apprFranchiseId"))
 			sb.append("and FRANCHISE_ID = ? ");
@@ -250,6 +252,8 @@ public class KeyStoneCareersAction extends SBActionAdapter {
 		try{
 			int ctr = 1;
 			ps = dbConn.prepareStatement(sb.toString());
+			ps.setString(ctr++, SyncStatus.Approved.toString());
+			ps.setString(ctr++, SyncStatus.Declined.toString());
 			ps.setString(ctr++, orgId);
 			if(r.getRoleLevel() < 100 || req.hasParameter("apprFranchiseId"))
 				ps.setString(ctr++, franchiseId + "");
@@ -337,12 +341,12 @@ public class KeyStoneCareersAction extends SBActionAdapter {
 		Object msg = "msg.updateSuccess";
 		CareersVO cvo = new CareersVO(req);
 		String sql = null;
-    	UserRoleVO r = (UserRoleVO) req.getSession().getAttribute(Constants.ROLE_DATA);
-
-    	//Determine the script we need to run.
-    	if(cvo.getJobPostingId().length() > 0){
-    		sql = getUpdateSql();
-    	} else{
+	    	UserRoleVO r = (UserRoleVO) req.getSession().getAttribute(Constants.ROLE_DATA);
+	
+	    	//Determine the script we need to run.
+	    	if(cvo.getJobPostingId().length() > 0){
+	    		sql = getUpdateSql();
+	    	} else{
 			sql = getInsertSql();
             cvo.setJobPostingId(new UUIDGenerator().getUUID());	
 		}
@@ -365,7 +369,7 @@ public class KeyStoneCareersAction extends SBActionAdapter {
 			ps.setTimestamp(i++, Convert.getCurrentTimestamp());
 			//If this is an corporate job and admin entered
 			if(r.getRoleLevel() == 100 && cvo.getFranchiseId() == null)
-				ps.setInt(i++, AbstractChangeLogVO.Status.APPROVED.ordinal());
+				ps.setInt(i++, 1);
 			else
 				ps.setInt(i++, -1);
 			ps.setString(i++, cvo.getJobAddressTxt());
@@ -380,6 +384,9 @@ public class KeyStoneCareersAction extends SBActionAdapter {
 			ps.setString(i++, cvo.getJobPostingId());
 			ps.execute();
 			
+			if (cvo.getJobApprovalFlg() != -1 && cvo.getFranchiseId() != null) 
+				buildSyncEntry(cvo, req);
+			
 		} catch(SQLException sqle){
 			log.error("Error during build.", sqle);
 			msg = "msg.cannotUpdate";
@@ -388,6 +395,34 @@ public class KeyStoneCareersAction extends SBActionAdapter {
 		redir.append("msg=").append(msg);
 		req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
 		req.setAttribute(Constants.REDIRECT_URL, redir.toString());
+	}
+	
+	/**
+	 * Build a sync entry to track the career
+	 * @param req
+	 */
+	private void buildSyncEntry(CareersVO cvo, SMTServletRequest req) {
+		ApprovalController controller = new ApprovalController(dbConn, getAttributes());
+		ApprovalVO approval = new ApprovalVO();
+		WebeditType approvalType = WebeditType.Career;
+		
+		approval.setWcKeyId(cvo.getJobPostingId());
+		approval.setItemDesc(approvalType.toString());
+		approval.setItemName("Center " + cvo.getFranchiseId() + " " + approvalType.getLabel());
+		approval.setModuleType(ModuleType.Webedit);
+		approval.setSyncStatus(SyncStatus.InProgress);
+		approval.setSyncTransaction(SyncTransaction.Create);
+		approval.setOrganizationId(cvo.getOrganizationId()+"_"+cvo.getFranchiseId());
+		approval.setUserDataVo((UserDataVO) req.getSession().getAttribute(Constants.USER_DATA));
+		approval.setCreateDt(Convert.getCurrentTimestamp());
+		
+		try {
+			controller.process(approval);
+		} catch (ApprovalException e) {
+			e.printStackTrace();
+		}
+		
+		
 	}
 	
 	/**
@@ -447,7 +482,7 @@ public class KeyStoneCareersAction extends SBActionAdapter {
 	 */
 	private boolean isRenewable(SMTServletRequest req){
 		boolean renew = Convert.formatBoolean(req.getParameter("renew"));
-		boolean isApproved = Convert.formatInteger(req.getParameter("approvalFlg")) == AbstractChangeLogVO.Status.APPROVED.ordinal();
+		boolean isApproved = Convert.formatInteger(req.getParameter("approvalFlg")) == 1;
 		return (renew && isApproved);
 	}
 	
@@ -501,39 +536,5 @@ public class KeyStoneCareersAction extends SBActionAdapter {
 		sb.append("JOB_PRIMARY_PHONE_NO=?, FRANCHISE_LINK_FLG=?, ACTIVE_JOB_FLG=? where JOB_POSTING_ID=? ");
 		return sb.toString();
 	}
-	
-	/** submits the job to the FTS admins for approval 
-	 * @throws ActionException **/
-	protected void submitJobs(SMTServletRequest req) throws ActionException {
-		log.debug("Begninng approval submittal method");
-		
-		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
-		StringBuilder redir = new StringBuilder(page.getFullPath());
-		redir.append("?");
-		
-		ApprovalFacadeAction aA = new ApprovalFacadeAction(this.actionInit);
-		aA.setDBConnection(dbConn);
-		aA.setAttributes(attributes);
-		ApprovalVO avo = new ApprovalVO();
-		String [] pageIds = new String[0];
-		if(req.hasParameter("jobPostingId")){
-			pageIds = req.getParameter("jobPostingId").split(",");
-		} else if(req.hasParameter("jobsToSubmit")){
-			pageIds = req.getParameter("jobsToSubmit").split(",");
-		}
-		List<AbstractChangeLogVO> vos = new ArrayList<AbstractChangeLogVO>();
-		for(String id : pageIds){
-			req.setParameter("componentId", id.trim());
-			vos.add(new CareerLogVO(req));
-		}
-		avo.setChangeLogList(CareerLogVO.TYPE_ID, vos);
-		req.setAttribute("approvalVO", avo);
-		aA.update(req);
-		
-		//finish the redirect
-		req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
-		req.setAttribute(Constants.REDIRECT_URL, redir.toString());
-	}
-	
 	
 }
