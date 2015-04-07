@@ -13,6 +13,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.smt.sitebuilder.approval.ApprovalAction;
 import com.smt.sitebuilder.approval.ApprovalController;
 import com.smt.sitebuilder.approval.ApprovalVO;
 import com.smt.sitebuilder.approval.ApprovalController.SyncStatus;
@@ -41,6 +42,14 @@ public class KeystoneApprovalAction extends SimpleActionAdapter {
 		}  else  {
 			getApprovalsByCenter(req, franchiseId);
 		}
+	}
+	
+	public void build(SMTServletRequest req) throws ActionException {
+		ApprovalAction a = new ApprovalAction(actionInit);
+		a.setDBConnection(dbConn);
+		a.setAttributes(getAttributes());
+		a.update(req);
+		req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.FALSE);
 	}
 
 	/**
