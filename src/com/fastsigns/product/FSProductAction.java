@@ -155,8 +155,9 @@ public class FSProductAction extends SBActionAdapter {
 		ModuleVO cachedMod = null;
 		
 		log.debug("Loading Catalog with id: " + catalogId);
-		if (!page.isPreviewMode())
-			cachedMod = super.readFromCache("FS_CAT_"+catalogId);
+		if (!page.isPreviewMode()){
+			cachedMod = super.readFromCache(catalogId);
+		}
 		
 		if (cachedMod == null || cachedMod.getActionData() == null) {
 			if(cachedMod != null) log.error("Something is wrong with the cached product catalog " + catalogId);
@@ -164,7 +165,6 @@ public class FSProductAction extends SBActionAdapter {
 			cachedMod = new ModuleVO();
 			cachedMod.setActionId("FS_CAT_"+catalogId);
 			cachedMod.setActionData(this.loadCatalog(catalogId, page.isPreviewMode()));
-			
 	        if (!page.isPreviewMode()) {
 	        	cachedMod.setCacheable(true);
 	        	cachedMod.setPageModuleId(catalogId);
