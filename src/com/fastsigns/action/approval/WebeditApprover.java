@@ -8,6 +8,10 @@ import java.util.List;
 import java.util.Map;
 
 import com.siliconmtn.db.pool.SMTDBConnection;
+import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.io.mail.EmailMessageVO;
+import com.siliconmtn.io.mail.MessageVO;
+import com.siliconmtn.io.mail.MessageVO.InstanceName;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.approval.AbstractApprover;
@@ -16,6 +20,8 @@ import com.smt.sitebuilder.approval.ApprovalController.SyncStatus;
 import com.smt.sitebuilder.approval.ApprovalException;
 import com.smt.sitebuilder.approval.ApprovalVO;
 import com.smt.sitebuilder.approval.PageApprover;
+import com.smt.sitebuilder.util.CacheAdministrator;
+import com.smt.sitebuilder.util.MessageSender;
 
 /****************************************************************************
  * <b>Title</b>: WebeditApprover.java<p/>
@@ -30,6 +36,8 @@ import com.smt.sitebuilder.approval.PageApprover;
  ****************************************************************************/
 
 public class WebeditApprover extends AbstractApprover {
+	
+	private final String ADMIN_EMAIL = "eteam@fastsigns.com";
 	
 	public enum WebeditType {
 		CenterPage("Center Page"), 
@@ -50,6 +58,7 @@ public class WebeditApprover extends AbstractApprover {
 
 	@Override
 	public void approve(ApprovalVO... approvables) throws ApprovalException {
+		CacheAdministrator cache = new CacheAdministrator(getAttributes());
 		
 		AbstractApprover app = null;
 		for (ApprovalVO vo : approvables) {
@@ -79,9 +88,54 @@ public class WebeditApprover extends AbstractApprover {
 					vo.setSyncStatus(SyncStatus.Approved);
 					break;
 			}
+			cache.clearCacheByGroup(vo.getOrganizationId()+"_1");
 		}
+		
+		prepareEmails(approvables);
 	}
 	
+	
+	/**
+	 * Prepare the Success emails 
+	 */
+	private void prepareEmails(ApprovalVO[] approvables) {
+		MessageSender ms = new MessageSender(getAttributes(), dbConn);
+		for(ApprovalVO app : approvables) {
+			if (app.getSyncStatus() == SyncStatus.Approved) {
+				MessageVO msg = buildApproveEmail(app);
+				if (msg != null) {
+					ms.sendMessage(msg);
+				}
+			}
+		}
+	}
+
+	private MessageVO buildApproveEmail(ApprovalVO app) {
+		EmailMessageVO msg;
+		try {
+			msg = new EmailMessageVO();
+			msg.addRecipient(app.getUserDataVO().getEmailAddress());
+			msg.setFrom(ADMIN_EMAIL);
+			msg.setInstance(InstanceName.FASTSIGNS);
+			
+			StringBuilder body = new StringBuilder(250);
+			body.append("Your request to change the ").append(WebeditType.valueOf(app.getItemDesc()).getLabel());
+			body.append(" for FASTSIGNS Location ").append(app.getOrganizationId().substring(app.getOrganizationId().lastIndexOf('_')+1));
+			body.append(" has been approved.\nIf you need assistance please contact ");
+			String htmlEnd = "<a href='mailto:eteam@fastsigns.com'>eteam@fastsigns.com</a>";
+			String textEnd = "eteam@fastsigns.com";
+			
+			msg.setHtmlBody(body.toString() + htmlEnd);
+			msg.setTextBody(body.toString() + textEnd);
+			msg.setSubject("Resolution of " + WebeditType.valueOf(app.getItemDesc()).getLabel() + " Request");
+		} catch (InvalidDataException e) {
+			log.error("Unable to make webedit success email for approval " + app.getWcSyncId(), e);
+			return null;
+		}
+		
+		return msg;
+	}
+
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.approval.Approver#reject(com.smt.sitebuilder.approval.ApprovalVO[])
 	 */
@@ -109,8 +163,69 @@ public class WebeditApprover extends AbstractApprover {
 					super.reject(approvables);
 					break;
 			}
+			
 		}
 	
+	}
+	
+	/**
+	 * Send emails to the eteam to let them know that 
+	 * items have been submitted for approval
+	 */
+	public void submit(ApprovalVO... approvables) throws ApprovalException {
+		MessageSender ms = new MessageSender(getAttributes(), dbConn);
+		for(ApprovalVO app : approvables) {
+			MessageVO msg = buildSubmitEmail(app);
+			if (msg != null) {
+				log.debug("Sending submitted message");
+				ms.sendMessage(msg);
+			}
+		}
+	}
+	
+	/**
+	 * Build the submittal email
+	 */
+	private MessageVO buildSubmitEmail(ApprovalVO app) {
+		EmailMessageVO msg;
+		try {
+			msg = new EmailMessageVO();
+			msg.addRecipient(ADMIN_EMAIL);
+			msg.setInstance(InstanceName.FASTSIGNS);
+			
+			String siteAlias = findSite(app.getOrganizationId().substring(0, app.getOrganizationId().lastIndexOf('_')));
+			
+			StringBuilder body = new StringBuilder(250);
+			body.append("A request to change the  ").append(WebeditType.valueOf(app.getItemDesc()).getLabel());
+			body.append(" for FASTSIGNS Location ").append(app.getOrganizationId().substring(app.getOrganizationId().lastIndexOf('_')+1));
+			body.append(" has been submitted.\nPlease log in to ");
+			String htmlEnd = "<a href='//"+siteAlias+"/webedit'>webedit</a> to review and approve this change";
+			String textEnd = "webedit to review and approve this change";
+			
+			msg.setHtmlBody(body.toString() + htmlEnd);
+			msg.setTextBody(body.toString() + textEnd);
+			msg.setSubject("Submission of " + WebeditType.valueOf(app.getItemDesc()).getLabel() + " Request");
+		} catch (Exception e) {
+			log.error("Unable to make webedit success email for approval " + app.getWcSyncId(), e);
+			return null;
+		}
+		
+		return msg;
+	}
+
+	private String findSite(String orgId) throws SQLException {
+		StringBuilder sql = new StringBuilder(150);
+		
+		sql.append("SELECT sa.SITE_ALIAS_URL FROM SITE s left join SITE_ALIAS ");
+		sql.append("sa on s.SITE_ID = sa.SITE_ID where s.SITE_ID = ? and PRIMARY_FLG = 1");
+		log.debug(sql+"|"+orgId);
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, orgId+"_7");
+			
+			ResultSet rs = ps.executeQuery();
+			if(rs.next()) return rs.getString(1);
+		}
+		return "";
 	}
 
 	@Override
