@@ -199,7 +199,7 @@ public class WebeditApprover extends AbstractApprover {
 			body.append("A request to change the  ").append(WebeditType.valueOf(app.getItemDesc()).getLabel());
 			body.append(" for FASTSIGNS Location ").append(app.getOrganizationId().substring(app.getOrganizationId().lastIndexOf('_')+1));
 			body.append(" has been submitted.\nPlease log in to ");
-			String htmlEnd = "<a href='//"+siteAlias+"/webedit'>webedit</a> to review and approve this change";
+			String htmlEnd = "<a href='http://"+siteAlias+"/webedit'>webedit</a> to review and approve this change";
 			String textEnd = "webedit to review and approve this change";
 			
 			msg.setHtmlBody(body.toString() + htmlEnd);
