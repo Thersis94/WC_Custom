@@ -102,7 +102,6 @@ public class CareersVO implements Serializable, Approvable {
 		jobPrimaryPhoneNo = db.getStringVal("JOB_PRIMARY_PHONE_NO", rs);
 		franchiseLinkFlg = db.getIntegerVal("FRANCHISE_LINK_FLG", rs);
 		activeJobFlg = db.getIntVal("ACTIVE_JOB_FLG", rs);
-		approval = new ApprovalVO(rs);
 	}
 
 	/**
