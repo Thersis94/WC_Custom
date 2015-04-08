@@ -168,6 +168,9 @@ public class KeyStoneCareersAction extends SBActionAdapter {
 			case COPY_JOB:
 				this.copy(req);
 				break;
+			case SUBMIT_JOB:
+				this.submitAll(req);
+				break;
 			default: 
 				throw new ActionException("Invalid Operation Attempted.");
 		}
@@ -175,6 +178,50 @@ public class KeyStoneCareersAction extends SBActionAdapter {
 
 	}
 	
+	/**
+	 * Submit all supplied jobs for approval
+	 */
+	private void submitAll(SMTServletRequest req) throws ActionException {
+		String jobs = req.getParameter("jobsToSubmit");
+		if (jobs == null || jobs.length() == 0) return;
+		
+		List<ApprovalVO> apprVOs = new ArrayList<>();
+		String[] ids = jobs.split(",");
+		StringBuilder sql = new StringBuilder(60);
+		
+		sql.append("SELECT * FROM WC_SYNC WHERE WC_KEY_ID in (");
+		for (int i=0; i<ids.length; i++) {
+			sql.append("?");
+			if (i < ids.length-1) {
+				sql.append(",");
+			} else {
+				sql.append(")");
+			}
+		}
+		
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			for (int i=0; i<ids.length; i++) {
+				ps.setString(i+1, ids[i]);
+			}
+			
+			ResultSet rs = ps.executeQuery();
+			while(rs.next()) {
+				ApprovalVO approval = new ApprovalVO(rs);
+				approval.setUserDataVo((UserDataVO) req.getSession().getAttribute(Constants.USER_DATA));
+				approval.setSyncTransaction(SyncTransaction.Submit);
+				apprVOs.add(approval);
+			}
+			
+			ApprovalController con = new ApprovalController(dbConn, getAttributes());
+			con.process(apprVOs.toArray(new ApprovalVO[ids.length]));
+		} catch (Exception e) {
+			log.error("Unable to submit all jobs for approval.", e);
+			throw new ActionException(e);
+		}
+		
+		
+	}
+
 	/**
 	 * Method responsible for retrieving careers for webedit
 	 */ 
@@ -263,7 +310,9 @@ public class KeyStoneCareersAction extends SBActionAdapter {
 			
 			ResultSet rs = ps.executeQuery();
 			while(rs.next()){
-				postings.add(new CareersVO(rs));
+				CareersVO career = new CareersVO(rs);
+				career.setSyncData(new ApprovalVO(rs));
+				postings.add(career);
 			}
 			log.debug("Retrieved " + postings.size() + " Jobs");
 		} catch(SQLException sqle){
@@ -348,7 +397,7 @@ public class KeyStoneCareersAction extends SBActionAdapter {
 	    		sql = getUpdateSql();
 	    	} else{
 			sql = getInsertSql();
-            cvo.setJobPostingId(new UUIDGenerator().getUUID());	
+			cvo.setJobPostingId(new UUIDGenerator().getUUID());	
 		}
 		try{
 			int i = 1;
@@ -384,7 +433,7 @@ public class KeyStoneCareersAction extends SBActionAdapter {
 			ps.setString(i++, cvo.getJobPostingId());
 			ps.execute();
 			
-			if (cvo.getJobApprovalFlg() != -1 && cvo.getFranchiseId() != null) 
+			if (!Convert.formatBoolean(req.getParameter("hasSync")) && cvo.getFranchiseId() != null) 
 				buildSyncEntry(cvo, req);
 			
 		} catch(SQLException sqle){

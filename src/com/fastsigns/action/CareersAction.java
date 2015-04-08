@@ -74,12 +74,10 @@ public class CareersAction extends SBActionAdapter {
 		sb.append("select a.*, b.LOCATION_NM, b.STATE_CD, b.CITY_NM, b.ATTRIB2_TXT from ");
 		sb.append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sb.append("FTS_JOB_POSTING a left outer join DEALER_LOCATION b on a.FRANCHISE_ID = b.DEALER_LOCATION_ID ");
-		sb.append("left join WC_SYNC ws on a.JOB_POSTING_ID = ws.WC_KEY_ID ");
+		sb.append("left join WC_SYNC ws on a.JOB_POSTING_ID = ws.WC_KEY_ID and ws.WC_SYNC_STATUS_CD not in (?,?) ");
 		sb.append("where a.ORGANIZATION_ID = ? ");
-		if (isPreview) {
-			sb.append("and ws.WC_SYNC_STATUS_CD not in (?,?) ");
-		} else {
-			sb.append("and (ws.WC_SYNC_STATUS_CD = ? or ws.WC_SYNC_STATUS_CD is null) and ");
+		if (!isPreview) {
+			sb.append("and ws.WC_SYNC_STATUS_CD is null and ");
 			if (Convert.formatBoolean(mod.getAttribute(ModuleVO.ATTRIBUTE_1))) {
 				sb.append("DATEDIFF(DAY, JOB_POST_DT, GETDATE()) < 21 ");
 			} else {
@@ -94,11 +92,9 @@ public class CareersAction extends SBActionAdapter {
 		try{
 			int ctr = 1;
 			ps = dbConn.prepareStatement(sb.toString());
-			ps.setString(ctr++, orgId);
 			ps.setString(ctr++, SyncStatus.Approved.toString());
-			if (isPreview) {
-				ps.setString(ctr++, SyncStatus.Declined.toString());
-			}
+			ps.setString(ctr++, SyncStatus.Declined.toString());
+			ps.setString(ctr++, orgId);
 			
 			ResultSet rs = ps.executeQuery();
 			while(rs.next()){
