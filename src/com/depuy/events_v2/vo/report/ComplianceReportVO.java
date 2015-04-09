@@ -85,6 +85,11 @@ public class ComplianceReportVO extends AbstractSBReportVO {
 //			rpt = new CFSEM25ReportVO();
 //			break;
 		
+		case "MITEK-PEER": //Mitek P2P
+		case "MITEK-ESEM": //Mitek Patient
+			rpt = new ESEMMitekReportVO();
+			break;
+			
 		default:
 			rpt = new ESEMReportVO();
 			break;
