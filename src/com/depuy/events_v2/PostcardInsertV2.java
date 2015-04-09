@@ -1005,6 +1005,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		try {
 			req.setParameter(AdminConstants.FACADE_TYPE, "report");
 			req.setParameter("rptType", reportType.toString());
+			req.setParameter("reqType", PostcardSelectV2.ReqType.summary.toString());
 			epsa.build(req);
 			ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 			sem = (DePuyEventSeminarVO) mod.getActionData();
