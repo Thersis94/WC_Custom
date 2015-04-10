@@ -22,6 +22,9 @@ import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.html.tool.RegexParser;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.io.FileWriterException;
+import com.siliconmtn.io.mail.EmailMessageVO;
+import com.siliconmtn.io.mail.MessageVO;
+import com.siliconmtn.io.mail.MessageVO.InstanceName;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -36,6 +39,7 @@ import com.smt.sitebuilder.action.menu.MenuObj;
 import com.smt.sitebuilder.admin.action.PageModuleAction;
 import com.smt.sitebuilder.admin.action.SitePageAction;
 import com.smt.sitebuilder.approval.ApprovalController;
+import com.smt.sitebuilder.approval.ApprovalController.ModuleType;
 import com.smt.sitebuilder.approval.ApprovalController.SyncTransaction;
 import com.smt.sitebuilder.approval.ApprovalDecoratorAction;
 import com.smt.sitebuilder.approval.ApprovalController.SyncStatus;
@@ -47,6 +51,7 @@ import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.util.MessageParser;
+import com.smt.sitebuilder.util.MessageSender;
 
 /****************************************************************************
  * <b>Title</b>: FranchisePageAction.java <p/>
@@ -271,11 +276,18 @@ public class FranchisePageAction extends SBActionAdapter {
 	 */
 	private void submitPage(SMTServletRequest req) {
 		ApprovalController controller = new ApprovalController(dbConn, attributes, req);
-		
+		MessageSender ms = new MessageSender(getAttributes(), dbConn);
 		try {
 			List<ApprovalVO> appr = getApprovalVOs(req);
 			for(ApprovalVO vo : appr) {
 				controller.process(vo);
+				if (vo.getModuleType() == ModuleType.Page) {
+					MessageVO msg = buildSubmitEmail(vo, req);
+					if (msg != null) {
+						log.debug("Sending submitted message");
+						ms.sendMessage(msg);
+					}
+				}
 			}
 		} catch (ApprovalException e) {
 			e.printStackTrace();
@@ -305,6 +317,36 @@ public class FranchisePageAction extends SBActionAdapter {
 			throw new ApprovalException(e);
 		}
 		return approvals;
+	}
+	
+	/**
+	 * Build the submittal email since we are not technically doing a webedit approval
+	 */
+	private MessageVO buildSubmitEmail(ApprovalVO app, SMTServletRequest req) {
+		EmailMessageVO msg;
+		try {
+			msg = new EmailMessageVO();
+			msg.addRecipient("eteam@fastsigns.com");
+			msg.setInstance(InstanceName.FASTSIGNS);
+			
+			String siteAlias =  ((SiteVO)req.getAttribute("siteData")).getFullSiteAlias();
+			
+			StringBuilder body = new StringBuilder(250);
+			body.append("A request to change the  ").append(WebeditType.valueOf(app.getItemDesc()).getLabel());
+			body.append(" for FASTSIGNS Location ").append(app.getOrganizationId().substring(app.getOrganizationId().lastIndexOf('_')+1));
+			body.append(" has been submitted.\nPlease log in to ");
+			String htmlEnd = "<a href='http://"+siteAlias+"/webedit'>webedit</a> to review and approve this change";
+			String textEnd = "webedit to review and approve this change";
+			
+			msg.setHtmlBody(body.toString() + htmlEnd);
+			msg.setTextBody(body.toString() + textEnd);
+			msg.setSubject("Submission of " + WebeditType.valueOf(app.getItemDesc()).getLabel() + " Request");
+		} catch (Exception e) {
+			log.error("Unable to make webedit success email for approval " + app.getWcSyncId(), e);
+			return null;
+		}
+		
+		return msg;
 	}
 		
 	/*
