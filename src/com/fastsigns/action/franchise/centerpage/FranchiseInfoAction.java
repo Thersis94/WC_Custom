@@ -426,6 +426,7 @@ public class FranchiseInfoAction extends SBActionAdapter {
 	 */
 	private void buildSyncEntry(SMTServletRequest req, WebeditApprover.WebeditType approvalType) {
 		ApprovalController controller = new ApprovalController(dbConn, getAttributes());
+		WebeditApprover app = new WebeditApprover(dbConn, getAttributes());
 		String franchiseId = CenterPageAction.getFranchiseId(req);
 		ApprovalVO approval = new ApprovalVO();
 		
@@ -441,6 +442,7 @@ public class FranchiseInfoAction extends SBActionAdapter {
 		
 		try {
 			controller.process(approval);
+			app.submit(approval);
 		} catch (ApprovalException e) {
 			e.printStackTrace();
 		}
