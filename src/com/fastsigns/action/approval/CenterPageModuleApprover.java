@@ -53,9 +53,8 @@ public class CenterPageModuleApprover extends AbstractApprover {
 		for (ApprovalVO vo : approvables) {
 			try {
 				switch(vo.getSyncStatus()) {
-				// Only creation and updates go through approval.  Anything else does nothing.
+				// Only updates need to be changed for approval.  All else needs nothing
 				case PendingUpdate:
-				case PendingCreate:
 					executeQuery(update.toString(), vo.getOrigWcKeyId(), vo.getWcKeyId());
 					executeQuery(delete.toString(), vo.getWcKeyId());
 					break;
