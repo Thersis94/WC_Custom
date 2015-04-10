@@ -571,11 +571,6 @@ public class CenterPageAction extends SimpleActionAdapter {
 		s.append("(CAST(c.PARENT_ID AS NVARCHAR(32)) =  WC_ORIG_KEY_ID and WC_ORIG_KEY_ID != '0')) and WC_SYNC_STATUS_CD not in (?,?) ");
 		s.append("where a.FRANCHISE_ID = ? "); 
 		
-		if (isKeystone || PageFilter.testPreviewMode(req, req.getServletContext())) {
-			//ignore approval_flg within Keystone and when a page is in preview mode
-		} else {
-			s.append("and approval_flg=1 ");
-		}
 		if(isMobile) {
 			s.append("and MOBILE_FLG = 1 ");
 		} else {
