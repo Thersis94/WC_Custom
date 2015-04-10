@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.fastsigns.action.approval.WebeditApprover;
 import com.fastsigns.action.approval.WebeditApprover.WebeditType;
 import com.fastsigns.action.franchise.centerpage.FranchiseLocationInfoAction;
 import com.fastsigns.action.franchise.vo.CenterModuleOptionVO;
@@ -36,6 +37,7 @@ import com.smt.sitebuilder.action.menu.MenuObj;
 import com.smt.sitebuilder.admin.action.PageModuleAction;
 import com.smt.sitebuilder.admin.action.SitePageAction;
 import com.smt.sitebuilder.approval.ApprovalController;
+import com.smt.sitebuilder.approval.ApprovalController.ModuleType;
 import com.smt.sitebuilder.approval.ApprovalController.SyncTransaction;
 import com.smt.sitebuilder.approval.ApprovalDecoratorAction;
 import com.smt.sitebuilder.approval.ApprovalController.SyncStatus;
@@ -271,11 +273,14 @@ public class FranchisePageAction extends SBActionAdapter {
 	 */
 	private void submitPage(SMTServletRequest req) {
 		ApprovalController controller = new ApprovalController(dbConn, attributes, req);
-		
+		WebeditApprover app = new WebeditApprover(dbConn, getAttributes());
 		try {
 			List<ApprovalVO> appr = getApprovalVOs(req);
 			for(ApprovalVO vo : appr) {
 				controller.process(vo);
+				if (vo.getModuleType() == ModuleType.Page) {
+					app.submit(vo);
+				}
 			}
 		} catch (ApprovalException e) {
 			e.printStackTrace();

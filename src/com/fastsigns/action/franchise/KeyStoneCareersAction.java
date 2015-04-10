@@ -195,14 +195,17 @@ public class KeyStoneCareersAction extends SBActionAdapter {
 			if (i < ids.length-1) {
 				sql.append(",");
 			} else {
-				sql.append(")");
+				sql.append(") ");
 			}
 		}
+		sql.append("and WC_SYNC_STATUS_CD = ?");
 		
 		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			for (int i=0; i<ids.length; i++) {
+			int i;
+			for (i=0; i<ids.length; i++) {
 				ps.setString(i+1, ids[i]);
 			}
+			ps.setString(i+1, SyncStatus.InProgress.toString());
 			
 			ResultSet rs = ps.executeQuery();
 			while(rs.next()) {
@@ -214,6 +217,11 @@ public class KeyStoneCareersAction extends SBActionAdapter {
 			
 			ApprovalController con = new ApprovalController(dbConn, getAttributes());
 			con.process(apprVOs.toArray(new ApprovalVO[ids.length]));
+			
+
+			req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
+			req.setAttribute(Constants.REDIRECT_URL, ((PageVO) req.getAttribute(Constants.PAGE_DATA)).getFullPath());
+			
 		} catch (Exception e) {
 			log.error("Unable to submit all jobs for approval.", e);
 			throw new ActionException(e);

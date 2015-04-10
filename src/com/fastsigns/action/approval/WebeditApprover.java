@@ -213,6 +213,12 @@ public class WebeditApprover extends AbstractApprover {
 		return msg;
 	}
 
+	/**
+	 * Get the site alias for the current organization.
+	 * @param orgId
+	 * @return
+	 * @throws SQLException
+	 */
 	private String findSite(String orgId) throws SQLException {
 		StringBuilder sql = new StringBuilder(150);
 		

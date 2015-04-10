@@ -7,6 +7,7 @@ import java.util.Map;
 
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.approval.ApprovalVO;
 
 /****************************************************************************
  * <b>Title</b>: CenterModuleVO.java <p/>
@@ -81,7 +82,9 @@ public class CenterModuleVO implements Serializable {
 		moduleDisplayId = db.getStringVal("FTS_CP_MODULE_DISPLAY_ID", rs);
 		moduleLocationXRId = db.getStringVal("CP_LOCATION_MODULE_XR_ID", rs);
 		// Add the options
-		this.addOption(new CenterModuleOptionVO(rs));
+		CenterModuleOptionVO opt = new CenterModuleOptionVO(rs);
+		if (isKeystone) opt.setSyncData(new ApprovalVO(rs));
+		this.addOption(opt);
 	}
 	
 	

@@ -143,25 +143,55 @@ public class ModuleOptionAction extends SBActionAdapter{
 	
 	/**
 	 * Submit the module assets for approval
+	 * @throws ActionException 
 	 */
-	private void submitForApproval(SMTServletRequest req) throws SQLException {
+	private void submitForApproval(SMTServletRequest req) throws SQLException, ActionException {
 		log.debug("Beginning Request Module Option Approval Process...");
-		StringBuilder sb = new StringBuilder();
-		sb.append("update wc_sync set wc_sync_status_cd=? where wc_key_id=? and wc_sync_status_cd not in (?,?)");
-		String[] ids = req.getParameter("modOptsToSubmit").split(",");
-		for(String id : ids) log.debug(id);
+		String opts = req.getParameter("modOptsToSubmit");
+		if (opts == null || opts.length() == 0) return;
 		
-		for(String key : req.getParameterMap().keySet()) log.debug(key+"|"+req.getParameter(key));
-		try (PreparedStatement ps = dbConn.prepareStatement(sb.toString())) {
-			for (int x=0; x < ids.length; x++) {
-				ps.setString(1, SyncStatus.PendingUpdate.toString());
-				ps.setString(2, ids[x]);
-				ps.setString(3, SyncStatus.Approved.toString());
-				ps.setString(4, SyncStatus.Declined.toString());
-				ps.addBatch();
+		List<ApprovalVO> apprVOs = new ArrayList<>();
+		String[] ids = req.getParameter("modOptsToSubmit").split(",");
+		StringBuilder sql = new StringBuilder(60);
+		
+		sql.append("SELECT * FROM WC_SYNC WHERE WC_KEY_ID in (");
+		for (int i=0; i<ids.length; i++) {
+			sql.append("?");
+			if (i < ids.length-1) {
+				sql.append(",");
+			} else {
+				sql.append(") ");
 			}
-			ps.executeBatch();
 		}
+		sql.append("and WC_SYNC_STATUS_CD = ?");
+		
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			int i;
+			for (i=0; i<ids.length; i++) {
+				ps.setString(i+1, ids[i]);
+			}
+			ps.setString(i+1, SyncStatus.InProgress.toString());
+			
+			ResultSet rs = ps.executeQuery();
+			while(rs.next()) {
+				ApprovalVO approval = new ApprovalVO(rs);
+				approval.setUserDataVo((UserDataVO) req.getSession().getAttribute(Constants.USER_DATA));
+				approval.setSyncTransaction(SyncTransaction.Submit);
+				apprVOs.add(approval);
+			}
+			
+			ApprovalController con = new ApprovalController(dbConn, getAttributes());
+			con.process(apprVOs.toArray(new ApprovalVO[apprVOs.size()]));
+			
+
+			req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
+			req.setAttribute(Constants.REDIRECT_URL, ((PageVO) req.getAttribute(Constants.PAGE_DATA)).getFullPath());
+			
+		} catch (Exception e) {
+			log.error("Unable to submit all jobs for approval.", e);
+			throw new ActionException(e);
+		}
+		
 	}
 
 	@Override
