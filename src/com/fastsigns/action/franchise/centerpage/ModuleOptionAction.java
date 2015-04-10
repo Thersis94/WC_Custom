@@ -46,7 +46,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class ModuleOptionAction extends SBActionAdapter{
 	//This is a list of the modules that only allow one item at a time
-	final String modList = "11 12 81";
+	final String modList = "11,12,81,";
 	
 	public ModuleOptionAction(ActionInitVO avo){
 		super(avo);
@@ -106,8 +106,10 @@ public class ModuleOptionAction extends SBActionAdapter{
 					if (Convert.formatInteger(req.getParameter("parentId")) > 0 && 
 							Convert.formatInteger(req.getParameter("approvalFlag"), 0).intValue() == 100)
 						this.revokeApprovalSubmission(req);
-						
-					if (!modList.contains(req.getParameter("moduleId"))) {
+					
+					// The comma at the end of the parameter ensures that we won't get partial matches
+					// Such as matching the 8 in 81
+					if (!modList.contains(req.getParameter("moduleId")+",")) {
 						req.setParameter("skipDelete", "true");
 					}
 					
