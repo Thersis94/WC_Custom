@@ -83,7 +83,6 @@ public class CenterModuleVO implements Serializable {
 		moduleLocationXRId = db.getStringVal("CP_LOCATION_MODULE_XR_ID", rs);
 		// Add the options
 		CenterModuleOptionVO opt = new CenterModuleOptionVO(rs);
-		System.out.println(isKeystone);
 		if (isKeystone) opt.setSyncData(new ApprovalVO(rs));
 		if (isKeystone || StringUtil.checkVal(StringUtil.checkVal(db.getStringVal("WC_SYNC_STATUS_CD", rs))).length() == 0)
 			this.addOption(opt);
