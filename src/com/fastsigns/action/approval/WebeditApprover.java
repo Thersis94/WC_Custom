@@ -191,6 +191,7 @@ public class WebeditApprover extends AbstractApprover {
 		try {
 			msg = new EmailMessageVO();
 			msg.addRecipient(ADMIN_EMAIL);
+			msg.setFrom(ADMIN_EMAIL);
 			msg.setInstance(InstanceName.FASTSIGNS);
 			
 			String siteAlias = findSite(app.getOrganizationId().substring(0, app.getOrganizationId().lastIndexOf('_')));
