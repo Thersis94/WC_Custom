@@ -84,7 +84,8 @@ public class CenterModuleVO implements Serializable {
 		// Add the options
 		CenterModuleOptionVO opt = new CenterModuleOptionVO(rs);
 		if (isKeystone) opt.setSyncData(new ApprovalVO(rs));
-		this.addOption(opt);
+		if (isKeystone || StringUtil.checkVal(StringUtil.checkVal(db.getStringVal("WC_SYNC_STATUS_CD", rs))).length() == 0)
+			this.addOption(opt);
 	}
 	
 	

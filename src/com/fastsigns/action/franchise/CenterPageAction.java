@@ -39,7 +39,6 @@ import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
-import com.smt.sitebuilder.http.PageFilter;
 
 /****************************************************************************
  * <b>Title</b>: CenterPageAction.java <p/>
@@ -419,13 +418,15 @@ public class CenterPageAction extends SimpleActionAdapter {
 						cmVo = new CenterModuleVO(rs, isKeystone);
 						
 					} else {
-						CenterModuleOptionVO opt = new CenterModuleOptionVO(rs);
-						// If we are in webedit we add the sync data
-						if (isKeystone) opt.setSyncData(new ApprovalVO(rs));
-						cmVo.addOption(opt);
-						
-//						for(CenterModuleOptionVO vo : cmVo.getModuleOptions().values())
-//						log.debug(vo.getApprovalFlag());
+						if (isKeystone || StringUtil.checkVal(rs.getString("WC_SYNC_STATUS_CD")).length() == 0) {
+							CenterModuleOptionVO opt = new CenterModuleOptionVO(rs);
+							// If we are in webedit we add the sync data
+							if (isKeystone) opt.setSyncData(new ApprovalVO(rs));
+							cmVo.addOption(opt);
+							
+	//						for(CenterModuleOptionVO vo : cmVo.getModuleOptions().values())
+	//						log.debug(vo.getApprovalFlag());
+						}
 					}
 					
 					lastLocnId = rs.getInt("cp_location_id");
@@ -568,7 +569,7 @@ public class CenterPageAction extends SimpleActionAdapter {
 		s.append("left outer join ").append(customDb).append("FTS_CP_MODULE_DISPLAY h ");
 		s.append("on a.FTS_CP_MODULE_DISPLAY_ID = h.FTS_CP_MODULE_DISPLAY_ID ");
 		s.append("left join WC_SYNC ws on (CAST(c.CP_MODULE_OPTION_ID AS NVARCHAR(32)) =  WC_KEY_ID or ");
-		s.append("(CAST(c.PARENT_ID AS NVARCHAR(32)) =  WC_ORIG_KEY_ID and WC_ORIG_KEY_ID != '0')) and WC_SYNC_STATUS_CD not in (?,?) ");
+		s.append("(CAST(c.PARENT_ID AS NVARCHAR(32)) =  WC_ORIG_KEY_ID and WC_ORIG_KEY_ID != '0' and WC_ORIG_KEY_ID is not null)) and WC_SYNC_STATUS_CD not in (?,?) ");
 		s.append("where a.FRANCHISE_ID = ? "); 
 		
 		if(isMobile) {
