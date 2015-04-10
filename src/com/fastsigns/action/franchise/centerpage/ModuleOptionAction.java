@@ -501,7 +501,7 @@ public class ModuleOptionAction extends SBActionAdapter{
 		CenterModuleOptionVO vo = new CenterModuleOptionVO(req);
 		boolean isInsert = false;
 		// Determine if this is an omnipresent global asset.  These are treated differently from normal assets
-		boolean globalAsset = "g".equals(req.getParameter("globalFlg"));
+		String globalAsset = StringUtil.checkVal(req.getParameter("globalFlg"));
 		
 		//if the user is not a global admin, and this is an update to an existing module,
 		//treat it as a NEW module.  This behavior will ensure the module gets approved
@@ -516,9 +516,9 @@ public class ModuleOptionAction extends SBActionAdapter{
 		//}
 			
 
-		if (globalAsset) {
+		if ("g".equals(globalAsset)) {
 			vo.setFranchiseId(-1);
-		} else {
+		} else if (!"y".equals(globalAsset)){
 			vo.setFranchiseId(franchiseId);
 		}
 		
@@ -565,7 +565,7 @@ public class ModuleOptionAction extends SBActionAdapter{
 			}
 			if (isInsert) {
 				 ps.setInt(++i, vo.getModuleTypeId()); 
-				 if (globalAsset) {
+				 if ("g".equals(globalAsset)) {
 					 ps.setInt(++i, 100);
 				 } else {
 					 ps.setInt(++i, vo.getApprovalFlag());
@@ -576,7 +576,8 @@ public class ModuleOptionAction extends SBActionAdapter{
 			ps.setInt(++i, vo.getModuleOptionId());
 			ps.executeUpdate();
 			
-			if (isInsert)
+			// Only create a sync entry if this is an insert for a non-global asset
+			if (isInsert && !"y".equals(globalAsset))
 				buildSyncEntry(req, vo);
 			
 		} finally {
@@ -598,7 +599,8 @@ public class ModuleOptionAction extends SBActionAdapter{
 		WebeditType approvalType = WebeditType.CenterModule;
 
 		approval.setWcKeyId(StringUtil.checkVal(vo.getModuleOptionId()));
-		approval.setOrigWcKeyId(StringUtil.checkVal(vo.getParentId()));
+		//Only set this if we actually have a valid parent id
+		if (vo.getParentId() != 0)approval.setOrigWcKeyId(StringUtil.checkVal(vo.getParentId()));
 		approval.setItemDesc(approvalType.toString());
 		approval.setItemName(vo.getOptionName());
 		approval.setModuleType(ModuleType.Webedit);
