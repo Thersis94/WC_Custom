@@ -79,6 +79,8 @@ public class WebeditApprover extends AbstractApprover {
 				case CenterModule:
 					app = new CenterPageModuleApprover(dbConn, getAttributes());
 					app.approve(vo);
+					if (vo.getParentId() != null)
+						cache.clearCacheByGroup(vo.getParentId()+"_7");
 					break;
 				case Career:
 					// Any edits made to a job immediately remove it from the site and change the master record
@@ -86,6 +88,7 @@ public class WebeditApprover extends AbstractApprover {
 					// approval status and only needs to be updated to approved when it reaches this point.
 					vo.setSyncCompleteDt(Convert.getCurrentTimestamp());
 					vo.setSyncStatus(SyncStatus.Approved);
+					cache.clearCacheByGroup(vo.getOrganizationId().substring(0, vo.getOrganizationId().lastIndexOf('_'))+"_7");
 					break;
 			}
 			cache.clearCacheByGroup(vo.getOrganizationId()+"_1");
@@ -199,9 +202,11 @@ public class WebeditApprover extends AbstractApprover {
 			StringBuilder body = new StringBuilder(250);
 			body.append("A request to change the  ").append(WebeditType.valueOf(app.getItemDesc()).getLabel());
 			body.append(" for FASTSIGNS Location ").append(app.getOrganizationId().substring(app.getOrganizationId().lastIndexOf('_')+1));
-			body.append(" has been submitted.\nPlease log in to ");
-			String htmlEnd = "<a href='http://"+siteAlias+"/webedit'>webedit</a> to review and approve this change";
-			String textEnd = "webedit to review and approve this change";
+			body.append(" has been submitted by ");
+			body.append("");
+			String htmlEnd = "<a href='mailTo:"+app.getUserDataVO().getEmailAddress()+"'>"+app.getUserDataVO().getEmailAddress()+
+					"</a>.\nPlease log in to <a href='http://"+siteAlias+"/webedit'>webedit</a> to review and approve this change";
+			String textEnd = app.getUserDataVO().getEmailAddress()+".\nPlease log in to webedit to review and approve this change";
 			
 			msg.setHtmlBody(body.toString() + htmlEnd);
 			msg.setTextBody(body.toString() + textEnd);
