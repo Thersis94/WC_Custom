@@ -131,6 +131,8 @@ public class CenterModuleOptionVO implements Serializable, Approvable {
 		moduleOptionId = Convert.formatInteger(req.getParameter("moduleOptionId"));
 		parentId = Convert.formatInteger(req.getParameter("parentId"), 0);
 		moduleTypeId = Convert.formatInteger(req.getParameter("moduleTypeId"));
+		if (moduleTypeId == null) 
+			moduleTypeId = Convert.formatInteger(req.getParameter("modTypeId"));
 		optionName = req.getParameter("optionName");
 		optionDesc = req.getParameter("optionDesc");
 		linkUrl = req.getParameter("linkUrl");
