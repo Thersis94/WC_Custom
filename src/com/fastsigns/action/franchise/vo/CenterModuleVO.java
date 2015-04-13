@@ -98,6 +98,10 @@ public class CenterModuleVO implements Serializable {
 		Integer optId = cmvo.getParentId();
 		if (optId == null || optId == 0) optId = cmvo.getModuleOptionId();
 		
+		// Check if we still don't have an id for this option vo
+		// If we still have nothing we return because this option vo is useless
+		if (optId == null || optId == 0) return;
+		
 		if (isKeystone) {
 			//determine if the one we already have is newer than the one we're getting
 			CenterModuleOptionVO v = moduleOptions.get(optId);

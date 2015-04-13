@@ -579,8 +579,8 @@ public class ModuleOptionAction extends SBActionAdapter{
 			ps.executeUpdate();
 			
 			// Only create a sync entry if this is an insert for a non-global asset
-			if (isInsert && !"y".equals(globalAsset))
-				buildSyncEntry(req, vo);
+			if (isInsert)
+				buildSyncEntry(req, vo, globalAsset);
 			
 		} finally {
 			try { ps.close(); } catch (Exception e) {}
@@ -595,10 +595,11 @@ public class ModuleOptionAction extends SBActionAdapter{
 	 * @param req
 	 * @param approvalType
 	 */
-	private void buildSyncEntry(SMTServletRequest req, CenterModuleOptionVO vo) {
+	private void buildSyncEntry(SMTServletRequest req, CenterModuleOptionVO vo, String globalAsset) {
 		ApprovalController controller = new ApprovalController(dbConn, getAttributes());
 		ApprovalVO approval = new ApprovalVO();
 		WebeditType approvalType = WebeditType.CenterModule;
+		String orgId = ((SiteVO)req.getAttribute("siteData")).getOrganizationId();
 
 		approval.setWcKeyId(StringUtil.checkVal(vo.getModuleOptionId()));
 		//Only set this if we actually have a valid parent id
@@ -606,17 +607,21 @@ public class ModuleOptionAction extends SBActionAdapter{
 		approval.setItemDesc(approvalType.toString());
 		approval.setItemName(vo.getOptionName());
 		approval.setModuleType(ModuleType.Webedit);
-		if (vo.getFranchiseId() == -1) {
+		if ("g".equals(globalAsset)) {
 			approval.setSyncStatus(vo.getParentId() == 0? SyncStatus.PendingCreate : SyncStatus.PendingUpdate );
 		} else {
 			approval.setSyncStatus(SyncStatus.InProgress);
 		}
 		approval.setSyncTransaction(SyncTransaction.Create);
-		if (vo.getFranchiseId() == null || vo.getFranchiseId() == -1) {
-			approval.setOrganizationId(((SiteVO)req.getAttribute("siteData")).getOrganizationId());
+		if (!"n".equals(globalAsset)) {
+			approval.setOrganizationId(orgId);
 		} else {
-			approval.setOrganizationId(((SiteVO)req.getAttribute("siteData")).getOrganizationId()+"_"+vo.getFranchiseId());
+			approval.setOrganizationId(orgId+"_"+vo.getFranchiseId());
 		}
+		if (vo.getModuleTypeId() == 2) {
+			approval.setParentId(orgId);
+		}
+		
 		approval.setUserDataVo((UserDataVO) req.getSession().getAttribute(Constants.USER_DATA));
 		approval.setCreateDt(Convert.getCurrentTimestamp());
 		
