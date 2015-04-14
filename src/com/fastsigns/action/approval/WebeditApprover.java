@@ -110,13 +110,16 @@ public class WebeditApprover extends AbstractApprover {
 	 * @param app
 	 */
 	private void buildSiteList(List<String> sites, ApprovalVO app) {
+		boolean addGlobal = false;
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql =new StringBuilder(180);
 		
-		sql.append("SELECT FRANCHISE_ID FROM ").append(customDb).append("FTS_CP_MODULE_FRANCHISE_XR mfx ");
+		sql.append("SELECT f.FRANCHISE_ID, mo.FRANCHIS_ID FROM ").append(customDb).append("FTS_CP_MODULE_FRANCHISE_XR mfx ");
 		sql.append("left join ").append(customDb).append("FTS_CP_LOCATION_MODULE_XR lmx ");
 		sql.append("on lmx.CP_LOCATION_MODULE_XR_ID = mfx.CP_LOCATION_MODULE_XR_ID ");
-		sql.append("WHERE mfx.CP_MODULE_OPTION_ID in (?,?) ");
+		sql.append("left join ").append(customDb).append("FTS_CP_MODULE_OPTION mo ");
+		sql.append("on mo.CP_MODULE_OPTION_ID mfx.CP_MODULE_OPTION_ID ");
+		sql.append("WHERE mfx.CP_MODULE_OPTION_ID in (?,?) OR ");
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, app.getWcKeyId());
@@ -132,9 +135,40 @@ public class WebeditApprover extends AbstractApprover {
 				
 				if (!sites.contains(mobile))
 					sites.add(mobile);
+				if (rs.getInt(2) == -1)
+					addGlobal = true;
 			}
 		} catch (SQLException e) {
-			log.warn("Unable to get franchises that use this center module.", e);
+			log.error("Unable to get franchises that use this center module.", e);
+		}
+		
+		if (addGlobal)
+			addGlobalSites(sites);
+	}
+
+	/**
+	 * Get all franchises that use omnipresent global modules assets
+	 * @param sites
+	 */
+	private void addGlobalSites(List<String> sites) {
+		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(110);
+		sql.append("SELECT FRANCHISE_ID FROM ").append(customDb).append("FTS_FRANCHISE ");
+		sql.append("WHERE USE_GLOBAL_MODULES_FLG = 1");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				String desktop = "FTS_" + rs.getString(1) + "_1";
+				String mobile = "FTS_" + rs.getString(1) + "_2";
+				if (!sites.contains(desktop))
+					sites.add(desktop);
+				
+				if (!sites.contains(mobile))
+					sites.add(mobile);
+			}
+		} catch(SQLException e) {
+			log.error("Unable to get list of franchises that use omnipresent global assets.", e);
 		}
 	}
 
