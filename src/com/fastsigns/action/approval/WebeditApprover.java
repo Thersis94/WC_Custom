@@ -20,6 +20,7 @@ import com.smt.sitebuilder.approval.ApprovalController.SyncStatus;
 import com.smt.sitebuilder.approval.ApprovalException;
 import com.smt.sitebuilder.approval.ApprovalVO;
 import com.smt.sitebuilder.approval.PageApprover;
+import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.util.CacheAdministrator;
 import com.smt.sitebuilder.util.MessageSender;
 
@@ -62,6 +63,10 @@ public class WebeditApprover extends AbstractApprover {
 		
 		AbstractApprover app = null;
 		for (ApprovalVO vo : approvables) {
+			List<String> sites = new ArrayList<>();
+			sites.add(vo.getOrganizationId()+"_1");
+			sites.add(vo.getOrganizationId()+"_2");
+			
 			
 			switch(WebeditType.valueOf(vo.getItemDesc())) {
 				case CenterPage:
@@ -80,24 +85,93 @@ public class WebeditApprover extends AbstractApprover {
 					app = new CenterPageModuleApprover(dbConn, getAttributes());
 					app.approve(vo);
 					if (vo.getParentId() != null)
-						cache.clearCacheByGroup(vo.getParentId()+"_7");
+						sites.add(vo.getParentId()+"_7");
+					buildSiteList(sites, vo);
 					break;
 				case Career:
 					// Any edits made to a job immediately remove it from the site and change the master record
-					// and all delets bypass approval.  Furthermore the wc_sync table handles the entirety of the
+					// and all deletes bypass approval.  Furthermore the wc_sync table handles the entirety of the
 					// approval status and only needs to be updated to approved when it reaches this point.
 					vo.setSyncCompleteDt(Convert.getCurrentTimestamp());
 					vo.setSyncStatus(SyncStatus.Approved);
 					cache.clearCacheByGroup(vo.getOrganizationId().substring(0, vo.getOrganizationId().lastIndexOf('_'))+"_7");
 					break;
 			}
-			cache.clearCacheByGroup(vo.getOrganizationId()+"_1");
+			
+			cache.clearCacheByGroup(sites.toArray(new String[sites.size()]));
 		}
 		
 		prepareEmails(approvables);
 	}
 	
-	
+	/**
+	 * Get all franchises that are using a particular module asset so that they can have their cache cleared.
+	 * @param sites
+	 * @param app
+	 */
+	private void buildSiteList(List<String> sites, ApprovalVO app) {
+		boolean addGlobal = false;
+		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql =new StringBuilder(180);
+		
+		sql.append("SELECT f.FRANCHISE_ID, mo.FRANCHIS_ID FROM ").append(customDb).append("FTS_CP_MODULE_FRANCHISE_XR mfx ");
+		sql.append("left join ").append(customDb).append("FTS_CP_LOCATION_MODULE_XR lmx ");
+		sql.append("on lmx.CP_LOCATION_MODULE_XR_ID = mfx.CP_LOCATION_MODULE_XR_ID ");
+		sql.append("left join ").append(customDb).append("FTS_CP_MODULE_OPTION mo ");
+		sql.append("on mo.CP_MODULE_OPTION_ID mfx.CP_MODULE_OPTION_ID ");
+		sql.append("WHERE mfx.CP_MODULE_OPTION_ID in (?,?) OR ");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, app.getWcKeyId());
+			ps.setString(2, app.getOrigWcKeyId());
+			
+			ResultSet rs = ps.executeQuery();
+			
+			while (rs.next()) {
+				String desktop = "FTS_" + rs.getString(1) + "_1";
+				String mobile = "FTS_" + rs.getString(1) + "_2";
+				if (!sites.contains(desktop))
+					sites.add(desktop);
+				
+				if (!sites.contains(mobile))
+					sites.add(mobile);
+				if (rs.getInt(2) == -1)
+					addGlobal = true;
+			}
+		} catch (SQLException e) {
+			log.error("Unable to get franchises that use this center module.", e);
+		}
+		
+		if (addGlobal)
+			addGlobalSites(sites);
+	}
+
+	/**
+	 * Get all franchises that use omnipresent global modules assets
+	 * @param sites
+	 */
+	private void addGlobalSites(List<String> sites) {
+		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(110);
+		sql.append("SELECT FRANCHISE_ID FROM ").append(customDb).append("FTS_FRANCHISE ");
+		sql.append("WHERE USE_GLOBAL_MODULES_FLG = 1");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				String desktop = "FTS_" + rs.getString(1) + "_1";
+				String mobile = "FTS_" + rs.getString(1) + "_2";
+				if (!sites.contains(desktop))
+					sites.add(desktop);
+				
+				if (!sites.contains(mobile))
+					sites.add(mobile);
+			}
+		} catch(SQLException e) {
+			log.error("Unable to get list of franchises that use omnipresent global assets.", e);
+		}
+	}
+
 	/**
 	 * Prepare the Success emails 
 	 */
