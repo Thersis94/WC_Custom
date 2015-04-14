@@ -283,20 +283,35 @@ public class FranchisePageAction extends SBActionAdapter {
 				}
 			}
 		} catch (ApprovalException e) {
-			e.printStackTrace();
+			log.error("Unable to get submit items for approval", e);
 		}
 		
 	}
 
 	/**
 	 * Get the approval vos for the content and page that are being submitted
+	 * This also supports mass submissions from the submit all button
 	 */
 	private List<ApprovalVO> getApprovalVOs(SMTServletRequest req) throws ApprovalException {
-		String sql = "SELECT * FROM WC_SYNC WHERE WC_SYNC_ID in (?,?)";
+		String[] pages = StringUtil.checkVal(req.getParameter("pagesToSubmit")).split(",");
+		String[] modules = StringUtil.checkVal(req.getParameter("modulesToSubmit")).split(",");
+		StringBuilder sql = new StringBuilder(60);
+		sql.append("SELECT * FROM WC_SYNC WHERE WC_SYNC_ID in (?,?");
+		for(String page : pages) 
+			if (!"0".equals(page)) sql.append(",?");
+		for(String module : modules) 
+			if (!"0".equals(module)) sql.append(",?");
+		sql.append(")");
+			
 		List<ApprovalVO> approvals = new ArrayList<>();
-		try (PreparedStatement ps = dbConn.prepareStatement(sql)){
-			ps.setString(1, req.getParameter("moduleSyncId"));
-			ps.setString(2, req.getParameter("pageSyncId"));
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())){
+			int i = 1;
+			ps.setString(i++, req.getParameter("moduleSyncId"));
+			ps.setString(i++, req.getParameter("pageSyncId"));
+			for(String page : pages) 
+				if (!"0".equals(page)) ps.setString(i++, page);
+			for(String module : modules) 
+				if (!"0".equals(module)) ps.setString(i++, module);
 			
 			ResultSet rs = ps.executeQuery();
 			
