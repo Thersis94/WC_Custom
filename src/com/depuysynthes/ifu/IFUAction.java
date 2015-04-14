@@ -267,6 +267,7 @@ public class IFUAction  extends SBActionAdapter {
 			Map<String, String> groupId = new HashMap<>();
 			groupId.put("", oldIFU);
 			replaceVals.put("DEPUY_IFU_GROUP_ID", groupId);
+			replaceVals.put("CREATE_DT", Convert.getCurrentTimestamp());
 			
 			RecordDuplicatorUtility rdu = new RecordDuplicatorUtility(attributes, dbConn, customDb + "DEPUY_IFU", "DEPUY_IFU_ID", true);
 			rdu.addWhereClause("DEPUY_IFU_ID", oldIFU);
