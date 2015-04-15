@@ -41,7 +41,7 @@ import com.smt.sitebuilder.search.SearchDocumentHandler;
  * @since Sep 24, 2014
  ****************************************************************************/
 public class SolrSearchWrapper extends SimpleActionAdapter {
-	
+
 	protected static final String PAGEVIEWS = "PAGEVIEWS";
 	protected static final String FAVORITES = MyFavoritesAction.MY_FAVORITES;
 	private static final int RPP = 48; //DSI #results per page, could be moved to attribute2Text if needed to be configurable
@@ -55,11 +55,11 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 	public SolrSearchWrapper(ActionInitVO arg0) {
 		super(arg0);
 	}
-	
+
 	public void list(SMTServletRequest req) throws ActionException {
 		super.retrieve(req);
 	}
-	
+
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		//determine if custom sort is needed
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
@@ -68,35 +68,35 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 		boolean isFeatItem = StringUtil.checkVal(req.getParameter("fmid")).equals(mod.getPageModuleId());
 		if (!isFeatItem && req.hasParameter("pmid"))
 			isFeatItem = req.getParameter("pmid").equals(mod.getPageModuleId()) && StringUtil.checkVal(mod.getParamName()).length() == 0;
-		
+
 		//log.debug("isFocused=" + isFeatItem);
 		//log.debug("isCustomSort=" + doCustomSort);
-		
+
 		//reset sortOrder or Solr will bomb (unknown sortType)
 		if (isFeatItem && doCustomSort) {
 			req.setParameter("fieldSort", "documentId");
 			req.setParameter("rpp", "3000");
 			req.setParameter("page", "0");
 		}
-		
+
 		//call SolrAction 
 		actionInit.setActionId((String)mod.getAttribute(SBModuleVO.ATTRIBUTE_1));
 		SolrAction sa = new SolrAction(actionInit);
 		sa.setAttributes(attributes);
 		sa.setDBConnection(dbConn);
 		sa.retrieve(req);
-			
+
 		//get the response object back from SolrAction
 		mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		SolrResponseVO solrResp = (SolrResponseVO) mod.getActionData();
 		if (solrResp == null || solrResp.getTotalResponses() == 0) return;
-		
+
 		if (solrResp.getTotalResponses() == 1 && req.hasParameter("reqParam_1"))
 			applyPageData(solrResp.getResultDocuments().get(0), req);
-		
+
 		//if not custom sort, we're done
 		if (!isFeatItem || !doCustomSort) return;
-				
+
 		//call the proper sort method
 		Integer pageNo = Convert.formatInteger(req.getParameter("page"));
 		if ("popular".equals(sortType)) {
@@ -104,13 +104,13 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 		} else if ("favorites".equals(sortType)) {
 			sortByFavorite(solrResp, req, pageNo);
 		}
-		
+
 		//put the proper 'page' of results back into the SolrResponse to forward on to the View.
 		req.setParameter("fieldSort", sortType);
 		super.putModuleData(solrResp);
 	}
-	
-	
+
+
 	/**
 	 * If we're looking at a single asset (in detail), the URL is a /qs/.  We should
 	 * override the page's meta data and title with those of the asset.
@@ -123,8 +123,8 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 		//set a canonical that points to the first proclaimed hierarchy level
 		page.setCanonicalPageUrl(this.buildDSIUrl(doc));
 	}
-	
-	
+
+
 	/**
 	 * updates each SolrDocument to include a favorites indicator (1/0), then invokes a 
 	 * Comparator to sort the List.
@@ -135,7 +135,7 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 	private void sortByFavorite(SolrResponseVO resp, SMTServletRequest req, Integer pageNo) 
 			throws ActionException {
 		Collection<String> favs = loadFavorites(req);
-		
+
 		///iterate the solr results and encapsulate each SolrDocument with the extra fields we need for the Comparator
 		List<SolrDocument> docs = new ArrayList<SolrDocument>(Long.valueOf(resp.getTotalResponses()).intValue());
 		for (SolrDocument sd : resp.getResultDocuments()) {
@@ -143,13 +143,13 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 			sd.setField(FAVORITES, (favs.contains(docId)) ? 0 : 5); //use zero for 'like', because the compatator will put lowest #s first
 			docs.add(sd);
 		}
-		
+
 		//sort the Collection
 		Collections.sort(docs, new SolrFavoritesComparator());
 		resp.setResultDocuments(docs, pageNo, RPP);
 	}
-	
-	
+
+
 	/**
 	 * updates each SolrDocument to include a pageview count, then invokes a 
 	 * Comparator to sort the List.
@@ -163,7 +163,7 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		String baseUrl = ("/search".equals(page.getFullPath())) ? null : page.getFullPath() + "/" + attributes.get(Constants.QS_PATH) ;
 		log.debug("base=" + baseUrl);
-		
+
 		///iterate the solr results and encapsulate each SolrDocument with the extra fields we need for the Comparator
 		List<SolrDocument> docs = new ArrayList<SolrDocument>(Long.valueOf(resp.getTotalResponses()).intValue());
 		for (SolrDocument sd : resp.getResultDocuments()) {
@@ -176,12 +176,12 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 			sd.setField(PAGEVIEWS, (favs.containsKey(url)) ? favs.get(url) : 0);
 			docs.add(sd);
 		}
-		
+
 		//sort the Collection
 		Collections.sort(docs, new SolrPageviewComparator());
 		resp.setResultDocuments(docs, pageNo, RPP);
 	}
-	
+
 	/**
 	 * loads the user's favorites and stores them in session for next time 
 	 * (since the user is interested in this type of sort).
@@ -190,28 +190,28 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 	private Collection<String> loadFavorites(SMTServletRequest req) throws ActionException {
 		if (req.getSession().getAttribute(FAVORITES) != null)
 			return (List<String>) req.getSession().getAttribute(FAVORITES);
-		
+
 		FavoritesAction fa = new FavoritesAction(actionInit);
 		fa.setDBConnection(dbConn);
 		fa.setAttributes(attributes);
 		fa.retrieve(req);
-		
+
 		//get the loaded data off ModuleVO
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		List<FavoriteVO> favs = (List<FavoriteVO>) mod.getActionData();
-		
+
 		//turn the map into one keyed using IDs, so we don't have to parse it every time.
 		//for DSI, any URL containing /qs/ is proceeded by the Solr documentId, which is convenient.  :)
 		List<String> data = new ArrayList<String>(favs.size());
 		for (FavoriteVO vo : favs)
 			if (vo.getRelId() != null) data.add(vo.getRelId());
-		
+
 		//save the favs for next time
 		req.getSession().setAttribute(FAVORITES, data);
 		return data;
 	}
-	
-	
+
+
 	/**
 	 * loads the pageview hits for mediabin assets and returns them for sorting use.
 	 * @param req
@@ -223,17 +223,17 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 		//check for cached data
 		if (req.getSession().getAttribute(PAGEVIEWS) != null)
 			return (Map<String, Integer>) req.getSession().getAttribute(PAGEVIEWS);
-		
+
 		//call the action and load the stats for this website
 		PageViewReportingAction pvra = new PageViewReportingAction(actionInit);
 		pvra.setDBConnection(dbConn);
 		pvra.setAttributes(attributes);
 		pvra.retrieve(req);
-		
+
 		//get the loaded data off ModuleVO
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		Map<String, StatVO> stats = (Map<String, StatVO>) mod.getActionData();
-		
+
 		//turn the map into one keyed using IDs, so we don't have to parse it every time.
 		//for DSI, any URL containing /qs/ is proceeded by the Solr documentId, which is convenient.  :)
 		Map<String, Integer> data = new HashMap<String, Integer>(stats.size());
@@ -244,53 +244,54 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 				data.put(key, vo.getHitCnt());
 			}
 		}
-		
+
 		//save the favs for next time
 		req.getSession().setAttribute(PAGEVIEWS, data);
 		return data;
 	} 
-	
-	
+
+
 	/**
-	     * take the first hierachy definition and turn it into a dsi-business-rules-applied URL string
-	     * This method is also used by the DePuySiteMapServlet
-	     * @param sd
-	     * @return
-	     */
-//TODO there is a bug in here - test once SMT-CMS is integrated
-	    public String buildDSIUrl(SolrDocument sd) {
-		    String hierarchy = "";
-		    try {
-			    hierarchy= StringUtil.checkVal(sd.getFieldValues(SearchDocumentHandler.HIERARCHY).iterator().next());
-		    } catch (Exception e) {};
+	 * take the first hierachy definition and turn it into a dsi-business-rules-applied URL string
+	 * This method is also used by the DePuySiteMapServlet
+	 * @param sd
+	 * @return
+	 */
+	public String buildDSIUrl(SolrDocument sd) {
+		String hierarchy = "";
+		try {
+			hierarchy= StringUtil.checkVal(sd.getFieldValues(SearchDocumentHandler.HIERARCHY).iterator().next());
+		} catch (Exception e) {};
 
-		    //log.debug(hierarchy);
-		    if (hierarchy == null || hierarchy.length() == 0) return null;
-		    
-		    String rootLvl = (hierarchy.indexOf("~") > 0) ? hierarchy.substring(0, hierarchy.indexOf("~")) : hierarchy;
-		    rootLvl = StringUtil.checkVal(rootLvl).toLowerCase();
-		    if ("vet".equals(rootLvl)) {
-			    int tildeIndx = rootLvl.length() +1;
-			    if (hierarchy.length() > tildeIndx) rootLvl = hierarchy.substring(tildeIndx, hierarchy.indexOf("~", tildeIndx));
-			    rootLvl = StringUtil.checkVal(rootLvl).toLowerCase();
+		//log.debug(hierarchy);
+		if (hierarchy == null || hierarchy.length() == 0) return null;
 
-			    rootLvl = "veterinary/" + rootLvl;
-			    //log.debug(rootLvl);
-		    }
+		String rootLvl = (hierarchy.indexOf("~") > 0) ? hierarchy.substring(0, hierarchy.indexOf("~")) : hierarchy;
+		rootLvl = StringUtil.checkVal(rootLvl).toLowerCase();
+		if ("vet".equals(rootLvl)) {
+			int tildeIndx = rootLvl.length() +1;
+			int nextDelim = hierarchy.indexOf("~", tildeIndx);
+			if (nextDelim < 0) nextDelim = hierarchy.length(); //if there isn't more than 1 level use the length as the endpoint.
+			if (hierarchy.length() > tildeIndx) rootLvl = hierarchy.substring(tildeIndx, nextDelim);
+			rootLvl = StringUtil.checkVal(rootLvl).toLowerCase();
 
-		    //remove ampersands and replace spaces
-		    rootLvl = StringUtil.replace(rootLvl, "& ", "");
-		    rootLvl = StringUtil.replace(rootLvl, " ", "-");
+			rootLvl = "veterinary/" + rootLvl;
+			//log.debug(rootLvl);
+		}
 
-		    if ("nurse-education".equals(rootLvl))
-			    rootLvl = "nurse-education/resource-library";
+		//remove ampersands and replace spaces
+		rootLvl = StringUtil.replace(rootLvl, "& ", "");
+		rootLvl = StringUtil.replace(rootLvl, " ", "-");
 
-		    //log.debug(rootLvl);
-		    hierarchy = rootLvl;
+		if ("nurse-education".equals(rootLvl))
+			rootLvl = "nurse-education/resource-library";
 
-		    //assemble & return the URL
-		    if (hierarchy == null || hierarchy.length() == 0) return null;
-		    return "/" + hierarchy + "/" + attributes.get(Constants.QS_PATH) + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
-	    }
+		//log.debug(rootLvl);
+		hierarchy = rootLvl;
+
+		//assemble & return the URL
+		if (hierarchy == null || hierarchy.length() == 0) return null;
+		return "/" + hierarchy + "/" + attributes.get(Constants.QS_PATH) + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
+	}
 
 }
