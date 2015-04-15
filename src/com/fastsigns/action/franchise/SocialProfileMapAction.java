@@ -158,8 +158,11 @@ public class SocialProfileMapAction extends ProfileMapAction {
 		}
 		
 		StringBuilder sql = new StringBuilder(80);
-		//Only one graph per center, so orgId+modtype is fine
-		sql.append("delete from SB_ACTION where ORGANIZATION_ID = ? and MODULE_TYPE_ID = ? ");
+		sql.append("delete from SB_ACTION where ACTION_ID in ( ");
+		sql.append("select sb.ACTION_ID from SB_ACTION sb ");
+		sql.append("inner join PAGE_MODULE pm on sb.ACTION_ID=pm.ACTION_ID ");
+		sql.append("inner join PAGE p on p.PAGE_ID=pm.PAGE_ID ");
+		sql.append("where p.SITE_ID=? and sb.MODULE_TYPE_ID = ? )");
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())){
 			removeModuleRoles(foId);
@@ -167,7 +170,7 @@ public class SocialProfileMapAction extends ProfileMapAction {
 			
 			int i = 0;
 			log.debug(sql.toString()+" | "+foId+" | "+MODULE_NAME);
-			ps.setString(++i, foId);
+			ps.setString(++i, foId+"_1");
 			ps.setString(++i, MODULE_NAME);
 			int affected = ps.executeUpdate();
 			log.debug(affected+" record(s) removed.");
