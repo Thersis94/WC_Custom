@@ -269,10 +269,11 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 		String rootLvl = (hierarchy.indexOf("~") > 0) ? hierarchy.substring(0, hierarchy.indexOf("~")) : hierarchy;
 		rootLvl = StringUtil.checkVal(rootLvl).toLowerCase();
 		if ("vet".equals(rootLvl)) {
+			//vet hierarchies start at level 2, indent and find the rootLvl (at the second level)
 			int tildeIndx = rootLvl.length() +1;
 			int nextDelim = hierarchy.indexOf("~", tildeIndx);
-			if (nextDelim < 0) nextDelim = hierarchy.length(); //if there isn't more than 1 level use the length as the endpoint.
-			if (hierarchy.length() > tildeIndx) rootLvl = hierarchy.substring(tildeIndx, nextDelim);
+			if (nextDelim == -1) nextDelim = hierarchy.length(); //if there isn't more than 1 level use the length as the endpoint.
+			if (nextDelim > tildeIndx) rootLvl = hierarchy.substring(tildeIndx, nextDelim); //if we have a next level, capture it as the new root.
 			rootLvl = StringUtil.checkVal(rootLvl).toLowerCase();
 
 			rootLvl = "veterinary/" + rootLvl;
