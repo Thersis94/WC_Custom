@@ -598,4 +598,20 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 		if (actionItems == null) actionItems = new HashSet<>();
 		actionItems.add(actionItem);
 	}
+	
+	public boolean isMitekSeminar() {
+		String typeCd = "";
+		try {
+			typeCd = super.getEvents().get(0).getEventTypeCd();
+		} catch (Exception e) {}
+		return typeCd.startsWith("MITEK-");
+	}
+	
+	public boolean isHospitalSponsored() {
+		String typeCd = "";
+		try {
+			typeCd = super.getEvents().get(0).getEventTypeCd();
+		} catch (Exception e) {}
+		return typeCd.equals("HSEM");
+	}
 }

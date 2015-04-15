@@ -83,7 +83,7 @@ public class MapDataAction extends SimpleActionAdapter {
 		try {
 			// Get the point coordinates
 			data.put("coordinates", getPointData(gl, req.getParameter("joint_cd"), start,
-					Convert.formatDouble( req.getParameter("distance") ) ));
+					Convert.formatDouble( req.getParameter("distance")), req.hasParameter("source") ));
 		} catch (SQLException sqle) {
 			log.error("Unable to retrieve point data", sqle);
 		}
@@ -99,7 +99,7 @@ public class MapDataAction extends SimpleActionAdapter {
 	 * @param zipCode
 	 * @return
 	 */
-	public GeocodeLocation getGeocode(String city, String state, String address, String zipCode){
+	public GeocodeLocation getGeocode(String city, String state, String address, String zipCode) {
 		// Initialize the geocoder
 		String geocodeClass = (String) this.getAttribute(GlobalConfig.GEOCODER_CLASS);
 		AbstractGeocoder ag = GeocodeFactory.getInstance(geocodeClass);
@@ -124,7 +124,7 @@ public class MapDataAction extends SimpleActionAdapter {
 	 * queries the database and retrieves a collection of lat/longs
 	 * @return
 	 */
-	private List<Double[]> getPointData(GeocodeLocation gl, String joint, Date startDate, Double meterRadius) 
+	private List<Double[]> getPointData(GeocodeLocation gl, String joint, Date startDate, Double meterRadius, boolean isMitek) 
 	throws SQLException {
 		// Get the earths mean radius and search radius (in Kilometers)
 		double radius = meterRadius/1000.0;
@@ -136,8 +136,9 @@ public class MapDataAction extends SimpleActionAdapter {
 		//Build the SQL Statement
 		List<Double[]> pointData = new ArrayList<Double[]>();
 		StringBuffer sql = new StringBuffer();
-		sql.append("select latitude_no, longitude_no from DEPUY_SEMINARS_VIEW ");
-		sql.append("where acos(sin(?) * sin(latitude_no) + cos(?) * cos(latitude_no) * cos(longitude_no - ?)) <= ? ");
+		sql.append("select latitude_no, longitude_no from ");
+		sql.append((isMitek) ? "MITEK_SEMINARS_VIEW" : "DEPUY_SEMINARS_VIEW");
+		sql.append(" where acos(sin(?) * sin(latitude_no) + cos(?) * cos(latitude_no) * cos(longitude_no - ?)) <= ? ");
 		if (startDate != null) sql.append("and attempt_dt > ? ");
 		sql.append("and product_cd = ? ");
 		sql.append("and (latitude_no  between ? and ?)  and (longitude_no between ? and ?)");
@@ -145,22 +146,23 @@ public class MapDataAction extends SimpleActionAdapter {
 		
 		// Add the parameters
 		int ctr = 1;
-		PreparedStatement ps = dbConn.prepareStatement(sql.toString());
-		ps.setDouble(ctr++, points.getLatitudeInRadians());
-		ps.setDouble(ctr++, points.getLatitudeInRadians());
-		ps.setDouble(ctr++, points.getLongitudeInRadians());
-		ps.setDouble(ctr++, GeoLocation.EARTH_RADIUS / radius);
-		if (startDate != null) ps.setDate(ctr++, Convert.formatSQLDate(startDate));
-		ps.setString(ctr++, joint);
-		ps.setDouble(ctr++, coords.get(GeoLocation.MIN_BOUNDING_LOC).getLatitudeInDegrees());
-		ps.setDouble(ctr++, coords.get(GeoLocation.MAX_BOUNDING_LOC).getLatitudeInDegrees());
-		ps.setDouble(ctr++, coords.get(GeoLocation.MIN_BOUNDING_LOC).getLongitudeInDegrees());
-		ps.setDouble(ctr++, coords.get(GeoLocation.MAX_BOUNDING_LOC).getLongitudeInDegrees());
-		ResultSet rs = ps.executeQuery();
-		
-		// Loop the results and add the lat/long to the collection
-		while (rs.next()) {
-			pointData.add(new Double[] {rs.getDouble("latitude_no"), rs.getDouble("longitude_no")});
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setDouble(ctr++, points.getLatitudeInRadians());
+			ps.setDouble(ctr++, points.getLatitudeInRadians());
+			ps.setDouble(ctr++, points.getLongitudeInRadians());
+			ps.setDouble(ctr++, GeoLocation.EARTH_RADIUS / radius);
+			if (startDate != null) ps.setDate(ctr++, Convert.formatSQLDate(startDate));
+			ps.setString(ctr++, joint);
+			ps.setDouble(ctr++, coords.get(GeoLocation.MIN_BOUNDING_LOC).getLatitudeInDegrees());
+			ps.setDouble(ctr++, coords.get(GeoLocation.MAX_BOUNDING_LOC).getLatitudeInDegrees());
+			ps.setDouble(ctr++, coords.get(GeoLocation.MIN_BOUNDING_LOC).getLongitudeInDegrees());
+			ps.setDouble(ctr++, coords.get(GeoLocation.MAX_BOUNDING_LOC).getLongitudeInDegrees());
+			ResultSet rs = ps.executeQuery();
+			
+			// Loop the results and add the lat/long to the collection
+			while (rs.next()) {
+				pointData.add(new Double[] {rs.getDouble("latitude_no"), rs.getDouble("longitude_no")});
+			}
 		}
 		
 		log.debug("data size: " + pointData.size());

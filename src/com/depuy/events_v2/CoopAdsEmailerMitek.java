@@ -1,15 +1,14 @@
 package com.depuy.events_v2;
 
 import java.sql.Connection;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.Map;
-
-import org.apache.log4j.Logger;
 
 import com.depuy.events.vo.CoopAdVO;
 import com.depuy.events_v2.vo.ConsigneeVO;
 import com.depuy.events_v2.vo.DePuyEventSeminarVO;
+import com.depuy.events_v2.vo.PersonVO;
+import com.depuy.events_v2.vo.PersonVO.Role;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
@@ -34,33 +33,10 @@ import com.smt.sitebuilder.util.MessageSender;
  * @version 1.0
  * @since Jan 31, 2014
  ****************************************************************************/
-public class CoopAdsEmailer {
+public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 
-	protected static Logger log = null;
-	protected Map<String, Object> attributes = null;
-	protected Connection dbConn = null;
-
-
-	/**
-	 * returns an instance of PostcardEmailer, giving us abstract support for Mitek events
-	 * @param sem
-	 * @param attrs
-	 * @param conn
-	 * @return
-	 */
-	public static CoopAdsEmailer newInstance(DePuyEventSeminarVO sem, Map<String, Object> attrs, Connection conn) {
-		//test for Mitek Seminar.  If so, return the Mitek emailer instead of 'this' class
-		if (sem != null && sem.isMitekSeminar()) {
-			return new CoopAdsEmailerMitek(attrs, conn);
-		} else {
-			return new CoopAdsEmailer(attrs, conn);
-		}
-	}
-	
-	public CoopAdsEmailer(Map<String, Object> attrs, Connection conn) {
-		log = Logger.getLogger(getClass());
-		this.attributes = attrs;
-		this.dbConn = conn;
+	public CoopAdsEmailerMitek(Map<String, Object> attrs, Connection conn) {
+		super(attrs, conn);
 	}
 
 
@@ -80,13 +56,12 @@ public class CoopAdsEmailer {
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipient(site.getAdminEmail());
+			mail.addRecipient("ksmith49@its.jnj.com");
 			mail.addRecipient("amy.zimmerman@hmktgroup.com");
-			mail.addCC("rwilkin7@its.jnj.com");
-			mail.addCC("Sterling.Hoham@hmktgroup.com");
+			mail.addCC("mroderic@its.jnj.com");
+//			mail.addCC("Sterling.Hoham@hmktgroup.com");
 			mail.addCC("lisa.maiers@novusmediainc.com");
-			mail.addCC("anna.schwanz@novusmediainc.com");
-			mail.addCC("taylor.larson@novusmediainc.com");
+
 			mail.setSubject(label + " Ad #" + cnt + " declined for Seminar " + sem.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
@@ -124,8 +99,8 @@ public class CoopAdsEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(sem.getOwner().getEmailAddress());
-			mail.addCC("rwilkin7@its.jnj.com");
-			mail.addCC(site.getAdminEmail());
+			mail.addCC("mroderic@its.jnj.com");
+			mail.addCC("ksmith49@its.jnj.com");
 			mail.setSubject(((isOnline) ? "Online" : "Newspaper") + " Options - Seminar " + sem.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
@@ -149,28 +124,28 @@ public class CoopAdsEmailer {
 	 */
 	public void feedbackAdOptions(DePuyEventSeminarVO sem, SiteVO site, CoopAdVO vo) {
 		boolean isOnline = false; //Convert.formatInteger(vo.getOnlineFlg()).intValue() == 1;
-		String eventType = StringUtil.checkVal(sem.getEvents().get(0).getEventTypeCd());
-		boolean isCFSEM = ( eventType.toUpperCase().startsWith("CFSEM") );
+		//String eventType = StringUtil.checkVal(sem.getEvents().get(0).getEventTypeCd());
+		//boolean isCFSEM = ( eventType.toUpperCase().startsWith("CFSEM") );
 		
 		StringBuilder msg = new StringBuilder(500);
 		msg.append("The seminar coordinator has chosen their Newspaper Ad Options and they are listed below:\r\r\r");
 		msg.append(vo.getOptionFeedbackText()).append("\r\r\r");
 		msg.append("Harmony, please upload the chosen Newspaper Ad Details to the portal along with the final Ad Files ");
-		msg.append("and change status to \"Pending Coordinator Approval\".\r\r");
+		msg.append("and change status to \"Pending Client Approval\".\r\r");
 		msg.append("Thank You,\rEvents.DePuySynthes.com Administrator\r\r");
 
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipient("amy.zimmerman@hmktgroup.com");
-			mail.addCC(site.getAdminEmail());
-			mail.addCC("rwilkin7@its.jnj.com");
-			mail.addCC("Sterling.Hoham@hmktgroup.com");
-			if (! isCFSEM ){ //Additional recipients for DePuy Funded events
-				mail.addRecipient("lisa.maiers@novusmediainc.com");
-				mail.addCC("anna.schwanz@novusmediainc.com");
-				mail.addCC("taylor.larson@novusmediainc.com");
-			}
+			//mail.addRecipient("amy.zimmerman@hmktgroup.com");
+			mail.addCC("ksmith49@its.jnj.com");
+			mail.addCC("mroderic@its.jnj.com");
+			//mail.addCC("Sterling.Hoham@hmktgroup.com");
+			//if (! isCFSEM ){ //Additional recipients for DePuy Funded events
+				//mail.addRecipient("lisa.maiers@novusmediainc.com");
+				//mail.addCC("anna.schwanz@novusmediainc.com");
+				//mail.addCC("taylor.larson@novusmediainc.com");
+			//}
 			mail.setSubject(((isOnline) ? "Online" : "Newspaper") + " Options Confirmed - Seminar " + sem.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
@@ -206,8 +181,17 @@ public class CoopAdsEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(sem.getOwner().getEmailAddress());
-			mail.addCC("rwilkin7@its.jnj.com");
-			mail.addCC(site.getAdminEmail());
+			mail.addCC("mroderic@its.jnj.com");
+			mail.addCC("ksmith49@its.jnj.com");
+
+			for (PersonVO p : sem.getPeople()) {
+				if (! StringUtil.isValidEmail(p.getEmailAddress())) continue;
+				//Add only the sales rep
+				else if (p.getRoleCode() == Role.TGM ) {
+					mail.addCC(p.getEmailAddress());
+					break;
+				}
+			}
 			mail.setSubject(((isOnline) ? "Online" : "Newspaper") + " Ad approval required - Seminar " + sem.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
@@ -221,36 +205,26 @@ public class CoopAdsEmailer {
 		}
 	}
 
-	/**
-	 * Helper method that returns a new date, set x number of business days 
-	 * away from the current date.
-	 * @param addDaysToToday Number of days to add to the current date.
+	/* Replacing this method with one that adds business days instead of days, to avoid 
+	 * odd results (i.e. Fri 12/5/2014 + 3 business days should be Wed 12/10/2014
+	 * instead of Mon 12/8/2014.  -Wingo 12/5/14
+	 * 
+	 * simple date wrapper that adds business days to today + #days passed.
+	 * works around weekends.
+	 * @param addDaysToToday
 	 * @return
-	 */
-	protected Date addBusinessDays(int addDaysToToday) {
+	private Date addBusinessDays(int addDaysToToday) {
 		Calendar cal = Calendar.getInstance();
-		int daysToAdd = 0; //Actual applied
-        
-        //if it's the weekend right now, move to Monday
-		if ( cal.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY )
-        	cal.add(Calendar.DATE, 2);
-		else if (cal.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY)
-			cal.add(Calendar.DATE, 1);
+		cal.add(Calendar.DATE, addDaysToToday); // give them 5 days from today to approve the Ad
 		
-		//Today. Offset by 1 so that Monday is the beginning of the week instead of Sunday
-		int initial = cal.get(Calendar.DAY_OF_WEEK) - 1;
-		for ( int i = initial; i < addDaysToToday+initial; i++){ //for each day to be added
-			if ( i%5 == 0 ) //If we're adding on a Friday, increase the increment to 3, so we skip weekends
-				daysToAdd+=3;
-			else
-				daysToAdd++;
-			}
-
-		//increment Calendar date with new number
-		cal.add(Calendar.DATE, daysToAdd);
-
+		// do not allow the deadline to fall on a weekend
+		if (cal.get(Calendar.DAY_OF_WEEK) == 7)
+			cal.add(Calendar.DATE, 2); // Saturday
+		else if (cal.get(Calendar.DAY_OF_WEEK) == 1)
+			cal.add(Calendar.DATE, 1); // Sunday
+	
 		return cal.getTime();
-	}
+	}*/
 	
 	public void requestAdApprovalOfConsignee(DePuyEventSeminarVO sem, SiteVO site, boolean isHospital) {
 		EventEntryVO event = sem.getEvents().get(0);
@@ -285,8 +259,8 @@ public class CoopAdsEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(consignee.getEmail());
-			mail.addBCC(site.getAdminEmail());
-			mail.addBCC("rwilkin7@its.jnj.com");
+			mail.addBCC("ksmith49@its.jnj.com");
+			mail.addBCC("mroderic@its.jnj.com");
 			mail.addCC(sem.getOwner().getEmailAddress());
 			mail.setSubject("Approval Required: Promotion for Seminar #" + sem.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
@@ -328,20 +302,20 @@ public class CoopAdsEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			if (! isCFSEM ){ //different recipients for DePuy Funded events
-				mail.addRecipient("amy.zimmerman@hmktgroup.com");
+				//mail.addRecipient("amy.zimmerman@hmktgroup.com");
 				mail.addRecipient("lisa.maiers@novusmediainc.com");
-				mail.addCC("Sterling.Hoham@hmktgroup.com");
+				//mail.addCC("Sterling.Hoham@hmktgroup.com");
 				mail.addCC(sem.getOwner().getEmailAddress());
-				mail.addCC(site.getAdminEmail());
-				mail.addCC("rwilkin7@its.jnj.com");
-				mail.addCC("anna.schwanz@novusmediainc.com");
-				mail.addCC("taylor.larson@novusmediainc.com");
+				mail.addCC("ksmith49@its.jnj.com");
+				mail.addCC("mroderic@its.jnj.com");
+				//mail.addCC("anna.schwanz@novusmediainc.com");
+				//mail.addCC("taylor.larson@novusmediainc.com");
 			} else {
 				//CFSEM recipients
-				mail.addRecipient("amy.zimmerman@hmktgroup.com");
-				mail.addCC(site.getAdminEmail());
-				mail.addCC("rwilkin7@its.jnj.com");
-				mail.addCC("Sterling.Hoham@hmktgroup.com");
+//				mail.addRecipient("amy.zimmerman@hmktgroup.com");
+//				mail.addCC("ksmith49@its.jnj.com");
+//				mail.addCC("mroderic@its.jnj.com");
+//				mail.addCC("Sterling.Hoham@hmktgroup.com");
 			}
 			
 			mail.setSubject(subject.toString());
@@ -365,144 +339,7 @@ public class CoopAdsEmailer {
 	 * @param user
 	 */
 	public void notifyAdminOfSurgeonsApproval(DePuyEventSeminarVO sem, SiteVO site, boolean isHospital) {
-		ConsigneeVO consignee = sem.getConsignees().get((isHospital ? Long.valueOf(2) : Long.valueOf(1)));
-		if (consignee == null) consignee = new ConsigneeVO();
-		int nCnt=0, oCnt=0, statusFlg=0;
-		boolean appr = false, haveUnapproved = false;
-		String subject;
-		StringBuilder msg = new StringBuilder(1000);
-		msg.append("<p>").append(consignee.getContactName());
-		msg.append(" has reviewed the ad(s)/cost for Seminar #");
-		msg.append(sem.getRSVPCodes()).append(" with the following results:</p>");
-		
-		for (CoopAdVO vo : sem.getAllAds()) {
-			if (isHospital) {
-				statusFlg = Convert.formatInteger(vo.getHospitalStatusFlg()).intValue();
-				appr = (statusFlg == CoopAdsActionV2.HOSP_APPROVED_AD);
-			} else {
-				statusFlg = Convert.formatInteger(vo.getSurgeonStatusFlg()).intValue();
-				appr = (statusFlg == CoopAdsActionV2.SURG_APPROVED_AD);
-			}
-//			log.debug("sts=" + statusFlg + ", appr=" + appr);
-//			log.debug(StringUtil.getToString(vo));
-			
-			if (vo.getOnlineFlg() > 0) {
-				msg.append("Online Ad #").append(++oCnt);
-			} else {
-				msg.append("Newspaper Ad #").append(++nCnt);
-			}
-			
-			msg.append(": ").append((appr) ? "Approved" : "Not Approved").append("<br/>");
-			if (!appr) {
-				msg.append("<div style='padding:2px 10px 10px'>Reason: <i>").append(vo.getInstructionsText()).append("</i></div><br/>");
-				haveUnapproved = true;
-			}
-		}
-		msg.append("<p>&nbsp;</p>");
-		
-		if (!haveUnapproved) {
-			subject = "Ad(s) approved by " + (isHospital ? "Hospital" : "Speaker") + " for Seminar #" + sem.getRSVPCodes();
-			msg.append("<p>Harmony, the speaker has approved all ads for Seminar ").append(sem.getRSVPCodes());
-			msg.append(" and is in the process of making their payment.  Once you confirm that you've received payment ");
-			msg.append("please change status in the portal to \"Payment Received\" for each ad.</p>");
-		} else {
-			subject = "Ad Changes Requested by Speaker for Seminar #" + sem.getRSVPCodes();
-			msg.append("<p>Harmony, please use the speaker's comments to address any unapproved ads. ");
-			msg.append("The link below will take you back to the portal when you're ready to post changes.</p>");
-			String url = site.getFullSiteAlias() + "/?reqType=promote&eventPostcardId=" + sem.getEventPostcardId();
-			msg.append("<p><a href=\"").append(url).append("\">").append(url).append("</a></p>");
-		}
-		msg.append("<p>Thank You,<br/>Events.DePuySynthes.com Administrator</p><br/>");
-
-		try {
-			// Create the mail object and send
-			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipient("amy.zimmerman@hmktgroup.com");
-			mail.addCC(site.getAdminEmail());
-			mail.addCC("rwilkin7@its.jnj.com");
-			mail.addCC("Sterling.Hoham@hmktgroup.com");
-			mail.addCC(sem.getOwner().getEmailAddress());
-			mail.setSubject(subject);
-			mail.setFrom(site.getMainEmail());
-			mail.setHtmlBody(msg.toString());
-
-			MessageSender ms = new MessageSender(attributes, dbConn);
-			ms.sendMessage(mail);
-			log.debug("Co-Op Ad Approved Email Sent");
-		} catch (Exception me) {
-			log.error("Co-Op Ad Approved", me);
-		}
-	}
-
-
-	/**
-	 * this use-case only triggered for co-funded (CFSEM), once a surgeon has
-	 * paid for their Ad.
-	 * 
-	 * @param vo
-	 * @param site
-	 * @param user
-	 */
-	public void notifyAdminOfAdPaymentRecd(DePuyEventSeminarVO sem, SiteVO site,
-			UserDataVO user, boolean isHospital) {
-		ConsigneeVO consignee = sem.getConsignees().get((isHospital ? Long.valueOf(2) : Long.valueOf(1)));
-		if (consignee == null) consignee = new ConsigneeVO();
-		int nCnt=0, oCnt=0, statusFlg=0;
-		boolean appr = false;//, haveUnapproved = false;
-		
-		StringBuilder msg = new StringBuilder(1000);
-		msg.append("<p>").append(consignee.getContactName());
-		msg.append(" has reviewed the ad(s)/cost for Seminar #");
-		msg.append(sem.getRSVPCodes()).append(" with the following results:</p>");
-		
-		for (CoopAdVO vo : sem.getAllAds()) {
-			if (isHospital) {
-				statusFlg = Convert.formatInteger(vo.getHospitalStatusFlg()).intValue();
-				appr = (statusFlg == CoopAdsActionV2.HOSP_APPROVED_AD);
-			} else {
-				statusFlg = Convert.formatInteger(vo.getSurgeonStatusFlg()).intValue();
-				appr = (statusFlg == CoopAdsActionV2.SURG_APPROVED_AD ||  statusFlg == CoopAdsActionV2.SURG_PAID_AD);
-			}
-			log.debug("sts=" + statusFlg + ", appr=" + appr);
-			log.debug(StringUtil.getToString(vo));
-			
-			if (vo.getOnlineFlg() > 0) {
-				msg.append("Online Ad #").append(++oCnt);
-			} else {
-				msg.append("Newspaper Ad #").append(++nCnt);
-			}
-			
-			msg.append(": ").append((appr) ? "Approved" : "Not Approved").append("<br/>");
-			if (!appr) {
-				msg.append("<div style='padding:2px 10px 10px'>Reason: <i>").append(vo.getInstructionsText()).append("</i></div><br/>");
-				//haveUnapproved = true;
-			}
-		}
-		msg.append("<p>Novus, please move forward with the newspaper ad purchases.</p>");
-		msg.append("<p>Thank You,<br/>Events.DePuySynthes.com Administrator</p><br/>");
-
-		try {
-			// Create the mail object and send
-			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipient("amy.zimmerman@hmktgroup.com");
-			mail.addRecipient("lisa.maiers@novusmediainc.com");
-			mail.addCC(site.getAdminEmail());
-			mail.addCC("rwilkin7@its.jnj.com");
-			mail.addCC("Sterling.Hoham@hmktgroup.com");
-			mail.addCC(sem.getOwner().getEmailAddress());
-			mail.addCC("anna.schwanz@novusmediainc.com");
-			mail.addCC("taylor.larson@novusmediainc.com");
-			
-			mail.setSubject("Payment Received from Speaker for Seminar #" + sem.getRSVPCodes());
-			mail.setFrom(site.getMainEmail());
-			mail.setHtmlBody(msg.toString());
-
-			MessageSender ms = new MessageSender(attributes, dbConn);
-			ms.sendMessage(mail);
-			log.debug("Co-Op Ad payment rcvd Email Sent");
-		} catch (Exception me) {
-			log.error("Co-Op Ad payment rcvd", me);
-		}
+		//Mitek does not do co-funded seminars
 	}
 
 	
@@ -528,10 +365,9 @@ public class CoopAdsEmailer {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
-			mail.addRecipient("amy.zimmerman@hmktgroup.com");
-			mail.addCC(site.getAdminEmail());
-			mail.addCC("rwilkin7@its.jnj.com");
-			mail.addCC("Sterling.Hoham@hmktgroup.com");
+			mail.addCC("Amy.Zimmerman@hmktgroup.com");
+			mail.addCC("ksmith49@its.jnj.com");
+			mail.addCC("mroderic@its.jnj.com");
 			mail.setTextBody(msg.toString());
 			
 			//Send message
@@ -559,14 +395,14 @@ public class CoopAdsEmailer {
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
 			
-			mail.addRecipient(site.getAdminEmail());
-			mail.addRecipient("rwilkin7@its.jnj.com");
+			mail.addRecipient("ksmith49@its.jnj.com");
+			mail.addRecipient("mroderic@its.jnj.com");
 			mail.addRecipient(sem.getOwner().getEmailAddress());
-			mail.addCC("amy.zimmerman@hmktgroup.com");
-			mail.addCC("Sterling.Hoham@hmktgroup.com");
+//			mail.addCC("amy.zimmerman@hmktgroup.com");
+//			mail.addCC("Sterling.Hoham@hmktgroup.com");
 			mail.addCC("lisa.maiers@novusmediainc.com");
-			mail.addCC("anna.schwanz@novusmediainc.com");
-			mail.addCC("taylor.larson@novusmediainc.com");
+//			mail.addCC("anna.schwanz@novusmediainc.com");
+//			mail.addCC("taylor.larson@novusmediainc.com");
 			
 			MessageSender sender = new MessageSender(attributes,dbConn);
 			sender.sendMessage(mail);
