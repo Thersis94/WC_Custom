@@ -59,6 +59,7 @@ public class ComplianceReportVO extends AbstractSBReportVO {
 		AbstractSBReportVO rpt = null;
 		EventEntryVO event = sem.getEvents().get(0);
 		log.debug("printing PDF for "+ event.getEventTypeCd());
+		boolean isMitek = false;
 		
 		PersonVO adv = new PersonVO(); //if there isn't one yet, we'll need this VO
 		for (PersonVO p : sem.getPeople()) {
@@ -87,6 +88,7 @@ public class ComplianceReportVO extends AbstractSBReportVO {
 		
 		case "MITEK-PEER": //Mitek P2P
 		case "MITEK-ESEM": //Mitek Patient
+			isMitek = true;
 			rpt = new ESEMMitekReportVO();
 			break;
 			
@@ -110,13 +112,14 @@ public class ComplianceReportVO extends AbstractSBReportVO {
 		data.put("approvalDt", "<u>&nbsp; &nbsp;" + apprDt + "&nbsp; &nbsp;</u>");
 		data.put("ownerName", sem.getOwner().getFullName());
 		data.put("territoryNo", sem.getTerritoryNumber());
+		String rep = "";
 		for (PersonVO p : sem.getPeople()) {
-			if (p.getRoleCode() == Role.TGM) continue;
+			if (p.getRoleCode() == Role.TGM && !isMitek) continue;
 			//combine both reps into one String
-			String rep =  p.getFullName();
-			if (data.containsKey("repName")) 	rep += ", " + data.get("repName");
-			data.put("repName", rep);
+			if (rep.length() > 0) rep += ", ";
+			rep +=  p.getFullName();
 		}
+		data.put("repName", rep);
 		
 		StringBuffer buf = null;
 		try {

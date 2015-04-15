@@ -17,6 +17,7 @@ import com.depuy.events_v2.vo.report.AttendeeSurveyReportVO;
 import com.depuy.events_v2.vo.report.ComplianceReportVO;
 import com.depuy.events_v2.vo.report.EventPostalLeadsReportVO;
 import com.depuy.events_v2.vo.report.LocatorReportVO;
+import com.depuy.events_v2.vo.report.LocatorReportVOMitek;
 import com.depuy.events_v2.vo.report.PostcardSummaryReportVO;
 import com.depuy.events_v2.vo.report.RsvpBreakdownReportVO;
 import com.depuy.events_v2.vo.report.RsvpSummaryReportVO;
@@ -51,7 +52,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class ReportBuilder extends SBActionAdapter {
 
 	public enum ReportType {
-		mailingList(true), summary(true), locator(true), leads(true), 
+		mailingList(true), summary(true), locator(true), mitekLocator(true), leads(true), 
 		rsvpSummary(true),  seminarRollup(true), rsvpBreakdown(false), 
 		compliance(true), customReport(true), attendeeSurvey(false);
 
@@ -120,6 +121,9 @@ public class ReportBuilder extends SBActionAdapter {
 
 			case locator: 
 				rpt = generateLocatorReport(data, req.getParameter("radius"));
+				break;
+			case mitekLocator: 
+				rpt = generateLocatorReportMitek(data, req.getParameter("radius"));
 				break;
 			case attendeeSurvey:
 				rpt = generateAttendeeSurveyReport(req);
@@ -250,11 +254,11 @@ public class ReportBuilder extends SBActionAdapter {
 	 */
 	public AbstractSBReportVO generatePostcardRecipientsReport(DePuyEventSeminarVO sem, Date start) 
 			throws ActionException {
-		LeadsDataToolV2 ldt = new LeadsDataToolV2();
-		ldt.setAttributes(attributes);
-		ldt.setDBConnection(dbConn);
+		LeadsDataToolV2 leads = LeadsDataToolV2.newInstance(sem, actionInit);
+		leads.setAttributes(attributes);
+		leads.setDBConnection(dbConn);
 
-		sem.setLeadsData(ldt.pullLeads(sem, ReportType.mailingList, start));
+		sem.setLeadsData(leads.pullLeads(sem, ReportType.mailingList, start));
 		AbstractSBReportVO rpt = new EventPostalLeadsReportVO();
 		rpt.setData(sem);
 		return rpt;
@@ -310,6 +314,12 @@ public class ReportBuilder extends SBActionAdapter {
 
 	public AbstractSBReportVO generateLocatorReport(Object data, String radius) {
 		LocatorReportVO rpt = new LocatorReportVO();
+		rpt.setData(data);
+		rpt.setRadius(radius);
+		return rpt;
+	}
+	public AbstractSBReportVO generateLocatorReportMitek(Object data, String radius) {
+		LocatorReportVO rpt = new LocatorReportVOMitek();
 		rpt.setData(data);
 		rpt.setRadius(radius);
 		return rpt;

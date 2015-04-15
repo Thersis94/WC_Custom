@@ -124,7 +124,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		UserDataVO user = (UserDataVO) ses.getAttribute(Constants.USER_DATA);
 		SBUserRole roles = (SBUserRole) ses.getAttribute(Constants.ROLE_DATA);
 		Integer roleId = (roles != null) ? roles.getRoleLevel() : SecurityController.PUBLIC_ROLE_LEVEL;
-		String profileId = (user != null && roleId < SecurityController.ADMIN_ROLE_LEVEL) ? user.getProfileId() : null;
+		String profileId = (user != null && roleId < 90) ? user.getProfileId() : null;
 	
 		Object data = null;
 		try {
@@ -230,7 +230,8 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		sql.append(") baseQry ");
 		sql.append("pivot (count(joint_id) for joint_id in ([4],[5],[6])) as pvtQry "); //PIVOT is an implicit group-by
 		log.debug(sql);
-		
+		log.debug(actionGroupId);
+		log.debug(profileId);
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, actionGroupId);
 			if (profileId != null) {
@@ -516,7 +517,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	private void retrieveLeads(DePuyEventSeminarVO sem, String sort) throws ActionException {
-		LeadsDataToolV2 leads = new LeadsDataToolV2(actionInit);
+		LeadsDataToolV2 leads = LeadsDataToolV2.newInstance(sem, actionInit);
 		leads.setAttributes(attributes);
 		leads.setDBConnection(dbConn);
 		leads.targetLeads(sem, sort);

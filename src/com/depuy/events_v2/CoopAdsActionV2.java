@@ -55,6 +55,7 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 	//public static final int PENDING_SURG_APPROVAL = 7;
 	public static final int SURG_APPROVED_AD = 8;
 	public static final int SURG_DECLINED_AD = 9;
+	public static final int SURG_PAID_AD = 10;
 	//public static final int PENDING_HOSP_APPROVAL = 12;
 	public static final int HOSP_APPROVED_AD = 13;
 	public static final int HOSP_DECLINED_AD = 14;
@@ -205,9 +206,7 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 		req.setParameter("reqType", origReqType);
 
 		// send appropriate notification emails
-		CoopAdsEmailer emailer = new CoopAdsEmailer(actionInit);
-		emailer.setAttributes(attributes);
-		emailer.setDBConnection(dbConn);
+		CoopAdsEmailer emailer = CoopAdsEmailer.newInstance(sem, attributes, dbConn);
 
 		// avoid nulls ahead when we compare statusFlgs
 		if (vo.getStatusFlg() == null) vo.setStatusFlg(0);
@@ -256,18 +255,24 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 					//only send this if the coordinator submitted the approved status
 					log.debug("sending client approved email");
 					emailer.notifyAdminOfAdApproval(sem, site, user, Convert.formatInteger(req.getParameter("adCount"), 1), vo);
-				}	
+					
+				} else if ("9".equals(req.getParameter("origSurgeonStatusFlg")) && vo.getSurgeonStatusFlg() == 0) {
+					//if the surgeon had previously declined this ad, email them that the ad is ready for re-review
+					emailer.requestAdApprovalOfConsignee(sem, site, false);
+					
+				} else if (SURG_PAID_AD == vo.getSurgeonStatusFlg() && SURG_PAID_AD != Convert.formatInteger(req.getParameter("origSurgeonStatusFlg"))) {
+					//the surgeon's ad status is now being marked as paid, and was not previous marked as paid.
+					log.debug("sending payment recieved email");
+					//test if we should announce that all ads are paid for
+					if (allAdsMeetStatus(sem, "surgeon_status_flg", SURG_PAID_AD))
+						emailer.notifyAdminOfAdPaymentRecd(sem, site, user, false);
+				}
 				break;
 
 			case CLIENT_DECLINED_AD:
 				log.debug("sending admin declined email");
 				emailer.notifyAdminOfAdDeclined(sem, site, user, req.getParameter("notesText"), Convert.formatInteger(req.getParameter("adCount"), 1), vo);
 				break;
-
-//			case CLIENT_PAYMENT_RECD:
-//				log.debug("sending payment recieved email");
-//				emailer.notifyAdminOfAdPaymentRecd(sem, site, user);
-//				break;
 
 			case AD_BUY_COMPLETE:
 				log.debug("sending ad-buy-complete email");
