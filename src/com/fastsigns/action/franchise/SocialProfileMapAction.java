@@ -162,9 +162,10 @@ public class SocialProfileMapAction extends ProfileMapAction {
 		sql.append("delete from SB_ACTION where ORGANIZATION_ID = ? and MODULE_TYPE_ID = ? ");
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())){
-			int i = 0;
+			removeModuleRoles(foId);
 			deleteFromLayout(foId);
 			
+			int i = 0;
 			log.debug(sql.toString()+" | "+foId+" | "+MODULE_NAME);
 			ps.setString(++i, foId);
 			ps.setString(++i, MODULE_NAME);
@@ -209,6 +210,7 @@ public class SocialProfileMapAction extends ProfileMapAction {
 		this.attributes.put(AdminConstants.ADMIN_MODULE_DATA, modVO);
 		boolean isInsert = StringUtil.checkVal(req.getParameter(SB_ACTION_ID)).isEmpty();
 		
+		//prepare params for the SBActionAdapter
 		List<String> urlList = (List<String>) actionData.getAttribute(URL_PARAM);
 		req.setParameter(URL_PARAM, urlList.toArray(new String[urlList.size()]), true);
 		req.setParameter("organizationId", foId);
@@ -219,8 +221,11 @@ public class SocialProfileMapAction extends ProfileMapAction {
 		
 		try {
 			super.update(req);
-			if (isInsert) 
-				addToLayout(foId, (String)req.getAttribute(SB_ACTION_ID));
+			if (isInsert) {
+				//this is for new entries, updates can ignore it
+				String pmid = addToLayout(foId, (String)req.getAttribute(SB_ACTION_ID));
+				addModuleRoles(foId, pmid);
+			}
 		} catch (SQLException e) {
 			log.error(e);
 			throw new ActionException(e);
@@ -281,9 +286,10 @@ public class SocialProfileMapAction extends ProfileMapAction {
 	 * Adds the new action to the center's default layout
 	 * @param franchiseOrgId
 	 * @param actionId
+	 * @return pmid used for insertion
 	 * @throws SQLException
 	 */
-	private void addToLayout(String franchiseOrgId, String actionId) throws SQLException{
+	private String addToLayout(String franchiseOrgId, String actionId) throws SQLException{
 		String pKey = new UUIDGenerator().getUUID();
 		String aId = StringUtil.checkVal(actionId, null);
 		
@@ -310,22 +316,56 @@ public class SocialProfileMapAction extends ProfileMapAction {
 			ps.setString(++i, MODULE_NAME);
 			ps.execute();
 		}
+		
+		return pKey;
 	}
 	
+	/**
+	 * Add roles for the portlet
+	 * @param franchiseOrgId
+	 * @param pmid
+	 * @throws SQLException
+	 */
 	private void addModuleRoles(String franchiseOrgId, String pmid) throws SQLException{
 		String corpId = franchiseOrgId.split("_")[0];
-		StringBuilder sql = new StringBuilder();
+		StringBuilder sql = new StringBuilder(260);
 		sql.append("insert into PAGE_MODULE_ROLE (PAGE_MODULE_ROLE_ID, ROLE_ID, ");
 		sql.append("PAGE_MODULE_ID, CREATE_DT) ");
 		sql.append("select LOWER(REPLACE(NEWID(),'-','')), r.ROLE_ID, ?, ? from ROLE r ");
 		sql.append("where r.ROLE_ID in ('0','10','100') or r.ORGANIZATION_ID=? ");
 		
+		log.debug(sql.toString()+"|"+pmid+"|"+corpId);
+		
 		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())){
-			
+			int i=0;
+			ps.setString(++i, pmid);
+			ps.setTimestamp(++i, Convert.getCurrentTimestamp());
+			ps.setString(++i, corpId);
+			ps.execute();
 		}
 	}
 	
-	private void removeModuleRoles(String franchiseOrgId){
+	/**
+	 * Remove the module roles for the portlet
+	 * @param franchiseOrgId
+	 * @throws SQLException
+	 */
+	private void removeModuleRoles(String franchiseOrgId) throws SQLException{
+		StringBuilder sql = new StringBuilder(265);
+		sql.append("delete from PAGE_MODULE_ROLE where PAGE_MODULE_ID in ( ");
+		sql.append("select pm.PAGE_MODULE_ID from PAGE_MODULE pm ");
+		sql.append("inner join SB_ACTION sb on sb.ACTION_ID=pm.ACTION_ID ");
+		sql.append("where sb.MODULE_TYPE_ID=? and sb.ORGANIZATION_ID=? ) ");
+		
+		log.debug(sql.toString()+"|"+franchiseOrgId);
+		
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())){
+			int i=0;
+			ps.setString(++i, MODULE_NAME);
+			ps.setString(++i, franchiseOrgId);
+			int affected = ps.executeUpdate();
+			log.debug(affected+" row(s) deleted.");
+		}
 		
 	}
 
