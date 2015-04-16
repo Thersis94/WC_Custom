@@ -57,6 +57,20 @@ public class TVSpotDlrContactAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
+		
+
+//		if (req.hasParameter("reprocessEmails")) {
+//			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+//			TVSpotConfig config =TVSpotConfig.getInstance(site.getCountryCode());
+//			req.setParameter("reprocessDealerKey", config.getDealerLocnField());
+//			ReprocessConsultationRequestEmails rep = new ReprocessConsultationRequestEmails(this.actionInit);
+//			rep.setDBConnection(dbConn);
+//			rep.setAttributes(attributes);
+//			rep.procEmails(req);
+//			rep = null;
+//			return;
+//		}
+		
 		if (req.hasParameter("isSurvey")) return; //we don't need anything addtl to render this.
 		
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
@@ -100,7 +114,14 @@ public class TVSpotDlrContactAction extends SimpleActionAdapter {
 		
 		//load the dealer info using the dealerLocationId passed on the request
 		//remove the "dlr-" prefix we needed when we built the dropdown (ensured proper ordering, by distance)
-		req.setParameter(config.getDealerLocnField(),  req.getParameter(config.getDealerLocnField()).substring(4), true);
+		//only if it is present.  If this is coming in through a reprocess the dlr- will not be present.
+		String dealerId;
+		if (req.getParameter(config.getDealerLocnField()).contains("dlr-")) {
+			dealerId = req.getParameter(config.getDealerLocnField()).substring(4);
+		} else {
+			dealerId = req.getParameter(config.getDealerLocnField());
+		}
+		req.setParameter(config.getDealerLocnField(),  dealerId, true);
 		DealerLocationVO dealer = loadDesiredDealer(config, req);
 		
 		//the contact us portlet will send the email to the FranchiseOwner and Center for us;

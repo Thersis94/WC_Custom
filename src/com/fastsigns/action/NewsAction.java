@@ -32,6 +32,7 @@ import com.smt.sitebuilder.action.rss.RSSCreatorVO;
 import com.smt.sitebuilder.action.tools.EmailFriendAction;
 import com.smt.sitebuilder.action.tools.EmailFriendVO;
 import com.smt.sitebuilder.action.tools.SearchVO;
+import com.smt.sitebuilder.approval.ApprovalController.SyncStatus;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -78,11 +79,12 @@ public class NewsAction extends SBActionAdapter {
 		sb.append("union ");
 		}
 		sb.append("select cast(CP_MODULE_OPTION_ID as nvarchar(32)) as item_action_id, OPTION_NM as item_action_nm, OPTION_DESC as item_action_desc, ");
-		sb.append("ARTICLE_TXT as item_article_txt, START_DT as item_create_dt, 'NEWS' as attribute1Text from ").append(cdb).append("fts_cp_module_option ");
+		sb.append("ARTICLE_TXT as item_article_txt, START_DT as item_create_dt, 'NEWS' as attribute1Text from ").append(cdb).append("fts_cp_module_option mo ");
+		sb.append("left join WC_SYNC ws on ws.WC_KEY_ID = cast(CP_MODULE_OPTION_ID as nvarchar(32)) and WC_SYNC_STATUS_CD not in (?,?) ");
 		sb.append("where fts_cp_module_type_id = 2 and franchise_id is null and START_DT is not null ");
 		//show pending articles if this is a preview
 		if (!isPreview)
-			sb.append("and approval_flg=1 ");
+			sb.append("and WC_SYNC_STATUS_CD is null ");
 		sb.append("and org_id = ? ");
 		sb.append("order by item_create_dt desc, item_action_nm ");
 		log.debug("SQL = " + sb.toString() + "|" + orgId);
@@ -95,6 +97,8 @@ public class NewsAction extends SBActionAdapter {
 			ps = dbConn.prepareStatement(sb.toString());
 			if(isRss)
 				ps.setString(i++, orgId);
+			ps.setString(i++, SyncStatus.Approved.toString());
+			ps.setString(i++, SyncStatus.Declined.toString());
 			ps.setString(i++, orgId);
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {

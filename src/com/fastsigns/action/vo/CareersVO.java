@@ -8,8 +8,10 @@ import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.approval.Approvable;
+import com.smt.sitebuilder.approval.ApprovalVO;
 
-public class CareersVO implements Serializable {
+public class CareersVO implements Serializable, Approvable {
 	private static final long serialVersionUID = -5433447806749384216L;
 	public static final Integer CORP_NUMBER = 0;
 	public static enum hours {fullTime, partTime, temporary};
@@ -38,6 +40,7 @@ public class CareersVO implements Serializable {
 	private Date jobPostDt = null;
 	private Integer jobApprovalFlg = 0;
 	private int activeJobFlg = 0;
+	private ApprovalVO approval;
 
 	public CareersVO(){
 		
@@ -69,6 +72,7 @@ public class CareersVO implements Serializable {
 		jobPrimaryPhoneNo = req.getParameter("jobPrimaryPhoneNo");
 		franchiseLinkFlg = Convert.formatInteger(req.getParameter("franchiseLinkFlg"));
 		activeJobFlg = Convert.formatInteger(req.getParameter("activeJobFlg"));
+		approval = new ApprovalVO(req);
 	}
 	
 	public CareersVO(ResultSet rs){
@@ -436,6 +440,16 @@ public class CareersVO implements Serializable {
 
 	public void setActiveJobFlg(int activeJobFlg) {
 		this.activeJobFlg = activeJobFlg;
+	}
+
+	@Override
+	public ApprovalVO getSyncData() {
+		return approval;
+	}
+
+	@Override
+	public void setSyncData(ApprovalVO approval) {
+		this.approval = approval;
 	}
 		
 }
