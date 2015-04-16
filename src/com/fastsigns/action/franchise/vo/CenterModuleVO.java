@@ -7,6 +7,7 @@ import java.util.Map;
 
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.approval.ApprovalVO;
 
 /****************************************************************************
  * <b>Title</b>: CenterModuleVO.java <p/>
@@ -81,7 +82,10 @@ public class CenterModuleVO implements Serializable {
 		moduleDisplayId = db.getStringVal("FTS_CP_MODULE_DISPLAY_ID", rs);
 		moduleLocationXRId = db.getStringVal("CP_LOCATION_MODULE_XR_ID", rs);
 		// Add the options
-		this.addOption(new CenterModuleOptionVO(rs));
+		CenterModuleOptionVO opt = new CenterModuleOptionVO(rs);
+		if (isKeystone) opt.setSyncData(new ApprovalVO(rs));
+		if (isKeystone || StringUtil.checkVal(StringUtil.checkVal(db.getStringVal("WC_SYNC_STATUS_CD", rs))).length() == 0)
+			this.addOption(opt);
 	}
 	
 	
@@ -93,6 +97,10 @@ public class CenterModuleVO implements Serializable {
 
 		Integer optId = cmvo.getParentId();
 		if (optId == null || optId == 0) optId = cmvo.getModuleOptionId();
+		
+		// Check if we still don't have an id for this option vo
+		// If we still have nothing we return because this option vo is useless
+		if (optId == null || optId == 0) return;
 		
 		if (isKeystone) {
 			//determine if the one we already have is newer than the one we're getting
