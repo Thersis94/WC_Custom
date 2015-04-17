@@ -16,6 +16,7 @@ import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.util.RecordDuplicatorUtility;
 
 /****************************************************************************
  * <b>Title</b>: KitLayerProductAction.java
@@ -39,6 +40,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  */
 public class KitLayerProductAction extends SBActionAdapter {
 
+	public static final String PRODUCT_KIT_ID = "productKitIds";
 	/**
 	 * Default Constructor
 	 */
@@ -54,6 +56,28 @@ public class KitLayerProductAction extends SBActionAdapter {
 	public KitLayerProductAction(ActionInitVO actionInit) {
 		super(actionInit);
 		
+	}
+
+	/**
+	 * Copy method for cloning the Product XR Records for the new Kit Layers.
+	 * After they are cloned, we call out to KitCoordinateAction to clone the
+	 * coordinate data for each ProductXR.
+	 */
+	@Override
+	public void copy(SMTServletRequest req) throws ActionException {
+		@SuppressWarnings("unchecked")
+		Map<String, Object> replaceVals = (Map<String, Object>) attributes.get(RecordDuplicatorUtility.REPLACE_VALS);
+		RecordDuplicatorUtility rdu = new RecordDuplicatorUtility(attributes, dbConn, "RAM_PRODUCT_LAYER_XR", "PRODUCT_KIT_ID", true);
+		rdu.setSchemaNm((String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		rdu.addWhereListClause("KIT_LAYER_ID");
+		Map<String, String> productKitIds = rdu.copy();
+		replaceVals.put("PRODUCT_KIT_ID", productKitIds);
+
+		//Continue propagating copy up the Action Chain.
+		KitCoordinateAction kca = new KitCoordinateAction(getActionInit());
+		kca.setDBConnection(dbConn);
+		kca.setAttributes(attributes);
+		kca.copy(req);
 	}
 	
 	/**

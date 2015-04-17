@@ -9,22 +9,21 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.fastsigns.action.LogAction;
-import com.fastsigns.action.approval.ApprovalFacadeAction;
-import com.fastsigns.action.approval.vo.AbstractChangeLogVO;
-import com.fastsigns.action.approval.vo.ApprovalVO;
-import com.fastsigns.action.approval.vo.PageLogVO;
-import com.fastsigns.action.approval.vo.PageModuleLogVO;
+import com.fastsigns.action.approval.WebeditApprover;
+import com.fastsigns.action.approval.WebeditApprover.WebeditType;
 import com.fastsigns.action.franchise.centerpage.FranchiseLocationInfoAction;
 import com.fastsigns.action.franchise.vo.CenterModuleOptionVO;
 import com.fastsigns.action.franchise.vo.FranchiseVO;
 import com.fastsigns.action.franchise.vo.pages.PageContainerVO;
+import com.fastsigns.action.wizard.SiteWizardAction;
+import com.fastsigns.action.wizard.SiteWizardFactoryAction;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.html.tool.RegexParser;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.io.FileWriterException;
+import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -37,7 +36,13 @@ import com.smt.sitebuilder.action.content.ContentVO;
 import com.smt.sitebuilder.action.menu.MenuObj;
 import com.smt.sitebuilder.admin.action.PageModuleAction;
 import com.smt.sitebuilder.admin.action.SitePageAction;
-import com.smt.sitebuilder.admin.action.sync.SyncTransactionAction;
+import com.smt.sitebuilder.approval.ApprovalController;
+import com.smt.sitebuilder.approval.ApprovalController.ModuleType;
+import com.smt.sitebuilder.approval.ApprovalController.SyncTransaction;
+import com.smt.sitebuilder.approval.ApprovalDecoratorAction;
+import com.smt.sitebuilder.approval.ApprovalController.SyncStatus;
+import com.smt.sitebuilder.approval.ApprovalException;
+import com.smt.sitebuilder.approval.ApprovalVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
@@ -116,15 +121,6 @@ public class FranchisePageAction extends SBActionAdapter {
 		ai.setAttributes(attributes);
 		ai.delete(req);
 		//SitePageAction will flush the cache for us.
-		
-		//delete from the Changelog 
-		LogAction lA = new LogAction(this.actionInit);
-		lA.setDBConnection(dbConn);
-		lA.setAttributes(attributes);
-		List<String> ids = new ArrayList<String>();
-		ids.add(pageId);
-		lA.deleteFromChangelog(ids);
-		
 		// Insert a redirect in order to cut down on 404 errors
 		createRedirect(req);
 	}
@@ -176,14 +172,13 @@ public class FranchisePageAction extends SBActionAdapter {
 		String orgId = ((SiteVO)req.getAttribute("siteData")).getOrganizationId();
 		log.debug(req.getSession().getAttribute("webeditIsMobile"));
 		String siteId = orgId + "_" + CenterPageAction.getFranchiseId(req) + "_" + (StringUtil.checkVal(req.getSession().getAttribute("webeditIsMobile")).equals("true") ? 2 : 1);
-
 		try {
 			switch (type) {
 				case ADD_PAGE:
 					boolean noPageModule = false;
 					
 					//create a new the Site Page
-					req.setParameter("startDate", "01/01/2100");  //new pages must be approved before being released
+					req.setParameter("startDate", Convert.formatDate(new java.util.Date()));  //new pages must be approved before being released
 					req.setParameter("titleName", "Insert browser title here");
 					
 					//we don't need Content or PMID/permissions if this is just a redirect to another resource
@@ -191,14 +186,11 @@ public class FranchisePageAction extends SBActionAdapter {
 					if ((lvl >= 50 || !Convert.formatBoolean(req.getParameter("customPg"))) 
 							&& Convert.formatBoolean(req.getParameter("visible")))
 					{
-						
-						req.setParameter("startDate", Convert.formatDate(new java.util.Date()));
-						req.setParameter("endDate", null);
 						noPageModule = true;
 					}
 					
 					this.savePage(req);
-					if(req.getParameter("pageNm").equals("gallery")){
+					if("gallery".equals(req.getParameter("pageNm"))){
 						log.debug("adding gallery page.");
 						redir.append(addPhotoGallery(req));
 					}
@@ -209,23 +201,30 @@ public class FranchisePageAction extends SBActionAdapter {
 					redir.append("pageId=").append(req.getAttribute("pageId"));
 					redir.append("&lvl=").append(lvl).append("&template=");
 					redir.append(req.getParameter("aliasName"));
+					redir.append("&selectCol=true");
 					break;
 					
 				case EDIT_PAGE_COPY:
+
+					//Check if the user wants to add a page with no left or right rails
+					Boolean showMenu = Convert.formatBoolean(req.getParameter("showMenu"), true);
+					
+					//check for null so default is not the empty layout
+					if (showMenu != null && showMenu.booleanValue() == false){
+						req.setParameter("siteId", siteId);
+						setEmptyColLayout(req);
+					}
+					
 					this.savePage(req);
+					
 					if(req.hasParameter("galleryId"))
 						updatePhotoGallery(req);
 					else
 						this.saveModule(req);
 					
-					//we don't need the page_module association unless a new portlet was created.
-					if (Convert.formatBoolean(req.getParameter("makeNew"))) {
-						String basePgId = StringUtil.checkVal(req.getAttribute("pageId"));
-						String baseModId = (String)req.getAttribute(SB_ACTION_ID);
-						req.setParameter("pageId", basePgId);
-						req.setParameter("moduleId", baseModId);
+					if (Convert.formatBoolean(req.getParameter("makeNew")))
 						this.savePageModule(req);
-					}
+					
 					break;
 				
 				case EDIT_PAGE_FILE:
@@ -237,22 +236,17 @@ public class FranchisePageAction extends SBActionAdapter {
 					this.savePage(req);
 					break;
 				
+				case SUBMIT_PAGE:
+				case SUBMIT_PAGE_MODULE:
+					submitPage(req);
+					break;
+				
 				case REORDER_PAGE:
 					this.reorderPages(req);
 					break;
 				
 				case ARCHIVE_PAGE:
 					this.archivePage(req);
-					break;
-				
-				case SUBMIT_PAGE:
-					req.setParameter("startDate", "01/01/2200");  //new pages must be approved before being released
-					this.submitPage(req);
-					break;	
-					
-				case SUBMIT_PAGE_MODULE:
-					req.setParameter("approvalType", ApprovalFacadeAction.SUBMIT + "");
-					this.submitContent(req);
 					break;
 					
 				case DEL_PAGE:
@@ -274,7 +268,65 @@ public class FranchisePageAction extends SBActionAdapter {
 		req.setAttribute(Constants.REDIRECT_URL, redir.toString());
 	}
 	
-	
+	/**
+	 * Submit the page and its content module for approval
+	 */
+	private void submitPage(SMTServletRequest req) {
+		ApprovalController controller = new ApprovalController(dbConn, attributes, req);
+		WebeditApprover app = new WebeditApprover(dbConn, getAttributes());
+		try {
+			List<ApprovalVO> appr = getApprovalVOs(req);
+			for(ApprovalVO vo : appr) {
+				controller.process(vo);
+				if (vo.getModuleType() == ModuleType.Page) {
+					app.submit(vo);
+				}
+			}
+		} catch (ApprovalException e) {
+			log.error("Unable to get submit items for approval", e);
+		}
+		
+	}
+
+	/**
+	 * Get the approval vos for the content and page that are being submitted
+	 * This also supports mass submissions from the submit all button
+	 */
+	private List<ApprovalVO> getApprovalVOs(SMTServletRequest req) throws ApprovalException {
+		String[] pages = StringUtil.checkVal(req.getParameter("pagesToSubmit")).split(",");
+		String[] modules = StringUtil.checkVal(req.getParameter("modulesToSubmit")).split(",");
+		StringBuilder sql = new StringBuilder(60);
+		sql.append("SELECT * FROM WC_SYNC WHERE WC_SYNC_ID in (?,?");
+		for(String page : pages) 
+			if (!"0".equals(page)) sql.append(",?");
+		for(String module : modules) 
+			if (!"0".equals(module)) sql.append(",?");
+		sql.append(")");
+			
+		List<ApprovalVO> approvals = new ArrayList<>();
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())){
+			int i = 1;
+			ps.setString(i++, req.getParameter("moduleSyncId"));
+			ps.setString(i++, req.getParameter("pageSyncId"));
+			for(String page : pages) 
+				if (!"0".equals(page)) ps.setString(i++, page);
+			for(String module : modules) 
+				if (!"0".equals(module)) ps.setString(i++, module);
+			
+			ResultSet rs = ps.executeQuery();
+			
+			while(rs.next()) {
+				ApprovalVO appr = new ApprovalVO(rs);
+				appr.setSyncTransaction(SyncTransaction.Submit);
+				appr.setUserDataVo((UserDataVO) req.getSession().getAttribute(Constants.USER_DATA));
+				approvals.add(appr);
+			}
+		} catch(SQLException e) {
+			throw new ApprovalException(e);
+		}
+		return approvals;
+	}
+		
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
@@ -284,7 +336,7 @@ public class FranchisePageAction extends SBActionAdapter {
 		String franId = CenterPageAction.getFranchiseId(req);
 		attributes.put("webeditFranId", franId);
 		
-        String previewApiKey = SyncTransactionAction.generatePreviewApiKey(attributes);
+        String previewApiKey = ApprovalController.generatePreviewApiKey(attributes);
         req.setParameter(Constants.PAGE_PREVIEW, previewApiKey);
 		
 		Map<String, ContentVO> contents = new HashMap<String, ContentVO>();
@@ -314,12 +366,10 @@ public class FranchisePageAction extends SBActionAdapter {
 				
 				ContentVO vo = this.getContent(p, null, pc.getSharedId());
 				log.debug("loaded " + p.getDisplayName() + " with Content permissions " + vo.getAttribute("isPublic"));
-				if(StringUtil.checkVal(vo.getAttribute("isPublic")).length() == 0 && p.isLive()){
-					if (vo.getActionId() != null) {
-						 p.setFooterFlag(true);
-					}
-					contents.put(p.getPageId(), vo);
+				if (vo.getActionId() != null) {
+					 p.setFooterFlag(true);
 				}
+				contents.put(p.getPageId(), vo);
 				vo = null;
 			}
 			List<String> l = new ArrayList<String>();
@@ -327,11 +377,6 @@ public class FranchisePageAction extends SBActionAdapter {
 			for(ContentVO s : contents.values()){
 				l.add((String) s.getAttribute("pmid"));
 			}
-			
-			ApprovalFacadeAction sb = new ApprovalFacadeAction(this.actionInit);
-			sb.setAttributes(attributes);
-			sb.setDBConnection(dbConn);
-			req.setAttribute("changelogs", sb.getChangeLogStatus(l, null));
 			
 		}
 		req.setAttribute("contents", contents);
@@ -359,26 +404,26 @@ public class FranchisePageAction extends SBActionAdapter {
 		}
 		
 		StringBuilder s = new StringBuilder();
-		s.append("select top 1 a.action_id, article_txt, a.page_module_id, c.*, d.page_module_role_id ");
-		s.append("from page_module a inner join content b ");
-		s.append("on a.action_id = b.action_id inner join sb_action c ");
-		s.append("on b.action_id=c.action_id ");
-		s.append("left outer join page_module_role d on ");
-		s.append("a.page_module_id=d.page_module_id and d.role_id='0' ");  //this tells us whether the module is live or not
-		s.append("where a.page_id = ? order by b.create_dt desc "); //ordering by date gets us the most recent revision
-		
+		s.append("select top 1 c.action_id, article_txt,c.action_group_id, a.page_module_id, c.*, ws.* ");
+		s.append("from page_module a ");
+		s.append("inner join sb_action c on a.action_id=c.action_group_id ");
+		s.append("inner join content b on c.action_id = b.action_id ");
+		s.append("left join wc_sync ws on (ws.wc_orig_key_id = c.action_group_id or ws.wc_key_id = c.action_id) and wc_sync_status_cd not in (?,?) ");
+		s.append("where a.page_id = ? order by ISNULL(c.update_dt, '1900-06-05T23:59:00') desc "); //ordering by date gets us the most recent revision and ensures nulls are left at the bottom of the list
+		log.debug(s+"|"+page.getPageId());
 		ContentVO content = null;
-		PreparedStatement ps = null;
-		try {
-			ps = dbConn.prepareStatement(s.toString());
-			ps.setString(1, page.getPageId());
+		try (PreparedStatement ps = dbConn.prepareStatement(s.toString())){
+			ps.setString(1, SyncStatus.Approved.toString());
+			ps.setString(2, SyncStatus.Declined.toString());
+			ps.setString(3, page.getPageId());
 			ResultSet rs = ps.executeQuery();
 			if (rs.next()) {
 				content = new ContentVO(rs.getString(1), rs.getString(2));
+				content.setActionGroupId(rs.getString("action_group_id"));
 				content.setActionDesc(rs.getString("action_desc"));
 				content.setActionName(rs.getString("action_nm"));
-				content.setAttribute("isPublic", rs.getString("page_module_role_id"));
 				content.setAttribute("pmid", rs.getString("page_module_id"));
+				content.setSyncData(new ApprovalVO(rs));
 			} else {
 				//setup some default copy to aid the Users...
 				content = new ContentVO(null, "Insert page copy here");
@@ -388,10 +433,6 @@ public class FranchisePageAction extends SBActionAdapter {
 			}
 		} catch(Exception e) {
 			log.error("Unable to retrieve franchise page: " + page.getPageId(), e);
-		} finally {
-			try {
-				ps.close();
-			} catch (Exception e) {}
 		}
 		
 		return content;
@@ -569,11 +610,15 @@ public class FranchisePageAction extends SBActionAdapter {
 		String localization = StringUtil.checkVal(((SiteVO)req.getAttribute("siteData")).getLocale());
 		if (req.getParameter("apprFranchiseId") != null)
 			franId = Convert.formatInteger((String)req.getParameter("apprFranchiseId"));
-		StringBuilder s = new StringBuilder("select p.*, pr.ROLE_ID from page p left outer join page_role pr ");
-		s.append("on p.page_id = pr.page_id and pr.role_id = '1000' where p.site_id = ? ");
+		StringBuilder s = new StringBuilder(425);
+		s.append("select p.*, pr.ROLE_ID, ws.* from page p left outer join page_role pr ");
+		s.append("on p.page_id = pr.page_id and pr.role_id = '1000' left join wc_sync ws on ");
+		s.append("ws.wc_key_id = p.page_id and wc_sync_status_cd not in (?,?) ");
+		s.append("where p.site_id = ? and p.page_id not in (");
+		s.append("select page_group_id from page where page_group_id is not null and page_id != page_group_id) ");
 		if (pageId.length() > 0) s.append("and p.page_id = ? ");
-		s.append("order by parent_id, order_no, page_display_nm");
-		log.debug("Franchise Page SQL: " + s);
+		s.append("order by p.parent_id, order_no, page_display_nm");
+		log.debug("Franchise Page SQL: " + s +"|"+pageId);
 		String sitePrefix = ((SiteVO)req.getAttribute("siteData")).getOrganizationId();
 		log.debug("OrgId = " + ((SiteVO)req.getAttribute("siteData")).getOrganizationId());
 		log.debug("Serving pages for localization: " + localization + "\n Serving Site ID: " + sitePrefix);
@@ -583,15 +628,19 @@ public class FranchisePageAction extends SBActionAdapter {
 		PreparedStatement ps = null;
 		try {
 			ps = dbConn.prepareStatement(s.toString());
+			int ctr = 1;
+			ps.setString(ctr++, SyncStatus.Approved.toString());
+			ps.setString(ctr++, SyncStatus.Declined.toString());
 			if(isMobile)
-				ps.setString(1, sitePrefix +"_"+ franId + "_2");
+				ps.setString(ctr++, sitePrefix +"_"+ franId + "_2");
 			else
-				ps.setString(1, sitePrefix +"_"+ franId + "_1");
-			if (pageId.length() > 0) ps.setString(2, pageId);
+				ps.setString(ctr++, sitePrefix +"_"+ franId + "_1");
+			if (pageId.length() > 0) ps.setString(ctr++, pageId);
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				MenuObj p = new MenuObj();
 				p.setData(rs);
+				p.setSyncData(new ApprovalVO(rs));
 				
 				// Check if this page if this page is allowed to be edited via webedit
 				if (StringUtil.checkVal(rs.getString("ROLE_ID")).length() > 0)
@@ -612,7 +661,8 @@ public class FranchisePageAction extends SBActionAdapter {
 		return pc;
 	}
 	
-	private void savePage(SMTServletRequest req) throws ActionException {		
+	private void savePage(SMTServletRequest req) throws ActionException {
+		try {
 		SitePageAction ai = new SitePageAction(this.actionInit);
 		ai.setDBConnection(dbConn);
 		ai.setAttributes(attributes);
@@ -624,25 +674,23 @@ public class FranchisePageAction extends SBActionAdapter {
 				//this has already been written to the logs, and we don't need to do anything more here
 			}
 		}
-		req.setParameter("skipApproval", "true");
-		ai.update(req);
+		ApprovalDecoratorAction dec = new ApprovalDecoratorAction(ai);
+		req.setParameter("wcKeyId", (String)req.getParameter("pageId"));
+		//req.setParameter("pageGroupId", req.getParameter("pageId"), true);
+		req.setParameter("ignoreTemplates", "true");
+		req.setParameter("actionId", "Page", true);
+		req.setParameter("siteName", WebeditType.CenterPage.toString());
+		dec.update(req);
+		} catch(Exception e) {
+			log.error(e);
+		}
 	}
 	
 	private void savePageModule(SMTServletRequest req) throws ActionException {
-        req.setParameter("displayOrder", String.valueOf(5));
-        log.debug(req.getParameter("displayName"));
-        req.setParameter("moduleActionName", req.getParameter("displayName"));
-        if (Convert.formatBoolean(req.getParameter("makeNew"))) {        	
-        	// Add the admin and custom franchisee role to the request
-			if(!Convert.formatBoolean(req.getParameter("isGallery"))) {
-				for(String role : req.getParameterValues("roles")) {
-					if (role.length() > 5)
-						req.setParameter("roleId", new String[]{role, "100"}, true);
-				}
-			}
-		}
-    	
-        SMTActionInterface ai = new PageModuleAction(this.actionInit);
+		req.setParameter("displayOrder", String.valueOf(5));
+		req.setParameter("moduleActionName", req.getParameter("actionName"));
+		req.setParameter("moduleId", (String)req.getAttribute(SB_ACTION_ID));
+		SMTActionInterface ai = new PageModuleAction(this.actionInit);
 		ai.setDBConnection(dbConn);
 		ai.setAttributes(attributes);
 		ai.update(req);
@@ -655,17 +703,19 @@ public class FranchisePageAction extends SBActionAdapter {
 	 */
 	private void saveModule(SMTServletRequest req) throws ActionException {
 		ModuleVO mod = new ModuleVO();
-		if (Convert.formatBoolean(req.getParameter("makeNew"))) {
-			//forces WC to create a new Portlet instead of updating the existing one
-			req.setParameter(SB_ACTION_ID, null);
-			//submitContent(req);
-		}
+		if (Convert.formatBoolean(req.getParameter("makeNew"))) req.setParameter("insertAction", "true");
+		
+		req.setParameter("wcKeyId", req.getParameter(SB_ACTION_ID), true);
+		req.setParameter("wcOrigKeyId", req.getParameter(SB_ACTION_GROUP_ID), true);
+		req.setParameter("actionId", "Portlet", true);
+		req.setAttribute(SB_ACTION_ID, req.getParameter(SB_ACTION_ID));
 		mod.setActionId("CONTENT");
 		attributes.put(AdminConstants.ADMIN_MODULE_DATA, mod);
 		SMTActionInterface ai = new ContentAction(this.actionInit);
 		ai.setDBConnection(dbConn);
 		ai.setAttributes(attributes);
-		ai.update(req);
+		ApprovalDecoratorAction dec = new ApprovalDecoratorAction(ai);
+		dec.update(req);
 	}
 	
 	private void reorderPages(SMTServletRequest req) throws ActionException {
@@ -703,47 +753,6 @@ public class FranchisePageAction extends SBActionAdapter {
 
 		log.debug("clearing cache for siteId=" + req.getParameter("siteId"));
 		super.clearCacheByGroup(req.getParameter("siteId"));
-	}
-	
-	/** submits the content to the FTS admins for approval 
-	 * @throws ActionException 
-	 **/
-	protected void submitContent(SMTServletRequest req) throws ActionException {
-		ApprovalFacadeAction aA = new ApprovalFacadeAction(this.actionInit);
-		aA.setDBConnection(dbConn);
-		aA.setAttributes(attributes);
-		ApprovalVO avo = new ApprovalVO();
-		String [] pmIds = req.getParameter("modulesToSubmit").split(",");
-		List<AbstractChangeLogVO> vos = new ArrayList<AbstractChangeLogVO>();
-		for(String id : pmIds){
-			if(!id.equals("0")){
-			req.setParameter("componentId", id.trim());
-			vos.add(new PageModuleLogVO(req));
-			}
-		}
-		avo.setChangeLogList(PageModuleLogVO.TYPE_ID, vos);
-		req.setAttribute("approvalVO", avo);
-		aA.update(req);
-	}
-	
-	/** submits the page to the FTS admins for approval 
-	 * @throws ActionException **/
-	protected void submitPage(SMTServletRequest req) throws ActionException {
-		ApprovalFacadeAction aA = new ApprovalFacadeAction(this.actionInit);
-		aA.setDBConnection(dbConn);
-		aA.setAttributes(attributes);
-		ApprovalVO avo = new ApprovalVO();
-		String [] pageIds = req.getParameter("pagesToSubmit").split(",");
-		List<AbstractChangeLogVO> vos = new ArrayList<AbstractChangeLogVO>();
-		for(String id : pageIds){
-			if(!id.equals("0")){
-			req.setParameter("componentId", id.trim());
-			vos.add(new PageLogVO(req));
-			}
-		}
-		avo.setChangeLogList(PageLogVO.TYPE_ID, vos);
-		req.setAttribute("approvalVO", avo);
-		aA.update(req);
 	}
 	
 	private String saveFile(SMTServletRequest req) throws FileWriterException {
@@ -859,5 +868,45 @@ public class FranchisePageAction extends SBActionAdapter {
 	
 	protected String stripHTML(String target) {
 		return RegexParser.regexReplace(RegexParser.Patterns.STRIP_ALL_HTML, StringUtil.checkVal(target), "");
+	}
+	
+	/**
+	 * Sets the template Id on the request to point to the single column layout
+	 * @param req
+	 * @throws Exception 
+	 */
+	private void setEmptyColLayout(SMTServletRequest req) throws Exception{
+		log.debug("Single Column Layout Selected");
+		
+		//Get the proper SiteWizardAction
+		SiteVO site = (SiteVO)req.getAttribute("siteData");
+		String siteId = StringUtil.checkVal(req.getParameter("siteId"));
+		SiteWizardFactoryAction wizardFactory = new SiteWizardFactoryAction();
+		SiteWizardAction swa = wizardFactory.retrieveWizard(site.getCountryCode());
+		swa.setAttributes(attributes);
+		swa.setDBConnection(dbConn);
+		
+		String tId = null;
+		try{
+			//Check if the layout was already created
+			tId = swa.getSecondaryLayoutId(siteId, SiteWizardAction.EMPTY_COL_LABEL);
+		} catch (Exception e){ 
+			log.error("Couldn't fetch layout",e); 
+			throw e;
+		}
+		//If the layout doesn't exits yet, create it
+		if (StringUtil.checkVal(tId).isEmpty()){
+			log.debug("***********Creating new "+SiteWizardAction.EMPTY_COL_LABEL);
+			tId = swa.addEmptyColLayout(req);
+			
+			//Grab the center number from the siteId
+			String[] cId = req.getParameter("organizationId").split("_");
+			swa.setCenterId(Convert.formatInteger(cId[cId.length-1]));
+			swa.assignTypes();
+			swa.associateCenterPage(tId, null, null, 2);
+		}
+		
+		req.setParameter("templateId", tId);
+		req.setParameter("displayColumn","1");
 	}
 }

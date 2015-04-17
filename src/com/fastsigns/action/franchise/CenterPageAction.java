@@ -4,11 +4,10 @@ package com.fastsigns.action.franchise;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-
 
 // SMT Base Libs
 import com.fastsigns.action.franchise.centerpage.FranchiseInfoAction;
@@ -32,7 +31,9 @@ import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.tools.EmailFriendAction;
-import com.smt.sitebuilder.admin.action.sync.SyncTransactionAction;
+import com.smt.sitebuilder.approval.ApprovalController;
+import com.smt.sitebuilder.approval.ApprovalVO;
+import com.smt.sitebuilder.approval.ApprovalController.SyncStatus;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
@@ -75,6 +76,7 @@ public class CenterPageAction extends SimpleActionAdapter {
 	public static final int WHITEBOARD_UPDATE = 35;
 	public static final int RESELLER_UPDATE = 17;
 	public static final int RAQSAF_UPDATE = 18;
+	public static final int GLOBAL_MODULE_UPDATE = 19;
 	/**
 	 * 
 	 */
@@ -136,6 +138,7 @@ public class CenterPageAction extends SimpleActionAdapter {
 				case WHITEBOARD_UPDATE:
 				case CenterPageAction.RESELLER_UPDATE:
 				case RAQSAF_UPDATE:
+				case GLOBAL_MODULE_UPDATE:
 					FranchiseInfoAction fia = new FranchiseInfoAction(this.actionInit);
 					fia.setDBConnection(dbConn);
 					fia.setAttributes(attributes);
@@ -325,7 +328,7 @@ public class CenterPageAction extends SimpleActionAdapter {
 		else if (mod.isCacheable()) mod.setCacheGroup(orgId + "_" + id + "_1");
 		Boolean isPreview = Convert.formatBoolean(req.getAttribute(Constants.PAGE_PREVIEW), false);
 		
-        String previewApiKey = SyncTransactionAction.generatePreviewApiKey(attributes);
+        String previewApiKey = ApprovalController.generatePreviewApiKey(attributes);
         req.setParameter(Constants.PAGE_PREVIEW, previewApiKey);
 		if(req.hasParameter("reloadMenu"))
 			isPreview = Convert.formatBoolean(req.getParameter("reloadMenu"));
@@ -344,7 +347,7 @@ public class CenterPageAction extends SimpleActionAdapter {
 		fc.setMapData(fla.setMapData(f));
 		
 		// Get the module Data
-		Map<String, CenterModuleVO> modules = getModuleData(id, req);
+		Map<String, CenterModuleVO> modules = getModuleData(id, req, f.getUseGlobalMod());
 		
 		// Add the data to the module container
 		fc.setModuleData(modules);
@@ -365,7 +368,7 @@ public class CenterPageAction extends SimpleActionAdapter {
 	 * @param id
 	 * @return
 	 */
-	public Map<String, CenterModuleVO> getModuleData(String franId, SMTServletRequest req) {
+	public Map<String, CenterModuleVO> getModuleData(String franId, SMTServletRequest req, int useGlobalModules) {
 		Boolean isKeystone = Convert.formatBoolean(req.getAttribute("isKeystone"), false);				//In Webedit
 		Boolean isPreview = Convert.formatBoolean(req.getAttribute(Constants.PAGE_PREVIEW), false);				//In Preview mode
 		if (isPreview) {
@@ -383,6 +386,8 @@ public class CenterPageAction extends SimpleActionAdapter {
 		try {
 			ps = dbConn.prepareStatement(s.toString());
 			if (!isKeystone || (isKeystone && locationId == 0)) {
+				ps.setString(++i, SyncStatus.Approved.toString());
+				ps.setString(++i, SyncStatus.Declined.toString());
 				ps.setInt(++i, Convert.formatInteger(franId));
 			} else {
 				if (locationId > 0) {
@@ -413,9 +418,15 @@ public class CenterPageAction extends SimpleActionAdapter {
 						cmVo = new CenterModuleVO(rs, isKeystone);
 						
 					} else {
-						cmVo.addOption(new CenterModuleOptionVO(rs));
-//						for(CenterModuleOptionVO vo : cmVo.getModuleOptions().values())
-//						log.debug(vo.getApprovalFlag());
+						if (isKeystone || StringUtil.checkVal(rs.getString("WC_SYNC_STATUS_CD")).length() == 0) {
+							CenterModuleOptionVO opt = new CenterModuleOptionVO(rs);
+							// If we are in webedit we add the sync data
+							if (isKeystone) opt.setSyncData(new ApprovalVO(rs));
+							cmVo.addOption(opt);
+							
+	//						for(CenterModuleOptionVO vo : cmVo.getModuleOptions().values())
+	//						log.debug(vo.getApprovalFlag());
+						}
 					}
 					
 					lastLocnId = rs.getInt("cp_location_id");
@@ -431,6 +442,11 @@ public class CenterPageAction extends SimpleActionAdapter {
 			
 			// Add the straggler
 			if (cmVo != null) data.put("MODULE_" + cmVo.getModuleLocationId(), cmVo);
+			
+			// If we are using global modules we add the global assets to the modules here.
+			if (useGlobalModules == 1 && !req.hasParameter("edit")) {
+				appendGlobalAssets(data, isPreview);
+			}
 			
 		} catch (Exception e) {
 			log.error("Unable to get franchise info", e);
@@ -450,6 +466,66 @@ public class CenterPageAction extends SimpleActionAdapter {
 
 		req.setAttribute("moduleTypeId", modTypeId);
 		return data;
+	}
+	
+	/**
+	 * Get all global assets from the database and prepend them to the list of assets
+	 */
+	private void appendGlobalAssets(Map<String, CenterModuleVO> data, boolean preview) throws SQLException {
+		log.debug("Gathering global assets.|"+preview);
+		StringBuilder sql = new StringBuilder(430);
+		final String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		
+		sql.append("SELECT * FROM ").append(customDb).append("FTS_CP_MODULE_OPTION cmo  ");
+		sql.append("left join ").append(customDb).append("FTS_CP_MODULE_TYPE_XR mtx ");
+		sql.append("on mtx.FTS_CP_MODULE_TYPE_ID = cmo.FTS_CP_MODULE_TYPE_ID ");
+		sql.append("left join ").append(customDb).append("FTS_CP_MODULE m on m.CP_MODULE_ID = mtx.CP_MODULE_ID ");
+		sql.append("left join ").append(customDb).append("FTS_CP_MODULE_OPTION child on child.PARENT_ID = cmo.CP_MODULE_OPTION_ID ");
+		sql.append("WHERE cmo.FRANCHISE_ID = -1 and m.ORG_ID = 'FTS' ");
+		if (preview) {
+			sql.append("and ((cmo.APPROVAL_FLG = 1 and child.CP_MODULE_OPTION_ID is null) or cmo.APPROVAL_FLG = 100) ");
+		} else {
+			sql.append("and cmo.APPROVAL_FLG = 1 ");
+		}
+		sql.append("ORDER BY m.CP_MODULE_ID, cmo.CREATE_DT DESC");
+		log.debug(sql);
+		
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		
+		ps = dbConn.prepareStatement(sql.toString());
+		rs = ps.executeQuery();
+
+		Integer lastModTypeId = 0;
+		CenterModuleVO cmVo = null;
+		Map<Integer, CenterModuleVO> globalModules = new HashMap<Integer, CenterModuleVO>();
+		while (rs.next()) {
+			if (!lastModTypeId.equals(rs.getInt("CP_MODULE_ID"))) {
+				if (cmVo != null) globalModules.put(lastModTypeId, cmVo);
+
+				lastModTypeId = rs.getInt("CP_MODULE_ID");
+				cmVo = new CenterModuleVO();
+				cmVo.addOption(new CenterModuleOptionVO(rs));
+				log.debug(cmVo.getModuleOptions().size()+"|NEW");
+			} else {
+				cmVo.addOption(new CenterModuleOptionVO(rs));
+				log.debug(cmVo.getModuleOptions().size()+"|ESTABLISHED");
+			}
+		}
+
+		CenterModuleVO center = null;
+		CenterModuleVO globalModule = null;
+		Map<Integer, CenterModuleOptionVO> options;
+		for (String key : data.keySet()) {
+			center = data.get(key);
+			log.debug(key+"|"+center.getModuleId()+"|"+center.getModuleName());
+			globalModule = globalModules.get(center.getModuleId());
+			if (globalModule != null) {
+				options = globalModule.getModuleOptions();
+				options.putAll(center.getModuleOptions());
+				center.setModuleOptions(options);
+			}
+		}
 	}
 
 	/** the query used to retrieve the module data
@@ -492,13 +568,10 @@ public class CenterPageAction extends SimpleActionAdapter {
 		s.append("on c.FTS_CP_MODULE_TYPE_ID = e.FTS_CP_MODULE_TYPE_ID ");
 		s.append("left outer join ").append(customDb).append("FTS_CP_MODULE_DISPLAY h ");
 		s.append("on a.FTS_CP_MODULE_DISPLAY_ID = h.FTS_CP_MODULE_DISPLAY_ID ");
-		s.append("where a.FRANCHISE_ID = ? ");
+		s.append("left join WC_SYNC ws on (CAST(c.CP_MODULE_OPTION_ID AS NVARCHAR(32)) =  WC_KEY_ID or ");
+		s.append("(CAST(c.PARENT_ID AS NVARCHAR(32)) =  WC_ORIG_KEY_ID and WC_ORIG_KEY_ID != '0' and WC_ORIG_KEY_ID is not null)) and WC_SYNC_STATUS_CD not in (?,?) ");
+		s.append("where a.FRANCHISE_ID = ? "); 
 		
-		if (isKeystone) {
-			//ignore approval_flg within Keystone
-		} else {
-			s.append("and approval_flg=1 ");
-		}
 		if(isMobile) {
 			s.append("and MOBILE_FLG = 1 ");
 		} else {

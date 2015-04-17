@@ -14,7 +14,6 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.admin.action.PageModuleAction;
 import com.smt.sitebuilder.admin.action.PageModuleRoleAction;
 import com.smt.sitebuilder.admin.action.PageRoleAction;
-import com.smt.sitebuilder.admin.action.sync.SyncTransactionAction;
 
 /****************************************************************************
  * <b>Title</b>: FastsignsMetroWizard.java<p/>
@@ -30,13 +29,13 @@ import com.smt.sitebuilder.admin.action.sync.SyncTransactionAction;
  ****************************************************************************/
 
 public class FastsignsMetroWizard  extends SBActionAdapter {
-	
+
 	// These values are set in thesetOrgValues method and are used to allow this to
 	// work with all the Fastsigns locations.
 	private String displayId;
 	private String frachiseRoleId;
 	private String templateId;
-	
+
 	/**
 	 * Instantiates this metro wizard under the assumption we are creating a new metro area
 	 * @param actionInit
@@ -46,7 +45,7 @@ public class FastsignsMetroWizard  extends SBActionAdapter {
 		super(actionInit);
 		this.dbConn = dbConn;
 	}
-	
+
 	/**
 	 * Create and update the page and module related to 
 	 * the metro area that was just added or updated
@@ -101,7 +100,7 @@ public class FastsignsMetroWizard  extends SBActionAdapter {
 			boolean newMetro) throws SQLException, ActionException {
 		StringBuilder sql = createPageSQL(newMetro);
 		String siteId = req.getParameter("organizationId") + "_7";
-		
+
 		PreparedStatement ps = dbConn.prepareStatement(sql.toString());
 
 		ps.setString(1, "");
@@ -127,13 +126,13 @@ public class FastsignsMetroWizard  extends SBActionAdapter {
 		if(resultCount == 0) {
 			throw new SQLException();
 		}
-		
+
 		if (newMetro) {
 			req.setAttribute("pageId", metroAreaId);
 			req.setParameter("roles", new String[]{"0", "10", "100", frachiseRoleId}, true);
-	        SMTActionInterface aac = new PageRoleAction(this.actionInit);
-	        aac.setDBConnection(dbConn);
-	        aac.update(req);
+			SMTActionInterface aac = new PageRoleAction(this.actionInit);
+			aac.setDBConnection(dbConn);
+			aac.update(req);
 		}
 	}
 
@@ -144,7 +143,7 @@ public class FastsignsMetroWizard  extends SBActionAdapter {
 	 */
 	private StringBuilder createPageSQL(boolean newMetro) {
 		StringBuilder sql = new StringBuilder();
-		
+
 		if (newMetro) {
 			sql.append("INSERT INTO PAGE (");
 			sql.append("PARENT_ID, TEMPLATE_ID, SITE_ID, PAGE_ALIAS_NM, ");
@@ -153,7 +152,7 @@ public class FastsignsMetroWizard  extends SBActionAdapter {
 			sql.append("PARENT_PATH_TXT, FULL_PATH_TXT, CANONICAL_MOBILE_URL, PAGE_ID) ");
 			sql.append("VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 		} else {
-			 sql.append("update page set PARENT_ID = ?, TEMPLATE_ID = ?, SITE_ID = ?, PAGE_ALIAS_NM = ?, ");
+			sql.append("update page set PARENT_ID = ?, TEMPLATE_ID = ?, SITE_ID = ?, PAGE_ALIAS_NM = ?, ");
 			sql.append("PAGE_DISPLAY_NM = ?, PAGE_TITLE_NM = ?, LIVE_START_DT = ?, ORDER_NO = ?, ");
 			sql.append("VISIBLE_FLG = ?, FOOTER_FLG = ?, UPDATE_DT = ?, META_KEYWORD_TXT = ?, META_DESC_TXT = ?, ");
 			sql.append("DEFAULT_FLG = ?, PARENT_PATH_TXT = ?, FULL_PATH_TXT = ?, CANONICAL_MOBILE_URL = ? ");
@@ -172,7 +171,7 @@ public class FastsignsMetroWizard  extends SBActionAdapter {
 	private void updateMetroModule(SMTServletRequest req, String metroAreaId, 
 			boolean newMetro) throws SQLException {
 		StringBuilder sql = createModuleSQL(newMetro);
-		
+
 		PreparedStatement ps = dbConn.prepareStatement(sql.toString());
 		ps.setString(1, req.getParameter("organizationId"));
 		ps.setString(2, "FTS_METRO");
@@ -181,14 +180,14 @@ public class FastsignsMetroWizard  extends SBActionAdapter {
 		ps.setTimestamp(5, Convert.getCurrentTimestamp());
 		ps.setString(6, metroAreaId);
 		ps.setString(7, metroAreaId);
-		
+
 		int resultCount = ps.executeUpdate();
 		ps.close();
 		if(resultCount == 0) {
 			throw new SQLException();
 		}
 	}
-	
+
 	/**
 	 * Creates the sql for creating the metro display module
 	 * @param newMetro
@@ -196,7 +195,7 @@ public class FastsignsMetroWizard  extends SBActionAdapter {
 	 */
 	private StringBuilder createModuleSQL(boolean newMetro) {
 		StringBuilder sql = new StringBuilder();
-		
+
 		if (newMetro) {
 			sql.append("INSERT INTO SB_ACTION (");
 			sql.append("ORGANIZATION_ID, MODULE_TYPE_ID, ACTION_NM, ");
@@ -210,7 +209,7 @@ public class FastsignsMetroWizard  extends SBActionAdapter {
 		}
 		return sql;
 	}
-	
+
 	/**
 	 * Puts the new display module on the new page
 	 * @param req
@@ -220,7 +219,7 @@ public class FastsignsMetroWizard  extends SBActionAdapter {
 	 */
 	private void createPageModule(SMTServletRequest req, String metroAreaId) throws SQLException, ActionException {
 		StringBuilder sql = createPageModuleSQL();
-		
+
 		PreparedStatement ps = dbConn.prepareStatement(sql.toString());
 
 		ps.setString(1, metroAreaId);
@@ -231,47 +230,47 @@ public class FastsignsMetroWizard  extends SBActionAdapter {
 		ps.setInt(6, 1);
 		ps.setString(7, req.getParameter("areaName") + " Metro Area Display");
 		ps.setTimestamp(8, Convert.getCurrentTimestamp());
-		
+
 		int resultCount = ps.executeUpdate();
 		ps.close();
 		if(resultCount == 0) {
 			log.debug("something");
 			throw new SQLException();
 		}
-		
-		
+
+
 		req.setAttribute("pageModuleId", metroAreaId);
 		req.setParameter("roleId", new String[]{"0", "10", "100", frachiseRoleId}, true);
 		PageModuleRoleAction pmra = new PageModuleRoleAction(actionInit);
 		pmra.setDBConnection(dbConn);
 		pmra.update(req);
 	}
-	
+
 	/**
 	 * Create the page module sql
 	 * @return
 	 */
 	private StringBuilder createPageModuleSQL() {
 		StringBuilder sql = new StringBuilder();
-		
+
 		sql.append("INSERT INTO PAGE_MODULE (");
 		sql.append("PAGE_MODULE_ID, MODULE_DISPLAY_ID, PAGE_ID, ");
 		sql.append("ACTION_ID, DISPLAY_COLUMN_NO, ORDER_NO, ");
 		sql.append("MODULE_ACTION_NM, CREATE_DT) ");
 		sql.append("VALUES (?,?,?,?,?,?,?,?)");
-		
+
 		return sql;
 	}
-	
+
 	/**
 	 * Delete the page and module that were created for this metro area.
 	 */
 	public void delete(SMTServletRequest req) throws ActionException {
 		req.setParameter("skipApproval", "true");
-		
+
 		String id = req.getParameter("metroAreaId");
 		String siteId = req.getParameter("organizationId") + "_7";
-		
+
 		try {
 			deletePage(req, id, siteId);
 			deleteModule(req, id);
@@ -279,7 +278,7 @@ public class FastsignsMetroWizard  extends SBActionAdapter {
 			throw new ActionException(e.getMessage(), e.getCause());
 		}
 	}
-	
+
 	/**
 	 * Deletes the page the associated with the metro area.
 	 * @param req
@@ -288,31 +287,23 @@ public class FastsignsMetroWizard  extends SBActionAdapter {
 	private void deletePage(SMTServletRequest req, String pageId, String SiteId) throws ActionException, SQLException {
 		log.debug("Beginning Page Delete");
 		StringBuilder sql = new StringBuilder("delete from page where page_id = ? or parent_id = ? ");
-        
-        PreparedStatement ps = null;
-        
-        ps = dbConn.prepareStatement(sql.toString());
-        ps.setString(1, pageId);
-        ps.setString(2, pageId); //delete all child pages too.  - JM 08/22/11
-        
-        // Make sure the update was successful
-        int resultCount = ps.executeUpdate();
+
+		PreparedStatement ps = null;
+
+		ps = dbConn.prepareStatement(sql.toString());
+		ps.setString(1, pageId);
+		ps.setString(2, pageId); //delete all child pages too.  - JM 08/22/11
+
+		// Make sure the update was successful
+		int resultCount = ps.executeUpdate();
 		ps.close();
 		if(resultCount == 0) {
 			throw new SQLException();
 		}
-    
-        // Update the menu cache
-        super.clearCacheByGroup(req.getParameter("siteId"));
-        super.clearCacheByGroup(pageId);
-        
-        // Delete any pending sync approvals
-        log.debug("Deleting any sync actions");
-        req.setAttribute(SBActionAdapter.SB_ACTION_ID, pageId);
-        SMTActionInterface sai = new SyncTransactionAction(actionInit);
-        sai.setAttributes(attributes);
-        sai.setDBConnection(dbConn);
-        sai.delete(req);
+
+		// Update the menu cache
+		super.clearCacheByGroup(req.getParameter("siteId"));
+		super.clearCacheByGroup(pageId);
 	}
 
 	/**
@@ -329,32 +320,25 @@ public class FastsignsMetroWizard  extends SBActionAdapter {
 		log.debug("Beginning Module Delete");
 		StringBuilder sb = new StringBuilder();
 
-        sb.append("delete from sb_action where action_id = ?");
-        
-        log.info("Delete SB Action SQL: " + sb + " - " + sbActionId);
-        PreparedStatement ps = null;
-        
-        ps = dbConn.prepareStatement(sb.toString());
-        ps.setString(1, sbActionId);
-        
-        // Make sure the update was successful
-        int resultCount = ps.executeUpdate();
+		sb.append("delete from sb_action where action_id = ?");
+
+		log.info("Delete SB Action SQL: " + sb + " - " + sbActionId);
+		PreparedStatement ps = null;
+
+		ps = dbConn.prepareStatement(sb.toString());
+		ps.setString(1, sbActionId);
+
+		// Make sure the update was successful
+		int resultCount = ps.executeUpdate();
 		ps.close();
 		if(resultCount == 0) {
 			throw new SQLException();
 		}
 
-        PageModuleAction aac = new PageModuleAction(this.actionInit); 
-        aac.setDBConnection(dbConn);
-    	aac.delete(req, sbActionId);
-        
- 		this.clearCacheByActionId(sbActionId);
-        
-        // Delete any pending sync approvals
-        log.debug("Deleting any sync actions");
-        SMTActionInterface sai = new SyncTransactionAction(actionInit);
-        sai.setAttributes(attributes);
-        sai.setDBConnection(dbConn);
-        sai.delete(req);
+		PageModuleAction aac = new PageModuleAction(this.actionInit); 
+		aac.setDBConnection(dbConn);
+		aac.delete(req, sbActionId);
+
+		this.clearCacheByActionId(sbActionId);
 	}
 }

@@ -223,7 +223,8 @@ public class CoopAdsEmailer extends SBActionAdapter {
 		msg.append(user.getFirstName()).append(" ").append(user.getLastName());
 		msg.append(" (").append(user.getEmailAddress()).append(") has approved ");
 		msg.append("the newspaper ad for Seminar #").append(sem.getRSVPCodes()).append("\r\r");
-		if (sem.getNewspaperAd().getSurgeonStatusFlg() == 0)
+		
+		if (isCFSEM && sem.getNewspaperAd().getSurgeonStatusFlg() == 0)
 			msg.append("The surgeon has yet to review this ad.\r\n");
 
 		try {

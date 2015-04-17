@@ -1,27 +1,27 @@
 package com.depuysynthesinst.events;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.sql.SQLException;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.http.SMTServletRequest;
-import com.siliconmtn.util.parser.AnnotationXlsParser;
-import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.siliconmtn.util.databean.FilePartDataBean;
+import com.siliconmtn.util.parser.AnnotationParser;
 import com.smt.sitebuilder.action.SBModuleVO;
-import com.smt.sitebuilder.action.event.EventFacadeAction;
+import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.event.EventEntryAction;
+import com.smt.sitebuilder.action.event.EventFacadeAction;
 import com.smt.sitebuilder.action.event.vo.EventEntryVO;
 import com.smt.sitebuilder.action.event.vo.EventGroupVO;
 import com.smt.sitebuilder.action.event.vo.EventTypeVO;
@@ -76,16 +76,17 @@ public class CourseCalendar extends SimpleActionAdapter {
 	 * @throws ActionException
 	 */
 	private void processUpload(SMTServletRequest req) throws ActionException {
-		AnnotationXlsParser parser = new AnnotationXlsParser();
-		//Create a list of vo classnames
-		LinkedList<Class<?>> classList = new LinkedList<>();
-		classList.add(CourseCalendarVO.class);
-		
+		AnnotationParser parser;
+		FilePartDataBean fpdb = req.getFile("xlsFile");
+		try {
+			parser = new AnnotationParser(CourseCalendarVO.class, fpdb.getExtension());
+		} catch(InvalidDataException e) {
+			throw new ActionException("could not load import file", e);
+		}
 		try {
 			//Gets the xls file from the request object, and passes it to the parser.
 			//Parser then returns the list of populated beans
-			Map< Class<?>, Collection<Object>> beans = parser.readFileData(
-					req.getFile("xlsFile").getFileData(), classList);
+			Map< Class<?>, Collection<Object>> beans = parser.parseFile(fpdb, true);
 			
 			ArrayList<Object> beanList = null;
 			EventEntryAction eventAction = new EventEntryAction();
@@ -94,18 +95,15 @@ public class CourseCalendar extends SimpleActionAdapter {
 			//Disable the db autocommit for the insert batch
 			dbConn.setAutoCommit(false);
 			
-			for ( Class<?> className : beans.keySet() ) {
-				//Change the generic collection to an arrayList for the import method
-				beanList = new ArrayList<>(beans.get(className));
-				for (Object o : beanList) {
-					//set the eventTypeId for each
-					EventEntryVO vo = (EventEntryVO) o;
-					vo.setEventTypeId(req.getParameter("eventTypeId"));
-					vo.setStatusFlg(EventFacadeAction.STATUS_APPROVED);
-				}
-				
-				eventAction.importBeans(beanList, req.getParameter("attrib1Text"));
+			beanList = new ArrayList<>(beans.get(CourseCalendarVO.class));
+			for (Object o : beanList) {
+				//set the eventTypeId for each
+				CourseCalendarVO vo = (CourseCalendarVO) o;
+				vo.setEventTypeId(req.getParameter("eventTypeId"));
+				vo.setStatusFlg(EventFacadeAction.STATUS_APPROVED);
 			}
+			eventAction.importBeans(beanList, req.getParameter("attrib1Text"));
+			
 			//commit only after the entire import succeeds
 			dbConn.commit();
 			
@@ -149,7 +147,10 @@ public class CourseCalendar extends SimpleActionAdapter {
 			req.setParameter(EventEntryAction.REQ_SERVICE_OPT, anatomy);
 		}
 		
-		req.setParameter(EventEntryAction.REQ_START_DT, Convert.formatDate(Calendar.getInstance().getTime(), Convert.DATE_SLASH_PATTERN));
+		Calendar cal = Calendar.getInstance();
+		if (page.getAliasName().equals("profile"))
+			cal.add(Calendar.DATE, -90);
+		req.setParameter(EventEntryAction.REQ_START_DT, Convert.formatDate(cal.getTime(), Convert.DATE_SLASH_PATTERN));
 		
 		//load the Events
 		actionInit.setActionId((String)mod.getAttribute(SBModuleVO.ATTRIBUTE_1));
@@ -163,11 +164,20 @@ public class CourseCalendar extends SimpleActionAdapter {
 		
 		//prepare facets/filters
 		if (showFilters) {
-			prepareFacets(req, vo);
+			if (!req.hasParameter("location"))
+				prepareSpecialtyFacets(req, vo);
+			
 			req.setValidateInput(false);
 			filterDataBySpecialty(req, vo);
 			filterDataByLocation(req, vo);
 			req.setValidateInput(true);
+			
+			if (req.hasParameter("location"))
+				prepareSpecialtyFacets(req, vo);
+			
+			//locations listed are limited to only those containing events (after specialty filter is applied)
+			prepareLocationFacets(req, vo);
+			
 			super.putModuleData(vo);
 		}
 	}
@@ -177,23 +187,7 @@ public class CourseCalendar extends SimpleActionAdapter {
 	 * @param req
 	 * @param grpVo
 	 */
-	private void prepareFacets(SMTServletRequest req, EventGroupVO grpVo) {
-		//one for city & state, put on the request by Type
-		for (EventTypeVO typeVo : grpVo.getTypes().values()) {
-			Map<String, Integer> locations = new TreeMap<String, Integer>();
-			for (EventEntryVO vo : typeVo.getEvents()) {
-				String locn = StringUtil.checkVal(vo.getCityName()) + ", " + StringUtil.checkVal(vo.getStateCode());
-				if (locn.length() == 2) locn = "Other";
-				if (locations.containsKey(locn)) {
-					locations.put(locn, locations.get(locn)+1);
-				} else {
-					locations.put(locn, 1);
-				}
-			}
-			log.debug("loaded " + locations.size() + " location filters");
-			req.setAttribute("facet_locn_" + typeVo.getTypeName(), locations);
-		}
-		
+	private void prepareSpecialtyFacets(SMTServletRequest req, EventGroupVO grpVo) {
 		//one for specialties, put on the request by Type
 		for (EventTypeVO typeVo : grpVo.getTypes().values()) {
 			Map<String, Integer> specialties = new TreeMap<String, Integer>();
@@ -211,8 +205,29 @@ public class CourseCalendar extends SimpleActionAdapter {
 			log.debug("loaded " + specialties.size() + " specialty filters");
 			req.setAttribute("facet_spec_" + typeVo.getTypeName(), specialties);
 		}
-		
 	}
+	
+	private void prepareLocationFacets(SMTServletRequest req, EventGroupVO grpVo) {
+		//one for Location (city & state), put on the request by Type
+		for (EventTypeVO typeVo : grpVo.getTypes().values()) {
+			Map<String, Integer> locations = new TreeMap<String, Integer>();
+			for (EventEntryVO vo : typeVo.getEvents()) {
+				String state = StringUtil.checkVal(vo.getStateCode());
+				String locn = StringUtil.checkVal(vo.getCityName());
+				if (state.length() > 0) locn += ", " + state;
+				
+				if (locn.length() == 2) locn = "Other";
+				if (locations.containsKey(locn)) {
+					locations.put(locn, locations.get(locn)+1);
+				} else {
+					locations.put(locn, 1);
+				}
+			}
+			log.debug("loaded " + locations.size() + " location filters facet_locn_" + typeVo.getTypeName());
+			req.setAttribute("facet_locn_" + typeVo.getTypeName(), locations);
+		}
+	}
+	
 	
 	/**
 	 * filter the list of events being returned to the browser to only those matching 
@@ -220,7 +235,6 @@ public class CourseCalendar extends SimpleActionAdapter {
 	 * @param req
 	 * @param vo
 	 */
-	@SuppressWarnings("unchecked")
 	private void filterDataByLocation(SMTServletRequest req, EventGroupVO grpVo) {
 		if (!req.hasParameter("location")) return;
 		List<String> filters = Arrays.asList(req.getParameter("location").split("~"));
@@ -245,7 +259,6 @@ public class CourseCalendar extends SimpleActionAdapter {
 	 * @param req
 	 * @param vo
 	 */
-	@SuppressWarnings("unchecked")
 	private void filterDataBySpecialty(SMTServletRequest req, EventGroupVO grpVo) {
 		if (!req.hasParameter("specialty")) return;
 		List<String> filters = Arrays.asList(req.getParameter("specialty").split("~"));
@@ -256,7 +269,7 @@ public class CourseCalendar extends SimpleActionAdapter {
 			List<EventEntryVO> data = new ArrayList<EventEntryVO>();
 			for (EventEntryVO vo : typeVo.getEvents()) {
 				//check each event and only include those matching our filters
-				String spec = StringUtil.checkVal(vo.getServiceText());
+				String spec = StringUtil.checkVal(vo.getServiceText(),"Other");
 				//log.debug("spec=" + spec);
 				boolean addIt = false;
 				for (String f : filters) {

@@ -123,8 +123,10 @@ public class SiteWizardAction_SA extends SiteWizardAction {
 		//defDisplay.add(makePageModule("0a00141332afb0976020f5cb8b3c98f7","c0a8022363bdd195bac696fd46636514", null, 2, 2));										// Center Page Slider 2012
 		defDisplay.add(makePageModule(true, true, true, null,"c0a8016564a89155842b990af697746c", null, 2, 5));														// Modules 2012
 		defDisplay.add(makePageModule(true, true, true, null,"c0a80165f0c0ccdaef974a12b5ee3faa", null, 3, 7));														// Right Rail 2012
-		defDisplay.add(makePageModule(true, false, false, "0a001413d97974fa38f6a61140522c69","c0a80a07614b3c24224dd3d77221237a", "HEADER_TOP_LEFT_CONTENT", 0, 1));	// World Link 2012
+		//defDisplay.add(makePageModule(true, false, false, "0a001413d97974fa38f6a61140522c69","c0a80a07614b3c24224dd3d77221237a", "HEADER_TOP_LEFT_CONTENT", 0, 1));	// World Link 2012
+		defDisplay.add(makePageModule(true, false, false, "c0a80223d5a6cfd7728463274edddb40","c0a80a07614b3c24224dd3d77221237a", "HEADER_TOP_LEFT_CONTENT", 0, 1));	// World Link 2012 updated
 		defDisplay.add(makePageModule(false, true, true, "0a001413d97974ff38f6a611791ac25d","c0a80a07614b3c24224dd3d77221237a", "HEADER_TOP_LEFT_CONTENT", 0, 1));	// World Link 2012 Logged In
+		defDisplay.add(makePageModule(true, true, false, "FTS_CENTER_PAGE_"+centerId, "0a00141d8afabb8f1d07f6377fa000a6", "HEADER_RIGHT", 0, 1));		//Consultation Portlet
 		defDisplay.add(makePageModule(true, true, true, "0a001413d97974f338f6a611d1f839d9", "c0a802411c9e09843c052afd87f4bba1", "SITE_SEARCH", 1, 0));				// Site Search 2012
 		defDisplay.add(makePageModule(true, true, true, null, "c0a802234b3c124378e7a6703fa3445", null, 1, 4));														// White Board
 
@@ -132,12 +134,19 @@ public class SiteWizardAction_SA extends SiteWizardAction {
 		secDisplay.add(makePageModule(true, true, true, null,"c0a8016564a7940e9195bd84416afd93", null, 1, 2));														// 3-Button Group below menu 2012
 		//secDisplay.add(makePageModule("7f0001016122294ce3852a7728cb4963","c0a8022363bdd195bac696fd46636514", null, 2, 4));										// Center Page Slider 2012
 		secDisplay.add(makePageModule(true, true, true, null,"c0a80165f0c0ccdaef974a12b5ee3faa", null, 3, 6));														// Right Rail 2012
-		secDisplay.add(makePageModule(true, false, false, "0a001413d97974fa38f6a61140522c69","c0a80a07614b3c24224dd3d77221237a", "HEADER_TOP_LEFT_CONTENT", 0, 1));	// World Link 2012
+		//secDisplay.add(makePageModule(true, false, false, "0a001413d97974fa38f6a61140522c69","c0a80a07614b3c24224dd3d77221237a", "HEADER_TOP_LEFT_CONTENT", 0, 1));	// World Link 2012
+		secDisplay.add(makePageModule(true, false, false, "c0a80223d5a6cfd7728463274edddb40","c0a80a07614b3c24224dd3d77221237a", "HEADER_TOP_LEFT_CONTENT", 0, 1));	// World Link 2012 updated
 		secDisplay.add(makePageModule(false, true, true, "0a001413d97974ff38f6a611791ac25d","c0a80a07614b3c24224dd3d77221237a", "HEADER_TOP_LEFT_CONTENT", 0, 1));	// World Link 2012 Logged In
+		secDisplay.add(makePageModule(true, true, false, "FTS_CENTER_PAGE_"+centerId, "0a00141d8afabb8f1d07f6377fa000a6", "HEADER_RIGHT", 0, 1));		//Consultation portlet
 		secDisplay.add(makePageModule(true, true, true, "0a001413d97974f338f6a611d1f839d9", "c0a802411c9e09843c052afd87f4bba1", "SITE_SEARCH", 1, 0));				// Site Search 2012
 		secDisplay.add(makePageModule(true, true, true, "0a001413d979751438f6a611ee7fb3fe", "c0a80a076e1dc62789a3565692e8803e", null, 2, 1));						// Breadcrumbs
 		secDisplay.add(makePageModule(true, true, true, null, "c0a802234b3c124378e7a6703fa3445", null, 1, 4));														// White Board
+		secDisplay.add(makePageModule(true,true, true, "FTS_CENTER_PAGE_"+centerId, "c0a80165f0c00ec5ab44b17238772bf9", null, 2, 4));								//Sub page Intro heading
 
+		emptyColDisplay.add(makePageModule(true, false, false, "c0a80223d5a6cfd7728463274edddb40","c0a80a07614b3c24224dd3d77221237a", "HEADER_TOP_LEFT_CONTENT", 0, 1));	// World Link 2012 updated
+		emptyColDisplay.add(makePageModule(false, true, true, "0a001413d97974ff38f6a611791ac25d","c0a80a07614b3c24224dd3d77221237a", "HEADER_TOP_LEFT_CONTENT", 0, 1));		// World Link 2012 Logged In
+		emptyColDisplay.add(makePageModule(true, true, true, "FTS_CENTER_PAGE_"+centerId, "0a00141d8afabb8f1d07f6377fa000a6", "HEADER_RIGHT", 0, 1));						//Consultation Portlet
+		emptyColDisplay.add(makePageModule(true, true, true, "0a001413d97974f338f6a611d1f839d9", "c0a802411c9e09843c052afd87f4bba1", "SITE_SEARCH", 1, 0));					// Site Search 2012
 	}
 	
 	public Map<String, Integer> makeRoles(boolean isPublic, boolean isReg, boolean isAdmin) {
@@ -176,7 +185,7 @@ public class SiteWizardAction_SA extends SiteWizardAction {
 		sai.update(req);
 		
 		// get default location desc
-		req.setParameter("locationDesc", this.getLocationDesc(req.getParameter("dealerName")));
+		req.setParameter("locationDesc", this.getLocationDesc(req));
 		
 		// Add Dealer Location
 		//req.setParameter("country", localization.substring(localization.indexOf("_")+1, localization.length()));
@@ -213,6 +222,30 @@ public class SiteWizardAction_SA extends SiteWizardAction {
 		sai.update(req);
 		
 		return this.getSecondaryLayoutId(req.getParameter("siteId"), "Secondary Page Layout");
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see com.fastsigns.action.wizard.SiteWizardAction#addSingleColLayout(com.siliconmtn.http.SMTServletRequest)
+	 */
+	public String addEmptyColLayout(SMTServletRequest req) throws Exception {
+		SMTActionInterface sai = new TemplateAction(this.actionInit);
+		sai.setAttributes(attributes);
+		sai.setDBConnection(dbConn);
+		req.setParameter("actionId", "TEMPLATE");
+		req.setParameter("pageModuleId", "");
+		req.setParameter("pmTemplateId", "");
+		req.setParameter("columns", "1");
+		req.setParameter("layoutName", EMPTY_COL_LABEL);
+		req.setParameter("pageTitle", "Welcome to FASTSIGNS &reg;");
+		req.setParameter("defaultFlag", "0");
+		req.setParameter("defaultColumn","1");
+		req.setParameter("numberColumns", "1");
+		req.setParameter("templateId", "");
+		req.setParameter("paramName", "");
+		sai.update(req);
+		
+		return getSecondaryLayoutId(req.getParameter("siteId"), EMPTY_COL_LABEL);
 	}
 
 	/**

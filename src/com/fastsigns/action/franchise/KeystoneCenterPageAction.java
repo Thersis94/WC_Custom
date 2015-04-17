@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.fastsigns.action.franchise;
 
 import javax.servlet.http.HttpSession;
@@ -11,7 +8,7 @@ import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.UserRoleVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-import com.smt.sitebuilder.admin.action.sync.SyncTransactionAction;
+import com.smt.sitebuilder.approval.ApprovalController;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -65,7 +62,7 @@ public class KeystoneCenterPageAction extends CenterPageAction {
 		//this snippet allows Keystone admins to use the Admintool's file manager
 		HttpSession ses = req.getSession();
     	SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-        String previewApiKey = SyncTransactionAction.generatePreviewApiKey(attributes);
+        String previewApiKey = ApprovalController.generatePreviewApiKey(attributes);
         req.setParameter(Constants.PAGE_PREVIEW, previewApiKey);
         SBUserRoleContainer roles = (SBUserRoleContainer) ses.getAttribute(AdminConstants.ADMIN_ROLE_DATA);
         String franOrgId = site.getOrganizationId() + "_" + StringUtil.checkVal(CenterPageAction.getFranchiseId(req));
@@ -98,10 +95,10 @@ public class KeystoneCenterPageAction extends CenterPageAction {
 	 */
 	protected StringBuilder formatQuery(SMTServletRequest req) {
 		//set an api key for previewing pages
-        String previewApiKey = SyncTransactionAction.generatePreviewApiKey(attributes);
+        String previewApiKey = ApprovalController.generatePreviewApiKey(attributes);
 		req.setAttribute(Constants.PAGE_PREVIEW, previewApiKey);
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder s = new StringBuilder();
+		StringBuilder s = new StringBuilder(1000);
 		String orgId = ((SiteVO)req.getAttribute("siteData")).getOrganizationId();
 		boolean isMobile = Convert.formatBoolean(req.getSession().getAttribute("webeditIsMobile"));
 		//without a module_location the below query will fail.  Return the default "grab all as layout" query
@@ -129,7 +126,8 @@ public class KeystoneCenterPageAction extends CenterPageAction {
 		s.append("(c.cp_module_option_id=d.cp_module_option_id or c.parent_id=d.cp_module_option_id) ");
 		s.append("left outer join ").append(customDb).append("FTS_CP_OPTION_ATTR e on c.CP_MODULE_OPTION_ID ");
 		s.append("= e.cp_module_option_id ");
-		s.append("where a.cp_module_id=? and (c.franchise_id is null or c.franchise_id = ?) and c.org_id = '");
+		// Franchise Ids of -1 only appear on assets that should appear on all centers that allow global assets
+		s.append("where a.cp_module_id=? and (c.franchise_id is null or c.franchise_id = -1 or c.franchise_id = ?) and c.org_id = '");
 		s.append(orgId).append("' ");
 		if (req.getParameter("optionId") != null) 
 			s.append("and c.cp_module_option_id=? ");

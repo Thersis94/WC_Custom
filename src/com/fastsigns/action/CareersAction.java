@@ -9,7 +9,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.fastsigns.action.approval.vo.AbstractChangeLogVO;
 import com.fastsigns.action.vo.CareersVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -19,7 +18,9 @@ import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.SBModuleVO;
 import com.smt.sitebuilder.action.contact.ContactFacadeAction;
+import com.smt.sitebuilder.approval.ApprovalController.SyncStatus;
 import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -58,6 +59,8 @@ public class CareersAction extends SBActionAdapter {
 		super.retrieve(req);
 		String orgId;
 		SiteVO site = (SiteVO) req.getAttribute("siteData");
+		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+		boolean isPreview = page.isPreviewMode();
 		if (site != null) {
 			orgId = site.getOrganizationId();
 		} else {
@@ -71,22 +74,27 @@ public class CareersAction extends SBActionAdapter {
 		sb.append("select a.*, b.LOCATION_NM, b.STATE_CD, b.CITY_NM, b.ATTRIB2_TXT from ");
 		sb.append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sb.append("FTS_JOB_POSTING a left outer join DEALER_LOCATION b on a.FRANCHISE_ID = b.DEALER_LOCATION_ID ");
-		sb.append("where a.ORGANIZATION_ID = ? and ");
-		if (Convert.formatBoolean(mod.getAttribute(ModuleVO.ATTRIBUTE_1))) {
-			sb.append("DATEDIFF(DAY, JOB_POST_DT, GETDATE()) < 21 ");
-		} else {
-			sb.append("ACTIVE_JOB_FLG = 1 ");
+		sb.append("left join WC_SYNC ws on a.JOB_POSTING_ID = ws.WC_KEY_ID and ws.WC_SYNC_STATUS_CD not in (?,?) ");
+		sb.append("where a.ORGANIZATION_ID = ? ");
+		if (!isPreview) {
+			sb.append("and ws.WC_SYNC_STATUS_CD is null and ");
+			if (Convert.formatBoolean(mod.getAttribute(ModuleVO.ATTRIBUTE_1))) {
+				sb.append("DATEDIFF(DAY, JOB_POST_DT, GETDATE()) < 21 ");
+			} else {
+				sb.append("ACTIVE_JOB_FLG = 1 ");
+			}
 		}
-		sb.append("and JOB_APPROVAL_FLG = ? order by JOB_POST_DT");
+		sb.append("order by JOB_POST_DT");
 		PreparedStatement ps = null;
-		log.debug(sb + " | " + orgId + " | " + AbstractChangeLogVO.Status.APPROVED.ordinal());
+		log.debug(sb + " | " + orgId);
 		List<CareersVO> centerCareers = new ArrayList<CareersVO>();
 		List<CareersVO> corpCareers = new ArrayList<CareersVO>();
 		try{
 			int ctr = 1;
 			ps = dbConn.prepareStatement(sb.toString());
+			ps.setString(ctr++, SyncStatus.Approved.toString());
+			ps.setString(ctr++, SyncStatus.Declined.toString());
 			ps.setString(ctr++, orgId);
-			ps.setInt(ctr++, AbstractChangeLogVO.Status.APPROVED.ordinal());
 			
 			ResultSet rs = ps.executeQuery();
 			while(rs.next()){
