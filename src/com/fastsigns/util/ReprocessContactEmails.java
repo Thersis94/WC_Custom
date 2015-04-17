@@ -49,7 +49,8 @@ public class ReprocessContactEmails extends SBActionAdapter {
 		sql += "where (a.CREATE_DT between '2014-07-07 17:00:00' and '2014-07-08 09:30:00' ";
 		sql += "or a.CREATE_DT between '2014-07-04 13:00:00' and '2014-07-05 22:30:00') ";
 		sql += "and action_id=?";
-		
+		req.setParameter("startDate", "2015-04-08 13:30:00");
+		req.setParameter("endDate", "2015-04-09 10:00:00");
 		PreparedStatement ps = null;
 		try {
 			ps = dbConn.prepareStatement(sql);
@@ -61,6 +62,7 @@ public class ReprocessContactEmails extends SBActionAdapter {
 			while (rs.next()) { //for each submittal
 				log.debug("********* processing " + rs.getString("contact_submittal_id"));
 				req.setParameter("contactSubmittalId", rs.getString("contact_submittal_id"));
+				req.setParameter("csi", rs.getString("contact_submittal_id"));
 				
 				try {
 					RequestAQuoteSTF raq = new RequestAQuoteSTF(actionInit);
