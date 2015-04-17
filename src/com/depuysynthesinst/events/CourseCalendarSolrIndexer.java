@@ -1,5 +1,6 @@
 package com.depuysynthesinst.events;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -17,6 +18,7 @@ import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.event.vo.EventEntryVO;
+import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SMTAbstractIndex;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 
@@ -58,10 +60,9 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 
 	protected void indexEvents(HttpSolrServer server, List<EventEntryVO> data) {
 		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-		int cnt = 0;
+		
 		for (EventEntryVO vo : data) {
 			SolrInputDocument doc = new SolrInputDocument();
-			
 			try {
 				doc.setField(SearchDocumentHandler.INDEX_TYPE, INDEX_TYPE);
 				doc.setField(SearchDocumentHandler.ORGANIZATION, vo.getOrganizationId());
@@ -85,22 +86,11 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 					doc.addField(SearchDocumentHandler.HIERARCHY, s.trim());
 				
 				server.add(doc);
-				++cnt;
-				if ((cnt % 100) == 0) {
-					log.info("Committed " + cnt + " records");
-					server.commit();
-				}
 			} catch (Exception e) {
 				log.error("Unable to index course: " + StringUtil.getToString(vo), e);
 			}
 		}
 
-		// Clean up any uncommitted files
-		try {
-			server.commit();
-		} catch (Exception e) {
-			log.error("Unable to commit remaining documents", e);
-		}
 	}
 	
 	/**
@@ -151,7 +141,7 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 			ps.setTimestamp(2, Convert.getCurrentTimestamp());
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
-				String url = rs.getString(2) + "/qs/";
+				String url = rs.getString(2) + "/" + config.getProperty(Constants.QS_PATH);
 				//ensure pages on subsites are aliased properly.
 				String subSiteAlias = StringUtil.checkVal(rs.getString(1));
 				if (subSiteAlias.length() > 0) url = "/" + subSiteAlias + url;
@@ -194,6 +184,19 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 	@Override
 	public String getIndexType() {
 		return INDEX_TYPE;
+	}
+
+
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#purgeIndexItems(org.apache.solr.client.solrj.impl.HttpSolrServer)
+	 */
+	@Override
+	public void purgeIndexItems(HttpSolrServer server) throws IOException {
+		try {
+			server.deleteByQuery(SearchDocumentHandler.INDEX_TYPE + ":" + getIndexType());
+		} catch (Exception e) {
+			throw new IOException(e);
+		}
 	}
 
 }
