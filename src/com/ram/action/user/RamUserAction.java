@@ -52,7 +52,7 @@ import com.smt.sitebuilder.security.SBUserRole;
  * May 28, 2014: David Bargerhuff: Created class.
  ****************************************************************************/
 public class RamUserAction extends SBActionAdapter {
-	
+
 	public static final int ROLE_LEVEL_AUDITOR = 15;
 	public static final int ROLE_LEVEL_OEM = 20;
 	public static final int ROLE_LEVEL_PROVIDER = 25;
@@ -69,7 +69,7 @@ public class RamUserAction extends SBActionAdapter {
 	public RamUserAction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.http.SMTServletRequest)
 	 */
@@ -78,13 +78,13 @@ public class RamUserAction extends SBActionAdapter {
 		log.debug("RamUserAction retrieve...");
 		// if this is an 'add user' operation, simply return.
 		if (StringUtil.checkVal(req.getParameter("addUser")).length() > 0) return;
-		
+
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 		boolean isAdmin = (role.getRoleLevel() == 100);
 		List<RAMUserVO> data = new ArrayList<>();
-		
+
 		String schema = (String)getAttribute("customDbSchema");
-		
+
 		StringBuilder sql = new StringBuilder();
 		sql.append("select a.*, b.FIRST_NM, b.LAST_NM, b.EMAIL_ADDRESS_TXT, ");
 		sql.append("c.ROLE_ORDER_NO, c.ROLE_NM, d.PHONE_NUMBER_TXT, ");
@@ -97,7 +97,7 @@ public class RamUserAction extends SBActionAdapter {
 		sql.append("on a.ATTRIB_TXT_1 = e.CUSTOMER_ID ");
 		sql.append("left outer join ").append(schema).append("RAM_AUDITOR f ");
 		sql.append("on a.PROFILE_ID = f.PROFILE_ID where 1 = 1 ");
-		
+
 		// filter by site ID
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		String siteId = site.getSiteId();
@@ -114,38 +114,28 @@ public class RamUserAction extends SBActionAdapter {
 			// otherwise, force filter by logged-in user's profile ID from session
 			profileId = retrieveNonAdminProfileId(req);
 		}
-		
+
 		if (profileId.length() > 0) sql.append("and a.PROFILE_ID = ? ");
 		sql.append("order by a.PROFILE_ID");
 		log.debug("RamUserAction retrieve SQL: " + sql.toString() + " | " + profileId);
-		boolean useNav = false;
-		if (req.getParameter("start") != null && req.getParameter("limit") != null) {
-			useNav = true;
-		}
-		int recCtr = -1;
+
+		int recCtr = 0;
 		PreparedStatement ps = null;
 		try {
 			ps = dbConn.prepareStatement(sql.toString());
 			ps.setString(1, siteId);
 			if (profileId.length() > 0) ps.setString(2, profileId);
 			ResultSet rs = ps.executeQuery();
-			log.debug("useNav: " + useNav);
-			if (useNav) {
-				int navStart = Convert.formatInteger(req.getParameter("start"), 0);
-				int navLimit = Convert.formatInteger(req.getParameter("limit"), 25);
-				int navEnd = navStart + navLimit;
-				
-				while (rs.next()) {
-					recCtr ++;
-					if (! (recCtr >= navStart && recCtr < navEnd)) continue;
-					data.add(new RAMUserVO(rs));
-				}	
-			} else {
-				while (rs.next()) {
-					data.add(new RAMUserVO(rs));
-				}
+
+			/*
+			 * Since we sort on userName, we need to retrieve all records each 
+			 * time to properly paginate the results.
+			 */
+			while (rs.next()) {
+				recCtr++;
+				data.add(new RAMUserVO(rs));
 			}
-			
+
 		} catch (SQLException sqle) {
 			log.error("Error retrieving user data, ", sqle);
 		} finally {
@@ -155,21 +145,16 @@ public class RamUserAction extends SBActionAdapter {
 				} catch (Exception e) {log.error("Error closing PreparedStatement, ", e); }
 			}
 		}
-		
+
 		formatUserData(data);
+
 		// sort collection by name
 		Collections.sort(data, new RAMUserComparator());
-		
-		if (useNav) {
-			Map<String, Object> rData = new HashMap<>();
-			rData.put("count", recCtr);
-			rData.put("actionData", data);
-			rData.put(GlobalConfig.SUCCESS_KEY, Boolean.TRUE);
-			this.putModuleData(rData, 3, false);
-		} else {
-			putModuleData(data, data.size(), false, null);
-		}
-		
+
+		//Need to paginate the data after retrieving it.
+		data = paginateData(req, data);
+
+		putModuleData(data, recCtr, false, null);
 	}
 
 	/* (non-Javadoc)
@@ -193,7 +178,7 @@ public class RamUserAction extends SBActionAdapter {
 		boolean isProfileInsert = (StringUtil.checkVal(profileId).length() == 0);
 		log.debug("isProfileInsert: " + isProfileInsert);
 		user.setProfileId(profileId);
-		
+
 		// manage profile
 		manageProfile(req, user, isProfileInsert, msg);
 
@@ -202,14 +187,14 @@ public class RamUserAction extends SBActionAdapter {
 			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 			SBUserRole userRole = preformatUserRoleData(req, site, user);
 			manageRole(req, userRole, isProfileInsert, msg);
-			
+
 			try {
 				manageAuthentication(req, site, user, userRole);
 				msg = "You have successfully " + (isProfileInsert ? "created" : "updated") + " the user.";
 			} catch (Exception e) {
 				msg = "Error creating login for Ram user.";
 			}
-			
+
 			// check for role change TO 'auditor' or FROM 'auditor'
 			int origRoleLevel = Convert.formatInteger(req.getParameter("origRoleLevel"), -1);
 			if (origRoleLevel == ROLE_LEVEL_AUDITOR || userRole.getRoleLevel() == ROLE_LEVEL_AUDITOR) {
@@ -218,7 +203,7 @@ public class RamUserAction extends SBActionAdapter {
 		} else {
 			// if non-admin and has changed email address, check auth record.
 		}
-			
+
         // Build the redirect and messages
 		// Setup the redirect.
 		StringBuilder url = new StringBuilder();
@@ -233,7 +218,7 @@ public class RamUserAction extends SBActionAdapter {
 				url.append("?msg=").append(msg);
 			}
 		}
-		
+
 		boolean isJson = Convert.formatBoolean(StringUtil.checkVal(req.getParameter("amid")).length() > 0);
 		if (isJson) {
 			Map<String, Object> res = new HashMap<>(); 
@@ -246,7 +231,7 @@ public class RamUserAction extends SBActionAdapter {
 			req.setAttribute(Constants.REDIRECT_URL, url.toString());
 		}
 	}
-	
+
 	/**
 	 * Inserts or updates a user profile
 	 * @param req
@@ -265,7 +250,7 @@ public class RamUserAction extends SBActionAdapter {
 			log.error(msg, de);
 		}
 	}
-	
+
 	/**
 	 * Inserts or updates a user's role
 	 * @param req
@@ -287,9 +272,8 @@ public class RamUserAction extends SBActionAdapter {
 			msg = (isProfileInsert ? "Error creating " : "Error updating ") + "RAM user role.";
 			log.error(msg, de);
 		}
-	
 	}
-	
+
 	/**
 	 * Inserts authentication record for a user if that user does not already have one.
 	 * @param req
@@ -324,7 +308,7 @@ public class RamUserAction extends SBActionAdapter {
 					authEmail = oldEmail;
 				}
 			}
-			
+
 			// retrieve authID for this user if it exists.
 			authId = loginModule.retrieveAuthenticationId(authEmail);
 			log.debug("authId after check: " + authId);
@@ -340,21 +324,21 @@ public class RamUserAction extends SBActionAdapter {
 			// TODO 2014-08-01 DBargerhuff: commented out, verify that we are not
 			// generating passwords for a RAM user.
 			//managePassword(req, site, user);
-						
+
 			// create or update the auth record.  We are depending upon the form
 			// for password and thus we are not setting the password reset flag to true.
 			authId = loginModule.manageUser(authId, user.getEmailAddress(), authPwd, 0);
 			user.setAuthenticationId(authId);
-			
+
 			// update profile with auth record
 			if (updateProfileAuthId) updateProfileAuth(user);
-			
+
 		} catch (Exception e) {
 			log.error("Error creating Ram user authentication record, ", e);
 			throw new ApplicationException(e.getMessage());
 		}
 	}
-	
+
 	/**
 	 * Manages the data record for a user of role 'Auditor'.
 	 * updated to ensure we always update theAuditor record as that has more data
@@ -375,7 +359,7 @@ public class RamUserAction extends SBActionAdapter {
 			updateAuditor(user, auditorId, userRole.getStatusId());
 		}
 	}
-	
+
 	/**
 	 * Inserts or updates a RAM_AUDITOR record
 	 * @param profileId
@@ -397,11 +381,11 @@ public class RamUserAction extends SBActionAdapter {
 			sql.append("set PROFILE_ID = ?, FIRST_NM = ?, LAST_NM = ?, ACTIVE_FLG = ?, UPDATE_DT = ? ");
 			sql.append("where AUDITOR_ID = ?");
 		}
-		
+
 		// set active/inactive, default to inactive
 		int activeFlg = 0;
 		if (newStatusId == RamUserFacadeAction.PROFILE_STATUS_ACTIVE) activeFlg = 1;
-		
+
 		int index = 1;
 		PreparedStatement ps = null;
 		try {
@@ -414,9 +398,9 @@ public class RamUserAction extends SBActionAdapter {
 			if (! isInsert) {
 				ps.setString(index++, auditorId);
 			}
-			
+
 			ps.executeUpdate();
-			
+
 		} catch (SQLException sqle) {
 			log.error("Error retrieving RAM auditor ID, ", sqle);
 		} finally {
@@ -427,7 +411,7 @@ public class RamUserAction extends SBActionAdapter {
 			}
 		}
 	}
-	
+
 	/**
 	 * Performs a lookup of the auditor ID associated with the profile ID passed in.
 	 * @param profileId
@@ -439,7 +423,7 @@ public class RamUserAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder();
 		sql.append("select AUDITOR_ID from ").append(schema).append("RAM_AUDITOR ");
 		sql.append("where PROFILE_ID = ?");
-		
+
 		PreparedStatement ps = null;
 		try {
 			ps = dbConn.prepareStatement(sql.toString());
@@ -459,7 +443,7 @@ public class RamUserAction extends SBActionAdapter {
 		}
 		return auditorId;
 	}
-	
+
 	/**
 	 * Updates user profile with the associated user's authentication ID.
 	 * @param user
@@ -484,7 +468,7 @@ public class RamUserAction extends SBActionAdapter {
 			}
 		}
 	}
-	
+
 	/**
 	 * Instantiates StringEncrypter to decrypt encrypted user information and
 	 * sets the decrypted information on the user data.
@@ -499,7 +483,7 @@ public class RamUserAction extends SBActionAdapter {
 			log.error("Error instantiating StringEncrypter, ", ee);
 			return;
 		}
-		
+
 		for (RAMUserVO user : users) {
 			try {
 				user.setFirstName(se.decrypt(user.getFirstName()));
@@ -516,7 +500,7 @@ public class RamUserAction extends SBActionAdapter {
 		}	
 		return;
 	}
-	
+
 	/**
 	 * Returns the profile ID of the logged-in user from the user's session data.
 	 * @param req
@@ -526,7 +510,7 @@ public class RamUserAction extends SBActionAdapter {
 		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 		return user.getProfileId(); 
 	}
-	
+
 	/**
 	 * Formats an SBUserRole with role data from the request.
 	 * @param req
@@ -557,5 +541,32 @@ public class RamUserAction extends SBActionAdapter {
 		userRole.setStatusId(Convert.formatInteger(req.getParameter("statusId")));
 		return userRole;
 	}
-	
+
+	/**
+	 * Loops the sorted list and returns a list containing the records for the page number that was requested.
+	 * @param req
+	 * @param sortedList
+	 * @return
+	 */
+	private List<RAMUserVO> paginateData(SMTServletRequest req, List<RAMUserVO> sortedList) {
+		int navStart = Convert.formatInteger(req.getParameter("start"), 0);
+		int navLimit = Convert.formatInteger(req.getParameter("limit"), 25);
+		int navEnd = navStart + navLimit;
+		int ctr = -1;
+		List<RAMUserVO> paginatedList = new ArrayList<>();
+		for (int i = 0; i < sortedList.size(); i++) {
+			ctr++;
+			// determine which records to add to the paginated list.
+			if (ctr >= navStart) {
+				if (ctr < navEnd) {
+					paginatedList.add(sortedList.get(i));
+				} else {
+					break;
+				}
+			} else {
+				continue;
+			}
+		}
+		return paginatedList;
+	}
 }
