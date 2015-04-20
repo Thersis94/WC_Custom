@@ -92,7 +92,7 @@ public class DSProductCatalogAction extends SimpleActionAdapter {
 			//added support for DS-Select subsite.  -JM 05.20.14
 			if (page.getDepthLevel() > 2 || page.getFullPath().equals("/select/products")) {
 				//these are 'this' page plus a query string
-				pc.assignPageviewsToCatalog(t.getPreorderList(), pageViews, page.getFullPath() + "/qs/");
+				pc.assignPageviewsToCatalog(t.getPreorderList(), pageViews, page.getFullPath() + "/" + attributes.get(Constants.QS_PATH));
 			} else {
 				// /hcp/products root level page; we'll need to use the data from the Tree to build URL strings for these...
 				pc.assignPageviewsToCatalogUsingDivision(t.getPreorderList(), pageViews, 
@@ -172,7 +172,7 @@ public class DSProductCatalogAction extends SimpleActionAdapter {
 			page.setMetaDesc(val);
 		
 		//TODO set canonical URL of the page to the case-proper UrlAlias of this product
-		//page.setCanonicalUrl(page.getRequestURI() + "/qs/" + pr.getUrlAlias());
+		//page.setCanonicalUrl(page.getRequestURI() + "/" + attributes.get(Constants.QS_PATH) + pr.getUrlAlias());
 	}
 	
 }

@@ -127,20 +127,22 @@ public class RegisterClinicAction extends SBActionAdapter {
 		
 		// Build the Redirect URL
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
-		String url = StringUtil.checkVal(page.getFullPath());
-		if (url.length() == 0) url = "/" + page.getAliasName();
+		StringBuilder url = new StringBuilder(75);
+		url.append(StringUtil.checkVal(page.getFullPath()));
+		if (url.length() == 0) url.append("/").append(page.getAliasName());
 		if (isValidCaptcha) {
-			url += "/qs/complete/" + adminSubmitted + "/" + StringEncoder.urlEncode(msg);
+			url.append("/").append(attributes.get(Constants.QS_PATH)).append("complete/");
+			url.append(adminSubmitted).append("/").append(StringEncoder.urlEncode(msg));
 		} else {
 			if (! adminSubmitted) {
-				url += "?addClinic=true";
+				url.append("?addClinic=true");
 			} else {
-				url += "?dealerLocationId=" + dealerLocationId;	
+				url.append("?dealerLocationId=").append(dealerLocationId);
 			}
-			url += "&revalidate=true&errorCode=1";
+			url.append("&revalidate=true&errorCode=1");
 		}
 		log.debug("URL Redirect: " + url);
-		this.sendRedirect(url, "", req);
+		this.sendRedirect(url.toString(), "", req);
  	}
 	
 	/**
