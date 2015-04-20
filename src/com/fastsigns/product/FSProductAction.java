@@ -155,8 +155,9 @@ public class FSProductAction extends SBActionAdapter {
 		ModuleVO cachedMod = null;
 		
 		log.debug("Loading Catalog with id: " + catalogId);
-		if (!page.isPreviewMode())
-			cachedMod = super.readFromCache("FS_CAT_"+catalogId);
+		if (!page.isPreviewMode()){
+			cachedMod = super.readFromCache(catalogId);
+		}
 		
 		if (cachedMod == null || cachedMod.getActionData() == null) {
 			if(cachedMod != null) log.error("Something is wrong with the cached product catalog " + catalogId);
@@ -164,7 +165,6 @@ public class FSProductAction extends SBActionAdapter {
 			cachedMod = new ModuleVO();
 			cachedMod.setActionId("FS_CAT_"+catalogId);
 			cachedMod.setActionData(this.loadCatalog(catalogId, page.isPreviewMode()));
-			
 	        if (!page.isPreviewMode()) {
 	        	cachedMod.setCacheable(true);
 	        	cachedMod.setPageModuleId(catalogId);
@@ -375,6 +375,7 @@ public class FSProductAction extends SBActionAdapter {
 			sql.append("pa.ATTRIBUTE_GROUP_ID is null and p.product_group_id is null ");
 		}
 		sql.append("and p.status_no=5 and p.product_catalog_id=? ");
+		sql.append("order by p.url_alias_txt ");
 		log.debug(sql.toString()+"|"+catalogId);
 		try {
 			PreparedStatement ps = dbConn.prepareStatement(sql.toString());
@@ -456,12 +457,13 @@ public class FSProductAction extends SBActionAdapter {
 
 		if(isMobile) url.append("http://"+site.getMobileSiteUrl());
 		
+		//TODO -- TEST THAT PRODUCTS STILL WORK AFTER MODIFYING QS STRING TO ATTRIBUTES VALUE!
 		if (req.hasParameter("prefix")) {
 			appendLevel(url, req.getParameter("prefix"));
-		} else if (isMobile || req.getRequestURL().indexOf("qs") > -1){
+		} else if (isMobile || req.getRequestURL().indexOf((String)attributes.get(Constants.QS_PATH)) > -1){
 			if(isMobile) appendLevel(url, "products");
 			appendLevel(url, req.getRequestURI().substring(req.getRequestURI().lastIndexOf('/')+1));
-			appendLevel(url, "qs/");
+			appendLevel(url, (String)attributes.get(Constants.QS_PATH));
 		} else {
 			appendLevel(url, req.getRequestURI().substring(req.getRequestURI().lastIndexOf('/')) + "-");
 		}

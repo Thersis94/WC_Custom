@@ -16,6 +16,7 @@ import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.util.RecordDuplicatorUtility;
 
 /****************************************************************************
  * <b>Title</b>: KitLayerProductAction.java
@@ -39,6 +40,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  */
 public class KitLayerProductAction extends SBActionAdapter {
 
+	public static final String PRODUCT_KIT_ID = "productKitIds";
 	/**
 	 * Default Constructor
 	 */
@@ -54,6 +56,28 @@ public class KitLayerProductAction extends SBActionAdapter {
 	public KitLayerProductAction(ActionInitVO actionInit) {
 		super(actionInit);
 		
+	}
+
+	/**
+	 * Copy method for cloning the Product XR Records for the new Kit Layers.
+	 * After they are cloned, we call out to KitCoordinateAction to clone the
+	 * coordinate data for each ProductXR.
+	 */
+	@Override
+	public void copy(SMTServletRequest req) throws ActionException {
+		@SuppressWarnings("unchecked")
+		Map<String, Object> replaceVals = (Map<String, Object>) attributes.get(RecordDuplicatorUtility.REPLACE_VALS);
+		RecordDuplicatorUtility rdu = new RecordDuplicatorUtility(attributes, dbConn, "RAM_PRODUCT_LAYER_XR", "PRODUCT_KIT_ID", true);
+		rdu.setSchemaNm((String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		rdu.addWhereListClause("KIT_LAYER_ID");
+		Map<String, String> productKitIds = rdu.copy();
+		replaceVals.put("PRODUCT_KIT_ID", productKitIds);
+
+		//Continue propagating copy up the Action Chain.
+		KitCoordinateAction kca = new KitCoordinateAction(getActionInit());
+		kca.setDBConnection(dbConn);
+		kca.setAttributes(attributes);
+		kca.copy(req);
 	}
 	
 	/**
@@ -147,6 +171,7 @@ public class KitLayerProductAction extends SBActionAdapter {
 				vo.setKitLayerId(Convert.formatInteger(values[2]));
 				vo.setCoordinateType(values[3]);
 				vo.setActiveFlag(Convert.formatInteger(values[4]));
+				vo.setQuantity(Convert.formatInteger(values[5]));
 				
 				/*
 				 * If the user saved and there were rows with empty
@@ -184,7 +209,7 @@ public class KitLayerProductAction extends SBActionAdapter {
 		StringBuilder update = new StringBuilder();
 		update.append("update ").append(customDb).append("RAM_PRODUCT_LAYER_XR set PRODUCT_ID = ?, ");
 		update.append("COORDINATE_TYPE_CD = ?, UPDATE_DT = ?, ");
-		update.append("ACTIVE_FLG = ? where PRODUCT_KIT_ID = ?");
+		update.append("ACTIVE_FLG = ?, QUANTITY = ? where PRODUCT_KIT_ID = ?");
 		
 		PreparedStatement ps = null;
 
@@ -197,7 +222,8 @@ public class KitLayerProductAction extends SBActionAdapter {
 				ps.setString(2, v.getCoordinateType().name());
 				ps.setTimestamp(3, Convert.getCurrentTimestamp());
 				ps.setInt(4, v.getActiveFlag());
-				ps.setInt(5, v.getProductKitId());
+				ps.setInt(5, v.getQuantity());
+				ps.setInt(6, v.getProductKitId());
 				ps.addBatch();
 			}
 			ps.executeBatch();
@@ -220,8 +246,8 @@ public class KitLayerProductAction extends SBActionAdapter {
 		//Build the Sql Statement
 		StringBuilder insert = new StringBuilder();
 		insert.append("insert into ").append(customDb).append("RAM_PRODUCT_LAYER_XR (PRODUCT_ID, ");
-		insert.append("KIT_LAYER_ID, COORDINATE_TYPE_CD, CREATE_DT, ACTIVE_FLG) ");
-		insert.append("values (?,?,?,?,?)");
+		insert.append("KIT_LAYER_ID, COORDINATE_TYPE_CD, CREATE_DT, ACTIVE_FLG, QUANTITY) ");
+		insert.append("values (?,?,?,?,?,?)");
 		
 		PreparedStatement ps = null;
 		try {
@@ -234,6 +260,7 @@ public class KitLayerProductAction extends SBActionAdapter {
 				ps.setString(3, v.getCoordinateType().name());
 				ps.setTimestamp(4, Convert.getCurrentTimestamp());
 				ps.setInt(5, v.getActiveFlag());
+				ps.setInt(6, v.getQuantity());
 				ps.addBatch();
 			}
 			ps.executeBatch();

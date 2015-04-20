@@ -136,9 +136,11 @@ public class DSOLAction extends SBActionAdapter {
 			log.error("Error Saving DSOL Template data", e);
 		} finally {
 			try {
-				is.close();
-				os.flush();
-				os.close();
+				if (is != null) is.close();
+				if (os != null) {
+					os.flush();
+					os.close();
+				}
 				log.debug("Closed all Buffer Streams");
 			} catch(Exception e) {}
 		}
