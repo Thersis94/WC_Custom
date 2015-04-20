@@ -263,7 +263,6 @@ public class PostcardEmailer {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
 		EventEntryVO event = sem.getEvents().get(0);
-		DePuyEventSurgeonVO surg = sem.getSurgeon();
 		StringBuilder subject = new StringBuilder();
 		subject.append("SRC Approval - Seminar " + sem.getRSVPCodes());
 
@@ -271,11 +270,17 @@ public class PostcardEmailer {
 		msg.append("This email confirms that your ").append(event.getEventTypeDesc());
 		msg.append(" ").append(sem.getJointLabel()).append(" Seminar #").append(event.getRSVPCode());
 		msg.append(" as detailed below, has now been Approved by SRC and your ");
-		msg.append("Surgeon Speaker contract will be sent shortly.\r\r");
+		msg.append("Speaker contract(s) will be sent shortly.\r\r");
 
 		msg.append(Convert.formatDate(event.getStartDate(), Convert.DATE_LONG));
-		msg.append("\r").append(event.getLocationDesc()).append("\rSpeaker: ");
-		msg.append(surg.getSurgeonName()).append("\r\r");
+		msg.append("\r").append(event.getLocationDesc()).append("\rSpeaker(s): ");
+		boolean isFirst = true;
+		for (DePuyEventSurgeonVO vo : sem.getSurgeonList()) {
+			if (!isFirst) msg.append(", ");
+			msg.append(vo.getSurgeonName());
+			isFirst = false;
+		}
+		msg.append("\r\r");
 		msg.append(event.getEventName()).append("\r");
 		msg.append(event.getAddressText()).append("\r");
 		if (StringUtil.checkVal(event.getAddress2Text()).length() > 0) 
@@ -456,10 +461,10 @@ public class PostcardEmailer {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
 		StringBuilder subject = new StringBuilder();
-		subject.append("Surgeon Speaker Contract Received - Seminar " + sem.getRSVPCodes());
+		subject.append("Speaker Contract Received - Seminar " + sem.getRSVPCodes());
 
 		StringBuilder msg = new StringBuilder();
-		msg.append("Medical Affairs has received and approved the Surgeon Speaker's signed contract for Seminar #").append(sem.getRSVPCodes());
+		msg.append("Medical Affairs has received and approved the Speaker's signed contract for Seminar #").append(sem.getRSVPCodes());
 		msg.append(".  This seminar is now fully approved.  Please proceed with ");
 		msg.append("ad purchases, postcard mailings, flyer/poster distribution, ");
 		msg.append("and other necessary tasks to prepare for the seminar.\r\r");
