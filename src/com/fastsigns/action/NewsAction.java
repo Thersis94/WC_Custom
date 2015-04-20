@@ -172,7 +172,7 @@ public class NewsAction extends SBActionAdapter {
 			if(cnt.getAttribute(ContentVO.ATTRIBUTE_1).equals("NEWS"))
 				search.setDocumentUrl(baseUrl + cnt.getActionId());
 			else
-				search.setDocumentUrl("Blog/qs/" + cnt.getActionId());
+				search.setDocumentUrl("Blog/" + attributes.get(Constants.QS_PATH) + cnt.getActionId());
 			search.setSummary(cnt.getActionDesc());
 			search.setTitle(cnt.getActionName());
 			news.add(search);
