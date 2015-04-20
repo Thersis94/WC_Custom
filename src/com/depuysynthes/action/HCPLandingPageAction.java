@@ -149,8 +149,8 @@ public class HCPLandingPageAction extends SBActionAdapter {
 		List<Node> divProcs = filterCatalog(procedures);
 		
 		//assign pageView #s to each product/procedure in this Division
-		divProds = pcl.assignPageviewsToCatalog(divProds, pageViews, page.getFullPath() + "/products/qs/");
-		divProcs = pcl.assignPageviewsToCatalog(divProcs, pageViews, page.getFullPath() + "/procedures/qs/");
+		divProds = pcl.assignPageviewsToCatalog(divProds, pageViews, page.getFullPath() + "/products/" + attributes.get(Constants.QS_PATH));
+		divProcs = pcl.assignPageviewsToCatalog(divProcs, pageViews, page.getFullPath() + "/procedures/" + attributes.get(Constants.QS_PATH));
 		
 		//re-sort the Lists according to most pageViews.
 		//This call places the top 10 (or top 2), in order, onto the VO

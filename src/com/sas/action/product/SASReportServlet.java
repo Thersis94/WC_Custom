@@ -7,15 +7,18 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
+
 // J2EE 1.5
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletResponse;
+
 
 // SMT Base Libs
 import com.siliconmtn.http.SMTBaseServlet;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title</b>: SASReportServlet.java <p/>
@@ -74,15 +77,16 @@ public class SASReportServlet extends SMTBaseServlet {
 	 */
 	public void retrieveProductReport(Connection dbConn, HttpServletResponse res) 
 	throws IOException {
+		String qs = (String)sc.getAttribute(Constants.QS_PATH);
 		StringBuilder s = new StringBuilder();
-		s.append("select category_url, '/cat/qs/' + replace(a.short_desc, '|', '/')  as full_url, ");
+		s.append("select category_url, '/cat/").append(qs).append("' + replace(a.short_desc, '|', '/')  as full_url, ");
 		s.append("c.product_id, cust_product_no, product_url, cust_category_id ");
 		s.append("from product_category a ");
 		s.append("inner join product_category_xr b on a.product_category_cd = b.product_category_cd ");
 		s.append("inner join product c on b.product_id = c.product_id ");
 		s.append("where a.organization_id = 'SAS' and parent_id is null ");
 		s.append("union ");
-		s.append("select category_url, '/cat/qs/' + replace(a.short_desc, '|', '/') as full_url, ");
+		s.append("select category_url, '/cat/").append(qs).append("' + replace(a.short_desc, '|', '/') as full_url, ");
 		s.append("c.product_id, cust_product_no, product_url, cust_category_id ");
 		s.append("from product_category a ");
 		s.append("inner join product_category_xr b on a.product_category_cd = b.product_category_cd ");
@@ -102,10 +106,12 @@ public class SASReportServlet extends SMTBaseServlet {
 			ps = dbConn.prepareStatement(s.toString());
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
-				
-				String url = "/cat/qs/detail/" + rs.getString(5) + "/" + rs.getString(4);
+				StringBuilder url = new StringBuilder();
+				url.append("/cat/").append(sc.getAttribute(Constants.QS_PATH));
+				url.append("detail/").append(rs.getString(5)).append("/");
+				url.append(rs.getString(4));
 				if (StringUtil.checkVal(rs.getString(4)).length() == 0) {
-					url = rs.getString(2) + "/" + rs.getString(5);
+					url.append(rs.getString(2)).append("/").append(rs.getString(5));
 				}
 				
 				StringBuilder val = new StringBuilder();
@@ -113,7 +119,7 @@ public class SASReportServlet extends SMTBaseServlet {
 				val.append(rs.getString(2)).append("\t");
 				val.append(StringUtil.checkVal(rs.getString(4))).append("\t");
 				val.append(rs.getString(3)).append("\t");
-				val.append(url).append("\r\n"); 
+				val.append(url).append("\r\n");
 				os.write(val.toString().getBytes());
 			}
 		} catch (Exception e) {
@@ -154,7 +160,7 @@ public class SASReportServlet extends SMTBaseServlet {
 				StringBuilder val = new StringBuilder();
 				val.append(rs.getString(1)).append("\t");
 				val.append(rs.getString(2)).append("\t");
-				val.append("/cat/qs/" + rs.getString(3)).append("\r\n"); 
+				val.append("/cat/" + sc.getAttribute(Constants.QS_PATH) + rs.getString(3)).append("\r\n");
 				os.write(val.toString().getBytes());
 			}
 		} catch (Exception e) {

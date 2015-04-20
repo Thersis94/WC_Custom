@@ -109,6 +109,8 @@ public abstract class MobileSiteWizardAction extends SBActionAdapter implements 
 	public void insertOrReturn(SMTServletRequest req) throws Exception {
 		log.debug("Starting Site Wizard");
 		attributes.put(AdminConstants.ADMIN_MODULE_DATA, new ModuleVO());
+		// Prevent approval from getting in the way of page creation.
+		req.setParameter("skipApproval", "true");
 		String dealerLocId = (String) req.getParameter("dealerLocId");
 		FranchiseVO vo = getFranchiseData(dealerLocId);
 		
@@ -136,7 +138,7 @@ public abstract class MobileSiteWizardAction extends SBActionAdapter implements 
 		//associateCenterPage(layoutId, franchiseId, centerActionId, 1);
 		
 		// Change the theme from the default to the new theme
-		this.assignTheme(vo);
+		this.assignTheme(vo); 
 		
 		// Add the home page using the default layout
 		this.addHomePage(layoutId, franchiseId, req);
@@ -350,11 +352,9 @@ public abstract class MobileSiteWizardAction extends SBActionAdapter implements 
 		/*
 		 * We are updating a redirect, not adding a new one.
 		 */
-		StringBuilder sql = new StringBuilder();
+		StringBuilder sql = new StringBuilder(90);
 		sql.append("update SITE_REDIRECT set destination_url = ?, update_dt = ? where site_redirect_id = ?");
-		PreparedStatement ps = null;
-		try {
-			ps = dbConn.prepareStatement(sql.toString());
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, "/" + alias);
 			ps.setTimestamp(2, Convert.getCurrentTimestamp());
 			ps.setString(3, FS_SITE_ID + "_" + fId + "_MOBILE");
@@ -363,9 +363,9 @@ public abstract class MobileSiteWizardAction extends SBActionAdapter implements 
 			log.debug("The site was unable to update the redirect for center" + fId, e);
 		}
 		
+		sql = new StringBuilder(60);
 		sql.append("delete from SITE_REDIRECT where site_redirect_id = ?");
-		try {
-			ps = dbConn.prepareStatement(sql.toString());
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, "FTS_" + fId + "_MOBILE_ALIAS");
 			ps.executeUpdate();
 		} catch (Exception e) {

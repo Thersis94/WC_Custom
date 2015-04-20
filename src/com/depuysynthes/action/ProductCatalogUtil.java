@@ -15,6 +15,7 @@ import com.siliconmtn.http.SMTServletRequest;
 import com.smt.sitebuilder.action.AbstractBaseAction;
 import com.smt.sitebuilder.action.commerce.product.ProductCatalogAction;
 import com.smt.sitebuilder.action.tools.StatVO;
+import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title</b>: ProductCatalogLoader.java<p/>
@@ -150,7 +151,7 @@ public class ProductCatalogUtil extends AbstractBaseAction {
 	public List<Node> assignPageviewsToCatalogUsingDivision(List<Node> prods, Map<String, StatVO> pageViews, String siteAlias, boolean isProducts, boolean isFullCatalog) {
 		log.debug("assigning pageViews using baseUrl: " + siteAlias);
 		if (pageViews == null) pageViews = Collections.emptyMap();
-		String suffixUrl = (isProducts) ? "/products/qs/" : "/procedures/qs/";
+		String suffixUrl = ((isProducts) ? "/products/" : "/procedures/") + attributes.get(Constants.QS_PATH);
 		String divisionAlias = "";
 		String prodAlias = null;
 		StringBuilder url = null;
