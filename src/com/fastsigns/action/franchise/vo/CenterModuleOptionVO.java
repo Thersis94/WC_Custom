@@ -12,6 +12,8 @@ import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.approval.Approvable;
+import com.smt.sitebuilder.approval.ApprovalVO;
 
 /****************************************************************************
  * <b>Title</b>: CenterModuleOptionVO.java <p/>
@@ -25,7 +27,7 @@ import com.siliconmtn.util.StringUtil;
  * @since Nov 22, 2010<p/>
  * <b>Changes: </b>
  ****************************************************************************/
-public class CenterModuleOptionVO implements Serializable {
+public class CenterModuleOptionVO implements Serializable, Approvable {
 
 	/**
 	 * 
@@ -57,6 +59,8 @@ public class CenterModuleOptionVO implements Serializable {
 	private String actionId = null;
 	private String responseText = null;
 	private String moduleFranXRId = null;
+	private ApprovalVO approval;
+	
 	public CenterModuleOptionVO() {
 		
 	}
@@ -127,6 +131,8 @@ public class CenterModuleOptionVO implements Serializable {
 		moduleOptionId = Convert.formatInteger(req.getParameter("moduleOptionId"));
 		parentId = Convert.formatInteger(req.getParameter("parentId"), 0);
 		moduleTypeId = Convert.formatInteger(req.getParameter("moduleTypeId"));
+		if (moduleTypeId == null) 
+			moduleTypeId = Convert.formatInteger(req.getParameter("modTypeId"));
 		optionName = req.getParameter("optionName");
 		optionDesc = req.getParameter("optionDesc");
 		linkUrl = req.getParameter("linkUrl");
@@ -446,6 +452,16 @@ public class CenterModuleOptionVO implements Serializable {
 
 	public String getModuleFranXRId() {
 		return moduleFranXRId;
+	}
+
+	@Override
+	public ApprovalVO getSyncData() {
+		return approval;
+	}
+
+	@Override
+	public void setSyncData(ApprovalVO approval) {
+		this.approval = approval;
 	}
 
 }

@@ -38,6 +38,7 @@ public class IFUDocumentVO extends IFUVO implements Serializable{
 	private String defaultMsgText;
 	private Map<String, IFUTechniqueGuideVO> nativeLangTgList;
 	private Map<String, IFUTechniqueGuideVO> defaultLangTgList;
+	private boolean keywordMatched;
 	
 	public IFUDocumentVO() {
 		nativeLangTgList = new LinkedHashMap<>();
@@ -58,6 +59,7 @@ public class IFUDocumentVO extends IFUVO implements Serializable{
 			this.setUrlText(req.getParameter("urlText"));
 		}
 		
+		this.setTitleText(req.getParameter("titleText"));
 		this.setDpySynMediaBinId(req.getParameter("dpySynMediaBinId"));
 		this.setLanguageCd(req.getParameter("languageCd"));
 		this.setArticleText(req.getParameter("articleText"));
@@ -186,11 +188,21 @@ public class IFUDocumentVO extends IFUVO implements Serializable{
 	}
 	
 	public String getPublicUrl() {
-		if (this.dpySynMediaBinId != null) {
+		if (this.dpySynMediaBinId != null && this.dpySynMediaBinId.length() > 0) {
 			return IFUFacadeAction.MEDIABIN_PATH + this.getDpySynMediaBinId();
-		} else {
+		} else if (this.urlText != null && this.urlText.length() > 0) {
 			return IFUFacadeAction.BINARY_PATH + getBusinessUnitName() + "/" + this.getUrlText();
+		} else {
+			return "javascript:;";
 		}
+	}
+
+	public boolean isKeywordMatched() {
+		return keywordMatched;
+	}
+
+	public void setKeywordMatched(boolean keywordMatched) {
+		this.keywordMatched = keywordMatched;
 	}
 
 }

@@ -5,8 +5,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
 
 import com.ram.datafeed.data.KitLayerVO;
 import com.siliconmtn.action.ActionException;
@@ -18,6 +22,7 @@ import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.util.RecordDuplicatorUtility;
 
 /****************************************************************************
  * <b>Title</b>: KitLayerAction.java
@@ -58,7 +63,63 @@ public class KitLayerAction extends SBActionAdapter {
 	 */
 	public KitLayerAction(ActionInitVO actionInit) {
 		super(actionInit);
-		
+	}
+
+	/**
+	 * Copy method for cloning the Kit Layers of a Kit.  After copying the layers
+	 * we call out to the KitLayerProductAction to clone the associated Products
+	 * per layer.  Upon completion, we update the JSONData associated on each
+	 * kit layer to match the new layer and product xr Ids.
+	 */
+	@SuppressWarnings("unchecked")
+	@Override
+	public void copy(SMTServletRequest req) throws ActionException {
+		//Clone the Kit Product Layers.
+		Map<String, Object> replaceVals = (Map<String, Object>) attributes.get(RecordDuplicatorUtility.REPLACE_VALS);
+		RecordDuplicatorUtility rdu = new RecordDuplicatorUtility(attributes, dbConn, "RAM_KIT_LAYER", "KIT_LAYER_ID", true);
+		rdu.setSchemaNm((String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		rdu.addWhereListClause("PRODUCT_ID");
+		Map<String, String> kitLayerIds = rdu.copy();
+		replaceVals.put("KIT_LAYER_ID", kitLayerIds);
+
+		//Continue propagating copy up the Action Chain.
+		KitLayerProductAction klpa = new KitLayerProductAction(getActionInit());
+		klpa.setDBConnection(dbConn);
+		klpa.setAttributes(attributes);
+		klpa.copy(req);
+
+		//Update the Kit Layers Image Paths and JSON Data from the data on the attributes map.
+		Map<String, String> data = getJsonData(req.getParameter("productId"));
+		String id = null;
+		if(data != null) {
+			Map<String, String> updatedJson = new HashMap<String, String>();
+
+			//Loop over the Kit Layers
+			for(String kitLayerId : data.keySet()) {
+				String newKitLayerId = kitLayerIds.get("" + kitLayerId);
+				Map<String, String> prodKitIds = (Map<String, String>)replaceVals.get("PRODUCT_KIT_ID");
+				JSONObject obj = JSONObject.fromObject(data.get(kitLayerId));
+				log.debug(obj);
+				JSONArray objs = obj.getJSONArray("objects");
+
+				//Loop over the JSONData Object and update the id field.
+				for(int i = 0; i < objs.size(); i++) {
+					JSONObject o = objs.getJSONObject(i);
+					id = o.getString("id");
+					if(id != null) {
+						o.put("id", newKitLayerId + "-" + prodKitIds.get(id.split("-")[1]));
+					}
+				}
+
+				//Place the updated data on the map.
+				log.debug(obj);
+				updatedJson.put(newKitLayerId, obj.toString());
+			}
+
+			//Update the JSON Data in the Database.
+			saveJsonData(updatedJson);
+			log.debug("JSONData Updated!");
+		}
 	}
 	
 	/**
@@ -140,7 +201,7 @@ public class KitLayerAction extends SBActionAdapter {
 		 * get the Coordinate data for the kit layer products.
 		 */
 		if(req.hasParameter(KIT_LAYER_ID)) {
-			SMTActionInterface sai = new KitCoordinateParser(this.actionInit);
+			SMTActionInterface sai = new KitCoordinateAction(this.actionInit);
 			sai.setAttributes(attributes);
 			sai.setDBConnection(dbConn);
 			sai.build(req);
@@ -232,5 +293,49 @@ public class KitLayerAction extends SBActionAdapter {
 	public void update(SMTServletRequest req) throws ActionException {
 		
 	}
-	
+
+	/**
+	 * Helper method for retrieving the JSONData for the original kits layers.
+	 * @param prodId
+	 * @return
+	 */
+	private Map<String, String> getJsonData(String prodId) {
+		Map<String, String> jsonData = new LinkedHashMap<String, String>();
+		StringBuilder sb = new StringBuilder(90);
+		sb.append("select KIT_LAYER_ID, JSON_DATA from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sb.append("RAM_KIT_LAYER where PRODUCT_ID = ?");
+
+		try(PreparedStatement ps = dbConn.prepareStatement(sb.toString())) {
+			ps.setString(1, prodId);
+			ResultSet rs = ps.executeQuery();
+			while(rs.next())
+				jsonData.put(rs.getString("KIT_LAYER_ID"), rs.getString("JSON_DATA"));
+			return jsonData;
+		} catch (SQLException e) {
+			log.debug(e);
+		}
+		return null;
+	}
+
+	/**
+	 * Helper method for updating the JSONData for the new Kit layers.
+	 * @param data
+	 */
+	private void saveJsonData(Map<String, String> data) {
+		StringBuilder sb = new StringBuilder(110);
+		sb.append("update ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sb.append("RAM_KIT_LAYER set JSON_DATA = ?, UPDATE_DT = ? where KIT_LAYER_ID = ?");
+
+		try (PreparedStatement ps = dbConn.prepareStatement(sb.toString())){
+			for(String key : data.keySet()) {
+				ps.setString(1, data.get(key));
+				ps.setTimestamp(2, Convert.getCurrentTimestamp());
+				ps.setString(3, key);
+				ps.addBatch();
+			}
+			ps.executeBatch();
+		} catch(SQLException e) {
+			log.error("There was a problem updating the JSON Data", e);
+		}
+	}
 }
