@@ -49,11 +49,9 @@ public class AUSAFConfig extends SAFConfig {
 		String name = StringUtil.checkVal(record.getFirstName()) + " " + StringUtil.checkVal(record.getLastName());
 		String dealerLink = "http://" + getPostbackDomain() + "/" + vals.get("aliasPath");
 		if (isDealer) {
-			msg.append("<p>This message is to advise you that a customer has filled out a ");
-			msg.append("Request a Quote form or sent you a file.  ");
-			msg.append("Please use the contact information provided by the customer in the form.  ");
-			msg.append("Do not click reply to this message, it is sent to you from a  ");
-			msg.append("do_not_reply@fastsigns email box and will not be received by the customer.</p>");
+			msg.append("<p><b>Reminder: Do Not click reply on this email, it is sent to you from a do not reply email box.</b></p>");
+			msg.append("<p>This message is to advise you that you have received a Request a Quote and/or a file.<br/>");
+			msg.append("Please use the contact information provided in the form to response to the customer or prospect.</p>");
 			msg.append("<p>Thank you.</p>");
 		} else {
 			msg.append("<p>Dear ").append(name).append(",<br/>Thank you for contacting ");
