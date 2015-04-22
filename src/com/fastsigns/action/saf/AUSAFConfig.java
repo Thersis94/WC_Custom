@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.fastsigns.action.saf;
 
 import java.util.Map;
@@ -41,26 +38,22 @@ public class AUSAFConfig extends SAFConfig {
 		this.salesContactId = "0a0014137c78012a1472f78fe071400b";
 	}
 
-	/* (non-Javadoc)
-	 * @see com.fastsigns.action.saf.SAFConfig#statusFieldId()
-	 */
-	@Override
-	public String getSenderEmailAddress(boolean isSAF) {
-		return (isSAF) ? "sendafile@signwave.com.au" : "requestaquote@signwave.com.au";
-	}
 
 	/* (non-Javadoc)
 	 * @see com.fastsigns.action.saf.SAFConfig#buildEmail(boolean, com.smt.sitebuilder.action.contact.ContactDataContainer)
 	 */
 	@Override
 	public String buildEmail(boolean isDealer, ContactDataContainer cdc, Map<String,String> vals) {
-		StringBuilder msg = new StringBuilder();
+		StringBuilder msg = new StringBuilder(1000);
 		ContactDataModuleVO record = cdc.getData().get(0);
 		String name = StringUtil.checkVal(record.getFirstName()) + " " + StringUtil.checkVal(record.getLastName());
 		String dealerLink = "http://" + getPostbackDomain() + "/" + vals.get("aliasPath");
 		if (isDealer) {
-			msg.append("<p>This message is to advise you that a customer has filled ");
-			msg.append("out a Request a Quote Form or sent you a file.</p>");
+			msg.append("<p>This message is to advise you that a customer has filled out a ");
+			msg.append("Request a Quote form or sent you a file.  ");
+			msg.append("Please use the contact information provided by the customer in the form.  ");
+			msg.append("Do not click reply to this message, it is sent to you from a  ");
+			msg.append("do_not_reply@fastsigns email box and will not be received by the customer.</p>");
 			msg.append("<p>Thank you.</p>");
 		} else {
 			msg.append("<p>Dear ").append(name).append(",<br/>Thank you for contacting ");
@@ -155,85 +148,4 @@ public class AUSAFConfig extends SAFConfig {
 	public String getEmailSubjectUser() {
 		return "Your request has been delivered to SIGNWAVE";
 	}
-
-	/* (non-Javadoc)
-	 * @see com.fastsigns.action.saf.SAFConfig#contactUsActionId()
-	 */
-	@Override
-	public String getContactUsActionId() {
-		return "0a0014137c775057ed1c4b27e7e2dd12";
-	}
-
-	/* (non-Javadoc)
-	 * @see com.fastsigns.action.saf.SAFConfig#signTypeId()
-	 */
-	@Override
-	public String getSignTypeId() {
-		return "0a0014137c7801331472f78f9389531f";
-	}
-
-	/* (non-Javadoc)
-	 * @see com.fastsigns.action.saf.SAFConfig#companyId()
-	 */
-	@Override
-	public String getCompanyId() {
-		return "0a0014137c7801301472f78fbb3039b4";
-	}
-
-	/* (non-Javadoc)
-	 * @see com.fastsigns.action.saf.SAFConfig#faxId()
-	 */
-	@Override
-	public String getFaxId() {
-		return "0a0014137c78012a1472f78f3adbec87";
-	}
-
-	/* (non-Javadoc)
-	 * @see com.fastsigns.action.saf.SAFConfig#requestedCompletionDateId()
-	 */
-	@Override
-	public String getRequestedCompletionDateId() {
-		return "0a0014137c7801301472f78f5b2779e9";
-	}
-
-	/* (non-Javadoc)
-	 * @see com.fastsigns.action.saf.SAFConfig#signQuantityId()
-	 */
-	@Override
-	public String getSignQuantityId() {
-		return "0a0014137c7801331472f78f96102656";
-	}
-
-	/* (non-Javadoc)
-	 * @see com.fastsigns.action.saf.SAFConfig#desiredHeightId()
-	 */
-	@Override
-	public String getDesiredHeightId() {
-		return "0a0014137c78012f1472f78f4a1bec6";
-	}
-
-	/* (non-Javadoc)
-	 * @see com.fastsigns.action.saf.SAFConfig#desiredWidthId()
-	 */
-	@Override
-	public String getDesiredWidthId() {
-		return "0a0014137c78012f1472f78fbe660afe";
-	}
-
-	/* (non-Javadoc)
-	 * @see com.fastsigns.action.saf.SAFConfig#projectDescriptionId()
-	 */
-	@Override
-	public String getProjectDescriptionId() {
-		return "0a0014137c7801301472f78fa1ad440d";
-	}
-
-	/* (non-Javadoc)
-	 * @see com.fastsigns.action.saf.SAFConfig#salesContactId()
-	 */
-	@Override
-	public String getSalesContactId() {
-		return "0a0014137c78012a1472f78fe071400b";
-	}
-
 }

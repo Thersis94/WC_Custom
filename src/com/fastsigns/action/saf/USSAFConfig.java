@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.fastsigns.action.saf;
 
 import java.util.Map;
@@ -41,13 +38,6 @@ public class USSAFConfig extends SAFConfig {
 		this.salesContactId = "c0a8023721541f6fe2ace856c69913f0";
 	}
 	
-	/* (non-Javadoc)
-	 * @see com.fastsigns.action.saf.SAFConfig#statusFieldId()
-	 */
-	@Override
-	public String getSenderEmailAddress(boolean isSAF) {
-		return (isSAF) ? "sendafile@fastsigns.com" : "requestaquote@fastsigns.com";
-	}
 
 	/* (non-Javadoc)
 	 * @see com.fastsigns.action.saf.SAFConfig#buildEmail(boolean, com.smt.sitebuilder.action.contact.ContactDataContainer)
@@ -56,7 +46,7 @@ public class USSAFConfig extends SAFConfig {
 	public String buildEmail(boolean isDealer, ContactDataContainer cdc, Map<String, String> vals) {
 		ContactDataModuleVO record = cdc.getData().get(0);
 		String name = StringUtil.checkVal(record.getFirstName()) + " " + StringUtil.checkVal(record.getLastName());
-		StringBuilder msg = new StringBuilder();
+		StringBuilder msg = new StringBuilder(1000);
 		String dealerLink = "http://" + getPostbackDomain() + "/" + vals.get("aliasPath");
 		
 		/*
@@ -65,12 +55,15 @@ public class USSAFConfig extends SAFConfig {
 		 * rule with James Mckain
 		 */
 		String dealer = vals.get("fastsignsTxt") + "&reg; of " + vals.get("locationName");
-		if(((String)vals.get("dealerLocationId")).equals("210"))
+		if (StringUtil.checkVal(vals.get("dealerLocationId")).equals("210"))
 			dealer = "Brand Imaging Group";
 		
 		if (isDealer) {
-			msg.append("<p>This message is to advise you that a customer has filled ");
-			msg.append("out a Request a Quote Form or sent you a file.</p>");
+			msg.append("<p>This message is to advise you that a customer has filled out a ");
+			msg.append("Request a Quote form or sent you a file.  ");
+			msg.append("Please use the contact information provided by the customer in the form.  ");
+			msg.append("Do not click reply to this message, it is sent to you from a  ");
+			msg.append("do_not_reply@fastsigns email box and will not be received by the customer.</p>");
 			msg.append("<p>Thank you.</p>");
 		} else {
 			msg.append("<p>Dear ").append(name).append(",<br/>Thank you for contacting ");
@@ -165,5 +158,4 @@ public class USSAFConfig extends SAFConfig {
 	public String getEmailSubjectUser() {
 		return "Your request has been delivered to FASTSIGNS";
 	}
-
 }
