@@ -51,26 +51,36 @@ public class AESAFConfig extends SAFConfig {
 	 */
 	@Override
 	public String buildEmail(boolean isDealer, ContactDataContainer cdc, Map<String, String> vals) {
-		StringBuilder msg = new StringBuilder();
 		ContactDataModuleVO record = cdc.getData().get(0);
 		String name = StringUtil.checkVal(record.getFirstName()) + " " + StringUtil.checkVal(record.getLastName());
+		StringBuilder msg = new StringBuilder(1000);
 		String dealerLink = "http://" + getPostbackDomain() + "/" + vals.get("aliasPath");
+		
+		/*
+		 * Billy Larsen.
+		 * Brand Imaging needed a special announcement, cleared approval for a special
+		 * rule with James Mckain
+		 */
+		String dealer = vals.get("fastsignsTxt") + "&reg; of " + vals.get("locationName");
+		if(((String)vals.get("dealerLocationId")).equals("210"))
+			dealer = "Brand Imaging Group";
+		
 		if (isDealer) {
-			msg.append("<p>This message is to advise you that a customer has filled ");
-			msg.append("out a Request a Quote Form or sent you a file.</p>");
+			msg.append("<p><b>Reminder: Do Not click reply on this email, it is sent to you from a do not reply email box.</b></p>");
+			msg.append("<p>This message is to advise you that you have received a Request a Quote and/or a file.<br/>");
+			msg.append("Please use the contact information provided in the form to response to the customer or prospect.</p>");
 			msg.append("<p>Thank you.</p>");
 		} else {
 			msg.append("<p>Dear ").append(name).append(",<br/>Thank you for contacting ");
-			msg.append(vals.get("fastsignsTxt")).append("&reg; of ").append(vals.get("locationName")).append(". This email serves to confirm ");
+			msg.append(dealer);
+			msg.append(". This email serves to confirm ");
 			msg.append("that we have received the following information from you.<br/>If you have any ");
 			msg.append("questions please contact us at ").append(vals.get("phoneNumber")).append(" or ");
 			msg.append(vals.get("dealerEmail")).append("<br/>Thank you,<br/><a href='").append(dealerLink).append("'>");
-			msg.append(vals.get("fastsignsTxt")).append("&reg; of ");
-			msg.append(vals.get("locationName")).append("</a><br/>More than fast. More than signs.&trade;");
+			msg.append(dealer).append("</a><br/>More than fast. More than signs.&trade;");
 			
 		}
 		msg.append("<table style=\"width:750px;border:solid 1px black;\">");
-
 		
 		msg.append("<tr style=\"background:#c0d2ec;\"><td style=\"padding-right:10px;\" nowrap valign=\"top\">Name</td><td valign=\"top\">").append(name).append("</td></tr>");
 		msg.append("<tr style=\"background:#E1EAFE;\"><td style=\"padding-right:10px;\" nowrap valign=\"top\">Email</td><td valign=\"top\">").append(StringUtil.checkVal(record.getEmailAddress())).append("</td></tr>");
