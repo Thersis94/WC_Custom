@@ -3,6 +3,7 @@ package com.depuy.events_v2.vo;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Date;
@@ -11,6 +12,7 @@ import java.util.Set;
 
 import com.depuy.events.vo.CoopAdVO;
 import com.depuy.events.vo.LeadCityVO;
+import com.depuy.events_v2.OutstandingItems.ActionItem;
 import com.depuy.events_v2.vo.DePuyEventSurgeonVO;
 import com.depuy.events_v2.vo.PersonVO.Role;
 import com.depuy.events.vo.DePuyEventLeadSourceVO;
@@ -36,12 +38,15 @@ import com.smt.sitebuilder.action.event.vo.EventPostcardVO;
 public class DePuyEventSeminarVO extends EventPostcardVO {
 	private static final long serialVersionUID = 1l;
     
-	private DePuyEventSurgeonVO surgeon = null;
+	private List<DePuyEventSurgeonVO> surgeons = null;
 	private Set<String> joints = null;  //comes from DEPUY_EVENT_SPECIALTY_XR
 	private Set<PersonVO> people = null;
+	private Map<Long, ConsigneeVO> consignees = null; //JSTL wants us to use a Long key instead of an Integer here.
+	private Set<ActionItem> actionItems = null;
     
-	private CoopAdVO newspaperAd = null;
 	private CoopAdVO radioAd = null;
+	private List<CoopAdVO> newspaperAds = null;
+	private List<CoopAdVO> onlineAds = null;
 	private List<DePuyEventLeadSourceVO> leadSources = null;;
 	private List<UserDataVO> leadsData = null;
 	private int rsvpCount = 0;
@@ -51,11 +56,16 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	
 	private Map<Location, LeadCityVO> targetLeads = null;
 	private int totalSelectedLeads = 0;
+	private int upfrontFeeFlg = 0;
     
     public DePuyEventSeminarVO() {
 	    super();
-	    joints = new HashSet<String>();
-	    people = new HashSet<PersonVO>();
+	    joints = new HashSet<>();
+	    people = new HashSet<>();
+	    newspaperAds = new ArrayList<>();
+	    onlineAds = new ArrayList<>();
+	    consignees = new HashMap<>();
+	    surgeons = new ArrayList<>();
     }
     
     /**
@@ -72,9 +82,6 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	    List<EventEntryVO> lst = new ArrayList<EventEntryVO>();
 	    lst.add(new EventEntryVO(rs));
 	    super.setEvents(lst);
-	    
-	    //add the Surgeon
-	    surgeon = new DePuyEventSurgeonVO(rs);
     }
     
     /**
@@ -90,6 +97,12 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	    super.setPostcardTypeFlg(db.getIntegerVal("content_no", rs));
 	    super.setAuthorizationText(db.getStringVal("authorization_txt", rs));
 	    super.setPostcardFileStatusFlg(db.getIntVal("postcard_file_status_no", rs));
+	    super.setLanguageCode( db.getStringVal("language_cd", rs) );
+	    super.setTerritoryNumber( db.getIntegerVal("territory_no", rs));
+	    super.setPostcardMailDate(db.getDateVal("postcard_mail_dt", rs));
+	    super.setConsumableOrderDate(db.getDateVal("CONSUMABLE_ORDER_DT", rs));
+	    super.setInviteFileUrl(db.getStringVal("INVITE_FILE_URL", rs));
+	    super.setInviteFileFlg(db.getIntegerVal("INVITE_FILE_FLG", rs));
 	    
 	    List<EventEntryVO> lst = new ArrayList<EventEntryVO>();
 	    EventEntryVO event = new EventEntryVO();
@@ -100,11 +113,15 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	    event.setEventTypeCd(db.getStringVal("type_nm", rs));
 	    event.setCityName(db.getStringVal("city_nm", rs));
 	    event.setStateCode(db.getStringVal("state_cd", rs));
+	    event.setEventDesc(db.getStringVal("event_desc", rs));
 	    lst.add(event);
 	    super.setEvents(lst);
 	    
-	    surgeon = new DePuyEventSurgeonVO();
+	    DePuyEventSurgeonVO surgeon = new DePuyEventSurgeonVO();
 	    surgeon.setSurgeonName(db.getStringVal("surgeon_nm", rs));
+	    addSurgeon(surgeon);
+	    
+	    upfrontFeeFlg = db.getIntVal("upfront_cost_flg", rs);
 
 		if (db.getIntVal("hip", rs) > 0) joints.add("4");
 	    	if (db.getIntVal("knee", rs) > 0) joints.add("5");
@@ -112,12 +129,15 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	    	
 	    	rsvpCount = db.getIntVal("rsvp_no", rs);
 	    	
-	    	String runDates = db.getStringVal("run_dates_txt", rs);
-    		this.newspaperAd = new CoopAdVO();
-    		this.newspaperAd.setAdDatesText(runDates);
-    		this.newspaperAd.setStatusFlg(db.getIntVal("ad_status_flg", rs));
+//	    	String runDates = db.getStringVal("run_dates_txt", rs);
+
+	    	CoopAdVO ad = new CoopAdVO();
+//    		ad.setAdDatesText(runDates);
+    		ad.setStatusFlg(db.getIntVal("ad_status_flg", rs));
+    		newspaperAds.add(ad);
     		
     		db = null;
+    	
 	    return this;
     }
 
@@ -150,7 +170,7 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	}
 	
 	public Date getEarliestEventDate() {
-		if (firstEventDate == null) {  //only need to iterator once to set the member variable
+		if (firstEventDate == null) {  //only need to iterate once to set the member variable
 			if (super.getEventCount() == 1) {
 				firstEventDate = super.getEvents().get(0).getStartDate();
 				
@@ -165,7 +185,6 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 				}
 			}
 		}
-		
 		if (firstEventDate == null) firstEventDate = Calendar.getInstance().getTime();
 		return firstEventDate;
 	}
@@ -279,19 +298,44 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	}
 
 	public DePuyEventSurgeonVO getSurgeon() {
-		return surgeon;
+		return (surgeons != null && surgeons.size() > 0) ? surgeons.get(0) : null;
+	}
+	
+	public List<DePuyEventSurgeonVO> getSurgeonList() {
+		return surgeons;
 	}
 
-	public void setSurgeon(DePuyEventSurgeonVO surgeon) {
-		this.surgeon = surgeon;
+	public void addSurgeon(DePuyEventSurgeonVO surgeon) {
+		this.surgeons.add(surgeon);
 	}
 
-	public CoopAdVO getNewspaperAd() {
-		return newspaperAd;
+	public List<CoopAdVO> getNewspaperAds() {
+		return newspaperAds;
 	}
 
-	public void setNewspaperAd(CoopAdVO newspaperAd) {
-		this.newspaperAd = newspaperAd;
+	public void setNewspaperAds(List<CoopAdVO> list) {
+		this.newspaperAds = list;
+	}
+	
+	public List<CoopAdVO> getOnlineAds(){
+		return onlineAds;
+	}
+	
+	public void setOnlineAds( List<CoopAdVO> list ){
+		this.onlineAds = list;
+	}
+	
+	public List<CoopAdVO> getAllAds(){
+		List<CoopAdVO> list = new ArrayList<CoopAdVO>(newspaperAds);
+		list.addAll(onlineAds);
+		return list;
+	}
+	
+	public void addAdvertisement(CoopAdVO ad) {
+		if (ad.getOnlineFlg() != null && ad.getOnlineFlg() == 1)
+			onlineAds.add(ad);
+		else
+			newspaperAds.add(ad);
 	}
 
 	public CoopAdVO getRadioAd() {
@@ -421,6 +465,17 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 		return this.getEarliestEventDate().equals(cal.getTime());
 	}
 	
+	public boolean isTimeToOrderConsumables() {
+		if (this.isComplete()) return false;
+		
+		Calendar cal = Calendar.getInstance();		
+		Calendar eventDtM10 = Calendar.getInstance();
+		eventDtM10.setTime(this.getEarliestEventDate());
+		eventDtM10.add(Calendar.DATE, -10);
+		
+		return cal.getTime().after(eventDtM10.getTime());
+	}
+	
 	public boolean isComplete() {
 		Calendar cal = Calendar.getInstance();
 		cal.set(Calendar.HOUR, 0);
@@ -428,6 +483,15 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 		cal.set(Calendar.SECOND, 0);
 		cal.set(Calendar.MILLISECOND, 0);
 		return this.getEarliestEventDate().before(cal.getTime());
+	}
+	
+	public boolean isMinDaysAway(int days) {
+		Calendar milestone = Calendar.getInstance();
+		milestone.setTime(this.getEarliestEventDate());
+		milestone.add(Calendar.DAY_OF_YEAR, (0 - days));
+
+		//true if the today is greater-than or equal to the milestone
+		return Calendar.getInstance().getTime().compareTo(milestone.getTime()) > -1;
 	}
 
 	public String getLeadSortType() {
@@ -437,10 +501,48 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	public boolean isPromotePgCompleted() {
 		//CPSEM does not use the Ads system, so they get a free pass here
 		boolean adApproved = ("CPSEM".equalsIgnoreCase(getEvents().get(0).getEventTypeCd()));
-		if (!adApproved) 
-			adApproved = (newspaperAd != null && newspaperAd.getStatusFlg() != null &&  newspaperAd.getStatusFlg() == 3);
-		
+		if (!adApproved && newspaperAds != null && !newspaperAds.isEmpty() ) {
+			//if there is a non-empty list, loop through to see if all entries are complete
+			adApproved = true;
+			//if any ad is not complete, change adApproved back to false and proceed
+			for( CoopAdVO ad : newspaperAds ){
+				if ( ad.getStatusFlg() == null || ad.getStatusFlg() != 3 )
+					adApproved = false;
+			}
+		}
 		return getPostcardFileStatusFlg() == 3 && adApproved;
+	}
+	
+	
+	/**
+	 * returns total Ad costs for a specific party
+	 * @param forWhom
+	 * @return
+	 */
+	public Double getAdCost(String forWhom) {
+		Double cost = 0.0;
+		
+		for (CoopAdVO ad : this.getAllAds()) {
+			switch (forWhom) {
+				case "depuy":
+					cost += ad.getCostToDepuyNo();
+					continue;
+				case "hospital":
+					cost += ad.getCostToHospitalNo();
+					continue;
+				case "surgeon":
+					cost += ad.getCostToSurgeonNo();
+					continue;
+				case "rep":
+					cost += ad.getCostToRepNo();
+					continue;
+				case "total":
+					cost += ad.getTotalCostNo();
+					continue;
+			}
+		}
+		
+		return cost;
 	}
 	
 	
@@ -461,4 +563,57 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 		}
 	}
 
+	/**
+	 * @return the upfrontFeeFlg
+	 */
+	public int getUpfrontFeeFlg() {
+		return upfrontFeeFlg;
+	}
+
+	/**
+	 * @param upfrontFeeFlg the upfrontFeeFlg to set
+	 */
+	public void setUpfrontFeeFlg(int upfrontFeeFlg) {
+		this.upfrontFeeFlg = upfrontFeeFlg;
+	}
+
+	public Map<Long, ConsigneeVO> getConsignees() {
+		return consignees;
+	}
+
+	public void setConsignees(Map<Long, ConsigneeVO> consignees) {
+		this.consignees = consignees;
+	}
+	
+	public void addConsignee(ConsigneeVO vo) {
+		this.consignees.put(Long.valueOf(vo.getTypeNo()), vo);
+	}
+
+	public Set<ActionItem> getActionItems() {
+		return actionItems;
+	}
+
+	public void setActionItems(Set<ActionItem> actionItems) {
+		this.actionItems = actionItems;
+	}
+	public void addActionItem(ActionItem actionItem) {
+		if (actionItems == null) actionItems = new HashSet<>();
+		actionItems.add(actionItem);
+	}
+	
+	public boolean isMitekSeminar() {
+		String typeCd = "";
+		try {
+			typeCd = super.getEvents().get(0).getEventTypeCd();
+		} catch (Exception e) {}
+		return typeCd.startsWith("MITEK-");
+	}
+	
+	public boolean isHospitalSponsored() {
+		String typeCd = "";
+		try {
+			typeCd = super.getEvents().get(0).getEventTypeCd();
+		} catch (Exception e) {}
+		return typeCd.equals("HSEM");
+	}
 }

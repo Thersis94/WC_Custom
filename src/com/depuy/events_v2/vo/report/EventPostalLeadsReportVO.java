@@ -60,7 +60,8 @@ public class EventPostalLeadsReportVO extends AbstractSBReportVO {
 		String rsvpDateStr = Convert.formatDate(rsvpDate, "EEEE, MMMM dd, yyyy");
 		
 		for (UserDataVO vo : leads) {
-			rpt.append("<tr><td>").append(StringUtil.checkVal(vo.getPrefixName())).append("</td>");
+			rpt.append("<tr><td>").append(StringUtil.checkVal(vo.getProfileId())).append("</td>");
+			rpt.append("<td>").append(StringUtil.checkVal(vo.getPrefixName())).append("</td>");
 			rpt.append("<td>").append(StringUtil.checkVal(vo.getFirstName())).append("</td>");
 			rpt.append("<td>").append(StringUtil.checkVal(vo.getLastName())).append("</td>");
 			rpt.append("<td>").append(StringUtil.checkVal(vo.getSuffixName())).append("</td>");
@@ -82,6 +83,7 @@ public class EventPostalLeadsReportVO extends AbstractSBReportVO {
 	private StringBuilder getHeader(int eventCnt) {
 		StringBuilder hdr = new StringBuilder();
 		hdr.append("<table border='1'>\r<tr style='background-color:#ccc;'>");
+		hdr.append("<th>ProfileAddressId</th>");
 		hdr.append("<th>Title</th>");
 		hdr.append("<th>First_Name</th>");
 		hdr.append("<th>Last_Name</th>");

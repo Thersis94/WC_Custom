@@ -14,9 +14,9 @@ import com.smt.sitebuilder.action.AbstractSBReportVO;
  * @since Jan 31, 2014
  ***************************************************************************/
 @Deprecated
-public class CFSEMReportVO extends AbstractSBReportVO {
+public class CFSEM25ReportVO extends AbstractSBReportVO {
 	public static void main(String [] Args) {
-		System.out.println(new String(new CFSEMReportVO().generateReport()));
+		System.out.println(new String(new CFSEM25ReportVO().generateReport()));
 	}
 	private static final long serialVersionUID = 2149353708238601389L;
 
@@ -31,7 +31,7 @@ public class CFSEMReportVO extends AbstractSBReportVO {
 		sb.append("<h4><i>DePuy Synthes Joint Reconstruction</i><br/>");
 		sb.append("Patient Education Seminar<br/>");
 		sb.append("Compliance Acknowledgment<br/>");
-		sb.append("(DePuySynthes Joint Reconstruction/Surgeon Co-funded)</h4>");
+		sb.append("(DePuySynthes Joint Reconstruction/Co-funded 50/25/25 Split)</h4>");
 		sb.append("</center>");
 		
 		//Requirements preamble
@@ -40,10 +40,11 @@ public class CFSEMReportVO extends AbstractSBReportVO {
 		
 		//Paragraph 1
 		sb.append("<br/><br/><u>Seminar Marketing:</u><br/>");
-		sb.append("<ul><li>Surgeon speaker will be responsible for 1/3 of the cost of the newspaper ad and postcard invitations. The surgeon speaker ");
-		sb.append("will therefore have 1/3 of the real estate on the newspaper ad and postcards. Seminar will be cancelled if surgeon speaker ");
-		sb.append("does not approve the newspaper ad, agree to the related costs, provide credit card information to third party agency for ");
-		sb.append("related costs when contacted by third party agency.</li>");
+		sb.append("<ul><li>Surgeon speaker and hospital will be responsible for 25% of the cost of the newspaper ad and combined are responsible ");
+		sb.append("for a $200 upfront fee covering postcards, flyers, posters, refreshments and venue rental fees. The surgeon speaker or hospital ");
+		sb.append("will therefore have 25% of the real estate on the newspaper ad, postcards, flyers and posters. Seminar will be cancelled if ");
+		sb.append("surgeon speaker does not approve the newspaper ad, agree to the related costs, provide credit card information to third party ");
+		sb.append("agency for related costs when contacted by third party agency. </li>");
 		sb.append("<li>The surgeon speaker may market the education seminar provided they use an approved venue and the pre-approved <i>DePuy ");
 		sb.append("Synthes Joint Reconstruction</i> newspaper ad. No changes can be made to the pre-approved newspaper ad.</li>");
 		sb.append("<li>No modifications will be made to the seminar marketing templates with the exception of adding the location, date, time, ");
@@ -78,13 +79,13 @@ public class CFSEMReportVO extends AbstractSBReportVO {
 		sb.append("<li>A <i>DePuy Synthes Joint Reconstruction</i> Surgeon Locator list will be distributed to all attendees.</li>");
 		sb.append("<li>The surgeon speaker may distribute his business card, display practice brochures, as well as have staff at the seminar.</li>");
 		sb.append("<li>No payment or reimbursement of expenses will be paid for the speaker (i.e. parking, mileage). The surgeon speaker ");
-		sb.append("may partake in the refreshments provided at the seminar.</li>");
+		sb.append("may enjoy the refreshments provided at the seminar.</li>");
 		sb.append("<li>A meal service will not be provided, but refreshments such as cookies and coffee are acceptable. The refreshment spending ");
-		sb.append("limit is $10 per attendee, which includes the $3 First Aid kit.</li></ul>");
+		sb.append("limit is $13 per attendee, which includes the $3 First Aid kit.</li></ul>");
 
 		//Footer
 		sb.append("<br/><br/>");
-		sb.append("Area Marketing Director's Signature: ${admSignature} Date: ${approvalDt} <br/>");
+		sb.append("Community Education Program Director's Signature: ${admSignature} Date: ${approvalDt} <br/>");
 		sb.append("I have read and understand the requirements and have reviewed the Surgeon Guideline document with the surgeon speaker.<br/>");
 		sb.append("Seminar Coordinator's Name: ${ownerName}<br/>Territory #: ${territoryNo} <br/>");
 		sb.append("Sales representative's Name: ${repName} <br/>");

@@ -13,10 +13,10 @@ import com.smt.sitebuilder.action.AbstractSBReportVO;
  * @version 1.0
  * @since Jan 31, 2014
  ***************************************************************************/
-public class ESEMReportVO extends AbstractSBReportVO {
+public class ESEMMitekReportVO extends AbstractSBReportVO {
 
 	public static void main(String [] args) {
-		System.out.println(new String(new ESEMReportVO().generateReport()));
+		System.out.println(new String(new ESEMMitekReportVO().generateReport()));
 	}
 	
 	private static final long serialVersionUID = 8396753231530938375L;
@@ -29,12 +29,12 @@ public class ESEMReportVO extends AbstractSBReportVO {
 		sb.append("<html><head><title>Compliance Form</title></head><body>");
 		sb.append("rev. 4/2/15<br/>");
 		sb.append("<center>");
-		sb.append("<h4><i>DePuy Synthes Joint Reconstruction</i><br/>");
+		sb.append("<h4><i>DePuy Synthes Mitek Sports Medicine</i><br/>");
 		sb.append("Patient Education Seminar<br/>");
 		sb.append("Compliance Acknowledgment</h4>");
 		sb.append("</center>");
 		//Requirements Preamble
-		sb.append("<p>To the best of my knowledge, the <i>DePuy Synthes Joint Reconstruction</i> Patient ");
+		sb.append("<p>To the best of my knowledge, the <i>DePuy Synthes Mitek Sports Medicine</i> Patient ");
 		sb.append("Education Seminar scheduled for at ${eventDate} at ${eventLocation} will comply with the following requirements.</p>");
 		//Paragraph 1
 		sb.append("<br/><br/><u>Seminar Marketing:</u><br/>");
@@ -42,7 +42,7 @@ public class ESEMReportVO extends AbstractSBReportVO {
 		sb.append("reservation code and speaker information. Only company created and approved marketing collateral may be used.</li>");
 		sb.append("<li>The speaker may market the education seminar provided they use an approved venue and the pre-approved <i>DePuy ");
 		sb.append("Synthes Joint Reconstruction</i> newspaper ad. No changes can be made to the pre-approved newspaper ad.</li>");
-		sb.append("<li>Speaker may send the <i>DePuy Synthes Joint Reconstruction</i> pre-approved and pre-printed postcard invitations to ");
+		sb.append("<li>Speaker may send the <i>DePuy Synthes Mitek Sports Medicine</i> pre-approved and pre-printed postcard invitations to ");
 		sb.append("their own referral list. The speaker is responsible for ensuring that any such outreach to their own referral base ");
 		sb.append("complies with the HIPAA law and all other applicable legal requirements.</li></ul>");
 		//Paragraph 2
@@ -53,40 +53,31 @@ public class ESEMReportVO extends AbstractSBReportVO {
 		sb.append("<li>The speaker will be required to sign a legal approved agreement sent to them by the Medical Affairs team at <i>DePuy ");
 		sb.append("Synthes Joint Reconstruction</i>.</li>");
 		sb.append("<li>The surgeon speaker will not make any modifications to the pre-approved presentation slide deck. The additional slides ");
-		sb.append("within the deck (i.e. female knee, computer assisted surgery, Anterior Approach) may be used or not used, based on ");
-		sb.append("relevance to the speaker's knowledge.<br/>");
+		sb.append("within the deck may be used or not used, based on relevance to the speaker's knowledge.<br/>");
 		sb.append("NOTE: The presentation slide deck will be provided to the speaker to prepare for the seminar, but the ");
-		sb.append("presentation that will be used during the seminar will be supplied by the Seminar Coordinator the day of the seminar.</li>");
-		sb.append("<li>The speaker will not market him/herself, his/her practice or his/her hospital during the seminar. For Example:");
-			//indented sub-list
-			sb.append("<ul><li>The speaker will not book office appointments while at the seminar.</li>");
-			sb.append("<li>The speaker will not have practice/hospital brochures at the seminar.</li>");
-			sb.append("<li>The speaker will not hand out business cards to attendees<br/>");
-			sb.append("Note: The speaker may not hand out a business card, even if asked by an attendee. However, the attendee may be ");
-			sb.append("directed to the <i>DePuy Synthes Joint Reconstruction</i> Surgeon Locator list which will include ");
-			sb.append("surgeons in the area who use <i>DePuy Synthes Joint Reconstruction</i> products.</li></ul></li>");
+		sb.append("presentation that will be used during the seminar will be supplied by the EISC the day of the seminar.</li>");
 		sb.append("<li>The speaker can talk about the procedures and technologies that he/she uses, provided those uses are <b>not off-");
 		sb.append("label</b> for our products.</li></ul>");
 		//Paragraph 3
 		sb.append("<br/><br/><u>The Seminar:</u><br/>");
 		sb.append("<ul><li>If using a hospital location for the seminar venue the hospital may not be reimbursed for use of a conference room, nor for ");
 		sb.append("food or catering services.</li>");
-		sb.append("<li>During the opening remarks, the <i>DePuy Synthes Joint Reconstruction</i> representative may introduce the speaker by ");
+		sb.append("<li>During the opening remarks, the <i>DePuy Synthes Mitek Sports Medicine</i> representative may introduce the speaker by ");
 		sb.append("his/her name and practice name. The introductory slides will include the speaker's name, practice name and bio. ");
 		sb.append("The speaker's contact information may be added to the \"Questions\" slide at the end of the presentation in case there ");
 		sb.append("are any questions about the presentation. These are the only designated areas on the presentation to identify the ");
 		sb.append("speaker's practice.</li>");
-		sb.append("<li>A <i>DePuy Synthes Joint Reconstruction</i> Surgeon Locator list will be distributed to all attendees.</li>");
+		sb.append("<li>A <i>DePuy Synthes Mitek Sports Medicine</i> Surgeon Locator list will be distributed to all attendees.</li>");
 		sb.append("<li>No payment or reimbursement of expenses will be paid for the speaker (i.e. parking, mileage). The speaker may ");
 		sb.append("partake in the refreshments provided at the seminar.</li>");
 		sb.append("<li>A meal service will not be provided, but refreshments such as cookies and coffee are acceptable. The refreshment spending ");
-		sb.append("limit is $10 per attendee, which includes the $3 First Aid kit.</li></ul>");
+		sb.append("limit is $10 per attendee, which includes the give-away kit.</li></ul>");
 		//Footer
 		sb.append("<br/><br/>");
-		sb.append("Community Education Program Director's Signature: ${admSignature} Date: ${approvalDt}<br/>");
+		sb.append("Area Marketing Director's Signature: ${admSignature} Date: ${approvalDt}<br/>");
 		sb.append("I have read and understand the requirements and have reviewed the Speaker Guideline document with the speaker.<br/>");
-		sb.append("Seminar Coordinator's Name: ${ownerName}<br/>Territory #: ${territoryNo}<br/>");
-		sb.append("Sales representative's Name: ${repName}<br/>");
+		sb.append("Early Intervention Sales Consultant's Name: ${ownerName}<br/>");
+		sb.append("Early Intervention Sales Manager's Name: ${repName}<br/>");
 		sb.append("</body></html>");
 		
 		return sb.toString().getBytes();
