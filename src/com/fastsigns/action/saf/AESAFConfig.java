@@ -39,14 +39,6 @@ public class AESAFConfig extends SAFConfig {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.fastsigns.action.saf.SAFConfig#statusFieldId()
-	 */
-	@Override
-	public String getSenderEmailAddress(boolean isSAF) {
-		return (isSAF) ? "sendafile@fastsigns.com" : "requestaquote@fastsigns.com";
-	}
-
-	/* (non-Javadoc)
 	 * @see com.fastsigns.action.saf.SAFConfig#buildEmail(boolean, com.smt.sitebuilder.action.contact.ContactDataContainer)
 	 */
 	@Override
