@@ -8,37 +8,34 @@ import com.smt.sitebuilder.action.contact.ContactDataContainer;
 import com.smt.sitebuilder.action.contact.ContactDataModuleVO;
 
 /****************************************************************************
- * <b>Title</b>: USSAFConfig.java<p/>
- * <b>Description: </b> 
+ * <b>Title</b>: SASAFConfig.java<p/>
+ * <b>Description: SAF config for Fastsigns SA</b> 
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2012<p/>
  * <b>Company:</b> Silicon Mountain Technologies<p/>
- * @author James McKain
+ * @author Billy Larsen
  * @version 1.0
- * @since Jun 12, 2012
+ * @since Sept 20, 2012
  ****************************************************************************/
 public class AESAFConfig extends SAFConfig {
-	
+
 	public AESAFConfig() {
 		this.countryCode = "AE";
 		this.postbackDomain = "www.fastsigns.ae";
-//	TODO - change guids below to match AE portlet, in production.
-// You'll need to write DB queries to export the contact fields/form from production 
-// to staging, so the guids align
-//		this.sendingFilesNowFieldId = "c0a8023721565d1bdd5add6a42b2f3c8";
-//		this.transactionStageFieldId = "7f0001019c4932bc3629f3987f43b5ec";
-//		this.filesFieldId = "7f000101580d3209dd677866f73ed913";
-//		this.statusFieldId = "7f000101ed12428e6f503d8d58e4ef90";
-//		this.contactUsActionId = "c0a80165f4bfd181b8291101947bff4b";
-//		this.signTypeId = "c0a80237214f632f9a16a15e3b629c58";
-//		this.companyId = "c0a80237b0c703fd4020174ce3a74dfd";
-//		this.faxId = "c0a8023721541f6fe2ace856c70113f0";
-//		this.requestedCompletionDateId = "c0a80237215abba6c0da9428fd936f8c";
-//		this.signQuantityId = "c0a8023721541f6fe2ace856c52213f0";
-//		this.desiredHeightId = "c0a802372158184c63997ded6321a2df";
-//		this.desiredWidthId = "c0a8023721587c01854c54f919f8073";
-//		this.projectDescriptionId = "c0a802372158e14b3400741780e58cf8";
-//		this.salesContactId = "c0a8023721541f6fe2ace856c69913f0";
+		this.sendingFilesNowFieldId = "23bb2a82ee52484ca158b79a5d324cbc";
+		this.transactionStageFieldId = "9846574d9b1c4f43a179c4e37c0865dc";
+		this.filesFieldId = "1e70807163f249b59c3994392ed7feac";
+		this.statusFieldId = "8051a47051b04c1b96338da7c1a3d414";
+		this.contactUsActionId = "1b16afc703b24b5bb22de38dadabd11d";
+		this.signTypeId = "da1ef48b9e7b424690bcf031a1504b81";
+		this.companyId = "52a91896a63b4981ad06b69dee21b06c";
+		this.faxId = "8f651916573749e694acc1b83b168784";
+		this.requestedCompletionDateId = "8848c78ab56e4052a0f88df769341347";
+		this.signQuantityId = "9b5b82e65f4e4481a0ab2b4431559099";
+		this.desiredHeightId = "03e3062cffd84d11b8e2e5bd47d7e54d";
+		this.desiredWidthId = "a0231dd9db0347a2b9bbeeeede06bb2d";
+		this.projectDescriptionId = "ade8a3871222403db2dbc1d4301b5c61";
+		this.salesContactId = "cb49533204de42f19134070261296436";
 	}
 
 	/* (non-Javadoc)
@@ -158,5 +155,4 @@ public class AESAFConfig extends SAFConfig {
 	public String getEmailSubjectUser() {
 		return "Your request has been delivered to FASTSIGNS";
 	}
-
 }
