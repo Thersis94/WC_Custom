@@ -101,6 +101,8 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	    super.setTerritoryNumber( db.getIntegerVal("territory_no", rs));
 	    super.setPostcardMailDate(db.getDateVal("postcard_mail_dt", rs));
 	    super.setConsumableOrderDate(db.getDateVal("CONSUMABLE_ORDER_DT", rs));
+	    super.setInviteFileUrl(db.getStringVal("INVITE_FILE_URL", rs));
+	    super.setInviteFileFlg(db.getIntegerVal("INVITE_FILE_FLG", rs));
 	    
 	    List<EventEntryVO> lst = new ArrayList<EventEntryVO>();
 	    EventEntryVO event = new EventEntryVO();

@@ -13,6 +13,7 @@ import com.depuy.events.vo.CoopAdVO;
 import com.depuy.events_v2.vo.DePuyEventSeminarVO;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.event.EventFacadeAction;
 import com.smt.sitebuilder.action.event.vo.EventEntryVO;
 
@@ -44,7 +45,7 @@ public class OutstandingItems {
 		consumableBox, survey, attendance,
 		//processes the user must manually acknowledge/complete on their own
 		printFlyers(true), meetWithHospital(true), educateSurgeon(true), getAVEquipment(true),
-		testAVEquipment(true), printLocator(true), callRSVPs(true);
+		testAVEquipment(true), printLocator(true), callRSVPs(true), pcpInviteFile;
 		
 		private boolean offline;  //flags whether this is a manually-completed item, not something we complete via processes.
 		ActionItem(){}
@@ -76,12 +77,20 @@ public class OutstandingItems {
 			sem.addActionItem(ActionItem.survey); // [CF|CP|E]SEM requiring survey completion
 			
 		} else if (isFullyApproved && !isHSEM && !sem.isComplete()) {
+			boolean isCPSEM = "CPSEM".equals(event.getEventTypeCd());
+			
 			if (sem.getPostcardFileStatusFlg() == 2) {
 				sem.addActionItem(ActionItem.postcardApproval); // awaiting postcard approval
 			}
 			if (sem.getConsumableOrderDate() == null && sem.isTimeToOrderConsumables()) {
 				sem.addActionItem(ActionItem.consumableBox); // need to order consumable box
 			}
+			if (isCPSEM) {
+				boolean sendingFile = Convert.formatInteger(sem.getInviteFileFlg()).intValue() == 2;
+				if (sendingFile  && StringUtil.checkVal(sem.getInviteFileUrl()).length() == 0)
+					sem.addActionItem(ActionItem.pcpInviteFile); //they said they're uploading a file, but haven't
+			}
+			
 			//loop the ads
 			for (CoopAdVO ad : sem.getAllAds()) {
 				int adStatus = Convert.formatInteger(ad.getStatusFlg()).intValue();

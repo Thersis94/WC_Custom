@@ -21,8 +21,6 @@ public class AttendeeSurveyVO implements Serializable {
 	
 	private String eventEntryId = null;
 	private String profileId = null;
-	private String firstName = null;
-	private String lastName = null;
 	private String rsvpCode = null;
 	private Map<String, Object> responses = new HashMap<>();
 
@@ -57,47 +55,6 @@ public class AttendeeSurveyVO implements Serializable {
 		this.eventEntryId = eventEntryId;
 	}
 
-	/**
-	 * @return the profileId
-	 */
-	public String getProfileId() {
-		return profileId;
-	}
-
-	/**
-	 * @param profileId the profileId to set
-	 */
-	public void setProfileId(String profileId) {
-		this.profileId = profileId;
-	}
-
-	/**
-	 * @return the firstName
-	 */
-	public String getFirstName() {
-		return firstName;
-	}
-
-	/**
-	 * @param firstName the firstName to set
-	 */
-	public void setFirstName(String firstName) {
-		this.firstName = firstName;
-	}
-
-	/**
-	 * @return the lastName
-	 */
-	public String getLastName() {
-		return lastName;
-	}
-
-	/**
-	 * @param lastName the lastName to set
-	 */
-	public void setLastName(String lastName) {
-		this.lastName = lastName;
-	}
 
 	public Map<String, Object> getResponses() {
 		return responses;
@@ -109,5 +66,13 @@ public class AttendeeSurveyVO implements Serializable {
 	
 	public void addResponse(String cd, String resp) {
 		responses.put(cd, resp);
+	}
+
+	public String getProfileId() {
+		return profileId;
+	}
+
+	public void setProfileId(String profileId) {
+		this.profileId = profileId;
 	}
 }

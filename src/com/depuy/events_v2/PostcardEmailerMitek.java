@@ -5,6 +5,7 @@ import java.sql.Connection;
 import java.util.Map;
 
 
+
 // SMT BaseLibs
 import com.depuy.events_v2.vo.DePuyEventSeminarVO;
 import com.depuy.events_v2.vo.DePuyEventSurgeonVO;
@@ -591,6 +592,40 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			
 		} catch (Exception e){
 			log.error("notifyPostcardSent",e);
+		}
+	}
+	
+	
+	/**
+	 * notifies Harmony when a PEER coordinator uploads their leads
+	 * @param req
+	 */
+	protected void inviteFileUploaded(SMTServletRequest req) {
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
+		
+		StringBuilder msg = new StringBuilder(100);
+		msg.append("The PEER Invite List has been uploaded and is now available on the portal. ");
+		msg.append("Please click the following link below to view and download the file.\r\r");
+		msg.append(site.getFullSiteAlias()).append("/?reqType=promote&eventPostcardId=");
+		msg.append(sem.getEventPostcardId()).append("\r\r");
+		
+		try {
+			EmailMessageVO mail = new EmailMessageVO();
+			mail.setSubject("PEER Invite List Now Available - Seminar "+ sem.getRSVPCodes());
+			mail.setFrom(site.getMainEmail());
+			mail.setTextBody(msg.toString());
+			
+			//recipients
+			mail.addRecipient("ksmith49@its.jnj.com");
+			mail.addRecipient("mroderic@its.jnj.com");
+			
+			MessageSender mailer = new MessageSender(attributes,dbConn);
+			mailer.sendMessage(mail);
+			log.debug("inviteFileUploaded Sent");
+			
+		} catch (Exception e) {
+			log.error("inviteFileUploaded",e);
 		}
 	}
 }
