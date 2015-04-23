@@ -7,6 +7,8 @@ import java.util.Map;
 
 import org.apache.log4j.Logger;
 
+import com.fastsigns.action.RequestAQuoteSTF;
+import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.contact.ContactDataContainer;
 
 /****************************************************************************
@@ -107,12 +109,33 @@ public abstract class SAFConfig {
 	 */
 	public abstract String buildEmail(boolean isDealer, ContactDataContainer cdc, Map<String, String> vals);
 	
+	
 	/**
-	 * returns one of two email addresses, depending on whether this is a SAF or RAQ submission
+	 * returns the email address of the center; used when we email the customer, so if they reply
+	 * to the email it gets sent to the Center, not the ethers.
 	 * @param isSAF
 	 * @return
 	 */
-	public abstract String getSenderEmailAddress(boolean isSAF);
+	public String getSenderEmailAddress(Map<String, String> vals) {
+		if (vals != null) {
+			Integer webId = Convert.formatInteger(vals.get(RequestAQuoteSTF.DEALER_LOCATION_ID), null);
+		
+			if (webId != null)
+				return webId + "@fastsigns.com";
+		}
+		
+		return getNoReplyEmailAddress();
+	}
+	
+
+	/**
+	 * returns a canned "do not reply" email address; used when emailing the Centers SAF requests
+	 * @return
+	 */
+	public String getNoReplyEmailAddress() {
+		return "do_not_reply@fastsigns.com";
+	}
+	
 	
 	/**
 	 * the subject of the email message sent to the Center

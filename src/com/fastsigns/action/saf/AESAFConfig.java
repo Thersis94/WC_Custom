@@ -8,34 +8,37 @@ import com.smt.sitebuilder.action.contact.ContactDataContainer;
 import com.smt.sitebuilder.action.contact.ContactDataModuleVO;
 
 /****************************************************************************
- * <b>Title</b>: SASAFConfig.java<p/>
- * <b>Description: SAF config for Fastsigns SA</b> 
+ * <b>Title</b>: USSAFConfig.java<p/>
+ * <b>Description: </b> 
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2012<p/>
  * <b>Company:</b> Silicon Mountain Technologies<p/>
- * @author Billy Larsen
+ * @author James McKain
  * @version 1.0
- * @since Sept 20, 2012
+ * @since Jun 12, 2012
  ****************************************************************************/
-public class SASAFConfig extends SAFConfig {
-
-	public SASAFConfig() {
-		this.countryCode = "SA";
-		this.postbackDomain = "www.fastsignssa.com";
-		this.sendingFilesNowFieldId = "0a001413d979c50738f6a61159574403";
-		this.transactionStageFieldId = "0a001413d979c50338f6a611e159153a";
-		this.filesFieldId = "0a001413d979c50238f6a611c8093aea";
-		this.statusFieldId = "0a001413d979c50238f6a6114e3abd1c";
-		this.contactUsActionId = "0a001413d97974ef38f6a6119e1ecc68";
-		this.signTypeId = "0a001413d979c50938f6a6119f5e0356";
-		this.companyId = "0a001413d979c50838f6a611985c8a77";
-		this.faxId = "0a001413d979c50138f6a611eaaf4ffd";
-		this.requestedCompletionDateId = "0a001413d979c50838f6a6115e18f25";
-		this.signQuantityId = "0a001413d979c50938f6a611c92d1cc4";
-		this.desiredHeightId = "0a001413d979c50738f6a6111b519391";
-		this.desiredWidthId = "0a001413d979c50838f6a6118ef132be";
-		this.projectDescriptionId = "0a001413d979c50838f6a611354bd503";
-		this.salesContactId = "0a001413d979c50138f6a6116a03ea57";
+public class AESAFConfig extends SAFConfig {
+	
+	public AESAFConfig() {
+		this.countryCode = "AE";
+		this.postbackDomain = "www.fastsigns.ae";
+//	TODO - change guids below to match AE portlet, in production.
+// You'll need to write DB queries to export the contact fields/form from production 
+// to staging, so the guids align
+//		this.sendingFilesNowFieldId = "c0a8023721565d1bdd5add6a42b2f3c8";
+//		this.transactionStageFieldId = "7f0001019c4932bc3629f3987f43b5ec";
+//		this.filesFieldId = "7f000101580d3209dd677866f73ed913";
+//		this.statusFieldId = "7f000101ed12428e6f503d8d58e4ef90";
+//		this.contactUsActionId = "c0a80165f4bfd181b8291101947bff4b";
+//		this.signTypeId = "c0a80237214f632f9a16a15e3b629c58";
+//		this.companyId = "c0a80237b0c703fd4020174ce3a74dfd";
+//		this.faxId = "c0a8023721541f6fe2ace856c70113f0";
+//		this.requestedCompletionDateId = "c0a80237215abba6c0da9428fd936f8c";
+//		this.signQuantityId = "c0a8023721541f6fe2ace856c52213f0";
+//		this.desiredHeightId = "c0a802372158184c63997ded6321a2df";
+//		this.desiredWidthId = "c0a8023721587c01854c54f919f8073";
+//		this.projectDescriptionId = "c0a802372158e14b3400741780e58cf8";
+//		this.salesContactId = "c0a8023721541f6fe2ace856c69913f0";
 	}
 
 	/* (non-Javadoc)
@@ -43,10 +46,20 @@ public class SASAFConfig extends SAFConfig {
 	 */
 	@Override
 	public String buildEmail(boolean isDealer, ContactDataContainer cdc, Map<String, String> vals) {
-		StringBuilder msg = new StringBuilder(1000);
 		ContactDataModuleVO record = cdc.getData().get(0);
 		String name = StringUtil.checkVal(record.getFirstName()) + " " + StringUtil.checkVal(record.getLastName());
+		StringBuilder msg = new StringBuilder(1000);
 		String dealerLink = "http://" + getPostbackDomain() + "/" + vals.get("aliasPath");
+		
+		/*
+		 * Billy Larsen.
+		 * Brand Imaging needed a special announcement, cleared approval for a special
+		 * rule with James Mckain
+		 */
+		String dealer = vals.get("fastsignsTxt") + "&reg; of " + vals.get("locationName");
+		if(((String)vals.get("dealerLocationId")).equals("210"))
+			dealer = "Brand Imaging Group";
+		
 		if (isDealer) {
 			msg.append("<p><b>Reminder: Do Not click reply on this email, it is sent to you from a do not reply email box.</b></p>");
 			msg.append("<p>This message is to advise you that you have received a Request a Quote and/or a file.<br/>");
@@ -54,16 +67,15 @@ public class SASAFConfig extends SAFConfig {
 			msg.append("<p>Thank you.</p>");
 		} else {
 			msg.append("<p>Dear ").append(name).append(",<br/>Thank you for contacting ");
-			msg.append(vals.get("fastsignsTxt")).append("&reg; of ").append(vals.get("locationName")).append(". This email serves to confirm ");
+			msg.append(dealer);
+			msg.append(". This email serves to confirm ");
 			msg.append("that we have received the following information from you.<br/>If you have any ");
 			msg.append("questions please contact us at ").append(vals.get("phoneNumber")).append(" or ");
 			msg.append(vals.get("dealerEmail")).append("<br/>Thank you,<br/><a href='").append(dealerLink).append("'>");
-			msg.append(vals.get("fastsignsTxt")).append("&reg; of ");
-			msg.append(vals.get("locationName")).append("</a><br/>More than fast. More than signs.&trade;");
+			msg.append(dealer).append("</a><br/>More than fast. More than signs.&trade;");
 			
 		}
 		msg.append("<table style=\"width:750px;border:solid 1px black;\">");
-
 		
 		msg.append("<tr style=\"background:#c0d2ec;\"><td style=\"padding-right:10px;\" nowrap valign=\"top\">Name</td><td valign=\"top\">").append(name).append("</td></tr>");
 		msg.append("<tr style=\"background:#E1EAFE;\"><td style=\"padding-right:10px;\" nowrap valign=\"top\">Email</td><td valign=\"top\">").append(StringUtil.checkVal(record.getEmailAddress())).append("</td></tr>");
@@ -146,4 +158,5 @@ public class SASAFConfig extends SAFConfig {
 	public String getEmailSubjectUser() {
 		return "Your request has been delivered to FASTSIGNS";
 	}
+
 }
