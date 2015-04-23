@@ -6,9 +6,11 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.depuy.events_v2.vo.AttendeeSurveyVO;
 import com.depuy.events_v2.vo.DePuyEventSeminarVO;
@@ -25,6 +27,7 @@ import com.depuy.events_v2.vo.report.SeminarRollupReportVO;
 import com.depuy.events_v2.vo.report.CustomReportVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
@@ -345,46 +348,54 @@ public class ReportBuilder extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	public AbstractSBReportVO generateAttendeeSurveyReport(SMTServletRequest req){
+	public AbstractSBReportVO generateAttendeeSurveyReport(SMTServletRequest req) {
+		final String dfSchema = (String)attributes.get(Constants.DATA_FEED_SCHEMA);
+		Set<String> profileIds = new HashSet<>();
 		Map<String, AttendeeSurveyVO> data = new LinkedHashMap<>(); //keep in the order defined by the query
 		Map<String, String> questionMap = new LinkedHashMap<>(); //keep in order defined by the query
 		questionMap.put("RSVP_CD",  "Seminar #");
 		questionMap.put("SEM_DT",  "Seminar Date");
 		questionMap.put("PRODUCT_CD",  "Primary Joint");
+		questionMap.put("NAME", "Name");
+		questionMap.put("ADDRESS", "Address");
+		questionMap.put("ADDRESS2","Address2");
+		questionMap.put("CITY", "City");
+		questionMap.put("STATE","State");
+		questionMap.put("ZIP","Zip");
+		questionMap.put("PHONE", "Phone");
+		questionMap.put("EMAIL", "Email");
+		questionMap.put("BIRTH_YR",  "Birth Year");
+		questionMap.put("GENDER",  "Gender");
 		questionMap.put("REFERER",  "Referral Source");
 		questionMap.put("TARGET",  "Call Target");
-		questionMap.put("GENDER",  "Gender");
-		questionMap.put("BIRTH_YR",  "Birth Year");
+		questionMap.put("INFO_KIT",  "Previously Received Info-Kit?");
 		
-		final String dfSchema = (String)attributes.get(Constants.DATA_FEED_SCHEMA);
-
+		
 		//Concatenated string of rsvp codes to include in the report.
 		//Assume all to be included if no code is specified
 		String [] rsvpCodes = req.getParameterValues("surveySeminars");
 		Boolean selectAll = Convert.formatBoolean(req.getParameter("allSurveySeminars"));
 
 		StringBuilder sql = new StringBuilder(500);
-		sql.append("select c.customer_id, c.SELECTION_CD, c.product_cd, p.gender_cd, p.BIRTH_YEAR_NO, ");
+		sql.append("select c.customer_id, c.SELECTION_CD, c.product_cd, c.profile_id, c.lead_type_id, ");
 		sql.append("case c.call_reason_cd when 'OTHER' then c.call_reason_other_txt else call_reason_cd end as call_reason_cd, ");
 		sql.append("c.call_target_cd, c.attempt_dt, cr.RESPONSE_TXT, qm.QUESTION_CD, q.QUESTION_TXT ");
-		//sql.append(", p.FIRST_NM, p.LAST_NM, p.PROFILE_ID ");
 		sql.append("from ").append(dfSchema).append("CUSTOMER c ");
 		sql.append("inner join ").append(dfSchema).append("CUSTOMER_RESPONSE cr on c.CUSTOMER_ID=cr.CUSTOMER_ID ");
 		sql.append("inner join ").append(dfSchema).append("QUESTION_MAP qm on qm.QUESTION_MAP_ID=cr.QUESTION_MAP_ID ");
 		sql.append("inner join ").append(dfSchema).append("QUESTION q on q.QUESTION_ID=qm.QUESTION_ID ");
-		sql.append("left join PROFILE p on p.PROFILE_ID=c.PROFILE_ID ");
 		sql.append("where c.CALL_SOURCE_CD='EVENT' ");
 
 		//set the specific events, if any exists
 		if (selectAll) {
 			sql.append("and c.SELECTION_CD like 'EVENT_[0-9][0-9][0-9][0-9]' "); //only ones with four trailing digits are patient seminars
 		} else {
-			sql.append(" and c.SELECTION_CD in ( ");
+			sql.append(" and c.SELECTION_CD in (");
 			for (int i=0; i < rsvpCodes.length; i++) {
 				if (i > 0) sql.append(",");
 				sql.append("?");
 			}
-			sql.append(" ) ");
+			sql.append(") ");
 		}
 		sql.append("order by c.SELECTION_CD, c.CUSTOMER_ID, q.question_txt");
 		log.debug(sql);
@@ -397,8 +408,6 @@ public class ReportBuilder extends SBActionAdapter {
 				}
 			}
 			ResultSet rs = ps.executeQuery();
-			//Needed to decrypt name values
-			//ProfileManager pm = ProfileManagerFactory.getInstance(this.attributes);
 			AttendeeSurveyVO vo = null;
 			while (rs.next()) {
 				String questCd = rs.getString("question_cd");
@@ -406,24 +415,22 @@ public class ReportBuilder extends SBActionAdapter {
 				if (!questionMap.containsKey(questCd))
 					questionMap.put(questCd, rs.getString("question_txt"));
 
-				//if customer_id differs, we are on to a new person
+				//when customer_id changes, we're on to the next person
 				String customerId = rs.getString("customer_id");
 				if (data.containsKey(customerId)) {
 					vo = data.get(customerId);
 				} else {
 					vo = new AttendeeSurveyVO();
-					//vo.setProfileId(rs.getString("profile_id"));
+					vo.setProfileId(rs.getString("profile_id"));
+					profileIds.add(vo.getProfileId());
 					//get the rsvp code by trimming the selection_cd prefix
 					vo.setRsvpCode(StringUtil.checkVal(rs.getString("selection_cd")).replaceFirst("EVENT_0", "").replaceFirst("EVENT_",""));
 					vo.addResponse("RSVP_CD", vo.getRsvpCode()); //for when we pass the map to ExcelReport
 					vo.addResponse("SEM_DT",  Convert.formatDate(rs.getDate("attempt_dt"), Convert.DATE_SLASH_PATTERN));
 					vo.addResponse("PRODUCT_CD",  rs.getString("PRODUCT_CD"));
-					vo.addResponse("REFERER",  rs.getString("call_reason_cd"));
+					vo.addResponse("REFERER",  StringUtil.checkVal(rs.getString("call_reason_cd")));
 					vo.addResponse("TARGET",  rs.getString("call_target_cd"));
-					vo.addResponse("GENDER", rs.getString("gender_cd"));
-					vo.addResponse("BIRTH_YR", Convert.formatInteger(rs.getInt("BIRTH_YEAR_NO")).toString());
-					//vo.setFirstName(pm.getStringValue("FIRST_NM", rs.getString("first_nm")));
-					//vo.setLastName(pm.getStringValue("LAST_NM", rs.getString("last_nm")));
+					vo.addResponse("INFO_KIT", (rs.getInt("lead_type_id") == 1 ? "Yes" : "No"));
 				}
 				//add this Q&A pair to the vo
 				vo.addResponse(questCd, StringUtil.checkVal(rs.getString("response_txt")));
@@ -434,6 +441,35 @@ public class ReportBuilder extends SBActionAdapter {
 
 		} catch (SQLException sqle) {
 			log.error("could not load survey responses", sqle);
+		}
+		
+		//lookup profiles for all users
+		ProfileManager pm = ProfileManagerFactory.getInstance(this.attributes);
+		try {
+			Map<String, UserDataVO> users = pm.searchProfileMap(dbConn, new ArrayList<String>(profileIds));
+			//tie a profile back to each survey response
+			for (String customerId : data.keySet()) {
+				AttendeeSurveyVO vo = data.get(customerId);
+				UserDataVO user = users.get(vo.getProfileId());
+				if (user == null) continue;
+				vo.addResponse("NAME", user.getFullName());
+				vo.addResponse("ADDRESS", StringUtil.checkVal(user.getAddress()));
+				vo.addResponse("ADDRESS2", StringUtil.checkVal(user.getAddress2()));
+				vo.addResponse("CITY", StringUtil.checkVal(user.getCity()));
+				vo.addResponse("STATE", StringUtil.checkVal(user.getState()));
+				vo.addResponse("ZIP", StringUtil.checkVal(user.getZipCode()));
+				vo.addResponse("PHONE", StringUtil.checkVal(user.getMainPhone()));
+				vo.addResponse("EMAIL", StringUtil.checkVal(user.getEmailAddress()));
+				vo.addResponse("BIRTH_YR", StringUtil.checkVal(user.getBirthYear()));
+				vo.addResponse("GENDER", StringUtil.checkVal(user.getGenderCode()));
+				data.put(customerId, vo);
+			}
+			
+		} catch (DatabaseException de) {
+			log.error("could not load user profiles", de);
+		} finally {
+			pm = null;
+			profileIds = null;
 		}
 
 		log.debug("loaded " + data.size() + " survey responses");

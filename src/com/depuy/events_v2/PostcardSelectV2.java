@@ -542,7 +542,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		Map<String, DePuyEventSeminarVO> data = new HashMap<>();
 
 		StringBuilder sql = new StringBuilder(1300);
-		sql.append("select distinct e.event_entry_id, e.RSVP_CODE_TXT, e.start_dt, ");
+		sql.append("select distinct e.event_entry_id, e.RSVP_CODE_TXT, e.start_dt, ep.invite_file_flg, ep.invite_file_url, ");
 		sql.append("et.type_nm, ep.event_postcard_id, ep.PROFILE_ID, ep.postcard_file_status_no, "); 
 		sql.append("e.event_nm, e.city_nm, e.state_cd, ep.status_flg, ep.CONSUMABLE_ORDER_DT,  ");
 		sql.append("cad.status_flg as ad_status_flg, ep.language_cd, online_flg, e.create_dt ");
@@ -574,7 +574,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 			sql.append("and (pxr.PROFILE_ID=? or ep.PROFILE_ID=?) ");
 		}
 		sql.append("group by e.event_entry_id, ep.event_postcard_id, e.RSVP_CODE_TXT, ");
-		sql.append("e.start_dt, et.type_nm, ep.PROFILE_ID, ep.postcard_file_status_no, ");
+		sql.append("e.start_dt, ep.invite_file_flg, ep.invite_file_url, et.type_nm, ep.PROFILE_ID, ep.postcard_file_status_no, ");
 		sql.append("e.event_nm, e.city_nm, e.state_cd, ep.status_flg, ep.CONSUMABLE_ORDER_DT,  ");
 		sql.append("cad.status_flg, ep.language_cd, online_flg, e.create_dt ");
 		sql.append("order by e.create_dt, ep.event_postcard_id");

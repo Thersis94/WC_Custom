@@ -687,4 +687,39 @@ public class PostcardEmailer {
 			log.error("notifyPostcardSent",e);
 		}
 	}
+	
+	/**
+	 * notifies Harmony when a PCP coordinator uploads their leads
+	 * @param req
+	 */
+	protected void inviteFileUploaded(SMTServletRequest req) {
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
+		
+		StringBuilder msg = new StringBuilder(100);
+		msg.append("The PCP Invite List has been uploaded and is now available on the portal. ");
+		msg.append("Please click the following link below to view and download the file.\r\r");
+		msg.append(site.getFullSiteAlias()).append("/?reqType=promote&eventPostcardId=");
+		msg.append(sem.getEventPostcardId()).append("\r\r");
+		
+		try {
+			EmailMessageVO mail = new EmailMessageVO();
+			mail.setSubject("PCP Invite List Now Available - Seminar "+ sem.getRSVPCodes());
+			mail.setFrom(site.getMainEmail());
+			mail.setTextBody(msg.toString());
+			
+			//recipients
+			mail.addRecipient("sterling.hoham@hmktgroup.com");
+			mail.addCC("amy.zimmerman@hmktgroup.com");
+			mail.addCC(site.getAdminEmail());
+			mail.addCC("rwilkin7@its.jnj.com");
+			
+			MessageSender mailer = new MessageSender(attributes,dbConn);
+			mailer.sendMessage(mail);
+			log.debug("inviteFileUploaded Sent");
+			
+		} catch (Exception e) {
+			log.error("inviteFileUploaded",e);
+		}
+	}
 }

@@ -54,7 +54,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 
 	// transaction types understood by this action
 	public enum ReqType {
-		eventInfo, leads, cancelSeminar, orderBox, uploadPostcard, approvePostcardFile, declinePostcardFile,
+		eventInfo, leads, cancelSeminar, orderBox, uploadPostcard, uploadPCPLeads, approvePostcardFile, declinePostcardFile,
 		uploadAdFile, approveAd, declineAd, postseminar, coopAdsSurgeonApproval, optionFeedback,
 		hospitalSponsored, uploadPosterFile, saveInvoiceFile, radioAdsSubmit, markAdsComplete,
 		//status levels
@@ -166,6 +166,10 @@ public class PostcardInsertV2 extends SBActionAdapter {
 					this.orderBox(req, eventPostcardId);
 					break;
 
+				case uploadPCPLeads:
+					this.uploadPCPLeads(req, eventPostcardId, site);
+					break;
+					
 				case uploadPostcard:
 					this.uploadPostcard(req, eventPostcardId, site);
 					break;
@@ -271,21 +275,19 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		if (pkId != null) {
 			sql.append("update event_postcard set update_dt=?, quantity_no=?, ");
 			sql.append("mailing_addr_txt=?, label_txt=?, content_no=?, territory_no=?, ");
-			sql.append("language_cd=?, postcard_style_txt=?, PSTRS_FLYRS_SPECIAL_INST_TXT=? ");
-			sql.append("where event_postcard_id=?");
+			sql.append("language_cd=?, postcard_style_txt=?, PSTRS_FLYRS_SPECIAL_INST_TXT=?, ");
+			sql.append("invite_file_flg=? where event_postcard_id=?");
 		} else {
 			sql.append("insert into event_postcard (organization_id, profile_id, ");
 			sql.append("create_dt, quantity_no, mailing_addr_txt, label_txt, content_no, ");
 			sql.append("territory_no, language_cd, postcard_style_txt, PSTRS_FLYRS_SPECIAL_INST_TXT, ");
-			sql.append("event_postcard_id) values (?,?,?,?,?,?,?,?,?,?,?,?)");
+			sql.append("invite_file_flg, event_postcard_id) values (?,?,?,?,?,?,?,?,?,?,?,?,?)");
 			if (label == null || label.length() == 0) label = "Local Orthopaedic Surgeon";
 		}
 		log.debug("saving event postcard: " + sql);
 
 		int x = 1;
-		PreparedStatement ps = null;
-		try {
-			ps = dbConn.prepareStatement(sql.toString());
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			if (pkId == null) {
 				pkId = new UUIDGenerator().getUUID();
 				ps.setString(x++, site.getOrganizationId());
@@ -300,13 +302,12 @@ public class PostcardInsertV2 extends SBActionAdapter {
 			ps.setString(x++, StringUtil.checkVal(req.getParameter("languageCode"), "en") );
 			ps.setString(x++, req.getParameter("postcardTypeText"));
 			ps.setString(x++, req.getParameter("postersFlyersInstrText"));
+			ps.setInt(x++, Convert.formatInteger(req.getParameter("inviteFileFlg"), 0));
 			ps.setString(x++, pkId);
 
 			if (ps.executeUpdate() < 1)
 				throw new SQLException(ps.getWarnings());
 
-		} finally {
-			try { ps.close(); } catch (Exception e) { }
 		}
 
 		return pkId;
@@ -330,8 +331,8 @@ public class PostcardInsertV2 extends SBActionAdapter {
 			vo.setShortDesc(req.getParameter("eventDescOther"));
 		} else if ("Art museums".equalsIgnoreCase(vo.getEventDesc())) {
 			vo.setShortDesc(req.getParameter("justificationArt"));
-		} else if ("Country clubs".equalsIgnoreCase(vo.getEventDesc())) {
-			vo.setShortDesc(req.getParameter("justificationCC"));
+//		} else if ("Country clubs".equalsIgnoreCase(vo.getEventDesc())) {
+//			vo.setShortDesc(req.getParameter("justificationCC"));
 		} else if ("Hospital".equalsIgnoreCase(vo.getEventDesc())) {
 			vo.setShortDesc(req.getParameter("eventDescAffirmation"));
 		} else if ("Amb. Surg. Ctr. (Hosp Owned)".equalsIgnoreCase(vo.getEventDesc())) {
@@ -1147,6 +1148,41 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		} else {
 			epe.requestPostcardApproval(req);
 		}
+	}
+	
+	
+	/**
+	 * for PCP events - allows the coordinator to upload a spreadsheet of their 
+	 * leads into the system
+	 * @param req
+	 * @param eventPostcardId
+	 * @param site
+	 * @throws ActionException
+	 * @throws SQLException
+	 */
+	private void uploadPCPLeads(SMTServletRequest req, String eventPostcardId, SiteVO site)
+			throws ActionException, SQLException {
+		String sql = "update event_postcard set invite_file_url=?,  update_dt=? where event_postcard_id=?";
+		log.debug(sql);
+
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			ps.setString(1, this.saveFile(req, "inviteFileUrl", "/postcards/", site));
+			ps.setTimestamp(2, Convert.getCurrentTimestamp());
+			ps.setString(3, eventPostcardId);
+			ps.executeUpdate();
+		} catch (SQLException sqle) {
+			log.error("failed saving PCP leads file", sqle);
+			message = "Transaction Failed";
+			throw new ActionException(sqle);
+		}
+		
+		// get the postcard data for emailing & approving each event
+		DePuyEventSeminarVO sem = fetchSeminar(req, ReportType.summary);
+		req.setAttribute("postcard", sem);
+
+		//send an email to the coordinator here...
+		PostcardEmailer epe = PostcardEmailer.newInstance(sem, attributes, dbConn);
+		epe.inviteFileUploaded(req);
 	}
 	
 
