@@ -22,26 +22,25 @@ public class AESAFConfig extends SAFConfig {
 	public AESAFConfig() {
 		this.countryCode = "AE";
 		this.postbackDomain = "www.fastsigns.ae";
-		this.sendingFilesNowFieldId = "23bb2a82ee52484ca158b79a5d324cbc";
-		this.transactionStageFieldId = "9846574d9b1c4f43a179c4e37c0865dc";
-		this.filesFieldId = "1e70807163f249b59c3994392ed7feac";
-		this.statusFieldId = "8051a47051b04c1b96338da7c1a3d414";
-		this.contactUsActionId = "1b16afc703b24b5bb22de38dadabd11d";
-		this.signTypeId = "da1ef48b9e7b424690bcf031a1504b81";
-		this.companyId = "52a91896a63b4981ad06b69dee21b06c";
-		this.faxId = "8f651916573749e694acc1b83b168784";
-		this.requestedCompletionDateId = "8848c78ab56e4052a0f88df769341347";
-		this.signQuantityId = "9b5b82e65f4e4481a0ab2b4431559099";
-		this.desiredHeightId = "03e3062cffd84d11b8e2e5bd47d7e54d";
-		this.desiredWidthId = "a0231dd9db0347a2b9bbeeeede06bb2d";
-		this.projectDescriptionId = "ade8a3871222403db2dbc1d4301b5c61";
-		this.salesContactId = "cb49533204de42f19134070261296436";
+		this.sendingFilesNowFieldId = "c0a80223e1d32dcc13144565d66a00d8";
+		this.transactionStageFieldId = "c0a80223e1d32dca131445651d62f056";
+		this.filesFieldId = "c0a80223e1d32dca13144565af61229a";
+		this.statusFieldId = "c0a80223e1d32dca13144565c2e92683";
+		this.contactUsActionId = "c0a8024ae85538163e399b708c71d78e";
+		this.signTypeId = "c0a8024aa2f37c67add458d04d3031f6";
+		this.companyId = "c0a80223e1d32dcc131445655531b4fd";
+		this.faxId = "c0a8024aa2f37c44add458d0fc6e0844";
+		this.requestedCompletionDateId = "c0a80223e1d32dcc13144565ce735342";
+		this.signQuantityId = "c0a8024aa2f37c68add458d0e706df00";
+		this.desiredHeightId = "c0a8024aa2f37c5eadd458d0d6b01a4d";
+		this.desiredWidthId = "c0a8024aa2f37c5fadd458d0ad9bb183";
+		this.projectDescriptionId = "c0a80223e1d32dcc1314456596cbbca6";
+		this.salesContactId = "c0a80223e1d32dc9131445658820b465";
 	}
 
 	/* (non-Javadoc)
 	 * @see com.fastsigns.action.saf.SAFConfig#statusFieldId()
 	 */
-	@Override
 	public String getSenderEmailAddress(boolean isSAF) {
 		return (isSAF) ? "sendafile@fastsigns.com" : "requestaquote@fastsigns.com";
 	}
