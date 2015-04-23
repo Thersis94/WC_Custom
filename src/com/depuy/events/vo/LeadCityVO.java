@@ -5,6 +5,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.depuy.events_v2.LeadsDataToolV2;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
@@ -135,7 +136,7 @@ public class LeadCityVO implements Serializable {
 	 * @return
 	 */
 	public Integer getTierOne() {
-		return Convert.formatInteger(leads.get(3));
+		return Convert.formatInteger(leads.get(LeadsDataToolV2.LeadTierOne));
 	}
 	
 	/**
@@ -143,7 +144,7 @@ public class LeadCityVO implements Serializable {
 	 * @return
 	 */
 	public Integer getTierTwo() {
-		return Convert.formatInteger(leads.get(6)) + getTierOne();
+		return Convert.formatInteger(leads.get(LeadsDataToolV2.LeadTierTwo)) + getTierOne();
 	}
 	
 	/**
@@ -152,7 +153,7 @@ public class LeadCityVO implements Serializable {
 	 * @return
 	 */
 	public Integer getTierThree() {
-		return Convert.formatInteger(leads.get(12)) + getTierTwo();
+		return Convert.formatInteger(leads.get(LeadsDataToolV2.LeadTierThree)) + getTierTwo();
 	}
 	
 	/**
@@ -161,7 +162,7 @@ public class LeadCityVO implements Serializable {
 	 * @return
 	 */
 	public Integer getTierFour() {
-		return Convert.formatInteger(leads.get(240)) + getTierThree();
+		return Convert.formatInteger(leads.get(LeadsDataToolV2.LeadTierFour)) + getTierThree();
 	}
 
 	public boolean getTierOneChecked() {
@@ -182,14 +183,14 @@ public class LeadCityVO implements Serializable {
 
 	public void setChecked(Integer range, boolean checked) {
 		if (range == null) return;
-		switch (range) {
-			case 3:
+		switch (range.intValue()) {
+			case LeadsDataToolV2.LeadTierOne:
 				this.checkedTierOne = checked; break;
-			case 6:
+			case LeadsDataToolV2.LeadTierTwo:
 				this.checkedTierTwo = checked; break;
-			case 12:
+			case LeadsDataToolV2.LeadTierThree:
 				this.checkedTierThree = checked; break;
-			case 240:
+			case LeadsDataToolV2.LeadTierFour:
 				this.checkedTierFour = checked; break;
 		}
 	}

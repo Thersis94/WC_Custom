@@ -22,6 +22,7 @@ public class DePuyEventSurgeonVO implements Serializable {
 	private String surgeonId = null;
 	private String eventPostcardId = null;
 	private String surgeonName = null;
+	private String surgeonTitle = null;
 	private String cvFileUrl = null;
 	private String logoFileUrl = null;
 	private int seenGuidelinesFlg = 0;
@@ -37,6 +38,10 @@ public class DePuyEventSurgeonVO implements Serializable {
 	private String secPhone = null;
 	private String secEmail = null;
 	private String surgeonBio = null;
+	private String altImg1Url = null;
+	private String altImg2Url = null;
+	private String altImg3Url = null;
+	private String hospitalText = null;
 	
 	public DePuyEventSurgeonVO() {
 	}
@@ -48,6 +53,7 @@ public class DePuyEventSurgeonVO implements Serializable {
 		 surgeonId = db.getStringVal("depuy_event_surgeon_id", rs);
 		 eventPostcardId = db.getStringVal("event_postcard_id", rs);
 		surgeonName = db.getStringVal("surgeon_nm", rs);
+		surgeonTitle = db.getStringVal("title_txt", rs);
 		cvFileUrl = db.getStringVal("cv_file_url", rs);
 		logoFileUrl = db.getStringVal("logo_file_url", rs);
 		seenGuidelinesFlg = db.getIntVal("seen_guidelines_flg", rs);
@@ -68,6 +74,10 @@ public class DePuyEventSurgeonVO implements Serializable {
 												db.getStringVal("pract_zip_cd", rs));
 		loc.setAddress2(db.getStringVal("pract_addr2_txt", rs));
 		setPractLocation(loc);
+		setAltImg1Url(db.getStringVal("alt_img1_url", rs));
+		setAltImg2Url(db.getStringVal("alt_img2_url", rs));
+		setAltImg3Url(db.getStringVal("alt_img3_url", rs));
+		setHospitalText(db.getStringVal("hospital_txt", rs));
 		
 		db = null;
 	}
@@ -180,6 +190,46 @@ public class DePuyEventSurgeonVO implements Serializable {
 	}
 	public void setSurgeonBio(String surgeonBio) {
 		this.surgeonBio = surgeonBio;
+	}
+
+	public String getAltImg1Url() {
+		return altImg1Url;
+	}
+
+	public void setAltImg1Url(String altImg1Url) {
+		this.altImg1Url = altImg1Url;
+	}
+
+	public String getAltImg2Url() {
+		return altImg2Url;
+	}
+
+	public void setAltImg2Url(String altImg2Url) {
+		this.altImg2Url = altImg2Url;
+	}
+
+	public String getAltImg3Url() {
+		return altImg3Url;
+	}
+
+	public void setAltImg3Url(String altImg3Url) {
+		this.altImg3Url = altImg3Url;
+	}
+
+	public String getHospitalText() {
+		return hospitalText;
+	}
+
+	public void setHospitalText(String hospitalText) {
+		this.hospitalText = hospitalText;
+	}
+
+	public String getSurgeonTitle() {
+		return surgeonTitle;
+	}
+
+	public void setSurgeonTitle(String surgeonTitle) {
+		this.surgeonTitle = surgeonTitle;
 	}
 	
 }
