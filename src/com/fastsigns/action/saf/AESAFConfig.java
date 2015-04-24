@@ -26,7 +26,7 @@ public class AESAFConfig extends SAFConfig {
 		this.transactionStageFieldId = "c0a80223e1d32dca131445651d62f056";
 		this.filesFieldId = "c0a80223e1d32dca13144565af61229a";
 		this.statusFieldId = "c0a80223e1d32dca13144565c2e92683";
-		this.contactUsActionId = "c0a8024ae85538163e399b708c71d78e";
+		this.contactUsActionId = "c0a80223e1d32e5b61a0358e397bf390";
 		this.signTypeId = "c0a8024aa2f37c67add458d04d3031f6";
 		this.companyId = "c0a80223e1d32dcc131445655531b4fd";
 		this.faxId = "c0a8024aa2f37c44add458d0fc6e0844";
