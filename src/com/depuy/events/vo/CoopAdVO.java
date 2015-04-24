@@ -35,9 +35,14 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 	private String newspaper3Phone = null;
 	private String adDatesText = null;
 	private Double totalCostNo = null;
+	private Double costToDepuyNo = null;
+	private Double costToHospitalNo = null;
+	private Double costToSurgeonNo = null; //also holds 'cost to party' for CFSEM50
 	private Double costToRepNo = null;
 	private String approvedPaperName = null;
 	private String adFileUrl = null;
+	private String optionFileUrl = null;
+	private String optionFeedbackText = null;
 	private String territoryNo = null;
 	private Integer statusFlg = null;
 	private Map<String, Integer> eventCodes = new HashMap<String, Integer>();
@@ -49,6 +54,7 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 	private String instructionsText = null;
 
 	private Integer surgeonStatusFlg = null; // the surgeon must approve CFSEM independently of the Rep
+	private Integer hospitalStatusFlg = null; // the surgeon must approve CFSEM25 independently of the Rep
 	private String surgeonName = null;
 	private String surgeonTitle = null;
 	private String surgeonEmail = null; // used to send approval notification email
@@ -58,6 +64,13 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 	private String clinicPhone = null;
 	private String clinicHours = null;
 	private String surgicalExperience = null;
+	
+	private String languageCode = null;
+	private Integer onlineFlg = null;
+	private String surgeonInfo = null;
+	private String hospitalInfo = null;
+	private Integer weeksAdvance = null;
+	private Integer adCount = null;
 	private String invoiceFile = null;
 
 	public CoopAdVO() {
@@ -77,8 +90,11 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 		newspaper1Text = req.getParameter("newspaper1Text");
 		newspaper2Text = req.getParameter("newspaper2Text");
 		newspaper3Text = req.getParameter("newspaper3Text");
-		totalCostNo = Convert.formatDouble(StringUtil.replace(req.getParameter("totalCostNo"), ",", ""));
-		costToRepNo = Convert.formatDouble(StringUtil.replace(req.getParameter("costToRepNo"), ",", ""));
+		totalCostNo = Convert.formatDouble(StringUtil.removeNonNumericExceptDecimal(req.getParameter("totalCostNo")));
+		costToRepNo = Convert.formatDouble(StringUtil.removeNonNumericExceptDecimal(req.getParameter("costToRepNo")));
+		costToDepuyNo = Convert.formatDouble(StringUtil.removeNonNumericExceptDecimal(req.getParameter("costToDepuyNo")));
+		costToHospitalNo = Convert.formatDouble(StringUtil.removeNonNumericExceptDecimal(req.getParameter("costToHospitalNo")));
+		costToSurgeonNo = Convert.formatDouble(StringUtil.removeNonNumericExceptDecimal(req.getParameter("costToSurgeonNo")));
 		approvedPaperName = req.getParameter("approvedPaperName");
 		newspaper1Phone = req.getParameter("newspaper1Phone");
 		newspaper2Phone = req.getParameter("newspaper2Phone");
@@ -97,6 +113,7 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 		// adFileUrl will get set by the file upload
 		// statusFlg will get set by the action
 		surgeonStatusFlg = Convert.formatInteger(req.getParameter("surgeonStatusFlag"));
+		hospitalStatusFlg = Convert.formatInteger(req.getParameter("hospitalStatusFlag"));
 		surgeonName = req.getParameter("surgeonName");
 		surgeonTitle = req.getParameter("surgeonTitle");
 		setSurgeonEmail(req.getParameter("surgeonEmail"));
@@ -106,6 +123,15 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 		clinicPhone = req.getParameter("clinicPhone");
 		clinicHours = req.getParameter("clinicHours");
 		surgicalExperience = req.getParameter("surgicalExperience");
+		String type = StringUtil.checkVal(adType);
+		languageCode = ( type.toLowerCase().startsWith("spanish") ? "es" : "en");
+		onlineFlg = Convert.formatInteger(req.getParameter("onlineFlg"), 0 );
+		surgeonInfo = req.getParameter("surgeonInfo");
+		hospitalInfo = req.getParameter("hospitalInfo");
+		weeksAdvance = Convert.formatInteger( req.getParameter("weeksAdvance") );
+		adCount = Convert.formatInteger( req.getParameter("adCount") );
+		
+		optionFeedbackText = req.getParameter("optionFeedbackText");
     }
     
     public void setData(ResultSet rs) {
@@ -117,8 +143,13 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 		newspaper3Text = db.getStringVal("newspaper3_txt", rs);
 		totalCostNo = db.getDoubleVal("total_cost_no", rs);
 		costToRepNo = db.getDoubleVal("cost_to_rep_no", rs);
+		costToDepuyNo = db.getDoubleVal("cost_to_depuy_no", rs);
+		costToHospitalNo = db.getDoubleVal("cost_to_hospital_no", rs);
+		costToSurgeonNo = db.getDoubleVal("cost_to_surgeon_no",rs);
 		approvedPaperName = db.getStringVal("approved_paper_nm", rs);
 		adFileUrl = db.getStringVal("ad_file_url", rs);
+		optionFileUrl = db.getStringVal("option_file_url", rs);
+		optionFeedbackText = db.getStringVal("option_feedback_txt", rs);
 		statusFlg = db.getIntegerVal("status_flg", rs);
 		newspaper1Phone = db.getStringVal("newspaper1_phone_no", rs);
 		newspaper2Phone = db.getStringVal("newspaper2_phone_no", rs);
@@ -131,6 +162,7 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 		instructionsText = db.getStringVal("instructions_txt", rs);
 
 		surgeonStatusFlg = db.getIntegerVal("surgeon_status_flg", rs);
+		hospitalStatusFlg = db.getIntegerVal("hospital_status_flg", rs);
 		surgeonName = db.getStringVal("surgeon_nm", rs);
 		surgeonTitle = db.getStringVal("surgeon_title_txt", rs);
 		setSurgeonEmail(db.getStringVal("surgeon_email_txt", rs));
@@ -140,6 +172,12 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 		clinicPhone = db.getStringVal("clinic_phone_txt", rs);
 		clinicHours = db.getStringVal("clinic_hours_txt", rs);
 		surgicalExperience = db.getStringVal("surg_experience_txt", rs);
+		languageCode = db.getStringVal("language_cd", rs);
+		onlineFlg = db.getIntegerVal("online_flg", rs);
+		hospitalInfo = db.getStringVal("hospital_info_txt", rs);
+		surgeonInfo = db.getStringVal("surgeon_info_txt", rs);
+		adCount = db.getIntegerVal("ad_count_no", rs);
+		weeksAdvance = db.getIntegerVal("weeks_advance_no", rs);
 		invoiceFile = db.getStringVal("invoice_file_url", rs);
 		db = null;
     }
@@ -221,13 +259,13 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 	}
 
 	public String getEventCodes() {
-		StringBuffer codes = new StringBuffer();
+		StringBuilder codes = new StringBuilder();
 
 		for (String key : eventCodes.keySet())
 			codes.append(key).append(", ");
 
 		if (codes.length() > 2)
-			codes = new StringBuffer(codes.substring(0, codes.length() - 2));
+			codes = new StringBuilder(codes.substring(0, codes.length() - 2));
 
 		return codes.toString();
 	}
@@ -242,7 +280,14 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 			case CoopAdsActionV2.PENDING_CLIENT_APPROVAL: return "Pending Coordinator Approval";
 			case CoopAdsActionV2.CLIENT_APPROVED_AD: return "Coordinator Approved Ad";
 			case CoopAdsActionV2.CLIENT_DECLINED_AD: return "Coordinator Declined Ad";
-			case CoopAdsActionV2.CLIENT_PAYMENT_RECD: return "Ad Payment Received";
+//			case CoopAdsActionV2.CLIENT_PAYMENT_RECD: return "Ad Payment Received";
+//			case CoopAdsActionV2.AD_DETAILS_RECD: return "Ad Details Received";
+//			case CoopAdsActionV2.PENDING_SURG_APPROVAL: return "Pending Surgeon Approval";
+			case CoopAdsActionV2.SURG_APPROVED_AD: return "Surgeon Approved Ad";
+			case CoopAdsActionV2.SURG_DECLINED_AD: return "Surgeon Declined Ad";
+//			case CoopAdsActionV2.PENDING_HOSP_APPROVAL: return "Pending Hospital Approval";
+			case CoopAdsActionV2.HOSP_APPROVED_AD: return "Hospital Approved Ad";
+			case CoopAdsActionV2.HOSP_DECLINED_AD: return "Hospital Declined Ad";
 			default: return "";
 		}
 	}
@@ -440,6 +485,132 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 	}
 
 	/**
+	 * @return the languageCode
+	 */
+	public String getLanguageCode() {
+		return languageCode;
+	}
+
+	/**
+	 * @param languageCode the languageCode to set
+	 */
+	public void setLanguageCode(String languageCode) {
+		this.languageCode = languageCode;
+	}
+
+	/**
+	 * @return the onlineFlg
+	 */
+	public Integer getOnlineFlg() {
+		return onlineFlg;
+	}
+
+	/**
+	 * @param onlineFlg the onlineFlg to set
+	 */
+	public void setOnlineFlg(Integer onlineFlg) {
+		this.onlineFlg = onlineFlg;
+	}
+
+	/**
+	 * @return the surgeonInfo
+	 */
+	public String getSurgeonInfo() {
+		return surgeonInfo;
+	}
+
+	/**
+	 * @param surgeonInfo the surgeonInfo to set
+	 */
+	public void setSurgeonInfo(String surgeonInfo) {
+		this.surgeonInfo = surgeonInfo;
+	}
+
+	/**
+	 * @return the hospitalInfo
+	 */
+	public String getHospitalInfo() {
+		return hospitalInfo;
+	}
+
+	/**
+	 * @param hospitalInfo the hospitalInfo to set
+	 */
+	public void setHospitalInfo(String hospitalInfo) {
+		this.hospitalInfo = hospitalInfo;
+	}
+
+	/**
+	 * @return the weeksAdvance
+	 */
+	public Integer getWeeksAdvance() {
+		return weeksAdvance;
+	}
+
+	/**
+	 * @param weeksAdvance the weeksAdvance to set
+	 */
+	public void setWeeksAdvance(Integer weeksAdvance) {
+		this.weeksAdvance = weeksAdvance;
+	}
+
+	/**
+	 * @return the adCount
+	 */
+	public Integer getAdCount() {
+		return adCount;
+	}
+
+	/**
+	 * @param adCount the adCount to set
+	 */
+	public void setAdCount(Integer adCount) {
+		this.adCount = adCount;
+	}
+
+	/**
+	 * @return the costToDepuyNo
+	 */
+	public Double getCostToDepuyNo() {
+		return costToDepuyNo;
+	}
+
+	/**
+	 * @param costToDepuyNo the costToDepuyNo to set
+	 */
+	public void setCostToDepuyNo(Double costToDepuyNo) {
+		this.costToDepuyNo = costToDepuyNo;
+	}
+
+	/**
+	 * @return the costToHospitalNo
+	 */
+	public Double getCostToHospitalNo() {
+		return costToHospitalNo;
+	}
+
+	/**
+	 * @param costToHospitalNo the costToHospitalNo to set
+	 */
+	public void setCostToHospitalNo(Double costToHospitalNo) {
+		this.costToHospitalNo = costToHospitalNo;
+	}
+
+	/**
+	 * @return the costToSurgeonNo
+	 */
+	public Double getCostToSurgeonNo() {
+		return costToSurgeonNo;
+	}
+
+	/**
+	 * @param costToSurgeonNo the costToSurgeonNo to set
+	 */
+	public void setCostToSurgeonNo(Double costToSurgeonNo) {
+		this.costToSurgeonNo = costToSurgeonNo;
+	}
+
+	/**
 	 * @return the invoiceFile
 	 */
 	public String getInvoiceFile() {
@@ -453,4 +624,27 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 		this.invoiceFile = invoiceFile;
 	}
 
+	public String getOptionFileUrl() {
+		return optionFileUrl;
+	}
+
+	public void setOptionFileUrl(String optionFileUrl) {
+		this.optionFileUrl = optionFileUrl;
+	}
+
+	public String getOptionFeedbackText() {
+		return optionFeedbackText;
+	}
+
+	public void setOptionFeedbackText(String optionFeedbackText) {
+		this.optionFeedbackText = optionFeedbackText;
+	}
+
+	public Integer getHospitalStatusFlg() {
+		return hospitalStatusFlg;
+	}
+
+	public void setHospitalStatusFlg(Integer hospitalStatusFlg) {
+		this.hospitalStatusFlg = hospitalStatusFlg;
+	}
 }

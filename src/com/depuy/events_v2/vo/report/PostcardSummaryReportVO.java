@@ -105,24 +105,25 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 		rpt.append("<tr><td colspan='2' style='background-color: #ccc;'><b>Ad Information</td></tr>\r");
 		
 		//add the Co-Op Ad data
-		if (sem.getNewspaperAd() != null && sem.getNewspaperAd().getCoopAdId() != null) {
-			CoopAdVO ad = sem.getNewspaperAd();
-			rpt.append("<tr><td colspan='2'>&nbsp;</td></tr>\r");
-			rpt.append("<tr><td colspan='2' style='background-color: #ccc;'><b>Newspaper Ad</td></tr>\r");
-			rpt.append("<tr><td>Ad Type:</td><td align='center'>").append(StringUtil.checkVal(ad.getAdType())).append("</td></tr>\r");
-			rpt.append("<tr><td>Sponsored Newspaper:</td><td align='center'>").append(StringUtil.checkVal(ad.getNewspaper1Text())).append(" (").append(ad.getNewspaper1Phone()).append(")</td></tr>\r");
-			rpt.append("<tr><td>Co-Op Ad Approved:</td><td align='center'>").append((ad.getStatusFlg() == 3) ? "Yes" : "No").append("</td></tr>\r");
-			rpt.append("<tr><td>Approved Paper:</td><td align='center'>").append(StringUtil.checkVal(ad.getApprovedPaperName())).append("</td></tr>\r");
-			rpt.append("<tr><td>Total Cost:</td><td align='center'>").append(ad.getTotalCostNo()).append("</td></tr>\r");
-			//calculate cost of ad to territory or surgeon
-			if ("CFSEM".equalsIgnoreCase(sem.getEvents().get(0).getEventTypeCd())) {
-				rpt.append("<tr><td>Surgeon approved ad?:</td><td align='center'>").append((ad.getSurgeonStatusFlg() == 1) ? "Yes" : "No").append("</td></tr>\r");
-				rpt.append("<tr><td>Surgeon paid for ad?:</td><td align='center'>").append((ad.getStatusFlg() == CoopAdsAction.CLIENT_PAYMENT_RECD) ? "Yes" : "No").append("</td></tr>\r");
-				rpt.append("<tr><td>Ad Cost to Surgeon:</td><td align='center'>").append(ad.getCostToRepNo()).append("</td></tr>\r");
-			} else {
-				rpt.append("<tr><td>Ad Cost to Territory:</td><td align='center'>").append(ad.getCostToRepNo()).append("</td></tr>\r");
+		if (sem.getNewspaperAds() != null && !sem.getNewspaperAds().isEmpty() ) {
+			for (CoopAdVO ad : sem.getNewspaperAds() ){
+				rpt.append("<tr><td colspan='2'>&nbsp;</td></tr>\r");
+				rpt.append("<tr><td colspan='2' style='background-color: #ccc;'><b>Newspaper Ad</td></tr>\r");
+				rpt.append("<tr><td>Ad Type:</td><td align='center'>").append(StringUtil.checkVal(ad.getAdType())).append("</td></tr>\r");
+				rpt.append("<tr><td>Sponsored Newspaper:</td><td align='center'>").append(StringUtil.checkVal(ad.getNewspaper1Text())).append(" (").append(ad.getNewspaper1Phone()).append(")</td></tr>\r");
+				rpt.append("<tr><td>Co-Op Ad Approved:</td><td align='center'>").append((ad.getStatusFlg() == 3) ? "Yes" : "No").append("</td></tr>\r");
+				rpt.append("<tr><td>Approved Paper:</td><td align='center'>").append(StringUtil.checkVal(ad.getApprovedPaperName())).append("</td></tr>\r");
+				rpt.append("<tr><td>Total Cost:</td><td align='center'>").append(ad.getTotalCostNo()).append("</td></tr>\r");
+				//calculate cost of ad to territory or surgeon
+				if ("CFSEM".equalsIgnoreCase(sem.getEvents().get(0).getEventTypeCd())) {
+					rpt.append("<tr><td>Surgeon approved ad?:</td><td align='center'>").append((ad.getSurgeonStatusFlg() == 1) ? "Yes" : "No").append("</td></tr>\r");
+					rpt.append("<tr><td>Surgeon paid for ad?:</td><td align='center'>").append((ad.getStatusFlg() == CoopAdsAction.CLIENT_PAYMENT_RECD) ? "Yes" : "No").append("</td></tr>\r");
+					rpt.append("<tr><td>Ad Cost to Surgeon:</td><td align='center'>").append(ad.getCostToRepNo()).append("</td></tr>\r");
+				} else {
+					rpt.append("<tr><td>Ad Cost to Territory:</td><td align='center'>").append(ad.getCostToRepNo()).append("</td></tr>\r");
+				}
+				rpt.append("<tr><td>Ad File:</td><td align='center'><a href=\"").append(sem.getBaseUrl()).append("/ads/").append(ad.getAdFileUrl()).append("\" target='_blank'>").append(ad.getAdFileUrl()).append("</a></td></tr>\r");
 			}
-			rpt.append("<tr><td>Ad File:</td><td align='center'><a href=\"").append(sem.getBaseUrl()).append("/ads/").append(ad.getAdFileUrl()).append("\" target='_blank'>").append(ad.getAdFileUrl()).append("</a></td></tr>\r");
 		}
 		//add the Radio Ad data
 		if (sem.getRadioAd() != null && sem.getRadioAd().getCoopAdId() != null) {

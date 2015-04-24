@@ -1,6 +1,8 @@
 package com.depuy.events;
 
 // DePuy SB Libs
+import java.util.Calendar;
+
 import com.depuy.events.PostcardInsert;
 import com.depuy.events.PostcardSelect;
 import com.depuy.events.vo.report.SigninReportVO;
@@ -10,12 +12,14 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
 // SB Libs
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.event.EventGroupAction;
 import com.smt.sitebuilder.action.event.EventRSVPAction;
+import com.smt.sitebuilder.action.event.vo.EventRsvpVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -67,7 +71,13 @@ public class DePuyEventManageAction extends SimpleActionAdapter {
     		EventRSVPAction er = new EventRSVPAction(this.actionInit);
 	    	er.setAttributes(this.attributes);
 	    	er.setDBConnection(dbConn);
-	    	er.updateRSVP(req);
+	    	EventRsvpVO vo = new EventRsvpVO(req);
+
+		Calendar reminderDt = Calendar.getInstance();
+		reminderDt.setTime(Convert.formatDate(Convert.DATE_SLASH_PATTERN, req.getParameter("eventDt")));
+		reminderDt.add(Calendar.DATE, -7); // set reminder for 7 days before the event
+		vo.setReminderDt(reminderDt.getTime());
+		er.updateRSVP(vo);
 	    	er = null;
 	    	
 	    	//set redirect page (used for public site redirects only)
