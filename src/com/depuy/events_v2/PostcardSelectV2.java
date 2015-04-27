@@ -634,17 +634,18 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		boolean resp = false;
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("select value_txt from survey_response ");
-		sql.append("where survey_question_id=? and action_id=?");
+		sql.append("where survey_question_id=? and action_group_id=?");
 		log.debug(sql);
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, SURVEY_RSVP_QUEST_ID);
 			ps.setString(2, SURVEY_ACTION_ID);
 			ResultSet rs = ps.executeQuery();
-			if (rs.next()) {
+			while (rs.next()) {
 				String val = StringUtil.checkVal(rs.getString(1)).toLowerCase();
-				if (val.contains(StringUtil.checkVal(rsvpCode).toLowerCase())) {
+				if (val.startsWith(StringUtil.checkVal(rsvpCode).toLowerCase())) {
 					resp = true;
+					break;
 				}
 			}
 		} catch (SQLException sqle) {
