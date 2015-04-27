@@ -208,7 +208,7 @@ public class CustomReportVO extends AbstractSBReportVO {
 						row.append(StringUtil.checkVal(event.getLocationDesc()));
 						break;
 					case SPEAKER_FLG:
-						row.append(StringUtil.checkVal(vo.getSurgeon().getSurgeonName()));
+						row.append(StringUtil.checkVal(vo.getAllSurgeonNames()));
 						break;
 					case RSVP_COUNT_FLG:
 						row.append( vo.getRsvpCount() ); //TODO

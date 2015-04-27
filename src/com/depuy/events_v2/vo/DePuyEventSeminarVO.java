@@ -616,4 +616,16 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 		} catch (Exception e) {}
 		return typeCd.equals("HSEM");
 	}
+	
+	
+	public String getAllSurgeonNames() {
+		if (this.surgeons == null || this.surgeons.size() == 0) return "";
+		StringBuilder names = new StringBuilder(100);
+		for (DePuyEventSurgeonVO vo : surgeons) {
+			if (names.length() > 0) names.append(" &amp; ");
+			names.append(vo.getSurgeonName());
+		}
+		return names.toString();
+		
+	}
 }
