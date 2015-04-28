@@ -17,25 +17,25 @@ import com.smt.sitebuilder.action.contact.ContactDataModuleVO;
  * @version 1.0
  * @since Sept 20, 2012
  ****************************************************************************/
-public class SASAFConfig extends SAFConfig {
+public class AESAFConfig extends SAFConfig {
 
-	public SASAFConfig() {
-		this.countryCode = "SA";
-		this.postbackDomain = "www.fastsignssa.com";
-		this.sendingFilesNowFieldId = "0a001413d979c50738f6a61159574403";
-		this.transactionStageFieldId = "0a001413d979c50338f6a611e159153a";
-		this.filesFieldId = "0a001413d979c50238f6a611c8093aea";
-		this.statusFieldId = "0a001413d979c50238f6a6114e3abd1c";
-		this.contactUsActionId = "0a001413d97974ef38f6a6119e1ecc68";
-		this.signTypeId = "0a001413d979c50938f6a6119f5e0356";
-		this.companyId = "0a001413d979c50838f6a611985c8a77";
-		this.faxId = "0a001413d979c50138f6a611eaaf4ffd";
-		this.requestedCompletionDateId = "0a001413d979c50838f6a6115e18f25";
-		this.signQuantityId = "0a001413d979c50938f6a611c92d1cc4";
-		this.desiredHeightId = "0a001413d979c50738f6a6111b519391";
-		this.desiredWidthId = "0a001413d979c50838f6a6118ef132be";
-		this.projectDescriptionId = "0a001413d979c50838f6a611354bd503";
-		this.salesContactId = "0a001413d979c50138f6a6116a03ea57";
+	public AESAFConfig() {
+		this.countryCode = "AE";
+		this.postbackDomain = "www.fastsigns.ae";
+		this.sendingFilesNowFieldId = "c0a80223e1d32dcc13144565d66a00d8";
+		this.transactionStageFieldId = "c0a80223e1d32dca131445651d62f056";
+		this.filesFieldId = "c0a80223e1d32dca13144565af61229a";
+		this.statusFieldId = "c0a80223e1d32dca13144565c2e92683";
+		this.contactUsActionId = "c0a80223e1d32e5b61a0358e397bf390";
+		this.signTypeId = "c0a8024aa2f37c67add458d04d3031f6";
+		this.companyId = "c0a80223e1d32dcc131445655531b4fd";
+		this.faxId = "c0a8024aa2f37c44add458d0fc6e0844";
+		this.requestedCompletionDateId = "c0a80223e1d32dcc13144565ce735342";
+		this.signQuantityId = "c0a8024aa2f37c68add458d0e706df00";
+		this.desiredHeightId = "c0a8024aa2f37c5eadd458d0d6b01a4d";
+		this.desiredWidthId = "c0a8024aa2f37c5fadd458d0ad9bb183";
+		this.projectDescriptionId = "c0a80223e1d32dcc1314456596cbbca6";
+		this.salesContactId = "c0a80223e1d32dc9131445658820b465";
 	}
 
 	/* (non-Javadoc)
@@ -43,10 +43,20 @@ public class SASAFConfig extends SAFConfig {
 	 */
 	@Override
 	public String buildEmail(boolean isDealer, ContactDataContainer cdc, Map<String, String> vals) {
-		StringBuilder msg = new StringBuilder(1000);
 		ContactDataModuleVO record = cdc.getData().get(0);
 		String name = StringUtil.checkVal(record.getFirstName()) + " " + StringUtil.checkVal(record.getLastName());
+		StringBuilder msg = new StringBuilder(1000);
 		String dealerLink = "http://" + getPostbackDomain() + "/" + vals.get("aliasPath");
+		
+		/*
+		 * Billy Larsen.
+		 * Brand Imaging needed a special announcement, cleared approval for a special
+		 * rule with James Mckain
+		 */
+		String dealer = vals.get("fastsignsTxt") + "&reg; of " + vals.get("locationName");
+		if(((String)vals.get("dealerLocationId")).equals("210"))
+			dealer = "Brand Imaging Group";
+		
 		if (isDealer) {
 			msg.append("<p><b>Reminder: Do Not click reply on this email, it is sent to you from a do not reply email box.</b></p>");
 			msg.append("<p>This message is to advise you that you have received a Request a Quote and/or a file.<br/>");
@@ -54,16 +64,15 @@ public class SASAFConfig extends SAFConfig {
 			msg.append("<p>Thank you.</p>");
 		} else {
 			msg.append("<p>Dear ").append(name).append(",<br/>Thank you for contacting ");
-			msg.append(vals.get("fastsignsTxt")).append("&reg; of ").append(vals.get("locationName")).append(". This email serves to confirm ");
+			msg.append(dealer);
+			msg.append(". This email serves to confirm ");
 			msg.append("that we have received the following information from you.<br/>If you have any ");
 			msg.append("questions please contact us at ").append(vals.get("phoneNumber")).append(" or ");
 			msg.append(vals.get("dealerEmail")).append("<br/>Thank you,<br/><a href='").append(dealerLink).append("'>");
-			msg.append(vals.get("fastsignsTxt")).append("&reg; of ");
-			msg.append(vals.get("locationName")).append("</a><br/>More than fast. More than signs.&trade;");
+			msg.append(dealer).append("</a><br/>More than fast. More than signs.&trade;");
 			
 		}
 		msg.append("<table style=\"width:750px;border:solid 1px black;\">");
-
 		
 		msg.append("<tr style=\"background:#c0d2ec;\"><td style=\"padding-right:10px;\" nowrap valign=\"top\">Name</td><td valign=\"top\">").append(name).append("</td></tr>");
 		msg.append("<tr style=\"background:#E1EAFE;\"><td style=\"padding-right:10px;\" nowrap valign=\"top\">Email</td><td valign=\"top\">").append(StringUtil.checkVal(record.getEmailAddress())).append("</td></tr>");
