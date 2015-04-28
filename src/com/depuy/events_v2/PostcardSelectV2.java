@@ -143,10 +143,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 				
 			} else if (ReqType.report == reqType && req.hasParameter("isCustomReport")) {
 				//need to load the list, then full details for each one.
-				data = loadSeminarList(actionInit.getActionId(), reqType, profileId, null);
-				
-				@SuppressWarnings("unchecked")
-				List<DePuyEventSeminarVO> list =(List<DePuyEventSeminarVO>) data;
+				List<DePuyEventSeminarVO> list = loadSeminarList(actionInit.getActionId(), reqType, profileId, null);
 				List<DePuyEventSeminarVO> fullList = new ArrayList<>(list.size());
 				
 				//use a report object so we can apply filters in advance of loading more data
@@ -183,10 +180,10 @@ public class PostcardSelectV2 extends SBActionAdapter {
 	private List<DePuyEventSeminarVO> loadSeminarList(String actionGroupId, ReqType reqType, String profileId, String sortType) throws SQLException {
 		final String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		Set<String> profileIds = new HashSet<String>();
-		List<DePuyEventSeminarVO> data = new ArrayList<DePuyEventSeminarVO>();
+		Map<String, DePuyEventSeminarVO> mapData = new HashMap<>();
 //		Integer rptType = Convert.formatInteger(req.getParameter("rptType"), 0);
 		
-		StringBuilder sql = new StringBuilder();
+		StringBuilder sql = new StringBuilder(1000);
 		sql.append("select distinct event_entry_id, RSVP_CODE_TXT, start_dt, type_nm, profile_id, ");
 		sql.append("surgeon_nm, event_nm, city_nm, state_cd, status_flg, event_postcard_id, postcard_file_status_no, ");
 		sql.append("rsvp_no, [4] as 'hip', [5] as 'knee', [6] as 'shoulder', ");  //in a PIVOT, we're turning the data (values) into column headings.  hence the square brackets.
@@ -239,12 +236,24 @@ public class PostcardSelectV2 extends SBActionAdapter {
 				ps.setString(3, profileId);
 			}
 			ResultSet rs = ps.executeQuery();
+			DePuyEventSeminarVO vo = null;
 			while (rs.next()) {
-				//set aside profileIds for the event owners, these will need to be retrieved from ProfileManager
-				profileIds.add(rs.getString("profile_id"));
-				data.add(new DePuyEventSeminarVO().populateFromListRS(rs));
+				if (mapData.containsKey(rs.getString("event_postcard_id"))) {
+					vo = mapData.get(rs.getString("event_postcard_id"));
+					DePuyEventSurgeonVO surgeon = new DePuyEventSurgeonVO();
+					surgeon.setSurgeonName(rs.getString("surgeon_nm"));
+					vo.addSurgeon(surgeon);
+					   
+				} else {
+					vo = new DePuyEventSeminarVO().populateFromListRS(rs);
+					//set aside profileIds for the event owners, these will need to be retrieved from ProfileManager
+					profileIds.add(rs.getString("profile_id"));
+				}
+				mapData.put(vo.getEventPostcardId(), vo);
 			}
 		}
+		
+		List<DePuyEventSeminarVO> data = new ArrayList<>(mapData.values());
 		
 		//retrieve the profiles for the names we need to display
 		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
@@ -426,7 +435,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 	 * @return
 	 */
 	private boolean loadSurgeons(ReqType reqType) {
-		return (ReqType.eventInfo == reqType || ReqType.summary == reqType || ReqType.report == reqType);
+		return (ReqType.eventInfo == reqType || ReqType.summary == reqType || ReqType.report == reqType || ReqType.reportForm == reqType);
 	}
 	
 	/**
@@ -625,17 +634,18 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		boolean resp = false;
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("select value_txt from survey_response ");
-		sql.append("where survey_question_id=? and action_id=?");
+		sql.append("where survey_question_id=? and action_group_id=?");
 		log.debug(sql);
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, SURVEY_RSVP_QUEST_ID);
 			ps.setString(2, SURVEY_ACTION_ID);
 			ResultSet rs = ps.executeQuery();
-			if (rs.next()) {
+			while (rs.next()) {
 				String val = StringUtil.checkVal(rs.getString(1)).toLowerCase();
-				if (val.contains(StringUtil.checkVal(rsvpCode).toLowerCase())) {
+				if (val.startsWith(StringUtil.checkVal(rsvpCode).toLowerCase())) {
 					resp = true;
+					break;
 				}
 			}
 		} catch (SQLException sqle) {

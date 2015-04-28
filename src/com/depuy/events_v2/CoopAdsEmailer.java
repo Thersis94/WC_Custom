@@ -532,6 +532,9 @@ public class CoopAdsEmailer {
 			mail.addCC(site.getAdminEmail());
 			mail.addCC("rwilkin7@its.jnj.com");
 			mail.addCC("Sterling.Hoham@hmktgroup.com");
+			mail.addCC("anna.schwanz@novusmediainc.com");
+			mail.addCC("taylor.larson@novusmediainc.com");
+			mail.addCC("lisa.maiers@novusmediainc.com");
 			mail.setTextBody(msg.toString());
 			
 			//Send message
