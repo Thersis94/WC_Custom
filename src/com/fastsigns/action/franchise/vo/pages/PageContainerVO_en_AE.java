@@ -84,6 +84,7 @@ public class PageContainerVO_en_AE extends PageContainerVO {
 		pgs.put("FASTSIGNS&reg; Blog", CORP);
 		pgs.put("Sign Materials", CUSTOM_TEMPLATED);
 		pgs.put("Product Information", CUSTOM_TEMPLATED);
+		pgs.put("3M Attention Software Service", CUSTOM_TEMPLATED);
 			//Product Sub-Pages
 			pgs.put("Digital Signage", CUSTOM_TEMPLATED);
 			pgs.put("Banners", CUSTOM_TEMPLATED);
@@ -127,6 +128,7 @@ public class PageContainerVO_en_AE extends PageContainerVO {
 		bizRules.put("Sign Materials",makePage("sign-materials", "Sign Materials", "")); //custom
 		bizRules.put("Product Information",makePage("products", "Product Information", "")); //custom
 		bizRules.put("Careers", makePage("careers", "Careers", "/careers?franchiseId=${franchiseId}"));
+		bizRules.put("3M Attention Software Service", makePage("visual-attention-software", "3M Attention Software Service", null)); //custom
 
 		MenuObj p;
 		
