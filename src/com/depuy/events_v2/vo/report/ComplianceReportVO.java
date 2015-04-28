@@ -4,6 +4,7 @@ package com.depuy.events_v2.vo.report;
 import java.util.HashMap;
 import java.util.Map;
 
+
 // Log4j 1.2.8
 import org.apache.log4j.Logger;
 
@@ -12,6 +13,7 @@ import com.depuy.events_v2.vo.PersonVO;
 import com.depuy.events_v2.vo.PersonVO.Role;
 import com.siliconmtn.data.report.PDFReport;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.event.vo.EventEntryVO;
 import com.smt.sitebuilder.util.MessageParser;
@@ -57,6 +59,7 @@ public class ComplianceReportVO extends AbstractSBReportVO {
 		AbstractSBReportVO rpt = null;
 		EventEntryVO event = sem.getEvents().get(0);
 		log.debug("printing PDF for "+ event.getEventTypeCd());
+		boolean isMitek = false;
 		
 		PersonVO adv = new PersonVO(); //if there isn't one yet, we'll need this VO
 		for (PersonVO p : sem.getPeople()) {
@@ -66,12 +69,32 @@ public class ComplianceReportVO extends AbstractSBReportVO {
 		}
 		
 		// load the proper html-formated report
-		if (event.getEventTypeCd().equalsIgnoreCase("CFSEM")) {
-			rpt = new CFSEMReportVO();
-		} else if (event.getEventTypeCd().equalsIgnoreCase("CPSEM")) {
+		switch ( StringUtil.checkVal( event.getEventTypeCd() ).toUpperCase() ){
+		case "CPSEM":
 			rpt = new CPSEMReportVO();
-		} else {
+			break;
+			
+		case "CFSEM":
+//			rpt = new CFSEMReportVO();
+//			break;
+		
+		case "CFSEM50":
+			rpt = new CFSEM50ReportVO();
+			break;
+			
+//		case "CFSEM25":
+//			rpt = new CFSEM25ReportVO();
+//			break;
+		
+		case "MITEK-PEER": //Mitek P2P
+		case "MITEK-ESEM": //Mitek Patient
+			isMitek = true;
+			rpt = new ESEMMitekReportVO();
+			break;
+			
+		default:
 			rpt = new ESEMReportVO();
+			break;
 		}
 		
 		//run Freemarker replacements to populate the compliance form for this seminar
@@ -89,13 +112,14 @@ public class ComplianceReportVO extends AbstractSBReportVO {
 		data.put("approvalDt", "<u>&nbsp; &nbsp;" + apprDt + "&nbsp; &nbsp;</u>");
 		data.put("ownerName", sem.getOwner().getFullName());
 		data.put("territoryNo", sem.getTerritoryNumber());
+		String rep = "";
 		for (PersonVO p : sem.getPeople()) {
-			if (p.getRoleCode() == Role.TGM) continue;
+			if (p.getRoleCode() == Role.TGM && !isMitek) continue;
 			//combine both reps into one String
-			String rep =  p.getFullName();
-			if (data.containsKey("repName")) 	rep += ", " + data.get("repName");
-			data.put("repName", rep);
+			if (rep.length() > 0) rep += ", ";
+			rep +=  p.getFullName();
 		}
+		data.put("repName", rep);
 		
 		StringBuffer buf = null;
 		try {
@@ -107,7 +131,7 @@ public class ComplianceReportVO extends AbstractSBReportVO {
 
 		
 		//convert the html to a PDF, and return it
-		PDFReport pdf = new PDFReport("http://events.depuy.com");
+		PDFReport pdf = new PDFReport("http://events.depuysynthes.com");
 		pdf.setData(buf.toString());
 		return pdf.generateReport();
 	}

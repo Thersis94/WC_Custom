@@ -1,20 +1,22 @@
 package com.depuy.events_v2;
 
 // DePuy SB Libs
+import java.util.Calendar;
+
 import com.depuy.events.vo.report.SigninReportVO;
-import com.depuy.events_v2.PostcardInsertV2;
-import com.depuy.events_v2.PostcardSelectV2;
+import com.depuy.events_v2.ReportBuilder.ReportType;
 // SMT Base libs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.http.SMTServletRequest;
-
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 // SB Libs
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.event.EventGroupAction;
 import com.smt.sitebuilder.action.event.EventRSVPAction;
+import com.smt.sitebuilder.action.event.vo.EventRsvpVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -42,8 +44,8 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class DePuyEventManageActionV2 extends SimpleActionAdapter {
 
 	/**
-     * 
-     */
+	 * 
+	 */
 	public DePuyEventManageActionV2() {
 		super();
 	}
@@ -75,46 +77,90 @@ public class DePuyEventManageActionV2 extends SimpleActionAdapter {
 		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 		actionInit.setActionId((String) mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 
-		if ("rsvp".equals(ft)) {
-			EventRSVPAction er = new EventRSVPAction(this.actionInit);
-			er.setAttributes(this.attributes);
-			er.setDBConnection(dbConn);
-			er.updateRSVP(req);
-			er = null;
+		switch (ft) {
+			case "rsvp":
+				EventRSVPAction er = new EventRSVPAction(this.actionInit);
+				er.setAttributes(this.attributes);
+				er.setDBConnection(dbConn);
+				
+				EventRsvpVO vo = new EventRsvpVO(req);
 
-			// set redirect page (used for public site redirects only)
-			StringBuilder redirectPg = new StringBuilder();
-			redirectPg.append(req.getRequestURI()).append(
-					"?facadeType=rsvp&reqType=closeModal");
-			redirectPg.append("&printerFriendlyTheme=true&hidePf=true");
-			redirectPg.append("&msg=").append(req.getAttribute("message"));
-			log.debug("nextPage=" + redirectPg);
+				Calendar reminderDt = Calendar.getInstance();
+				reminderDt.setTime(Convert.formatDate(Convert.DATE_SLASH_PATTERN, req.getParameter("eventDt")));
+				reminderDt.add(Calendar.DATE, -7); // set reminder for 7 days before the event
+				vo.setReminderDt(reminderDt.getTime());
+				
+				er.updateRSVP(vo);
+				er = null;
 
-			req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
-			req.setAttribute(Constants.REDIRECT_URL, redirectPg.toString());
+				// set redirect page (used for public site redirects only)
+				StringBuilder redirectPg = new StringBuilder();
+				redirectPg.append(req.getRequestURI()).append(
+						"?facadeType=rsvp&reqType=closeModal");
+				redirectPg.append("&printerFriendlyTheme=true&hidePf=true");
+				redirectPg.append("&msg=").append(req.getAttribute("message"));
+				log.debug("nextPage=" + redirectPg);
 
-		} else if ("report".equals(ft)) {
-			// retrieve event/postcard first
-			ee = new PostcardSelectV2(this.actionInit);
-			ee.setAttributes(this.attributes);
-			ee.setDBConnection(dbConn);
-			ee.retrieve(req);
-			log.info("Retrieved Postcard Data ");
-			
-			//the Object returned here (getActionData) could be a List<VO>, or a single VO.  Let the ReportBuilder worry about it!
-			mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
-			
-			ReportBuilder rb = new ReportBuilder(this.actionInit);
-			rb.setAttributes(attributes);
-			rb.setDBConnection(dbConn);
-			rb.generateReport(req, mod.getActionData());
-			
-			
-		} else {
-			ee = new PostcardInsertV2(this.actionInit);
-			ee.setAttributes(this.attributes);
-			ee.setDBConnection(dbConn);
-			ee.build(req);
+				req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
+				req.setAttribute(Constants.REDIRECT_URL, redirectPg.toString());
+
+				break;
+
+			case "report": 
+				ReportType type = null;
+				try {
+					type = ReportType.valueOf(req.getParameter("rptType"));
+				} catch (Exception e) {
+					throw new ActionException("unknown report type", e);
+				}
+				
+				// retrieve event/postcard first
+				if (type.requiresSeminar()) { //we don't need seminar data for certain reports
+					ee = new PostcardSelectV2(this.actionInit);
+					ee.setAttributes(this.attributes);
+					ee.setDBConnection(dbConn);
+					ee.retrieve(req);
+					log.debug("Retrieved Postcard Data ");
+				}
+
+				//the Object returned here (getActionData) could be a List<VO>, or a single VO.  Let the ReportBuilder worry about it!
+				mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
+
+				ReportBuilder rb = new ReportBuilder(this.actionInit);
+				rb.setAttributes(attributes);
+				rb.setDBConnection(dbConn);
+				rb.generateReport(req, mod.getActionData());
+
+				break;
+			case "customReport":
+				log.info("Managing custom report");
+				ee = new CustomReportAction(this.actionInit);
+				ee.setAttributes(this.attributes);
+				ee.setDBConnection(dbConn);
+				ee.build(req);
+				break;
+			case "delete":
+				ee = new PostcardDeleteV2( this.actionInit );
+				ee.setAttributes( this.attributes );
+				ee.setDBConnection(dbConn);
+				ee.build(req);
+				break;
+
+			case "rsvpFileImport":
+				//For batch uploading
+				EventRSVPAction era = new EventRSVPAction(this.actionInit);
+				era.setAttributes( this.attributes );
+				era.setDBConnection(dbConn);
+				era.importFile(req);
+				era = null;
+				break;
+				
+			default:
+				ee = new PostcardInsertV2(this.actionInit);
+				ee.setAttributes(this.attributes);
+				ee.setDBConnection(dbConn);
+				ee.build(req);
+				break;
 		}
 		log.debug("build complete");
 
