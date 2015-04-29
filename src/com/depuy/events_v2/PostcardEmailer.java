@@ -223,6 +223,7 @@ public class PostcardEmailer {
 
 		// build the attachment
 		AbstractSBReportVO rpt = (AbstractSBReportVO) req.getAttribute(Constants.BINARY_DOCUMENT);
+		AbstractSBReportVO compliance = (AbstractSBReportVO) req.getAttribute("complianceForm");
 
 		try {
 			// Create the mail object and send
@@ -243,6 +244,7 @@ public class PostcardEmailer {
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
 			mail.addAttachment(rpt.getFileName(), rpt.generateReport());
+			mail.addAttachment(compliance.getFileName(), compliance.generateReport());
 
 			MessageSender ms = new MessageSender(attributes, dbConn);
 			ms.sendMessage(mail);
