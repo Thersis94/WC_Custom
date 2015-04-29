@@ -7,6 +7,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title</b>: SASProductReport.java <p/>
@@ -41,15 +42,16 @@ public class SASProductReport extends SBActionAdapter {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	public void retrieve(SMTServletRequest req) throws ActionException {
+		String qs = (String) attributes.get(Constants.QS_PATH);
 		StringBuilder s = new StringBuilder();
-		s.append("select category_url, '/cat/qs/' + replace(a.short_desc, '|', '/')  as full_url, ");
+		s.append("select category_url, '/cat/").append(qs).append("' + replace(a.short_desc, '|', '/')  as full_url, ");
 		s.append("c.product_id, cust_product_no, product_url, cust_category_id ");
 		s.append("from product_category a ");
 		s.append("inner join product_category_xr b on a.product_category_cd = b.product_category_cd ");
 		s.append("inner join product c on b.product_id = c.product_id ");
 		s.append("where a.organization_id = 'SAS' ");
 		s.append("union ");
-		s.append("select category_url, '/cat/qs/' + replace(a.short_desc, '|', '/') as full_url, ");
+		s.append("select category_url, '/cat/").append(qs).append("' + replace(a.short_desc, '|', '/') as full_url, ");
 		s.append("c.product_id, cust_product_no, product_url, cust_category_id ");
 		s.append("from product_category a ");
 		s.append("inner join product_category_xr b on a.product_category_cd = b.product_category_cd ");

@@ -155,8 +155,9 @@ public class FSProductAction extends SBActionAdapter {
 		ModuleVO cachedMod = null;
 		
 		log.debug("Loading Catalog with id: " + catalogId);
-		if (!page.isPreviewMode())
-			cachedMod = super.readFromCache("FS_CAT_"+catalogId);
+		if (!page.isPreviewMode()){
+			cachedMod = super.readFromCache(catalogId);
+		}
 		
 		if (cachedMod == null || cachedMod.getActionData() == null) {
 			if(cachedMod != null) log.error("Something is wrong with the cached product catalog " + catalogId);
@@ -164,7 +165,6 @@ public class FSProductAction extends SBActionAdapter {
 			cachedMod = new ModuleVO();
 			cachedMod.setActionId("FS_CAT_"+catalogId);
 			cachedMod.setActionData(this.loadCatalog(catalogId, page.isPreviewMode()));
-			
 	        if (!page.isPreviewMode()) {
 	        	cachedMod.setCacheable(true);
 	        	cachedMod.setPageModuleId(catalogId);
@@ -256,7 +256,6 @@ public class FSProductAction extends SBActionAdapter {
 		Tree pTree = new Tree(products);
 
 		setLeaves(pTree, categories);
-		
 		catalog.add(CATEGORIES, new Tree(categories));
 		catalog.add(PRODUCTS, pTree);
 		
@@ -296,17 +295,16 @@ public class FSProductAction extends SBActionAdapter {
 		sql.append("pc.TITLE_NM, pc.ORDER_NO, pc.IMAGE_URL, pc.THUMBNAIL_IMG, pc.CUST_CATEGORY_ID, pc.URL_ALIAS_TXT, pc.SHORT_DESC, pc.ATTRIB1_TXT, p.URL_ALIAS_TXT as CATEGORY_PRODUCT_URL, p.IMAGE_URL as PRODUCT_IMAGE, p.PRODUCT_NM as C_PROD_NM, p.SHORT_DESC as PRODUCT_DESCRIPTION, p.PRODUCT_NM, p.DESC_TXT, p.DISPLAY_ORDER_NO ");
 		sql.append("FROM PRODUCT_CATEGORY pc ");
 		sql.append("inner join PRODUCT_CATEGORY_XR pcx on pc.PRODUCT_CATEGORY_CD = pcx.PRODUCT_CATEGORY_CD ");
+		if (isPreview){
+			sql.append("or (pc.CATEGORY_GROUP_ID=pcx.PRODUCT_CATEGORY_CD and pc.CATEGORY_GROUP_ID is not null) ");
+		}
 		sql.append("inner join PRODUCT p on p.PRODUCT_ID = pcx.PRODUCT_ID and p.STATUS_NO = 5 ");
 		sql.append("where pc.product_catalog_id=? and pc.active_flg = 1 ");
 		if (isPreview){
-			sql.append("and CATEGORY_GROUP_ID not in (select PRODUCT_CATEGORY_CD from PRODUCT_CATEGORY where CATEGORY_GROUP_ID is not null and CATEGORY_GROUP_ID != CATEGORY_GROUP_ID) ");
+			sql.append("and pc.PRODUCT_CATEGORY_CD not in (select pc1.PRODUCT_CATEGORY_CD from PRODUCT_CATEGORY pc1 left join PRODUCT_CATEGORY pc2 on pc1.PRODUCT_CATEGORY_CD=pc2.CATEGORY_GROUP_ID where pc2.CATEGORY_GROUP_ID is not null) ");
+			sql.append("and p.PRODUCT_ID not in (select p1.PRODUCT_ID from PRODUCT p1 left join PRODUCT p2 on p1.PRODUCT_ID=p2.PRODUCT_GROUP_ID where p2.PRODUCT_GROUP_ID is not null) ");
 		} else {
-			sql.append("and CATEGORY_GROUP_ID is null ");
-		}
-		if (isPreview) {
-			sql.append("and p.product_id not in (select product_group_id from product where product_group_id is not null and product_group_id != product_id) ");
-		} else {
-			sql.append("and p.PRODUCT_GROUP_ID is null ");
+			sql.append("and CATEGORY_GROUP_ID is null and p.PRODUCT_GROUP_ID is null ");
 		}
 		
 		sql.append("union ");
@@ -377,6 +375,7 @@ public class FSProductAction extends SBActionAdapter {
 			sql.append("pa.ATTRIBUTE_GROUP_ID is null and p.product_group_id is null ");
 		}
 		sql.append("and p.status_no=5 and p.product_catalog_id=? ");
+		sql.append("order by p.url_alias_txt ");
 		log.debug(sql.toString()+"|"+catalogId);
 		try {
 			PreparedStatement ps = dbConn.prepareStatement(sql.toString());
@@ -458,12 +457,13 @@ public class FSProductAction extends SBActionAdapter {
 
 		if(isMobile) url.append("http://"+site.getMobileSiteUrl());
 		
+		//TODO -- TEST THAT PRODUCTS STILL WORK AFTER MODIFYING QS STRING TO ATTRIBUTES VALUE!
 		if (req.hasParameter("prefix")) {
 			appendLevel(url, req.getParameter("prefix"));
-		} else if (isMobile || req.getRequestURL().indexOf("qs") > -1){
+		} else if (isMobile || req.getRequestURL().indexOf((String)attributes.get(Constants.QS_PATH)) > -1){
 			if(isMobile) appendLevel(url, "products");
 			appendLevel(url, req.getRequestURI().substring(req.getRequestURI().lastIndexOf('/')+1));
-			appendLevel(url, "qs/");
+			appendLevel(url, (String)attributes.get(Constants.QS_PATH));
 		} else {
 			appendLevel(url, req.getRequestURI().substring(req.getRequestURI().lastIndexOf('/')) + "-");
 		}
@@ -476,7 +476,7 @@ public class FSProductAction extends SBActionAdapter {
 			appendLevel(url, thirdItem);
 		}
 		
-		return url.toString();
+		return url.toString().toLowerCase();
 	}
 	
 	/**

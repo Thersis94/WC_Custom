@@ -47,6 +47,7 @@ public class CoopAdsAction extends SBActionAdapter {
 	public static final int CLIENT_APPROVED_AD = 3;
 	public static final int CLIENT_DECLINED_AD = 4;
 	public static final int CLIENT_PAYMENT_RECD = 5;
+	public static final int PENDING_SURGEON_APPROVAL = 7; //CFSEM only
 	public static final int REMIND_ME_LATER = 10;
 
 	public CoopAdsAction() {

@@ -56,11 +56,11 @@ public class DePuySiteMapServlet extends SiteMapServlet {
 		
 		// Retrieve the custom Products & Procedures for DS & DS-EMEA (only)
 		if ((site.getOrganizationId()).equals("DPY_SYN")) {
-			pages = this.loadDSProducts(site, req, "DS_PRODUCTS", "/products/qs/");
-			pages.addAll(this.loadDSProducts(site, req, "DS_PROCEDURES", "/procedures/qs/"));
+			pages = this.loadDSProducts(site, req, "DS_PRODUCTS", "/products/" + sc.getAttribute(Constants.QS_PATH));
+			pages.addAll(this.loadDSProducts(site, req, "DS_PROCEDURES", "/procedures/" + sc.getAttribute(Constants.QS_PATH)));
 		} else if ((site.getOrganizationId()).equals("DPY_SYN_EMEA")) {
-			pages = this.loadDSProducts(site, req, "DS_PRODUCTS_EMEA", "/products/qs/");
-			pages.addAll(this.loadDSProducts(site, req, "DS_PROCEDURES_EMEA", "/procedures/qs/"));
+			pages = this.loadDSProducts(site, req, "DS_PRODUCTS_EMEA", "/products/" + sc.getAttribute(Constants.QS_PATH));
+			pages.addAll(this.loadDSProducts(site, req, "DS_PROCEDURES_EMEA", "/procedures/" + sc.getAttribute(Constants.QS_PATH)));
 		} else if ((site.getOrganizationId()).equals("DPY_SYN_INST")) {
 			pages = this.loadDSISolrAssets(site, req);
 		} else {

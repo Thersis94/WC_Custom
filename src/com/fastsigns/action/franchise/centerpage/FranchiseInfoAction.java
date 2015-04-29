@@ -6,20 +6,25 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.fastsigns.action.LogAction;
-import com.fastsigns.action.approval.ApprovalFacadeAction;
-import com.fastsigns.action.approval.vo.AbstractChangeLogVO;
-import com.fastsigns.action.approval.vo.ApprovalVO;
-import com.fastsigns.action.approval.vo.CenterImageLogVO;
-import com.fastsigns.action.approval.vo.WhiteBoardLogVO;
+import com.fastsigns.action.approval.WebeditApprover;
+import com.fastsigns.action.approval.WebeditApprover.WebeditType;
 import com.fastsigns.action.franchise.CenterPageAction;
 import com.fastsigns.action.franchise.vo.ButtonVO;
+import com.fastsigns.action.franchise.vo.FranchiseVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.PhoneNumberFormat;
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.approval.ApprovalController;
+import com.smt.sitebuilder.approval.ApprovalController.SyncStatus;
+import com.smt.sitebuilder.approval.ApprovalController.SyncTransaction;
+import com.smt.sitebuilder.approval.ApprovalException;
+import com.smt.sitebuilder.approval.ApprovalVO;
+import com.smt.sitebuilder.approval.ApprovalController.ModuleType;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -39,6 +44,9 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class FranchiseInfoAction extends SBActionAdapter {
 
+	public static final String LOCATION_HANDLE = "[location]";
+	public static final String PHONE_NO_HANDLE = "[telephone number]";
+	
 	public FranchiseInfoAction(ActionInitVO avo){
 		super(avo);
 	}
@@ -65,7 +73,8 @@ public class FranchiseInfoAction extends SBActionAdapter {
 		try {
 			switch(bType) {
 				case CenterPageAction.FRANCHISE_MAIN_IMAGE_APPROVE:
-					sendToApprovalAction(req);
+					// This is no longer needed
+					//sendToApprovalAction(req);
 					break;
 				case CenterPageAction.FRANCHISE_BUTTON_UPDATE:
 					updateFranchiseButton(req);
@@ -280,12 +289,22 @@ public class FranchiseInfoAction extends SBActionAdapter {
 		}
 		
 		/*
-		 * Update the dealer Location info.  Here we perform some replacements
-		 * on the description template to make it reflect the center data.
+		 * The phone number (and possible other info) may be put into descriptions.
+		 * Since the phone number needs to be formatted before put into the description,
+		 * grab it here.
+		 */
+		FranchiseLocationInfoAction flia = new FranchiseLocationInfoAction(actionInit);
+		flia.setAttributes(attributes);
+		flia.setDBConnection(dbConn);
+		FranchiseVO franchise = flia.getLocationInfo(CenterPageAction.getFranchiseId(req), false);
+
+		/*
+		 * Update the dealer Location info.  
 		 */
 		s = new StringBuilder();
 		s.append("update DEALER_LOCATION set ");
-		s.append("location_desc = replace(cast(DESC_TXT as nvarchar(4000)), '[location]', location_nm) ");
+		s.append("location_desc = replace(replace(cast(DESC_TXT as nvarchar(4000)),'");
+		s.append(PHONE_NO_HANDLE).append("',?), '").append(LOCATION_HANDLE).append("', location_nm) ");
 		s.append("from ").append(customDb).append("fts_franchise a ");
 		s.append("inner join ").append(customDb).append("FTS_LOCATION_DESC_OPTION b ");
 		s.append("on a.LOCATION_DESC_OPTION_ID = b.LOCATION_DESC_OPTION_ID ");
@@ -294,8 +313,10 @@ public class FranchiseInfoAction extends SBActionAdapter {
 		s.append("where FRANCHISE_ID = ? ");
 		
 		try {
+			int i = 0;
 			ps = dbConn.prepareStatement(s.toString());
-			ps.setInt(1, Convert.formatInteger(CenterPageAction.getFranchiseId(req)));
+			ps.setString(++i, franchise.getFormattedPhoneNumber(PhoneNumberFormat.NATIONAL_FORMAT));
+			ps.setInt(++i, Convert.formatInteger(CenterPageAction.getFranchiseId(req)));
 			
 			ps.executeUpdate();
 		} finally {
@@ -331,14 +352,9 @@ public class FranchiseInfoAction extends SBActionAdapter {
 			} catch (Exception e) {}
 		}
 		
-		//Log the update for Approval Action.
-		req.setParameter("apprFranchiseId", CenterPageAction.getFranchiseId(req));
-		req.setParameter("subStatus", AbstractChangeLogVO.Status.PENDING.toString());
-		LogAction lA = new LogAction(this.actionInit);
-		lA.setDBConnection(dbConn);
-		lA.setAttributes(attributes);
-		lA.logChange(req, new CenterImageLogVO(req));
-		lA = null;
+		// Only create a new sync record if we are are not editing the modified image
+		if (!Convert.formatBoolean(req.getParameter("pendingImgChange")))
+			buildSyncEntry(req, WebeditType.CenterImage);
 	}
 	
 	/**
@@ -398,37 +414,40 @@ public class FranchiseInfoAction extends SBActionAdapter {
 			catch (Exception e) {}
 		}
 		
-		//Log the update for Approval Action
-		req.setParameter("apprFranchiseId", CenterPageAction.getFranchiseId(req));
-		LogAction lA = new LogAction(this.actionInit);
-		lA.setDBConnection(dbConn);
-		lA.setAttributes(attributes);
-		lA.logChange(req, new WhiteBoardLogVO(req));		
-		lA = null;
-	}
-	
-	public void forwardToLog(SMTServletRequest req){
-		LogAction lA = new LogAction(this.actionInit);
-		lA.setDBConnection(dbConn);
-		lA.setAttributes(attributes);
-		lA.logChange(req, new WhiteBoardLogVO(req));		
-		lA = null;
+		// Only create a new sync record if we are are not editing the modified whiteboard
+		if (!Convert.formatBoolean(req.getParameter("pendingWBChange")))
+			buildSyncEntry(req, WebeditType.Whiteboard);
 	}
 	
 	/**
-	 * Handles Submitting Changes for Approval by Forwarding to the Approval 
-	 * Facade Action
+	 * Build a sync entry to track the action that is being edited
 	 * @param req
-	 * @throws ActionException
+	 * @param approvalType
 	 */
-	public void sendToApprovalAction(SMTServletRequest req) throws ActionException{
-		req.setParameter("approvalType", "3");
-		req.setAttribute("approvalVO", buildVO(req));
-		ApprovalFacadeAction aA = new ApprovalFacadeAction(this.actionInit);
-		aA.setDBConnection(dbConn);
-		aA.setAttributes(attributes);
-		aA.update(req);
-		aA = null;
+	private void buildSyncEntry(SMTServletRequest req, WebeditApprover.WebeditType approvalType) {
+		ApprovalController controller = new ApprovalController(dbConn, getAttributes());
+		WebeditApprover app = new WebeditApprover(dbConn, getAttributes());
+		String franchiseId = CenterPageAction.getFranchiseId(req);
+		ApprovalVO approval = new ApprovalVO();
+		
+		approval.setWcKeyId(franchiseId+"_"+approvalType);
+		approval.setItemDesc(approvalType.toString());
+		approval.setItemName("Center " + franchiseId + " " + approvalType.getLabel());
+		approval.setModuleType(ModuleType.Webedit);
+		approval.setSyncStatus(SyncStatus.PendingUpdate);
+		approval.setSyncTransaction(SyncTransaction.Create);
+		approval.setOrganizationId(((SiteVO)req.getAttribute("siteData")).getOrganizationId()+"_"+franchiseId);
+		approval.setUserDataVo((UserDataVO) req.getSession().getAttribute(Constants.USER_DATA));
+		approval.setCreateDt(Convert.getCurrentTimestamp());
+		
+		try {
+			controller.process(approval);
+			app.submit(approval);
+		} catch (ApprovalException e) {
+			e.printStackTrace();
+		}
+		
+		
 	}
 	
 	/**
@@ -444,10 +463,8 @@ public class FranchiseInfoAction extends SBActionAdapter {
 		switch(bType) {
 			case CenterPageAction.FRANCHISE_MAIN_IMAGE_UPDATE:
 			case CenterPageAction.FRANCHISE_MAIN_IMAGE_APPROVE:
-				avo.setChangeLogList(CenterImageLogVO.TYPE_ID, new CenterImageLogVO(req));
 				break;
 			case CenterPageAction.WHITEBOARD_UPDATE:
-				avo.setChangeLogList(WhiteBoardLogVO.TYPE_ID, new WhiteBoardLogVO(req));
 				break;
 		}
 		return avo;

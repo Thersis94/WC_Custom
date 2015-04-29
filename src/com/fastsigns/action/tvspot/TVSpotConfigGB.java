@@ -172,13 +172,13 @@ public class TVSpotConfigGB extends TVSpotConfig {
 		EmailMessageVO mail = new EmailMessageVO();
 		mail.addRecipient(req.getParameter("pfl_EMAIL_ADDRESS_TXT"));
 		mail.setSubject("Thank you for your consultation request from FASTSIGNS");
-		mail.setFrom("consultation@fastsigns.com");
+		mail.setFrom(dealer.getDealerLocationId() + "@fastsigns.com");
 		mail.setHtmlBody(msg.toString());
 		return mail;
 	}
 	
 	public String getDefaultSenderEmail() {
-		return "consultation@fastsigns.com";
+		return "do_not_reply@fastsigns.com";
 	}
 	
 	public EmailMessageVO buildSurveyEmail(String contactSubmittalId) {
@@ -244,7 +244,7 @@ public class TVSpotConfigGB extends TVSpotConfig {
 		body.append("<p>Is there anything you want to tell us about your consultation experience? (open-ended with space for at least 250 words).</p></div><br/>");
 		
 		msg.setHtmlBody(body.toString());
-		msg.setFrom("consultation@fastsigns.com");
+		msg.setFrom(getDefaultSenderEmail());
 		
 		return msg;
 	}
@@ -258,7 +258,7 @@ public class TVSpotConfigGB extends TVSpotConfig {
 		msg.addRecipient("Garth.Allison@fastsigns.com");
 		msg.setSubject("\"Operation Consultation\" report is attached for your review");
 		msg.setHtmlBody(buildReportBody(false));
-		msg.setFrom("consultation@fastsigns.com");
+		msg.setFrom(getDefaultSenderEmail());
 		return msg;
 	}
 	
@@ -266,7 +266,7 @@ public class TVSpotConfigGB extends TVSpotConfig {
 		EmailMessageVO msg = new EmailMessageVO();
 		msg.setSubject("\"Operation Consultation\" report is attached for your review");
 		msg.setHtmlBody(buildReportBody(true));
-		msg.setFrom("consultation@fastsigns.com");
+		msg.setFrom(getDefaultSenderEmail());
 		return msg;
 	}
 	

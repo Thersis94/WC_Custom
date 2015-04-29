@@ -25,6 +25,7 @@ import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.data.DataContainer;
 import com.smt.sitebuilder.data.DataManagerFacade;
+import com.smt.sitebuilder.data.TransactionParserIntfc;
 import com.smt.sitebuilder.data.vo.FormFieldVO;
 import com.smt.sitebuilder.data.vo.FormPageVO;
 import com.smt.sitebuilder.data.vo.FormTransactionVO;
@@ -93,7 +94,10 @@ public class ProductComplaintFormAction extends SBActionAdapter {
 		
 		// build page map or check session for page map
 		this.checkPageMap(req);
-				
+		
+		// override profile creation
+		req.setParameter(TransactionParserIntfc.PROCESS_PROFILE, "false");
+		
 		// save form data for the given page ('currentPageNo' param on request)
 		SMTActionInterface ffa = new FormFacadeAction(this.actionInit);
 		ffa.setAttributes(attributes);

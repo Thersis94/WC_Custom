@@ -6,10 +6,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.fastsigns.action.approval.ApprovalFacadeAction;
-import com.fastsigns.action.approval.vo.AbstractChangeLogVO;
-import com.fastsigns.action.approval.vo.ApprovalVO;
-import com.fastsigns.action.approval.vo.ModuleLogVO;
+import com.fastsigns.action.approval.WebeditApprover.WebeditType;
 import com.fastsigns.action.franchise.CenterPageAction;
 import com.fastsigns.action.franchise.vo.CenterModuleOptionVO;
 import com.fastsigns.action.franchise.vo.OptionAttributeVO;
@@ -19,10 +16,17 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.exception.MailException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.http.parser.StringEncoder;
+import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.SMTMail;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.approval.ApprovalController;
+import com.smt.sitebuilder.approval.ApprovalException;
+import com.smt.sitebuilder.approval.ApprovalController.ModuleType;
+import com.smt.sitebuilder.approval.ApprovalController.SyncStatus;
+import com.smt.sitebuilder.approval.ApprovalController.SyncTransaction;
+import com.smt.sitebuilder.approval.ApprovalVO;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -42,7 +46,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class ModuleOptionAction extends SBActionAdapter{
 	//This is a list of the modules that only allow one item at a time
-	final String modList = "11 12 81";
+	final String modList = "11,12,81,";
 	
 	public ModuleOptionAction(ActionInitVO avo){
 		super(avo);
@@ -69,16 +73,8 @@ public class ModuleOptionAction extends SBActionAdapter{
 		// Determine which data is being updated
 		try {
 			switch(bType) {
-				case CenterPageAction.MODULE_APPROVE:
-				case CenterPageAction.FRANCHISE_MAIN_IMAGE_APPROVE:
 				case CenterPageAction.MODULE_SUBMIT:
-				case CenterPageAction.DELETE_ALL_MODULES:
-					/*
-					 * All these types require approval so we forward to 
-					 * approval action
-					 */
-					sendToApprovalAction(req);
-					log.debug("Sending Redirect to: " + redir);
+					submitForApproval(req);
 					break;
 				case CenterPageAction.MODULE_ASSOC:
 					msg = "msg.selectOptions";
@@ -110,8 +106,10 @@ public class ModuleOptionAction extends SBActionAdapter{
 					if (Convert.formatInteger(req.getParameter("parentId")) > 0 && 
 							Convert.formatInteger(req.getParameter("approvalFlag"), 0).intValue() == 100)
 						this.revokeApprovalSubmission(req);
-						
-					if (!modList.contains(req.getParameter("moduleId"))) {
+					
+					// The comma at the end of the parameter ensures that we won't get partial matches
+					// Such as matching the 8 in 81
+					if (!modList.contains(req.getParameter("moduleId")+",")) {
 						req.setParameter("skipDelete", "true");
 					}
 					
@@ -145,6 +143,59 @@ public class ModuleOptionAction extends SBActionAdapter{
 		req.setAttribute(Constants.REDIRECT_URL, redir + "msg=" + msg);
 	}
 	
+	/**
+	 * Submit the module assets for approval
+	 * @throws ActionException 
+	 */
+	private void submitForApproval(SMTServletRequest req) throws SQLException, ActionException {
+		log.debug("Beginning Request Module Option Approval Process...");
+		String opts = req.getParameter("modOptsToSubmit");
+		if (opts == null || opts.length() == 0) return;
+		
+		List<ApprovalVO> apprVOs = new ArrayList<>();
+		String[] ids = req.getParameter("modOptsToSubmit").split(",");
+		StringBuilder sql = new StringBuilder(60);
+		
+		sql.append("SELECT * FROM WC_SYNC WHERE WC_KEY_ID in (");
+		for (int i=0; i<ids.length; i++) {
+			sql.append("?");
+			if (i < ids.length-1) {
+				sql.append(",");
+			} else {
+				sql.append(") ");
+			}
+		}
+		sql.append("and WC_SYNC_STATUS_CD = ?");
+		
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			int i;
+			for (i=0; i<ids.length; i++) {
+				ps.setString(i+1, ids[i]);
+			}
+			ps.setString(i+1, SyncStatus.InProgress.toString());
+			
+			ResultSet rs = ps.executeQuery();
+			while(rs.next()) {
+				ApprovalVO approval = new ApprovalVO(rs);
+				approval.setUserDataVo((UserDataVO) req.getSession().getAttribute(Constants.USER_DATA));
+				approval.setSyncTransaction(SyncTransaction.Submit);
+				apprVOs.add(approval);
+			}
+			
+			ApprovalController con = new ApprovalController(dbConn, getAttributes());
+			con.process(apprVOs.toArray(new ApprovalVO[apprVOs.size()]));
+			
+
+			req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
+			req.setAttribute(Constants.REDIRECT_URL, ((PageVO) req.getAttribute(Constants.PAGE_DATA)).getFullPath());
+			
+		} catch (Exception e) {
+			log.error("Unable to submit all jobs for approval.", e);
+			throw new ActionException(e);
+		}
+		
+	}
+
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		
@@ -174,53 +225,6 @@ public class ModuleOptionAction extends SBActionAdapter{
 		} else {
 			update(req);
 		}
-	}
-	
-	/**
-	 * This is a helper method that forwards calls to the approval action with a 
-	 * default approvalType of Request(3).
-	 * @param req
-	 * @throws ActionException
-	 */
-	public void sendToApprovalAction(SMTServletRequest req) throws ActionException{
-		req.setParameter("approvalType", "3");
-		req.setAttribute("approvalVO", buildVO(req));
-		ApprovalFacadeAction aA = new ApprovalFacadeAction(this.actionInit);
-		aA.setDBConnection(dbConn);
-		aA.setAttributes(attributes);
-		aA.update(req);
-		aA = null;
-	}
-	
-	/**
-	 * This is a helper method to build the appropriate ApprovalVO container 
-	 * with the correct pieces.
-	 * @param req
-	 * @return
-	 * @throws ActionException
-	 */
-	public ApprovalVO buildVO(SMTServletRequest req) throws ActionException{
-		Integer bType = Convert.formatInteger(req.getParameter("bType"));
-		ApprovalVO avo = new ApprovalVO();
-		switch(bType) {
-		case CenterPageAction.DELETE_ALL_MODULES:
-			AbstractChangeLogVO vo = new ModuleLogVO(req);
-			vo.setApprovalType(30);
-			avo.setChangeLogList(ModuleLogVO.TYPE_ID, vo);
-			break;
-		default:
-			String [] pageIds = req.getParameter("modOptsToSubmit").split(",");
-			List<AbstractChangeLogVO> vos = new ArrayList<AbstractChangeLogVO>();
-			for(String id : pageIds){
-				if(!id.equals("0")){
-				req.setParameter("componentId", id.trim());
-				vos.add(new ModuleLogVO(req));
-				}
-			}
-			avo.setChangeLogList(ModuleLogVO.TYPE_ID, vos);
-			break;
-	}
-		return avo;
 	}
 	
 	/**
@@ -403,16 +407,17 @@ public class ModuleOptionAction extends SBActionAdapter{
 		String[] options = req.getParameterValues("selectedElements");
 		String locationId = req.getParameter("locationId");
 		boolean skipDelete = Convert.formatBoolean(req.getParameter("skipDelete"), false);
-		String dSql = "";
+		StringBuilder dSql = new StringBuilder(100);
 		
 		if (!skipDelete) {
-			dSql = "delete from " + customDb + "FTS_CP_MODULE_FRANCHISE_XR ";
-			dSql += "where CP_LOCATION_MODULE_XR_ID = ? ";
+			dSql.append("delete from ").append(customDb).append("FTS_CP_MODULE_FRANCHISE_XR ");
+			dSql.append("where CP_LOCATION_MODULE_XR_ID = ? ");
 		}
 		
-		String iSql = "insert into " + customDb + "FTS_CP_MODULE_FRANCHISE_XR ";
-		iSql += "(cp_location_module_xr_id, cp_module_option_id, order_no, create_dt) ";
-		iSql += "values (?,?,?,?)";
+		StringBuilder iSql = new StringBuilder(170);
+		iSql.append("insert into ").append(customDb).append("FTS_CP_MODULE_FRANCHISE_XR ");
+		iSql.append("(cp_location_module_xr_id, cp_module_option_id, order_no, create_dt) ");
+		iSql.append("values (?,?,?,?)");
 		
 		PreparedStatement psIns = null;
 		PreparedStatement psDel = null;
@@ -420,13 +425,13 @@ public class ModuleOptionAction extends SBActionAdapter{
 			// Delete the existing records
 			// This step will be skipped when we are adding a new asset to a module that allows multiple assets.
 			if (!skipDelete) {
-				psDel = dbConn.prepareStatement(dSql);
+				psDel = dbConn.prepareStatement(dSql.toString());
 				psDel.setString(1, locationId);
 				psDel.executeUpdate();
 			}
 			
 			// Add new records
-			psIns = dbConn.prepareStatement(iSql);
+			psIns = dbConn.prepareStatement(iSql.toString());
 			for (int i = 0; i < options.length; i++) {
 				String[] opts = options[i].split("~"); //split is key ~ order-by-index
 				int idx = i+1; //default ordering
@@ -496,20 +501,28 @@ public class ModuleOptionAction extends SBActionAdapter{
 
 		//UserRoleVO role = (UserRoleVO) req.getSession().getAttribute(Constants.ROLE_DATA);
 		CenterModuleOptionVO vo = new CenterModuleOptionVO(req);
-		boolean isInsert = (vo.getModuleOptionId() == 0);
+		boolean isInsert = false;
 		// Determine if this is an omnipresent global asset.  These are treated differently from normal assets
-		boolean globalAsset = "g".equals(req.getParameter("globalFlg"));
+		String globalAsset = StringUtil.checkVal(req.getParameter("globalFlg"));
 		
 		//if the user is not a global admin, and this is an update to an existing module,
 		//treat it as a NEW module.  This behavior will ensure the module gets approved
 		//before it's visible on the website.
 		//if (role.getRoleLevel() < SecurityController.ADMIN_ROLE_LEVEL) {
-			isInsert = true;
-			if (vo.getParentId() == null || vo.getParentId() == 0) 
+			if (vo.getParentId() == null || vo.getParentId() == 0)  {
 				vo.setParentId(vo.getModuleOptionId()); //link this new entry to it's predecessor
+				isInsert = true;
+			}
 			req.setParameter("moduleParentId", StringUtil.checkVal(vo.getModuleOptionId()));
 			log.debug("saving with parent=" + vo.getParentId());
 		//}
+			
+
+		if ("g".equals(globalAsset)) {
+			vo.setFranchiseId(-1);
+		} else if (!"y".equals(globalAsset)){
+			vo.setFranchiseId(franchiseId);
+		}
 		
 		//build the query
 		if (isInsert) {
@@ -547,16 +560,14 @@ public class ModuleOptionAction extends SBActionAdapter{
 			ps.setTimestamp(++i, Convert.getCurrentTimestamp());
 			ps.setString(++i, vo.getResponseText());
 			ps.setString(++i, vo.getActionId());
-			if (Convert.formatBoolean(req.getParameter("globalFlg"), false)) {
+			if (vo.getFranchiseId() == null) {
 				ps.setNull(++i, java.sql.Types.INTEGER);
-			} else if (globalAsset) {
-				ps.setInt(++i, -1);
 			} else {
-				ps.setInt(++i, franchiseId);
+				ps.setInt(++i, vo.getFranchiseId());
 			}
 			if (isInsert) {
 				 ps.setInt(++i, vo.getModuleTypeId()); 
-				 if (globalAsset) {
+				 if ("g".equals(globalAsset)) {
 					 ps.setInt(++i, 100);
 				 } else {
 					 ps.setInt(++i, vo.getApprovalFlag());
@@ -566,12 +577,61 @@ public class ModuleOptionAction extends SBActionAdapter{
 			}
 			ps.setInt(++i, vo.getModuleOptionId());
 			ps.executeUpdate();
+			
+			// Only create a sync entry if this is an insert for a non-global asset
+			if (isInsert)
+				buildSyncEntry(req, vo, globalAsset);
+			
 		} finally {
 			try { ps.close(); } catch (Exception e) {}
 		}
 		req.setParameter("selectedElements", vo.getModuleOptionId()+"~"+req.getParameter("modLocId"));
 		if(vo.getModuleTypeId() == 10)
 			updateModuleAttributes(req);
+	}
+	
+	/**
+	 * Build a sync entry to track the action that is being edited
+	 * @param req
+	 * @param approvalType
+	 */
+	private void buildSyncEntry(SMTServletRequest req, CenterModuleOptionVO vo, String globalAsset) {
+		ApprovalController controller = new ApprovalController(dbConn, getAttributes());
+		ApprovalVO approval = new ApprovalVO();
+		WebeditType approvalType = WebeditType.CenterModule;
+		String orgId = ((SiteVO)req.getAttribute("siteData")).getOrganizationId();
+
+		approval.setWcKeyId(StringUtil.checkVal(vo.getModuleOptionId()));
+		//Only set this if we actually have a valid parent id
+		if (vo.getParentId() != 0)approval.setOrigWcKeyId(StringUtil.checkVal(vo.getParentId()));
+		approval.setItemDesc(approvalType.toString());
+		approval.setItemName(vo.getOptionName());
+		approval.setModuleType(ModuleType.Webedit);
+		if ("g".equals(globalAsset)) {
+			approval.setSyncStatus(vo.getParentId() == 0? SyncStatus.PendingCreate : SyncStatus.PendingUpdate );
+		} else {
+			approval.setSyncStatus(SyncStatus.InProgress);
+		}
+		approval.setSyncTransaction(SyncTransaction.Create);
+		if (!"n".equals(globalAsset)) {
+			approval.setOrganizationId(orgId);
+		} else {
+			approval.setOrganizationId(orgId+"_"+vo.getFranchiseId());
+		}
+		if (vo.getModuleTypeId() == 2) {
+			approval.setParentId(orgId);
+		}
+		
+		approval.setUserDataVo((UserDataVO) req.getSession().getAttribute(Constants.USER_DATA));
+		approval.setCreateDt(Convert.getCurrentTimestamp());
+		
+		try {
+			controller.process(approval);
+		} catch (ApprovalException e) {
+			e.printStackTrace();
+		}
+		
+		
 	}
 
 	/**

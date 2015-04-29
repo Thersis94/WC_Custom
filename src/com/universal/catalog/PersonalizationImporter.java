@@ -92,7 +92,7 @@ public class PersonalizationImporter extends AbstractImporter {
 				headers = parseHeaderRow(fields);
 				continue; // skip to next row
 			}
-
+			
 			try {
 				prodId = catalog.getCatalogPrefix() + fields[headers.get("CUSTOM")];
 				dataValue = fields[headers.get("DATA")];

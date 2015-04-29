@@ -60,7 +60,7 @@ public class TVSpotReportVO extends AbstractSBReportVO {
 	public byte[] generateReport() {
 		HSSFWorkbook workbook = new HSSFWorkbook();
 		HSSFSheet sheet = workbook.createSheet("Report");
-		log.debug("starting generateReport()");
+		log.info("starting generateReport()");
 		getHeader(sheet);
 
 		int rowNum = 2;
@@ -115,7 +115,7 @@ public class TVSpotReportVO extends AbstractSBReportVO {
 	 * @return
 	 */
 	public Map<String, HSSFWorkbook> generateCenterReport() {
-		log.debug("starting generateReport()");
+		log.info("starting generateCenterReport()");
 		Calendar now = Calendar.getInstance();
 		Map<String, HSSFWorkbook> byCenter = new HashMap<String, HSSFWorkbook>();
 		HSSFWorkbook book;
@@ -129,42 +129,65 @@ public class TVSpotReportVO extends AbstractSBReportVO {
         ContactDataModuleVO vo;
 		while (li.hasPrevious()) {
 			vo = li.previous();
-			
 			book = byCenter.get(vo.getDealerLocation().getOwnerEmail());
-			
 			// If we don't have this center in the map already start a new one..
 			if (book == null) {
 				// If the center's most recent request was more than a week ago we skip them.
 				//this is nested where we create new Books (sheets) in the report.
-				if (((vo.getSubmittalDate().getTime() - now.getTimeInMillis()) / (1000 * 60 * 60 * 24)) < -7) 
+				if (((vo.getSubmittalDate().getTime() - now.getTimeInMillis()) / (1000 * 60 * 60 * 24)) < -7) {
 					continue;
-				
+				}
 				book = new HSSFWorkbook();
 				sheet = book.createSheet("Report");
 				getHeader(sheet);
 				setColWidths(sheet);
 				row = sheet.createRow(2);
 				
-				//define a red font & text color and assign it to a Style, for highlighting "initiated" status entries
-				//TODO this coloring does not work correctly, after 20+ attempts and much Googling.  -JM 07.02.14
-				style = book.createCellStyle();
-				style.setFillForegroundColor(HSSFColor.RED.index);
-				style.setFillPattern(HSSFCellStyle.SOLID_FOREGROUND);
-				HSSFFont font = book.createFont();
-				font.setColor(HSSFColor.RED.index);
-				style.setFont(font);
 			} else {
 				row = book.getSheet("Report").createRow(book.getSheet("Report").getLastRowNum()+1);
 			}
 			
-			appendRow(vo, row, style);
+			//define a red font & text color and assign it to a Style, for highlighting "initiated" status entries
+			//TODO this coloring does not work correctly, after 20+ attempts and much Googling.  -JM 07.02.14
+			/* 
+			 * 2015-03-19: DBargerhuff Moved style creation block so that we create 
+			 * the style based on the book AFTER we have found or created the 
+			 * book.  This associates the style to the book and prevents the 
+			 * POI library from throwing an exception downstream complaining about 
+			 * the style not being associated with 'this' book.  
+			 */
+			style = book.createCellStyle();
+			style.setFillForegroundColor(HSSFColor.RED.index);
+			style.setFillPattern(HSSFCellStyle.SOLID_FOREGROUND);
+			HSSFFont font = book.createFont();
+			font.setColor(HSSFColor.RED.index);
+			style.setFont(font);
+						
+			/*
+			 * 2015-03-19: DBargerhuff: Wrapping appendRow in try/catch to trap
+			 * any exceptions thrown by the POI libraries.  Fixes an issue where the
+			 * script was silently failing due to an exception thrown by an unrecognized
+			 * 'style'.
+			 */
+			try {
+				appendRow(vo, row, style);
+			} catch (Exception e) {
+				log.warn("Caught unknown exception during 'appendRow' operation, " + e.getMessage());
+			}
 			
+			// add or replace center on the map
 			byCenter.put(vo.getDealerLocation().getOwnerEmail(), book);
 		}
 		
 		return byCenter;
 	}
 	
+	/**
+	 * Appends row
+	 * @param vo
+	 * @param row
+	 * @param style
+	 */
 	private void appendRow(ContactDataModuleVO vo, Row row, HSSFCellStyle style) {
 		int cellNum = 0;
 		Date d = vo.getSubmittalDate();
@@ -199,12 +222,16 @@ public class TVSpotReportVO extends AbstractSBReportVO {
 		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.rating))));
 		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.feedback))));
 		row.createCell(cellNum++).setCellValue(StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.consultation))));
+		
+		// parse the status value
 		String statusTxt = StringUtil.checkVal(vo.getExtData().get(config.getContactId(ContactField.status)));
 		Status status = null;
 		try {
 			status = Status.valueOf(statusTxt);
 		} catch (IllegalArgumentException iae) {
 			// suppressing this exception.
+			log.warn("Caught Exception: Value of Status enum is not valid(original value: " + statusTxt + ") setting Status enum to 'invalid'.");
+			status = Status.invalid;
 		}
 		
 		//status field.  if status=initiated color the cell red.

@@ -4,6 +4,7 @@ package com.depuysynthes.lucene;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -20,9 +21,6 @@ import java.util.Properties;
 
 import org.xml.sax.ContentHandler;
 
-// log4j 1.2-15
-import org.apache.log4j.Logger;
-
 // Apche SolrJ 4.9
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.common.SolrInputDocument;
@@ -34,11 +32,6 @@ import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.sax.BodyContentHandler;
-
-
-
-
-
 
 // SMT Base Libs
 import com.depuysynthes.action.MediaBinAdminAction;
@@ -67,23 +60,23 @@ import com.smt.sitebuilder.search.SearchDocumentHandler;
  * 		Added ASSET_LANGUAGE as a non-core language field, so we could use it in View filters w/o affecting the Indexer.
  * JC 09/02/14 
  * 		Copied the file and modified for the Solr Indexer
+ * JM 03.03.15
+ * 		Implemented purgeIndexItems method from Interface
  ****************************************************************************/
 public class MediaBinSolrIndex extends SMTAbstractIndex {
-	// Member Variables
-	protected static final Logger log = Logger.getLogger(MediaBinSolrIndex.class);
 	private Map<String,String> busUnits = null;
-	
+
 	/**
 	 * Base url information for the redirection
 	 */
 	public static final String BASE_REDIR_URL = "/json?amid=MEDIA_BIN_AJAX&mbid=";
-	
+
 	/**
 	 * Index type for this index.  This value is stored in the INDEX_TYPE field
 	 */
 	public static final String INDEX_TYPE = "MEDIA_BIN";
-	
-	public enum MediaBinField { 
+
+	public enum MediaBinField {
 		AssetType("assetType_s"),
 		AssetDesc("assetDesc_s"),
 		TrackingNo("trackingNumber_s"),
@@ -92,14 +85,14 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 		private String metaDataField = null;
 		public String getField() { return metaDataField; }
 	}
-	
+
 
 	/**
 	 * Initializes the Business Units
 	 */
 	public MediaBinSolrIndex(Properties config) {
-        super(config);
-        loadBusUnits();
+		super(config);
+		loadBusUnits();
 	}
 
 	/* (non-Javadoc)
@@ -111,38 +104,38 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 		List<MediaBinAssetVO> metaData = loadMetaData(dbConn, config.getProperty(Constants.CUSTOM_DB_SCHEMA));
 		indexFiles(metaData, server, StringUtil.checkVal(config.getProperty("mediabinFiles")));
 	}
-	
-    /**
-     * Flattens out the hierarchy and stores all fields in the content fields
-     * @param metaData Collection of meta-data corresponding to each document in the media bin repository
-     * @param server
-     * @param fileRepos
-     */
-    protected void indexFiles(List<MediaBinAssetVO> metaData, HttpSolrServer server, String fileRepos) {
-        for (int i = 0; i < metaData.size(); i++) {
-        	SolrInputDocument doc = new SolrInputDocument();
-    		MediaBinAssetVO vo = metaData.get(i);
-    		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-    		
-    		// Get the Organization ID
-    		List<String> opCoList = Arrays.asList(vo.getOpCoNm().split("~"));
-    		if (opCoList == null || opCoList.size() == 0) continue; //not authorized for any; we should never hit this.
-    		List<String> orgList  = new ArrayList<String>();
-    		if (opCoList.contains("INTDS.com")) orgList.add("DPY_SYN_EMEA");
-    		if (opCoList.contains("DSI.com")) orgList.add("DPY_SYN_INST");
-    		if (opCoList.contains("USDS.com")) orgList.add("DPY_SYN");
-    		    		
-    		//ensure click-to URLs bounce through our redirector for version control.  leading slash added by WC's View.
-    		String fileNm = "&name=" + StringEncoder.urlEncode(vo.getFileNm());
-    		vo.setActionUrl(BASE_REDIR_URL + vo.getDpySynMediaBinId() + fileNm);
-    		
-    		//ensure a decent name is presented
-    		if (vo.getTitleTxt() == null || vo.getTitleTxt().length() == 0)
-    			vo.setTitleTxt(vo.getLiteratureTypeTxt());
-    		
-    		String fileName = StringUtil.checkVal(vo.getFileNm());
-    		int dotIndex = fileName.lastIndexOf(".");
-   			log.debug("adding '" + vo.getAssetType() + "' to index: url=" + vo.getActionUrl() + ", org=" + orgList);
+
+	/**
+	 * Flattens out the hierarchy and stores all fields in the content fields
+	 * @param metaData Collection of meta-data corresponding to each document in the media bin repository
+	 * @param server
+	 * @param fileRepos
+	 */
+	protected void indexFiles(List<MediaBinAssetVO> metaData, HttpSolrServer server, String fileRepos) {
+		for (int i = 0; i < metaData.size(); i++) {
+			SolrInputDocument doc = new SolrInputDocument();
+			MediaBinAssetVO vo = metaData.get(i);
+			DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+
+			// Get the Organization ID
+			List<String> opCoList = Arrays.asList(vo.getOpCoNm().split("~"));
+			if (opCoList == null || opCoList.size() == 0) continue; //not authorized for any; we should never hit this.
+			List<String> orgList  = new ArrayList<String>();
+			if (opCoList.contains("INTDS.com")) orgList.add("DPY_SYN_EMEA");
+			if (opCoList.contains("DSI.com")) orgList.add("DPY_SYN_INST");
+			if (opCoList.contains("USDS.com")) orgList.add("DPY_SYN");
+
+			//ensure click-to URLs bounce through our redirector for version control.  leading slash added by WC's View.
+			String fileNm = "&name=" + StringEncoder.urlEncode(vo.getFileNm());
+			vo.setActionUrl(BASE_REDIR_URL + vo.getDpySynMediaBinId() + fileNm);
+
+			//ensure a decent name is presented
+			if (vo.getTitleTxt() == null || vo.getTitleTxt().length() == 0)
+				vo.setTitleTxt(vo.getLiteratureTypeTxt());
+
+			String fileName = StringUtil.checkVal(vo.getFileNm());
+			int dotIndex = fileName.lastIndexOf(".");
+			log.debug("adding '" + vo.getAssetType() + "' to index: url=" + vo.getActionUrl() + ", org=" + orgList);
 			try {
 				doc.setField(SearchDocumentHandler.INDEX_TYPE, INDEX_TYPE);
 				doc.setField(SearchDocumentHandler.ORGANIZATION, orgList); //multiValue field
@@ -167,60 +160,54 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 				doc.setField(MediaBinField.AssetDesc.getField(), vo.getAssetDesc());
 				if (vo.isVideo())
 					doc.setField(MediaBinField.VideoChapters.getField(), vo.getVideoChapters());
-				
+
 				//turn the flat/delimited hierarchy into a structure that PathHierarchyTokenizer will understand
-		    		for (String s : StringUtil.checkVal(vo.getAnatomy()).split("~")) {
-		    			//need to tokenize the levels and trim spaces from each, the MB team are slobs!
-		    			StringBuilder sb = new StringBuilder();
-		    			for (String subStr : s.split(",")) {
-		    				sb.append(StringUtil.checkVal(subStr).trim()).append("~");
-		    			}
-		    			if (sb.length() > 0) sb.deleteCharAt(sb.length()-1);
-		    			doc.addField(SearchDocumentHandler.HIERARCHY, sb.toString());
-		    		}
-		    		
+				for (String s : StringUtil.checkVal(vo.getAnatomy()).split("~")) {
+					//need to tokenize the levels and trim spaces from each, the MB team are slobs!
+					StringBuilder sb = new StringBuilder();
+					for (String subStr : s.split(",")) {
+						sb.append(StringUtil.checkVal(subStr).trim()).append(SearchDocumentHandler.HIERARCHY_DELIMITER);
+					}
+					if (sb.length() >= SearchDocumentHandler.HIERARCHY_DELIMITER.length()) 
+						sb.deleteCharAt(sb.length()-SearchDocumentHandler.HIERARCHY_DELIMITER.length());
+					doc.addField(SearchDocumentHandler.HIERARCHY, sb.toString());
+				}
+
 				if (fileName.length() > 0 && dotIndex > -1 && (dotIndex + 1) < fileName.length())
 					doc.setField(SearchDocumentHandler.FILE_EXTENSION, fileName.substring(++dotIndex));
-				
+
 				server.add(doc);
 				if ((i % 100) == 0) {
-					log.info("Committed " + i + " records");
-					server.commit();
+					//server.commit(false, false, true);
+					log.info("Added " + i + " records");
 				}
 			} catch (Exception e) {
 				log.error("Unable to index asset " + vo.getDpySynMediaBinId(), e);
 			}
 		}
-        
-		// Clean up any uncommitted files
-		try {
-			server.commit();
-		} catch (Exception e) {
-			log.error("Unable to commit remaining documents", e);
+	}
+
+	private String getAssetType(MediaBinAssetVO vo) {
+		if ("multimedia file".equalsIgnoreCase(vo.getAssetType())) {
+			return StringUtil.checkVal(vo.getAssetDesc()).toLowerCase();
+		} else {
+			return vo.getAssetType();
 		}
 	}
-    
-    private String getAssetType(MediaBinAssetVO vo) {
-	    if ("multimedia file".equalsIgnoreCase(vo.getAssetType())) {
-		    return StringUtil.checkVal(vo.getAssetDesc()).toLowerCase();
-	    } else {
-		    return vo.getAssetType();
-	    }
-    }
-    
-    /**
-     * Figures out the appropriate summary for the given document
-     * @param vo Document Meta-Data
-     * @return
-     */
-    private String getSummary(MediaBinAssetVO vo) {
-	    String summary = "";
-	    //DSI work-around.  DS.com should never have been using AssetDesc, but 
-	    //since it was validated that way we can't change it.
-	    if (vo.getOpCoNm().indexOf("DSI.com") > -1) {
-		    summary = StringUtil.checkVal(vo.getDescription());
-	    }
-	    
+
+	/**
+	 * Figures out the appropriate summary for the given document
+	 * @param vo Document Meta-Data
+	 * @return
+	 */
+	private String getSummary(MediaBinAssetVO vo) {
+		String summary = "";
+		//DSI work-around.  DS.com should never have been using AssetDesc, but 
+		//since it was validated that way we can't change it.
+		if (vo.getOpCoNm().indexOf("DSI.com") > -1) {
+			summary = StringUtil.checkVal(vo.getDescription());
+		}
+
 		if (summary.length() == 0) summary = StringUtil.checkVal(vo.getAssetDesc());
 		if (summary.length() == 0) {
 			summary = StringUtil.checkVal(vo.getProdFamilyNm());
@@ -229,24 +216,28 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 		}
 
 		return summary;
-    }
-    
-    /**
+	}
+
+	/**
 	 * Parses the file (text or binary) into an indexable String.  This method
 	 * calls a detector (based upon the stream to the local file) and auto-detects
 	 * the correct parser based upon the file detection.  The data is converted to a 
 	 * String Object and returned to the calling class to be added to the index
-     * @param vo MediaBin meta data
-     * @param fileRepos Location of the file data
-     * @return
-     */
-    private String parseFile(MediaBinAssetVO vo, String fileRepos) {
-    	String data = "";
-    	try {
-    		String fileNm = StringUtil.replace(vo.getRevisionLvlTxt() + "/" + vo.getAssetNm(), "/", File.separator);
-    		InputStream input = new BufferedInputStream(new FileInputStream(new File(fileRepos + fileNm)));
-    		log.debug("loading file: " + fileRepos + fileNm);
-    		
+	 * @param vo MediaBin meta data
+	 * @param fileRepos Location of the file data
+	 * @return
+	 */
+	private String parseFile(MediaBinAssetVO vo, String fileRepos) {
+		String data = "";
+		String fileNm = null;
+		try { //catch NPEs in the file name, before we attempt to open the file
+			fileNm = StringUtil.replace(vo.getRevisionLvlTxt() + "/" + vo.getAssetNm(), "/", File.separator);
+		} catch (Exception e) { 
+			return data; 
+		}
+
+		try (InputStream input = new BufferedInputStream(new FileInputStream(new File(fileRepos + fileNm)))) {
+			log.debug("loading file: " + fileRepos + fileNm);
 			Metadata metadata = new Metadata();
 			Detector detector = new DefaultDetector();
 			detector.detect(input, metadata);
@@ -254,24 +245,24 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 			ContentHandler handler = new BodyContentHandler(1000*1024*1024);
 			adp.parse(input, handler, metadata, new ParseContext());
 			data = handler.toString();
-    	} catch (Exception e) {
-    		log.error("could not load file for " + vo.getDpySynMediaBinId() + "|" + vo.isVideo());
-    	}
-    	
-    	return data;
-    	
-    }
-    
-    
-    /**
-     * load a list of assets from the meta-data stored in the database.
-     * Files on the file-system that are not in the retrieved meta-data should be ignored by the indexer. 
-     * @param conn
-     * @param orgId
-     */
-    private List<MediaBinAssetVO> loadMetaData(Connection conn, String dbSchema) {
-    	List<MediaBinAssetVO> data = new ArrayList<MediaBinAssetVO>();
-    	StringBuilder sql = new StringBuilder();
+		} catch (Exception e) {
+			log.error("could not load file for " + vo.getDpySynMediaBinId() + "|" + vo.isVideo());
+		}
+
+		return data;
+
+	}
+
+
+	/**
+	 * load a list of assets from the meta-data stored in the database.
+	 * Files on the file-system that are not in the retrieved meta-data should be ignored by the indexer. 
+	 * @param conn
+	 * @param orgId
+	 */
+	private List<MediaBinAssetVO> loadMetaData(Connection conn, String dbSchema) {
+		List<MediaBinAssetVO> data = new ArrayList<MediaBinAssetVO>();
+		StringBuilder sql = new StringBuilder();
 		sql.append("select * from ").append(dbSchema).append("DPY_SYN_MEDIABIN a ");
 		sql.append("left join video_meta_content b on a.dpy_syn_mediabin_id=b.asset_id and b.asset_type='MEDIABIN' ");
 		sql.append("where lower(a.asset_type) in (null"); //loop all pdf types
@@ -279,7 +270,7 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 		for (int y=MediaBinAdminAction.VIDEO_ASSETS.length; y > 0; y--) sql.append(",?");
 		sql.append(")");
 		log.debug(sql);
-		
+
 		int i = 0;
 		PreparedStatement ps = null;
 		try {
@@ -289,25 +280,25 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 			ResultSet rs = ps.executeQuery();
 			while (rs.next())
 				data.add(new MediaBinAssetVO(rs));
-			
+
 		} catch (SQLException sqle) {
 			log.error("could not load MediaBin meta-data from DB", sqle);
 		} finally {
 			try { ps.close(); } catch (Exception e) {}
 		}
-		
+
 		log.info("loaded " + data.size() + " records from the meta-data");
 		return data;
-    }
-    
-    /**
-     * Parses the duration (seconds) into a String representing
-     * hours and minutes in HH:MM format.
-     * @param duration
-     * @return
-     */
-    private String parseDuration(double duration) {
-	    if (duration == 0) return "";
+	}
+
+	/**
+	 * Parses the duration (seconds) into a String representing
+	 * hours and minutes in HH:MM format.
+	 * @param duration
+	 * @return
+	 */
+	private String parseDuration(double duration) {
+		if (duration == 0) return "";
 		StringBuilder dur = new StringBuilder();
 		int hours = (int) duration / 3600;
 		int minutes = (int) (duration % 3600) / 60;
@@ -329,65 +320,65 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 
 		log.debug("video duration parsed is: " + dur.toString());
 		return dur.toString();
-    }
+	}
 
 
-    /**
-     * Parses the source business unit name into a consistent naming schema using 
-     * based on the key/value pairs in the business unit map.  The source name is
-     * split on a tilde and each token is parsed according to the business unit map.
-     * The final result is a single or pipe-delimited value.  Empty tokens are ignored.  
-     * @param busUnit
-     * @return
-     */
-    private String parseBusinessUnit(String busUnit) {
-    	String tmp = StringUtil.checkVal(busUnit).toUpperCase();
-    	String[] tokens = tmp.split("~");
-    	StringBuilder newStr = new StringBuilder();
-    	
-    	for (int i = 0; i < tokens.length; i++) {
-    		// skip token if empty
-    		if (tokens[i].length() == 0) continue;
-    		
-    		// append a pipe delimiter if not first valid token
-    		if (i > 0) newStr.append("|");
-    		
-        	if (tokens[i].contains("BIO")) {
-        		newStr.append(busUnits.get("BIO"));
-        	} else if (tokens[i].contains("CMF")) {
-        		newStr.append(busUnits.get("CMF"));
-        	} else if (tokens[i].contains("CODMAN")) {
-        		newStr.append(busUnits.get("CODMAN"));
-        	} else if (tokens[i].contains("HIP")) {
-        		newStr.append(busUnits.get("HIP"));
-        	} else if (tokens[i].contains("KNEE")) {
-        		newStr.append(busUnits.get("KNEE"));
-        	} else if (tokens[i].contains("MITEK")) {
-        		newStr.append(busUnits.get("MITEK"));
-        	} else if (tokens[i].contains("POWERTOOLS")) {
-        		newStr.append(busUnits.get("TOOLS"));
-        	} else if (tokens[i].contains("SHOULDER")) {
-        		newStr.append(busUnits.get("SHOULDER"));
-        	} else if (tokens[i].contains("SPINE")) {
-        		newStr.append(busUnits.get("SPINE"));
-        	} else if (tokens[i].contains("TRAUMA")) {
-        		newStr.append(busUnits.get("TRAUMA"));
-        	} else {
-        		newStr.append(busUnits.get("OTHER"));
-        	}
+	/**
+	 * Parses the source business unit name into a consistent naming schema using 
+	 * based on the key/value pairs in the business unit map.  The source name is
+	 * split on a tilde and each token is parsed according to the business unit map.
+	 * The final result is a single or pipe-delimited value.  Empty tokens are ignored.  
+	 * @param busUnit
+	 * @return
+	 */
+	private String parseBusinessUnit(String busUnit) {
+		String tmp = StringUtil.checkVal(busUnit).toUpperCase();
+		String[] tokens = tmp.split("~");
+		StringBuilder newStr = new StringBuilder();
 
-    	}
-    	    	    	
-    	return newStr.toString();
-    }
-    
-    /**
-     * Parses download type and returns the download type text either as an empty String,
-     * a single-value String, or a comma-delimited String.
-     * @param downloadType
-     * @param isVideo
-     * @return
-   
+		for (int i = 0; i < tokens.length; i++) {
+			// skip token if empty
+			if (tokens[i].length() == 0) continue;
+
+			// append a pipe delimiter if not first valid token
+			if (i > 0) newStr.append("|");
+
+			if (tokens[i].contains("BIO")) {
+				newStr.append(busUnits.get("BIO"));
+			} else if (tokens[i].contains("CMF")) {
+				newStr.append(busUnits.get("CMF"));
+			} else if (tokens[i].contains("CODMAN")) {
+				newStr.append(busUnits.get("CODMAN"));
+			} else if (tokens[i].contains("HIP")) {
+				newStr.append(busUnits.get("HIP"));
+			} else if (tokens[i].contains("KNEE")) {
+				newStr.append(busUnits.get("KNEE"));
+			} else if (tokens[i].contains("MITEK")) {
+				newStr.append(busUnits.get("MITEK"));
+			} else if (tokens[i].contains("POWERTOOLS")) {
+				newStr.append(busUnits.get("TOOLS"));
+			} else if (tokens[i].contains("SHOULDER")) {
+				newStr.append(busUnits.get("SHOULDER"));
+			} else if (tokens[i].contains("SPINE")) {
+				newStr.append(busUnits.get("SPINE"));
+			} else if (tokens[i].contains("TRAUMA")) {
+				newStr.append(busUnits.get("TRAUMA"));
+			} else {
+				newStr.append(busUnits.get("OTHER"));
+			}
+
+		}
+
+		return newStr.toString();
+	}
+
+	/**
+	 * Parses download type and returns the download type text either as an empty String,
+	 * a single-value String, or a comma-delimited String.
+	 * @param downloadType
+	 * @param isVideo
+	 * @return
+
     private String parseDownloadType(String downloadType, boolean isVideo) {
     	String tmp = StringUtil.checkVal(downloadType).replace("~", ",");
     	if (isVideo) {
@@ -405,33 +396,45 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
     	}
     	return tmp;
     }
-   */
-    
-    /**
-     * Helper method for loading the business units look-up map.  This map provides
-     * consistent business unit values for indexing by business unit name.
-     */
-    private void loadBusUnits() {
-        busUnits = new HashMap<>();
-        busUnits.put("BIO", "Biomaterials");
-        busUnits.put("CMF", "CMF");
-        busUnits.put("CODMAN", "Codman Neuro");
-        busUnits.put("HIP", "Hip Reconstruction");
-        busUnits.put("KNEE", "Knee Reconstruction");
-        busUnits.put("MITEK", "Mitek Sports Medicine");
-        busUnits.put("SHOULDER", "Shoulder Reconstruction");
-        busUnits.put("SPINE", "Spine");
-        busUnits.put("TOOLS", "Power Tools");
-        busUnits.put("TRAUMA", "Trauma");
-        busUnits.put("OTHER", "Other");
-    }
+	 */
 
-    /*
-     * (non-Javadoc)
-     * @see com.smt.sitebuilder.search.SMTAbstractIndex#getIndexType()
-     */
+	/**
+	 * Helper method for loading the business units look-up map.  This map provides
+	 * consistent business unit values for indexing by business unit name.
+	 */
+	private void loadBusUnits() {
+		busUnits = new HashMap<>();
+		busUnits.put("BIO", "Biomaterials");
+		busUnits.put("CMF", "CMF");
+		busUnits.put("CODMAN", "Codman Neuro");
+		busUnits.put("HIP", "Hip Reconstruction");
+		busUnits.put("KNEE", "Knee Reconstruction");
+		busUnits.put("MITEK", "Mitek Sports Medicine");
+		busUnits.put("SHOULDER", "Shoulder Reconstruction");
+		busUnits.put("SPINE", "Spine");
+		busUnits.put("TOOLS", "Power Tools");
+		busUnits.put("TRAUMA", "Trauma");
+		busUnits.put("OTHER", "Other");
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.search.SMTAbstractIndex#getIndexType()
+	 */
 	@Override
 	public String getIndexType() {
 		return MediaBinSolrIndex.INDEX_TYPE;
+	}
+
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#purgeIndexItems(org.apache.solr.client.solrj.impl.HttpSolrServer)
+	 */
+	@Override
+	public void purgeIndexItems(HttpSolrServer server) throws IOException {
+		try {
+			server.deleteByQuery(SearchDocumentHandler.INDEX_TYPE + ":" + getIndexType());
+		} catch (Exception e) {
+			throw new IOException(e);
+		}
 	}
 }

@@ -147,7 +147,10 @@ public class CourseCalendar extends SimpleActionAdapter {
 			req.setParameter(EventEntryAction.REQ_SERVICE_OPT, anatomy);
 		}
 		
-		req.setParameter(EventEntryAction.REQ_START_DT, Convert.formatDate(Calendar.getInstance().getTime(), Convert.DATE_SLASH_PATTERN));
+		Calendar cal = Calendar.getInstance();
+		if (page.getAliasName().equals("profile"))
+			cal.add(Calendar.DATE, -90);
+		req.setParameter(EventEntryAction.REQ_START_DT, Convert.formatDate(cal.getTime(), Convert.DATE_SLASH_PATTERN));
 		
 		//load the Events
 		actionInit.setActionId((String)mod.getAttribute(SBModuleVO.ATTRIBUTE_1));
@@ -161,11 +164,20 @@ public class CourseCalendar extends SimpleActionAdapter {
 		
 		//prepare facets/filters
 		if (showFilters) {
-			prepareFacets(req, vo);
+			if (!req.hasParameter("location"))
+				prepareSpecialtyFacets(req, vo);
+			
 			req.setValidateInput(false);
 			filterDataBySpecialty(req, vo);
 			filterDataByLocation(req, vo);
 			req.setValidateInput(true);
+			
+			if (req.hasParameter("location"))
+				prepareSpecialtyFacets(req, vo);
+			
+			//locations listed are limited to only those containing events (after specialty filter is applied)
+			prepareLocationFacets(req, vo);
+			
 			super.putModuleData(vo);
 		}
 	}
@@ -175,23 +187,7 @@ public class CourseCalendar extends SimpleActionAdapter {
 	 * @param req
 	 * @param grpVo
 	 */
-	private void prepareFacets(SMTServletRequest req, EventGroupVO grpVo) {
-		//one for city & state, put on the request by Type
-		for (EventTypeVO typeVo : grpVo.getTypes().values()) {
-			Map<String, Integer> locations = new TreeMap<String, Integer>();
-			for (EventEntryVO vo : typeVo.getEvents()) {
-				String locn = StringUtil.checkVal(vo.getCityName()) + ", " + StringUtil.checkVal(vo.getStateCode());
-				if (locn.length() == 2) locn = "Other";
-				if (locations.containsKey(locn)) {
-					locations.put(locn, locations.get(locn)+1);
-				} else {
-					locations.put(locn, 1);
-				}
-			}
-			log.debug("loaded " + locations.size() + " location filters");
-			req.setAttribute("facet_locn_" + typeVo.getTypeName(), locations);
-		}
-		
+	private void prepareSpecialtyFacets(SMTServletRequest req, EventGroupVO grpVo) {
 		//one for specialties, put on the request by Type
 		for (EventTypeVO typeVo : grpVo.getTypes().values()) {
 			Map<String, Integer> specialties = new TreeMap<String, Integer>();
@@ -209,8 +205,29 @@ public class CourseCalendar extends SimpleActionAdapter {
 			log.debug("loaded " + specialties.size() + " specialty filters");
 			req.setAttribute("facet_spec_" + typeVo.getTypeName(), specialties);
 		}
-		
 	}
+	
+	private void prepareLocationFacets(SMTServletRequest req, EventGroupVO grpVo) {
+		//one for Location (city & state), put on the request by Type
+		for (EventTypeVO typeVo : grpVo.getTypes().values()) {
+			Map<String, Integer> locations = new TreeMap<String, Integer>();
+			for (EventEntryVO vo : typeVo.getEvents()) {
+				String state = StringUtil.checkVal(vo.getStateCode());
+				String locn = StringUtil.checkVal(vo.getCityName());
+				if (state.length() > 0) locn += ", " + state;
+				
+				if (locn.length() == 2) locn = "Other";
+				if (locations.containsKey(locn)) {
+					locations.put(locn, locations.get(locn)+1);
+				} else {
+					locations.put(locn, 1);
+				}
+			}
+			log.debug("loaded " + locations.size() + " location filters facet_locn_" + typeVo.getTypeName());
+			req.setAttribute("facet_locn_" + typeVo.getTypeName(), locations);
+		}
+	}
+	
 	
 	/**
 	 * filter the list of events being returned to the browser to only those matching 
@@ -252,7 +269,7 @@ public class CourseCalendar extends SimpleActionAdapter {
 			List<EventEntryVO> data = new ArrayList<EventEntryVO>();
 			for (EventEntryVO vo : typeVo.getEvents()) {
 				//check each event and only include those matching our filters
-				String spec = StringUtil.checkVal(vo.getServiceText());
+				String spec = StringUtil.checkVal(vo.getServiceText(),"Other");
 				//log.debug("spec=" + spec);
 				boolean addIt = false;
 				for (String f : filters) {
@@ -269,7 +286,6 @@ public class CourseCalendar extends SimpleActionAdapter {
 			typeVo.setEvents(data);
 		}
 	}
-	
 	
 	/**
 	 * cast the URL alias to a anotomical section (as used in the Events lists)

@@ -31,7 +31,9 @@ import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.tools.EmailFriendAction;
-import com.smt.sitebuilder.admin.action.sync.SyncTransactionAction;
+import com.smt.sitebuilder.approval.ApprovalController;
+import com.smt.sitebuilder.approval.ApprovalVO;
+import com.smt.sitebuilder.approval.ApprovalController.SyncStatus;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
@@ -326,7 +328,7 @@ public class CenterPageAction extends SimpleActionAdapter {
 		else if (mod.isCacheable()) mod.setCacheGroup(orgId + "_" + id + "_1");
 		Boolean isPreview = Convert.formatBoolean(req.getAttribute(Constants.PAGE_PREVIEW), false);
 		
-        String previewApiKey = SyncTransactionAction.generatePreviewApiKey(attributes);
+        String previewApiKey = ApprovalController.generatePreviewApiKey(attributes);
         req.setParameter(Constants.PAGE_PREVIEW, previewApiKey);
 		if(req.hasParameter("reloadMenu"))
 			isPreview = Convert.formatBoolean(req.getParameter("reloadMenu"));
@@ -384,6 +386,8 @@ public class CenterPageAction extends SimpleActionAdapter {
 		try {
 			ps = dbConn.prepareStatement(s.toString());
 			if (!isKeystone || (isKeystone && locationId == 0)) {
+				ps.setString(++i, SyncStatus.Approved.toString());
+				ps.setString(++i, SyncStatus.Declined.toString());
 				ps.setInt(++i, Convert.formatInteger(franId));
 			} else {
 				if (locationId > 0) {
@@ -414,9 +418,15 @@ public class CenterPageAction extends SimpleActionAdapter {
 						cmVo = new CenterModuleVO(rs, isKeystone);
 						
 					} else {
-						cmVo.addOption(new CenterModuleOptionVO(rs));
-//						for(CenterModuleOptionVO vo : cmVo.getModuleOptions().values())
-//						log.debug(vo.getApprovalFlag());
+						if (isKeystone || StringUtil.checkVal(rs.getString("WC_SYNC_STATUS_CD")).length() == 0) {
+							CenterModuleOptionVO opt = new CenterModuleOptionVO(rs);
+							// If we are in webedit we add the sync data
+							if (isKeystone) opt.setSyncData(new ApprovalVO(rs));
+							cmVo.addOption(opt);
+							
+	//						for(CenterModuleOptionVO vo : cmVo.getModuleOptions().values())
+	//						log.debug(vo.getApprovalFlag());
+						}
 					}
 					
 					lastLocnId = rs.getInt("cp_location_id");
@@ -459,7 +469,7 @@ public class CenterPageAction extends SimpleActionAdapter {
 	}
 	
 	/**
-	 * Get all global assets from the database and append them to the list of assets
+	 * Get all global assets from the database and prepend them to the list of assets
 	 */
 	private void appendGlobalAssets(Map<String, CenterModuleVO> data, boolean preview) throws SQLException {
 		log.debug("Gathering global assets.|"+preview);
@@ -477,7 +487,8 @@ public class CenterPageAction extends SimpleActionAdapter {
 		} else {
 			sql.append("and cmo.APPROVAL_FLG = 1 ");
 		}
-		sql.append("ORDER BY m.CP_MODULE_ID");
+		sql.append("ORDER BY m.CP_MODULE_ID, cmo.CREATE_DT DESC");
+		log.debug(sql);
 		
 		PreparedStatement ps = null;
 		ResultSet rs = null;
@@ -504,15 +515,15 @@ public class CenterPageAction extends SimpleActionAdapter {
 
 		CenterModuleVO center = null;
 		CenterModuleVO globalModule = null;
+		Map<Integer, CenterModuleOptionVO> options;
 		for (String key : data.keySet()) {
 			center = data.get(key);
 			log.debug(key+"|"+center.getModuleId()+"|"+center.getModuleName());
 			globalModule = globalModules.get(center.getModuleId());
 			if (globalModule != null) {
-				for (int optionNum : globalModule.getModuleOptions().keySet()) {
-					log.debug("Added item");
-					center.addOption(globalModule.getModuleOptions().get(optionNum));
-				}
+				options = globalModule.getModuleOptions();
+				options.putAll(center.getModuleOptions());
+				center.setModuleOptions(options);
 			}
 		}
 	}
@@ -557,13 +568,10 @@ public class CenterPageAction extends SimpleActionAdapter {
 		s.append("on c.FTS_CP_MODULE_TYPE_ID = e.FTS_CP_MODULE_TYPE_ID ");
 		s.append("left outer join ").append(customDb).append("FTS_CP_MODULE_DISPLAY h ");
 		s.append("on a.FTS_CP_MODULE_DISPLAY_ID = h.FTS_CP_MODULE_DISPLAY_ID ");
-		s.append("where a.FRANCHISE_ID = ? ");
+		s.append("left join WC_SYNC ws on (CAST(c.CP_MODULE_OPTION_ID AS NVARCHAR(32)) =  WC_KEY_ID or ");
+		s.append("(CAST(c.PARENT_ID AS NVARCHAR(32)) =  WC_ORIG_KEY_ID and WC_ORIG_KEY_ID != '0' and WC_ORIG_KEY_ID is not null)) and WC_SYNC_STATUS_CD not in (?,?) ");
+		s.append("where a.FRANCHISE_ID = ? "); 
 		
-		if (isKeystone) {
-			//ignore approval_flg within Keystone
-		} else {
-			s.append("and approval_flg=1 ");
-		}
 		if(isMobile) {
 			s.append("and MOBILE_FLG = 1 ");
 		} else {
