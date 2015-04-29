@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.depuysynthes.pa;
 
 import java.io.ByteArrayOutputStream;
@@ -57,15 +54,12 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 		super();
 		setFileName(fileName);
 	}
+	
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.data.report.AbstractReport#generateReport()
 	 */
 	@Override
 	public byte[] generateReport() {
-
-		//Retrieve Column Names
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-
 		//Build Excel File
 		Workbook wb = new HSSFWorkbook();
 		Sheet sheet = wb.createSheet("importValues");
@@ -74,9 +68,9 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 		 * decide if we are writing a landscape (multi-result) report,
 		 * a portrait (single-result) report or print No results found.
 		 */
-		if(dc.getTransactions().size() > 1) {
+		if (dc.getTransactions().size() > 1) {
 			landscapeReport(sheet);
-		} else if(dc.getTransactions().size() == 1) {
+		} else if (dc.getTransactions().size() == 1) {
 			portraitReport(sheet);
 		} else {
 			Row row = sheet.createRow(0);
@@ -84,13 +78,11 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 		}
 
 		//Write xls to ByteStream and return.
-		try {
+		try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 			wb.write(baos);
 			return baos.toByteArray();
 		} catch (IOException e) {
 			log.error(e);
-		} finally {
-			try {baos.close();} catch (IOException e) {log.error(e);}
 		}
 		return null;
 	}
@@ -118,24 +110,25 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 	 */
 	private List<String> getHeaders() {
 		List<String> headers = new ArrayList<String>();
-		headers.add("Author Name");
+		headers.add("Patient Name");
 		headers.add("Email");
 		headers.add("City");
 		headers.add("State");
-		headers.add("ZipCode");
-		headers.add("ImageUrl");
+		headers.add("Zipcode");
+		headers.add("Photo URL");
 		headers.add("Joints");
 		headers.add("Hobbies");
-		headers.add("Have a replacement?");
-		headers.add("Life Before?");
+		headers.add("Had Surgery");
+		headers.add("Life Before");
 		headers.add("Turning Point");
 		headers.add("Life After");
 		headers.add("Advice for others");
 		headers.add("Story Title");
 		headers.add("Story Text");
-		headers.add("Status Text");
+		headers.add("Status");
 		headers.add("User opened consent statement");
 		headers.add("User was emailed consent statement");
+		headers.add("User agreed to consent statement");
 
 		return headers;
 	}
@@ -266,6 +259,9 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 			else
 				addCell(c++, "No", row);
 
+			//Add agreed Consent Flag
+			addCell(c++, ((vo.getAcceptPrivacyFlg() == 1) ? "Yes" : "No"), row);
+			
 			//Close out the Transaction Row.
 			row = sheet.createRow(r++);
 		}
@@ -373,6 +369,9 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 			addRow(r++, vo.getFieldById(PAFConst.EMAIL_CONSENT_ID.getId()).getResponses().get(0), sheet);
 		else
 			addRow(r++, "No", sheet);
+		
+		//Add agreed Consent Flag
+		addRow(r++, ((vo.getAcceptPrivacyFlg() == 1) ? "Yes" : "No"), sheet);
 
 	}
 
