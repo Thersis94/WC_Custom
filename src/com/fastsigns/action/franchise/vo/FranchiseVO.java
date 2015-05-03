@@ -205,8 +205,8 @@ public class FranchiseVO extends DealerLocationVO {
 		data.put("city", StringUtil.checkVal(this.getCity()));
 		data.put("state", StringUtil.checkVal(this.getState()));
 		data.put("zip", StringUtil.checkVal(this.getZip()));
-		data.put("phone", StringUtil.checkVal(new PhoneNumberFormat(this.getPhone(), PhoneNumberFormat.PAREN_FORMATTING).getFormattedNumber()));
-		data.put("fax", StringUtil.checkVal(new PhoneNumberFormat(this.getFax(), PhoneNumberFormat.PAREN_FORMATTING).getFormattedNumber()));
+		data.put("phone", StringUtil.checkVal(new PhoneNumberFormat(this.getPhone(), this.getCountryCode(), PhoneNumberFormat.NATIONAL_FORMAT).getFormattedNumber()));
+		data.put("fax", StringUtil.checkVal(new PhoneNumberFormat(this.getFax(), this.getCountryCode(), PhoneNumberFormat.NATIONAL_FORMAT).getFormattedNumber()));
 		data.put("email", StringUtil.checkVal(this.getEmailAddress()));
 		data.put("websiteUrl", "http://" + StringUtil.checkVal(this.getWebsite()));
 		data.put("designatorName", StringUtil.checkVal(this.getLocationName()));
