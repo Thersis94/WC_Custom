@@ -29,7 +29,7 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
         super();
         setContentType("application/vnd.ms-excel");
         isHeaderAttachment(Boolean.TRUE);
-        setFileName("Postcard-Summary.xls");
+        setFileName("Seminar-Summary.xls");
     }
     
     /**
@@ -47,7 +47,7 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 		
 		StringBuffer rpt = new StringBuffer(this.getHeader());
 		rpt.append("<tr><td>Product</td><td align='center'>").append(sem.getJointLabel()).append("</td></tr>\r");
-		rpt.append("<tr><td>Postcard Type</td><td align='center'>").append(sem.getEvents().get(0).getEventTypeDesc()).append("</td></tr>\r");
+		rpt.append("<tr><td>Seminar Type</td><td align='center'>").append(sem.getEvents().get(0).getEventTypeDesc()).append("</td></tr>\r");
 		rpt.append("<tr><td>Seminar Promotion #</td><td align='center'>").append(sem.getRSVPCodes()).append("</td></tr>\r");
 		for (PersonVO p : sem.getPeople()) {
 			rpt.append("<tr><td>").append(p.getRoleCode()).append("</td><td align='center'>")
