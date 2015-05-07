@@ -114,12 +114,13 @@ public class WebeditApprover extends AbstractApprover {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql =new StringBuilder(180);
 		
-		sql.append("SELECT f.FRANCHISE_ID, mo.FRANCHIS_ID FROM ").append(customDb).append("FTS_CP_MODULE_FRANCHISE_XR mfx ");
+		sql.append("SELECT lmx.FRANCHISE_ID, mo.FRANCHISE_ID FROM ").append(customDb).append("FTS_CP_MODULE_FRANCHISE_XR mfx ");
 		sql.append("left join ").append(customDb).append("FTS_CP_LOCATION_MODULE_XR lmx ");
 		sql.append("on lmx.CP_LOCATION_MODULE_XR_ID = mfx.CP_LOCATION_MODULE_XR_ID ");
 		sql.append("left join ").append(customDb).append("FTS_CP_MODULE_OPTION mo ");
-		sql.append("on mo.CP_MODULE_OPTION_ID mfx.CP_MODULE_OPTION_ID ");
-		sql.append("WHERE mfx.CP_MODULE_OPTION_ID in (?,?) OR ");
+		sql.append("on mo.CP_MODULE_OPTION_ID = mfx.CP_MODULE_OPTION_ID ");
+		sql.append("WHERE mfx.CP_MODULE_OPTION_ID in (?,?) ");
+		log.debug(sql.toString()+"|"+app.getWcKeyId()+"|"+app.getOrigWcKeyId());
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, app.getWcKeyId());
