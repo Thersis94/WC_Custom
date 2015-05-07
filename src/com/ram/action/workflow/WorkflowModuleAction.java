@@ -94,20 +94,22 @@ public class WorkflowModuleAction extends SBActionAdapter {
 		//Get WorkflowModuleVO off the request.
 		WorkflowModuleVO wfmv = new WorkflowModuleVO(req);
 
-		//Update the Database with informationContained within.
+		//Update the Database with information contained within.
 		try {
 			updateWorkflowModule(wfmv);
 		} catch(Exception e) {
 			log.error("Problem occured while inserting/updating a WorkflowModule Record", e);
 		}
 
+		//Build Redirect
 		StringBuilder pg = new StringBuilder(125);
 		pg.append("/").append(attributes.get(Constants.CONTEXT_NAME)).append("/");
 		pg.append(getAttribute(AdminConstants.ADMIN_TOOL_PATH));
 		pg.append("?dataMod=true&callType=module&bType=listWorkflows");
 		pg.append("&actionId=").append(req.getParameter("actionId"));
 		pg.append("&organizationId=").append(req.getParameter("organizationId"));
-		
+
+		//Set Redirect on request
 		req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
 		req.setAttribute(Constants.REDIRECT_URL, pg.toString());
 	}
