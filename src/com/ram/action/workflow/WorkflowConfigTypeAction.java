@@ -12,12 +12,8 @@ import java.util.List;
 import com.ram.workflow.data.WorkflowConfigTypeVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.http.SMTServletRequest;
-import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -38,7 +34,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  *        <p/>
  *        <b>Changes: </b>
  ****************************************************************************/
-public class WorkflowConfigTypeAction extends SBActionAdapter {
+public class WorkflowConfigTypeAction extends AbstractWorkflowAction {
 
 	/**
 	 * 
@@ -54,38 +50,32 @@ public class WorkflowConfigTypeAction extends SBActionAdapter {
 	}
 
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
-		update(req);
-	}
-
-	@Override
-	public void copy(SMTServletRequest req) throws ActionException {
-		
-	}
-
-	@Override
 	public void delete(SMTServletRequest req) throws ActionException {
-		//Get the workflowModuleId off the request.
-		String configTypeCd = req.getParameter("configTypeCd");
+		//Get the configTypeCd off the request.
+		WorkflowConfigTypeVO ctvo = new WorkflowConfigTypeVO(req);
 		String msg = "Config Type deleted Successfully";
+
 		//Check that we have the necessary Parameters on the Request.
-		boolean canDelete = StringUtil.checkVal(configTypeCd).length() > 0;
-		boolean inUse = isInUse(configTypeCd);
+		boolean canDelete = StringUtil.checkVal(ctvo.getConfigTypeCd()).length() > 0;
+		boolean inUse = isInUse(ctvo.getConfigTypeCd());
 		boolean success = false;
+
 		/*
 		 * Verify that both necessary parameters are given and there are no
 		 * instances where the given configTypeCd is in Use.
 		 */
 		if(canDelete && !inUse) {
-			success = deleteConfigType(configTypeCd);
+			success = deleteObject(ctvo);
 		}
 
+		//Updated Success Message if necessary.
 		if(!success && inUse) {
-			msg = "Could not delete.  Config Type " + configTypeCd + " is in Use.";
+			msg = "Could not delete.  Config Type " + ctvo.getConfigTypeCd() + " is in Use.";
 		} else if(!canDelete){
 			msg = "Could not delete.  Missing required param on request.";
 		}
-		
+
+		//Send Redirect
 		setRedirect(req, msg);
 	}
 
@@ -100,11 +90,6 @@ public class WorkflowConfigTypeAction extends SBActionAdapter {
 	}
 
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
-		list(req);
-	}
-
-	@Override
 	public void update(SMTServletRequest req) throws ActionException {
 
 		boolean success = true;
@@ -115,7 +100,7 @@ public class WorkflowConfigTypeAction extends SBActionAdapter {
 
 		//Update the Database with the information contained within.
 		try {
-			updateWorkflowConfigType(ctvo);
+			saveObject(ctvo, true);
 		} catch(Exception e) {
 			log.error("Problem occurred while inserting/updating a WorkflowConfigType Record", e);
 			success = false;
@@ -127,43 +112,6 @@ public class WorkflowConfigTypeAction extends SBActionAdapter {
 		setRedirect(req, msg);
 	}
 
-	public boolean deleteConfigType(String configTypeCd) {
-		boolean deleteSuccess = true;
-		StringBuilder sql = new StringBuilder();
-		sql.append("delete from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("RAM_CONFIG_TYPE where CONFIG_TYPE_CD = ?");
-
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, configTypeCd);
-			ps.executeUpdate();
-		} catch (SQLException e) {
-			log.error(e);
-			deleteSuccess = false;
-		}
-
-		return deleteSuccess;
-	}
-
-	public boolean isInUse(String configTypeCd) {
-		boolean inUse = false;
-
-		//Query Db and look for anywhere that the given configTypeCd is in Use.
-		try (PreparedStatement ps = dbConn.prepareStatement(getInUseSql())) {
-			ps.setString(1, configTypeCd);
-			ResultSet rs = ps.executeQuery();
-
-			//If there are any records, it's in use so update inUse.
-			if(rs.next()) {
-				inUse = true;
-			}
-		} catch (SQLException e) {
-			log.error(e);
-		}
-
-		//Return inUse
-		return inUse;
-	}
-
 	public List<WorkflowConfigTypeVO> listConfigTypes(String configTypeCd) {
 		List<WorkflowConfigTypeVO> data = new ArrayList<WorkflowConfigTypeVO>();
 
@@ -172,12 +120,14 @@ public class WorkflowConfigTypeAction extends SBActionAdapter {
 
 		//Query Db for ConfigTypes
 		try (PreparedStatement ps = dbConn.prepareStatement(getConfigTypeListSql(hasConfigTypeCd))) {
+			log.debug(getConfigTypeListSql(hasConfigTypeCd));
 			if(hasConfigTypeCd) {
 				ps.setString(1, configTypeCd);
 			}
 			ResultSet rs = ps.executeQuery();
 			while(rs.next()) {
-				data.add(new WorkflowConfigTypeVO(rs));
+				WorkflowConfigTypeVO ctvo = new WorkflowConfigTypeVO(rs);
+				data.add(ctvo);
 			}
 		} catch (SQLException e) {
 			log.error(e);
@@ -186,23 +136,10 @@ public class WorkflowConfigTypeAction extends SBActionAdapter {
 		return data;
 	}
 
-	public void updateWorkflowConfigType(WorkflowConfigTypeVO ctvo) throws Exception {
-		DBProcessor dbp = null;
-
-		//Insert the VO via DBProcessor utility.
-		try {
-			dbp = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
-			ctvo.setCreateDt(Convert.getCurrentTimestamp());
-			dbp.insert(ctvo);
-		} catch(Exception e) {
-			throw e;
-		}
-	}
-
 	/**
 	 * @return
 	 */
-	private String getInUseSql() {
+	protected String getInUseSql() {
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("select * from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("RAM_WORKFLOW_MODULE_CONFIG where CONFIG_TYPE_CD = ?");
@@ -226,20 +163,12 @@ public class WorkflowConfigTypeAction extends SBActionAdapter {
 		return sql.toString();
 	}
 
-	private void setRedirect(SMTServletRequest req, String msg) {
-		//Build Redirect
-		StringBuilder pg = new StringBuilder(125);
-		pg.append("/").append(getAttribute(Constants.CONTEXT_NAME));
-		pg.append(getAttribute(AdminConstants.ADMIN_TOOL_PATH));
-		pg.append("?dataMod=true&callType=config&bType=listConfigTypes");
-		pg.append("&actionId=").append(req.getParameter("actionId"));
-		pg.append("&organizationId=").append(req.getParameter("organizationId"));
-		if(msg != null) {
-			pg.append("&msg=").append(msg);
-		}
-
-		//Set Redirect on request
-		req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
-		req.setAttribute(Constants.REDIRECT_URL, pg.toString());
+	/* (non-Javadoc)
+	 * @see com.ram.action.workflow.AbstractWorkflowAction#buildRedirectSupplement(com.siliconmtn.http.SMTServletRequest)
+	 */
+	@Override
+	protected String buildRedirectSupplement(SMTServletRequest req) {
+		return "&callType=config&bType=listConfigTypes";
 	}
+
 }

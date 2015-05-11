@@ -14,8 +14,10 @@ import com.ram.workflow.data.WorkflowConfigTypeVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -36,7 +38,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  *        <p/>
  *        <b>Changes: </b>
  ****************************************************************************/
-public class WorkflowParamAction extends SBActionAdapter {
+public class WorkflowParamAction extends AbstractWorkflowAction {
 
 	/**
 	 * 
@@ -49,18 +51,33 @@ public class WorkflowParamAction extends SBActionAdapter {
 	}
 
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
-		//Not Implemented
-	}
-
-	@Override
-	public void copy(SMTServletRequest req) throws ActionException {
-		//Not Implemented
-	}
-
-	@Override
 	public void delete(SMTServletRequest req) throws ActionException {
-		super.delete(req);
+		//Get the configTypeCd off the request.
+		WorkflowConfigParamVO wcp = new WorkflowConfigParamVO(req);
+		String msg = "Workflow Module Param deleted Successfully";
+
+		//Check that we have the necessary Parameters on the Request.
+		boolean canDelete = StringUtil.checkVal(wcp.getWorkflowModuleConfigId()).length() > 0;
+		boolean inUse = isInUse(wcp.getWorkflowModuleConfigId());
+		boolean success = false;
+
+		/*
+		 * Verify that both necessary parameters are given and there are no
+		 * instances where the given workflowModuleConfigId is in Use.
+		 */
+		if(canDelete && !inUse) {
+			success = deleteObject(wcp);
+		}
+
+		//Updated Success Message if necessary.
+		if(!success && inUse) {
+			msg = "Could not delete.  Module Param " + wcp.getConfigTypeNm() + " is in Use.";
+		} else if(!canDelete){
+			msg = "Could not delete.  Missing required param on request.";
+		}
+
+		//Send Redirect
+		setRedirect(req, msg);
 	}
 
 	@Override
@@ -69,47 +86,61 @@ public class WorkflowParamAction extends SBActionAdapter {
 		//Get List of WorkflowModule Config VOs
 		List<WorkflowConfigParamVO> data = listWorkflowParams(req.getParameter("workflowModuleConfigId"));
 
-		//Get List of Workflow Config Types
-		List<WorkflowConfigTypeVO> configTypes = listWorkflowConfigTypes();
-		req.setAttribute("configTypes", configTypes);
+		//Get List of Workflow Config Types if this is an edit.
+		if(req.hasParameter("workflowModuleConfigId")) {
+			List<WorkflowConfigTypeVO> configTypes = listWorkflowConfigTypes(req);
+			req.setAttribute("configTypes", configTypes);
+		}
 
 		//Set List of Workflow Modules on ModuleData.
 		this.putModuleData(data, data.size(), true);
 	}
 
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
-		list(req);
-	}
-
-	@Override
 	public void update(SMTServletRequest req) throws ActionException {
-		super.update(req);
-	}
 
-	/**
-	 * Helper 
-	 * @return
-	 */
-	public List<WorkflowConfigTypeVO> listWorkflowConfigTypes() {
-		List<WorkflowConfigTypeVO> types = new ArrayList<WorkflowConfigTypeVO>();
+		boolean success = true;
+		String msg = null;
 
-		StringBuilder sql = new StringBuilder(100);
-		sql.append("select * from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("RAM_CONFIG_TYPE order by CONFIG_TYPE_NM desc");
+		//Get the Workflow ConfigType off the request.
+		WorkflowConfigParamVO wcp = new WorkflowConfigParamVO(req);
+		boolean isInsert = Convert.formatBoolean(req.getParameter("isInsert"));
 
-		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ResultSet rs = ps.executeQuery();
-			while(rs.next()) {
-				types.add(new WorkflowConfigTypeVO(rs));
-			}
-		} catch (SQLException e) {
-			log.error(e);
+		//Update the Database with the information contained within.
+		try {
+			saveObject(wcp, isInsert);
+		} catch(Exception e) {
+			log.error("Problem occurred while inserting/updating a WorkflowConfigParam Record", e);
+			success = false;
 		}
-		return types;
+
+		if(!success) {
+			msg = "There was a problem creating the Workflow Config Param.";
+		}
+		setRedirect(req, msg);
 	}
 
 	/**
+	 * Helper that loads up the WorkflowConfigTypeAction for retrieving all
+	 * workflow config types.
+	 * @param req
+	 * @return
+	 * @throws ActionException
+	 */
+	@SuppressWarnings("unchecked")
+	public List<WorkflowConfigTypeVO> listWorkflowConfigTypes(SMTServletRequest req) throws ActionException {
+		WorkflowConfigTypeAction wcta = new WorkflowConfigTypeAction(this.actionInit);
+		wcta.setAttributes(attributes);
+		wcta.setDBConnection(dbConn);
+		wcta.list(req);
+		ModuleVO mod = (ModuleVO)req.getAttribute(AdminConstants.ADMIN_MODULE_DATA);
+		return (List<WorkflowConfigTypeVO>)mod.getActionData();
+	}
+
+	/**
+	 * Helper method that loads up all the Workflow Config Params for a given
+	 * workflowModule.  Can optionally pass a workflowModuleConfigId to return
+	 * specifics for a single config param.
 	 * @param parameter
 	 * @return
 	 */
@@ -132,6 +163,8 @@ public class WorkflowParamAction extends SBActionAdapter {
 	}
 
 	/**
+	 * Helper method that returns the sql query needed to retrieve all the config
+	 * Params.
 	 * @param hasConfigId
 	 * @return
 	 */
@@ -148,6 +181,29 @@ public class WorkflowParamAction extends SBActionAdapter {
 		}
 		sql.append("order by b.CONFIG_TYPE_NM desc");
 
+		return sql.toString();
+	}
+
+	/* (non-Javadoc)
+	 * @see com.ram.action.workflow.AbstractWorkflowAction#buildRedirectSupplement(com.siliconmtn.http.SMTServletRequest)
+	 */
+	@Override
+	protected String buildRedirectSupplement(SMTServletRequest req) {
+		StringBuilder sb = new StringBuilder(95);
+		sb.append("&callType=param&bType=listModuleParams&workflowModuleId=");
+		sb.append(req.getParameter("workflowModuleId"));
+		return sb.toString();
+	}
+
+	/* (non-Javadoc)
+	 * @see com.ram.action.workflow.AbstractWorkflowAction#getInUseSql()
+	 */
+	@Override
+	protected String getInUseSql() {
+		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(125);
+		sql.append("select * from ").append(schema).append("RAM_WORKFLOW_MODULE_CONFIG_XR ");
+		sql.append("where WORKFLOW_MODULE_CONFIG_ID = ?");
 		return sql.toString();
 	}
 }

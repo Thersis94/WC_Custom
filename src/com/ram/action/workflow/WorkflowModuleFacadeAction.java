@@ -45,31 +45,36 @@ public class WorkflowModuleFacadeAction extends SBActionAdapter {
 	@Override
 	public void build(SMTServletRequest req) throws ActionException {
 		CallType type = getCallType(req.getParameter(CALL_TYPE));
-		getAction(type).build(req);
+		if(type != null)
+			getAction(type).build(req);
 	}
 
 	@Override
 	public void copy(SMTServletRequest req) throws ActionException {
 		CallType type = getCallType(req.getParameter(CALL_TYPE));
-		getAction(type).copy(req);
+		if(type != null)
+			getAction(type).copy(req);
 	}
 
 	@Override
 	public void delete(SMTServletRequest req) throws ActionException {
 		CallType type = getCallType(req.getParameter(CALL_TYPE));
-		getAction(type).delete(req);
+		if(type != null)
+			getAction(type).delete(req);
 	}
 
 	@Override
 	public void list(SMTServletRequest req) throws ActionException {
 		CallType type = getCallType(req.getParameter(CALL_TYPE));
-		getAction(type).list(req);
+		if(type != null)
+			getAction(type).list(req);
 	}
 
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		CallType type = getCallType(req.getParameter(CALL_TYPE));
-		getAction(type).retrieve(req);
+		if(type != null)
+			getAction(type).retrieve(req);
 	}
 
 	@Override
@@ -115,7 +120,7 @@ public class WorkflowModuleFacadeAction extends SBActionAdapter {
 		try {
 			type = CallType.valueOf(callType);
 		} catch(Exception e) {
-			type = CallType.module;
+			type = null;
 		}
 
 		return type;
