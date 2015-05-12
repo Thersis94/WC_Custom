@@ -179,7 +179,6 @@ public class FranchisePageAction extends SBActionAdapter {
 					
 					//create a new the Site Page
 					req.setParameter("startDate", Convert.formatDate(new java.util.Date()));  //new pages must be approved before being released
-					req.setParameter("titleName", "Insert browser title here");
 					
 					//we don't need Content or PMID/permissions if this is just a redirect to another resource
 					//redirects do not require admin approval, so we can set a valid start/end date for these pages.
