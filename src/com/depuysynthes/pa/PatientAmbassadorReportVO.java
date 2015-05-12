@@ -183,7 +183,11 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 			addCell(c++, vo.getZipCode(), row);
 
 			//Set Image Url
-			addCell(c++, "http://" + siteUrl + vo.getFieldById(PAFConst.PROFILE_IMAGE_ID.getId()).getResponses().get(0), row);
+			String imgPath = "";
+			if (vo.getFieldById(PAFConst.PROFILE_IMAGE_ID.getId()) != null)
+					imgPath = vo.getFieldById(PAFConst.PROFILE_IMAGE_ID.getId()).getResponseText();
+			if (imgPath.length() > 0) imgPath = "http://" + siteUrl + imgPath;
+			addCell(c++, imgPath, row);
 
 			//Set Joints
 			StringBuilder sb = new StringBuilder();
@@ -208,54 +212,54 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 			}
 
 			//Add Other Hobby if present.
-			if(vo.getFieldById(PAFConst.OTHER_HOBBY_ID.getId()).getResponses().size() > 0 && StringUtil.checkVal(vo.getFieldById(PAFConst.OTHER_HOBBY_ID.getId()).getResponses().get(0)).length() > 0) {
+			if(vo.getFieldById(PAFConst.OTHER_HOBBY_ID.getId()).getResponseText().length() > 0 && StringUtil.checkVal(vo.getFieldById(PAFConst.OTHER_HOBBY_ID.getId()).getResponseText()).length() > 0) {
 				if(i > 0) sb.append(", ");
-				sb.append(vo.getFieldById(PAFConst.OTHER_HOBBY_ID.getId()).getResponses().get(0));
+				sb.append(vo.getFieldById(PAFConst.OTHER_HOBBY_ID.getId()).getResponseText());
 			}
 			addCell(c++, sb.toString(), row);
 
 			//Add Has had Replacement
-			addCell(c++, vo.getFieldById(PAFConst.HAS_REPLACED_ID.getId()).getResponses().get(0).replace("_", " "), row);
+			addCell(c++, vo.getFieldById(PAFConst.HAS_REPLACED_ID.getId()).getResponseText().replace("_", " "), row);
 
 			//Add Life Before
-			addCell(c++, vo.getFieldById(PAFConst.LIFE_BEFORE_ID.getId()).getResponses().get(0), row);
+			addCell(c++, vo.getFieldById(PAFConst.LIFE_BEFORE_ID.getId()).getResponseText(), row);
 
 			//Add Turning Point
-			addCell(c++, vo.getFieldById(PAFConst.TURNING_POINT_ID.getId()).getResponses().get(0), row);
+			addCell(c++, vo.getFieldById(PAFConst.TURNING_POINT_ID.getId()).getResponseText(), row);
 
 			//Add Life After
-			addCell(c++, vo.getFieldById(PAFConst.LIFE_AFTER_ID.getId()).getResponses().get(0), row);
+			addCell(c++, vo.getFieldById(PAFConst.LIFE_AFTER_ID.getId()).getResponseText(), row);
 
 			//Add Advice
-			addCell(c++, vo.getFieldById(PAFConst.ADVICE_ID.getId()).getResponses().get(0), row);
+			addCell(c++, vo.getFieldById(PAFConst.ADVICE_ID.getId()).getResponseText(), row);
 
 			//Add Story Title
 			if(vo.getFieldById(PAFConst.STORY_TITLE_ID.getId()) != null)
-				addCell(c++, vo.getFieldById(PAFConst.STORY_TITLE_ID.getId()).getResponses().get(0), row);
+				addCell(c++, vo.getFieldById(PAFConst.STORY_TITLE_ID.getId()).getResponseText(), row);
 			else
 				addCell(c++, "", row);
 
 			//Add Story Text
 			if(vo.getFieldById(PAFConst.STORY_TEXT_ID.getId()) != null)
-				addCell(c++, vo.getFieldById(PAFConst.STORY_TEXT_ID.getId()).getResponses().get(0), row);
+				addCell(c++, vo.getFieldById(PAFConst.STORY_TEXT_ID.getId()).getResponseText(), row);
 			else
 				addCell(c++, "", row);
 
 			//Add Status Text
 			if(vo.getFieldById(PAFConst.STATUS_ID.getId()) != null)
-				addCell(c++, vo.getFieldById(PAFConst.STATUS_ID.getId()).getResponses().get(0), row);
+				addCell(c++, vo.getFieldById(PAFConst.STATUS_ID.getId()).getResponseText(), row);
 			else
 				addCell(c++, "", row);
 
 			//Add Modal Opened Text
 			if(vo.getFieldById(PAFConst.MODAL_OPENED_ID.getId()) != null)
-				addCell(c++, vo.getFieldById(PAFConst.MODAL_OPENED_ID.getId()).getResponses().get(0), row);
+				addCell(c++, vo.getFieldById(PAFConst.MODAL_OPENED_ID.getId()).getResponseText(), row);
 			else
 				addCell(c++, "No", row);
 
 			//Add Email Consent Text
 			if(vo.getFieldById(PAFConst.EMAIL_CONSENT_ID.getId()) != null)
-				addCell(c++, vo.getFieldById(PAFConst.EMAIL_CONSENT_ID.getId()).getResponses().get(0), row);
+				addCell(c++, vo.getFieldById(PAFConst.EMAIL_CONSENT_ID.getId()).getResponseText(), row);
 			else
 				addCell(c++, "No", row);
 
@@ -294,7 +298,11 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 
 
 		//Set Image Url
-		addRow(r++, "http://" + siteUrl + vo.getFieldById(PAFConst.PROFILE_IMAGE_ID.getId()).getResponses().get(0), sheet);
+		String imgPath = "";
+		if (vo.getFieldById(PAFConst.PROFILE_IMAGE_ID.getId()) != null)
+				imgPath = vo.getFieldById(PAFConst.PROFILE_IMAGE_ID.getId()).getResponseText();
+		if (imgPath.length() > 0) imgPath = "http://" + siteUrl + imgPath;
+		addRow(r++, imgPath, sheet);
 
 		//Set Joints
 		StringBuilder sb = new StringBuilder();
@@ -319,54 +327,54 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 		}
 
 		//Add Other Hobby if present.
-		if(vo.getFieldById(PAFConst.OTHER_HOBBY_ID.getId()).getResponses().size() > 0 && StringUtil.checkVal(vo.getFieldById(PAFConst.OTHER_HOBBY_ID.getId()).getResponses().get(0)).length() > 0) {
+		if(vo.getFieldById(PAFConst.OTHER_HOBBY_ID.getId()).getResponses().size() > 0 && StringUtil.checkVal(vo.getFieldById(PAFConst.OTHER_HOBBY_ID.getId()).getResponseText()).length() > 0) {
 			if(i > 0) sb.append(", ");
-			sb.append(vo.getFieldById(PAFConst.OTHER_HOBBY_ID.getId()).getResponses().get(0));
+			sb.append(vo.getFieldById(PAFConst.OTHER_HOBBY_ID.getId()).getResponseText());
 		}
 		addRow(r++, sb.toString(), sheet);
 
 		//Add Has had Replacement
-		addRow(r++, vo.getFieldById(PAFConst.HAS_REPLACED_ID.getId()).getResponses().get(0), sheet);
+		addRow(r++, vo.getFieldById(PAFConst.HAS_REPLACED_ID.getId()).getResponseText(), sheet);
 
 		//Add Life Before
-		addRow(r++, vo.getFieldById(PAFConst.LIFE_BEFORE_ID.getId()).getResponses().get(0), sheet);
+		addRow(r++, vo.getFieldById(PAFConst.LIFE_BEFORE_ID.getId()).getResponseText(), sheet);
 
 		//Add Turning Point
-		addRow(r++, vo.getFieldById(PAFConst.TURNING_POINT_ID.getId()).getResponses().get(0), sheet);
+		addRow(r++, vo.getFieldById(PAFConst.TURNING_POINT_ID.getId()).getResponseText(), sheet);
 
 		//Add Life After
-		addRow(r++, vo.getFieldById(PAFConst.LIFE_AFTER_ID.getId()).getResponses().get(0), sheet);
+		addRow(r++, vo.getFieldById(PAFConst.LIFE_AFTER_ID.getId()).getResponseText(), sheet);
 
 		//Add Advice
-		addRow(r++, vo.getFieldById(PAFConst.ADVICE_ID.getId()).getResponses().get(0), sheet);
+		addRow(r++, vo.getFieldById(PAFConst.ADVICE_ID.getId()).getResponseText(), sheet);
 
 		//Add Story Title
 		if(vo.getFieldById(PAFConst.STORY_TITLE_ID.getId()) != null)
-			addRow(r++, vo.getFieldById(PAFConst.STORY_TITLE_ID.getId()).getResponses().get(0), sheet);
+			addRow(r++, vo.getFieldById(PAFConst.STORY_TITLE_ID.getId()).getResponseText(), sheet);
 		else
 			addRow(r++, "", sheet);
 
 		//Add Story Text
 		if(vo.getFieldById(PAFConst.STORY_TEXT_ID.getId()) != null)
-			addRow(r++, vo.getFieldById(PAFConst.STORY_TEXT_ID.getId()).getResponses().get(0), sheet);
+			addRow(r++, vo.getFieldById(PAFConst.STORY_TEXT_ID.getId()).getResponseText(), sheet);
 		else
 			addRow(r++, "", sheet);
 
 		//Add Status Text
 		if(vo.getFieldById(PAFConst.STATUS_ID.getId()) != null)
-			addRow(r++, vo.getFieldById(PAFConst.STATUS_ID.getId()).getResponses().get(0), sheet);
+			addRow(r++, vo.getFieldById(PAFConst.STATUS_ID.getId()).getResponseText(), sheet);
 		else
 			addRow(r++, "", sheet);
 
 		//Add Modal Opened Flag
 		if(vo.getFieldById(PAFConst.MODAL_OPENED_ID.getId()) != null)
-			addRow(r++, vo.getFieldById(PAFConst.MODAL_OPENED_ID.getId()).getResponses().get(0), sheet);
+			addRow(r++, vo.getFieldById(PAFConst.MODAL_OPENED_ID.getId()).getResponseText(), sheet);
 		else
 			addRow(r++, "No", sheet);
 
 		//Add Email Consent Flag
 		if(vo.getFieldById(PAFConst.EMAIL_CONSENT_ID.getId()) != null)
-			addRow(r++, vo.getFieldById(PAFConst.EMAIL_CONSENT_ID.getId()).getResponses().get(0), sheet);
+			addRow(r++, vo.getFieldById(PAFConst.EMAIL_CONSENT_ID.getId()).getResponseText(), sheet);
 		else
 			addRow(r++, "No", sheet);
 		
