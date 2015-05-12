@@ -17,6 +17,8 @@ import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
+import com.siliconmtn.util.databean.FilePartDataBean;
+import com.smt.sitebuilder.action.FileLoader;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.form.FormFacadeAction;
 import com.smt.sitebuilder.action.user.ProfileManager;
@@ -155,6 +157,12 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 			//Write story Text
 			writeStoryElement(getElement(req.getParameter("storyText"), req.getParameter("storyTextFieldId"), req.getParameter("storyTextDataId")), submittalId);
 			log.debug("Text Written");
+			
+			//save image if provided
+			if (req.getFile("replacePhoto") != null) {
+				String filePath = saveFile(req);
+				writeStoryElement(getElement(filePath, PAFConst.PROFILE_IMAGE_ID.getId(), req.getParameter("filePathDataId")), submittalId);
+			}
 
 			if(req.hasParameter("storyStatusLevel") && req.getParameter("storyStatusLevel").equals(PAFStatus.published.name())) {
 				//Update Status Element.
@@ -218,16 +226,25 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		ssv.setState(trans.getState());
 		ssv.setLat(trans.getLatitude().toString());
 		ssv.setLng(trans.getLongitude().toString());
-		ssv.setDetailImage(fields.get(PAFConst.PROFILE_IMAGE_ID.getId()).getResponses().get(0));
+		ssv.setDetailImage(getFirstResponse(fields.get(PAFConst.PROFILE_IMAGE_ID.getId())));
 		ssv.setCategories(fields.get(PAFConst.HOBBIES_ID.getId()).getResponses());
 		ssv.setHierarchies(fields.get(PAFConst.JOINT_ID.getId()).getResponses());
-		ssv.setOtherHobbies(fields.get(PAFConst.OTHER_HOBBY_ID.getId()).getResponses().get(0));
-		ssv.setTitle(fields.get(PAFConst.STORY_TITLE_ID.getId()).getResponses().get(0));
-		ssv.setSummary(fields.get(PAFConst.STORY_TEXT_ID.getId()).getResponses().get(0));
+		ssv.setOtherHobbies(getFirstResponse(fields.get(PAFConst.OTHER_HOBBY_ID.getId())));
+		ssv.setTitle(getFirstResponse(fields.get(PAFConst.STORY_TITLE_ID.getId())));
+		ssv.setSummary(getFirstResponse(fields.get(PAFConst.STORY_TEXT_ID.getId())));
 		ssv.addOrganization(req.getParameter("organizationId"));
 		ssv.addRole("" + SecurityController.PUBLIC_ROLE_LEVEL);
 
 		return ssv;
+	}
+	
+	private String getFirstResponse(FormFieldVO field) {
+		try {
+			return field.getResponses().get(0);
+		} catch (Exception e) {
+		}
+		
+		return "";
 	}
 
 	/**
@@ -482,6 +499,35 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		report.setData(results);
 		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, Boolean.TRUE);
 		req.setAttribute(Constants.BINARY_DOCUMENT, report);
+	}
+	
+	/**
+	 * Stores the uploaded image to the file system
+	 *
+	 * @param req
+	 * @return
+	 */
+	protected String saveFile(SMTServletRequest req) {
+		// Build the file location
+		log.debug("attempting to save any files uploaded");
+		String pathToBinary = (String) getAttribute("pathToBinary");
+		String uploadPathName = "/org/DPY_SYN/images/module/form/";
+		List<FilePartDataBean> files = req.getFiles();
+		// Write out each file to the file system
+		try {
+			FilePartDataBean fpdb = files.get(0);
+			if (fpdb.isFileData()) {
+				FileLoader fl = new FileLoader(attributes);
+				fl.setFileName(fpdb.getFileName());
+				fl.setPath(pathToBinary + uploadPathName);
+				fl.setData(fpdb.getFileData());
+				fl.setOverWrite(false);
+				return "/binary" + uploadPathName + fl.writeFiles();
+			}
+		} catch (Exception e) {
+			log.error("Error Writing Contact File", e);
+		}
+		return null;
 	}
 
 	//send the browser back to the appropriate page
