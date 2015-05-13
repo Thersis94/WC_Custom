@@ -3,18 +3,26 @@
  */
 package com.ram.action.workflow;
 
+//JDK 7
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+//RAMDataFeed
 import com.ram.workflow.data.WorkflowModuleVO;
+import com.ram.workflow.data.WorkflowConfigParamVO;
+
+//SMTBaseLibs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+
+//WebCrescendo 2.0
+import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -175,6 +183,108 @@ public class WorkflowModuleAction extends AbstractWorkflowAction {
 	@Override
 	protected String buildRedirectSupplement(SMTServletRequest req) {
 		return "&callType=module&bType=listModules";
+	}
+
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.http.SMTServletRequest)
+	 */
+	@Override
+	public void retrieve(SMTServletRequest req) throws ActionException {
+		log.debug("WorkflowModuleAction retrieve...");
+		List<WorkflowModuleVO> data = null;
+
+		/*
+		 * Check if this is a DropDown request or not.  DropDown returns all
+		 * workflow modules.
+		 */
+		if(req.hasParameter("isDropDown")) {
+			data = getUnfilteredWorkflowModules();
+		}
+		ModuleVO modVo = (ModuleVO) attributes.get(Constants.MODULE_DATA);
+
+		//Only go after record count if we are doing a list.
+        modVo.setDataSize(getRecordCount());
+        modVo.setActionData(data);
+        this.setAttribute(Constants.MODULE_DATA, modVo);
+	}
+
+	/**
+	 * Helper method that returns the complete list of RAM_WORKFLOW_MODULES for a
+	 * dropdown menu sorted by module_nm.
+	 * @return
+	 */
+	private List<WorkflowModuleVO> getUnfilteredWorkflowModules() {
+		List<WorkflowModuleVO> data = new ArrayList<>();
+		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+
+		//Build SQL Query
+		StringBuilder sql = new StringBuilder();
+		sql.append("select wm.WORKFLOW_MODULE_ID, wm.MODULE_NM, wm.MODULE_DESC, wm.ACTIVE_FLG, ");
+		sql.append("ct.CONFIG_TYPE_CD, ct.CONFIG_TYPE_NM, ct.CONFIG_TYPE_DESC, ");
+		sql.append("wmc.WORKFLOW_MODULE_CONFIG_ID, wmc.MODULE_REQUIRED_FLG, wmc.WORKFLOW_REQUIRED_FLG ");
+		sql.append("from ").append(schema);
+		sql.append("RAM_WORKFLOW_MODULE wm left join ").append(schema);
+		sql.append("RAM_WORKFLOW_MODULE_CONFIG wmc on wm.WORKFLOW_MODULE_ID = wmc.WORKFLOW_MODULE_ID ");
+		sql.append("left join ").append(schema);
+		sql.append("RAM_CONFIG_TYPE ct on wmc.CONFIG_TYPE_CD = ct.CONFIG_TYPE_CD ");
+		sql.append("order by MODULE_NM ");
+		
+		log.debug("WorkflowModuleAction getUnfilteredWorkflowModules SQL: " + sql.toString());
+
+		//Query for Results and build WorkflowModuleVO Object.
+		String currentModuleId = "";
+		WorkflowModuleVO wm = null;
+		WorkflowConfigParamVO wcp = null;
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ResultSet rs = ps.executeQuery();
+			while(rs.next()) {
+				//Add the WorkflowModuleVO for the row to the Workflow Module List.
+				if (!rs.getString("WORKFLOW_MODULE_ID").equals(currentModuleId)) {
+					if (wm != null) data.add(wm);
+					currentModuleId = rs.getString("WORKFLOW_MODULE_ID");
+					wm = new WorkflowModuleVO(rs);
+					wcp = new WorkflowConfigParamVO(rs);
+					wm.addConfig(wcp);
+				} else {
+					wcp = new WorkflowConfigParamVO(rs);
+					wm.addConfig(wcp);
+				}
+			}
+			
+			//Add the last remaining WorkflowModuleVO
+			data.add(wm);
+		} catch (SQLException e) {
+			log.error(e);
+		}
+
+		//Return WorkflowVO Data.
+		return data;
+	}
+	
+	/**
+	 * Gets the count of the records
+	 * @return
+	 * @throws SQLException
+	 */
+	protected int getRecordCount() {
+
+		StringBuilder sql = new StringBuilder(80);
+		sql.append("select count(WORKFLOW_ID) from ");
+		sql.append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("RAM_WORKFLOW");
+
+		int cnt = 0;
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString());) {
+
+		//Get the count off the first row.
+		ResultSet rs = ps.executeQuery();
+		if(rs.next())
+			cnt = rs.getInt(1);
+		} catch(SQLException sqle) {
+			log.error("Error retrieving workflow Count", sqle);
+		}
+
+		log.debug("Count: " + cnt);
+		return cnt;		
 	}
 
 }
