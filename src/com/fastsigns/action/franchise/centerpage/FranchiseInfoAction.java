@@ -84,6 +84,14 @@ public class FranchiseInfoAction extends SBActionAdapter {
 					updateFranchiseDesc(req);
 					super.clearCacheByGroup(siteId);
 					break;
+				case CenterPageAction.FRANCHISE_CUSTOM_DESC_UPDATE:
+					updateDescText(req);
+					super.clearCacheByGroup(siteId);
+					break;
+				case CenterPageAction.FRANCHISE_CUSTOM_DESC_DELETE:
+					deleteDescText(req);
+					super.clearCacheByGroup(siteId);
+					break;
 				case CenterPageAction.FRANCHISE_MAIN_IMAGE_UPDATE:
 					updateMainImage(req);
 					//super.clearCacheGroup(siteId);	this requires admin approval now, so don't flush just yet.
@@ -310,7 +318,7 @@ public class FranchiseInfoAction extends SBActionAdapter {
 		s.append("on a.LOCATION_DESC_OPTION_ID = b.LOCATION_DESC_OPTION_ID ");
 		s.append("inner join DEALER_LOCATION c ");
 		s.append("on a.FRANCHISE_ID = c.DEALER_LOCATION_ID ");
-		s.append("where FRANCHISE_ID = ? ");
+		s.append("where a.FRANCHISE_ID = ? ");
 		
 		try {
 			int i = 0;
@@ -323,6 +331,89 @@ public class FranchiseInfoAction extends SBActionAdapter {
 			try {
 				ps.close();
 			} catch (Exception e) {}
+		}
+	}
+	
+	/**
+	 * Inserts/Updates the custom location description description for a franchise
+	 * @param req
+	 * @throws SQLException
+	 */
+	public void updateDescText(SMTServletRequest req) throws SQLException{
+		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(200);
+		
+		//If there is no Id yet, it's a new record. Else, it's an update.
+		Integer dId = Convert.formatInteger(req.getParameter("optionDescId"), -1);
+		boolean insert = (dId < 0);
+		
+		if (insert){
+			sql.append("insert into ").append(customDb).append("FTS_LOCATION_DESC_OPTION ");
+			sql.append("(COUNTRY_CODE,DESC_FRANCHISE_ID,CREATE_DT,DESC_TXT) values (?,?,?,?) ");
+		}else{
+			sql.append("update ").append(customDb).append("FTS_LOCATION_DESC_OPTION ");
+			sql.append("set COUNTRY_CODE=?,DESC_FRANCHISE_ID=?, UPDATE_DT=?, DESC_TXT=? ");
+			sql.append("where LOCATION_DESC_OPTION_ID=? ");
+		}
+		
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())){
+			int i=0;
+			ps.setString(++i, ((SiteVO)req.getAttribute("siteData")).getCountryCode());
+			ps.setInt(++i, Convert.formatInteger(CenterPageAction.getFranchiseId(req)));
+			ps.setTimestamp(++i, Convert.getCurrentTimestamp());
+			ps.setString(++i, req.getParameter("descText"));
+			//primary key is an autonumber, so it isn't added here for inserts
+			if (!insert)
+				ps.setInt(++i, dId);
+			
+			ps.execute();
+		}
+	}
+	
+	/**
+	 * Removes a center's custom description.
+	 * @param req
+	 * @throws SQLException
+	 */
+	public void deleteDescText(SMTServletRequest req) throws SQLException{
+		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		int descId = Convert.formatInteger(req.getParameter("optionDescId"), -1);
+		int currId = Convert.formatInteger(req.getParameter("cDescOpt"), -2);
+		
+		//Primary key is required for the delete
+		if (descId < 0){
+			log.error("Missing location_desc_option_id, unable to delete.");
+			return;
+		}
+		
+		//change selected description if it's the one targeted for deletion (to satisfy FTS_FRANCHISE constraint)
+		if (currId == descId){
+			StringBuilder upd = new StringBuilder(230);
+			upd.append("update ").append(customDb).append("FTS_FRANCHISE ");
+			upd.append("set LOCATION_DESC_OPTION_ID = ff.LOCATION_DESC_OPTION_ID ");
+			upd.append("from (select top 1 flo.LOCATION_DESC_OPTION_ID "); 
+			upd.append("from ").append(customDb).append("FTS_LOCATION_DESC_OPTION flo ");
+			upd.append("where flo.COUNTRY_CODE=? ) as ff where FRANCHISE_ID=? ");
+			
+			try(PreparedStatement ps = dbConn.prepareStatement(upd.toString())){
+				int i=0;
+				ps.setString(++i, ((SiteVO)req.getAttribute("siteData")).getCountryCode());
+				ps.setInt(++i, Convert.formatInteger(CenterPageAction.getFranchiseId(req)));
+				ps.execute();
+			}
+			super.clearCacheByGroup("FTS_7292_1");
+		}
+		
+		//Delete the record from the desc option table
+		StringBuilder del = new StringBuilder(120);
+		del.append("delete from ").append(customDb).append("FTS_LOCATION_DESC_OPTION ");
+		del.append("where LOCATION_DESC_OPTION_ID=? ");
+		del.append("and DESC_FRANCHISE_ID is not null "); //prevent deletion of global descriptions
+		
+		try(PreparedStatement ps = dbConn.prepareStatement(del.toString())){
+			int i=0;
+			ps.setInt(++i, descId);
+			ps.execute();
 		}
 	}
 	
