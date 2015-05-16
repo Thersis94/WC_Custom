@@ -5,12 +5,16 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 // RAMDataFeed
 import com.ram.workflow.data.WorkflowVO;
 import com.ram.workflow.data.WorkflowModuleVO;
 import com.ram.workflow.data.WorkflowConfigParamVO;
+import com.ram.workflow.data.WorkflowModuleConfigXrVO;
+import com.ram.datafeed.data.CustomerLocationVO;
 
 // SMTBaseLibs 2.0
 import com.siliconmtn.action.ActionException;
@@ -18,11 +22,22 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.UUIDGenerator;
+import com.siliconmtn.http.parser.StringEncoder;
 
 // WebCrescendo 2.0
-import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.Constants;
+
+// WC_Custom 2.0
+import com.ram.action.customer.CustomerLocationAction;
+
+//Google Gson 2.2.4
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 
 /****************************************************************************
  * <b>Title: </b>WorkflowAction.java <p/>
@@ -37,7 +52,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  *<b>Changes: </b>
  * Apr 27, 2015: Tim Johnson: Created class.
  ****************************************************************************/
-public class WorkflowAction extends SBActionAdapter {
+public class WorkflowAction extends AbstractWorkflowAction {
 	
 	/**
 	 * 
@@ -157,7 +172,6 @@ public class WorkflowAction extends SBActionAdapter {
 	 */
 	public WorkflowVO getWorkflowData(String workflowId) {
 		WorkflowVO data = null;
-		//List<WorkflowModuleVO> wmods = new ArrayList<WorkflowModuleVO>();
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 
 		//Build Query.
@@ -215,6 +229,9 @@ public class WorkflowAction extends SBActionAdapter {
 			
 			//Add the last remaining WorkflowModuleVO
 			data.addWorkflowModule(wm);
+			
+			//Get the locations associated to the workflow
+			data.setLocations(getWorkflowLocations(workflowId));
 		} catch (SQLException e) {
 			log.error(e);
 		}
@@ -273,6 +290,43 @@ public class WorkflowAction extends SBActionAdapter {
 	}
 	
 	/**
+	 * Gets all Customer Locations associated to a workflow.
+	 * @param workflowId
+	 * @return
+	 */
+	private List<CustomerLocationVO> getWorkflowLocations(String workflowId) {
+		List<CustomerLocationVO> locations = new ArrayList<>();
+		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		
+		//Build the SQL Query.
+		StringBuilder sql = new StringBuilder(75);
+		sql.append("select cwxr.CUSTOMER_WORKFLOW_XR_ID, cwxr.CUSTOMER_LOCATION_ID, ");
+		sql.append("cwxr.WORKFLOW_ID, cl.LOCATION_NM ");
+		sql.append("from ").append(schema).append("RAM_CUSTOMER_WORKFLOW_XR cwxr ");
+		sql.append("inner join ").append(schema).append("RAM_CUSTOMER_LOCATION cl ");
+		sql.append("on cwxr.CUSTOMER_LOCATION_ID = cl.CUSTOMER_LOCATION_ID ");
+		sql.append("where cwxr.WORKFLOW_ID = ? ");
+
+		log.debug("Workflow Location retrieve SQL: " + sql.toString() + "|" + workflowId);
+
+		//Build Prepared Statement and iterate the results.
+		int index = 1;
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString());){
+			ps.setString(index++, workflowId);
+			ResultSet rs = ps.executeQuery();
+
+			//Add the CustomerLocationVOs to the List.
+			while(rs.next())
+				locations.add(new CustomerLocationVO(rs, false));
+
+		} catch (SQLException e) {
+			log.error("Error retrieving RAM workflow location data, ", e);
+		}
+
+		return locations;
+	}
+	
+	/**
 	 * Gets the count of the records
 	 * @return
 	 * @throws SQLException
@@ -303,5 +357,172 @@ public class WorkflowAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(SMTServletRequest req) throws ActionException {
+		boolean success = true;
+		boolean isInsert = false;
+		String msg = null;
+		
+		//Get WorkflowVO off the request.
+		WorkflowVO wf = new WorkflowVO(req);
+		wf.setModules(getWorkflowModuleData(req));
+		wf.setLocations(getCustomerLocationData(req));
+		
+		if (wf.getWorkflowId().startsWith("ext")) {
+			isInsert = true;
+			wf.setWorkflowId(new UUIDGenerator().getUUID());
+		}
+		
+		//Update the Database with all of the workflow data.
+		try {
+			// Save the Workflow record
+			saveObject(wf, isInsert);
+			
+			// Save the Module Data & Configs
+			WorkflowModuleAction wma = new WorkflowModuleAction(actionInit);
+			wma.setAttributes(attributes);
+			wma.setDBConnection(dbConn);
+			for (WorkflowModuleVO module : wf.getModules()) {
+				module.setWorkflowId(wf.getWorkflowId());
+				wma.modifyModuleXr(module);
+				saveConfigs(module);
+			}
+			
+			// Save the Customer Location Data
+			CustomerLocationAction cla = new CustomerLocationAction(actionInit);
+			cla.setAttributes(attributes);
+			cla.setDBConnection(dbConn);
+			for (CustomerLocationVO location : wf.getLocations()) {
+				location.setWorkflowId(wf.getWorkflowId());
+				cla.modifyLocationXr(location);
+			}
+		} catch(Exception e) {
+			log.error("Problem occured while inserting/updating a Workflow Record", e);
+			success = false;
+		}
+
+		//Update Msg
+		if(!success && isInsert) {
+			msg = "There was a problem creating the Workflow.";
+		} else if (!success) {
+			msg = "There was a problem updating the Workflow.";
+		}
+		
+		boolean isJson = Convert.formatBoolean(StringUtil.checkVal(req.getParameter("amid")).length() > 0);
+		if (isJson) {
+			Map<String, Object> res = new HashMap<>(); 
+			res.put("success", true);
+			res.put("workflowId", wf.getWorkflowId());
+			putModuleData(res);
+		} else {
+	        // Build the redirect and messages
+			// Setup the redirect.
+			StringBuilder url = new StringBuilder(50);
+			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+			url.append(page.getRequestURI());
+			if (msg != null) url.append("?msg=").append(msg);
+			
+			log.debug("WorkflowAction redir: " + url);
+			req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
+			req.setAttribute(Constants.REDIRECT_URL, url.toString());
+		}
+	}
+	
+	/**
+	 * Gets all of the workflow module data from the JSON parameter
+	 * 
+	 * @param req
+	 * @return
+	 */
+	private List<WorkflowModuleVO> getWorkflowModuleData(SMTServletRequest req) {
+		StringEncoder se = new StringEncoder();
+		String modules = se.decodeValue(req.getParameter("modules"));
+		log.debug(modules);
+		
+		Gson gson = new Gson();
+		JsonParser parser = new JsonParser();
+		List<WorkflowModuleVO> workflowModuleData = new ArrayList<WorkflowModuleVO>();
+		JsonArray jArray = parser.parse(modules).getAsJsonArray();
+		
+		for (JsonElement obj : jArray) {
+			WorkflowModuleVO wmvo = gson.fromJson(obj, WorkflowModuleVO.class);
+			workflowModuleData.add(wmvo);
+		}
+
+		return workflowModuleData;
+	}
+	
+	/**
+	 * Gets all of the workflow location data from the JSON parameter
+	 * @param req
+	 * @return
+	 */
+	private List<CustomerLocationVO> getCustomerLocationData(SMTServletRequest req) {
+		StringEncoder se = new StringEncoder();
+		String locations = se.decodeValue(req.getParameter("locations"));
+		log.debug(locations);
+		
+		Gson gson = new Gson();
+		JsonParser parser = new JsonParser();
+		List<CustomerLocationVO> customerLocationData = new ArrayList<CustomerLocationVO>();
+		JsonArray jArray = parser.parse(locations).getAsJsonArray();
+		
+		for (JsonElement obj : jArray) {
+			CustomerLocationVO clvo = gson.fromJson(obj, CustomerLocationVO.class);
+			customerLocationData.add(clvo);
+		}
+
+		return customerLocationData;
+	}
+	
+	/**
+	 * Helper method to save all parameters associated to a Workflow's modules
+	 * @param module
+	 * @throws Exception
+	 */
+	private void saveConfigs(WorkflowModuleVO module) throws Exception {
+		List<WorkflowConfigParamVO> params = null;
+		boolean configIsInsert = false;
+		
+		params = new ArrayList<WorkflowConfigParamVO>(module.getConfig().values());
+		for (WorkflowConfigParamVO param : params) {
+			for (WorkflowModuleConfigXrVO config : param.getConfigValues()) {
+				configIsInsert = false;
+				if (config.getWorkflowModuleConfigXrId().startsWith("ext")) {
+					configIsInsert = true;
+					config.setWorkflowModuleConfigXrId(new UUIDGenerator().getUUID());
+				}
+				config.setWorkflowModuleXrId(module.getWorkflowModuleXRId());
+				saveObject(config, configIsInsert);
+			}
+		}
+	}
+
+	@Override
+	public void delete(SMTServletRequest req) throws ActionException {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void update(SMTServletRequest req) throws ActionException {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void list(SMTServletRequest req) throws ActionException {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	protected String buildRedirectSupplement(SMTServletRequest req) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	protected String getInUseSql() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }

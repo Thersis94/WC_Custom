@@ -20,6 +20,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.UUIDGenerator;
 
 //WebCrescendo 2.0
 import com.smt.sitebuilder.common.ModuleVO;
@@ -287,4 +288,53 @@ public class WorkflowModuleAction extends AbstractWorkflowAction {
 		return cnt;		
 	}
 
+	/**
+	 * Helper method that manages inserting and updating a Workflow Module XR
+	 * Record in the Database.
+	 * @param vo
+	 * @throws SQLException
+	 */
+	public void modifyModuleXr(WorkflowModuleVO vo) throws SQLException {
+		StringBuilder sql = new StringBuilder(200);
+		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		boolean isInsert = false;
+
+		//Build appropriate SQL Statement.
+		if (vo.getWorkflowModuleXRId().startsWith("ext")) {
+			// is an insert
+			sql.append("insert into ").append(schema);
+			sql.append("RAM_WORKFLOW_MODULE_XR ");
+			sql.append("(WORKFLOW_ID, WORKFLOW_MODULE_ID, MODULE_ORDER_NO, ");
+			sql.append("CONTINUE_ON_ERROR_FLG, CREATE_DT, WORKFLOW_MODULE_XR_ID) ");
+			sql.append("values (?,?,?,?,?,?)");
+
+			isInsert = true;
+			vo.setWorkflowModuleXRId(new UUIDGenerator().getUUID());
+		} else {
+			// is an update
+			sql.append("update ").append(schema);
+			sql.append("RAM_WORKFLOW_MODULE_XR ");
+			sql.append("set WORKFLOW_ID = ?, WORKFLOW_MODULE_ID = ?, ");
+			sql.append("MODULE_ORDER_NO = ?, CONTINUE_ON_ERROR_FLG = ? ");
+			sql.append("WHERE WORKFLOW_MODULE_XR_ID = ?");
+		}
+
+		log.debug(sql + "|" + vo.isContinueOnError());
+		
+		//Exequte Query
+		int i = 1;
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			//set insert/update params.
+			ps.setString(i++, vo.getWorkflowId());
+			ps.setString(i++, vo.getWorkflowModuleId());
+			ps.setInt(i++, vo.getOrderNo());
+			ps.setBoolean(i++, vo.isContinueOnError());
+			if (isInsert) ps.setTimestamp(i++, Convert.getCurrentTimestamp());
+			ps.setString(i++, vo.getWorkflowModuleXRId());
+
+			ps.executeUpdate();
+		} catch(Exception e) {
+			log.error("Problem occured while inserting/updating a Workflow Module XR Record", e);
+		}
+	}
 }
