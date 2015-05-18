@@ -349,10 +349,10 @@ public class FranchiseInfoAction extends SBActionAdapter {
 		
 		if (insert){
 			sql.append("insert into ").append(customDb).append("FTS_LOCATION_DESC_OPTION ");
-			sql.append("(COUNTRY_CODE,DESC_FRANCHISE_ID,CREATE_DT,DESC_TXT) values (?,?,?,?) ");
+			sql.append("(COUNTRY_CODE,FRANCHISE_ID,CREATE_DT,DESC_TXT) values (?,?,?,?) ");
 		}else{
 			sql.append("update ").append(customDb).append("FTS_LOCATION_DESC_OPTION ");
-			sql.append("set COUNTRY_CODE=?,DESC_FRANCHISE_ID=?, UPDATE_DT=?, DESC_TXT=? ");
+			sql.append("set COUNTRY_CODE=?,FRANCHISE_ID=?, UPDATE_DT=?, DESC_TXT=? ");
 			sql.append("where LOCATION_DESC_OPTION_ID=? ");
 		}
 		
@@ -401,14 +401,13 @@ public class FranchiseInfoAction extends SBActionAdapter {
 				ps.setInt(++i, Convert.formatInteger(CenterPageAction.getFranchiseId(req)));
 				ps.execute();
 			}
-			super.clearCacheByGroup("FTS_7292_1");
 		}
 		
 		//Delete the record from the desc option table
 		StringBuilder del = new StringBuilder(120);
 		del.append("delete from ").append(customDb).append("FTS_LOCATION_DESC_OPTION ");
 		del.append("where LOCATION_DESC_OPTION_ID=? ");
-		del.append("and DESC_FRANCHISE_ID is not null "); //prevent deletion of global descriptions
+		del.append("and FRANCHISE_ID is not null "); //prevent deletion of global descriptions
 		
 		try(PreparedStatement ps = dbConn.prepareStatement(del.toString())){
 			int i=0;
