@@ -13,10 +13,10 @@ import com.smt.sitebuilder.action.AbstractSBReportVO;
  * @version 1.0
  * @since Jan 31, 2014
  ***************************************************************************/
-public class ESEMMitekReportVO extends AbstractSBReportVO {
+public class MitekPEERReportVO extends AbstractSBReportVO {
 
 	public static void main(String [] args) {
-		System.out.println(new String(new ESEMMitekReportVO().generateReport()));
+		System.out.println(new String(new MitekPEERReportVO().generateReport()));
 	}
 	
 	private static final long serialVersionUID = 8396753231530938375L;
@@ -30,29 +30,28 @@ public class ESEMMitekReportVO extends AbstractSBReportVO {
 		sb.append("rev. 4/2/15<br/>");
 		sb.append("<center>");
 		sb.append("<h4><i>DePuy Synthes Mitek Sports Medicine</i><br/>");
-		sb.append("Patient Education Seminar<br/>");
+		sb.append("Peer to Peer Event<br/>");
 		sb.append("Compliance Acknowledgment</h4>");
 		sb.append("</center>");
 		//Requirements Preamble
-		sb.append("<p>To the best of my knowledge, the <i>DePuy Synthes Mitek Sports Medicine</i> Patient ");
-		sb.append("Education Seminar scheduled for at ${eventDate} at ${eventLocation} will comply with the following requirements.</p>");
+		sb.append("<p>To the best of my knowledge, the <i>DePuy Synthes Mitek Sports Medicine</i> ");
+		sb.append("Peer to Peer Event scheduled for at ${eventDate} at ${eventLocation} will comply with the following requirements.</p>");
 		//Paragraph 1
 		sb.append("<br/><br/><u>Seminar Marketing:</u><br/>");
 		sb.append("<ul><li>No modifications will be made to the seminar marketing templates with the exception of adding the location, date, time, ");
 		sb.append("reservation code and speaker information. Only company created and approved marketing collateral may be used.</li>");
 		sb.append("<li>The speaker may market the education seminar provided they use an approved venue and the pre-approved <i>DePuy ");
-		sb.append("Synthes Joint Reconstruction</i> newspaper ad. No changes can be made to the pre-approved newspaper ad.</li>");
+		sb.append("Synthes Mitek Sports Medicine</i> invitation. No changes can be made to the pre-approved invitation.</li>");
 		sb.append("<li>Speaker may send the <i>DePuy Synthes Mitek Sports Medicine</i> pre-approved and pre-printed postcard invitations to ");
 		sb.append("their own referral list. The speaker is responsible for ensuring that any such outreach to their own referral base ");
 		sb.append("complies with the HIPAA law and all other applicable legal requirements.</li></ul>");
 		//Paragraph 2
 		sb.append("<br/><br/><u>The Speaker:</u><br/>");
 		sb.append("<ul><li>To the best of my knowledge this person has not been asked to speak as a reward, or encouragement to use <i>DePuy Synthes ");
-		sb.append("Joint Reconstruction</i> products.</li>");
+		sb.append("Mitek Sports Medicine</i> products.</li>");
 		sb.append("<li>The speaker meets the requirements needed to speak at the seminar.</li>");
-		sb.append("<li>The speaker will be required to sign a legal approved agreement sent to them by the Medical Affairs team at <i>DePuy ");
-		sb.append("Synthes Joint Reconstruction</i>.</li>");
-		sb.append("<li>The surgeon speaker will not make any modifications to the pre-approved presentation slide deck. The additional slides ");
+		sb.append("<li>The speaker will be required to sign a legal approved agreement sent to them by the Contracting Team at <i>DePuy Synthes Mitek Sports Medicine</i>.</li>");
+		sb.append("<li>The speaker will not make any modifications to the pre-approved presentation slide deck. The additional slides ");
 		sb.append("within the deck may be used or not used, based on relevance to the speaker's knowledge.<br/>");
 		sb.append("NOTE: The presentation slide deck will be provided to the speaker to prepare for the seminar, but the ");
 		sb.append("presentation that will be used during the seminar will be supplied by the EISC the day of the seminar.</li>");
@@ -67,11 +66,7 @@ public class ESEMMitekReportVO extends AbstractSBReportVO {
 		sb.append("The speaker's contact information may be added to the \"Questions\" slide at the end of the presentation in case there ");
 		sb.append("are any questions about the presentation. These are the only designated areas on the presentation to identify the ");
 		sb.append("speaker's practice.</li>");
-		sb.append("<li>A <i>DePuy Synthes Mitek Sports Medicine</i> Surgeon Locator list will be distributed to all attendees.</li>");
-		sb.append("<li>No payment or reimbursement of expenses will be paid for the speaker (i.e. parking, mileage). The speaker may ");
-		sb.append("partake in the refreshments provided at the seminar.</li>");
-		sb.append("<li>A meal service will not be provided, but refreshments such as cookies and coffee are acceptable. The refreshment spending ");
-		sb.append("limit is $10 per attendee, which includes the give-away kit.</li></ul>");
+		sb.append("<li>An honorarium will be provided to the HCP per fair market value and coordinated by the contracting department of <i>DePuy Synthes Mitek Sports Medicine</i>.</li></ul>");
 		//Footer
 		sb.append("<br/><br/>");
 		sb.append("Area Marketing Director's Signature: ${admSignature} Date: ${approvalDt}<br/>");
