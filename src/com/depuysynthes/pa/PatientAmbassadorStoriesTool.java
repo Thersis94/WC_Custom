@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.depuysynthes.pa;
 
 import java.sql.Date;
@@ -14,13 +11,14 @@ import java.util.Map;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
+import com.siliconmtn.util.databean.FilePartDataBean;
+import com.smt.sitebuilder.action.FileLoader;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.form.FormFacadeAction;
 import com.smt.sitebuilder.action.user.ProfileManager;
@@ -31,6 +29,7 @@ import com.smt.sitebuilder.data.DataContainer;
 import com.smt.sitebuilder.data.vo.FormFieldVO;
 import com.smt.sitebuilder.data.vo.FormTransactionVO;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
+import com.smt.sitebuilder.security.SecurityController;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
 
 /****************************************************************************
@@ -66,7 +65,13 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		ADVICE_ID("c0a80241bbb2d50c11b6f3652f008aa6"),
 		STORY_TITLE_ID("c0a80237dfd89c30f3b7848d499d28a0"),
 		STORY_TEXT_ID("c0a80237dfd8ca8957bec8575c5f35e5"),
-		STATUS_ID("c0a80237eaa74b1245d3a04296472ffd");
+		STATUS_ID("c0a80237eaa74b1245d3a04296472ffd"),
+		EMAIL_CONSENT_ID("c0a80237feea61107a662ea060005c35"),
+		MODAL_OPENED_ID("c0a80237fee851245d6f6f073c07573e"),
+		AGREED_CONSENT_ID(""),
+
+		//the ID of the form itself (containing all these fields)
+		FORM_ID("c0a80241bb7b15cc1bff05ed771c527d");
 
 		private final String id;
 		PAFConst(String id) {
@@ -76,20 +81,21 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 			return id;
 		}
 	}
-	
+
 	public enum PAFStatus {saved, published, removed, republish}
-	
+
 	private static final String EXPORT_FILE_NAME = "PatientStories.xls";
+
 	/**
 	 * 
 	 */
 	public PatientAmbassadorStoriesTool() {
 	}
-	
+
 	public PatientAmbassadorStoriesTool(ActionInitVO init) {
 		super(init);
 	}
-	
+
 	/**
 	 * Calls out to solr to remove the story from the index and adds the hidden
 	 * flag to the FORM_DATA for the given submission.
@@ -110,37 +116,39 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		}
 		sendRedirect(req, msg);
 	}
-	
+
 	/**
 	 * On update, Save the story and title information on the FORM_DATA table
 	 * and call out to solr to update the index.
 	 */
 	@Override 
 	public void update(SMTServletRequest req) throws ActionException {
-		
 		String submittalId = req.getParameter("fsi");
 		String msg = "Story Successfully Saved";
-		
-		if(req.hasParameter("publish")) {
 
+		if (req.hasParameter("publish")) {
 			//Create SolrStoryVO
 			SolrStoryVO ssv = createStoryVO(req);
 
 			try {
-				//Submit to Solr
-				new SolrActionUtil(attributes).addDocument(ssv);
-
 				//Update Status Element.
 				writeStoryElement(getElement(PAFStatus.published.name(), PAFConst.STATUS_ID.getId(), req.getParameter("storyStatusDataId")), submittalId);
 				log.debug("Status Written");
 
+				//Submit to Solr
+				new SolrActionUtil(attributes).addDocument(ssv);
+				log.debug("Solr Updated");
+
 				msg = "Story Successfully Published";
 
 			} catch(Exception e) {
-				log.error(e);
+				log.error("could not publish story", e);
 				msg = "There was an error publishing the story.";
 			}
 		} else {
+			//write consent flag -- this only happens once, when the admin tags the override field to set it to true (acceptPrivacyFlg=1)
+			if (req.hasParameter("acceptPrivacyFlg"))
+				this.setPrivacyFlag(submittalId);
 
 			//Write story Title
 			writeStoryElement(getElement(req.getParameter("storyTitle"), req.getParameter("storyTitleFieldId"), req.getParameter("storyTitleDataId")), submittalId);
@@ -149,6 +157,12 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 			//Write story Text
 			writeStoryElement(getElement(req.getParameter("storyText"), req.getParameter("storyTextFieldId"), req.getParameter("storyTextDataId")), submittalId);
 			log.debug("Text Written");
+			
+			//save image if provided
+			if (req.getFile("replacePhoto") != null) {
+				String filePath = saveFile(req);
+				writeStoryElement(getElement(filePath, PAFConst.PROFILE_IMAGE_ID.getId(), req.getParameter("filePathDataId")), submittalId);
+			}
 
 			if(req.hasParameter("storyStatusLevel") && req.getParameter("storyStatusLevel").equals(PAFStatus.published.name())) {
 				//Update Status Element.
@@ -162,7 +176,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		}
 		sendRedirect(req, msg);
 	}
-	
+
 	/**
 	 * Return either a single submission with all Form Data present or a list
 	 * of Form Submissions matching given search criteria.
@@ -174,16 +188,16 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		 * Choose whether we Export a report, retrieve a particular submission
 		 * or list all results of a search.
 		 */
-		if(req.hasParameter("export")) {
+		if (req.hasParameter("export")) {
 			exportAllSubmissions(req);
-		} else if(req.hasParameter("searchSubmitted")){
+		} else if (req.hasParameter("searchSubmitted")){
 			List<FormTransactionVO> vos = retreiveAllSubmissions(req, true);
 			this.putModuleData(vos, vos.size(), true);
-		} else if(req.hasParameter("fsi")) {
+		} else if (req.hasParameter("fsi")) {
 			retrieveSubmittalData(req);
 		}
 	}
-	
+
 	/**
 	 * Helper method that calls out to FormFacadeAction for the form data, 
 	 * creates a SolrStoryVO and then stores the data from the form transaction
@@ -212,16 +226,25 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		ssv.setState(trans.getState());
 		ssv.setLat(trans.getLatitude().toString());
 		ssv.setLng(trans.getLongitude().toString());
-		ssv.setDetailImage(fields.get(PAFConst.PROFILE_IMAGE_ID.getId()).getResponses().get(0));
+		ssv.setDetailImage(getFirstResponse(fields.get(PAFConst.PROFILE_IMAGE_ID.getId())));
 		ssv.setCategories(fields.get(PAFConst.HOBBIES_ID.getId()).getResponses());
 		ssv.setHierarchies(fields.get(PAFConst.JOINT_ID.getId()).getResponses());
-		ssv.setOtherHobbies(fields.get(PAFConst.OTHER_HOBBY_ID.getId()).getResponses().get(0));
-		ssv.setTitle(fields.get(PAFConst.STORY_TITLE_ID.getId()).getResponses().get(0));
-		ssv.setSummary(fields.get(PAFConst.STORY_TEXT_ID.getId()).getResponses().get(0));
+		ssv.setOtherHobbies(getFirstResponse(fields.get(PAFConst.OTHER_HOBBY_ID.getId())));
+		ssv.setTitle(getFirstResponse(fields.get(PAFConst.STORY_TITLE_ID.getId())));
+		ssv.setSummary(getFirstResponse(fields.get(PAFConst.STORY_TEXT_ID.getId())));
 		ssv.addOrganization(req.getParameter("organizationId"));
-		ssv.addRole("0");
+		ssv.addRole("" + SecurityController.PUBLIC_ROLE_LEVEL);
 
 		return ssv;
+	}
+	
+	private String getFirstResponse(FormFieldVO field) {
+		try {
+			return field.getResponses().get(0);
+		} catch (Exception e) {
+		}
+		
+		return "";
 	}
 
 	/**
@@ -232,22 +255,12 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 	 * @param req
 	 */
 	private void writeStoryElement(FormFieldVO vo, String submittalId) {
-		String sql = null;
 		boolean isInsert = StringUtil.checkVal(vo.getFormDataId()).length() == 0;
-		
-		//Get Query
-		if(isInsert)
-			sql = getInsertQuery();
-		else 
-			sql = getUpdateQuery();
+		String sql = (isInsert) ? getInsertQuery() : getUpdateQuery();
 		log.debug(sql);
-		PreparedStatement ps = null;
-		
-		//Call to Database for insert or update.
 		int i = 1;
-		try {
-			ps = dbConn.prepareStatement(sql);
-			if(isInsert) {
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			if (isInsert) {
 				ps.setString(i++, vo.getFormFieldId());
 				ps.setString(i++, submittalId);
 				ps.setInt(i++, 0);
@@ -255,12 +268,13 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 			ps.setString(i++, vo.getResponses().get(0));
 			ps.setTimestamp(i++, Convert.getCurrentTimestamp());
 			ps.setString(i++, isInsert ? new UUIDGenerator().getUUID() : vo.getFormDataId());
-			
 			ps.executeUpdate();
+
 		} catch (Exception e) {
 			log.error("Error saving Story Field: " + vo.getFormDataId(), e);
-		} finally { DBUtil.close(ps);}
+		}
 	}
+
 
 	/**
 	 * Helper method for preparing a FormFieldVO for insert/update.
@@ -274,7 +288,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		f.addResponse(valParam);
 		f.setFormFieldId(fieldParam);
 		f.setFormDataId(dataParam);
-		
+
 		return f;
 	}
 
@@ -288,7 +302,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		sb.append("DATA_ENC_FLG, VALUE_TXT, CREATE_DT, FORM_DATA_ID) values(?,?,?,?,?,?)");
 		return sb.toString();
 	}
-	
+
 	/**
 	 * Helper method that returns the update query for a FormFieldVO
 	 * @return
@@ -297,6 +311,22 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		StringBuilder sb = new StringBuilder(75);
 		sb.append("update FORM_DATA set VALUE_TXT = ?, UPDATE_DT = ? where FORM_DATA_ID = ?");
 		return sb.toString();
+	}
+	
+	
+	/**
+	 * sets the privacy flag for the submission.  This is an override for the Admin to use.
+	 * @param formSubmittalId
+	 */
+	private void setPrivacyFlag(String formSubmittalId) {
+		String sql = "update form_submittal set accepted_privacy_flg=1, update_dt=getDate() where form_submittal_id=?";
+		log.debug(sql + " " + formSubmittalId);
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			ps.setString(1, formSubmittalId);
+			ps.executeUpdate();
+		} catch (SQLException sqle) {
+			log.error("could not update privacy flag for " + formSubmittalId, sqle);
+		}
 	}
 
 	/**
@@ -335,10 +365,8 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		log.debug("Query = " + srQuery);
 
 		//Retrieve Data from DB
-		PreparedStatement ps = null;
 		int i = 1;
-		try {
-			ps = dbConn.prepareStatement(srQuery);
+		try (PreparedStatement ps = dbConn.prepareStatement(srQuery)) {
 			ps.setString(i++, PAFConst.STATUS_ID.getId());
 			if(filterHidden)
 				ps.setString(i++, PAFConst.HIDDEN_ID.getId());
@@ -364,24 +392,24 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 					continue;
 				FormTransactionVO vo = new FormTransactionVO(rs);
 				vo.setUserExtendedInfo(data);
-				
+
 				vos.add(vo);
 			}
-			
+
 			//Loop over the Transactions and retrieve the profile data for them.
 			for(FormTransactionVO f : vos) {
 				UserDataVO t = pm.getProfile(f.getProfileId(), dbConn, ProfileManager.PROFILE_ID_LOOKUP, req.getParameter("organizationId"));
 				f.setData(t.getDataMap());
 			}
-			
+
 			if(vos.size() == 0)
 				log.debug("No Results Found");
 		} catch(SQLException sqle) {
 			log.error("Problem Retrieving Data from Database.", sqle);
 		} catch (DatabaseException e) {
 			log.error("Problem Retrieveing Profile Data", e);
-		} finally {DBUtil.close(ps);}
-		
+		}
+
 		return vos;
 	}
 
@@ -402,12 +430,12 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		sb.append("Left', ''), '").append(SearchDocumentHandler.HIERARCHY_DELIMITER).append("Right', '') FROM FORM_DATA FD ");
 		sb.append("WHERE (FD.FORM_SUBMITTAL_ID = a.FORM_SUBMITTAL_ID and FD.FORM_FIELD_ID = b.FORM_FIELD_ID) ");
 		sb.append("FOR XML PATH('')), 1, 1, '') Joints, cast(f.VALUE_TXT as nvarchar) as 'STATUS', f.FORM_DATA_ID as 'STATUS_ID' ");
-		if(filterHidden)
+		if (filterHidden)
 			sb.append(", cast(e.VALUE_TXT as nvarchar) as 'HIDE' ");
 		sb.append("from FORM_SUBMITTAL a ");
 		sb.append("inner join FORM_DATA b on a.FORM_SUBMITTAL_ID = b.FORM_SUBMITTAL_ID ");
 		sb.append("left outer join FORM_DATA f on a.FORM_SUBMITTAL_ID = f.FORM_SUBMITTAL_ID and f.FORM_FIELD_ID= ? ");
-		if(filterHidden)
+		if (filterHidden)
 			sb.append("left outer join FORM_DATA e on a.FORM_SUBMITTAL_ID = e.FORM_SUBMITTAL_ID and e.FORM_FIELD_ID= ? ");
 		sb.append("left outer join PROFILE c on a.PROFILE_ID = c.PROFILE_ID ");
 		sb.append("left outer join PROFILE_ADDRESS d on c.PROFILE_ID = d.PROFILE_ID ");
@@ -425,7 +453,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		sb.append("order by a.CREATE_DT desc");
 		return sb.toString();
 	}
-	
+
 	/**
 	 * Method retrieves all Submittal ids for a given date range then calls out
 	 * to FormFacadeAction on each of them to retrieve the Submission Data.
@@ -451,7 +479,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 			fsids = retreiveAllSubmissions(req, true);
 		}
 		Map<String, FormTransactionVO> t = new HashMap<String, FormTransactionVO>(fsids.size());
-		
+
 		//Iterate over list to get FormTransactionVOs
 
 		FormFacadeAction ffa = new FormFacadeAction(actionInit);
@@ -464,7 +492,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		}
 		log.debug("retrieved " + t.size() + " submissions.");
 		results.setTransactions(t);
-		
+
 		//Build Report
 		PatientAmbassadorReportVO report = new PatientAmbassadorReportVO(EXPORT_FILE_NAME);
 		report.setSiteUrl(req.getHostName());
@@ -473,9 +501,38 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		req.setAttribute(Constants.BINARY_DOCUMENT, report);
 	}
 	
+	/**
+	 * Stores the uploaded image to the file system
+	 *
+	 * @param req
+	 * @return
+	 */
+	protected String saveFile(SMTServletRequest req) {
+		// Build the file location
+		log.debug("attempting to save any files uploaded");
+		String pathToBinary = (String) getAttribute("pathToBinary");
+		String uploadPathName = "/org/DPY_SYN/images/module/form/";
+		List<FilePartDataBean> files = req.getFiles();
+		// Write out each file to the file system
+		try {
+			FilePartDataBean fpdb = files.get(0);
+			if (fpdb.isFileData()) {
+				FileLoader fl = new FileLoader(attributes);
+				fl.setFileName(fpdb.getFileName());
+				fl.setPath(pathToBinary + uploadPathName);
+				fl.setData(fpdb.getFileData());
+				fl.setOverWrite(false);
+				return "/binary" + uploadPathName + fl.writeFiles();
+			}
+		} catch (Exception e) {
+			log.error("Error Writing Contact File", e);
+		}
+		return null;
+	}
+
 	//send the browser back to the appropriate page
 	private void sendRedirect(SMTServletRequest req, String msg) {
-		StringBuilder pg = new StringBuilder();
+		StringBuilder pg = new StringBuilder(250);
 		pg.append("/").append(attributes.get(Constants.CONTEXT_NAME));
 		pg.append(getAttribute(AdminConstants.ADMIN_TOOL_PATH));
 		pg.append("?dataMod=true&actionId=").append(req.getParameter("actionId"));
