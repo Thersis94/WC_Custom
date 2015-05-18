@@ -150,12 +150,14 @@ public class FranchiseLocationInfoAction extends SBActionAdapter {
 		
 		//Build specialized query across base and custom db.
 		StringBuilder s = new StringBuilder();
-		s.append("select * from dealer d "); 
+		s.append("select d.*, dl.*, ff.*, fri.*, frb.*, dla.*, fld.desc_txt, ");
+		s.append("fld.franchise_id as desc_franchise_id,fld.country_code,fld.location_desc_option_id ");
+		s.append("from dealer d ");
 		s.append("inner join dealer_location dl on d.dealer_id = dl.dealer_id ");
 		s.append("inner join ").append(customDb).append("fts_franchise ff ");
 		s.append("on dl.dealer_location_id = ff.franchise_id ");
 		s.append("left outer join ").append(customDb).append("fts_location_desc_option fld ");
-		s.append("on fld.desc_franchise_id=ff.franchise_id ");
+		s.append("on fld.franchise_id=ff.franchise_id ");
 		s.append("left outer join ").append(customDb).append("fts_right_image fri ");
 		s.append("on ff.right_image_id = fri.right_image_id ");
 		s.append("left outer join ").append(customDb).append("fts_reseller_button frb ");
