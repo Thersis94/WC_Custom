@@ -13,7 +13,6 @@ import java.util.Properties;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 
 import com.depuysynthes.pa.PatientAmbassadorStoriesTool.PAFConst;
-import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.security.UserDataVO;
 import com.smt.sitebuilder.action.user.ProfileManager;
@@ -38,10 +37,7 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
  * @since Mar 4, 2015
  ****************************************************************************/
 public class PatientAmbassadorIndexer extends SMTAbstractIndex {
-	
-	public static final String INDEX_TYPE = "PATIENT_AMBASSADOR";
 	private static final String ORG_ID = "DPY_SYN";
-	private static final String FORM_ID = "c0a80241bb7b15cc1bff05ed771c527d";
 
 	public PatientAmbassadorIndexer(Properties config) {
 		this.config = config;
@@ -111,14 +107,12 @@ public class PatientAmbassadorIndexer extends SMTAbstractIndex {
 		
 		
 		String srQuery = getSubmittalRecordQuery();
-		log.debug("Query = " + srQuery + "|" + FORM_ID + "|" + PAFConst.STATUS_ID.getId());
+		log.debug("Query = " + srQuery + "|" + PAFConst.FORM_ID.getId() + "|" + PAFConst.STATUS_ID.getId());
 
 		//Retrieve Data from DB
-		PreparedStatement ps = null;
-		try {
-			ps = dbConn.prepareStatement(srQuery);
+		try (PreparedStatement  ps = dbConn.prepareStatement(srQuery)) {
 			ps.setString(1, PAFConst.STATUS_ID.getId());
-			ps.setString(2, FORM_ID);
+			ps.setString(2, PAFConst.FORM_ID.getId());
 
 			//Retrieve Results
 			ResultSet rs = ps.executeQuery();
@@ -168,7 +162,7 @@ public class PatientAmbassadorIndexer extends SMTAbstractIndex {
 			log.error("Problem Retrieving Data from Database.", sqle);
 		} catch (DatabaseException e) {
 			log.error("Problem Retrieveing Profile Data", e);
-		} finally {DBUtil.close(ps);}
+		}
 		
 		return vos;
 	}
@@ -208,6 +202,6 @@ public class PatientAmbassadorIndexer extends SMTAbstractIndex {
 	 */
 	@Override
 	public String getIndexType() {
-		return INDEX_TYPE;
+		return SolrStoryVO.INDEX_TYPE;
 	}
 }
