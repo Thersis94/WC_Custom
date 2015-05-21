@@ -87,9 +87,13 @@ public class ComplianceReportVO extends AbstractSBReportVO {
 //			break;
 		
 		case "MITEK-PEER": //Mitek P2P
+			isMitek = true;
+			rpt = new MitekPEERReportVO();
+			break;
+			
 		case "MITEK-ESEM": //Mitek Patient
 			isMitek = true;
-			rpt = new ESEMMitekReportVO();
+			rpt = new MitekESEMReportVO();
 			break;
 			
 		default:
