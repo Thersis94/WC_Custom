@@ -31,8 +31,6 @@ import com.smt.sitebuilder.security.SecurityController;
  * @since Sep 19, 2014
  ****************************************************************************/
 public class MediaBinVideo extends SimpleActionAdapter {
-	
-	final String solrCollectionUrl = "WebCrescendo_DePuy";
 
 	public MediaBinVideo() {
 	}
@@ -78,7 +76,7 @@ public class MediaBinVideo extends SimpleActionAdapter {
 		qData.setRoleLevel((role != null) ? role.getRoleLevel() : SecurityController.PUBLIC_ROLE_LEVEL);
 		qData.setNumberResponses(1);
 		
-		SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, solrCollectionUrl);
+		SolrQueryProcessor sqp = new SolrQueryProcessor(attributes);
 		SolrResponseVO resp = sqp.processQuery(qData);
 		
 		SolrDocument doc = null;
