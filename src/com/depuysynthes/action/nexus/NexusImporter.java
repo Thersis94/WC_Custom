@@ -146,7 +146,6 @@ public class NexusImporter extends CommandLineUtil {
 			// initialize the connection to the solr server
 			HttpSolrServer server = new HttpSolrServer(props.getProperty(Constants.SOLR_BASE_URL)+props.getProperty(Constants.SOLR_COLLECTION_NAME));
 			SolrActionUtil solr = new SolrActionUtil(server);
-			int counter = 0;
 			
 			for (String key : products.keySet()) {
 				NexusProductVO p = products.get(key);
@@ -157,20 +156,12 @@ public class NexusImporter extends CommandLineUtil {
 							!"USA".equals(StringUtil.checkVal(p.getRegion(), "SKIP")))) {
 						continue;
 					}
-					
-					// Only commit every 5000 products to reduce the number of times solr needs to rebuild itself
-					if (counter == 5000) {
-						server.commit();
-						counter = 0;
-					}
 					solr.addDocument(p);
-					counter++;
 				} catch (Exception e) {
 					log.error("Unable to add products to solr", e);
 				}
 			}
 			
-			// Commit any dangling products here
 			try {
 				server.commit();
 			} catch (Exception e) {
