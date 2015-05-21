@@ -154,7 +154,7 @@ public class NexusSolrCartAction extends SBActionAdapter {
 		for (String id : cart.getItems().keySet())
 			newFq[i++] = "-documentId:"+id;
 		
-		newFq[i] = "organizationName_t:" + req.getParameter("orgName");
+		newFq[i] = "organizationName:" + req.getParameter("orgName");
 		
 		req.setParameter("fq", newFq, true);
 	}
