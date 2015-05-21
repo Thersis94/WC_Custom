@@ -185,4 +185,18 @@ public class NexusProductVO extends  SolrDocumentVO {
 		this.status = status;
 	}
 
+	/**
+	 * Gathers all relevant information that could be used for autocompletion
+	 * and condenses it into a single field
+	 * @return
+	 */
+	@SolrField(name="contents")
+	public String getAutocomplete() {
+		StringBuilder auto = new StringBuilder();
+		auto.append(getTitle()).append(" ");
+		for (String s : gtin) auto.append(s).append(" ");
+		auto.append(getSummary());
+		return auto.toString();
+	}
+
 }
