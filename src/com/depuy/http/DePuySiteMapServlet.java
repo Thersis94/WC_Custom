@@ -142,14 +142,14 @@ public class DePuySiteMapServlet extends SiteMapServlet {
 	    SolrSearchWrapper solrWrapper = new SolrSearchWrapper();
 	    
 	    attributes.put(Constants.SOLR_BASE_URL, sc.getAttribute(Constants.SOLR_BASE_URL));
-	    attributes.put(Constants.SOLR_COLLECTION_NAME, sc.getAttribute(Constants.SOLR_COLLECTION_NAME));
+	    String solrCollectionPath = (String) sc.getAttribute(Constants.SOLR_COLLECTION_NAME);
 
 	    SolrActionVO qData = new SolrActionVO();
 	    qData.setNumberResponses(20000);
 		qData.setOrganizationId(site.getOrganizationId()); //DPY_SYN_INST only
 		qData.setRoleLevel(0); //public assets only
 		qData.addIndexType(new SolrActionIndexVO(SearchDocumentHandler.INDEX_TYPE, MediaBinSolrIndex.INDEX_TYPE));
-		SolrQueryProcessor sqp = new SolrQueryProcessor(attributes);
+		SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, solrCollectionPath);
 		SolrResponseVO resp = sqp.processQuery(qData);
 		
 		if (resp == null || resp.getTotalResponses() == 0) return data;
