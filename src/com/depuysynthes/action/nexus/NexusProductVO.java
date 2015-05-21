@@ -6,18 +6,31 @@ import java.util.List;
 import com.siliconmtn.annotations.SolrField;
 import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 
+/****************************************************************************
+ * <b>Title</b>: NexusProductVO.java <p/>
+ * <b>Project</b>: WC_Custom <p/>
+ * <b>Description: </b> Handles the solr side of the nexus product information
+ * <p/>
+ * <b>Copyright:</b> Copyright (c) 2015<p/>
+ * <b>Company:</b> Silicon Mountain Technologies<p/>
+ * @author Eric Damschroder
+ * @version 1.0
+ * @since May 20, 2015<p/>
+ * @updates:
+ ****************************************************************************/
+
 public class NexusProductVO extends  SolrDocumentVO {
 	
-	private final static String solrIndex = "DEPUY_NEXUS";
+	public final static String solrIndex = "DEPUY_NEXUS";
 	private String orgName;
 	private List<String> gtin;
-	private String gtinLevel;
+	private List<String> gtinLevel;
 	private String primaryDeviceId;
 	private String unitOfUse;
 	private String dpmGTIN;
 	private int quantity;
 	private String packageLevel;
-	private String uomLevel;
+	private List<String> uomLevel;
 	private String region;
 	private String status;
 
@@ -25,6 +38,8 @@ public class NexusProductVO extends  SolrDocumentVO {
 	public NexusProductVO() {
 		super(solrIndex);
 		gtin = new ArrayList<>();
+		gtinLevel = new ArrayList<>();
+		uomLevel = new ArrayList<>();
 	}
 	
 	public NexusProductVO(String name) {
@@ -70,14 +85,18 @@ public class NexusProductVO extends  SolrDocumentVO {
 	}
 
 
-	@SolrField(name="gtinLvl_t")
-	public String getGtinLevel() {
+	@SolrField(name="gtinLvl_txt")
+	public List<String> getGtinLevel() {
 		return gtinLevel;
+	}
+	
+	public void setGtinLevel(List<String> gtinLevel) {
+		this.gtinLevel = gtinLevel;
 	}
 
 
-	public void setGtinLevel(String gtinLevel) {
-		this.gtinLevel = gtinLevel;
+	public void addGtinLevel(String gtinLevel) {
+		this.gtinLevel.add(gtinLevel);
 	}
 
 
@@ -136,13 +155,17 @@ public class NexusProductVO extends  SolrDocumentVO {
 	}
 
 
-	@SolrField(name="uomLvl_t")
-	public String getUomLevel() {
+	@SolrField(name="uomLvl_txt")
+	public List<String> getUomLevel() {
 		return uomLevel;
+	}
+	
+	public void addUOMLevel(String uom) {
+		this.uomLevel.add(uom);
 	}
 
 
-	public void setUomLevel(String uomLevel) {
+	public void setUomLevel(List<String> uomLevel) {
 		this.uomLevel = uomLevel;
 	}
 
