@@ -20,6 +20,7 @@ import com.siliconmtn.util.CommandLineUtil;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.SecurityController;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
 
 /****************************************************************************
@@ -299,8 +300,8 @@ public class NexusImporter extends CommandLineUtil {
 						p.setQuantity(Convert.formatInteger(data.get(quantityCol).get(i)));
 					p.setPackageLevel(getColData(i, data.get(packageCol)));
 					p.addUOMLevel(getColData(i, data.get(uomCol)));
-					p.addRole("0");
-					p.addOrganization("DPY_SYN_NEXUS");
+					p.addRole(StringUtil.checkVal(SecurityController.PUBLIC_ROLE_LEVEL));
+					p.addOrganization(props.getProperty("organization"));
 					p.setRegion(getColData(i, data.get(regionCol)));
 					p.setState(getColData(i, data.get(statusCol)));
 					 
