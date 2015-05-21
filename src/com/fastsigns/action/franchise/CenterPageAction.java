@@ -65,6 +65,8 @@ public class CenterPageAction extends SimpleActionAdapter {
 	public static final int FRANCHISE_MAIN_IMAGE_UPDATE = 6;
 	public static final int FRANCHISE_SOCIAL_MEDIA_LINKS = 13;
 	public static final int FRANCHISE_DESC_UPDATE = 7;
+	public static final int FRANCHISE_CUSTOM_DESC_UPDATE = 21;
+	public static final int FRANCHISE_CUSTOM_DESC_DELETE = 22;
 	public static final int MODULE_LOC_DELETE = 8;
 	public static final int MODULE_ADD = 9;
 	public static final int MODULE_REARRANGE = 14;
@@ -133,6 +135,8 @@ public class CenterPageAction extends SimpleActionAdapter {
 					break;
 				case FRANCHISE_BUTTON_UPDATE:
 				case FRANCHISE_DESC_UPDATE:
+				case FRANCHISE_CUSTOM_DESC_UPDATE:
+				case FRANCHISE_CUSTOM_DESC_DELETE:
 				case FRANCHISE_MAIN_IMAGE_UPDATE:
 				case FRANCHISE_SOCIAL_MEDIA_LINKS:
 				case WHITEBOARD_UPDATE:

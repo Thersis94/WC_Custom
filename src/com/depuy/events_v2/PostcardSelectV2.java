@@ -607,7 +607,8 @@ public class PostcardSelectV2 extends SBActionAdapter {
 					vo = new DePuyEventSeminarVO().populateFromListRS(rs);
 				}
 				oa.attachActionItems(vo);
-				data.put(id, vo);
+				if (vo.getActionItems() != null && vo.getActionItems().size() > 0)
+					data.put(id, vo);
 			}
 		} catch (SQLException sqle) {
 			log.error("could not load action items", sqle);
