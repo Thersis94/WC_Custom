@@ -59,7 +59,7 @@ public class NexusProductVO extends  SolrDocumentVO {
 	}
 
 
-	@SolrField(name="organizationName_t")
+	@SolrField(name="organizationName")
 	public String getOrgName() {
 		return orgName;
 	}
@@ -70,7 +70,7 @@ public class NexusProductVO extends  SolrDocumentVO {
 	}
 
 
-	@SolrField(name="gtin_txt")
+	@SolrField(name="gtin")
 	public List<String> getGtin() {
 		return gtin;
 	}
@@ -85,7 +85,7 @@ public class NexusProductVO extends  SolrDocumentVO {
 	}
 
 
-	@SolrField(name="gtinLvl_txt")
+	@SolrField(name="gtinLvl")
 	public List<String> getGtinLevel() {
 		return gtinLevel;
 	}
@@ -100,7 +100,7 @@ public class NexusProductVO extends  SolrDocumentVO {
 	}
 
 
-	@SolrField(name="device_t")
+	@SolrField(name="deviceId")
 	public String getPrimaryDeviceId() {
 		return primaryDeviceId;
 	}
@@ -111,7 +111,7 @@ public class NexusProductVO extends  SolrDocumentVO {
 	}
 
 
-	@SolrField(name="unitOfUse_t")
+	@SolrField(name="unitOfUse")
 	public String getUnitOfUse() {
 		return unitOfUse;
 	}
@@ -122,7 +122,7 @@ public class NexusProductVO extends  SolrDocumentVO {
 	}
 
 
-	@SolrField(name="dpmGTIN_t")
+	@SolrField(name="dpmGTIN")
 	public String getDpmGTIN() {
 		return dpmGTIN;
 	}
@@ -133,7 +133,7 @@ public class NexusProductVO extends  SolrDocumentVO {
 	}
 
 
-	@SolrField(name="quantity_i")
+	@SolrField(name="quantity")
 	public int getQuantity() {
 		return quantity;
 	}
@@ -144,7 +144,7 @@ public class NexusProductVO extends  SolrDocumentVO {
 	}
 
 
-	@SolrField(name="packageLvl_t")
+	@SolrField(name="packageLvl")
 	public String getPackageLevel() {
 		return packageLevel;
 	}
@@ -155,7 +155,7 @@ public class NexusProductVO extends  SolrDocumentVO {
 	}
 
 
-	@SolrField(name="uomLvl_txt")
+	@SolrField(name="uomLvl")
 	public List<String> getUomLevel() {
 		return uomLevel;
 	}
