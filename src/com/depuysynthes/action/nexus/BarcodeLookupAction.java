@@ -6,7 +6,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-
 // SMT BAse Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -16,8 +15,16 @@ import com.siliconmtn.barcode.BarcodeOEM;
 import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.http.SMTServletRequest;
 
+import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.action.search.SolrActionIndexVO;
+import com.smt.sitebuilder.action.search.SolrActionVO;
+import com.smt.sitebuilder.action.search.SolrFieldVO;
+import com.smt.sitebuilder.action.search.SolrQueryProcessor;
+import com.smt.sitebuilder.action.search.SolrFieldVO.BooleanType;
+import com.smt.sitebuilder.action.search.SolrResponseVO;
+import com.smt.sitebuilder.search.SearchDocumentHandler;
 
 /****************************************************************************
  * <b>Title</b>: BarcodeLookupAction.java <p/>
@@ -91,6 +98,8 @@ public class BarcodeLookupAction extends SBActionAdapter {
 			log.info("barcode: " + barcode);
 			
 			// Call the SOLR Query to populate
+			if (barcode == null) throw new Exception("Invalid Barcode Recieved");
+			
 			product = this.retrieveProduct(barcode);
 		} catch(Exception e) {
 			errorMsg = e.getLocalizedMessage();
@@ -106,10 +115,24 @@ public class BarcodeLookupAction extends SBActionAdapter {
 	 * @return
 	 */
 	protected ProductVO retrieveProduct(BarcodeItemVO barcode) {
-		ProductVO product = new ProductVO();
-		product.setProductId("1294-09 650");
-		product.setProductName("LCS Complete Metal Backed Patella");
-		return product;
+		SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, "DePuy_NeXus");
+		SolrActionVO qData = new SolrActionVO();
+		qData.setNumberResponses(1);
+		qData.setStartLocation(0);
+		qData.setOrganizationId("DPY_SYN_NEXUS");
+		qData.setRoleLevel(0);
+		qData.addIndexType(new SolrActionIndexVO("", NexusProductVO.solrIndex));
+		log.debug(barcode.getProductId());
+		SolrFieldVO field = new SolrFieldVO(SolrFieldVO.FieldType.FILTER, SearchDocumentHandler.DOCUMENT_ID, barcode.getProductId(), BooleanType.AND);
+		qData.addSolrField(field);
+		ProductVO prod = new ProductVO();
+		SolrResponseVO resp = sqp.processQuery(qData);
+		if (resp.getResultDocuments().size() == 0) {
+			prod .setProductId("No Product Found with Supplied Barcode.");
+			return prod;
+		}
+		prod.setProductId(StringUtil.checkVal(resp.getResultDocuments().get(0).get("documentId"), "No valid barcode found in system."));
+		return prod;
 	}
 
 }
