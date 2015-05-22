@@ -50,14 +50,16 @@ public class NexusSolrCartAction extends SBActionAdapter {
 			}
 		} else {
 			// Build a product vo that can be placed in the cart vo
+			String dateLot = new SimpleDateFormat("ddMMMMyyyy").format(Convert.getCurrentTimestamp());
 			cart.getItems().get(req.getParameter("productId"));
 			ProductVO product = new ProductVO();
 			product.setProductId(req.getParameter("productId"));
 			product.setShortDesc(req.getParameter("desc"));
 			product.addProdAttribute("orgName", req.getParameter("orgName"));
 			product.addProdAttribute("gtin", req.getParameter("gtin"));
-			product.addProdAttribute("lotNo", StringUtil.checkVal(req.getParameter("lotNo"), new SimpleDateFormat("ddMMMMyyyy").format(Convert.getCurrentTimestamp())));
-			product.addProdAttribute("dateLot", req.getParameter("dateLot"));
+			product.addProdAttribute("lotNo", StringUtil.checkVal(req.getParameter("lotNo"), dateLot));
+			if (dateLot.equals(product.getProdAttributes().get("lotNo")))
+				product.addProdAttribute("dateLot", true);
 			product.addProdAttribute("uom", req.getParameter("uom"));
 			product.addProdAttribute("qty", StringUtil.checkVal(req.getParameter("qty"),"1"));
 			ShoppingCartItemVO item = new ShoppingCartItemVO(product);
