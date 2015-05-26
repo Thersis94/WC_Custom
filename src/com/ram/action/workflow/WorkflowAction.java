@@ -66,7 +66,117 @@ public class WorkflowAction extends AbstractWorkflowAction {
 	public WorkflowAction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
-	
+
+	public void copy(SMTServletRequest req) throws ActionException {
+
+		//Validate we have a workflowId to copy.
+		if(req.hasParameter("workflowId")) {
+
+			//Copy the Workflow
+			String newId = copyWorkflow(req.getParameter("workflowId"));
+
+			/*
+			 * Copy the Workflow Module Xr Records
+			 * Need to capture new Ids for use in copying the Workflow/ModConfig
+			 * Records.  Can use RecordDuplicator to perform the heavy Lifting.
+			 * The below should be close.
+			 */
+			RecordDuplicator rd = new RecordDuplicator(dbConn, "RAM_WORKFLOW_MODULE_XR", "WORKFLOW_MODULE_XR_ID", true);
+			rd.setSchemaNm((String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
+			rd.addWhereClause("WORKFLOW_ID", req.getParameter("workflowId"));
+			try {
+				Map<String, String> ids = rd.copyRecords();
+			} catch (Exception e) {
+				log.error(e);
+			}
+			/*
+			 * Copy the Workflow Module Config Xr Records.  Can use
+			 * RecordDuplicator to perform the Heavy Lifting.
+			 */
+
+			//If we have a customerLocationId, write the CustomerLoc/WorkflowXR
+			if(req.hasParameter("customerLocationId")) {
+				insertCustomerWorkflowXr(newId, req.getParameter("customerLocationId"));
+			}
+		} else {
+			//Redirect User with Error Status, Missing WorkflowId
+		}
+	}
+
+	/**
+	 * Helper method that manages inserting a CustomerWorkflowXr Record
+	 * @param newId
+	 * @param parameter
+	 * @throws ActionException
+	 */
+	private void insertCustomerWorkflowXr(String workflowId, String customerLocationId) throws ActionException {
+		String sql = getCustomerWorkflowSql();
+		String newId = new UUIDGenerator().getUUID();
+
+		try(PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			ps.setString(1, newId);
+			ps.setString(2, customerLocationId);
+			ps.setString(3, workflowId);
+			ps.setTimestamp(5, Convert.getCurrentTimestamp());
+			ps.executeUpdate();
+		} catch(SQLException sqle) {
+			log.error(sqle);
+			throw new ActionException("Error Adding Customer Workflow XR", sqle);
+		}
+	}
+
+	/**
+	 * Helper method that returns CustomerWorkflowXr Sql.
+	 * @return
+	 */
+	private String getCustomerWorkflowSql() {
+		StringBuilder sql = new StringBuilder();
+		sql.append("insert into ").append((String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("RAM_CUSTOMER_WORKFLOW_XR (CUSTOMER_WORKFLOW_XR_ID, ");
+		sql.append("CUSTOMER_LOCATION_ID, WORKFLOW_ID, CREATE_DT) values(?,?,?,?)");
+
+		return sql.toString();
+	}
+
+	/**
+	 * Helper method that manages copying a Workflow.
+	 * @param workflowId
+	 * @return
+	 * @throws ActionException
+	 */
+	private String copyWorkflow(String workflowId) throws ActionException {
+		String sql = getWorkflowCopySql();
+		String newId = new UUIDGenerator().getUUID();
+
+		try(PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			ps.setString(1, newId);
+			ps.setTimestamp(2, Convert.getCurrentTimestamp());
+			ps.setString(3, workflowId);
+			ps.executeUpdate();
+		} catch(SQLException sqle) {
+			log.error(sqle);
+			throw new ActionException("Error Adding Copying Workflow", sqle);
+		}
+
+		return newId;
+	}
+
+	/**
+	 * Helper method that returns WorkflowCopy Sql.
+	 * @return
+	 */
+	public String getWorkflowCopySql() {
+		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(325);
+		sql.append("insert into ").append(schema);
+		sql.append("RAM_WORKFLOW (WORKFLOW_ID, WORKFLOW_EVENT_TYPE_CD, SERVICE_CD, ");
+		sql.append("WORKFLOW_NM, WORKFLOW_DESC, ACTIVE_FLG, CREATE_DT) select ");
+		sql.append("?, WORKFLOW_EVENT_TYPE_CD, SERVICE_CD, WORKFLOW_NM, ");
+		sql.append("WORKFLOW_DESC, ACTIVE_FLG, ? from ").append(schema);
+		sql.append("RAM_WORKFLOW where WORKFLOW_ID=?");
+
+		return sql.toString();
+	}
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.http.SMTServletRequest)
 	 */
