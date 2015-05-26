@@ -53,21 +53,22 @@ public class FranchiseLocatorAction extends DealerLocatorAction {
 	 * @see com.smt.sitebuilder.action.dealer.DealerLocatorAction#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	public void retrieve(SMTServletRequest req) throws ActionException{
-		//get the locations from the superclass. We call the dealer locator action
+		//get the locations from the superclass
 		super.retrieve(req);
 		
-		//if the request was for a VCard, skip the rest of this method
 		String vcard = StringUtil.checkVal(req.getParameter("vcard"));
 		String dli = StringUtil.checkVal(req.getParameter("dealerLocationId"));
+		//if the request was for a VCard, pass off to superclass and leave
 		if (vcard.length() > 0 && dli.length() > 0) { 
+			super.retrieve(req);
 			return; 
 		}
 		
-		//get the list of results from the superclass
 		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
+		//get the list of results from the superclass
 		DealerLocatorVO loc = (DealerLocatorVO) mod.getActionData();
 		List<DealerLocationVO> dealerList = loc.getResults();
-		
+		log.debug("There are "+dealerList.size()+" results.");
 		//no need to process an empty location list
 		if (dealerList.isEmpty())
 			return;
@@ -93,9 +94,10 @@ public class FranchiseLocatorAction extends DealerLocatorAction {
 	 * @return
 	 * @throws SQLException
 	 */
-	private List<DealerLocationVO> getCustomFranchiseData(List<DealerLocationVO> orig)
+	public List<DealerLocationVO> getCustomFranchiseData(List<DealerLocationVO> orig)
 	throws SQLException{
 		final String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		Map<String,DealerLocationVO> dlrMap = new HashMap<>();
 		Map<String,FranchiseVO> franMap = new HashMap<>();
 		List<DealerLocationVO> franList = new ArrayList<>();
 		
@@ -124,16 +126,17 @@ public class FranchiseLocatorAction extends DealerLocatorAction {
 			for (DealerLocationVO vo:orig){
 				ps.setString(++i, vo.getDealerLocationId());
 				//used to map DealerLocationVO to FranchiseVO
-				franMap.put(vo.getDealerLocationId(), (FranchiseVO) vo);
+				dlrMap.put(vo.getDealerLocationId(), vo);
 			}
 			ResultSet rs = ps.executeQuery();
 			
 			FranchiseVO fran = null;
 			while (rs.next()){
-				//Add the data to the existing VO's rather than replacing them
-				//(keep whatever data was populated from DealerLocator)
-				fran = franMap.get(rs.getString("dealer_location_id"));
+				fran = new FranchiseVO();
+				fran.setData(dlrMap.get(rs.getString("dealer_location_id")));
+				//preserve data from the dealer locator results
 				fran.assignData(rs, false);
+				franMap.put(fran.getDealerLocationId(), fran);
 			}
 		}
 		//Put results back into the order that they came in (since this is a distance search)
