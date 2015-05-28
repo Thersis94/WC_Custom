@@ -66,9 +66,26 @@ public class WorkflowFacadeAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(SMTServletRequest req) throws ActionException {
+		// check to see if we are cloning a workflow or module
+		boolean isCopy = Convert.formatBoolean(req.getParameter("isCopy"));
+		if (isCopy) {
+			copy(req);
+			return;
+		}
+
 		log.debug("WorkflowFacadeAction build...");
 		String bType = req.getParameter(STEP_PARAM);
 		getAction(bType).build(req);
+	}
+	
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#copy(com.siliconmtn.http.SMTServletRequest)
+	 */
+	@Override
+	public void copy(SMTServletRequest req) throws ActionException{
+		log.debug("WorkflowFacadeAction copy...");
+		String bType = req.getParameter(STEP_PARAM);
+		getAction(bType).copy(req);
 	}
 	
 	/**
