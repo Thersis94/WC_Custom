@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fastsigns.action.franchise.vo.FranchiseVO;
 import com.fastsigns.action.franchise.vo.MetroCategoryVO;
 import com.fastsigns.action.franchise.vo.MetroContainerVO;
 import com.fastsigns.action.franchise.vo.MetroProductVO;
@@ -582,7 +583,7 @@ public class MetroAction extends SBActionAdapter {
 				if (i++ == 0) mcvo.assignVals(rs);
 				
 				// Add the location data
-				DealerLocationVO dlr = new DealerLocationVO(rs);
+				DealerLocationVO dlr = new FranchiseVO(rs);
 				dlr.setActionId(rs.getString("id"));
 				mcvo.addResult(dlr);
 				
@@ -901,7 +902,7 @@ public class MetroAction extends SBActionAdapter {
 				}
 				
 				// Add the location data
-				DealerLocationVO dlvo = new DealerLocationVO(rs);
+				DealerLocationVO dlvo = new FranchiseVO(rs);
 				mcvo.addResult(dlvo);
 			}
 			
@@ -924,7 +925,7 @@ public class MetroAction extends SBActionAdapter {
 		req.setParameter("country", ((SiteVO)req.getAttribute("siteData")).getCountryCode());
 		String customDb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sb = new StringBuilder();
-		DealerLocatorAction dla = new DealerLocatorAction(this.actionInit);
+		DealerLocatorAction dla = new FranchiseLocatorAction(this.actionInit);
 		dla.setAttributes(attributes);
 		dla.setDBConnection(dbConn);
 		GeocodeLocation l = new GeocodeLocation();

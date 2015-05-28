@@ -4,7 +4,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -52,99 +52,79 @@ public class FranchiseLocatorAction extends DealerLocatorAction {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.dealer.DealerLocatorAction#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void retrieve(SMTServletRequest req) throws ActionException{
-		//get the locations from the superclass
+	public void retrieve(SMTServletRequest req) throws ActionException {
+		log.debug("Looking up Franchise info ...");
 		super.retrieve(req);
 		
 		String vcard = StringUtil.checkVal(req.getParameter("vcard"));
 		String dli = StringUtil.checkVal(req.getParameter("dealerLocationId"));
-		//if the request was for a VCard, pass off to superclass and leave
+		//if the request was for a VCard, it has already been handled by the call to super
 		if (vcard.length() > 0 && dli.length() > 0) { 
-			super.retrieve(req);
-			return; 
+			return;
 		}
 		
 		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
-		//get the list of results from the superclass
 		DealerLocatorVO loc = (DealerLocatorVO) mod.getActionData();
-		List<DealerLocationVO> dealerList = loc.getResults();
-		log.debug("There are "+dealerList.size()+" results.");
-		//no need to process an empty location list
-		if (dealerList.isEmpty())
-			return;
-		
-		List<DealerLocationVO> franchiseList = null;
-		//Add the custom franchise data to the vo's
-		try{
-			franchiseList = getCustomFranchiseData(dealerList);
-		} catch(SQLException sqle){
-			log.error(sqle);
-			throw new ActionException(sqle);
+		try {
+			if (loc.getResultCount() > 0)
+				loc.setResults(getCustomFranchiseData(loc.getResults()));
+		} catch (SQLException e) {
+			log.error(e);
+			throw new ActionException(e);
 		}
-		
-		//add module data
-		loc.setResults(franchiseList);
-		mod.setActionData(loc);
-		attributes.put(Constants.MODULE_DATA, mod);
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.dealer.DealerLocatorAction#getDealerInfoContainer()
+	 */
+	@Override
+	protected DealerLocationVO getDealerInfoContainer(ResultSet rs){
+		return new FranchiseVO(rs);
 	}
 	
 	/**
-	 * Gets the custom data for the franchises in the list and adds it.
+	 * Adds custom franchise data from the database view to the retrieved centers
 	 * @param orig
 	 * @return
 	 * @throws SQLException
 	 */
 	public List<DealerLocationVO> getCustomFranchiseData(List<DealerLocationVO> orig)
 	throws SQLException{
-		final String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		Map<String,DealerLocationVO> dlrMap = new HashMap<>();
-		Map<String,FranchiseVO> franMap = new HashMap<>();
+		Map<String,Object> franMap = new LinkedHashMap<>();
 		List<DealerLocationVO> franList = new ArrayList<>();
-		
-		StringBuilder sql = new StringBuilder(1050);
-		sql.append("select dl.dealer_location_id, ff.*, fri.*, frb.*, fld.desc_txt, ");
-		sql.append("fld.franchise_id as desc_franchise_id,fld.country_code,fld.location_desc_option_id ");
-		sql.append("from dealer_location dl ");
-		sql.append("inner join ").append(customDb).append("fts_franchise ff ");
-		sql.append("on dl.dealer_location_id = ff.franchise_id ");
-		sql.append("left outer join ").append(customDb).append("fts_location_desc_option fld ");
-		sql.append("on fld.franchise_id=ff.franchise_id ");
-		sql.append("left outer join ").append(customDb).append("fts_right_image fri ");
-		sql.append("on ff.right_image_id = fri.right_image_id ");
-		sql.append("left outer join ").append(customDb).append("fts_reseller_button frb ");
-		sql.append("on ff.reseller_button_id = frb.reseller_button_id ");
-		sql.append("where dl.dealer_location_id in (");
-		for (int index=0; index<orig.size(); index++){
+		StringBuilder sql = new StringBuilder();
+		sql.append("select dealer_location_id, franchise_id, use_raqsaf, country_cd ");
+		sql.append("from FTS_FRANCHISE_INFO_VIEW ");
+		sql.append("where dealer_location_id in (");
+		for (int index = 0; index < orig.size(); index++){
 			sql.append("?");
-			if (index+1 < orig.size())
+			if (index+1<orig.size())
 				sql.append(",");
+			//add the vo's to the map here so we don't have to iterate a second time
+			franMap.put(orig.get(index).getDealerLocationId(), orig.get(index));
 		}
-		sql.append(") ");
+		sql.append(")");
+		
+		log.debug(sql.toString());
 		
 		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())){
-			int i=0;
-			for (DealerLocationVO vo:orig){
+			int i = 0;
+			for(DealerLocationVO vo:orig){
 				ps.setString(++i, vo.getDealerLocationId());
-				//used to map DealerLocationVO to FranchiseVO
-				dlrMap.put(vo.getDealerLocationId(), vo);
 			}
-			ResultSet rs = ps.executeQuery();
 			
+			ResultSet rs = ps.executeQuery();
 			FranchiseVO fran = null;
 			while (rs.next()){
-				fran = new FranchiseVO();
-				fran.setData(dlrMap.get(rs.getString("dealer_location_id")));
-				//preserve data from the dealer locator results
+				fran = (FranchiseVO) franMap.get(rs.getString("dealer_location_id"));
 				fran.assignData(rs, false);
-				franMap.put(fran.getDealerLocationId(), fran);
 			}
+			
+			for(Object obj:franMap.values())
+				franList.add((DealerLocationVO) obj);
+			
 		}
-		//Put results back into the order that they came in (since this is a distance search)
-		for (DealerLocationVO dlvo : orig){
-			franList.add(franMap.get(dlvo.getDealerLocationId()));
-		}
-		
 		return franList;
 	}
-
 }

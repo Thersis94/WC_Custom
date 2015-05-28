@@ -112,6 +112,11 @@ public class FranchiseVO extends DealerLocationVO {
 		setLocationDesc(desc.toString());
 	}
 
+	@Override
+	public void setData(ResultSet rs){
+		assignData(rs, true); 
+	}
+	
 	/**
 	 * @return the locationDesc
 	 */
