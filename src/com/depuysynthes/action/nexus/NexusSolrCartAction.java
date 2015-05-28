@@ -4,6 +4,8 @@ import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.servlet.http.Cookie;
+
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.commerce.ShoppingCartItemVO;
@@ -102,18 +104,24 @@ public class NexusSolrCartAction extends SBActionAdapter {
 		
 		// Check if we are building a file, create the report generator and set the pertinent information
 		if (req.hasParameter("buildFile")) {
-			AbstractSBReportVO report = new NexusCartExcelReport();
+			AbstractSBReportVO report;
+			if ("excel".equals(req.getParameter("buildFile"))) {
+				report = new NexusCartExcelReport();
+				report.setFileName("cart.xls");
+			} else {
+				report = new NexusCartPDFReport();
+				report.setFileName("cart.pdf");
+			}
 			Map<String, Object> data = new HashMap<>();
 			data.put("cart", cart.getItems());
-			data.put("hospital", StringEncoder.urlDecode(req.getCookie("hospital").getValue()));
-			data.put("room", StringEncoder.urlDecode(req.getCookie("room").getValue()));
-			data.put("surgeon", StringEncoder.urlDecode(req.getCookie("surgeon").getValue()));
-			data.put("time", StringEncoder.urlDecode(req.getCookie("time").getValue()));
-			data.put("caseId", StringEncoder.urlDecode(req.getCookie("caseId").getValue()));
+			data.put("hospital", getCookie(req, "hospital"));
+			data.put("room", getCookie(req, "room"));
+			data.put("surgeon", getCookie(req, "surgeon"));
+			data.put("time", getCookie(req, "time"));
+			data.put("caseId", getCookie(req, "caseId"));
 			data.put("baseDomain", req.getHostName());
 			
 			report.setData(data);
-			report.setFileName("cart.xls");
 			req.setAttribute(Constants.BINARY_DOCUMENT, report);
 			req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, true);
 			return;
@@ -132,7 +140,18 @@ public class NexusSolrCartAction extends SBActionAdapter {
 	    	sai.setAttributes(attributes);
 		sai.retrieve(req);
 	}
-
+	
+	
+	/**
+	 * Checks if a cookie exists and returns either the cookie's value or an
+	 * empty string
+	 */
+	private String getCookie(SMTServletRequest req, String name) {
+		Cookie c = req.getCookie(name);
+		if (c == null) return "";
+		return StringEncoder.urlDecode(c.getValue());
+	}
+	
 	
 	/**
 	 * Build the filter queries from the request object and the user's cart
