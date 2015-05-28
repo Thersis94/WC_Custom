@@ -256,8 +256,9 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		DePuyEventSeminarVO vo = psa.loadOneSeminar(eventPostcardId, 
 				actionInit.getActionId(), null, null, null);
 
-		//Order the consumables
-		orderBox(req, eventPostcardId, vo);
+		//Order the consumables, if requested
+		if (Convert.formatInteger(req.getParameter("qnty"), 0) > 0)
+			orderBox(req, eventPostcardId, vo);
 	}
 
 
