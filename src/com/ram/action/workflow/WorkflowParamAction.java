@@ -10,14 +10,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.ram.workflow.data.WorkflowConfigParamVO;
-import com.ram.workflow.data.WorkflowConfigTypeVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-import com.smt.sitebuilder.common.ModuleVO;
-import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -84,14 +81,24 @@ public class WorkflowParamAction extends AbstractWorkflowAction {
 	public void list(SMTServletRequest req) throws ActionException {
 
 		//Get List of WorkflowModule Config VOs
-		List<WorkflowConfigParamVO> data = listWorkflowParams(req.getParameter("workflowModuleConfigId"));
+		List<WorkflowConfigParamVO> data = listWorkflowParams(req.getParameter("workflowModuleId"));
 
-		//Get List of Workflow Config Types if this is an edit.
-		if(req.hasParameter("workflowModuleConfigId")) {
-			List<WorkflowConfigTypeVO> configTypes = listWorkflowConfigTypes(req);
-			req.setAttribute("configTypes", configTypes);
+		//Get the WorkflowModuleConfigId off the request.
+		String confId = req.getParameter("workflowModuleConfigId");
+
+		/*
+		 * If the WorkflowModuleConfigId is present, set the matching VO on the
+		 * req.
+		 */
+		if(StringUtil.checkVal(confId).length() > 0) {
+			for(WorkflowConfigParamVO cp : data) {
+				log.debug(cp.getWorkflowModuleConfigId());
+				if(confId.equals(cp.getWorkflowModuleConfigId())) {
+					req.setAttribute("sel", cp);
+					break;
+				}
+			}
 		}
-
 		//Set List of Workflow Modules on ModuleData.
 		this.putModuleData(data, data.size(), true);
 	}
@@ -121,37 +128,18 @@ public class WorkflowParamAction extends AbstractWorkflowAction {
 	}
 
 	/**
-	 * Helper that loads up the WorkflowConfigTypeAction for retrieving all
-	 * workflow config types.
-	 * @param req
-	 * @return
-	 * @throws ActionException
-	 */
-	@SuppressWarnings("unchecked")
-	public List<WorkflowConfigTypeVO> listWorkflowConfigTypes(SMTServletRequest req) throws ActionException {
-		WorkflowConfigTypeAction wcta = new WorkflowConfigTypeAction(this.actionInit);
-		wcta.setAttributes(attributes);
-		wcta.setDBConnection(dbConn);
-		wcta.list(req);
-		ModuleVO mod = (ModuleVO)req.getAttribute(AdminConstants.ADMIN_MODULE_DATA);
-		return (List<WorkflowConfigTypeVO>)mod.getActionData();
-	}
-
-	/**
 	 * Helper method that loads up all the Workflow Config Params for a given
 	 * workflowModule.  Can optionally pass a workflowModuleConfigId to return
 	 * specifics for a single config param.
 	 * @param parameter
 	 * @return
 	 */
-	public List<WorkflowConfigParamVO> listWorkflowParams(String workflowModuleConfigId) {
+	public List<WorkflowConfigParamVO> listWorkflowParams(String workflowModuleId) {
 		List<WorkflowConfigParamVO> params = new ArrayList<WorkflowConfigParamVO>();
-		boolean hasConfigId = StringUtil.checkVal(workflowModuleConfigId).length() > 0;
 
-		try(PreparedStatement ps = dbConn.prepareStatement(getConfigParamSql(hasConfigId))) {
-			if(hasConfigId) {
-				ps.setString(1, workflowModuleConfigId);
-			}
+		try(PreparedStatement ps = dbConn.prepareStatement(getConfigParamSql())) {
+			log.debug("Query: " + getConfigParamSql());
+			ps.setString(1, workflowModuleId);
 			ResultSet rs = ps.executeQuery();
 			while(rs.next()) {
 				params.add(new WorkflowConfigParamVO(rs));
@@ -168,18 +156,16 @@ public class WorkflowParamAction extends AbstractWorkflowAction {
 	 * @param hasConfigId
 	 * @return
 	 */
-	private String getConfigParamSql(boolean hasConfigId) {
+	private String getConfigParamSql() {
 		String alias = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(260);
 
 		sql.append("select * from ").append(alias);
-		sql.append("RAM_WORKFLOW_MODULE_CONFIG a inner join ");
-		sql.append(alias).append("RAM_CONFIG_TYPE b ");
+		sql.append("RAM_CONFIG_TYPE a left outer join ");
+		sql.append(alias).append("RAM_WORKFLOW_MODULE_CONFIG b ");
 		sql.append("on a.CONFIG_TYPE_CD = b.CONFIG_TYPE_CD ");
-		if(hasConfigId) {
-			sql.append("where a.WORKFLOW_MODULE_CONFIG_ID = ? ");
-		}
-		sql.append("order by b.CONFIG_TYPE_NM desc");
+		sql.append("and b.WORKFLOW_MODULE_ID = ? ");
+		sql.append("order by a.CONFIG_TYPE_NM");
 
 		return sql.toString();
 	}

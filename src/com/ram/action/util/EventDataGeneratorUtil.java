@@ -24,17 +24,19 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
 
+
 // Log4J 1.2.15
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
 //WebCrescendo Custom
-import com.ram.action.data.InventoryEventGroupVO;
+
 import com.ram.action.event.InventoryEventRecurrenceAction;
 //RAMDataFeed
 import com.ram.datafeed.data.AuditorVO;
 import com.ram.datafeed.data.CustomerEventVO;
 import com.ram.datafeed.data.InventoryEventAuditorVO;
+import com.ram.datafeed.data.InventoryEventGroupVO;
 import com.ram.datafeed.data.InventoryEventReturnVO;
 import com.ram.datafeed.data.InventoryEventVO;
 import com.ram.datafeed.data.InventoryItemType;
