@@ -119,10 +119,18 @@ public class NexusCartPDFReport  extends AbstractSBReportVO {
 			html.append("<td style='font-size:12px;'>").append(item.getProduct().getProdAttributes().get("uom")).append("</td>");
 			html.append("<td style='font-size:12px;'>").append(item.getProduct().getProdAttributes().get("qty")).append("</td>");
 			html.append("<td colspan='2' style='font-size:12px; width:200px;'><span style='font-weight:bold;'>GTIN</span>");
-			html.append("<span><img style='height:10px; margin-left:5px;' src='/barcodeGenerator?barcodeData=").append(item.getProduct().getProdAttributes().get("gtin")).append("&height=25&humanReadable=false' /></span></td></tr>");
-			html.append("<tr><td style='border-bottom:1px solid black;'>&nbsp;</td>");
-			html.append("<td colspan='7' style='font-size:12px; width:200px;border-bottom:1px solid black;'>").append(item.getProduct().getShortDesc()).append("</td><td colspan='2' style='font-size:12px;border-bottom:1px solid black;'>");
-			html.append("<span style='font-weight:bold;'>LOT<span><img style='height:10px; margin-left:10px;' src='/barcodeGenerator?barcodeData=").append(item.getProduct().getProdAttributes().get("lotNo")).append("&height=25&humanReadable=false' /></span>");
+			
+			if ("QR".equals(data.get("format"))) {
+				html.append("<span><img style='margin-left:5px;' src='/barcodeGenerator?barcodeData=").append(item.getProduct().getProdAttributes().get("gtin")).append("&height=25&humanReadable=false&format=").append(data.get("format")).append("' /></span></td></tr>");
+				html.append("<tr><td style='border-bottom:1px solid black;'>&nbsp;</td>");
+				html.append("<td colspan='7' style='font-size:12px; width:200px;border-bottom:1px solid black;'>").append(item.getProduct().getShortDesc()).append("</td><td colspan='2' style='font-size:12px;border-bottom:1px solid black;'>");
+				html.append("<span style='font-weight:bold;'>LOT<span><img style='margin-left:10px;' src='/barcodeGenerator?barcodeData=").append(item.getProduct().getProdAttributes().get("lotNo")).append("&height=25&humanReadable=false&format=").append(data.get("format")).append("' /></span>");
+			} else {
+				html.append("<span><img style='height:10px; margin-left:5px;' src='/barcodeGenerator?barcodeData=").append(item.getProduct().getProdAttributes().get("gtin")).append("&height=25&humanReadable=false' /></span></td></tr>");
+				html.append("<tr><td style='border-bottom:1px solid black;'>&nbsp;</td>");
+				html.append("<td colspan='7' style='font-size:12px; width:200px;border-bottom:1px solid black;'>").append(item.getProduct().getShortDesc()).append("</td><td colspan='2' style='font-size:12px;border-bottom:1px solid black;'>");
+				html.append("<span style='font-weight:bold;'>LOT<span><img style='height:10px; margin-left:10px;' src='/barcodeGenerator?barcodeData=").append(item.getProduct().getProdAttributes().get("lotNo")).append("&height=25&humanReadable=false' /></span>");
+			}
 			html.append("</span></td></tr>");
 			i++;
 		}

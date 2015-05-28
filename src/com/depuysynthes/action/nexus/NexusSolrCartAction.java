@@ -120,6 +120,7 @@ public class NexusSolrCartAction extends SBActionAdapter {
 			data.put("time", getCookie(req, "time"));
 			data.put("caseId", getCookie(req, "caseId"));
 			data.put("baseDomain", req.getHostName());
+			data.put("format", req.getParameter("format"));
 			
 			report.setData(data);
 			req.setAttribute(Constants.BINARY_DOCUMENT, report);
