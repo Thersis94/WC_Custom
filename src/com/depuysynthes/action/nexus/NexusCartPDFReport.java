@@ -12,6 +12,7 @@ import org.xhtmlrenderer.pdf.ITextRenderer;
 import com.lowagie.text.pdf.BaseFont;
 import com.siliconmtn.commerce.ShoppingCartItemVO;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 
 
@@ -67,46 +68,47 @@ public class NexusCartPDFReport  extends AbstractSBReportVO {
 		html.append("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">");
 		html.append("<html><head><title>Case Summary</title></head><body>");
 		html.append("<link href='/binary/themes/CUSTOM/DEPUY/DPY_SYN_NEXUS/scripts/css/font-awesome.css' rel='stylesheet'>");
-		html.append("<style>td{padding:0px 12px;}</style>");
-		html.append("<table style='color:#636363;border-collapse:collapse;font-size:16px;'><tbody><tr>");
-		html.append("<td colspan='4'><img style='width:100%' src='/binary/themes/CUSTOM/DEPUY/DPY_SYN_NEXUS/images/logo.jpg'/></td>");
-		html.append("<td colspan='5'><p style='font-size:20px;'><span style='color:#1A496A;'>U</span>nique&nbsp;");
+		html.append("<style>body{font-family: 'MyriadWebPro';}th{margin-bottom:10px;border-bottom:solid black 2px; font-size:12px;}</style>");
+		
+		html.append("<table style='color:#636363;border-collapse:collapse;font-size:16px; width:100%;'><tbody>");
+		html.append("<tr><td style='width:48%'><img style='width:200px' src='/binary/themes/CUSTOM/DEPUY/DPY_SYN_NEXUS/images/logo.png' /></td><td colspan='2' style='text-align:right;'>");
+		html.append("<p style='font-size:20px;'><span style='color:#1A496A;'>U</span>nique&nbsp;");
 		html.append("<span style='color:#1A496A;'>D</span>evice&nbsp;");
-		html.append("<span style='color:#1A496A;'>I</span>dentification</p>");
-		html.append("</td></tr><tr><td colspan='4' rowspan='5' style='font-size:16px;'>Case Report(ID:").append(data.get("caseId")).append(")</td>");
-		html.append("<td colspan='2' style='border-left:1px solid black; padding-left:12px;font-size:12px;'>Surgery Date and Time:</td>");
-		html.append("<td colspan='3' style='font-size:12px;'>").append(data.get("time")).append("</td></tr>");
-		html.append("<tr><td colspan='2' style='border-left:1px solid black; padding-left:12px;font-size:12px;'>Surgeon Name:</td>");
-		html.append("<td colspan='3' style='font-size:12px;'>").append(data.get("surgeon")).append("</td></tr><tr>");
-		html.append("<td colspan='2' style='border-left:1px solid black; padding-left:12px;font-size:12px;'>Hospital Name:</td>");
-		html.append("<td colspan='3' style='font-size:12px;'>").append(data.get("hospital")).append("</td></tr><tr>");
-		html.append("<td colspan='2' style='border-left:1px solid black; padding-left:12px;font-size:12px;'>OR Room:</td>");
-		html.append("<td colspan='3' style='font-size:12px;'>").append(data.get("room")).append("</td></tr><tr>");
-		html.append("<td colspan='2' style='border-left:1px solid black; padding-left:12px;font-size:12px;'>Case ID:</td>");
-		html.append("<td colspan='3' style='font-size:12px;'>").append(data.get("caseId")).append("</td></tr><tr>");
-		html.append("<td colspan='10'><span><i class='fa fa-2'>&#xf0b1;</i>&nbsp;Products</span></td></tr><tr>");
-		html.append("<td colspan='3'>&nbsp;</td><td colspan='2'>");
-		html.append("<img style='width:35%' src='/binary/themes/CUSTOM/DEPUY/DPY_SYN_NEXUS/images/line-before.jpg' />");
-		html.append("UDI<img style='width:35%' src='/binary/themes/CUSTOM/DEPUY/DPY_SYN_NEXUS/images/line-after.jpg' /></td>");
-		html.append("</tr><tr style='margin-bottom:12px;'>");
-		html.append("<td style='font-size:12px;border-bottom:2px solid black;'>&nbsp;</td>");
-		html.append("<td style='font-size:12px;border-bottom:2px solid black; width:80px;'>Product No.</td>");
-		html.append("<td style='font-size:12px;border-bottom:2px solid black;'>Company</td>");
-		html.append("<td style='font-size:12px;border-bottom:2px solid black;'>GTIN</td>");
-		html.append("<td style='font-size:12px;border-bottom:2px solid black;'>LOT No.</td>");
-		html.append("<td style='font-size:12px;border-bottom:2px solid black;width:60px;text-align:center;'>Date Lot</td>");
-		html.append("<td style='font-size:12px;border-bottom:2px solid black;'>UOM</td>");
-		html.append("<td style='font-size:12px;border-bottom:2px solid black;'>QTY</td>");
-		html.append("<td style='font-size:12px;border-bottom:2px solid black;'>Barcodes</td>");
-		html.append("<td>&nbsp;</td></tr>");
+		html.append("<span style='color:#1A496A;'>I</span>dentification</p></td></tr>");
+		html.append("<tr><td rowspan='5'>");
+		if (StringUtil.checkVal(data.get("caseId")).length() > 0)
+			html.append("<span style='font-size:20px;'>Case Report(ID:").append(data.get("caseId")).append(")</span>");
+		html.append("</td>");
+		html.append("<td style='border-left: solid 1px black; padding-left:10px;font-size:14px;'>Surgery Date and Time:</td>");
+		html.append("<td style='font-size:14px;'>").append(data.get("time")).append("</td></tr>");
+		html.append("<tr><td style='border-left: solid 1px black; padding-left:10px;font-size:14px;'>Surgeon Name:</td>");
+		html.append("<td style='font-size:14px;'>").append(data.get("surgeon")).append("</td></tr>");
+		html.append("<tr><td style='border-left: solid 1px black; padding-left:10px;font-size:14px;'>Hospital Name:</td>");
+		html.append("<td style='font-size:14px;'>").append(data.get("hospital")).append("</td></tr>");
+		html.append("<tr><td style='border-left: solid 1px black; padding-left:10px;font-size:14px;'>OR Room:</td>");
+		html.append("<td style='font-size:14px;'>").append(data.get("room")).append("</td></tr>");
+		html.append("<tr><td style='border-left: solid 1px black; padding-left:10px;font-size:14px;'>Case ID:</td>");
+		html.append("<td style='font-size:14px;'>").append(data.get("caseId")).append("</td></tr></tbody></table>");
+		html.append("<span style='font-size:24px; color:#636363;'><i class='fa fa-2'>&#xf0b1;</i>&nbsp;Products</span>");
+		html.append("<div style='position:relative; left:26%;'>");
+		html.append("<img src='/binary/themes/CUSTOM/DEPUY/DPY_SYN_NEXUS/images/line-before.jpg' style='width:60px' /> ");
+		html.append("UDI<img src='/binary/themes/CUSTOM/DEPUY/DPY_SYN_NEXUS/images/line-after.jpg' style='width:60px' /></div>");
+		html.append("<table style='color:#636363;border-collapse:collapse;font-size:16px; width:100%'>");
+		html.append("<tbody><tr style='margin-bottom:10px;'><th style='width:2%'>&nbsp;</th><th style='width:12%'>Product No.</th>");
+		html.append("<th style='width:12%'>Company</th><th style='width:15%;'>GTIN</th><th style='width:10%'>LOT No.</th>");
+		html.append("<th style='width:8%'>Date Lot</th><th style='width:8%'>UOM</th><th style='width:7%'>QTY</th>");
+		html.append("<th>Barcode</th></tr>");
+
 
 		// Loop over all the items in the cart
 		@SuppressWarnings("unchecked")
 		Map<String, ShoppingCartItemVO> cart = (Map<String, ShoppingCartItemVO>) data.get("cart");
 		int i=1;
+		String border="border-bottom:1px solid black;";
 		for(String key : cart.keySet()){
+			if (i == cart.size()) border="";
 			ShoppingCartItemVO item = cart.get(key);
-			html.append("<tr><td style='font-size:12px; width:10px;'>").append(i).append(".</td>");
+			html.append("<tr><td style='font-size:12px;'>").append(i).append(".</td>");
 			html.append("<td style='font-size:12px;'>").append(item.getProduct().getProductId()).append("</td>");
 			html.append("<td style='font-size:12px;'>").append(item.getProduct().getProdAttributes().get("orgName")).append("</td>");
 			html.append("<td style='font-size:12px;'>").append(item.getProduct().getProdAttributes().get("gtin")).append("</td>");
@@ -118,18 +120,20 @@ public class NexusCartPDFReport  extends AbstractSBReportVO {
 			html.append("</td>");
 			html.append("<td style='font-size:12px;'>").append(item.getProduct().getProdAttributes().get("uom")).append("</td>");
 			html.append("<td style='font-size:12px;'>").append(item.getProduct().getProdAttributes().get("qty")).append("</td>");
-			html.append("<td colspan='2' style='font-size:12px; width:200px;'><span style='font-weight:bold;'>GTIN</span>");
+			html.append("<td style='font-size:12px; width:400px;min-height:70px;'>");
 			
-			if ("QR".equals(data.get("format"))) {
-				html.append("<span><img style='margin-left:5px;' src='/barcodeGenerator?barcodeData=").append(item.getProduct().getProdAttributes().get("gtin")).append("&height=25&humanReadable=false&format=").append(data.get("format")).append("' /></span></td></tr>");
-				html.append("<tr><td style='border-bottom:1px solid black;'>&nbsp;</td>");
-				html.append("<td colspan='7' style='font-size:12px; width:200px;border-bottom:1px solid black;'>").append(item.getProduct().getShortDesc()).append("</td><td colspan='2' style='font-size:12px;border-bottom:1px solid black;'>");
-				html.append("<span style='font-weight:bold;'>LOT<span><img style='margin-left:10px;' src='/barcodeGenerator?barcodeData=").append(item.getProduct().getProdAttributes().get("lotNo")).append("&height=25&humanReadable=false&format=").append(data.get("format")).append("' /></span>");
+			if ("DM".equals(data.get("format"))) {
+				html.append("<span><img src='/barcodeGenerator?barcodeData=").append(item.getProduct().getProdAttributes().get("gtin")).append("&height=50&humanReadable=false&format=").append(data.get("format")).append("' /></span></td></tr>");
+				html.append("<tr style='margin-bottom:10px;'><td style='").append(border).append("'>&nbsp;</td>");
+				html.append("<td colspan='7' style='font-size:12px; width:400px;").append(border).append("'>");
+				html.append(item.getProduct().getShortDesc()).append("</td><td style='font-size:12px;min-height:70px;").append(border).append("'>");
+				html.append("<img style='margin-bottom:10px;' src='/barcodeGenerator?barcodeData=").append(item.getProduct().getProdAttributes().get("lotNo")).append("&height=50&humanReadable=false&format=").append(data.get("format")).append("' /></span>");
 			} else {
-				html.append("<span><img style='height:10px; margin-left:5px;' src='/barcodeGenerator?barcodeData=").append(item.getProduct().getProdAttributes().get("gtin")).append("&height=25&humanReadable=false' /></span></td></tr>");
-				html.append("<tr><td style='border-bottom:1px solid black;'>&nbsp;</td>");
-				html.append("<td colspan='7' style='font-size:12px; width:200px;border-bottom:1px solid black;'>").append(item.getProduct().getShortDesc()).append("</td><td colspan='2' style='font-size:12px;border-bottom:1px solid black;'>");
-				html.append("<span style='font-weight:bold;'>LOT<span><img style='height:10px; margin-left:10px;' src='/barcodeGenerator?barcodeData=").append(item.getProduct().getProdAttributes().get("lotNo")).append("&height=25&humanReadable=false' /></span>");
+				html.append("<span style='font-weight:bold;position:relative;top:-5px;'>GTIN</span><span><img style='height:50px; margin-left:5px;' src='/barcodeGenerator?barcodeData=").append(item.getProduct().getProdAttributes().get("gtin")).append("&height=50&humanReadable=false' /></span></td></tr>");
+				html.append("<tr><td style='").append(border).append("'>&nbsp;</td>");
+				html.append("<td colspan='7' style='font-size:12px; width:400px;").append(border).append("'>");
+				html.append(item.getProduct().getShortDesc()).append("</td><td style='font-size:12px;min-height:70px; margin-bottom:10px;").append(border).append("'>");
+				html.append("<span style='font-weight:bold;position:relative;top:-5px;'>LOT</span><span><img style='height:50px; margin-left:10px;' src='/barcodeGenerator?barcodeData=").append(item.getProduct().getProdAttributes().get("lotNo")).append("&height=50&humanReadable=false' /></span>");
 			}
 			html.append("</span></td></tr>");
 			i++;

@@ -1,10 +1,15 @@
 package com.depuysynthes.action.nexus;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.Cookie;
+
+import org.apache.solr.client.solrj.response.FacetField;
+import org.apache.solr.client.solrj.response.FacetField.Count;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.SMTActionInterface;
@@ -21,6 +26,7 @@ import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
+import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -128,6 +134,11 @@ public class NexusSolrCartAction extends SBActionAdapter {
 			return;
 		}
 		
+		// Build a list of all the companies that are currently in the database
+		// and add that to the request object
+		if (req.getAttribute("orgs") == null)
+			buildCompanyList(req);
+		
 		// Build the filter queries so that we don't get any items
 		// that are already in the cart or from a different organization
 		buildFilterQueries(req, cart);
@@ -143,6 +154,43 @@ public class NexusSolrCartAction extends SBActionAdapter {
 	}
 	
 	
+	/**
+	 * Queries the solr server with a blank request and builds a list of 
+	 * organizations in the solr server from that
+	 * @param req
+	 * @throws ActionException 
+	 */
+	private void buildCompanyList(SMTServletRequest req) throws ActionException {
+		// Save the search data here so we can make the blank request
+		String searchData = req.getParameter("searchData");
+		req.setParameter("searchData", "", true);
+		List<String> orgs = new ArrayList<>();
+	    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+	    	log.debug((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
+	    	actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
+	    	SMTActionInterface sai = new SolrAction(actionInit);
+	    	sai.setDBConnection(dbConn);
+	    	sai.setAttributes(attributes);
+		sai.retrieve(req);
+
+	    	mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+	    	
+	    	SolrResponseVO resp = (SolrResponseVO) mod.getActionData();
+	    	for (FacetField facet : resp.getFacets()) {
+	    		if("organizationName".equals(facet.getName())) {
+	    			for (Count name : facet.getValues()) {
+	    				orgs.add(name.getName());
+	    			}
+	    		}
+	    			
+	    	}
+	    	req.setAttribute("orgs", orgs);
+	    	req.setParameter("searchData", searchData, true);
+		
+	}
+
+
+
 	/**
 	 * Checks if a cookie exists and returns either the cookie's value or an
 	 * empty string
