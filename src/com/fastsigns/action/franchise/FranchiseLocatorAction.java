@@ -1,23 +1,14 @@
 package com.fastsigns.action.franchise;
 
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 
 import com.fastsigns.action.franchise.vo.FranchiseVO;
-import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
-import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.dealer.DealerLocationVO;
 import com.smt.sitebuilder.action.dealer.DealerLocatorAction;
 import com.smt.sitebuilder.action.dealer.DealerLocatorVO;
-import com.smt.sitebuilder.common.ModuleVO;
-import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title</b>: FranchiseLocatorAction.java <p/>
@@ -50,32 +41,6 @@ public class FranchiseLocatorAction extends DealerLocatorAction {
 	
 	/*
 	 * (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.dealer.DealerLocatorAction#retrieve(com.siliconmtn.http.SMTServletRequest)
-	 */
-	public void retrieve(SMTServletRequest req) throws ActionException {
-		log.debug("Looking up Franchise info ...");
-		super.retrieve(req);
-		
-		String vcard = StringUtil.checkVal(req.getParameter("vcard"));
-		String dli = StringUtil.checkVal(req.getParameter("dealerLocationId"));
-		//if the request was for a VCard, it has already been handled by the call to super
-		if (vcard.length() > 0 && dli.length() > 0) { 
-			return;
-		}
-		
-		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
-		DealerLocatorVO loc = (DealerLocatorVO) mod.getActionData();
-		try {
-			if (loc.getResultCount() > 0)
-				loc.setResults(getCustomFranchiseData(loc.getResults()));
-		} catch (SQLException e) {
-			log.error(e);
-			throw new ActionException(e);
-		}
-	}
-	
-	/*
-	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.dealer.DealerLocatorAction#getDealerInfoContainer()
 	 */
 	@Override
@@ -83,48 +48,60 @@ public class FranchiseLocatorAction extends DealerLocatorAction {
 		return new FranchiseVO(rs);
 	}
 	
-	/**
-	 * Adds custom franchise data from the database view to the retrieved centers
-	 * @param orig
-	 * @return
-	 * @throws SQLException
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.dealer.DealerLocatorAction#getDealerInfoQuery(java.lang.String[])
 	 */
-	public List<DealerLocationVO> getCustomFranchiseData(List<DealerLocationVO> orig)
-	throws SQLException{
-		Map<String,Object> franMap = new LinkedHashMap<>();
-		List<DealerLocationVO> franList = new ArrayList<>();
+	@Override
+	protected String getDealerInfoQuery(String[] dlrLocnIds){
+		
 		StringBuilder sql = new StringBuilder();
-		sql.append("select dealer_location_id, franchise_id, use_raqsaf, country_cd ");
-		sql.append("from FTS_FRANCHISE_INFO_VIEW ");
-		sql.append("where dealer_location_id in (");
-		for (int index = 0; index < orig.size(); index++){
-			sql.append("?");
-			if (index+1<orig.size())
-				sql.append(",");
-			//add the vo's to the map here so we don't have to iterate a second time
-			franMap.put(orig.get(index).getDealerLocationId(), orig.get(index));
-		}
+		sql.append("select * from FTS_FRANCHISE_INFO_VIEW ");
+		sql.append("where dealer_location_id in (''");
+		for (int x=dlrLocnIds.length; x > 0; --x) sql.append(",?");
 		sql.append(")");
 		
-		log.debug(sql.toString());
+		return sql.toString();
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.dealer.DealerLocatorAction#getLocationResultsQuery(com.smt.sitebuilder.action.dealer.DealerLocatorVO, int, com.siliconmtn.http.SMTServletRequest, java.lang.String, java.lang.String[], java.lang.String)
+	 */
+	@Override
+	protected String getLocationResultsQuery(DealerLocatorVO locator, int type, 
+			SMTServletRequest req, String country,String[] productIds, String locationName){
+		Boolean useAttrib1Txt = Convert.formatBoolean((req.getParameter("useAttrib1Txt")));
 		
-		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())){
-			int i = 0;
-			for(DealerLocationVO vo:orig){
-				ps.setString(++i, vo.getDealerLocationId());
+		StringBuilder sb = new StringBuilder();
+		sb.append("select * from FTS_FRANCHISE_INFO_VIEW ");
+		// append dealer types
+		sb.append("where DEALER_TYPE_ID in (");
+		for(int i = 0; i < locator.getDealerTypes().size(); i++){
+			if(i > 0) sb.append(", ");
+			sb.append("?");
+		}		
+		sb.append(") and PARENT_ID is null ");
+		if (locator.getActiveOnlyFlag() == 1) sb.append("and b.ACTIVE_FLG = 1 ");
+		if (locator.activePromotionsOnly()) sb.append(" and b.PROMOTIONS_FLG=1 ");
+		// we need country code for all search types
+		sb.append("and b.COUNTRY_CD = ? ");
+		if (STATE_SEARCH_TYPE == type) sb.append("and STATE_CD = ? ");
+		if (locationName.length() > 0)	 sb.append("and LOCATION_NM like ? ");
+		if (useAttrib1Txt) sb.append("and ATTRIB1_TXT is not null and ATTRIB1_TXT != '' ");
+		if (productIds.length > 1) {
+			sb.append("and PRODUCT_ID in (");
+			for (int i = 0; i < productIds.length; i++) {
+				if (i > 0) sb.append(",");
+				sb.append("?");
 			}
-			
-			ResultSet rs = ps.executeQuery();
-			FranchiseVO fran = null;
-			while (rs.next()){
-				fran = (FranchiseVO) franMap.get(rs.getString("dealer_location_id"));
-				fran.assignData(rs, false);
-			}
-			
-			for(Object obj:franMap.values())
-				franList.add((DealerLocationVO) obj);
-			
+			sb.append(") ");
+		} else if (productIds.length > 0) {
+			sb.append("and e.PRODUCT_ID = ? ");
 		}
-		return franList;
+		sb.append("order by LOCATION_NM ");
+		
+		
+		return sb.toString();
 	}
 }

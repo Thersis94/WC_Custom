@@ -68,13 +68,7 @@ public class FranchiseVO extends DealerLocationVO {
 		countryCode = loc.substring(loc.indexOf("_")+1, loc.length());
 	}
 	
-	public void assignData(ResultSet rs){
-		this.assignData(rs, true);
-	}
-	
-	public void assignData(ResultSet rs, boolean includeSuper) {
-		if (includeSuper)
-			super.setData(rs);
+	public void assignData(ResultSet rs) {
 		DBUtil db = new DBUtil();
 		locationDescId = db.getStringVal("location_desc_option_id", rs);
 		rightImageUrl = db.getStringVal("image_path_url", rs);
@@ -110,11 +104,6 @@ public class FranchiseVO extends DealerLocationVO {
 		}
 		
 		setLocationDesc(desc.toString());
-	}
-
-	@Override
-	public void setData(ResultSet rs){
-		assignData(rs, true); 
 	}
 	
 	/**
