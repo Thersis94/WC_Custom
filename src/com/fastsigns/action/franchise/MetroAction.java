@@ -156,7 +156,6 @@ public class MetroAction extends SBActionAdapter {
 			mcvo.setMapData(this.getMapData(mcvo));
 			req.setAttribute("mapAltData", null);
 			mcvo.setProdList(mpa.getProductCategories(mcvo.getMetroAreaId()));
-			getFranchiseResults(mcvo,req);
 			
 			//If we're on a product page, update the title with the products title.
 			log.debug("productAlias = " + productAlias);
@@ -184,7 +183,6 @@ public class MetroAction extends SBActionAdapter {
 			mcvo.setMapData(this.getMapData(mcvo));
 			req.setAttribute("mapAltData", null);
 			mcvo.setProductPages(mpa.getProductPages(mcvo.getMetroAreaId(), false, null));
-			getFranchiseResults(mcvo,req);
 			
 			//If we're on a product page, update the title with the products title.
 			log.debug("productAlias = " + productAlias);
@@ -230,27 +228,6 @@ public class MetroAction extends SBActionAdapter {
 		}
 	}
 	
-	/**
-	 * Adds franchise data to vo list
-	 * @param mcvo
-	 * @param req
-	 * @throws ActionException
-	 */
-	private void getFranchiseResults(MetroContainerVO mcvo, SMTServletRequest req) 
-	throws ActionException {
-		FranchiseLocatorAction sai = new FranchiseLocatorAction();
-		sai.setAttributes(attributes);
-		sai.setDBConnection(dbConn);
-		List<DealerLocationVO> lst = null;
-		try {
-			lst = sai.getCustomFranchiseData(mcvo.getResults());
-		} catch (SQLException e) {
-			log.error(e);
-		}
-		if (lst != null)
-			mcvo.setResults(lst); 
-	}
-
 	/**
 	 * Set the canonical and relative urls for the page based on the product and metro aliases we are given
 	 * @param req
