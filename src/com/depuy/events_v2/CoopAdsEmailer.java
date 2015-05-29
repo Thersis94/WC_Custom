@@ -10,6 +10,7 @@ import org.apache.log4j.Logger;
 import com.depuy.events.vo.CoopAdVO;
 import com.depuy.events_v2.vo.ConsigneeVO;
 import com.depuy.events_v2.vo.DePuyEventSeminarVO;
+import com.depuy.events_v2.vo.DePuyEventSurgeonVO;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
@@ -256,6 +257,7 @@ public class CoopAdsEmailer {
 		EventEntryVO event = sem.getEvents().get(0);
 		ConsigneeVO consignee = sem.getConsignees().get((isHospital ? Long.valueOf(2) : Long.valueOf(1)));
 		if (consignee == null) consignee = new ConsigneeVO();
+		DePuyEventSurgeonVO surgeon = sem.getSurgeon();
 		Date approvalDt = addBusinessDays(6);
 
 		StringBuilder msg = new StringBuilder();
@@ -271,12 +273,12 @@ public class CoopAdsEmailer {
 		msg.append("set-up and contracted by DePuy Synthes.  Your credit card information will NOT ");
 		msg.append("be provided to any party other than PayPal to ensure the privacy and security of your personal information.</p>");
 		
-		msg.append("<p>Ad approval and payment must be received by ").append(
-				Convert.formatDate(approvalDt, Convert.DATE_LONG));
+		msg.append("<p>Ad approval and payment must be received by ");
+		msg.append(Convert.formatDate(approvalDt, Convert.DATE_LONG));
 		msg.append(" or the seminar will be canceled.</p>");
-		msg.append("<p><a href=\"http://").append(site.getSiteAlias())
-				.append("/approve-ad?reqType=coopAdsReview&amp;eventPostcardId=")
-				.append(sem.getEventPostcardId());
+		msg.append("<p><a href=\"http://").append(site.getSiteAlias());
+		msg.append("/approve-ad?reqType=coopAdsReview&amp;eventPostcardId=");
+		msg.append(sem.getEventPostcardId());
 		if (isHospital) msg.append("&isHosp=1");
 		msg.append("\">Click here to review &amp; approve this ad.</a></p>");
 		msg.append("<p>Regards,<br/><i>DePuy Synthes Joint Reconstruction</i></p><br/>");
@@ -284,10 +286,15 @@ public class CoopAdsEmailer {
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipient(consignee.getEmail());
+			if (consignee.getEmail() != null) mail.addRecipient(consignee.getEmail());
 			mail.addBCC(site.getAdminEmail());
 			mail.addBCC("rwilkin7@its.jnj.com");
 			mail.addCC(sem.getOwner().getEmailAddress());
+			
+			//add the surgeon's secondary contact, if they have one
+			if (surgeon != null && StringUtil.isValidEmail(surgeon.getSecEmail()))
+				mail.addCC(surgeon.getSecEmail());
+			
 			mail.setSubject("Approval Required: Promotion for Seminar #" + sem.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
 			mail.setHtmlBody(msg.toString());
