@@ -76,19 +76,19 @@ public class NexusCartPDFReport  extends AbstractSBReportVO {
 		html.append("<span style='color:#1A496A;'>D</span>evice&nbsp;");
 		html.append("<span style='color:#1A496A;'>I</span>dentification</p></td></tr>");
 		html.append("<tr><td rowspan='5'>");
-		if (StringUtil.checkVal(data.get("caseId")).length() > 0)
-			html.append("<span style='font-size:20px;'>Case Report(ID:").append(data.get("caseId")).append(")</span>");
+		if (StringUtil.checkVal(data.get(NexusSolrCartAction.CASE_ID)).length() > 0)
+			html.append("<span style='font-size:20px;'>Case Report(ID:").append(data.get(NexusSolrCartAction.CASE_ID)).append(")</span>");
 		html.append("</td>");
 		html.append("<td style='border-left: solid 1px black; padding-left:10px;font-size:14px;'>Surgery Date and Time:</td>");
-		html.append("<td style='font-size:14px;'>").append(data.get("time")).append("</td></tr>");
+		html.append("<td style='font-size:14px;'>").append(data.get(NexusSolrCartAction.TIME)).append("</td></tr>");
 		html.append("<tr><td style='border-left: solid 1px black; padding-left:10px;font-size:14px;'>Surgeon Name:</td>");
-		html.append("<td style='font-size:14px;'>").append(data.get("surgeon")).append("</td></tr>");
+		html.append("<td style='font-size:14px;'>").append(data.get(NexusSolrCartAction.SURGEON)).append("</td></tr>");
 		html.append("<tr><td style='border-left: solid 1px black; padding-left:10px;font-size:14px;'>Hospital Name:</td>");
-		html.append("<td style='font-size:14px;'>").append(data.get("hospital")).append("</td></tr>");
+		html.append("<td style='font-size:14px;'>").append(data.get(NexusSolrCartAction.HOSPITAL)).append("</td></tr>");
 		html.append("<tr><td style='border-left: solid 1px black; padding-left:10px;font-size:14px;'>OR Room:</td>");
-		html.append("<td style='font-size:14px;'>").append(data.get("room")).append("</td></tr>");
+		html.append("<td style='font-size:14px;'>").append(data.get(NexusSolrCartAction.ROOM)).append("</td></tr>");
 		html.append("<tr><td style='border-left: solid 1px black; padding-left:10px;font-size:14px;'>Case ID:</td>");
-		html.append("<td style='font-size:14px;'>").append(data.get("caseId")).append("</td></tr></tbody></table>");
+		html.append("<td style='font-size:14px;'>").append(data.get(NexusSolrCartAction.CASE_ID)).append("</td></tr></tbody></table>");
 		html.append("<span style='font-size:24px; color:#636363;'><i class='fa fa-2'>&#xf0b1;</i>&nbsp;Products</span>");
 		html.append("<div style='position:relative; left:26%;'>");
 		html.append("<img src='/binary/themes/CUSTOM/DEPUY/DPY_SYN_NEXUS/images/line-before.jpg' style='width:60px' /> ");
@@ -123,11 +123,11 @@ public class NexusCartPDFReport  extends AbstractSBReportVO {
 			html.append("<td style='font-size:12px; width:400px;min-height:70px;'>");
 			
 			if ("DM".equals(data.get("format"))) {
-				html.append("<span><img src='/barcodeGenerator?barcodeData=").append(item.getProduct().getProdAttributes().get("gtin")).append("&height=50&humanReadable=false&format=").append(data.get("format")).append("' /></span></td></tr>");
+				html.append("<span><img style='height:35px;' src='/barcodeGenerator?barcodeData=").append(item.getProduct().getProdAttributes().get("gtin")).append("&height=35&humanReadable=false&format=").append(data.get("format")).append("' /></span></td></tr>");
 				html.append("<tr style='margin-bottom:10px;'><td style='").append(border).append("'>&nbsp;</td>");
 				html.append("<td colspan='7' style='font-size:12px; width:400px;").append(border).append("'>");
 				html.append(item.getProduct().getShortDesc()).append("</td><td style='font-size:12px;min-height:70px;").append(border).append("'>");
-				html.append("<img style='margin-bottom:10px;' src='/barcodeGenerator?barcodeData=").append(item.getProduct().getProdAttributes().get("lotNo")).append("&height=50&humanReadable=false&format=").append(data.get("format")).append("' /></span>");
+				html.append("<img style='margin-bottom:10px;height:35px;' src='/barcodeGenerator?barcodeData=").append(item.getProduct().getProdAttributes().get("lotNo")).append("&height=35&humanReadable=false&format=").append(data.get("format")).append("' /></span>");
 			} else {
 				html.append("<span style='font-weight:bold;position:relative;top:-5px;'>GTIN</span><span><img style='height:50px; margin-left:5px;' src='/barcodeGenerator?barcodeData=").append(item.getProduct().getProdAttributes().get("gtin")).append("&height=50&humanReadable=false' /></span></td></tr>");
 				html.append("<tr><td style='").append(border).append("'>&nbsp;</td>");

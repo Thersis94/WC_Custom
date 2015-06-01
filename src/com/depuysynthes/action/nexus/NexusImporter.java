@@ -51,6 +51,7 @@ public class NexusImporter extends CommandLineUtil {
 	private String directory;
 	// Column names for pertinent data
 	private String orgCol;
+	private String orgNmCol;
 	private String codeCol;
 	private String descCol;
 	private String statusCol;
@@ -89,9 +90,10 @@ public class NexusImporter extends CommandLineUtil {
 		
 		if (fileName.contains(".zip")) {
 			 orgCol = "SLS_ORG_CO_CD";
+			 orgNmCol = "PROVR_SHRT_NM";
 			 codeCol = "PSKU_CD";
 			 descCol = "PROD_DESCN_TXT";
-			 statusCol = "PROD_STAT_CD ";
+			 statusCol = "STAT_CD";
 			 gtinCol = "GTIN_CD";
 			 gtinLevelCol = "GTIN_TYP_CD";
 			 deviceCol = "PRIM_DI";
@@ -104,6 +106,7 @@ public class NexusImporter extends CommandLineUtil {
 			 DELIMITER = ",";
 		} else {
 			 orgCol = "OperatingCompany";
+			 orgNmCol = "OperatingCompany";
 			 codeCol = "ProductNumber";
 			 descCol = "Description";
 			 statusCol = "unusedStatus";
@@ -151,7 +154,7 @@ public class NexusImporter extends CommandLineUtil {
 				NexusProductVO p = products.get(key);
 				try {
 					// If we are dealing with a zip file we need to filter out the unneeded products
-					if (isZip && (!"DO,DS,DM,DC".contains(StringUtil.checkVal(p.getOrgName(), "SKIP")) ||
+					if (isZip && (!"DO,DS,DM,DC".contains(StringUtil.checkVal(p.getOrgId(), "SKIP")) ||
 							!"AC,CT,DP,DS".contains(StringUtil.checkVal(p.getStatus(), "SKIP")) ||
 							!"USA".equals(StringUtil.checkVal(p.getRegion(), "SKIP")))) {
 						continue;
@@ -244,7 +247,13 @@ public class NexusImporter extends CommandLineUtil {
 		
 		// Build the map of pertinent columns from the supplied files
 		for (String fileName : fileDataList.keySet()) {
-			String[] rows = fileDataList.get(fileName).split("\\r?\\n");
+			String[] rows;
+			// Due to differences in how the files are put together zip files need to be handled special when split
+			if (fileName.contains(".zip")){
+				rows = fileDataList.get(fileName).split("\n");
+			} else {
+				rows = fileDataList.get(fileName).split("\\r?\\n");
+			}
 			if (rows.length < 2) continue;
 			String[] headers = rows[0].split(DELIMITER);
 			Map<String, List<String>> data = prepareDataMap();
@@ -279,7 +288,8 @@ public class NexusImporter extends CommandLineUtil {
 						productCode = getColData(i, data.get(codeCol));
 					}
 					p = new NexusProductVO();
-					p.setOrgName(getColData(i, data.get(orgCol)));
+					p.setOrgId(getColData(i, data.get(orgCol)));
+					p.setOrgName(getColData(i, data.get(orgNmCol)));
 					p.setProductName(getColData(i, data.get(codeCol)));
 					p.setSummary(getColData(i, data.get(descCol)));
 					p.addGtin(getColData(i, data.get(gtinCol)));
@@ -294,7 +304,7 @@ public class NexusImporter extends CommandLineUtil {
 					p.addRole(StringUtil.checkVal(SecurityController.PUBLIC_ROLE_LEVEL));
 					p.addOrganization(props.getProperty("organization"));
 					p.setRegion(getColData(i, data.get(regionCol)));
-					p.setState(getColData(i, data.get(statusCol)));
+					p.setStatus(getColData(i, data.get(statusCol)));
 					 
 					// If we have not received a primary device identifier
 					// but we have a GTIN of the valid level we use that instead
@@ -334,7 +344,9 @@ public class NexusImporter extends CommandLineUtil {
 	 */
 	private void updateColData(NexusProductVO p, Map<String, List<String>> data, int i) {
 		if (StringUtil.checkVal(p.getOrgName()).length() == 0)
-			p.setOrgName(getColData(i, data.get(orgCol)));
+			p.setOrgName(getColData(i, data.get(orgNmCol)));
+		if (StringUtil.checkVal(p.getOrgId()).length() == 0)
+			p.setOrgId(getColData(i, data.get(orgCol)));
 		if (StringUtil.checkVal(p.getSummary()).length() == 0)
 			p.setSummary(getColData(i, data.get(descCol)));
 		if (!p.getGtin().contains(getColData(i, data.get(gtinCol)))) {
@@ -384,6 +396,7 @@ public class NexusImporter extends CommandLineUtil {
 		Map<String, List<String>> data = new HashMap<>();
 
 		data.put(orgCol, new ArrayList<String>());
+		data.put(orgNmCol, new ArrayList<String>());
 		data.put(codeCol, new ArrayList<String>());
 		data.put(descCol, new ArrayList<String>());
 		data.put(statusCol, new ArrayList<String>());

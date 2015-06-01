@@ -44,6 +44,13 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 
 public class NexusSolrCartAction extends SBActionAdapter {
+
+	// Names for the cookies related to this action
+	public static final String HOSPITAL = "hospital";
+	public static final String ROOM = "room";
+	public static final String SURGEON = "surgeon";
+	public static final String TIME = "time";
+	public static final String CASE_ID = "caseId";
 	
 	public void build(SMTServletRequest req) throws ActionException {
 		Storage store = retrieveContainer(req);
@@ -71,7 +78,7 @@ public class NexusSolrCartAction extends SBActionAdapter {
 			product.addProdAttribute("uom", req.getParameter("uom"));
 			product.addProdAttribute("qty", StringUtil.checkVal(req.getParameter("qty"),"1"));
 			ShoppingCartItemVO item = new ShoppingCartItemVO(product);
-			item.setProductId(product.getProductId());
+			item.setProductId(product.getProductId()+product.getProdAttributes().get("lotNo"));
 			cart.add(item);
 		}
 		store.save(cart);
@@ -111,20 +118,28 @@ public class NexusSolrCartAction extends SBActionAdapter {
 		// Check if we are building a file, create the report generator and set the pertinent information
 		if (req.hasParameter("buildFile")) {
 			AbstractSBReportVO report;
+			String filename;
+			String caseId = getCookie(req, CASE_ID);
+			if (caseId.length() != 0) {
+				filename = "case-" + caseId;
+			} else {
+				filename = "DePuyUDI-" + new SimpleDateFormat("YYYYMMdd").format(Convert.getCurrentTimestamp());;
+			}
+			
 			if ("excel".equals(req.getParameter("buildFile"))) {
 				report = new NexusCartExcelReport();
-				report.setFileName("cart.xls");
+				report.setFileName(filename + ".xls");
 			} else {
 				report = new NexusCartPDFReport();
-				report.setFileName("cart.pdf");
+				report.setFileName(filename + ".pdf");
 			}
 			Map<String, Object> data = new HashMap<>();
 			data.put("cart", cart.getItems());
-			data.put("hospital", getCookie(req, "hospital"));
-			data.put("room", getCookie(req, "room"));
-			data.put("surgeon", getCookie(req, "surgeon"));
-			data.put("time", getCookie(req, "time"));
-			data.put("caseId", getCookie(req, "caseId"));
+			data.put("hospital", getCookie(req, HOSPITAL));
+			data.put("room", getCookie(req, ROOM));
+			data.put("surgeon", getCookie(req, SURGEON));
+			data.put("time", getCookie(req, TIME));
+			data.put("caseId", getCookie(req, CASE_ID));
 			data.put("baseDomain", req.getHostName());
 			data.put("format", req.getParameter("format"));
 			
@@ -139,9 +154,8 @@ public class NexusSolrCartAction extends SBActionAdapter {
 		if (req.getAttribute("orgs") == null)
 			buildCompanyList(req);
 		
-		// Build the filter queries so that we don't get any items
-		// that are already in the cart or from a different organization
-		buildFilterQueries(req, cart);
+		// Build the organization filter query
+		req.setParameter("fq", "organizationName:" + req.getParameter("orgName"));
 		
 		// Do the solr search
 	    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
@@ -199,33 +213,5 @@ public class NexusSolrCartAction extends SBActionAdapter {
 		Cookie c = req.getCookie(name);
 		if (c == null) return "";
 		return StringEncoder.urlDecode(c.getValue());
-	}
-	
-	
-	/**
-	 * Build the filter queries from the request object and the user's cart
-	 * @param req
-	 * @param cart
-	 */
-	private void buildFilterQueries(SMTServletRequest req, ShoppingCartVO cart) {
-		String[] newFq;
-		int i=0;
-		if (req.hasParameter("fq")) {
-			String[] fq = req.getParameterValues("fq");
-			newFq = new String[fq.length+cart.getItems().size() + 1];
-			for (; i<fq.length; i++){
-				newFq[i] = fq[i];
-			}
-		} else {
-			newFq = new String[cart.getItems().size() + 1];
-		}
-		
-		// Remove all items in the cart from the search
-		for (String id : cart.getItems().keySet())
-			newFq[i++] = "-documentId:"+id;
-		
-		newFq[i] = "organizationName:" + req.getParameter("orgName");
-		
-		req.setParameter("fq", newFq, true);
 	}
 }

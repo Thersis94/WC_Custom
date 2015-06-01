@@ -22,6 +22,7 @@ import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 public class NexusProductVO extends  SolrDocumentVO {
 	
 	public final static String solrIndex = "DEPUY_NEXUS";
+	private String orgId;
 	private String orgName;
 	private List<String> gtin;
 	private List<String> gtinLevel;
@@ -56,6 +57,16 @@ public class NexusProductVO extends  SolrDocumentVO {
 	public void setProductName(String productName) {
 		setDocumentId(productName);
 		setTitle(productName);
+	}
+
+	
+	public String getOrgId() {
+		return orgId;
+	}
+
+
+	public void setOrgId(String orgId) {
+		this.orgId = orgId;
 	}
 
 
