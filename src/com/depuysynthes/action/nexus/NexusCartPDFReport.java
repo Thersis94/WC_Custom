@@ -123,11 +123,11 @@ public class NexusCartPDFReport  extends AbstractSBReportVO {
 			html.append("<td style='font-size:12px; width:400px;min-height:70px;'>");
 			
 			if ("DM".equals(data.get("format"))) {
-				html.append("<span><img src='/barcodeGenerator?barcodeData=").append(item.getProduct().getProdAttributes().get("gtin")).append("&height=50&humanReadable=false&format=").append(data.get("format")).append("' /></span></td></tr>");
+				html.append("<span><img style='height:35px;' src='/barcodeGenerator?barcodeData=").append(item.getProduct().getProdAttributes().get("gtin")).append("&height=35&humanReadable=false&format=").append(data.get("format")).append("' /></span></td></tr>");
 				html.append("<tr style='margin-bottom:10px;'><td style='").append(border).append("'>&nbsp;</td>");
 				html.append("<td colspan='7' style='font-size:12px; width:400px;").append(border).append("'>");
 				html.append(item.getProduct().getShortDesc()).append("</td><td style='font-size:12px;min-height:70px;").append(border).append("'>");
-				html.append("<img style='margin-bottom:10px;' src='/barcodeGenerator?barcodeData=").append(item.getProduct().getProdAttributes().get("lotNo")).append("&height=50&humanReadable=false&format=").append(data.get("format")).append("' /></span>");
+				html.append("<img style='margin-bottom:10px;height:35px;' src='/barcodeGenerator?barcodeData=").append(item.getProduct().getProdAttributes().get("lotNo")).append("&height=35&humanReadable=false&format=").append(data.get("format")).append("' /></span>");
 			} else {
 				html.append("<span style='font-weight:bold;position:relative;top:-5px;'>GTIN</span><span><img style='height:50px; margin-left:5px;' src='/barcodeGenerator?barcodeData=").append(item.getProduct().getProdAttributes().get("gtin")).append("&height=50&humanReadable=false' /></span></td></tr>");
 				html.append("<tr><td style='").append(border).append("'>&nbsp;</td>");
