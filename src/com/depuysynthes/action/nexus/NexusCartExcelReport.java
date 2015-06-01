@@ -102,11 +102,11 @@ public class NexusCartExcelReport extends AbstractSBReportVO {
 			r.createCell(cellCnt++).setCellValue((String)p.getProdAttributes().get("lotNo"));
 			r.createCell(cellCnt++).setCellValue((String)p.getProdAttributes().get("uom"));
 			r.createCell(cellCnt++).setCellValue((String)p.getProdAttributes().get("qty"));
-			r.createCell(cellCnt++).setCellValue((String)data.get("caseId"));
-			r.createCell(cellCnt++).setCellValue((String)data.get("room"));
-			r.createCell(cellCnt++).setCellValue((String)data.get("hospital"));
-			r.createCell(cellCnt++).setCellValue((String)data.get("surgeon"));
-			r.createCell(cellCnt++).setCellValue((String)data.get("time"));
+			r.createCell(cellCnt++).setCellValue((String)data.get(NexusSolrCartAction.CASE_ID));
+			r.createCell(cellCnt++).setCellValue((String)data.get(NexusSolrCartAction.ROOM));
+			r.createCell(cellCnt++).setCellValue((String)data.get(NexusSolrCartAction.HOSPITAL));
+			r.createCell(cellCnt++).setCellValue((String)data.get(NexusSolrCartAction.SURGEON));
+			r.createCell(cellCnt++).setCellValue((String)data.get(NexusSolrCartAction.TIME));
 		}
 	}
 
