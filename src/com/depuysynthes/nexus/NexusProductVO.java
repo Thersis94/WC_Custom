@@ -1,4 +1,4 @@
-package com.depuysynthes.action.nexus;
+package com.depuysynthes.nexus;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,4 +1,4 @@
-package com.depuysynthes.action.nexus;
+package com.depuysynthes.nexus;
 
 // SMT Base Libs
 import java.io.ByteArrayInputStream;
