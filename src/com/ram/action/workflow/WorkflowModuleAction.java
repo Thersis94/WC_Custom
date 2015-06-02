@@ -245,10 +245,10 @@ public class WorkflowModuleAction extends AbstractWorkflowAction {
 					currentModuleId = rs.getString("WORKFLOW_MODULE_ID");
 					wm = new WorkflowModuleVO(rs);
 					wcp = new WorkflowConfigParamVO(rs);
-					wm.addConfig(wcp);
+					wm.addModuleConfig(wcp);
 				} else {
 					wcp = new WorkflowConfigParamVO(rs);
-					wm.addConfig(wcp);
+					wm.addModuleConfig(wcp);
 				}
 			}
 			

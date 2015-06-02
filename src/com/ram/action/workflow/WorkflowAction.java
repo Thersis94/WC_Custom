@@ -404,10 +404,10 @@ public class WorkflowAction extends AbstractWorkflowAction {
 					currentModuleXr = rs.getInt("MODULE_ORDER_NO");
 					wm = new WorkflowModuleVO(rs);
 					wcp = new WorkflowConfigParamVO(rs);
-					wm.addConfig(wcp);
+					wm.addModuleConfig(wcp);
 				} else {
 					wcp = new WorkflowConfigParamVO(rs);
-					wm.addConfig(wcp);
+					wm.addModuleConfig(wcp);
 				}
 			}
 			
@@ -666,7 +666,7 @@ public class WorkflowAction extends AbstractWorkflowAction {
 		List<WorkflowConfigParamVO> params = null;
 		boolean configIsInsert = false;
 		
-		params = new ArrayList<WorkflowConfigParamVO>(module.getConfig().values());
+		params = new ArrayList<WorkflowConfigParamVO>(module.getModuleConfig().values());
 		for (WorkflowConfigParamVO param : params) {
 			for (WorkflowModuleConfigXrVO config : param.getConfigValues()) {
 				configIsInsert = false;
