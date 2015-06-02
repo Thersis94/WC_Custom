@@ -77,7 +77,7 @@ public class OutstandingItems {
 			sem.addActionItem(ActionItem.survey); // [CF|CP|E]SEM requiring survey completion
 			
 		} else if (isFullyApproved && !isHSEM && !sem.isComplete()) {
-			boolean isCPSEM = "CPSEM".equals(event.getEventTypeCd());
+			boolean isCPSEM = "CPSEM".equals(event.getEventTypeCd()) || "MITEK-PEER".equals(event.getEventTypeCd());
 			
 			if (sem.getPostcardFileStatusFlg() == 2) {
 				sem.addActionItem(ActionItem.postcardApproval); // awaiting postcard approval
@@ -136,6 +136,7 @@ public class OutstandingItems {
 				}
 			}
 		}
+		log.debug("outstanding complete");
 	}
 	
 	
