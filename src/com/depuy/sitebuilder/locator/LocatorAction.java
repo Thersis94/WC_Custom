@@ -5,10 +5,21 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 
+
+
+
+
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 // SMT Base Libs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -37,6 +48,11 @@ import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.util.RecordDuplicatorUtility;
+
+
+
+
+
 
 // Xerces
 import org.apache.xerces.dom.DeferredDocumentImpl;
@@ -663,16 +679,35 @@ public class LocatorAction extends SBActionAdapter {
     }
     
     /**
-     * Attempts to find a surgeon from the XML search data on the session.  
-     * This method assumes that the underlying XML implementation(format) of 
-     * the search data on the session is based on Apache's Xerces implementation
-     * because this is the implementation used by the JSTL XML taglib.
+     * Attempts to find a surgeon from the search data on the session.  
      * @param req
      * @return
      */
     private Map<String,String> findSurgeonFromJSTLSessionVar(SMTServletRequest req) {
     	log.debug("finding surgeon from session");
     	String uniqueId = StringUtil.checkVal(req.getParameter("uniqueId"));
+    	String idFormat = StringUtil.checkVal(req.getParameter("idFormat"), null);
+    	if (idFormat != null) {
+    		if (idFormat.equalsIgnoreCase("json")) {
+    			return findSurgeonFromJson(req, uniqueId);
+    		} else {
+    			return null;
+    		}
+    	} else {
+    		return findSurgeonFromXml(req, uniqueId);
+    	}
+    }
+    
+    /**
+     * Attempts to find a surgeon from the XML search data on the session.  
+     * This method assumes that the underlying XML implementation(format) of 
+     * the search data on the session is based on Apache's Xerces implementation
+     * because this is the implementation used by the JSTL XML taglib.
+     * @param req
+     * @param uniqueId
+     * @return
+     */
+    private Map<String,String> findSurgeonFromXml(SMTServletRequest req, String uniqueId) {
     	DeferredDocumentImpl ddi = (DeferredDocumentImpl) req.getSession().getAttribute("locData");
     	Map<String,String> surgeon = null;
     	if (ddi != null) {
@@ -725,5 +760,63 @@ public class LocatorAction extends SBActionAdapter {
 	    	}
     	}		
     	return surgeon;
+    }
+
+    /**
+     * Attempts to find a surgeon from the JSON search data on the session.  
+     * @param req
+     * @param uniqueId
+     * @return
+     */
+    private Map<String,String> findSurgeonFromJson(SMTServletRequest req, String uniqueId) {
+    	Map<String,String> surgeon = null;
+    	String json = (String)req.getSession().getAttribute("locData");
+    	if (json != null && json.length() > 0) {
+			JsonParser parser = new JsonParser();
+			JsonElement jEle = null;
+			try {
+				jEle = parser.parse(json);
+				surgeon = new HashMap<>();
+			} catch (Exception e) {
+				log.error("Error parsing surgeon data from JSON on session, ", e);
+				return surgeon;
+			}
+			
+			JsonArray jArr = jEle.getAsJsonArray();
+			Iterator<JsonElement> jIter = jArr.iterator();
+			while (jIter.hasNext()) {
+				JsonObject jo = jIter.next().getAsJsonObject();
+				if (jo.has("uniqueId")) {
+					if (uniqueId.equalsIgnoreCase(jo.get("uniqueId").getAsString())) {
+						log.debug("found surgeon with uniqueId: " + uniqueId + "|" + jo.get("uniqueId").getAsString());
+						// found the surgeon record
+						surgeon.put("firstName", parseJsonStringValue(jo,"firstName"));
+						surgeon.put("lastName", parseJsonStringValue(jo,"lastName"));
+						surgeon.put("address1", parseJsonStringValue(jo,"address"));
+						surgeon.put("city", parseJsonStringValue(jo,"city"));
+						surgeon.put("state", parseJsonStringValue(jo,"state"));
+						surgeon.put("phone", parseJsonStringValue(jo,"phoneNumber"));
+						break;
+					}
+				}
+			}
+    	}
+    	if (surgeon != null) {
+    		log.debug("firstName: " + surgeon.get("firstName"));
+    		log.debug("lastName: " + surgeon.get("lastName"));
+    		log.debug("address1: " + surgeon.get("address1"));
+    		log.debug("city: " + surgeon.get("city"));
+    		log.debug("state: " + surgeon.get("state"));
+    		log.debug("phone: " + surgeon.get("phone"));
+    	}
+    	return surgeon;
+    }
+    
+    private String parseJsonStringValue(JsonObject jo, String propertyName) {
+    	if (jo.has(propertyName)) {
+    		return jo.get(propertyName).getAsString();
+    	} else {
+    		return "";
+    	}
     }
 }
