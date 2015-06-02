@@ -74,7 +74,7 @@ public class FranchiseLocatorAction extends DealerLocatorAction {
 		Boolean useAttrib1Txt = Convert.formatBoolean((req.getParameter("useAttrib1Txt")));
 		
 		StringBuilder sb = new StringBuilder();
-		sb.append("select fv.*, px.product_id from FTS_FRANCHISE_INFO_VIEW fv");
+		sb.append("select fv.*, px.product_id from FTS_FRANCHISE_INFO_VIEW fv ");
 		sb.append("left join DEALER_LOCATION_PRODUCT_XR px on fv.dealer_location_id=px.dealer_location_id ");
 		
 		// append dealer types
