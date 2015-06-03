@@ -67,9 +67,6 @@ public class FranchiseTimeVO implements Serializable {
 	 * @param times
 	 */
 	
-	//	public FranchiseTimeVO(Map<DayType, String> times, boolean useMilitaryTime) {
-	//this.times = buildTimes(useMilitaryTime);
-	//
 	 public FranchiseTimeVO(Map<DayType, String> times, String countryCd) {
 		 
 		this.times = this.buildTimes(getTimeFormat(countryCd));
@@ -279,7 +276,6 @@ public class FranchiseTimeVO implements Serializable {
 	           
 	    	   t.add(sdf.format(cal.getTime()));
 	    	   cal.add(Calendar.MINUTE,  30);
-	    	   System.out.println("loop" + sdf.format(cal.getTime()));
 	         }
 
 		return t;
