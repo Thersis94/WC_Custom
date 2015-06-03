@@ -771,44 +771,38 @@ public class LocatorAction extends SBActionAdapter {
     private Map<String,String> findSurgeonFromJson(SMTServletRequest req, String uniqueId) {
     	Map<String,String> surgeon = null;
     	String json = (String)req.getSession().getAttribute("locData");
-    	if (json != null && json.length() > 0) {
-			JsonParser parser = new JsonParser();
-			JsonElement jEle = null;
-			try {
-				jEle = parser.parse(json);
-				surgeon = new HashMap<>();
-			} catch (Exception e) {
-				log.error("Error parsing surgeon data from JSON on session, ", e);
-				return surgeon;
-			}
-			
-			JsonArray jArr = jEle.getAsJsonArray();
-			Iterator<JsonElement> jIter = jArr.iterator();
-			while (jIter.hasNext()) {
-				JsonObject jo = jIter.next().getAsJsonObject();
-				if (jo.has("uniqueId")) {
-					if (uniqueId.equalsIgnoreCase(jo.get("uniqueId").getAsString())) {
-						log.debug("found surgeon with uniqueId: " + uniqueId + "|" + jo.get("uniqueId").getAsString());
-						// found the surgeon record
-						surgeon.put("firstName", parseJsonStringValue(jo,"firstName"));
-						surgeon.put("lastName", parseJsonStringValue(jo,"lastName"));
-						surgeon.put("address1", parseJsonStringValue(jo,"address"));
-						surgeon.put("city", parseJsonStringValue(jo,"city"));
-						surgeon.put("state", parseJsonStringValue(jo,"state"));
-						surgeon.put("phone", parseJsonStringValue(jo,"phoneNumber"));
-						break;
-					}
+    	if (json == null) return surgeon;
+    	
+    	// parse the data from the session.
+		JsonParser parser = new JsonParser();
+		JsonElement jEle = null;
+		try {
+			jEle = parser.parse(json);
+			surgeon = new HashMap<>();
+		} catch (Exception e) {
+			log.error("Error parsing surgeon data from JSON on session, ", e);
+			return surgeon;
+		}
+		
+		JsonArray jArr = jEle.getAsJsonArray();
+		Iterator<JsonElement> jIter = jArr.iterator();
+		// loop JSON array until we find the surgeon we are looking for
+		while (jIter.hasNext()) {
+			JsonObject jo = jIter.next().getAsJsonObject();
+			if (jo.has("uniqueId")) {
+				if (uniqueId.equalsIgnoreCase(jo.get("uniqueId").getAsString())) {
+					// found surgeon record, add keys/values required by email/sms
+					surgeon.put("firstName", parseJsonStringValue(jo,"firstName"));
+					surgeon.put("lastName", parseJsonStringValue(jo,"lastName"));
+					surgeon.put("address1", parseJsonStringValue(jo,"address"));
+					surgeon.put("city", parseJsonStringValue(jo,"city"));
+					surgeon.put("state", parseJsonStringValue(jo,"state"));
+					surgeon.put("phone", parseJsonStringValue(jo,"phoneNumber"));
+					break;
 				}
 			}
-    	}
-    	if (surgeon != null) {
-    		log.debug("firstName: " + surgeon.get("firstName"));
-    		log.debug("lastName: " + surgeon.get("lastName"));
-    		log.debug("address1: " + surgeon.get("address1"));
-    		log.debug("city: " + surgeon.get("city"));
-    		log.debug("state: " + surgeon.get("state"));
-    		log.debug("phone: " + surgeon.get("phone"));
-    	}
+		}
+
     	return surgeon;
     }
     
