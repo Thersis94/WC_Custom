@@ -307,7 +307,6 @@ public class CenterPageAction extends SimpleActionAdapter {
 	 */
 	@SuppressWarnings("unchecked")
 	public void retrieve(SMTServletRequest req) throws ActionException {
-		Boolean useMilitaryTime = false;
 		
 		if (AdminConstants.REQ_LIST.equalsIgnoreCase(req.getParameter(AdminConstants.REQUEST_TYPE))) {
 			super.retrieve(req);
@@ -345,13 +344,8 @@ public class CenterPageAction extends SimpleActionAdapter {
 		
 		String cc = StringUtil.checkVal(f.getCountryCode());
 		
-		//changes the list of times from 12hr to 24hr for AE only
-		if (cc.equals("AE") ) {
-			useMilitaryTime = true;
-		}
-		
 		// Set Franchise Times
-		fc.setTimes(new FranchiseTimeVO((Map<FranchiseTimeVO.DayType, String>) f.getAttributes().get("times"), useMilitaryTime));
+		fc.setTimes(new FranchiseTimeVO((Map<FranchiseTimeVO.DayType, String>) f.getAttributes().get("times"), cc));
 			
 		// retrieve buttons
 		List<ButtonVO> buttons = fia.getButtonInfo(id);

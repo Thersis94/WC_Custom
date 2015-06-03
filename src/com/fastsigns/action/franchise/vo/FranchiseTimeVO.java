@@ -57,7 +57,7 @@ public class FranchiseTimeVO implements Serializable {
 	 * @param times
 	 */
 	public FranchiseTimeVO(Map<DayType, String> times) {
-		this(times, false);
+		this(times, null);
 	}
 	
 	/**
@@ -66,8 +66,13 @@ public class FranchiseTimeVO implements Serializable {
 	 * string so the jsp has less work to do.
 	 * @param times
 	 */
-	public FranchiseTimeVO(Map<DayType, String> times, boolean useMilitaryTime) {
-		this.times = buildTimes(useMilitaryTime);
+	
+	//	public FranchiseTimeVO(Map<DayType, String> times, boolean useMilitaryTime) {
+	//this.times = buildTimes(useMilitaryTime);
+	//
+	 public FranchiseTimeVO(Map<DayType, String> times, String countryCd) {
+		 
+		this.times = this.buildTimes(getTimeFormat(countryCd));
 		rawTimes = times;
 		combineTimes();
 		sortTimes();
@@ -75,7 +80,7 @@ public class FranchiseTimeVO implements Serializable {
 	}
 	
 	public FranchiseTimeVO(){
-		this.times = buildTimes(false);
+		this.times = buildTimes(getTimeFormat("US"));
 	}
 
 	/**
@@ -249,8 +254,8 @@ public class FranchiseTimeVO implements Serializable {
 	 * List of times used for generating webedit dropdowns.
 	 * @return
 	 */
-	private static List<String> buildTimes(boolean useMilitaryTime) {
-		
+	 private List<String> buildTimes(String format) {
+	
 		List<String> t = new ArrayList<String>(55);
 		
 		Locale locale = new Locale("en", "US");
@@ -259,11 +264,9 @@ public class FranchiseTimeVO implements Serializable {
 		
 		//uses simple date formatter to set up how a 24hr day and a 12hr day will
 		//be displayed 
-		if (useMilitaryTime) {
-			sdf = new SimpleDateFormat("HHmm");
-		}else{
-			sdf = new SimpleDateFormat("h:mm a");
-		}
+		
+			sdf = new SimpleDateFormat(format);
+		
 		
 		//sets the calendars time to midnight
 		cal.set(Calendar.MINUTE, 0);
@@ -273,13 +276,27 @@ public class FranchiseTimeVO implements Serializable {
 		t.add("");
 		//loops every half hour adding a new option to the list
 	       for(int i=1; i<49; i++){
+	           
 	    	   t.add(sdf.format(cal.getTime()));
 	    	   cal.add(Calendar.MINUTE,  30);
+	    	   System.out.println("loop" + sdf.format(cal.getTime()));
 	         }
 
 		return t;
 	}
 	
+	 /**
+	  * this method takes the country code and returns the time formate as a 
+	  * string.
+	  * @param countryCd
+	  * @return
+	  */
+	 private String getTimeFormat(String countryCd) {
+		    if (countryCd != null && countryCd.equals("AE")) return "HHmm";
+		     else return "hh:mm a";
+	}
+	 
+	 
 	/**
 	 * This method allows for a jsp to specify a Map of Times and will handle
 	 * the processing required.
