@@ -1,25 +1,21 @@
 package com.depuy.sitebuilder.locator;
 
-// JDK 1.5.0
+// Java 7
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 
-
-
-
-
-
+// Google Gson libs
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+
 // SMT Base Libs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -49,11 +45,6 @@ import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.util.RecordDuplicatorUtility;
 
-
-
-
-
-
 // Xerces
 import org.apache.xerces.dom.DeferredDocumentImpl;
 
@@ -72,6 +63,7 @@ import org.w3c.dom.NodeList;
  @since Jun 19, 2006
  Code Updates
  James Camire, Jun 19, 2006 - Creating Initial Class File
+ Jun 03, 2015: DBargerhuff: Added method to parse JSON-ified surgeon data from session.
  ***************************************************************************/
 
 public class LocatorAction extends SBActionAdapter {
