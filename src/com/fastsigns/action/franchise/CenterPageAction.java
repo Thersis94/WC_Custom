@@ -4,10 +4,22 @@ package com.fastsigns.action.franchise;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.text.DateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+
+
+
+
+
+
+import com.siliconmtn.util.StringUtil;
 
 // SMT Base Libs
 import com.fastsigns.action.franchise.centerpage.FranchiseInfoAction;
@@ -307,6 +319,8 @@ public class CenterPageAction extends SimpleActionAdapter {
 	 */
 	@SuppressWarnings("unchecked")
 	public void retrieve(SMTServletRequest req) throws ActionException {
+		Boolean useMilitaryTime = false;
+		
 		if (AdminConstants.REQ_LIST.equalsIgnoreCase(req.getParameter(AdminConstants.REQUEST_TYPE))) {
 			super.retrieve(req);
 			return;
@@ -341,9 +355,16 @@ public class CenterPageAction extends SimpleActionAdapter {
 		// Retrieve location info
 		FranchiseVO f = fla.getLocationInfo(id, (isPreview || isKeystone));
 		
-		// Set Franchise Times
-		fc.setTimes(new FranchiseTimeVO((Map<FranchiseTimeVO.DayType, String>) f.getAttributes().get("times")));
+		String cc = StringUtil.checkVal(f.getCountryCode());
 		
+		//changes the list of times from 12hr to 24hr for AE only
+		if (cc.equals("AE") ) {
+			useMilitaryTime = true;
+		}
+		
+		// Set Franchise Times
+		fc.setTimes(new FranchiseTimeVO((Map<FranchiseTimeVO.DayType, String>) f.getAttributes().get("times"), useMilitaryTime));
+			
 		// retrieve buttons
 		List<ButtonVO> buttons = fia.getButtonInfo(id);
 		

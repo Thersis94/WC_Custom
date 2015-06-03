@@ -1,9 +1,15 @@
 package com.fastsigns.action.franchise.vo;
 
 import java.io.Serializable;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import com.siliconmtn.util.StringUtil;
@@ -44,15 +50,24 @@ public class FranchiseTimeVO implements Serializable {
 	private Map<DayType, String> rawTimes;
 	private Map<String, String> sortedTimes;
 	private String timeStr = "";
-	private static List<String> times = buildTimes();
+	private List<String> times = null;
 
+	/**
+	 * This constructor redirects all legacy calls to the new method
+	 * @param times
+	 */
+	public FranchiseTimeVO(Map<DayType, String> times) {
+		this(times, false);
+	}
+	
 	/**
 	 * Constructor that handles taking in a Map of Times, combines start and end
 	 * times, sorts them and combines like time slots together and builds the default
 	 * string so the jsp has less work to do.
 	 * @param times
 	 */
-	public FranchiseTimeVO(Map<DayType, String> times) {
+	public FranchiseTimeVO(Map<DayType, String> times, boolean useMilitaryTime) {
+		this.times = buildTimes(useMilitaryTime);
 		rawTimes = times;
 		combineTimes();
 		sortTimes();
@@ -60,7 +75,7 @@ public class FranchiseTimeVO implements Serializable {
 	}
 	
 	public FranchiseTimeVO(){
-		
+		this.times = buildTimes(false);
 	}
 
 	/**
@@ -234,57 +249,34 @@ public class FranchiseTimeVO implements Serializable {
 	 * List of times used for generating webedit dropdowns.
 	 * @return
 	 */
-	private static List<String> buildTimes() {
+	private static List<String> buildTimes(boolean useMilitaryTime) {
+		
 		List<String> t = new ArrayList<String>(55);
+		
+		Locale locale = new Locale("en", "US");
+		GregorianCalendar cal = new GregorianCalendar(locale);
+		SimpleDateFormat sdf = null;
+		
+		//uses simple date formatter to set up how a 24hr day and a 12hr day will
+		//be displayed 
+		if (useMilitaryTime) {
+			sdf = new SimpleDateFormat("HHmm");
+		}else{
+			sdf = new SimpleDateFormat("h:mm a");
+		}
+		
+		//sets the calendars time to midnight
+		cal.set(Calendar.MINUTE, 0);
+		cal.set(Calendar.HOUR_OF_DAY, 0);
+		
+		//adds the existing empty row
 		t.add("");
-		t.add("12:00am");
-		t.add("12:30am");
-		t.add("1:00am");
-		t.add("1:30am");
-		t.add("2:00am");
-		t.add("2:30am");
-		t.add("3:00am");
-		t.add("3:30am");
-		t.add("4:00am");
-		t.add("4:30am");
-		t.add("5:00am");
-		t.add("5:30am");
-		t.add("6:00am");
-		t.add("6:30am");
-		t.add("7:00am");
-		t.add("7:30am");
-		t.add("8:00am");
-		t.add("8:30am");
-		t.add("9:00am");
-		t.add("9:30am");
-		t.add("10:00am");
-		t.add("10:30am");
-		t.add("11:00am");
-		t.add("11:30am");
-		t.add("12:00pm");
-		t.add("12:30pm");
-		t.add("1:00pm");
-		t.add("1:30pm");
-		t.add("2:00pm");
-		t.add("2:30pm");
-		t.add("3:00pm");
-		t.add("3:30pm");
-		t.add("4:00pm");
-		t.add("4:30pm");
-		t.add("5:00pm");
-		t.add("5:30pm");
-		t.add("6:00pm");
-		t.add("6:30pm");
-		t.add("7:00pm");
-		t.add("7:30pm");
-		t.add("8:00pm");
-		t.add("8:30pm");
-		t.add("9:00pm");
-		t.add("9:30pm");
-		t.add("10:00pm");
-		t.add("10:30pm");
-		t.add("11:00pm");
-		t.add("11:30pm");
+		//loops every half hour adding a new option to the list
+	       for(int i=1; i<49; i++){
+	    	   t.add(sdf.format(cal.getTime()));
+	    	   cal.add(Calendar.MINUTE,  30);
+	         }
+
 		return t;
 	}
 	
