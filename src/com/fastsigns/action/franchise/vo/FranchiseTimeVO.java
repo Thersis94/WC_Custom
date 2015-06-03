@@ -77,7 +77,7 @@ public class FranchiseTimeVO implements Serializable {
 	}
 	
 	public FranchiseTimeVO(){
-		this.times = buildTimes(getTimeFormat("US"));
+		this.times = buildTimes(getTimeFormat(null));
 	}
 
 	/**
