@@ -789,17 +789,16 @@ public class LocatorAction extends SBActionAdapter {
 		// loop JSON array until we find the surgeon we are looking for
 		while (jIter.hasNext()) {
 			JsonObject jo = jIter.next().getAsJsonObject();
-			if (jo.has("uniqueId")) {
-				if (uniqueId.equalsIgnoreCase(jo.get("uniqueId").getAsString())) {
-					// found surgeon record, add keys/values required by email/sms
-					surgeon.put("firstName", parseJsonStringValue(jo,"firstName"));
-					surgeon.put("lastName", parseJsonStringValue(jo,"lastName"));
-					surgeon.put("address1", parseJsonStringValue(jo,"address"));
-					surgeon.put("city", parseJsonStringValue(jo,"city"));
-					surgeon.put("state", parseJsonStringValue(jo,"state"));
-					surgeon.put("phone", parseJsonStringValue(jo,"phoneNumber"));
-					break;
-				}
+			if (! jo.has("uniqueId")) continue;
+			if (uniqueId.equalsIgnoreCase(jo.get("uniqueId").getAsString())) {
+				// found surgeon record, add keys/values required by email/sms
+				surgeon.put("firstName", parseJsonStringValue(jo,"firstName"));
+				surgeon.put("lastName", parseJsonStringValue(jo,"lastName"));
+				surgeon.put("address1", parseJsonStringValue(jo,"address"));
+				surgeon.put("city", parseJsonStringValue(jo,"city"));
+				surgeon.put("state", parseJsonStringValue(jo,"state"));
+				surgeon.put("phone", parseJsonStringValue(jo,"phoneNumber"));
+				break;
 			}
 		}
 
