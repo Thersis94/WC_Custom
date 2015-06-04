@@ -120,20 +120,28 @@ public class NexusCartPDFReport  extends AbstractSBReportVO {
 			html.append("</td>");
 			html.append("<td style='font-size:12px;'>").append(item.getProduct().getProdAttributes().get("uom")).append("</td>");
 			html.append("<td style='font-size:12px;'>").append(item.getProduct().getProdAttributes().get("qty")).append("</td>");
-			html.append("<td style='font-size:12px; width:400px;min-height:70px;'>");
+			// This ends off without closing the tag so that the single barcode option can add in a rowspan attribute
+			html.append("<td style='font-size:12px; width:400px;min-height:50px;");
 			
 			if ("DM".equals(data.get("format"))) {
-				html.append("<span><img style='height:35px;' src='/barcodeGenerator?barcodeData=").append(item.getProduct().getProdAttributes().get("gtin")).append("&height=35&humanReadable=false&format=").append(data.get("format")).append("' /></span></td></tr>");
-				html.append("<tr style='margin-bottom:10px;'><td style='").append(border).append("'>&nbsp;</td>");
-				html.append("<td colspan='7' style='font-size:12px; width:400px;").append(border).append("'>");
-				html.append(item.getProduct().getShortDesc()).append("</td><td style='font-size:12px;min-height:70px;").append(border).append("'>");
-				html.append("<img style='margin-bottom:10px;height:35px;' src='/barcodeGenerator?barcodeData=").append(item.getProduct().getProdAttributes().get("lotNo")).append("&height=35&humanReadable=false&format=").append(data.get("format")).append("' /></span>");
-			} else {
-				html.append("<span style='font-weight:bold;position:relative;top:-5px;'>GTIN</span><span><img style='margin-left:5px;' src='/barcodeGenerator?barcodeData=").append(item.getProduct().getProdAttributes().get("gtin")).append("&height=50&humanReadable=false' /></span></td></tr>");
+				html.append(border).append("' rowspan='2'><span><img style='margin-left:5px;' src='/barcodeGenerator?barcodeData=01").append(item.getProduct().getProdAttributes().get("gtin"));
+				html.append("10").append(item.getProduct().getProdAttributes().get("lotNo")).append("&height=35&format=DM' /></span></td></tr>");
 				html.append("<tr><td style='").append(border).append("'>&nbsp;</td>");
 				html.append("<td colspan='7' style='font-size:12px; width:400px;").append(border).append("'>");
-				html.append(item.getProduct().getShortDesc()).append("</td><td style='font-size:12px;min-height:70px; margin-bottom:10px;").append(border).append("'>");
-				html.append("<span style='font-weight:bold;position:relative;top:-5px;'>LOT</span><span><img style='margin-left:10px;' src='/barcodeGenerator?barcodeData=").append(item.getProduct().getProdAttributes().get("lotNo")).append("&height=50&humanReadable=false' /></span>");
+				html.append(item.getProduct().getShortDesc()).append("</td>");
+				
+			} else if ("single".equals(data.get("format"))){
+				html.append(border).append("' rowspan='2'><span><img style='margin-left:5px;' src='/barcodeGenerator?barcodeData=01").append(item.getProduct().getProdAttributes().get("gtin"));
+				html.append("10").append(item.getProduct().getProdAttributes().get("lotNo")).append("&height=35' /></span></td></tr>");
+				html.append("<tr><td style='").append(border).append("'>&nbsp;</td>");
+				html.append("<td colspan='7' style='font-size:12px; width:400px;").append(border).append("'>");
+				html.append(item.getProduct().getShortDesc()).append("</td>");
+			} else {
+				html.append("'><span style='font-weight:bold;position:relative;top:-5px;'>GTIN</span><span><img style='margin-left:5px;' src='/barcodeGenerator?barcodeData=01").append(item.getProduct().getProdAttributes().get("gtin")).append("&height=35' /></span></td></tr>");
+				html.append("<tr><td style='").append(border).append("'>&nbsp;</td>");
+				html.append("<td colspan='7' style='font-size:12px; width:400px;").append(border).append("'>");
+				html.append(item.getProduct().getShortDesc()).append("</td><td style='font-size:12px; margin-bottom:10px;").append(border).append("'>");
+				html.append("<span style='font-weight:bold;position:relative;top:-5px;'>LOT</span><span><img style='margin-left:10px;' src='/barcodeGenerator?barcodeData=10").append(item.getProduct().getProdAttributes().get("lotNo")).append("&height=35' /></span>");
 			}
 			html.append("</span></td></tr>");
 			i++;
