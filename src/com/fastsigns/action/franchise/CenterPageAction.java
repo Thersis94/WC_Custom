@@ -307,6 +307,7 @@ public class CenterPageAction extends SimpleActionAdapter {
 	 */
 	@SuppressWarnings("unchecked")
 	public void retrieve(SMTServletRequest req) throws ActionException {
+		
 		if (AdminConstants.REQ_LIST.equalsIgnoreCase(req.getParameter(AdminConstants.REQUEST_TYPE))) {
 			super.retrieve(req);
 			return;
@@ -341,9 +342,11 @@ public class CenterPageAction extends SimpleActionAdapter {
 		// Retrieve location info
 		FranchiseVO f = fla.getLocationInfo(id, (isPreview || isKeystone));
 		
-		// Set Franchise Times
-		fc.setTimes(new FranchiseTimeVO((Map<FranchiseTimeVO.DayType, String>) f.getAttributes().get("times")));
+		String cc = StringUtil.checkVal(f.getCountryCode());
 		
+		// Set Franchise Times
+		fc.setTimes(new FranchiseTimeVO((Map<FranchiseTimeVO.DayType, String>) f.getAttributes().get("times"), cc));
+			
 		// retrieve buttons
 		List<ButtonVO> buttons = fia.getButtonInfo(id);
 		

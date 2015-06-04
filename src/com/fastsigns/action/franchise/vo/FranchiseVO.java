@@ -106,7 +106,7 @@ public class FranchiseVO extends DealerLocationVO {
 		
 		setLocationDesc(desc.toString());
 	}
-
+	
 	/**
 	 * @return the locationDesc
 	 */
