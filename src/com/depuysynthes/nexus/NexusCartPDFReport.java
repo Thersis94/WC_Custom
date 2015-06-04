@@ -96,7 +96,7 @@ public class NexusCartPDFReport  extends AbstractSBReportVO {
 		html.append("<table style='color:#636363;border-collapse:collapse;font-size:16px; width:100%'>");
 		html.append("<tbody><tr style='margin-bottom:10px;'><th style='width:2%'>&nbsp;</th><th style='width:12%'>Product No.</th>");
 		html.append("<th style='width:12%'>Company</th><th style='width:15%;'>GTIN</th><th style='width:10%'>LOT No.</th>");
-		html.append("<th style='width:8%'>Date Lot</th><th style='width:8%'>UOM</th><th style='width:7%'>QTY</th>");
+		html.append("<th style='width:8%'>Date Lot</th><th style='width:7%'>UOM</th><th style='width:7%'>QTY</th>");
 		html.append("<th>Barcode</th></tr>");
 
 
@@ -124,24 +124,24 @@ public class NexusCartPDFReport  extends AbstractSBReportVO {
 			html.append("<td style='font-size:12px; width:400px;min-height:50px;");
 			
 			if ("DM".equals(data.get("format"))) {
-				html.append(border).append("' rowspan='2'><span><img style='margin-left:5px;' src='/barcodeGenerator?barcodeData=01").append(item.getProduct().getProdAttributes().get("gtin"));
+				html.append(border).append("' rowspan='2'><span><img style='margin-left:25px;' src='/barcodeGenerator?barcodeData=01").append(item.getProduct().getProdAttributes().get("gtin"));
 				html.append("10").append(item.getProduct().getProdAttributes().get("lotNo")).append("&height=35&format=DM' /></span></td></tr>");
 				html.append("<tr><td style='").append(border).append("'>&nbsp;</td>");
 				html.append("<td colspan='7' style='font-size:12px; width:400px;").append(border).append("'>");
 				html.append(item.getProduct().getShortDesc()).append("</td>");
 				
 			} else if ("single".equals(data.get("format"))){
-				html.append(border).append("' rowspan='2'><span><img style='margin-left:5px;' src='/barcodeGenerator?barcodeData=01").append(item.getProduct().getProdAttributes().get("gtin"));
+				html.append(border).append("' rowspan='2'><span><img style='margin-left:25px;' src='/barcodeGenerator?barcodeData=01").append(item.getProduct().getProdAttributes().get("gtin"));
 				html.append("10").append(item.getProduct().getProdAttributes().get("lotNo")).append("&height=35' /></span></td></tr>");
 				html.append("<tr><td style='").append(border).append("'>&nbsp;</td>");
 				html.append("<td colspan='7' style='font-size:12px; width:400px;").append(border).append("'>");
 				html.append(item.getProduct().getShortDesc()).append("</td>");
 			} else {
-				html.append("'><span style='font-weight:bold;position:relative;top:-5px;'>GTIN</span><span><img style='margin-left:5px;' src='/barcodeGenerator?barcodeData=01").append(item.getProduct().getProdAttributes().get("gtin")).append("&height=35' /></span></td></tr>");
+				html.append("'><span style='font-weight:bold;position:relative;top:-20px;'>GTIN</span><span><img style='margin-left:20px;' src='/barcodeGenerator?barcodeData=01").append(item.getProduct().getProdAttributes().get("gtin")).append("&height=35' /></span></td></tr>");
 				html.append("<tr><td style='").append(border).append("'>&nbsp;</td>");
 				html.append("<td colspan='7' style='font-size:12px; width:400px;").append(border).append("'>");
 				html.append(item.getProduct().getShortDesc()).append("</td><td style='font-size:12px; margin-bottom:10px;").append(border).append("'>");
-				html.append("<span style='font-weight:bold;position:relative;top:-5px;'>LOT</span><span><img style='margin-left:10px;' src='/barcodeGenerator?barcodeData=10").append(item.getProduct().getProdAttributes().get("lotNo")).append("&height=35' /></span>");
+				html.append("<span style='font-weight:bold;position:relative;top:-20px;'>LOT</span><span><img style='margin-left:25px;' src='/barcodeGenerator?barcodeData=10").append(item.getProduct().getProdAttributes().get("lotNo")).append("&height=35' /></span>");
 			}
 			html.append("</span></td></tr>");
 			i++;

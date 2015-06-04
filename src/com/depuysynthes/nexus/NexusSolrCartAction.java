@@ -70,7 +70,7 @@ public class NexusSolrCartAction extends SBActionAdapter {
 				String time = getCookie(req, TIME);
 				dateLot =  Convert.formatDate(Convert.formatDate(time.substring(0, time.indexOf("--")-1).replace('-', '/')),"ddMMMyyyy").toString();
 			} else {
-				dateLot="";
+				dateLot=Convert.formatDate(Convert.getCurrentTimestamp(), "ddMMMyyyy");
 			}
 			cart.getItems().get(req.getParameter("productId"));
 			ProductVO product = new ProductVO();
