@@ -270,6 +270,11 @@ public class NexusImporter extends CommandLineUtil {
 		}
 	}
 	
+	/**
+	 * Gets the files from a local zip file instead of pulling it down from the mbox server
+	 * @return
+	 * @throws ActionException
+	 */
 	private Map<String, NexusProductVO> getFilesFromLocalZip() throws ActionException {
 		log.debug("Got File From mbox at " + Convert.getCurrentTimestamp());
 		ZipEntry ze = null;
