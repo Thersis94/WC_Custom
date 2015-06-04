@@ -346,6 +346,8 @@ public class NexusImporter extends CommandLineUtil {
 			} else {
 				p = new NexusProductVO();
 				updateProduct(p, cols);
+				p.addOrganization("DPY_SYN_NEXUS");
+				p.addRole("0");
 				products.put(p.getDocumentId(), p);
 			}
 		}
@@ -407,14 +409,18 @@ public class NexusImporter extends CommandLineUtil {
 		if (StringUtil.checkVal(p.getSummary()).length() == 0 && desc != -1) p.setSummary(cols[desc]);
 		if (gtin != -1 && cols[gtin].length() > 0 && !p.getGtin().contains(cols[gtin])) {
 			p.addGtin(cols[gtin]);
+			if (gtinLvl != -1 && cols[gtinLvl].length() > 0 && !p.getGtinLevel().contains(cols[gtinLvl]))p.addGtinLevel(cols[gtinLvl]);
+			if (uom != -1 && cols[uom].length() > 0 && !p.getUomLevel().contains(cols[uom]))p.addUOMLevel(cols[uom]);
+			if (pkg != -1 && cols[pkg].length() > 0 && !p.getPackageLevel().contains(cols[pkg]))p.addPackageLevel(cols[pkg]);
 		}
-		if (gtinLvl != -1 && cols[gtinLvl].length() > 0 && !p.getGtin().contains(cols[gtin]))p.addGtinLevel(cols[gtinLvl]);
-		if (uom != -1 && cols[uom].length() > 0 && !p.getUomLevel().contains(cols[uom]))p.addUOMLevel(cols[uom]);
-		if (pkg != -1 && cols[pkg].length() > 0 && !p.getPackageLevel().contains(cols[pkg]))p.addPackageLevel(cols[pkg]);
-		if (StringUtil.checkVal(p.getPrimaryDeviceId()).length() == 0 && device != -1) {
+		if (StringUtil.checkVal(p.getPrimaryDeviceId()).length() == 0 && device != -1 && cols[device].length() > 0) {
 			p.setPrimaryDeviceId(cols[device]);
-			if (!p.getGtin().contains(cols[device]))
+			if (!p.getGtin().contains(cols[device])) {
 				p.addGtin(cols[device]);
+				if (gtinLvl != -1 && cols[gtinLvl].length() > 0 && !p.getGtinLevel().contains(cols[gtinLvl]))p.addGtinLevel(cols[gtinLvl]);
+				if (uom != -1 && cols[uom].length() > 0 && !p.getUomLevel().contains(cols[uom]))p.addUOMLevel(cols[uom]);
+				if (pkg != -1 && cols[pkg].length() > 0 && !p.getPackageLevel().contains(cols[pkg]))p.addPackageLevel(cols[pkg]);
+			}
 		}
 		if (StringUtil.checkVal(p.getUnitOfUse()).length() == 0 && use != -1)p.setUnitOfUse(cols[use]);
 		if (StringUtil.checkVal(p.getDpmGTIN()).length() == 0 && dpm != -1)p.setDpmGTIN(cols[dpm]);
