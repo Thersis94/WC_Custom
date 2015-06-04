@@ -139,11 +139,4 @@ public class SASAFConfig extends SAFConfig {
 		return "SAF Completed: " + emailAddress;
 	}
 
-	/* (non-Javadoc)
-	 * @see com.fastsigns.action.saf.SAFConfig#emailSubjectUser()
-	 */
-	@Override
-	public String getEmailSubjectUser() {
-		return "Your request has been delivered to FASTSIGNS";
-	}
 }
