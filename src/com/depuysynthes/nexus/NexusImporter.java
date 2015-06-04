@@ -3,8 +3,11 @@ package com.depuysynthes.nexus;
 // SMT Base Libs
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,11 +19,14 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer;
 
 import com.depuy.datafeed.SFTPClient;
 import com.siliconmtn.action.ActionException;
+import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.io.mail.EmailMessageVO;
+import com.siliconmtn.io.mail.SMTMailHandler;
 import com.siliconmtn.util.CommandLineUtil;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
-import com.smt.sitebuilder.security.SecurityController;
+import com.smt.sitebuilder.util.MessageSender;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
 
 /****************************************************************************
@@ -39,41 +45,78 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
 public class NexusImporter extends CommandLineUtil {
 	private static final int BUFFER_SIZE = 2048;
 	
-	/**
-	 * Delimiter used in the EXP file
-	 */
 	private String DELIMITER;
+	
+	// Used to store variables that are used in the MessageSender constructor
+	private HashMap<String, Object> attributes;
+	
+	// Check if we are getting a local file
+	private boolean isLocal = false;
+	
 	// FTP variables
 	private String user;
 	private String password;
 	private String fileName;
 	private String hostName;
 	private String directory;
-	// Column names for pertinent data
-	private String orgCol;
-	private String orgNmCol;
-	private String codeCol;
-	private String descCol;
-	private String statusCol;
-	private String gtinCol;
-	private String gtinLevelCol;
-	private String deviceCol;
-	private String useCol;
-	private String dpmCol;
-	private String quantityCol;
-	private String packageCol;
-	private String uomCol;
-	private String regionCol;
-    
 	
-	/**
-	 * Initializes the Logger, config files and the database connection
-	 * @throws Exception
-	 */
+	// Stores the organizations code mappings
+	public enum organizations {
+		DO("Orthopaedics"),
+		Orthopaedics("Orthopaedics"),
+		DC("Codman"),
+		Codman("Codman"),
+		Trauma("Trauma"),
+		Spine("Spine"),
+		CMF("CMF"),
+		DM("Mitek"),
+		Mitek("Mitek"),
+		DS("Spine");
+		private final String name;
+		organizations(String name) {
+			this.name=name;
+		}
+		public String getName() {
+			return name;
+		}
+	}
+	
+	private int org;
+	private int status;
+	private int region;
+	private int code;
+	private int desc;
+	private int gtin;
+	private int gtinLvl;
+	private int device;
+	private int use;
+	private int dpm;
+	private int qty;
+	private int pkg;
+	private int uom;
+	
+	// Stores any errors that we run into throughout the import
+	private List<String> errors;
+	
 	public NexusImporter(String[] args) {
 		super(args);
 		loadProperties("scripts/Nexus.properties");
+		loadDBConnection(props);
+
+		if (args.length > 0) {
+			isLocal = Convert.formatBoolean(args[0]);
+		}
+		
+		if (args.length == 3) {
+			directory = args[1];
+			fileName = args[2];
+		} else {
+			fileName = props.getProperty("fileName");
+			directory = props.getProperty("directory");
+		}
+		
 		prepareValues();
+		errors = new ArrayList<>();
 	}
 	
 	
@@ -82,45 +125,19 @@ public class NexusImporter extends CommandLineUtil {
 	 * to need to use in order get the product information from the supplied files
 	 */
 	private void prepareValues() {
+		attributes = new HashMap<>();
+		attributes.put("defaultMailHandler", new SMTMailHandler(props));
+		attributes.put("instanceName", props.get("instanceName"));
+		attributes.put("appName", props.get("appName"));
+		attributes.put("adminEmail", props.get("adminEmail"));
+		
+		
+		
+		DELIMITER = props.getProperty("delimiter");
 		user = props.getProperty("user");
 		password = props.getProperty("password");
-		fileName = props.getProperty("fileName");
 		hostName = props.getProperty("hostName");
-		directory = props.getProperty("directory");
 		
-		if (fileName.contains(".zip")) {
-			 orgCol = "SLS_ORG_CO_CD";
-			 orgNmCol = "PROVR_SHRT_NM";
-			 codeCol = "PSKU_CD";
-			 descCol = "PROD_DESCN_TXT";
-			 statusCol = "STAT_CD";
-			 gtinCol = "GTIN_CD";
-			 gtinLevelCol = "GTIN_TYP_CD";
-			 deviceCol = "PRIM_DI";
-			 useCol = "UNIT_OF_USE";
-			 dpmCol = "DPM_GTIN_CD";
-			 quantityCol = "PKGEG_LVL_QTY";
-			 packageCol = "PKGEG_LVL_CD";
-			 uomCol = "PKGEG_LVL_LBL_UOM_CD";
-			 regionCol = "REG_CD";
-			 DELIMITER = ",";
-		} else {
-			 orgCol = "OperatingCompany";
-			 orgNmCol = "OperatingCompany";
-			 codeCol = "ProductNumber";
-			 descCol = "Description";
-			 statusCol = "unusedStatus";
-			 gtinCol = "GTIN";
-			 gtinLevelCol = "GTINType";
-			 deviceCol = "PrimaryDI";
-			 useCol = "unitOfUse";
-			 dpmCol = "DPMGTINCode";
-			 quantityCol = "UOMQuantity";
-			 packageCol = "Packaging Level Code";
-			 uomCol = "UOM";
-			 regionCol = "unusedRegion";
-			 DELIMITER = "\\|";
-		}
 	}
     
     
@@ -143,13 +160,17 @@ public class NexusImporter extends CommandLineUtil {
 		try {
 			boolean isZip = props.getProperty("fileName").contains(".zip");
 			// Get the files and parse them into products
-			Map<String, String> fileData = getFileData();
-			Map<String, NexusProductVO> products = buildProducts(fileData,isZip);
-	
+			Map<String, NexusProductVO> products;
+			if (isLocal) {
+				products = getFilesFromLocalZip();
+			} else {
+				products = getProductsFromFile();
+			}
+			
 			// initialize the connection to the solr server
 			HttpSolrServer server = new HttpSolrServer(props.getProperty(Constants.SOLR_BASE_URL)+props.getProperty(Constants.SOLR_COLLECTION_NAME));
 			SolrActionUtil solr = new SolrActionUtil(server);
-			
+			int cnt=0;
 			for (String key : products.keySet()) {
 				NexusProductVO p = products.get(key);
 				try {
@@ -159,45 +180,58 @@ public class NexusImporter extends CommandLineUtil {
 							!"USA".equals(StringUtil.checkVal(p.getRegion(), "SKIP")))) {
 						continue;
 					}
+					
 					solr.addDocument(p);
+					cnt++;
 				} catch (Exception e) {
-					log.error("Unable to add products to solr", e);
+					errors.add("Unable to add product with product code of " + p.getDocumentId() + " to solr server.");
+					log.error("Unable to add product to solr", e);
 				}
 			}
-			
+			sendAlertEmail(cnt, products.size());
 			try {
 				server.commit();
 			} catch (Exception e) {
-				log.error("Unable to commit dangling products", e);
+				log.error("Unable to commit documents", e);
 			}
 		} catch(ActionException e) {
 			log.error("Failed to complete transaction", e);
 		}
+		log.debug("Ended at " + Convert.getCurrentTimestamp());
 	}
+	
 	
 	/**
 	 * Get the file from the mbox and create a map out of the contained data
 	 * @return
 	 * @throws ActionException 
 	 */
-	private Map<String, String> getFileData() throws ActionException {
+	private Map<String, NexusProductVO> getProductsFromFile() throws ActionException {
 		log.debug("Getting file from mbox");
+		boolean isZip = fileName.contains(".zip");
 		Map<String, String> fileData = new TreeMap<>();
-		
+		Map<String, NexusProductVO> products = new HashMap<>();
 		SFTPClient ftp = null;
 		try {
+			
 			ftp = new SFTPClient(hostName, user, password);
 			log.debug("Getting File " + directory + "/" + fileName + " at " + Convert.getCurrentTimestamp());
-			if (fileName.contains(".zip")) {
+			if (isZip) {
 				getFilesFromZip(fileData, ftp.getFileData(directory+"/"+fileName));
 			} else {
 				fileData.put(fileName, new String(ftp.getFileData(directory+"/"+fileName)));
 			}
+			
+			for (String key : fileData.keySet()) {
+				buildProducts(key, fileData.get(key), isZip, products);
+			}
+			
+			
 		} catch (IOException e) { 
 			log.error("Unable to get data from file", e);
 			throw new ActionException(e);
 		}
-		return fileData;
+		return products;
 	}
 	
 	
@@ -217,7 +251,7 @@ public class NexusImporter extends CommandLineUtil {
 		
 		try {
 			while ((ze = zis.getNextEntry()) != null) {
-				if (!ze.getName().contains(".csv")) 
+				if (!ze.getName().contains(".OUT")) 
 					continue;
 
 				// Get the file
@@ -227,7 +261,7 @@ public class NexusImporter extends CommandLineUtil {
 				while ((c = zis.read(b, 0, BUFFER_SIZE)) != -1) {
 					baos.write(b, 0, c);
 				}
-				fileData.put(ze.getName(), new String(baos.toByteArray()));
+				fileData.put(ze.getName(), new String(baos.toByteArray(),"ISO-8859-15"));
 				
 			}
 		} catch (IOException e) {
@@ -236,180 +270,203 @@ public class NexusImporter extends CommandLineUtil {
 		}
 	}
 	
+	private Map<String, NexusProductVO> getFilesFromLocalZip() throws ActionException {
+		log.debug("Got File From mbox at " + Convert.getCurrentTimestamp());
+		ZipEntry ze = null;
+		Map<String, NexusProductVO> map = new HashMap<>();
+		try {
+			InputStream input = new FileInputStream(directory+""+fileName);
+			ZipInputStream zis = new ZipInputStream(input);
+			while ((ze = zis.getNextEntry()) != null) {
+				if (!ze.getName().contains(".OUT")) 
+					continue;
+
+				// Get the file
+				byte[] b = new byte[2048];
+				ByteArrayOutputStream baos = new ByteArrayOutputStream();
+				int c = 0;
+				while ((c = zis.read(b, 0, BUFFER_SIZE)) != -1) {
+					baos.write(b, 0, c);
+				}
+				buildProducts(ze.getName(), new String(baos.toByteArray()), true, map);
+			}
+			input.close();
+			zis.close();
+		} catch (IOException e) {
+			log.error("Unable to parse zip contents", e);
+			throw new ActionException(e);
+		}
+		return map;
+	}
+	
+	
 	/**
 	 * Build a map of products out of the supplied files
 	 * @param fileDataList
 	 * @param isZip
 	 * @return
 	 */
-	private Map<String, NexusProductVO> buildProducts(Map<String, String> fileDataList, boolean isZip) {
-		Map<String, NexusProductVO> products = new HashMap<>();
-		
+	private Map<String, NexusProductVO> buildProducts(String fileName, String fileData, boolean isZip, Map<String, NexusProductVO> products) {
 		// Build the map of pertinent columns from the supplied files
-		for (String fileName : fileDataList.keySet()) {
-			String[] rows;
-			// Due to differences in how the files are put together zip files need to be handled special when split
-			if (fileName.contains(".zip")){
-				rows = fileDataList.get(fileName).split("\n");
+		String[] rows;
+		// Due to differences in how the files are put together zip files need to be handled special when split
+		if (fileName.contains(".zip")){
+			rows = fileData.split("\n", -1);
+		} else {
+			rows = fileData.split("\\r?\\n", -1);
+		}
+		log.debug(fileName +"|"+rows.length);
+		String[] headers = rows[0].split(DELIMITER, -1);
+		getColumns(Arrays.asList(headers));
+		
+		NexusProductVO p = null;
+		String[] cols;
+		
+		for (int i=1; i<rows.length; i++) {
+			cols = rows[i].split(DELIMITER, -1);
+			if (cols.length == 1) continue;
+			if (cols.length <headers.length) {
+				errors.add("Invalid data at line " + i+1 +" in file " + fileName + ".  Recieved "+cols.length+" columns, expected "+headers.length + " columns.");
+				continue;
+			}
+			
+			if (isZip && org != -1 && !"DO,DS,DM,DC".contains(StringUtil.checkVal(cols[org], "DO"))) continue;
+			if (isZip && status != -1 && !"AC,CT,DP,DS".contains(StringUtil.checkVal(cols[status], "AC"))) continue;
+			if (isZip && region != -1 && !"USA".contains(StringUtil.checkVal(cols[region], "USA"))) continue;
+			
+			if (products.get(cols[code]) != null) {
+				p = products.get(cols[code]);
+				updateProduct(p, cols);
+				products.put(p.getDocumentId(), p);
 			} else {
-				rows = fileDataList.get(fileName).split("\\r?\\n");
-			}
-			if (rows.length < 2) continue;
-			String[] headers = rows[0].split(DELIMITER);
-			Map<String, List<String>> data = prepareDataMap();
-			
-
-			for (int j=0; j<headers.length; j++) {
-				if (!data.containsKey(headers[j])) continue;
-				
-				// If this column is not going to be put in the vo we skip it.
-				for (int i=1; i<rows.length; i++) {
-					String[] cols = rows[i].split(DELIMITER);
-						data.get(headers[j]).add(cols[j]);
-					}
-				
-			}
-			
-			// Loop over the columns recieved from the files and turn them into productvos
-			String productCode = "";
-			NexusProductVO p = null;
-			for (int i=0; i<rows.length-1; i++) {
-				if (products.get(getColData(i, data.get(codeCol))) != null) {
-					// If we have already created this product we update it with any new information
-					// This will only occur when we are getting information from multiple files
-					p = products.get(getColData(i, data.get(codeCol)));
-					productCode = p.getDocumentId();
-					updateColData(p, data, i);
-				} else if (!productCode.equals(getColData(i, data.get(codeCol)))) {
-					// Since this is a new product we add the old one, if any, to the final list
-					// and create the new product
-					if (p != null) {
-						products.put(p.getDocumentId(), p);
-						productCode = getColData(i, data.get(codeCol));
-					}
-					p = new NexusProductVO();
-					p.setOrgId(getColData(i, data.get(orgCol)));
-					p.setOrgName(getColData(i, data.get(orgNmCol)));
-					p.setProductName(getColData(i, data.get(codeCol)));
-					p.setSummary(getColData(i, data.get(descCol)));
-					p.addGtin(getColData(i, data.get(gtinCol)));
-					p.addGtinLevel(getColData(i, data.get(gtinLevelCol)));
-					p.setPrimaryDeviceId(getColData(i, data.get(deviceCol)));
-					p.setUnitOfUse(getColData(i, data.get(useCol)));
-					p.setDpmGTIN(getColData(i, data.get(dpmCol)));
-					if (getColData(i, data.get(quantityCol)) != null)
-						p.setQuantity(Convert.formatInteger(data.get(quantityCol).get(i)));
-					p.setPackageLevel(getColData(i, data.get(packageCol)));
-					p.addUOMLevel(getColData(i, data.get(uomCol)));
-					p.addRole(StringUtil.checkVal(SecurityController.PUBLIC_ROLE_LEVEL));
-					p.addOrganization(props.getProperty("organization"));
-					p.setRegion(getColData(i, data.get(regionCol)));
-					p.setStatus(getColData(i, data.get(statusCol)));
-					 
-					// If we have not received a primary device identifier
-					// but we have a GTIN of the valid level we use that instead
-					if (StringUtil.checkVal(p.getPrimaryDeviceId()).length() == 0 && "C".equals(getColData(i, data.get(gtinLevelCol)))) {
-						p.setPrimaryDeviceId(getColData(i, data.get(gtinCol)));
-					}
-					
-				} else {
-					// We already have the product we are working with so we only need
-					// to add the gtin information
-					p.addGtin(getColData(i, data.get(gtinCol)));
-					p.addGtinLevel(getColData(i, data.get(gtinLevelCol)));
-					p.addUOMLevel(getColData(i, data.get(uomCol)));
-					
-					// If we have not received a primary device identifier
-					// but we have a GTIN of the valid level we use that instead
-					if (StringUtil.checkVal(p.getPrimaryDeviceId()).length() == 0 && "C".equals(getColData(i, data.get(gtinLevelCol)))) {
-						p.setPrimaryDeviceId(getColData(i, data.get(gtinCol)));
-					}
-				}
-				
-			}
-			// Add the dangling record
-			if (p != null) {
+				p = new NexusProductVO();
+				updateProduct(p, cols);
 				products.put(p.getDocumentId(), p);
 			}
 		}
+		headers = null;
+		rows=null;
 		return products;
 	}
 	
+	
 	/**
-	 * Check all fields in the product vo and check to see if the information on this row
-	 * covers anything that has not already been set by a previous row
+	 * Get the columns that contain the information that will be used during
+	 * the file processing.
+	 * @param headerList
+	 */
+	private void getColumns(List<String> headerList) {
+		if (fileName.contains(".zip")) {
+			org=headerList.indexOf("SLS_ORG_CO_CD");
+			status=headerList.indexOf("STAT_CD");
+			region=headerList.indexOf("REG_CD");
+			code=headerList.indexOf("PSKU_CD");
+			desc=headerList.indexOf("PROD_DESCN_TXT");
+			gtin=headerList.indexOf("GTIN_CD");
+			gtinLvl=headerList.indexOf("GTIN_TYP_CD");
+			device=headerList.indexOf("PRIM_DI");
+			use=headerList.indexOf("UNIT_OF_USE");
+			dpm=headerList.indexOf("DPM_GTIN_CD");
+			qty=headerList.indexOf("PKGEG_LVL_QTY");
+			pkg=headerList.indexOf("PKGEG_LVL_CD");
+			uom=headerList.indexOf("PKGEG_LVL_LBL_UOM_CD");
+		} else {
+			org=headerList.indexOf("OperatingCompany");
+			status=headerList.indexOf("UNUSED");
+			region=headerList.indexOf("UNUSED");
+			code=headerList.indexOf("ProductNumber");
+			desc=headerList.indexOf("Description");
+			gtin=headerList.indexOf("GTIN");
+			gtinLvl=headerList.indexOf("GTINType");
+			device=headerList.indexOf("PrimaryDI");
+			use=headerList.indexOf("unitOfUse");
+			dpm=headerList.indexOf("DPMGTINCode");
+			qty=headerList.indexOf("UOMQuantity");
+			pkg=headerList.indexOf("Packaging Level Code");
+			uom=headerList.indexOf("UOM");
+		}
+	}
+	
+	
+	/**
+	 * Update the supplied product with information from a string array
 	 * @param p
-	 * @param data
-	 * @param i
+	 * @param cols
 	 */
-	private void updateColData(NexusProductVO p, Map<String, List<String>> data, int i) {
-		if (StringUtil.checkVal(p.getOrgName()).length() == 0)
-			p.setOrgName(getColData(i, data.get(orgNmCol)));
-		if (StringUtil.checkVal(p.getOrgId()).length() == 0)
-			p.setOrgId(getColData(i, data.get(orgCol)));
-		if (StringUtil.checkVal(p.getSummary()).length() == 0)
-			p.setSummary(getColData(i, data.get(descCol)));
-		if (!p.getGtin().contains(getColData(i, data.get(gtinCol)))) {
-			p.addGtin(getColData(i, data.get(gtinCol)));
-			p.addUOMLevel(getColData(i, data.get(uomCol)));
-			p.addGtinLevel(getColData(i, data.get(gtinLevelCol)));
+	private void updateProduct(NexusProductVO p, String[] cols) {
+		if (StringUtil.checkVal(p.getOrgId()).length() == 0 && org != -1 && cols[org].length() > 0) {
+			p.setOrgId(cols[org]);
+			p.setOrgName(organizations.valueOf(cols[org]).getName());
 		}
-		if (StringUtil.checkVal(p.getPrimaryDeviceId()).length() == 0)
-			p.setPrimaryDeviceId(getColData(i, data.get(deviceCol)));
-		if (StringUtil.checkVal(p.getUnitOfUse()).length() == 0)
-			p.setUnitOfUse(getColData(i, data.get(useCol)));
-		if (StringUtil.checkVal(p.getDpmGTIN()).length() == 0)
-			p.setDpmGTIN(getColData(i, data.get(dpmCol)));
-		if (getColData(i, data.get(quantityCol)) != null)
-			p.setQuantity(Convert.formatInteger(data.get(quantityCol).get(i)));
-		if (StringUtil.checkVal(p.getPackageLevel()).length() == 0)
-			p.setPackageLevel(getColData(i, data.get(packageCol)));
-		if (StringUtil.checkVal(p.getRegion()).length() == 0)
-			p.setRegion(getColData(i, data.get(regionCol)));
-		if (StringUtil.checkVal(p.getStatus()).length() == 0)
-			p.setStatus(getColData(i, data.get(statusCol)));
-		if (StringUtil.checkVal(p.getPrimaryDeviceId()).length() == 0 && "C".equals(getColData(i, data.get(gtinLevelCol)))) {
-			p.setPrimaryDeviceId(getColData(i, data.get(gtinCol)));
+		if (StringUtil.checkVal(p.getProductName()).length() == 0 && code != -1) p.setProductName(cols[code]);
+		if (StringUtil.checkVal(p.getSummary()).length() == 0 && desc != -1) p.setSummary(cols[desc]);
+		if (gtin != -1 && cols[gtin].length() > 0 && !p.getGtin().contains(cols[gtin])) {
+			p.addGtin(cols[gtin]);
+		}
+		if (gtinLvl != -1 && cols[gtinLvl].length() > 0 && !p.getGtin().contains(cols[gtin]))p.addGtinLevel(cols[gtinLvl]);
+		if (uom != -1 && cols[uom].length() > 0 && !p.getUomLevel().contains(cols[uom]))p.addUOMLevel(cols[uom]);
+		if (pkg != -1 && cols[pkg].length() > 0 && !p.getPackageLevel().contains(cols[pkg]))p.addPackageLevel(cols[pkg]);
+		if (StringUtil.checkVal(p.getPrimaryDeviceId()).length() == 0 && device != -1) {
+			p.setPrimaryDeviceId(cols[device]);
+			if (!p.getGtin().contains(cols[device]))
+				p.addGtin(cols[device]);
+		}
+		if (StringUtil.checkVal(p.getUnitOfUse()).length() == 0 && use != -1)p.setUnitOfUse(cols[use]);
+		if (StringUtil.checkVal(p.getDpmGTIN()).length() == 0 && dpm != -1)p.setDpmGTIN(cols[dpm]);
+		if (StringUtil.checkVal(p.getQuantity()).length() == 0 && qty != -1)p.setQuantity(Convert.formatInteger(cols[qty]));
+		if (StringUtil.checkVal(p.getRegion()).length() == 0 && region != -1)p.setRegion(cols[region]);
+		if (StringUtil.checkVal(p.getStatus()).length() == 0 && status != -1)p.setStatus(cols[status]);
+		 
+		// If we have not received a primary device identifier
+		// but we have a GTIN of the valid level we use that instead
+		if (StringUtil.checkVal(p.getPrimaryDeviceId()).length() == 0 && pkg != -1 && ("1".equals(cols[pkg]) || "C".equals(cols[pkg]))
+				&& gtin != -1 && cols[gtin].length() > 0) {
+			p.setPrimaryDeviceId(cols[gtin]);
 		}
 	}
-
-
+	
+	
 	/**
-	 * Since not all files will contain all the information that could be loaded
-	 * into the vo we check to make sure that the column that we are querying 
-	 * is capable of containing the row we want to get
-	 * @param row
-	 * @param col
-	 * @return
+	 * Create and send an email with information pertaining to what was uploaded
+	 * and any errors that were run into during the upload.
+	 * @param itemsAdded
+	 * @param itemsProcessed
 	 */
-	private String getColData(int row, List<String> col) {
-		if (row >= col.size()) return null;
-		return col.get(row);
+	private void sendAlertEmail(int itemsAdded, int itemsProcessed) {
+		try {
+			EmailMessageVO mail = new EmailMessageVO();
+			mail.addRecipients(props.getProperty("toAddress"));
+			mail.setSubject("DePuy NeXus Import Report");
+			mail.setFrom(props.getProperty("fromAddress"));
+			mail.setHtmlBody(buildBody(itemsAdded, itemsProcessed));
+
+			MessageSender ms = new MessageSender(attributes, dbConn);
+			ms.sendMessage(mail);
+		} catch (InvalidDataException ide) {
+			log.error("could not send contact email", ide);
+		}
 	}
-
-
+	
+	
 	/**
-	 * Prepare the list of columns that will contain the file data
+	 * Build the html body of the email
+	 * @param itemsAdded
+	 * @param itemsProcessed
 	 * @return
 	 */
-	private Map<String, List<String>> prepareDataMap() {
-		Map<String, List<String>> data = new HashMap<>();
-
-		data.put(orgCol, new ArrayList<String>());
-		data.put(orgNmCol, new ArrayList<String>());
-		data.put(codeCol, new ArrayList<String>());
-		data.put(descCol, new ArrayList<String>());
-		data.put(statusCol, new ArrayList<String>());
-		data.put(gtinCol, new ArrayList<String>());
-		data.put(gtinLevelCol, new ArrayList<String>());
-		data.put(deviceCol, new ArrayList<String>());
-		data.put(useCol, new ArrayList<String>());
-		data.put(dpmCol, new ArrayList<String>());
-		data.put(quantityCol, new ArrayList<String>());
-		data.put(packageCol, new ArrayList<String>());
-		data.put(uomCol, new ArrayList<String>());
-		data.put(regionCol, new ArrayList<String>());
+	private String buildBody(int itemsAdded, int itemsProcessed) {
+		StringBuilder body = new StringBuilder(300);
 		
-		return data;
+		body.append("DePuy NeXus import has been completed for file").append(fileName).append(".\n");
+		body.append(itemsAdded).append(" products were succesfully added to the solr server out of ");
+		body.append(itemsProcessed).append(" total products processed from the file\n");
+		if (errors.size() > 0) {
+			body.append("\nThe following errors occured during the product upload:\n");
+			for (String s : errors) {
+				body.append(s).append("\n");
+			}
+		}
+		
+		return body.toString();
 	}
 }
