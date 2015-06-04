@@ -9,6 +9,7 @@ import org.apache.log4j.Logger;
 
 import com.fastsigns.action.RequestAQuoteSTF;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.contact.ContactDataContainer;
 
 /****************************************************************************
@@ -145,9 +146,20 @@ public abstract class SAFConfig {
 	
 	/**
 	 * the subject of the email message sent to the User
+	 * @param userEmail email address of the user (null or empty will return default subject)
 	 * @return
 	 */
-	public abstract String getEmailSubjectUser();
+	public String getEmailSubjectUser(String emailAddr) {
+		StringBuilder subj = new StringBuilder();
+		String addr = StringUtil.checkVal(emailAddr, null);
+		if (addr == null){
+			subj.append("Your request has been delivered to FASTSIGNS");
+		} else {
+			subj.append(emailAddr);
+			subj.append(", your request has been delivered to FASTSIGNS");
+		}
+		return subj.toString();
+	}
 	
 	/**
 	 * the type of sign requested by the user
