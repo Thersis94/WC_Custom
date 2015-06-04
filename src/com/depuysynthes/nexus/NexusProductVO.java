@@ -1,4 +1,4 @@
-package com.depuysynthes.action.nexus;
+package com.depuysynthes.nexus;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,14 +23,14 @@ public class NexusProductVO extends  SolrDocumentVO {
 	
 	public final static String solrIndex = "DEPUY_NEXUS";
 	private String orgId;
-	private String orgName;
+	private String orgName ;
 	private List<String> gtin;
 	private List<String> gtinLevel;
 	private String primaryDeviceId;
 	private String unitOfUse;
 	private String dpmGTIN;
-	private int quantity;
-	private String packageLevel;
+	private int quantity = 0;
+	private List<String> packageLevel;
 	private List<String> uomLevel;
 	private String region;
 	private String status;
@@ -39,6 +39,7 @@ public class NexusProductVO extends  SolrDocumentVO {
 	public NexusProductVO() {
 		super(solrIndex);
 		gtin = new ArrayList<>();
+		packageLevel = new ArrayList<>();
 		gtinLevel = new ArrayList<>();
 		uomLevel = new ArrayList<>();
 	}
@@ -110,7 +111,6 @@ public class NexusProductVO extends  SolrDocumentVO {
 		this.gtinLevel.add(gtinLevel);
 	}
 
-
 	@SolrField(name="deviceId")
 	public String getPrimaryDeviceId() {
 		return primaryDeviceId;
@@ -156,13 +156,17 @@ public class NexusProductVO extends  SolrDocumentVO {
 
 
 	@SolrField(name="packageLvl")
-	public String getPackageLevel() {
+	public List<String> getPackageLevel() {
 		return packageLevel;
 	}
 
 
-	public void setPackageLevel(String packageLevel) {
+	public void setPackageLevel(List<String> packageLevel) {
 		this.packageLevel = packageLevel;
+	}
+	
+	public void addPackageLevel(String packageLevel) {
+		this.packageLevel.add(packageLevel);
 	}
 
 
@@ -187,7 +191,8 @@ public class NexusProductVO extends  SolrDocumentVO {
 	public void setRegion(String region) {
 		this.region = region;
 	}
-
+	
+	@SolrField(name="status")
 	public String getStatus() {
 		return status;
 	}

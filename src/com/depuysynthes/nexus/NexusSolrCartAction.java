@@ -1,4 +1,4 @@
-package com.depuysynthes.action.nexus;
+package com.depuysynthes.nexus;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -65,7 +65,13 @@ public class NexusSolrCartAction extends SBActionAdapter {
 			}
 		} else {
 			// Build a product vo that can be placed in the cart vo
-			String dateLot = new SimpleDateFormat("ddMMMMyyyy").format(Convert.getCurrentTimestamp());
+			String dateLot;
+			if (getCookie(req, TIME).length() > 0) {
+				String time = getCookie(req, TIME);
+				dateLot =  Convert.formatDate(Convert.formatDate(time.substring(0, time.indexOf("--")-1).replace('-', '/')),"ddMMMyyyy").toString();
+			} else {
+				dateLot="";
+			}
 			cart.getItems().get(req.getParameter("productId"));
 			ProductVO product = new ProductVO();
 			product.setProductId(req.getParameter("productId"));
@@ -73,13 +79,18 @@ public class NexusSolrCartAction extends SBActionAdapter {
 			product.addProdAttribute("orgName", req.getParameter("orgName"));
 			product.addProdAttribute("gtin", req.getParameter("gtin"));
 			product.addProdAttribute("lotNo", StringUtil.checkVal(req.getParameter("lotNo"), dateLot));
-			if (dateLot.equals(product.getProdAttributes().get("lotNo")))
+			if (dateLot.length() > 0 && dateLot.equals(product.getProdAttributes().get("lotNo")))
 				product.addProdAttribute("dateLot", true);
 			product.addProdAttribute("uom", req.getParameter("uom"));
 			product.addProdAttribute("qty", StringUtil.checkVal(req.getParameter("qty"),"1"));
 			ShoppingCartItemVO item = new ShoppingCartItemVO(product);
 			item.setProductId(product.getProductId()+product.getProdAttributes().get("lotNo"));
 			cart.add(item);
+			
+			// Remove the old product if we have changed the lot no
+			if (!StringUtil.checkVal(req.getParameter("oldLot")).equals(product.getProdAttributes().get("lotNo")) ) {
+				cart.remove(product.getProductId()+req.getParameter("oldLot"));
+			}
 		}
 		store.save(cart);
 	}
@@ -157,6 +168,10 @@ public class NexusSolrCartAction extends SBActionAdapter {
 		// Build the organization filter query
 		req.setParameter("fq", "organizationName:" + req.getParameter("orgName"));
 		
+
+		String searchData = req.getParameter("searchData");
+		req.setParameter("searchData", "*"+searchData+"*", true);
+		
 		// Do the solr search
 	    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 	    	log.debug((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
@@ -165,6 +180,7 @@ public class NexusSolrCartAction extends SBActionAdapter {
 	    	sai.setDBConnection(dbConn);
 	    	sai.setAttributes(attributes);
 		sai.retrieve(req);
+	    	req.setParameter("searchData", searchData, true);
 	}
 	
 	
