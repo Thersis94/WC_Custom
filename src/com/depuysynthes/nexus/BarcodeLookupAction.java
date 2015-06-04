@@ -24,7 +24,6 @@ import com.smt.sitebuilder.action.search.SolrFieldVO;
 import com.smt.sitebuilder.action.search.SolrQueryProcessor;
 import com.smt.sitebuilder.action.search.SolrFieldVO.BooleanType;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
-import com.smt.sitebuilder.search.SearchDocumentHandler;
 
 /****************************************************************************
  * <b>Title</b>: BarcodeLookupAction.java <p/>
@@ -123,7 +122,7 @@ public class BarcodeLookupAction extends SBActionAdapter {
 		qData.setRoleLevel(0);
 		qData.addIndexType(new SolrActionIndexVO("", NexusProductVO.solrIndex));
 		log.debug(barcode.getProductId());
-		SolrFieldVO field = new SolrFieldVO(SolrFieldVO.FieldType.FILTER, SearchDocumentHandler.DOCUMENT_ID, barcode.getProductId(), BooleanType.AND);
+		SolrFieldVO field = new SolrFieldVO(SolrFieldVO.FieldType.FILTER, "gtin", "*"+barcode.getProductId()+"*", BooleanType.AND);
 		qData.addSolrField(field);
 		ProductVO prod = new ProductVO();
 		SolrResponseVO resp = sqp.processQuery(qData);
