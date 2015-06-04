@@ -9,6 +9,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+
 // SMT Base Libs
 import com.fastsigns.action.franchise.centerpage.FranchiseInfoAction;
 import com.fastsigns.action.franchise.centerpage.FranchiseLocationInfoAction;
@@ -24,6 +25,7 @@ import com.fastsigns.security.FastsignsSessVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -153,7 +155,7 @@ public class CenterPageAction extends SimpleActionAdapter {
 			log.error("Error Updating Center Page", e);
 			msg = "msg.cannotUpdate";
 		}
-		
+
 		log.debug("Sending Redirect to: " + redir);
 		req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
 		req.setAttribute(Constants.REDIRECT_URL, redir + "msg=" + msg);
@@ -189,6 +191,8 @@ public class CenterPageAction extends SimpleActionAdapter {
 			url.append("&testimonialForm=true&printerFriendlyTheme=true&hidePf=true&submitted=true");
 			super.sendRedirect(url.toString(), null, req);
 		} 
+		
+		
 		/*
 		 * If this is an embedded Action, forward to the PortletLoaderAction
 		 */
@@ -197,13 +201,13 @@ public class CenterPageAction extends SimpleActionAdapter {
 			pla.setDBConnection(dbConn);
 			pla.setAttributes(attributes);
 			pla.build(req);
-			
 		} 
 		
 		// If the req does not fit any of the above, call the update method
 		else {
 			update(req);
 		}
+		
 	}
 	
 	/**
@@ -221,15 +225,22 @@ public class CenterPageAction extends SimpleActionAdapter {
 		ai.setName("Tell Someone About Us");
 		
 		//If the site is Signwave branded, use AU's ActionId.
-		if(site.getCountryCode().equals("AU"))
+		if(site.getCountryCode().equals("AU")){
 			ai.setActionId("0a0014137c77504fed1c4b27b4e52892");
+		}
+			
 		
-		log.debug("******** Sending Email ...");
+		log.debug(" Sending Email ...");
 		
 		SMTActionInterface sai = new EmailFriendAction(ai);
 		sai.setAttributes(attributes);
 		sai.setDBConnection(dbConn);
 		sai.build(req);
+		
+		//setting the actionId of the email a friend to the redirect url.
+		String url = StringUtil.checkVal(req.getAttribute(Constants.REDIRECT_URL));
+		url += "&emailActionId=" + ai.getActionId();
+		req.setAttribute(Constants.REDIRECT_URL, url);
 	}
 	
 	/**
