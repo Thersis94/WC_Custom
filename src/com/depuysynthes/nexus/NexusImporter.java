@@ -28,6 +28,7 @@ import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.util.MessageSender;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
+import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 
 /****************************************************************************
  * <b>Title</b>: NexusImporter.java<p/>
@@ -157,10 +158,11 @@ public class NexusImporter extends CommandLineUtil {
 	 */
 	@Override
 	public void run() {
+		int cnt=0;
+		Map<String, NexusProductVO> products = new HashMap<>();
 		try {
 			boolean isZip = props.getProperty("fileName").contains(".zip");
 			// Get the files and parse them into products
-			Map<String, NexusProductVO> products;
 			if (isLocal) {
 				products = getFilesFromLocalZip();
 			} else {
@@ -170,7 +172,7 @@ public class NexusImporter extends CommandLineUtil {
 			// initialize the connection to the solr server
 			HttpSolrServer server = new HttpSolrServer(props.getProperty(Constants.SOLR_BASE_URL)+props.getProperty(Constants.SOLR_COLLECTION_NAME));
 			SolrActionUtil solr = new SolrActionUtil(server);
-			int cnt=0;
+			List<SolrDocumentVO> docs = new ArrayList<>();
 			for (String key : products.keySet()) {
 				NexusProductVO p = products.get(key);
 				try {
@@ -181,22 +183,26 @@ public class NexusImporter extends CommandLineUtil {
 						continue;
 					}
 					
-					solr.addDocument(p);
+					docs.add(p);
 					cnt++;
+					// Add these documents now so as to prevent overloading
+					if (cnt%50000 == 0) {
+						solr.addDocuments(docs);
+						docs.clear();
+					}
 				} catch (Exception e) {
 					errors.add("Unable to add product with product code of " + p.getDocumentId() + " to solr server.");
 					log.error("Unable to add product to solr", e);
 				}
 			}
-			sendAlertEmail(cnt, products.size());
-			try {
-				server.commit();
-			} catch (Exception e) {
-				log.error("Unable to commit documents", e);
-			}
+			
+			// Add the remaining documents
+			solr.addDocuments(docs);
+
 		} catch(ActionException e) {
 			log.error("Failed to complete transaction", e);
 		}
+		sendAlertEmail(cnt, products.size());
 		log.debug("Ended at " + Convert.getCurrentTimestamp());
 	}
 	
