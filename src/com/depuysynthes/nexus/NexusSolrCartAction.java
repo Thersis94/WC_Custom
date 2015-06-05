@@ -2,7 +2,9 @@ package com.depuysynthes.nexus;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -57,46 +59,98 @@ public class NexusSolrCartAction extends SBActionAdapter {
 		ShoppingCartVO cart = store.load();
 		
 		if (Convert.formatBoolean(req.getParameter("clearCart"))) {
-			// Determine whether we are deleting a single item or the entire cart
-			if (req.hasParameter("removeItem")){
-				cart.remove(req.getParameter("removeItem"));
-			} else {
-				cart.flush();
-			}
+			deleteItem(cart, req);
+		} else if (Convert.formatBoolean(req.getParameter("lotChange"))) {
+			changeLot(cart, req);
 		} else {
-			// Build a product vo that can be placed in the cart vo
-			String dateLot;
-			if (getCookie(req, TIME).length() > 0) {
-				String time = getCookie(req, TIME);
-				dateLot =  Convert.formatDate(Convert.formatDate(time.substring(0, time.indexOf("--")-1).replace('-', '/')),"ddMMMyyyy").toString();
-			} else {
-				dateLot=Convert.formatDate(Convert.getCurrentTimestamp(), "ddMMMyyyy");
-			}
-			cart.getItems().get(req.getParameter("productId"));
-			ProductVO product = new ProductVO();
-			product.setProductId(req.getParameter("productId"));
-			product.setShortDesc(req.getParameter("desc"));
-			product.addProdAttribute("orgName", req.getParameter("orgName"));
-			product.addProdAttribute("gtin", req.getParameter("gtin"));
-			product.addProdAttribute("lotNo", StringUtil.checkVal(req.getParameter("lotNo"), dateLot));
-			if (dateLot.length() > 0 && dateLot.equals(product.getProdAttributes().get("lotNo")))
-				product.addProdAttribute("dateLot", true);
-			product.addProdAttribute("uom", req.getParameter("uom"));
-			product.addProdAttribute("qty", StringUtil.checkVal(req.getParameter("qty"),"1"));
-			ShoppingCartItemVO item = new ShoppingCartItemVO(product);
-			item.setProductId(product.getProductId()+product.getProdAttributes().get("lotNo"));
-			cart.add(item);
-			
-			// Remove the old product if we have changed the lot no
-			if (!StringUtil.checkVal(req.getParameter("oldLot")).equals(product.getProdAttributes().get("lotNo")) ) {
-				cart.remove(product.getProductId()+req.getParameter("oldLot"));
-			}
+			addItem(cart, req);
 		}
+		
 		store.save(cart);
 	}
 	
 
-	
+	/**
+	 * Deletes the requested item or clears the cart completely
+	 * @param cart
+	 * @param req
+	 */
+	private void deleteItem(ShoppingCartVO cart, SMTServletRequest req) {
+		// Determine whether we are deleting a single item or the entire cart
+		if (req.hasParameter("removeItem")){
+			cart.remove(req.getParameter("removeItem"));
+		} else {
+			cart.flush();
+		}
+	}
+
+
+	/**
+	 * Loops over the cart and changes the lot no for any item that is using
+	 * the default date lot instead of a custom lot no
+	 * @param cart
+	 * @param req
+	 */
+	private void changeLot(ShoppingCartVO cart, SMTServletRequest req) {
+		for (String key : cart.getItems().keySet()) {
+			ProductVO p = cart.getItems().get(key).getProduct();
+			if (Convert.formatBoolean(p.getProdAttributes().get("dateLot"))) {
+				String time = getCookie(req, TIME);
+				String dateLot =  Convert.formatDate(Convert.formatDate(time.substring(0, time.indexOf("--")-1).replace('-', '/')),"ddMMMyyyy").toString();
+				p.addProdAttribute("lotNo", StringUtil.checkVal(req.getParameter("lotNo"), dateLot));
+			}
+		}
+	}
+
+
+	/**
+	 * Add the item on the request object to the cart, removing any old versions
+	 * of that product and reordering them in order to ensure they are ordered
+	 * by product id
+	 * @param cart
+	 * @param req
+	 */
+	private void addItem(ShoppingCartVO cart, SMTServletRequest req) {
+		// Build a product vo that can be placed in the cart vo
+		String dateLot;
+		if (getCookie(req, TIME).length() > 0) {
+			String time = getCookie(req, TIME);
+			dateLot =  Convert.formatDate(Convert.formatDate(time.substring(0, time.indexOf("--")-1).replace('-', '/')),"ddMMMyyyy").toString();
+		} else {
+			dateLot=Convert.formatDate(Convert.getCurrentTimestamp(), "ddMMMyyyy");
+		}
+		cart.getItems().get(req.getParameter("productId"));
+		ProductVO product = new ProductVO();
+		product.setProductId(req.getParameter("productId"));
+		product.setShortDesc(req.getParameter("desc"));
+		product.addProdAttribute("orgName", req.getParameter("orgName"));
+		product.addProdAttribute("gtin", req.getParameter("gtin"));
+		product.addProdAttribute("lotNo", StringUtil.checkVal(req.getParameter("lotNo"), dateLot));
+		if (dateLot.length() > 0 && dateLot.equals(product.getProdAttributes().get("lotNo")))
+			product.addProdAttribute("dateLot", true);
+		product.addProdAttribute("uom", req.getParameter("uom"));
+		product.addProdAttribute("qty", StringUtil.checkVal(req.getParameter("qty"),"1"));
+		ShoppingCartItemVO item = new ShoppingCartItemVO(product);
+		item.setProductId(product.getProductId()+product.getProdAttributes().get("lotNo"));
+		cart.add(item);
+		
+		// Remove the old product if we have changed the lot no
+		if (!StringUtil.checkVal(req.getParameter("oldLot")).equals(product.getProdAttributes().get("lotNo")) ) {
+			cart.remove(product.getProductId()+req.getParameter("oldLot"));
+		}
+		
+		// Ensure that the map is properly ordered by product id
+		List<String> sortedKeys = new ArrayList<String>(cart.getItems().keySet());
+		Collections.sort(sortedKeys);
+		Map<String, ShoppingCartItemVO> orderedCart = new LinkedHashMap<>();
+		for (String key : sortedKeys) {
+			orderedCart.put(key, cart.getItems().get(key));
+		}
+		cart.setItems(orderedCart);
+	}
+
+
+
 	/**
 	 * Retrieves the Storage container
 	 * @param req
@@ -128,42 +182,9 @@ public class NexusSolrCartAction extends SBActionAdapter {
 		
 		// Check if we are building a file, create the report generator and set the pertinent information
 		if (req.hasParameter("buildFile")) {
-			AbstractSBReportVO report;
-			String filename;
-			String caseId = getCookie(req, CASE_ID);
-			if (caseId.length() != 0) {
-				filename = "case-" + caseId;
-			} else {
-				filename = "DePuyUDI-" + new SimpleDateFormat("YYYYMMdd").format(Convert.getCurrentTimestamp());;
-			}
-			
-			if ("excel".equals(req.getParameter("buildFile"))) {
-				report = new NexusCartExcelReport();
-				report.setFileName(filename + ".xls");
-			} else {
-				report = new NexusCartPDFReport();
-				report.setFileName(filename + ".pdf");
-			}
-			Map<String, Object> data = new HashMap<>();
-			data.put("cart", cart.getItems());
-			data.put("hospital", getCookie(req, HOSPITAL));
-			data.put("room", getCookie(req, ROOM));
-			data.put("surgeon", getCookie(req, SURGEON));
-			data.put("time", getCookie(req, TIME));
-			data.put("caseId", getCookie(req, CASE_ID));
-			data.put("baseDomain", req.getHostName());
-			data.put("format", req.getParameter("format"));
-			
-			report.setData(data);
-			req.setAttribute(Constants.BINARY_DOCUMENT, report);
-			req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, true);
+			buildReport(cart, req);
 			return;
 		}
-		
-		// Build a list of all the companies that are currently in the database
-		// and add that to the request object
-		if (req.getAttribute("orgs") == null)
-			buildCompanyList(req);
 		
 		// Build the organization filter query
 		req.setParameter("fq", "organizationName:" + req.getParameter("orgName"));
@@ -185,40 +206,42 @@ public class NexusSolrCartAction extends SBActionAdapter {
 	
 	
 	/**
-	 * Queries the solr server with a blank request and builds a list of 
-	 * organizations in the solr server from that
+	 * Build the requested report based off of the request servlet and the 
+	 * shopping cart
+	 * @param cart
 	 * @param req
-	 * @throws ActionException 
 	 */
-	private void buildCompanyList(SMTServletRequest req) throws ActionException {
-		// Save the search data here so we can make the blank request
-		String searchData = req.getParameter("searchData");
-		req.setParameter("searchData", "", true);
-		List<String> orgs = new ArrayList<>();
-	    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
-	    	log.debug((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
-	    	actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
-	    	SMTActionInterface sai = new SolrAction(actionInit);
-	    	sai.setDBConnection(dbConn);
-	    	sai.setAttributes(attributes);
-		sai.retrieve(req);
-
-	    	mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
-	    	
-	    	SolrResponseVO resp = (SolrResponseVO) mod.getActionData();
-	    	for (FacetField facet : resp.getFacets()) {
-	    		if("organizationName".equals(facet.getName())) {
-	    			for (Count name : facet.getValues()) {
-	    				orgs.add(name.getName());
-	    			}
-	    		}
-	    			
-	    	}
-	    	req.setAttribute("orgs", orgs);
-	    	req.setParameter("searchData", searchData, true);
+	private void buildReport(ShoppingCartVO cart, SMTServletRequest req) {
+		AbstractSBReportVO report;
+		String filename;
+		String caseId = getCookie(req, CASE_ID);
+		if (caseId.length() != 0) {
+			filename = "case-" + caseId;
+		} else {
+			filename = "DePuyUDI-" + new SimpleDateFormat("YYYYMMdd").format(Convert.getCurrentTimestamp());;
+		}
 		
+		if ("excel".equals(req.getParameter("buildFile"))) {
+			report = new NexusCartExcelReport();
+			report.setFileName(filename + ".xls");
+		} else {
+			report = new NexusCartPDFReport();
+			report.setFileName(filename + ".pdf");
+		}
+		Map<String, Object> data = new HashMap<>();
+		data.put("cart", cart.getItems());
+		data.put("hospital", getCookie(req, HOSPITAL));
+		data.put("room", getCookie(req, ROOM));
+		data.put("surgeon", getCookie(req, SURGEON));
+		data.put("time", getCookie(req, TIME));
+		data.put("caseId", getCookie(req, CASE_ID));
+		data.put("baseDomain", req.getHostName());
+		data.put("format", req.getParameter("format"));
+		
+		report.setData(data);
+		req.setAttribute(Constants.BINARY_DOCUMENT, report);
+		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, true);
 	}
-
 
 
 	/**
