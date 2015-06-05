@@ -5,7 +5,9 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 
 // SMT BaseLibs
@@ -753,25 +755,20 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		log.debug(sql);
 
 		int batchCnt = 0;
-		PreparedStatement ps = null;
-		try {
-			ps = dbConn.prepareStatement(sql.toString());
-		} catch (Exception e) {
-			log.error("could not open PS to start batch query", e);
-		}
-
-		//iterate the request to find the fields we need to save.  They have ugly parameterNames!
-		//"leads|${loc.state}|${loc.city}|${loc.zipCode}|${loc.address}|${loc.locationId}"
-		Enumeration<String> reqParams = req.getParameterNames();
-		UUIDGenerator uuid = new UUIDGenerator();
-		int totalLeadCnt = 0; //gets insert into the event_postcard table later.
 		SortType sortType = null;
 		try {
 			sortType = SortType.valueOf(req.getParameter("sortType")); 
 		} catch (Exception e) {
 			sortType = SortType.city;
 		}
-		try {
+
+		//iterate the request to find the fields we need to save.  They have ugly parameterNames!
+		//"leads|${loc.state}|${loc.city}|${loc.zipCode}|${loc.address}|${loc.locationId}"
+		Set<String> uniqueCities = new HashSet<>();
+		Enumeration<String> reqParams = req.getParameterNames();
+		UUIDGenerator uuid = new UUIDGenerator();
+		int totalLeadCnt = 0; //gets insert into the event_postcard table later.
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			while (reqParams.hasMoreElements()) {
 				String param = reqParams.nextElement();
 				if (!param.startsWith("leads|")) continue;  //not one we want!
@@ -783,7 +780,11 @@ public class PostcardInsertV2 extends SBActionAdapter {
 					log.error(StringUtil.getToString(tokens, false, false, "|"));
 					continue;
 				}
-
+				
+				//ensure we've not already captured this city/state - this messes up the reports if we allow dups
+				String unqToken = tokens[1] + (SortType.zip == sortType ? tokens[3] : tokens[2]); 
+				if (uniqueCities.contains(unqToken)) continue;
+				
 				try {
 					ps.setString(1, uuid.getUUID());
 					ps.setString(2, eventPostcardId);
@@ -803,6 +804,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 						batchCnt= 0;
 					}
 					totalLeadCnt += Convert.formatInteger(vals[0]);
+					uniqueCities.add(unqToken);
 
 				} catch (SQLException sqle) {
 					log.error("could not save lead city", sqle);
@@ -813,8 +815,6 @@ public class PostcardInsertV2 extends SBActionAdapter {
 			if (batchCnt > 0)
 				ps.executeBatch();
 
-		} finally {
-			try { ps.close(); } catch (Exception e) { }
 		}
 
 		this.updatePostcardLeadsStats(totalLeadCnt, eventPostcardId, sortType);
