@@ -291,7 +291,7 @@ public class WorkflowAction extends AbstractWorkflowAction {
 		ModuleVO modVo = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 
 		//Only go after record count if we are doing a list.
-        modVo.setDataSize((workflowId.equals("") ? 1 : getRecordCount()));
+        modVo.setDataSize((workflowId.equals("") ? getRecordCount() : 1));
         modVo.setActionData(data);
         this.setAttribute(Constants.MODULE_DATA, modVo);
 	}
@@ -365,8 +365,8 @@ public class WorkflowAction extends AbstractWorkflowAction {
 		sql.append("wm.WORKFLOW_MODULE_ID, wm.MODULE_NM, wm.MODULE_DESC, wm.ACTIVE_FLG as MODULE_ACTIVE_FLG, ");
 		sql.append("wmx.WORKFLOW_MODULE_XR_ID, wmx.MODULE_ORDER_NO, wmx.CONTINUE_ON_ERROR_FLG, ");
 		sql.append("ct.CONFIG_TYPE_CD, ct.CONFIG_TYPE_NM, ct.CONFIG_TYPE_DESC, ");
-		sql.append("wmc.WORKFLOW_MODULE_CONFIG_ID, wmc.MODULE_REQUIRED_FLG, ");
-		sql.append("wmc.WORKFLOW_REQUIRED_FLG, wmcx.CONFIG_VALUE_TXT, ");
+		sql.append("wmc.WORKFLOW_MODULE_CONFIG_ID, wmc.IS_REQUIRED_FLG, ");
+		sql.append("wmc.IS_MODULE_FLG, wmcx.CONFIG_VALUE_TXT, ");
 		sql.append("wmcx.WORKFLOW_MODULE_CONFIG_XR_ID ");
 		sql.append("from ").append(schema).append("RAM_WORKFLOW w ");
 		sql.append("inner join ").append(schema).append("RAM_WORKFLOW_MODULE_XR wmx ");

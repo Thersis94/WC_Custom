@@ -222,7 +222,7 @@ public class WorkflowModuleAction extends AbstractWorkflowAction {
 		StringBuilder sql = new StringBuilder();
 		sql.append("select wm.WORKFLOW_MODULE_ID, wm.MODULE_NM, wm.MODULE_DESC, wm.ACTIVE_FLG, ");
 		sql.append("ct.CONFIG_TYPE_CD, ct.CONFIG_TYPE_NM, ct.CONFIG_TYPE_DESC, ");
-		sql.append("wmc.WORKFLOW_MODULE_CONFIG_ID, wmc.MODULE_REQUIRED_FLG, wmc.WORKFLOW_REQUIRED_FLG ");
+		sql.append("wmc.WORKFLOW_MODULE_CONFIG_ID, wmc.IS_REQUIRED_FLG, wmc.IS_MODULE_FLG ");
 		sql.append("from ").append(schema);
 		sql.append("RAM_WORKFLOW_MODULE wm left join ").append(schema);
 		sql.append("RAM_WORKFLOW_MODULE_CONFIG wmc on wm.WORKFLOW_MODULE_ID = wmc.WORKFLOW_MODULE_ID ");
