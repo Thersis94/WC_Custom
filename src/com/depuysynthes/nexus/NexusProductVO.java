@@ -60,6 +60,12 @@ public class NexusProductVO extends  SolrDocumentVO {
 		setTitle(productName);
 	}
 
+	@SolrField(name="searchableName")
+	public String getSearchableName() {
+		if (getDocumentId() == null) return null;
+		return getDocumentId().replaceAll("[\\-\\/\\.]", "");
+	}
+
 	
 	public String getOrgId() {
 		return orgId;
