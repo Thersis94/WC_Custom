@@ -17,7 +17,7 @@ import java.util.zip.ZipInputStream;
 
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 
-import com.depuy.datafeed.SFTPClient;
+import com.siliconmtn.io.ftp.SFTPV3Client;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.io.mail.EmailMessageVO;
@@ -161,7 +161,7 @@ public class NexusImporter extends CommandLineUtil {
 		int cnt=0;
 		Map<String, NexusProductVO> products = new HashMap<>();
 		try {
-			boolean isZip = props.getProperty("fileName").contains(".zip");
+			boolean isZip = fileName.contains(".zip");
 			// Get the files and parse them into products
 			if (isLocal) {
 				products = getFilesFromLocalZip();
@@ -179,7 +179,8 @@ public class NexusImporter extends CommandLineUtil {
 					// If we are dealing with a zip file we need to filter out the unneeded products
 					if (isZip && (!"DO,DS,DM,DC".contains(StringUtil.checkVal(p.getOrgId(), "SKIP")) ||
 							!"AC,CT,DP,DS".contains(StringUtil.checkVal(p.getStatus(), "SKIP")) ||
-							!"USA".equals(StringUtil.checkVal(p.getRegion(), "SKIP")))) {
+							!"USA".equals(StringUtil.checkVal(p.getRegion(), "SKIP"))
+							|| StringUtil.checkVal(p.getOrgName()).length() == 0)) {
 						continue;
 					}
 					
@@ -197,7 +198,8 @@ public class NexusImporter extends CommandLineUtil {
 			}
 			
 			// Add the remaining documents
-			solr.addDocuments(docs);
+			if (docs.size() > 0)
+				solr.addDocuments(docs);
 
 		} catch(ActionException e) {
 			log.error("Failed to complete transaction", e);
@@ -217,10 +219,10 @@ public class NexusImporter extends CommandLineUtil {
 		boolean isZip = fileName.contains(".zip");
 		Map<String, String> fileData = new TreeMap<>();
 		Map<String, NexusProductVO> products = new HashMap<>();
-		SFTPClient ftp = null;
+		SFTPV3Client ftp = null;
 		try {
 			
-			ftp = new SFTPClient(hostName, user, password);
+			ftp = new SFTPV3Client(hostName, user, password);
 			log.debug("Getting File " + directory + "/" + fileName + " at " + Convert.getCurrentTimestamp());
 			if (isZip) {
 				getFilesFromZip(fileData, ftp.getFileData(directory+"/"+fileName));
@@ -415,18 +417,28 @@ public class NexusImporter extends CommandLineUtil {
 		if (StringUtil.checkVal(p.getSummary()).length() == 0 && desc != -1) p.setSummary(cols[desc]);
 		if (gtin != -1 && cols[gtin].length() > 0 && !p.getGtin().contains(cols[gtin])) {
 			p.addGtin(cols[gtin]);
-			if (gtinLvl != -1 && cols[gtinLvl].length() > 0 && !p.getGtinLevel().contains(cols[gtinLvl]))p.addGtinLevel(cols[gtinLvl]);
-			if (uom != -1 && cols[uom].length() > 0 && !p.getUomLevel().contains(cols[uom]))p.addUOMLevel(cols[uom]);
-			if (pkg != -1 && cols[pkg].length() > 0 && !p.getPackageLevel().contains(cols[pkg]))p.addPackageLevel(cols[pkg]);
+			// Every GTIN can have a gtin level, uom, and package level
+			// If we are given nothing we add an empty item to the respective list
+			// so as not to unbalance the lists
+			if (gtinLvl != -1 && cols[gtinLvl].length() > 0) {
+				p.addGtinLevel(cols[gtinLvl]);
+			} else {
+				p.addGtinLevel("");
+			}
+			
+			if (uom != -1 && cols[uom].length() > 0) {
+				p.addUOMLevel(cols[uom]);
+			} else {
+				p.addUOMLevel("");
+			}
+			if (pkg != -1 && cols[pkg].length() > 0) {
+				p.addUOMLevel(cols[pkg]);
+			} else {
+				p.addPackageLevel("");
+			}
 		}
 		if (StringUtil.checkVal(p.getPrimaryDeviceId()).length() == 0 && device != -1 && cols[device].length() > 0) {
 			p.setPrimaryDeviceId(cols[device]);
-			if (!p.getGtin().contains(cols[device])) {
-				p.addGtin(cols[device]);
-				if (gtinLvl != -1 && cols[gtinLvl].length() > 0 && !p.getGtinLevel().contains(cols[gtinLvl]))p.addGtinLevel(cols[gtinLvl]);
-				if (uom != -1 && cols[uom].length() > 0 && !p.getUomLevel().contains(cols[uom]))p.addUOMLevel(cols[uom]);
-				if (pkg != -1 && cols[pkg].length() > 0 && !p.getPackageLevel().contains(cols[pkg]))p.addPackageLevel(cols[pkg]);
-			}
 		}
 		if (StringUtil.checkVal(p.getUnitOfUse()).length() == 0 && use != -1)p.setUnitOfUse(cols[use]);
 		if (StringUtil.checkVal(p.getDpmGTIN()).length() == 0 && dpm != -1)p.setDpmGTIN(cols[dpm]);
@@ -436,7 +448,7 @@ public class NexusImporter extends CommandLineUtil {
 		 
 		// If we have not received a primary device identifier
 		// but we have a GTIN of the valid level we use that instead
-		if (StringUtil.checkVal(p.getPrimaryDeviceId()).length() == 0 && pkg != -1 && ("1".equals(cols[pkg]) || "C".equals(cols[pkg]))
+		if (StringUtil.checkVal(p.getPrimaryDeviceId()).length() == 0 && ((pkg != -1 &&"1".equals(cols[pkg])) || ( gtinLvl != -1 &&"C".equals(cols[gtinLvl])))
 				&& gtin != -1 && cols[gtin].length() > 0) {
 			p.setPrimaryDeviceId(cols[gtin]);
 		}
