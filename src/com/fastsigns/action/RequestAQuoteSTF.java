@@ -459,7 +459,7 @@ public class RequestAQuoteSTF extends SBActionAdapter {
 		EmailMessageVO msg = new EmailMessageVO();
 		try {
 			msg.addRecipient(req.getParameter("userEmail"));
-			msg.setSubject(safConfig.getEmailSubjectUser());
+			msg.setSubject(safConfig.getEmailSubjectUser(req.getParameter("userEmail")));
 			msg.setFrom(safConfig.getSenderEmailAddress(vals));
 			msg.setHtmlBody(safConfig.buildEmail(false, cdc, vals));
 		} catch (InvalidDataException e) {

@@ -62,7 +62,9 @@ import com.smt.sitebuilder.security.SecurityController;
 public class PostcardSelectV2 extends SBActionAdapter {
 	
 	private static final String SURVEY_ACTION_ID = "c0a8021edb7fd91f57d3396eea06b0e9"; // the actionId of the Survey portlet tied to Events.
+	private static final String MITEK_SURVEY_ACTION_ID = "c0a80237c2034fbfe0cea6bddfbf537d"; //Mitek's surveyId
 	private static final String SURVEY_RSVP_QUEST_ID = "c0a8021edb832b385a61675da76470a2"; //the questionId holding RSVP#
+	private static final String MITEK_SURVEY_RSVP_QUEST_ID = "c0a80237c2034fcfc5194464583dff35"; //the questionId holding RSVP# for Mitek
 	public static final String ACTION_ITEMS_CNT = "outstanding";
 	
 	public enum ReqType {
@@ -134,7 +136,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 			if ( ReqType.outstanding == reqType ){
 				data = outstanding;
 			} else if (ReqType.isSurveyComplete == reqType) {
-				verifySurveyComplete(req.getParameter("rsvpCode"));
+				verifySurveyComplete(req.getParameter("rsvpCode"), req.hasParameter("isMitek"));
 				return;
 				
 			} else if (eventPostcardId.length() > 0) {
@@ -631,7 +633,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 	 * a survey for the given seminar.
 	 * @param rsvpCode
 	 */
-	private void verifySurveyComplete(String rsvpCode) {
+	private void verifySurveyComplete(String rsvpCode, boolean isMitek) {
 		boolean resp = false;
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("select value_txt from survey_response ");
@@ -639,8 +641,8 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		log.debug(sql);
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, SURVEY_RSVP_QUEST_ID);
-			ps.setString(2, SURVEY_ACTION_ID);
+			ps.setString(1, (isMitek ? MITEK_SURVEY_RSVP_QUEST_ID : SURVEY_RSVP_QUEST_ID));
+			ps.setString(2, (isMitek ? MITEK_SURVEY_ACTION_ID : SURVEY_ACTION_ID));
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				String val = StringUtil.checkVal(rs.getString(1)).toLowerCase();

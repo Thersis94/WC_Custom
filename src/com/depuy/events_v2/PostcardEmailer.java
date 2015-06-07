@@ -139,11 +139,14 @@ public class PostcardEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(site.getAdminEmail()); // the DePuy intern in charge
-			mail.addRecipient("KAlfano@its.jnj.com"); // Kristi Alfano
+			mail.addRecipient("Kwebb1@its.jnj.com"); 
 			mail.addRecipient("amy.zimmerman@hmktgroup.com");
-			mail.addRecipient("admgt@hmktgroup.com"); // Barb Goley & Shari Slough
-			mail.addRecipient("Jenn.Davis@hmktgroup.com"); // Jenn Parrish-Davis);
+			mail.addRecipient("admgt@hmktgroup.com");
 			mail.addRecipient("sterling.hoham@hmktgroup.com");
+			mail.addRecipient("rwilkin7@its.jnj.com");
+			mail.addRecipient("lisa.maiers@novusmediainc.com");
+			mail.addRecipient("anna.schwanz@novusmediainc.com");
+			mail.addRecipient("taylor.larson@novusmediainc.com");
 			mail.setSubject("DePuy Community Education; Postcard Canceled " + postcard.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
