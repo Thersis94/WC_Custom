@@ -95,7 +95,7 @@ public class NexusCartPDFReport  extends AbstractSBReportVO {
 		html.append("UDI<img src='/binary/themes/CUSTOM/DEPUY/DPY_SYN_NEXUS/images/line-after.jpg' style='width:60px' /></div>");
 		html.append("<table style='color:#636363;border-collapse:collapse;font-size:16px; width:100%'>");
 		html.append("<tbody><tr style='margin-bottom:10px;'><th style='width:2%'>&nbsp;</th><th style='width:12%'>Product No.</th>");
-		html.append("<th style='width:12%'>Company</th><th style='width:15%;'>GTIN</th><th style='width:10%'>LOT No.</th>");
+		html.append("<th style='width:11%'>Company</th><th style='width:15%;'>GTIN</th><th style='width:10%'>LOT No.</th>");
 		html.append("<th style='width:8%'>Date Lot</th><th style='width:7%'>UOM</th><th style='width:7%'>QTY</th>");
 		html.append("<th>Barcode</th></tr>");
 
