@@ -10,9 +10,6 @@ import java.util.Map;
 
 import javax.servlet.http.Cookie;
 
-import org.apache.solr.client.solrj.response.FacetField;
-import org.apache.solr.client.solrj.response.FacetField.Count;
-
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.commerce.ShoppingCartItemVO;
@@ -28,7 +25,6 @@ import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
-import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -189,19 +185,20 @@ public class NexusSolrCartAction extends SBActionAdapter {
 		// Build the organization filter query
 		req.setParameter("fq", "organizationName:" + req.getParameter("orgName"));
 		
-
-		String searchData = req.getParameter("searchData");
-		req.setParameter("searchData", "*"+searchData+"*", true);
-		
-		// Do the solr search
-	    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
-	    	log.debug((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
-	    	actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
-	    	SMTActionInterface sai = new SolrAction(actionInit);
-	    	sai.setDBConnection(dbConn);
-	    	sai.setAttributes(attributes);
-		sai.retrieve(req);
-	    	req.setParameter("searchData", searchData, true);
+		if (!Convert.formatBoolean(req.getParameter("showCart"))) {
+			String searchData = StringUtil.checkVal(req.getParameter("searchData"));
+			req.setParameter("searchData", "*"+searchData.replaceAll("[\\/\\.\\-]", "")+"*", true);
+			
+			// Do the solr search
+		    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+		    	log.debug((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
+		    	actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
+		    	SMTActionInterface sai = new SolrAction(actionInit);
+		    	sai.setDBConnection(dbConn);
+		    	sai.setAttributes(attributes);
+			sai.retrieve(req);
+		    	req.setParameter("searchData", searchData, true);
+		}
 	}
 	
 	
