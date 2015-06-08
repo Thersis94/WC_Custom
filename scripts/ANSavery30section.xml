@@ -1,0 +1,37 @@
+	<wx:sect>
+		<w:tbl>
+			<w:tblPr>
+				<w:tblW w:w="0" w:type="auto"/>
+				<w:tblLayout w:type="Fixed"/>
+				<w:tblCellMar>
+					<w:left w:w="15" w:type="dxa"/>
+					<w:right w:w="15" w:type="dxa"/>
+				</w:tblCellMar>
+			</w:tblPr>
+			
+			<w:tblGrid>
+				<w:gridCol w:w="3780"/>
+				<w:gridCol w:w="180"/>
+				<w:gridCol w:w="3780"/>
+				<w:gridCol w:w="180"/>
+				<w:gridCol w:w="3780"/>
+			</w:tblGrid>
+		
+			#ROWS#
+			
+		</w:tbl>
+		<w:p>
+			<w:pPr>
+				<w:rPr>
+					<w:vanish/>
+				</w:rPr>
+			</w:pPr>
+		</w:p>
+		<w:sectPr>
+			<w:type w:val="continuous"/>
+			<w:pgSz w:w="12240" w:h="15840"/>
+			<w:pgMar w:top="720" w:right="272" w:bottom="0" w:left="272" w:header="720" w:footer="720" w:gutter="0"/>
+			<w:paperSrc w:first="4" w:other="4"/>
+			<w:cols w:space="720"/>
+		</w:sectPr>
+	</wx:sect>
