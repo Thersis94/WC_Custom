@@ -173,7 +173,7 @@ public class NexusCartExcelReport extends AbstractSBReportVO {
 		c.setCellValue("Case Id");
 		c.setCellStyle(header);
 		c = r.createCell(cellCnt++);
-		c.setCellValue("OR Room");
+		c.setCellValue("Operating Room");
 		c.setCellStyle(header);
 		c = r.createCell(cellCnt++);
 		c.setCellValue("Hospital name");
