@@ -432,7 +432,7 @@ public class NexusImporter extends CommandLineUtil {
 				p.addUOMLevel("");
 			}
 			if (pkg != -1 && cols[pkg].length() > 0) {
-				p.addUOMLevel(cols[pkg]);
+				p.addPackageLevel(cols[pkg]);
 			} else {
 				p.addPackageLevel("");
 			}

@@ -85,18 +85,19 @@ public class NexusCartPDFReport  extends AbstractSBReportVO {
 		html.append("<td style='font-size:14px;'>").append(data.get(NexusSolrCartAction.SURGEON)).append("</td></tr>");
 		html.append("<tr><td style='border-left: solid 1px black; padding-left:10px;font-size:14px;'>Hospital Name:</td>");
 		html.append("<td style='font-size:14px;'>").append(data.get(NexusSolrCartAction.HOSPITAL)).append("</td></tr>");
-		html.append("<tr><td style='border-left: solid 1px black; padding-left:10px;font-size:14px;'>OR Room:</td>");
+		html.append("<tr><td style='border-left: solid 1px black; padding-left:10px;font-size:14px;'>Operating Room:</td>");
 		html.append("<td style='font-size:14px;'>").append(data.get(NexusSolrCartAction.ROOM)).append("</td></tr>");
 		html.append("<tr><td style='border-left: solid 1px black; padding-left:10px;font-size:14px;'>Case ID:</td>");
 		html.append("<td style='font-size:14px;'>").append(data.get(NexusSolrCartAction.CASE_ID)).append("</td></tr></tbody></table>");
 		html.append("<span style='font-size:24px; color:#636363;'><i class='fa fa-2'>&#xf0b1;</i>&nbsp;Products</span>");
-		html.append("<div style='position:relative; left:26%;'>");
+		html.append("<div style='position:relative; left:24%;'>");
 		html.append("<img src='/binary/themes/CUSTOM/DEPUY/DPY_SYN_NEXUS/images/line-before.jpg' style='width:60px' /> ");
-		html.append("UDI<img src='/binary/themes/CUSTOM/DEPUY/DPY_SYN_NEXUS/images/line-after.jpg' style='width:60px' /></div>");
+		html.append("<span style='position:relative; top:-4px;'>UDI</span>");
+		html.append("<img src='/binary/themes/CUSTOM/DEPUY/DPY_SYN_NEXUS/images/line-after.jpg' style='width:60px' /></div>");
 		html.append("<table style='color:#636363;border-collapse:collapse;font-size:16px; width:100%'>");
 		html.append("<tbody><tr style='margin-bottom:10px;'><th style='width:2%'>&nbsp;</th><th style='width:12%'>Product No.</th>");
-		html.append("<th style='width:11%'>Company</th><th style='width:15%;'>GTIN</th><th style='width:10%'>LOT No.</th>");
-		html.append("<th style='width:8%'>Date Lot</th><th style='width:7%'>UOM</th><th style='width:7%'>QTY</th>");
+		html.append("<th style='width:11%'>Company</th><th style='width:14%;'>GTIN</th><th style='width:10%'>LOT No.</th>");
+		html.append("<th style='width:7%'>Date Lot</th><th style='width:6%'>UOM</th><th style='width:6%'>QTY</th>");
 		html.append("<th>Barcode</th></tr>");
 
 
@@ -131,7 +132,7 @@ public class NexusCartPDFReport  extends AbstractSBReportVO {
 				html.append(item.getProduct().getShortDesc()).append("</td>");
 				
 			} else if ("single".equals(data.get("format"))){
-				html.append(border).append("' rowspan='2'><span><img style='margin-left:25px;' src='/barcodeGenerator?barcodeData=01").append(item.getProduct().getProdAttributes().get("gtin"));
+				html.append(border).append("' rowspan='2'><span><img src='/barcodeGenerator?barcodeData=01").append(item.getProduct().getProdAttributes().get("gtin"));
 				html.append("10").append(item.getProduct().getProdAttributes().get("lotNo")).append("&height=35' /></span></td></tr>");
 				html.append("<tr><td style='").append(border).append("'>&nbsp;</td>");
 				html.append("<td colspan='7' style='font-size:12px; width:400px;").append(border).append("'>");
