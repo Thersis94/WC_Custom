@@ -53,13 +53,24 @@ public class NexusSolrCartAction extends SBActionAdapter {
 	public void build(SMTServletRequest req) throws ActionException {
 		Storage store = retrieveContainer(req);
 		ShoppingCartVO cart = store.load();
+		String dateLot;
+		if (getCookie(req, TIME).length() > 0) {
+			String time = getCookie(req, TIME);
+			dateLot =  Convert.formatDate(Convert.formatDate(time.substring(0, time.indexOf("--")-1).replace('-', '/')),"ddMMMyyyy").toString();
+		} else {
+			dateLot = Convert.formatDate(Convert.getCurrentTimestamp(), "ddMMMyyyy");
+		}
 		
 		if (Convert.formatBoolean(req.getParameter("clearCart"))) {
 			deleteItem(cart, req);
 		} else if (Convert.formatBoolean(req.getParameter("lotChange"))) {
 			changeLot(cart, req);
+		} else if (!Convert.formatBoolean(req.getParameter("editItem")) && cart.getItems().containsKey(req.getParameter("productId") + StringUtil.checkVal(req.getParameter("lotNo"), dateLot))) {
+			ShoppingCartItemVO p = cart.getItems().get(req.getParameter("productId") + dateLot);
+			p.setQuantity(p.getQuantity() + Convert.formatInteger(StringUtil.checkVal(req.getParameter("qty"),"1")));
+			cart.add(p);
 		} else {
-			addItem(cart, req);
+			addItem(cart, req, dateLot);
 		}
 		
 		store.save(cart);
@@ -106,15 +117,8 @@ public class NexusSolrCartAction extends SBActionAdapter {
 	 * @param cart
 	 * @param req
 	 */
-	private void addItem(ShoppingCartVO cart, SMTServletRequest req) {
+	private void addItem(ShoppingCartVO cart, SMTServletRequest req, String dateLot) {
 		// Build a product vo that can be placed in the cart vo
-		String dateLot;
-		if (getCookie(req, TIME).length() > 0) {
-			String time = getCookie(req, TIME);
-			dateLot =  Convert.formatDate(Convert.formatDate(time.substring(0, time.indexOf("--")-1).replace('-', '/')),"ddMMMyyyy").toString();
-		} else {
-			dateLot=Convert.formatDate(Convert.getCurrentTimestamp(), "ddMMMyyyy");
-		}
 		cart.getItems().get(req.getParameter("productId"));
 		ProductVO product = new ProductVO();
 		product.setProductId(req.getParameter("productId"));
@@ -125,9 +129,9 @@ public class NexusSolrCartAction extends SBActionAdapter {
 		if (dateLot.length() > 0 && dateLot.equals(product.getProdAttributes().get("lotNo")))
 			product.addProdAttribute("dateLot", true);
 		product.addProdAttribute("uom", req.getParameter("uom"));
-		product.addProdAttribute("qty", StringUtil.checkVal(req.getParameter("qty"),"1"));
 		ShoppingCartItemVO item = new ShoppingCartItemVO(product);
 		item.setProductId(product.getProductId()+product.getProdAttributes().get("lotNo"));
+		item.setQuantity(Convert.formatInteger(StringUtil.checkVal(req.getParameter("qty"),"1")));
 		cart.add(item);
 		
 		// Remove the old product if we have changed the lot no
