@@ -6,6 +6,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.solr.common.SolrDocument;
+
 // SMT BAse Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -124,13 +126,42 @@ public class BarcodeLookupAction extends SBActionAdapter {
 		log.debug(barcode.getProductId());
 		SolrFieldVO field = new SolrFieldVO(SolrFieldVO.FieldType.FILTER, "gtin", "*"+barcode.getProductId()+"*", BooleanType.AND);
 		qData.addSolrField(field);
-		ProductVO prod = new ProductVO();
 		SolrResponseVO resp = sqp.processQuery(qData);
+		
+		return buildProduct(resp, barcode.getProductId());
+	}
+
+	
+	/**
+	 * Build a product from the supplied solr response
+	 * @param resp
+	 * @param barcode
+	 * @return
+	 */
+	private ProductVO buildProduct(SolrResponseVO resp, String barcode) {
+		ProductVO prod = new ProductVO();
 		if (resp.getResultDocuments().size() == 0) {
 			prod .setProductId("No Product Found with Supplied Barcode.");
 			return prod;
 		}
-		prod.setProductId(StringUtil.checkVal(resp.getResultDocuments().get(0).get("documentId"), "No valid barcode found in system."));
+		SolrDocument doc = resp.getResultDocuments().get(0);
+		prod.getProdAttributes().put("organizationName", doc.get("organizationName"));
+		prod.setProductId((String)doc.get("documentId"));
+		prod.setProductGroupId((String)doc.get("deviceId"));
+		prod.setShortDesc((String) doc.get("summary"));
+
+
+		Object[] gtin = doc.getFieldValues("gtin").toArray();
+		Object[] uom = doc.getFieldValues("uomLvl").toArray();
+		
+		for (int i=0; i < gtin.length; i++) {
+			if (StringUtil.checkVal(gtin[i]).equals(prod.getProductGroupId())) {
+				prod.getProdAttributes().put("primaryUOM", uom[i]);
+			} else if (StringUtil.checkVal(gtin[i]).contains(barcode)) {
+				prod.getProdAttributes().put("gtin", gtin[i]);
+				prod.getProdAttributes().put("uom", uom[i]);
+			}
+		}
 		return prod;
 	}
 
