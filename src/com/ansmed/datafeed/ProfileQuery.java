@@ -121,14 +121,14 @@ public class ProfileQuery {
 		
 		List<String> profiles = new ArrayList<String>();
 		
-		StringBuffer baseSql = new StringBuffer();
+		StringBuilder baseSql = new StringBuilder(100);
 		baseSql.append("select distinct a.profile_id from contact_submittal a ");
 		baseSql.append("inner join contact_data b on a.contact_submittal_id = ");
 		baseSql.append("b.contact_submittal_id where a.action_id = ? ");
 		
 		PreparedStatement ps = null;
 		
-		StringBuffer sql = new StringBuffer(baseSql);
+		StringBuilder sql = new StringBuilder(baseSql);
 		sql.append(this.addFieldQuery(form));
 	
 		log.debug(form + " profile SQL: " + sql.toString());
@@ -168,9 +168,9 @@ public class ProfileQuery {
 		
 	}
 	
-	private StringBuffer addFieldQuery(String actionId) {
+	private StringBuilder addFieldQuery(String actionId) {
 		
-		StringBuffer fieldQuery = new StringBuffer();
+		StringBuilder fieldQuery = new StringBuilder(100);
 		
 		// additional query logic for certain contact forms
 		if (actionId.equalsIgnoreCase("brcCard") || actionId.equalsIgnoreCase("contactUs")) {
@@ -207,7 +207,7 @@ public class ProfileQuery {
 	public void addFormat(Connection conn, List<String> profiles, 
 			String actionId, String fieldId) {
 		
-		StringBuffer sql = new StringBuffer();
+		StringBuilder sql = new StringBuilder(200);
 		
 		sql.append("select a.profile_id, b.value_txt from ").append(schema);
 		sql.append("contact_submittal a inner join ").append(schema);
@@ -269,7 +269,7 @@ public class ProfileQuery {
 	public void addCountry(Connection conn, List<String> profiles, 
 			String actionId, String fieldId, String form) {
 		
-		StringBuffer sql = new StringBuffer();
+		StringBuilder sql = new StringBuilder(200);
 		
 		sql.append("select a.profile_id, b.value_txt from ").append(schema);
 		sql.append("contact_submittal a inner join ").append(schema);

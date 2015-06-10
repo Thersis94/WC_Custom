@@ -19,14 +19,14 @@ public class LabelMaker {
 
 	private int slot = 0;
 	private int rowCount = 0;
-	private StringBuffer row = new StringBuffer();
-	private StringBuffer blankRow = new StringBuffer();
-	private StringBuffer currentRow = new StringBuffer();
-	private StringBuffer rowBlock = new StringBuffer();
-	private StringBuffer section = new StringBuffer();
-	private StringBuffer currentSection = new StringBuffer();
-	private StringBuffer sectionBody = new StringBuffer();
-	private StringBuffer labelFile = new StringBuffer();
+	private StringBuilder row = new StringBuilder();
+	private StringBuilder blankRow = new StringBuilder();
+	private StringBuilder currentRow = new StringBuilder();
+	private StringBuilder rowBlock = new StringBuilder();
+	private StringBuilder section = new StringBuilder();
+	private StringBuilder currentSection = new StringBuilder();
+	private StringBuilder sectionBody = new StringBuilder();
+	private StringBuilder labelFile = new StringBuilder();
 	private String templatePath = "scripts//";
 	
 	public LabelMaker(String rowFile, String sectionFile, String wrapperFile) {
@@ -41,7 +41,7 @@ public class LabelMaker {
 	 * @param address
 	 * @param cityStateZip
 	 */
-	protected void addLabel(StringBuffer name, StringBuffer address, StringBuffer cityStateZip) {
+	protected void addLabel(StringBuilder name, StringBuilder address, StringBuilder cityStateZip) {
 		
 		int index = -1;
 		
@@ -90,10 +90,10 @@ public class LabelMaker {
 	 * Adds label row to section rows.  Passes complete section to section body. 
 	 * @param theRow
 	 */
-	protected void addRow(StringBuffer theRow) {
+	protected void addRow(StringBuilder theRow) {
 		
 		if (rowCount == 0) {
-			rowBlock = new StringBuffer();
+			rowBlock = new StringBuilder();
 		}
 		
 		rowCount++;
@@ -115,7 +115,7 @@ public class LabelMaker {
 	 * Adds section to section body.
 	 * @param theSection
 	 */
-	protected void addSection(StringBuffer theRows) {
+	protected void addSection(StringBuilder theRows) {
 		
 		currentSection = getNewSection();
 		
@@ -131,7 +131,7 @@ public class LabelMaker {
 	 */
 	protected void flushRow() {
 		
-		StringBuffer lastRow = getCurrentRow();
+		StringBuilder lastRow = getCurrentRow();
 		int lastSlot = getCurrentSlot();
 		int index = -1;
 		
@@ -233,7 +233,7 @@ public class LabelMaker {
 	 * Returns a label row with blanks in place of text placeholders.
 	 * @return
 	 */
-	protected StringBuffer getBlankRow() {
+	protected StringBuilder getBlankRow() {
 		
 		if (blankRow.length() > 0) {
 			
@@ -242,7 +242,7 @@ public class LabelMaker {
 		} else {
 
 			int index = -1;
-			blankRow = new StringBuffer(row);
+			blankRow = new StringBuilder(row);
 			
 			index = blankRow.indexOf("#NAME1#");
 			blankRow.replace(index, index + 7, "");
@@ -272,8 +272,8 @@ public class LabelMaker {
 	 * Returns a label row template with text placeholders.
 	 * @return
 	 */
-	protected StringBuffer getNewRow() {
-		return new StringBuffer(row);
+	protected StringBuilder getNewRow() {
+		return new StringBuilder(row);
 	}
 	
 	
@@ -281,8 +281,8 @@ public class LabelMaker {
 	 * Returns label section template.
 	 * @return
 	 */
-	protected StringBuffer getNewSection() {
-		return new StringBuffer(section);
+	protected StringBuilder getNewSection() {
+		return new StringBuilder(section);
 	}
 	
 	
@@ -299,7 +299,7 @@ public class LabelMaker {
 	 * Returns the current row being modified.
 	 * @return
 	 */
-	protected StringBuffer getCurrentRow() {
+	protected StringBuilder getCurrentRow() {
 		return currentRow;
 	}
 	
@@ -317,7 +317,7 @@ public class LabelMaker {
 	 * Returns the current section being modified.
 	 * @return
 	 */
-	protected StringBuffer getCurrentSection() {
+	protected StringBuilder getCurrentSection() {
 		return currentSection;
 	}
 	
@@ -325,7 +325,7 @@ public class LabelMaker {
 	 * Returns the completed label file.
 	 * @return
 	 */
-	protected StringBuffer getLabelFile() {
+	protected StringBuilder getLabelFile() {
 		
 		int index = -1;
 		flushRow();
