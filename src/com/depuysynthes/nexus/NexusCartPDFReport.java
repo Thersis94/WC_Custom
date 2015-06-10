@@ -77,7 +77,7 @@ public class NexusCartPDFReport  extends AbstractSBReportVO {
 		html.append("<span style='color:#1A496A;'>I</span>dentification</p></td></tr>");
 		html.append("<tr><td rowspan='5'>");
 		if (StringUtil.checkVal(data.get(NexusSolrCartAction.CASE_ID)).length() > 0)
-			html.append("<span style='font-size:20px;'>Case Report(ID:").append(data.get(NexusSolrCartAction.CASE_ID)).append(")</span>");
+			html.append("<span style='font-size:20px;'>Case Report (ID: ").append(data.get(NexusSolrCartAction.CASE_ID)).append(")</span>");
 		html.append("</td>");
 		html.append("<td style='border-left: solid 1px black; padding-left:10px;font-size:14px;'>Surgery Date and Time:</td>");
 		html.append("<td style='font-size:14px;'>").append(data.get(NexusSolrCartAction.TIME)).append("</td></tr>");
@@ -97,7 +97,7 @@ public class NexusCartPDFReport  extends AbstractSBReportVO {
 		html.append("<table style='color:#636363;border-collapse:collapse;font-size:16px; width:100%'>");
 		html.append("<tbody><tr style='margin-bottom:10px;'><th style='width:2%'>&nbsp;</th><th style='width:12%'>Product No.</th>");
 		html.append("<th style='width:11%'>Company</th><th style='width:14%;'>GTIN</th><th style='width:10%'>LOT No.</th>");
-		html.append("<th style='width:7%'>Date Lot</th><th style='width:6%'>UOM</th><th style='width:6%'>QTY</th>");
+		html.append("<th style='width:7%; text-align:center;'>Date Lot</th><th style='width:6%; text-align:center;'>UOM</th><th style='width:6%; text-align:center;'>QTY</th>");
 		html.append("<th>Barcode</th></tr>");
 
 
@@ -119,14 +119,14 @@ public class NexusCartPDFReport  extends AbstractSBReportVO {
 				html.append("<i class='fa'>&#xf00c;</i>");
 			}
 			html.append("</td>");
-			html.append("<td style='font-size:12px;'>").append(item.getProduct().getProdAttributes().get("uom")).append("</td>");
-			html.append("<td style='font-size:12px;'>").append(item.getProduct().getProdAttributes().get("qty")).append("</td>");
+			html.append("<td style='font-size:12px; text-align:center;'>").append(item.getProduct().getProdAttributes().get("uom")).append("</td>");
+			html.append("<td style='font-size:12px; text-align:center;'>").append(item.getQuantity()).append("</td>");
 			// This ends off without closing the tag so that the single barcode option can add in a rowspan attribute
-			html.append("<td style='font-size:12px; width:400px;min-height:50px;");
+			html.append("<td style='font-size:12px; width:400px;min-height:40px;");
 			
 			if ("DM".equals(data.get("format"))) {
-				html.append(border).append("' rowspan='2'><span><img style='margin-left:25px;' src='/barcodeGenerator?barcodeData=01").append(item.getProduct().getProdAttributes().get("gtin"));
-				html.append("10").append(item.getProduct().getProdAttributes().get("lotNo")).append("&height=35&format=DM' /></span></td></tr>");
+				html.append(border).append("' rowspan='2'><span><img style='margin-left:28px;' src='/barcodeGenerator?barcodeData=01").append(item.getProduct().getProdAttributes().get("gtin"));
+				html.append("10").append(item.getProduct().getProdAttributes().get("lotNo")).append("&height=25&format=DM' /></span></td></tr>");
 				html.append("<tr><td style='").append(border).append("'>&nbsp;</td>");
 				html.append("<td colspan='7' style='font-size:12px; width:400px;").append(border).append("'>");
 				html.append(item.getProduct().getShortDesc()).append("</td>");
