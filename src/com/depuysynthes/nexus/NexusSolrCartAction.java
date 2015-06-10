@@ -67,7 +67,7 @@ public class NexusSolrCartAction extends SBActionAdapter {
 			changeLot(cart, req);
 		} else if (!Convert.formatBoolean(req.getParameter("editItem")) && cart.getItems().containsKey(req.getParameter("productId") + StringUtil.checkVal(req.getParameter("lotNo"), dateLot))) {
 			ShoppingCartItemVO p = cart.getItems().get(req.getParameter("productId") + dateLot);
-			p.setQuantity(p.getQuantity() + Convert.formatInteger(StringUtil.checkVal(req.getParameter("qty"),"1")));
+			p.setQuantity(p.getQuantity() + Convert.formatInteger(req.getParameter("qty"),1));
 			cart.add(p);
 		} else {
 			addItem(cart, req, dateLot);
@@ -131,7 +131,7 @@ public class NexusSolrCartAction extends SBActionAdapter {
 		product.addProdAttribute("uom", req.getParameter("uom"));
 		ShoppingCartItemVO item = new ShoppingCartItemVO(product);
 		item.setProductId(product.getProductId()+product.getProdAttributes().get("lotNo"));
-		item.setQuantity(Convert.formatInteger(StringUtil.checkVal(req.getParameter("qty"),"1")));
+		item.setQuantity(Convert.formatInteger(req.getParameter("qty"),1));
 		cart.add(item);
 		
 		// Remove the old product if we have changed the lot no
