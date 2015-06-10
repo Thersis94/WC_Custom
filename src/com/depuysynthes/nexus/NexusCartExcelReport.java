@@ -18,6 +18,7 @@ import org.apache.poi.ss.usermodel.Sheet;
 import com.lowagie.text.Font;
 import com.siliconmtn.commerce.ShoppingCartItemVO;
 import com.siliconmtn.commerce.catalog.ProductVO;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 
 /****************************************************************************
@@ -101,7 +102,7 @@ public class NexusCartExcelReport extends AbstractSBReportVO {
 			r.createCell(cellCnt++).setCellValue((String)p.getProdAttributes().get("gtin"));
 			r.createCell(cellCnt++).setCellValue((String)p.getProdAttributes().get("lotNo"));
 			r.createCell(cellCnt++).setCellValue((String)p.getProdAttributes().get("uom"));
-			r.createCell(cellCnt++).setCellValue((String)p.getProdAttributes().get("qty"));
+			r.createCell(cellCnt++).setCellValue(StringUtil.checkVal(cart.get(cartKey).getQuantity()));
 			r.createCell(cellCnt++).setCellValue((String)data.get(NexusSolrCartAction.CASE_ID));
 			r.createCell(cellCnt++).setCellValue((String)data.get(NexusSolrCartAction.ROOM));
 			r.createCell(cellCnt++).setCellValue((String)data.get(NexusSolrCartAction.HOSPITAL));
