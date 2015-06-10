@@ -9,7 +9,7 @@ import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.io.IOException;
 import java.lang.Integer;
-import java.lang.StringBuffer;
+import java.lang.StringBuilder;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
@@ -91,12 +91,12 @@ public class KitRequestorParser {
 	private Calendar cal;
 	private String dateStart;
 	private String dateEnd;
-	private StringBuffer sbXMLWrapper = new StringBuffer();
-	private StringBuffer sbXMLBody = new StringBuffer();
-	private StringBuffer templateDate = new StringBuffer();
-	private StringBuffer xmlEmptyCell = new StringBuffer("<w:tc>\n<w:p>\n</w:p>\n</w:tc>\n");
-	private StringBuffer xmlEmptyRow = new StringBuffer("<w:tr>\n<w:tc>\n<w:p>\n</w:p>\n</w:tc>\n<w:tc>\n<w:p>\n</w:p>\n</w:tc>\n</w:tr>\n");
-	private StringBuffer xmlLineBreak = new StringBuffer("<w:br w:type=\"text-wrapping\"/>");
+	private StringBuilder sbXMLWrapper = new StringBuilder();
+	private StringBuilder sbXMLBody = new StringBuilder();
+	private StringBuilder templateDate = new StringBuilder();
+	private StringBuilder xmlEmptyCell = new StringBuilder("<w:tc>\n<w:p>\n</w:p>\n</w:tc>\n");
+	private StringBuilder xmlEmptyRow = new StringBuilder("<w:tr>\n<w:tc>\n<w:p>\n</w:p>\n</w:tc>\n<w:tc>\n<w:p>\n</w:p>\n</w:tc>\n</w:tr>\n");
+	private StringBuilder xmlLineBreak = new StringBuilder("<w:br w:type=\"text-wrapping\"/>");
 		
 	/* **************************************************************** */
 	
@@ -252,7 +252,7 @@ public class KitRequestorParser {
 		String endOn = null;
 		Date rangeStart = null;
 		Date rangeEnd = null;
-		StringBuffer dateRange = new StringBuffer();
+		StringBuilder dateRange = new StringBuilder();
 		Calendar reportDay = GregorianCalendar.getInstance();
 		// Report day date is set to yesterday's date.
 		reportDay.roll(Calendar.DATE,false);
@@ -299,8 +299,8 @@ public class KitRequestorParser {
 		String actionId = null;
 		List<String> listProfileIds;
 		List<UserDataVO> listProfileVO;
-		StringBuffer fileData = new StringBuffer();
-		StringBuffer invalidFileData = new StringBuffer();
+		StringBuilder fileData = new StringBuilder();
+		StringBuilder invalidFileData = new StringBuilder();
 		
 		// Get appropriate action_id
 		actionId = krp.retrieveActionId();
@@ -370,21 +370,21 @@ public class KitRequestorParser {
 				
 				// Report file...
 				String fileDataString = krp.sbXMLWrapper.toString();
-				fileData = new StringBuffer(fileDataString.replace("#reports#",fileData.toString()));
+				fileData = new StringBuilder(fileDataString.replace("#reports#",fileData.toString()));
 			
-				StringBuffer fileName = new StringBuffer(krp.strPatientFileName);
+				StringBuilder fileName = new StringBuilder(krp.strPatientFileName);
 				fileName.append("_").append(dateRange).append(krp.parserConfig.getProperty("fileExt"));
 
 				// Invalid file...
-				StringBuffer invalidFileName = new StringBuffer(krp.strInvalidFileName);
+				StringBuilder invalidFileName = new StringBuilder(krp.strInvalidFileName);
 				invalidFileName.append("_").append(dateRange).append(krp.parserConfig.getProperty("fileExt"));
 				
 				// Label file...
-				StringBuffer labelData = labels.getLabelFile();
-				StringBuffer labelFileName = new StringBuffer("PatientLabels");
+				StringBuilder labelData = labels.getLabelFile();
+				StringBuilder labelFileName = new StringBuilder("PatientLabels");
 				labelFileName.append("_").append(dateRange).append(krp.parserConfig.getProperty("fileExt"));
 				
-				StringBuffer zipFileName = new StringBuffer(krp.parserConfig.getProperty("ftpFileName"));
+				StringBuilder zipFileName = new StringBuilder(krp.parserConfig.getProperty("ftpFileName"));
 				zipFileName.append("_").append(dateRange).append(krp.parserConfig.getProperty("ftpExt"));
 				krp.createZipFile(fileName,fileData,invalidFileName.toString(),invalidFileData,
 						labelFileName, labelData, zipFileName.toString());
@@ -415,7 +415,7 @@ public class KitRequestorParser {
 	 */
 	protected String retrieveActionId() {
 		
-		StringBuffer strSql = new StringBuffer();
+		StringBuilder strSql = new StringBuilder();
 		strSql.append("select ACTION_ID from ");
 		strSql.append(sbSchema + "SB_ACTION ");
 		strSql.append("where ORGANIZATION_ID = ? ");
@@ -452,7 +452,7 @@ public class KitRequestorParser {
 	 */
 	protected List<String> retrieveProfileIds(String action) {
 		
-		StringBuffer strSql = new StringBuffer();
+		StringBuilder strSql = new StringBuilder();
 		strSql.append("select distinct PROFILE_ID from ");
 		strSql.append(sbSchema);
 		strSql.append("CONTACT_SUBMITTAL where ACTION_ID = ? and CREATE_DT >= ?");
@@ -516,7 +516,7 @@ public class KitRequestorParser {
 		Double lng = longitude;
 
 		String customDbSchema = sbANSSchema;
-		StringBuffer sql = new StringBuffer();
+		StringBuilder sql = new StringBuilder();
 		sql.append("select a.surgeon_id, title_nm, first_nm, middle_nm, last_nm, ");
 		sql.append("suffix_nm, a.website_url, clinic_nm, address_txt, address2_txt, ");
 		sql.append("city_nm, state_cd, zip_cd, latitude_no, longitude_no, area_cd, ");
@@ -568,17 +568,17 @@ public class KitRequestorParser {
 	protected String buildPatient(UserDataVO udv, List<SurgeonVO> lSurgeonVO, int limit, LabelMaker labelMaker) {
 		
 		Iterator<SurgeonVO> iterSurgeonVO = lSurgeonVO.iterator();
-		List<StringBuffer> patientClinics = new ArrayList<StringBuffer>();
+		List<StringBuilder> patientClinics = new ArrayList<StringBuilder>();
 		SurgeonVO sv = null;
 		ClinicVO cv = null;
 		PhoneVO phv = null;
 		
-		StringBuffer patientGreeting = new StringBuffer();
-		StringBuffer patientName = new StringBuffer();
-		StringBuffer patientStreetAddr = new StringBuffer();
-		StringBuffer patientCityStateZip = new StringBuffer();
-		StringBuffer patientAddr = new StringBuffer();
-		StringBuffer clinicBody = new StringBuffer();
+		StringBuilder patientGreeting = new StringBuilder();
+		StringBuilder patientName = new StringBuilder();
+		StringBuilder patientStreetAddr = new StringBuilder();
+		StringBuilder patientCityStateZip = new StringBuilder();
+		StringBuilder patientAddr = new StringBuilder();
+		StringBuilder clinicBody = new StringBuilder();
 		
 		String patientBody = new String(sbXMLBody.toString());
 		
@@ -592,11 +592,11 @@ public class KitRequestorParser {
 		patientName.append(" ").append(replaceXML(StringUtil.capitalizePhrase(udv.getLastName().trim())));
 		patientName.append("</w:t>\n");
 		
-		StringBuffer labelName = new StringBuffer(patientName);
+		StringBuilder labelName = new StringBuilder(patientName);
 		
 		patientName.append(xmlLineBreak).append("\n");
 		
-		StringBuffer labelAddress = new StringBuffer();
+		StringBuilder labelAddress = new StringBuilder();
 		
 		patientStreetAddr.append("<w:t>");
 		patientStreetAddr.append(replaceXML(StringUtil.capitalizeAddress(udv.getAddress().trim())));
@@ -620,7 +620,7 @@ public class KitRequestorParser {
 		patientCityStateZip.append(udv.getState()).append("  ");			
 		patientCityStateZip.append(udv.getZipCode());
 		patientCityStateZip.append("</w:t>\n");
-		StringBuffer labelCityStateZip = new StringBuffer(patientCityStateZip);
+		StringBuilder labelCityStateZip = new StringBuilder(patientCityStateZip);
 		patientCityStateZip.append(xmlLineBreak).append("\n");
 		
 		patientAddr.append(patientName).append(patientStreetAddr).append(patientCityStateZip);
@@ -636,7 +636,7 @@ public class KitRequestorParser {
 			
 			//iterate Clinic and get first valid phone number
 			Iterator<PhoneVO> iterClinic = cv.getPhones().iterator();
-			StringBuffer clinicPhone = new StringBuffer();
+			StringBuilder clinicPhone = new StringBuilder();
 			int phoneCount = 0;
 			while(iterClinic.hasNext() && phoneCount < 1) {
 				
@@ -680,9 +680,9 @@ public class KitRequestorParser {
 	 * @param cPhone
 	 * @return
 	 */
-	protected StringBuffer buildClinics(ClinicVO cvo, SurgeonVO svo, StringBuffer cPhone) {
+	protected StringBuilder buildClinics(ClinicVO cvo, SurgeonVO svo, StringBuilder cPhone) {
 		
-		StringBuffer body = new StringBuffer();
+		StringBuilder body = new StringBuilder();
 		boolean hasClinicName = false;
 		
 		if ((cvo.getClinicName() != null) && (cvo.getClinicName().trim().length() > 0)) {
@@ -766,7 +766,7 @@ public class KitRequestorParser {
 	 * @param max
 	 * @return
 	 */
-	protected StringBuffer buildRows(List<StringBuffer> clinics, int max) {
+	protected StringBuilder buildRows(List<StringBuilder> clinics, int max) {
 
 		int size = clinics.size();
 		int rowLimit = max/2;
@@ -783,7 +783,7 @@ public class KitRequestorParser {
 		log.debug("clinic size = " + size);
 		log.debug("numRows = " + numRows);
 
-		StringBuffer rows = new StringBuffer();
+		StringBuilder rows = new StringBuilder();
 		
 		if(size > 0) {
 			
@@ -845,9 +845,9 @@ public class KitRequestorParser {
 	 * @param profile
 	 * @param msg
 	 */
-	protected StringBuffer addInvalidProfileDataXML(UserDataVO profile, String msg) {
+	protected StringBuilder addInvalidProfileDataXML(UserDataVO profile, String msg) {
 
-		StringBuffer buf = new StringBuffer();
+		StringBuilder buf = new StringBuilder();
 		
 		setInvalidProfileCount();
 		buf.append("<w:t>");
@@ -868,9 +868,9 @@ public class KitRequestorParser {
 		return buf;
 	}
 	
-	protected StringBuffer addInvalidProfileData(UserDataVO profile, String msg) {
+	protected StringBuilder addInvalidProfileData(UserDataVO profile, String msg) {
 
-		StringBuffer buf = new StringBuffer();
+		StringBuilder buf = new StringBuilder();
 		
 		setInvalidProfileCount();
 		buf.append(profile.getFirstName()).append(" ").append(profile.getLastName()).append(" : ");
@@ -897,9 +897,9 @@ public class KitRequestorParser {
 	 * @param invalidFileData
 	 * @param ftpFileName
 	 */
-	protected void createZipFile(StringBuffer dataFileName, StringBuffer fileData, 
-			String invalidFileName,	StringBuffer invalidFileData, 
-			StringBuffer labelFileName, StringBuffer labelFileData, String ftpFileName) {
+	protected void createZipFile(StringBuilder dataFileName, StringBuilder fileData, 
+			String invalidFileName,	StringBuilder invalidFileData, 
+			StringBuilder labelFileName, StringBuilder labelFileData, String ftpFileName) {
 		
 		String host = parserConfig.getProperty("ftpHost");
 		int port = Convert.formatInteger(parserConfig.getProperty("ftpPort")).intValue();
@@ -978,7 +978,7 @@ public class KitRequestorParser {
 	 * @param fileData
 	 * @param path
 	 */
-	protected void createLocalFile(String fileName, StringBuffer fileData, String path) {
+	protected void createLocalFile(String fileName, StringBuilder fileData, String path) {
 		
 		FileOutputStream fos = null;
 				
