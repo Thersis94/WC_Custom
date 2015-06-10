@@ -8,7 +8,7 @@ import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.io.IOException;
 import java.lang.Integer;
-import java.lang.StringBuffer;
+import java.lang.StringBuilder;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
@@ -82,29 +82,29 @@ public class KitRequestProcessor {
 	private Integer searchRadius;
 	private Integer surgeonLimit;
 	private String strTemplatePath;
-	private StringBuffer xmlEnglishBody;
-	private StringBuffer xmlSpanishBody;
-	private StringBuffer firstPageImageHeader;
-	private StringBuffer subPageImageHeader;
+	private StringBuilder xmlEnglishBody;
+	private StringBuilder xmlSpanishBody;
+	private StringBuilder firstPageImageHeader;
+	private StringBuilder subPageImageHeader;
 	private String letterFileName;
 	private String labelFileName;
 	private String smtpServer;
 	private Integer smtpPort;
 	private String smtpUser;
 	private String smtpPwd;
-	private StringBuffer xmlWrapper;
-	private StringBuffer xmlLabelWrapper;
+	private StringBuilder xmlWrapper;
+	private StringBuilder xmlLabelWrapper;
 	private String msg = null;
-	private StringBuffer statusMsg = null;
+	private StringBuilder statusMsg = null;
 	private boolean successStatus = false;
 	
 	// English labels and letters
 	private ExcelFileBuilder eLabels;
-	private StringBuffer eLetters;
+	private StringBuilder eLetters;
 	
 	// Spanish labels and letters
 	private ExcelFileBuilder sLabels;
-	private StringBuffer sLetters;
+	private StringBuilder sLetters;
 	
 	private Map<String, Object> config = new HashMap<String, Object>();
 	
@@ -140,7 +140,7 @@ public class KitRequestProcessor {
 	 */
 	public KitRequestProcessor(Date startDate, Date endDate) {
 		PropertyConfigurator.configure("scripts/ans_log4j.properties");
-		statusMsg = new StringBuffer();
+		statusMsg = new StringBuilder();
 		// load the config properties file or exit
 		try {
 			this.loadConfig();
@@ -175,10 +175,10 @@ public class KitRequestProcessor {
 		}
 		
 		// instantiate/initialize label/letter containers
-		eLabels = new ExcelFileBuilder(new StringBuffer(xmlLabelWrapper));
-		eLetters = new StringBuffer();
-		sLabels = new ExcelFileBuilder(new StringBuffer(xmlLabelWrapper));
-		sLetters = new StringBuffer();
+		eLabels = new ExcelFileBuilder(new StringBuilder(xmlLabelWrapper));
+		eLetters = new StringBuilder();
+		sLabels = new ExcelFileBuilder(new StringBuilder(xmlLabelWrapper));
+		sLetters = new StringBuilder();
 		// get a database connection or exit
 		try {
 			this.getDBConnection();
@@ -262,7 +262,7 @@ public class KitRequestProcessor {
 		krp.mergeLetterData(runDate);
 		
 		// retrieve the aggregate letters
-		Map<String, StringBuffer> completeLetters = krp.retrieveCompleteLetters(runDate);
+		Map<String, StringBuilder> completeLetters = krp.retrieveCompleteLetters(runDate);
 		
 		// retrieve zipped customer letters file
 		Map<String, byte[]> customerFile = krp.createZippedCustomerFile(runDate, completeLetters);
@@ -495,7 +495,7 @@ public class KitRequestProcessor {
 		Double lat = latitude;
 		Double lng = longitude;
 		String customDbSchema = props.getProperty("sbANSSchema");
-		StringBuffer sql = new StringBuffer();
+		StringBuilder sql = new StringBuilder();
 		sql.append("select a.surgeon_id, title_nm, first_nm, middle_nm, last_nm, ");
 		sql.append("suffix_nm, a.website_url, clinic_nm, address_txt, address2_txt, ");
 		sql.append("city_nm, state_cd, zip_cd, latitude_no, longitude_no, b.clinic_id, c.phone_number_txt ");
@@ -541,10 +541,10 @@ public class KitRequestProcessor {
 		String englishWrapper = xmlWrapper.toString();
 		String spanishWrapper = xmlWrapper.toString();
 		if (englishCount > 0) {
-			eLetters = new StringBuffer(englishWrapper.replace("#reports#",eLetters.toString()));			
+			eLetters = new StringBuilder(englishWrapper.replace("#reports#",eLetters.toString()));			
 		}
 		if (spanishCount > 0) {
-			sLetters = new StringBuffer(spanishWrapper.replace("#reports#",sLetters.toString()));			
+			sLetters = new StringBuilder(spanishWrapper.replace("#reports#",sLetters.toString()));			
 		}
 	}
 	
@@ -553,14 +553,14 @@ public class KitRequestProcessor {
 	 * @param runDate
 	 * @return
 	 */
-	protected Map<String, StringBuffer> retrieveCompleteLetters(Date runDate) {
-		Map<String, StringBuffer> fileList = new LinkedHashMap<String, StringBuffer>();
+	protected Map<String, StringBuilder> retrieveCompleteLetters(Date runDate) {
+		Map<String, StringBuilder> fileList = new LinkedHashMap<String, StringBuilder>();
 		if (englishCount > 0 || spanishCount > 0) {
 			if (englishCount > 0) {
 				//build the letter filenames
 				String ePrefix = "English_";
-				StringBuffer eFileName = new StringBuffer();
-				StringBuffer eLabelFileName = new StringBuffer();
+				StringBuilder eFileName = new StringBuilder();
+				StringBuilder eLabelFileName = new StringBuilder();
 				// build the English letters
 				eFileName.append(ePrefix);
 				eFileName.append(letterFileName).append("_");
@@ -575,8 +575,8 @@ public class KitRequestProcessor {
 			
 			if (spanishCount > 0) {
 				String sPrefix = "Spanish_";
-				StringBuffer sFileName = new StringBuffer();
-				StringBuffer sLabelFileName = new StringBuffer();
+				StringBuilder sFileName = new StringBuilder();
+				StringBuilder sLabelFileName = new StringBuilder();
 				// build the Spanish letters
 				sFileName.append(sPrefix);
 				sFileName.append(letterFileName).append("_");
@@ -598,11 +598,11 @@ public class KitRequestProcessor {
 	 * @param fileList
 	 * @return
 	 */
-	private Map<String, byte[]> createZippedCustomerFile(Date runDate, Map<String, StringBuffer> fileList) {
+	private Map<String, byte[]> createZippedCustomerFile(Date runDate, Map<String, StringBuilder> fileList) {
 		Map<String, byte[]> zippedFile = null;
 		if (fileList.size() > 0) {
 			// build the zipped file's name...
-			StringBuffer customerFileName = new StringBuffer();
+			StringBuilder customerFileName = new StringBuilder();
 			customerFileName.append(props.getProperty("ftpFileName"));
 			customerFileName.append("_").append(runDate.toString()).append(props.getProperty("ftpExt"));
 			// call remote exec to use WinZip CL util.
@@ -692,7 +692,7 @@ public class KitRequestProcessor {
 		String to = props.getProperty("customerEmailTo");
 		String from = props.getProperty("customerEmailFrom");
 		String subject = props.getProperty("customerEmailSubject");
-		StringBuffer body = new StringBuffer(props.getProperty("customerEmailBody"));
+		StringBuilder body = new StringBuilder(props.getProperty("customerEmailBody"));
 		this.sendEmail(from, to, subject, body, customerFile);
 	}
 		
@@ -705,7 +705,7 @@ public class KitRequestProcessor {
 	private void sendAdminEmail(boolean success, String msg) throws MailException {
 		log.info("Sending admin email...");
 		String status = "";
-		StringBuffer body = new StringBuffer();
+		StringBuilder body = new StringBuilder();
 		body.append("Messages:<br/>").append(msg).append("<br/>");
 		
 		// set subject header and body
@@ -736,7 +736,7 @@ public class KitRequestProcessor {
 	 * @param attachment
 	 * @throws MailException
 	 */
-	private void sendEmail(String from, String to, String subject, StringBuffer body, Map<String,byte[]> attachment) 
+	private void sendEmail(String from, String to, String subject, StringBuilder body, Map<String,byte[]> attachment) 
 			throws MailException {
 		
 		String[] sendTo = to.split(",");
@@ -813,9 +813,9 @@ public class KitRequestProcessor {
 	 * @throws FileNotFoundException
 	 * @throws IOException
 	 */
-	private StringBuffer loadTemplate(String templateName)
+	private StringBuilder loadTemplate(String templateName)
 	throws FileNotFoundException, IOException {
-		StringBuffer template = new StringBuffer();
+		StringBuilder template = new StringBuilder();
 		// Load the XML wrapper template file
 		FileReader fr = null;
 		BufferedReader br = null;

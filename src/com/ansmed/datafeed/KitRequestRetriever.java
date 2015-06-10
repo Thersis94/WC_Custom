@@ -151,12 +151,12 @@ public class KitRequestRetriever {
 	public List<String> queryProfiles(Connection conn, String actionId, String fieldId, String form) {
 				
 		List<String> profiles = new ArrayList<String>();
-		StringBuffer baseSql = new StringBuffer();
+		StringBuilder baseSql = new StringBuilder(150);
 		baseSql.append("select distinct a.profile_id from contact_submittal a ");
 		baseSql.append("inner join contact_data b on a.contact_submittal_id = ");
 		baseSql.append("b.contact_submittal_id where a.action_id = ? ");
 		
-		StringBuffer sql = new StringBuffer(baseSql);
+		StringBuilder sql = new StringBuilder(baseSql);
 		sql.append(this.addFieldQuery(form));
 		log.debug(form + " profile SQL: " + sql.toString());
 		log.debug("actionId: " + actionId);
@@ -201,8 +201,8 @@ public class KitRequestRetriever {
 	 * @param actionId
 	 * @return
 	 */
-	private StringBuffer addFieldQuery(String actionId) {
-		StringBuffer fieldQuery = new StringBuffer();
+	private StringBuilder addFieldQuery(String actionId) {
+		StringBuilder fieldQuery = new StringBuilder(100);
 		// additional query logic for certain contact forms
 		if (actionId.equalsIgnoreCase("brcCard") || 
 				actionId.equalsIgnoreCase("contactUs") ||
@@ -238,7 +238,7 @@ public class KitRequestRetriever {
 	public void addFormat(Connection conn, List<String> profiles, 
 			String actionId, String fieldId, String formType) {
 		
-		StringBuffer sql = new StringBuffer();
+		StringBuilder sql = new StringBuilder(250);
 		sql.append("select a.profile_id, b.value_txt from ").append(schema);
 		sql.append("contact_submittal a inner join ").append(schema);
 		sql.append("contact_data b on a.contact_submittal_id = ");
@@ -295,7 +295,7 @@ public class KitRequestRetriever {
 	public void addCountry(Connection conn, List<String> profiles, 
 			String actionId, String fieldId, String form) {
 		
-		StringBuffer sql = new StringBuffer();
+		StringBuilder sql = new StringBuilder(250);
 		sql.append("select a.profile_id, b.value_txt from ").append(schema);
 		sql.append("contact_submittal a inner join ").append(schema);
 		sql.append("contact_data b on a.contact_submittal_id = ");

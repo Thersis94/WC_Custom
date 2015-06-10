@@ -20,12 +20,12 @@ package com.ansmed.datafeed;
 public class ExcelFileBuilder {
 	
 	private int rowCount = 0;
-	private StringBuffer rowData = new StringBuffer();
-	private StringBuffer fileData = new StringBuffer();
+	private StringBuilder rowData = new StringBuilder();
+	private StringBuilder fileData = new StringBuilder();
 	private String type = "csv";
 	private String delimiter = ",";
 	
-	public ExcelFileBuilder(StringBuffer wrapperFile) {
+	public ExcelFileBuilder(StringBuilder wrapperFile) {
 		fileData = wrapperFile;
 	}
 
@@ -33,7 +33,7 @@ public class ExcelFileBuilder {
 	 * Creates the header row for the row data.
 	 * @param header
 	 */
-	protected void addRowHeader(StringBuffer header) {
+	protected void addRowHeader(StringBuilder header) {
 		rowData.append(header);
 	}
 	
@@ -77,10 +77,10 @@ public class ExcelFileBuilder {
 	
 	/**
 	 * Inserts the row data into the XML wrapper template and returns the
-	 * completed XML file as a StringBuffer.
+	 * completed XML file as a StringBuilder.
 	 * @return
 	 */
-	protected StringBuffer getFileData() {
+	protected StringBuilder getFileData() {
 		
 		int index = -1;
 		

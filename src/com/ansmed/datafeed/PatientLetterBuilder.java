@@ -32,19 +32,19 @@ public class PatientLetterBuilder {
 	
 	private static Logger log = Logger.getLogger(PatientLetterBuilder.class);
 	
-	//private StringBuffer sendDate;
+	//private StringBuilder sendDate;
 	
-	private StringBuffer englishLetter = null;
-	private StringBuffer spanishLetter = null;
+	private StringBuilder englishLetter = null;
+	private StringBuilder spanishLetter = null;
 	
-	private StringBuffer firstImageHeader = null;
-	private StringBuffer secondImageHeader = null;
+	private StringBuilder firstImageHeader = null;
+	private StringBuilder secondImageHeader = null;
 	
-	private StringBuffer xmlEmptyCell = new StringBuffer("<w:tc>\n<w:p>\n</w:p>\n</w:tc>\n");
-	private StringBuffer xmlEmptyRow = new StringBuffer("<w:tr>\n<w:tc>\n<w:p>\n</w:p>\n</w:tc>\n<w:tc>\n<w:p>\n</w:p>\n</w:tc>\n</w:tr>\n");
-	private StringBuffer xmlLineBreak = new StringBuffer("<w:br w:type=\"text-wrapping\"/>");
-	//private StringBuffer xmlPageBreak = new StringBuffer("<w:p><w:r><w:br w:type=\"page\"/></w:r></w:p>");
-	private StringBuffer xmlPageBreak = new StringBuffer("<w:p><w:br w:type=\"page\"/></w:p>");
+	private StringBuilder xmlEmptyCell = new StringBuilder("<w:tc>\n<w:p>\n</w:p>\n</w:tc>\n");
+	private StringBuilder xmlEmptyRow = new StringBuilder("<w:tr>\n<w:tc>\n<w:p>\n</w:p>\n</w:tc>\n<w:tc>\n<w:p>\n</w:p>\n</w:tc>\n</w:tr>\n");
+	private StringBuilder xmlLineBreak = new StringBuilder("<w:br w:type=\"text-wrapping\"/>");
+	//private StringBuilder xmlPageBreak = new StringBuilder("<w:p><w:r><w:br w:type=\"page\"/></w:r></w:p>");
+	private StringBuilder xmlPageBreak = new StringBuilder("<w:p><w:br w:type=\"page\"/></w:p>");
 	
 	/**
 	 * 
@@ -67,13 +67,13 @@ public class PatientLetterBuilder {
 		StringEncoder se = new StringEncoder();
 		
 		Iterator<SurgeonVO> iterSurgeonVO = lSurgeonVO.iterator();
-		List<StringBuffer> patientClinics = new ArrayList<StringBuffer>();
+		List<StringBuilder> patientClinics = new ArrayList<StringBuilder>();
 		SurgeonVO sv = null;
 		ClinicVO cv = null;
 		PhoneVO phv = null;
 		
-		StringBuffer firstName = new StringBuffer(StringUtil.capitalizePhrase(scrubXML(se.decodeValue(udv.getFirstName().trim()))));
-		StringBuffer fullName = new StringBuffer(firstName);
+		StringBuilder firstName = new StringBuilder(StringUtil.capitalizePhrase(scrubXML(se.decodeValue(udv.getFirstName().trim()))));
+		StringBuilder fullName = new StringBuilder(firstName);
 		String lastName = scrubXML(se.decodeValue(udv.getLastName().trim())).replace(",", "");
 		fullName.append(" ").append(StringUtil.capitalizePhrase(lastName));
 		String address = StringUtil.capitalizeAddress(scrubXML(se.decodeValue(udv.getAddress().trim())));
@@ -95,16 +95,16 @@ public class PatientLetterBuilder {
 		log.debug("main phone is: " + phone);
 		
 		// Build the patient's first name.
-		StringBuffer patientGreeting = new StringBuffer(firstName).append(",");
+		StringBuilder patientGreeting = new StringBuilder(firstName).append(",");
 		
 		// Build the patient's address.
-		//StringBuffer patientName = new StringBuffer("<w:t>").append(fullName).append("</w:t>\n");
-		StringBuffer patientName = new StringBuffer("<w:r><w:br/><w:t>").append(fullName).append("</w:t></w:r>\n");
+		//StringBuilder patientName = new StringBuilder("<w:t>").append(fullName).append("</w:t>\n");
+		StringBuilder patientName = new StringBuilder("<w:r><w:br/><w:t>").append(fullName).append("</w:t></w:r>\n");
 		
 		//patientName.append(xmlLineBreak).append("\n");
 		
-		//StringBuffer patientStreetAddr = new StringBuffer("<w:t>").append(address);
-		StringBuffer patientStreetAddr = new StringBuffer("<w:r><w:br/><w:t>").append(address);
+		//StringBuilder patientStreetAddr = new StringBuilder("<w:t>").append(address);
+		StringBuilder patientStreetAddr = new StringBuilder("<w:r><w:br/><w:t>").append(address);
 				
 		if ((udv.getAddress2() != null) && (udv.getAddress2().length() > 0)) {
 			patientStreetAddr.append(", ");
@@ -116,8 +116,8 @@ public class PatientLetterBuilder {
 			patientStreetAddr.append("</w:t></w:r>\n");
 		}
 		
-		//StringBuffer patientCityStateZip = new StringBuffer("<w:t>");
-		StringBuffer patientCityStateZip = new StringBuffer("<w:r><w:br/><w:t>");
+		//StringBuilder patientCityStateZip = new StringBuilder("<w:t>");
+		StringBuilder patientCityStateZip = new StringBuilder("<w:r><w:br/><w:t>");
 		patientCityStateZip.append(city).append(", ");		
 		patientCityStateZip.append(state).append("  ");			
 		patientCityStateZip.append(zipCode);
@@ -125,7 +125,7 @@ public class PatientLetterBuilder {
 		//patientCityStateZip.append(xmlLineBreak).append("\n");
 		patientCityStateZip.append("</w:t></w:r>\n");
 		
-		StringBuffer patientAddr = new StringBuffer(patientName);
+		StringBuilder patientAddr = new StringBuilder(patientName);
 		patientAddr.append(patientStreetAddr).append(patientCityStateZip);
 
 		efb.addRow(fullName.toString(),address, city, state, zipCode, phone);
@@ -139,7 +139,7 @@ public class PatientLetterBuilder {
 			
 			//iterate Clinic and get first valid phone number
 			Iterator<PhoneVO> iterClinic = cv.getPhones().iterator();
-			StringBuffer clinicPhone = new StringBuffer();
+			StringBuilder clinicPhone = new StringBuilder();
 			int phoneCount = 0;
 			while(iterClinic.hasNext() && phoneCount < 1) {
 				
@@ -162,7 +162,7 @@ public class PatientLetterBuilder {
 		//log.debug(patientAddr.toString());
 		
 		// Format the table rows for patient clinics list
-		StringBuffer clinicBody = new StringBuffer();
+		StringBuilder clinicBody = new StringBuilder();
 		clinicBody = buildRows(patientClinics,limit);
 		//log.debug(clinicBody.toString());
 
@@ -208,9 +208,9 @@ public class PatientLetterBuilder {
 	 * @param cPhone
 	 * @return
 	 */
-	protected StringBuffer buildClinics(ClinicVO cvo, SurgeonVO svo, StringBuffer cPhone) {
+	protected StringBuilder buildClinics(ClinicVO cvo, SurgeonVO svo, StringBuilder cPhone) {
 		
-		StringBuffer body = new StringBuffer();
+		StringBuilder body = new StringBuilder();
 		boolean hasClinicName = false;
 		
 		if ((cvo.getClinicName() != null) && (cvo.getClinicName().trim().length() > 0)) {
@@ -294,10 +294,10 @@ public class PatientLetterBuilder {
 	 * @param max
 	 * @return
 	 */
-	protected StringBuffer buildRows(List<StringBuffer> clinics, int max) {
+	protected StringBuilder buildRows(List<StringBuilder> clinics, int max) {
 	
 		int size = clinics.size();
-		if(size == 0) return new StringBuffer();
+		if(size == 0) return new StringBuilder();
 		if(size > max) size = max;
 		log.debug("Clinic size: " + size);
 		//rpp = rows per page
@@ -317,7 +317,7 @@ public class PatientLetterBuilder {
 		int startCell = 0;
 		int nextCell = 0;
 	
-		StringBuffer rows = new StringBuffer();
+		StringBuilder rows = new StringBuilder();
 		
 		// Iterate through the number of pages to be built.
 		for (int i = 0; i < pageCount; i++) {
@@ -417,7 +417,7 @@ public class PatientLetterBuilder {
 	 * @return
 	 */
 	private String formatSendDate(String format) {
-		StringBuffer sendDate = new StringBuffer();
+		StringBuilder sendDate = new StringBuilder();
 		Calendar cal = GregorianCalendar.getInstance();
 		if (format.equalsIgnoreCase("spanish")) {
 			sendDate.append(cal.get(Calendar.DAY_OF_MONTH));
@@ -436,56 +436,56 @@ public class PatientLetterBuilder {
 	/**
 	 * @return the englishLetter
 	 */
-	public StringBuffer getEnglishLetter() {
+	public StringBuilder getEnglishLetter() {
 		return englishLetter;
 	}
 
 	/**
 	 * @param englishLetter the englishLetter to set
 	 */
-	public void setEnglishLetter(StringBuffer englishLetter) {
+	public void setEnglishLetter(StringBuilder englishLetter) {
 		this.englishLetter = englishLetter;
 	}
 
 	/**
 	 * @return the spanishLetter
 	 */
-	public StringBuffer getSpanishLetter() {
+	public StringBuilder getSpanishLetter() {
 		return spanishLetter;
 	}
 
 	/**
 	 * @param spanishLetter the spanishLetter to set
 	 */
-	public void setSpanishLetter(StringBuffer spanishLetter) {
+	public void setSpanishLetter(StringBuilder spanishLetter) {
 		this.spanishLetter = spanishLetter;
 	}
 	
 	/**
 	 * @return the firstImageHeader
 	 */
-	public StringBuffer getFirstImageHeader() {
+	public StringBuilder getFirstImageHeader() {
 		return firstImageHeader;
 	}
 
 	/**
 	 * @param firstImageHeader  the firstImageHeader to set
 	 */
-	public void setFirstImageHeader(StringBuffer firstImageHeader) {
+	public void setFirstImageHeader(StringBuilder firstImageHeader) {
 		this.firstImageHeader = firstImageHeader;
 	}
 	
 		/**
 	 * @return the secondImageHeader
 	 */
-	public StringBuffer getSecondImageHeader() {
+	public StringBuilder getSecondImageHeader() {
 		return secondImageHeader;
 	}
 
 	/**
 	 * @param secondImageHeader the secondImageHeader to set
 	 */
-	public void setSecondImageHeader(StringBuffer secondImageHeader) {
+	public void setSecondImageHeader(StringBuilder secondImageHeader) {
 		this.secondImageHeader = secondImageHeader;
 	}
 

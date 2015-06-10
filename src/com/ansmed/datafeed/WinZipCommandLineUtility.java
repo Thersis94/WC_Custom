@@ -94,7 +94,7 @@ public class WinZipCommandLineUtility {
      * will be used to create the zipped, password-protected, encrypted archive.
      * @param fileData
      */
-    public void writeRawFiles(Map<String, StringBuffer> fileData) 
+    public void writeRawFiles(Map<String, StringBuilder> fileData) 
     		throws FileNotFoundException, IOException {
 	    log.info("Attempting to write raw source files...");
     	String rawPath = this.fixPath(this.getRawFileSourcePath());
