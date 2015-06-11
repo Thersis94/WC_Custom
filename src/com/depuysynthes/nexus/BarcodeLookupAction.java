@@ -128,7 +128,7 @@ public class BarcodeLookupAction extends SBActionAdapter {
 		qData.addSolrField(field);
 		SolrResponseVO resp = sqp.processQuery(qData);
 		
-		return buildProduct(resp, barcode.getProductId());
+		return buildProduct(resp, barcode);
 	}
 
 	
@@ -138,7 +138,7 @@ public class BarcodeLookupAction extends SBActionAdapter {
 	 * @param barcode
 	 * @return
 	 */
-	private ProductVO buildProduct(SolrResponseVO resp, String barcode) {
+	private ProductVO buildProduct(SolrResponseVO resp, BarcodeItemVO barcode) {
 		ProductVO prod = new ProductVO();
 		if (resp.getResultDocuments().size() == 0) {
 			prod .setProductId("No Product Found with Supplied Barcode.");
@@ -157,11 +157,13 @@ public class BarcodeLookupAction extends SBActionAdapter {
 		for (int i=0; i < gtin.length; i++) {
 			if (StringUtil.checkVal(gtin[i]).equals(prod.getProductGroupId())) {
 				prod.getProdAttributes().put("primaryUOM", uom[i]);
-			} else if (StringUtil.checkVal(gtin[i]).contains(barcode)) {
+			} else if (StringUtil.checkVal(gtin[i]).contains(barcode.getProductId())) {
 				prod.getProdAttributes().put("gtin", gtin[i]);
 				prod.getProdAttributes().put("uom", uom[i]);
 			}
 		}
+		
+		prod.getProdAttributes().put("lotNo", barcode.getLotCodeNumber());
 		return prod;
 	}
 
