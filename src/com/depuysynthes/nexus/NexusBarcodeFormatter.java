@@ -29,7 +29,7 @@ public class NexusBarcodeFormatter implements BarcodeFormatterIntfc {
 		// If so we need to check the latter part of the data for a lot prepend
 		if (data.length() > 20) {
 			String lotNo = data.substring(GTIN_LENGTH, data.length());
-			data.replace(lotNo, lotNo.replaceFirst(LOT_PREPEND, "("+LOT_PREPEND+")"));
+			data = data.replace(lotNo, lotNo.replaceFirst(LOT_PREPEND, "("+LOT_PREPEND+")"));
 		}
 		
 		return data;

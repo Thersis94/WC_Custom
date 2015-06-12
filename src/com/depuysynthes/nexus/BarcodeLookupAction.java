@@ -2,8 +2,10 @@ package com.depuysynthes.nexus;
 
 // JDK 1.8.x
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.solr.common.SolrDocument;
@@ -22,9 +24,7 @@ import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.search.SolrActionIndexVO;
 import com.smt.sitebuilder.action.search.SolrActionVO;
-import com.smt.sitebuilder.action.search.SolrFieldVO;
 import com.smt.sitebuilder.action.search.SolrQueryProcessor;
-import com.smt.sitebuilder.action.search.SolrFieldVO.BooleanType;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
 
 /****************************************************************************
@@ -114,8 +114,9 @@ public class BarcodeLookupAction extends SBActionAdapter {
 	 * Retrieves the product information for the provided barcode
 	 * @param barcode
 	 * @return
+	 * @throws ActionException 
 	 */
-	protected ProductVO retrieveProduct(BarcodeItemVO barcode) {
+	protected ProductVO retrieveProduct(BarcodeItemVO barcode) throws ActionException {
 		SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, "DePuy_NeXus");
 		SolrActionVO qData = new SolrActionVO();
 		qData.setNumberResponses(1);
@@ -123,9 +124,9 @@ public class BarcodeLookupAction extends SBActionAdapter {
 		qData.setOrganizationId("DPY_SYN_NEXUS");
 		qData.setRoleLevel(0);
 		qData.addIndexType(new SolrActionIndexVO("", NexusProductVO.solrIndex));
-		log.debug(barcode.getProductId());
-		SolrFieldVO field = new SolrFieldVO(SolrFieldVO.FieldType.FILTER, "gtin", "*"+barcode.getProductId()+"*", BooleanType.AND);
-		qData.addSolrField(field);
+		Map<String, String> filter = new HashMap<>();
+		filter.put("gtin", "*"+barcode.getProductId()+"* OR searchableName:*"+barcode.getProductId()+"*");
+		qData.setFilterQueries(filter);
 		SolrResponseVO resp = sqp.processQuery(qData);
 		
 		return buildProduct(resp, barcode);
@@ -137,12 +138,12 @@ public class BarcodeLookupAction extends SBActionAdapter {
 	 * @param resp
 	 * @param barcode
 	 * @return
+	 * @throws ActionException 
 	 */
-	private ProductVO buildProduct(SolrResponseVO resp, BarcodeItemVO barcode) {
+	private ProductVO buildProduct(SolrResponseVO resp, BarcodeItemVO barcode) throws ActionException {
 		ProductVO prod = new ProductVO();
 		if (resp.getResultDocuments().size() == 0) {
-			prod .setProductId("No Product Found with Supplied Barcode.");
-			return prod;
+			throw new ActionException("No Product Found with Supplied Barcode.");
 		}
 		SolrDocument doc = resp.getResultDocuments().get(0);
 		prod.getProdAttributes().put("organizationName", doc.get("organizationName"));
