@@ -1,0 +1,90 @@
+
+<wx:sect>
+#imageHeader#
+<w:p>
+	<w:pPr><w:pStyle w:val="mainBody"/></w:pPr>
+	<w:r><w:br/></w:r>
+	<w:r><w:br/></w:r>
+	<w:r><w:br/></w:r>
+	<w:r><w:br/></w:r>
+	<w:r><w:br/></w:r>
+	<w:r><w:br/></w:r>
+	<w:r><w:br/><w:t>#date#</w:t></w:r>
+	<w:r><w:br/></w:r>
+	<w:r><w:br/></w:r>
+	#address#
+	<w:r><w:br/></w:r>
+	<w:r><w:br/></w:r>
+	<w:r><w:br/><w:t>Dear #patient#</w:t></w:r>
+	<w:r><w:br/></w:r>
+	<w:r><w:br/></w:r>
+	<w:r><w:t>Enclosed is the neurostimulation information kit that you requested. This kit contains a video and brochure that were designed to provide information about chronic pain and neurostimulation, including what it is, how it works, and what it takes to receive </w:t></w:r>
+	<w:r><w:t>a system. We hope you find the information helpful.</w:t></w:r>
+	<w:r><w:br/></w:r>
+	<w:r><w:br/><w:t>When you are ready to discuss your treatment options, you can use the enclosed list to find pain management doctors in your area. These doctors have training in the diagnosis, treatment, and/or rehabilit</w:t></w:r>
+	<w:r><w:t>ation of people with chronic pain and are familiar with neurostimulation procedures.</w:t></w:r>
+	<w:r><w:br/></w:r>
+	<w:r><w:br/><w:t>To prepare for a doctor's visit, it may be helpful to write down questions you have about neurostimulation and prioritize them by what is important to you. To help you do</w:t></w:r>
+	<w:r><w:t> this, we have included a discussion guide in the </w:t></w:r>
+	<w:r><w:rPr><w:i/></w:rPr><w:t>Frequently Asked Questions </w:t></w:r>
+	<w:r><w:t>section inside this kit.</w:t></w:r>
+	<w:r><w:br/></w:r>
+	<w:r><w:br/><w:t>We encourage you to use our Power Over Your Pain website (PowerOverYourPain.com) to learn about neurostimulation, read patient stories, and understand ho</w:t></w:r>
+	<w:r><w:t>w chronic pain affects people. You can also use the site to connect with actual neurostimulation patients through our Patient Ambassador Program.</w:t></w:r>
+	<w:r><w:br/></w:r>
+	<w:r><w:br/><w:t>If you have questions about neurostimulation, feel free to contact us by emailing contact@sjmneuro.com or by </w:t></w:r>
+	<w:r><w:t>calling 1-866-990-PAIN (7246).</w:t></w:r>
+	<w:r><w:br/></w:r>
+	<w:r><w:br/><w:t>Sincerely,</w:t></w:r>
+	<w:r><w:br/></w:r>
+	<w:r><w:br/><w:t>The Power Over Your Pain Team</w:t></w:r>
+	<w:r><w:br/></w:r>
+	<w:r><w:br/></w:r>
+	<w:r><w:br/><w:t>Enclosures:</w:t></w:r>
+	<w:r><w:br/><w:t>1.   A list of pain management doctors in your area</w:t></w:r>
+	<w:r><w:br/><w:t>2.   Information about neurostimulation</w:t></w:r>
+	<w:r><w:br/></w:r>
+</w:p>
+<w:p><w:pPr><w:pStyle w:val="a"/></w:pPr></w:p>
+<w:p><w:pPr><w:pStyle w:val="a0"/></w:pPr>
+	<w:r><w:rPr><w:noProof/></w:rPr>
+		<w:pict>
+			<v:rect id="_x0000_s1032" style="position:absolute;margin-left:0;margin-top:137pt;width:332.9pt;height:13.05pt;z-index:46;mso-wrap-style:none;mso-position-horizontal:center" filled="f" stroked="f">
+			<v:textbox>
+				<w:txbxContent>
+					<w:p><w:pPr><w:pStyle w:val="a0"/><w:jc w:val="center"/><w:rPr><w:color w:val="5F6A72"/></w:rPr></w:pPr>
+						<w:r><w:rPr><w:rFonts w:ascii="Arial" w:h-ansi="Arial"/><wx:font wx:val="Arial"/><w:caps/><w:color w:val="5F6A72"/><w:spacing w:val="2"/><w:sz w:val="12"/><w:sz-cs w:val="12"/></w:rPr>
+							<w:t>ATRIAL FIBRILLATION      CARDIAC RHYTHM MANAGEMENT      CARDIOVASCULAR</w:t>
+						</w:r>
+						<w:r><w:rPr><w:rFonts w:ascii="Arial" w:h-ansi="Arial"/><wx:font wx:val="Arial"/><w:caps/><w:color w:val="5F6A72"/><w:spacing w:val="2"/><w:sz w:val="12"/><w:sz-cs w:val="12"/></w:rPr><w:t>      NEUROMODULATION</w:t></w:r>
+					</w:p>
+				</w:txbxContent>
+			</v:textbox>
+			</v:rect>
+		</w:pict>
+	</w:r>
+</w:p>
+<w:p>
+	<w:pPr><w:pStyle w:val="a0"/>
+		<w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="0" w:footer="0" w:gutter="0"/><w:cols w:space="720"/><w:formProt w:val="off"/><w:docGrid w:line-pitch="360"/></w:sectPr>
+	</w:pPr>
+</w:p>
+</wx:sect>
+
+<wx:sect>
+	<w:p>
+		<w:pPr><w:pStyle w:val="tableBody"/></w:pPr>
+		<w:r><w:rPr><w:b/><w:sz w:val="27"/></w:rPr><w:t>Pain Management Doctors in Your Area</w:t></w:r>
+		<w:r><w:br/></w:r>
+		<w:r><w:br/><w:t>Below is a list of pain management doctors in your area who have been selected based on proximity to your address. You can also find doctors using the "Find a Pain Specialist" feat</w:t></w:r>
+		<w:r><w:t>ure on our Power Over Your Pain website (PowerOverYourPain.com/locator). All the doctors on our site have experience with St. Jude Medical neurostimulation products, and none have paid or received a fee to be listed there.</w:t></w:r>
+		<w:r><w:br/></w:r>
+		<w:r><w:br/></w:r>
+	</w:p>
+<w:tbl>
+	<w:tblPr>
+		<w:tblW w:type="pct" w:w="4800"/>
+	</w:tblPr>
+	#clinics#
+	</w:tbl>
+</wx:sect>

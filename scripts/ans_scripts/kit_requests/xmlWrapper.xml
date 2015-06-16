@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<?mso-application progid="Word.Document"?>
+<w:wordDocument
+ xmlns:w="http://schemas.microsoft.com/office/word/2003/wordml" 
+ xmlns:v="urn:schemas-microsoft-com:vml" 
+ xmlns:wx="http://schemas.microsoft.com/office/word/2003/auxHint" 
+ xmlns:o="urn:schemas-microsoft-com:office:office" 
+  w:macrosPresent="no" 
+ w:embeddedObjPresent="no" 
+ w:ocxPresent="no" 
+ xml:space="preserve">
+ <w:styles> 	
+ 	    <w:style w:type="paragraph" w:styleId="mainBody" w:default="on">
+    	<w:rPr>
+    		<w:rFonts w:ascii="Times New Roman" w:h-ansi="Times New Roman" w:cs="Times New Roman"/>
+			<w:sz w:val="20" />
+    	</w:rPr>
+    </w:style>
+    <w:style w:type="paragraph" w:styleId="tableBody" w:default="on">
+    	<w:rPr>
+    		<w:rFonts w:ascii="Times New Roman" w:h-ansi="Times New Roman" w:cs="Times New Roman"/>
+			<w:sz w:val="20" />
+    	</w:rPr>
+    </w:style> 	
+ </w:styles>
+ <w:shapeDefaults><o:shapedefaults v:ext="edit" spidmax="5122"><o:colormenu v:ext="edit" fillcolor="none" strokecolor="fuchsia"/></o:shapedefaults><o:shapelayout v:ext="edit"><o:idmap v:ext="edit" data="1"/></o:shapelayout></w:shapeDefaults><w:docPr><w:view w:val="print"/><w:zoom w:percent="84"/><w:doNotEmbedSystemFonts/><w:attachedTemplate w:val="K:\Forms\Letterhead_SJM.dot"/><w:defaultTabStop w:val="720"/><w:drawingGridHorizontalSpacing w:val="100"/><w:drawingGridVerticalSpacing w:val="187"/><w:displayHorizontalDrawingGridEvery w:val="2"/><w:displayVerticalDrawingGridEvery w:val="0"/><w:doNotShadeFormData/><w:characterSpacingControl w:val="DontCompress"/><w:optimizeForBrowser/><w:validateAgainstSchema/><w:saveInvalidXML w:val="off"/><w:ignoreMixedContent w:val="off"/><w:alwaysShowPlaceholderText w:val="off"/><w:hdrShapeDefaults><o:shapedefaults v:ext="edit" spidmax="5122"><o:colormenu v:ext="edit" fillcolor="none" strokecolor="fuchsia"/></o:shapedefaults><o:shapelayout v:ext="edit"><o:idmap v:ext="edit" data="2"/></o:shapelayout></w:hdrShapeDefaults><w:footnotePr><w:footnote w:type="separator"><w:p><w:r><w:separator/></w:r></w:p></w:footnote><w:footnote w:type="continuation-separator"><w:p><w:r><w:continuationSeparator/></w:r></w:p></w:footnote></w:footnotePr><w:endnotePr><w:endnote w:type="separator"><w:p><w:r><w:separator/></w:r></w:p></w:endnote><w:endnote w:type="continuation-separator"><w:p><w:r><w:continuationSeparator/></w:r></w:p></w:endnote></w:endnotePr><w:compat><w:breakWrappedTables/><w:snapToGridInCell/><w:wrapTextWithPunct/><w:useAsianBreakRules/><w:useWord2002TableStyleRules/></w:compat></w:docPr>
+ <w:body>
+#reports#
+ </w:body>
+</w:wordDocument>

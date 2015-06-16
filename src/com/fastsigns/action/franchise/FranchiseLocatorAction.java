@@ -74,8 +74,9 @@ public class FranchiseLocatorAction extends DealerLocatorAction {
 		Boolean useAttrib1Txt = Convert.formatBoolean((req.getParameter("useAttrib1Txt")));
 		
 		StringBuilder sb = new StringBuilder();
-		sb.append("select fv.*, px.product_id from FTS_FRANCHISE_INFO_VIEW fv");
+		sb.append("select fv.*, px.product_id, dla.ATTRIBUTE_NM, dla.ATTRIBUTE_TXT from FTS_FRANCHISE_INFO_VIEW fv ");
 		sb.append("left join DEALER_LOCATION_PRODUCT_XR px on fv.dealer_location_id=px.dealer_location_id ");
+		sb.append("left join DEALER_LOCATION_ATTRIBUTE dla on dla.DEALER_LOCATION_ID=fv.DEALER_LOCATION_ID ");
 		
 		// append dealer types
 		sb.append("where DEALER_TYPE_ID in (");
@@ -87,7 +88,7 @@ public class FranchiseLocatorAction extends DealerLocatorAction {
 		if (locator.getActiveOnlyFlag() == 1) sb.append("and ACTIVE_FLG = 1 ");
 		if (locator.activePromotionsOnly()) sb.append(" and PROMOTIONS_FLG=1 ");
 		// we need country code for all search types
-		sb.append("and b.COUNTRY_CD = ? ");
+		sb.append("and COUNTRY_CD = ? ");
 		if (STATE_SEARCH_TYPE == type) sb.append("and STATE_CD = ? ");
 		if (locationName.length() > 0)	 sb.append("and LOCATION_NM like ? ");
 		if (useAttrib1Txt) sb.append("and ATTRIB1_TXT is not null and ATTRIB1_TXT != '' ");
