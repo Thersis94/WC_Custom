@@ -191,7 +191,7 @@ public class CustomerLocationImporter {
 			boolean isBatch = true;
 			for(CustomerLocationVO c : cust) {
 				//log.debug(c.getCustomerLocationId());
-				if(c.getCreateDt() != null) {
+				if(c.getCreateDate() != null) {
 					prepCustomer(pi, c, isBatch);
 				} else {
 					prepCustomer(pu, c, isBatch);
@@ -373,9 +373,9 @@ public class CustomerLocationImporter {
 			
 			//Depending on what data is present we may be inserting or updating.  Make check here.
 			if(row[15].length() > 0 && !updates.contains(row[0]))
-				c.setCreateDt(new Date());
+				c.setCreateDate(new Date());
 			else
-				c.setUpdateDt(new Date());
+				c.setUpdateDate(new Date());
 			locations.add(c);
 			
 		}
