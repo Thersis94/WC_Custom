@@ -1,7 +1,7 @@
 package com.depuy.events_v2.vo.report;
 
-import com.depuy.events.CoopAdsAction;
 import com.depuy.events.vo.CoopAdVO;
+import com.depuy.events_v2.CoopAdsActionV2;
 import com.depuy.events_v2.vo.DePuyEventSeminarVO;
 import com.depuy.events_v2.vo.DePuyEventSurgeonVO;
 import com.depuy.events_v2.vo.PersonVO;
@@ -29,7 +29,7 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
         super();
         setContentType("application/vnd.ms-excel");
         isHeaderAttachment(Boolean.TRUE);
-        setFileName("Postcard-Summary.xls");
+        setFileName("Seminar-Summary.xls");
     }
     
     /**
@@ -44,11 +44,10 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
     
 	public byte[] generateReport() {
 		log.debug("starting PostcardSummaryReport");
-		DePuyEventSurgeonVO surg = sem.getSurgeon();
 		
 		StringBuffer rpt = new StringBuffer(this.getHeader());
 		rpt.append("<tr><td>Product</td><td align='center'>").append(sem.getJointLabel()).append("</td></tr>\r");
-		rpt.append("<tr><td>Postcard Type</td><td align='center'>").append(sem.getEvents().get(0).getEventTypeDesc()).append("</td></tr>\r");
+		rpt.append("<tr><td>Seminar Type</td><td align='center'>").append(sem.getEvents().get(0).getEventTypeDesc()).append("</td></tr>\r");
 		rpt.append("<tr><td>Seminar Promotion #</td><td align='center'>").append(sem.getRSVPCodes()).append("</td></tr>\r");
 		for (PersonVO p : sem.getPeople()) {
 			rpt.append("<tr><td>").append(p.getRoleCode()).append("</td><td align='center'>")
@@ -84,55 +83,61 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 		rpt.append("<tr><td colspan='2'>&nbsp;</td></tr>\r");
 		
 		
-		rpt.append("<tr><td colspan='2' style='background-color: #ccc;'><b>Surgeon Information</td></tr>\r");
-		rpt.append("<tr><td>Surgeon Speaker Name:</td><td align='center'>").append(surg.getSurgeonName()).append("</td></tr>\r");
-		rpt.append("<tr><td>The Field Marketing Director has reviewed the Surgeon Guidelines with speaker?:</td><td align='center'>").append(surg.getSeenGuidelinesFlg() == 1 ? "yes" : "no").append("</td></tr>\r");
-		rpt.append("<tr><td>Years practicing:</td><td align='center'>").append(surg.getExperienceYrs()).append("</td></tr>\r");
-		rpt.append("<tr><td>Years at current practice:</td><td align='center'>").append(surg.getPractYrs()).append("</td></tr>\r");
-		rpt.append("<tr><td>Employed by hospital?:</td><td align='center'>").append(surg.getHospEmployeeFlg() == 1 ? "yes" : "no").append("</td></tr>\r");
-		rpt.append("<tr><td>Hospital Address:</td><td align='center'>").append(surg.getHospAddress()).append("</td></tr>\r");
-		rpt.append("<tr><td>Practice Address:</td><td align='center'>").append(surg.getPractLocation().getFormattedLocation()).append("</td></tr>\r");
-		rpt.append("<tr><td>Practice Phone:</td><td align='center'>").append(surg.getPractPhone()).append("</td></tr>\r");
-		rpt.append("<tr><td>Surgeon/Office Email(s):</td><td align='center'>").append(surg.getPractEmail()).append("</td></tr>\r");
-		rpt.append("<tr><td>Secondary Contact:</td><td align='center'>").append(surg.getSecPhone()).append("</td></tr>\r");
-		rpt.append("<tr><td>Secondary Contact Email:</td><td align='center'>").append(surg.getSecEmail()).append("</td></tr>\r");
-		rpt.append("<tr><td>Practice Website:</td><td align='center'>").append(StringUtil.checkVal(surg.getPractWebsite())).append("</td></tr>\r");
-		rpt.append("<tr><td>Surgeon Photo:</td><td align='center'>").append(surg.getLogoFileUrl()).append("</td></tr>\r");
-		rpt.append("<tr><td>Surgeon Bio:</td><td align='center'>").append(StringUtil.checkVal(surg.getSurgeonBio())).append("</td></tr>\r");
-		rpt.append("<tr><td colspan='2'>&nbsp;</td></tr>\r");
+		rpt.append("<tr><td colspan='2' style='background-color: #ccc;'><b>Speaker Information</td></tr>\r");
+		for (DePuyEventSurgeonVO surg : sem.getSurgeonList()) {
+			rpt.append("<tr><td>Speaker Name:</td><td align='center'>").append(surg.getSurgeonName()).append("</td></tr>\r");
+			rpt.append("<tr><td>The Field Marketing Director has reviewed the Speaker Guidelines with speaker?:</td><td align='center'>").append(surg.getSeenGuidelinesFlg() == 1 ? "yes" : "no").append("</td></tr>\r");
+			rpt.append("<tr><td>Years practicing:</td><td align='center'>").append(surg.getExperienceYrs()).append("</td></tr>\r");
+			rpt.append("<tr><td>Years at current practice:</td><td align='center'>").append(surg.getPractYrs()).append("</td></tr>\r");
+			rpt.append("<tr><td>Employed by hospital?:</td><td align='center'>").append(surg.getHospEmployeeFlg() == 1 ? "yes" : "no").append("</td></tr>\r");
+			rpt.append("<tr><td>Hospital Address:</td><td align='center'>").append(surg.getHospAddress()).append("</td></tr>\r");
+			rpt.append("<tr><td>Practice Address:</td><td align='center'>").append(surg.getPractLocation().getFormattedLocation()).append("</td></tr>\r");
+			rpt.append("<tr><td>Practice Phone:</td><td align='center'>").append(surg.getPractPhone()).append("</td></tr>\r");
+			rpt.append("<tr><td>Speaker/Office Email(s):</td><td align='center'>").append(surg.getPractEmail()).append("</td></tr>\r");
+			rpt.append("<tr><td>Secondary Contact:</td><td align='center'>").append(surg.getSecPhone()).append("</td></tr>\r");
+			rpt.append("<tr><td>Secondary Contact Email:</td><td align='center'>").append(surg.getSecEmail()).append("</td></tr>\r");
+			rpt.append("<tr><td>Practice Website:</td><td align='center'>").append(StringUtil.checkVal(surg.getPractWebsite())).append("</td></tr>\r");
+			rpt.append("<tr><td>Speaker Photo:</td><td align='center'>").append(surg.getLogoFileUrl()).append("</td></tr>\r");
+			rpt.append("<tr><td>Speaker Bio:</td><td align='center'>").append(StringUtil.checkVal(surg.getSurgeonBio())).append("</td></tr>\r");
+			rpt.append("<tr><td colspan='2'>&nbsp;</td></tr>\r");
+		}
 		
 		
 		rpt.append("<tr><td colspan='2' style='background-color: #ccc;'><b>Ad Information</td></tr>\r");
 		
 		//add the Co-Op Ad data
-		if (sem.getNewspaperAd() != null && sem.getNewspaperAd().getCoopAdId() != null) {
-			CoopAdVO ad = sem.getNewspaperAd();
-			rpt.append("<tr><td colspan='2'>&nbsp;</td></tr>\r");
-			rpt.append("<tr><td colspan='2' style='background-color: #ccc;'><b>Newspaper Ad</td></tr>\r");
-			rpt.append("<tr><td>Ad Type:</td><td align='center'>").append(StringUtil.checkVal(ad.getAdType())).append("</td></tr>\r");
-			rpt.append("<tr><td>Sponsored Newspaper:</td><td align='center'>").append(StringUtil.checkVal(ad.getNewspaper1Text())).append(" (").append(ad.getNewspaper1Phone()).append(")</td></tr>\r");
-			rpt.append("<tr><td>Co-Op Ad Approved:</td><td align='center'>").append((ad.getStatusFlg() == 3) ? "Yes" : "No").append("</td></tr>\r");
-			rpt.append("<tr><td>Approved Paper:</td><td align='center'>").append(StringUtil.checkVal(ad.getApprovedPaperName())).append("</td></tr>\r");
-			rpt.append("<tr><td>Total Cost:</td><td align='center'>").append(ad.getTotalCostNo()).append("</td></tr>\r");
-			//calculate cost of ad to territory or surgeon
-			if ("CFSEM".equalsIgnoreCase(sem.getEvents().get(0).getEventTypeCd())) {
-				rpt.append("<tr><td>Surgeon approved ad?:</td><td align='center'>").append((ad.getSurgeonStatusFlg() == 1) ? "Yes" : "No").append("</td></tr>\r");
-				rpt.append("<tr><td>Surgeon paid for ad?:</td><td align='center'>").append((ad.getStatusFlg() == CoopAdsAction.CLIENT_PAYMENT_RECD) ? "Yes" : "No").append("</td></tr>\r");
-				rpt.append("<tr><td>Ad Cost to Surgeon:</td><td align='center'>").append(ad.getCostToRepNo()).append("</td></tr>\r");
-			} else {
-				rpt.append("<tr><td>Ad Cost to Territory:</td><td align='center'>").append(ad.getCostToRepNo()).append("</td></tr>\r");
+		if (sem.getAllAds() != null && !sem.getAllAds().isEmpty() ) {
+			for (CoopAdVO ad : sem.getAllAds() ){
+				int adSts = Convert.formatInteger(ad.getStatusFlg(), 0).intValue();
+				
+				rpt.append("<tr><td colspan='2'>&nbsp;</td></tr>\r");
+				rpt.append("<tr><td colspan='2' style='background-color: #ccc;'><b>Newspaper Ad</td></tr>\r");
+				rpt.append("<tr><td>Ad Type:</td><td align='center'>").append(StringUtil.checkVal(ad.getAdType())).append("</td></tr>\r");
+				rpt.append("<tr><td>Sponsored Newspaper:</td><td align='center'>").append(StringUtil.checkVal(ad.getNewspaper1Text())).append(" (").append(ad.getNewspaper1Phone()).append(")</td></tr>\r");
+				rpt.append("<tr><td>Coordinator approved ad?:</td><td align='center'>").append((adSts == CoopAdsActionV2.CLIENT_APPROVED_AD) ? "Yes" : "No").append("</td></tr>\r");
+				rpt.append("<tr><td>Approved Paper:</td><td align='center'>").append(StringUtil.checkVal(ad.getApprovedPaperName())).append("</td></tr>\r");
+				rpt.append("<tr><td>Total Cost:</td><td align='center'>").append(ad.getTotalCostNo()).append("</td></tr>\r");
+				//calculate cost of ad to territory or surgeon
+				if ("CFSEM".equalsIgnoreCase(sem.getEvents().get(0).getEventTypeCd())) {
+					int surgSts = Convert.formatInteger(ad.getSurgeonStatusFlg(), 0).intValue();
+					rpt.append("<tr><td>Speaker approved ad?:</td><td align='center'>").append((surgSts == CoopAdsActionV2.SURG_APPROVED_AD) ? "Yes" : "No").append("</td></tr>\r");
+					rpt.append("<tr><td>Speaker paid for ad?:</td><td align='center'>").append((surgSts == CoopAdsActionV2.SURG_PAID_AD) ? "Yes" : "No").append("</td></tr>\r");
+					rpt.append("<tr><td>Ad Cost to Speaker:</td><td align='center'>").append(ad.getCostToRepNo()).append("</td></tr>\r");
+				} else {
+					rpt.append("<tr><td>Ad Cost to Territory:</td><td align='center'>").append(ad.getCostToRepNo()).append("</td></tr>\r");
+				}
+				rpt.append("<tr><td>Ad File:</td><td align='center'><a href=\"").append(sem.getBaseUrl()).append("/ads/").append(ad.getAdFileUrl()).append("\" target='_blank'>").append(ad.getAdFileUrl()).append("</a></td></tr>\r");
 			}
-			rpt.append("<tr><td>Ad File:</td><td align='center'><a href=\"").append(sem.getBaseUrl()).append("/ads/").append(ad.getAdFileUrl()).append("\" target='_blank'>").append(ad.getAdFileUrl()).append("</a></td></tr>\r");
 		}
 		//add the Radio Ad data
-		if (sem.getRadioAd() != null && sem.getRadioAd().getCoopAdId() != null) {
-			CoopAdVO ad = sem.getRadioAd();
-			rpt.append("<tr><td colspan='2'>&nbsp;</td></tr>\r");
-			rpt.append("<tr><td colspan='2' style='background-color: #ccc;'><b>Radio Ad</td></tr>\r");
-			rpt.append("<tr><td>Radio Station:</td><td align='center'>").append(StringUtil.checkVal(ad.getNewspaper1Text())).append(" (").append(StringUtil.checkVal(ad.getNewspaper1Phone())).append(")</td></tr>\r");
-			rpt.append("<tr><td>Contact Name:</td><td align='center'>").append(StringUtil.checkVal(ad.getNewspaper2Text())).append(" (").append(StringUtil.checkVal(ad.getNewspaper2Phone())).append(")</td></tr>\r");
-			rpt.append("<tr><td>Ad Deadline:</td><td align='center'>").append(StringUtil.checkVal(ad.getAdDatesText())).append("</td></tr>\r");
-		}
+//		if (sem.getRadioAd() != null && sem.getRadioAd().getCoopAdId() != null) {
+//			CoopAdVO ad = sem.getRadioAd();
+//			rpt.append("<tr><td colspan='2'>&nbsp;</td></tr>\r");
+//			rpt.append("<tr><td colspan='2' style='background-color: #ccc;'><b>Radio Ad</td></tr>\r");
+//			rpt.append("<tr><td>Radio Station:</td><td align='center'>").append(StringUtil.checkVal(ad.getNewspaper1Text())).append(" (").append(StringUtil.checkVal(ad.getNewspaper1Phone())).append(")</td></tr>\r");
+//			rpt.append("<tr><td>Contact Name:</td><td align='center'>").append(StringUtil.checkVal(ad.getNewspaper2Text())).append(" (").append(StringUtil.checkVal(ad.getNewspaper2Phone())).append(")</td></tr>\r");
+//			rpt.append("<tr><td>Ad Deadline:</td><td align='center'>").append(StringUtil.checkVal(ad.getAdDatesText())).append("</td></tr>\r");
+//		}
 		
 		rpt.append(this.getFooter());
 		return rpt.toString().getBytes();

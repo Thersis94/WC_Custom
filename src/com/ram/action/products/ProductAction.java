@@ -322,18 +322,22 @@ public class ProductAction extends SBActionAdapter {
 				}
 				ps.setInt(index++, providerId);
 			}
+			ps.setInt(index++, start);
+			ps.setInt(index++, limit);
 
 			/*
 			 * Iterate over results to get our paginated selection
 			 */
 			ResultSet rs = ps.executeQuery();
-			for(int i=0; rs.next(); i++) {
-				if (i >= start && i < limit)
-					products.add(new RAMProductVO(rs));
-			}
+			while(rs.next())
+				products.add(new RAMProductVO(rs));
 			
-			//Retrieve the total count of products to properly show pagination 
-			ctr = getRecordCount(customerId, term, advFilter, providerId);
+			/*
+			 * Retrieve the total count of products to properly show pagination.
+			 * Need to increment by one as this is a 0 start number and the list
+			 * starts at 1.
+			 */
+			ctr = 1 + getRecordCount(customerId, term, advFilter, providerId);
 		} catch(SQLException sqle) {
 			log.error("Error retrieving product list", sqle);
 			throw new ActionException(sqle);
@@ -428,6 +432,10 @@ public class ProductAction extends SBActionAdapter {
 	 * Fixed query and database to use a View on the Customer Table to avoid the circular reference
 	 * that was causing problems with the Product Lookup query.  Now performance is much better as we
 	 * don't have to perform any intersects on the data.
+	 *
+	 * Cleaned up the select query to perform the pagination in query.  Reduces
+	 * data returned and eliminates app server side looping to records we actually
+	 * care about.
 	 * @param customerId
 	 * @param term
 	 * @param kitFilter
@@ -443,7 +451,7 @@ public class ProductAction extends SBActionAdapter {
 		if(isCount) {
 			sb.append("select count(a.product_id) from ").append(schema);
 		} else {
-			sb.append("select top ").append(limit ).append(" a.PRODUCT_ID, a.CUSTOMER_ID, a.CUST_PRODUCT_ID, a.PRODUCT_NM, a.DESC_TXT, a.SHORT_DESC, a.LOT_CODE_FLG, a.ACTIVE_FLG, a.EXPIREE_REQ_FLG, a.GTIN_PRODUCT_ID, b.CUSTOMER_NM, a.KIT_FLG, a.MANUAL_ENTRY_FLG from ").append(schema);
+			sb.append("select * from (select ROW_NUMBER() OVER (order by Product_nm) as RowNum, a.PRODUCT_ID, a.CUSTOMER_ID, a.CUST_PRODUCT_ID, a.PRODUCT_NM, a.DESC_TXT, a.SHORT_DESC, a.LOT_CODE_FLG, a.ACTIVE_FLG, a.EXPIREE_REQ_FLG, a.GTIN_PRODUCT_ID, b.CUSTOMER_NM, a.KIT_FLG, a.MANUAL_ENTRY_FLG from ").append(schema);
 		}
 		//Build Initial Query
 
@@ -454,7 +462,7 @@ public class ProductAction extends SBActionAdapter {
 
 		//Lastly if this is not a count call order the results.
 		if(!isCount)
-			sb.append("order by PRODUCT_NM");
+			sb.append(") as paginatedResult where RowNum >= ? and RowNum < ? order by RowNum");
 
 		log.debug(customerId + "|" + providerId + "|" + sb.toString());
 		return sb.toString();

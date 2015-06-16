@@ -6,20 +6,18 @@ import java.util.Map;
 
 import org.apache.log4j.Logger;
 
-
 // SMT BaseLibs
 import com.depuy.events_v2.vo.DePuyEventSeminarVO;
 import com.depuy.events_v2.vo.DePuyEventSurgeonVO;
 import com.depuy.events_v2.vo.PersonVO;
 import com.depuy.events_v2.vo.PersonVO.Role;
-import com.smt.sitebuilder.action.AbstractSBReportVO;
-import com.smt.sitebuilder.action.event.vo.EventEntryVO;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
-
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.action.AbstractSBReportVO;
+import com.smt.sitebuilder.action.event.vo.EventEntryVO;
 // WC Libs
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -45,6 +43,23 @@ public class PostcardEmailer {
 	protected static Logger log = null;
 	protected Map<String, Object> attributes = null;
 	protected Connection dbConn = null;
+	
+	
+	/**
+	 * returns an instance of PostcardEmailer, giving us abstract support for Mitek events
+	 * @param sem
+	 * @param attrs
+	 * @param conn
+	 * @return
+	 */
+	public static PostcardEmailer newInstance(DePuyEventSeminarVO sem, Map<String, Object> attrs, Connection conn) {
+		//test for Mitek Seminar.  If so, return the Mitek emailer instead of 'this' class
+		if (sem != null && sem.isMitekSeminar()) {
+			return new PostcardEmailerMitek(attrs, conn);
+		} else {
+			return new PostcardEmailer(attrs, conn);
+		}
+	}
 	
 	/**
 	 * @param attrs
@@ -124,11 +139,14 @@ public class PostcardEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(site.getAdminEmail()); // the DePuy intern in charge
-			mail.addRecipient("KAlfano@its.jnj.com"); // Kristi Alfano
+			mail.addRecipient("Kwebb1@its.jnj.com"); 
 			mail.addRecipient("amy.zimmerman@hmktgroup.com");
-			mail.addRecipient("admgt@hmktgroup.com"); // Barb Goley & Shari Slough
-			mail.addRecipient("Jenn.Davis@hmktgroup.com"); // Jenn Parrish-Davis);
+			mail.addRecipient("admgt@hmktgroup.com");
 			mail.addRecipient("sterling.hoham@hmktgroup.com");
+			mail.addRecipient("rwilkin7@its.jnj.com");
+			mail.addRecipient("lisa.maiers@novusmediainc.com");
+			mail.addRecipient("anna.schwanz@novusmediainc.com");
+			mail.addRecipient("taylor.larson@novusmediainc.com");
 			mail.setSubject("DePuy Community Education; Postcard Canceled " + postcard.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
@@ -150,6 +168,7 @@ public class PostcardEmailer {
 	 * @see com.depuy.events.AbstractPostcardEmailer#sendSRCApprovalRequest(com.siliconmtn.http.SMTServletRequest)
 	 */
 	public void sendAdvApprovalRequest(SMTServletRequest req) {
+		
 		// send email to site admin
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
@@ -166,15 +185,12 @@ public class PostcardEmailer {
 
 		// build the attachment
 		AbstractSBReportVO rpt = (AbstractSBReportVO) req.getAttribute(Constants.BINARY_DOCUMENT);
-
+		
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			//mail.addRecipient("WWilder@its.jnj.com");
-			//mail.addRecipient("RSmith68@its.jnj.com");
-			mail.addRecipient("rwilkin7@ITS.JNJ.COM");
+			mail.addRecipient("rwilkin7@its.jnj.com");
 			mail.addCC(site.getAdminEmail());
-			//mail.addCC(sem.getOwner().getEmailAddress()); //Coordinator email
 			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
@@ -188,7 +204,6 @@ public class PostcardEmailer {
 		}
 		return;
 	}
-	
 	
 	/**
 	 * announcement email triggered when the ADV team member reviews the
@@ -216,7 +231,6 @@ public class PostcardEmailer {
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			mail.addCC(site.getAdminEmail());
 			mail.addRecipient("sterling.hoham@hmktgroup.com"); // Sterling Hoham
 			mail.addRecipient("amy.zimmerman@hmktgroup.com");
 			mail.addRecipient("lisa.maiers@novusmediainc.com");
@@ -225,8 +239,9 @@ public class PostcardEmailer {
 			
 			//Additional CC recipients
 			mail.addCC("rwilkin7@its.jnj.com");
-			mail.addCC("nicole.olson@novusmediainc.com");
-			mail.addCC("carly.lubert@novusmediainc.com");
+			mail.addCC("anna.schwanz@novusmediainc.com");
+			mail.addCC("taylor.larson@novusmediainc.com");
+			mail.addCC(site.getAdminEmail());
 			
 			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
@@ -253,7 +268,6 @@ public class PostcardEmailer {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
 		EventEntryVO event = sem.getEvents().get(0);
-		DePuyEventSurgeonVO surg = sem.getSurgeon();
 		StringBuilder subject = new StringBuilder();
 		subject.append("SRC Approval - Seminar " + sem.getRSVPCodes());
 
@@ -261,11 +275,17 @@ public class PostcardEmailer {
 		msg.append("This email confirms that your ").append(event.getEventTypeDesc());
 		msg.append(" ").append(sem.getJointLabel()).append(" Seminar #").append(event.getRSVPCode());
 		msg.append(" as detailed below, has now been Approved by SRC and your ");
-		msg.append("Surgeon Speaker contract will be sent shortly.\r\r");
+		msg.append("Speaker contract(s) will be sent shortly.\r\r");
 
 		msg.append(Convert.formatDate(event.getStartDate(), Convert.DATE_LONG));
-		msg.append("\r").append(event.getLocationDesc()).append("\rSpeaker: ");
-		msg.append(surg.getSurgeonName()).append("\r\r");
+		msg.append("\r").append(event.getLocationDesc()).append("\rSpeaker(s): ");
+		boolean isFirst = true;
+		for (DePuyEventSurgeonVO vo : sem.getSurgeonList()) {
+			if (!isFirst) msg.append(", ");
+			msg.append(vo.getSurgeonName());
+			isFirst = false;
+		}
+		msg.append("\r\r");
 		msg.append(event.getEventName()).append("\r");
 		msg.append(event.getAddressText()).append("\r");
 		if (StringUtil.checkVal(event.getAddress2Text()).length() > 0) 
@@ -281,7 +301,7 @@ public class PostcardEmailer {
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipient(sem.getOwner().getEmailAddress());
+			mail.addRecipient(sem.getOwner().getEmailAddress()); //Coordinator
 			//mail.addRecipient("Jenn.Davis@hmktgroup.com"); // Jenn Parrish-Davis);
 			mail.addCC("sterling.hoham@hmktgroup.com"); // Sterling Hoham
 			mail.addCC("amy.zimmerman@hmktgroup.com");
@@ -289,10 +309,10 @@ public class PostcardEmailer {
 			//mail.addCC("RSmith68@its.jnj.com");
 			mail.addCC("rwilkin7@ITS.JNJ.COM");
 			mail.addCC(site.getAdminEmail());
-			for (PersonVO p : sem.getPeople()) {
+			for (PersonVO p : sem.getPeople()) { 
 				//add only the sales reps
-				if (p.getRoleCode() == Role.TGM) continue;
-				mail.addCC(p.getEmailAddress());
+				if (p.getRoleCode() == Role.REP)
+					mail.addCC(p.getEmailAddress());
 			}
 			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
@@ -312,17 +332,21 @@ public class PostcardEmailer {
 		// send email to site admin
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
+		boolean isHosp = sem.isHospitalSponsored();
 		StringBuilder subject = new StringBuilder();
 		String ownerEmail = StringUtil.checkVal(sem.getOwner().getEmailAddress());
-		subject.append("Consumable Box request - Seminar " + sem.getRSVPCodes());
+		if (isHosp) {
+			subject.append("Hospital Sponsored Consumable Box request - Seminar " + sem.getRSVPCodes());
+		} else {
+			subject.append("Consumable Box request - Seminar " + sem.getRSVPCodes());
+		}
 		
-		//logged-in user:
-		//UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
-
-		StringBuilder msg = new StringBuilder();
+		StringBuilder msg = new StringBuilder(500);
 		msg.append("The Seminar Coordinator for DePuy ").append(sem.getJointLabel());
 		msg.append(" Seminar #").append(sem.getEvents().get(0).getRSVPCode());
-		msg.append(" has submitted a request for a Consumable Box.  ");
+		msg.append(" has submitted a request for a ");
+		if (isHosp) msg.append("Hospital Sponsored ");
+		msg.append("Consumable Box.  ");
 		msg.append("Please ship the requested seminar supplies to the person listed below. \r\r");
 		msg.append("Seminar #: ").append(sem.getRSVPCodes()).append("\r");
 		msg.append("Seminar Date: ").append(Convert.formatDate(sem.getEarliestEventDate(), Convert.DATE_FULL_MONTH)).append("\r");
@@ -363,40 +387,6 @@ public class PostcardEmailer {
 		return;
 	}
 	
-	/*
-	 * This confirmation email was turned off by Rachel Wilkerson, 06-17-14,
-	 * the recipient was added to the CC on the email to the admins (above)
-	 * 
-	protected void orderConsumableBoxConfirmation(SMTServletRequest req) {
-		// send email to site admin
-		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
-		StringBuilder subject = new StringBuilder();
-		subject.append("Consumable Box request confirmation - Seminar " + sem.getRSVPCodes());
-		
-		StringBuilder msg = new StringBuilder();
-		msg.append("Your order for Seminar Supplies has been sent. You should ");
-		msg.append("plan to receive your order within 7-10 days. Should you need ");
-		msg.append("it before then, please contact Terrie Kumfer at Lincoln Printing; ");
-		msg.append("tkumfer@printlinc.net or 260-414-8368.\r\r");
-		
-		try {
-			// Create the mail object and send
-			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipient(sem.getOwner().getEmailAddress());
-			mail.setSubject(subject.toString());
-			mail.setFrom(site.getMainEmail());
-			mail.setTextBody(msg.toString());
-
-			MessageSender ms = new MessageSender(attributes, dbConn);
-			ms.sendMessage(mail);
-			log.debug("orderConsumableBoxConfirmation Email Sent");
-		} catch (Exception me) {
-			log.error("orderConsumableBoxConfirmationEmail", me);
-		}
-		return;
-	}
-	*/
 	
 	protected void requestPostcardApproval(SMTServletRequest req) {
 		// send email to site admin
@@ -406,7 +396,7 @@ public class PostcardEmailer {
 		subject.append("Postcard uploaded - Seminar " + sem.getRSVPCodes());
 		
 		StringBuilder msg = new StringBuilder();
-		msg.append("The sample postcard for DePuy ").append(sem.getJointLabel());
+		msg.append("The sample postcard for DePuy Synthes ").append(sem.getJointLabel());
 		msg.append(" Seminar #").append(sem.getEvents().get(0).getRSVPCode());
 		msg.append(" has been uploaded to the website. ");
 		msg.append("Please review the sample (PDF) and approve it using the URL below.\r\r");
@@ -476,10 +466,10 @@ public class PostcardEmailer {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
 		StringBuilder subject = new StringBuilder();
-		subject.append("Surgeon Speaker Contract Received - Seminar " + sem.getRSVPCodes());
+		subject.append("Speaker Contract Received - Seminar " + sem.getRSVPCodes());
 
 		StringBuilder msg = new StringBuilder();
-		msg.append("Medical Affairs has received and approved the Surgeon Speaker's signed contract for Seminar #").append(sem.getRSVPCodes());
+		msg.append("Medical Affairs has received and approved the Speaker's signed contract for Seminar #").append(sem.getRSVPCodes());
 		msg.append(".  This seminar is now fully approved.  Please proceed with ");
 		msg.append("ad purchases, postcard mailings, flyer/poster distribution, ");
 		msg.append("and other necessary tasks to prepare for the seminar.\r\r");
@@ -500,8 +490,8 @@ public class PostcardEmailer {
 			
 			mail.addCC(site.getAdminEmail());
 			mail.addCC("rwilkin7@its.jnj.com");
-			mail.addCC("nicole.olson@novusmediainc.com");
-			mail.addCC("carly.lubert@novusmediainc.com");
+			mail.addCC("anna.schwanz@novusmediainc.com");
+			mail.addCC("taylor.larson@novusmediainc.com");
 			
 			for (PersonVO p : sem.getPeople()) {
 				if (! StringUtil.isValidEmail(p.getEmailAddress())) continue;
@@ -534,7 +524,7 @@ public class PostcardEmailer {
 		String reason = StringUtil.checkVal( req.getParameter("notesText") );
 		
 		//Create the message body
-		StringBuilder msg = new StringBuilder();
+		StringBuilder msg = new StringBuilder(340);
 		msg.append(sem.getOwner().getFullName()).append(" (");
 		msg.append(sem.getOwner().getEmailAddress()).append(") has declined ");
 		msg.append("the postcard for Seminar #").append(sem.getRSVPCodes()).append(".\r");
@@ -560,5 +550,181 @@ public class PostcardEmailer {
 			log.error("sendPostcardDeclined",e);
 		}
 	}
+	
+	/**
+	 * Sent when the PCP invitation is ready for approval.
+	 * @param req
+	 */
+	protected void sendInvitationApprovalRequest( SMTServletRequest req ){
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
+		
+		//Create message body
+		StringBuilder msg = new StringBuilder(415);
+		msg.append("The sample PCP Invitation for Seminar #").append(sem.getRSVPCodes());
+		msg.append(" has been uploaded to the website for approval. Please review ");
+		msg.append("the sample (PDF) and approve using the url below.\r");
+		msg.append(site.getFullSiteAlias()).append("/?reqType=promote&eventPostcardId=");
+		msg.append(sem.getEventPostcardId()).append("\r\r");
+		
+		try{
+			EmailMessageVO mail = new EmailMessageVO();
+			mail.setSubject("PCP Invitation Uploaded - Seminar "+sem.getRSVPCodes());
+			mail.setFrom(site.getMainEmail());
+			
+			//Recipients
+			mail.addRecipient( sem.getOwner().getEmailAddress() );
+			mail.addCC( site.getAdminEmail() );
+			mail.addCC("rwilkin7@its.jnj.com");
+			//set the email content
+			mail.setTextBody(msg.toString());
+			
+			//Send the message
+			MessageSender mailer = new MessageSender(attributes, dbConn);
+			mailer.sendMessage(mail);
+			log.debug("sendInvitationApprovalRequest Sent");
+			
+		} catch (Exception e){
+			log.error("sendInvitationApprovalRequest",e);
+		}
+	}
 
+	/**
+	 * Notification that the coordinator has approved the PCP invitation
+	 * @param req
+	 */
+	protected void sendInvitationApproved( SMTServletRequest req ){
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
+		
+		//Create the message
+		StringBuilder msg = new StringBuilder(130);
+		msg.append("The seminar coordinator for Seminar #").append(sem.getRSVPCodes());
+		msg.append(" has approved the sample PCP Invitation.\r\r");
+		
+		try{
+			EmailMessageVO mail = new EmailMessageVO();
+			mail.setSubject("PCP Invitation Approved - Seminar "+sem.getRSVPCodes());
+			mail.setFrom(site.getMainEmail());
+			mail.setTextBody(msg.toString());
+			
+			//Recipients
+			mail.addRecipient("sterling.hoham@hmktgroup.com");
+			mail.addCC("amy.zimmerman@hmktgroup.com");
+			mail.addCC("rwilkin7@its.jnj.com");
+			mail.addCC(site.getAdminEmail());
+			mail.addCC(sem.getOwner().getEmailAddress());
+			
+			//Send Message
+			MessageSender mailer = new MessageSender(attributes,dbConn);
+			mailer.sendMessage(mail);
+			log.debug("sendInvitationApproved Sent");
+			
+		}catch (Exception e){
+			log.error("sendInvitationApproved",e);
+		}
+	}
+	
+	/**
+	 * Notification that the PCP Invitations have been sent.
+	 * @param req
+	 */
+	protected void notifyInvitationSent( SMTServletRequest req ){
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
+		
+		StringBuilder msg = new StringBuilder(100);
+		msg.append("PCP Invitations for Seminar #").append(sem.getRSVPCodes());
+		msg.append(" have been sent.");
+		
+		try{
+			EmailMessageVO mail = new EmailMessageVO();
+			mail.setSubject("PCP Invitation Mailing Confirmation - Seminar "+sem.getRSVPCodes());
+			mail.setFrom(site.getMainEmail());
+			mail.setTextBody(msg.toString());
+			
+			//recipients
+			mail.addRecipient(site.getAdminEmail());
+			mail.addRecipient("rwilkin7@its.jnj.com");
+			mail.addRecipient(sem.getOwner().getEmailAddress());
+			mail.addCC("amy.zimmerman@hmktgroup.com");
+			mail.addCC("sterling.hoham@hmktgroup.com");
+			
+			MessageSender mailer = new MessageSender(attributes,dbConn);
+			mailer.sendMessage(mail);
+			log.debug("notifyInvitationSent Sent");
+			
+		} catch (Exception e){
+			log.error("notifyInvitationSent",e);
+		}
+	}
+	
+	/**
+	 * Notification that the Postcards have been sent.
+	 * @param req
+	 */
+	protected void notifyPostcardSent( SMTServletRequest req ){
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
+		
+		StringBuilder msg = new StringBuilder(100);
+		msg.append("Postcards for Seminar #").append(sem.getRSVPCodes());
+		msg.append(" have been sent.");
+		
+		try{
+			EmailMessageVO mail = new EmailMessageVO();
+			mail.setSubject("Postcard Mailing Confirmation - Seminar "+sem.getRSVPCodes());
+			mail.setFrom(site.getMainEmail());
+			mail.setTextBody(msg.toString());
+			
+			//recipients
+			mail.addRecipient(site.getAdminEmail());
+			mail.addRecipient("rwilkin7@its.jnj.com");
+			mail.addRecipient(sem.getOwner().getEmailAddress());
+			mail.addCC("amy.zimmerman@hmktgroup.com");
+			mail.addCC("sterling.hoham@hmktgroup.com");
+			
+			MessageSender mailer = new MessageSender(attributes,dbConn);
+			mailer.sendMessage(mail);
+			log.debug("notifyPostcardSent Sent");
+			
+		} catch (Exception e){
+			log.error("notifyPostcardSent",e);
+		}
+	}
+	
+	/**
+	 * notifies Harmony when a PCP coordinator uploads their leads
+	 * @param req
+	 */
+	protected void inviteFileUploaded(SMTServletRequest req) {
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
+		
+		StringBuilder msg = new StringBuilder(100);
+		msg.append("The PCP Invite List has been uploaded and is now available on the portal. ");
+		msg.append("Please click the following link below to view and download the file.\r\r");
+		msg.append(site.getFullSiteAlias()).append("/?reqType=promote&eventPostcardId=");
+		msg.append(sem.getEventPostcardId()).append("\r\r");
+		
+		try {
+			EmailMessageVO mail = new EmailMessageVO();
+			mail.setSubject("PCP Invite List Now Available - Seminar "+ sem.getRSVPCodes());
+			mail.setFrom(site.getMainEmail());
+			mail.setTextBody(msg.toString());
+			
+			//recipients
+			mail.addRecipient("sterling.hoham@hmktgroup.com");
+			mail.addCC("amy.zimmerman@hmktgroup.com");
+			mail.addCC(site.getAdminEmail());
+			mail.addCC("rwilkin7@its.jnj.com");
+			
+			MessageSender mailer = new MessageSender(attributes,dbConn);
+			mailer.sendMessage(mail);
+			log.debug("inviteFileUploaded Sent");
+			
+		} catch (Exception e) {
+			log.error("inviteFileUploaded",e);
+		}
+	}
 }

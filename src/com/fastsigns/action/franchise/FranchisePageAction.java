@@ -179,7 +179,6 @@ public class FranchisePageAction extends SBActionAdapter {
 					
 					//create a new the Site Page
 					req.setParameter("startDate", Convert.formatDate(new java.util.Date()));  //new pages must be approved before being released
-					req.setParameter("titleName", "Insert browser title here");
 					
 					//we don't need Content or PMID/permissions if this is just a redirect to another resource
 					//redirects do not require admin approval, so we can set a valid start/end date for these pages.
@@ -360,11 +359,13 @@ public class FranchisePageAction extends SBActionAdapter {
 			pages.addAll(pc.getMenuPages());
 			
 			//loop the page and determine which ones will require approval on the JSP
+			contents = this.getContentSyncRecords(pages);
 			for (PageVO p : pages) {
 				if (p.getPageId() == null || p.isDefaultPage() || StringUtil.checkVal(p.getExternalPageUrl()).length() > 0) 
 					continue; //skip these, they will never require approval!
 				
-				ContentVO vo = this.getContent(p, null, pc.getSharedId());
+				ContentVO vo = contents.get(p.getPageId());
+				if (vo == null) continue; //nothing exist on this page, or nothing is pending
 				log.debug("loaded " + p.getDisplayName() + " with Content permissions " + vo.getAttribute("isPublic"));
 				if (vo.getActionId() != null) {
 					 p.setFooterFlag(true);
@@ -372,11 +373,11 @@ public class FranchisePageAction extends SBActionAdapter {
 				contents.put(p.getPageId(), vo);
 				vo = null;
 			}
-			List<String> l = new ArrayList<String>();
-
-			for(ContentVO s : contents.values()){
-				l.add((String) s.getAttribute("pmid"));
-			}
+//			List<String> l = new ArrayList<String>();
+//
+//			for(ContentVO s : contents.values()){
+//				l.add((String) s.getAttribute("pmid"));
+//			}
 			
 		}
 		req.setAttribute("contents", contents);
@@ -385,6 +386,56 @@ public class FranchisePageAction extends SBActionAdapter {
 		
 		// Add the data to the Module Container
 		this.putModuleData(pc);
+	}
+	
+	
+	/**
+	 * loads the sync records for the portlets (Content) attached to each page in our list.
+	 * We need these values so we can submit them for approval when we submit the page for approval.
+	 * @param pages
+	 * @return
+	 */
+	private Map<String, ContentVO> getContentSyncRecords(List<MenuObj> pages) {
+		Map<String, ContentVO> data = new HashMap<>(pages.size());
+		StringBuilder s = new StringBuilder(350);
+		s.append("select isnull(g.action_id, f.action_id) as action_id, ");
+		s.append("isnull(g.action_group_id, f.action_group_id) as action_group_id, a.page_module_id, ");
+		s.append("isnull(g.attrib1_txt, f.attrib1_txt) as attrib1_txt, ");
+		s.append("isnull(g.attrib2_txt, f.attrib2_txt) as attrib2_txt, ");
+		s.append("isnull(g.action_nm,f.action_nm) as action_nm, ");
+		s.append("isnull(g.action_desc,f.action_desc) as action_desc, ws.*, a.page_id ");
+		s.append("from page_module a ");
+		s.append("left join sb_action f on a.action_id = f.action_id "); //the approved record
+		s.append("left outer join sb_action g on f.action_group_id = g.action_group_id ");  //the pending record
+		s.append("left outer join CONTENT c on ISNULL(g.ACTION_ID, f.ACTION_ID)=c.ACTION_ID ");
+		s.append("left join wc_sync ws on (ISNULL(g.ACTION_ID, f.ACTION_ID) = ws.wc_key_id) and wc_sync_status_cd not in (?,?) ");
+		s.append("where a.page_id in (''");
+		for (@SuppressWarnings("unused") MenuObj menu : pages) s.append(",?");
+		s.append(") order by ISNULL(c.update_dt, '1900-06-05T23:59:00') desc "); //ordering by date gets us the most recent revision and ensures nulls are left at the bottom of the list
+		
+		log.debug(s);
+		ContentVO content = null;
+		int i = 0;
+		try (PreparedStatement ps = dbConn.prepareStatement(s.toString())){
+			ps.setString(++i, SyncStatus.Approved.toString());
+			ps.setString(++i, SyncStatus.Declined.toString());
+			for (MenuObj menu : pages)
+				ps.setString(++i, menu.getPageId());
+			ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				if (data.containsKey(rs.getString("page_id"))) continue; //we already have the record we want (pending one)
+				content = new ContentVO(rs.getString("action_id"), null);
+				content.setActionGroupId(rs.getString("action_group_id"));
+				content.setActionDesc(rs.getString("action_desc"));
+				content.setActionName(rs.getString("action_nm"));
+				content.setAttribute("pmid", rs.getString("page_module_id"));
+				content.setSyncData(new ApprovalVO(rs));
+				data.put(rs.getString("page_id"), content);
+			}
+		} catch(Exception e) {
+			log.error("Unable to retrieve franchise page sync records ", e);
+		}
+		return data;
 	}
 	
 	
@@ -403,13 +454,19 @@ public class FranchisePageAction extends SBActionAdapter {
 			if (content != null) return content;
 		}
 		
-		StringBuilder s = new StringBuilder();
-		s.append("select top 1 c.action_id, article_txt,c.action_group_id, a.page_module_id, c.*, ws.* ");
+		StringBuilder s = new StringBuilder(300);
+		s.append("select top 1 c.action_id, c.article_txt, ");
+		s.append("isnull(g.action_group_id, f.action_group_id) as action_group_id, a.page_module_id, ");
+		s.append("isnull(g.attrib1_txt, f.attrib1_txt) as attrib1_txt, ");
+		s.append("isnull(g.attrib2_txt, f.attrib2_txt) as attrib2_txt, ");
+		s.append("isnull(g.action_nm,f.action_nm) as action_nm, ");
+		s.append("isnull(g.action_desc,f.action_desc) as action_desc, ws.* ");
 		s.append("from page_module a ");
-		s.append("inner join sb_action c on a.action_id=c.action_group_id ");
-		s.append("inner join content b on c.action_id = b.action_id ");
-		s.append("left join wc_sync ws on (ws.wc_orig_key_id = c.action_group_id or ws.wc_key_id = c.action_id) and wc_sync_status_cd not in (?,?) ");
-		s.append("where a.page_id = ? order by ISNULL(c.update_dt, '1900-06-05T23:59:00') desc "); //ordering by date gets us the most recent revision and ensures nulls are left at the bottom of the list
+		s.append("left join sb_action f on a.action_id = f.action_id "); //the approved record
+		s.append("left outer join sb_action g on f.action_group_id = g.action_group_id ");  //the pending record
+		s.append("left outer join CONTENT c on ISNULL(g.ACTION_ID, f.ACTION_ID)=c.ACTION_ID ");
+		s.append("left join wc_sync ws on (ISNULL(g.ACTION_ID, f.ACTION_ID) = ws.wc_key_id) and wc_sync_status_cd not in (?,?) ");
+		s.append("where a.page_id=? order by ISNULL(c.update_dt, '1900-06-05T23:59:00') desc "); //ordering by date gets us the most recent revision and ensures nulls are left at the bottom of the list
 		log.debug(s+"|"+page.getPageId());
 		ContentVO content = null;
 		try (PreparedStatement ps = dbConn.prepareStatement(s.toString())){

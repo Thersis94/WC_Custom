@@ -287,7 +287,6 @@ public class CourseCalendar extends SimpleActionAdapter {
 		}
 	}
 	
-	
 	/**
 	 * cast the URL alias to a anotomical section (as used in the Events lists)
 	 * most of these align, but a couple needed massaging.

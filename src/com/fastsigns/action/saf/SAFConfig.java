@@ -7,6 +7,9 @@ import java.util.Map;
 
 import org.apache.log4j.Logger;
 
+import com.fastsigns.action.RequestAQuoteSTF;
+import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.contact.ContactDataContainer;
 
 /****************************************************************************
@@ -107,12 +110,33 @@ public abstract class SAFConfig {
 	 */
 	public abstract String buildEmail(boolean isDealer, ContactDataContainer cdc, Map<String, String> vals);
 	
+	
 	/**
-	 * returns one of two email addresses, depending on whether this is a SAF or RAQ submission
+	 * returns the email address of the center; used when we email the customer, so if they reply
+	 * to the email it gets sent to the Center, not the ethers.
 	 * @param isSAF
 	 * @return
 	 */
-	public abstract String getSenderEmailAddress(boolean isSAF);
+	public String getSenderEmailAddress(Map<String, String> vals) {
+		if (vals != null) {
+			Integer webId = Convert.formatInteger(vals.get(RequestAQuoteSTF.DEALER_LOCATION_ID), null);
+		
+			if (webId != null)
+				return webId + "@fastsigns.com";
+		}
+		
+		return getNoReplyEmailAddress();
+	}
+	
+
+	/**
+	 * returns a canned "do not reply" email address; used when emailing the Centers SAF requests
+	 * @return
+	 */
+	public String getNoReplyEmailAddress() {
+		return "do_not_reply@fastsigns.com";
+	}
+	
 	
 	/**
 	 * the subject of the email message sent to the Center
@@ -122,9 +146,20 @@ public abstract class SAFConfig {
 	
 	/**
 	 * the subject of the email message sent to the User
+	 * @param userEmail email address of the user (null or empty will return default subject)
 	 * @return
 	 */
-	public abstract String getEmailSubjectUser();
+	public String getEmailSubjectUser(String emailAddr) {
+		StringBuilder subj = new StringBuilder();
+		String addr = StringUtil.checkVal(emailAddr, null);
+		if (addr == null){
+			subj.append("Your request has been delivered to FASTSIGNS");
+		} else {
+			subj.append(emailAddr);
+			subj.append(", your request has been delivered to FASTSIGNS");
+		}
+		return subj.toString();
+	}
 	
 	/**
 	 * the type of sign requested by the user

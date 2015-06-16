@@ -44,13 +44,13 @@ import com.smt.sitebuilder.action.event.vo.EventEntryVO;
  * @since Feb 3, 2014
  ****************************************************************************/
 public class LocatorReportVO extends AbstractSBReportVO {
-    private static final long serialVersionUID = 6l;
-	private static Logger log = null;
+	private static final long serialVersionUID = 6l;
+	protected static Logger log = null;
 	public static final int DEFAULT_RADIUS = 50;  //miles
-	private int radius = DEFAULT_RADIUS;
-	private DePuyEventSeminarVO sem = null;
-	private EventEntryVO event = null;
-	
+	protected int radius = DEFAULT_RADIUS;
+	protected DePuyEventSeminarVO sem = null;
+	protected EventEntryVO event = null;
+
 	/**
 	 * 
 	 */
@@ -61,18 +61,18 @@ public class LocatorReportVO extends AbstractSBReportVO {
 		isHeaderAttachment(Boolean.TRUE);
 		setFileName("Locator-Results.doc");
 	}
-	
+
 	public void setData(Object o) {
 		sem = (DePuyEventSeminarVO) o;
 		event = sem.getEvents().get(0);
 	}
-	
+
 	public void setRadius(String radius) {
 		if (Convert.formatInteger(radius) > 0)
 			this.radius = Convert.formatInteger(radius);
 	}
 
-	
+
 	/**
 	 * Generates the Locator report
 	 * @param address Event Address
@@ -83,23 +83,23 @@ public class LocatorReportVO extends AbstractSBReportVO {
 	 * @return
 	 */
 	public byte[] generateReport() {
-		
+
 		// Retrieve the XML Data
 		StringBuilder doc = getHeader();
 		try {
 			doc.append(formatDisplay(connect(buildUrl())));
-			
+
 		} catch (Exception ioe) {
 			log.error("Unable to retrieve locator results", ioe);
 		}
-		
+
 		doc.append("</body></html>");
 		log.info(doc);
 		return doc.toString().getBytes();
 	}
-	
-	
-	private StringBuilder getHeader() {
+
+
+	protected StringBuilder getHeader() {
 		StringBuilder sb = new StringBuilder();
 		sb.append("<html><head><title>Surgeon Locator Report</title></head><body>");
 		sb.append("<u>Today's Seminar:</u><br/>"); 
@@ -109,7 +109,7 @@ public class LocatorReportVO extends AbstractSBReportVO {
 		sb.append(event.getEventName()).append(", ").append(event.getCityName()).append(", ").append(event.getStateCode());
 
 		sb.append("<h1>LOCAL ORTHOPAEDIC SURGEONS</h1>\n");
-		
+
 		// Load the header into
 		sb.append("<p>We are pleased to supply you with a list of orthopaedic surgeons in your area who use DePuy products.  ");
 		sb.append("While our database of orthopaedic surgeons is large, it is not a complete ");
@@ -118,12 +118,12 @@ public class LocatorReportVO extends AbstractSBReportVO {
 		sb.append("surgeon has paid a fee to participate.  DePuy Orthopaedics Inc., ");
 		sb.append("does not make any recommendation or referral regarding any of these specific surgeons.</p>");
 		sb.append("<p>For general information about DePuy Orthopaedics, visit www.depuy.com</p>");
-		
+
 		return sb;
 	}
-	
+
 	@SuppressWarnings("rawtypes")
-	private StringBuilder formatDisplay(StringBuilder xml) throws DocumentException {
+	protected StringBuilder formatDisplay(StringBuilder xml) throws DocumentException {
 		// Parse out the XML Data and create the root element
 		ByteArrayInputStream bais = null;
 		try {
@@ -134,30 +134,30 @@ public class LocatorReportVO extends AbstractSBReportVO {
 		SAXReader reader = new SAXReader();
 		Document doc = reader.read(bais);
 		//Element e = doc.getRootElement();
-		
+
 		// Create an html formatted table structure
 		StringBuilder out = new StringBuilder();
 		out.append("<table border=\"0\"><tr><td colspan='3'>");
 		out.append("(Orthopaedic Surgeons are listed in alphabetical order)</td></tr>");
-		
+
 		//log.info("Message: " + doc.selectSingleNode("//*[name()='message']").getStringValue());
 		//log.info("Specialty: " + doc.selectSingleNode("//*[name()='specialty']").getStringValue());
-		
+
 		List result = doc.selectNodes("//*[name()='result']");
 		Map<String, String> rowData = new HashMap<String, String>();
 		//log.info("Number Results: " + result.size());
 		PhoneNumberFormat pnf = null;
 		StringEncoder se = new StringEncoder();
-		
+
 		for(int i=0; i < result.size(); i++) {
 			Element ele = (Element) result.get(i);
 			Iterator iter = ele.elementIterator();
-			
+
 			while (iter.hasNext()) {
 				Element ne = (Element) iter.next();
 				rowData.put(ne.getName(), ne.getStringValue());
 			}
-			
+
 			// Setup the columns
 			if ((i % 2) == 0) {
 				out.append("<tr><td valign='top'>");
@@ -168,7 +168,7 @@ public class LocatorReportVO extends AbstractSBReportVO {
 			if (event.getEventDesc().contains(nameStr)) {
 				out.append("<i>Today's Speaker</i><br/>");
 			}
-			
+
 			// Format the phone number
 			pnf = new PhoneNumberFormat(rowData.get("phone"), PhoneNumberFormat.DASH_FORMATTING);
 			out.append("<b>");
@@ -177,24 +177,24 @@ public class LocatorReportVO extends AbstractSBReportVO {
 			out.append(rowData.get("suffix")).append(" ");
 			out.append(rowData.get("degreeDesc")).append("</b><br/>");
 			out.append("<b>").append(rowData.get("clinicName")).append("</b><br/>");
-						out.append(rowData.get("address1"));
-			
+			out.append(rowData.get("address1"));
+
 			if (rowData.get("address2").length() > 0) {
 				out.append(", ").append(rowData.get("address2"));
 			}
 			out.append("<br/>");
-			
+
 			out.append(rowData.get("city")).append(", ");
 			out.append(rowData.get("state")).append(" ").append(rowData.get("zip"));
 			out.append("<br/>");
-			
+
 			out.append("<b>Phone: ").append(pnf.getFormattedNumber()).append("</b><br/>");
 			if (rowData.get("siteURL").length() > 0 && !rowData.get("siteURL").endsWith("null")) 
 				out.append(rowData.get("siteURL")).append("<br/>");
-			
+
 			if (rowData.get("site2URL").length() > 0) 
 				out.append(rowData.get("site2URL")).append("<br/>");
-			
+
 			// Setup the columns
 			if ((i % 2) == 0) {
 				out.append("</td>");
@@ -202,63 +202,63 @@ public class LocatorReportVO extends AbstractSBReportVO {
 				out.append("</td></tr>");
 				out.append("<tr><td colspan='3'><p>&nbsp;</p></td></tr>\n");
 			}
-			
+
 		}
 		out.append("<tr><td colspan='3'><p>&nbsp;</p></td></tr>\n");
 		out.append("<tr><td colspan='3'>To learn more about joint replacement, ");
 		out.append("or to find additional surgeons in your area, please visit ");
-//		if (productId.equals("4")) {
-//			out.append("www.hipreplacement.com");
-//		} else if (productId.equals("6")) {
-//			out.append("www.shoulderpainsolutions.com");
-//		} else {
-//			out.append("www.kneereplacement.com");
-//		}
+		//		if (productId.equals("4")) {
+		//			out.append("www.hipreplacement.com");
+		//		} else if (productId.equals("6")) {
+		//			out.append("www.shoulderpainsolutions.com");
+		//		} else {
+		//			out.append("www.kneereplacement.com");
+		//		}
 		out.append("www.reallifetested.com or www.aaos.org.</td></tr>\n");
 		out.append("</table>");
 		return out;
 	}
-	
+
 	/**
 	 * Connects to DePuy Locator using the supplied url and gets the Locator XML Data
 	 * @param actionUrl
 	 * @return
 	 * @throws IOException
 	 */
-	private StringBuilder connect(String actionUrl) throws IOException {
-        StringBuilder sb = new StringBuilder();
-        HttpURLConnection conn = null;
-        URL url = null;
-        try {
-            url = new URL(actionUrl);
-            conn = (HttpURLConnection) url.openConnection();
-            
-            //Parse header information.  Ensure ode 200 is returned
-            for (int c=0; conn.getHeaderField(c) != null; c++) {
-            	if (conn.getHeaderFieldKey(c) == null) {
-            		String field = conn.getHeaderField(c);
-            		if (field == null || field.indexOf("200") == -1) {
-            			throw new IOException("Header returned error: " + field + ", not 200");
-            		}
-            	}
-            }
-            
-            // Retrieve the data coming back from MapQuest and Store it in a StringBuilder
-            BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-            String temp = "";
-            while ((temp = in.readLine()) != null) {
-            	sb.append(temp);
-            }
-            
-            // Close the connection
-            conn.disconnect();
-        } catch(Exception e) {
-        	log.error("Error retreiving surgeons from AAMD", e);
-        }
-        
+	protected StringBuilder connect(String actionUrl) throws IOException {
+		StringBuilder sb = new StringBuilder();
+		HttpURLConnection conn = null;
+		URL url = null;
+		try {
+			url = new URL(actionUrl);
+			conn = (HttpURLConnection) url.openConnection();
+
+			//Parse header information.  Ensure ode 200 is returned
+			for (int c=0; conn.getHeaderField(c) != null; c++) {
+				if (conn.getHeaderFieldKey(c) == null) {
+					String field = conn.getHeaderField(c);
+					if (field == null || field.indexOf("200") == -1) {
+						throw new IOException("Header returned error: " + field + ", not 200");
+					}
+				}
+			}
+
+			// Retrieve the data coming back from MapQuest and Store it in a StringBuilder
+			BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+			String temp = "";
+			while ((temp = in.readLine()) != null) {
+				sb.append(temp);
+			}
+
+			// Close the connection
+			conn.disconnect();
+		} catch(Exception e) {
+			log.error("Error retreiving surgeons from AAMD", e);
+		}
+
 		return sb;
 	}
-	
+
 	/**
 	 * Builds the url for the locator call
 	 * @param address
@@ -267,8 +267,7 @@ public class LocatorReportVO extends AbstractSBReportVO {
 	 * @param zip
 	 * @return URL Formatted for AAMD Locator Request
 	 */
-	private String buildUrl() {
-
+	protected String buildUrl() {
 		StringBuilder s = new StringBuilder();
 		s.append("http://www.allaboutmydoc.com/AAMD/locator?");
 		s.append("display_template=/xml_display.jsp&company=1");
@@ -278,24 +277,24 @@ public class LocatorReportVO extends AbstractSBReportVO {
 		s.append("&state=").append(encode(event.getStateCode()));
 		s.append("&zip=").append(encode(event.getZipCode()));
 		//if (productId.equals("4")) { //hip events query by specialty, knee by product
-			s.append("&product=&specialty=").append(sem.getJointCodes());
+		s.append("&product=&specialty=").append(sem.getJointCodes());
 		//} else {
-			//s.append("&specialty=&product=").append(productId);
+		//s.append("&specialty=&product=").append(productId);
 		//}
 		s.append("&radius=").append(radius);
 		s.append("&order=last");
 		s.append("&resultCount=10");
-		
+
 		log.info("URL: " + s);
 		return s.toString();
 	}
-	
-	private String encode(String s) {
+
+	protected String encode(String s) {
 		try {
 			s = java.net.URLEncoder.encode(StringUtil.checkVal(s), "UTF-8");
 		} catch (Exception e) {}
-		
+
 		return s;
 	}
-			
+
 }
