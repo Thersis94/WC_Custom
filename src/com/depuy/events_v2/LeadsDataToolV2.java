@@ -154,7 +154,7 @@ public class LeadsDataToolV2 extends SBActionAdapter {
 					
 					//if the lead is not newer than the defined limit, skip it.
 					//bypass this for scoping leads, which needs a count for each date range.
-					if (!cal.getTime().before(createDt)) continue;
+					if (!cal.getTime().before(createDt))  continue;
 				}
 				
 				UserDataVO vo = new UserDataVO();
@@ -352,10 +352,10 @@ public class LeadsDataToolV2 extends SBActionAdapter {
 		
 		int diff = 0;
 		while (today.after(c1)) {
+			diff++;
 			c1.add(Calendar.MONTH, 1);
-			if (today.after(c1))
-				diff++;
 		}
+		log.debug("att=" + attemptDt + ", dif=" + diff);
 		return diff;
 	}
 

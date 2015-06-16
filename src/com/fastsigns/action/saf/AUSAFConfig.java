@@ -139,11 +139,20 @@ public class AUSAFConfig extends SAFConfig {
 		return "SAF Completed: " + emailAddress;
 	}
 
-	/* (non-Javadoc)
-	 * @see com.fastsigns.action.saf.SAFConfig#emailSubjectUser()
+	/*
+	 * (non-Javadoc)
+	 * @see com.fastsigns.action.saf.SAFConfig#getEmailSubjectUser(java.lang.String)
 	 */
 	@Override
-	public String getEmailSubjectUser() {
-		return "Your request has been delivered to SIGNWAVE";
+	public String getEmailSubjectUser(String emailAddr) {
+		StringBuilder subj = new StringBuilder();
+		String addr = StringUtil.checkVal(emailAddr, null);
+		if (addr == null){
+			subj.append("Your request has been delivered to SIGNWAVE");
+		} else {
+			subj.append(emailAddr);
+			subj.append(", your request has been delivered to SIGNWAVE");
+		}
+		return subj.toString();
 	}
 }
