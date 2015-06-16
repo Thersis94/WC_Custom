@@ -181,7 +181,7 @@ public class KitRequestRetriever {
 				ps.setString(index++, fields[1]);
 			} else if(form.equalsIgnoreCase("infoKit") ){
 				ps.setString(index++, fieldId);
-				ps.setString(index++, "download pdf");
+				ps.setString(index++, "download-pdf");
 			}
 			ps.setString(index++, dateStart);
 			ps.setString(index++, dateEnd);

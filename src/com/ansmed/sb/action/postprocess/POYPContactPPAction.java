@@ -1,5 +1,6 @@
 package com.ansmed.sb.action.postprocess;
 
+//SB Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.exception.MailException;
@@ -65,19 +66,80 @@ public class POYPContactPPAction extends SBActionAdapter {
 		}
 	}
 	
+	/**
+	 * Creates the post generated email
+	 * @param req
+	 * @return
+	 */
 	protected String getMessage(SMTServletRequest req) {
 		StringBuilder msg = new StringBuilder();
-		msg.append("<p>Dear ").append(req.getParameter("pfl_FIRST_NM"));
-		msg.append(" ").append(req.getParameter("pfl_FIRST_NM")).append(" ");
-		msg.append(req.getParameter("pfl_LAST_NM")).append(",</p>");
 		
-		msg.append("<p>This is a simple test for email setting up email. ");
-		msg.append("If you have any questions please, please hesistate to ask. ");
-		msg.append("If you still need to ask questions contact the Pope or Tim ");
-		msg.append("They will be able to answer any questions you have. </p>");
+		String imagePath = "http://www.poweroveryourpain.com/binary/org/ANS-MEDICAL/Power_Over_Your_Pain/post/";	
 		
-		msg.append("<p>--<br/>Best Regards,<br/>Devon Franklin<br/>");
-		msg.append("Office  978 686 1700 x205<br/>Mobile 978 815 3960<br/></p>");
+		msg.append("<table width='100%' cellspacing='0' cellpadding='0' border='0' ");
+		msg.append("bgcolor='#fff' style='font-size: 15px; font-family: Arial, sans-serif;' ");
+		msg.append("<tr><td><table width='750px' bgcolor='#fff' ");
+		msg.append("border='0' align='center' cellspacing='0' cellpadding='0' border='0' style='border: solid 1px #00a98f;'> ");
+		msg.append("<tr><td> <table width='750px' align='center' bgcolor='#fff' cellspacing='0' cellpadding='0' border='0' > ");
+		msg.append("<tr><td style='width: 55%; padding: 0 0 0 30px;'><a href='#'> ");
+		msg.append("<img alt='SJM_logo' style='width: 320px;' ");
+		msg.append("src='").append(imagePath).append("SJM_Logo_Standard_2C_NoTag_highres.jpg' /> ");
+		msg.append("</a></td><td style='width: 45%; font-size: 12px; font-weight: bold;'> ");
+		msg.append("<a style='color: #00a98f; text-decoration: none; margin: 0 5px;' href='#'>ABOUT SJM |</a> ");
+		msg.append("<a style='color: #00a98f; text-decoration: none; margin: 0 5px;' href='#'>EVENTS |</a> ");
+		msg.append("<a style='color: #00a98f; text-decoration: none; margin-left: 5px;' href='#'>NEWSROOM</a> ");
+		msg.append("</td></tr></table> ");
+		msg.append("<table width='750px' bgcolor='#f3f4f4' cellspacing='0' cellpadding='0' border='0' align='center' ");
+		msg.append("style='padding: 0 60px; font-family: trebuchet ms, helvetica;'> ");
+		msg.append("<tr><td style='padding: 15px 0; font-family: Arial, sans-serif;'> ");
+		msg.append("<p style='margin: 0;'><span style='float: left; color: #e47f25;  ");
+		msg.append("font-weight: bold; margin-top: 27px; font-size: 16px; line-height: 170%;'> ");
+		msg.append("The upgradeable Prot&eacute;g&eacute; ");
+		msg.append("<span style='font-size: 9px;'>&#0153;</span> <br/> MRI IPG from <br /> St. Jude Medical. ");
+		msg.append("<span style='padding: 0 0 0 15px; font-size: 35px; font-weight: ");
+		msg.append("normal; margin-top: -10px; position: relative; top: 15px;'>&tilde;</span> ");
+		msg.append("</span><a href='#'> ");
+		msg.append("<img style=' width: 480px; float: left; margin-left: -100px;' ");
+		msg.append("src='").append(imagePath).append("SJM.png' alt='protege_mri'/> ");
+		msg.append("</a></p></td></tr> ");
+		msg.append("<tr><td style='background-color: #f3f4f4;'> ");
+		msg.append("<h3 style='color: #00a98f; margin: 0; font-size: 35px; line-height: 130%; ");
+		msg.append("padding: 0 0 10px; border-bottom: 1px solid #00a98f;'> ");
+		msg.append("THANK YOU FOR YOUR INTERESET <br/> IN A NEUROSTIMULATION SYSTEM <br/> ");
+		msg.append("FROM ST. JUDE MEDICAL</h3></td></tr> ");
+		msg.append("<tr><td style='padding: 40px 0 75px; background-color: #f4f5f5;' font-size: 16px;> ");
+		msg.append("<p style='float: left; width: 48%; font-family: TradeGothic_18; line-height: 150%; '> ");
+		msg.append("<span style='color: #00a98f; padding: 0; display: inline-block; font-size: 21px; ");
+		msg.append("font-family: TradeGothic_Light, arial;'>MOVE BEYOND PAIN.</span><br/> ");
+		msg.append("We've attached an electronic version of our patient education brochure for your reference. ");
+		msg.append("If you requested the actual brochure, you'll be receiving one soon in the mail. ");
+		msg.append("The next step. is to ask your doctor about neurostimulation, and the particular ");
+		msg.append("advantages of a system from St. Jude Medical in your case. We sincerly hope ");
+		msg.append("it's a first step toward life after pain for you.</p> ");
+		msg.append("<p style='float: right; width: 35%; padding: 75px 5px 30px; margin: 15px 0 0; ");
+		msg.append("background-color: #e9e9ea; height: 232px;'> ");
+		msg.append("<a href='#' style='background-color: #00a98f; color: #fff; display: inline-block; ");
+		msg.append("padding: 10px 35px; margin: 20px 0 10px 25px; text-decoration: none;'> ");
+		msg.append("Learn More</a><br/>	 ");
+		msg.append("<span style='display: inline-block; margin: 10px 0 0 25px; font-family: TradeGothic_18; line-height: 140%;'> ");
+		msg.append("Let us help you find<br/> a pain specialist.</span></p></td></tr></table> ");
+		msg.append("<table width='750px' bgcolor='#fbfbfc' cellspacing='0' cellpadding='0' border='0'> ");
+		msg.append("<tr><td><a href='#'> ");
+		msg.append("<img src='").append(imagePath).append("SJM-CHUNG-TRACI-WICKHAM-20508_sm.jpg'  ");
+		msg.append("alt='SJM_wickham' style='width: 100%; height: 240px; float: left; width: 25%;' /></a> ");
+		msg.append("<p style='float: left; width: 33%; height: 240px; margin: 0 7px 0 0; ");
+		msg.append("background-color: #00a98f; color: #fff; line-height: 175%; font-size: 16px;'> ");
+		msg.append("<span style='display: inline-block; margin: 65px 27px 0; '> ");
+		msg.append("Read about the lives our patients are living now that neurostimulation is managing their pain.<span></p> ");
+		msg.append("<a href='#'><span style='background-image:  ");
+		msg.append("url(&#39;").append(imagePath).append("23SAMBENSON_SCS_SELECTS_CPJ_NB.jpg&#39;); ");
+		msg.append("background-repeat: no-repeat; background-size: 100% 240px; display: inline-block; width: 100%;");
+		msg.append("height: 260px; float: left; width: 41%; margin-bottom: -20px;'> ");
+		msg.append("<span style='display: inline-block; color: #fff; font-size: 18px; ");
+		msg.append("margin: 100px 2px 0 15px; line-height: 170%; '> ");
+		msg.append("WATCH FILMS ABOUT OUR PATIENT'S STORIES OF HOPE</span></span></a> ");
+		msg.append("</td></tr></table> ");
+		msg.append("</td></tr></table></td></tr></table> ");
 		
 		return msg.toString();
 	}
