@@ -192,7 +192,8 @@ public class NexusSolrCartAction extends SBActionAdapter {
 		if (!Convert.formatBoolean(req.getParameter("showCart"))) {
 			String searchData = StringUtil.checkVal(req.getParameter("searchData"));
 			int searchType = Convert.formatInteger(req.getParameter("searchType"));
-			req.setParameter("searchData", (searchType>2?"*":"")+searchData.replaceAll("[\\/\\.\\-]", "")+(searchType>1?"*":""), true);
+			req.setParameter("searchData", (searchType>2?"*":"")+searchData+(searchType>1?"*":""), true);
+			req.setParameter("minimumMatch", "100%");
 			
 			// Do the solr search
 		    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
