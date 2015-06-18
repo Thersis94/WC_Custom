@@ -1027,23 +1027,23 @@ public class KitRequestorParser {
 		val = StringUtil.checkVal(val);
 		val = StringUtil.replace(val, "&", "&amp;");
 		val = StringUtil.replace(val, "'", "&apos;");
-		val = StringUtil.replace(val, "’", "&apos;");
-		val = StringUtil.replace(val, "´", "&apos;");
+		val = StringUtil.replace(val, "Â’", "&apos;");
+		val = StringUtil.replace(val, "Å½", "&apos;");
 		val = StringUtil.replace(val, "\"", "&quot;");
 		val = StringUtil.replace(val, ">", "&gt;");
 		val = StringUtil.replace(val, "<", "&lt;");
-		val = StringUtil.replace(val, "ï", "&#239;");
-		val = StringUtil.replace(val, "Ï", "&#207;");
-		val = StringUtil.replace(val, "¿", "&#191;");
-		val = StringUtil.replace(val, "¼", "&#188;");
-		val = StringUtil.replace(val, "½", "&#189;");
-		val = StringUtil.replace(val, "ã", "&#227;");
-		val = StringUtil.replace(val, "©", "&#169;");
-		val = StringUtil.replace(val, "£", "&#163;");
-		val = StringUtil.replace(val, "‰", "");
-		val = StringUtil.replace(val, "¡", "");
-		val = StringUtil.replace(val, "¨","");
-		val = StringUtil.replace(val, "º", "&#176;");
+		val = StringUtil.replace(val, "Ã¯", "&#239;");
+		val = StringUtil.replace(val, "Ã", "&#207;");
+		val = StringUtil.replace(val, "Â¿", "&#191;");
+		val = StringUtil.replace(val, "Å’", "&#188;");
+		val = StringUtil.replace(val, "Å“", "&#189;");
+		val = StringUtil.replace(val, "Ã£", "&#227;");
+		val = StringUtil.replace(val, "Â©", "&#169;");
+		val = StringUtil.replace(val, "Â£", "&#163;");
+		val = StringUtil.replace(val, "Â‰", "");
+		val = StringUtil.replace(val, "Â¡", "");
+		val = StringUtil.replace(val, "Å¡","");
+		val = StringUtil.replace(val, "Âº", "&#176;");
 		
 		return val;
 	}
