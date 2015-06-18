@@ -1024,28 +1024,7 @@ public class KitRequestorParser {
 	 * @return
 	 */
 	protected String replaceXML(String val) {
-		val = StringUtil.checkVal(val);
-		val = StringUtil.replace(val, "&", "&amp;");
-		val = StringUtil.replace(val, "'", "&apos;");
-		val = StringUtil.replace(val, "’", "&apos;");
-		val = StringUtil.replace(val, "´", "&apos;");
-		val = StringUtil.replace(val, "\"", "&quot;");
-		val = StringUtil.replace(val, ">", "&gt;");
-		val = StringUtil.replace(val, "<", "&lt;");
-		val = StringUtil.replace(val, "ï", "&#239;");
-		val = StringUtil.replace(val, "Ï", "&#207;");
-		val = StringUtil.replace(val, "¿", "&#191;");
-		val = StringUtil.replace(val, "¼", "&#188;");
-		val = StringUtil.replace(val, "½", "&#189;");
-		val = StringUtil.replace(val, "ã", "&#227;");
-		val = StringUtil.replace(val, "©", "&#169;");
-		val = StringUtil.replace(val, "£", "&#163;");
-		val = StringUtil.replace(val, "‰", "");
-		val = StringUtil.replace(val, "¡", "");
-		val = StringUtil.replace(val, "¨","");
-		val = StringUtil.replace(val, "º", "&#176;");
-		
-		return val;
+		return StringUtil.replaceXml(val);
 	}
 				
 }
