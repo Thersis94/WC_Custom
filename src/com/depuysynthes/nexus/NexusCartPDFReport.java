@@ -147,7 +147,9 @@ public class NexusCartPDFReport  extends AbstractSBReportVO {
 			html.append("</span></td></tr>");
 			i++;
 		}
-		html.append("</tbody></table></body></html>");
+		
+		html.append("</tbody></table></body>");
+		html.append("<div style='position:fixed; bottom:0px; width:100%; text-align:center;'><span>This document contains sensitive data that is highly restricted</span></div></html>");
 		log.debug(html);
 		return html.toString().getBytes();
 	}
