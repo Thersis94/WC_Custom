@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.ram.action.data.RAMSearchVO;
 import com.ram.action.user.RamUserAction;
 import com.ram.datafeed.data.RAMProductVO;
 import com.siliconmtn.action.ActionException;
@@ -18,7 +19,6 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
-import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
@@ -284,46 +284,36 @@ public class ProductAction extends SBActionAdapter {
 		//Instantiate necessary items
 		List<RAMProductVO> products = new ArrayList<RAMProductVO>();
 		
-		//Check for providerId, providers are only allowed to see products at their locations.
-		SBUserRole r = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
-		int providerId = r.getRoleLevel() == RamUserAction.ROLE_LEVEL_PROVIDER ? Convert.formatInteger((String) r.getAttribute("roleAttributeKey_1")) : 0;
-
-		//Check for oem, oem are only allowed to see their products.
-		int customerId = r.getRoleLevel() == RamUserAction.ROLE_LEVEL_OEM ? Convert.formatInteger((String) r.getAttribute("roleAttributeKey_1")) : Convert.formatInteger(req.getParameter("customerId"));
-
 		//Pull relevant data off the request
-		int advFilter = Convert.formatInteger(req.getParameter("advFilter"), -1);
-		String term = StringUtil.checkVal(req.getParameter("term"));
-		int start = Convert.formatInteger(req.getParameter("start"), 0);
-		int limit = Convert.formatInteger(req.getParameter("limit"), 25) + start;
+		RAMSearchVO svo = new RAMSearchVO(req);
 		
 		log.debug("Retrieving Products");
 		PreparedStatement ps = null;
 		int index = 1, ctr = 0;
 		try{
-			ps = dbConn.prepareStatement(getProdList(customerId, term, advFilter, providerId, false, limit));
-			if (customerId > 0) ps.setInt(index++, customerId);
-			if (advFilter > -1 && advFilter < 2) ps.setInt(index++, advFilter);
-			else if (advFilter > 1) ps.setInt(index++, (advFilter == 2 ? 1 : 0));
-			if(term.length() > 0) {
-				ps.setString(index++, "%" + term + "%");
-				ps.setString(index++, "%" + term + "%");
+			ps = dbConn.prepareStatement(getProdList(svo));
+			if (svo.getCustomerId() > 0) ps.setInt(index++, svo.getCustomerId());
+			if (svo.getAdvFilter() > -1 && svo.getAdvFilter() < 2) ps.setInt(index++, svo.getAdvFilter());
+			else if (svo.getAdvFilter() > 1) ps.setInt(index++, (svo.getAdvFilter() == 2 ? 1 : 0));
+			if(svo.getTerm().length() > 0) {
+				ps.setString(index++, "%" + svo.getTerm() + "%");
+				ps.setString(index++, "%" + svo.getTerm() + "%");
 			}
 			/*
 			 * Providers use an intersect to get the correct products
 			 * so we need to set the same attributes again.
 			 */
-			if(providerId > 0) {
-				if (advFilter > -1 && advFilter < 2) ps.setInt(index++, advFilter);
-				else if (advFilter > 1) ps.setInt(index++, (advFilter == 2 ? 1 : 0));
-				if(term.length() > 0) {
-					ps.setString(index++, "%" + term + "%");
-					ps.setString(index++, "%" + term + "%");
+			if(svo.getProviderId() > 0) {
+				if (svo.getAdvFilter() > -1 && svo.getAdvFilter() < 2) ps.setInt(index++, svo.getAdvFilter());
+				else if (svo.getAdvFilter() > 1) ps.setInt(index++, (svo.getAdvFilter() == 2 ? 1 : 0));
+				if(svo.getTerm().length() > 0) {
+					ps.setString(index++, "%" + svo.getTerm() + "%");
+					ps.setString(index++, "%" + svo.getTerm() + "%");
 				}
-				ps.setInt(index++, providerId);
+				ps.setInt(index++, svo.getProviderId());
 			}
-			ps.setInt(index++, start);
-			ps.setInt(index++, limit);
+			ps.setInt(index++, svo.getStart());
+			ps.setInt(index++, svo.getLimit());
 
 			/*
 			 * Iterate over results to get our paginated selection
@@ -337,7 +327,8 @@ public class ProductAction extends SBActionAdapter {
 			 * Need to increment by one as this is a 0 start number and the list
 			 * starts at 1.
 			 */
-			ctr = 1 + getRecordCount(customerId, term, advFilter, providerId);
+			svo.setCount(true);
+			ctr = 1 + getRecordCount(svo);
 		} catch(SQLException sqle) {
 			log.error("Error retrieving product list", sqle);
 			throw new ActionException(sqle);
@@ -346,7 +337,7 @@ public class ProductAction extends SBActionAdapter {
 		}
 
 		//Return the data.
-		putModuleData(products, ctr, false);		
+		putModuleData(products, ctr, false);
 	}
 	
 	/**
@@ -356,26 +347,25 @@ public class ProductAction extends SBActionAdapter {
 	 * @return
 	 * @throws SQLException
 	 */
-	protected int getRecordCount(int customerId, String term, int advFilter, int providerId) 
-	throws SQLException {
+	protected int getRecordCount(RAMSearchVO svo) throws SQLException {
 		log.debug("Retrieving Total Counts");
-		PreparedStatement ps = dbConn.prepareStatement(getProdList(customerId, term, advFilter, providerId, true, 0));
+		PreparedStatement ps = dbConn.prepareStatement(getProdList(svo));
 		int index = 1;
-		if (customerId > 0) ps.setInt(index++, customerId);
-		if (advFilter > -1 && advFilter < 2) ps.setInt(index++, advFilter);
-		else if (advFilter > 1) ps.setInt(index++, (advFilter == 2 ? 1 : 0));
-		if(term.length() > 0) {
-			ps.setString(index++, "%" + term + "%");
-			ps.setString(index++, "%" + term + "%");
+		if (svo.getCustomerId() > 0) ps.setInt(index++, svo.getCustomerId());
+		if (svo.getAdvFilter() > -1 && svo.getAdvFilter() < 2) ps.setInt(index++, svo.getAdvFilter());
+		else if (svo.getAdvFilter() > 1) ps.setInt(index++, (svo.getAdvFilter() == 2 ? 1 : 0));
+		if(svo.getTerm().length() > 0) {
+			ps.setString(index++, "%" + svo.getTerm() + "%");
+			ps.setString(index++, "%" + svo.getTerm() + "%");
 		}
-		if(providerId > 0) {
-			if (advFilter > -1 && advFilter < 2) ps.setInt(index++, advFilter);
-			else if (advFilter > 1) ps.setInt(index++, (advFilter == 2 ? 1 : 0));
-			if(term.length() > 0) {
-				ps.setString(index++, "%" + term + "%");
-				ps.setString(index++, "%" + term + "%");
+		if(svo.getProviderId() > 0) {
+			if (svo.getAdvFilter() > -1 && svo.getAdvFilter() < 2) ps.setInt(index++, svo.getAdvFilter());
+			else if (svo.getAdvFilter() > 1) ps.setInt(index++, (svo.getAdvFilter() == 2 ? 1 : 0));
+			if(svo.getTerm().length() > 0) {
+				ps.setString(index++, "%" + svo.getTerm() + "%");
+				ps.setString(index++, "%" + svo.getTerm() + "%");
 			}
-			ps.setInt(index++, providerId);
+			ps.setInt(index++, svo.getProviderId());
 		}
 		int cnt = 0;
 		//Get the count off the first row.
@@ -394,20 +384,21 @@ public class ProductAction extends SBActionAdapter {
 	 * @param customerId
 	 * @return
 	 */
-	protected StringBuilder getWhereClause(int customerId, String term, int advFilter, int providerId) {
+	protected StringBuilder getWhereClause(RAMSearchVO svo) {
 		StringBuilder sb = new StringBuilder();
 		String schema = attributes.get(Constants.CUSTOM_DB_SCHEMA) + "";
 
 		sb.append("where 1=1 ");
 		
 		//Add clauses depending on what is passed in.
-		if (customerId > 0) sb.append("and a.customer_id = ? ");
-		if(advFilter > -1 && advFilter < 2) sb.append("and kit_flg = ? ");
-		if(advFilter > 1) sb.append("and manual_entry_flg = ? ");
-		if(term.length() > 0) sb.append("and (product_nm like ? or cust_product_id like ?) ");
+		if(svo.isActiveOnly()) sb.append("and a.ACTIVE_FLG = 1 ");
+		if (svo.getCustomerId() > 0) sb.append("and a.customer_id = ? ");
+		if(svo.getAdvFilter() > -1 && svo.getAdvFilter() < 2) sb.append("and kit_flg = ? ");
+		if(svo.getAdvFilter() > 1) sb.append("and manual_entry_flg = ? ");
+		if(svo.getTerm().length() > 0) sb.append("and (product_nm like ? or cust_product_id like ?) ");
 		
 		//Providers filter by inventoryItems that are related to their customerId
-		if(providerId > 0) {
+		if(svo.getProviderId() > 0) {
 			sb.append("and a.product_id in (select c.product_id from ");
 			sb.append(schema).append("ram_inventory_item c ");
 			sb.append("inner join ").append(schema).append("ram_inventory_event_auditor_xr d on c.inventory_event_auditor_xr_id = d.inventory_event_auditor_xr_id ");
@@ -444,11 +435,11 @@ public class ProductAction extends SBActionAdapter {
 	 * @param limit
 	 * @return
 	 */
-	public String getProdList(int customerId, String term, int advFilter, int providerId, boolean isCount, int limit) {
+	public String getProdList(RAMSearchVO svo) {
 		String schema = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sb = new StringBuilder();
 
-		if(isCount) {
+		if(svo.isCount()) {
 			sb.append("select count(a.product_id) from ").append(schema);
 		} else {
 			sb.append("select * from (select ROW_NUMBER() OVER (order by Product_nm) as RowNum, a.PRODUCT_ID, a.CUSTOMER_ID, a.CUST_PRODUCT_ID, a.PRODUCT_NM, a.DESC_TXT, a.SHORT_DESC, a.LOT_CODE_FLG, a.ACTIVE_FLG, a.EXPIREE_REQ_FLG, a.GTIN_PRODUCT_ID, b.CUSTOMER_NM, a.KIT_FLG, a.MANUAL_ENTRY_FLG from ").append(schema);
@@ -458,13 +449,13 @@ public class ProductAction extends SBActionAdapter {
 		sb.append("ram_product a ");
 		sb.append("inner join ").append(schema).append("RAM_OEM_CUSTOMER b ");
 		sb.append("on a.customer_id = b.customer_id ");
-		sb.append(this.getWhereClause(customerId, term, advFilter, providerId));
+		sb.append(this.getWhereClause(svo));
 
 		//Lastly if this is not a count call order the results.
-		if(!isCount)
+		if(!svo.isCount())
 			sb.append(") as paginatedResult where RowNum >= ? and RowNum < ? order by RowNum");
 
-		log.debug(customerId + "|" + providerId + "|" + sb.toString());
+		log.debug(svo.getCustomerId() + "|" + svo.getProviderId() + "|" + sb.toString());
 		return sb.toString();
 	}
 
