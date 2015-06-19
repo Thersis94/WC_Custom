@@ -14,6 +14,7 @@ import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.CreationHelper;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.util.CellRangeAddress;
 
 import com.lowagie.text.Font;
 import com.siliconmtn.commerce.ShoppingCartItemVO;
@@ -109,6 +110,9 @@ public class NexusCartExcelReport extends AbstractSBReportVO {
 			r.createCell(cellCnt++).setCellValue((String)data.get(NexusSolrCartAction.SURGEON));
 			r.createCell(cellCnt++).setCellValue((String)data.get(NexusSolrCartAction.TIME));
 		}
+		
+		s.addMergedRegion(new CellRangeAddress(rowCnt+1, rowCnt+1, 0, 11));
+		s.createRow(rowCnt+1).createCell(0).setCellValue("This document contains sensitive data that is highly restricted");
 	}
 
 	@SuppressWarnings("unchecked")
