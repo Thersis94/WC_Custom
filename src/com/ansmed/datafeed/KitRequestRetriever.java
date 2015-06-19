@@ -223,7 +223,7 @@ public class KitRequestRetriever {
 			fieldQuery.append("c.contact_submittal_id = d.contact_submittal_id "); 
 			fieldQuery.append("where c.action_id = ? and d.contact_field_id = ?) ");
 			fieldQuery.append("and (b.contact_field_id = ? and ");
-			fieldQuery.append("(CAST(b.value_txt AS nvarchar(max)) in ('ingl�s','espa�ol'))) ");
+			fieldQuery.append("(CAST(b.value_txt AS nvarchar(max)) in ('inglés','español'))) ");
 		}else if(actionId.equalsIgnoreCase("infoKit")){
 			fieldQuery.append(" and (b.contact_field_id = ? and ");
 			fieldQuery.append("CAST(b.value_txt AS nvarchar(max)) != ?) ");

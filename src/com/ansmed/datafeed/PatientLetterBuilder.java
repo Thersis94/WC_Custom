@@ -378,37 +378,7 @@ public class PatientLetterBuilder {
 	 * @return
 	 */
 	protected String scrubXML(String val) {
-		val = StringUtil.checkVal(val);
-		val = StringUtil.replace(val, "&", "&amp;");
-		val = StringUtil.replace(val, "'", "&apos;");
-		val = StringUtil.replace(val, "’", "&apos;");
-		val = StringUtil.replace(val, "´", "&apos;");
-		val = StringUtil.replace(val, "\"", "&quot;");
-		val = StringUtil.replace(val, ">", "&gt;");
-		val = StringUtil.replace(val, "<", "&lt;");
-		val = StringUtil.replace(val, "ï", "&#239;");
-		val = StringUtil.replace(val, "Ï", "&#207;");
-		val = StringUtil.replace(val, "¿", "&#191;");
-		val = StringUtil.replace(val, "¼", "&#188;");
-		val = StringUtil.replace(val, "½", "&#189;");
-		val = StringUtil.replace(val, "ã", "&#227;");
-		val = StringUtil.replace(val, "©", "&#169;");
-		val = StringUtil.replace(val, "£", "&#163;");
-		val = StringUtil.replace(val, "‰", "");
-		val = StringUtil.replace(val, "¡", "");
-		val = StringUtil.replace(val, "¨","");
-		val = StringUtil.replace(val, "º", "&#176;");
-		val = StringUtil.replace(val, "°", "&#186;");
-		val = StringUtil.replace(val, "â", "&#226;");
-		val = StringUtil.replace(val, "Â", "&#194;");
-		val = StringUtil.replace(val, "³", "&#179;");
-		val = StringUtil.replace(val, "§", "&#167;");
-		val = StringUtil.replace(val, "á", "&#225;");
-		val = StringUtil.replace(val, "é", "&#233;");
-		val = StringUtil.replace(val, "í", "&#237;");
-		val = StringUtil.replace(val, "ó", "&#243;");
-		val = StringUtil.replace(val, "ú", "&#250;");
-		return val;
+		return StringUtil.replaceXml(val);
 	}
 	
 	/**
