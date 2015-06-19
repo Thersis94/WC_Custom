@@ -220,7 +220,7 @@ public class KitRequestRetriever {
 			fieldQuery.append("c.contact_submittal_id = d.contact_submittal_id "); 
 			fieldQuery.append("where c.action_id = ? and d.contact_field_id = ?) ");
 			fieldQuery.append("and (b.contact_field_id = ? and ");
-			fieldQuery.append("(CAST(b.value_txt AS nvarchar(max)) in ('inglés','español'))) ");
+			fieldQuery.append("(CAST(b.value_txt AS nvarchar(max)) in ('inglÃ©s','espaÃ±ol'))) ");
 		}
 		// add date range
 		fieldQuery.append("and (b.create_dt >= ? and b.create_dt <= ?)");
