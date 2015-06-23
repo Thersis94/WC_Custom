@@ -4,21 +4,22 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 
-import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
+import com.ram.action.util.RAMFabricParser;
 import com.ram.datafeed.data.LayerCoordinateVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.imageMap.FabricParserInterface;
+import com.siliconmtn.util.imageMap.ImageMapVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.util.RecordDuplicatorUtility;
@@ -89,22 +90,27 @@ public class KitCoordinateAction extends SBActionAdapter {
 		//Initial list to hold coordinate data parsed from json Data
 		List<LayerCoordinateVO> coordinates = new ArrayList<LayerCoordinateVO>();
 		
-		/*
-		 * Build JSONObject from data and iterate over it parsing the proper 
-		 * coordinate information.
-		 */
-		
+		//Build JSONObject of fabric js coordinate data.
 		JSONObject json = JSONObject.fromObject(req.getParameter("jsonData"));
-		for(Object obj : json.optJSONArray("objects")){
-			coordinates.addAll(getCoordinatesFromShape((JSONObject) obj));
-		}
-		
+
+		//Instantiate a FabricParser and parse the coordinate data.
+		FabricParserInterface<LayerCoordinateVO> fp = new RAMFabricParser<LayerCoordinateVO>();
+		coordinates = fp.getCoordinatesFromShape(json);
+
+		/*
+		 * TODO - Possibly manage saving/updating the VisionSystem ImageMap of a given kit layer here.
+		 */
+		//Create coordinate map of data.
+//		ImageMapVO map = fp.getImageMap(json);
+//		map.setName("test");
+//		log.debug(map.toString());
+
 		//We need to clear existing coordinates for this update.
 		List<LayerCoordinateVO> existingCoordinates = getExistingCoordinates(req.getParameter("kitLayerId"));
-		
+
 		//Merge the coordinates.
 		Map<String, List<LayerCoordinateVO>> changes = mergeCoordinates(coordinates, existingCoordinates);
-		
+
 		//Insert or Update Coordinates
 		updateCoordinates(changes);
 	}
@@ -306,103 +312,6 @@ public class KitCoordinateAction extends SBActionAdapter {
 		}
 		
 		return coordinates;
-	}
-
-	/**
-	 * Method responsible for properly retrieving coordinates for a given shape.  For normal shapes
-	 * a standard 2 point coordinate map is fine, however for polygons this will change so we need
-	 * to parse them differently.
-	 * @param obj
-	 * @return
-	 */
-	private Collection<? extends LayerCoordinateVO> getCoordinatesFromShape(JSONObject shape) {
-		List<LayerCoordinateVO> c = new ArrayList<LayerCoordinateVO>();
-		switch(shape.getString("type")) {
-		case "rect" : 
-		case "circle" :
-			c.add(getCoordinate(shape));
-			c.add(getBottomRightCoordinate(shape));
-		break;
-		case "polygon" :
-			c.addAll(getPolyCoordinates(shape));
-			break;
-		}			
-		return c;
-	}
-	
-	/**
-	 * Parse out the Polygon coordinates from the points on the shape object.  The points 
-	 * are caculated from the center of the polygon so we need to perform some slight
-	 * calculation to get the real coordinates.
-	 * @param shape
-	 * @return
-	 */
-	private Collection<? extends LayerCoordinateVO> getPolyCoordinates(JSONObject shape) {
-		List<LayerCoordinateVO> pc = new ArrayList<LayerCoordinateVO>();
-		LayerCoordinateVO coord = new LayerCoordinateVO();
-		
-		//Get the Center of the shape.
-		int cy = shape.getInt("top") + shape.getInt("height") / 2;
-		int cx = shape.getInt("left") + shape.getInt("width") / 2;
-
-		/*
-		 * For each point on the shape, calculate the x and y and add it to the 
-		 */
-		JSONArray points = shape.getJSONArray("points");
-		for(Object p : points.toArray()) {
-			coord = new LayerCoordinateVO();
-			coord.setActiveFlag(1);
-			coord.setHorizontalPoint(cx + ((JSONObject)p).getInt("x"));
-			coord.setVerticalPoint(cy + ((JSONObject)p).getInt("y"));
-			coord.setProductLayerId(Convert.formatInteger(shape.getString("id").split("-")[1]));
-			pc.add(coord);
-		}
-		return pc;
-	}
-
-	/**
-	 * Parse out a basic Coordinate Point from the JSONShape.
-	 * @param shape
-	 * @return
-	 */
-	private LayerCoordinateVO getCoordinate(JSONObject shape) {
-		LayerCoordinateVO coord = new LayerCoordinateVO();
-		coord.setActiveFlag(1);
-		coord.setHorizontalPoint(shape.getInt("left"));
-		coord.setVerticalPoint(shape.getInt("top"));
-		coord.setProductLayerId(Convert.formatInteger(shape.getString("id").split("-")[1]));
-		return coord;
-	}
-
-	/**
-	 * For Circles and Rectangles we have a second bottom right coordinate
-	 * that we need to parse out.  In fabric this is handled via a calculation
-	 * involving the basic coordinate and the dimension * scaleFactor.  We perform
-	 * the math to get the right points and update a new LayerCoordinateVO
-	 * accordingly.
-	 * @param shape
-	 * @return
-	 */
-	public LayerCoordinateVO getBottomRightCoordinate(JSONObject shape) {
-		LayerCoordinateVO coord = new LayerCoordinateVO();
-		coord.setActiveFlag(1);
-		int bottom = 0;
-		int right = 0;
-		switch(shape.getString("type")) {
-		case "rect" : 
-			bottom = shape.getInt("top") + (int)(shape.getInt("height") * shape.getDouble("scaleY"));
-			right = shape.getInt("left") + (int)(shape.getInt("width") * shape.getDouble("scaleX"));
-		break;
-		case "circle" :
-			bottom = shape.getInt("top") + (int)(shape.getInt("width") * shape.getDouble("scaleY"));
-			right = shape.getInt("left") + (int)(shape.getInt("height") * shape.getDouble("scaleX"));
-		break;
-		}
-		
-		coord.setHorizontalPoint(right);
-		coord.setVerticalPoint(bottom);
-		coord.setProductLayerId(Convert.formatInteger(shape.getString("id").split("-")[1]));
-		return coord;
 	}
 
 }
