@@ -135,7 +135,7 @@ public class CustomerAction extends SBActionAdapter {
 		//Build Query.
 		StringBuilder sql = new StringBuilder(180);
 		sql.append("select * from ").append(schema).append("RAM_CUSTOMER a ");
-		sql.append("inner join ").append(schema).append("ram_customer_location b ");
+		sql.append("left outer join ").append(schema).append("ram_customer_location b ");
 		sql.append("on a.customer_id = b.customer_id where a.CUSTOMER_ID = ? ");
 		sql.append("order by b.LOCATION_NM");
 
