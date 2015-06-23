@@ -82,7 +82,7 @@ public class KitRequestRetriever {
 		
 		//InfoKit
 		profiles = null;
-		profiles = this.queryProfiles(conn,"c0a80228d7b30e0f59cf59d3fffdfc22","","infoKit");
+		profiles = this.queryProfiles(conn,"c0a80228d7b30e0f59cf59d3fffdfc22","c0a80228d7bc7345474c59ff8c97b5e1","infoKit");
 		log.debug("InfoKit profiles list size: " + profiles.size());
 		if (profiles.size() > 0) {
 			this.addFormat(conn,profiles,"c0a80228d7b30e0f59cf59d3fffdfc22","c0a80228d7bc7345474c59ff8c97b5e1","infoKit");
@@ -179,7 +179,10 @@ public class KitRequestRetriever {
 				ps.setString(index++, actionId);
 				ps.setString(index++, fields[0]);
 				ps.setString(index++, fields[1]);
-			} 
+			} else if(form.equalsIgnoreCase("infoKit") ){
+				ps.setString(index++, fieldId);
+				ps.setString(index++, "download-pdf");
+			}
 			ps.setString(index++, dateStart);
 			ps.setString(index++, dateEnd);
 			
@@ -221,6 +224,9 @@ public class KitRequestRetriever {
 			fieldQuery.append("where c.action_id = ? and d.contact_field_id = ?) ");
 			fieldQuery.append("and (b.contact_field_id = ? and ");
 			fieldQuery.append("(CAST(b.value_txt AS nvarchar(max)) in ('inglés','español'))) ");
+		}else if(actionId.equalsIgnoreCase("infoKit")){
+			fieldQuery.append(" and (b.contact_field_id = ? and ");
+			fieldQuery.append("CAST(b.value_txt AS nvarchar(max)) != ?) ");
 		}
 		// add date range
 		fieldQuery.append("and (b.create_dt >= ? and b.create_dt <= ?)");
