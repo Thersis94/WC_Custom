@@ -782,7 +782,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 				}
 				
 				//ensure we've not already captured this city/state - this messes up the reports if we allow dups
-				String unqToken = tokens[1] + (SortType.zip == sortType ? tokens[3] : tokens[2]); 
+				String unqToken = tokens[4].toUpperCase() + tokens[1] + (SortType.zip == sortType ? tokens[3] : tokens[2]); 
 				if (uniqueCities.contains(unqToken)) continue;
 				
 				try {
