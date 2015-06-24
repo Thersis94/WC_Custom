@@ -93,7 +93,7 @@ public class AJAXUtilAction extends SBActionAdapter {
 	public static final String WORKFLOW_EVENT_TYPES_TYPE = "workflow_event_types";
 	
 	/**
-	 * 
+	 * List of possible transaction statuses.
 	 */
 	public static final String TRANSACTION_STATUS_TYPE = "transaction_status";
 	
