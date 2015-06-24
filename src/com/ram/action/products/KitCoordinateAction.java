@@ -19,7 +19,6 @@ import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.imageMap.FabricParserInterface;
-import com.siliconmtn.util.imageMap.ImageMapVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.util.RecordDuplicatorUtility;
