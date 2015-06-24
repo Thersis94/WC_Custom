@@ -28,7 +28,7 @@ public class WorkflowFacadeAction extends SBActionAdapter {
 	
 	//Used to hold type param we look for and the values that are valid.
 	public static final String STEP_PARAM = "bType";
-	public static enum WORKFLOW_TYPE {workflow, module}
+	public static enum WORKFLOW_TYPE {workflow, module, transaction, transactionNotes}
 	/**
 	 * 
 	 */
@@ -96,6 +96,12 @@ public class WorkflowFacadeAction extends SBActionAdapter {
 	public SMTActionInterface getAction(String action) {
 		SMTActionInterface sai = null;
 		switch(WORKFLOW_TYPE.valueOf(action)) {
+		case transaction:
+			sai = new WorkflowTransactionAction(actionInit);
+			break;
+		case transactionNotes:
+			sai = new WorkflowTransactionNotesAction(actionInit);
+			break;
 		case module:
 			sai = new WorkflowModuleAction(actionInit);
 			break;

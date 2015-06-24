@@ -13,6 +13,7 @@ import com.ram.action.customer.CustomerTypesAction;
 import com.ram.action.event.InventoryEventGroupAction;
 import com.ram.action.products.ProductAction;
 import com.ram.action.workflow.ServicesAction;
+import com.ram.action.workflow.TransactionStatusAction;
 import com.ram.action.workflow.WorkflowEventTypesAction;
 import com.ram.datafeed.data.CustomerLocationVO;
 //SMT Base Libs
@@ -90,6 +91,11 @@ public class AJAXUtilAction extends SBActionAdapter {
 	 * 
 	 */
 	public static final String WORKFLOW_EVENT_TYPES_TYPE = "workflow_event_types";
+	
+	/**
+	 * 
+	 */
+	public static final String TRANSACTION_STATUS_TYPE = "transaction_status";
 	
 	/**
 	 *
@@ -172,6 +178,12 @@ public class AJAXUtilAction extends SBActionAdapter {
 				break;
 			case WORKFLOW_EVENT_TYPES_TYPE:
 				sai = new WorkflowEventTypesAction(getActionInit());
+				sai.setDBConnection(getDBConnection());
+				sai.setAttributes(getAttributes());
+				sai.retrieve(req);
+				break;
+			case TRANSACTION_STATUS_TYPE:
+				sai = new TransactionStatusAction(getActionInit());
 				sai.setDBConnection(getDBConnection());
 				sai.setAttributes(getAttributes());
 				sai.retrieve(req);
