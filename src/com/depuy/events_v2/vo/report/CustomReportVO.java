@@ -245,7 +245,6 @@ public class CustomReportVO extends AbstractSBReportVO {
 						printMultiVal(row, "getNewspaper1Text",vo.getAllAds());
 						break;
 					case AD_DT_FLG:
-						vo.getAllAds().get(0).getCostToRepNo();
 						printMultiVal(row, "getAdDatesText",vo.getAllAds());
 						break;
 					case AD_COST_FLG:
