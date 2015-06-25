@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<?mso-application progid="Word.Document"?>
+<w:wordDocument xmlns:w="http://schemas.microsoft.com/office/word/2003/wordml" 
+ xmlns:wx="http://schemas.microsoft.com/office/word/2003/auxHint" 
+ w:macrosPresent="no" 
+ w:embeddedObjPresent="no" 
+ w:ocxPresent="no" xml:space="preserve">
+
+<w:fonts>
+	<w:defaultFonts w:ascii="Trebuchet MS" w:fareast="Trebuchet MS" w:h-ansi="Trebuchet MS" w:cs="Trebuchet MS"/>
+</w:fonts>
+
+<w:styles>
+	<w:versionOfBuiltInStylenames w:val="4"/>
+	<w:latentStyles w:defLockedState="off" w:latentStyleCount="156"/>
+	
+	<w:style w:type="paragraph" w:default="on" w:styleId="Normal">
+	<w:name w:val="Normal"/>
+	<w:rPr>
+		<wx:font wx:val="Trebuchet MS"/>
+		<w:sz w:val="22"/><w:sz-cs w:val="22"/>
+		<w:lang w:val="EN-US" w:fareast="EN-US" w:bidi="AR-SA"/>
+	</w:rPr>
+	</w:style>
+	
+	<w:style w:type="character" w:default="on" w:styleId="DefaultParagraphFont">
+		<w:name w:val="Default Paragraph Font"/>
+		<w:semiHidden/>
+	</w:style>
+	
+	<w:style w:type="table" w:default="on" w:styleId="TableNormal">
+		<w:name w:val="Normal Table"/>
+		<wx:uiName wx:val="Table Normal"/>
+		<w:semiHidden/>
+		<w:rPr>
+			<wx:font wx:val="Trebuchet MS"/>
+		</w:rPr>
+		<w:tblPr>
+			<w:tblInd w:w="0" w:type="dxa"/>
+			<w:tblCellMar>
+				<w:top w:w="0" w:type="dxa"/>
+				<w:left w:w="108" w:type="dxa"/>
+				<w:bottom w:w="0" w:type="dxa"/>
+				<w:right w:w="108" w:type="dxa"/>
+			</w:tblCellMar>
+		</w:tblPr>
+	</w:style>
+	
+	<w:style w:type="list" w:default="on" w:styleId="NoList">
+		<w:name w:val="No List"/>
+		<w:semiHidden/>
+	</w:style>
+</w:styles>
+
+<w:docPr>
+	<w:view w:val="print"/>
+	<w:zoom w:percent="100"/>
+	<w:doNotEmbedSystemFonts/>
+	<w:proofState w:spelling="clean" w:grammar="clean"/>
+	<w:attachedTemplate w:val=""/>
+	<w:defaultTabStop w:val="720"/>
+	<w:characterSpacingControl w:val="DontCompress"/>
+	<w:optimizeForBrowser/>
+	<w:validateAgainstSchema/>
+	<w:saveInvalidXML w:val="off"/>
+	<w:ignoreMixedContent w:val="off"/>
+	<w:alwaysShowPlaceholderText w:val="off"/>
+	<w:compat>
+		<w:dontAllowFieldEndSelect/>
+		<w:useWord2002TableStyleRules/>
+	</w:compat>
+</w:docPr>
+
+<w:body>
+#SECTIONS#	
+</w:body>
+</w:wordDocument>

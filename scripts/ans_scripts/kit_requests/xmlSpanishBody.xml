@@ -1,0 +1,94 @@
+
+<wx:sect>
+#imageHeader#
+<w:p>
+	<w:pPr><w:pStyle w:val="mainBody"/></w:pPr>
+	<w:r><w:br/></w:r>
+	<w:r><w:br/></w:r>
+	<w:r><w:br/></w:r>
+	<w:r><w:br/></w:r>
+	<w:r><w:br/></w:r>
+	<w:r><w:br/></w:r>
+	<w:r><w:br/><w:t>#date#</w:t></w:r>
+	<w:r><w:br/></w:r>
+	<w:r><w:br/></w:r>
+	#address#
+	<w:r><w:br/></w:r>
+	<w:r><w:br/></w:r>
+	<w:r><w:br/><w:t>Estimada #patient#</w:t></w:r>
+	<w:r><w:br/></w:r>
+	<w:r><w:br/><w:t>Adjunta encontrar&#225; la informaci&#243;n sobre neuroestimulaci&#243;n solicitada. Este paquete de informaci&#243;n incluye un video </w:t></w:r>
+	<w:r><w:br/><w:t>y un folleto dise&#241;ados para proporcionar informaci&#243;n acerca del dolor cr&#243;nico y la neuroestimulaci&#243;n, que incluye </w:t></w:r>
+	<w:r><w:br/><w:t>informaci&#243;n sobre qu&#233; es, c&#243;mo funciona y qu&#233; hay que hacer para recibir un sistema. Esperamos que la </w:t></w:r>
+	<w:r><w:br/><w:t>informaci&#243;n le resulte &#250;til.</w:t></w:r>
+	<w:r><w:br/></w:r>
+	<w:r><w:br/><w:t>Cuando est&#233; preparada para hablar de sus alternativas de tratamiento, puede buscar alg&#250;n m&#233;dico especialista en el </w:t></w:r>
+	<w:r><w:br/><w:t>manejo del dolor en el listado adjunto. Estos m&#233;dicos se especializan en el diagn&#243;stico, el tratamiento y la </w:t></w:r>
+	<w:r><w:br/><w:t>rehabilitaci&#243;n de personas con dolor cr&#243;nico y conocen los procedimientos de neuroestimulaci&#243;n. </w:t></w:r>
+	<w:r><w:br/></w:r>
+	<w:r><w:br/><w:t>La invitamos a usar nuestro sitio web, Poder Sobre Su Dolor, (PoderSobreSuDolor.com) para saber m&#225;s acerca de la </w:t></w:r>
+	<w:r><w:br/><w:t>neuroestimulaci&#243;n, leer historias de pacientes y saber de qu&#233; manera el dolor cr&#243;nico afecta a las personas. Tambi&#233;n </w:t></w:r>
+	<w:r><w:br/><w:t>puede usar el sitio para conectarse con pacientes que actualmente tengan un sistema de neuroestimulaci&#243;n a trav&#233;s </w:t></w:r>
+	<w:r><w:br/><w:t>de nuestro Programa pacientes embajadores.</w:t></w:r>
+	<w:r><w:br/></w:r>
+	<w:r><w:br/><w:t>Si tiene preguntas acerca de la neuroestimulaci&#243;n, cont&#225;ctenos por correo electr&#243;nico a contact@sjmneuro.com o </w:t></w:r>
+	<w:r><w:br/><w:t>ll&#225;menos al 1-866-990-7246. </w:t></w:r>
+	<w:r><w:br/></w:r>
+	<w:r><w:br/><w:t>Atentamente</w:t></w:r>
+	<w:r><w:br/></w:r>
+	<w:r><w:br/><w:t>El equipo de Poder Sobre Su Dolor</w:t></w:r>
+	<w:r><w:br/></w:r>
+	<w:r><w:br/><w:t>Adjuntos:</w:t></w:r>
+	<w:r><w:br/><w:t>1.   Listado de especialistas en el manejo del dolor cerca de su domicilio</w:t></w:r>
+	<w:r><w:br/><w:t>2.   Informaci&#243;n sobre neuroestimulaci&#243;n</w:t></w:r>
+	<w:r><w:br/></w:r>
+	<w:r><w:br/></w:r>
+	<w:r><w:br/></w:r>
+	<w:r><w:br/></w:r>
+</w:p>
+<w:p><w:pPr><w:pStyle w:val="a"/></w:pPr></w:p>
+<w:p><w:pPr><w:pStyle w:val="a0"/></w:pPr>
+	<w:r><w:rPr><w:noProof/></w:rPr>
+		<w:pict>
+			<v:rect id="_x0000_s1032" style="position:absolute;margin-left:0;margin-top:137pt;width:332.9pt;height:13.05pt;z-index:46;mso-wrap-style:none;mso-position-horizontal:center" filled="f" stroked="f">
+			<v:textbox>
+				<w:txbxContent>
+					<w:p><w:pPr><w:pStyle w:val="a0"/><w:jc w:val="center"/><w:rPr><w:color w:val="5F6A72"/></w:rPr></w:pPr>
+						<w:r><w:rPr><w:rFonts w:ascii="Arial" w:h-ansi="Arial"/><wx:font wx:val="Arial"/><w:caps/><w:color w:val="5F6A72"/><w:spacing w:val="2"/><w:sz w:val="12"/><w:sz-cs w:val="12"/></w:rPr>
+							<w:t>ATRIAL FIBRILLATION      CARDIAC RHYTHM MANAGEMENT      CARDIOVASCULAR</w:t>
+						</w:r>
+						<w:r><w:rPr><w:rFonts w:ascii="Arial" w:h-ansi="Arial"/><wx:font wx:val="Arial"/><w:caps/><w:color w:val="5F6A72"/><w:spacing w:val="2"/><w:sz w:val="12"/><w:sz-cs w:val="12"/></w:rPr><w:t>      NEUROMODULATION</w:t></w:r>
+					</w:p>
+				</w:txbxContent>
+			</v:textbox>
+			</v:rect>
+		</w:pict>
+	</w:r>
+</w:p>
+<w:p>
+	<w:pPr><w:pStyle w:val="a0"/>
+		<w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="0" w:footer="0" w:gutter="0"/><w:cols w:space="720"/><w:formProt w:val="off"/><w:docGrid w:line-pitch="360"/></w:sectPr>
+	</w:pPr>
+</w:p>
+</wx:sect>
+
+<wx:sect>
+	<w:p>
+		<w:pPr><w:pStyle w:val="tableBody"/></w:pPr>
+		<w:r><w:rPr><w:b/><w:sz w:val="27"/></w:rPr><w:t>M&#233;dicos especialistas en el manejo del dolor cerca de su domicilio</w:t></w:r>
+		<w:r><w:br/></w:r>
+		<w:r><w:br/><w:t>A continuaci&#243;n figura un listado de m&#233;dicos especialistas en el tratamiento del dolor seleccionados sobre la base de</w:t></w:r>
+		<w:r><w:br/><w:t>la cercan&#237;a a su domicilio. Tambi&#233;n puede encontrar un m&#233;dico con la herramienta "Encuentre un especialista en</w:t></w:r>
+		<w:r><w:br/><w:t>dolor" en nuestro sitio web Poder Sobre Su Dolor. Todos los m&#233;dicos de nuestro sitio tienen experiencia con los</w:t></w:r>
+		<w:r><w:br/><w:t>productos de neuroestimulaci&#243;n de St. Jude Medical, y ninguno ha pagado o recibido alguna compensaci&#243;n por</w:t></w:r>
+		<w:r><w:br/><w:t>aparecer en el listado.</w:t></w:r>
+		<w:r><w:br/></w:r>
+		<w:r><w:br/></w:r>
+	</w:p>
+<w:tbl>
+	<w:tblPr>
+		<w:tblW w:type="pct" w:w="4800"/>
+	</w:tblPr>
+	#clinics#
+	</w:tbl>
+</wx:sect>
