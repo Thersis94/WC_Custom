@@ -721,8 +721,10 @@ public class FranchisePageAction extends SBActionAdapter {
 	
 	private void savePage(SMTServletRequest req) throws ActionException {
 		try {
-		//change the column number for the content
-		changeDisplayColumn(Convert.formatBoolean(req.getParameter("showMenu"), true));
+		if (ADD_PAGE != Convert.formatInteger(req.getParameter("bType"))){
+			//change the column number for the content for page edits
+			changeDisplayColumn(req, Convert.formatBoolean(req.getParameter("showMenu"), true));
+		}
 		SitePageAction ai = new SitePageAction(this.actionInit);
 		ai.setDBConnection(dbConn);
 		ai.setAttributes(attributes);
@@ -751,11 +753,22 @@ public class FranchisePageAction extends SBActionAdapter {
 	 * between menu and menu-less pages.
 	 * @param showMenu true if the menus are shown on this page, false if not
 	 */
-	private void changeDisplayColumn(boolean showMenu){
+	private void changeDisplayColumn(SMTServletRequest req, boolean showMenu){
 		//retrive the replace vals map
 		@SuppressWarnings("unchecked")
 		Map<String,Object> repl = (Map<String,Object>) attributes.get(RecordDuplicatorUtility.REPLACE_VALS);
-		if (repl == null) repl = new HashMap<>();
+		if (repl == null) {
+			repl = new HashMap<>();
+			
+			//attempt to grab existing page information
+			PageVO page = (PageVO) req.getAttribute("PAGE_INFO");
+			if (page == null){
+				page = new PageVO(req);
+			}
+			//Add data required by SitePageAction.copy() to add new pages
+			repl.put("SITE_ID",page.getSiteId());
+			repl.put("TEMPLATE_ID", page.getTemplateId());
+		}
 		
 		//change the column for the page module so content shows up
 		if (showMenu){
