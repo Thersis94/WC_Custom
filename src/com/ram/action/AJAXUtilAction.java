@@ -13,6 +13,7 @@ import com.ram.action.customer.CustomerTypesAction;
 import com.ram.action.event.InventoryEventGroupAction;
 import com.ram.action.products.ProductAction;
 import com.ram.action.provider.VisionAction;
+import com.ram.action.provider.VisionProductAction;
 import com.ram.action.workflow.ServicesAction;
 import com.ram.action.workflow.WorkflowEventTypesAction;
 import com.ram.datafeed.data.CustomerLocationVO;
@@ -97,6 +98,7 @@ public class AJAXUtilAction extends SBActionAdapter {
 	 */
 	public static final String VISION_SYSTEM = "visionSystem";
 
+	public static final String VISION_SYSTEM_PRODUCTS = "visions_system_products";
 	/**
 	 *
 	 */
@@ -184,6 +186,12 @@ public class AJAXUtilAction extends SBActionAdapter {
 				break;
 			case VISION_SYSTEM:
 				sai = new VisionAction(getActionInit());
+				sai.setDBConnection(dbConn);
+				sai.setAttributes(getAttributes());
+				sai.retrieve(req);
+				break;
+			case VISION_SYSTEM_PRODUCTS:
+				sai = new VisionProductAction(getActionInit());
 				sai.setDBConnection(dbConn);
 				sai.setAttributes(getAttributes());
 				sai.retrieve(req);
