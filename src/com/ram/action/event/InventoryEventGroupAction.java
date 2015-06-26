@@ -12,8 +12,9 @@ import java.util.Date;
 
 
 // RAM Data Feed Libs
-import com.ram.action.data.InventoryEventGroupVO;
 
+
+import com.ram.datafeed.data.InventoryEventGroupVO;
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;

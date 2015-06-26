@@ -1,0 +1,78 @@
+    <w:p>
+    	<w:pPr>
+            <w:pStyle w:val="mainBody"/>
+        </w:pPr>
+        <w:r>
+        	<w:br w:type="text-wrapping"/>
+        	<w:br w:type="text-wrapping"/>
+        	<w:br w:type="text-wrapping"/>
+        	<w:br w:type="text-wrapping"/>
+        	<w:br w:type="text-wrapping"/>
+        	<w:br w:type="text-wrapping"/>
+        	<w:br w:type="text-wrapping"/>
+        	<w:br w:type="text-wrapping"/>
+            #date#
+            <w:br w:type="text-wrapping"/>
+            <w:br w:type="text-wrapping"/>
+            <w:br w:type="text-wrapping"/>
+            <w:br w:type="text-wrapping"/>
+			#address#
+			<w:br w:type="text-wrapping"/>
+			#patient#
+			<w:br w:type="text-wrapping"/>
+			<w:br w:type="text-wrapping"/>
+			<w:t>Recently you received a letter from us including a listing of pain management doctors in your area. It has been brought to our attention that a computer error may have caused the list to be inaccurate. We apologize for any inconvenience this may have caused.</w:t>
+			<w:br w:type="text-wrapping"/>
+			<w:br w:type="text-wrapping"/>
+			<w:t>Attached you will find a revised list. When you are ready to discuss your treatment options, you can use the list to find a pain management doctor in your area. These doctors have advanced training in the diagnosis, treatment, and/or rehabilitation of people with chronic pain and are familiar with neurostimulation procedures.</w:t>
+			<w:br w:type="text-wrapping"/>
+			<w:br w:type="text-wrapping"/>
+			<w:t>If you have any questions about this letter or about neurostimulation, feel free to contact us by emailing contact@sjmneuro.com or by calling 1-866-990-PAIN (7246).</w:t>
+			<w:br w:type="text-wrapping"/>
+			<w:br w:type="text-wrapping"/>
+			<w:t>Warm regards,</w:t>
+			<w:br w:type="text-wrapping"/>
+			<w:br w:type="text-wrapping"/>
+			<w:t>The Power Over Your Pain Team</w:t>
+			<w:br w:type="text-wrapping"/>
+			<w:br w:type="text-wrapping"/>
+			<w:br w:type="text-wrapping"/>
+			<w:t>Enclosures: Pain Management Doctors in Your Area</w:t>
+		</w:r>
+		<w:br w:type="page"/>
+	</w:p>
+	<w:p>
+    	<w:pPr>
+            <w:pStyle w:val="tableBody"/>
+        </w:pPr>
+		<w:r>
+			<w:rPr>
+				<w:sz w:val="27" />
+				<w:b w:val="on"/>
+    		</w:rPr>
+    			<w:br w:type="text-wrapping"/>
+    			<w:br w:type="text-wrapping"/>
+				<w:t>Pain Management Doctors in Your Area</w:t>
+		</w:r>
+		<w:r>
+			<w:br w:type="text-wrapping"/>
+			<w:br w:type="text-wrapping"/>
+			<w:t>Below is a list of pain management doctors in your area who have been selected based on proximity to your address.
+You can also find doctors using the "Find a Pain Specialist" feature on our Power Over Your Pain website
+(PowerOverYourPain.com/locator). All the doctors on our site have experience with St. Jude Medical
+neurostimulation products, and none have paid or received a fee to be listed there.</w:t>
+			<w:br w:type="text-wrapping"/>
+			<w:br w:type="text-wrapping"/>
+		</w:r>
+	</w:p>
+		
+		<w:tbl>
+			<w:tblPr>
+				<w:tblW
+					w:type="pct"
+					w:w="4800"
+				/>
+			</w:tblPr>
+			#clinics#	
+		</w:tbl>
+		
