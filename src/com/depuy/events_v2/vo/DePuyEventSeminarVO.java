@@ -53,7 +53,7 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	private String baseUrl = null; //used in reports to give AbsURLs to urls in the Excel files.
 	
 	private Map<String, Integer> rsvpReferralSources = null; 
-	
+	private Map<String, String> surveyResponses = null;
 	private Map<Location, LeadCityVO> targetLeads = null;
 	private int totalSelectedLeads = 0;
 	private int upfrontFeeFlg = 0;
@@ -626,6 +626,20 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 			names.append(vo.getSurgeonName());
 		}
 		return names.toString();
-		
+	}
+	
+	
+	/**
+	 * survey responses are used on the Custom Report - loaded from the Survey portlet
+	 * @param key
+	 * @param val
+	 */
+	public void addSurveyResponse(String key, String val) {
+		if (surveyResponses == null) surveyResponses = new HashMap<>();
+		surveyResponses.put(key, val);
+	}
+	public String getSurveyResponse(String key) {
+		if (surveyResponses == null) return null;
+		return surveyResponses.get(key);
 	}
 }

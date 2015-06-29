@@ -67,8 +67,8 @@ public class CustomReportVO extends AbstractSBReportVO {
 		AD_DT_FLG("ad_dt_flg","Ad Date"),
 		AD_COST_FLG("ad_cost_flg", "Total Ad Cost"),
 		TERRITORY_COST_FLG("territory_cost_flg", "Cost to Territory"),
-		SURGEON_COST_FLG("surgeon_cost_flg", "Cost to Surgeon"),
-		HOSPITAL_COST_FLG("hospital_cost_flg", "Cost to Hospital"),
+		SURGEON_COST_FLG("surgeon_cost_flg", "Cost to Surgeon/Hospital"),
+		//HOSPITAL_COST_FLG("hospital_cost_flg", "Cost to Hospital"),  //50/25/25 - n o longer supported
 		UPFRONT_FEE_FLG("upfront_fee_flg",  "$200 Upfront Fee"),
 		TERRITORY_NO("territory_no","Territory#"),
 		POSTCARD_COUNT_NO("postcard_count_no","Postcard/Invitation Qnty"),
@@ -211,10 +211,10 @@ public class CustomReportVO extends AbstractSBReportVO {
 						row.append(StringUtil.checkVal(vo.getAllSurgeonNames()));
 						break;
 					case RSVP_COUNT_FLG:
-						row.append( vo.getRsvpCount() ); //TODO
+						row.append( vo.getRsvpCount() );
 						break;
 					case ATTENDEE_COUNT_FLG:
-						row.append(event.getRsvpTotal() ); //TODO
+						row.append(StringUtil.checkVal(vo.getSurveyResponse("attendee_cnt")));
 						break;
 //					case OPT_IN_FLG:
 //						row.append( (vo.getOptInFlag() == 1 ? "Yes" : "No") );
@@ -233,10 +233,10 @@ public class CustomReportVO extends AbstractSBReportVO {
 						row.append(StringUtil.checkVal(event.getStateCode()));
 						break;
 					case VENUE_COST_FLG:
-						//TODO
+						row.append(StringUtil.checkVal(vo.getSurveyResponse("venue_cost")));
 						break;
 					case REFRESHMENT_COST_FLG:
-						//TODO
+						row.append(StringUtil.checkVal(vo.getSurveyResponse("refresh_cost")));
 						break;
 					case POSTCARD_DT_FLG:
 						row.append(Convert.formatDate(vo.getPostcardMailDate(), Convert.DATE_SLASH_PATTERN));
@@ -245,7 +245,6 @@ public class CustomReportVO extends AbstractSBReportVO {
 						printMultiVal(row, "getNewspaper1Text",vo.getAllAds());
 						break;
 					case AD_DT_FLG:
-						vo.getAllAds().get(0).getCostToRepNo();
 						printMultiVal(row, "getAdDatesText",vo.getAllAds());
 						break;
 					case AD_COST_FLG:
@@ -257,9 +256,9 @@ public class CustomReportVO extends AbstractSBReportVO {
 					case SURGEON_COST_FLG:
 						row.append(vo.getAdCost("surgeon"));
 						break;
-					case HOSPITAL_COST_FLG:
-						row.append(vo.getAdCost("hospital"));
-						break;
+//					case HOSPITAL_COST_FLG:
+//						row.append(vo.getAdCost("hospital"));
+//						break;
 //					case INVITATION_COST_NO:
 //						row.append(StringUtil.checkVal(vo.getPostcardCostNo()));
 //						break;
