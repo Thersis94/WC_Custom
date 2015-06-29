@@ -14,7 +14,7 @@ public class PageContainerVO_m_en_AE extends PageContainerVO {
 
 	private static final long serialVersionUID = 1L;
 	protected static final Logger log = Logger.getLogger(PageContainerVO_m_en_GB.class);
-	protected final String loginModId = "3c83ebed9eb543139cf3693dcf1cdcaf";
+	protected final String loginModId = "c0a80223e1d3351066421fe4e895e7fa";
 
 	public PageContainerVO_m_en_AE() {
 		assignTypeVals();
