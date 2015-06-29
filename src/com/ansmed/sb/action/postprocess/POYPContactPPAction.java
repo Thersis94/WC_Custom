@@ -10,6 +10,7 @@ import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.util.MessageSender;
 
 /****************************************************************************
@@ -85,9 +86,21 @@ public class POYPContactPPAction extends SBActionAdapter {
 	 */
 	protected String getMessage(SMTServletRequest req) {
 		StringBuilder msg = new StringBuilder();
+
+		//Get the current site info
+		String siteAlias = ((SiteVO) req.getAttribute("siteData")).getSiteAlias();	
+		Integer sslLevel = ((SiteVO) req.getAttribute("siteData")).getSsl();
 		
-		String imagePath = "http://www.poweroveryourpain.com/binary/org/ANS-MEDICAL/Power_Over_Your_Pain/post/";	
+		//build the paths
+		String binaryLoc = "/binary/org/ANS-MEDICAL/Power_Over_Your_Pain/post/";
+		String basePath = "http://" + siteAlias;
+		if(sslLevel == 1){
+			basePath = "https://" + siteAlias;
+		}
 		
+		String imagePath = basePath + binaryLoc;
+		
+		//build the email
 		msg.append("<table width='100%' cellspacing='0' cellpadding='0' border='0'");
 		msg.append("bgcolor='#fff' align='center' style='font-size: 15px; font-family: Arial,sans-serif;'>");
 		msg.append("<tr><td><table width='650' bgcolor='#fff' align='center' cellspacing='0' cellpadding='0' border='0'  ");
@@ -98,9 +111,9 @@ public class POYPContactPPAction extends SBActionAdapter {
 		msg.append(" alt='SJM_logo' width='320' height='110'  /></td> ");
 		msg.append("<td align='left' width='45%' style='font-size: 12px; font-weight: bold; '> ");
 		msg.append("<a style='color: #00a98f; text-decoration: none; padding: 0 5px;'  ");
-		msg.append("href='http://poyp.sbdev.siliconmtn.com/about'>ABOUT SJM |</a> ");
+		msg.append("href='").append(basePath).append("/about'>ABOUT SJM |</a> ");
 		msg.append("<a style='color: #00a98f; text-decoration: none; padding: 0 5px;'  ");
-		msg.append("href='http://poyp.sbdev.siliconmtn.com/privacy'>PRIVACY POLICY </a> ");
+		msg.append("href='").append(basePath).append("/privacy'>PRIVACY POLICY </a> ");
 		msg.append("</td></tr></table> ");
 		msg.append("<table width='650' bgcolor='#f3f4f4' cellspacing='0' cellpadding='0' border='0' align='center' > ");
 		msg.append("<tr><td width='8%'></td><td align='left' width='28%' valign='top' style='padding: 40px 0 0; color: #e47f25; ");
@@ -132,7 +145,7 @@ public class POYPContactPPAction extends SBActionAdapter {
 		msg.append("<td align='left' style=' padding: 10px 0; font-size: 16px;'> ");
 		msg.append("<table width='100%' cellspacing='0' cellpadding='0' border='0' align='center'  ");
 		msg.append("style='background-color: #00a98f; color: #fff;'><tr><td align='center' style='padding: 12px 0;'> ");
-		msg.append("<a href='http://poyp.sbdev.siliconmtn.com/next/specialist' style='color: #fff; text-decoration: none;'> ");
+		msg.append("<a href='").append(basePath).append("/next/specialist' style='color: #fff; text-decoration: none;'> ");
 		msg.append("Learn More</a></td></tr></table>	 ");
 		msg.append("<br/><span style=' line-height: 140%;'> Let us help you find<br/> a pain specialist.</span></td>  ");
 		msg.append("<td width='10%'></td></tr></table></td>	<td width='8%'></td></tr> ");
@@ -142,13 +155,13 @@ public class POYPContactPPAction extends SBActionAdapter {
 		msg.append("<img src='").append(imagePath).append("SJM-CHUNG-TRACI-WICKHAM-20508_sm.jpg' ");
 		msg.append("alt='SJM_wickham' height='240' width='169' style='display: block;'/></td> ");
 		msg.append("<td width='180' style='padding: 0 15px; background-color: #00a98f; color: #fff; line-height: 175%; font-size: 14px;'>");
-		msg.append("<a href='http://poyp.sbdev.siliconmtn.com/next/stories' style='color: #fff; text-decoration: none;'>  ");
+		msg.append("<a href='").append(basePath).append("/next/stories' style='color: #fff; text-decoration: none;'>  ");
 		msg.append("Read about the lives our patients are living now that neurostimulation is managing their pain.</a></td> ");
 		msg.append("<td width='7'></td> ");
 		msg.append("<td width='295' bgcolor='#333333' style='color: #fff; font-size: 17px; padding: 0 20px; line-height: 170%; ");
 		msg.append("background: #333 url(&quot;").append(imagePath).append("23SAMBENSON_SCS_SELECTS_CPJ_NB.jpg&quot;) ");
 		msg.append("no-repeat scroll 100% center / 102% 240px;'><br/> ");
-		msg.append("<a href='http://poyp.sbdev.siliconmtn.com/next/video' style='color: #fff; text-decoration: none;'> ");
+		msg.append("<a href='").append(basePath).append("/next/video' style='color: #fff; text-decoration: none;'> ");
 		msg.append("WATCH FILMS ABOUT OUR PATIENT'S STORIES OF HOPE </a></td></tr></table> ");
 		msg.append("</td></tr></table></td></tr></table> ");
 			
