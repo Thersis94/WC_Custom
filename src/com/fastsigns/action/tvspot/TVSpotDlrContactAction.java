@@ -9,6 +9,7 @@ import java.util.Set;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.gis.Location;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.util.StringUtil;
@@ -250,8 +251,11 @@ public class TVSpotDlrContactAction extends SimpleActionAdapter {
 		//set the status to 'initiated'
 		req.setParameter(TVSpotConfig.CON_ + config.getContactId(ContactField.status), Status.initiated.toString());
 		
-		//set the users state, retrieved from front-end geocode
-		req.setParameter(TVSpotConfig.CON_ + config.getContactId(ContactField.state), req.getParameter("nState"));
+		//set the users state based on their zip code
+		String state = StringUtil.checkVal(req.getParameter("nState"),null);
+		if (state == null)
+			state = getStateFromZip(config, req);
+		req.setParameter(TVSpotConfig.CON_ + config.getContactId(ContactField.state), state);
 		
 		//email header from country implentation
 		req.setParameter("contactEmailHeader", config.getDealerEmailHeader());
@@ -263,6 +267,30 @@ public class TVSpotDlrContactAction extends SimpleActionAdapter {
 		req.setValidateInput(false);
 		req.setParameter("contactEmailSubject", config.getDealerEmailSubject(req.getParameter("pfl_combinedName")));
 		req.setValidateInput(true);
+	}
+	
+	
+	/**
+	 * Does a quick geocode for the user's state using the passed zip code.
+	 * Assumes country code to be that of the Site, since it's not asked of the user..
+	 * @param zip
+	 * @return
+	 */
+	private String getStateFromZip(TVSpotConfig config, SMTServletRequest req) {
+		Location loc = null;
+		DealerLocatorAction dla = new DealerLocatorAction();
+		dla.setAttributes(attributes);
+		
+		try {
+			req.setParameter("zip", req.getParameter(TVSpotConfig.CON_ + config.getContactId(ContactField.zipcode)));
+			req.setParameter("country", config.getCountryCode());
+			loc = dla.getGeocode(req);
+		} catch (Exception e) {
+			log.error("could not geocode zip", e);
+			loc = new Location();
+		}
+		
+		return loc.getState();
 	}
 	
 	
