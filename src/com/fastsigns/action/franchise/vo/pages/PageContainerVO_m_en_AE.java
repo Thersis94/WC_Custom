@@ -14,8 +14,8 @@ public class PageContainerVO_m_en_AE extends PageContainerVO {
 
 	private static final long serialVersionUID = 1L;
 	protected static final Logger log = Logger.getLogger(PageContainerVO_m_en_GB.class);
-	protected final String loginModId = "c0a80223e1d3351066421fe4e895e7fa";
-
+	public static final String LOGIN_MOD_ID = "c0a80223e1d337e1f964d44d26f006c8";
+	
 	public PageContainerVO_m_en_AE() {
 		assignTypeVals();
 		sharedId = "FTS_SHARED_AE";
@@ -58,7 +58,7 @@ public class PageContainerVO_m_en_AE extends PageContainerVO {
 	 */
 	public Map<String, String> getCustomVals(){
 		Map<String, String> vals = new HashMap<String, String>();
-		vals.put("loginPmid", loginModId);	//Pmid for parent org's login module.
+		vals.put("loginPmid", LOGIN_MOD_ID);	//Pmid for parent org's login module.
 		return vals;
 	}
 	
