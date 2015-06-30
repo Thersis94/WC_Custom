@@ -252,7 +252,9 @@ public class TVSpotDlrContactAction extends SimpleActionAdapter {
 		req.setParameter(TVSpotConfig.CON_ + config.getContactId(ContactField.status), Status.initiated.toString());
 		
 		//set the users state based on their zip code
-		String state = getStateFromZip(config, req);
+		String state = StringUtil.checkVal(req.getParameter("nState"),null);
+		if (state == null)
+			state = getStateFromZip(config, req);
 		req.setParameter(TVSpotConfig.CON_ + config.getContactId(ContactField.state), state);
 		
 		//email header from country implentation
