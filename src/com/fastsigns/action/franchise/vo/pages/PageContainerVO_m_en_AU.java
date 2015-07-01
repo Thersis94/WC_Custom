@@ -72,7 +72,9 @@ public class PageContainerVO_m_en_AU extends PageContainerVO{
 	 */
 	public Map<String, String> getCustomVals(){
 		Map<String, String> vals = new HashMap<String, String>();
-		vals.put("loginPmid", loginModId);	//Pmid for parent org's login module.
+		/*mobile sites do not use log modules at this time
+		 * vals.put("loginPmid", loginModId);	//Pmid for parent org's login module.
+		 */
 		return vals;
 	}
 	
