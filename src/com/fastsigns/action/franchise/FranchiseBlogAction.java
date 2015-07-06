@@ -3,22 +3,19 @@
  */
 package com.fastsigns.action.franchise;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-
 import com.fastsigns.action.franchise.centerpage.FranchiseLocationInfoAction;
+import com.fastsigns.action.franchise.vo.FranchiseBlogVO;
 import com.fastsigns.action.franchise.vo.FranchiseVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
-import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.action.blog.BlogCategoryVO;
+import com.smt.sitebuilder.action.SBModuleVO;
+import com.smt.sitebuilder.action.blog.BlogFacadeAction;
 import com.smt.sitebuilder.action.blog.BlogGroupVO;
-import com.smt.sitebuilder.action.blog.BlogVO;
-import com.smt.sitebuilder.common.SiteVO;
+import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -32,11 +29,6 @@ import com.smt.sitebuilder.common.constants.Constants;
  * <b>Changes: </b>
  ****************************************************************************/
 public class FranchiseBlogAction extends SBActionAdapter {
-
-	/**
-	 * key used for storing the franchise info in the request
-	 */
-	public static String FRANCHISE_INFO = "franchiseInfo";
 	
 	/**
 	 * Default Constructor
@@ -58,7 +50,33 @@ public class FranchiseBlogAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException{
+		req.setParameter(SB_ACTION_ID, actionInit.getActionId());
+		super.retrieve(req);
 		
+		//if this is a request for a list we don't need the rest of the data (SBActionAdapter.list sometimes calls retrieve)
+		String reqType = StringUtil.checkVal(req.getParameter(AdminConstants.REQUEST_TYPE));
+		if (reqType.equals(AdminConstants.REQ_LIST)){
+			return;
+		}
+		
+		ModuleVO mod = (ModuleVO) this.getAttribute(Constants.MODULE_DATA);
+		SBModuleVO data = (SBModuleVO) mod.getActionData();
+		
+		FranchiseBlogVO vo = new FranchiseBlogVO();
+		//get franchise location data
+		this.getFranchise(req, vo);
+		//get the group of blogs to display (actionId stored in attrib1Text)
+		this.getBlogGroup(req,vo, (String)data.getAttribute(SBModuleVO.ATTRIBUTE_1));
+		
+		this.putModuleData(vo);
+	}
+	
+	/**
+	 * Retrieves the location data for a franchise
+	 * @param req
+	 * @param vo
+	 */
+	private void getFranchise(SMTServletRequest req, FranchiseBlogVO vo){
 		//get franchise info for the current site
 		String franId = StringUtil.checkVal(CenterPageAction.getFranchiseId(req),null);
 		//skip lookup if we can't identify the franchise
@@ -73,66 +91,32 @@ public class FranchiseBlogAction extends SBActionAdapter {
 		fla.setDBConnection(dbConn);
 		
 		FranchiseVO fran = fla.getLocationInfo(franId, false);
-		req.setAttribute(FRANCHISE_INFO, fran);
-		
-		try{
-			getBlogs(req);
-		} catch(SQLException sqle){
-			log.error(sqle);
-			throw new ActionException(sqle);
-		}
+		vo.setFranchise(fran);
 	}
 	
 	/**
-	 * Get the list of corporate blogs.
+	 * Retrieves the blogs from the parent corp
 	 * @param req
-	 * @throws SQLException
+	 * @param vo
+	 * @param blogId
+	 * @throws ActionException
 	 */
-	protected void getBlogs(SMTServletRequest req) throws SQLException{
-		Boolean isPreview = Convert.formatBoolean(req.getAttribute(Constants.PAGE_PREVIEW), false);
-		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		String org = (site.getCountryCode().equalsIgnoreCase("US") ? "FTS" : "FTS_"+site.getCountryCode());
-		
-		StringBuilder sql = new StringBuilder(650);
-		sql.append("select * from BLOG a ");
-		sql.append("inner join BLOGGER b on a.BLOGGER_ID = b.BLOGGER_ID ");
-		sql.append("left outer join BLOG_CATEGORY_XR c on a.BLOG_ID = c.BLOG_ID ");
-		sql.append("left outer join BLOG_CATEGORY d on c.BLOG_CATEGORY_ID = d.BLOG_CATEGORY_ID ");
-		sql.append("inner join sb_action e on a.action_id = e.action_id ");
-		sql.append("where a.action_id in (select top 1 ACTION_ID from SB_ACTION ");
-		sql.append("where ORGANIZATION_ID = ? and MODULE_TYPE_ID='BLOG' ");
-		if (! isPreview)
-			sql.append("and PENDING_SYNC_FLG=0 ");
-		sql.append(") and approval_flg=1 ");
-		sql.append("order by publish_dt desc");
-		
-		//setup the blog group
-		BlogGroupVO blog = new BlogGroupVO();
-		blog.setActionName(actionInit.getName());
-		blog.setActionId(actionInit.getActionId());
-		
-		
-		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())){
-			int i = 0;
-			ps.setString(++i, org);
-			
-			ResultSet rs = ps.executeQuery();
-			BlogVO vo = null;
-			String blogUrl = null;
-			
-			while (rs.next()) {
-				blogUrl = rs.getString("blog_url");
-				if (blog.getBlogs().containsKey(blogUrl)) {
-					vo = blog.getBlog(blogUrl);
-				} else {
-					vo = new BlogVO(rs);
-				}
-				//add categories to group
-				vo.addCategory(new BlogCategoryVO(rs));
-				blog.addBlog(vo);
-			}
+	private void getBlogGroup(SMTServletRequest req, FranchiseBlogVO vo, String blogId) throws ActionException{
+		String aId = StringUtil.checkVal(blogId, null);
+		if (aId == null) {
+			throw new ActionException("Missing blog Id");
 		}
-		//set blog list as mod data
-		putModuleData(blog);
+		
+		//actionId changed to match corporate blog's actionId
+		actionInit.setActionId(aId);
+		//get blogs
+		BlogFacadeAction bfa = new BlogFacadeAction(actionInit);
+		bfa.setDBConnection(dbConn);
+		bfa.setAttributes(attributes);
+		bfa.retrieve(req);
+		
+		//add blogs to vo
+		ModuleVO mod = (ModuleVO)bfa.getAttribute(Constants.MODULE_DATA);
+		vo.setData((BlogGroupVO) mod.getActionData());
 	}
 }
