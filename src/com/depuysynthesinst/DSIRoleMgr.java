@@ -25,7 +25,7 @@ public class DSIRoleMgr {
 	 * @return
 	 */
 	public static boolean isResident(UserDataVO user) {
-		return true;
+		return "RESIDENT".equals(DSIUserDataVO.getProfession(user));
 	}
 	
 	/**
@@ -34,7 +34,7 @@ public class DSIRoleMgr {
 	 * @return
 	 */
 	public static boolean isFellow(UserDataVO user) {
-		return true;
+		return "FELLOW".equals(DSIUserDataVO.getProfession(user));
 	}
 	
 	/**
@@ -43,7 +43,7 @@ public class DSIRoleMgr {
 	 * @return
 	 */
 	public static boolean isChiefResident(UserDataVO user) {
-		return true;
+		return "CHIEF".equals(DSIUserDataVO.getProfession(user));
 	}
 	
 	/**
@@ -52,7 +52,7 @@ public class DSIRoleMgr {
 	 * @return
 	 */
 	public static boolean isDirector(UserDataVO user) {
-		return false;
+		return "DIRECTOR".equals(DSIUserDataVO.getProfession(user));
 	}
 	
 	/**

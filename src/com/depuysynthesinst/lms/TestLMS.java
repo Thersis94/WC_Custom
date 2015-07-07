@@ -1,7 +1,7 @@
-package com.depuysynthesinst.lms.client;
+package com.depuysynthesinst.lms;
 
-// Java 7
-import java.util.Arrays;
+import com.depuysynthesinst.DSIUserDataVO;
+import com.siliconmtn.security.UserDataVO;
 
 /****************************************************************************
  * <b>Title: </b>TestLMS.java <p/>
@@ -74,11 +74,11 @@ public class TestLMS {
 	
 	
 	public static DSIUserDataVO formatTestUser() {
-		DSIUserDataVO dU = new DSIUserDataVO();
+		DSIUserDataVO dU = new DSIUserDataVO(new UserDataVO());
 		dU.setFirstName("SMT-TestUser-103");
 		dU.setLastName("SMTUser103");
 		dU.setEmailAddress("smttest103@siliconmtn.com");
-		dU.setDsiId("SMT103");
+		dU.setProfileId("SMT103");
 		dU.setCountryCode("US");
 		dU.setHospital("SMT Hospital 103");
 		dU.setSpecialty("Orthopedic Surgery");
@@ -91,7 +91,7 @@ public class TestLMS {
 	
 	public static DSIUserDataVO formatMigrateUser() {
 		// test user from Jay
-		DSIUserDataVO mU = new DSIUserDataVO();
+		DSIUserDataVO mU = new DSIUserDataVO(new UserDataVO());
 		mU.setEmailAddress("test6-residentprogram@synthes.com");
 		mU.setSpecialty("Orthopedic Surgery");
 		mU.setSynthesId("1031");

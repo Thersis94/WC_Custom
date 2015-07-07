@@ -1,16 +1,20 @@
-package com.depuysynthesinst.lms.client;
+package com.depuysynthesinst.lms;
 
 // Java 7
 import java.rmi.RemoteException;
 import java.util.HashMap;
 import java.util.Map;
 
+
 // Apache log4j
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
+
+import com.depuysynthesinst.DSIUserDataVO;
 // SMTBaseLibs 2
 import com.siliconmtn.action.ActionException;
+
 
 //LMS SOAP Api
 import cfc.DSIResidentsCFCInvocationExceptionException;
@@ -56,7 +60,9 @@ import cfc.DSIResidentsStub.UserCourseListResponse;
  ****************************************************************************/
 public class LMSWSClient {
 	
-	public Logger log;
+	public static final String CFG_SECURITY_KEY = "dsiTTLMSApiKey"; //from the sb_config file
+	
+	private static Logger log;
 	private String securityKey;
 	private DSIResidentsStub dsi;
 	private Map<Integer,String> errorCodeMap;
@@ -77,7 +83,7 @@ public class LMSWSClient {
 		LMSWSClient tc = new LMSWSClient(secKeySMT);
 		
 		try {
-			tc.log.debug("JKTest return value: " + tc.doJKTest());
+			log.debug("JKTest return value: " + tc.doJKTest());
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -90,7 +96,7 @@ public class LMSWSClient {
 	 * @throws DSIResidentsCFCInvocationExceptionException 
 
 	 */
-	protected double doJKTest() throws ActionException {
+	public double doJKTest() throws ActionException {
 
 		JKTest jTest = new JKTest();
 		JKTestResponse jRes = null;
@@ -101,8 +107,7 @@ public class LMSWSClient {
 			// test WS 
 			jRes = dsi.jKTest(jTest);
 		} catch (Exception e) {
-			log.error("Error performing conn test to WS, ", e);
-			throw new ActionException(e.getMessage());
+			throw new ActionException(e);
 		}
 		
 		// JKTest return value: 1.0
@@ -116,7 +121,7 @@ public class LMSWSClient {
 	 * @return TTLMSID of newly created user
 	 * @throws ActionException
 	 */
-	protected double createUser(DSIUserDataVO user) throws ActionException {
+	public double createUser(DSIUserDataVO user) throws ActionException {
 		
 		// build request
 		CreateUser cu = new CreateUser();
@@ -141,8 +146,7 @@ public class LMSWSClient {
 			// get response
 			cur = dsi.createUser(cu);
 		} catch (Exception e) {
-			log.error("Error creating user, ", e);
-			throw new ActionException(e.getMessage());
+			throw new ActionException(e);
 		}
 		return cur.get_return();
 	}
@@ -153,7 +157,7 @@ public class LMSWSClient {
 	 * @return TTLMSID of update user
 	 * @throws ActionException
 	 */
-	protected double updateUser(DSIUserDataVO user) throws ActionException {
+	public double updateUser(DSIUserDataVO user) throws ActionException {
 
 		// build request
 		UpdateUser uu = new UpdateUser();
@@ -179,8 +183,7 @@ public class LMSWSClient {
 			uur = dsi.updateUser(uu);
 			log.debug("UpdateUserResponse val: " + uur.get_return());
 		} catch (Exception e) {
-			log.error("Error updating user, ",e);
-			throw new ActionException(e.getMessage());
+			throw new ActionException(e);
 		}
 		return uur.get_return();
 	}
@@ -191,7 +194,7 @@ public class LMSWSClient {
 	 * @return TTLMSID of migrated user.
 	 * @throws ActionException
 	 */
-	protected double migrateUser(DSIUserDataVO user) 
+	public double migrateUser(DSIUserDataVO user) 
 			throws ActionException {
 		
 		// format request data
@@ -220,8 +223,7 @@ public class LMSWSClient {
 			 // debug
 			 log.debug("MigrateUserResponse return val: " + mur.get_return());
 		} catch (Exception e) {
-			log.error("Error migrating user, ", e);
-			throw new ActionException(e.getMessage());
+			throw new ActionException(e);
 		}
 
 		return mur.get_return();
@@ -239,7 +241,7 @@ public class LMSWSClient {
 	 * Error with value of -2 if user does not have a legacy user account
 	 * @throws ActionException
 	 */
-	protected Map<Object,Object> getUserActiveIDByEmail(String emailAddress) 
+	public Map<Object,Object> getUserActiveIDByEmail(String emailAddress) 
 			throws ActionException {
 
 		// build request
@@ -263,13 +265,12 @@ public class LMSWSClient {
 			// debug
 			if (m1 != null && m1.getEntry() != null) {
 				for (Entry1 e1 : m1.getEntry()) {
-					//log.debug("key/value: " + e1.getKey() + "|" + e1.getValue());
+					log.debug("key/value: " + e1.getKey() + "|" + e1.getValue());
 					ret.put(e1.getKey(),e1.getValue());
 				}
 			}
 		} catch (Exception e) {
-			log.error("Error getting active ID for this user, ", e);
-			throw new ActionException(e.getMessage());
+			throw new ActionException(e);
 		}
 		
 		return ret;
@@ -286,7 +287,7 @@ public class LMSWSClient {
 	 * Error with value of -2 if user does not have a legacy user account
 	 * @throws ActionException
 	 */
-	protected Map<Object,Object> getUserHoldingIDByEmail(String emailAddress) 
+	public Map<Object,Object> getUserHoldingIDByEmail(String emailAddress) 
 			throws ActionException {
 
 		// build request
@@ -309,13 +310,12 @@ public class LMSWSClient {
 			// parse the returned map into a standard Map.
 			if (m2 != null && m2.getEntry() != null) {
 				for (Entry2 e2 : m2.getEntry()) {
-					//log.debug("key/value: " + e2.getKey() + "|" + e2.getValue());
+					log.debug("key/value: " + e2.getKey() + "|" + e2.getValue());
 					ret.put(e2.getKey(), e2.getValue());
 				}
 			}
 		} catch (Exception e) {
-			log.error("Error getting holding ID for this user, ", e);
-			throw new ActionException(e.getMessage());
+			throw new ActionException(e);
 		}
 
 		return ret;
@@ -327,7 +327,7 @@ public class LMSWSClient {
 	 * @return
 	 * @throws ActionException
 	 */
-	protected double getTotalUserPoints(String dsiId) 
+	public double getTotalUserPoints(String dsiId) 
 			throws ActionException {
 
 		// build request
@@ -345,8 +345,7 @@ public class LMSWSClient {
 			tupr = dsi.totalUserPoints(tup);
 			log.debug("TotalUserPoints val: " + tupr.get_return());
 		} catch (Exception e) {
-			log.error("Error getting total points for this user, ", e);
-			throw new ActionException(e.getMessage());
+			throw new ActionException(e);
 		}
 		
 		return tupr.get_return();
@@ -369,7 +368,7 @@ public class LMSWSClient {
 	 * @return
 	 * @throws ActionException
 	 */
-	protected Object[] getUserCourseList(String dsiId) 
+	public Object[] getUserCourseList(String dsiId) 
 			throws ActionException {
 
 		// build request
@@ -394,8 +393,7 @@ public class LMSWSClient {
 			return courseList;
 			*/
 		} catch (Exception e) {
-			log.error("Error retrieving course list for user, ", e);
-			throw new ActionException(e.getMessage());
+			throw new ActionException(e);
 		}
 		return uclr.get_return();
 	}
@@ -414,7 +412,7 @@ public class LMSWSClient {
 	 * @return
 	 * @throws ActionException
 	 */
-	protected Object[] getCourseList() throws ActionException {
+	public Object[] getCourseList() throws ActionException {
 
 		// build request
 		CourseList cl = new CourseList();
@@ -436,8 +434,7 @@ public class LMSWSClient {
 			log.debug("End of course list response.");
 			 */
 		} catch (Exception e) {
-			log.error("Error retrieving course list, ", e);
-			throw new ActionException(e.getMessage());
+			throw new ActionException(e);
 		}
 		return clr.get_return();
 	}
@@ -450,7 +447,7 @@ public class LMSWSClient {
 	 * @throws ActionException
 	 */
 	@SuppressWarnings("unused")
-	private double registerUserForCourse(String dsiId, double courseId) 
+	public double registerUserForCourse(String dsiId, double courseId) 
 			throws ActionException {
 
 		// build request
@@ -468,8 +465,7 @@ public class LMSWSClient {
 			// make the call
 			rufcr = dsi.registerUserforCourse(rufc);
 		} catch (Exception e) {
-			log.error("Error registering user for course, ", e);
-			throw new ActionException(e.getMessage());
+			throw new ActionException(e);
 		}
 		
 		log.debug("registerUserforCourseResponse: " + rufcr.get_return());
@@ -495,13 +491,13 @@ public class LMSWSClient {
 	 * Initializes the error Map that contains error code key values mapped to 
 	 * the key's meaning.
 	 */
-	private void initErrorMap() {
+	private final void initErrorMap() {
 		errorCodeMap = new HashMap<>();
-		errorCodeMap.put(-1,"Can’t find new group (Internal Error)");
-		errorCodeMap.put(-2,"Requested user doesn’t exist");
-		errorCodeMap.put(-3,"Can’t find new user (Internal Error)");
+		errorCodeMap.put(-1,"Can't find new group (Internal Error)");
+		errorCodeMap.put(-2,"Requested user doesn't exist");
+		errorCodeMap.put(-3,"Can't find new user (Internal Error)");
 		errorCodeMap.put(-4,"User already exists (Based on SynthesID)");
-		errorCodeMap.put(-5,"Requested course doesn’t exist");
+		errorCodeMap.put(-5,"Requested course doesn't exist");
 		errorCodeMap.put(-6,"Bad security code");
 	}
 	
