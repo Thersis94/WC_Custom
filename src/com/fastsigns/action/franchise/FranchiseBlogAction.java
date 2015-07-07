@@ -9,14 +9,13 @@ import com.fastsigns.action.franchise.vo.FranchiseVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
-import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.SBModuleVO;
-import com.smt.sitebuilder.action.blog.BlogAction;
 import com.smt.sitebuilder.action.blog.BlogFacadeAction;
 import com.smt.sitebuilder.action.blog.BlogGroupVO;
 import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -71,12 +70,9 @@ public class FranchiseBlogAction extends SBActionAdapter {
 		this.getFranchise(req, vo);
 		
 		String gId = (String)data.getAttribute(SBModuleVO.ATTRIBUTE_1); 
-		boolean isPreview = Convert.formatBoolean(req.getAttribute(Constants.PAGE_PREVIEW), false);
-		//get the group of blogs to display (blogGroupId stored in attrib1Text)
-		BlogAction ba = new BlogAction(actionInit);
-		ba.setAttributes(attributes);
-		ba.setDBConnection(dbConn);
-		this.getBlogGroup(req,vo, ba.getBlogActionId(gId, isPreview));
+		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+		
+		this.getBlogGroup(req,vo, lookupActionId(gId, page.isPreviewMode()));
 		
 		this.putModuleData(vo);
 	}
