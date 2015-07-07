@@ -9,17 +9,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.ram.action.data.RAMCustomerSearchVO;
 // RAMDataFeed
 import com.ram.datafeed.data.CustomerLocationVO;
 import com.ram.datafeed.data.CustomerVO;
-
 // SMTBaseLibs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-
 // WebCrescendo 2.0
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -61,7 +60,7 @@ public class CustomerAction extends SBActionAdapter {
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		log.debug("CustomerAction retrieve...");
-		int customerId = Convert.formatInteger(req.getParameter("customerId"), 0);
+		RAMCustomerSearchVO svo = new RAMCustomerSearchVO(req);
 		List<CustomerVO> data = null;
 
 		/*
@@ -70,56 +69,22 @@ public class CustomerAction extends SBActionAdapter {
 		 * separately.  If this is an addCustomer request, simply put an empty
 		 * vo on the list.
 		 */
-		if(req.hasParameter("isDropDown")) {
-			data = getUnFilteredCustomers();
-		} else if (Convert.formatBoolean(req.getParameter("addCustomer"))) {
+		if (svo.isAddCustomer()) {
 			data = new ArrayList<CustomerVO>();
 			data.add(new CustomerVO());
-		} else if (req.hasParameter("customerId")) {
+		} else if (svo.getCustomerId() > 0) {
 			data = new ArrayList<CustomerVO>();
-			data.add(getCustomerData(Convert.formatInteger(req.getParameter("customerId"))));
+			data.add(getCustomerData(svo));
 		} else {
-			//Gather Request Params.
-			int start = Convert.formatInteger(req.getParameter("start"), 0);
-			int end = Convert.formatInteger(req.getParameter("limit"), 25) + start;
-			String customerTypeId = StringUtil.checkVal(req.getParameter("customerTypeId"));
-			String excludeTypeId = StringUtil.checkVal(req.getParameter("excludeTypeId"));
-
 			//Get filtered customer list for grid view.
-			data = getFilteredCustomers(start, end, customerTypeId, excludeTypeId);
+			data = getCustomers(svo);
 		}
 		ModuleVO modVo = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 
 		//Only go after record count if we are doing a list.
-        modVo.setDataSize((customerId > 0 ? 1 : getRecordCount()));
+        modVo.setDataSize((svo.getCustomerId() > 0 ? 1 : getRecordCount(svo)));
         modVo.setActionData(data);
         this.setAttribute(Constants.MODULE_DATA, modVo);
-	}
-
-	/**
-	 * Helper method that returns the complete list of RAM_CUSTOMERS for a
-	 * dropdown menu sorted by customer_nm.
-	 * @return
-	 */
-	private List<CustomerVO> getUnFilteredCustomers() {
-		List<CustomerVO> data = new ArrayList<>();
-
-		//Build SQL Query
-		StringBuilder sql = new StringBuilder(80);
-		sql.append("select * from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("RAM_CUSTOMER order by CUSTOMER_NM");
-
-		//Query for Results and add to list.
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ResultSet rs = ps.executeQuery();
-			while(rs.next())
-				data.add(new CustomerVO(rs, false));
-		} catch (SQLException e) {
-			log.error(e);
-		}
-
-		//Return CustomerVO Data.
-		return data;
 	}
 
 	/**
@@ -127,7 +92,7 @@ public class CustomerAction extends SBActionAdapter {
 	 * @param customerId
 	 * @return
 	 */
-	public CustomerVO getCustomerData(int customerId) {
+	public CustomerVO getCustomerData(RAMCustomerSearchVO svo) {
 		CustomerVO c = null;
 		List<CustomerLocationVO> locs = new ArrayList<CustomerLocationVO>();
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
@@ -135,13 +100,13 @@ public class CustomerAction extends SBActionAdapter {
 		//Build Query.
 		StringBuilder sql = new StringBuilder(180);
 		sql.append("select * from ").append(schema).append("RAM_CUSTOMER a ");
-		sql.append("inner join ").append(schema).append("ram_customer_location b ");
+		sql.append("left outer join ").append(schema).append("ram_customer_location b ");
 		sql.append("on a.customer_id = b.customer_id where a.CUSTOMER_ID = ? ");
 		sql.append("order by b.LOCATION_NM");
 
 		//Query for Results and build CustomerVO Object.
 		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setInt(1, customerId);
+			ps.setInt(1, svo.getCustomerId());
 			ResultSet rs = ps.executeQuery();
 			while(rs.next()) {
 
@@ -168,38 +133,28 @@ public class CustomerAction extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	public List<CustomerVO> getFilteredCustomers(int start, int end, String customerTypeId, String excludeTypeId) {
+	public List<CustomerVO> getCustomers(RAMCustomerSearchVO svo) {
 		List<CustomerVO> data = new ArrayList<>();
-
-		//Build the SQL Query.
-		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = new StringBuilder(260);
-		sql.append("select * from (select ROW_NUMBER() OVER (order by CUSTOMER_NM) ");
-		sql.append("as RowNum, a.* from ").append(schema).append("ram_customer a ");
-
-		//Build Where Clause based of req Params that were passed.
-		sql.append("where 1 = 1 ");
-		if (customerTypeId.length() > 0) {
-			sql.append("and customer_type_id = ? ");
-		} else if (excludeTypeId.length() > 0) {
-			sql.append("and customer_type_id != ? ");
-		}
-
-		//Limit Paginated Result Set.
-		sql.append(") as paginatedResult where RowNum >= ? and RowNum < ? order by RowNum");
-
-		log.debug("Customer retrieve SQL: " + sql.toString() + "|" + customerTypeId + " | " + excludeTypeId);
 		int index = 1;
 
 		//Build Prepared Statement and iterate the results.
-		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString());){
-			if (customerTypeId.length() > 0) {
-				ps.setString(index++, customerTypeId);
-			} else if (excludeTypeId.length() > 0) {
-				ps.setString(index++, excludeTypeId);
+		try(PreparedStatement ps = dbConn.prepareStatement(getCustomerLookupQuery(svo));){
+			if (svo.getCustomerTypeId().length() > 0) {
+				ps.setString(index++, svo.getCustomerTypeId());
+			} else if (svo.getExcludeTypeId().length() > 0) {
+				ps.setString(index++, svo.getExcludeTypeId());
 			}
-			ps.setInt(index++, start);
-			ps.setInt(index++, end);
+
+			//Add Kit Flag Value.
+			if(svo.isKitsOnly()) {
+				ps.setInt(index++, 1);
+			}
+
+			//Add Paginations.
+			if(svo.isPaginated()) {
+				ps.setInt(index++, svo.getStart());
+				ps.setInt(index++, svo.getLimit());
+			}
 			ResultSet rs = ps.executeQuery();
 
 			//Add the CustomerVOs to the List.
@@ -220,25 +175,13 @@ public class CustomerAction extends SBActionAdapter {
 	 * @return
 	 * @throws SQLException
 	 */
-	protected int getRecordCount() {
+	protected int getRecordCount(RAMCustomerSearchVO svo) {
+		svo.setCount(true);
+		svo.setPaginated(false);
+		List<CustomerVO> customers = getCustomers(svo);
 
-		StringBuilder sb = new StringBuilder(80);
-		sb.append("select count(customer_id) from ");
-		sb.append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("RAM_CUSTOMER");
-
-		int cnt = 0;
-		try(PreparedStatement ps = dbConn.prepareStatement(sb.toString());) {
-
-		//Get the count off the first row.
-		ResultSet rs = ps.executeQuery();
-		if(rs.next())
-			cnt = rs.getInt(1);
-		} catch(SQLException sqle) {
-			log.error("Error retrieving customer Count", sqle);
-		}
-
-		log.debug("Count: " + cnt);
-		return cnt;		
+		log.debug("Count: " + customers.size());
+		return customers.size();
 	}
 
 	/* (non-Javadoc)
@@ -321,6 +264,47 @@ public class CustomerAction extends SBActionAdapter {
 		}
 	}
 
+	public String getCustomerLookupQuery(RAMCustomerSearchVO svo) {
+		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(260);
+		if(svo.isPaginated()) {
+			sql.append("select * from (");
+		}
+		sql.append("select ROW_NUMBER() OVER (order by CUSTOMER_NM) ");
+		sql.append("as RowNum, a.* from ").append(schema).append("ram_customer a ");
+
+		//Add Where Clause
+		sql.append(getCustomerLookupWhereClause(svo));
+
+		//Limit Paginated Result Set.
+		if(svo.isPaginated()) {
+			sql.append(") as paginatedResult where RowNum >= ? and RowNum < ? order by RowNum");
+		}
+
+		log.debug("Customer retrieve SQL: " + sql.toString() + "|" + svo.getCustomerTypeId() + " | " + svo.getExcludeTypeId());
+
+		return sql.toString();
+	}
+
+	public String getCustomerLookupWhereClause(RAMCustomerSearchVO svo) {
+		StringBuilder sql = new StringBuilder(150);
+
+		//Build Where Clause based of req Params that were passed.
+		sql.append("where 1 = 1 ");
+
+		if (svo.getCustomerTypeId().length() > 0) {
+			sql.append("and customer_type_id = ? ");
+		} else if (svo.getExcludeTypeId().length() > 0) {
+			sql.append("and customer_type_id != ? ");
+		}
+
+		if(svo.isKitsOnly()) {
+			sql.append("and customer_id in (select distinct CUSTOMER_ID from ");
+			sql.append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("RAM_PRODUCT ");
+			sql.append("where KIT_FLG = ?) ");
+		}
+		return sql.toString();
+	}
 	/**
 	 * Helper method that manages inserting and updating a Customer Record
 	 * in the Database.

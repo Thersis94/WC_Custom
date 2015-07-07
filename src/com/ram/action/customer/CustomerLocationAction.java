@@ -7,8 +7,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-
-
 import java.util.Map;
 
 // RAMDataFeed
@@ -26,6 +24,7 @@ import com.siliconmtn.gis.MatchCode;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.UUIDGenerator;
 // WebCrescendo 2.0
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -249,4 +248,50 @@ public class CustomerLocationAction extends SBActionAdapter {
 		}
 	}
 
+	/**
+	 * Helper method that manages inserting and updating a Customer Location XR
+	 * Record in the Database.
+	 * @param vo
+	 * @throws SQLException
+	 */
+	public void modifyLocationXr(CustomerLocationVO vo) throws SQLException {
+		StringBuilder sql = new StringBuilder(200);
+		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		boolean isInsert = false;
+
+		//Build appropriate SQL Statement.
+		if (vo.getCustomerWorkflowXrId().startsWith("ext")) {
+			// is an insert
+			sql.append("insert into ").append(schema);
+			sql.append("RAM_CUSTOMER_WORKFLOW_XR ");
+			sql.append("(CUSTOMER_LOCATION_ID, WORKFLOW_ID, CREATE_DT, ");
+			sql.append("CUSTOMER_WORKFLOW_XR_ID) ");
+			sql.append("values (?,?,?,?)");
+
+			isInsert = true;
+			vo.setCustomerWorkflowXrId(new UUIDGenerator().getUUID());
+		} else {
+			// is an update
+			sql.append("update ").append(schema);
+			sql.append("RAM_CUSTOMER_WORKFLOW_XR ");
+			sql.append("set CUSTOMER_LOCATION_ID = ?, WORKFLOW_ID = ? ");
+			sql.append("WHERE CUSTOMER_WORKFLOW_XR_ID = ?");
+		}
+
+		log.debug(sql);
+		
+		//Exequte Query
+		int i = 1;
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			//set insert/update params.
+			ps.setInt(i++, vo.getCustomerLocationId());
+			ps.setString(i++, vo.getWorkflowId());
+			if (isInsert) ps.setTimestamp(i++, Convert.getCurrentTimestamp());
+			ps.setString(i++, vo.getCustomerWorkflowXrId());
+
+			ps.executeUpdate();
+		} catch(Exception e) {
+			log.error("Problem occured while inserting/updating a Customer Location XR Record", e);
+		}
+	}
 }

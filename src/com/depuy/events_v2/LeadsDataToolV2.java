@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-
 // SMT BaseLibs
 import com.depuy.events.vo.LeadCityVO;
 import com.depuy.events_v2.ReportBuilder.ReportType;
@@ -49,12 +48,36 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class LeadsDataToolV2 extends SBActionAdapter {
 	
-	private Map<String, String> usStates = null; 
+	private Map<String, String> usStates = null;
 	
-	private final double MAX_DISTANCE = 62.00; //radians a lead would drive to a Seminar  ~50mi
+	protected final double MAX_DISTANCE = 62.00; //radians a lead would drive to a Seminar  ~50mi
+	
+	//constants for lead ages (in months); used on the Leads page to render the 4 display columns.
+	public final static int LeadTierOne = 6;
+	public final static int LeadTierTwo = 12;
+	public final static int LeadTierThree = 36;
+	public final static int LeadTierFour = 240;
 	
 	public enum SortType { city, county, zip }
 	private UUIDGenerator uuid = null;
+	
+	
+	/**
+	 * returns an instance of PostcardEmailer, giving us abstract support for Mitek events
+	 * @param sem
+	 * @param attrs
+	 * @param conn
+	 * @return
+	 */
+	public static LeadsDataToolV2 newInstance(DePuyEventSeminarVO sem, ActionInitVO actionInit) {
+		//test for Mitek Seminar.  If so, return the Mitek emailer instead of 'this' class
+		if (sem != null && sem.isMitekSeminar()) {
+			return new LeadsDataToolV2Mitek(actionInit);
+		} else {
+			return new LeadsDataToolV2(actionInit);
+		}
+	}
+	
 	
 	public LeadsDataToolV2() {
 		super();
@@ -125,13 +148,13 @@ public class LeadsDataToolV2 extends SBActionAdapter {
 					if (startDt != null && startDt.after(createDt)) continue; 
 							
 					int maxAgeMos = rs.getInt("max_age_no");
-					if (maxAgeMos == 0) maxAgeMos = 240; //20yrs of historical data
+					if (maxAgeMos == 0) maxAgeMos = LeadTierFour; //20yrs of historical data
 					Calendar cal = Calendar.getInstance();
 					cal.add(Calendar.MONTH, -maxAgeMos); //subtract month limit from today
 					
 					//if the lead is not newer than the defined limit, skip it.
 					//bypass this for scoping leads, which needs a count for each date range.
-					if (!cal.getTime().before(createDt)) continue;
+					if (!cal.getTime().before(createDt))  continue;
 				}
 				
 				UserDataVO vo = new UserDataVO();
@@ -154,6 +177,8 @@ public class LeadsDataToolV2 extends SBActionAdapter {
 					vo.setCounty(rs.getString("COUNTY_NM"));
 					vo.setPassword(rs.getString("product_cd"));
 					vo.addAttribute("savedMaxAge", rs.getInt("max_age_no"));
+				} else {
+					vo.setProfileId(rs.getString("profile_address_id"));
 				}
 
 //				if (vo.getState().equals("TX"))
@@ -177,7 +202,7 @@ public class LeadsDataToolV2 extends SBActionAdapter {
 	 * @param users
 	 * @return
 	 */
-	private List<UserDataVO> deduplicateUsers(List<UserDataVO> users) {
+	protected List<UserDataVO> deduplicateUsers(List<UserDataVO> users) {
 		List<UserDataVO> data = new ArrayList<UserDataVO>(users.size());
 		List<String> dupls = new ArrayList<String>(users.size());
 		String key = "";
@@ -219,7 +244,7 @@ public class LeadsDataToolV2 extends SBActionAdapter {
 		uuid = new UUIDGenerator();
 		
 		//load the user base
-		List<UserDataVO> leads = this.pullLeads(sem, ReportType.leads, null);
+		List<UserDataVO> leads = pullLeads(sem, ReportType.leads, null);
 		
 		//define data containers
 		Map<Location, LeadCityVO> locnData  = new TreeMap<Location, LeadCityVO>(new LocationComparator());
@@ -244,7 +269,7 @@ public class LeadsDataToolV2 extends SBActionAdapter {
 	 * @param user
 	 * @return
 	 */
-	private boolean isSelected(UserDataVO user) {
+	protected boolean isSelected(UserDataVO user) {
 		boolean haveXR = user.getAliasName() != null;
 		Integer age = (Integer) user.getAttributes().get("savedMaxAge");
 		boolean ageMeetsSelection = (user.getBirthYear().intValue() == age.intValue());
@@ -258,7 +283,7 @@ public class LeadsDataToolV2 extends SBActionAdapter {
 	 * @param user
 	 * @return
 	 */
-	private Location polishAddressData(UserDataVO user, SortType sort) {
+	protected Location polishAddressData(UserDataVO user, SortType sort) {
 		Location loc = new Location();
 		loc.setAddress(StringUtil.capitalizePhrase(user.getPassword())); //product
 		loc.setCity(StringUtil.capitalizePhrase(user.getCity()));
@@ -287,7 +312,7 @@ public class LeadsDataToolV2 extends SBActionAdapter {
 	 * @param cd
 	 * @return
 	 */
-	private String getStateNameFromCode(String cd) {
+	protected String getStateNameFromCode(String cd) {
 		//reverse the state list, but only once
 		if (usStates == null) {
 			usStates = new HashMap<String, String>(55, 100);
@@ -307,11 +332,11 @@ public class LeadsDataToolV2 extends SBActionAdapter {
 	 * @param monthsOld
 	 * @return
 	 */
-	private int bucketizeLeadAge(int monthsOld) {
-		if (monthsOld < 3) return 3;
-		else if (monthsOld < 6) return 6;
-		else if (monthsOld < 12) return 12;
-		else return 240; //20yrs, which is the catch-all bucket
+	protected int bucketizeLeadAge(int monthsOld) {
+		if (monthsOld <= LeadTierOne) return LeadTierOne;
+		else if (monthsOld <= LeadTierTwo) return LeadTierTwo;
+		else if (monthsOld <= LeadTierThree) return LeadTierThree;
+		else return LeadTierFour; //20yrs, which is the catch-all bucket
 	}
 	
 	
@@ -320,17 +345,17 @@ public class LeadsDataToolV2 extends SBActionAdapter {
 	 * @param attemptDt
 	 * @return
 	 */
-	private int differenceInMonths(Date attemptDt) {
+	protected int differenceInMonths(Date attemptDt) {
 		Calendar today = Calendar.getInstance();
 		Calendar c1 = Calendar.getInstance();
 		c1.setTime(attemptDt);
 		
 		int diff = 0;
 		while (today.after(c1)) {
+			diff++;
 			c1.add(Calendar.MONTH, 1);
-			if (today.after(c1))
-				diff++;
 		}
+		log.debug("att=" + attemptDt + ", dif=" + diff);
 		return diff;
 	}
 

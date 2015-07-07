@@ -28,7 +28,7 @@ public class PageContainerVO_en_US extends PageContainerVO{
 
 	private static final long serialVersionUID = 1L;
 	protected static final Logger log = Logger.getLogger(PageContainerVO_en_US.class);
-	protected final String loginModId = "c0a802232cbe218db59504f1d6757df7";
+	public static final String LOGIN_MOD_ID = "c0a802232cbe218db59504f1d6757df7";
 	
 	public PageContainerVO_en_US() {
 		assignTypeVals();
@@ -72,7 +72,7 @@ public class PageContainerVO_en_US extends PageContainerVO{
 	 */
 	public Map<String, String> getCustomVals(){
 		Map<String, String> vals = new HashMap<String, String>();
-		vals.put("loginPmid", "c0a802232cbe218db59504f1d6757df7");	//Pmid for parent org's login module.
+		vals.put("loginPmid", LOGIN_MOD_ID);	//Pmid for parent org's login module.
 		return vals;
 	}
 	
@@ -99,6 +99,9 @@ public class PageContainerVO_en_US extends PageContainerVO{
 		pgs.put("FASTSIGNS&reg; Blog", CORP);
 		pgs.put("Sign Materials", CUSTOM_TEMPLATED);
 		pgs.put("Product Information", CUSTOM_TEMPLATED);
+		pgs.put("3M Attention Software Service", CUSTOM_TEMPLATED);
+		pgs.put("Optima", CUSTOM_TEMPLATED);
+		pgs.put("Modulex", CUSTOM_TEMPLATED);
 			//Product Sub-Pages
 			pgs.put("Digital Signage", CUSTOM_TEMPLATED);
 			pgs.put("Banners", CUSTOM_TEMPLATED);
@@ -142,6 +145,9 @@ public class PageContainerVO_en_US extends PageContainerVO{
 		bizRules.put("Sign Materials",makePage("sign-materials", "Sign Materials", "")); //custom
 		bizRules.put("Product Information",makePage("products", "Product Information", "")); //custom
 		bizRules.put("Careers", makePage("careers", "Careers", "/careers?franchiseId=${franchiseId}"));
+		bizRules.put("3M Attention Software Service", makePage("visual-attention-software", "3M Attention Software Service", null)); //custom
+		bizRules.put("Optima", makePage("optima", "Optima", null)); //custom
+		bizRules.put("Modulex", makePage("modulex","Modulex",null)); //custom
 		
 		MenuObj p;	
 				

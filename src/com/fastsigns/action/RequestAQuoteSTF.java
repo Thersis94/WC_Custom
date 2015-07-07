@@ -67,7 +67,7 @@ public class RequestAQuoteSTF extends SBActionAdapter {
 	private static final String FASTSIGNS_TEXT = "fastsignsTxt";
 	private static final String USER_EMAIL = "userEmail";
 	private static final String DEALER_EMAIL = "dealerEmail";
-	private static final String DEALER_LOCATION_ID = "dealerLocationId";
+	public static final String DEALER_LOCATION_ID = "dealerLocationId";
 	
 	
 	public RequestAQuoteSTF(ActionInitVO actionInit) {
@@ -433,7 +433,7 @@ public class RequestAQuoteSTF extends SBActionAdapter {
 		try {
 			msg.addRecipients(req.getParameter(DEALER_EMAIL).split(","));
 			msg.setSubject(safConfig.getEmailSubjectCenter(req.getParameter(USER_EMAIL)));
-			msg.setFrom(safConfig.getSenderEmailAddress(isSAF));
+			msg.setFrom(safConfig.getNoReplyEmailAddress());
 			msg.setHtmlBody(safConfig.buildEmail(true, cdc, vals));
 		} catch (InvalidDataException e) {
 			log.error("could not send SAF Center email", e);
@@ -459,8 +459,8 @@ public class RequestAQuoteSTF extends SBActionAdapter {
 		EmailMessageVO msg = new EmailMessageVO();
 		try {
 			msg.addRecipient(req.getParameter("userEmail"));
-			msg.setSubject(safConfig.getEmailSubjectUser());
-			msg.setFrom(safConfig.getSenderEmailAddress(isSAF));
+			msg.setSubject(safConfig.getEmailSubjectUser(req.getParameter("userEmail")));
+			msg.setFrom(safConfig.getSenderEmailAddress(vals));
 			msg.setHtmlBody(safConfig.buildEmail(false, cdc, vals));
 		} catch (InvalidDataException e) {
 			log.error("could not send SAF User email", e);
