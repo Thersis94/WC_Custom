@@ -15,6 +15,7 @@ import com.ram.action.products.ProductAction;
 import com.ram.action.provider.VisionAction;
 import com.ram.action.provider.VisionProductAction;
 import com.ram.action.workflow.ServicesAction;
+import com.ram.action.workflow.TransactionStatusAction;
 import com.ram.action.workflow.WorkflowEventTypesAction;
 import com.ram.datafeed.data.CustomerLocationVO;
 //SMT Base Libs
@@ -100,6 +101,11 @@ public class AJAXUtilAction extends SBActionAdapter {
 
 	public static final String VISION_SYSTEM_PRODUCTS = "visions_system_products";
 	/**
+	 * List of possible transaction statuses.
+	 */
+	public static final String TRANSACTION_STATUS_TYPE = "transaction_status";
+	
+	/**
 	 *
 	 */
 	public AJAXUtilAction() {
@@ -180,6 +186,12 @@ public class AJAXUtilAction extends SBActionAdapter {
 				break;
 			case WORKFLOW_EVENT_TYPES_TYPE:
 				sai = new WorkflowEventTypesAction(getActionInit());
+				sai.setDBConnection(getDBConnection());
+				sai.setAttributes(getAttributes());
+				sai.retrieve(req);
+				break;
+			case TRANSACTION_STATUS_TYPE:
+				sai = new TransactionStatusAction(getActionInit());
 				sai.setDBConnection(getDBConnection());
 				sai.setAttributes(getAttributes());
 				sai.retrieve(req);
