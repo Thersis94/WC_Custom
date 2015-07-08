@@ -109,6 +109,12 @@ public abstract class TVSpotConfig {
 	public abstract String getDefaultSenderEmail();
 	
 	/**
+	 * Returns the 'from' email address for the corp consultation email
+	 * @return
+	 */
+	public abstract String getCorpConsultationEmail();
+	
+	/**
 	 * This field hooks to the View; it's a custom request parameter we defined to hold the dealerLocationId value
 	 * @return
 	 */
