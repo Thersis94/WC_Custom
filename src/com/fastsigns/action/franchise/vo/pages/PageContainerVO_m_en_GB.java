@@ -28,7 +28,6 @@ public class PageContainerVO_m_en_GB extends PageContainerVO{
 
 	private static final long serialVersionUID = 1L;
 	protected static final Logger log = Logger.getLogger(PageContainerVO_m_en_GB.class);
-	protected final String loginModId = "0a00141332b1fb5f4008c75cda601db9";
 
 	public PageContainerVO_m_en_GB() {
 		assignTypeVals();
@@ -72,7 +71,9 @@ public class PageContainerVO_m_en_GB extends PageContainerVO{
 	 */
 	public Map<String, String> getCustomVals(){
 		Map<String, String> vals = new HashMap<String, String>();
-		vals.put("loginPmid", loginModId);	//Pmid for parent org's login module.
+		/*mobile sites do not use log modules at this time
+		 * vals.put("loginPmid", PageContainerVO_en_GB.LOGIN_MOD_ID);	//Pmid for parent org's login module.
+		 */
 		return vals;
 	}
 	

@@ -29,23 +29,21 @@ import com.smt.sitebuilder.security.SBUserRole;
  *        <p/>
  *        <b>Changes: </b>
  ****************************************************************************/
-public class RAMSearchVO {
+public class RAMProductSearchVO extends EXTJSDataVO {
 
 	private int advFilter = 0;
 	private String term = null;
-	private int start = 0;
-	private int limit = 0;
+	
 	private boolean activeOnly = false;
 	private int providerId = 0;
 	private int customerId = 0;
 	private int productId = 0;
-	private boolean isCount = false;
-	private boolean isPaginated = false;
+	private int layoutDepthNo = 0;
 
 	/**
 	 * @param req 
 	 */
-	public RAMSearchVO(SMTServletRequest req) {
+	public RAMProductSearchVO(SMTServletRequest req) {
 		setData(req);
 	}
 
@@ -53,17 +51,16 @@ public class RAMSearchVO {
 	 * Helper method that parses the necessary req params off the RequestObject.
 	 * @param req
 	 */
-	private void setData(SMTServletRequest req) {
+	protected void setData(SMTServletRequest req) {
+		super.setData(req);
 		SBUserRole r = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 
 		advFilter = Convert.formatInteger(req.getParameter("advFilter"), -1);
 		term = StringUtil.checkVal(req.getParameter("term"));
-		start = Convert.formatInteger(req.getParameter("start"), 0);
-		limit = Convert.formatInteger(req.getParameter("limit"), 25) + start;
+		
 		activeOnly = Convert.formatBoolean(req.getParameter("activeFlag"));
-		isPaginated = Convert.formatBoolean(req.getParameter("isPaginated"));
 		productId = Convert.formatInteger(req.getParameter("productId"));
-
+		layoutDepthNo = Convert.formatInteger(req.getParameter("layoutDepthNo"));
 		if(r != null) {
 			//Check for providerId, providers are only allowed to see products at their locations.
 			providerId = r.getRoleLevel() == RamUserAction.ROLE_LEVEL_PROVIDER ? Convert.formatInteger((String) r.getAttribute("roleAttributeKey_1")) : 0;
@@ -76,24 +73,22 @@ public class RAMSearchVO {
 	//Getters
 	public int getAdvFilter() {return advFilter;}
 	public String getTerm() {return term;}
-	public int getStart() {return start;}
-	public int getLimit() {return limit;}
+	
 	public boolean isActiveOnly() {return activeOnly;}
 	public int getProviderId() {return providerId;}
 	public int getCustomerId() {return customerId;}
 	public int getProductId() {return productId;}
-	public boolean isCount() {return isCount;}
-	public boolean isPaginated() {return isPaginated;}
+	public int getLayoutDepthNo() {return layoutDepthNo;}
+	
 
 	//Setters
 	public void setAdvFilter(int advFilter) {this.advFilter = advFilter;}
 	public void setTerm(String term) {this.term = term;}
-	public void setStart(int start) {this.start = start;}
-	public void setLimit(int limit) {this.limit = limit;}
+	
 	public void setActiveOnly(boolean activeOnly) {this.activeOnly = activeOnly;}
 	public void setProviderId(int providerId) {this.providerId = providerId;}
 	public void setCustomerId(int customerId) {this.customerId = customerId;}
 	public void setProductId(int productId) {this.productId = productId;}
-	public void setCount(boolean isCount) {this.isCount = isCount;}	
-	public void setPaginated(boolean isPaginated) {this.isPaginated = isPaginated;}
+	public void setLayoutDepthNo(int layoutDepthNo) {this.layoutDepthNo = layoutDepthNo;}
+	
 }
