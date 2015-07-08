@@ -33,6 +33,11 @@ public class GFPUserAction extends SBActionAdapter {
 	}
 	
 	
+	/**
+	 * Get all programs related to the user supplied by the request object
+	 * @param req
+	 * @throws ActionException
+	 */
 	private void getPrograms(SMTServletRequest req) throws ActionException {
 		// Create a GFPProgramAction and get a list of all programs
 		// and put that on the request object for use when assigning a user

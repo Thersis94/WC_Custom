@@ -20,14 +20,24 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 public class GFPProgramAction extends SBActionAdapter {
 
 	public void retrieve(SMTServletRequest req) throws ActionException {
-		// Check the request object for either a user id or a program id.
-		// If we have either of them we only need to get one program
-		// In the situation of a user id we get the program related to them
-		// In the situation of a program id we need only get that program
-		// If neither id is present we get all available programs
+		
+		// Check if we are dealing with dashboard request
+		
+		// if so and we have a program id we get the one program we need
+		// otherwise get all programs
+		
+		// if we are not dealing with a dashboard request check for a user id
+		
+		// if we get one get the program associated with that user.
+		
 	}
 	
 	
+	/**
+	 * Get the program associate with the supplied id
+	 * @param id the id of the program we are looking for
+	 * @param isUser determines the starting point of the search
+	 */
 	private void getProgram (String id, boolean isUser) {
 		// Get the supplied program
 		
@@ -38,7 +48,10 @@ public class GFPProgramAction extends SBActionAdapter {
 	}
 	
 	
-	private void getAllProgram() {
+	/**
+	 * Gets all the programs in the database
+	 */
+	private void getAllPrograms() {
 		// Get all programs from the database
 		
 		// Select query for the program table.
@@ -57,21 +70,36 @@ public class GFPProgramAction extends SBActionAdapter {
 	public void update(SMTServletRequest req) throws ActionException {
 		// Only called from the dashboard
 		// Determine the level of the update (resource, workshop, program)
-		// and update the associated item.
+		// and call the associated update method
 	}
 	
 	
+	/**
+	 * Build and run an update/insert query for a program
+	 * @param req
+	 */
 	private void updateProgram (SMTServletRequest req) {
 		// Update/Insert query for the program table
 	}
 	
 	
+	/**
+	 * Build and run an update/insert query for a workshop
+	 * @param req
+	 * @throws ActionException
+	 */
 	private void updateWorkshop (SMTServletRequest req) throws ActionException {
 		// Update/Insert query for the workshop table
 		
 	}
 	
-	
+
+	/**
+	 * Build and run an update/insert query for a resource as well as 
+	 * create the xr table record if an insert is being run
+	 * @param req
+	 * @throws ActionException
+	 */
 	private void updateResource (SMTServletRequest req) throws ActionException {
 		// Determine if we are adding the resource to a program or to a workshop
 		
