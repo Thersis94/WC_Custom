@@ -16,6 +16,7 @@ import com.smt.sitebuilder.action.blog.BlogFacadeAction;
 import com.smt.sitebuilder.action.blog.BlogGroupVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -59,20 +60,30 @@ public class FranchiseBlogAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException{
-		req.setParameter(SB_ACTION_ID, actionInit.getActionId());
-		super.retrieve(req);
 		
 		ModuleVO mod = (ModuleVO) this.getAttribute(Constants.MODULE_DATA);
-		SBModuleVO data = (SBModuleVO) mod.getActionData();
 		
 		FranchiseBlogVO vo = new FranchiseBlogVO();
 		//get franchise location data
-		this.getFranchise(req, vo);
+		String franId = StringUtil.checkVal(CenterPageAction.getFranchiseId(req),null);
+		this.getFranchise(franId, vo);
 		
-		String gId = (String)data.getAttribute(SBModuleVO.ATTRIBUTE_1); 
+		String gId = (String)mod.getAttribute(SBModuleVO.ATTRIBUTE_1); 
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+		String blogId = lookupActionId(gId, page.isPreviewMode());
 		
-		this.getBlogGroup(req,vo, lookupActionId(gId, page.isPreviewMode()));
+		this.getBlogGroup(req,vo, blogId);
+		
+		//add cache groups to the module
+		if (mod.isCacheable()){
+			String orgId = ((SiteVO)req.getAttribute(Constants.SITE_DATA)).getOrganizationId();
+			mod.addCacheGroup("BLOG");
+			mod.addCacheGroup(blogId);
+			if (orgId.matches(".*[0-9].*")) 
+				mod.addCacheGroup(orgId + "_1");
+			else if (franId != null)
+				mod.addCacheGroup(orgId + "_" + franId + "_1");
+		}
 		
 		this.putModuleData(vo);
 	}
@@ -82,9 +93,8 @@ public class FranchiseBlogAction extends SBActionAdapter {
 	 * @param req
 	 * @param vo
 	 */
-	private void getFranchise(SMTServletRequest req, FranchiseBlogVO vo){
-		//get franchise info for the current site
-		String franId = StringUtil.checkVal(CenterPageAction.getFranchiseId(req),null);
+	private void getFranchise(String franchiseId, FranchiseBlogVO vo){
+		String franId = StringUtil.checkVal(franchiseId, null);
 		//skip lookup if we can't identify the franchise
 		if (franId == null){
 			log.error("Cannot get franchise info: Missing franchiseId.");
