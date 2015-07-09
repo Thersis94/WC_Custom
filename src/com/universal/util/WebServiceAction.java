@@ -86,10 +86,6 @@ public class WebServiceAction extends SBActionAdapter {
 	 * Code returned from the user object for the shipping address type
 	 */
 	public static final String SHIPPING_USER_TYPE = "shipping";
-
-	public static final String KEYSTORE_PATH = "/data/WebCrescendo/certStores-websvc/";
-	
-	public static final String KEYSTORE_PWD = "uaJ/0Rkt7jYz1hmCJIKekw==";
 	
 	/**
 	 * @param actionInit
@@ -730,7 +726,11 @@ public class WebServiceAction extends SBActionAdapter {
 	 * @return
 	 */
 	private SSLSocketFactory buildSSLSocketFactory() {
-		HttpsSocketFactoryManager hsfm = new HttpsSocketFactoryManager(KEYSTORE_PATH, decryptString(KEYSTORE_PWD));
+		String ksFilePath = (String)getAttribute(Constants.KEY_STORE_DEFAULT_PATH);
+		String ksFileName = (String)getAttribute(Constants.KEY_STORE_DEFAULT_FILENAME);
+		String ksPwd = (String)getAttribute(Constants.KEY_STORE_DEFAULT_PWD);
+		log.debug("ks path|name|pwd: " + ksFilePath +"|"+ksFileName+"|"+ksPwd);
+		HttpsSocketFactoryManager hsfm = new HttpsSocketFactoryManager(ksFilePath+ksFileName, decryptString(ksPwd));
 		SSLSocketFactory ssf = null;
 		try {
 			ssf = hsfm.buildDefaultSslSocketFactory(SSLContextType.TLSv1_2.getContextName());
