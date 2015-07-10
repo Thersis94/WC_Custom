@@ -6,14 +6,17 @@ import java.util.HashMap;
 import java.util.Map;
 
 
+
+
 // Apache log4j
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
-
 import com.depuysynthesinst.DSIUserDataVO;
 // SMTBaseLibs 2
 import com.siliconmtn.action.ActionException;
+import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 
 
 //LMS SOAP Api
@@ -59,36 +62,33 @@ import cfc.DSIResidentsStub.UserCourseListResponse;
  * May 28, 2015: David Bargerhuff: Created class.
  ****************************************************************************/
 public class LMSWSClient {
-	
+
 	public static final String CFG_SECURITY_KEY = "dsiTTLMSApiKey"; //from the sb_config file
-	
+
 	private static Logger log;
 	private String securityKey;
 	private DSIResidentsStub dsi;
 	private Map<Integer,String> errorCodeMap;
-	
-	/**
-	 * 
-	 */
+
+
 	public LMSWSClient(String securityKey) {
-		log = Logger.getLogger(LMSWSClient.class);
+		log = Logger.getLogger(getClass());
 		this.securityKey = securityKey;
 		initErrorMap();
 	}
-	
+
 	public static void main (String[] args) {
 		String secKeySMT = "183742B231C69E28";
 		//String secKeyTest = "SUSR802";
 		PropertyConfigurator.configure("scripts/dsi/lms_soap_log4j.properties");
 		LMSWSClient tc = new LMSWSClient(secKeySMT);
-		
 		try {
 			log.debug("JKTest return value: " + tc.doJKTest());
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
-	 
+
 	/**
 	 * This tests communication to the WebService.  A response value of 1 indicates
 	 * success.
@@ -97,24 +97,24 @@ public class LMSWSClient {
 
 	 */
 	public double doJKTest() throws ActionException {
-
 		JKTest jTest = new JKTest();
-		JKTestResponse jRes = null;
+		double d;
 		try {
 			// make sure we have a client stub
 			checkWSStub();
-			
+
 			// test WS 
-			jRes = dsi.jKTest(jTest);
+			JKTestResponse jRes = dsi.jKTest(jTest);
+			d = jRes.get_return();
+			if (d < 0) throw new ActionException(parseErrorCode(d));
+
+			log.debug("JKTest: " + d);
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}
-		
-		// JKTest return value: 1.0
-		
-		return jRes.get_return();
+		return d;
 	}
-	
+
 	/**
 	 * Creates new user in the LMS based on given information.
 	 * @param user
@@ -122,7 +122,7 @@ public class LMSWSClient {
 	 * @throws ActionException
 	 */
 	public double createUser(DSIUserDataVO user) throws ActionException {
-		
+		double d;
 		// build request
 		CreateUser cu = new CreateUser();
 		cu.setSecurityKey(securityKey);
@@ -136,19 +136,22 @@ public class LMSWSClient {
 		cu.setProfession(user.getProfession());
 		cu.setEligibleProgram(convertBoolean(user.isEligible()));
 		cu.setVerified(convertBoolean(user.isVerified()));
-		
+
 		// make WS call and get response
-		CreateUserResponse cur = null;
 		try {
 			// make sure we have a client stub
 			checkWSStub();
-				
+
 			// get response
-			cur = dsi.createUser(cu);
+			CreateUserResponse cur = dsi.createUser(cu);
+			d = cur.get_return();
+			if (d < 0) throw new ActionException(parseErrorCode(d));
+
+			log.debug("CreateUserResponse val: " + d);
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}
-		return cur.get_return();
+		return d;
 	}
 
 	/**
@@ -158,7 +161,7 @@ public class LMSWSClient {
 	 * @throws ActionException
 	 */
 	public double updateUser(DSIUserDataVO user) throws ActionException {
-
+		double d;
 		// build request
 		UpdateUser uu = new UpdateUser();
 		uu.setSecurityKey(securityKey);
@@ -172,31 +175,33 @@ public class LMSWSClient {
 		uu.setProfession(user.getProfession());
 		uu.setEligibleProgram(convertBoolean(user.isEligible()));
 		uu.setVerified(convertBoolean(user.isVerified()));
-		
+
 		// make WS call and get response
-		UpdateUserResponse uur = null;
 		try {
 			// make sure we have a client stub
 			checkWSStub();
-				
+
 			// 	get response
-			uur = dsi.updateUser(uu);
-			log.debug("UpdateUserResponse val: " + uur.get_return());
+			UpdateUserResponse uur = dsi.updateUser(uu);
+			d = uur.get_return();
+
+			if (d < 0) throw new ActionException(parseErrorCode(d));
+
+			log.debug("UpdateUserResponse val: " + d);
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}
-		return uur.get_return();
+		return d;
 	}
-	
+
 	/**
 	 * Migrates a user's legacy LMS user account to a new account(?).
 	 * @param user
 	 * @return TTLMSID of migrated user.
 	 * @throws ActionException
 	 */
-	public double migrateUser(DSIUserDataVO user) 
-			throws ActionException {
-		
+	public double migrateUser(DSIUserDataVO user) throws ActionException {
+		double d;
 		// format request data
 		MigrateUser mu = new MigrateUser();
 		mu.setSecurityKey(securityKey);
@@ -211,25 +216,29 @@ public class LMSWSClient {
 		mu.setSpecialty(user.getSpecialty());
 		mu.setEligibleProgram(convertBoolean(user.isEligible()));
 		mu.setVerified(convertBoolean(user.isVerified()));
-		
-		MigrateUserResponse mur = null;
+
 		try {
 			// make sure we have a client stub
 			checkWSStub();
-		
-			// make WS call and get response
-			 mur = dsi.migrateUser(mu);
 
-			 // debug
-			 log.debug("MigrateUserResponse return val: " + mur.get_return());
+			// make WS call and get response
+			MigrateUserResponse mur = dsi.migrateUser(mu);
+			d = mur.get_return();
+			
+			if (d == -2) d = 0;  //user doesn't exist, we've got a use case for that, fail quietly.
+			
+			if (d < 0) throw new ActionException(parseErrorCode(d));
+
+			// debug
+			log.debug("MigrateUserResponse val: " + d);
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}
 
-		return mur.get_return();
-		
+		return d;
+
 	}
-	
+
 	/**
 	 * Looks up user by email address.  API returns user's TTLMSID.
 	 * @param emailAddress
@@ -248,34 +257,39 @@ public class LMSWSClient {
 		GetUserActiveIDbyEmail gube = new GetUserActiveIDbyEmail();
 		gube.setSecurityKey(securityKey);
 		gube.setEmail(emailAddress);
-		
+
 		// make WS and get response
-		GetUserActiveIDbyEmailResponse guder = null;
 		Map<Object,Object> ret = new HashMap<>();
 		try {
 			// make sure we have a client stub
 			checkWSStub();
-					
+
 			// get response
-			guder = dsi.getUserActiveIDbyEmail(gube);
+			GetUserActiveIDbyEmailResponse guder = dsi.getUserActiveIDbyEmail(gube);
 			Map1 m1 = new Map1();
 			m1 = guder.get_return();
-			log.debug("getUserActiveIDbyEmailResponse raw response: " + m1);
+			log.debug("getUserActiveIDbyEmailResponse val: " + StringUtil.getToString(m1));
 
-			// debug
+			// parse the returned map into a standard Map.
 			if (m1 != null && m1.getEntry() != null) {
 				for (Entry1 e1 : m1.getEntry()) {
 					log.debug("key/value: " + e1.getKey() + "|" + e1.getValue());
 					ret.put(e1.getKey(),e1.getValue());
 				}
 			}
+			
+			//check for errors, -2 (user doesn't exist) is OK in this scenario
+			double errCd = Convert.formatDouble("" + ret.get("ERROR"));
+			if (errCd < 0 && errCd != -2) 
+				throw new ActionException(errorCodeMap.get(errCd));
+			
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}
-		
+
 		return ret;
 	}
-	
+
 	/**
 	 * Performs a lookup to see if this user has a legacy LMS account.
 	 * @param emailAddress
@@ -294,19 +308,18 @@ public class LMSWSClient {
 		GetUserHoldingIDbyEmail gusi = new GetUserHoldingIDbyEmail();
 		gusi.setSecurityKey(securityKey);
 		gusi.setEmail(emailAddress);
-		
+
 		// make WS and get response
-		GetUserHoldingIDbyEmailResponse gusr = null;
 		Map<Object,Object> ret = new HashMap<>();
 		try {
 			// make sure we have a client stub
 			checkWSStub();
-			
+
 			// make WS call
-			gusr = dsi.getUserHoldingIDbyEmail(gusi);
+			GetUserHoldingIDbyEmailResponse gusr = dsi.getUserHoldingIDbyEmail(gusi);
 			Map2 m2 = gusr.get_return();
-			log.debug("getUserHoldingIDbyEmailResponse raw response: " + m2);
-			
+			log.debug("getUserHoldingIDbyEmailResponse val: " + StringUtil.getToString(m2));
+
 			// parse the returned map into a standard Map.
 			if (m2 != null && m2.getEntry() != null) {
 				for (Entry2 e2 : m2.getEntry()) {
@@ -314,13 +327,19 @@ public class LMSWSClient {
 					ret.put(e2.getKey(), e2.getValue());
 				}
 			}
+			
+			//check for errors
+			double errCd = Convert.formatDouble("" + ret.get("ERROR"));
+			if (errCd < 0 && errCd != -2) 
+				throw new ActionException(errorCodeMap.get(errCd));
+			
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}
 
 		return ret;
 	}
-	
+
 	/**
 	 * Returns the total number of points for a specified user.
 	 * @param user
@@ -330,27 +349,31 @@ public class LMSWSClient {
 	public double getTotalUserPoints(String dsiId) 
 			throws ActionException {
 
+		double d;
+
 		// build request
 		TotalUserPoints tup = new TotalUserPoints();
 		tup.setSecurityKey(securityKey);
 		tup.setDSI_ID(dsiId);
-		
-		// make WS call and get response
-		TotalUserPointsResponse tupr = null;
+
 		try {
 			// make sure we have a client stub
 			checkWSStub();
-					
+
 			// get response
-			tupr = dsi.totalUserPoints(tup);
-			log.debug("TotalUserPoints val: " + tupr.get_return());
+			TotalUserPointsResponse tupr = dsi.totalUserPoints(tup);
+			d = tupr.get_return();
+
+			if (d < 0) throw new ActionException(parseErrorCode(d));
+
+			log.debug("TotalUserPoints val: " + d);
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}
-		
-		return tupr.get_return();
+
+		return d;
 	}
-	
+
 	/**
 	 * Returns an Object array of JSON-formatted structures containing a list of 
 	 * all available courses and user-data related to these courses.  Each element
@@ -375,13 +398,13 @@ public class LMSWSClient {
 		UserCourseList ucl = new UserCourseList();
 		ucl.setSecurityKey(securityKey);
 		ucl.setDSI_ID(dsiId);
-		
+
 		// make WS call and get response
 		UserCourseListResponse uclr = null;
 		try {
 			// make sure we have a client stub
 			checkWSStub();
-		
+
 			// get response
 			uclr = dsi.userCourseList(ucl);
 			/*
@@ -391,13 +414,13 @@ public class LMSWSClient {
 				log.debug("Course: " + o);
 			}
 			return courseList;
-			*/
+			 */
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}
 		return uclr.get_return();
 	}
-	
+
 	/**
 	 * Gets all available courses.
 	 * JSON structure is returned which is an Object array (Object[]).  Each element
@@ -417,7 +440,7 @@ public class LMSWSClient {
 		// build request
 		CourseList cl = new CourseList();
 		cl.setSecurityKey(securityKey);
-		
+
 		// make WS call and get response.
 		CourseListResponse clr = null;
 		try {
@@ -438,7 +461,7 @@ public class LMSWSClient {
 		}
 		return clr.get_return();
 	}
-	
+
 	/**
 	 * Assigns a course to a user.
 	 * @param user
@@ -450,28 +473,33 @@ public class LMSWSClient {
 	public double registerUserForCourse(String dsiId, double courseId) 
 			throws ActionException {
 
+		double d;
+
 		// build request
 		RegisterUserforCourse rufc = new RegisterUserforCourse();
 		rufc.setSecurityKey(securityKey);
 		rufc.setDSI_ID(dsiId);
 		rufc.setC_ID(courseId);
-		
+
 		// make call and get response
-		RegisterUserforCourseResponse rufcr = null;
 		try {
 			// make sure we have a client stub
 			checkWSStub();
-			
+
 			// make the call
-			rufcr = dsi.registerUserforCourse(rufc);
+			RegisterUserforCourseResponse rufcr = dsi.registerUserforCourse(rufc);
+			d = rufcr.get_return();
+			
+			if (d < 0) throw new ActionException(parseErrorCode(d));
+
+			log.debug("registerUserforCourseResponse val: " + d);
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}
-		
-		log.debug("registerUserforCourseResponse: " + rufcr.get_return());
-		return rufcr.get_return();
-		
+		return d;
+
 	}
+
 	
 	/**
 	 * Performs a lookup on the supplied error code and returns the message 
@@ -480,18 +508,17 @@ public class LMSWSClient {
 	 * @param errorCode
 	 * @return
 	 */
-	public String parseErrorCode(Integer errorCode) {
-		if (errorCode == null || (errorCode > -1 || errorCode < -6)) {
-			return "Invalid error code supplied.";
-		}
+	private String parseErrorCode(double errorCode) {
+		if (errorCode > -1 || errorCode < -6) return "Invalid error code supplied.";
 		return errorCodeMap.get(errorCode);
 	}
+
 	
 	/**
 	 * Initializes the error Map that contains error code key values mapped to 
 	 * the key's meaning.
 	 */
-	private final void initErrorMap() {
+	private void initErrorMap() {
 		errorCodeMap = new HashMap<>();
 		errorCodeMap.put(-1,"Can't find new group (Internal Error)");
 		errorCodeMap.put(-2,"Requested user doesn't exist");
@@ -500,7 +527,7 @@ public class LMSWSClient {
 		errorCodeMap.put(-5,"Requested course doesn't exist");
 		errorCodeMap.put(-6,"Bad security code");
 	}
-	
+
 	/**
 	 * Checks to see if a client stub has been instantiated prior to a WS call
 	 * being made.  If not, a client stub is instantiated.  An exception is thrown
@@ -516,7 +543,7 @@ public class LMSWSClient {
 			}
 		}
 	}
-	
+
 	/**
 	 * Utility method to convert boolean into specific value.
 	 * @param val
@@ -526,5 +553,5 @@ public class LMSWSClient {
 		if (val) return 1.0;
 		return 0.0;
 	}
-	
+
 }

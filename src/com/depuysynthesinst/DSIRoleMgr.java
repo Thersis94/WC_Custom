@@ -63,7 +63,17 @@ public class DSIRoleMgr {
 	 * @return
 	 */
 	public static boolean isAssgUser(UserDataVO user) {
-		return isResident(user) || isChiefResident(user) || isDirector(user);
+		return isResident(user) || isChiefResident(user) || (isDirector(user) && isParticipating(user));
+	}	
+	
+	/**
+	 * helper method to isAssgUser(); CHEIFs and DIRECTORs can opt NOT to 
+	 * partake in My Assignments.
+	 * @param user
+	 * @return
+	 */
+	private static boolean isParticipating(UserDataVO user) {
+		return "yes".equals(user.getAttribute(DSIUserDataVO.RegField.DSI_MY_ASSIGNMENTS.toString()));
 	}
 	
 	/**
@@ -72,7 +82,17 @@ public class DSIRoleMgr {
 	 * @return
 	 */
 	public static boolean isAssgAdmin(UserDataVO user) {
-		return isChiefResident(user) || isDirector(user);
+		return (isChiefResident(user) || isDirector(user)) && isParticipating(user);
+	}
+	
+	
+	/**
+	 * returns true if the user is a CHIEF Resident and has chosen to participate in the program (administrative)
+	 * @param user
+	 * @return
+	 */
+	public static boolean isChiefResidentAdmin(UserDataVO user) {
+		return isChiefResident(user) && isParticipating(user);
 	}
 	
 }
