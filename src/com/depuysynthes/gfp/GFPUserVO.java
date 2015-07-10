@@ -4,8 +4,6 @@ import java.sql.ResultSet;
 
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.SMTServletRequest;
-import com.siliconmtn.security.EncryptionException;
-import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 
@@ -47,24 +45,6 @@ public class GFPUserVO {
 		hospitalId = db.getStringVal("HOSPITAL_ID", rs);
 		hospitalName = db.getStringVal("HOSPITAL_NM", rs);
 		db = null;
-	}
-	
-	public GFPUserVO(ResultSet rs, String key) {
-		assignData(rs, key);
-	}
-	
-	public void assignData(ResultSet rs, String key) {
-		try {
-			StringEncrypter se = new StringEncrypter(key);
-			DBUtil db = new DBUtil();
-			
-			assignData(rs);
-			db = null;
-		} catch (EncryptionException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
 	}
 
 	public String getUserId() {

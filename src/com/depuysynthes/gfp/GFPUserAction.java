@@ -11,6 +11,8 @@ import java.util.Map;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.security.EncryptionException;
+import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -50,6 +52,8 @@ public class GFPUserAction extends SBActionAdapter {
 		if (userId.length() > 0) sql.append("WHERE u.USER_ID = ?");
 		List<GFPUserVO> users = new ArrayList<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			String encKey = (String) getAttribute(Constants.ENCRYPT_KEY);
+			StringEncrypter se = new StringEncrypter(encKey);
 			if (userId.length() > 0) ps.setString(1, userId);
 			
 			ResultSet rs = ps.executeQuery();
@@ -57,10 +61,16 @@ public class GFPUserAction extends SBActionAdapter {
 			while(rs.next()) {
 				GFPUserVO user = new GFPUserVO(rs);
 				user.setProfile(new UserDataVO(rs));
+	            	user.getProfile().setFirstName(se.decrypt(user.getProfile().getFirstName()));
+	            	user.getProfile().setLastName(se.decrypt(user.getProfile().getLastName()));
+	            	user.getProfile().setEmailAddress(se.decrypt(user.getProfile().getEmailAddress()));
 				users.add(user);
 			}
 		} catch (SQLException e) {
 			log.error("Unable to get user " + (userId.length()>0? "with id " + userId: ""), e);
+			throw new ActionException(e);
+		} catch (EncryptionException e) {
+			log.error("Unable to decode profile data", e);
 			throw new ActionException(e);
 		}
 		

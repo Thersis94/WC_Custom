@@ -42,6 +42,9 @@ public class GFPResourceVO {
 	}
 	
 	public void assignData(SMTServletRequest req) {
+		setResourceId(req.getParameter("resourceId"));
+		setParentId(req.getParameter("parentId"));
+		setCategoryId(req.getParameter("categoryId"));
 		setName(req.getParameter("resourceName"));
 		setResourceId(req.getParameter("resourceName"));
 		setDesc(req.getParameter("resourceDesc"));
@@ -60,6 +63,8 @@ public class GFPResourceVO {
 	public void assignData(ResultSet rs) {
 		DBUtil db = new DBUtil();
 		setResourceId(db.getStringVal("RESOURCE_ID", rs));
+		setParentId(db.getStringVal("WORKSHOP_ID", rs));
+		if (resourceId == null) setParentId(db.getStringVal("PROGRAM_ID", rs));
 		setName(db.getStringVal("RESOURCE_NM", rs));
 		setDesc(db.getStringVal("RESOURCE_DESC", rs));
 		setShortDesc(db.getStringVal("SHORT_DESC", rs));
