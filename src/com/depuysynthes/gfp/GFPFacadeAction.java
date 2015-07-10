@@ -1,8 +1,11 @@
 package com.depuysynthes.gfp;
 
 import com.siliconmtn.action.ActionException;
+import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.http.SMTServletRequest;
 import com.smt.sitebuilder.action.FacadeActionAdapter;
+import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.SBUserRole;
 
 /****************************************************************************
  * <b>Title</b>: GFPFacadeAction.java
@@ -18,32 +21,52 @@ import com.smt.sitebuilder.action.FacadeActionAdapter;
  ****************************************************************************/
 
 public class GFPFacadeAction extends FacadeActionAdapter {
+	
+	public enum GFPLevel{
+		PROGRAM,	WORKSHOP,	RESOURCE;
+	}
+	
 	public void retrieve(SMTServletRequest req) throws ActionException {
-		// Check if the current user has the gfp role,
-		// whether they are a site admin, and
-		// if we are dealing with a dashboard request
+		SMTActionInterface sai = null;
+		// Determine if we are working with a user or programs
+		if (req.hasParameter("editUser")) {
+			sai = new GFPUserAction();
+		} else {
+			sai = new GFPProgramAction();
+		}
 		
-		// If the user does not have a GFP role they are not supposed to see
-		// any of the logged in user information and we return here.
-		
-		// If we are dealing with an admin level user determine whether 
-		// we are working with programs or users
-		// Create the approprite action and call out to the created action
-		
-		// Else create a program action and retrieve the pertinent program
+		sai.setActionInit(actionInit);
+		sai.setAttributes(attributes);
+		sai.setDBConnection(dbConn);
+		sai.retrieve(req);
 	}
 	
 
 	public void build(SMTServletRequest req) throws ActionException {
-		// Check if the current user is a site admin that has the proper
-		// roles assigned to them.  If not return now
+		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
+		// If we are not dealing with an admin level user we ignore the request.
+		if (role.getRoleLevel() < 100) return;
 		
-		// Check if the user is editing a program or a user
+		SMTActionInterface sai = null;
+		// Determine if we are working with a user or programs
+		if (req.hasParameter("editUser")) {
+			sai = new GFPUserAction();
+		} else {
+			sai = new GFPProgramAction();
+		}
+		sai.setActionInit(actionInit);
+		sai.setAttributes(attributes);
+		sai.setDBConnection(dbConn);
 		
-		// Create the appropriate action.
+		String actionType = req.getParameter("actionType");
 		
-		// Check if we are doing an update or delete
-		
-		// Call chosen function for created action
+		// If our supplied actionType is neither an update nor a delete
+		// we can't trust that it has enough information to do anything
+		// and simply don't do anything with the request.
+		if ("update".equals(actionType)) {
+			sai.update(req);
+		} else if ("delete".equals(actionType)) {
+			sai.delete(req);
+		}
 	}
 }
