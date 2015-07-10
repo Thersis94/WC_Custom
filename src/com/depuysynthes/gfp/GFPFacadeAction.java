@@ -44,8 +44,17 @@ public class GFPFacadeAction extends FacadeActionAdapter {
 
 	public void build(SMTServletRequest req) throws ActionException {
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
-		// If we are not dealing with an admin level user we ignore the request.
-		if (role.getRoleLevel() < 100) return;
+		// The only reason a non-admin will reach here is to change the
+		// Completedness state of a resource, all others are turned back here
+		if (req.hasParameter("completeState")) {
+			SMTActionInterface sai = new GFPProgramAction();
+			sai.setActionInit(actionInit);
+			sai.setAttributes(attributes);
+			sai.setDBConnection(dbConn);
+			sai.build(req);
+		} else if (role.getRoleLevel() < 100) {
+			return;
+		}
 		
 		SMTActionInterface sai = null;
 		// Determine if we are working with a user or programs

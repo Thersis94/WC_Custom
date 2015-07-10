@@ -345,4 +345,37 @@ public class GFPProgramAction extends SBActionAdapter {
 		}
 	}
 	
+	public void build(SMTServletRequest req) throws ActionException {
+		int completeState = Convert.formatInteger(req.getParameter("completeState"));
+		StringBuilder sql = new StringBuilder(250);
+		// A zero state indicates that the workshop has begun and a record needs to be created
+		// Any other state is an update to the existing record
+		if (completeState == 0) {
+			sql.append("INSERT INTO ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+			sql.append("DPY_SYN_GFP_COMPLETED_WORKSHOP (COMPLETED_WORKSHOP_ID, ");
+			sql.append("COMPLETED_FLG, BEGIN_DT, USER_ID, WORKSHOP_ID) ");
+			sql.append("VALUES(?,?,?,?,?)");
+		} else {
+			sql.append("UPDATE ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+			sql.append("DPY_SYN_GFP_COMPLETED_WORKSHOP SET COMPLETED_FLG = ?, COMPLETED_DT = ?, ");
+			// There will only ever be one completed state for each user workshop pair
+			// and thus are what are used to find existing records.
+			sql.append("WHERE USER_ID = ? and WORKSHOP_ID = ?");
+		}
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			int i = 1;
+			if (completeState == 0) ps.setString(i++, new UUIDGenerator().getUUID());
+			ps.setInt(i++, completeState);
+			ps.setTimestamp(i++, Convert.getCurrentTimestamp());
+			ps.setString(i++, req.getParameter("userId"));
+			ps.setString(i++, req.getParameter("workshopId"));
+		} catch (SQLException e) {
+			log.error("Unable to update complete status of workshop " + req.getParameter("workshopId") + 
+					" for user " + req.getParameter("userId"), e);
+			throw new ActionException(e);
+			
+		}
+	}
+	
 }

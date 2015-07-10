@@ -28,6 +28,7 @@ public class GFPProgramVO {
 	private String programName;
 	private List<GFPWorkshopVO> workshops;
 	private List<GFPResourceVO> resources;
+	private String userId;
 	
 	
 	public GFPProgramVO() {
@@ -43,6 +44,7 @@ public class GFPProgramVO {
 	public void assignData(SMTServletRequest req) {
 		programName = req.getParameter("programName");
 		programId = req.getParameter("programId");
+		userId = req.getParameter("userId");
 	}
 	
 	public GFPProgramVO(ResultSet rs) {
@@ -54,6 +56,7 @@ public class GFPProgramVO {
 		DBUtil db = new DBUtil();
 		programName = db.getStringVal("PROGRAM_NM", rs);
 		programId = db.getStringVal("PROGRAM_ID", rs);
+		userId = db.getStringVal("USER_ID", rs);
 		db = null;
 	}
 	
@@ -95,5 +98,13 @@ public class GFPProgramVO {
 
 	public void addResource(GFPResourceVO resource) {
 		resources.add(resource);
+	}
+
+	public String getUserId() {
+		return userId;
+	}
+
+	public void setUserId(String userId) {
+		this.userId = userId;
 	}
 }
