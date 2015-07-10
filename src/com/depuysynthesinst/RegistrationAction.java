@@ -3,10 +3,13 @@ package com.depuysynthesinst;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.depuysynthesinst.DSIUserDataVO.RegField;
 import com.depuysynthesinst.lms.LMSWSClient;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -16,7 +19,9 @@ import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.smt.sitebuilder.action.registration.SubmittalAction;
 import com.smt.sitebuilder.action.registration.RegistrationFacadeAction;
+import com.smt.sitebuilder.action.registration.SubmittalDataVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -116,9 +121,9 @@ public class RegistrationAction extends SimpleActionAdapter {
 		reg.setDBConnection(dbConn);
 		reg.setAttributes(getAttributes());
 		reg.build(req);
-		reg = null;		
+		reg = null;
 
-		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
+		DSIUserDataVO user = DSIUserDataVO.getInstance(req.getSession().getAttribute(Constants.USER_DATA));
 
 		//if they're not using My Assignments, we're done:
 		if (!DSIRoleMgr.isAssgUser(user)) return;
@@ -131,11 +136,58 @@ public class RegistrationAction extends SimpleActionAdapter {
 			//if not migrated, call save (create||update)
 			if (!migrated) saveUser(user);
 			
+			String[] regFields = new String[]{ RegField.DSI_TTLMS_ID.toString(), 
+															 RegField.DSI_SYNTHES_ID.toString(), 
+															 RegField.DSI_PROG_ELIGIBLE.toString(), 
+															 RegField.DSI_VERIFIED.toString() };
+			captureLMSResponses(req, user, regFields);
+			
 		} else if (!req.hasParameter("newReg")) {
 			//existing user updating their data
 			saveUser(user);
+			captureLMSResponses(req, user, new String[]{ RegField.DSI_TTLMS_ID.toString() });
 		}
 		
+		req.getSession().setAttribute(Constants.USER_DATA, user.getUserDataVO());
+	}
+	
+	
+	/**
+	 * writes back to the register_data table to update a couple fields on the user's registration
+	 * @param user
+	 */
+	private void captureLMSResponses(SMTServletRequest req, UserDataVO user, String[] formFields) {
+		String registerSubmittalId = StringUtil.checkVal(req.getAttribute("registerSubmittalId"));
+		req.setParameter("formFields", formFields, Boolean.TRUE);
+		DSIUserDataVO dsiUser = new DSIUserDataVO(user);
+		
+		//build a list of values to insert based on the ones we're going to delete
+		List<SubmittalDataVO> regData = new ArrayList<>();
+		for (String field : formFields) {
+			SubmittalDataVO vo = new SubmittalDataVO(null); //encryption key=null, we don't need it.
+			vo.setRegisterFieldId(field);
+			switch (field) {
+				case "DSI_TTLMS_ID": //RegField.DSI_TTLMS_ID - can't use an object here
+					vo.setUserValue(dsiUser.getTtLmsId());
+					break;
+				case "DSI_SYNTHES_ID": //RegField.DSI_SYNTHES_ID - can't use an object here
+					vo.setUserValue(dsiUser.getSynthesId());
+					break;
+				case "DSI_PROG_ELIGIBLE": //RegField.DSI_PROG_ELIGIBLE - can't use an object here
+					vo.setUserValue((dsiUser.isEligible() ? "yes" : "no"));
+					break;
+				case "DSI_VERIFIED": //RegField.DSI_VERIFIED - can't use an object here
+					vo.setUserValue((dsiUser.isVerified() ? "yes" : "no"));
+					break;
+			}
+			regData.add(vo);
+		}
+		
+		SubmittalAction sa = new SubmittalAction();
+		sa.setAttributes(getAttributes());
+		sa.setDBConnection(dbConn);
+		sa.updateRegisterData(req, user, registerSubmittalId, regData);
+		sa = null;
 	}
 	
 	
@@ -145,8 +197,9 @@ public class RegistrationAction extends SimpleActionAdapter {
 	 * @param req
 	 */
 	private void checkHoldingUser(SMTServletRequest req) {
-		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
+		DSIUserDataVO user = DSIUserDataVO.getInstance(req.getSession().getAttribute(Constants.USER_DATA));
 		String pswd = getLegacyPassword(user.getEmailAddress());
+		log.debug("holdingPwd=" + pswd);
 		
 		if (pswd.length() > 0) {
 			//verify the user has an account on the LMS to migrate
@@ -154,19 +207,18 @@ public class RegistrationAction extends SimpleActionAdapter {
 			try {
 				LMSWSClient lms = new LMSWSClient((String)getAttribute(LMSWSClient.CFG_SECURITY_KEY));
 				Map<Object,Object> data = lms.getUserHoldingIDByEmail(user.getEmailAddress());
-				DSIUserDataVO.setAttributesFromMap(user, data);
-				inHolding = (data.containsKey("SYNTHESID") && Convert.formatInteger((String)data.get("SYNTHESID")) > 0);
-				//save the responses onto UserDataVO for when the form is submitted
-				if (inHolding) {
-					for (Object o : data.values()) user.addAttribute(o.toString(), o);
-					req.getSession().setAttribute(Constants.USER_DATA, user);
-				}
-				
+				user.setAttributesFromMap(data);
+				inHolding = (Convert.formatInteger(user.getSynthesId()) > 0);
+
 			} catch (ActionException ae) {
 				log.error("could not query LMS for user holding", ae);
 			}
 			
-			if (inHolding) req.setAttribute("isLegacyUser", "true");
+			if (inHolding) {
+				req.setAttribute("isLegacyUser", "true");
+				//save the responses onto UserDataVO for when the form is submitted
+				req.getSession().setAttribute(Constants.USER_DATA, user.getUserDataVO());
+			}
 		}
 	}
 	
@@ -198,7 +250,7 @@ public class RegistrationAction extends SimpleActionAdapter {
 			DSIUserDataVO.setTTLMSID(user, d);
 			log.debug("user migrated, TTLMSID=" + d);
 		} catch (ActionException e) {
-			log.error("could not migrate user", e);
+			log.warn("could not migrate user", e);
 			return false;
 		}
 		
@@ -213,23 +265,25 @@ public class RegistrationAction extends SimpleActionAdapter {
 	 * @param user
 	 * @throws ActionException 
 	 */
-	private void saveUser(UserDataVO user) throws ActionException {
-		log.debug("creating/updaing user");
+	private void saveUser(DSIUserDataVO user) throws ActionException {
+		log.debug("creating/updating user");
 		LMSWSClient lms = new LMSWSClient((String)getAttribute(LMSWSClient.CFG_SECURITY_KEY));
 		Map<Object, Object> data = null;
 		
-		//check to see if the user has an active account
-		try {
-			data = lms.getUserActiveIDByEmail(user.getEmailAddress());
-			DSIUserDataVO.setAttributesFromMap(user, data);
-			log.debug("activeId=" + data.get("TTLMSID"));
-		} catch (ActionException ae) {
-			log.error("could not get userActiveId from LMS", ae);
+		//check to see if the user has an active account if we don't already know
+		if (user.getTtLmsId() == null || user.getTtLmsId().length() == 0) {
+			try {
+				data = lms.getUserActiveIDByEmail(user.getEmailAddress());
+				user.setAttributesFromMap(data);
+				log.debug("activeId=" + data.get("TTLMSID"));
+			} catch (ActionException ae) {
+				log.error("could not get userActiveId from LMS", ae);
+			}
 		}
 		
 		DSIUserDataVO dsiUser = new DSIUserDataVO(user);
 		double d;
-		if (dsiUser.getTtLmsId() != null) {
+		if (Convert.formatInteger(dsiUser.getTtLmsId()) > 0) {
 			//call update
 			d= lms.updateUser(dsiUser);
 			log.debug("LMS user updated: " + d);
@@ -238,9 +292,8 @@ public class RegistrationAction extends SimpleActionAdapter {
 			d = lms.createUser(dsiUser);
 			//save the newly created TTLMSID to their UserDataVO
 			log.debug("LMS user created: " + d);
+			dsiUser.setTtLmsId(Integer.valueOf(Double.valueOf(d).intValue()).toString());
 		}
-		dsiUser.setTtLmsId(Integer.valueOf(Double.valueOf(d).intValue()).toString());
-		
 	}
 
 	
