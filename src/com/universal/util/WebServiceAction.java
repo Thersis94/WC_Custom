@@ -2,6 +2,7 @@ package com.universal.util;
 
 // Java 7
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.HashMap;
@@ -9,12 +10,16 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import javax.net.ssl.SSLSocketFactory;
+
+
 // DOM4j
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
 import org.dom4j.tree.DefaultElement;
+
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -25,10 +30,13 @@ import com.siliconmtn.commerce.catalog.ProductAttributeVO;
 import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.http.parser.StringEncoder;
+import com.siliconmtn.io.http.HttpsSocketFactoryManager;
+import com.siliconmtn.io.http.HttpsSocketFactoryManager.SSLContextType;
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
 import com.siliconmtn.security.AuthenticationException;
 import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.PhoneVO;
+import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -36,6 +44,7 @@ import com.siliconmtn.util.XMLUtil;
 
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title</b>: WebServiceAction.java <p/>
@@ -77,7 +86,7 @@ public class WebServiceAction extends SBActionAdapter {
 	 * Code returned from the user object for the shipping address type
 	 */
 	public static final String SHIPPING_USER_TYPE = "shipping";
-
+	
 	/**
 	 * @param actionInit
 	 */
@@ -109,8 +118,9 @@ public class WebServiceAction extends SBActionAdapter {
 	 */
 	public Element retrieveTaxInfo(UserDataVO shippingInfo, Collection<ShoppingCartItemVO> prods, String promoCode) 
 	throws DocumentException {
+		boolean useSSL = false;
 		if (shippingInfo == null || prods == null || prods.size() == 0) return new DefaultElement("Tax");
-		String url = this.retrieveServiceURL(StringUtil.checkVal(getAttribute(CATALOG_SITE_ID)), "tax", false);
+		String url = this.retrieveServiceURL(StringUtil.checkVal(getAttribute(CATALOG_SITE_ID)), "tax", useSSL);
 		StringBuilder s = new StringBuilder();
 		s.append("xml=").append(BASE_XML_HEADER).append("<TaxRequest>");
 		s.append("<State>").append(shippingInfo.getState()).append("</State>");
@@ -119,7 +129,7 @@ public class WebServiceAction extends SBActionAdapter {
 		s.append("<PromotionCode>").append(promoCode).append("</PromotionCode>");
 		s.append("</TaxRequest>");
 		log.debug("Calling tax service: " + s);
-		return this.callWebService(url, s, "Tax");
+		return this.callWebService(url, s, "Tax", null, useSSL);
 	}
 	
 	/**
@@ -132,7 +142,9 @@ public class WebServiceAction extends SBActionAdapter {
 	public Element retrievePromotionDiscount(Collection<ShoppingCartItemVO> prods, String pc) 
 	throws DocumentException {
 		if (prods == null || prods.size() == 0) return new DefaultElement("PromotionCodeResponse");
-		String url = this.retrieveServiceURL(StringUtil.checkVal(getAttribute(CATALOG_SITE_ID)), "promocode", true);
+		boolean useSSL = true;
+		String siteId = StringUtil.checkVal(getAttribute(CATALOG_SITE_ID));
+		String url = this.retrieveServiceURL(siteId, "promocode", useSSL);
 		StringBuilder s = new StringBuilder();
 		s.append("xml=").append(BASE_XML_HEADER).append("<PromotionCodeRequest>");
 		s.append("<Code>").append(pc).append("</Code>");
@@ -140,7 +152,7 @@ public class WebServiceAction extends SBActionAdapter {
 		s.append("</PromotionCodeRequest>");
 		// Response element is 'PromotionCodeResponse' but is the root element of the reponse
 		// hence we use 'root' as the element name requested from the webservice.
-		return this.callWebService(url, s, "root");
+		return this.callWebService(url, s, "root", siteId, useSSL);
 	}
 	
 	/**
@@ -154,14 +166,15 @@ public class WebServiceAction extends SBActionAdapter {
 	 */
 	public Element authenticateMember(String email, String pwd, String catalogSiteId) 
 	throws DocumentException, AuthenticationException {
-		String url = this.retrieveServiceURL(StringUtil.checkVal(catalogSiteId), "login", true);
+		boolean useSSL = true;
+		String url = this.retrieveServiceURL(StringUtil.checkVal(catalogSiteId), "login", useSSL);
 		StringBuilder s = new StringBuilder();
 		s.append("xml=").append(BASE_XML_HEADER).append("<MemberRequest>");
 		s.append("<Email>").append(email).append("</Email>");
 		s.append("<Password>").append(pwd).append("</Password>");
 		s.append("</MemberRequest>");
 		log.debug("sending login request");
-		return this.callWebService(url, s, "root");
+		return this.callWebService(url, s, "root", catalogSiteId, useSSL);
 	}
 
 	/**
@@ -173,8 +186,9 @@ public class WebServiceAction extends SBActionAdapter {
 	 */
 	public Element retrieveShippingInfo(String zip, Map<String, ShoppingCartItemVO> prods)
 			throws DocumentException {
+		boolean useSSL = false;
 		// Build the URL
-		String url = this.retrieveServiceURL(StringUtil.checkVal(getAttribute(CATALOG_SITE_ID)), "shipping", false);
+		String url = this.retrieveServiceURL(StringUtil.checkVal(getAttribute(CATALOG_SITE_ID)), "shipping", useSSL);
 		// Build the XML Request
 		StringBuilder s = new StringBuilder();
 		s.append("xml=").append(BASE_XML_HEADER).append("<ShippingRequest>");
@@ -182,7 +196,7 @@ public class WebServiceAction extends SBActionAdapter {
 		// add product XML
 		this.addProductXMLByMap(s, prods);
 		s.append("</ShippingRequest>");
-		return this.callWebService(url, s, "ShippingCost");
+		return this.callWebService(url, s, "ShippingCost", null, useSSL);
 	}
 	
 	/**
@@ -194,7 +208,8 @@ public class WebServiceAction extends SBActionAdapter {
 	 */
 	public Element checkProductAvailability(ProductVO product) 
 			throws DocumentException {
-		String url = this.retrieveServiceURL(StringUtil.checkVal(getAttribute(CATALOG_SITE_ID)), "stock", false);
+		boolean useSSL = false;
+		String url = this.retrieveServiceURL(StringUtil.checkVal(getAttribute(CATALOG_SITE_ID)), "stock", useSSL);
 		StringBuilder s = new StringBuilder();
 		s.append("xml=").append(BASE_XML_HEADER).append("<StockRequest>");
 		s.append("<Products>");
@@ -202,7 +217,7 @@ public class WebServiceAction extends SBActionAdapter {
 		s.append("</Products>");
 		s.append("</StockRequest>");
 		log.debug("availability request XML: " + s);
-		return this.callWebService(url, s, "Products");
+		return this.callWebService(url, s, "Products", null, useSSL);
 	}
 	
 	/**
@@ -215,8 +230,10 @@ public class WebServiceAction extends SBActionAdapter {
 	 */
 	public Element placeOrder(SMTServletRequest req, ShoppingCartVO cart, String ipAddr) 
 			throws DocumentException {
+		boolean useSSL = true;
+		String siteId = StringUtil.checkVal(getAttribute(CATALOG_SITE_ID));
 		// Build the URL
-		String url = this.retrieveServiceURL(StringUtil.checkVal(getAttribute(CATALOG_SITE_ID)), "checkout", true);
+		String url = this.retrieveServiceURL(siteId, "checkout", useSSL);
 		// Get the request XML
 		StringBuilder s = null;
 		try {
@@ -234,7 +251,7 @@ public class WebServiceAction extends SBActionAdapter {
 		}
 
 		// place the order.
-		Element orderResponse = this.callWebService(url, s, "root");
+		Element orderResponse = this.callWebService(url, s, "root", siteId, useSSL);
 		//Element orderResponse = this.createDebugResponseElement(cart);
 		
 		return orderResponse;
@@ -551,27 +568,49 @@ public class WebServiceAction extends SBActionAdapter {
 	 * @return
 	 * @throws DocumentException
 	 */
-	private Element callWebService (String url, StringBuilder xmlRequest, String elem) 
-		throws DocumentException {
+	private Element callWebService (String url, StringBuilder xmlRequest, 
+			String elem, String siteId, boolean useSSL) throws DocumentException {
 		// Make the HTTP call the web service
 		log.debug("xmlRequest: " + xmlRequest);
 		SMTHttpConnectionManager conn = new SMTHttpConnectionManager();
+		// if using SSL for the call, create an SSL socket factory for the conn.
+		if (useSSL) {
+			// TODO 2016-07-13: DBargerhuff: Implements TLS1.2 only for Floriana site
+			// Remove when all sites are okayed for TLS1.2
+			if (StringUtil.checkVal(siteId).equals("USA_6")) {
+				SSLSocketFactory sfy = this.buildSSLSocketFactory();
+				conn.setSslSocketFactory(sfy);
+			}
+		}
+		
 		byte[] data = null;
+		boolean isError = false;
 		try {
 			data = conn.retrieveDataViaPost(url, xmlRequest.toString());
-		} catch (Exception ioe) {
+			// examine the response code for success
+			if (conn.getResponseCode() != 200) {
+				// We did not receive parseable XML from the webservice, throw exception
+				throw new IllegalStateException("RESPONSE:"+conn.getResponseCode());
+			}
+		} catch (IOException ioe) {
 			StringBuilder msg = new StringBuilder("Error retrieving '").append(elem);
 			msg.append("' data from web service for url ").append(url).append(" - ");
 			msg.append(ioe.getMessage());
 			log.error(msg);
-			return this.createErrorElement("SYSTEM_ERROR", "A system error occurred.");
+			isError = true;
+		} catch (IllegalStateException ise) {
+			log.error("Error, invalid response received from webservice, response code is: ", ise);
+			isError = true;
 		}
-		// just in case the connection manager failed but 'ate' the
-		// exception instead of throwing it to us.
+
+		// Check for null data in case conn mgr ate an Exception instead of throwing it to us.
 		if (data == null) {
-			log.debug("Unknown exception; error retrieving data from web service...");
-			return this.createErrorElement("SYSTEM_ERROR", "A system error occurred.");
+			log.error("Error, no data returned from webservice call, data object is null.");
+			isError = true;
 		}
+		
+		if (isError) return this.createErrorElement("SYSTEM_ERROR", "A system error occurred.");
+		
 		log.debug("xml response data: " + new String(data));
 		return this.retrieveElement(data, elem);
 	}
@@ -683,5 +722,42 @@ public class WebServiceAction extends SBActionAdapter {
 			return "0.00";
 		}
 	}
-		
+	
+	/**
+	 * Builds an SSL socket factory for using TLS 1.2 for SSL-based web service
+	 * calls.
+	 * @param req
+	 * @return
+	 */
+	private SSLSocketFactory buildSSLSocketFactory() {
+		String ksFilePath = (String)getAttribute(Constants.KEY_STORE_DEFAULT_PATH);
+		String ksFileName = (String)getAttribute(Constants.KEY_STORE_DEFAULT_FILENAME);
+		String ksPwd = (String)getAttribute(Constants.KEY_STORE_DEFAULT_PWD);
+		log.debug("ks path|name|pwd: " + ksFilePath +"|"+ksFileName+"|"+ksPwd);
+		HttpsSocketFactoryManager hsfm = new HttpsSocketFactoryManager(ksFilePath+ksFileName, decryptString(ksPwd));
+		SSLSocketFactory ssf = null;
+		try {
+			ssf = hsfm.buildDefaultSslSocketFactory(SSLContextType.TLSv1_2.getContextName());
+		} catch (Exception e) {
+			log.error("Error building SSL socket factory for secure connection, ", e);
+		}
+		return ssf;
+	}
+	
+	/**
+	 * Helper method for decrypting an encrypted String val.
+	 * @param encVal
+	 * @return
+	 */
+	private String decryptString(String encVal) {
+		if (encVal == null) return encVal;
+		StringEncrypter se = null;
+		try {
+			se = new StringEncrypter((String)attributes.get(Constants.ENCRYPT_KEY));
+			return se.decrypt(encVal);
+		} catch (Exception e) {
+			log.error("Error decrypting value: " + e.getMessage());
+			return encVal;
+		}
+	}
 }
