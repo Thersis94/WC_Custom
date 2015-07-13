@@ -129,7 +129,7 @@ public class WebServiceAction extends SBActionAdapter {
 		s.append("<PromotionCode>").append(promoCode).append("</PromotionCode>");
 		s.append("</TaxRequest>");
 		log.debug("Calling tax service: " + s);
-		return this.callWebService(url, s, "Tax", useSSL);
+		return this.callWebService(url, s, "Tax", null, useSSL);
 	}
 	
 	/**
@@ -143,8 +143,8 @@ public class WebServiceAction extends SBActionAdapter {
 	throws DocumentException {
 		if (prods == null || prods.size() == 0) return new DefaultElement("PromotionCodeResponse");
 		boolean useSSL = true;
-		//String url = this.retrieveServiceURL(StringUtil.checkVal(getAttribute(CATALOG_SITE_ID)), "promocode", true);
-		String url = this.retrieveServiceURL(StringUtil.checkVal(getAttribute(CATALOG_SITE_ID)), "promocode", useSSL);
+		String siteId = StringUtil.checkVal(getAttribute(CATALOG_SITE_ID));
+		String url = this.retrieveServiceURL(siteId, "promocode", useSSL);
 		StringBuilder s = new StringBuilder();
 		s.append("xml=").append(BASE_XML_HEADER).append("<PromotionCodeRequest>");
 		s.append("<Code>").append(pc).append("</Code>");
@@ -152,7 +152,7 @@ public class WebServiceAction extends SBActionAdapter {
 		s.append("</PromotionCodeRequest>");
 		// Response element is 'PromotionCodeResponse' but is the root element of the reponse
 		// hence we use 'root' as the element name requested from the webservice.
-		return this.callWebService(url, s, "root", useSSL);
+		return this.callWebService(url, s, "root", siteId, useSSL);
 	}
 	
 	/**
@@ -174,7 +174,7 @@ public class WebServiceAction extends SBActionAdapter {
 		s.append("<Password>").append(pwd).append("</Password>");
 		s.append("</MemberRequest>");
 		log.debug("sending login request");
-		return this.callWebService(url, s, "root", useSSL);
+		return this.callWebService(url, s, "root", catalogSiteId, useSSL);
 	}
 
 	/**
@@ -196,7 +196,7 @@ public class WebServiceAction extends SBActionAdapter {
 		// add product XML
 		this.addProductXMLByMap(s, prods);
 		s.append("</ShippingRequest>");
-		return this.callWebService(url, s, "ShippingCost", useSSL);
+		return this.callWebService(url, s, "ShippingCost", null, useSSL);
 	}
 	
 	/**
@@ -217,7 +217,7 @@ public class WebServiceAction extends SBActionAdapter {
 		s.append("</Products>");
 		s.append("</StockRequest>");
 		log.debug("availability request XML: " + s);
-		return this.callWebService(url, s, "Products", useSSL);
+		return this.callWebService(url, s, "Products", null, useSSL);
 	}
 	
 	/**
@@ -231,8 +231,9 @@ public class WebServiceAction extends SBActionAdapter {
 	public Element placeOrder(SMTServletRequest req, ShoppingCartVO cart, String ipAddr) 
 			throws DocumentException {
 		boolean useSSL = true;
+		String siteId = StringUtil.checkVal(getAttribute(CATALOG_SITE_ID));
 		// Build the URL
-		String url = this.retrieveServiceURL(StringUtil.checkVal(getAttribute(CATALOG_SITE_ID)), "checkout", useSSL);
+		String url = this.retrieveServiceURL(siteId, "checkout", useSSL);
 		// Get the request XML
 		StringBuilder s = null;
 		try {
@@ -250,7 +251,7 @@ public class WebServiceAction extends SBActionAdapter {
 		}
 
 		// place the order.
-		Element orderResponse = this.callWebService(url, s, "root", useSSL);
+		Element orderResponse = this.callWebService(url, s, "root", siteId, useSSL);
 		//Element orderResponse = this.createDebugResponseElement(cart);
 		
 		return orderResponse;
@@ -568,15 +569,18 @@ public class WebServiceAction extends SBActionAdapter {
 	 * @throws DocumentException
 	 */
 	private Element callWebService (String url, StringBuilder xmlRequest, 
-			String elem, boolean useSSL) throws DocumentException {
+			String elem, String siteId, boolean useSSL) throws DocumentException {
 		// Make the HTTP call the web service
 		log.debug("xmlRequest: " + xmlRequest);
 		SMTHttpConnectionManager conn = new SMTHttpConnectionManager();
-
 		// if using SSL for the call, create an SSL socket factory for the conn.
 		if (useSSL) {
-			SSLSocketFactory sfy = this.buildSSLSocketFactory();
-			conn.setSslSocketFactory(sfy);
+			// TODO 2016-07-13: DBargerhuff: Implements TLS1.2 only for Floriana site
+			// Remove when all sites are okayed for TLS1.2
+			if (StringUtil.checkVal(siteId).equals("USA_6")) {
+				SSLSocketFactory sfy = this.buildSSLSocketFactory();
+				conn.setSslSocketFactory(sfy);
+			}
 		}
 		
 		byte[] data = null;
