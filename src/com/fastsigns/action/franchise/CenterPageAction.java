@@ -9,6 +9,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+
 // SMT Base Libs
 import com.fastsigns.action.franchise.centerpage.FranchiseInfoAction;
 import com.fastsigns.action.franchise.centerpage.FranchiseLocationInfoAction;
@@ -65,6 +66,8 @@ public class CenterPageAction extends SimpleActionAdapter {
 	public static final int FRANCHISE_MAIN_IMAGE_UPDATE = 6;
 	public static final int FRANCHISE_SOCIAL_MEDIA_LINKS = 13;
 	public static final int FRANCHISE_DESC_UPDATE = 7;
+	public static final int FRANCHISE_CUSTOM_DESC_UPDATE = 21;
+	public static final int FRANCHISE_CUSTOM_DESC_DELETE = 22;
 	public static final int MODULE_LOC_DELETE = 8;
 	public static final int MODULE_ADD = 9;
 	public static final int MODULE_REARRANGE = 14;
@@ -133,6 +136,8 @@ public class CenterPageAction extends SimpleActionAdapter {
 					break;
 				case FRANCHISE_BUTTON_UPDATE:
 				case FRANCHISE_DESC_UPDATE:
+				case FRANCHISE_CUSTOM_DESC_UPDATE:
+				case FRANCHISE_CUSTOM_DESC_DELETE:
 				case FRANCHISE_MAIN_IMAGE_UPDATE:
 				case FRANCHISE_SOCIAL_MEDIA_LINKS:
 				case WHITEBOARD_UPDATE:
@@ -149,7 +154,7 @@ public class CenterPageAction extends SimpleActionAdapter {
 			log.error("Error Updating Center Page", e);
 			msg = "msg.cannotUpdate";
 		}
-		
+
 		log.debug("Sending Redirect to: " + redir);
 		req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
 		req.setAttribute(Constants.REDIRECT_URL, redir + "msg=" + msg);
@@ -185,6 +190,8 @@ public class CenterPageAction extends SimpleActionAdapter {
 			url.append("&testimonialForm=true&printerFriendlyTheme=true&hidePf=true&submitted=true");
 			super.sendRedirect(url.toString(), null, req);
 		} 
+		
+		
 		/*
 		 * If this is an embedded Action, forward to the PortletLoaderAction
 		 */
@@ -193,13 +200,13 @@ public class CenterPageAction extends SimpleActionAdapter {
 			pla.setDBConnection(dbConn);
 			pla.setAttributes(attributes);
 			pla.build(req);
-			
 		} 
 		
 		// If the req does not fit any of the above, call the update method
 		else {
 			update(req);
 		}
+		
 	}
 	
 	/**
@@ -217,15 +224,22 @@ public class CenterPageAction extends SimpleActionAdapter {
 		ai.setName("Tell Someone About Us");
 		
 		//If the site is Signwave branded, use AU's ActionId.
-		if(site.getCountryCode().equals("AU"))
+		if(site.getCountryCode().equals("AU")){
 			ai.setActionId("0a0014137c77504fed1c4b27b4e52892");
+		}
+			
 		
-		log.debug("******** Sending Email ...");
+		log.debug(" Sending Email ...");
 		
 		SMTActionInterface sai = new EmailFriendAction(ai);
 		sai.setAttributes(attributes);
 		sai.setDBConnection(dbConn);
 		sai.build(req);
+		
+		//setting the actionId of the email a friend to the redirect url.
+		String url = StringUtil.checkVal(req.getAttribute(Constants.REDIRECT_URL));
+		url += "&emailActionId=" + ai.getActionId();
+		req.setAttribute(Constants.REDIRECT_URL, url);
 	}
 	
 	/**
@@ -303,6 +317,7 @@ public class CenterPageAction extends SimpleActionAdapter {
 	 */
 	@SuppressWarnings("unchecked")
 	public void retrieve(SMTServletRequest req) throws ActionException {
+		
 		if (AdminConstants.REQ_LIST.equalsIgnoreCase(req.getParameter(AdminConstants.REQUEST_TYPE))) {
 			super.retrieve(req);
 			return;
@@ -337,9 +352,11 @@ public class CenterPageAction extends SimpleActionAdapter {
 		// Retrieve location info
 		FranchiseVO f = fla.getLocationInfo(id, (isPreview || isKeystone));
 		
-		// Set Franchise Times
-		fc.setTimes(new FranchiseTimeVO((Map<FranchiseTimeVO.DayType, String>) f.getAttributes().get("times")));
+		String cc = StringUtil.checkVal(f.getCountryCode());
 		
+		// Set Franchise Times
+		fc.setTimes(new FranchiseTimeVO((Map<FranchiseTimeVO.DayType, String>) f.getAttributes().get("times"), cc));
+			
 		// retrieve buttons
 		List<ButtonVO> buttons = fia.getButtonInfo(id);
 		

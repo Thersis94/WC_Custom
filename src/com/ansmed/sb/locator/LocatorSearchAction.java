@@ -120,7 +120,8 @@ public class LocatorSearchAction extends SBActionAdapter {
 		//log.debug("Lat/Lng/State: " + gLoc.getLatitude() + "/" + gLoc.getLongitude() + "/" + gLoc.getState());
 		//log.debug("Is " + gLoc.getGeocodeType() + ": " + gLoc.isMinGeocodeLevel(GeocodeType.city));
 		// Check and see if the lat long was already set
-		if (locatorSearchSubmitted && gLoc.isMinGeocodeLevel(GeocodeType.city)) {
+		if (locatorSearchSubmitted && gLoc.isMinGeocodeLevel(GeocodeType.city) && 
+				gLoc.getLongitude() == 0.0 && gLoc.getLatitude() == 0.0) {
 
 			// Geocode the location and add the lat/long to the request object
 			String geocodeClass = (String) this.getAttribute(GlobalConfig.GEOCODER_CLASS);

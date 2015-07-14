@@ -1,11 +1,14 @@
-package com.depuysynthes.action.nexus;
+package com.depuysynthes.nexus;
 
 // JDK 1.8.x
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
+import org.apache.solr.common.SolrDocument;
 
 // SMT BAse Libs
 import com.siliconmtn.action.ActionException;
@@ -16,8 +19,13 @@ import com.siliconmtn.barcode.BarcodeOEM;
 import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.http.SMTServletRequest;
 
+import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.action.search.SolrActionIndexVO;
+import com.smt.sitebuilder.action.search.SolrActionVO;
+import com.smt.sitebuilder.action.search.SolrQueryProcessor;
+import com.smt.sitebuilder.action.search.SolrResponseVO;
 
 /****************************************************************************
  * <b>Title</b>: BarcodeLookupAction.java <p/>
@@ -91,6 +99,8 @@ public class BarcodeLookupAction extends SBActionAdapter {
 			log.info("barcode: " + barcode);
 			
 			// Call the SOLR Query to populate
+			if (barcode == null) throw new Exception("Invalid Barcode Recieved");
+			
 			product = this.retrieveProduct(barcode);
 		} catch(Exception e) {
 			errorMsg = e.getLocalizedMessage();
@@ -104,12 +114,58 @@ public class BarcodeLookupAction extends SBActionAdapter {
 	 * Retrieves the product information for the provided barcode
 	 * @param barcode
 	 * @return
+	 * @throws ActionException 
 	 */
-	protected ProductVO retrieveProduct(BarcodeItemVO barcode) {
-		ProductVO product = new ProductVO();
-		product.setProductId("1294-09 650");
-		product.setProductName("LCS Complete Metal Backed Patella");
-		return product;
+	protected ProductVO retrieveProduct(BarcodeItemVO barcode) throws ActionException {
+		SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, "DePuy_NeXus");
+		SolrActionVO qData = new SolrActionVO();
+		qData.setNumberResponses(1);
+		qData.setStartLocation(0);
+		qData.setOrganizationId("DPY_SYN_NEXUS");
+		qData.setRoleLevel(0);
+		qData.addIndexType(new SolrActionIndexVO("", NexusProductVO.solrIndex));
+		Map<String, String> filter = new HashMap<>();
+		filter.put("gtin", "*"+barcode.getProductId()+"* OR searchableName:*"+barcode.getProductId()+"*");
+		qData.setFilterQueries(filter);
+		SolrResponseVO resp = sqp.processQuery(qData);
+		
+		return buildProduct(resp, barcode);
+	}
+
+	
+	/**
+	 * Build a product from the supplied solr response
+	 * @param resp
+	 * @param barcode
+	 * @return
+	 * @throws ActionException 
+	 */
+	private ProductVO buildProduct(SolrResponseVO resp, BarcodeItemVO barcode) throws ActionException {
+		ProductVO prod = new ProductVO();
+		if (resp.getResultDocuments().size() == 0) {
+			throw new ActionException("No Product Found with Supplied Barcode.");
+		}
+		SolrDocument doc = resp.getResultDocuments().get(0);
+		prod.getProdAttributes().put("organizationName", doc.get("organizationName"));
+		prod.setProductId((String)doc.get("documentId"));
+		prod.setProductGroupId((String)doc.get("deviceId"));
+		prod.setShortDesc((String) doc.get("summary"));
+
+
+		Object[] gtin = doc.getFieldValues("gtin").toArray();
+		Object[] uom = doc.getFieldValues("uomLvl").toArray();
+		
+		for (int i=0; i < gtin.length; i++) {
+			if (StringUtil.checkVal(gtin[i]).equals(prod.getProductGroupId())) {
+				prod.getProdAttributes().put("primaryUOM", uom[i]);
+			} else if (StringUtil.checkVal(gtin[i]).contains(barcode.getProductId())) {
+				prod.getProdAttributes().put("gtin", gtin[i]);
+				prod.getProdAttributes().put("uom", uom[i]);
+			}
+		}
+		
+		prod.getProdAttributes().put("lotNo", barcode.getLotCodeNumber());
+		return prod;
 	}
 
 }

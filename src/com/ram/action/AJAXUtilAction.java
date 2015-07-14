@@ -12,6 +12,11 @@ import com.ram.action.customer.CustomerLocationAction;
 import com.ram.action.customer.CustomerTypesAction;
 import com.ram.action.event.InventoryEventGroupAction;
 import com.ram.action.products.ProductAction;
+import com.ram.action.provider.VisionAction;
+import com.ram.action.provider.VisionProductAction;
+import com.ram.action.workflow.ServicesAction;
+import com.ram.action.workflow.TransactionStatusAction;
+import com.ram.action.workflow.WorkflowEventTypesAction;
 import com.ram.datafeed.data.CustomerLocationVO;
 //SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -78,6 +83,28 @@ public class AJAXUtilAction extends SBActionAdapter {
 	 * 
 	 */
 	public static final String PRODUCT_CLONE = "productClone";
+	
+	/**
+	 * 
+	 */
+	public static final String SERVICES_TYPE = "services";
+	
+	/**
+	 * 
+	 */
+	public static final String WORKFLOW_EVENT_TYPES_TYPE = "workflow_event_types";
+
+	/**
+	 * Code to handle retrieving Vision System Product List.
+	 */
+	public static final String VISION_SYSTEM = "visionSystem";
+
+	public static final String VISION_SYSTEM_PRODUCTS = "visions_system_products";
+	/**
+	 * List of possible transaction statuses.
+	 */
+	public static final String TRANSACTION_STATUS_TYPE = "transaction_status";
+	
 	/**
 	 *
 	 */
@@ -150,6 +177,36 @@ public class AJAXUtilAction extends SBActionAdapter {
 				pa.setDBConnection(getDBConnection());
 				pa.setAttributes(getAttributes());
 				pa.copy(req);
+				break;
+			case SERVICES_TYPE:
+				sai = new ServicesAction(getActionInit());
+				sai.setDBConnection(getDBConnection());
+				sai.setAttributes(getAttributes());
+				sai.retrieve(req);
+				break;
+			case WORKFLOW_EVENT_TYPES_TYPE:
+				sai = new WorkflowEventTypesAction(getActionInit());
+				sai.setDBConnection(getDBConnection());
+				sai.setAttributes(getAttributes());
+				sai.retrieve(req);
+				break;
+			case TRANSACTION_STATUS_TYPE:
+				sai = new TransactionStatusAction(getActionInit());
+				sai.setDBConnection(getDBConnection());
+				sai.setAttributes(getAttributes());
+				sai.retrieve(req);
+				break;
+			case VISION_SYSTEM:
+				sai = new VisionAction(getActionInit());
+				sai.setDBConnection(dbConn);
+				sai.setAttributes(getAttributes());
+				sai.retrieve(req);
+				break;
+			case VISION_SYSTEM_PRODUCTS:
+				sai = new VisionProductAction(getActionInit());
+				sai.setDBConnection(dbConn);
+				sai.setAttributes(getAttributes());
+				sai.retrieve(req);
 				break;
 		}
 	}

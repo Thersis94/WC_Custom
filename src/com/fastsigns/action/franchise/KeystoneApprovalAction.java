@@ -147,7 +147,15 @@ public class KeystoneApprovalAction extends SimpleActionAdapter {
 			
 			while(rs.next()) {
 				ApprovalVO app = new ApprovalVO(rs);
-				switch(WebeditType.valueOf(app.getItemDesc())) {
+				WebeditType type = null;
+				try {
+					type = WebeditType.valueOf(app.getItemDesc());
+				} catch (Exception e) {
+					log.error("null or unknown type (portlet_desc) for syncId=" + app.getWcSyncId());
+					continue;
+				}
+				
+				switch(type) {
 					case Career:
 						app.setPreviewUrl("/careers?jobPostingId="+app.getWcKeyId());
 						break;

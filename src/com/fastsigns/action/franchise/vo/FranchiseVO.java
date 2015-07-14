@@ -30,6 +30,7 @@ public class FranchiseVO extends DealerLocationVO {
 	
 	// Franchise specific values
 	private String locationDescId = null;
+	private String descFranchiseId = null;
 	private String rightImageUrl = null;
 	private String franchiseId = null;
 	private String centerImage = null;
@@ -86,6 +87,7 @@ public class FranchiseVO extends DealerLocationVO {
 		resellerId = db.getStringVal("reseller_button_id", rs);
 		resellerLink = db.getStringVal("reseller_button_link", rs);
 		resellerImg = db.getStringVal("reseller_button_img", rs);
+		descFranchiseId = db.getStringVal("desc_franchise_id", rs);
 		setUseRaqSaf(db.getIntVal("USE_RAQSAF", rs));
 		setUseGlobalMod((db.getIntVal("USE_GLOBAL_MODULES_FLG", rs)));
 		
@@ -104,7 +106,7 @@ public class FranchiseVO extends DealerLocationVO {
 		
 		setLocationDesc(desc.toString());
 	}
-
+	
 	/**
 	 * @return the locationDesc
 	 */
@@ -324,6 +326,19 @@ public class FranchiseVO extends DealerLocationVO {
 
 	public void setUseGlobalMod(int useGlobalMod) {
 		this.useGlobalMod = useGlobalMod;
+	}
+	
+	public String getDescFranchiseId(){
+		return descFranchiseId;
+	}
+	
+	public void setDescFranchsieId(String descFranchiseId){
+		this.descFranchiseId = descFranchiseId;
+	}
+	
+	public boolean isCustomDesc(){
+		String desc = StringUtil.checkVal(descFranchiseId);
+		return (desc.equals(getFranchiseId()));
 	}
 	
 	/**

@@ -78,6 +78,9 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient("ksmith49@its.jnj.com");
+			mail.addCC("mroderic@its.jnj.com");
+			if (sem.getTgmEmail() != null && sem.getTgmEmail().length() > 0)
+				mail.addCC(sem.getTgmEmail().split(", "));
 			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
@@ -260,7 +263,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 		//UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 
 		StringBuilder msg = new StringBuilder();
-		msg.append("The Seminar Coordinator for DePuy ").append(sem.getJointLabel());
+		msg.append("The EISC for DePuy ").append(sem.getJointLabel());
 		msg.append(" Seminar #").append(sem.getEvents().get(0).getRSVPCode());
 		msg.append(" has submitted a request for a Patient Education Seminar Kit.  ");
 		msg.append("Please ship the requested seminar supplies to the person listed below. \r\r");
@@ -378,11 +381,15 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 		// send email to site admin
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
+		EventEntryVO event = sem.getEvents() != null ? sem.getEvents().get(0) : null;
+		String name = "EI Marketing";
+		if (event != null && "MITEK-PEER".equals(event.getEventTypeCd())) name = "Contracting Department";
+		
 		StringBuilder subject = new StringBuilder();
 		subject.append("Speaker Contract Received - Seminar " + sem.getRSVPCodes());
 
 		StringBuilder msg = new StringBuilder();
-		msg.append("Medical Affairs has received and approved the Speaker's signed contract for Seminar #").append(sem.getRSVPCodes());
+		msg.append(name).append(" has received and approved the Speaker's signed contract for Seminar #").append(sem.getRSVPCodes());
 		msg.append(".  This seminar is now fully approved.  Please proceed with ");
 		msg.append("ad purchases, postcard mailings, flyer/poster distribution, ");
 		msg.append("and other necessary tasks to prepare for the seminar.\r\r");
@@ -505,7 +512,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 		
 		//Create the message
 		StringBuilder msg = new StringBuilder(130);
-		msg.append("The seminar coordinator for Seminar #").append(sem.getRSVPCodes());
+		msg.append("The EISC for Seminar #").append(sem.getRSVPCodes());
 		msg.append(" has approved the sample Peer to Peer Invitation.\r\r");
 		
 		try{
