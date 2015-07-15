@@ -20,7 +20,10 @@ import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
+import com.smt.sitebuilder.action.user.ProfileRoleManager;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.UserLogin;
 
 /****************************************************************************
  * <b>Title</b>: GFPUserAction.java
@@ -143,8 +146,10 @@ public class GFPUserAction extends SBActionAdapter {
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(175);
 		GFPUserVO user = new GFPUserVO(req);
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		user.setProfile(new UserDataVO(req));
-		updateProfile(user);
+		updateProfile(user, site.getOrganizationId());
+		updateAuthentication(user, site.getAliasPathParentId(), req.getParameter("password"), Convert.formatBoolean(req.getParameter("overwritePassword")));
 		
 		if (user.getUserId() == null) {
 			sql.append("INSERT INTO ").append(customDb).append("DPY_SYN_GFP_USER ");
@@ -170,21 +175,53 @@ public class GFPUserAction extends SBActionAdapter {
 			throw new ActionException(e);
 		}
 	}
+
+
+	/**
+	 * Update the Authentication information for the user.  If the user already 
+	 * has an entry in the authentication table we only update that if explicitly
+	 * stated.
+	 * @param user
+	 * @param siteId
+	 * @param password
+	 * @param overwritePassword
+	 * @throws ActionException
+	 */
+	private void updateAuthentication(GFPUserVO user, String siteId, String password, boolean overwritePassword) throws ActionException {
+		try {
+			if (overwritePassword || user.getProfile().getAuthenticationId() == null) {
+				UserLogin ul = new UserLogin(dbConn, (String) attributes.get(Constants.ENCRYPT_KEY));
+					ul.modifyUser(user.getProfile().getAuthenticationId(), user.getProfile().getEmailAddress(), password, 0);
+			}
 	
-	
+			ProfileRoleManager prm = new ProfileRoleManager();
+			int userState = user.getActiveFlg() == 1? 20 : 5;
+			prm.addRole(user.getProfileId(), siteId, "10", userState, dbConn);
+		} catch (DatabaseException e) {
+			log.error("Unable to update authentication and role infromation for user profile id " + user.getProfileId(), e);
+			throw new ActionException(e);
+		}
+	}
+
+
 	/**
 	 * Update the profile associated with the current user.
 	 * @param user
 	 * @throws ActionException
 	 */
-	private void updateProfile(GFPUserVO user) throws ActionException {
+	private void updateProfile(GFPUserVO user, String orgId) throws ActionException {
 		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
 		try {
 			// If no profile id was passed we need to either find or create a
 			// proper profile id.
 			if (user.getProfileId() == null) {
 				String profileId = pm.checkProfile(user.getProfile(), dbConn);
-				if (profileId == null) profileId = new UUIDGenerator().getUUID();
+				if (profileId == null) {
+					profileId = new UUIDGenerator().getUUID();
+					user.getProfile().setProfileId(profileId);
+				} else {
+					user.setProfile(pm.getProfile(profileId, dbConn, ProfileManager.PROFILE_ID_LOOKUP, orgId));
+				}
 				user.setProfileId(profileId);
 			}
 			pm.updateProfile(user.getProfile(), dbConn);

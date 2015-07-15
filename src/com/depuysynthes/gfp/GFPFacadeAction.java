@@ -1,6 +1,7 @@
 package com.depuysynthes.gfp;
 
 import com.siliconmtn.action.ActionException;
+import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.http.SMTServletRequest;
 import com.smt.sitebuilder.action.FacadeActionAdapter;
@@ -26,10 +27,19 @@ public class GFPFacadeAction extends FacadeActionAdapter {
 		PROGRAM,	WORKSHOP,	RESOURCE;
 	}
 	
+	public GFPFacadeAction() {
+		
+	}
+	
+	public GFPFacadeAction(ActionInitVO init) {
+		this.actionInit = init;
+	}
+	
 	public void retrieve(SMTServletRequest req) throws ActionException {
+		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 		SMTActionInterface sai = null;
 		// Determine if we are working with a user or programs
-		if (req.hasParameter("editUser")) {
+		if (req.hasParameter("editUser") && role.getRoleLevel() == 100) {
 			sai = new GFPUserAction();
 		} else {
 			sai = new GFPProgramAction();

@@ -34,7 +34,11 @@ public class GFPProgramAction extends SBActionAdapter {
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		String programId = StringUtil.checkVal(req.getParameter("programId"));
 		UserDataVO user = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
-		String profileId = StringUtil.checkVal(user.getProfileId());
+		String profileId = null;
+		if (user != null) {
+			profileId = StringUtil.checkVal(user.getProfileId());
+		}
+		
 		boolean isUser = req.hasParameter("dashboard");
 		
 		if (!isUser && programId.length() == 0) {
