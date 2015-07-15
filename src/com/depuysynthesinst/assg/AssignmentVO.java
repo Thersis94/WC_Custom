@@ -3,6 +3,8 @@ package com.depuysynthesinst.assg;
 import java.io.Serializable;
 import java.sql.ResultSet;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -10,6 +12,7 @@ import java.util.Map;
 
 import org.apache.solr.common.SolrDocument;
 
+import com.depuysynthesinst.assg.ResidentVO.ResidentGrouping;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.UserDataVO;
@@ -35,14 +38,14 @@ public class AssignmentVO implements Serializable {
 	private String parentId;
 	private String directorProfileId;
 	private UserDataVO directorProfile;
-	private List<ResidentVO> residents;
+	private Map<String, ResidentVO> residents;
 	private String assgName;
 	private String assgDesc;
 	private Date dueDt;
+	private Date publishDt;
 	private boolean sequentialFlg; //if the assets should be completed in a certain sequence
 	private boolean skipAheadFlg; //if the user has acknowledged that they're out of sequence.
 	private int orderNo;
-	private boolean activeFlg;
 	private Date createDt;
 	private Date updateDt;
 	private List<AssignmentAssetVO> assets;
@@ -50,22 +53,23 @@ public class AssignmentVO implements Serializable {
 	
 	public AssignmentVO() {
 		assets = new ArrayList<>();
-		residents = new ArrayList<>();
+		residents = new HashMap<>();
 	}
 	
 	public AssignmentVO(ResultSet rs) {
 		this();
 		DBUtil util = new DBUtil();
 		assgId = util.getStringVal("assg_id", rs);
+		resDirId = util.getIntVal("res_dir_id", rs);
 		parentId = util.getStringVal("parent_id", rs);
 		assgName = util.getStringVal("assg_nm", rs);
 		assgDesc = util.getStringVal("desc_txt", rs);
 		directorProfileId = util.getStringVal("res_dir_profile_id", rs);
 		dueDt = util.getDateVal("due_dt", rs);
-		updateDt = util.getDateVal("update_dt", rs);
+		setPublishDt(util.getDateVal("publish_dt", rs));
+		setUpdateDt(util.getDateVal("update_dt", rs));
 		setSequentialFlg(util.getIntegerVal("sequential_flg", rs));
 		setSkipAheadFlg(util.getIntegerVal("skip_ahead_flg", rs));
-		setActiveFlg(util.getIntegerVal("active_flg", rs));
 		util = null;
 	}
 	
@@ -78,7 +82,6 @@ public class AssignmentVO implements Serializable {
 		assgDesc = StringUtil.checkVal(req.getParameter("assgDesc"), null);
 		dueDt = Convert.formatDate(Convert.DATE_SLASH_PATTERN, req.getParameter("dueDt"));
 		setSequentialFlg(Convert.formatBoolean(req.getParameter("sequentialFlg")));
-		setActiveFlg(Convert.formatBoolean(req.getParameter("activeFlg")));
 	}
 
 
@@ -171,19 +174,6 @@ public class AssignmentVO implements Serializable {
 	}
 
 
-	public boolean isActiveFlg() {
-		return activeFlg;
-	}
-
-
-	public void setActiveFlg(boolean activeFlg) {
-		this.activeFlg = activeFlg;
-	}
-	public void setActiveFlg(int activeFlg) {
-		setActiveFlg(Convert.formatBoolean(activeFlg));
-	}
-
-
 	public Date getCreateDt() {
 		return createDt;
 	}
@@ -195,7 +185,9 @@ public class AssignmentVO implements Serializable {
 
 
 	public Date getUpdateDt() {
-		return updateDt;
+		if (updateDt != null && publishDt != null && updateDt.after(publishDt))
+			return updateDt;
+		else return null;
 	}
 
 
@@ -205,6 +197,7 @@ public class AssignmentVO implements Serializable {
 
 
 	public List<AssignmentAssetVO> getAssets() {
+		Collections.sort(assets);
 		return assets;
 	}
 
@@ -231,8 +224,9 @@ public class AssignmentVO implements Serializable {
 			SolrDocument sd = vo.getSolrDocument();
 			if (sd == null) continue;
 			
-			String type = StringUtil.checkVal(sd.getFieldValue("assetType_s"));
+			String type = StringUtil.checkVal(sd.getFieldValue("assetType_s")).toUpperCase();
 			if (type.length() == 0) type = "Unknown";
+			type = StringUtil.capitalizePhrase(type, 4);
 			int cnt = 1;
 			if (facets.containsKey(type)) {
 				cnt += facets.get(type).intValue();
@@ -243,7 +237,13 @@ public class AssignmentVO implements Serializable {
 		return facets;
 	}
 	
+	public void addResidentStats(String residentId, int completeCnt) {
+		if (this.residents.containsKey(residentId))
+				this.residents.get(residentId).setCompleteCnt(completeCnt);
+	}
+	
 	public Integer getPercentComplete() {
+		if (assets.size() == 0) return 0;
 		int completeCnt = 0;
 		for (AssignmentAssetVO vo : assets)
 			if (vo.getCompleteDt() != null) ++completeCnt;
@@ -255,22 +255,20 @@ public class AssignmentVO implements Serializable {
 		return (100 == getPercentComplete());
 	}
 
-	public List<ResidentVO> getResidents() {
-		return residents;
+	public Collection<ResidentVO> getResidents() {
+		return residents.values();
 	}
 
-	public void setResidents(List<ResidentVO> residents) {
-		this.residents = residents;
-	}
 	
 	public void addResident(ResidentVO resident) {
-		this.residents.add(resident);
+		this.residents.put(resident.getResidentId(), resident);
 	}
 	
 	public int getResidentsCompleted() {
 		int cnt = 0;
-		for (ResidentVO res : residents)
-			if (res.isCompleted()) ++cnt;
+		for (ResidentVO res : residents.values()) {
+			if (res.getCompleteCnt() == this.assets.size()) ++cnt;
+		}
 		
 		return cnt;
 	}
@@ -297,5 +295,22 @@ public class AssignmentVO implements Serializable {
 
 	public void setParentId(String parentId) {
 		this.parentId = parentId;
+	}
+	
+	public boolean isExpired() {
+		if (dueDt == null) return false;
+		return (dueDt.before(Convert.getCurrentTimestamp()));
+	}
+	
+	public ResidentGrouping getResidentGrouping() {
+		return new ResidentVO().new ResidentGrouping(new ArrayList<ResidentVO>(residents.values()));
+	}
+
+	public Date getPublishDt() {
+		return publishDt;
+	}
+
+	public void setPublishDt(Date publishDt) {
+		this.publishDt = publishDt;
 	}
 }

@@ -50,7 +50,7 @@ public class AssignmentsFacadeAction extends SimpleActionAdapter {
 			action = new MyResidentsAction();
 		} else if (isProfessor && req.hasParameter("view")) {
 			//admin view of assignments - or a single assignment (edit mode)
-			action = new MyAssignmentsAdminAction();
+			action = new MyAssignmentsAdminAction(actionInit);
 		} else {
 			//load list of 'My Assignments'
 			action = new MyAssignmentsAction();
@@ -88,15 +88,17 @@ public class AssignmentsFacadeAction extends SimpleActionAdapter {
 		action.setDBConnection(dbConn);
 		action.build(req);
 		
-		// Setup the redirect.
-		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
-		StringBuilder url = new StringBuilder();
-		url.append(page.getRequestURI()).append("?view=").append(req.getParameter("view")); //display admin menus
-		if (req.hasParameter("pg")) url.append("&pg=").append(req.getParameter("pg")); //admin page (include)
-		if (req.hasParameter("redirAssignmentId")) url.append("&isNew=1&assignmentId=").append(req.getParameter("redirAssignmentId"));
-		
-		req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
-		req.setAttribute(Constants.REDIRECT_URL, url.toString());
+		// Setup the redirect if one of our child actions hasn't do so already. (MyResidentAction does)
+		if (req.getAttribute(Constants.REDIRECT_URL) == null) {
+			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+			StringBuilder url = new StringBuilder();
+			url.append(page.getRequestURI()).append("?view=").append(req.getParameter("view")); //display admin menus
+			if (req.hasParameter("pg")) url.append("&pg=").append(req.getParameter("pg")); //admin page (include)
+			if (req.hasParameter("redirAssignmentId")) url.append("&isNew=1&assignmentId=").append(req.getParameter("redirAssignmentId"));
+			
+			req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
+			req.setAttribute(Constants.REDIRECT_URL, url.toString());
+		}
 	}
 
 	public void list(SMTServletRequest req) throws ActionException {

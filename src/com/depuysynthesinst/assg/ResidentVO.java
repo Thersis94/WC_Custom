@@ -39,6 +39,8 @@ public class ResidentVO implements Serializable {
 	private boolean consentTimedOut;
 	private Date consentReqDt; //the date the Director last requested this user join their roster.  If pending, requests can be re-sent after 10 days.
 	private List<AssignmentVO> assignments;
+	private String resAssgId;
+	private int completeCnt;
 
 	public ResidentVO() {
 		assignments = new ArrayList<>();
@@ -49,10 +51,11 @@ public class ResidentVO implements Serializable {
 		DBUtil util = new DBUtil();
 		residentId = util.getStringVal("resident_id", rs);
 		residentDirectorId = util.getIntVal("res_dir_id", rs);
+		resAssgId = util.getStringVal("res_assg_id", rs);
 		pgyId = util.getStringVal("pgy_id", rs);
 		profileId = util.getStringVal("profile_id", rs);
 		consentDt = util.getDateVal("consent_dt", rs);
-		setConsentTimedOut(util.getDateVal("update_dt", rs));
+		setConsentTimedOut(util.getDateVal("invite_sent_dt", rs));
 	}
 	
 	public ResidentVO(SMTServletRequest req) {
@@ -119,14 +122,6 @@ public class ResidentVO implements Serializable {
 		this.assignments = assignments;
 	}
 	
-	/** 
-	 * returns true of the resident has completed all the assignments
-	 * @return
-	 */
-	public boolean isCompleted() {
-		return true;
-	}
-
 	public boolean isConsentTimedOut() {
 		return consentTimedOut;
 	}
@@ -142,7 +137,7 @@ public class ResidentVO implements Serializable {
 		Calendar cal = Calendar.getInstance();
 		cal.setTime(updateDt);
 		cal.add(Calendar.DAY_OF_YEAR, MyResidentsAction.CONSENT_TIMEOUT);
-		
+
 		consentTimedOut = (cal.getTime().before(Convert.getCurrentTimestamp()));
 	}
 
@@ -163,6 +158,24 @@ public class ResidentVO implements Serializable {
 	}
 	
 	
+	public String getResAssgId() {
+		return resAssgId;
+	}
+
+	public void setResAssgId(String resAssgId) {
+		this.resAssgId = resAssgId;
+	}
+
+
+	public int getCompleteCnt() {
+		return completeCnt;
+	}
+
+	public void setCompleteCnt(int completeCnt) {
+		this.completeCnt = completeCnt;
+	}
+
+
 	/**
 	 * **************************************************************************
 	 * <b>Title</b>: ResidentGrouping.java<p/>

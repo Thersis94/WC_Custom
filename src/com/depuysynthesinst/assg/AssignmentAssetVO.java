@@ -8,6 +8,7 @@ import org.apache.solr.common.SolrDocument;
 
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.util.Convert;
 
 /****************************************************************************
  * <b>Title</b>: AssgAssetVO.java<p/>
@@ -19,7 +20,7 @@ import com.siliconmtn.http.SMTServletRequest;
  * @version 1.0
  * @since Jul 7, 2015
  ****************************************************************************/
-public class AssignmentAssetVO implements Serializable {
+public class AssignmentAssetVO implements Serializable, Comparable<AssignmentAssetVO> {
 	private static final long serialVersionUID = 1393648844170164739L;
 
 	private String assgAssetId;
@@ -133,6 +134,14 @@ public class AssignmentAssetVO implements Serializable {
 
 	public void setAssgAssetId(String assgAssetId) {
 		this.assgAssetId = assgAssetId;
+	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Comparable#compareTo(java.lang.Object)
+	 */
+	@Override
+	public int compareTo(AssignmentAssetVO o) {
+		return Convert.formatInteger(this.orderNo).compareTo(Convert.formatInteger(o.getOrderNo()));
 	}
 
 }

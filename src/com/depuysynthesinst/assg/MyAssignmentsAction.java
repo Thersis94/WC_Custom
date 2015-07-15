@@ -74,10 +74,15 @@ public class MyAssignmentsAction extends SBActionAdapter {
 		//load the list of assignments
 		List<AssignmentVO> data = loadAssignmentList(user.getProfileId(), assgId);
 		
+		for (AssignmentVO assg : data) {			
+			//load assets from Solr
+			if (assg.getAssets().size() > 0)
+				loadSolrAssets(assg, role);
+		}
+		
 		//if we're displaying only one assignment we need to load all of it's Solr assets (for detailed view/display)
 		if (assgId != null && data.size() == 1) {
 			AssignmentVO assg = data.get(0);
-			loadSolrAssets(assg, role);
 			
 			//also load the Profile for the Resident Director
 			ProfileManager pm = ProfileManagerFactory.getInstance(getAttributes());
@@ -102,7 +107,7 @@ public class MyAssignmentsAction extends SBActionAdapter {
 		String reqType = StringUtil.checkVal(req.getParameter("reqType"), "");
 		
 		switch (reqType) {
-			case "assgAsset":
+			case "complete":
 				captureResAssgAsset(req);
 				break;
 			case "skipAhead":
@@ -221,7 +226,7 @@ public class MyAssignmentsAction extends SBActionAdapter {
 		SolrActionVO qData = new SolrActionVO();
 		qData.setNumberResponses(assg.getAssets().size()); //all
 		for (AssignmentAssetVO vo : assg.getAssets()) {
-			log.debug("querying for asset: " + vo.getAssetId() + " = " + vo.getSolrDocumentId());
+			log.debug("querying for asset: " + vo.getAssgAssetId() + " = " + vo.getSolrDocumentId());
 			SolrFieldVO field = new SolrFieldVO();
 			field.setBooleanType(BooleanType.OR);
 			field.setFieldType(FieldType.SEARCH);
@@ -259,8 +264,9 @@ public class MyAssignmentsAction extends SBActionAdapter {
 		Map<String, AssignmentVO> data = new HashMap<>();
 		String customDb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(400);
-		sql.append("select a.assg_id, a.assg_nm, a.due_dt, a.sequential_flg, ra.skip_ahead_flg, ");
-		sql.append("aa.solr_document_id, aa.order_no, raa.complete_dt, rd.profile_id as res_dir_profile_id ");
+		sql.append("select a.assg_id, a.assg_nm, a.due_dt, a.sequential_flg, a.desc_txt, a.publish_dt, a.update_dt, ");
+		sql.append("ra.skip_ahead_flg, aa.solr_document_id, aa.order_no, aa.assg_asset_id, ");
+		sql.append("raa.complete_dt, rd.profile_id as res_dir_profile_id ");
 		sql.append("from ").append(customDb).append("DPY_SYN_INST_ASSG a ");
 		sql.append("inner join ").append(customDb).append("DPY_SYN_INST_RES_DIR rd on a.res_dir_id=rd.res_dir_id ");
 		sql.append("inner join ").append(customDb).append("DPY_SYN_INST_RES_ASSG ra on a.assg_id=ra.assg_id ");
@@ -269,7 +275,7 @@ public class MyAssignmentsAction extends SBActionAdapter {
 		sql.append("left outer join ").append(customDb).append("DPY_SYN_INST_RES_ASSG_ASSET raa on aa.assg_asset_id=raa.assg_asset_id ");
 		sql.append("where r.profile_id=? ");
 		if (assignmentId != null) sql.append("and a.assg_id=? ");
-		sql.append("order by a.due_dt, a.assg_nm, a.assg_id");
+		sql.append("and a.publish_dt is not null order by a.due_dt, a.assg_nm, a.assg_id");
 		log.debug(sql);
 		
 		AssignmentVO vo;
