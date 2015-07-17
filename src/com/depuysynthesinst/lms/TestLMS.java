@@ -29,8 +29,8 @@ public class TestLMS {
 		LMSWSClient client = new LMSWSClient("183742B231C69E28");
 		
 		try {
-			System.out.println("doJKTest: " + client.doJKTest());
-			
+			System.out.println("doJKTest: " + client.getUserActiveIDByEmail("jmckain@siliconmtn.com"));
+			System.out.println("doJKTest: " + client.getTotalUserPoints("c0a80228a3afb43aeaf9bd49b6a69292"));
 			// format a test user VO and set on client.
 			DSIUserDataVO du = formatTestUser();
 			

@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.servlet.http.HttpSession;
+
 import com.depuysynthesinst.DSIUserDataVO.RegField;
 import com.depuysynthesinst.lms.LMSWSClient;
 import com.siliconmtn.action.ActionException;
@@ -111,19 +113,27 @@ public class RegistrationAction extends SimpleActionAdapter {
 		mod.setActionGroupId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_2));
 		setAttribute(Constants.MODULE_DATA, mod);
 		
+		HttpSession ses = (HttpSession) req.getSession();
+		
 		//TODO
 		if (req.hasParameter("revokeDirector")) {
 
 			return;
 		}
 
+		//set a parameter to tell Registration to NOT dump the userVO if the user completes without logging in, we need it
+		boolean unloadSessionIfNoRole = false;
+		if (req.hasParameter("newReg")) {
+			unloadSessionIfNoRole = true;
+			req.setAttribute("dontUnloadSession", "true");
+		}
 		SMTActionInterface reg = new RegistrationFacadeAction(actionInit);
 		reg.setDBConnection(dbConn);
 		reg.setAttributes(getAttributes());
 		reg.build(req);
 		reg = null;
 
-		DSIUserDataVO user = DSIUserDataVO.getInstance(req.getSession().getAttribute(Constants.USER_DATA));
+		DSIUserDataVO user = DSIUserDataVO.getInstance(ses.getAttribute(Constants.USER_DATA));
 
 		//if they're not using My Assignments, we're done:
 		if (!DSIRoleMgr.isAssgUser(user)) return;
@@ -148,7 +158,12 @@ public class RegistrationAction extends SimpleActionAdapter {
 			captureLMSResponses(req, user, new String[]{ RegField.DSI_TTLMS_ID.toString() });
 		}
 		
-		req.getSession().setAttribute(Constants.USER_DATA, user.getUserDataVO());
+		boolean isFinalPage = StringUtil.checkVal(req.getParameter("finalPage")).equals("1");
+		if (isFinalPage && unloadSessionIfNoRole && ses.getAttribute(Constants.ROLE_DATA) == null) {
+			ses.removeAttribute(Constants.USER_DATA);
+		} else {
+			ses.setAttribute(Constants.USER_DATA, user.getUserDataVO());
+		}
 	}
 	
 	
