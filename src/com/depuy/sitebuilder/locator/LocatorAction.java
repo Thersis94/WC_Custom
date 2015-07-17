@@ -615,6 +615,12 @@ public class LocatorAction extends SBActionAdapter {
 		url.append("&specialty=").append(req.getParameter("specialty"));
 		url.append("&zip=").append(req.getParameter("zip"));
 		url.append("&uniqueId=").append(req.getParameter("uniqueId"));
+		if (req.hasParameter("radius")) {
+			url.append("&radius=").append(req.getParameter("radius"));
+		}
+		if (req.hasParameter("page")) {
+			url.append("&page=").append(req.getParameter("page"));
+		}
 		return url;
     }
     
