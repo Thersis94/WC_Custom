@@ -50,6 +50,8 @@ public class AssignmentVO implements Serializable {
 	private Date updateDt;
 	private List<AssignmentAssetVO> assets;
 	
+	private String resAssgId;
+	
 	
 	public AssignmentVO() {
 		assets = new ArrayList<>();
@@ -70,6 +72,7 @@ public class AssignmentVO implements Serializable {
 		setUpdateDt(util.getDateVal("update_dt", rs));
 		setSequentialFlg(util.getIntegerVal("sequential_flg", rs));
 		setSkipAheadFlg(util.getIntegerVal("skip_ahead_flg", rs));
+		setResAssgId(util.getStringVal("res_assg_id", rs));
 		util = null;
 	}
 	
@@ -244,11 +247,17 @@ public class AssignmentVO implements Serializable {
 	
 	public Integer getPercentComplete() {
 		if (assets.size() == 0) return 0;
-		int completeCnt = 0;
+		double completeCnt = 0;
+		double size = assets.size();
 		for (AssignmentAssetVO vo : assets)
 			if (vo.getCompleteDt() != null) ++completeCnt;
-		
-		return Math.round((completeCnt / assets.size())) * 100;
+
+		try {
+			double d = (completeCnt / size);
+			return Double.valueOf(d * 100).intValue();
+		} catch (Exception e) {
+			return 0;
+		}
 	}
 	
 	public boolean isComplete() {
@@ -312,5 +321,13 @@ public class AssignmentVO implements Serializable {
 
 	public void setPublishDt(Date publishDt) {
 		this.publishDt = publishDt;
+	}
+
+	public String getResAssgId() {
+		return resAssgId;
+	}
+
+	public void setResAssgId(String resAssgId) {
+		this.resAssgId = resAssgId;
 	}
 }

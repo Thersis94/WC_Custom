@@ -125,22 +125,22 @@ public class MyAssignmentsAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	private void captureSkipAhead(SMTServletRequest req) throws ActionException {
-		String residentId = StringUtil.checkVal(req.getParameter("residentId"), null);
+		String resAssgId = StringUtil.checkVal(req.getParameter("resAssgId"), null);
 		String assgId = StringUtil.checkVal(req.getParameter("assgId"), null);
 		
 		//data validation - require a user and an ID to enact upon
-		if (residentId == null || assgId == null) 
+		if (resAssgId == null || assgId == null) 
 			throw new ActionException("missing data, cannot complete transaction");
 		
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("update ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("DPY_SYN_INST_RES_ASSG set skip_ahead_flg=? where resident_id=? and assg_id=?");
+		sql.append("DPY_SYN_INST_RES_ASSG set skip_ahead_flg=? where assg_id=? and res_assg_id=?");
 		log.debug(sql);
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setInt(1, 1);
-			ps.setString(2, residentId);
-			ps.setString(3, assgId);
+			ps.setString(2, assgId);
+			ps.setString(3, resAssgId);
 			ps.executeUpdate();
 		} catch (SQLException sqle) {
 			log.error("could not delete user assignment asset completion tag", sqle);
@@ -156,7 +156,7 @@ public class MyAssignmentsAction extends SBActionAdapter {
 	 */
 	private void captureResAssgAsset(SMTServletRequest req) throws ActionException {
 		String assgAssetId = StringUtil.checkVal(req.getParameter("assgAssetId"), null);
-		String resAssgId = StringUtil.checkVal(req.getParameter("assgAssetId"), null);
+		String resAssgId = StringUtil.checkVal(req.getParameter("resAssgId"), null);
 		
 		//data validation - require a user and an ID to enact upon
 		if (resAssgId == null || assgAssetId == null) 
@@ -180,7 +180,7 @@ public class MyAssignmentsAction extends SBActionAdapter {
 	private void deleteResAssgAsset(String assgAssetId, String resAssgId) {
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("delete from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("DPY_SYN_INST_RES_ASSG_ASSET where res_assg_id=? and res_assg_id=?");
+		sql.append("DPY_SYN_INST_RES_ASSG_ASSET where assg_asset_id=? and res_assg_id=?");
 		log.debug(sql);
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -266,13 +266,13 @@ public class MyAssignmentsAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(400);
 		sql.append("select a.assg_id, a.assg_nm, a.due_dt, a.sequential_flg, a.desc_txt, a.publish_dt, a.update_dt, ");
 		sql.append("ra.skip_ahead_flg, aa.solr_document_id, aa.order_no, aa.assg_asset_id, ");
-		sql.append("raa.complete_dt, rd.profile_id as res_dir_profile_id ");
+		sql.append("raa.complete_dt, rd.profile_id as res_dir_profile_id, ra.res_assg_id ");
 		sql.append("from ").append(customDb).append("DPY_SYN_INST_ASSG a ");
 		sql.append("inner join ").append(customDb).append("DPY_SYN_INST_RES_DIR rd on a.res_dir_id=rd.res_dir_id ");
 		sql.append("inner join ").append(customDb).append("DPY_SYN_INST_RES_ASSG ra on a.assg_id=ra.assg_id ");
 		sql.append("inner join ").append(customDb).append("DPY_SYN_INST_RESIDENT r on ra.resident_id=r.resident_id ");
 		sql.append("left outer join ").append(customDb).append("DPY_SYN_INST_ASSG_ASSET aa on a.assg_id=aa.assg_id ");
-		sql.append("left outer join ").append(customDb).append("DPY_SYN_INST_RES_ASSG_ASSET raa on aa.assg_asset_id=raa.assg_asset_id ");
+		sql.append("left outer join ").append(customDb).append("DPY_SYN_INST_RES_ASSG_ASSET raa on aa.assg_asset_id=raa.assg_asset_id and ra.res_assg_id=raa.res_assg_id ");
 		sql.append("where r.profile_id=? ");
 		if (assignmentId != null) sql.append("and a.assg_id=? ");
 		sql.append("and a.publish_dt is not null order by a.due_dt, a.assg_nm, a.assg_id");
