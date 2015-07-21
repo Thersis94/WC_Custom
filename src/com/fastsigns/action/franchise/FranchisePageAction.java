@@ -699,7 +699,7 @@ public class FranchisePageAction extends SBActionAdapter {
 				MenuObj p = new MenuObj();
 				p.setData(rs);
 				p.setSyncData(new ApprovalVO(rs));
-				
+
 				// Check if this page if this page is allowed to be edited via webedit
 				if (StringUtil.checkVal(rs.getString("ROLE_ID")).length() > 0)
 					p.setLevel(100);
@@ -721,7 +721,7 @@ public class FranchisePageAction extends SBActionAdapter {
 	
 	private void savePage(SMTServletRequest req) throws ActionException {
 		try {
-		if (ADD_PAGE != Convert.formatInteger(req.getParameter("bType"))){
+		if (EDIT_PAGE_COPY == Convert.formatInteger(req.getParameter("bType"))){
 			//change the column number for the content for page edits
 			changeDisplayColumn(req, Convert.formatBoolean(req.getParameter("showMenu"), true));
 		}
