@@ -100,6 +100,10 @@ public class DSIUserDataVO extends UserDataVO {
 	public String getDsiId() {
 		return user.getProfileId();
 	}
+	
+	public Date getGraduationDate() {
+		return Convert.formatDate(Convert.DATE_SLASH_PATTERN, "" + user.getAttribute(RegField.DSI_GRAD_DT.toString()));
+	}
 
 	/**
 	 * @return the ttLmsId

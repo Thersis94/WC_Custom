@@ -1,6 +1,8 @@
 package com.depuysynthesinst;
 
+import java.util.Date;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 
 import com.siliconmtn.security.UserDataVO;
@@ -127,6 +129,10 @@ public class DSIRoleMgr {
 	 */
 	public static boolean isRedemptionAuthorized(DSIUserDataVO user) {
 		if (user == null) return false;
+		
+		//graduated Residents & Fellows can't get redeem anymore
+		Date d = user.getGraduationDate();
+		if (d != null && d.before(Calendar.getInstance().getTime())) return false;
 		
 		//if they can cash-in points, they can get im
 		if (isCreditRedeeming(user)) return true;
