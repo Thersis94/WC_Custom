@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import com.depuysynthesinst.DSIUserDataVO;
 import com.depuysynthesinst.DSIUserDataVO.RegField;
 import com.depuysynthesinst.assg.ResidentVO.ResidentGrouping;
 import com.siliconmtn.action.ActionException;
@@ -106,6 +107,9 @@ public class MyResidentsAction extends SBActionAdapter {
 				break;
 			case "search":
 				findAndAddResident(req.getParameter("email"), req);
+				break;
+			case "manageProctor":
+				this.manageMyDirector(resident, req);
 				break;
 		}
 	}
@@ -512,5 +516,41 @@ public class MyResidentsAction extends SBActionAdapter {
 		} catch (SQLException sqle) {
 			throw new ActionException("could not re-activate Resident");
 		}
+	}
+	
+	
+	/**
+	 * 
+	 * @param resident
+	 * @param req
+	 * @throws ActionException
+	 */
+	private void manageMyDirector(ResidentVO resident, SMTServletRequest req) throws ActionException {
+		StringBuilder sql = new StringBuilder(100);
+		boolean isRevoke = Convert.formatBoolean(req.getParameter("revokeDirector"));
+		if (isRevoke) {
+			sql.append("update ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+			sql.append("DPY_SYN_INST_RESIDENT set active_flg=0, update_dt=? where resident_id=?");
+		} else {
+			sql.append("update ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+			sql.append("DPY_SYN_INST_RESIDENT set active_flg=1, consent_dt=? where resident_id=?");
+		}
+		log.debug(sql);
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setTimestamp(1, Convert.getCurrentTimestamp());
+			ps.setString(2, resident.getResidentId());
+			ps.executeUpdate();
+		} catch (SQLException sqle) {
+			log.error("could not update MyDirector for Resident", sqle);
+		}
+		
+		//if the user is accepting invitations, remove this one from their pending list
+		DSIUserDataVO user = DSIUserDataVO.getInstance(req.getSession().getAttribute(Constants.USER_DATA));
+		if (user != null && user.getPendingResDirs() != null) {
+			user.getPendingResDirs().remove(resident.getResidentId());
+			req.getSession().setAttribute(Constants.USER_DATA, user);
+		}
+		
 	}
 }

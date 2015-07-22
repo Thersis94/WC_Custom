@@ -2,12 +2,14 @@ package com.depuysynthesinst;
 
 // SMTBaseLibs
 import java.sql.ResultSet;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
+import com.depuysynthesinst.lms.MyLMSCourseVO;
 import com.siliconmtn.gis.GeocodeLocation;
 import com.siliconmtn.gis.Location;
 import com.siliconmtn.security.PhoneVO;
@@ -32,6 +34,7 @@ import com.siliconmtn.util.StringUtil;
 public class DSIUserDataVO extends UserDataVO {
 	
 	private static final long serialVersionUID = 6745777068563527968L;
+	public static final String MY_COURSES = "myCourses"; //a constant for the user's LMS data loaded at login
 	private UserDataVO user;
 	
 	/**
@@ -243,6 +246,38 @@ public class DSIUserDataVO extends UserDataVO {
 		Integer id = Integer.valueOf(Convert.formatDouble(d).intValue());
 		if (id > 0)
 			user.addAttribute(RegField.DSI_TTLMS_ID.toString(), id.toString());
+	}
+	
+	
+	@SuppressWarnings("unchecked")
+	public List<MyLMSCourseVO> getMyCourses() {
+		if (user.getAttribute(MY_COURSES) instanceof List<?>) {
+			return (List<MyLMSCourseVO>)user.getAttribute(MY_COURSES);
+		} else {
+			return new ArrayList<MyLMSCourseVO>();
+		}
+	}
+	
+	public void setMyCourses(List<MyLMSCourseVO> courses) {
+		user.addAttribute(MY_COURSES, courses);
+	}
+	
+	@SuppressWarnings("unchecked")
+	public Map<String,UserDataVO> getPendingResDirs() {
+		return (Map<String,UserDataVO>) user.getAttribute("pendingResDirs");
+	}
+	
+	public void setPendingResDirs(Map<String,UserDataVO> resDirs) {
+		user.addAttribute("pendingResDirs", resDirs);
+	}
+	
+	@SuppressWarnings("unchecked")
+	public Map<String,UserDataVO> getResDirs() {
+		return (Map<String,UserDataVO>) user.getAttribute("resDirs");
+	}
+	
+	public void setResDirs(Map<String,UserDataVO> resDirs) {
+		user.addAttribute("resDirs", resDirs);
 	}
 
 

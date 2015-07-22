@@ -77,6 +77,9 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 			req.setParameter("fieldSort", "documentId");
 			req.setParameter("rpp", "3000");
 			req.setParameter("page", "0");
+		} else if ("credits_i".equals(sortType)) { //LMS course credits 
+			//test for specific sorting values, or Solr will puke (@hack attempts)
+			req.setParameter("sortField", sortType);
 		}
 
 		//call SolrAction 
@@ -262,7 +265,11 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 		try {
 			hierarchy= StringUtil.checkVal(sd.getFieldValues(SearchDocumentHandler.HIERARCHY).iterator().next());
 		} catch (Exception e) {};
-
+		
+		return buildDSIUrl(hierarchy, (String)sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID), (String)attributes.get(Constants.QS_PATH));
+	}
+	
+		public static String buildDSIUrl(String hierarchy, String documentId, String qsPath) {
 		//log.debug(hierarchy);
 		if (hierarchy == null || hierarchy.length() == 0) return null;
 
@@ -278,21 +285,40 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 
 			rootLvl = "veterinary/" + rootLvl;
 			//log.debug(rootLvl);
+		} else if ("future leaders".equals(rootLvl)) {
+			//future leaders start at level 2, indent and find the rootLvl (at the second level)
+			int tildeIndx = rootLvl.length() +1;
+			int nextDelim = hierarchy.indexOf("~", tildeIndx);
+			if (nextDelim == -1) nextDelim = hierarchy.length(); //if there isn't more than 1 level use the length as the endpoint.
+			if (nextDelim > tildeIndx) rootLvl = hierarchy.substring(tildeIndx, nextDelim); //if we have a next level, capture it as the new root.
+			rootLvl = StringUtil.checkVal(rootLvl).toLowerCase();
+
+			//prume verbose wording
+			if ("general principles & fundamentals".equals(rootLvl)) {
+				rootLvl = "general";
+			} else if ("musculoskeletal oncology".equals(rootLvl)) {
+				rootLvl = "musculoskeletal";
+			} else {
+				rootLvl =StringUtil.replace(rootLvl, " medicine", "");
+				rootLvl =StringUtil.replace(rootLvl, " surgery", "");
+			}
+			rootLvl = "futureleaders/kc/" + rootLvl;
 		}
 
 		//remove ampersands and replace spaces
 		rootLvl = StringUtil.replace(rootLvl, "& ", "");
 		rootLvl = StringUtil.replace(rootLvl, " ", "-");
 
-		if ("nurse-education".equals(rootLvl))
+		if ("nurse-education".equals(rootLvl)) {
 			rootLvl = "nurse-education/resource-library";
+		}
 
 		//log.debug(rootLvl);
 		hierarchy = rootLvl;
 
 		//assemble & return the URL
 		if (hierarchy == null || hierarchy.length() == 0) return null;
-		return "/" + hierarchy + "/" + attributes.get(Constants.QS_PATH) + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
+		return "/" + hierarchy + "/" + qsPath + documentId;
 	}
 
 }

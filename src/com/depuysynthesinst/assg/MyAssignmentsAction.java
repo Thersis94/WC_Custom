@@ -74,11 +74,17 @@ public class MyAssignmentsAction extends SBActionAdapter {
 		//load the list of assignments
 		List<AssignmentVO> data = loadAssignmentList(user.getProfileId(), assgId);
 		
+		int cnt = 0;
 		for (AssignmentVO assg : data) {			
 			//load assets from Solr
 			if (assg.getAssets().size() > 0)
 				loadSolrAssets(assg, role);
+		
+			if (! assg.isComplete()) ++cnt;
 		}
+		//don't stomp a valid count if we're looking at a single course
+		if (!req.hasParameter("assignmentId"))
+				user.addAttribute("myAssgCnt", cnt);	
 		
 		//if we're displaying only one assignment we need to load all of it's Solr assets (for detailed view/display)
 		if (assgId != null && data.size() == 1) {
@@ -260,7 +266,7 @@ public class MyAssignmentsAction extends SBActionAdapter {
 	 * @param assignmentId
 	 * @return
 	 */
-	private List<AssignmentVO> loadAssignmentList(String profileId, String assignmentId) {
+	public List<AssignmentVO> loadAssignmentList(String profileId, String assignmentId) {
 		Map<String, AssignmentVO> data = new HashMap<>();
 		String customDb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(400);
@@ -270,7 +276,7 @@ public class MyAssignmentsAction extends SBActionAdapter {
 		sql.append("from ").append(customDb).append("DPY_SYN_INST_ASSG a ");
 		sql.append("inner join ").append(customDb).append("DPY_SYN_INST_RES_DIR rd on a.res_dir_id=rd.res_dir_id ");
 		sql.append("inner join ").append(customDb).append("DPY_SYN_INST_RES_ASSG ra on a.assg_id=ra.assg_id ");
-		sql.append("inner join ").append(customDb).append("DPY_SYN_INST_RESIDENT r on ra.resident_id=r.resident_id ");
+		sql.append("inner join ").append(customDb).append("DPY_SYN_INST_RESIDENT r on ra.resident_id=r.resident_id and r.active_flg=1 ");
 		sql.append("left outer join ").append(customDb).append("DPY_SYN_INST_ASSG_ASSET aa on a.assg_id=aa.assg_id ");
 		sql.append("left outer join ").append(customDb).append("DPY_SYN_INST_RES_ASSG_ASSET raa on aa.assg_asset_id=raa.assg_asset_id and ra.res_assg_id=raa.res_assg_id ");
 		sql.append("where r.profile_id=? ");
@@ -304,5 +310,47 @@ public class MyAssignmentsAction extends SBActionAdapter {
 		}
 		
 		return new ArrayList<AssignmentVO>(data.values());
+	}
+	
+	
+	/**
+	 * adds all of the RD's attached to the given user, to their UserDataVO
+	 * @param user
+	 */
+	public Map<String, UserDataVO> loadResidencyDirectors(String profileId, boolean pendingOnly) {
+		String customDb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(250);
+		sql.append("select rd.profile_id, res.resident_id ");
+		sql.append("from ").append(customDb).append("DPY_SYN_INST_RES_DIR rd ");
+		sql.append("inner join ").append(customDb).append("DPY_SYN_INST_RESIDENT res on rd.res_dir_id=res.res_dir_id ");
+		sql.append("where res.profile_id=? and res.active_flg=1 ");
+		if (pendingOnly) sql.append("and res.invite_sent_dt is not null and res.consent_dt is null"); //invitation sent but not accepted
+		log.debug(sql);
+		
+		Map<String, String> residents = new HashMap<>();
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, profileId);
+			ResultSet rs = ps.executeQuery();
+			while (rs.next())
+				residents.put(rs.getString(1), rs.getString(2));
+			
+		} catch (SQLException sqle) {
+			log.error("could not load pending ResDirs", sqle);
+		}
+		
+		if (residents.isEmpty()) return null;
+		
+		Map<String,UserDataVO> resDirs = new HashMap<>(residents.size());
+		ProfileManager pm = ProfileManagerFactory.getInstance(getAttributes());
+		try {
+			Map<String, UserDataVO> users = pm.searchProfileMap(dbConn, new ArrayList<String>(residents.keySet()));
+			//bind the two maps into one, keyed with residentId so we know which record to update when the user accepts.
+			for (String key : users.keySet())
+				resDirs.put(residents.get(key), users.get(key));
+
+		} catch (Exception e) {
+			log.error("could not load profiles for resDirs", e);
+		}
+		return resDirs;
 	}
 }

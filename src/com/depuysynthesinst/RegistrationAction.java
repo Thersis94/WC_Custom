@@ -12,6 +12,8 @@ import java.util.Set;
 import javax.servlet.http.HttpSession;
 
 import com.depuysynthesinst.DSIUserDataVO.RegField;
+import com.depuysynthesinst.assg.MyAssignmentsAction;
+import com.depuysynthesinst.assg.MyResidentsAction;
 import com.depuysynthesinst.lms.LMSWSClient;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -94,6 +96,16 @@ public class RegistrationAction extends SimpleActionAdapter {
 		reg.retrieve(req);
 		reg = null;
 		
+		//on the summary page, load the name(s) of this students Residency Director(s)
+		DSIUserDataVO dsiUser = DSIUserDataVO.getInstance(req.getSession().getAttribute(Constants.USER_DATA));
+		if (!req.hasParameter("pg") && dsiUser != null && DSIRoleMgr.isAssgStudent(dsiUser)) {
+			MyAssignmentsAction maa = new MyAssignmentsAction();
+			maa.setAttributes(getAttributes());
+			maa.setDBConnection(dbConn);
+			Map<String,UserDataVO> resDirs = maa.loadResidencyDirectors(dsiUser.getProfileId(), false); //false=approved RDs only
+			dsiUser.setResDirs(resDirs);
+		}
+		
 		//if page=3 and this is a new registration, probe to see if the user is eligible for migration
 		//all users getting page 3 are TTLMS eligible; decision is made in the View of which modal comes next.
 		if ("3".equals(req.getParameter("pg")) && req.hasParameter("newReg"))
@@ -107,19 +119,22 @@ public class RegistrationAction extends SimpleActionAdapter {
 	 * determining if we need to display pages 3 & 4 of registration
 	 */
 	public void build(SMTServletRequest req) throws ActionException {
+		//these 'hooks' are here because they live on the Registration/"My Profile" page in the UI.
+		if (req.hasParameter("revokeDirector") || req.hasParameter("approveDirector")) {
+			req.setParameter("reqType", "manageProctor");
+			SMTActionInterface act = new MyResidentsAction();
+			act.setAttributes(getAttributes());
+			act.setDBConnection(dbConn);
+			act.build(req);
+			return;
+		}
+
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 		mod.setActionId(actionInit.getActionId());
 		mod.setActionGroupId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_2));
 		setAttribute(Constants.MODULE_DATA, mod);
-		
 		HttpSession ses = (HttpSession) req.getSession();
-		
-		//TODO
-		if (req.hasParameter("revokeDirector")) {
-
-			return;
-		}
 
 		//set a parameter to tell Registration to NOT dump the userVO if the user completes without logging in, we need it
 		boolean unloadSessionIfNoRole = false;

@@ -2,10 +2,12 @@ package com.depuysynthesinst;
 
 import java.util.List;
 
+
 //import org.apache.log4j.Logger;
 import org.apache.solr.common.SolrDocument;
 
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.search.SearchDocumentHandler;
 
 /****************************************************************************
  * <b>Title</b>: SolrBusinessRules.java<p/>
@@ -23,11 +25,13 @@ public class SolrBusinessRules {
 	//protected static Logger log;
 	private String pageUrl;
 	private String sectionNm;
+	private String hierarchy;
 	private String thumbnailImg;
 	private SolrDocument sd;
 	private String moduleType;
 	private String qsPath = "";
-
+	private boolean isSiteSearch;
+	
 	public SolrBusinessRules() {
 		//log = Logger.getLogger(getClass());
 	}
@@ -61,13 +65,14 @@ public class SolrBusinessRules {
 			Object obj = (Object)sd.get("hierarchy");
 			if (obj instanceof List) {
 				List<String> lst = (List<String>) obj;
-				sectionNm = StringUtil.checkVal(lst.get(0)).toLowerCase();
+				hierarchy = StringUtil.checkVal(lst.get(0)).toLowerCase();
 			} else {
-				sectionNm = StringUtil.checkVal(obj).toLowerCase();
+				hierarchy = StringUtil.checkVal(obj).toLowerCase();
 			}
 		} catch (Exception e) {
 			//log.error("could not parse sectionName from SolrDoc", e);
 		}
+		sectionNm = hierarchy;
 
 		//for Vet and Nursing sections, bring level 2 of the hierarchy up to the surface
 		if (sectionNm.startsWith("vet~small")) {
@@ -76,7 +81,12 @@ public class SolrBusinessRules {
 			sectionNm = "Large Animal";
 		} else if (sectionNm.startsWith("nurs")) {
 			sectionNm = "Nurse Education";
-		} else if ("EVENT".equals(moduleType)) {
+		} else if (!isSiteSearch && sectionNm.startsWith("future leaders") && sectionNm.indexOf("~") > 1) {
+			//parse-out the 2nd level of the hierarchy to display, but NOT in search results, those remain level 1.
+			sectionNm = sectionNm.substring(sectionNm.indexOf("~")+1);
+			if (sectionNm.indexOf("~") > 0)
+				sectionNm = sectionNm.substring(0, sectionNm.indexOf("~"));
+		} else if ("EVENT".equals(moduleType)) {  //this use-case is ONLY search results
 			sectionNm = StringUtil.checkVal(sd.get("eventType_s")).toLowerCase();
 			if (sectionNm.equals("surgeon")) {
 				sectionNm = "Surgeon";
@@ -84,6 +94,8 @@ public class SolrBusinessRules {
 				sectionNm ="Nurse Education";
 			} else if (sectionNm.equals("vet")) {
 				sectionNm ="Veterinary";
+			} else if (sectionNm.equals("future")) {
+				sectionNm ="Future Leaders";
 			}
 		}
 
@@ -96,30 +108,10 @@ public class SolrBusinessRules {
 	
 	private void buildPageUrl() {
 		if ("EVENT".equals(moduleType)) {
-			if (sectionNm.equals("Surgeon")) {
-				pageUrl = "/calendar";
-			} else if (sectionNm.equals("Nurse Education")) {
-				pageUrl ="/nurse-education/calendar";
-			} else if (sectionNm.equals("Veterinary")) {
-				pageUrl ="/veterinary/calendar";
-			}
-		} else if (sectionNm.equals("Small Animal")) {
-			pageUrl = "/veterinary/small-animal";
-		} else if (sectionNm.equals("Large Animal")) {
-			pageUrl = "/veterinary/large-animal";
-		} else if (sectionNm.startsWith("chest")) {
-			pageUrl = "/chest-wall";
-		} else if (sectionNm.startsWith("hand")) {
-			pageUrl = "/hand-wrist";
-		} else if (sectionNm.startsWith("foot")) {
-			pageUrl = "/foot-ankle";
-		} else if (sectionNm.equals("Nurse Education")) {
-			pageUrl = "/nurse-education/resource-library";
+			pageUrl = StringUtil.checkVal(sd.get(SearchDocumentHandler.SITE_PAGE_URL));
 		} else {
-			pageUrl = "/" + sectionNm.toLowerCase();
+			pageUrl = SolrSearchWrapper.buildDSIUrl(hierarchy, (String)sd.get("documentId"), qsPath);
 		}
-
-		pageUrl += "/" + qsPath + sd.get("documentId");
 	}
 
 
@@ -140,5 +132,9 @@ public class SolrBusinessRules {
 
 	public SolrDocument getSd() {
 		return sd;
+	}
+
+	public void setSiteSearch(boolean isSiteSearch) {
+		this.isSiteSearch = isSiteSearch;
 	}
 }

@@ -10,6 +10,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.servlet.http.HttpSession;
+
+import com.depuysynthesinst.DSIRoleMgr;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
@@ -106,6 +109,8 @@ public class MyAssignmentsAdminAction extends SBActionAdapter {
 	public void build(SMTServletRequest req) throws ActionException {
 		String reqType = StringUtil.checkVal(req.getParameter("reqType"), null);
 		AssignmentVO assg = new AssignmentVO(req);
+		Integer cnt;
+		HttpSession ses = req.getSession();
 		
 		switch (reqType) {
 			case "edit":
@@ -122,10 +127,24 @@ public class MyAssignmentsAdminAction extends SBActionAdapter {
 			case "add":
 				this.saveAssg(assg, false);
 				req.setParameter("redirAssignmentId", assg.getAssgId());
+				
+				//increment the count displayed in the left menu for DIRECTORs only
+				if (DSIRoleMgr.isDirector((UserDataVO)ses.getAttribute(Constants.USER_DATA))) {
+					cnt = Convert.formatInteger("" + ses.getAttribute("myAssgCnt"), 0);
+					++cnt;
+					req.getSession().setAttribute("myAssgCnt", cnt);
+				}
 				break;
 			case "delete":
 				this.deleteAssg(assg);
 				//TODO email all the residents that this course is gone. - need to get a list first, before we purge the relationship!
+				
+				//decrement the count displayed in the left menu for DIRECTORs only
+				if (DSIRoleMgr.isDirector((UserDataVO)ses.getAttribute(Constants.USER_DATA))) {
+						cnt = Convert.formatInteger("" + ses.getAttribute("myAssgCnt"), 0);
+						if (cnt > 0) --cnt;
+						ses.setAttribute("myAssgCnt", cnt);
+				}
 				break;
 			case "addAssets":
 				this.addAssgAssets(assg, req);
@@ -208,7 +227,7 @@ public class MyAssignmentsAdminAction extends SBActionAdapter {
 	 * @param assignmentId
 	 * @return
 	 */
-	private List<AssignmentVO> loadAssignmentList(String profileId, String assignmentId) {
+	public List<AssignmentVO> loadAssignmentList(String profileId, String assignmentId) {
 		Map<String, AssignmentVO> data = new HashMap<>();
 		String customDb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(200);
@@ -401,7 +420,7 @@ public class MyAssignmentsAdminAction extends SBActionAdapter {
 			ps.setString(2, assg.getAssgId());
 			ps.executeUpdate();
 		} catch (SQLException sqle) {
-			log.error("could not add users to assignment", sqle);
+			log.error("could not delete assignment", sqle);
 		}
 	}
 	

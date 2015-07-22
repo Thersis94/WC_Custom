@@ -14,6 +14,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.common.SolrInputDocument;
 
 import com.depuysynthes.lucene.MediaBinSolrIndex.MediaBinField;
+import com.depuysynthesinst.lms.FutureLeaderACGME;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -21,6 +22,7 @@ import com.smt.sitebuilder.action.event.vo.EventEntryVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SMTAbstractIndex;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
+import com.smt.sitebuilder.security.SecurityController;
 
 /****************************************************************************
  * <b>Title</b>: CourseCalendarSolrIndexer.java<p/>
@@ -67,7 +69,7 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 				doc.setField(SearchDocumentHandler.INDEX_TYPE, INDEX_TYPE);
 				doc.setField(SearchDocumentHandler.ORGANIZATION, vo.getOrganizationId());
 				doc.setField(SearchDocumentHandler.LANGUAGE, "en");
-				doc.setField(SearchDocumentHandler.ROLE, 0);
+				doc.setField(SearchDocumentHandler.ROLE, SecurityController.PUBLIC_ROLE_LEVEL);
 				doc.setField(SearchDocumentHandler.SITE_PAGE_URL, vo.getEventUrl());
 				doc.setField(SearchDocumentHandler.DOCUMENT_ID, vo.getActionId());
 				doc.setField(SearchDocumentHandler.TITLE, vo.getEventName());
@@ -128,8 +130,8 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 		sql.append("inner join site s on c.site_id=s.site_id ");
 		sql.append("inner join module_display md on b.module_display_id=md.module_display_id ");
 		sql.append("where s.ORGANIZATION_ID=? and ee.start_dt > ? ");
-		sql.append("and (a.pending_sync_flg is null or a.pending_sync_flg=0) ");
-		sql.append("and (c.pending_sync_flg is null or c.pending_sync_flg=0) ");
+		sql.append("and (a.pending_sync_flg is null or a.pending_sync_flg=0) ");  //portlet not pending
+		sql.append("and (c.pending_sync_flg is null or c.pending_sync_flg=0) "); //page not pending
 		sql.append("and a.module_type_id='COURSE_CAL' and md.indexable_flg=1 "); //only include pages that contain Views that are considered indexable.
 		log.debug(sql);
 
@@ -152,6 +154,9 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 				//vet events only appear on the vet calendar page
 				else if ("veterinary".equals(subSiteAlias) && !"VET".equals(rs.getString(3)))
 					continue;
+				//future leader events only appear on the future leaders calendar page
+				else if ("futureleaders".equals(subSiteAlias) && !"FUTURE".equals(rs.getString(3)))
+					continue;
 				else if ("".equals(subSiteAlias) && !"SURGEON".equals(rs.getString(3)))
 					continue;
 				
@@ -160,8 +165,20 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 				vo.setOrganizationId(organizationId);
 				
 				//for vet, we need to align the hierarchies so they match the anatomy pages, which are 2nd level.
-				if ("VET".equals(vo.getEventTypeCd()))
+				if ("VET".equals(vo.getEventTypeCd())) {
 					vo.setServiceText("Vet/Small Animal,Vet/Large Animal");
+				} else if ("FUTURE".equals(vo.getEventTypeCd()) && vo.getServiceText() != null) {
+					String[] svcs = vo.getServiceText().split(",");
+					if (svcs != null && svcs.length > 0) {
+						StringBuilder services = new StringBuilder();
+						for (String s : svcs) {
+							if (services.length() > 0) services.append(",");
+							services.append(FutureLeaderACGME.getHierarchyFromCode(s));
+						}
+						log.error(services);
+						vo.setServiceText(services.toString());
+					}
+				}
 				
 				log.info("loaded " + vo.getEventTypeCd() + " - " + vo.getEventName());
 				data.add(vo);
