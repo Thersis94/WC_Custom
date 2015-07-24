@@ -10,11 +10,11 @@ import java.util.Map;
 import com.depuysynthesinst.DSIUserDataVO;
 import com.depuysynthesinst.DSIUserDataVO.RegField;
 import com.depuysynthesinst.assg.ResidentVO.ResidentGrouping;
+import com.depuysynthesinst.emails.InviteResidentVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.http.SMTServletRequest;
-import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -297,7 +297,7 @@ public class MyResidentsAction extends SBActionAdapter {
 	 */
 	protected void loadAssgResidents(AssignmentVO assg, SiteVO site, boolean fullDetail, String residentId) {
 		if (fullDetail) {
-			loadAssgResidents(assg, site, residentId);
+			loadAssgResidents(assg, site, residentId, false);
 			return;
 		}
 		
@@ -306,7 +306,7 @@ public class MyResidentsAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select r.resident_id, sum(case raa.complete_dt when null then 0 else 1 end) ");
 		sql.append("from ").append(customDb).append("DPY_SYN_INST_RESIDENT r ");
-		sql.append("left outer join ").append(customDb).append("DPY_SYN_INST_RES_ASSG ra on r.resident_id=ra.resident_id ");
+		sql.append("inner join ").append(customDb).append("DPY_SYN_INST_RES_ASSG ra on r.resident_id=ra.resident_id ");
 		sql.append("left outer join ").append(customDb).append("DPY_SYN_INST_RES_ASSG_ASSET raa on ra.res_assg_id=raa.res_assg_id ");
 		sql.append("where ra.assg_id=? and r.active_flg=1 ");
 		sql.append("group by r.resident_id");
@@ -330,13 +330,17 @@ public class MyResidentsAction extends SBActionAdapter {
 		 * @param assg
 		 * @param site
 		 */
-	private void loadAssgResidents(AssignmentVO assg, SiteVO site, String residentId) {
+	private void loadAssgResidents(AssignmentVO assg, SiteVO site, String residentId, boolean outerJoinAssg) {
 		String customDb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		List<String> profileIds = new ArrayList<>(50);
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select distinct r.resident_id, r.profile_id, r.consent_dt, r.invite_sent_dt, regd.value_txt as pgy_id, ra.res_assg_id ");
 		sql.append("from ").append(customDb).append("DPY_SYN_INST_RESIDENT r ");
-		sql.append("left outer join ").append(customDb).append("DPY_SYN_INST_RES_ASSG ra on r.resident_id=ra.resident_id and ra.assg_id=? ");
+		if (outerJoinAssg) {
+			sql.append("left outer join ").append(customDb).append("DPY_SYN_INST_RES_ASSG ra on r.resident_id=ra.resident_id and ra.assg_id=? ");
+		} else {
+			sql.append("inner join ").append(customDb).append("DPY_SYN_INST_RES_ASSG ra on r.resident_id=ra.resident_id and ra.assg_id=? ");
+		}
 		sql.append("left outer join ").append(customDb).append("DPY_SYN_INST_RES_ASSG_ASSET raa on ra.res_assg_id=raa.res_assg_id ");
 		sql.append("left outer join register_submittal rs on r.profile_id=rs.profile_id and rs.site_id=? ");  //the user's registration on the site
 		sql.append("left outer join register_data regd on rs.register_submittal_id=regd.register_submittal_id and regd.register_field_id=? "); //the user's PGY value
@@ -377,7 +381,10 @@ public class MyResidentsAction extends SBActionAdapter {
 	}
 	
 	
-
+	protected void loadMyResidents(AssignmentVO assg, SiteVO site, String residentId) {
+		loadAssgResidents(assg, site, residentId, true);
+	}
+	
 	
 	/**
 	 * Invite
@@ -407,19 +414,55 @@ public class MyResidentsAction extends SBActionAdapter {
 			log.error("could not load user profile", de);
 		}
 		
+		UserDataVO resDir = getResDirProfile(resident.getResidentDirectorId(), site.getOrganizationId());
+		
 		//send the email invite asking the Resident to acknowledge their Director
 		try {
-			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipient(resident.getProfile().getEmailAddress());
-			mail.setSubject("Invitation from DSI");
+			InviteResidentVO mail = new InviteResidentVO();
 			mail.setFrom(site.getMainEmail());
-			mail.setHtmlBody("<p>Please accept my invitation</p>");
+			mail.addRecipient(resident.getProfile().getEmailAddress());
+			mail.buildMessage(resident.getProfile(), resDir, site); //builds subject and message body automatically
 
 			MessageSender ms = new MessageSender(attributes, dbConn);
 			ms.sendMessage(mail);
 		} catch (Exception ide) {
 			log.error("could not send invite email", ide);
 		}
+	}
+	
+	
+	/**
+	 * gets the profileId for the given resident_director record, then does a 
+	 * ProfileManager lookup for the UserDataVO of that person.
+	 * @param resDirId
+	 * @param orgId
+	 * @return
+	 */
+	private UserDataVO getResDirProfile(int resDirId, String orgId) {
+		StringBuilder sql = new StringBuilder(100);
+		sql.append("select profile_id from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("DPY_SYN_INST_RES_DIR where RES_DIR_ID=?");
+		log.debug(sql);
+		
+		String resDirProfileId = "";
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setInt(1, resDirId);
+			ResultSet rs = ps.executeQuery();
+			if (rs.next())
+				resDirProfileId = rs.getString(1);
+			
+		} catch (SQLException sqle) {
+			log.error("could not load resDir profileId", sqle);
+		}
+		
+		//load a complete profile for the resDir so we can customize the email
+		ProfileManager pm = ProfileManagerFactory.getInstance(getAttributes());
+		try {
+			return pm.getProfile(resDirProfileId, dbConn, ProfileManager.PROFILE_ID_LOOKUP, orgId);
+		} catch (DatabaseException de) {
+			log.error("could not load user profile", de);
+		}
+		return new UserDataVO();
 	}
 	
 	

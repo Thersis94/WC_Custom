@@ -94,7 +94,10 @@ public class AssignmentsFacadeAction extends SimpleActionAdapter {
 			StringBuilder url = new StringBuilder();
 			url.append(page.getRequestURI()).append("?view=").append(req.getParameter("view")); //display admin menus
 			if (req.hasParameter("pg")) url.append("&pg=").append(req.getParameter("pg")); //admin page (include)
-			if (req.hasParameter("redirAssignmentId")) url.append("&isNew=1&assignmentId=").append(req.getParameter("redirAssignmentId"));
+			if (req.hasParameter("redirAssignmentId")) {
+				url.append("&assignmentId=").append(req.getParameter("redirAssignmentId"));
+				if (req.hasParameter("isNew")) url.append("&isNew=1");
+			}
 			
 			req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
 			req.setAttribute(Constants.REDIRECT_URL, url.toString());

@@ -13,6 +13,10 @@ import java.util.Set;
 import javax.servlet.http.HttpSession;
 
 import com.depuysynthesinst.DSIRoleMgr;
+import com.depuysynthesinst.emails.AbstractDSIEmailVO;
+import com.depuysynthesinst.emails.AssgDeletedVO;
+import com.depuysynthesinst.emails.AssgPublishVO;
+import com.depuysynthesinst.emails.AssgRepublishVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
@@ -27,6 +31,7 @@ import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
+import com.smt.sitebuilder.util.MessageSender;
 
 /****************************************************************************
  * <b>Title</b>: MyAssignmentsAction.java<p/>
@@ -75,7 +80,11 @@ public class MyAssignmentsAdminAction extends SBActionAdapter {
 		
 		for (AssignmentVO assg : data) {
 			//load the residents and their enrollment/completion stats
-			loadAssgResidents(assg, site, (data.size() == 1), req.getParameter("residentId"));
+			if ("edit-assignment".equals(req.getParameter("pg"))) {
+				loadMyResidents(assg, site, req.getParameter("residentId"));
+			} else {
+				loadAssgResidents(assg, site, true, req.getParameter("residentId"));
+			}
 			
 			//load assets from Solr
 			if (assg.getAssets().size() > 0)
@@ -107,6 +116,8 @@ public class MyAssignmentsAdminAction extends SBActionAdapter {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	public void build(SMTServletRequest req) throws ActionException {
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 		String reqType = StringUtil.checkVal(req.getParameter("reqType"), null);
 		AssignmentVO assg = new AssignmentVO(req);
 		Integer cnt;
@@ -122,7 +133,8 @@ public class MyAssignmentsAdminAction extends SBActionAdapter {
 				this.saveAssg(assg, !req.hasParameter("publishDt")); //pass the previous publish date so we know; this only gets saved once. ("First published date")
 				this.saveAssgAssets(assg, req);
 				this.saveAssgResidents(assg, req);
-				//TODO email all the residents
+				assg.setDirectorProfile(user);
+				this.sendPublishEmail(assg, site, !req.hasParameter("publishDt"));  //boolean means "isFirstPublish/isRepublish"
 				break;
 			case "add":
 				this.saveAssg(assg, false);
@@ -136,8 +148,16 @@ public class MyAssignmentsAdminAction extends SBActionAdapter {
 				}
 				break;
 			case "delete":
+				//load the assignment
+				List<AssignmentVO> assgLst = loadAssignmentList(user.getProfileId(), assg.getAssgId());
+				if (assgLst != null && assgLst.size() > 0) assg = assgLst.get(0);
+				assg.setDirectorProfile(user);
+				//load all the residents so we know who to email
+				this.loadAssgResidents(assg, site, true, null);
+				//delete the assignment
 				this.deleteAssg(assg);
-				//TODO email all the residents that this course is gone. - need to get a list first, before we purge the relationship!
+				//email all the residents that this course is gone
+				this.sendDeletedAssgEmail(assg, site);
 				
 				//decrement the count displayed in the left menu for DIRECTORs only
 				if (DSIRoleMgr.isDirector((UserDataVO)ses.getAttribute(Constants.USER_DATA))) {
@@ -195,6 +215,15 @@ public class MyAssignmentsAdminAction extends SBActionAdapter {
 	}
 	
 	
+	private void loadMyResidents(AssignmentVO assg, SiteVO site, String residentId) {
+		MyResidentsAction mra = new MyResidentsAction();
+		mra.setDBConnection(dbConn);
+		mra.setAttributes(getAttributes());
+		mra.loadMyResidents(assg, site, residentId);
+		mra = null;
+	}
+	
+	
 	/**
 	 * loads a count of residents attached to the given Resident Director
 	 * @param directorProfileId
@@ -230,7 +259,7 @@ public class MyAssignmentsAdminAction extends SBActionAdapter {
 	public List<AssignmentVO> loadAssignmentList(String profileId, String assignmentId) {
 		Map<String, AssignmentVO> data = new HashMap<>();
 		String customDb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = new StringBuilder(200);
+		StringBuilder sql = new StringBuilder(250);
 		sql.append("select a.assg_id, a.parent_id, a.assg_nm, a.desc_txt, a.due_dt, a.sequential_flg, a.publish_dt, ");
 		sql.append("aa.solr_document_id, aa.assg_asset_id, aa.order_no, rd.profile_id as res_dir_profile_id, rd.res_dir_id, a.update_dt ");
 		sql.append("from ").append(customDb).append("DPY_SYN_INST_ASSG a ");
@@ -345,9 +374,11 @@ public class MyAssignmentsAdminAction extends SBActionAdapter {
 	 */
 	private void saveAssgResidents(AssignmentVO assg, SMTServletRequest req) throws ActionException {
 		String[] residentKeys= req.getParameterValues("residentId");
+		log.debug(req.getParameterValues("residentId"));
+		log.debug(req.getParameter("residentId"));
 		Set<String> addIds = new HashSet<>();
 		Set<String> persistIds = new HashSet<>();
-		//split the key into two lists; one to protect from deletion, the other to add.  We don't need to do any SQL updates.
+		//split the key into two lists; one to protect from deletion, the other to add.  We don't need to do any SQL updates".
 		for (String s : residentKeys) {
 			String[] val = s.split("~");
 			if (val.length == 2 && val[1].length() > 0) {
@@ -421,6 +452,7 @@ public class MyAssignmentsAdminAction extends SBActionAdapter {
 			ps.executeUpdate();
 		} catch (SQLException sqle) {
 			log.error("could not delete assignment", sqle);
+			throw new ActionException(sqle);
 		}
 	}
 	
@@ -474,6 +506,62 @@ public class MyAssignmentsAdminAction extends SBActionAdapter {
 			ps.executeUpdate();
 		} catch (SQLException sqle) {
 			throw new ActionException("could not delete assg asset");
+		}
+	}
+	
+	
+	/**
+	 * sends an email to each Resident tied to this assignment, that the assg is now deleted
+	 * @param assg
+	 */
+	private void sendDeletedAssgEmail(AssignmentVO assg, SiteVO site) {
+		if (assg.getResidents() == null || assg.getResidents().size() == 0) return;
+		
+		AssgDeletedVO mail = null;
+		MessageSender ms = new MessageSender(attributes, dbConn);
+		for (ResidentVO resident : assg.getResidents()) {
+			try {
+				mail = new AssgDeletedVO();
+				mail.setFrom(site.getMainEmail());
+				mail.addRecipient(resident.getProfile().getEmailAddress());
+				mail.buildMessage(resident.getProfile(), assg, site); //builds subject and message body automatically
+				log.debug(mail);
+				ms.sendMessage(mail);
+			} catch (Exception ide) {
+				log.error("could not send delete email", ide);
+			}
+		}
+	}
+	
+	
+	/**
+	 * sends an email to each Resident that the assignment is assigned to, notifying them 
+	 * of its creation (by the RD).
+	 * @param assg
+	 * @param site
+	 * @param isFirstPublish
+	 */
+	private void sendPublishEmail(AssignmentVO assg, SiteVO site, boolean isFirstPublish) {
+		//load all the residents so we know who to email
+		this.loadAssgResidents(assg, site, true, null);
+		if (assg.getResidents() == null || assg.getResidents().size() == 0) return;
+		
+		AbstractDSIEmailVO mail = null;
+		MessageSender ms = new MessageSender(attributes, dbConn);
+		for (ResidentVO resident : assg.getResidents()) {
+			try {
+				if (isFirstPublish) {
+					mail = new AssgPublishVO();
+				} else {
+					mail = new AssgRepublishVO();
+				}
+				mail.setFrom(site.getMainEmail());
+				mail.addRecipient(resident.getProfile().getEmailAddress());
+				mail.buildMessage(resident.getProfile(), assg, site); //builds subject and message body automatically
+				ms.sendMessage(mail);
+			} catch (Exception ide) {
+				log.error("could not send delete email", ide);
+			}
 		}
 	}
 }

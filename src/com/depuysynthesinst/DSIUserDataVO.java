@@ -50,7 +50,8 @@ public class DSIUserDataVO extends UserDataVO {
 		DSI_ACAD_NM,
 		c0a80241b71c9d40a59dbd6f4b621260, //profession
 		c0a80241b71d27b038342fcb3ab567a0, //specialty
-		DSI_PGY
+		DSI_PGY,
+		DSI_MIL_HOSP  //used for Proffer email notification
 		;
 	}
 	
