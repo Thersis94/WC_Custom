@@ -396,10 +396,12 @@ public class ProductAction extends SBActionAdapter {
 		
 		// add a mapping for each of the secondary attribute types
 		String keyName = null;
+		int count = 1;
 		for (ProductAttributeVO pAttr : sAttributes) {
 			keyName = pAttr.getAttributeName();
 			if (attrKeysList.contains(keyName)) {
-				keyName = keyName+"-DUPE";
+				keyName = keyName+"-DUPE"+count;
+				attrKeysList.add(keyName);
 			}
 			product.addProdAttribute(keyName, new ArrayList<>());
 		}
