@@ -364,7 +364,7 @@ public class ProductAction extends SBActionAdapter {
 		
 		// clean up any dangling standard attributes and add standard option to 
 		// product attribute map, attribute name is the key.
-		if (standard.size() > 0) {
+		if (standard != null && standard.size() > 0) {
 			product.addProdAttribute(prevStd, standard);
 			attrKeysList.add(prevStd);
 		}
