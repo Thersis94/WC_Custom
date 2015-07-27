@@ -68,7 +68,7 @@ public class LMSWSClient {
 	private static Logger log;
 	private String securityKey;
 	private DSIResidentsStub dsi;
-	private Map<Integer,String> errorCodeMap;
+	private Map<Double,String> errorCodeMap;
 
 
 	public LMSWSClient(String securityKey) {
@@ -281,7 +281,7 @@ public class LMSWSClient {
 			//check for errors, -2 (user doesn't exist) is OK in this scenario
 			double errCd = Convert.formatDouble("" + ret.get("ERROR"));
 			if (errCd < 0 && errCd != -2) 
-				throw new ActionException(errorCodeMap.get(errCd));
+				throw new ActionException(parseErrorCode(errCd));
 			
 		} catch (Exception e) {
 			throw new ActionException(e);
@@ -331,7 +331,7 @@ public class LMSWSClient {
 			//check for errors
 			double errCd = Convert.formatDouble("" + ret.get("ERROR"));
 			if (errCd < 0 && errCd != -2) 
-				throw new ActionException(errorCodeMap.get(errCd));
+				throw new ActionException(parseErrorCode(errCd));
 			
 		} catch (Exception e) {
 			throw new ActionException(e);
@@ -521,7 +521,7 @@ public class LMSWSClient {
 	 */
 	private String parseErrorCode(double errorCode) {
 		if (errorCode > -1 || errorCode < -6) return "Invalid error code supplied.";
-		return errorCodeMap.get(errorCode);
+		return errorCodeMap.get(Double.valueOf(errorCode));
 	}
 
 	
@@ -531,12 +531,12 @@ public class LMSWSClient {
 	 */
 	private void initErrorMap() {
 		errorCodeMap = new HashMap<>();
-		errorCodeMap.put(-1,"Can't find new group (Internal Error)");
-		errorCodeMap.put(-2,"Requested user doesn't exist");
-		errorCodeMap.put(-3,"Can't find new user (Internal Error)");
-		errorCodeMap.put(-4,"User already exists (Based on SynthesID)");
-		errorCodeMap.put(-5,"Requested course doesn't exist");
-		errorCodeMap.put(-6,"Bad security code");
+		errorCodeMap.put(Double.valueOf(-1),"Can't find new group (Internal Error)");
+		errorCodeMap.put(Double.valueOf(-2),"Requested user doesn't exist");
+		errorCodeMap.put(Double.valueOf(-3),"Can't find new user (Internal Error)");
+		errorCodeMap.put(Double.valueOf(-4),"User already exists (Based on SynthesID)");
+		errorCodeMap.put(Double.valueOf(-5),"Requested course doesn't exist");
+		errorCodeMap.put(Double.valueOf(-6),"Bad security code");
 	}
 
 	/**

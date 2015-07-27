@@ -12,7 +12,7 @@ import com.smt.sitebuilder.search.SearchDocumentHandler;
 /****************************************************************************
  * <b>Title</b>: SolrBusinessRules.java<p/>
  * <b>Description: Contains the logic we need to extract DSI display components 
- * and pageURls from the SolrDocument. - used in multiple views and MyAssignmentsAdminAction</b> 
+ * and pageURls from a SolrDocument. - used in multiple views and MyAssignmentsAdminAction</b> 
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2015<p/>
  * <b>Company:</b> Silicon Mountain Technologies<p/>

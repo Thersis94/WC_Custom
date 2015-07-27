@@ -120,7 +120,6 @@ public class MyAssignmentsAdminAction extends SBActionAdapter {
 		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 		String reqType = StringUtil.checkVal(req.getParameter("reqType"), null);
 		AssignmentVO assg = new AssignmentVO(req);
-		Integer cnt;
 		HttpSession ses = req.getSession();
 		
 		switch (reqType) {
@@ -140,12 +139,7 @@ public class MyAssignmentsAdminAction extends SBActionAdapter {
 				this.saveAssg(assg, false);
 				req.setParameter("redirAssignmentId", assg.getAssgId());
 				
-				//increment the count displayed in the left menu for DIRECTORs only
-				if (DSIRoleMgr.isDirector((UserDataVO)ses.getAttribute(Constants.USER_DATA))) {
-					cnt = Convert.formatInteger("" + ses.getAttribute("myAssgCnt"), 0);
-					++cnt;
-					req.getSession().setAttribute("myAssgCnt", cnt);
-				}
+				adjustAssgCount(ses, user, 1);
 				break;
 			case "delete":
 				//load the assignment
@@ -159,12 +153,7 @@ public class MyAssignmentsAdminAction extends SBActionAdapter {
 				//email all the residents that this course is gone
 				this.sendDeletedAssgEmail(assg, site);
 				
-				//decrement the count displayed in the left menu for DIRECTORs only
-				if (DSIRoleMgr.isDirector((UserDataVO)ses.getAttribute(Constants.USER_DATA))) {
-						cnt = Convert.formatInteger("" + ses.getAttribute("myAssgCnt"), 0);
-						if (cnt > 0) --cnt;
-						ses.setAttribute("myAssgCnt", cnt);
-				}
+				adjustAssgCount(ses, user, -1);
 				break;
 			case "addAssets":
 				this.addAssgAssets(assg, req);
@@ -307,7 +296,7 @@ public class MyAssignmentsAdminAction extends SBActionAdapter {
 	private void saveAssg(AssignmentVO assg, boolean publish) throws ActionException {
 		log.debug("saving assignment");
 		String customDb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = new StringBuilder(350);
+		StringBuilder sql = new StringBuilder(200);
 		if (assg.getAssgId() == null) {
 			assg.setAssgId(new UUIDGenerator().getUUID());
 			sql.append("insert into ").append(customDb).append("DPY_SYN_INST_ASSG ");
@@ -379,14 +368,16 @@ public class MyAssignmentsAdminAction extends SBActionAdapter {
 		Set<String> addIds = new HashSet<>();
 		Set<String> persistIds = new HashSet<>();
 		//split the key into two lists; one to protect from deletion, the other to add.  We don't need to do any SQL updates".
-		for (String s : residentKeys) {
-			String[] val = s.split("~");
-			if (val.length == 2 && val[1].length() > 0) {
-				//already on the roster, just protect from deletion
-				persistIds.add(val[1]);
-			} else {
-				//not currently assigned, put in the list to insert
-				addIds.add(val[0]);
+		if (residentKeys != null) {
+			for (String s : residentKeys) {
+				String[] val = s.split("~");
+				if (val.length == 2 && val[1].length() > 0) {
+					//already on the roster, just protect from deletion
+					persistIds.add(val[1]);
+				} else {
+					//not currently assigned, put in the list to insert
+					addIds.add(val[0]);
+				}
 			}
 		}
 		log.debug("persisting " + persistIds.size());
@@ -410,6 +401,9 @@ public class MyAssignmentsAdminAction extends SBActionAdapter {
 		} catch (SQLException sqle) {
 			log.error("could not delete users from assignment", sqle);
 		}
+		
+		//fail-fast if nobody to add
+		if (addIds.size() == 0) return;
 		
 		//add the residents not already on the roster
 		sql = new StringBuilder(150);
@@ -563,5 +557,19 @@ public class MyAssignmentsAdminAction extends SBActionAdapter {
 				log.error("could not send delete email", ide);
 			}
 		}
+	}
+	
+
+	//increment the count displayed in the left menu for DIRECTORs only
+	private void adjustAssgCount(HttpSession ses, UserDataVO user, int incr) {
+		if (! DSIRoleMgr.isDirector((UserDataVO)ses.getAttribute(Constants.USER_DATA))) return;
+		
+		int cnt = Convert.formatInteger("" + user.getAttribute("myAssgCnt"), 0);
+		log.debug("cnt=" + cnt);
+		cnt = cnt + incr; // +/- accordingly
+		
+		user.addAttribute("myAssgCnt", Integer.valueOf(cnt));
+		ses.setAttribute(Constants.USER_DATA, user);
+		log.debug("cnt=" + user.getAttribute("myAssgCnt"));
 	}
 }

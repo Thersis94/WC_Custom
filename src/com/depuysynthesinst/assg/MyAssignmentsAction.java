@@ -111,7 +111,6 @@ public class MyAssignmentsAction extends SBActionAdapter {
 	 */
 	public void build(SMTServletRequest req) throws ActionException {
 		String reqType = StringUtil.checkVal(req.getParameter("reqType"), "");
-		
 		switch (reqType) {
 			case "complete":
 				captureResAssgAsset(req);
@@ -120,7 +119,6 @@ public class MyAssignmentsAction extends SBActionAdapter {
 				captureSkipAhead(req);
 				break;
 		}
-		
 	}
 	
 	
@@ -151,7 +149,6 @@ public class MyAssignmentsAction extends SBActionAdapter {
 		} catch (SQLException sqle) {
 			log.error("could not delete user assignment asset completion tag", sqle);
 		}
-		
 	}
 	
 	
@@ -240,8 +237,6 @@ public class MyAssignmentsAction extends SBActionAdapter {
 			field.setValue(vo.getSolrDocumentId());
 			qData.addSolrField(field);
 		}
-		//qData.setFieldSort("startDate_dt " + ORDER.asc + ", title");
-		//qData.setSortDirection(ORDER.asc);
 		qData.setOrganizationId(role.getOrganizationId());
 		qData.setRoleLevel(role.getRoleLevel());
 		SolrQueryProcessor sqp = new SolrQueryProcessor(getAttributes());

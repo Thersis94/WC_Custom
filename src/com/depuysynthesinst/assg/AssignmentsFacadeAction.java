@@ -48,7 +48,7 @@ public class AssignmentsFacadeAction extends SimpleActionAdapter {
 		SMTActionInterface action;
 		if (isProfessor && "residents".equals(req.getParameter("pg"))) {
 			action = new MyResidentsAction();
-		} else if (isProfessor && req.hasParameter("view")) {
+		} else if ((isProfessor && req.hasParameter("view")) || DSIRoleMgr.isDirector(user)) {
 			//admin view of assignments - or a single assignment (edit mode)
 			action = new MyAssignmentsAdminAction(actionInit);
 		} else {

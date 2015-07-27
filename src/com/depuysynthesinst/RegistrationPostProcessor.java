@@ -51,7 +51,7 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 	 */
 	@Override
 	public void build(SMTServletRequest req) throws ActionException {
-		Integer page = Convert.formatInteger(req.getParameter("pg"),0);
+		Integer page = Convert.formatInteger(req.getParameter("page"),0);
 		log.debug("starting post-processor, " + page);
 		
 		//if page = 3 and they're done then they did NOT register as a Future Leader.  Send the stock email.

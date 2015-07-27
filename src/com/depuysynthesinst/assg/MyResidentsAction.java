@@ -4,8 +4,10 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.depuysynthesinst.DSIUserDataVO;
 import com.depuysynthesinst.DSIUserDataVO.RegField;
@@ -42,7 +44,7 @@ import com.smt.sitebuilder.util.MessageSender;
 public class MyResidentsAction extends SBActionAdapter {
 
 	public static final int CONSENT_TIMEOUT  = 10; //days that must lapse before a new invite can be sent
-	
+
 	/**
 	 * 
 	 */
@@ -55,10 +57,10 @@ public class MyResidentsAction extends SBActionAdapter {
 	public MyResidentsAction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
-	
-	
+
+
 	/**
-	* loads a list of Residents for the logged-in Director
+	 * loads a list of Residents for the logged-in Director
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
@@ -66,7 +68,7 @@ public class MyResidentsAction extends SBActionAdapter {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		
+
 		//load the list of residents
 		if (req.hasParameter("search")) {
 			if (StringUtil.isValidEmail(req.getParameter("search"))) {
@@ -82,8 +84,8 @@ public class MyResidentsAction extends SBActionAdapter {
 			mod.setActionData(loadResidentList(user.getProfileId(), site));
 		}
 	}
-	
-	
+
+
 	/**
 	 * handles all the 'write' transactions related to managing Residents
 	 * (non-Javadoc)
@@ -92,7 +94,7 @@ public class MyResidentsAction extends SBActionAdapter {
 	public void build(SMTServletRequest req) throws ActionException {
 		String reqType = StringUtil.checkVal(req.getParameter("reqType"), null);
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		
+
 		ResidentVO resident = new ResidentVO(req);
 		switch (reqType) {
 			case "reinvite":
@@ -113,8 +115,8 @@ public class MyResidentsAction extends SBActionAdapter {
 				break;
 		}
 	}
-	
-	
+
+
 	/**
 	 * finds/adds a WC user and then creates their Resident account, and invites them.
 	 * @param email
@@ -128,7 +130,7 @@ public class MyResidentsAction extends SBActionAdapter {
 		try {
 			user.setEmailAddress(email);
 			user.setProfileId(pm.checkProfile(user, dbConn));
-			
+
 			if (user.getProfileId() == null) //create a new profile if need be - the user will come back later and register on the website
 				pm.updateProfile(user, dbConn);
 		} catch (DatabaseException de) {
@@ -144,8 +146,8 @@ public class MyResidentsAction extends SBActionAdapter {
 		} catch (ActionException ae) {
 			msg = ae.getMessage();
 		}
-		
-		
+
+
 		// Setup the redirect.
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		StringBuilder url = new StringBuilder();
@@ -155,8 +157,8 @@ public class MyResidentsAction extends SBActionAdapter {
 		req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
 		req.setAttribute(Constants.REDIRECT_URL, url.toString());
 	}
-	
-	
+
+
 	/**
 	 * searches through all registered Residents via keyword.
 	 * If keyword is a valid email address, 
@@ -169,7 +171,7 @@ public class MyResidentsAction extends SBActionAdapter {
 		List<UserDataVO> users = new ArrayList<>();
 		ProfileManager pm = ProfileManagerFactory.getInstance(getAttributes());
 		UserDataVO vo;
-		
+
 		//find users with a matching name & are registered users as Residents or Chief Residents
 		StringBuilder sql = new StringBuilder(400);
 		sql.append("select p.profile_id, p.first_nm, p.last_nm, p.email_address_txt ");
@@ -180,7 +182,7 @@ public class MyResidentsAction extends SBActionAdapter {
 		sql.append("left outer join ").append(customDb).append("DPY_SYN_INST_RESIDENT r on p.profile_id=r.profile_id and r.res_dir_id=? ");
 		sql.append("where (regd.value_txt=? or regd.value_txt=?) and p.SEARCH_LAST_NM=? and r.resident_id is null");
 		log.debug(sql);
-		
+
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, "" + SecurityController.PUBLIC_REGISTERED_LEVEL);
 			ps.setString(2, ((site.getAliasPathParentId() != null) ? site.getAliasPathParentId() : site.getSiteId())); //use parent's siteId
@@ -203,11 +205,11 @@ public class MyResidentsAction extends SBActionAdapter {
 		} catch (SQLException sqle) {
 			log.error("could not load residents", sqle);
 		}
-		
+
 		return users;
 	}
-	
-	
+
+
 	/**
 	 * loads a count of residents attached to the given Resident Director
 	 * @param directorProfileId
@@ -222,7 +224,7 @@ public class MyResidentsAction extends SBActionAdapter {
 		sql.append("DPY_SYN_INST_RES_DIR rd on r.res_dir_id=rd.res_dir_id ");
 		sql.append("where rd.profile_id=? and r.active_flg=1");
 		log.debug(sql);
-		
+
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, directorProfileId);
 			ResultSet rs = ps.executeQuery();
@@ -232,8 +234,8 @@ public class MyResidentsAction extends SBActionAdapter {
 		}
 		return 0;
 	}
-	
-	
+
+
 	/**
 	 * loads a list of residents associated to the given Director
 	 * @param directorProfileId
@@ -253,7 +255,7 @@ public class MyResidentsAction extends SBActionAdapter {
 		sql.append("left outer join register_data regd on rs.register_submittal_id=regd.register_submittal_id and regd.register_field_id=? "); //the user's PGY value
 		sql.append("where rd.profile_id=? and r.active_flg=1");
 		log.debug(sql);
-		
+
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, ((site.getAliasPathParentId() != null) ? site.getAliasPathParentId() : site.getSiteId())); //use parent's siteId
 			ps.setString(2, RegField.DSI_PGY.toString());
@@ -266,26 +268,26 @@ public class MyResidentsAction extends SBActionAdapter {
 		} catch (SQLException sqle) {
 			log.error("could not load residents", sqle);
 		}
-		
+
 		//no residents, no profile lookup needed.
 		if (profileIds.size() == 0) return new ResidentVO().new ResidentGrouping(data);
-		
+
 		//load profiles for all these residents
 		ProfileManager pm = ProfileManagerFactory.getInstance(getAttributes());
 		try {
 			Map<String, UserDataVO> profiles = pm.searchProfileMap(dbConn, profileIds);
-			
+
 			for (ResidentVO res : data)
 				res.setProfile(profiles.get(res.getProfileId()));
-			
+
 		} catch (DatabaseException de) {
 			log.error("could not load profiles for Residents", de);
 		}
-		
+
 		return new ResidentVO().new ResidentGrouping(data);
 	}
-	
-	
+
+
 	/**
 	 * loads all of the residents attached to an Assignment; inclusive of their PGY
 	 * and %complete for the assignment.
@@ -296,45 +298,25 @@ public class MyResidentsAction extends SBActionAdapter {
 	 * 		**CALLED FROM MyAssignmentsAdminAction**
 	 */
 	protected void loadAssgResidents(AssignmentVO assg, SiteVO site, boolean fullDetail, String residentId) {
-		if (fullDetail) {
-			loadAssgResidents(assg, site, residentId, false);
-			return;
-		}
-		
-		//load some simple counts - we don't need all the resident data, only stats
-		String customDb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = new StringBuilder(200);
-		sql.append("select r.resident_id, sum(case raa.complete_dt when null then 0 else 1 end) ");
-		sql.append("from ").append(customDb).append("DPY_SYN_INST_RESIDENT r ");
-		sql.append("inner join ").append(customDb).append("DPY_SYN_INST_RES_ASSG ra on r.resident_id=ra.resident_id ");
-		sql.append("left outer join ").append(customDb).append("DPY_SYN_INST_RES_ASSG_ASSET raa on ra.res_assg_id=raa.res_assg_id ");
-		sql.append("where ra.assg_id=? and r.active_flg=1 ");
-		sql.append("group by r.resident_id");
-		log.debug(sql);
-		
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, assg.getAssgId());
-			ResultSet rs = ps.executeQuery();
-			while (rs.next()) {
-				assg.addResident(new ResidentVO(rs));
-				assg.addResidentStats(rs.getString(1), rs.getInt(2));
-			}
-		} catch (SQLException sqle) {
-			log.error("could not load list of assignment's residents", sqle);
-		}
-		
+		loadAssgResidents(assg, site, residentId, false);
 	}
-	
-		/**
-		 * helper to above, loads full detail for the residents
-		 * @param assg
-		 * @param site
-		 */
+	protected void loadMyResidents(AssignmentVO assg, SiteVO site, String residentId) {
+		loadAssgResidents(assg, site, residentId, true);
+	}
+
+
+	/**
+	 * helper to above, loads full detail for the residents
+	 * @param assg
+	 * @param site
+	 */
 	private void loadAssgResidents(AssignmentVO assg, SiteVO site, String residentId, boolean outerJoinAssg) {
 		String customDb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		List<String> profileIds = new ArrayList<>(50);
-		StringBuilder sql = new StringBuilder(200);
-		sql.append("select distinct r.resident_id, r.profile_id, r.consent_dt, r.invite_sent_dt, regd.value_txt as pgy_id, ra.res_assg_id ");
+		Set<String> profileIds = new HashSet<>(50);
+		StringBuilder sql = new StringBuilder(250);
+		sql.append("select distinct r.resident_id, r.profile_id, r.consent_dt, r.invite_sent_dt, ");
+		sql.append("regd.value_txt as pgy_id, ra.res_assg_id, raa.complete_dt, raa.assg_asset_id, ");
+		sql.append("sum(case raa.complete_dt when null then 0 else 1 end) as stats ");
 		sql.append("from ").append(customDb).append("DPY_SYN_INST_RESIDENT r ");
 		if (outerJoinAssg) {
 			sql.append("left outer join ").append(customDb).append("DPY_SYN_INST_RES_ASSG ra on r.resident_id=ra.resident_id and ra.assg_id=? ");
@@ -346,8 +328,9 @@ public class MyResidentsAction extends SBActionAdapter {
 		sql.append("left outer join register_data regd on rs.register_submittal_id=regd.register_submittal_id and regd.register_field_id=? "); //the user's PGY value
 		sql.append("where r.res_dir_id=? and r.active_flg=1");
 		if (residentId != null) sql.append("and r.resident_id=?");
+		sql.append(" group by r.resident_id, r.profile_id, r.consent_dt, r.invite_sent_dt, regd.value_txt, ra.res_assg_id, raa.assg_asset_id, raa.complete_dt");
 		log.debug(sql);
-		
+
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, assg.getAssgId());
 			ps.setString(2, ((site.getAliasPathParentId() != null) ? site.getAliasPathParentId() : site.getSiteId())); //use parent's siteId
@@ -357,21 +340,24 @@ public class MyResidentsAction extends SBActionAdapter {
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				assg.addResident(new ResidentVO(rs));
+				assg.addResidentStats(rs.getString("resident_id"), rs.getInt("stats"));
 				profileIds.add(rs.getString("profile_id"));
+				if (residentId != null)
+					assg.setResidentAssetCompleted(rs.getString("assg_asset_id"), rs.getDate("complete_dt"));
 			}
-			
+
 		} catch (SQLException sqle) {
 			log.error("could not load list of assignment's residents", sqle);
 		}
-		
+
 		//no residents, no profile lookup needed.
 		if (profileIds.size() == 0) return;
-		
+
 		//load profiles for all these residents
 		ProfileManager pm = ProfileManagerFactory.getInstance(getAttributes());
 		try {
-			Map<String, UserDataVO> profiles = pm.searchProfileMap(dbConn, profileIds);
-			
+			Map<String, UserDataVO> profiles = pm.searchProfileMap(dbConn, new ArrayList<String>(profileIds));
+
 			for (ResidentVO res : assg.getResidents())
 				res.setProfile(profiles.get(res.getProfileId()));
 
@@ -379,13 +365,8 @@ public class MyResidentsAction extends SBActionAdapter {
 			log.error("could not load profiles for Residents", de);
 		}
 	}
-	
-	
-	protected void loadMyResidents(AssignmentVO assg, SiteVO site, String residentId) {
-		loadAssgResidents(assg, site, residentId, true);
-	}
-	
-	
+
+
 	/**
 	 * Invite
 	 * @param resident
@@ -397,7 +378,7 @@ public class MyResidentsAction extends SBActionAdapter {
 		sql.append("update ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("DPY_SYN_INST_RESIDENT set invite_sent_dt=? where resident_id=?");
 		log.debug(sql);
-		
+
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setTimestamp(1, Convert.getCurrentTimestamp());
 			ps.setString(2, resident.getResidentId());
@@ -405,7 +386,7 @@ public class MyResidentsAction extends SBActionAdapter {
 		} catch (SQLException sqle) {
 			log.error("could not detach Director from Resident", sqle);
 		}
-		
+
 		//load a complete profile for the invitee so we can customize the email
 		ProfileManager pm = ProfileManagerFactory.getInstance(getAttributes());
 		try {
@@ -413,9 +394,9 @@ public class MyResidentsAction extends SBActionAdapter {
 		} catch (DatabaseException de) {
 			log.error("could not load user profile", de);
 		}
-		
+
 		UserDataVO resDir = getResDirProfile(resident.getResidentDirectorId(), site.getOrganizationId());
-		
+
 		//send the email invite asking the Resident to acknowledge their Director
 		try {
 			InviteResidentVO mail = new InviteResidentVO();
@@ -429,8 +410,8 @@ public class MyResidentsAction extends SBActionAdapter {
 			log.error("could not send invite email", ide);
 		}
 	}
-	
-	
+
+
 	/**
 	 * gets the profileId for the given resident_director record, then does a 
 	 * ProfileManager lookup for the UserDataVO of that person.
@@ -443,18 +424,18 @@ public class MyResidentsAction extends SBActionAdapter {
 		sql.append("select profile_id from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("DPY_SYN_INST_RES_DIR where RES_DIR_ID=?");
 		log.debug(sql);
-		
+
 		String resDirProfileId = "";
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setInt(1, resDirId);
 			ResultSet rs = ps.executeQuery();
 			if (rs.next())
 				resDirProfileId = rs.getString(1);
-			
+
 		} catch (SQLException sqle) {
 			log.error("could not load resDir profileId", sqle);
 		}
-		
+
 		//load a complete profile for the resDir so we can customize the email
 		ProfileManager pm = ProfileManagerFactory.getInstance(getAttributes());
 		try {
@@ -464,8 +445,8 @@ public class MyResidentsAction extends SBActionAdapter {
 		}
 		return new UserDataVO();
 	}
-	
-	
+
+
 	/**
 	 * Detaches a Resident from the superintendency of 'this' Director.  
 	 * Does not actually delete the Resident.
@@ -477,7 +458,7 @@ public class MyResidentsAction extends SBActionAdapter {
 		sql.append("update ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("DPY_SYN_INST_RESIDENT set active_flg=0, update_dt=? where resident_id=?");
 		log.debug(sql);
-		
+
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setTimestamp(1, Convert.getCurrentTimestamp());
 			ps.setString(2, resident.getResidentId());
@@ -486,8 +467,8 @@ public class MyResidentsAction extends SBActionAdapter {
 			log.error("could not detach Director from Resident", sqle);
 		}
 	}
-	
-	
+
+
 	/**
 	 * writes an Resident to the database
 	 * @param resident
@@ -520,13 +501,13 @@ public class MyResidentsAction extends SBActionAdapter {
 		//insert the RESIDENT table
 		if (resident.getResidentId() == null)
 			resident.setResidentId(new UUIDGenerator().getUUID());
-			
+
 		sql = new StringBuilder(150);
 		sql.append("insert into ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("DPY_SYN_INST_RESIDENT (RES_DIR_ID, PROFILE_ID, ACTIVE_FLG, ");
 		sql.append("CREATE_DT, RESIDENT_ID) values (?,?,?,?,?)");
 		log.debug(sql);
-		
+
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setInt(1, resident.getResidentDirectorId());
 			ps.setString(2, resident.getProfileId());
@@ -539,8 +520,8 @@ public class MyResidentsAction extends SBActionAdapter {
 			throw new ActionException("Could not add Resident - user not found");
 		}
 	}
-	
-	
+
+
 	/**
 	 * re-enrolls a previously deleted Resident from a Director's superintendency
 	 * @param resident
@@ -551,7 +532,7 @@ public class MyResidentsAction extends SBActionAdapter {
 		sql.append("update ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("DPY_SYN_INST_RESIDENT set active_flg=1, update_dt=? where resident_id=?");
 		log.debug(sql);
-		
+
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setTimestamp(1, Convert.getCurrentTimestamp());
 			ps.setString(2, resident.getResidentId());
@@ -560,8 +541,8 @@ public class MyResidentsAction extends SBActionAdapter {
 			throw new ActionException("could not re-activate Resident");
 		}
 	}
-	
-	
+
+
 	/**
 	 * 
 	 * @param resident
@@ -579,7 +560,7 @@ public class MyResidentsAction extends SBActionAdapter {
 			sql.append("DPY_SYN_INST_RESIDENT set active_flg=1, consent_dt=? where resident_id=?");
 		}
 		log.debug(sql);
-		
+
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setTimestamp(1, Convert.getCurrentTimestamp());
 			ps.setString(2, resident.getResidentId());
@@ -587,13 +568,13 @@ public class MyResidentsAction extends SBActionAdapter {
 		} catch (SQLException sqle) {
 			log.error("could not update MyDirector for Resident", sqle);
 		}
-		
+
 		//if the user is accepting invitations, remove this one from their pending list
 		DSIUserDataVO user = DSIUserDataVO.getInstance(req.getSession().getAttribute(Constants.USER_DATA));
 		if (user != null && user.getPendingResDirs() != null) {
 			user.getPendingResDirs().remove(resident.getResidentId());
 			req.getSession().setAttribute(Constants.USER_DATA, user);
 		}
-		
+
 	}
 }

@@ -134,13 +134,13 @@ public class DSIRoleMgr {
 		Date d = user.getGraduationDate();
 		if (d != null && d.before(Calendar.getInstance().getTime())) return false;
 		
-		//if they can cash-in points, they can get im
+		//if they can cash-in points, they can get in
 		if (isCreditRedeeming(user)) return true;
 		
 		//allow all J&J WWID users through
 		if (UserDataVO.AuthenticationType.SAML == user.getAuthType()) return true;
 		
-		//let Resident Directors through, but everyone else is SOL!
+		//let Resident Directors through, but everyone else is S.O.L.!
 		return isDirector(user);
 	}
 	
