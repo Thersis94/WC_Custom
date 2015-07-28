@@ -56,7 +56,7 @@ public class DSILoginModule extends SAMLLoginModule {
 		addAssgCount(dsiUser);
 		
 		log.error("loaded dsiUser " + dsiUser.getEmailAddress());
-		return dsiUser;
+		return dsiUser.getUserDataVO();
 	}
 	
 	@Override
@@ -73,7 +73,7 @@ public class DSILoginModule extends SAMLLoginModule {
 		addAssgCount(dsiUser);
 		
 		log.error("loaded dsiUser from cookie " + dsiUser.getEmailAddress());
-		return dsiUser;
+		return dsiUser.getUserDataVO();
 	}
 	
 	

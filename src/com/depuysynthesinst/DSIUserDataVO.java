@@ -3,6 +3,7 @@ package com.depuysynthesinst;
 // SMTBaseLibs
 import java.sql.ResultSet;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -105,12 +106,25 @@ public class DSIUserDataVO extends UserDataVO {
 	public Date getGraduationDate() {
 		return Convert.formatDate(Convert.DATE_SLASH_PATTERN, "" + user.getAttribute(RegField.DSI_GRAD_DT.toString()));
 	}
+	
+	/**
+	 * returns true if the user is graduating within 6mos
+	 * @return
+	 */
+	public boolean isGraduatingSoon() {
+		if (getGraduationDate() == null) return false;
+		Calendar then = Calendar.getInstance();
+		Date now = then.getTime();
+		then.setTime(getGraduationDate());
+		then.add(Calendar.DAY_OF_YEAR, -180); //rollback 6mos
+		return now.after(then.getTime()) && now.before(getGraduationDate());
+	}
 
 	/**
 	 * @return the ttLmsId
 	 */
 	public String getTtLmsId() {
-		return StringUtil.checkVal(user.getAttribute(RegField.DSI_TTLMS_ID.toString()));
+		return StringUtil.checkVal(user.getAttribute(RegField.DSI_TTLMS_ID.toString()), null);
 	}
 
 	/**

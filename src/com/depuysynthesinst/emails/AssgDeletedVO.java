@@ -40,7 +40,7 @@ public class AssgDeletedVO extends AbstractDSIEmailVO {
 		sb.append("Your residency director/coordinator (");
 		sb.append(assg.getDirectorProfile().getFirstName()).append(" ").append(assg.getDirectorProfile().getLastName());
 		sb.append(") has canceled an assignment in your DePuy Synthes Future Leaders account. ");
-		sb.append("To access your assignment please click on the URL below:<br>");
+		sb.append("To access your assignments please click on the URL below:<br>");
 		sb.append("<a href=\"").append(assgUrl).append("\">").append(assgUrl).append("</a></p>");
 
 		addIfYouBelieve(sb);

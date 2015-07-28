@@ -2,6 +2,7 @@ package com.depuysynthesinst.emails;
 
 import com.depuysynthesinst.DSIUserDataVO;
 import com.depuysynthesinst.DSIUserDataVO.RegField;
+import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.SiteVO;
 
@@ -28,13 +29,14 @@ public class RegProfferVO extends AbstractDSIEmailVO {
 	 * This is important, because when this message gets to JMS it won't have access
 	 * to the Assg or SiteVO to do what it needs to do.
 	 */
-	public void buildMessage(DSIUserDataVO rcpt, SiteVO site) {
+	public void buildMessage(UserDataVO user, SiteVO site) {
 		String siteUrl = site.getFullSiteAlias();
+		DSIUserDataVO rcpt = DSIUserDataVO.getInstance(user);
 
 		StringBuilder sb = new StringBuilder(1000);
 		sb.append("<p>Dear Future Leaders Program,<br>");
 		sb.append(rcpt.getFirstName()).append(" ").append(rcpt.getLastName());
-		sb.append("has indicated during the registration process for the DePuy Synthes Future ");
+		sb.append(" has indicated during the registration process for the DePuy Synthes Future ");
 		sb.append("Leaders program that he/she is working as a healthcare professional in a ");
 		sb.append("Federal Military Hospital.  The following are the details of his/her registration:</p>");
 		

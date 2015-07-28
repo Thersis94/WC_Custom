@@ -412,6 +412,7 @@ public class LMSWSClient {
 			for (Object o : uclr.get_return()) { 
 				//these are actually Strings, not Objects of any meaningful type
 				//feed the String through the JSON Deserializer and add it to the list of VOs
+				//System.err.println(o.toString());
 				try {
 					MyLMSCourseVO data = (MyLMSCourseVO) SMTSerializer.fromJson(o.toString(), MyLMSCourseVO.class);
 					courses.add(data);
