@@ -68,13 +68,13 @@ public class NexusGTINBuilder extends CommandLineUtil {
 	 */
 	public static final List<String> ORGANIZATIONS = new ArrayList<String>(8) {
 		private static final long serialVersionUID = 1L; {
-			add("ALL");
+			//add("ALL");
 			add("CMF");
-			add("Trauma");
-			add("Codman");
+			//add("Trauma");
+			//add("Codman");
 			add("Mitek");
-			add("Spine");
-			add("Orthopaedics");
+			//add("Spine");
+			//add("Orthopaedics");
 		}
 		
 	};
@@ -169,7 +169,7 @@ public class NexusGTINBuilder extends CommandLineUtil {
 		
 		// Send an email report
 		try {
-			this.sendEmail(getEmailMessage(messages), null, null);
+			this.sendEmail(getEmailMessage(messages), null);
 		} catch(Exception e) {
 			log.error("Unable to send email report", e);
 		}
