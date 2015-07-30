@@ -683,7 +683,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 	 * load specific responses to the short term surveys - needed for Custom Reports only.
 	 * @param sem
 	 */
-	private void loadSurveyReponses(List<DePuyEventSeminarVO> seminars, boolean isMitek) {
+	protected void loadSurveyReponses(List<DePuyEventSeminarVO> seminars, boolean isMitek) {
 		StringBuilder sql = new StringBuilder(300);
 		sql.append("select a.value_txt as rsvp_cd, b.value_txt as venue_cost, c.value_txt as refresh_cost, d.value_txt as attendee_cnt ");
 		sql.append("from SURVEY_RESPONSE a ");

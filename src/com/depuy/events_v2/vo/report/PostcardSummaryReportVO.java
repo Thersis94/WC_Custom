@@ -91,7 +91,8 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 			rpt.append("<tr><td>Years at current practice:</td><td align='center'>").append(surg.getPractYrs()).append("</td></tr>\r");
 			rpt.append("<tr><td>Employed by hospital?:</td><td align='center'>").append(surg.getHospEmployeeFlg() == 1 ? "yes" : "no").append("</td></tr>\r");
 			rpt.append("<tr><td>Hospital Address:</td><td align='center'>").append(surg.getHospAddress()).append("</td></tr>\r");
-			rpt.append("<tr><td>Practice Address:</td><td align='center'>").append(surg.getPractLocation().getFormattedLocation()).append("</td></tr>\r");
+			String location = (surg.getPractLocation() != null) ? surg.getPractLocation().getFormattedLocation() : "";
+			rpt.append("<tr><td>Practice Address:</td><td align='center'>").append(location).append("</td></tr>\r");
 			rpt.append("<tr><td>Practice Phone:</td><td align='center'>").append(surg.getPractPhone()).append("</td></tr>\r");
 			rpt.append("<tr><td>Speaker/Office Email(s):</td><td align='center'>").append(surg.getPractEmail()).append("</td></tr>\r");
 			rpt.append("<tr><td>Secondary Contact:</td><td align='center'>").append(surg.getSecPhone()).append("</td></tr>\r");
