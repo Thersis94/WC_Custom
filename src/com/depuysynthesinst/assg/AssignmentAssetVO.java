@@ -7,7 +7,6 @@ import java.util.Date;
 import org.apache.solr.common.SolrDocument;
 
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 
 /****************************************************************************
@@ -47,10 +46,6 @@ public class AssignmentAssetVO implements Serializable, Comparable<AssignmentAss
 		util = null;
 	}
 	
-	public AssignmentAssetVO(SMTServletRequest req) {
-		//TODO
-	}
-
 	public String getAssetId() {
 		return assetId;
 	}

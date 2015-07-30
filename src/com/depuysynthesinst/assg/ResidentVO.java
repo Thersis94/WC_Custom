@@ -172,7 +172,7 @@ public class ResidentVO implements Serializable {
 	}
 
 	public void setCompleteCnt(int completeCnt) {
-		this.completeCnt = completeCnt;
+		this.completeCnt += completeCnt;
 	}
 
 
@@ -180,7 +180,7 @@ public class ResidentVO implements Serializable {
 	 * **************************************************************************
 	 * <b>Title</b>: ResidentGrouping.java<p/>
 	 * <b>Description: a simple nested class used in the Views to cleaning print all the
-	 * Residents into buckets based on their PGY year.</b> 
+	 * Residents into accordion buckets based on their PGY year.</b> 
 	 * <p/>
 	 * <b>Copyright:</b> Copyright (c) 2015<p/>
 	 * <b>Company:</b> Silicon Mountain Technologies<p/>

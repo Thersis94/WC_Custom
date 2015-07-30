@@ -29,17 +29,17 @@ public class TestLMS {
 		LMSWSClient client = new LMSWSClient("183742B231C69E28");
 		
 		try {
-			System.out.println("doJKTest: " + client.getUserActiveIDByEmail("jmckain@siliconmtn.com"));
-			System.out.println("doJKTest: " + client.getTotalUserPoints("c0a80228a3afb43aeaf9bd49b6a69292"));
+			//System.out.println("doJKTest: " + client.getUserActiveIDByEmail("jmckain@siliconmtn.com"));
+			System.out.println(client.getUserCourseList("c0a80228a3afb43aeaf9bd49b6a69292"));
 			// format a test user VO and set on client.
-			DSIUserDataVO du = formatTestUser();
+			//DSIUserDataVO du = formatTestUser();
 			
 			// create user
-			System.out.println("createUser TTLMSID response: " + client.createUser(du));
+			//System.out.println("createUser TTLMSID response: " + client.createUser(du));
 			
 			// update user
-			du.setEligible(true);
-			du.setVerified(true);
+			//du.setEligible(true);
+			//du.setVerified(true);
 			//System.out.println("updateUser TTLMSID response: " + client.updateUser(du));
 			
 			/*
@@ -68,7 +68,7 @@ public class TestLMS {
 			*/		
 			
 		} catch (Exception e) {
-			System.out.println(e);
+			e.printStackTrace();
 		}
 	}
 	

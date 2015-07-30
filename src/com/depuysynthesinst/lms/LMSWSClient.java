@@ -2,22 +2,22 @@ package com.depuysynthesinst.lms;
 
 // Java 7
 import java.rmi.RemoteException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-
-
-
 
 // Apache log4j
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
 import com.depuysynthesinst.DSIUserDataVO;
+
 // SMTBaseLibs 2
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.SMTSerializer;
 import com.siliconmtn.util.StringUtil;
-
 
 //LMS SOAP Api
 import cfc.DSIResidentsCFCInvocationExceptionException;
@@ -68,7 +68,7 @@ public class LMSWSClient {
 	private static Logger log;
 	private String securityKey;
 	private DSIResidentsStub dsi;
-	private Map<Integer,String> errorCodeMap;
+	private Map<Double,String> errorCodeMap;
 
 
 	public LMSWSClient(String securityKey) {
@@ -281,7 +281,7 @@ public class LMSWSClient {
 			//check for errors, -2 (user doesn't exist) is OK in this scenario
 			double errCd = Convert.formatDouble("" + ret.get("ERROR"));
 			if (errCd < 0 && errCd != -2) 
-				throw new ActionException(errorCodeMap.get(errCd));
+				throw new ActionException(parseErrorCode(errCd));
 			
 		} catch (Exception e) {
 			throw new ActionException(e);
@@ -331,7 +331,7 @@ public class LMSWSClient {
 			//check for errors
 			double errCd = Convert.formatDouble("" + ret.get("ERROR"));
 			if (errCd < 0 && errCd != -2) 
-				throw new ActionException(errorCodeMap.get(errCd));
+				throw new ActionException(parseErrorCode(errCd));
 			
 		} catch (Exception e) {
 			throw new ActionException(e);
@@ -391,7 +391,7 @@ public class LMSWSClient {
 	 * @return
 	 * @throws ActionException
 	 */
-	public Object[] getUserCourseList(String dsiId) 
+	public List<MyLMSCourseVO> getUserCourseList(String dsiId) 
 			throws ActionException {
 
 		// build request
@@ -401,24 +401,30 @@ public class LMSWSClient {
 
 		// make WS call and get response
 		UserCourseListResponse uclr = null;
+		 List<MyLMSCourseVO> courses = new ArrayList<>();
 		try {
 			// make sure we have a client stub
 			checkWSStub();
 
 			// get response
 			uclr = dsi.userCourseList(ucl);
-			/*
-			Object[] courseList = uclr.get_return();
-			// debug
-			for (Object o : courseList) {
-				log.debug("Course: " + o);
+			
+			for (Object o : uclr.get_return()) { 
+				//these are actually Strings, not Objects of any meaningful type
+				//feed the String through the JSON Deserializer and add it to the list of VOs
+				//System.err.println(o.toString());
+				try {
+					MyLMSCourseVO data = (MyLMSCourseVO) SMTSerializer.fromJson(o.toString(), MyLMSCourseVO.class);
+					courses.add(data);
+				} catch (Exception e) {
+					log.error("could not parse JSON", e);
+				}
 			}
-			return courseList;
-			 */
+			
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}
-		return uclr.get_return();
+		return courses;
 	}
 
 	/**
@@ -435,7 +441,7 @@ public class LMSWSClient {
 	 * @return
 	 * @throws ActionException
 	 */
-	public Object[] getCourseList() throws ActionException {
+	public List<LMSCourseVO> getCourseList() throws ActionException {
 
 		// build request
 		CourseList cl = new CourseList();
@@ -443,23 +449,29 @@ public class LMSWSClient {
 
 		// make WS call and get response.
 		CourseListResponse clr = null;
+		 List<LMSCourseVO> courses = new ArrayList<>();
 		try {
 			// make sure we have a client stub
 			checkWSStub();
 
 			// make WS call
 			clr = dsi.courseList(cl);
-			/*
-			log.debug("Logging course list response: ");
-			for (Object o : clr.get_return()) {
-				log.debug(o);
+			
+			for (Object o : clr.get_return()) { 
+				//these are actually Strings, not Objects of any meaningful type
+				//feed the String through the JSON Deserializer and add it to the list of LMSCourseVOs
+				try {
+					LMSCourseVO data = (LMSCourseVO) SMTSerializer.fromJson(o.toString(), LMSCourseVO.class);
+					courses.add(data);
+				} catch (Exception e) {
+					log.error("could not parse JSON", e);
+				}
 			}
-			log.debug("End of course list response.");
-			 */
+
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}
-		return clr.get_return();
+		return courses;
 	}
 
 	/**
@@ -510,7 +522,7 @@ public class LMSWSClient {
 	 */
 	private String parseErrorCode(double errorCode) {
 		if (errorCode > -1 || errorCode < -6) return "Invalid error code supplied.";
-		return errorCodeMap.get(errorCode);
+		return errorCodeMap.get(Double.valueOf(errorCode));
 	}
 
 	
@@ -520,12 +532,12 @@ public class LMSWSClient {
 	 */
 	private void initErrorMap() {
 		errorCodeMap = new HashMap<>();
-		errorCodeMap.put(-1,"Can't find new group (Internal Error)");
-		errorCodeMap.put(-2,"Requested user doesn't exist");
-		errorCodeMap.put(-3,"Can't find new user (Internal Error)");
-		errorCodeMap.put(-4,"User already exists (Based on SynthesID)");
-		errorCodeMap.put(-5,"Requested course doesn't exist");
-		errorCodeMap.put(-6,"Bad security code");
+		errorCodeMap.put(Double.valueOf(-1),"Can't find new group (Internal Error)");
+		errorCodeMap.put(Double.valueOf(-2),"Requested user doesn't exist");
+		errorCodeMap.put(Double.valueOf(-3),"Can't find new user (Internal Error)");
+		errorCodeMap.put(Double.valueOf(-4),"User already exists (Based on SynthesID)");
+		errorCodeMap.put(Double.valueOf(-5),"Requested course doesn't exist");
+		errorCodeMap.put(Double.valueOf(-6),"Bad security code");
 	}
 
 	/**

@@ -108,7 +108,6 @@ public class AssignmentVO implements Serializable {
 	}
 
 
-
 	public String getAssgName() {
 		return assgName;
 	}
@@ -268,9 +267,9 @@ public class AssignmentVO implements Serializable {
 		return residents.values();
 	}
 
-	
 	public void addResident(ResidentVO resident) {
-		this.residents.put(resident.getResidentId(), resident);
+		if (! residents.containsKey(resident.getResidentId()))
+				this.residents.put(resident.getResidentId(), resident);
 	}
 	
 	public int getResidentsCompleted() {
@@ -280,6 +279,15 @@ public class AssignmentVO implements Serializable {
 		}
 		
 		return cnt;
+	}
+	
+	public void setResidentAssetCompleted(String assgAssetId, Date completeDt) {
+		if (completeDt == null) return; //nothing needs to be done if the asset is not complete
+		
+		for (AssignmentAssetVO asset : assets) {
+			if (asset.getAssgAssetId().equals(assgAssetId))
+				asset.setCompleteDt(completeDt);
+		}
 	}
 
 	public String getAssgId() {

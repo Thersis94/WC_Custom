@@ -48,7 +48,7 @@ public class AssignmentsFacadeAction extends SimpleActionAdapter {
 		SMTActionInterface action;
 		if (isProfessor && "residents".equals(req.getParameter("pg"))) {
 			action = new MyResidentsAction();
-		} else if (isProfessor && req.hasParameter("view")) {
+		} else if ((isProfessor && req.hasParameter("view")) || DSIRoleMgr.isDirector(user)) {
 			//admin view of assignments - or a single assignment (edit mode)
 			action = new MyAssignmentsAdminAction(actionInit);
 		} else {
@@ -94,7 +94,10 @@ public class AssignmentsFacadeAction extends SimpleActionAdapter {
 			StringBuilder url = new StringBuilder();
 			url.append(page.getRequestURI()).append("?view=").append(req.getParameter("view")); //display admin menus
 			if (req.hasParameter("pg")) url.append("&pg=").append(req.getParameter("pg")); //admin page (include)
-			if (req.hasParameter("redirAssignmentId")) url.append("&isNew=1&assignmentId=").append(req.getParameter("redirAssignmentId"));
+			if (req.hasParameter("redirAssignmentId")) {
+				url.append("&assignmentId=").append(req.getParameter("redirAssignmentId"));
+				if (req.hasParameter("isNew")) url.append("&isNew=1");
+			}
 			
 			req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
 			req.setAttribute(Constants.REDIRECT_URL, url.toString());

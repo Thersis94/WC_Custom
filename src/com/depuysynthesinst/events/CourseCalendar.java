@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import com.depuysynthesinst.lms.FutureLeaderACGME;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.exception.InvalidDataException;
@@ -191,10 +192,12 @@ public class CourseCalendar extends SimpleActionAdapter {
 		//one for specialties, put on the request by Type
 		for (EventTypeVO typeVo : grpVo.getTypes().values()) {
 			Map<String, Integer> specialties = new TreeMap<String, Integer>();
+			boolean isFutureLdrs = "FUTURE".equals(typeVo.getTypeName());
 			for (EventEntryVO vo : typeVo.getEvents()) {
 				String specs = StringUtil.checkVal(vo.getServiceText(), "Other");
 				for (String spec : specs.split(",")) {
 					spec = StringUtil.checkVal(spec).trim();
+					if (isFutureLdrs) spec = FutureLeaderACGME.getNameFromCode(spec);
 					if (specialties.containsKey(spec)) {
 						specialties.put(spec, specialties.get(spec)+1);
 					} else {
@@ -267,9 +270,12 @@ public class CourseCalendar extends SimpleActionAdapter {
 		
 		for (EventTypeVO typeVo : grpVo.getTypes().values()) {
 			List<EventEntryVO> data = new ArrayList<EventEntryVO>();
+			boolean isFutureLdrs = "FUTURE".equals(typeVo.getTypeName());
 			for (EventEntryVO vo : typeVo.getEvents()) {
 				//check each event and only include those matching our filters
-				String spec = StringUtil.checkVal(vo.getServiceText(),"Other");
+				String spec = StringUtil.checkVal(vo.getServiceText());
+				if (isFutureLdrs) spec = FutureLeaderACGME.getNameFromCode(spec);
+				if (spec == null || spec.length() == 0) spec = "Other";
 				//log.debug("spec=" + spec);
 				boolean addIt = false;
 				for (String f : filters) {
@@ -298,13 +304,15 @@ public class CourseCalendar extends SimpleActionAdapter {
 		if (site.getAliasPathName() == null && page.isDefaultPage()) return "";
 		String alias = page.getAliasName().toLowerCase();
 		
-		if (alias.equals("chest-wall")) return "Chest Wall";
-		else if ("veterinary".equals(site.getAliasPathName())) return "Vet"; //vet section
+		if ("veterinary".equals(site.getAliasPathName())) return "Vet"; //vet section
 		else if ("nurse-education".equals(site.getAliasPathName())) return "Nurse Education"; //nursing section
+		else if ("futureleaders".equals(site.getAliasPathName())) return FutureLeaderACGME.getCodeFromAlias(alias);
+		else if (alias.equals("chest-wall")) return "Chest Wall";
 		else if (alias.indexOf("-") > 0) return StringUtil.capitalizePhrase(alias.replace("-", " & ")); //Foot & Ankle, Hand & Wrist
 		
 		return StringUtil.capitalize(alias);
 	}
+	
 	
 	
 	/**
