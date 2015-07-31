@@ -220,7 +220,11 @@ public class CustomReportVO extends AbstractSBReportVO {
 						row.append( vo.getRsvpCount() );
 						break;
 					case ATTENDEE_COUNT_FLG:
-						row.append(StringUtil.checkVal(vo.getSurveyResponse("attendee_cnt")));
+						if ("HSEM".equals(event.getEventTypeCd())) {
+							row.append(Convert.formatInteger(vo.getPcAttribute1()));
+						} else {
+							row.append(Convert.formatInteger(vo.getSurveyResponse("attendee_cnt")));
+						}
 						break;
 //					case OPT_IN_FLG:
 //						row.append( (vo.getOptInFlag() == 1 ? "Yes" : "No") );
