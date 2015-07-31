@@ -107,4 +107,14 @@ public class GFPProgramVO {
 	public void setUserId(String userId) {
 		this.userId = userId;
 	}
+	
+	public int getCompleted() {
+		int completed = 0;
+		for (GFPWorkshopVO workshop : workshops) {
+			if (workshop.getCompleteState() == 2) {
+				completed++;
+			}
+		}
+		return completed;
+	}
 }
