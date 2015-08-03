@@ -37,7 +37,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class ProductFacadeAction extends SBActionAdapter {
 
 	public static final String STEP_PARAM = "bType";
-	public static enum KIT_STEP {product, productRecall, kitLayer, kitProduct, customer}
+	public static enum KIT_STEP {product, productRecall, kitLayer, kitProduct, customer, upload}
 	/**
 	 * Default Constructor
 	 */
@@ -106,6 +106,7 @@ public class ProductFacadeAction extends SBActionAdapter {
 				case customer:
 					action = new CustomerProductAction(actionInit);
 					break;
+				case upload:
 				case product:
 				default:
 					action = new ProductAction(actionInit);
