@@ -75,7 +75,7 @@ public class TTLMSSolrIndexer extends SMTAbstractIndex {
 			} catch (Exception e) {
 				log.error("could not create document to add to Solr", e);
 			}
-			log.info("added course");
+			log.info("added course " + course.getC_NAME());
 		}
 
 	}
