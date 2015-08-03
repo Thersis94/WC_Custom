@@ -73,6 +73,13 @@ public class DSIUserDataVO extends UserDataVO {
 		}
 	}
 	
+	public DSIUserDataVO() {
+		//called from jsp:useBean syntax only, in conjuction to the below setter
+	}
+	public void setUser(UserDataVO user) {
+		this.user = user;
+	}
+	
 	
 	/**
 	 * 
