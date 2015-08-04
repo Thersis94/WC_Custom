@@ -313,10 +313,10 @@ public class MyResidentsAction extends SBActionAdapter {
 	private void loadAssgResidents(AssignmentVO assg, SiteVO site, String residentId, boolean outerJoinAssg) {
 		String customDb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		Set<String> profileIds = new HashSet<>(50);
-		StringBuilder sql = new StringBuilder(250);
+		StringBuilder sql = new StringBuilder(500);
 		sql.append("select distinct r.resident_id, r.profile_id, r.consent_dt, r.invite_sent_dt, ");
 		sql.append("regd.value_txt as pgy_id, ra.res_assg_id, raa.complete_dt, raa.assg_asset_id, ");
-		sql.append("sum(case raa.complete_dt when null then 0 else 1 end) as stats ");
+		sql.append("sum(case when raa.complete_dt is not null then 1 else 0 end) as crsStat ");
 		sql.append("from ").append(customDb).append("DPY_SYN_INST_RESIDENT r ");
 		if (outerJoinAssg) {
 			sql.append("left outer join ").append(customDb).append("DPY_SYN_INST_RES_ASSG ra on r.resident_id=ra.resident_id and ra.assg_id=? ");
@@ -340,7 +340,7 @@ public class MyResidentsAction extends SBActionAdapter {
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				assg.addResident(new ResidentVO(rs));
-				assg.addResidentStats(rs.getString("resident_id"), rs.getInt("stats"));
+				assg.addResidentStats(rs.getString("resident_id"), rs.getInt("crsStat"));
 				profileIds.add(rs.getString("profile_id"));
 				if (residentId != null)
 					assg.setResidentAssetCompleted(rs.getString("assg_asset_id"), rs.getDate("complete_dt"));
