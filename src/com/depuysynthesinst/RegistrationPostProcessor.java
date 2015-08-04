@@ -10,6 +10,7 @@ import com.depuysynthesinst.emails.RegResidentIneligibleVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
@@ -66,21 +67,22 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 		//determine which type of user they are, and send the appropriate email
 		MessageSender ms = new MessageSender(getAttributes(), dbConn);
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		DSIUserDataVO dsiUser = DSIUserDataVO.getInstance(req.getSession().getAttribute(Constants.USER_DATA));
+		DSIUserDataVO dsiUser = new DSIUserDataVO((UserDataVO)req.getSession().getAttribute(Constants.USER_DATA));
 		ResponseLoader loader = new ResponseLoader();
 		loader.setDbConn(dbConn);
 		loader.setSite(site);
 		loader.loadRegistrationResponses(dsiUser, site.getSiteId());
+		DSIRoleMgr dsiRoleMgr = new DSIRoleMgr();
 		
-		if (DSIRoleMgr.isDirector(dsiUser)) {
+		if (dsiRoleMgr.isDirector(dsiUser)) {
 			sendDirectorEmail(dsiUser, site, ms);
-		} else if (DSIRoleMgr.isChiefResident(dsiUser) && dsiUser.isEligible()) {
+		} else if (dsiRoleMgr.isChiefResident(dsiUser) && dsiUser.isEligible()) {
 			sendChiefEligibleEmail(dsiUser, site, ms);
-		} else if (DSIRoleMgr.isChiefResident(dsiUser)) {
+		} else if (dsiRoleMgr.isChiefResident(dsiUser)) {
 			sendChiefIneligibleEmail(dsiUser, site, ms);
-		} else if ((DSIRoleMgr.isResident(dsiUser) || DSIRoleMgr.isFellow(dsiUser)) && dsiUser.isEligible()) {
+		} else if ((dsiRoleMgr.isResident(dsiUser) || dsiRoleMgr.isFellow(dsiUser)) && dsiUser.isEligible()) {
 			sendResidentEligibleEmail(dsiUser, site, ms);
-		} else if (DSIRoleMgr.isResident(dsiUser) || DSIRoleMgr.isFellow(dsiUser)) {
+		} else if (dsiRoleMgr.isResident(dsiUser) || dsiRoleMgr.isFellow(dsiUser)) {
 			sendResidentIneligibleEmail(dsiUser, site, ms);
 		}
 		

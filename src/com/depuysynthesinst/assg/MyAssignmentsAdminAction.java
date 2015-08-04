@@ -562,7 +562,8 @@ public class MyAssignmentsAdminAction extends SBActionAdapter {
 
 	//increment the count displayed in the left menu for DIRECTORs only
 	private void adjustAssgCount(HttpSession ses, UserDataVO user, int incr) {
-		if (! DSIRoleMgr.isDirector((UserDataVO)ses.getAttribute(Constants.USER_DATA))) return;
+		DSIRoleMgr dsiRoleMgr = new DSIRoleMgr();
+		if (! dsiRoleMgr.isDirector(user)) return;
 		
 		int cnt = Convert.formatInteger("" + user.getAttribute("myAssgCnt"), 0);
 		log.debug("cnt=" + cnt);

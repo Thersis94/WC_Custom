@@ -30,7 +30,7 @@ public class TestLMS {
 		
 		try {
 			//System.out.println("doJKTest: " + client.getUserActiveIDByEmail("jmckain@siliconmtn.com"));
-			System.out.println(client.getUserCourseList("c0a80228a3afb43aeaf9bd49b6a69292"));
+			System.out.println(client.getUserActiveIDByEmail("huscha@gmail.com"));
 			// format a test user VO and set on client.
 			//DSIUserDataVO du = formatTestUser();
 			

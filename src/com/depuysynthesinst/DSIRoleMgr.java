@@ -31,7 +31,7 @@ public class DSIRoleMgr {
 	 * @param user
 	 * @return
 	 */
-	public static boolean isResident(UserDataVO user) {
+	public boolean isResident(UserDataVO user) {
 		return "RESIDENT".equals(DSIUserDataVO.getProfession(user));
 	}
 	
@@ -40,7 +40,7 @@ public class DSIRoleMgr {
 	 * @param user
 	 * @return
 	 */
-	public static boolean isFellow(UserDataVO user) {
+	public boolean isFellow(UserDataVO user) {
 		return "FELLOW".equals(DSIUserDataVO.getProfession(user));
 	}
 	
@@ -49,7 +49,7 @@ public class DSIRoleMgr {
 	 * @param user
 	 * @return
 	 */
-	public static boolean isChiefResident(UserDataVO user) {
+	public boolean isChiefResident(UserDataVO user) {
 		return "CHIEF".equals(DSIUserDataVO.getProfession(user));
 	}
 	
@@ -58,7 +58,7 @@ public class DSIRoleMgr {
 	 * @param user
 	 * @return
 	 */
-	public static boolean isDirector(UserDataVO user) {
+	public boolean isDirector(UserDataVO user) {
 		return "DIRECTOR".equals(DSIUserDataVO.getProfession(user));
 	}
 	
@@ -69,7 +69,7 @@ public class DSIRoleMgr {
 	 * @param user
 	 * @return
 	 */
-	public static boolean isAssgUser(UserDataVO user) {
+	public boolean isAssgUser(UserDataVO user) {
 		return isResident(user) || isChiefResident(user) || (isDirector(user) && isParticipating(user));
 	}	
 	
@@ -79,7 +79,7 @@ public class DSIRoleMgr {
 	 * @param user
 	 * @return
 	 */
-	private static boolean isParticipating(UserDataVO user) {
+	private boolean isParticipating(UserDataVO user) {
 		return "yes".equals(user.getAttribute(DSIUserDataVO.RegField.DSI_MY_ASSIGNMENTS.toString()));
 	}
 	
@@ -88,7 +88,7 @@ public class DSIRoleMgr {
 	 * @param user
 	 * @return
 	 */
-	public static boolean isAssgAdmin(UserDataVO user) {
+	public boolean isAssgAdmin(UserDataVO user) {
 		return (isChiefResident(user) || isDirector(user)) && isParticipating(user);
 	}
 	
@@ -98,7 +98,7 @@ public class DSIRoleMgr {
 	 * @param user
 	 * @return
 	 */
-	public static boolean isChiefResidentAdmin(UserDataVO user) {
+	public boolean isChiefResidentAdmin(UserDataVO user) {
 		return isChiefResident(user) && isParticipating(user);
 	}
 	
@@ -109,7 +109,7 @@ public class DSIRoleMgr {
 	 * @param user
 	 * @return
 	 */
-	public static boolean isAssgStudent(UserDataVO user) {
+	public boolean isAssgStudent(UserDataVO user) {
 		return isResident(user) || isChiefResident(user);
 	}
 	
@@ -119,7 +119,7 @@ public class DSIRoleMgr {
 	 * @param user
 	 * @return
 	 */
-	public static boolean isLMSAuthorized(UserDataVO user) {
+	public boolean isLMSAuthorized(UserDataVO user) {
 		return isResident(user) || isFellow(user) || isChiefResident(user) || isDirector(user);
 	}
 	
@@ -129,7 +129,7 @@ public class DSIRoleMgr {
 	 * @param user
 	 * @return
 	 */
-	public static boolean isRedemptionAuthorized(DSIUserDataVO user) {
+	public boolean isRedemptionAuthorized(DSIUserDataVO user) {
 		if (user == null) return false;
 		
 		//graduated Residents & Fellows can't get redeem anymore
@@ -154,7 +154,7 @@ public class DSIRoleMgr {
 	 * @param user
 	 * @return
 	 */
-	public static boolean isCreditRedeeming(DSIUserDataVO user) {
+	public boolean isCreditRedeeming(DSIUserDataVO user) {
 		return (user != null && (isResident(user) || isFellow(user) || isChiefResident(user)) && user.isEligible());
 	}
 
@@ -165,7 +165,7 @@ public class DSIRoleMgr {
 	 * @param specialty
 	 * @return
 	 */
-	public static boolean isCreditEarning(UserDataVO user, List<String> courseSpecialties) {
+	public boolean isCreditEarning(UserDataVO user, List<String> courseSpecialties) {
 		if (user == null || courseSpecialties == null) return false;
 		
 		//test Profession
@@ -173,7 +173,7 @@ public class DSIRoleMgr {
 			return false;
 
 		//if they're eligible they can only earn credits for courses in their specialty.
-		DSIUserDataVO vo = DSIUserDataVO.getInstance(user);
+		DSIUserDataVO vo = new DSIUserDataVO(user);
 		if (vo.isEligible()) {
 			//compare course speciatly to user's specialty
 			return courseSpecialties.contains(vo.getSpecialty());
@@ -188,7 +188,7 @@ public class DSIRoleMgr {
 	 * @param courseSpecialty
 	 * @return
 	 */
-	public static boolean  isCreditEarning(UserDataVO user, String courseSpecialty) {
+	public boolean  isCreditEarning(UserDataVO user, String courseSpecialty) {
 		List<String> specs = new ArrayList<>();
 		specs.add(courseSpecialty);
 		return  isCreditEarning(user, specs);
@@ -200,7 +200,7 @@ public class DSIRoleMgr {
 	 * @param user
 	 * @return
 	 */
-	public static boolean isCourseAuthorized(DSIUserDataVO user) {
+	public boolean isCourseAuthorized(DSIUserDataVO user) {
 		if (user == null || user.getProfession() == null) return false;
 		
 		//must have a TTLMS ID

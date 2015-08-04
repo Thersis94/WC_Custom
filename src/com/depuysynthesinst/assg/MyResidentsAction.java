@@ -570,10 +570,10 @@ public class MyResidentsAction extends SBActionAdapter {
 		}
 
 		//if the user is accepting invitations, remove this one from their pending list
-		DSIUserDataVO user = DSIUserDataVO.getInstance(req.getSession().getAttribute(Constants.USER_DATA));
-		if (user != null && user.getPendingResDirs() != null) {
+		DSIUserDataVO user = new DSIUserDataVO((UserDataVO)req.getSession().getAttribute(Constants.USER_DATA));
+		if (user.getPendingResDirs() != null) {
 			user.getPendingResDirs().remove(resident.getResidentId());
-			req.getSession().setAttribute(Constants.USER_DATA, user);
+			req.getSession().setAttribute(Constants.USER_DATA, user.getUserDataVO());
 		}
 
 	}
