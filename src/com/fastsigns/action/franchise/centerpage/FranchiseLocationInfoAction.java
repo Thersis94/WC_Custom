@@ -105,17 +105,18 @@ public class FranchiseLocationInfoAction extends SBActionAdapter {
 	 * @return
 	 */
 	public String getLocationDesc(String id, String locationName) {
-		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		String s = "select desc_txt from " + customDb + "fts_franchise a ";
-		s+= "inner join  " + customDb + "fts_location_desc_option b ";
-		s += "on a.location_desc_option_id = b.location_desc_option_id ";
-		s+= "where a.franchise_id = ? ";
-		log.debug("Location Desc SQL: " + s + "|" + id);
+		
+		StringBuilder sb = new StringBuilder();
+		sb.append("select desc_txt from ").append((String) getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("fts_franchise a ");
+		sb.append("inner join  ").append((String) getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("fts_location_desc_option b ");
+		sb.append("on a.location_desc_option_id = b.location_desc_option_id ");
+		sb.append("where a.franchise_id = ? ");
+		log.debug("Location Desc SQL: " + sb.toString() + "|" + id);
 		
 		PreparedStatement ps = null;
 		String locationDesc = "";
 		try {
-			ps = dbConn.prepareStatement(s);
+			ps = dbConn.prepareStatement(sb.toString());
 			ps.setString(1, id);
 			ResultSet rs = ps.executeQuery();
 			if (rs.next()) {
