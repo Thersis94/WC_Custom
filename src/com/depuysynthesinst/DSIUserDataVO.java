@@ -58,15 +58,17 @@ public class DSIUserDataVO extends UserDataVO {
 	
 	public DSIUserDataVO() {
 		super();
+		setUser(null);
 		//called from jsp:useBean syntax only, in conjuction to the below setter
 		//JSTL needs a concrete object in order to access static methods.
 	}
 	public DSIUserDataVO(UserDataVO user) {
-		this();
-		this.user = user;
+		super();
+		setUser(user);
 	}
 	
 	public void setUser(UserDataVO user) {
+		if (user == null) user = new UserDataVO();
 		this.user = user;
 	}
 	
