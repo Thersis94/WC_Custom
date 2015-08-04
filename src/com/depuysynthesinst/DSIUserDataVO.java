@@ -56,6 +56,14 @@ public class DSIUserDataVO extends UserDataVO {
 		;
 	}
 	
+	public DSIUserDataVO() {
+		//called from jsp:useBean syntax only, in conjuction to the below setter
+		//JSTL needs a concrete object in order to access static methods.
+	}
+	public void setUser(UserDataVO user) {
+		this.user = user;
+	}
+	
 	
 	/**
 	 * static classloader - ensures the UserDataVO we put on session is not
@@ -71,13 +79,6 @@ public class DSIUserDataVO extends UserDataVO {
 		} else {
 			return new DSIUserDataVO((UserDataVO)o);
 		}
-	}
-	
-	public DSIUserDataVO() {
-		//called from jsp:useBean syntax only, in conjuction to the below setter
-	}
-	public void setUser(UserDataVO user) {
-		this.user = user;
 	}
 	
 	

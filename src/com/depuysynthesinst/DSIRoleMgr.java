@@ -21,6 +21,8 @@ import com.siliconmtn.security.UserDataVO;
 public class DSIRoleMgr {
 
 	public DSIRoleMgr() {
+		//this constructor is important for JSTL, which needs a concrete object 
+		//reference in order to access static methods.
 	}
 
 	
