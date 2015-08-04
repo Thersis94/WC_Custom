@@ -131,19 +131,22 @@ public class DSIRoleMgr {
 	 */
 	public boolean isRedemptionAuthorized(DSIUserDataVO user) {
 		if (user == null) return false;
-		
-		//graduated Residents & Fellows can't get redeem anymore
-		Date d = user.getGraduationDate();
-		if (d != null && d.before(Calendar.getInstance().getTime())) return false;
-		
-		//if they can cash-in points, they can get in
-		if (isCreditRedeeming(user)) return true;
-		
+
 		//allow all J&J WWID users through
 		if (UserDataVO.AuthenticationType.SAML == user.getAuthType()) return true;
 		
-		//let Resident Directors through, but everyone else is S.O.L.!
-		return isDirector(user);
+		//let Resident Directors through
+		if (isDirector(user)) return true;
+
+		//block everyone that can't redeem
+		if (!isCreditRedeeming(user)) return false;
+		
+		//graduated Residents & Fellows can't get redeem anymore
+		Date d = user.getGraduationDate();
+		if (d == null || d.before(Calendar.getInstance().getTime())) return false;
+		
+		//the only ones left are eligible residents, chief residents, and fellows who've not graduated yet
+		return true;
 	}
 	
 	
@@ -155,7 +158,7 @@ public class DSIRoleMgr {
 	 * @return
 	 */
 	public boolean isCreditRedeeming(DSIUserDataVO user) {
-		return (user != null && (isResident(user) || isFellow(user) || isChiefResident(user)) && user.isEligible());
+		return (user != null && (isResident(user) || isFellow(user) || isChiefResident(user)) && user.isEligible() && user.isVerified());
 	}
 
 	/**
