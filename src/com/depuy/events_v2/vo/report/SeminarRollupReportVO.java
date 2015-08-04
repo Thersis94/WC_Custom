@@ -59,7 +59,7 @@ public class SeminarRollupReportVO extends AbstractSBReportVO {
 	
 	private void buildRow(EventEntryVO vo, DePuyEventSeminarVO sem, StringBuilder rpt) {
 		Integer leadsCnt = sem.getTotalSelectedLeads();
-		Integer attendCnt = 0;
+		Integer attendCnt = Convert.formatInteger(sem.getSurveyResponse("attendee_cnt"), 0);
 		Integer rsvpCnt = sem.getRsvpCount();
 		for ( CoopAdVO ad : sem.getAllAds()) {
 			rpt.append("<tr><td>").append(sem.getJointLabel()).append("</td>");
@@ -72,14 +72,25 @@ public class SeminarRollupReportVO extends AbstractSBReportVO {
 			rpt.append("<td>").append(vo.getStateCode()).append("</td>");
 			rpt.append("<td>").append(Convert.formatDate(vo.getStartDate(), Convert.DATE_SLASH_PATTERN)).append("</td>");
 			rpt.append("<td>").append(vo.getLocationDesc()).append("</td>");
-			rpt.append("<td>").append(sem.getSurgeon().getSurgeonName()).append("</td>");
+			String surgeon = (sem.getSurgeon() != null) ? sem.getSurgeon().getSurgeonName() : "";
+			rpt.append("<td>").append(surgeon).append("</td>");
 			rpt.append("<td>").append(rsvpCnt).append("</td>");
 			rpt.append("<td>").append(attendCnt).append("</td>");
-			rpt.append("<td>").append(Float.valueOf(attendCnt)/Float.valueOf(rsvpCnt)*100).append("%</td>");
-			rpt.append("<td>").append(Float.valueOf(attendCnt)/Float.valueOf(leadsCnt)*100).append("%</td>");
+			double val = Math.rint(Double.valueOf(attendCnt)/Double.valueOf(rsvpCnt));
+			if (val > 0) {
+				rpt.append("<td>").append(val*100).append("%</td>");
+			} else {
+				rpt.append("<td></td>");
+			}
+			val = Math.rint(Double.valueOf(attendCnt)/Double.valueOf(leadsCnt)); 
+			if (val > 0) {
+				rpt.append("<td>").append(val*100).append("%</td>");
+			} else {
+				rpt.append("<td></td>");
+			}
 			rpt.append("<td>").append(leadsCnt).append("</td>");
-			rpt.append("<td></td>");
-			rpt.append("<td></td>");
+			rpt.append("<td>").append(sem.getPostcardFileStatusFlg() == 3 ? "Yes" : "No").append("</td>");
+			rpt.append("<td>").append(Convert.formatDate(sem.getPostcardSendDate(), Convert.DATE_SLASH_PATTERN)).append("</td>");
 			rpt.append("<td></td>");
 			rpt.append("<td>").append(ad.getStatusName()).append("</td>");
 			rpt.append("<td>").append(StringUtil.checkVal(ad.getNewspaper1Text())).append("</td>");

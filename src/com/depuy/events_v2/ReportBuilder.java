@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.depuy.events_v2.PostcardSelectV2.ReqType;
 import com.depuy.events_v2.vo.AttendeeSurveyVO;
 import com.depuy.events_v2.vo.DePuyEventSeminarVO;
 import com.depuy.events_v2.vo.RsvpBreakdownVO;
@@ -108,7 +109,8 @@ public class ReportBuilder extends SBActionAdapter {
 				rpt = generatePostcardRecipientsReport(sem, Convert.formatDate(req.getParameter("startDate")));
 				break;
 			case seminarRollup:
-				rpt = generateSeminarRollupReport(data, Convert.formatDate(req.getParameter("rptStartDate")), Convert.formatDate(req.getParameter("rptEndDate")));
+				rpt = generateSeminarRollupReport(data, Convert.formatDate(req.getParameter("rptStartDate")), 
+						Convert.formatDate(req.getParameter("rptEndDate")), req.hasParameter("isMitek"));
 				break;
 			case rsvpBreakdown:
 				rpt = generateRSVPBreakdownReport(
@@ -216,7 +218,7 @@ public class ReportBuilder extends SBActionAdapter {
 	 * @param end
 	 * @return
 	 */
-	public AbstractSBReportVO generateSeminarRollupReport(Object listObj, Date start, Date end) {
+	public AbstractSBReportVO generateSeminarRollupReport(Object listObj, Date start, Date end, boolean isMitek) {
 		@SuppressWarnings("unchecked")
 		List<DePuyEventSeminarVO> data = (List<DePuyEventSeminarVO>) listObj;
 		List<DePuyEventSeminarVO> finalData = new ArrayList<DePuyEventSeminarVO>(data.size());
@@ -227,14 +229,14 @@ public class ReportBuilder extends SBActionAdapter {
 
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		String actionId = (String) mod.getAttribute(ModuleVO.ATTRIBUTE_1);
-
+		
 		//loop through the events, filter by date, then load the coop-ad for each one
 		for (DePuyEventSeminarVO sem : data) {
 			Date eDate = sem.getEarliestEventDate();
 			if ((start != null && eDate.before(start)) || (end != null && eDate.after(end))) continue;
 
 			try {
-				DePuyEventSeminarVO semFull  = (DePuyEventSeminarVO) retriever.loadOneSeminar(sem.getEventPostcardId(), actionId, null, null, null);
+				DePuyEventSeminarVO semFull  = (DePuyEventSeminarVO) retriever.loadOneSeminar(sem.getEventPostcardId(), actionId, ReqType.report , null, null);
 				semFull.setRsvpCount(sem.getRsvpCount()); //this only gets set on the initial query, not the detailed lookup
 				finalData.add(semFull);
 			} catch (SQLException e) {
@@ -242,6 +244,8 @@ public class ReportBuilder extends SBActionAdapter {
 			}
 		}
 
+		retriever.loadSurveyReponses(finalData, isMitek);
+		
 		SeminarRollupReportVO rpt = new SeminarRollupReportVO();
 		rpt.setData(finalData);
 		return rpt;
