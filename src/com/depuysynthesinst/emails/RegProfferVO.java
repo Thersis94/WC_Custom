@@ -31,7 +31,7 @@ public class RegProfferVO extends AbstractDSIEmailVO {
 	 */
 	public void buildMessage(UserDataVO user, SiteVO site) {
 		String siteUrl = site.getFullSiteAlias();
-		DSIUserDataVO rcpt = DSIUserDataVO.getInstance(user);
+		DSIUserDataVO rcpt = new DSIUserDataVO(user);
 
 		StringBuilder sb = new StringBuilder(1000);
 		sb.append("<p>Dear Future Leaders Program,<br>");

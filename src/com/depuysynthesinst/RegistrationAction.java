@@ -97,8 +97,9 @@ public class RegistrationAction extends SimpleActionAdapter {
 		reg = null;
 		
 		//on the summary page, load the name(s) of this students Residency Director(s)
-		DSIUserDataVO dsiUser = DSIUserDataVO.getInstance(req.getSession().getAttribute(Constants.USER_DATA));
-		if (!req.hasParameter("pg") && dsiUser != null && DSIRoleMgr.isAssgStudent(dsiUser)) {
+		DSIUserDataVO dsiUser = new DSIUserDataVO((UserDataVO)req.getSession().getAttribute(Constants.USER_DATA));
+		DSIRoleMgr dsiRoleMgr = new DSIRoleMgr();
+		if (!req.hasParameter("pg") && dsiRoleMgr.isAssgStudent(dsiUser)) {
 			MyAssignmentsAction maa = new MyAssignmentsAction();
 			maa.setAttributes(getAttributes());
 			maa.setDBConnection(dbConn);
@@ -149,10 +150,11 @@ public class RegistrationAction extends SimpleActionAdapter {
 		reg.build(req);
 		reg = null;
 
-		DSIUserDataVO user = DSIUserDataVO.getInstance(ses.getAttribute(Constants.USER_DATA));
+		DSIUserDataVO user = new DSIUserDataVO((UserDataVO)ses.getAttribute(Constants.USER_DATA));
+		DSIRoleMgr dsiRoleMgr = new DSIRoleMgr();
 
 		//if they're not using LMS, we're done:
-		if (!DSIRoleMgr.isLMSAuthorized(user)) return;
+		if (!dsiRoleMgr.isLMSAuthorized(user)) return;
 		
 		//if this is an edit, call the LMS after each modal saves 1,2 and 3.  
 		//Otherwise only when modal #3 is submitted.
@@ -235,7 +237,7 @@ public class RegistrationAction extends SimpleActionAdapter {
 	 * @param req
 	 */
 	private void checkHoldingUser(SMTServletRequest req) {
-		DSIUserDataVO user = DSIUserDataVO.getInstance(req.getSession().getAttribute(Constants.USER_DATA));
+		DSIUserDataVO user = new DSIUserDataVO((UserDataVO)req.getSession().getAttribute(Constants.USER_DATA));
 		String pswd = getLegacyPassword(user.getEmailAddress());
 		log.debug("holdingPwd=" + pswd);
 		
@@ -274,7 +276,7 @@ public class RegistrationAction extends SimpleActionAdapter {
 		//do not migrate the user if they didn't consent to migration
 		if (!"1".equals(req.getParameter("dsrpAuthorized"))) return false;
 		
-		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
+		DSIUserDataVO user = new DSIUserDataVO((UserDataVO) req.getSession().getAttribute(Constants.USER_DATA));
 		String pswd = getLegacyPassword(user.getEmailAddress());
 		
 		//verify their typed password matches what's on record in the DB
@@ -284,8 +286,8 @@ public class RegistrationAction extends SimpleActionAdapter {
 		//migrate the user
 		LMSWSClient lms = new LMSWSClient((String)getAttribute(LMSWSClient.CFG_SECURITY_KEY));
 		try {
-			double d = lms.migrateUser(new DSIUserDataVO(user));
-			DSIUserDataVO.setTTLMSID(user, d);
+			double d = lms.migrateUser(user);
+			user.setTtLmsId(d);
 			log.debug("user migrated, TTLMSID=" + d);
 		} catch (ActionException e) {
 			log.warn("could not migrate user", e);

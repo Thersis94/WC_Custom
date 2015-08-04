@@ -57,38 +57,19 @@ public class DSIUserDataVO extends UserDataVO {
 	}
 	
 	public DSIUserDataVO() {
+		super();
 		//called from jsp:useBean syntax only, in conjuction to the below setter
 		//JSTL needs a concrete object in order to access static methods.
 	}
+	public DSIUserDataVO(UserDataVO user) {
+		this();
+		this.user = user;
+	}
+	
 	public void setUser(UserDataVO user) {
 		this.user = user;
 	}
 	
-	
-	/**
-	 * static classloader - ensures the UserDataVO we put on session is not
-	 * mangled by the WC core while in use. (like ProfileManager)
-	 * @param o
-	 * @return
-	 */
-	public static DSIUserDataVO getInstance(Object o) {
-		if (o == null) {
-			return new DSIUserDataVO(new UserDataVO());
-		} else if (o instanceof DSIUserDataVO) {
-			return (DSIUserDataVO) o;
-		} else {
-			return new DSIUserDataVO((UserDataVO)o);
-		}
-	}
-	
-	
-	/**
-	 * 
-	 */
-	public DSIUserDataVO(UserDataVO vo) {
-		super();
-		this.user = vo;
-	}
 
 	/**
 	 * @return the synthesId
@@ -140,6 +121,10 @@ public class DSIUserDataVO extends UserDataVO {
 	 */
 	public void setTtLmsId(String ttLmsId) {
 		user.addAttribute(RegField.DSI_TTLMS_ID.toString(), ttLmsId);
+	}
+	public void setTtLmsId(double d) {
+		if (Convert.formatDouble(d) < 1) return;
+		user.addAttribute(RegField.DSI_TTLMS_ID.toString(), Convert.formatDouble(d));
 	}
 
 	/**

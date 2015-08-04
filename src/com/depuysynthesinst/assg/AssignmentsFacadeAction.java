@@ -43,12 +43,13 @@ public class AssignmentsFacadeAction extends SimpleActionAdapter {
 
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
-		boolean isProfessor = DSIRoleMgr.isAssgAdmin(user);
+		DSIRoleMgr dsiRoleMgr = new DSIRoleMgr();
+		boolean isProfessor = dsiRoleMgr.isAssgAdmin(user);
 
 		SMTActionInterface action;
 		if (isProfessor && "residents".equals(req.getParameter("pg"))) {
 			action = new MyResidentsAction();
-		} else if ((isProfessor && req.hasParameter("view")) || DSIRoleMgr.isDirector(user)) {
+		} else if ((isProfessor && req.hasParameter("view")) || dsiRoleMgr.isDirector(user)) {
 			//admin view of assignments - or a single assignment (edit mode)
 			action = new MyAssignmentsAdminAction(actionInit);
 		} else {
@@ -67,7 +68,8 @@ public class AssignmentsFacadeAction extends SimpleActionAdapter {
 	 */
 	public void build(SMTServletRequest req) throws ActionException {
 		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
-		boolean isProfessor = DSIRoleMgr.isAssgAdmin(user);
+		DSIRoleMgr dsiRoleMgr = new DSIRoleMgr();
+		boolean isProfessor = dsiRoleMgr.isAssgAdmin(user);
 		
 		//if we don't already know the residentDirectorId, go get it.  Add if necessary.
 		if (req.getSession().getAttribute(RES_DIR_ID) == null)

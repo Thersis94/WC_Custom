@@ -45,10 +45,11 @@ public class DSILoginModule extends SAMLLoginModule {
 			throws AuthenticationException {
 		
 		DSIUserDataVO dsiUser = new DSIUserDataVO(super.retrieveUserData(user, pwd));
+		DSIRoleMgr dsiRoleMgr = new DSIRoleMgr();
 		
 		if (dsiUser.getTtLmsId() != null) {
 			loadLMSData(dsiUser);
-		} else if (DSIRoleMgr.isResident(dsiUser) || DSIRoleMgr.isFellow(dsiUser) || DSIRoleMgr.isChiefResident(dsiUser)) {
+		} else if (dsiRoleMgr.isResident(dsiUser) || dsiRoleMgr.isFellow(dsiUser) || dsiRoleMgr.isChiefResident(dsiUser)) {
 			//flag the account as incomplete so we can prompt them to complete their registration data (and get a TTLMSID)
 			dsiUser.addAttribute("incomplete", true);
 		}
@@ -62,10 +63,11 @@ public class DSILoginModule extends SAMLLoginModule {
 	@Override
 	public UserDataVO retrieveUserData(String encProfileId) throws AuthenticationException {
 		DSIUserDataVO dsiUser = new DSIUserDataVO(super.retrieveUserData(encProfileId));
+		DSIRoleMgr dsiRoleMgr = new DSIRoleMgr();
 		
 		if (dsiUser.getTtLmsId() != null) {
 			loadLMSData(dsiUser);
-		} else if (DSIRoleMgr.isResident(dsiUser) || DSIRoleMgr.isFellow(dsiUser) || DSIRoleMgr.isChiefResident(dsiUser)) {
+		} else if (dsiRoleMgr.isResident(dsiUser) || dsiRoleMgr.isFellow(dsiUser) || dsiRoleMgr.isChiefResident(dsiUser)) {
 			//flag the account as incomplete so we can prompt them to complete their registration data (and get a TTLMSID)
 			dsiUser.addAttribute("incomplete", true);
 		}
@@ -91,10 +93,11 @@ public class DSILoginModule extends SAMLLoginModule {
 		} catch (ActionException ae) {
 			log.error("could not load user course list", ae);
 		}
-		
+
+		DSIRoleMgr dsiRoleMgr = new DSIRoleMgr();
 		//if this is a Resident or Chief Resident, see if they have any pending 
 		//resident director invitations they need to accept/decline
-		if (DSIRoleMgr.isResident(dsiUser) || DSIRoleMgr.isChiefResident(dsiUser)) {
+		if (dsiRoleMgr.isResident(dsiUser) || dsiRoleMgr.isChiefResident(dsiUser)) {
 			Map<String,UserDataVO> resDirs = loadPendingInvites(dsiUser.getProfileId());
 			if (resDirs != null && resDirs.size() > 0)
 				dsiUser.setPendingResDirs(resDirs);
@@ -121,8 +124,9 @@ public class DSILoginModule extends SAMLLoginModule {
 	 */
 	private void addAssgCount(DSIUserDataVO user) {
 		int cnt = 0;
+		DSIRoleMgr dsiRoleMgr = new DSIRoleMgr();
 		
-		if (DSIRoleMgr.isDirector(user)) {
+		if (dsiRoleMgr.isDirector(user)) {
 			MyAssignmentsAdminAction maaa = new MyAssignmentsAdminAction();
 			maaa.setAttributes(getInitVals());
 			maaa.setDBConnection(new SMTDBConnection((Connection)initVals.get(GlobalConfig.KEY_DB_CONN)));
