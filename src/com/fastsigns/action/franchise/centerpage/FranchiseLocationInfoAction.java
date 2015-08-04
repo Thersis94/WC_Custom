@@ -109,7 +109,7 @@ public class FranchiseLocationInfoAction extends SBActionAdapter {
 		String s = "select desc_txt from " + customDb + "fts_franchise a ";
 		s+= "inner join  " + customDb + "fts_location_desc_option b ";
 		s += "on a.location_desc_option_id = b.location_desc_option_id ";
-		s+= "where franchise_id = ? ";
+		s+= "where a.franchise_id = ? ";
 		log.debug("Location Desc SQL: " + s + "|" + id);
 		
 		PreparedStatement ps = null;
