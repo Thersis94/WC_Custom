@@ -106,7 +106,7 @@ public class FranchiseLocationInfoAction extends SBActionAdapter {
 	 */
 	public String getLocationDesc(String id, String locationName) {
 		
-		StringBuilder sb = new StringBuilder();
+		StringBuilder sb = new StringBuilder(250);
 		sb.append("select desc_txt from ").append((String) getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("fts_franchise a ");
 		sb.append("inner join  ").append((String) getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("fts_location_desc_option b ");
 		sb.append("on a.location_desc_option_id = b.location_desc_option_id ");
@@ -150,7 +150,7 @@ public class FranchiseLocationInfoAction extends SBActionAdapter {
 		int i = 0;
 		
 		//Build specialized query across base and custom db.
-		StringBuilder s = new StringBuilder();
+		StringBuilder s = new StringBuilder(400);
 		s.append("select d.*, dl.*, ff.*, fri.*, frb.*, dla.*, fld.desc_txt, ");
 		s.append("fld.franchise_id as desc_franchise_id,fld.country_code,fld.location_desc_option_id ");
 		s.append("from dealer d ");
