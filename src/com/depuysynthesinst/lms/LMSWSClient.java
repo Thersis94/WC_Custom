@@ -185,6 +185,7 @@ public class LMSWSClient {
 			UpdateUserResponse uur = dsi.updateUser(uu);
 			d = uur.get_return();
 
+			log.debug("UpdateUserResponse val: " + d);
 			if (d < 0) throw new ActionException(parseErrorCode(d));
 
 			log.debug("UpdateUserResponse val: " + d);
