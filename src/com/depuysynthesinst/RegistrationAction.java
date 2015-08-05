@@ -188,7 +188,7 @@ public class RegistrationAction extends SimpleActionAdapter {
 		} else {
 			ses.setAttribute(Constants.USER_DATA, user.getUserDataVO());
 		}
-		log.error("got to end");
+		log.debug("got to end");
 	}
 	
 	
