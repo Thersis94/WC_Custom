@@ -321,6 +321,7 @@ public class RegistrationAction extends SimpleActionAdapter {
 			}
 		}
 		
+		log.debug("TTLMSID=" + user.getTtLmsId());
 		double d;
 		if (Convert.formatInteger(user.getTtLmsId()) > 0) {
 			//call update
