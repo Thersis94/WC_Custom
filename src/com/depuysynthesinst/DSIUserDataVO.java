@@ -122,11 +122,12 @@ public class DSIUserDataVO extends UserDataVO {
 	 * @param ttLmsId the ttLmsId to set
 	 */
 	public void setTtLmsId(String ttLmsId) {
-		user.addAttribute(RegField.DSI_TTLMS_ID.toString(), ttLmsId);
+		Integer intVal = Convert.formatInteger(ttLmsId);
+		if (intVal.intValue() < 1) return;
+		user.addAttribute(RegField.DSI_TTLMS_ID.toString(), intVal.toString());
 	}
 	public void setTtLmsId(double d) {
-		if (Convert.formatDouble(d) < 1) return;
-		user.addAttribute(RegField.DSI_TTLMS_ID.toString(), Convert.formatDouble(d));
+		setTtLmsId("" + d);
 	}
 
 	/**
