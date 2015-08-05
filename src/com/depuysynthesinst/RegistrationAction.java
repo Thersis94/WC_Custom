@@ -311,7 +311,7 @@ public class RegistrationAction extends SimpleActionAdapter {
 		Map<Object, Object> data = null;
 		
 		//check to see if the user has an active account if we don't already know
-		if (user.getTtLmsId() == null || user.getTtLmsId().length() == 0) {
+		if (user.getTtLmsId() == null || Convert.formatInteger(user.getTtLmsId()) <= 0) {
 			try {
 				data = lms.getUserActiveIDByEmail(user.getEmailAddress());
 				user.setAttributesFromMap(data);
@@ -321,18 +321,17 @@ public class RegistrationAction extends SimpleActionAdapter {
 			}
 		}
 		
-		DSIUserDataVO dsiUser = new DSIUserDataVO(user);
 		double d;
-		if (Convert.formatInteger(dsiUser.getTtLmsId()) > 0) {
+		if (Convert.formatInteger(user.getTtLmsId()) > 0) {
 			//call update
-			d= lms.updateUser(dsiUser);
+			d= lms.updateUser(user);
 			log.debug("LMS user updated: " + d);
 		} else {
 			//call create
-			d = lms.createUser(dsiUser);
+			d = lms.createUser(user);
 			//save the newly created TTLMSID to their UserDataVO
 			log.debug("LMS user created: " + d);
-			dsiUser.setTtLmsId(Integer.valueOf(Double.valueOf(d).intValue()).toString());
+			user.setTtLmsId(Convert.formatInteger("" + d).toString());
 		}
 	}
 
