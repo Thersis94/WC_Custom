@@ -56,8 +56,10 @@ public class FranchiseLocatorAction extends DealerLocatorAction {
 	protected String getDealerInfoQuery(String[] dlrLocnIds){
 		
 		StringBuilder sql = new StringBuilder();
-		sql.append("select * from FTS_FRANCHISE_INFO_VIEW ");
-		sql.append("where dealer_location_id in (''");
+		sql.append("select * from FTS_FRANCHISE_INFO_VIEW fiv ");
+		sql.append("left join dealer_location_attribute dla ");
+		sql.append("on fiv.dealer_location_id = dla.dealer_location_id ");
+		sql.append("where fiv.dealer_location_id in (''");
 		for (int x=dlrLocnIds.length; x > 0; --x) sql.append(",?");
 		sql.append(")");
 		
