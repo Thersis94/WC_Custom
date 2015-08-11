@@ -460,10 +460,11 @@ public class MyAssignmentsAdminAction extends SBActionAdapter {
 		String[] assets = req.getParameterValues("solrDocumentId");
 		if (assets == null || assets.length == 0) return;
 		
+		Integer startCnt = Convert.formatInteger(req.getParameter("seqStart"), 0);
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("insert into ").append(customDb).append("DPY_SYN_INST_ASSG_ASSET ");
-		sql.append("(assg_asset_id, assg_id, solr_document_id, create_dt) values (?,?,?,?)");
+		sql.append("(assg_asset_id, assg_id, solr_document_id, order_no, create_dt) values (?,?,?,?,?)");
 		log.debug(sql);
 		
 		UUIDGenerator uuid = new UUIDGenerator();
@@ -472,7 +473,8 @@ public class MyAssignmentsAdminAction extends SBActionAdapter {
 				ps.setString(1, uuid.getUUID());
 				ps.setString(2, assg.getAssgId());
 				ps.setString(3, sorlDocumentId);
-				ps.setTimestamp(4, Convert.getCurrentTimestamp());
+				ps.setInt(4, ++startCnt);
+				ps.setTimestamp(5, Convert.getCurrentTimestamp());
 				ps.addBatch();
 			}
 			ps.executeBatch();

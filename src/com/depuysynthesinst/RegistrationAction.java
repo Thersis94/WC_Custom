@@ -273,28 +273,29 @@ public class RegistrationAction extends SimpleActionAdapter {
 	 */
 	private boolean migrateUser(SMTServletRequest req) {
 		log.debug("checking migrate");
-		//do not migrate the user if they didn't consent to migration
-		if (!"1".equals(req.getParameter("dsrpAuthorized"))) return false;
-		
 		DSIUserDataVO user = new DSIUserDataVO((UserDataVO) req.getSession().getAttribute(Constants.USER_DATA));
-		String pswd = getLegacyPassword(user.getEmailAddress());
 		
-		//verify their typed password matches what's on record in the DB
-		if (pswd.length() == 0 || !pswd.equalsIgnoreCase(req.getParameter("dsrpPassword"))) 
-			return false;
-		
-		//migrate the user
-		LMSWSClient lms = new LMSWSClient((String)getAttribute(LMSWSClient.CFG_SECURITY_KEY));
-		try {
-			double d = lms.migrateUser(user);
-			user.setTtLmsId(d);
-			log.debug("user migrated, TTLMSID=" + d);
-		} catch (ActionException e) {
-			log.warn("could not migrate user", e);
-			return false;
+		//do not migrate the user if they didn't consent to migration
+		if ("1".equals(req.getParameter("dsrpAuthorized"))) {
+			//verify they gave us the correct legacy password
+			String pswd = getLegacyPassword(user.getEmailAddress());
+			if (pswd.length() > 0 && pswd.equalsIgnoreCase(req.getParameter("dsrpPassword")))  {
+				//migrate the user
+				LMSWSClient lms = new LMSWSClient((String)getAttribute(LMSWSClient.CFG_SECURITY_KEY));
+				try {
+					double d = lms.migrateUser(user);
+					user.setTtLmsId(d);
+					log.debug("user migrated, TTLMSID=" + d);
+					return true; //if we're not successful here, the catch-all below is designed to strip any old TTLMSID before returning, so a new account can be created
+				} catch (ActionException e) {
+					log.warn("could not migrate user", e);
+				}
+			}
 		}
 		
-		return true;
+		//remove their 'old' TTLMSID, so a new account will be created for this user
+		user.setTtLmsId(0);
+		return false;
 	}
 	
 	
