@@ -10,7 +10,6 @@ import com.siliconmtn.util.Convert;
 public class GFPUserVO {
 	
 	private String userId;
-	private String profileId;
 	private int activeFlg;
 	private String hospitalId;
 	private String hospitalName;
@@ -26,11 +25,12 @@ public class GFPUserVO {
 	}
 	
 	public void assignData(SMTServletRequest req) {
-		userId = req.getParameter("USER_ID");
-		profileId = req.getParameter("PROFILE_ID");
-		activeFlg = Convert.formatInteger(req.getParameter("ACTIVE_FLG"));
-		hospitalId = req.getParameter("HOSPITAL_ID");
-		hospitalName = req.getParameter("HOSPITAL_NM");
+		userId = req.getParameter("userId");
+		activeFlg = Convert.formatInteger(req.getParameter("activeFlg"));
+		hospitalId = req.getParameter("hospitalId");
+		hospitalName = req.getParameter("hospitalName");
+		programId = req.getParameter("programId");
+		profile = new UserDataVO(req);
 	}
 	
 	public GFPUserVO(ResultSet rs) {
@@ -40,10 +40,11 @@ public class GFPUserVO {
 	public void assignData(ResultSet rs) {
 		DBUtil db = new DBUtil();
 		userId = db.getStringVal("USER_ID", rs);
-		profileId = db.getStringVal("PROFILE_ID", rs);
 		activeFlg = db.getIntegerVal("ACTIVE_FLG", rs);
 		hospitalId = db.getStringVal("HOSPITAL_ID", rs);
 		hospitalName = db.getStringVal("HOSPITAL_NM", rs);
+		programId = db.getStringVal("PROGRAM_ID", rs);
+		profile = new UserDataVO(rs);
 		db = null;
 	}
 
@@ -55,15 +56,6 @@ public class GFPUserVO {
 		this.userId = userId;
 	}
 
-	public String getProfileId() {
-		return profileId;
-	}
-
-	public void setProfileId(String profileId) {
-		this.profileId = profileId;
-		if (profile != null) profile.setProfileId(profileId);
-	}
-
 	public int getActiveFlg() {
 		return activeFlg;
 	}
@@ -72,6 +64,10 @@ public class GFPUserVO {
 		this.activeFlg = activeFlg;
 	}
 
+	public boolean isActive() {
+		return Convert.formatBoolean(activeFlg);
+	}
+	
 	public String getHospitalId() {
 		return hospitalId;
 	}

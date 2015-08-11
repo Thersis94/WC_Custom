@@ -1,12 +1,17 @@
 package com.depuysynthes.gfp;
 
 import java.sql.ResultSet;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.databean.FilePartDataBean;
 
 /****************************************************************************
  * <b>Title</b>: GFPWorkshopVO.java
@@ -29,9 +34,10 @@ public class GFPWorkshopVO {
 	private String name;
 	private String desc;
 	private String shortDesc;
+	private String filePath;
+	private FilePartDataBean file;
 	private int sequenceNo;
 	private int activeFlg;
-	private int completeFlg;
 	private List<GFPResourceVO> resources;
 
 	public GFPWorkshopVO() {
@@ -49,9 +55,10 @@ public class GFPWorkshopVO {
 		setName(req.getParameter("workshopName"));
 		setDesc(req.getParameter("workshopDesc"));
 		setShortDesc(req.getParameter("shortDesc"));
+		setFilePath(req.getParameter("filePath"));
+		setFile(req.getFile("newFile"));
 		setSequenceNo(Convert.formatInteger(req.getParameter("sequenceNo")));
 		setActiveFlg(Convert.formatInteger(req.getParameter("activeFlg")));
-		setCompleteFlg(Convert.formatInteger(req.getParameter("completeFlg")));
 	}
 	
 	public GFPWorkshopVO(ResultSet rs) {
@@ -63,12 +70,12 @@ public class GFPWorkshopVO {
 		DBUtil db = new DBUtil();
 		setWorkshopId(db.getStringVal("WORKSHOP_ID", rs));
 		setParentId(db.getStringVal("PROGRAM_ID", rs));
-		setName(db.getStringVal("PROGRAM_NM", rs));
-		setDesc(db.getStringVal("PROGRAM_NM", rs));
-		setShortDesc(db.getStringVal("PROGRAM_NM", rs));
+		setName(db.getStringVal("WORKSHOP_NM", rs));
+		setDesc(db.getStringVal("WORKSHOP_DESC", rs));
+		setShortDesc(db.getStringVal("SHORT_DESC", rs));
+		setFilePath(db.getStringVal("THUMBNAIL_PATH", rs));
 		setSequenceNo(db.getIntegerVal("SEQUENCE_NO", rs));
 		setActiveFlg(db.getIntegerVal("ACTIVE_FLG", rs));
-		setCompleteFlg(db.getIntegerVal("COMPLETE_FLG", rs));
 		db = null;
 	}
 
@@ -112,6 +119,22 @@ public class GFPWorkshopVO {
 		this.shortDesc = shortDesc;
 	}
 
+	public String getFilePath() {
+		return filePath;
+	}
+
+	public void setFilePath(String filePath) {
+		this.filePath = filePath;
+	}
+
+	public FilePartDataBean getFile() {
+		return file;
+	}
+
+	public void setFile(FilePartDataBean file) {
+		this.file = file;
+	}
+
 	public int getSequenceNo() {
 		return sequenceNo;
 	}
@@ -131,13 +154,50 @@ public class GFPWorkshopVO {
 	public void setActiveFlg(int activeFlg) {
 		this.activeFlg = activeFlg;
 	}
-
-	public int getCompleteFlg() {
-		return completeFlg;
+	
+	public int getCompleteState() {
+		int completed = 0;
+		for (GFPResourceVO resource : resources) {
+			if (resource.isComplete())
+				completed++;
+		}
+		
+		if (completed == 0) {
+			return 0;
+		} else if (completed < resources.size()) {
+			return 1;
+		} else {
+			return 2;
+		}
 	}
-
-	public void setCompleteFlg(int completeFlg) {
-		this.completeFlg = completeFlg;
+	
+	public Date mostRecentCompletion() {
+		Date d = null;
+		for (GFPResourceVO resource : resources) {
+			if (resource.getCompleteDate() == null) continue;
+			if (d == null && resource.getCompleteDate() != null)
+				d = resource.getCompleteDate();
+			
+			if (d.before(resource.getCompleteDate())) {
+				d = resource.getCompleteDate();
+			}
+		}
+		
+		return d;
+	}
+	
+	public String timeSinceCompletion() {
+		if (getCompleteState() == 2) {
+			return new SimpleDateFormat("M/d/YY").format(mostRecentCompletion());
+		}
+		
+		Date d = mostRecentCompletion();
+		if (d == null) return "";
+		Calendar c = Calendar.getInstance();
+		c.setTime(d);
+		long days = TimeUnit.MILLISECONDS.toDays(Calendar.getInstance().getTimeInMillis() - c.getTimeInMillis());
+		
+		return ", " + days + " days";
 	}
 
 	public List<GFPResourceVO> getResources() {

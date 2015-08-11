@@ -1,9 +1,11 @@
 package com.depuysynthes.gfp;
 
 import com.siliconmtn.action.ActionException;
+import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.http.SMTServletRequest;
 import com.smt.sitebuilder.action.FacadeActionAdapter;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
 
@@ -26,10 +28,19 @@ public class GFPFacadeAction extends FacadeActionAdapter {
 		PROGRAM,	WORKSHOP,	RESOURCE;
 	}
 	
+	public GFPFacadeAction() {
+		
+	}
+	
+	public GFPFacadeAction(ActionInitVO init) {
+		this.actionInit = init;
+	}
+	
 	public void retrieve(SMTServletRequest req) throws ActionException {
+		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 		SMTActionInterface sai = null;
 		// Determine if we are working with a user or programs
-		if (req.hasParameter("editUser")) {
+		if (req.hasParameter("editUser") && role != null && role.getRoleLevel() == 100) {
 			sai = new GFPUserAction();
 		} else {
 			sai = new GFPProgramAction();
@@ -46,12 +57,13 @@ public class GFPFacadeAction extends FacadeActionAdapter {
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 		// The only reason a non-admin will reach here is to change the
 		// Completedness state of a resource, all others are turned back here
-		if (req.hasParameter("completeState")) {
+		if (req.hasParameter("completeState") || req.hasParameter("getMediabin")) {
 			SMTActionInterface sai = new GFPProgramAction();
 			sai.setActionInit(actionInit);
 			sai.setAttributes(attributes);
 			sai.setDBConnection(dbConn);
 			sai.build(req);
+			return;
 		} else if (role.getRoleLevel() < 100) {
 			return;
 		}
@@ -77,5 +89,34 @@ public class GFPFacadeAction extends FacadeActionAdapter {
 		} else if ("delete".equals(actionType)) {
 			sai.delete(req);
 		}
+		
+		buildRedirect(req);
+	}
+
+	
+	/**
+	 * Build a redirect from the request object to keep the user in the dashboard
+	 * when an update or delete occurs.
+	 */
+	private void buildRedirect(SMTServletRequest req) {
+		StringBuilder redirect = new StringBuilder(50);
+		redirect.append("/").append(((SiteVO)req.getAttribute(Constants.SITE_DATA)).getAliasPathName());
+		redirect.append("/dashboard?dashboard=true");
+
+		if (req.hasParameter("programId"))
+			redirect.append("&programId=").append(req.getParameter("programId"));
+		
+		if (req.hasParameter("workshopId"))
+			redirect.append("&workshopId=").append(req.getParameter("workshopId"));
+		
+		if (req.hasParameter("resourceId"))
+			redirect.append("&resourceId=").append(req.getParameter("resourceId"));
+		
+		if (req.hasParameter("editUser"))
+			redirect.append("&editUser=").append(req.getParameter("editUser"));
+		
+
+		req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
+		req.setAttribute(Constants.REDIRECT_URL, redirect.toString());
 	}
 }
