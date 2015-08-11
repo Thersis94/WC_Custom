@@ -122,8 +122,7 @@ public class DSIUserDataVO extends UserDataVO {
 	 * @param ttLmsId the ttLmsId to set
 	 */
 	public void setTtLmsId(String ttLmsId) {
-		Integer intVal = Convert.formatInteger(ttLmsId);
-		if (intVal.intValue() < 1) return;
+		Integer intVal = Convert.formatInteger(ttLmsId, 0);
 		user.addAttribute(RegField.DSI_TTLMS_ID.toString(), intVal.toString());
 	}
 	public void setTtLmsId(double d) {
@@ -186,7 +185,7 @@ public class DSIUserDataVO extends UserDataVO {
 		user.addAttribute(RegField.DSI_PROG_ELIGIBLE.toString(), eligible);
 	}
 	public void setEligible(double eligible) {
-		setEligible(Convert.formatBoolean(Double.valueOf(eligible)).booleanValue());
+		setEligible(Convert.formatBoolean(Double.valueOf(eligible).intValue()).booleanValue());
 	}
 
 	/**
@@ -203,7 +202,7 @@ public class DSIUserDataVO extends UserDataVO {
 		user.addAttribute(RegField.DSI_VERIFIED.toString(), verified);
 	}
 	public void setVerified(double verified) {
-		setVerified(Convert.formatBoolean(Double.valueOf(verified)).booleanValue());
+		setVerified(Convert.formatBoolean(Double.valueOf(verified).intValue()).booleanValue());
 	}
 	
 	/**
@@ -228,6 +227,7 @@ public class DSIUserDataVO extends UserDataVO {
 	public void setAttributesFromMap(Map<Object, Object> data) {
 		//check for null
 		if (data == null || data.size() == 0) return;
+		
 		//check for errors
 		Object o = data.get("ERROR");
 		if (Convert.formatInteger(o.toString()) != 0) return;
@@ -237,12 +237,15 @@ public class DSIUserDataVO extends UserDataVO {
 			setTtLmsId(Convert.formatInteger(o.toString()).toString());
 		
 		o = data.get("ELIGIBLEPROGRAM");
-		if (o != null) 
-			setEligible(Convert.formatDouble(o.toString()));
+		if (o != null)
+			setEligible(Convert.formatDouble(o.toString()).doubleValue());
 		
 		o = data.get("VERIFIED");
-		if (o != null) 
-			setVerified(Convert.formatDouble(o.toString()));
+		if (o != null)  {
+			double d = Convert.formatDouble(o.toString()).doubleValue();
+			if (d > 0) //this allows the value from 'migrate' to persist to new accounts - where the 2nd lookup would return 0 after the first returned 1
+				setVerified(Convert.formatDouble(o.toString()).doubleValue());
+		}
 		
 		o = data.get("SYNTHESID");
 		if (o != null && Convert.formatInteger(o.toString()) > 0) 
