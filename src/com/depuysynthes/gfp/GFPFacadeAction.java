@@ -5,7 +5,6 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.http.SMTServletRequest;
 import com.smt.sitebuilder.action.FacadeActionAdapter;
-import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
 
@@ -100,8 +99,8 @@ public class GFPFacadeAction extends FacadeActionAdapter {
 	 */
 	private void buildRedirect(SMTServletRequest req) {
 		StringBuilder redirect = new StringBuilder(50);
-		redirect.append("/").append(((SiteVO)req.getAttribute(Constants.SITE_DATA)).getAliasPathName());
-		redirect.append("/dashboard?dashboard=true");
+		redirect.append(req.getRequestURI());
+		redirect.append("?dashboard=true");
 
 		if (req.hasParameter("programId"))
 			redirect.append("&programId=").append(req.getParameter("programId"));
