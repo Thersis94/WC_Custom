@@ -7,6 +7,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+
 // FASTSIGNS Libs
 import com.fastsigns.action.franchise.vo.FranchiseVO;
 
@@ -39,6 +40,12 @@ import com.smt.sitebuilder.common.constants.Constants;
  * <b>Changes: Apr 17. 2012, Billy Larsen, Updated SiteWizardAction to be compatible with new site.</b>
  ****************************************************************************/
 public class SiteWizardAction_US extends SiteWizardAction {
+	
+	/**
+	 * Rjr 9-13-2015 staticly declared Id centeralized for use in us site wizard.
+	 */
+	public static final String DEFAULT_FS_CENTER_THEME_MENU_ID = "c0a8022db43c1ba22a4f6264d810ee60";
+	
 	
 	/**
 	 * Localization text set
@@ -74,7 +81,7 @@ public class SiteWizardAction_US extends SiteWizardAction {
 	 * @throws SQLException
 	 */
 	public void addFranchiseEntry(FranchiseVO vo) throws SQLException {
-		StringBuilder s = new StringBuilder();
+		StringBuilder s = new StringBuilder(250);
 
 		String customDbSchema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		s.append("insert into ").append(customDbSchema).append("fts_franchise ");
@@ -135,13 +142,14 @@ public class SiteWizardAction_US extends SiteWizardAction {
 	 */
 	public void assignTheme(FranchiseVO vo) throws Exception {
 		String siteId = FS_SITE_ID + "_" + vo.getFranchiseId() + "_1";
+		StringBuilder sql = new StringBuilder(175);
+		sql.append("update site_theme_impl set theme_menu_id = '");
+		sql.append(SiteWizardAction_US.DEFAULT_FS_CENTER_THEME_MENU_ID).append("',");
+		sql.append("theme_stylesheet_id = 'c0a8022318f0d3236725668a5925ef0a' ");
+		sql.append("where site_id = ?");
+		log.debug("Theme Update: " + sql.toString() + "|" + siteId);
 		
-		String sql = "update site_theme_impl set theme_menu_id = 'c0a8022318ef45c7af24e2c4568bde4f',";
-		sql += "theme_stylesheet_id = 'c0a8022318f0d3236725668a5925ef0a' ";
-		sql += "where site_id = ?";
-		log.debug("Theme Update: " + sql + "|" + siteId);
-		
-		PreparedStatement ps = dbConn.prepareStatement(sql);
+		PreparedStatement ps = dbConn.prepareStatement(sql.toString());
 		ps.setString(1, siteId);
 		ps.executeUpdate();
 	}

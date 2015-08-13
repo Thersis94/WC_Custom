@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 
+
 // FASTSIGNS Libs
 import com.fastsigns.action.franchise.vo.FranchiseVO;
 
@@ -77,7 +78,7 @@ public class SiteWizardAction_AU extends SiteWizardAction {
 	 * @throws SQLException
 	 */
 	public void addFranchiseEntry(FranchiseVO vo) throws SQLException {
-		StringBuilder s = new StringBuilder();
+		StringBuilder s = new StringBuilder(250);
 
 		String customDbSchema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		s.append("insert into ").append(customDbSchema).append("fts_franchise ");
@@ -138,13 +139,14 @@ public class SiteWizardAction_AU extends SiteWizardAction {
 	 */
 	public void assignTheme(FranchiseVO vo) throws Exception {
 		String siteId = FS_SITE_ID + "_" + vo.getFranchiseId() + "_1";
+		StringBuilder sql = new StringBuilder(175);
+		sql.append("update site_theme_impl set theme_menu_id = '");
+		sql.append(SiteWizardAction_US.DEFAULT_FS_CENTER_THEME_MENU_ID).append("',");
+		sql.append("theme_stylesheet_id = 'c0a8022357d186a8f91a8eb46c170871' ");
+		sql.append("where site_id = ?");
+		log.debug("Theme Update: " + sql.toString() + "|" + siteId);
 		
-		String sql = "update site_theme_impl set theme_menu_id = 'c0a8022318eea91e75c51208440a65fb',";
-		sql += "theme_stylesheet_id = 'c0a8022357d186a8f91a8eb46c170871' ";
-		sql += "where site_id = ?";
-		log.debug("Theme Update: " + sql + "|" + siteId);
-		
-		PreparedStatement ps = dbConn.prepareStatement(sql);
+		PreparedStatement ps = dbConn.prepareStatement(sql.toString());
 		ps.setString(1, siteId);
 		ps.executeUpdate();
 	}
