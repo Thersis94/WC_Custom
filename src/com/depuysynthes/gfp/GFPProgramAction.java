@@ -53,6 +53,8 @@ public class GFPProgramAction extends SBActionAdapter {
 		if (req.hasParameter("dashboard") && programId.length() == 0) {
 			// This is only called when we are not editing any particular program.
 			super.putModuleData(getAllPrograms());
+		} else if (req.hasParameter("resourceList")) {
+			super.putModuleData(getResources(req.getParameter("resourceList"), user.getProfileId(), req.hasParameter("favOnly")));
 		} else {
 			super.putModuleData(getProgram(isUser? profileId : programId, isUser, req.getParameter("workshopId")));
 		}
@@ -63,6 +65,74 @@ public class GFPProgramAction extends SBActionAdapter {
 	}
 	
 	
+	/**
+	 * Get all resources associated with the current user.
+	 * @param orderBy
+	 * @param profileId
+	 * @return
+	 * @throws ActionException
+	 */
+	private Map<String, List<GFPResourceVO>> getResources(String orderBy, String profileId, boolean favOnly) throws ActionException {
+		Map<String, List<GFPResourceVO>> categories = new HashMap<>();
+		StringBuilder sql = new StringBuilder(1200);
+		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		
+		sql.append("SELECT DISTINCT r.*, c.*, m.*, cr.CREATE_DT as COMPLETE_DT");
+		if (favOnly) sql.append(", pf.PROFILE_FAVORITE_ID ");
+		sql.append(" FROM ").append(customDb).append("DPY_SYN_GFP_USER u ");
+		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_GFP_WORKSHOP w ");
+		sql.append("on w.PROGRAM_ID = u.PROGRAM_ID " );
+		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_GFP_WORKSHOP_XR wx ");
+		sql.append("on wx.WORKSHOP_ID = w.WORKSHOP_ID ");
+		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_GFP_PROGRAM_XR px ");
+		sql.append("ON px.PROGRAM_ID = u.PROGRAM_ID ");
+		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_GFP_RESOURCE r ");
+		sql.append("on r.RESOURCE_ID = wx.RESOURCE_ID or r.RESOURCE_ID = px.RESOURCE_ID ");
+		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_GFP_CATEGORY c ");
+		sql.append("on c.CATEGORY_ID = r.CATEGORY_ID ");
+		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_GFP_COMPLETED_RESOURCE cr ");
+		sql.append("on cr.RESOURCE_ID = r.RESOURCE_ID ");
+		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_MEDIABIN m ");
+		sql.append("ON m.DPY_SYN_MEDIABIN_ID = r.DPY_SYN_MEDIABIN_ID ");
+		if (favOnly) {
+			sql.append("LEFT JOIN PROFILE_FAVORITE pf ");
+			sql.append("on pf.PROFILE_ID = u.PROFILE_ID and pf.REL_ID = r.DPY_SYN_MEDIABIN_ID ");
+		}
+		sql.append("WHERE u.PROFILE_ID = ? ");
+		if (favOnly) {
+			sql.append(" and pf.PROFILE_FAVORITE_ID is not null ");
+		}
+		sql.append("ORDER BY r.CATEGORY_ID, r.").append(orderBy);
+		
+		log.debug(sql+"|"+profileId);
+		
+		String categoryNm = "";
+		List<GFPResourceVO> resources = null;
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			int i = 1;
+			ps.setString(i++, profileId);
+			
+			ResultSet rs = ps.executeQuery();
+			
+			while (rs.next()) {
+				if (!categoryNm.equals(rs.getString("CATEGORY_NM"))) {
+					categoryNm = rs.getString("CATEGORY_NM");
+					if (resources != null) categories.put(categoryNm, resources);
+					resources = new ArrayList<>();
+				}
+				log.debug("Adding");
+				resources.add(new GFPResourceVO(rs));
+			}
+			if (resources != null) categories.put(categoryNm, resources);
+		} catch (SQLException e) {
+			log.error("Unable to get all resources available to user with profile id of " + profileId, e);
+			throw new ActionException(e);
+		}
+		
+		return categories;
+	}
+
+
 	/**
 	 * Get a map of all possible resource categories
 	 * @return
@@ -99,7 +169,7 @@ public class GFPProgramAction extends SBActionAdapter {
 			// Since this is a user centric search the first table needs to be
 			// the user in order to ensure that the information validating the
 			// user as an authorized GFP user is returned.
-			sql.append(", cr.CREATE_DT as COMPLETE_DT FROM ");
+			sql.append(", cr.CREATE_DT as COMPLETE_DT, u.USER_ID FROM ");
 			sql.append(customDb).append("DPY_SYN_GFP_USER u ");
 			sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_GFP_PROGRAM p ");
 			sql.append("ON u.PROGRAM_ID = p.PROGRAM_ID ");
@@ -116,12 +186,14 @@ public class GFPProgramAction extends SBActionAdapter {
 		sql.append("ON m.DPY_SYN_MEDIABIN_ID = pr.DPY_SYN_MEDIABIN_ID ");
 		if (isUser) {
 			sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_GFP_COMPLETED_RESOURCE cr ");
-			sql.append("ON cr.RESOURCE_ID = pr.RESOURCE_ID and cr.USER_ID = u.PROFILE_ID ");
+			sql.append("ON cr.RESOURCE_ID = pr.RESOURCE_ID and cr.USER_ID = u.USER_ID ");
 			sql.append("WHERE u.PROFILE_ID = ? ");
 		} else {
 			sql.append("WHERE p.PROGRAM_ID = ? ");
 		}
 		sql.append("ORDER BY p.PROGRAM_ID, ORDER_NO ");
+		
+		log.debug(sql+"|"+id);
 		
 		GFPProgramVO program = null;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -130,10 +202,11 @@ public class GFPProgramAction extends SBActionAdapter {
 			ResultSet rs = ps.executeQuery();
 			while(rs.next()) {
 				if (program == null) program = new GFPProgramVO(rs);
+				log.debug(program.getUserId());
 				if (rs.getString("RESOURCE_ID") != null)
 					program.addResource(new GFPResourceVO(rs));
 			}
-			if (program != null) program.setWorkshops(getWorkshops(program.getProgramId(), isUser, id, workshopId));
+			if (program != null) program.setWorkshops(getWorkshops(program.getProgramId(), isUser, program.getUserId(), workshopId));
 		} catch (SQLException e) {
 			log.error("Unable to get GFP program with " + (isUser? "user id of" : "program id of ") + id, e);
 		}
@@ -438,6 +511,7 @@ public class GFPProgramAction extends SBActionAdapter {
 		
 		if (req.hasParameter("completeState")) {
 			completeResource(req);
+			super.putModuleData(new GFPResourceVO(req));
 			return;
 		}
 		
@@ -456,10 +530,11 @@ public class GFPProgramAction extends SBActionAdapter {
 	 * Creates a complete record for the supplied resource/user pair
 	 */
 	private void completeResource(SMTServletRequest req) throws ActionException {
+		
 		StringBuilder sql = new StringBuilder(250);
 		sql.append("INSERT INTO ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("DPY_SYN_GFP_COMPLETED_WORKSHOP (COMPLETED_WORKSHOP_ID, ");
-		sql.append("CREATE_DT, USER_ID, WORKSHOP_ID) ");
+		sql.append("DPY_SYN_GFP_COMPLETED_RESOURCE (COMPLETED_RESOURCE_ID, ");
+		sql.append("CREATE_DT, USER_ID, RESOURCE_ID) ");
 		sql.append("VALUES(?,?,?,?)");
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -467,7 +542,9 @@ public class GFPProgramAction extends SBActionAdapter {
 			ps.setString(i++, new UUIDGenerator().getUUID());
 			ps.setTimestamp(i++, Convert.getCurrentTimestamp());
 			ps.setString(i++, req.getParameter("userId"));
-			ps.setString(i++, req.getParameter("programId"));
+			ps.setString(i++, req.getParameter("resourceId"));
+			
+			ps.executeUpdate();
 		} catch (SQLException e) {
 			log.error("Unable to update complete status of program " + req.getParameter("programId") + 
 					" for user " + req.getParameter("userId"), e);

@@ -30,6 +30,7 @@ public class GFPResourceVO {
 	private String shortDesc;
 	private String mediabinName;
 	private String mediabinId;
+	private String docType;
 	private String category;
 	private String CategoryId;
 	private int activeFlg;
@@ -67,12 +68,13 @@ public class GFPResourceVO {
 		DBUtil db = new DBUtil();
 		setResourceId(db.getStringVal("RESOURCE_ID", rs));
 		setParentId(db.getStringVal("WORKSHOP_ID", rs));
-		if (resourceId == null) setParentId(db.getStringVal("PROGRAM_ID", rs));
+		if (parentId == null) setParentId(db.getStringVal("PROGRAM_ID", rs));
 		setName(db.getStringVal("RESOURCE_NM", rs));
 		setDesc(db.getStringVal("RESOURCE_DESC", rs));
 		setShortDesc(db.getStringVal("SHORT_DESC", rs));
 		setMediabinId(db.getStringVal("DPY_SYN_MEDIABIN_ID", rs));
 		setMediabinName(db.getStringVal("FILE_NM", rs));
+		setDocType(db.getStringVal("ASSET_TYPE", rs));
 		setCategory(db.getStringVal("CATEGORY_NM", rs));
 		setCategoryId(db.getStringVal("CATEGORY_ID", rs));
 		setActiveFlg(db.getIntegerVal("ACTIVE_FLG", rs));
@@ -135,6 +137,14 @@ public class GFPResourceVO {
 
 	public void setMediabinId(String mediabinId) {
 		this.mediabinId = mediabinId;
+	}
+
+	public String getDocType() {
+		return docType;
+	}
+
+	public void setDocType(String docType) {
+		this.docType = docType;
 	}
 
 	public String getCategory() {

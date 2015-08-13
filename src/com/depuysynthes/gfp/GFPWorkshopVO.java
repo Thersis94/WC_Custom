@@ -1,9 +1,12 @@
 package com.depuysynthes.gfp;
 
 import java.sql.ResultSet;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.SMTServletRequest;
@@ -171,6 +174,7 @@ public class GFPWorkshopVO {
 	public Date mostRecentCompletion() {
 		Date d = null;
 		for (GFPResourceVO resource : resources) {
+			if (resource.getCompleteDate() == null) continue;
 			if (d == null && resource.getCompleteDate() != null)
 				d = resource.getCompleteDate();
 			
@@ -180,6 +184,20 @@ public class GFPWorkshopVO {
 		}
 		
 		return d;
+	}
+	
+	public String timeSinceCompletion() {
+		if (getCompleteState() == 2) {
+			return new SimpleDateFormat("M/d/YY").format(mostRecentCompletion());
+		}
+		
+		Date d = mostRecentCompletion();
+		if (d == null) return "";
+		Calendar c = Calendar.getInstance();
+		c.setTime(d);
+		long days = TimeUnit.MILLISECONDS.toDays(Calendar.getInstance().getTimeInMillis() - c.getTimeInMillis());
+		
+		return ", " + days + " days";
 	}
 
 	public List<GFPResourceVO> getResources() {
