@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 
+
 // FASTSIGNS Libs
 import com.fastsigns.action.franchise.vo.FranchiseVO;
 
@@ -136,15 +137,15 @@ public class SiteWizardAction_GB extends SiteWizardAction {
 	public void assignTheme(FranchiseVO vo) throws Exception {
 		String siteId = FS_SITE_ID + "_" + vo.getFranchiseId() + "_1";
 		StringBuilder sql = new StringBuilder(175);
-		sql.append("update site_theme_impl set theme_menu_id = '");
-		sql.append(SiteWizardAction_US.DEFAULT_FS_CENTER_THEME_MENU_ID).append("',");
-		sql.append("theme_stylesheet_id = '");
-		sql.append(SiteWizardAction_US.DEFAULT_FS_CENTER_THEME_MENU_STYLE_SHEET).append("' ");
-		sql.append("where site_id = ?");
+		sql.append("update site_theme_impl set theme_menu_id = ?, ");
+		sql.append("theme_stylesheet_id = ? ");
+		sql.append("where site_id = ? ");
 		log.debug("Theme Update: " + sql.toString() + "|" + siteId);
 		
 		PreparedStatement ps = dbConn.prepareStatement(sql.toString());
-		ps.setString(1, siteId);
+		ps.setString(1, SiteWizardAction_US.DEFAULT_FS_CENTER_THEME_MENU_ID);
+		ps.setString(2, SiteWizardAction_US.DEFAULT_FS_CENTER_THEME_MENU_STYLE_SHEET);
+		ps.setString(3, siteId);
 		ps.executeUpdate();
 	}
 	
