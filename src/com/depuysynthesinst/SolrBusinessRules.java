@@ -41,6 +41,7 @@ public class SolrBusinessRules {
 	}
 	
 	public void setSolrDocument(SolrDocument sd) {
+		if (sd == null) sd = new SolrDocument(); //this is needed incase the asset is no longer in Solr
 		this.sd = sd;
 		this.moduleType = StringUtil.checkVal(sd.get("moduleType"));
 

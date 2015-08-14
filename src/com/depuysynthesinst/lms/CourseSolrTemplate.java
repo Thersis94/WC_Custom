@@ -39,7 +39,7 @@ public class CourseSolrTemplate extends SolrDocumentVO {
 		super.setLanguage("en");
 		super.addRole(StringUtil.checkVal(SecurityController.PUBLIC_ROLE_LEVEL));
 		super.addOrganization(ORG_ID);
-		setAssetType("eLearning");
+		setAssetType("eModule");
 	}
 	
 	/**
@@ -136,7 +136,7 @@ public class CourseSolrTemplate extends SolrDocumentVO {
 	
 	@SolrField(name="assetDesc_s")
 	public String getAssetDesc() {
-		return "eLearning";
+		return "eModule";
 	}
 
 	@SolrField(name="courseId_i")
