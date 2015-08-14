@@ -7,7 +7,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-
 // FASTSIGNS Libs
 import com.fastsigns.action.franchise.vo.FranchiseVO;
 
