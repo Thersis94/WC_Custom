@@ -116,11 +116,10 @@ public class GFPProgramAction extends SBActionAdapter {
 			
 			while (rs.next()) {
 				if (!categoryNm.equals(rs.getString("CATEGORY_NM"))) {
-					categoryNm = rs.getString("CATEGORY_NM");
 					if (resources != null) categories.put(categoryNm, resources);
+					categoryNm = rs.getString("CATEGORY_NM");
 					resources = new ArrayList<>();
 				}
-				log.debug("Adding");
 				resources.add(new GFPResourceVO(rs));
 			}
 			if (resources != null) categories.put(categoryNm, resources);
@@ -530,19 +529,21 @@ public class GFPProgramAction extends SBActionAdapter {
 	 * Creates a complete record for the supplied resource/user pair
 	 */
 	private void completeResource(SMTServletRequest req) throws ActionException {
-		
+		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(250);
-		sql.append("INSERT INTO ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("INSERT INTO ").append(customDb);
 		sql.append("DPY_SYN_GFP_COMPLETED_RESOURCE (COMPLETED_RESOURCE_ID, ");
 		sql.append("CREATE_DT, USER_ID, RESOURCE_ID) ");
-		sql.append("VALUES(?,?,?,?)");
+		sql.append("SELECT ?,?,USER_ID,? ");
+		sql.append("FROM ").append(customDb);
+		sql.append("DPY_SYN_GFP_USER WHERE PROFILE_ID = ?");
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			int i = 1;
 			ps.setString(i++, new UUIDGenerator().getUUID());
 			ps.setTimestamp(i++, Convert.getCurrentTimestamp());
-			ps.setString(i++, req.getParameter("userId"));
 			ps.setString(i++, req.getParameter("resourceId"));
+			ps.setString(i++, req.getParameter("profileId"));
 			
 			ps.executeUpdate();
 		} catch (SQLException e) {
