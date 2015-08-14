@@ -107,7 +107,8 @@ public class SiteWizardAction_AE extends SiteWizardAction {
 		StringBuilder sql = new StringBuilder(175);
 		sql.append("update site_theme_impl set theme_menu_id = '");
 		sql.append(SiteWizardAction_US.DEFAULT_FS_CENTER_THEME_MENU_ID).append("',");
-		sql.append("theme_stylesheet_id = 'd1b917a358d747bea1495b2b434ad379' ");
+		sql.append("theme_stylesheet_id = '");
+		sql.append(SiteWizardAction_US.DEFAULT_FS_CENTER_THEME_MENU_STYLE_SHEET).append("' ");
 		sql.append("where site_id = ?");
 		log.debug("Theme Update: " + sql.toString() + "|" + siteId);
 		

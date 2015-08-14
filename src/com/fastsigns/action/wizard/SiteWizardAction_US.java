@@ -42,11 +42,11 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class SiteWizardAction_US extends SiteWizardAction {
 	
 	/**
-	 * Rjr 9-13-2015 staticly declared Id centeralized for use in us site wizard.
+	 * Rjr 9-13-2015 DEFAULT_FS_CENTER_THEME_MENU_ID is a statically declared Id 
+	 * for use in other site wizards.
 	 */
 	public static final String DEFAULT_FS_CENTER_THEME_MENU_ID = "c0a8022db43c1ba22a4f6264d810ee60";
-	
-	
+	public static final String DEFAULT_FS_CENTER_THEME_MENU_STYLE_SHEET = "c0a8022318f0d3236725668a5925ef0a";
 	/**
 	 * Localization text set
 	 */
@@ -145,7 +145,8 @@ public class SiteWizardAction_US extends SiteWizardAction {
 		StringBuilder sql = new StringBuilder(175);
 		sql.append("update site_theme_impl set theme_menu_id = '");
 		sql.append(SiteWizardAction_US.DEFAULT_FS_CENTER_THEME_MENU_ID).append("',");
-		sql.append("theme_stylesheet_id = 'c0a8022318f0d3236725668a5925ef0a' ");
+		sql.append("theme_stylesheet_id = '");
+		sql.append(SiteWizardAction_US.DEFAULT_FS_CENTER_THEME_MENU_STYLE_SHEET).append("' ");
 		sql.append("where site_id = ?");
 		log.debug("Theme Update: " + sql.toString() + "|" + siteId);
 		

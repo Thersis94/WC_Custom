@@ -9,6 +9,7 @@ import java.util.Map;
 
 
 
+
 // FASTSIGNS Libs
 import com.fastsigns.action.franchise.vo.FranchiseVO;
 
@@ -142,7 +143,8 @@ public class SiteWizardAction_AU extends SiteWizardAction {
 		StringBuilder sql = new StringBuilder(175);
 		sql.append("update site_theme_impl set theme_menu_id = '");
 		sql.append(SiteWizardAction_US.DEFAULT_FS_CENTER_THEME_MENU_ID).append("',");
-		sql.append("theme_stylesheet_id = 'c0a8022357d186a8f91a8eb46c170871' ");
+		sql.append("theme_stylesheet_id = '");
+		sql.append(SiteWizardAction_US.DEFAULT_FS_CENTER_THEME_MENU_STYLE_SHEET).append("' ");
 		sql.append("where site_id = ?");
 		log.debug("Theme Update: " + sql.toString() + "|" + siteId);
 		
