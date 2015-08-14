@@ -2,6 +2,7 @@ package com.depuysynthesinst.emails;
 
 import com.depuysynthesinst.assg.AssignmentVO;
 import com.siliconmtn.security.UserDataVO;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.SiteVO;
 
 /****************************************************************************
@@ -32,7 +33,11 @@ public class InviteResidentVO extends AbstractDSIEmailVO {
 		String profileUrl = siteUrl + "/profile";
 
 		StringBuilder sb = new StringBuilder(1000);
-		sb.append("<p>Dear ").append(rcpt.getFirstName()).append(" ").append(rcpt.getLastName()).append(",<br>");
+		sb.append("<p>");
+		String name = StringUtil.checkVal(rcpt.getFirstName()) + " " + StringUtil.checkVal(rcpt.getLastName());
+		if (name.length() > 1) { //the space between them - don't print a salutation if we don't know their name
+			sb.append("Dear ").append(name).append(",<br>");
+		}
 		sb.append(resDir.getFirstName()).append(" ").append(resDir.getLastName());
 		sb.append(" has invited you to participate in his/her residents group in the DePuy Synthes Future Leaders program.</p>");
 		sb.append("<p>To accept or decline this invitation please click on the URL below and sign-in to your account:<br/>");

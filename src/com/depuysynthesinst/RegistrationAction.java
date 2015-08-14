@@ -113,6 +113,18 @@ public class RegistrationAction extends SimpleActionAdapter {
 		if ("3".equals(req.getParameter("pg")) && req.hasParameter("newReg"))
 			checkHoldingUser(req);
 		
+		//if there are no parameters on the request, this is the summary page/view.
+		//Reload the user's transcript each time so they always see their latest transcript
+		if (dsiUser.getTtLmsId() != null && StringUtil.checkVal(req.getQueryString()).length() == 0) {
+			log.debug("loading transcript from LMS");
+			try {
+				LMSWSClient lms = new LMSWSClient((String)getAttribute(LMSWSClient.CFG_SECURITY_KEY));
+				dsiUser.setMyCourses(lms.getUserCourseList(dsiUser.getDsiId()));
+			} catch (ActionException ae) {
+				log.error("could not load user course list", ae);
+			}
+		}
+		
 	}
 	
 

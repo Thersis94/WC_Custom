@@ -256,7 +256,7 @@ public class MyAssignmentsAdminAction extends SBActionAdapter {
 		sql.append("left outer join ").append(customDb).append("DPY_SYN_INST_ASSG_ASSET aa on a.assg_id=aa.assg_id ");
 		sql.append("where rd.profile_id=? ");
 		if (assignmentId != null) sql.append("and a.assg_id=? ");
-		sql.append("order by a.due_dt, a.assg_nm, a.assg_id");
+		sql.append("and a.active_flg=1 order by a.due_dt, a.assg_nm, a.assg_id");
 		log.debug(sql);
 		
 		AssignmentVO vo;
@@ -297,14 +297,16 @@ public class MyAssignmentsAdminAction extends SBActionAdapter {
 		log.debug("saving assignment");
 		String customDb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(200);
-		if (assg.getAssgId() == null) {
+		boolean isInsert = assg.getAssgId() == null;
+		if (isInsert) {
 			assg.setAssgId(new UUIDGenerator().getUUID());
 			sql.append("insert into ").append(customDb).append("DPY_SYN_INST_ASSG ");
-			sql.append("(RES_DIR_ID, ASSG_NM, DESC_TXT, DUE_DT, SEQUENTIAL_FLG, ");
-			sql.append("CREATE_DT, ASSG_ID) values (?,?,?,?,?,?,?)");
+			sql.append("(RES_DIR_ID, ASSG_NM, ACTIVE_FLG, DESC_TXT, DUE_DT, SEQUENTIAL_FLG, ");
+			sql.append("CREATE_DT, ASSG_ID) values (?,?,?,?,?,?,?,?)");
+			makeAssgName(assg);
 		} else {
 			sql.append("update ").append(customDb).append("DPY_SYN_INST_ASSG ");
-			sql.append("set RES_DIR_ID=?, ASSG_NM=?, DESC_TXT=?, DUE_DT=?, ");
+			sql.append("set RES_DIR_ID=?, DESC_TXT=?, DUE_DT=?, ");
 			sql.append("SEQUENTIAL_FLG=?, ");
 			if (publish) sql.append("PUBLISH_DT=?, ");
 			sql.append("UPDATE_DT=? where ASSG_ID=?");
@@ -314,7 +316,10 @@ public class MyAssignmentsAdminAction extends SBActionAdapter {
 		int x=1;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setInt(x++, assg.getResDirId());
-			ps.setString(x++, assg.getAssgName());
+			if (isInsert) {
+				ps.setString(x++, assg.getAssgName());
+				ps.setInt(x++, 1); //active_flg - only turned off via the delete query
+			}
 			ps.setString(x++, assg.getAssgDesc());
 			ps.setDate(x++, Convert.formatSQLDate(assg.getDueDt()));
 			ps.setInt(x++, assg.isSequentialFlg() ? 1 : 0);
@@ -436,8 +441,8 @@ public class MyAssignmentsAdminAction extends SBActionAdapter {
 	private void deleteAssg(AssignmentVO assg) throws ActionException {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(150);
-		sql.append("delete from ").append(customDb).append("DPY_SYN_INST_ASSG ");
-		sql.append("where res_dir_id=? and assg_id=?");
+		sql.append("update ").append(customDb).append("DPY_SYN_INST_ASSG ");
+		sql.append("set active_flg=0 where res_dir_id=? and assg_id=?");
 		log.debug(sql);
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -574,5 +579,31 @@ public class MyAssignmentsAdminAction extends SBActionAdapter {
 		user.addAttribute("myAssgCnt", Integer.valueOf(cnt));
 		ses.setAttribute(Constants.USER_DATA, user);
 		log.debug("cnt=" + user.getAttribute("myAssgCnt"));
+	}
+	
+	
+	/**
+	 * count how many assignments the profession has, and use that to determine
+	 * the "next in line" sequence # for the Assignment name field
+	 * @param assg
+	 */
+	private void makeAssgName(AssignmentVO assg) {
+		StringBuilder sql = new StringBuilder(100);
+		sql.append("select count(*) from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("DPY_SYN_INST_ASSG where res_dir_id=?");
+		log.debug(sql);
+		int nextNo = 1;
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setInt(1, assg.getResDirId());
+			ResultSet rs = ps.executeQuery();
+			if (rs.next())
+				nextNo = rs.getInt(1) + 1;
+			
+		} catch (SQLException sqle) {
+			log.error("could not get count of resDir's assignments", sqle);
+		}
+		assg.setAssgName("Assignment " + nextNo);
+		
 	}
 }

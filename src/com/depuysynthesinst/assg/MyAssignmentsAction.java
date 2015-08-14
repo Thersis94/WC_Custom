@@ -276,7 +276,8 @@ public class MyAssignmentsAction extends SBActionAdapter {
 		sql.append("left outer join ").append(customDb).append("DPY_SYN_INST_RES_ASSG_ASSET raa on aa.assg_asset_id=raa.assg_asset_id and ra.res_assg_id=raa.res_assg_id ");
 		sql.append("where r.profile_id=? ");
 		if (assignmentId != null) sql.append("and a.assg_id=? ");
-		sql.append("and a.publish_dt is not null order by a.due_dt, a.assg_nm, a.assg_id");
+		sql.append("and a.publish_dt is not null and a.active_flg=1 ");
+		sql.append("order by a.due_dt, a.assg_nm, a.assg_id");
 		log.debug(sql);
 		
 		AssignmentVO vo;
@@ -293,6 +294,7 @@ public class MyAssignmentsAction extends SBActionAdapter {
 					vo = data.get(assgId);
 				} else {
 					//create a new Assignment the first time by
+					log.debug(rs.getDate("update_dt"));
 					vo = new AssignmentVO(rs);
 				}
 				

@@ -3,6 +3,7 @@ package com.depuysynthesinst.assg;
 import java.io.Serializable;
 import java.sql.ResultSet;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -315,8 +316,23 @@ public class AssignmentVO implements Serializable {
 	}
 	
 	public boolean isExpired() {
-		if (dueDt == null) return false;
-		return (dueDt.before(Convert.getCurrentTimestamp()));
+		/**
+		 * "expired" has 3 faces per requirement U_BUS_2010
+		 * All elements of the assignment have been completed/checked
+		 * Or Due Date has passed (if there is a Due Date)
+		 * Or 90 days after creation if there is no Due Date 
+		 */
+		//if the due date has lapsed
+		Calendar cal = Calendar.getInstance();
+		if (dueDt != null && dueDt.before(cal.getTime())) return true;
+		
+		//if the assignment is 90 days old
+		cal.add(Calendar.DAY_OF_YEAR, -90);
+		Date d = updateDt != null ? updateDt : publishDt;
+		if (d != null && d.before(cal.getTime())) return true;
+		
+		//if all the assets have been completed
+		return isComplete();
 	}
 	
 	public ResidentGrouping getResidentGrouping() {
