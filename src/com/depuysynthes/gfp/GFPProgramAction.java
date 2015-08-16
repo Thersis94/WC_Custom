@@ -538,6 +538,10 @@ public class GFPProgramAction extends SBActionAdapter {
 		}
 	}
 	
+
+	/**
+	 * Change the order of resources to match the order presented in the request object
+	 */
 	private void reorderResources(SMTServletRequest req) throws ActionException {
 		StringBuilder sql = new StringBuilder(250);
 		
@@ -564,6 +568,10 @@ public class GFPProgramAction extends SBActionAdapter {
 		}
 	}
 	
+	
+	/**
+	 * Change the order of workshops to match the order presented in the request object
+	 */
 	private void reorderWorkshops(SMTServletRequest req) throws ActionException {
 		StringBuilder sql = new StringBuilder(150);
 		
