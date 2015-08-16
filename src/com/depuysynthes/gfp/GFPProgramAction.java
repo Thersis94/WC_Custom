@@ -39,6 +39,10 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 
 public class GFPProgramAction extends SBActionAdapter {
+	
+	enum BuildType {
+		mediabin, reorderResource, reorderWorkshop, complete
+	}
 
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		String programId = StringUtil.checkVal(req.getParameter("programId"));
@@ -223,7 +227,7 @@ public class GFPProgramAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(600);
 		sql.append("SELECT w.*, wr.RESOURCE_ID, wr.CATEGORY_ID, wr.RESOURCE_NM, ");
 		sql.append("wr.RESOURCE_DESC, wr.SHORT_DESC as RESOURCE_SHORT_DESC, wr.DPY_SYN_MEDIABIN_ID, ");
-		sql.append("wr.ACTIVE_FLG as RESOURCE_ACTIVE_FLG, c.*, m.*");
+		sql.append("wx.ORDER_NO, wr.ACTIVE_FLG as RESOURCE_ACTIVE_FLG, c.*, m.*");
 		if (isUser) sql.append(", cr.CREATE_DT as COMPLETE_DT");
 		sql.append(" FROM ").append(customDb).append("DPY_SYN_GFP_PROGRAM p ");
 		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_GFP_WORKSHOP w ");
@@ -242,6 +246,7 @@ public class GFPProgramAction extends SBActionAdapter {
 		sql.append("ON m.DPY_SYN_MEDIABIN_ID = wr.DPY_SYN_MEDIABIN_ID ");
 		sql.append("WHERE p.PROGRAM_ID = ? ");
 		if (currentWorkshop != null) sql.append(" and w.WORKSHOP_ID = ? ");
+		if (isUser) sql.append("and w.ACTIVE_FLG = 1 ");
 		sql.append("ORDER BY w.SEQUENCE_NO, wx.ORDER_NO ");
 		log.debug(sql+"|"+programId+"|"+userId);
 		
@@ -507,24 +512,82 @@ public class GFPProgramAction extends SBActionAdapter {
 	}
 	
 	public void build(SMTServletRequest req) throws ActionException {
+		BuildType build = BuildType.valueOf(req.getParameter("programBuild"));
 		
-		if (req.hasParameter("completeState")) {
+		switch (build) {
+		case complete:
 			completeResource(req);
 			super.putModuleData(new GFPResourceVO(req));
-			return;
+			break;
+		case reorderResource:
+			reorderResources(req);
+			break;
+		case reorderWorkshop:
+			reorderWorkshops(req);
+			break;
+		case mediabin:
+			req.setParameter("organizationId", ((SiteVO)req.getAttribute(Constants.SITE_DATA)).getAliasPathOrgId());
+			SMTActionInterface sai = new MediaBinAdminAction();
+			sai.setDBConnection(dbConn);
+			sai.setAttributes(attributes);
+			sai.setActionInit(actionInit);
+			sai.list(req);
+			ModuleVO mod = (ModuleVO) sai.getAttribute(AdminConstants.ADMIN_MODULE_DATA);
+			super.putModuleData(mod.getActionData(), mod.getDataSize(), false);
+			break;
 		}
-		
-		req.setParameter("organizationId", ((SiteVO)req.getAttribute(Constants.SITE_DATA)).getAliasPathOrgId());
-		SMTActionInterface sai = new MediaBinAdminAction();
-		sai.setDBConnection(dbConn);
-		sai.setAttributes(attributes);
-		sai.setActionInit(actionInit);
-		sai.list(req);
-		ModuleVO mod = (ModuleVO) sai.getAttribute(AdminConstants.ADMIN_MODULE_DATA);
-		super.putModuleData(mod.getActionData(), mod.getDataSize(), false);
-		
 	}
 	
+	private void reorderResources(SMTServletRequest req) throws ActionException {
+		StringBuilder sql = new StringBuilder(250);
+		
+		sql.append("UPDATE ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("DPY_SYN_GFP_").append(req.getParameter("parentType")).append("_XR ");
+		sql.append("SET ORDER_NO = ? WHERE RESOURCE_ID = ? and ");
+		sql.append(req.getParameter("parentType")).append("_ID = ?");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			String order = req.getParameter("order");
+			String parentId = req.getParameter("parentId");
+			int i=1;
+			for (String id : order.split("\\|")) {
+				ps.setInt(1, i++);
+				ps.setString(2, id);
+				ps.setString(3, parentId);
+				ps.addBatch();
+			}
+			
+			ps.executeBatch();
+		} catch (SQLException e) {
+			log.error("Unable to reorder workshops.", e);
+			throw new ActionException(e);
+		}
+	}
+	
+	private void reorderWorkshops(SMTServletRequest req) throws ActionException {
+		StringBuilder sql = new StringBuilder(150);
+		
+		sql.append("UPDATE ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("DPY_SYN_GFP_WORKSHOP SET SEQUENCE_NO = ? ");
+		sql.append("WHERE WORKSHOP_ID = ?");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			String order = req.getParameter("order");
+			int i=1;
+			for (String id : order.split("\\|")) {
+				ps.setInt(1, i++);
+				ps.setString(2, id);
+				ps.addBatch();
+			}
+			
+			ps.executeBatch();
+		} catch (SQLException e) {
+			log.error("Unable to reorder workshops.", e);
+			throw new ActionException(e);
+		}
+	}
+
+
 	/**
 	 * Creates a complete record for the supplied resource/user pair
 	 */
