@@ -34,7 +34,6 @@ import com.smt.sitebuilder.action.contact.ContactDataContainer;
 import com.smt.sitebuilder.action.contact.SubmittalAction;
 import com.smt.sitebuilder.action.contact.SubmittalDataAction;
 import com.smt.sitebuilder.action.dealer.DealerContactAction;
-import com.smt.sitebuilder.action.dealer.DealerLocatorAction;
 import com.smt.sitebuilder.action.user.ProfileRoleManager;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
