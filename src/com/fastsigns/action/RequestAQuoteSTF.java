@@ -9,6 +9,7 @@ import java.util.Map;
 
 import javax.servlet.http.HttpSession;
 
+import com.fastsigns.action.franchise.FranchiseLocatorAction;
 import com.fastsigns.action.saf.SAFConfig;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.action.ActionException;
@@ -311,7 +312,7 @@ public class RequestAQuoteSTF extends SBActionAdapter {
 			mod.setPageModuleId(String.valueOf(mod.getAttribute(ModuleVO.ATTRIBUTE_1)));
 			actionInit.setActionId(mod.getPageModuleId());
 			req.setParameter("pmid", mod.getPageModuleId());
-			sai = new DealerLocatorAction(actionInit);
+			sai = new FranchiseLocatorAction(actionInit);
 			sai.setAttributes(attributes);
 			sai.setDBConnection(dbConn);
 			sai.retrieve(req);
