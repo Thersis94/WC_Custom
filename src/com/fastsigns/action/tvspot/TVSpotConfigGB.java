@@ -259,7 +259,7 @@ public class TVSpotConfigGB extends TVSpotConfig {
 		msg.addRecipient("Drue.Townsend@fastsigns.com"); 
 		msg.addRecipient("E.Team@fastsigns.com");
 		msg.addRecipient("david.callister@fastsigns.com");
-		msg.addRecipient("Garth.Allison@fastsigns.com");
+		msg.addRecipient("John.davies@fastsigns.com");
 		msg.setSubject("\"Operation Consultation\" report is attached for your review");
 		msg.setHtmlBody(buildReportBody(false));
 		msg.setFrom(getCorpConsultationEmail());
