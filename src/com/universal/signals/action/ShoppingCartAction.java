@@ -1014,15 +1014,22 @@ public class ShoppingCartAction extends SBActionAdapter {
 		for(String paramKey : paramsMap.keySet()) {
 			if (paramKey.startsWith("attribute_")) {
 				// custom key is the value of the 'key' on the paramaterMap
-				prodAttribIdKey = paramsMap.get(paramKey)[0]; 
+				if (paramsMap.get(paramKey) == null || 
+						paramsMap.get(paramKey).length == 0) continue;
+				
+				// loop the attributes and add.
+				for (String attribIdKey : paramsMap.get(paramKey)) {
+					if (attribIdKey != null) prodAttribs.add(attribs.get(attribIdKey));
+				}
+				
 			} else if (paramKey.startsWith("custom_")) {
 				// custom key is the suffix of the parameterMap 'key'
 				prodAttribIdKey = StringUtil.replace(paramKey, "custom_", "");
+				if (prodAttribIdKey != null) prodAttribs.add(attribs.get(prodAttribIdKey));
 			}
-			if (prodAttribIdKey != null) {
-				prodAttribs.add(attribs.get(prodAttribIdKey));
-				prodAttribIdKey = null;
-			}
+			
+			prodAttribIdKey = null;
+
 		}
 		
 		/* 3: Sort the product attribute selections and put them into the proper sequence.

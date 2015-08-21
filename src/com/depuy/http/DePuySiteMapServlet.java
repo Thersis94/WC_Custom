@@ -140,6 +140,7 @@ public class DePuySiteMapServlet extends SiteMapServlet {
 	    List<Node> data = new ArrayList<Node>();
 	    Map<String, Object> attributes = new HashMap<String, Object>();
 	    SolrSearchWrapper solrWrapper = new SolrSearchWrapper();
+	    solrWrapper.setAttribute(Constants.QS_PATH, sc.getAttribute(Constants.QS_PATH));
 	    
 	    attributes.put(Constants.SOLR_BASE_URL, sc.getAttribute(Constants.SOLR_BASE_URL));
 	    String solrCollectionPath = (String) sc.getAttribute(Constants.SOLR_COLLECTION_NAME);
