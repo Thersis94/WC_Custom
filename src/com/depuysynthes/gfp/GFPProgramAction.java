@@ -41,7 +41,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class GFPProgramAction extends SBActionAdapter {
 	
 	enum BuildType {
-		mediabin, reorderResource, reorderWorkshop, complete
+		MediaBin, ReorderResource, ReorderWorkshop, Complete
 	}
 
 	public void retrieve(SMTServletRequest req) throws ActionException {
@@ -512,20 +512,26 @@ public class GFPProgramAction extends SBActionAdapter {
 	}
 	
 	public void build(SMTServletRequest req) throws ActionException {
-		BuildType build = BuildType.valueOf(req.getParameter("programBuild"));
+		BuildType build;
+		try {
+			build = BuildType.valueOf(req.getParameter("programBuild"));
+		} catch(Exception e) {
+			log.error("Unable to parse build type from request object.  Recieved " + req.getParameter("programBuild"), e);
+			throw new ActionException(e);
+		}
 		
 		switch (build) {
-		case complete:
+		case Complete:
 			completeResource(req);
 			super.putModuleData(new GFPResourceVO(req));
 			break;
-		case reorderResource:
+		case ReorderResource:
 			reorderResources(req);
 			break;
-		case reorderWorkshop:
+		case ReorderWorkshop:
 			reorderWorkshops(req);
 			break;
-		case mediabin:
+		case MediaBin:
 			req.setParameter("organizationId", ((SiteVO)req.getAttribute(Constants.SITE_DATA)).getAliasPathOrgId());
 			SMTActionInterface sai = new MediaBinAdminAction();
 			sai.setDBConnection(dbConn);
@@ -544,11 +550,18 @@ public class GFPProgramAction extends SBActionAdapter {
 	 */
 	private void reorderResources(SMTServletRequest req) throws ActionException {
 		StringBuilder sql = new StringBuilder(250);
+		GFPLevel parent;
+		try {
+			parent = GFPLevel.valueOf(StringUtil.checkVal(req.getParameter("parentType")));
+		} catch(Exception e) {
+			log.error("Unable to parse GFPLevel from request", e);
+			throw new ActionException(e);
+		}
 		
 		sql.append("UPDATE ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("DPY_SYN_GFP_").append(req.getParameter("parentType")).append("_XR ");
+		sql.append("DPY_SYN_GFP_").append(parent.toString()).append("_XR ");
 		sql.append("SET ORDER_NO = ? WHERE RESOURCE_ID = ? and ");
-		sql.append(req.getParameter("parentType")).append("_ID = ?");
+		sql.append(parent.toString()).append("_ID = ?");
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			String order = req.getParameter("order");
