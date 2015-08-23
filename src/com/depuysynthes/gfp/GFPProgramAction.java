@@ -43,6 +43,23 @@ public class GFPProgramAction extends SBActionAdapter {
 	enum BuildType {
 		MediaBin, ReorderResource, ReorderWorkshop, Complete
 	}
+	
+	enum OrderBy {
+		Oldest("CREATE_DT DESC"),
+		Youngest("CREATE_DT ASC"),
+		Name("RESOURCE_NM ASC");
+		
+		
+		private String sql;
+		OrderBy(String sql) {
+			this.sql = sql;
+		}
+		
+		public String getSQL() {
+			return sql;
+		}
+		
+	}
 
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		String programId = StringUtil.checkVal(req.getParameter("programId"));
@@ -58,7 +75,15 @@ public class GFPProgramAction extends SBActionAdapter {
 			// This is only called when we are not editing any particular program.
 			super.putModuleData(getAllPrograms());
 		} else if (req.hasParameter("resourceList")) {
-			super.putModuleData(getResources(req.getParameter("resourceList"), user.getProfileId(), req.hasParameter("favOnly")));
+
+			OrderBy order;
+			try {
+				order = OrderBy.valueOf(StringUtil.checkVal(req.getParameter("resourceList")));
+			} catch(Exception e) {
+				log.error("Unable to parse GFPLevel from request", e);
+				throw new ActionException(e);
+			}
+			super.putModuleData(getResources(order, user.getProfileId(), req.hasParameter("favOnly")));
 		} else {
 			super.putModuleData(getProgram(isUser? profileId : programId, isUser, req.getParameter("workshopId")));
 		}
@@ -76,7 +101,7 @@ public class GFPProgramAction extends SBActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	private Map<String, List<GFPResourceVO>> getResources(String orderBy, String profileId, boolean favOnly) throws ActionException {
+	private Map<String, List<GFPResourceVO>> getResources(OrderBy order, String profileId, boolean favOnly) throws ActionException {
 		Map<String, List<GFPResourceVO>> categories = new HashMap<>();
 		StringBuilder sql = new StringBuilder(1200);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
@@ -106,7 +131,7 @@ public class GFPProgramAction extends SBActionAdapter {
 		if (favOnly) {
 			sql.append(" and pf.PROFILE_FAVORITE_ID is not null ");
 		}
-		sql.append("ORDER BY r.CATEGORY_ID, r.").append(orderBy);
+		sql.append("ORDER BY r.CATEGORY_ID, r.").append(order.getSQL());
 		
 		log.debug(sql+"|"+profileId);
 		
@@ -302,7 +327,16 @@ public class GFPProgramAction extends SBActionAdapter {
 
 	public void delete(SMTServletRequest req) throws ActionException {
 		StringBuilder sql = new StringBuilder(120);
-		GFPLevel level = GFPLevel.valueOf(req.getParameter("level"));
+		GFPLevel level;
+
+		try {
+			level = GFPLevel.valueOf(req.getParameter("level"));
+		} catch(Exception e) {
+			log.error("Unable to parse build type from request object.  Recieved " + req.getParameter("programBuild"), e);
+			throw new ActionException(e);
+		}
+		
+		
 		
 		sql.append("DELETE ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("DPY_SYN_GFP_").append(level.toString()).append(" WHERE ");
@@ -321,7 +355,13 @@ public class GFPProgramAction extends SBActionAdapter {
 
 	
 	public void update(SMTServletRequest req) throws ActionException {
-		GFPLevel level = GFPLevel.valueOf(req.getParameter("level"));
+		GFPLevel level;
+		try {
+			level = GFPLevel.valueOf(req.getParameter("level"));
+		} catch(Exception e) {
+			log.error("Unable to parse build type from request object.  Recieved " + req.getParameter("programBuild"), e);
+			throw new ActionException(e);
+		}
 		
 		FilePartDataBean file = req.getFile("newFile");
 		if (file != null) {
@@ -335,7 +375,15 @@ public class GFPProgramAction extends SBActionAdapter {
 				updateWorkshop(new GFPWorkshopVO(req));
 				break;
 			case RESOURCE:
-				updateResource(new GFPResourceVO(req), GFPLevel.valueOf(req.getParameter("parentLevel")));
+				GFPLevel parent;
+				try {
+					parent = GFPLevel.valueOf(req.getParameter("parentLevel"));
+				} catch(Exception e) {
+					log.error("Unable to parse build type from request object.  Recieved " + req.getParameter("programBuild"), e);
+					throw new ActionException(e);
+				}
+				
+				updateResource(new GFPResourceVO(req), parent);
 				break;
 		}
 	}
