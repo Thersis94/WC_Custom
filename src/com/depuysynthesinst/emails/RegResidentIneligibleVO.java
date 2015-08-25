@@ -39,7 +39,7 @@ public class RegResidentIneligibleVO extends AbstractDSIEmailVO {
 		sb.append("you will not be able to earn credits and/or utilize the DePuy Synthes Institute redemption center.</p>");
 		
 		sb.append("<p>If you believe that you <u>are eligible</u> to use this feature in the program or if ");
-		sb.append("you have any questions please feel free to contact us at any time at <br/>");
+		sb.append("you have any questions please feel free to contact us at any time at ");
 		sb.append("<a href=\"mailto:futureleaders@its.jnj.com\">futureleaders@its.jnj.com</a></p>");
 
 		addClosingRemark(sb, siteUrl);

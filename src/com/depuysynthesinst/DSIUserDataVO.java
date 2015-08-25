@@ -107,7 +107,7 @@ public class DSIUserDataVO extends UserDataVO {
 		Calendar then = Calendar.getInstance();
 		Date now = then.getTime();
 		then.setTime(getGraduationDate());
-		then.add(Calendar.DAY_OF_YEAR, -180); //rollback 6mos
+		then.add(Calendar.DAY_OF_YEAR, -365); //rollback 1yr
 		return now.after(then.getTime()) && now.before(getGraduationDate());
 	}
 

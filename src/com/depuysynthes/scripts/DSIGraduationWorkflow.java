@@ -108,6 +108,13 @@ public class DSIGraduationWorkflow extends CommandLineUtil {
 			} catch (SQLException sqle) {
 				log.error("could not update account for " + rsId, sqle);
 			}
+			
+			try {
+				deleteOldSrvyResponses(accounts.get(rsId));
+				++cnt;
+			} catch (SQLException sqle) {
+				log.error("could not update account for " + rsId, sqle);
+			}
 		}
 		
 		//noitify the admin we did what something
@@ -188,6 +195,8 @@ public class DSIGraduationWorkflow extends CommandLineUtil {
 				if (isResident && !"yes".equalsIgnoreCase(vo.value)) return null;
 				vo.profileFieldId = RegField.c0a80241b71c9d40a59dbd6f4b621260.toString();
 				vo.value = "FELLOW";
+				//tag the record so we can flush all existing survey responses for this user; they'll get a new survey for their Fellowship
+				vo.delSrvyResponses = true;
 				return vo;
 				
 			case "DSI_SRVY_SPECIALTY":
@@ -251,6 +260,31 @@ public class DSIGraduationWorkflow extends CommandLineUtil {
 		}
 	}
 	
+	/**
+	 * Purge survey responses for residents who just became Fellows;
+	 * They'll get a new set of survey questions from here forward.
+	 * @param data
+	 * @throws SQLException
+	 */
+	private void deleteOldSrvyResponses(List<DataVO> data) throws SQLException {
+		//loop their register data and see if we're going to delete anything
+		boolean failFast = true;
+		for (DataVO vo : data) if (vo.delSrvyResponses) failFast = false;
+		if (failFast) return;
+		
+		String sql = "delete from register_data where register_field_id like ? and register_submittal_id=?";
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			ps.setString(1, "DSI_SRVY_%");
+			ps.setString(2, data.get(0).registerSubmittalId);
+			int cnt = ps.executeUpdate();
+			log.debug("deleting survey values for registerSubmittalId=" + data.get(0).registerSubmittalId);
+			log.info("deleted " + cnt + " records in register_data");
+		} catch (SQLException sqle) {
+			failures.add(sqle);
+			throw sqle;
+		}
+	}
+	
 	
 	/**
 	 * sends a synopsys email to the admin of what was done and if errors were generated
@@ -303,5 +337,6 @@ public class DSIGraduationWorkflow extends CommandLineUtil {
 		String profileFieldId;
 		String value;
 		String registerSubmittalId;
+		boolean delSrvyResponses;
 	}
 }
