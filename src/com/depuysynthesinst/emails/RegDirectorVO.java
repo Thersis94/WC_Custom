@@ -40,7 +40,7 @@ public class RegDirectorVO extends AbstractDSIEmailVO {
 		sb.append("participate in your group.  To get started click on the URL below.<br/>");
 		sb.append("<a href=\"").append(siteUrl).append("\">").append(siteUrl).append("</a></p>");
 		
-		sb.append("<p>If you have any questions please feel free to contact us at any time at <br/>");
+		sb.append("<p>If you have any questions please feel free to contact us at any time at ");
 		sb.append("<a href=\"mailto:futureleaders@its.jnj.com\">futureleaders@its.jnj.com</a></p>");
 
 		addIfYouBelieve(sb);

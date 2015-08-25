@@ -56,7 +56,7 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 		log.debug("starting post-processor, " + page);
 		
 		//if page = 3 and they're done then they did NOT register as a Future Leader.  Send the stock email.
-		if (page == 3) { 
+		if (3 == page.intValue()) { 
 			//SubmittalAction will do this for us; we're done!
 			return;
 		}
@@ -68,6 +68,7 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 		MessageSender ms = new MessageSender(getAttributes(), dbConn);
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		DSIUserDataVO dsiUser = new DSIUserDataVO((UserDataVO)req.getSession().getAttribute(Constants.USER_DATA));
+		//log.debug("email DSIUser=" + StringUtil.getToString(dsiUser));
 		ResponseLoader loader = new ResponseLoader();
 		loader.setDbConn(dbConn);
 		loader.setSite(site);

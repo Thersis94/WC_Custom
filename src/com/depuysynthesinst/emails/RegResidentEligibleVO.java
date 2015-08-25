@@ -37,7 +37,7 @@ public class RegResidentEligibleVO extends AbstractDSIEmailVO {
 		sb.append("<p><b><u>PLEASE NOTE:</u></b> You will not be able to redeem credits earned during this validation period. ");
 		sb.append("You will receive further communication via email within 1-2 business days.</p>");
 		
-		sb.append("<p>If you have any questions please feel free to contact us at any time at <br/>");
+		sb.append("<p>If you have any questions please feel free to contact us at any time at ");
 		sb.append("<a href=\"mailto:futureleaders@its.jnj.com\">futureleaders@its.jnj.com</a></p>");
 
 		addClosingRemark(sb, siteUrl);
