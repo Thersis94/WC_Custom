@@ -33,6 +33,7 @@ import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.sax.BodyContentHandler;
 
+
 // SMT Base Libs
 import com.depuysynthes.action.MediaBinAdminAction;
 import com.depuysynthes.action.MediaBinAssetVO;
@@ -43,6 +44,7 @@ import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SMTAbstractIndex;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
+import com.smt.sitebuilder.security.SecurityController;
 
 /****************************************************************************
  * <b>Title</b>: MediaBinSolrIndex.java <p/>
@@ -80,7 +82,8 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 		AssetType("assetType_s"),
 		AssetDesc("assetDesc_s"),
 		TrackingNo("trackingNumber_s"),
-		VideoChapters("videoChapters_s");
+		VideoChapters("videoChapters_s"),
+		DownloadType("downloadType_s");
 		MediaBinField(String s) { this.metaDataField = s; }
 		private String metaDataField = null;
 		public String getField() { return metaDataField; }
@@ -140,7 +143,7 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 				doc.setField(SearchDocumentHandler.INDEX_TYPE, INDEX_TYPE);
 				doc.setField(SearchDocumentHandler.ORGANIZATION, orgList); //multiValue field
 				doc.setField(SearchDocumentHandler.LANGUAGE, StringUtil.checkVal(vo.getLanguageCode(), "en"));
-				doc.setField(SearchDocumentHandler.ROLE, 0);
+				doc.setField(SearchDocumentHandler.ROLE, SecurityController.PUBLIC_ROLE_LEVEL);
 				doc.setField(SearchDocumentHandler.SITE_PAGE_URL, vo.getActionUrl());
 				doc.setField(SearchDocumentHandler.DOCUMENT_ID, vo.getDpySynMediaBinId());
 				doc.setField(SearchDocumentHandler.TITLE, vo.getTitleTxt());
@@ -149,8 +152,9 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 				doc.setField(SearchDocumentHandler.FILE_SIZE, vo.getFileSizeNo());
 				doc.setField(SearchDocumentHandler.DURATION, parseDuration(vo.getDuration()));
 				doc.setField(SearchDocumentHandler.SECTION, parseBusinessUnit(vo.getBusinessUnitNm()));
-				//TODO this keyword hack for downloadType was for DS, which will need to be addressed.
-				//doc.setField(SearchDocumentHandler.META_KEYWORDS, parseDownloadType(vo.getDownloadTypeTxt(), vo.isVideo()));
+				//downloadType is used exclusively for DS and EMEA-DS as a cosmetic value
+				doc.setField(MediaBinField.DownloadType.getField(), parseDownloadType(vo.getDownloadTypeTxt(), vo.isVideo()));
+				
 				doc.setField(SearchDocumentHandler.META_KEYWORDS, vo.getMetaKeywords());
 				doc.setField(SearchDocumentHandler.MODULE_TYPE, "DOWNLOAD");
 				doc.setField(SearchDocumentHandler.UPDATE_DATE, df.format(vo.getModifiedDt()));
@@ -250,7 +254,6 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 		}
 
 		return data;
-
 	}
 
 
@@ -378,7 +381,7 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 	 * @param downloadType
 	 * @param isVideo
 	 * @return
-
+	 */
     private String parseDownloadType(String downloadType, boolean isVideo) {
     	String tmp = StringUtil.checkVal(downloadType).replace("~", ",");
     	if (isVideo) {
@@ -396,7 +399,6 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
     	}
     	return tmp;
     }
-	 */
 
 	/**
 	 * Helper method for loading the business units look-up map.  This map provides
