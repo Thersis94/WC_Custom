@@ -336,7 +336,7 @@ public class DSMediaBinImporter extends CommandLineUtil {
 				ps.setString(2, row.get("Asset Name").replace('\\','/'));
 				ps.setString(3, StringUtil.checkVal(row.get("Asset Description"), row.get("SOUS - Literature Category")));
 				ps.setString(4, row.get("Asset Type").toLowerCase());
-				ps.setString(5, StringUtil.checkVal(row.get("Body Region"), StringUtil.checkVal(row.get("SOUS - Body Region Spine"), row.get("SOUS - Body Region Trauma"))));
+				ps.setString(5, parseBodyRegion(row));
 				ps.setString(6, StringUtil.checkVal(row.get("BUSINESS UNIT"),row.get("SOUS - Business Unit")));
 				ps.setString(7, row.get("Business Unit ID"));
 				ps.setString(8, StringUtil.checkVal(row.get("SOUS - Literature Category"))); // download_type_txt
@@ -356,7 +356,7 @@ public class DSMediaBinImporter extends CommandLineUtil {
 				ps.setDouble(22, Convert.formatDouble(row.get("Media Play Length (secs.)")));
 				ps.setString(23, StringUtil.checkVal(row.get("Anatomy"), null)); //used on DSI.com
 				ps.setString(24, StringUtil.checkVal(row.get("Description"), null)); //used on DSI.com
-				ps.setString(25, StringUtil.checkVal(row.get("Keywords"), null)); //used on DSI.com
+				ps.setString(25, parseKeywords(row, type)); //used on DSI.com
 				
 				if (DEBUG_MODE) {
 					ps.executeUpdate();
@@ -479,6 +479,56 @@ public class DSMediaBinImporter extends CommandLineUtil {
 		languages.put("SPANISH","es");
 		languages.put("SWEDISH","sv");
 		languages.put("TURKISH","tr");
+	}
+	
+	
+	/**
+	 * parses one of 4 EXP-file columns into the Body Region field
+	 * @param row
+	 * @return
+	 */
+	private String parseBodyRegion(Map<String, String> row) {
+		String retVal = StringUtil.checkVal(row.get("Body Region"), null);
+		if (retVal != null) return retVal;
+		
+		retVal = StringUtil.checkVal(row.get("SOUS - Body Region CMF"), null);
+		if (retVal != null) return retVal;
+		
+		retVal = StringUtil.checkVal(row.get("SOUS - Body Region Spine"), null);
+		if (retVal != null) return retVal;
+		
+		retVal = StringUtil.checkVal(row.get("SOUS - Body Region Trauma"), null);
+		if (retVal != null) return retVal;
+		
+		return "";
+	}
+	
+	
+	/**
+	 * parses keywords for US Vs EMEA into the Keywords field
+	 * @param row
+	 * @return
+	 */
+	private String parseKeywords(Map<String, String> row, int type) {
+		String retVal = StringUtil.checkVal(row.get("Keywords"));
+		if (retVal.length() > 0) return retVal;
+		
+		//use EMEA fallback
+		if (type == 2) {
+			retVal = StringUtil.checkVal(row.get("SOUS - Promotion Material Number"));
+			
+			//concat a second value for EMEA when present
+			String promo = StringUtil.checkVal(row.get("SOUS - Project number"), null);
+			if (promo != null) {
+				if (retVal.length() > 0) retVal += ", ";
+				retVal += promo;
+			}
+			
+			retVal = retVal.replaceAll("~", ", ");
+		}
+		
+		if (retVal.length() == 0) return null;
+		return retVal;
 	}
 	
 	/**
