@@ -7,6 +7,7 @@ import org.apache.log4j.Logger;
 import com.siliconmtn.annotations.SolrField;
 import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.security.SecurityController;
 import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 import com.universal.util.ProductSolrIndex;
 
@@ -48,7 +49,7 @@ public class ProductSolrDocumentVO extends SolrDocumentVO {
 		ProductVO vo = (ProductVO) o;
 
 		super.setLanguage("en");
-		//super.addRole("000");
+		super.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
 		super.setDocumentId(vo.getProductId());
 		super.setTitle(vo.getProductName());
 		super.setSummary(vo.getDescText());

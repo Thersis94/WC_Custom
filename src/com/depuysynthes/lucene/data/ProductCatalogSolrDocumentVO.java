@@ -10,6 +10,7 @@ import com.siliconmtn.commerce.catalog.ProductCategoryVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
+import com.smt.sitebuilder.security.SecurityController;
 import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 
 /****************************************************************************
@@ -26,7 +27,6 @@ public class ProductCatalogSolrDocumentVO extends SolrDocumentVO {
 	
 	protected static final Logger log = Logger.getLogger(ProductCatalogSolrDocumentVO.class);
 	
-	private String section = null;
 	private String thumbImage = null;
 	
 	/**
@@ -51,7 +51,7 @@ public class ProductCatalogSolrDocumentVO extends SolrDocumentVO {
 		Node n = (Node) o;
 
 		super.setLanguage("en");
-		//super.addRole("000");
+		super.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
 		super.setDocumentId(n.getNodeId());
 		super.setTitle(n.getNodeName());
 	}
@@ -72,15 +72,6 @@ public class ProductCatalogSolrDocumentVO extends SolrDocumentVO {
 
 	// ------- Getters and Setters Below This Line -------
 	
-	@SolrField(name=SearchDocumentHandler.SECTION)
-	public String getSection() {
-		return section;
-	}
-
-	public void setSection(String section) {
-		this.section = section;
-	}
-
 	@SolrField(name=SearchDocumentHandler.THUMBNAIL_IMAGE)
 	public String getThumbImage() {
 		return thumbImage;

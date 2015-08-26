@@ -17,7 +17,6 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
-import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.StringUtil;
 
 // WC Libs
@@ -160,7 +159,7 @@ public class ProductSolrIndex extends SMTAbstractIndex {
     		
     		if (n.getParentId() == null) continue;
     		else 
-    			n.setFullPath("/" + SMTServletRequest.DIRECTORY_KEY + "/detail/" + ((ProductVO)n.getUserObject()).getProductId());
+    			n.setFullPath("/" + config.getProperty("qsPath") + "/detail/" + ((ProductVO)n.getUserObject()).getProductId());
     		
     		log.debug("Full Path: " + n.getFullPath());
     		fp.put(n.getNodeId(), n.getFullPath());

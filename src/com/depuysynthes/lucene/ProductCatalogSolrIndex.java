@@ -29,7 +29,6 @@ import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SMTAbstractIndex;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
-import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 
 /****************************************************************************
  * <b>Title</b>: ProductCatalogSolrIndex.java <p/>
@@ -85,7 +84,7 @@ public class ProductCatalogSolrIndex extends SMTAbstractIndex {
     	log.info("Found " + nodes.size() + " nodes to index for " + catalogId + ".");
     	
     	SolrActionUtil solrUtil = new SolrActionUtil(server);
-		SolrDocumentVO solrDoc = null;
+		ProductCatalogSolrDocumentVO pcSolrDoc = null;
 
         String divisionNm = null;
         String countryNodeId = null;
@@ -145,18 +144,17 @@ public class ProductCatalogSolrIndex extends SMTAbstractIndex {
     		}
     		log.debug("adding product to index: url=" + vo.getCategoryName() + ", img=" + imagePath + " org=" + organizationId + " country=" + country);
     		try {
-	    		solrDoc = this.buildDocument(vo, pVo);
-	    		((ProductCatalogSolrDocumentVO) solrDoc).setData(n, vo);
+	    		// solrDoc = this.buildDocument(vo, pVo);  // TJ - 8/26/2015: Removed per JM, not needed
+	    		pcSolrDoc = new ProductCatalogSolrDocumentVO();
 
-	    		solrDoc.addOrganization(organizationId);
-	    		solrDoc.setModule(catalogId);
-	    		((ProductCatalogSolrDocumentVO) solrDoc).setSection(divisionNm);
+	    		pcSolrDoc.setData(n, vo);
+	    		pcSolrDoc.addOrganization(organizationId);
+	    		pcSolrDoc.setModule(catalogId);
+	    		pcSolrDoc.addSection(divisionNm);
+	    		if (imagePath != null) pcSolrDoc.setThumbImage(imagePath);
 	    		
-	    		if (imagePath != null)
-	    			((ProductCatalogSolrDocumentVO) solrDoc).setThumbImage(imagePath);
-	    		
-	    		log.debug("adding to Solr: " + solrDoc.toString());
-				solrUtil.addDocument(solrDoc);
+	    		log.debug("adding to Solr: " + pcSolrDoc.toString());
+				solrUtil.addDocument(pcSolrDoc);
     		} catch (Exception e) {
     			log.error("Unable to index product " + n.getNodeId(),e);
     		}
@@ -188,11 +186,15 @@ public class ProductCatalogSolrIndex extends SMTAbstractIndex {
      * the purpose of this method is to transpose the Category and Product VO's
      * into searchable strings for Lucene to match against.
      * Iterate the Category, Product, as well as the ProductAttributes
+     * 
+     * TJ - 8/26/2015: Removed per JM, was needed in Lucene,
+     * 					but no longer needed for Solr.
+     * 
      * @param catVo
      * @param prodVo
      * @return
      */
-    private SolrDocumentVO buildDocument(ProductCategoryVO catVo, ProductVO prodVo) {
+    /* private SolrDocumentVO buildDocument(ProductCategoryVO catVo, ProductVO prodVo) {
     	SolrDocumentVO solrDoc = null;
 		try {
 			solrDoc = SolrActionUtil.newInstance(SOLR_DOC_CLASS);
@@ -226,7 +228,7 @@ public class ProductCatalogSolrIndex extends SMTAbstractIndex {
     	//log.debug(txt);
     	solrDoc.setContents(txt.toString());
     	return solrDoc;
-    }
+    } */
 
 	@Override
 	public void purgeIndexItems(HttpSolrServer server) throws IOException {
