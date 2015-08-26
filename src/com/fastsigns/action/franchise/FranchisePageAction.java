@@ -5,6 +5,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -127,7 +128,7 @@ public class FranchisePageAction extends SBActionAdapter {
 	}
 	
 	private void createRedirect(SMTServletRequest req) {
-		StringBuilder sql = new StringBuilder();
+		StringBuilder sql = new StringBuilder(240);
 		
 		String orgId = ((SiteVO)req.getAttribute("siteData")).getOrganizationId();
 		log.debug(req.getSession().getAttribute("webeditIsMobile"));
@@ -161,6 +162,7 @@ public class FranchisePageAction extends SBActionAdapter {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	public void build(SMTServletRequest req) throws ActionException {
+		log.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~FPA build start");
 		req.setValidateInput(Boolean.FALSE); //this is a secure action, don't escape HTML from our WYSIWYG!
 		int type = Convert.formatInteger(req.getParameter("bType"));
 		int lvl = Convert.formatInteger(req.getParameter("lvl"));
@@ -205,7 +207,6 @@ public class FranchisePageAction extends SBActionAdapter {
 					break;
 					
 				case EDIT_PAGE_COPY:
-
 					//Check if the user wants to add a page with no left or right rails
 					Boolean showMenu = Convert.formatBoolean(req.getParameter("showMenu"), true);
 					
@@ -266,6 +267,7 @@ public class FranchisePageAction extends SBActionAdapter {
 		redir.append("&msg=").append(msg);
 		req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
 		req.setAttribute(Constants.REDIRECT_URL, redir.toString());
+		log.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~FPA build end");
 	}
 	
 	/**
@@ -511,7 +513,8 @@ public class FranchisePageAction extends SBActionAdapter {
 		/*
 		 * Build sb_action entry for the File Gallery 
 		 */
-		StringBuilder sql = new StringBuilder("insert into sb_action (action_nm, action_desc, organization_id, ");
+		StringBuilder sql = new StringBuilder(125);
+		sql.append("insert into sb_action (action_nm, action_desc, organization_id, ");
 		sql.append("module_type_id, action_id, create_dt) values (?,?,?,?,?,?)");
 		PreparedStatement ps = null;
 
@@ -533,7 +536,7 @@ public class FranchisePageAction extends SBActionAdapter {
 		}	
 		
         //Build Gallery
-		sql = new StringBuilder();
+		sql = new StringBuilder(100);
 		sql.append("insert into file_gallery (organization_id, ");
         sql.append("create_dt, action_id) ");
         sql.append("values (?,?,?)");
@@ -553,7 +556,7 @@ public class FranchisePageAction extends SBActionAdapter {
 		}
 		
 		//Build Album
-		sql = new StringBuilder();
+		sql = new StringBuilder(100);
 		sql.append("insert into file_gallery_album (ACTION_ID, ALBUM_NM, ");
 		sql.append("ORDER_NO, CREATE_DT, GALLERY_ALBUM_ID) ");
 		sql.append("values (?,?,?,?,?)");
@@ -586,7 +589,7 @@ public class FranchisePageAction extends SBActionAdapter {
 	
 	public Map<String, CenterModuleOptionVO> getCPModuleOptions(String [] optIds, SMTServletRequest req) {
 		Map<String, CenterModuleOptionVO> options = new HashMap<String, CenterModuleOptionVO>();
-		StringBuilder sql = new StringBuilder();
+		StringBuilder sql = new StringBuilder(50);
 		sql.append("select * from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("FTS_CP_MODULE_OPTION where CP_MODULE_OPTION_ID in ('");
 		for(String opt : optIds) {
@@ -617,7 +620,7 @@ public class FranchisePageAction extends SBActionAdapter {
 		PreparedStatement ps = null;
 		
 		//Delete existing
-		StringBuilder sql = new StringBuilder();
+		StringBuilder sql = new StringBuilder(50);
 		sql.append("delete from FILE_GALLERY_ITEM where GALLERY_ALBUM_ID = ?");
 		try{
 			ps = dbConn.prepareStatement(sql.toString());
@@ -628,7 +631,7 @@ public class FranchisePageAction extends SBActionAdapter {
 			log.error("Could not delete old photo items", sqle);
 		}
 		//iterate and add new
-		sql = new StringBuilder();
+		sql = new StringBuilder(100);
 		sql.append("insert into FILE_GALLERY_ITEM (GALLERY_ITEM_ID, ");
 		sql.append("GALLERY_ALBUM_ID, MAIN_IMG_URL, THUMB_IMG_URL, LINK_URL, ");
 		sql.append("ENTRY_NM, DESC_TXT, ORDER_NO, CREATE_DT) values (?,?,?,?,?,?,?,?,?)");
@@ -720,10 +723,25 @@ public class FranchisePageAction extends SBActionAdapter {
 	}
 	
 	private void savePage(SMTServletRequest req) throws ActionException {
+		log.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`save page called");
 		try {
 		if (EDIT_PAGE_COPY == Convert.formatInteger(req.getParameter("bType"))){
 			//change the column number for the content for page edits
-			changeDisplayColumn(req, Convert.formatBoolean(req.getParameter("showMenu"), true));
+			log.info("inside the if, and showmenu is " + Convert.formatBoolean(req.getParameter("selectCol"), true));
+		
+			Enumeration<String> e = req.getParameterNames();
+			while(e.hasMoreElements()){
+				String param = (String) e.nextElement();
+				System.out.println(param);
+				System.out.println(req.getParameter(param));
+				System.out.println("____________");
+				
+				}
+			
+			
+			
+			changeDisplayColumn(req, Convert.formatBoolean(req.getParameter("selectCol"), true));
+			log.info("next");
 		}
 		SitePageAction ai = new SitePageAction(this.actionInit);
 		ai.setDBConnection(dbConn);
@@ -771,7 +789,7 @@ public class FranchisePageAction extends SBActionAdapter {
 		}
 		
 		//change the column for the page module so content shows up
-		if (showMenu){
+		if (showMenu || showMenu){
 			repl.put("display_column_no", Integer.valueOf(2));
 		} else {
 			repl.put("display_column_no", Integer.valueOf(1));
@@ -887,13 +905,15 @@ public class FranchisePageAction extends SBActionAdapter {
 	
 	private ContentVO loadContentFromTemplate(PageVO page, String templateId, String sharedId) {
 		ContentVO vo = null;
-		String sql = "select * from content a inner join sb_action b on a.action_id=b.action_id " +
-				"and b.action_nm=? and b.organization_id='" + sharedId + "'";
+		StringBuilder sql = new StringBuilder();
+		sql.append("select * from content a inner join sb_action b on a.action_id=b.action_id ");
+		sql.append("and b.action_nm=? and b.organization_id=?");
 		log.debug("Load Content From Template Sql = " + sql);
 		PreparedStatement ps = null;
 		try {
-			ps = dbConn.prepareStatement(sql);
+			ps = dbConn.prepareStatement(sql.toString());
 			ps.setString(1, "subpageTemplate-" + templateId);
+			ps.setString(2, sharedId);
 			ResultSet rs = ps.executeQuery();
 			if (rs.next()) {
 				log.debug("template loaded");
