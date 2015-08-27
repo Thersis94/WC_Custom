@@ -80,14 +80,18 @@ public class KitRequestRetriever {
 			this.addCountry(conn,profiles,"c0a8021eed0b59d1b502e106b0e9956c","c0a8021eed0e1d86d104529c9e094d8c","brcCard");
 		}
 		
+		/*
+		 * Form now only provides kit in downloadable form only, no need to 
+		 * send out kit to these profiles. --D.F. 08.27.15
+		 */
 		//InfoKit
-		profiles = null;
-		profiles = this.queryProfiles(conn,"c0a80228d7b30e0f59cf59d3fffdfc22","","infoKit");
-		log.debug("InfoKit profiles list size: " + profiles.size());
-		if (profiles.size() > 0) {
-			this.addFormat(conn,profiles,"c0a80228d7b30e0f59cf59d3fffdfc22","c0a80228d7bc7345474c59ff8c97b5e1","infoKit");
-			this.addCountry(conn,profiles,"c0a80228d7b30e0f59cf59d3fffdfc22","c0a802283493393656c8fd4a909568a9","infoKit");
-		}
+//		profiles = null;
+//		profiles = this.queryProfiles(conn,"c0a80228d7b30e0f59cf59d3fffdfc22","","infoKit");
+//		log.debug("InfoKit profiles list size: " + profiles.size());
+//		if (profiles.size() > 0) {
+//			this.addFormat(conn,profiles,"c0a80228d7b30e0f59cf59d3fffdfc22","c0a80228d7bc7345474c59ff8c97b5e1","infoKit");
+//			this.addCountry(conn,profiles,"c0a80228d7b30e0f59cf59d3fffdfc22","c0a802283493393656c8fd4a909568a9","infoKit");
+//		}
 		
 		//Contact Us
 		profiles = null;
