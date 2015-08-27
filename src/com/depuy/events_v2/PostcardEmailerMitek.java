@@ -78,6 +78,9 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient("ksmith49@its.jnj.com");
+			mail.addCC("mroderic@its.jnj.com");
+			if (sem.getTgmEmail() != null && sem.getTgmEmail().length() > 0)
+				mail.addCC(sem.getTgmEmail().split(", "));
 			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());

@@ -11,7 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.ram.action.data.RAMSearchVO;
+import com.ram.action.data.RAMProductSearchVO;
 import com.ram.action.user.RamUserAction;
 import com.ram.datafeed.data.RAMProductVO;
 import com.siliconmtn.action.ActionException;
@@ -121,7 +121,7 @@ public class ProductAction extends SBActionAdapter {
 	public void delete(SMTServletRequest req) throws ActionException {
 		
 		//Build Query, we deactivate, not delete.
-		StringBuilder sb = new StringBuilder();
+		StringBuilder sb = new StringBuilder(140);
 		sb.append("update ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sb.append("RAM_PRODUCT set ACTIVE_FLG = 0 where PRODUCT_ID = ?");
 
@@ -167,7 +167,7 @@ public class ProductAction extends SBActionAdapter {
 		List<RAMProductVO> products = new ArrayList<RAMProductVO>();
 		boolean isProductLookup = req.hasParameter("productId");
 
-		StringBuilder sb = new StringBuilder();
+		StringBuilder sb = new StringBuilder(150);
 		sb.append("select * from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sb.append("RAM_PRODUCT where ");
 		if(isProductLookup)
@@ -239,8 +239,6 @@ public class ProductAction extends SBActionAdapter {
 		//Build PreparedStatement and set Parameters
 		PreparedStatement ps = null;
 		int i = 1;
-		log.debug(req.getParameter("kitFlag"));
-		log.debug(req.getParameter("lotCodeRequired"));
 		try {
 			ps = dbConn.prepareStatement(query);
 			ps.setString(i++, req.getParameter("productNm"));
@@ -268,7 +266,7 @@ public class ProductAction extends SBActionAdapter {
 		} finally {
 			DBUtil.close(ps);
 		}
-		
+
 		//Redirect User
 		super.putModuleData(result);
 	}
@@ -285,7 +283,7 @@ public class ProductAction extends SBActionAdapter {
 		List<RAMProductVO> products = new ArrayList<RAMProductVO>();
 		
 		//Pull relevant data off the request
-		RAMSearchVO svo = new RAMSearchVO(req);
+		RAMProductSearchVO svo = new RAMProductSearchVO(req);
 		
 		log.debug("Retrieving Products");
 		PreparedStatement ps = null;
@@ -328,7 +326,7 @@ public class ProductAction extends SBActionAdapter {
 			 * starts at 1.
 			 */
 			svo.setCount(true);
-			ctr = 1 + getRecordCount(svo);
+			ctr = getRecordCount(svo);
 		} catch(SQLException sqle) {
 			log.error("Error retrieving product list", sqle);
 			throw new ActionException(sqle);
@@ -347,7 +345,7 @@ public class ProductAction extends SBActionAdapter {
 	 * @return
 	 * @throws SQLException
 	 */
-	protected int getRecordCount(RAMSearchVO svo) throws SQLException {
+	protected int getRecordCount(RAMProductSearchVO svo) throws SQLException {
 		log.debug("Retrieving Total Counts");
 		PreparedStatement ps = dbConn.prepareStatement(getProdList(svo));
 		int index = 1;
@@ -384,8 +382,8 @@ public class ProductAction extends SBActionAdapter {
 	 * @param customerId
 	 * @return
 	 */
-	protected StringBuilder getWhereClause(RAMSearchVO svo) {
-		StringBuilder sb = new StringBuilder();
+	protected StringBuilder getWhereClause(RAMProductSearchVO svo) {
+		StringBuilder sb = new StringBuilder(700);
 		String schema = attributes.get(Constants.CUSTOM_DB_SCHEMA) + "";
 
 		sb.append("where 1=1 ");
@@ -435,9 +433,9 @@ public class ProductAction extends SBActionAdapter {
 	 * @param limit
 	 * @return
 	 */
-	public String getProdList(RAMSearchVO svo) {
+	public String getProdList(RAMProductSearchVO svo) {
 		String schema = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sb = new StringBuilder();
+		StringBuilder sb = new StringBuilder(1300);
 
 		if(svo.isCount()) {
 			sb.append("select count(a.product_id) from ").append(schema);
@@ -464,7 +462,7 @@ public class ProductAction extends SBActionAdapter {
 	 * @return
 	 */
 	public String getProdInsert() {
-		StringBuilder sb = new StringBuilder();
+		StringBuilder sb = new StringBuilder(300);
 		sb.append("insert into ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sb.append("RAM_PRODUCT (PRODUCT_NM, SHORT_DESC, ACTIVE_FLG, LOT_CODE_FLG, ");
 		sb.append("KIT_FLG, CREATE_DT, EXPIREE_REQ_FLG, CUST_PRODUCT_ID, ");
@@ -478,7 +476,7 @@ public class ProductAction extends SBActionAdapter {
 	 * @return
 	 */
 	public String getProdUpdate() {
-		StringBuilder sb = new StringBuilder();
+		StringBuilder sb = new StringBuilder(300);
 		sb.append("update ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sb.append("RAM_PRODUCT set PRODUCT_NM = ?, SHORT_DESC = ?, ACTIVE_FLG = ?, ");
 		sb.append("LOT_CODE_FLG = ?, KIT_FLG = ?, UPDATE_DT = ?, ");
@@ -492,7 +490,7 @@ public class ProductAction extends SBActionAdapter {
 	 * @param prefix
 	 */
 	private void updateNames(Map<String, String> ids, String suffix) {
-		StringBuilder sb = new StringBuilder(90);
+		StringBuilder sb = new StringBuilder(150);
 		sb.append("update ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sb.append("RAM_PRODUCT set PRODUCT_NM = PRODUCT_NM + ' - ' + ? where PRODUCT_ID = ?");
 

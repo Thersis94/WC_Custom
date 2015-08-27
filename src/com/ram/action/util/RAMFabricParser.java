@@ -55,7 +55,12 @@ public class RAMFabricParser<T extends LayerCoordinateVO> extends FabricParser<T
 
 		//Set the Active Flag and Product Layer Id on the coordinateVO.
 		coord.setActiveFlag(1);
-		coord.setProductLayerId(Convert.formatInteger(json.getString("id").split("-")[1]));
+		String id = json.getString("id");
+
+		//Validate that we have a proper id on the object before parsing.
+		if(!id.equals("null") && id.contains("_")) {
+			coord.setProductLayerId(Convert.formatInteger(id.split("-")[1]));
+		}
 	}
 
 	

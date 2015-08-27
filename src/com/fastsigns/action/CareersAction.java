@@ -104,8 +104,8 @@ public class CareersAction extends SBActionAdapter {
 					centerCareers.add(new CareersVO(rs));
 				}
 			}
-			postings.put("0", corpCareers);
-			postings.put("1", centerCareers);
+			postings.put("corp", corpCareers);
+			postings.put("center", centerCareers);
 			log.debug("retrieved " + postings.size() + " job postings");
 		} catch(SQLException sqle){
 			log.error("An error was thrown while retrieving ", sqle);

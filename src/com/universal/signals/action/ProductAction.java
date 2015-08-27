@@ -275,16 +275,19 @@ public class ProductAction extends SBActionAdapter {
 				// put all product attributes in a List for later processing.
 				if (rs.getString("product_attribute_id") != null) {
 					aLevel = rs.getString("attrib2_txt");
+					//log.debug("product_attribute_id | aLevel: " + rs.getString("product_attribute_id") + "|" + aLevel);
 					switch(aLevel) {
 						case "0":
 						case "1":
 							// add all level '0' or level '1' attributes
 							primaryAttributes.add(new ProductAttributeVO(rs));
+							//log.debug("added primary attribute: " + rs.getString("VALUE_TXT"));
 							break;
 						case "2":
 							// add ONLY 1 of the level '2' attributes so we have a placeholder
 							if (secondaryAttributes.size() == 0) {
 								secondaryAttributes.add(new ProductAttributeVO(rs));
+								//log.debug("added secondary attribute: " + rs.getString("VALUE_TXT"));
 							}
 							break;
 						case "3":
@@ -305,7 +308,6 @@ public class ProductAction extends SBActionAdapter {
 		
 		/* Sort attributes and add them to product VO according to business rules.*/
 		processProductAttributes(product, primaryAttributes, secondaryAttributes);
-		
 		primaryAttributes = null;
 		secondaryAttributes = null;
 		this.setPageData(req, product.getTitle(), product.getMetaKywds(), product.getMetaDesc());
@@ -334,9 +336,11 @@ public class ProductAction extends SBActionAdapter {
 		 * by value_txt value (custom options). */
 		Collections.sort(pAttributes, new ProductAttributeComparator());
 		List<ProductAttributeVO> custom = new ArrayList<>();
-		List<ProductAttributeVO> standard = new ArrayList<>();
+		List<ProductAttributeVO> standard = null;
+		List<String> attrKeysList = new ArrayList<>();
 		String prevStd = null;
 		String currStd = null;
+		
 		for (ProductAttributeVO p : pAttributes) {
 			if (p.getAttributeName().equalsIgnoreCase("custom")) {
 				custom.add(p);
@@ -346,10 +350,12 @@ public class ProductAction extends SBActionAdapter {
 					standard.add(p);
 				} else {
 					// add List to product attribute map, attribute name is the key
-					product.addProdAttribute(prevStd, standard);
-					// re-initialize the standard List
+					if (standard != null) 	{
+						product.addProdAttribute(prevStd, standard);
+						attrKeysList.add(prevStd);
+					}
+					// re-initialize the standard List and add current attribute
 					standard = new ArrayList<>();
-					// add the current attribute to the new List
 					standard.add(p);
 				}
 				prevStd = currStd;
@@ -358,9 +364,9 @@ public class ProductAction extends SBActionAdapter {
 		
 		// clean up any dangling standard attributes and add standard option to 
 		// product attribute map, attribute name is the key.
-		if (standard.size() > 0) {
+		if (standard != null && standard.size() > 0) {
 			product.addProdAttribute(prevStd, standard);
-			log.debug("added standard attribute key: " + prevStd);
+			attrKeysList.add(prevStd);
 		}
 		
 		/*
@@ -368,12 +374,11 @@ public class ProductAction extends SBActionAdapter {
 		 * attribute.  These represent the 2nd and 3rd-level attributes which we
 		 * manipulate/populate in the JSTL.
 		 */
-		processSecondaryAttributes(product, sAttributes);
+		processSecondaryAttributes(product, sAttributes, attrKeysList);
 		
 		// ALWAYS LAST! : now add the custom list to the product attribute map using specified key
 		if (custom.size() > 0) {
 			product.addProdAttribute("custom", custom);
-			log.debug("added custom attribute key: custom");
 		}
 	}
 	
@@ -384,14 +389,21 @@ public class ProductAction extends SBActionAdapter {
 	 * @param product
 	 * @param sAttributes
 	 */
-	private void processSecondaryAttributes(ProductVO product, List<ProductAttributeVO> sAttributes) {
+	private void processSecondaryAttributes(ProductVO product, 
+			List<ProductAttributeVO> sAttributes, List<String> attrKeysList) {
 		log.debug("processSecondaryAttributes...");
 		if (sAttributes == null || sAttributes.isEmpty()) return;
 		
 		// add a mapping for each of the secondary attribute types
+		String keyName = null;
+		int count = 1;
 		for (ProductAttributeVO pAttr : sAttributes) {
-			product.addProdAttribute(pAttr.getAttributeName(), new ArrayList<>());
-			log.debug("adding secondary attrib key: " + pAttr.getAttributeName());
+			keyName = pAttr.getAttributeName();
+			if (attrKeysList.contains(keyName)) {
+				keyName = keyName+"-DUPE"+count;
+				attrKeysList.add(keyName);
+			}
+			product.addProdAttribute(keyName, new ArrayList<>());
 		}
 
 	}

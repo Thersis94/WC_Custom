@@ -20,6 +20,7 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpSession;
 
 
+
 //wc-depuy libs
 import com.depuy.events.vo.CoopAdVO;
 import com.depuy.events_v2.vo.ConsigneeVO;
@@ -61,10 +62,25 @@ import com.smt.sitebuilder.security.SecurityController;
  ****************************************************************************/
 public class PostcardSelectV2 extends SBActionAdapter {
 	
-	private static final String SURVEY_ACTION_ID = "c0a8021edb7fd91f57d3396eea06b0e9"; // the actionId of the Survey portlet tied to Events.
-	private static final String MITEK_SURVEY_ACTION_ID = "c0a80237c2034fbfe0cea6bddfbf537d"; //Mitek's surveyId
-	private static final String SURVEY_RSVP_QUEST_ID = "c0a8021edb832b385a61675da76470a2"; //the questionId holding RSVP#
-	private static final String MITEK_SURVEY_RSVP_QUEST_ID = "c0a80237c2034fcfc5194464583dff35"; //the questionId holding RSVP# for Mitek
+	//GUIDS tied to the short term survey (a Survey portlet)
+	private enum SurveyConst {
+		surveyAction("c0a8021edb7fd91f57d3396eea06b0e9","c0a80237c2034fbfe0cea6bddfbf537d"),
+		rsvpCodeQuestion("c0a8021edb832b385a61675da76470a2", "c0a80237c2034fcfc5194464583dff35"),
+		venueCostQuestion("c0a802378e86f39749342d9a1b36ba68", "c0a80237c2034fcfc5194464583dff35"),
+		refreshmentCostQuestion("c0a802378e87b9f229fbb0ae1e1c3e9a", "c0a80237c2034fddc5194464da186e94"),
+		attendeeCountQuestion("c0a8021edb84f3d3e235a9961df88afa", "c0a80237c2034fd0c51944641a8a690d");
+		
+		private String orthoQuestionGrpId, mitekQuestionGrpId;
+		SurveyConst(String ortho, String mitek) {
+			this.orthoQuestionGrpId = ortho;
+			this.mitekQuestionGrpId = mitek;
+		}
+		public String getKey(boolean isMitek) {
+			return (isMitek) ? mitekQuestionGrpId : orthoQuestionGrpId;
+		}
+	}
+	
+	
 	public static final String ACTION_ITEMS_CNT = "outstanding";
 	
 	public enum ReqType {
@@ -151,9 +167,13 @@ public class PostcardSelectV2 extends SBActionAdapter {
 				//use a report object so we can apply filters in advance of loading more data
 				CustomReportVO rpt = new CustomReportVO(req);
 				for (DePuyEventSeminarVO sem: list) {
-					if (rpt.semPassesFilters(sem))
-						fullList.add(loadOneSeminar(sem.getEventPostcardId(), actionInit.getActionId(), ReqType.report, null, null));
+					if (rpt.semPassesFilters(sem)) {
+						DePuyEventSeminarVO sem2 = loadOneSeminar(sem.getEventPostcardId(), actionInit.getActionId(), ReqType.report, null, null);
+						sem2.setRsvpCount(sem.getRsvpCount());
+						fullList.add(sem2);
+					}
 				}
+				loadSurveyReponses(fullList, req.hasParameter("isMitek"));
 				data = fullList;
 			
 			} else {
@@ -641,8 +661,8 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		log.debug(sql);
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, (isMitek ? MITEK_SURVEY_RSVP_QUEST_ID : SURVEY_RSVP_QUEST_ID));
-			ps.setString(2, (isMitek ? MITEK_SURVEY_ACTION_ID : SURVEY_ACTION_ID));
+			ps.setString(1, SurveyConst.rsvpCodeQuestion.getKey(isMitek));
+			ps.setString(2, SurveyConst.surveyAction.getKey(isMitek));
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				String val = StringUtil.checkVal(rs.getString(1)).toLowerCase();
@@ -656,5 +676,45 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		}
 		log.debug("survey complete? " + resp);
 		super.putModuleData(resp);
+	}
+	
+	
+	/**
+	 * load specific responses to the short term surveys - needed for Custom Reports only.
+	 * @param sem
+	 */
+	protected void loadSurveyReponses(List<DePuyEventSeminarVO> seminars, boolean isMitek) {
+		StringBuilder sql = new StringBuilder(300);
+		sql.append("select a.value_txt as rsvp_cd, b.value_txt as venue_cost, c.value_txt as refresh_cost, d.value_txt as attendee_cnt ");
+		sql.append("from SURVEY_RESPONSE a ");
+		sql.append("left outer join SURVEY_RESPONSE b on b.SURVEY_QUESTION_ID=? and a.TRANSACTION_ID=b.TRANSACTION_ID ");
+		sql.append("left outer join SURVEY_RESPONSE c on c.SURVEY_QUESTION_ID=? and a.TRANSACTION_ID=c.TRANSACTION_ID ");
+		sql.append("left outer join SURVEY_RESPONSE d on d.SURVEY_QUESTION_ID=? and a.TRANSACTION_ID=d.TRANSACTION_ID ");
+		sql.append("where a.VALUE_TXT in ('~!'");
+		for (@SuppressWarnings("unused") Object o : seminars) sql.append(",?");
+		sql.append(") and a.SURVEY_QUESTION_ID=? and a.ACTION_GROUP_ID=? ");
+		log.debug(sql);
+		
+		int x = 1;
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(x++,  SurveyConst.venueCostQuestion.getKey(isMitek));
+			ps.setString(x++,  SurveyConst.refreshmentCostQuestion.getKey(isMitek));
+			ps.setString(x++,  SurveyConst.attendeeCountQuestion.getKey(isMitek));
+			for (DePuyEventSeminarVO vo: seminars) ps.setString(x++, vo.getRSVPCodes());
+			ps.setString(x++,  SurveyConst.rsvpCodeQuestion.getKey(isMitek));
+			ps.setString(x++,  SurveyConst.surveyAction.getKey(isMitek));
+			ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				String rsvpCd = rs.getString(1);
+				for (DePuyEventSeminarVO vo : seminars) {
+					if (! vo.getRSVPCodes().equals(rsvpCd)) continue;
+					vo.addSurveyResponse("venue_cost", rs.getString(2));
+					vo.addSurveyResponse("refresh_cost", rs.getString(3));
+					vo.addSurveyResponse("attendee_cnt", rs.getString(4));
+				}
+			}
+		} catch (SQLException sqle) {
+			log.error("could not load custom report survey responses", sqle);
+		}
 	}
 }

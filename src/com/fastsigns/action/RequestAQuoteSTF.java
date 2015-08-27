@@ -1,15 +1,19 @@
 package com.fastsigns.action;
 
+//JDK 7
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.servlet.http.HttpSession;
 
+//WC_customs
+import com.fastsigns.action.franchise.FranchiseLocatorAction;
 import com.fastsigns.action.saf.SAFConfig;
+
+//SMT Base Libs
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -26,6 +30,8 @@ import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.siliconmtn.util.databean.FilePartDataBean;
+
+//WebCrescendo
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.SBModuleVO;
 import com.smt.sitebuilder.action.contact.ContactDataAction;
@@ -33,7 +39,6 @@ import com.smt.sitebuilder.action.contact.ContactDataContainer;
 import com.smt.sitebuilder.action.contact.SubmittalAction;
 import com.smt.sitebuilder.action.contact.SubmittalDataAction;
 import com.smt.sitebuilder.action.dealer.DealerContactAction;
-import com.smt.sitebuilder.action.dealer.DealerLocatorAction;
 import com.smt.sitebuilder.action.user.ProfileRoleManager;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
@@ -311,7 +316,7 @@ public class RequestAQuoteSTF extends SBActionAdapter {
 			mod.setPageModuleId(String.valueOf(mod.getAttribute(ModuleVO.ATTRIBUTE_1)));
 			actionInit.setActionId(mod.getPageModuleId());
 			req.setParameter("pmid", mod.getPageModuleId());
-			sai = new DealerLocatorAction(actionInit);
+			sai = new FranchiseLocatorAction(actionInit);
 			sai.setAttributes(attributes);
 			sai.setDBConnection(dbConn);
 			sai.retrieve(req);
@@ -507,7 +512,7 @@ public class RequestAQuoteSTF extends SBActionAdapter {
 			return;
 		
 		//write the container to the database
-		StringBuffer sql = new StringBuffer();
+		StringBuffer sql = new StringBuffer(150);
 		PreparedStatement ps  = null;
 		sql.append("insert into contact_data (contact_data_id, contact_submittal_id, ");
 		sql.append("contact_field_id, value_txt, data_enc_flg, create_dt) ");
@@ -585,7 +590,7 @@ public class RequestAQuoteSTF extends SBActionAdapter {
 	throws InvalidDataException {
 		Map<String, String> vals = new HashMap<String, String>();
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sb = new StringBuilder();
+		StringBuilder sb = new StringBuilder(425);
 		sb.append("select a.email_address_txt, b.email_address_txt, b.attrib2_txt, ");
 		sb.append("b.location_nm, d.alias_path_nm, b.primary_phone_no, b.dealer_location_id ");
 		sb.append("from contact_submittal a inner join dealer_location b "); 

@@ -181,6 +181,10 @@ public class TVSpotConfigGB extends TVSpotConfig {
 		return "do_not_reply@fastsigns.com";
 	}
 	
+	public String getCorpConsultationEmail(){
+		return "consultation@fastsigns.com";
+	}
+	
 	public EmailMessageVO buildSurveyEmail(String contactSubmittalId) {
 		EmailMessageVO vo = new EmailMessageVO();
 		vo.setSubject("Please complete a one question survey about your FASTSIGNS consultation");
@@ -255,10 +259,10 @@ public class TVSpotConfigGB extends TVSpotConfig {
 		msg.addRecipient("Drue.Townsend@fastsigns.com"); 
 		msg.addRecipient("E.Team@fastsigns.com");
 		msg.addRecipient("david.callister@fastsigns.com");
-		msg.addRecipient("Garth.Allison@fastsigns.com");
+		msg.addRecipient("John.davies@fastsigns.com");
 		msg.setSubject("\"Operation Consultation\" report is attached for your review");
 		msg.setHtmlBody(buildReportBody(false));
-		msg.setFrom(getDefaultSenderEmail());
+		msg.setFrom(getCorpConsultationEmail());
 		return msg;
 	}
 	
