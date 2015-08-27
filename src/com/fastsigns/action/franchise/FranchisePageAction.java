@@ -5,7 +5,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -162,7 +161,6 @@ public class FranchisePageAction extends SBActionAdapter {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	public void build(SMTServletRequest req) throws ActionException {
-		log.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~FPA build start");
 		req.setValidateInput(Boolean.FALSE); //this is a secure action, don't escape HTML from our WYSIWYG!
 		int type = Convert.formatInteger(req.getParameter("bType"));
 		int lvl = Convert.formatInteger(req.getParameter("lvl"));
@@ -267,7 +265,6 @@ public class FranchisePageAction extends SBActionAdapter {
 		redir.append("&msg=").append(msg);
 		req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
 		req.setAttribute(Constants.REDIRECT_URL, redir.toString());
-		log.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~FPA build end");
 	}
 	
 	/**
@@ -723,25 +720,13 @@ public class FranchisePageAction extends SBActionAdapter {
 	}
 	
 	private void savePage(SMTServletRequest req) throws ActionException {
-		log.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`save page called");
+		log.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~save page called");
 		try {
 		if (EDIT_PAGE_COPY == Convert.formatInteger(req.getParameter("bType"))){
-			//change the column number for the content for page edits
-			log.info("inside the if, and showmenu is " + Convert.formatBoolean(req.getParameter("selectCol"), true));
-		
-			Enumeration<String> e = req.getParameterNames();
-			while(e.hasMoreElements()){
-				String param = (String) e.nextElement();
-				System.out.println(param);
-				System.out.println(req.getParameter(param));
-				System.out.println("____________");
-				
-				}
-			
-			
-			
-			changeDisplayColumn(req, Convert.formatBoolean(req.getParameter("selectCol"), true));
-			log.info("next");
+			if (req.getParameter("showMenu") != null){		
+				//change the column number for the content for page edits
+			changeDisplayColumn(req, Convert.formatBoolean(req.getParameter("showMenu"), true));
+			}
 		}
 		SitePageAction ai = new SitePageAction(this.actionInit);
 		ai.setDBConnection(dbConn);
@@ -789,7 +774,8 @@ public class FranchisePageAction extends SBActionAdapter {
 		}
 		
 		//change the column for the page module so content shows up
-		if (showMenu || showMenu){
+		if (showMenu
+				){
 			repl.put("display_column_no", Integer.valueOf(2));
 		} else {
 			repl.put("display_column_no", Integer.valueOf(1));
