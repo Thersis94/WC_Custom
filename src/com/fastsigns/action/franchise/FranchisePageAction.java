@@ -720,11 +720,10 @@ public class FranchisePageAction extends SBActionAdapter {
 	}
 	
 	private void savePage(SMTServletRequest req) throws ActionException {
-		log.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~save page called");
 		try {
 		if (EDIT_PAGE_COPY == Convert.formatInteger(req.getParameter("bType"))){
 			if (req.getParameter("showMenu") != null){		
-				//change the column number for the content for page edits
+			//change the column number for the content for page edits
 			changeDisplayColumn(req, Convert.formatBoolean(req.getParameter("showMenu"), true));
 			}
 		}
@@ -774,8 +773,7 @@ public class FranchisePageAction extends SBActionAdapter {
 		}
 		
 		//change the column for the page module so content shows up
-		if (showMenu
-				){
+		if (showMenu){
 			repl.put("display_column_no", Integer.valueOf(2));
 		} else {
 			repl.put("display_column_no", Integer.valueOf(1));
