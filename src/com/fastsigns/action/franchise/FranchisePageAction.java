@@ -1,5 +1,6 @@
 package com.fastsigns.action.franchise;
 
+//Java 7
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -9,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+//WC customs
 import com.fastsigns.action.approval.WebeditApprover;
 import com.fastsigns.action.approval.WebeditApprover.WebeditType;
 import com.fastsigns.action.franchise.centerpage.FranchiseLocationInfoAction;
@@ -17,6 +19,8 @@ import com.fastsigns.action.franchise.vo.FranchiseVO;
 import com.fastsigns.action.franchise.vo.pages.PageContainerVO;
 import com.fastsigns.action.wizard.SiteWizardAction;
 import com.fastsigns.action.wizard.SiteWizardFactoryAction;
+
+//SMT baselibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
@@ -28,6 +32,8 @@ import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.siliconmtn.util.databean.FilePartDataBean;
+
+//WebCrescendo
 import com.smt.sitebuilder.action.FileLoader;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.SBModuleVO;
@@ -889,7 +895,7 @@ public class FranchisePageAction extends SBActionAdapter {
 	
 	private ContentVO loadContentFromTemplate(PageVO page, String templateId, String sharedId) {
 		ContentVO vo = null;
-		StringBuilder sql = new StringBuilder();
+		StringBuilder sql = new StringBuilder(120);
 		sql.append("select * from content a inner join sb_action b on a.action_id=b.action_id ");
 		sql.append("and b.action_nm=? and b.organization_id=?");
 		log.debug("Load Content From Template Sql = " + sql);
