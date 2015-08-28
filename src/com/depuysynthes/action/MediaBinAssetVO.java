@@ -4,6 +4,7 @@ package com.depuysynthes.action;
 import java.sql.ResultSet;
 import java.util.Date;
 
+
 // SMTBaseLibs 2.0
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.util.Convert;
@@ -41,6 +42,7 @@ public class MediaBinAssetVO extends SBModuleVO {
 	private Integer fileSizeNo = Integer.valueOf(0);
 	private Integer widthNo = Integer.valueOf(0);
 	private Integer heightNo = Integer.valueOf(0);
+	private String dimensionsTxt = null;
 	private Double duration = Double.valueOf(0);
 	private String prodFamilyNm = null;
 	private String prodNm = null;
@@ -56,6 +58,9 @@ public class MediaBinAssetVO extends SBModuleVO {
 	private String anatomy = null;
 	private String metaKeywords = null;
 	private String videoChapters = null;
+	
+	public MediaBinAssetVO() {
+	}
 	
 	public MediaBinAssetVO(ResultSet rs) {
 		DBUtil db = new DBUtil();
@@ -82,7 +87,7 @@ public class MediaBinAssetVO extends SBModuleVO {
 		languageCode = db.getStringVal("language_cd", rs);
 		setDescription(db.getStringVal("desc_txt", rs));
 		setAnatomy(db.getStringVal("anatomy_txt", rs));
-		setMetaKeywords(db.getStringVal("meta_keywords_txt", rs));
+		setMetaKeywords(db.getStringVal("meta_kywds_txt", rs));
 		setVideoChapters(db.getStringVal("META_CONTENT_TXT", rs));
 		
 		String dims = db.getStringVal("dimensions_txt", rs);
@@ -91,6 +96,7 @@ public class MediaBinAssetVO extends SBModuleVO {
 			setWidthNo(Convert.formatInteger(dims.substring(0, delim)));
 			setHeightNo(Convert.formatInteger(dims.substring(delim+1)));
 		}
+		this.setDimensionsTxt(dims);
 		
 		// Determine if the asset is a video
 		if (StringUtil.checkVal(assetType).toLowerCase().startsWith("multimedia")) {
@@ -335,5 +341,349 @@ public class MediaBinAssetVO extends SBModuleVO {
 	public void setVideoChapters(String videoChapters) {
 		this.videoChapters = videoChapters;
 	}
+
+	public String getDimensionsTxt() {
+		return dimensionsTxt;
+	}
+
+	public void setDimensionsTxt(String dimensionsTxt) {
+		this.dimensionsTxt = dimensionsTxt;
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result
+				+ ((anatomy == null) ? 0 : anatomy.hashCode());
+		result = prime * result
+				+ ((assetDesc == null) ? 0 : assetDesc.hashCode());
+		result = prime * result
+				+ ((assetNm == null) ? 0 : assetNm.hashCode());
+		result = prime * result
+				+ ((assetType == null) ? 0 : assetType.hashCode());
+		result = prime * result
+				+ ((bodyRegionTxt == null) ? 0 : bodyRegionTxt.hashCode());
+		result = prime
+				* result
+				+ ((businessUnitId == null) ? 0 : businessUnitId.hashCode());
+		result = prime
+				* result
+				+ ((businessUnitNm == null) ? 0 : businessUnitNm.hashCode());
+		result = prime * result
+				+ ((description == null) ? 0 : description.hashCode());
+		result = prime * result
+				+ ((dimensionsTxt == null) ? 0 : dimensionsTxt.hashCode());
+		result = prime
+				* result
+				+ ((downloadTypeTxt == null) ? 0 : downloadTypeTxt
+						.hashCode());
+		result = prime
+				* result
+				+ ((dpySynMediaBinId == null) ? 0 : dpySynMediaBinId
+						.hashCode());
+		result = prime * result
+				+ ((duration == null) ? 0 : duration.hashCode());
+		result = prime * result + ((fileNm == null) ? 0 : fileNm.hashCode());
+//		result = prime * result + ((fileSizeNo == null) ? 0 : fileSizeNo.hashCode());
+		result = prime * result
+				+ ((heightNo == null) ? 0 : heightNo.hashCode());
+		result = prime * result + importFileCd;
+		result = prime * result + (isVideo ? 1231 : 1237);
+		result = prime * result
+				+ ((languageCode == null) ? 0 : languageCode.hashCode());
+		result = prime
+				* result
+				+ ((literatureTypeTxt == null) ? 0 : literatureTypeTxt
+						.hashCode());
+		result = prime * result
+				+ ((metaKeywords == null) ? 0 : metaKeywords.hashCode());
+		result = prime * result
+				+ ((modifiedDt == null) ? 0 : modifiedDt.hashCode());
+		result = prime * result + ((opCoNm == null) ? 0 : opCoNm.hashCode());
+		result = prime * result
+				+ ((prodFamilyNm == null) ? 0 : prodFamilyNm.hashCode());
+		result = prime * result + ((prodNm == null) ? 0 : prodNm.hashCode());
+		result = prime
+				* result
+				+ ((revisionLvlTxt == null) ? 0 : revisionLvlTxt.hashCode());
+		result = prime * result
+				+ ((titleTxt == null) ? 0 : titleTxt.hashCode());
+		result = prime * result
+				+ ((trackingNoTxt == null) ? 0 : trackingNoTxt.hashCode());
+		result = prime * result
+				+ ((videoChapters == null) ? 0 : videoChapters.hashCode());
+		result = prime * result
+				+ ((widthNo == null) ? 0 : widthNo.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null) {
+			return false;
+		}
+		if (getClass() != obj.getClass()) {
+			return false;
+		}
+		MediaBinAssetVO other = (MediaBinAssetVO) obj;
+		if (anatomy == null) {
+			if (other.anatomy != null) {
+//				System.err.println("anatomy1 is different");
+				return false;
+			}
+		} else if (!anatomy.equals(other.anatomy)) {
+//			System.err.println("anatomy2 is different");
+			return false;
+		}
+		if (assetDesc == null) {
+			if (other.assetDesc != null) {
+//				System.err.println("assetDesc1 is different");
+				return false;
+			}
+		} else if (!assetDesc.equals(other.assetDesc)) {
+//			System.err.println("assetDesc2 is different");
+			return false;
+		}
+		if (assetNm == null) {
+			if (other.assetNm != null) {
+//				System.err.println("assetNm1 is different");
+				return false;
+			}
+		} else if (!assetNm.equals(other.assetNm)) {
+//			System.err.println("assetNm2 is different");
+			return false;
+		}
+		if (assetType == null) {
+			if (other.assetType != null) {
+//				System.err.println("assetType1 is different");
+				return false;
+			}
+		} else if (!assetType.equals(other.assetType)) {
+//			System.err.println("assetType2 is different");
+			return false;
+		}
+		if (bodyRegionTxt == null) {
+			if (other.bodyRegionTxt != null) {
+//				System.err.println("bodyRegion1 is different");
+				return false;
+			}
+		} else if (!bodyRegionTxt.equals(other.bodyRegionTxt)) {
+//			System.err.println("bodyRegion2 is different");
+			return false;
+		}
+		if (businessUnitId == null) {
+			if (other.businessUnitId != null) {
+//				System.err.println("businessunit1 is different");
+				return false;
+			}
+		} else if (!businessUnitId.equals(other.businessUnitId)) {
+//			System.err.println("businessunit2 is different");
+			return false;
+		}
+		if (businessUnitNm == null) {
+			if (other.businessUnitNm != null) {
+//				System.err.println("businessunitnm1 is different");
+				return false;
+			}
+		} else if (!businessUnitNm.equals(other.businessUnitNm)) {
+//			System.err.println("businessunitnm2 is different");
+			return false;
+		}
+		if (description == null) {
+			if (other.description != null) {
+//				System.err.println("desc is different");
+				return false;
+			}
+		} else if (!description.equals(other.description)) {
+//			System.err.println("desc2 is different");
+			return false;
+		}
+		if (dimensionsTxt == null) {
+			if (other.dimensionsTxt != null) {
+//				System.err.println("dims is different");
+				return false;
+			}
+		} else if (!dimensionsTxt.equals(other.dimensionsTxt)) {
+//			System.err.println("dims2 is different");
+			return false;
+		}
+		if (downloadTypeTxt == null) {
+			if (other.downloadTypeTxt != null) {
+//				System.err.println("downloadTypeTxt is different");
+				return false;
+			}
+		} else if (!downloadTypeTxt.equals(other.downloadTypeTxt)) {
+//			System.err.println("downloadTypeTxt2 is different");
+			return false;
+		}
+		if (dpySynMediaBinId == null) {
+			if (other.dpySynMediaBinId != null) {
+//				System.err.println("dpySynMediaBinId is different");
+				return false;
+			}
+		} else if (!dpySynMediaBinId.equals(other.dpySynMediaBinId)) {
+//			System.err.println("dpySynMediaBinId2 is different");
+			return false;
+		}
+		if (duration == null) {
+			if (other.duration != null) {
+//				System.err.println("duration is different");
+				return false;
+			}
+		} else if (!duration.equals(other.duration)) {
+//			System.err.println("duration2 is different");
+			return false;
+		}
+		if (fileNm == null) {
+			if (other.fileNm != null) {
+//				System.err.println("fileNm is different");
+				return false;
+			}
+		} else if (!fileNm.equals(other.fileNm)) {
+//			System.err.println("fileNm2 is different");
+			return false;
+		}
+//		if (fileSizeNo == null) {
+//			if (other.fileSizeNo != null) {
+//				return false;
+//			}
+//		} else if (!fileSizeNo.equals(other.fileSizeNo)) {
+//			return false;
+//		}
+//		if (heightNo == null) {
+//			if (other.heightNo != null) {
+//				System.err.println("heightNo is different");
+//				return false;
+//			}
+//		} else if (!heightNo.equals(other.heightNo)) {
+//			System.err.println("heightNo2 is different");
+//			return false;
+//		}
+		if (importFileCd != other.importFileCd) {
+//			System.err.println("importFileCd is different");
+			return false;
+		}
+//		if (isVideo != other.isVideo) {
+//			System.err.println("isVideo is different");
+//			return false;
+//		}
+		if (languageCode == null) {
+			if (other.languageCode != null) {
+//				System.err.println("languageCode is different");
+				return false;
+			}
+		} else if (!languageCode.equals(other.languageCode)) {
+//			System.err.println("languageCode2 is different");
+			return false;
+		}
+		if (literatureTypeTxt == null) {
+			if (other.literatureTypeTxt != null) {
+//				System.err.println("literatureTypeTxt is different");
+				return false;
+			}
+		} else if (!literatureTypeTxt.equals(other.literatureTypeTxt)) {
+//			System.err.println("literatureTypeTxt2 is different");
+			return false;
+		}
+		if (metaKeywords == null) {
+			if (other.metaKeywords != null) {
+//				System.err.println("metaKeywords is different");
+				return false;
+			}
+		} else if (!metaKeywords.equals(other.metaKeywords)) {
+//			System.err.println(metaKeywords + "|||" + other.metaKeywords);
+			return false;
+		}
+//		if (modifiedDt == null) {
+//			if (other.modifiedDt != null) {
+//				System.err.println("modifiedDt is different");
+//				return false;
+//			}
+//		} else if (!modifiedDt.equals(other.modifiedDt)) {
+//			System.err.println("modifiedDt2 is different");
+//			return false;
+//		}
+		if (opCoNm == null) {
+			if (other.opCoNm != null) {
+//				System.err.println("opCoNm is different");
+				return false;
+			}
+		} else if (!opCoNm.equals(other.opCoNm)) {
+//			System.err.println("opCoNm2 is different");
+			return false;
+		}
+		if (prodFamilyNm == null) {
+			if (other.prodFamilyNm != null) {
+//				System.err.println("prodFamilyNm is different");
+				return false;
+			}
+		} else if (!prodFamilyNm.equals(other.prodFamilyNm)) {
+//			System.err.println("prodFamilyNm2 is different");
+			return false;
+		}
+		if (prodNm == null) {
+			if (other.prodNm != null) {
+//				System.err.println("prodNm is different");
+				return false;
+			}
+		} else if (!prodNm.equals(other.prodNm)) {
+//			System.err.println("prodNm2 is different");
+			return false;
+		}
+		if (revisionLvlTxt == null) {
+			if (other.revisionLvlTxt != null) {
+//				System.err.println("revisionLvlTxt is different");
+				return false;
+			}
+		} else if (!revisionLvlTxt.equals(other.revisionLvlTxt)) {
+//			System.err.println("revisionLvlTxt2 is different");
+			return false;
+		}
+		if (titleTxt == null) {
+			if (other.titleTxt != null) {
+//				System.err.println("titleTxt is different");
+				return false;
+			}
+		} else if (!titleTxt.equals(other.titleTxt)) {
+//			System.err.println("titleTxt2 is different");
+			return false;
+		}
+		if (trackingNoTxt == null) {
+			if (other.trackingNoTxt != null) {
+//				System.err.println("trackingNoTxt is different");
+				return false;
+			}
+		} else if (!trackingNoTxt.equals(other.trackingNoTxt)) {
+//			System.err.println("trackingNoTxt2 is different");
+			return false;
+		}
+		if (videoChapters == null) {
+			if (other.videoChapters != null) {
+//				System.err.println("videoChapters is different");
+				return false;
+			}
+		} else if (!videoChapters.equals(other.videoChapters)) {
+//			System.err.println("videoChapters2 is different");
+			return false;
+		}
+//		if (widthNo == null) {
+//			if (other.widthNo != null) {
+//				System.err.println("widthNo is different");
+//				return false;
+//			}
+//		} else if (!widthNo.equals(other.widthNo)) {
+//			System.err.println("widthNo2 is different");
+//			return false;
+//		}
+		return true;
+	}
 	
+	@Override
+	public String toString() {
+		return StringUtil.getToString(this, true, 1, "|");
+	}
 }
