@@ -2,8 +2,13 @@ package com.depuysynthes.action;
 
 // JDK 7
 import java.sql.ResultSet;
+import java.util.Arrays;
 import java.util.Date;
 
+
+
+
+import java.util.List;
 
 // SMTBaseLibs 2.0
 import com.siliconmtn.db.DBUtil;
@@ -29,6 +34,7 @@ import com.smt.sitebuilder.action.SBModuleVO;
 public class MediaBinAssetVO extends SBModuleVO {
 	private static final long serialVersionUID = 1L;
 	
+	private static final List<String> videoTypes = Arrays.asList(MediaBinAdminAction.VIDEO_ASSETS);
 	private String dpySynMediaBinId = null;
 	private String assetNm = null;
 	private String assetDesc = null;
@@ -97,11 +103,6 @@ public class MediaBinAssetVO extends SBModuleVO {
 			setHeightNo(Convert.formatInteger(dims.substring(delim+1)));
 		}
 		this.setDimensionsTxt(dims);
-		
-		// Determine if the asset is a video
-		if (StringUtil.checkVal(assetType).toLowerCase().startsWith("multimedia")) {
-			isVideo = true;
-		}
 	}
 	
 	
@@ -128,6 +129,12 @@ public class MediaBinAssetVO extends SBModuleVO {
 	}
 	public void setAssetType(String assetType) {
 		this.assetType = assetType;
+		
+		//the decision of whether or not this asset is a video is based on assetType,
+		//so when we set assetType also set isVideo.  Based on the video types predefined by DS/SMT.
+		if (assetType != null)
+			isVideo = videoTypes.contains(assetType.toLowerCase());
+
 	}
 	public String getBodyRegionTxt() {
 		return bodyRegionTxt;
