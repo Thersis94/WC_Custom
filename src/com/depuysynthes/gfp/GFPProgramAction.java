@@ -39,6 +39,27 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 
 public class GFPProgramAction extends SBActionAdapter {
+	
+	enum BuildType {
+		MediaBin, ReorderResource, ReorderWorkshop, Complete
+	}
+	
+	enum OrderBy {
+		Oldest("CREATE_DT DESC"),
+		Youngest("CREATE_DT ASC"),
+		Name("RESOURCE_NM ASC");
+		
+		
+		private String sql;
+		OrderBy(String sql) {
+			this.sql = sql;
+		}
+		
+		public String getSQL() {
+			return sql;
+		}
+		
+	}
 
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		String programId = StringUtil.checkVal(req.getParameter("programId"));
@@ -53,8 +74,20 @@ public class GFPProgramAction extends SBActionAdapter {
 		if (req.hasParameter("dashboard") && programId.length() == 0) {
 			// This is only called when we are not editing any particular program.
 			super.putModuleData(getAllPrograms());
+		}  else if (req.hasParameter("searchData")) {
+			int rpp = Convert.formatInteger(req.getParameter("rpp"), 5);
+			int page = Convert.formatInteger(req.getParameter("page"), 0);
+			searchResources(profileId, "%"+req.getParameter("searchData")+"%", rpp, page);
 		} else if (req.hasParameter("resourceList")) {
-			super.putModuleData(getResources(req.getParameter("resourceList"), user.getProfileId(), req.hasParameter("favOnly")));
+
+			OrderBy order;
+			try {
+				order = OrderBy.valueOf(StringUtil.checkVal(req.getParameter("resourceList")));
+			} catch(Exception e) {
+				log.error("Unable to parse GFPLevel from request", e);
+				throw new ActionException(e);
+			}
+			super.putModuleData(getResources(order, user.getProfileId(), req.getParameter("keepOnly")));
 		} else {
 			super.putModuleData(getProgram(isUser? profileId : programId, isUser, req.getParameter("workshopId")));
 		}
@@ -66,17 +99,77 @@ public class GFPProgramAction extends SBActionAdapter {
 	
 	
 	/**
+	 * Search through the resources that the user has access to for the supplied search terms
+	 */
+	private void searchResources(String profileId, String searchData, int rpp, int page) throws ActionException {
+		StringBuilder sql = new StringBuilder(2000);
+		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		sql.append("SELECT DISTINCT r.*, c.*, m.*, cr.CREATE_DT as COMPLETE_DT, w.WORKSHOP_NM ");
+		sql.append("FROM ").append(customDb).append("DPY_SYN_GFP_USER u ");
+		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_GFP_WORKSHOP w on w.PROGRAM_ID = u.PROGRAM_ID ");
+		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_GFP_WORKSHOP_XR wx on wx.WORKSHOP_ID = w.WORKSHOP_ID ");
+		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_GFP_RESOURCE r on r.RESOURCE_ID = wx.RESOURCE_ID ");
+		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_GFP_CATEGORY c on c.CATEGORY_ID = r.CATEGORY_ID ");
+		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_GFP_COMPLETED_RESOURCE cr on cr.RESOURCE_ID = r.RESOURCE_ID ");
+		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_MEDIABIN m ON m.DPY_SYN_MEDIABIN_ID = r.DPY_SYN_MEDIABIN_ID ");
+		sql.append("WHERE u.PROFILE_ID = ? and (r.RESOURCE_NM like ? or r.RESOURCE_DESC like ?) ");
+		sql.append("union ");
+		sql.append("SELECT DISTINCT r.*, c.*, m.*, cr.CREATE_DT as COMPLETE_DT, null ");
+		sql.append("FROM ").append(customDb).append("DPY_SYN_GFP_USER u ");
+		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_GFP_PROGRAM_XR px ON px.PROGRAM_ID = u.PROGRAM_ID ");
+		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_GFP_RESOURCE r on r.RESOURCE_ID = px.RESOURCE_ID ");
+		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_GFP_CATEGORY c on c.CATEGORY_ID = r.CATEGORY_ID ");
+		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_GFP_COMPLETED_RESOURCE cr on cr.RESOURCE_ID = r.RESOURCE_ID ");
+		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_MEDIABIN m ON m.DPY_SYN_MEDIABIN_ID = r.DPY_SYN_MEDIABIN_ID ");
+		sql.append("WHERE u.PROFILE_ID = ? and (r.RESOURCE_NM like ? or r.RESOURCE_DESC like ?)");
+		
+		log.debug(sql+"|"+profileId+"|"+searchData);
+		List<GFPWorkshopVO> resources = new ArrayList<>();
+		int count = 0;
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			int i = 1;
+			ps.setString(i++, profileId);
+			ps.setString(i++, searchData);
+			ps.setString(i++, searchData);
+			ps.setString(i++, profileId);
+			ps.setString(i++, searchData);
+			ps.setString(i++, searchData);
+			
+			ResultSet rs = ps.executeQuery();
+			int start = rpp*page;
+			while (rs.next()) {
+				log.debug(rpp*page+"|"+count+"|");
+				if (count >= start && count < start+rpp) {
+					log.debug("Added");
+					GFPWorkshopVO w = new GFPWorkshopVO(rs);
+					w.addResource(new GFPResourceVO(rs));
+					resources.add(w);
+				}
+				count++;
+			}
+		} catch (SQLException e) {
+			log.error("Unable to get all resources available to user with profile id of " + profileId, e);
+			throw new ActionException(e);
+		}
+		
+		super.putModuleData(resources, count, false);
+	}
+
+
+	/**
 	 * Get all resources associated with the current user.
 	 * @param orderBy
 	 * @param profileId
 	 * @return
 	 * @throws ActionException
 	 */
-	private Map<String, List<GFPResourceVO>> getResources(String orderBy, String profileId, boolean favOnly) throws ActionException {
+	private Map<String, List<GFPResourceVO>> getResources(OrderBy order, String profileId, String keepOnly) throws ActionException {
 		Map<String, List<GFPResourceVO>> categories = new HashMap<>();
+		boolean favOnly = "favorites".equals(keepOnly);
+		boolean downloaded = "downloaded".equals(keepOnly);
+
 		StringBuilder sql = new StringBuilder(1200);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		
 		sql.append("SELECT DISTINCT r.*, c.*, m.*, cr.CREATE_DT as COMPLETE_DT");
 		if (favOnly) sql.append(", pf.PROFILE_FAVORITE_ID ");
 		sql.append(" FROM ").append(customDb).append("DPY_SYN_GFP_USER u ");
@@ -99,10 +192,14 @@ public class GFPProgramAction extends SBActionAdapter {
 			sql.append("on pf.PROFILE_ID = u.PROFILE_ID and pf.REL_ID = r.DPY_SYN_MEDIABIN_ID ");
 		}
 		sql.append("WHERE u.PROFILE_ID = ? ");
+		
 		if (favOnly) {
-			sql.append(" and pf.PROFILE_FAVORITE_ID is not null ");
+			sql.append("and pf.PROFILE_FAVORITE_ID is not null ");
 		}
-		sql.append("ORDER BY r.CATEGORY_ID, r.").append(orderBy);
+		if (downloaded) {
+			sql.append("and cr.CREATE_DT is not null ");
+		}
+		sql.append("ORDER BY r.CATEGORY_ID, r.").append(order.getSQL());
 		
 		log.debug(sql+"|"+profileId);
 		
@@ -223,7 +320,7 @@ public class GFPProgramAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(600);
 		sql.append("SELECT w.*, wr.RESOURCE_ID, wr.CATEGORY_ID, wr.RESOURCE_NM, ");
 		sql.append("wr.RESOURCE_DESC, wr.SHORT_DESC as RESOURCE_SHORT_DESC, wr.DPY_SYN_MEDIABIN_ID, ");
-		sql.append("wr.ACTIVE_FLG as RESOURCE_ACTIVE_FLG, c.*, m.*");
+		sql.append("wx.ORDER_NO, wr.ACTIVE_FLG as RESOURCE_ACTIVE_FLG, c.*, m.*");
 		if (isUser) sql.append(", cr.CREATE_DT as COMPLETE_DT");
 		sql.append(" FROM ").append(customDb).append("DPY_SYN_GFP_PROGRAM p ");
 		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_GFP_WORKSHOP w ");
@@ -242,6 +339,7 @@ public class GFPProgramAction extends SBActionAdapter {
 		sql.append("ON m.DPY_SYN_MEDIABIN_ID = wr.DPY_SYN_MEDIABIN_ID ");
 		sql.append("WHERE p.PROGRAM_ID = ? ");
 		if (currentWorkshop != null) sql.append(" and w.WORKSHOP_ID = ? ");
+		if (isUser) sql.append("and w.ACTIVE_FLG = 1 ");
 		sql.append("ORDER BY w.SEQUENCE_NO, wx.ORDER_NO ");
 		log.debug(sql+"|"+programId+"|"+userId);
 		
@@ -297,7 +395,16 @@ public class GFPProgramAction extends SBActionAdapter {
 
 	public void delete(SMTServletRequest req) throws ActionException {
 		StringBuilder sql = new StringBuilder(120);
-		GFPLevel level = GFPLevel.valueOf(req.getParameter("level"));
+		GFPLevel level;
+
+		try {
+			level = GFPLevel.valueOf(req.getParameter("level"));
+		} catch(Exception e) {
+			log.error("Unable to parse build type from request object.  Recieved " + req.getParameter("programBuild"), e);
+			throw new ActionException(e);
+		}
+		
+		
 		
 		sql.append("DELETE ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("DPY_SYN_GFP_").append(level.toString()).append(" WHERE ");
@@ -316,7 +423,13 @@ public class GFPProgramAction extends SBActionAdapter {
 
 	
 	public void update(SMTServletRequest req) throws ActionException {
-		GFPLevel level = GFPLevel.valueOf(req.getParameter("level"));
+		GFPLevel level;
+		try {
+			level = GFPLevel.valueOf(req.getParameter("level"));
+		} catch(Exception e) {
+			log.error("Unable to parse build type from request object.  Recieved " + req.getParameter("programBuild"), e);
+			throw new ActionException(e);
+		}
 		
 		FilePartDataBean file = req.getFile("newFile");
 		if (file != null) {
@@ -330,7 +443,15 @@ public class GFPProgramAction extends SBActionAdapter {
 				updateWorkshop(new GFPWorkshopVO(req));
 				break;
 			case RESOURCE:
-				updateResource(new GFPResourceVO(req), GFPLevel.valueOf(req.getParameter("parentLevel")));
+				GFPLevel parent;
+				try {
+					parent = GFPLevel.valueOf(req.getParameter("parentLevel"));
+				} catch(Exception e) {
+					log.error("Unable to parse build type from request object.  Recieved " + req.getParameter("programBuild"), e);
+					throw new ActionException(e);
+				}
+				
+				updateResource(new GFPResourceVO(req), parent);
 				break;
 		}
 	}
@@ -507,24 +628,103 @@ public class GFPProgramAction extends SBActionAdapter {
 	}
 	
 	public void build(SMTServletRequest req) throws ActionException {
-		
-		if (req.hasParameter("completeState")) {
-			completeResource(req);
-			super.putModuleData(new GFPResourceVO(req));
-			return;
+		BuildType build;
+		try {
+			build = BuildType.valueOf(req.getParameter("programBuild"));
+		} catch(Exception e) {
+			log.error("Unable to parse build type from request object.  Recieved " + req.getParameter("programBuild"), e);
+			throw new ActionException(e);
 		}
 		
-		req.setParameter("organizationId", ((SiteVO)req.getAttribute(Constants.SITE_DATA)).getAliasPathOrgId());
-		SMTActionInterface sai = new MediaBinAdminAction();
-		sai.setDBConnection(dbConn);
-		sai.setAttributes(attributes);
-		sai.setActionInit(actionInit);
-		sai.list(req);
-		ModuleVO mod = (ModuleVO) sai.getAttribute(AdminConstants.ADMIN_MODULE_DATA);
-		super.putModuleData(mod.getActionData(), mod.getDataSize(), false);
-		
+		switch (build) {
+		case Complete:
+			completeResource(req);
+			super.putModuleData(new GFPResourceVO(req));
+			break;
+		case ReorderResource:
+			reorderResources(req);
+			break;
+		case ReorderWorkshop:
+			reorderWorkshops(req);
+			break;
+		case MediaBin:
+			req.setParameter("organizationId", ((SiteVO)req.getAttribute(Constants.SITE_DATA)).getAliasPathOrgId());
+			SMTActionInterface sai = new MediaBinAdminAction();
+			sai.setDBConnection(dbConn);
+			sai.setAttributes(attributes);
+			sai.setActionInit(actionInit);
+			sai.list(req);
+			ModuleVO mod = (ModuleVO) sai.getAttribute(AdminConstants.ADMIN_MODULE_DATA);
+			super.putModuleData(mod.getActionData(), mod.getDataSize(), false);
+			break;
+		}
 	}
 	
+
+	/**
+	 * Change the order of resources to match the order presented in the request object
+	 */
+	private void reorderResources(SMTServletRequest req) throws ActionException {
+		StringBuilder sql = new StringBuilder(250);
+		GFPLevel parent;
+		try {
+			parent = GFPLevel.valueOf(StringUtil.checkVal(req.getParameter("parentType")));
+		} catch(Exception e) {
+			log.error("Unable to parse GFPLevel from request", e);
+			throw new ActionException(e);
+		}
+		
+		sql.append("UPDATE ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("DPY_SYN_GFP_").append(parent.toString()).append("_XR ");
+		sql.append("SET ORDER_NO = ? WHERE RESOURCE_ID = ? and ");
+		sql.append(parent.toString()).append("_ID = ?");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			String order = req.getParameter("order");
+			String parentId = req.getParameter("parentId");
+			int i=1;
+			for (String id : order.split("\\|")) {
+				ps.setInt(1, i++);
+				ps.setString(2, id);
+				ps.setString(3, parentId);
+				ps.addBatch();
+			}
+			
+			ps.executeBatch();
+		} catch (SQLException e) {
+			log.error("Unable to reorder workshops.", e);
+			throw new ActionException(e);
+		}
+	}
+	
+	
+	/**
+	 * Change the order of workshops to match the order presented in the request object
+	 */
+	private void reorderWorkshops(SMTServletRequest req) throws ActionException {
+		StringBuilder sql = new StringBuilder(150);
+		
+		sql.append("UPDATE ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("DPY_SYN_GFP_WORKSHOP SET SEQUENCE_NO = ? ");
+		sql.append("WHERE WORKSHOP_ID = ?");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			String order = req.getParameter("order");
+			int i=1;
+			for (String id : order.split("\\|")) {
+				ps.setInt(1, i++);
+				ps.setString(2, id);
+				ps.addBatch();
+			}
+			
+			ps.executeBatch();
+		} catch (SQLException e) {
+			log.error("Unable to reorder workshops.", e);
+			throw new ActionException(e);
+		}
+	}
+
+
 	/**
 	 * Creates a complete record for the supplied resource/user pair
 	 */

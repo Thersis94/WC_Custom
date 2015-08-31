@@ -56,7 +56,7 @@ public class GFPFacadeAction extends FacadeActionAdapter {
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 		// The only reason a non-admin will reach here is to change the
 		// Completedness state of a resource, all others are turned back here
-		if (req.hasParameter("completeState") || req.hasParameter("getMediabin")) {
+		if (req.hasParameter("programBuild")) {
 			SMTActionInterface sai = new GFPProgramAction();
 			sai.setActionInit(actionInit);
 			sai.setAttributes(attributes);
@@ -105,11 +105,8 @@ public class GFPFacadeAction extends FacadeActionAdapter {
 		if (req.hasParameter("programId"))
 			redirect.append("&programId=").append(req.getParameter("programId"));
 		
-		if (req.hasParameter("workshopId"))
+		if (req.hasParameter("workshopId") && req.hasParameter("resourceId"))
 			redirect.append("&workshopId=").append(req.getParameter("workshopId"));
-		
-		if (req.hasParameter("resourceId"))
-			redirect.append("&resourceId=").append(req.getParameter("resourceId"));
 		
 		if (req.hasParameter("editUser"))
 			redirect.append("&editUser=").append(req.getParameter("editUser"));
