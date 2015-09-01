@@ -52,7 +52,7 @@ public class ProductCatalogSolrIndex extends SMTAbstractIndex {
 	/**
 	 * Index type for this index.  This value is stored in the INDEX_TYPE field
 	 */
-	public static final String INDEX_TYPE = "DS_PRODUCTS";
+	public static final String INDEX_TYPE = "PRODUCT";
 	public static final String SOLR_DOC_CLASS = "com.depuysynthes.lucene.data.ProductCatalogSolrDocumentVO";
 
 	/**

@@ -159,7 +159,7 @@ public class ProductSolrIndex extends SMTAbstractIndex {
     		
     		if (n.getParentId() == null) continue;
     		else 
-    			n.setFullPath("/" + config.getProperty("qsPath") + "/detail/" + ((ProductVO)n.getUserObject()).getProductId());
+    			n.setFullPath("/" + config.getProperty("qsPath") + "detail/" + ((ProductVO)n.getUserObject()).getProductId());
     		
     		log.debug("Full Path: " + n.getFullPath());
     		fp.put(n.getNodeId(), n.getFullPath());
