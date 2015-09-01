@@ -7,12 +7,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+
 // log4j 1.2-15
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
+
 
 // SMT Base Libs
 import com.depuysynthes.action.ProductCatalogUtil;
 import com.depuysynthes.lucene.data.ProductCatalogSolrDocumentVO;
+import com.siliconmtn.action.ActionException;
 import com.siliconmtn.commerce.catalog.ProductAttributeContainer;
 import com.siliconmtn.commerce.catalog.ProductAttributeVO;
 import com.siliconmtn.commerce.catalog.ProductCategoryVO;
@@ -111,9 +114,6 @@ public class ProductCatalogSolrIndex extends SMTAbstractIndex {
     			log.debug("not a product: " + vo.getCategoryName());
     			lastCategoryName = divisionNm + " " + vo.getCategoryName();
     			continue;
-    		} else {
-    			//trim the leading slash, search-results will prepend contextPath
-    			vo.setCategoryUrl(vo.getCategoryUrl().substring(1));
     		}
     		
     		//pull the category name off the parent node
@@ -145,8 +145,7 @@ public class ProductCatalogSolrIndex extends SMTAbstractIndex {
     		}
     		log.debug("adding product to index: url=" + vo.getCategoryName() + ", img=" + imagePath + " org=" + organizationId + " country=" + country);
     		try {
-	    		// solrDoc = this.buildDocument(vo, pVo);  // TJ - 8/26/2015: Removed per JM, not needed
-	    		solrDoc = SolrActionUtil.newInstance(solrDocClass);
+	    		solrDoc = this.buildDocument(vo, pVo);
 	    		ProductCatalogSolrDocumentVO pcSolrDoc = (ProductCatalogSolrDocumentVO) solrDoc;
 
 	    		pcSolrDoc.setData(n, vo);
@@ -174,6 +173,7 @@ public class ProductCatalogSolrIndex extends SMTAbstractIndex {
     	util.setDBConnection(new SMTDBConnection(dbConn));
     	Map<String, Object> attribs = new HashMap<String, Object>();
     	attribs.put(Constants.MODULE_DATA, new ModuleVO());
+    	attribs.put(Constants.QS_PATH, config.get(Constants.QS_PATH));
     	util.setAttributes(attribs);
     	log.debug("loading product for catalogId=" + catalogId);
     	Tree t = util.loadCatalog(catalogId, null, true, null);
@@ -187,24 +187,17 @@ public class ProductCatalogSolrIndex extends SMTAbstractIndex {
     /**
      * the purpose of this method is to transpose the Category and Product VO's
      * into searchable strings for Lucene to match against.
-     * Iterate the Category, Product, as well as the ProductAttributes
-     * 
-     * TJ - 8/26/2015: Removed per JM, was needed in Lucene,
-     * 					but no longer needed for Solr.
-     * 
+     * Iterate the Category, Product, as well as the ProductAttributes.
+     * The value-add here is that we're making the database-values searchable in the index.
+     * If my product has an attribute "Resources", this will allow us to match against searches for "Resources"
      * @param catVo
      * @param prodVo
      * @return
+ * @throws ActionException 
      */
-    /* private SolrDocumentVO buildDocument(ProductCategoryVO catVo, ProductVO prodVo) {
-    	SolrDocumentVO solrDoc = null;
-		try {
-			solrDoc = SolrActionUtil.newInstance(SOLR_DOC_CLASS);
-		} catch (Exception e) {
-			log.debug("Could not create SolrDocumentVO. ", e);
-		}
-    	
-    	StringBuilder txt = new StringBuilder();
+    private SolrDocumentVO buildDocument(ProductCategoryVO catVo, ProductVO prodVo) throws ActionException {
+    	SolrDocumentVO solrDoc = SolrActionUtil.newInstance(SOLR_DOC_CLASS);
+    	StringBuilder txt = new StringBuilder(5000);
     	
     	//add the CategoryVO
     	txt.append(catVo.toString()).append("\r");
@@ -230,7 +223,7 @@ public class ProductCatalogSolrIndex extends SMTAbstractIndex {
     	//log.debug(txt);
     	solrDoc.setContents(txt.toString());
     	return solrDoc;
-    } */
+    }
 
 	@Override
 	public void purgeIndexItems(HttpSolrServer server) throws IOException {
