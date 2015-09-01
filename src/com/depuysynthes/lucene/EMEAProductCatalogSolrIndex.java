@@ -20,6 +20,12 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer;
 public class EMEAProductCatalogSolrIndex extends ProductCatalogSolrIndex {
 
 	/**
+	 * Index type for this index.  This value is stored in the INDEX_TYPE field
+	 */
+	public static String INDEX_TYPE = "DS_PRODUCTS_EMEA";
+	public static String SOLR_DOC_CLASS = "com.depuysynthes.lucene.data.EMEAProductCatalogSolrDocumentVO";
+	
+	/**
 	 * @param config
 	 */
 	public EMEAProductCatalogSolrIndex(Properties config) {
@@ -33,7 +39,12 @@ public class EMEAProductCatalogSolrIndex extends ProductCatalogSolrIndex {
 	@Override
 	public void addIndexItems(HttpSolrServer server) {
 		log.info("Indexing DePuySynthes EMEA Products & Procedures");
-		indexProducts("DS_PRODUCTS_EMEA", server);
-		indexProducts("DS_PROCEDURES_EMEA", server);
+		indexProducts("DS_PRODUCTS_EMEA", server, EMEAProductCatalogSolrIndex.SOLR_DOC_CLASS);
+		indexProducts("DS_PROCEDURES_EMEA", server, EMEAProductCatalogSolrIndex.SOLR_DOC_CLASS);
+	}
+	
+	@Override
+	public String getIndexType() {
+		return INDEX_TYPE;
 	}
 }

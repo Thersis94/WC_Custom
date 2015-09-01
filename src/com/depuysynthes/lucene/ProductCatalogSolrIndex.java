@@ -29,6 +29,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SMTAbstractIndex;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
+import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 
 /****************************************************************************
  * <b>Title</b>: ProductCatalogSolrIndex.java <p/>
@@ -52,8 +53,8 @@ public class ProductCatalogSolrIndex extends SMTAbstractIndex {
 	/**
 	 * Index type for this index.  This value is stored in the INDEX_TYPE field
 	 */
-	public static final String INDEX_TYPE = "PRODUCT";
-	public static final String SOLR_DOC_CLASS = "com.depuysynthes.lucene.data.ProductCatalogSolrDocumentVO";
+	public static String INDEX_TYPE = "DS_PRODUCTS";
+	public static String SOLR_DOC_CLASS = "com.depuysynthes.lucene.data.ProductCatalogSolrDocumentVO";
 
 	/**
 	 * @param config
@@ -69,8 +70,8 @@ public class ProductCatalogSolrIndex extends SMTAbstractIndex {
 	@Override
 	public void addIndexItems(HttpSolrServer server) {
 		log.info("Indexing DePuySynthes US Products & Procedures");
-		indexProducts("DS_PRODUCTS", server);
-		indexProducts("DS_PROCEDURES", server);
+		indexProducts("DS_PRODUCTS", server, ProductCatalogSolrIndex.SOLR_DOC_CLASS);
+		indexProducts("DS_PROCEDURES", server, ProductCatalogSolrIndex.SOLR_DOC_CLASS);
 	}
 	
     
@@ -79,12 +80,12 @@ public class ProductCatalogSolrIndex extends SMTAbstractIndex {
 	 * @param catalogId
 	 * @param server
      */
-    protected void indexProducts(String catalogId, HttpSolrServer server) {
+    protected void indexProducts(String catalogId, HttpSolrServer server, String solrDocClass) {
     	List<Node> nodes = getProductData(catalogId);
     	log.info("Found " + nodes.size() + " nodes to index for " + catalogId + ".");
     	
     	SolrActionUtil solrUtil = new SolrActionUtil(server);
-		ProductCatalogSolrDocumentVO pcSolrDoc = null;
+		SolrDocumentVO solrDoc = null;
 
         String divisionNm = null;
         String countryNodeId = null;
@@ -145,7 +146,8 @@ public class ProductCatalogSolrIndex extends SMTAbstractIndex {
     		log.debug("adding product to index: url=" + vo.getCategoryName() + ", img=" + imagePath + " org=" + organizationId + " country=" + country);
     		try {
 	    		// solrDoc = this.buildDocument(vo, pVo);  // TJ - 8/26/2015: Removed per JM, not needed
-	    		pcSolrDoc = new ProductCatalogSolrDocumentVO();
+	    		solrDoc = SolrActionUtil.newInstance(solrDocClass);
+	    		ProductCatalogSolrDocumentVO pcSolrDoc = (ProductCatalogSolrDocumentVO) solrDoc;
 
 	    		pcSolrDoc.setData(n, vo);
 	    		pcSolrDoc.addOrganization(organizationId);
