@@ -24,11 +24,11 @@ import com.smt.sitebuilder.util.solr.SolrDocumentVO;
  * @since Aug 24, 2015
  ****************************************************************************/
 public class ProductCatalogSolrDocumentVO extends SolrDocumentVO {
-	
+
 	protected static final Logger log = Logger.getLogger(ProductCatalogSolrDocumentVO.class);
-	
+
 	private String thumbImage = null;
-	
+
 	/**
 	 * 
 	 */
@@ -36,26 +36,25 @@ public class ProductCatalogSolrDocumentVO extends SolrDocumentVO {
 		this(ProductCatalogSolrIndex.INDEX_TYPE);
 		super.setUpdateDt(Calendar.getInstance().getTime());
 	}
-	
+
 	/**
 	 * @param solrIndex
 	 */
 	public ProductCatalogSolrDocumentVO(String solrIndex) {
 		super(solrIndex);
 	}
-	
+
 	/**
 	 * Captures DS Product Catalog data fields into the SolrDocument.
 	 */
 	public void setData(Object o) {
 		Node n = (Node) o;
-
 		super.setLanguage("en");
 		super.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
 		super.setDocumentId(n.getNodeId());
 		super.setTitle(n.getNodeName());
 	}
-	
+
 	/**
 	 * Overloaded to allow additional data passed from multiple objects/VOs.
 	 * @param n
@@ -63,7 +62,6 @@ public class ProductCatalogSolrDocumentVO extends SolrDocumentVO {
 	 */
 	public void setData(Node n, ProductCategoryVO vo) {
 		this.setData(n);
-		
 		super.setDocumentUrl(vo.getCategoryUrl());
 		super.setSummary(StringUtil.checkVal(vo.getCategoryDesc()));
 	}
@@ -71,7 +69,7 @@ public class ProductCatalogSolrDocumentVO extends SolrDocumentVO {
 
 
 	// ------- Getters and Setters Below This Line -------
-	
+
 	@SolrField(name=SearchDocumentHandler.THUMBNAIL_IMAGE)
 	public String getThumbImage() {
 		return thumbImage;
