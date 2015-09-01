@@ -236,6 +236,10 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	}
 
 
+	/**
+	 * consumes the masterRecords list and pushes the qualifying records into Solr
+	 * @param masterRecords
+	 */
 	private void pushChangesToSolr(Map<String, MediaBinDeltaVO> masterRecords) {
 		// initialize the connection to the solr server
 		String baseUrl = props.getProperty("solrBaseUrl");
