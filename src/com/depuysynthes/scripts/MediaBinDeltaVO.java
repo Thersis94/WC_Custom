@@ -8,7 +8,8 @@ import com.siliconmtn.db.DBUtil;
 /****************************************************************************
  * <b>Title</b>: MediaBinDeltaVO.java<p/>
  * <b>Description: extends a stock mediabin record with some additional fields that 
- * help us monitor state (insert|update|delete), status, and errors.</b> 
+ * help us monitor state (insert|update|delete), error-reason, and ingest-time parameters
+ * that we don't need to exist within WC or the database.</b> 
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2015<p/>
  * <b>Company:</b> Silicon Mountain Technologies<p/>
