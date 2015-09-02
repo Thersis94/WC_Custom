@@ -28,6 +28,7 @@ public class ProductCatalogSolrDocumentVO extends SolrDocumentVO {
 	protected static final Logger log = Logger.getLogger(ProductCatalogSolrDocumentVO.class);
 
 	private String thumbImage = null;
+	private int dsOrderNo;
 
 	/**
 	 * 
@@ -77,5 +78,14 @@ public class ProductCatalogSolrDocumentVO extends SolrDocumentVO {
 
 	public void setThumbImage(String thumbImage) {
 		this.thumbImage = thumbImage;
+	}
+
+	@SolrField(name="dsOrderNo_i")
+	public int getDsOrderNo() {
+		return dsOrderNo;
+	}
+
+	public void setDsOrderNo(int dsOrderNo) {
+		this.dsOrderNo = dsOrderNo;
 	}
 }
