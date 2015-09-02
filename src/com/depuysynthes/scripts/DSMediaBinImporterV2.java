@@ -414,13 +414,29 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			String fileNm = StringUtil.replace(vo.getRevisionLvlTxt() + "/" + vo.getAssetNm(), "/", File.separator);
 			//log.debug("fileNm=" + fileNm);
 
+			String prevChecksum = vo.getChecksum();
 			try {
 				//check if this file at this revision-level has already been retrieved from LL
 				File f = new File(dropboxFolder + fileNm);
 				if (f.exists()) {
 					log.debug("file exists: " + fileNm);
-					if (isFileStillPresentOnLL(vo))
+					if (isFileStillPresentOnLL(vo)) {
+						//make sure the file has a checksum, if not load one - this will only surface when we purge the DB without purging the file system.
+						if (prevChecksum == null || prevChecksum.length() == 0) {
+							MessageDigest digest = MessageDigest.getInstance(HashGeneratorUtil.SHA256);
+							try (FileInputStream fis = new FileInputStream(f)) {
+								int nRead = 0;
+								byte[] byteBuffer = new byte[8192];
+								while ((nRead = fis.read(byteBuffer)) != -1)
+									digest.update(byteBuffer, 0, nRead);
+								
+								vo.setChecksum(HashGeneratorUtil.generate(digest));
+							} catch (Exception e) {
+								log.error("could not read file checksum", e);
+							}
+						}
 						continue;
+					}	
 				}
 
 			} catch (Exception e) {
@@ -428,7 +444,6 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 				failures.add(new Exception("failed " + vo.getDpySynMediaBinId(), e));
 			}
 
-			String prevChecksum = vo.getChecksum();
 			downloadFile(dropboxFolder, vo, fileNm);
 
 			//if the State is 'update', compare file size to make sure a changed file was pushed out.
@@ -482,7 +497,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			File f = new File(fullPath);
 			try (FileOutputStream fos = new FileOutputStream(f)) {
 				int nRead, byteCnt = 0;
-				byte[] byteBuffer = new byte[16384];
+				byte[] byteBuffer = new byte[8192];
 				while ((nRead = is.read(byteBuffer)) != -1) {
 					byteCnt += nRead;
 					digest.update(byteBuffer, 0, nRead);
