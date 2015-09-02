@@ -70,8 +70,8 @@ public class ProductCatalogSolrIndex extends SMTAbstractIndex {
 	@Override
 	public void addIndexItems(HttpSolrServer server) {
 		log.info("Indexing DePuySynthes US Products & Procedures");
-		indexProducts("DS_PRODUCTS", server, ProductCatalogSolrIndex.SOLR_DOC_CLASS);
-		indexProducts("DS_PROCEDURES", server, ProductCatalogSolrIndex.SOLR_DOC_CLASS);
+		indexProducts("DS_PRODUCTS", server, ProductCatalogSolrIndex.SOLR_DOC_CLASS, 50);
+		indexProducts("DS_PROCEDURES", server, ProductCatalogSolrIndex.SOLR_DOC_CLASS, 45);
 	}
 
 
@@ -80,7 +80,7 @@ public class ProductCatalogSolrIndex extends SMTAbstractIndex {
 	 * @param catalogId
 	 * @param server
 	 */
-	protected void indexProducts(String catalogId, HttpSolrServer server, String solrDocClass) {
+	protected void indexProducts(String catalogId, HttpSolrServer server, String solrDocClass, int dsOrderNo) {
 		List<Node> nodes = getProductData(catalogId);
 		log.info("Found " + nodes.size() + " nodes to index for " + catalogId + ".");
 
@@ -144,6 +144,7 @@ public class ProductCatalogSolrIndex extends SMTAbstractIndex {
 			try {
 				solrDoc = this.buildDocument(vo, pVo);
 				solrDoc.setData(n, vo);
+				solrDoc.setDsOrderNo(dsOrderNo);
 				solrDoc.addOrganization(organizationId);
 				solrDoc.setModule(catalogId);
 				solrDoc.addSection(divisionNm);

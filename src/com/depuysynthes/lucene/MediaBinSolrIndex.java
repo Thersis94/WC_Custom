@@ -83,7 +83,8 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 		AssetDesc("assetDesc_s"),
 		TrackingNo("trackingNumber_s"),
 		VideoChapters("videoChapters_s"),
-		DownloadType("downloadType_s");
+		DownloadType("downloadType_s"),
+		DSOrderNo("dsOrderNo_i");
 		MediaBinField(String s) { this.metaDataField = s; }
 		private String metaDataField = null;
 		public String getField() { return metaDataField; }
@@ -144,7 +145,8 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 				doc.setField(SearchDocumentHandler.ORGANIZATION, orgList); //multiValue field
 				doc.setField(SearchDocumentHandler.LANGUAGE, StringUtil.checkVal(vo.getLanguageCode(), "en"));
 				doc.setField(SearchDocumentHandler.ROLE, SecurityController.PUBLIC_ROLE_LEVEL);
-				doc.setField(SearchDocumentHandler.SITE_PAGE_URL, vo.getActionUrl());
+				doc.setField(SearchDocumentHandler.SITE_PAGE_URL, vo.getActionUrl()); //need to fix DSI and regression test before removing this
+				doc.setField(SearchDocumentHandler.DOCUMENT_URL, vo.getActionUrl());
 				doc.setField(SearchDocumentHandler.DOCUMENT_ID, vo.getDpySynMediaBinId());
 				doc.setField(SearchDocumentHandler.TITLE, vo.getTitleTxt());
 				doc.setField(SearchDocumentHandler.SUMMARY, getSummary(vo));
@@ -162,6 +164,7 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 				doc.setField(MediaBinField.TrackingNo.getField(), vo.getTrackingNoTxt()); //DSI uses this to align supporting images and tag favorites
 				doc.setField(MediaBinField.AssetType.getField(), this.getAssetType(vo));
 				doc.setField(MediaBinField.AssetDesc.getField(), vo.getAssetDesc());
+				doc.setField(MediaBinField.DSOrderNo.getField(), vo.isVideo() ? 25 : 30); //used for moduleType sequencing on DS only
 				if (vo.isVideo())
 					doc.setField(MediaBinField.VideoChapters.getField(), vo.getVideoChapters());
 

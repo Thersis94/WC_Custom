@@ -39,8 +39,8 @@ public class EMEAProductCatalogSolrIndex extends ProductCatalogSolrIndex {
 	@Override
 	public void addIndexItems(HttpSolrServer server) {
 		log.info("Indexing DePuySynthes EMEA Products & Procedures");
-		indexProducts("DS_PRODUCTS_EMEA", server, SOLR_DOC_CLASS);
-		indexProducts("DS_PROCEDURES_EMEA", server, SOLR_DOC_CLASS);
+		indexProducts("DS_PRODUCTS_EMEA", server, SOLR_DOC_CLASS, 50);
+		indexProducts("DS_PROCEDURES_EMEA", server, SOLR_DOC_CLASS, 45);
 	}
 
 	@Override
