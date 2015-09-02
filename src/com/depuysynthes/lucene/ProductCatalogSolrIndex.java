@@ -7,10 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-
 // log4j 1.2-15
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
-
 
 // SMT Base Libs
 import com.depuysynthes.action.ProductCatalogUtil;
@@ -32,7 +30,6 @@ import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SMTAbstractIndex;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
-import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 
 /****************************************************************************
  * <b>Title</b>: ProductCatalogSolrIndex.java <p/>
@@ -52,19 +49,19 @@ import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 public class ProductCatalogSolrIndex extends SMTAbstractIndex {
 
 	protected String organizationId = null;
-	
+
 	/**
 	 * Index type for this index.  This value is stored in the INDEX_TYPE field
 	 */
 	public static String INDEX_TYPE = "DS_PRODUCTS";
-	public static String SOLR_DOC_CLASS = "com.depuysynthes.lucene.data.ProductCatalogSolrDocumentVO";
+	public static String SOLR_DOC_CLASS = ProductCatalogSolrDocumentVO.class.getName();
 
 	/**
 	 * @param config
 	 */
 	public ProductCatalogSolrIndex(Properties config) {
 		super(config);
-        organizationId = "DPY_SYN";
+		organizationId = "DPY_SYN";
 	}
 
 	/* (non-Javadoc)
@@ -76,154 +73,152 @@ public class ProductCatalogSolrIndex extends SMTAbstractIndex {
 		indexProducts("DS_PRODUCTS", server, ProductCatalogSolrIndex.SOLR_DOC_CLASS);
 		indexProducts("DS_PROCEDURES", server, ProductCatalogSolrIndex.SOLR_DOC_CLASS);
 	}
-	
-    
-    /**
-     * Flattens out the hierarchy and stores all fields in the content fields
+
+
+	/**
+	 * Flattens out the hierarchy and stores all fields in the content fields
 	 * @param catalogId
 	 * @param server
-     */
-    protected void indexProducts(String catalogId, HttpSolrServer server, String solrDocClass) {
-    	List<Node> nodes = getProductData(catalogId);
-    	log.info("Found " + nodes.size() + " nodes to index for " + catalogId + ".");
-    	
-    	SolrActionUtil solrUtil = new SolrActionUtil(server);
-		SolrDocumentVO solrDoc = null;
+	 */
+	protected void indexProducts(String catalogId, HttpSolrServer server, String solrDocClass) {
+		List<Node> nodes = getProductData(catalogId);
+		log.info("Found " + nodes.size() + " nodes to index for " + catalogId + ".");
 
-        String divisionNm = null;
-        String countryNodeId = null;
-        String country = "";
-        String lastCategoryName = null;
-    	for (Node n : nodes) {
-    		ProductCategoryVO vo = (ProductCategoryVO)n.getUserObject();
-    		
-    		//top level categories define our countries
-    		if (n.getParentId() == null) {
-    			country = vo.getUrlAlias();
-    			countryNodeId = n.getNodeId();
-    			log.debug("changed country to " + country);
-    			continue; //these are not products (to index)
-    		} else if (n.getParentId().equals(countryNodeId)) {
-    			divisionNm = n.getNodeName();
-    			log.debug("set division to: " + divisionNm);
-    			lastCategoryName = divisionNm;
-    			continue; //these are child categories, not products (to index)
-    		}
-    		
-    		if (StringUtil.checkVal(vo.getCategoryUrl()).length() == 0 || vo.getProducts().size() == 0) {
-    			log.debug("not a product: " + vo.getCategoryName());
-    			lastCategoryName = divisionNm + " " + vo.getCategoryName();
-    			continue;
-    		}
-    		
-    		//pull the category name off the parent node
-    		vo.setCategoryName(lastCategoryName);
-    		
-    		String imagePath = null;
-    		ProductVO pVo = null;
-    		if (vo.getProducts() != null && vo.getProducts().size() > 0) {
-	    		try {
-	    			pVo = vo.getProducts().get(0);
-	    			//log.debug("product= " + StringUtil.getToString(pVo));
-	    			if (vo.getCategoryDesc() == null || vo.getCategoryDesc().length() == 0)
-	    				vo.setCategoryDesc(pVo.getDescText());
-	    			
-	    			ProductAttributeContainer attrs = pVo.getAttributes();
-	    			//log.debug("#attribs=" + attrs.getRootAttributes().size());
-	    			for (Node an : attrs.getRootAttributes()) {
-	    				ProductAttributeVO attr = (ProductAttributeVO) an.getUserObject();
-	    				//log.debug("attr=" + attr.getAttributeId() + " par=" + attr.getParentId());
-	    				if (attr.getAttributeId().startsWith("DS_IMAGE")) {
-	    					//log.debug("found image for " + attr.getAttributeId());
-	    					imagePath = attr.getValueText();
-	    					break;
-	    				}
-	    			}
-	    		} catch (Exception e) {
-	    			log.warn("could not extract productImage for: " + vo.getCategoryName());
-	    		}
-    		}
-    		log.debug("adding product to index: url=" + vo.getCategoryName() + ", img=" + imagePath + " org=" + organizationId + " country=" + country);
-    		try {
-	    		solrDoc = this.buildDocument(vo, pVo);
-	    		ProductCatalogSolrDocumentVO pcSolrDoc = (ProductCatalogSolrDocumentVO) solrDoc;
+		SolrActionUtil solrUtil = new SolrActionUtil(server);
+		ProductCatalogSolrDocumentVO solrDoc = null;
+		String divisionNm = null;
+		String countryNodeId = null;
+		String country = "";
+		String lastCategoryName = null;
+		
+		for (Node n : nodes) {
+			ProductCategoryVO vo = (ProductCategoryVO)n.getUserObject();
 
-	    		pcSolrDoc.setData(n, vo);
-	    		pcSolrDoc.addOrganization(organizationId);
-	    		pcSolrDoc.setModule(catalogId);
-	    		pcSolrDoc.addSection(divisionNm);
-	    		if (imagePath != null) pcSolrDoc.setThumbImage(imagePath);
-	    		
-	    		log.debug("adding to Solr: " + pcSolrDoc.toString());
-				solrUtil.addDocument(pcSolrDoc);
-    		} catch (Exception e) {
-    			log.error("Unable to index product " + n.getNodeId(),e);
-    		}
-    	}
-    }
-    
-    
-    /**
-     * load the entire product catalog in the same way the public sites would.
-     * leverage the Util class to traverse and assign pageUrls for us.
-     * @param orgId
-     */
-    private List<Node> getProductData(String catalogId) {
-    	ProductCatalogUtil util = new ProductCatalogUtil();
-    	util.setDBConnection(new SMTDBConnection(dbConn));
-    	Map<String, Object> attribs = new HashMap<String, Object>();
-    	attribs.put(Constants.MODULE_DATA, new ModuleVO());
-    	attribs.put(Constants.QS_PATH, config.get(Constants.QS_PATH));
-    	util.setAttributes(attribs);
-    	log.debug("loading product for catalogId=" + catalogId);
-    	Tree t = util.loadCatalog(catalogId, null, true, null);
-    	
-    	//let the util assign page URLs for us
-    	return util.assignPageviewsToCatalogUsingDivision(t.preorderList(), new HashMap<String, StatVO>(), "/hcp/", (catalogId.startsWith("DS_PRODUCTS")), true);
-    }
-    
-    
-    
-    /**
-     * the purpose of this method is to transpose the Category and Product VO's
-     * into searchable strings for Lucene to match against.
-     * Iterate the Category, Product, as well as the ProductAttributes.
-     * The value-add here is that we're making the database-values searchable in the index.
-     * If my product has an attribute "Resources", this will allow us to match against searches for "Resources"
-     * @param catVo
-     * @param prodVo
-     * @return
- * @throws ActionException 
-     */
-    private SolrDocumentVO buildDocument(ProductCategoryVO catVo, ProductVO prodVo) throws ActionException {
-    	SolrDocumentVO solrDoc = SolrActionUtil.newInstance(SOLR_DOC_CLASS);
-    	StringBuilder txt = new StringBuilder(5000);
-    	
-    	//add the CategoryVO
-    	txt.append(catVo.toString()).append("\r");
-    	//log.debug("cat=" + catVo.toString());
-    	
-    	//add the ProductVO
-    	if (prodVo != null) {
-    		txt.append(prodVo.toString()).append("\r");
-	    	//log.debug("prod=" + prodVo.toString());
-	    	
-	    	//add each of the ProductAttributeVOs
-	    	try {
-		    	for (Node n : prodVo.getAttributes().getAllAttributes()) {
-		    		txt.append(((ProductAttributeVO)n.getUserObject()).toString()).append("\r");
-		    	//	log.debug("added attrib: " + n);
-		    	}
-		    	
-	    	} catch (Exception e) {
-	    		//log.warn("could not add attributes to product: " + prodVo.getProductId(), e);
-	    	}
-    	}
-    	
-    	//log.debug(txt);
-    	solrDoc.setContents(txt.toString());
-    	return solrDoc;
-    }
+			//top level categories define our countries
+			if (n.getParentId() == null) {
+				country = vo.getUrlAlias();
+				countryNodeId = n.getNodeId();
+				log.debug("changed country to " + country);
+				continue; //these are not products (to index)
+			} else if (n.getParentId().equals(countryNodeId)) {
+				divisionNm = n.getNodeName();
+				log.debug("set division to: " + divisionNm);
+				lastCategoryName = divisionNm;
+				continue; //these are child categories, not products (to index)
+			}
+
+			if (StringUtil.checkVal(vo.getCategoryUrl()).length() == 0 || vo.getProducts().size() == 0) {
+				log.debug("not a product: " + vo.getCategoryName());
+				lastCategoryName = divisionNm + " " + vo.getCategoryName();
+				continue;
+			}
+
+			//pull the category name off the parent node
+			vo.setCategoryName(lastCategoryName);
+
+			String imagePath = null;
+			ProductVO pVo = null;
+			if (vo.getProducts() != null && vo.getProducts().size() > 0) {
+				try {
+					pVo = vo.getProducts().get(0);
+					//log.debug("product= " + StringUtil.getToString(pVo));
+					if (vo.getCategoryDesc() == null || vo.getCategoryDesc().length() == 0)
+						vo.setCategoryDesc(pVo.getDescText());
+
+					ProductAttributeContainer attrs = pVo.getAttributes();
+					//log.debug("#attribs=" + attrs.getRootAttributes().size());
+					for (Node an : attrs.getRootAttributes()) {
+						ProductAttributeVO attr = (ProductAttributeVO) an.getUserObject();
+						//log.debug("attr=" + attr.getAttributeId() + " par=" + attr.getParentId());
+						if (attr.getAttributeId().startsWith("DS_IMAGE")) {
+							//log.debug("found image for " + attr.getAttributeId());
+							imagePath = attr.getValueText();
+							break;
+						}
+					}
+				} catch (Exception e) {
+					log.warn("could not extract productImage for: " + vo.getCategoryName());
+				}
+			}
+			log.debug("adding product to index: section=" + vo.getCategoryName() + ", img=" + imagePath + " org=" + organizationId + " country=" + country);
+			try {
+				solrDoc = this.buildDocument(vo, pVo);
+				solrDoc.setData(n, vo);
+				solrDoc.addOrganization(organizationId);
+				solrDoc.setModule(catalogId);
+				solrDoc.addSection(divisionNm);
+				if (imagePath != null) solrDoc.setThumbImage(imagePath);
+
+				log.debug("adding to Solr: " + solrDoc.toString());
+				solrUtil.addDocument(solrDoc);
+			} catch (Exception e) {
+				log.error("Unable to index product " + n.getNodeId(),e);
+			}
+		}
+	}
+
+
+	/**
+	 * load the entire product catalog in the same way the public sites would.
+	 * leverage the Util class to traverse and assign pageUrls for us.
+	 * @param orgId
+	 */
+	private List<Node> getProductData(String catalogId) {
+		ProductCatalogUtil util = new ProductCatalogUtil();
+		util.setDBConnection(new SMTDBConnection(dbConn));
+		Map<String, Object> attribs = new HashMap<String, Object>();
+		attribs.put(Constants.MODULE_DATA, new ModuleVO());
+		attribs.put(Constants.QS_PATH, config.get(Constants.QS_PATH));
+		util.setAttributes(attribs);
+		log.debug("loading product for catalogId=" + catalogId);
+		Tree t = util.loadCatalog(catalogId, null, true, null);
+
+		//let the util assign page URLs for us
+		return util.assignPageviewsToCatalogUsingDivision(t.preorderList(), new HashMap<String, StatVO>(), "/hcp/", (catalogId.startsWith("DS_PRODUCTS")), true);
+	}
+
+
+
+	/**
+	 * the purpose of this method is to transpose the Category and Product VO's
+	 * into searchable strings for Lucene to match against.
+	 * Iterate the Category, Product, as well as the ProductAttributes.
+	 * The value-add here is that we're making the database-values searchable in the index.
+	 * If my product has an attribute "Resources", this will allow us to match against searches for "Resources"
+	 * @param catVo
+	 * @param prodVo
+	 * @return
+	 * @throws ActionException 
+	 */
+	private ProductCatalogSolrDocumentVO buildDocument(ProductCategoryVO catVo, ProductVO prodVo) throws ActionException {
+		ProductCatalogSolrDocumentVO solrDoc = (ProductCatalogSolrDocumentVO) SolrActionUtil.newInstance(SOLR_DOC_CLASS);
+		StringBuilder txt = new StringBuilder(5000);
+
+		//add the CategoryVO
+		txt.append(catVo.toString()).append("\r");
+		//log.debug("cat=" + catVo.toString());
+
+		//add the ProductVO
+		if (prodVo != null) {
+			txt.append(prodVo.toString()).append("\r");
+			//log.debug("prod=" + prodVo.toString());
+
+			//add each of the ProductAttributeVOs
+			try {
+				for (Node n : prodVo.getAttributes().getAllAttributes()) {
+					txt.append(((ProductAttributeVO)n.getUserObject()).toString()).append("\r");
+					//	log.debug("added attrib: " + n);
+				}
+
+			} catch (Exception e) {
+				//log.warn("could not add attributes to product: " + prodVo.getProductId(), e);
+			}
+		}
+
+		//log.debug(txt);
+		solrDoc.setContents(txt.toString());
+		return solrDoc;
+	}
 
 	@Override
 	public void purgeIndexItems(HttpSolrServer server) throws IOException {
