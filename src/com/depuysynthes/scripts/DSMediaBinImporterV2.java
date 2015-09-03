@@ -712,7 +712,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 						if (s.startsWith("DSUS")) continue; //remove tracking#s
 						newVals.add(s.trim().replaceAll(", ", ","));
 					}
-					vo.setAnatomy(StringUtil.getDelimitedList(newVals.toArray(new String[newVals.size()]), false, "~"));
+					row.put("Anatomy", StringUtil.getDelimitedList(newVals.toArray(new String[newVals.size()]), false, "~"));
 				}
 
 				//determine Modification Date for the record. -- displays in site-search results
