@@ -158,7 +158,7 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 				doc.setField(MediaBinField.DownloadType.getField(), parseDownloadType(vo.getDownloadTypeTxt(), vo.isVideo()));
 				
 				doc.setField(SearchDocumentHandler.META_KEYWORDS, vo.getMetaKeywords());
-				doc.setField(SearchDocumentHandler.MODULE_TYPE, "DOWNLOAD");
+				doc.setField(SearchDocumentHandler.MODULE_TYPE, "DOWNLOAD_" + (vo.isVideo() ? "VIDEO" : "OTHER"));
 				doc.setField(SearchDocumentHandler.UPDATE_DATE, df.format(vo.getModifiedDt()));
 				doc.setField(SearchDocumentHandler.CONTENTS, vo.isVideo() ? "" : parseFile(vo, fileRepos));
 				doc.setField(MediaBinField.TrackingNo.getField(), vo.getTrackingNoTxt()); //DSI uses this to align supporting images and tag favorites
