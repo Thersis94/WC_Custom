@@ -224,7 +224,11 @@ public class ProductCatalogSolrIndex extends SMTAbstractIndex {
 	@Override
 	public void purgeIndexItems(HttpSolrServer server) throws IOException {
 		try {
-			server.deleteByQuery(SearchDocumentHandler.INDEX_TYPE + ":" + getIndexType());
+			StringBuilder solrQuery = new StringBuilder(60);
+			solrQuery.append(SearchDocumentHandler.INDEX_TYPE + ":" + getIndexType() + " AND ");
+			solrQuery.append(SearchDocumentHandler.ORGANIZATION + ":" + organizationId);
+			
+			server.deleteByQuery(solrQuery.toString());
 		} catch (Exception e) {
 			throw new IOException(e);
 		}
