@@ -54,7 +54,7 @@ public class ProductCatalogSolrIndex extends SMTAbstractIndex {
 	 * Index type for this index.  This value is stored in the INDEX_TYPE field
 	 */
 	public static String INDEX_TYPE = "DS_PRODUCTS";
-	public static String SOLR_DOC_CLASS = ProductCatalogSolrDocumentVO.class.getName();
+	protected static String SOLR_DOC_CLASS = ProductCatalogSolrDocumentVO.class.getName();
 
 	/**
 	 * @param config
@@ -70,8 +70,8 @@ public class ProductCatalogSolrIndex extends SMTAbstractIndex {
 	@Override
 	public void addIndexItems(HttpSolrServer server) {
 		log.info("Indexing DePuySynthes US Products & Procedures");
-		indexProducts("DS_PRODUCTS", server, SOLR_DOC_CLASS, 50);
-		indexProducts("DS_PROCEDURES", server, SOLR_DOC_CLASS, 45);
+		indexProducts("DS_PRODUCTS", server, SOLR_DOC_CLASS, 50, "DS_PRODUCT");
+		indexProducts("DS_PROCEDURES", server, SOLR_DOC_CLASS, 45, "DS_PROCEDURE");
 	}
 
 
@@ -80,7 +80,7 @@ public class ProductCatalogSolrIndex extends SMTAbstractIndex {
 	 * @param catalogId
 	 * @param server
 	 */
-	protected void indexProducts(String catalogId, HttpSolrServer server, String solrDocClass, int dsOrderNo) {
+	protected void indexProducts(String catalogId, HttpSolrServer server, String solrDocClass, int dsOrderNo, String moduleType) {
 		List<Node> nodes = getProductData(catalogId);
 		log.info("Found " + nodes.size() + " nodes to index for " + catalogId + ".");
 
@@ -146,7 +146,7 @@ public class ProductCatalogSolrIndex extends SMTAbstractIndex {
 				solrDoc.setData(n, vo);
 				solrDoc.setDsOrderNo(dsOrderNo);
 				solrDoc.addOrganization(organizationId);
-				solrDoc.setModule(catalogId);
+				solrDoc.setModule(moduleType);
 				solrDoc.addSection(divisionNm);
 				if (imagePath != null) solrDoc.setThumbImage(imagePath);
 
