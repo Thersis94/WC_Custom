@@ -1,7 +1,9 @@
 package com.depuysynthes.action;
 
 // JDK 7
+import java.beans.PropertyChangeEvent;
 import java.sql.ResultSet;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 
@@ -9,6 +11,8 @@ import java.util.Date;
 
 
 import java.util.List;
+
+
 
 // SMTBaseLibs 2.0
 import com.siliconmtn.db.DBUtil;
@@ -64,6 +68,7 @@ public class MediaBinAssetVO extends SBModuleVO {
 	private String anatomy = null;
 	private String metaKeywords = null;
 	private String videoChapters = null;
+	private List<PropertyChangeEvent> deltas;
 	
 	public MediaBinAssetVO() {
 	}
@@ -357,109 +362,98 @@ public class MediaBinAssetVO extends SBModuleVO {
 		this.dimensionsTxt = dimensionsTxt;
 	}
 
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((anatomy == null) ? 0 : anatomy.hashCode());
-		result = prime * result + ((assetDesc == null) ? 0 : assetDesc.hashCode());
-		result = prime * result + ((assetNm == null) ? 0 : assetNm.hashCode());
-		result = prime * result + ((assetType == null) ? 0 : assetType.hashCode());
-		result = prime * result + ((bodyRegionTxt == null) ? 0 : bodyRegionTxt.hashCode());
-		result = prime * result + ((businessUnitId == null) ? 0 : businessUnitId.hashCode());
-		result = prime * result + ((businessUnitNm == null) ? 0 : businessUnitNm.hashCode());
-		result = prime * result + ((description == null) ? 0 : description.hashCode());
-		result = prime * result + ((dimensionsTxt == null) ? 0 : dimensionsTxt.hashCode());
-		result = prime * result + ((downloadTypeTxt == null) ? 0 : downloadTypeTxt.hashCode());
-		result = prime * result + ((dpySynMediaBinId == null) ? 0 : dpySynMediaBinId .hashCode());
-		result = prime * result + ((duration == null) ? 0 : duration.hashCode());
-		result = prime * result + ((fileNm == null) ? 0 : fileNm.hashCode());
-		result = prime * result + ((heightNo == null) ? 0 : heightNo.hashCode());
-		result = prime * result + importFileCd;
-		result = prime * result + (isVideo ? 1231 : 1237);
-		result = prime * result + ((languageCode == null) ? 0 : languageCode.hashCode());
-		result = prime * result + ((literatureTypeTxt == null) ? 0 : literatureTypeTxt.hashCode());
-		result = prime * result + ((metaKeywords == null) ? 0 : metaKeywords.hashCode());
-		result = prime * result + ((modifiedDt == null) ? 0 : modifiedDt.hashCode());
-		result = prime * result + ((opCoNm == null) ? 0 : opCoNm.hashCode());
-		result = prime * result + ((prodFamilyNm == null) ? 0 : prodFamilyNm.hashCode());
-		result = prime * result + ((prodNm == null) ? 0 : prodNm.hashCode());
-		result = prime * result + ((revisionLvlTxt == null) ? 0 : revisionLvlTxt.hashCode());
-		result = prime * result + ((titleTxt == null) ? 0 : titleTxt.hashCode());
-		result = prime * result + ((trackingNoTxt == null) ? 0 : trackingNoTxt.hashCode());
-		result = prime * result + ((videoChapters == null) ? 0 : videoChapters.hashCode());
-		result = prime * result + ((widthNo == null) ? 0 : widthNo.hashCode());
-		return result;
-	}
-
 	/**
 	 * a rather complex "equals" method, but highly effective.
 	 * This method is called specifically from the DSMediaBinImporterV2 class,
 	 * which uses it to compare two versions of the same MB Asset for changes.
 	 * It must look at every field in order to accurately determine if the records are identical.
 	 */
-	@Override
-	public boolean equals(Object obj) {
+	public boolean lexicographyEquals(Object obj) {
 		if (this == obj) return true;
 		if (obj == null) return false;
 		if (getClass() != obj.getClass()) return false;
 
 		MediaBinAssetVO other = (MediaBinAssetVO) obj;
-		if (!compareStr(anatomy, other.anatomy)) {
-			return false;
-		} else if (!compareStr(assetDesc, other.assetDesc)) {
-			return false;
-		} else if (!compareStr(assetNm, other.assetNm)) {
-			return false;
-		} else if (!compareStr(assetType, other.assetType)) {
-			return false;
-		} else if (!compareStr(bodyRegionTxt, other.bodyRegionTxt)) {
-			return false;
-		} else if (!compareInt(businessUnitId, other.businessUnitId)) {
-			return false;
-		} else if (!compareStr(businessUnitNm, other.businessUnitNm)) {
-			return false;
-		} else if (!compareStr(description, other.description)) {
-			return false;
-		} else if (!compareStr(dimensionsTxt, other.dimensionsTxt)) {
-			return false;
-		} else if (!compareStr(downloadTypeTxt, other.downloadTypeTxt)) {
-			return false;
-		} else if (!compareStr(dpySynMediaBinId, other.dpySynMediaBinId)) {
-			return false;
-		} else if (!compareDbl(duration, other.duration)) {
-			return false;
-		} else if (!compareStr(businessUnitNm, other.businessUnitNm)) {
-			return false;
-		} else if (!compareStr(description, other.description)) {
-			return false;
-		} else if (!compareStr(fileNm, other.fileNm)) {
-			return false;
-		} else if (!compareInt(importFileCd, other.importFileCd)) {
-			return false;
-		} else if (!compareStr(languageCode, other.languageCode)) {
-			return false;
-		} else if (!compareStr(literatureTypeTxt, other.literatureTypeTxt)) {
-			return false;
-		} else if (!compareStr(metaKeywords, other.metaKeywords)) {
-			return false;
-		} else if (!compareStr(opCoNm, other.opCoNm)) {
-			return false;
-		} else if (!compareStr(prodFamilyNm, other.prodFamilyNm)) {
-			return false;
-		} else if (!compareStr(prodNm, other.prodNm)) {
-			return false;
-		} else if (!compareStr(revisionLvlTxt, other.revisionLvlTxt)) {
-			return false;
-		} else if (!compareStr(titleTxt, other.titleTxt)) {
-			return false;
-		} else if (!compareStr(trackingNoTxt, other.trackingNoTxt)) {
-			return false;
-		} else if (!compareStr(videoChapters, other.videoChapters)) {
-			return false;
-		}
+		if (!compareStr(anatomy, other.anatomy))
+			this.addDelta(new PropertyChangeEvent(this,"anatomy",other.anatomy, anatomy));
+		
+		if (!compareStr(assetDesc, other.assetDesc))
+			this.addDelta(new PropertyChangeEvent(this,"assetDesc",other.assetDesc, assetDesc));
 
-		return true;
+		if (!compareStr(assetNm, other.assetNm))
+			this.addDelta(new PropertyChangeEvent(this,"assetNm",other.assetNm, assetNm));
+
+		if (!compareStr(assetType, other.assetType))
+			this.addDelta(new PropertyChangeEvent(this,"assetType",other.assetType, assetType));
+
+		if (!compareStr(bodyRegionTxt, other.bodyRegionTxt))
+			this.addDelta(new PropertyChangeEvent(this,"bodyRegionTxt",other.bodyRegionTxt, bodyRegionTxt));
+
+		if (!compareInt(businessUnitId, other.businessUnitId))
+			this.addDelta(new PropertyChangeEvent(this,"businessUnitId",other.businessUnitId, businessUnitId));
+
+		if (!compareStr(businessUnitNm, other.businessUnitNm))
+			this.addDelta(new PropertyChangeEvent(this,"businessUnitNm",other.businessUnitNm, businessUnitNm));
+
+		if (!compareStr(description, other.description))
+			this.addDelta(new PropertyChangeEvent(this,"description",other.description, description));
+
+		if (!compareStr(dimensionsTxt, other.dimensionsTxt))
+			this.addDelta(new PropertyChangeEvent(this,"dimensionsTxt",other.dimensionsTxt, dimensionsTxt));
+
+		if (!compareStr(downloadTypeTxt, other.downloadTypeTxt))
+			this.addDelta(new PropertyChangeEvent(this,"downloadTypeTxt",other.downloadTypeTxt, downloadTypeTxt));
+
+		if (!compareStr(dpySynMediaBinId, other.dpySynMediaBinId))
+			this.addDelta(new PropertyChangeEvent(this,"dpySynMediaBinId",other.dpySynMediaBinId, dpySynMediaBinId));
+
+		if (!compareDbl(duration, other.duration))
+			this.addDelta(new PropertyChangeEvent(this,"duration",Convert.formatDouble(other.duration), Convert.formatDouble(duration)));
+
+//		if (!compareStr(businessUnitNm, other.businessUnitNm))
+//			this.addDelta(new PropertyChangeEvent(this,"anatomy",other.anatomy, anatomy));
+//
+//		if (!compareStr(description, other.description))
+//			this.addDelta(new PropertyChangeEvent(this,"description",other.description, description));
+//
+		if (!compareStr(fileNm, other.fileNm))
+			this.addDelta(new PropertyChangeEvent(this,"fileNm",other.fileNm, fileNm));
+
+		if (!compareInt(importFileCd, other.importFileCd))
+			this.addDelta(new PropertyChangeEvent(this,"anatomy",Convert.formatInteger(other.importFileCd), Convert.formatInteger(importFileCd)));
+
+		if (!compareStr(languageCode, other.languageCode))
+			this.addDelta(new PropertyChangeEvent(this,"languageCode",other.languageCode, languageCode));
+
+		if (!compareStr(literatureTypeTxt, other.literatureTypeTxt))
+			this.addDelta(new PropertyChangeEvent(this,"literatureTypeTxt",other.literatureTypeTxt, literatureTypeTxt));
+
+		if (!compareStr(metaKeywords, other.metaKeywords))
+			this.addDelta(new PropertyChangeEvent(this,"metaKeywords",other.metaKeywords, metaKeywords));
+
+		if (!compareStr(opCoNm, other.opCoNm))
+			this.addDelta(new PropertyChangeEvent(this,"opCoNm",other.opCoNm, opCoNm));
+
+		if (!compareStr(prodFamilyNm, other.prodFamilyNm))
+			this.addDelta(new PropertyChangeEvent(this,"prodFamilyNm",other.prodFamilyNm, prodFamilyNm));
+
+		if (!compareStr(prodNm, other.prodNm))
+			this.addDelta(new PropertyChangeEvent(this,"prodNm",other.prodNm, prodNm));
+
+		if (!compareStr(revisionLvlTxt, other.revisionLvlTxt))
+			this.addDelta(new PropertyChangeEvent(this,"revisionLvlTxt",other.revisionLvlTxt, revisionLvlTxt));
+
+		if (!compareStr(titleTxt, other.titleTxt))
+			this.addDelta(new PropertyChangeEvent(this,"titleTxt",other.titleTxt, titleTxt));
+
+		if (!compareStr(trackingNoTxt, other.trackingNoTxt))
+			this.addDelta(new PropertyChangeEvent(this,"trackingNoTxt",other.trackingNoTxt, trackingNoTxt));
+
+		if (!compareStr(videoChapters, other.videoChapters))
+			this.addDelta(new PropertyChangeEvent(this,"videoChapters",other.videoChapters, videoChapters));
+
+
+		return getDeltas() == null;
 	}
 	
 	/**
@@ -504,5 +498,26 @@ public class MediaBinAssetVO extends SBModuleVO {
 	@Override
 	public String toString() {
 		return StringUtil.getToString(this, false, 1, "|");
+	}
+	
+
+	/**
+	 * the 3 methods below are for tracking changes across asset versioning.  
+	 * We capture these from the .equals() method, and are able to report this information
+	 * to an administrator
+	 * @param evt
+	 */
+
+	public void addDelta(PropertyChangeEvent evt) {
+		if (deltas == null) deltas = new ArrayList<>();
+		deltas.add(evt);
+	}
+
+	public List<PropertyChangeEvent> getDeltas() {
+		return deltas;
+	}
+
+	public void setDeltas(List<PropertyChangeEvent> deltas) {
+		this.deltas = deltas;
 	}
 }
