@@ -44,7 +44,7 @@ import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 public class ProductSolrIndex extends SMTAbstractIndex {
 
 	public static final String ORGANIZATON_ID = "USA";
-	public static final String CUSTOM_FIELD_CATALOG = "catalog";
+	public static final String CUSTOM_FIELD_CATALOG = "catalog_s";
 	public static final String CATALOG_PAGE_URL = "catalog";
 
 	/**

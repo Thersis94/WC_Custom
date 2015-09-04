@@ -70,8 +70,8 @@ public class ProductCatalogSolrIndex extends SMTAbstractIndex {
 	@Override
 	public void addIndexItems(HttpSolrServer server) {
 		log.info("Indexing DePuySynthes US Products & Procedures");
-		indexProducts("DS_PRODUCTS", server, ProductCatalogSolrIndex.SOLR_DOC_CLASS, 50);
-		indexProducts("DS_PROCEDURES", server, ProductCatalogSolrIndex.SOLR_DOC_CLASS, 45);
+		indexProducts("DS_PRODUCTS", server, SOLR_DOC_CLASS, 50);
+		indexProducts("DS_PROCEDURES", server, SOLR_DOC_CLASS, 45);
 	}
 
 
@@ -142,7 +142,7 @@ public class ProductCatalogSolrIndex extends SMTAbstractIndex {
 			}
 			log.debug("adding product to index: section=" + vo.getCategoryName() + ", img=" + imagePath + " org=" + organizationId + " country=" + country);
 			try {
-				solrDoc = this.buildDocument(vo, pVo);
+				solrDoc = this.buildDocument(vo, pVo, solrDocClass);
 				solrDoc.setData(n, vo);
 				solrDoc.setDsOrderNo(dsOrderNo);
 				solrDoc.addOrganization(organizationId);
@@ -191,8 +191,8 @@ public class ProductCatalogSolrIndex extends SMTAbstractIndex {
 	 * @return
 	 * @throws ActionException 
 	 */
-	private ProductCatalogSolrDocumentVO buildDocument(ProductCategoryVO catVo, ProductVO prodVo) throws ActionException {
-		ProductCatalogSolrDocumentVO solrDoc = (ProductCatalogSolrDocumentVO) SolrActionUtil.newInstance(SOLR_DOC_CLASS);
+	private ProductCatalogSolrDocumentVO buildDocument(ProductCategoryVO catVo, ProductVO prodVo, String solrDocClass) throws ActionException {
+		ProductCatalogSolrDocumentVO solrDoc = (ProductCatalogSolrDocumentVO) SolrActionUtil.newInstance(solrDocClass);
 		StringBuilder txt = new StringBuilder(5000);
 
 		//add the CategoryVO
