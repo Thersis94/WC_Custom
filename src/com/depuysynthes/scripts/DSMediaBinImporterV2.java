@@ -12,6 +12,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.beans.PropertyChangeEvent;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -21,6 +22,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+
 
 
 // SMT Base Libs
@@ -378,7 +380,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			if (masterRecords.containsKey(vo.getDpySynMediaBinId())) {
 				//check to see if the data has changed, which implies we have an update
 				MediaBinDeltaVO mr = masterRecords.get(vo.getDpySynMediaBinId());
-				if (! vo.equals(mr)) {
+				if (! vo.lexicographyEquals(mr)) {
 					vo.setRecordState(State.Update);
 					//pass the checksum off the existing file to the new VO, so we can compare it to the new file
 					vo.setChecksum(mr.getChecksum());
@@ -1094,19 +1096,32 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		
 		msg.append("<h4>").append(st.toString()).append(" Summary</h4>");
 		msg.append("<table border='1' width='95%' align='center'><thead><tr>");
-		msg.append("<th width='33%'>SMT Tracking Number</th>");
-		msg.append("<th width='33%'>eCopy Tracking Number</th>");
-		msg.append("<th width='34%'>File Name</th></tr></thead><tbody>");
+		msg.append("<th>SMT Tracking Number</th>");
+		msg.append("<th>eCopy Tracking Number</th>");
+		msg.append("<th>File Name</th>");
+		if (State.Update == st) msg.append("<th>Changes</th>");
+		msg.append("</tr></thead><tbody>");
 		
 		for (MediaBinDeltaVO vo : masterRecords.values()) {
 			if (st != vo.getRecordState()) continue; //only print the ones we want
 			msg.append("<tr>");
-			msg.append("<td>").append(StringUtil.checkVal(vo.getDpySynMediaBinId())).append("</td>");
-			msg.append("<td>").append(StringUtil.checkVal(vo.getEcopyTrackingNo())).append("</td>");
+			msg.append("<td nowrap>").append(StringUtil.checkVal(vo.getDpySynMediaBinId())).append("</td>");
+			msg.append("<td nowrap>").append(StringUtil.checkVal(vo.getEcopyTrackingNo())).append("</td>");
 			if (State.Delete == st) {
 				msg.append("<td>").append(vo.getFileNm()).append("</td>");
 			} else {
 				msg.append("<td><a href=\"").append(vo.getLimeLightUrl()).append("\">").append(vo.getFileNm()).append("</a></td>");
+			}
+			if (State.Update == st) {
+				msg.append("<td>");
+				if (vo.getDeltas() != null) {
+					for (PropertyChangeEvent e : vo.getDeltas()) {
+						msg.append("<b>").append(e.getPropertyName()).append("</b><br/>");
+						msg.append("old=").append(e.getOldValue()).append("<br/>");
+						msg.append("new=").append(e.getNewValue()).append("<br/>");
+					}
+				}
+				msg.append("</td>");
 			}
 			msg.append("</tr>");
 		}
