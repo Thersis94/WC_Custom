@@ -20,12 +20,6 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer;
 public class EMEAProductCatalogSolrIndex extends ProductCatalogSolrIndex {
 
 	/**
-	 * Index type for this index.  This value is stored in the INDEX_TYPE field
-	 */
-	public static String INDEX_TYPE = "DS_PRODUCTS_EMEA";
-	protected static String SOLR_DOC_CLASS = "com.depuysynthes.lucene.data.EMEAProductCatalogSolrDocumentVO";
-
-	/**
 	 * @param config
 	 */
 	public EMEAProductCatalogSolrIndex(Properties config) {
@@ -33,18 +27,11 @@ public class EMEAProductCatalogSolrIndex extends ProductCatalogSolrIndex {
 		organizationId = "DPY_SYN_EMEA";
 	}
 
-	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.search.lucene.custom.SMTCustomIndexIntfc#addIndexItems(java.sql.Connection, com.siliconmtn.cms.CMSConnection, org.apache.lucene.index.IndexWriter)
-	 */
 	@Override
 	public void addIndexItems(HttpSolrServer server) {
 		log.info("Indexing DePuySynthes EMEA Products & Procedures");
-		indexProducts("DS_PRODUCTS_EMEA", server, SOLR_DOC_CLASS, 50);
-		indexProducts("DS_PROCEDURES_EMEA", server, SOLR_DOC_CLASS, 45);
+		indexProducts("DS_PRODUCTS_EMEA", server, SOLR_DOC_CLASS, 50, "DS_PRODUCT");
+		indexProducts("DS_PROCEDURES_EMEA", server, SOLR_DOC_CLASS, 45, "DS_PROCEDURE");
 	}
 
-	@Override
-	public String getIndexType() {
-		return INDEX_TYPE;
-	}
 }

@@ -15,9 +15,11 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 import org.xml.sax.ContentHandler;
 
@@ -32,6 +34,8 @@ import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.sax.BodyContentHandler;
+
+
 
 
 // SMT Base Libs
@@ -337,45 +341,40 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 	 * @param busUnit
 	 * @return
 	 */
-	private String parseBusinessUnit(String busUnit) {
+	private List<String> parseBusinessUnit(String busUnit) {
 		String tmp = StringUtil.checkVal(busUnit).toUpperCase();
 		String[] tokens = tmp.split("~");
-		StringBuilder newStr = new StringBuilder();
+		Set<String> data = new HashSet<>();
 
 		for (int i = 0; i < tokens.length; i++) {
 			// skip token if empty
-			if (tokens[i].length() == 0) continue;
-
-			// append a pipe delimiter if not first valid token
-			if (i > 0) newStr.append("|");
-
-			if (tokens[i].contains("BIO")) {
-				newStr.append(busUnits.get("BIO"));
+			if (tokens[i].length() == 0) {
+				continue;
+			} else if (tokens[i].contains("BIO")) {
+				data.add(busUnits.get("BIO"));
 			} else if (tokens[i].contains("CMF")) {
-				newStr.append(busUnits.get("CMF"));
+				data.add(busUnits.get("CMF"));
 			} else if (tokens[i].contains("CODMAN")) {
-				newStr.append(busUnits.get("CODMAN"));
+				data.add(busUnits.get("CODMAN"));
 			} else if (tokens[i].contains("HIP")) {
-				newStr.append(busUnits.get("HIP"));
+				data.add(busUnits.get("HIP"));
 			} else if (tokens[i].contains("KNEE")) {
-				newStr.append(busUnits.get("KNEE"));
+				data.add(busUnits.get("KNEE"));
 			} else if (tokens[i].contains("MITEK")) {
-				newStr.append(busUnits.get("MITEK"));
+				data.add(busUnits.get("MITEK"));
 			} else if (tokens[i].contains("POWERTOOLS")) {
-				newStr.append(busUnits.get("TOOLS"));
+				data.add(busUnits.get("TOOLS"));
 			} else if (tokens[i].contains("SHOULDER")) {
-				newStr.append(busUnits.get("SHOULDER"));
+				data.add(busUnits.get("SHOULDER"));
 			} else if (tokens[i].contains("SPINE")) {
-				newStr.append(busUnits.get("SPINE"));
+				data.add(busUnits.get("SPINE"));
 			} else if (tokens[i].contains("TRAUMA")) {
-				newStr.append(busUnits.get("TRAUMA"));
+				data.add(busUnits.get("TRAUMA"));
 			} else {
-				newStr.append(busUnits.get("OTHER"));
+				data.add(busUnits.get("OTHER"));
 			}
-
 		}
-
-		return newStr.toString();
+		return new ArrayList<String>(data);
 	}
 
 	/**
