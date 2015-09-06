@@ -89,12 +89,17 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 		VideoChapters("videoChapters_s"),
 		DownloadType("downloadType_s"),
 		DSOrderNo("dsOrderNo_i");
+		ImportFileCd("importFileCd_i");
 		MediaBinField(String s) { this.metaDataField = s; }
 		private String metaDataField = null;
 		public String getField() { return metaDataField; }
 	}
 
-
+	public MediaBinSolrIndex() {
+		loadBusUnits();
+	}
+	
+			
 	/**
 	 * Initializes the Business Units
 	 */
@@ -119,7 +124,8 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 	 * @param server
 	 * @param fileRepos
 	 */
-	protected void indexFiles(List<MediaBinAssetVO> metaData, HttpSolrServer server, String fileRepos) {
+	public void indexFiles(List<MediaBinAssetVO> metaData, HttpSolrServer server, String fileRepos) {
+		int cnt = 0;
 		for (int i = 0; i < metaData.size(); i++) {
 			SolrInputDocument doc = new SolrInputDocument();
 			MediaBinAssetVO vo = metaData.get(i);
@@ -169,6 +175,7 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 				doc.setField(MediaBinField.AssetType.getField(), this.getAssetType(vo));
 				doc.setField(MediaBinField.AssetDesc.getField(), vo.getAssetDesc());
 				doc.setField(MediaBinField.DSOrderNo.getField(), vo.isVideo() ? 25 : 30); //used for moduleType sequencing on DS only
+				doc.setField(MediaBinField.ImportFileCd.getField(), vo.getImportFileCd());
 				if (vo.isVideo())
 					doc.setField(MediaBinField.VideoChapters.getField(), vo.getVideoChapters());
 
@@ -188,7 +195,8 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 					doc.setField(SearchDocumentHandler.FILE_EXTENSION, fileName.substring(++dotIndex));
 
 				server.add(doc);
-				if ((i % 100) == 0) {
+				++cnt;
+				if ((i % 100) == 0 && i > 0) {
 					//server.commit(false, false, true);
 					log.info("Added " + i + " records");
 				}
@@ -196,6 +204,7 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 				log.error("Unable to index asset " + vo.getDpySynMediaBinId(), e);
 			}
 		}
+		log.info("Added " + cnt + " records");
 	}
 
 	private String getAssetType(MediaBinAssetVO vo) {
