@@ -88,13 +88,18 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 		TrackingNo("trackingNumber_s"),
 		VideoChapters("videoChapters_s"),
 		DownloadType("downloadType_s"),
-		DSOrderNo("dsOrderNo_i");
+		DSOrderNo("dsOrderNo_i"),
+		ImportFileCd("importFileCd_i");
 		MediaBinField(String s) { this.metaDataField = s; }
 		private String metaDataField = null;
 		public String getField() { return metaDataField; }
 	}
 
-
+	public MediaBinSolrIndex() {
+		loadBusUnits();
+	}
+	
+			
 	/**
 	 * Initializes the Business Units
 	 */
@@ -119,7 +124,8 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 	 * @param server
 	 * @param fileRepos
 	 */
-	protected void indexFiles(List<MediaBinAssetVO> metaData, HttpSolrServer server, String fileRepos) {
+	public void indexFiles(List<MediaBinAssetVO> metaData, HttpSolrServer server, String fileRepos) {
+		int cnt = 0;
 		for (int i = 0; i < metaData.size(); i++) {
 			SolrInputDocument doc = new SolrInputDocument();
 			MediaBinAssetVO vo = metaData.get(i);
@@ -149,7 +155,7 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 				doc.setField(SearchDocumentHandler.ORGANIZATION, orgList); //multiValue field
 				doc.setField(SearchDocumentHandler.LANGUAGE, StringUtil.checkVal(vo.getLanguageCode(), "en"));
 				doc.setField(SearchDocumentHandler.ROLE, SecurityController.PUBLIC_ROLE_LEVEL);
-				doc.setField(SearchDocumentHandler.SITE_PAGE_URL, vo.getActionUrl()); //need to fix DSI and regression test before removing this
+				doc.setField(SearchDocumentHandler.SITE_PAGE_URL, vo.getActionUrl()); //need to fix DSI phase 2 code and regression test before removing this
 				doc.setField(SearchDocumentHandler.DOCUMENT_URL, vo.getActionUrl());
 				doc.setField(SearchDocumentHandler.DOCUMENT_ID, vo.getDpySynMediaBinId());
 				doc.setField(SearchDocumentHandler.TITLE, vo.getTitleTxt());
@@ -166,12 +172,14 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 				doc.setField(SearchDocumentHandler.UPDATE_DATE, df.format(vo.getModifiedDt()));
 				doc.setField(SearchDocumentHandler.CONTENTS, vo.isVideo() ? "" : parseFile(vo, fileRepos));
 				doc.setField(MediaBinField.TrackingNo.getField(), vo.getTrackingNoTxt()); //DSI uses this to align supporting images and tag favorites
-				doc.setField(MediaBinField.AssetType.getField(), this.getAssetType(vo));
+				doc.setField(MediaBinField.AssetType.getField(), getAssetType(vo));
 				doc.setField(MediaBinField.AssetDesc.getField(), vo.getAssetDesc());
 				doc.setField(MediaBinField.DSOrderNo.getField(), vo.isVideo() ? 25 : 30); //used for moduleType sequencing on DS only
-				if (vo.isVideo())
+				doc.setField(MediaBinField.ImportFileCd.getField(), vo.getImportFileCd());
+				if (vo.isVideo()) {
 					doc.setField(MediaBinField.VideoChapters.getField(), vo.getVideoChapters());
-
+					log.error("chapters=" + vo.getVideoChapters());
+				}
 				//turn the flat/delimited hierarchy into a structure that PathHierarchyTokenizer will understand
 				for (String s : StringUtil.checkVal(vo.getAnatomy()).split("~")) {
 					//need to tokenize the levels and trim spaces from each, the MB team are slobs!
@@ -188,7 +196,8 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 					doc.setField(SearchDocumentHandler.FILE_EXTENSION, fileName.substring(++dotIndex));
 
 				server.add(doc);
-				if ((i % 100) == 0) {
+				++cnt;
+				if ((i % 100) == 0 && i > 0) {
 					//server.commit(false, false, true);
 					log.info("Added " + i + " records");
 				}
@@ -196,6 +205,7 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 				log.error("Unable to index asset " + vo.getDpySynMediaBinId(), e);
 			}
 		}
+		log.info("Added " + cnt + " records");
 	}
 
 	private String getAssetType(MediaBinAssetVO vo) {
