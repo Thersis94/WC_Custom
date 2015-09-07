@@ -32,8 +32,6 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 	 * 
 	 */
 	private static final long serialVersionUID = 2414243653179753113L;
-
-	public final static String solrIndex = "DEPUY_NEXUS";
 	
 	private String kitId;
 	private String kitSKU;
@@ -46,15 +44,20 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 	private Map<String, String> sharedWith;
 	private List<NexusKitLayerVO> layers;
 	
-	NexusKitVO() {
+	NexusKitVO(String solrIndex) {
 		super(solrIndex);
 		layers = new ArrayList<>();
 		sharedWith = new HashMap<>();
 	}
 	
-	NexusKitVO(SMTServletRequest req) {
-		this();
+	NexusKitVO(SMTServletRequest req, String solrIndex) {
+		this(solrIndex);
 		setData(req);
+	}
+	
+	NexusKitVO(ResultSet rs, String solrIndex) {
+		this(solrIndex);
+		setData(rs);
 	}
 	
 	public void setData(SMTServletRequest req) {
@@ -65,11 +68,6 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 		kitGTIN = req.getParameter("kitGTIN");
 		orgName = req.getParameter("orgName");
 		
-	}
-	
-	NexusKitVO(ResultSet rs) {
-		this();
-		setData(rs);
 	}
 	
 	public void setData(ResultSet rs) {

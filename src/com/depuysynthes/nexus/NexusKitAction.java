@@ -31,7 +31,9 @@ import com.smt.sitebuilder.action.search.SolrAction;
  ****************************************************************************/
 
 public class NexusKitAction extends SBActionAdapter {
-	
+
+
+	public static final String SOLR_INDEX = "DEPUY_NEXUS";
 	public static final String KIT_SESSION_NM = "depuy-nexus-kit";
 	
 	// Potential actions for the user to take
@@ -397,7 +399,7 @@ public class NexusKitAction extends SBActionAdapter {
 					if (layer != null) kit.addLayer(layer);
 					if (kit != null) kits.add(kit);
 					currentKit = rs.getString("SET_INFO_ID");
-					kit = new NexusKitVO(rs);
+					kit = new NexusKitVO(rs, SOLR_INDEX);
 				}
 
 				if (!currentLayer.equals(rs.getString("LAYER_ID"))) {
@@ -439,7 +441,7 @@ public class NexusKitAction extends SBActionAdapter {
 				break;
 			case Kit:
 				NexusKitVO kit = (NexusKitVO)req.getSession().getAttribute(KIT_SESSION_NM);
-				if (kit == null) kit = new NexusKitVO();
+				if (kit == null) kit = new NexusKitVO(SOLR_INDEX);
 				kit.setData(req);
 				req.getSession().setAttribute(KIT_SESSION_NM, kit);
 				break;
@@ -456,7 +458,7 @@ public class NexusKitAction extends SBActionAdapter {
 	 */
 	private void editProduct(SMTServletRequest req) throws ActionException {
 		NexusKitVO kit = (NexusKitVO)req.getSession().getAttribute(KIT_SESSION_NM);
-		if(kit == null) kit = new NexusKitVO();
+		if(kit == null) kit = new NexusKitVO(SOLR_INDEX);
 		NexusKitLayerVO layer = kit.findLayer(req.getParameter("layerId"));
 		if (req.hasParameter("products")) {
 			int order = layer.getProducts().size() + 1;
@@ -486,7 +488,7 @@ public class NexusKitAction extends SBActionAdapter {
 	 */
 	private void editLayer(SMTServletRequest req) throws ActionException {
 		NexusKitVO kit = (NexusKitVO)req.getSession().getAttribute(KIT_SESSION_NM);
-		if(kit == null) kit = new NexusKitVO();
+		if(kit == null) kit = new NexusKitVO(SOLR_INDEX);
 		NexusKitLayerVO layer = kit.findLayer(req.getParameter("layerId"));
 		if (layer == null) {
 			layer = new NexusKitLayerVO(req);
