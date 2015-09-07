@@ -32,6 +32,8 @@ import com.smt.sitebuilder.action.search.SolrAction;
 
 public class NexusKitAction extends SBActionAdapter {
 	
+	public static final String KIT_SESSION_NM = "depuy-nexus-kit";
+	
 	// Potential actions for the user to take
 	enum KitAction {
 		Permissions, Clone, Save, Delete, Edit, Load, Add, Empty, Reorder, ChangeLayer, Copy
@@ -90,14 +92,14 @@ public class NexusKitAction extends SBActionAdapter {
 							sublayer.setParentId(layer.getLayerId());
 						}
 					}
-					req.getSession().setAttribute("kit", kit);
+					req.getSession().setAttribute(KIT_SESSION_NM, kit);
 					saveKit(req);
 				}
 				break;
 			case Load:
 				kits = loadKits(req);
 				if (kits.size() > 0) {
-					req.getSession().setAttribute("kit", kits.get(0));
+					req.getSession().setAttribute(KIT_SESSION_NM, kits.get(0));
 				}
 				break;
 			case Save: 
@@ -138,7 +140,7 @@ public class NexusKitAction extends SBActionAdapter {
 			throw new ActionException("unknown kit action: " + req.getParameter("kitAction"), e);
 		}
 		NexusKitLayerVO layer;
-		NexusKitVO kit = (NexusKitVO) req.getSession().getAttribute("kit");
+		NexusKitVO kit = (NexusKitVO) req.getSession().getAttribute(KIT_SESSION_NM);
 		try {
 			switch(level) {
 				case Layer:
@@ -208,7 +210,7 @@ public class NexusKitAction extends SBActionAdapter {
 	 * @param req
 	 */
 	private void changeSubLayer(SMTServletRequest req) {
-		NexusKitVO kit = (NexusKitVO) req.getSession().getAttribute("kit");
+		NexusKitVO kit = (NexusKitVO) req.getSession().getAttribute(KIT_SESSION_NM);
 		int index = Convert.formatInteger(req.getParameter("index"));
 		NexusKitLayerVO layer;
 		if (req.hasParameter("parentId")) {
@@ -233,7 +235,7 @@ public class NexusKitAction extends SBActionAdapter {
 		
 		kit.addLayer(layer);
 		
-		req.getSession().setAttribute("kit", kit);
+		req.getSession().setAttribute(KIT_SESSION_NM, kit);
 	}
 
 
@@ -244,7 +246,7 @@ public class NexusKitAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	private void changeProductLayer(SMTServletRequest req) throws ActionException {
-		NexusKitVO kit = (NexusKitVO) req.getSession().getAttribute("kit");
+		NexusKitVO kit = (NexusKitVO) req.getSession().getAttribute(KIT_SESSION_NM);
 		String parent = req.getParameter("parentId");
 		String newParent = req.getParameter("newParentId");
 		int index = Convert.formatInteger(req.getParameter("index"));
@@ -254,7 +256,7 @@ public class NexusKitAction extends SBActionAdapter {
 		layer.getProducts().remove(index);
 		kit.findLayer(newParent).addProduct(p);
 		
-		req.getSession().setAttribute("kit", kit);
+		req.getSession().setAttribute(KIT_SESSION_NM, kit);
 	}
 	
 	
@@ -288,13 +290,13 @@ public class NexusKitAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	private void reorderProduct (SMTServletRequest req) throws ActionException {
-		NexusKitVO kit = (NexusKitVO) req.getSession().getAttribute("kit");
+		NexusKitVO kit = (NexusKitVO) req.getSession().getAttribute(KIT_SESSION_NM);
 		NexusKitLayerVO layer = kit.findLayer(req.getParameter("layerId"));
 		int index = Convert.formatInteger(req.getParameter("index"));
 		NexusProductVO p = layer.getProducts().get(index);
 		layer.getProducts().remove(index);
 		layer.getProducts().add(Convert.formatInteger(req.getParameter("newIndex")), p);
-		req.getSession().setAttribute("kit", kit);
+		req.getSession().setAttribute(KIT_SESSION_NM, kit);
 	}
 
 	
@@ -304,7 +306,7 @@ public class NexusKitAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	private void reorderLayer(SMTServletRequest req) throws ActionException {
-		NexusKitVO kit = (NexusKitVO) req.getSession().getAttribute("kit");
+		NexusKitVO kit = (NexusKitVO) req.getSession().getAttribute(KIT_SESSION_NM);
 		int index = Convert.formatInteger(req.getParameter("index"));
 		int newIndex =Convert.formatInteger( req.getParameter("newIndex"));
 		
@@ -323,7 +325,7 @@ public class NexusKitAction extends SBActionAdapter {
 			kit.getLayers().add(Convert.formatInteger(req.getParameter("newIndex")), layer);
 			changeOrderNo(kit.getLayers(), index < newIndex? index : newIndex);
 		}
-		req.getSession().setAttribute("kit", kit);
+		req.getSession().setAttribute(KIT_SESSION_NM, kit);
 	}
 
 
@@ -334,7 +336,7 @@ public class NexusKitAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	private List<NexusKitVO> loadKits(SMTServletRequest req) throws ActionException {
-		StringBuilder sql = new StringBuilder();
+		StringBuilder sql = new StringBuilder(1300);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		String kitId = StringUtil.checkVal(req.getParameter("kitId"));
 		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
@@ -409,7 +411,6 @@ public class NexusKitAction extends SBActionAdapter {
 			if (layer != null) kit.addLayer(layer);
 			if (kit != null) kits.add(kit);
 		} catch (SQLException e) {
-			log.error("Unable to get requested kit infomation", e);
 			throw new ActionException(e);
 		}
 		return kits;
@@ -437,10 +438,10 @@ public class NexusKitAction extends SBActionAdapter {
 				editProduct(req);
 				break;
 			case Kit:
-				NexusKitVO kit = (NexusKitVO)req.getSession().getAttribute("kit");
+				NexusKitVO kit = (NexusKitVO)req.getSession().getAttribute(KIT_SESSION_NM);
 				if (kit == null) kit = new NexusKitVO();
 				kit.setData(req);
-				req.getSession().setAttribute("kit", kit);
+				req.getSession().setAttribute(KIT_SESSION_NM, kit);
 				break;
 		default:
 			break;
@@ -454,7 +455,7 @@ public class NexusKitAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	private void editProduct(SMTServletRequest req) throws ActionException {
-		NexusKitVO kit = (NexusKitVO)req.getSession().getAttribute("kit");
+		NexusKitVO kit = (NexusKitVO)req.getSession().getAttribute(KIT_SESSION_NM);
 		if(kit == null) kit = new NexusKitVO();
 		NexusKitLayerVO layer = kit.findLayer(req.getParameter("layerId"));
 		if (req.hasParameter("products")) {
@@ -474,7 +475,7 @@ public class NexusKitAction extends SBActionAdapter {
 			NexusProductVO p = layer.getProducts().get(Convert.formatInteger(req.getParameter("index")));
 			p.setQuantity(Convert.formatInteger(req.getParameter("qty")));
 		}
-		req.getSession().setAttribute("kit", kit);
+		req.getSession().setAttribute(KIT_SESSION_NM, kit);
 	}
 
 
@@ -484,7 +485,7 @@ public class NexusKitAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	private void editLayer(SMTServletRequest req) throws ActionException {
-		NexusKitVO kit = (NexusKitVO)req.getSession().getAttribute("kit");
+		NexusKitVO kit = (NexusKitVO)req.getSession().getAttribute(KIT_SESSION_NM);
 		if(kit == null) kit = new NexusKitVO();
 		NexusKitLayerVO layer = kit.findLayer(req.getParameter("layerId"));
 		if (layer == null) {
@@ -515,7 +516,7 @@ public class NexusKitAction extends SBActionAdapter {
 				layer.setData(req);
 			}
 		}
-		req.getSession().setAttribute("kit", kit);
+		req.getSession().setAttribute(KIT_SESSION_NM, kit);
 	}
 	
 	
@@ -526,8 +527,8 @@ public class NexusKitAction extends SBActionAdapter {
 	 * @throws ActionException 
 	 */
 	private void saveKit(SMTServletRequest req) throws ActionException {
-		NexusKitVO kit = (NexusKitVO) req.getSession().getAttribute("kit");
-		StringBuilder sql = new StringBuilder();
+		NexusKitVO kit = (NexusKitVO) req.getSession().getAttribute(KIT_SESSION_NM);
+		StringBuilder sql = new StringBuilder(300);
 		boolean insert = false;
 		if (StringUtil.checkVal(kit.getKitId()).length() == 0) {
 			sql.append("INSERT INTO ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("DEPUY_SET_INFO ");
@@ -555,7 +556,6 @@ public class NexusKitAction extends SBActionAdapter {
 			
 			ps.executeUpdate();
 		} catch (SQLException e) {
-			log.error("Unable to save kit", e);
 			throw new ActionException(e);
 		} 
 		if (!insert) {
@@ -573,7 +573,7 @@ public class NexusKitAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	private void clearKit(String kitId) throws ActionException {
-		StringBuilder sql = new StringBuilder();
+		StringBuilder sql = new StringBuilder(150);
 		
 		sql.append("DELETE ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("DEPUY_SET_LAYER ");
 		sql.append("WHERE SET_INFO_ID = ? ");
@@ -583,7 +583,6 @@ public class NexusKitAction extends SBActionAdapter {
 			
 			ps.executeUpdate();
 		} catch(SQLException e) {
-			log.error("Unable to clear supplied kit " + kitId, e);
 			throw new ActionException(e);
 		}
 	}
@@ -595,7 +594,7 @@ public class NexusKitAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	private void saveLayers(NexusKitVO kit) throws ActionException {
-		StringBuilder sql = new StringBuilder();
+		StringBuilder sql = new StringBuilder(250);
 		
 		sql.append("INSERT INTO ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("DEPUY_SET_LAYER ");
 		sql.append("(LAYER_NM, PARENT_ID, ORDER_NO, CREATE_DT, SET_INFO_ID, LAYER_ID) ");
@@ -624,7 +623,6 @@ public class NexusKitAction extends SBActionAdapter {
 			}
 			ps.executeBatch();
 		} catch (SQLException e) {
-			log.error("Unable to update layer", e);
 			throw new ActionException(e);
 		}
 
@@ -643,7 +641,7 @@ public class NexusKitAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	private void saveProducts(NexusKitLayerVO layer) throws ActionException {
-		StringBuilder insert = new StringBuilder();
+		StringBuilder insert = new StringBuilder(350);
 		
 		insert.append("INSERT INTO ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("DEPUY_SET_ITEM ");
 		insert.append("(PRODUCT_SKU_TXT, QUANTITY_NO, UNIT_MEASURE_CD, EFFECTIVE_START_DT, ");
@@ -670,7 +668,6 @@ public class NexusKitAction extends SBActionAdapter {
 			}
 			insertState.executeBatch();
 		} catch (SQLException e) {
-			log.error("Unable to update layer", e);
 			throw new ActionException(e);
 		} finally {
 			try {
@@ -696,7 +693,7 @@ public class NexusKitAction extends SBActionAdapter {
 		int index = Convert.formatInteger(req.getParameter("index"));
 		switch(level) {
 			case Layer:
-				kit = (NexusKitVO) req.getSession().getAttribute("kit");
+				kit = (NexusKitVO) req.getSession().getAttribute(KIT_SESSION_NM);
 				if (req.hasParameter("parentId")) {
 					NexusKitLayerVO parent = kit.findLayer(req.getParameter("parentId"));
 					parent.getSublayers().remove(index);
@@ -705,17 +702,17 @@ public class NexusKitAction extends SBActionAdapter {
 					kit.getLayers().remove(index);
 					changeOrderNo(kit.getLayers(), index);
 				}
-				req.getSession().setAttribute("kit", kit);
+				req.getSession().setAttribute(KIT_SESSION_NM, kit);
 				break;
 			case Product:
-				kit = (NexusKitVO) req.getSession().getAttribute("kit");
+				kit = (NexusKitVO) req.getSession().getAttribute(KIT_SESSION_NM);
 				String parent = req.getParameter("parentId");
 				NexusKitLayerVO layer = kit.findLayer(parent);
 				layer.getProducts().remove(index);
-				req.getSession().setAttribute("kit", kit);
+				req.getSession().setAttribute(KIT_SESSION_NM, kit);
 				break;
 			case Kit:
-				StringBuilder sql = new StringBuilder();
+				StringBuilder sql = new StringBuilder(150);
 				
 				sql.append("DELETE ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("DEPUY_SET_INFO ");
 				sql.append("WHERE SET_INFO_ID in ( ");
@@ -728,10 +725,9 @@ public class NexusKitAction extends SBActionAdapter {
 					
 					ps.executeUpdate();
 				} catch (SQLException e) {
-					log.error("Unable to delete kit with id " + req.getParameter("kitId"), e);
 					throw new ActionException(e);
 				}
-				req.getSession().removeAttribute("kit");
+				req.getSession().removeAttribute(KIT_SESSION_NM);
 				break;
 		default:
 			break;
@@ -760,7 +756,7 @@ public class NexusKitAction extends SBActionAdapter {
 	 * @param req
 	 */
 	private void removePermission(String profileId, String kitId) throws ActionException {
-		StringBuilder sql =  new StringBuilder();
+		StringBuilder sql =  new StringBuilder(150);
 		sql.append("DELETE ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("DEPUY_PROFILE_SET_XR ");
 		sql.append("WHERE PROFILE_ID = ? and SET_INFO_ID = ? ");
 		
@@ -769,7 +765,6 @@ public class NexusKitAction extends SBActionAdapter {
 			ps.setString(2, kitId);
 			ps.executeUpdate();
 		} catch (SQLException e) {
-			log.error("Unable to delete permission for user " + profileId + " and kit " + kitId, e);
 			throw new ActionException(e);
 		}
 	}
@@ -780,7 +775,7 @@ public class NexusKitAction extends SBActionAdapter {
 	 * @param req
 	 */
 	private void addPermission(String profileId, String kitId) throws ActionException {
-		StringBuilder sql =  new StringBuilder();
+		StringBuilder sql =  new StringBuilder(200);
 		sql.append("INSERT INTO ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("DEPUY_PROFILE_SET_XR ");
 		sql.append("(PROFILE_SET_ID, PROFILE_ID, SET_INFO_ID, CREATE_DT) ");
 		sql.append("VALUES(?,?,?,?)");
@@ -792,7 +787,6 @@ public class NexusKitAction extends SBActionAdapter {
 			ps.setTimestamp(4, Convert.getCurrentTimestamp());
 			ps.executeUpdate();
 		} catch (SQLException e) {
-			log.error("Unable to add permission for user " + profileId + " and kit " + kitId, e);
 			throw new ActionException(e);
 		}
 	}
