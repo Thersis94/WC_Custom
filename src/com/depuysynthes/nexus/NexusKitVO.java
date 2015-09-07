@@ -158,11 +158,9 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 		this.layers = layers;
 	}
 	public void addLayer(NexusKitLayerVO layer) {
-		System.out.println(layer.getLayerId()+"|"+layer.getParentId());
 		if (StringUtil.checkVal(layer.getParentId()).length() != 0) {
 			NexusKitLayerVO parent = findLayer(layer.getParentId());
 			if (parent != null) {
-				System.out.println("Adding to " + parent.getLayerId());
 				parent.addLayer(layer);
 			}
 		} else {
