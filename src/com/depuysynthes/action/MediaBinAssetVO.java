@@ -449,9 +449,8 @@ public class MediaBinAssetVO extends SBModuleVO {
 		if (!compareStr(trackingNoTxt, other.trackingNoTxt))
 			this.addDelta(new PropertyChangeEvent(this,"trackingNoTxt",other.trackingNoTxt, trackingNoTxt));
 
-		if (!compareStr(videoChapters, other.videoChapters))
-			this.addDelta(new PropertyChangeEvent(this,"videoChapters",other.videoChapters, videoChapters));
-
+//		if (!compareStr(videoChapters, other.videoChapters))
+//			this.addDelta(new PropertyChangeEvent(this,"videoChapters",other.videoChapters, videoChapters));
 
 		return getDeltas() == null;
 	}

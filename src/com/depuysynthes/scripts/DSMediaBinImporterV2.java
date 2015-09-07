@@ -190,7 +190,9 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 
 		StringBuilder sql = new StringBuilder(250);
 		sql.append("select * from ").append(props.get(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("dpy_syn_mediabin where import_file_cd=?");
+		sql.append("dpy_syn_mediabin a ");
+		sql.append("left join video_meta_content b on a.dpy_syn_mediabin_id=b.asset_id and b.asset_type='MEDIABIN' ");
+		sql.append("where a.import_file_cd=?");
 		log.debug(sql);
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -384,6 +386,8 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 					vo.setRecordState(State.Update);
 					//pass the checksum off the existing file to the new VO, so we can compare it to the new file
 					vo.setChecksum(mr.getChecksum());
+					//pass the video chapters over as well
+					vo.setVideoChapters(mr.getVideoChapters());
 				} else {
 					//nothing changed, ignore this record.  99% of time this is the default use case
 					vo.setRecordState(State.Ignore);
