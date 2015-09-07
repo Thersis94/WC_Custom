@@ -463,6 +463,7 @@ public class NexusKitAction extends SBActionAdapter {
 				String[] values = product.split("\\|", -1);
 				NexusProductVO p = new NexusProductVO();
 				p.setProductId(values[0]);
+				p.setQuantity(1);
 				p.setPrimaryDeviceId(values[1]);
 				p.setSummary(values[2]);
 				p.addUOMLevel(values[3]);
