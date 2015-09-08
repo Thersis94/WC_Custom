@@ -4,19 +4,25 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
+import com.smt.sitebuilder.action.user.ProfileManager;
+import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 
 /****************************************************************************
  * <b>Title</b>: NexusKitAction.java<p/>
@@ -34,16 +40,22 @@ public class NexusKitAction extends SBActionAdapter {
 
 
 	public static final String SOLR_INDEX = "DEPUY_NEXUS";
-	public static final String KIT_SESSION_NM = "depuy-nexus-kit";
+	public static final String KIT_SESSION_NM = "depuyNexusKit";
 	
 	// Potential actions for the user to take
 	enum KitAction {
-		Permissions, Clone, Save, Delete, Edit, Load, Add, Empty, Reorder, ChangeLayer, Copy
+		Permissions, Clone, Save, Delete, Edit, Load, Add, Empty, Reorder, ChangeLayer, Copy, NewKit, findUsers
 	}
 	
 	// The level of the kit that is being targeted
 	enum EditLevel {
 		Layer, Product, Kit
+	}
+	
+
+	// The level of the kit that is being targeted
+	enum KitType {
+		Custom, Loaner
 	}
 	
 	
@@ -94,6 +106,11 @@ public class NexusKitAction extends SBActionAdapter {
 							sublayer.setParentId(layer.getLayerId());
 						}
 					}
+					if (req.hasParameter("loaner")) kit.setBranchCode(KitType.Custom.toString());
+					UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
+					if (user != null) {
+						kit.setOwnerId(user.getProfileId());
+					}
 					req.getSession().setAttribute(KIT_SESSION_NM, kit);
 					saveKit(req);
 				}
@@ -122,9 +139,75 @@ public class NexusKitAction extends SBActionAdapter {
 			case Copy:
 				copyItem(req);
 				break;
+			case NewKit:
+				req.getSession().setAttribute(KIT_SESSION_NM, new NexusKitVO(SOLR_INDEX));
+				break;
+			case findUsers:
+				super.putModuleData(getUsers(req));
+				break;
 		default:
 			break;
 		}
+	}
+	
+	
+	/**
+	 * Get a full list of users for this site as well as any kits they have created
+	 * @param req
+	 * @return
+	 * @throws ActionException
+	 */
+	private Map<GenericVO, List<NexusKitVO>> getUsers(SMTServletRequest req) throws ActionException {
+
+		Map<GenericVO, List<NexusKitVO>> users = new HashMap<>();
+
+		StringBuilder sql = new StringBuilder(575);
+		sql.append("select a.*, s.* from profile a ");
+	    	sql.append("inner join profile_role b on a.profile_id=b.profile_id and b.site_id=? ");
+		sql.append("inner join role c on b.role_id=c.role_id ");
+		sql.append("inner join status d on b.status_id=d.status_id ");
+		sql.append("left join ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("depuy_set_info s ");
+		sql.append("on s.profile_id = a.profile_id ");
+	    	sql.append("where b.site_id = ? ");
+		sql.append("and b.status_id = '20' ");
+		sql.append("order by a.profile_id");
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		log.debug(sql+"|"+site.getAliasPathParentId()+"|"+site.getSiteId());
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+
+			if (site.getAliasPathParentId() != null) {
+				ps.setString(1, site.getAliasPathParentId());
+				ps.setString(2, site.getAliasPathParentId());
+			} else {
+				ps.setString(1, site.getSiteId());
+				ps.setString(2, site.getSiteId());
+			}
+			
+			ResultSet rs = ps.executeQuery();
+			String currentProfile = "";
+			List<NexusKitVO> kits = null;
+			GenericVO user = null;
+			ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
+			while(rs.next()) {
+				if (!currentProfile.equals(rs.getString("PROFILE_ID"))) {
+					if (user != null) users.put(user, kits);
+					currentProfile = rs.getString("PROFILE_ID");
+					user = new GenericVO();
+					user.setKey(currentProfile);
+					user.setValue(pm.getStringValue("email_address_txt", rs.getString("email_address_txt")));
+					kits = new ArrayList<>();
+				}
+				
+				if (rs.getString("SET_INFO_ID") != null) {
+					kits.add(new NexusKitVO(rs, SOLR_INDEX));
+				}
+			}
+			if (user != null)  users.put(user, kits);
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
+		
+		return users;
 	}
 
 	
@@ -312,7 +395,7 @@ public class NexusKitAction extends SBActionAdapter {
 		int index = Convert.formatInteger(req.getParameter("index"));
 		int newIndex =Convert.formatInteger( req.getParameter("newIndex"));
 		
-		// Check wether we are dealing with a sublayer or a top level layer
+		// Check whether we are dealing with a sublayer or a top level layer
 		if (req.hasParameter("layerId")) {
 			NexusKitLayerVO parentLayer = kit.findLayer(req.getParameter("layerId"));
 			NexusKitLayerVO layer = parentLayer.getSublayers().get(index);
@@ -343,6 +426,10 @@ public class NexusKitAction extends SBActionAdapter {
 		String kitId = StringUtil.checkVal(req.getParameter("kitId"));
 		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 		String profileId;
+		boolean profileOne = false;
+		boolean profileTwo = false;
+		boolean orgSearch = req.hasParameter("organizationNm");
+		boolean kitSearch = req.hasParameter("searchTerms");
 		if (user == null) {
 			profileId = "";
 		} else {
@@ -351,12 +438,33 @@ public class NexusKitAction extends SBActionAdapter {
 		// Get the kit, its top layers, and their products
 		sql.append("SELECT s.*, sl.*, si.*, p.PROFILE_ID as SHARED_ID FROM ").append(customDb).append("DEPUY_SET_INFO s ");
 		sql.append("LEFT JOIN ").append(customDb).append("DEPUY_SET_LAYER sl ");
-		sql.append("on sl.SET_INFO_ID = s.SET_INFO_ID and (sl.PARENT_ID is null or sl.PARENT_ID = '') ");
+		sql.append("on sl.SET_INFO_ID = s.SET_INFO_ID ");
 		sql.append("LEFT JOIN ").append(customDb).append("DEPUY_SET_ITEM si ");
 		sql.append("on si.LAYER_ID = sl.LAYER_ID ");
 		sql.append("LEFT JOIN ").append(customDb).append("DEPUY_PROFILE_SET_XR p ");
-		sql.append("on p.SET_INFO_ID = s.SET_INFO_ID ");
-		sql.append("WHERE (p.PROFILE_ID = ? or s.PROFILE_ID = ? or s.PROFILE_ID is null) ");
+		sql.append("on p.SET_INFO_ID = s.SET_INFO_ID and p.APPROVED_FLG = '1' ");
+		sql.append("WHERE ");
+		if ("loaner".equals(req.getParameter("type"))) {
+			sql.append("s.PROFILE_ID is null ");
+		} else if ("custom".equals(req.getParameter("type"))) {
+			sql.append("s.PROFILE_ID is not null ");
+			sql.append("and (p.PROFILE_ID = ? or s.PROFILE_ID = ?) ");
+		} else if ("own".equals(req.getParameter("owner"))) {
+			sql.append("s.PROFILE_ID = ? ");
+		} else if ("shared".equals(req.getParameter("owner"))) {
+			sql.append("p.PROFILE_ID = ? ");
+		} else {
+			sql.append("(p.PROFILE_ID = ? or s.PROFILE_ID = ? or s.PROFILE_ID is null) ");
+		}
+		
+		if (orgSearch) {
+			sql.append("and s.ORGANIZATION_NM = ? ");
+		}
+		
+		if (kitSearch) {
+			sql.append("and (s.SET_SKU_TXT like ? or s.DESCRIPTION_TXT like ?) ");
+		}
+		
 		if (kitId.length() > 0) sql.append("and s.SET_INFO_ID = ? ");
 		
 		
@@ -371,8 +479,34 @@ public class NexusKitAction extends SBActionAdapter {
 		sql.append("LEFT JOIN ").append(customDb).append("DEPUY_SET_ITEM si ");
 		sql.append("on si.LAYER_ID = sl2.LAYER_ID ");
 		sql.append("LEFT JOIN ").append(customDb).append("DEPUY_PROFILE_SET_XR p ");
-		sql.append("on p.SET_INFO_ID = s.SET_INFO_ID ");
-		sql.append("WHERE (p.PROFILE_ID = ? or s.PROFILE_ID = ? or s.PROFILE_ID is null) and sl2.LAYER_ID is not null ");
+		sql.append("on p.SET_INFO_ID = s.SET_INFO_ID and p.APPROVED_FLG = '1' ");
+		sql.append("WHERE ");
+		if ("loaner".equals(req.getParameter("type"))) {
+			sql.append("s.PROFILE_ID is null ");
+		} else if ("custom".equals(req.getParameter("type"))) {
+			sql.append("s.PROFILE_ID is not null ");
+			sql.append("and (p.PROFILE_ID = ? or s.PROFILE_ID = ?) ");
+			profileOne = true;
+			profileTwo = true;
+		} else if ("own".equals(req.getParameter("owner"))) {
+			sql.append("s.PROFILE_ID = ? ");
+			profileOne = true;
+		} else if ("shared".equals(req.getParameter("owner"))) {
+			sql.append("p.PROFILE_ID = ? ");
+			profileOne = true;
+		} else {
+			sql.append("(p.PROFILE_ID = ? or s.PROFILE_ID = ? or s.PROFILE_ID is null) ");
+			profileOne = true;
+			profileTwo = true;
+		}
+		
+		if (orgSearch) {
+			sql.append("and s.ORGANIZATION_NM = ? ");
+		}
+		
+		if (kitSearch) {
+			sql.append("and (s.SET_SKU_TXT like ? or s.DESCRIPTION_TXT like ?) ");
+		}
 		if (kitId.length() > 0) sql.append("and s.SET_INFO_ID = ? ");
 		sql.append("ORDER BY s.SET_INFO_ID, sl.PARENT_ID, sl.ORDER_NO, si.ORDER_NO ");
 		
@@ -380,12 +514,22 @@ public class NexusKitAction extends SBActionAdapter {
 		List<NexusKitVO> kits = new ArrayList<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			int i = 1;
-			ps.setString(i++, profileId);
-			ps.setString(i++, profileId);
+			if (profileOne) ps.setString(i++, profileId);
+			if (profileTwo) ps.setString(i++, profileId);
+			if (orgSearch) ps.setString(i++, req.getParameter("organizationNm"));
+			if (kitSearch) {
+				ps.setString(i++, "%"+req.getParameter("searchTerms")+"%");
+				ps.setString(i++, "%"+req.getParameter("searchTerms")+"%");
+			}
 			if (kitId.length() > 0) ps.setString(i++, kitId);
 
-			ps.setString(i++, profileId);
-			ps.setString(i++, profileId);
+			if (profileOne) ps.setString(i++, profileId);
+			if (profileTwo) ps.setString(i++, profileId);
+			if (orgSearch) ps.setString(i++, req.getParameter("organizationNm"));
+			if (kitSearch) {
+				ps.setString(i++, "%"+req.getParameter("searchTerms")+"%");
+				ps.setString(i++, "%"+req.getParameter("searchTerms")+"%");
+			}
 			if (kitId.length() > 0) ps.setString(i++, kitId);
 			
 			ResultSet rs = ps.executeQuery();
@@ -395,20 +539,20 @@ public class NexusKitAction extends SBActionAdapter {
 			NexusKitLayerVO layer = null;
 			while(rs.next()) {
 				if (!currentKit.equals(rs.getString("SET_INFO_ID"))) {
-					log.debug("New Kit");
 					if (layer != null) kit.addLayer(layer);
 					if (kit != null) kits.add(kit);
 					currentKit = rs.getString("SET_INFO_ID");
 					kit = new NexusKitVO(rs, SOLR_INDEX);
 				}
 
-				if (!currentLayer.equals(rs.getString("LAYER_ID"))) {
+				if (!currentLayer.equals(rs.getString("LAYER_ID")) 
+						&& StringUtil.checkVal(rs.getString("LAYER_ID")).length() > 0) {
 					if (layer != null) kit.addLayer(layer);
 					currentLayer = rs.getString("LAYER_ID");
 					layer = new NexusKitLayerVO(rs);
 				}
-				
-				layer.addProduct(new NexusProductVO(rs));
+				if(StringUtil.checkVal(rs.getString("ITEM_ID")).length() > 0)
+					layer.addProduct(new NexusProductVO(rs));
 			}
 			if (layer != null) kit.addLayer(layer);
 			if (kit != null) kits.add(kit);
@@ -534,21 +678,21 @@ public class NexusKitAction extends SBActionAdapter {
 		boolean insert = false;
 		if (StringUtil.checkVal(kit.getKitId()).length() == 0) {
 			sql.append("INSERT INTO ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("DEPUY_SET_INFO ");
-			sql.append("(SET_SKU_TXT, ORGANIZATION_ID, DESCRIPTION_TXT, GTIN_TXT, BRANCH_PLANT_CD, ");
+			sql.append("(SET_SKU_TXT, ORGANIZATION_NM, DESCRIPTION_TXT, GTIN_TXT, BRANCH_PLANT_CD, ");
 			sql.append("CREATE_DT, PROFILE_ID, SET_INFO_ID) ");
 			sql.append("VALUES(?,?,?,?,?,?,?,?)");
 			kit.setKitId(new UUIDGenerator().getUUID());
 			insert = true;
 		} else {
 			sql.append("UPDATE ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("DEPUY_SET_INFO ");
-			sql.append("SET SET_SKU_TXT = ?, ORGANIZATION_ID = ?, DESCRIPTION_TXT = ?, GTIN_TXT = ?, BRANCH_PLANT_CD = ?, ");
+			sql.append("SET SET_SKU_TXT = ?, ORGANIZATION_NM = ?, DESCRIPTION_TXT = ?, GTIN_TXT = ?, BRANCH_PLANT_CD = ?, ");
 			sql.append("CREATE_DT = ?, PROFILE_ID = ? WHERE SET_INFO_ID = ? ");
 		}
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			int i = 1;
 			ps.setString(i++, kit.getKitSKU());
-			ps.setString(i++, kit.getOrgId());
+			ps.setString(i++, kit.getOrgName());
 			ps.setString(i++, kit.getKitDesc());
 			ps.setString(i++, kit.getKitGTIN());
 			ps.setString(i++, kit.getBranchCode());
@@ -714,16 +858,22 @@ public class NexusKitAction extends SBActionAdapter {
 				req.getSession().setAttribute(KIT_SESSION_NM, kit);
 				break;
 			case Kit:
+				UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 				StringBuilder sql = new StringBuilder(150);
 				
 				sql.append("DELETE ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("DEPUY_SET_INFO ");
-				sql.append("WHERE SET_INFO_ID in ( ");
-				for (int i=0; i < req.getParameterValues("kitId").length -1; i++) sql.append("?,");
-				sql.append("?)");
+				sql.append("WHERE (1=2) ");
+				
+				for (int i=0; i < req.getParameterValues("kitId").length; i++) {
+					sql.append("OR (SET_INFO_ID = ? and PROFILE_ID = ?) ");
+				}
 				
 				try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 					int i = 1;
-					for (String s: req.getParameterValues("kitId")) ps.setString(i++, s);
+					for (String s: req.getParameterValues("kitId")) {
+						ps.setString(i++, s);
+						ps.setString(i++, user.getProfileId());
+					}
 					
 					ps.executeUpdate();
 				} catch (SQLException e) {
@@ -743,12 +893,21 @@ public class NexusKitAction extends SBActionAdapter {
 	 * @throws ActionException 
 	 */
 	private void modifyPermissions(SMTServletRequest req) throws ActionException {
-		String kitId = req.getParameter("kitId");
 		String profileId = req.getParameter("profileId");
 		if (req.hasParameter("delete")) {
-			removePermission(profileId, kitId);
+			for (String kitId : req.getParameterValues("kitId")) {
+				removePermission(profileId, kitId);
+			}
 		} else {
-			addPermission(profileId, kitId);
+			UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
+			// Determine if the current user is adding someone else to thier kit or someone else
+			// is requesting access to a kit.  If they are requesting access the share is placed
+			// in an awaiting approval state for the owner to accept or deny at a later date.
+			int request = 0;
+			if (!user.getProfileId().equals(profileId)) request = 1;
+			for (String kitId : req.getParameterValues("kitId")) {
+				addPermission(profileId, kitId, request);
+			}
 		}
 	}
 	
@@ -776,17 +935,18 @@ public class NexusKitAction extends SBActionAdapter {
 	 * Give a selected user access permissions to the provided kit
 	 * @param req
 	 */
-	private void addPermission(String profileId, String kitId) throws ActionException {
+	private void addPermission(String profileId, String kitId, int request) throws ActionException {
 		StringBuilder sql =  new StringBuilder(200);
 		sql.append("INSERT INTO ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("DEPUY_PROFILE_SET_XR ");
-		sql.append("(PROFILE_SET_ID, PROFILE_ID, SET_INFO_ID, CREATE_DT) ");
-		sql.append("VALUES(?,?,?,?)");
+		sql.append("(PROFILE_SET_ID, PROFILE_ID, SET_INFO_ID, APPROVED_FLG, CREATE_DT) ");
+		sql.append("VALUES(?,?,?,?,?)");
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, new UUIDGenerator().getUUID());
 			ps.setString(2, profileId);
 			ps.setString(3, kitId);
-			ps.setTimestamp(4, Convert.getCurrentTimestamp());
+			ps.setInt(4, request);
+			ps.setTimestamp(5, Convert.getCurrentTimestamp());
 			ps.executeUpdate();
 		} catch (SQLException e) {
 			throw new ActionException(e);
