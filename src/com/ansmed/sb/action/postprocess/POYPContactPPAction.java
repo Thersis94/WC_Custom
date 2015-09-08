@@ -75,7 +75,7 @@ public class POYPContactPPAction extends SBActionAdapter {
 	 * @return
 	 */
 	protected String getMessage(SMTServletRequest req) {
-		StringBuilder msg = new StringBuilder(100);
+		StringBuilder msg = new StringBuilder(1000);
 
 		//Get the current site info
 		String siteAlias = ((SiteVO) req.getAttribute("siteData")).getSiteAlias();	
