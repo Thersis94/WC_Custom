@@ -75,92 +75,63 @@ public class POYPContactPPAction extends SBActionAdapter {
 	 * @return
 	 */
 	protected String getMessage(SMTServletRequest req) {
-		StringBuilder msg = new StringBuilder();
+		StringBuilder msg = new StringBuilder(100);
 
 		//Get the current site info
 		String siteAlias = ((SiteVO) req.getAttribute("siteData")).getSiteAlias();	
 		Integer sslLevel = ((SiteVO) req.getAttribute("siteData")).getSsl();
 		
 		//build the paths
-		String binaryLoc = "/binary/org/ANS-MEDICAL/Power_Over_Your_Pain/post/";
+		//String binaryLoc = "/binary/org/ANS-MEDICAL/Power_Over_Your_Pain/post/";
 		String basePath = "http://" + siteAlias;
 		if(sslLevel == 1){
 			basePath = "https://" + siteAlias;
 		}
 		
-		String imagePath = basePath + binaryLoc;
-		
 		//build the email
-		msg.append("<table width='100%' cellspacing='0' cellpadding='0' border='0'");
-		msg.append("bgcolor='#fff' align='center' style='font-size: 15px; font-family: Arial,sans-serif;'>");
-		msg.append("<tr><td><table width='650' bgcolor='#fff' align='center' cellspacing='0' cellpadding='0' border='0'  ");
-		msg.append("style='border: solid 1px #00a98f;'><tr><td>");
-		msg.append("<table width='650' align='center' bgcolor='#fff' cellspacing='0' cellpadding='0' border='0' > ");
-		msg.append("<tr><td align='left' width='55%' style='padding: 0 0 0 30px;'> ");
-		msg.append("<img src='").append(imagePath).append("SJM_Logo_Standard_2C_NoTag_highres.jpg' ");
-		msg.append(" alt='SJM_logo' width='320' height='110'  /></td> ");
-		msg.append("<td align='left' width='45%' style='font-size: 12px; font-weight: bold; '> ");
-		msg.append("<a style='color: #00a98f; text-decoration: none; padding: 0 5px;'  ");
-		msg.append("href='").append(basePath).append("/about'>ABOUT SJM |</a> ");
-		msg.append("<a style='color: #00a98f; text-decoration: none; padding: 0 5px;'  ");
-		msg.append("href='").append(basePath).append("/privacy'>PRIVACY POLICY </a> ");
-		msg.append("</td></tr></table> ");
-		msg.append("<table width='650' bgcolor='#f3f4f4' cellspacing='0' cellpadding='0' border='0' align='center' > ");
-		msg.append("<tr><td width='8%'></td><td align='left' width='28%' valign='top' style='padding: 40px 0 0; color: #e47f25; ");
-		msg.append("font-weight: bold; font-size: 14px; line-height: 170%;'> ");
-		msg.append("The upgradeable Prot&eacute;g&eacute;<span style='font-size: 9px; '>&trade;");
-		msg.append("</span> <br/> MRI IPG from <br />  St. Jude Medical.</td> ");
-		msg.append("<td align='left' width='60%' style='padding: 15px 0 30px;'> ");
-		msg.append("<img src='").append(imagePath).append("SJM_NB.png'  ");
-		msg.append("width='275' height='240' alt='upgradeable_protege' /></td></tr></table> ");
-		msg.append("<table width='650' bgcolor='#f3f4f4' cellspacing='0' cellpadding='0' border='0'  ");
-		msg.append("align='center' style='font-family: Arial;' ><tr><td width='8%'></td> ");
-		msg.append("<td align='left' colspan='3' style='background-color: #f3f4f4; padding: 0 0 10px; color: #00a98f; font-size: 27px; ");
-		msg.append("font-family: Verdana; border-bottom: 1px solid #00a98f; line-height: 120%;'> ");
-		msg.append("THANK YOU FOR YOUR INTEREST <br/> IN A NEUROSTIMULATION SYSTEM <br/> ");
-		msg.append("FROM ST. JUDE MEDICAL.</td><td width='8%'></td></tr> ");
-		msg.append("<tr><td height='40' colspan='2'></td></tr> ");
+		msg.append("<table width='100%' cellspacing='0' cellpadding='0' border='0' ");
+		msg.append("bgcolor='#fff' align='center' style='font-size: 15px; ");
+		msg.append("font-family: Arial,sans-serif; border-collapse: collapse;'><tr><td> ");
+		msg.append("<table width='650' bgcolor='#f3f4f4' align='center' cellspacing='0' cellpadding='0' border='0' ");
+		msg.append("style='border: solid 1px #00a98f;'><tr><td> ");
+		msg.append("<table width='650' align='center' cellspacing='0' cellpadding='0' border='0' bgcolor='#f3f4f4' ");
+		msg.append("style='line-height: 140%; font-family: Arial,sans-serif;'> ");
+		msg.append("<tr height='25' width='100%'><td ></td><td ></td><td ></td></tr> ");
 		msg.append("<tr><td width='8%'></td> ");
-		msg.append("<td align='left' width='41%' style='padding: 0 ; background-color: #f4f5f5; line-height: 175%; font-size: 15px; '> ");
-		msg.append("<span style='color: #00a98f; padding: 0; display: inline-block; font-size: 21px; '> ");
-		msg.append("PAIN INTERRUPTED.</span><br/> ");
-		msg.append("We’ve attached an electronic version of our patient education brochure ");
-		msg.append("for your reference. The next step is to ask your doctor about ");
-		msg.append("neurostimulation and the particular advantages of a system ");
-		msg.append("from St. Jude Medical in your case. We sincerely hope it’s a first ");
-		msg.append("step toward life after pain for you.</td><td width='10%'></td> ");
-		msg.append("<td align='left' width='35%' bgcolor='#e9e9ea' style='padding: 0;'> ");
-		msg.append("<table width='100%' height='100%' bgcolor='#e9e9ea' cellspacing='0' cellpadding='0' border='0' align='center'  ");
-		msg.append("style='font-family: Arial; height: 290px;'><tr>");
-		msg.append("<td width='10%' style='padding: 50px 0 0;'></td> ");
-		msg.append("<td align='left' style=' padding: 10px 0; font-size: 16px;'> ");
-		msg.append("<table width='100%' cellspacing='0' cellpadding='0' border='0' align='center'  ");
-		msg.append("style='background-color: #00a98f; color: #fff;'><tr><td align='center' style='padding: 12px 0;'> ");
-		msg.append("<a href='").append(basePath).append("next/specialist?");
-		msg.append("utm_source=POYP_Site&utm_medium=Email&utm_content=specialist&utm_campaign=9840_emppusnoy' ");
-		msg.append("style='color: #fff; text-decoration: none;'> ");
-		msg.append("Learn More</a></td></tr></table> ");
-		msg.append("<br/><span style=' line-height: 140%;'> Let us help you find<br/> a pain specialist.</span></td>  ");
-		msg.append("<td width='10%'></td></tr></table></td>	<td width='8%'></td></tr> ");
-		msg.append("<tr><td height='40' colspan='2'></td></tr></table> ");
-		msg.append("<table width='650' bgcolor='#fbfbfc' cellspacing='0' cellpadding='0' border='0' align='center'> ");
-		msg.append("<tr><td width='169' align='left'> ");
-		msg.append("<img src='").append(imagePath).append("SJM-CHUNG-TRACI-WICKHAM-20508_sm.jpg' ");
-		msg.append("alt='SJM_wickham' height='240' width='169' style='display: block;'/></td> ");
-		msg.append("<td width='180' style='padding: 0 15px; background-color: #00a98f; color: #fff; line-height: 175%; font-size: 14px;'>");
-		msg.append("<a href='").append(basePath).append("/next/stories?");
-		msg.append("utm_source=POYP_Site&utm_medium=Email&utm_content=stories&utm_campaign=9840_emppuknoy' ");
-		msg.append("style='color: #fff; text-decoration: none;'>  ");
-		msg.append("Read about other patients whose lives have been transformed now that neurostimulation is managing their pain.</a></td> ");
-		msg.append("<td width='7'></td> ");
-		msg.append("<td width='295' bgcolor='#333333' style='color: #fff; font-size: 17px; padding: 0 20px; line-height: 170%; ");
-		msg.append("background: #333 url(&quot;").append(imagePath).append("23SAMBENSON_SCS_SELECTS_CPJ_NB.jpg&quot;) ");
-		msg.append("no-repeat scroll 100% center / 102% 240px;'><br/> ");
-		msg.append("<a href='").append(basePath).append("/next/video?");
-		msg.append("utm_source=POYP_Site&utm_medium=Email&utm_content=video&utm_campaign=9840_emppusnoy' ");
-		msg.append("style='color: #fff; text-decoration: none;'> ");
-		msg.append("WATCH FILMS ABOUT OUR PATIENT'S STORIES OF HOPE </a></td></tr></table> ");
-		msg.append("</td></tr></table></td></tr></table> ");
+		msg.append("<td align='left' width='84%' style='padding: 0;'> ");
+		msg.append("<span style='padding: 0; display: inline-block; font-size: 27px; font-weight: 600; ");
+		msg.append("line-height: 115%; font-family: arial;'> ");
+		msg.append("Thank You For Your Interest In A Neurostimulation System From <br/>St. Jude Medical. ");
+		msg.append("</span></td><td width='8%'></td></tr>");
+		msg.append("<tr height='20' width='100%'><td ></td><td ></td><td ></td></tr> ");
+		msg.append("<tr><td width='8%'></td><td align='left' width='84%'> ");
+		msg.append("<span style='padding: 0; display: inline-block; font-size: 19px;'> ");
+		msg.append("Pain Interrupted.</span><br/> ");
+		msg.append("We've attached an electronic version of our patient education brochure for ");
+		msg.append("your reference. The next step is to ask your doctor about neurostimulation and ");
+		msg.append("the particular advantages of a system from St. Jude Medical in your case. ");
+		msg.append("We sincerely hope it's a first step toward life after pain for you. ");
+		msg.append("</td><td width='8%'></td></tr> ");
+		msg.append("<tr height='20' width='100%'><td ></td><td ></td><td ></td></tr> ");
+		msg.append("<tr><td width='8%'></td> ");
+		msg.append("<td align='left' width='84%' style='padding: 0 0 10px; line-height: 130%;'> ");
+		msg.append("<table width='100%' align='center' cellspacing='0' cellpadding='0' border='0' ");
+		msg.append("style='font-family: Arial,sans-serif;'><tr><td> ");
+		msg.append("<span style='padding: 0; display: inline-block; font-size: 19px;'> ");
+		msg.append("Learn More.</span><br/></td></tr><tr><td style='padding: 10px 10px 10px;'> ");
+		msg.append("<a style='color: #00a98f; display: inline-block; text-decoration: none;' ");
+		msg.append("href='").append(basePath).append("/next/stories'> ");
+		msg.append("Hear from people who have chosen neurostimulation to manage their chronic pain. Read their stories ");
+		msg.append("</a></td></tr><tr><td style='padding: 0 10px 10px;'> ");
+		msg.append("<a style='color: #00a98f; display: inline-block; text-decoration: none;' ");
+		msg.append("href='http://www.poweroveryourpain.com/next/video'>Watch videos</a></td></tr> ");
+		msg.append("<tr><td style='padding: 0 10px 0;'> ");
+		msg.append("<a style='color: #00a98f; display: inline-block; text-decoration: none;' ");
+		msg.append("href='").append(basePath).append("/next/specialist'> ");
+		msg.append("Find a pain specialist in your area</a></td></tr></table> ");
+		msg.append("</td><td width='8%'></td></tr> ");
+		msg.append("<tr height='25' width='100%'><td ></td><td ></td><td ></td></tr> ");
+		msg.append("</table></td></tr></table></td></tr></table> ");
 			
 		return msg.toString();
 	}
