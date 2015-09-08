@@ -166,7 +166,7 @@ public class NexusKitAction extends SBActionAdapter {
 	    	sql.append("inner join profile_role b on a.profile_id=b.profile_id and b.site_id=? ");
 		sql.append("inner join role c on b.role_id=c.role_id ");
 		sql.append("inner join status d on b.status_id=d.status_id ");
-		sql.append("left join ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("depuy_set_info s ");
+		sql.append("left join ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("dpy_syn_nexus_set_info s ");
 		sql.append("on s.profile_id = a.profile_id ");
 	    	sql.append("where b.site_id = ? ");
 		sql.append("and b.status_id = '20' ");
@@ -436,12 +436,12 @@ public class NexusKitAction extends SBActionAdapter {
 			profileId = user.getProfileId();
 		}
 		// Get the kit, its top layers, and their products
-		sql.append("SELECT s.*, sl.*, si.*, p.PROFILE_ID as SHARED_ID FROM ").append(customDb).append("DEPUY_SET_INFO s ");
-		sql.append("LEFT JOIN ").append(customDb).append("DEPUY_SET_LAYER sl ");
+		sql.append("SELECT s.*, sl.*, si.*, p.PROFILE_ID as SHARED_ID FROM ").append(customDb).append("DPY_SYN_NEXUS_SET_INFO s ");
+		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_NEXUS_SET_LAYER sl ");
 		sql.append("on sl.SET_INFO_ID = s.SET_INFO_ID ");
-		sql.append("LEFT JOIN ").append(customDb).append("DEPUY_SET_ITEM si ");
+		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_NEXUS_SET_ITEM si ");
 		sql.append("on si.LAYER_ID = sl.LAYER_ID ");
-		sql.append("LEFT JOIN ").append(customDb).append("DEPUY_PROFILE_SET_XR p ");
+		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_NEXUS_SET_SHARE p ");
 		sql.append("on p.SET_INFO_ID = s.SET_INFO_ID and p.APPROVED_FLG = '1' ");
 		sql.append("WHERE ");
 		if ("loaner".equals(req.getParameter("type"))) {
@@ -471,14 +471,14 @@ public class NexusKitAction extends SBActionAdapter {
 		sql.append("union ");
 		
 		// Get the sublayers and their products
-		sql.append("SELECT s.*, sl2.*, si.*, p.PROFILE_ID as SHARED_ID FROM ").append(customDb).append("DEPUY_SET_INFO s ");
-		sql.append("LEFT JOIN ").append(customDb).append("DEPUY_SET_LAYER sl ");
+		sql.append("SELECT s.*, sl2.*, si.*, p.PROFILE_ID as SHARED_ID FROM ").append(customDb).append("DPY_SYN_NEXUS_SET_INFO s ");
+		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_NEXUS_SET_LAYER sl ");
 		sql.append("on sl.SET_INFO_ID = s.SET_INFO_ID ");
-		sql.append("LEFT JOIN ").append(customDb).append("DEPUY_SET_LAYER sl2 ");
+		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_NEXUS_SET_LAYER sl2 ");
 		sql.append("on sl2.PARENT_ID = sl.LAYER_ID ");
-		sql.append("LEFT JOIN ").append(customDb).append("DEPUY_SET_ITEM si ");
+		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_NEXUS_SET_ITEM si ");
 		sql.append("on si.LAYER_ID = sl2.LAYER_ID ");
-		sql.append("LEFT JOIN ").append(customDb).append("DEPUY_PROFILE_SET_XR p ");
+		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_NEXUS_SET_SHARE p ");
 		sql.append("on p.SET_INFO_ID = s.SET_INFO_ID and p.APPROVED_FLG = '1' ");
 		sql.append("WHERE ");
 		if ("loaner".equals(req.getParameter("type"))) {
@@ -677,14 +677,14 @@ public class NexusKitAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(300);
 		boolean insert = false;
 		if (StringUtil.checkVal(kit.getKitId()).length() == 0) {
-			sql.append("INSERT INTO ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("DEPUY_SET_INFO ");
+			sql.append("INSERT INTO ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_NEXUS_SET_INFO ");
 			sql.append("(SET_SKU_TXT, ORGANIZATION_NM, DESCRIPTION_TXT, GTIN_TXT, BRANCH_PLANT_CD, ");
 			sql.append("CREATE_DT, PROFILE_ID, SET_INFO_ID) ");
 			sql.append("VALUES(?,?,?,?,?,?,?,?)");
 			kit.setKitId(new UUIDGenerator().getUUID());
 			insert = true;
 		} else {
-			sql.append("UPDATE ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("DEPUY_SET_INFO ");
+			sql.append("UPDATE ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_NEXUS_SET_INFO ");
 			sql.append("SET SET_SKU_TXT = ?, ORGANIZATION_NM = ?, DESCRIPTION_TXT = ?, GTIN_TXT = ?, BRANCH_PLANT_CD = ?, ");
 			sql.append("CREATE_DT = ?, PROFILE_ID = ? WHERE SET_INFO_ID = ? ");
 		}
@@ -721,7 +721,7 @@ public class NexusKitAction extends SBActionAdapter {
 	private void clearKit(String kitId) throws ActionException {
 		StringBuilder sql = new StringBuilder(150);
 		
-		sql.append("DELETE ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("DEPUY_SET_LAYER ");
+		sql.append("DELETE ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_NEXUS_SET_LAYER ");
 		sql.append("WHERE SET_INFO_ID = ? ");
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -742,7 +742,7 @@ public class NexusKitAction extends SBActionAdapter {
 	private void saveLayers(NexusKitVO kit) throws ActionException {
 		StringBuilder sql = new StringBuilder(250);
 		
-		sql.append("INSERT INTO ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("DEPUY_SET_LAYER ");
+		sql.append("INSERT INTO ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_NEXUS_SET_LAYER ");
 		sql.append("(LAYER_NM, PARENT_ID, ORDER_NO, CREATE_DT, SET_INFO_ID, LAYER_ID) ");
 		sql.append("VALUES(?,?,?,?,?,?)");
 		
@@ -789,7 +789,7 @@ public class NexusKitAction extends SBActionAdapter {
 	private void saveProducts(NexusKitLayerVO layer) throws ActionException {
 		StringBuilder insert = new StringBuilder(350);
 		
-		insert.append("INSERT INTO ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("DEPUY_SET_ITEM ");
+		insert.append("INSERT INTO ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_NEXUS_SET_ITEM ");
 		insert.append("(PRODUCT_SKU_TXT, QUANTITY_NO, UNIT_MEASURE_CD, EFFECTIVE_START_DT, ");
 		insert.append("EFFECTIVE_END_DT, ITEM_GTIN_TXT, CREATE_DT, LAYER_ID, ORDER_NO, ITEM_ID) ");
 		insert.append("VALUES(?,?,?,?,?,?,?,?,?,?)");
@@ -861,7 +861,7 @@ public class NexusKitAction extends SBActionAdapter {
 				UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 				StringBuilder sql = new StringBuilder(150);
 				
-				sql.append("DELETE ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("DEPUY_SET_INFO ");
+				sql.append("DELETE ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_NEXUS_SET_INFO ");
 				sql.append("WHERE (1=2) ");
 				
 				for (int i=0; i < req.getParameterValues("kitId").length; i++) {
@@ -918,7 +918,7 @@ public class NexusKitAction extends SBActionAdapter {
 	 */
 	private void removePermission(String profileId, String kitId) throws ActionException {
 		StringBuilder sql =  new StringBuilder(150);
-		sql.append("DELETE ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("DEPUY_PROFILE_SET_XR ");
+		sql.append("DELETE ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_NEXUS_SET_SHARE ");
 		sql.append("WHERE PROFILE_ID = ? and SET_INFO_ID = ? ");
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -937,7 +937,7 @@ public class NexusKitAction extends SBActionAdapter {
 	 */
 	private void addPermission(String profileId, String kitId, int request) throws ActionException {
 		StringBuilder sql =  new StringBuilder(200);
-		sql.append("INSERT INTO ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("DEPUY_PROFILE_SET_XR ");
+		sql.append("INSERT INTO ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_NEXUS_SET_SHARE ");
 		sql.append("(PROFILE_SET_ID, PROFILE_ID, SET_INFO_ID, APPROVED_FLG, CREATE_DT) ");
 		sql.append("VALUES(?,?,?,?,?)");
 		
