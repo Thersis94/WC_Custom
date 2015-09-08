@@ -1,5 +1,6 @@
 package com.fastsigns.action.franchise;
 
+//Java 7
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -9,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+//WC customs
 import com.fastsigns.action.approval.WebeditApprover;
 import com.fastsigns.action.approval.WebeditApprover.WebeditType;
 import com.fastsigns.action.franchise.centerpage.FranchiseLocationInfoAction;
@@ -17,6 +19,8 @@ import com.fastsigns.action.franchise.vo.FranchiseVO;
 import com.fastsigns.action.franchise.vo.pages.PageContainerVO;
 import com.fastsigns.action.wizard.SiteWizardAction;
 import com.fastsigns.action.wizard.SiteWizardFactoryAction;
+
+//SMT baselibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
@@ -28,6 +32,8 @@ import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.siliconmtn.util.databean.FilePartDataBean;
+
+//WebCrescendo
 import com.smt.sitebuilder.action.FileLoader;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.SBModuleVO;
@@ -127,7 +133,7 @@ public class FranchisePageAction extends SBActionAdapter {
 	}
 	
 	private void createRedirect(SMTServletRequest req) {
-		StringBuilder sql = new StringBuilder();
+		StringBuilder sql = new StringBuilder(240);
 		
 		String orgId = ((SiteVO)req.getAttribute("siteData")).getOrganizationId();
 		log.debug(req.getSession().getAttribute("webeditIsMobile"));
@@ -205,7 +211,6 @@ public class FranchisePageAction extends SBActionAdapter {
 					break;
 					
 				case EDIT_PAGE_COPY:
-
 					//Check if the user wants to add a page with no left or right rails
 					Boolean showMenu = Convert.formatBoolean(req.getParameter("showMenu"), true);
 					
@@ -511,7 +516,8 @@ public class FranchisePageAction extends SBActionAdapter {
 		/*
 		 * Build sb_action entry for the File Gallery 
 		 */
-		StringBuilder sql = new StringBuilder("insert into sb_action (action_nm, action_desc, organization_id, ");
+		StringBuilder sql = new StringBuilder(125);
+		sql.append("insert into sb_action (action_nm, action_desc, organization_id, ");
 		sql.append("module_type_id, action_id, create_dt) values (?,?,?,?,?,?)");
 		PreparedStatement ps = null;
 
@@ -533,7 +539,7 @@ public class FranchisePageAction extends SBActionAdapter {
 		}	
 		
         //Build Gallery
-		sql = new StringBuilder();
+		sql = new StringBuilder(100);
 		sql.append("insert into file_gallery (organization_id, ");
         sql.append("create_dt, action_id) ");
         sql.append("values (?,?,?)");
@@ -553,7 +559,7 @@ public class FranchisePageAction extends SBActionAdapter {
 		}
 		
 		//Build Album
-		sql = new StringBuilder();
+		sql = new StringBuilder(100);
 		sql.append("insert into file_gallery_album (ACTION_ID, ALBUM_NM, ");
 		sql.append("ORDER_NO, CREATE_DT, GALLERY_ALBUM_ID) ");
 		sql.append("values (?,?,?,?,?)");
@@ -586,7 +592,7 @@ public class FranchisePageAction extends SBActionAdapter {
 	
 	public Map<String, CenterModuleOptionVO> getCPModuleOptions(String [] optIds, SMTServletRequest req) {
 		Map<String, CenterModuleOptionVO> options = new HashMap<String, CenterModuleOptionVO>();
-		StringBuilder sql = new StringBuilder();
+		StringBuilder sql = new StringBuilder(50);
 		sql.append("select * from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("FTS_CP_MODULE_OPTION where CP_MODULE_OPTION_ID in ('");
 		for(String opt : optIds) {
@@ -617,7 +623,7 @@ public class FranchisePageAction extends SBActionAdapter {
 		PreparedStatement ps = null;
 		
 		//Delete existing
-		StringBuilder sql = new StringBuilder();
+		StringBuilder sql = new StringBuilder(50);
 		sql.append("delete from FILE_GALLERY_ITEM where GALLERY_ALBUM_ID = ?");
 		try{
 			ps = dbConn.prepareStatement(sql.toString());
@@ -628,7 +634,7 @@ public class FranchisePageAction extends SBActionAdapter {
 			log.error("Could not delete old photo items", sqle);
 		}
 		//iterate and add new
-		sql = new StringBuilder();
+		sql = new StringBuilder(100);
 		sql.append("insert into FILE_GALLERY_ITEM (GALLERY_ITEM_ID, ");
 		sql.append("GALLERY_ALBUM_ID, MAIN_IMG_URL, THUMB_IMG_URL, LINK_URL, ");
 		sql.append("ENTRY_NM, DESC_TXT, ORDER_NO, CREATE_DT) values (?,?,?,?,?,?,?,?,?)");
@@ -722,8 +728,10 @@ public class FranchisePageAction extends SBActionAdapter {
 	private void savePage(SMTServletRequest req) throws ActionException {
 		try {
 		if (EDIT_PAGE_COPY == Convert.formatInteger(req.getParameter("bType"))){
+			if (req.getParameter("showMenu") != null){		
 			//change the column number for the content for page edits
 			changeDisplayColumn(req, Convert.formatBoolean(req.getParameter("showMenu"), true));
+			}
 		}
 		SitePageAction ai = new SitePageAction(this.actionInit);
 		ai.setDBConnection(dbConn);
@@ -887,13 +895,15 @@ public class FranchisePageAction extends SBActionAdapter {
 	
 	private ContentVO loadContentFromTemplate(PageVO page, String templateId, String sharedId) {
 		ContentVO vo = null;
-		String sql = "select * from content a inner join sb_action b on a.action_id=b.action_id " +
-				"and b.action_nm=? and b.organization_id='" + sharedId + "'";
+		StringBuilder sql = new StringBuilder(120);
+		sql.append("select * from content a inner join sb_action b on a.action_id=b.action_id ");
+		sql.append("and b.action_nm=? and b.organization_id=?");
 		log.debug("Load Content From Template Sql = " + sql);
 		PreparedStatement ps = null;
 		try {
-			ps = dbConn.prepareStatement(sql);
+			ps = dbConn.prepareStatement(sql.toString());
 			ps.setString(1, "subpageTemplate-" + templateId);
+			ps.setString(2, sharedId);
 			ResultSet rs = ps.executeQuery();
 			if (rs.next()) {
 				log.debug("template loaded");
