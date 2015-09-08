@@ -226,13 +226,16 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 	}
 	
 
-	/**
-	 * Only exists to let the automatic solr document builder
-	 * know that it is dealing with a kit instead of a product
-	 * @return
-	 */
+	//These functions exist solely to be called by the solr document creator
+	//in order to ensure that certain fields get properly populated for use 
+	//on the main site.
+	
 	@SolrField(name="kit")
 	public boolean isKit() {
 		return true;
+	}
+	@SolrField(name="gtin")
+	public String getGTIN() {
+		return kitGTIN;
 	}
 }

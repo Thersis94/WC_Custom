@@ -19,6 +19,7 @@ import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.util.solr.SolrActionUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.user.ProfileManager;
@@ -60,11 +61,7 @@ public class NexusKitAction extends SBActionAdapter {
 	
 	
 	public void retrieve(SMTServletRequest req) throws ActionException {
-		// In most cases the user will already have eveyrthing they need in the 
-		// session.  These are special cases where more is needed from the system
-		if (req.hasParameter("dashboard")) {
-			super.putModuleData(loadKits(req));
-		} else if (req.hasParameter("searchData")) {
+		if (req.hasParameter("searchData")) {
 			String searchData = StringUtil.checkVal(req.getParameter("searchData"));
 			req.setParameter("searchData", "*"+searchData+"*", true);
 			req.setParameter("minimumMatch", "100%");
@@ -77,6 +74,11 @@ public class NexusKitAction extends SBActionAdapter {
 		    	sai.setDBConnection(dbConn);
 		    	sai.setAttributes(attributes);
 			sai.retrieve(req);
+		} else if (!req.hasParameter("edit")){
+			// If the user is on the edit page they already have all the kit 
+			// information that they need stored in thier session and this is
+			// not needed
+			super.putModuleData(loadKits(req));
 		}
 	}
 	
@@ -708,7 +710,11 @@ public class NexusKitAction extends SBActionAdapter {
 			clearKit(kit.getKitId());
 		}
 		saveLayers(kit);
-		
+		// Set the solr variables
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		if (kit.getOrganization().size() == 0) kit.addOrganization(site.getOrganizationId());
+		if (kit.getRoles().size() == 0) kit.addRole("0");
+		addToSolr(kit);
 	}
 	
 	
@@ -964,6 +970,43 @@ public class NexusKitAction extends SBActionAdapter {
 	private void changeOrderNo(List<NexusKitLayerVO> layers, int index) {
 		for (int i = index; i < layers.size(); i++) {
 			layers.get(i).setOrderNo(i); 
+		}
+	}
+	
+	
+	/**
+	 * Create a solr action util and submit the user's kit
+	 */
+	private void addToSolr(NexusKitVO kit) throws ActionException {
+	    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+		attributes.put(Constants.SOLR_COLLECTION_NAME, getSolrCollection((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1)));
+		new SolrActionUtil(attributes).addDocument(kit);
+	}
+	
+	
+	/**
+	 * Get the solr collection 
+	 * @param solrId
+	 * @return
+	 * @throws ActionException
+	 */
+	private String getSolrCollection(String solrId) throws ActionException {
+		StringBuilder sql = new StringBuilder(200);
+		sql.append("SELECT SOLR_COLLECTION_PATH FROM SOLR_ACTION sa ");
+		sql.append("inner join SOLR_COLLECTION sc on sa.SOLR_COLLECTION_ID = sc.SOLR_COLLECTION_ID ");
+		sql.append("WHERE ACTION_ID = ? ");
+		log.debug(sql+"|"+solrId);
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, solrId);
+			ResultSet rs = ps.executeQuery();
+			
+			if (rs.next()) {
+				 return rs.getString(1);
+			} else {
+				throw new ActionException("Got null value for Solr Collection Name when adding kit to Solr", new NullPointerException());
+			}
+		} catch(SQLException e) {
+			throw new ActionException(e);
 		}
 	}
 

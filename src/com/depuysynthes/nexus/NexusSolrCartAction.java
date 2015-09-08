@@ -51,15 +51,74 @@ public class NexusSolrCartAction extends SBActionAdapter {
 	public static final String CASE_ID = "caseId";
 	
 	public void build(SMTServletRequest req) throws ActionException {
+		if (req.hasParameter("loadKit")) {
+			getKitProducts(req);
+		} else if (req.hasParameter("multiprod")) {
+			addMultiple(req);
+		} else {
+			editCart(req);
+		}
+	}
+	
+	
+	/**
+	 * Get all information related to the supplied kit's products
+	 * @param req
+	 * @throws ActionException
+	 */
+	private void getKitProducts(SMTServletRequest req) throws ActionException {
+		req.setParameter("minimumMatch", "100%");
+		
+	    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+	    	log.debug((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
+	    	actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
+	    	SMTActionInterface sai = new SolrAction(actionInit);
+	    	sai.setDBConnection(dbConn);
+	    	sai.setAttributes(attributes);
+		sai.retrieve(req);
+	}
+	
+	
+	/**
+	 * Loop through the supplied product information to create products
+	 * and add them to the cart
+	 * @param req
+	 * @throws ActionException
+	 */
+	private void addMultiple(SMTServletRequest req) throws ActionException {
+		String dateLot = getDateLot(req);
 		Storage store = retrieveContainer(req);
 		ShoppingCartVO cart = store.load();
-		String dateLot;
-		if (getCookie(req, TIME).length() > 0) {
-			String time = getCookie(req, TIME);
-			dateLot =  Convert.formatDate(Convert.formatDate(time.substring(0, time.indexOf("--")-1).replace('-', '/')),"ddMMMyyyy").toString();
-		} else {
-			dateLot = Convert.formatDate(Convert.getCurrentTimestamp(), "ddMMMyyyy");
+		// If no products were given simply return now
+		if (!req.hasParameter("products"))return;
+		for (String prodInfo : req.getParameterValues("products")) {
+			String[] split = prodInfo.split("\\|", -1);
+			ProductVO product = new ProductVO();
+			product.setProductId(split[0]);
+			product.setShortDesc(split[1]);
+			product.addProdAttribute("orgName", split[2]);
+			product.addProdAttribute("gtin", split[3]);
+			product.addProdAttribute("lotNo", dateLot);
+			product.addProdAttribute("dateLot", true);
+			product.addProdAttribute("uom", split[4]);
+			ShoppingCartItemVO item = new ShoppingCartItemVO(product);
+			item.setProductId(product.getProductId()+product.getProdAttributes().get("lotNo"));
+			item.setQuantity(1);
+			addItem(cart, item, "SKIP");
 		}
+		store.save(cart);
+	}
+	
+	
+	/**
+	 * Deals with the various actions that a user can enact that affect thier cart
+	 * @param req
+	 * @throws ActionException
+	 */
+	private void editCart(SMTServletRequest req) throws ActionException {
+		Storage store = retrieveContainer(req);
+		ShoppingCartVO cart = store.load();
+		String dateLot = getDateLot(req);
 		
 		if (Convert.formatBoolean(req.getParameter("clearCart"))) {
 			deleteItem(cart, req);
@@ -71,10 +130,27 @@ public class NexusSolrCartAction extends SBActionAdapter {
 			p.setQuantity(qty > 99? 99:qty);
 			cart.add(p);
 		} else {
-			addItem(cart, req, dateLot);
+			addItem(cart, buildProduct(req), StringUtil.checkVal(req.getParameter("oldLot")));
 		}
 		
 		store.save(cart);
+	}
+	
+	
+	/**
+	 * Create the datelot from the request
+	 * @param req
+	 * @return
+	 */
+	private String getDateLot(SMTServletRequest req) {
+		String dateLot;
+		if (getCookie(req, TIME).length() > 0) {
+			String time = getCookie(req, TIME);
+			dateLot =  Convert.formatDate(Convert.formatDate(time.substring(0, time.indexOf("--")-1).replace('-', '/')),"ddMMMyyyy").toString();
+		} else {
+			dateLot = Convert.formatDate(Convert.getCurrentTimestamp(), "ddMMMyyyy");
+		}
+		return dateLot;
 	}
 	
 
@@ -112,15 +188,12 @@ public class NexusSolrCartAction extends SBActionAdapter {
 
 
 	/**
-	 * Add the item on the request object to the cart, removing any old versions
-	 * of that product and reordering them in order to ensure they are ordered
-	 * by product id
-	 * @param cart
+	 * Create a single ShoppingCartItemVO from the request object
 	 * @param req
+	 * @return
 	 */
-	private void addItem(ShoppingCartVO cart, SMTServletRequest req, String dateLot) {
-		// Build a product vo that can be placed in the cart vo
-		cart.getItems().get(req.getParameter("productId"));
+	private ShoppingCartItemVO buildProduct(SMTServletRequest req) {
+		String dateLot = getDateLot(req);
 		ProductVO product = new ProductVO();
 		product.setProductId(req.getParameter("productId"));
 		product.setShortDesc(req.getParameter("desc"));
@@ -133,11 +206,23 @@ public class NexusSolrCartAction extends SBActionAdapter {
 		ShoppingCartItemVO item = new ShoppingCartItemVO(product);
 		item.setProductId(product.getProductId()+product.getProdAttributes().get("lotNo"));
 		item.setQuantity(Convert.formatInteger(req.getParameter("qty"),1));
-		cart.add(item);
 		
+		return item;
+	}
+
+
+	/**
+	 * Add the item on the request object to the cart, removing any old versions
+	 * of that product and reordering them in order to ensure they are ordered
+	 * by product id
+	 * @param cart
+	 * @param req
+	 */
+	private void addItem(ShoppingCartVO cart, ShoppingCartItemVO item, String oldLot) {
+		cart.add(item);
 		// Remove the old product if we have changed the lot no
-		if (!StringUtil.checkVal(req.getParameter("oldLot")).equals(product.getProdAttributes().get("lotNo")) ) {
-			cart.remove(product.getProductId()+req.getParameter("oldLot"));
+		if (!oldLot.equals(item.getProduct().getProdAttributes().get("lotNo")) ) {
+			cart.remove(item.getProduct().getProductId()+oldLot);
 		}
 		
 		// Ensure that the map is properly ordered by product id
@@ -186,9 +271,6 @@ public class NexusSolrCartAction extends SBActionAdapter {
 			buildReport(cart, req);
 			return;
 		}
-		
-		// Build the organization filter query
-		req.setParameter("fq", "organizationName:" + req.getParameter("orgName"));
 		
 		if (!Convert.formatBoolean(req.getParameter("showCart"))) {
 			String searchData = StringUtil.checkVal(req.getParameter("searchData"));
