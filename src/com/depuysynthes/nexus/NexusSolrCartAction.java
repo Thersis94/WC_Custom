@@ -88,8 +88,6 @@ public class NexusSolrCartAction extends SBActionAdapter {
 	private void addMultiple(SMTServletRequest req) throws ActionException {
 		String dateLot = getDateLot(req);
 		Storage store = retrieveContainer(req);
-		log.debug(store);
-		log.debug(store.load());
 		ShoppingCartVO cart = store.load();
 		// If no products were given simply return now
 		if (!req.hasParameter("products"))return;
