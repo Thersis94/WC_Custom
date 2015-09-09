@@ -115,7 +115,7 @@ public class RegistrationAction extends SimpleActionAdapter {
 		
 		//if there are no parameters on the request, this is the summary page/view.
 		//Reload the user's transcript each time so they always see their latest transcript
-		if (dsiUser.getTtLmsId() != null && StringUtil.checkVal(req.getQueryString()).length() == 0) {
+		if (dsiUser.getTtLmsId() != null && (req.hasParameter("coursesAjax") || StringUtil.checkVal(req.getQueryString()).length() == 0)) {
 			log.debug("loading transcript from LMS");
 			try {
 				LMSWSClient lms = new LMSWSClient((String)getAttribute(LMSWSClient.CFG_SECURITY_KEY));

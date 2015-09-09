@@ -418,7 +418,7 @@ public class LMSWSClient {
 					MyLMSCourseVO data = (MyLMSCourseVO) SMTSerializer.fromJson(o.toString(), MyLMSCourseVO.class);
 					courses.add(data);
 				} catch (Exception e) {
-					log.error("could not parse JSON", e);
+					log.error("could not parse JSON: " + o.toString(), e);
 				}
 			}
 			

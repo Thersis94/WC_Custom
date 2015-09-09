@@ -100,6 +100,7 @@ public class AssignmentsFacadeAction extends SimpleActionAdapter {
 				url.append("&assignmentId=").append(req.getParameter("redirAssignmentId"));
 				if (req.hasParameter("isNew")) url.append("&isNew=1");
 			}
+			if (req.hasParameter("redirMsg")) url.append("&msg=").append(req.getParameter("redirMsg"));
 			
 			req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
 			req.setAttribute(Constants.REDIRECT_URL, url.toString());
