@@ -22,6 +22,10 @@ import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
+import com.smt.sitebuilder.action.search.SolrActionIndexVO;
+import com.smt.sitebuilder.action.search.SolrActionVO;
+import com.smt.sitebuilder.action.search.SolrQueryProcessor;
+import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 
@@ -76,9 +80,9 @@ public class NexusKitAction extends SBActionAdapter {
 			sai.retrieve(req);
 		} else if (!req.hasParameter("edit")){
 			// If the user is on the edit page they already have all the kit 
-			// information that they need stored in thier session and this is
+			// information that they need stored in their session and this is
 			// not needed
-			super.putModuleData(loadKits(req));
+			super.putModuleData(loadKits(req, false));
 		}
 	}
 	
@@ -96,7 +100,7 @@ public class NexusKitAction extends SBActionAdapter {
 				modifyPermissions(req);
 				break;
 			case Clone:
-				kits = loadKits(req);
+				kits = loadKits(req, true);
 				if (kits.size() > 0) {
 					NexusKitVO kit = kits.get(0);
 					kit.setKitId("");
@@ -108,17 +112,16 @@ public class NexusKitAction extends SBActionAdapter {
 							sublayer.setParentId(layer.getLayerId());
 						}
 					}
-					if (req.hasParameter("loaner")) kit.setBranchCode(KitType.Custom.toString());
+					kit.setBranchCode(KitType.Custom.toString());
 					UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 					if (user != null) {
 						kit.setOwnerId(user.getProfileId());
 					}
 					req.getSession().setAttribute(KIT_SESSION_NM, kit);
-					saveKit(req);
 				}
 				break;
 			case Load:
-				kits = loadKits(req);
+				kits = loadKits(req, true);
 				if (kits.size() > 0) {
 					req.getSession().setAttribute(KIT_SESSION_NM, kits.get(0));
 				}
@@ -172,10 +175,12 @@ public class NexusKitAction extends SBActionAdapter {
 		sql.append("on s.profile_id = a.profile_id ");
 	    	sql.append("where b.site_id = ? ");
 		sql.append("and b.status_id = '20' ");
+		sql.append("and search_email_txt = ? ");
 		sql.append("order by a.profile_id");
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		log.debug(sql+"|"+site.getAliasPathParentId()+"|"+site.getSiteId());
+		log.debug(sql+"|"+site.getAliasPathParentId()+"|"+site.getSiteId()+"|"+req.getParameter("emailAddress"));
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
 
 			if (site.getAliasPathParentId() != null) {
 				ps.setString(1, site.getAliasPathParentId());
@@ -184,12 +189,13 @@ public class NexusKitAction extends SBActionAdapter {
 				ps.setString(1, site.getSiteId());
 				ps.setString(2, site.getSiteId());
 			}
+
+			ps.setString(3, pm.getEncValue("SEARCH_EMAIL_TXT", req.getParameter("emailAddress").toUpperCase()));
 			
 			ResultSet rs = ps.executeQuery();
 			String currentProfile = "";
 			List<NexusKitVO> kits = null;
 			GenericVO user = null;
-			ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
 			while(rs.next()) {
 				if (!currentProfile.equals(rs.getString("PROFILE_ID"))) {
 					if (user != null) users.put(user, kits);
@@ -422,7 +428,7 @@ public class NexusKitAction extends SBActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	private List<NexusKitVO> loadKits(SMTServletRequest req) throws ActionException {
+	private List<NexusKitVO> loadKits(SMTServletRequest req, boolean fullLoad) throws ActionException {
 		StringBuilder sql = new StringBuilder(1300);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		String kitId = StringUtil.checkVal(req.getParameter("kitId"));
@@ -539,25 +545,58 @@ public class NexusKitAction extends SBActionAdapter {
 			String currentLayer = "";
 			NexusKitVO kit = null;
 			NexusKitLayerVO layer = null;
+
+			int page = Convert.formatInteger(req.getParameter("page"), 1);
+			int rpp = Convert.formatInteger(req.getParameter("rpp"), 10);
+			int count = 0;
+			int start = (page-1)*rpp;
+			int end = page*rpp;
 			while(rs.next()) {
+				
 				if (!currentKit.equals(rs.getString("SET_INFO_ID"))) {
-					if (layer != null) kit.addLayer(layer);
-					if (kit != null) kits.add(kit);
+					if (count > start && count <= end) {
+						if (layer != null) kit.addLayer(layer);
+						if (kit != null) kits.add(kit);
+					}
 					currentKit = rs.getString("SET_INFO_ID");
 					kit = new NexusKitVO(rs, SOLR_INDEX);
+					count++;
 				}
 
-				if (!currentLayer.equals(rs.getString("LAYER_ID")) 
-						&& StringUtil.checkVal(rs.getString("LAYER_ID")).length() > 0) {
-					if (layer != null) kit.addLayer(layer);
-					currentLayer = rs.getString("LAYER_ID");
-					layer = new NexusKitLayerVO(rs);
+				if (count < start || count >= end) continue;
+				if (fullLoad) {
+					if (!currentLayer.equals(rs.getString("LAYER_ID")) 
+							&& StringUtil.checkVal(rs.getString("LAYER_ID")).length() > 0) {
+						if (layer != null) kit.addLayer(layer);
+						currentLayer = rs.getString("LAYER_ID");
+						layer = new NexusKitLayerVO(rs);
+					}
+					if(StringUtil.checkVal(rs.getString("ITEM_ID")).length() > 0) {
+						NexusProductVO p = new NexusProductVO(rs);
+						SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, "DePuy_NeXus");
+						SolrActionVO qData = new SolrActionVO();
+						qData.setNumberResponses(1);
+						qData.setStartLocation(0);
+						qData.setOrganizationId("DPY_SYN_NEXUS");
+						qData.setRoleLevel(0);
+						qData.addIndexType(new SolrActionIndexVO("", NexusProductVO.solrIndex));
+						Map<String, String> filter = new HashMap<>();
+						filter.put("documentId", p.getProductId());
+						qData.setFilterQueries(filter);
+						SolrResponseVO resp = sqp.processQuery(qData);
+						if (resp.getResultDocuments().size() == 1) {
+							p.setPrimaryDeviceId((String) resp.getResultDocuments().get(0).get("deviceId"));
+							p.addGtin((String) resp.getResultDocuments().get(0).get("deviceId"));
+						}
+						layer.addProduct(p);
+					}
 				}
-				if(StringUtil.checkVal(rs.getString("ITEM_ID")).length() > 0)
-					layer.addProduct(new NexusProductVO(rs));
 			}
-			if (layer != null) kit.addLayer(layer);
-			if (kit != null) kits.add(kit);
+			req.setAttribute("total", count);
+			if ( kits.size() < rpp) {
+				if (layer != null) kit.addLayer(layer);
+				if (kit != null) kits.add(kit);
+			}
 		} catch (SQLException e) {
 			throw new ActionException(e);
 		}
