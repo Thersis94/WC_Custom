@@ -74,7 +74,7 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 		DBUtil db = new DBUtil();
 		kitId = db.getStringVal("SET_INFO_ID", rs);
 		setKitSKU(db.getStringVal("SET_SKU_TXT", rs));
-		orgName = db.getStringVal("ORGANIZATION_NM", rs);
+		orgName = db.getStringVal("ORGANIZATION_ID", rs);
 		kitGTIN = db.getStringVal("GTIN_TXT", rs);
 		kitDesc = db.getStringVal("DESCRIPTION_TXT", rs);
 		branchCode = db.getStringVal("BRANCH_PLANT_CD", rs);

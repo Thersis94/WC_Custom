@@ -466,7 +466,7 @@ public class NexusKitAction extends SBActionAdapter {
 		}
 		
 		if (orgSearch) {
-			sql.append("and s.ORGANIZATION_NM = ? ");
+			sql.append("and s.ORGANIZATION_ID = ? ");
 		}
 		
 		if (kitSearch) {
@@ -509,7 +509,7 @@ public class NexusKitAction extends SBActionAdapter {
 		}
 		
 		if (orgSearch) {
-			sql.append("and s.ORGANIZATION_NM = ? ");
+			sql.append("and s.ORGANIZATION_ID = ? ");
 		}
 		
 		if (kitSearch) {
@@ -719,14 +719,14 @@ public class NexusKitAction extends SBActionAdapter {
 		boolean insert = false;
 		if (StringUtil.checkVal(kit.getKitId()).length() == 0) {
 			sql.append("INSERT INTO ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_NEXUS_SET_INFO ");
-			sql.append("(SET_SKU_TXT, ORGANIZATION_NM, DESCRIPTION_TXT, GTIN_TXT, BRANCH_PLANT_CD, ");
+			sql.append("(SET_SKU_TXT, ORGANIZATION_ID, DESCRIPTION_TXT, GTIN_TXT, BRANCH_PLANT_CD, ");
 			sql.append("CREATE_DT, PROFILE_ID, SET_INFO_ID) ");
 			sql.append("VALUES(?,?,?,?,?,?,?,?)");
 			kit.setKitId(new UUIDGenerator().getUUID());
 			insert = true;
 		} else {
 			sql.append("UPDATE ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_NEXUS_SET_INFO ");
-			sql.append("SET SET_SKU_TXT = ?, ORGANIZATION_NM = ?, DESCRIPTION_TXT = ?, GTIN_TXT = ?, BRANCH_PLANT_CD = ?, ");
+			sql.append("SET SET_SKU_TXT = ?, ORGANIZATION_ID = ?, DESCRIPTION_TXT = ?, GTIN_TXT = ?, BRANCH_PLANT_CD = ?, ");
 			sql.append("CREATE_DT = ?, PROFILE_ID = ? WHERE SET_INFO_ID = ? ");
 		}
 		
