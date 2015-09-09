@@ -25,7 +25,6 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.ModuleVO;
-import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SecurityController;
@@ -71,15 +70,9 @@ public class MyResidentsAction extends SBActionAdapter {
 
 		//load the list of residents
 		if (req.hasParameter("search")) {
-			if (StringUtil.isValidEmail(req.getParameter("search"))) {
-				//Find or create the WC profile, add them as a Resident, and invite them. 
-				//This mostly runs through the build() method
-				findAndAddResident(req.getParameter("search"), req);
-			} else {
-				//search residents matching keyword and return a list of matches to choose from
-				int resDirId = Convert.formatInteger("" + req.getSession().getAttribute(AssignmentsFacadeAction.RES_DIR_ID));
-				mod.setActionData(searchResidents(req.getParameter("search"), site, resDirId));
-			}
+			//search residents matching keyword and return a list of matches to choose from
+			int resDirId = Convert.formatInteger("" + req.getSession().getAttribute(AssignmentsFacadeAction.RES_DIR_ID));
+			mod.setActionData(searchResidents(req.getParameter("search"), site, resDirId));
 		} else {
 			mod.setActionData(loadResidentList(user.getProfileId(), site));
 		}
@@ -99,6 +92,8 @@ public class MyResidentsAction extends SBActionAdapter {
 		switch (reqType) {
 			case "reinvite":
 				this.invite(resident, site);
+				if (resident.getProfile() != null)
+					req.setParameter("redirMsg", "Invitation+sent+to+" + resident.getProfile().getEmailAddress());
 				break;
 			case "delete":
 				this.delete(resident);
@@ -137,25 +132,14 @@ public class MyResidentsAction extends SBActionAdapter {
 			log.error("could not find user for email: " + email, de);
 		}
 
-		String msg = "Invitation+sent+to+" + user.getEmailAddress();
 		ResidentVO resident = new ResidentVO(req);
 		resident.setProfileId(user.getProfileId());
 		try {
 			this.addResident(resident);
 			this.invite(resident, site);
 		} catch (ActionException ae) {
-			msg = ae.getMessage();
+			log.error("could not find & add resident", ae);
 		}
-
-
-		// Setup the redirect.
-		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
-		StringBuilder url = new StringBuilder();
-		url.append(page.getRequestURI()).append("?view=").append(req.getParameter("view")); //display admin menus
-		if (req.hasParameter("pg")) url.append("&pg=").append(req.getParameter("pg")); //admin page (include)
-		url.append("&msg=").append(msg);
-		req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
-		req.setAttribute(Constants.REDIRECT_URL, url.toString());
 	}
 
 
@@ -174,14 +158,19 @@ public class MyResidentsAction extends SBActionAdapter {
 
 		//find users with a matching name & are registered users as Residents or Chief Residents
 		StringBuilder sql = new StringBuilder(400);
-		sql.append("select p.profile_id, p.first_nm, p.last_nm, p.email_address_txt ");
+		sql.append("select p.profile_id, p.first_nm, p.last_nm, p.email_address_txt, r.resident_id ");
 		sql.append("from PROFILE p ");
 		sql.append("inner join PROFILE_ROLE pr on p.profile_id=pr.profile_Id and pr.role_id=? and pr.site_id=? and pr.status_id=? ");
 		sql.append("inner join register_submittal rs on p.profile_id=rs.profile_id and rs.site_id=? ");  //the user's registration on the site
 		sql.append("inner join register_data regd on rs.register_submittal_id=regd.register_submittal_id and regd.register_field_id=? "); //the user's Profession value
 		sql.append("left outer join ").append(customDb).append("DPY_SYN_INST_RESIDENT r on p.profile_id=r.profile_id and r.res_dir_id=? ");
-		sql.append("where (regd.value_txt=? or regd.value_txt=?) and p.SEARCH_LAST_NM=? and r.resident_id is null");
-		log.debug(sql);
+		sql.append("where (regd.value_txt=? or regd.value_txt=?) ");
+		if (StringUtil.isValidEmail(searchKywd)) {
+			sql.append("and p.SEARCH_EMAIL_TXT=?");
+		} else {
+			sql.append("and p.SEARCH_LAST_NM=?");
+		}
+		log.debug(pm.getEncValue("SEARCH_EMAIL_TXT", searchKywd.toUpperCase()));
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, "" + SecurityController.PUBLIC_REGISTERED_LEVEL);
@@ -192,7 +181,11 @@ public class MyResidentsAction extends SBActionAdapter {
 			ps.setInt(6, resDirId); //do not include users who are already tied to this resident director
 			ps.setString(7, "RESIDENT"); //profession value
 			ps.setString(8, "CHIEF"); //profession value
-			ps.setString(9, pm.getEncValue("SEARCH_LAST_NM", searchKywd.toUpperCase()));
+			if (StringUtil.isValidEmail(searchKywd)) {
+				ps.setString(9, pm.getEncValue("SEARCH_EMAIL_TXT", searchKywd.toUpperCase()));
+			} else {
+				ps.setString(9, pm.getEncValue("SEARCH_LAST_NM", searchKywd.toUpperCase()));
+			}
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				vo = new UserDataVO();
@@ -200,10 +193,18 @@ public class MyResidentsAction extends SBActionAdapter {
 				vo.setFirstName(pm.getStringValue("FIRST_NM", rs.getString(2)));
 				vo.setLastName(pm.getStringValue("LAST_NM", rs.getString(3)));
 				vo.setEmailAddress(pm.getStringValue("EMAIL_ADDRESS_TXT", rs.getString(4)));
+				vo.setAuthenticationId(rs.getString("resident_id"));
 				users.add(vo);
 			}
 		} catch (SQLException sqle) {
 			log.error("could not load residents", sqle);
+		}
+		
+		//this may be an email address of a new person, allow them to be invited
+		if (users.size() == 0 && StringUtil.isValidEmail(searchKywd)) {
+			vo = new UserDataVO();
+			vo.setEmailAddress(searchKywd);
+			users.add(vo);
 		}
 
 		return users;
@@ -384,7 +385,7 @@ public class MyResidentsAction extends SBActionAdapter {
 			ps.setString(2, resident.getResidentId());
 			ps.executeUpdate();
 		} catch (SQLException sqle) {
-			log.error("could not detach Director from Resident", sqle);
+			throw new ActionException("could not update Resident record", sqle);
 		}
 
 		//load a complete profile for the invitee so we can customize the email
@@ -392,7 +393,7 @@ public class MyResidentsAction extends SBActionAdapter {
 		try {
 			resident.setProfile(pm.getProfile(resident.getProfileId(), dbConn, ProfileManager.PROFILE_ID_LOOKUP, site.getOrganizationId()));
 		} catch (DatabaseException de) {
-			log.error("could not load user profile", de);
+			throw new ActionException("could not load user profile", de);
 		}
 
 		UserDataVO resDir = getResDirProfile(resident.getResidentDirectorId(), site.getOrganizationId());
@@ -407,7 +408,7 @@ public class MyResidentsAction extends SBActionAdapter {
 			MessageSender ms = new MessageSender(attributes, dbConn);
 			ms.sendMessage(mail);
 		} catch (Exception ide) {
-			log.error("could not send invite email", ide);
+			throw new ActionException("could not send invite email", ide);
 		}
 	}
 

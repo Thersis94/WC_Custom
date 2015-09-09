@@ -77,7 +77,8 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 			req.setParameter("fieldSort", "documentId");
 			req.setParameter("rpp", "3000");
 			req.setParameter("page", "0");
-		} else if ("credits_i".equals(sortType)) { //LMS course credits 
+		} else if ("credits_i".equals(sortType) || "title_sort".equals(sortType)) { 
+			//LMS course credits or Future Leaders Technique Guides 
 			//test for specific sorting values, or Solr will puke (@hack attempts)
 			req.setParameter("sortField", sortType);
 		}
@@ -164,7 +165,8 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 			throws ActionException {
 		Map<String, Integer> favs = loadPageViews(req);
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
-		String baseUrl = ("/search".equals(page.getFullPath())) ? null : page.getFullPath() + "/" + attributes.get(Constants.QS_PATH) ;
+		boolean isAnatomyRootPg = !"/search".equals(page.getFullPath()) && !"/futureleaders/surgical-technique-guides".equals(page.getFullPath());
+		String baseUrl = (isAnatomyRootPg) ? page.getFullPath() + "/" + attributes.get(Constants.QS_PATH) : null;
 		log.debug("base=" + baseUrl);
 
 		///iterate the solr results and encapsulate each SolrDocument with the extra fields we need for the Comparator
@@ -265,11 +267,11 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 		try {
 			hierarchy= StringUtil.checkVal(sd.getFieldValues(SearchDocumentHandler.HIERARCHY).iterator().next());
 		} catch (Exception e) {};
-		
+
 		return buildDSIUrl(hierarchy, (String)sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID), (String)attributes.get(Constants.QS_PATH));
 	}
-	
-		public static String buildDSIUrl(String hierarchy, String documentId, String qsPath) {
+
+	public static String buildDSIUrl(String hierarchy, String documentId, String qsPath) {
 		//log.debug(hierarchy);
 		if (hierarchy == null || hierarchy.length() == 0) return null;
 
