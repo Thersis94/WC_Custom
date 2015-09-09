@@ -24,11 +24,12 @@ public class MediaBinDeltaVO extends MediaBinAssetVO {
 	private String errorReason;
 	private String checksum;
 	private String eCopyTrackingNo;
+	private String eCopyRevisionLvl;
 	private String limeLightUrl;
 	
 	
 	public enum State {
-		Insert,Update,Delete,Ignore,Failed,ChecksumIssue;
+		Insert,Update,Delete,Ignore,Failed,ChecksumIssue,NewDownload;
 	}
 
 	public MediaBinDeltaVO() {
@@ -96,6 +97,16 @@ public class MediaBinDeltaVO extends MediaBinAssetVO {
 
 	public void setLimeLightUrl(String limeLightUrl) {
 		this.limeLightUrl = limeLightUrl;
+	}
+
+	public String geteCopyRevisionLvl() {
+		return eCopyRevisionLvl;
+	}
+
+	public void seteCopyRevisionLvl(String lvl) {
+		//do some data cleanup; a zero synonymizes null here
+		if (lvl == null || lvl.length() == 0 || "0".equals(lvl)) lvl = null;
+		this.eCopyRevisionLvl = lvl;
 	}
 	
 }

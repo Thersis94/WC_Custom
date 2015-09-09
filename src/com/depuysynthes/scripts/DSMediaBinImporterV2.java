@@ -262,6 +262,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 					break;
 				case Update:
 				case Insert:
+				case NewDownload: //we want the file contents to be re-indexed here, even though there are no meta-data changes
 					adds.add(vo);
 					break;
 				default:
@@ -388,6 +389,10 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 					vo.setChecksum(mr.getChecksum());
 					//pass the video chapters over as well
 					vo.setVideoChapters(mr.getVideoChapters());
+				} else if (vo.geteCopyRevisionLvl() != null) {
+					//the file on LL should have changed, but there's nothing in the meta-data we need to save
+					vo.setRecordState(State.NewDownload);
+					vo.setChecksum(mr.getChecksum());
 				} else {
 					//nothing changed, ignore this record.  99% of time this is the default use case
 					vo.setRecordState(State.Ignore);
@@ -414,40 +419,42 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		for (MediaBinDeltaVO vo : masterRecords.values()) {
 			//first check state, we only need to download a file under certain conditions
 			State st = vo.getRecordState();
-			if (st != State.Insert && st != State.Update) continue;
+			if (st != State.Insert && st != State.Update && st != State.NewDownload) continue;
 
 			vo.setLimeLightUrl(limeLightUrl + StringUtil.replace(vo.getAssetNm(), " ","%20"));
 			String fileNm = StringUtil.replace(vo.getRevisionLvlTxt() + "/" + vo.getAssetNm(), "/", File.separator);
 			//log.debug("fileNm=" + fileNm);
 
 			String prevChecksum = vo.getChecksum();
-			try {
-				//check if this file at this revision-level has already been retrieved from LL
-				File f = new File(dropboxFolder + fileNm);
-				if (f.exists()) {
-					log.debug("file exists: " + fileNm);
-					if (isFileStillPresentOnLL(vo)) {
-						//make sure the file has a checksum, if not load one - this will only surface when we purge the DB without purging the file system.
-						if (prevChecksum == null || prevChecksum.length() == 0) {
-							MessageDigest digest = MessageDigest.getInstance(HashGeneratorUtil.SHA256);
-							try (FileInputStream fis = new FileInputStream(f)) {
-								int nRead = 0;
-								byte[] byteBuffer = new byte[8192];
-								while ((nRead = fis.read(byteBuffer)) != -1)
-									digest.update(byteBuffer, 0, nRead);
-								
-								vo.setChecksum(HashGeneratorUtil.generate(digest));
-							} catch (Exception e) {
-								log.error("could not read file checksum", e);
+			if (st != State.NewDownload) {
+				try {
+					//check if this file at this revision-level has already been retrieved from LL
+					File f = new File(dropboxFolder + fileNm);
+					if (f.exists()) {
+						log.debug("file exists: " + fileNm);
+						if (isFileStillPresentOnLL(vo)) {
+							//make sure the file has a checksum, if not load one - this will only surface when we purge the DB without purging the file system.
+							if (prevChecksum == null || prevChecksum.length() == 0) {
+								MessageDigest digest = MessageDigest.getInstance(HashGeneratorUtil.SHA256);
+								try (FileInputStream fis = new FileInputStream(f)) {
+									int nRead = 0;
+									byte[] byteBuffer = new byte[8192];
+									while ((nRead = fis.read(byteBuffer)) != -1)
+										digest.update(byteBuffer, 0, nRead);
+									
+									vo.setChecksum(HashGeneratorUtil.generate(digest));
+								} catch (Exception e) {
+									log.error("could not read file checksum", e);
+								}
 							}
-						}
-						continue;
-					}	
+							continue;
+						}	
+					}
+	
+				} catch (Exception e) {
+					log.error("could not read file " + vo.getDpySynMediaBinId(), e);
+					failures.add(new Exception("failed " + vo.getDpySynMediaBinId(), e));
 				}
-
-			} catch (Exception e) {
-				log.error("could not read file " + vo.getDpySynMediaBinId(), e);
-				failures.add(new Exception("failed " + vo.getDpySynMediaBinId(), e));
 			}
 
 			downloadFile(dropboxFolder, vo, fileNm);
@@ -455,7 +462,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			//if the State is 'update', compare file size to make sure a changed file was pushed out.
 			//if not, report it as a failure
 			//log.debug("prevChecksum=" + prevChecksum + " newchecksum=" + vo.getChecksum());
-			if (vo.getRecordState() == State.Update) {
+			if (vo.getRecordState() == State.Update || vo.getRecordState() == State.NewDownload) {
 				if (vo.getChecksum().equals(prevChecksum)) {
 					//this file size did not change, flag it as a failure and report it
 					vo.setRecordState(State.ChecksumIssue);
@@ -741,7 +748,8 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 				vo.setFileSizeNo(Convert.formatInteger(row.get("Original File Size")));
 				vo.setProdFamilyNm(getProductFamily(row));
 				vo.setProdNm(StringUtil.checkVal(row.get("Product Name"), row.get("SOUS - Product Name")));
-				vo.setRevisionLvlTxt(parseRevisionLevel(row, type));
+				vo.setRevisionLvlTxt(StringUtil.checkVal(row.get("Revision Level"), row.get("Current Revision")));
+				vo.seteCopyRevisionLvl(StringUtil.checkVal(row.get("eCopy Revision Level"), null));
 				vo.setOpCoNm(row.get("Distribution Channel"));
 				vo.setTitleTxt(row.get("Title"));
 				vo.setDuration(Convert.formatDouble(row.get("Media Play Length (secs.)")));
@@ -888,21 +896,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		dataCounts.put("deleted", cnt);
 	}
 
-
-	/**
-	 * returns one of multiple revisionLevel values based on importTypeCd
-	 * @param row
-	 * @param type
-	 * @return
-	 */
-	private String parseRevisionLevel(Map<String, String> row, int type) {
-		String rev = StringUtil.checkVal(row.get("eCopy Revision Level"), null);
-		if (type == 1 || rev == null)
-			rev = StringUtil.checkVal(row.get("Revision Level"), row.get("Current Revision"));
-
-		return rev;
-	}
-
+	
 	/**
 	 * parses the tracking number from the old MediaBin file format
 	 * @param data
