@@ -38,6 +38,8 @@ public class NexusKitPDFReport  extends AbstractSBReportVO {
 	private int lines=0;
 	// Holds how many lines should appear on each page
 	private int threshold;
+	private int start;
+	private int width;
 
 	@Override
 	public byte[] generateReport() {
@@ -67,17 +69,20 @@ public class NexusKitPDFReport  extends AbstractSBReportVO {
 	private byte[] getPageHtml() {
 		NexusKitVO kit =  (NexusKitVO) data.get("kit");
 		boolean isForm = (boolean) data.get("isForm");
+		
+		
+		int colspan;
+
 		if (isForm) {
 			threshold = 25;
+			colspan=3;
+			width = 15;
 		} else {
 			threshold = 37;
-		}
-		int colspan;
-		if (isForm) {
-			colspan=3;
-		} else {
 			colspan=1;
+			width = 18;
 		}
+		start += Math.ceil(kit.getKitDesc().length()/((double)width));
 		
 		StringBuilder html = new StringBuilder(20000);
 		html.append("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">");
@@ -87,14 +92,16 @@ public class NexusKitPDFReport  extends AbstractSBReportVO {
 		html.append("@page {@bottom-center { content: counter(page) ' of ' counter(pages);page-break-after: always; }}");
 		html.append("@page {");
 		if (isForm) {
-			html.append("margin-top:230px!important;");
+			int baseHeight = 210;
+			html.append("margin-top:").append(baseHeight+start*18).append("px!important;");
 		} else {
-			html.append("margin-top:224px!important;");
+			int baseHeight = 204;
+			html.append("margin-top:").append(baseHeight+start*18).append("px!important;");
 		}
 		html.append("margin-bottom:40px;}");
 		html.append("@page {tr{page-break-inside:avoid-page}}");
 		html.append(".border{border:1px solid black;} ");
-		html.append("body{font-family: 'MyriadWebPro';}");
+		html.append("body{font-family: 'MyriadWebPro';word-wrap: break-word!important;}");
 		html.append("#body td{text-align:center;} @page{");
 		html.append("tr{ page-break-inside:avoid!important; page-break-after:auto!important}");
 		html.append("td{ page-break-inside:avoid!important; page-break-after:auto!important}");
@@ -130,7 +137,14 @@ public class NexusKitPDFReport  extends AbstractSBReportVO {
 			html.append("<td class='border col-5'>Surgery Date: </td>");
 		}
 		html.append("<td class='border col-8'></td></tr>");
-		html.append("<tr><td></td><td class='border'>Description: </td><td class='border'>").append(kit.getKitDesc()).append("</td><td colspan='").append(colspan).append("'></td><td class='border'>Surgery Time: </td><td class='border'></td></tr>");
+		html.append("<tr><td></td><td class='border'>Description: </td><td class='border'>");
+		int pos = 0;
+		while((pos+width) < kit.getKitDesc().length()) {
+			html.append("<span>").append(kit.getKitDesc().substring(pos, pos+width)).append("-</span><br/>");
+			pos+=width;
+		}
+		html.append(kit.getKitDesc().substring(pos));
+		html.append("</td><td colspan='").append(colspan).append("'></td><td class='border'>Surgery Time: </td><td class='border'></td></tr>");
 		html.append("<tr><td></td><td class='border'>Case Report ID: </td><td style='border:1px solid black;border-bottom:none;'></td><td colspan='").append(colspan).append("'></td><td class='border'>Surgeon: </td><td class='border'></td></tr>");
 		html.append("<tr><td colspan='2' rowspan='3'></td><td style='border-top:1px solid black;'></td><td colspan='").append(colspan).append("'></td><td class='border'>Operating Room: </td><td class='border'></td></tr>");
 		html.append("<tr><td colspan='").append(colspan+1).append("'></td><td class='border'>Case ID: </td><td class='border'></td></tr>");
@@ -177,13 +191,19 @@ public class NexusKitPDFReport  extends AbstractSBReportVO {
 
 		lines += Math.ceil(product.getSummary().length()/15.0) + 1;
 		if(lines >= threshold) {
-			lines =  (int) (Math.ceil(product.getSummary().length()/15.0) + 1);
+			lines =  (int) (Math.ceil(product.getSummary().length()/15.0) + 1) + start;
 			row.append("<tr style='page-break-before:always'><td  rowspan='2' class='border col-1'>").append(i);
 		} else {
 			row.append("<tr style=''><td  rowspan='2' class='border col-1'>").append(i);
 		}
 		row.append("</td><td class='border col-2'>").append(product.getProductId()).append("</td>");
-		row.append("<td class='border col-3'>").append(product.getSummary()).append("</td>");
+		row.append("<td class='border col-3'>");
+		int pos = 0;
+		while((pos+width) < product.getSummary().length()) {
+			row.append("<span >").append(product.getSummary().substring(pos, pos+width)).append("-</span><br/>");
+			pos+=width;
+		}
+		row.append(product.getSummary().substring(pos)).append("</td>");
 		row.append("<td class='border col-4'>");
 		if (!isForm) row.append(product.getQuantity());
 		row.append("</td>");
