@@ -1,11 +1,11 @@
 package com.depuysynthes.scripts;
 
 // JDK 1.7
-import java.security.MessageDigest;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -23,8 +23,6 @@ import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 
-
-
 // SMT Base Libs
 import com.depuysynthes.action.MediaBinAdminAction;
 import com.depuysynthes.action.MediaBinAssetVO;
@@ -32,7 +30,6 @@ import com.depuysynthes.action.MediaBinLinkAction;
 import com.depuysynthes.lucene.MediaBinSolrIndex;
 import com.depuysynthes.scripts.MediaBinDeltaVO.State;
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.io.HashGeneratorUtil;
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.io.mail.MailHandlerFactory;
@@ -166,7 +163,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			countDBRecords();
 			
 			//push-to-solr - all three of the above transaction sets
-			pushChangesToSolr(masterRecords);
+			syncWithSolr(masterRecords);
 
 
 		} catch (Exception e) {
@@ -244,17 +241,66 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	 * consumes the masterRecords list and pushes the qualifying records into Solr
 	 * @param masterRecords
 	 */
-	private void pushChangesToSolr(Map<String, MediaBinDeltaVO> masterRecords) {
+	private void syncWithSolr(Map<String, MediaBinDeltaVO> masterRecords) {
 		// initialize the connection to the solr server
 		String baseUrl = props.getProperty("solrBaseUrl");
 		String collection = props.getProperty("solrCollectionName");
 		HttpSolrServer server = new HttpSolrServer(baseUrl + collection);
 		server.setParser(new XMLResponseParser());
 
+		pushToSolr(masterRecords.values(), server);
+
+		//ask for a count of records in Solr using a typical query
+		int cnt = 0;
+		String queryString = SearchDocumentHandler.INDEX_TYPE + ":" + MediaBinSolrIndex.INDEX_TYPE;
+		queryString += " AND importFileCd_i:" + type;
+		SolrQuery qry = new SolrQuery(queryString);
+		qry.setRows(50000);
+		SolrDocumentList solrData = null;
+		try {
+			solrData = server.query(qry).getResults();
+			cnt = Convert.formatLong("" + solrData.getNumFound()).intValue();
+			log.info("solr count = " + cnt);
+		} catch (Exception e) {
+			failures.add(e);
+			log.error("could not process read Solr query", e);
+		}
+
+		//if the count in solr doesn't match what's in the database, report which ones are missing
+		int dbCnt = dataCounts.get("total");
+		if (dbCnt != cnt) {
+			List<MediaBinDeltaVO> revisions = analyzeSolrRecords(masterRecords, solrData, true);
+			//if extra solr records were present and got deleted, commit that change and re-count the records
+			pushToSolr(revisions, server);
+			
+			try {
+				solrData = server.query(qry).getResults();
+				cnt = Convert.formatLong("" + solrData.getNumFound()).intValue();
+				log.info("solr count = " + cnt);
+			} catch (Exception e) {
+				failures.add(e);
+				log.error("could not process read Solr query", e);
+			}
+			if (dbCnt != cnt) {
+				//this time when we re-sort, don't go to Solr, which would put us in a loop; just report them as failed.
+				analyzeSolrRecords(masterRecords, solrData, false);
+			}
+		}
+
+		dataCounts.put("solr", cnt);
+	}
+	
+	
+	/**
+	 * accepts a list of records to transact, and the server to run them against
+	 * @param masterRecords
+	 * @param server
+	 */
+	private void pushToSolr(Collection<MediaBinDeltaVO> records, HttpSolrServer server) {
 		//bucketize what needs to be done so we can hit Solr in two batch transactions
-		List<String> deletes = new ArrayList<>(masterRecords.size());
-		List<MediaBinAssetVO> adds = new ArrayList<>(masterRecords.size());
-		for (MediaBinDeltaVO vo : masterRecords.values()) {
+		List<String> deletes = new ArrayList<>(records.size());
+		List<MediaBinAssetVO> adds = new ArrayList<>(records.size());
+		for (MediaBinDeltaVO vo : records) {
 			switch (vo.getRecordState()) {
 				case Delete:
 				case Failed: //fails come from 404's at LimeLight; we don't want these showing up on DS if the linked file is MIA
@@ -262,13 +308,14 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 					break;
 				case Update:
 				case Insert:
-				case NewDownload: //we want the file contents to be re-indexed here, even though there are no meta-data changes
+				//case NewDownload: //we want the file contents to be re-indexed here, even though there are no meta-data changes
 					adds.add(vo);
 					break;
 				default:
 			}
 		}
 
+		//fire the deletes to solr first
 		if (deletes.size() > 0) {
 			try {
 				server.deleteById(deletes);
@@ -279,49 +326,21 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		}
 
 		//fire the adds & updates to Solr the same way the offline indexer does
-		String dropboxFolder = (String) props.get("downloadDir");
-		MediaBinSolrIndex idx = new MediaBinSolrIndex();
-		idx.indexFiles(adds, server, dropboxFolder);
-
+		if (adds.size() > 0) {
+			String dropboxFolder = (String) props.get("downloadDir");
+			MediaBinSolrIndex idx = new MediaBinSolrIndex();
+			idx.indexFiles(adds, server, dropboxFolder);
+		}
+		
 		//commit the changes using a softCommit
-		try {
-			server.commit(true, true, true);
-		} catch (Exception e) {
-			log.error("could not commit solr changes", e);
-			failures.add(e);
-		}
-
-		//ask for a count of records in Solr using a typical query
-		int cnt = 0;
-		String queryString = SearchDocumentHandler.INDEX_TYPE + ":" + MediaBinSolrIndex.INDEX_TYPE;
-		queryString += " AND importFileCd_i:" + type;
-		SolrQuery qry = new SolrQuery(queryString);
-		qry.setRows(0);  // don't actually request any data
-		try {
-			cnt = Convert.formatLong("" + server.query(qry).getResults().getNumFound()).intValue();
-			log.info("solr count = " + cnt);
-		} catch (Exception e) {
-			failures.add(e);
-			log.error("could not process Solr query", e);
-		}
-
-		//if the count in solr doesn't match what's in the database, report which ones are missing
-		int dbCnt = dataCounts.get("total");
-		if (dbCnt != cnt) {
-			boolean commitAndRecount = reportMissingSolrRecords(masterRecords, server, queryString);
-			//if extra solr records were present and got deleted, commit that change and re-count the records
-			if (commitAndRecount) {
-				try {
-					server.commit(true, true, true);
-					cnt = Convert.formatLong("" + server.query(qry).getResults().getNumFound()).intValue();
-				} catch (Exception e) {
-					log.error("could not commit solr changes", e);
-					failures.add(e);
-				}
+		if (adds.size() > 0 || deletes.size() > 0) {
+			try {
+				server.commit(true, true, true);
+			} catch (Exception e) {
+				log.error("could not commit solr changes", e);
+				failures.add(e);
 			}
 		}
-
-		dataCounts.put("solr", cnt);
 	}
 
 
@@ -332,21 +351,22 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	 * @param server
 	 * @param queryString
 	 */
-	private boolean reportMissingSolrRecords(Map<String, MediaBinDeltaVO> masterRecords, 
-			HttpSolrServer server, String queryString) {
-		boolean solrChangesPresent = false;
+	private List<MediaBinDeltaVO> analyzeSolrRecords(Map<String, MediaBinDeltaVO> masterRecords, 
+			SolrDocumentList solrData, boolean retrySolr) {
+		List<MediaBinDeltaVO> changes = new ArrayList<>();
 		try {
-			SolrQuery qry = new SolrQuery(queryString);
-			qry.setRows(50000);
-			SolrDocumentList solrData = server.query(qry).getResults();
-			
 			//iterate solr against DB
 			for (SolrDocument sd : solrData) {
 				if (!masterRecords.containsKey(sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID))) {
 					//these should be deleted from Solr
-					server.deleteById("" + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID));
-					solrChangesPresent = true;
-					failures.add(new Exception("Record exists in Solr but not database, and was deleted: " + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID)));
+					if (retrySolr) {
+						MediaBinDeltaVO vo = new MediaBinDeltaVO();
+						vo.setDpySynMediaBinId("" + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID));
+						vo.setRecordState(State.Delete);
+						changes.add(vo);
+					} else {
+						failures.add(new Exception("Record exists in Solr but not database, and could't be deleted: " + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID)));
+					}
 				}
 			}
 			
@@ -358,14 +378,19 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 						continue dbLoop;
 					}
 				}
-				failures.add(new Exception("Record exists in database but not Solr: " + vo.getDpySynMediaBinId()));
+				if (retrySolr) {
+					vo.setRecordState(State.Insert);
+					changes.add(vo);
+				} else {
+					failures.add(new Exception("Record exists in database but not Solr and couldn't be added: " + vo.getDpySynMediaBinId()));
+				}
 			}
 			
 		} catch (Exception e) {
 			failures.add(e);
 			log.error("could not report Solr missing entries", e);
 		}
-		return solrChangesPresent;
+		return changes;
 	}
 
 
@@ -391,8 +416,10 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 					vo.setVideoChapters(mr.getVideoChapters());
 				} else if (vo.geteCopyRevisionLvl() != null) {
 					//the file on LL should have changed, but there's nothing in the meta-data we need to save
-					vo.setRecordState(State.NewDownload);
+					vo.addDelta(new PropertyChangeEvent(vo,"eCopyRevisionLvl",""/*we don't save these*/, vo.geteCopyRevisionLvl()));
+					vo.setRecordState(State.Update);
 					vo.setChecksum(mr.getChecksum());
+					vo.setVideoChapters(mr.getVideoChapters());
 				} else {
 					//nothing changed, ignore this record.  99% of time this is the default use case
 					vo.setRecordState(State.Ignore);
@@ -419,65 +446,14 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		for (MediaBinDeltaVO vo : masterRecords.values()) {
 			//first check state, we only need to download a file under certain conditions
 			State st = vo.getRecordState();
-			if (st != State.Insert && st != State.Update && st != State.NewDownload) continue;
+			if (st != State.Insert && st != State.Update) continue;
 
 			vo.setLimeLightUrl(limeLightUrl + StringUtil.replace(vo.getAssetNm(), " ","%20"));
-			String fileNm = StringUtil.replace(vo.getRevisionLvlTxt() + "/" + vo.getAssetNm(), "/", File.separator);
+			vo.setFileName(StringUtil.replace(vo.getRevisionLvlTxt() + "/" + vo.getAssetNm(), "/", File.separator));
 			//log.debug("fileNm=" + fileNm);
 
-			String prevChecksum = vo.getChecksum();
-			if (st != State.NewDownload) {
-				try {
-					//check if this file at this revision-level has already been retrieved from LL
-					File f = new File(dropboxFolder + fileNm);
-					if (f.exists()) {
-						log.debug("file exists: " + fileNm);
-						if (isFileStillPresentOnLL(vo)) {
-							//make sure the file has a checksum, if not load one - this will only surface when we purge the DB without purging the file system.
-							if (prevChecksum == null || prevChecksum.length() == 0) {
-								MessageDigest digest = MessageDigest.getInstance(HashGeneratorUtil.SHA256);
-								try (FileInputStream fis = new FileInputStream(f)) {
-									int nRead = 0;
-									byte[] byteBuffer = new byte[8192];
-									while ((nRead = fis.read(byteBuffer)) != -1)
-										digest.update(byteBuffer, 0, nRead);
-									
-									vo.setChecksum(HashGeneratorUtil.generate(digest));
-								} catch (Exception e) {
-									log.error("could not read file checksum", e);
-								}
-							}
-							continue;
-						}	
-					}
-	
-				} catch (Exception e) {
-					log.error("could not read file " + vo.getDpySynMediaBinId(), e);
-					failures.add(new Exception("failed " + vo.getDpySynMediaBinId(), e));
-				}
-			}
-
-			downloadFile(dropboxFolder, vo, fileNm);
-
-			//if the State is 'update', compare file size to make sure a changed file was pushed out.
-			//if not, report it as a failure
-			//log.debug("prevChecksum=" + prevChecksum + " newchecksum=" + vo.getChecksum());
-			if (vo.getRecordState() == State.Update || vo.getRecordState() == State.NewDownload) {
-				if (vo.getChecksum().equals(prevChecksum)) {
-					//this file size did not change, flag it as a failure and report it
-					vo.setRecordState(State.ChecksumIssue);
-					String msg = makeMessage(vo, "According to the EXP file this asset has changed, but the file on Limelight has not been updated");
-					failures.add(new Exception(msg));
-					
-					//delete the downloaded file so we can try this again next time
-					try {
-						File f = new File(dropboxFolder + fileNm);
-						if (f.exists()) f.delete();
-					} catch (Exception e) {
-						log.error("could not delete unchanged file from dropboxFolder: " + fileNm);
-					}
-				}
-			}
+			if (fileOnLLChanged(vo))
+				downloadFile(dropboxFolder, vo);
 		}
 	}
 	
@@ -488,9 +464,15 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	 * @param vo
 	 * @param fileNm
 	 */
-	private void downloadFile(String dropboxFolder, MediaBinDeltaVO vo, String fileNm) {
+	private void downloadFile(String dropboxFolder, MediaBinDeltaVO vo) {
 		log.info("retrieving " + vo.getLimeLightUrl());
 		try {
+			//this is a work-around for development use, so we don't have to download files we already have
+			if (Convert.formatBoolean(props.getProperty("honorExistingFiles"))) {
+				File f1 = new File(dropboxFolder + vo.getFileName());
+				if (f1.exists()) return;
+			}
+				
 			SMTHttpConnectionManager conn = new SMTHttpConnectionManager();
 			InputStream is = conn.retrieveConnectionStream(vo.getLimeLightUrl(), null);				
 
@@ -501,8 +483,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 				throw new IOException();
 
 			//write the file to our repository
-			MessageDigest digest = MessageDigest.getInstance(HashGeneratorUtil.SHA256);
-			String fullPath = dropboxFolder + fileNm; 
+			String fullPath = dropboxFolder + vo.getFileName(); 
 			String parentDir = fullPath.substring(0, fullPath.lastIndexOf(File.separator));
 			File dir = new File(parentDir);
 			if (!dir.exists()) dir.mkdirs();
@@ -513,11 +494,9 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 				byte[] byteBuffer = new byte[8192];
 				while ((nRead = is.read(byteBuffer)) != -1) {
 					byteCnt += nRead;
-					digest.update(byteBuffer, 0, nRead);
 					fos.write(byteBuffer, 0, nRead);
 				}
 				fos.flush();
-				vo.setChecksum(HashGeneratorUtil.generate(digest));
 				vo.setFileSizeNo(byteCnt);
 				log.debug("wrote file " + fullPath);
 			}
@@ -543,19 +522,29 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	 * @param vo
 	 * @param fileNm
 	 */
-	private boolean isFileStillPresentOnLL(MediaBinDeltaVO vo) {
-		log.info("pinging " + vo.getLimeLightUrl());
+	private boolean fileOnLLChanged(MediaBinDeltaVO vo) {
+		log.info("checking headers on " + vo.getLimeLightUrl());
+		boolean changed = false;
 		try {
 			HttpURLConnection conn = (HttpURLConnection) new URL(vo.getLimeLightUrl()).openConnection();
 			conn.setRequestMethod("HEAD");
-			return (HttpURLConnection.HTTP_OK == conn.getResponseCode());
+			
+			if (HttpURLConnection.HTTP_OK == conn.getResponseCode()) {
+				String checksum = conn.getHeaderField("Last-Modified") + "||" + conn.getHeaderField("Content-Length");
+				log.debug(checksum);
+				changed = !checksum.equals(vo.getChecksum());
+				vo.setChecksum(checksum);
+				if (!changed && vo.geteCopyRevisionLvl() != null) {
+					vo.setErrorReason("File on LL did not change");
+				}
+			}
 
 		} catch (Exception e) {
 			//ignore these, because by returning false we're going to make a second
 			//call out to LL to retrieve the file, which will not be found, and be recorded
 			//as a failure (properly)
 		}
-		return false;
+		return changed;
 	}
 
 	
@@ -618,7 +607,8 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 
 			// test quality of data
 			if (tokens.length != columns.length) {
-				log.error("Not loading row# " + y + " " + rowStr);
+				log.error("Not loading row# " + y + "  " + rowStr);
+				failures.add(new Exception("Skipped EXP row# " + y + ", it has " + tokens.length + " columns instead of " + columns.length + ":<br/>" + rowStr.substring(0,rowStr.indexOf("|"))));
 				continue;
 			}
 
@@ -1030,7 +1020,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			// Build the email message
 			EmailMessageVO msg = new EmailMessageVO(); 
 			msg.addRecipients(props.getProperty("adminEmail" + type).split(","));
-			msg.setSubject("MediaBin Import - " + ((type == 1) ? "US" : "EMEA"));
+			msg.setSubject("SMT MediaBin Import - " + ((type == 1) ? "US" : "EMEA"));
 			msg.setFrom("appsupport@siliconmtn.com");
 
 			StringBuilder html= new StringBuilder(1000);
@@ -1113,10 +1103,11 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			if (State.Update == st) {
 				msg.append("<td>");
 				if (vo.getDeltas() != null) {
+					if (vo.getErrorReason() != null) msg.append("<font color=\"red\">").append(vo.getErrorReason()).append("</font><br/>");
 					for (PropertyChangeEvent e : vo.getDeltas()) {
-						msg.append("<b>").append(e.getPropertyName()).append("</b><br/>");
-						msg.append("old=").append(e.getOldValue()).append("<br/>");
-						msg.append("new=").append(e.getNewValue()).append("<br/>");
+						msg.append(e.getPropertyName()).append("<br/>");
+						//msg.append("old=").append(e.getOldValue()).append("<br/>");
+						//msg.append("new=").append(e.getNewValue()).append("<br/>");
 					}
 				}
 				msg.append("</td>");

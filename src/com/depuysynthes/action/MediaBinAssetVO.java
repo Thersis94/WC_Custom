@@ -6,13 +6,7 @@ import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
-
-
-
-
 import java.util.List;
-
-
 
 // SMTBaseLibs 2.0
 import com.siliconmtn.db.DBUtil;
@@ -57,6 +51,7 @@ public class MediaBinAssetVO extends SBModuleVO {
 	private String prodFamilyNm = null;
 	private String prodNm = null;
 	private String revisionLvlTxt = null;
+	private String eCopyRevisionLvl = null;
 	private String opCoNm = null;
 	private String titleTxt = null;
 	private String trackingNoTxt = null;
@@ -404,23 +399,11 @@ public class MediaBinAssetVO extends SBModuleVO {
 		if (!compareStr(downloadTypeTxt, other.downloadTypeTxt))
 			this.addDelta(new PropertyChangeEvent(this,"downloadTypeTxt",other.downloadTypeTxt, downloadTypeTxt));
 
-		if (!compareStr(dpySynMediaBinId, other.dpySynMediaBinId))
-			this.addDelta(new PropertyChangeEvent(this,"dpySynMediaBinId",other.dpySynMediaBinId, dpySynMediaBinId));
-
 		if (!compareDbl(duration, other.duration))
 			this.addDelta(new PropertyChangeEvent(this,"duration",Convert.formatDouble(other.duration), Convert.formatDouble(duration)));
 
-//		if (!compareStr(businessUnitNm, other.businessUnitNm))
-//			this.addDelta(new PropertyChangeEvent(this,"anatomy",other.anatomy, anatomy));
-//
-//		if (!compareStr(description, other.description))
-//			this.addDelta(new PropertyChangeEvent(this,"description",other.description, description));
-//
 		if (!compareStr(fileNm, other.fileNm))
 			this.addDelta(new PropertyChangeEvent(this,"fileNm",other.fileNm, fileNm));
-
-		if (!compareInt(importFileCd, other.importFileCd))
-			this.addDelta(new PropertyChangeEvent(this,"anatomy",Convert.formatInteger(other.importFileCd), Convert.formatInteger(importFileCd)));
 
 		if (!compareStr(languageCode, other.languageCode))
 			this.addDelta(new PropertyChangeEvent(this,"languageCode",other.languageCode, languageCode));
@@ -443,6 +426,9 @@ public class MediaBinAssetVO extends SBModuleVO {
 		if (!compareStr(revisionLvlTxt, other.revisionLvlTxt))
 			this.addDelta(new PropertyChangeEvent(this,"revisionLvlTxt",other.revisionLvlTxt, revisionLvlTxt));
 
+//		if (!compareStr(eCopyRevisionLvl, other.eCopyRevisionLvl))
+//			this.addDelta(new PropertyChangeEvent(this,"eCopyRevisionLvl",other.eCopyRevisionLvl, eCopyRevisionLvl));
+		
 		if (!compareStr(titleTxt, other.titleTxt))
 			this.addDelta(new PropertyChangeEvent(this,"titleTxt",other.titleTxt, titleTxt));
 
@@ -518,5 +504,15 @@ public class MediaBinAssetVO extends SBModuleVO {
 
 	public void setDeltas(List<PropertyChangeEvent> deltas) {
 		this.deltas = deltas;
+	}
+
+	public String geteCopyRevisionLvl() {
+		return eCopyRevisionLvl;
+	}
+
+	public void seteCopyRevisionLvl(String lvl) {
+		//do some data cleanup; a zero synonymizes null here
+		if (lvl == null || lvl.length() == 0 || "0".equals(lvl)) lvl = null;
+		this.eCopyRevisionLvl = lvl;
 	}
 }

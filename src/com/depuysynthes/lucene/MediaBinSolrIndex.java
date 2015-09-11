@@ -176,10 +176,9 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 				doc.setField(MediaBinField.AssetDesc.getField(), vo.getAssetDesc());
 				doc.setField(MediaBinField.DSOrderNo.getField(), vo.isVideo() ? 25 : 30); //used for moduleType sequencing on DS only
 				doc.setField(MediaBinField.ImportFileCd.getField(), vo.getImportFileCd());
-				if (vo.isVideo()) {
+				if (vo.isVideo())
 					doc.setField(MediaBinField.VideoChapters.getField(), vo.getVideoChapters());
-					log.error("chapters=" + vo.getVideoChapters());
-				}
+
 				//turn the flat/delimited hierarchy into a structure that PathHierarchyTokenizer will understand
 				for (String s : StringUtil.checkVal(vo.getAnatomy()).split("~")) {
 					//need to tokenize the levels and trim spaces from each, the MB team are slobs!
