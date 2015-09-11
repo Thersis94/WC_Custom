@@ -444,13 +444,8 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		String dropboxFolder = (String) props.get("downloadDir");
 
 		for (MediaBinDeltaVO vo : masterRecords.values()) {
-			//first check state, we only need to download a file under certain conditions
-			State st = vo.getRecordState();
-			if (st != State.Insert && st != State.Update) continue;
-
 			vo.setLimeLightUrl(limeLightUrl + StringUtil.replace(vo.getAssetNm(), " ","%20"));
-			vo.setFileName(StringUtil.replace(vo.getRevisionLvlTxt() + "/" + vo.getAssetNm(), "/", File.separator));
-			//log.debug("fileNm=" + fileNm);
+			vo.setFileName(StringUtil.replace((type == 1 ? "US" : "EMEA") + "/" + vo.getAssetNm(), "/", File.separator));
 
 			if (fileOnLLChanged(vo))
 				downloadFile(dropboxFolder, vo);
@@ -512,6 +507,13 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			vo.setRecordState(State.Failed);
 			String msg = makeMessage(vo, "Unknown error downloading from LimeLight: " + e.getMessage());
 			failures.add(new Exception(msg));
+		}
+		
+		//if we successfully downloaded a new file for a record with no meta-data changes,
+		//we need to flag it so Solr gets updated.  We also need to update the checksum column in the DB
+		if (State.Ignore == vo.getRecordState()) {
+			vo.setRecordState(State.Update);
+			vo.setErrorReason("File on LL was updated");
 		}
 	}
 	
