@@ -410,20 +410,18 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 				MediaBinDeltaVO mr = masterRecords.get(vo.getDpySynMediaBinId());
 				if (! vo.lexicographyEquals(mr)) {
 					vo.setRecordState(State.Update);
-					//pass the checksum off the existing file to the new VO, so we can compare it to the new file
-					vo.setChecksum(mr.getChecksum());
-					//pass the video chapters over as well
-					vo.setVideoChapters(mr.getVideoChapters());
 				} else if (vo.geteCopyRevisionLvl() != null) {
 					//the file on LL should have changed, but there's nothing in the meta-data we need to save
 					vo.addDelta(new PropertyChangeEvent(vo,"eCopyRevisionLvl",""/*we don't save these*/, vo.geteCopyRevisionLvl()));
 					vo.setRecordState(State.Update);
-					vo.setChecksum(mr.getChecksum());
-					vo.setVideoChapters(mr.getVideoChapters());
 				} else {
 					//nothing changed, ignore this record.  99% of time this is the default use case
 					vo.setRecordState(State.Ignore);
 				}
+				//pass the checksum of the existing file to the new VO, so we can compare it to the new file
+				vo.setChecksum(mr.getChecksum());
+				//pass the video chapters as well
+				vo.setVideoChapters(mr.getVideoChapters());
 			} else {
 				vo.setRecordState(State.Insert);
 			}
