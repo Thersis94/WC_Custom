@@ -20,6 +20,7 @@ import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
+import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrActionIndexVO;
@@ -47,9 +48,11 @@ public class NexusKitAction extends SBActionAdapter {
 	public static final String SOLR_INDEX = "DEPUY_NEXUS";
 	public static final String KIT_SESSION_NM = "depuyNexusKit";
 	
+	private String successMsgEnd = " Please click outside the modal in order to complete this action.";
+	
 	// Potential actions for the user to take
 	enum KitAction {
-		Permissions, Clone, Save, Delete, Edit, Load, Add, Empty, Reorder, ChangeLayer, Copy, NewKit, findUsers
+		Permissions, Clone, Save, Delete, Edit, Load, Add, Empty, Reorder, ChangeLayer, Copy, NewKit, findUsers, Print
 	}
 	
 	// The level of the kit that is being targeted
@@ -95,63 +98,105 @@ public class NexusKitAction extends SBActionAdapter {
 			throw new ActionException("unknown kit action: " + req.getParameter("kitAction"), e);
 		}
 		List<NexusKitVO> kits;
-		switch(action) {
-			case Permissions:
-				modifyPermissions(req);
-				break;
-			case Clone:
-				kits = loadKits(req, true);
-				if (kits.size() > 0) {
-					NexusKitVO kit = kits.get(0);
-					kit.setKitId("");
-					kit.setKitDesc("(Copy)"+kit.getKitDesc());
-					for (NexusKitLayerVO layer : kit.getLayers()) {
-						layer.setLayerId(new UUIDGenerator().getUUID());
-						for (NexusKitLayerVO sublayer : layer.getSublayers()) {
-							sublayer.setLayerId(new UUIDGenerator().getUUID());
-							sublayer.setParentId(layer.getLayerId());
+		try {
+			switch(action) {
+				case Permissions:
+					modifyPermissions(req);
+					break;
+				case Clone:
+					kits = loadKits(req, true);
+					if (kits.size() > 0) {
+						NexusKitVO kit = kits.get(0);
+						kit.setKitId("");
+						kit.setKitDesc("(Copy)"+kit.getKitDesc());
+						for (NexusKitLayerVO layer : kit.getLayers()) {
+							layer.setLayerId(new UUIDGenerator().getUUID());
+							for (NexusKitLayerVO sublayer : layer.getSublayers()) {
+								sublayer.setLayerId(new UUIDGenerator().getUUID());
+								sublayer.setParentId(layer.getLayerId());
+							}
 						}
+						kit.setBranchCode(KitType.Custom.toString());
+						UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
+						if (user != null) {
+							kit.setOwnerId(user.getProfileId());
+						}
+						req.getSession().setAttribute(KIT_SESSION_NM, kit);
+						saveKit(req);
 					}
-					kit.setBranchCode(KitType.Custom.toString());
-					UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
-					if (user != null) {
-						kit.setOwnerId(user.getProfileId());
+					super.putModuleData("Kit Successfully Cloned." + successMsgEnd);
+					break;
+				case Load:
+					kits = loadKits(req, true);
+					if (kits.size() > 0) {
+						req.getSession().setAttribute(KIT_SESSION_NM, kits.get(0));
 					}
-					req.getSession().setAttribute(KIT_SESSION_NM, kit);
-				}
+					break;
+				case Save: 
+					saveKit(req);
+					super.putModuleData("Kit Successfully Saved." + successMsgEnd);
+					break;
+				case Delete: 
+					deleteKit(req);
+					break;
+				case Edit: 
+					editKit(req);
+					break;
+				case ChangeLayer:
+					changeLayer(req);
+					break;
+				case Reorder:
+					reorderKit(req);
+					break;
+				case Copy:
+					copyItem(req);
+					super.putModuleData(getUsers(req));
+					break;
+				case NewKit:
+					NexusKitVO newKit = new NexusKitVO(SOLR_INDEX);
+					newKit.setKitDesc("Empty Kit");
+					req.getSession().setAttribute(KIT_SESSION_NM, newKit);
+					break;
+				case findUsers:
+					super.putModuleData(getUsers(req));
+					break;
+				case Print:
+					buildReport(req);
+					break;
+			default:
 				break;
-			case Load:
-				kits = loadKits(req, true);
-				if (kits.size() > 0) {
-					req.getSession().setAttribute(KIT_SESSION_NM, kits.get(0));
-				}
-				break;
-			case Save: 
-				saveKit(req);
-				break;
-			case Delete: 
-				deleteKit(req);
-				break;
-			case Edit: 
-				editKit(req);
-				break;
-			case ChangeLayer:
-				changeLayer(req);
-				break;
-			case Reorder:
-				reorderKit(req);
-				break;
-			case Copy:
-				copyItem(req);
-				break;
-			case NewKit:
-				req.getSession().setAttribute(KIT_SESSION_NM, new NexusKitVO(SOLR_INDEX));
-				break;
-			case findUsers:
-				super.putModuleData(getUsers(req));
-				break;
-		default:
-			break;
+			}
+		} catch (Exception e) {
+			super.putModuleData("Action Failed to Complete");
+			throw e;
+		}
+	}
+	
+	
+	
+	/**
+	 * Build the requested report based off of the request servlet and the 
+	 * shopping cart
+	 * @param cart
+	 * @param req
+	 * @throws ActionException 
+	 */
+	private void buildReport(SMTServletRequest req) throws ActionException {
+		AbstractSBReportVO report;
+
+		List<NexusKitVO> kits = loadKits(req, true);
+		if (kits.size() > 0) {
+			report = new NexusKitPDFReport();
+			report.setFileName("NeXus_Kit_Report.pdf");
+			Map<String, Object> data = new HashMap<>();
+			data.put("kit",kits.get(0));
+			data.put("baseDomain", req.getHostName());
+			data.put("isForm", req.hasParameter("isForm"));
+			report.setData(data);
+			req.setAttribute(Constants.BINARY_DOCUMENT, report);
+			req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, true);
+		} else {
+			throw new ActionException("Unable to get kit for report");
 		}
 	}
 	
@@ -587,6 +632,7 @@ public class NexusKitAction extends SBActionAdapter {
 						if (resp.getResultDocuments().size() == 1) {
 							p.setPrimaryDeviceId((String) resp.getResultDocuments().get(0).get("deviceId"));
 							p.addGtin((String) resp.getResultDocuments().get(0).get("deviceId"));
+							p.setSummary((String) resp.getResultDocuments().get(0).get("summary"));
 						}
 						layer.addProduct(p);
 					}
