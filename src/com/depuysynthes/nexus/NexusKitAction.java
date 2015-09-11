@@ -489,48 +489,15 @@ public class NexusKitAction extends SBActionAdapter {
 			profileId = user.getProfileId();
 		}
 		// Get the kit, its top layers, and their products
-		sql.append("SELECT s.*, sl.*, si.*, p.PROFILE_ID as SHARED_ID FROM ").append(customDb).append("DPY_SYN_NEXUS_SET_INFO s ");
-		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_NEXUS_SET_LAYER sl ");
-		sql.append("on sl.SET_INFO_ID = s.SET_INFO_ID ");
-		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_NEXUS_SET_ITEM si ");
-		sql.append("on si.LAYER_ID = sl.LAYER_ID ");
-		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_NEXUS_SET_SHARE p ");
-		sql.append("on p.SET_INFO_ID = s.SET_INFO_ID and p.APPROVED_FLG = '1' ");
-		sql.append("WHERE ");
-		if ("loaner".equals(req.getParameter("type"))) {
-			sql.append("s.PROFILE_ID is null ");
-		} else if ("custom".equals(req.getParameter("type"))) {
-			sql.append("s.PROFILE_ID is not null ");
-			sql.append("and (p.PROFILE_ID = ? or s.PROFILE_ID = ?) ");
-		} else if ("own".equals(req.getParameter("owner"))) {
-			sql.append("s.PROFILE_ID = ? ");
-		} else if ("shared".equals(req.getParameter("owner"))) {
-			sql.append("p.PROFILE_ID = ? ");
-		} else {
-			sql.append("(p.PROFILE_ID = ? or s.PROFILE_ID = ? or s.PROFILE_ID is null) ");
+		sql.append("SELECT s.*, ");
+		if (fullLoad) sql.append("sl.*, si.*, ");
+		sql.append("p.PROFILE_ID as SHARED_ID FROM ").append(customDb).append("DPY_SYN_NEXUS_SET_INFO s ");
+		if (fullLoad) {
+			sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_NEXUS_SET_LAYER sl ");
+			sql.append("on sl.SET_INFO_ID = s.SET_INFO_ID ");
+			sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_NEXUS_SET_ITEM si ");
+			sql.append("on si.LAYER_ID = sl.LAYER_ID ");
 		}
-		
-		if (orgSearch) {
-			sql.append("and s.ORGANIZATION_ID = ? ");
-		}
-		
-		if (kitSearch) {
-			sql.append("and (s.SET_SKU_TXT like ? or s.DESCRIPTION_TXT like ?) ");
-		}
-		
-		if (kitId.length() > 0) sql.append("and s.SET_INFO_ID = ? ");
-		
-		
-		sql.append("union ");
-		
-		// Get the sublayers and their products
-		sql.append("SELECT s.*, sl2.*, si.*, p.PROFILE_ID as SHARED_ID FROM ").append(customDb).append("DPY_SYN_NEXUS_SET_INFO s ");
-		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_NEXUS_SET_LAYER sl ");
-		sql.append("on sl.SET_INFO_ID = s.SET_INFO_ID ");
-		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_NEXUS_SET_LAYER sl2 ");
-		sql.append("on sl2.PARENT_ID = sl.LAYER_ID ");
-		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_NEXUS_SET_ITEM si ");
-		sql.append("on si.LAYER_ID = sl2.LAYER_ID ");
 		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_NEXUS_SET_SHARE p ");
 		sql.append("on p.SET_INFO_ID = s.SET_INFO_ID and p.APPROVED_FLG = '1' ");
 		sql.append("WHERE ");
@@ -560,22 +527,64 @@ public class NexusKitAction extends SBActionAdapter {
 		if (kitSearch) {
 			sql.append("and (s.SET_SKU_TXT like ? or s.DESCRIPTION_TXT like ?) ");
 		}
+		
 		if (kitId.length() > 0) sql.append("and s.SET_INFO_ID = ? ");
-		sql.append("ORDER BY s.SET_INFO_ID, sl.PARENT_ID, sl.ORDER_NO, si.ORDER_NO ");
+		
+		if (fullLoad) {
+			sql.append("union ");
+			
+			// Get the sublayers and their products
+			sql.append("SELECT s.*, sl2.*, si.*, p.PROFILE_ID as SHARED_ID FROM ").append(customDb).append("DPY_SYN_NEXUS_SET_INFO s ");
+			sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_NEXUS_SET_LAYER sl ");
+			sql.append("on sl.SET_INFO_ID = s.SET_INFO_ID ");
+			sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_NEXUS_SET_LAYER sl2 ");
+			sql.append("on sl2.PARENT_ID = sl.LAYER_ID ");
+			sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_NEXUS_SET_ITEM si ");
+			sql.append("on si.LAYER_ID = sl2.LAYER_ID ");
+			sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_NEXUS_SET_SHARE p ");
+			sql.append("on p.SET_INFO_ID = s.SET_INFO_ID and p.APPROVED_FLG = '1' ");
+			sql.append("WHERE ");
+			if ("loaner".equals(req.getParameter("type"))) {
+				sql.append("s.PROFILE_ID is null ");
+			} else if ("custom".equals(req.getParameter("type"))) {
+				sql.append("s.PROFILE_ID is not null ");
+				sql.append("and (p.PROFILE_ID = ? or s.PROFILE_ID = ?) ");
+			} else if ("own".equals(req.getParameter("owner"))) {
+				sql.append("s.PROFILE_ID = ? ");
+			} else if ("shared".equals(req.getParameter("owner"))) {
+				sql.append("p.PROFILE_ID = ? ");
+			} else {
+				sql.append("(p.PROFILE_ID = ? or s.PROFILE_ID = ? or s.PROFILE_ID is null) ");
+			}
+			
+			if (orgSearch) {
+				sql.append("and s.ORGANIZATION_ID = ? ");
+			}
+			
+			if (kitSearch) {
+				sql.append("and (s.SET_SKU_TXT like ? or s.DESCRIPTION_TXT like ?) ");
+			}
+			if (kitId.length() > 0) sql.append("and s.SET_INFO_ID = ? ");
+		}
+		
+		sql.append("ORDER BY s.SET_INFO_ID");
+		if (fullLoad) sql.append(", sl.PARENT_ID, sl.ORDER_NO, si.ORDER_NO ");
 		
 		log.debug(sql+"|"+profileId+"|"+kitId);
 		List<NexusKitVO> kits = new ArrayList<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			int i = 1;
-			if (profileOne) ps.setString(i++, profileId);
-			if (profileTwo) ps.setString(i++, profileId);
-			if (orgSearch) ps.setString(i++, req.getParameter("organizationNm"));
-			if (kitSearch) {
-				ps.setString(i++, "%"+req.getParameter("searchTerms")+"%");
-				ps.setString(i++, "%"+req.getParameter("searchTerms")+"%");
+			if (fullLoad) {
+				if (profileOne) ps.setString(i++, profileId);
+				if (profileTwo) ps.setString(i++, profileId);
+				if (orgSearch) ps.setString(i++, req.getParameter("organizationNm"));
+				if (kitSearch) {
+					ps.setString(i++, "%"+req.getParameter("searchTerms")+"%");
+					ps.setString(i++, "%"+req.getParameter("searchTerms")+"%");
+				}
+				if (kitId.length() > 0) ps.setString(i++, kitId);
 			}
-			if (kitId.length() > 0) ps.setString(i++, kitId);
-
+			
 			if (profileOne) ps.setString(i++, profileId);
 			if (profileTwo) ps.setString(i++, profileId);
 			if (orgSearch) ps.setString(i++, req.getParameter("organizationNm"));
