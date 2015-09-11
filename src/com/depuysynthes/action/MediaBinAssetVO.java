@@ -6,15 +6,7 @@ import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
-
-
-
-
 import java.util.List;
-
-
-
-
 
 // SMTBaseLibs 2.0
 import com.siliconmtn.db.DBUtil;
