@@ -38,9 +38,11 @@ import org.apache.tika.sax.BodyContentHandler;
 
 
 
+
 // SMT Base Libs
 import com.depuysynthes.action.MediaBinAdminAction;
 import com.depuysynthes.action.MediaBinAssetVO;
+import com.depuysynthes.scripts.MediaBinDeltaVO;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.StringUtil;
 
@@ -252,6 +254,10 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 		String fileNm = null;
 		try { //catch NPEs in the file name, before we attempt to open the file
 			fileNm = StringUtil.replace(vo.getRevisionLvlTxt() + "/" + vo.getAssetNm(), "/", File.separator);
+			
+			//remain backwards compatible, this class is used by both the V1 and V2 Mediabin importers
+			if (vo instanceof MediaBinDeltaVO) fileNm = ((MediaBinDeltaVO)vo).getFileName();
+			
 		} catch (Exception e) { 
 			return data; 
 		}
