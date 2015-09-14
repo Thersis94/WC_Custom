@@ -105,7 +105,7 @@ public class POYPContactPPAction extends SBActionAdapter {
 		msg.append("</span></td><td width='8%'></td></tr>");
 		msg.append("<tr height='20' width='100%'><td ></td><td ></td><td ></td></tr> ");
 		msg.append("<tr><td width='8%'></td><td align='left' width='84%'> ");
-		msg.append("<span style='padding: 0; display: inline-block; font-size: 19px;'> ");
+		msg.append("<span style='padding: 0 0 5px; display: inline-block; font-size: 19px;'> ");
 		msg.append("Pain Interrupted.</span><br/> ");
 		msg.append("We've attached an electronic version of our patient education brochure for ");
 		msg.append("your reference. The next step is to ask your doctor about neurostimulation and ");
@@ -116,23 +116,26 @@ public class POYPContactPPAction extends SBActionAdapter {
 		msg.append("<tr><td width='8%'></td> ");
 		msg.append("<td align='left' width='84%' style='padding: 0 0 10px; line-height: 130%;'> ");
 		msg.append("<table width='100%' align='center' cellspacing='0' cellpadding='0' border='0' ");
-		msg.append("style='font-family: Arial,sans-serif;'><tr><td> ");
-		msg.append("<span style='padding: 0; display: inline-block; font-size: 19px;'> ");
-		msg.append("Learn More.</span><br/></td></tr><tr><td style='padding: 10px 10px 10px;'> ");
+		msg.append("style='font-family: Arial,sans-serif;'><tr><td align='left' colspan='2' style='padding: 0 0 7px;'>");
+		msg.append("<span style='display: inline-block; font-size: 19px;'> ");
+		msg.append("Learn More.</span><br/></td></tr><tr><td valign='top' colspan='2' style='padding: 0 0 5px 0;'> ");
+		msg.append("Hear from people who have chosen neurostimulation to manage their<br/> chronic pain: ");
+		msg.append("</td></tr><tr><td valign='top' width='8%'>&bull;</td> ");
+		msg.append("<td valign='top' style='padding: 0 0 5px 0;'>Read their  ");
 		msg.append("<a style='color: #00a98f; display: inline-block; text-decoration: none;' ");
 		msg.append("href='").append(basePath).append("/next/stories'> ");
-		msg.append("Hear from people who have chosen neurostimulation to manage their chronic pain. Read their stories ");
-		msg.append("</a></td></tr><tr><td style='padding: 0 10px 10px;'> ");
+		msg.append("stories</a></td></tr> ");
+		msg.append("<tr><td valign='top' width='8%'>&bull;</td> ");
+		msg.append("<td valign='top' style='padding: 0 0 5px 0;'> Watch ");
 		msg.append("<a style='color: #00a98f; display: inline-block; text-decoration: none;' ");
-		msg.append("href='http://www.poweroveryourpain.com/next/video'>Watch videos</a></td></tr> ");
-		msg.append("<tr><td style='padding: 0 10px 0;'> ");
-		msg.append("<a style='color: #00a98f; display: inline-block; text-decoration: none;' ");
+		msg.append("href='").append(basePath).append("/next/video'> ");
+		msg.append("videos</a></td></tr><tr><td valign='top' colspan='2' style='padding: 0 0 5px 0;'> ");
+		msg.append("Find a pain specialist<a style='color: #00a98f; display: inline-block; text-decoration: none;' ");
 		msg.append("href='").append(basePath).append("/next/specialist'> ");
-		msg.append("Find a pain specialist in your area</a></td></tr></table> ");
-		msg.append("</td><td width='8%'></td></tr> ");
-		msg.append("<tr height='25' width='100%'><td ></td><td ></td><td ></td></tr> ");
+		msg.append("in your area</a></td></tr></table></td><td width='8%'></td> ");
+		msg.append("</tr><tr height='25' width='100%'><td ></td><td ></td><td ></td></tr> ");
 		msg.append("</table></td></tr></table></td></tr></table> ");
-			
+		
 		return msg.toString();
 	}
 }
