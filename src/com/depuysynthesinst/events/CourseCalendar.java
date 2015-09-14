@@ -272,16 +272,19 @@ public class CourseCalendar extends SimpleActionAdapter {
 			List<EventEntryVO> data = new ArrayList<EventEntryVO>();
 			boolean isFutureLdrs = "FUTURE".equals(typeVo.getTypeName());
 			for (EventEntryVO vo : typeVo.getEvents()) {
+				boolean addIt = false;
 				//check each event and only include those matching our filters
 				String spec = StringUtil.checkVal(vo.getServiceText());
-				if (isFutureLdrs) spec = FutureLeaderACGME.getNameFromCode(spec);
 				if (spec == null || spec.length() == 0) spec = "Other";
-				//log.debug("spec=" + spec);
-				boolean addIt = false;
-				for (String f : filters) {
-					if (spec.contains(f)) {
-						addIt = true;
-						break;
+				outer:
+				for (String s : spec.split(",")) {
+					if (isFutureLdrs) s = FutureLeaderACGME.getNameFromCode(s);
+					log.debug("spec=" + s);
+					for (String f : filters) {
+						if (s.contains(f)) {
+							addIt = true;
+							break outer;
+						}
 					}
 				}
 				if (!addIt) continue;

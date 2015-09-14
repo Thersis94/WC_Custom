@@ -175,7 +175,7 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 							if (services.length() > 0) services.append(",");
 							services.append(FutureLeaderACGME.getHierarchyFromCode(s));
 						}
-						log.error(services);
+						log.debug(services);
 						vo.setServiceText(services.toString());
 					}
 				}
