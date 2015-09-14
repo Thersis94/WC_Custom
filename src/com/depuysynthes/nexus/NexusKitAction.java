@@ -156,7 +156,9 @@ public class NexusKitAction extends SBActionAdapter {
 					break;
 				case NewKit:
 					NexusKitVO newKit = new NexusKitVO(SOLR_INDEX);
+					UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 					newKit.setKitDesc("Empty Kit");
+					newKit.setOwnerId(user.getProfileId());
 					req.getSession().setAttribute(KIT_SESSION_NM, newKit);
 					break;
 				case findUsers:
@@ -482,10 +484,10 @@ public class NexusKitAction extends SBActionAdapter {
 		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 		String profileId;
 		String nexusFilter = getCookie(req, "nexusFilter");
+		String searchTerms = getCookie(req, "searchTerms");
 		boolean profileOne = false;
 		boolean profileTwo = false;
 		boolean orgSearch = req.hasParameter("organizationNm");
-		boolean kitSearch = req.hasParameter("searchTerms");
 		if (user == null) {
 			profileId = "";
 		} else {
@@ -503,7 +505,7 @@ public class NexusKitAction extends SBActionAdapter {
 		}
 		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_NEXUS_SET_SHARE p ");
 		sql.append("on p.SET_INFO_ID = s.SET_INFO_ID and p.APPROVED_FLG = '1' ");
-		sql.append("WHERE ");
+		sql.append("WHERE s.DESCRIPTION_TXT is not null and ");
 		if ("loaner".equals(nexusFilter)) {
 			sql.append("s.PROFILE_ID is null ");
 		} else if ("custom".equals(nexusFilter)) {
@@ -527,7 +529,7 @@ public class NexusKitAction extends SBActionAdapter {
 			sql.append("and s.ORGANIZATION_ID = ? ");
 		}
 		
-		if (kitSearch) {
+		if (searchTerms != null) {
 			sql.append("and (s.SET_SKU_TXT like ? or s.DESCRIPTION_TXT like ?) ");
 		}
 		
@@ -546,7 +548,7 @@ public class NexusKitAction extends SBActionAdapter {
 			sql.append("on si.LAYER_ID = sl2.LAYER_ID ");
 			sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_NEXUS_SET_SHARE p ");
 			sql.append("on p.SET_INFO_ID = s.SET_INFO_ID and p.APPROVED_FLG = '1' ");
-			sql.append("WHERE ");
+			sql.append("WHERE s.DESCRIPTION_TXT is not null and ");
 			if ("loaner".equals(nexusFilter)) {
 				sql.append("s.PROFILE_ID is null ");
 			} else if ("custom".equals(nexusFilter)) {
@@ -564,13 +566,28 @@ public class NexusKitAction extends SBActionAdapter {
 				sql.append("and s.ORGANIZATION_ID = ? ");
 			}
 			
-			if (kitSearch) {
+			if (searchTerms != null) {
 				sql.append("and (s.SET_SKU_TXT like ? or s.DESCRIPTION_TXT like ?) ");
 			}
 			if (kitId.length() > 0) sql.append("and s.SET_INFO_ID = ? ");
 		}
 		
-		sql.append("ORDER BY s.SET_INFO_ID");
+		if (req.hasParameter("gtinOrder")) {
+			sql.append("ORDER BY s.GTIN_TXT ");
+		} else if (req.hasParameter("orgOrder")) {
+			sql.append("ORDER BY s.ORGANIZATION_ID ");
+		} else {
+			sql.append("ORDER BY s.DESCRIPTION_TXT ");
+		}
+
+		
+		
+		if (req.hasParameter("desc")) {
+			sql.append("DESC ");
+		} else {
+			sql.append("ASC ");
+		}
+		
 		if (fullLoad) sql.append(", sl.PARENT_ID, sl.ORDER_NO, si.ORDER_NO ");
 		
 		log.debug(sql+"|"+profileId+"|"+kitId);
@@ -581,9 +598,9 @@ public class NexusKitAction extends SBActionAdapter {
 				if (profileOne) ps.setString(i++, profileId);
 				if (profileTwo) ps.setString(i++, profileId);
 				if (orgSearch) ps.setString(i++, req.getParameter("organizationNm"));
-				if (kitSearch) {
-					ps.setString(i++, "%"+req.getParameter("searchTerms")+"%");
-					ps.setString(i++, "%"+req.getParameter("searchTerms")+"%");
+				if (searchTerms != null) {
+					ps.setString(i++, "%"+searchTerms+"%");
+					ps.setString(i++, "%"+searchTerms+"%");
 				}
 				if (kitId.length() > 0) ps.setString(i++, kitId);
 			}
@@ -591,9 +608,9 @@ public class NexusKitAction extends SBActionAdapter {
 			if (profileOne) ps.setString(i++, profileId);
 			if (profileTwo) ps.setString(i++, profileId);
 			if (orgSearch) ps.setString(i++, req.getParameter("organizationNm"));
-			if (kitSearch) {
-				ps.setString(i++, "%"+req.getParameter("searchTerms")+"%");
-				ps.setString(i++, "%"+req.getParameter("searchTerms")+"%");
+			if (searchTerms != null) {
+				ps.setString(i++, "%"+searchTerms+"%");
+				ps.setString(i++, "%"+searchTerms+"%");
 			}
 			if (kitId.length() > 0) ps.setString(i++, kitId);
 			
