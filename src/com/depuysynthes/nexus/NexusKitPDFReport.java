@@ -146,7 +146,7 @@ public class NexusKitPDFReport  extends AbstractSBReportVO {
 		html.append(kit.getKitDesc().substring(pos));
 		html.append("</td><td colspan='").append(colspan).append("'></td><td class='border'>Surgery Time: </td><td class='border'></td></tr>");
 		html.append("<tr><td></td><td class='border'>Case Report ID: </td><td style='border:1px solid black;border-bottom:none;'></td><td colspan='").append(colspan).append("'></td><td class='border'>Surgeon: </td><td class='border'></td></tr>");
-		html.append("<tr><td colspan='2' rowspan='3'></td><td style='border-top:1px solid black;'></td><td colspan='").append(colspan).append("'></td><td class='border'>Operating Room: </td><td class='border'></td></tr>");
+		html.append("<tr><td colspan='2' rowspan='3'><span style='font-size:24px; color:#636363;'><i class='fa fa-2'>&#xf0b1;</i>&nbsp;Products</span></td><td style='border-top:1px solid black;'></td><td colspan='").append(colspan).append("'></td><td class='border'>Operating Room: </td><td class='border'></td></tr>");
 		html.append("<tr><td colspan='").append(colspan+1).append("'></td><td class='border'>Case ID: </td><td class='border'></td></tr>");
 		html.append("<tr><td colspan='3'></td><td ");
 		if (isForm) html.append("class='border' ");
