@@ -273,6 +273,9 @@ public class NexusSolrCartAction extends SBActionAdapter {
 		}
 		
 		if (!Convert.formatBoolean(req.getParameter("showCart"))) {
+			// Build the organization filter query
+			req.setParameter("fq", "organizationName:" + req.getParameter("orgName"));
+			
 			String searchData = StringUtil.checkVal(req.getParameter("searchData"));
 			int searchType = Convert.formatInteger(req.getParameter("searchType"));
 			req.setParameter("searchData", (searchType>2?"*":"")+searchData+(searchType>1?"*":""), true);

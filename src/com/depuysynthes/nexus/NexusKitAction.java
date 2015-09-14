@@ -8,10 +8,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.servlet.http.Cookie;
+
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -19,7 +22,6 @@ import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
-import com.smt.sitebuilder.util.solr.SolrActionUtil;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
@@ -479,6 +481,7 @@ public class NexusKitAction extends SBActionAdapter {
 		String kitId = StringUtil.checkVal(req.getParameter("kitId"));
 		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 		String profileId;
+		String nexusFilter = getCookie(req, "nexusFilter");
 		boolean profileOne = false;
 		boolean profileTwo = false;
 		boolean orgSearch = req.hasParameter("organizationNm");
@@ -501,17 +504,17 @@ public class NexusKitAction extends SBActionAdapter {
 		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_NEXUS_SET_SHARE p ");
 		sql.append("on p.SET_INFO_ID = s.SET_INFO_ID and p.APPROVED_FLG = '1' ");
 		sql.append("WHERE ");
-		if ("loaner".equals(req.getParameter("type"))) {
+		if ("loaner".equals(nexusFilter)) {
 			sql.append("s.PROFILE_ID is null ");
-		} else if ("custom".equals(req.getParameter("type"))) {
+		} else if ("custom".equals(nexusFilter)) {
 			sql.append("s.PROFILE_ID is not null ");
 			sql.append("and (p.PROFILE_ID = ? or s.PROFILE_ID = ?) ");
 			profileOne = true;
 			profileTwo = true;
-		} else if ("own".equals(req.getParameter("owner"))) {
+		} else if ("own".equals(nexusFilter)) {
 			sql.append("s.PROFILE_ID = ? ");
 			profileOne = true;
-		} else if ("shared".equals(req.getParameter("owner"))) {
+		} else if ("shared".equals(nexusFilter)) {
 			sql.append("p.PROFILE_ID = ? ");
 			profileOne = true;
 		} else {
@@ -544,14 +547,14 @@ public class NexusKitAction extends SBActionAdapter {
 			sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_NEXUS_SET_SHARE p ");
 			sql.append("on p.SET_INFO_ID = s.SET_INFO_ID and p.APPROVED_FLG = '1' ");
 			sql.append("WHERE ");
-			if ("loaner".equals(req.getParameter("type"))) {
+			if ("loaner".equals(nexusFilter)) {
 				sql.append("s.PROFILE_ID is null ");
-			} else if ("custom".equals(req.getParameter("type"))) {
+			} else if ("custom".equals(nexusFilter)) {
 				sql.append("s.PROFILE_ID is not null ");
 				sql.append("and (p.PROFILE_ID = ? or s.PROFILE_ID = ?) ");
-			} else if ("own".equals(req.getParameter("owner"))) {
+			} else if ("own".equals(nexusFilter)) {
 				sql.append("s.PROFILE_ID = ? ");
-			} else if ("shared".equals(req.getParameter("owner"))) {
+			} else if ("shared".equals(nexusFilter)) {
 				sql.append("p.PROFILE_ID = ? ");
 			} else {
 				sql.append("(p.PROFILE_ID = ? or s.PROFILE_ID = ? or s.PROFILE_ID is null) ");
@@ -804,11 +807,6 @@ public class NexusKitAction extends SBActionAdapter {
 			clearKit(kit.getKitId());
 		}
 		saveLayers(kit);
-		// Set the solr variables
-		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		if (kit.getOrganization().size() == 0) kit.addOrganization(site.getOrganizationId());
-		if (kit.getRoles().size() == 0) kit.addRole("0");
-		addToSolr(kit);
 	}
 	
 	
@@ -1066,42 +1064,16 @@ public class NexusKitAction extends SBActionAdapter {
 			layers.get(i).setOrderNo(i); 
 		}
 	}
-	
-	
-	/**
-	 * Create a solr action util and submit the user's kit
-	 */
-	private void addToSolr(NexusKitVO kit) throws ActionException {
-	    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
-		attributes.put(Constants.SOLR_COLLECTION_NAME, getSolrCollection((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1)));
-		new SolrActionUtil(attributes).addDocument(kit);
-	}
-	
-	
-	/**
-	 * Get the solr collection 
-	 * @param solrId
-	 * @return
-	 * @throws ActionException
-	 */
-	private String getSolrCollection(String solrId) throws ActionException {
-		StringBuilder sql = new StringBuilder(200);
-		sql.append("SELECT SOLR_COLLECTION_PATH FROM SOLR_ACTION sa ");
-		sql.append("inner join SOLR_COLLECTION sc on sa.SOLR_COLLECTION_ID = sc.SOLR_COLLECTION_ID ");
-		sql.append("WHERE ACTION_ID = ? ");
-		log.debug(sql+"|"+solrId);
-		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, solrId);
-			ResultSet rs = ps.executeQuery();
-			
-			if (rs.next()) {
-				 return rs.getString(1);
-			} else {
-				throw new ActionException("Got null value for Solr Collection Name when adding kit to Solr", new NullPointerException());
-			}
-		} catch(SQLException e) {
-			throw new ActionException(e);
-		}
-	}
 
+
+
+	/**
+	 * Checks if a cookie exists and returns either the cookie's value or an
+	 * empty string
+	 */
+	private String getCookie(SMTServletRequest req, String name) {
+		Cookie c = req.getCookie(name);
+		if (c == null) return "";
+		return StringEncoder.urlDecode(c.getValue());
+	}
 }
