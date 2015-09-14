@@ -410,9 +410,9 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 				MediaBinDeltaVO mr = masterRecords.get(vo.getDpySynMediaBinId());
 				if (! vo.lexicographyEquals(mr)) {
 					vo.setRecordState(State.Update);
-				} else if (vo.geteCopyRevisionLvl() != null) {
+				} else if (vo.geteCopyRevisionLvl() != null && !vo.geteCopyRevisionLvl().equals(mr.geteCopyRevisionLvl())) {
 					//the file on LL should have changed, but there's nothing in the meta-data we need to save
-					vo.addDelta(new PropertyChangeEvent(vo,"eCopyRevisionLvl",""/*we don't save these*/, vo.geteCopyRevisionLvl()));
+					vo.addDelta(new PropertyChangeEvent(vo,"eCopyRevisionLvl",mr.geteCopyRevisionLvl(), vo.geteCopyRevisionLvl()));
 					vo.setRecordState(State.Update);
 				} else {
 					//nothing changed, ignore this record.  99% of time this is the default use case
@@ -534,15 +534,21 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 				log.debug(checksum);
 				changed = !checksum.equals(vo.getChecksum());
 				vo.setChecksum(checksum);
-				if (!changed && vo.geteCopyRevisionLvl() != null) {
+				if (!changed) {
 					vo.setErrorReason("File on LL did not change");
 				}
+			} else {
+				changed = true;
 			}
+			//cleanup at the TCP level so Keep-Alives can be leveraged at the IP level
+			conn.getInputStream().close();
+			conn.disconnect();
 
 		} catch (Exception e) {
-			//ignore these, because by returning false we're going to make a second
+			//ignore these, because by returning true we're going to make a second
 			//call out to LL to retrieve the file, which will not be found, and be recorded
 			//as a failure (properly)
+			changed = true;
 		}
 		return changed;
 	}
@@ -790,8 +796,8 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			sql.append("modified_dt, file_nm, dimensions_txt, orig_file_size_no, prod_family, ");
 			sql.append("prod_nm, revision_lvl_txt, opco_nm, title_txt, tracking_no_txt, ");
 			sql.append("import_file_cd, duration_length_no, anatomy_txt, desc_txt, meta_kywds_txt, ");
-			sql.append("file_checksum_txt, dpy_syn_mediabin_id) ");
-			sql.append("values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)" );
+			sql.append("file_checksum_txt, ecopy_revision_lvl_txt, dpy_syn_mediabin_id) ");
+			sql.append("values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)" );
 		} else {
 			sql.append("update ").append(props.getProperty(Constants.CUSTOM_DB_SCHEMA)).append("dpy_syn_mediabin ");
 			sql.append("set asset_nm=?, asset_desc=?, asset_type=?, body_region_txt=?, ");
@@ -799,7 +805,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			sql.append("modified_dt=?, file_nm=?, dimensions_txt=?, orig_file_size_no=?, prod_family=?, ");
 			sql.append("prod_nm=?, revision_lvl_txt=?, opco_nm=?, title_txt=?, tracking_no_txt=?, ");
 			sql.append("import_file_cd=?, duration_length_no=?, anatomy_txt=?, desc_txt=?, ");
-			sql.append("meta_kywds_txt=?, file_checksum_txt=? ");
+			sql.append("meta_kywds_txt=?, file_checksum_txt=?, ecopy_revision_lvl_txt=? ");
 			sql.append("where dpy_syn_mediabin_id=?");
 		}
 		log.debug(sql);
@@ -836,7 +842,8 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 				ps.setString(23, vo.getDescription());
 				ps.setString(24, vo.getMetaKeywords());
 				ps.setString(25, vo.getChecksum());
-				ps.setString(26, vo.getDpySynMediaBinId());
+				ps.setString(26, vo.geteCopyRevisionLvl());
+				ps.setString(27, vo.getDpySynMediaBinId());
 				ps.executeUpdate();
 				log.debug((isInsert ? "Inserted: " : "Updated: ") + vo.getDpySynMediaBinId());
 				++cnt;

@@ -258,7 +258,7 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 			//remain backwards compatible, this class is used by both the V1 and V2 Mediabin importers
 			if (vo instanceof MediaBinDeltaVO) fileNm = ((MediaBinDeltaVO)vo).getFileName();
 			
-		} catch (Exception e) { 
+		} catch (Exception e) {
 			return data; 
 		}
 
@@ -272,7 +272,7 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 			adp.parse(input, handler, metadata, new ParseContext());
 			data = handler.toString();
 		} catch (Exception e) {
-			log.error("could not load file for " + vo.getDpySynMediaBinId() + "|" + vo.isVideo());
+			log.error("could not load file " + fileRepos + fileNm);
 		}
 
 		return data;

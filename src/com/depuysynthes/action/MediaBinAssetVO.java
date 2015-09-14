@@ -95,6 +95,7 @@ public class MediaBinAssetVO extends SBModuleVO {
 		setAnatomy(db.getStringVal("anatomy_txt", rs));
 		setMetaKeywords(db.getStringVal("meta_kywds_txt", rs));
 		setVideoChapters(db.getStringVal("META_CONTENT_TXT", rs));
+		seteCopyRevisionLvl(db.getStringVal("ecopy_revision_lvl_txt", rs));
 		
 		String dims = db.getStringVal("dimensions_txt", rs);
 		if (dims != null && dims.indexOf("~") > 0) {
@@ -423,20 +424,11 @@ public class MediaBinAssetVO extends SBModuleVO {
 		if (!compareStr(prodNm, other.prodNm))
 			this.addDelta(new PropertyChangeEvent(this,"prodNm",other.prodNm, prodNm));
 
-		if (!compareStr(revisionLvlTxt, other.revisionLvlTxt))
-			this.addDelta(new PropertyChangeEvent(this,"revisionLvlTxt",other.revisionLvlTxt, revisionLvlTxt));
-
-//		if (!compareStr(eCopyRevisionLvl, other.eCopyRevisionLvl))
-//			this.addDelta(new PropertyChangeEvent(this,"eCopyRevisionLvl",other.eCopyRevisionLvl, eCopyRevisionLvl));
-		
 		if (!compareStr(titleTxt, other.titleTxt))
 			this.addDelta(new PropertyChangeEvent(this,"titleTxt",other.titleTxt, titleTxt));
 
 		if (!compareStr(trackingNoTxt, other.trackingNoTxt))
 			this.addDelta(new PropertyChangeEvent(this,"trackingNoTxt",other.trackingNoTxt, trackingNoTxt));
-
-//		if (!compareStr(videoChapters, other.videoChapters))
-//			this.addDelta(new PropertyChangeEvent(this,"videoChapters",other.videoChapters, videoChapters));
 
 		return getDeltas() == null;
 	}
