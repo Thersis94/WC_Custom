@@ -60,6 +60,13 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 		setData(rs);
 	}
 	
+	/**
+	 * Uses the string util to output a pipe delimited list of values
+	 */
+	public String toString() {
+		return StringUtil.getToString(this, false, 1, "|");
+	}
+ 	
 	public void setData(SMTServletRequest req) {
 		kitId = req.getParameter("kitId");
 		kitSKU = req.getParameter("kitSKU");
