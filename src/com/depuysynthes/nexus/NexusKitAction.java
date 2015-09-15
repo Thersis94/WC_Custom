@@ -104,6 +104,7 @@ public class NexusKitAction extends SBActionAdapter {
 			switch(action) {
 				case Permissions:
 					modifyPermissions(req);
+					super.putModuleData("Kits Successfully Shared.");
 					break;
 				case Clone:
 					kits = loadKits(req, true);
@@ -152,7 +153,7 @@ public class NexusKitAction extends SBActionAdapter {
 					break;
 				case Copy:
 					copyItem(req);
-					super.putModuleData(getUsers(req));
+					super.putModuleData("Item Successfully Copied."+successMsgEnd);
 					break;
 				case NewKit:
 					NexusKitVO newKit = new NexusKitVO(SOLR_INDEX);
@@ -295,7 +296,7 @@ public class NexusKitAction extends SBActionAdapter {
 							sublayer.setLayerId(layer.getLayerId());
 							sublayer.setLayerId(new UUIDGenerator().getUUID());
 						}
-						layer.setOrderNo(parent.getSublayers().size());
+						layer.setOrderNo(parent.getSublayers().size()+1);
 						parent.addLayer(layer);
 					} else {
 						layer= kit.getLayers().get(Convert.formatInteger(req.getParameter("index"))).clone();
@@ -304,14 +305,14 @@ public class NexusKitAction extends SBActionAdapter {
 							sublayer.setLayerId(layer.getLayerId());
 							sublayer.setLayerId(new UUIDGenerator().getUUID());
 						}
-						layer.setOrderNo(kit.getLayers().size());
+						layer.setOrderNo(kit.getLayers().size()+1);
 						kit.addLayer(layer);
 					}
 					break;
 				case Product:
 					layer = kit.findLayer(req.getParameter("parentId"));
 					NexusProductVO p = layer.getProducts().get(Convert.formatInteger(req.getParameter("index"))).clone();
-					p.setOrderNo(layer.getProducts().size());
+					p.setOrderNo(layer.getProducts().size()+1);
 					layer.addProduct(p);
 					break;
 				default: break;
@@ -368,7 +369,7 @@ public class NexusKitAction extends SBActionAdapter {
 		
 		if (req.hasParameter("newParentId")) {
 			layer.setParentId(req.getParameter("newParentId"));
-			layer.setOrderNo(kit.findLayer(layer.getParentId()).getSublayers().size());
+			layer.setOrderNo(kit.findLayer(layer.getParentId()).getSublayers().size()+1);
 		} else {
 			//Since this is a top level layer the parentId needs to be cleared
 			layer.setParentId("");
@@ -754,8 +755,11 @@ public class NexusKitAction extends SBActionAdapter {
 			layer = new NexusKitLayerVO(req);
 			layer.setLayerId(new UUIDGenerator().getUUID());
 			if (StringUtil.checkVal(layer.getParentId()).length() > 0) {
-				kit.findLayer(layer.getParentId()).addLayer(layer);
+				NexusKitLayerVO parent = kit.findLayer(layer.getParentId());
+				layer.setOrderNo(parent.getSublayers().size()+1);
+				parent.addLayer(layer);
 			} else {
+				layer.setOrderNo(kit.getLayers().size()+1);
 				kit.addLayer(layer);
 			}
 		} else {
@@ -1078,7 +1082,7 @@ public class NexusKitAction extends SBActionAdapter {
 	 */
 	private void changeOrderNo(List<NexusKitLayerVO> layers, int index) {
 		for (int i = index; i < layers.size(); i++) {
-			layers.get(i).setOrderNo(i); 
+			layers.get(i).setOrderNo(i+1); 
 		}
 	}
 
