@@ -754,8 +754,11 @@ public class NexusKitAction extends SBActionAdapter {
 			layer = new NexusKitLayerVO(req);
 			layer.setLayerId(new UUIDGenerator().getUUID());
 			if (StringUtil.checkVal(layer.getParentId()).length() > 0) {
+				NexusKitLayerVO parent = ;
+				layer.setOrderNo(parent.getSublayers().size());
 				kit.findLayer(layer.getParentId()).addLayer(layer);
 			} else {
+				layer.setOrderNo(kit.getLayers().size());
 				kit.addLayer(layer);
 			}
 		} else {
