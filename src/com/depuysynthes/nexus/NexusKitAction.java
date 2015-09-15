@@ -104,6 +104,7 @@ public class NexusKitAction extends SBActionAdapter {
 			switch(action) {
 				case Permissions:
 					modifyPermissions(req);
+					super.putModuleData("Kits Successfully Shared.");
 					break;
 				case Clone:
 					kits = loadKits(req, true);
