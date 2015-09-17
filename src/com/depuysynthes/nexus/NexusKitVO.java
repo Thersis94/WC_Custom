@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import com.siliconmtn.annotations.SolrField;
 import com.siliconmtn.db.DBUtil;
@@ -88,6 +87,7 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 		ownerId = db.getStringVal("PROFILE_ID", rs);
 	}
 
+	@SolrField(name="documentId")
 	public String getKitId() {
 		return kitId;
 	}
@@ -95,7 +95,6 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 		this.kitId = kitId;
 	}
 
-	@SolrField(name="documentId")
 	public String getKitSKU() {
 		return kitSKU;
 	}
@@ -120,7 +119,6 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 	public void setKitGTIN(String kitGTIN) {
 		this.kitGTIN = kitGTIN;
 	}
-	@SolrField(name="owner")
 	public String getOwnerId() {
 		return ownerId;
 	}
@@ -136,9 +134,11 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 		this.sharedWith = sharedWith;
 	}
 
-	@SolrField(name="sharedWith")
-	public Set<String> getPermissions() {
-		return sharedWith.keySet();
+	@SolrField(name="owner")
+	public List<String> getPermissions() {
+		List<String> s = new ArrayList<>(sharedWith.keySet());
+		if (ownerId != null) s.add(ownerId);
+		return s;
 	}
 	
 	public void addPermision(String profileId, String name) {
@@ -173,7 +173,6 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 		}
 	}
 
-	@SolrField(name="products")
 	public List<String> getProducts() {
 		List<String> productIds = new ArrayList<>();
 		for (NexusKitLayerVO layer : layers) {
@@ -207,7 +206,6 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 		this.orgName = orgName;
 	}
 
-	@SolrField(name="branchCode")
 	public String getBranchCode() {
 		return branchCode;
 	}
@@ -244,5 +242,10 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 	@SolrField(name="gtin")
 	public String getGTIN() {
 		return kitGTIN;
+	}
+	@SolrField(name="searchableName")
+	public String getSearchableName() {
+		if (getDocumentId() == null) return null;
+		return getDocumentId().replaceAll("[\\-\\/\\.]", "");
 	}
 }
