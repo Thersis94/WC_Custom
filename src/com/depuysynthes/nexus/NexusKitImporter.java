@@ -13,9 +13,12 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrInputDocument;
 
 //SMT Base Libs
 import com.siliconmtn.util.CommandLineUtil;
@@ -26,6 +29,7 @@ import com.smt.sitebuilder.action.search.SolrActionIndexVO;
 import com.smt.sitebuilder.action.search.SolrActionVO;
 import com.smt.sitebuilder.action.search.SolrQueryProcessor;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
+import com.smt.sitebuilder.util.solr.SolrActionUtil;
 
 /****************************************************************************
  * <b>Title</b>: NexusKitImporter.java<p/>
@@ -42,6 +46,11 @@ import com.smt.sitebuilder.action.search.SolrResponseVO;
  ****************************************************************************/
 public class NexusKitImporter extends CommandLineUtil {
 	
+	/**
+	 * Instance of the solr server create when the program starts so that
+	 * it is not recreated with every kit. 
+	 */
+	private HttpSolrServer server;
 	
 	/**
 	 * Key for the property for the location of the output excel file
@@ -100,6 +109,7 @@ public class NexusKitImporter extends CommandLineUtil {
 		super(args);
 		loadProperties("scripts/Nexus.properties");
 		loadDBConnection(props);
+		loadSolrServer(props);
 	}
 
 	/**
@@ -125,11 +135,11 @@ public class NexusKitImporter extends CommandLineUtil {
 		int cnt = 0;
 		try {
 			// Process the JDE Header file
-			//cnt = processJDEHeaderFile();
+			cnt = processJDEHeaderFile();
 			messages.put("Number of JDE Kits", cnt + "");
 			
 			// Process the JDE Detail File
-			//cnt = processJDEDetailFile();
+			cnt = processJDEDetailFile();
 			messages.put("Number of JDE Kit Items", cnt + "");
 			
 			// Process the MDM File
@@ -147,7 +157,7 @@ public class NexusKitImporter extends CommandLineUtil {
 		
 		// Send an email report
 		try {
-			this.sendEmail(getEmailMessage(messages), null);
+			//this.sendEmail(getEmailMessage(messages), null);
 		} catch(Exception e) {
 			log.error("Unable to send email report", e);
 		}
@@ -185,6 +195,7 @@ public class NexusKitImporter extends CommandLineUtil {
 				String desc = (String)doc.get("summary");
 				String sku = (String)doc.get("documentId");
 				String gtin = (String)doc.get("deviceId");
+				this.updateSolr(sku, gtin, desc);
 				this.updateKitRecord(sku, gtin, desc);
 			}
 		}
@@ -266,7 +277,7 @@ public class NexusKitImporter extends CommandLineUtil {
 			// If the IDs are different, that means it is the first line of a kit
 			// So we're going to add the kit
 			if (! kitIds.contains(items[1])) {
-				NexusKitVO kit = new NexusKitVO(null);
+				NexusKitVO kit = new NexusKitVO(NexusKitAction.SOLR_INDEX);
 				kit.setKitId(items[1]);
 				kit.setOrgId(MDM_ORG_MAP.get(items[0]));
 				kit.setKitSKU(items[1]);
@@ -313,7 +324,7 @@ public class NexusKitImporter extends CommandLineUtil {
 			String[] items = temp.split(",");
 			
 			// Map the data to the VO
-			NexusKitVO kit = new NexusKitVO(null);
+			NexusKitVO kit = new NexusKitVO(NexusKitAction.SOLR_INDEX);
 			//kit.setKitId(ORG_MAP.get(items[0]) + "_" + items[1]);
 			kit.setKitId(items[1]);
 			kit.setOrgId(JDE_ORG_MAP.get(items[0]));
@@ -321,9 +332,13 @@ public class NexusKitImporter extends CommandLineUtil {
 			kit.setKitDesc(items[2]);
 			kit.setKitGTIN(items[3]);
 			kit.setBranchCode(items[4]);
+			kit.addOrganization(props.getProperty("organization"));
+			kit.addRole("0");
+			kit.setOrgName(kit.getOrgId());
 			
-			// Load the DB
+			// Load the DB and solr
 			storeKitHeader(kit);
+			addToSolr(kit);
 		}
 		
 		in.close();
@@ -516,5 +531,58 @@ public class NexusKitImporter extends CommandLineUtil {
 		
 		sb.append("</table>");
 		return sb;
+	}
+	
+	
+	/**
+	 * Build the solr server for later use in the importer
+	 * @param props
+	 */
+	private void loadSolrServer(Properties props) {
+		String baseUrl = props.getProperty("solrBaseUrl");
+		String collection = props.getProperty("solrCollectionName");
+		server = new HttpSolrServer(baseUrl + collection);
+	}
+	
+	
+	/**
+	 * Update the product with the supplied sku to show it is a kit
+	 * @param sku
+	 * @param gtin
+	 * @param desc
+	 */
+	private void updateSolr(String sku, String gtin, String desc) {
+		SolrInputDocument doc = new SolrInputDocument();
+		Map<String,Object> fieldModifier = new HashMap<>(1);
+		fieldModifier.put("set","true");
+		doc.addField("kit", fieldModifier);
+		doc.addField("documentId",sku);
+		// Contents is used to create the autocomplete every time the document
+		// is updated.  Since it isn't actually stored by the index any updates
+		// need to containe the contents or it will be lost.
+		doc.addField("contents", sku + " " + desc + " " + gtin + " ");
+		try {
+			System.out.println("Updating " + sku);
+			server.add(doc);
+			server.commit();
+		} catch (Exception e) {
+			log.error("Unable to add kit " + sku + " to solr.", e);
+		}
+
+	}
+
+	
+	/**
+	 * Add the supplied kit to solr
+	 * @param kit
+	 */
+	private void addToSolr(NexusKitVO kit) {
+		SolrActionUtil util = new SolrActionUtil(server);
+		try {
+			System.out.println("Adding " + kit.getKitId());
+			util.addDocument(kit);
+		} catch (Exception e) {
+			log.error("Unable to add kit " + kit.getKitSKU() + " to solr.", e);
+		}
 	}
 }
