@@ -238,6 +238,7 @@ public class NexusKitImporter extends CommandLineUtil {
 		List<String> ids = new ArrayList<>();
 		while(rs.next()) ids.add(rs.getString(1));
 
+		ps.close();
 		return ids;
 	}
 	
