@@ -68,15 +68,14 @@ public class NexusGTINBuilder extends CommandLineUtil {
 	 */
 	public static final List<String> ORGANIZATIONS = new ArrayList<String>(8) {
 		private static final long serialVersionUID = 1L; {
-			//add("ALL");
+			add("ALL");
 			add("CMF");
-			//add("Trauma");
-			//add("Codman");
+			add("Trauma");
+			add("Codman");
 			add("Mitek");
-			//add("Spine");
-			//add("Orthopaedics");
-		}
-		
+			add("Spine");
+			add("Orthopaedics");
+		}	
 	};
 	
 	/**
