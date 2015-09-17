@@ -532,11 +532,11 @@ public class NexusKitAction extends SBActionAdapter {
 			profileTwo = true;
 		}
 		
-		if (orgId != null) {
+		if (orgId.length() > 0) {
 			sql.append("and s.ORGANIZATION_ID = ? ");
 		}
 		
-		if (searchTerms != null) {
+		if (searchTerms.length() > 0) {
 			sql.append("and (s.SET_SKU_TXT like ? or s.DESCRIPTION_TXT like ?) ");
 		}
 		
@@ -569,11 +569,11 @@ public class NexusKitAction extends SBActionAdapter {
 				sql.append("(p.PROFILE_ID = ? or s.PROFILE_ID = ? or s.PROFILE_ID is null) ");
 			}
 			
-			if (orgId != null) {
+			if (orgId.length() > 0) {
 				sql.append("and s.ORGANIZATION_ID = ? ");
 			}
 			
-			if (searchTerms != null) {
+			if (searchTerms.length() > 0) {
 				sql.append("and (s.SET_SKU_TXT like ? or s.DESCRIPTION_TXT like ?) ");
 			}
 			if (kitId.length() > 0) sql.append("and s.SET_INFO_ID = ? ");
@@ -597,15 +597,15 @@ public class NexusKitAction extends SBActionAdapter {
 		
 		if (fullLoad) sql.append(", sl.PARENT_ID, sl.ORDER_NO, si.ORDER_NO ");
 		
-		log.debug(sql+"|"+profileId+"|"+kitId);
+		log.debug(sql+"|"+profileId+"|"+kitId+"|"+orgId+"|"+searchTerms);
 		List<NexusKitVO> kits = new ArrayList<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			int i = 1;
 			if (fullLoad) {
 				if (profileOne) ps.setString(i++, profileId);
 				if (profileTwo) ps.setString(i++, profileId);
-				if (orgId != null) ps.setString(i++, orgId);
-				if (searchTerms != null) {
+				if (orgId.length() > 0) ps.setString(i++, orgId);
+				if (searchTerms.length() > 0) {
 					ps.setString(i++, "%"+searchTerms+"%");
 					ps.setString(i++, "%"+searchTerms+"%");
 				}
@@ -614,8 +614,8 @@ public class NexusKitAction extends SBActionAdapter {
 			
 			if (profileOne) ps.setString(i++, profileId);
 			if (profileTwo) ps.setString(i++, profileId);
-			if (orgId != null) ps.setString(i++, orgId);
-			if (searchTerms != null) {
+			if (orgId.length() > 0) ps.setString(i++, orgId);
+			if (searchTerms.length() > 0) {
 				ps.setString(i++, "%"+searchTerms+"%");
 				ps.setString(i++, "%"+searchTerms+"%");
 			}
