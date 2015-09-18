@@ -50,6 +50,10 @@ public class MediaBinDeltaVO extends MediaBinAssetVO {
 	public void setRecordState(State recordState) {
 		this.recordState = recordState;
 	}
+	
+	public boolean isUsable() {
+		return (State.Failed != recordState && State.Delete != recordState);
+	}
 
 	public String getErrorReason() {
 		return errorReason;
