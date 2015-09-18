@@ -29,6 +29,7 @@ import com.smt.sitebuilder.action.search.SolrActionIndexVO;
 import com.smt.sitebuilder.action.search.SolrActionVO;
 import com.smt.sitebuilder.action.search.SolrQueryProcessor;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
+import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
 
 /****************************************************************************
@@ -150,6 +151,8 @@ public class NexusKitImporter extends CommandLineUtil {
 			// Get the GTIN and Description from Solr
 			cnt = processMDMInformation();
 			messages.put("MDM Kit Data Updated From Solr", "");
+			// Once this point has been reached all documents are ready to be committed.
+			server.commit();
 		} catch (Exception e) {
 			log.error("Unable to process", e);
 			messages.put("Error: ", e.getMessage());
@@ -157,7 +160,7 @@ public class NexusKitImporter extends CommandLineUtil {
 		
 		// Send an email report
 		try {
-			//this.sendEmail(getEmailMessage(messages), null);
+			sendEmail(getEmailMessage(messages), null);
 		} catch(Exception e) {
 			log.error("Unable to send email report", e);
 		}
@@ -192,9 +195,9 @@ public class NexusKitImporter extends CommandLineUtil {
 			// Loop the results and update the gtin/desc
 			List<SolrDocument> docs = resp.getResultDocuments();
 			for(SolrDocument doc : docs) {
-				String desc = (String)doc.get("summary");
-				String sku = (String)doc.get("documentId");
-				String gtin = (String)doc.get("deviceId");
+				String desc = StringUtil.checkVal(doc.get(SearchDocumentHandler.SUMMARY));
+				String sku = StringUtil.checkVal(doc.get(SearchDocumentHandler.DOCUMENT_ID));
+				String gtin = StringUtil.checkVal(doc.get(NexusProductVO.DEVICE_ID));
 				this.updateSolr(sku, gtin, desc);
 				this.updateKitRecord(sku, gtin, desc);
 			}
@@ -240,16 +243,16 @@ public class NexusKitImporter extends CommandLineUtil {
 		sql.append("select set_info_id from ").append(props.get("customDbSchema"));
 		sql.append("DPY_SYN_NEXUS_SET_INFO where description_txt is null ");
 		sql.append("or gtin_txt is null");
-		
-		// Set the sql data elements
-		PreparedStatement ps = dbConn.prepareStatement(sql.toString());
-		ResultSet rs = ps.executeQuery();
-		
-		// Load the results into the collection and return the data
-		List<String> ids = new ArrayList<>();
-		while(rs.next()) ids.add(rs.getString(1));
 
-		ps.close();
+		List<String> ids = new ArrayList<>();
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			// Set the sql data elements
+			ResultSet rs = ps.executeQuery();
+			
+			// Load the results into the collection and return the data
+			while(rs.next()) ids.add(rs.getString(1));
+
+		}
 		return ids;
 	}
 	
@@ -392,20 +395,20 @@ public class NexusKitImporter extends CommandLineUtil {
 		//log.info("Detail SQL: " + sql);
 		
 		// Set the sql data elements
-		PreparedStatement ps = dbConn.prepareStatement(sql.toString());
-		ps.setString(1, new UUIDGenerator().getUUID());
-		ps.setString(2, layerId);
-		ps.setString(3, sku);
-		ps.setInt(4, Convert.formatInteger(qty));
-		ps.setString(5, "");
-		ps.setDate(6, Convert.formatSQLDate(Convert.parseDateUnknownPattern(start)));
-		ps.setDate(7, Convert.formatSQLDate(Convert.parseDateUnknownPattern(end)));
-		ps.setInt(8, order);
-		ps.setTimestamp(9, Convert.getCurrentTimestamp());
-		
-		// Store the data
-		ps.executeUpdate();
-		ps.close();
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, new UUIDGenerator().getUUID());
+			ps.setString(2, layerId);
+			ps.setString(3, sku);
+			ps.setInt(4, Convert.formatInteger(qty));
+			ps.setString(5, "");
+			ps.setDate(6, Convert.formatSQLDate(Convert.parseDateUnknownPattern(start)));
+			ps.setDate(7, Convert.formatSQLDate(Convert.parseDateUnknownPattern(end)));
+			ps.setInt(8, order);
+			ps.setTimestamp(9, Convert.getCurrentTimestamp());
+			
+			// Store the data
+			ps.executeUpdate();
+		}
 	}
 	
 	/**
@@ -423,18 +426,18 @@ public class NexusKitImporter extends CommandLineUtil {
 		//log.info("kit Header SQL: " + sql);
 		
 		// Set the sql data elements
-		PreparedStatement ps = dbConn.prepareStatement(sql.toString());
-		ps.setString(1, kit.getKitId());
-		ps.setString(2, kit.getKitSKU());
-		ps.setString(3, kit.getOrgId());
-		ps.setString(4, kit.getKitDesc());
-		ps.setString(5, kit.getKitGTIN());
-		ps.setString(6, StringUtil.checkVal(kit.getBranchCode()).trim());
-		ps.setTimestamp(7, Convert.getCurrentTimestamp());
-		
-		// Store the data
-		ps.executeUpdate();
-		ps.close();
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, kit.getKitId());
+			ps.setString(2, kit.getKitSKU());
+			ps.setString(3, kit.getOrgId());
+			ps.setString(4, kit.getKitDesc());
+			ps.setString(5, kit.getKitGTIN());
+			ps.setString(6, StringUtil.checkVal(kit.getBranchCode()).trim());
+			ps.setTimestamp(7, Convert.getCurrentTimestamp());
+			
+			// Store the data
+			ps.executeUpdate();
+		}
 		
 		// Add the layer
 		storeKitLayer(kit.getKitId());
@@ -455,16 +458,16 @@ public class NexusKitImporter extends CommandLineUtil {
 		//log.info("Kit Layer Header SQL: " + sql);
 		
 		// Set the sql data elements
-		PreparedStatement ps = dbConn.prepareStatement(sql.toString());
-		ps.setString(1, kitId);
-		ps.setString(2, kitId);
-		ps.setString(3, props.getProperty("defaultLayerName"));
-		ps.setInt(4, 1);
-		ps.setTimestamp(5, Convert.getCurrentTimestamp());
-		
-		// Store the data
-		ps.executeUpdate();
-		ps.close();
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, kitId);
+			ps.setString(2, kitId);
+			ps.setString(3, props.getProperty("defaultLayerName"));
+			ps.setInt(4, 1);
+			ps.setTimestamp(5, Convert.getCurrentTimestamp());
+			
+			// Store the data
+			ps.executeUpdate();
+		}
 	}
 	
 	/**
@@ -481,17 +484,17 @@ public class NexusKitImporter extends CommandLineUtil {
 		sql.append("update ").append(props.get("customDbSchema"));
 		sql.append("DPY_SYN_NEXUS_SET_INFO set gtin_txt = ?, description_txt = ? ");
 		sql.append("where set_info_id = ? ");
-		
+		int cnt;
 		// Set the sql data elements
-		PreparedStatement ps = dbConn.prepareStatement(sql.toString());
-		ps.setString(1, gtin);
-		ps.setString(2, desc);
-		ps.setString(3, sku);
-		
-		// Store the data
-		int cnt = ps.executeUpdate();
-		ps.close();
-		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, gtin);
+			ps.setString(2, desc);
+			ps.setString(3, sku);
+			
+			// Store the data
+			cnt = ps.executeUpdate();
+			ps.close();
+		}
 		return cnt;
 	}
 	
@@ -563,7 +566,6 @@ public class NexusKitImporter extends CommandLineUtil {
 		doc.addField("contents", sku + " " + desc + " " + gtin + " ");
 		try {
 			server.add(doc);
-			server.commit();
 		} catch (Exception e) {
 			log.error("Unable to add kit " + sku + " to solr.", e);
 		}
