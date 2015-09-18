@@ -13,9 +13,12 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrInputDocument;
 
 //SMT Base Libs
 import com.siliconmtn.util.CommandLineUtil;
@@ -26,6 +29,8 @@ import com.smt.sitebuilder.action.search.SolrActionIndexVO;
 import com.smt.sitebuilder.action.search.SolrActionVO;
 import com.smt.sitebuilder.action.search.SolrQueryProcessor;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
+import com.smt.sitebuilder.search.SearchDocumentHandler;
+import com.smt.sitebuilder.util.solr.SolrActionUtil;
 
 /****************************************************************************
  * <b>Title</b>: NexusKitImporter.java<p/>
@@ -42,6 +47,11 @@ import com.smt.sitebuilder.action.search.SolrResponseVO;
  ****************************************************************************/
 public class NexusKitImporter extends CommandLineUtil {
 	
+	/**
+	 * Instance of the solr server create when the program starts so that
+	 * it is not recreated with every kit. 
+	 */
+	private HttpSolrServer server;
 	
 	/**
 	 * Key for the property for the location of the output excel file
@@ -100,6 +110,7 @@ public class NexusKitImporter extends CommandLineUtil {
 		super(args);
 		loadProperties("scripts/Nexus.properties");
 		loadDBConnection(props);
+		loadSolrServer(props);
 	}
 
 	/**
@@ -125,11 +136,11 @@ public class NexusKitImporter extends CommandLineUtil {
 		int cnt = 0;
 		try {
 			// Process the JDE Header file
-			//cnt = processJDEHeaderFile();
+			cnt = processJDEHeaderFile();
 			messages.put("Number of JDE Kits", cnt + "");
 			
 			// Process the JDE Detail File
-			//cnt = processJDEDetailFile();
+			cnt = processJDEDetailFile();
 			messages.put("Number of JDE Kit Items", cnt + "");
 			
 			// Process the MDM File
@@ -140,6 +151,8 @@ public class NexusKitImporter extends CommandLineUtil {
 			// Get the GTIN and Description from Solr
 			cnt = processMDMInformation();
 			messages.put("MDM Kit Data Updated From Solr", "");
+			// Once this point has been reached all documents are ready to be committed.
+			server.commit();
 		} catch (Exception e) {
 			log.error("Unable to process", e);
 			messages.put("Error: ", e.getMessage());
@@ -147,7 +160,7 @@ public class NexusKitImporter extends CommandLineUtil {
 		
 		// Send an email report
 		try {
-			this.sendEmail(getEmailMessage(messages), null);
+			sendEmail(getEmailMessage(messages), null);
 		} catch(Exception e) {
 			log.error("Unable to send email report", e);
 		}
@@ -182,9 +195,10 @@ public class NexusKitImporter extends CommandLineUtil {
 			// Loop the results and update the gtin/desc
 			List<SolrDocument> docs = resp.getResultDocuments();
 			for(SolrDocument doc : docs) {
-				String desc = (String)doc.get("summary");
-				String sku = (String)doc.get("documentId");
-				String gtin = (String)doc.get("deviceId");
+				String desc = StringUtil.checkVal(doc.get(SearchDocumentHandler.SUMMARY));
+				String sku = StringUtil.checkVal(doc.get(SearchDocumentHandler.DOCUMENT_ID));
+				String gtin = StringUtil.checkVal(doc.get(NexusProductVO.DEVICE_ID));
+				this.updateSolr(sku, gtin, desc);
 				this.updateKitRecord(sku, gtin, desc);
 			}
 		}
@@ -229,16 +243,16 @@ public class NexusKitImporter extends CommandLineUtil {
 		sql.append("select set_info_id from ").append(props.get("customDbSchema"));
 		sql.append("DPY_SYN_NEXUS_SET_INFO where description_txt is null ");
 		sql.append("or gtin_txt is null");
-		
-		// Set the sql data elements
-		PreparedStatement ps = dbConn.prepareStatement(sql.toString());
-		ResultSet rs = ps.executeQuery();
-		
-		// Load the results into the collection and return the data
-		List<String> ids = new ArrayList<>();
-		while(rs.next()) ids.add(rs.getString(1));
 
-		ps.close();
+		List<String> ids = new ArrayList<>();
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			// Set the sql data elements
+			ResultSet rs = ps.executeQuery();
+			
+			// Load the results into the collection and return the data
+			while(rs.next()) ids.add(rs.getString(1));
+
+		}
 		return ids;
 	}
 	
@@ -266,7 +280,7 @@ public class NexusKitImporter extends CommandLineUtil {
 			// If the IDs are different, that means it is the first line of a kit
 			// So we're going to add the kit
 			if (! kitIds.contains(items[1])) {
-				NexusKitVO kit = new NexusKitVO(null);
+				NexusKitVO kit = new NexusKitVO(NexusKitAction.SOLR_INDEX);
 				kit.setKitId(items[1]);
 				kit.setOrgId(MDM_ORG_MAP.get(items[0]));
 				kit.setKitSKU(items[1]);
@@ -313,7 +327,7 @@ public class NexusKitImporter extends CommandLineUtil {
 			String[] items = temp.split(",");
 			
 			// Map the data to the VO
-			NexusKitVO kit = new NexusKitVO(null);
+			NexusKitVO kit = new NexusKitVO(NexusKitAction.SOLR_INDEX);
 			//kit.setKitId(ORG_MAP.get(items[0]) + "_" + items[1]);
 			kit.setKitId(items[1]);
 			kit.setOrgId(JDE_ORG_MAP.get(items[0]));
@@ -321,9 +335,13 @@ public class NexusKitImporter extends CommandLineUtil {
 			kit.setKitDesc(items[2]);
 			kit.setKitGTIN(items[3]);
 			kit.setBranchCode(items[4]);
+			kit.addOrganization(props.getProperty("organization"));
+			kit.addRole("0");
+			kit.setOrgName(kit.getOrgId());
 			
-			// Load the DB
+			// Load the DB and solr
 			storeKitHeader(kit);
+			addToSolr(kit);
 		}
 		
 		in.close();
@@ -377,20 +395,20 @@ public class NexusKitImporter extends CommandLineUtil {
 		//log.info("Detail SQL: " + sql);
 		
 		// Set the sql data elements
-		PreparedStatement ps = dbConn.prepareStatement(sql.toString());
-		ps.setString(1, new UUIDGenerator().getUUID());
-		ps.setString(2, layerId);
-		ps.setString(3, sku);
-		ps.setInt(4, Convert.formatInteger(qty));
-		ps.setString(5, "");
-		ps.setDate(6, Convert.formatSQLDate(Convert.parseDateUnknownPattern(start)));
-		ps.setDate(7, Convert.formatSQLDate(Convert.parseDateUnknownPattern(end)));
-		ps.setInt(8, order);
-		ps.setTimestamp(9, Convert.getCurrentTimestamp());
-		
-		// Store the data
-		ps.executeUpdate();
-		ps.close();
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, new UUIDGenerator().getUUID());
+			ps.setString(2, layerId);
+			ps.setString(3, sku);
+			ps.setInt(4, Convert.formatInteger(qty));
+			ps.setString(5, "");
+			ps.setDate(6, Convert.formatSQLDate(Convert.parseDateUnknownPattern(start)));
+			ps.setDate(7, Convert.formatSQLDate(Convert.parseDateUnknownPattern(end)));
+			ps.setInt(8, order);
+			ps.setTimestamp(9, Convert.getCurrentTimestamp());
+			
+			// Store the data
+			ps.executeUpdate();
+		}
 	}
 	
 	/**
@@ -408,18 +426,18 @@ public class NexusKitImporter extends CommandLineUtil {
 		//log.info("kit Header SQL: " + sql);
 		
 		// Set the sql data elements
-		PreparedStatement ps = dbConn.prepareStatement(sql.toString());
-		ps.setString(1, kit.getKitId());
-		ps.setString(2, kit.getKitSKU());
-		ps.setString(3, kit.getOrgId());
-		ps.setString(4, kit.getKitDesc());
-		ps.setString(5, kit.getKitGTIN());
-		ps.setString(6, StringUtil.checkVal(kit.getBranchCode()).trim());
-		ps.setTimestamp(7, Convert.getCurrentTimestamp());
-		
-		// Store the data
-		ps.executeUpdate();
-		ps.close();
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, kit.getKitId());
+			ps.setString(2, kit.getKitSKU());
+			ps.setString(3, kit.getOrgId());
+			ps.setString(4, kit.getKitDesc());
+			ps.setString(5, kit.getKitGTIN());
+			ps.setString(6, StringUtil.checkVal(kit.getBranchCode()).trim());
+			ps.setTimestamp(7, Convert.getCurrentTimestamp());
+			
+			// Store the data
+			ps.executeUpdate();
+		}
 		
 		// Add the layer
 		storeKitLayer(kit.getKitId());
@@ -440,16 +458,16 @@ public class NexusKitImporter extends CommandLineUtil {
 		//log.info("Kit Layer Header SQL: " + sql);
 		
 		// Set the sql data elements
-		PreparedStatement ps = dbConn.prepareStatement(sql.toString());
-		ps.setString(1, kitId);
-		ps.setString(2, kitId);
-		ps.setString(3, props.getProperty("defaultLayerName"));
-		ps.setInt(4, 1);
-		ps.setTimestamp(5, Convert.getCurrentTimestamp());
-		
-		// Store the data
-		ps.executeUpdate();
-		ps.close();
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, kitId);
+			ps.setString(2, kitId);
+			ps.setString(3, props.getProperty("defaultLayerName"));
+			ps.setInt(4, 1);
+			ps.setTimestamp(5, Convert.getCurrentTimestamp());
+			
+			// Store the data
+			ps.executeUpdate();
+		}
 	}
 	
 	/**
@@ -466,17 +484,17 @@ public class NexusKitImporter extends CommandLineUtil {
 		sql.append("update ").append(props.get("customDbSchema"));
 		sql.append("DPY_SYN_NEXUS_SET_INFO set gtin_txt = ?, description_txt = ? ");
 		sql.append("where set_info_id = ? ");
-		
+		int cnt;
 		// Set the sql data elements
-		PreparedStatement ps = dbConn.prepareStatement(sql.toString());
-		ps.setString(1, gtin);
-		ps.setString(2, desc);
-		ps.setString(3, sku);
-		
-		// Store the data
-		int cnt = ps.executeUpdate();
-		ps.close();
-		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, gtin);
+			ps.setString(2, desc);
+			ps.setString(3, sku);
+			
+			// Store the data
+			cnt = ps.executeUpdate();
+			ps.close();
+		}
 		return cnt;
 	}
 	
@@ -516,5 +534,55 @@ public class NexusKitImporter extends CommandLineUtil {
 		
 		sb.append("</table>");
 		return sb;
+	}
+	
+	
+	/**
+	 * Build the solr server for later use in the importer
+	 * @param props
+	 */
+	private void loadSolrServer(Properties props) {
+		String baseUrl = props.getProperty("solrBaseUrl");
+		String collection = props.getProperty("solrCollectionName");
+		server = new HttpSolrServer(baseUrl + collection);
+	}
+	
+	
+	/**
+	 * Update the product with the supplied sku to show it is a kit
+	 * @param sku
+	 * @param gtin
+	 * @param desc
+	 */
+	private void updateSolr(String sku, String gtin, String desc) {
+		SolrInputDocument doc = new SolrInputDocument();
+		Map<String,Object> fieldModifier = new HashMap<>(1);
+		fieldModifier.put("set","true");
+		doc.addField("kit", fieldModifier);
+		doc.addField("documentId",sku);
+		// Contents is used to create the autocomplete every time the document
+		// is updated.  Since it isn't actually stored by the index any updates
+		// need to containe the contents or it will be lost.
+		doc.addField("contents", sku + " " + desc + " " + gtin + " ");
+		try {
+			server.add(doc);
+		} catch (Exception e) {
+			log.error("Unable to add kit " + sku + " to solr.", e);
+		}
+
+	}
+
+	
+	/**
+	 * Add the supplied kit to solr
+	 * @param kit
+	 */
+	private void addToSolr(NexusKitVO kit) {
+		SolrActionUtil util = new SolrActionUtil(server);
+		try {
+			util.addDocument(kit);
+		} catch (Exception e) {
+			log.error("Unable to add kit " + kit.getKitSKU() + " to solr.", e);
+		}
 	}
 }

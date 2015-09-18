@@ -6,12 +6,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import com.siliconmtn.annotations.SolrField;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 
 /****************************************************************************
@@ -27,6 +27,9 @@ import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 
 
 public class NexusKitVO extends SolrDocumentVO implements Serializable {
+	
+	public static final String KIT = "kit";
+	public static final String OWNER = "owner";
 
 	/**
 	 * 
@@ -88,6 +91,7 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 		ownerId = db.getStringVal("PROFILE_ID", rs);
 	}
 
+	@SolrField(name=SearchDocumentHandler.DOCUMENT_ID)
 	public String getKitId() {
 		return kitId;
 	}
@@ -95,7 +99,6 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 		this.kitId = kitId;
 	}
 
-	@SolrField(name="documentId")
 	public String getKitSKU() {
 		return kitSKU;
 	}
@@ -105,7 +108,7 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 		setTitle(kitSKU);
 	}
 
-	@SolrField(name="summary")
+	@SolrField(name=SearchDocumentHandler.SUMMARY)
 	public String getKitDesc() {
 		return kitDesc;
 	}
@@ -113,14 +116,13 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 	public void setKitDesc(String kitDesc) {
 		this.kitDesc = kitDesc;
 	}
-	@SolrField(name="deviceId")
+	@SolrField(name=NexusProductVO.DEVICE_ID)
 	public String getKitGTIN() {
 		return kitGTIN;
 	}
 	public void setKitGTIN(String kitGTIN) {
 		this.kitGTIN = kitGTIN;
 	}
-	@SolrField(name="owner")
 	public String getOwnerId() {
 		return ownerId;
 	}
@@ -136,9 +138,11 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 		this.sharedWith = sharedWith;
 	}
 
-	@SolrField(name="sharedWith")
-	public Set<String> getPermissions() {
-		return sharedWith.keySet();
+	@SolrField(name=OWNER)
+	public List<String> getPermissions() {
+		List<String> s = new ArrayList<>(sharedWith.keySet());
+		if (ownerId != null) s.add(ownerId);
+		return s;
 	}
 	
 	public void addPermision(String profileId, String name) {
@@ -173,7 +177,6 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 		}
 	}
 
-	@SolrField(name="products")
 	public List<String> getProducts() {
 		List<String> productIds = new ArrayList<>();
 		for (NexusKitLayerVO layer : layers) {
@@ -189,7 +192,7 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 		return productIds;
 	}
 	
-	@SolrField(name="organization")
+	@SolrField(name=SearchDocumentHandler.ORGANIZATION)
 	public String getOrgId() {
 		return orgId;
 	}
@@ -198,7 +201,7 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 		this.orgId = orgId;
 	}
 
-	@SolrField(name="organizationName")
+	@SolrField(name=NexusProductVO.ORGANIZATION_NM)
 	public String getOrgName() {
 		return orgName;
 	}
@@ -207,7 +210,6 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 		this.orgName = orgName;
 	}
 
-	@SolrField(name="branchCode")
 	public String getBranchCode() {
 		return branchCode;
 	}
@@ -223,7 +225,7 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 	 * and condenses it into a single field
 	 * @return
 	 */
-	@SolrField(name="contents")
+	@SolrField(name=SearchDocumentHandler.CONTENTS)
 	public String getAutocomplete() {
 		StringBuilder auto = new StringBuilder();
 		auto.append(kitSKU).append(" ");
@@ -237,12 +239,17 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 	//in order to ensure that certain fields get properly populated for use 
 	//on the main site.
 	
-	@SolrField(name="kit")
+	@SolrField(name=KIT)
 	public boolean isKit() {
 		return true;
 	}
-	@SolrField(name="gtin")
+	@SolrField(name=NexusProductVO.GTIN)
 	public String getGTIN() {
 		return kitGTIN;
+	}
+	@SolrField(name=NexusProductVO.SEARCHABLE_NM)
+	public String getSearchableName() {
+		if (getDocumentId() == null) return null;
+		return getDocumentId().replaceAll("[\\-\\/\\.]", "");
 	}
 }

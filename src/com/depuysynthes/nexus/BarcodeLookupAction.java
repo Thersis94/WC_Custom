@@ -10,6 +10,7 @@ import java.util.Set;
 
 import org.apache.solr.common.SolrDocument;
 
+
 // SMT BAse Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -18,7 +19,6 @@ import com.siliconmtn.barcode.BarcodeManager;
 import com.siliconmtn.barcode.BarcodeOEM;
 import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.http.SMTServletRequest;
-
 import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -26,6 +26,7 @@ import com.smt.sitebuilder.action.search.SolrActionIndexVO;
 import com.smt.sitebuilder.action.search.SolrActionVO;
 import com.smt.sitebuilder.action.search.SolrQueryProcessor;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
+import com.smt.sitebuilder.search.SearchDocumentHandler;
 
 /****************************************************************************
  * <b>Title</b>: BarcodeLookupAction.java <p/>
@@ -146,14 +147,14 @@ public class BarcodeLookupAction extends SBActionAdapter {
 			throw new ActionException("No Product Found with Supplied Barcode.");
 		}
 		SolrDocument doc = resp.getResultDocuments().get(0);
-		prod.getProdAttributes().put("organizationName", doc.get("organizationName"));
-		prod.setProductId((String)doc.get("documentId"));
-		prod.setProductGroupId((String)doc.get("deviceId"));
-		prod.setShortDesc((String) doc.get("summary"));
+		prod.getProdAttributes().put("organizationName", doc.get(NexusProductVO.ORGANIZATION_NM));
+		prod.setProductId((String)doc.get(SearchDocumentHandler.DOCUMENT_ID));
+		prod.setProductGroupId((String)doc.get(NexusProductVO.DEVICE_ID));
+		prod.setShortDesc((String) doc.get(SearchDocumentHandler.SUMMARY));
 
 
-		Object[] gtin = doc.getFieldValues("gtin").toArray();
-		Object[] uom = doc.getFieldValues("uomLvl").toArray();
+		Object[] gtin = doc.getFieldValues(NexusProductVO.GTIN).toArray();
+		Object[] uom = doc.getFieldValues(NexusProductVO.UOM_LVL).toArray();
 		
 		for (int i=0; i < gtin.length; i++) {
 			if (StringUtil.checkVal(gtin[i]).equals(prod.getProductGroupId())) {

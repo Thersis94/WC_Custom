@@ -20,11 +20,15 @@ import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.http.parser.StringEncoder;
+import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
+import com.smt.sitebuilder.action.search.SolrActionIndexVO;
+import com.smt.sitebuilder.action.search.SolrActionVO;
+import com.smt.sitebuilder.action.search.SolrQueryProcessor;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -67,15 +71,11 @@ public class NexusSolrCartAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	private void getKitProducts(SMTServletRequest req) throws ActionException {
-		req.setParameter("minimumMatch", "100%");
-		
-	    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
-	    	log.debug((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
-	    	actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
-	    	SMTActionInterface sai = new SolrAction(actionInit);
+	    	SMTActionInterface sai = new NexusKitAction();
+	    	sai.setActionInit(actionInit);
 	    	sai.setDBConnection(dbConn);
 	    	sai.setAttributes(attributes);
-		sai.retrieve(req);
+		sai.build(req);
 	}
 	
 	
@@ -273,22 +273,38 @@ public class NexusSolrCartAction extends SBActionAdapter {
 		}
 		
 		if (!Convert.formatBoolean(req.getParameter("showCart"))) {
-			// Build the organization filter query
-			req.setParameter("fq", "organizationName:" + req.getParameter("orgName"));
-			
-			String searchData = StringUtil.checkVal(req.getParameter("searchData"));
-			int searchType = Convert.formatInteger(req.getParameter("searchType"));
-			req.setParameter("searchData", (searchType>2?"*":"")+searchData+(searchType>1?"*":""), true);
-			req.setParameter("minimumMatch", "100%");
-			
-			// Do the solr search
+			UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
+			SolrAction sa = new SolrAction(actionInit);
+			sa.setDBConnection(dbConn);
+			sa.setAttributes(attributes);
 		    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		    	log.debug((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 		    	actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
-		    	SMTActionInterface sai = new SolrAction(actionInit);
-		    	sai.setDBConnection(dbConn);
-		    	sai.setAttributes(attributes);
-			sai.retrieve(req);
+			SolrActionVO qData = sa.retrieveActionData(req);
+			SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, "DePuy_NeXus");
+			qData.setNumberResponses(Convert.formatInteger(req.getParameter("rpp"), 10));
+			qData.setStartLocation(0);
+			qData.setOrganizationId("DPY_SYN_NEXUS");
+			qData.setRoleLevel(0);
+			qData.setMinimumMatch("100%");
+			qData.setStartLocation(qData.getNumberResponses() * Convert.formatInteger(req.getParameter("page"), 0));
+			String searchData = StringUtil.checkVal(req.getParameter("searchData"));
+			int searchType = Convert.formatInteger(req.getParameter("searchType"));
+			qData.setSearchData((searchType>2?"*":"")+searchData+(searchType>1?"*":""));
+			qData.addIndexType(new SolrActionIndexVO("", NexusProductVO.solrIndex));
+			Map<String, String> filter = new HashMap<>();
+			// Build the filter that ensures users only see kits that they are allowed to see.
+			if (user != null) {
+				filter.put("owner", user.getProfileId() +" or (-owner:[* TO *] and *:*)");
+			} else {
+				filter.put("-owner", "[* TO *]");
+			}
+			log.debug(req.hasParameter("orgName"));
+			if (req.hasParameter("orgName"))
+				filter.put("organizationName", req.getParameter("orgName"));
+			qData.setFilterQueries(filter);
+			super.putModuleData(sqp.processQuery(qData));
+			
 		    	req.setParameter("searchData", searchData, true);
 		}
 	}

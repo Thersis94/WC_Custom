@@ -4,11 +4,16 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.Cookie;
+
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrInputDocument;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.SMTActionInterface;
@@ -22,6 +27,8 @@ import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.search.SearchDocumentHandler;
+import com.smt.sitebuilder.util.solr.SolrActionUtil;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
@@ -488,7 +495,7 @@ public class NexusKitAction extends SBActionAdapter {
 		String searchTerms = getCookie(req, "searchTerms");
 		boolean profileOne = false;
 		boolean profileTwo = false;
-		boolean orgSearch = req.hasParameter("organizationNm");
+		String orgId = getCookie(req, "opCo");
 		if (user == null) {
 			profileId = "";
 		} else {
@@ -526,11 +533,11 @@ public class NexusKitAction extends SBActionAdapter {
 			profileTwo = true;
 		}
 		
-		if (orgSearch) {
+		if (orgId.length() > 0) {
 			sql.append("and s.ORGANIZATION_ID = ? ");
 		}
 		
-		if (searchTerms != null) {
+		if (searchTerms.length() > 0) {
 			sql.append("and (s.SET_SKU_TXT like ? or s.DESCRIPTION_TXT like ?) ");
 		}
 		
@@ -563,11 +570,11 @@ public class NexusKitAction extends SBActionAdapter {
 				sql.append("(p.PROFILE_ID = ? or s.PROFILE_ID = ? or s.PROFILE_ID is null) ");
 			}
 			
-			if (orgSearch) {
+			if (orgId.length() > 0) {
 				sql.append("and s.ORGANIZATION_ID = ? ");
 			}
 			
-			if (searchTerms != null) {
+			if (searchTerms.length() > 0) {
 				sql.append("and (s.SET_SKU_TXT like ? or s.DESCRIPTION_TXT like ?) ");
 			}
 			if (kitId.length() > 0) sql.append("and s.SET_INFO_ID = ? ");
@@ -591,15 +598,15 @@ public class NexusKitAction extends SBActionAdapter {
 		
 		if (fullLoad) sql.append(", sl.PARENT_ID, sl.ORDER_NO, si.ORDER_NO ");
 		
-		log.debug(sql+"|"+profileId+"|"+kitId);
+		log.debug(sql+"|"+profileId+"|"+kitId+"|"+orgId+"|"+searchTerms);
 		List<NexusKitVO> kits = new ArrayList<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			int i = 1;
 			if (fullLoad) {
 				if (profileOne) ps.setString(i++, profileId);
 				if (profileTwo) ps.setString(i++, profileId);
-				if (orgSearch) ps.setString(i++, req.getParameter("organizationNm"));
-				if (searchTerms != null) {
+				if (orgId.length() > 0) ps.setString(i++, orgId);
+				if (searchTerms.length() > 0) {
 					ps.setString(i++, "%"+searchTerms+"%");
 					ps.setString(i++, "%"+searchTerms+"%");
 				}
@@ -608,8 +615,8 @@ public class NexusKitAction extends SBActionAdapter {
 			
 			if (profileOne) ps.setString(i++, profileId);
 			if (profileTwo) ps.setString(i++, profileId);
-			if (orgSearch) ps.setString(i++, req.getParameter("organizationNm"));
-			if (searchTerms != null) {
+			if (orgId.length() > 0) ps.setString(i++, orgId);
+			if (searchTerms.length() > 0) {
 				ps.setString(i++, "%"+searchTerms+"%");
 				ps.setString(i++, "%"+searchTerms+"%");
 			}
@@ -660,9 +667,7 @@ public class NexusKitAction extends SBActionAdapter {
 						qData.setFilterQueries(filter);
 						SolrResponseVO resp = sqp.processQuery(qData);
 						if (resp.getResultDocuments().size() == 1) {
-							p.setPrimaryDeviceId((String) resp.getResultDocuments().get(0).get("deviceId"));
-							p.addGtin((String) resp.getResultDocuments().get(0).get("deviceId"));
-							p.setSummary((String) resp.getResultDocuments().get(0).get("summary"));
+							addProductInfo(p, resp.getResultDocuments().get(0));
 						}
 						layer.addProduct(p);
 					}
@@ -680,6 +685,26 @@ public class NexusKitAction extends SBActionAdapter {
 	}
 	
 	
+	/**
+	 * Get product information from the supplied solr document
+	 * @param p
+	 * @param solrDocument
+	 */
+	private void addProductInfo(NexusProductVO p, SolrDocument solrDocument) {
+		p.setPrimaryDeviceId((String)solrDocument.get(NexusProductVO.DEVICE_ID));
+		p.addGtin((String) solrDocument.get(NexusProductVO.DEVICE_ID));
+		p.setSummary((String) solrDocument.get(SearchDocumentHandler.SUMMARY));
+		Collection<Object> gtins = solrDocument.getFieldValues(NexusProductVO.GTIN);
+		int pIndex = 0;
+		for (Object gtin : gtins) {
+			if (p.getPrimaryDeviceId().equals(gtin)) break;
+			pIndex++;
+		}
+		p.addUOMLevel((String) (solrDocument.getFieldValues(NexusProductVO.UOM_LVL).toArray()[pIndex]));
+		p.setOrgName((String) solrDocument.get(NexusProductVO.ORGANIZATION_NM));
+	}
+
+
 	/**
 	 * Edit the kit that is currently being worked on
 	 * @param req
@@ -828,9 +853,43 @@ public class NexusKitAction extends SBActionAdapter {
 			clearKit(kit.getKitId());
 		}
 		saveLayers(kit);
+		
+		// Set the solr variables
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		if (kit.getOrganization().size() == 0) kit.addOrganization(site.getOrganizationId());
+		if (kit.getRoles().size() == 0) kit.addRole("0");
+		getShared(kit);
+		addToSolr(kit);
 	}
 	
 	
+	/**
+	 * Get all users that the supplied kit is shared with and add them to the kit
+	 * @param kit
+	 * @throws ActionException
+	 */
+	private void getShared(NexusKitVO kit) throws ActionException {
+		StringBuilder sql = new StringBuilder();
+		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		sql.append("SELECT * FROM ").append(customDb).append("DPY_SYN_NEXUS_SET_SHARE s ");
+		sql.append("LEFT JOIN PROFILE p on p.PROFILE_ID = s.PROFILE_ID ");
+		sql.append("WHERE SET_INFO_ID = ? ");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, kit.getKitId());
+			
+			ResultSet rs = ps.executeQuery();
+
+			ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
+			while(rs.next()) {
+				kit.addPermision(rs.getString("PROFILE_ID"), pm.getStringValue("first_nm", rs.getString("first_nm")) + " " + pm.getStringValue("last_nm", rs.getString("last_nm")));
+			}
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
+	}
+
+
 	/**
 	 * Remove all existing products and layers from this kit so that they can
 	 * recreated from the kit that is being saved.
@@ -1024,8 +1083,30 @@ public class NexusKitAction extends SBActionAdapter {
 			// in an awaiting approval state for the owner to accept or deny at a later date.
 			int request = 0;
 			if (!user.getProfileId().equals(profileId)) request = 1;
+			List<SolrInputDocument> docUpdates = new ArrayList<>();
 			for (String kitId : req.getParameterValues("kitId")) {
 				addPermission(profileId, kitId, request);
+				if (request == 1) {
+					SolrInputDocument sdoc = new SolrInputDocument();
+					Map<String,Object> fieldModifier = new HashMap<>(1);
+					fieldModifier.put("add",profileId);
+					sdoc.addField("owner", fieldModifier);
+					sdoc.addField("documentId",kitId);
+					docUpdates.add(sdoc);
+				}
+			}
+			
+			try {
+				String baseUrl = StringUtil.checkVal(attributes.get(Constants.SOLR_BASE_URL), null);
+				ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+				String collection = getSolrCollection((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
+				HttpSolrServer server = new HttpSolrServer(baseUrl + collection);
+				for (SolrInputDocument doc : docUpdates) {
+					server.add( doc );
+				}
+				server.commit();
+			} catch (Exception e) {
+				throw new ActionException(e);
 			}
 		}
 	}
@@ -1083,6 +1164,43 @@ public class NexusKitAction extends SBActionAdapter {
 	private void changeOrderNo(List<NexusKitLayerVO> layers, int index) {
 		for (int i = index; i < layers.size(); i++) {
 			layers.get(i).setOrderNo(i+1); 
+		}
+	}
+	
+	
+	/**
+	 * Create a solr action util and submit the user's kit
+	 */
+	private void addToSolr(NexusKitVO kit) throws ActionException {
+	    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+		attributes.put(Constants.SOLR_COLLECTION_NAME, getSolrCollection((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1)));
+		new SolrActionUtil(attributes).addDocument(kit);
+	}
+	
+	
+	/**
+	 * Get the solr collection 
+	 * @param solrId
+	 * @return
+	 * @throws ActionException
+	 */
+	private String getSolrCollection(String solrId) throws ActionException {
+		StringBuilder sql = new StringBuilder(200);
+		sql.append("SELECT SOLR_COLLECTION_PATH FROM SOLR_ACTION sa ");
+		sql.append("inner join SOLR_COLLECTION sc on sa.SOLR_COLLECTION_ID = sc.SOLR_COLLECTION_ID ");
+		sql.append("WHERE ACTION_ID = ? ");
+		log.debug(sql+"|"+solrId);
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, solrId);
+			ResultSet rs = ps.executeQuery();
+			
+			if (rs.next()) {
+				 return rs.getString(1);
+			} else {
+				throw new ActionException("Got null value for Solr Collection Name when adding kit to Solr", new NullPointerException());
+			}
+		} catch(SQLException e) {
+			throw new ActionException(e);
 		}
 	}
 
