@@ -373,6 +373,9 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			//iterate DB against Solr
 			dbLoop:
 			for (MediaBinDeltaVO vo: masterRecords.values()) {
+				//make sure only 'good' records get pushed to Solr. - this check filters out failed records, including 404's at LL. 
+				if (!vo.isUsable()) continue;
+				
 				for (SolrDocument sd : solrData) {
 					if (vo.getDpySynMediaBinId().equals(sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID))) {
 						continue dbLoop;
