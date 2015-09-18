@@ -27,6 +27,7 @@ import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -690,18 +691,17 @@ public class NexusKitAction extends SBActionAdapter {
 	 * @param solrDocument
 	 */
 	private void addProductInfo(NexusProductVO p, SolrDocument solrDocument) {
-		p.setPrimaryDeviceId((String)solrDocument.get("deviceId"));
-		p.addGtin((String) solrDocument.get("deviceId"));
-		p.setSummary((String) solrDocument.get("summary"));
-		Collection<Object> gtins = solrDocument.getFieldValues("gtin");
+		p.setPrimaryDeviceId((String)solrDocument.get(NexusProductVO.DEVICE_ID));
+		p.addGtin((String) solrDocument.get(NexusProductVO.DEVICE_ID));
+		p.setSummary((String) solrDocument.get(SearchDocumentHandler.SUMMARY));
+		Collection<Object> gtins = solrDocument.getFieldValues(NexusProductVO.GTIN);
 		int pIndex = 0;
 		for (Object gtin : gtins) {
 			if (p.getPrimaryDeviceId().equals(gtin)) break;
 			pIndex++;
 		}
-		log.debug(solrDocument.getFieldValues("uomLvl")+"|"+pIndex);
-		p.addUOMLevel((String) (solrDocument.getFieldValues("uomLvl").toArray()[pIndex]));
-		p.setOrgName((String) solrDocument.get("organizationName"));
+		p.addUOMLevel((String) (solrDocument.getFieldValues(NexusProductVO.UOM_LVL).toArray()[pIndex]));
+		p.setOrgName((String) solrDocument.get(NexusProductVO.ORGANIZATION_NM));
 	}
 
 

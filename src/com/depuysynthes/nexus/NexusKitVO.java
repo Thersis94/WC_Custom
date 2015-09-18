@@ -11,6 +11,7 @@ import com.siliconmtn.annotations.SolrField;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 
 /****************************************************************************
@@ -26,6 +27,9 @@ import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 
 
 public class NexusKitVO extends SolrDocumentVO implements Serializable {
+	
+	public static final String KIT = "kit";
+	public static final String OWNER = "owner";
 
 	/**
 	 * 
@@ -87,7 +91,7 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 		ownerId = db.getStringVal("PROFILE_ID", rs);
 	}
 
-	@SolrField(name="documentId")
+	@SolrField(name=SearchDocumentHandler.DOCUMENT_ID)
 	public String getKitId() {
 		return kitId;
 	}
@@ -104,7 +108,7 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 		setTitle(kitSKU);
 	}
 
-	@SolrField(name="summary")
+	@SolrField(name=SearchDocumentHandler.SUMMARY)
 	public String getKitDesc() {
 		return kitDesc;
 	}
@@ -112,7 +116,7 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 	public void setKitDesc(String kitDesc) {
 		this.kitDesc = kitDesc;
 	}
-	@SolrField(name="deviceId")
+	@SolrField(name=NexusProductVO.DEVICE_ID)
 	public String getKitGTIN() {
 		return kitGTIN;
 	}
@@ -134,7 +138,7 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 		this.sharedWith = sharedWith;
 	}
 
-	@SolrField(name="owner")
+	@SolrField(name=OWNER)
 	public List<String> getPermissions() {
 		List<String> s = new ArrayList<>(sharedWith.keySet());
 		if (ownerId != null) s.add(ownerId);
@@ -188,7 +192,7 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 		return productIds;
 	}
 	
-	@SolrField(name="organization")
+	@SolrField(name=SearchDocumentHandler.ORGANIZATION)
 	public String getOrgId() {
 		return orgId;
 	}
@@ -197,7 +201,7 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 		this.orgId = orgId;
 	}
 
-	@SolrField(name="organizationName")
+	@SolrField(name=NexusProductVO.ORGANIZATION_NM)
 	public String getOrgName() {
 		return orgName;
 	}
@@ -221,7 +225,7 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 	 * and condenses it into a single field
 	 * @return
 	 */
-	@SolrField(name="contents")
+	@SolrField(name=SearchDocumentHandler.CONTENTS)
 	public String getAutocomplete() {
 		StringBuilder auto = new StringBuilder();
 		auto.append(kitSKU).append(" ");
@@ -235,15 +239,15 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 	//in order to ensure that certain fields get properly populated for use 
 	//on the main site.
 	
-	@SolrField(name="kit")
+	@SolrField(name=KIT)
 	public boolean isKit() {
 		return true;
 	}
-	@SolrField(name="gtin")
+	@SolrField(name=NexusProductVO.GTIN)
 	public String getGTIN() {
 		return kitGTIN;
 	}
-	@SolrField(name="searchableName")
+	@SolrField(name=NexusProductVO.SEARCHABLE_NM)
 	public String getSearchableName() {
 		if (getDocumentId() == null) return null;
 		return getDocumentId().replaceAll("[\\-\\/\\.]", "");
