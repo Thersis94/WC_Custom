@@ -562,7 +562,6 @@ public class NexusKitImporter extends CommandLineUtil {
 		// need to containe the contents or it will be lost.
 		doc.addField("contents", sku + " " + desc + " " + gtin + " ");
 		try {
-			System.out.println("Updating " + sku);
 			server.add(doc);
 			server.commit();
 		} catch (Exception e) {
@@ -579,7 +578,6 @@ public class NexusKitImporter extends CommandLineUtil {
 	private void addToSolr(NexusKitVO kit) {
 		SolrActionUtil util = new SolrActionUtil(server);
 		try {
-			System.out.println("Adding " + kit.getKitId());
 			util.addDocument(kit);
 		} catch (Exception e) {
 			log.error("Unable to add kit " + kit.getKitSKU() + " to solr.", e);
