@@ -1,8 +1,12 @@
 package com.depuysynthes.action;
 
 // JDK 7
+import java.beans.PropertyChangeEvent;
 import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 
 // SMTBaseLibs 2.0
 import com.siliconmtn.db.DBUtil;
@@ -28,6 +32,7 @@ import com.smt.sitebuilder.action.SBModuleVO;
 public class MediaBinAssetVO extends SBModuleVO {
 	private static final long serialVersionUID = 1L;
 	
+	private static final List<String> videoTypes = Arrays.asList(MediaBinAdminAction.VIDEO_ASSETS);
 	private String dpySynMediaBinId = null;
 	private String assetNm = null;
 	private String assetDesc = null;
@@ -41,10 +46,12 @@ public class MediaBinAssetVO extends SBModuleVO {
 	private Integer fileSizeNo = Integer.valueOf(0);
 	private Integer widthNo = Integer.valueOf(0);
 	private Integer heightNo = Integer.valueOf(0);
+	private String dimensionsTxt = null;
 	private Double duration = Double.valueOf(0);
 	private String prodFamilyNm = null;
 	private String prodNm = null;
 	private String revisionLvlTxt = null;
+	private String eCopyRevisionLvl = null;
 	private String opCoNm = null;
 	private String titleTxt = null;
 	private String trackingNoTxt = null;
@@ -56,6 +63,10 @@ public class MediaBinAssetVO extends SBModuleVO {
 	private String anatomy = null;
 	private String metaKeywords = null;
 	private String videoChapters = null;
+	private List<PropertyChangeEvent> deltas;
+	
+	public MediaBinAssetVO() {
+	}
 	
 	public MediaBinAssetVO(ResultSet rs) {
 		DBUtil db = new DBUtil();
@@ -82,8 +93,9 @@ public class MediaBinAssetVO extends SBModuleVO {
 		languageCode = db.getStringVal("language_cd", rs);
 		setDescription(db.getStringVal("desc_txt", rs));
 		setAnatomy(db.getStringVal("anatomy_txt", rs));
-		setMetaKeywords(db.getStringVal("meta_keywords_txt", rs));
+		setMetaKeywords(db.getStringVal("meta_kywds_txt", rs));
 		setVideoChapters(db.getStringVal("META_CONTENT_TXT", rs));
+		seteCopyRevisionLvl(db.getStringVal("ecopy_revision_lvl_txt", rs));
 		
 		String dims = db.getStringVal("dimensions_txt", rs);
 		if (dims != null && dims.indexOf("~") > 0) {
@@ -91,11 +103,7 @@ public class MediaBinAssetVO extends SBModuleVO {
 			setWidthNo(Convert.formatInteger(dims.substring(0, delim)));
 			setHeightNo(Convert.formatInteger(dims.substring(delim+1)));
 		}
-		
-		// Determine if the asset is a video
-		if (StringUtil.checkVal(assetType).toLowerCase().startsWith("multimedia")) {
-			isVideo = true;
-		}
+		this.setDimensionsTxt(dims);
 	}
 	
 	
@@ -122,6 +130,12 @@ public class MediaBinAssetVO extends SBModuleVO {
 	}
 	public void setAssetType(String assetType) {
 		this.assetType = assetType;
+		
+		//the decision of whether or not this asset is a video is based on assetType,
+		//so when we set assetType also set isVideo.  Based on the video types predefined by DS/SMT.
+		if (assetType != null)
+			isVideo = videoTypes.contains(assetType.toLowerCase());
+
 	}
 	public String getBodyRegionTxt() {
 		return bodyRegionTxt;
@@ -335,5 +349,162 @@ public class MediaBinAssetVO extends SBModuleVO {
 	public void setVideoChapters(String videoChapters) {
 		this.videoChapters = videoChapters;
 	}
+
+	public String getDimensionsTxt() {
+		return dimensionsTxt;
+	}
+
+	public void setDimensionsTxt(String dimensionsTxt) {
+		this.dimensionsTxt = dimensionsTxt;
+	}
+
+	/**
+	 * a rather complex "equals" method, but highly effective.
+	 * This method is called specifically from the DSMediaBinImporterV2 class,
+	 * which uses it to compare two versions of the same MB Asset for changes.
+	 * It must look at every field in order to accurately determine if the records are identical.
+	 */
+	public boolean lexicographyEquals(Object obj) {
+		if (this == obj) return true;
+		if (obj == null) return false;
+		if (getClass() != obj.getClass()) return false;
+
+		MediaBinAssetVO other = (MediaBinAssetVO) obj;
+		if (!compareStr(anatomy, other.anatomy))
+			this.addDelta(new PropertyChangeEvent(this,"anatomy",other.anatomy, anatomy));
+		
+		if (!compareStr(assetDesc, other.assetDesc))
+			this.addDelta(new PropertyChangeEvent(this,"assetDesc",other.assetDesc, assetDesc));
+
+		if (!compareStr(assetNm, other.assetNm))
+			this.addDelta(new PropertyChangeEvent(this,"assetNm",other.assetNm, assetNm));
+
+		if (!compareStr(assetType, other.assetType))
+			this.addDelta(new PropertyChangeEvent(this,"assetType",other.assetType, assetType));
+
+		if (!compareStr(bodyRegionTxt, other.bodyRegionTxt))
+			this.addDelta(new PropertyChangeEvent(this,"bodyRegionTxt",other.bodyRegionTxt, bodyRegionTxt));
+
+		if (!compareInt(businessUnitId, other.businessUnitId))
+			this.addDelta(new PropertyChangeEvent(this,"businessUnitId",other.businessUnitId, businessUnitId));
+
+		if (!compareStr(businessUnitNm, other.businessUnitNm))
+			this.addDelta(new PropertyChangeEvent(this,"businessUnitNm",other.businessUnitNm, businessUnitNm));
+
+		if (!compareStr(description, other.description))
+			this.addDelta(new PropertyChangeEvent(this,"description",other.description, description));
+
+		if (!compareStr(dimensionsTxt, other.dimensionsTxt))
+			this.addDelta(new PropertyChangeEvent(this,"dimensionsTxt",other.dimensionsTxt, dimensionsTxt));
+
+		if (!compareStr(downloadTypeTxt, other.downloadTypeTxt))
+			this.addDelta(new PropertyChangeEvent(this,"downloadTypeTxt",other.downloadTypeTxt, downloadTypeTxt));
+
+		if (!compareDbl(duration, other.duration))
+			this.addDelta(new PropertyChangeEvent(this,"duration",Convert.formatDouble(other.duration), Convert.formatDouble(duration)));
+
+		if (!compareStr(fileNm, other.fileNm))
+			this.addDelta(new PropertyChangeEvent(this,"fileNm",other.fileNm, fileNm));
+
+		if (!compareStr(languageCode, other.languageCode))
+			this.addDelta(new PropertyChangeEvent(this,"languageCode",other.languageCode, languageCode));
+
+		if (!compareStr(literatureTypeTxt, other.literatureTypeTxt))
+			this.addDelta(new PropertyChangeEvent(this,"literatureTypeTxt",other.literatureTypeTxt, literatureTypeTxt));
+
+		if (!compareStr(metaKeywords, other.metaKeywords))
+			this.addDelta(new PropertyChangeEvent(this,"metaKeywords",other.metaKeywords, metaKeywords));
+
+		if (!compareStr(opCoNm, other.opCoNm))
+			this.addDelta(new PropertyChangeEvent(this,"opCoNm",other.opCoNm, opCoNm));
+
+		if (!compareStr(prodFamilyNm, other.prodFamilyNm))
+			this.addDelta(new PropertyChangeEvent(this,"prodFamilyNm",other.prodFamilyNm, prodFamilyNm));
+
+		if (!compareStr(prodNm, other.prodNm))
+			this.addDelta(new PropertyChangeEvent(this,"prodNm",other.prodNm, prodNm));
+
+		if (!compareStr(titleTxt, other.titleTxt))
+			this.addDelta(new PropertyChangeEvent(this,"titleTxt",other.titleTxt, titleTxt));
+
+		if (!compareStr(trackingNoTxt, other.trackingNoTxt))
+			this.addDelta(new PropertyChangeEvent(this,"trackingNoTxt",other.trackingNoTxt, trackingNoTxt));
+
+		return getDeltas() == null;
+	}
 	
+	/**
+	 * helper to .equals method above; reusable String equality test to reduce code overhead.
+	 * @param a
+	 * @param b
+	 * @return
+	 */
+	private boolean compareStr(String a, String b) {
+		if (a == null && b == null) return true;
+		if (a == null && b != null) return false;
+		if (a != null && b == null) return false;
+		return a.equals(b);
+	}
+	
+	/**
+	 * helper to .equals method above; reusable Integer equality test to reduce code overhead.
+	 * @param a
+	 * @param b
+	 * @return
+	 */
+	private boolean compareInt(Integer a, Integer b) {
+		if (a == null && b == null) return true;
+		if (a == null && b != null) return false;
+		if (a != null && b == null) return false;
+		return a.equals(b);
+	}
+	
+	/**
+	 * helper to .equals method above; reusable Double equality test to reduce code overhead.
+	 * @param a
+	 * @param b
+	 * @return
+	 */
+	private boolean compareDbl(Double a, Double b) {
+		if (a == null && b == null) return true;
+		if (a == null && b != null) return false;
+		if (a != null && b == null) return false;
+		return a.equals(b);
+	}
+	
+	@Override
+	public String toString() {
+		return StringUtil.getToString(this, false, 1, "|");
+	}
+	
+
+	/**
+	 * the 3 methods below are for tracking changes across asset versioning.  
+	 * We capture these from the .equals() method, and are able to report this information
+	 * to an administrator
+	 * @param evt
+	 */
+
+	public void addDelta(PropertyChangeEvent evt) {
+		if (deltas == null) deltas = new ArrayList<>();
+		deltas.add(evt);
+	}
+
+	public List<PropertyChangeEvent> getDeltas() {
+		return deltas;
+	}
+
+	public void setDeltas(List<PropertyChangeEvent> deltas) {
+		this.deltas = deltas;
+	}
+
+	public String geteCopyRevisionLvl() {
+		return eCopyRevisionLvl;
+	}
+
+	public void seteCopyRevisionLvl(String lvl) {
+		//do some data cleanup; a zero synonymizes null here
+		if (lvl == null || lvl.length() == 0 || "0".equals(lvl)) lvl = null;
+		this.eCopyRevisionLvl = lvl;
+	}
 }

@@ -15,9 +15,11 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 import org.xml.sax.ContentHandler;
 
@@ -34,9 +36,13 @@ import org.apache.tika.parser.ParseContext;
 import org.apache.tika.sax.BodyContentHandler;
 
 
+
+
+
 // SMT Base Libs
 import com.depuysynthes.action.MediaBinAdminAction;
 import com.depuysynthes.action.MediaBinAssetVO;
+import com.depuysynthes.scripts.MediaBinDeltaVO;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.StringUtil;
 
@@ -83,13 +89,19 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 		AssetDesc("assetDesc_s"),
 		TrackingNo("trackingNumber_s"),
 		VideoChapters("videoChapters_s"),
-		DownloadType("downloadType_s");
+		DownloadType("downloadType_s"),
+		DSOrderNo("dsOrderNo_i"),
+		ImportFileCd("importFileCd_i");
 		MediaBinField(String s) { this.metaDataField = s; }
 		private String metaDataField = null;
 		public String getField() { return metaDataField; }
 	}
 
-
+	public MediaBinSolrIndex() {
+		loadBusUnits();
+	}
+	
+			
 	/**
 	 * Initializes the Business Units
 	 */
@@ -114,7 +126,8 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 	 * @param server
 	 * @param fileRepos
 	 */
-	protected void indexFiles(List<MediaBinAssetVO> metaData, HttpSolrServer server, String fileRepos) {
+	public void indexFiles(List<MediaBinAssetVO> metaData, HttpSolrServer server, String fileRepos) {
+		int cnt = 0;
 		for (int i = 0; i < metaData.size(); i++) {
 			SolrInputDocument doc = new SolrInputDocument();
 			MediaBinAssetVO vo = metaData.get(i);
@@ -144,7 +157,8 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 				doc.setField(SearchDocumentHandler.ORGANIZATION, orgList); //multiValue field
 				doc.setField(SearchDocumentHandler.LANGUAGE, StringUtil.checkVal(vo.getLanguageCode(), "en"));
 				doc.setField(SearchDocumentHandler.ROLE, SecurityController.PUBLIC_ROLE_LEVEL);
-				doc.setField(SearchDocumentHandler.SITE_PAGE_URL, vo.getActionUrl());
+				doc.setField(SearchDocumentHandler.SITE_PAGE_URL, vo.getActionUrl()); //need to fix DSI phase 2 code and regression test before removing this
+				doc.setField(SearchDocumentHandler.DOCUMENT_URL, vo.getActionUrl());
 				doc.setField(SearchDocumentHandler.DOCUMENT_ID, vo.getDpySynMediaBinId());
 				doc.setField(SearchDocumentHandler.TITLE, vo.getTitleTxt());
 				doc.setField(SearchDocumentHandler.SUMMARY, getSummary(vo));
@@ -156,12 +170,14 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 				doc.setField(MediaBinField.DownloadType.getField(), parseDownloadType(vo.getDownloadTypeTxt(), vo.isVideo()));
 				
 				doc.setField(SearchDocumentHandler.META_KEYWORDS, vo.getMetaKeywords());
-				doc.setField(SearchDocumentHandler.MODULE_TYPE, "DOWNLOAD");
+				doc.setField(SearchDocumentHandler.MODULE_TYPE, INDEX_TYPE + "_" + (vo.isVideo() ? "VIDEO" : "DOWNLOAD"));
 				doc.setField(SearchDocumentHandler.UPDATE_DATE, df.format(vo.getModifiedDt()));
 				doc.setField(SearchDocumentHandler.CONTENTS, vo.isVideo() ? "" : parseFile(vo, fileRepos));
 				doc.setField(MediaBinField.TrackingNo.getField(), vo.getTrackingNoTxt()); //DSI uses this to align supporting images and tag favorites
-				doc.setField(MediaBinField.AssetType.getField(), this.getAssetType(vo));
+				doc.setField(MediaBinField.AssetType.getField(), getAssetType(vo));
 				doc.setField(MediaBinField.AssetDesc.getField(), vo.getAssetDesc());
+				doc.setField(MediaBinField.DSOrderNo.getField(), vo.isVideo() ? 25 : 30); //used for moduleType sequencing on DS only
+				doc.setField(MediaBinField.ImportFileCd.getField(), vo.getImportFileCd());
 				if (vo.isVideo())
 					doc.setField(MediaBinField.VideoChapters.getField(), vo.getVideoChapters());
 
@@ -181,7 +197,8 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 					doc.setField(SearchDocumentHandler.FILE_EXTENSION, fileName.substring(++dotIndex));
 
 				server.add(doc);
-				if ((i % 100) == 0) {
+				++cnt;
+				if ((i % 100) == 0 && i > 0) {
 					//server.commit(false, false, true);
 					log.info("Added " + i + " records");
 				}
@@ -189,6 +206,7 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 				log.error("Unable to index asset " + vo.getDpySynMediaBinId(), e);
 			}
 		}
+		log.info("Added " + cnt + " records");
 	}
 
 	private String getAssetType(MediaBinAssetVO vo) {
@@ -236,7 +254,11 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 		String fileNm = null;
 		try { //catch NPEs in the file name, before we attempt to open the file
 			fileNm = StringUtil.replace(vo.getRevisionLvlTxt() + "/" + vo.getAssetNm(), "/", File.separator);
-		} catch (Exception e) { 
+			
+			//remain backwards compatible, this class is used by both the V1 and V2 Mediabin importers
+			if (vo instanceof MediaBinDeltaVO) fileNm = ((MediaBinDeltaVO)vo).getFileName();
+			
+		} catch (Exception e) {
 			return data; 
 		}
 
@@ -250,7 +272,7 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 			adp.parse(input, handler, metadata, new ParseContext());
 			data = handler.toString();
 		} catch (Exception e) {
-			log.error("could not load file for " + vo.getDpySynMediaBinId() + "|" + vo.isVideo());
+			log.error("could not load file " + fileRepos + fileNm);
 		}
 
 		return data;
@@ -334,45 +356,40 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 	 * @param busUnit
 	 * @return
 	 */
-	private String parseBusinessUnit(String busUnit) {
+	private List<String> parseBusinessUnit(String busUnit) {
 		String tmp = StringUtil.checkVal(busUnit).toUpperCase();
 		String[] tokens = tmp.split("~");
-		StringBuilder newStr = new StringBuilder();
+		Set<String> data = new HashSet<>();
 
 		for (int i = 0; i < tokens.length; i++) {
 			// skip token if empty
-			if (tokens[i].length() == 0) continue;
-
-			// append a pipe delimiter if not first valid token
-			if (i > 0) newStr.append("|");
-
-			if (tokens[i].contains("BIO")) {
-				newStr.append(busUnits.get("BIO"));
+			if (tokens[i].length() == 0) {
+				continue;
+			} else if (tokens[i].contains("BIO")) {
+				data.add(busUnits.get("BIO"));
 			} else if (tokens[i].contains("CMF")) {
-				newStr.append(busUnits.get("CMF"));
+				data.add(busUnits.get("CMF"));
 			} else if (tokens[i].contains("CODMAN")) {
-				newStr.append(busUnits.get("CODMAN"));
+				data.add(busUnits.get("CODMAN"));
 			} else if (tokens[i].contains("HIP")) {
-				newStr.append(busUnits.get("HIP"));
+				data.add(busUnits.get("HIP"));
 			} else if (tokens[i].contains("KNEE")) {
-				newStr.append(busUnits.get("KNEE"));
+				data.add(busUnits.get("KNEE"));
 			} else if (tokens[i].contains("MITEK")) {
-				newStr.append(busUnits.get("MITEK"));
+				data.add(busUnits.get("MITEK"));
 			} else if (tokens[i].contains("POWERTOOLS")) {
-				newStr.append(busUnits.get("TOOLS"));
+				data.add(busUnits.get("TOOLS"));
 			} else if (tokens[i].contains("SHOULDER")) {
-				newStr.append(busUnits.get("SHOULDER"));
+				data.add(busUnits.get("SHOULDER"));
 			} else if (tokens[i].contains("SPINE")) {
-				newStr.append(busUnits.get("SPINE"));
+				data.add(busUnits.get("SPINE"));
 			} else if (tokens[i].contains("TRAUMA")) {
-				newStr.append(busUnits.get("TRAUMA"));
+				data.add(busUnits.get("TRAUMA"));
 			} else {
-				newStr.append(busUnits.get("OTHER"));
+				data.add(busUnits.get("OTHER"));
 			}
-
 		}
-
-		return newStr.toString();
+		return new ArrayList<String>(data);
 	}
 
 	/**
