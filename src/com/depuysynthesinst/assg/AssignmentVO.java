@@ -230,6 +230,7 @@ public class AssignmentVO implements Serializable {
 			String type = StringUtil.checkVal(sd.getFieldValue("assetType_s")).toUpperCase();
 			if (type.length() == 0) type = "Unknown";
 			type = StringUtil.capitalizePhrase(type, 4);
+			if ("Emodule".equals(type)) type = "eModule";
 			int cnt = 1;
 			if (facets.containsKey(type)) {
 				cnt += facets.get(type).intValue();
