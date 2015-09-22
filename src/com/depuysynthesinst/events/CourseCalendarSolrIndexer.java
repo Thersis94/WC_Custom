@@ -70,7 +70,6 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 				doc.setField(SearchDocumentHandler.ORGANIZATION, vo.getOrganizationId());
 				doc.setField(SearchDocumentHandler.LANGUAGE, "en");
 				doc.setField(SearchDocumentHandler.ROLE, SecurityController.PUBLIC_ROLE_LEVEL);
-				doc.setField(SearchDocumentHandler.SITE_PAGE_URL, vo.getEventUrl()); //need to fix DSI and regression test before removing this
 				doc.setField(SearchDocumentHandler.DOCUMENT_URL, vo.getEventUrl());
 				doc.setField(SearchDocumentHandler.DOCUMENT_ID, vo.getActionId());
 				doc.setField(SearchDocumentHandler.TITLE, vo.getEventName());

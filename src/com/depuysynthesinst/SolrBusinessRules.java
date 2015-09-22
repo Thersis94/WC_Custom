@@ -109,7 +109,7 @@ public class SolrBusinessRules {
 	
 	private void buildPageUrl() {
 		if ("EVENT".equals(moduleType)) {
-			pageUrl = StringUtil.checkVal(sd.get(SearchDocumentHandler.SITE_PAGE_URL));
+			pageUrl = StringUtil.checkVal(sd.get(SearchDocumentHandler.DOCUMENT_URL));
 		} else {
 			pageUrl = SolrSearchWrapper.buildDSIUrl(hierarchy, (String)sd.get("documentId"), qsPath);
 		}
@@ -137,5 +137,18 @@ public class SolrBusinessRules {
 
 	public void setSiteSearch(boolean isSiteSearch) {
 		this.isSiteSearch = isSiteSearch;
+	}
+	
+	
+	/**
+	 * select the proper favoriteType based on indexType - they don't align properly.
+	 * @return
+	 */
+	public String getFavoriteType() {
+		if ("MEDIA_BIN".equals(sd.get("indexType"))) return "MEDIABIN";
+		if ("LMS_DSI".equals(sd.get("indexType"))) return "COURSE";
+		if ("QUICKSTREAM_DSI".equals(sd.get("indexType"))) return "CMS";
+		if ("COURSE_CAL".equals(sd.get("indexType"))) return "EVENT";
+		else return "";
 	}
 }
