@@ -37,9 +37,10 @@ public class CourseSolrTemplate extends SolrDocumentVO {
 	public CourseSolrTemplate() {
 		super(TTLMSSolrIndexer.INDEX_TYPE);
 		super.setLanguage("en");
-		super.addRole(StringUtil.checkVal(SecurityController.PUBLIC_ROLE_LEVEL));
+		super.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
 		super.addOrganization(ORG_ID);
 		setAssetType("eModule");
+		setModule("COURSE");
 	}
 	
 	/**
