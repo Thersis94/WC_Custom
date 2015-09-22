@@ -399,12 +399,19 @@ public class NexusKitAction extends SBActionAdapter {
 		NexusKitVO kit = (NexusKitVO) req.getSession().getAttribute(KIT_SESSION_NM);
 		String parent = req.getParameter("parentId");
 		String newParent = req.getParameter("newParentId");
-		int index = Convert.formatInteger(req.getParameter("index"));
+		String[] indexes = req.getParameterValues("index");
 		
-		NexusKitLayerVO layer = kit.findLayer(parent);
-		NexusProductVO p = layer.getProducts().get(index);
-		layer.getProducts().remove(index);
-		kit.findLayer(newParent).addProduct(p);
+		
+		int offset = 0;
+		NexusKitLayerVO oldLayer = kit.findLayer(parent);
+		NexusKitLayerVO newLayer = kit.findLayer(newParent);
+		for (String index : indexes) {
+			int i = Convert.formatInteger(index);
+			NexusProductVO p = oldLayer.getProducts().get(i-offset);
+			oldLayer.getProducts().remove(i-offset);
+			newLayer.addProduct(p);
+			offset++;
+		}
 		
 		req.getSession().setAttribute(KIT_SESSION_NM, kit);
 	}
@@ -538,7 +545,7 @@ public class NexusKitAction extends SBActionAdapter {
 		}
 		
 		if (searchTerms.length() > 0) {
-			sql.append("and (s.SET_SKU_TXT like ? or s.DESCRIPTION_TXT like ?) ");
+			sql.append("and (s.SET_SKU_TXT like ? or s.DESCRIPTION_TXT like ? or s.GTIN_TXT like ?) ");
 		}
 		
 		if (kitId.length() > 0) sql.append("and s.SET_INFO_ID = ? ");
@@ -575,7 +582,7 @@ public class NexusKitAction extends SBActionAdapter {
 			}
 			
 			if (searchTerms.length() > 0) {
-				sql.append("and (s.SET_SKU_TXT like ? or s.DESCRIPTION_TXT like ?) ");
+				sql.append("and (s.SET_SKU_TXT like ? or s.DESCRIPTION_TXT like ? or s.GTIN_TXT like ?) ");
 			}
 			if (kitId.length() > 0) sql.append("and s.SET_INFO_ID = ? ");
 		}
@@ -609,6 +616,7 @@ public class NexusKitAction extends SBActionAdapter {
 				if (searchTerms.length() > 0) {
 					ps.setString(i++, "%"+searchTerms+"%");
 					ps.setString(i++, "%"+searchTerms+"%");
+					ps.setString(i++, "%"+searchTerms+"%");
 				}
 				if (kitId.length() > 0) ps.setString(i++, kitId);
 			}
@@ -617,6 +625,7 @@ public class NexusKitAction extends SBActionAdapter {
 			if (profileTwo) ps.setString(i++, profileId);
 			if (orgId.length() > 0) ps.setString(i++, orgId);
 			if (searchTerms.length() > 0) {
+				ps.setString(i++, "%"+searchTerms+"%");
 				ps.setString(i++, "%"+searchTerms+"%");
 				ps.setString(i++, "%"+searchTerms+"%");
 			}
