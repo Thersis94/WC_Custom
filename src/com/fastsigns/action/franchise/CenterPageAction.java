@@ -586,7 +586,7 @@ public class CenterPageAction extends SimpleActionAdapter {
 		s.append("left outer join ").append(customDb).append("FTS_CP_MODULE_DISPLAY h ");
 		s.append("on a.FTS_CP_MODULE_DISPLAY_ID = h.FTS_CP_MODULE_DISPLAY_ID ");
 		s.append("left join WC_SYNC ws on (c.CP_MODULE_OPTION_ID =  WC_KEY_ID or ");
-		s.append("(c.PARENT_ID =  WC_ORIG_KEY_ID and WC_ORIG_KEY_ID != '0' and WC_ORIG_KEY_ID is not null)) and WC_SYNC_STATUS_CD not in (?,?) ");
+		s.append("(c.PARENT_ID =  WC_ORIG_KEY_ID and WC_ORIG_KEY_ID is not null and WC_ORIG_KEY_ID != '0' and c.PARENT_ID <> '')) and WC_SYNC_STATUS_CD not in (?,?) ");
 		s.append("where a.FRANCHISE_ID = ? "); 
 		
 		if(isMobile) {

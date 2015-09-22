@@ -102,10 +102,9 @@ public class ModuleOptionAction extends SBActionAdapter{
 					this.saveModuleOption(req);
 					redir += "assoc=true&locationId=" + req.getParameter("locationId") + "&moduleId=" + req.getParameter("moduleId") + "&";
 					redir += "type=" + StringEncoder.urlEncode(req.getParameter("type")) + "&";
-					
+					String parentId = StringUtil.checkVal(req.getParameter("parentId"));
 					//if the module we just edited was already pending approval, we must remove that flag (the new module will now be the one needing approval)
-					if (Convert.formatInteger(req.getParameter("parentId")) > 0 && 
-							Convert.formatInteger(req.getParameter("approvalFlag"), 0).intValue() == 100)
+					if (!parentId.isEmpty()  && Convert.formatInteger(req.getParameter("approvalFlag"), 0).intValue() == 100)
 						this.revokeApprovalSubmission(req);
 					
 					// The comma at the end of the parameter ensures that we won't get partial matches
@@ -115,11 +114,13 @@ public class ModuleOptionAction extends SBActionAdapter{
 					}
 					
 					// Determine whether we are dealing with a edit of the original or an edit of an edit.
-					if (Convert.formatInteger(req.getParameter("parentId")) == 0) {
+					if (parentId.isEmpty()) {
 						req.setParameter("parentModuleId", req.getParameter("moduleOptionId"));
 					} else {
-						req.setParameter("parentModuleId", req.getParameter("parentId"));
+						req.setParameter("parentModuleId", parentId);
 					}
+					if (Convert.formatBoolean(req.getParameter("insOnly")))
+						break;
 					
 				case CenterPageAction.MODULE_OPTION_UPDATE:
 					this.updateModuleOptions(req);
@@ -301,7 +302,7 @@ public class ModuleOptionAction extends SBActionAdapter{
 			ps = dbConn.prepareStatement(s.toString());
 			ps.setInt(1, locnId);
 			ps.setString(2, franId);
-			ps.setInt(3, Convert.formatInteger(req.getParameter("moduleId")));
+			ps.setString(3, StringUtil.checkVal(req.getParameter("moduleId")));
 			ps.setTimestamp(4, Convert.getCurrentTimestamp());
 			ps.executeUpdate();
 			
@@ -528,7 +529,7 @@ public class ModuleOptionAction extends SBActionAdapter{
 		//build the query
 		if (isInsert) {
 			vo.setModuleOptionId(new UUIDGenerator().getUUID());
-			req.setParameter("optionId", StringUtil.checkVal(vo.getModuleOptionId()));
+			req.setParameter("optionId", vo.getModuleOptionId());
 			sb.append("insert into ").append(customDb);
 			sb.append("FTS_CP_MODULE_OPTION (OPTION_NM, ");
 			sb.append("OPTION_DESC, ARTICLE_TXT, RANK_NO, LINK_URL, FILE_PATH_URL, THUMB_PATH_URL, VIDEO_STILLFRAME_URL, ");
@@ -651,38 +652,12 @@ public class ModuleOptionAction extends SBActionAdapter{
 		try {
 			ps = dbConn.prepareStatement(sb.toString());
 			ps.setInt(1, 0);
-			ps.setInt(2, Convert.formatInteger(req.getParameter("parentId")));
+			ps.setString(2, StringUtil.checkVal(req.getParameter("parentId")));
 			ps.executeUpdate();
 		} finally {
 			try { ps.close(); } catch (Exception e) {}
 		}
 	}
-
-	/**
-	 * Replaced int keys with guids
-	 * 
-	 * This is in place because this table does not support an Identity seed counter.
-	 * @return
-	 *
-	private int nextModuleOptionPkId() {
-		final String customDb = String.valueOf(getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		int pkId = 0;
-		StringBuilder sb = new StringBuilder();
-		sb.append("select max(cp_module_option_id) from ").append(customDb);
-		sb.append("fts_cp_module_option");
-		PreparedStatement ps = null;
-		try {
-			ps = dbConn.prepareStatement(sb.toString());
-			ResultSet rs = ps.executeQuery();
-			if (rs.next())
-				pkId = rs.getInt(1) + 1;
-		} catch (SQLException sqle) {
-			log.error(sqle);
-		} finally {
-			try { ps.close(); } catch (Exception e) {}
-		}
-		return pkId;
-	}*/
 	
 	/**
 	 * This method handles re-arranging modules on a page.  
