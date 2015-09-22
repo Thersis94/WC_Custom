@@ -20,6 +20,7 @@ import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.SMTMail;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.approval.ApprovalController;
 import com.smt.sitebuilder.approval.ApprovalException;
@@ -319,9 +320,9 @@ public class ModuleOptionAction extends SBActionAdapter{
 	/**
 	 * This method updates the attributes tied to a module (poll/survey/list)
 	 * @param req
+	 * @param optVO
 	 */
-	private void updateModuleAttributes(SMTServletRequest req){
-		int optionId = nextModuleOptionPkId() - 1;
+	private void updateModuleAttributes(SMTServletRequest req, CenterModuleOptionVO optVO){
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		
 		//loop over the attributes and add them to a list for processing
@@ -343,7 +344,7 @@ public class ModuleOptionAction extends SBActionAdapter{
 			ps = dbConn.prepareStatement(attrStr.toString());
 			for(int i = 0; i < vos.size(); i++){
 				OptionAttributeVO vo = vos.get(i);
-				ps.setInt(1, optionId);
+				ps.setString(1, optVO.getModuleOptionId());
 				ps.setString(2, (String)vo.getKey());
 				ps.setInt(3, Convert.formatInteger((String)vo.getValue()));
 				ps.setInt(4, Convert.formatInteger(vo.getOrderNo()));
@@ -509,7 +510,7 @@ public class ModuleOptionAction extends SBActionAdapter{
 		//treat it as a NEW module.  This behavior will ensure the module gets approved
 		//before it's visible on the website.
 		//if (role.getRoleLevel() < SecurityController.ADMIN_ROLE_LEVEL) {
-			if (vo.getParentId() == null || vo.getParentId() == 0)  {
+			if (vo.getParentId() == null || vo.getParentId().isEmpty())  {
 				vo.setParentId(vo.getModuleOptionId()); //link this new entry to it's predecessor
 				isInsert = true;
 			}
@@ -526,7 +527,7 @@ public class ModuleOptionAction extends SBActionAdapter{
 		
 		//build the query
 		if (isInsert) {
-			vo.setModuleOptionId(this.nextModuleOptionPkId());
+			vo.setModuleOptionId(new UUIDGenerator().getUUID());
 			req.setParameter("optionId", StringUtil.checkVal(vo.getModuleOptionId()));
 			sb.append("insert into ").append(customDb);
 			sb.append("FTS_CP_MODULE_OPTION (OPTION_NM, ");
@@ -572,10 +573,10 @@ public class ModuleOptionAction extends SBActionAdapter{
 				 } else {
 					 ps.setInt(++i, vo.getApprovalFlag());
 				 }
-				 ps.setInt(++i, vo.getParentId());
+				 ps.setString(++i, vo.getParentId());
 				 ps.setString(++i, orgId);
 			}
-			ps.setInt(++i, vo.getModuleOptionId());
+			ps.setString(++i, vo.getModuleOptionId());
 			ps.executeUpdate();
 			
 			// Only create a sync entry if this is an insert for a non-global asset
@@ -587,7 +588,7 @@ public class ModuleOptionAction extends SBActionAdapter{
 		}
 		req.setParameter("selectedElements", vo.getModuleOptionId()+"~"+req.getParameter("modLocId"));
 		if(vo.getModuleTypeId() == 10)
-			updateModuleAttributes(req);
+			updateModuleAttributes(req, vo);
 	}
 	
 	/**
@@ -603,12 +604,12 @@ public class ModuleOptionAction extends SBActionAdapter{
 
 		approval.setWcKeyId(StringUtil.checkVal(vo.getModuleOptionId()));
 		//Only set this if we actually have a valid parent id
-		if (vo.getParentId() != 0)approval.setOrigWcKeyId(StringUtil.checkVal(vo.getParentId()));
+		if (vo.getParentId() != null)approval.setOrigWcKeyId(StringUtil.checkVal(vo.getParentId()));
 		approval.setItemDesc(approvalType.toString());
 		approval.setItemName(vo.getOptionName());
 		approval.setModuleType(ModuleType.Webedit);
 		if ("g".equals(globalAsset)) {
-			approval.setSyncStatus(vo.getParentId() == 0? SyncStatus.PendingCreate : SyncStatus.PendingUpdate );
+			approval.setSyncStatus(vo.getParentId() != null? SyncStatus.PendingCreate : SyncStatus.PendingUpdate );
 		} else {
 			approval.setSyncStatus(SyncStatus.InProgress);
 		}
@@ -658,9 +659,11 @@ public class ModuleOptionAction extends SBActionAdapter{
 	}
 
 	/**
+	 * Replaced int keys with guids
+	 * 
 	 * This is in place because this table does not support an Identity seed counter.
 	 * @return
-	 */
+	 *
 	private int nextModuleOptionPkId() {
 		final String customDb = String.valueOf(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		int pkId = 0;
@@ -679,7 +682,7 @@ public class ModuleOptionAction extends SBActionAdapter{
 			try { ps.close(); } catch (Exception e) {}
 		}
 		return pkId;
-	}
+	}*/
 	
 	/**
 	 * This method handles re-arranging modules on a page.  
