@@ -251,7 +251,7 @@ public class CenterPageAction extends SimpleActionAdapter {
 		SiteVO site = (SiteVO)req.getAttribute("siteData");
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		int attrId = Convert.formatInteger(req.getParameter("optionAttrId"));
-		int moduleOptionId = Convert.formatInteger(req.getParameter("moduleOptionId"));
+		String moduleOptionId = req.getParameter("moduleOptionId");
 		
 		StringBuilder sb = new StringBuilder();
 		sb.append("update ").append(customDb).append("fts_cp_option_attr ");
@@ -262,7 +262,7 @@ public class CenterPageAction extends SimpleActionAdapter {
 		PreparedStatement ps = null;
 		try {
 			ps = dbConn.prepareStatement(sb.toString());
-			ps.setInt(1, moduleOptionId);
+			ps.setString(1, moduleOptionId);
 			ps.setInt(2, attrId);
 			ps.executeUpdate();
 			
@@ -418,8 +418,8 @@ public class CenterPageAction extends SimpleActionAdapter {
 				ps.setInt(++i, Convert.formatInteger(franId));
 				
 				if (req.getParameter("optionId") != null){
-					ps.setInt(++i, Convert.formatInteger(req.getParameter("optionId")));
-					log.debug("OptId: " + Convert.formatInteger(req.getParameter("optionId")));
+					ps.setString(++i, req.getParameter("optionId"));
+					log.debug("OptId: " + req.getParameter("optionId"));
 				}
 			}
 			//log.debug(locationId + ", " + Convert.formatInteger(req.getParameter("moduleId")) + ", " + Convert.formatInteger(franId));

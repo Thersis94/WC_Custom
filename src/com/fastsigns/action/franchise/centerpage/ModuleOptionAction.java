@@ -102,9 +102,9 @@ public class ModuleOptionAction extends SBActionAdapter{
 					this.saveModuleOption(req);
 					redir += "assoc=true&locationId=" + req.getParameter("locationId") + "&moduleId=" + req.getParameter("moduleId") + "&";
 					redir += "type=" + StringEncoder.urlEncode(req.getParameter("type")) + "&";
-					String parentId = StringUtil.checkVal(req.getParameter("parentId"));
+					String parentId = StringUtil.checkVal(req.getParameter("parentId"), null);
 					//if the module we just edited was already pending approval, we must remove that flag (the new module will now be the one needing approval)
-					if (!parentId.isEmpty()  && Convert.formatInteger(req.getParameter("approvalFlag"), 0).intValue() == 100)
+					if (parentId != null  && Convert.formatInteger(req.getParameter("approvalFlag"), 0).intValue() == 100)
 						this.revokeApprovalSubmission(req);
 					
 					// The comma at the end of the parameter ensures that we won't get partial matches
@@ -114,7 +114,7 @@ public class ModuleOptionAction extends SBActionAdapter{
 					}
 					
 					// Determine whether we are dealing with a edit of the original or an edit of an edit.
-					if (parentId.isEmpty()) {
+					if (parentId == null) {
 						req.setParameter("parentModuleId", req.getParameter("moduleOptionId"));
 					} else {
 						req.setParameter("parentModuleId", parentId);
@@ -511,7 +511,7 @@ public class ModuleOptionAction extends SBActionAdapter{
 		//treat it as a NEW module.  This behavior will ensure the module gets approved
 		//before it's visible on the website.
 		//if (role.getRoleLevel() < SecurityController.ADMIN_ROLE_LEVEL) {
-			if (vo.getParentId() == null || vo.getParentId().isEmpty())  {
+			if (StringUtil.checkVal(vo.getParentId(),null) == null)  {
 				vo.setParentId(vo.getModuleOptionId()); //link this new entry to it's predecessor
 				isInsert = true;
 			}
@@ -605,12 +605,12 @@ public class ModuleOptionAction extends SBActionAdapter{
 
 		approval.setWcKeyId(StringUtil.checkVal(vo.getModuleOptionId()));
 		//Only set this if we actually have a valid parent id
-		if (vo.getParentId() != null)approval.setOrigWcKeyId(StringUtil.checkVal(vo.getParentId()));
+		if (vo.getParentId() != null && !vo.getParentId().isEmpty())approval.setOrigWcKeyId(vo.getParentId());
 		approval.setItemDesc(approvalType.toString());
 		approval.setItemName(vo.getOptionName());
 		approval.setModuleType(ModuleType.Webedit);
 		if ("g".equals(globalAsset)) {
-			approval.setSyncStatus(vo.getParentId() != null? SyncStatus.PendingCreate : SyncStatus.PendingUpdate );
+			approval.setSyncStatus((StringUtil.checkVal(vo.getParentId(),null) == null) ? SyncStatus.PendingCreate : SyncStatus.PendingUpdate );
 		} else {
 			approval.setSyncStatus(SyncStatus.InProgress);
 		}

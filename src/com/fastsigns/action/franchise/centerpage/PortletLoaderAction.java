@@ -11,7 +11,6 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.http.SMTServletRequest;
-import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.FacadeActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -87,7 +86,7 @@ public class PortletLoaderAction extends FacadeActionAdapter {
 	 */
 	public SMTActionInterface getAction(SMTServletRequest req){
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		int optionId = Convert.formatInteger(req.getParameter("actionOptionId"));
+		String optionId = req.getParameter("actionOptionId");
 		StringBuilder sql = new StringBuilder();
 		sql.append("select a.OPTION_NM, d.CLASS_NM, c.ACTION_ID from ").append(customDb).append("FTS_CP_MODULE_OPTION a ");
 		sql.append("inner join ").append(customDb).append("FTS_CP_MODULE_ACTION b ");
@@ -99,7 +98,7 @@ public class PortletLoaderAction extends FacadeActionAdapter {
 		PreparedStatement ps = null;
 		try {
 			ps = dbConn.prepareStatement(sql.toString());
-			ps.setInt(1, optionId);
+			ps.setString(1, optionId);
 			ResultSet rs = ps.executeQuery();
 			/*
 			 * If we have a result, set the ActionInit and return the classname
