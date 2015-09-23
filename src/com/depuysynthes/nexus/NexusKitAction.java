@@ -126,6 +126,7 @@ public class NexusKitAction extends SBActionAdapter {
 								sublayer.setParentId(layer.getLayerId());
 							}
 						}
+						kit.setOrgName(KitType.Custom.toString());
 						kit.setBranchCode(KitType.Custom.toString());
 						UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 						if (user != null) {
@@ -167,6 +168,7 @@ public class NexusKitAction extends SBActionAdapter {
 					UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 					newKit.setKitDesc("Empty Kit");
 					newKit.setOwnerId(user.getProfileId());
+					newKit.setOrgName(KitType.Custom.toString());
 					req.getSession().setAttribute(KIT_SESSION_NM, newKit);
 					break;
 				case findUsers:
@@ -376,14 +378,15 @@ public class NexusKitAction extends SBActionAdapter {
 		
 		if (req.hasParameter("newParentId")) {
 			layer.setParentId(req.getParameter("newParentId"));
-			layer.setOrderNo(kit.findLayer(layer.getParentId()).getSublayers().size()+1);
+			NexusKitLayerVO parent = kit.findLayer(layer.getParentId());
+			layer.setOrderNo(parent.getSublayers().size()+1);
+			parent.addLayer(layer);
 		} else {
 			//Since this is a top level layer the parentId needs to be cleared
 			layer.setParentId("");
 			layer.setOrderNo(kit.getLayers().size());
+			kit.addLayer(layer);
 		}
-		
-		kit.addLayer(layer);
 		
 		req.getSession().setAttribute(KIT_SESSION_NM, kit);
 	}
@@ -705,11 +708,14 @@ public class NexusKitAction extends SBActionAdapter {
 		p.setSummary((String) solrDocument.get(SearchDocumentHandler.SUMMARY));
 		Collection<Object> gtins = solrDocument.getFieldValues(NexusProductVO.GTIN);
 		int pIndex = 0;
-		for (Object gtin : gtins) {
-			if (p.getPrimaryDeviceId().equals(gtin)) break;
-			pIndex++;
+		if (gtins != null) {
+			for (Object gtin : gtins) {
+				if (p.getPrimaryDeviceId().equals(gtin)) break;
+				pIndex++;
+			}
+			if (solrDocument.getFieldValues(NexusProductVO.UOM_LVL) != null)
+				p.addUOMLevel((String) (solrDocument.getFieldValues(NexusProductVO.UOM_LVL).toArray()[pIndex]));
 		}
-		p.addUOMLevel((String) (solrDocument.getFieldValues(NexusProductVO.UOM_LVL).toArray()[pIndex]));
 		p.setOrgName((String) solrDocument.get(NexusProductVO.ORGANIZATION_NM));
 	}
 
