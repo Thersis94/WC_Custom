@@ -1060,7 +1060,8 @@ public class NexusKitAction extends SBActionAdapter {
 				for (int i=0; i < req.getParameterValues("kitId").length; i++) {
 					sql.append("OR (SET_INFO_ID = ? and PROFILE_ID = ?) ");
 				}
-				
+
+			    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 				try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 					int i = 1;
 					for (String s: req.getParameterValues("kitId")) {
@@ -1071,6 +1072,11 @@ public class NexusKitAction extends SBActionAdapter {
 					ps.executeUpdate();
 				} catch (SQLException e) {
 					throw new ActionException(e);
+				}
+				attributes.put(Constants.SOLR_COLLECTION_NAME, getSolrCollection((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1)));
+				SolrActionUtil util = new SolrActionUtil(attributes);
+				for (String s: req.getParameterValues("kitId")) {
+					util.removeDocument(s);
 				}
 				req.getSession().removeAttribute(KIT_SESSION_NM);
 				break;
