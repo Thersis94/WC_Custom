@@ -504,6 +504,9 @@ public class ModuleOptionAction extends SBActionAdapter{
 		//UserRoleVO role = (UserRoleVO) req.getSession().getAttribute(Constants.ROLE_DATA);
 		CenterModuleOptionVO vo = new CenterModuleOptionVO(req);
 		boolean isInsert = false;
+		//modules that get created without parents and are not submitted should be identifiable
+		boolean isParent = (StringUtil.checkVal(vo.getModuleOptionId(),null) == null 
+				&& StringUtil.checkVal(vo.getParentId(),null)==null);
 		// Determine if this is an omnipresent global asset.  These are treated differently from normal assets
 		String globalAsset = StringUtil.checkVal(req.getParameter("globalFlg"));
 		
@@ -518,7 +521,6 @@ public class ModuleOptionAction extends SBActionAdapter{
 			req.setParameter("moduleParentId", StringUtil.checkVal(vo.getModuleOptionId()));
 			log.debug("saving with parent=" + vo.getParentId());
 		//}
-			
 
 		if ("g".equals(globalAsset)) {
 			vo.setFranchiseId(-1);
@@ -530,6 +532,9 @@ public class ModuleOptionAction extends SBActionAdapter{
 		if (isInsert) {
 			vo.setModuleOptionId(new UUIDGenerator().getUUID());
 			req.setParameter("optionId", vo.getModuleOptionId());
+			if (isParent)
+				vo.setParentId(vo.getModuleOptionId());
+			
 			sb.append("insert into ").append(customDb);
 			sb.append("FTS_CP_MODULE_OPTION (OPTION_NM, ");
 			sb.append("OPTION_DESC, ARTICLE_TXT, RANK_NO, LINK_URL, FILE_PATH_URL, THUMB_PATH_URL, VIDEO_STILLFRAME_URL, ");
@@ -602,15 +607,18 @@ public class ModuleOptionAction extends SBActionAdapter{
 		ApprovalVO approval = new ApprovalVO();
 		WebeditType approvalType = WebeditType.CenterModule;
 		String orgId = ((SiteVO)req.getAttribute("siteData")).getOrganizationId();
+		boolean isParent = ((StringUtil.checkVal(vo.getParentId(),null) == null) 
+				|| vo.getModuleOptionId().equals(vo.getParentId()));
 
 		approval.setWcKeyId(StringUtil.checkVal(vo.getModuleOptionId()));
 		//Only set this if we actually have a valid parent id
-		if (vo.getParentId() != null && !vo.getParentId().isEmpty())approval.setOrigWcKeyId(vo.getParentId());
+		if (! isParent)
+			approval.setOrigWcKeyId(vo.getParentId());
 		approval.setItemDesc(approvalType.toString());
 		approval.setItemName(vo.getOptionName());
 		approval.setModuleType(ModuleType.Webedit);
 		if ("g".equals(globalAsset)) {
-			approval.setSyncStatus((StringUtil.checkVal(vo.getParentId(),null) == null) ? SyncStatus.PendingCreate : SyncStatus.PendingUpdate );
+			approval.setSyncStatus(isParent ? SyncStatus.PendingCreate : SyncStatus.PendingUpdate );
 		} else {
 			approval.setSyncStatus(SyncStatus.InProgress);
 		}
