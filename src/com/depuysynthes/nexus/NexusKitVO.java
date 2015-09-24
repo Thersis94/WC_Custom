@@ -99,13 +99,14 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 		this.kitId = kitId;
 	}
 
+
+	@SolrField(name=SearchDocumentHandler.TITLE)
 	public String getKitSKU() {
 		return kitSKU;
 	}
 
 	public void setKitSKU(String kitSKU) {
 		this.kitSKU = kitSKU;
-		setTitle(kitSKU);
 	}
 
 	@SolrField(name=SearchDocumentHandler.SUMMARY)
@@ -249,7 +250,7 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 	}
 	@SolrField(name=NexusProductVO.SEARCHABLE_NM)
 	public String getSearchableName() {
-		if (getDocumentId() == null) return null;
-		return getDocumentId().replaceAll("[\\-\\/\\.]", "");
+		if (kitSKU == null) return null;
+		return kitSKU.replaceAll("[\\-\\/\\.]", "");
 	}
 }
