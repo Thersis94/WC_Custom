@@ -321,19 +321,23 @@ public class AssignmentVO implements Serializable {
 		 * "expired" has 3 faces per requirement U_BUS_2010
 		 * All elements of the assignment have been completed/checked
 		 * Or Due Date has passed (if there is a Due Date)
-		 * Or 90 days after creation if there is no Due Date 
+		 * Or 90 days after publish date if there is no Due Date 
 		 */
+		//is the assg complete
+		if (isComplete()) return true;
+		
 		//if the due date has lapsed
 		Calendar cal = Calendar.getInstance();
-		if (dueDt != null && dueDt.before(cal.getTime())) return true;
+		if (dueDt != null) {
+			if (dueDt.before(cal.getTime())) return true;
+			else return false;
+		}
 		
 		//if the assignment is 90 days old
 		cal.add(Calendar.DAY_OF_YEAR, -90);
-		Date d = updateDt != null ? updateDt : publishDt;
-		if (d != null && d.before(cal.getTime())) return true;
+		if (publishDt != null && publishDt.before(cal.getTime())) return true;
 		
-		//if all the assets have been completed
-		return isComplete();
+		return false;
 	}
 	
 	public ResidentGrouping getResidentGrouping() {
