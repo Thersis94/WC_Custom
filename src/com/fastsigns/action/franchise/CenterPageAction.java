@@ -251,7 +251,7 @@ public class CenterPageAction extends SimpleActionAdapter {
 		SiteVO site = (SiteVO)req.getAttribute("siteData");
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		int attrId = Convert.formatInteger(req.getParameter("optionAttrId"));
-		int moduleOptionId = Convert.formatInteger(req.getParameter("moduleOptionId"));
+		String moduleOptionId = req.getParameter("moduleOptionId");
 		
 		StringBuilder sb = new StringBuilder();
 		sb.append("update ").append(customDb).append("fts_cp_option_attr ");
@@ -262,7 +262,7 @@ public class CenterPageAction extends SimpleActionAdapter {
 		PreparedStatement ps = null;
 		try {
 			ps = dbConn.prepareStatement(sb.toString());
-			ps.setInt(1, moduleOptionId);
+			ps.setString(1, moduleOptionId);
 			ps.setInt(2, attrId);
 			ps.executeUpdate();
 			
@@ -418,8 +418,8 @@ public class CenterPageAction extends SimpleActionAdapter {
 				ps.setInt(++i, Convert.formatInteger(franId));
 				
 				if (req.getParameter("optionId") != null){
-					ps.setInt(++i, Convert.formatInteger(req.getParameter("optionId")));
-					log.debug("OptId: " + Convert.formatInteger(req.getParameter("optionId")));
+					ps.setString(++i, req.getParameter("optionId"));
+					log.debug("OptId: " + req.getParameter("optionId"));
 				}
 			}
 			//log.debug(locationId + ", " + Convert.formatInteger(req.getParameter("moduleId")) + ", " + Convert.formatInteger(franId));
@@ -532,7 +532,7 @@ public class CenterPageAction extends SimpleActionAdapter {
 
 		CenterModuleVO center = null;
 		CenterModuleVO globalModule = null;
-		Map<Integer, CenterModuleOptionVO> options;
+		Map<String, CenterModuleOptionVO> options;
 		for (String key : data.keySet()) {
 			center = data.get(key);
 			log.debug(key+"|"+center.getModuleId()+"|"+center.getModuleName());
@@ -585,8 +585,8 @@ public class CenterPageAction extends SimpleActionAdapter {
 		s.append("on c.FTS_CP_MODULE_TYPE_ID = e.FTS_CP_MODULE_TYPE_ID ");
 		s.append("left outer join ").append(customDb).append("FTS_CP_MODULE_DISPLAY h ");
 		s.append("on a.FTS_CP_MODULE_DISPLAY_ID = h.FTS_CP_MODULE_DISPLAY_ID ");
-		s.append("left join WC_SYNC ws on (CAST(c.CP_MODULE_OPTION_ID AS NVARCHAR(32)) =  WC_KEY_ID or ");
-		s.append("(CAST(c.PARENT_ID AS NVARCHAR(32)) =  WC_ORIG_KEY_ID and WC_ORIG_KEY_ID != '0' and WC_ORIG_KEY_ID is not null)) and WC_SYNC_STATUS_CD not in (?,?) ");
+		s.append("left join WC_SYNC ws on (c.CP_MODULE_OPTION_ID =  WC_KEY_ID or ");
+		s.append("(c.PARENT_ID =  WC_ORIG_KEY_ID and WC_ORIG_KEY_ID is not null and WC_ORIG_KEY_ID != '0' and c.PARENT_ID <> '')) and WC_SYNC_STATUS_CD not in (?,?) ");
 		s.append("where a.FRANCHISE_ID = ? "); 
 		
 		if(isMobile) {
