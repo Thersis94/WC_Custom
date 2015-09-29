@@ -140,7 +140,11 @@ public class NexusKitAction extends SBActionAdapter {
 				case Load:
 					kits = loadKits(req, true);
 					if (kits.size() > 0) {
-						req.getSession().setAttribute(KIT_SESSION_NM, kits.get(0));
+						if (req.hasParameter("moduleStore")){
+							super.putModuleData(kits.get(0));
+						} else {
+							req.getSession().setAttribute(KIT_SESSION_NM, kits.get(0));
+						}
 					}
 					break;
 				case Save: 
@@ -475,9 +479,19 @@ public class NexusKitAction extends SBActionAdapter {
 			NexusKitLayerVO parentLayer = kit.findLayer(req.getParameter("layerId"));
 			NexusKitLayerVO layer = parentLayer.getSublayers().get(index);
 			parentLayer.getSublayers().remove(index);
-			layer.setOrderNo(newIndex);
-			parentLayer.getSublayers().add(Convert.formatInteger(req.getParameter("newIndex")), layer);
-			changeOrderNo(parentLayer.getSublayers(), index < newIndex? index : newIndex);
+			
+			if (req.hasParameter("newParent")) {
+				changeOrderNo(parentLayer.getSublayers(), index);
+				NexusKitLayerVO newParent = kit.findLayer(req.getParameter("newParent"));
+				layer.setOrderNo(newParent.getSublayers().size());
+				newParent.getSublayers().add(newIndex, layer);
+				changeOrderNo(newParent.getSublayers(), newIndex);
+				
+			} else {
+				layer.setOrderNo(newIndex);
+				parentLayer.getSublayers().add(newIndex, layer);
+				changeOrderNo(parentLayer.getSublayers(), index < newIndex? index : newIndex);
+			}
 		} else {
 			NexusKitLayerVO layer = kit.getLayers().get(index);
 			kit.getLayers().remove(index);
@@ -523,35 +537,41 @@ public class NexusKitAction extends SBActionAdapter {
 		}
 		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_NEXUS_SET_SHARE p ");
 		sql.append("on p.SET_INFO_ID = s.SET_INFO_ID and p.APPROVED_FLG = '1' ");
-		sql.append("WHERE s.DESCRIPTION_TXT is not null and ");
-		if ("loaner".equals(nexusFilter)) {
-			sql.append("s.PROFILE_ID is null ");
-		} else if ("custom".equals(nexusFilter)) {
-			sql.append("s.PROFILE_ID is not null ");
-			sql.append("and (p.PROFILE_ID = ? or s.PROFILE_ID = ?) ");
-			profileOne = true;
-			profileTwo = true;
-		} else if ("own".equals(nexusFilter)) {
-			sql.append("s.PROFILE_ID = ? ");
-			profileOne = true;
-		} else if ("shared".equals(nexusFilter)) {
-			sql.append("p.PROFILE_ID = ? ");
-			profileOne = true;
-		} else {
-			sql.append("(p.PROFILE_ID = ? or s.PROFILE_ID = ? or s.PROFILE_ID is null) ");
-			profileOne = true;
-			profileTwo = true;
+		sql.append("WHERE s.DESCRIPTION_TXT is not null ");
+
+
+		if (kitId.length() > 0) {
+			sql.append("and s.SET_INFO_ID = ? ");
+		} else  {
+			
+			if (orgId.length() > 0) {
+				sql.append("and s.ORGANIZATION_ID = ? ");
+			}
+			
+			if (searchTerms.length() > 0) {
+				sql.append("and (s.SET_SKU_TXT like ? or s.DESCRIPTION_TXT like ? or s.GTIN_TXT like ?) ");
+			}
+			
+			if ("loaner".equals(nexusFilter)) {
+				sql.append("and s.PROFILE_ID is null ");
+			} else if ("custom".equals(nexusFilter)) {
+				sql.append("and s.PROFILE_ID is not null ");
+				sql.append("and (p.PROFILE_ID = ? or s.PROFILE_ID = ?) ");
+				profileOne = true;
+				profileTwo = true;
+			} else if ("own".equals(nexusFilter)) {
+				sql.append("and s.PROFILE_ID = ? ");
+				profileOne = true;
+			} else if ("shared".equals(nexusFilter)) {
+				sql.append("and p.PROFILE_ID = ? ");
+				profileOne = true;
+			} else {
+				sql.append("and (p.PROFILE_ID = ? or s.PROFILE_ID = ? or s.PROFILE_ID is null) ");
+				profileOne = true;
+				profileTwo = true;
+			}
 		}
 		
-		if (orgId.length() > 0) {
-			sql.append("and s.ORGANIZATION_ID = ? ");
-		}
-		
-		if (searchTerms.length() > 0) {
-			sql.append("and (s.SET_SKU_TXT like ? or s.DESCRIPTION_TXT like ? or s.GTIN_TXT like ?) ");
-		}
-		
-		if (kitId.length() > 0) sql.append("and s.SET_INFO_ID = ? ");
 		
 		if (fullLoad) {
 			sql.append("union ");
@@ -566,28 +586,31 @@ public class NexusKitAction extends SBActionAdapter {
 			sql.append("on si.LAYER_ID = sl2.LAYER_ID ");
 			sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_NEXUS_SET_SHARE p ");
 			sql.append("on p.SET_INFO_ID = s.SET_INFO_ID and p.APPROVED_FLG = '1' ");
-			sql.append("WHERE s.DESCRIPTION_TXT is not null and ");
-			if ("loaner".equals(nexusFilter)) {
-				sql.append("s.PROFILE_ID is null ");
-			} else if ("custom".equals(nexusFilter)) {
-				sql.append("s.PROFILE_ID is not null ");
-				sql.append("and (p.PROFILE_ID = ? or s.PROFILE_ID = ?) ");
-			} else if ("own".equals(nexusFilter)) {
-				sql.append("s.PROFILE_ID = ? ");
-			} else if ("shared".equals(nexusFilter)) {
-				sql.append("p.PROFILE_ID = ? ");
+			sql.append("WHERE s.DESCRIPTION_TXT is not null ");
+
+			if (kitId.length() > 0) {
+				sql.append("and s.SET_INFO_ID = ? ");
 			} else {
-				sql.append("(p.PROFILE_ID = ? or s.PROFILE_ID = ? or s.PROFILE_ID is null) ");
+				if (orgId.length() > 0) {
+					sql.append("and s.ORGANIZATION_ID = ? ");
+				}
+				
+				if (searchTerms.length() > 0) {
+					sql.append("and (s.SET_SKU_TXT like ? or s.DESCRIPTION_TXT like ? or s.GTIN_TXT like ?) ");
+				}
+				if ("loaner".equals(nexusFilter)) {
+					sql.append("and s.PROFILE_ID is null ");
+				} else if ("custom".equals(nexusFilter)) {
+					sql.append("and s.PROFILE_ID is not null ");
+					sql.append("and (p.PROFILE_ID = ? or s.PROFILE_ID = ?) ");
+				} else if ("own".equals(nexusFilter)) {
+					sql.append("s.PROFILE_ID = ? ");
+				} else if ("shared".equals(nexusFilter)) {
+					sql.append("and p.PROFILE_ID = ? ");
+				} else {
+					sql.append("and (p.PROFILE_ID = ? or s.PROFILE_ID = ? or s.PROFILE_ID is null) ");
+				}
 			}
-			
-			if (orgId.length() > 0) {
-				sql.append("and s.ORGANIZATION_ID = ? ");
-			}
-			
-			if (searchTerms.length() > 0) {
-				sql.append("and (s.SET_SKU_TXT like ? or s.DESCRIPTION_TXT like ? or s.GTIN_TXT like ?) ");
-			}
-			if (kitId.length() > 0) sql.append("and s.SET_INFO_ID = ? ");
 		}
 		
 		if (req.hasParameter("gtinOrder")) {
@@ -613,26 +636,32 @@ public class NexusKitAction extends SBActionAdapter {
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			int i = 1;
 			if (fullLoad) {
-				if (profileOne) ps.setString(i++, profileId);
-				if (profileTwo) ps.setString(i++, profileId);
+				if (kitId.length() > 0) {
+					ps.setString(i++, kitId);
+				} else {
+					if (orgId.length() > 0) ps.setString(i++, orgId);
+					if (searchTerms.length() > 0) {
+						ps.setString(i++, "%"+searchTerms+"%");
+						ps.setString(i++, "%"+searchTerms+"%");
+						ps.setString(i++, "%"+searchTerms+"%");
+					}
+					if (profileOne) ps.setString(i++, profileId);
+					if (profileTwo) ps.setString(i++, profileId);
+				}
+			}
+
+			if (kitId.length() > 0) {
+				ps.setString(i++, kitId);
+			} else {
 				if (orgId.length() > 0) ps.setString(i++, orgId);
 				if (searchTerms.length() > 0) {
 					ps.setString(i++, "%"+searchTerms+"%");
 					ps.setString(i++, "%"+searchTerms+"%");
 					ps.setString(i++, "%"+searchTerms+"%");
 				}
-				if (kitId.length() > 0) ps.setString(i++, kitId);
+				if (profileOne) ps.setString(i++, profileId);
+				if (profileTwo) ps.setString(i++, profileId);
 			}
-			
-			if (profileOne) ps.setString(i++, profileId);
-			if (profileTwo) ps.setString(i++, profileId);
-			if (orgId.length() > 0) ps.setString(i++, orgId);
-			if (searchTerms.length() > 0) {
-				ps.setString(i++, "%"+searchTerms+"%");
-				ps.setString(i++, "%"+searchTerms+"%");
-				ps.setString(i++, "%"+searchTerms+"%");
-			}
-			if (kitId.length() > 0) ps.setString(i++, kitId);
 			
 			ResultSet rs = ps.executeQuery();
 			String currentKit = "";
@@ -1029,9 +1058,10 @@ public class NexusKitAction extends SBActionAdapter {
 		} catch (Exception e) {
 			throw new ActionException("unknown kit action: " + req.getParameter("kitAction"), e);
 		}
-		int index = Convert.formatInteger(req.getParameter("index"));
+		int index;
 		switch(level) {
 			case Layer:
+				index = Convert.formatInteger(req.getParameter("index"));
 				kit = (NexusKitVO) req.getSession().getAttribute(KIT_SESSION_NM);
 				if (req.hasParameter("parentId")) {
 					NexusKitLayerVO parent = kit.findLayer(req.getParameter("parentId"));
@@ -1047,10 +1077,16 @@ public class NexusKitAction extends SBActionAdapter {
 				kit = (NexusKitVO) req.getSession().getAttribute(KIT_SESSION_NM);
 				String parent = req.getParameter("parentId");
 				NexusKitLayerVO layer = kit.findLayer(parent);
-				layer.getProducts().remove(index);
+				int offset = 0;
+				for (String s : req.getParameterValues("index")) {
+					index = Convert.formatInteger(s);
+					layer.getProducts().remove(index-offset);
+					offset++;
+				}
 				req.getSession().setAttribute(KIT_SESSION_NM, kit);
 				break;
 			case Kit:
+				index = Convert.formatInteger(req.getParameter("index"));
 				UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 				StringBuilder sql = new StringBuilder(150);
 				
@@ -1074,7 +1110,7 @@ public class NexusKitAction extends SBActionAdapter {
 					throw new ActionException(e);
 				}
 				attributes.put(Constants.SOLR_COLLECTION_NAME, getSolrCollection((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1)));
-				SolrActionUtil util = new SolrActionUtil(attributes);
+				SolrActionUtil util = new SolrActionUtil(attributes, false);
 				for (String s: req.getParameterValues("kitId")) {
 					util.removeDocument(s);
 				}
@@ -1195,7 +1231,7 @@ public class NexusKitAction extends SBActionAdapter {
 	private void addToSolr(NexusKitVO kit) throws ActionException {
 	    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		attributes.put(Constants.SOLR_COLLECTION_NAME, getSolrCollection((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1)));
-		new SolrActionUtil(attributes).addDocument(kit);
+		new SolrActionUtil(attributes, false).addDocument(kit);
 	}
 	
 	
