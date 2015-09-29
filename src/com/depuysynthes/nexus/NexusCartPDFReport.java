@@ -2,6 +2,7 @@ package com.depuysynthes.nexus;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.text.SimpleDateFormat;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
@@ -71,7 +72,8 @@ public class NexusCartPDFReport  extends AbstractSBReportVO {
 		html.append("<style>body{font-family: 'MyriadWebPro';}th{margin-bottom:10px;border-bottom:solid black 2px; font-size:12px;}</style>");
 		
 		html.append("<table style='color:#636363;border-collapse:collapse;font-size:16px; width:100%;'><tbody>");
-		html.append("<tr><td style='width:48%'><img style='width:200px' src='/binary/themes/CUSTOM/DEPUY/DPY_SYN_NEXUS/images/logo.png' /></td><td colspan='2' style='text-align:right;'>");
+		html.append("<tr><td style='width:48%'><img style='width:200px' src='/binary/themes/CUSTOM/DEPUY/DPY_SYN_NEXUS/images/logo.png' /><span style='float:right'>");
+		html.append( new SimpleDateFormat("MM/dd/YYYY").format(Convert.getCurrentTimestamp())).append("</span></td><td colspan='2' style='text-align:right;'>");
 		html.append("<p style='font-size:20px;'><span style='color:#1A496A;'>U</span>nique&nbsp;");
 		html.append("<span style='color:#1A496A;'>D</span>evice&nbsp;");
 		html.append("<span style='color:#1A496A;'>I</span>dentification</p></td></tr>");
