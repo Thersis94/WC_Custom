@@ -33,7 +33,7 @@ public class CenterModuleVO implements Serializable {
 	private String displayFile = null;
 	private String moduleName = null;
 	private int numColumns = 0;
-	private Map<Integer, CenterModuleOptionVO> moduleOptions = new LinkedHashMap<Integer, CenterModuleOptionVO>();
+	private Map<String, CenterModuleOptionVO> moduleOptions = new LinkedHashMap<String, CenterModuleOptionVO>();
 	private int moduleId = 0;
 	private String displayName = null;
 	private int moduleLocationId = 0;
@@ -95,12 +95,12 @@ public class CenterModuleVO implements Serializable {
 	 */
 	public void addOption(CenterModuleOptionVO cmvo) {
 
-		Integer optId = cmvo.getParentId();
-		if (optId == null || optId == 0) optId = cmvo.getModuleOptionId();
+		String optId = cmvo.getParentId();
+		if (optId == null || optId.isEmpty()) optId = cmvo.getModuleOptionId();
 		
 		// Check if we still don't have an id for this option vo
 		// If we still have nothing we return because this option vo is useless
-		if (optId == null || optId == 0) return;
+		if (optId == null || optId.isEmpty()) return;
 		
 		if (isKeystone) {
 			//determine if the one we already have is newer than the one we're getting
@@ -185,14 +185,14 @@ public class CenterModuleVO implements Serializable {
 	/**
 	 * @return the moduleOptions
 	 */
-	public Map<Integer, CenterModuleOptionVO> getModuleOptions() {
+	public Map<String, CenterModuleOptionVO> getModuleOptions() {
 		return moduleOptions;
 	}
 
 	/**
 	 * @param moduleOptions the moduleOptions to set
 	 */
-	public void setModuleOptions(Map<Integer, CenterModuleOptionVO> moduleOptions) {
+	public void setModuleOptions(Map<String, CenterModuleOptionVO> moduleOptions) {
 		this.moduleOptions = moduleOptions;
 	}
 
