@@ -300,8 +300,14 @@ public class NexusSolrCartAction extends SBActionAdapter {
 				filter.put("-owner", "[* TO *]");
 			}
 			log.debug(req.hasParameter("orgName"));
-			if (req.hasParameter("orgName"))
-				filter.put("organizationName", req.getParameter("orgName"));
+			if (req.hasParameter("orgName")) {
+				if ("Standard".equals(req.getParameter("orgName"))) {
+					filter.put("kit", "true");
+					filter.put("-owner", "[* TO *]");
+				} else {
+					filter.put("organizationName", req.getParameter("orgName"));
+				}
+			}
 			qData.setFilterQueries(filter);
 			super.putModuleData(sqp.processQuery(qData));
 			
