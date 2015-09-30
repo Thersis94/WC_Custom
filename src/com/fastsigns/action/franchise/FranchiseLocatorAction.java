@@ -55,9 +55,11 @@ public class FranchiseLocatorAction extends DealerLocatorAction {
 	@Override
 	protected String getDealerInfoQuery(String[] dlrLocnIds){
 		
-		StringBuilder sql = new StringBuilder();
-		sql.append("select * from FTS_FRANCHISE_INFO_VIEW ");
-		sql.append("where dealer_location_id in (''");
+		StringBuilder sql = new StringBuilder(215);
+		sql.append("select fiv.*, dla.attribute_nm, dla.attribute_txt from FTS_FRANCHISE_INFO_VIEW fiv ");
+		sql.append("left join dealer_location_attribute dla ");
+		sql.append("on fiv.dealer_location_id = dla.dealer_location_id ");
+		sql.append("where fiv.dealer_location_id in (''");
 		for (int x=dlrLocnIds.length; x > 0; --x) sql.append(",?");
 		sql.append(")");
 		
@@ -73,7 +75,7 @@ public class FranchiseLocatorAction extends DealerLocatorAction {
 			SMTServletRequest req, String country,String[] productIds, String locationName){
 		Boolean useAttrib1Txt = Convert.formatBoolean((req.getParameter("useAttrib1Txt")));
 		
-		StringBuilder sb = new StringBuilder();
+		StringBuilder sb = new StringBuilder(300);
 		sb.append("select fv.*, px.product_id, dla.ATTRIBUTE_NM, dla.ATTRIBUTE_TXT from FTS_FRANCHISE_INFO_VIEW fv ");
 		sb.append("left join DEALER_LOCATION_PRODUCT_XR px on fv.dealer_location_id=px.dealer_location_id ");
 		sb.append("left join DEALER_LOCATION_ATTRIBUTE dla on dla.DEALER_LOCATION_ID=fv.DEALER_LOCATION_ID ");
@@ -117,7 +119,7 @@ public class FranchiseLocatorAction extends DealerLocatorAction {
 			String locationName,String[] productIds){
 		Boolean useAttrib1Txt = Convert.formatBoolean((req.getParameter("useAttrib1Txt")));
 		
-		StringBuilder sb = new StringBuilder();
+		StringBuilder sb = new StringBuilder(500);
 		sb.append("select dbo.geoCalcDistance(").append(locator.getSourceLatitude());
 		sb.append(",").append(locator.getSourceLongitude());
 		sb.append(", GEO_LAT_NO, GEO_LONG_NO, 'mi') as distance, fv.*, ");
