@@ -7,6 +7,7 @@ import java.util.List;
 
 import com.siliconmtn.annotations.SolrField;
 import com.siliconmtn.db.DBUtil;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 
@@ -78,11 +79,13 @@ public class NexusProductVO extends SolrDocumentVO {
 		DBUtil db = new DBUtil();
 		productId = db.getStringVal("PRODUCT_SKU_TXT", rs);
 		quantity = db.getIntVal("QUANTITY_NO", rs);
-		gtin.add(db.getStringVal("ITEM_GTIN_TXT", rs));
+		if (!StringUtil.checkVal(db.getStringVal("ITEM_GTIN_TXT", rs)).equals(""))
+			gtin.add(db.getStringVal("ITEM_GTIN_TXT", rs));
 		primaryDeviceId = db.getStringVal("ITEM_GTIN_NO", rs);
 		start = db.getDateVal("EFFECTIVE_START_DT", rs);
 		end = db.getDateVal("EFFECTIVE_END_DT", rs);
-		uomLevel.add(db.getStringVal("UNIT_MEASURE_CD", rs));
+		if (!StringUtil.checkVal(db.getStringVal("UNIT_MEASURE_CD", rs)).equals(""))
+			uomLevel.add(db.getStringVal("UNIT_MEASURE_CD", rs));
 		orderNo = db.getIntVal("ORDER_NO", rs);
 	}
 	
