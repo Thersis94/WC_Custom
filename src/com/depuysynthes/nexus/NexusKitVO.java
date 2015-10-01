@@ -193,6 +193,17 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 		return productIds;
 	}
 	
+	public int getTotalProducts() {
+		int count = 0;
+		for (NexusKitLayerVO layer : layers) {
+			count += layer.getProducts().size();
+			
+			for (NexusKitLayerVO sublayer : layer.getSublayers())
+				count += sublayer.getProducts().size();
+		}
+		return count;
+	}
+	
 	@SolrField(name=SearchDocumentHandler.ORGANIZATION)
 	public String getOrgId() {
 		return orgId;
