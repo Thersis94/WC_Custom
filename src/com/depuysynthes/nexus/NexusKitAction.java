@@ -17,9 +17,11 @@ import org.apache.solr.common.SolrInputDocument;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.data.GenericVO;
+import com.siliconmtn.exception.DatabaseException;
+import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.http.parser.StringEncoder;
+import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -28,6 +30,7 @@ import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
+import com.smt.sitebuilder.util.MessageSender;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -61,7 +64,7 @@ public class NexusKitAction extends SBActionAdapter {
 	
 	// Potential actions for the user to take
 	enum KitAction {
-		Permissions, Clone, Save, Delete, Edit, Load, Add, Empty, Reorder, ChangeLayer, Copy, NewKit, findUsers, Print
+		Permissions, Clone, Save, Delete, Edit, Load, Add, Empty, Reorder, ChangeLayer, Copy, NewKit, Print
 	}
 	
 	// The level of the kit that is being targeted
@@ -175,9 +178,6 @@ public class NexusKitAction extends SBActionAdapter {
 					newKit.setOrgName(KitType.Custom.toString());
 					req.getSession().setAttribute(KIT_SESSION_NM, newKit);
 					break;
-				case findUsers:
-					super.putModuleData(getUsers(req));
-					break;
 				case Print:
 					buildReport(req);
 					break;
@@ -217,70 +217,6 @@ public class NexusKitAction extends SBActionAdapter {
 			throw new ActionException("Unable to get kit for report");
 		}
 	}
-	
-	
-	/**
-	 * Get a full list of users for this site as well as any kits they have created
-	 * @param req
-	 * @return
-	 * @throws ActionException
-	 */
-	private Map<GenericVO, List<NexusKitVO>> getUsers(SMTServletRequest req) throws ActionException {
-
-		Map<GenericVO, List<NexusKitVO>> users = new HashMap<>();
-
-		StringBuilder sql = new StringBuilder(575);
-		sql.append("select a.*, s.* from profile a ");
-	    	sql.append("inner join profile_role b on a.profile_id=b.profile_id and b.site_id=? ");
-		sql.append("inner join role c on b.role_id=c.role_id ");
-		sql.append("inner join status d on b.status_id=d.status_id ");
-		sql.append("left join ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("dpy_syn_nexus_set_info s ");
-		sql.append("on s.profile_id = a.profile_id ");
-	    	sql.append("where b.site_id = ? ");
-		sql.append("and b.status_id = '20' ");
-		sql.append("and search_email_txt = ? ");
-		sql.append("order by a.profile_id");
-		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		log.debug(sql+"|"+site.getAliasPathParentId()+"|"+site.getSiteId()+"|"+req.getParameter("emailAddress"));
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
-
-			if (site.getAliasPathParentId() != null) {
-				ps.setString(1, site.getAliasPathParentId());
-				ps.setString(2, site.getAliasPathParentId());
-			} else {
-				ps.setString(1, site.getSiteId());
-				ps.setString(2, site.getSiteId());
-			}
-
-			ps.setString(3, pm.getEncValue("SEARCH_EMAIL_TXT", req.getParameter("emailAddress").toUpperCase()));
-			
-			ResultSet rs = ps.executeQuery();
-			String currentProfile = "";
-			List<NexusKitVO> kits = null;
-			GenericVO user = null;
-			while(rs.next()) {
-				if (!currentProfile.equals(rs.getString("PROFILE_ID"))) {
-					if (user != null) users.put(user, kits);
-					currentProfile = rs.getString("PROFILE_ID");
-					user = new GenericVO();
-					user.setKey(currentProfile);
-					user.setValue(pm.getStringValue("email_address_txt", rs.getString("email_address_txt")));
-					kits = new ArrayList<>();
-				}
-				
-				if (rs.getString("SET_INFO_ID") != null) {
-					kits.add(new NexusKitVO(rs, SOLR_INDEX));
-				}
-			}
-			if (user != null)  users.put(user, kits);
-		} catch (SQLException e) {
-			throw new ActionException(e);
-		}
-		
-		return users;
-	}
-
 	
 	
 	/**
@@ -1128,25 +1064,38 @@ public class NexusKitAction extends SBActionAdapter {
 	 * @throws ActionException 
 	 */
 	private void modifyPermissions(SMTServletRequest req) throws ActionException {
-		String profileId = req.getParameter("profileId");
+		UserDataVO user = new UserDataVO(req);
+		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
+		try {
+			 user.setProfileId(pm.checkProfile(new UserDataVO(req), dbConn));
+			log.debug(user.getProfileId());
+			// If this email address has no corrosponding profile create it now.
+			if (user.getProfileId() == null) {
+				pm.updateProfile(user, dbConn);
+			}
+		} catch (DatabaseException e1) {
+			throw new ActionException(e1);
+		}
+		
 		if (req.hasParameter("delete")) {
 			for (String kitId : req.getParameterValues("kitId")) {
-				removePermission(profileId, kitId);
+				removePermission(user.getProfileId(), kitId);
 			}
 		} else {
-			UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
-			// Determine if the current user is adding someone else to thier kit or someone else
+			UserDataVO owner = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
+			// Determine if the current user is adding someone else to their kit or someone else
 			// is requesting access to a kit.  If they are requesting access the share is placed
 			// in an awaiting approval state for the owner to accept or deny at a later date.
 			int request = 0;
-			if (!user.getProfileId().equals(profileId)) request = 1;
+			if (!owner.getProfileId().equals(user.getProfileId())) request = 1;
 			List<SolrInputDocument> docUpdates = new ArrayList<>();
-			for (String kitId : req.getParameterValues("kitId")) {
-				addPermission(profileId, kitId, request);
+			String[] ids = req.getParameterValues("kitId");
+			for (String kitId : ids) {
+				addPermission(user.getProfileId(), kitId, request);
 				if (request == 1) {
 					SolrInputDocument sdoc = new SolrInputDocument();
 					Map<String,Object> fieldModifier = new HashMap<>(1);
-					fieldModifier.put("add",profileId);
+					fieldModifier.put("add",user.getProfileId());
 					sdoc.addField("owner", fieldModifier);
 					sdoc.addField("documentId",kitId);
 					docUpdates.add(sdoc);
@@ -1161,14 +1110,42 @@ public class NexusKitAction extends SBActionAdapter {
 				for (SolrInputDocument doc : docUpdates) {
 					server.add( doc );
 				}
-				server.commit();
 			} catch (Exception e) {
 				throw new ActionException(e);
 			}
+			sendEmail(user.getEmailAddress(), owner.getFullName(), ids.length);
 		}
 	}
 	
 	
+	
+	/**
+	 * Send an email to the user that the kits were shared with informing them 
+	 * of the kits they now have access to.
+	 */
+	private void sendEmail(String emailAddress, String name, int total) {
+		EmailMessageVO email = new EmailMessageVO();
+		
+		try {
+			email.addRecipient(emailAddress);
+			email.setSubject(name + " has Shared Some of Their Sets With You");
+			StringBuilder body = new StringBuilder(500);
+			body.append("<p>").append(name).append(" has shared ").append(total).append(" sets with you.</p>");
+			body.append("<p>Please log in to <a href='http://dpy-syn-nexus-1.depuydev.siliconmtn.com/my_sets'>DePuy Synthes NeXus</a> to view these sets</p>");
+			body.append("<p>If you do not have an account with our site please <a href='http://dpy-syn-nexus-1.depuydev.siliconmtn.com/register'>create one here</a> ");
+			body.append("in order to view these sets.</p>");
+			email.setHtmlBody(body.toString());
+			email.setFrom("donotreply@depuyus.jnj.com");
+
+			MessageSender ms = new MessageSender(attributes, dbConn);
+			ms.sendMessage(email);
+		} catch (InvalidDataException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+
 	/**
 	 * Delete the selected sharing permission
 	 * @param req
