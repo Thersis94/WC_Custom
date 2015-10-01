@@ -71,6 +71,10 @@ public class NexusSolrCartAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	private void getKitProducts(SMTServletRequest req) throws ActionException {
+		req.setParameter("kitAction", "Load");
+		req.setParameter("moduleStore", "true");
+		req.setParameter("rpp", "5");
+		req.setParameter("page", "1");
 	    	SMTActionInterface sai = new NexusKitAction();
 	    	sai.setActionInit(actionInit);
 	    	sai.setDBConnection(dbConn);
@@ -272,7 +276,9 @@ public class NexusSolrCartAction extends SBActionAdapter {
 			return;
 		}
 		
-		if (!Convert.formatBoolean(req.getParameter("showCart"))) {
+		if (req.hasParameter("kitId")) {
+			getKitProducts(req);
+		} else if (!Convert.formatBoolean(req.getParameter("showCart"))) {
 			UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 			SolrAction sa = new SolrAction(actionInit);
 			sa.setDBConnection(dbConn);
