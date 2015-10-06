@@ -19,7 +19,7 @@ import com.siliconmtn.http.SMTServletRequest;
  * @since Aug 9, 2015
  ****************************************************************************/
 
-public class NexusKitLayerVO {
+public class NexusKitLayerVO implements Cloneable {
 
 	private String layerId;
 	private String layerName;

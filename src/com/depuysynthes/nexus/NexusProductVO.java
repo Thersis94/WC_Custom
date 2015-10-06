@@ -7,6 +7,8 @@ import java.util.List;
 
 import com.siliconmtn.annotations.SolrField;
 import com.siliconmtn.db.DBUtil;
+import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 
 /****************************************************************************
@@ -23,8 +25,19 @@ import com.smt.sitebuilder.util.solr.SolrDocumentVO;
  ****************************************************************************/
 
 public class NexusProductVO extends SolrDocumentVO {
-	
+
+	public final static String DEVICE_ID = "deviceId";
+	public final static String SEARCHABLE_NM = "searchableName";
+	public final static String ORGANIZATION_NM = "organizationName";
+	public final static String GTIN = "gtin";
+	public final static String GTIN_LVL = "gtinLvl";
+	public final static String UNIT = "unitOfUse";
+	public final static String DPM = "dpmGTIN";
+	public final static String QUANTITY = "quantity";
+	public final static String PKG_LVL = "packageLvl";
+	public final static String UOM_LVL = "uomLvl";
 	public final static String solrIndex = "DEPUY_NEXUS";
+	public final static String STATUS = "status";
 	private String productId;
 	private String orgId;
 	private String orgName ;
@@ -66,11 +79,13 @@ public class NexusProductVO extends SolrDocumentVO {
 		DBUtil db = new DBUtil();
 		productId = db.getStringVal("PRODUCT_SKU_TXT", rs);
 		quantity = db.getIntVal("QUANTITY_NO", rs);
-		gtin.add(db.getStringVal("ITEM_GTIN_TXT", rs));
+		if (!StringUtil.checkVal(db.getStringVal("ITEM_GTIN_TXT", rs)).equals(""))
+			gtin.add(db.getStringVal("ITEM_GTIN_TXT", rs));
 		primaryDeviceId = db.getStringVal("ITEM_GTIN_NO", rs);
 		start = db.getDateVal("EFFECTIVE_START_DT", rs);
 		end = db.getDateVal("EFFECTIVE_END_DT", rs);
-		uomLevel.add(db.getStringVal("UNIT_MEASURE_CD", rs));
+		if (!StringUtil.checkVal(db.getStringVal("UNIT_MEASURE_CD", rs)).equals(""))
+			uomLevel.add(db.getStringVal("UNIT_MEASURE_CD", rs));
 		orderNo = db.getIntVal("ORDER_NO", rs);
 	}
 	
@@ -115,7 +130,7 @@ public class NexusProductVO extends SolrDocumentVO {
 		setTitle(productName);
 	}
 
-	@SolrField(name="searchableName")
+	@SolrField(name=SEARCHABLE_NM)
 	public String getSearchableName() {
 		if (getDocumentId() == null) return null;
 		return getDocumentId().replaceAll("[\\-\\/\\.]", "");
@@ -132,7 +147,7 @@ public class NexusProductVO extends SolrDocumentVO {
 	}
 
 
-	@SolrField(name="organizationName")
+	@SolrField(name=ORGANIZATION_NM)
 	public String getOrgName() {
 		return orgName;
 	}
@@ -143,7 +158,7 @@ public class NexusProductVO extends SolrDocumentVO {
 	}
 
 
-	@SolrField(name="gtin")
+	@SolrField(name=GTIN)
 	public List<String> getGtin() {
 		return gtin;
 	}
@@ -158,7 +173,7 @@ public class NexusProductVO extends SolrDocumentVO {
 	}
 
 
-	@SolrField(name="gtinLvl")
+	@SolrField(name=GTIN_LVL)
 	public List<String> getGtinLevel() {
 		return gtinLevel;
 	}
@@ -172,7 +187,7 @@ public class NexusProductVO extends SolrDocumentVO {
 		this.gtinLevel.add(gtinLevel);
 	}
 
-	@SolrField(name="deviceId")
+	@SolrField(name=DEVICE_ID)
 	public String getPrimaryDeviceId() {
 		return primaryDeviceId;
 	}
@@ -183,7 +198,7 @@ public class NexusProductVO extends SolrDocumentVO {
 	}
 
 
-	@SolrField(name="unitOfUse")
+	@SolrField(name=UNIT)
 	public String getUnitOfUse() {
 		return unitOfUse;
 	}
@@ -194,7 +209,7 @@ public class NexusProductVO extends SolrDocumentVO {
 	}
 
 
-	@SolrField(name="dpmGTIN")
+	@SolrField(name=DPM)
 	public String getDpmGTIN() {
 		return dpmGTIN;
 	}
@@ -205,7 +220,7 @@ public class NexusProductVO extends SolrDocumentVO {
 	}
 
 
-	@SolrField(name="quantity")
+	@SolrField(name=QUANTITY)
 	public int getQuantity() {
 		return quantity;
 	}
@@ -216,7 +231,7 @@ public class NexusProductVO extends SolrDocumentVO {
 	}
 
 
-	@SolrField(name="packageLvl")
+	@SolrField(name=PKG_LVL)
 	public List<String> getPackageLevel() {
 		return packageLevel;
 	}
@@ -231,7 +246,7 @@ public class NexusProductVO extends SolrDocumentVO {
 	}
 
 
-	@SolrField(name="uomLvl")
+	@SolrField(name=UOM_LVL)
 	public List<String> getUomLevel() {
 		return uomLevel;
 	}
@@ -253,7 +268,7 @@ public class NexusProductVO extends SolrDocumentVO {
 		this.region = region;
 	}
 	
-	@SolrField(name="status")
+	@SolrField(name=STATUS)
 	public String getStatus() {
 		return status;
 	}
@@ -275,7 +290,7 @@ public class NexusProductVO extends SolrDocumentVO {
 	 * and condenses it into a single field
 	 * @return
 	 */
-	@SolrField(name="contents")
+	@SolrField(name=SearchDocumentHandler.CONTENTS)
 	public String getAutocomplete() {
 		StringBuilder auto = new StringBuilder();
 		auto.append(getTitle()).append(" ");
