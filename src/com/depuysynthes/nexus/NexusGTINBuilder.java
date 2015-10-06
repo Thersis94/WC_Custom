@@ -201,6 +201,13 @@ public class NexusGTINBuilder extends CommandLineUtil {
 			if (! "ALL".equals(org)) 
 				vo.addSolrField(new SolrFieldVO(FieldType.SEARCH, SOLR_FIELD_NAME, org, BooleanType.AND));
 			
+			// Filter to only gtins with values and owner is empty
+			Map<String, String> filter = new HashMap<>(8);
+			filter.put("gtin", "[* TO *]");
+			filter.put("-owner", "[* TO *]");
+			vo.setFilterQueries(filter);
+			
+			// Execute the query
 			SolrQueryProcessor sqp = new SolrQueryProcessor(solrAttribs);
 			SolrResponseVO res = sqp.processQuery(vo);
 			addRow(res.getResultDocuments(), sheet, start);
@@ -248,9 +255,6 @@ public class NexusGTINBuilder extends CommandLineUtil {
 	public void addRow(List<SolrDocument> docs, Sheet sheet, int start) {
 		int r = start + (DATA_START_ROW + 1);
 		for(SolrDocument prod : docs) {
-			int c = 0;
-			Row row = sheet.createRow(r++);
-			
 			// get the gtin and uom value (This value may contain multiples.  
 			// Need to pull the primary (0 location) first
 			Collection<Object> col = prod.getFieldValues("gtin");
@@ -261,6 +265,8 @@ public class NexusGTINBuilder extends CommandLineUtil {
 			Object uom = prod.get("uomLvl");
 			if (col != null && col.size() > 0) uom = col.toArray()[0];
 			
+			int c = 0;
+			Row row = sheet.createRow(r++);
 			// Add cells
 			addCell(c++, prod.get("documentId") + "", row);
 			addCell(c++, gtin + "", row);
