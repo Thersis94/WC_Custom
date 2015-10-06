@@ -340,16 +340,21 @@ public class NexusKitAction extends SBActionAdapter {
 	 */
 	private void changeProductLayer(SMTServletRequest req) throws ActionException {
 		NexusKitVO kit = (NexusKitVO) req.getSession().getAttribute(KIT_SESSION_NM);
-		String parent = req.getParameter("parentId");
 		String newParent = req.getParameter("newParentId");
 		String[] indexes = req.getParameterValues("index");
 		
-		
 		int offset = 0;
-		NexusKitLayerVO oldLayer = kit.findLayer(parent);
+		NexusKitLayerVO oldLayer = null;
 		NexusKitLayerVO newLayer = kit.findLayer(newParent);
+		String currentLayer = "";
 		for (String index : indexes) {
-			int i = Convert.formatInteger(index);
+			String[] split = index.split("\\|");
+			if (split.length != 2) continue;
+			if (!currentLayer.equals(split[1])) {
+				offset = 0;
+				oldLayer = kit.findLayer(split[1]);
+			}
+			int i = Convert.formatInteger(split[0]);
 			NexusProductVO p = oldLayer.getProducts().get(i-offset);
 			oldLayer.getProducts().remove(i-offset);
 			newLayer.addProduct(p);
@@ -768,7 +773,9 @@ public class NexusKitAction extends SBActionAdapter {
 				kit.addLayer(layer);
 			}
 		} else {
-			if (!StringUtil.checkVal(req.getParameter("parentId")).equals(layer.getParentId())) {
+			// Since sublayers are no longer in use most of this code block is no longer needed.
+			// However it is being kept here in case sublayers are ever returned to functionality.
+/*			if (!StringUtil.checkVal(req.getParameter("parentId")).equals(layer.getParentId())) {
 				if (StringUtil.checkVal(layer.getParentId()).equals("")) {
 					kit.getLayers().remove(layer);
 				} else {
@@ -784,8 +791,9 @@ public class NexusKitAction extends SBActionAdapter {
 					kit.addLayer(layer);
 				}
 			} else {
+			*/
 				layer.setData(req);
-			}
+//			}
 		}
 		req.getSession().setAttribute(KIT_SESSION_NM, kit);
 	}
@@ -1011,14 +1019,21 @@ public class NexusKitAction extends SBActionAdapter {
 				break;
 			case Product:
 				kit = (NexusKitVO) req.getSession().getAttribute(KIT_SESSION_NM);
-				String parent = req.getParameter("parentId");
-				NexusKitLayerVO layer = kit.findLayer(parent);
+				String[] indexes = req.getParameterValues("index");
 				int offset = 0;
-				for (String s : req.getParameterValues("index")) {
-					index = Convert.formatInteger(s);
-					layer.getProducts().remove(index-offset);
+				NexusKitLayerVO layer = null;
+				String currentLayer = "";
+				for (String single : indexes) {
+					String[] split = single.split("\\|");
+					if (!currentLayer.equals(split[1])) {
+						offset = 0;
+						layer = kit.findLayer(split[1]);
+					}
+					int i = Convert.formatInteger(split[0]);
+					layer.getProducts().remove(i-offset);
 					offset++;
 				}
+				
 				req.getSession().setAttribute(KIT_SESSION_NM, kit);
 				break;
 			case Kit:
