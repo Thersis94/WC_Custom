@@ -129,7 +129,7 @@ public class NexusSolrCartAction extends SBActionAdapter {
 		} else if (Convert.formatBoolean(req.getParameter("lotChange"))) {
 			changeLot(cart, req);
 		} else if (!Convert.formatBoolean(req.getParameter("editItem")) && cart.getItems().containsKey(req.getParameter("productId") + StringUtil.checkVal(req.getParameter("lotNo"), dateLot))) {
-			ShoppingCartItemVO p = cart.getItems().get(req.getParameter("productId") + dateLot);
+			ShoppingCartItemVO p = cart.getItems().get(req.getParameter("productId") + StringUtil.checkVal(req.getParameter("lotNo"), dateLot));
 			int qty = p.getQuantity() + Convert.formatInteger(req.getParameter("qty"),1);
 			p.setQuantity(qty > 99? 99:qty);
 			cart.add(p);
