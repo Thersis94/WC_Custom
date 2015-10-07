@@ -1145,6 +1145,7 @@ public class NexusKitAction extends SBActionAdapter {
 			email.addRecipient(emailAddress);
 			email.setSubject(name + " has Shared Some of Their Sets With You");
 			StringBuilder body = new StringBuilder(500);
+			body.append("<p><img alt='' src='http://dpy-syn-nexus-1.depuydev.siliconmtn.com/binary/themes/CUSTOM/DEPUY/DPY_SYN_NEXUS/images/logo.jpg' style='width: 424px; height: 66px;' /></p>");
 			body.append("<p>").append(name).append(" has shared ").append(total).append(" sets with you.</p>");
 			body.append("<p>Please log in to <a href='http://dpy-syn-nexus-1.depuydev.siliconmtn.com/my_sets'>DePuy Synthes NeXus</a> to view these sets</p>");
 			body.append("<p>If you do not have an account with our site please <a href='http://dpy-syn-nexus-1.depuydev.siliconmtn.com/register'>create one here</a> ");

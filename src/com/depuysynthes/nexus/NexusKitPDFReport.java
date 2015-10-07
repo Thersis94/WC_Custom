@@ -86,6 +86,7 @@ public class NexusKitPDFReport  extends AbstractSBReportVO {
 		}
 		
 		start += (Math.ceil(kit.getKitDesc().length()/width) + 1) * 10;
+		log.debug(start);
 		StringBuilder html = new StringBuilder(20000);
 		html.append("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">");
 		html.append("<html><head><title>Case Summary</title><style>");
@@ -95,10 +96,10 @@ public class NexusKitPDFReport  extends AbstractSBReportVO {
 		html.append("@page {@bottom-center { content: counter(page) ' of ' counter(pages);page-break-after: always; }}");
 		html.append("@page {");
 		if (isForm) {
-			int baseHeight = 179;
+			int baseHeight = 194;
 			html.append("margin-top:").append(baseHeight+start).append("px!important;");
 		} else {
-			int baseHeight = 178;
+			int baseHeight = 192;
 			html.append("margin-top:").append(baseHeight+start).append("px!important;");
 		}
 		html.append("margin-bottom:40px;}");
@@ -137,10 +138,11 @@ public class NexusKitPDFReport  extends AbstractSBReportVO {
 		html.append("<tr><td class=' col-1'></td><td class='border col-2'>Kit Code: </td><td class='border col-3'>").append(kit.getKitSKU()).append("</td><td class=' col-4'></td>");
 		if(isForm) {
 			html.append("<td class=' col-5'></td><td class=' col-6'></td><td class='border col-7'>Surgery Date: </td>");
+			html.append("<td class='border col-8'></td></tr>");
 		} else {
-			html.append("<td class='border col-5'>Surgery Date: </td>");
+			html.append("<td class='col-5'></td>");
+			html.append("<td class='col-8'></td></tr>");
 		}
-		html.append("<td class='border col-8'></td></tr>");
 		html.append("<tr><td></td><td class='border'>Description: </td><td class='border'>");
 		int pos = 0;
 		while((pos+width) < kit.getKitDesc().length()) {
@@ -148,11 +150,31 @@ public class NexusKitPDFReport  extends AbstractSBReportVO {
 			pos+=width;
 		}
 		html.append(kit.getKitDesc().substring(pos));
-		html.append("</td><td colspan='").append(colspan).append("'></td><td class='border'>Surgery Time: </td><td class='border'></td></tr>");
-		html.append("<tr><td></td><td class='border'>Case Report ID: </td><td style='border:1px solid black;border-bottom:none;'></td><td colspan='").append(colspan).append("'></td><td class='border'>Surgeon: </td><td class='border'></td></tr>");
-		html.append("<tr><td colspan='2' rowspan='3'><span style='font-size:18px; color:#636363;'><i class='fa fa-2'>&#xf0b1;</i><span style=''></span></span></td><td style='border-top:1px solid black;'></td><td colspan='").append(colspan).append("'></td><td class='border'>Operating Room: </td><td class='border'></td></tr>");
-		html.append("<tr><td colspan='").append(colspan+1).append("'></td><td class='border'>Case ID: </td><td class='border'></td></tr>");
-		html.append("<tr><td colspan='3'></td><td ");
+		html.append("</td><td colspan='").append(colspan).append("'></td><");
+		if (isForm) {
+			html.append("td class='border'>Surgery Time: </td><td class='border'></td>");
+		} else {
+			html.append("td class=''></td><td class=''></td>");
+		}
+		html.append("</tr>");
+		html.append("<tr><td></td><td class='border' >Case Report ID: </td><td style='border:1px solid black;'></td><td colspan='").append(colspan).append("'></td>");
+		if (isForm){
+			html.append("<td class='border'>Surgeon: </td><td class='border'></td></tr>");
+		} else {
+			html.append("<td class=''></td><td class=''></td></tr>");
+		}
+		html.append("<tr><td colspan='3' rowspan='4'><img alt='barcode' ");
+		html.append("src='/barcodeGenerator?textFormat=NEXUS&amp;barcodeData=01").append(kit.getKitSKU());
+		html.append("&amp;height=15&amp;hideHumanReadable=true' /><br/><span style='font-size:18px; color:#636363;'><i class='fa fa-2'>&#xf0b1;</i><span style=''></span></span></td><td ></td><td colspan='").append(colspan-1).append("'></td>");
+		if (isForm) {
+			html.append("<td class='border'>Operating Room: </td><td class='border'></td></tr>");
+			html.append("<tr><td colspan='").append(colspan).append("'></td><td class='border'>Case ID: </td><td class='border'></td></tr>");
+		} else {
+			html.append("<td class=''></td><td class=''></td></tr>");
+			html.append("<tr><td colspan='").append(colspan).append("'></td><td class=''></td><td class=''></td></tr>");
+		}
+		html.append("<tr><td colspan='5'></td></tr>");
+		html.append("<tr><td colspan='2'></td><td ");
 		if (isForm) html.append("class='border' ");
 		html.append(" colspan='2'>");
 		if (isForm) html.append("(additional lot #'s can be written on back of sheet)");
@@ -174,11 +196,12 @@ public class NexusKitPDFReport  extends AbstractSBReportVO {
 		int i=1;
 		for(NexusKitLayerVO layer : kit.getLayers()){
 			if (i != 1) {
-				html.append("<tr><td style='text-align:left' colspan='").append(colspan+5).append("'><span style='font-size:18px; color:#636363;'><i class='fa fa-2'>&#xf0b1;</i>&nbsp;");
+				html.append("<tr><td style='text-align:left; height:40px' colspan='").append(colspan+5).append("'><span style='font-size:18px; color:#636363;'><i class='fa fa-2'>&#xf0b1;</i>&nbsp;");
 				html.append(layer.getLayerName()).append("</span></td></td>");
 				lines += 50;
 			} else {
-				html.append("<h2 style='position:running(layer);width:0px; overflow: visible; display:inline-box; white-space: nowrap;left:10px;top:50px;font-size:18px; color:#636363; font-weight:normal;' class='layerName'><span style='position:relative;left:25px;top:57px;'>").append(layer.getLayerName()).append("</span></h2>");
+				html.append("<h2 style='position:running(layer);width:0px; overflow: visible; display:inline-box; white-space: nowrap;left:10px;top:50px;font-size:18px; color:#636363; font-weight:normal;'");
+				html.append("class='layerName'><span style='position:relative;left:25px;top:").append(start+45).append("px;'>").append(layer.getLayerName()).append("</span></h2>");
 			}
 			for (NexusProductVO p : layer.getProducts()) {
 				html.append(buildRow(p, i, isForm, layer.getLayerName()));
@@ -193,12 +216,17 @@ public class NexusKitPDFReport  extends AbstractSBReportVO {
 	private String buildRow(NexusProductVO product, int i, boolean isForm, String LayerNm) {
 		StringBuilder row = new StringBuilder(1000);
 
-		lines += (Math.ceil((double)product.getSummary().length()/width) + 1) * 10;
+		int prodLines = (int) Math.ceil((double)product.getSummary().length()/width);
+		if (prodLines == 1) {
+			lines += 25;
+		} else {
+			lines +=  (prodLines+1) *10;
+		}
 		if(lines >= threshold) {
 			lines =  (int) ((Math.ceil((double)product.getSummary().length()/width) + 1) * 10);
-			row.append("<tr style='page-break-before:always'><td class='border col-1'><h2 style='position:running(layer);width:0px; overflow: visible; display:inline-box; white-space: nowrap;left:10px;top:50px;font-size:18px; color:#636363; font-weight:normal;text-align:left;' class='layerName'><span style='position:relative;left:25px;top:57px;'>").append(LayerNm).append("</span></h2>").append(i);
+			row.append("<tr style='page-break-before:always; min-height:25px;'><td class='border col-1'><h2 style='position:running(layer);width:0px; overflow: visible; display:inline-box; white-space: nowrap;left:10px;top:50px;font-size:18px; color:#636363; font-weight:normal;text-align:left;' class='layerName'><span style='position:relative;left:25px;top:").append(start+45).append("px;'>").append(LayerNm).append("</span></h2>").append(i);
 		} else {
-			row.append("<tr style=''><td class='border col-1'>").append(i);
+			row.append("<tr style='min-height:25px;'><td class='border col-1'>").append(i);
 		}
 		row.append("</td><td class='border col-2'>").append(product.getProductId()).append("</td>");
 		row.append("<td class='border col-3'>");
