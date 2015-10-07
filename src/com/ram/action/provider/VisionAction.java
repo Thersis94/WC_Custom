@@ -23,8 +23,10 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.imageMap.FabricParserInterface;
+import com.siliconmtn.util.imageMap.ImageMapAreaVO;
 import com.siliconmtn.util.imageMap.ImageMapVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -179,6 +181,7 @@ public class VisionAction extends SBActionAdapter {
 			for(KitLayerVO k : layers) {
 				map = fp.getImageMap(JSONObject.fromObject(k.getJsonData()));
 				map.setName(LAYER_ID + k.getDepthNumber());
+				updateMapData(map, k);
 
 				k.setImageMap(map);
 			}
@@ -193,6 +196,25 @@ public class VisionAction extends SBActionAdapter {
 
 		return mod;
 	}
+
+	/**
+	 * Helper method that manages setting map data not contained in the JSON.
+	 * 
+	 * @param map
+	 * @param k
+	 */
+	private void updateMapData(ImageMapVO map, KitLayerVO k) {
+
+		//Iterate the Shapes
+		for(ImageMapAreaVO s : map.getShapes()) {
+			//Obtain the related ProductId from the Shape.
+			int id = Convert.formatInteger(s.getId().substring(s.getId().indexOf('-')));
+
+			//Lookup the Product and set the Title based on ProductName.
+			s.setTitle(k.getProducts().get(id).getProductName());
+		}
+	}
+
 	/**
 	 * Helper method intended to load Vision System Data. Attempt a lookup in
 	 * cache and if found, return it.  Otherwise generate all the necessary data
