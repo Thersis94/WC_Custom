@@ -11,6 +11,7 @@ import org.w3c.tidy.Tidy;
 import org.xhtmlrenderer.pdf.ITextRenderer;
 
 import com.lowagie.text.pdf.BaseFont;
+import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 
@@ -76,30 +77,29 @@ public class NexusKitPDFReport  extends AbstractSBReportVO {
 		int colspan;
 
 		if (isForm) {
-			threshold = 560;
+			threshold = 500;
 			colspan=3;
 			width = 28;
 		} else {
-			threshold = 820;
+			threshold = 750;
 			colspan=1;
 			width = 34;
 		}
 		
-		start += (Math.ceil(kit.getKitDesc().length()/width) + 1) * 10;
-		log.debug(start);
+		start += (Math.ceil((double)kit.getKitDesc().length()/width)+1) * 12 ;
 		StringBuilder html = new StringBuilder(20000);
 		html.append("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">");
 		html.append("<html><head><title>Case Summary</title><style>");
 		if (isForm) html.append("@page { size: A4 landscape;}");
 		html.append(" @page {@top-center { content: element(header); width:100%;}}");
-		html.append(" @page {@top-left { content: element(layer);}}");
+		html.append(" @page {@left-middle { content: element(layer); height:100%; vertical-align: top;}}");
 		html.append("@page {@bottom-center { content: counter(page) ' of ' counter(pages);page-break-after: always; }}");
 		html.append("@page {");
 		if (isForm) {
-			int baseHeight = 194;
+			int baseHeight = 184;
 			html.append("margin-top:").append(baseHeight+start).append("px!important;");
 		} else {
-			int baseHeight = 192;
+			int baseHeight = 180;
 			html.append("margin-top:").append(baseHeight+start).append("px!important;");
 		}
 		html.append("margin-bottom:40px;}");
@@ -143,7 +143,7 @@ public class NexusKitPDFReport  extends AbstractSBReportVO {
 			html.append("<td class='col-5'></td>");
 			html.append("<td class='col-8'></td></tr>");
 		}
-		html.append("<tr><td></td><td class='border'>Description: </td><td class='border'>");
+		html.append("<tr><td></td><td class='border'>Description: </td><td style='height:").append(start).append("px' class='border'>");
 		int pos = 0;
 		while((pos+width) < kit.getKitDesc().length()) {
 			html.append("<span>").append(kit.getKitDesc().substring(pos, pos+width)).append("-</span><br/>");
@@ -200,8 +200,8 @@ public class NexusKitPDFReport  extends AbstractSBReportVO {
 				html.append(layer.getLayerName()).append("</span></td></td>");
 				lines += 50;
 			} else {
-				html.append("<h2 style='position:running(layer);width:0px; overflow: visible; display:inline-box; white-space: nowrap;left:10px;top:50px;font-size:18px; color:#636363; font-weight:normal;'");
-				html.append("class='layerName'><span style='position:relative;left:25px;top:").append(start+45).append("px;'>").append(layer.getLayerName()).append("</span></h2>");
+				html.append("<h2 style='position:running(layer);width:0px; overflow: visible; display:inline-box; white-space: nowrap;font-size:18px; color:#636363; font-weight:normal;'");
+				html.append("class='layerName'><span style='position:relative;left:75px;top:-64px;'>").append(layer.getLayerName()).append("</span></h2>");
 			}
 			for (NexusProductVO p : layer.getProducts()) {
 				html.append(buildRow(p, i, isForm, layer.getLayerName()));
@@ -224,7 +224,7 @@ public class NexusKitPDFReport  extends AbstractSBReportVO {
 		}
 		if(lines >= threshold) {
 			lines =  (int) ((Math.ceil((double)product.getSummary().length()/width) + 1) * 10);
-			row.append("<tr style='page-break-before:always; min-height:25px;'><td class='border col-1'><h2 style='position:running(layer);width:0px; overflow: visible; display:inline-box; white-space: nowrap;left:10px;top:50px;font-size:18px; color:#636363; font-weight:normal;text-align:left;' class='layerName'><span style='position:relative;left:25px;top:").append(start+45).append("px;'>").append(LayerNm).append("</span></h2>").append(i);
+			row.append("<tr style='page-break-before:always; min-height:25px;'><td class='border col-1'><h2 style='position:running(layer);width:0px; overflow: visible; display:inline-box; white-space: nowrap;font-size:18px; color:#636363; font-weight:normal;text-align:left;' class='layerName'><span style='position:relative;left:75px;top:-64px;'>").append(LayerNm).append("</span></h2>").append(i);
 		} else {
 			row.append("<tr style='min-height:25px;'><td class='border col-1'>").append(i);
 		}
@@ -242,7 +242,7 @@ public class NexusKitPDFReport  extends AbstractSBReportVO {
 		row.append("<td class='border col-5'>").append(product.getPrimaryDeviceId()).append("</td>");
 		if (isForm) row.append("<td class='border col-6'></td><td class='border col-7'></td>");
 		row.append("<td class='border col-8'><img alt='barcode' ");
-		row.append("src='/barcodeGenerator?textFormat=NEXUS&amp;barcodeData=01").append(product.getPrimaryDeviceId());
+		row.append("src='/barcodeGenerator?textFormat=NEXUS&amp;barcodeData=01").append(StringEncoder.urlEncode(product.getPrimaryDeviceId()));
 		row.append("&amp;height=15&amp;hideHumanReadable=true' /></td>");
 		
 		
