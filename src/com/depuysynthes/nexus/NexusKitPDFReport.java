@@ -76,29 +76,30 @@ public class NexusKitPDFReport  extends AbstractSBReportVO {
 		int colspan;
 
 		if (isForm) {
-			threshold = 25;
+			threshold = 560;
 			colspan=3;
-			width = 15;
+			width = 28;
 		} else {
-			threshold = 37;
+			threshold = 820;
 			colspan=1;
-			width = 18;
+			width = 34;
 		}
-		start += Math.ceil(kit.getKitDesc().length()/((double)width));
 		
+		start += (Math.ceil(kit.getKitDesc().length()/width) + 1) * 10;
 		StringBuilder html = new StringBuilder(20000);
 		html.append("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">");
 		html.append("<html><head><title>Case Summary</title><style>");
 		if (isForm) html.append("@page { size: A4 landscape;}");
 		html.append(" @page {@top-center { content: element(header); width:100%;}}");
+		html.append(" @page {@top-left { content: element(layer);}}");
 		html.append("@page {@bottom-center { content: counter(page) ' of ' counter(pages);page-break-after: always; }}");
 		html.append("@page {");
 		if (isForm) {
-			int baseHeight = 210;
-			html.append("margin-top:").append(baseHeight+start*18).append("px!important;");
+			int baseHeight = 179;
+			html.append("margin-top:").append(baseHeight+start).append("px!important;");
 		} else {
-			int baseHeight = 204;
-			html.append("margin-top:").append(baseHeight+start*18).append("px!important;");
+			int baseHeight = 178;
+			html.append("margin-top:").append(baseHeight+start).append("px!important;");
 		}
 		html.append("margin-bottom:40px;}");
 		html.append("@page {tr{page-break-inside:avoid-page}}");
@@ -110,12 +111,12 @@ public class NexusKitPDFReport  extends AbstractSBReportVO {
 		html.append("thead { display:table-header-group }tfoot { display:table-footer-group }}");
 		html.append("table{width:100%;} tr{min-height:15px;} #body tr{min-height:20px;}");
 		if (isForm) {
-			html.append(".col-1{width:3.66%}.col-2{width:13%}.col-3{width:16.66%}");
-			html.append(".col-4{width:4.66%}.col-5{width:12%}.col-6{width:16.66%}");
+			html.append(".col-1{width:3.66%}.col-2{width:10%}.col-3{width:21.66%}");
+			html.append(".col-4{width:4.66%}.col-5{width:10%}.col-6{width:16.66%}");
 			html.append(".col-7{width:16.66%}.col-8{width:16.66%}");
 		} else {
-			html.append(".col-1{width:4%}.col-2{width:20%}.col-3{width:30%}");
-			html.append(".col-4{width:6%}.col-5{width:20%}");
+			html.append(".col-1{width:4%}.col-2{width:15%}.col-3{width:37%}");
+			html.append(".col-4{width:6%}.col-5{width:18%}");
 			html.append(".col-8{width:20%}");
 		}
 		html.append("</style>");
@@ -125,11 +126,11 @@ public class NexusKitPDFReport  extends AbstractSBReportVO {
 		
 		
 		html.append("<div style='position:running(header);width:98.5%;display:block;'>");
-		html.append("<table style='border-collapse:collapse;font-size:16px; width:100%;margin-top:15px;'><tbody>");
+		html.append("<table style='border-collapse:collapse;font-size:12px; width:100%;margin-top:15px;'><tbody>");
 		
 		html.append("<tr><td colspan='").append(colspan+2).append("'><img style='width:200px' src='/binary/themes/CUSTOM/DEPUY/DPY_SYN_NEXUS/images/logo.png' /><span style='float:right'>");
 		html.append( new SimpleDateFormat("MM/dd/YYYY").format(Convert.getCurrentTimestamp())).append("</span></td><td colspan='3' style='text-align:right;'>");
-		html.append("<p style='font-size:20px;'><span style='color:#1A496A;'>U</span>nique&nbsp;");
+		html.append("<p style='font-size:16px;'><span style='color:#1A496A;'>U</span>nique&nbsp;");
 		html.append("<span style='color:#1A496A;'>D</span>evice&nbsp;");
 		html.append("<span style='color:#1A496A;'>I</span>dentification</p></td></tr>");
 		
@@ -149,7 +150,7 @@ public class NexusKitPDFReport  extends AbstractSBReportVO {
 		html.append(kit.getKitDesc().substring(pos));
 		html.append("</td><td colspan='").append(colspan).append("'></td><td class='border'>Surgery Time: </td><td class='border'></td></tr>");
 		html.append("<tr><td></td><td class='border'>Case Report ID: </td><td style='border:1px solid black;border-bottom:none;'></td><td colspan='").append(colspan).append("'></td><td class='border'>Surgeon: </td><td class='border'></td></tr>");
-		html.append("<tr><td colspan='2' rowspan='3'><span style='font-size:24px; color:#636363;'><i class='fa fa-2'>&#xf0b1;</i>&nbsp;Products</span></td><td style='border-top:1px solid black;'></td><td colspan='").append(colspan).append("'></td><td class='border'>Operating Room: </td><td class='border'></td></tr>");
+		html.append("<tr><td colspan='2' rowspan='3'><span style='font-size:18px; color:#636363;'><i class='fa fa-2'>&#xf0b1;</i><span style=''></span></span></td><td style='border-top:1px solid black;'></td><td colspan='").append(colspan).append("'></td><td class='border'>Operating Room: </td><td class='border'></td></tr>");
 		html.append("<tr><td colspan='").append(colspan+1).append("'></td><td class='border'>Case ID: </td><td class='border'></td></tr>");
 		html.append("<tr><td colspan='3'></td><td ");
 		if (isForm) html.append("class='border' ");
@@ -165,23 +166,23 @@ public class NexusKitPDFReport  extends AbstractSBReportVO {
 		html.append("</div>");
 		
 		if (isForm) {
-			html.append("<table id='body' style='border-collapse:collapse;font-size:16px; width:100%;position:relative;top:-7px;left:-8px;'><tbody>");
+			html.append("<table id='body' style='border-collapse:collapse;font-size:12px; width:100%;position:relative;top:-7px;left:-8px;'><tbody>");
 		} else {
-			html.append("<table id='body' style='border-collapse:collapse;font-size:16px; width:100.4%;position:relative;top:-7px;left:-8px;'><tbody>");
+			html.append("<table id='body' style='border-collapse:collapse;font-size:12px; width:100.4%;position:relative;top:-7px;left:-8px;'><tbody>");
 		}
 
 		int i=1;
 		for(NexusKitLayerVO layer : kit.getLayers()){
-			for (NexusProductVO p : layer.getProducts()) {
-				html.append(buildRow(p, i, isForm));
-				i++;
+			if (i != 1) {
+				html.append("<tr><td style='text-align:left' colspan='").append(colspan+5).append("'><span style='font-size:18px; color:#636363;'><i class='fa fa-2'>&#xf0b1;</i>&nbsp;");
+				html.append(layer.getLayerName()).append("</span></td></td>");
+				lines += 50;
+			} else {
+				html.append("<h2 style='position:running(layer);width:0px; overflow: visible; display:inline-box; white-space: nowrap;left:10px;top:50px;font-size:18px; color:#636363; font-weight:normal;' class='layerName'><span style='position:relative;left:25px;top:57px;'>").append(layer.getLayerName()).append("</span></h2>");
 			}
-			
-			for (NexusKitLayerVO sublayer : layer.getSublayers()) {
-				for (NexusProductVO p : sublayer.getProducts()) {
-					html.append(buildRow(p, i, isForm));
-					i++;
-				}
+			for (NexusProductVO p : layer.getProducts()) {
+				html.append(buildRow(p, i, isForm, layer.getLayerName()));
+				i++;
 			}
 		}
 		
@@ -189,15 +190,15 @@ public class NexusKitPDFReport  extends AbstractSBReportVO {
 		return html.toString().getBytes();
 	}
 	
-	private String buildRow(NexusProductVO product, int i, boolean isForm) {
+	private String buildRow(NexusProductVO product, int i, boolean isForm, String LayerNm) {
 		StringBuilder row = new StringBuilder(1000);
 
-		lines += Math.ceil(product.getSummary().length()/15.0) + 1;
+		lines += (Math.ceil((double)product.getSummary().length()/width) + 1) * 10;
 		if(lines >= threshold) {
-			lines =  (int) (Math.ceil(product.getSummary().length()/15.0) + 1) + start;
-			row.append("<tr style='page-break-before:always'><td  rowspan='2' class='border col-1'>").append(i);
+			lines =  (int) ((Math.ceil((double)product.getSummary().length()/width) + 1) * 10);
+			row.append("<tr style='page-break-before:always'><td class='border col-1'><h2 style='position:running(layer);width:0px; overflow: visible; display:inline-box; white-space: nowrap;left:10px;top:50px;font-size:18px; color:#636363; font-weight:normal;text-align:left;' class='layerName'><span style='position:relative;left:25px;top:57px;'>").append(LayerNm).append("</span></h2>").append(i);
 		} else {
-			row.append("<tr style=''><td  rowspan='2' class='border col-1'>").append(i);
+			row.append("<tr style=''><td class='border col-1'>").append(i);
 		}
 		row.append("</td><td class='border col-2'>").append(product.getProductId()).append("</td>");
 		row.append("<td class='border col-3'>");
@@ -215,12 +216,6 @@ public class NexusKitPDFReport  extends AbstractSBReportVO {
 		row.append("<td class='border col-8'><img alt='barcode' ");
 		row.append("src='/barcodeGenerator?textFormat=NEXUS&amp;barcodeData=01").append(product.getPrimaryDeviceId());
 		row.append("&amp;height=15&amp;hideHumanReadable=true' /></td>");
-		
-		row.append("<tr style=' page-break-inside: avoid;'>");
-		row.append("<td class='border'></td><td class='border'></td>");
-		if (isForm) row.append("<td class='border'></td><td class='border'></td>");
-		row.append("<td class='border'></td><td class='border'></td>");
-		row.append("<td class='border'></td>");
 		
 		
 		return row.toString();
