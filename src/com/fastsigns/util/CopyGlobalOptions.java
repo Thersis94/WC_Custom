@@ -13,6 +13,7 @@ import org.apache.log4j.PropertyConfigurator;
 import com.fastsigns.action.franchise.vo.CenterModuleOptionVO;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.UUIDGenerator;
 
 public class CopyGlobalOptions {
 	protected static String DESTINATION_DB_URL = "jdbc:sqlserver://localhost:1433";
@@ -44,7 +45,6 @@ public class CopyGlobalOptions {
 		try {
 			dbConn = getDBConnection(DESTINATION_AUTH[0], DESTINATION_AUTH[1],
 					DESTINATION_DB_DRIVER, DESTINATION_DB_URL);
-			int id = nextModuleOptionPkId();
 			String sql = getSql();
 			PreparedStatement ps = null;
 			try {
@@ -53,9 +53,8 @@ public class CopyGlobalOptions {
 				ResultSet rs = ps.executeQuery();
 				while (rs.next()) {
 					temp = new CenterModuleOptionVO(rs);
-					temp.setModuleOptionId(id);
+					temp.setModuleOptionId(new UUIDGenerator().getUUID());
 					opts.add(temp);
-					id++;
 				}
 			} catch (SQLException e) {
 				log.debug(e);
@@ -82,9 +81,9 @@ public class CopyGlobalOptions {
 					ps.setNull(++i, java.sql.Types.INTEGER);
 					ps.setInt(++i, vo.getModuleTypeId());
 					ps.setInt(++i, vo.getApprovalFlag());
-					ps.setInt(++i, vo.getParentId());
+					ps.setString(++i, vo.getParentId());
 					ps.setString(++i, destOrgId);
-					ps.setInt(++i, vo.getModuleOptionId());
+					ps.setString(++i, vo.getModuleOptionId());
 					ps.addBatch();
 					count++;
 				}
@@ -120,34 +119,6 @@ public class CopyGlobalOptions {
 				.append(customDb)
 				.append("FTS_CP_MODULE_OPTION where ORG_ID=? and franchise_ID is null");
 		return sb.toString();
-	}
-
-	/**
-	 * this is in place because this table does not support an Identity seed
-	 * counter.
-	 * 
-	 * @return
-	 */
-	private int nextModuleOptionPkId() {
-		int pkId = 0;
-		StringBuilder sb = new StringBuilder();
-		sb.append("select max(cp_module_option_id) from ").append(customDb);
-		sb.append("fts_cp_module_option");
-		PreparedStatement ps = null;
-		try {
-			ps = dbConn.prepareStatement(sb.toString());
-			ResultSet rs = ps.executeQuery();
-			if (rs.next())
-				pkId = rs.getInt(1) + 1;
-		} catch (SQLException sqle) {
-			log.error(sqle);
-		} finally {
-			try {
-				ps.close();
-			} catch (Exception e) {
-			}
-		}
-		return pkId;
 	}
 
 	/**
