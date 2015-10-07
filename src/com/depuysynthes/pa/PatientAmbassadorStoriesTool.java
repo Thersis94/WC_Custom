@@ -90,6 +90,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 	 * 
 	 */
 	public PatientAmbassadorStoriesTool() {
+		super();
 	}
 
 	public PatientAmbassadorStoriesTool(ActionInitVO init) {
@@ -334,7 +335,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 	 * FormSubmittalId
 	 * @param req
 	 */
-	private void retrieveSubmittalData(SMTServletRequest req) {
+	protected void retrieveSubmittalData(SMTServletRequest req) {
 		FormFacadeAction ffa = new FormFacadeAction(actionInit);
 		ffa.setDBConnection(dbConn);
 		ffa.setAttributes(attributes);
