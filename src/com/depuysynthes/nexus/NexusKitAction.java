@@ -22,6 +22,8 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.io.mail.EmailMessageVO;
+import com.siliconmtn.security.EncryptionException;
+import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -64,7 +66,7 @@ public class NexusKitAction extends SBActionAdapter {
 	
 	// Potential actions for the user to take
 	enum KitAction {
-		Permissions, Clone, Save, Delete, Edit, Load, Add, Empty, Reorder, ChangeLayer, Copy, NewKit, Print
+		Permissions, Clone, Save, Delete, Edit, Load, Add, Empty, Reorder, ChangeLayer, Copy, NewKit, Print, showShared
 	}
 	
 	// The level of the kit that is being targeted
@@ -102,6 +104,41 @@ public class NexusKitAction extends SBActionAdapter {
 	}
 	
 	
+	/**
+	 * Get all users a kit has been shared with
+	 */
+	private Object getSharedKits(SMTServletRequest req) {
+		NexusKitVO kit = new NexusKitVO(SOLR_INDEX);
+		StringBuilder sql = new StringBuilder(300);
+		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		sql.append("SELECT *, u.PROFILE_ID as SHARED_ID FROM ").append(customDb).append("DPY_SYN_NEXUS_SET_INFO s ");
+		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_NEXUS_SET_SHARE u ");
+		sql.append("on s.SET_INFO_ID = u.SET_INFO_ID ");
+		sql.append("LEFT JOIN PROFILE p on p.PROFILE_ID = u.PROFILE_ID ");
+		sql.append("WHERE s.SET_INFO_ID = ? and u.PROFILE_ID is not null ");
+		log.debug(sql+"|"+req.getParameter("kitId"));
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, req.getParameter("kitId"));
+			
+			ResultSet rs = ps.executeQuery();
+			ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
+			kit.setData(rs);
+			StringEncrypter se = new StringEncrypter((String) attributes.get(Constants.ENCRYPT_KEY));
+			while (rs.next()) {
+				String name = se.decrypt(rs.getString("FIRST_NM")) + " " +  se.decrypt(rs.getString("LAST_NM"));
+				kit.addPermision(rs.getString("SHARED_ID"), name);
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (EncryptionException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return kit;
+	}
+
+
 	public void build(SMTServletRequest req) throws ActionException {
 		KitAction action;
 		try {
@@ -176,11 +213,17 @@ public class NexusKitAction extends SBActionAdapter {
 					newKit.setKitDesc("Empty Kit");
 					newKit.setOwnerId(user.getProfileId());
 					newKit.setOrgName(KitType.Custom.toString());
+					NexusKitLayerVO tray = new NexusKitLayerVO();
+					tray.setLayerId(new UUIDGenerator().getUUID());
+					tray.setLayerName("Primary Tray");
+					newKit.addLayer(tray);
 					req.getSession().setAttribute(KIT_SESSION_NM, newKit);
 					break;
 				case Print:
 					buildReport(req);
 					break;
+				case showShared:
+					super.putModuleData(getSharedKits(req));
 			default:
 				break;
 			}
@@ -1081,20 +1124,37 @@ public class NexusKitAction extends SBActionAdapter {
 	private void modifyPermissions(SMTServletRequest req) throws ActionException {
 		UserDataVO user = new UserDataVO(req);
 		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
-		try {
-			 user.setProfileId(pm.checkProfile(new UserDataVO(req), dbConn));
-			log.debug(user.getProfileId());
-			// If this email address has no corrosponding profile create it now.
-			if (user.getProfileId() == null) {
-				pm.updateProfile(user, dbConn);
+		if (!req.hasParameter("profileId")) {
+			try {
+				user.setProfileId(pm.checkProfile(new UserDataVO(req), dbConn));
+				log.debug(user.getProfileId());
+				// If this email address has no corrosponding profile create it now.
+				if (user.getProfileId() == null) {
+					pm.updateProfile(user, dbConn);
+				}
+			} catch (DatabaseException e1) {
+				throw new ActionException(e1);
 			}
-		} catch (DatabaseException e1) {
-			throw new ActionException(e1);
 		}
 		
 		if (req.hasParameter("delete")) {
-			for (String kitId : req.getParameterValues("kitId")) {
-				removePermission(user.getProfileId(), kitId);
+			String kitId = req.getParameter("kitId");
+			removePermission(req.getParameter("profileId"), kitId);
+			
+			SolrInputDocument sdoc = new SolrInputDocument();
+			Map<String,Object> fieldModifier = new HashMap<>(1);
+			fieldModifier.put("remove",user.getProfileId());
+			sdoc.addField("owner", fieldModifier);
+			sdoc.addField("documentId",kitId);
+			
+			try {
+				String baseUrl = StringUtil.checkVal(attributes.get(Constants.SOLR_BASE_URL), null);
+				ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+				String collection = getSolrCollection((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
+				HttpSolrServer server = new HttpSolrServer(baseUrl + collection);
+				server.add(sdoc);
+			} catch (Exception e) {
+				throw new ActionException(e);
 			}
 		} else {
 			UserDataVO owner = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
@@ -1170,7 +1230,7 @@ public class NexusKitAction extends SBActionAdapter {
 		StringBuilder sql =  new StringBuilder(150);
 		sql.append("DELETE ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_NEXUS_SET_SHARE ");
 		sql.append("WHERE PROFILE_ID = ? and SET_INFO_ID = ? ");
-		
+		log.debug(sql+"|"+profileId+"|"+kitId);
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, profileId);
 			ps.setString(2, kitId);
