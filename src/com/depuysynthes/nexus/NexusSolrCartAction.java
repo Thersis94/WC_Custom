@@ -305,6 +305,7 @@ public class NexusSolrCartAction extends SBActionAdapter {
 			} else {
 				filter.put("-owner", "[* TO *]");
 			}
+			filter.put("gtin", "[* TO *] or kit:true");
 			log.debug(req.hasParameter("orgName"));
 			if (req.hasParameter("orgName")) {
 				if ("Standard".equals(req.getParameter("orgName"))) {
