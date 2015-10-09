@@ -139,6 +139,10 @@ public class ProductCatalogUtil extends AbstractBaseAction {
 			
 			//log.debug("getting stats for " + pageAlias + prodAlias);
 			StatVO stats = pageViews.get(pageAlias + prodAlias);
+			if (stats == null) {
+				//look for a lower-case match.  /qs/ values cannot enforce canonicals the way pages do -JM 10-9-15
+				stats = pageViews.get(pageAlias + prodAlias.toLowerCase());
+			}
 			if (stats != null) {
 				log.debug(pageAlias + prodAlias + "=" + stats.getHitCnt());
 				cat.setNumProdAssoc(stats.getHitCnt());
@@ -174,6 +178,11 @@ public class ProductCatalogUtil extends AbstractBaseAction {
 			
 			//log.debug("getting stats for " + url);
 			StatVO stats = pageViews.get(url.toString());
+			if (stats == null) {
+				//look for a lower-case match.  /qs/ values cannot enforce canonicals the way pages do -JM 10-9-15
+				url = new StringBuilder(siteAlias).append(divisionAlias).append(suffixUrl).append(prodAlias.toLowerCase());
+				stats = pageViews.get(url.toString());
+			}
 			if (stats != null) {
 				log.debug(url + "=" + stats.getHitCnt());
 				cat.setNumProdAssoc(stats.getHitCnt());
@@ -226,7 +235,7 @@ public class ProductCatalogUtil extends AbstractBaseAction {
 			}
 			
 			//if we get this far, compare them fairly.
-			return cat1Cnt.compareTo(cat2Cnt);
+			return cat2Cnt.compareTo(cat1Cnt);
 		}
 	}
 	

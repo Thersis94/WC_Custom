@@ -90,6 +90,7 @@ public class EmailWrapper extends SimpleActionAdapter {
 		} else {
 			String contactActionId = (String)mod.getAttribute(SBModuleVO.ATTRIBUTE_1);
 			actionInit.setActionId(contactActionId);
+			req.setParameter("actionGroupId", contactActionId);
 			
 			SMTActionInterface ai = new ContactFacadeAction(actionInit);
 			ai.setDBConnection(dbConn);
@@ -146,7 +147,7 @@ public class EmailWrapper extends SimpleActionAdapter {
 		sql.append("cast(f.value_txt as nvarchar(150)) as 'gifter_nm', ");
 		sql.append("MIN(c.CREATE_DT) as 'first_dt', MAX(c.CREATE_DT) as 'last_dt', ");
 		sql.append("COUNT(c.CAMPAIGN_LOG_ID) as 'email_cnt', b.ALLOW_COMM_FLG, ");
-		sql.append("a.contact_submittal_id, wc.record_no ");
+		sql.append("a.contact_submittal_id, wc.record_no, a.create_dt ");
 		sql.append("from CONTACT_SUBMITTAL a ");
 		sql.append("left outer join CONTACT_DATA e on a.CONTACT_SUBMITTAL_ID=e.CONTACT_SUBMITTAL_ID and e.CONTACT_FIELD_ID='c0a80237c670c7f0abba7364a8fc9a85' "); //funeralHomeName
 		sql.append("left outer join CONTACT_DATA f on a.CONTACT_SUBMITTAL_ID=f.CONTACT_SUBMITTAL_ID and f.CONTACT_FIELD_ID='c0a80237c670f730b45753522de808b' "); //giftGiverName
@@ -154,12 +155,12 @@ public class EmailWrapper extends SimpleActionAdapter {
 		sql.append("left outer join ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("WILLOWGREEN_COUNTER wc on a.CONTACT_SUBMITTAL_ID=wc.CONTACT_SUBMITTAL_ID ");
 		sql.append("left outer join EMAIL_CAMPAIGN_LOG c on a.PROFILE_ID=c.PROFILE_ID and campaign_instance_id in (select campaign_instance_id from email_campaign_instance where EMAIL_CAMPAIGN_ID=?) ");
-		sql.append("where ACTION_ID=? ");
+		sql.append("where a.ACTION_ID=? "); //this is actually actionGroupId, on the data level
 		if (role.getRoleLevel() < SecurityController.ADMIN_ROLE_LEVEL)
 			sql.append("and a.DEALER_LOCATION_ID=? ");
-		sql.append("group by a.PROFILE_ID, a.DEALER_LOCATION_ID, a.contact_submittal_id, a.create_dt, b.ALLOW_COMM_FLG, cast(e.value_txt as nvarchar(150)), cast(f.value_txt as nvarchar(150)), record_no ");
+		sql.append("group by a.PROFILE_ID, a.DEALER_LOCATION_ID, a.contact_submittal_id, a.create_dt, b.ALLOW_COMM_FLG, cast(e.value_txt as nvarchar(150)), cast(f.value_txt as nvarchar(150)), record_no, a.create_dt ");
 		sql.append("order by record_no desc");
-		//log.debug(sql + " " + role.getProfileId());
+		//log.debug(sql + "|" + role.getProfileId() + "|" + emailCampaignId + "|" + contactActionId);
 		
 		PreparedStatement ps = null;
 		try {
