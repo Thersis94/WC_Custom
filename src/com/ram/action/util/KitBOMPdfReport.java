@@ -83,7 +83,9 @@ public class KitBOMPdfReport extends AbstractSBReportVO {
 		StringBuilder html = new StringBuilder(3000);
 		html.append("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">");
 		html.append("<html><head><title>").append(data.getProductName()).append(" BOM</title></head><body>");
-		html.append("<h2>").append(data.getProductName()).append("</h2>");
+		html.append("<style>@page {@top-center { content: element(header); width:100%;}}</style>");
+		html.append("<div style='position:running(header);text-align:center;'><h2>").append(data.getProductName()).append("</h2></div>");
+		html.append("<div class='content'>");
 		int cnt = 1;
 			for(KitLayerVO k : data.getKitLayers()) {
 				html.append("<h3>Layer ").append(k.getDepthNumber()).append("</h3>");
@@ -92,6 +94,7 @@ public class KitBOMPdfReport extends AbstractSBReportVO {
 				html.append("<th>Product Id</th>");
 				html.append("<th>Vendor/OEM</th>");
 				html.append("<th>Inventory Date</th>");
+				html.append("<th>Qty.</th>");
 				html.append("</tr></thead><tbody>");
 				for(KitLayerProductVO p: k.getProducts().values()) {
 					html.append("<tr>");
@@ -99,16 +102,19 @@ public class KitBOMPdfReport extends AbstractSBReportVO {
 					html.append("<td>").append(p.getProduct().getCustomerProductId()).append("</td>");
 					html.append("<td>").append(p.getProduct().getCustomerName()).append("</td>");
 					html.append("<td>").append(Convert.formatDate(new Date())).append("</td>");
+					html.append("<td>").append(p.getQuantity()).append("</td>");
 					html.append("</tr>");
 				}
 				html.append("</tbody></table>");
 				if(cnt < data.getKitLayers().size()) {
-					html.append("<p style='page-break-before:always;'>&nbsp;</p>");
+					html.append("<p style='page-break-before:always; height:0px; margin:0px; padding:0px;'>&nbsp;</p>");
 					cnt++;
 				}
 			}
-		html.append("</body>");
+		html.append("</div></body>");
 		html.append("</html>");
+		
+		log.debug(html.toString());
 		return html.toString().getBytes();
 	}
 

@@ -444,6 +444,24 @@ public class VisionAction extends SBActionAdapter {
 		RAMProductVO p = getProduct(productId);
 		p.setKitLayers(loadKitLayers(p));
 
+		/*
+		 * Check if we've selected any items.  Selected items have been removed
+		 * from kit and should be marked as 0 quantity.
+		 */
+		String [] selItems = req.getParameterValues("selItems");
+		if(selItems != null) {
+			for(String s : selItems) {
+				int layerId = Convert.formatInteger(s.substring(0, s.indexOf('-')));
+				int layerProdId = Convert.formatInteger(s.substring(s.indexOf('-')));
+	
+				for(KitLayerVO l : p.getKitLayers()) {
+					if(l.getKitLayerId() == layerId) {
+						l.getProducts().get(layerProdId).setQuantity(0);
+					}
+				}
+			}
+		}
+
 		report = new KitBOMPdfReport();
 		String fileName = StringUtil.replace(p.getProductName(), " ", "_");
 		report.setFileName(fileName + "_bom_export.pdf");
