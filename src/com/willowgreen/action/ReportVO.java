@@ -23,6 +23,7 @@ public class ReportVO implements Serializable {
 	private String dealerLocationId = null;
 	private String funeralHomeName = null;
 	private String gifterName = null;
+	private Date enrolledDate = null;
 	private Date firstEmailDate = null;
 	private Date lastEmailDate = null;
 	private Integer emailCnt = Integer.valueOf(0);
@@ -45,6 +46,7 @@ public class ReportVO implements Serializable {
 		gifterName = db.getStringVal("gifter_nm", rs);
 		firstEmailDate = db.getDateVal("first_dt", rs);
 		lastEmailDate = db.getDateVal("last_dt", rs);
+		enrolledDate = db.getDateVal("create_dt", rs);
 		emailCnt = db.getIntegerVal("email_cnt", rs);
 		allowCommFlg = db.getIntegerVal("allow_comm_flg", rs);
 		setContactSubmittalId(db.getStringVal("contact_submittal_id", rs));
@@ -158,6 +160,14 @@ public class ReportVO implements Serializable {
 
 	public void setRecordNo(int recordNo) {
 		this.recordNo = recordNo;
+	}
+
+	public Date getEnrolledDate() {
+		return enrolledDate;
+	}
+
+	public void setEnrolledDate(Date enrolledDate) {
+		this.enrolledDate = enrolledDate;
 	}
 	
 	

@@ -36,7 +36,7 @@ public class CenterModuleOptionVO implements Serializable, Approvable {
 	
 	// Member Variables 
 	private Map<String, OptionAttributeVO> attributes = new LinkedHashMap<String, OptionAttributeVO>();
-	private Integer moduleOptionId = Integer.valueOf(0);
+	private String moduleOptionId = null;
 	private Integer moduleTypeId = Integer.valueOf(0);
 	private String optionName = null;
 	private String contentPath = null;
@@ -50,7 +50,7 @@ public class CenterModuleOptionVO implements Serializable, Approvable {
 	private Date startDate = null;
 	private Date endDate = null;
 	private Integer approvalFlag = Integer.valueOf(0); //0=pending
-	private Integer parentId = Integer.valueOf(0); //used to link modules with their predecessor prior to approval
+	private String parentId = null; //used to link modules with their predecessor prior to approval
 	private Integer franchiseId = null;
 	private String typeName = null;
 	private Integer moduleLocationId = null;
@@ -85,10 +85,11 @@ public class CenterModuleOptionVO implements Serializable, Approvable {
 	public void assignVals(ResultSet rs) {
 		DBUtil db = new DBUtil();
 		
-		if (moduleOptionId == 0) {
-			moduleOptionId = db.getIntegerVal("cp_module_option_id", rs);
-			if (db.getIntegerVal("mod_opt_id", rs) > 0)
-				moduleOptionId = db.getIntegerVal("mod_opt_id", rs);
+		if (moduleOptionId == null) {
+			moduleOptionId = db.getStringVal("cp_module_option_id", rs);
+			String modOptId = StringUtil.checkVal(db.getStringVal("mod_opt_id", rs),null);
+			if (modOptId != null)
+				moduleOptionId = modOptId;
 
 			moduleTypeId = db.getIntegerVal("fts_cp_module_type_id", rs);
 			optionName = db.getStringVal("option_nm", rs);
@@ -103,7 +104,7 @@ public class CenterModuleOptionVO implements Serializable, Approvable {
 			startDate = db.getDateVal("start_dt", rs);
 			endDate = db.getDateVal("end_dt", rs);
 			approvalFlag = db.getIntegerVal("approval_flg", rs);
-			parentId = db.getIntegerVal("parent_id", rs);
+			this.setParentId(db.getStringVal("parent_id", rs));
 			franchiseId = db.getIntegerVal("franchise_id", rs);
 			createDate = db.getDateVal("option_create_dt", rs);
 			actionId = db.getStringVal("FTS_CP_MODULE_ACTION_ID", rs);
@@ -128,8 +129,8 @@ public class CenterModuleOptionVO implements Serializable, Approvable {
 	 * added for Keystone interface...
 	 */
 	public void assignVals(SMTServletRequest req) {
-		moduleOptionId = Convert.formatInteger(req.getParameter("moduleOptionId"));
-		parentId = Convert.formatInteger(req.getParameter("parentId"), 0);
+		moduleOptionId = req.getParameter("moduleOptionId");
+		this.setParentId(req.getParameter("parentId"));
 		moduleTypeId = Convert.formatInteger(req.getParameter("moduleTypeId"));
 		if (moduleTypeId == null) 
 			moduleTypeId = Convert.formatInteger(req.getParameter("modTypeId"));
@@ -188,14 +189,14 @@ public class CenterModuleOptionVO implements Serializable, Approvable {
 	/**
 	 * @return the moduleOptionId
 	 */
-	public Integer getModuleOptionId() {
+	public String getModuleOptionId() {
 		return moduleOptionId;
 	}
 
 	/**
 	 * @param moduleOptionId the moduleOptionId to set
 	 */
-	public void setModuleOptionId(Integer moduleOptionId) {
+	public void setModuleOptionId(String moduleOptionId) {
 		this.moduleOptionId = moduleOptionId;
 	}
 
@@ -376,11 +377,11 @@ public class CenterModuleOptionVO implements Serializable, Approvable {
 		return approvalFlag;
 	}
 
-	public void setParentId(Integer parentId) {
-		this.parentId = parentId;
+	public void setParentId(String parentId) {
+		this.parentId = (Convert.formatInteger(parentId) == 0 ? null:parentId);
 	}
 
-	public Integer getParentId() {
+	public String getParentId() {
 		return parentId;
 	}
 
