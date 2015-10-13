@@ -169,7 +169,7 @@ public class RegistrationAction extends SimpleActionAdapter {
 		if (!dsiRoleMgr.isLMSAuthorized(user)) return;
 		
 		//if this is an edit, call the LMS after each modal saves 1,2 and 3.  
-		//Otherwise only when modal #3 is submitted.
+		//Otherwise only when modal #3 is submitted (which is page=4 on the request).
 		if ("4".equals(req.getParameter("page")) && req.hasParameter("newReg")) {
 			boolean migrated = migrateUser(req);
 			
@@ -183,24 +183,33 @@ public class RegistrationAction extends SimpleActionAdapter {
 			captureLMSResponses(req, user, regFields);
 			
 		} else if (!req.hasParameter("newReg")) {
+			String[] fieldList = new String[]{ RegField.DSI_TTLMS_ID.toString() };
 			//existing user updating their data
 			saveUser(user);
-			captureLMSResponses(req, user, new String[]{ RegField.DSI_TTLMS_ID.toString() });
+			
+			//if the user is submitting page 2, and has changed either their profession or specialty, reset Verified=no
+			if ("3".equals(req.getParameter("page"))) {
+				if (!StringUtil.checkVal(req.getParameter("oldProfession")).equals(user.getProfession()) || 
+						!StringUtil.checkVal(req.getParameter("oldSpecialty")).equals(user.getSpecialty())) {
+					user.setVerified(false);
+					fieldList = new String[]{ RegField.DSI_TTLMS_ID.toString(), RegField.DSI_VERIFIED.toString() };
+				}
+			}
+			
+			captureLMSResponses(req, user, fieldList);
 		}
 		
 		boolean isFinalPage = StringUtil.checkVal(req.getParameter("finalPage")).equals("1");
-		log.debug("isFinalPage=" + isFinalPage);
-		log.debug("isFinalPage=" + req.getParameter("finalPage"));
+		log.debug("isFinalPage=" + isFinalPage + " " + req.getParameter("finalPage"));
 		if (isFinalPage && unloadSessionIfNoRole && ses.getAttribute(Constants.ROLE_DATA) == null) {
 			ses.removeAttribute(Constants.USER_DATA);
 		} else if (isFinalPage) {
-			log.debug("removing incomplete");
+			log.debug("removing incomplete flag from UserDataVO");
 			user.addAttribute("incomplete",false); //this comes from rereg scenarios
 			ses.setAttribute(Constants.USER_DATA, user.getUserDataVO());
 		} else {
 			ses.setAttribute(Constants.USER_DATA, user.getUserDataVO());
 		}
-		log.debug("got to end");
 	}
 	
 	
@@ -333,8 +342,8 @@ public class RegistrationAction extends SimpleActionAdapter {
 				log.error("could not get userActiveId from LMS", ae);
 			}
 		}
-		
 		log.debug("TTLMSID=" + user.getTtLmsId());
+		
 		double d;
 		if (Convert.formatInteger(user.getTtLmsId()) > 0) {
 			//call update
