@@ -535,6 +535,7 @@ public class PostcardEmailer {
 		
 		try{
 			EmailMessageVO mail = new EmailMessageVO();
+			mail.addRecipient("Sterling.Hoham@hmktgroup.com");
 			mail.addRecipient(site.getAdminEmail());
 			mail.addCC("rwilkin7@its.jnj.com");
 			mail.setSubject("Postcard Declined - Seminar "+sem.getRSVPCodes());
