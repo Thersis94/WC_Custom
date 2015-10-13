@@ -23,7 +23,7 @@ public class FutureLeaderACGME {
 		ORTHSE("ORTH-SE", "Shoulder & Elbow","Future Leaders~Orthopaedics~Shoulder & Elbow","orthpaedics"),
 		ORTHHW("ORTH-HW", "Hand & Wrist","Future Leaders~Orthopaedics~Hand & Wrist","orthpaedics"),
 		ORTHSP("ORTH-SP", "Spine","Future Leaders~Orthopaedics~Spine","orthpaedics"),
-		ORTHCW("ORTH-CW	", "Chest Wall","Future Leaders~Orthopaedics~Chest Wall","orthpaedics"),
+		ORTHCW("ORTH-CW", "Chest Wall","Future Leaders~Orthopaedics~Chest Wall","orthpaedics"),
 		ORTHHIP("ORTH-HIP", "Hip","Future Leaders~Orthopaedics~Hip","orthpaedics"),
 		ORTHKNE("ORTH-KNE", "Knee","Future Leaders~Orthopaedics~Knee","orthpaedics"),
 		ORTHFTA("ORTH-FTA", "Foot & Ankle","Future Leaders~Orthopaedics~Foot & Ankle","orthpaedics"),
