@@ -4,6 +4,8 @@ package com.depuysynthes.nexus;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetEncoder;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -16,6 +18,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
+// SOLR Libs
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
@@ -140,7 +143,7 @@ public class NexusKitImporter extends CommandLineUtil {
 			messages.put("Number of JDE Kits", cnt + "");
 			
 			// Process the JDE Detail File
-			cnt = processJDEDetailFile();
+			//cnt = processJDEDetailFile();
 			messages.put("Number of JDE Kit Items", cnt + "");
 			
 			// Process the MDM File
@@ -150,7 +153,8 @@ public class NexusKitImporter extends CommandLineUtil {
 			
 			// Get the GTIN and Description from Solr
 			cnt = processMDMInformation();
-			messages.put("MDM Kit Data Updated From Solr", "");
+			messages.put("MDM Kit Data Updated From Solr", "OK");
+			
 			// Once this point has been reached all documents are ready to be committed.
 			server.commit();
 		} catch (Exception e) {
@@ -174,7 +178,7 @@ public class NexusKitImporter extends CommandLineUtil {
 		// Initialize the connection to solr
 		SolrQueryProcessor sqp = new SolrQueryProcessor((Map)props, "DePuy_NeXus");
 		
-		// Get the ids hwere the description or gtin is missing and format
+		// Get the ids where the description or gtin is missing and format
 		// the ids into solr filters
 		List<String> ids = this.formatIdsIntoSolrQuery(this.getMDMIds());
 		
@@ -425,12 +429,16 @@ public class NexusKitImporter extends CommandLineUtil {
 		sql.append("values (?,?,?,?,?,?,?)");
 		//log.info("kit Header SQL: " + sql);
 		
+		String desc = StringUtil.checkVal(kit.getKitDesc());
+		CharsetEncoder asciiEncoder = Charset.forName("US-ASCII").newEncoder(); 
+		if (! asciiEncoder.canEncode(desc)) desc = desc.replaceAll("[^\\p{ASCII}]", "");
+		
 		// Set the sql data elements
 		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, kit.getKitId());
 			ps.setString(2, kit.getKitSKU());
 			ps.setString(3, kit.getOrgId());
-			ps.setString(4, kit.getKitDesc());
+			ps.setString(4, desc);
 			ps.setString(5, kit.getKitGTIN());
 			ps.setString(6, StringUtil.checkVal(kit.getBranchCode()).trim());
 			ps.setTimestamp(7, Convert.getCurrentTimestamp());
