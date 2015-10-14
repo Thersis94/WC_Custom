@@ -126,7 +126,7 @@ public class BarcodeLookupAction extends SBActionAdapter {
 		qData.setRoleLevel(0);
 		qData.addIndexType(new SolrActionIndexVO("", NexusProductVO.solrIndex));
 		Map<String, String> filter = new HashMap<>();
-		filter.put("gtin", barcode.getProductId()+" OR searchableName:"+barcode.getProductId());
+		filter.put("gtin", "*"+barcode.getProductId()+" OR searchableName:*"+barcode.getProductId());
 		qData.setFilterQueries(filter);
 		SolrResponseVO resp = sqp.processQuery(qData);
 		
