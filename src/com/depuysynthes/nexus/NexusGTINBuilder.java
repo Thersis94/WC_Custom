@@ -265,13 +265,22 @@ public class NexusGTINBuilder extends CommandLineUtil {
 			Object uom = prod.get("uomLvl");
 			if (col != null && col.size() > 0) uom = col.toArray()[0];
 			
+			// Split the spine opco label
+			String opco = StringUtil.checkVal(prod.get("organizationName")); 
+			if ("spine".equalsIgnoreCase(opco)) {
+				if (StringUtil.checkVal(prod.get("source")).equalsIgnoreCase("mdm"))
+					opco = "DePuy " + opco;
+				else
+					opco = "Synthes " + opco;
+			}
+			
 			int c = 0;
 			Row row = sheet.createRow(r++);
 			// Add cells
 			addCell(c++, prod.get("documentId") + "", row);
 			addCell(c++, gtin + "", row);
 			addCell(c++, prod.get("summary") + "", row);
-			addCell(c++, prod.get("organizationName") + "", row);
+			addCell(c++, opco, row);
 			addCell(c++, uom + "", row);
 		}
 	}
