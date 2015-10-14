@@ -6,6 +6,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetEncoder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -60,6 +62,7 @@ public class NexusImporter extends CommandLineUtil {
 	private String fileName;
 	private String hostName;
 	private String directory;
+	private Source source;
 	
 	// Stores the organizations code mappings
 	public enum organizations {
@@ -80,6 +83,10 @@ public class NexusImporter extends CommandLineUtil {
 		public String getName() {
 			return name;
 		}
+	}
+	
+	public enum Source {
+		MDM, JDE
 	}
 	
 	private int org;
@@ -115,6 +122,7 @@ public class NexusImporter extends CommandLineUtil {
 			fileName = props.getProperty("fileName");
 			directory = props.getProperty("directory");
 		}
+		determineSource();
 		
 		prepareValues();
 		errors = new ArrayList<>();
@@ -261,7 +269,7 @@ public class NexusImporter extends CommandLineUtil {
 			while ((ze = zis.getNextEntry()) != null) {
 				if (!ze.getName().contains(".OUT")) 
 					continue;
-
+				determineSource(ze.getName());
 				// Get the file
 				byte[] b = new byte[2048];
 				ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -293,7 +301,7 @@ public class NexusImporter extends CommandLineUtil {
 			while ((ze = zis.getNextEntry()) != null) {
 				if (!ze.getName().contains(".OUT")) 
 					continue;
-
+				determineSource(ze.getName());
 				// Get the file
 				byte[] b = new byte[2048];
 				ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -356,6 +364,7 @@ public class NexusImporter extends CommandLineUtil {
 				updateProduct(p, cols);
 				p.addOrganization("DPY_SYN_NEXUS");
 				p.addRole("0");
+				p.setSource(source);
 				products.put(p.getDocumentId(), p);
 			}
 		}
@@ -414,7 +423,12 @@ public class NexusImporter extends CommandLineUtil {
 			p.setOrgName(organizations.valueOf(cols[org]).getName());
 		}
 		if (StringUtil.checkVal(p.getProductName()).length() == 0 && code != -1) p.setProductName(cols[code]);
-		if (StringUtil.checkVal(p.getSummary()).length() == 0 && desc != -1) p.setSummary(cols[desc]);
+		if (StringUtil.checkVal(p.getSummary()).length() == 0 && desc != -1) {
+			String temp = cols[desc];
+			CharsetEncoder asciiEncoder = Charset.forName("US-ASCII").newEncoder(); 
+			if (! asciiEncoder.canEncode(temp)) temp = temp.replaceAll("[^\\p{ASCII}]", "");
+			p.setSummary(temp);
+		}
 		if (gtin != -1 && cols[gtin].length() > 0 && !p.getGtin().contains(cols[gtin])) {
 			p.addGtin(cols[gtin]);
 			// Every GTIN can have a gtin level, uom, and package level
@@ -497,5 +511,26 @@ public class NexusImporter extends CommandLineUtil {
 		}
 		
 		return body.toString();
+	}
+	
+	/**
+	 * get the source from the overall file name
+	 */
+	private void determineSource() {
+		determineSource(fileName);
+	}
+	
+	/**
+	 * Set the source based on the filename
+	 * This is meant to be called when dealing with multiple files in a zip file.
+	 */
+	private void determineSource(String fileName) {
+		if (fileName == null) {
+			
+		} else if (fileName.contains("MDM")) {
+			source = Source.MDM;
+		} else {
+			source = Source.JDE;
+		}
 	}
 }

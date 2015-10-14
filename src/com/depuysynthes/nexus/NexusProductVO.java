@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import com.depuysynthes.nexus.NexusImporter.Source;
 import com.siliconmtn.annotations.SolrField;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.util.StringUtil;
@@ -38,6 +39,7 @@ public class NexusProductVO extends SolrDocumentVO {
 	public final static String UOM_LVL = "uomLvl";
 	public final static String solrIndex = "DEPUY_NEXUS";
 	public final static String STATUS = "status";
+	public final static String SOURCE = "source";
 	private String productId;
 	private String orgId;
 	private String orgName ;
@@ -55,6 +57,7 @@ public class NexusProductVO extends SolrDocumentVO {
 	private boolean dateLot;
 	private Date start;
 	private Date end;
+	private Source source;
 
 	
 	public NexusProductVO() {
@@ -313,6 +316,15 @@ public class NexusProductVO extends SolrDocumentVO {
 
 	public void setEnd(Date end) {
 		this.end = end;
+	}
+
+	@SolrField(name=SOURCE)
+	public Source getSource() {
+		return source;
+	}
+
+	public void setSource(Source source) {
+		this.source = source;
 	}
 
 }

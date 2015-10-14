@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.depuysynthes.nexus.NexusImporter.Source;
 import com.siliconmtn.annotations.SolrField;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.SMTServletRequest;
@@ -46,6 +47,7 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 	private String branchCode;
 	private Map<String, String> sharedWith;
 	private List<NexusKitLayerVO> layers;
+	private Source source;
 	
 	NexusKitVO(String solrIndex) {
 		super(solrIndex);
@@ -203,7 +205,16 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 		}
 		return count;
 	}
-	
+
+	@SolrField(name=NexusProductVO.SOURCE)
+	public Source getSource() {
+		return source;
+	}
+
+	public void setSource(Source source) {
+		this.source = source;
+	}
+
 	@SolrField(name=SearchDocumentHandler.ORGANIZATION)
 	public String getOrgId() {
 		return orgId;

@@ -22,7 +22,6 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.io.mail.EmailMessageVO;
-import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
@@ -106,8 +105,9 @@ public class NexusKitAction extends SBActionAdapter {
 	
 	/**
 	 * Get all users a kit has been shared with
+	 * @throws ActionException 
 	 */
-	private Object getSharedKits(SMTServletRequest req) {
+	private Object getSharedKits(SMTServletRequest req) throws ActionException {
 		NexusKitVO kit = new NexusKitVO(SOLR_INDEX);
 		StringBuilder sql = new StringBuilder(300);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
@@ -121,19 +121,14 @@ public class NexusKitAction extends SBActionAdapter {
 			ps.setString(1, req.getParameter("kitId"));
 			
 			ResultSet rs = ps.executeQuery();
-			ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
 			kit.setData(rs);
 			StringEncrypter se = new StringEncrypter((String) attributes.get(Constants.ENCRYPT_KEY));
 			while (rs.next()) {
 				String name = se.decrypt(rs.getString("FIRST_NM")) + " " +  se.decrypt(rs.getString("LAST_NM"));
 				kit.addPermision(rs.getString("SHARED_ID"), name);
 			}
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (EncryptionException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		} catch (Exception e) {
+			throw new ActionException(e);
 		}
 		return kit;
 	}
