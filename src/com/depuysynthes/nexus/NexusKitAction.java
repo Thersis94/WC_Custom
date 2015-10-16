@@ -395,7 +395,11 @@ public class NexusKitAction extends SBActionAdapter {
 			int i = Convert.formatInteger(split[0]);
 			NexusProductVO p = oldLayer.getProducts().get(i-offset);
 			oldLayer.getProducts().remove(i-offset);
-			newLayer.addProduct(p);
+			if (req.hasParameter("newIndex")) {
+				newLayer.getProducts().add(Convert.formatInteger(req.getParameter("newIndex")), p);
+			} else {
+				newLayer.addProduct(p);
+			}
 			offset++;
 		}
 		
