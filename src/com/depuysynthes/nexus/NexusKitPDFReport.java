@@ -93,7 +93,9 @@ public class NexusKitPDFReport  extends AbstractSBReportVO {
 		if (isForm) html.append("@page { size: A4 landscape;}");
 		html.append(" @page {@top-center { content: element(header); width:100%;}}");
 		html.append(" @page {@left-middle { content: element(layer); height:100%; vertical-align: top;}}");
-		html.append("@page {@bottom-center { content: counter(page) ' of ' counter(pages);page-break-after: always; }}");
+		html.append("@page {@bottom-right { content: counter(page) ' of ' counter(pages);page-break-after: always; }");
+		if (isForm) html.append("@bottom-left {content: 'By annotating the case specific information it is understood that this document contains sensitive data that is highly restricted.'}");
+		html.append("}");
 		html.append("@page {");
 		if (isForm) {
 			int baseHeight = 178;
