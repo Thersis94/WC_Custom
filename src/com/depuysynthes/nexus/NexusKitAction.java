@@ -391,6 +391,7 @@ public class NexusKitAction extends SBActionAdapter {
 			if (!currentLayer.equals(split[1])) {
 				offset = 0;
 				oldLayer = kit.findLayer(split[1]);
+				currentLayer = split[1];
 			}
 			int i = Convert.formatInteger(split[0]);
 			NexusProductVO p = oldLayer.getProducts().get(i-offset);
@@ -401,6 +402,7 @@ public class NexusKitAction extends SBActionAdapter {
 				newLayer.addProduct(p);
 			}
 			offset++;
+			log.debug(offset);
 		}
 		
 		req.getSession().setAttribute(KIT_SESSION_NM, kit);
