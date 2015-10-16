@@ -402,7 +402,6 @@ public class NexusKitAction extends SBActionAdapter {
 				newLayer.addProduct(p);
 			}
 			offset++;
-			log.debug(offset);
 		}
 		
 		req.getSession().setAttribute(KIT_SESSION_NM, kit);
