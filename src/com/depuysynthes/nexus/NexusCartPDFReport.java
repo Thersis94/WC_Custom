@@ -69,7 +69,9 @@ public class NexusCartPDFReport  extends AbstractSBReportVO {
 		html.append("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">");
 		html.append("<html><head><title>Case Summary</title></head><body>");
 		html.append("<link href='/binary/themes/CUSTOM/DEPUY/DPY_SYN_NEXUS/scripts/css/font-awesome.css' rel='stylesheet'>");
-		html.append("<style>body{font-family: 'MyriadWebPro';}th{margin-bottom:10px;border-bottom:solid black 2px; font-size:12px;}</style>");
+		html.append("<style>@page{margin-bottom:50px;}body{font-family: 'MyriadWebPro';}th{margin-bottom:10px;border-bottom:solid black 2px; font-size:12px;}");
+		html.append("@page{margin-bottom:125px;@bottom-center {content: 'By annotating the case specific information it is understood that this document contains sensitive data that is highly restricted.'}}</style>");
+		
 		
 		html.append("<table style='color:#636363;border-collapse:collapse;font-size:16px; width:100%;'><tbody>");
 		html.append("<tr><td style='width:48%'><img style='width:200px' src='/binary/themes/CUSTOM/DEPUY/DPY_SYN_NEXUS/images/logo.png' /><span style='float:right'>");
@@ -99,7 +101,7 @@ public class NexusCartPDFReport  extends AbstractSBReportVO {
 		html.append("<table style='color:#636363;border-collapse:collapse;font-size:16px; width:100%'>");
 		html.append("<tbody><tr style='margin-bottom:10px;'><th style='width:2%'>&nbsp;</th><th style='width:12%'>Product No.</th>");
 		html.append("<th style='width:11%'>Company</th><th style='width:14%;'>GTIN</th><th style='width:10%'>LOT No.</th>");
-		html.append("<th style='width:7%; text-align:center;'>Date Lot</th><th style='width:6%; text-align:center;'>UOM</th><th style='width:6%; text-align:center;'>QTY</th>");
+		html.append("<th style='width:7%; text-align:center;'>Date LOT</th><th style='width:6%; text-align:center;'>UOM</th><th style='width:6%; text-align:center;'>QTY</th>");
 		html.append("<th>Barcode</th></tr>");
 
 
@@ -151,8 +153,6 @@ public class NexusCartPDFReport  extends AbstractSBReportVO {
 		}
 		
 		html.append("</tbody></table></body>");
-		html.append("<div style='position:fixed; bottom:0px; width:100%; text-align:center;'><span>This document contains sensitive data that is highly restricted</span></div></html>");
-		log.debug(html);
 		return html.toString().getBytes();
 	}
 
