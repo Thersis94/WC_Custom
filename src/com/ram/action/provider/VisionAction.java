@@ -14,6 +14,7 @@ import net.sf.json.JSONException;
 import net.sf.json.JSONObject;
 
 import com.ram.action.data.RAMProductSearchVO;
+import com.ram.action.util.KitBOMPdfReport;
 import com.ram.action.util.RAMFabricParser;
 import com.ram.datafeed.data.KitLayerProductVO;
 import com.ram.datafeed.data.KitLayerVO;
@@ -23,8 +24,10 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.imageMap.FabricParserInterface;
+import com.siliconmtn.util.imageMap.ImageMapAreaVO;
 import com.siliconmtn.util.imageMap.ImageMapVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -74,19 +77,23 @@ public class VisionAction extends SBActionAdapter {
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
 
-		//Create RAMSearchVO to manage the Search/Query Params.
-		RAMProductSearchVO svo = new RAMProductSearchVO(req);
-
-		//Don't process if we don't have a productId.
-		if(svo.getProductId() == 0) {
-			return;
-		}
-
-		//Determine if we are processing an Ajax request or the initial page request.
-		if(req.hasParameter("amid")) {
-			processAjaxRequest(svo);
+		if(req.hasParameter("exportBOM")) {
+			sendReport(Convert.formatInteger(req.getParameter("productId")), req);
 		} else {
-			processStandardRequest(svo);
+			//Create RAMSearchVO to manage the Search/Query Params.
+			RAMProductSearchVO svo = new RAMProductSearchVO(req);
+	
+			//Don't process if we don't have a productId.
+			if(svo.getProductId() == 0) {
+				return;
+			}
+	
+			//Determine if we are processing an Ajax request or the initial page request.
+			if(req.hasParameter("amid")) {
+				processAjaxRequest(svo);
+			} else {
+				processStandardRequest(svo);
+			}
 		}
 	}
 
@@ -179,11 +186,13 @@ public class VisionAction extends SBActionAdapter {
 			for(KitLayerVO k : layers) {
 				map = fp.getImageMap(JSONObject.fromObject(k.getJsonData()));
 				map.setName(LAYER_ID + k.getDepthNumber());
+				updateMapData(map, k);
 
 				k.setImageMap(map);
 			}
 
 			//Set Proper ModuleVO Data
+			
 			mod.setActionData(layers);
 			mod.setDataSize(layers.size());
 
@@ -193,6 +202,25 @@ public class VisionAction extends SBActionAdapter {
 
 		return mod;
 	}
+
+	/**
+	 * Helper method that manages setting map data not contained in the JSON.
+	 * 
+	 * @param map
+	 * @param k
+	 */
+	private void updateMapData(ImageMapVO map, KitLayerVO k) {
+
+		//Iterate the Shapes
+		for(ImageMapAreaVO s : map.getShapes()) {
+			//Obtain the related ProductId from the Shape.
+			int id = Convert.formatInteger(s.getId().substring(s.getId().indexOf('-')));
+
+			//Lookup the Product and set the Title based on ProductName.
+			s.setTitle(k.getProducts().get(id).getProductName());
+		}
+	}
+
 	/**
 	 * Helper method intended to load Vision System Data. Attempt a lookup in
 	 * cache and if found, return it.  Otherwise generate all the necessary data
@@ -260,7 +288,7 @@ public class VisionAction extends SBActionAdapter {
 				layer = new KitLayerVO(rs, false);
 				layer.setJsonData(rs.getString("JSON_DATA"));
 				layer.setKitProductId(p.getProductId());
-
+				layer.setKitName(p.getProductName());
 				//Build Kit Layer PRoduct XR VO
 				lpxr = new KitLayerProductVO(rs, false);
 
@@ -295,6 +323,7 @@ public class VisionAction extends SBActionAdapter {
 						layer = new KitLayerVO(rs, false);
 						layer.setJsonData(rs.getString("JSON_DATA"));
 						layer.setKitProductId(p.getProductId());
+						layer.setKitName(p.getProductName());
 					}
 
 					//Build Kit Layer PRoduct XR VO
@@ -371,7 +400,7 @@ public class VisionAction extends SBActionAdapter {
 		sql.append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("RAM_CUSTOMER d ");
 		sql.append("on d.CUSTOMER_ID = c.CUSTOMER_ID ");
 		sql.append("where a.PRODUCT_ID = ? ");
-		sql.append("order by LAYOUT_DEPTH_NO");
+		sql.append("order by LAYOUT_DEPTH_NO, c.CUST_PRODUCT_ID");
 
 		log.debug(sql.toString());
 		return sql.toString();
@@ -401,5 +430,44 @@ public class VisionAction extends SBActionAdapter {
 		} else {
 			return null;
 		}
+	}
+
+	/**
+	 * Helper method that generates the Kit Bom Report and places it back on the
+	 * request.
+	 * @param productId
+	 * @param req
+	 * @throws ActionException
+	 */
+	public void sendReport(int productId, SMTServletRequest req) throws ActionException {
+		KitBOMPdfReport report;
+		RAMProductVO p = getProduct(productId);
+		p.setKitLayers(loadKitLayers(p));
+
+		/*
+		 * Check if we've selected any items.  Selected items have been removed
+		 * from kit and should be marked as 0 quantity.
+		 */
+		String [] selItems = req.getParameterValues("selItems");
+		if(selItems != null) {
+			for(String s : selItems) {
+				int layerId = Convert.formatInteger(s.substring(0, s.indexOf('-')));
+				int layerProdId = Convert.formatInteger(s.substring(s.indexOf('-')));
+	
+				for(KitLayerVO l : p.getKitLayers()) {
+					if(l.getKitLayerId() == layerId) {
+						l.getProducts().get(layerProdId).setQuantity(0);
+					}
+				}
+			}
+		}
+
+		report = new KitBOMPdfReport();
+		String fileName = StringUtil.replace(p.getProductName(), " ", "_");
+		report.setFileName(fileName + "_bom_export.pdf");
+		report.setData(p);
+		report.setBaseDomain(req.getDomainUrl());
+		req.setAttribute(Constants.BINARY_DOCUMENT, report);
+		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, true);		
 	}
 }
