@@ -124,8 +124,8 @@ public class NexusKitAction extends SBActionAdapter {
 			kit.setData(rs);
 			StringEncrypter se = new StringEncrypter((String) attributes.get(Constants.ENCRYPT_KEY));
 			while (rs.next()) {
-				String name = se.decrypt(rs.getString("FIRST_NM")) + " " +  se.decrypt(rs.getString("LAST_NM"));
-				kit.addPermision(rs.getString("SHARED_ID"), name);
+				String email = se.decrypt(rs.getString("EMAIL_ADDRESS_TXT"));
+				kit.addPermision(rs.getString("SHARED_ID"), email);
 			}
 		} catch (Exception e) {
 			throw new ActionException(e);
@@ -667,6 +667,9 @@ public class NexusKitAction extends SBActionAdapter {
 					}
 					currentKit = rs.getString("SET_INFO_ID");
 					kit = new NexusKitVO(rs, SOLR_INDEX);
+					if (StringUtil.checkVal(rs.getString("SHARED_ID")).length() > 0) {
+						kit.setShared(true);
+					}
 					count++;
 				}
 
@@ -913,7 +916,7 @@ public class NexusKitAction extends SBActionAdapter {
 
 			ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
 			while(rs.next()) {
-				kit.addPermision(rs.getString("PROFILE_ID"), pm.getStringValue("first_nm", rs.getString("first_nm")) + " " + pm.getStringValue("last_nm", rs.getString("last_nm")));
+				kit.addPermision(rs.getString("PROFILE_ID"), pm.getStringValue("EMAIL_ADDRESS", rs.getString("EMAIL_ADDRESS")));
 			}
 		} catch (SQLException e) {
 			throw new ActionException(e);
