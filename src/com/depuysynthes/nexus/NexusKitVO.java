@@ -48,6 +48,7 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 	private Map<String, String> sharedWith;
 	private List<NexusKitLayerVO> layers;
 	private Source source;
+	private boolean shared = false;
 	
 	NexusKitVO(String solrIndex) {
 		super(solrIndex);
@@ -274,5 +275,13 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 	public String getSearchableName() {
 		if (kitSKU == null) return null;
 		return kitSKU.replaceAll("[\\-\\/\\.]", "");
+	}
+
+	public boolean isShared() {
+		return shared;
+	}
+
+	public void setShared(boolean shared) {
+		this.shared = shared;
 	}
 }
