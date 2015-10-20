@@ -3,6 +3,8 @@ package com.depuysynthes.nexus;
 //JDK 1.7.x
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetEncoder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -116,6 +118,7 @@ public class NexusGTINBuilder extends CommandLineUtil {
 	// Member Variables
 	Map<String, Object> solrAttribs = new HashMap<>();
 	Picture pict = null;
+	CharsetEncoder asciiEncoder = Charset.forName("US-ASCII").newEncoder(); 
 	
 	/**
 	 * 
@@ -274,12 +277,16 @@ public class NexusGTINBuilder extends CommandLineUtil {
 					opco = "Synthes " + opco;
 			}
 			
+			// Get rid if nonascii
+			String desc = prod.get("summary") + "";
+			if (! asciiEncoder.canEncode(desc)) desc = desc.replaceAll("[^\\p{ASCII}]", "");
+						
 			int c = 0;
 			Row row = sheet.createRow(r++);
 			// Add cells
 			addCell(c++, prod.get("documentId") + "", row);
 			addCell(c++, gtin + "", row);
-			addCell(c++, prod.get("summary") + "", row);
+			addCell(c++, desc, row);
 			addCell(c++, opco, row);
 			addCell(c++, uom + "", row);
 		}
