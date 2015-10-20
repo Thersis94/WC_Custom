@@ -48,7 +48,9 @@ public class BarcodeLookupAction extends SBActionAdapter {
 	 */
 	protected List<BarcodeOEM> oems = new ArrayList<BarcodeOEM>() {
 		private static final long serialVersionUID = 1L; {
-			add(new BarcodeOEM("codman", "Codman", "0886704", "H202"));
+			add(new BarcodeOEM("spine", "Spine", "", "H981"));
+			add(new BarcodeOEM("trauma", "Trauma", "", "H980"));
+			add(new BarcodeOEM("cmf", "CMF", "", "H679"));
 			add(new BarcodeOEM("mitek", "Mitek", "0886705", "H207"));
 			add(new BarcodeOEM("depuy", "DePuy", "038135", "H441"));
 			add(new BarcodeOEM("depuy_ireland", "DePuy Ireland", "038135", "H205"));
