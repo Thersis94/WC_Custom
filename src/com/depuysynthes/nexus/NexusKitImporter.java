@@ -143,7 +143,7 @@ public class NexusKitImporter extends CommandLineUtil {
 			messages.put("Number of JDE Kits", cnt + "");
 			
 			// Process the JDE Detail File
-			//cnt = processJDEDetailFile();
+			cnt = processJDEDetailFile();
 			messages.put("Number of JDE Kit Items", cnt + "");
 			
 			// Process the MDM File
@@ -297,8 +297,11 @@ public class NexusKitImporter extends CommandLineUtil {
 				kCtr++; 
 			}
 			
-			// There will always be a kit item added
-			this.storeKitItem(items[1], items[2], items[6], items[8], items[9], iCtr);
+			// There will always be a kit item added.  If the date is way out into 
+			// the future, set it into the future 
+			String end = StringUtil.checkVal(items[6]);
+			if (! end.startsWith("20")) end = "20501231";
+			this.storeKitItem(items[1], items[2], items[9], items[5], end, iCtr, items[7]);
 			iCtr++;
 		}
 		
@@ -375,7 +378,7 @@ public class NexusKitImporter extends CommandLineUtil {
 			if (ctr == 0) continue;
 			
 			String[] items = temp.split(",");
-			this.storeKitItem(items[0], items[1], items[2], items[3], items[4], ctr);
+			this.storeKitItem(items[0], items[1], items[2], items[3], "20" + items[4], ctr, "");
 		}
 		
 		in.close();
@@ -388,7 +391,7 @@ public class NexusKitImporter extends CommandLineUtil {
 	 * @param order
 	 * @throws SQLException
 	 */
-	public void storeKitItem(String layerId, String sku, String qty, String start, String end, int order) 
+	public void storeKitItem(String layerId, String sku, String qty, String start, String end, int order, String uom) 
 	throws SQLException {
 		// Build the SQL Statement
 		StringBuilder sql = new StringBuilder(255);
@@ -404,7 +407,7 @@ public class NexusKitImporter extends CommandLineUtil {
 			ps.setString(2, layerId);
 			ps.setString(3, sku);
 			ps.setInt(4, Convert.formatInteger(qty));
-			ps.setString(5, "");
+			ps.setString(5, uom);
 			ps.setDate(6, Convert.formatSQLDate(Convert.parseDateUnknownPattern(start)));
 			ps.setDate(7, Convert.formatSQLDate(Convert.parseDateUnknownPattern(end)));
 			ps.setInt(8, order);
