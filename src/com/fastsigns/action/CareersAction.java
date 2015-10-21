@@ -84,7 +84,7 @@ public class CareersAction extends SBActionAdapter {
 				sb.append("ACTIVE_JOB_FLG = 1 ");
 			}
 		}
-		sb.append("order by JOB_POST_DT");
+		sb.append("order by JOB_POST_DT DESC");
 		PreparedStatement ps = null;
 		log.debug(sb + " | " + orgId);
 		List<CareersVO> centerCareers = new ArrayList<CareersVO>();
