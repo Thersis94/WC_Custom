@@ -377,8 +377,12 @@ public class CenterModuleOptionVO implements Serializable, Approvable {
 		return approvalFlag;
 	}
 
-	public void setParentId(String parentId) {
-		this.parentId = (Convert.formatInteger(parentId) == 0 ? null:parentId);
+	/**
+	 * Set parent module id. 
+	 * @param parentId Parent Id to set. If null, '', or '0', null will be used instead.
+	 */
+	public void setParentId(String parentId) { 
+		this.parentId = (StringUtil.checkVal(parentId, "0").equals("0") ? null:parentId);
 	}
 
 	public String getParentId() {
