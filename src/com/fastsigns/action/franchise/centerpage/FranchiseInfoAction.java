@@ -9,6 +9,7 @@ import java.util.List;
 import com.fastsigns.action.approval.WebeditApprover;
 import com.fastsigns.action.approval.WebeditApprover.WebeditType;
 import com.fastsigns.action.franchise.CenterPageAction;
+import com.fastsigns.action.franchise.SocialProfileMapAction;
 import com.fastsigns.action.franchise.vo.ButtonVO;
 import com.fastsigns.action.franchise.vo.FranchiseVO;
 import com.siliconmtn.action.ActionException;
@@ -452,8 +453,9 @@ public class FranchiseInfoAction extends SBActionAdapter {
 	 * Franchise Table.
 	 * @param req
 	 */
-	private void updateSocialMediaLinks(SMTServletRequest req) throws SQLException {
+	private void updateSocialMediaLinks(SMTServletRequest req) throws SQLException, ActionException {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		String fId = CenterPageAction.getFranchiseId(req);
 		StringBuilder s = new StringBuilder();
 		s.append("update ").append(customDb).append("fts_franchise set ");
 		s.append("facebook_url = ?, twitter_url=?, linkedin_url=?, foursquare_url=?, pinterest_url=?, google_plus_url=?, ");
@@ -469,13 +471,20 @@ public class FranchiseInfoAction extends SBActionAdapter {
 			ps.setString(5, req.getParameter("pinterestUrl"));
 			ps.setString(6, req.getParameter("googlePlusUrl"));
 			ps.setTimestamp(7, Convert.getCurrentTimestamp());
-			ps.setString(8, CenterPageAction.getFranchiseId(req));
+			ps.setString(8, fId);
 			ps.executeUpdate();
 		} finally {
 			try {
 				ps.close();
 			} catch (Exception e) {}
 		}
+		
+		//update the social media map
+		String corpOrg = ((SiteVO)req.getAttribute(Constants.SITE_DATA)).getOrganizationId();
+		SocialProfileMapAction spm = new SocialProfileMapAction(actionInit);
+		spm.setAttributes(attributes);
+		spm.setDBConnection(dbConn);
+		spm.updateFranchiseMap(req, corpOrg+"_"+fId); 
 	}	
 	
 	/**
