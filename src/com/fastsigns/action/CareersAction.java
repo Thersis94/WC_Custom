@@ -78,7 +78,7 @@ public class CareersAction extends SBActionAdapter {
 		Map<String, List<CareersVO>> postings = new LinkedHashMap<String, List<CareersVO>>();
 		super.retrieve(req);
 		String orgId;
-		SiteVO site = (SiteVO) req.getAttribute("siteData");
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		boolean isPreview = page.isPreviewMode();
 		if (site != null) {
