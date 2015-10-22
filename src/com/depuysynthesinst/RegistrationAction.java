@@ -184,17 +184,21 @@ public class RegistrationAction extends SimpleActionAdapter {
 			
 		} else if (!req.hasParameter("newReg")) {
 			String[] fieldList = new String[]{ RegField.DSI_TTLMS_ID.toString() };
-			//existing user updating their data
-			saveUser(user);
 			
 			//if the user is submitting page 2, and has changed either their profession or specialty, reset Verified=no
+			log.debug(req.getParameter("oldProfession") + "=" + user.getProfession());
+			log.debug(req.getParameter("oldSpecialty") + "=" + user.getSpecialty());
 			if ("3".equals(req.getParameter("page"))) {
 				if (!StringUtil.checkVal(req.getParameter("oldProfession")).equals(user.getProfession()) || 
 						!StringUtil.checkVal(req.getParameter("oldSpecialty")).equals(user.getSpecialty())) {
 					user.setVerified(false);
 					fieldList = new String[]{ RegField.DSI_TTLMS_ID.toString(), RegField.DSI_VERIFIED.toString() };
+					log.debug("verified flag set false");
 				}
 			}
+
+			//existing user updating their data
+			saveUser(user);
 			
 			captureLMSResponses(req, user, fieldList);
 		}
