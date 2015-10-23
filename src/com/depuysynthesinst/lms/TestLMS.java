@@ -1,5 +1,7 @@
 package com.depuysynthesinst.lms;
 
+import java.util.List;
+
 import com.depuysynthesinst.DSIUserDataVO;
 import com.siliconmtn.security.UserDataVO;
 
@@ -30,32 +32,37 @@ public class TestLMS {
 		
 		try {
 			//System.out.println("doJKTest: " + client.getUserActiveIDByEmail("jmckain@siliconmtn.com"));
-			String email = "huscha@gmail.com";
+			String email = "ianb723@gmail.com";
 			System.out.println(client.getUserHoldingIDByEmail(email));
 			System.out.println(client.getUserActiveIDByEmail(email));
 			// format a test user VO and set on client.
-			//DSIUserDataVO du = formatTestUser();
+			DSIUserDataVO du = formatTestUser();
 			
 			// create user
 			//System.out.println("createUser TTLMSID response: " + client.createUser(du));
 			
 			// update user
-			//du.setEligible(true);
-			//du.setVerified(true);
+			du.setEligible(true);
+			du.setVerified(true);
+			du.setTtLmsId(163659);
+			du.setEmailAddress(email);
+			du.setProfileId("c0a8024a906c46e9f68bf2cd5273a381");
 			//System.out.println("updateUser TTLMSID response: " + client.updateUser(du));
 			
-			/*
 			// get all available courses
-			Object[] allCourses = client.getCourseList();
-			System.out.println("allCourses response: " + Arrays.toString(allCourses));
+//			Object[] allCourses = client.getCourseList();
+//			System.out.println("allCourses response: " + Arrays.toString(allCourses));
 			
 			// get all courses for this user
-			Object[] userCourseList = client.getUserCourseList(du.getEmailAddress());
-			System.out.println("userCourseList response: " + Arrays.toString(userCourseList));
+			List<MyLMSCourseVO> userCourseList = client.getUserCourseList(du.getDsiId());
+			for (MyLMSCourseVO vo : userCourseList) {
+				System.out.println(vo.getId() + "\t" + vo.isComplete() + "\t" + vo.isInDevelopment() + "\t" + vo.getPointsEarnable() + "\t" + vo.getPOINTS());
+			}
 			
 			
 			// get users total points
 			System.out.println("total user points response: " + client.getTotalUserPoints(du.getDsiId()));
+			/*
 			
 			// get active user by email address
 			System.out.println("get active user ID by email response: " + client.getUserActiveIDByEmail(du.getEmailAddress()));
