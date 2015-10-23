@@ -141,6 +141,16 @@ public class RegistrationAction extends SimpleActionAdapter {
 			act.setDBConnection(dbConn);
 			act.build(req);
 			return;
+		} else if (req.hasParameter("checkDSRPusername")) {
+			//called via ajax on Modal #3, fail if the username typed does not match the value on record
+			UserDataVO user = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
+			String pswd = getLegacyPassword((user != null ? user.getEmailAddress() : ""));
+			String userNm = req.getParameter("checkDSRPusername");
+			if (!pswd.equalsIgnoreCase(userNm)) {
+				ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
+				mod.setErrorCondition(Boolean.TRUE);
+			}
+			return;
 		}
 
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
