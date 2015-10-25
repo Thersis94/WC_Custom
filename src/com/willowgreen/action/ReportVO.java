@@ -6,6 +6,7 @@ import java.util.Date;
 
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.security.UserDataVO;
+import com.siliconmtn.util.Convert;
 
 /****************************************************************************
  * <b>Title</b>: ReportVO.java<p/>
@@ -32,6 +33,7 @@ public class ReportVO implements Serializable {
 	private UserDataVO submitter = null;
 	private String contactSubmittalId = null;
 	private int recordNo = 0;
+	private boolean isGatekeeper = false;
 	
 	//added for grief's healing journey
 	private String deceasedName = null;
@@ -51,6 +53,7 @@ public class ReportVO implements Serializable {
 		allowCommFlg = db.getIntegerVal("allow_comm_flg", rs);
 		setContactSubmittalId(db.getStringVal("contact_submittal_id", rs));
 		recordNo = db.getIntVal("record_no", rs);
+		isGatekeeper = Convert.formatBoolean(db.getStringVal("is_gatekeeper", rs));
 		
 		deceasedName = db.getStringVal("deceased_nm", rs);
 		relationship = db.getStringVal("relationship", rs);
@@ -168,6 +171,14 @@ public class ReportVO implements Serializable {
 
 	public void setEnrolledDate(Date enrolledDate) {
 		this.enrolledDate = enrolledDate;
+	}
+
+	public boolean isGatekeeper() {
+		return isGatekeeper;
+	}
+
+	public void setGatekeeper(boolean isGatekeeper) {
+		this.isGatekeeper = isGatekeeper;
 	}
 	
 	
