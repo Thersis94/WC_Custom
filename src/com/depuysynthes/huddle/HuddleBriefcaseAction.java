@@ -3,17 +3,22 @@ package com.depuysynthes.huddle;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Date;
 
-import com.depuysynthes.action.MediaBinAssetVO;
+import com.depuysynthes.scripts.MediaBinDeltaVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
-import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.smt.sitebuilder.action.tools.FavoriteVO;
+import com.smt.sitebuilder.action.tools.MyFavoritesAction;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.SBUserRole;
 
 /****************************************************************************
  * <b>Title</b>: HuddleBriefcaseAction.java<p/>
@@ -27,9 +32,9 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @since Oct 23, 2015
  ****************************************************************************/
 
-public class HuddleBriefcaseAction extends SimpleActionAdapter {
-	String KEY_NAME = "briefcaseKey";
-	String GROUP_CD = "BRIEFCASE";
+public class HuddleBriefcaseAction extends MyFavoritesAction {
+	public final String KEY_NAME = "briefcaseKey";
+	public final String GROUP_CD = "BRIEFCASE";
 
 	public HuddleBriefcaseAction() {
 		super();
@@ -44,27 +49,52 @@ public class HuddleBriefcaseAction extends SimpleActionAdapter {
 	
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		if (validateKey(req.getParameter("key"))) {
+			req.setParameter("groupingCd", GROUP_CD);
+			UserDataVO user = new UserDataVO();
+			user.setProfileId(getProfileId(req));
+			req.getSession().setAttribute(Constants.USER_DATA, user);
+			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+			SBUserRole role = new SBUserRole();
+			role.setOrganizationId(site.getOrganizationId());
+			role.setRoleLevel(0);
+			req.getSession().setAttribute(Constants.ROLE_DATA,role);
+			super.retrieve(req);
+			req.getSession().setAttribute(Constants.USER_DATA, null);
 			req.setParameter("formatJson", "true"); 
 			
+			@SuppressWarnings("unchecked")
+			List<FavoriteVO> favs = (List<FavoriteVO>) req.getAttribute(MyFavoritesAction.MY_FAVORITES);
+			if (favs.size() == 0) throw new ActionException("No Favorites Found for Current User");
+			
+			// Create a map of bookmark create dates and mediabin ids 
+			// so that we can keep the date and the document together
+			Map<String, Date> created = new HashMap<>();
+			for (FavoriteVO fav : favs) {
+				created.put(fav.getRelId(), fav.getCreateDt());
+			}
+			
 			StringBuilder sql = new StringBuilder(275);
-			sql.append("SELECT * FROM PROFILE_FAVORITE f ");
-			sql.append("left join ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_MEDIABIN ");
-			sql.append("b on f.REL_ID = b.DPY_SYN_MEDIABIN_ID ");
-			sql.append("WHERE PROFILE_ID = ? ");
-			log.debug(sql +"|"+req.getParameter("wwid"));
-			List<MediaBinAssetVO> items = new ArrayList<>();
+			sql.append("SELECT * FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_MEDIABIN ");
+			sql.append("WHERE DPY_SYN_MEDIABIN_ID in ('skip' ");
+			for (int i=0; i<favs.size(); i++) sql.append(",?");
+			sql.append(")");
+			
+			Map<String, MediaBinDeltaVO> items = new HashMap<>();
 			try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-				ps.setString(1, req.getParameter("wwid"));
+				int x=1;
+				for (FavoriteVO fav : favs) ps.setString(x++, fav.getRelId());
 				
 				ResultSet rs = ps.executeQuery();
 				
 				while (rs.next()) {
-					items.add(new MediaBinAssetVO(rs));
+					MediaBinDeltaVO asset = new MediaBinDeltaVO(rs);
+					asset.setCreateDate(created.get(asset.getDpySynMediaBinId()));
+					items.put(rs.getString("DPY_SYN_MEDIABIN_ID"), asset);
 				}
 			} catch (SQLException e) {
 				throw new ActionException(e);
 			}
-			super.putModuleData(items);
+			req.setAttribute(GROUP_CD, items);
 		} else {
 			throw new ActionException("Invalid APP key");
 		}
@@ -72,7 +102,11 @@ public class HuddleBriefcaseAction extends SimpleActionAdapter {
 	
 	public void build(SMTServletRequest req) throws ActionException {
 		if (validateKey(req.getParameter("key"))) {
-			deleteItem(req);
+			if(req.hasParameter("insert")) {
+				deleteFavorite(req);
+			} else {
+				deleteItem(req);
+			}
 		} else {
 			throw new ActionException("Invalid APP key");
 		}
@@ -83,14 +117,32 @@ public class HuddleBriefcaseAction extends SimpleActionAdapter {
 		return key.equals(attributes.get(KEY_NAME));
 	}
 	
+	/**
+	 * Get the profile id from the request object.  If the user is logged in we get the profile id from the
+	 * session.  Otherwise we get the id from the request parameters
+	 * @param req
+	 * @return
+	 * @throws ActionException
+	 */
+	private String getProfileId(SMTServletRequest req) throws ActionException {
+		UserDataVO user = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
+		if (user != null && user.getProfileId() != null) return user.getProfileId();
+		if (req.hasParameter("wwid")) {
+			//TODO Implement global user checking
+			return req.getParameter("wwid");
+		}
+		throw new ActionException("No/Invalid user id provided.");
+	}
+	
 	
 	/**
 	 * Delete all briefcase items that were passed via the request
 	 * @param req
+	 * @throws ActionException 
 	 */
-	private void deleteItem(SMTServletRequest req) {
+	private void deleteItem(SMTServletRequest req) throws ActionException {
 		String[] assets = req.getParameterValues("briefcaseAssetId");
-		String user = req.getParameter("wwid");
+		String user = getProfileId(req);
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 	
 		StringBuilder sql = new StringBuilder(150);
@@ -107,7 +159,7 @@ public class HuddleBriefcaseAction extends SimpleActionAdapter {
 				ps.setInt(i++, Convert.formatInteger(asset));
 			ps.executeUpdate();
 		} catch (SQLException sqle) {
-			log.error("could not delete briefcase items", sqle);
+			throw new ActionException(sqle);
 		}
 	}
 
