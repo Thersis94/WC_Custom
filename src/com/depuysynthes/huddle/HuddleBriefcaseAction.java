@@ -52,16 +52,8 @@ public class HuddleBriefcaseAction extends MyFavoritesAction {
 		if (!validateKey(req.getParameter("key"))) throw new ActionException("Invalid APP key");
 		
 		req.setParameter("groupingCd", GROUP_CD);
-		UserDataVO user = new UserDataVO();
-		user.setProfileId(getProfileId(req));
-		req.getSession().setAttribute(Constants.USER_DATA, user);
-		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		SBUserRole role = new SBUserRole();
-		role.setOrganizationId(site.getOrganizationId());
-		role.setRoleLevel(0);
-		req.getSession().setAttribute(Constants.ROLE_DATA,role);
+		req.setParameter("profileId", getProfileId(req));
 		super.retrieve(req);
-		req.getSession().setAttribute(Constants.USER_DATA, null);
 		req.setParameter("formatJson", "true"); 
 		
 		@SuppressWarnings("unchecked")
@@ -147,7 +139,7 @@ public class HuddleBriefcaseAction extends MyFavoritesAction {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 	
 		StringBuilder sql = new StringBuilder(150);
-		sql.append("delete from PROFILE_FAVORITE where PROFILE_ID = ? and SITE_ID = ? and GROUP_CD = ? and PROFILE_FAVORITE_ID in (-1");
+		sql.append("delete from PROFILE_FAVORITE where PROFILE_ID = ? and SITE_ID = ? and GROUPING_CD = ? and PROFILE_FAVORITE_ID in (-1");
 		for (int i=0; i < assets.length; i++) sql.append(",?");
 		sql.append(") ");
 		log.debug(sql+"|"+user+"|"+site.getSiteId()+"|"+GROUP_CD);
