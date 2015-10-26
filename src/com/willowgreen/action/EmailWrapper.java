@@ -115,7 +115,8 @@ public class EmailWrapper extends SimpleActionAdapter {
 				!isEnrolled(req.getParameter("pfl_EMAIL_ADDRESS_TXT"), (String)mod.getAttribute(SBModuleVO.ATTRIBUTE_2))) {
 			//bind the submitting user to this record via DealerLocationId
 			UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
-			req.setParameter(Constants.DEALER_LOCATION_ID_KEY, user.getProfileId());
+			if (user != null)
+				req.setParameter(Constants.DEALER_LOCATION_ID_KEY, user.getProfileId());
 			
 			actionInit.setActionId((String)mod.getAttribute(SBModuleVO.ATTRIBUTE_1));
 			SMTActionInterface ai = new ContactFacadeAction(actionInit);
