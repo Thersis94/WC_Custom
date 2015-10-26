@@ -10,7 +10,9 @@ import org.apache.solr.common.SolrDocument;
 
 import com.depuysynthes.action.ProductCatalogUtil;
 import com.depuysynthes.lucene.MediaBinSolrIndex;
+import com.depuysynthesinst.QuickstreamSolrIndexer;
 import com.depuysynthesinst.SolrSearchWrapper;
+import com.depuysynthesinst.TTLMSSolrIndexer;
 import com.siliconmtn.commerce.catalog.ProductCategoryVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
@@ -27,6 +29,7 @@ import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.http.SiteMapServlet;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
+import com.smt.sitebuilder.security.SecurityController;
 
 /****************************************************************************
  * <b>Title</b>: DePuySiteMapServlet.java<p/>
@@ -39,6 +42,7 @@ import com.smt.sitebuilder.search.SearchDocumentHandler;
  * @since Oct 16, 2013
  * @updates
  * 		JM 10.15.14 - Added DSI/Solr support
+ * 		JM 07.19.15 - Added DSI IndexTypes for Quickstream and LMS to the Solr query
  ****************************************************************************/
 public class DePuySiteMapServlet extends SiteMapServlet {
 	private static final long serialVersionUID = 44784795996815006L;
@@ -148,8 +152,10 @@ public class DePuySiteMapServlet extends SiteMapServlet {
 	    SolrActionVO qData = new SolrActionVO();
 	    qData.setNumberResponses(20000);
 		qData.setOrganizationId(site.getOrganizationId()); //DPY_SYN_INST only
-		qData.setRoleLevel(0); //public assets only
+		qData.setRoleLevel(SecurityController.PUBLIC_ROLE_LEVEL); //public assets only
 		qData.addIndexType(new SolrActionIndexVO(SearchDocumentHandler.INDEX_TYPE, MediaBinSolrIndex.INDEX_TYPE));
+		qData.addIndexType(new SolrActionIndexVO(SearchDocumentHandler.INDEX_TYPE, QuickstreamSolrIndexer.INDEX_TYPE));
+		qData.addIndexType(new SolrActionIndexVO(SearchDocumentHandler.INDEX_TYPE, TTLMSSolrIndexer.INDEX_TYPE));
 		SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, solrCollectionPath);
 		SolrResponseVO resp = sqp.processQuery(qData);
 		
