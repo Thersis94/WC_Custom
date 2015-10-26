@@ -9,7 +9,6 @@ import java.util.List;
 import com.depuysynthes.action.MediaBinAssetVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
@@ -72,7 +71,6 @@ public class HuddleBriefcaseAction extends SimpleActionAdapter {
 	}
 	
 	public void build(SMTServletRequest req) throws ActionException {
-		log.debug("Something");
 		if (validateKey(req.getParameter("key"))) {
 			deleteItem(req);
 		} else {
@@ -95,15 +93,13 @@ public class HuddleBriefcaseAction extends SimpleActionAdapter {
 		String user = req.getParameter("wwid");
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 	
-		StringBuilder sql = new StringBuilder(125);
+		StringBuilder sql = new StringBuilder(150);
 		sql.append("delete from PROFILE_FAVORITE where PROFILE_ID = ? and SITE_ID = ? and GROUP_CD = ? and PROFILE_FAVORITE_ID in (-1");
 		for (int i=0; i < assets.length; i++) sql.append(",?");
 		sql.append(") ");
 		log.debug(sql+"|"+user+"|"+site.getSiteId()+"|"+GROUP_CD);
-		PreparedStatement ps = null;
-		try {
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			int i = 1;
-			ps = dbConn.prepareStatement(sql.toString());
 			ps.setString(i++, user);
 			ps.setString(i++, site.getSiteId());
 			ps.setString(i++, GROUP_CD);
@@ -112,8 +108,6 @@ public class HuddleBriefcaseAction extends SimpleActionAdapter {
 			ps.executeUpdate();
 		} catch (SQLException sqle) {
 			log.error("could not delete briefcase items", sqle);
-		} finally {
-			DBUtil.close(ps);
 		}
 	}
 
