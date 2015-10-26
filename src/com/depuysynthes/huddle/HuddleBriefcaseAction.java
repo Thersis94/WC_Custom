@@ -18,7 +18,6 @@ import com.smt.sitebuilder.action.tools.FavoriteVO;
 import com.smt.sitebuilder.action.tools.MyFavoritesAction;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
-import com.smt.sitebuilder.security.SBUserRole;
 
 /****************************************************************************
  * <b>Title</b>: HuddleBriefcaseAction.java<p/>
