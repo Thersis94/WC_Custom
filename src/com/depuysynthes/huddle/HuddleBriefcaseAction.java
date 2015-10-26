@@ -35,7 +35,7 @@ import com.smt.sitebuilder.security.SBUserRole;
 public class HuddleBriefcaseAction extends MyFavoritesAction {
 	public final String KEY_NAME = "briefcaseKey";
 	public final String GROUP_CD = "BRIEFCASE";
-	private final String API_KEY = " dsHuddl3K3y|SMT";
+	private final String API_KEY = "dsHuddl3K3y|SMT";
 
 	public HuddleBriefcaseAction() {
 		super();
