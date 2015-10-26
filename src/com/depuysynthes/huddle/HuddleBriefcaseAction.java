@@ -35,6 +35,7 @@ import com.smt.sitebuilder.security.SBUserRole;
 public class HuddleBriefcaseAction extends MyFavoritesAction {
 	public final String KEY_NAME = "briefcaseKey";
 	public final String GROUP_CD = "BRIEFCASE";
+	private final String API_KEY = " dsHuddl3K3y|SMT";
 
 	public HuddleBriefcaseAction() {
 		super();
@@ -48,73 +49,73 @@ public class HuddleBriefcaseAction extends MyFavoritesAction {
 	}
 	
 	public void retrieve(SMTServletRequest req) throws ActionException {
-		if (validateKey(req.getParameter("key"))) {
-			req.setParameter("groupingCd", GROUP_CD);
-			UserDataVO user = new UserDataVO();
-			user.setProfileId(getProfileId(req));
-			req.getSession().setAttribute(Constants.USER_DATA, user);
-			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-			SBUserRole role = new SBUserRole();
-			role.setOrganizationId(site.getOrganizationId());
-			role.setRoleLevel(0);
-			req.getSession().setAttribute(Constants.ROLE_DATA,role);
-			super.retrieve(req);
-			req.getSession().setAttribute(Constants.USER_DATA, null);
-			req.setParameter("formatJson", "true"); 
-			
-			@SuppressWarnings("unchecked")
-			List<FavoriteVO> favs = (List<FavoriteVO>) req.getAttribute(MyFavoritesAction.MY_FAVORITES);
-			if (favs.size() == 0) throw new ActionException("No Favorites Found for Current User");
-			
-			// Create a map of bookmark create dates and mediabin ids 
-			// so that we can keep the date and the document together
-			Map<String, Date> created = new HashMap<>();
-			for (FavoriteVO fav : favs) {
-				created.put(fav.getRelId(), fav.getCreateDt());
-			}
-			
-			StringBuilder sql = new StringBuilder(275);
-			sql.append("SELECT * FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_MEDIABIN ");
-			sql.append("WHERE DPY_SYN_MEDIABIN_ID in ('skip' ");
-			for (int i=0; i<favs.size(); i++) sql.append(",?");
-			sql.append(")");
-			
-			Map<String, MediaBinDeltaVO> items = new HashMap<>();
-			try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-				int x=1;
-				for (FavoriteVO fav : favs) ps.setString(x++, fav.getRelId());
-				
-				ResultSet rs = ps.executeQuery();
-				
-				while (rs.next()) {
-					MediaBinDeltaVO asset = new MediaBinDeltaVO(rs);
-					asset.setCreateDate(created.get(asset.getDpySynMediaBinId()));
-					items.put(rs.getString("DPY_SYN_MEDIABIN_ID"), asset);
-				}
-			} catch (SQLException e) {
-				throw new ActionException(e);
-			}
-			req.setAttribute(GROUP_CD, items);
-		} else {
-			throw new ActionException("Invalid APP key");
+		if (!validateKey(req.getParameter("key"))) throw new ActionException("Invalid APP key");
+		
+		req.setParameter("groupingCd", GROUP_CD);
+		UserDataVO user = new UserDataVO();
+		user.setProfileId(getProfileId(req));
+		req.getSession().setAttribute(Constants.USER_DATA, user);
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		SBUserRole role = new SBUserRole();
+		role.setOrganizationId(site.getOrganizationId());
+		role.setRoleLevel(0);
+		req.getSession().setAttribute(Constants.ROLE_DATA,role);
+		super.retrieve(req);
+		req.getSession().setAttribute(Constants.USER_DATA, null);
+		req.setParameter("formatJson", "true"); 
+		
+		@SuppressWarnings("unchecked")
+		List<FavoriteVO> favs = (List<FavoriteVO>) req.getAttribute(MyFavoritesAction.MY_FAVORITES);
+		if (favs.size() == 0) throw new ActionException("No Favorites Found for Current User");
+		
+		// Create a map of bookmark create dates and mediabin ids 
+		// so that we can keep the date and the document together
+		Map<String, Date> created = new HashMap<>();
+		for (FavoriteVO fav : favs) {
+			created.put(fav.getRelId(), fav.getCreateDt());
 		}
+		
+		StringBuilder sql = new StringBuilder(275);
+		sql.append("SELECT * FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_MEDIABIN ");
+		sql.append("WHERE DPY_SYN_MEDIABIN_ID in ('skip' ");
+		for (int i=0; i<favs.size(); i++) sql.append(",?");
+		sql.append(")");
+		
+		Map<String, MediaBinDeltaVO> items = new HashMap<>();
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			int x=1;
+			for (FavoriteVO fav : favs) ps.setString(x++, fav.getRelId());
+			
+			ResultSet rs = ps.executeQuery();
+			
+			while (rs.next()) {
+				MediaBinDeltaVO asset = new MediaBinDeltaVO(rs);
+				asset.setCreateDate(created.get(asset.getDpySynMediaBinId()));
+				items.put(rs.getString("DPY_SYN_MEDIABIN_ID"), asset);
+			}
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
+		req.setAttribute(GROUP_CD, items);
 	}
 	
 	public void build(SMTServletRequest req) throws ActionException {
-		if (validateKey(req.getParameter("key"))) {
-			if(req.hasParameter("insert")) {
-				deleteFavorite(req);
-			} else {
-				deleteItem(req);
-			}
+		if (!validateKey(req.getParameter("key"))) throw new ActionException("Invalid APP key");
+		
+		if(req.hasParameter("insert")) {
+			deleteFavorite(req);
 		} else {
-			throw new ActionException("Invalid APP key");
+			deleteItem(req);
 		}
 	}
 	
+	/**
+	 * Ensure that the call has the required passcode to access the app.
+	 * @param key
+	 * @return
+	 */
 	private boolean validateKey(String key) {
-		if (key == null) return false;
-		return key.equals(attributes.get(KEY_NAME));
+		return API_KEY.equals(key);
 	}
 	
 	/**
