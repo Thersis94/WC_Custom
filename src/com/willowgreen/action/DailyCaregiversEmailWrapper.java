@@ -36,6 +36,8 @@ import com.smt.sitebuilder.security.SecurityController;
 public class DailyCaregiversEmailWrapper extends EmailWrapper {
 	
 	private static final String GATEKEEPER_QUEST_ID = "c0a80241a10d8161cd749175f14e2a9d"; //from database
+	private static final String FREE_SERIES = "c0a80241a143abeb8ff0e2bc206b9831"; //DiFC free trial campaign - 16 emails
+	private static final String MAIN_SERIES = "c0a80237a94882127e4d342eb3d66a4f"; // DiFC 365 email series
 	
 	public DailyCaregiversEmailWrapper() {
 		super();
@@ -53,6 +55,59 @@ public class DailyCaregiversEmailWrapper extends EmailWrapper {
 	}
 	
 	
+	/**
+	 * checks to see if the user has already recieved all of the emails in the series.
+	 * 
+	 * @param emailAddress
+	 * @return
+	 */
+	protected boolean isEnrolled(String emailAddress, String emailCampaignId) {
+		boolean isEnrolled = false;
+		String profileId = null;
+		
+		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
+		try {
+			UserDataVO user = new UserDataVO();
+			user.setEmailAddress(emailAddress);
+			profileId = pm.checkProfile(user, dbConn);
+		} catch (DatabaseException de) {
+			log.error("could not find profileId for " + emailAddress, de);
+		} finally {
+			pm = null;
+		}
+		log.debug("profileId=" + profileId);
+		if (profileId == null) return isEnrolled;
+		
+		StringBuilder sql = new StringBuilder(250);
+		sql.append("select count(a.campaign_instance_id), count(b.campaign_instance_id) ");
+		sql.append("from email_campaign_instance b left outer join email_campaign_log a ");
+		sql.append("on a.campaign_instance_id=b.campaign_instance_id and a.profile_id=? ");
+		sql.append("where b.email_campaign_id=?");
+		log.debug(sql);
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, profileId);
+			ps.setString(2, emailCampaignId);
+			ResultSet rs = ps.executeQuery();
+			if (rs.next()) {
+				//if they have recieved emails, but not all of them, they're still enrolled.
+				//or they've opt-out and don't want to be a subscriber anyways!
+				if (MAIN_SERIES.equals(emailCampaignId)) {
+					//deduct the alternate intro email.  The user will only get one of the two (gatekeeper or main)
+					isEnrolled = (rs.getInt(1) > 0 && rs.getInt(1) < (rs.getInt(2)-1));
+				} else {
+					isEnrolled = (rs.getInt(1) > 0 && rs.getInt(1) < rs.getInt(2));
+				}
+				//log.debug("rcvd=" + rs.getInt(1) + " series=" + rs.getInt(2));
+			}
+		} catch (SQLException sqle) {
+			log.error("could not lookup email count", sqle);
+		}
+
+		return isEnrolled;
+	}
+	
+	
 	protected void loadReport(SMTServletRequest req, String contactActionId, String emailCampaignId) {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
@@ -67,7 +122,7 @@ public class DailyCaregiversEmailWrapper extends EmailWrapper {
 		sql.append("a.contact_submittal_id, wc.record_no, a.create_dt ");
 		sql.append("from CONTACT_SUBMITTAL a ");
 		sql.append("left outer join CONTACT_DATA e on a.CONTACT_SUBMITTAL_ID=e.CONTACT_SUBMITTAL_ID and e.CONTACT_FIELD_ID='").append(GATEKEEPER_QUEST_ID).append("' "); //isGatekeeper
-		sql.append("inner join ORG_PROFILE_COMM b on a.PROFILE_ID=b.PROFILE_ID and b.ORGANIZATION_ID=? ");
+		sql.append("left outer join ORG_PROFILE_COMM b on a.PROFILE_ID=b.PROFILE_ID and b.ORGANIZATION_ID=? ");
 		sql.append("left outer join ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("WILLOWGREEN_COUNTER wc on a.CONTACT_SUBMITTAL_ID=wc.CONTACT_SUBMITTAL_ID ");
 		sql.append("left outer join EMAIL_CAMPAIGN_LOG c on a.PROFILE_ID=c.PROFILE_ID and campaign_instance_id in (select campaign_instance_id from email_campaign_instance where EMAIL_CAMPAIGN_ID=?) ");
@@ -108,8 +163,11 @@ public class DailyCaregiversEmailWrapper extends EmailWrapper {
 				rpt.setUser(profiles.get(rpt.getProfileId()));
 				rpt.setSubmitter(profiles.get(rpt.getDealerLocationId()));
 				
-				//determine if the user is current getting emails
-				if (rpt.isGatekeeper() && rpt.getEmailCnt() < 62 && rpt.getAllowCommFlg() == 1) {
+				//determine if the user is currently getting emails
+				if (FREE_SERIES.equals(emailCampaignId)) { //free series
+					if (rpt.getEmailCnt() < 16 && rpt.getAllowCommFlg() == 1)
+						activeCnt++;
+				} else if (rpt.isGatekeeper() && rpt.getEmailCnt() < 62 && rpt.getAllowCommFlg() == 1) {
 					gatekeeperCnt++;
 				} else if (!rpt.isGatekeeper() && rpt.getEmailCnt() < 366 && rpt.getAllowCommFlg() == 1) {
 					activeCnt++; 
