@@ -52,7 +52,14 @@ public class HuddleBriefcaseAction extends MyFavoritesAction {
 		if (!validateKey(req.getParameter("key"))) throw new ActionException("Invalid APP key");
 		
 		req.setParameter("groupingCd", GROUP_CD);
-		req.setParameter("profileId", getProfileId(req));
+
+		UserDataVO user = ((UserDataVO)req.getSession().getAttribute(Constants.USER_DATA));
+		if (user == null) {
+			user = new UserDataVO();
+			user.setProfileId(getProfileId(req));
+			req.getSession().setAttribute(Constants.USER_DATA, user);
+		}
+		
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 		if (role == null) {
 			SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
@@ -70,7 +77,7 @@ public class HuddleBriefcaseAction extends MyFavoritesAction {
 		
 		// Create a map of bookmark create dates and mediabin ids 
 		// so that we can keep the date and the document together
-		Map<String, Date> created = new HashMap<>();
+		Map<String, Date> created = new HashMap<>(favs.size());
 		for (FavoriteVO fav : favs) {
 			created.put(fav.getRelId(), fav.getCreateDt());
 		}
@@ -103,7 +110,12 @@ public class HuddleBriefcaseAction extends MyFavoritesAction {
 		if (!validateKey(req.getParameter("key"))) throw new ActionException("Invalid APP key");
 		
 		if(req.hasParameter("insert")) {
-			req.setParameter("profileId", getProfileId(req));
+			UserDataVO user = ((UserDataVO)req.getSession().getAttribute(Constants.USER_DATA));
+			if (user == null) {
+				user = new UserDataVO();
+				user.setProfileId(getProfileId(req));
+				req.getSession().setAttribute(Constants.USER_DATA, user);
+			}
 			super.build(req);
 		} else {
 			deleteItem(req);
