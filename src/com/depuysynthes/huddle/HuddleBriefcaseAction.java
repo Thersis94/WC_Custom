@@ -18,6 +18,7 @@ import com.smt.sitebuilder.action.tools.FavoriteVO;
 import com.smt.sitebuilder.action.tools.MyFavoritesAction;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.SBUserRole;
 
 /****************************************************************************
  * <b>Title</b>: HuddleBriefcaseAction.java<p/>
@@ -52,6 +53,14 @@ public class HuddleBriefcaseAction extends MyFavoritesAction {
 		
 		req.setParameter("groupingCd", GROUP_CD);
 		req.setParameter("profileId", getProfileId(req));
+		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
+		if (role == null) {
+			SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
+			role = new SBUserRole();
+			role.setRoleLevel(0);
+			role.setOrganizationId(site.getOrganizationId());
+			req.getSession().setAttribute(Constants.ROLE_DATA, role);
+		}
 		super.retrieve(req);
 		req.setParameter("formatJson", "true"); 
 		
