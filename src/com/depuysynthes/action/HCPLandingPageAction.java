@@ -26,7 +26,6 @@ import com.smt.sitebuilder.action.tools.StatVO;
 import com.smt.sitebuilder.admin.action.SBModuleAction;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
-import com.smt.sitebuilder.common.SiteBuilderUtil;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.util.RecordDuplicatorUtility;
@@ -44,16 +43,13 @@ import com.smt.sitebuilder.util.RecordDuplicatorUtility;
  * @since May 9, 2013
  ****************************************************************************/
 public class HCPLandingPageAction extends SBActionAdapter {
-	private SiteBuilderUtil util = null;
 	
 	public HCPLandingPageAction() {
 		super();
-		util = new SiteBuilderUtil();
 	}
 
 	public HCPLandingPageAction(ActionInitVO avo) {
 		super(avo);
-		util = new SiteBuilderUtil();
 	}
 
 	
@@ -90,7 +86,7 @@ public class HCPLandingPageAction extends SBActionAdapter {
         }
         
         // Redirect the user
-        util.moduleRedirect(req, msg, (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH));
+        moduleRedirect(req, msg, (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH));
 	}
 
 	@SuppressWarnings("unchecked")
@@ -374,7 +370,7 @@ public class HCPLandingPageAction extends SBActionAdapter {
 		
 		
 		// Redirect after the update
-        util.moduleRedirect(req, msg, (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH));
+        moduleRedirect(req, msg, (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH));
 	}
 	
 	@Override
@@ -405,7 +401,7 @@ public class HCPLandingPageAction extends SBActionAdapter {
 		rdu.copy();
 		
 		// Redirect the user
-		util.moduleRedirect(req, msg, (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH));
+		moduleRedirect(req, msg, (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH));
 	}
 	
 	
