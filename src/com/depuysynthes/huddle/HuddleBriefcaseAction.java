@@ -94,7 +94,8 @@ public class HuddleBriefcaseAction extends MyFavoritesAction {
 		if (!validateKey(req.getParameter("key"))) throw new ActionException("Invalid APP key");
 		
 		if(req.hasParameter("insert")) {
-			deleteFavorite(req);
+			req.setParameter("profileId", getProfileId(req));
+			super.build(req);
 		} else {
 			deleteItem(req);
 		}
