@@ -73,7 +73,7 @@ public class HuddleBriefcaseAction extends MyFavoritesAction {
 		
 		@SuppressWarnings("unchecked")
 		List<FavoriteVO> favs = (List<FavoriteVO>) req.getAttribute(MyFavoritesAction.MY_FAVORITES);
-		if (favs.size() == 0) throw new ActionException("No Favorites Found for Current User");
+		if (favs == null || favs.size() == 0) return;
 		
 		// Create a map of bookmark create dates and mediabin ids 
 		// so that we can keep the date and the document together
