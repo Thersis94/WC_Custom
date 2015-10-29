@@ -292,12 +292,13 @@ public class SocialProfileMapAction extends ProfileMapAction {
 		sql.append("on pm.TEMPLATE_ID = tm.TEMPLATE_ID ");
 		sql.append("inner join SB_ACTION sb ");
 		sql.append("on pm.ACTION_ID = sb.ACTION_ID ");
-		sql.append("where SITE_ID = ? and MODULE_TYPE_ID = 'FTS_PROFILE_MAP' ");
+		sql.append("where SITE_ID = ? and MODULE_TYPE_ID = ? ");
 
 		log.debug(sql.toString()+" | "+siteId);
 
 		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())){
 			ps.setString(1, siteId);
+			ps.setString(2, MODULE_NAME);
 			ResultSet rs = ps.executeQuery();
 
 			int count = 0;
