@@ -102,8 +102,18 @@ public class SocialProfileMapAction extends ProfileMapAction {
 	protected void getMediaLinks(SMTServletRequest req, SBModuleVO vo) throws SQLException{
 		final String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		List<String> urlList = new ArrayList<String>();
-		String fId = CenterPageAction.getFranchiseId(req);
-		
+		String fId = null;
+
+		try {
+			fId = CenterPageAction.getFranchiseId(req);
+		}catch (NullPointerException npe){
+			String orgId = (String) req.getParameter("organizationId");
+			if (fId == null && orgId.substring(0, 3).equals("FTS")){
+				fId = (String) req.getParameter("organizationId");
+				fId = fId + "_1";
+			}
+
+		}
 		StringBuilder sql = new StringBuilder(220);
 		//Using location url here, since only the corp sites are using the canonicals 
 		sql.append("select dl.LOCATION_NM, dl.WEBSITE_URL, sb.ACTION_ID, sb.ACTION_GROUP_ID, ");
@@ -248,15 +258,63 @@ public class SocialProfileMapAction extends ProfileMapAction {
 		//if there are any social links present, we aren't deleting it
 		for (SocialMediaTypes s : SocialMediaTypes.values()){
 			hasLink = req.hasParameter(s.getParamName());
+			log.debug("param : " + s.getParamName() + " exists " + hasLink);
 			if (hasLink)
 				break;
 		}
-		if (hasLink)
+		if (hasLink) {
+
+			boolean hasInstance = CheckForExistingInstance(req, franchiseOrgId);
+			//delete the old map
+			if (hasInstance )deleteFranchiseMap(franchiseOrgId);
+			//add a new updated map
 			createFranchiseMap(req, franchiseOrgId);
-		else
+		}else{
 			deleteFranchiseMap(franchiseOrgId);
+		}
 	}
-	
+
+	/**
+	 * this method does a check to see if there is an existing instance of the 
+	 * social profile path. 
+	 * @param req
+	 * @param franchiseOrgId
+	 * @return
+	 */
+	private boolean CheckForExistingInstance(SMTServletRequest req,
+			String franchiseOrgId) {
+
+		String siteId = franchiseOrgId+"_1";
+
+		StringBuilder sql = new StringBuilder(205);
+		sql.append("select * from PAGE_MODULE pm  ");
+		sql.append("inner join TEMPLATE tm ");
+		sql.append("on pm.TEMPLATE_ID = tm.TEMPLATE_ID ");
+		sql.append("inner join SB_ACTION sb ");
+		sql.append("on pm.ACTION_ID = sb.ACTION_ID ");
+		sql.append("where SITE_ID = ? and MODULE_TYPE_ID = 'FTS_PROFILE_MAP' ");
+
+		log.debug(sql.toString()+" | "+siteId);
+
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())){
+			ps.setString(1, siteId);
+			ResultSet rs = ps.executeQuery();
+
+			int count = 0;
+
+			while (rs.next()) {
+				++count;
+				// gets the count of instases on the page
+				if (count >= 1) return true; 
+			}
+			log.debug(count + " is the number of times module used on page");
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+
+		return false;
+	}
+
 	/**
 	 * Removes the profile map from the center's default layout
 	 * @param franchiseOrgId
@@ -369,7 +427,5 @@ public class SocialProfileMapAction extends ProfileMapAction {
 			int affected = ps.executeUpdate();
 			log.debug(affected+" row(s) deleted.");
 		}
-		
 	}
-
 }
