@@ -9,8 +9,11 @@ import java.nio.charset.CharsetEncoder;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -18,11 +21,13 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
+
 // SOLR Libs
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 
+import com.depuysynthes.nexus.NexusImporter.Source;
 //SMT Base Libs
 import com.siliconmtn.util.CommandLineUtil;
 import com.siliconmtn.util.Convert;
@@ -206,10 +211,29 @@ public class NexusKitImporter extends CommandLineUtil {
 				this.updateKitRecord(sku, gtin, desc);
 			}
 		}
+		
+		// Delete any remaining blank kits
+		deleteBlankKits();
 
 		return 0;
 	}
 	
+	
+	/**
+	 * Delete all kits that are missing descriptions
+	 * @param ids
+	 * @throws SQLException
+	 */
+	private void deleteBlankKits() throws SQLException {
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("DELETE ").append(props.get("customDbSchema")).append("DPY_SYN_NEXUS_SET_INFO ");
+		sql.append("WHERE ORGANIZATION_ID != 'Custom' AND (DESCRIPTION_TXT is null ");
+		sql.append("OR DESCRIPTION_TXT = '')");
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.executeUpdate();
+		}
+	}
+
 	/**
 	 * Creates a collection of filters (100 items in each) in the following format:
 	 * documentId: #### or documentId #####
@@ -272,6 +296,7 @@ public class NexusKitImporter extends CommandLineUtil {
 		BufferedReader in = new BufferedReader(new FileReader((path + name)));
 		int[] mdmCnt = { 0,0 };
 		
+		Map<String, List<String>> existingSets = getActiveMDM();
 		Set<String> kitIds = new HashSet<>();
 		String temp;
 		int iCtr = 0, kCtr = 0;
@@ -290,7 +315,11 @@ public class NexusKitImporter extends CommandLineUtil {
 				kit.setKitSKU(items[1]);
 				
 				// Store the header and layer info to the DB
-				this.storeKitHeader(kit);
+				if (existingSets.keySet().contains(kit.getKitId())) {
+					this.updateKitHeader(kit);
+				} else {
+					this.storeKitHeader(kit, true);
+				}
 				
 				// Add the kit to the set so this kit doesn't get built again
 				kitIds.add(items[1]);
@@ -301,7 +330,11 @@ public class NexusKitImporter extends CommandLineUtil {
 			// the future, set it into the future 
 			String end = StringUtil.checkVal(items[6]);
 			if (! end.startsWith("20")) end = "20501231";
-			this.storeKitItem(items[1], items[2], items[9], items[5], end, iCtr, items[7]);
+			if (existingSets.get(items[1]) != null) {
+				this.storeKitItem(items[1], items[2], items[8], items[5], end, iCtr, items[7], true, existingSets.get(items[1]).contains(items[2]));
+			} else {
+				this.storeKitItem(items[1], items[2], items[8], items[5], end, iCtr, items[7], true, false);
+			}
 			iCtr++;
 		}
 		
@@ -314,12 +347,72 @@ public class NexusKitImporter extends CommandLineUtil {
 		return mdmCnt;
 	}
 	
+	
+	/**
+	 * Update an existing kit
+	 * @param kit
+	 * @throws SQLException
+	 */
+	private void updateKitHeader(NexusKitVO kit) throws SQLException {
+		StringBuilder sql = new StringBuilder(200);
+		
+		sql.append("UPDATE ").append(props.get("customDbSchema")).append("DPY_SYN_NEXUS_SET_INFO ");
+		sql.append("SET description_txt=?, gtin_txt=?, UPDATE_DT=? ");
+		sql.append("WHERE SET_INFO_ID = ? ");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, kit.getKitDesc());
+			ps.setString(2, kit.getKitGTIN());
+			ps.setTimestamp(3, Convert.getCurrentTimestamp());
+			ps.setString(4, kit.getKitId());
+			
+			ps.executeUpdate();
+		}
+	}
+
+	/**
+	 * Get a list of all the MDM kits in the database that are available for updating
+	 * @return
+	 */
+	private Map<String, List<String>> getActiveMDM() {
+		Map<String, List<String>> existingKits = new HashMap<>();
+		
+		StringBuilder sql = new StringBuilder(200);
+		sql.append("SELECT SET_INFO_ID, ITEM_ID FROM ").append(props.get("customDbSchema")).append("DPY_SYN_NEXUS_SET_INFO s ");
+		sql.append("LEFT JOIN ").append(props.get("customDbSchema")).append("DPY_SYN_NEXUS_SET_ITEM i ");
+		sql.append("on s.SET_INFO_ID = i.LAYER_ID ");
+		sql.append("WHERE SOURCE = 'MDM' ORDER BY SET_INFO_ID");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ResultSet rs = ps.executeQuery();
+			String kitId = "";
+			List<String> items = null;
+			while(rs.next()) {
+				if (!kitId.equals(rs.getString("SET_INFO_ID"))) {
+					if (items != null) {
+						existingKits.put(kitId, items);
+					}
+					items = new ArrayList<>();
+					kitId = rs.getString("SET_INFO_ID");
+				}
+				items.add(rs.getString("ITEM_ID"));
+			}
+			if (items != null) existingKits.put(kitId, items);
+			
+		} catch (Exception e) {
+			log.error("Unable to get existing MDM kits", e);
+		}
+		
+		return existingKits;
+	}
+
 	/**
 	 * Processes the JDE Kit Header Data
 	 * @return
 	 * @throws Exception
 	 */
 	public int processJDEHeaderFile() throws Exception {
+		flushJDEKits();
 		String path = props.getProperty(KIT_FILE_PATH);
 		String name = props.getProperty(JDE_HEADER_FILE_NAME);
 		BufferedReader in = new BufferedReader(new FileReader((path + name)));
@@ -337,17 +430,18 @@ public class NexusKitImporter extends CommandLineUtil {
 			NexusKitVO kit = new NexusKitVO(NexusKitAction.SOLR_INDEX);
 			//kit.setKitId(ORG_MAP.get(items[0]) + "_" + items[1]);
 			kit.setKitId(items[1]);
-			kit.setOrgId(JDE_ORG_MAP.get(items[0]));
+			kit.setOrgId(items[0]);
 			kit.setKitSKU(items[1]);
 			kit.setKitDesc(items[2]);
 			kit.setKitGTIN(items[3]);
 			kit.setBranchCode(items[4]);
 			kit.addOrganization(props.getProperty("organization"));
-			kit.addRole("0");
+			kit.addRole(0);
+			kit.setSource(Source.JDE);
 			kit.setOrgName(kit.getOrgId());
 			
 			// Load the DB and solr
-			storeKitHeader(kit);
+			storeKitHeader(kit, false);
 			addToSolr(kit);
 		}
 		
@@ -356,6 +450,25 @@ public class NexusKitImporter extends CommandLineUtil {
 		return ctr;
 	}
 	
+	/**
+	 * Delete all kits that came from JDE since these are going to come from
+	 * full refreshes instead of updates
+	 * @throws SQLException 
+	 */
+	private void flushJDEKits() throws Exception {
+		StringBuilder sql = new StringBuilder(125);
+		
+		sql.append("DELETE ").append(props.get("customDbSchema")).append("DPY_SYN_NEXUS_SET_INFO ");
+		sql.append("WHERE SOURCE = 'JDE'");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.executeUpdate();
+		}
+		
+		server.deleteByQuery("source:JDE, kit:true");
+		server.commit();
+	}
+
 	/**
 	 * Processes the details file and stores the entries in the database
 	 * @return
@@ -378,7 +491,17 @@ public class NexusKitImporter extends CommandLineUtil {
 			if (ctr == 0) continue;
 			
 			String[] items = temp.split(",");
-			this.storeKitItem(items[0], items[1], items[2], items[3], "20" + items[4], ctr, "");
+			Date d = new Date();
+			try {
+				if (d.after(parseDate(items[4], "mm/dd/yy"))) {
+					ctr--;
+				} else if (!this.storeKitItem(items[0], items[1], items[2], items[3],items[4], ctr, "", false, false)) {
+					ctr--;
+				}
+			} catch (ParseException e) {
+				ctr--;
+				log.error("Unable to parse product date" + items[0] + "|"+items[1]);
+			}
 		}
 		
 		in.close();
@@ -391,31 +514,47 @@ public class NexusKitImporter extends CommandLineUtil {
 	 * @param order
 	 * @throws SQLException
 	 */
-	public void storeKitItem(String layerId, String sku, String qty, String start, String end, int order, String uom) 
+	public boolean storeKitItem(String layerId, String sku, String qty, String start, String end, int order, String uom, boolean isMDM, boolean update) 
 	throws SQLException {
+		String dateFormat;
+		if (isMDM) {
+			dateFormat = "yyyymmdd";
+		} else {
+			dateFormat = "mm/dd/yy";
+		}
 		// Build the SQL Statement
 		StringBuilder sql = new StringBuilder(255);
-		sql.append("insert into ").append(props.get("customDbSchema"));
-		sql.append("DPY_SYN_NEXUS_SET_ITEM (item_id, layer_id, product_sku_txt, quantity_no, ");
-		sql.append("unit_measure_cd, effective_start_dt, effective_end_dt, order_no, create_dt) ");
-		sql.append("values (?,?,?,?,?,?,?,?,?)");
+		if (!update) {
+			sql.append("insert into ").append(props.get("customDbSchema"));
+			sql.append("DPY_SYN_NEXUS_SET_ITEM (quantity_no, unit_measure_cd, effective_start_dt, ");
+			sql.append("effective_end_dt, order_no, create_dt,layer_id, product_sku_txt, item_id) ");
+			sql.append("values (?,?,?,?,?,?,?,?,?)");
+		} else {
+			sql.append("UPDATE ").append(props.get("customDbSchema"));
+			sql.append("DPY_SYN_NEXUS_SET_ITEM SET quantity_no=?, ");
+			sql.append("unit_measure_cd=?, effective_start_dt=?, effective_end_dt=?, order_no=?, create_dt=? ");
+			sql.append("WHERE layer_id = ? and product_sku_txt = ? ");
+		}
 		//log.info("Detail SQL: " + sql);
 		
 		// Set the sql data elements
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, new UUIDGenerator().getUUID());
-			ps.setString(2, layerId);
-			ps.setString(3, sku);
-			ps.setInt(4, Convert.formatInteger(qty));
-			ps.setString(5, uom);
-			ps.setDate(6, Convert.formatSQLDate(Convert.parseDateUnknownPattern(start)));
-			ps.setDate(7, Convert.formatSQLDate(Convert.parseDateUnknownPattern(end)));
-			ps.setInt(8, order);
-			ps.setTimestamp(9, Convert.getCurrentTimestamp());
+			ps.setInt(1, Convert.formatInteger(qty));
+			ps.setString(2, "");
+			ps.setDate(3, Convert.formatSQLDate(parseDate(start, dateFormat)));
+			ps.setDate(4, Convert.formatSQLDate(parseDate(start, dateFormat)));
+			ps.setInt(5, order);
+			ps.setTimestamp(6, Convert.getCurrentTimestamp());
+			ps.setString(7, layerId);
+			ps.setString(8, sku);
+			if (!update) ps.setString(9, new UUIDGenerator().getUUID());
 			
-			// Store the data
 			ps.executeUpdate();
+		} catch (Exception e) {
+			log.error("Invalid product");
+			return false;
 		}
+		return true;
 	}
 	
 	/**
@@ -423,13 +562,13 @@ public class NexusKitImporter extends CommandLineUtil {
 	 * @param kit
 	 * @throws SQLException
 	 */
-	public void storeKitHeader(NexusKitVO kit) throws SQLException {
+	public void storeKitHeader(NexusKitVO kit, boolean isMDM) throws SQLException {
 		// Build the SQL Statement
 		StringBuilder sql = new StringBuilder(255);
 		sql.append("insert into ").append(props.get("customDbSchema"));
 		sql.append("DPY_SYN_NEXUS_SET_INFO (set_info_id, set_sku_txt, organization_id, ");
-		sql.append("description_txt, gtin_txt, branch_plant_cd, create_dt) ");
-		sql.append("values (?,?,?,?,?,?,?)");
+		sql.append("description_txt, gtin_txt, branch_plant_cd, create_dt, source) ");
+		sql.append("values (?,?,?,?,?,?,?,?)");
 		//log.info("kit Header SQL: " + sql);
 		
 		String desc = StringUtil.checkVal(kit.getKitDesc());
@@ -445,6 +584,11 @@ public class NexusKitImporter extends CommandLineUtil {
 			ps.setString(5, kit.getKitGTIN());
 			ps.setString(6, StringUtil.checkVal(kit.getBranchCode()).trim());
 			ps.setTimestamp(7, Convert.getCurrentTimestamp());
+			if (isMDM) {
+				ps.setString(8, Source.MDM.toString());
+			} else {
+				ps.setString(8, Source.JDE.toString());
+			}
 			
 			// Store the data
 			ps.executeUpdate();
@@ -595,5 +739,20 @@ public class NexusKitImporter extends CommandLineUtil {
 		} catch (Exception e) {
 			log.error("Unable to add kit " + kit.getKitSKU() + " to solr.", e);
 		}
+	}
+	
+	
+	/**
+	 * Parse the date in such a way that the proper century is used for
+	 * two digit date formats.
+	 * @param date
+	 * @param format
+	 * @return
+	 * @throws ParseException
+	 */
+	private Date parseDate(String date, String format) throws ParseException {
+		SimpleDateFormat sdf = new SimpleDateFormat(format);
+		sdf.set2DigitYearStart(new GregorianCalendar(1990, 1, 1).getTime());
+		return sdf.parse(date);
 	}
 }
