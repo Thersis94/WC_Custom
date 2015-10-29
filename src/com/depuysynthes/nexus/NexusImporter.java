@@ -172,7 +172,11 @@ public class NexusImporter extends CommandLineUtil {
 			boolean isZip = fileName.contains(".zip");
 			// Get the files and parse them into products
 			if (isLocal) {
-				products = getFilesFromLocalZip();
+				if (isZip) {
+					products = getFilesFromLocalZip();
+				} else {
+					products = getLocalFile();
+				}
 			} else {
 				products = getProductsFromFile();
 			}
@@ -186,7 +190,7 @@ public class NexusImporter extends CommandLineUtil {
 				try {
 					// If we are dealing with a zip file we need to filter out the unneeded products
 					if (isZip && (!"DO,DS,DM,DC".contains(StringUtil.checkVal(p.getOrgId(), "SKIP")) ||
-							!"AC,CT,DP,DS".contains(StringUtil.checkVal(p.getStatus(), "SKIP")) ||
+							"02".contains(StringUtil.checkVal(p.getStatus(), "SKIP")) ||
 							!"USA".equals(StringUtil.checkVal(p.getRegion(), "SKIP"))
 							|| StringUtil.checkVal(p.getOrgName()).length() == 0)) {
 						continue;
@@ -320,6 +324,32 @@ public class NexusImporter extends CommandLineUtil {
 		return map;
 	}
 	
+	/**
+	 * Gets the files from a local file instead of pulling it down from the mbox server
+	 * @return
+	 * @throws ActionException
+	 */
+	private Map<String, NexusProductVO> getLocalFile() throws ActionException {
+		Map<String, NexusProductVO> map = new HashMap<>();
+		try {
+			InputStream input = new FileInputStream(directory+""+fileName);
+			determineSource();
+			// Get the file
+			byte[] b = new byte[2048];
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			int c = 0;
+			while ((c = input.read(b, 0, BUFFER_SIZE)) != -1) {
+				baos.write(b, 0, c);
+			}
+			buildProducts(fileName, new String(baos.toByteArray()), false, map);
+			input.close();
+		} catch (IOException e) {
+			log.error("Unable to parse file contents", e);
+			throw new ActionException(e);
+		}
+		return map;
+	}
+	
 	
 	/**
 	 * Build a map of products out of the supplied files
@@ -351,9 +381,9 @@ public class NexusImporter extends CommandLineUtil {
 				continue;
 			}
 			
-			if (isZip && org != -1 && !"DO,DS,DM,DC".contains(StringUtil.checkVal(cols[org], "DO"))) continue;
-			if (isZip && status != -1 && !"AC,CT,DP,DS".contains(StringUtil.checkVal(cols[status], "AC"))) continue;
-			if (isZip && region != -1 && !"USA".contains(StringUtil.checkVal(cols[region], "USA"))) continue;
+			if (isZip && org != -1 && !"DO,DS,DM,DC".contains(StringUtil.checkVal(cols[org], "XX"))) continue;
+			if (isZip && status != -1 && "02".contains(StringUtil.checkVal(cols[status], "XX"))) continue;
+			if (isZip && region != -1 && !"USA".contains(StringUtil.checkVal(cols[region], "XX"))) continue;
 			
 			if (products.get(cols[code]) != null) {
 				p = products.get(cols[code]);
@@ -363,7 +393,7 @@ public class NexusImporter extends CommandLineUtil {
 				p = new NexusProductVO();
 				updateProduct(p, cols);
 				p.addOrganization("DPY_SYN_NEXUS");
-				p.addRole("0");
+				p.addRole(0);
 				p.setSource(source);
 				products.put(p.getDocumentId(), p);
 			}
@@ -382,7 +412,7 @@ public class NexusImporter extends CommandLineUtil {
 	private void getColumns(List<String> headerList) {
 		if (fileName.contains(".zip")) {
 			org=headerList.indexOf("SLS_ORG_CO_CD");
-			status=headerList.indexOf("STAT_CD");
+			status=headerList.indexOf("DCHAIN_SPCL_STAT_CD");
 			region=headerList.indexOf("REG_CD");
 			code=headerList.indexOf("PSKU_CD");
 			desc=headerList.indexOf("PROD_DESCN_TXT");
