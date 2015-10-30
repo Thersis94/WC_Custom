@@ -60,7 +60,7 @@ public class SendThisFileReconcile {
 	private Integer timeout = Integer.valueOf(15); //minutes that we wait before timing-out a transaction  (15mins by default)
 	
 	public SendThisFileReconcile(String[] args) {
-		PropertyConfigurator.configure("/data/log4j.properties");
+		PropertyConfigurator.configure("log4j.properties");
 		log = Logger.getLogger(SendThisFileReconcile.class);
 		
 		log.info("args=" + StringUtil.getDelimitedList(args, false, ","));

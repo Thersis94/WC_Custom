@@ -82,6 +82,9 @@ public class EmailWrapper extends SimpleActionAdapter {
 			if (req.hasParameter("del")) {
 				this.delete(req);
 				return;
+			} else if (req.hasParameter("convert")) {
+				convert(req);
+				return;
 			}
 			
 			//if the View is our report, load the report data.
@@ -90,6 +93,7 @@ public class EmailWrapper extends SimpleActionAdapter {
 		} else {
 			String contactActionId = (String)mod.getAttribute(SBModuleVO.ATTRIBUTE_1);
 			actionInit.setActionId(contactActionId);
+			req.setParameter("actionGroupId", contactActionId);
 			
 			SMTActionInterface ai = new ContactFacadeAction(actionInit);
 			ai.setDBConnection(dbConn);
@@ -111,7 +115,8 @@ public class EmailWrapper extends SimpleActionAdapter {
 				!isEnrolled(req.getParameter("pfl_EMAIL_ADDRESS_TXT"), (String)mod.getAttribute(SBModuleVO.ATTRIBUTE_2))) {
 			//bind the submitting user to this record via DealerLocationId
 			UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
-			req.setParameter(Constants.DEALER_LOCATION_ID_KEY, user.getProfileId());
+			if (user != null)
+				req.setParameter(Constants.DEALER_LOCATION_ID_KEY, user.getProfileId());
 			
 			actionInit.setActionId((String)mod.getAttribute(SBModuleVO.ATTRIBUTE_1));
 			SMTActionInterface ai = new ContactFacadeAction(actionInit);
@@ -146,7 +151,7 @@ public class EmailWrapper extends SimpleActionAdapter {
 		sql.append("cast(f.value_txt as nvarchar(150)) as 'gifter_nm', ");
 		sql.append("MIN(c.CREATE_DT) as 'first_dt', MAX(c.CREATE_DT) as 'last_dt', ");
 		sql.append("COUNT(c.CAMPAIGN_LOG_ID) as 'email_cnt', b.ALLOW_COMM_FLG, ");
-		sql.append("a.contact_submittal_id, wc.record_no ");
+		sql.append("a.contact_submittal_id, wc.record_no, a.create_dt ");
 		sql.append("from CONTACT_SUBMITTAL a ");
 		sql.append("left outer join CONTACT_DATA e on a.CONTACT_SUBMITTAL_ID=e.CONTACT_SUBMITTAL_ID and e.CONTACT_FIELD_ID='c0a80237c670c7f0abba7364a8fc9a85' "); //funeralHomeName
 		sql.append("left outer join CONTACT_DATA f on a.CONTACT_SUBMITTAL_ID=f.CONTACT_SUBMITTAL_ID and f.CONTACT_FIELD_ID='c0a80237c670f730b45753522de808b' "); //giftGiverName
@@ -154,12 +159,12 @@ public class EmailWrapper extends SimpleActionAdapter {
 		sql.append("left outer join ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("WILLOWGREEN_COUNTER wc on a.CONTACT_SUBMITTAL_ID=wc.CONTACT_SUBMITTAL_ID ");
 		sql.append("left outer join EMAIL_CAMPAIGN_LOG c on a.PROFILE_ID=c.PROFILE_ID and campaign_instance_id in (select campaign_instance_id from email_campaign_instance where EMAIL_CAMPAIGN_ID=?) ");
-		sql.append("where ACTION_ID=? ");
+		sql.append("where a.ACTION_ID=? "); //this is actually actionGroupId, on the data level
 		if (role.getRoleLevel() < SecurityController.ADMIN_ROLE_LEVEL)
 			sql.append("and a.DEALER_LOCATION_ID=? ");
-		sql.append("group by a.PROFILE_ID, a.DEALER_LOCATION_ID, a.contact_submittal_id, a.create_dt, b.ALLOW_COMM_FLG, cast(e.value_txt as nvarchar(150)), cast(f.value_txt as nvarchar(150)), record_no ");
+		sql.append("group by a.PROFILE_ID, a.DEALER_LOCATION_ID, a.contact_submittal_id, a.create_dt, b.ALLOW_COMM_FLG, cast(e.value_txt as nvarchar(150)), cast(f.value_txt as nvarchar(150)), record_no, a.create_dt ");
 		sql.append("order by record_no desc");
-		//log.debug(sql + " " + role.getProfileId());
+		//log.debug(sql + "|" + role.getProfileId() + "|" + emailCampaignId + "|" + contactActionId);
 		
 		PreparedStatement ps = null;
 		try {
@@ -232,7 +237,7 @@ public class EmailWrapper extends SimpleActionAdapter {
 		} finally {
 			pm = null;
 		}
-		
+		log.debug("profileId=" + profileId);
 		if (profileId == null) return isEnrolled;
 		
 		StringBuilder sql = new StringBuilder();
@@ -240,6 +245,7 @@ public class EmailWrapper extends SimpleActionAdapter {
 		sql.append("from email_campaign_instance b left outer join email_campaign_log a ");
 		sql.append("on a.campaign_instance_id=b.campaign_instance_id and a.profile_id=? ");
 		sql.append("where b.email_campaign_id=?");
+		log.debug(sql);
 		
 		PreparedStatement ps = null;
 		try {
@@ -249,8 +255,9 @@ public class EmailWrapper extends SimpleActionAdapter {
 			ResultSet rs = ps.executeQuery();
 			if (rs.next()) {
 				//if they have recieved emails, but not all of them, they're still enrolled.
-				//or they've opt-out and don't want to be a subscriber anyways!  :)
+				//or they've opt-out and don't want to be a subscriber anyways!
 				isEnrolled = (rs.getInt(1) < rs.getInt(2) && rs.getInt(1) > 0);
+				//log.debug("rcvd=" + rs.getInt(1) + " series=" + rs.getInt(2));
 			}
 		} catch (SQLException sqle) {
 			log.error("could not lookup email count", sqle);
@@ -266,33 +273,28 @@ public class EmailWrapper extends SimpleActionAdapter {
 	}
 	
 	protected void incrementCounter(String csId, String series) {
-		StringBuilder sql = new StringBuilder();
+		StringBuilder sql = new StringBuilder(100);
 		sql.append("select max(record_no)+1 from ");
 		sql.append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("WILLOWGREEN_COUNTER where series_txt=?");
-		
+		log.debug(sql + "|" + series);
 		int recordNo = 0;
-		PreparedStatement ps = null;
-		try {
-			ps = dbConn.prepareStatement(sql.toString());
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, series);
 			ResultSet rs = ps.executeQuery();
 			if (rs.next()) recordNo = rs.getInt(1);
 		} catch (SQLException sqle) {
 			log.error("could not increment counter", sqle);
-		} finally {
-			try { ps.close(); } catch (Exception e) {}
 		}
 		
-		if (recordNo == 0) return;
+		if (recordNo == 0) recordNo = 1;
 		
-		sql = new StringBuilder();
+		sql = new StringBuilder(200);
 		sql.append("insert into ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("WILLOWGREEN_COUNTER (counter_id, series_txt, contact_submittal_id, ");
 		sql.append("record_no, create_dt) values (?,?,?,?,?)");
 		
-		try {
-			ps = dbConn.prepareStatement(sql.toString());
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, new UUIDGenerator().getUUID());
 			ps.setString(2, series);
 			ps.setString(3, csId);
@@ -301,9 +303,10 @@ public class EmailWrapper extends SimpleActionAdapter {
 			ps.executeUpdate();
 		} catch (SQLException sqle) {
 			log.error("could not increment counter", sqle);
-		} finally {
-			try { ps.close(); } catch (Exception e) {}
 		}
-		
+	}
+	
+	protected void convert(SMTServletRequest req) throws ActionException {
+		//stub to be overloaded in DailyCaregiversEmailWrapper
 	}
 }
