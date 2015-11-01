@@ -85,7 +85,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 
 	private String limeLightUrl = MediaBinLinkAction.US_BASE_URL;
 
-	private Map<String, Integer> dataCounts = new HashMap<>();
+	protected Map<String, Integer> dataCounts = new HashMap<>();
 
 	/**
 	 * Initializes the Logger, config files and the database connection
@@ -1043,6 +1043,14 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			html.append("Deleted: ").append(dataCounts.get("deleted")).append("<br/><br/>");
 			html.append("DB Total: ").append(dataCounts.get("total")).append("<br/>");
 			html.append("Solr Total: ").append(dataCounts.get("solr")).append("<br/>");
+			//add-in for showpad stats
+			if (dataCounts.containsKey("showpad")) {
+				html.append("<br/>Showpad Added: ").append(dataCounts.get("showpad-inserted")).append("<br/>");
+				html.append("Showpad Updated: ").append(dataCounts.get("showpad-updated")).append("<br/>");
+				html.append("Showpad Deleted: ").append(dataCounts.get("showpad-deleted")).append("<br/>");
+				html.append("Showpad Total: ").append(dataCounts.get("showpad-total")).append("<br/><br/>");
+			}
+			
 			long timeSpent = System.nanoTime()-startNano;
 			double millis = timeSpent/1000000;
 			if (millis > (60*1000)) {
@@ -1125,5 +1133,10 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			msg.append("</tr>");
 		}
 		msg.append("</tbody></table>");
+	}
+	
+	
+	public Integer getDataCount(String type) {
+		return Convert.formatInteger(dataCounts.get(type));
 	}
 }
