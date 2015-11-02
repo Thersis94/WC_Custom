@@ -164,6 +164,7 @@ public class KeystoneApprovalAction extends SimpleActionAdapter {
 						break;
 					default:app.setPreviewUrl("/"+siteAlias);;
 				}
+				log.debug("######################################### " + app.getPreviewUrl() + "|" + app.getOrganizationId() +"|" + siteAlias);
 				approvables.add(app);
 			}
 		} catch(SQLException e) {
