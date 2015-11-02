@@ -1,17 +1,21 @@
 package com.fastsigns.action.franchise;
 
+//java 7
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+//SMT base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
+
+//Web Crescendo
 import com.smt.sitebuilder.action.SBModuleVO;
 import com.smt.sitebuilder.action.tools.SocialKnowledgeGraphAction;
 import com.smt.sitebuilder.common.ModuleVO;
