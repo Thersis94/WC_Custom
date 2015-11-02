@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.fastsigns.action.franchise;
 
 import java.sql.PreparedStatement;
@@ -16,7 +13,7 @@ import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.SBModuleVO;
-import com.smt.sitebuilder.action.tools.ProfileMapAction;
+import com.smt.sitebuilder.action.tools.SocialKnowledgeGraphAction;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -33,10 +30,10 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @version 1.0
  * @since Mar 30, 2015
  ****************************************************************************/
-public class SocialProfileMapAction extends ProfileMapAction {
+public class WESocialKnowledgeGraphAction extends SocialKnowledgeGraphAction {
 
 	public static final String MAIN_URL_PARAM = "mainUrl";
-	public static final String MODULE_NAME = "FTS_PROFILE_MAP";
+	public static final String MODULE_NAME = "FTS_KNOWLEDGE_GRAPH";
 	public enum SocialMediaTypes{
 		FACEBOOK("facebook_url","facebookUrl"),
 		TWITTER("twitter_url","twitterUrl"),
@@ -58,14 +55,14 @@ public class SocialProfileMapAction extends ProfileMapAction {
 	/**
 	 * Default Constructor
 	 */
-	public SocialProfileMapAction() {
+	public WESocialKnowledgeGraphAction() {
 		super();
 	}
 
 	/**
 	 * @param actionInit
 	 */
-	public SocialProfileMapAction(ActionInitVO actionInit) {
+	public WESocialKnowledgeGraphAction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
 	

@@ -9,7 +9,7 @@ import java.util.List;
 import com.fastsigns.action.approval.WebeditApprover;
 import com.fastsigns.action.approval.WebeditApprover.WebeditType;
 import com.fastsigns.action.franchise.CenterPageAction;
-import com.fastsigns.action.franchise.SocialProfileMapAction;
+import com.fastsigns.action.franchise.WESocialKnowledgeGraphAction;
 import com.fastsigns.action.franchise.vo.ButtonVO;
 import com.fastsigns.action.franchise.vo.FranchiseVO;
 import com.siliconmtn.action.ActionException;
@@ -481,7 +481,7 @@ public class FranchiseInfoAction extends SBActionAdapter {
 		
 		//update the social media map
 		String corpOrg = ((SiteVO)req.getAttribute(Constants.SITE_DATA)).getOrganizationId();
-		SocialProfileMapAction spm = new SocialProfileMapAction(actionInit);
+		WESocialKnowledgeGraphAction spm = new WESocialKnowledgeGraphAction(actionInit);
 		spm.setAttributes(attributes);
 		spm.setDBConnection(dbConn);
 		spm.updateFranchiseMap(req, corpOrg+"_"+fId); 
