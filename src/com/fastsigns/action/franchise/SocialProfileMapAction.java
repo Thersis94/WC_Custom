@@ -285,9 +285,10 @@ public class SocialProfileMapAction extends ProfileMapAction {
 			String franchiseOrgId) {
 
 		String siteId = franchiseOrgId+"_1";
-
+		int count = 0;
+		
 		StringBuilder sql = new StringBuilder(205);
-		sql.append("select * from PAGE_MODULE pm  ");
+		sql.append("select count(*) as total from PAGE_MODULE pm  ");
 		sql.append("inner join TEMPLATE tm ");
 		sql.append("on pm.TEMPLATE_ID = tm.TEMPLATE_ID ");
 		sql.append("inner join SB_ACTION sb ");
@@ -301,19 +302,17 @@ public class SocialProfileMapAction extends ProfileMapAction {
 			ps.setString(2, MODULE_NAME);
 			ResultSet rs = ps.executeQuery();
 
-			int count = 0;
+			
 
-			while (rs.next()) {
-				++count;
+			if (rs.next() ) {
+				count = rs.getInt("total");
 				// gets the count of instases on the page
-				if (count >= 1) return true; 
 			}
 			log.debug(count + " is the number of times module used on page");
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-
-		return false;
+		return (count > 0);
 	}
 
 	/**
