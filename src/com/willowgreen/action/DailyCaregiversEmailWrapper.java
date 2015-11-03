@@ -167,7 +167,7 @@ public class DailyCaregiversEmailWrapper extends EmailWrapper {
 				if (FREE_SERIES.equals(emailCampaignId)) { //free series
 					if (rpt.getEmailCnt() < 16 && rpt.getAllowCommFlg() == 1)
 						activeCnt++;
-				} else if (rpt.isGatekeeper() && rpt.getEmailCnt() < 62 && rpt.getAllowCommFlg() == 1) {
+				} else if (rpt.isGatekeeper() && rpt.getEmailCnt() < 32 && rpt.getAllowCommFlg() == 1) {
 					gatekeeperCnt++;
 				} else if (!rpt.isGatekeeper() && rpt.getEmailCnt() < 366 && rpt.getAllowCommFlg() == 1) {
 					activeCnt++; 
