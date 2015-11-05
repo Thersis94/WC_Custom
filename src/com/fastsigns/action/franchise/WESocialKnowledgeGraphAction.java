@@ -106,7 +106,7 @@ public class WESocialKnowledgeGraphAction extends SocialKnowledgeGraphAction {
 		String fId = null;
 
 		try {
-			fId = CenterPageAction.getFranchiseId(req);
+			fId = CenterPageAction.getFranchiseId(req, true);
 		}catch (NullPointerException npe){
 			String orgId = (String) req.getParameter("organizationId");
 			if (fId == null && orgId.substring(0, 3).equals("FTS")){
