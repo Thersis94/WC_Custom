@@ -144,9 +144,15 @@ public class PostcardEmailer {
 			mail.addRecipient("admgt@hmktgroup.com");
 			mail.addRecipient("sterling.hoham@hmktgroup.com");
 			mail.addRecipient("rwilkin7@its.jnj.com");
-			mail.addRecipient("lisa.maiers@novusmediainc.com");
-			mail.addRecipient("anna.schwanz@novusmediainc.com");
-			mail.addRecipient("taylor.larson@novusmediainc.com");
+			if (postcard.getEarliestEventDate().after(Convert.formatDate(Convert.DATE_SLASH_PATTERN,"01/01/2016"))) {
+				mail.addCC("Justin.Reyes@umj3.com");
+				mail.addCC("Evan.Pring@umj3.com");
+				mail.addCC("lisav@metrosn.com");
+			} else {
+				mail.addCC("lisa.maiers@novusmediainc.com");
+				mail.addCC("anna.schwanz@novusmediainc.com");
+				mail.addCC("taylor.larson@novusmediainc.com");
+			}
 			mail.setSubject("DePuy Community Education; Postcard Canceled " + postcard.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
@@ -232,15 +238,18 @@ public class PostcardEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient("sterling.hoham@hmktgroup.com"); // Sterling Hoham
-			mail.addRecipient("amy.zimmerman@hmktgroup.com");
-			mail.addRecipient("lisa.maiers@novusmediainc.com");
-			//if ("CFSEM".equalsIgnoreCase(sem.getEvents().get(0).getEventTypeCd())) 
-			//	mail.addRecipient("rita.harman@hmktgroup.com");
-			
+			mail.addRecipient("amy.zimmerman@hmktgroup.com");			
 			//Additional CC recipients
 			mail.addCC("rwilkin7@its.jnj.com");
-			mail.addCC("anna.schwanz@novusmediainc.com");
-			mail.addCC("taylor.larson@novusmediainc.com");
+			if (sem.getEarliestEventDate().after(Convert.formatDate(Convert.DATE_SLASH_PATTERN,"01/01/2016"))) {
+				mail.addCC("Justin.Reyes@umj3.com");
+				mail.addCC("Evan.Pring@umj3.com");
+				mail.addCC("lisav@metrosn.com");
+			} else {
+				mail.addCC("lisa.maiers@novusmediainc.com");
+				mail.addCC("anna.schwanz@novusmediainc.com");
+				mail.addCC("taylor.larson@novusmediainc.com");
+			}
 			mail.addCC(site.getAdminEmail());
 			
 			mail.setSubject(subject.toString());
@@ -483,15 +492,21 @@ public class PostcardEmailer {
 			//mail.addRecipient("Jenn.Davis@hmktgroup.com"); // Jenn Parrish-Davis);
 			mail.addRecipient("sterling.hoham@hmktgroup.com"); // Sterling Hoham
 			mail.addRecipient("amy.zimmerman@hmktgroup.com");
-			mail.addRecipient("lisa.maiers@novusmediainc.com");
 			mail.addRecipient(sem.getOwner().getEmailAddress());
 			if ("CFSEM".equalsIgnoreCase(sem.getEvents().get(0).getEventTypeCd())) 
 				mail.addRecipient("rita.harman@hmktgroup.com");
 			
 			mail.addCC(site.getAdminEmail());
 			mail.addCC("rwilkin7@its.jnj.com");
-			mail.addCC("anna.schwanz@novusmediainc.com");
-			mail.addCC("taylor.larson@novusmediainc.com");
+			if (sem.getEarliestEventDate().after(Convert.formatDate(Convert.DATE_SLASH_PATTERN,"01/01/2016"))) {
+				mail.addCC("Justin.Reyes@umj3.com");
+				mail.addCC("Evan.Pring@umj3.com");
+				mail.addCC("lisav@metrosn.com");
+			} else {
+				mail.addCC("lisa.maiers@novusmediainc.com");
+				mail.addCC("anna.schwanz@novusmediainc.com");
+				mail.addCC("taylor.larson@novusmediainc.com");
+			}
 			
 			for (PersonVO p : sem.getPeople()) {
 				if (! StringUtil.isValidEmail(p.getEmailAddress())) continue;

@@ -85,9 +85,15 @@ public class CoopAdsEmailer {
 			mail.addRecipient("amy.zimmerman@hmktgroup.com");
 			mail.addCC("rwilkin7@its.jnj.com");
 			mail.addCC("Sterling.Hoham@hmktgroup.com");
-			mail.addCC("lisa.maiers@novusmediainc.com");
-			mail.addCC("anna.schwanz@novusmediainc.com");
-			mail.addCC("taylor.larson@novusmediainc.com");
+			if (sem.getEarliestEventDate().after(Convert.formatDate(Convert.DATE_SLASH_PATTERN,"01/01/2016"))) {
+				mail.addCC("Justin.Reyes@umj3.com");
+				mail.addCC("Evan.Pring@umj3.com");
+				mail.addCC("lisav@metrosn.com");
+			} else {
+				mail.addCC("lisa.maiers@novusmediainc.com");
+				mail.addCC("anna.schwanz@novusmediainc.com");
+				mail.addCC("taylor.larson@novusmediainc.com");
+			}
 			mail.setSubject(label + " Ad #" + cnt + " declined for Seminar " + sem.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
@@ -168,9 +174,15 @@ public class CoopAdsEmailer {
 			mail.addCC("rwilkin7@its.jnj.com");
 			mail.addCC("Sterling.Hoham@hmktgroup.com");
 			if (! isCFSEM ){ //Additional recipients for DePuy Funded events
-				mail.addRecipient("lisa.maiers@novusmediainc.com");
-				mail.addCC("anna.schwanz@novusmediainc.com");
-				mail.addCC("taylor.larson@novusmediainc.com");
+				if (sem.getEarliestEventDate().after(Convert.formatDate(Convert.DATE_SLASH_PATTERN,"01/01/2016"))) {
+					mail.addCC("Justin.Reyes@umj3.com");
+					mail.addCC("Evan.Pring@umj3.com");
+					mail.addCC("lisav@metrosn.com");
+				} else {
+					mail.addCC("lisa.maiers@novusmediainc.com");
+					mail.addCC("anna.schwanz@novusmediainc.com");
+					mail.addCC("taylor.larson@novusmediainc.com");
+				}
 			}
 			mail.setSubject(((isOnline) ? "Online" : "Newspaper") + " Options Confirmed - Seminar " + sem.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
@@ -336,13 +348,19 @@ public class CoopAdsEmailer {
 			EmailMessageVO mail = new EmailMessageVO();
 			if (! isCFSEM ){ //different recipients for DePuy Funded events
 				mail.addRecipient("amy.zimmerman@hmktgroup.com");
-				mail.addRecipient("lisa.maiers@novusmediainc.com");
 				mail.addCC("Sterling.Hoham@hmktgroup.com");
 				mail.addCC(sem.getOwner().getEmailAddress());
 				mail.addCC(site.getAdminEmail());
 				mail.addCC("rwilkin7@its.jnj.com");
-				mail.addCC("anna.schwanz@novusmediainc.com");
-				mail.addCC("taylor.larson@novusmediainc.com");
+				if (sem.getEarliestEventDate().after(Convert.formatDate(Convert.DATE_SLASH_PATTERN,"01/01/2016"))) {
+					mail.addCC("Justin.Reyes@umj3.com");
+					mail.addCC("Evan.Pring@umj3.com");
+					mail.addCC("lisav@metrosn.com");
+				} else {
+					mail.addCC("lisa.maiers@novusmediainc.com");
+					mail.addCC("anna.schwanz@novusmediainc.com");
+					mail.addCC("taylor.larson@novusmediainc.com");
+				}
 			} else {
 				//CFSEM recipients
 				mail.addRecipient("amy.zimmerman@hmktgroup.com");
@@ -492,13 +510,19 @@ public class CoopAdsEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient("amy.zimmerman@hmktgroup.com");
-			mail.addRecipient("lisa.maiers@novusmediainc.com");
 			mail.addCC(site.getAdminEmail());
 			mail.addCC("rwilkin7@its.jnj.com");
 			mail.addCC("Sterling.Hoham@hmktgroup.com");
 			mail.addCC(sem.getOwner().getEmailAddress());
-			mail.addCC("anna.schwanz@novusmediainc.com");
-			mail.addCC("taylor.larson@novusmediainc.com");
+			if (sem.getEarliestEventDate().after(Convert.formatDate(Convert.DATE_SLASH_PATTERN,"01/01/2016"))) {
+				mail.addCC("Justin.Reyes@umj3.com");
+				mail.addCC("Evan.Pring@umj3.com");
+				mail.addCC("lisav@metrosn.com");
+			} else {
+				mail.addCC("lisa.maiers@novusmediainc.com");
+				mail.addCC("anna.schwanz@novusmediainc.com");
+				mail.addCC("taylor.larson@novusmediainc.com");
+			}
 			
 			mail.setSubject("Payment Received from Speaker for Seminar #" + sem.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
@@ -539,9 +563,15 @@ public class CoopAdsEmailer {
 			mail.addCC(site.getAdminEmail());
 			mail.addCC("rwilkin7@its.jnj.com");
 			mail.addCC("Sterling.Hoham@hmktgroup.com");
-			mail.addCC("anna.schwanz@novusmediainc.com");
-			mail.addCC("taylor.larson@novusmediainc.com");
-			mail.addCC("lisa.maiers@novusmediainc.com");
+			if (sem.getEarliestEventDate().after(Convert.formatDate(Convert.DATE_SLASH_PATTERN,"01/01/2016"))) {
+				mail.addCC("Justin.Reyes@umj3.com");
+				mail.addCC("Evan.Pring@umj3.com");
+				mail.addCC("lisav@metrosn.com");
+			} else {
+				mail.addCC("lisa.maiers@novusmediainc.com");
+				mail.addCC("anna.schwanz@novusmediainc.com");
+				mail.addCC("taylor.larson@novusmediainc.com");
+			}
 			mail.setTextBody(msg.toString());
 			
 			//Send message
@@ -574,9 +604,15 @@ public class CoopAdsEmailer {
 			mail.addRecipient(sem.getOwner().getEmailAddress());
 			mail.addCC("amy.zimmerman@hmktgroup.com");
 			mail.addCC("Sterling.Hoham@hmktgroup.com");
-			mail.addCC("lisa.maiers@novusmediainc.com");
-			mail.addCC("anna.schwanz@novusmediainc.com");
-			mail.addCC("taylor.larson@novusmediainc.com");
+			if (sem.getEarliestEventDate().after(Convert.formatDate(Convert.DATE_SLASH_PATTERN,"01/01/2016"))) {
+				mail.addCC("Justin.Reyes@umj3.com");
+				mail.addCC("Evan.Pring@umj3.com");
+				mail.addCC("lisav@metrosn.com");
+			} else {
+				mail.addCC("lisa.maiers@novusmediainc.com");
+				mail.addCC("anna.schwanz@novusmediainc.com");
+				mail.addCC("taylor.larson@novusmediainc.com");
+			}
 			
 			MessageSender sender = new MessageSender(attributes,dbConn);
 			sender.sendMessage(mail);
