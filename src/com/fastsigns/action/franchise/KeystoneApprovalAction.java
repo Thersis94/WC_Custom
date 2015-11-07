@@ -170,7 +170,11 @@ public class KeystoneApprovalAction extends SimpleActionAdapter {
 				
 				String newSiteAlias = getModSpecificAlias(app.getWcKeyId());
 				
-				approvables.add(app);
+				 log.debug("############################################################new alias: " + newSiteAlias + " old alias " + siteAlias);
+				 if (newSiteAlias != null && !siteAlias.equals(newSiteAlias))
+					 app.setPreviewUrl("/"+newSiteAlias);
+				 
+				 approvables.add(app);
 			}
 		} catch(SQLException e) {
 			log.error("Could not get list of approval items for " + franchiseId, e);
@@ -199,8 +203,16 @@ public class KeystoneApprovalAction extends SimpleActionAdapter {
 		sql.append(" where wc.WC_KEY_ID = ? ");
 
 		log.debug(sql.toString() + "|" + wcKeyId);
-		 //'7f000101ceb67a5d77ec38a2e4362481'
 
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, wcKeyId);
+			
+			ResultSet rs = ps.executeQuery();
+			
+			if (rs.next()) return rs.getString(1);
+		} catch(SQLException e) {
+			log.error("Could not get default location alias", e);
+		}
 		return null;
 	}
 
