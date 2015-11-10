@@ -57,8 +57,6 @@ import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 
 public class NexusKitAction extends SBActionAdapter {
 
-
-	public static final String SOLR_INDEX = "DEPUY_NEXUS";
 	public static final String KIT_SESSION_NM = "depuyNexusKit";
 	
 	private String successMsgEnd = " Please click outside the modal in order to complete this action.";
@@ -108,7 +106,8 @@ public class NexusKitAction extends SBActionAdapter {
 	 * @throws ActionException 
 	 */
 	private Object getSharedKits(SMTServletRequest req) throws ActionException {
-		NexusKitVO kit = new NexusKitVO(SOLR_INDEX);
+	    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+		NexusKitVO kit = new NexusKitVO(getSolrCollection((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1)));
 		StringBuilder sql = new StringBuilder(300);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT *, u.PROFILE_ID as SHARED_ID FROM ").append(customDb).append("DPY_SYN_NEXUS_SET_INFO s ");
@@ -203,7 +202,8 @@ public class NexusKitAction extends SBActionAdapter {
 					super.putModuleData("Item Successfully Copied."+successMsgEnd);
 					break;
 				case NewKit:
-					NexusKitVO newKit = new NexusKitVO(SOLR_INDEX);
+				    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+					NexusKitVO newKit = new NexusKitVO((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 					UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 					newKit.setKitDesc("Empty Kit");
 					newKit.setOwnerId(user.getProfileId());
@@ -658,6 +658,8 @@ public class NexusKitAction extends SBActionAdapter {
 			int count = 0;
 			int start = (page-1)*rpp;
 			int end = page*rpp;
+		    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+		    	String collection = getSolrCollection((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 			while(rs.next()) {
 				
 				if (!currentKit.equals(rs.getString("SET_INFO_ID"))) {
@@ -666,7 +668,7 @@ public class NexusKitAction extends SBActionAdapter {
 						if (kit != null) kits.add(kit);
 					}
 					currentKit = rs.getString("SET_INFO_ID");
-					kit = new NexusKitVO(rs, SOLR_INDEX);
+					kit = new NexusKitVO(rs, collection);
 					if (StringUtil.checkVal(rs.getString("SHARED_ID")).length() > 0) {
 						kit.setShared(true);
 					}
@@ -683,7 +685,7 @@ public class NexusKitAction extends SBActionAdapter {
 					}
 					if(StringUtil.checkVal(rs.getString("ITEM_ID")).length() > 0) {
 						NexusProductVO p = new NexusProductVO(rs);
-						SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, "DePuy_NeXus");
+						SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, collection);
 						SolrActionVO qData = new SolrActionVO();
 						qData.setNumberResponses(1);
 						qData.setStartLocation(0);
@@ -757,8 +759,9 @@ public class NexusKitAction extends SBActionAdapter {
 				editProduct(req);
 				break;
 			case Kit:
+			    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 				NexusKitVO kit = (NexusKitVO)req.getSession().getAttribute(KIT_SESSION_NM);
-				if (kit == null) kit = new NexusKitVO(SOLR_INDEX);
+				if (kit == null) kit = new NexusKitVO((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 				kit.setData(req);
 				req.getSession().setAttribute(KIT_SESSION_NM, kit);
 				break;
@@ -774,8 +777,9 @@ public class NexusKitAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	private void editProduct(SMTServletRequest req) throws ActionException {
+	    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		NexusKitVO kit = (NexusKitVO)req.getSession().getAttribute(KIT_SESSION_NM);
-		if(kit == null) kit = new NexusKitVO(SOLR_INDEX);
+		if(kit == null) kit = new NexusKitVO((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 		NexusKitLayerVO layer = kit.findLayer(req.getParameter("layerId"));
 		if (req.hasParameter("products")) {
 			int order = layer.getProducts().size() + 1;
@@ -804,8 +808,9 @@ public class NexusKitAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	private void editLayer(SMTServletRequest req) throws ActionException {
+	    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		NexusKitVO kit = (NexusKitVO)req.getSession().getAttribute(KIT_SESSION_NM);
-		if(kit == null) kit = new NexusKitVO(SOLR_INDEX);
+		if(kit == null) kit = new NexusKitVO((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 		NexusKitLayerVO layer = kit.findLayer(req.getParameter("layerId"));
 		if (layer == null) {
 			layer = new NexusKitLayerVO(req);
