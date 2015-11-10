@@ -1,5 +1,8 @@
 package com.depuysynthes.nexus;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -287,7 +290,7 @@ public class NexusSolrCartAction extends SBActionAdapter {
 		    	log.debug((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 		    	actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 			SolrActionVO qData = sa.retrieveActionData(req);
-			SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, "DePuy_NeXus");
+			SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, getCollection((String) mod.getAttribute(ModuleVO.ATTRIBUTE_1)));
 			qData.setNumberResponses(Convert.formatInteger(req.getParameter("rpp"), 10));
 			qData.setStartLocation(0);
 			qData.setOrganizationId("DPY_SYN_NEXUS");
@@ -370,5 +373,29 @@ public class NexusSolrCartAction extends SBActionAdapter {
 		Cookie c = req.getCookie(name);
 		if (c == null) return "";
 		return StringEncoder.urlDecode(c.getValue());
+	}
+
+	
+	/**
+	 * Get the solr collection associated with this particular portlet
+	 * @param actionId
+	 * @return
+	 * @throws ActionException
+	 */
+	private String getCollection(String actionId) throws ActionException {
+		StringBuilder sql = new StringBuilder(200);
+		sql.append("SELECT SOLR_COLLECTION_PATH FROM SOLR_ACTION sa ");
+		sql.append("left join SOLR_COLLECTION sc on sa.SOLR_COLLECTION_ID = sc.SOLR_COLLECTION_ID ");
+		sql.append("WHERE ACTION_ID = ?");
+		
+		try (PreparedStatement ps = dbConn.prepareCall(sql.toString())) {
+			ps.setString(1, actionId);
+			ResultSet rs = ps.executeQuery();
+			if (rs.next())
+				return rs.getString("SOLR_COLLECTION_PATH");
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
+		return null;
 	}
 }
