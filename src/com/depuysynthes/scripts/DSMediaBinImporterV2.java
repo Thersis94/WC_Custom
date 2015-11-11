@@ -67,6 +67,11 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	 * Delimiter used in the EXP file
 	 */
 	protected String DELIMITER = "\\|";
+	
+	/**
+	 * Delimiterd used in the EXP file to tokenize multiple values stuffed into a single meta-data field
+	 */
+	protected String MB_TOKENIZER = "~";
 
 	/**
 	 * debug mode runs individual insert queries instead of a batch query, to be able to track row failures.
@@ -74,12 +79,12 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	private boolean DEBUG_MODE = false; 
 
 	// Get the type (Intl (2) or US(1))
-	private int type = 1;
+	protected int type = 1;
 
 	/**
 	 * List of errors 
 	 */
-	private List <Exception> failures = new ArrayList<Exception>();
+	protected List <Exception> failures = new ArrayList<Exception>();
 
 	private Map<String,String> languages = new HashMap<>();
 
@@ -182,7 +187,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	 * @param type
 	 * @return
 	 */
-	private Map<String,MediaBinDeltaVO> loadManifest() {
+	protected Map<String,MediaBinDeltaVO> loadManifest() {
 		Map<String,MediaBinDeltaVO> data = new HashMap<>(7000); //at time of writing, this was enough capacity to avoid resizing
 
 		StringBuilder sql = new StringBuilder(250);
@@ -215,7 +220,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	 * @param type
 	 * @return
 	 */
-	private void countDBRecords() {
+	protected void countDBRecords() {
 		int cnt = 0;
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("select count(*) from ").append(props.get(Constants.CUSTOM_DB_SCHEMA));
@@ -425,6 +430,8 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 				vo.setChecksum(mr.getChecksum());
 				//pass the video chapters as well
 				vo.setVideoChapters(mr.getVideoChapters());
+				//and the showpadId as well
+				vo.setShowpadId(mr.getShowpadId());
 			} else {
 				vo.setRecordState(State.Insert);
 			}
@@ -528,31 +535,32 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	private boolean fileOnLLChanged(MediaBinDeltaVO vo) {
 		log.info("checking headers on " + vo.getLimeLightUrl());
 		boolean changed = false;
-		try {
-			HttpURLConnection conn = (HttpURLConnection) new URL(vo.getLimeLightUrl()).openConnection();
-			conn.setRequestMethod("HEAD");
-			
-			if (HttpURLConnection.HTTP_OK == conn.getResponseCode()) {
-				String checksum = conn.getHeaderField("Last-Modified") + "||" + conn.getHeaderField("Content-Length");
-				log.debug(checksum);
-				changed = !checksum.equals(vo.getChecksum());
-				vo.setChecksum(checksum);
-				if (!changed) {
-					vo.setErrorReason("File on LL did not change");
-				}
-			} else {
-				changed = true;
-			}
-			//cleanup at the TCP level so Keep-Alives can be leveraged at the IP level
-			conn.getInputStream().close();
-			conn.disconnect();
-
-		} catch (Exception e) {
-			//ignore these, because by returning true we're going to make a second
-			//call out to LL to retrieve the file, which will not be found, and be recorded
-			//as a failure (properly)
-			changed = true;
-		}
+		//TODO
+//		try {
+//			HttpURLConnection conn = (HttpURLConnection) new URL(vo.getLimeLightUrl()).openConnection();
+//			conn.setRequestMethod("HEAD");
+//			
+//			if (HttpURLConnection.HTTP_OK == conn.getResponseCode()) {
+//				String checksum = conn.getHeaderField("Last-Modified") + "||" + conn.getHeaderField("Content-Length");
+//				log.debug(checksum);
+//				changed = !checksum.equals(vo.getChecksum());
+//				vo.setChecksum(checksum);
+//				if (!changed) {
+//					vo.setErrorReason("File on LL did not change");
+//				}
+//			} else {
+//				changed = true;
+//			}
+//			//cleanup at the TCP level so Keep-Alives can be leveraged at the IP level
+//			conn.getInputStream().close();
+//			conn.disconnect();
+//
+//		} catch (Exception e) {
+//			//ignore these, because by returning true we're going to make a second
+//			//call out to LL to retrieve the file, which will not be found, and be recorded
+//			//as a failure (properly)
+//			changed = true;
+//		}
 		return changed;
 	}
 
@@ -565,7 +573,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	 * @param url
 	 * @return
 	 */
-	private String makeMessage(MediaBinDeltaVO vo, String err) {
+	protected String makeMessage(MediaBinDeltaVO vo, String err) {
 		StringBuilder msg = new StringBuilder(200);
 		msg.append("<font color='red'>").append(err).append(":</font><br/>");
 		msg.append("Tracking number: ").append(vo.getTrackingNoTxt()).append("<br/>");
@@ -717,14 +725,14 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 				vo.setRecordState(State.Insert);
 
 				//pluck the tracking#s off the end of the Anatomy field, if data exists
-				if (StringUtil.checkVal(row.get("Anatomy")).indexOf("~") > 0) {
-					String[] vals = StringUtil.checkVal(row.get("Anatomy")).split("~");
+				if (StringUtil.checkVal(row.get("Anatomy")).indexOf(MB_TOKENIZER) > 0) {
+					String[] vals = StringUtil.checkVal(row.get("Anatomy")).split(MB_TOKENIZER);
 					Set<String> newVals = new LinkedHashSet<String>(vals.length);
 					for (String s : vals) {
 						if (s.startsWith("DSUS")) continue; //remove tracking#s
 						newVals.add(s.trim().replaceAll(", ", ","));
 					}
-					row.put("Anatomy", StringUtil.getDelimitedList(newVals.toArray(new String[newVals.size()]), false, "~"));
+					row.put("Anatomy", StringUtil.getDelimitedList(newVals.toArray(new String[newVals.size()]), false, MB_TOKENIZER));
 				}
 
 				//determine Modification Date for the record. -- displays in site-search results
@@ -847,7 +855,8 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 				ps.setString(25, vo.getChecksum());
 				ps.setString(26, vo.geteCopyRevisionLvl());
 				ps.setString(27, vo.getDpySynMediaBinId());
-				ps.executeUpdate();
+				//TODO
+				//ps.executeUpdate();
 				log.debug((isInsert ? "Inserted: " : "Updated: ") + vo.getDpySynMediaBinId());
 				++cnt;
 			} catch (SQLException sqle) {
@@ -1014,7 +1023,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 				retVal += promo;
 			}
 
-			retVal = retVal.replaceAll("~", ", ");
+			retVal = retVal.replaceAll(MB_TOKENIZER, ", ");
 		}
 
 		if (retVal.length() == 0) return null;
@@ -1045,10 +1054,10 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			html.append("Solr Total: ").append(dataCounts.get("solr")).append("<br/>");
 			//add-in for showpad stats
 			if (dataCounts.containsKey("showpad")) {
-				html.append("<br/>Showpad Added: ").append(dataCounts.get("showpad-inserted")).append("<br/>");
-				html.append("Showpad Updated: ").append(dataCounts.get("showpad-updated")).append("<br/>");
-				html.append("Showpad Deleted: ").append(dataCounts.get("showpad-deleted")).append("<br/>");
-				html.append("Showpad Total: ").append(dataCounts.get("showpad-total")).append("<br/><br/>");
+				html.append("<br/>Showpad Added: ").append(Convert.formatInteger(dataCounts.get("showpad-inserted"))).append("<br/>");
+				html.append("Showpad Updated: ").append(Convert.formatInteger(dataCounts.get("showpad-updated"))).append("<br/>");
+				html.append("Showpad Deleted: ").append(Convert.formatInteger(dataCounts.get("showpad-deleted"))).append("<br/>");
+				html.append("Showpad Total: ").append(Convert.formatInteger(dataCounts.get("showpad-total"))).append("<br/><br/>");
 			}
 			
 			long timeSpent = System.nanoTime()-startNano;

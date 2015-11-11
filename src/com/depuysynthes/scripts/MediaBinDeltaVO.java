@@ -27,6 +27,9 @@ public class MediaBinDeltaVO extends MediaBinAssetVO {
 	private String limeLightUrl;
 	private String fileName;
 	
+	//added for Showpad support; all the other fields are reuseable
+	private String showpadId;
+	
 	
 	public enum State {
 		Insert,Update,Delete,Ignore,Failed;
@@ -40,6 +43,7 @@ public class MediaBinDeltaVO extends MediaBinAssetVO {
 		super(rs);
 		DBUtil db = new DBUtil();
 		setChecksum(db.getStringVal("file_checksum_txt", rs));
+		setShowpadId(db.getStringVal("DPY_SYN_SHOWPAD_ID", rs));
 		db = null;
 	}
 
@@ -110,5 +114,14 @@ public class MediaBinDeltaVO extends MediaBinAssetVO {
 	public void setFileName(String fileName) {
 		this.fileName = fileName;
 	}
+
+	public String getShowpadId() {
+		return showpadId;
+	}
+
+	public void setShowpadId(String showpadId) {
+		this.showpadId = showpadId;
+	}
+
 	
 }
