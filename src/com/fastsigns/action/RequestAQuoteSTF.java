@@ -548,6 +548,9 @@ public class RequestAQuoteSTF extends SBActionAdapter {
 	 * @param message
 	 */
 	public void recordStatus(String csi, String message, SAFConfig safConfig) {
+		log.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+		log.info("message: " + message + "csi: " + csi + "status field: " + safConfig.getStatusFieldId());
+		log.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 		this.recordStatus(message, csi, safConfig.getStatusFieldId());
 		
 	}
@@ -560,10 +563,14 @@ public class RequestAQuoteSTF extends SBActionAdapter {
 	 * @param message
 	 */
 	public void recordStep(String csi, TransactionStep step, SAFConfig safConfig) {
+		log.info("#############################################################");
+		log.info("step: " + step.toString() + "csi: " + csi + "transactionStateID: " + safConfig.getTransactionStageFieldId());
+		log.info("#############################################################");
 		this.recordStatus(step.toString(), csi, safConfig.getTransactionStageFieldId());
 	}
 	
 	private final void recordStatus(String message, String csi, String fieldId) {
+		log.info("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
 		// cleanup any HTML passed in the message
 		try {
 			StringEncoder se = new StringEncoder();
@@ -578,6 +585,8 @@ public class RequestAQuoteSTF extends SBActionAdapter {
 			log.error("DB update failed for csi=" + csi + ", fieldId=" + fieldId + ", msg=" + message);
 			log.error("could not update contact field", sqle);
 		}
+		log.info("message: " + message + "csi " + csi + "fieldId " + fieldId);
+		log.info("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
 	}
 	
 	/**
