@@ -22,6 +22,7 @@ import java.util.Properties;
 import java.util.Set;
 
 
+
 // SOLR Libs
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.common.SolrDocument;
@@ -60,6 +61,11 @@ public class NexusKitImporter extends CommandLineUtil {
 	 * it is not recreated with every kit. 
 	 */
 	private HttpSolrServer server;
+	
+	/**
+	 * Key for the index that should be used for the solr documents
+	 */
+	public static final String SOLR_INDEX = "solrIndex";
 	
 	/**
 	 * Key for the property for the location of the output excel file
@@ -309,7 +315,7 @@ public class NexusKitImporter extends CommandLineUtil {
 			// If the IDs are different, that means it is the first line of a kit
 			// So we're going to add the kit
 			if (! kitIds.contains(items[1])) {
-				NexusKitVO kit = new NexusKitVO(NexusKitAction.SOLR_INDEX);
+				NexusKitVO kit = new NexusKitVO(props.getProperty(SOLR_INDEX));
 				kit.setKitId(items[1]);
 				kit.setOrgId(MDM_ORG_MAP.get(items[0]));
 				kit.setKitSKU(items[1]);
@@ -427,10 +433,14 @@ public class NexusKitImporter extends CommandLineUtil {
 			String[] items = temp.split(",");
 			
 			// Map the data to the VO
-			NexusKitVO kit = new NexusKitVO(NexusKitAction.SOLR_INDEX);
+			NexusKitVO kit = new NexusKitVO(props.getProperty(SOLR_INDEX));
 			//kit.setKitId(ORG_MAP.get(items[0]) + "_" + items[1]);
 			kit.setKitId(items[1]);
-			kit.setOrgId(items[0]);
+			if (JDE_ORG_MAP.containsKey(items[0])) {
+				kit.setOrgId(JDE_ORG_MAP.get(items[0]));
+			} else {
+				kit.setOrgId(items[0]);
+			}
 			kit.setKitSKU(items[1]);
 			kit.setKitDesc(items[2]);
 			kit.setKitGTIN(items[3]);
