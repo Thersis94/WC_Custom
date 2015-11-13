@@ -288,6 +288,8 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			if (i > 0) msg.append(", ");
 			msg.append(vals[i]);
 		}
+		if (req.hasParameter("product")) msg.append(" - ").append(req.getParameter("product"));
+		
 		msg.append("\r\rQuantity Needed:\r");
 		msg.append(req.getParameter("qnty"));
 		msg.append("\r\rMailing Address:\r");

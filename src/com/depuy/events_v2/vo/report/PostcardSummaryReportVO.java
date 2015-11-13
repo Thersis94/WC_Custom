@@ -60,10 +60,11 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 			rpt.append("<tr><td>Seminar #").append(event.getRSVPCode()).append("</td><td>").append(event.getEventName()).append("</td></tr>\r");
 			rpt.append("<tr><td>Seminar Date/Time</td><td>").append(Convert.formatDate(event.getStartDate(),Convert.DATE_LONG)).append(" ").append(event.getLocationDesc()).append("</td></tr>");
 			rpt.append("<tr><td>Seminar Location</td><td>").append(event.getCityName()).append(", ").append(event.getStateCode()).append(" ").append(event.getZipCode()).append("</td></tr>\r");
-			rpt.append("<tr><td>Product</td><td>").append(sem.getJointLabel()).append("</td></tr>\r");
+			rpt.append("<tr><td>Joint</td><td>").append(sem.getJointLabel()).append("</td></tr>\r");
+			if (sem.getProductCodes().length() > 0) rpt.append("<tr><td>Product</td><td>").append(sem.getProductCodes()).append("</td></tr>\r");
 			rpt.append("<tr><td>Venue Location</td><td align='center'>").append(event.getEventDesc()).append("</td></tr>\r");
 			rpt.append("<tr><td>Venue Name</td><td align='center'>").append(event.getEventName()).append("</td></tr>\r");
-			rpt.append("<tr><td>Refreshment Choice</td><td align='center'>").append(event.getServiceText()).append("</td></tr>\r");
+			rpt.append("<tr><td>Refreshment Choice</td><td align='center'>").append(StringUtil.checkVal(event.getServiceText())).append("</td></tr>\r");
 			rpt.append("<tr><td>Venue Address</td><td align='center'>").append(event.getAddressText())
 						.append("<br/>").append(event.getAddress2Text())
 						.append("<br/>").append(event.getCityName()).append(" " ).append(event.getStateCode()).append(", " ).append(event.getZipCode()).append("</td></tr>\r");
@@ -90,7 +91,7 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 			rpt.append("<tr><td>Years practicing:</td><td align='center'>").append(surg.getExperienceYrs()).append("</td></tr>\r");
 			rpt.append("<tr><td>Years at current practice:</td><td align='center'>").append(surg.getPractYrs()).append("</td></tr>\r");
 			rpt.append("<tr><td>Employed by hospital?:</td><td align='center'>").append(surg.getHospEmployeeFlg() == 1 ? "yes" : "no").append("</td></tr>\r");
-			rpt.append("<tr><td>Hospital Address:</td><td align='center'>").append(surg.getHospAddress()).append("</td></tr>\r");
+			rpt.append("<tr><td>Hospital Address:</td><td align='center'>").append(StringUtil.checkVal(surg.getHospAddress())).append("</td></tr>\r");
 			String location = (surg.getPractLocation() != null) ? surg.getPractLocation().getFormattedLocation() : "";
 			rpt.append("<tr><td>Practice Address:</td><td align='center'>").append(location).append("</td></tr>\r");
 			rpt.append("<tr><td>Practice Phone:</td><td align='center'>").append(surg.getPractPhone()).append("</td></tr>\r");
@@ -127,7 +128,8 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 				} else {
 					rpt.append("<tr><td>Ad Cost to Territory:</td><td align='center'>").append(ad.getCostToRepNo()).append("</td></tr>\r");
 				}
-				rpt.append("<tr><td>Ad File:</td><td align='center'><a href=\"").append(sem.getBaseUrl()).append("/ads/").append(ad.getAdFileUrl()).append("\" target='_blank'>").append(ad.getAdFileUrl()).append("</a></td></tr>\r");
+				if (ad.getAdFileUrl() != null)
+					rpt.append("<tr><td>Ad File:</td><td align='center'><a href=\"").append(sem.getBaseUrl()).append("/ads/").append(ad.getAdFileUrl()).append("\" target='_blank'>").append(ad.getAdFileUrl()).append("</a></td></tr>\r");
 			}
 		}
 		//add the Radio Ad data
