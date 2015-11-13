@@ -528,9 +528,9 @@ public class NexusKitImporter extends CommandLineUtil {
 	throws SQLException {
 		String dateFormat;
 		if (isMDM) {
-			dateFormat = "yyyymmdd";
+			dateFormat = "yyyyMMdd";
 		} else {
-			dateFormat = "mm/dd/yy";
+			dateFormat = "MM/dd/yy";
 		}
 		// Build the SQL Statement
 		StringBuilder sql = new StringBuilder(255);
@@ -552,7 +552,7 @@ public class NexusKitImporter extends CommandLineUtil {
 			ps.setInt(1, Convert.formatInteger(qty));
 			ps.setString(2, "");
 			ps.setDate(3, Convert.formatSQLDate(parseDate(start, dateFormat)));
-			ps.setDate(4, Convert.formatSQLDate(parseDate(start, dateFormat)));
+			ps.setDate(4, Convert.formatSQLDate(parseDate(end, dateFormat)));
 			ps.setInt(5, order);
 			ps.setTimestamp(6, Convert.getCurrentTimestamp());
 			ps.setString(7, layerId);
