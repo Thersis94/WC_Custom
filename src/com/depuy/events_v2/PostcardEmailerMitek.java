@@ -120,7 +120,13 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient("ksmith49@its.jnj.com"); // the DePuy intern in charge
 			mail.addCC("mroderic@its.jnj.com");
-			mail.addCC("lisa.maiers@novusmediainc.com");
+			if (postcard.getEarliestEventDate().after(Convert.formatDate(Convert.DATE_SLASH_PATTERN,"01/01/2016"))) {
+				mail.addCC("Justin.Reyes@umj3.com");
+				mail.addCC("Evan.Pring@umj3.com");
+				mail.addCC("lisav@metrosn.com");
+			} else {
+				mail.addCC("lisa.maiers@novusmediainc.com");
+			}
 			mail.addCC("Amy.Zimmerman@hmktgroup.com");
 			mail.setSubject("DePuy Community Education; Postcard Canceled " + postcard.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
@@ -228,10 +234,16 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(sem.getOwner().getEmailAddress());
-			mail.addCC("lisa.maiers@novusmediainc.com");
 			mail.addCC("ksmith49@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 			mail.addCC("Amy.Zimmerman@hmktgroup.com");
+			if (sem.getEarliestEventDate().after(Convert.formatDate(Convert.DATE_SLASH_PATTERN,"01/01/2016"))) {
+				mail.addCC("Justin.Reyes@umj3.com");
+				mail.addCC("Evan.Pring@umj3.com");
+				mail.addCC("lisav@metrosn.com");
+			} else {
+				mail.addCC("lisa.maiers@novusmediainc.com");
+			}
 			for (PersonVO p : sem.getPeople()) { 
 				//add only the sales reps
 				if (p.getRoleCode() == Role.TGM)
@@ -400,11 +412,17 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipient("lisa.maiers@novusmediainc.com");
 			mail.addRecipient(sem.getOwner().getEmailAddress());
 			mail.addCC("ksmith49@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 			mail.addCC("Amy.Zimmerman@hmktgroup.com");
+			if (sem.getEarliestEventDate().after(Convert.formatDate(Convert.DATE_SLASH_PATTERN,"01/01/2016"))) {
+				mail.addCC("Justin.Reyes@umj3.com");
+				mail.addCC("Evan.Pring@umj3.com");
+				mail.addCC("lisav@metrosn.com");
+			} else {
+				mail.addCC("lisa.maiers@novusmediainc.com");
+			}
 			
 			for (PersonVO p : sem.getPeople()) {
 				if (! StringUtil.isValidEmail(p.getEmailAddress())) continue;
