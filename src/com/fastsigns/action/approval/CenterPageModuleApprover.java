@@ -48,7 +48,9 @@ public class CenterPageModuleApprover extends AbstractApprover {
 		delete.append("DELETE ").append(customDb).append("FTS_CP_MODULE_OPTION ");
 		delete.append("WHERE CP_MODULE_OPTION_ID = ?");
 		
-		
+		StringBuilder updateInitial = new StringBuilder(130);
+		updateInitial.append("UPDATE ").append(customDb).append("FTS_CP_MODULE_OPTION ");
+		updateInitial.append("SET PARENT_ID=null WHERE CP_MODULE_OPTION_ID=? ");
 		
 		for (ApprovalVO vo : approvables) {
 			try {
@@ -57,6 +59,9 @@ public class CenterPageModuleApprover extends AbstractApprover {
 				case PendingUpdate:
 					executeQuery(update.toString(), vo.getOrigWcKeyId(), vo.getWcKeyId());
 					executeQuery(delete.toString(), vo.getWcKeyId());
+					break;
+				case PendingCreate:
+					executeQuery(updateInitial.toString(), vo.getWcKeyId());
 					break;
 				}
 				
