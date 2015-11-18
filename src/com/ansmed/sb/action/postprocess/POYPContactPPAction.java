@@ -52,8 +52,8 @@ public class POYPContactPPAction extends SBActionAdapter {
 		try{
 			EmailMessageVO emailVo = new EmailMessageVO();
 			emailVo.addRecipient(rcpt);
-			emailVo.setFrom("contact@sjm.com", "Laura Sterling");
-			emailVo.setSubject("Request Info Kit");
+			emailVo.setFrom("contact@sjm.com", "The Power Over Your Pain Team");
+			emailVo.setSubject("The Chronic Pain Therapy Materials You Requested");
 			emailVo.setHtmlBody(this.getMessage(req));
 			log.info("Mail Info: " + emailVo.toString());
 			
@@ -75,7 +75,7 @@ public class POYPContactPPAction extends SBActionAdapter {
 	 * @return
 	 */
 	protected String getMessage(SMTServletRequest req) {
-		StringBuilder msg = new StringBuilder(1000);
+		StringBuilder msg = new StringBuilder(6500);
 
 		//Get the current site info
 		String siteAlias = ((SiteVO) req.getAttribute("siteData")).getSiteAlias();	
@@ -91,49 +91,71 @@ public class POYPContactPPAction extends SBActionAdapter {
 		//build the email
 		msg.append("<table width='100%' cellspacing='0' cellpadding='0' border='0' ");
 		msg.append("bgcolor='#fff' align='center' style='font-size: 15px; ");
-		msg.append("font-family: Arial,sans-serif; border-collapse: collapse;'><tr><td> ");
+		msg.append("font-family: Arial,sans-serif; border-collapse: collapse;'><tr><td>  ");
 		msg.append("<table width='650' bgcolor='#f3f4f4' align='center' cellspacing='0' cellpadding='0' border='0' ");
 		msg.append("style='border: solid 1px #00a98f;'><tr><td> ");
 		msg.append("<table width='650' align='center' cellspacing='0' cellpadding='0' border='0' bgcolor='#f3f4f4' ");
 		msg.append("style='line-height: 140%; font-family: Arial,sans-serif;'> ");
-		msg.append("<tr height='25' width='100%'><td ></td><td ></td><td ></td></tr> ");
-		msg.append("<tr><td width='8%'></td> ");
-		msg.append("<td align='left' width='84%' style='padding: 0;'> ");
-		msg.append("<span style='padding: 0; display: inline-block; font-size: 27px; font-weight: 600; ");
-		msg.append("line-height: 115%; font-family: arial;'> ");
-		msg.append("Thank You For Your Interest In A Neurostimulation System From <br/>St. Jude Medical. ");
-		msg.append("</span></td><td width='8%'></td></tr>");
-		msg.append("<tr height='20' width='100%'><td ></td><td ></td><td ></td></tr> ");
+		msg.append("<tr height='40' width='100%'><td ></td><td ></td><td ></td></tr> ");
 		msg.append("<tr><td width='8%'></td><td align='left' width='84%'> ");
-		msg.append("<span style='padding: 0 0 5px; display: inline-block; font-size: 19px;'> ");
-		msg.append("Pain Interrupted.</span><br/> ");
-		msg.append("We've attached an electronic version of our patient education brochure for ");
-		msg.append("your reference. The next step is to ask your doctor about neurostimulation and ");
-		msg.append("the particular advantages of a system from St. Jude Medical in your case. ");
-		msg.append("We sincerely hope it's a first step toward life after pain for you. ");
-		msg.append("</td><td width='8%'></td></tr> ");
+		msg.append("Thank you for your interest in St. Jude Medical&trade; neurostimulation therapy.  ");
+		msg.append("The information you requested can be viewed ");
+		msg.append("<a style='color: #00a98f; display: inline-block; text-decoration: none;' download='patient-education-brochure' ");
+		msg.append("href='").append(basePath).append("/binary/org/ANS-MEDICAL/new_video/NeurostimulationPatientEducationBrochureSt.JudeMedical.pdf'> ");
+		msg.append("here</a>. ");
+		msg.append("We hope that you find it helpful. </td><td width='8%'></td></tr>");
 		msg.append("<tr height='20' width='100%'><td ></td><td ></td><td ></td></tr> ");
 		msg.append("<tr><td width='8%'></td> ");
-		msg.append("<td align='left' width='84%' style='padding: 0 0 10px; line-height: 130%;'> ");
-		msg.append("<table width='100%' align='center' cellspacing='0' cellpadding='0' border='0' ");
-		msg.append("style='font-family: Arial,sans-serif;'><tr><td align='left' colspan='2' style='padding: 0 0 7px;'>");
-		msg.append("<span style='display: inline-block; font-size: 19px;'> ");
-		msg.append("Learn More.</span><br/></td></tr><tr><td valign='top' colspan='2' style='padding: 0 0 5px 0;'> ");
-		msg.append("Hear from people who have chosen neurostimulation to manage their<br/> chronic pain: ");
-		msg.append("</td></tr><tr><td valign='top' width='8%'>&bull;</td> ");
-		msg.append("<td valign='top' style='padding: 0 0 5px 0;'>Read their  ");
+		msg.append("<td align='left' width='84%' style='padding: 0 0 10px; line-height: 140%;'> ");
+		msg.append("<table width='100%' align='center' cellspacing='0' cellpadding='0' border='0' style='font-family: Arial,sans-serif;'> ");
+		msg.append("<tr><td valign='top' colspan='3' style='padding: 0 0 5px 0; line-height: 140%;'> ");
+		msg.append("Once you&apos;ve had an opportunity to learn more about neurostimulation, the next step is ");
+		msg.append("to schedule an appointment with a local pain management specialist to determine if ");
+		msg.append("an evaluation of neurostimulation with the St. Jude Medical&trade; Invisible Trial System ");
+		msg.append("is right for you. During this evaluation period, you can see if the therapy relieves ");
+		msg.append("your pain and enables you to go about your daily routine. If it does, then you can ");
+		msg.append("talk to your doctor about a low-maintenance implant. ");
+		msg.append("In the meantime, we encourage you to use ");
 		msg.append("<a style='color: #00a98f; display: inline-block; text-decoration: none;' ");
-		msg.append("href='").append(basePath).append("/next/stories'> ");
-		msg.append("stories</a></td></tr> ");
-		msg.append("<tr><td valign='top' width='8%'>&bull;</td> ");
-		msg.append("<td valign='top' style='padding: 0 0 5px 0;'> Watch ");
+		msg.append("href='http://www.poweroveryourpain.com/'>PowerOverYourPain.com</a> to:</td></tr> ");
+		msg.append("<tr><td valign='top' width='6%'></td><td valign='top' width='6%'>&bull;</td> ");
+		msg.append("<td valign='top' style='padding: 0 0 5px 0;'> ");
 		msg.append("<a style='color: #00a98f; display: inline-block; text-decoration: none;' ");
-		msg.append("href='").append(basePath).append("/next/video'> ");
-		msg.append("videos</a></td></tr><tr><td valign='top' colspan='2' style='padding: 0 0 5px 0;'> ");
-		msg.append("Find a pain specialist<a style='color: #00a98f; display: inline-block; text-decoration: none;' ");
-		msg.append("href='").append(basePath).append("/next/specialist'> ");
-		msg.append("in your area</a></td></tr></table></td><td width='8%'></td> ");
-		msg.append("</tr><tr height='25' width='100%'><td ></td><td ></td><td ></td></tr> ");
+		msg.append("href='http://www.poweroveryourpain.com/getting/evaluation'> ");
+		msg.append("Learn about the temporary evaluation period</a></td></tr> ");
+		msg.append("<tr><td valign='top' width='6%'></td><td valign='top' width='6%'>&bull;</td> ");
+		msg.append("<td valign='top' style='padding: 0 0 5px 0;'> ");
+		msg.append("<a style='color: #00a98f; display: inline-block; text-decoration: none;' ");
+		msg.append("href='http://www.poweroveryourpain.com/next/specialist'> ");
+		msg.append("Find a pain specialist in your area</a></td></tr> ");
+		msg.append("<tr height='20' width='100%'><td></td> <td></td><td></td></tr> ");
+		msg.append("<tr><td valign='top' colspan='3'>We know that making a decision ");
+		msg.append("about pain management can be difficult, but you don&apos;t have to do it alone.<br><br> ");
+		msg.append("Sincerely,<br><br>The Power Over Your Pain Team</td></tr> ");
+		msg.append("<tr height='180' width='100%'><td></td> <td></td><td></td></tr> ");
+		msg.append("<tr><td colspan='3' style='font-size: 11px; '> ");
+		msg.append("<span style='font-weight: bold'>Rx Only</span><br> ");
+		msg.append("<span style='font-weight: bold'>Brief Summary:</span> Prior to using these devices, please ");
+		msg.append("review the Instructions for Use for a complete listing of indications, contraindications, warnings, ");
+		msg.append("precautions, potential adverse events and directions for use.<br> ");
+		msg.append("<span style='font-weight: bold'>Indications for Use:</span> Spinal cord stimulation as an aid in ");
+		msg.append("the management of chronic, intractable pain of the trunk and limbs.<br> ");
+		msg.append("<span style='font-weight: bold'>Contraindications:</span> Patients who are unable to operate the ");
+		msg.append("system or who have failed to receive effective pain relief during trial stimulation.<br/> ");
+		msg.append("<span style='font-weight: bold'>Warnings/Precautions:</span> Diathermy therapy, implanted cardiac ");
+		msg.append("systems, magnetic resonance imaging (MRI), explosive or flammable gases, theft detectors and ");
+		msg.append("metal screening devices, lead movement, operation of machinery and equipment, postural changes, ");
+		msg.append("pediatric use, pregnancy, and case damage. Patients who are poor surgical risks, with multiple ");
+		msg.append("illnesses, or with active general infections should not be implanted.<br> ");
+		msg.append("<span style='font-weight: bold'>Adverse Effects:</span> Painful stimulation, loss of pain relief, ");
+		msg.append("surgical risks (e.g. paralysis). User&apos;s Guide must be reviewed for detailed disclosure.</td></tr> ");
+		msg.append("<tr height='30' width='100%'><td></td> <td></td><td></td></tr> ");
+		msg.append("<tr><td colspan='3' style='font-size: 11px; '> ");
+		msg.append("Unless otherwise noted, &trade; indicates that the name is a trademark of, or licensed to, St. Jude Medical or ");
+		msg.append("one of its subsidiaries. ST. JUDE MEDICAL and the nine-squares symbol and trademarks and service marks ");
+		msg.append("of St. Jude Medical, Inc. and its related companies. &copy; 2015 St. Jude Medical, Inc. All Rights Reserved.</td></tr>  ");
+		msg.append("</table></td><td width='8%'></td></tr> ");
+		msg.append("<tr height='25' width='100%'><td ></td><td ></td><td ></td></tr> ");
 		msg.append("</table></td></tr></table></td></tr></table> ");
 		
 		return msg.toString();
