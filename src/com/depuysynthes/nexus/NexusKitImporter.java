@@ -2,8 +2,10 @@ package com.depuysynthes.nexus;
 
 //JDK 1.7.x
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 import java.sql.PreparedStatement;
@@ -29,6 +31,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 
 import com.depuysynthes.nexus.NexusImporter.Source;
+import com.siliconmtn.io.ftp.SFTPV3Client;
 //SMT Base Libs
 import com.siliconmtn.util.CommandLineUtil;
 import com.siliconmtn.util.Convert;
@@ -78,6 +81,12 @@ public class NexusKitImporter extends CommandLineUtil {
 	public static final String LOGO_FILE_PATH = "logoFilePath";
 	
 	/**
+	 * Key for determining if we are getting local files or are downloading
+	 * them from a remote server.
+	 */
+	public static final String IS_LOCAL = "isLocal";
+	
+	/**
 	 * File name of the JDE Kit Files
 	 */
 	public static final String JDE_HEADER_FILE_NAME = "jdeKitHeaderFileName";
@@ -87,11 +96,28 @@ public class NexusKitImporter extends CommandLineUtil {
 	 * File Name of the MDM Kit Files
 	 */
 	public static final String MDM_FILE_NAME = "mdmFileName";
+
+	/**
+	 * Whether or not we are loading MDM kits
+	 */
+	public static final String LOAD_MDM = "loadMDM";
+
+	/**
+	 * Whether or not we are loading MDM kits
+	 */
+	public static final String LOAD_JDE = "loadJDE";
 	
 	/**
 	 * File Name of the MDM Kit Files
 	 */
 	public static final int SOLR_FILTER_SIZE = 100;
+	
+	/**
+	 * Information pertaining to downloading remote files. 
+	 */
+	public static final String REMOTE_USER = "user";
+	public static final String REMOTE_PASS = "password";
+	public static final String REMOTE_HOST = "hostName";
 	
 	/**
 	 * Maps the JDE OpCos to the Opcos in use
@@ -123,8 +149,26 @@ public class NexusKitImporter extends CommandLineUtil {
 	public NexusKitImporter(String[] args) {
 		super(args);
 		loadProperties("scripts/Nexus.properties");
+		overrideDefaults(args);
 		loadDBConnection(props);
 		loadSolrServer(props);
+	}
+
+	/**
+	 * Override properties with items from the arguments where applicable
+	 * @param args
+	 */
+	private void overrideDefaults(String[] args) {
+		switch (args.length) {
+			case 7: props.put(JDE_DETAIL_FILE_NAME, args[6]);
+			case 6: props.put(JDE_HEADER_FILE_NAME, args[5]);
+			case 5: props.put(LOAD_JDE, args[4]);
+			case 4: props.put(MDM_FILE_NAME, args[3]);
+			case 3: props.put(LOAD_MDM, args[2]);
+			case 2: props.put(KIT_FILE_PATH, args[1]);
+			case 1: props.put(IS_LOCAL, args[0]);
+			default: return;
+		}
 	}
 
 	/**
@@ -149,22 +193,29 @@ public class NexusKitImporter extends CommandLineUtil {
 		Map<String, String> messages = new HashMap<>();
 		int cnt = 0;
 		try {
-			// Process the JDE Header file
-			cnt = processJDEHeaderFile();
-			messages.put("Number of JDE Kits", cnt + "");
+			if (Convert.formatBoolean(props.get(LOAD_JDE))) {
+				// Process the JDE Header file
+				cnt = processJDEHeaderFile();
+				messages.put("Number of JDE Kits", cnt + "");
+				
+				// Process the JDE Detail File
+				cnt = processJDEDetailFile();
+				messages.put("Number of JDE Kit Items", cnt + "");
+			}
 			
-			// Process the JDE Detail File
-			cnt = processJDEDetailFile();
-			messages.put("Number of JDE Kit Items", cnt + "");
-			
-			// Process the MDM File
-			int[] mdmCnt = this.processMDMFile();
-			messages.put("Number of MDM Kits", mdmCnt[0] + "");
-			messages.put("Number of MDM Kit Items", mdmCnt[1] + "");
-			
-			// Get the GTIN and Description from Solr
-			cnt = processMDMInformation();
-			messages.put("MDM Kit Data Updated From Solr", "OK");
+			if (Convert.formatBoolean(props.get(LOAD_MDM))) {
+				// Process the MDM File
+				int[] mdmCnt = this.processMDMFile();
+
+				// Get the GTIN and Description from Solr
+				cnt = processMDMInformation(mdmCnt);
+				
+				// Add the final message values for the email.
+				messages.put("Number of MDM Kits", mdmCnt[0] + "");
+				messages.put("Number of MDM Kit Items", mdmCnt[1] + "");
+				messages.put("Number of Items in MDM File", (mdmCnt[2] + mdmCnt[1]) + "");
+				messages.put("MDM Kit Data Updated From Solr", "OK");
+			}
 			
 			// Once this point has been reached all documents are ready to be committed.
 			server.commit();
@@ -185,7 +236,7 @@ public class NexusKitImporter extends CommandLineUtil {
 	
 	
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public int processMDMInformation() throws SQLException {
+	public int processMDMInformation(int[] mdmCnt) throws SQLException {
 		// Initialize the connection to solr
 		SolrQueryProcessor sqp = new SolrQueryProcessor((Map)props, "DePuy_NeXus");
 		
@@ -218,13 +269,43 @@ public class NexusKitImporter extends CommandLineUtil {
 			}
 		}
 		
+		int fails = getInvalidProducts();
+		
 		// Delete any remaining blank kits
 		deleteBlankKits();
-
+		
+		mdmCnt[1] = mdmCnt[1]-fails;
+		mdmCnt[2] = mdmCnt[2]+fails;
+		log.debug("Final MDM Successes: " + mdmCnt[1]);
+		log.debug("Final MDM Failures: " + mdmCnt[2]);
+		
 		return 0;
 	}
 	
 	
+	/**
+	 * Get the count of all products that belong to invalid kits
+	 */
+	private int getInvalidProducts() throws SQLException {
+		StringBuilder sql = new StringBuilder(250);
+		String customDb = (String) props.get("customDbSchema");
+		sql.append("SELECT COUNT(*) FROM ").append(customDb).append("DPY_SYN_NEXUS_SET_INFO s ");
+		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_NEXUS_SET_ITEM i ");
+		sql.append("ON i.LAYER_ID = s.SET_INFO_ID ");
+		sql.append("WHERE ORGANIZATION_ID != 'Custom' AND (DESCRIPTION_TXT is null ");
+		sql.append("OR DESCRIPTION_TXT = '')");
+		//log.debug(sql);
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ResultSet rs = ps.executeQuery();
+			
+			if (rs.next()) {
+				return rs.getInt(1);
+			} else {
+				return 0;
+			}
+		}
+	}
+
 	/**
 	 * Delete all kits that are missing descriptions
 	 * @param ids
@@ -236,7 +317,7 @@ public class NexusKitImporter extends CommandLineUtil {
 		sql.append("WHERE ORGANIZATION_ID != 'Custom' AND (DESCRIPTION_TXT is null ");
 		sql.append("OR DESCRIPTION_TXT = '')");
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.executeUpdate();
+			log.debug(ps.executeUpdate() + " Sets Deleted for having no description");
 		}
 	}
 
@@ -250,13 +331,13 @@ public class NexusKitImporter extends CommandLineUtil {
 		List<String> where = new ArrayList<>();
 		StringBuilder filter = new StringBuilder(4096);
 		boolean isStart = true;
-		for (int i=0; i < ids.size(); i++) {
+		for (int i=1; i <= ids.size(); i++) {
 			if (! isStart) filter.append("documentId:");
 			else isStart = false;
 			
-			filter.append(ids.get(i));
+			filter.append(ids.get(i-1));
 			
-			if ((i > 0 && (i % 100) == 0) || (i + 1) == ids.size()) {
+			if ((i > 0 && (i % 100) == 0) || i == ids.size()) {
 				where.add(filter.toString());
 				filter = new StringBuilder(4096);
 				isStart = true;
@@ -299,8 +380,13 @@ public class NexusKitImporter extends CommandLineUtil {
 	public int[] processMDMFile() throws IOException, SQLException {
 		String path = props.getProperty(KIT_FILE_PATH);
 		String name = props.getProperty(MDM_FILE_NAME);
-		BufferedReader in = new BufferedReader(new FileReader((path + name)));
-		int[] mdmCnt = { 0,0 };
+		BufferedReader in = getFile(path, name);
+		int[] mdmCnt = { 0,0,0 };
+		int success=0;
+		// Fail starts at -1 in order to absorb the fail from the column headers
+		int fail=-1;
+		int nonBlank=0;
+		int nonOrg=0;
 		
 		Map<String, List<String>> existingSets = getActiveMDM();
 		Set<String> kitIds = new HashSet<>();
@@ -309,8 +395,13 @@ public class NexusKitImporter extends CommandLineUtil {
 		while((temp = in.readLine()) != null) {
 			// Make sure the feature code is empty and the opco is on the list
 			String[] items = temp.split("\\|");
-			if (StringUtil.checkVal(items[3]).length() > 0 || ! MDM_ORG_MAP.containsKey(items[0])) 
+			if (! MDM_ORG_MAP.containsKey(items[0])) {
+				fail++;
 				continue;
+			} else if (StringUtil.checkVal(items[3]).length() > 0) {
+				nonBlank++;
+				continue;
+			}
 			
 			// If the IDs are different, that means it is the first line of a kit
 			// So we're going to add the kit
@@ -337,16 +428,29 @@ public class NexusKitImporter extends CommandLineUtil {
 			String end = StringUtil.checkVal(items[6]);
 			if (! end.startsWith("20")) end = "20501231";
 			if (existingSets.get(items[1]) != null) {
-				this.storeKitItem(items[1], items[2], items[8], items[5], end, iCtr, items[7], true, existingSets.get(items[1]).contains(items[2]));
+				if (this.storeKitItem(items[1], items[2], items[9], items[5], end, iCtr, items[7], true, existingSets.get(items[1]).contains(items[2]))) {
+					success++;
+				} else {
+					nonOrg++;
+				}
 			} else {
-				this.storeKitItem(items[1], items[2], items[8], items[5], end, iCtr, items[7], true, false);
+				if (this.storeKitItem(items[1], items[2], items[9], items[5], end, iCtr, items[7], true, false)) {
+					success++;
+				} else {
+					nonOrg++;
+				}
 			}
 			iCtr++;
 		}
 		
 		// Update the kit count and kit item count
 		mdmCnt[0] = kCtr;
-		mdmCnt[1] = iCtr;
+		mdmCnt[1] = success;
+		mdmCnt[2] = fail + nonBlank + nonOrg;
+		log.debug("Successes: " +success);
+		log.debug("Non-Capitated Data Issue Fails: " +fail);
+		log.debug("Capitaded or Promotional Fails: " + nonBlank);
+		log.debug("Invalid Products: " + nonOrg);
 		
 		// Close the stream and return
 		in.close();
@@ -421,7 +525,7 @@ public class NexusKitImporter extends CommandLineUtil {
 		flushJDEKits();
 		String path = props.getProperty(KIT_FILE_PATH);
 		String name = props.getProperty(JDE_HEADER_FILE_NAME);
-		BufferedReader in = new BufferedReader(new FileReader((path + name)));
+		BufferedReader in = getFile(path, name);
 		
 		String temp;
 		int ctr = -1;
@@ -461,6 +565,18 @@ public class NexusKitImporter extends CommandLineUtil {
 	}
 	
 	/**
+	 * Get a buffered reader containing the file at the location described
+	 * by the supplied path and name.
+	 */
+	private BufferedReader getFile(String path, String name) throws IOException {
+		if (Convert.formatBoolean(props.get(IS_LOCAL), true)){
+			return getLocalFile(path, name);
+		} else {
+			return getRemoteFile(path, name);
+		}
+	}
+
+	/**
 	 * Delete all kits that came from JDE since these are going to come from
 	 * full refreshes instead of updates
 	 * @throws SQLException 
@@ -490,7 +606,7 @@ public class NexusKitImporter extends CommandLineUtil {
 		String path = props.getProperty(KIT_FILE_PATH);
 		String name = props.getProperty(JDE_DETAIL_FILE_NAME);
 		log.info("File Path: " + path + name);
-		BufferedReader in = new BufferedReader(new FileReader((path + name)));
+		BufferedReader in = getFile(path, name);
 		
 		// Read in one line at a time and process it
 		String temp;
@@ -503,14 +619,14 @@ public class NexusKitImporter extends CommandLineUtil {
 			String[] items = temp.split(",");
 			Date d = new Date();
 			try {
-				if (d.after(parseDate(items[4], "mm/dd/yy"))) {
+				if (d.after(parseDate(items[5], "MM/dd/yy"))) {
 					ctr--;
-				} else if (!this.storeKitItem(items[0], items[1], items[2], items[3],items[4], ctr, "", false, false)) {
+				} else if (!this.storeKitItem(items[0], items[1], items[4], items[5],items[6], ctr, "", false, false)) {
 					ctr--;
 				}
 			} catch (ParseException e) {
 				ctr--;
-				log.error("Unable to parse product date" + items[0] + "|"+items[1]);
+				log.error("Unable to parse product date " + items[0] + "|"+items[1]);
 			}
 		}
 		
@@ -528,9 +644,9 @@ public class NexusKitImporter extends CommandLineUtil {
 	throws SQLException {
 		String dateFormat;
 		if (isMDM) {
-			dateFormat = "yyyymmdd";
+			dateFormat = "yyyyMMdd";
 		} else {
-			dateFormat = "mm/dd/yy";
+			dateFormat = "MM/dd/yy";
 		}
 		// Build the SQL Statement
 		StringBuilder sql = new StringBuilder(255);
@@ -552,7 +668,7 @@ public class NexusKitImporter extends CommandLineUtil {
 			ps.setInt(1, Convert.formatInteger(qty));
 			ps.setString(2, "");
 			ps.setDate(3, Convert.formatSQLDate(parseDate(start, dateFormat)));
-			ps.setDate(4, Convert.formatSQLDate(parseDate(start, dateFormat)));
+			ps.setDate(4, Convert.formatSQLDate(parseDate(end, dateFormat)));
 			ps.setInt(5, order);
 			ps.setTimestamp(6, Convert.getCurrentTimestamp());
 			ps.setString(7, layerId);
@@ -561,7 +677,7 @@ public class NexusKitImporter extends CommandLineUtil {
 			
 			ps.executeUpdate();
 		} catch (Exception e) {
-			log.error("Invalid product");
+			log.error("Invalid product " + e);
 			return false;
 		}
 		return true;
@@ -764,5 +880,31 @@ public class NexusKitImporter extends CommandLineUtil {
 		SimpleDateFormat sdf = new SimpleDateFormat(format);
 		sdf.set2DigitYearStart(new GregorianCalendar(1990, 1, 1).getTime());
 		return sdf.parse(date);
+	}
+	
+	
+	/**
+	 * Get the file from the mbox
+	 * @param path
+	 * @param name
+	 * @return
+	 * @throws IOException 
+	 */
+	private BufferedReader getRemoteFile(String path, String fileName) throws IOException {
+		SFTPV3Client ftp = null;
+		ftp = new SFTPV3Client(props.getProperty(REMOTE_HOST), props.getProperty(REMOTE_USER), props.getProperty(REMOTE_PASS));
+		byte[] data = ftp.getFileData(path + fileName);
+		return new BufferedReader(new InputStreamReader(new ByteArrayInputStream(data)));
+	}
+	
+	/**
+	 * Get the file from the local location
+	 * @param path
+	 * @param name
+	 * @return
+	 * @throws IOException
+	 */
+	private BufferedReader getLocalFile(String path, String name) throws IOException {
+		return new BufferedReader(new FileReader((path + name)));
 	}
 }
