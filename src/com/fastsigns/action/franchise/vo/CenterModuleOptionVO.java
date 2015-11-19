@@ -104,7 +104,7 @@ public class CenterModuleOptionVO implements Serializable, Approvable {
 			startDate = db.getDateVal("start_dt", rs);
 			endDate = db.getDateVal("end_dt", rs);
 			approvalFlag = db.getIntegerVal("approval_flg", rs);
-			parentId = db.getStringVal("parent_id", rs);
+			this.setParentId(db.getStringVal("parent_id", rs));
 			franchiseId = db.getIntegerVal("franchise_id", rs);
 			createDate = db.getDateVal("option_create_dt", rs);
 			actionId = db.getStringVal("FTS_CP_MODULE_ACTION_ID", rs);
@@ -130,7 +130,7 @@ public class CenterModuleOptionVO implements Serializable, Approvable {
 	 */
 	public void assignVals(SMTServletRequest req) {
 		moduleOptionId = req.getParameter("moduleOptionId");
-		parentId = req.getParameter("parentId");
+		this.setParentId(req.getParameter("parentId"));
 		moduleTypeId = Convert.formatInteger(req.getParameter("moduleTypeId"));
 		if (moduleTypeId == null) 
 			moduleTypeId = Convert.formatInteger(req.getParameter("modTypeId"));
@@ -377,8 +377,12 @@ public class CenterModuleOptionVO implements Serializable, Approvable {
 		return approvalFlag;
 	}
 
-	public void setParentId(String parentId) {
-		this.parentId = parentId;
+	/**
+	 * Set parent module id. 
+	 * @param parentId Parent Id to set. If null, '', or '0', null will be used instead.
+	 */
+	public void setParentId(String parentId) { 
+		this.parentId = (StringUtil.checkVal(parentId, "0").equals("0") ? null:parentId);
 	}
 
 	public String getParentId() {
