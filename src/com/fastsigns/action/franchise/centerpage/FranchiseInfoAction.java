@@ -1,16 +1,21 @@
 package com.fastsigns.action.franchise.centerpage;
 
+//Java 7
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+//WC customs
 import com.fastsigns.action.approval.WebeditApprover;
 import com.fastsigns.action.approval.WebeditApprover.WebeditType;
 import com.fastsigns.action.franchise.CenterPageAction;
+import com.fastsigns.action.franchise.WESocialKnowledgeGraphAction;
 import com.fastsigns.action.franchise.vo.ButtonVO;
 import com.fastsigns.action.franchise.vo.FranchiseVO;
+
+//SMT base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.exception.InvalidDataException;
@@ -18,6 +23,8 @@ import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.PhoneNumberFormat;
+
+//Web Crescendo
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.approval.ApprovalController;
 import com.smt.sitebuilder.approval.ApprovalController.SyncStatus;
@@ -136,7 +143,7 @@ public class FranchiseInfoAction extends SBActionAdapter {
 	private void updateGlobalModule(SMTServletRequest req) throws SQLException {
 		log.debug("Beginning global module preference update");
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = new StringBuilder();
+		StringBuilder sql = new StringBuilder(85);
 		String franchiseId = CenterPageAction.getFranchiseId(req);
 		int useGlobalModules = Convert.formatInteger(req.getParameter("useGlobalModules"));
 		
@@ -203,7 +210,7 @@ public class FranchiseInfoAction extends SBActionAdapter {
 	private void updateRAQSAF(SMTServletRequest req) throws SQLException {
 		log.debug("Beginning Reseller Button Update.");
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = new StringBuilder();
+		StringBuilder sql = new StringBuilder(85);
 		String franchiseId = CenterPageAction.getFranchiseId(req);
 		
 		sql.append("UPDATE ").append(customDb).append("FTS_FRANCHISE ");
@@ -237,12 +244,12 @@ public class FranchiseInfoAction extends SBActionAdapter {
 	 */
 	public void updateFranchiseButton(SMTServletRequest req) throws SQLException {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder s = new StringBuilder();
+		StringBuilder s = new StringBuilder(105);
 		s.append("insert into ").append(customDb).append("fts_franchise_button_xr ");
 		s.append("(center_button_id, franchise_id, create_dt) ");
 		s.append("values (?,?,?) ");
 		
-		StringBuilder del = new StringBuilder();
+		StringBuilder del = new StringBuilder(70);
 		del.append("delete from ").append(customDb).append("fts_franchise_button_xr ");
 		del.append("where franchise_id = ? ");
 		
@@ -278,7 +285,7 @@ public class FranchiseInfoAction extends SBActionAdapter {
 		
 		//This first query stores the selected description on the franchise table.
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder s = new StringBuilder();
+		StringBuilder s = new StringBuilder(125);
 		s.append("update ").append(customDb).append("fts_franchise set ");
 		s.append("location_desc_option_id = ?, update_dt = ? where franchise_id = ? ");
 		
@@ -309,7 +316,7 @@ public class FranchiseInfoAction extends SBActionAdapter {
 		/*
 		 * Update the dealer Location info.  
 		 */
-		s = new StringBuilder();
+		s = new StringBuilder(405);
 		s.append("update DEALER_LOCATION set ");
 		s.append("location_desc = replace(replace(cast(DESC_TXT as nvarchar(4000)),'");
 		s.append(PHONE_NO_HANDLE).append("',?), '").append(LOCATION_HANDLE).append("', location_nm) ");
@@ -424,7 +431,7 @@ public class FranchiseInfoAction extends SBActionAdapter {
 	public void updateMainImage(SMTServletRequest req) throws InvalidDataException, SQLException {
 		String centerImageUrl = req.getParameter("centerImageUrl");
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder s = new StringBuilder();
+		StringBuilder s = new StringBuilder(125);
 		s.append("update ").append(customDb).append("fts_franchise set ");
 		s.append("new_center_image_url = ?, new_center_image_alt_txt = ?, update_dt = ? where franchise_id = ? ");
 		
@@ -452,9 +459,10 @@ public class FranchiseInfoAction extends SBActionAdapter {
 	 * Franchise Table.
 	 * @param req
 	 */
-	private void updateSocialMediaLinks(SMTServletRequest req) throws SQLException {
+	private void updateSocialMediaLinks(SMTServletRequest req) throws SQLException, ActionException {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder s = new StringBuilder();
+		String fId = CenterPageAction.getFranchiseId(req);
+		StringBuilder s = new StringBuilder(175);
 		s.append("update ").append(customDb).append("fts_franchise set ");
 		s.append("facebook_url = ?, twitter_url=?, linkedin_url=?, foursquare_url=?, pinterest_url=?, google_plus_url=?, ");
 		s.append("update_dt = ? where franchise_id = ? ");
@@ -469,13 +477,20 @@ public class FranchiseInfoAction extends SBActionAdapter {
 			ps.setString(5, req.getParameter("pinterestUrl"));
 			ps.setString(6, req.getParameter("googlePlusUrl"));
 			ps.setTimestamp(7, Convert.getCurrentTimestamp());
-			ps.setString(8, CenterPageAction.getFranchiseId(req));
+			ps.setString(8, fId);
 			ps.executeUpdate();
 		} finally {
 			try {
 				ps.close();
 			} catch (Exception e) {}
 		}
+		
+		//update the social media map
+		String corpOrg = ((SiteVO)req.getAttribute(Constants.SITE_DATA)).getOrganizationId();
+		WESocialKnowledgeGraphAction spm = new WESocialKnowledgeGraphAction(actionInit);
+		spm.setAttributes(attributes);
+		spm.setDBConnection(dbConn);
+		spm.updateFranchiseMap(req, corpOrg+"_"+fId); 
 	}	
 	
 	/**
@@ -485,7 +500,7 @@ public class FranchiseInfoAction extends SBActionAdapter {
 	 */
 	public void updateWhiteboard(SMTServletRequest req){
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder s = new StringBuilder();
+		StringBuilder s = new StringBuilder(97);
 		s.append("update ").append(customDb).append("FTS_FRANCHISE ");
 		s.append("set NEW_WHITE_BOARD_TEXT = ?, UPDATE_DT = ? where FRANCHISE_ID = ? ");
 		
@@ -568,7 +583,7 @@ public class FranchiseInfoAction extends SBActionAdapter {
 	public List<ButtonVO> getButtonInfo(String id) {
 		log.debug("Getting buttons for store number: " + id);
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder s = new StringBuilder();
+		StringBuilder s = new StringBuilder(171);
 		s.append("select * from ").append(customDb).append("FTS_FRANCHISE_BUTTON_XR a ");
 		s.append("inner join ").append(customDb).append("FTS_CENTER_BUTTON b ");
 		s.append("on a.CENTER_BUTTON_ID = b.CENTER_BUTTON_ID ");
