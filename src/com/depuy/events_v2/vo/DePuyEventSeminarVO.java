@@ -40,6 +40,7 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
     
 	private List<DePuyEventSurgeonVO> surgeons = null;
 	private Set<String> joints = null;  //comes from DEPUY_EVENT_SPECIALTY_XR
+	private Set<String> products = null;  //comes from DEPUY_EVENT_SPECIALTY_XR
 	private Set<PersonVO> people = null;
 	private Map<Long, ConsigneeVO> consignees = null; //JSTL wants us to use a Long key instead of an Integer here.
 	private Set<ActionItem> actionItems = null;
@@ -57,10 +58,13 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	private Map<Location, LeadCityVO> targetLeads = null;
 	private int totalSelectedLeads = 0;
 	private int upfrontFeeFlg = 0;
+	
+	private boolean readOnly = false;
     
     public DePuyEventSeminarVO() {
 	    super();
 	    joints = new HashSet<>();
+	    products = new HashSet<>();
 	    people = new HashSet<>();
 	    newspaperAds = new ArrayList<>();
 	    onlineAds = new ArrayList<>();
@@ -76,7 +80,10 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
     public DePuyEventSeminarVO(ResultSet rs) {
 		this();
 		super.setData(rs);
-		super.setStatusFlg(new DBUtil().getIntVal("pc_status_flg", rs));
+		DBUtil db = new DBUtil();
+		super.setStatusFlg(db.getIntVal("pc_status_flg", rs));
+
+	    	addProduct(db.getStringVal("product_id", rs));
 		
 	    //add the Event
 	    List<EventEntryVO> lst = new ArrayList<EventEntryVO>();
@@ -126,6 +133,8 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 		if (db.getIntVal("hip", rs) > 0) joints.add("4");
 	    	if (db.getIntVal("knee", rs) > 0) joints.add("5");
 	    	if (db.getIntVal("shoulder", rs) > 0) joints.add("6");
+	    	
+	    	addProduct(db.getStringVal("product_id", rs));
 	    	
 	    	rsvpCount = db.getIntVal("rsvp_no", rs);
 	    	
@@ -641,5 +650,52 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	public String getSurveyResponse(String key) {
 		if (surveyResponses == null) return null;
 		return surveyResponses.get(key);
+	}
+
+	public boolean isReadOnly() {
+		return readOnly;
+	}
+
+	public void setReadOnly(boolean readOnly) {
+		this.readOnly = readOnly;
+	}
+
+	public Set<String> getProducts() {
+		return products;
+	}
+
+	public void setProducts(Set<String> products) {
+		this.products = products;
+	}
+	
+	public void addProduct(String prod) {
+		if (prod == null || prod.length() == 0) return;
+		this.products.add(prod);
+	}
+	
+	/**
+	 * returns the joint name, UCASE, for the passed code (int)
+	 * This maps AAMD's IDs to DataFeed's ucase-names.
+	 * @param id
+	 * @return
+	 */
+	public String getProductName(String id) {
+		if ("HA".equals(id)) { 
+			return "HA";
+		} else if ("PRP".equals(id)) {
+			return "PRP";
+		} else if ("PEAK".equals(id)) {
+			return "PEAK";
+		}
+		return null;
+	}
+	
+	public String getProductCodes() {
+		StringBuilder sb = new StringBuilder();
+		for (String j : products) {
+			if (sb.length() > 0) sb.append(",");
+			sb.append(j);
+		}
+		return sb.toString();
 	}
 }
