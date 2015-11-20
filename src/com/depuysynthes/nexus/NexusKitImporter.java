@@ -619,7 +619,7 @@ public class NexusKitImporter extends CommandLineUtil {
 			String[] items = temp.split(",");
 			Date d = new Date();
 			try {
-				if (d.after(parseDate(items[5], "MM/dd/yy"))) {
+				if (d.after(parseDate(items[6], "MM/dd/yy"))) {
 					ctr--;
 				} else if (!this.storeKitItem(items[0], items[1], items[4], items[5],items[6], ctr, "", false, false)) {
 					ctr--;
