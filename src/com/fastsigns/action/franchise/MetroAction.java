@@ -995,7 +995,7 @@ public class MetroAction extends SBActionAdapter {
 	 * @param mcvo 
 	 */
 	private void shortCircuitMetro(SMTServletRequest req, MetroContainerVO mcvo) {
-		if (mcvo.getBypassMapFlag() == 1) {
+		if (mcvo.getBypassMapFlag() == 1 && mcvo.getResults().size() == 1) {
 			super.sendRedirect("/" + mcvo.getResults().get(0).getDealerLocationId(), null, req);
 		}
 	}
