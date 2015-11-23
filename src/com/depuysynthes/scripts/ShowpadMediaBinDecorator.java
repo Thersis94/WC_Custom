@@ -139,13 +139,6 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 			if (s == State.Failed || s == State.Delete ||  (s == State.Ignore && vo.getShowpadId() != null))
 				continue;
 			
-			//enforce a limit here while we bulk-load Showpad, who limits daily API calls to 5k requests
-			//if you expect to hit this limit, make sure the database is purged first.  Tomorrow when you re-run, those assets will not have ShowpadIds, and get processed then.
-			if (insertCnt+updateCnt > 2000) {
-				log.fatal("Showpad limit reached");
-				break;
-			}
-			
 			FileType fType = new FileType(vo.getFileNm());
 			Map<String, String> params = new HashMap<>();
 			String title = StringUtil.checkVal(vo.getTitleTxt(), vo.getFileNm());
@@ -226,6 +219,13 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 				String msg = makeMessage(vo, "Could not push file to showpad: " + ioe.getMessage());
 				failures.add(new Exception(msg));
 				log.error("could not push file to showpad", ioe);
+			}
+			
+			//enforce a limit here while we bulk-load Showpad, who limits daily API calls to 5k requests
+			//if you expect to hit this limit make sure your database is purged first.  Tomorrow when you re-run, those assets will not have ShowpadIds, and get processed then.
+			if (insertCnt+updateCnt > 1500) {
+				log.fatal("Showpad limit reached");
+				break;
 			}
 
 			log.info("completed: " + vo.getFileNm());
