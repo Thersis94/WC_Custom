@@ -52,7 +52,7 @@ public class POYPContactPPAction extends SBActionAdapter {
 		try{
 			EmailMessageVO emailVo = new EmailMessageVO();
 			emailVo.addRecipient(rcpt);
-			emailVo.setFrom("contact@sjm.com", "The Power Over Your Pain Team");
+			emailVo.setFrom("contact@sjmneuro.com", "St. Jude Medical");
 			emailVo.setSubject("The Chronic Pain Therapy Materials You Requested");
 			emailVo.setHtmlBody(this.getMessage(req));
 			log.info("Mail Info: " + emailVo.toString());
@@ -109,7 +109,7 @@ public class POYPContactPPAction extends SBActionAdapter {
 		msg.append("<td align='left' width='84%' style='padding: 0 0 10px; line-height: 140%;'> ");
 		msg.append("<table width='100%' align='center' cellspacing='0' cellpadding='0' border='0' style='font-family: Arial,sans-serif;'> ");
 		msg.append("<tr><td valign='top' colspan='3' style='padding: 0 0 5px 0; line-height: 140%;'> ");
-		msg.append("Once you&apos;ve had an opportunity to learn more about neurostimulation, the next step is ");
+		msg.append("Once you&#39;ve had an opportunity to learn more about neurostimulation, the next step is ");
 		msg.append("to schedule an appointment with a local pain management specialist to determine if ");
 		msg.append("an evaluation of neurostimulation with the St. Jude Medical&trade; Invisible Trial System ");
 		msg.append("is right for you. During this evaluation period, you can see if the therapy relieves ");
@@ -130,7 +130,7 @@ public class POYPContactPPAction extends SBActionAdapter {
 		msg.append("Find a pain specialist in your area</a></td></tr> ");
 		msg.append("<tr height='20' width='100%'><td></td> <td></td><td></td></tr> ");
 		msg.append("<tr><td valign='top' colspan='3'>We know that making a decision ");
-		msg.append("about pain management can be difficult, but you don&apos;t have to do it alone.<br><br> ");
+		msg.append("about pain management can be difficult, but you don&#39;t have to do it alone.<br><br> ");
 		msg.append("Sincerely,<br><br>The Power Over Your Pain Team</td></tr> ");
 		msg.append("<tr height='180' width='100%'><td></td> <td></td><td></td></tr> ");
 		msg.append("<tr><td colspan='3' style='font-size: 11px; '> ");
@@ -148,12 +148,15 @@ public class POYPContactPPAction extends SBActionAdapter {
 		msg.append("pediatric use, pregnancy, and case damage. Patients who are poor surgical risks, with multiple ");
 		msg.append("illnesses, or with active general infections should not be implanted.<br> ");
 		msg.append("<span style='font-weight: bold'>Adverse Effects:</span> Painful stimulation, loss of pain relief, ");
-		msg.append("surgical risks (e.g. paralysis). User&apos;s Guide must be reviewed for detailed disclosure.</td></tr> ");
+		msg.append("surgical risks (e.g. paralysis). User&#39;s Guide must be reviewed for detailed disclosure.</td></tr> ");
 		msg.append("<tr height='30' width='100%'><td></td> <td></td><td></td></tr> ");
 		msg.append("<tr><td colspan='3' style='font-size: 11px; '> ");
 		msg.append("Unless otherwise noted, &trade; indicates that the name is a trademark of, or licensed to, St. Jude Medical or ");
 		msg.append("one of its subsidiaries. ST. JUDE MEDICAL and the nine-squares symbol and trademarks and service marks ");
 		msg.append("of St. Jude Medical, Inc. and its related companies. &copy; 2015 St. Jude Medical, Inc. All Rights Reserved.</td></tr>  ");
+		msg.append("<tr height='50' width='100%'><td></td> <td></td><td></td></tr> ");
+		msg.append("<tr><td colspan='3' style='font-size: 11px; '> ");
+		msg.append("SJM-CPG-0815-0026a | Item approved for U.S. use only.</td></tr> ");
 		msg.append("</table></td><td width='8%'></td></tr> ");
 		msg.append("<tr height='25' width='100%'><td ></td><td ></td><td ></td></tr> ");
 		msg.append("</table></td></tr></table></td></tr></table> ");
