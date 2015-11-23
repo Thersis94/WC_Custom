@@ -67,6 +67,11 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	 * Delimiter used in the EXP file
 	 */
 	protected String DELIMITER = "\\|";
+	
+	/**
+	 * Delimiterd used in the EXP file to tokenize multiple values stuffed into a single meta-data field
+	 */
+	protected String TOKENIZER = "~";
 
 	/**
 	 * debug mode runs individual insert queries instead of a batch query, to be able to track row failures.
@@ -74,18 +79,18 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	private boolean DEBUG_MODE = false; 
 
 	// Get the type (Intl (2) or US(1))
-	private int type = 1;
+	protected int type = 1;
 
 	/**
 	 * List of errors 
 	 */
-	private List <Exception> failures = new ArrayList<Exception>();
+	protected List <Exception> failures = new ArrayList<Exception>();
 
 	private Map<String,String> languages = new HashMap<>();
 
 	private String limeLightUrl = MediaBinLinkAction.US_BASE_URL;
 
-	private Map<String, Integer> dataCounts = new HashMap<>();
+	protected Map<String, Integer> dataCounts = new HashMap<>();
 
 	/**
 	 * Initializes the Logger, config files and the database connection
@@ -182,7 +187,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	 * @param type
 	 * @return
 	 */
-	private Map<String,MediaBinDeltaVO> loadManifest() {
+	protected Map<String,MediaBinDeltaVO> loadManifest() {
 		Map<String,MediaBinDeltaVO> data = new HashMap<>(7000); //at time of writing, this was enough capacity to avoid resizing
 
 		StringBuilder sql = new StringBuilder(250);
@@ -215,7 +220,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	 * @param type
 	 * @return
 	 */
-	private void countDBRecords() {
+	protected void countDBRecords() {
 		int cnt = 0;
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("select count(*) from ").append(props.get(Constants.CUSTOM_DB_SCHEMA));
@@ -425,6 +430,8 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 				vo.setChecksum(mr.getChecksum());
 				//pass the video chapters as well
 				vo.setVideoChapters(mr.getVideoChapters());
+				//and the showpadId as well
+				vo.setShowpadId(mr.getShowpadId());
 			} else {
 				vo.setRecordState(State.Insert);
 			}
@@ -565,7 +572,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	 * @param url
 	 * @return
 	 */
-	private String makeMessage(MediaBinDeltaVO vo, String err) {
+	protected String makeMessage(MediaBinDeltaVO vo, String err) {
 		StringBuilder msg = new StringBuilder(200);
 		msg.append("<font color='red'>").append(err).append(":</font><br/>");
 		msg.append("Tracking number: ").append(vo.getTrackingNoTxt()).append("<br/>");
@@ -658,7 +665,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		if (type == 2) {
 			requiredOpCo = new String[]{ "INTDS.com" };
 		} else {
-			requiredOpCo = new String[]{ "USDS.com", "DSI.com" };
+			requiredOpCo = new String[]{ "USDS.com", "DSI.com" ,"DSHuddle.com" };
 		}
 
 		Map<String, MediaBinDeltaVO> records = new HashMap<>(data.size());
@@ -717,14 +724,14 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 				vo.setRecordState(State.Insert);
 
 				//pluck the tracking#s off the end of the Anatomy field, if data exists
-				if (StringUtil.checkVal(row.get("Anatomy")).indexOf("~") > 0) {
-					String[] vals = StringUtil.checkVal(row.get("Anatomy")).split("~");
+				if (StringUtil.checkVal(row.get("Anatomy")).indexOf(TOKENIZER) > 0) {
+					String[] vals = StringUtil.checkVal(row.get("Anatomy")).split(TOKENIZER);
 					Set<String> newVals = new LinkedHashSet<String>(vals.length);
 					for (String s : vals) {
 						if (s.startsWith("DSUS")) continue; //remove tracking#s
 						newVals.add(s.trim().replaceAll(", ", ","));
 					}
-					row.put("Anatomy", StringUtil.getDelimitedList(newVals.toArray(new String[newVals.size()]), false, "~"));
+					row.put("Anatomy", StringUtil.getDelimitedList(newVals.toArray(new String[newVals.size()]), false, TOKENIZER));
 				}
 
 				//determine Modification Date for the record. -- displays in site-search results
@@ -1014,7 +1021,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 				retVal += promo;
 			}
 
-			retVal = retVal.replaceAll("~", ", ");
+			retVal = retVal.replaceAll(TOKENIZER, ", ");
 		}
 
 		if (retVal.length() == 0) return null;
@@ -1043,6 +1050,14 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			html.append("Deleted: ").append(dataCounts.get("deleted")).append("<br/><br/>");
 			html.append("DB Total: ").append(dataCounts.get("total")).append("<br/>");
 			html.append("Solr Total: ").append(dataCounts.get("solr")).append("<br/>");
+			//add-in for showpad stats
+			if (dataCounts.containsKey("showpad")) {
+				html.append("<br/>Showpad Added: ").append(Convert.formatInteger(dataCounts.get("showpad-inserted"))).append("<br/>");
+				html.append("Showpad Updated: ").append(Convert.formatInteger(dataCounts.get("showpad-updated"))).append("<br/>");
+				html.append("Showpad Deleted: ").append(Convert.formatInteger(dataCounts.get("showpad-deleted"))).append("<br/>");
+				html.append("Showpad Total: ").append(Convert.formatInteger(dataCounts.get("showpad-total"))).append("<br/><br/>");
+			}
+			
 			long timeSpent = System.nanoTime()-startNano;
 			double millis = timeSpent/1000000;
 			if (millis > (60*1000)) {
@@ -1125,5 +1140,10 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			msg.append("</tr>");
 		}
 		msg.append("</tbody></table>");
+	}
+	
+	
+	public Integer getDataCount(String type) {
+		return Convert.formatInteger(dataCounts.get(type));
 	}
 }
