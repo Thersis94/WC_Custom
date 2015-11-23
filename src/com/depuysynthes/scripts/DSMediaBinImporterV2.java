@@ -71,7 +71,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	/**
 	 * Delimiterd used in the EXP file to tokenize multiple values stuffed into a single meta-data field
 	 */
-	protected String MB_TOKENIZER = "~";
+	protected String TOKENIZER = "~";
 
 	/**
 	 * debug mode runs individual insert queries instead of a batch query, to be able to track row failures.
@@ -535,32 +535,31 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	private boolean fileOnLLChanged(MediaBinDeltaVO vo) {
 		log.info("checking headers on " + vo.getLimeLightUrl());
 		boolean changed = false;
-		//TODO
-//		try {
-//			HttpURLConnection conn = (HttpURLConnection) new URL(vo.getLimeLightUrl()).openConnection();
-//			conn.setRequestMethod("HEAD");
-//			
-//			if (HttpURLConnection.HTTP_OK == conn.getResponseCode()) {
-//				String checksum = conn.getHeaderField("Last-Modified") + "||" + conn.getHeaderField("Content-Length");
-//				log.debug(checksum);
-//				changed = !checksum.equals(vo.getChecksum());
-//				vo.setChecksum(checksum);
-//				if (!changed) {
-//					vo.setErrorReason("File on LL did not change");
-//				}
-//			} else {
-//				changed = true;
-//			}
-//			//cleanup at the TCP level so Keep-Alives can be leveraged at the IP level
-//			conn.getInputStream().close();
-//			conn.disconnect();
-//
-//		} catch (Exception e) {
-//			//ignore these, because by returning true we're going to make a second
-//			//call out to LL to retrieve the file, which will not be found, and be recorded
-//			//as a failure (properly)
-//			changed = true;
-//		}
+		try {
+			HttpURLConnection conn = (HttpURLConnection) new URL(vo.getLimeLightUrl()).openConnection();
+			conn.setRequestMethod("HEAD");
+			
+			if (HttpURLConnection.HTTP_OK == conn.getResponseCode()) {
+				String checksum = conn.getHeaderField("Last-Modified") + "||" + conn.getHeaderField("Content-Length");
+				log.debug(checksum);
+				changed = !checksum.equals(vo.getChecksum());
+				vo.setChecksum(checksum);
+				if (!changed) {
+					vo.setErrorReason("File on LL did not change");
+				}
+			} else {
+				changed = true;
+			}
+			//cleanup at the TCP level so Keep-Alives can be leveraged at the IP level
+			conn.getInputStream().close();
+			conn.disconnect();
+
+		} catch (Exception e) {
+			//ignore these, because by returning true we're going to make a second
+			//call out to LL to retrieve the file, which will not be found, and be recorded
+			//as a failure (properly)
+			changed = true;
+		}
 		return changed;
 	}
 
@@ -666,7 +665,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		if (type == 2) {
 			requiredOpCo = new String[]{ "INTDS.com" };
 		} else {
-			requiredOpCo = new String[]{ "USDS.com", "DSI.com" };
+			requiredOpCo = new String[]{ "USDS.com", "DSI.com" ,"DSHuddle.com" };
 		}
 
 		Map<String, MediaBinDeltaVO> records = new HashMap<>(data.size());
@@ -725,14 +724,14 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 				vo.setRecordState(State.Insert);
 
 				//pluck the tracking#s off the end of the Anatomy field, if data exists
-				if (StringUtil.checkVal(row.get("Anatomy")).indexOf(MB_TOKENIZER) > 0) {
-					String[] vals = StringUtil.checkVal(row.get("Anatomy")).split(MB_TOKENIZER);
+				if (StringUtil.checkVal(row.get("Anatomy")).indexOf(TOKENIZER) > 0) {
+					String[] vals = StringUtil.checkVal(row.get("Anatomy")).split(TOKENIZER);
 					Set<String> newVals = new LinkedHashSet<String>(vals.length);
 					for (String s : vals) {
 						if (s.startsWith("DSUS")) continue; //remove tracking#s
 						newVals.add(s.trim().replaceAll(", ", ","));
 					}
-					row.put("Anatomy", StringUtil.getDelimitedList(newVals.toArray(new String[newVals.size()]), false, MB_TOKENIZER));
+					row.put("Anatomy", StringUtil.getDelimitedList(newVals.toArray(new String[newVals.size()]), false, TOKENIZER));
 				}
 
 				//determine Modification Date for the record. -- displays in site-search results
@@ -855,8 +854,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 				ps.setString(25, vo.getChecksum());
 				ps.setString(26, vo.geteCopyRevisionLvl());
 				ps.setString(27, vo.getDpySynMediaBinId());
-				//TODO
-				//ps.executeUpdate();
+				ps.executeUpdate();
 				log.debug((isInsert ? "Inserted: " : "Updated: ") + vo.getDpySynMediaBinId());
 				++cnt;
 			} catch (SQLException sqle) {
@@ -1023,7 +1021,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 				retVal += promo;
 			}
 
-			retVal = retVal.replaceAll(MB_TOKENIZER, ", ");
+			retVal = retVal.replaceAll(TOKENIZER, ", ");
 		}
 
 		if (retVal.length() == 0) return null;

@@ -15,6 +15,7 @@ import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
 import com.depuysynthes.scripts.MediaBinDeltaVO.State;
+import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.io.FileType;
 import com.siliconmtn.security.OAuth2TokenViaCLI;
 import com.siliconmtn.security.OAuth2TokenViaCLI.Config;
@@ -128,7 +129,7 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 		if (!isInsert) return;
 
 		String postUrl;
-		int cnt = 0;
+		int insertCnt=0, updateCnt=0;
 
 		//push all changes to Showpad
 		for (MediaBinDeltaVO vo : masterRecords.values()) {
@@ -137,28 +138,43 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 			State s = vo.getRecordState();
 			if (s == State.Failed || s == State.Delete ||  (s == State.Ignore && vo.getShowpadId() != null))
 				continue;
-
+			
+			//enforce a limit here while we bulk-load Showpad, who limits daily API calls to 5k requests
+			if (insertCnt+updateCnt > 2000) break;
+			
+			FileType fType = new FileType(vo.getFileNm());
+			Map<String, String> params = new HashMap<>();
+			String title = StringUtil.checkVal(vo.getTitleTxt(), vo.getFileNm());
+			title += " - " + vo.getTrackingNoTxt() + "." + fType.getFileExtension();
+			title = StringUtil.replace(title, "\"", ""); //remove double quotes, which break the JSON structure
+			title = StringUtil.replace(title, "/", "-"); //Showpad doesn't like slashes either, which look like directory structures
+			
 			boolean isShowpadUpdate = (vo.getShowpadId() != null && vo.getShowpadId().length() > 0); 
 
 			if (isShowpadUpdate) { //send as an 'update' to Showpad
 				postUrl = props.getProperty("showpadApiUrl") + "/assets/" + vo.getShowpadId() + ".json";
 			} else {
 				postUrl = props.getProperty("showpadApiUrl") + "/assets.json";
+				//check if this file is already in Showpad before treating it as new
+				vo.setShowpadId(findShowpadId(title));
+				if (vo.getShowpadId() != null) {
+					//if the file is already there, and doesn't need updating, simply move on.
+					if (s == State.Ignore) continue;
+					//do an update instead of an insert
+					postUrl = props.getProperty("showpadApiUrl") + "/assets/" + vo.getShowpadId() + ".json";
+				}
 			}
 
-			Map<String, String> params = new HashMap<>();
-			String title = StringUtil.checkVal(vo.getTitleTxt(), vo.getFileNm());
-			title += " - " + vo.getTrackingNoTxt();
 			params.put("name", title);
-			params.put("resourcetype", getResourceType(vo.getFileNm())); //Showpad Constant for all assets
+			log.info("name=" + params.get("name"));
+			params.put("resourcetype", getResourceType(fType)); //Showpad Constant for all assets
 			params.put("suppress_response_codes","true"); //forces a 200 response header
 			params.put("description", vo.getDownloadTypeTxt());
 			params.put("isSensitive", "false");
 			params.put("isShareable", "true");
-			params.put("releasedAt", Convert.formatDate(vo.getLastUpdate(), Convert.DATE_TIME_SLASH_PATTERN));
+			params.put("releasedAt", Convert.formatDate(vo.getModifiedDt(), Convert.DATE_TIME_SLASH_PATTERN));
 
 			//add any Link objects (Tags) we need to have attached to this asset
-			//TODO make header attachments, not form.
 			String linkHeader = generateTags(vo, params);
 
 			try {
@@ -194,14 +210,13 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 					} else {
 						vo.setShowpadId(assetId);
 					}
+					++insertCnt;
+					
 				} else { //remove the showpadId on updates so we don't create a dup in the SMT database (we need inserts only)
 					vo.setShowpadId(null);
+					++updateCnt;
 				}
-
-				++cnt;
-				//TODO remove this development limiter
-				if (cnt == 10) break;
-
+				
 			} catch (Exception ioe) {
 				vo.setShowpadId(null);
 				String msg = makeMessage(vo, "Could not push file to showpad: " + ioe.getMessage());
@@ -218,7 +233,8 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 		//save the newly created records to our database
 		insertNewRecords(masterRecords);
 
-		dataCounts.put("showpad-" + (isInsert ? "inserted" : "updated"), cnt);
+		dataCounts.put("showpad-inserted", insertCnt);
+		dataCounts.put("showpad-updated", updateCnt);
 	}
 	
 	
@@ -230,27 +246,84 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 	 */
 	private void processTicketQueue(Map<String, MediaBinDeltaVO> masterRecords) {
 		//continue processing the queue until it's empty; meaning Showpad has processed all our assets
-		while (ticketQueue.size() > 0) {
-			try {
-				Thread.sleep(10000);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-				break;
-			}
-			
-			for (String ticketId : ticketQueue.keySet()) {
-				String assetId = getAssetIdFromTicket(ticketId);
-				if (assetId != null) {
-					masterRecords.get(ticketQueue.get(ticketId)).setShowpadId(assetId);
-					ticketQueue.remove(ticketId);
-					log.info("finished processing ticket " + ticketId + ", its now assetId=" + assetId);
+		int count = ticketQueue.size();
+		int runCount = 0;
+		while (count > 0) {
+			if (runCount > 0) {
+				try {
+					log.info("sleeping 30 seconds");
+					Thread.sleep(30000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+					break;
 				}
 			}
 			
-			if (ticketQueue.size() == 0) break;
+			Set<String> removes = new HashSet<>();
+			for (String ticketId : ticketQueue.keySet()) {
+				String assetId;
+				try {
+					assetId = getAssetIdFromTicket(ticketId);
+					if (assetId != null) {
+						log.info("found assetId=" + assetId + " for ticket=" + ticketId);
+						masterRecords.get(ticketQueue.get(ticketId)).setShowpadId(assetId);
+						removes.add(ticketId);
+						log.info("finished processing ticket " + ticketId + ", its now assetId=" + assetId);
+					}
+				} catch (InvalidDataException e) {
+					//this asset failed lookup.  or maybe failed adding to Showpad.
+					//remove it and set the ID=null, we'll try it again tomorrow.
+					masterRecords.get(ticketQueue.get(ticketId)).setShowpadId(null);
+					removes.add(ticketId);
+				}
+			}
+			//remove the processed ones from our ticketQueue.
+			//this cannot be done above (inline) because of concurrency issues (ConcurrentModificationException)
+			for (String t : removes) {
+				ticketQueue.remove(t);
+				--count;
+			}
+			++runCount;
 		}
+		log.info("iterated " + runCount + " times waiting for the Showpad queue to empty");
 	}
 	
+	
+	/**
+	 * this can be used to obtain showpadIds from file names if this script 
+	 * fails after uploading the files
+	 * @param fileName
+	 * @return
+	 */
+	private String findShowpadId(String fileName) {
+		String showpadId = null;
+		String findUrl = props.getProperty("showpadApiUrl") + "/assets.json?fields=id&limit=1&name=" + fileName;
+		try {
+			String resp = showpadUtil.executeGet(findUrl);
+			JSONObject json = JSONObject.fromObject(resp);
+			log.info(json);
+			JSONObject metaResp = json.getJSONObject("meta");
+			if (!"200".equals(metaResp.getString("code")))
+				throw new IOException(metaResp.getString("message"));
+
+			JSONObject response = json.getJSONObject("response");
+			JSONArray items = response.getJSONArray("items");
+			for (int x=0; x < items.size(); x++) {
+				JSONObject asset = items.getJSONObject(x);
+				//report duplicates
+				if (x>0) {
+					log.error("duplicate found!  delete " + asset.getString("id") + " in favor of " + showpadId);
+				} else {
+					showpadId = asset.getString("id");
+				}
+			}
+
+		} catch (IOException | NullPointerException ioe) {
+			failures.add(ioe);
+			log.error("could not load showpad id from name", ioe);
+		}
+		return showpadId;
+	}
 	
 	
 	/**
@@ -258,7 +331,7 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 	 * @param ticketId
 	 * @return
 	 */
-	private String getAssetIdFromTicket(String ticketId) {
+	private String getAssetIdFromTicket(String ticketId) throws InvalidDataException {
 		String ticketUrl = props.getProperty("showpadApiUrl") + "/tickets/" + ticketId + ".json?fields=status,asset";
 		try {
 			String resp = showpadUtil.executeGet(ticketUrl);
@@ -269,11 +342,14 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 				throw new IOException(metaResp.getString("message"));
 
 			JSONObject response = json.getJSONObject("response");
+			String status = response.optString("status");
+			if ("failed".equalsIgnoreCase(status)) throw new InvalidDataException(status);
+			
 			JSONObject asset = response.getJSONObject("asset");
 			if (asset != null && !asset.isNullObject() && asset.optString("id").length() > 0)
 				return asset.getString("id");
 			
-			log.info(ticketId + " is not finished yet, status=" + response.optString("status"));
+			log.info(ticketId + " is not finished yet, status=" + status);
 
 		} catch (IOException | NullPointerException ioe) {
 			failures.add(ioe);
@@ -292,22 +368,25 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 	 */
 	private String generateTags(MediaBinDeltaVO vo, Map<String, String> params) {
 		Map<String,String> assignedTags = null;
-		if (State.Update == vo.getRecordState()) assignedTags = loadAssetTags(vo.getShowpadId());
+		if (vo.getShowpadId() != null) assignedTags = loadAssetTags(vo.getShowpadId());
 		Set<String> desiredTags = new HashSet<>();
-
+		desiredTags.add("mediabin"); //a static tag for all assets, identifies their source
+		
 		//assign the tags this asset SHOULD have, attempt to backfill those from the known list of tags already in Showpad
 		FileType ft = new FileType(vo.getFileNm());
 		desiredTags.add(ft.getFileExtension());
+		if (vo.getLanguageCode() != null && vo.getLanguageCode().length() > 0)
+			desiredTags.addAll(Arrays.asList(vo.getLanguageCode().split(TOKENIZER)));
 		if (vo.getBodyRegionTxt() != null && vo.getBodyRegionTxt().length() > 0)
-			desiredTags.addAll(Arrays.asList(vo.getBodyRegionTxt().split(MB_TOKENIZER)));
+			desiredTags.addAll(Arrays.asList(vo.getBodyRegionTxt().split(TOKENIZER)));
 		if (vo.getBusinessUnitNm() != null && vo.getBusinessUnitNm().length() > 0)
-			desiredTags.addAll(Arrays.asList(vo.getBusinessUnitNm().split(MB_TOKENIZER)));
+			desiredTags.addAll(Arrays.asList(vo.getBusinessUnitNm().split(TOKENIZER)));
 		if (vo.getLiteratureTypeTxt() != null && vo.getLiteratureTypeTxt().length() > 0)
-			desiredTags.addAll(Arrays.asList(vo.getLiteratureTypeTxt().split(MB_TOKENIZER)));
+			desiredTags.addAll(Arrays.asList(vo.getLiteratureTypeTxt().split(TOKENIZER)));
 		if (vo.getProdFamilyNm() != null && vo.getProdFamilyNm().length() > 0)
-			desiredTags.addAll(Arrays.asList(vo.getProdFamilyNm().split(MB_TOKENIZER)));
-		if (vo.getProdNm() != null && vo.getProdNm().length() > 0)
-			desiredTags.addAll(Arrays.asList(vo.getProdNm().split(MB_TOKENIZER)));
+			desiredTags.addAll(Arrays.asList(vo.getProdFamilyNm().split(TOKENIZER)));
+//		if (vo.getProdNm() != null && vo.getProdNm().length() > 0)
+//			desiredTags.addAll(Arrays.asList(vo.getProdNm().split(MB_TOKENIZER)));
 
 		//loop the tags the asset already has, removing them from the "need to add" list
 		if (assignedTags != null) {
@@ -326,7 +405,7 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 			}
 
 			if (tagHeader.length() > 0) tagHeader.append(",");
-			tagHeader.append(showpadTags.get(tagNm)).append(";rel=\"Tag\"");
+			tagHeader.append("<").append(showpadTags.get(tagNm)).append(">; rel=\"Tag\"");
 		}
 		return tagHeader.toString();
 	}
@@ -432,8 +511,7 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 	 * @param fileName
 	 * @return
 	 */
-	private String getResourceType(String fileName) {
-		FileType fType = new FileType(fileName);
+	private String getResourceType(FileType fType) {
 		switch (fType.getFileExtension()) {
 			case "pdf":
 			case "txt":

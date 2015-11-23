@@ -105,10 +105,11 @@ public class ShowpadApiUtil {
 			part.setHeaders(new HttpHeaders().set("Content-Disposition", String.format("form-data; name=\"%s\"", k)));
 			content.addPart(part);
 		}
-
+		
 		// Add file
+		String fileName = (params.containsKey("name") ? params.get("name") : f.getName());
 		MultipartContent.Part part = new MultipartContent.Part(fileContent);
-		part.setHeaders(new HttpHeaders().set("Content-Disposition", String.format("form-data; name=\"file\"; filename=\"%s\"", f.getName())));
+		part.setHeaders(new HttpHeaders().set("Content-Disposition", String.format("form-data; name=\"file\"; filename=\"%s\"", fileName)));
 		content.addPart(part);
 
 		//add the Link header
