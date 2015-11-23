@@ -540,10 +540,13 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			conn.setRequestMethod("HEAD");
 			
 			if (HttpURLConnection.HTTP_OK == conn.getResponseCode()) {
-				String checksum = conn.getHeaderField("Last-Modified") + "||" + conn.getHeaderField("Content-Length");
+				String lastMod = StringUtil.checkVal(conn.getHeaderField("Last-Modified"), new Date().toString());
+				String checksum = lastMod + "||" + conn.getHeaderField("Content-Length");
 				log.debug(checksum);
 				changed = !checksum.equals(vo.getChecksum());
 				vo.setChecksum(checksum);
+				//use the file's datestamp for modified date on our side
+				vo.setModifiedDt(Convert.formatDate("EEEE, dd MMM yyyy hh:mm:ss z", lastMod));
 				if (!changed) {
 					vo.setErrorReason("File on LL did not change");
 				}
@@ -735,6 +738,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 				}
 
 				//determine Modification Date for the record. -- displays in site-search results
+				//note modDt now gets overwritten with the Last Modified header coming back from LimeLight. -JM 11-23-15
 				Date modDt = Convert.formatDate(Convert.DATE_TIME_SLASH_PATTERN_FULL_12HR, row.get("Check In Time"));
 				if (modDt == null) modDt = Convert.formatDate(Convert.DATE_TIME_SLASH_PATTERN_FULL_12HR, row.get("Insertion Time"));
 

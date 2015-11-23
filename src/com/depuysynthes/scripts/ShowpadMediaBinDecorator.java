@@ -119,14 +119,14 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 	public void saveRecords(Map<String, MediaBinDeltaVO> masterRecords, boolean isInsert) {
 		super.saveRecords(masterRecords, isInsert);
 
-		//confirm we have something to add or update
-		if (getDataCount((isInsert ? "inserted" : "updated")) == 0) return;
-
 		//the below logic will process both inserts & updates at once.  
 		//Block here for updates so we don't process the records twice.
 		//Insert runs after deletes & updates, so wait for the 'inserts' invocation so 
 		//all the mediabin records are already in our database.
 		if (!isInsert) return;
+
+		//confirm we have something to add or update
+		if (getDataCount("inserted") == 0 && getDataCount("updated") == 0) return;
 
 		String postUrl;
 		int insertCnt=0, updateCnt=0;
@@ -140,7 +140,11 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 				continue;
 			
 			//enforce a limit here while we bulk-load Showpad, who limits daily API calls to 5k requests
-			if (insertCnt+updateCnt > 2000) break;
+			//if you expect to hit this limit, make sure the database is purged first.  Tomorrow when you re-run, those assets will not have ShowpadIds, and get processed then.
+			if (insertCnt+updateCnt > 2000) {
+				log.fatal("Showpad limit reached");
+				break;
+			}
 			
 			FileType fType = new FileType(vo.getFileNm());
 			Map<String, String> params = new HashMap<>();
