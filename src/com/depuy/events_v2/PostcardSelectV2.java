@@ -62,6 +62,9 @@ import com.smt.sitebuilder.security.SecurityController;
  ****************************************************************************/
 public class PostcardSelectV2 extends SBActionAdapter {
 	
+	private static final int MITEK_READ_ONLY_ROLE = 1500;
+	
+	
 	//GUIDS tied to the short term survey (a Survey portlet)
 	private enum SurveyConst {
 		surveyAction("c0a8021edb7fd91f57d3396eea06b0e9","c0a80237c2034fbfe0cea6bddfbf537d"),
@@ -141,8 +144,15 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		
 		UserDataVO user = (UserDataVO) ses.getAttribute(Constants.USER_DATA);
 		SBUserRole roles = (SBUserRole) ses.getAttribute(Constants.ROLE_DATA);
-		Integer roleId = (roles != null) ? roles.getRoleLevel() : SecurityController.PUBLIC_ROLE_LEVEL;
+		int roleId = (roles != null) ? roles.getRoleLevel() : SecurityController.PUBLIC_ROLE_LEVEL;
 		String profileId = (user != null && roleId < 90) ? user.getProfileId() : null;
+		
+		//set a special role level for mitek coordinators so they can have read-only access to all seminars
+		//this has to use roleName because the roleLevel is 10, the same as joint recon's
+		//joint recon does not use the 'read only/show all' capability
+		log.debug("name=" + roles.getRoleName());
+		if ("Mitek_Coordinator".equalsIgnoreCase(roles.getRoleName())) 
+			roleId = MITEK_READ_ONLY_ROLE;
 	
 		Object data = null;
 		try {
@@ -157,18 +167,18 @@ public class PostcardSelectV2 extends SBActionAdapter {
 				
 			} else if (eventPostcardId.length() > 0) {
 				//load one postcard in it's entirety
-				data = loadOneSeminar(eventPostcardId, actionInit.getActionId(), reqType, profileId, req.getParameter("sort"));
+				data = loadOneSeminar(eventPostcardId, actionInit.getActionId(), reqType, profileId, req.getParameter("sort"), roleId);
 				
 			} else if (ReqType.report == reqType && req.hasParameter("isCustomReport")) {
 				//need to load the list, then full details for each one.
-				List<DePuyEventSeminarVO> list = loadSeminarList(actionInit.getActionId(), reqType, profileId, null);
+				List<DePuyEventSeminarVO> list = loadSeminarList(actionInit.getActionId(), reqType, profileId, null, roleId);
 				List<DePuyEventSeminarVO> fullList = new ArrayList<>(list.size());
 				
 				//use a report object so we can apply filters in advance of loading more data
 				CustomReportVO rpt = new CustomReportVO(req);
 				for (DePuyEventSeminarVO sem: list) {
 					if (rpt.semPassesFilters(sem)) {
-						DePuyEventSeminarVO sem2 = loadOneSeminar(sem.getEventPostcardId(), actionInit.getActionId(), ReqType.report, null, null);
+						DePuyEventSeminarVO sem2 = loadOneSeminar(sem.getEventPostcardId(), actionInit.getActionId(), ReqType.report, null, null, roleId);
 						sem2.setRsvpCount(sem.getRsvpCount());
 						fullList.add(sem2);
 					}
@@ -180,7 +190,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 				//load the list of postcards (screen# 1)
 				Cookie c = req.getCookie("seminarSortType");
 				String sortType =  c != null ? c.getValue() : null;
-				data = loadSeminarList(actionInit.getActionId(), reqType, profileId, sortType);
+				data = loadSeminarList(actionInit.getActionId(), reqType, profileId, sortType, roleId);
 			}
 			
 		} catch (SQLException sqle) {
@@ -199,7 +209,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 	 * @return
 	 * @throws SQLException
 	 */
-	private List<DePuyEventSeminarVO> loadSeminarList(String actionGroupId, ReqType reqType, String profileId, String sortType) throws SQLException {
+	private List<DePuyEventSeminarVO> loadSeminarList(String actionGroupId, ReqType reqType, String profileId, String sortType, int roleId) throws SQLException {
 		final String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		Set<String> profileIds = new HashSet<String>();
 		Map<String, DePuyEventSeminarVO> mapData = new HashMap<>();
@@ -210,10 +220,10 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		sql.append("surgeon_nm, event_nm, city_nm, state_cd, status_flg, event_postcard_id, postcard_file_status_no, ");
 		sql.append("rsvp_no, [4] as 'hip', [5] as 'knee', [6] as 'shoulder', ");  //in a PIVOT, we're turning the data (values) into column headings.  hence the square brackets.
 		sql.append("quantity_no, upfront_fee_flg, postcard_cost_no, territory_no, "); 
-		sql.append("event_desc, language_cd, postcard_mail_dt ");
+		sql.append("event_desc, language_cd, postcard_mail_dt, product_id ");
 		sql.append("from (select e.event_entry_id, e.RSVP_CODE_TXT, e.start_dt, et.type_nm, ep.event_postcard_id, ");
 		sql.append("ep.PROFILE_ID, ep.postcard_file_status_no, s.surgeon_nm, e.event_nm, e.city_nm, ");
-		sql.append("e.state_cd, ep.status_flg, lxr.JOINT_ID, sum(rsvp.GUESTS_NO) as 'rsvp_no', ");
+		sql.append("e.state_cd, ep.status_flg, lxr.JOINT_ID, lxr.product_id, sum(rsvp.GUESTS_NO) as 'rsvp_no', ");
 		sql.append("ep.language_cd, ep.postcard_mail_dt, ");
 		sql.append("(ep.quantity_no+deap.postcard_qnty_no) as quantity_no, ep.upfront_fee_flg, ");
 		sql.append("ep.territory_no, ep.postcard_cost_no, cast(e.event_desc as varchar(500)) as event_desc ");
@@ -229,8 +239,9 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		sql.append("left outer join ").append(customDb).append("DEPUY_EVENT_SPECIALTY_XR lxr on ep.EVENT_POSTCARD_ID=lxr.EVENT_POSTCARD_ID ");
 		//sql.append("left outer join ").append(customDb).append("DEPUY_EVENT_COOP_AD cad on ep.EVENT_POSTCARD_ID=cad.EVENT_POSTCARD_ID and cad.ad_type_txt != 'radio' ");
 		sql.append("where sb.action_group_id=? ");
-		//--conditionally grab only the events this non-admin is affiliated with -- 
-		if (profileId != null) {
+		//--conditionally grab only the events this non-admin is affiliated with --
+		//but only for PUBLIC_REGISTERED_LEVEL, which is Joint Recon.  Mitek users can see all, but in read-only mode.
+		if (profileId != null && roleId != MITEK_READ_ONLY_ROLE) {
 			//this has to be a nested query to avoid duplicates in the RS - JM 03-28-14
 			sql.append("and (ep.event_postcard_id in (select event_postcard_id from ").append(customDb).append("DEPUY_EVENT_PERSON_XR where profile_id=?) or ");
 			sql.append("ep.profile_id=?) ");  //postcards I'm a part of (REPs & TGMs), or postcards that are mine (coordinators)
@@ -244,7 +255,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		}
 		sql.append("group by e.event_entry_id, ep.event_postcard_id, e.RSVP_CODE_TXT, e.start_dt, ");
 		sql.append("et.type_nm, ep.PROFILE_ID, ep.postcard_file_status_no, e.event_nm, s.surgeon_nm, ");
-		sql.append("e.city_nm, e.state_cd, ep.status_flg, lxr.JOINT_ID, ep.language_cd, ep.postcard_mail_dt, ");
+		sql.append("e.city_nm, e.state_cd, ep.status_flg, lxr.JOINT_ID, lxr.product_id, ep.language_cd, ep.postcard_mail_dt, ");
 		sql.append("ep.territory_no, ep.quantity_no, postcard_cost_no, upfront_fee_flg, postcard_qnty_no, cast(e.event_desc as varchar(500)) ");
 		sql.append(") baseQry ");
 		sql.append("pivot (count(joint_id) for joint_id in ([4],[5],[6])) as pvtQry "); //PIVOT is an implicit group-by
@@ -253,7 +264,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		log.debug(profileId);
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, actionGroupId);
-			if (profileId != null) {
+			if (profileId != null && roleId != MITEK_READ_ONLY_ROLE) {
 				ps.setString(2, profileId);
 				ps.setString(3, profileId);
 			}
@@ -268,6 +279,8 @@ public class PostcardSelectV2 extends SBActionAdapter {
 					   
 				} else {
 					vo = new DePuyEventSeminarVO().populateFromListRS(rs);
+					if (roleId == MITEK_READ_ONLY_ROLE)
+						vo.setReadOnly(!profileId.equals(vo.getProfileId()));
 					//set aside profileIds for the event owners, these will need to be retrieved from ProfileManager
 					profileIds.add(rs.getString("profile_id"));
 				}
@@ -332,7 +345,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 	 * @throws SQLException
 	 */
 	protected DePuyEventSeminarVO loadOneSeminar(String eventPostcardId, String actionGroupId, 
-			ReqType reqType, String profileId, String sortOrder) throws SQLException {
+			ReqType reqType, String profileId, String sortOrder, int roleId) throws SQLException {
 		final String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		Set<String> profileIds = new HashSet<String>();
 		DePuyEventSeminarVO vo = null;
@@ -351,7 +364,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		sql.append("left outer join ").append(customDb).append("DEPUY_EVENT_PERSON_XR pxr on ep.EVENT_POSTCARD_ID=pxr.EVENT_POSTCARD_ID ");
 		sql.append("where sb.action_group_id=? and ep.event_postcard_id=? ");
 		//--conditionally grab only the events this non-admin is affiliated with -- 
-		if (profileId != null) {
+		if (profileId != null && roleId != MITEK_READ_ONLY_ROLE) {
 			sql.append("and (pxr.PROFILE_ID=? or ep.PROFILE_ID=?) ");
 		}
 		log.debug(sql + "|" + actionGroupId + "|" + eventPostcardId + "|" + profileId);
@@ -359,15 +372,18 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, actionGroupId);
 			ps.setString(2, eventPostcardId);
-			if (profileId != null) {
+			if (profileId != null && roleId != MITEK_READ_ONLY_ROLE) {
 				ps.setString(3, profileId);
 				ps.setString(4, profileId);
 			}
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
+				log.debug("HERE");
 				if (vo == null) {
 					vo = new DePuyEventSeminarVO(rs);
 					vo.setProfileId(rs.getString("owner_profile_id"));
+					if (roleId == MITEK_READ_ONLY_ROLE)
+						vo.setReadOnly(!profileId.equals(vo.getProfileId()));
 					profileIds.add(vo.getProfileId());
 				}
 				//REP, TGM & ADV (approver) will need to be retrieved from ProfileManager
@@ -406,7 +422,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 			log.error("could not attach user profiles " + npe.getMessage());
 		}
 		
-		if (loadSurgeons(reqType)) {
+		if (loadSurgeons(reqType) && vo != null) {
 			try {
 				retrieveSurgeons(vo);
 			} catch (ActionException ae) {
@@ -415,7 +431,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		}
 		
 		//load CoopAds (newspaper & radio)
-		if (loadCoopAds(reqType)) {
+		if (loadCoopAds(reqType) && vo != null) {
 			try {
 				retrieveCoopAds(vo);
 			} catch (ActionException e) {
@@ -423,7 +439,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 			}
 		}
 		
-		if (loadConsignees(reqType)) {
+		if (loadConsignees(reqType) && vo != null) {
 			try {
 				retrieveConsignees(vo);
 			} catch (ActionException e) {
@@ -431,7 +447,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 			}
 		}
 		
-		if (loadLeads(reqType)) {
+		if (loadLeads(reqType) && vo != null) {
 			try {
 				retrieveLeads(vo, sortOrder);
 			} catch (ActionException e) {
