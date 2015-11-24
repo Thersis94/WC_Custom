@@ -118,6 +118,7 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 		headers.add("Photo URL");
 		headers.add("Joints");
 		headers.add("Hobbies");
+		headers.add("Surgeon Name");
 		headers.add("Had Surgery");
 		headers.add("Life Before");
 		headers.add("Turning Point");
@@ -217,6 +218,10 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 				sb.append(vo.getFieldById(PAFConst.OTHER_HOBBY_ID.getId()).getResponseText());
 			}
 			addCell(c++, sb.toString(), row);
+			
+			//Add Surgeon Name
+			String surgNm = (vo.getFieldById(PAFConst.SURGEON_NM.getId()) != null) ? vo.getFieldById(PAFConst.SURGEON_NM.getId()).getResponseText() : null;
+			addCell(c++, StringUtil.checkVal(surgNm), row);
 
 			//Add Has had Replacement
 			addCell(c++, vo.getFieldById(PAFConst.HAS_REPLACED_ID.getId()).getResponseText().replace("_", " "), row);
@@ -332,6 +337,10 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 			sb.append(vo.getFieldById(PAFConst.OTHER_HOBBY_ID.getId()).getResponseText());
 		}
 		addRow(r++, sb.toString(), sheet);
+		
+		//Add Surgeon Name
+		String surgNm = (vo.getFieldById(PAFConst.SURGEON_NM.getId()) != null) ? vo.getFieldById(PAFConst.SURGEON_NM.getId()).getResponseText() : null;
+		addRow(r++, StringUtil.checkVal(surgNm), sheet);
 
 		//Add Has had Replacement
 		addRow(r++, vo.getFieldById(PAFConst.HAS_REPLACED_ID.getId()).getResponseText(), sheet);
