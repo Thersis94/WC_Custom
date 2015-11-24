@@ -78,6 +78,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient("ksmith49@its.jnj.com");
+			mail.addCC("broides@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 			if (sem.getTgmEmail() != null && sem.getTgmEmail().length() > 0)
 				mail.addCC(sem.getTgmEmail().split(", "));
@@ -119,15 +120,12 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient("ksmith49@its.jnj.com"); // the DePuy intern in charge
+			mail.addCC("broides@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
-			if (postcard.getEarliestEventDate().after(Convert.formatDate(Convert.DATE_SLASH_PATTERN,"01/01/2016"))) {
-				mail.addCC("Justin.Reyes@umj3.com");
-				mail.addCC("Evan.Pring@umj3.com");
-				mail.addCC("lisav@metrosn.com");
-			} else {
-				mail.addCC("lisa.maiers@novusmediainc.com");
-			}
-			mail.addCC("Amy.Zimmerman@hmktgroup.com");
+			mail.addRecipient("Justin.Reyes@umj3.com");
+			mail.addRecipient("Evan.Pring@umj3.com");
+			mail.addRecipient("Amy.Zimmerman@hmktgroup.com");
+			mail.addRecipient("Anthony.Manning@hmktgroup.com");
 			mail.setSubject("DePuy Community Education; Postcard Canceled " + postcard.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
@@ -171,6 +169,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient("ksmith49@its.jnj.com");
+			mail.addCC("broides@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
@@ -235,15 +234,13 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(sem.getOwner().getEmailAddress());
 			mail.addCC("ksmith49@its.jnj.com");
+			mail.addCC("broides@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
+			mail.addCC("Justin.Reyes@umj3.com");
+			mail.addCC("Evan.Pring@umj3.com");
 			mail.addCC("Amy.Zimmerman@hmktgroup.com");
-			if (sem.getEarliestEventDate().after(Convert.formatDate(Convert.DATE_SLASH_PATTERN,"01/01/2016"))) {
-				mail.addCC("Justin.Reyes@umj3.com");
-				mail.addCC("Evan.Pring@umj3.com");
-				mail.addCC("lisav@metrosn.com");
-			} else {
-				mail.addCC("lisa.maiers@novusmediainc.com");
-			}
+			mail.addCC("Anthony.Manning@hmktgroup.com");
+			
 			for (PersonVO p : sem.getPeople()) { 
 				//add only the sales reps
 				if (p.getRoleCode() == Role.TGM)
@@ -302,6 +299,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient("ksmith49@its.jnj.com");
+			mail.addCC("broides@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 			mail.addCC(ownerEmail);
 			mail.setSubject(subject.toString());
@@ -338,6 +336,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(sem.getOwner().getEmailAddress());
 			mail.addCC("ksmith49@its.jnj.com");
+			mail.addCC("broides@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
@@ -375,8 +374,9 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			//mail.addRecipient("sterling.hoham@hmktgroup.com"); // Sterling Hoham
 			//mail.addCC("amy.zimmerman@hmktgroup.com");
 			mail.addRecipient("ksmith49@its.jnj.com");
-			mail.addCC(sem.getOwner().getEmailAddress());
+			mail.addCC("broides@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
+			mail.addCC(sem.getOwner().getEmailAddress());
 			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
@@ -416,15 +416,12 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(sem.getOwner().getEmailAddress());
 			mail.addCC("ksmith49@its.jnj.com");
+			mail.addCC("broides@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
+			mail.addCC("Justin.Reyes@umj3.com");
+			mail.addCC("Evan.Pring@umj3.com");
 			mail.addCC("Amy.Zimmerman@hmktgroup.com");
-			if (sem.getEarliestEventDate().after(Convert.formatDate(Convert.DATE_SLASH_PATTERN,"01/01/2016"))) {
-				mail.addCC("Justin.Reyes@umj3.com");
-				mail.addCC("Evan.Pring@umj3.com");
-				mail.addCC("lisav@metrosn.com");
-			} else {
-				mail.addCC("lisa.maiers@novusmediainc.com");
-			}
+			mail.addCC("Anthony.Manning@hmktgroup.com");
 			
 			for (PersonVO p : sem.getPeople()) {
 				if (! StringUtil.isValidEmail(p.getEmailAddress())) continue;
@@ -469,6 +466,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 		try{
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient("ksmith49@its.jnj.com");
+			mail.addCC("broides@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 			mail.setSubject("Postcard Declined - Seminar "+sem.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
@@ -508,6 +506,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			//Recipients
 			mail.addRecipient( sem.getOwner().getEmailAddress() );
 			mail.addCC( "ksmith49@its.jnj.com" );
+			mail.addCC("broides@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 			//set the email content
 			mail.setTextBody(msg.toString());
@@ -543,6 +542,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			
 			//Recipients
 			mail.addRecipient("ksmith49@its.jnj.com");
+			mail.addCC("broides@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 			mail.addCC(sem.getOwner().getEmailAddress());
 			
@@ -577,6 +577,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			//recipients
 			mail.addRecipient(sem.getOwner().getEmailAddress());
 			mail.addCC("ksmith49@its.jnj.com");
+			mail.addCC("broides@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 			
 			MessageSender mailer = new MessageSender(attributes,dbConn);
@@ -609,9 +610,10 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			//recipients
 			mail.addRecipient(sem.getOwner().getEmailAddress());
 			mail.addRecipient("ksmith49@its.jnj.com");
+			mail.addRecipient("broides@its.jnj.com");
 			mail.addRecipient("mroderic@its.jnj.com");
-//			mail.addCC("amy.zimmerman@hmktgroup.com");
-//			mail.addCC("sterling.hoham@hmktgroup.com");
+			mail.addCC("Amy.Zimmerman@hmktgroup.com");
+			mail.addCC("Anthony.Manning@hmktgroup.com");
 			
 			MessageSender mailer = new MessageSender(attributes,dbConn);
 			mailer.sendMessage(mail);
@@ -645,6 +647,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			
 			//recipients
 			mail.addRecipient("ksmith49@its.jnj.com");
+			mail.addRecipient("broides@its.jnj.com");
 			mail.addRecipient("mroderic@its.jnj.com");
 			
 			MessageSender mailer = new MessageSender(attributes,dbConn);
