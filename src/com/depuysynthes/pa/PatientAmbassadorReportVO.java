@@ -15,6 +15,7 @@ import com.depuysynthes.pa.PatientAmbassadorStoriesTool.PAFConst;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.data.DataContainer;
+import com.smt.sitebuilder.data.vo.FormFieldVO;
 import com.smt.sitebuilder.data.vo.FormTransactionVO;
 
 /****************************************************************************
@@ -135,14 +136,18 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 	}
 
 	/**
-	 * Helper method that adds a Cell to the given row.
+	 * Helper methods that adds a Cell to the given row.
 	 * @param cellPos
 	 * @param value
 	 * @param r
 	 */
+	private void addCell(int cellPos, FormFieldVO vo, Row r) {
+		String value = (vo != null) ? vo.getResponseText() : "";
+		addCell(cellPos,value,r);
+	}
 	private void addCell(int cellPos, String value, Row r) {
 		Cell cell = r.createCell(cellPos);
-		cell.setCellValue(value);
+		cell.setCellValue(StringUtil.checkVal(value));
 	}
 
 	/**
@@ -193,68 +198,64 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 			//Set Joints
 			StringBuilder sb = new StringBuilder();
 			int i = 0;
-			for(String s : vo.getFieldById(PAFConst.JOINT_ID.getId()).getResponses()) {
-				if(i > 0) sb.append(", ");
-				sb.append(s);
-				i++;
+			if (vo.getFieldById(PAFConst.JOINT_ID.getId()) != null) {
+				for(String s : vo.getFieldById(PAFConst.JOINT_ID.getId()).getResponses()) {
+					if(i > 0) sb.append(", ");
+					sb.append(s);
+					i++;
+				}
 			}
 			addCell(c++, sb.toString(), row);
 			i = 0;
 
 			//Set Hobbies
 			sb = new StringBuilder();
-			for(String s : vo.getFieldById(PAFConst.HOBBIES_ID.getId()).getResponses()) {
-				if(i > 0) sb.append(", ");
-				//Skip other, we'll add it later.
-				if(!s.equals("OTHER")) {
-					sb.append(s);
-					i++;
+			if (vo.getFieldById(PAFConst.HOBBIES_ID.getId()) != null) {
+				for (String s : vo.getFieldById(PAFConst.HOBBIES_ID.getId()).getResponses()) {
+					if (i > 0) sb.append(", ");
+					//Skip other, we'll add it later.
+					if (!s.equals("OTHER")) {
+						sb.append(s);
+						i++;
+					}
 				}
 			}
 
 			//Add Other Hobby if present.
-			if(vo.getFieldById(PAFConst.OTHER_HOBBY_ID.getId()).getResponseText().length() > 0 && StringUtil.checkVal(vo.getFieldById(PAFConst.OTHER_HOBBY_ID.getId()).getResponseText()).length() > 0) {
-				if(i > 0) sb.append(", ");
-				sb.append(vo.getFieldById(PAFConst.OTHER_HOBBY_ID.getId()).getResponseText());
+			String other = (vo.getFieldById(PAFConst.OTHER_HOBBY_ID.getId()) != null) ? vo.getFieldById(PAFConst.OTHER_HOBBY_ID.getId()).getResponseText() : "";
+			if (other != null && other.length() > 0) {
+				if (i > 0) sb.append(", ");
+				sb.append(other);
 			}
 			addCell(c++, sb.toString(), row);
 			
 			//Add Surgeon Name
-			String surgNm = (vo.getFieldById(PAFConst.SURGEON_NM.getId()) != null) ? vo.getFieldById(PAFConst.SURGEON_NM.getId()).getResponseText() : null;
-			addCell(c++, StringUtil.checkVal(surgNm), row);
+			addCell(c++, vo.getFieldById(PAFConst.SURGEON_NM.getId()), row);
 
 			//Add Has had Replacement
-			addCell(c++, vo.getFieldById(PAFConst.HAS_REPLACED_ID.getId()).getResponseText().replace("_", " "), row);
+			String response = (vo.getFieldById(PAFConst.HAS_REPLACED_ID.getId()) != null) ? vo.getFieldById(PAFConst.HAS_REPLACED_ID.getId()).getResponseText() : null;
+			addCell(c++, StringUtil.checkVal(response).replace("_", " "), row);
 
 			//Add Life Before
-			addCell(c++, vo.getFieldById(PAFConst.LIFE_BEFORE_ID.getId()).getResponseText(), row);
+			addCell(c++, vo.getFieldById(PAFConst.LIFE_BEFORE_ID.getId()), row);
 
 			//Add Turning Point
-			addCell(c++, vo.getFieldById(PAFConst.TURNING_POINT_ID.getId()).getResponseText(), row);
+			addCell(c++, vo.getFieldById(PAFConst.TURNING_POINT_ID.getId()), row);
 
 			//Add Life After
-			addCell(c++, vo.getFieldById(PAFConst.LIFE_AFTER_ID.getId()).getResponseText(), row);
+			addCell(c++, vo.getFieldById(PAFConst.LIFE_AFTER_ID.getId()), row);
 
 			//Add Advice
-			addCell(c++, vo.getFieldById(PAFConst.ADVICE_ID.getId()).getResponseText(), row);
+			addCell(c++, vo.getFieldById(PAFConst.ADVICE_ID.getId()), row);
 
 			//Add Story Title
-			if(vo.getFieldById(PAFConst.STORY_TITLE_ID.getId()) != null)
-				addCell(c++, vo.getFieldById(PAFConst.STORY_TITLE_ID.getId()).getResponseText(), row);
-			else
-				addCell(c++, "", row);
+			addCell(c++, vo.getFieldById(PAFConst.STORY_TITLE_ID.getId()), row);
 
 			//Add Story Text
-			if(vo.getFieldById(PAFConst.STORY_TEXT_ID.getId()) != null)
-				addCell(c++, vo.getFieldById(PAFConst.STORY_TEXT_ID.getId()).getResponseText(), row);
-			else
-				addCell(c++, "", row);
-
+			addCell(c++, vo.getFieldById(PAFConst.STORY_TEXT_ID.getId()), row);
+			
 			//Add Status Text
-			if(vo.getFieldById(PAFConst.STATUS_ID.getId()) != null)
-				addCell(c++, vo.getFieldById(PAFConst.STATUS_ID.getId()).getResponseText(), row);
-			else
-				addCell(c++, "", row);
+			addCell(c++, vo.getFieldById(PAFConst.STATUS_ID.getId()), row);
 
 			//Add Modal Opened Text
 			if(vo.getFieldById(PAFConst.MODAL_OPENED_ID.getId()) != null)
@@ -332,27 +333,27 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 		}
 
 		//Add Other Hobby if present.
-		if(vo.getFieldById(PAFConst.OTHER_HOBBY_ID.getId()).getResponses().size() > 0 && StringUtil.checkVal(vo.getFieldById(PAFConst.OTHER_HOBBY_ID.getId()).getResponseText()).length() > 0) {
-			if(i > 0) sb.append(", ");
-			sb.append(vo.getFieldById(PAFConst.OTHER_HOBBY_ID.getId()).getResponseText());
+		String other = (vo.getFieldById(PAFConst.OTHER_HOBBY_ID.getId()) != null) ? vo.getFieldById(PAFConst.OTHER_HOBBY_ID.getId()).getResponseText() : "";
+		if (other != null && other.length() > 0) {
+			if (i > 0) sb.append(", ");
+			sb.append(other);
 		}
 		addRow(r++, sb.toString(), sheet);
 		
 		//Add Surgeon Name
-		String surgNm = (vo.getFieldById(PAFConst.SURGEON_NM.getId()) != null) ? vo.getFieldById(PAFConst.SURGEON_NM.getId()).getResponseText() : null;
-		addRow(r++, StringUtil.checkVal(surgNm), sheet);
+		addRow(r++, vo.getFieldById(PAFConst.SURGEON_NM.getId()), sheet);
 
 		//Add Has had Replacement
-		addRow(r++, vo.getFieldById(PAFConst.HAS_REPLACED_ID.getId()).getResponseText(), sheet);
+		addRow(r++, vo.getFieldById(PAFConst.HAS_REPLACED_ID.getId()), sheet);
 
 		//Add Life Before
-		addRow(r++, vo.getFieldById(PAFConst.LIFE_BEFORE_ID.getId()).getResponseText(), sheet);
+		addRow(r++, vo.getFieldById(PAFConst.LIFE_BEFORE_ID.getId()), sheet);
 
 		//Add Turning Point
-		addRow(r++, vo.getFieldById(PAFConst.TURNING_POINT_ID.getId()).getResponseText(), sheet);
+		addRow(r++, vo.getFieldById(PAFConst.TURNING_POINT_ID.getId()), sheet);
 
 		//Add Life After
-		addRow(r++, vo.getFieldById(PAFConst.LIFE_AFTER_ID.getId()).getResponseText(), sheet);
+		addRow(r++, vo.getFieldById(PAFConst.LIFE_AFTER_ID.getId()), sheet);
 
 		//Add Advice
 		addRow(r++, vo.getFieldById(PAFConst.ADVICE_ID.getId()).getResponseText(), sheet);
@@ -389,18 +390,23 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 		
 		//Add agreed Consent Flag
 		addRow(r++, ((vo.getAcceptPrivacyFlg() == 1) ? "Yes" : "No"), sheet);
-
 	}
+	
+	
 
 	/**
-	 * Helper method for writing a pair of cells into a row.
+	 * Helper methods for writing a pair of cells into a row.
 	 * @param r
 	 * @param value
 	 * @param s
 	 */
+	private void addRow(int r, FormFieldVO vo, Sheet s) {
+		String value = (vo != null) ? vo.getResponseText() : "";
+		addRow(r,value,s);
+	}
 	private void addRow(int r, String value, Sheet s) {
 		Row row = s.createRow(r);
 		row.createCell(0).setCellValue(getHeaders().get(r));
-		row.createCell(1).setCellValue(value);
+		row.createCell(1).setCellValue(StringUtil.checkVal(value));
 	}
 }
