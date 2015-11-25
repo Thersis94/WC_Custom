@@ -26,6 +26,7 @@ import org.apache.solr.common.SolrDocumentList;
 // SMT Base Libs
 import com.depuysynthes.action.MediaBinAdminAction;
 import com.depuysynthes.action.MediaBinAssetVO;
+import com.depuysynthes.action.MediaBinDistChannels;
 import com.depuysynthes.action.MediaBinLinkAction;
 import com.depuysynthes.lucene.MediaBinSolrIndex;
 import com.depuysynthes.scripts.MediaBinDeltaVO.State;
@@ -664,13 +665,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		acceptedAssets.addAll(java.util.Arrays.asList(MediaBinAdminAction.PDF_ASSETS));
 
 		String tn = "", pkId = "";
-		String[] requiredOpCo = null;
-		if (type == 2) {
-			requiredOpCo = new String[]{ "INTDS.com" };
-		} else {
-			requiredOpCo = new String[]{ "USDS.com", "DSI.com" ,"DSHuddle.com" };
-		}
-
+		String[] requiredOpCo = MediaBinDistChannels.getDistChannels(type);
 		Map<String, MediaBinDeltaVO> records = new HashMap<>(data.size());
 
 		// Loop the list and parse out each map item for inserting into the db
