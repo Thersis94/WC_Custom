@@ -83,8 +83,8 @@ public class HuddleBriefcaseAction extends MyFavoritesAction {
 		}
 		
 		StringBuilder sql = new StringBuilder(275);
-		sql.append("SELECT * FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_MEDIABIN ");
-		sql.append("WHERE DPY_SYN_MEDIABIN_ID in ('skip' ");
+		sql.append("SELECT * FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("DPY_SYN_MEDIABIN WHERE DPY_SYN_MEDIABIN_ID in ('~' ");
 		for (int i=0; i<favs.size(); i++) sql.append(",?");
 		sql.append(")");
 		
@@ -109,7 +109,7 @@ public class HuddleBriefcaseAction extends MyFavoritesAction {
 	public void build(SMTServletRequest req) throws ActionException {
 		if (!validateKey(req.getParameter("key"))) throw new ActionException("Invalid APP key");
 		
-		if(req.hasParameter("insert")) {
+		if (req.hasParameter("insert")) {
 			UserDataVO user = ((UserDataVO)req.getSession().getAttribute(Constants.USER_DATA));
 			if (user == null) {
 				user = new UserDataVO();
@@ -145,7 +145,7 @@ public class HuddleBriefcaseAction extends MyFavoritesAction {
 			//TODO Implement global user checking
 			return req.getParameter("wwid");
 		}
-		throw new ActionException("No/Invalid user id provided.");
+		throw new ActionException("Invalid user id provided.");
 	}
 	
 	
@@ -160,7 +160,8 @@ public class HuddleBriefcaseAction extends MyFavoritesAction {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 	
 		StringBuilder sql = new StringBuilder(150);
-		sql.append("delete from PROFILE_FAVORITE where PROFILE_ID = ? and SITE_ID = ? and GROUPING_CD = ? and PROFILE_FAVORITE_ID in (-1");
+		sql.append("delete from PROFILE_FAVORITE where PROFILE_ID=? ");
+		sql.append("and SITE_ID=? and GROUPING_CD=? and PROFILE_FAVORITE_ID in (-1");
 		for (int i=0; i < assets.length; i++) sql.append(",?");
 		sql.append(") ");
 		log.debug(sql+"|"+user+"|"+site.getSiteId()+"|"+GROUP_CD);
