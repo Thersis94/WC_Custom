@@ -140,6 +140,7 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 			if (opCoList.contains("INTDS.com")) orgList.add("DPY_SYN_EMEA");
 			if (opCoList.contains("DSI.com")) orgList.add("DPY_SYN_INST");
 			if (opCoList.contains("USDS.com")) orgList.add("DPY_SYN");
+			if (opCoList.contains("DSHuddle.com")) orgList.add("DPY_SYN_HUDDLE");
 
 			//ensure click-to URLs bounce through our redirector for version control.  leading slash added by WC's View.
 			String fileNm = "&name=" + StringEncoder.urlEncode(vo.getFileNm());
