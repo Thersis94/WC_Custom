@@ -32,6 +32,8 @@ import com.siliconmtn.security.OAuth2Token;
 public class ShowpadApiUtil {
 
 	private OAuth2Token oauthUtil;
+	private final int READ_TIMEOUT = 60000; //1 minute
+	private final int WRITE_TIMEOUT = 120000; //2 minutes
 
 
 	/**
@@ -61,7 +63,7 @@ public class ShowpadApiUtil {
 	public HttpResponse executeGet(GenericUrl url) throws IOException {
 		Credential credential = new Credential(BearerToken.authorizationHeaderAccessMethod()).setAccessToken(oauthUtil.getToken().getAccessToken());
 		HttpRequestFactory requestFactory = OAuth2Token.transport.createRequestFactory(credential);
-		return requestFactory.buildGetRequest(url).execute();
+		return requestFactory.buildGetRequest(url).setReadTimeout(READ_TIMEOUT).execute();
 	}
 
 
@@ -77,7 +79,7 @@ public class ShowpadApiUtil {
 		HttpRequestFactory requestFactory = OAuth2Token.transport.createRequestFactory(credential);
 
 		HttpContent content = new UrlEncodedContent(params);
-		return requestFactory.buildPostRequest(new GenericUrl(url), content).execute().parseAsString();
+		return requestFactory.buildPostRequest(new GenericUrl(url), content).setReadTimeout(WRITE_TIMEOUT).execute().parseAsString();
 	}
 
 
@@ -117,7 +119,7 @@ public class ShowpadApiUtil {
 		if (linkHeader != null && linkHeader.length() > 0)
 			linkHeaders.set("Link", linkHeader);
 
-		return  requestFactory.buildPostRequest(gUrl, content).setHeaders(linkHeaders).execute().parseAsString();
+		return  requestFactory.buildPostRequest(gUrl, content).setReadTimeout(WRITE_TIMEOUT).setHeaders(linkHeaders).execute().parseAsString();
 	}
 
 
@@ -141,6 +143,6 @@ public class ShowpadApiUtil {
 	public HttpResponse executeDelete(GenericUrl url) throws IOException {
 		Credential credential = new Credential(BearerToken.authorizationHeaderAccessMethod()).setAccessToken(oauthUtil.getToken().getAccessToken());
 		HttpRequestFactory requestFactory = OAuth2Token.transport.createRequestFactory(credential);
-		return requestFactory.buildDeleteRequest(url).execute();
+		return requestFactory.buildDeleteRequest(url).setReadTimeout(WRITE_TIMEOUT).execute();
 	}
 }
