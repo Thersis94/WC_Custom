@@ -88,7 +88,7 @@ public class ThumbnailGenerator extends CommandLineUtil {
 		boolean loadHuddle = (props.getProperty("dsHuddle") != null);
 
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("select dpy_syn_mediabin_id, asset_nm from ");
+		sql.append("select tracking_no_txt, asset_nm from ");
 		sql.append(props.getProperty(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("DPY_SYN_MEDIABIN where ");
 		sql.append("lower(asset_type) in (?"); //loop all pdf types
