@@ -16,6 +16,7 @@ import net.sf.json.JSONObject;
 
 import com.depuysynthes.scripts.MediaBinDeltaVO.State;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.io.FileType;
 import com.siliconmtn.security.OAuth2TokenViaCLI;
 import com.siliconmtn.security.OAuth2TokenViaCLI.Config;
@@ -36,7 +37,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 
 	private ShowpadApiUtil showpadUtil;
-	private Map<String, String> showpadTags = new HashMap<>(500);
+	private Map<String, String> showpadTags = new HashMap<>(1000);
 	private Map<String, String> ticketQueue = new HashMap<>();
 
 	/**
@@ -75,7 +76,10 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 
 		//get a list of tags already at Showpad, so when we save the assets these are preloaded
 		loadShowpadTagList();
-
+		
+		//use only for de-duplication
+//		cleanupShowpadDups();
+		
 		super.run();
 	}
 
@@ -108,6 +112,45 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 		}
 
 		log.info("loaded " + showpadTags.size() + " showpad tags: " + showpadTags);
+	}
+	
+	
+	/**
+	 * removes duplicates from Showpad by looping the list of assets and 
+	 * maintaining a list of 'good' assets to keep
+	 */
+	protected void cleanupShowpadDups() {
+		Map<String, String> showpadAssets = new HashMap<>(5000);
+		String tagUrl = props.getProperty("showpadApiUrl") + "/assets.json?limit=100000&fields=id,name";
+		try {
+			String resp = showpadUtil.executeGet(tagUrl);
+			JSONObject json = JSONObject.fromObject(resp);
+			log.info(json);
+			JSONObject metaResp = json.getJSONObject("meta");
+			if (!"200".equals(metaResp.getString("code")))
+				throw new IOException(metaResp.getString("message"));
+
+			JSONObject response = json.getJSONObject("response");
+			JSONArray items = response.getJSONArray("items");
+			for (int x=0; x < items.size(); x++) {
+				JSONObject asset = items.getJSONObject(x);
+				String assetNm = asset.getString("name");
+				if (showpadAssets.containsKey(assetNm) || assetNm.startsWith(" ")) {
+					log.error("dup or blank start, deleting:" + assetNm);
+					String url = props.getProperty("showpadApiUrl") + "/assets/" + asset.getString("id") + ".json";
+					showpadUtil.executeDelete(url);
+				} else {
+					log.info("saving:" + assetNm);
+					showpadAssets.put(assetNm, asset.getString("id"));
+				}
+			}
+
+		} catch (IOException | NullPointerException ioe) {
+			failures.add(ioe);
+			log.error("could not load showpad assets", ioe);
+		}
+
+		log.info("loaded " + showpadAssets.size() + " showpad assets");
 	}
 
 	
@@ -144,7 +187,7 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 			String title = StringUtil.checkVal(vo.getTitleTxt(), vo.getFileNm());
 			title += " - " + vo.getTrackingNoTxt() + "." + fType.getFileExtension();
 			title = StringUtil.replace(title, "\"", ""); //remove double quotes, which break the JSON structure
-			title = StringUtil.replace(title, "/", "-"); //Showpad doesn't like slashes either, which look like directory structures
+			title = StringUtil.replace(title, "/", "-").trim(); //Showpad doesn't like slashes either, which look like directory structures
 			
 			boolean isShowpadUpdate = (vo.getShowpadId() != null && vo.getShowpadId().length() > 0); 
 
@@ -301,7 +344,8 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 	 */
 	private String findShowpadId(String fileName) {
 		String showpadId = null;
-		String findUrl = props.getProperty("showpadApiUrl") + "/assets.json?fields=id&limit=1&name=" + fileName;
+		//encode the file Name as a URL parameter, since this is a GET request
+		String findUrl = props.getProperty("showpadApiUrl") + "/assets.json?fields=id&limit=100&name=" + StringEncoder.urlEncode(fileName);
 		try {
 			String resp = showpadUtil.executeGet(findUrl);
 			JSONObject json = JSONObject.fromObject(resp);
@@ -316,7 +360,7 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 				JSONObject asset = items.getJSONObject(x);
 				//report duplicates
 				if (x>0) {
-					log.error("duplicate found!  delete " + asset.getString("id") + " in favor of " + showpadId);
+					log.fatal("duplicate found!  delete " + asset.getString("id") + " in favor of " + showpadId);
 				} else {
 					showpadId = asset.getString("id");
 				}
