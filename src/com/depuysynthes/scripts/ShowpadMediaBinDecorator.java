@@ -60,12 +60,14 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 				put(Config.KEYSTORE, "showpad");
 			}}, Arrays.asList(props.getProperty("showpadScopes").split(","))));
 	}
+	
 
 	public static void main(String[] args) throws Exception {
 		//Create an instance of the MedianBinImporter
 		ShowpadMediaBinDecorator dmb = new ShowpadMediaBinDecorator(args);
 		dmb.run();
 	}
+	
 
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.util.CommandLineUtil#run()
@@ -77,8 +79,16 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 		//get a list of tags already at Showpad, so when we save the assets these are preloaded
 		loadShowpadTagList();
 		
-		//use only for de-duplication
-//		cleanupShowpadDups();
+//		Map<String,MediaBinDeltaVO> records = loadManifest();
+//		Set<String> assetNames = new HashSet<>(records.size());
+//		Set<String> localShowpadIds = new HashSet<>(records.size());
+//		for (MediaBinDeltaVO vo : records.values()) {
+//			assetNames.add(makeShowpadAssetName(vo, new FileType(vo.getFileNm())));
+//			if (vo.getShowpadId() != null) localShowpadIds.add(vo.getShowpadId());
+//		}
+//		
+//		//use only for de-duplication
+//		cleanupShowpadDups(assetNames, localShowpadIds);
 		
 		super.run();
 	}
@@ -119,8 +129,10 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 	 * removes duplicates from Showpad by looping the list of assets and 
 	 * maintaining a list of 'good' assets to keep
 	 */
-	protected void cleanupShowpadDups() {
+	protected void cleanupShowpadDups(Set<String> assetNames, Set<String> localShowpadIds) {
 		Map<String, String> showpadAssets = new HashMap<>(5000);
+		
+		//NOTE: THIS WILL INCLUDE SHOWPAD ASSETS IN THE TRASH! 
 		String tagUrl = props.getProperty("showpadApiUrl") + "/assets.json?limit=100000&fields=id,name";
 		try {
 			String resp = showpadUtil.executeGet(tagUrl);
@@ -139,9 +151,15 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 					log.error("dup or blank start, deleting:" + assetNm);
 					String url = props.getProperty("showpadApiUrl") + "/assets/" + asset.getString("id") + ".json";
 					showpadUtil.executeDelete(url);
+				} else if (!assetNames.contains(assetNm)) {
+					//delete from Showpad - files that shouldn't be there
+					log.info("deleting rogue asset: " + assetNm + " id=" + asset.getString("id"));
+					String url = props.getProperty("showpadApiUrl") + "/assets/" + asset.getString("id") + ".json";
+					showpadUtil.executeDelete(url);
 				} else {
 					log.info("saving:" + assetNm);
 					showpadAssets.put(assetNm, asset.getString("id"));
+					localShowpadIds.remove(asset.getString("id"));
 				}
 			}
 
@@ -149,6 +167,10 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 			failures.add(ioe);
 			log.error("could not load showpad assets", ioe);
 		}
+
+		log.info("need to delete " + localShowpadIds.size() + " showpad records");
+		for (String s : localShowpadIds)
+			System.err.println("'" + s + "',");
 
 		log.info("loaded " + showpadAssets.size() + " showpad assets");
 	}
@@ -182,13 +204,9 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 			if (s == State.Failed || s == State.Delete ||  (s == State.Ignore && vo.getShowpadId() != null))
 				continue;
 			
-			FileType fType = new FileType(vo.getFileNm());
 			Map<String, String> params = new HashMap<>();
-			String title = StringUtil.checkVal(vo.getTitleTxt(), vo.getFileNm());
-			title += " - " + vo.getTrackingNoTxt() + "." + fType.getFileExtension();
-			title = StringUtil.replace(title, "\"", ""); //remove double quotes, which break the JSON structure
-			title = StringUtil.replace(title, "/", "-").trim(); //Showpad doesn't like slashes either, which look like directory structures
-			
+			FileType fType = new FileType(vo.getFileNm());
+			String title = makeShowpadAssetName(vo, fType);
 			boolean isShowpadUpdate = (vo.getShowpadId() != null && vo.getShowpadId().length() > 0); 
 
 			if (isShowpadUpdate) { //send as an 'update' to Showpad
@@ -285,6 +303,14 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 	}
 	
 	
+	private String makeShowpadAssetName(MediaBinDeltaVO vo, FileType fType ) {
+		String title = StringUtil.checkVal(vo.getTitleTxt(), vo.getFileNm());
+		title += " - " + vo.getTrackingNoTxt() + "." + fType.getFileExtension();
+		title = StringUtil.replace(title, "\"", ""); //remove double quotes, which break the JSON structure
+		title = StringUtil.replace(title, "/", "-").trim(); //Showpad doesn't like slashes either, which look like directory structures
+		
+		return title;
+	}
 	
 	/**
 	 * runs a loop around the ticket queue checking for status changes.  Returns only
