@@ -3,7 +3,6 @@ package com.sas.util;
 // JDK 1.6.x
 import java.util.Map;
 
-
 // SMT Base Libs
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.security.AbstractLoginModule;
@@ -138,5 +137,4 @@ public class SASLoginModule extends AbstractLoginModule {
 			throws AuthenticationException {
 		return null;
 	}
-
 }
