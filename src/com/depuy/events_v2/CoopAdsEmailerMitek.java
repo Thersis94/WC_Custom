@@ -57,17 +57,13 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient("ksmith49@its.jnj.com");
-			mail.addRecipient("amy.zimmerman@hmktgroup.com");
 			mail.addCC("mroderic@its.jnj.com");
-//			mail.addCC("Sterling.Hoham@hmktgroup.com");
-			if (sem.getEarliestEventDate().after(Convert.formatDate(Convert.DATE_SLASH_PATTERN,"01/01/2016"))) {
-				mail.addCC("Justin.Reyes@umj3.com");
-				mail.addCC("Evan.Pring@umj3.com");
-				mail.addCC("lisav@metrosn.com");
-			} else {
-				mail.addCC("lisa.maiers@novusmediainc.com");
-			}
-
+			mail.addCC("broides@its.jnj.com");
+			mail.addRecipient("Amy.Zimmerman@hmktgroup.com");
+			mail.addRecipient("Anthony.Manning@hmktgroup.com");
+			mail.addRecipient("Justin.Reyes@umj3.com");
+			mail.addRecipient("Evan.Pring@umj3.com");
+			
 			mail.setSubject(label + " Ad #" + cnt + " declined for Seminar " + sem.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
@@ -106,6 +102,7 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(sem.getOwner().getEmailAddress());
 			mail.addCC("mroderic@its.jnj.com");
+			mail.addCC("broides@its.jnj.com");
 			mail.addCC("ksmith49@its.jnj.com");
 			mail.setSubject(((isOnline) ? "Online" : "Newspaper") + " Options - Seminar " + sem.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
@@ -143,15 +140,12 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			//mail.addRecipient("amy.zimmerman@hmktgroup.com");
+			mail.addRecipient("Amy.Zimmerman@hmktgroup.com");
+			mail.addRecipient("Anthony.Manning@hmktgroup.com");
 			mail.addCC("ksmith49@its.jnj.com");
+			mail.addCC("broides@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
-			//mail.addCC("Sterling.Hoham@hmktgroup.com");
-			//if (! isCFSEM ){ //Additional recipients for DePuy Funded events
-				//mail.addRecipient("lisa.maiers@novusmediainc.com");
-				//mail.addCC("anna.schwanz@novusmediainc.com");
-				//mail.addCC("taylor.larson@novusmediainc.com");
-			//}
+
 			mail.setSubject(((isOnline) ? "Online" : "Newspaper") + " Options Confirmed - Seminar " + sem.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
@@ -188,6 +182,7 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(sem.getOwner().getEmailAddress());
 			mail.addCC("mroderic@its.jnj.com");
+			mail.addCC("broides@its.jnj.com");
 			mail.addCC("ksmith49@its.jnj.com");
 
 			for (PersonVO p : sem.getPeople()) {
@@ -211,26 +206,6 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 		}
 	}
 
-	/* Replacing this method with one that adds business days instead of days, to avoid 
-	 * odd results (i.e. Fri 12/5/2014 + 3 business days should be Wed 12/10/2014
-	 * instead of Mon 12/8/2014.  -Wingo 12/5/14
-	 * 
-	 * simple date wrapper that adds business days to today + #days passed.
-	 * works around weekends.
-	 * @param addDaysToToday
-	 * @return
-	private Date addBusinessDays(int addDaysToToday) {
-		Calendar cal = Calendar.getInstance();
-		cal.add(Calendar.DATE, addDaysToToday); // give them 5 days from today to approve the Ad
-		
-		// do not allow the deadline to fall on a weekend
-		if (cal.get(Calendar.DAY_OF_WEEK) == 7)
-			cal.add(Calendar.DATE, 2); // Saturday
-		else if (cal.get(Calendar.DAY_OF_WEEK) == 1)
-			cal.add(Calendar.DATE, 1); // Sunday
-	
-		return cal.getTime();
-	}*/
 	
 	public void requestAdApprovalOfConsignee(DePuyEventSeminarVO sem, SiteVO site, boolean isHospital) {
 		EventEntryVO event = sem.getEvents().get(0);
@@ -266,6 +241,7 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(consignee.getEmail());
 			mail.addBCC("ksmith49@its.jnj.com");
+			mail.addBCC("broides@its.jnj.com");
 			mail.addBCC("mroderic@its.jnj.com");
 			mail.addCC(sem.getOwner().getEmailAddress());
 			mail.setSubject("Approval Required: Promotion for Seminar #" + sem.getRSVPCodes());
@@ -307,26 +283,14 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			if (! isCFSEM ){ //different recipients for DePuy Funded events
-				//mail.addRecipient("amy.zimmerman@hmktgroup.com");
-				if (sem.getEarliestEventDate().after(Convert.formatDate(Convert.DATE_SLASH_PATTERN,"01/01/2016"))) {
-					mail.addCC("Justin.Reyes@umj3.com");
-					mail.addCC("Evan.Pring@umj3.com");
-					mail.addCC("lisav@metrosn.com");
-				} else {
-					mail.addCC("lisa.maiers@novusmediainc.com");
-				}
-				//mail.addCC("Sterling.Hoham@hmktgroup.com");
-				mail.addCC(sem.getOwner().getEmailAddress());
-				mail.addCC("ksmith49@its.jnj.com");
-				mail.addCC("mroderic@its.jnj.com");
-			} else {
-				//CFSEM recipients
-//				mail.addRecipient("amy.zimmerman@hmktgroup.com");
-//				mail.addCC("ksmith49@its.jnj.com");
-//				mail.addCC("mroderic@its.jnj.com");
-//				mail.addCC("Sterling.Hoham@hmktgroup.com");
-			}
+			mail.addRecipient("Amy.Zimmerman@hmktgroup.com");
+			mail.addRecipient("Anthony.Manning@hmktgroup.com");
+			mail.addRecipient("Justin.Reyes@umj3.com");
+			mail.addRecipient("Evan.Pring@umj3.com");
+			mail.addCC(sem.getOwner().getEmailAddress());
+			mail.addCC("ksmith49@its.jnj.com");
+			mail.addCC("broides@its.jnj.com");
+			mail.addCC("mroderic@its.jnj.com");
 			
 			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
@@ -361,7 +325,7 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 	public void notifyNovusUpload( DePuyEventSeminarVO sem, SiteVO site ){
 		//Message body
 		StringBuilder msg = new StringBuilder(250);
-		msg.append("Novus has uploaded all Newspaper Advertising options into ");
+		msg.append("J3 has uploaded all Newspaper Advertising options into ");
 		msg.append("the portal for Seminar #").append(sem.getRSVPCodes()).append(". ");
 		msg.append("Detailed information is now available for Harmony to begin ");
 		msg.append("ad creation.\r\r");
@@ -375,17 +339,21 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
-			mail.addCC("Amy.Zimmerman@hmktgroup.com");
+			mail.addRecipient("Amy.Zimmerman@hmktgroup.com");
+			mail.addRecipient("Anthony.Manning@hmktgroup.com");
 			mail.addCC("ksmith49@its.jnj.com");
+			mail.addCC("broides@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
+			mail.addCC("Justin.Reyes@umj3.com");
+			mail.addCC("Evan.Pring@umj3.com");
 			mail.setTextBody(msg.toString());
 			
 			//Send message
 			MessageSender ms = new MessageSender(attributes, dbConn);
 			ms.sendMessage(mail);
-			log.debug("Novus Upload Notification Sent");
+			log.debug("J3 Upload Notification Sent");
 		} catch (Exception e){
-			log.error("Novus Upload Mailer", e);
+			log.error("J3 Upload Mailer", e);
 		}
 	}
 
@@ -404,19 +372,15 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			mail.setSubject("Newspaper Advertising Placement Confirmation - Seminar "+sem.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
-			
-			mail.addRecipient("ksmith49@its.jnj.com");
-			mail.addRecipient("mroderic@its.jnj.com");
+
 			mail.addRecipient(sem.getOwner().getEmailAddress());
-//			mail.addCC("amy.zimmerman@hmktgroup.com");
-//			mail.addCC("Sterling.Hoham@hmktgroup.com");
-			if (sem.getEarliestEventDate().after(Convert.formatDate(Convert.DATE_SLASH_PATTERN,"01/01/2016"))) {
-				mail.addCC("Justin.Reyes@umj3.com");
-				mail.addCC("Evan.Pring@umj3.com");
-				mail.addCC("lisav@metrosn.com");
-			} else {
-				mail.addCC("lisa.maiers@novusmediainc.com");
-			}
+			mail.addRecipient("ksmith49@its.jnj.com");
+			mail.addCC("broides@its.jnj.com");
+			mail.addCC("mroderic@its.jnj.com");
+			mail.addCC("amy.zimmerman@hmktgroup.com");
+			mail.addCC("Anthony.Manning@hmktgroup.com");
+			mail.addCC("Justin.Reyes@umj3.com");
+			mail.addCC("Evan.Pring@umj3.com");
 			
 			MessageSender sender = new MessageSender(attributes,dbConn);
 			sender.sendMessage(mail);
