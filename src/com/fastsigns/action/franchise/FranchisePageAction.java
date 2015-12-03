@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+
 //WC customs
 import com.fastsigns.action.approval.WebeditApprover;
 import com.fastsigns.action.approval.WebeditApprover.WebeditType;
@@ -29,6 +30,7 @@ import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.io.FileWriterException;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.RandomAlphaNumeric;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.siliconmtn.util.databean.FilePartDataBean;
@@ -643,7 +645,8 @@ public class FranchisePageAction extends SBActionAdapter {
 			ps = dbConn.prepareStatement(sql.toString());
 			for(String itemId : selected) {
 				CenterModuleOptionVO opt = options.get(itemId);
-				ps.setString(1, franId + "_" + itemId);
+
+				ps.setString(1, RandomAlphaNumeric.generateRandom(8, true) + "_" + itemId);
 				ps.setString(2, albumId);
 				ps.setString(3, opt.getFilePath());
 				ps.setString(4, opt.getThumbPath());
@@ -656,7 +659,7 @@ public class FranchisePageAction extends SBActionAdapter {
 			}
 			ps.executeBatch();
 		} catch (SQLException sqle){
-			log.error("Could not delete old photo items", sqle);
+			log.error("Could not insert photo items", sqle);
 		}
 		this.clearCacheByActionId(actionId);
 
