@@ -635,6 +635,9 @@ public class FranchisePageAction extends SBActionAdapter {
 		} catch (SQLException sqle){
 			log.error("Could not delete old photo items", sqle);
 		}
+		
+		UUIDGenerator uuid = new UUIDGenerator();
+		
 		//iterate and add new
 		sql = new StringBuilder(100);
 		sql.append("insert into FILE_GALLERY_ITEM (GALLERY_ITEM_ID, ");
@@ -646,7 +649,7 @@ public class FranchisePageAction extends SBActionAdapter {
 			for(String itemId : selected) {
 				CenterModuleOptionVO opt = options.get(itemId);
 
-				ps.setString(1, RandomAlphaNumeric.generateRandom(8, true) + "_" + itemId);
+				ps.setString(1, uuid.getUUID());
 				ps.setString(2, albumId);
 				ps.setString(3, opt.getFilePath());
 				ps.setString(4, opt.getThumbPath());
