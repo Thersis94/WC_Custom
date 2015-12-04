@@ -1,6 +1,7 @@
 package com.depuysynthes.ifu;
 
 import com.siliconmtn.action.ActionException;
+import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.StringUtil;
@@ -33,6 +34,14 @@ public class IFUFacadeAction extends SimpleActionAdapter {
 	 **/
 	private enum ActionType {
 		technique, instance, ifu; 
+	}
+
+	public IFUFacadeAction(ActionInitVO actionInit) {
+		super(actionInit);
+	}
+
+	public IFUFacadeAction() {
+		super();
 	}
 
 	public void list(SMTServletRequest req) throws ActionException {
