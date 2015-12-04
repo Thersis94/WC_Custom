@@ -621,7 +621,6 @@ public class FranchisePageAction extends SBActionAdapter {
 		String [] selected = req.getParameterValues("selectedElements");
 		String actionId = ((SiteVO)req.getAttribute("siteData")).getOrganizationId() + "_GALLERY_" + CenterPageAction.getFranchiseId(req);
 		String albumId = req.getParameter("galleryAlbumId");
-		String franId = CenterPageAction.getFranchiseId(req);
 		PreparedStatement ps = null;
 		
 		//Delete existing
@@ -635,9 +634,7 @@ public class FranchisePageAction extends SBActionAdapter {
 		} catch (SQLException sqle){
 			log.error("Could not delete old photo items", sqle);
 		}
-		
-		UUIDGenerator uuid = new UUIDGenerator();
-		
+			
 		//iterate and add new
 		sql = new StringBuilder(100);
 		sql.append("insert into FILE_GALLERY_ITEM (GALLERY_ITEM_ID, ");
