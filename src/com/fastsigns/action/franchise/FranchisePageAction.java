@@ -649,7 +649,7 @@ public class FranchisePageAction extends SBActionAdapter {
 			for(String itemId : selected) {
 				CenterModuleOptionVO opt = options.get(itemId);
 
-				ps.setString(1, uuid.getUUID());
+				ps.setString(1, RandomAlphaNumeric.generateRandom(8, true) + "_" + itemId);
 				ps.setString(2, albumId);
 				ps.setString(3, opt.getFilePath());
 				ps.setString(4, opt.getThumbPath());
