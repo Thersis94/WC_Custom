@@ -211,6 +211,7 @@ public class NexusKitAction extends SBActionAdapter {
 					NexusKitLayerVO tray = new NexusKitLayerVO();
 					tray.setLayerId(new UUIDGenerator().getUUID());
 					tray.setLayerName("Primary Tray");
+					tray.setOrderNo(1);
 					newKit.addLayer(tray);
 					req.getSession().setAttribute(KIT_SESSION_NM, newKit);
 					break;
