@@ -236,7 +236,7 @@ public class ReportBuilder extends SBActionAdapter {
 			if ((start != null && eDate.before(start)) || (end != null && eDate.after(end))) continue;
 
 			try {
-				DePuyEventSeminarVO semFull  = (DePuyEventSeminarVO) retriever.loadOneSeminar(sem.getEventPostcardId(), actionId, ReqType.report , null, null);
+				DePuyEventSeminarVO semFull  = (DePuyEventSeminarVO) retriever.loadOneSeminar(sem.getEventPostcardId(), actionId, ReqType.report , null, null, -1);
 				semFull.setRsvpCount(sem.getRsvpCount()); //this only gets set on the initial query, not the detailed lookup
 				finalData.add(semFull);
 			} catch (SQLException e) {

@@ -87,6 +87,8 @@ public class SJMContactPostProcessorAction extends SimpleActionAdapter {
     	c0a802281bda5ce6b55e6589832dbcf8("PowerOverYourPain (Spanish) Information Kit Request"),
     	c0a80237cad8198bf3a74c321b39949("PoderSobreSuDolor Information Kit Request"),
     	c0a8024121202bfe526d209c678fdd5b("Patient Ambassador Request Form (Field)");
+
+    	//7f0001015d35a74de00888b1696af16f
     	
     	// enum 'class' constructor
     	private SJMFormId(String name) {
@@ -145,7 +147,7 @@ public class SJMContactPostProcessorAction extends SimpleActionAdapter {
 	 */
 	private void postProcess(SMTServletRequest req, SJMFormId form)
 	throws ActionException {
-		
+		log.debug("Starting post processing");
 		List<String> mailTo = new ArrayList<String>();
 		
 		// capture the 'default' administrative email address(es) in case we need it/them
@@ -158,8 +160,16 @@ public class SJMContactPostProcessorAction extends SimpleActionAdapter {
 			case c0a8022834e40d1b8e531bc0e370fc60: //Contact Us: POYP
 			case c0a80237d934c65240bb374eb2791e57: //Contact Us: POYP2
 			case c0a80228d7b30e0f59cf59d3fffdfc22: //Info Kit: POYP/POYP2
-				boolean i18n = false;
 				
+				//Build email message for after contact submission
+				if(form.equals(SJMFormId.c0a80228d7b30e0f59cf59d3fffdfc22)){
+					POYPContactPPAction poyp = new POYPContactPPAction(this.actionInit);
+					poyp.setAttributes(attributes);
+					poyp.setDBConnection(dbConn);
+					poyp.build(req);
+				}
+				
+				boolean i18n = false;			
 				// if 'outside US' field was selected, email to specific person
 				if (StringUtil.checkVal(req.getParameter("con_c0a80237fbf824eca619c81bfd7a208a")).length() > 0) {
 					addRecipient(mailTo,new String[]{"laura.gasch@sjmneuro.com"});
@@ -185,6 +195,7 @@ public class SJMContactPostProcessorAction extends SimpleActionAdapter {
 						}
 					}
 				}
+				
 				break;
 				
 			// US-Spanish language form
@@ -217,7 +228,9 @@ public class SJMContactPostProcessorAction extends SimpleActionAdapter {
 			default:
 				addRecipient(mailTo, defaultRcpts);
 				break;
+				
 		}
+		
 		// send email
 		this.sendEmail(req, form, mailTo);
 	}

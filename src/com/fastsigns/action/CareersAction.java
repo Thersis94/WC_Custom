@@ -1,5 +1,6 @@
 package com.fastsigns.action;
 
+//java 7
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -9,12 +10,15 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+//SMT Base Libs
 import com.fastsigns.action.vo.CareersVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
+
+//WebCrescendo 
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.SBModuleVO;
 import com.smt.sitebuilder.action.contact.ContactFacadeAction;
@@ -23,6 +27,22 @@ import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
+
+/****************************************************************************
+ * <b>Title</b>: CareerAction.java <p/>
+ * <b>Project</b>: SB_FastSigns <p/>
+ * <b>Description: </b> This class retrieves all career entries were created in 
+ * 		the last 3 weeks that are approved for viewing and puts them in a list for 
+ * 		the view. 
+ * <p/>
+ * <b>Copyright:</b> Copyright (c) 2011<p/>
+ * <b>Company:</b> Silicon Mountain Technologies<p/>
+ * @author ?
+ * @version 1.0
+ * @since Oct, 22 2015<p/>
+ * <b>Changes: Oct, 22 2015 Ryan Riker changed the order in which the dates are 
+ * ordered. </b>
+ ****************************************************************************/
 
 public class CareersAction extends SBActionAdapter {
 
@@ -58,7 +78,7 @@ public class CareersAction extends SBActionAdapter {
 		Map<String, List<CareersVO>> postings = new LinkedHashMap<String, List<CareersVO>>();
 		super.retrieve(req);
 		String orgId;
-		SiteVO site = (SiteVO) req.getAttribute("siteData");
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		boolean isPreview = page.isPreviewMode();
 		if (site != null) {
@@ -70,7 +90,7 @@ public class CareersAction extends SBActionAdapter {
 		}
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		log.debug(mod.getAttribute(ModuleVO.ATTRIBUTE_1));
-		StringBuilder sb = new StringBuilder();
+		StringBuilder sb = new StringBuilder(330);
 		sb.append("select a.*, b.LOCATION_NM, b.STATE_CD, b.CITY_NM, b.ATTRIB2_TXT from ");
 		sb.append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sb.append("FTS_JOB_POSTING a left outer join DEALER_LOCATION b on a.FRANCHISE_ID = b.DEALER_LOCATION_ID ");
@@ -84,7 +104,7 @@ public class CareersAction extends SBActionAdapter {
 				sb.append("ACTIVE_JOB_FLG = 1 ");
 			}
 		}
-		sb.append("order by JOB_POST_DT");
+		sb.append("order by JOB_POST_DT DESC");
 		PreparedStatement ps = null;
 		log.debug(sb + " | " + orgId);
 		List<CareersVO> centerCareers = new ArrayList<CareersVO>();

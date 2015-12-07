@@ -180,6 +180,7 @@ public class MetroAction extends SBActionAdapter {
 		} else {			
 			// Get the data
 			MetroContainerVO mcvo = this.getLocations(req, metroAlias, isLST);
+			shortCircuitMetro(req, mcvo );
 			mcvo.setMapData(this.getMapData(mcvo));
 			req.setAttribute("mapAltData", null);
 			mcvo.setProductPages(mpa.getProductPages(mcvo.getMetroAreaId(), false, null));
@@ -416,6 +417,7 @@ public class MetroAction extends SBActionAdapter {
 	private void updateMetroInfo(SMTServletRequest req) throws SQLException {
 		log.debug("Updating Metro Info");
 		String metroAreaId = StringUtil.checkVal(req.getParameter("metroAreaId")); 
+		String bypassMap = StringUtil.checkVal(req.getParameter("bypassMap"));
 		StringBuilder s = new StringBuilder();
 		String customDb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		log.debug("Location ID: " + metroAreaId + "|" + req.getParameter("latitude"));
@@ -427,14 +429,14 @@ public class MetroAction extends SBActionAdapter {
 			s.append("area_nm, image_path_url, area_desc, area_lst_flg, ");
 			s.append("latitude_no, longitude_no, title_txt, meta_keyword_txt, ");
 			s.append("meta_desc_txt, area_alias_nm, create_dt, communities_txt, locality_txt, ");
-			s.append("country_cd, map_zoom_no, metro_area_id) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+			s.append("country_cd, map_zoom_no, bypass_map_flg, metro_area_id) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 		} else {
 			s.append("update ").append(customDb).append("fts_metro_area set area_nm = ?, ");
 			s.append("image_path_url = ?, area_desc = ?, area_lst_flg = ?, ");
 			s.append("latitude_no = ?, longitude_no = ?, title_txt = ?, ");
 			s.append("meta_keyword_txt = ?, meta_desc_txt = ?, area_alias_nm = ?, ");
 			s.append("update_dt = ?, communities_txt = ?, locality_txt = ?, ");
-			s.append("country_cd=?, map_zoom_no = ? where metro_area_id = ? ");
+			s.append("country_cd=?, map_zoom_no = ?, bypass_map_flg=? where metro_area_id = ?");
 		}
 		log.debug("Metro Area Update SQL: " + s + "|" + req.getParameter("imagePath"));
 		PreparedStatement ps = null;
@@ -456,7 +458,9 @@ public class MetroAction extends SBActionAdapter {
 			ps.setString(13, req.getParameter("locality"));
 			ps.setString(14, req.getParameter("country"));
 			ps.setInt(15, Convert.formatInteger(req.getParameter("mapZoomNo")));
-			ps.setString(16, metroAreaId);
+			ps.setString(16, bypassMap);
+			ps.setString(17, metroAreaId);
+			
 			
 			ps.executeUpdate();
 			
@@ -980,6 +984,20 @@ public class MetroAction extends SBActionAdapter {
 		log.debug("Metro Area SQL: " + s + "|" + alias + "|");
 		
 		return s.toString();
+	}
+	
+	/**
+	 * This method allows us to short circuit the metro process and send a response 
+	 * directly to a centers page.
+	 * @param req
+	 * @param metroAlias
+	 * @param orgId 
+	 * @param mcvo 
+	 */
+	private void shortCircuitMetro(SMTServletRequest req, MetroContainerVO mcvo) {
+		if (mcvo.getBypassMapFlag() == 1 && mcvo.getResults().size() == 1) {
+			super.sendRedirect("/" + mcvo.getResults().get(0).getDealerLocationId(), null, req);
+		}
 	}
 	
 }
