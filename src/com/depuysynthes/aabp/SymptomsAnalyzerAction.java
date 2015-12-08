@@ -9,8 +9,11 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.action.SBModuleVO;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -46,6 +49,21 @@ public class SymptomsAnalyzerAction extends SimpleActionAdapter {
 	 */
 	public SymptomsAnalyzerAction(ActionInitVO init) {
 		super(init);
+	}
+
+	public void list(SMTServletRequest req) throws ActionException {
+		super.retrieve(req);
+	}
+	
+	/**
+	 * Helper method that builds the Symptoms Analyzer List Query.
+	 * @return
+	 */
+	private String getSymtAnlList() {
+		StringBuilder sql = new StringBuilder(50);
+		sql.append("select * from SB_ACTION where ACTION_ID = ?");
+		
+		return sql.toString();
 	}
 
 	public void retrieve(SMTServletRequest req) {
