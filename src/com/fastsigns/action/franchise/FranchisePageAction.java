@@ -202,12 +202,10 @@ public class FranchisePageAction extends SBActionAdapter {
 					if (req.getParameter("parentPath").isEmpty())
 						req.setParameter("parentPath", slashAppender.toString());
 					
-					if (!req.getParameter("aliasName").substring(0, 1).equals("/")){
-						slashAppender.append(req.getParameter("aliasName"));
+					slashAppender.append(req.getParameter("aliasName"));
 					
-						if (req.getParameter("externalPageUrl").isEmpty())
-							req.setParameter("externalPageUrl", slashAppender.toString());
-					}
+					if (req.getParameter("externalPageUrl").isEmpty())
+						req.setParameter("externalPageUrl", slashAppender.toString());
 					
 					this.savePage(req);
 					if("gallery".equals(req.getParameter("pageNm"))){
