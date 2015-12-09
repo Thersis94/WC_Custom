@@ -185,7 +185,8 @@ public class FranchisePageAction extends SBActionAdapter {
 					boolean noPageModule = false;
 					
 					//create a new the Site Page
-					req.setParameter("startDate", Convert.formatDate(new java.util.Date()));  //new pages must be approved before being released
+					req.setParameter("startDate", Convert.formatDate(new java.util.Date()));  
+					//new pages must be approved before being released
 					
 					//we don't need Content or PMID/permissions if this is just a redirect to another resource
 					//redirects do not require admin approval, so we can set a valid start/end date for these pages.
@@ -193,6 +194,19 @@ public class FranchisePageAction extends SBActionAdapter {
 							&& Convert.formatBoolean(req.getParameter("visible")))
 					{
 						noPageModule = true;
+					}
+					
+					StringBuilder slashAppender = new StringBuilder(20);
+					slashAppender.append("/");
+					
+					if (req.getParameter("parentPath").isEmpty())
+						req.setParameter("parentPath", slashAppender.toString());
+					
+					if (!req.getParameter("aliasName").substring(0, 1).equals("/")){
+						slashAppender.append(req.getParameter("aliasName"));
+					
+						if (req.getParameter("externalPageUrl").isEmpty())
+							req.setParameter("externalPageUrl", slashAppender.toString());
 					}
 					
 					this.savePage(req);
