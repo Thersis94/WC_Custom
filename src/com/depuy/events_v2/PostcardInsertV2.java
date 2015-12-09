@@ -256,7 +256,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		psa.setAttributes(attributes);
 		psa.setDBConnection(dbConn);
 		DePuyEventSeminarVO vo = psa.loadOneSeminar(eventPostcardId, 
-				actionInit.getActionId(), null, null, null);
+				actionInit.getActionId(), null, null, null, -1);
 
 		//Order the consumables, if requested
 		if (Convert.formatInteger(req.getParameter("qnty"), 0) > 0)
@@ -401,7 +401,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder();
 		sql.append("insert into ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("DEPUY_EVENT_SPECIALTY_XR (depuy_event_specialty_xr_id,  ");
-		sql.append("event_postcard_id, joint_id, create_dt) values (?,?,?,?)");
+		sql.append("event_postcard_id, joint_id, product_id, create_dt) values (?,?,?,?,?)");
 		log.debug(sql + "|" + eventPostcardId + "|" + req.getParameter("joint"));
 
 		try {
@@ -410,7 +410,8 @@ public class PostcardInsertV2 extends SBActionAdapter {
 				ps.setString(1, new UUIDGenerator().getUUID());
 				ps.setString(2, eventPostcardId);
 				ps.setString(3, jointId);
-				ps.setTimestamp(4, Convert.getCurrentTimestamp());
+				ps.setString(4, req.getParameter("product"));
+				ps.setTimestamp(5, Convert.getCurrentTimestamp());
 				ps.addBatch();
 			}
 			if (ps.executeBatch().length < 1) 
