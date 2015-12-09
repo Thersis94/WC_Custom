@@ -44,6 +44,7 @@ public class MetroContainerVO extends SBModuleVO {
 	private String state = null;
 	private String country = null;
 	private Integer lstFlag = Integer.valueOf(0);
+	private Integer bypassMapFlag = Integer.valueOf(0); 
 	private Double latitude = Double.valueOf(0);
 	private Double longitude = Double.valueOf(0);
 	private MapVO mapData = new MapVO();
@@ -79,6 +80,7 @@ public class MetroContainerVO extends SBModuleVO {
 		state = db.getStringVal("state_cd", rs);
 		country = db.getStringVal("country_cd", rs);
 		lstFlag = db.getIntVal("area_lst_flg", rs);
+		setBypassMapFlag(db.getIntVal("bypass_map_flg", rs));
 		latitude = db.getDoubleVal("latitude_no", rs);
 		longitude = db.getDoubleVal("longitude_no", rs);
 		communities = db.getStringVal("communities_txt", rs);
@@ -373,6 +375,22 @@ public class MetroContainerVO extends SBModuleVO {
 	
 	public void addProduct(Node prod) {
 		this.prodList.add(prod);
+	}
+
+	/**
+	 * this is standard getter and returns the value stored in bypassMapFlag
+	 * @return the bypassMapFlag
+	 */
+	public Integer getBypassMapFlag() {
+		return bypassMapFlag;
+	}
+
+	/**
+	 * this is a standard setter and sets the value of bypassMapFlag
+	 * @param bypassMapFlag the bypassMapFlag to set
+	 */
+	public void setBypassMapFlag(Integer bypassMapFlag) {
+		this.bypassMapFlag = bypassMapFlag;
 	}
 
 }
