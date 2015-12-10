@@ -550,7 +550,7 @@ public class NexusKitImporter extends CommandLineUtil {
 			kit.setKitGTIN(items[3]);
 			kit.setBranchCode(items[4]);
 			kit.addOrganization(props.getProperty("organization"));
-			kit.addRole(0);
+			kit.addRole("0");
 			kit.setSource(Source.JDE);
 			kit.setOrgName(kit.getOrgId());
 			
