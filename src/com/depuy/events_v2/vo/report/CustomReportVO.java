@@ -33,6 +33,9 @@ import com.smt.sitebuilder.action.event.vo.EventEntryVO;
  ****************************************************************************/
 public class CustomReportVO extends AbstractSBReportVO {
 
+	/**
+	 * 
+	 */
 	private static final Map<String, String> typeMap = new HashMap<String, String>() {
 		private static final long serialVersionUID = 1L;
 		{
@@ -45,6 +48,9 @@ public class CustomReportVO extends AbstractSBReportVO {
 		}
 	};
 
+	/**
+	 * 
+	 */
 	public static enum FieldList {
 		JOINT_FLG("joint_flg", "Joint"),
 		SEMINAR_TYPE_FLG("seminar_type_flg","Seminar Type"),
@@ -313,8 +319,11 @@ public class CustomReportVO extends AbstractSBReportVO {
 
 	}
 
-	
-	@SuppressWarnings("incomplete-switch")
+	/**
+	 * 
+	 * @param sem
+	 * @return
+	 */
 	public boolean semPassesFilters(DePuyEventSeminarVO sem) {
 		if (filterMap == null || filterMap.size() == 0) return true;
 		String value;
