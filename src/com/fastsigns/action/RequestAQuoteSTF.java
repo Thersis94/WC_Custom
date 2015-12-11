@@ -284,12 +284,13 @@ public class RequestAQuoteSTF extends SBActionAdapter {
 			String csi = req.getParameter("csi");
 
 			String os = checkStatus(csi, safConfig.getTransactionStageFieldId());
-
+			if (!StringUtil.checkVal(os).equals("complete")){
+				
 			this.recordStatus(csi, req.getParameter("status"), safConfig);
 			this.recordStep(csi, TransactionStep.fileCanceled, safConfig);
-
-			if (!StringUtil.checkVal(os).equals("complete") )
-				this.sendEmail(req, safConfig);
+			
+			this.sendEmail(req, safConfig);
+			}
 
 			this.recordStep(csi, TransactionStep.complete, safConfig);
 		}	
@@ -377,11 +378,10 @@ public class RequestAQuoteSTF extends SBActionAdapter {
 			ps.setString(2, csi);
 
 			ResultSet rs = ps.executeQuery();
-			rs.next();
-
-			return rs.getString(1);
-
-
+			if(rs.next()){
+				return rs.getString(1);
+			}
+			
 		} catch (SQLException sqle) {
 			log.error("Error getting the status from the database " + sqle);
 		}
