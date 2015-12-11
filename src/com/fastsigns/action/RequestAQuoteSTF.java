@@ -360,6 +360,7 @@ public class RequestAQuoteSTF extends SBActionAdapter {
 
 
 	/**
+	 * This method returns the status from the database
 	 * @param csi
 	 * @param transactionStageFieldId
 	 * @return
@@ -584,10 +585,10 @@ public class RequestAQuoteSTF extends SBActionAdapter {
 	 */
 	public void recordStatus(String csi, String message, SAFConfig safConfig) {
 		this.recordStatus(message, csi, safConfig.getStatusFieldId());
-
+		
 	}
-
-
+	
+	
 	/** 
 	 * documents that a milestone in the process has been reached.
 	 * @param step
