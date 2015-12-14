@@ -11,6 +11,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+
+import com.siliconmtn.data.Node;
+import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
@@ -39,8 +42,7 @@ public class LeihsetVO implements Approvable, Serializable, Comparable<LeihsetVO
 	private String leihsetAssetId;
 	private String leihsetName;
 	private String assetName;
-	private Set<String> bodyRegion;
-	private Set<String> businessUnit;
+	private Set<String> categories;
 	private String assetNumber; //used loosly! 
 	private String imageUrl;
 	private String excelUrl;
@@ -53,12 +55,15 @@ public class LeihsetVO implements Approvable, Serializable, Comparable<LeihsetVO
 	private Map<String, LeihsetVO> assets; //a PDF or Excel uploaded to this Liehset
 	private Map<String, LeihsetVO> materials; //Mediabin Literature
 	private ApprovalVO approval;
+	
+	private String categoryName;
+	private String parentCategoryName;
+	private Tree categoryTree;
 
 	public LeihsetVO() {
 		assets = new LinkedHashMap<>();
 		materials = new LinkedHashMap<>();
-		bodyRegion = new HashSet<>(); 
-		businessUnit = new HashSet<>();
+		categories = new HashSet<>();
 	}
 	
 	public LeihsetVO(ResultSet rs, boolean isSet) {
@@ -116,10 +121,8 @@ public class LeihsetVO implements Approvable, Serializable, Comparable<LeihsetVO
 			//this is a Leihset itself
 			setOrganizationId(req.getParameter("organizationId"));
 			setLeihsetName(req.getParameter("actionName"));
-			if (req.hasParameter("bodyRegion"))
-					setBodyRegion(Arrays.asList(req.getParameterValues("bodyRegion")));
-			if (req.hasParameter("businessUnit"))
-					setBusinessUnit(Arrays.asList(req.getParameterValues("businessUnit")));
+			if (req.hasParameter("categories"))
+					this.setCategories(Arrays.asList(req.getParameterValues("categories")));
 			setArchiveFlg(Convert.formatInteger(req.getParameter("archiveFlg"), 0).intValue());
 			
 			// Check if we're getting a new file that will replace the old one.
@@ -127,6 +130,7 @@ public class LeihsetVO implements Approvable, Serializable, Comparable<LeihsetVO
 				this.setImageUrl(req.getParameter("imageFileOrig"));
 			
 			setSyncData(new ApprovalVO(req));
+			
 		}
 	}
 
@@ -136,34 +140,6 @@ public class LeihsetVO implements Approvable, Serializable, Comparable<LeihsetVO
 
 	public String getAssetName() {
 		return assetName;
-	}
-
-	public Set<String> getBodyRegion() {
-		return bodyRegion;
-	}
-	public boolean getBodyRegionContains(String br) {
-		return bodyRegion.contains(br);
-	}
-
-	public Set<String> getBusinessUnit() {
-		return businessUnit;
-	}
-	
-	/**
-	 * used for cosmetic display on the admin list page
-	 * @return
-	 */
-	public String getBusinessUnitDisplay() {
-		StringBuilder sb = new StringBuilder(100);
-		for (String s : businessUnit) {
-			if (sb.length() > 0) sb.append(", ");
-			sb.append(s);
-		}
-		return sb.toString();
-	}
-	
-	public boolean getBusinessUnitContains(String bu) {
-		return businessUnit.contains(bu);
 	}
 
 	public String getAssetNumber() {
@@ -192,28 +168,6 @@ public class LeihsetVO implements Approvable, Serializable, Comparable<LeihsetVO
 
 	public void setAssetName(String assetName) {
 		this.assetName = assetName;
-	}
-
-	public void addCategory(String typeCd, String catNm) {
-		if (typeCd == null || typeCd.length() == 0) return;
-		if ("BODY".equals(typeCd)) {
-			addBodyRegion(catNm);
-		} else if ("UNIT".equals(typeCd)) {
-			addBusinessUnit(catNm);
-		}
-	}
-	public void setBodyRegion(Collection<String> bodyRegion) {
-		this.bodyRegion.addAll(bodyRegion);
-	}
-	public void addBodyRegion(String bodyRegion) {
-		this.bodyRegion.add(bodyRegion);
-	}
-
-	public void addBusinessUnit(String businessUnit) {
-		this.businessUnit.add(businessUnit);
-	}
-	public void setBusinessUnit(Collection<String> businessUnit) {
-		this.businessUnit.addAll(businessUnit);
 	}
 
 	public void setAssetNumber(String assetNumber) {
@@ -354,4 +308,61 @@ public class LeihsetVO implements Approvable, Serializable, Comparable<LeihsetVO
 		this.dpySynTrackingNo = dpySynTrackingNo;
 	}
 
+	public Set<String> getCategories() {
+		return categories;
+	}
+
+	public void setCategories(Collection<String> categories) {
+		this.categories.addAll(categories);
+	}
+	
+	public void addCategory(String cat) {
+		this.categories.add(cat);
+	}
+
+	public Tree getCategoryTree() {
+		return categoryTree;
+	}
+
+	public void setCategoryTree(Tree categoryTree) {
+		this.categoryTree = categoryTree;
+	}
+
+	public String getBusinessUnits() {
+		Tree t = getCategoryTree();
+		if (t == null || t.getRootNode() == null) return null;
+		
+		Set<String> bizUnits = new HashSet<>();
+		StringBuilder sb = new StringBuilder(100);
+		for (Node n : t.getRootNode().getChildren()) {
+			//dig down and find out of this root node is tagged for this Leihset
+			for (Node n2 : n.getChildren()) {
+				for (Node n3 : n2.getChildren()) {
+					if (!((Boolean)(n3.getUserObject()))) continue;
+					bizUnits.add(n.getNodeName());
+				}
+			}
+		}
+		for (String s : bizUnits) {
+			if (sb.length() > 0) sb.append(", ");
+			sb.append(s);
+		}
+		return sb.toString();
+	}
+
+	public String getCategoryName() {
+		return categoryName;
+	}
+
+	public void setCategoryName(String categoryName) {
+		this.categoryName = categoryName;
+	}
+
+	public String getParentCategoryName() {
+		return parentCategoryName;
+	}
+
+	public void setParentCategoryName(String parentCategoryName) {
+		this.parentCategoryName = parentCategoryName;
+	}
 }

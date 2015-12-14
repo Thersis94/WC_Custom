@@ -23,7 +23,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class LeihsetFacadeAction extends FacadeActionAdapter {
 
 	public static final String MEDIABIN_PATH = "/json?amid=MEDIA_BIN_AJAX&mbid=";
-	public static final String ORG_PATH = "/org/DPY_SYN_EMEA/leihset_documents/";
+	public static final String ORG_PATH = "/org/DPY_SYN_EMEA_DE/leihset_documents/";
 	public static final String BINARY_PATH = "/binary" + ORG_PATH;
 
 
@@ -39,7 +39,7 @@ public class LeihsetFacadeAction extends FacadeActionAdapter {
 	 * ActionType - supported behaviors of this facade
 	 **/
 	private enum ActionType {
-		leihset, asset; 
+		leihset, asset, category; 
 	}
 
 	public void list(SMTServletRequest req) throws ActionException {
@@ -113,10 +113,13 @@ public class LeihsetFacadeAction extends FacadeActionAdapter {
 			case asset:
 				ai =  new LeihsetAssetAction(actionInit);
 				break;
+			case category:
+				ai = new LeihsetCategoryAction(actionInit);
+				break;
 		}
 
 		if (ai != null) {
-			ai.setAttributes(attributes);
+			ai.setAttributes(getAttributes());
 			ai.setDBConnection(dbConn);
 		}
 		return ai;
