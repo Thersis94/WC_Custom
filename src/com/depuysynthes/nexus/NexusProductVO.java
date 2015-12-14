@@ -54,7 +54,6 @@ public class NexusProductVO extends SolrDocumentVO {
 	private String region;
 	private String status;
 	private int orderNo;
-	private boolean dateLot;
 	private Date start;
 	private Date end;
 	private Source source;
