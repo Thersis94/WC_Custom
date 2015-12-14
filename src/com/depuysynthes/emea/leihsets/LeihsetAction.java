@@ -57,8 +57,8 @@ public class LeihsetAction extends SBActionAdapter {
 	 * @param req
 	 */
 	protected void loadLeihsets(SMTServletRequest req) {
-		String leihsetId = req.getParameter("leihsetId");
-		String leihsetAssetId = req.getParameter("leihsetAssetId");
+		String leihsetId = StringUtil.checkVal(req.getParameter("leihsetId"), null);
+		String leihsetAssetId = StringUtil.checkVal(req.getParameter("leihsetAssetId"), null);
 		log.debug("Retriving leihsets " + leihsetId + "|" + leihsetAssetId);
 
 		String sql = getSelectSql(leihsetId, leihsetAssetId);
@@ -78,9 +78,6 @@ public class LeihsetAction extends SBActionAdapter {
 				LeihsetVO vo = data.get(groupId);
 				if (vo == null)
 					vo = new LeihsetVO(rs, false);
-
-				if (rs.getString("leihset_id").equals(vo.getLeihsetId())) //don't accept values from the live record intermixed with the pending one
-						vo.addCategory(rs.getString("TYPE_CD"), rs.getString("CATEGORY_NM"));
 				
 				if (vo.getLeihsetGroupId() == null) vo.setLeihsetGroupId(rs.getString("leihset_group_id"));
 				if (rs.getString("leihset_asset_id") != null) vo.addResource(new LeihsetVO(rs, true));
@@ -89,10 +86,24 @@ public class LeihsetAction extends SBActionAdapter {
 		} catch (SQLException e) {
 			log.error("Unable to get data for leihset: " + leihsetId, e);
 		}
-
+		
 		log.debug("loaded " + data.size() + " liehsets");
 		List<LeihsetVO> list = new ArrayList<LeihsetVO>(data.values());
 		Collections.sort(list);
+		
+
+		LeihsetCategoryAction ca = new LeihsetCategoryAction();
+		ca.setDBConnection(dbConn);
+		ca.setAttributes(getAttributes());
+		
+		//if we're loading a single Leihset, load the category tree
+		for (LeihsetVO vo : list) {
+			vo.setCategoryTree(ca.loadCategoryTree(vo.getLeihsetId()));
+		}
+		if (list.size() == 0) { //add form
+			req.setAttribute("categories",  ca.loadCategoryTree(null));
+		}
+		
 		super.putModuleData(list);
 	}
 	
@@ -104,10 +115,9 @@ public class LeihsetAction extends SBActionAdapter {
 	private String getSelectSql(String leihsetId, String leihsetAssetId) {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(400);
-		sql.append("SELECT l.*, la.*, lc.CATEGORY_NM, lc.TYPE_CD, dsm.TITLE_TXT, dsm.TRACKING_NO_TXT, ws.* ");
+		sql.append("SELECT l.*, la.*, dsm.TITLE_TXT, dsm.TRACKING_NO_TXT, ws.* ");
 		sql.append("FROM ").append(customDb).append("DPY_SYN_LEIHSET l ");
 		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_LEIHSET_ASSET la on la.leihset_id=l.leihset_id ");
-		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_LEIHSET_CATEGORY lc on lc.leihset_id=l.leihset_id ");
 		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_MEDIABIN dsm on dsm.DPY_SYN_MEDIABIN_ID = la.DPY_SYN_MEDIABIN_ID ");
 		sql.append("LEFT JOIN WC_SYNC ws on ws.WC_KEY_ID = l.LEIHSET_ID and ws.WC_SYNC_STATUS_CD not in ('Approved', 'Declined') ");
 		sql.append("WHERE l.archive_flg=0 and l.ORGANIZATION_ID=? ");
@@ -217,58 +227,10 @@ public class LeihsetAction extends SBActionAdapter {
 	 * @param vo
 	 */
 	private void saveCategories(LeihsetVO vo) {
-		String customDb = getAttribute(Constants.CUSTOM_DB_SCHEMA).toString();
-		StringBuilder sql = new StringBuilder(100);
-		sql.append("insert into ").append(customDb).append("DPY_SYN_LEIHSET_CATEGORY ");
-		sql.append("(LEIHSET_ID, CATEGORY_NM, CREATE_DT, TYPE_CD) values (?,?,?,?)");
-		log.debug(sql);
-		
-		deleteCategories(vo, customDb);
-		
-		//test whether we have anything to save
-		if (vo.getBodyRegion().size() == 0 || vo.getBusinessUnit().size() == 0)
-			return;
-
-		java.sql.Timestamp ts = Convert.getCurrentTimestamp();
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			for (String catNm : vo.getBodyRegion()) {
-				ps.setString(1, vo.getLeihsetId());
-				ps.setString(2, catNm);
-				ps.setTimestamp(3, ts);
-				ps.setString(4, "BODY");
-				ps.addBatch();
-			}
-			for (String bizUnit : vo.getBusinessUnit()) {
-				ps.setString(1, vo.getLeihsetId());
-				ps.setString(2, bizUnit);
-				ps.setTimestamp(3, ts);
-				ps.setString(4, "UNIT");
-				ps.addBatch();
-			}
-
-			ps.executeBatch();
-
-		} catch (SQLException e) {
-			log.error("Unable to add categories for leihset: " + vo.getLeihsetId(), e);
-		}
-	}
-	
-	
-	/**
-	 * purge all category values for the given Leihset
-	 * @param vo
-	 * @param customDb
-	 */
-	private void deleteCategories(LeihsetVO vo, String customDb) {
-		String sql = "delete from " + customDb + "DPY_SYN_LEIHSET_CATEGORY where LEIHSET_ID=?";
-		log.debug(sql);
-
-		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
-			ps.setString(1, vo.getLeihsetId());
-			ps.executeUpdate();
-		} catch (SQLException e) {
-			log.error("Unable to delete categories for leihset: " + vo.getLeihsetId(), e);
-		}
+		LeihsetCategoryAction ca = new LeihsetCategoryAction();
+		ca.setDBConnection(dbConn);
+		ca.setAttributes(getAttributes());
+		ca.saveXRCategories(vo);
 	}
 
 
@@ -351,8 +313,8 @@ public class LeihsetAction extends SBActionAdapter {
 			rdu.returnGeneratedKeys(false);
 			rdu.copy();
 
-			// Copy all categories of this leihset
-			rdu = new RecordDuplicatorUtility(attributes, dbConn, customDb + "DPY_SYN_LEIHSET_CATEGORY", "LEIHSET_CATEGORY_ID", true);
+			// Copy all category relationships of this leihset
+			rdu = new RecordDuplicatorUtility(attributes, dbConn, customDb + "DPY_SYN_LEIHSET_CATEGORY_XR", "LEIHSET_CATEGORY_XR_ID", true);
 			rdu.addWhereListClause("LEIHSET_ID");
 			rdu.returnGeneratedKeys(false);
 			rdu.copy();
