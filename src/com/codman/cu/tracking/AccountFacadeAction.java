@@ -250,7 +250,7 @@ public class AccountFacadeAction extends SBActionAdapter {
 						trans = new TransactionVO(rs);
 					}
 					
-					if (rs.getString("unit_id") != null)
+					if (trans != null && rs.getString("unit_id") != null)
 						trans.addUnit(new UnitVO(rs));
 
 					acctVo.addTransaction(trans);
