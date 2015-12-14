@@ -38,11 +38,4 @@
 		<nature>org.eclipse.jdt.core.javanature</nature>
 		<nature>org.eclipse.wst.common.project.facet.core.nature</nature>
 	</natures>
-	<linkedResources>
-		<link>
-			<name>files/stacks.txt</name>
-			<type>1</type>
-			<location>/Users/james/Public/stacks.txt</location>
-		</link>
-	</linkedResources>
 </projectDescription>

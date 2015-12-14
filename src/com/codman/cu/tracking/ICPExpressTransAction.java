@@ -45,7 +45,6 @@ public class ICPExpressTransAction extends AbstractTransAction {
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
 	 */
-	@SuppressWarnings("incomplete-switch")
 	public void build( SMTServletRequest req ) throws ActionException {
 		Object msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
 
