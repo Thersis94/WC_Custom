@@ -6,6 +6,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetEncoder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -26,7 +28,6 @@ import com.siliconmtn.util.CommandLineUtil;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
-import com.smt.sitebuilder.security.SecurityController;
 import com.smt.sitebuilder.util.MessageSender;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
 import com.smt.sitebuilder.util.solr.SolrDocumentVO;
@@ -61,6 +62,7 @@ public class NexusImporter extends CommandLineUtil {
 	private String fileName;
 	private String hostName;
 	private String directory;
+	private Source source;
 	
 	// Stores the organizations code mappings
 	public enum organizations {
@@ -81,6 +83,10 @@ public class NexusImporter extends CommandLineUtil {
 		public String getName() {
 			return name;
 		}
+	}
+	
+	public enum Source {
+		MDM, JDE
 	}
 	
 	private int org;
@@ -116,6 +122,7 @@ public class NexusImporter extends CommandLineUtil {
 			fileName = props.getProperty("fileName");
 			directory = props.getProperty("directory");
 		}
+		determineSource();
 		
 		prepareValues();
 		errors = new ArrayList<>();
@@ -161,11 +168,16 @@ public class NexusImporter extends CommandLineUtil {
 	public void run() {
 		int cnt=0;
 		Map<String, NexusProductVO> products = new HashMap<>();
+		int fails = 0;
 		try {
-			boolean isZip = fileName.contains(".zip");
+			boolean mdm = fileName.contains(".zip") || fileName.contains("|");
 			// Get the files and parse them into products
 			if (isLocal) {
-				products = getFilesFromLocalZip();
+				if (fileName.contains(".zip")) {
+					products = getFilesFromLocalZip();
+				} else {
+					products = getLocalFile();
+				}
 			} else {
 				products = getProductsFromFile();
 			}
@@ -178,10 +190,11 @@ public class NexusImporter extends CommandLineUtil {
 				NexusProductVO p = products.get(key);
 				try {
 					// If we are dealing with a zip file we need to filter out the unneeded products
-					if (isZip && (!"DO,DS,DM,DC".contains(StringUtil.checkVal(p.getOrgId(), "SKIP")) ||
-							!"AC,CT,DP,DS".contains(StringUtil.checkVal(p.getStatus(), "SKIP")) ||
+					if (mdm && (!"DO,DS,DM,DC".contains(StringUtil.checkVal(p.getOrgId(), "SKIP")) ||
+							"02".contains(StringUtil.checkVal(p.getStatus(), "SKIP")) ||
 							!"USA".equals(StringUtil.checkVal(p.getRegion(), "SKIP"))
 							|| StringUtil.checkVal(p.getOrgName()).length() == 0)) {
+						fails++;
 						continue;
 					}
 					
@@ -206,6 +219,8 @@ public class NexusImporter extends CommandLineUtil {
 			log.error("Failed to complete transaction", e);
 		}
 		sendAlertEmail(cnt, products.size());
+		log.debug("Final Successes: " + cnt);
+		log.debug("Final Failures: " + fails);
 		log.debug("Ended at " + Convert.getCurrentTimestamp());
 	}
 	
@@ -262,7 +277,7 @@ public class NexusImporter extends CommandLineUtil {
 			while ((ze = zis.getNextEntry()) != null) {
 				if (!ze.getName().contains(".OUT")) 
 					continue;
-
+				determineSource(ze.getName());
 				// Get the file
 				byte[] b = new byte[2048];
 				ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -294,7 +309,7 @@ public class NexusImporter extends CommandLineUtil {
 			while ((ze = zis.getNextEntry()) != null) {
 				if (!ze.getName().contains(".OUT")) 
 					continue;
-
+				determineSource(ze.getName());
 				// Get the file
 				byte[] b = new byte[2048];
 				ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -313,6 +328,36 @@ public class NexusImporter extends CommandLineUtil {
 		return map;
 	}
 	
+	/**
+	 * Gets the files from a local file instead of pulling it down from the mbox server
+	 * @return
+	 * @throws ActionException
+	 */
+	private Map<String, NexusProductVO> getLocalFile() throws ActionException {
+		Map<String, NexusProductVO> map = new HashMap<>();
+		String files[] = fileName.split("\\|");
+		
+		for (String file : files) {
+			try {
+				InputStream input = new FileInputStream(directory+""+file);
+				determineSource();
+				// Get the file
+				byte[] b = new byte[2048];
+				ByteArrayOutputStream baos = new ByteArrayOutputStream();
+				int c = 0;
+				while ((c = input.read(b, 0, BUFFER_SIZE)) != -1) {
+					baos.write(b, 0, c);
+				}
+				buildProducts(file, new String(baos.toByteArray()), fileName.contains("|"), map);
+				input.close();
+			} catch (IOException e) {
+				log.error("Unable to parse file contents", e);
+				throw new ActionException(e);
+			}
+		}
+		return map;
+	}
+	
 	
 	/**
 	 * Build a map of products out of the supplied files
@@ -323,8 +368,10 @@ public class NexusImporter extends CommandLineUtil {
 	private Map<String, NexusProductVO> buildProducts(String fileName, String fileData, boolean isZip, Map<String, NexusProductVO> products) {
 		// Build the map of pertinent columns from the supplied files
 		String[] rows;
+		int fails = 0;
+		int successes = 0;
 		// Due to differences in how the files are put together zip files need to be handled special when split
-		if (fileName.contains(".zip")){
+		if (fileName.contains(".zip") || fileName.contains("|")){
 			rows = fileData.split("\n", -1);
 		} else {
 			rows = fileData.split("\\r?\\n", -1);
@@ -343,10 +390,18 @@ public class NexusImporter extends CommandLineUtil {
 				errors.add("Invalid data at line " + i+1 +" in file " + fileName + ".  Recieved "+cols.length+" columns, expected "+headers.length + " columns.");
 				continue;
 			}
-			
-			if (isZip && org != -1 && !"DO,DS,DM,DC".contains(StringUtil.checkVal(cols[org], "DO"))) continue;
-			if (isZip && status != -1 && !"AC,CT,DP,DS".contains(StringUtil.checkVal(cols[status], "AC"))) continue;
-			if (isZip && region != -1 && !"USA".contains(StringUtil.checkVal(cols[region], "USA"))) continue;
+			if (isZip && org != -1 && !"DO,DS,DM,DC".contains(StringUtil.checkVal(cols[org], "XX"))) {
+				fails++;
+				continue;
+			}
+			if (isZip && status != -1 && "02".contains(StringUtil.checkVal(cols[status], "XX"))) {
+				fails++;
+				continue;
+			}
+			if (isZip && region != -1 && !"USA".contains(StringUtil.checkVal(cols[region], "XX"))) {
+				fails++;
+				continue;
+			}
 			
 			if (products.get(cols[code]) != null) {
 				p = products.get(cols[code]);
@@ -356,12 +411,17 @@ public class NexusImporter extends CommandLineUtil {
 				p = new NexusProductVO();
 				updateProduct(p, cols);
 				p.addOrganization("DPY_SYN_NEXUS");
-				p.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
+				p.addRole("0");
+				p.setSource(source);
 				products.put(p.getDocumentId(), p);
 			}
+			successes++;
 		}
 		headers = null;
 		rows=null;
+		log.debug(fileName);
+		log.debug("Successes: " + successes);
+		log.debug("Fails: " + fails);
 		return products;
 	}
 	
@@ -372,9 +432,9 @@ public class NexusImporter extends CommandLineUtil {
 	 * @param headerList
 	 */
 	private void getColumns(List<String> headerList) {
-		if (fileName.contains(".zip")) {
+		if (fileName.contains(".zip") || fileName.contains("|")) {
 			org=headerList.indexOf("SLS_ORG_CO_CD");
-			status=headerList.indexOf("STAT_CD");
+			status=headerList.indexOf("DCHAIN_SPCL_STAT_CD");
 			region=headerList.indexOf("REG_CD");
 			code=headerList.indexOf("PSKU_CD");
 			desc=headerList.indexOf("PROD_DESCN_TXT");
@@ -415,7 +475,12 @@ public class NexusImporter extends CommandLineUtil {
 			p.setOrgName(organizations.valueOf(cols[org]).getName());
 		}
 		if (StringUtil.checkVal(p.getProductName()).length() == 0 && code != -1) p.setProductName(cols[code]);
-		if (StringUtil.checkVal(p.getSummary()).length() == 0 && desc != -1) p.setSummary(cols[desc]);
+		if (StringUtil.checkVal(p.getSummary()).length() == 0 && desc != -1) {
+			String temp = cols[desc];
+			CharsetEncoder asciiEncoder = Charset.forName("US-ASCII").newEncoder(); 
+			if (! asciiEncoder.canEncode(temp)) temp = temp.replaceAll("[^\\p{ASCII}]", "");
+			p.setSummary(temp);
+		}
 		if (gtin != -1 && cols[gtin].length() > 0 && !p.getGtin().contains(cols[gtin])) {
 			p.addGtin(cols[gtin]);
 			// Every GTIN can have a gtin level, uom, and package level
@@ -498,5 +563,26 @@ public class NexusImporter extends CommandLineUtil {
 		}
 		
 		return body.toString();
+	}
+	
+	/**
+	 * get the source from the overall file name
+	 */
+	private void determineSource() {
+		determineSource(fileName);
+	}
+	
+	/**
+	 * Set the source based on the filename
+	 * This is meant to be called when dealing with multiple files in a zip file.
+	 */
+	private void determineSource(String fileName) {
+		if (fileName == null) {
+			
+		} else if (fileName.contains("MDM")) {
+			source = Source.MDM;
+		} else {
+			source = Source.JDE;
+		}
 	}
 }
