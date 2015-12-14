@@ -90,7 +90,6 @@ public class AccountFacadeAction extends SBActionAdapter {
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.action.ActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
-	@SuppressWarnings("null")
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		final String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
