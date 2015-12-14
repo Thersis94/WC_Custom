@@ -17,11 +17,11 @@ import com.siliconmtn.commerce.ShoppingCartVO;
 import com.siliconmtn.gis.Location;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
-import com.smt.http.AbstractWebServiceServlet.TaxationServiceType;
 import com.smt.taxation.LineItemVO;
 import com.smt.taxation.TaxLocationVO;
 import com.smt.taxation.TaxationRequestVO;
 import com.smt.taxation.TaxationResponseVO;
+import com.smt.taxation.http.TaxationWebService.TaxationServiceType;
 import com.smt.taxation.TaxationDataParser;
 
 /****************************************************************************
