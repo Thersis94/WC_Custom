@@ -284,15 +284,15 @@ public class RequestAQuoteSTF extends SBActionAdapter {
 			String csi = req.getParameter("csi");
 
 			String os = checkStatus(csi, safConfig.getTransactionStageFieldId());
-			if (!StringUtil.checkVal(os).equals("complete")){
+			if (!TransactionStep.complete.toString().equals(os)){
 				
 			this.recordStatus(csi, req.getParameter("status"), safConfig);
 			this.recordStep(csi, TransactionStep.fileCanceled, safConfig);
 			
 			this.sendEmail(req, safConfig);
-			}
-
+		
 			this.recordStep(csi, TransactionStep.complete, safConfig);
+			}
 		}	
 		
 		if (Convert.formatBoolean(req.getParameter("start")))
