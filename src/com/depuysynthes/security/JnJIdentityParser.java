@@ -59,6 +59,14 @@ public class JnJIdentityParser extends AbstractSSOParser {
 			user.addAttribute("title", this.getStringValue("title", ssoData));
 		}
 		
+		// add world-wide ID (wwid)
+		user.addAttribute("wwid", this.getStringValue("wwid", ssoData));
+		
+		// add authToken/authValue for informing proxied SSO clients.
+		if (StringUtil.checkVal(user.getAttribute("wwid"),null) != null) {
+			user.addAttribute("authToken", "wwid");
+			user.addAttribute("authValue", user.getAttribute("wwid"));
+		}
 		return user;
 	}
 
