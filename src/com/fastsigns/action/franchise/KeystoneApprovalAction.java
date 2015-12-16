@@ -129,7 +129,7 @@ public class KeystoneApprovalAction extends SimpleActionAdapter {
 		sql.append("ORDER BY PORTLET_DESC");
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			log.debug(franchiseId+"|"+orgId+"|"+franchiseId.equals(orgId));
+			log.debug("######## " +franchiseId+"|"+orgId+"|"+franchiseId.equals(orgId));
 			if (franchiseId.equals(orgId)) {
 				ps.setString(1, franchiseId);
 			} else {
@@ -147,6 +147,7 @@ public class KeystoneApprovalAction extends SimpleActionAdapter {
 			
 			while(rs.next()) {
 				ApprovalVO app = new ApprovalVO(rs);
+				log.debug("#######org id: " + app.getOrganizationId() + "|" + rs.getString("organization_id"));
 				WebeditType type = null;
 				try {
 					type = WebeditType.valueOf(app.getItemDesc());
@@ -160,11 +161,20 @@ public class KeystoneApprovalAction extends SimpleActionAdapter {
 						app.setPreviewUrl("/careers?jobPostingId="+app.getWcKeyId());
 						break;
 					case CenterPage:
+						log.debug("centerpage type");
 						app.setPreviewUrl("/"+siteAlias+rs.getString("FULL_PATH_TXT"));
 						break;
 					default:app.setPreviewUrl("/"+siteAlias);;
 				}
-				approvables.add(app);
+				log.debug("######################################### " + app.getPreviewUrl() + "|" + app.getOrganizationId() +"|" + siteAlias);
+				
+				String newSiteAlias = getModSpecificAlias(app.getWcKeyId());
+				
+				 log.debug("############################################################new alias: " + newSiteAlias + " old alias " + siteAlias);
+				 if (newSiteAlias != null && !siteAlias.equals(newSiteAlias))
+					 app.setPreviewUrl("/"+newSiteAlias);
+				 
+				 approvables.add(app);
 			}
 		} catch(SQLException e) {
 			log.error("Could not get list of approval items for " + franchiseId, e);
@@ -175,6 +185,37 @@ public class KeystoneApprovalAction extends SimpleActionAdapter {
 		putModuleData(approvables);
 	}
 		
+	/**
+	 * this method takes a wc key id and finds a center where that particular 
+	 * center page module is active to preview.
+	 * @param wcKeyId
+	 * @return
+	 */
+	private String getModSpecificAlias(String wcKeyId) {
+		String customDb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(220);
+		
+		sql.append("SELECT fclmxr.FRANCHISE_ID from ");
+		sql.append(customDb).append("FTS_CP_MODULE_FRANCHISE_XR fcmfxr ");
+		sql.append("inner join ").append(customDb).append("FTS_CP_LOCATION_MODULE_XR fclmxr ");
+		sql.append("on fcmfxr.CP_LOCATION_MODULE_XR_ID = fclmxr.CP_LOCATION_MODULE_XR_ID ");
+		sql.append("inner join WebCrescendo_fs.dbo.WC_SYNC wc on wc.WC_KEY_ID = fcmfxr.CP_MODULE_OPTION_ID ");
+		sql.append(" where wc.WC_KEY_ID = ? ");
+
+		log.debug(sql.toString() + "|" + wcKeyId);
+
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, wcKeyId);
+			
+			ResultSet rs = ps.executeQuery();
+			
+			if (rs.next()) return rs.getString(1);
+		} catch(SQLException e) {
+			log.error("Could not get default location alias", e);
+		}
+		return null;
+	}
+
 	/**
 	 * Get the default site alias for a center that has global modules enabled 
 	 * so that changes to global assets can be properly previewed
