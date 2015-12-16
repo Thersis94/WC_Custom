@@ -129,7 +129,6 @@ public class KeystoneApprovalAction extends SimpleActionAdapter {
 		sql.append("ORDER BY PORTLET_DESC");
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			log.debug("######## " +franchiseId+"|"+orgId+"|"+franchiseId.equals(orgId));
 			if (franchiseId.equals(orgId)) {
 				ps.setString(1, franchiseId);
 			} else {
@@ -147,7 +146,6 @@ public class KeystoneApprovalAction extends SimpleActionAdapter {
 			
 			while(rs.next()) {
 				ApprovalVO app = new ApprovalVO(rs);
-				log.debug("#######org id: " + app.getOrganizationId() + "|" + rs.getString("organization_id"));
 				WebeditType type = null;
 				try {
 					type = WebeditType.valueOf(app.getItemDesc());
@@ -166,13 +164,13 @@ public class KeystoneApprovalAction extends SimpleActionAdapter {
 						break;
 					default:app.setPreviewUrl("/"+siteAlias);;
 				}
-				log.debug("######################################### " + app.getPreviewUrl() + "|" + app.getOrganizationId() +"|" + siteAlias);
 				
 				String newSiteAlias = getModSpecificAlias(app.getWcKeyId());
-				
-				 log.debug("############################################################new alias: " + newSiteAlias + " old alias " + siteAlias);
-				 if (newSiteAlias != null && !siteAlias.equals(newSiteAlias))
+				if (newSiteAlias != null && !siteAlias.equals(newSiteAlias)) {
+					 log.debug("############################################################new alias: " + newSiteAlias + " old alias " + siteAlias);
+
 					 app.setPreviewUrl("/"+newSiteAlias);
+				}
 				 
 				 approvables.add(app);
 			}
@@ -201,8 +199,6 @@ public class KeystoneApprovalAction extends SimpleActionAdapter {
 		sql.append("on fcmfxr.CP_LOCATION_MODULE_XR_ID = fclmxr.CP_LOCATION_MODULE_XR_ID ");
 		sql.append("inner join WebCrescendo_fs.dbo.WC_SYNC wc on wc.WC_KEY_ID = fcmfxr.CP_MODULE_OPTION_ID ");
 		sql.append(" where wc.WC_KEY_ID = ? ");
-
-		log.debug(sql.toString() + "|" + wcKeyId);
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, wcKeyId);
