@@ -2,13 +2,17 @@ package com.depuysynthes.security;
 
 // Java 7
 import java.sql.Connection;
+import java.util.Calendar;
 import java.util.Map;
+
+
 
 // SMTBaseLibs 2.0
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.AuthenticationException;
 import com.siliconmtn.security.UserDataVO;
+import com.siliconmtn.util.StringUtil;
 
 // WebCrescendo 2.0
 import com.smt.sitebuilder.common.SiteVO;
@@ -77,15 +81,17 @@ public class SAMLProxyLoginModule extends SAMLLoginModule {
 			StringBuilder redir = new StringBuilder(40);
 			redir.append(REDIRECT_URI_SRT);
 			redir.append("?SAMLResponse=");
-			if (baseUser.getAttribute("authToken") == null) {
+			if (StringUtil.checkVal(baseUser.getAttribute("wwid"),null) == null) {
 				redir.append("invalid");
 			} else {
 				redir.append("valid");
-				redir.append("&authToken=").append(baseUser.getAttribute("authToken"));
-				redir.append("&authValue=").append(baseUser.getAttribute("authValue"));
+				redir.append("&authToken=").append("wwid");
+				redir.append("&authValue=").append(baseUser.getAttribute("wwid"));
+				redir.append("&ts=").append(Calendar.getInstance().getTimeInMillis());
 			}
 			log.debug("parsed proxied response, sso auth redir=" + redir);
-			// throw exception so that the redirect we built will be executed
+			// set redir, throw exception so redirect will be processed
+			req.setAttribute(Constants.SSO_AUTH_REDIRECT, redir.toString());
 			throw new AuthenticationException(ErrorCodes.SSO_AUTH_REDIRECT);
 		}
 		
