@@ -19,9 +19,10 @@ import com.siliconmtn.security.SHAEncrypt;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.RandomAlphaNumeric;
+
+// WebCrescendo 2.0
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
-// WebCrescendo 2.0
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.common.constants.ErrorCodes;
 import com.smt.sitebuilder.security.UserLogin;
