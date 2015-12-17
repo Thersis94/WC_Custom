@@ -83,10 +83,10 @@ public class RequestAQuoteSTF extends SBActionAdapter {
 	}
 
 	/* (non-Javadoc)
-     * @see com.siliconmtn.action.AbstractActionController#list(com.siliconmtn.http.SMTServletRequest)
-     */
+	 * @see com.siliconmtn.action.AbstractActionController#list(com.siliconmtn.http.SMTServletRequest)
+	 */
 	@Override
-    public void list(SMTServletRequest req) throws ActionException {
+	public void list(SMTServletRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 	
@@ -164,10 +164,10 @@ public class RequestAQuoteSTF extends SBActionAdapter {
 	
 	
 	/* (non-Javadoc)
-     * @see com.siliconmtn.action.AbstractActionController#build(com.siliconmtn.http.SMTServletRequest)
-     */
+	 * @see com.siliconmtn.action.AbstractActionController#build(com.siliconmtn.http.SMTServletRequest)
+	 */
 	@Override
-    public void build(SMTServletRequest req) throws ActionException {
+	public void build(SMTServletRequest req) throws ActionException {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		SAFConfig safConfig = SAFConfig.getInstance(site.getCountryCode());
 		
@@ -187,9 +187,9 @@ public class RequestAQuoteSTF extends SBActionAdapter {
 		}
 		
 		//prevent ContactSubmitallAction from sending emails at this stage if we're asking for files next.
-        req.setParameter("contactEmailAddress", "", true);
-        req.setParameter("overrideEmails", "true", true);
-        
+		req.setParameter("contactEmailAddress", "", true);
+		req.setParameter("overrideEmails", "true", true);
+
 		//we need to get the sb_action variables for this DlrContactAction before we call it.
 		//this action is also a facade, which requires it's own attributes to call the ContactFacadeAction
 		req.setParameter(SB_ACTION_ID, String.valueOf(mod.getAttribute(ModuleVO.ATTRIBUTE_2)));
@@ -201,9 +201,9 @@ public class RequestAQuoteSTF extends SBActionAdapter {
 		mod.setActionName(sbMod.getActionName());
 		mod.setActionDesc(sbMod.getActionDesc());
 		mod.setAttribute(SBModuleVO.ATTRIBUTE_1, sbMod.getAttribute(SBModuleVO.ATTRIBUTE_1));
-        mod.setAttribute(SBModuleVO.ATTRIBUTE_2, sbMod.getAttribute(SBModuleVO.ATTRIBUTE_2));
+		mod.setAttribute(SBModuleVO.ATTRIBUTE_2, sbMod.getAttribute(SBModuleVO.ATTRIBUTE_2));
 
-        actionInit.setActionId(mod.getActionId());
+		actionInit.setActionId(mod.getActionId());
 		SMTActionInterface sai = new DealerContactAction(actionInit);
 		sai.setAttributes(attributes);
 		sai.setDBConnection(dbConn);
@@ -253,10 +253,11 @@ public class RequestAQuoteSTF extends SBActionAdapter {
 	
 	
 	/* (non-Javadoc)
-     * @see com.siliconmtn.action.AbstractActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
-     */
+	 * @see com.siliconmtn.action.AbstractActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
+	 */
 	@Override
-    public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(SMTServletRequest req) throws ActionException {
+
 		SMTActionInterface sai = null;
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		String pmid = mod.getPageModuleId();
@@ -281,10 +282,17 @@ public class RequestAQuoteSTF extends SBActionAdapter {
 			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 			SAFConfig safConfig = SAFConfig.getInstance(site.getCountryCode());
 			String csi = req.getParameter("csi");
+
+			String os = checkStatus(csi, safConfig.getTransactionStageFieldId());
+			if (!TransactionStep.complete.toString().equals(os)){
+				
 			this.recordStatus(csi, req.getParameter("status"), safConfig);
 			this.recordStep(csi, TransactionStep.fileCanceled, safConfig);
+			
 			this.sendEmail(req, safConfig);
+		
 			this.recordStep(csi, TransactionStep.complete, safConfig);
+			}
 		}	
 		
 		if (Convert.formatBoolean(req.getParameter("start")))
@@ -335,8 +343,8 @@ public class RequestAQuoteSTF extends SBActionAdapter {
 			mod.setActionName(sbMod.getActionName());
 			mod.setActionDesc(sbMod.getActionDesc());
 			mod.setAttribute(SBModuleVO.ATTRIBUTE_1, sbMod.getAttribute(SBModuleVO.ATTRIBUTE_1));
-            mod.setAttribute(SBModuleVO.ATTRIBUTE_2, sbMod.getAttribute(SBModuleVO.ATTRIBUTE_2));
-			
+			mod.setAttribute(SBModuleVO.ATTRIBUTE_2, sbMod.getAttribute(SBModuleVO.ATTRIBUTE_2));
+
 			//load the Contact Us
 			log.debug("starting contact us for "  + mod.getAttribute(ModuleVO.ATTRIBUTE_2));
 			sai = new DealerContactAction(actionInit);
@@ -350,7 +358,35 @@ public class RequestAQuoteSTF extends SBActionAdapter {
 		mod.setPageModuleId(pmid);
 		attributes.put(Constants.MODULE_DATA, mod);
 	}
-	
+
+
+	/**
+	 * This method returns the status from the database
+	 * @param csi
+	 * @param transactionStageFieldId
+	 * @return
+	 */
+	private String checkStatus(String csi, String transactionStageFieldId) {
+		//checks the database to get current status from contact data
+		StringBuilder sb = new StringBuilder(90);
+		sb.append("select value_txt from contact_data ");
+		sb.append("where contact_field_id = ? and contact_submittal_id = ? ");
+		log.debug("sql: " + sb.toString() + " | " + csi + " | " + transactionStageFieldId );
+
+		try (PreparedStatement ps = dbConn.prepareStatement(sb.toString()) ) {
+			ps.setString(1, transactionStageFieldId);
+			ps.setString(2, csi);
+
+			ResultSet rs = ps.executeQuery();
+			if(rs.next()){
+				return rs.getString(1);
+			}
+			
+		} catch (SQLException sqle) {
+			log.error("Error getting the status from the database " + sqle);
+		}
+		return null;
+	}
 	
 	/**
 	 * evaluates and submits the PROFILE_ROLE entry to give this user login permissions
@@ -375,21 +411,21 @@ public class RequestAQuoteSTF extends SBActionAdapter {
 			}
 			log.debug("done with roles " + prm.checkRole(profileId, site.getSiteId(), dbConn) + " for proId=" + profileId + " and site=" + site.getSiteId());
 		} catch (Exception e) {
-        	log.error("could not add profile_role for profileId=" + profileId + " on site=" + site.getSiteId(), e);
-        	throw(e);
-        }
-		
+			log.error("could not add profile_role for profileId=" + profileId + " on site=" + site.getSiteId(), e);
+			throw(e);
+		}
+
 		//perform automatic login
 		try {
 			UserDataVO user = new UserDataVO();
 			user.setProfileId(profileId);
 			user.setAuthenticationId(authId);
-        	SecurityController sc = new SecurityController(site.getLoginModule(), site.getRoleModule(), attributes);
-	        sc.checkRole(user, req, site.getSiteId(), dbConn);
-	        log.debug("login complete");
-        } catch (Exception e) {
-        	log.error("could not auto-login user after registration, profileId=" + profileId, e);
-        }
+			SecurityController sc = new SecurityController(site.getLoginModule(), site.getRoleModule(), attributes);
+			sc.checkRole(user, req, site.getSiteId(), dbConn);
+			log.debug("login complete");
+		} catch (Exception e) {
+			log.error("could not auto-login user after registration, profileId=" + profileId, e);
+		}
 	}
 	
 	
@@ -433,7 +469,7 @@ public class RequestAQuoteSTF extends SBActionAdapter {
 	 * @throws MailException
 	 */
 	private void sendCenterEmail(SMTServletRequest req, ContactDataContainer cdc, Boolean isSAF, SAFConfig safConfig, Map<String, String> vals) 
-	throws MailException {
+			throws MailException {
 		EmailMessageVO msg = new EmailMessageVO();
 		try {
 			msg.addRecipients(req.getParameter(DEALER_EMAIL).split(","));
@@ -460,7 +496,7 @@ public class RequestAQuoteSTF extends SBActionAdapter {
 	 * @throws MailException
 	 */
 	private void sendUserEmail(SMTServletRequest req, ContactDataContainer cdc, Boolean isSAF, SAFConfig safConfig, Map<String, String> vals) 
-	throws MailException {
+			throws MailException {
 		EmailMessageVO msg = new EmailMessageVO();
 		try {
 			msg.addRecipient(req.getParameter("userEmail"));
@@ -587,7 +623,7 @@ public class RequestAQuoteSTF extends SBActionAdapter {
 	 * @throws InvalidDataException
 	 */
 	private final Map<String, String> loadEmailInfo(SMTServletRequest req, String csi) 
-	throws InvalidDataException {
+			throws InvalidDataException {
 		Map<String, String> vals = new HashMap<String, String>();
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sb = new StringBuilder(425);
@@ -646,7 +682,7 @@ public class RequestAQuoteSTF extends SBActionAdapter {
 		}
 		return ts;
 	}
-	**/
+	 **/
 	
 	
 	
