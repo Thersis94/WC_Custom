@@ -93,9 +93,12 @@ public class SAMLProxyLoginModule extends SAMLLoginModule {
 			// set redir, throw exception so redirect will be processed
 			req.setAttribute(Constants.SSO_AUTH_REDIRECT, redir.toString());
 			throw new AuthenticationException(ErrorCodes.SSO_AUTH_REDIRECT);
+		} else {
+			// if neither case, throw 'invalid login'
+			throw new AuthenticationException(ErrorCodes.ERR_INVALID_LOGIN);
 		}
 		
-		return new UserDataVO();
+		return null;
 
 	}	
 
