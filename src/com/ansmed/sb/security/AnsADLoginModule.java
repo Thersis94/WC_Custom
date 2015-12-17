@@ -8,7 +8,6 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
-
 // SMT Base Libs
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.exception.DatabaseException;
@@ -393,5 +392,4 @@ public class AnsADLoginModule extends AbstractLoginModule {
 			throws AuthenticationException {
 		return null;
 	}
-
 }

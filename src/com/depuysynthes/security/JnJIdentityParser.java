@@ -59,6 +59,9 @@ public class JnJIdentityParser extends AbstractSSOParser {
 			user.addAttribute("title", this.getStringValue("title", ssoData));
 		}
 		
+		// add world-wide ID (wwid)
+		user.addAttribute("wwid", this.getStringValue("wwid", ssoData));
+		
 		return user;
 	}
 
