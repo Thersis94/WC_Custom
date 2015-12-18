@@ -127,7 +127,7 @@ public class KeystoneApprovalAction extends SimpleActionAdapter {
 		sql.append("WHERE ORGANIZATION_ID = ? and (MODULE_TYPE_ID = ? or ");
 		sql.append("(MODULE_TYPE_ID=? and PORTLET_DESC=?))  and WC_SYNC_STATUS_CD not in (?,?,?) ");
 		sql.append("ORDER BY PORTLET_DESC");
-		
+
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			if (franchiseId.equals(orgId)) {
 				ps.setString(1, franchiseId);
@@ -167,9 +167,9 @@ public class KeystoneApprovalAction extends SimpleActionAdapter {
 				
 				String newSiteAlias = getModSpecificAlias(app.getWcKeyId());
 				if (newSiteAlias != null && !siteAlias.equals(newSiteAlias)) {
-					 log.debug("############################################################new alias: " + newSiteAlias + " old alias " + siteAlias);
-
 					 app.setPreviewUrl("/"+newSiteAlias);
+				} else {
+					app.setPreviewUrl("");
 				}
 				 
 				 approvables.add(app);
@@ -179,27 +179,30 @@ public class KeystoneApprovalAction extends SimpleActionAdapter {
 		}
 		
 		String previewApiKey = ApprovalController.generatePreviewApiKey(attributes);
-	     req.setParameter(Constants.PAGE_PREVIEW, previewApiKey);
+		req.setParameter(Constants.PAGE_PREVIEW, previewApiKey);
 		putModuleData(approvables);
 	}
 		
 	/**
-	 * this method takes a wc key id and finds a center where that particular 
+	 * This method takes a wc key id and finds a center where that particular 
 	 * center page module is active to preview.
 	 * @param wcKeyId
 	 * @return
 	 */
 	private String getModSpecificAlias(String wcKeyId) {
 		String customDb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = new StringBuilder(220);
-		
+
+		//Build Lookup Query
+		StringBuilder sql = new StringBuilder(500);
 		sql.append("SELECT fclmxr.FRANCHISE_ID from ");
 		sql.append(customDb).append("FTS_CP_MODULE_FRANCHISE_XR fcmfxr ");
 		sql.append("inner join ").append(customDb).append("FTS_CP_LOCATION_MODULE_XR fclmxr ");
 		sql.append("on fcmfxr.CP_LOCATION_MODULE_XR_ID = fclmxr.CP_LOCATION_MODULE_XR_ID ");
-		sql.append("inner join WebCrescendo_fs.dbo.WC_SYNC wc on wc.WC_KEY_ID = fcmfxr.CP_MODULE_OPTION_ID ");
+		sql.append("inner join WebCrescendo_fs.dbo.WC_SYNC wc on (wc.WC_ORIG_KEY_ID = fcmfxr.CP_MODULE_OPTION_ID ");
+		sql.append("or wc.WC_KEY_ID = fcmfxr.CP_MODULE_OPTION_ID) ");
 		sql.append(" where wc.WC_KEY_ID = ? ");
 
+		//Query for Franchise Id if available.
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, wcKeyId);
 			
