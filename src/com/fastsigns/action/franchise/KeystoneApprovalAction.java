@@ -9,6 +9,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
+//SMT app libs
+import org.apache.commons.lang.StringUtils;
+
 //WC_customs
 import com.fastsigns.action.approval.WebeditApprover.WebeditType;
 
@@ -166,12 +169,13 @@ public class KeystoneApprovalAction extends SimpleActionAdapter {
 						app.setPreviewUrl("/careers?jobPostingId="+app.getWcKeyId());
 						break;
 					case CenterPage:
-						log.debug("centerpage type");
+						log.debug("centerpage type called for franchise " + franchiseId);
 						app.setPreviewUrl("/"+siteAlias+rs.getString("FULL_PATH_TXT"));
 						break;
 					default:app.setPreviewUrl("/"+siteAlias);;
 				}
 				
+				if ("FTS".equals(StringUtils.substring(franchiseId, 0, 3))){
 				String newSiteAlias = getModSpecificAlias(app.getWcKeyId());
 				if (newSiteAlias != null && !siteAlias.equals(newSiteAlias)) {
 					 app.setPreviewUrl("/"+newSiteAlias);
@@ -179,6 +183,7 @@ public class KeystoneApprovalAction extends SimpleActionAdapter {
 					app.setPreviewUrl("");
 				}
 				 
+				}
 				 approvables.add(app);
 			}
 		} catch(SQLException e) {
@@ -248,7 +253,7 @@ public class KeystoneApprovalAction extends SimpleActionAdapter {
 	 */
 	private String getSiteAlias(String franchiseId) {
 		StringBuilder sql = new StringBuilder(105);
-		sql.append("select location_alias_nm from dealer_location where dealer_location_id=?");
+		sql.append("select location_alias_nm from dealer_location where dealer_location_id= ? ");
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, franchiseId);
 			
