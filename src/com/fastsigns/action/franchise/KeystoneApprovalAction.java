@@ -215,7 +215,7 @@ public class KeystoneApprovalAction extends SimpleActionAdapter {
 			
 			ResultSet rs = ps.executeQuery();
 			
-			if (rs.next()) return rs.getString(1);
+			if (rs.next()) return rs.getString("FRANCHISE_ID");
 		} catch(SQLException e) {
 			log.error("Could not get default location alias", e);
 		}
