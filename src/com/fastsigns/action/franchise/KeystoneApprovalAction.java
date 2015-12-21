@@ -205,7 +205,7 @@ public class KeystoneApprovalAction extends SimpleActionAdapter {
 		sql.append(customDb).append("FTS_CP_MODULE_FRANCHISE_XR fcmfxr ");
 		sql.append("inner join ").append(customDb).append("FTS_CP_LOCATION_MODULE_XR fclmxr ");
 		sql.append("on fcmfxr.CP_LOCATION_MODULE_XR_ID = fclmxr.CP_LOCATION_MODULE_XR_ID ");
-		sql.append("inner join WebCrescendo_fs.dbo.WC_SYNC wc on (wc.WC_ORIG_KEY_ID = fcmfxr.CP_MODULE_OPTION_ID ");
+		sql.append("inner join WC_SYNC wc on (wc.WC_ORIG_KEY_ID = fcmfxr.CP_MODULE_OPTION_ID ");
 		sql.append("or wc.WC_KEY_ID = fcmfxr.CP_MODULE_OPTION_ID) ");
 		sql.append(" where wc.WC_KEY_ID = ? ");
 
