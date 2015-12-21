@@ -177,11 +177,11 @@ public class KeystoneApprovalAction extends SimpleActionAdapter {
 				
 				if ("FTS".equals(StringUtils.substring(franchiseId, 0, 3))){
 				String newSiteAlias = getModSpecificAlias(app.getWcKeyId());
-				if (newSiteAlias != null && !siteAlias.equals(newSiteAlias)) {
-					 app.setPreviewUrl("/"+newSiteAlias);
-				} else {
-					app.setPreviewUrl("");
-				}
+					if (newSiteAlias != null && !siteAlias.equals(newSiteAlias)) {
+						app.setPreviewUrl("/"+newSiteAlias);
+					} else {
+						app.setPreviewUrl("");
+					}
 				 
 				}
 				 approvables.add(app);
