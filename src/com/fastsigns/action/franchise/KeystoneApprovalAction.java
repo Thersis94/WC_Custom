@@ -1,5 +1,6 @@
 package com.fastsigns.action.franchise;
 
+//Java 7
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -8,10 +9,15 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
+//WC_customs
 import com.fastsigns.action.approval.WebeditApprover.WebeditType;
+
+//SMT base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.StringUtil;
+
+//WebCrescendo
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.approval.ApprovalAction;
 import com.smt.sitebuilder.approval.ApprovalController;
@@ -127,8 +133,9 @@ public class KeystoneApprovalAction extends SimpleActionAdapter {
 		sql.append("WHERE ORGANIZATION_ID = ? and (MODULE_TYPE_ID = ? or ");
 		sql.append("(MODULE_TYPE_ID=? and PORTLET_DESC=?))  and WC_SYNC_STATUS_CD not in (?,?,?) ");
 		sql.append("ORDER BY PORTLET_DESC");
-
+		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			//log.debug(franchiseId+"|"+orgId+"|"+franchiseId.equals(orgId));
 			if (franchiseId.equals(orgId)) {
 				ps.setString(1, franchiseId);
 			} else {
@@ -240,8 +247,9 @@ public class KeystoneApprovalAction extends SimpleActionAdapter {
 	 * Get the site alias for the submitted franchise id
 	 */
 	private String getSiteAlias(String franchiseId) {
-		String sql = "select location_alias_nm from dealer_location where dealer_location_id=?";
-		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+		StringBuilder sql = new StringBuilder(105);
+		sql.append("select location_alias_nm from dealer_location where dealer_location_id=?");
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, franchiseId);
 			
 			ResultSet rs = ps.executeQuery();
