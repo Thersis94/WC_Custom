@@ -18,6 +18,7 @@ public class SolrStoryVO extends SolrDocumentVO {
 	public static final String INDEX_TYPE = "PATIENT_AMBASSADOR";
 	
 	private String otherHobby;
+	private String surgeonName;
 	
 	public SolrStoryVO() {
 		super(INDEX_TYPE);
@@ -39,6 +40,15 @@ public class SolrStoryVO extends SolrDocumentVO {
 		} else {
 			return "single";
 		}
+	}
+
+	@SolrField(name="surgeon_name_s")
+	public String getSurgeonName() {
+		return surgeonName;
+	}
+
+	public void setSurgeonName(String surgeonName) {
+		this.surgeonName = surgeonName;
 	}
 
 }

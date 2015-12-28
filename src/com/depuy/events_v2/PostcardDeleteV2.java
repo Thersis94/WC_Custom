@@ -191,7 +191,7 @@ public class PostcardDeleteV2 extends SBActionAdapter {
 		PostcardSelectV2 pSel = new PostcardSelectV2(this.actionInit);
 		pSel.setDBConnection(dbConn);
 		pSel.setAttributes(this.attributes);
-		vo = pSel.loadOneSeminar(eventPostcardId, actionInit.getActionId(), null, null, null);
+		vo = pSel.loadOneSeminar(eventPostcardId, actionInit.getActionId(), null, null, null, -1);
 		//grab event_entry_id so we can delete from event_entry later
 		vo.setActionId( fetchEventEntryId(eventPostcardId) );
 		

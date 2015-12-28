@@ -68,6 +68,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		STATUS_ID("c0a80237eaa74b1245d3a04296472ffd"),
 		EMAIL_CONSENT_ID("c0a80237feea61107a662ea060005c35"),
 		MODAL_OPENED_ID("c0a80237fee851245d6f6f073c07573e"),
+		SURGEON_NM("c0a802413aea94a8e9b70d61e07832fc"),
 		AGREED_CONSENT_ID(""),
 
 		//the ID of the form itself (containing all these fields)
@@ -159,6 +160,10 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 			writeStoryElement(getElement(req.getParameter("storyText"), req.getParameter("storyTextFieldId"), req.getParameter("storyTextDataId")), submittalId);
 			log.debug("Text Written");
 			
+			//Write Surgeon Name
+			writeStoryElement(getElement(req.getParameter("surgeonNm"), req.getParameter("surgeonNameFieldId"), req.getParameter("surgeonNameDataId")), submittalId);
+			log.debug("Surgeon Name Written");
+			
 			//save image if provided
 			if (req.getFile("replacePhoto") != null) {
 				String filePath = saveFile(req);
@@ -229,6 +234,8 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 		ssv.setLng(trans.getLongitude().toString());
 		ssv.setDetailImage(getFirstResponse(fields.get(PAFConst.PROFILE_IMAGE_ID.getId())));
 		ssv.setCategories(fields.get(PAFConst.HOBBIES_ID.getId()).getResponses());
+		if (fields.get(PAFConst.SURGEON_NM.getId()) != null)
+			ssv.setSurgeonName(fields.get(PAFConst.SURGEON_NM.getId()).getResponses().get(0));
 		ssv.setHierarchies(fields.get(PAFConst.JOINT_ID.getId()).getResponses());
 		ssv.setOtherHobbies(getFirstResponse(fields.get(PAFConst.OTHER_HOBBY_ID.getId())));
 		ssv.setTitle(getFirstResponse(fields.get(PAFConst.STORY_TITLE_ID.getId())));

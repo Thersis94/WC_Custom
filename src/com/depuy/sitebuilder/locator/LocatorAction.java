@@ -437,9 +437,8 @@ public class LocatorAction extends SBActionAdapter {
         	sa.retrieve(req);
         } else if (StringUtil.checkVal(req.getParameter("registrationId")).length() > 0) {
         	log.debug("Getting registration data: " + req.getParameter("registrationId"));
-        	ActionInitVO newAi = this.actionInit;
-        	newAi.setActionId(req.getParameter("registrationId"));
-        	RegistrationAction sa = new RegistrationAction(newAi);
+        	actionInit.setActionGroupId(req.getParameter("registrationId"));
+        	RegistrationAction sa = new RegistrationAction(actionInit);
         	sa.setDBConnection(dbConn);
         	sa.setAttributes(attributes);
         	sa.retrieve(req);
