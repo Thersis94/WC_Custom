@@ -25,6 +25,7 @@ import java.util.Set;
 
 
 
+
 // SOLR Libs
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.common.SolrDocument;
@@ -42,6 +43,7 @@ import com.smt.sitebuilder.action.search.SolrActionVO;
 import com.smt.sitebuilder.action.search.SolrQueryProcessor;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
+import com.smt.sitebuilder.security.SecurityController;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
 
 /****************************************************************************
@@ -550,7 +552,7 @@ public class NexusKitImporter extends CommandLineUtil {
 			kit.setKitGTIN(items[3]);
 			kit.setBranchCode(items[4]);
 			kit.addOrganization(props.getProperty("organization"));
-			kit.addRole("0");
+			kit.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
 			kit.setSource(Source.JDE);
 			kit.setOrgName(kit.getOrgId());
 			

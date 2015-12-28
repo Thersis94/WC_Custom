@@ -411,7 +411,7 @@ public class NexusImporter extends CommandLineUtil {
 				p = new NexusProductVO();
 				updateProduct(p, cols);
 				p.addOrganization("DPY_SYN_NEXUS");
-				p.addRole("0");
+				p.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
 				p.setSource(source);
 				products.put(p.getDocumentId(), p);
 			}
