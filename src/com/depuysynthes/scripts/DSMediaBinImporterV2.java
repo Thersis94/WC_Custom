@@ -453,7 +453,10 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		String dropboxFolder = (String) props.get("downloadDir");
 
 		for (MediaBinDeltaVO vo : masterRecords.values()) {
-			vo.setLimeLightUrl(limeLightUrl + StringUtil.replace(vo.getAssetNm(), " ","%20"));
+			//escape certain chars on the asset path/name.  Note we cannot do a full URLEncode because of the directory separators
+			String fileUrl = StringUtil.replace(vo.getAssetNm(), " ","%20");
+			fileUrl = StringUtil.replace(fileUrl, "#","%23");
+			vo.setLimeLightUrl(limeLightUrl + fileUrl);
 			vo.setFileName(StringUtil.replace((type == 1 ? "US" : "EMEA") + "/" + vo.getAssetNm(), "/", File.separator));
 
 			if (fileOnLLChanged(vo))
