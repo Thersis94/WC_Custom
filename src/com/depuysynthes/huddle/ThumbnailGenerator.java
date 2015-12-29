@@ -4,16 +4,22 @@ import java.io.File;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.im4java.core.ConvertCmd;
 import org.im4java.core.IMOperation;
 
 import com.depuysynthes.action.MediaBinAdminAction;
+import com.depuysynthes.action.MediaBinAssetVO;
 import com.depuysynthes.action.MediaBinDistChannels;
-import com.siliconmtn.data.GenericVO;
+import com.depuysynthes.action.MediaBinLinkAction;
+import com.siliconmtn.exception.ApplicationException;
+import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.exception.MailException;
 import com.siliconmtn.util.CommandLineUtil;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -32,6 +38,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class ThumbnailGenerator extends CommandLineUtil {
 
 	StringBuilder email = new StringBuilder(500);
+	Set<MediaBinAssetVO> videos = new HashSet<>();
 
 	/**
 	 * @param args
@@ -54,7 +61,7 @@ public class ThumbnailGenerator extends CommandLineUtil {
 	public void run() {
 		//query the database for a list of assets that should have thumbnail images
 		//this Set of Strings represents the trimmed file name of the image
-		Set<GenericVO> records = getMediabinAssetList();
+		Set<MediaBinAssetVO> records = getMediabinAssetList();
 		
 		//this could be turned into a Map<basePath, Set<records>> to support multiple Dist. Channels.
 		String basePath = props.getProperty("huddleBaseImgPath");
@@ -70,10 +77,35 @@ public class ThumbnailGenerator extends CommandLineUtil {
 
 		//send a notification email
 		try {
-			sendEmail(email, null);
+			this.sendEmail();
 		} catch (Exception e) {
 			log.error("could not send email", e);
 		}
+	}
+	
+	
+	/**
+	 * appends any video notifications to the email message, then forwards to super.sendEmail()
+	 * @throws ApplicationException
+	 * @throws InvalidDataException
+	 * @throws MailException
+	 */
+	private void sendEmail() throws ApplicationException, InvalidDataException, MailException {
+		if (videos.size() > 0) {
+			email.append("\n<h2>Videos that need your attention</h2>");
+			email.append("<table width=\"100%\" border='1'>");
+			email.append("<tr><th align='left'>Tracking Number</th><th align='left'>Folder</th><th align='left'>File Name</th><th align='left'>Video</th></tr>\n");
+			for (MediaBinAssetVO vo : videos) {
+				email.append("<tr><td>").append(vo.getTrackingNoTxt()).append("</td><td>");
+				email.append(this.getImageFolder(vo.getTrackingNoTxt())).append("</td><td>");
+				email.append(this.getImageName(vo.getTrackingNoTxt())).append("</td><td>");
+				email.append("<a href=\"").append(MediaBinLinkAction.US_BASE_URL).append(vo.getAssetNm());
+				email.append("\">raw file</a></td></tr>\n");
+			}
+			email.append("</table>Note: Folder and File Name values above are for ");
+			email.append("Web Crescendo's File Manager, where you need to upload the thumbnail image.  Both values are case sensitive.\n<br/>");
+		}
+		sendEmail(email, null);
 	}
 
 
@@ -82,19 +114,15 @@ public class ThumbnailGenerator extends CommandLineUtil {
 	 * The code is structured so that we can easily add DSI and other Channels in the future.
 	 * @return
 	 */
-	private Set<GenericVO> getMediabinAssetList() {
-		Set<GenericVO> records = new HashSet<>();
+	private Set<MediaBinAssetVO> getMediabinAssetList() {
+		Set<MediaBinAssetVO> records = new HashSet<>();
 		Calendar huddleCal = Calendar.getInstance();
 		boolean loadHuddle = (props.getProperty("dsHuddle") != null);
 
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("select tracking_no_txt, asset_nm from ");
+		sql.append("select tracking_no_txt, asset_nm, asset_type from ");
 		sql.append(props.getProperty(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("DPY_SYN_MEDIABIN where ");
-		sql.append("lower(asset_type) in (?"); //loop all pdf types
-		for (int x=MediaBinAdminAction.PDF_ASSETS.length; x > 0; x--) sql.append(",?");
-		sql.append(") ");
-
+		sql.append("DPY_SYN_MEDIABIN where 1=1 ");
 		if (loadHuddle) {
 			sql.append("and (opco_nm like ? and modified_dt > ?) ");
 			huddleCal.add(Calendar.DAY_OF_YEAR, Integer.parseInt(props.getProperty("dsHuddle")));
@@ -104,15 +132,18 @@ public class ThumbnailGenerator extends CommandLineUtil {
 
 		int x=1;
 		try  (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(x++, "pdf");
-			for (String at: MediaBinAdminAction.PDF_ASSETS) ps.setString(x++, at);
 			if (loadHuddle) {
 				ps.setString(x++, "%" + MediaBinDistChannels.DistChannel.DSHuddle.getChannel() + "%");
 				ps.setDate(x++, new java.sql.Date(huddleCal.getTimeInMillis()));
 			}
 			ResultSet rs = ps.executeQuery();
-			while (rs.next())
-				records.add(new GenericVO(rs.getString(1), rs.getString(2)));
+			while (rs.next()) {
+				MediaBinAssetVO vo = new MediaBinAssetVO();
+				vo.setTrackingNoTxt(rs.getString(1));
+				vo.setAssetNm(rs.getString(2));
+				vo.setAssetType(rs.getString(3));
+				records.add(vo);
+			}
 
 		} catch (SQLException sqle) {
 			log.error("could not load records", sqle);
@@ -158,15 +189,23 @@ public class ThumbnailGenerator extends CommandLineUtil {
 	 * @param basePath
 	 * @param records
 	 */
-	private Set<GenericVO>  parseRecords(String baseImgPath, Set<GenericVO> records) {
-		Set<GenericVO> newRecords = new HashSet<>(records.size());
-
-		for (GenericVO vo : records) {
-			String fn = StringUtil.checkVal(vo.getKey()); //fileName is based on Tracking Number
+	private Set<MediaBinAssetVO>  parseRecords(String baseImgPath, Set<MediaBinAssetVO> records) {
+		Set<MediaBinAssetVO> newRecords = new HashSet<>(records.size());
+		List<String> pdfAssetTypes  = Arrays.asList(MediaBinAdminAction.PDF_ASSETS);
+		
+		for (MediaBinAssetVO vo : records) {
+			String fn = StringUtil.checkVal(vo.getTrackingNoTxt()); //fileName is based on Tracking Number
 			fn = getImageFolder(fn) + File.separator + getImageName(fn);
 			File f = new File(baseImgPath + fn);
 			log.debug("testing for file: " + baseImgPath + fn);
-			if (!f.exists()) newRecords.add(vo);
+			if (!f.exists()) {
+				boolean isVideo = !pdfAssetTypes.contains(vo.getAssetType());
+				if (isVideo) {
+					videos.add(vo);
+				} else {
+					newRecords.add(vo);
+				}
+			}
 		}
 
 		logMsg(newRecords.size() + " images need to be created");
@@ -184,20 +223,20 @@ public class ThumbnailGenerator extends CommandLineUtil {
 	 * @param mediabinPath
 	 * @param records
 	 */
-	private void createImages(String baseImgPath, String mediabinPath, Set<GenericVO> records) {
+	private void createImages(String baseImgPath, String mediabinPath, Set<MediaBinAssetVO> records) {
 		Set<String> failures = new HashSet<>();
 		int successCnt =0;
 
-		for (GenericVO vo : records) {
-			String sourceFilePath = mediabinPath + vo.getValue();
-			String destFilePath = baseImgPath + getImageFolder(""+vo.getKey()) + File.separator + getImageName(""+vo.getKey());
+		for (MediaBinAssetVO vo : records) {
+			String sourceFilePath = mediabinPath + vo.getAssetNm();
+			String destFilePath = baseImgPath + getImageFolder(""+vo.getTrackingNoTxt()) + File.separator + getImageName(""+vo.getTrackingNoTxt());
 			try {
 				//make sure the parent directories exist
-				new File(baseImgPath + getImageFolder(""+vo.getKey())).mkdirs();
+				new File(baseImgPath + getImageFolder(""+vo.getTrackingNoTxt())).mkdirs();
 
 				// create the operation, add images and operators/options
 				IMOperation op = new IMOperation();
-				op.thumbnail(300);
+				op.thumbnail(320);
 				op.background("white");
 				op.alpha("remove");
 				op.addImage(sourceFilePath + "[0]");
@@ -208,7 +247,7 @@ public class ThumbnailGenerator extends CommandLineUtil {
 				new ConvertCmd().run(op);
 				++successCnt;
 			} catch (Exception e) {
-				failures.add("could not create image for " + vo.getKey() + " from " +  vo.getValue());
+				failures.add("could not create image for " + vo.getTrackingNoTxt() + " from " +  vo.getAssetNm());
 				log.error("could not create thumbnail", e);
 			}
 		}
