@@ -29,6 +29,9 @@ public class HuddleUtils {
 	 *  001220 OR 001510, pre-select ETHICON
 	 *  000940, pre-select JOINT RECON
 	 *  001225, pre-select SPORTS MED
+	 *  
+	 *  These are used on the registration page, to pre-select which homepage 
+	 *  option is recommended for the user (based on their SSO value).
 	 */
 	public enum SSOBusinessUnit {
 		Spine("Spine","/spine", "000942"),
