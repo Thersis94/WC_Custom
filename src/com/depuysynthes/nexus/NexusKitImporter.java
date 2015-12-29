@@ -25,6 +25,7 @@ import java.util.Set;
 
 
 
+
 // SOLR Libs
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.common.SolrDocument;
@@ -477,6 +478,31 @@ public class NexusKitImporter extends CommandLineUtil {
 			ps.setString(4, kit.getKitId());
 			
 			ps.executeUpdate();
+		}
+		
+		// Remove all products associated with the kit.
+		// The kit's current products are all in the file.
+		deleteKitProducts(kit.getKitId());
+	}
+
+	
+	/**
+	 * Delete all products associated with the supplied kit.
+	 * This prepares the kit to have its new collection of items listed
+	 * in the loaded document added to the database without duplicating any
+	 * items that are already present.
+	 * @param kitId
+	 */
+	private void deleteKitProducts(String kitId) {
+		StringBuilder sql = new StringBuilder(100);
+		sql.append("DELETE ").append(props.get("customDbSchema")).append("DPY_SYN_NEXUS_SET_ITEM ");
+		sql.append("WHERE LAYER_ID = ?");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, kitId);
+			ps.executeUpdate();
+		} catch (SQLException e) {
+			log.error("Unable to delete products for kit " + kitId, e);
 		}
 	}
 
