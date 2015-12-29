@@ -74,14 +74,23 @@ public class SAMLProxyLoginModule extends SAMLLoginModule {
 			// retrieve provider info
 			SSOProviderVO provider = retrieveProviderData(req, conn, site);
 
-			// parse response and  build UserDataVO from response
-			UserDataVO baseUser = parseSSOResponse(req, site, provider);
+			/* parse response and build UserDataVO from response
+			 * We try/catch to ensure that we capture any parsing exceptions
+			 * so that we can send these back in a custom manner to the legacy
+			 * calling site.  */
+			UserDataVO baseUser = null;
+			try {
+				baseUser = parseSSOResponse(req, site, provider);
+			} catch (AuthenticationException ae) {
+				log.error("Intercepted the parent SSO response parsing exception.");
+			}
 			
 			// build/set sso redirect using the alternate service endpoint URI.
 			StringBuilder redir = new StringBuilder(40);
 			redir.append(REDIRECT_URI_SRT);
 			redir.append("?SAMLResponse=");
-			if (StringUtil.checkVal(baseUser.getAttribute("wwid"),null) == null) {
+			if (baseUser == null || 
+					StringUtil.checkVal(baseUser.getAttribute("wwid"),null) == null) {
 				redir.append("invalid");
 			} else {
 				redir.append("valid");
