@@ -117,7 +117,7 @@ public class BatchUserAction extends SimpleActionAdapter {
 		
 		int x = 1;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(x++, HuddleConstants.WWID_REGISTER_FIELD_ID);
+			ps.setString(x++, HuddleUtils.WWID_REGISTER_FIELD_ID);
 			for (String s : wwids) ps.setString(x++, s);
 			ps.setString(x, siteId);
 			ResultSet rs = ps.executeQuery();
