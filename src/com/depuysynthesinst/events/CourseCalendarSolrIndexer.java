@@ -15,7 +15,6 @@ import org.apache.solr.common.SolrInputDocument;
 
 import com.depuysynthes.lucene.MediaBinSolrIndex.MediaBinField;
 import com.depuysynthesinst.lms.FutureLeaderACGME;
-import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.event.vo.EventEntryVO;
@@ -39,9 +38,8 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 	/**
 	 * Index type for this index.  This value is stored in the INDEX_TYPE field
 	 */
-	public static final String INDEX_TYPE = "COURSE_CAL";
-	
-	private static String organizationId = "DPY_SYN_INST";
+	protected String INDEX_TYPE = "COURSE_CAL";
+	protected String organizationId = "DPY_SYN_INST";
 
 	/**
 	 * @param config
@@ -92,15 +90,15 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 				log.error("Unable to index course: " + StringUtil.getToString(vo), e);
 			}
 		}
-
 	}
+
 	
 	/**
 	 * builds a summary of the Event using city & state.  fallback to full description
 	 * @param vo
 	 * @return
 	 */
-	private String buildSummary(EventEntryVO vo) {
+	protected String buildSummary(EventEntryVO vo) {
 		String val = StringUtil.checkVal(vo.getCityName());
 		if (val.length() > 0 && vo.getStateCode() != null) val += ", ";
 		val+= vo.getStateCode();
@@ -116,29 +114,12 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 	 * @param conn
 	 * @return Map<pageUrl, BlogGroupVO>
 	 */
-	private List<EventEntryVO> loadEvents(Connection conn) {
-		StringBuilder sql = new StringBuilder();
-		sql.append("select s.alias_path_nm, c.full_path_txt, et.type_nm, ee.* ");
-		sql.append("from event_entry ee ");
-		sql.append("inner join event_type et on ee.event_type_id=et.event_type_id ");
-		sql.append("inner join event_group eg on et.action_id=eg.action_id ");
-		sql.append("inner join sb_action a on eg.action_id=a.attrib1_txt ");
-		sql.append("inner join page_module b on a.action_id=b.action_id ");
-		sql.append("inner join page_module_role pmr on pmr.page_module_id=b.page_module_id and pmr.role_id='0' ");  //only public portlets
-		sql.append("inner join page c on c.page_id=b.page_id ");
-		sql.append("inner join page_role pr on pr.page_id=c.page_id and pr.role_id='0' "); //only public pages
-		sql.append("inner join site s on c.site_id=s.site_id ");
-		sql.append("inner join module_display md on b.module_display_id=md.module_display_id ");
-		sql.append("where s.ORGANIZATION_ID=? and ee.start_dt > ? ");
-		sql.append("and (a.pending_sync_flg is null or a.pending_sync_flg=0) ");  //portlet not pending
-		sql.append("and (c.pending_sync_flg is null or c.pending_sync_flg=0) "); //page not pending
-		sql.append("and a.module_type_id='COURSE_CAL' and md.indexable_flg=1 "); //only include pages that contain Views that are considered indexable.
+	protected List<EventEntryVO> loadEvents(Connection conn) {
+		String sql = buildQuery();
 		log.debug(sql);
 
-		PreparedStatement ps = null;
 		List<EventEntryVO> data = new ArrayList<EventEntryVO>();
-		try {
-			ps = conn.prepareStatement(sql.toString());
+		try (PreparedStatement ps = conn.prepareStatement(sql)) {
 			ps.setString(1, organizationId);
 			ps.setTimestamp(2, Convert.getCurrentTimestamp());
 			ResultSet rs = ps.executeQuery();
@@ -186,8 +167,6 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 
 		} catch(Exception e) {
 			log.error("Unable to retrieve course calendar events", e);
-		} finally {
-			DBUtil.close(ps);
 		}
 
 		log.info("loaded " + data.size() + " events");
@@ -214,6 +193,31 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 		} catch (Exception e) {
 			throw new IOException(e);
 		}
+	}
+	
+	
+	/**
+	 * returns the event lookup query used to load indexable events
+	 * @return
+	 */
+	protected String buildQuery() {
+		StringBuilder sql = new StringBuilder();
+		sql.append("select s.alias_path_nm, c.full_path_txt, et.type_nm, ee.* ");
+		sql.append("from event_entry ee ");
+		sql.append("inner join event_type et on ee.event_type_id=et.event_type_id ");
+		sql.append("inner join event_group eg on et.action_id=eg.action_id ");
+		sql.append("inner join sb_action a on eg.action_id=a.attrib1_txt ");
+		sql.append("inner join page_module b on a.action_id=b.action_id ");
+		sql.append("inner join page_module_role pmr on pmr.page_module_id=b.page_module_id and pmr.role_id='0' ");  //only public portlets
+		sql.append("inner join page c on c.page_id=b.page_id ");
+		sql.append("inner join page_role pr on pr.page_id=c.page_id and pr.role_id='0' "); //only public pages
+		sql.append("inner join site s on c.site_id=s.site_id ");
+		sql.append("inner join module_display md on b.module_display_id=md.module_display_id ");
+		sql.append("where s.ORGANIZATION_ID=? and ee.start_dt > ? ");
+		sql.append("and (a.pending_sync_flg is null or a.pending_sync_flg=0) ");  //portlet not pending
+		sql.append("and (c.pending_sync_flg is null or c.pending_sync_flg=0) "); //page not pending
+		sql.append("and a.module_type_id='COURSE_CAL' and md.indexable_flg=1 "); //only include pages that contain Views that are considered indexable.
+		return sql.toString();
 	}
 
 }
