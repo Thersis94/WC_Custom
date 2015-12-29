@@ -26,6 +26,7 @@ import java.util.Set;
 
 
 
+
 // SOLR Libs
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.common.SolrDocument;
@@ -42,6 +43,7 @@ import com.smt.sitebuilder.action.search.SolrActionIndexVO;
 import com.smt.sitebuilder.action.search.SolrActionVO;
 import com.smt.sitebuilder.action.search.SolrQueryProcessor;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
+import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
 
@@ -289,7 +291,7 @@ public class NexusKitImporter extends CommandLineUtil {
 	 */
 	private int getInvalidProducts() throws SQLException {
 		StringBuilder sql = new StringBuilder(250);
-		String customDb = (String) props.get("customDbSchema");
+		String customDb = (String) props.get(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT COUNT(*) FROM ").append(customDb).append("DPY_SYN_NEXUS_SET_INFO s ");
 		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_NEXUS_SET_ITEM i ");
 		sql.append("ON i.LAYER_ID = s.SET_INFO_ID ");
@@ -314,7 +316,7 @@ public class NexusKitImporter extends CommandLineUtil {
 	 */
 	private void deleteBlankKits() throws SQLException {
 		StringBuilder sql = new StringBuilder(150);
-		sql.append("DELETE ").append(props.get("customDbSchema")).append("DPY_SYN_NEXUS_SET_INFO ");
+		sql.append("DELETE ").append(props.get(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_NEXUS_SET_INFO ");
 		sql.append("WHERE ORGANIZATION_ID != 'Custom' AND (DESCRIPTION_TXT is null ");
 		sql.append("OR DESCRIPTION_TXT = '')");
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -356,7 +358,7 @@ public class NexusKitImporter extends CommandLineUtil {
 	 */
 	public List<String> getMDMIds() throws SQLException {
 		StringBuilder sql = new StringBuilder(512);
-		sql.append("select set_info_id from ").append(props.get("customDbSchema"));
+		sql.append("select set_info_id from ").append(props.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("DPY_SYN_NEXUS_SET_INFO where description_txt is null ");
 		sql.append("or gtin_txt is null");
 
@@ -467,7 +469,7 @@ public class NexusKitImporter extends CommandLineUtil {
 	private void updateKitHeader(NexusKitVO kit) throws SQLException {
 		StringBuilder sql = new StringBuilder(200);
 		
-		sql.append("UPDATE ").append(props.get("customDbSchema")).append("DPY_SYN_NEXUS_SET_INFO ");
+		sql.append("UPDATE ").append(props.get(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_NEXUS_SET_INFO ");
 		sql.append("SET description_txt=?, gtin_txt=?, UPDATE_DT=? ");
 		sql.append("WHERE SET_INFO_ID = ? ");
 		
@@ -495,7 +497,7 @@ public class NexusKitImporter extends CommandLineUtil {
 	 */
 	private void deleteKitProducts(String kitId) {
 		StringBuilder sql = new StringBuilder(100);
-		sql.append("DELETE ").append(props.get("customDbSchema")).append("DPY_SYN_NEXUS_SET_ITEM ");
+		sql.append("DELETE ").append(props.get(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_NEXUS_SET_ITEM ");
 		sql.append("WHERE LAYER_ID = ?");
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -514,8 +516,8 @@ public class NexusKitImporter extends CommandLineUtil {
 		Map<String, List<String>> existingKits = new HashMap<>();
 		
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("SELECT SET_INFO_ID, ITEM_ID FROM ").append(props.get("customDbSchema")).append("DPY_SYN_NEXUS_SET_INFO s ");
-		sql.append("LEFT JOIN ").append(props.get("customDbSchema")).append("DPY_SYN_NEXUS_SET_ITEM i ");
+		sql.append("SELECT SET_INFO_ID, ITEM_ID FROM ").append(props.get(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_NEXUS_SET_INFO s ");
+		sql.append("LEFT JOIN ").append(props.get(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_NEXUS_SET_ITEM i ");
 		sql.append("on s.SET_INFO_ID = i.LAYER_ID ");
 		sql.append("WHERE SOURCE = 'MDM' ORDER BY SET_INFO_ID");
 		
@@ -610,7 +612,7 @@ public class NexusKitImporter extends CommandLineUtil {
 	private void flushJDEKits() throws Exception {
 		StringBuilder sql = new StringBuilder(125);
 		
-		sql.append("DELETE ").append(props.get("customDbSchema")).append("DPY_SYN_NEXUS_SET_INFO ");
+		sql.append("DELETE ").append(props.get(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_NEXUS_SET_INFO ");
 		sql.append("WHERE SOURCE = 'JDE'");
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -677,12 +679,12 @@ public class NexusKitImporter extends CommandLineUtil {
 		// Build the SQL Statement
 		StringBuilder sql = new StringBuilder(255);
 		if (!update) {
-			sql.append("insert into ").append(props.get("customDbSchema"));
+			sql.append("insert into ").append(props.get(Constants.CUSTOM_DB_SCHEMA));
 			sql.append("DPY_SYN_NEXUS_SET_ITEM (quantity_no, unit_measure_cd, effective_start_dt, ");
 			sql.append("effective_end_dt, order_no, create_dt,layer_id, product_sku_txt, item_id) ");
 			sql.append("values (?,?,?,?,?,?,?,?,?)");
 		} else {
-			sql.append("UPDATE ").append(props.get("customDbSchema"));
+			sql.append("UPDATE ").append(props.get(Constants.CUSTOM_DB_SCHEMA));
 			sql.append("DPY_SYN_NEXUS_SET_ITEM SET quantity_no=?, ");
 			sql.append("unit_measure_cd=?, effective_start_dt=?, effective_end_dt=?, order_no=?, create_dt=? ");
 			sql.append("WHERE layer_id = ? and product_sku_txt = ? ");
@@ -717,7 +719,7 @@ public class NexusKitImporter extends CommandLineUtil {
 	public void storeKitHeader(NexusKitVO kit, boolean isMDM) throws SQLException {
 		// Build the SQL Statement
 		StringBuilder sql = new StringBuilder(255);
-		sql.append("insert into ").append(props.get("customDbSchema"));
+		sql.append("insert into ").append(props.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("DPY_SYN_NEXUS_SET_INFO (set_info_id, set_sku_txt, organization_id, ");
 		sql.append("description_txt, gtin_txt, branch_plant_cd, create_dt, source) ");
 		sql.append("values (?,?,?,?,?,?,?,?)");
@@ -758,7 +760,7 @@ public class NexusKitImporter extends CommandLineUtil {
 	public void storeKitLayer(String kitId) throws SQLException{
 		// Build the SQL Statement
 		StringBuilder sql = new StringBuilder(255);
-		sql.append("insert into ").append(props.get("customDbSchema"));
+		sql.append("insert into ").append(props.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("DPY_SYN_NEXUS_SET_LAYER (layer_id, set_info_id, layer_nm, ");
 		sql.append("order_no, create_dt) ");
 		sql.append("values (?,?,?,?,?)");
@@ -788,7 +790,7 @@ public class NexusKitImporter extends CommandLineUtil {
 	 */
 	public int updateKitRecord(String sku, String gtin, String desc) throws SQLException {
 		StringBuilder sql = new StringBuilder(512);
-		sql.append("update ").append(props.get("customDbSchema"));
+		sql.append("update ").append(props.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("DPY_SYN_NEXUS_SET_INFO set gtin_txt = ?, description_txt = ? ");
 		sql.append("where set_info_id = ? ");
 		int cnt;
