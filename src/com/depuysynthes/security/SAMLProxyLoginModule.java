@@ -109,6 +109,22 @@ public class SAMLProxyLoginModule extends SAMLLoginModule {
 		
 		return null;
 
-	}	
+	}
+	
+	/* (non-Javadoc)
+	 * @see com.siliconmtn.security.AbstractLoginModule#initiateLogin()
+	 */
+	@Override
+	public boolean canInitiateLogin(SMTServletRequest req) throws AuthenticationException {
+		//only initiate logic if the session is new.
+		//This traps an infinite redirect loop where something goes wrong on WC 
+		//but the user successfully authenticates to SSO. (go there, come back, fail, redir to homepage, go there, come back, fail, ...con't.)
+		if (!req.getSession().isNew())
+			return false;
+
+		//set a parameter to invoke SSO and leverage the superclass implementation
+		req.setParameter("initiateSSO", "true");
+		return super.canInitiateLogin(req);
+	}
 
 }
