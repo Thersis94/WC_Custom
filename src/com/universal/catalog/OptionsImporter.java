@@ -856,7 +856,7 @@ public class OptionsImporter extends AbstractImporter {
 	private ProductAttributeVO cloneProductAttribute(ProductAttributeVO child, String parentId) {
 		// copy the child, set parent's product attribute ID as the parent ID
 		ProductAttributeVO newVO = new ProductAttributeVO();
-		newVO.setActiveFlg(child.getActiveFlg());
+		newVO.setActiveFlag(child.getActiveFlag());
 		newVO.setAttributeGroupId(child.getAttributeGroupId());
 		newVO.setAttributeId(child.getAttributeId());
 		newVO.setAttributeName(child.getAttributeName());
