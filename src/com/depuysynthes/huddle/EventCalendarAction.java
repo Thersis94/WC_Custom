@@ -45,15 +45,15 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @version 1.0
  * @since Dec 28, 2015
  ****************************************************************************/
-public class EventCalendar extends CourseCalendar {
+public class EventCalendarAction extends CourseCalendar {
 
-	public EventCalendar() {
+	public EventCalendarAction() {
 	}
 
 	/**
 	 * @param arg0
 	 */
-	public EventCalendar(ActionInitVO arg0) {
+	public EventCalendarAction(ActionInitVO arg0) {
 		super(arg0);
 	}
 	

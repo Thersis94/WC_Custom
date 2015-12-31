@@ -34,11 +34,11 @@ public class HuddleUtils {
 	 *  option is recommended for the user (based on their SSO value).
 	 */
 	public enum SSOBusinessUnit {
-		Spine("Spine","/spine", "000942"),
-		Codman("Codman","/codman","000945"),
-		Ethicon("Ethicon","/ethicon","001220","001510"),
-		JointRecon("Joint Reconstruction","/jointrecon","000940"),
-		SportsMed("Sports Medicine","/sportsmed","001225");
+		Spine("Spine","spine", "000942"),
+		Codman("Codman","codman-neuro","000945"),
+		Ethicon("Ethicon","ethicon","001220","001510"),
+		JointRecon("Joint Reconstruction","joint-reconstruction","000940"),
+		SportsMed("Sports Medicine","sports-medicine","001225");
 
 		private String name;
 		private String pageAlias;

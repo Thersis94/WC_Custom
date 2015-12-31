@@ -35,16 +35,16 @@ import com.smt.sitebuilder.security.SecurityController;
  * @since Oct 23, 2015
  ****************************************************************************/
 
-public class HuddleBriefcaseAction extends MyFavoritesAction {
+public class BriefcaseAction extends MyFavoritesAction {
 	public final String KEY_NAME = "briefcaseKey";
 	public final String GROUP_CD = "BRIEFCASE";
 	private final String API_KEY = "dsHuddl3K3y|SMT";
 
-	public HuddleBriefcaseAction() {
+	public BriefcaseAction() {
 		super();
 	}
 
-	public HuddleBriefcaseAction(ActionInitVO arg0) {
+	public BriefcaseAction(ActionInitVO arg0) {
 		super(arg0);
 	}
 	

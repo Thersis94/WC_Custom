@@ -36,12 +36,12 @@ import com.smt.sitebuilder.security.SecurityController;
  * @version 1.0
  * @since Dec 28, 2015
  ****************************************************************************/
-public class BatchUserAction extends SimpleActionAdapter {
+public class BatchUserDataTool extends SimpleActionAdapter {
 
-	public BatchUserAction() {
+	public BatchUserDataTool() {
 	}
 
-	public BatchUserAction(ActionInitVO arg0) {
+	public BatchUserDataTool(ActionInitVO arg0) {
 		super(arg0);
 	}
 

@@ -2,6 +2,8 @@ package com.depuysynthes.huddle;
 
 import java.util.Map;
 
+import javax.servlet.http.HttpSession;
+
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.AuthenticationException;
@@ -71,15 +73,18 @@ public class HuddleLoginModule extends SAMLLoginModule {
 	private void applyRedirectLogic(UserDataVO userData) {
 		String homepage = StringUtil.checkVal(userData.getAttribute(HuddleUtils.HOMEPAGE_REGISTER_FIELD_ID), null);
 		SMTServletRequest req = (SMTServletRequest) initVals.get(GlobalConfig.HTTP_REQUEST);
+		HttpSession ses = req.getSession();
 
 		if (homepage == null) {
 			//no homepage, this is a first-time login.
 			//send them to our registration page to setup their account
-			req.getSession().setAttribute(LoginAction.DESTN_URL, "/register");
+			ses.setAttribute(LoginAction.DESTN_URL, "/profile");
+			homepage = "/";
 		} else if ("/".equals(req.getRequestURI())) {
 			//send the user to their homepage if they're not deep linking somewhere specific.
-			req.getSession().setAttribute(LoginAction.DESTN_URL, homepage);
+			ses.setAttribute(LoginAction.DESTN_URL, homepage);
 		}
+		ses.setAttribute("huddleMyHomepage", homepage);
 	}
 
 
