@@ -14,13 +14,14 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.common.SolrInputDocument;
 
 import com.depuysynthes.lucene.MediaBinSolrIndex.MediaBinField;
-import com.siliconmtn.db.DBUtil;
+import com.depuysynthesinst.lms.FutureLeaderACGME;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.event.vo.EventEntryVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SMTAbstractIndex;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
+import com.smt.sitebuilder.security.SecurityController;
 
 /****************************************************************************
  * <b>Title</b>: CourseCalendarSolrIndexer.java<p/>
@@ -37,9 +38,8 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 	/**
 	 * Index type for this index.  This value is stored in the INDEX_TYPE field
 	 */
-	public static final String INDEX_TYPE = "COURSE_CAL";
-	
-	private static String organizationId = "DPY_SYN_INST";
+	protected String INDEX_TYPE = "COURSE_CAL";
+	protected String organizationId = "DPY_SYN_INST";
 
 	/**
 	 * @param config
@@ -67,8 +67,8 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 				doc.setField(SearchDocumentHandler.INDEX_TYPE, INDEX_TYPE);
 				doc.setField(SearchDocumentHandler.ORGANIZATION, vo.getOrganizationId());
 				doc.setField(SearchDocumentHandler.LANGUAGE, "en");
-				doc.setField(SearchDocumentHandler.ROLE, 0);
-				doc.setField(SearchDocumentHandler.SITE_PAGE_URL, vo.getEventUrl());
+				doc.setField(SearchDocumentHandler.ROLE, SecurityController.PUBLIC_ROLE_LEVEL);
+				doc.setField(SearchDocumentHandler.DOCUMENT_URL, vo.getEventUrl());
 				doc.setField(SearchDocumentHandler.DOCUMENT_ID, vo.getActionId());
 				doc.setField(SearchDocumentHandler.TITLE, vo.getEventName());
 				doc.setField(SearchDocumentHandler.SUMMARY, buildSummary(vo));
@@ -90,15 +90,15 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 				log.error("Unable to index course: " + StringUtil.getToString(vo), e);
 			}
 		}
-
 	}
+
 	
 	/**
 	 * builds a summary of the Event using city & state.  fallback to full description
 	 * @param vo
 	 * @return
 	 */
-	private String buildSummary(EventEntryVO vo) {
+	protected String buildSummary(EventEntryVO vo) {
 		String val = StringUtil.checkVal(vo.getCityName());
 		if (val.length() > 0 && vo.getStateCode() != null) val += ", ";
 		val+= vo.getStateCode();
@@ -114,29 +114,12 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 	 * @param conn
 	 * @return Map<pageUrl, BlogGroupVO>
 	 */
-	private List<EventEntryVO> loadEvents(Connection conn) {
-		StringBuilder sql = new StringBuilder();
-		sql.append("select s.alias_path_nm, c.full_path_txt, et.type_nm, ee.* ");
-		sql.append("from event_entry ee ");
-		sql.append("inner join event_type et on ee.event_type_id=et.event_type_id ");
-		sql.append("inner join event_group eg on et.action_id=eg.action_id ");
-		sql.append("inner join sb_action a on eg.action_id=a.attrib1_txt ");
-		sql.append("inner join page_module b on a.action_id=b.action_id ");
-		sql.append("inner join page_module_role pmr on pmr.page_module_id=b.page_module_id and pmr.role_id='0' ");  //only public portlets
-		sql.append("inner join page c on c.page_id=b.page_id ");
-		sql.append("inner join page_role pr on pr.page_id=c.page_id and pr.role_id='0' "); //only public pages
-		sql.append("inner join site s on c.site_id=s.site_id ");
-		sql.append("inner join module_display md on b.module_display_id=md.module_display_id ");
-		sql.append("where s.ORGANIZATION_ID=? and ee.start_dt > ? ");
-		sql.append("and (a.pending_sync_flg is null or a.pending_sync_flg=0) ");
-		sql.append("and (c.pending_sync_flg is null or c.pending_sync_flg=0) ");
-		sql.append("and a.module_type_id='COURSE_CAL' and md.indexable_flg=1 "); //only include pages that contain Views that are considered indexable.
+	protected List<EventEntryVO> loadEvents(Connection conn) {
+		String sql = buildQuery();
 		log.debug(sql);
 
-		PreparedStatement ps = null;
 		List<EventEntryVO> data = new ArrayList<EventEntryVO>();
-		try {
-			ps = conn.prepareStatement(sql.toString());
+		try (PreparedStatement ps = conn.prepareStatement(sql)) {
 			ps.setString(1, organizationId);
 			ps.setTimestamp(2, Convert.getCurrentTimestamp());
 			ResultSet rs = ps.executeQuery();
@@ -152,6 +135,9 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 				//vet events only appear on the vet calendar page
 				else if ("veterinary".equals(subSiteAlias) && !"VET".equals(rs.getString(3)))
 					continue;
+				//future leader events only appear on the future leaders calendar page
+				else if ("futureleaders".equals(subSiteAlias) && !"FUTURE".equals(rs.getString(3)))
+					continue;
 				else if ("".equals(subSiteAlias) && !"SURGEON".equals(rs.getString(3)))
 					continue;
 				
@@ -160,8 +146,20 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 				vo.setOrganizationId(organizationId);
 				
 				//for vet, we need to align the hierarchies so they match the anatomy pages, which are 2nd level.
-				if ("VET".equals(vo.getEventTypeCd()))
+				if ("VET".equals(vo.getEventTypeCd())) {
 					vo.setServiceText("Vet/Small Animal,Vet/Large Animal");
+				} else if ("FUTURE".equals(vo.getEventTypeCd()) && vo.getServiceText() != null) {
+					String[] svcs = vo.getServiceText().split(",");
+					if (svcs != null && svcs.length > 0) {
+						StringBuilder services = new StringBuilder();
+						for (String s : svcs) {
+							if (services.length() > 0) services.append(",");
+							services.append(FutureLeaderACGME.getHierarchyFromCode(s));
+						}
+						log.debug(services);
+						vo.setServiceText(services.toString());
+					}
+				}
 				
 				log.info("loaded " + vo.getEventTypeCd() + " - " + vo.getEventName());
 				data.add(vo);
@@ -169,8 +167,6 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 
 		} catch(Exception e) {
 			log.error("Unable to retrieve course calendar events", e);
-		} finally {
-			DBUtil.close(ps);
 		}
 
 		log.info("loaded " + data.size() + " events");
@@ -197,6 +193,31 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 		} catch (Exception e) {
 			throw new IOException(e);
 		}
+	}
+	
+	
+	/**
+	 * returns the event lookup query used to load indexable events
+	 * @return
+	 */
+	protected String buildQuery() {
+		StringBuilder sql = new StringBuilder();
+		sql.append("select s.alias_path_nm, c.full_path_txt, et.type_nm, ee.* ");
+		sql.append("from event_entry ee ");
+		sql.append("inner join event_type et on ee.event_type_id=et.event_type_id ");
+		sql.append("inner join event_group eg on et.action_id=eg.action_id ");
+		sql.append("inner join sb_action a on eg.action_id=a.attrib1_txt ");
+		sql.append("inner join page_module b on a.action_id=b.action_id ");
+		sql.append("inner join page_module_role pmr on pmr.page_module_id=b.page_module_id and pmr.role_id='0' ");  //only public portlets
+		sql.append("inner join page c on c.page_id=b.page_id ");
+		sql.append("inner join page_role pr on pr.page_id=c.page_id and pr.role_id='0' "); //only public pages
+		sql.append("inner join site s on c.site_id=s.site_id ");
+		sql.append("inner join module_display md on b.module_display_id=md.module_display_id ");
+		sql.append("where s.ORGANIZATION_ID=? and ee.start_dt > ? ");
+		sql.append("and (a.pending_sync_flg is null or a.pending_sync_flg=0) ");  //portlet not pending
+		sql.append("and (c.pending_sync_flg is null or c.pending_sync_flg=0) "); //page not pending
+		sql.append("and a.module_type_id='COURSE_CAL' and md.indexable_flg=1 "); //only include pages that contain Views that are considered indexable.
+		return sql.toString();
 	}
 
 }

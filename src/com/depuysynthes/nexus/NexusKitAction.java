@@ -31,6 +31,7 @@ import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
+import com.smt.sitebuilder.security.SecurityController;
 import com.smt.sitebuilder.util.MessageSender;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
@@ -897,7 +898,7 @@ public class NexusKitAction extends SBActionAdapter {
 		// Set the solr variables
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		if (kit.getOrganization().size() == 0) kit.addOrganization(site.getOrganizationId());
-		if (kit.getRoles().size() == 0) kit.addRole("0");
+		if (kit.getRoles().size() == 0) kit.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
 		getShared(kit);
 		addToSolr(kit);
 	}

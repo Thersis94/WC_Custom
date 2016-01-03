@@ -91,7 +91,7 @@ public class PatientAmbassadorIndexer extends SMTAbstractIndex {
 		ssv.setTitle(fields.get(PAFConst.STORY_TITLE_ID.getId()).getResponses().get(0));
 		ssv.setSummary(fields.get(PAFConst.STORY_TEXT_ID.getId()).getResponses().get(0));
 		ssv.addOrganization(ORG_ID);
-		ssv.addRole("" + SecurityController.PUBLIC_ROLE_LEVEL);
+		ssv.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
 
 		return ssv;
 	}
