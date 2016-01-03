@@ -671,7 +671,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		if (type == 2) {
 			requiredOpCo = new String[]{ "INTDS.com" };
 		} else {
-			requiredOpCo = new String[]{ "USDS.com", "DSI.com" ,"DSHuddle.com" };
+			requiredOpCo = new String[]{ "USDS.com", "DSI.com" };
 		}
 
 		Map<String, MediaBinDeltaVO> records = new HashMap<>(data.size());
