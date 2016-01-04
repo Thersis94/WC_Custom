@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.util.List;
 import java.util.Map;
 
+import com.depuysynthesinst.DSIUserDataVO.RegField;
 import com.depuysynthesinst.assg.AssignmentVO;
 import com.depuysynthesinst.assg.MyAssignmentsAction;
 import com.depuysynthesinst.assg.MyAssignmentsAdminAction;
@@ -11,6 +12,7 @@ import com.depuysynthesinst.lms.LMSWSClient;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.db.pool.SMTDBConnection;
+import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.AuthenticationException;
 import com.siliconmtn.security.UserDataVO;
 import com.smt.sitebuilder.security.SAMLLoginModule;
@@ -52,9 +54,14 @@ public class DSILoginModule extends SAMLLoginModule {
 		} else if (dsiRoleMgr.isResident(dsiUser) || dsiRoleMgr.isFellow(dsiUser) || dsiRoleMgr.isChiefResident(dsiUser)) {
 			//flag the account as incomplete so we can prompt them to complete their registration data (and get a TTLMSID)
 			dsiUser.addAttribute("incomplete", true);
+		} else if (UserDataVO.AuthenticationType.SAML == dsiUser.getAuthType()) { 
+			//allow all J&J WWID users through, but they need to be given a TTLMS account first
+			SMTServletRequest req = (SMTServletRequest)initVals.get(GlobalConfig.HTTP_REQUEST);
+			makeLMSAccount(dsiUser, req);
 		}
 		
-		addAssgCount(dsiUser);
+		if (dsiRoleMgr.isAssgUser(dsiUser))
+			addAssgCount(dsiUser);
 		
 		log.debug("loaded dsiUser " + dsiUser.getEmailAddress());
 		return dsiUser.getUserDataVO();
@@ -72,7 +79,8 @@ public class DSILoginModule extends SAMLLoginModule {
 			dsiUser.addAttribute("incomplete", true);
 		}
 		
-		addAssgCount(dsiUser);
+		if (dsiRoleMgr.isAssgUser(dsiUser))
+			addAssgCount(dsiUser);
 		
 		log.debug("loaded dsiUser from cookie " + dsiUser.getEmailAddress());
 		return dsiUser.getUserDataVO();
@@ -140,5 +148,30 @@ public class DSILoginModule extends SAMLLoginModule {
 				if (! vo.isComplete()) ++cnt;
 		}
 		user.addAttribute("myAssgCnt", cnt);	
+	}
+	
+	
+	/**
+	 * create an LMS account for this WWID user, but make sure they don't already have one
+	 * that we're not aware of first.
+	 * @param user
+	 */
+	private void makeLMSAccount(DSIUserDataVO user, SMTServletRequest req) {
+		RegistrationAction ra = new RegistrationAction();
+		ra.setAttributes(getInitVals());
+		ra.setDBConnection(new SMTDBConnection((Connection)initVals.get(GlobalConfig.KEY_DB_CONN)));
+		
+		try {
+			ra.saveUser(user);
+		
+			String[] regFields = new String[]{ RegField.DSI_TTLMS_ID.toString(), 
+															 RegField.DSI_SYNTHES_ID.toString(), 
+															 RegField.DSI_PROG_ELIGIBLE.toString(), 
+															 RegField.DSI_VERIFIED.toString() };
+			
+			ra.captureLMSResponses(req, user, regFields);
+		} catch (Exception e) {
+			log.error("could not create LMS account for WWID user, profileId= " + user.getProfileId(), e);
+		}
 	}
 }
