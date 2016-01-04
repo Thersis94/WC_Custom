@@ -114,6 +114,7 @@ public class BatchUserDataTool extends SimpleActionAdapter {
 		for (@SuppressWarnings("unused") String s : wwids) sql.append(",?");
 		sql.append(") and rs.site_id=?");
 		log.debug(sql);
+		log.debug("WWIDs: " + wwids);
 		
 		int x = 1;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -185,7 +186,7 @@ public class BatchUserDataTool extends SimpleActionAdapter {
 				}
 
 				if (d > 0)
-					wwids.add(d.toString());
+					wwids.add("" + d.intValue());
 			}
 		} catch (Exception e) {
 			throw new InvalidDataException(e);

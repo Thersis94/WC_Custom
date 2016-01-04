@@ -1,32 +1,19 @@
 package com.depuysynthes.huddle;
 
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+
+import javax.servlet.http.Cookie;
 
 import com.depuysynthesinst.events.CourseCalendar;
-import com.depuysynthesinst.lms.FutureLeaderACGME;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-import com.siliconmtn.util.databean.FilePartDataBean;
-import com.siliconmtn.util.parser.AnnotationParser;
 import com.smt.sitebuilder.action.SBModuleVO;
-import com.smt.sitebuilder.action.SimpleActionAdapter;
-import com.smt.sitebuilder.action.event.EventEntryAction;
 import com.smt.sitebuilder.action.event.EventFacadeAction;
-import com.smt.sitebuilder.action.event.vo.EventEntryVO;
-import com.smt.sitebuilder.action.event.vo.EventGroupVO;
-import com.smt.sitebuilder.action.event.vo.EventTypeVO;
+import com.smt.sitebuilder.action.search.SolrAction;
+import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
@@ -48,6 +35,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class EventCalendarAction extends CourseCalendar {
 
 	public EventCalendarAction() {
+		super();
 	}
 
 	/**
@@ -56,214 +44,57 @@ public class EventCalendarAction extends CourseCalendar {
 	public EventCalendarAction(ActionInitVO arg0) {
 		super(arg0);
 	}
-	
-	
+
+
 	/**
 	 * retrieves a list of Events tied to this porlet.  Filters the list to the passed anatomy, if present. 
 	 */
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
-		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 
-		String anatomy = null;
-		boolean showFilters = (page.getAliasName().equals("calendar")); //not needed on these pages/views;
-//		
-//		//hook for event signup; these would come from an email and the user must login first,
-//		//so we needed to keep the URLs short and redirect-able.
-//		if (req.hasParameter("reqParam_2") && "ADD".equalsIgnoreCase(req.getParameter("reqParam_1"))) {
-//			UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
-//			if (user != null) {
-//				req.setParameter("userSignup", "true");
-//				req.setParameter("profileId", user.getProfileId());
-//				req.setParameter("rsvpCodeText", req.getParameter("reqParam_2"));
-//				build(req);
-//			}
-//			return;
-//		}
-//		
-//		//if not on the calendar page, we'll need to filter the events by anatomy
-//		if (! page.getAliasName().equals("calendar") && ! page.getAliasName().equals("profile")) {
-//			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-//			anatomy = getAnatomyFromAlias(page, site);
-//			req.setParameter(EventEntryAction.REQ_SERVICE_OPT, anatomy);
-//		}
-//		
-//		Calendar cal = Calendar.getInstance();
-//		if (page.getAliasName().equals("profile"))
-//			cal.add(Calendar.DATE, -90);
-//		req.setParameter(EventEntryAction.REQ_START_DT, Convert.formatDate(cal.getTime(), Convert.DATE_SLASH_PATTERN));
-//		
-//		//load the Events
-//		actionInit.setActionId((String)mod.getAttribute(SBModuleVO.ATTRIBUTE_1));
-//		mod.setActionId(actionInit.getActionId());
-//		EventFacadeAction efa = new EventFacadeAction(actionInit);
-//		efa.setAttributes(attributes);
-//		efa.setDBConnection(dbConn);
-//		efa.retrieve(req);
-//		mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
-//		EventGroupVO vo = (EventGroupVO) mod.getActionData();
-//		
-//		//prepare facets/filters
-//		if (showFilters) {
-//			if (!req.hasParameter("location"))
-//				prepareSpecialtyFacets(req, vo);
-//			
-//			req.setValidateInput(false);
-//			filterDataBySpecialty(req, vo);
-//			filterDataByLocation(req, vo);
-//			req.setValidateInput(true);
-//			
-//			if (req.hasParameter("location"))
-//				prepareSpecialtyFacets(req, vo);
-//			
-//			//locations listed are limited to only those containing events (after specialty filter is applied)
-//			prepareLocationFacets(req, vo);
-//			
-//			super.putModuleData(vo);
-//		}
-	}
-	
-	/**
-	 * prepare search filters to present to the user based on the data we're displaying
-	 * @param req
-	 * @param grpVo
-	 */
-	private void prepareSpecialtyFacets(SMTServletRequest req, EventGroupVO grpVo) {
-		//one for specialties, put on the request by Type
-		for (EventTypeVO typeVo : grpVo.getTypes().values()) {
-			Map<String, Integer> specialties = new TreeMap<String, Integer>();
-			boolean isFutureLdrs = "FUTURE".equals(typeVo.getTypeName());
-			for (EventEntryVO vo : typeVo.getEvents()) {
-				String specs = StringUtil.checkVal(vo.getServiceText(), "Other");
-				for (String spec : specs.split(",")) {
-					spec = StringUtil.checkVal(spec).trim();
-					if (isFutureLdrs) spec = FutureLeaderACGME.getNameFromCode(spec);
-					if (specialties.containsKey(spec)) {
-						specialties.put(spec, specialties.get(spec)+1);
-					} else {
-						specialties.put(spec, 1);
-					}
-				}
+		//hook for event signup; these would come from an email and the user must login first,
+		//so we needed to keep the URLs short and redirect-able.
+		if (req.hasParameter("reqParam_2") && "ADD".equalsIgnoreCase(req.getParameter("reqParam_1"))) {
+			UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
+			if (user != null) {
+				req.setParameter("userSignup", "true");
+				req.setParameter("profileId", user.getProfileId());
+				req.setParameter("rsvpCodeText", req.getParameter("reqParam_2"));
+				build(req);
 			}
-			log.debug("loaded " + specialties.size() + " specialty filters");
-			req.setAttribute("facet_spec_" + typeVo.getTypeName(), specialties);
+			return;
 		}
-	}
-	
-	private void prepareLocationFacets(SMTServletRequest req, EventGroupVO grpVo) {
-		//one for Location (city & state), put on the request by Type
-		for (EventTypeVO typeVo : grpVo.getTypes().values()) {
-			Map<String, Integer> locations = new TreeMap<String, Integer>();
-			for (EventEntryVO vo : typeVo.getEvents()) {
-				String state = StringUtil.checkVal(vo.getStateCode());
-				String locn = StringUtil.checkVal(vo.getCityName());
-				if (state.length() > 0) locn += ", " + state;
-				
-				if (locn.length() == 2) locn = "Other";
-				if (locations.containsKey(locn)) {
-					locations.put(locn, locations.get(locn)+1);
-				} else {
-					locations.put(locn, 1);
-				}
-			}
-			log.debug("loaded " + locations.size() + " location filters facet_locn_" + typeVo.getTypeName());
-			req.setAttribute("facet_locn_" + typeVo.getTypeName(), locations);
-		}
-	}
-	
-	
-	/**
-	 * filter the list of events being returned to the browser to only those matching 
-	 * certain locations.  A "location" here is a String: "city, st"
-	 * @param req
-	 * @param vo
-	 */
-	private void filterDataByLocation(SMTServletRequest req, EventGroupVO grpVo) {
-		if (!req.hasParameter("location")) return;
-		List<String> filters = Arrays.asList(req.getParameter("location").split("~"));
-		if (filters == null || filters.size() == 0) return;
+
+		Cookie rppCook = req.getCookie(HuddleUtils.RPP_COOKIE);
+		if (rppCook != null)
+			req.setParameter("rpp", rppCook.getValue());
 		
-		for (EventTypeVO typeVo : grpVo.getTypes().values()) {
-			List<EventEntryVO> data = new ArrayList<EventEntryVO>();
-			for (EventEntryVO vo : typeVo.getEvents()) {
-				//check each event and only include those matching our filters
-				String locn = StringUtil.checkVal(vo.getCityName()) + ", " + StringUtil.checkVal(vo.getStateCode());
-				if (filters.contains(locn))
-					data.add(vo);
-			}
-			log.debug("removed " + (typeVo.getEvents().size() - data.size()) + " events by location, now " + data.size());
-			typeVo.setEvents(data);
-		}
-	}
-	
-	/**
-	 * filter the list of events being returned to the browser to only those matching 
-	* certain specialties
-	 * @param req
-	 * @param vo
-	 */
-	private void filterDataBySpecialty(SMTServletRequest req, EventGroupVO grpVo) {
-		if (!req.hasParameter("specialty")) return;
-		List<String> filters = Arrays.asList(req.getParameter("specialty").split("~"));
-		if (filters == null || filters.size() == 0) return;
-		//log.debug(filters);
+		req.setParameter("fmid",mod.getPageModuleId());
+		//NOTE: page & start get picked up by SolrActionVO automatically, because we set "fmid"
+
+		//call SolrAction 
+		actionInit.setActionId((String)mod.getAttribute(SBModuleVO.ATTRIBUTE_2));
+		SolrAction sa = new SolrAction(actionInit);
+		sa.setAttributes(attributes);
+		sa.setDBConnection(dbConn);
+		sa.retrieve(req);
+
+		//get the response object back from SolrAction
+		mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
+		SolrResponseVO solrResp = (SolrResponseVO) mod.getActionData();
+		log.error("**************** SOLR COUNT: " + solrResp.getTotalResponses());
 		
-		for (EventTypeVO typeVo : grpVo.getTypes().values()) {
-			List<EventEntryVO> data = new ArrayList<EventEntryVO>();
-			boolean isFutureLdrs = "FUTURE".equals(typeVo.getTypeName());
-			for (EventEntryVO vo : typeVo.getEvents()) {
-				boolean addIt = false;
-				//check each event and only include those matching our filters
-				String spec = StringUtil.checkVal(vo.getServiceText());
-				if (spec == null || spec.length() == 0) spec = "Other";
-				outer:
-				for (String s : spec.split(",")) {
-					if (isFutureLdrs) s = FutureLeaderACGME.getNameFromCode(s);
-					log.debug("spec=" + s);
-					for (String f : filters) {
-						if (s.contains(f)) {
-							addIt = true;
-							break outer;
-						}
-					}
-				}
-				if (!addIt) continue;
-				data.add(vo);
-				//log.debug("added " + vo.getServiceText());
-			}
-			log.debug("removed " + (typeVo.getEvents().size() - data.size()) + " events by specialty, now " + data.size());
-			typeVo.setEvents(data);
-		}
+		req.setParameter("fmid","");
 	}
-	
-	/**
-	 * cast the URL alias to a anotomical section (as used in the Events lists)
-	 * most of these align, but a couple needed massaging.
-	 * @param alias
-	 * @return
-	 */
-	private String getAnatomyFromAlias(PageVO page, SiteVO site) {
-		//on the main site we don't filter
-		if (site.getAliasPathName() == null && page.isDefaultPage()) return "";
-		String alias = page.getAliasName().toLowerCase();
-		
-		if ("veterinary".equals(site.getAliasPathName())) return "Vet"; //vet section
-		else if ("nurse-education".equals(site.getAliasPathName())) return "Nurse Education"; //nursing section
-		else if ("futureleaders".equals(site.getAliasPathName())) return FutureLeaderACGME.getCodeFromAlias(alias);
-		else if (alias.equals("chest-wall")) return "Chest Wall";
-		else if (alias.indexOf("-") > 0) return StringUtil.capitalizePhrase(alias.replace("-", " & ")); //Foot & Ankle, Hand & Wrist
-		
-		return StringUtil.capitalize(alias);
-	}
-	
-	
-	
+
+
+
 	/**
 	 * Build gets called for creating iCal files (downloads) of the passed eventEntryId
 	 */
 	public void build(SMTServletRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
-		
+
 		//for event RSVP signups
 		if (req.hasParameter("userSignup")) {
 			req.setAttribute(EventFacadeAction.STATUS_OVERRIDE, EventFacadeAction.STATUS_APPROVED);
@@ -275,8 +106,8 @@ public class EventCalendarAction extends CourseCalendar {
 				req.setAttribute(EventFacadeAction.STATUS_OVERRIDE, url);
 			}
 		}
-		
-		
+
+
 		actionInit.setActionId((String)mod.getAttribute(SBModuleVO.ATTRIBUTE_1));
 		mod.setActionId(actionInit.getActionId());
 		EventFacadeAction efa = new EventFacadeAction(actionInit);
@@ -284,5 +115,5 @@ public class EventCalendarAction extends CourseCalendar {
 		efa.setDBConnection(dbConn);
 		efa.build(req);
 	}
-	
+
 }

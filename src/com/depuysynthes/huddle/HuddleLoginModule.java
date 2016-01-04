@@ -30,6 +30,7 @@ public class HuddleLoginModule extends SAMLLoginModule {
 	 * 
 	 */
 	public HuddleLoginModule() {
+		super();
 	}
 
 	/**
@@ -53,6 +54,7 @@ public class HuddleLoginModule extends SAMLLoginModule {
 
 	/**
 	 * called via 'remember me' cookie logins:
+	 * Note: This is not a real use-case for Huddle b/c there is no login form.
 	 */
 	@Override
 	public UserDataVO retrieveUserData(String encProfileId) throws AuthenticationException {
@@ -74,17 +76,18 @@ public class HuddleLoginModule extends SAMLLoginModule {
 		String homepage = StringUtil.checkVal(userData.getAttribute(HuddleUtils.HOMEPAGE_REGISTER_FIELD_ID), null);
 		SMTServletRequest req = (SMTServletRequest) initVals.get(GlobalConfig.HTTP_REQUEST);
 		HttpSession ses = req.getSession();
-
+		String destPg = StringUtil.checkVal(ses.getAttribute(LoginAction.DESTN_URL));
+		
 		if (homepage == null) {
 			//no homepage, this is a first-time login.
 			//send them to our registration page to setup their account
-			ses.setAttribute(LoginAction.DESTN_URL, "/profile");
+			ses.setAttribute(LoginAction.DESTN_URL, "/?firstVisit=true");
 			homepage = "/";
-		} else if ("/".equals(req.getRequestURI())) {
+		} else if (destPg.endsWith("/") || destPg.length() == 0) { //homepage or /context/
 			//send the user to their homepage if they're not deep linking somewhere specific.
 			ses.setAttribute(LoginAction.DESTN_URL, homepage);
 		}
-		ses.setAttribute("huddleMyHomepage", homepage);
+		ses.setAttribute(HuddleUtils.MY_HOMEPAGE, homepage);
 	}
 
 
