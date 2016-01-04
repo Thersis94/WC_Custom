@@ -231,7 +231,7 @@ public class RegistrationAction extends SimpleActionAdapter {
 	 * writes back to the register_data table to update a couple fields on the user's registration
 	 * @param user
 	 */
-	private void captureLMSResponses(SMTServletRequest req, UserDataVO user, String[] formFields) {
+	protected void captureLMSResponses(SMTServletRequest req, UserDataVO user, String[] formFields) {
 		String registerSubmittalId = StringUtil.checkVal(req.getAttribute("registerSubmittalId"));
 		req.setParameter("formFields", formFields, Boolean.TRUE);
 		DSIUserDataVO dsiUser = new DSIUserDataVO(user);
@@ -341,7 +341,7 @@ public class RegistrationAction extends SimpleActionAdapter {
 	 * @param user
 	 * @throws ActionException 
 	 */
-	private void saveUser(DSIUserDataVO user) throws ActionException {
+	protected void saveUser(DSIUserDataVO user) throws ActionException {
 		log.debug("creating/updating user");
 		LMSWSClient lms = new LMSWSClient((String)getAttribute(LMSWSClient.CFG_SECURITY_KEY));
 		Map<Object, Object> data = null;
