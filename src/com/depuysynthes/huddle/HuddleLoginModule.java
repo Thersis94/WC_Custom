@@ -2,6 +2,8 @@ package com.depuysynthes.huddle;
 
 import java.util.Map;
 
+import javax.servlet.http.HttpSession;
+
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.AuthenticationException;
@@ -28,6 +30,7 @@ public class HuddleLoginModule extends SAMLLoginModule {
 	 * 
 	 */
 	public HuddleLoginModule() {
+		super();
 	}
 
 	/**
@@ -51,6 +54,7 @@ public class HuddleLoginModule extends SAMLLoginModule {
 
 	/**
 	 * called via 'remember me' cookie logins:
+	 * Note: This is not a real use-case for Huddle b/c there is no login form.
 	 */
 	@Override
 	public UserDataVO retrieveUserData(String encProfileId) throws AuthenticationException {
@@ -71,15 +75,19 @@ public class HuddleLoginModule extends SAMLLoginModule {
 	private void applyRedirectLogic(UserDataVO userData) {
 		String homepage = StringUtil.checkVal(userData.getAttribute(HuddleUtils.HOMEPAGE_REGISTER_FIELD_ID), null);
 		SMTServletRequest req = (SMTServletRequest) initVals.get(GlobalConfig.HTTP_REQUEST);
-
+		HttpSession ses = req.getSession();
+		String destPg = StringUtil.checkVal(ses.getAttribute(LoginAction.DESTN_URL));
+		
 		if (homepage == null) {
 			//no homepage, this is a first-time login.
 			//send them to our registration page to setup their account
-			req.getSession().setAttribute(LoginAction.DESTN_URL, "/register");
-		} else if ("/".equals(req.getRequestURI())) {
+			ses.setAttribute(LoginAction.DESTN_URL, "/?firstVisit=true");
+			homepage = "/";
+		} else if (destPg.endsWith("/") || destPg.length() == 0) { //homepage or /context/
 			//send the user to their homepage if they're not deep linking somewhere specific.
-			req.getSession().setAttribute(LoginAction.DESTN_URL, homepage);
+			ses.setAttribute(LoginAction.DESTN_URL, homepage);
 		}
+		ses.setAttribute(HuddleUtils.MY_HOMEPAGE, homepage);
 	}
 
 

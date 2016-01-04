@@ -54,7 +54,7 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 	@Override
 	public void addIndexItems(HttpSolrServer server) {
 		log.info("Indexing Course Calendar Portlets");
-		List<EventEntryVO> data = this.loadEvents(dbConn);
+		List<EventEntryVO> data = loadEvents(dbConn);
 		indexEvents(server, data);
 	}
 
@@ -78,10 +78,12 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 				doc.setField(SearchDocumentHandler.END_DATE + "_dt", df.format(vo.getEndDate()));
 				doc.setField(SearchDocumentHandler.CONTENTS, StringUtil.getToString(vo));
 				doc.setField(SearchDocumentHandler.MODULE_TYPE, "EVENT");
+				doc.setField("opco_s", vo.getOpcoName());
 				doc.setField(MediaBinField.AssetType.getField(), "Course");
 				doc.setField(MediaBinField.AssetDesc.getField(), "Course"); //displays on the gallery view
 				doc.setField("duration_i", vo.getDuration()); //this is an int, not a String like MediaBin uses
 				doc.setField("eventType_s", StringUtil.checkVal(vo.getEventTypeCd()).toLowerCase());
+				
 				for (String s : StringUtil.checkVal(vo.getServiceText()).split(","))
 					doc.addField(SearchDocumentHandler.HIERARCHY, s.trim());
 				
@@ -100,7 +102,7 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 	 */
 	protected String buildSummary(EventEntryVO vo) {
 		String val = StringUtil.checkVal(vo.getCityName());
-		if (val.length() > 0 && vo.getStateCode() != null) val += ", ";
+		if (val.length() > 0 && vo.getStateCode() != null && vo.getStateCode().length() > 0) val += ", ";
 		val+= vo.getStateCode();
 		
 		return val;
@@ -115,7 +117,7 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 	 * @return Map<pageUrl, BlogGroupVO>
 	 */
 	protected List<EventEntryVO> loadEvents(Connection conn) {
-		String sql = buildQuery();
+		String sql = buildQuery("COURSE_CAL");
 		log.debug(sql);
 
 		List<EventEntryVO> data = new ArrayList<EventEntryVO>();
@@ -200,7 +202,7 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 	 * returns the event lookup query used to load indexable events
 	 * @return
 	 */
-	protected String buildQuery() {
+	protected String buildQuery(String moduleTypeId) {
 		StringBuilder sql = new StringBuilder();
 		sql.append("select s.alias_path_nm, c.full_path_txt, et.type_nm, ee.* ");
 		sql.append("from event_entry ee ");
@@ -216,7 +218,8 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 		sql.append("where s.ORGANIZATION_ID=? and ee.start_dt > ? ");
 		sql.append("and (a.pending_sync_flg is null or a.pending_sync_flg=0) ");  //portlet not pending
 		sql.append("and (c.pending_sync_flg is null or c.pending_sync_flg=0) "); //page not pending
-		sql.append("and a.module_type_id='COURSE_CAL' and md.indexable_flg=1 "); //only include pages that contain Views that are considered indexable.
+		sql.append("and a.module_type_id='").append(moduleTypeId);
+		sql.append("' and md.indexable_flg=1 "); //only include pages that contain Views that are considered indexable.
 		return sql.toString();
 	}
 

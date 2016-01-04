@@ -36,12 +36,12 @@ import com.smt.sitebuilder.security.SecurityController;
  * @version 1.0
  * @since Dec 28, 2015
  ****************************************************************************/
-public class BatchUserAction extends SimpleActionAdapter {
+public class BatchUserDataTool extends SimpleActionAdapter {
 
-	public BatchUserAction() {
+	public BatchUserDataTool() {
 	}
 
-	public BatchUserAction(ActionInitVO arg0) {
+	public BatchUserDataTool(ActionInitVO arg0) {
 		super(arg0);
 	}
 
@@ -114,6 +114,7 @@ public class BatchUserAction extends SimpleActionAdapter {
 		for (@SuppressWarnings("unused") String s : wwids) sql.append(",?");
 		sql.append(") and rs.site_id=?");
 		log.debug(sql);
+		log.debug("WWIDs: " + wwids);
 		
 		int x = 1;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -185,7 +186,7 @@ public class BatchUserAction extends SimpleActionAdapter {
 				}
 
 				if (d > 0)
-					wwids.add(d.toString());
+					wwids.add("" + d.intValue());
 			}
 		} catch (Exception e) {
 			throw new InvalidDataException(e);
