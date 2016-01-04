@@ -5,9 +5,11 @@ import java.util.List;
 import java.util.Map;
 
 
+
 // SMT Base Libs
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.security.saml.AbstractSSOParser;
+import com.siliconmtn.security.saml.SAMLV2Constants;
 import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
@@ -59,8 +61,8 @@ public class JnJIdentityParser extends AbstractSSOParser {
 			user.addAttribute("title", this.getStringValue("title", ssoData));
 		}
 		
-		// add world-wide ID (wwid)
-		user.addAttribute("wwid", this.getStringValue("wwid", ssoData));
+		// add world-wide ID (wwid), passed in response as the SAML2 'NameID' element.
+		user.addAttribute("wwid", this.getStringValue(SAMLV2Constants.NAME_ID_ELE, ssoData));
 		
 		return user;
 	}
