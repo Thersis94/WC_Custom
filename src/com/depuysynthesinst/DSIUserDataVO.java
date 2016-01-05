@@ -56,6 +56,12 @@ public class DSIUserDataVO extends UserDataVO {
 		;
 	}
 	
+	/**
+	 *  needed by the login module for a work-around for WWID users
+	 */
+	public static final String REG_ACTION_GROUP_ID="c0a80241b7139e30186fd3b0749eb907";
+	
+	
 	public DSIUserDataVO() {
 		super();
 		setUser(null);
