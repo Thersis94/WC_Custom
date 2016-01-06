@@ -230,6 +230,10 @@ public class NexusKitPDFReport  extends AbstractSBReportVO {
 	}
 	
 	private String buildRow(NexusProductVO product, int i, boolean isForm, String LayerNm) {
+		// If the product has no summary it does not exist in solr and should not
+		// be added to the report.
+		if (product.getSummary() == null) return "";
+		
 		StringBuilder row = new StringBuilder(1000);
 
 		int prodLines = (int) Math.ceil((double)product.getSummary().length()/width);
