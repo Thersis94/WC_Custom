@@ -52,23 +52,21 @@ public class BriefcaseAction extends MyFavoritesAction {
 			mod.setError(e.getCause());
 			mod.setErrorCondition(Boolean.TRUE);
 			mod.setErrorMessage(e.getMessage());
-			if (req.getAttribute(Constants.PAGE_DATA) == null) 
-				mod.setDisplayPage(null); //circumvents going to view.  DO NOT set this on a SitePage
+			if (req.hasParameter("amid")) mod.setDisplayPage(null); //circumvents going to view.
 		}
 	}
 	
 	
 	@Override
 	public void build(SMTServletRequest req) throws ActionException {
+		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
+		if (req.hasParameter("amid")) mod.setDisplayPage(null); //circumvents going to view.
 		try {
 			executeBuild(req);
 		} catch (Exception e) {
-			ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 			mod.setError(e.getCause());
 			mod.setErrorCondition(Boolean.TRUE);
 			mod.setErrorMessage(e.getMessage());
-			if (req.getAttribute(Constants.PAGE_DATA) == null) 
-				mod.setDisplayPage(null); //circumvents going to view via /json.  DO NOT set this on a SitePage
 		}
 	}
 	
@@ -102,6 +100,10 @@ public class BriefcaseAction extends MyFavoritesAction {
 		setSessionArgs(req);
 		
 		if (req.hasParameter("insert")) {
+			if (!req.hasParameter("relId")) req.setParameter("relId",req.getParameter("insert"));
+			if (!req.hasParameter("uriTxt")) req.setParameter("uriTxt","");
+			if (!req.hasParameter("typeCd")) req.setParameter("typeCd", "MEDIABIN");
+			req.setParameter("groupingCd", GROUP_CD);
 			super.build(req);
 		} else if (req.hasParameter("briefcaseAssetId")) {
 			deleteItem(req);
@@ -163,7 +165,7 @@ public class BriefcaseAction extends MyFavoritesAction {
 		UserDataVO user = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 		
-		if (user == null && !req.hasParameter("wwid")) {
+		if ((user == null || req.hasParameter("amid")) && !req.hasParameter("wwid")) {
 			throw new ActionException("unknown user");
 		} else if (user != null && req.hasParameter("wwid")) {
 			//verify WWID did not change from what's on session. If so replace the logged-in user
