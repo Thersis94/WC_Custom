@@ -14,7 +14,6 @@ import java.util.Properties;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.common.SolrInputDocument;
 
-import com.depuysynthes.lucene.MediaBinSolrIndex.MediaBinField;
 import com.depuysynthesinst.events.CourseCalendarSolrIndexer;
 import com.siliconmtn.common.html.state.USStateList;
 import com.siliconmtn.util.Convert;
@@ -122,7 +121,6 @@ public class CalendarSolrIndexer extends CourseCalendarSolrIndexer {
 		List<EventEntryVO> data = new ArrayList<EventEntryVO>();
 		try (PreparedStatement ps = conn.prepareStatement(sql)) {
 			ps.setString(1, organizationId);
-			ps.setTimestamp(2, Convert.getCurrentTimestamp());
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				String url = rs.getString(2) + "/" + config.getProperty(Constants.QS_PATH);
@@ -144,5 +142,34 @@ public class CalendarSolrIndexer extends CourseCalendarSolrIndexer {
 
 		log.info("loaded " + data.size() + " events");
 		return data;
+	}
+	
+
+	
+	
+	/**
+	 * returns the event lookup query used to load indexable events
+	 * @return
+	 */
+	@Override
+	protected String buildQuery(String moduleTypeId) {
+		StringBuilder sql = new StringBuilder();
+		sql.append("select s.alias_path_nm, c.full_path_txt, et.type_nm, ee.* ");
+		sql.append("from event_entry ee ");
+		sql.append("inner join event_type et on ee.event_type_id=et.event_type_id ");
+		sql.append("inner join event_group eg on et.action_id=eg.action_id ");
+		sql.append("inner join sb_action a on eg.action_id=a.attrib1_txt ");
+		sql.append("inner join page_module b on a.action_id=b.action_id ");
+		sql.append("inner join page_module_role pmr on pmr.page_module_id=b.page_module_id and pmr.role_id='0' ");  //only public portlets
+		sql.append("inner join page c on c.page_id=b.page_id ");
+		sql.append("inner join page_role pr on pr.page_id=c.page_id and pr.role_id='0' "); //only public pages
+		sql.append("inner join site s on c.site_id=s.site_id ");
+		sql.append("inner join module_display md on b.module_display_id=md.module_display_id ");
+		sql.append("where s.ORGANIZATION_ID=? ");
+		sql.append("and (a.pending_sync_flg is null or a.pending_sync_flg=0) ");  //portlet not pending
+		sql.append("and (c.pending_sync_flg is null or c.pending_sync_flg=0) "); //page not pending
+		sql.append("and a.module_type_id='").append(moduleTypeId);
+		sql.append("' and md.indexable_flg=1 "); //only include pages that contain Views that are considered indexable.
+		return sql.toString();
 	}
 }
