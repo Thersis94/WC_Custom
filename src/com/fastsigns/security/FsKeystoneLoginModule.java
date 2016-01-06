@@ -57,7 +57,7 @@ public class FsKeystoneLoginModule extends AbstractLoginModule {
     public UserDataVO retrieveUserData(String encProfileId) 
     throws AuthenticationException {
 		String profileId = this.retrieveAuthIdByCookie(encProfileId);
-		log.debug("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& Starting user login: " + profileId);
+		log.debug("Starting user login: " + profileId);
 		if (profileId == null)
 			throw new AuthenticationException(ErrorCodes.ERR_INVALID_LOGIN);
 
