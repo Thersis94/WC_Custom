@@ -7,11 +7,11 @@ import java.sql.SQLException;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
-import com.siliconmtn.io.FileManager;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.siliconmtn.util.databean.FilePartDataBean;
+import com.smt.sitebuilder.action.FileLoader;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -201,7 +201,7 @@ public class IFUInstanceAction extends SBActionAdapter {
 		try {
 			FilePartDataBean file = req.getFile("instanceFile");
 			String path = (String)getAttribute(Constants.BINARY_PATH) + IFUFacadeAction.ORG_PATH + req.getParameter("businessUnitName")+"/";
-			FileManager fm = new FileManager();
+			FileLoader fm = new FileLoader(attributes);
 			fm.setPath(path);
 			fm.writeFiles(file.getFileData(), path, file.getFileName(), true, false);
 			log.debug("Wrote file to " + path + fm.getFileName());
