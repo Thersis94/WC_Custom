@@ -66,12 +66,6 @@ public class KeystoneProxy {
 	public KeystoneProxy(Map<String, Object> attribs) {
 		log = Logger.getLogger(this.getClass());
 		keystoneApiUrl = StringUtil.checkVal(attribs.get("keystoneApiUrl"));
-		
-		//if (keystoneApiUrl.isEmpty() ){
-			
-		//	keystoneApiUrl = "http://www.keystonefs.biz/api.php";
-		//}
-		
 		encryptKey = StringUtil.checkVal(attribs.get(Constants.ENCRYPT_KEY));
 		postData = new HashMap<String, String>();
 		
