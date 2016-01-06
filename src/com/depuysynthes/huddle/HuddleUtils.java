@@ -31,6 +31,11 @@ public class HuddleUtils {
 	public static final String DEFAULT_RPP = "12"; //set as String, the same way we'd get it from the Browser/Cookie
 
 	
+	/**
+	 * the number of days to subtract from an event to designate when Registration opens
+	 */
+	public static final int EVENT_REGISTRATION_OPENS = -90;
+	
 	
 	
 	/**
