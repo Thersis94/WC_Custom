@@ -405,6 +405,7 @@ public class FsDBLoginModule extends AbstractLoginModule {
 	@Override
 	public UserDataVO retrieveUserData(String loginName, String password)
 			throws AuthenticationException {
+		
 		UserDataVO authData = this.authenticateUser(loginName, password);
 		UserDataVO newUser = null;
 		
