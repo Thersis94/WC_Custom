@@ -4,6 +4,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import javax.servlet.http.Cookie;
+
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
@@ -81,6 +83,9 @@ public class BriefcaseAction extends MyFavoritesAction {
 		//perform token validation to deter deviants
 		validateApiKey(req);
 		setSessionArgs(req);
+
+		Cookie sort = req.getCookie(HuddleUtils.SORT_COOKIE);
+		if (sort != null) req.setParameter("sort", sort.getValue());
 		
 		req.setParameter("formatJson", "true");
 		req.setParameter("groupingCd", GROUP_CD);
@@ -105,7 +110,10 @@ public class BriefcaseAction extends MyFavoritesAction {
 			if (!req.hasParameter("typeCd")) req.setParameter("typeCd", "MEDIABIN");
 			req.setParameter("groupingCd", GROUP_CD);
 			super.build(req);
-		} else if (req.hasParameter("briefcaseAssetId")) {
+		} else if (req.hasParameter("isDelete")) { //deletes from the website use URI
+			req.setParameter("groupingCd", GROUP_CD);
+			super.build(req);
+		} else if (req.hasParameter("briefcaseAssetId")) { //deletes from the App use profileFavoriteId
 			deleteItem(req);
 		}
 	}
@@ -150,7 +158,7 @@ public class BriefcaseAction extends MyFavoritesAction {
 	 * @return
 	 */
 	private void validateApiKey(SMTServletRequest req) throws ActionException {
-		if (!API_KEY.equals(req.getParameter("key")) && req.getAttribute(Constants.PAGE_DATA) == null) 
+		if (!API_KEY.equals(req.getParameter("key")) && req.getSession().getAttribute(Constants.USER_DATA) == null) 
 			throw new ActionException("Invalid or missing security key");
 	}
 	
@@ -165,7 +173,7 @@ public class BriefcaseAction extends MyFavoritesAction {
 		UserDataVO user = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 		
-		if ((user == null || req.hasParameter("amid")) && !req.hasParameter("wwid")) {
+		if (user == null && !req.hasParameter("wwid")) {
 			throw new ActionException("unknown user");
 		} else if (user != null && req.hasParameter("wwid")) {
 			//verify WWID did not change from what's on session. If so replace the logged-in user
