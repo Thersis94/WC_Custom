@@ -434,7 +434,7 @@ public class RegistrationAction extends SimpleActionAdapter {
 	private void emailBradley(String subject, String body) {
 		try {
 			EmailMessageVO msg = new EmailMessageVO();
-			msg.addRecipient("bhood2@ITS.JNJ.com");
+			msg.addRecipient("MagellanDSI2@gmail.com");
 			msg.setSubject(subject);
 			msg.setTextBody(body);
 			new MessageSender(getAttributes(), dbConn).sendMessage(msg);
