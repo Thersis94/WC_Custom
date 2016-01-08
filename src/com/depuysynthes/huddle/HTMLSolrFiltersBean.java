@@ -14,7 +14,7 @@ import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: HTMLFiltersBean.java<p/>
- * <b>Description: </b> 
+ * <b>Description: Reusable HTML generating class for Huddle Solr Facets & filter boxes.</b> 
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2016<p/>
  * <b>Company:</b> Silicon Mountain Technologies<p/>
@@ -30,7 +30,7 @@ public class HTMLSolrFiltersBean {
 	 * @param n
 	 * @return
 	 */
-	public static String getFilterSimple(Count c, String filterNm, String onclick) {
+	public static String getFilterSimple(Count c, String filterNm, String onclick, String selectedItem) {
 		String uuid = RandomAlphaNumeric.generateRandom(5);
 		StringBuilder sb = new StringBuilder(250);
 		sb.append("<div class=\"collapse-panel collapse-panel-filter\">");
@@ -38,10 +38,17 @@ public class HTMLSolrFiltersBean {
 		sb.append("<span class=\"count\">").append(c.getCount()).append("</span>");
 		sb.append("<input type=\"checkbox\" id=\"filter_simple_").append(uuid);
 		sb.append("\" data-filter-nm=\"").append(filterNm).append("\" value=\"");
-		sb.append(c.getName()).append("\" onclick=\"").append(onclick).append("\">");
+		sb.append(c.getName()).append("\" onclick=\"").append(onclick).append("\"");
+		System.err.println(c.getName() + " = " + selectedItem);
+		if (selectedItem != null && c.getName().equals(selectedItem)) sb.append("checked=\"checked\" ");
+		sb.append(">");
 		sb.append("<label class=\"checkbox\" for=\"filter_simple_").append(uuid).append("\">");
 		sb.append(c.getName()).append("</label></div></div>\r");
 		return sb.toString();
+	}
+	
+	public static String getFilterSimple(Count c, String filterNm, String onclick) {
+		return HTMLSolrFiltersBean.getFilterSimple(c, filterNm, onclick, null);
 	}
 	
 	
@@ -75,7 +82,7 @@ public class HTMLSolrFiltersBean {
 		sb.append(c.getNodeName()).append("\" onclick=\"").append(onclick).append("\">");
 		sb.append("<label class=\"checkbox\" for=\"filter_simple_").append(uuid).append("\">");
 		sb.append(c.getNodeName()).append(c.isLeaf()).append("</label>");
-		for (String s : classes) {
+		for (@SuppressWarnings("unused") String s : classes) {
 			sb.append("</div>");
 		}
 		sb.append("\r");

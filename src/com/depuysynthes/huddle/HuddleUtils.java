@@ -32,6 +32,8 @@ public class HuddleUtils {
 	public static final int DEFAULT_RPP_INT = 12;
 	public static final String DEFAULT_RPP = "" + DEFAULT_RPP_INT; //set as String, the same way we'd get it from the Browser/Cookie
 
+	//solr fields
+	public static final String SOLR_OPCO_FIELD = "opco_ss";
 	
 	/**
 	 * the number of days to subtract from an event to designate when Registration opens
