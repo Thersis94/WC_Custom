@@ -320,7 +320,7 @@ public class RegistrationAction extends SimpleActionAdapter {
 		DSIUserDataVO user = new DSIUserDataVO((UserDataVO) req.getSession().getAttribute(Constants.USER_DATA));
 		
 		//do not migrate the user if they didn't consent to migration
-		if ("1".equals(req.getParameter("reg_||DSI_DSRP_TRANSFER_AUTH"))) {
+		if ("1".equals(req.getParameter("reg_||DSI_DSRP_TRANSFER_AUTH"))) { //submitted a Yes
 			//verify they gave us the correct legacy password
 			String pswd = getLegacyPassword(user.getEmailAddress());
 			if (pswd.length() > 0 && pswd.equalsIgnoreCase(req.getParameter("dsrpPassword")))  {
@@ -342,12 +342,15 @@ public class RegistrationAction extends SimpleActionAdapter {
 					emailBradley("DSI migration failed - needs reconciled", msg);
 				}
 			} else {
-				log.debug("user did not provide the correct DSRP username " + user.getEmailAddress());
-				//email bradley
-				String msg = user.getEmailAddress() + " (Legacy TTLMSID=" + user.getTtLmsId() + ") wanted to migrate their LMS account but did not provide the correct username.  A new account was likely created and should be considered duplicate.  Please use the SMT/EP Reconcile process to correct their account.";
+				String msg = user.getEmailAddress() + " (Legacy TTLMSID=" + user.getTtLmsId() + ") did not submit the correct DSRP password, so the migration they desired did not occur.  Use the SMT/EP reconcile process to fix this.";
 				emailBradley("DSI duplicate account created - needs reconciled", msg);
 			}
-		} else if (req.getParameter("reg_||DSI_DSRP_TRANSFER_AUTH") != null) {
+		} else if ("1".equals(req.getParameter("clickedYes"))) { //attempted a Yes but settled for No
+			log.debug("user did not provide the correct DSRP username, but wanted to " + user.getEmailAddress());
+			//email bradley
+			String msg = user.getEmailAddress() + " (Legacy TTLMSID=" + user.getTtLmsId() + ") seemingly tried to migrate their LMS account but could not provide the correct username, or changed their mind and did not want to migrate.  A new account was likely created and should be considered duplicate.  Please use the SMT/EP Reconcile process to correct their account.  You should confirm with the individual before doing so.  Their OLD account should be deleted if they do not desire migration.";
+			emailBradley("DSI duplicate account created - needs reconciled", msg);
+		} else { //never clicked Yes
 			log.debug("user chose not to migrate: " + user.getEmailAddress() + " " + user.getTtLmsId());
 			//email bradley
 			String msg = user.getEmailAddress() + " (Legacy TTLMSID=" + user.getTtLmsId() + ") DID NOT want to migrate their LMS account.  Please delete their old account from the LMS.";
