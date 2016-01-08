@@ -6,6 +6,7 @@ import java.util.Comparator;
 import org.apache.solr.client.solrj.response.FacetField.Count;
 import org.apache.solr.client.solrj.response.PivotField;
 
+import com.siliconmtn.data.Node;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.DateUtil;
 import com.siliconmtn.util.RandomAlphaNumeric;
@@ -40,6 +41,44 @@ public class HTMLSolrFiltersBean {
 		sb.append(c.getName()).append("\" onclick=\"").append(onclick).append("\">");
 		sb.append("<label class=\"checkbox\" for=\"filter_simple_").append(uuid).append("\">");
 		sb.append(c.getName()).append("</label></div></div>\r");
+		return sb.toString();
+	}
+	
+	
+	/**
+	 * Create an html structure from a parsed hierarchy field.
+	 * @param c
+	 * @param filterNm
+	 * @param onclick
+	 * @param classes List of classes that each cause the creation of a new containing div for the html element
+	 * @return
+	 */
+	public static String getHierarchyFilterSimple(Node c, String filterNm, String onclick, String... classes) {
+		String uuid = RandomAlphaNumeric.generateRandom(5);
+		StringBuilder sb = new StringBuilder(250);
+		for (String s : classes) {
+			sb.append("<div class=\"").append(s).append("\">");
+		}
+		if (c.getNumberChildren() > 0) {
+			sb.append("<span class=\"count fa fa-caret-down collapse-toggle\"");
+			sb.append("data-toggle='collapse' data-target='#");
+			sb.append(c.getNodeId().replace("~", "-"));
+			sb.append("' aria-expanded='false' aria-controls='");
+			sb.append(c.getNodeId().replace("~", "-"));
+			sb.append("'></span>");
+			
+		} else {
+			sb.append("<span class=\"count\">").append(c.getUserObject()).append("</span>");
+		}
+		sb.append("<input type=\"checkbox\" id=\"filter_simple_").append(uuid);
+		sb.append("\" data-filter-nm=\"").append(c.getNodeName()).append("\" value=\"");
+		sb.append(c.getNodeName()).append("\" onclick=\"").append(onclick).append("\">");
+		sb.append("<label class=\"checkbox\" for=\"filter_simple_").append(uuid).append("\">");
+		sb.append(c.getNodeName()).append(c.isLeaf()).append("</label>");
+		for (String s : classes) {
+			sb.append("</div>");
+		}
+		sb.append("\r");
 		return sb.toString();
 	}
 	
