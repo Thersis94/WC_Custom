@@ -349,7 +349,7 @@ public class RegistrationAction extends SimpleActionAdapter {
 			log.debug("user did not provide the correct DSRP username, but wanted to " + user.getEmailAddress());
 			//email bradley
 			String msg = user.getEmailAddress() + " (Legacy TTLMSID=" + user.getTtLmsId() + ") seemingly tried to migrate their LMS account but could not provide the correct username, or changed their mind and did not want to migrate.  A new account was likely created and should be considered duplicate.  Please use the SMT/EP Reconcile process to correct their account.  You should confirm with the individual before doing so.  Their OLD account should be deleted if they do not desire migration.";
-			emailBradley("DSI duplicate account created - needs reconciled", msg);
+			emailBradley("DSI duplicate account created - needs reconciled - user changed their mind", msg);
 		} else { //never clicked Yes
 			log.debug("user chose not to migrate: " + user.getEmailAddress() + " " + user.getTtLmsId());
 			//email bradley
