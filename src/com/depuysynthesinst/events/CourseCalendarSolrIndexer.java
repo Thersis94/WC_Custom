@@ -191,7 +191,7 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 	@Override
 	public void purgeIndexItems(HttpSolrServer server) throws IOException {
 		try {
-			server.deleteByQuery(SearchDocumentHandler.INDEX_TYPE + ":" + getIndexType());
+			server.deleteByQuery(SearchDocumentHandler.INDEX_TYPE + ":" + getIndexType() + " AND " + SearchDocumentHandler.ORGANIZATION + ":" + organizationId);
 		} catch (Exception e) {
 			throw new IOException(e);
 		}

@@ -27,8 +27,10 @@ public class HuddleUtils {
 	public static final String MY_HOMEPAGE = "huddleMyHomepage";
 	
 	//cookies
+	public static final String SORT_COOKIE = "huddleSort";
 	public static final String RPP_COOKIE = "huddleRpp";
-	public static final String DEFAULT_RPP = "12"; //set as String, the same way we'd get it from the Browser/Cookie
+	public static final int DEFAULT_RPP_INT = 12;
+	public static final String DEFAULT_RPP = "" + DEFAULT_RPP_INT; //set as String, the same way we'd get it from the Browser/Cookie
 
 	
 	/**

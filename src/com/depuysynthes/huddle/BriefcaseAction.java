@@ -3,19 +3,15 @@ package com.depuysynthes.huddle;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Date;
 
-import com.depuysynthes.scripts.MediaBinDeltaVO;
+import javax.servlet.http.Cookie;
+
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-import com.smt.sitebuilder.action.tools.FavoriteVO;
 import com.smt.sitebuilder.action.tools.MyFavoritesAction;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
@@ -58,21 +54,21 @@ public class BriefcaseAction extends MyFavoritesAction {
 			mod.setError(e.getCause());
 			mod.setErrorCondition(Boolean.TRUE);
 			mod.setErrorMessage(e.getMessage());
-			mod.setDisplayPage(null); //circumvents going to view
+			if (req.hasParameter("amid")) mod.setDisplayPage(null); //circumvents going to view.
 		}
 	}
 	
 	
 	@Override
 	public void build(SMTServletRequest req) throws ActionException {
+		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
+		if (req.hasParameter("amid")) mod.setDisplayPage(null); //circumvents going to view.
 		try {
 			executeBuild(req);
 		} catch (Exception e) {
-			ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 			mod.setError(e.getCause());
 			mod.setErrorCondition(Boolean.TRUE);
 			mod.setErrorMessage(e.getMessage());
-			mod.setDisplayPage(null); //circumvents going to view
 		}
 	}
 	
@@ -87,44 +83,13 @@ public class BriefcaseAction extends MyFavoritesAction {
 		//perform token validation to deter deviants
 		validateApiKey(req);
 		setSessionArgs(req);
+
+		Cookie sort = req.getCookie(HuddleUtils.SORT_COOKIE);
+		if (sort != null) req.setParameter("sort", sort.getValue());
 		
 		req.setParameter("formatJson", "true");
 		req.setParameter("groupingCd", GROUP_CD);
 		super.retrieve(req);
-		
-		@SuppressWarnings("unchecked")
-		List<FavoriteVO> favs = (List<FavoriteVO>) req.getAttribute(MyFavoritesAction.MY_FAVORITES);
-		if (favs == null || favs.size() == 0) return;
-		
-		// Create a map of bookmark create dates and mediabin ids 
-		// so that we can keep the date and the document together
-		Map<String, Date> created = new HashMap<>(favs.size());
-		for (FavoriteVO fav : favs) {
-			created.put(fav.getRelId(), fav.getCreateDt());
-		}
-		
-		//load the mediabin assets
-		StringBuilder sql = new StringBuilder(275);
-		sql.append("SELECT * FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("DPY_SYN_MEDIABIN WHERE DPY_SYN_MEDIABIN_ID in ('~' ");
-		for (int i=0; i<favs.size(); i++) sql.append(",?");
-		sql.append(")");
-		log.debug(sql);
-		
-		Map<String, MediaBinDeltaVO> items = new HashMap<>();
-		int x=1;
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			for (FavoriteVO fav : favs) ps.setString(x++, fav.getRelId());
-			ResultSet rs = ps.executeQuery();
-			while (rs.next()) {
-				MediaBinDeltaVO asset = new MediaBinDeltaVO(rs);
-				asset.setCreateDate(created.get(asset.getDpySynMediaBinId()));
-				items.put(rs.getString("DPY_SYN_MEDIABIN_ID"), asset);
-			}
-		} catch (SQLException e) {
-			throw new ActionException(e);
-		}
-		req.setAttribute(GROUP_CD, items);
 	}
 	
 	
@@ -140,8 +105,15 @@ public class BriefcaseAction extends MyFavoritesAction {
 		setSessionArgs(req);
 		
 		if (req.hasParameter("insert")) {
+			if (!req.hasParameter("relId")) req.setParameter("relId",req.getParameter("insert"));
+			if (!req.hasParameter("uriTxt")) req.setParameter("uriTxt","");
+			if (!req.hasParameter("typeCd")) req.setParameter("typeCd", "MEDIABIN");
+			req.setParameter("groupingCd", GROUP_CD);
 			super.build(req);
-		} else if (req.hasParameter("briefcaseAssetId")) {
+		} else if (req.hasParameter("isDelete")) { //deletes from the website use URI
+			req.setParameter("groupingCd", GROUP_CD);
+			super.build(req);
+		} else if (req.hasParameter("briefcaseAssetId")) { //deletes from the App use profileFavoriteId
 			deleteItem(req);
 		}
 	}
@@ -180,12 +152,13 @@ public class BriefcaseAction extends MyFavoritesAction {
 	
 	
 	/**
-	 * Ensure that the call has the required passcode to access the app.
+	 * Ensure that the call has the required passcode to access the app,
+	 * or the call came from a SitePage
 	 * @param key
 	 * @return
 	 */
 	private void validateApiKey(SMTServletRequest req) throws ActionException {
-		if (!API_KEY.equals(req.getParameter("key"))) 
+		if (!API_KEY.equals(req.getParameter("key")) && req.getSession().getAttribute(Constants.USER_DATA) == null) 
 			throw new ActionException("Invalid or missing security key");
 	}
 	
@@ -237,7 +210,7 @@ public class BriefcaseAction extends MyFavoritesAction {
 		sql.append("select rs.profile_id from register_submittal rs ");
 		sql.append("inner join register_data rd on rs.register_submittal_id=rd.register_submittal_id and rd.register_field_id=? ");
 		sql.append("inner join profile_role pr on rs.profile_id=pr.profile_id and rs.site_id=pr.site_id and pr.status_id=? ");
-		sql.append("where cast(rd.value_txt as nvarchar(50))=? and rs.site_id=?");
+		sql.append("where cast(rd.value_txt as nvarchar(20))=? and rs.site_id=?");
 		log.debug(sql);
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
