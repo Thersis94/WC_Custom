@@ -60,22 +60,22 @@ public class HTMLSolrFiltersBean {
 			sb.append("<div class=\"").append(s).append("\">");
 		}
 		if (c.getNumberChildren() > 0) {
-			sb.append("<span class=\"count fa fa-caret-down collapse-toggle\"");
-			sb.append("data-toggle='collapse' data-target='#");
-			sb.append(c.getNodeId().replace("~", "-"));
+			sb.append("<a class=\"caret_wrap collapsed\"");
+			sb.append("data-toggle='collapse' href='#");
+			sb.append(c.getNodeId().replace("~", "-").replace(" ", "-"));
 			sb.append("' aria-expanded='false' aria-controls='");
-			sb.append(c.getNodeId().replace("~", "-"));
-			sb.append("'></span>");
+			sb.append(c.getNodeId().replace("~", "-").replace(" ", "-"));
+			sb.append("'><span class=\"caret\"></span></a>");
 			
 		} else {
 			sb.append("<span class=\"count\">").append(c.getUserObject()).append("</span>");
 		}
-		sb.append("<input type=\"checkbox\" id=\"filter_simple_").append(uuid);
-		sb.append("\" data-filter-nm=\"").append(c.getNodeName()).append("\" value=\"");
-		sb.append(c.getNodeName()).append("\" onclick=\"").append(onclick).append("\">");
+		sb.append("<input type=\"checkbox\" class=\"parChkbx\" id=\"filter_simple_").append(uuid);
+		sb.append("\" data-filter-nm=\"").append(filterNm).append("\" value=\"");
+		sb.append(c.getNodeId()).append("\" onclick=\"").append(onclick).append("\">");
 		sb.append("<label class=\"checkbox\" for=\"filter_simple_").append(uuid).append("\">");
-		sb.append(c.getNodeName()).append(c.isLeaf()).append("</label>");
-		for (String s : classes) {
+		sb.append(c.getNodeName()).append("</label>");
+		for (int i=0; i<classes.length; i++) {
 			sb.append("</div>");
 		}
 		sb.append("\r");
