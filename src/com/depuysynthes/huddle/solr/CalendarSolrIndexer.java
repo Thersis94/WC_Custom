@@ -14,6 +14,7 @@ import java.util.Properties;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.common.SolrInputDocument;
 
+import com.depuysynthes.huddle.HuddleUtils;
 import com.depuysynthesinst.events.CourseCalendarSolrIndexer;
 import com.siliconmtn.common.html.state.USStateList;
 import com.siliconmtn.util.Convert;
@@ -91,7 +92,7 @@ public class CalendarSolrIndexer extends CourseCalendarSolrIndexer {
 				doc.setField(SearchDocumentHandler.AUTHOR + "Phone_s", vo.getPhoneText());
 				doc.setField(SearchDocumentHandler.START_DATE + "Year_i", Convert.formatDate(vo.getStartDate(), "yyyy"));
 				doc.setField(SearchDocumentHandler.START_DATE + "Month_i", Convert.formatDate(vo.getStartDate(), "MM"));
-				doc.setField("opco_s", vo.getOpcoName());
+				doc.setField(HuddleUtils.SOLR_OPCO_FIELD, vo.getOpcoName());
 				doc.setField(SearchDocumentHandler.CITY + "_s", vo.getCityName());
 				doc.setField(SearchDocumentHandler.STATE + "_s", StringUtil.checkVal(states.get(vo.getStateCode())));
 				doc.setField(SearchDocumentHandler.STATE, vo.getStateCode());
