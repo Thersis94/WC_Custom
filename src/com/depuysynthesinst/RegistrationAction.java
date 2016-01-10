@@ -119,13 +119,13 @@ public class RegistrationAction extends SimpleActionAdapter {
 		
 		//if there are no parameters on the request, this is the summary page/view.
 		//Reload the user's transcript each time so they always see their latest transcript
-		if (dsiUser.getTtLmsId() != null && (req.hasParameter("coursesAjax") || StringUtil.checkVal(req.getQueryString()).length() == 0)) {
+		if (dsiUser.getTtLmsId() != null  && Convert.formatInteger(dsiUser.getTtLmsId()) > 0 && (req.hasParameter("coursesAjax") || StringUtil.checkVal(req.getQueryString()).length() == 0)) {
 			log.debug("loading transcript from LMS");
 			try {
 				LMSWSClient lms = new LMSWSClient((String)getAttribute(LMSWSClient.CFG_SECURITY_KEY));
 				dsiUser.setMyCourses(lms.getUserCourseList(dsiUser.getDsiId()));
 			} catch (ActionException ae) {
-				log.error("could not load user course list", ae);
+				log.warn("could not load user course list", ae);
 			}
 		}
 		
@@ -211,8 +211,8 @@ public class RegistrationAction extends SimpleActionAdapter {
 				}
 			}
 
-			//existing user updating their data on the LMS
-			if (user.getTtLmsId() != null &&  Convert.formatInteger(user.getTtLmsId()) > 0) {
+			//existing user updating their data
+			if (user.getTtLmsId() != null && Convert.formatInteger(user.getTtLmsId()) > 0) {
 				saveUser(user);
 				captureLMSResponses(req, user, fieldList);
 			}
