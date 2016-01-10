@@ -1,5 +1,7 @@
 package com.depuysynthesinst;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -19,6 +21,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -28,6 +31,7 @@ import com.smt.sitebuilder.action.registration.RegistrationFacadeAction;
 import com.smt.sitebuilder.action.registration.SubmittalDataVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.util.MessageSender;
 
 /****************************************************************************
  * <b>Title</b>: RegistrationAction.java<p/>
@@ -231,7 +235,7 @@ public class RegistrationAction extends SimpleActionAdapter {
 	 * writes back to the register_data table to update a couple fields on the user's registration
 	 * @param user
 	 */
-	private void captureLMSResponses(SMTServletRequest req, UserDataVO user, String[] formFields) {
+	protected void captureLMSResponses(SMTServletRequest req, UserDataVO user, String[] formFields) {
 		String registerSubmittalId = StringUtil.checkVal(req.getAttribute("registerSubmittalId"));
 		req.setParameter("formFields", formFields, Boolean.TRUE);
 		DSIUserDataVO dsiUser = new DSIUserDataVO(user);
@@ -284,7 +288,7 @@ public class RegistrationAction extends SimpleActionAdapter {
 				Map<Object,Object> data = lms.getUserHoldingIDByEmail(user.getEmailAddress());
 				user.setAttributesFromMap(data);
 				inHolding = (Convert.formatInteger(user.getSynthesId()) > 0);
-
+				log.debug(user.getEmailAddress() + " inHolding? " + inHolding);
 			} catch (ActionException ae) {
 				log.error("could not query LMS for user holding", ae);
 			}
@@ -293,6 +297,11 @@ public class RegistrationAction extends SimpleActionAdapter {
 				req.setAttribute("isLegacyUser", "true");
 				//save the responses onto UserDataVO for when the form is submitted
 				req.getSession().setAttribute(Constants.USER_DATA, user.getUserDataVO());
+			} else {
+				//email bradley, the LMS lied to us
+				String msg = user.getEmailAddress() + " (Legacy TTLMSID=" + user.getTtLmsId() + ") is on the holding list but their account was not In Holding on the LMS.  " +
+				"As a result they were not given the option to migrate, and a new LMS account was likely created.";
+				emailBradley("DSI duplicate account created - user not in holding", msg);
 			}
 		}
 	}
@@ -311,7 +320,7 @@ public class RegistrationAction extends SimpleActionAdapter {
 		DSIUserDataVO user = new DSIUserDataVO((UserDataVO) req.getSession().getAttribute(Constants.USER_DATA));
 		
 		//do not migrate the user if they didn't consent to migration
-		if ("1".equals(req.getParameter("dsrpAuthorized"))) {
+		if ("1".equals(req.getParameter("reg_||DSI_DSRP_TRANSFER_AUTH"))) { //submitted a Yes
 			//verify they gave us the correct legacy password
 			String pswd = getLegacyPassword(user.getEmailAddress());
 			if (pswd.length() > 0 && pswd.equalsIgnoreCase(req.getParameter("dsrpPassword")))  {
@@ -319,13 +328,33 @@ public class RegistrationAction extends SimpleActionAdapter {
 				LMSWSClient lms = new LMSWSClient((String)getAttribute(LMSWSClient.CFG_SECURITY_KEY));
 				try {
 					double d = lms.migrateUser(user);
+					if (d < 1) throw new ActionException("could not migrate: " + d);
 					user.setTtLmsId(d);
 					log.debug("user migrated, TTLMSID=" + d);
 					return true; //if we're not successful here, the catch-all below is designed to strip any old TTLMSID before returning, so a new account can be created
 				} catch (ActionException e) {
 					log.warn("could not migrate user", e);
+					//email bradley
+					String msg = user.getEmailAddress() + " (Legacy TTLMSID=" + user.getTtLmsId() + ") wanted to migrate their LMS account but something went wrong.  A new account was likely created and should be considered duplicate.  Please use the SMT/EP Reconcile process to correct their account.";
+					StringWriter errors = new StringWriter();
+					e.printStackTrace(new PrintWriter(errors));
+					msg += "\r\n" + errors.toString();
+					emailBradley("DSI migration failed - needs reconciled", msg);
 				}
+			} else {
+				String msg = user.getEmailAddress() + " (Legacy TTLMSID=" + user.getTtLmsId() + ") did not submit the correct DSRP password, so the migration they desired did not occur.  Use the SMT/EP reconcile process to fix this.";
+				emailBradley("DSI duplicate account created - needs reconciled", msg);
 			}
+		} else if ("1".equals(req.getParameter("clickedYes"))) { //attempted a Yes but settled for No
+			log.debug("user did not provide the correct DSRP username, but wanted to " + user.getEmailAddress());
+			//email bradley
+			String msg = user.getEmailAddress() + " (Legacy TTLMSID=" + user.getTtLmsId() + ") seemingly tried to migrate their LMS account but could not provide the correct username, or changed their mind and did not want to migrate.  A new account was likely created and should be considered duplicate.  Please use the SMT/EP Reconcile process to correct their account.  You should confirm with the individual before doing so.  Their OLD account should be deleted if they do not desire migration.";
+			emailBradley("DSI duplicate account created - needs reconciled - user changed their mind", msg);
+		} else { //never clicked Yes
+			log.debug("user chose not to migrate: " + user.getEmailAddress() + " " + user.getTtLmsId());
+			//email bradley
+			String msg = user.getEmailAddress() + " (Legacy TTLMSID=" + user.getTtLmsId() + ") DID NOT want to migrate their LMS account.  Please delete their old account from the LMS.";
+			emailBradley("DSI duplicate account created - no transfer requested", msg);
 		}
 		
 		//remove their 'old' TTLMSID, so a new account will be created for this user
@@ -341,7 +370,7 @@ public class RegistrationAction extends SimpleActionAdapter {
 	 * @param user
 	 * @throws ActionException 
 	 */
-	private void saveUser(DSIUserDataVO user) throws ActionException {
+	protected void saveUser(DSIUserDataVO user) throws ActionException {
 		log.debug("creating/updating user");
 		LMSWSClient lms = new LMSWSClient((String)getAttribute(LMSWSClient.CFG_SECURITY_KEY));
 		Map<Object, Object> data = null;
@@ -383,7 +412,7 @@ public class RegistrationAction extends SimpleActionAdapter {
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("select password_txt from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("DPY_SYN_INST_MIGRATE_USR where email_address_txt=?");
-		log.debug(sql);
+		log.debug(sql + " " + email);
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, email);
 			ResultSet rs = ps.executeQuery();
@@ -394,5 +423,23 @@ public class RegistrationAction extends SimpleActionAdapter {
 		}
 		
 		return "";
+	}
+	
+	
+	/**
+	 * this is an emergency patch put in place at the launch of DSI Phase 2 to resolve LMS issues
+	 * @param subject
+	 * @param msg
+	 */
+	private void emailBradley(String subject, String body) {
+		try {
+			EmailMessageVO msg = new EmailMessageVO();
+			msg.addRecipient("MagellanDSI2@gmail.com");
+			msg.setSubject(subject);
+			msg.setTextBody(body);
+			new MessageSender(getAttributes(), dbConn).sendMessage(msg);
+		} catch (Exception e) {
+			log.error("could not email bradley", e);
+		}
 	}
 }
