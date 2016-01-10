@@ -211,10 +211,11 @@ public class RegistrationAction extends SimpleActionAdapter {
 				}
 			}
 
-			//existing user updating their data
-			saveUser(user);
-			
-			captureLMSResponses(req, user, fieldList);
+			//existing user updating their data on the LMS
+			if (user.getTtLmsId() != null &&  Convert.formatInteger(user.getTtLmsId()) > 0) {
+				saveUser(user);
+				captureLMSResponses(req, user, fieldList);
+			}
 		}
 		
 		boolean isFinalPage = StringUtil.checkVal(req.getParameter("finalPage")).equals("1");
