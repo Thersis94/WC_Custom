@@ -8,9 +8,6 @@ import java.util.Date;
 import java.util.Map;
 import java.util.TimeZone;
 
-
-
-
 // SMT Base Libs
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.exception.InvalidDataException;
@@ -308,5 +305,4 @@ public class FsHelpSiteLoginModule extends AbstractLoginModule {
 	public boolean resetPassword(String pwd, UserDataVO user) {
 		return false;
 	}
-
 }

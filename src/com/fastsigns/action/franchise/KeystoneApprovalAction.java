@@ -1,5 +1,6 @@
 package com.fastsigns.action.franchise;
 
+//Java 7
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -8,10 +9,18 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
+//SMT app libs
+import org.apache.commons.lang.StringUtils;
+
+//WC_customs
 import com.fastsigns.action.approval.WebeditApprover.WebeditType;
+
+//SMT base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.StringUtil;
+
+//WebCrescendo
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.approval.ApprovalAction;
 import com.smt.sitebuilder.approval.ApprovalController;
@@ -129,7 +138,7 @@ public class KeystoneApprovalAction extends SimpleActionAdapter {
 		sql.append("ORDER BY PORTLET_DESC");
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			log.debug(franchiseId+"|"+orgId+"|"+franchiseId.equals(orgId));
+			//log.debug(franchiseId+"|"+orgId+"|"+franchiseId.equals(orgId));
 			if (franchiseId.equals(orgId)) {
 				ps.setString(1, franchiseId);
 			} else {
@@ -160,21 +169,64 @@ public class KeystoneApprovalAction extends SimpleActionAdapter {
 						app.setPreviewUrl("/careers?jobPostingId="+app.getWcKeyId());
 						break;
 					case CenterPage:
+						log.debug("centerpage type called for franchise " + franchiseId);
 						app.setPreviewUrl("/"+siteAlias+rs.getString("FULL_PATH_TXT"));
 						break;
 					default:app.setPreviewUrl("/"+siteAlias);;
 				}
-				approvables.add(app);
+				
+				if ("FTS".equals(StringUtils.substring(franchiseId, 0, 3))){
+				String newSiteAlias = getModSpecificAlias(app.getWcKeyId());
+					if (newSiteAlias != null && !siteAlias.equals(newSiteAlias)) {
+						app.setPreviewUrl("/"+newSiteAlias);
+					} else {
+						app.setPreviewUrl("");
+					}
+				 
+				}
+				 approvables.add(app);
 			}
 		} catch(SQLException e) {
 			log.error("Could not get list of approval items for " + franchiseId, e);
 		}
 		
 		String previewApiKey = ApprovalController.generatePreviewApiKey(attributes);
-	     req.setParameter(Constants.PAGE_PREVIEW, previewApiKey);
+		req.setParameter(Constants.PAGE_PREVIEW, previewApiKey);
 		putModuleData(approvables);
 	}
 		
+	/**
+	 * This method takes a wc key id and finds a center where that particular 
+	 * center page module is active to preview.
+	 * @param wcKeyId
+	 * @return
+	 */
+	private String getModSpecificAlias(String wcKeyId) {
+		String customDb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+
+		//Build Lookup Query
+		StringBuilder sql = new StringBuilder(500);
+		sql.append("SELECT fclmxr.FRANCHISE_ID from ");
+		sql.append(customDb).append("FTS_CP_MODULE_FRANCHISE_XR fcmfxr ");
+		sql.append("inner join ").append(customDb).append("FTS_CP_LOCATION_MODULE_XR fclmxr ");
+		sql.append("on fcmfxr.CP_LOCATION_MODULE_XR_ID = fclmxr.CP_LOCATION_MODULE_XR_ID ");
+		sql.append("inner join WC_SYNC wc on (wc.WC_ORIG_KEY_ID = fcmfxr.CP_MODULE_OPTION_ID ");
+		sql.append("or wc.WC_KEY_ID = fcmfxr.CP_MODULE_OPTION_ID) ");
+		sql.append(" where wc.WC_KEY_ID = ? ");
+
+		//Query for Franchise Id if available.
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, wcKeyId);
+			
+			ResultSet rs = ps.executeQuery();
+			
+			if (rs.next()) return rs.getString("FRANCHISE_ID");
+		} catch(SQLException e) {
+			log.error("Could not get default location alias", e);
+		}
+		return null;
+	}
+
 	/**
 	 * Get the default site alias for a center that has global modules enabled 
 	 * so that changes to global assets can be properly previewed
@@ -200,8 +252,9 @@ public class KeystoneApprovalAction extends SimpleActionAdapter {
 	 * Get the site alias for the submitted franchise id
 	 */
 	private String getSiteAlias(String franchiseId) {
-		String sql = "select location_alias_nm from dealer_location where dealer_location_id=?";
-		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+		StringBuilder sql = new StringBuilder(105);
+		sql.append("select location_alias_nm from dealer_location where dealer_location_id= ? ");
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, franchiseId);
 			
 			ResultSet rs = ps.executeQuery();
