@@ -1,4 +1,4 @@
-package com.depuysynthes.huddle;
+package com.depuysynthes.huddle.solr;
 
 //JDK 1.6.x
 import java.io.IOException;
@@ -8,8 +8,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+
 //log4j 1.2-15
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
+
 
 //SMT Base Libs
 import com.depuysynthes.action.ProductCatalogUtil;
@@ -81,8 +83,6 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 
 		SolrActionUtil solrUtil = new SolrActionUtil(server);
 		ProductCatalogSolrDocumentVO solrDoc = null;
-		String country = "";
-		String lastCategoryName = null;
 		List<String> hierarchy = null;
 		Map<String, ProductCatalogSolrDocumentVO> docs = new HashMap<>();
 		for (Node n : nodes) {
@@ -100,28 +100,24 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 				}
 				hierarchy.add(vo.getCategoryName());
 			}
-
-			//pull the category name off the parent node
-			vo.setCategoryName(lastCategoryName);
-
-			String imagePath = null;
+			
 			if (vo.getProducts() == null || vo.getProducts().size() == 0) continue;
 			// Remove the product from the hierarchy list.
 			hierarchy.remove(hierarchy.size()-1);
 			for (ProductVO pVo : vo.getProducts()) {
 				try {
 					if (docs.containsKey(pVo.getProductId())) {
-						solrDoc.addHierarchies(buildHierarchy(hierarchy));
+						docs.get(pVo.getProductId()).addHierarchies(buildHierarchy(hierarchy));
 					} else {
 						solrDoc = new ProductCatalogSolrDocumentVO(INDEX_TYPE);
 						solrDoc.setDocumentId(pVo.getProductId());
-						solrDoc.setTitle(pVo.getProductName());
+						solrDoc.setTitle(pVo.getTitle());
 						solrDoc.setSummary(pVo.getDescText());
 						solrDoc.setDetailImage(pVo.getImage());
 						solrDoc.setDocumentUrl(pVo.getUrlAlias());
 						solrDoc.addOrganization(organizationId);
 						solrDoc.setModule(moduleType);
-						solrDoc.setSections(hierarchy);
+						solrDoc.setSpecialty(hierarchy.get(0));
 						solrDoc.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
 						docs.put(pVo.getProductId(), solrDoc);
 					}
@@ -130,11 +126,9 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 					log.error(e);
 				}
 			}
-			log.debug("adding product to index: section=" + vo.getCategoryName() + ", img=" + imagePath + " org=" + organizationId + " country=" + country);
 		}
 		for (String key : docs.keySet()) {
 			try {
-				System.out.println(docs.get(key).getHierarchies());
 				solrUtil.addDocument(docs.get(key));
 			} catch (ActionException e) {
 				log.warn("Unable to add product: " + docs.get(key).getDocumentId());
