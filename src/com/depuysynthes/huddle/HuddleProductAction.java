@@ -47,13 +47,13 @@ public class HuddleProductAction extends SimpleActionAdapter {
 		
 		if (sort == null) {
 			// Default to normal sort
-		} else if (sort.getValue() == "recentlyAdded") {
+		} else if ("recentlyAdded".equals(sort.getValue())) {
 			req.setParameter("fieldSort", "updateDate");
 			req.setParameter("sortDirection", "desc");
-		} else if (sort.getValue() == "titleZA") {
+		} else if ("titleZA".equals(sort.getValue())) {
 			req.setParameter("fieldSort", "title");
 			req.setParameter("sortDirection", "desc");
-		} else if (sort.getValue() == "titleAZ") {
+		} else if ("titleAZ".equals(sort.getValue())) {
 			req.setParameter("fieldSort", "title");
 			req.setParameter("sortDirection", "asc");
 		}
