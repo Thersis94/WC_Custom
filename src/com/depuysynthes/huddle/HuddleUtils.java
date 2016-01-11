@@ -32,6 +32,9 @@ public class HuddleUtils {
 	public static final int DEFAULT_RPP_INT = 12;
 	public static final String DEFAULT_RPP = "" + DEFAULT_RPP_INT; //set as String, the same way we'd get it from the Browser/Cookie
 
+	//solr fields
+	public static final String SOLR_OPCO_FIELD = "opco_ss";
+	public static final String SOLR_SALES_CONSULTANT_IDEX_TYPE = "HUDDLE_CONSULTANTS";
 	
 	/**
 	 * the number of days to subtract from an event to designate when Registration opens
@@ -57,24 +60,27 @@ public class HuddleUtils {
 	 *  A blank pageAlias means we won't pre-select during initial registration
 	 */
 	public enum SSOBusinessUnit {
-		Spine("SPINE","spine", "000942"),
-		Cmf("CMF","","001221"),
-		Codman("CODMAN NEURO","codman-neuro","000945"),
-		Ethicon("ETHICON","ethicon","001220","001510"),
-		JointRecon("JOINT RECONSTRUCTION","joint-reconstruction","000940"),
-		PowerTools("POWER TOOLS", "", "001221"),
-		SportsMed("SPORTS MEDICINE","sports-medicine","001225"),
-		Trauma("TRAUMA", "", "001221");
+		Spine("Spine", "DSP","spine", "000942"),
+		Cmf("CMF","CMF","","001221"),
+		Codman("Codman Neuro","CDM","codman-neuro","000945"),
+		Ethicon("Ethicon","ETH","ethicon","001220","001510"),
+		JointRecon("Joint Reconstruction","DJT","joint-reconstruction","000940"),
+		PowerTools("Power Tools","PWT", "", "001221"),
+		SportsMed("Sports Medicine","SPM","sports-medicine","001225"),
+		Trauma("Trauma","DJT", "", "001221");
 
 		private String name;
+		private String abbr;
 		private String pageAlias;
 		private String[] businessUnits;
-		SSOBusinessUnit(String name, String pageAlias, String... businessUnits) {
+		SSOBusinessUnit(String name, String abbr, String pageAlias, String... businessUnits) {
 			this.name = name;
+			this.abbr = abbr;
 			this.pageAlias = pageAlias;
 			this.businessUnits = businessUnits;
 		}
 		public String getName() { return name;	}
+		public String getAbbreviation() { return abbr; }
 		public String getPageAlias() { return pageAlias; }
 		public String[] getBusinessUnits() { return businessUnits; }
 	}
@@ -83,6 +89,14 @@ public class HuddleUtils {
 	public static String getBusUnitNm(String mrcCode) {
 		SSOBusinessUnit bu = getSSOBusinessUnit(mrcCode);
 		return (bu != null) ? bu.getName() : null;
+	}
+	
+	public static String getBusUnitNmFromAbbr(String abbr) {
+		for (SSOBusinessUnit vo : SSOBusinessUnit.values()) {
+			if (vo.getAbbreviation().equalsIgnoreCase(abbr))
+				return vo.getName();
+		}
+		return null;
 	}
 	
 	public static SSOBusinessUnit getSSOBusinessUnit(String mrcCode) {
