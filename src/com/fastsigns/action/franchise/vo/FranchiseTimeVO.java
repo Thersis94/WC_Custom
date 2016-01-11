@@ -1,5 +1,6 @@
 package com.fastsigns.action.franchise.vo;
 
+//java 7
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -10,6 +11,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+//SMT Baselibs
 import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
@@ -17,7 +19,7 @@ import com.siliconmtn.util.StringUtil;
  * <b>Project</b>: SB_FastSigns <p/>
  * <b>Description: </b> Bean and Formatter for Center Times.  Handles taking in 
  * a raw map of Times and combines them into a formatted map of timeslot and the
- * days that mathch that slot.
+ * days that match that slot.
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2012<p/>
  * <b>Company:</b> Silicon Mountain Technologies<p/>
@@ -280,14 +282,14 @@ public class FranchiseTimeVO implements Serializable {
 	}
 	
 	 /**
-	  * this method takes the country code and returns the time formate as a 
+	  * this method takes the country code and returns the time format as a 
 	  * string.
 	  * @param countryCd
 	  * @return
 	  */
 	 private String getTimeFormat(String countryCd) {
 		    if (countryCd != null && countryCd.equals("AE")) return "HHmm";
-		     else return "hh:mm a";
+		     else return "h:mm a";
 	}
 	 
 	 
