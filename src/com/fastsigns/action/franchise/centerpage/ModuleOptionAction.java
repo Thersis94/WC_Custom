@@ -510,10 +510,6 @@ public class ModuleOptionAction extends SBActionAdapter{
 		// Determine if this is an omnipresent global asset.  These are treated differently from normal assets
 		String globalAsset = StringUtil.checkVal(req.getParameter("globalFlg"));
 		
-		//log.info("is insert " + isInsert + " is parent " + isParent);
-		//PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
-		//log.info("page id " + page.toString());
-		
 		//if the user is not a global admin, and this is an update to an existing module,
 		//treat it as a NEW module.  This behavior will ensure the module gets approved
 		//before it's visible on the website.
@@ -627,7 +623,6 @@ public class ModuleOptionAction extends SBActionAdapter{
 			approval.setSyncStatus(SyncStatus.InProgress);
 		}
 		approval.setSyncTransaction(SyncTransaction.Create);
-
 		if (!"n".equals(globalAsset)) {
 			approval.setOrganizationId(orgId);
 		} else {
@@ -643,16 +638,17 @@ public class ModuleOptionAction extends SBActionAdapter{
 			UserDataVO userVo = new UserDataVO();
 			userVo.setProfileId("public-Side-Submission");
 			req.getSession().setAttribute(Constants.USER_DATA, userVo);
-		
 		}
 		
 		approval.setUserDataVo((UserDataVO) req.getSession().getAttribute(Constants.USER_DATA));
 		approval.setCreateDt(Convert.getCurrentTimestamp());
+		
 		try {
 			controller.process(approval);
 		} catch (ApprovalException e) {
 			e.printStackTrace();
 		}
+		
 		
 	}
 
