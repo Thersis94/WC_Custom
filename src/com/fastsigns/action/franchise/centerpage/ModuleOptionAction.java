@@ -489,7 +489,6 @@ public class ModuleOptionAction extends SBActionAdapter{
 	 * @throws SQLException
 	 */
 	private void saveModuleOption(SMTServletRequest req) throws SQLException {
-		log.info("################################################################ mod op save " + getAttributeNames().size());
 		
 		final String customDb = String.valueOf(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		StringBuilder sb = new StringBuilder();
@@ -594,7 +593,6 @@ public class ModuleOptionAction extends SBActionAdapter{
 			}
 			ps.setString(++i, vo.getModuleOptionId());
 			ps.executeUpdate();
-			log.info("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ after execute. is insert value " + isInsert);
 			// Only create a sync entry if this is an insert for a non-global asset
 			if (isInsert)
 				buildSyncEntry(req, vo, globalAsset);
@@ -612,7 +610,7 @@ public class ModuleOptionAction extends SBActionAdapter{
 	 * @param approvalType
 	 */
 	private void buildSyncEntry(SMTServletRequest req, CenterModuleOptionVO vo, String globalAsset) {
-		log.info("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ inside build sync");
+
 		ApprovalController controller = new ApprovalController(dbConn, getAttributes());
 		ApprovalVO approval = new ApprovalVO();
 		WebeditType approvalType = WebeditType.CenterModule;
@@ -633,7 +631,7 @@ public class ModuleOptionAction extends SBActionAdapter{
 			approval.setSyncStatus(SyncStatus.InProgress);
 		}
 		approval.setSyncTransaction(SyncTransaction.Create);
-		log.info("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ the middle or so");
+
 		if (!"n".equals(globalAsset)) {
 			approval.setOrganizationId(orgId);
 		} else {
@@ -646,19 +644,14 @@ public class ModuleOptionAction extends SBActionAdapter{
 		if ( req.getParameter("testimonialForm") != null && 
 				req.getParameter("testimonialForm").equals("true") &&
 				req.getSession().getAttribute(Constants.USER_DATA) == null){
-			log.info("its a testimonial form with a null user vo " + req.getSession().getAttribute(Constants.USER_DATA));
-		UserDataVO userVo = new UserDataVO();
-		userVo.setProfileId("public-Side-Submission");
-		req.getSession().setAttribute(Constants.USER_DATA, userVo);
+			UserDataVO userVo = new UserDataVO();
+			userVo.setProfileId("public-Side-Submission");
+			req.getSession().setAttribute(Constants.USER_DATA, userVo);
 		
 		}
 		
-		log.info("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ the middle of the middle");
-		log.info("user data " + req.getSession().getAttribute(Constants.USER_DATA));
 		approval.setUserDataVo((UserDataVO) req.getSession().getAttribute(Constants.USER_DATA));
-		log.info("check");
 		approval.setCreateDt(Convert.getCurrentTimestamp());
-		log.info("try");
 		try {
 			log.info("pre process");
 			controller.process(approval);
@@ -667,7 +660,6 @@ public class ModuleOptionAction extends SBActionAdapter{
 			e.printStackTrace();
 		}
 		
-		log.info("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ end sync");
 	}
 
 	/**
