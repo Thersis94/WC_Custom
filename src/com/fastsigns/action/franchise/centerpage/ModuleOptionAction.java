@@ -642,6 +642,17 @@ public class ModuleOptionAction extends SBActionAdapter{
 		if (vo.getModuleTypeId() == 2) {
 			approval.setParentId(orgId);
 		}
+		
+		if ( req.getParameter("testimonialForm") != null && 
+				req.getParameter("testimonialForm").equals("true") &&
+				req.getSession().getAttribute(Constants.USER_DATA) == null){
+			log.info("its a testimonial form with a null user vo " + req.getSession().getAttribute(Constants.USER_DATA));
+		UserDataVO userVo = new UserDataVO();
+		userVo.setProfileId("public-Side-Submission");
+		req.getSession().setAttribute(Constants.USER_DATA, userVo);
+		
+		}
+		
 		log.info("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ the middle of the middle");
 		log.info("user data " + req.getSession().getAttribute(Constants.USER_DATA));
 		approval.setUserDataVo((UserDataVO) req.getSession().getAttribute(Constants.USER_DATA));
