@@ -211,7 +211,7 @@ public class ModuleOptionAction extends SBActionAdapter{
 		 * has been submitted and redirect back to the Center Page.
 		 */
 		if (Convert.formatBoolean(req.getParameter("isTestimonial"))) {
-			log.debug("saving testimonial ");
+			log.debug("saving testimonial");
 			try {
 				this.saveModuleOption(req);
 				this.sendTestimonalAnnouncement(req);
@@ -489,7 +489,6 @@ public class ModuleOptionAction extends SBActionAdapter{
 	 * @throws SQLException
 	 */
 	private void saveModuleOption(SMTServletRequest req) throws SQLException {
-		
 		final String customDb = String.valueOf(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		StringBuilder sb = new StringBuilder();
 		Integer franchiseId = Convert.formatInteger(CenterPageAction.getFranchiseId(req));	//Get Franchise Id
@@ -504,9 +503,6 @@ public class ModuleOptionAction extends SBActionAdapter{
 
 		//UserRoleVO role = (UserRoleVO) req.getSession().getAttribute(Constants.ROLE_DATA);
 		CenterModuleOptionVO vo = new CenterModuleOptionVO(req);
-		
-		log.info("vo " + vo.toString());
-		
 		boolean isInsert = false;
 		//modules that get created without parents and are not submitted should be identifiable
 		boolean isParent = (StringUtil.checkVal(vo.getModuleOptionId(),null) == null 
@@ -514,9 +510,9 @@ public class ModuleOptionAction extends SBActionAdapter{
 		// Determine if this is an omnipresent global asset.  These are treated differently from normal assets
 		String globalAsset = StringUtil.checkVal(req.getParameter("globalFlg"));
 		
-		log.info("is insert " + isInsert + " is parent " + isParent);
-		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
-		log.info("page id " + page.toString());
+		//log.info("is insert " + isInsert + " is parent " + isParent);
+		//PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+		//log.info("page id " + page.toString());
 		
 		//if the user is not a global admin, and this is an update to an existing module,
 		//treat it as a NEW module.  This behavior will ensure the module gets approved
@@ -560,7 +556,6 @@ public class ModuleOptionAction extends SBActionAdapter{
 		PreparedStatement ps = null;
 		int i = 0;
 		try {
-			log.info("before  execute");
 			ps = dbConn.prepareStatement(sb.toString());
 			ps.setString(++i, vo.getOptionName());
 			ps.setString(++i, vo.getOptionDesc());
@@ -593,9 +588,11 @@ public class ModuleOptionAction extends SBActionAdapter{
 			}
 			ps.setString(++i, vo.getModuleOptionId());
 			ps.executeUpdate();
+			
 			// Only create a sync entry if this is an insert for a non-global asset
 			if (isInsert)
 				buildSyncEntry(req, vo, globalAsset);
+			
 		} finally {
 			try { ps.close(); } catch (Exception e) {}
 		}
@@ -610,7 +607,6 @@ public class ModuleOptionAction extends SBActionAdapter{
 	 * @param approvalType
 	 */
 	private void buildSyncEntry(SMTServletRequest req, CenterModuleOptionVO vo, String globalAsset) {
-
 		ApprovalController controller = new ApprovalController(dbConn, getAttributes());
 		ApprovalVO approval = new ApprovalVO();
 		WebeditType approvalType = WebeditType.CenterModule;
@@ -653,9 +649,7 @@ public class ModuleOptionAction extends SBActionAdapter{
 		approval.setUserDataVo((UserDataVO) req.getSession().getAttribute(Constants.USER_DATA));
 		approval.setCreateDt(Convert.getCurrentTimestamp());
 		try {
-			log.info("pre process");
 			controller.process(approval);
-			log.info("under process");
 		} catch (ApprovalException e) {
 			e.printStackTrace();
 		}
