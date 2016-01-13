@@ -95,12 +95,11 @@ public class HuddleProductAction extends SimpleActionAdapter {
 		} else {
 			buildMediabin(p, req, mediabin);
 		}
-
 	}
 
 
 	/**
-	 * 
+	 * Build a list of mediabin assets for the product
 	 * @param p
 	 * @param req
 	 * @param mediabin
