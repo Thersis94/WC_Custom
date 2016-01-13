@@ -90,7 +90,7 @@ public class HTMLSolrFiltersBean {
 				sb.append("'><span class=\"caret\"></span></a>");
 				
 			} else {
-				sb.append("<span class=\"count\">").append(formatCount(c.getUserObject())).append("</span>");
+				sb.append("<span class=\"count\">").append(formatCount(n.getUserObject())).append("</span>");
 			}
 			sb.append("<input type=\"checkbox\" class=\"parChkbx\" id=\"filter_simple_").append(uuid);
 			sb.append("\" data-filter-nm=\"").append(filterNm).append("\" value=\"");
