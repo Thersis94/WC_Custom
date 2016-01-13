@@ -11,6 +11,7 @@ import javax.servlet.http.Cookie;
 import org.apache.solr.common.SolrDocument;
 
 import com.depuysynthes.action.MediaBinAssetVO;
+import com.depuysynthes.lucene.MediaBinSolrIndex;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.commerce.catalog.ProductVO;
@@ -26,6 +27,7 @@ import com.smt.sitebuilder.action.search.SolrQueryProcessor;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 
@@ -78,37 +80,34 @@ public class HuddleProductAction extends SimpleActionAdapter {
 		p.setProductId((String) doc.getFieldValue(SearchDocumentHandler.DOCUMENT_ID));
 		p.setTitle((String) doc.getFieldValue(SearchDocumentHandler.TITLE));
 		p.setDescText((String) doc.getFieldValue(SearchDocumentHandler.SUMMARY));
-		p.addProdAttribute(HuddleUtils.HUDDLE_CLINICAL, doc.getFieldValues(HuddleUtils.HUDDLE_CLINICAL));
-		p.addProdAttribute(HuddleUtils.HUDDLE_IMAGE, doc.getFieldValues(HuddleUtils.HUDDLE_IMAGE));
-		p.addProdAttribute(HuddleUtils.HUDDLE_VALUE, doc.getFieldValues(HuddleUtils.HUDDLE_VALUE));
-		p.addProdAttribute(HuddleUtils.HUDDLE_COMPETITION, doc.getFieldValues(HuddleUtils.HUDDLE_COMPETITION));
-		p.addProdAttribute(HuddleUtils.HUDDLE_SELLING_TIPS, doc.getFieldValues(HuddleUtils.HUDDLE_SELLING_TIPS));
+		p.addProdAttribute(HuddleUtils.PROD_ATTR_CLINICAL, doc.getFieldValues(HuddleUtils.PROD_ATTR_CLINICAL));
+		p.addProdAttribute(HuddleUtils.PROD_ATTR_IMAGE, doc.getFieldValues(HuddleUtils.PROD_ATTR_IMAGE));
+		p.addProdAttribute(HuddleUtils.PROD_ATTR_VALUE, doc.getFieldValues(HuddleUtils.PROD_ATTR_VALUE));
+		p.addProdAttribute(HuddleUtils.PROD_ATTR_COMPETITION, doc.getFieldValues(HuddleUtils.PROD_ATTR_COMPETITION));
+		p.addProdAttribute(HuddleUtils.PROD_ATTR_SELLING_TIPS, doc.getFieldValues(HuddleUtils.PROD_ATTR_SELLING_TIPS));
 		p.addProdAttribute(HuddleUtils.SOLR_OPCO_FIELD, doc.getFieldValue(HuddleUtils.SOLR_OPCO_FIELD));
 		
-		Collection<Object> mediabin = doc.getFieldValues(HuddleUtils.HUDDLE_SYSTEM);
-		StringBuilder f = new StringBuilder();
+		Collection<Object> mediabin = doc.getFieldValues(HuddleUtils.PROD_ATTR_SYSTEM);
 		// If there are no mediabin items the method can exit here
 		if (mediabin == null) {
 			super.putModuleData(p);
 			return;
+		} else {
+			buildMediabin(p, req, mediabin);
 		}
-		
-		for (Object o : mediabin) {
-			if (f.length() > 0) f.append(" OR documentId:");
-			f.append(o);
-		}
-	
-		SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, "WebCrescendo_DePuy");
-		SolrActionVO qData = new SolrActionVO();
-		qData.setNumberResponses(200);
-		qData.setStartLocation(0);
-		qData.setRoleLevel(0);
-		qData.setOrganizationId("*");
-		qData.addIndexType(new SolrActionIndexVO("", "MEDIA_BIN"));
-		Map<String, String> filter = new HashMap<>();
-		filter.put("documentId", f.toString());
-		qData.setFilterQueries(filter);
-		resp = sqp.processQuery(qData);
+
+	}
+
+
+	/**
+	 * 
+	 * @param p
+	 * @param req
+	 * @param mediabin
+	 */
+	private void buildMediabin(ProductVO p, SMTServletRequest req, Collection<Object> mediabin) {
+		SiteVO siteData = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		SolrResponseVO resp = getSolrDocs(siteData.getOrganizationId(), mediabin);
 		
 		List<MediaBinAssetVO> assets = new ArrayList<>();
 		for (SolrDocument d : resp.getResultDocuments()) {
@@ -116,17 +115,50 @@ public class HuddleProductAction extends SimpleActionAdapter {
 			asset.setActionUrl((String) d.getFieldValue(SearchDocumentHandler.DOCUMENT_URL));
 			asset.setActionId((String) d.getFieldValue(SearchDocumentHandler.DOCUMENT_ID));
 			asset.setActionName((String) d.getFieldValue(SearchDocumentHandler.TITLE));
-			asset.setAssetType((String) d.getFieldValue("assetType_s"));
+			asset.setAssetType((String) d.getFieldValue(MediaBinSolrIndex.MediaBinField.AssetType.getField()));
 			asset.setFileSizeNo(Convert.formatInteger(d.getFieldValue(SearchDocumentHandler.FILE_SIZE).toString()));
 			asset.setFileNm((String) d.getFieldValue(SearchDocumentHandler.FILE_NAME));
 			assets.add(asset);
 		}
-		p.addProdAttribute(HuddleUtils.HUDDLE_SYSTEM, assets);
+		p.addProdAttribute(HuddleUtils.PROD_ATTR_SYSTEM, assets);
 		
 		super.putModuleData(p);
 	}
 
 
+	/**
+	 * Get all the mediabin solr documents associated with this product
+	 * @param organizationId
+	 * @param mediabin
+	 * @return
+	 */
+	private SolrResponseVO getSolrDocs(String organizationId, Collection<Object> mediabin) {
+		StringBuilder f = new StringBuilder();
+		for (Object o : mediabin) {
+			if (f.length() > 0) f.append(" OR ").append(SearchDocumentHandler.DOCUMENT_ID).append(":");
+			f.append(o);
+		}
+	
+		SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, (String) attributes.get(Constants.SOLR_COLLECTION_NAME));
+		SolrActionVO qData = new SolrActionVO();
+		qData.setNumberResponses(200);
+		qData.setStartLocation(0);
+		qData.setRoleLevel(0);
+		qData.setOrganizationId(organizationId);
+		qData.addIndexType(new SolrActionIndexVO("", MediaBinSolrIndex.INDEX_TYPE));
+		Map<String, String> filter = new HashMap<>();
+		filter.put(SearchDocumentHandler.DOCUMENT_ID, f.toString());
+		qData.setFilterQueries(filter);
+		return sqp.processQuery(qData);
+	}
+
+
+	/**
+	 * Get the list of products from solr that fit the supplied filters
+	 * @param req
+	 * @param mainCol
+	 * @throws ActionException
+	 */
 	private void listSearch(SMTServletRequest req, boolean mainCol) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		req.setParameter("fmid", mod.getPageModuleId());
