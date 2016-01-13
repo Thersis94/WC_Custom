@@ -17,6 +17,8 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import com.depuysynthes.action.ProductCatalogUtil;
 import com.depuysynthes.lucene.data.ProductCatalogSolrDocumentVO;
 import com.siliconmtn.action.ActionException;
+import com.siliconmtn.commerce.catalog.ProductAttributeContainer;
+import com.siliconmtn.commerce.catalog.ProductAttributeVO;
 import com.siliconmtn.commerce.catalog.ProductCategoryVO;
 import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.data.Node;
@@ -85,6 +87,7 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 		ProductCatalogSolrDocumentVO solrDoc = null;
 		List<String> hierarchy = null;
 		Map<String, ProductCatalogSolrDocumentVO> docs = new HashMap<>();
+		Map<String, List<String>> attrs = null;
 		for (Node n : nodes) {
 			ProductCategoryVO vo = (ProductCategoryVO)n.getUserObject();
 			
@@ -119,11 +122,24 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 						solrDoc.setModule(moduleType);
 						solrDoc.setSpecialty(hierarchy.get(0));
 						solrDoc.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
+						ProductAttributeContainer c = pVo.getAttributes();
+						if (c != null) {
+							attrs = new HashMap<String, List<String>>();
+							for (Node a : c.getAllAttributes()) {
+								if (a.getUserObject() == null) continue;
+								ProductAttributeVO attr = (ProductAttributeVO)a.getUserObject();
+								if (!attrs.keySet().contains(attr.getAttributeId()+"_ss"))
+									attrs.put(attr.getAttributeId()+"_ss", new ArrayList<String>());
+								attrs.get(attr.getAttributeId()+"_ss").add(attr.getValueText());
+							}
+							solrDoc.setProdAttributes(attrs);
+						}
+						
 						docs.put(pVo.getProductId(), solrDoc);
 					}
 					
 				} catch (Exception e) {
-					log.error(e);
+					log.error("Failed to build product " + pVo.getProductId(), e);
 				}
 			}
 		}
