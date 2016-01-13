@@ -1,8 +1,7 @@
 package com.depuysynthes.huddle;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 
 import javax.servlet.http.Cookie;
@@ -11,10 +10,12 @@ import org.apache.solr.client.solrj.SolrQuery.ORDER;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.common.html.StateList;
+import com.siliconmtn.common.html.state.USStateList;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-import com.siliconmtn.util.UUIDGenerator;
 import com.siliconmtn.util.databean.FilePartDataBean;
 import com.siliconmtn.util.parser.AnnotationParser;
 import com.smt.sitebuilder.action.SBModuleVO;
@@ -25,7 +26,6 @@ import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.security.SecurityController;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
-import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 
 /****************************************************************************
  * <b>Title</b>: SalesConsultantAction.java<p/>
@@ -124,27 +124,79 @@ public class SalesConsultantAction extends SimpleActionAdapter {
 			//don't make any changes if no data was provided.  This likely means something is wrong with the uploaded file
 			if (data == null || data.size() == 0) return;
 
-			SolrActionUtil util = new SolrActionUtil(getAttributes());
-			util.setHardCommit(false); //let the insert handle the commit of the delete; so we only fire one commit to Solr.
-			
-			//delete all existing Solr records, since we don't have a means of managing deltas
-			util.removeByQuery(SearchDocumentHandler.INDEX_TYPE, HuddleUtils.SOLR_SALES_CONSULTANT_IDEX_TYPE);
-			
-			//insert all records loaded from the file
-			util.setHardCommit(true);
-			List<SolrDocumentVO> repData = new ArrayList<>(data.size());
-			UUIDGenerator uuid = new UUIDGenerator();
-			for (Object obj : data) {
-				SalesConsultantVO vo = (SalesConsultantVO) obj;
-				vo.setDocumentId(uuid.getUUID());
-				vo.addOrganization(req.getParameter("organizationId"));
-				vo.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
-				repData.add(vo);
-			}
-			util.addDocuments(repData);
+			indexRecords(data, req.getParameter("organizationId"));
 
 		} catch (Exception e) {
 			log.error("could not process Sales Consultant import", e);
 		}
+	}
+	
+	
+	
+	/**
+	 * takes the list of beans we built from Excel and pushes them to Solr
+	 * @param data
+	 * @param orgId
+	 * @throws ActionException
+	 */
+	private void indexRecords(Collection<Object> data, String orgId) throws ActionException  {
+		Map<String, String> states = invertStates(new USStateList()); 
+		Map<String, SalesConsultantVO> repData = new HashMap<>(data.size());
+		SalesConsultantVO vo;
+		SolrActionUtil util = new SolrActionUtil(getAttributes());
+		util.setHardCommit(false); //let the insert handle the commit of the delete; so we only fire one commit to Solr.
+		
+		//delete all existing Solr records, since we don't have a means of managing deltas
+		util.removeByQuery(SearchDocumentHandler.INDEX_TYPE, HuddleUtils.SOLR_SALES_CONSULTANT_IDEX_TYPE);
+		
+		//insert all records loaded from the file
+		util.setHardCommit(true);
+		
+		for (Object obj : data) {
+			SalesConsultantVO newVo = (SalesConsultantVO) obj;
+			if (Convert.formatInteger(newVo.getREP_ID()) == 0) continue;
+			
+			String documentId = "dpy-rep-" + newVo.getREP_ID();
+			newVo.setState(states.get(newVo.getState())); //replace the stateCd with stateNm
+			newVo.setCity(StringUtil.capitalizePhrase(newVo.getCity(), 3));
+			newVo.setCNSMR_NM(StringUtil.capitalizePhrase(newVo.getCNSMR_NM(), 3));
+			vo = repData.get(documentId);
+			if (vo != null) {
+				//treat this as an additional hospital, add it to the existing VO
+				String hier = newVo.getHierarchy();
+				for (String existing : vo.getHierarchies()) {
+					if (existing.equals(hier)) { //do not add if we already have it
+						hier = null;
+						break;
+					}
+				}
+				if (hier != null) vo.addHierarchies(hier);
+			} else {
+				vo = newVo;
+				vo.setDocumentId(documentId);
+				vo.addOrganization(orgId);
+				vo.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
+				vo.addHierarchies(newVo.getHierarchy()); //move the data from 3 separate fields to our hierarchy field
+				vo.setCity(null); //flush these, because they don't apply to these records in the context implied
+				vo.setState(null);
+			}
+			repData.put(documentId, vo);
+		}
+		
+		util.addDocuments(repData.values());
+	}
+	
+	
+	/**
+	 * inverts the Map of states maintained in the static bean
+	 * @param states
+	 * @return
+	 */
+	private Map<String, String> invertStates(StateList list) {
+		Map<String, String> data = new HashMap<>(60);
+		for(Map.Entry<Object, Object> entry : list.getStateList().entrySet())
+			data.put(entry.getValue().toString(), entry.getKey().toString());
+
+		return data;
 	}
 }

@@ -1,5 +1,10 @@
 package com.depuysynthes.huddle;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import com.siliconmtn.annotations.DataType;
 import com.siliconmtn.annotations.Importable;
 import com.siliconmtn.annotations.SolrField;
@@ -24,8 +29,6 @@ public class SalesConsultantVO extends SolrDocumentVO {
 	private String OPCO_CD;
 	private String CNSMR_NO;
 	private String CNSMR_NM;
-	private String CNSMR_CITY;
-	private String CNSMR_STATE;
 	private String TERR_ID;
 	private String REP_ID;
 	private String REP_FIRST_NM;
@@ -40,11 +43,14 @@ public class SalesConsultantVO extends SolrDocumentVO {
 	private String CORE_REG_MGR_TEL_NO;
 	private String CORE_REG_MGR_EMAIL_ADDR;
 	
+	private Set<String> hospitals;
+	
 	/**
 	 * @param solrIndex
 	 */
 	public SalesConsultantVO(String solrIndex) {
 		super(solrIndex);
+		hospitals = new HashSet<>();
 	}
 	
 	public SalesConsultantVO() {
@@ -61,19 +67,13 @@ public class SalesConsultantVO extends SolrDocumentVO {
 		return CNSMR_NO;
 	}
 
-	@SolrField(name="hospital_nm_s")
+	@SolrField(name="hospital_nm_ss")
+	public List<String> getHospitals() {
+		return new ArrayList<>(hospitals);
+	}
+	
 	public String getCNSMR_NM() {
 		return CNSMR_NM;
-	}
-
-	@SolrField(name=SearchDocumentHandler.CITY)
-	public String getCNSMR_CITY() {
-		return CNSMR_CITY;
-	}
-
-	@SolrField(name=SearchDocumentHandler.STATE)
-	public String getCNSMR_STATE() {
-		return CNSMR_STATE;
 	}
 
 	@SolrField(name="territory_no_i")
@@ -150,15 +150,18 @@ public class SalesConsultantVO extends SolrDocumentVO {
 	public void setCNSMR_NM(String cNSMR_NM) {
 		CNSMR_NM = cNSMR_NM;
 	}
-
-	@Importable(name = "CNSMR_CITY", type = DataType.STRING)
-	public void setCNSMR_CITY(String cNSMR_CITY) {
-		CNSMR_CITY = cNSMR_CITY;
+	public void addHospital(String hosp) {
+		hospitals.add(hosp);
 	}
 
-	@Importable(name = "CNSMR_STATE", type = DataType.STRING)
+	@Importable(name = "CITY_NM", type = DataType.STRING)
+	public void setCNSMR_CITY(String cNSMR_CITY) {
+		super.setCity(cNSMR_CITY);
+	}
+
+	@Importable(name = "STATE_CD", type = DataType.STRING)
 	public void setCNSMR_STATE(String cNSMR_STATE) {
-		CNSMR_STATE = cNSMR_STATE;
+		super.setState(cNSMR_STATE);
 	}
 
 	@Importable(name = "TERR_ID", type = DataType.STRING)
@@ -214,5 +217,10 @@ public class SalesConsultantVO extends SolrDocumentVO {
 	@Importable(name = "CORE_REG_MGR_EMAIL_ADDR", type = DataType.STRING)
 	public void setCORE_REG_MGR_EMAIL_ADDR(String cORE_REG_MGR_EMAIL_ADDR) {
 		CORE_REG_MGR_EMAIL_ADDR = cORE_REG_MGR_EMAIL_ADDR;
+	}
+	
+	public String getHierarchy() {
+		String tok = SearchDocumentHandler.HIERARCHY_DELIMITER;
+		return this.getState() + tok + this.getCity() + tok + this.getCNSMR_NM();
 	}
 }
