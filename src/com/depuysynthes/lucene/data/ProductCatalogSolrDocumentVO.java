@@ -1,6 +1,9 @@
 package com.depuysynthes.lucene.data;
 
 import java.util.Calendar;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.log4j.Logger;
 
@@ -30,6 +33,7 @@ public class ProductCatalogSolrDocumentVO extends SolrDocumentVO {
 	private String thumbImage = null;
 	private int dsOrderNo;
 	private String specialty = null;
+	private Map<String, List<String>> prodAttributes = null;
 
 	/**
 	 * 
@@ -37,6 +41,7 @@ public class ProductCatalogSolrDocumentVO extends SolrDocumentVO {
 	public ProductCatalogSolrDocumentVO() {
 		this(ProductCatalogSolrIndex.INDEX_TYPE);
 		super.setUpdateDt(Calendar.getInstance().getTime());
+		prodAttributes = new HashMap<>();
 	}
 
 	/**
@@ -44,6 +49,7 @@ public class ProductCatalogSolrDocumentVO extends SolrDocumentVO {
 	 */
 	public ProductCatalogSolrDocumentVO(String solrIndex) {
 		super(solrIndex);
+		prodAttributes = new HashMap<>();
 	}
 
 	/**
@@ -97,5 +103,18 @@ public class ProductCatalogSolrDocumentVO extends SolrDocumentVO {
 	@SolrField(name="opco_ss")
 	public String getSpecialty(){
 		return specialty;
+	}
+
+	public void setProdAttributes(Map<String, List<String>> prodAttributes) {
+		this.prodAttributes = prodAttributes;
+	}
+
+	@SolrField(name="attributes")
+	public Map<String, List<String>> getProdAttributes(){
+		return prodAttributes;
+	}
+	
+	public void addPordAttribute(String key, List<String> value) {
+		prodAttributes.put(key, value);
 	}
 }
