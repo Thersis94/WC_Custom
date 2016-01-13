@@ -1,7 +1,9 @@
 package com.depuysynthes.huddle;
 
+import java.text.NumberFormat;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Locale;
 
 import org.apache.solr.client.solrj.response.FacetField.Count;
 import org.apache.solr.client.solrj.response.PivotField;
@@ -35,11 +37,10 @@ public class HTMLSolrFiltersBean {
 		StringBuilder sb = new StringBuilder(250);
 		sb.append("<div class=\"collapse-panel collapse-panel-filter\">");
 		sb.append("<div class=\"collapse-panel-header\">");
-		sb.append("<span class=\"count\">").append(c.getCount()).append("</span>");
+		sb.append("<span class=\"count\">").append(formatCount(c.getCount())).append("</span>");
 		sb.append("<input type=\"checkbox\" id=\"filter_simple_").append(uuid);
 		sb.append("\" data-filter-nm=\"").append(filterNm).append("\" value=\"");
 		sb.append(c.getName()).append("\" onclick=\"").append(onclick).append("\"");
-		System.err.println(c.getName() + " = " + selectedItem);
 		if (selectedItem != null && c.getName().equals(selectedItem)) sb.append("checked=\"checked\" ");
 		sb.append(">");
 		sb.append("<label class=\"checkbox\" for=\"filter_simple_").append(uuid).append("\">");
@@ -75,7 +76,7 @@ public class HTMLSolrFiltersBean {
 			sb.append("'><span class=\"caret\"></span></a>");
 			
 		} else {
-			sb.append("<span class=\"count\">").append(c.getUserObject()).append("</span>");
+			sb.append("<span class=\"count\">").append(formatCount(c.getUserObject())).append("</span>");
 		}
 		sb.append("<input type=\"checkbox\" class=\"parChkbx\" id=\"filter_simple_").append(uuid);
 		sb.append("\" data-filter-nm=\"").append(filterNm).append("\" value=\"");
@@ -127,7 +128,7 @@ public class HTMLSolrFiltersBean {
 			sb.append("class=\"childChkbx\" data-filter-nm=\"").append(filterNm).append("\" value=\"");
 			sb.append(child.getValue()).append("\" onclick=\"").append(onclick).append("\">");
 			sb.append("<label for=\"nested_list_item_").append(uuid).append(x).append("\">").append(label).append("</label>");
-			sb.append("<span class=\"count\">").append(child.getCount()).append("</span>");
+			sb.append("<span class=\"count\">").append(formatCount(child.getCount())).append("</span>");
 			sb.append("</li>\n");
 			x++;
 		}
@@ -136,6 +137,36 @@ public class HTMLSolrFiltersBean {
 	}
 	
 	
+	/**
+	 * format a long for UI display
+	 * @param l
+	 * @return
+	 */
+	private static String formatCount(long l) {
+		return formatCount(Long.valueOf(l));
+	}
+	/**
+	 * format an int for UI display
+	 * @param l
+	 * @return
+	 */
+	private static String formatCount(int i) {
+		return formatCount(Integer.valueOf(i));
+	}
+	/**
+	 * format an object for UI display
+	 * @param l
+	 * @return
+	 */
+	private static String formatCount(Object o) {
+		try {
+			return NumberFormat.getNumberInstance(Locale.US).format(o);
+		} catch (Exception e) {
+			//System.err.println(e.getMessage() + " could not format " + o);
+			if (o != null) return o.toString();
+		}
+		return "0";
+	}
 	
 
 }
