@@ -8,6 +8,7 @@ import java.util.Map;
 
 import javax.servlet.http.Cookie;
 
+import org.apache.solr.client.solrj.SolrQuery.ORDER;
 import org.apache.solr.common.SolrDocument;
 
 import com.depuysynthes.action.MediaBinAssetVO;
@@ -168,11 +169,11 @@ public class HuddleProductAction extends SimpleActionAdapter {
 		// Only add filters if this is the main portlet on the page.
 		if (mainCol) {
 			if (req.hasParameter("category") && !req.hasParameter("fq")) {
-				req.setParameter("fq", "hierarchy:" + req.getParameter("category"));
+				req.setParameter("fq", SearchDocumentHandler.HIERARCHY + ":" + req.getParameter("category"));
 			}
 			
 			if (req.hasParameter("specialty")) {
-				req.setParameter("fq", "opco_ss:" + req.getParameter("specialty"));
+				req.setParameter("fq", HuddleUtils.SOLR_OPCO_FIELD + ":" + req.getParameter("specialty"));
 			}
 			
 			req.setParameter("rpp", req.getCookie(HuddleUtils.RPP_COOKIE).getValue());
@@ -182,14 +183,14 @@ public class HuddleProductAction extends SimpleActionAdapter {
 			if (sort == null) {
 				// Default to normal sort
 			} else if ("recentlyAdded".equals(sort.getValue())) {
-				req.setParameter("fieldSort", "updateDate", true);
-				req.setParameter("sortDirection", "desc", true);
+				req.setParameter("fieldSort", SearchDocumentHandler.UPDATE_DATE, true);
+				req.setParameter("sortDirection", ORDER.desc.toString(), true);
 			} else if ("titleZA".equals(sort.getValue())) {
-				req.setParameter("fieldSort", "title_sort", true);
-				req.setParameter("sortDirection", "desc", true);
+				req.setParameter("fieldSort", SearchDocumentHandler.TITLE_SORT, true);
+				req.setParameter("sortDirection", ORDER.desc.toString(), true);
 			} else if ("titleAZ".equals(sort.getValue())) {
-				req.setParameter("fieldSort", "title_sort", true);
-				req.setParameter("sortDirection", "asc", true);
+				req.setParameter("fieldSort", SearchDocumentHandler.TITLE_SORT, true);
+				req.setParameter("sortDirection", ORDER.asc.toString(), true);
 			}
 		}
 		
