@@ -114,7 +114,7 @@ public class ProductCatalogSolrDocumentVO extends SolrDocumentVO {
 		return prodAttributes;
 	}
 	
-	public void addPordAttribute(String key, List<String> value) {
+	public void addProdAttribute(String key, List<String> value) {
 		prodAttributes.put(key, value);
 	}
 }
