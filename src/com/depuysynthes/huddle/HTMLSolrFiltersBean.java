@@ -53,6 +53,15 @@ public class HTMLSolrFiltersBean {
 	}
 	
 	
+	/**
+	 * Takes calls from the jsp, creates the stringbuilder that will hold the 
+	 * html and passes it on to the main method.
+	 * @param c
+	 * @param filterNm
+	 * @param onclick
+	 * @param invertColor
+	 * @return
+	 */
 	public static String getHierarchyFilterSimple(Node c, String filterNm, String onclick, boolean invertColor) {
 		return getHierarchyFilterSimple(c, filterNm, onclick, new StringBuilder(), invertColor);
 	}
