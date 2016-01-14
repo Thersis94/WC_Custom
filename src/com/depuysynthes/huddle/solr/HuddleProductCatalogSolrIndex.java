@@ -93,6 +93,7 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 		for (Node n : nodes) {
 			ProductCategoryVO vo = (ProductCategoryVO)n.getUserObject();
 			
+			
 			// Build the product Hierarchy
 			if (n.getDepthLevel() == 1) {
 				hierarchy = new ArrayList<>();
@@ -105,12 +106,23 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 				}
 				hierarchy.add(vo.getCategoryName());
 			}
-			
+
+			System.out.println(vo.getParentCode());
 			if (vo.getProducts() == null || vo.getProducts().size() == 0) continue;
+			
 			// Remove the product from the hierarchy list.
 			hierarchy.remove(hierarchy.size()-1);
+			
+			// The only VOs that do not have a parent code are the root node
+			// and products that have no categories assigned to them.
+			// In both cases they will never show up on the site and by this
+			// point have done their job maintaining the hierarchy structure
+			if (vo.getParentCode() == null) continue;
+			
 			for (ProductVO pVo : vo.getProducts()) {
 				try {
+					// If this product has already been added just add a new hierarchy
+					// to show its latest category path.
 					if (docs.containsKey(pVo.getProductId())) {
 						docs.get(pVo.getProductId()).addHierarchies(buildHierarchy(hierarchy));
 					} else {
@@ -126,9 +138,13 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 						solrDoc.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
 						ProductAttributeContainer c = pVo.getAttributes();
 						if (c != null) {
+							// Loop over all attributes and add them to the
+							// custom field map on the solr document
 							for (Node a : c.getAllAttributes()) {
 								if (a.getUserObject() == null) continue;
 								ProductAttributeVO attr = (ProductAttributeVO)a.getUserObject();
+								// Check if an attribute of this type is already in the map.  
+								// If not create a new list for that attribute type
 								if (!solrDoc.getAttributes().keySet().contains(attr.getAttributeId()))
 									solrDoc.getAttributes().put(attr.getAttributeId(), new ArrayList<String>());
 								((ArrayList<String>)solrDoc.getAttributes().get(attr.getAttributeId())).add(attr.getValueText());
@@ -154,6 +170,12 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 	}
 
 
+	/**
+	 * Turn the list of categories into a descending
+	 * ancestory of the current category.
+	 * @param hierarchy
+	 * @return
+	 */
 	private String buildHierarchy(List<String> hierarchy) {
 		if (hierarchy == null) return "";
 		StringBuilder fullHierarchy = new StringBuilder(100);
