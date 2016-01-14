@@ -106,7 +106,7 @@ public class DSILoginModule extends SAMLLoginModule {
 			dsiUser.setMyCourses(lms.getUserCourseList(dsiUser.getDsiId()));
 			
 		} catch (ActionException ae) {
-			log.error("could not load user course list", ae);
+			log.warn("could not load user course list", ae);
 		}
 
 		DSIRoleMgr dsiRoleMgr = new DSIRoleMgr();
