@@ -9,8 +9,10 @@ import java.util.Map;
 import java.util.Properties;
 
 
+
 //log4j 1.2-15
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
+
 
 
 //SMT Base Libs
@@ -79,6 +81,7 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 	 * @param catalogId
 	 * @param server
 	 */
+	@SuppressWarnings("unchecked")
 	protected void indexProducts(HttpSolrServer server, String solrDocClass, int dsOrderNo, String moduleType) {
 		List<Node> nodes = getProductData(CATALOG_ID);
 		log.info("Found " + nodes.size() + " nodes to index for " + CATALOG_ID + ".");
@@ -87,7 +90,6 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 		ProductCatalogSolrDocumentVO solrDoc = null;
 		List<String> hierarchy = null;
 		Map<String, ProductCatalogSolrDocumentVO> docs = new HashMap<>();
-		Map<String, List<String>> attrs = null;
 		for (Node n : nodes) {
 			ProductCategoryVO vo = (ProductCategoryVO)n.getUserObject();
 			
@@ -124,16 +126,15 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 						solrDoc.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
 						ProductAttributeContainer c = pVo.getAttributes();
 						if (c != null) {
-							attrs = new HashMap<String, List<String>>();
 							for (Node a : c.getAllAttributes()) {
 								if (a.getUserObject() == null) continue;
 								ProductAttributeVO attr = (ProductAttributeVO)a.getUserObject();
-								if (!attrs.keySet().contains(attr.getAttributeId()+"_ss"))
-									attrs.put(attr.getAttributeId()+"_ss", new ArrayList<String>());
-								attrs.get(attr.getAttributeId()+"_ss").add(attr.getValueText());
+								if (!solrDoc.getAttributes().keySet().contains(attr.getAttributeId()+"_ss"))
+									solrDoc.getAttributes().put(attr.getAttributeId()+"_ss", new ArrayList<String>());
+								((ArrayList<String>)solrDoc.getAttributes().get(attr.getAttributeId()+"_ss")).add(attr.getValueText());
 							}
-							solrDoc.setProdAttributes(attrs);
 						}
+						
 						
 						docs.put(pVo.getProductId(), solrDoc);
 					}
