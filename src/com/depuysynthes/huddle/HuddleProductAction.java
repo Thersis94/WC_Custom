@@ -2,9 +2,7 @@ package com.depuysynthes.huddle;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import javax.servlet.http.Cookie;
 
@@ -17,6 +15,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.security.UserRoleVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBModuleVO;
@@ -24,8 +23,11 @@ import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrActionIndexVO;
 import com.smt.sitebuilder.action.search.SolrActionVO;
+import com.smt.sitebuilder.action.search.SolrFieldVO;
+import com.smt.sitebuilder.action.search.SolrFieldVO.FieldType;
 import com.smt.sitebuilder.action.search.SolrQueryProcessor;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
+import com.smt.sitebuilder.action.search.SolrFieldVO.BooleanType;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
@@ -46,6 +48,12 @@ import com.smt.sitebuilder.search.SearchDocumentHandler;
 ****************************************************************************/
 
 public class HuddleProductAction extends SimpleActionAdapter {
+	
+	
+	@Override
+	public void list(SMTServletRequest req) throws ActionException {
+		super.retrieve(req);
+	}
 	
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
@@ -107,7 +115,8 @@ public class HuddleProductAction extends SimpleActionAdapter {
 	 */
 	private void buildMediabin(ProductVO p, SMTServletRequest req, Collection<Object> mediabin) {
 		SiteVO siteData = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		SolrResponseVO resp = getSolrDocs(siteData.getOrganizationId(), mediabin);
+		UserRoleVO role = (UserRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
+		SolrResponseVO resp = getSolrDocs(siteData.getOrganizationId(), mediabin, role.getRoleLevel());
 		
 		List<MediaBinAssetVO> assets = new ArrayList<>();
 		for (SolrDocument d : resp.getResultDocuments()) {
@@ -132,23 +141,23 @@ public class HuddleProductAction extends SimpleActionAdapter {
 	 * @param mediabin
 	 * @return
 	 */
-	private SolrResponseVO getSolrDocs(String organizationId, Collection<Object> mediabin) {
-		StringBuilder f = new StringBuilder();
-		for (Object o : mediabin) {
-			if (f.length() > 0) f.append(" OR ").append(SearchDocumentHandler.DOCUMENT_ID).append(":");
-			f.append(o);
-		}
-	
+	private SolrResponseVO getSolrDocs(String organizationId, Collection<Object> mediabin, int roleLevel) {
 		SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, (String) attributes.get(Constants.SOLR_COLLECTION_NAME));
 		SolrActionVO qData = new SolrActionVO();
-		qData.setNumberResponses(200);
+		for (Object o : mediabin) {
+			SolrFieldVO field = new SolrFieldVO();
+			field.setBooleanType(BooleanType.OR);
+			field.setFieldType(FieldType.SEARCH);
+			field.setFieldCode(SearchDocumentHandler.DOCUMENT_ID);
+			field.setValue((String) o);
+			qData.addSolrField(field);
+		}
+		
+		qData.setNumberResponses(mediabin.size());
 		qData.setStartLocation(0);
-		qData.setRoleLevel(0);
+		qData.setRoleLevel(roleLevel);
 		qData.setOrganizationId(organizationId);
 		qData.addIndexType(new SolrActionIndexVO("", MediaBinSolrIndex.INDEX_TYPE));
-		Map<String, String> filter = new HashMap<>();
-		filter.put(SearchDocumentHandler.DOCUMENT_ID, f.toString());
-		qData.setFilterQueries(filter);
 		return sqp.processQuery(qData);
 	}
 
