@@ -267,15 +267,15 @@ public class LMSWSClient {
 
 			// get response
 			GetUserActiveIDbyEmailResponse guder = dsi.getUserActiveIDbyEmail(gube);
-			Map1 m1 = new Map1();
-			m1 = guder.get_return();
-			log.debug("getUserActiveIDbyEmailResponse val: " + StringUtil.getToString(m1));
+			Map2 m2 = new Map2();
+			m2 = guder.get_return();
+			log.debug("getUserActiveIDbyEmailResponse val: " + StringUtil.getToString(m2));
 
 			// parse the returned map into a standard Map.
-			if (m1 != null && m1.getEntry() != null) {
-				for (Entry1 e1 : m1.getEntry()) {
-					log.debug("key/value: " + e1.getKey() + "|" + e1.getValue());
-					ret.put(e1.getKey(),e1.getValue());
+			if (m2 != null && m2.getEntry() != null) {
+				for (Entry2 e2 : m2.getEntry()) {
+					log.debug("key/value: " + e2.getKey() + "|" + e2.getValue());
+					ret.put(e2.getKey(),e2.getValue());
 				}
 			}
 			
@@ -318,14 +318,14 @@ public class LMSWSClient {
 
 			// make WS call
 			GetUserHoldingIDbyEmailResponse gusr = dsi.getUserHoldingIDbyEmail(gusi);
-			Map2 m2 = gusr.get_return();
-			log.debug("getUserHoldingIDbyEmailResponse val: " + StringUtil.getToString(m2));
+			Map1 m1 = gusr.get_return();
+			log.debug("getUserHoldingIDbyEmailResponse val: " + StringUtil.getToString(m1));
 
 			// parse the returned map into a standard Map.
-			if (m2 != null && m2.getEntry() != null) {
-				for (Entry2 e2 : m2.getEntry()) {
-					log.debug("key/value: " + e2.getKey() + "|" + e2.getValue());
-					ret.put(e2.getKey(), e2.getValue());
+			if (m1 != null && m1.getEntry() != null) {
+				for (Entry1 e1 : m1.getEntry()) {
+					log.debug("key/value: " + e1.getKey() + "|" + e1.getValue());
+					ret.put(e1.getKey(), e1.getValue());
 				}
 			}
 			
@@ -482,7 +482,6 @@ public class LMSWSClient {
 	 * @return
 	 * @throws ActionException
 	 */
-	@SuppressWarnings("unused")
 	public double registerUserForCourse(String dsiId, double courseId) 
 			throws ActionException {
 
