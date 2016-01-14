@@ -6,7 +6,6 @@ import java.util.List;
 
 import javax.servlet.http.Cookie;
 
-import org.apache.commons.lang.WordUtils;
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
 import org.apache.solr.common.SolrDocument;
 
@@ -176,22 +175,33 @@ public class HuddleProductAction extends SimpleActionAdapter {
 		
 		// Only add filters if this is the main portlet on the page.
 		if (mainCol) {
-			req.setParameter("rpp", req.getCookie(HuddleUtils.RPP_COOKIE).getValue());
+			if (req.getCookie(HuddleUtils.RPP_COOKIE) != null)
+				req.setParameter("rpp", req.getCookie(HuddleUtils.RPP_COOKIE).getValue());
+			
 			Cookie sort = req.getCookie(HuddleUtils.SORT_COOKIE);
 			
+			// Called on the category page of the site.
+			// Turns the category parameter into a hierarchy fq
 			if (req.hasParameter("category") && !req.hasParameter("fq")) {
 				String category = req.getParameter("category").replace(" ", "_");
-				req.setParameter("fq", SearchDocumentHandler.HIERARCHY + ":" + WordUtils.capitalize(category));
+				req.setParameter("fq", SearchDocumentHandler.HIERARCHY + ":" + StringUtil.capitalizePhrase(category));
 			}
 			
+			// Called on the specialty page of the site.
+			// Turns the speciality parameter into an opco fq. 
 			if (req.hasParameter("specialty")) {
 				req.setParameter("fq", HuddleUtils.SOLR_OPCO_FIELD + ":" + req.getParameter("specialty"));
 			}
 			
+			// Called on the speciality home pages of the site.
+			// Uses the last section of the request uri to determine the 
+			// speciality of the page that the portlet is on and make an opco fq
 			if (!req.hasParameter("fq")) {
 				String uri = req.getRequestURI().substring(req.getRequestURI().lastIndexOf("/")+1);
-				req.setParameter("fq", SearchDocumentHandler.HIERARCHY + ":" + WordUtils.capitalize(uri));
-				sort = new Cookie("bypass", "recentlyAdded");
+				req.setParameter("fq", HuddleUtils.SOLR_OPCO_FIELD + ":" + StringUtil.capitalizePhrase(uri));
+				// This search ignores the user's last sorting preference in
+				// order to show new products on the home page.
+				sort = new Cookie(HuddleUtils.SORT_COOKIE, "recentlyAdded");
 			}
 			
 			
