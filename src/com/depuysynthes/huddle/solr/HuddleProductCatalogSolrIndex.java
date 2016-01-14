@@ -106,8 +106,7 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 				}
 				hierarchy.add(vo.getCategoryName());
 			}
-
-			System.out.println(vo.getParentCode());
+			
 			if (vo.getProducts() == null || vo.getProducts().size() == 0) continue;
 			
 			// Remove the product from the hierarchy list.
