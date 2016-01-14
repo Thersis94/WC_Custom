@@ -157,7 +157,6 @@ public class HuddleProductAction extends SimpleActionAdapter {
 		qData.setStartLocation(0);
 		qData.setRoleLevel(roleLevel);
 		qData.setOrganizationId(organizationId);
-		qData.addIndexType(new SolrActionIndexVO("", MediaBinSolrIndex.INDEX_TYPE));
 		return sqp.processQuery(qData);
 	}
 
