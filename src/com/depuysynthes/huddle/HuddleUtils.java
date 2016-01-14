@@ -15,12 +15,12 @@ import java.util.Arrays;
 public class HuddleUtils {
 	
 	/** Solr field names of product attributes **/
-	public static final String PROD_ATTR_SYSTEM = "HUDDLE_SYSTEM_ss";
-	public static final String PROD_ATTR_IMAGE = "HUDDLE_IMAGE_ss";
-	public static final String PROD_ATTR_CLINICAL = "HUDDLE_CLINICAL_ss";
-	public static final String PROD_ATTR_VALUE = "HUDDLE_VALUE_ss";
-	public static final String PROD_ATTR_COMPETITION = "HUDDLE_COMPETITION_ss";
-	public static final String PROD_ATTR_SELLING_TIPS = "HUDDLE_SELLING_TIPS_ss";
+	public static final String PROD_ATTR_SYSTEM = "huddle_system_ss";
+	public static final String PROD_ATTR_IMAGE = "huddle_image_ss";
+	public static final String PROD_ATTR_CLINICAL = "huddle_clinical_ss";
+	public static final String PROD_ATTR_VALUE = "huddle_value_ss";
+	public static final String PROD_ATTR_COMPETITION = "huddle_competition_ss";
+	public static final String PROD_ATTR_SELLING_TIPS = "huddle_selling_tips_ss";
 	
 	/** registration (user account) fields **/
 	public static final String WWID_REGISTER_FIELD_ID = "HUDDLE_WWID";
