@@ -6,6 +6,7 @@ import java.util.List;
 
 import javax.servlet.http.Cookie;
 
+import org.apache.commons.lang.WordUtils;
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
 import org.apache.solr.common.SolrDocument;
 
@@ -21,7 +22,6 @@ import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBModuleVO;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
-import com.smt.sitebuilder.action.search.SolrActionIndexVO;
 import com.smt.sitebuilder.action.search.SolrActionVO;
 import com.smt.sitebuilder.action.search.SolrFieldVO;
 import com.smt.sitebuilder.action.search.SolrFieldVO.FieldType;
@@ -176,17 +176,24 @@ public class HuddleProductAction extends SimpleActionAdapter {
 		
 		// Only add filters if this is the main portlet on the page.
 		if (mainCol) {
+			req.setParameter("rpp", req.getCookie(HuddleUtils.RPP_COOKIE).getValue());
+			Cookie sort = req.getCookie(HuddleUtils.SORT_COOKIE);
+			
 			if (req.hasParameter("category") && !req.hasParameter("fq")) {
-				req.setParameter("fq", SearchDocumentHandler.HIERARCHY + ":" + req.getParameter("category"));
+				String category = req.getParameter("category").replace(" ", "_");
+				req.setParameter("fq", SearchDocumentHandler.HIERARCHY + ":" + WordUtils.capitalize(category));
 			}
 			
 			if (req.hasParameter("specialty")) {
 				req.setParameter("fq", HuddleUtils.SOLR_OPCO_FIELD + ":" + req.getParameter("specialty"));
 			}
 			
-			req.setParameter("rpp", req.getCookie(HuddleUtils.RPP_COOKIE).getValue());
+			if (!req.hasParameter("fq")) {
+				String uri = req.getRequestURI().substring(req.getRequestURI().lastIndexOf("/")+1);
+				req.setParameter("fq", SearchDocumentHandler.HIERARCHY + ":" + WordUtils.capitalize(uri));
+				sort = new Cookie("bypass", "recentlyAdded");
+			}
 			
-			Cookie sort = req.getCookie(HuddleUtils.SORT_COOKIE);
 			
 			if (sort == null) {
 				// Default to normal sort
