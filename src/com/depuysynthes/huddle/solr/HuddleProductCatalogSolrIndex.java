@@ -129,9 +129,9 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 							for (Node a : c.getAllAttributes()) {
 								if (a.getUserObject() == null) continue;
 								ProductAttributeVO attr = (ProductAttributeVO)a.getUserObject();
-								if (!solrDoc.getAttributes().keySet().contains(attr.getAttributeId()+"_ss"))
-									solrDoc.getAttributes().put(attr.getAttributeId()+"_ss", new ArrayList<String>());
-								((ArrayList<String>)solrDoc.getAttributes().get(attr.getAttributeId()+"_ss")).add(attr.getValueText());
+								if (!solrDoc.getAttributes().keySet().contains(attr.getAttributeId()))
+									solrDoc.getAttributes().put(attr.getAttributeId(), new ArrayList<String>());
+								((ArrayList<String>)solrDoc.getAttributes().get(attr.getAttributeId())).add(attr.getValueText());
 							}
 						}
 						
