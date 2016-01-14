@@ -13,7 +13,15 @@ import java.util.Arrays;
  * @since Dec 29, 2015
  ****************************************************************************/
 public class HuddleUtils {
-
+	
+	/** Solr field names of product attributes **/
+	public static final String PROD_ATTR_SYSTEM = "huddle_system_ss";
+	public static final String PROD_ATTR_IMAGE = "huddle_image_ss";
+	public static final String PROD_ATTR_CLINICAL = "huddle_clinical_ss";
+	public static final String PROD_ATTR_VALUE = "huddle_value_ss";
+	public static final String PROD_ATTR_COMPETITION = "huddle_competition_ss";
+	public static final String PROD_ATTR_SELLING_TIPS = "huddle_selling_tips_ss";
+	
 	/** registration (user account) fields **/
 	public static final String WWID_REGISTER_FIELD_ID = "HUDDLE_WWID";
 	public static final String HOMEPAGE_REGISTER_FIELD_ID = "c0a80241f4bfdb229fce1431e31a1cfe";

@@ -54,6 +54,18 @@ public class HTMLSolrFiltersBean {
 	
 	
 	/**
+	 * Takes calls from the jsp, creates the stringbuilder that will hold the 
+	 * html and passes it on to the main method.
+	 * @param c
+	 * @param filterNm
+	 * @param onclick
+	 * @param invertColor
+	 * @return
+	 */
+	public static String getHierarchyFilterSimple(Node c, String filterNm, String onclick, boolean invertColor) {
+		return getHierarchyFilterSimple(c, filterNm, onclick, new StringBuilder(), invertColor);
+	}
+	/**
 	 * Create an html structure from a parsed hierarchy field.
 	 * @param c
 	 * @param filterNm
@@ -61,33 +73,80 @@ public class HTMLSolrFiltersBean {
 	 * @param classes List of classes that each cause the creation of a new containing div for the html element
 	 * @return
 	 */
-	public static String getHierarchyFilterSimple(Node c, String filterNm, String onclick, String... classes) {
-		String uuid = RandomAlphaNumeric.generateRandom(5);
-		StringBuilder sb = new StringBuilder(250);
-		for (String s : classes) {
-			sb.append("<div class=\"").append(s).append("\">");
-		}
-		if (c.getNumberChildren() > 0) {
-			sb.append("<a class=\"caret_wrap collapsed\"");
-			sb.append("data-toggle='collapse' href='#");
-			sb.append(c.getNodeId().replace("~", "-").replace(" ", "-"));
-			sb.append("' aria-expanded='false' aria-controls='");
-			sb.append(c.getNodeId().replace("~", "-").replace(" ", "-"));
-			sb.append("'><span class=\"caret\"></span></a>");
+	public static String getHierarchyFilterSimple(Node c, String filterNm, String onclick, StringBuilder sb, boolean invertColor) {
+		for (Node n : c.getChildren()) {
+			if ((Long)n.getUserObject() == 0) continue;
+			String uuid = RandomAlphaNumeric.generateRandom(5);
+			sb.append("<div class='collapse-panel collapse-panel-filter");
+			if (invertColor) sb.append(" collapse-panel-nested");
+			sb.append("'>");
+			sb.append("<div class='collapse-panel-header'>");
+			if (n.getNumberChildren() > 0) {
+				sb.append("<a class=\"caret_wrap collapsed\"");
+				sb.append("data-toggle='collapse' href='#");
+				sb.append(n.getNodeId().replace("~", "-").replace(" ", "-"));
+				sb.append("' aria-expanded='false' aria-controls='");
+				sb.append(n.getNodeId().replace("~", "-").replace(" ", "-"));
+				sb.append("'><span class=\"caret\"></span></a>");
+				
+			} else {
+				sb.append("<span class=\"count\">").append(formatCount(n.getUserObject())).append("</span>");
+			}
+			sb.append("<input type=\"checkbox\" class=\"parChkbx\" id=\"filter_simple_").append(uuid);
+			sb.append("\" data-filter-nm=\"").append(filterNm).append("\" value=\"");
+			sb.append(n.getNodeId()).append("\" onclick=\"").append(onclick).append("\">");
+			sb.append("<label class=\"checkbox\" for=\"filter_simple_").append(uuid).append("\">");
+			sb.append(n.getNodeName()).append("</label>");
+			sb.append("</div>");
 			
-		} else {
-			sb.append("<span class=\"count\">").append(formatCount(c.getUserObject())).append("</span>");
-		}
-		sb.append("<input type=\"checkbox\" class=\"parChkbx\" id=\"filter_simple_").append(uuid);
-		sb.append("\" data-filter-nm=\"").append(filterNm).append("\" value=\"");
-		sb.append(c.getNodeId()).append("\" onclick=\"").append(onclick).append("\">");
-		sb.append("<label class=\"checkbox\" for=\"filter_simple_").append(uuid).append("\">");
-		sb.append(c.getNodeName()).append("</label>");
-		for (@SuppressWarnings("unused") String s : classes) {
+			if (n.getNumberChildren() > 0) {
+				boolean isLeaf = true;
+				for (Node g : n.getChildren()) {
+					if (g.getNumberChildren() > 0)
+						isLeaf = false;
+				}
+				if (isLeaf) {
+					sb.append("<div id='").append(n.getNodeId().replace("~", "-").replace(" ", "-"));
+					sb.append("' class='collapse-panel-body collapse' aria-expanded='true'>");
+					getHierarchyLeaf(n, filterNm, onclick, sb);
+					sb.append("</div>");
+				} else {
+					sb.append("<div id='").append(n.getNodeId().replace("~", "-").replace(" ", "-"));
+					sb.append("' class='collapse-panel-body collapse' aria-expanded='true'>");
+					getHierarchyFilterSimple(n, filterNm, onclick, sb, !invertColor);
+					sb.append("</div>");
+				}
+			}
+			
 			sb.append("</div>");
 		}
 		sb.append("\r");
 		return sb.toString();
+	}
+	
+	
+	/**
+	 * Build the hierarchy leaf html
+	 * @param c
+	 * @param filterNm
+	 * @param onclick
+	 * @param sb
+	 */
+	private static void getHierarchyLeaf(Node c, String filterNm, String onclick, StringBuilder sb) {
+		sb.append("<ul class='list-unstyled sub-filters'>");
+		for (Node n : c.getChildren()) {
+			if ((Long)n.getUserObject() == 0) continue;
+			String uuid = RandomAlphaNumeric.generateRandom(5);
+			sb.append("<li>");
+			sb.append("<span class=\"count\">").append(n.getUserObject()).append("</span>");
+			sb.append("<input type=\"checkbox\" class=\"parChkbx\" id=\"filter_simple_").append(uuid);
+			sb.append("\" data-filter-nm=\"").append(filterNm).append("\" value=\"");
+			sb.append(n.getNodeId()).append("\" onclick=\"").append(onclick).append("\">");
+			sb.append("<label class=\"checkbox\" for=\"filter_simple_").append(uuid).append("\">");
+			sb.append(n.getNodeName()).append("</label>");
+			sb.append("</li>");
+		}
+		sb.append("</ul>");
 	}
 	
 	

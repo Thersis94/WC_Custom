@@ -9,14 +9,18 @@ import java.util.Map;
 import java.util.Properties;
 
 
+
 //log4j 1.2-15
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
+
 
 
 //SMT Base Libs
 import com.depuysynthes.action.ProductCatalogUtil;
 import com.depuysynthes.lucene.data.ProductCatalogSolrDocumentVO;
 import com.siliconmtn.action.ActionException;
+import com.siliconmtn.commerce.catalog.ProductAttributeContainer;
+import com.siliconmtn.commerce.catalog.ProductAttributeVO;
 import com.siliconmtn.commerce.catalog.ProductCategoryVO;
 import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.data.Node;
@@ -77,6 +81,7 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 	 * @param catalogId
 	 * @param server
 	 */
+	@SuppressWarnings("unchecked")
 	protected void indexProducts(HttpSolrServer server, String solrDocClass, int dsOrderNo, String moduleType) {
 		List<Node> nodes = getProductData(CATALOG_ID);
 		log.info("Found " + nodes.size() + " nodes to index for " + CATALOG_ID + ".");
@@ -119,11 +124,23 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 						solrDoc.setModule(moduleType);
 						solrDoc.setSpecialty(hierarchy.get(0));
 						solrDoc.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
+						ProductAttributeContainer c = pVo.getAttributes();
+						if (c != null) {
+							for (Node a : c.getAllAttributes()) {
+								if (a.getUserObject() == null) continue;
+								ProductAttributeVO attr = (ProductAttributeVO)a.getUserObject();
+								if (!solrDoc.getAttributes().keySet().contains(attr.getAttributeId()+"_ss"))
+									solrDoc.getAttributes().put(attr.getAttributeId()+"_ss", new ArrayList<String>());
+								((ArrayList<String>)solrDoc.getAttributes().get(attr.getAttributeId()+"_ss")).add(attr.getValueText());
+							}
+						}
+						
+						
 						docs.put(pVo.getProductId(), solrDoc);
 					}
 					
 				} catch (Exception e) {
-					log.error(e);
+					log.error("Failed to build product " + pVo.getProductId(), e);
 				}
 			}
 		}
