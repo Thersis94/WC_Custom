@@ -148,12 +148,14 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 								// This attribute has nothing we need and can be skipped.
 								if (attr.getValueText() == null) continue;
 								
-								List<String> values = (List<String>) solrDoc.getAttribute(attr.getAttributeId());
+								// All attributes go into lists with keys made from the attribute name
+								// and prefixed by the attribute type so that classes parsing those
+								// attributes know what kind of data is being worked with.
+								List<String> values = (List<String>) solrDoc.getAttribute(attr.getAttributeType() + "_" + attr.getAttributeName());
 								if (values == null) values = new ArrayList<>();
 
 								values.add(attr.getValueText());
-
-								solrDoc.addAttribute(attr.getAttributeId(), values);
+								solrDoc.addAttribute(attr.getAttributeType() + "_" + attr.getAttributeName(), values);
 							}
 						}
 						
