@@ -199,7 +199,8 @@ public class HuddleProductAction extends SimpleActionAdapter {
 			if (req.getCookie(HuddleUtils.RPP_COOKIE) != null)
 				req.setParameter("rpp", req.getCookie(HuddleUtils.RPP_COOKIE).getValue());
 
-			Cookie sort = req.getCookie(HuddleUtils.SORT_COOKIE);
+			Cookie sortCook = req.getCookie(HuddleUtils.SORT_COOKIE);
+			String sort = (sortCook != null) ? sortCook.getValue() : "titleAZ";
 
 			// Called on the category page of the site.
 			// Turns the category parameter into a hierarchy fq
@@ -221,20 +222,18 @@ public class HuddleProductAction extends SimpleActionAdapter {
 				String uri = req.getRequestURI().substring(req.getRequestURI().lastIndexOf("/")+1);
 				req.setParameter("fq", HuddleUtils.SOLR_OPCO_FIELD + ":" + StringUtil.capitalizePhrase(uri));
 				// This scenario ignores the user's sort preference to show new products 
-				// on the home page.  Leverage the value defined by the Widget
-				sort = null;
+				// on the home page.  Sort by recentlyAdded first
+				sort = "recentlyAdded";
 			}
 
 
-			if (sort == null) {
-				// Default to normal sort
-			} else if ("recentlyAdded".equals(sort.getValue())) {
+			if ("recentlyAdded".equals(sort)) {
 				req.setParameter("fieldSort", SearchDocumentHandler.UPDATE_DATE, true);
 				req.setParameter("sortDirection", ORDER.desc.toString(), true);
-			} else if ("titleZA".equals(sort.getValue())) {
+			} else if ("titleZA".equals(sort)) {
 				req.setParameter("fieldSort", SearchDocumentHandler.TITLE_SORT, true);
 				req.setParameter("sortDirection", ORDER.desc.toString(), true);
-			} else if ("titleAZ".equals(sort.getValue())) {
+			} else if ("titleAZ".equals(sort)) {
 				req.setParameter("fieldSort", SearchDocumentHandler.TITLE_SORT, true);
 				req.setParameter("sortDirection", ORDER.asc.toString(), true);
 			}
