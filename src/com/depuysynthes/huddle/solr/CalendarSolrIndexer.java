@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.common.SolrInputDocument;
@@ -36,7 +37,7 @@ import com.smt.sitebuilder.security.SecurityController;
  ****************************************************************************/
 public class CalendarSolrIndexer extends CourseCalendarSolrIndexer {
 
-	protected Map<Object, Object> states = new HashMap<>();
+	protected Map<Object, Object> states;
 	
 	/**
 	 * @param config
@@ -45,19 +46,10 @@ public class CalendarSolrIndexer extends CourseCalendarSolrIndexer {
 		super(config);
 		super.organizationId = "DPY_SYN_HUDDLE";
 
-		
+		states = new HashMap<>();
 		//put together a state list for lookups from stateCode
 		for(Map.Entry<Object, Object> entry : new USStateList().getStateList().entrySet())
 		    states.put(entry.getValue(), entry.getKey());
-	}
-	
-	/**
-	 * used on the WC framework, so transpose our attributes map into a Properties file
-	 * @param attributes
-	 */
-	public void addConfig(Map<String, Object> attributes) {
-		if (config == null) config = new Properties();
-		config.putAll(attributes);
 	}
 	
 	
@@ -66,6 +58,7 @@ public class CalendarSolrIndexer extends CourseCalendarSolrIndexer {
 	 */
 	protected void indexEvents(HttpSolrServer server, List<EventEntryVO> data) {
 		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+		List<SolrInputDocument> docs = new ArrayList<>(data.size());
 		
 		for (EventEntryVO vo : data) {
 			SolrInputDocument doc = new SolrInputDocument();
@@ -84,7 +77,7 @@ public class CalendarSolrIndexer extends CourseCalendarSolrIndexer {
 				doc.setField(SearchDocumentHandler.END_DATE + "_dt", df.format(vo.getEndDate()));
 				doc.setField(SearchDocumentHandler.CONTENTS, StringUtil.getToString(vo));
 				doc.setField(SearchDocumentHandler.MODULE_TYPE, "EVENT");
-				doc.setField("eventType_s", StringUtil.checkVal(vo.getEventTypeCd()).toLowerCase());
+				doc.setField("eventType_s", StringUtil.checkVal(vo.getLocationDesc()));
 				
 				//add-ons for Huddle
 				doc.setField("externalUrl_s", vo.getExternalUrl());
@@ -98,10 +91,17 @@ public class CalendarSolrIndexer extends CourseCalendarSolrIndexer {
 				doc.setField(SearchDocumentHandler.STATE, vo.getStateCode());
 				doc.setField("shortDesc_s", vo.getShortDesc()); //intended audience
 				doc.setField("objectives_s", vo.getObjectivesText());
-				
-				server.add(doc);
+				docs.add(doc);
 			} catch (Exception e) {
 				log.error("Unable to index course: " + StringUtil.getToString(vo), e);
+			}
+		}
+		
+		if (docs.size() > 0) {
+			try {
+				server.add(docs);
+			} catch (Exception e) {
+				log.error("could not add documents to Solr", e);
 			}
 		}
 	}
@@ -115,13 +115,18 @@ public class CalendarSolrIndexer extends CourseCalendarSolrIndexer {
 	 * @return Map<pageUrl, BlogGroupVO>
 	 */
 	@Override
-	protected List<EventEntryVO> loadEvents(Connection conn) {
-		String sql = buildQuery("HUDDLE_COURSE_CAL");
+	protected List<EventEntryVO> loadEvents(Connection conn, Set<String> eventIds) {
+		String sql = buildQuery("HUDDLE_COURSE_CAL", eventIds);
 		log.debug(sql);
 
 		List<EventEntryVO> data = new ArrayList<EventEntryVO>();
 		try (PreparedStatement ps = conn.prepareStatement(sql)) {
 			ps.setString(1, organizationId);
+			if (eventIds != null) {
+				int x = 2;
+				for (String eventId : eventIds)
+					ps.setString(x++, eventId);
+			}
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				String url = rs.getString(2) + "/" + config.getProperty(Constants.QS_PATH);
@@ -153,7 +158,7 @@ public class CalendarSolrIndexer extends CourseCalendarSolrIndexer {
 	 * @return
 	 */
 	@Override
-	protected String buildQuery(String moduleTypeId) {
+	protected String buildQuery(String moduleTypeId, Set<String> eventIds) {
 		StringBuilder sql = new StringBuilder();
 		sql.append("select s.alias_path_nm, c.full_path_txt, et.type_nm, ee.* ");
 		sql.append("from event_entry ee ");
@@ -171,6 +176,14 @@ public class CalendarSolrIndexer extends CourseCalendarSolrIndexer {
 		sql.append("and (c.pending_sync_flg is null or c.pending_sync_flg=0) "); //page not pending
 		sql.append("and a.module_type_id='").append(moduleTypeId);
 		sql.append("' and md.indexable_flg=1 "); //only include pages that contain Views that are considered indexable.
+
+		//limit the results to the new events we're adding - this scenario is invoked by the real-time indexer
+		if (eventIds != null) {
+			sql.append("and ee.event_entry_id in (''");
+			for (@SuppressWarnings("unused") String s : eventIds)
+				sql.append(",?");
+			sql.append(") ");
+		}
 		return sql.toString();
 	}
 }

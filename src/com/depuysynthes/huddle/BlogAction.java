@@ -85,7 +85,6 @@ public class BlogAction extends SimpleActionAdapter {
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
-		
 
 		Cookie rppCook = req.getCookie(HuddleUtils.RPP_COOKIE);
 		if (rppCook != null)
@@ -105,5 +104,7 @@ public class BlogAction extends SimpleActionAdapter {
 		sa.setAttributes(getAttributes());
 		sa.setDBConnection(dbConn);
 		sa.retrieve(req);
+		
+		req.setParameter("fmid", "", true);
 	}
 }
