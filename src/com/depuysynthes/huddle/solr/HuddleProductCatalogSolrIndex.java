@@ -135,13 +135,13 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 						solrDoc.setModule(moduleType);
 						solrDoc.setSpecialty(hierarchy.get(0));
 						solrDoc.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
-						ProductAttributeContainer c = pVo.getAttributes();
-						if (c != null) {
+						ProductAttributeContainer attrContainer = pVo.getAttributes();
+						if (attrContainer != null) {
 							// Loop over all attributes and add them to the
 							// custom field map on the solr document
-							for (Node a : c.getAllAttributes()) {
-								if (a.getUserObject() == null) continue;
-								ProductAttributeVO attr = (ProductAttributeVO)a.getUserObject();
+							for (Node attrNode : attrContainer.getAllAttributes()) {
+								if (attrNode.getUserObject() == null) continue;
+								ProductAttributeVO attr = (ProductAttributeVO)attrNode.getUserObject();
 								
 								// This attribute has nothing we need and can be skipped.
 								if (attr.getValueText() == null) continue;
