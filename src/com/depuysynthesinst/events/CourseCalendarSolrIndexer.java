@@ -9,6 +9,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.util.Set;
 
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.common.SolrInputDocument;
@@ -54,12 +55,38 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 	@Override
 	public void addIndexItems(HttpSolrServer server) {
 		log.info("Indexing Course Calendar Portlets");
-		List<EventEntryVO> data = loadEvents(dbConn);
+		List<EventEntryVO> data = loadEvents(dbConn, null);
 		indexEvents(server, data);
 	}
+	
+	
+	public void indexCertainItems(Set<String> eventEntryIds) {
+		HttpSolrServer server = makeServer();
+		log.info("Indexing Certain Course Calendar Portlets");
+		
+		//if we're doing a full rebuild, make sure we purge what's in there
+		if (eventEntryIds != null) {
+			try {
+				purgeIndexItems(server);
+			} catch (IOException e) {
+				log.error("could not purge index", e);
+			}
+		}
+		
+		List<EventEntryVO> data = loadEvents(dbConn, eventEntryIds);
+		indexEvents(server, data);
+		
+		try {
+			server.commit(false, false, true); //commit, but don't wait for Solr to acknowledge
+		} catch (Exception e) {
+			log.error("could not commit to Solr", e);
+		}
+	}
+	
 
 	protected void indexEvents(HttpSolrServer server, List<EventEntryVO> data) {
 		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+		List<SolrInputDocument> docs = new ArrayList<>(data.size());
 		
 		for (EventEntryVO vo : data) {
 			SolrInputDocument doc = new SolrInputDocument();
@@ -87,9 +114,17 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 				for (String s : StringUtil.checkVal(vo.getServiceText()).split(","))
 					doc.addField(SearchDocumentHandler.HIERARCHY, s.trim());
 				
-				server.add(doc);
+				docs.add(doc);
 			} catch (Exception e) {
 				log.error("Unable to index course: " + StringUtil.getToString(vo), e);
+			}
+		}
+		
+		if (docs.size() > 0) {
+			try {
+				server.add(docs);
+			} catch (Exception e) {
+				log.error("could not add documents to Solr", e);
 			}
 		}
 	}
@@ -116,14 +151,19 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 	 * @param conn
 	 * @return Map<pageUrl, BlogGroupVO>
 	 */
-	protected List<EventEntryVO> loadEvents(Connection conn) {
-		String sql = buildQuery("COURSE_CAL");
+	protected List<EventEntryVO> loadEvents(Connection conn, Set<String> eventIds) {
+		String sql = buildQuery("COURSE_CAL", eventIds);
 		log.debug(sql);
 
 		List<EventEntryVO> data = new ArrayList<EventEntryVO>();
 		try (PreparedStatement ps = conn.prepareStatement(sql)) {
 			ps.setString(1, organizationId);
 			ps.setTimestamp(2, Convert.getCurrentTimestamp());
+			if (eventIds != null) {
+				int x = 3;
+				for (String eventId : eventIds)
+					ps.setString(x++, eventId);
+			}
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				String url = rs.getString(2) + "/" + config.getProperty(Constants.QS_PATH);
@@ -202,7 +242,7 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 	 * returns the event lookup query used to load indexable events
 	 * @return
 	 */
-	protected String buildQuery(String moduleTypeId) {
+	protected String buildQuery(String moduleTypeId, Set<String> eventIds) {
 		StringBuilder sql = new StringBuilder();
 		sql.append("select s.alias_path_nm, c.full_path_txt, et.type_nm, ee.* ");
 		sql.append("from event_entry ee ");
@@ -220,6 +260,14 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 		sql.append("and (c.pending_sync_flg is null or c.pending_sync_flg=0) "); //page not pending
 		sql.append("and a.module_type_id='").append(moduleTypeId);
 		sql.append("' and md.indexable_flg=1 "); //only include pages that contain Views that are considered indexable.
+		
+		//limit the results to the new events we're adding - this scenario is invoked by the real-time indexer
+		if (eventIds != null) {
+			sql.append("and ee.event_entry_id in (''");
+			for (@SuppressWarnings("unused") String s : eventIds)
+				sql.append(",?");
+			sql.append(") ");
+		}
 		return sql.toString();
 	}
 

@@ -12,7 +12,6 @@ import java.util.Properties;
 import java.util.Set;
 
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
-import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.common.SolrInputDocument;
 
 import com.depuysynthes.huddle.HuddleUtils;
@@ -226,20 +225,5 @@ public class BlogSolrIndexer extends SMTAbstractIndex {
 		} catch (Exception e) {
 			log.error("could not commit to Solr", e);
 		}
-	}
-
-
-	/**
-	 * creates an index of the SolrServer; which would be passed from 
-	 * SolrIndexBuilder when run out-of-band
-	 * @return
-	 */
-	private HttpSolrServer makeServer() {
-		// initialize the connection to the solr server
-		String baseUrl = config.getProperty(Constants.SOLR_BASE_URL);
-		String collection = config.getProperty(Constants.SOLR_COLLECTION_NAME);
-		HttpSolrServer server = new HttpSolrServer(baseUrl + collection);
-		server.setParser(new XMLResponseParser());
-		return server;
 	}
 }
