@@ -21,7 +21,6 @@ import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBModuleVO;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
-import com.smt.sitebuilder.action.search.SolrActionIndexVO;
 import com.smt.sitebuilder.action.search.SolrActionVO;
 import com.smt.sitebuilder.action.search.SolrFieldVO;
 import com.smt.sitebuilder.action.search.SolrFieldVO.FieldType;
@@ -176,17 +175,35 @@ public class HuddleProductAction extends SimpleActionAdapter {
 		
 		// Only add filters if this is the main portlet on the page.
 		if (mainCol) {
+			if (req.getCookie(HuddleUtils.RPP_COOKIE) != null)
+				req.setParameter("rpp", req.getCookie(HuddleUtils.RPP_COOKIE).getValue());
+			
+			Cookie sort = req.getCookie(HuddleUtils.SORT_COOKIE);
+			
+			// Called on the category page of the site.
+			// Turns the category parameter into a hierarchy fq
 			if (req.hasParameter("category") && !req.hasParameter("fq")) {
-				req.setParameter("fq", SearchDocumentHandler.HIERARCHY + ":" + req.getParameter("category"));
+				String category = req.getParameter("category").replace(" ", "_");
+				req.setParameter("fq", SearchDocumentHandler.HIERARCHY + ":" + StringUtil.capitalizePhrase(category));
 			}
 			
+			// Called on the specialty page of the site.
+			// Turns the speciality parameter into an opco fq. 
 			if (req.hasParameter("specialty")) {
 				req.setParameter("fq", HuddleUtils.SOLR_OPCO_FIELD + ":" + req.getParameter("specialty"));
 			}
 			
-			req.setParameter("rpp", req.getCookie(HuddleUtils.RPP_COOKIE).getValue());
+			// Called on the speciality home pages of the site.
+			// Uses the last section of the request uri to determine the 
+			// speciality of the page that the portlet is on and make an opco fq
+			if (!req.hasParameter("fq")) {
+				String uri = req.getRequestURI().substring(req.getRequestURI().lastIndexOf("/")+1);
+				req.setParameter("fq", HuddleUtils.SOLR_OPCO_FIELD + ":" + StringUtil.capitalizePhrase(uri));
+				// This search ignores the user's last sorting preference in
+				// order to show new products on the home page.
+				sort = new Cookie(HuddleUtils.SORT_COOKIE, "recentlyAdded");
+			}
 			
-			Cookie sort = req.getCookie(HuddleUtils.SORT_COOKIE);
 			
 			if (sort == null) {
 				// Default to normal sort

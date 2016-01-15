@@ -10,8 +10,10 @@ import java.util.Properties;
 
 
 
+
 //log4j 1.2-15
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
+
 
 
 
@@ -93,6 +95,7 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 		for (Node n : nodes) {
 			ProductCategoryVO vo = (ProductCategoryVO)n.getUserObject();
 			
+			
 			// Build the product Hierarchy
 			if (n.getDepthLevel() == 1) {
 				hierarchy = new ArrayList<>();
@@ -107,10 +110,20 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 			}
 			
 			if (vo.getProducts() == null || vo.getProducts().size() == 0) continue;
+			
 			// Remove the product from the hierarchy list.
 			hierarchy.remove(hierarchy.size()-1);
+			
+			// The only VOs that do not have a parent code are the root node
+			// and products that have no categories assigned to them.
+			// In both cases they will never show up on the site and by this
+			// point have done their job maintaining the hierarchy structure
+			if (vo.getParentCode() == null) continue;
+			
 			for (ProductVO pVo : vo.getProducts()) {
 				try {
+					// If this product has already been added just add a new hierarchy
+					// to show its latest category path.
 					if (docs.containsKey(pVo.getProductId())) {
 						docs.get(pVo.getProductId()).addHierarchies(buildHierarchy(hierarchy));
 					} else {
@@ -124,14 +137,23 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 						solrDoc.setModule(moduleType);
 						solrDoc.setSpecialty(hierarchy.get(0));
 						solrDoc.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
-						ProductAttributeContainer c = pVo.getAttributes();
-						if (c != null) {
-							for (Node a : c.getAllAttributes()) {
-								if (a.getUserObject() == null) continue;
-								ProductAttributeVO attr = (ProductAttributeVO)a.getUserObject();
-								if (!solrDoc.getAttributes().keySet().contains(attr.getAttributeId()+"_ss"))
-									solrDoc.getAttributes().put(attr.getAttributeId()+"_ss", new ArrayList<String>());
-								((ArrayList<String>)solrDoc.getAttributes().get(attr.getAttributeId()+"_ss")).add(attr.getValueText());
+						ProductAttributeContainer attrContainer = pVo.getAttributes();
+						if (attrContainer != null) {
+							// Loop over all attributes and add them to the
+							// custom field map on the solr document
+							for (Node attrNode : attrContainer.getAllAttributes()) {
+								if (attrNode.getUserObject() == null) continue;
+								ProductAttributeVO attr = (ProductAttributeVO)attrNode.getUserObject();
+								
+								// This attribute has nothing we need and can be skipped.
+								if (attr.getValueText() == null) continue;
+								
+								List<String> values = (List<String>) solrDoc.getAttribute(attr.getAttributeId());
+								if (values == null) values = new ArrayList<>();
+
+								values.add(attr.getValueText());
+
+								solrDoc.addAttribute(attr.getAttributeId(), values);
 							}
 						}
 						
@@ -154,6 +176,12 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 	}
 
 
+	/**
+	 * Turn the list of categories into a descending
+	 * ancestory of the current category.
+	 * @param hierarchy
+	 * @return
+	 */
 	private String buildHierarchy(List<String> hierarchy) {
 		if (hierarchy == null) return "";
 		StringBuilder fullHierarchy = new StringBuilder(100);
