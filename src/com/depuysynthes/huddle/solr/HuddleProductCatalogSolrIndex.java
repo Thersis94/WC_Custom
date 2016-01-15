@@ -142,10 +142,15 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 							for (Node a : c.getAllAttributes()) {
 								if (a.getUserObject() == null) continue;
 								ProductAttributeVO attr = (ProductAttributeVO)a.getUserObject();
+								
+								// This attribute has nothing we need and can be skipped.
+								if (attr.getValueText() == null) continue;
+								
 								// Check if an attribute of this type is already in the map.  
 								// If not create a new list for that attribute type
 								if (!solrDoc.getAttributes().keySet().contains(attr.getAttributeId()))
 									solrDoc.getAttributes().put(attr.getAttributeId(), new ArrayList<String>());
+								
 								((ArrayList<String>)solrDoc.getAttributes().get(attr.getAttributeId())).add(attr.getValueText());
 							}
 						}
