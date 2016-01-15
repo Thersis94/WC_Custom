@@ -14,7 +14,10 @@ import com.depuysynthes.lucene.MediaBinSolrIndex;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.commerce.catalog.ProductAttributeContainer;
+import com.siliconmtn.commerce.catalog.ProductAttributeVO;
 import com.siliconmtn.commerce.catalog.ProductVO;
+import com.siliconmtn.data.Node;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.UserRoleVO;
 import com.siliconmtn.util.Convert;
@@ -68,7 +71,7 @@ public class HuddleProductAction extends SimpleActionAdapter {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		String param1 = req.getParameter("reqParam_1");
 		
-		if (param1 != null && mod.getDisplayColumn().equals(page.getDefaultColumn())) {
+		if (param1 != null && !"".equals(param1) && mod.getDisplayColumn().equals(page.getDefaultColumn())) {
 			detailSearch(req);
 			
 		} else {
@@ -107,24 +110,35 @@ public class HuddleProductAction extends SimpleActionAdapter {
 		p.setProductId((String) doc.getFieldValue(SearchDocumentHandler.DOCUMENT_ID));
 		p.setTitle((String) doc.getFieldValue(SearchDocumentHandler.TITLE));
 		p.setDescText((String) doc.getFieldValue(SearchDocumentHandler.SUMMARY));
-		p.addProdAttribute(HuddleUtils.PROD_ATTR_CLINICAL, doc.getFieldValues(HuddleUtils.PROD_ATTR_CLINICAL));
-		p.addProdAttribute(HuddleUtils.PROD_ATTR_IMAGE, doc.getFieldValues(HuddleUtils.PROD_ATTR_IMAGE));
-		p.addProdAttribute(HuddleUtils.PROD_ATTR_VALUE, doc.getFieldValues(HuddleUtils.PROD_ATTR_VALUE));
-		p.addProdAttribute(HuddleUtils.PROD_ATTR_COMPETITION, doc.getFieldValues(HuddleUtils.PROD_ATTR_COMPETITION));
-		p.addProdAttribute(HuddleUtils.PROD_ATTR_SELLING_TIPS, doc.getFieldValues(HuddleUtils.PROD_ATTR_SELLING_TIPS));
-		p.addProdAttribute(HuddleUtils.SOLR_OPCO_FIELD, doc.getFieldValue(HuddleUtils.SOLR_OPCO_FIELD));
-
-		//add mediabin items if needed
-		//TODO 
-		/*
-		 * this probably should be based on product_attribute_type_id, and one added for 
-		* MediaBinAssets...rather than using a hard-coded Attribute name, loop all the attributes 
-		* and enact on those types (in particular)
-		*/
-		Collection<Object> mediaBinAssets = doc.getFieldValues(HuddleUtils.PROD_ATTR_SYSTEM);
-		if (mediaBinAssets != null) 
-			buildMediabin(p, req, mediaBinAssets);
-
+		
+		ProductAttributeContainer pac = new ProductAttributeContainer();
+		List<Node> images = new ArrayList<>();
+		
+		// Loop through all items on the document looking for any prefixed with attribute types
+		for (String key : doc.getFieldValuesMap().keySet()) {
+			
+			if (key == null) continue;
+			if (key.startsWith(HuddleUtils.PROD_ATTR_IMG_PREFIX)) {
+				// keys starting with the image prefix are added to the ProductAttributeContainer
+				// and are used to create the product's image gallery.
+				for (Object o : doc.getFieldValues(key)) {
+					if (o == null) continue;
+					ProductAttributeVO attr = new ProductAttributeVO();
+					attr.setAttributeName(key.replace(HuddleUtils.PROD_ATTR_IMG_PREFIX, ""));
+					attr.setValueText(o.toString());
+					attr.setAttributeType(HuddleUtils.PROD_ATTR_IMG_TYPE);
+					Node n = new Node(key, null);
+					n.setUserObject(attr);
+					images.add(n);
+				}
+			} else if (key.startsWith(HuddleUtils.PROD_ATTR_MB_PREFIX)) {
+				// Keys starting with the mediabin prefix need to be sent out
+				// to solr in order to get all the documents with those ids
+				p.addProdAttribute(key.replace(HuddleUtils.PROD_ATTR_MB_PREFIX, "").replace("_ss", ""), buildMediabin(req, doc.getFieldValues(key)));
+			}
+		}
+		pac.addAll(images);
+		p.setAttributes(pac);
 		super.putModuleData(p);
 	}
 
@@ -134,8 +148,9 @@ public class HuddleProductAction extends SimpleActionAdapter {
 	 * @param p
 	 * @param req
 	 * @param mediabin
+	 * @return 
 	 */
-	private void buildMediabin(ProductVO p, SMTServletRequest req, Collection<Object> mediaBinAssets) {
+	private List<MediaBinAssetVO> buildMediabin(SMTServletRequest req, Collection<Object> mediaBinAssets) {
 		SiteVO siteData = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		UserRoleVO role = (UserRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
 		SolrResponseVO resp = getMBSolrDocs(siteData.getOrganizationId(), mediaBinAssets, role.getRoleLevel());
@@ -151,7 +166,8 @@ public class HuddleProductAction extends SimpleActionAdapter {
 			asset.setFileNm((String) d.getFieldValue(SearchDocumentHandler.FILE_NAME));
 			assets.add(asset);
 		}
-		p.addProdAttribute(HuddleUtils.PROD_ATTR_SYSTEM, assets);
+		
+		return assets;
 	}
 
 
