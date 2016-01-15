@@ -10,8 +10,10 @@ import java.util.Properties;
 
 
 
+
 //log4j 1.2-15
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
+
 
 
 
@@ -146,12 +148,12 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 								// This attribute has nothing we need and can be skipped.
 								if (attr.getValueText() == null) continue;
 								
-								// Check if an attribute of this type is already in the map.  
-								// If not create a new list for that attribute type
-								if (!solrDoc.getAttributes().keySet().contains(attr.getAttributeId()))
-									solrDoc.getAttributes().put(attr.getAttributeId(), new ArrayList<String>());
-								
-								((ArrayList<String>)solrDoc.getAttributes().get(attr.getAttributeId())).add(attr.getValueText());
+								List<String> values = (List<String>) solrDoc.getAttribute(attr.getAttributeId());
+								if (values == null) values = new ArrayList<>();
+
+								values.add(attr.getValueText());
+
+								solrDoc.addAttribute(attr.getAttributeId(), values);
 							}
 						}
 						
