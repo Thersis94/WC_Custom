@@ -42,6 +42,8 @@ public class HuddleUtils {
 	//solr fields
 	public static final String SOLR_OPCO_FIELD = "opco_ss";
 	public static final String SOLR_SALES_CONSULTANT_IDEX_TYPE = "HUDDLE_CONSULTANTS";
+	protected static final String SOLR_PROD_CONTACT_IDX_TYPE = "HUDDLE_PRODUCT_CONTACT";
+	
 	
 	/**
 	 * the number of days to subtract from an event to designate when Registration opens

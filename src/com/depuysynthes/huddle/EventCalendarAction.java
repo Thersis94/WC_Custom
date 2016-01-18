@@ -6,6 +6,8 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.Properties;
+import java.util.Set;
 import java.util.TimeZone;
 
 import javax.servlet.http.Cookie;
@@ -13,6 +15,7 @@ import javax.servlet.http.Cookie;
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
 import org.apache.solr.common.SolrDocument;
 
+import com.depuysynthes.huddle.solr.CalendarSolrIndexer;
 import com.depuysynthesinst.events.CourseCalendar;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -52,17 +55,24 @@ public class EventCalendarAction extends CourseCalendar {
 		super();
 	}
 
-	/**
-	 * @param arg0
-	 */
 	public EventCalendarAction(ActionInitVO arg0) {
 		super(arg0);
 	}
 
+	@Override
+	public void update(SMTServletRequest req) throws ActionException {
+		super.update(req);
+		
+		//if a file of events was not passed, but the user clicked the 'reindex' button, trigger the solrIndexer
+		if (req.getFile("xlsFile") == null && req.hasParameter("reindex"))
+			pushToSolr(null); //the null here will trigger a full rebuild
+	}
+	
 
 	/**
 	 * retrieves a list of Events tied to this porlet.  Filters the list to the passed anatomy, if present. 
 	 */
+	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 
@@ -105,6 +115,7 @@ public class EventCalendarAction extends CourseCalendar {
 	/**
 	 * Build gets called for creating iCal files (downloads) of the passed eventEntryId
 	 */
+	@Override
 	public void build(SMTServletRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 
@@ -179,5 +190,14 @@ public class EventCalendarAction extends CourseCalendar {
 		sb.append(url);
 		
 		return sb.toString();
+	}
+	
+	@Override
+	protected void pushToSolr(Set<String> eventIds) {
+		Properties props = new Properties();
+		props.putAll(getAttributes());
+		CalendarSolrIndexer indexer = new CalendarSolrIndexer(props);
+		indexer.setDBConnection(dbConn);
+		indexer.indexCertainItems(eventIds);
 	}
 }

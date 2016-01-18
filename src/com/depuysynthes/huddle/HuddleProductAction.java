@@ -2,6 +2,7 @@ package com.depuysynthes.huddle;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import javax.servlet.http.Cookie;
@@ -16,7 +17,6 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.commerce.catalog.ProductAttributeContainer;
 import com.siliconmtn.commerce.catalog.ProductAttributeVO;
-import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.UserRoleVO;
@@ -36,6 +36,7 @@ import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
+import com.smt.sitebuilder.security.SecurityController;
 
 /****************************************************************************
  * <b>Title</b>: HuddleProductAction.java <p/>
@@ -105,7 +106,7 @@ public class HuddleProductAction extends SimpleActionAdapter {
 		if (resp == null || resp.getTotalResponses() == 0) 
 			throw new ActionException("No product found with documentId: " + req.getParameter("reqParam_1"));
 		
-		ProductVO p = new ProductVO();
+		HuddleProductVO p = new HuddleProductVO();
 		SolrDocument doc = resp.getResultDocuments().get(0);
 		p.setProductId((String) doc.getFieldValue(SearchDocumentHandler.DOCUMENT_ID));
 		p.setTitle((String) doc.getFieldValue(SearchDocumentHandler.TITLE));
@@ -139,9 +140,53 @@ public class HuddleProductAction extends SimpleActionAdapter {
 		}
 		pac.addAll(images);
 		p.setAttributes(pac);
+
+		//get the product contacts as well.
+		addProductContacts(p);
+		
 		super.putModuleData(p);
 	}
 
+	
+	/**
+	 * lookup the product contacts, which is another Solr query
+	 * @param product
+	 */
+	private void addProductContacts(HuddleProductVO product) {
+		log.debug("loading product contacts");
+		SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, (String) attributes.get(Constants.SOLR_COLLECTION_NAME));
+		SolrActionVO qData = new SolrActionVO();
+		qData.setNumberResponses(15); //arbitrarty, should never be this high but we don't know
+		qData.setStartLocation(0);
+		qData.setRoleLevel(SecurityController.PUBLIC_ROLE_LEVEL);
+		qData.setOrganizationId("DPY_SYN_HUDDLE");
+		
+		//bind by product name
+		SolrFieldVO field = new SolrFieldVO();
+		field.setBooleanType(BooleanType.AND);
+		field.setFieldType(FieldType.SEARCH);
+		field.setFieldCode(SearchDocumentHandler.TITLE_SORT);
+		field.setValue(product.getTitle());
+		qData.addSolrField(field);
+		
+		//also bind by index_type
+		SolrFieldVO field2 = new SolrFieldVO();
+		field2.setBooleanType(BooleanType.AND);
+		field2.setFieldType(FieldType.SEARCH);
+		field2.setFieldCode(SearchDocumentHandler.INDEX_TYPE);
+		field2.setValue(HuddleUtils.SOLR_PROD_CONTACT_IDX_TYPE);
+		qData.addSolrField(field2);
+		
+		List<ProductContactVO> contacts = new ArrayList<>(15); //same count as above
+		SolrResponseVO solrResp =  sqp.processQuery(qData);
+		for (SolrDocument sd : solrResp.getResultDocuments())
+			contacts.add(new ProductContactVO(sd));
+
+		Collections.sort(contacts); //leverages the Comparable Interface in the VOs
+		product.setContacts(contacts);
+		log.debug("added " + product.getContactCnt() + " contacts to " + product.getTitle());
+	}
+	
 
 	/**
 	 * Build a list of mediabin assets for the product
