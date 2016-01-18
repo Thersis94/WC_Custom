@@ -2,6 +2,13 @@ package com.depuysynthes.huddle;
 
 import java.util.Arrays;
 
+import javax.servlet.http.Cookie;
+
+import org.apache.solr.client.solrj.SolrQuery.ORDER;
+
+import com.siliconmtn.http.SMTServletRequest;
+import com.smt.sitebuilder.search.SearchDocumentHandler;
+
 /****************************************************************************
  * <b>Title</b>: HuddleConstants.java<p/>
  * <b>Description: Constants for DS Huddle.  Commonly database pkIds that will never change.</b> 
@@ -144,5 +151,38 @@ public class HuddleUtils {
 				return vo;
 		}
 		return null;
+	}
+	
+	
+	public static void setSearchParameters(SMTServletRequest req) {
+		setSearchParameters(req, "titleAZ");
+	}
+	
+
+	/**
+	 * Get the sort type and rpp from cookies and assign them to the request
+	 * @param req
+	 */
+	public static void setSearchParameters(SMTServletRequest req, String defaultSort) {
+		// Only add filters if this is the main portlet on the page.
+		if (req.hasParameter("searchData")) {
+			if (req.getCookie(HuddleUtils.RPP_COOKIE) != null)
+				req.setParameter("rpp", req.getCookie(HuddleUtils.RPP_COOKIE).getValue());
+
+			Cookie sortCook = req.getCookie(HuddleUtils.SORT_COOKIE);
+			String sort = (sortCook != null) ? sortCook.getValue() : defaultSort;
+
+			if ("recentlyAdded".equals(sort)) {
+				req.setParameter("fieldSort", SearchDocumentHandler.UPDATE_DATE, true);
+				req.setParameter("sortDirection", ORDER.desc.toString(), true);
+			} else if ("titleZA".equals(sort)) {
+				req.setParameter("fieldSort", SearchDocumentHandler.TITLE_SORT, true);
+				req.setParameter("sortDirection", ORDER.desc.toString(), true);
+			} else if ("titleAZ".equals(sort)) {
+				req.setParameter("fieldSort", SearchDocumentHandler.TITLE_SORT, true);
+				req.setParameter("sortDirection", ORDER.asc.toString(), true);
+			}
+		}
+		
 	}
 }
