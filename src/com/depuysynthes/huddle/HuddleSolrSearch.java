@@ -1,9 +1,5 @@
 package com.depuysynthes.huddle;
 
-import javax.servlet.http.Cookie;
-
-import org.apache.solr.client.solrj.SolrQuery.ORDER;
-
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
@@ -14,7 +10,6 @@ import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
-import com.smt.sitebuilder.search.SearchDocumentHandler;
 
 /****************************************************************************
  * <b>Title</b>: HuddleSolrSearch.java <p/>
@@ -50,26 +45,8 @@ public class HuddleSolrSearch  extends SimpleActionAdapter {
 		String solrActionId = StringUtil.checkVal(mod.getAttribute(SBModuleVO.ATTRIBUTE_1));
 		actionInit.setActionId(solrActionId);
 
-		// Only add filters if this is the main portlet on the page.
-		if (req.hasParameter("searchData")) {
-			if (req.getCookie(HuddleUtils.RPP_COOKIE) != null)
-				req.setParameter("rpp", req.getCookie(HuddleUtils.RPP_COOKIE).getValue());
-
-			Cookie sortCook = req.getCookie(HuddleUtils.SORT_COOKIE);
-			String sort = (sortCook != null) ? sortCook.getValue() : "titleAZ";
-
-			if ("recentlyAdded".equals(sort)) {
-				req.setParameter("fieldSort", SearchDocumentHandler.UPDATE_DATE, true);
-				req.setParameter("sortDirection", ORDER.desc.toString(), true);
-			} else if ("titleZA".equals(sort)) {
-				req.setParameter("fieldSort", SearchDocumentHandler.TITLE_SORT, true);
-				req.setParameter("sortDirection", ORDER.desc.toString(), true);
-			} else if ("titleAZ".equals(sort)) {
-				req.setParameter("fieldSort", SearchDocumentHandler.TITLE_SORT, true);
-				req.setParameter("sortDirection", ORDER.asc.toString(), true);
-			}
-		}
-
+		HuddleUtils.setSearchParameters(req);
+		
 		SMTActionInterface sai = new SolrAction(actionInit);
 		sai.setAttributes(attributes);
 		sai.setDBConnection(dbConn);
