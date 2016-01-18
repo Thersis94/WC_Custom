@@ -57,9 +57,9 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 	/**
 	 * Index type for this index.  This value is stored in the INDEX_TYPE field
 	 */
-	public static String INDEX_TYPE = "PRODUCT";
-	protected static String SOLR_DOC_CLASS = ProductCatalogSolrDocumentVO.class.getName();
-	private static String CATALOG_ID = "c0a80241f53aa254e2a226f075d993a7";
+	public static final String INDEX_TYPE = "PRODUCT";
+	protected static final String SOLR_DOC_CLASS = ProductCatalogSolrDocumentVO.class.getName();
+	private static final String CATALOG_ID = "c0a80241f53aa254e2a226f075d993a7";
 
 	/**
 	 * @param config
