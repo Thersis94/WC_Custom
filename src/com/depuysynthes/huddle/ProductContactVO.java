@@ -74,7 +74,7 @@ public class ProductContactVO extends SolrDocumentVO implements Comparable<Produ
 
 	@SolrField(name="rep_email_s")
 	public String getEmail() {
-		return email;
+		return StringUtil.isValidEmail(email) ? email : "";
 	}
 
 	@SolrField(name="rep_phone_s")

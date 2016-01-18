@@ -76,17 +76,22 @@ public class HTMLSolrFiltersBean {
 	public static String getHierarchyFilterSimple(Node c, String filterNm, String onclick, boolean invertColor) {
 		return getHierarchyFilterSimple(c, filterNm, onclick, new StringBuilder(), invertColor);
 	}
+	
+	
 	/**
 	 * Create an html structure from a parsed hierarchy field.
-	 * @param c
+	 * @param rootNode
 	 * @param filterNm
 	 * @param onclick
 	 * @param classes List of classes that each cause the creation of a new containing div for the html element
 	 * @return
 	 */
-	public static String getHierarchyFilterSimple(Node c, String filterNm, String onclick, StringBuilder sb, boolean invertColor) {
-		for (Node n : c.getChildren()) {
+	public static String getHierarchyFilterSimple(Node rootNode, String filterNm, String onclick, StringBuilder sb, boolean invertColor) {
+		if (rootNode == null) return "";
+		
+		for (Node n : rootNode.getChildren()) {
 			if ((Long)n.getUserObject() == 0) continue;
+			
 			String uuid = RandomAlphaNumeric.generateRandom(5);
 			sb.append("<div class='collapse-panel collapse-panel-filter");
 			if (invertColor) sb.append(" collapse-panel-nested");
@@ -99,7 +104,6 @@ public class HTMLSolrFiltersBean {
 				sb.append("' aria-expanded='false' aria-controls='");
 				sb.append(n.getNodeId().replace("~", "-").replace(" ", "-"));
 				sb.append("'><span class=\"caret\"></span></a>");
-				
 			} else {
 				sb.append("<span class=\"count\">").append(formatCount(n.getUserObject())).append("</span>");
 			}
@@ -138,14 +142,14 @@ public class HTMLSolrFiltersBean {
 	
 	/**
 	 * Build the hierarchy leaf html
-	 * @param c
+	 * @param rootNode
 	 * @param filterNm
 	 * @param onclick
 	 * @param sb
 	 */
-	private static void getHierarchyLeaf(Node c, String filterNm, String onclick, StringBuilder sb) {
+	private static void getHierarchyLeaf(Node rootNode, String filterNm, String onclick, StringBuilder sb) {
 		sb.append("<ul class='list-unstyled sub-filters'>");
-		for (Node n : c.getChildren()) {
+		for (Node n : rootNode.getChildren()) {
 			if ((Long)n.getUserObject() == 0) continue;
 			String uuid = RandomAlphaNumeric.generateRandom(5);
 			sb.append("<li>");
