@@ -8,6 +8,7 @@ import java.util.Locale;
 import org.apache.solr.client.solrj.response.FacetField.Count;
 import org.apache.solr.client.solrj.response.PivotField;
 
+import com.depuysynthes.huddle.HuddleUtils.filterNameFormat;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.DateUtil;
@@ -32,7 +33,7 @@ public class HTMLSolrFiltersBean {
 	 * @param n
 	 * @return
 	 */
-	public static String getFilterSimple(Count c, String filterNm, String onclick, String selectedItem) {
+	public static String getFilterSimple(Count c, String filterNm, String onclick, String selectedItem, boolean formatName) {
 		String uuid = RandomAlphaNumeric.generateRandom(5);
 		StringBuilder sb = new StringBuilder(250);
 		sb.append("<div class=\"collapse-panel collapse-panel-filter\">");
@@ -44,8 +45,18 @@ public class HTMLSolrFiltersBean {
 		if (selectedItem != null && c.getName().equals(selectedItem)) sb.append("checked=\"checked\" ");
 		sb.append(">");
 		sb.append("<label class=\"checkbox\" for=\"filter_simple_").append(uuid).append("\">");
-		sb.append(c.getName()).append("</label></div></div>\r");
+		if (formatName) {
+			sb.append(filterNameFormat.valueOf(c.getName()).getName());
+		} else {
+			sb.append(c.getName());
+		}
+		sb.append("</label></div></div>\r");
 		return sb.toString();
+	}
+	
+
+	public static String getFilterSimple(Count c, String filterNm, String onclick, String selectedItem) {
+		return getFilterSimple(c, filterNm, onclick, selectedItem, false);
 	}
 	
 	public static String getFilterSimple(Count c, String filterNm, String onclick) {
