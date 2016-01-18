@@ -221,7 +221,7 @@ public class HuddleProductAction extends SimpleActionAdapter {
 			// Called on the category page of the site.
 			// Turns the category parameter into a hierarchy fq
 			if (req.hasParameter("category") && !req.hasParameter("fq")) {
-				String category = req.getParameter("category").replace(" ", "_");
+				String category = req.getParameter("category");
 				req.setParameter("fq", SearchDocumentHandler.HIERARCHY + ":" + StringUtil.capitalizePhrase(category));
 			}
 
@@ -235,7 +235,7 @@ public class HuddleProductAction extends SimpleActionAdapter {
 			// Uses the last section of the request uri to determine the 
 			// speciality of the page that the portlet is on and make an opco fq
 			if (!req.hasParameter("fq")) {
-				String uri = req.getRequestURI().substring(req.getRequestURI().lastIndexOf("/")+1);
+				String uri = req.getRequestURI().substring(req.getRequestURI().lastIndexOf("/")+1).replace('-', ' ');
 				req.setParameter("fq", HuddleUtils.SOLR_OPCO_FIELD + ":" + StringUtil.capitalizePhrase(uri));
 				// This scenario ignores the user's sort preference to show new products 
 				// on the home page.  Sort by recentlyAdded first
