@@ -15,18 +15,12 @@ public class HTMLUtilsBean {
 	
 	/**
 	 * renders the 'share on' html dropdown menu
-	 * @param n
+	 * @param pageUrl
 	 * @return
 	 */
 	public static String getShareOn(String pageUrl) {
-		StringBuilder sb = new StringBuilder(500);
-		sb.append("<li class=\"dropdown\">");
-		sb.append("<a href=\"javascript:;\" data-toggle=\"dropdown\"><i class=\"fa fa-share-alt\"></i> Share</a>");
-		sb.append("<ul class=\"dropdown-menu dropdown-menu-share icon-dropdown-menu\">");
-		sb.append("<li><a href=\"javascript:;\" onclick=\"shareFacebook('").append(pageUrl).append("');\"><i class=\"fa fa-facebook-square\"></i> Facebook</a></li>");
-		sb.append("<li><a href=\"javascript:;\" onclick=\"shareTwitter('").append(pageUrl).append("');\"><i class=\"fa fa-twitter-square\"></i> Twitter</a></li>");
-		sb.append("<li><a href=\"javascript:;\" onclick=\"shareEmail('").append(pageUrl).append("');\"><i class=\"fa fa-envelope-square\"></i> Email</a></li>");
-		sb.append("</ul></li>\n");
+		StringBuilder sb = new StringBuilder(250);
+		sb.append("<li><a href=\"javascript:;\" onclick=\"shareEmail('").append(pageUrl).append("');\"><i class=\"fa fa-envelope\"></i> Share</a></li>");
 		return sb.toString();
 	}
 	
