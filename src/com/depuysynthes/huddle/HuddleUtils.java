@@ -43,7 +43,13 @@ public class HuddleUtils {
 	public static final String SOLR_OPCO_FIELD = "opco_ss";
 	public static final String SOLR_SALES_CONSULTANT_IDEX_TYPE = "HUDDLE_CONSULTANTS";
 	protected static final String SOLR_PROD_CONTACT_IDX_TYPE = "HUDDLE_PRODUCT_CONTACT";
-	
+	protected static final String[] SOLR_PROD_ATTR_FIELD_ARR = {
+		"mediabin_system_information_ss",
+		"mediabin_selling_tips_ss ",
+		"mediabin_value_ss",
+		"mediabin_competition_ss",
+		"mediabin_clinical_ss"
+	};
 	
 	/**
 	 * the number of days to subtract from an event to designate when Registration opens

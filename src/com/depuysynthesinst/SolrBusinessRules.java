@@ -111,7 +111,7 @@ public class SolrBusinessRules {
 		if ("EVENT".equals(moduleType)) {
 			pageUrl = StringUtil.checkVal(sd.get(SearchDocumentHandler.DOCUMENT_URL));
 		} else {
-			pageUrl = SolrSearchWrapper.buildDSIUrl(hierarchy, (String)sd.get("documentId"), qsPath);
+			pageUrl = SolrSearchWrapper.buildDSIUrl(hierarchy, (String)sd.get(SearchDocumentHandler.DOCUMENT_ID), qsPath);
 		}
 	}
 
