@@ -49,6 +49,30 @@ public class HuddleUtils {
 	public static final int EVENT_REGISTRATION_OPENS = -90;
 	
 	
+	/**
+	 * These are used to create reader friendly versions of titles that are
+	 * stored in solr in non reader friendly formats.
+	 * @author root
+	 *
+	 */
+	public enum filterNameFormat {
+		COURSE_CAL("Courses & Events"),
+		HUDDLE_BLOG("News"),
+		HUDDLE_CONSULTANTS("Consultants"),
+		MEDIA_BIN("Documents"),
+		PRODUCT("Products");
+		
+		private String name;
+		filterNameFormat(String name) {
+			this.name = name;
+		}
+		
+		public String getName() {
+			return name;
+		}
+	}
+	
+	
 	
 	/**
 	 *  Per Bradley / TDS - 12.28.2015
