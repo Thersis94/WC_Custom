@@ -45,7 +45,8 @@ public class HuddleSolrSearch  extends SimpleActionAdapter {
 		String solrActionId = StringUtil.checkVal(mod.getAttribute(SBModuleVO.ATTRIBUTE_1));
 		actionInit.setActionId(solrActionId);
 
-		HuddleUtils.setSearchParameters(req);
+		if (req.hasParameter("searchData"))
+			HuddleUtils.setSearchParameters(req);
 		
 		SMTActionInterface sai = new SolrAction(actionInit);
 		sai.setAttributes(attributes);

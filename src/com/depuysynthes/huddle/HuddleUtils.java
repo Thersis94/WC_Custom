@@ -164,24 +164,21 @@ public class HuddleUtils {
 	 * @param req
 	 */
 	public static void setSearchParameters(SMTServletRequest req, String defaultSort) {
-		// Only add filters if this is the main portlet on the page.
-		if (req.hasParameter("searchData")) {
-			if (req.getCookie(HuddleUtils.RPP_COOKIE) != null)
-				req.setParameter("rpp", req.getCookie(HuddleUtils.RPP_COOKIE).getValue());
+		if (req.getCookie(HuddleUtils.RPP_COOKIE) != null)
+			req.setParameter("rpp", req.getCookie(HuddleUtils.RPP_COOKIE).getValue());
 
-			Cookie sortCook = req.getCookie(HuddleUtils.SORT_COOKIE);
-			String sort = (sortCook != null) ? sortCook.getValue() : defaultSort;
+		Cookie sortCook = req.getCookie(HuddleUtils.SORT_COOKIE);
+		String sort = (sortCook != null) ? sortCook.getValue() : defaultSort;
 
-			if ("recentlyAdded".equals(sort)) {
-				req.setParameter("fieldSort", SearchDocumentHandler.UPDATE_DATE, true);
-				req.setParameter("sortDirection", ORDER.desc.toString(), true);
-			} else if ("titleZA".equals(sort)) {
-				req.setParameter("fieldSort", SearchDocumentHandler.TITLE_SORT, true);
-				req.setParameter("sortDirection", ORDER.desc.toString(), true);
-			} else if ("titleAZ".equals(sort)) {
-				req.setParameter("fieldSort", SearchDocumentHandler.TITLE_SORT, true);
-				req.setParameter("sortDirection", ORDER.asc.toString(), true);
-			}
+		if ("recentlyAdded".equals(sort)) {
+			req.setParameter("fieldSort", SearchDocumentHandler.UPDATE_DATE, true);
+			req.setParameter("sortDirection", ORDER.desc.toString(), true);
+		} else if ("titleZA".equals(sort)) {
+			req.setParameter("fieldSort", SearchDocumentHandler.TITLE_SORT, true);
+			req.setParameter("sortDirection", ORDER.desc.toString(), true);
+		} else if ("titleAZ".equals(sort)) {
+			req.setParameter("fieldSort", SearchDocumentHandler.TITLE_SORT, true);
+			req.setParameter("sortDirection", ORDER.asc.toString(), true);
 		}
 		
 	}
