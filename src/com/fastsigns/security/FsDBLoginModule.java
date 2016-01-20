@@ -1,10 +1,14 @@
 package com.fastsigns.security;
 
 // JDK 1.6
+import java.net.URLDecoder;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+
 
 // SMTBaseLibs 2.0
 import com.siliconmtn.common.constants.GlobalConfig;
@@ -20,7 +24,8 @@ import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.RandomAlphaNumeric;
 
-// WebCrescendo 2.0
+//WebCrescendo 2.0
+import com.smt.sitebuilder.action.registration.ResponseLoader;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -430,6 +435,42 @@ public class FsDBLoginModule extends AbstractLoginModule {
 	@Override
 	public UserDataVO retrieveUserData(String encProfileId)
 			throws AuthenticationException {
-		throw new AuthenticationException(ErrorCodes.ERR_INVALID_LOGIN);
+		log.debug("Retrieving user data via encrypted profileId");
+		UserDataVO user = null;
+		String decProfileId = null;
+		String encKey = (String)initVals.get(Constants.ENCRYPT_KEY);
+		try {
+			encProfileId = URLDecoder.decode(encProfileId, "UTF-8");
+			StringEncrypter se = new StringEncrypter(encKey);
+			decProfileId = se.decrypt(encProfileId);
+		} catch (Exception e) {
+			log.error("Error decrypting an encrypted profile ID, ", e);
+			return user;
+		}
+
+		ProfileManager pm = ProfileManagerFactory.getInstance(this.initVals);
+		Connection dbConn = (Connection)initVals.get(GlobalConfig.KEY_DB_CONN);
+		try {
+			List<String> profileIds = new ArrayList<String>();
+			profileIds.add(decProfileId);
+			List<UserDataVO> profiles = pm.searchProfile(dbConn, profileIds);
+			if (! profiles.isEmpty()) {
+				user = profiles.get(0);
+				user.setPasswordResetFlag(retrievePasswordResetFlag(user.getEmailAddress()));
+			}
+		} catch(Exception e) {
+			log.error("Unable to retrieve profile, ", e);
+		}
+
+		if (user == null) return user;
+		//  retrieve user's registration data
+		String siteId = (String) initVals.get(Constants.SITE_ALIAS_PATH);
+
+		//leverage the registration response loader to update the UserDataVO with submitted registration data.
+		ResponseLoader rl = new ResponseLoader();
+		rl.setDbConn(dbConn);
+		rl.loadRegistrationResponses(user, siteId);
+
+		return user;
 	}
 }

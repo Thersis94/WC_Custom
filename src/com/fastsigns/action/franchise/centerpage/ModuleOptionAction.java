@@ -632,6 +632,14 @@ public class ModuleOptionAction extends SBActionAdapter{
 			approval.setParentId(orgId);
 		}
 		
+		if ( req.getParameter("testimonialForm") != null && 
+				req.getParameter("testimonialForm").equals("true") &&
+				req.getSession().getAttribute(Constants.USER_DATA) == null){
+			UserDataVO userVo = new UserDataVO();
+			userVo.setProfileId("public-Side-Submission");
+			req.getSession().setAttribute(Constants.USER_DATA, userVo);
+		}
+		
 		approval.setUserDataVo((UserDataVO) req.getSession().getAttribute(Constants.USER_DATA));
 		approval.setCreateDt(Convert.getCurrentTimestamp());
 		

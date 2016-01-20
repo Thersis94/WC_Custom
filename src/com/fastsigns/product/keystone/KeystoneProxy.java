@@ -1,23 +1,30 @@
 package com.fastsigns.product.keystone;
 
+//Java 7
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Map;
 
+//SMT app libs
 import javax.servlet.http.Cookie;
-
 import org.apache.log4j.Logger;
 
+//WC_custom
 import com.fastsigns.product.keystone.parser.KeystoneDataParser;
 import com.fastsigns.product.keystone.parser.KeystoneDataParser.DataParserType;
+
+//SMTBase libs
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
 import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
+
+//WebCrescendo
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -64,8 +71,8 @@ public class KeystoneProxy {
 	
 	public KeystoneProxy(Map<String, Object> attribs) {
 		log = Logger.getLogger(this.getClass());
-		keystoneApiUrl = (String) attribs.get("keystoneApiUrl");
-		encryptKey = (String) attribs.get(Constants.ENCRYPT_KEY);
+		keystoneApiUrl = StringUtil.checkVal(attribs.get("keystoneApiUrl"));
+		encryptKey = StringUtil.checkVal(attribs.get(Constants.ENCRYPT_KEY));
 		postData = new HashMap<String, String>();
 		
 		log.info(this.getClass() + " created with apiUrl=" + keystoneApiUrl);

@@ -179,6 +179,8 @@ public class CenterPageAction extends SimpleActionAdapter {
 			try {
 				retrieve(req);
 				ModuleOptionAction moa = new ModuleOptionAction(this.actionInit);
+				moa.setDBConnection(dbConn);
+				moa.setAttributes(attributes);
 				moa.build(req);
 			} catch (Exception e) {
 				throw new ActionException(e);
