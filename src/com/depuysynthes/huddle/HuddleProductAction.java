@@ -5,9 +5,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-import javax.servlet.http.Cookie;
-
-import org.apache.solr.client.solrj.SolrQuery.ORDER;
 import org.apache.solr.common.SolrDocument;
 
 import com.depuysynthes.action.MediaBinAssetVO;
@@ -71,6 +68,11 @@ public class HuddleProductAction extends SimpleActionAdapter {
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		String param1 = req.getParameter("reqParam_1");
+		String searchData = req.getParameter("searchData");
+		
+		// Data searches will never run through here, so ignore any search
+		// data that is on the request.
+		req.setParameter("searchData", "", true);
 		
 		if (param1 != null && !"".equals(param1) && mod.getDisplayColumn().equals(page.getDefaultColumn())) {
 			detailSearch(req);
@@ -83,6 +85,9 @@ public class HuddleProductAction extends SimpleActionAdapter {
 			if (param1 != null)
 				req.setParameter("reqParam_1", param1, true);
 		}
+		
+		// Put the searchData back
+		req.setParameter("searchData", searchData);
 	}
 
 
@@ -257,17 +262,12 @@ public class HuddleProductAction extends SimpleActionAdapter {
 
 		// Only add filters if this is the main portlet on the page.
 		if (mainCol) {
-			if (req.getCookie(HuddleUtils.RPP_COOKIE) != null)
-				req.setParameter("rpp", req.getCookie(HuddleUtils.RPP_COOKIE).getValue());
-
-			Cookie sortCook = req.getCookie(HuddleUtils.SORT_COOKIE);
-			String sort = (sortCook != null) ? sortCook.getValue() : "titleAZ";
 
 			// Called on the category page of the site.
 			// Turns the category parameter into a hierarchy fq
 			if (req.hasParameter("category") && !req.hasParameter("fq")) {
 				String category = req.getParameter("category");
-				req.setParameter("fq", SearchDocumentHandler.HIERARCHY + ":" + StringUtil.capitalizePhrase(category));
+				req.setParameter("fq", SearchDocumentHandler.HIERARCHY + ":" + StringUtil.capitalizePhrase(category, 0, " -"));
 			}
 
 			// Called on the specialty page of the site.
@@ -281,23 +281,14 @@ public class HuddleProductAction extends SimpleActionAdapter {
 			// speciality of the page that the portlet is on and make an opco fq
 			if (!req.hasParameter("fq")) {
 				String uri = req.getRequestURI().substring(req.getRequestURI().lastIndexOf("/")+1).replace('-', ' ');
-				req.setParameter("fq", HuddleUtils.SOLR_OPCO_FIELD + ":" + StringUtil.capitalizePhrase(uri));
+				req.setParameter("fq", HuddleUtils.SOLR_OPCO_FIELD + ":" + StringUtil.capitalizePhrase(uri, 0, " -"));
 				// This scenario ignores the user's sort preference to show new products 
 				// on the home page.  Sort by recentlyAdded first
-				sort = "recentlyAdded";
+				HuddleUtils.setSearchParameters(req, "recentlyAdded");
+			} else {
+				HuddleUtils.setSearchParameters(req);
 			}
-
-
-			if ("recentlyAdded".equals(sort)) {
-				req.setParameter("fieldSort", SearchDocumentHandler.UPDATE_DATE, true);
-				req.setParameter("sortDirection", ORDER.desc.toString(), true);
-			} else if ("titleZA".equals(sort)) {
-				req.setParameter("fieldSort", SearchDocumentHandler.TITLE_SORT, true);
-				req.setParameter("sortDirection", ORDER.desc.toString(), true);
-			} else if ("titleAZ".equals(sort)) {
-				req.setParameter("fieldSort", SearchDocumentHandler.TITLE_SORT, true);
-				req.setParameter("sortDirection", ORDER.asc.toString(), true);
-			}
+			
 		}
 
 		SMTActionInterface sai = new SolrAction(actionInit);
