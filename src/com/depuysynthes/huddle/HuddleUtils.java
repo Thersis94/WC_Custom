@@ -45,6 +45,7 @@ public class HuddleUtils {
 	public static final String RPP_COOKIE = "huddleRpp";
 	public static final int DEFAULT_RPP_INT = 12;
 	public static final String DEFAULT_RPP = "" + DEFAULT_RPP_INT; //set as String, the same way we'd get it from the Browser/Cookie
+	public static final String PROD_SHARE_COOKIE = "huddle-share-products";
 
 	//solr fields
 	public static final String SOLR_OPCO_FIELD = "opco_ss";
@@ -174,10 +175,10 @@ public class HuddleUtils {
 			req.setParameter("fieldSort", SearchDocumentHandler.UPDATE_DATE, true);
 			req.setParameter("sortDirection", ORDER.desc.toString(), true);
 		} else if ("titleZA".equals(sort)) {
-			req.setParameter("fieldSort", SearchDocumentHandler.TITLE_SORT, true);
+			req.setParameter("fieldSort", SearchDocumentHandler.TITLE_LCASE, true);
 			req.setParameter("sortDirection", ORDER.desc.toString(), true);
 		} else if ("titleAZ".equals(sort)) {
-			req.setParameter("fieldSort", SearchDocumentHandler.TITLE_SORT, true);
+			req.setParameter("fieldSort", SearchDocumentHandler.TITLE_LCASE, true);
 			req.setParameter("sortDirection", ORDER.asc.toString(), true);
 		}
 		

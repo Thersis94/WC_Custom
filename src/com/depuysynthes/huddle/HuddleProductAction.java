@@ -74,7 +74,7 @@ public class HuddleProductAction extends SimpleActionAdapter {
 		// data that is on the request.
 		req.setParameter("searchData", "", true);
 		
-		if (param1 != null && !"".equals(param1) && mod.getDisplayColumn().equals(page.getDefaultColumn())) {
+		if (param1 != null && !"".equals(param1) && (req.hasParameter("runDetail") || mod.getDisplayColumn().equals(page.getDefaultColumn()))) {
 			detailSearch(req);
 			
 		} else {
@@ -122,7 +122,6 @@ public class HuddleProductAction extends SimpleActionAdapter {
 		
 		// Loop through all items on the document looking for any prefixed with attribute types
 		for (String key : doc.getFieldValuesMap().keySet()) {
-			
 			if (key == null) continue;
 			if (key.startsWith(HuddleUtils.PROD_ATTR_IMG_PREFIX)) {
 				// keys starting with the image prefix are added to the ProductAttributeContainer
@@ -147,7 +146,9 @@ public class HuddleProductAction extends SimpleActionAdapter {
 		p.setAttributes(pac);
 
 		//get the product contacts as well.
-		addProductContacts(p);
+		//skip is passed from EmailFriendAction, where we don't need contacts
+		if (!req.hasParameter("skipContacts"))
+			addProductContacts(p);
 		
 		super.putModuleData(p);
 	}
@@ -170,7 +171,7 @@ public class HuddleProductAction extends SimpleActionAdapter {
 		SolrFieldVO field = new SolrFieldVO();
 		field.setBooleanType(BooleanType.AND);
 		field.setFieldType(FieldType.SEARCH);
-		field.setFieldCode(SearchDocumentHandler.TITLE_SORT);
+		field.setFieldCode(SearchDocumentHandler.TITLE_LCASE);
 		field.setValue(product.getTitle());
 		qData.addSolrField(field);
 		

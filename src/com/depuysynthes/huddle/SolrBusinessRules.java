@@ -7,6 +7,7 @@ import org.apache.solr.common.SolrDocument;
 import com.depuysynthes.huddle.solr.BlogSolrIndexer;
 import com.depuysynthes.huddle.solr.HuddleProductCatalogSolrIndex;
 import com.depuysynthes.lucene.MediaBinSolrIndex;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 
 /****************************************************************************
@@ -50,7 +51,7 @@ public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 		
 		switch((String)sd.getFieldValue(SearchDocumentHandler.INDEX_TYPE)) {
 		case MediaBinSolrIndex.INDEX_TYPE:
-			return "";
+			return "/asset/" + super.getQsPath() + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
 			
 		case HuddleProductCatalogSolrIndex.INDEX_TYPE:
 			return "/product/" + super.getQsPath() + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
@@ -65,8 +66,18 @@ public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 			return "";
 			
 		}
-		
-		
 	}
-
+	
+	/**
+	 * leverage the INDEX_TYPE to determine which type of Favorite to use.  Unfortunately they don't correlate directly.
+	 */
+	public String getFavoriteType() {
+		String indexType = StringUtil.checkVal(getSd().get(SearchDocumentHandler.INDEX_TYPE));
+		switch (indexType) {
+			case "COURSE_CAL": return "EVENT";
+			case "MEDIA_BIN": return "MEDIABIN";
+			default:
+				return indexType;
+		}
+	}
 }
