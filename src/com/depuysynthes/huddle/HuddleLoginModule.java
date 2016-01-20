@@ -99,7 +99,7 @@ public class HuddleLoginModule extends SAMLLoginModule {
 		//only initiate logic if the session is new.
 		//This traps an infinite redirect loop where something goes wrong on WC 
 		//but the user successfully authenticates to SSO. (go there, come back, fail, redir to homepage, go there, come back, fail, ...con't.)
-		if (!req.getSession().isNew())
+		if (!req.getSession().isNew() && !req.hasParameter("initiateSSO"))
 			return false;
 
 		//set a parameter to invoke SSO and leverage the superclass implementation

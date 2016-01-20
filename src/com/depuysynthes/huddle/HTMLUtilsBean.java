@@ -20,7 +20,7 @@ public class HTMLUtilsBean {
 	 */
 	public static String getShareOn(String pageUrl) {
 		StringBuilder sb = new StringBuilder(250);
-		sb.append("<li><a href=\"javascript:;\" onclick=\"shareEmail('").append(pageUrl).append("');\"><i class=\"fa fa-envelope\"></i> Share</a></li>");
+		sb.append("<li><a href=\"javascript:;\" onclick=\"emailAFriend.shareEmail('").append(pageUrl).append("');\"><i class=\"fa fa-envelope\"></i> Share</a></li>");
 		return sb.toString();
 	}
 	
