@@ -1,7 +1,5 @@
 package com.depuysynthes.huddle;
 
-import org.apache.solr.client.solrj.SolrQuery.ORDER;
-
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
@@ -47,14 +45,14 @@ public class HuddleSolrSearch  extends SimpleActionAdapter {
 		String solrActionId = StringUtil.checkVal(mod.getAttribute(SBModuleVO.ATTRIBUTE_1));
 		actionInit.setActionId(solrActionId);
 		
-		if (!req.hasParameter("section")) {
-			req.setParameter("fieldSort", "tf(" + HuddleUtils.SOLR_OPCO_FIELD + ",'" 
-					+ StringUtil.capitalizePhrase(req.getParameter("section"), 1, " -") + "')", true);
-			req.setParameter("sortDirection", ORDER.desc.toString(), true);
-			
-		} else if (req.hasParameter("searchData")) {
-			HuddleUtils.setSearchParameters(req);
+		if (req.hasParameter("section")) {
+			log.debug("bq|"+HuddleUtils.SOLR_OPCO_FIELD+":"+req.getParameter("section"));
+			req.setParameter("customParam", "bq|"+HuddleUtils.SOLR_OPCO_FIELD+":"+req.getParameter("section"));
 		}
+		
+		HuddleUtils.setSearchParameters(req, req.getParameter("siteSort"));
+		log.debug(req.getParameter("fieldSort"));
+		log.debug(req.getParameter("sortDirection"));
 		
 		SMTActionInterface sai = new SolrAction(actionInit);
 		sai.setAttributes(attributes);
