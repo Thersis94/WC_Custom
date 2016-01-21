@@ -285,9 +285,9 @@ public class HuddleProductAction extends SimpleActionAdapter {
 				req.setParameter("fq", HuddleUtils.SOLR_OPCO_FIELD + ":" + StringUtil.capitalizePhrase(uri, 0, " -"));
 				// This scenario ignores the user's sort preference to show new products 
 				// on the home page.  Sort by recentlyAdded first
-				HuddleUtils.setSearchParameters(req, "recentlyAdded");
+				HuddleUtils.determineSortParameters(req, "recentlyAdded");
 			} else {
-				HuddleUtils.setSearchParameters(req);
+				HuddleUtils.determineSortParameters(req);
 			}
 			
 		}
