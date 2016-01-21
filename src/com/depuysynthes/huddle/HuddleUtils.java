@@ -155,7 +155,7 @@ public class HuddleUtils {
 	}
 	
 	
-	public static void setSearchParameters(SMTServletRequest req) {
+	public static void determineSortParameters(SMTServletRequest req) {
 		setSearchParameters(req, "titleAZ");
 	}
 	
@@ -164,13 +164,17 @@ public class HuddleUtils {
 	 * Get the sort type and rpp from cookies and assign them to the request
 	 * @param req
 	 */
-	public static void setSearchParameters(SMTServletRequest req, String defaultSort) {
+	public static void determineSortParameters(SMTServletRequest req, String defaultSort) {
 		if (req.getCookie(HuddleUtils.RPP_COOKIE) != null)
 			req.setParameter("rpp", req.getCookie(HuddleUtils.RPP_COOKIE).getValue());
 
 		Cookie sortCook = req.getCookie(HuddleUtils.SORT_COOKIE);
 		String sort = (sortCook != null) ? sortCook.getValue() : defaultSort;
+		
+		setSearchParameters(req, sort);
+	}
 
+	public static void setSearchParameters(SMTServletRequest req, String sort) {
 		if ("recentlyAdded".equals(sort)) {
 			req.setParameter("fieldSort", SearchDocumentHandler.UPDATE_DATE, true);
 			req.setParameter("sortDirection", ORDER.desc.toString(), true);
@@ -181,6 +185,5 @@ public class HuddleUtils {
 			req.setParameter("fieldSort", SearchDocumentHandler.TITLE_LCASE, true);
 			req.setParameter("sortDirection", ORDER.asc.toString(), true);
 		}
-		
 	}
 }
