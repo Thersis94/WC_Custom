@@ -174,6 +174,10 @@ public class HuddleUtils {
 		setSearchParameters(req, sort);
 	}
 
+	
+	/**
+	 * Set the sort field and direction.
+	 */
 	public static void setSearchParameters(SMTServletRequest req, String sort) {
 		if ("recentlyAdded".equals(sort)) {
 			req.setParameter("fieldSort", SearchDocumentHandler.UPDATE_DATE, true);
