@@ -116,14 +116,22 @@ public class HTMLSolrFiltersBean {
 			
 			if (n.getNumberChildren() > 0) {
 				boolean isLeaf = true;
-				for (Node g : n.getChildren()) {
-					if (g.getNumberChildren() > 0)
-						isLeaf = false;
+				// If this item is inverted its children will 
+				// never be displayed as the end of a branch.
+				if (invertColor) {
+					isLeaf = false;
+				} else {
+					// If any children have children of their own this this
+					// section should not be treated as the end of a branch
+					for (Node g : n.getChildren()) {
+						if (g.getNumberChildren() > 0)
+							isLeaf = false;
+					}
 				}
 				if (isLeaf) {
 					sb.append("<div id='").append(n.getNodeId().replace("~", "-").replace(" ", "-"));
 					sb.append("' class='collapse-panel-body collapse' aria-expanded='true'>");
-					getHierarchyLeaf(n, filterNm, onclick, sb, invertColor);
+					getHierarchyLeaf(n, filterNm, onclick, sb);
 					sb.append("</div>");
 				} else {
 					sb.append("<div id='").append(n.getNodeId().replace("~", "-").replace(" ", "-"));
@@ -147,10 +155,8 @@ public class HTMLSolrFiltersBean {
 	 * @param onclick
 	 * @param sb
 	 */
-	private static void getHierarchyLeaf(Node rootNode, String filterNm, String onclick, StringBuilder sb, boolean invertColor) {
-		sb.append("<ul class='list-unstyled sub-filters");
-		if (invertColor)sb.append(" invert");
-		sb.append("'>");
+	private static void getHierarchyLeaf(Node rootNode, String filterNm, String onclick, StringBuilder sb) {
+		sb.append("<ul class='list-unstyled sub-filters'>");
 		for (Node n : rootNode.getChildren()) {
 			if ((Long)n.getUserObject() == 0) continue;
 			String uuid = RandomAlphaNumeric.generateRandom(5);
