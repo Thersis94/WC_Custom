@@ -59,7 +59,7 @@ public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 		case BlogSolrIndexer.INDEX_TYPE:
 			return "/news/" + super.getQsPath() + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
 			
-		case HuddleUtils.SOLR_SALES_CONSULTANT_IDEX_TYPE :
+		case HuddleUtils.SOLR_SALES_CONSULTANT_IDX_TYPE :
 			return "/sales-consultants/" + super.getQsPath() + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
 			
 		default:

@@ -54,7 +54,7 @@ public class SalesConsultantVO extends SolrDocumentVO {
 	}
 	
 	public SalesConsultantVO() {
-		this(HuddleUtils.SOLR_SALES_CONSULTANT_IDEX_TYPE);
+		this(HuddleUtils.SOLR_SALES_CONSULTANT_IDX_TYPE);
 	}
 
 	@SolrField(name=HuddleUtils.SOLR_OPCO_FIELD)
