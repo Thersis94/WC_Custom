@@ -21,6 +21,10 @@ import com.smt.sitebuilder.search.SearchDocumentHandler;
  ****************************************************************************/
 public class HuddleUtils {
 	
+	/** Catalog Constants **/
+	public static final String productCategoryCd = "HUDDLE_CATEGORY";
+	public static final String productCatalogId = "DS_HUDDLE";
+	
 	/** Solr field names of product attributes **/
 	public static final String PROD_ATTR_IMG_PREFIX = "image_";
 	public static final String PROD_ATTR_MB_PREFIX = "mediabin_";
