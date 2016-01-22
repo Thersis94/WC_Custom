@@ -5,7 +5,9 @@ package com.depuysynthes.huddle;
 
 import java.sql.ResultSet;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.SMTServletRequest;
@@ -37,9 +39,9 @@ public class HuddleGroupVO extends SBModuleVO {
 	 *
 	 */
 	private static final long serialVersionUID = 1L;
-	private List<HuddleForm> forms;
+	private Map<String, HuddleForm> forms;
 	public HuddleGroupVO() {
-		forms = new ArrayList<HuddleForm>();
+		forms = new LinkedHashMap<String, HuddleForm>();
 	}
 
 	/**
@@ -68,17 +70,18 @@ public class HuddleGroupVO extends SBModuleVO {
 	}
 
 	//Getter
-	public List<HuddleForm> getForms() {return forms;}
+	public Map<String, HuddleForm> getFormsMap() {return forms;}
+	public List<HuddleForm> getForms() {return new ArrayList<HuddleForm>(forms.values());}
 
 	//Setter
-	public void setForms(List<HuddleForm> forms) {this.forms = forms;}
+	public void setForms(Map<String, HuddleForm> forms) {this.forms = forms;}
 
 	/**
 	 * Helper method that adds a form to the forms List.
 	 * @param form
 	 */
 	public void addHuddleForm(HuddleForm form) {
-		forms.add(form);
+		forms.put(form.getActionGroupId(), form);
 	}
 
 	/**

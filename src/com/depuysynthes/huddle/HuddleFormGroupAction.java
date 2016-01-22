@@ -16,6 +16,7 @@ import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.formbuilder.FormBuilderFacadeAction;
 import com.smt.sitebuilder.admin.action.SBModuleAction;
+import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -63,7 +64,7 @@ public class HuddleFormGroupAction extends SBActionAdapter {
 		 * Retrieve the HuddleGroupVO for the given formGroupId and place in
 		 * AdminModuleData. 
 		 */
-		super.putModuleData(getHuddleGroupVO(formGroupId, organizationId), 1, true);
+		super.putModuleData(getHuddleGroupVO(formGroupId, organizationId, false), 1, true);
 	}
 
 	public void update(SMTServletRequest req) throws ActionException {
@@ -73,7 +74,7 @@ public class HuddleFormGroupAction extends SBActionAdapter {
 
 		//Get formIds and formGroupId off request
 		String [] formIds = req.getParameter("formGroupIds").trim().split(",");
-		String formGroupId = StringUtil.checkVal(req.getParameter(SBModuleAction.SB_ACTION_ID));
+		String formGroupId = StringUtil.checkVal(req.getAttribute(SBModuleAction.SB_ACTION_ID));
 
 		/*
 		 * If we have a formGroupId, remove all existing group records and
@@ -99,7 +100,8 @@ public class HuddleFormGroupAction extends SBActionAdapter {
 		} else {
 			String formGroupId = actionInit.getActionId();
 			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-			putModuleData(getHuddleGroupVO(formGroupId, site.getOrganizationId()), 1, false);
+			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+			putModuleData(getHuddleGroupVO(formGroupId, site.getOrganizationId(), page.isPreviewMode()), 1, false);
 		}
 	}
 
@@ -146,7 +148,6 @@ public class HuddleFormGroupAction extends SBActionAdapter {
 				ps.setTimestamp(cnt++, Convert.getCurrentTimestamp());
 				ps.setString(cnt++, new UUIDGenerator().getUUID());
 				ps.addBatch();
-
 			}
 			ps.executeBatch();
 		} catch (SQLException e) {
@@ -174,7 +175,7 @@ public class HuddleFormGroupAction extends SBActionAdapter {
 	 * @param actionId
 	 * @return
 	 */
-	private HuddleGroupVO getHuddleGroupVO(String formGroupId, String organizationId) {
+	private HuddleGroupVO getHuddleGroupVO(String formGroupId, String organizationId, boolean isPreview) {
 		HuddleGroupVO grp = new HuddleGroupVO();
 		try(PreparedStatement ps = dbConn.prepareStatement(getFormGroupSql())) {
 			ps.setString(1, formGroupId);
@@ -186,7 +187,7 @@ public class HuddleFormGroupAction extends SBActionAdapter {
 			log.error(e);
 		}
 
-		getFormList(grp, organizationId);
+		getFormList(grp, organizationId, isPreview);
 		return grp;
 	}
 
@@ -196,13 +197,18 @@ public class HuddleFormGroupAction extends SBActionAdapter {
 	 * @param grp
 	 * @param organizationId
 	 */
-	private void getFormList(HuddleGroupVO grp, String organizationId) {
+	private void getFormList(HuddleGroupVO grp, String organizationId, boolean isPreview) {
 		try(PreparedStatement ps = dbConn.prepareStatement(getFormsSql())) {
 			ps.setString(1, StringUtil.checkVal(grp.getActionId()));
 			ps.setString(2, StringUtil.checkVal(organizationId));
 			ResultSet rs = ps.executeQuery();
 			while(rs.next()) {
-				grp.addHuddleForm(grp.new HuddleForm(rs));
+				//If we are not in preview mode don't add Pending Forms.
+				if(!isPreview && rs.getInt("PENDING_SYNC_FLG") == 1) {
+					continue;
+				} else {
+					grp.addHuddleForm(grp.new HuddleForm(rs));
+				}
 			}
 		} catch (SQLException e) {
 			log.error(e);
@@ -253,9 +259,9 @@ public class HuddleFormGroupAction extends SBActionAdapter {
 		sql.append("select * from FB_FORM a inner join SB_ACTION c ");
 		sql.append("on a.FORM_ID = c.ACTION_ID left outer join ");
 		sql.append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("HUDDLE_FORM_GROUP b on a.FORM_ID = b.FORM_ID ");
+		sql.append("HUDDLE_FORM_GROUP b on c.ACTION_GROUP_ID = b.FORM_ID ");
 		sql.append("and b.FORM_GROUP_ID = ? and c.ORGANIZATION_ID = ? ");
-		sql.append("order by b.ORDER_NO ");
+		sql.append("order by b.ORDER_NO, PENDING_SYNC_FLG ");
 		return sql.toString();
 	}
 }
