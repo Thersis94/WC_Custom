@@ -109,7 +109,7 @@ public class HTMLSolrFiltersBean {
 			sb.append("<input type=\"checkbox\" class=\"parChkbx\" id=\"filter_simple_").append(uuid);
 			sb.append("\" data-filter-nm=\"").append(filterNm).append("\" value=\"");
 			sb.append(n.getNodeId()).append("\" onclick=\"").append(onclick);
-			sb.append("\" searchName=\"").append(StringUtil.removeNonAlpha((n.getNodeId()))).append("\">");
+			sb.append("\" data-search-name=\"").append(StringUtil.removeNonAlpha((n.getNodeId()))).append("\">");
 			sb.append("<label class=\"checkbox\" for=\"filter_simple_").append(uuid).append("\">");
 			sb.append(n.getNodeName()).append("</label>");
 			sb.append("</div>");
@@ -157,7 +157,7 @@ public class HTMLSolrFiltersBean {
 			sb.append("<input type=\"checkbox\" class=\"parChkbx\" id=\"filter_simple_").append(uuid);
 			sb.append("\" data-filter-nm=\"").append(filterNm).append("\" value=\"");
 			sb.append(n.getNodeId()).append("\" onclick=\"").append(onclick);
-			sb.append("\" searchName=\"").append(StringUtil.removeNonAlpha(n.getNodeId())).append("\">");
+			sb.append("\" data-search-name=\"").append(StringUtil.removeNonAlpha(n.getNodeId())).append("\">");
 			sb.append("<label class=\"checkbox\" for=\"filter_simple_").append(uuid).append("\">");
 			sb.append(n.getNodeName()).append("</label>");
 			sb.append("</li>");
