@@ -51,9 +51,14 @@ public class HuddleUtils {
 	public static final String DEFAULT_RPP = "" + DEFAULT_RPP_INT; //set as String, the same way we'd get it from the Browser/Cookie
 	public static final String PROD_SHARE_COOKIE = "huddle-share-products";
 
+	//product catalog constants
+	public static final String CATALOG_ID = "DS_HUDDLE";
+	public static final String SPEC_PRODCAT_ID = "HUDDLE_SPECIALTY";
+	public static final String CAT_PRODCAT_ID = "HUDDLE_CATEGORY";
+	
 	//solr fields
 	public static final String SOLR_OPCO_FIELD = "opco_ss";
-	public static final String SOLR_SALES_CONSULTANT_IDEX_TYPE = "HUDDLE_CONSULTANTS";
+	public static final String SOLR_SALES_CONSULTANT_IDX_TYPE = "HUDDLE_CONSULTANTS";
 	protected static final String SOLR_PROD_CONTACT_IDX_TYPE = "HUDDLE_PRODUCT_CONTACT";
 	protected static final String[] SOLR_PROD_ATTR_FIELD_ARR = {
 		"mediabin_system_information_ss",

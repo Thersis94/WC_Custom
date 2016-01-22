@@ -147,7 +147,7 @@ public class SalesConsultantAction extends SimpleActionAdapter {
 		util.setHardCommit(false); //let the insert handle the commit of the delete; so we only fire one commit to Solr.
 		
 		//delete all existing Solr records, since we don't have a means of managing deltas
-		util.removeByQuery(SearchDocumentHandler.INDEX_TYPE, HuddleUtils.SOLR_SALES_CONSULTANT_IDEX_TYPE);
+		util.removeByQuery(SearchDocumentHandler.INDEX_TYPE, HuddleUtils.SOLR_SALES_CONSULTANT_IDX_TYPE);
 		
 		//insert all records loaded from the file
 		util.setHardCommit(true);
