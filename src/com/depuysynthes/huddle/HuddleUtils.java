@@ -21,6 +21,10 @@ import com.smt.sitebuilder.search.SearchDocumentHandler;
  ****************************************************************************/
 public class HuddleUtils {
 	
+	/** Catalog Constants **/
+	public static final String productCategoryCd = "HUDDLE_CATEGORY";
+	public static final String productCatalogId = "DS_HUDDLE";
+	
 	/** Solr field names of product attributes **/
 	public static final String PROD_ATTR_IMG_PREFIX = "image_";
 	public static final String PROD_ATTR_MB_PREFIX = "mediabin_";
@@ -160,8 +164,8 @@ public class HuddleUtils {
 	}
 	
 	
-	public static void setSearchParameters(SMTServletRequest req) {
-		setSearchParameters(req, "titleAZ");
+	public static void determineSortParameters(SMTServletRequest req) {
+		determineSortParameters(req, "titleAZ");
 	}
 	
 
@@ -169,13 +173,21 @@ public class HuddleUtils {
 	 * Get the sort type and rpp from cookies and assign them to the request
 	 * @param req
 	 */
-	public static void setSearchParameters(SMTServletRequest req, String defaultSort) {
+	public static void determineSortParameters(SMTServletRequest req, String defaultSort) {
 		if (req.getCookie(HuddleUtils.RPP_COOKIE) != null)
 			req.setParameter("rpp", req.getCookie(HuddleUtils.RPP_COOKIE).getValue());
 
 		Cookie sortCook = req.getCookie(HuddleUtils.SORT_COOKIE);
 		String sort = (sortCook != null) ? sortCook.getValue() : defaultSort;
+		
+		setSearchParameters(req, sort);
+	}
 
+	
+	/**
+	 * Set the sort field and direction.
+	 */
+	public static void setSearchParameters(SMTServletRequest req, String sort) {
 		if ("recentlyAdded".equals(sort)) {
 			req.setParameter("fieldSort", SearchDocumentHandler.UPDATE_DATE, true);
 			req.setParameter("sortDirection", ORDER.desc.toString(), true);
@@ -186,6 +198,5 @@ public class HuddleUtils {
 			req.setParameter("fieldSort", SearchDocumentHandler.TITLE_LCASE, true);
 			req.setParameter("sortDirection", ORDER.asc.toString(), true);
 		}
-		
 	}
 }

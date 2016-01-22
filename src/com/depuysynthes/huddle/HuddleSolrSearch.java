@@ -44,9 +44,15 @@ public class HuddleSolrSearch  extends SimpleActionAdapter {
 		req.setParameter("fmid", mod.getPageModuleId());
 		String solrActionId = StringUtil.checkVal(mod.getAttribute(SBModuleVO.ATTRIBUTE_1));
 		actionInit.setActionId(solrActionId);
-
-		if (req.hasParameter("searchData"))
-			HuddleUtils.setSearchParameters(req);
+		
+		if (req.hasParameter("section")) {
+			log.debug("bq|"+HuddleUtils.SOLR_OPCO_FIELD+":"+req.getParameter("section"));
+			req.setParameter("customParam", "bq|"+HuddleUtils.SOLR_OPCO_FIELD+":"+req.getParameter("section"));
+		}
+		
+		HuddleUtils.setSearchParameters(req, req.getParameter("siteSort"));
+		log.debug(req.getParameter("fieldSort"));
+		log.debug(req.getParameter("sortDirection"));
 		
 		SMTActionInterface sai = new SolrAction(actionInit);
 		sai.setAttributes(attributes);

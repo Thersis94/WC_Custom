@@ -263,38 +263,56 @@ public class HuddleProductAction extends SimpleActionAdapter {
 
 		// Only add filters if this is the main portlet on the page.
 		if (mainCol) {
-
-			// Called on the category page of the site.
-			// Turns the category parameter into a hierarchy fq
-			if (req.hasParameter("category") && !req.hasParameter("fq")) {
-				String category = req.getParameter("category");
-				req.setParameter("fq", SearchDocumentHandler.HIERARCHY + ":" + StringUtil.capitalizePhrase(category, 0, " -"));
-			}
-
-			// Called on the specialty page of the site.
-			// Turns the speciality parameter into an opco fq. 
-			if (req.hasParameter("specialty")) {
-				req.setParameter("fq", HuddleUtils.SOLR_OPCO_FIELD + ":" + req.getParameter("specialty"));
-			}
-
-			// Called on the speciality home pages of the site.
-			// Uses the last section of the request uri to determine the 
-			// speciality of the page that the portlet is on and make an opco fq
-			if (!req.hasParameter("fq")) {
-				String uri = req.getRequestURI().substring(req.getRequestURI().lastIndexOf("/")+1).replace('-', ' ');
-				req.setParameter("fq", HuddleUtils.SOLR_OPCO_FIELD + ":" + StringUtil.capitalizePhrase(uri, 0, " -"));
-				// This scenario ignores the user's sort preference to show new products 
-				// on the home page.  Sort by recentlyAdded first
-				HuddleUtils.setSearchParameters(req, "recentlyAdded");
-			} else {
-				HuddleUtils.setSearchParameters(req);
-			}
-			
+			prepareFilterQueries(req);
 		}
 
 		SMTActionInterface sai = new SolrAction(actionInit);
 		sai.setAttributes(attributes);
 		sai.setDBConnection(dbConn);
 		sai.retrieve(req);
+	}
+
+	
+	/**
+	 * Prepare the filter queries for solr
+	 */
+	private void prepareFilterQueries(SMTServletRequest req) {
+
+		String category = null;
+		// Initial page loads coming from a home page can contain incorrect categories
+		// this ensures that all category parameters have proper formatting.
+		if (req.hasParameter("category")) {
+			category = StringUtil.capitalizePhrase(req.getParameter("category"), 0, " -");
+			req.setParameter("category", category);
+		}
+		
+		// Called on the category page of the site.
+		// Turns the category parameter into a hierarchy fq
+		if (category != null && !req.hasParameter("fq")) {
+			// Since the category can be set via data from the page alias we need
+			// to ensure it has the proper capitalization and structure here
+			req.setParameter("fq", SearchDocumentHandler.HIERARCHY + ":" + category);
+			req.setParameter("category", category);
+		}
+
+		// Called on the specialty page of the site.
+		// Turns the speciality parameter into an opco fq. 
+		if (req.hasParameter("specialty")) {
+			req.setParameter("fq", HuddleUtils.SOLR_OPCO_FIELD + ":" + req.getParameter("specialty"));
+		}
+
+		// Called on the speciality home pages of the site.
+		// Uses the last section of the request uri to determine the 
+		// speciality of the page that the portlet is on and make an opco fq
+		if (!req.hasParameter("fq")) {
+			String uri = req.getRequestURI().substring(req.getRequestURI().lastIndexOf("/")+1).replace('-', ' ');
+			req.setParameter("fq", HuddleUtils.SOLR_OPCO_FIELD + ":" + StringUtil.capitalizePhrase(uri, 0, " -"));
+			// This scenario ignores the user's sort preference to show new products 
+			// on the home page.  Sort by recentlyAdded first
+			HuddleUtils.determineSortParameters(req, "recentlyAdded");
+		} else {
+			HuddleUtils.determineSortParameters(req);
+		}
+		
 	}
 }

@@ -88,7 +88,6 @@ public class HTMLSolrFiltersBean {
 	 */
 	public static String getHierarchyFilterSimple(Node rootNode, String filterNm, String onclick, StringBuilder sb, boolean invertColor) {
 		if (rootNode == null) return "";
-		
 		for (Node n : rootNode.getChildren()) {
 			if ((Long)n.getUserObject() == 0) continue;
 			
@@ -99,7 +98,7 @@ public class HTMLSolrFiltersBean {
 			sb.append("<div class='collapse-panel-header'>");
 			if (n.getNumberChildren() > 0) {
 				sb.append("<a class=\"caret_wrap collapsed\"");
-				sb.append("data-toggle='collapse' href='#");
+				sb.append(" data-toggle='collapse' href='#");
 				sb.append(n.getNodeId().replace("~", "-").replace(" ", "-"));
 				sb.append("' aria-expanded='false' aria-controls='");
 				sb.append(n.getNodeId().replace("~", "-").replace(" ", "-"));
@@ -109,7 +108,8 @@ public class HTMLSolrFiltersBean {
 			}
 			sb.append("<input type=\"checkbox\" class=\"parChkbx\" id=\"filter_simple_").append(uuid);
 			sb.append("\" data-filter-nm=\"").append(filterNm).append("\" value=\"");
-			sb.append(n.getNodeId()).append("\" onclick=\"").append(onclick).append("\">");
+			sb.append(n.getNodeId()).append("\" onclick=\"").append(onclick);
+			sb.append("\" data-search-name=\"").append(StringUtil.removeNonAlpha((n.getNodeId()))).append("\">");
 			sb.append("<label class=\"checkbox\" for=\"filter_simple_").append(uuid).append("\">");
 			sb.append(n.getNodeName()).append("</label>");
 			sb.append("</div>");
@@ -156,7 +156,8 @@ public class HTMLSolrFiltersBean {
 			sb.append("<span class=\"count\">").append(n.getUserObject()).append("</span>");
 			sb.append("<input type=\"checkbox\" class=\"parChkbx\" id=\"filter_simple_").append(uuid);
 			sb.append("\" data-filter-nm=\"").append(filterNm).append("\" value=\"");
-			sb.append(n.getNodeId()).append("\" onclick=\"").append(onclick).append("\">");
+			sb.append(n.getNodeId()).append("\" onclick=\"").append(onclick);
+			sb.append("\" data-search-name=\"").append(StringUtil.removeNonAlpha(n.getNodeId())).append("\">");
 			sb.append("<label class=\"checkbox\" for=\"filter_simple_").append(uuid).append("\">");
 			sb.append(n.getNodeName()).append("</label>");
 			sb.append("</li>");
