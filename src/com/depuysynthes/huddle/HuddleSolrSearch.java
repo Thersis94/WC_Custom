@@ -60,4 +60,5 @@ public class HuddleSolrSearch  extends SimpleActionAdapter {
 		sai.retrieve(req);
 		
 	}
+	
 }
