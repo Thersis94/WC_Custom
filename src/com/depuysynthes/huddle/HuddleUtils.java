@@ -156,7 +156,7 @@ public class HuddleUtils {
 	
 	
 	public static void determineSortParameters(SMTServletRequest req) {
-		setSearchParameters(req, "titleAZ");
+		determineSortParameters(req, "titleAZ");
 	}
 	
 
