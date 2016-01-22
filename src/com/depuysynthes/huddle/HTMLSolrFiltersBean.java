@@ -123,7 +123,7 @@ public class HTMLSolrFiltersBean {
 				if (isLeaf) {
 					sb.append("<div id='").append(n.getNodeId().replace("~", "-").replace(" ", "-"));
 					sb.append("' class='collapse-panel-body collapse' aria-expanded='true'>");
-					getHierarchyLeaf(n, filterNm, onclick, sb);
+					getHierarchyLeaf(n, filterNm, onclick, sb, invertColor);
 					sb.append("</div>");
 				} else {
 					sb.append("<div id='").append(n.getNodeId().replace("~", "-").replace(" ", "-"));
@@ -147,8 +147,10 @@ public class HTMLSolrFiltersBean {
 	 * @param onclick
 	 * @param sb
 	 */
-	private static void getHierarchyLeaf(Node rootNode, String filterNm, String onclick, StringBuilder sb) {
-		sb.append("<ul class='list-unstyled sub-filters'>");
+	private static void getHierarchyLeaf(Node rootNode, String filterNm, String onclick, StringBuilder sb, boolean invertColor) {
+		sb.append("<ul class='list-unstyled sub-filters");
+		if (invertColor)sb.append(" invert");
+		sb.append("'>");
 		for (Node n : rootNode.getChildren()) {
 			if ((Long)n.getUserObject() == 0) continue;
 			String uuid = RandomAlphaNumeric.generateRandom(5);
