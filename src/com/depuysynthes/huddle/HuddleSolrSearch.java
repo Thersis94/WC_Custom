@@ -58,7 +58,6 @@ public class HuddleSolrSearch  extends SimpleActionAdapter {
 		sai.setAttributes(attributes);
 		sai.setDBConnection(dbConn);
 		sai.retrieve(req);
-		
 	}
-	
+
 }
