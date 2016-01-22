@@ -1,6 +1,6 @@
 package com.depuysynthes.huddle.solr;
 
-//JDK 1.6.x
+//JDK 1.7
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -8,19 +8,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-
-
-
-//log4j 1.2-15
+//Solr libs
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 
-
-
-
-//SMT Base Libs
-import com.depuysynthes.action.ProductCatalogUtil;
-import com.depuysynthes.lucene.data.ProductCatalogSolrDocumentVO;
-import com.siliconmtn.action.ActionException;
+// WC libs
 import com.siliconmtn.commerce.catalog.ProductAttributeContainer;
 import com.siliconmtn.commerce.catalog.ProductAttributeVO;
 import com.siliconmtn.commerce.catalog.ProductCategoryVO;
@@ -30,13 +21,18 @@ import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.pool.SMTDBConnection;
 
 //WC Libs
-import com.smt.sitebuilder.action.tools.StatVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SMTAbstractIndex;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.security.SecurityController;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
+
+// WC Custom libs
+import com.depuysynthes.action.ProductCatalogUtil;
+import com.depuysynthes.huddle.HuddleUtils;
+import com.depuysynthes.lucene.data.ProductCatalogSolrDocumentVO;
+
 
 /****************************************************************************
 * <b>Title</b>: HuddleProductCatalogSolrIndex.java <p/>
@@ -58,8 +54,9 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 	 * Index type for this index.  This value is stored in the INDEX_TYPE field
 	 */
 	public static final String INDEX_TYPE = "PRODUCT";
-	protected static final String SOLR_DOC_CLASS = ProductCatalogSolrDocumentVO.class.getName();
-	private static final String CATALOG_ID = "c0a80241f53aa254e2a226f075d993a7";
+	
+	private Map<String, ProductCatalogSolrDocumentVO> products = new HashMap<>(1500);
+	private Map<Integer, String> hierarchy = new HashMap<>();
 
 	/**
 	 * @param config
@@ -73,8 +70,8 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 	 */
 	@Override
 	public void addIndexItems(HttpSolrServer server) {
-		log.info("Indexing DePuySynthes Huddle Products");
-		indexProducts(server, SOLR_DOC_CLASS, 50, INDEX_TYPE);
+		log.info("Indexing DSHuddle Products");
+		indexProducts(server);
 	}
 
 
@@ -84,133 +81,160 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 	 * @param server
 	 */
 	@SuppressWarnings("unchecked")
-	protected void indexProducts(HttpSolrServer server, String solrDocClass, int dsOrderNo, String moduleType) {
-		List<Node> nodes = getProductData(CATALOG_ID);
-		log.info("Found " + nodes.size() + " nodes to index for " + CATALOG_ID + ".");
-
-		SolrActionUtil solrUtil = new SolrActionUtil(server);
-		ProductCatalogSolrDocumentVO solrDoc = null;
-		List<String> hierarchy = null;
-		Map<String, ProductCatalogSolrDocumentVO> docs = new HashMap<>();
-		for (Node n : nodes) {
-			ProductCategoryVO vo = (ProductCategoryVO)n.getUserObject();
-			
-			
-			// Build the product Hierarchy
-			if (n.getDepthLevel() == 1) {
-				hierarchy = new ArrayList<>();
-				hierarchy.add(vo.getCategoryName());
-			} else {
-				if (hierarchy.size() > n.getDepthLevel()-2) {
-					for (int i = hierarchy.size()-1; i>=n.getDepthLevel()-2;i--) {
-						hierarchy.remove(i);
-					}
-				}
-				hierarchy.add(vo.getCategoryName());
-			}
-			
-			if (vo.getProducts() == null || vo.getProducts().size() == 0) continue;
-			
-			// Remove the product from the hierarchy list.
-			hierarchy.remove(hierarchy.size()-1);
-			
-			// The only VOs that do not have a parent code are the root node
-			// and products that have no categories assigned to them.
-			// In both cases they will never show up on the site and by this
-			// point have done their job maintaining the hierarchy structure
-			if (vo.getParentCode() == null) continue;
-			
-			for (ProductVO pVo : vo.getProducts()) {
-				try {
-					// If this product has already been added just add a new hierarchy
-					// to show its latest category path.
-					if (docs.containsKey(pVo.getProductId())) {
-						docs.get(pVo.getProductId()).addHierarchies(buildHierarchy(hierarchy));
-					} else {
-						solrDoc = new ProductCatalogSolrDocumentVO(INDEX_TYPE);
-						solrDoc.setDocumentId(pVo.getProductId());
-						solrDoc.setTitle(pVo.getTitle());
-						solrDoc.setSummary(pVo.getDescText());
-						solrDoc.setDetailImage(pVo.getImage());
-						solrDoc.setDocumentUrl(pVo.getUrlAlias());
-						solrDoc.addOrganization(organizationId);
-						solrDoc.setModule(moduleType);
-						solrDoc.setSpecialty(hierarchy.get(0));
-						solrDoc.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
-						ProductAttributeContainer attrContainer = pVo.getAttributes();
-						if (attrContainer != null) {
-							// Loop over all attributes and add them to the
-							// custom field map on the solr document
-							for (Node attrNode : attrContainer.getAllAttributes()) {
-								if (attrNode.getUserObject() == null) continue;
-								ProductAttributeVO attr = (ProductAttributeVO)attrNode.getUserObject();
-								
-								// This attribute has nothing we need and can be skipped.
-								if (attr.getValueText() == null) continue;
-								
-								// All attributes go into lists with keys made from the attribute name
-								// and prefixed by the attribute type so that classes parsing those
-								// attributes know what kind of data is being worked with.
-								List<String> values = (List<String>) solrDoc.getAttribute(attr.getAttributeType() + "_" + attr.getAttributeName());
-								if (values == null) values = new ArrayList<>();
-
-								values.add(attr.getValueText());
-								solrDoc.addAttribute(attr.getAttributeType() + "_" + attr.getAttributeName(), values);
-							}
-						}
-						
-						
-						docs.put(pVo.getProductId(), solrDoc);
-					}
-					
-				} catch (Exception e) {
-					log.error("Failed to build product " + pVo.getProductId(), e);
-				}
-			}
+	protected void indexProducts(HttpSolrServer server) {
+		log.info("Indexing products in " + HuddleUtils.CATALOG_ID);
+		Tree tree = getProductData(HuddleUtils.CATALOG_ID);
+		
+		//begin iterating the category tree; this call is recursive and will iterate the entire tree sequentially
+		for (Node child : tree.getRootNode().getChildren()) {
+			loopNode(child);
 		}
-		for (String key : docs.keySet()) {
-			try {
-				solrUtil.addDocument(docs.get(key));
-			} catch (ActionException e) {
-				log.warn("Unable to add product: " + docs.get(key).getDocumentId());
-			}
+		
+		//verify we have something to index
+		if (products == null || products.size() == 0) return;
+		
+		//push the list to Solr all at once
+		try {
+			SolrActionUtil solrUtil = new SolrActionUtil(server);
+			solrUtil.addDocuments(products.values());
+		} catch (Exception e) {
+			log.error("Unable to index products", e);
 		}
 	}
-
-
+	
+	
 	/**
-	 * Turn the list of categories into a descending
-	 * ancestory of the current category.
-	 * @param hierarchy
-	 * @return
+	 * recursive method that walks the Product Tree from a certain level (down)
+	 * @param n
 	 */
-	private String buildHierarchy(List<String> hierarchy) {
-		if (hierarchy == null) return "";
-		StringBuilder fullHierarchy = new StringBuilder(100);
-		for (String s : hierarchy) {
-			fullHierarchy.append(s).append(SearchDocumentHandler.HIERARCHY_DELIMITER);
+	private void loopNode(Node par) {
+		//add this level to the hierarchy tree
+		log.debug("adding hierarchy: " + par.getDepthLevel() + "=" + par.getNodeName());
+		hierarchy.put(Integer.valueOf(par.getDepthLevel()), par.getNodeName());
+		
+		for (Node child : par.getChildren()) {
+			ProductCategoryVO vo = (ProductCategoryVO)child.getUserObject();
+			if (vo.getProductId() != null) {
+				//index this product
+				indexProduct(vo, child.getDepthLevel() -1); //ignore the depth of the product
+			} else {
+				//dig a level deeper
+				loopNode(child);
+			}
 		}
-		return fullHierarchy.substring(0, fullHierarchy.length()-1);
 	}
+	
+	
+	/**
+	 * creates a SolrDocumentVO from the passed ProductCategoryVO,
+	 * then adds the hierarchy or opco_ss to it based on the pre-built hierarchy.
+	 * @param vo
+	 * @param depth
+	 */
+	private void indexProduct(ProductCategoryVO vo, int depth) {
+		for (ProductVO pVo : vo.getProducts()) { //these are actually 1:1, but we'll iterate the loop anyways
+				
+			ProductCatalogSolrDocumentVO solrDoc = products.get(vo.getProductId());
+			if (solrDoc == null) {
+				solrDoc = new ProductCatalogSolrDocumentVO(INDEX_TYPE);
+				solrDoc.setDocumentId(pVo.getProductId());
+				solrDoc.setTitle(pVo.getTitle());
+				solrDoc.setSummary(pVo.getDescText());
+				solrDoc.setDetailImage(pVo.getImage());
+				solrDoc.setDocumentUrl(pVo.getUrlAlias());
+				solrDoc.addOrganization(organizationId);
+				solrDoc.setModule(INDEX_TYPE);
+				solrDoc.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
+				attachProductCategories(solrDoc, depth);
+				addProductAttributes(solrDoc, pVo);
+			}
+
+			//add a new hierarchy to this product; its either Specialty or Category (we only support two)
+			attachProductCategories(solrDoc, depth);
+			products.put(pVo.getProductId(), solrDoc);
+			log.info("added product " + solrDoc.getTitle());
+		}
+	}
+	
+	
+	/**
+	 * Turns the recursively built hierarchy into either Specialty (opco_ss) 
+	 * or Category (hierarchy) on the SolrDoc
+	 * @param solrDoc
+	 * @param depth
+	 */
+	private void attachProductCategories(ProductCatalogSolrDocumentVO solrDoc, int depth) {
+		//verify we have quality data to parse
+		if (hierarchy == null || hierarchy.size() < depth) return;
+		
+		//determine if this is a Speciaty or Category tree; they get added to the document differently
+		if ("Specialties".equalsIgnoreCase(hierarchy.get(Integer.valueOf(1)))) { //level 1 of category tree
+			solrDoc.setSpecialty(hierarchy.get(depth));
+			log.debug("set specialty= " + hierarchy.get(depth));
+		} else {
+			StringBuilder sb = new StringBuilder(100);
+			for (int x=2; x <= depth; x++) { //level 2 here is the 1st level BELOW "Categories"
+				String lvl = hierarchy.get(Integer.valueOf(x));
+				sb.append(lvl);
+				if (x < depth) sb.append(SearchDocumentHandler.HIERARCHY_DELIMITER);
+			}
+			log.debug("set hierarchy= " + sb);
+			solrDoc.addHierarchies(sb.toString());
+		}
+	}
+	
+	
+	/**
+	 * loops and adds the product attributes to the Solr record
+	 * @param solrDoc
+	 * @param pVo
+	 */
+	private void addProductAttributes(ProductCatalogSolrDocumentVO solrDoc, ProductVO pVo) {
+		ProductAttributeContainer attrContainer = pVo.getAttributes();
+		if (attrContainer == null) return;
+		
+		// Loop over all attributes and add them to the
+		// custom field map on the solr document
+		for (Node attrNode : attrContainer.getAllAttributes()) {
+			if (attrNode.getUserObject() == null) continue;
+			ProductAttributeVO attr = (ProductAttributeVO)attrNode.getUserObject();
+			
+			// This attribute has nothing we need and can be skipped.
+			if (attr.getValueText() == null) continue;
+			
+			// All attributes go into lists with keys made from the attribute name
+			// and prefixed by the attribute type so that classes parsing those
+			// attributes know what kind of data is being worked with.
+			String fieldNm = attr.getAttributeType() + "_" + attr.getAttributeName();
+			@SuppressWarnings("unchecked")
+			List<String> values = (List<String>) solrDoc.getAttribute(fieldNm);
+			if (values == null) values = new ArrayList<>();
+			
+			//TODO if this is a Mediabin field,
+			//turn the value back into a JSON object and index the mediabinAssetIds only
+
+			values.add(attr.getValueText());
+			solrDoc.addAttribute(fieldNm, values);
+		}
+	}
+	
 
 	/**
 	 * load the entire product catalog in the same way the public sites would.
 	 * leverage the Util class to traverse and assign pageUrls for us.
 	 * @param orgId
 	 */
-	private List<Node> getProductData(String catalogId) {
+	private Tree getProductData(String catalogId) {
+		log.debug("loading product for catalogId=" + catalogId);
 		ProductCatalogUtil util = new ProductCatalogUtil();
 		util.setDBConnection(new SMTDBConnection(dbConn));
 		Map<String, Object> attribs = new HashMap<String, Object>();
 		attribs.put(Constants.MODULE_DATA, new ModuleVO());
 		attribs.put(Constants.QS_PATH, config.get(Constants.QS_PATH));
 		util.setAttributes(attribs);
-		log.debug("loading product for catalogId=" + catalogId);
-		Tree t = util.loadCatalog(catalogId, null, true, null);
-
-		//let the util assign page URLs for us
-		return util.assignPageviewsToCatalogUsingDivision(t.preorderList(), new HashMap<String, StatVO>(), "/hcp/", (catalogId.startsWith("DS_PRODUCTS")), true);
+		return util.loadCatalog(catalogId, null, true, null);
 	}
+	
 
 	@Override
 	public void purgeIndexItems(HttpSolrServer server) throws IOException {
