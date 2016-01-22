@@ -75,8 +75,6 @@ public class EventCalendarAction extends CourseCalendar {
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
-		// Save the current filter queries for later
-		String[] fq = req.getParameterValues("fq");
 
 		Cookie rppCook = req.getCookie(HuddleUtils.RPP_COOKIE);
 		if (rppCook != null)
@@ -110,9 +108,7 @@ public class EventCalendarAction extends CourseCalendar {
 		sa.setDBConnection(dbConn);
 		sa.retrieve(req);
 
-		// Revert changes made to the request object.
 		req.setParameter("fmid","");
-		req.setParameter("fq", fq, true);
 	}
 
 

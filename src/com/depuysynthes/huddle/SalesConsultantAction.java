@@ -60,8 +60,6 @@ public class SalesConsultantAction extends SimpleActionAdapter {
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
-		// Save the current filter queries for later
-		String[] fq = req.getParameterValues("fq");
 
 		//change sort order to DESC if the results are sorted that way.  Otherwise the default is correct
 		Cookie sort = req.getCookie(HuddleUtils.SORT_COOKIE);
@@ -87,9 +85,6 @@ public class SalesConsultantAction extends SimpleActionAdapter {
 		sa.setAttributes(getAttributes());
 		sa.setDBConnection(dbConn);
 		sa.retrieve(req);
-		
-		// Revert changes made to the request object
-		req.setParameter("fq", fq, true);
 	}
 
 

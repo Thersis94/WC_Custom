@@ -69,7 +69,6 @@ public class HuddleProductAction extends SimpleActionAdapter {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		String param1 = req.getParameter("reqParam_1");
 		String searchData = req.getParameter("searchData");
-		String[] fq = req.getParameterValues("fq");
 		
 		// Data searches will never run through here, so ignore any search
 		// data that is on the request.
@@ -87,9 +86,8 @@ public class HuddleProductAction extends SimpleActionAdapter {
 				req.setParameter("reqParam_1", param1, true);
 		}
 		
-		// Revert any data that was changed on the request object.
-		req.setParameter("searchData", searchData, true);
-		req.setParameter("fq", fq, true);
+		// Put the searchData back
+		req.setParameter("searchData", searchData);
 	}
 
 
@@ -258,13 +256,13 @@ public class HuddleProductAction extends SimpleActionAdapter {
 	 */
 	private void listSearch(SMTServletRequest req, boolean mainCol) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
-		req.setParameter("fmid", mod.getPageModuleId());
 
 		String solrActionId = StringUtil.checkVal(mod.getAttribute(SBModuleVO.ATTRIBUTE_1));
 		actionInit.setActionId(solrActionId);
 
 		// Only add filters if this is the main portlet on the page.
 		if (mainCol) {
+			req.setParameter("fmid", mod.getPageModuleId());
 			prepareFilterQueries(req);
 		}
 
