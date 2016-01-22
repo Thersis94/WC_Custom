@@ -69,6 +69,7 @@ public class HuddleProductAction extends SimpleActionAdapter {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		String param1 = req.getParameter("reqParam_1");
 		String searchData = req.getParameter("searchData");
+		String[] fq = req.getParameterValues("fq");
 		
 		// Data searches will never run through here, so ignore any search
 		// data that is on the request.
@@ -86,8 +87,9 @@ public class HuddleProductAction extends SimpleActionAdapter {
 				req.setParameter("reqParam_1", param1, true);
 		}
 		
-		// Put the searchData back
-		req.setParameter("searchData", searchData);
+		// Revert any data that was changed on the request object.
+		req.setParameter("searchData", searchData, true);
+		req.setParameter("fq", fq, true);
 	}
 
 
