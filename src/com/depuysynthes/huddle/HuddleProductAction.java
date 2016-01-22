@@ -256,13 +256,13 @@ public class HuddleProductAction extends SimpleActionAdapter {
 	 */
 	private void listSearch(SMTServletRequest req, boolean mainCol) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
-		req.setParameter("fmid", mod.getPageModuleId());
 
 		String solrActionId = StringUtil.checkVal(mod.getAttribute(SBModuleVO.ATTRIBUTE_1));
 		actionInit.setActionId(solrActionId);
 
 		// Only add filters if this is the main portlet on the page.
 		if (mainCol) {
+			req.setParameter("fmid", mod.getPageModuleId());
 			prepareFilterQueries(req);
 		}
 
