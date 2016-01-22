@@ -58,6 +58,16 @@ public class HuddleSolrSearch  extends SimpleActionAdapter {
 		sai.setAttributes(attributes);
 		sai.setDBConnection(dbConn);
 		sai.retrieve(req);
+		
+	}
+	
+	public void build(SMTServletRequest req) throws ActionException {
+		StringBuilder redirect = new StringBuilder(150);
+		
+		redirect.append("/search?searchData=").append(req.getParameter("searchData"));
+		redirect.append("&section=").append(req.getParameter("section"));
+		req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
+		req.setAttribute(Constants.REDIRECT_URL, redirect.toString());
 	}
 
 }
