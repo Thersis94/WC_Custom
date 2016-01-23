@@ -1,17 +1,30 @@
 package com.depuysynthes.huddle;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import javax.servlet.http.Cookie;
 
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
 
+import ucar.unidata.util.StringUtil;
+
+import com.siliconmtn.commerce.catalog.ProductAttributeVO;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 
 /****************************************************************************
- * <b>Title</b>: HuddleConstants.java<p/>
- * <b>Description: Constants for DS Huddle.  Commonly database pkIds that will never change.</b> 
+ * <b>Title</b>: HuddleUtils.java<p/>
+ * <b>Description: Utility methods and constants for DS Huddle.  
+ * Commonly database pkIds and Solr constants that will rarely change.</b> 
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2015<p/>
  * <b>Company:</b> Silicon Mountain Technologies<p/>
@@ -26,10 +39,11 @@ public class HuddleUtils {
 	public static final String productCatalogId = "DS_HUDDLE";
 	
 	/** Solr field names of product attributes **/
-	public static final String PROD_ATTR_IMG_PREFIX = "image_";
-	public static final String PROD_ATTR_MB_PREFIX = "mediabin_";
+	public static final String PROD_ATTR_PREFIX = "huddle_";
 
+	//product attribute types - come from the PRODUCT_ATTRIBUTE_TYPE database table
 	public static final String PROD_ATTR_IMG_TYPE = "IMAGE";
+	public static final String PROD_ATTR_HTML_TYPE = "HTML";
 	public static final String PROD_ATTR_MB_TYPE = "MEDIABIN";
 	
 	/** registration (user account) fields **/
@@ -50,6 +64,7 @@ public class HuddleUtils {
 	public static final int DEFAULT_RPP_INT = 12;
 	public static final String DEFAULT_RPP = "" + DEFAULT_RPP_INT; //set as String, the same way we'd get it from the Browser/Cookie
 	public static final String PROD_SHARE_COOKIE = "huddle-share-products";
+	public static final String GRID_VIEW_COOKIE = "huddleGridView";
 
 	//product catalog constants
 	public static final String CATALOG_ID = "DS_HUDDLE";
@@ -58,15 +73,72 @@ public class HuddleUtils {
 	
 	//solr fields
 	public static final String SOLR_OPCO_FIELD = "opco_ss";
+	public static final String SOLR_IMAGE_FIELD = "huddle_1|image|images_ss";
 	public static final String SOLR_SALES_CONSULTANT_IDX_TYPE = "HUDDLE_CONSULTANTS";
 	protected static final String SOLR_PROD_CONTACT_IDX_TYPE = "HUDDLE_PRODUCT_CONTACT";
-	protected static final String[] SOLR_PROD_ATTR_FIELD_ARR = {
-		"mediabin_system_information_ss",
-		"mediabin_selling_tips_ss ",
-		"mediabin_value_ss",
-		"mediabin_competition_ss",
-		"mediabin_clinical_ss"
-	};
+	private static String[] solrProdAttributeFields = null;
+	/**
+	 * leverage a method to evaluate whether we've already obtained the product attributes
+	 * and stored them statically, or if we need to query the DB and load them up.
+	 * @param dbConn
+	 * @param orgId
+	 * @return
+	 */
+	public static final String[] getProductAttributeSolrFields(SMTDBConnection dbConn, String orgId) {
+		//leverage a static variable so we can store this fairly stable piece of data in memory and not have to query the DB every time
+		if (solrProdAttributeFields == null) {
+			Set<String> data = new HashSet<>();
+			for (ProductAttributeVO vo: loadProductAttributes(dbConn, orgId))
+				data.add(makeSolrNmFromProdAttrNm(vo.getDisplayOrderNo(), vo.getAttributeName(), vo.getAttributeType()));
+			
+			solrProdAttributeFields = data.toArray(new String[data.size()]);
+		}
+			
+		
+		return solrProdAttributeFields;
+	}
+	
+	
+	/**
+	 * loads the sort order of the attributes since we could not get this accurately from the ProductAttributeController
+	 */
+	public static List<ProductAttributeVO> loadProductAttributes(SMTDBConnection dbConn, String orgId) {
+		List<ProductAttributeVO> data = new ArrayList<>();
+		String sql = "select attribute_id, attribute_nm, type_nm, display_order_no " +
+				"from PRODUCT_ATTRIBUTE where organization_id=? and active_flg=1 and attribute_group_id is null";
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			ps.setString(1, orgId);
+			ResultSet rs = ps.executeQuery();
+			while (rs.next())
+				data.add(new ProductAttributeVO(rs));
+		} catch (SQLException sqle) { }
+		
+		return data;
+	}
+	
+
+	//solrize (for indexing)
+	public static String makeSolrNmFromProdAttrNm(int order, String nm, String type) {
+		return (PROD_ATTR_PREFIX + order + "|" +type +"|" + StringUtil.replace(nm, " ", "_")).toLowerCase();
+	}
+	//desolrize (for display)
+	public static String makeProdAttrNmFromSolrNm(String nm) {
+		nm = nm.toLowerCase();
+		if (nm.endsWith("_ss")) 
+			nm = nm.substring(0, nm.lastIndexOf("_ss")); //prune-off Solr's suffix
+		
+		nm = nm.substring(nm.lastIndexOf("|")+1);
+		return StringUtil.replace(nm,"_"," ");
+	}
+	public static String makeProdAttrTypeFromSolrNm(String nm) {
+		nm = nm.substring(nm.indexOf("|")+1); //removes the prefix and the <order>|
+		return nm.substring(0, nm.indexOf("|"));
+	}
+	public static Integer makeProdAttrOrderFromSolrNm(String nm) {
+		nm = nm.substring(0, nm.indexOf("|")+1); //removes the prefix and the <order>|
+		return Convert.formatInteger(StringUtil.replace(nm,PROD_ATTR_PREFIX,""));
+	}
+	
 	
 	/**
 	 * the number of days to subtract from an event to designate when Registration opens
