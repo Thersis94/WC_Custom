@@ -16,6 +16,7 @@ import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.action.search.SolrFieldVO.BooleanType;
 import com.smt.sitebuilder.action.search.SolrFieldVO.FieldType;
 import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 
@@ -52,12 +53,16 @@ public class ProductAssetAction extends SimpleActionAdapter {
 		UserRoleVO role = (UserRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
 		String documentId = StringUtil.checkVal(req.getParameter("reqParam_1"));
 		
-		SolrDocument resp = querySolr(mod.getOrganizationId(), documentId, role.getRoleLevel(), false);
+		SolrDocument resp = querySolr(mod.getOrganizationId(), documentId, role.getRoleLevel(), false, null);
 		req.setAttribute("assetSolrDoc", resp);
 		
 		//don't bother with the product lookup if the asset is not there.
-		if (resp != null)
-			req.setAttribute("productSolrDoc", querySolr(mod.getOrganizationId(), documentId, role.getRoleLevel(), true));
+		if (resp != null) {
+			req.setAttribute("productSolrDoc", querySolr(mod.getOrganizationId(), documentId, role.getRoleLevel(), true, req.getParameter("reqParam_2")));
+			//overwrite the browser title
+			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+			page.setTitleName(resp.getFieldValue(SearchDocumentHandler.TITLE).toString());
+		}
 	}
 	
 
@@ -72,8 +77,8 @@ public class ProductAssetAction extends SimpleActionAdapter {
 	 * @param isProduct
 	 * @return
 	 */
-	private SolrDocument querySolr(String organizationId, String documentId, int roleLevel, boolean isProduct) {
-		SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, (String) attributes.get(Constants.SOLR_COLLECTION_NAME));
+	private SolrDocument querySolr(String organizationId, String documentId, int roleLevel, boolean isProduct, String productAlias) {
+		SolrQueryProcessor sqp = new SolrQueryProcessor(getAttributes(), getAttribute(Constants.SOLR_COLLECTION_NAME).toString());
 		SolrActionVO qData = new SolrActionVO();
 		
 		if (!isProduct) { //query for mediabin or CMS asset by documentId (solr primary key)
@@ -84,16 +89,25 @@ public class ProductAssetAction extends SimpleActionAdapter {
 			field.setValue(documentId);
 			qData.addSolrField(field);
 			
+		} else if (productAlias != null && productAlias.length() > 0) {
+			//query product using documentUrl provided
+			SolrFieldVO field = new SolrFieldVO();
+			field.setBooleanType(BooleanType.AND);
+			field.setFieldType(FieldType.SEARCH);
+			field.setFieldCode(SearchDocumentHandler.DOCUMENT_URL);
+			field.setValue(productAlias);
+			qData.addSolrField(field);
+			
 		} else {
-			//for product queries, we need to search for documentId across product attribute fields
+			//for product queries with no documentUrl passed, we need to search for documentId across product attribute fields
 			//this needs to use an eDisMax query
 			qData.setSearchData(documentId);
 			
 			//define the eDisMax fields we want to search across
-			for (String fieldNm : HuddleUtils.SOLR_PROD_ATTR_FIELD_ARR) {
+			for (String fieldNm : HuddleUtils.getProductAttributeSolrFields(dbConn, organizationId)) {
 				SolrFieldVO field = new SolrFieldVO();
 				field.setFieldType(FieldType.BOOST);
-				field.setFieldCode(fieldNm);
+				field.setFieldCode(fieldNm + "_ss"); //the _ss here gets appended by SolrActionUtil via annotations when we index.  That's why it's not coming out of HuddleUtils
 				qData.addSolrField(field);
 			}
 			
@@ -112,7 +126,7 @@ public class ProductAssetAction extends SimpleActionAdapter {
 		qData.setOrganizationId(organizationId);
 		SolrResponseVO resp = sqp.processQuery(qData);
 		
-		if (resp != null && resp.getTotalResponses() == 1) {
+		if (resp != null && resp.getResultDocuments().size() > 0) {
 			return resp.getResultDocuments().get(0);
 		} else {
 			return null;

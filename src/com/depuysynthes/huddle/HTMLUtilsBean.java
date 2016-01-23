@@ -24,6 +24,15 @@ public class HTMLUtilsBean {
 		return sb.toString();
 	}
 	
+	/**
+	 * overloaded.  In this case the page's URL will be picked up via 
+	 * javascript when the modal gets invoked.  Inclusive of queryString & hash
+	 * @return
+	 */
+	public static String getShareOn() {
+		return getShareOn("");
+	}
+	
 	
 	/**
 	 * renders the html for Event-to-calendar adding 

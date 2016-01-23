@@ -27,9 +27,9 @@ public class SolrBusinessRules {
 	private String sectionNm;
 	private String hierarchy;
 	private String thumbnailImg;
-	private SolrDocument sd;
+	protected SolrDocument sd;
 	private String moduleType;
-	private String qsPath = "";
+	protected String qsPath = "";
 	private boolean isSiteSearch;
 	
 	public SolrBusinessRules() {
