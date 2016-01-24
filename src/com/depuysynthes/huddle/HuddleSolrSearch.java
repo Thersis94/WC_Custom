@@ -56,16 +56,21 @@ public class HuddleSolrSearch  extends SimpleActionAdapter {
 		req.setParameter("fmid", mod.getPageModuleId());
 		String solrActionId = StringUtil.checkVal(mod.getAttribute(SBModuleVO.ATTRIBUTE_1));
 		actionInit.setActionId(solrActionId);
-		
-		//apply boosting
-		if (req.hasParameter("specialty")) {
-			req.setParameter("customParam", "bq|"+HuddleUtils.SOLR_OPCO_FIELD+":"+req.getParameter("specialty"));
-		} else if (req.hasParameter("category")) {
-			req.setParameter("customParam", "bq|"+SearchDocumentHandler.HIERARCHY_LCASE+":"+req.getParameter("category")+"*");
-		}
-		log.debug("boost=" + req.getParameter("customParam"));
-		
+
+		//apply sorting
 		HuddleUtils.setSearchParameters(req, req.getParameter("siteSort"));
+		
+		//apply section-based boosting if there is no sort order requested by the user
+		if (!req.hasParameter("siteSort")) {
+			if (req.hasParameter("specialty")) {
+				req.setParameter("customParam", "bq|"+HuddleUtils.SOLR_OPCO_FIELD+":"+req.getParameter("specialty"));
+			} else if (req.hasParameter("category")) {
+				req.setParameter("customParam", "bq|"+SearchDocumentHandler.HIERARCHY_LCASE+":"+req.getParameter("category")+"*");
+			}
+			log.debug("boost=" + req.getParameter("customParam"));
+		}
+		
+		
 		
 		SMTActionInterface sai = new SolrAction(actionInit);
 		sai.setAttributes(attributes);

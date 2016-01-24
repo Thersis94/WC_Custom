@@ -5,6 +5,7 @@ import java.util.Collection;
 import com.depuysynthes.huddle.solr.BlogSolrIndexer;
 import com.depuysynthes.huddle.solr.HuddleProductCatalogSolrIndex;
 import com.depuysynthes.lucene.MediaBinSolrIndex;
+import com.depuysynthes.lucene.MediaBinSolrIndex.MediaBinField;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 
@@ -58,9 +59,16 @@ public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 				return "/sales-consultants/" + super.getQsPath() + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
 	
 			case MediaBinSolrIndex.INDEX_TYPE:
-				//TODO anything but audio and video goes directly to the file
-				//TODO accept apps, need a solution there!
-				return "/asset/" + super.getQsPath() + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
+				String assetType = StringUtil.checkVal(sd.getFieldValue(MediaBinField.AssetType.getField())).toLowerCase();
+				switch (assetType) {
+					case "podcast":
+					case "video":
+						return "/asset/" + super.getQsPath() + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
+					
+						//TODO add app as a JS hook to check for the app on the device, if apple device
+						
+					//default case here slips through and returns the asset's documentUrl
+				}
 				
 			default:
 				return StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.DOCUMENT_URL));
