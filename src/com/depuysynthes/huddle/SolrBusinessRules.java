@@ -4,6 +4,7 @@ import java.util.Collection;
 
 import com.depuysynthes.huddle.HuddleUtils.IndexType;
 import com.depuysynthes.lucene.MediaBinSolrIndex.MediaBinField;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 
@@ -38,6 +39,22 @@ public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 		String trackingNo = super.getThumbnailImg();
 		if (trackingNo == null || trackingNo.length() < 3) return trackingNo;
 		return "/binary/org/DPY_SYN_HUDDLE/mediabin/" + trackingNo.substring(0, 3) + "/" + trackingNo + ".jpg";
+	}
+	
+	
+	/**
+	 * Loop through the roles assigned to the document 
+	 * and determine if it has the public role.
+	 * @return
+	 */
+	public boolean isInternal() {
+		System.out.println(sd.getFieldValues("role")+"|"+sd.getFieldValue("title"));
+		if (sd.getFieldValues("role") == null) return false;
+		for (Object o : sd.getFieldValues("role")) {
+			if (o == null) continue;
+			if ((int)o == 0) return false;
+		}
+		return true;
 	}
 	
 	
