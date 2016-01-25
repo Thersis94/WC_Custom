@@ -47,7 +47,7 @@ public class ContentReportAction extends SBActionAdapter {
 	
 	public void build(SMTServletRequest req) throws ActionException {
 		AbstractSBReportVO report = new ContentReportVO();
-		report.setData(getSolrDocuments());
+		report.setData(getSolrDocuments(req.getParameter("organizationId")));
 		report.setFileName(reportName);
 		req.setAttribute(Constants.BINARY_DOCUMENT, report);
 		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, true);
@@ -58,7 +58,7 @@ public class ContentReportAction extends SBActionAdapter {
 	 * Get all the products from solr
 	 * @return
 	 */
-	private List<SolrDocument> getSolrDocuments() {
+	private List<SolrDocument> getSolrDocuments(String organizationId) {
 		
 		SolrQueryProcessor sqp = new SolrQueryProcessor(getAttributes(), getAttribute(Constants.SOLR_COLLECTION_NAME).toString());
 		SolrActionVO qData = new SolrActionVO();
@@ -77,7 +77,7 @@ public class ContentReportAction extends SBActionAdapter {
 		qData.setStartLocation(0);
 		qData.setRoleLevel(SecurityController.PUBLIC_REGISTERED_LEVEL);
 		qData.setRoleLevel(SecurityController.PUBLIC_ROLE_LEVEL);
-		qData.setOrganizationId(HuddleUtils.ORGANIZATION_ID);
+		qData.setOrganizationId(organizationId);
 		SolrResponseVO resp = sqp.processQuery(qData);
 		
 		// If there are still products in solr go back to get whatever is left
