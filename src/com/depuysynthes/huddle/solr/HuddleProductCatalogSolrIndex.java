@@ -8,6 +8,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+
 //Solr libs
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 
@@ -49,14 +52,9 @@ import com.depuysynthes.lucene.data.ProductCatalogSolrDocumentVO;
 public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 
 	protected String organizationId = "DPY_SYN_HUDDLE";
-
-	/**
-	 * Index type for this index.  This value is stored in the INDEX_TYPE field
-	 */
-	public static final String INDEX_TYPE = "PRODUCT";
-	
 	private Map<String, ProductCatalogSolrDocumentVO> products = new HashMap<>(1500);
 	private Map<Integer, String> hierarchy = new HashMap<>();
+	private Map<String, Integer> sortOrder = new HashMap<>();
 
 	/**
 	 * @param config
@@ -71,6 +69,11 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 	@Override
 	public void addIndexItems(HttpSolrServer server) {
 		log.info("Indexing DSHuddle Products");
+		
+		//acertain the sequencing order of the attributes, so we can push that into the solr field names and onward to the views
+		for (ProductAttributeVO vo : HuddleUtils.loadProductAttributes(new SMTDBConnection(dbConn), organizationId))
+			sortOrder.put(vo.getAttributeId(), vo.getDisplayOrderNo());
+		
 		indexProducts(server);
 	}
 
@@ -136,14 +139,14 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 				
 			ProductCatalogSolrDocumentVO solrDoc = products.get(vo.getProductId());
 			if (solrDoc == null) {
-				solrDoc = new ProductCatalogSolrDocumentVO(INDEX_TYPE);
+				solrDoc = new ProductCatalogSolrDocumentVO(getIndexType());
 				solrDoc.setDocumentId(pVo.getProductId());
 				solrDoc.setTitle(pVo.getTitle());
 				solrDoc.setSummary(pVo.getDescText());
 				solrDoc.setDetailImage(pVo.getImage());
 				solrDoc.setDocumentUrl(pVo.getUrlAlias());
 				solrDoc.addOrganization(organizationId);
-				solrDoc.setModule(INDEX_TYPE);
+				//solrDoc.setModule(getIndexType()); unused
 				solrDoc.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
 				attachProductCategories(solrDoc, depth);
 				addProductAttributes(solrDoc, pVo);
@@ -202,18 +205,42 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 			// This attribute has nothing we need and can be skipped.
 			if (attr.getValueText() == null) continue;
 			
-			// All attributes go into lists with keys made from the attribute name
-			// and prefixed by the attribute type so that classes parsing those
-			// attributes know what kind of data is being worked with.
-			String fieldNm = attr.getAttributeType() + "_" + attr.getAttributeName();
+			
+			String fieldNm = HuddleUtils.makeSolrNmFromProdAttrNm(
+										sortOrder.get(attr.getAttributeId()), 
+										attr.getAttributeName(), 
+										attr.getAttributeType());
+			
+			//check if we've already picked up this attribute, so we don't clobber previously captured values
 			@SuppressWarnings("unchecked")
 			List<String> values = (List<String>) solrDoc.getAttribute(fieldNm);
 			if (values == null) values = new ArrayList<>();
 			
-			//TODO if this is a Mediabin field,
 			//turn the value back into a JSON object and index the mediabinAssetIds only
-
-			values.add(attr.getValueText());
+			/**
+			 * This JSON gets built in the JSP/browser.  Parse it into a JSONArray and iterate the IDs out for indexing
+			 * [
+			 * 	{"id":"0612-53-506","text":"GLOBAL AP® Cadaver Lab Demo DVD","type":"MEDIABIN"}
+			 * {"id":"DSUSJRC07140349","text":"Hips Gription Product Reel (W)","type":"MEDIABIN"}
+			 * {"id":"0612-35-509","text":"GLOBAL ENABLE® Surgical Video by Joseph Iannotti, PhD, MD","type":"MEDIABIN"}
+			 * ]
+			 */
+			switch (attr.getAttributeType()) {
+				case HuddleUtils.PROD_ATTR_MB_TYPE:
+					try {
+						JSONArray arr = JSONArray.fromObject(attr.getValueText());
+						for (int x=0; x < arr.size(); x++) {
+							values.add(((JSONObject)arr.get(x)).getString("id"));
+						}
+					} catch (Exception e) {
+						log.warn("could not add mediabin IDs to product attribute", e);
+					}
+					break;
+				default:
+					values.add(attr.getValueText());
+					break;
+			}
+			
 			solrDoc.addAttribute(fieldNm, values);
 		}
 	}
@@ -251,6 +278,6 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 
 	@Override
 	public String getIndexType() {
-		return INDEX_TYPE;
+		return HuddleUtils.IndexType.PRODUCT.toString();
 	}
 }

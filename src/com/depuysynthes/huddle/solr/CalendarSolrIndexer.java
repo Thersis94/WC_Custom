@@ -53,6 +53,15 @@ public class CalendarSolrIndexer extends CourseCalendarSolrIndexer {
 	}
 	
 	
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.search.SMTAbstractIndex#getIndexType()
+	 */
+	@Override
+	public String getIndexType() {
+		return HuddleUtils.IndexType.COURSE_CAL.toString();
+	}
+	
+	
 	/**
 	 * push the list of pased VOs into Solr.
 	 */
@@ -63,7 +72,7 @@ public class CalendarSolrIndexer extends CourseCalendarSolrIndexer {
 		for (EventEntryVO vo : data) {
 			SolrInputDocument doc = new SolrInputDocument();
 			try {
-				doc.setField(SearchDocumentHandler.INDEX_TYPE, INDEX_TYPE);
+				doc.setField(SearchDocumentHandler.INDEX_TYPE, getIndexType());
 				doc.setField(SearchDocumentHandler.ORGANIZATION, vo.getOrganizationId());
 				doc.setField(SearchDocumentHandler.LANGUAGE, "en");
 				doc.setField(SearchDocumentHandler.ROLE, SecurityController.PUBLIC_ROLE_LEVEL);

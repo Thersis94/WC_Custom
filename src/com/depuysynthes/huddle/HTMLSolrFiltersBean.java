@@ -8,7 +8,7 @@ import java.util.Locale;
 import org.apache.solr.client.solrj.response.FacetField.Count;
 import org.apache.solr.client.solrj.response.PivotField;
 
-import com.depuysynthes.huddle.HuddleUtils.filterNameFormat;
+import com.depuysynthes.huddle.HuddleUtils.IndexType;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.DateUtil;
@@ -46,7 +46,7 @@ public class HTMLSolrFiltersBean {
 		sb.append(">");
 		sb.append("<label class=\"checkbox\" for=\"filter_simple_").append(uuid).append("\">");
 		if (formatName) {
-			sb.append(filterNameFormat.valueOf(c.getName()).getName());
+			sb.append(IndexType.valueOf(c.getName()).getName());
 		} else {
 			sb.append(c.getName());
 		}

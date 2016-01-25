@@ -1,7 +1,9 @@
 package com.depuysynthes.huddle;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.Cookie;
@@ -17,6 +19,7 @@ import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.databean.FilePartDataBean;
+import com.siliconmtn.util.parser.AnnotationExcelParser;
 import com.siliconmtn.util.parser.AnnotationParser;
 import com.smt.sitebuilder.action.SBModuleVO;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
@@ -106,29 +109,82 @@ public class SalesConsultantAction extends SimpleActionAdapter {
 	 * @throws ActionException
 	 */
 	private void processUpload(SMTServletRequest req) throws ActionException {
+		Collection<Object> alignData = parseAlignmentFile(req.getFile("xlsFileAlignment"));
+		Map<String, SalesConsultantRepVO> repData = parseRepFile(req.getFile("xlsFile"));
+		
+		//don't make any changes if no data (or bad data) was provided.
+		if (repData == null || repData.size() == 0) return;
+		if (alignData == null || alignData.size() == 0) return;
+		log.debug("align rows=" + alignData.size());
+		log.debug("repData rows=" + repData.size());
+		
+		indexRecords(repData, alignData, req.getParameter("organizationId"));
+	}
+	
+	
+	/**
+	 * parse the alignment file.  We'll get most of our data from here
+	 * @param fpdb
+	 * @return
+	 * @throws ActionException
+	 */
+	private Collection<Object> parseAlignmentFile(FilePartDataBean fpdb) throws ActionException {
 		AnnotationParser parser;
-		FilePartDataBean fpdb = req.getFile("xlsFile");
 		try {
-			parser = new AnnotationParser(SalesConsultantVO.class, fpdb.getExtension());
+			parser = new AnnotationParser(SalesConsultantAlignVO.class, fpdb.getExtension());
 		} catch(InvalidDataException e) {
 			throw new ActionException("could not load import file", e);
 		}
 
-		//push to Solr
 		try {
 			//Gets the xls file from the request object, and passes it to the parser.
 			//Parser then returns the list of populated beans
 			Map< Class<?>, Collection<Object>> beans = parser.parseFile(fpdb, true);
-			Collection<Object> data = (Collection<Object>) beans.get(SalesConsultantVO.class);
+			return (Collection<Object>) beans.get(SalesConsultantAlignVO.class);
 			
-			//don't make any changes if no data was provided.  This likely means something is wrong with the uploaded file
-			if (data == null || data.size() == 0) return;
-
-			indexRecords(data, req.getParameter("organizationId"));
 
 		} catch (Exception e) {
-			log.error("could not process Sales Consultant import", e);
+			log.error("could not process Sales Consultant Alignment import", e);
 		}
+		return null;
+	}
+	
+	
+	/**
+	 * parse the rep data file for Huddle - we'll get titles from here
+	 * @param fpdb
+	 * @return
+	 * @throws ActionException
+	 */
+	private Map<String, SalesConsultantRepVO> parseRepFile(FilePartDataBean fpdb) throws ActionException {
+		AnnotationExcelParser parser;
+		try {
+			List<Class<?>> lst = new ArrayList<>();
+			lst.add(SalesConsultantRepVO.class);
+			parser = new AnnotationExcelParser(lst);
+			parser.setSheetNo(2); //ACTIVE_SALES_REPS sheet.
+		} catch(Exception e) {
+			throw new ActionException("could not load import file", e);
+		}
+
+		//load the main file
+		try {
+			//Gets the xls file from the request object, and passes it to the parser.
+			//Parser then returns the list of populated beans
+			Map<Class<?>, Collection<Object>> beans = parser.parseData(fpdb.getFileData(), true);
+			Collection<Object> rawData =  (Collection<Object>) beans.get(SalesConsultantRepVO.class);
+			Map<String, SalesConsultantRepVO> data = new HashMap<>();
+			for (Object obj : rawData) {
+				SalesConsultantRepVO vo = (SalesConsultantRepVO) obj;
+				data.put(vo.getWWID(), vo);
+			}
+			
+			return data;
+
+		} catch (Exception e) {
+			log.error("could not process Sales Rep import", e);
+		}
+		return null;
 	}
 	
 	
@@ -139,28 +195,30 @@ public class SalesConsultantAction extends SimpleActionAdapter {
 	 * @param orgId
 	 * @throws ActionException
 	 */
-	private void indexRecords(Collection<Object> data, String orgId) throws ActionException  {
+	private void indexRecords(Map<String, SalesConsultantRepVO> repData, 
+			Collection<Object> data, String orgId) throws ActionException  {
+		
 		Map<String, String> states = invertStates(new USStateList()); 
-		Map<String, SalesConsultantVO> repData = new HashMap<>(data.size());
-		SalesConsultantVO vo;
+		Map<String, SalesConsultantAlignVO> finalData = new HashMap<>(data.size());
+		SalesConsultantAlignVO vo;
 		SolrActionUtil util = new SolrActionUtil(getAttributes());
 		util.setHardCommit(false); //let the insert handle the commit of the delete; so we only fire one commit to Solr.
 		
 		//delete all existing Solr records, since we don't have a means of managing deltas
-		util.removeByQuery(SearchDocumentHandler.INDEX_TYPE, HuddleUtils.SOLR_SALES_CONSULTANT_IDX_TYPE);
+		util.removeByQuery(SearchDocumentHandler.INDEX_TYPE, HuddleUtils.IndexType.HUDDLE_CONSULTANTS.toString());
 		
 		//insert all records loaded from the file
 		util.setHardCommit(true);
 		
 		for (Object obj : data) {
-			SalesConsultantVO newVo = (SalesConsultantVO) obj;
+			SalesConsultantAlignVO newVo = (SalesConsultantAlignVO) obj;
 			if (Convert.formatInteger(newVo.getREP_ID()) == 0) continue;
 			
 			String documentId = "dpy-rep-" + newVo.getREP_ID();
 			newVo.setState(states.get(newVo.getState())); //replace the stateCd with stateNm
 			newVo.setCity(StringUtil.capitalizePhrase(newVo.getCity(), 3));
 			newVo.setCNSMR_NM(StringUtil.capitalizePhrase(newVo.getCNSMR_NM(), 3));
-			vo = repData.get(documentId);
+			vo = finalData.get(documentId);
 			if (vo != null) {
 				//treat this as an additional hospital, add it to the existing VO
 				String hier = newVo.getHierarchy();
@@ -177,13 +235,15 @@ public class SalesConsultantAction extends SimpleActionAdapter {
 				vo.addOrganization(orgId);
 				vo.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
 				vo.addHierarchies(newVo.getHierarchy()); //move the data from 3 separate fields to our hierarchy field
-				vo.setCity(null); //flush these, because they don't apply to these records in the context implied
+				vo.setCity(null); //flush these, because they don't apply to these records in the context implied (we use them in hierarchy)
 				vo.setState(null);
+				if (repData.containsKey(vo.getREP_ID())) //REP_ID = WWID
+					vo.setRepTitle(repData.get(vo.getREP_ID()).getTitle());
 			}
-			repData.put(documentId, vo);
+			finalData.put(documentId, vo);
 		}
 		
-		util.addDocuments(repData.values());
+		util.addDocuments(finalData.values());
 	}
 	
 	

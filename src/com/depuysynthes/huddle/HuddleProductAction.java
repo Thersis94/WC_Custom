@@ -3,21 +3,18 @@ package com.depuysynthes.huddle;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.apache.solr.common.SolrDocument;
 
-import com.depuysynthes.action.MediaBinAssetVO;
-import com.depuysynthes.lucene.MediaBinSolrIndex;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.commerce.catalog.ProductAttributeContainer;
-import com.siliconmtn.commerce.catalog.ProductAttributeVO;
-import com.siliconmtn.data.Node;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.UserRoleVO;
-import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBModuleVO;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
@@ -33,7 +30,6 @@ import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
-import com.smt.sitebuilder.security.SecurityController;
 
 /****************************************************************************
  * <b>Title</b>: HuddleProductAction.java <p/>
@@ -67,27 +63,14 @@ public class HuddleProductAction extends SimpleActionAdapter {
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
-		String param1 = req.getParameter("reqParam_1");
-		String searchData = req.getParameter("searchData");
-		
-		// Data searches will never run through here, so ignore any search
-		// data that is on the request.
-		req.setParameter("searchData", "", true);
-		
-		if (param1 != null && !"".equals(param1) && (req.hasParameter("runDetail") || mod.getDisplayColumn().equals(page.getDefaultColumn()))) {
-			detailSearch(req);
-			
-		} else {
-			req.setParameter("reqParam_1", "", true);
-			listSearch(req, mod.getDisplayColumn().equals(page.getDefaultColumn()));
+		String param1 = StringUtil.checkVal(req.getParameter(SMTServletRequest.PARAMETER_KEY + "1"), null);
 
-			//put reqParam_1 back on the request, it wasn't meant for us
-			if (param1 != null)
-				req.setParameter("reqParam_1", param1, true);
+		if (param1 != null) {
+			//load the details view for a single product
+			detailSearch(req);
+		} else {
+			listSearch(req, mod.getDisplayColumn().equals(page.getDefaultColumn()));
 		}
-		
-		// Put the searchData back
-		req.setParameter("searchData", searchData);
 	}
 
 
@@ -98,59 +81,131 @@ public class HuddleProductAction extends SimpleActionAdapter {
 	 */
 	private void detailSearch(SMTServletRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		UserRoleVO role = (UserRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
 		
+		//run a search for the PRODUCT using productAlias (documentUrl)
+		req.setAttribute("searchField", SearchDocumentHandler.DOCUMENT_URL);
 		actionInit.setActionId((String)mod.getAttribute(SBModuleVO.ATTRIBUTE_1));
 		SolrAction sa = new SolrAction(actionInit);
 		sa.setAttributes(attributes);
 		sa.setDBConnection(dbConn);
 		sa.retrieve(req);
 
-		//get the response object back from SolrAction
+		//verify the response object back from SolrAction
 		mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		SolrResponseVO resp = (SolrResponseVO) mod.getActionData();
-		if (resp == null || resp.getTotalResponses() == 0) 
-			throw new ActionException("No product found with documentId: " + req.getParameter("reqParam_1"));
-		
+		if (resp == null || resp.getTotalResponses() == 0) {
+			mod.setErrorCondition(true);
+			mod.setActionData(null);
+			setAttribute(Constants.MODULE_DATA, mod);
+			return;
+		}
+
+		//make a ProductVO from the solr data
 		HuddleProductVO p = new HuddleProductVO();
 		SolrDocument doc = resp.getResultDocuments().get(0);
 		p.setProductId((String) doc.getFieldValue(SearchDocumentHandler.DOCUMENT_ID));
+		p.setProductUrl((String) doc.getFieldValue(SearchDocumentHandler.DOCUMENT_URL));
 		p.setTitle((String) doc.getFieldValue(SearchDocumentHandler.TITLE));
 		p.setDescText((String) doc.getFieldValue(SearchDocumentHandler.SUMMARY));
 		
-		ProductAttributeContainer pac = new ProductAttributeContainer();
-		List<Node> images = new ArrayList<>();
-		
-		// Loop through all items on the document looking for any prefixed with attribute types
-		for (String key : doc.getFieldValuesMap().keySet()) {
-			if (key == null) continue;
-			if (key.startsWith(HuddleUtils.PROD_ATTR_IMG_PREFIX)) {
-				// keys starting with the image prefix are added to the ProductAttributeContainer
-				// and are used to create the product's image gallery.
-				for (Object o : doc.getFieldValues(key)) {
-					if (o == null) continue;
-					ProductAttributeVO attr = new ProductAttributeVO();
-					attr.setAttributeName(key.replace(HuddleUtils.PROD_ATTR_IMG_PREFIX, ""));
-					attr.setValueText(o.toString());
-					attr.setAttributeType(HuddleUtils.PROD_ATTR_IMG_TYPE);
-					Node n = new Node(key, null);
-					n.setUserObject(attr);
-					images.add(n);
-				}
-			} else if (key.startsWith(HuddleUtils.PROD_ATTR_MB_PREFIX)) {
-				// Keys starting with the mediabin prefix need to be sent out
-				// to solr in order to get all the documents with those ids
-				p.addProdAttribute(key.replace(HuddleUtils.PROD_ATTR_MB_PREFIX, "").replace("_ss", ""), buildMediabin(req, doc.getFieldValues(key)));
-			}
-		}
-		pac.addAll(images);
-		p.setAttributes(pac);
+		//overwrite the browser title
+		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+		page.setTitleName(p.getTitle());
+				
+		addProductAttributes(p, doc, req);
 
 		//get the product contacts as well.
 		//skip is passed from EmailFriendAction, where we don't need contacts
 		if (!req.hasParameter("skipContacts"))
-			addProductContacts(p);
+			addProductContacts(p, site.getOrganizationId(), role.getRoleLevel());
 		
 		super.putModuleData(p);
+	}
+	
+	
+	/**
+	 * parse the solr document's attributes to determine which are product attibutes.
+	 * do another Solr query if need, to load supporting information for the attributes.
+	 * @param p
+	 * @param doc
+	 * @param req
+	 */
+	private void addProductAttributes(HuddleProductVO p, SolrDocument doc, SMTServletRequest req) {
+		Map<String, Collection<Object>> subqueryList = new HashMap<>();
+		
+		// Loop through all items on the document looking for any prefixed with attribute types
+		for (String key : doc.getFieldNames()) {
+			log.debug("found product attribute: " + key);
+			
+			//verify it's one of our custom product attributes; we don't want all of Solr's junk
+			if (!key.startsWith(HuddleUtils.PROD_ATTR_PREFIX)) continue;
+			
+			String name = HuddleUtils.makeProdAttrNmFromSolrNm(key);
+			String type = HuddleUtils.makeProdAttrTypeFromSolrNm(key).toUpperCase();
+			Integer order = HuddleUtils.makeProdAttrOrderFromSolrNm(key);
+			log.debug(name + " | " + type + " | " + order);
+			
+			switch (type) {
+				case HuddleUtils.PROD_ATTR_IMG_TYPE:
+					List<String> images = new ArrayList<>();
+					// keys starting with the image prefix are added to the ProductAttributeContainer
+					// and are used to create the product's image gallery.
+					for (Object o : doc.getFieldValues(key)) {
+						if (o == null) continue;
+						images.add(o.toString());
+					}
+					p.setImages(images);
+					break;
+				case HuddleUtils.PROD_ATTR_MB_TYPE:
+					// Keys starting with the mediabin prefix need to be sent out
+					// to solr in order to get all the documents with those ids
+					subqueryList.put(name, doc.getFieldValues(key));
+					p.addResource(order, name, null); //this will populate the sortMap for later so we know the order# of this attribute
+					break;
+				default:
+					p.addResource(order, name, doc.getFieldValues(key));
+			}
+			log.debug("saved attribute " + name);
+		}
+		
+		//now query for the dependent records (typically mediabin or CMS),  
+		// then marry them back to the attribute they belong to
+		if (subqueryList.size() > 0)
+			runAssetLookup(p, subqueryList, req);
+		
+	}
+	
+	
+	/**
+	 * sends a suplimental Solr query for assets tied to this product
+	 */
+	private void runAssetLookup(HuddleProductVO p, Map<String, Collection<Object>> subqueryList, SMTServletRequest req) {
+		//build a list of documentIds we need to lookup
+		Map<String, SolrDocument> solrDocs = new HashMap<>();
+		for (String name : subqueryList.keySet()) {
+			for (Object o : subqueryList.get(name))
+				solrDocs.put(o.toString(), null);
+		}
+		
+		//query solr once, for all the attributes, then turn it into a Map for each lookup
+		List<SolrDocument> solrResults = this.loadAttributeAssets(req, solrDocs.keySet());
+		for (SolrDocument sd : solrResults)
+			solrDocs.put(sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID).toString(), sd);
+		
+		// perform the marriages
+		for (String name : subqueryList.keySet()) {
+			Collection<Object> myDocs = new ArrayList<>(50);
+			//loop the attributes objects, find each in the solr results, and add it to myDocs
+			for (Object o : subqueryList.get(name)) {
+				SolrDocument sd = solrDocs.get(o.toString());
+				if (sd != null) myDocs.add(sd);
+			}
+			//put myDocs into this attribute's record (replaces the list of documentIds), then move on to the next
+			log.debug("set " + myDocs.size() + " docs into " + name);
+			p.addProdAttribute(name, myDocs);
+		}
 	}
 
 	
@@ -158,21 +213,21 @@ public class HuddleProductAction extends SimpleActionAdapter {
 	 * lookup the product contacts, which is another Solr query
 	 * @param product
 	 */
-	private void addProductContacts(HuddleProductVO product) {
+	private void addProductContacts(HuddleProductVO product, String orgId, int roleLevel) {
 		log.debug("loading product contacts");
-		SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, (String) attributes.get(Constants.SOLR_COLLECTION_NAME));
+		SolrQueryProcessor sqp = new SolrQueryProcessor(getAttributes(), getAttribute(Constants.SOLR_COLLECTION_NAME).toString());
 		SolrActionVO qData = new SolrActionVO();
 		qData.setNumberResponses(15); //arbitrarty, should never be this high but we don't know
 		qData.setStartLocation(0);
-		qData.setRoleLevel(SecurityController.PUBLIC_ROLE_LEVEL);
-		qData.setOrganizationId("DPY_SYN_HUDDLE");
+		qData.setRoleLevel(roleLevel);
+		qData.setOrganizationId(orgId);
 		
 		//bind by product name
 		SolrFieldVO field = new SolrFieldVO();
 		field.setBooleanType(BooleanType.AND);
 		field.setFieldType(FieldType.SEARCH);
 		field.setFieldCode(SearchDocumentHandler.TITLE_LCASE);
-		field.setValue(product.getTitle());
+		field.setValue(product.getTitle().toLowerCase());
 		qData.addSolrField(field);
 		
 		//also bind by index_type
@@ -180,7 +235,7 @@ public class HuddleProductAction extends SimpleActionAdapter {
 		field2.setBooleanType(BooleanType.AND);
 		field2.setFieldType(FieldType.SEARCH);
 		field2.setFieldCode(SearchDocumentHandler.INDEX_TYPE);
-		field2.setValue(HuddleUtils.SOLR_PROD_CONTACT_IDX_TYPE);
+		field2.setValue(HuddleUtils.IndexType.HUDDLE_PRODUCT_CONTACT.toString());
 		qData.addSolrField(field2);
 		
 		List<ProductContactVO> contacts = new ArrayList<>(15); //same count as above
@@ -190,46 +245,21 @@ public class HuddleProductAction extends SimpleActionAdapter {
 
 		Collections.sort(contacts); //leverages the Comparable Interface in the VOs
 		product.setContacts(contacts);
-		log.debug("added " + product.getContactCnt() + " contacts to " + product.getTitle());
+		log.debug("added " + product.getContactCnt() + " contacts to " + product.getTitle().toLowerCase());
 	}
 	
 
 	/**
-	 * Build a list of mediabin assets for the product
+	 * loads a list of assets for the product - we return SolrDocuments here so we can apply the SolrBusinessRules object in the view (consistent w/site)
 	 * @param p
 	 * @param req
 	 * @param mediabin
 	 * @return 
 	 */
-	private List<MediaBinAssetVO> buildMediabin(SMTServletRequest req, Collection<Object> mediaBinAssets) {
-		SiteVO siteData = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+	private List<SolrDocument> loadAttributeAssets(SMTServletRequest req, Set<String> mediabin) {
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		UserRoleVO role = (UserRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
-		SolrResponseVO resp = getMBSolrDocs(siteData.getOrganizationId(), mediaBinAssets, role.getRoleLevel());
-
-		List<MediaBinAssetVO> assets = new ArrayList<>();
-		for (SolrDocument d : resp.getResultDocuments()) {
-			MediaBinAssetVO asset = new MediaBinAssetVO();
-			asset.setActionUrl((String) d.getFieldValue(SearchDocumentHandler.DOCUMENT_URL));
-			asset.setActionId((String) d.getFieldValue(SearchDocumentHandler.DOCUMENT_ID));
-			asset.setActionName((String) d.getFieldValue(SearchDocumentHandler.TITLE));
-			asset.setAssetType((String) d.getFieldValue(MediaBinSolrIndex.MediaBinField.AssetType.getField()));
-			asset.setFileSizeNo(Convert.formatInteger(d.getFieldValue(SearchDocumentHandler.FILE_SIZE).toString()));
-			asset.setFileNm((String) d.getFieldValue(SearchDocumentHandler.FILE_NAME));
-			assets.add(asset);
-		}
-		
-		return assets;
-	}
-
-
-	/**
-	 * Get all the mediabin solr documents associated with this product
-	 * @param organizationId
-	 * @param mediabin
-	 * @return
-	 */
-	private SolrResponseVO getMBSolrDocs(String organizationId, Collection<Object> mediabin, int roleLevel) {
-		SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, (String) attributes.get(Constants.SOLR_COLLECTION_NAME));
+		SolrQueryProcessor sqp = new SolrQueryProcessor(getAttributes(), getAttribute(Constants.SOLR_COLLECTION_NAME).toString());
 		SolrActionVO qData = new SolrActionVO();
 		for (Object o : mediabin) {
 			SolrFieldVO field = new SolrFieldVO();
@@ -242,9 +272,10 @@ public class HuddleProductAction extends SimpleActionAdapter {
 
 		qData.setNumberResponses(mediabin.size());
 		qData.setStartLocation(0);
-		qData.setRoleLevel(roleLevel);
-		qData.setOrganizationId(organizationId);
-		return sqp.processQuery(qData);
+		qData.setRoleLevel(role.getRoleLevel());
+		qData.setOrganizationId(site.getOrganizationId());
+		SolrResponseVO resp = sqp.processQuery(qData);
+		return resp.getResultDocuments();
 	}
 
 
@@ -256,20 +287,19 @@ public class HuddleProductAction extends SimpleActionAdapter {
 	 */
 	private void listSearch(SMTServletRequest req, boolean mainCol) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
-
 		String solrActionId = StringUtil.checkVal(mod.getAttribute(SBModuleVO.ATTRIBUTE_1));
 		actionInit.setActionId(solrActionId);
 
 		// Only add filters if this is the main portlet on the page.
-		if (mainCol) {
-			req.setParameter("fmid", mod.getPageModuleId());
-			prepareFilterQueries(req);
-		}
+		req.setParameter("fmid", mod.getPageModuleId());
+		prepareFilterQueries(req);
 
 		SMTActionInterface sai = new SolrAction(actionInit);
-		sai.setAttributes(attributes);
+		sai.setAttributes(getAttributes());
 		sai.setDBConnection(dbConn);
 		sai.retrieve(req);
+
+		req.setParameter("fmid", "");
 	}
 
 	
@@ -277,42 +307,15 @@ public class HuddleProductAction extends SimpleActionAdapter {
 	 * Prepare the filter queries for solr
 	 */
 	private void prepareFilterQueries(SMTServletRequest req) {
-
-		String category = null;
-		// Initial page loads coming from a home page can contain incorrect categories
-		// this ensures that all category parameters have proper formatting.
+		// honor category and specialty pre-filters coming off the section homepages
 		if (req.hasParameter("category")) {
-			category = StringUtil.capitalizePhrase(req.getParameter("category"), 0, " -");
-			req.setParameter("category", category);
-		}
-		
-		// Called on the category page of the site.
-		// Turns the category parameter into a hierarchy fq
-		if (category != null && !req.hasParameter("fq")) {
-			// Since the category can be set via data from the page alias we need
-			// to ensure it has the proper capitalization and structure here
-			req.setParameter("fq", SearchDocumentHandler.HIERARCHY + ":" + category);
-			req.setParameter("category", category);
-		}
-
-		// Called on the specialty page of the site.
-		// Turns the speciality parameter into an opco fq. 
-		if (req.hasParameter("specialty")) {
+			//String cat = StringUtil.capitalizePhrase(req.getParameter("category"), 0, " -");
+			String cat = req.getParameter("category"); //above cleanup done in view
+			req.setParameter("fq", SearchDocumentHandler.HIERARCHY + ":" + cat);
+		} else if (req.hasParameter("specialty")) {
 			req.setParameter("fq", HuddleUtils.SOLR_OPCO_FIELD + ":" + req.getParameter("specialty"));
 		}
-
-		// Called on the speciality home pages of the site.
-		// Uses the last section of the request uri to determine the 
-		// speciality of the page that the portlet is on and make an opco fq
-		if (!req.hasParameter("fq")) {
-			String uri = req.getRequestURI().substring(req.getRequestURI().lastIndexOf("/")+1).replace('-', ' ');
-			req.setParameter("fq", HuddleUtils.SOLR_OPCO_FIELD + ":" + StringUtil.capitalizePhrase(uri, 0, " -"));
-			// This scenario ignores the user's sort preference to show new products 
-			// on the home page.  Sort by recentlyAdded first
-			HuddleUtils.determineSortParameters(req, "recentlyAdded");
-		} else {
-			HuddleUtils.determineSortParameters(req);
-		}
 		
+		HuddleUtils.determineSortParameters(req);
 	}
 }

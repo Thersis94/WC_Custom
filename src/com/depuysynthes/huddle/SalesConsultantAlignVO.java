@@ -13,9 +13,10 @@ import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 
 /****************************************************************************
- * <b>Title</b>: SalesConsultantVO.java<p/>
- * <b>Description: Represents a record in the incoming Excel file, which is dynamically parsed
- * and immediately fed into Solr.  This data is not stored in the database.</b> 
+ * <b>Title</b>: SalesConsultantAlignVO.java<p/>
+ * <b>Description: Represents a record in the incoming "Alignment" Excel file, 
+ * which is dynamically parsed and immediately fed into Solr.  
+ * This data is not stored in the database.</b> 
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2016<p/>
  * <b>Company:</b> Silicon Mountain Technologies<p/>
@@ -23,7 +24,7 @@ import com.smt.sitebuilder.util.solr.SolrDocumentVO;
  * @version 1.0
  * @since Jan 10, 2016
  ****************************************************************************/
-public class SalesConsultantVO extends SolrDocumentVO {
+public class SalesConsultantAlignVO extends SolrDocumentVO {
 	
 	//the sales rep's attributes
 	private String OPCO_CD;
@@ -35,6 +36,7 @@ public class SalesConsultantVO extends SolrDocumentVO {
 	private String REP_LAST_NM;
 	private String REP_TEL_NO;
 	private String REP_EMAIL_ADDR;
+	private String repTitle;
 	
 	//their manager's attributes
 	private String CORE_REG_MGR_ID;
@@ -48,13 +50,13 @@ public class SalesConsultantVO extends SolrDocumentVO {
 	/**
 	 * @param solrIndex
 	 */
-	public SalesConsultantVO(String solrIndex) {
+	public SalesConsultantAlignVO(String solrIndex) {
 		super(solrIndex);
 		hospitals = new HashSet<>();
 	}
 	
-	public SalesConsultantVO() {
-		this(HuddleUtils.SOLR_SALES_CONSULTANT_IDX_TYPE);
+	public SalesConsultantAlignVO() {
+		this(HuddleUtils.IndexType.HUDDLE_CONSULTANTS.toString());
 	}
 
 	@SolrField(name=HuddleUtils.SOLR_OPCO_FIELD)
@@ -96,11 +98,19 @@ public class SalesConsultantVO extends SolrDocumentVO {
 		return REP_LAST_NM;
 	}
 	
+	/** 
+	 * use Solr's title field for tokenized name to make searching more accurate
+	 */
 	@SolrField(name=SearchDocumentHandler.TITLE)
 	public String getTitle() {
-		return getREP_LAST_NM() + " " + getREP_FIRST_NM();
+		return getREP_FIRST_NM() + " " + getREP_LAST_NM();
 	}
-
+	
+	@SolrField(name="rep_title_s")
+	public String getRepTitle() {
+		return repTitle;
+	}
+	
 	@SolrField(name="rep_phone_s")
 	public String getREP_TEL_NO() {
 		return StringUtil.removeNonNumeric(REP_TEL_NO);
@@ -135,6 +145,8 @@ public class SalesConsultantVO extends SolrDocumentVO {
 	public String getCORE_REG_MGR_EMAIL_ADDR() {
 		return CORE_REG_MGR_EMAIL_ADDR;
 	}
+
+	
 	
 	@Importable(name = "OPCO_CD", type = DataType.STRING)
 	public void setOPCO_CD(String oPCO_CD) {
@@ -222,5 +234,9 @@ public class SalesConsultantVO extends SolrDocumentVO {
 	public String getHierarchy() {
 		String tok = SearchDocumentHandler.HIERARCHY_DELIMITER;
 		return this.getState() + tok + this.getCity() + tok + this.getCNSMR_NM();
+	}
+
+	public void setRepTitle(String repTitle) {
+		this.repTitle = repTitle;
 	}
 }

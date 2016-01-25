@@ -122,12 +122,12 @@ public class EmailFriendAction extends SimpleActionAdapter {
 		sb.append("<ul>");
 		String url;
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		String assetBase = site.getFullSiteAlias() + "/assets/" + StringUtil.checkVal(getAttribute(Constants.QS_PATH));
-		String mbBase = site.getFullSiteAlias() + "/json?amid=MEDIA_BIN_AJAX&mbid=";
+		String assetBase = site.getFullSiteAlias() + HuddleUtils.ASSET_PG_ALIAS + StringUtil.checkVal(getAttribute(Constants.QS_PATH));
+		String mbBase = site.getFullSiteAlias() + HuddleUtils.MEDIABIN_REDIR_URL;
 		@SuppressWarnings("unchecked")
 		Map<String, ShareVO> shareMap = (Map<String, ShareVO>) req.getAttribute("shareMap");
 		for (ShareVO vo : shareMap.values()) {
-			if ("video".equals(vo.getType()) || "audio".equals(vo.getType())) {
+			if ("video".equals(vo.getType()) || "podcast".equals(vo.getType())) {
 				url = assetBase + vo.getId();
 			} else {
 				url = mbBase + vo.getId();
@@ -136,6 +136,7 @@ public class EmailFriendAction extends SimpleActionAdapter {
 		}
 		sb.append("</ul>");
 		sb.append("<br><br>Please do not reply to this auto-generated email.\n");
+		log.debug("msg=" + sb);
 		return sb.toString();
 	}
 }

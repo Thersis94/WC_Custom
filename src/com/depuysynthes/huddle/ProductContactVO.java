@@ -30,7 +30,7 @@ public class ProductContactVO extends SolrDocumentVO implements Comparable<Produ
 	private String product;
 
 	public ProductContactVO() {
-		super(HuddleUtils.SOLR_PROD_CONTACT_IDX_TYPE);
+		super(HuddleUtils.IndexType.HUDDLE_PRODUCT_CONTACT.toString());
 	}
 
 	
