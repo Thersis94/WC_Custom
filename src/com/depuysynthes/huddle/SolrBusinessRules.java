@@ -4,7 +4,6 @@ import java.util.Collection;
 
 import com.depuysynthes.huddle.HuddleUtils.IndexType;
 import com.depuysynthes.lucene.MediaBinSolrIndex.MediaBinField;
-import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 
@@ -48,7 +47,6 @@ public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 	 * @return
 	 */
 	public boolean isInternal() {
-		System.out.println(sd.getFieldValues("role")+"|"+sd.getFieldValue("title"));
 		if (sd.getFieldValues("role") == null) return false;
 		for (Object o : sd.getFieldValues("role")) {
 			if (o == null) continue;
