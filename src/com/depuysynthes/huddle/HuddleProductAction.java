@@ -64,13 +64,18 @@ public class HuddleProductAction extends SimpleActionAdapter {
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		String param1 = StringUtil.checkVal(req.getParameter(SMTServletRequest.PARAMETER_KEY + "1"), null);
-
+		
+		// No matter what kind of search is being done a solr override is required.
+		req.setParameter("fmid", mod.getPageModuleId());
+		
 		if (param1 != null) {
 			//load the details view for a single product
 			detailSearch(req);
 		} else {
 			listSearch(req, mod.getDisplayColumn().equals(page.getDefaultColumn()));
 		}
+		
+		req.setParameter("fmid", "", true);
 	}
 
 
@@ -290,16 +295,12 @@ public class HuddleProductAction extends SimpleActionAdapter {
 		String solrActionId = StringUtil.checkVal(mod.getAttribute(SBModuleVO.ATTRIBUTE_1));
 		actionInit.setActionId(solrActionId);
 
-		// Only add filters if this is the main portlet on the page.
-		req.setParameter("fmid", mod.getPageModuleId());
 		prepareFilterQueries(req);
 
 		SMTActionInterface sai = new SolrAction(actionInit);
 		sai.setAttributes(getAttributes());
 		sai.setDBConnection(dbConn);
 		sai.retrieve(req);
-
-		req.setParameter("fmid", "");
 	}
 
 	
