@@ -235,7 +235,7 @@ public class HuddleProductAction extends SimpleActionAdapter {
 		field2.setBooleanType(BooleanType.AND);
 		field2.setFieldType(FieldType.SEARCH);
 		field2.setFieldCode(SearchDocumentHandler.INDEX_TYPE);
-		field2.setValue(HuddleUtils.SOLR_PROD_CONTACT_IDX_TYPE);
+		field2.setValue(HuddleUtils.IndexType.HUDDLE_PRODUCT_CONTACT.toString());
 		qData.addSolrField(field2);
 		
 		List<ProductContactVO> contacts = new ArrayList<>(15); //same count as above

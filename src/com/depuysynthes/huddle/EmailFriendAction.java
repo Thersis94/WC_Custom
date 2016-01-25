@@ -122,8 +122,8 @@ public class EmailFriendAction extends SimpleActionAdapter {
 		sb.append("<ul>");
 		String url;
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		String assetBase = site.getFullSiteAlias() + "/asset/" + StringUtil.checkVal(getAttribute(Constants.QS_PATH));
-		String mbBase = site.getFullSiteAlias() + "/json?amid=MEDIA_BIN_AJAX&mbid=";
+		String assetBase = site.getFullSiteAlias() + HuddleUtils.ASSET_PG_ALIAS + StringUtil.checkVal(getAttribute(Constants.QS_PATH));
+		String mbBase = site.getFullSiteAlias() + HuddleUtils.MEDIABIN_REDIR_URL;
 		@SuppressWarnings("unchecked")
 		Map<String, ShareVO> shareMap = (Map<String, ShareVO>) req.getAttribute("shareMap");
 		for (ShareVO vo : shareMap.values()) {
