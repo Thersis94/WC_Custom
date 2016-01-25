@@ -52,8 +52,11 @@ public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 		switch(type) {
 			case PRODUCT:
 				return "/product/" + super.getQsPath() + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_URL);
-				
+			
 			case COURSE_CAL:
+				return "/events/" + super.getQsPath() + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
+			
+			case HUDDLE_BLOG:
 				return "/news/" + super.getQsPath() + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
 				
 			case HUDDLE_CONSULTANTS:
