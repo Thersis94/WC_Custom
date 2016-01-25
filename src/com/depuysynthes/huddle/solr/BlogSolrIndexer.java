@@ -45,11 +45,6 @@ import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 public class BlogSolrIndexer extends SMTAbstractIndex {
 
 	/**
-	 * Index type for this index.  This value is stored in the INDEX_TYPE field
-	 */
-	public static final String INDEX_TYPE = "HUDDLE_BLOG";
-
-	/**
 	 * @param config
 	 */
 	public BlogSolrIndexer(Properties config) {
@@ -93,7 +88,7 @@ public class BlogSolrIndexer extends SMTAbstractIndex {
 					solrDoc.setData(entry);
 					solrDoc.setSummary(entry.getBlogText());  //store the whole article
 					solrDoc.setMetaDesc(entry.getShortDesc());
-					solrDoc.setSolrIndex(INDEX_TYPE);
+					solrDoc.setSolrIndex(getIndexType());
 					
 					//get the dynamically built document, then add a couple of custom fields to it for Huddle's date faceting.
 					SolrInputDocument doc = solrUtil.createInputDocument(solrDoc);
@@ -189,7 +184,7 @@ public class BlogSolrIndexer extends SMTAbstractIndex {
 	 */
 	@Override
 	public String getIndexType() {
-		return INDEX_TYPE;
+		return HuddleUtils.IndexType.HUDDLE_BLOG.toString();
 	}
 
 

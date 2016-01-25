@@ -2,7 +2,6 @@ package com.depuysynthes.huddle;
 
 import org.apache.solr.common.SolrDocument;
 
-import com.depuysynthes.huddle.solr.HuddleProductCatalogSolrIndex;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
@@ -116,7 +115,7 @@ public class ProductAssetAction extends SimpleActionAdapter {
 			field.setBooleanType(BooleanType.AND);
 			field.setFieldType(FieldType.FILTER);
 			field.setFieldCode(SearchDocumentHandler.INDEX_TYPE);
-			field.setValue(HuddleProductCatalogSolrIndex.INDEX_TYPE);
+			field.setValue(HuddleUtils.IndexType.PRODUCT.toString());
 			qData.addSolrField(field);
 		}
 
@@ -130,6 +129,6 @@ public class ProductAssetAction extends SimpleActionAdapter {
 			return resp.getResultDocuments().get(0);
 		} else {
 			return null;
-		}	
+		}
 	}
 }

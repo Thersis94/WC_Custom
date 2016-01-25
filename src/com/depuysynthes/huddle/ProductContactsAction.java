@@ -112,7 +112,7 @@ public class ProductContactsAction extends SimpleActionAdapter {
 	 */
 	private void pushToSolr(Collection<SolrDocumentVO> beanList) throws ActionException {
 		SolrActionUtil util = new SolrActionUtil(getAttributes());
-		util.removeByQuery(SearchDocumentHandler.INDEX_TYPE, HuddleUtils.SOLR_PROD_CONTACT_IDX_TYPE);
+		util.removeByQuery(SearchDocumentHandler.INDEX_TYPE, HuddleUtils.IndexType.HUDDLE_PRODUCT_CONTACT.toString());
 		util.addDocuments(beanList);
 		util.commitSolr(false, true);
 	}

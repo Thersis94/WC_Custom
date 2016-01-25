@@ -34,6 +34,10 @@ import com.smt.sitebuilder.search.SearchDocumentHandler;
  ****************************************************************************/
 public class HuddleUtils {
 	
+	/** page aliases **/
+	public static final String ASSET_PG_ALIAS = "/asset/"; //used in SolrBusinessRules & EmailAFriend
+	public static final String MEDIABIN_REDIR_URL = "/json?amid=MEDIA_BIN_AJAX&mbid="; //used in EmailAFriend
+	
 	/** Catalog Constants **/
 	public static final String productCategoryCd = "HUDDLE_CATEGORY";
 	public static final String productCatalogId = "DS_HUDDLE";
@@ -74,8 +78,6 @@ public class HuddleUtils {
 	//solr fields
 	public static final String SOLR_OPCO_FIELD = "opco_ss";
 	public static final String SOLR_IMAGE_FIELD = "huddle_1|image|images_ss";
-	public static final String SOLR_SALES_CONSULTANT_IDX_TYPE = "HUDDLE_CONSULTANTS";
-	protected static final String SOLR_PROD_CONTACT_IDX_TYPE = "HUDDLE_PRODUCT_CONTACT";
 	private static String[] solrProdAttributeFields = null;
 	/**
 	 * leverage a method to evaluate whether we've already obtained the product attributes
@@ -152,20 +154,30 @@ public class HuddleUtils {
 	 * @author root
 	 *
 	 */
-	public enum filterNameFormat {
+	public enum IndexType {
 		COURSE_CAL("Courses & Events"),
 		HUDDLE_BLOG("News"),
 		HUDDLE_CONSULTANTS("Consultants"),
+		HUDDLE_PRODUCT_CONTACT("Product Contacts"),
 		MEDIA_BIN("Documents"),
-		PRODUCT("Products");
+		PRODUCT("Products"),
+		CMS_QUICKSTREAM("Documents");
 		
 		private String name;
-		filterNameFormat(String name) {
-			this.name = name;
-		}
+		IndexType(String name) { this.name = name; }
+		public String getName() { return name; }
 		
-		public String getName() {
-			return name;
+		/**
+		 * return a type without throwing an exception
+		 * @param t
+		 * @return
+		 */
+		public static IndexType quietValueOf(String t) {
+			try {
+				return IndexType.valueOf(t);
+			} catch (Exception e) {
+				return null;
+			}
 		}
 	}
 	

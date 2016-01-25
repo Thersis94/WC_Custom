@@ -52,12 +52,6 @@ import com.depuysynthes.lucene.data.ProductCatalogSolrDocumentVO;
 public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 
 	protected String organizationId = "DPY_SYN_HUDDLE";
-
-	/**
-	 * Index type for this index.  This value is stored in the INDEX_TYPE field
-	 */
-	public static final String INDEX_TYPE = "PRODUCT";
-	
 	private Map<String, ProductCatalogSolrDocumentVO> products = new HashMap<>(1500);
 	private Map<Integer, String> hierarchy = new HashMap<>();
 	private Map<String, Integer> sortOrder = new HashMap<>();
@@ -145,14 +139,14 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 				
 			ProductCatalogSolrDocumentVO solrDoc = products.get(vo.getProductId());
 			if (solrDoc == null) {
-				solrDoc = new ProductCatalogSolrDocumentVO(INDEX_TYPE);
+				solrDoc = new ProductCatalogSolrDocumentVO(getIndexType());
 				solrDoc.setDocumentId(pVo.getProductId());
 				solrDoc.setTitle(pVo.getTitle());
 				solrDoc.setSummary(pVo.getDescText());
 				solrDoc.setDetailImage(pVo.getImage());
 				solrDoc.setDocumentUrl(pVo.getUrlAlias());
 				solrDoc.addOrganization(organizationId);
-				solrDoc.setModule(INDEX_TYPE);
+				//solrDoc.setModule(getIndexType()); unused
 				solrDoc.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
 				attachProductCategories(solrDoc, depth);
 				addProductAttributes(solrDoc, pVo);
@@ -284,6 +278,6 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 
 	@Override
 	public String getIndexType() {
-		return INDEX_TYPE;
+		return HuddleUtils.IndexType.PRODUCT.toString();
 	}
 }

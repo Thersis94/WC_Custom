@@ -2,9 +2,7 @@ package com.depuysynthes.huddle;
 
 import java.util.Collection;
 
-import com.depuysynthes.huddle.solr.BlogSolrIndexer;
-import com.depuysynthes.huddle.solr.HuddleProductCatalogSolrIndex;
-import com.depuysynthes.lucene.MediaBinSolrIndex;
+import com.depuysynthes.huddle.HuddleUtils.IndexType;
 import com.depuysynthes.lucene.MediaBinSolrIndex.MediaBinField;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
@@ -48,22 +46,25 @@ public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 	 */
 	@Override
 	public String getPageUrl() {
-		switch(StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.INDEX_TYPE))) {
-			case HuddleProductCatalogSolrIndex.INDEX_TYPE:
+		IndexType type = IndexType.quietValueOf(StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.INDEX_TYPE)));
+		if (type == null) type = IndexType.MEDIA_BIN; //this should quickly fall through to the default
+		
+		switch(type) {
+			case PRODUCT:
 				return "/product/" + super.getQsPath() + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_URL);
 				
-			case BlogSolrIndexer.INDEX_TYPE:
+			case COURSE_CAL:
 				return "/news/" + super.getQsPath() + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
 				
-			case HuddleUtils.SOLR_SALES_CONSULTANT_IDX_TYPE :
+			case HUDDLE_CONSULTANTS:
 				return "/sales-consultants/" + super.getQsPath() + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
 	
-			case MediaBinSolrIndex.INDEX_TYPE:
+			case MEDIA_BIN:
 				String assetType = StringUtil.checkVal(sd.getFieldValue(MediaBinField.AssetType.getField())).toLowerCase();
 				switch (assetType) {
 					case "podcast":
 					case "video":
-						return "/asset/" + super.getQsPath() + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
+						return HuddleUtils.ASSET_PG_ALIAS + super.getQsPath() + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
 					
 						//TODO add app as a JS hook to check for the app on the device, if apple device
 						
@@ -80,13 +81,15 @@ public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 	 */
 	@Override
 	public String getFavoriteType() {
-		String indexType = StringUtil.checkVal(getSd().get(SearchDocumentHandler.INDEX_TYPE));
-		switch (indexType) {
-			case "COURSE_CAL": return "EVENT";
-			case "MEDIA_BIN": return "MEDIABIN";
-			case "CMS_QUICKSTREAM": return "CMS";
+		IndexType type = IndexType.quietValueOf(StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.INDEX_TYPE)));
+		if (type == null) type = IndexType.MEDIA_BIN; //this should quickly fall through to the default
+		
+		switch (type) {
+			case COURSE_CAL: return "EVENT";
+			case MEDIA_BIN: return "MEDIABIN";
+			case CMS_QUICKSTREAM: return "CMS";
 			default:
-				return indexType;
+				return type.toString();
 		}
 	}
 }
