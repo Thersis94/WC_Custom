@@ -1,10 +1,13 @@
 package com.depuysynthes.huddle;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.servlet.http.Cookie;
 
@@ -74,8 +77,14 @@ public class SalesConsultantAction extends SimpleActionAdapter {
 			req.setParameter("rpp", rppCook.getValue());
 		
 		//if we have specialty add it as a filter - this allows the section homepages to target pre-filtered lists
-		if (req.hasParameter("specialty"))
-			req.setParameter("fq", HuddleUtils.SOLR_OPCO_FIELD + ":" + req.getParameter("specialty"));
+		if (req.hasParameter("specialty")) {
+			Set<String> fq = new HashSet<>();
+			if (req.hasParameter("fq"))
+				fq.addAll(Arrays.asList(req.getParameterValues("fq")));
+			
+			fq.add(HuddleUtils.SOLR_OPCO_FIELD + ":" + req.getParameter("specialty"));
+			req.setParameter("fq", fq.toArray(new String[fq.size()]), true);
+		}
 
 		req.setParameter("fmid",mod.getPageModuleId());
 		//NOTE: page & start get picked up by SolrActionVO automatically, because we set "fmid"
