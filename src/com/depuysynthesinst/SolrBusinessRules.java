@@ -8,6 +8,7 @@ import org.apache.solr.common.SolrDocument;
 
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
+import com.smt.sitebuilder.security.SecurityController;
 
 /****************************************************************************
  * <b>Title</b>: SolrBusinessRules.java<p/>
@@ -154,5 +155,29 @@ public class SolrBusinessRules {
 		if ("QUICKSTREAM_DSI".equals(sd.get("indexType"))) return "CMS";
 		if ("COURSE_CAL".equals(sd.get("indexType"))) return "EVENT";
 		else return "";
+	}
+	
+
+	
+	/**
+	 * Get the lowest role level associated with this document
+	 * @return
+	 */
+	public int getMinRoleLevel() {
+		// If we have no roles assume public
+		if (sd.getFieldValues("role") == null) return SecurityController.PUBLIC_ROLE_LEVEL;
+		
+		// Start at an unattainable value
+		int role = 1000;
+		for (Object o : sd.getFieldValues("role")) {
+			if (o == null) continue;
+			if ((int)o < role)
+				role = (int)o;
+		}
+		if (role == 1000) {
+			return SecurityController.PUBLIC_ROLE_LEVEL;
+		} else {
+			return role;
+		}
 	}
 }
