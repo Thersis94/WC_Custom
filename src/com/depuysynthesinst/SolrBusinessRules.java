@@ -165,11 +165,11 @@ public class SolrBusinessRules {
 	 */
 	public int getMinRoleLevel() {
 		// If we have no roles assume public
-		if (sd.getFieldValues("role") == null) return SecurityController.PUBLIC_ROLE_LEVEL;
+		if (sd.getFieldValues(SearchDocumentHandler.ROLE) == null) return SecurityController.PUBLIC_ROLE_LEVEL;
 		
 		// Start at an unattainable value
 		int role = 1000;
-		for (Object o : sd.getFieldValues("role")) {
+		for (Object o : sd.getFieldValues(SearchDocumentHandler.ROLE)) {
 			if (o == null) continue;
 			if ((int)o < role)
 				role = (int)o;
