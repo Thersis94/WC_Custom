@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -29,6 +30,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SMTAbstractIndex;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.search.solr.data.BlogSolrDocumentVO;
+import com.smt.sitebuilder.security.SecurityController;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
 import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 
@@ -89,6 +91,7 @@ public class BlogSolrIndexer extends SMTAbstractIndex {
 					solrDoc.setSummary(entry.getBlogText());  //store the whole article
 					solrDoc.setMetaDesc(entry.getShortDesc());
 					solrDoc.setSolrIndex(getIndexType());
+					solrDoc.setRoles(new HashSet<Integer>(Arrays.asList(SecurityController.PUBLIC_REGISTERED_LEVEL)));
 					
 					//get the dynamically built document, then add a couple of custom fields to it for Huddle's date faceting.
 					SolrInputDocument doc = solrUtil.createInputDocument(solrDoc);
@@ -167,9 +170,9 @@ public class BlogSolrIndexer extends SMTAbstractIndex {
 		sql.append("s.organization_id ");
 		sql.append("from sb_action a ");
 		sql.append("inner join page_module b on a.action_id=b.action_id ");
-		sql.append("inner join page_module_role pmr on pmr.page_module_id=b.page_module_id and pmr.role_id='0' ");  //only public portlets
+		sql.append("inner join page_module_role pmr on pmr.page_module_id=b.page_module_id and pmr.role_id='10' ");  //only secure portlets
 		sql.append("inner join page c on c.page_id=b.page_id ");
-		sql.append("inner join page_role pr on pr.page_id=c.page_id and pr.role_id='0' "); //only public pages
+		sql.append("inner join page_role pr on pr.page_id=c.page_id and pr.role_id='10' "); //only secure pages
 		sql.append("inner join site s on c.site_id=s.site_id ");
 		sql.append("inner join module_display md on b.module_display_id=md.module_display_id ");
 		sql.append("where a.module_type_id='HUDDLE_BLOG' and md.indexable_flg=1 "); //only include pages that contain Views of blog that are considered indexable.
