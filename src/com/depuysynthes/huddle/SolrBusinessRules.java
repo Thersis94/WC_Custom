@@ -42,21 +42,6 @@ public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 	
 	
 	/**
-	 * Loop through the roles assigned to the document 
-	 * and determine if it has the public role.
-	 * @return
-	 */
-	public boolean isInternal() {
-		if (sd.getFieldValues("role") == null) return false;
-		for (Object o : sd.getFieldValues("role")) {
-			if (o == null) continue;
-			if ((int)o == 0) return false;
-		}
-		return true;
-	}
-	
-	
-	/**
 	 * Get the proper destination url for the current solrDocument
 	 */
 	@Override
