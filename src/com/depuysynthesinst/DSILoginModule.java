@@ -56,7 +56,7 @@ public class DSILoginModule extends SAMLLoginModule {
 		DSIUserDataVO dsiUser = new DSIUserDataVO(super.retrieveUserData(user, pwd));
 		DSIRoleMgr dsiRoleMgr = new DSIRoleMgr();
 		
-		if (dsiUser.getTtLmsId() != null) {
+		if (dsiUser.getTtLmsId() != null && Convert.formatInteger(dsiUser.getTtLmsId()) > 0) {
 			loadLMSData(dsiUser);
 		} else if (dsiRoleMgr.isResident(dsiUser) || dsiRoleMgr.isFellow(dsiUser) || dsiRoleMgr.isChiefResident(dsiUser)) {
 			//flag the account as incomplete so we can prompt them to complete their registration data (and get a TTLMSID)
