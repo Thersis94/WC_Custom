@@ -239,7 +239,7 @@ public class SalesConsultantAction extends SimpleActionAdapter {
 				vo = newVo;
 				vo.setDocumentId(documentId);
 				vo.addOrganization(orgId);
-				vo.addRole(SecurityController.PUBLIC_REGISTERED_LEVEL);
+				vo.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
 				vo.addHierarchies(newVo.getHierarchy()); //move the data from 3 separate fields to our hierarchy field
 				vo.setCity(null); //flush these, because they don't apply to these records in the context implied (we use them in hierarchy)
 				vo.setState(null);
