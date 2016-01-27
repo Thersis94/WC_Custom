@@ -11,8 +11,10 @@ import java.util.Properties;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
+
 //Solr libs
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
+
 
 // WC libs
 import com.siliconmtn.commerce.catalog.ProductAttributeContainer;
@@ -23,6 +25,7 @@ import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.pool.SMTDBConnection;
 
+import com.smt.sitebuilder.action.blog.BlogGroupVO;
 //WC Libs
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -87,7 +90,16 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 	protected void indexProducts(HttpSolrServer server) {
 		log.info("Indexing products in " + HuddleUtils.CATALOG_ID);
 		Tree tree = getProductData(HuddleUtils.CATALOG_ID);
-		
+		traverseTree(tree, server);
+	}
+	
+	
+	/**
+	 * Traverse the tree to get the category hierarchies and all documents.
+	 * @param tree
+	 * @param server
+	 */
+	private void traverseTree(Tree tree, HttpSolrServer server) {
 		//begin iterating the category tree; this call is recursive and will iterate the entire tree sequentially
 		for (Node child : tree.getRootNode().getChildren()) {
 			loopNode(child);
@@ -112,7 +124,7 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 	 */
 	private void loopNode(Node par) {
 		//add this level to the hierarchy tree
-		log.debug("adding hierarchy: " + par.getDepthLevel() + "=" + par.getNodeName());
+		System.out.println("adding hierarchy: " + par.getDepthLevel() + "=" + par.getNodeName());
 		hierarchy.put(Integer.valueOf(par.getDepthLevel()), par.getNodeName());
 		
 		for (Node child : par.getChildren()) {
@@ -155,7 +167,6 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 			//add a new hierarchy to this product; its either Specialty or Category (we only support two)
 			attachProductCategories(solrDoc, depth);
 			products.put(pVo.getProductId(), solrDoc);
-			log.info("added product " + solrDoc.getTitle());
 		}
 	}
 	
@@ -181,7 +192,7 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 				sb.append(lvl);
 				if (x < depth) sb.append(SearchDocumentHandler.HIERARCHY_DELIMITER);
 			}
-			log.debug("set hierarchy= " + sb);
+			System.out.println("set hierarchy= " + sb);
 			solrDoc.addHierarchies(sb.toString());
 		}
 	}
@@ -252,7 +263,6 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 	 * @param orgId
 	 */
 	private Tree getProductData(String catalogId) {
-		log.debug("loading product for catalogId=" + catalogId);
 		ProductCatalogUtil util = new ProductCatalogUtil();
 		util.setDBConnection(new SMTDBConnection(dbConn));
 		Map<String, Object> attribs = new HashMap<String, Object>();
@@ -279,5 +289,25 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 	@Override
 	public String getIndexType() {
 		return HuddleUtils.IndexType.PRODUCT.toString();
+	}
+	
+
+	/**
+	 * Called form com.depuysynthes.huddle.HuddleProductAdminAction in order to 
+	 * keep the index current with the product catalog without having to call for
+	 * a full rebuild or set up a regular rebuild of the index.
+	 * @param blogId
+	 */
+	public void pushSingleProduct(Tree tree) {
+		log.info("Indexing Single Huddle Blog");
+		HttpSolrServer server = makeServer();
+		
+		traverseTree(tree, server);
+		
+		try {
+			server.commit(false, false); //commit, but don't wait for Solr to acknowledge
+		} catch (Exception e) {
+			log.error("could not commit to Solr", e);
+		}
 	}
 }
