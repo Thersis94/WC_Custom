@@ -13,12 +13,11 @@ import javax.servlet.http.Cookie;
 
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
 
-import ucar.unidata.util.StringUtil;
-
 import com.siliconmtn.commerce.catalog.ProductAttributeVO;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 
 /****************************************************************************
