@@ -23,7 +23,6 @@ import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.pool.SMTDBConnection;
 
-import com.smt.sitebuilder.action.blog.BlogGroupVO;
 //WC Libs
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -159,7 +158,7 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 				solrDoc.setDocumentUrl(pVo.getUrlAlias());
 				solrDoc.addOrganization(organizationId);
 				//solrDoc.setModule(getIndexType()); unused
-				solrDoc.addRole(SecurityController.PUBLIC_REGISTERED_LEVEL);
+				solrDoc.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
 				attachProductCategories(solrDoc, depth);
 				addProductAttributes(solrDoc, pVo);
 			}
@@ -268,6 +267,7 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 	 * @param orgId
 	 */
 	private Tree getProductData(String catalogId) {
+		log.debug("loading product for catalogId=" + catalogId);
 		ProductCatalogUtil util = new ProductCatalogUtil();
 		util.setDBConnection(new SMTDBConnection(dbConn));
 		Map<String, Object> attribs = new HashMap<String, Object>();

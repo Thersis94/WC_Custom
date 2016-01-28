@@ -75,7 +75,7 @@ public class CalendarSolrIndexer extends CourseCalendarSolrIndexer {
 				doc.setField(SearchDocumentHandler.INDEX_TYPE, getIndexType());
 				doc.setField(SearchDocumentHandler.ORGANIZATION, vo.getOrganizationId());
 				doc.setField(SearchDocumentHandler.LANGUAGE, "en");
-				doc.setField(SearchDocumentHandler.ROLE, SecurityController.PUBLIC_REGISTERED_LEVEL);
+				doc.setField(SearchDocumentHandler.ROLE, SecurityController.PUBLIC_ROLE_LEVEL);
 				doc.setField(SearchDocumentHandler.DOCUMENT_URL, vo.getEventUrl());
 				doc.setField(SearchDocumentHandler.DOCUMENT_ID, vo.getActionId());
 				doc.setField(SearchDocumentHandler.TITLE, vo.getEventName());
