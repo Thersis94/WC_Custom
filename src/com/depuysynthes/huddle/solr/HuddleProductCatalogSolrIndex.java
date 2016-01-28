@@ -11,10 +11,8 @@ import java.util.Properties;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
-
 //Solr libs
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
-
 
 // WC libs
 import com.siliconmtn.commerce.catalog.ProductAttributeContainer;
@@ -72,12 +70,14 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 	@Override
 	public void addIndexItems(HttpSolrServer server) {
 		log.info("Indexing DSHuddle Products");
-		
+		prepareSortOrder();
+		indexProducts(server);
+	}
+	
+	private void prepareSortOrder() {
 		//acertain the sequencing order of the attributes, so we can push that into the solr field names and onward to the views
 		for (ProductAttributeVO vo : HuddleUtils.loadProductAttributes(new SMTDBConnection(dbConn), organizationId))
 			sortOrder.put(vo.getAttributeId(), vo.getDisplayOrderNo());
-		
-		indexProducts(server);
 	}
 
 
@@ -124,7 +124,7 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 	 */
 	private void loopNode(Node par) {
 		//add this level to the hierarchy tree
-		System.out.println("adding hierarchy: " + par.getDepthLevel() + "=" + par.getNodeName());
+		log.debug("adding hierarchy: " + par.getDepthLevel() + "=" + par.getNodeName());
 		hierarchy.put(Integer.valueOf(par.getDepthLevel()), par.getNodeName());
 		
 		for (Node child : par.getChildren()) {
@@ -159,7 +159,7 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 				solrDoc.setDocumentUrl(pVo.getUrlAlias());
 				solrDoc.addOrganization(organizationId);
 				//solrDoc.setModule(getIndexType()); unused
-				solrDoc.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
+				solrDoc.addRole(SecurityController.PUBLIC_REGISTERED_LEVEL);
 				attachProductCategories(solrDoc, depth);
 				addProductAttributes(solrDoc, pVo);
 			}
@@ -167,6 +167,7 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 			//add a new hierarchy to this product; its either Specialty or Category (we only support two)
 			attachProductCategories(solrDoc, depth);
 			products.put(pVo.getProductId(), solrDoc);
+			log.info("added product " + solrDoc.getTitle());
 		}
 	}
 	
@@ -192,7 +193,7 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 				sb.append(lvl);
 				if (x < depth) sb.append(SearchDocumentHandler.HIERARCHY_DELIMITER);
 			}
-			System.out.println("set hierarchy= " + sb);
+			log.debug("set hierarchy= " + sb);
 			solrDoc.addHierarchies(sb.toString());
 		}
 	}
@@ -241,7 +242,11 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 					try {
 						JSONArray arr = JSONArray.fromObject(attr.getValueText());
 						for (int x=0; x < arr.size(); x++) {
-							values.add(((JSONObject)arr.get(x)).getString("id"));
+							if ("CMS".equals(((JSONObject)arr.get(x)).getString("type"))) {
+								values.add("CMS" + ((JSONObject)arr.get(x)).getString("id"));
+							} else {
+								values.add(((JSONObject)arr.get(x)).getString("id"));
+							}
 						}
 					} catch (Exception e) {
 						log.warn("could not add mediabin IDs to product attribute", e);
@@ -299,9 +304,9 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 	 * @param blogId
 	 */
 	public void pushSingleProduct(Tree tree) {
-		log.info("Indexing Single Huddle Blog");
+		log.debug("Indexing Single Huddle Product");
 		HttpSolrServer server = makeServer();
-		
+		prepareSortOrder();
 		traverseTree(tree, server);
 		
 		try {
