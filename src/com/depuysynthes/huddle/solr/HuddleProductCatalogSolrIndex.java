@@ -69,12 +69,14 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 	@Override
 	public void addIndexItems(HttpSolrServer server) {
 		log.info("Indexing DSHuddle Products");
-		
+		prepareSortOrder();
+		indexProducts(server);
+	}
+	
+	private void prepareSortOrder() {
 		//acertain the sequencing order of the attributes, so we can push that into the solr field names and onward to the views
 		for (ProductAttributeVO vo : HuddleUtils.loadProductAttributes(new SMTDBConnection(dbConn), organizationId))
 			sortOrder.put(vo.getAttributeId(), vo.getDisplayOrderNo());
-		
-		indexProducts(server);
 	}
 
 
@@ -87,7 +89,16 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 	protected void indexProducts(HttpSolrServer server) {
 		log.info("Indexing products in " + HuddleUtils.CATALOG_ID);
 		Tree tree = getProductData(HuddleUtils.CATALOG_ID);
-		
+		traverseTree(tree, server);
+	}
+	
+	
+	/**
+	 * Traverse the tree to get the category hierarchies and all documents.
+	 * @param tree
+	 * @param server
+	 */
+	private void traverseTree(Tree tree, HttpSolrServer server) {
 		//begin iterating the category tree; this call is recursive and will iterate the entire tree sequentially
 		for (Node child : tree.getRootNode().getChildren()) {
 			loopNode(child);
@@ -230,7 +241,11 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 					try {
 						JSONArray arr = JSONArray.fromObject(attr.getValueText());
 						for (int x=0; x < arr.size(); x++) {
-							values.add(((JSONObject)arr.get(x)).getString("id"));
+							if ("CMS".equals(((JSONObject)arr.get(x)).getString("type"))) {
+								values.add("CMS" + ((JSONObject)arr.get(x)).getString("id"));
+							} else {
+								values.add(((JSONObject)arr.get(x)).getString("id"));
+							}
 						}
 					} catch (Exception e) {
 						log.warn("could not add mediabin IDs to product attribute", e);
@@ -279,5 +294,25 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 	@Override
 	public String getIndexType() {
 		return HuddleUtils.IndexType.PRODUCT.toString();
+	}
+	
+
+	/**
+	 * Called form com.depuysynthes.huddle.HuddleProductAdminAction in order to 
+	 * keep the index current with the product catalog without having to call for
+	 * a full rebuild or set up a regular rebuild of the index.
+	 * @param blogId
+	 */
+	public void pushSingleProduct(Tree tree) {
+		log.debug("Indexing Single Huddle Product");
+		HttpSolrServer server = makeServer();
+		prepareSortOrder();
+		traverseTree(tree, server);
+		
+		try {
+			server.commit(false, false); //commit, but don't wait for Solr to acknowledge
+		} catch (Exception e) {
+			log.error("could not commit to Solr", e);
+		}
 	}
 }
