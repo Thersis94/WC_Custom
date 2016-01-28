@@ -340,7 +340,8 @@ public class SiteSurveyAction extends SBActionAdapter {
 	 */
 	private String getSiteSurveyDeleteSql() {
 		StringBuilder sql = new StringBuilder(60);
-		sql.append("delete from SITE_SURVEY where SITE_SURVEY_ID = ?");
+		sql.append("delete from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("SITE_SURVEY where SITE_SURVEY_ID = ?");
 		return sql.toString(); 
 	}
 
@@ -361,7 +362,8 @@ public class SiteSurveyAction extends SBActionAdapter {
 	 */
 	private String getSiteSurveyListSql() {
 		StringBuilder sql = new StringBuilder(50);
-		sql.append("select * from SITE_SURVEY a ");
+		sql.append("select * from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("SITE_SURVEY a ");
 		sql.append("inner join SB_ACTION b on b.ACTION_ID = a.SITE_SURVEY_ID ");
 		sql.append("where SITE_SURVEY_ID = ?");
 		return sql.toString();
@@ -373,7 +375,8 @@ public class SiteSurveyAction extends SBActionAdapter {
 	 */
 	private String getSiteSurveyUpdateSql() {
 		StringBuilder sql = new StringBuilder(100);
-		sql.append("update SITE_SURVEY set SURVEY_ID = ?, UPDATE_DT = ? where SITE_SURVEY_ID = ?");
+		sql.append("update ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("SITE_SURVEY set SURVEY_ID = ?, UPDATE_DT = ? where SITE_SURVEY_ID = ?");
 		return sql.toString();
 	}
 
@@ -383,7 +386,8 @@ public class SiteSurveyAction extends SBActionAdapter {
 	 */
 	private String getSiteSurveyInsertSql() {
 		StringBuilder sql = new StringBuilder(100);
-		sql.append("insert into SITE_SURVEY (SURVEY_ID, CREATE_DT, ACTION_ID, SITE_SURVEY_ID) ");
+		sql.append("insert into ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("SITE_SURVEY (SURVEY_ID, CREATE_DT, ACTION_ID, SITE_SURVEY_ID) ");
 		sql.append("values (?,?,?,?)");
 		return sql.toString();
 	}
@@ -394,8 +398,11 @@ public class SiteSurveyAction extends SBActionAdapter {
 	 * @return
 	 */
 	private String getSurveyLookupQuery() {
-		StringBuilder sql = new StringBuilder(350);
-		sql.append("select a.SITE_SURVEY_ID, a.ACTION_ID, b.ACTION_ID as 'SURVEY_ID', b.PENDING_SYNC_FLG, b.ACTION_DESC, b.ACTION_NM, c.ACTION_ID, c.REQUIRED_FLG, d.PROFILE_ID from SITE_SURVEY a ");
+		StringBuilder sql = new StringBuilder(600);
+		sql.append("select a.SITE_SURVEY_ID, a.ACTION_ID, b.ACTION_ID as 'SURVEY_ID', ");
+		sql.append("b.PENDING_SYNC_FLG, b.ACTION_DESC, b.ACTION_NM, c.ACTION_ID, ");
+		sql.append("c.REQUIRED_FLG, d.PROFILE_ID from ");
+		sql.append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("SITE_SURVEY a ");
 		sql.append("inner join SB_ACTION b on a.SURVEY_ID = b.ACTION_GROUP_ID ");
 		sql.append("inner join SURVEY c on b.ACTION_ID = c.ACTION_ID ");
 		sql.append("left outer join SURVEY_RESPONSE d on b.ACTION_GROUP_ID = d.ACTION_ID ");
