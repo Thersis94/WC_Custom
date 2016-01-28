@@ -28,6 +28,7 @@ public class SalesConsultantAlignVO extends SolrDocumentVO {
 	
 	//the sales rep's attributes
 	private String OPCO_CD;
+	private String ALGN_STRUC_CD;
 	private String CNSMR_NO;
 	private String CNSMR_NM;
 	private String TERR_ID;
@@ -98,6 +99,7 @@ public class SalesConsultantAlignVO extends SolrDocumentVO {
 		return REP_LAST_NM;
 	}
 	
+	
 	/** 
 	 * use Solr's title field for tokenized name to make searching more accurate
 	 */
@@ -144,6 +146,11 @@ public class SalesConsultantAlignVO extends SolrDocumentVO {
 	@SolrField(name="mgr_email_s")
 	public String getCORE_REG_MGR_EMAIL_ADDR() {
 		return CORE_REG_MGR_EMAIL_ADDR;
+	}
+
+	@SolrField(name="rep_region_s")
+	public String getALGN_STRUC_CD() {
+		return ALGN_STRUC_CD;
 	}
 
 	
@@ -229,6 +236,11 @@ public class SalesConsultantAlignVO extends SolrDocumentVO {
 	@Importable(name = "CORE_REG_MGR_EMAIL_ADDR", type = DataType.STRING)
 	public void setCORE_REG_MGR_EMAIL_ADDR(String cORE_REG_MGR_EMAIL_ADDR) {
 		CORE_REG_MGR_EMAIL_ADDR = cORE_REG_MGR_EMAIL_ADDR;
+	}
+
+	@Importable(name = "ALGN_STRUC_CD", type = DataType.STRING)
+	public void setALGN_STRUC_CD(String aLGN_STRUC_CD) {
+		ALGN_STRUC_CD = aLGN_STRUC_CD;
 	}
 	
 	public String getHierarchy() {

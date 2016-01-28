@@ -61,16 +61,13 @@ public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 				
 			case HUDDLE_CONSULTANTS:
 				return "/sales-consultants/" + super.getQsPath() + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
-	
+					
 			case MEDIA_BIN:
 				String assetType = StringUtil.checkVal(sd.getFieldValue(MediaBinField.AssetType.getField())).toLowerCase();
 				switch (assetType) {
 					case "podcast":
 					case "video":
 						return HuddleUtils.ASSET_PG_ALIAS + super.getQsPath() + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
-					
-						//TODO add app as a JS hook to check for the app on the device, if apple device
-						
 					//default case here slips through and returns the asset's documentUrl
 				}
 				
@@ -78,6 +75,27 @@ public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 				return StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.DOCUMENT_URL));
 		}
 	}
+	
+	
+	/**
+	 * regex the URL to see if we recognize the protocol.  App's have unique ones like depuy://
+	 * @return
+	 */
+	public boolean isApp() {
+		String url = StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.DOCUMENT_URL));
+		return (!url.matches("^(http://|https://|/(.*)$"));
+	}
+	
+	
+	/**
+	 * abstract the URL we use for testing app-opens (like a constant)
+	 * @return
+	 */
+	public String getAppWrapperUrl() {
+		String url = StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.DOCUMENT_URL));
+		return "javascript:launchApp('" + url + "');";
+	}
+	
 	
 	/**
 	 * leverage the INDEX_TYPE to determine which type of Favorite to use.  Unfortunately they don't correlate directly.
@@ -90,7 +108,7 @@ public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 		switch (type) {
 			case COURSE_CAL: return "EVENT";
 			case MEDIA_BIN: return "MEDIABIN";
-			case CMS_QUICKSTREAM: return "CMS";
+			case QUICKSTREAM_DSI: return "CMS";
 			default:
 				return type.toString();
 		}

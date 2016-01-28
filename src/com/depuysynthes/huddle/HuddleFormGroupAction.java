@@ -64,7 +64,7 @@ public class HuddleFormGroupAction extends SBActionAdapter {
 		 * Retrieve the HuddleGroupVO for the given formGroupId and place in
 		 * AdminModuleData. 
 		 */
-		super.putModuleData(getHuddleGroupVO(formGroupId, organizationId, false), 1, true);
+		super.putModuleData(getHuddleGroupVO(formGroupId, organizationId, true), 1, true);
 	}
 
 	public void update(SMTServletRequest req) throws ActionException {
@@ -256,12 +256,16 @@ public class HuddleFormGroupAction extends SBActionAdapter {
 	 */
 	private String getFormsSql() {
 		StringBuilder sql = new StringBuilder(300);
-		sql.append("select * from FB_FORM a inner join SB_ACTION c ");
-		sql.append("on a.FORM_ID = c.ACTION_ID left outer join ");
+		sql.append("select * from FB_FORM a ");
+		sql.append("inner join SB_ACTION b ");
+		sql.append("on a.ACTION_ID = b.ACTION_ID ");
+		sql.append("left outer join ");
 		sql.append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("HUDDLE_FORM_GROUP b on c.ACTION_GROUP_ID = b.FORM_ID ");
-		sql.append("and b.FORM_GROUP_ID = ? and c.ORGANIZATION_ID = ? ");
-		sql.append("order by b.ORDER_NO, PENDING_SYNC_FLG ");
+		sql.append("HUDDLE_FORM_GROUP c on b.ACTION_GROUP_ID = c.FORM_ID ");
+		sql.append("and c.FORM_GROUP_ID = ? where b.ORGANIZATION_ID = ? ");
+		sql.append("order by c.ORDER_NO, b.PENDING_SYNC_FLG ");
+
+		log.debug(sql.toString());
 		return sql.toString();
 	}
 }

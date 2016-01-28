@@ -15,8 +15,6 @@ import org.apache.solr.client.solrj.SolrQuery.ORDER;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.common.html.StateList;
-import com.siliconmtn.common.html.state.USStateList;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
@@ -77,6 +75,7 @@ public class SalesConsultantAction extends SimpleActionAdapter {
 			req.setParameter("rpp", rppCook.getValue());
 		
 		//if we have specialty add it as a filter - this allows the section homepages to target pre-filtered lists
+		//also check for city & state searches, or name searches  (action suports 3 models for searching)
 		if (req.hasParameter("specialty")) {
 			Set<String> fq = new HashSet<>();
 			if (req.hasParameter("fq"))
@@ -207,7 +206,6 @@ public class SalesConsultantAction extends SimpleActionAdapter {
 	private void indexRecords(Map<String, SalesConsultantRepVO> repData, 
 			Collection<Object> data, String orgId) throws ActionException  {
 		
-		Map<String, String> states = invertStates(new USStateList()); 
 		Map<String, SalesConsultantAlignVO> finalData = new HashMap<>(data.size());
 		SalesConsultantAlignVO vo;
 		SolrActionUtil util = new SolrActionUtil(getAttributes());
@@ -224,7 +222,6 @@ public class SalesConsultantAction extends SimpleActionAdapter {
 			if (Convert.formatInteger(newVo.getREP_ID()) == 0) continue;
 			
 			String documentId = "dpy-rep-" + newVo.getREP_ID();
-			newVo.setState(states.get(newVo.getState())); //replace the stateCd with stateNm
 			newVo.setCity(StringUtil.capitalizePhrase(newVo.getCity(), 3));
 			newVo.setCNSMR_NM(StringUtil.capitalizePhrase(newVo.getCNSMR_NM(), 3));
 			vo = finalData.get(documentId);
@@ -242,7 +239,7 @@ public class SalesConsultantAction extends SimpleActionAdapter {
 				vo = newVo;
 				vo.setDocumentId(documentId);
 				vo.addOrganization(orgId);
-				vo.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
+				vo.addRole(SecurityController.PUBLIC_REGISTERED_LEVEL);
 				vo.addHierarchies(newVo.getHierarchy()); //move the data from 3 separate fields to our hierarchy field
 				vo.setCity(null); //flush these, because they don't apply to these records in the context implied (we use them in hierarchy)
 				vo.setState(null);
@@ -253,19 +250,5 @@ public class SalesConsultantAction extends SimpleActionAdapter {
 		}
 		
 		util.addDocuments(finalData.values());
-	}
-	
-	
-	/**
-	 * inverts the Map of states maintained in the static bean
-	 * @param states
-	 * @return
-	 */
-	private Map<String, String> invertStates(StateList list) {
-		Map<String, String> data = new HashMap<>(60);
-		for(Map.Entry<Object, Object> entry : list.getStateList().entrySet())
-			data.put(entry.getValue().toString(), entry.getKey().toString());
-
-		return data;
 	}
 }

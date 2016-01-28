@@ -161,7 +161,7 @@ public class HuddleUtils {
 		HUDDLE_PRODUCT_CONTACT("Product Contacts"),
 		MEDIA_BIN("Documents"),
 		PRODUCT("Products"),
-		CMS_QUICKSTREAM("Documents");
+		QUICKSTREAM_DSI("Documents");
 		
 		private String name;
 		IndexType(String name) { this.name = name; }
