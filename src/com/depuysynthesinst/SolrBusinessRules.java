@@ -31,6 +31,7 @@ public class SolrBusinessRules {
 	protected SolrDocument sd;
 	private String moduleType;
 	protected String qsPath = "";
+	protected String cmsPath = "";
 	private boolean isSiteSearch;
 	
 	public SolrBusinessRules() {
@@ -43,6 +44,14 @@ public class SolrBusinessRules {
 	
 	public String getQsPath() {
 		return qsPath;
+	}
+
+	public void setCmsPath(String cmsPath) {
+		this.cmsPath = cmsPath;
+	}
+	
+	public String getCmsPath() {
+		return cmsPath;
 	}
 	
 	public void setSolrDocument(SolrDocument sd) {
