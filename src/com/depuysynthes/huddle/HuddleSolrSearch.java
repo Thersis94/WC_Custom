@@ -71,7 +71,7 @@ public class HuddleSolrSearch  extends SimpleActionAdapter {
 		}
 		
 		
-		System.out.println("@!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+		
 		SMTActionInterface sai = new SolrAction(actionInit);
 		sai.setAttributes(attributes);
 		sai.setDBConnection(dbConn);
