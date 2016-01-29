@@ -122,4 +122,35 @@ public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 				return type.toString();
 		}
 	}
+	
+	
+	/**
+	 * Check the hierarchies on the document to try and find the document's family
+	 * @param includeLineBreak 
+	 * @return
+	 */
+	public String getFamilyName(boolean includeLineBreak) {
+		String family = "";
+		Collection<Object> hierarchies = sd.getFieldValues(SearchDocumentHandler.HIERARCHY);
+		if (hierarchies == null || hierarchies.size() == 0) return "";
+		
+		for (Object o : hierarchies) {
+			if (o == null) continue;
+			String[] split = ((String)o).split(SearchDocumentHandler.HIERARCHY_DELIMITER);
+			
+			// Families are always at the fourth level of the hierarchy
+			if (split.length != 4) return "";
+			family = split[3];
+			
+			// Each product will only be part of one family.
+			// Once that has been found the loop can be exited.
+			break;
+		}
+		
+		if (includeLineBreak) {
+			return family + "<br/>";
+		} else {
+			return family;
+		}
+	}
 }
