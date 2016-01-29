@@ -70,7 +70,16 @@ public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 						return HuddleUtils.ASSET_PG_ALIAS + super.getQsPath() + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
 					//default case here slips through and returns the asset's documentUrl
 				}
-				
+			case QUICKSTREAM_DSI:
+				String cmsType = StringUtil.checkVal(sd.getFieldValue(MediaBinField.AssetType.getField())).toLowerCase();
+				switch(cmsType) {
+					case "external site":
+						// External sites will contain full urls in the document url field to be used on the page.
+						return (String) sd.getFieldValue(SearchDocumentHandler.DOCUMENT_URL);
+					default:
+						// Internal cms documents will be found under the cmsPath via their title.
+						return cmsPath + "/" + sd.getFieldValue(SearchDocumentHandler.TITLE);
+				}
 			default:
 				return StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.DOCUMENT_URL));
 		}
