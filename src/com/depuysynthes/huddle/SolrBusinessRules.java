@@ -147,7 +147,7 @@ public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 			break;
 		}
 		
-		if (includeLineBreak) {
+		if (includeLineBreak && family.length() > 0) {
 			return family + "<br/>";
 		} else {
 			return family;
