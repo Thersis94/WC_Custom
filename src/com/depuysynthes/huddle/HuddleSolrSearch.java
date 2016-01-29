@@ -45,7 +45,7 @@ public class HuddleSolrSearch  extends SimpleActionAdapter {
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		
-		if (req.hasParameter("searchData") && page.getDefaultColumn() == mod.getDisplayColumn())
+		if (req.hasParameter("searchData") && mod.getDisplayColumn() != null && mod.getDisplayColumn().equals(page.getDefaultColumn()))
 			this.build(req);
 	}
 	
@@ -71,7 +71,7 @@ public class HuddleSolrSearch  extends SimpleActionAdapter {
 		}
 		
 		
-		
+		System.out.println("@!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 		SMTActionInterface sai = new SolrAction(actionInit);
 		sai.setAttributes(attributes);
 		sai.setDBConnection(dbConn);
