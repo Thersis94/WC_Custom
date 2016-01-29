@@ -99,9 +99,9 @@ public class HTMLSolrFiltersBean {
 			if (n.getNumberChildren() > 0) {
 				sb.append("<a class=\"caret_wrap collapsed\"");
 				sb.append(" data-toggle='collapse' href='#");
-				sb.append(n.getNodeId().replace("~", "-").replace(" ", "-"));
+				sb.append(StringUtil.removeNonAlpha((n.getNodeId())));
 				sb.append("' aria-expanded='false' aria-controls='");
-				sb.append(n.getNodeId().replace("~", "-").replace(" ", "-"));
+				sb.append(StringUtil.removeNonAlpha((n.getNodeId())));
 				sb.append("'><span class=\"caret\"></span></a>");
 			} else {
 				sb.append("<span class=\"count\">").append(formatCount(n.getUserObject())).append("</span>");
@@ -129,12 +129,12 @@ public class HTMLSolrFiltersBean {
 					}
 				}
 				if (isLeaf) {
-					sb.append("<div id='").append(n.getNodeId().replace("~", "-").replace(" ", "-"));
+					sb.append("<div id='").append(StringUtil.removeNonAlpha((n.getNodeId())));
 					sb.append("' class='collapse-panel-body collapse' aria-expanded='true'>");
 					getHierarchyLeaf(n, filterNm, onclick, sb);
 					sb.append("</div>");
 				} else {
-					sb.append("<div id='").append(n.getNodeId().replace("~", "-").replace(" ", "-"));
+					sb.append("<div id='").append(StringUtil.removeNonAlpha((n.getNodeId())));
 					sb.append("' class='collapse-panel-body collapse' aria-expanded='true'>");
 					getHierarchyFilterSimple(n, filterNm, onclick, sb, !invertColor);
 					sb.append("</div>");
