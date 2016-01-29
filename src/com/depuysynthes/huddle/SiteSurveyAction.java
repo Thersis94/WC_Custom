@@ -405,7 +405,7 @@ public class SiteSurveyAction extends SBActionAdapter {
 		sql.append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_HUDDLE_SURVEY a ");
 		sql.append("inner join SB_ACTION b on a.SURVEY_ID = b.ACTION_GROUP_ID ");
 		sql.append("inner join SURVEY c on b.ACTION_ID = c.ACTION_ID ");
-		sql.append("left outer join SURVEY_RESPONSE d on b.ACTION_GROUP_ID = d.ACTION_ID ");
+		sql.append("left outer join SURVEY_RESPONSE d on b.ACTION_ID = d.ACTION_ID ");
 		sql.append("and d.PROFILE_ID = ? where a.ACTION_ID = ? order by b.PENDING_SYNC_FLG");
 		log.debug(sql.toString());
 		return sql.toString();
