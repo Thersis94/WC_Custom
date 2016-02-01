@@ -47,8 +47,11 @@ public class HuddleProductAdminAction extends SimpleActionAdapter {
 		bfa.setAttributes(getAttributes());
 		bfa.setDBConnection(dbConn);
 		bfa.update(req);
-		if (!req.hasParameter("productId")) return;
-		indexProduct(req.getParameter("productId"), req.getParameter("catalogId"), req);
+		if (req.hasParameter("productId")) {
+			indexProduct(req.getParameter("productId"), req.getParameter("catalogId"), req);
+		} else if (req.hasParameter("productCategoryCode") || req.hasParameter("attributeId")) {
+			indexProduct(null, req.getParameter("catalogId"), req);
+		}
 	}
 	
 	private void indexProduct(String productId, String catalogId, SMTServletRequest req) {
