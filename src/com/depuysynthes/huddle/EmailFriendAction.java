@@ -10,9 +10,9 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.SMTSerializer;
-import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBModuleVO;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.smt.sitebuilder.action.cms.DocumentAction;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -122,13 +122,15 @@ public class EmailFriendAction extends SimpleActionAdapter {
 		sb.append("<ul>");
 		String url;
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		String assetBase = site.getFullSiteAlias() + HuddleUtils.ASSET_PG_ALIAS + StringUtil.checkVal(getAttribute(Constants.QS_PATH));
+		//String assetBase = site.getFullSiteAlias() + HuddleUtils.ASSET_PG_ALIAS + StringUtil.checkVal(getAttribute(Constants.QS_PATH));
 		String mbBase = site.getFullSiteAlias() + HuddleUtils.MEDIABIN_REDIR_URL;
 		@SuppressWarnings("unchecked")
 		Map<String, ShareVO> shareMap = (Map<String, ShareVO>) req.getAttribute("shareMap");
 		for (ShareVO vo : shareMap.values()) {
-			if ("video".equals(vo.getType()) || "podcast".equals(vo.getType())) {
-				url = assetBase + vo.getId();
+			if (vo.getId().startsWith(DocumentAction.SOLR_PREFIX)) {
+				url = site.getFullSiteAlias() + vo.getUrl();
+			//} else if ("video".equals(vo.getType()) || "podcast".equals(vo.getType())) {
+			//	url = assetBase + vo.getId();
 			} else {
 				url = mbBase + vo.getId();
 			}

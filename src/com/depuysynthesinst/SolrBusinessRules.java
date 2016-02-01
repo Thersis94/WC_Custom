@@ -24,14 +24,13 @@ import com.smt.sitebuilder.security.SecurityController;
 public class SolrBusinessRules {
 
 	//protected static Logger log;
-	private String pageUrl;
+	protected String pageUrl;
 	private String sectionNm;
 	private String hierarchy;
 	private String thumbnailImg;
 	protected SolrDocument sd;
 	private String moduleType;
 	protected String qsPath = "";
-	protected String cmsPath = "";
 	private boolean isSiteSearch;
 	
 	public SolrBusinessRules() {
@@ -44,14 +43,6 @@ public class SolrBusinessRules {
 	
 	public String getQsPath() {
 		return qsPath;
-	}
-
-	public void setCmsPath(String cmsPath) {
-		this.cmsPath = cmsPath;
-	}
-	
-	public String getCmsPath() {
-		return cmsPath;
 	}
 	
 	public void setSolrDocument(SolrDocument sd) {
@@ -73,7 +64,7 @@ public class SolrBusinessRules {
 
 
 	@SuppressWarnings("unchecked")
-	private void buildSectionName() {
+	protected void buildSectionName() {
 		//hierarchy is a multi-valued field; if multiple values exist the object is an array instead of a String
 		//in either case we take the first one
 		try {
@@ -121,7 +112,7 @@ public class SolrBusinessRules {
 	}
 
 	
-	private void buildPageUrl() {
+	protected void buildPageUrl() {
 		if ("EVENT".equals(moduleType)) {
 			pageUrl = StringUtil.checkVal(sd.get(SearchDocumentHandler.DOCUMENT_URL));
 		} else {

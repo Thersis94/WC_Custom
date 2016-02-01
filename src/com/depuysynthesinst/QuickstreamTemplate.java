@@ -23,28 +23,32 @@ import com.smt.sitebuilder.search.SearchDocumentHandler;
 public class QuickstreamTemplate extends CMSSolrDocumentVO {
 
 	private String assetType;
-	private String assetUrl;
+	protected String assetUrl;
 	private String trackingNo;
 	
 	/**
 	 * @param solrIndex
 	 */
-	public QuickstreamTemplate() {
-		super(QuickstreamSolrIndexer.INDEX_TYPE);
+	public QuickstreamTemplate(String indexType) {
+		super(indexType);
 		super.setUpdateDt(Calendar.getInstance().getTime());
+	}
+	
+	public QuickstreamTemplate() {
+		this(QuickstreamSolrIndexer.INDEX_TYPE);
 	}
 	
 	/**
 	 * extension of superclass implementation; for DSI-specific template fields
 	 */
 	public void setData(Object o) {
-		super.setData(o);
-		CMSContentVO vo = (CMSContentVO) o;
 		//this is for debugging; trying to track down an NPE - JM 03.26.15
-		if (vo == null) {
+		if (o == null) {
 			log.error("passed a null vo, figure out why.");
 			return;
 		}
+		super.setData(o);
+		CMSContentVO vo = (CMSContentVO) o;
 		
 		TemplateFieldVOContainer templateData = vo.getTemplateData();
 		//this is for debugging; trying to track down an NPE - JM 03.26.15
@@ -55,7 +59,6 @@ public class QuickstreamTemplate extends CMSSolrDocumentVO {
 		
 		if (vo.getArticle() != null)
 			super.setSummary(StringUtil.checkVal(vo.getArticle().toString()));
-		
 		
 		
 		//some core fields are provided here-in:

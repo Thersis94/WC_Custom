@@ -20,6 +20,7 @@ public class ShareVO implements Serializable {
 	private String id;
 	private String title;
 	private String type;
+	private String url;
 	
 	public String getId() {
 		return id;
@@ -40,4 +41,10 @@ public class ShareVO implements Serializable {
 		this.type = type;
 	}
 	public String toString() { return SMTSerializer.toJson(this); }
+	public String getUrl() {
+		return url;
+	}
+	public void setUrl(String url) {
+		this.url = url;
+	}
 }
