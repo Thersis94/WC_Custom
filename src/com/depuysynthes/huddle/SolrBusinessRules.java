@@ -19,9 +19,73 @@ import com.smt.sitebuilder.search.SearchDocumentHandler;
  ****************************************************************************/
 public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 
+	protected String cmsPath = "";
+	protected String reqParam1 = "";
+	
 	public SolrBusinessRules() {
 		super();
 	}
+	
+	@Override
+	protected void buildSectionName() {
+		//overrides parent method, not needed for Huddle
+	}
+	
+	@Override
+	protected void buildPageUrl() {
+		IndexType type = IndexType.quietValueOf(StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.INDEX_TYPE)));
+		if (type == null) type = IndexType.MEDIA_BIN; //this should quickly fall through to the default
+		
+		switch(type) {
+			case PRODUCT:
+				pageUrl = "/product/" + super.getQsPath() + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_URL);
+				break;
+			
+			case COURSE_CAL:
+				pageUrl =  "/events/" + super.getQsPath() + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
+				break;
+			
+			case HUDDLE_BLOG:
+				pageUrl = "/news/" + super.getQsPath() + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
+				break;
+				
+			case HUDDLE_CONSULTANTS:
+				pageUrl = "/sales-consultants/" + super.getQsPath() + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
+				break;
+					
+			case MEDIA_BIN:
+				String assetType = StringUtil.checkVal(sd.getFieldValue(MediaBinField.AssetType.getField())).toLowerCase();
+				switch (assetType) {
+					case "podcast":
+					case "video":
+						String url = HuddleUtils.ASSET_PG_ALIAS + super.getQsPath() + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
+						if (reqParam1 != null && reqParam1.length() > 0) url += "/" + reqParam1; 
+						pageUrl = url;
+						break;
+					//default case here slips through and returns the asset's documentUrl
+				}
+			case CMS_QUICKSTREAM:
+				String cmsType = StringUtil.checkVal(sd.getFieldValue(MediaBinField.AssetType.getField())).toLowerCase();
+				switch(cmsType) {
+					case "external site":
+						// External sites will contain full urls in the document url field to be used on the page.
+						pageUrl = StringUtil.checkVal(sd.getFieldValue("asset_url_s"));
+						break;
+					//case "app":
+						//let these go to the CMS document /docs/, which can explain the app and apply the link text as static html
+						//it makes for a better user experience, and supports favoriting
+						
+					//default:
+						// Internal cms documents have the correct url in their doucmentUrl, slide-through
+						//pageUrl = StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.DOCUMENT_URL));
+						//break;
+				}
+			default:
+				pageUrl = StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.DOCUMENT_URL));
+				break;
+		}
+	}
+	
 	
 	/**
 	 * Get the first image from the potential list in the supplied field.
@@ -40,69 +104,13 @@ public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 		return "/binary/org/DPY_SYN_HUDDLE/mediabin/" + trackingNo.substring(0, 3) + "/" + trackingNo + ".jpg";
 	}
 	
-	
-	/**
-	 * Get the proper destination url for the current solrDocument
-	 */
-	@Override
-	public String getPageUrl() {
-		IndexType type = IndexType.quietValueOf(StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.INDEX_TYPE)));
-		if (type == null) type = IndexType.MEDIA_BIN; //this should quickly fall through to the default
-		
-		switch(type) {
-			case PRODUCT:
-				return "/product/" + super.getQsPath() + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_URL);
-			
-			case COURSE_CAL:
-				return "/events/" + super.getQsPath() + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
-			
-			case HUDDLE_BLOG:
-				return "/news/" + super.getQsPath() + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
-				
-			case HUDDLE_CONSULTANTS:
-				return "/sales-consultants/" + super.getQsPath() + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
-					
-			case MEDIA_BIN:
-				String assetType = StringUtil.checkVal(sd.getFieldValue(MediaBinField.AssetType.getField())).toLowerCase();
-				switch (assetType) {
-					case "podcast":
-					case "video":
-						return HuddleUtils.ASSET_PG_ALIAS + super.getQsPath() + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
-					//default case here slips through and returns the asset's documentUrl
-				}
-			case QUICKSTREAM_DSI:
-				String cmsType = StringUtil.checkVal(sd.getFieldValue(MediaBinField.AssetType.getField())).toLowerCase();
-				switch(cmsType) {
-					case "external site":
-						// External sites will contain full urls in the document url field to be used on the page.
-						return (String) sd.getFieldValue(SearchDocumentHandler.DOCUMENT_URL);
-					default:
-						// Internal cms documents will be found under the cmsPath via their title.
-						return cmsPath + "/" + sd.getFieldValue(SearchDocumentHandler.TITLE);
-				}
-			default:
-				return StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.DOCUMENT_URL));
-		}
-	}
-	
-	
 	/**
 	 * regex the URL to see if we recognize the protocol.  App's have unique ones like depuy://
 	 * @return
 	 */
 	public boolean isApp() {
 		String url = StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.DOCUMENT_URL));
-		return (!url.matches("^(http://|https://|/(.*)$"));
-	}
-	
-	
-	/**
-	 * abstract the URL we use for testing app-opens (like a constant)
-	 * @return
-	 */
-	public String getAppWrapperUrl() {
-		String url = StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.DOCUMENT_URL));
-		return "javascript:launchApp('" + url + "');";
+		return (!url.matches("^(http://|https://|/)(.*)$"));
 	}
 	
 	
@@ -117,7 +125,7 @@ public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 		switch (type) {
 			case COURSE_CAL: return "EVENT";
 			case MEDIA_BIN: return "MEDIABIN";
-			case QUICKSTREAM_DSI: return "CMS";
+			case CMS_QUICKSTREAM: return "CMS";
 			default:
 				return type.toString();
 		}
@@ -152,5 +160,64 @@ public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 		} else {
 			return family;
 		}
+	}
+	
+	
+	/**
+	 * returns the assetType_s value, except for CMS FILES, which look at the file type (extention)
+	 * @return
+	 */
+	public String getAssetType() {
+		String type = StringUtil.checkVal(sd.getFieldValue("assetType_s"));
+		//if its a CMS file, derive type from the file name
+		if ("FILE (PDF, PPT, DOC, XLS, ZIP, ETC.)".equalsIgnoreCase(type))
+			type = StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.FILE_EXTENSION), "FILE").toUpperCase();
+
+		return type;
+	}
+	
+	
+	/**
+	 * returns true if this solrDocument can be download to the user's briefcase; 
+	 * implies the Briefcase supports such media type (see TDS).
+	 * @return
+	 */
+	public boolean hasBriefcaseSupport() {
+		IndexType type = IndexType.quietValueOf(StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.INDEX_TYPE)));
+		if (IndexType.MEDIA_BIN == type ) {
+			return true; //public-facing PDFs, Podcasts and videos
+		} else if (IndexType.CMS_QUICKSTREAM == type) {
+			//need to look at AssetType, only non-html can go into the briefcase
+			String cmsType = StringUtil.checkVal(sd.getFieldValue(MediaBinField.AssetType.getField())).toLowerCase();
+			switch(cmsType) {
+				case "file (pdf, ppt, doc, xls, zip, etc.)":
+					return true;
+				case "app":
+				case "external site":
+				default:
+					return false;
+			}
+		} else if (IndexType.FORM == type) {
+			return true;
+		} else {
+			return false; //blog, events, sales consultants, etc.
+		}
+	}
+	
+
+	public void setCmsPath(String cmsPath) {
+		this.cmsPath = cmsPath;
+	}
+	
+	public String getCmsPath() {
+		return cmsPath;
+	}
+
+	public String getReqParam1() {
+		return reqParam1;
+	}
+
+	public void setReqParam1(String reqParam1) {
+		this.reqParam1 = reqParam1;
 	}
 }

@@ -1,7 +1,5 @@
 package com.depuysynthes.huddle;
 
-import java.util.Properties;
-
 import javax.servlet.http.Cookie;
 
 import com.depuysynthes.huddle.solr.BlogSolrIndexer;
@@ -69,9 +67,7 @@ public class BlogAction extends SimpleActionAdapter {
 		if (!req.hasParameter("blogId")) return;
 		
 		//fire the VO to Solr, leverage the same lookup the "full rebuild" indexer uses, which joins to Site Pages
-		Properties props = new Properties();
-		props.putAll(getAttributes());
-		BlogSolrIndexer indexer = new BlogSolrIndexer(props);
+		BlogSolrIndexer indexer = BlogSolrIndexer.makeInstance(getAttributes());
 		indexer.setDBConnection(getDBConnection());
 		log.debug("indexing blog article " + req.getParameter("blogId"));
 		indexer.pushSingleArticle(req.getParameter("blogId")); //null here would index the entire portlet, not just one article
