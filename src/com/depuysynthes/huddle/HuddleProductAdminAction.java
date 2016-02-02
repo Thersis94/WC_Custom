@@ -48,8 +48,11 @@ public class HuddleProductAdminAction extends SimpleActionAdapter {
 		bfa.setDBConnection(dbConn);
 		bfa.update(req);
 		if (req.hasParameter("productId")) {
+			// Since this is a product update only that needs to be updated.
 			indexProduct(req.getParameter("productId"), req.getParameter("catalogId"), req);
 		} else if (req.hasParameter("productCategoryCode") || req.hasParameter("attributeId")) {
+			// Attribute and category updates can affect many products,
+			// therefore the entire index needs to be remade.
 			indexProduct(null, req.getParameter("catalogId"), req);
 		}
 	}
