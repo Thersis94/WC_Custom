@@ -7,6 +7,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import com.depuysynthes.huddle.HuddleGroupVO.HuddleForm;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
@@ -90,18 +91,26 @@ public class HuddleFormGroupAction extends SBActionAdapter {
 	}
 
 	public void retrieve(SMTServletRequest req) throws ActionException {
+		String formGroupId = actionInit.getActionId();
+		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		
+		// Get the forms for this group id
+		HuddleGroupVO forms = getHuddleGroupVO(formGroupId, site.getOrganizationId(), page.isPreviewMode());
+		
+		if (forms == null) throw new ActionException("No forms found");
+		
 		/*
-		 * If there is a formId on the request, forward the call to
+		 * If there is a qs field on the request, forward the call to
 		 * FormBuilderFacadeActions build method.  Otherwise just retrieve the
 		 * HuddleFormGroupActions vo.
 		 */
-		if(req.hasParameter("formId")) {
-			getFormBuilderFacadeAction(req.getParameter("formId")).retrieve(req);
+		if(req.hasParameter("reqParam_1")) {
+			HuddleForm form = forms.getFormsMap().get(req.getParameter("reqParam_1"));
+			if (form == null) throw new ActionException("No form found with id " + req.getParameter("reqParam_1"));
+			getFormBuilderFacadeAction(form.getActionId()).retrieve(req);
 		} else {
-			String formGroupId = actionInit.getActionId();
-			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
-			putModuleData(getHuddleGroupVO(formGroupId, site.getOrganizationId(), page.isPreviewMode()), 1, false);
+			putModuleData(forms, 1, false);
 		}
 	}
 

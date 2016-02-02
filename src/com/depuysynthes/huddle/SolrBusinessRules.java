@@ -52,6 +52,10 @@ public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 			case HUDDLE_CONSULTANTS:
 				pageUrl = "/sales-consultants/" + super.getQsPath() + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
 				break;
+
+			case FORM:
+				pageUrl = "/forms/" + super.getQsPath() + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
+				break;
 					
 			case MEDIA_BIN:
 				String assetType = StringUtil.checkVal(sd.getFieldValue(MediaBinField.AssetType.getField())).toLowerCase();
@@ -80,6 +84,7 @@ public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 						//pageUrl = StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.DOCUMENT_URL));
 						//break;
 				}
+				
 			default:
 				pageUrl = StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.DOCUMENT_URL));
 				break;
