@@ -52,6 +52,12 @@ public class BlogSolrIndexer extends SMTAbstractIndex {
 	public BlogSolrIndexer(Properties config) {
 		super(config);
 	}
+	
+	public static BlogSolrIndexer makeInstance(Map<String, Object> attributes) {
+		Properties props = new Properties();
+		props.putAll(attributes);
+		return new BlogSolrIndexer(props);
+	}
 
 
 	/* (non-Javadoc)

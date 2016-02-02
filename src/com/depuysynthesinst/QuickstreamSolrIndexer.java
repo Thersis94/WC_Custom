@@ -28,6 +28,7 @@ import com.smt.sitebuilder.util.solr.SolrDocumentVO;
  * @version 1.0
  * @since Mar 3, 2015
  ****************************************************************************/
+@Deprecated //the core indexer will do all this now, combined with the DSI QuickstreamTemplate -JM 01.31.2016
 public class QuickstreamSolrIndexer extends SMTAbstractIndex {
 	
 	public static final String INDEX_TYPE = "QUICKSTREAM_DSI";
@@ -36,7 +37,8 @@ public class QuickstreamSolrIndexer extends SMTAbstractIndex {
 	public QuickstreamSolrIndexer(Properties config) {
 		this.config = config;
 	}
-
+	
+	
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#addIndexItems(org.apache.solr.client.solrj.impl.HttpSolrServer)
 	 */
