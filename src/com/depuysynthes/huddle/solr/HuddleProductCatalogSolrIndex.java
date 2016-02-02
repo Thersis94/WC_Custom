@@ -85,7 +85,6 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 	 * @param catalogId
 	 * @param server
 	 */
-	@SuppressWarnings("unchecked")
 	protected void indexProducts(HttpSolrServer server) {
 		log.info("Indexing products in " + HuddleUtils.CATALOG_ID);
 		Tree tree = getProductData(HuddleUtils.CATALOG_ID);
@@ -135,6 +134,14 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 				//dig a level deeper
 				loopNode(child);
 			}
+		}
+		
+		
+		// Products that have not been assigned any categories come as one off
+		// nodes with no children and must be handled differently.
+		ProductCategoryVO cat = (ProductCategoryVO)par.getUserObject();
+		if (cat.getProductId() != null) {
+			indexProduct(cat, par.getDepthLevel() -1);
 		}
 	}
 	
