@@ -28,7 +28,7 @@ public class HuddleSolrFormIndexer extends FormSolrIndexer {
 	protected String buildQuery(String groupId) {
 		StringBuilder sql = new StringBuilder(1000);
 		
-		sql.append("select fa.ACTION_GROUP_ID, fa.ACTION_NM, fa.ORGANIZATION_ID,PDF_FILE_PATH, ROLE_ID ");
+		sql.append("select fa.ACTION_GROUP_ID, fa.ACTION_NM, fa.ORGANIZATION_ID,PDF_FILE_PATH, ROLE_ORDER_NO ");
 		sql.append("from SB_ACTION sa ");
 		sql.append("left join ").append(config.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("HUDDLE_FORM_GROUP hfg on hfg.FORM_GROUP_ID = sa.ACTION_GROUP_ID ");
@@ -39,6 +39,7 @@ public class HuddleSolrFormIndexer extends FormSolrIndexer {
 		sql.append("inner join PAGE p on p.PAGE_ID = pm.PAGE_ID and p.PAGE_GROUP_ID is null ");
 		sql.append("inner join PAGE_MODULE_ROLE pmr ");
 		sql.append("on pmr.PAGE_MODULE_ID = pm.PAGE_MODULE_ID ");
+		sql.append("left join ROLE r on r.ROLE_ID = pmr.ROLE_ID ");
 		// We never want to add in progress items to solr.
 		sql.append("where sa.MODULE_TYPE_ID = ? and (sa.PENDING_SYNC_FLG = 0 ");
 		sql.append("or sa.PENDING_SYNC_FLG is null) ");
