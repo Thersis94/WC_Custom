@@ -21,6 +21,7 @@ public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 
 	protected String cmsPath = "";
 	protected String reqParam1 = "";
+	protected String shareUrl; //different from pageUrl, for MB assets these reference LL directly
 	
 	public SolrBusinessRules() {
 		super();
@@ -33,10 +34,12 @@ public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 	
 	@Override
 	protected void buildPageUrl() {
+		shareUrl = null; //flush this since we may not be setting it for the given asset, this bean gets reused in views
+		
 		IndexType type = IndexType.quietValueOf(StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.INDEX_TYPE)));
 		if (type == null) type = IndexType.MEDIA_BIN; //this should quickly fall through to the default
 		
-		switch(type) {
+		indexType: switch(type) {
 			case PRODUCT:
 				pageUrl = "/product/" + super.getQsPath() + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_URL);
 				break;
@@ -65,16 +68,18 @@ public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 						String url = HuddleUtils.ASSET_PG_ALIAS + super.getQsPath() + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
 						if (reqParam1 != null && reqParam1.length() > 0) url += "/" + reqParam1; 
 						pageUrl = url;
-						break;
+						shareUrl = StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.DOCUMENT_URL));
+						break indexType;
 					//default case here slips through and returns the asset's documentUrl
 				}
+				
 			case CMS_QUICKSTREAM:
 				String cmsType = StringUtil.checkVal(sd.getFieldValue(MediaBinField.AssetType.getField())).toLowerCase();
 				switch(cmsType) {
 					case "external site":
 						// External sites will contain full urls in the document url field to be used on the page.
 						pageUrl = StringUtil.checkVal(sd.getFieldValue("asset_url_s"));
-						break;
+						break indexType;
 					//case "app":
 						//let these go to the CMS document /docs/, which can explain the app and apply the link text as static html
 						//it makes for a better user experience, and supports favoriting
@@ -93,6 +98,17 @@ public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 	
 	
 	/**
+	 * returns a sometimes-different URL for SHARING the asset than viewing it on Huddle (pageUrl).
+	 * This is particularly important when we share Mediabin assets via email-a-friend ('share')
+	 * @return
+	 */
+	public String getShareUrl() {
+		if (shareUrl != null) return shareUrl;
+		else return getPageUrl();
+	}
+	
+	
+	/**
 	 * Get the first image from the potential list in the supplied field.
 	 */
 	public String getFirstImage() {
@@ -107,15 +123,6 @@ public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 		String trackingNo = super.getThumbnailImg();
 		if (trackingNo == null || trackingNo.length() < 3) return trackingNo;
 		return "/binary/org/DPY_SYN_HUDDLE/mediabin/" + trackingNo.substring(0, 3) + "/" + trackingNo + ".jpg";
-	}
-	
-	/**
-	 * regex the URL to see if we recognize the protocol.  App's have unique ones like depuy://
-	 * @return
-	 */
-	public boolean isApp() {
-		String url = StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.DOCUMENT_URL));
-		return (!url.matches("^(http://|https://|/)(.*)$"));
 	}
 	
 	
