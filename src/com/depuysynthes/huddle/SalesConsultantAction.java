@@ -238,6 +238,7 @@ public class SalesConsultantAction extends SimpleActionAdapter {
 			} else {
 				vo = newVo;
 				vo.setDocumentId(documentId);
+				vo.setModule(HuddleUtils.IndexType.HUDDLE_CONSULTANTS.toString());
 				vo.addOrganization(orgId);
 				vo.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
 				vo.addHierarchies(newVo.getHierarchy()); //move the data from 3 separate fields to our hierarchy field
