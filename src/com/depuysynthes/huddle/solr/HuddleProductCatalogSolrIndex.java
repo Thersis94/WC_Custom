@@ -165,7 +165,8 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 				solrDoc.setDocumentUrl(pVo.getUrlAlias());
 				solrDoc.addOrganization(organizationId);
 				//solrDoc.setModule(getIndexType()); unused
-				solrDoc.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
+				solrDoc.addRole(SecurityController.PUBLIC_REGISTERED_LEVEL);
+				solrDoc.setModule(getIndexType());
 				attachProductCategories(solrDoc, depth);
 				addProductAttributes(solrDoc, pVo);
 			}
