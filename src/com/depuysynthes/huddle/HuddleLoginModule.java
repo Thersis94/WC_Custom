@@ -77,15 +77,18 @@ public class HuddleLoginModule extends SAMLLoginModule {
 		SMTServletRequest req = (SMTServletRequest) initVals.get(GlobalConfig.HTTP_REQUEST);
 		HttpSession ses = req.getSession();
 		String destPg = StringUtil.checkVal(ses.getAttribute(LoginAction.DESTN_URL));
-		
-		if (homepage == null) {
-			//no homepage, this is a first-time login.
-			//send them to our registration page to setup their account
-			ses.setAttribute(LoginAction.DESTN_URL, "/?firstVisit=true");
-			homepage = "/";
-		} else if (destPg.endsWith("/") || destPg.length() == 0) { //homepage or /context/
-			//send the user to their homepage if they're not deep linking somewhere specific.
-			ses.setAttribute(LoginAction.DESTN_URL, homepage);
+
+		// if this is an admintool login, preserver the destination page.
+		if (! destPg.endsWith("/admintool")) {
+			if (homepage == null) {
+				//no homepage, this is a first-time login.
+				//send them to our registration page to setup their account
+				ses.setAttribute(LoginAction.DESTN_URL, "/?firstVisit=true");
+				homepage = "/";
+			} else if (destPg.endsWith("/") || destPg.length() == 0) { //homepage or /context/
+				//send the user to their homepage if they're not deep linking somewhere specific.
+				ses.setAttribute(LoginAction.DESTN_URL, homepage);
+			}
 		}
 		ses.setAttribute(HuddleUtils.MY_HOMEPAGE, homepage);
 	}
