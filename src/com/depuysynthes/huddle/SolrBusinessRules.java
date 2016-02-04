@@ -182,9 +182,11 @@ public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 	public String getAssetType() {
 		String type = StringUtil.checkVal(sd.getFieldValue("assetType_s"));
 		//if its a CMS file, derive type from the file name
-		if ("FILE (PDF, PPT, DOC, XLS, ZIP, ETC.)".equalsIgnoreCase(type))
+		if ("FILE (PDF, PPT, DOC, XLS, ZIP, ETC.)".equalsIgnoreCase(type)) {
 			type = StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.FILE_EXTENSION), "FILE").toUpperCase();
-
+		} else if (type.length() == 0) {
+			type = getFavoriteType();
+		}
 		return type;
 	}
 	
