@@ -38,6 +38,7 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 
 	private ShowpadApiUtil showpadUtil;
 	private Map<String, String> showpadTags = new HashMap<>(1000);
+	private Map<String, String> showpadDivisions = new HashMap<>();
 	private Map<String, String> ticketQueue = new HashMap<>();
 
 	/**
@@ -78,6 +79,9 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 
 		//get a list of tags already at Showpad, so when we save the assets these are preloaded
 		loadShowpadTagList();
+		
+		//load the divisions
+		loadShowpadDivisionList();
 		
 //		Map<String,MediaBinDeltaVO> records = loadManifest();
 //		Set<String> assetNames = new HashSet<>(records.size());
@@ -122,6 +126,35 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 		}
 
 		log.info("loaded " + showpadTags.size() + " showpad tags: " + showpadTags);
+	}
+	
+	/**
+	 * Load a list of tags already at Showpad
+	 * If we try to add a tag to an asset without using it's ID, and it already existing in the system, it will fail.
+	 */
+	private void loadShowpadDivisionList() {
+		String tagUrl = props.getProperty("showpadApiUrl") + "/divisions.json?limit=1000&fields=id,name";
+		try {
+			String resp = showpadUtil.executeGet(tagUrl);
+			JSONObject json = JSONObject.fromObject(resp);
+			log.info(json);
+			JSONObject metaResp = json.getJSONObject("meta");
+			if (!"200".equals(metaResp.getString("code")))
+				throw new IOException(metaResp.getString("message"));
+
+			JSONObject response = json.getJSONObject("response");
+			JSONArray items = response.getJSONArray("items");
+			for (int x=0; x < items.size(); x++) {
+				JSONObject tag = items.getJSONObject(x);
+				showpadDivisions.put(tag.getString("name"), tag.getString("id"));
+			}
+
+		} catch (IOException | NullPointerException ioe) {
+			failures.add(ioe);
+			log.error("could not load showpad divisions", ioe);
+		}
+
+		log.info("loaded " + showpadDivisions.size() + " showpad divisions: " + showpadDivisions);
 	}
 	
 	
@@ -230,15 +263,18 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 			params.put("description", vo.getDownloadTypeTxt());
 			params.put("isSensitive", "false");
 			params.put("isShareable", "true");
+			params.put("isDivisionShared", "true");
 			params.put("releasedAt", Convert.formatDate(vo.getModifiedDt(), Convert.DATE_TIME_SLASH_PATTERN));
 
 			//add any Link objects (Tags) we need to have attached to this asset
-			String linkHeader = generateTags(vo, params);
+			StringBuilder header = new StringBuilder(100);
+			addTags(vo, header);
+			addDivisions(vo, header);
 
 			try {
 				File mbFile = new File(props.get("downloadDir") + vo.getFileName());
 				log.info("sending to showpad: " + vo.getDpySynMediaBinId());
-				String resp = showpadUtil.executePostFile(postUrl, params, mbFile, linkHeader);
+				String resp = showpadUtil.executePostFile(postUrl, params, mbFile, header.toString());
 				JSONObject json = JSONObject.fromObject(resp);
 				JSONObject metaResp = json.getJSONObject("meta");
 				log.info(json);
@@ -282,9 +318,9 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 				log.error("could not push file to showpad", ioe);
 			}
 			
-			//enforce a limit here while we bulk-load Showpad, who limits daily API calls to 5k requests
+			//enforce a limit here while we bulk-load Showpad, who limits daily API calls to 15k requests
 			//if you expect to hit this limit make sure your database is purged first.  Tomorrow when you re-run, those assets will not have ShowpadIds, and get processed then.
-			if (insertCnt+updateCnt > 1500) {
+			if (insertCnt+updateCnt > 10000) {
 				log.fatal("Showpad limit reached");
 				break;
 			}
@@ -324,8 +360,8 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 		while (count > 0) {
 			if (runCount > 0) {
 				try {
-					log.info("sleeping 30 seconds");
-					Thread.sleep(30000);
+					log.info("sleeping 60 seconds");
+					Thread.sleep(60000);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 					break;
@@ -440,7 +476,7 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 	 * If the desired tag does not exist in Showpad, it must be added (there) first.
 	 * @param vo
 	 */
-	private String generateTags(MediaBinDeltaVO vo, Map<String, String> params) {
+	private void addTags(MediaBinDeltaVO vo, StringBuilder header) {
 		Map<String,String> assignedTags = null;
 		if (vo.getShowpadId() != null) assignedTags = loadAssetTags(vo.getShowpadId());
 		Set<String> desiredTags = new HashSet<>();
@@ -469,7 +505,6 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 		}
 
 		//add what's left on the "need to add" list as new tags; both to the Asset, and to Showpad if they're new
-		StringBuilder tagHeader = new StringBuilder();
 		for (String tagNm : desiredTags) {
 			if (tagNm == null || tagNm.length() == 0) continue;
 			log.info("need tag " + tagNm + ", current id=" + showpadTags.get(tagNm));
@@ -478,10 +513,26 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 				showpadTags.put(tagNm, createTag(tagNm));
 			}
 
-			if (tagHeader.length() > 0) tagHeader.append(",");
-			tagHeader.append("<").append(showpadTags.get(tagNm)).append(">; rel=\"Tag\"");
+			if (header.length() > 0) header.append(",");
+			header.append("<").append(showpadTags.get(tagNm)).append(">; rel=\"Tag\"");
 		}
-		return tagHeader.toString();
+	}
+	
+	
+	/**
+	 * adds the desired tags to the passed showpad asset
+	 * If the desired tag does not exist in Showpad, it must be added (there) first.
+	 * @param vo
+	 */
+	private void addDivisions(MediaBinDeltaVO vo, StringBuilder header) {
+		//tag all the Divisions to every asset - Raphael 2-4-16 
+		for (String divNm : showpadDivisions.keySet()) {
+			if (divNm == null || divNm.length() == 0 || "global".equalsIgnoreCase(divNm)) continue;
+			log.info("attaching division " + divNm + ", current id=" + showpadDivisions.get(divNm));
+
+			if (header.length() > 0) header.append(",");
+			header.append("<").append(showpadDivisions.get(divNm)).append(">; rel=\"Division\"");
+		}
 	}
 
 
