@@ -267,6 +267,10 @@ public class LMSWSClient {
 
 			// get response
 			GetUserActiveIDbyEmailResponse guder = dsi.getUserActiveIDbyEmail(gube);
+			/* 2016-02-05: Production block: Uncomment this block and comment out
+			 * the Staging block when deploying to production. Production web 
+			 * service maps to a different Map object than does staging. */
+			/*
 			Map2 m2 = new Map2();
 			m2 = guder.get_return();
 			log.debug("getUserActiveIDbyEmailResponse val: " + StringUtil.getToString(m2));
@@ -278,6 +282,24 @@ public class LMSWSClient {
 					ret.put(e2.getKey(),e2.getValue());
 				}
 			}
+			*/
+			 /* *** END Product block *** */
+			
+			/* 2016-02-05: Staging block: Uncomment this block and comment out
+			 * the Production block when deploying to staging. Staging web 
+			 * service maps to a different Map object than does production. */
+			Map1 m1 = new Map1();
+			m1 = guder.get_return();
+			log.debug("getUserActiveIDbyEmailResponse val: " + StringUtil.getToString(m1));
+
+			// parse the returned map into a standard Map.
+			if (m1 != null && m1.getEntry() != null) {
+				for (Entry1 e1 : m1.getEntry()) {
+					log.debug("key/value: " + e1.getKey() + "|" + e1.getValue());
+					ret.put(e1.getKey(),e1.getValue());
+				}
+			}
+			/* *** END Staging block *** */
 			
 			//check for errors, -2 (user doesn't exist) is OK in this scenario
 			double errCd = Convert.formatDouble("" + ret.get("ERROR"));
@@ -317,6 +339,9 @@ public class LMSWSClient {
 			checkWSStub();
 
 			// make WS call
+			/* 2016-02-05: Production Block: Uncomment this block and comment 
+			 * out the Staging block when deploying to production. */
+			/*
 			GetUserHoldingIDbyEmailResponse gusr = dsi.getUserHoldingIDbyEmail(gusi);
 			Map1 m1 = gusr.get_return();
 			log.debug("getUserHoldingIDbyEmailResponse val: " + StringUtil.getToString(m1));
@@ -328,6 +353,23 @@ public class LMSWSClient {
 					ret.put(e1.getKey(), e1.getValue());
 				}
 			}
+			*/
+			/* *** END Production Block *** */
+			
+			/* 2016-02-05: Staging Block: Uncomment this block and comment 
+			 * out the Production block when deploying to production. */
+			GetUserHoldingIDbyEmailResponse gusr = dsi.getUserHoldingIDbyEmail(gusi);
+			Map2 m2 = gusr.get_return();
+			log.debug("getUserHoldingIDbyEmailResponse val: " + StringUtil.getToString(m2));
+
+			// parse the returned map into a standard Map.
+			if (m2 != null && m2.getEntry() != null) {
+				for (Entry2 e2 : m2.getEntry()) {
+					log.debug("key/value: " + e2.getKey() + "|" + e2.getValue());
+					ret.put(e2.getKey(), e2.getValue());
+				}
+			}
+			/* *** END Staging Block *** */
 			
 			//check for errors
 			double errCd = Convert.formatDouble("" + ret.get("ERROR"));
