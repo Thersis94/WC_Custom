@@ -35,6 +35,7 @@ import com.smt.sitebuilder.action.SBModuleVO;
 import com.smt.sitebuilder.action.event.EventFacadeAction;
 import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
+import com.smt.sitebuilder.admin.action.SBModuleAction;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
@@ -65,15 +66,42 @@ public class EventCalendarAction extends CourseCalendar {
 	public EventCalendarAction(ActionInitVO arg0) {
 		super(arg0);
 	}
+	
+	/**
+	 * Prepare the request object with the event widget's id instead of the 
+	 * huddle calendar's id and return the original and child ids
+	 * @param req
+	 * @return
+	 * @throws ActionException
+	 */
+	private String[] prepareActionId(SMTServletRequest req) throws ActionException {
+		super.list(req);
+		String[] ids = new String[2];
+		ModuleVO mod = (ModuleVO) getAttribute(AdminConstants.ADMIN_MODULE_DATA);
+		SBModuleVO sb = (SBModuleVO) mod.getActionData();
+		ids[0] = req.getParameter("sbActionId");
+		ids[1] = (String) sb.getAttribute("attribute1Text");
+		req.setParameter("sbActionId", ids[1], true);
+		
+		return ids;
+	}
 
 	@Override
 	public void update(SMTServletRequest req) throws ActionException {
 		if (!req.hasParameter("cPage")) {
+			String[] ids = prepareActionId(req);
+			req.setParameter("attrib1Text", ids[1], true);
 			super.update(req);
 			
-			//if a file of events was not passed, but the user clicked the 'reindex' button, trigger the solrIndexer
-			if (req.getFile("xlsFile") == null && req.hasParameter("reindex"))
-				pushToSolr(null); //the null here will trigger a full rebuild
+			req.setParameter("sbActionId", ids[0], true);
+			req.setParameter("manMod", "true", true);
+			super.adminRedirect(req, attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE), (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH), req.getParameter(SBModuleAction.SB_ACTION_ID));
+			//append to the above-created redirectURL
+			StringBuilder redirect = new StringBuilder((String)req.getAttribute(Constants.REDIRECT_URL));
+			redirect.append("&cPage=facade&facadeType=true");
+			redirect.append("&actionName=").append(req.getParameter("actionName"));
+		     req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
+		     req.setAttribute(Constants.REDIRECT_URL, redirect.toString());
 		} else {
 			updateEvent(req);
 		}
@@ -87,13 +115,8 @@ public class EventCalendarAction extends CourseCalendar {
 	 * @throws ActionException
 	 */
 	private void updateEvent(SMTServletRequest req) throws ActionException {
-		super.list(req);
-		ModuleVO mod = (ModuleVO) getAttribute(AdminConstants.ADMIN_MODULE_DATA);
-		SBModuleVO sb = (SBModuleVO) mod.getActionData();
-		String actionId = req.getParameter("sbActionId");
-		String wrappedId = (String) sb.getAttribute("attribute1Text");
+		String[] ids = prepareActionId(req);
 
-		req.setParameter("sbActionId", wrappedId, true);
 		SMTActionInterface sai = new EventFacadeAction(actionInit);
 		sai.setDBConnection(dbConn);
 		sai.setAttributes(attributes);
@@ -111,7 +134,7 @@ public class EventCalendarAction extends CourseCalendar {
 		}
 
 	     String url = (String) req.getAttribute(Constants.REDIRECT_URL);
-		req.setAttribute(Constants.REDIRECT_URL, url.replace(wrappedId, actionId));
+		req.setAttribute(Constants.REDIRECT_URL, url.replace(ids[1], ids[0]));
 	}
 
 	@Override
@@ -130,25 +153,22 @@ public class EventCalendarAction extends CourseCalendar {
 	 * @throws ActionException
 	 */
 	private void listEvent(SMTServletRequest req) throws ActionException {
-		ModuleVO mod = (ModuleVO) getAttribute(AdminConstants.ADMIN_MODULE_DATA);
-		SBModuleVO sb = (SBModuleVO) mod.getActionData();
+		String[] ids = prepareActionId(req);
 		
-		String actionId = req.getParameter("sbActionId");
-		req.setParameter("sbActionId", (String) sb.getAttribute("attribute1Text"), true);
-		actionInit.setActionId((String) sb.getAttribute("attribute1Text"));
 		SMTActionInterface sai = new EventFacadeAction(actionInit);
 		sai.setDBConnection(dbConn);
 		sai.setAttributes(attributes);
 		sai.list(req);
-		mod = (ModuleVO) getAttribute(AdminConstants.ADMIN_MODULE_DATA);
-		mod.setActionId(actionId);
 		
-		// If the actionData has not been changed the views will be
-		// expecting a null value, so ensure it is one here.
-		if (mod.getActionData() == sb)
+		ModuleVO mod = (ModuleVO) getAttribute(AdminConstants.ADMIN_MODULE_DATA);
+		mod.setActionId(ids[0]);
+		mod.setActionGroupId(ids[0]);
+		req.setParameter("sbActionId", ids[0], true);
+		
+		// If the module data is still in the action data and the request is
+		// for a facade page remove the actiond data
+		if (mod.getActionData() instanceof SBModuleVO && Convert.formatBoolean(req.getParameter("facadeType")))
 			mod.setActionData(null);
-		
-		mod.setActionGroupId(actionId);
 	}
 
 	/**
@@ -284,8 +304,6 @@ public class EventCalendarAction extends CourseCalendar {
 	}
 	
 	
-	
-	
 	@Override
 	public void delete(SMTServletRequest req) throws ActionException {
 		if (!req.hasParameter("cPage")) {
@@ -303,19 +321,7 @@ public class EventCalendarAction extends CourseCalendar {
 	 * @throws ActionException
 	 */
 	private void deleteEvent(SMTServletRequest req) throws ActionException {
-		super.list(req);
-		ModuleVO mod = (ModuleVO) getAttribute(AdminConstants.ADMIN_MODULE_DATA);
-		SBModuleVO sb = (SBModuleVO) mod.getActionData();
-		String actionId = req.getParameter("sbActionId");
-		String wrappedId = (String) sb.getAttribute("attribute1Text");
-		req.setParameter("sbActionId", wrappedId, true);
-		
-		// if this is a type delete get the events associated with it for
-		// removal from solr on a successful deletion.
-		List<String> events = null;
-		if (req.hasParameter("eventTypeId")) {
-			events  = getEventsForType(req.getParameter("eventTypeId"));
-		}
+		String[] ids = prepareActionId(req);
 		
 		SMTActionInterface sai = new EventFacadeAction(actionInit);
 		sai.setDBConnection(dbConn);
@@ -326,35 +332,12 @@ public class EventCalendarAction extends CourseCalendar {
 			SolrActionUtil util = new SolrActionUtil(getAttributes());
 			util.removeDocument(req.getParameter("eventEntryId"));
 		} else if (req.hasParameter("eventTypeId")) {
-			SolrActionUtil util = new SolrActionUtil(getAttributes());
-			// Remove all documents associated with the deleted type
-			for (String s : events) {
-				util.removeDocument(s);
-			}
+			// If we deleted an entire group rebuild the index to be sure that
+			// the index is up to date with the current events.
+			pushToSolr(null);
 		}
 
 	     String url = (String) req.getAttribute(Constants.REDIRECT_URL);
-		req.setAttribute(Constants.REDIRECT_URL, url.replace(wrappedId, actionId));
-	}
-
-	/**
-	 * Get all event ids for a supplied type 
-	 * @param typeId
-	 * @throws ActionException 
-	 */
-	private List<String> getEventsForType(String typeId) throws ActionException {
-		String sql = "select EVENT_ENTRY_ID from EVENT_ENTRY where EVENT_TYPE_ID = ?";
-		List<String> events = new ArrayList<>();
-		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
-			ps.setString(1, typeId);
-			
-			ResultSet rs = ps.executeQuery();
-			while (rs.next()) {
-				events.add(rs.getString("EVENT_ENTRY_ID"));
-			}
-		} catch (SQLException e) {
-			throw new ActionException("Could not get list of events with type " + typeId, e);
-		}
-		return events;
+		req.setAttribute(Constants.REDIRECT_URL, url.replace(ids[1], ids[0]));
 	}
 }
