@@ -53,7 +53,8 @@ public class DSIUserDataVO extends UserDataVO {
 		c0a80241b71d27b038342fcb3ab567a0, //specialty
 		DSI_PGY,
 		DSI_MIL_HOSP, //used for Proffer email notification
-		DSI_DSRP_TRANSFER_AUTH
+		DSI_DSRP_TRANSFER_AUTH,
+		DSI_COUNTRY
 		;
 	}
 	
