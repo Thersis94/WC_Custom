@@ -1,8 +1,5 @@
 package com.depuysynthes.huddle;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -91,6 +88,9 @@ public class EventCalendarAction extends CourseCalendar {
 		if (!req.hasParameter("cPage")) {
 			String[] ids = prepareActionId(req);
 			req.setParameter("attrib1Text", ids[1], true);
+			if (Convert.formatBoolean(req.hasParameter("isBatch"))) 
+				req.setParameter("batchOnly", "true");
+			
 			super.update(req);
 			
 			req.setParameter("sbActionId", ids[0], true);
