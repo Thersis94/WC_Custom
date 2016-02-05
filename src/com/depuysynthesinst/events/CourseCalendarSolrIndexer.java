@@ -65,7 +65,7 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 		log.info("Indexing Certain Course Calendar Portlets");
 		
 		//if we're doing a full rebuild, make sure we purge what's in there
-		if (eventEntryIds != null) {
+		if (eventEntryIds == null) {
 			try {
 				purgeIndexItems(server);
 			} catch (IOException e) {
