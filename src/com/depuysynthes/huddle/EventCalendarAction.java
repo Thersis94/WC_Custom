@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
@@ -19,6 +20,7 @@ import com.depuysynthes.huddle.solr.CalendarSolrIndexer;
 import com.depuysynthesinst.events.CourseCalendar;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.io.mail.CalendarEventMessageVO;
 import com.siliconmtn.io.mail.EmailMessageVO;
@@ -30,11 +32,14 @@ import com.smt.sitebuilder.action.SBModuleVO;
 import com.smt.sitebuilder.action.event.EventFacadeAction;
 import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
+import com.smt.sitebuilder.admin.action.SBModuleAction;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
+import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.util.MessageSender;
+import com.smt.sitebuilder.util.solr.SolrActionUtil;
 
 /****************************************************************************
  * <b>Title</b>: EventCalendar.java<p/>
@@ -58,16 +63,113 @@ public class EventCalendarAction extends CourseCalendar {
 	public EventCalendarAction(ActionInitVO arg0) {
 		super(arg0);
 	}
+	
+	/**
+	 * Prepare the request object with the event widget's id instead of the 
+	 * huddle calendar's id and return the original and child ids
+	 * @param req
+	 * @return
+	 * @throws ActionException
+	 */
+	private String[] prepareActionId(SMTServletRequest req) throws ActionException {
+		super.list(req);
+		String[] ids = new String[2];
+		ModuleVO mod = (ModuleVO) getAttribute(AdminConstants.ADMIN_MODULE_DATA);
+		SBModuleVO sb = (SBModuleVO) mod.getActionData();
+		ids[0] = req.getParameter("sbActionId");
+		ids[1] = (String) sb.getAttribute("attribute1Text");
+		req.setParameter("sbActionId", ids[1], true);
+		
+		return ids;
+	}
 
 	@Override
 	public void update(SMTServletRequest req) throws ActionException {
-		super.update(req);
-		
-		//if a file of events was not passed, but the user clicked the 'reindex' button, trigger the solrIndexer
-		if (req.getFile("xlsFile") == null && req.hasParameter("reindex"))
-			pushToSolr(null); //the null here will trigger a full rebuild
+		if (!req.hasParameter("cPage")) {
+			String[] ids = prepareActionId(req);
+			req.setParameter("attrib1Text", ids[1], true);
+			if (Convert.formatBoolean(req.hasParameter("isBatch"))) 
+				req.setParameter("batchOnly", "true");
+			
+			super.update(req);
+			
+			req.setParameter("sbActionId", ids[0], true);
+			req.setParameter("manMod", "true", true);
+			super.adminRedirect(req, attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE), (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH), req.getParameter(SBModuleAction.SB_ACTION_ID));
+			//append to the above-created redirectURL
+			StringBuilder redirect = new StringBuilder((String)req.getAttribute(Constants.REDIRECT_URL));
+			redirect.append("&cPage=facade&facadeType=true");
+			redirect.append("&actionName=").append(req.getParameter("actionName"));
+		     req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
+		     req.setAttribute(Constants.REDIRECT_URL, redirect.toString());
+		} else {
+			updateEvent(req);
+		}
 	}
 	
+	
+	/**
+	 * Update the event item specified by the request object and make any 
+	 * required changes to solr.
+	 * @param req
+	 * @throws ActionException
+	 */
+	private void updateEvent(SMTServletRequest req) throws ActionException {
+		String[] ids = prepareActionId(req);
+
+		SMTActionInterface sai = new EventFacadeAction(actionInit);
+		sai.setDBConnection(dbConn);
+		sai.setAttributes(attributes);
+		sai.update(req);
+		
+		if (req.hasParameter("eventEntryId") && Convert.formatInteger(req.getParameter("statusFlg")) == 15) {
+			// Only add approved events to solr.
+			Set<String> events = new HashSet<>();
+			events.add(req.getParameter("eventEntryId"));
+			pushToSolr(events);
+		} else if (req.hasParameter("eventEntryId")) {
+			// This event is not approved so delete it from solr
+			SolrActionUtil util = new SolrActionUtil(getAttributes());
+			util.removeDocument(req.getParameter("eventEntryId"));
+		}
+
+	     String url = (String) req.getAttribute(Constants.REDIRECT_URL);
+		req.setAttribute(Constants.REDIRECT_URL, url.replace(ids[1], ids[0]));
+	}
+
+	@Override
+	public void list(SMTServletRequest req) throws ActionException {
+		super.list(req);
+		
+		if (req.hasParameter("facadeType")) {
+			listEvent(req);
+		}
+	}
+	
+
+	/**
+	 * Get any data from the event tables that is needed for the facade action
+	 * @param req
+	 * @throws ActionException
+	 */
+	private void listEvent(SMTServletRequest req) throws ActionException {
+		String[] ids = prepareActionId(req);
+		
+		SMTActionInterface sai = new EventFacadeAction(actionInit);
+		sai.setDBConnection(dbConn);
+		sai.setAttributes(attributes);
+		sai.list(req);
+		
+		ModuleVO mod = (ModuleVO) getAttribute(AdminConstants.ADMIN_MODULE_DATA);
+		mod.setActionId(ids[0]);
+		mod.setActionGroupId(ids[0]);
+		req.setParameter("sbActionId", ids[0], true);
+		
+		// If the module data is still in the action data and the request is
+		// for a facade page remove the actiond data
+		if (mod.getActionData() instanceof SBModuleVO && Convert.formatBoolean(req.getParameter("facadeType")))
+			mod.setActionData(null);
+	}
 
 	/**
 	 * retrieves a list of Events tied to this porlet.  Filters the list to the passed anatomy, if present. 
@@ -199,5 +301,43 @@ public class EventCalendarAction extends CourseCalendar {
 		CalendarSolrIndexer indexer = new CalendarSolrIndexer(props);
 		indexer.setDBConnection(dbConn);
 		indexer.indexCertainItems(eventIds);
+	}
+	
+	
+	@Override
+	public void delete(SMTServletRequest req) throws ActionException {
+		if (!req.hasParameter("cPage")) {
+			super.delete(req);
+		} else {
+			deleteEvent(req);
+		}
+	}
+
+	
+	/**
+	 * Prepare an event facade action to handle deleting an event item
+	 * and remove any associated documents from solr
+	 * @param req
+	 * @throws ActionException
+	 */
+	private void deleteEvent(SMTServletRequest req) throws ActionException {
+		String[] ids = prepareActionId(req);
+		
+		SMTActionInterface sai = new EventFacadeAction(actionInit);
+		sai.setDBConnection(dbConn);
+		sai.setAttributes(attributes);
+		sai.delete(req);
+		
+		if (req.hasParameter("eventEntryId")) {
+			SolrActionUtil util = new SolrActionUtil(getAttributes());
+			util.removeDocument(req.getParameter("eventEntryId"));
+		} else if (req.hasParameter("eventTypeId")) {
+			// If we deleted an entire group rebuild the index to be sure that
+			// the index is up to date with the current events.
+			pushToSolr(null);
+		}
+
+	     String url = (String) req.getAttribute(Constants.REDIRECT_URL);
+		req.setAttribute(Constants.REDIRECT_URL, url.replace(ids[1], ids[0]));
 	}
 }
