@@ -87,7 +87,17 @@ public class DSIUserDataVO extends UserDataVO {
 	public String getSynthesId() {
 		return StringUtil.checkVal(user.getAttribute(RegField.DSI_SYNTHES_ID.toString()));
 	}
+	
+	
+	/**
+	 * the user is a transfer (@registration time) if they have a legacy Synthes ID
+	 * @return
+	 */
+	public boolean isTransfer() {
+		return (getSynthesId().length() > 0);
+	}
 
+	
 	/**
 	 * @param synthesId the synthesId to set
 	 */

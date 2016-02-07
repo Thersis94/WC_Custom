@@ -155,6 +155,14 @@ public class RegistrationAction extends SimpleActionAdapter {
 				mod.setErrorCondition(Boolean.TRUE);
 			}
 			return;
+		} else if (req.hasParameter("sendVerifiedEmailFromAdmintool")) {
+			//called from the admintool via an ajax call when the users account gets Verified
+			//send the Verified email out and return
+			RegistrationPostProcessor rpp = new RegistrationPostProcessor();
+			rpp.setDBConnection(dbConn);
+			rpp.setAttributes(getAttributes());
+			rpp.update(req);
+			return;
 		}
 
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
