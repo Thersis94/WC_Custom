@@ -1080,7 +1080,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			}
 
 			//add-in for showpad stats
-			addSuplimentalDetails(html);
+			addSupplementalDetails(html);
 			
 			//create tables for each of our 3 transition states; Insert, Update, Delete
 			addSummaryTable(html, masterRecords, State.Insert);
@@ -1100,7 +1100,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	/**
 	 * @param html
 	 */
-	protected void addSuplimentalDetails(StringBuilder html) {
+	protected void addSupplementalDetails(StringBuilder html) {
 		//does nothing here, but gets overwritten by the Showpad decorator 
 		//to add valueable stats to the admin email
 	}

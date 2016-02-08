@@ -276,7 +276,7 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 	 * @param html
 	 */
 	@Override
-	protected void addSuplimentalDetails(StringBuilder html) {
+	protected void addSupplementalDetails(StringBuilder html) {
 		//does nothing here, but gets overwritten by the Showpad decorator 
 		//to add valueable stats to the admin email
 		for (ShowpadDivisionUtil util : divisions) {
