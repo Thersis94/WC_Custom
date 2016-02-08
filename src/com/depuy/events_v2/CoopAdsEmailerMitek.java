@@ -61,7 +61,7 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			mail.addCC("broides@its.jnj.com");
 			mail.addRecipient("Amy.Zimmerman@hmktgroup.com");
 			mail.addRecipient("Anthony.Manning@hmktgroup.com");
-			mail.addRecipient("Justin.Reyes@umj3.com");
+			mail.addRecipient("Francisco.Gonzalez@umj3.com");
 			mail.addRecipient("Evan.Pring@umj3.com");
 			
 			mail.setSubject(label + " Ad #" + cnt + " declined for Seminar " + sem.getRSVPCodes());
@@ -285,7 +285,7 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient("Amy.Zimmerman@hmktgroup.com");
 			mail.addRecipient("Anthony.Manning@hmktgroup.com");
-			mail.addRecipient("Justin.Reyes@umj3.com");
+			mail.addRecipient("Francisco.Gonzalez@umj3.com");
 			mail.addRecipient("Evan.Pring@umj3.com");
 			mail.addCC(sem.getOwner().getEmailAddress());
 			mail.addCC("ksmith49@its.jnj.com");
@@ -344,7 +344,7 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			mail.addCC("ksmith49@its.jnj.com");
 			mail.addCC("broides@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
-			mail.addCC("Justin.Reyes@umj3.com");
+			mail.addCC("Francisco.Gonzalez@umj3.com");
 			mail.addCC("Evan.Pring@umj3.com");
 			mail.setTextBody(msg.toString());
 			
@@ -379,7 +379,7 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			mail.addCC("mroderic@its.jnj.com");
 			mail.addCC("amy.zimmerman@hmktgroup.com");
 			mail.addCC("Anthony.Manning@hmktgroup.com");
-			mail.addCC("Justin.Reyes@umj3.com");
+			mail.addCC("Francisco.Gonzalez@umj3.com");
 			mail.addCC("Evan.Pring@umj3.com");
 			
 			MessageSender sender = new MessageSender(attributes,dbConn);
