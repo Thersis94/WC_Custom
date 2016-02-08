@@ -161,7 +161,11 @@ public class HuddleUtils {
 		MEDIA_BIN("Documents"),
 		PRODUCT("Products"),
 		CMS_QUICKSTREAM("Documents"),
-		FORM("Forms");
+		FORM("Forms"),
+		// Module Types used in the same way as index Types
+		DOCUMENT("Documents"),
+		EVENT("Courses & Events"),
+		BLOG("Blogs");
 		
 		private String name;
 		IndexType(String name) { this.name = name; }

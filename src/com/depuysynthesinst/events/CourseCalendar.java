@@ -65,9 +65,10 @@ public class CourseCalendar extends SimpleActionAdapter {
 
 	@Override
 	public void update(SMTServletRequest req) throws ActionException {
-		super.update(req);
+		if (!Convert.formatBoolean(req.getParameter("batchOnly")))
+			super.update(req);
 		
-		if (req.getFile("xlsFile") != null)
+		if (req.getFile("xlsFile") != null || req.getFile("batchFile") != null)
 			processUpload(req);
 		
 	}
@@ -82,6 +83,7 @@ public class CourseCalendar extends SimpleActionAdapter {
 	private void processUpload(SMTServletRequest req) throws ActionException {
 		AnnotationParser parser;
 		FilePartDataBean fpdb = req.getFile("xlsFile");
+		if (fpdb == null) fpdb = req.getFile("batchFile");
 		try {
 			parser = new AnnotationParser(CourseCalendarVO.class, fpdb.getExtension());
 		} catch(InvalidDataException e) {
