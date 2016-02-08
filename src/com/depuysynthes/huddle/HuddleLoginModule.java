@@ -10,6 +10,7 @@ import com.siliconmtn.security.AuthenticationException;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.user.LoginAction;
+import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.security.SAMLLoginModule;
 
 /****************************************************************************
@@ -79,16 +80,17 @@ public class HuddleLoginModule extends SAMLLoginModule {
 		String destPg = StringUtil.checkVal(ses.getAttribute(LoginAction.DESTN_URL));
 
 		// if this is an admintool login, preserver the destination page.
-		if (! destPg.endsWith("/admintool")) {
-			if (homepage == null) {
-				//no homepage, this is a first-time login.
-				//send them to our registration page to setup their account
-				ses.setAttribute(LoginAction.DESTN_URL, "/?firstVisit=true");
-				homepage = "/";
-			} else if (destPg.endsWith("/") || destPg.length() == 0) { //homepage or /context/
-				//send the user to their homepage if they're not deep linking somewhere specific.
-				ses.setAttribute(LoginAction.DESTN_URL, homepage);
-			}
+		
+		if (isAdminToolPath(destPg)) return;
+		
+		if (homepage == null) {
+			//no homepage, this is a first-time login.
+			//send them to our registration page to setup their account
+			ses.setAttribute(LoginAction.DESTN_URL, "/?firstVisit=true");
+			homepage = "/";
+		} else if (destPg.endsWith("/") || destPg.length() == 0) { //homepage or /context/
+			//send the user to their homepage if they're not deep linking somewhere specific.
+			ses.setAttribute(LoginAction.DESTN_URL, homepage);
 		}
 		ses.setAttribute(HuddleUtils.MY_HOMEPAGE, homepage);
 	}
@@ -108,6 +110,18 @@ public class HuddleLoginModule extends SAMLLoginModule {
 		//set a parameter to invoke SSO and leverage the superclass implementation
 		req.setParameter("initiateSSO", "true");
 		return super.canInitiateLogin(req);
+	}
+	
+	/**
+	 * Helper method used to determine if the destination page is an admin tool 
+	 * path.  If so, the destintation page is left untouched.
+	 * @param destPg
+	 * @return
+	 */
+	private boolean isAdminToolPath(String destPg) {
+		String adminToolPath = StringUtil.checkVal(initVals.get(AdminConstants.ADMIN_TOOL_PATH),null);
+		if (adminToolPath != null && destPg.contains(adminToolPath)) return true;
+		return false;
 	}
 
 }
