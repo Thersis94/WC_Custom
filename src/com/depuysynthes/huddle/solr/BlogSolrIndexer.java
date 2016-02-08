@@ -97,7 +97,8 @@ public class BlogSolrIndexer extends SMTAbstractIndex {
 					solrDoc.setSummary(entry.getBlogText());  //store the whole article
 					solrDoc.setMetaDesc(entry.getShortDesc());
 					solrDoc.setSolrIndex(getIndexType());
-					solrDoc.setRoles(new HashSet<Integer>(Arrays.asList(SecurityController.PUBLIC_ROLE_LEVEL)));
+					solrDoc.setRoles(new HashSet<Integer>(Arrays.asList(SecurityController.PUBLIC_REGISTERED_LEVEL)));
+					solrDoc.setModule("BLOG");
 					
 					//get the dynamically built document, then add a couple of custom fields to it for Huddle's date faceting.
 					SolrInputDocument doc = solrUtil.createInputDocument(solrDoc);

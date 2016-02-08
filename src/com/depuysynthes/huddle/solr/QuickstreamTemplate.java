@@ -31,6 +31,7 @@ public class QuickstreamTemplate extends com.depuysynthesinst.QuickstreamTemplat
 		super.setData(o);
 		CMSContentVO vo = (CMSContentVO) o;
 		TemplateFieldVOContainer templateData = vo.getTemplateData();
+		setModule("DOCUMENT");
 		
 		//some core fields are provided here-in:
 		for (TemplateFieldVO field : templateData.getContainerData()) {
