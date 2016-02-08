@@ -10,6 +10,7 @@ import com.siliconmtn.security.AuthenticationException;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.user.LoginAction;
+import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.security.SAMLLoginModule;
 
 /****************************************************************************
@@ -77,6 +78,10 @@ public class HuddleLoginModule extends SAMLLoginModule {
 		SMTServletRequest req = (SMTServletRequest) initVals.get(GlobalConfig.HTTP_REQUEST);
 		HttpSession ses = req.getSession();
 		String destPg = StringUtil.checkVal(ses.getAttribute(LoginAction.DESTN_URL));
+
+		// if this is an admintool login, preserver the destination page.
+		
+		if (isAdminToolPath(destPg)) return;
 		
 		if (homepage == null) {
 			//no homepage, this is a first-time login.
@@ -105,6 +110,18 @@ public class HuddleLoginModule extends SAMLLoginModule {
 		//set a parameter to invoke SSO and leverage the superclass implementation
 		req.setParameter("initiateSSO", "true");
 		return super.canInitiateLogin(req);
+	}
+	
+	/**
+	 * Helper method used to determine if the destination page is an admin tool 
+	 * path.  If so, the destintation page is left untouched.
+	 * @param destPg
+	 * @return
+	 */
+	private boolean isAdminToolPath(String destPg) {
+		String adminToolPath = StringUtil.checkVal(initVals.get(AdminConstants.ADMIN_TOOL_PATH),null);
+		if (adminToolPath != null && destPg.contains(adminToolPath)) return true;
+		return false;
 	}
 
 }
