@@ -86,22 +86,26 @@ public class EventCalendarAction extends CourseCalendar {
 	@Override
 	public void update(SMTServletRequest req) throws ActionException {
 		if (!req.hasParameter("cPage")) {
-			String[] ids = prepareActionId(req);
-			req.setParameter("attrib1Text", ids[1], true);
-			if (Convert.formatBoolean(req.hasParameter("isBatch"))) 
+			String ids[] = new String[]{""};
+			if (Convert.formatBoolean(req.hasParameter("isBatch"))) {
 				req.setParameter("batchOnly", "true");
+				ids = prepareActionId(req);
+				req.setParameter("attrib1Text", ids[1], true);
+			}
 			
 			super.update(req);
-			
-			req.setParameter("sbActionId", ids[0], true);
-			req.setParameter("manMod", "true", true);
-			super.adminRedirect(req, attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE), (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH), req.getParameter(SBModuleAction.SB_ACTION_ID));
-			//append to the above-created redirectURL
-			StringBuilder redirect = new StringBuilder((String)req.getAttribute(Constants.REDIRECT_URL));
-			redirect.append("&cPage=facade&facadeType=true");
-			redirect.append("&actionName=").append(req.getParameter("actionName"));
-		     req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
-		     req.setAttribute(Constants.REDIRECT_URL, redirect.toString());
+
+			if (Convert.formatBoolean(req.hasParameter("isBatch"))) {
+				req.setParameter("sbActionId", ids[0], true);
+				req.setParameter("manMod", "true", true);
+				super.adminRedirect(req, attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE), (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH), req.getParameter(SBModuleAction.SB_ACTION_ID));
+				//append to the above-created redirectURL
+				StringBuilder redirect = new StringBuilder((String)req.getAttribute(Constants.REDIRECT_URL));
+				redirect.append("&cPage=facade&facadeType=true");
+				redirect.append("&actionName=").append(req.getParameter("actionName"));
+			     req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
+			     req.setAttribute(Constants.REDIRECT_URL, redirect.toString());
+			}
 		} else {
 			updateEvent(req);
 		}
@@ -308,6 +312,7 @@ public class EventCalendarAction extends CourseCalendar {
 	public void delete(SMTServletRequest req) throws ActionException {
 		if (!req.hasParameter("cPage")) {
 			super.delete(req);
+			pushToSolr(null);
 		} else {
 			deleteEvent(req);
 		}
