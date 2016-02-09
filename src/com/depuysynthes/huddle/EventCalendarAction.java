@@ -63,40 +63,26 @@ public class EventCalendarAction extends CourseCalendar {
 	public EventCalendarAction(ActionInitVO arg0) {
 		super(arg0);
 	}
-	
-	/**
-	 * Prepare the request object with the event widget's id instead of the 
-	 * huddle calendar's id and return the original and child ids
-	 * @param req
-	 * @return
-	 * @throws ActionException
-	 */
-	private String[] prepareActionId(SMTServletRequest req) throws ActionException {
-		super.list(req);
-		String[] ids = new String[2];
-		ModuleVO mod = (ModuleVO) getAttribute(AdminConstants.ADMIN_MODULE_DATA);
-		SBModuleVO sb = (SBModuleVO) mod.getActionData();
-		ids[0] = req.getParameter("sbActionId");
-		ids[1] = (String) sb.getAttribute("attribute1Text");
-		req.setParameter("sbActionId", ids[1], true);
-		
-		return ids;
-	}
 
 	@Override
 	public void update(SMTServletRequest req) throws ActionException {
 		if (!req.hasParameter("cPage")) {
-			String ids[] = new String[]{""};
 			if (Convert.formatBoolean(req.hasParameter("isBatch"))) {
 				req.setParameter("batchOnly", "true");
-				ids = prepareActionId(req);
-				req.setParameter("attrib1Text", ids[1], true);
 			}
-			
+
+			req.setParameter("attrib1Text",  req.getParameter("sbActionId"), true);
 			super.update(req);
+			
+			if (!Convert.formatBoolean(req.hasParameter("isBatch"))) {
+				req.setParameter("eventBypass", "true");
+				SMTActionInterface sai = new EventFacadeAction(actionInit);
+				sai.setDBConnection(dbConn);
+				sai.setAttributes(attributes);
+				sai.update(req);
+			}
 
 			if (Convert.formatBoolean(req.hasParameter("isBatch"))) {
-				req.setParameter("sbActionId", ids[0], true);
 				req.setParameter("manMod", "true", true);
 				super.adminRedirect(req, attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE), (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH), req.getParameter(SBModuleAction.SB_ACTION_ID));
 				//append to the above-created redirectURL
@@ -119,7 +105,6 @@ public class EventCalendarAction extends CourseCalendar {
 	 * @throws ActionException
 	 */
 	private void updateEvent(SMTServletRequest req) throws ActionException {
-		String[] ids = prepareActionId(req);
 
 		SMTActionInterface sai = new EventFacadeAction(actionInit);
 		sai.setDBConnection(dbConn);
@@ -136,9 +121,6 @@ public class EventCalendarAction extends CourseCalendar {
 			SolrActionUtil util = new SolrActionUtil(getAttributes());
 			util.removeDocument(req.getParameter("eventEntryId"));
 		}
-
-	     String url = (String) req.getAttribute(Constants.REDIRECT_URL);
-		req.setAttribute(Constants.REDIRECT_URL, url.replace(ids[1], ids[0]));
 	}
 
 	@Override
@@ -157,17 +139,12 @@ public class EventCalendarAction extends CourseCalendar {
 	 * @throws ActionException
 	 */
 	private void listEvent(SMTServletRequest req) throws ActionException {
-		String[] ids = prepareActionId(req);
-		
 		SMTActionInterface sai = new EventFacadeAction(actionInit);
 		sai.setDBConnection(dbConn);
 		sai.setAttributes(attributes);
 		sai.list(req);
 		
 		ModuleVO mod = (ModuleVO) getAttribute(AdminConstants.ADMIN_MODULE_DATA);
-		mod.setActionId(ids[0]);
-		mod.setActionGroupId(ids[0]);
-		req.setParameter("sbActionId", ids[0], true);
 		
 		// If the module data is still in the action data and the request is
 		// for a facade page remove the actiond data
@@ -326,8 +303,6 @@ public class EventCalendarAction extends CourseCalendar {
 	 * @throws ActionException
 	 */
 	private void deleteEvent(SMTServletRequest req) throws ActionException {
-		String[] ids = prepareActionId(req);
-		
 		SMTActionInterface sai = new EventFacadeAction(actionInit);
 		sai.setDBConnection(dbConn);
 		sai.setAttributes(attributes);
@@ -341,8 +316,5 @@ public class EventCalendarAction extends CourseCalendar {
 			// the index is up to date with the current events.
 			pushToSolr(null);
 		}
-
-	     String url = (String) req.getAttribute(Constants.REDIRECT_URL);
-		req.setAttribute(Constants.REDIRECT_URL, url.replace(ids[1], ids[0]));
 	}
 }
