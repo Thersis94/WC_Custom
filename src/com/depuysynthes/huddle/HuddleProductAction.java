@@ -105,10 +105,13 @@ public class HuddleProductAction extends SimpleActionAdapter {
 		//make a ProductVO from the solr data
 		HuddleProductVO p = new HuddleProductVO();
 		SolrDocument doc = resp.getResultDocuments().get(0);
+		SolrBusinessRules sd = new SolrBusinessRules();
+		sd.setSolrDocument(doc);
 		p.setProductId((String) doc.getFieldValue(SearchDocumentHandler.DOCUMENT_ID));
 		p.setProductUrl((String) doc.getFieldValue(SearchDocumentHandler.DOCUMENT_URL));
 		p.setTitle((String) doc.getFieldValue(SearchDocumentHandler.TITLE));
 		p.setDescText((String) doc.getFieldValue(SearchDocumentHandler.SUMMARY));
+		p.setCatalogId(sd.getFamilyName());
 		
 		//overwrite the browser title
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
