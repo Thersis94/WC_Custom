@@ -149,7 +149,7 @@ public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 	 * @param includeLineBreak 
 	 * @return
 	 */
-	public String getFamilyName(boolean includeLineBreak) {
+	public String getFamilyName() {
 		String family = "";
 		Collection<Object> hierarchies = sd.getFieldValues(SearchDocumentHandler.HIERARCHY);
 		if (hierarchies == null || hierarchies.size() == 0) return "";
@@ -166,12 +166,7 @@ public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 			// Once that has been found the loop can be exited.
 			break;
 		}
-		
-		if (includeLineBreak && family.length() > 0) {
-			return family + "<br/>";
-		} else {
-			return family;
-		}
+		return family;
 	}
 	
 	

@@ -118,7 +118,7 @@ public class EmailFriendAction extends SimpleActionAdapter {
 	 */
 	private String buildProductEmailBody(SMTServletRequest req) {
 		StringBuilder sb = new StringBuilder(500);
-		sb.append("<p>I thought you may be interested in the attached information from DePuy Synthes.</p>\n");
+		sb.append("<p>I thought you might be interested in the attached information from DePuy Synthes.</p>\n");
 		sb.append("<ul>");
 		String url;
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
