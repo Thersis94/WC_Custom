@@ -40,7 +40,7 @@ public class BlogAction extends SimpleActionAdapter {
 		BlogFacadeAction bfa = new BlogFacadeAction(actionInit);
 		bfa.setAttributes(getAttributes());
 		bfa.setDBConnection(dbConn);
-		bfa.list(req);
+		bfa.delete(req);
 		if (!req.hasParameter("blogId")) return;
 		
 		//fire the delete to Solr
