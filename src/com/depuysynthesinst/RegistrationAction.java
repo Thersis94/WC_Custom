@@ -351,7 +351,7 @@ public class RegistrationAction extends SimpleActionAdapter {
 			//email bradley
 			String msg = user.getEmailAddress() + " (Legacy TTLMSID=" + user.getTtLmsId() + ") seemingly tried to migrate their LMS account but could not provide the correct username, or changed their mind and did not want to migrate.  A new account was likely created and should be considered duplicate.  Please use the SMT/EP Reconcile process to correct their account.  You should confirm with the individual before doing so.  Their OLD account should be deleted if they do not desire migration.";
 			emailBradley("DSI duplicate account created - needs reconciled - user changed their mind", msg);
-		} else { //never clicked Yes
+		} else if (req.hasParameter("reg_||DSI_DSRP_TRANSFER_AUTH")) { //never clicked Yes, make sure the form field was actually presented though
 			log.debug("user chose not to migrate: " + user.getEmailAddress() + " " + user.getTtLmsId());
 			//email bradley
 			String msg = user.getEmailAddress() + " (Legacy TTLMSID=" + user.getTtLmsId() + ") DID NOT want to migrate their LMS account.  Please delete their old account from the LMS.";
@@ -435,7 +435,9 @@ public class RegistrationAction extends SimpleActionAdapter {
 	private void emailBradley(String subject, String body) {
 		try {
 			EmailMessageVO msg = new EmailMessageVO();
+			msg.setFrom("no-reply@depuysynthesinstitute.com");
 			msg.addRecipient("MagellanDSI2@gmail.com");
+			//msg.addRecipient("mck222@gmail.com");
 			msg.setSubject(subject);
 			msg.setTextBody(body);
 			new MessageSender(getAttributes(), dbConn).sendMessage(msg);
