@@ -122,9 +122,9 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			mail.addRecipient("ksmith49@its.jnj.com"); // the DePuy intern in charge
 			mail.addCC("broides@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
-			mail.addRecipient("Justin.Reyes@umj3.com");
+			mail.addRecipient("Francisco.Gonzalez@umj3.com");
 			mail.addRecipient("Evan.Pring@umj3.com");
-			mail.addRecipient("Amy.Zimmerman@hmktgroup.com");
+			mail.addRecipient("amy.spencerman@hmktgroup.com");
 			mail.addRecipient("Anthony.Manning@hmktgroup.com");
 			mail.setSubject("DePuy Community Education; Postcard Canceled " + postcard.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
@@ -236,9 +236,9 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			mail.addCC("ksmith49@its.jnj.com");
 			mail.addCC("broides@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
-			mail.addCC("Justin.Reyes@umj3.com");
+			mail.addCC("Francisco.Gonzalez@umj3.com");
 			mail.addCC("Evan.Pring@umj3.com");
-			mail.addCC("Amy.Zimmerman@hmktgroup.com");
+			mail.addCC("amy.spencerman@hmktgroup.com");
 			mail.addCC("Anthony.Manning@hmktgroup.com");
 			
 			for (PersonVO p : sem.getPeople()) { 
@@ -372,7 +372,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			EmailMessageVO mail = new EmailMessageVO();
 			//mail.addRecipient("Jenn.Davis@hmktgroup.com"); // Jenn Parrish-Davis);
 			//mail.addRecipient("sterling.hoham@hmktgroup.com"); // Sterling Hoham
-			//mail.addCC("amy.zimmerman@hmktgroup.com");
+			//mail.addCC("amy.spencerman@hmktgroup.com");
 			mail.addRecipient("ksmith49@its.jnj.com");
 			mail.addCC("broides@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
@@ -418,9 +418,9 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			mail.addCC("ksmith49@its.jnj.com");
 			mail.addCC("broides@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
-			mail.addCC("Justin.Reyes@umj3.com");
+			mail.addCC("Francisco.Gonzalez@umj3.com");
 			mail.addCC("Evan.Pring@umj3.com");
-			mail.addCC("Amy.Zimmerman@hmktgroup.com");
+			mail.addCC("amy.spencerman@hmktgroup.com");
 			mail.addCC("Anthony.Manning@hmktgroup.com");
 			
 			for (PersonVO p : sem.getPeople()) {
@@ -612,7 +612,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			mail.addRecipient("ksmith49@its.jnj.com");
 			mail.addRecipient("broides@its.jnj.com");
 			mail.addRecipient("mroderic@its.jnj.com");
-			mail.addCC("Amy.Zimmerman@hmktgroup.com");
+			mail.addCC("amy.spencerman@hmktgroup.com");
 			mail.addCC("Anthony.Manning@hmktgroup.com");
 			
 			MessageSender mailer = new MessageSender(attributes,dbConn);

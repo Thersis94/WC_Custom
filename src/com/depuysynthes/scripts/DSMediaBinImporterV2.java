@@ -23,6 +23,7 @@ import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 
+
 // SMT Base Libs
 import com.depuysynthes.action.MediaBinAdminAction;
 import com.depuysynthes.action.MediaBinAssetVO;
@@ -71,7 +72,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	/**
 	 * Delimiterd used in the EXP file to tokenize multiple values stuffed into a single meta-data field
 	 */
-	protected String TOKENIZER = "~";
+	protected static String TOKENIZER = "~";
 
 	/**
 	 * debug mode runs individual insert queries instead of a batch query, to be able to track row failures.
@@ -433,8 +434,6 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 				vo.setChecksum(mr.getChecksum());
 				//pass the video chapters as well
 				vo.setVideoChapters(mr.getVideoChapters());
-				//and the showpadId as well
-				vo.setShowpadId(mr.getShowpadId());
 			} else {
 				vo.setRecordState(State.Insert);
 			}
@@ -1060,13 +1059,6 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			html.append("Deleted: ").append(dataCounts.get("deleted")).append("<br/><br/>");
 			html.append("DB Total: ").append(dataCounts.get("total")).append("<br/>");
 			html.append("Solr Total: ").append(dataCounts.get("solr")).append("<br/>");
-			//add-in for showpad stats
-			if (dataCounts.containsKey("showpad")) {
-				html.append("<br/>Showpad Added: ").append(Convert.formatInteger(dataCounts.get("showpad-inserted"))).append("<br/>");
-				html.append("Showpad Updated: ").append(Convert.formatInteger(dataCounts.get("showpad-updated"))).append("<br/>");
-				html.append("Showpad Deleted: ").append(Convert.formatInteger(dataCounts.get("showpad-deleted"))).append("<br/>");
-				html.append("Showpad Total: ").append(Convert.formatInteger(dataCounts.get("showpad-total"))).append("<br/><br/>");
-			}
 			
 			long timeSpent = System.nanoTime()-startNano;
 			double millis = timeSpent/1000000;
@@ -1086,6 +1078,9 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 					log.warn(failures.get(i).getMessage());
 				}
 			}
+
+			//add-in for showpad stats
+			addSupplementalDetails(html);
 			
 			//create tables for each of our 3 transition states; Insert, Update, Delete
 			addSummaryTable(html, masterRecords, State.Insert);
@@ -1102,6 +1097,15 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	}
 	
 	
+	/**
+	 * @param html
+	 */
+	protected void addSupplementalDetails(StringBuilder html) {
+		//does nothing here, but gets overwritten by the Showpad decorator 
+		//to add valueable stats to the admin email
+	}
+
+
 	/**
 	 * format the data into a pretty HTML table - to include in the email
 	 * @param msg
