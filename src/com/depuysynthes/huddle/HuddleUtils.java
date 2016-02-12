@@ -305,10 +305,12 @@ public class HuddleUtils {
 		if (solrResp == null) return null;
 		Map<String, GenericVO> records = new TreeMap<>();
 		for (FacetField.Count c : solrResp) {
+			System.err.println("count=" + c.getCount() + " and name=" + c.getName());
 			if (c.getCount() == 0) continue;
-			String key = IndexType.valueOf(c.getName()).getName(); //quietValueOf will not throw exceptions
+			String key = IndexType.quietValueOf(c.getName()).getName(); //quietValueOf will not throw exceptions
 			if (key == null || key.length() == 0) continue;
 			records.put(key, new GenericVO(key, c));
+			System.err.println("key=" + key + " and mapSize=" + records.size());
 		}
 		return records.values();
 	}
