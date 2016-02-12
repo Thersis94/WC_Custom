@@ -38,6 +38,7 @@ import com.smt.sitebuilder.security.SecurityController;
 public class CalendarSolrIndexer extends CourseCalendarSolrIndexer {
 
 	protected Map<Object, Object> states;
+	private static final int MIN_ROLE_LVL = SecurityController.PUBLIC_REGISTERED_LEVEL;
 	
 	/**
 	 * @param config
@@ -75,8 +76,8 @@ public class CalendarSolrIndexer extends CourseCalendarSolrIndexer {
 				doc.setField(SearchDocumentHandler.INDEX_TYPE, getIndexType());
 				doc.setField(SearchDocumentHandler.ORGANIZATION, vo.getOrganizationId());
 				doc.setField(SearchDocumentHandler.LANGUAGE, "en");
-				doc.setField(SearchDocumentHandler.ROLE, SecurityController.PUBLIC_REGISTERED_LEVEL);
-				doc.setField(SearchDocumentHandler.DOCUMENT_URL, vo.getEventUrl());
+				doc.setField(SearchDocumentHandler.ROLE, MIN_ROLE_LVL);
+				doc.setField(SearchDocumentHandler.DOCUMENT_URL, vo.getActionUrl());
 				doc.setField(SearchDocumentHandler.DOCUMENT_ID, vo.getActionId());
 				doc.setField(SearchDocumentHandler.TITLE, vo.getEventName());
 				doc.setField(SearchDocumentHandler.SUMMARY, vo.getEventDesc());
@@ -89,7 +90,9 @@ public class CalendarSolrIndexer extends CourseCalendarSolrIndexer {
 				doc.setField("eventType_s", StringUtil.checkVal(vo.getLocationDesc()));
 				
 				//add-ons for Huddle
-				doc.setField("externalUrl_s", vo.getExternalUrl());
+				doc.setField("status_i", vo.getStatusFlg());
+				doc.setField("externalUrl_s", vo.getEventFilePath()); //uploaded file or brochure
+				doc.setField("eventUrl_s", vo.getEventUrl()); //cVent registration URL
 				doc.setField(SearchDocumentHandler.AUTHOR + "Email_s", vo.getEmailAddress());
 				doc.setField(SearchDocumentHandler.AUTHOR + "Phone_s", vo.getPhoneText());
 				doc.setField(SearchDocumentHandler.START_DATE + "Year_i", Convert.formatDate(vo.getStartDate(), "yyyy"));
@@ -99,6 +102,7 @@ public class CalendarSolrIndexer extends CourseCalendarSolrIndexer {
 				doc.setField(SearchDocumentHandler.STATE + "_s", StringUtil.checkVal(states.get(vo.getStateCode())));
 				doc.setField(SearchDocumentHandler.STATE, vo.getStateCode());
 				doc.setField("shortDesc_s", vo.getShortDesc()); //intended audience
+				//doc.setField("service_s", vo.getServiceText()); //anatomical focus
 				doc.setField("objectives_s", vo.getObjectivesText());
 				docs.add(doc);
 			} catch (Exception e) {
@@ -144,7 +148,7 @@ public class CalendarSolrIndexer extends CourseCalendarSolrIndexer {
 				if (subSiteAlias.length() > 0) url = "/" + subSiteAlias + url;
 				
 				EventEntryVO vo = new EventEntryVO(rs);
-				vo.setEventUrl(url + vo.getActionId());
+				vo.setActionUrl(url + vo.getActionId());
 				vo.setOrganizationId(organizationId);
 				
 				log.info("loaded " + vo.getEventTypeCd() + " - " + vo.getEventName());
@@ -173,11 +177,11 @@ public class CalendarSolrIndexer extends CourseCalendarSolrIndexer {
 		sql.append("from event_entry ee ");
 		sql.append("inner join event_type et on ee.event_type_id=et.event_type_id ");
 		sql.append("inner join event_group eg on et.action_id=eg.action_id ");
-		sql.append("inner join sb_action a on eg.action_id=a.attrib1_txt ");
+		sql.append("inner join sb_action a on eg.action_id=a.action_id ");
 		sql.append("inner join page_module b on a.action_id=b.action_id ");
-		sql.append("inner join page_module_role pmr on pmr.page_module_id=b.page_module_id and pmr.role_id='0' ");  //only public portlets
+		sql.append("inner join page_module_role pmr on pmr.page_module_id=b.page_module_id and pmr.role_id='").append(MIN_ROLE_LVL).append("' ");  //only public portlets
 		sql.append("inner join page c on c.page_id=b.page_id ");
-		sql.append("inner join page_role pr on pr.page_id=c.page_id and pr.role_id='0' "); //only public pages
+		sql.append("inner join page_role pr on pr.page_id=c.page_id and pr.role_id='").append(MIN_ROLE_LVL).append("' "); //only public pages
 		sql.append("inner join site s on c.site_id=s.site_id ");
 		sql.append("inner join module_display md on b.module_display_id=md.module_display_id ");
 		sql.append("where s.ORGANIZATION_ID=? ");

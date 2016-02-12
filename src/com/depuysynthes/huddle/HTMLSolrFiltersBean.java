@@ -1,14 +1,16 @@
 package com.depuysynthes.huddle;
 
 import java.text.NumberFormat;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Locale;
 
+import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.FacetField.Count;
 import org.apache.solr.client.solrj.response.PivotField;
 
-import com.depuysynthes.huddle.HuddleUtils.IndexType;
+import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.DateUtil;
@@ -28,39 +30,75 @@ import com.siliconmtn.util.StringUtil;
 public class HTMLSolrFiltersBean {
 	
 	/**
-	 * turns a Solr Hierarchy Node into rendered HTML.
+	 *  turns a Solr Hierarchy Node into rendered HTML.
 	 * Abstracts the filter HTML to keep reusable code in one place, and our Views lean.
-	 * @param n
+	 * @param label
+	 * @param fieldNm
+	 * @param count
+	 * @param filterNm
+	 * @param onclick
+	 * @param selectedItem
 	 * @return
 	 */
-	public static String getFilterSimple(Count c, String filterNm, String onclick, String selectedItem, boolean formatName) {
+	public static String getFilterSimple(String label, String value, long count, String filterNm, String onclick, String selectedItem) {
 		String uuid = RandomAlphaNumeric.generateRandom(5);
-		StringBuilder sb = new StringBuilder(250);
+		StringBuilder sb = new StringBuilder(600);
 		sb.append("<div class=\"collapse-panel collapse-panel-filter\">");
 		sb.append("<div class=\"collapse-panel-header\">");
-		sb.append("<span class=\"count\">").append(formatCount(c.getCount())).append("</span>");
+		sb.append("<span class=\"count\">").append(formatCount(count)).append("</span>");
 		sb.append("<input type=\"checkbox\" id=\"filter_simple_").append(uuid);
 		sb.append("\" data-filter-nm=\"").append(filterNm).append("\" value=\"");
-		sb.append(c.getName()).append("\" onclick=\"").append(onclick).append("\"");
-		if (selectedItem != null && c.getName().equals(selectedItem)) sb.append("checked=\"checked\" ");
+		sb.append(value).append("\" onclick=\"").append(onclick).append("\"");
+		if (selectedItem != null && value.equals(selectedItem)) sb.append("checked=\"checked\" ");
 		sb.append(">");
 		sb.append("<label class=\"checkbox\" for=\"filter_simple_").append(uuid).append("\">");
-		if (formatName) {
-			sb.append(IndexType.valueOf(c.getName()).getName());
-		} else {
-			sb.append(c.getName());
-		}
+		sb.append(label);
 		sb.append("</label></div></div>\r");
 		return sb.toString();
 	}
 	
-
+	
+	/**
+	 * Informally deprecated - replaced with above getFilterSimple(String, String, long...) variation
+	 * @param c
+	 * @param filterNm
+	 * @param onclick
+	 * @param selectedItem
+	 * @return
+	 */
 	public static String getFilterSimple(Count c, String filterNm, String onclick, String selectedItem) {
-		return getFilterSimple(c, filterNm, onclick, selectedItem, false);
+		return getFilterSimple(c.getName(), c.getName(), c.getCount(), filterNm, onclick, selectedItem);
 	}
 	
+	/**
+	 * overloaded - does not care about selectedItem
+	 * @param c
+	 * @param filterNm
+	 * @param onclick
+	 * @return
+	 */
 	public static String getFilterSimple(Count c, String filterNm, String onclick) {
 		return HTMLSolrFiltersBean.getFilterSimple(c, filterNm, onclick, null);
+	}
+	
+	/**
+	 * does the same as the above, except the data comes from a 2-dimentional GenericVO
+	 * instead of a FacetField.  This allows us to re-sort the Facet.
+	 * Used in SiteSearch for ModuleType filter.
+	 * @param data
+	 * @param filterNm
+	 * @param onclick
+	 * @param selectedItem
+	 * @return
+	 */
+	public static String makeFilterSimple(Collection<GenericVO> data, String filterNm, String onclick, String selectedItem) {
+		if (data == null || data.size() == 0) return null;
+		StringBuilder sb = new StringBuilder(5000);
+		for (GenericVO vo : data) {
+			FacetField.Count c = (FacetField.Count) vo.getValue();
+			sb.append(getFilterSimple(vo.getKey().toString(), c.getName(), c.getCount(), filterNm, onclick, selectedItem));
+		}
+		return sb.toString();
 	}
 	
 	

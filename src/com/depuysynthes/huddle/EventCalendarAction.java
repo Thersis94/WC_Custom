@@ -111,7 +111,13 @@ public class EventCalendarAction extends CourseCalendar {
 		sai.setAttributes(attributes);
 		sai.update(req);
 		
-		if (req.hasParameter("eventEntryId") && Convert.formatInteger(req.getParameter("statusFlg")) == 15) {
+		int status = Convert.formatInteger(req.getParameter("statusFlg"));
+		if (req.hasParameter("eventEntryId") && (
+				status == EventFacadeAction.STATUS_APPROVED || 
+				status == EventFacadeAction.STATUS_WAITLIST ||
+				status == EventFacadeAction.STATUS_CANCELLED)) //we use cancelled as 'registration is closed'.  The event is still active 
+		{
+			
 			// Only add approved events to solr.
 			Set<String> events = new HashSet<>();
 			events.add(req.getParameter("eventEntryId"));
