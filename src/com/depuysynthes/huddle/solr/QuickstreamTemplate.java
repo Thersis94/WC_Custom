@@ -31,7 +31,7 @@ public class QuickstreamTemplate extends com.depuysynthesinst.QuickstreamTemplat
 		super.setData(o);
 		CMSContentVO vo = (CMSContentVO) o;
 		TemplateFieldVOContainer templateData = vo.getTemplateData();
-		setModule("DOCUMENT");
+		setModule(HuddleUtils.IndexType.DOCUMENT.name());
 		
 		//some core fields are provided here-in:
 		for (TemplateFieldVO field : templateData.getContainerData()) {
@@ -43,16 +43,6 @@ public class QuickstreamTemplate extends com.depuysynthesinst.QuickstreamTemplat
 					setOpco(StringUtil.checkVal(field.getFieldValue()).toLowerCase()); 
 					break;
 			}
-		}
-	}
-	
-	@Override
-	public String getAssetUrl() {
-		//if there is nothing in assetUrl, return documentUrl, which is the /docs/ path to the likely XLS file
-		if (assetUrl == null || assetUrl.length() == 0) {
-			return assetUrl;
-		} else {
-			return super.getDocumentUrl();
 		}
 	}
 

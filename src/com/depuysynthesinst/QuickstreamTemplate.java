@@ -109,9 +109,15 @@ public class QuickstreamTemplate extends CMSSolrDocumentVO {
 		this.assetType = assetType;
 	}
 
+	@Override
 	@SolrField(name=SearchDocumentHandler.DOCUMENT_URL)
-	public String getAssetUrl() {
-		return assetUrl;
+	public String getDocumentUrl() {
+		//if there is nothing in assetUrl, return documentUrl, which is the /docs/ path to a likely XLS or PDF file
+		if (assetUrl != null && assetUrl.length() > 0) {
+			return assetUrl;
+		} else {
+			return super.getDocumentUrl();
+		}
 	}
 
 	public void setAssetUrl(String assetUrl) {
