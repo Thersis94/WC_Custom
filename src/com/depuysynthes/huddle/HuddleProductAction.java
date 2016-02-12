@@ -320,5 +320,11 @@ public class HuddleProductAction extends SimpleActionAdapter {
 		}
 		
 		HuddleUtils.determineSortParameters(req);
+
+		//called from the codman homepage ancilary view; the data is loaded via ajax, 
+		//so we don't need any responses, just the facets.
+		if (req.hasParameter("nr")) 
+			req.setParameter("rpp", "0");
+		
 	}
 }

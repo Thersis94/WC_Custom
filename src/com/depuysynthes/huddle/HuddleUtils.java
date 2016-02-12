@@ -170,7 +170,7 @@ public class HuddleUtils {
 		// Module Types used in the same way as index Types
 		DOCUMENT("Documents"),
 		EVENT("Courses & Events"),
-		BLOG("Blogs");
+		BLOG("News");
 		
 		private String name;
 		IndexType(String name) { this.name = name; }
@@ -305,12 +305,10 @@ public class HuddleUtils {
 		if (solrResp == null) return null;
 		Map<String, GenericVO> records = new TreeMap<>();
 		for (FacetField.Count c : solrResp) {
-			System.err.println("count=" + c.getCount() + " and name=" + c.getName());
 			if (c.getCount() == 0) continue;
 			String key = IndexType.quietValueOf(c.getName()).getName(); //quietValueOf will not throw exceptions
 			if (key == null || key.length() == 0) continue;
 			records.put(key, new GenericVO(key, c));
-			System.err.println("key=" + key + " and mapSize=" + records.size());
 		}
 		return records.values();
 	}
