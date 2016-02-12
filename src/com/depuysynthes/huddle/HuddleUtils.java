@@ -5,15 +5,20 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 import javax.servlet.http.Cookie;
 
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
+import org.apache.solr.client.solrj.response.FacetField;
 
 import com.siliconmtn.commerce.catalog.ProductAttributeVO;
+import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
@@ -286,5 +291,25 @@ public class HuddleUtils {
 			req.setParameter("fieldSort", SearchDocumentHandler.TITLE_LCASE, true);
 			req.setParameter("sortDirection", ORDER.asc.toString(), true);
 		}
+	}
+	
+	
+	/**
+	 * ties specifically to Site Search.  We facet on moduleType, which are not the display values 
+	 * used on the website.  This method substitutes in the proper display values
+	 * and returns a reordered alphabetical list.
+	 * @param solrResp
+	 * @return
+	 */
+	public static Collection<GenericVO> facetModuleType(Collection<FacetField.Count> solrResp) {
+		if (solrResp == null) return null;
+		Map<String, GenericVO> records = new TreeMap<>();
+		for (FacetField.Count c : solrResp) {
+			if (c.getCount() == 0) continue;
+			String key = IndexType.valueOf(c.getName()).getName(); //quietValueOf will not throw exceptions
+			if (key == null || key.length() == 0) continue;
+			records.put(key, new GenericVO(key, c));
+		}
+		return records.values();
 	}
 }
