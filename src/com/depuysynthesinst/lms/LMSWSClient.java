@@ -7,17 +7,21 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+
 // Apache log4j
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
-import com.depuysynthesinst.DSIUserDataVO;
 
 // SMTBaseLibs 2
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.SMTSerializer;
+
 import com.siliconmtn.util.StringUtil;
+// WC_Custom
+import com.depuysynthesinst.DSIUserDataVO;
+
 
 //LMS SOAP Api
 import cfc.DSIResidentsCFCInvocationExceptionException;
@@ -26,16 +30,12 @@ import cfc.DSIResidentsStub.CourseList;
 import cfc.DSIResidentsStub.CourseListResponse;
 import cfc.DSIResidentsStub.CreateUser;
 import cfc.DSIResidentsStub.CreateUserResponse;
-import cfc.DSIResidentsStub.Entry1;
-import cfc.DSIResidentsStub.Entry2;
 import cfc.DSIResidentsStub.GetUserActiveIDbyEmail;
 import cfc.DSIResidentsStub.GetUserActiveIDbyEmailResponse;
 import cfc.DSIResidentsStub.GetUserHoldingIDbyEmail;
 import cfc.DSIResidentsStub.GetUserHoldingIDbyEmailResponse;
 import cfc.DSIResidentsStub.JKTest;
 import cfc.DSIResidentsStub.JKTestResponse;
-import cfc.DSIResidentsStub.Map1;
-import cfc.DSIResidentsStub.Map2;
 import cfc.DSIResidentsStub.MigrateUser;
 import cfc.DSIResidentsStub.MigrateUserResponse;
 import cfc.DSIResidentsStub.RegisterUserforCourse;
@@ -46,7 +46,6 @@ import cfc.DSIResidentsStub.UpdateUser;
 import cfc.DSIResidentsStub.UpdateUserResponse;
 import cfc.DSIResidentsStub.UserCourseList;
 import cfc.DSIResidentsStub.UserCourseListResponse;
-
 
 /****************************************************************************
  * <b>Title: </b>LMSWSClient.java <p/>
@@ -84,6 +83,13 @@ public class LMSWSClient {
 		LMSWSClient tc = new LMSWSClient(secKeySMT);
 		try {
 			log.debug("JKTest return value: " + tc.doJKTest());
+			//Map<Object,Object> ret = tc.getUserHoldingIDByEmail("dave@siliconmtn.com");
+			Map<Object,Object> ret = tc.getUserActiveIDByEmail("dave@siliconmtn.com");
+
+			for (Object key : ret.keySet()) {
+				log.debug("key|val: " + key + "|" + ret.get(key));
+			}
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -251,6 +257,7 @@ public class LMSWSClient {
 	 * Error with value of -2 if user does not have a legacy user account
 	 * @throws ActionException
 	 */
+	@SuppressWarnings("unchecked")
 	public Map<Object,Object> getUserActiveIDByEmail(String emailAddress) 
 			throws ActionException {
 
@@ -260,46 +267,20 @@ public class LMSWSClient {
 		gube.setEmail(emailAddress);
 
 		// make WS and get response
-		Map<Object,Object> ret = new HashMap<>();
+		Map<Object,Object> ret = null;
 		try {
 			// make sure we have a client stub
 			checkWSStub();
 
-			// get response
+			// get response, parse into Map.
 			GetUserActiveIDbyEmailResponse guder = dsi.getUserActiveIDbyEmail(gube);
-			/* 2016-02-05: Production block: Uncomment this block and comment out
-			 * the Staging block when deploying to production. Production web 
-			 * service maps to a different Map object than does staging. */
-			/*
-			Map2 m2 = new Map2();
-			m2 = guder.get_return();
-			log.debug("getUserActiveIDbyEmailResponse val: " + StringUtil.getToString(m2));
-
-			// parse the returned map into a standard Map.
-			if (m2 != null && m2.getEntry() != null) {
-				for (Entry2 e2 : m2.getEntry()) {
-					log.debug("key/value: " + e2.getKey() + "|" + e2.getValue());
-					ret.put(e2.getKey(),e2.getValue());
-				}
-			}
-			*/
-			 /* *** END Product block *** */
 			
-			/* 2016-02-05: Staging block: Uncomment this block and comment out
-			 * the Production block when deploying to staging. Staging web 
-			 * service maps to a different Map object than does production. */
-			Map1 m1 = new Map1();
-			m1 = guder.get_return();
-			log.debug("getUserActiveIDbyEmailResponse val: " + StringUtil.getToString(m1));
-
-			// parse the returned map into a standard Map.
-			if (m1 != null && m1.getEntry() != null) {
-				for (Entry1 e1 : m1.getEntry()) {
-					log.debug("key/value: " + e1.getKey() + "|" + e1.getValue());
-					ret.put(e1.getKey(),e1.getValue());
-				}
-			}
-			/* *** END Staging block *** */
+			/* get return val, default to empty String so that serializer will fail 
+			 * gracefully when trying to convert response to HashMap. */
+			String rawRet = StringUtil.checkVal(guder.get_return(), "");
+			ret = (HashMap<Object,Object>) SMTSerializer.fromJson(rawRet, HashMap.class);
+			
+			if (ret == null) ret = new HashMap<>();
 			
 			//check for errors, -2 (user doesn't exist) is OK in this scenario
 			double errCd = Convert.formatDouble("" + ret.get("ERROR"));
@@ -324,6 +305,7 @@ public class LMSWSClient {
 	 * Error with value of -2 if user does not have a legacy user account
 	 * @throws ActionException
 	 */
+	@SuppressWarnings("unchecked")
 	public Map<Object,Object> getUserHoldingIDByEmail(String emailAddress) 
 			throws ActionException {
 
@@ -333,43 +315,20 @@ public class LMSWSClient {
 		gusi.setEmail(emailAddress);
 
 		// make WS and get response
-		Map<Object,Object> ret = new HashMap<>();
+		Map<Object,Object> ret = null;
 		try {
 			// make sure we have a client stub
 			checkWSStub();
-
-			// make WS call
-			/* 2016-02-05: Production Block: Uncomment this block and comment 
-			 * out the Staging block when deploying to production. */
-			/*
-			GetUserHoldingIDbyEmailResponse gusr = dsi.getUserHoldingIDbyEmail(gusi);
-			Map1 m1 = gusr.get_return();
-			log.debug("getUserHoldingIDbyEmailResponse val: " + StringUtil.getToString(m1));
-
-			// parse the returned map into a standard Map.
-			if (m1 != null && m1.getEntry() != null) {
-				for (Entry1 e1 : m1.getEntry()) {
-					log.debug("key/value: " + e1.getKey() + "|" + e1.getValue());
-					ret.put(e1.getKey(), e1.getValue());
-				}
-			}
-			*/
-			/* *** END Production Block *** */
 			
-			/* 2016-02-05: Staging Block: Uncomment this block and comment 
-			 * out the Production block when deploying to production. */
+			// get response, parse into Map.
 			GetUserHoldingIDbyEmailResponse gusr = dsi.getUserHoldingIDbyEmail(gusi);
-			Map2 m2 = gusr.get_return();
-			log.debug("getUserHoldingIDbyEmailResponse val: " + StringUtil.getToString(m2));
 
-			// parse the returned map into a standard Map.
-			if (m2 != null && m2.getEntry() != null) {
-				for (Entry2 e2 : m2.getEntry()) {
-					log.debug("key/value: " + e2.getKey() + "|" + e2.getValue());
-					ret.put(e2.getKey(), e2.getValue());
-				}
-			}
-			/* *** END Staging Block *** */
+			/* get return val, default to empty String so that serializer will fail 
+			 * gracefully when trying to convert response to HashMap. */
+			String rawRet = StringUtil.checkVal(gusr.get_return(), "");
+			ret = (HashMap<Object,Object>) SMTSerializer.fromJson(rawRet, HashMap.class);
+			
+			if (ret == null) ret = new HashMap<>();
 			
 			//check for errors
 			double errCd = Convert.formatDouble("" + ret.get("ERROR"));

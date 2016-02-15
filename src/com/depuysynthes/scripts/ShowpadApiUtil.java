@@ -21,7 +21,8 @@ import com.siliconmtn.security.OAuth2Token;
 
 /****************************************************************************
  * <b>Title</b>: ShowpadApiUtil.java<p/>
- * <b>Description: Implements the HTTP verb-based calls to showpad's API.  GET POST PUT DELETE, etc.</b> 
+ * <b>Description:</b> Implements the HTTP verb-based calls to showpad's API.  GET POST PUT DELETE, etc.
+ * Works with the "v3" version of the showpad API. 
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2015<p/>
  * <b>Company:</b> Silicon Mountain Technologies<p/>
