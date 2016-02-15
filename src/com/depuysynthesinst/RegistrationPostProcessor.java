@@ -123,6 +123,12 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 	}
 
 
+	/**
+	 * fires the DIRECTOR email
+	 * @param dsiUser
+	 * @param site
+	 * @param ms
+	 */
 	private void sendDirectorEmail(DSIUserDataVO dsiUser, SiteVO site, MessageSender ms) {
 		try {
 			AbstractDSIEmailVO mail = new RegDirectorVO();
@@ -135,6 +141,13 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 		}
 	}
 
+	
+	/**
+	 * fires the RESIDENT/FELLOW elidgible email
+	 * @param dsiUser
+	 * @param site
+	 * @param ms
+	 */
 	private void sendTransferEligibleEmail(DSIUserDataVO dsiUser, SiteVO site, MessageSender ms) {
 		try {
 			AbstractDSIEmailVO mail = new TransferEligibleVO();
@@ -147,6 +160,13 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 		}
 	}
 
+	
+	/**
+	 * fires the transfer ineligible email
+	 * @param dsiUser
+	 * @param site
+	 * @param ms
+	 */
 	private void sendTransferIneligibleEmail(DSIUserDataVO dsiUser, SiteVO site, MessageSender ms) {
 		try {
 			AbstractDSIEmailVO mail = new TransferIneligibleVO();
@@ -159,6 +179,13 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 		}
 	}
 
+	
+	/**
+	 * fires the CHEIF eligble email
+	 * @param dsiUser
+	 * @param site
+	 * @param ms
+	 */
 	private void sendChiefEligibleEmail(DSIUserDataVO dsiUser, SiteVO site, MessageSender ms) {
 		try {
 			AbstractDSIEmailVO mail = new RegChiefEligibleVO();
@@ -171,7 +198,13 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 		}
 	}
 
-
+	
+	/**
+	 * fires the CHIEF ineligible email
+	 * @param dsiUser
+	 * @param site
+	 * @param ms
+	 */
 	private void sendChiefIneligibleEmail(DSIUserDataVO dsiUser, SiteVO site, MessageSender ms) {
 		try {
 			AbstractDSIEmailVO mail = new RegChiefIneligibleVO();
@@ -185,6 +218,12 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 	}
 
 
+	/**
+	 * fires the resident ineligible email
+	 * @param dsiUser
+	 * @param site
+	 * @param ms
+	 */
 	private void sendResidentIneligibleEmail(DSIUserDataVO dsiUser, SiteVO site, MessageSender ms) {
 		try {
 			AbstractDSIEmailVO mail = new RegResidentIneligibleVO();
@@ -196,7 +235,14 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 			log.error("could not send resident ineligible email", e);
 		}
 	}
+	
 
+	/**
+	 * fires the resident eligible email
+	 * @param dsiUser
+	 * @param site
+	 * @param ms
+	 */
 	private void sendResidentEligibleEmail(DSIUserDataVO dsiUser, SiteVO site, MessageSender ms) {
 		try {
 			AbstractDSIEmailVO mail = new RegResidentEligibleVO();
@@ -208,10 +254,18 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 			log.error("could not send resident eligible email", e);
 		}
 	}
+	
 
+	/**
+	 * fires the proffer notification to the admins
+	 * @param dsiUser
+	 * @param site
+	 * @param ms
+	 */
 	private void sendProfferEmail(DSIUserDataVO dsiUser, SiteVO site, MessageSender ms) {
 		try {
 			AbstractDSIEmailVO mail = new RegProfferVO();
+			mail.addRecipient("swest03@its.jnj.com");
 			mail.addRecipient("futureleaders@its.jnj.com");
 			mail.setFrom(site.getMainEmail());
 			mail.buildMessage(dsiUser, site);
@@ -220,7 +274,14 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 			log.error("could not send proffer email", e);
 		}
 	}
+	
 
+	/**
+	 * fires the acct verified email to the user
+	 * @param dsiUser
+	 * @param site
+	 * @param ms
+	 */
 	private void sendAcctVerifiedEmail(DSIUserDataVO dsiUser, SiteVO site, MessageSender ms) {
 		try {
 			AbstractDSIEmailVO mail = new AcctVerifiedVO();
