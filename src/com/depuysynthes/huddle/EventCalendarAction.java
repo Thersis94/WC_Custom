@@ -177,11 +177,11 @@ public class EventCalendarAction extends CourseCalendar {
 		if (!req.hasParameter("reqParam_1")) {
 			String dateFilter = "";
 			if (req.hasParameter("archive")) {
-				req.setParameter("sortField", "startDate_dt");
+				req.setParameter("sortField", "endDate_dt");
 				req.setParameter("sortDirection", ORDER.desc.toString());
-				dateFilter = "startDate_dt:[NOW-6MONTHS TO NOW]";
+				dateFilter = "endDate_dt:[NOW-6MONTHS TO NOW]";
 			} else {
-				dateFilter = "startDate_dt:[NOW TO *]";
+				dateFilter = "endDate_dt:[NOW TO *]";
 			}
 			String[] fqs = req.getParameterValues("fq");
 			if (fqs == null) fqs = new String[0];
