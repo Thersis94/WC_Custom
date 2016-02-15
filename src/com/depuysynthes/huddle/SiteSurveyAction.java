@@ -294,8 +294,9 @@ public class SiteSurveyAction extends SBActionAdapter {
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		//Get parameters off request.
 		UserDataVO user = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
+		if (user == null) return;
+		
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
-
 		String profileId = user.getProfileId();
 		String actionId = actionInit.getActionId();
 
