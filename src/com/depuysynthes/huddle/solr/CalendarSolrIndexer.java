@@ -97,6 +97,8 @@ public class CalendarSolrIndexer extends CourseCalendarSolrIndexer {
 				doc.setField(SearchDocumentHandler.AUTHOR + "Phone_s", vo.getPhoneText());
 				doc.setField(SearchDocumentHandler.START_DATE + "Year_i", Convert.formatDate(vo.getStartDate(), "yyyy"));
 				doc.setField(SearchDocumentHandler.START_DATE + "Month_i", Convert.formatDate(vo.getStartDate(), "MM"));
+				doc.setField(SearchDocumentHandler.END_DATE + "Year_i", Convert.formatDate(vo.getEndDate(), "yyyy"));
+				doc.setField(SearchDocumentHandler.END_DATE + "Month_i", Convert.formatDate(vo.getEndDate(), "MM"));
 				doc.setField(HuddleUtils.SOLR_OPCO_FIELD, vo.getOpcoName());
 				doc.setField(SearchDocumentHandler.CITY + "_s", vo.getCityName());
 				doc.setField(SearchDocumentHandler.STATE + "_s", StringUtil.checkVal(states.get(vo.getStateCode())));
@@ -189,7 +191,7 @@ public class CalendarSolrIndexer extends CourseCalendarSolrIndexer {
 		sql.append("and (c.pending_sync_flg is null or c.pending_sync_flg=0) "); //page not pending
 		sql.append("and a.module_type_id='").append(moduleTypeId);
 		sql.append("' and md.indexable_flg=1 "); //only include pages that contain Views that are considered indexable.
-		sql.append("and ee.start_dt >= DATEADD(month, -6, CURRENT_TIMESTAMP) "); //only include -6mos of events - per business requirement
+		sql.append("and isnull(ee.end_dt, ee.start_dt) >= DATEADD(month, -6, CURRENT_TIMESTAMP) "); //only include -6mos of events - per business requirement
 
 		//limit the results to the new events we're adding - this scenario is invoked by the real-time indexer
 		if (eventIds != null) {
