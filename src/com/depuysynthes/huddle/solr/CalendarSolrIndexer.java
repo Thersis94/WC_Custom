@@ -189,6 +189,7 @@ public class CalendarSolrIndexer extends CourseCalendarSolrIndexer {
 		sql.append("and (c.pending_sync_flg is null or c.pending_sync_flg=0) "); //page not pending
 		sql.append("and a.module_type_id='").append(moduleTypeId);
 		sql.append("' and md.indexable_flg=1 "); //only include pages that contain Views that are considered indexable.
+		sql.append("and ee.start_dt >= DATEADD(month, -6, CURRENT_TIMESTAMP) "); //only include -6mos of events - per business requirement
 
 		//limit the results to the new events we're adding - this scenario is invoked by the real-time indexer
 		if (eventIds != null) {
