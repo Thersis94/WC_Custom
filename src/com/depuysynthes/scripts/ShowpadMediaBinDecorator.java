@@ -50,14 +50,14 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 				put(Config.KEYSTORE, "showpad");
 			}}, Arrays.asList(props.getProperty("showpadScopes").split(","))));
 	}
-	
+
 
 	public static void main(String[] args) throws Exception {
 		//Create an instance of the MedianBinImporter
 		ShowpadMediaBinDecorator dmb = new ShowpadMediaBinDecorator(args);
 		dmb.run();
 	}
-	
+
 
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.util.CommandLineUtil#run()
@@ -65,24 +65,29 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 	@Override
 	public void run() {
 		//load the divisions
-		loadShowpadDivisionList();
-		
+		try {
+			loadShowpadDivisionList();
+		} catch (QuotaException qe) {
+			log.error(qe);
+		}
+
 		/*
 		//use only for de-duplication
 		loadManifest();
 		for (ShowpadDivisionUtil util : divisions)
 			cleanupShowpadDups(assetNames, localShowpadIds);
-		*/
+		 */
 		super.run();
 	}
 
-	
+
 
 	/**
 	 * Load a list of tags already at Showpad
 	 * If we try to add a tag to an asset without using it's ID, and it already existing in the system, it will fail.
+	 * @throws QuotaException 
 	 */
-	private void loadShowpadDivisionList() {
+	private void loadShowpadDivisionList() throws QuotaException {
 		String[] divs = props.getProperty("showpadDivisions").split(",");
 		for (String d : divs) {
 			String[] div = d.split("=");
@@ -119,7 +124,7 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 			log.error("could not load showpad assets from DB", sqle);
 		}
 		log.info("loaded " + divisionAssets.size() + " divisions from the database");
-		
+
 		//marry the divisionAssets to their respective util object
 		for (String divId : divisionAssets.keySet()) {
 			for (ShowpadDivisionUtil util : divisions) {
@@ -134,7 +139,7 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 		//lean on the superclass to load the roster of assets
 		return super.loadManifest();
 	}
-	
+
 
 	/**
 	 * override the saveRecords method to push the records to Showpad after 
@@ -153,18 +158,23 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 		//confirm we have something to add or update
 		if (getDataCount("inserted") == 0 && getDataCount("updated") == 0) return;
 
-		
+
 		//push all changes to Showpad
-		for (MediaBinDeltaVO vo : masterRecords.values()) {
+		outer: for (MediaBinDeltaVO vo : masterRecords.values()) {
 			//we need to sort out what gets pushed to Showpad on our own.
 			//if it's failed, being deleted, or unchanged and already in Showpad, skip it.
 			State s = vo.getRecordState();
 			if (s == State.Failed || s == State.Delete)
 				continue;
-			
+
 			for (ShowpadDivisionUtil util : divisions) {
 				try {
 					util.pushAsset(vo);					
+				} catch (QuotaException qe) {
+					String msg = makeMessage(vo, "Could not add file from showpad: " + qe.getMessage());
+					failures.add(new Exception(msg));
+					log.error("could not push to showpad, quota reached", qe);
+					break outer;
 				} catch (Exception ioe) {
 					String msg = makeMessage(vo, "Could not push file to showpad: " + ioe.getMessage());
 					failures.add(new Exception(msg));
@@ -173,10 +183,15 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 			}
 			log.info("completed: " + vo.getFileNm());
 		}
-		
+
 		//process the ticket queue for each division
-		for (ShowpadDivisionUtil util : divisions)
-			util.processTicketQueue();
+		try {
+			for (ShowpadDivisionUtil util : divisions)
+				util.processTicketQueue();
+		} catch (QuotaException qe) {
+			failures.add(qe);
+			log.error("could not process showpad queue, quota limit reached", qe);
+		}
 
 		//save the newly created records to our database for each division
 		for (ShowpadDivisionUtil util : divisions)
@@ -223,6 +238,11 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 							//if success, delete it from the DB as well
 							ps.setString(cnt++, vo.getDpySynMediaBinId());
 
+						} catch (QuotaException qe) {
+							String msg = makeMessage(vo, "Could not delete file from showpad: " + qe.getMessage());
+							failures.add(new Exception(msg));
+							log.error("could not delete from showpad", qe);
+							break;
 						} catch (Exception e) {
 							String msg = makeMessage(vo, "Could not delete file from showpad: " + e.getMessage());
 							failures.add(new Exception(msg));
@@ -270,8 +290,8 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 		dataCounts.put("showpad-total", cnt);
 		log.info("there are now " + cnt + " records in the showpad database");
 	}
-	
-	
+
+
 	/**
 	 * @param html
 	 */
@@ -285,7 +305,7 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 			html.append("Showpad Updated: ").append(util.getUpdateCount()).append("<br/>");
 			html.append("Showpad Deleted: ").append(util.getDeleteCount()).append("<br/>");
 			html.append("Showpad Total: ").append(util.getDbCount()).append("<br/><br/>");
-			
+
 			if (util.getFailures().size() > 0) {
 				html.append("<b>The following issues were reported:</b><br/><br/>");
 

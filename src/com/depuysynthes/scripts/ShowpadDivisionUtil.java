@@ -61,7 +61,7 @@ public class ShowpadDivisionUtil {
 
 
 	public ShowpadDivisionUtil(Properties props, String divisionId, 
-			String divisionNm, ShowpadApiUtil util) {
+			String divisionNm, ShowpadApiUtil util) throws QuotaException {
 		this.props = props;
 		this.divisionId = divisionId;
 		this.divisionNm = divisionNm;
@@ -214,8 +214,9 @@ public class ShowpadDivisionUtil {
 	 * Check to see if 'this' division has the given asset.  If so, fire the delete request
 	 * @param vo
 	 * @throws IOException
+	 * @throws QuotaException 
 	 */
-	public void deleteAsset(MediaBinDeltaVO vo) throws IOException {
+	public void deleteAsset(MediaBinDeltaVO vo) throws IOException, QuotaException {
 		String pkId = divisionAssets.get(vo.getDpySynMediaBinId());
 		if (pkId == null || pkId.length() == 0) return; //nothing to delete
 
@@ -293,8 +294,9 @@ public class ShowpadDivisionUtil {
 	 * runs a loop around the ticket queue checking for status changes.  Returns only
 	 * once the queue is empty, which may take some time (on occasation)
 	 * @param masterRecords
+	 * @throws QuotaException 
 	 */
-	public void processTicketQueue() {
+	public void processTicketQueue() throws QuotaException {
 		//continue processing the queue until it's empty; meaning Showpad has processed all our assets
 		int count = insertTicketQueue.size();
 		int runCount = 0;
@@ -343,8 +345,9 @@ public class ShowpadDivisionUtil {
 	 * queries a ticket to check status and capture assetId once complete.
 	 * @param ticketId
 	 * @return
+	 * @throws QuotaException 
 	 */
-	private String getAssetIdFromTicket(String ticketId) throws InvalidDataException {
+	private String getAssetIdFromTicket(String ticketId) throws InvalidDataException, QuotaException {
 		String ticketUrl = props.getProperty("showpadApiUrl") + "/tickets/" + ticketId + ".json?fields=status,asset";
 		try {
 			String resp = showpadUtil.executeGet(ticketUrl);
@@ -382,8 +385,9 @@ public class ShowpadDivisionUtil {
 	 * fails after uploading the files
 	 * @param fileName
 	 * @return
+	 * @throws QuotaException 
 	 */
-	private String findShowpadId(String fileName) {
+	private String findShowpadId(String fileName) throws QuotaException {
 		String showpadId = null;
 		//encode the file Name as a URL parameter, since this is a GET request
 		String findUrl = divisionUrl + "/assets.json?fields=id&id=" + divisionId + "&limit=100&name=" + StringEncoder.urlEncode(fileName);
@@ -437,8 +441,9 @@ public class ShowpadDivisionUtil {
 	/**
 	 * Load a list of tags already at Showpad
 	 * If we try to add a tag to an asset without using it's ID, and it already existing in the system, it will fail.
+	 * @throws QuotaException 
 	 */
-	private void loadShowpadTagList() {
+	private void loadShowpadTagList() throws QuotaException {
 		String tagUrl = divisionUrl + "/tags.json?limit=100000&id=" + divisionId + "&fields=id,name";
 		try {
 			String resp = showpadUtil.executeGet(tagUrl);
@@ -468,8 +473,9 @@ public class ShowpadDivisionUtil {
 	 * adds the desired tags to the passed showpad asset
 	 * If the desired tag does not exist in Showpad, it must be added (there) first.
 	 * @param vo
+	 * @throws QuotaException 
 	 */
-	private void addTags(MediaBinDeltaVO vo, StringBuilder header) {
+	private void addTags(MediaBinDeltaVO vo, StringBuilder header) throws QuotaException {
 		Map<String,String> assignedTags = null;
 		if (vo.getShowpadId() != null) assignedTags = loadAssetTags(vo.getShowpadId());
 		Set<String> desiredTags = new HashSet<>();
@@ -514,8 +520,9 @@ public class ShowpadDivisionUtil {
 	 * returns a list of tags already attached to this asset
 	 * @param showpadId
 	 * @return
+	 * @throws QuotaException 
 	 */
-	private Map<String, String> loadAssetTags(String showpadId) {
+	private Map<String, String> loadAssetTags(String showpadId) throws QuotaException {
 		Map<String,String> tags = new HashMap<>();
 		String tagUrl = props.getProperty("showpadApiUrl") + "/assets/" + showpadId + "/tags.json";
 		try {
@@ -549,8 +556,9 @@ public class ShowpadDivisionUtil {
 	 * @param showpadId
 	 * @param tagNm
 	 * @param tagId
+	 * @throws QuotaException 
 	 */
-	private String createTag(String tagNm) {
+	private String createTag(String tagNm) throws QuotaException {
 		String tagId = null;
 		String tagUrl = divisionUrl + "/tags.json";
 
