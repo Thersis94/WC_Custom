@@ -75,6 +75,11 @@ public class ResultsContainer implements Serializable {
     	}
     }
     
+    /**
+     * Receives a JSON string representing search results and calls the main 
+     * parsing method to parse the JSON into its component parts.
+     * @param json
+     */
     public void setJson(String json) {
     	this.json = json;
     	parseResults();
