@@ -1,9 +1,12 @@
 package com.depuysynthes.huddle.solr;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.util.Map;
 import java.util.Properties;
 
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.search.solr.FormSolrIndexer;
 
 public class HuddleSolrFormIndexer extends FormSolrIndexer {
@@ -16,6 +19,40 @@ public class HuddleSolrFormIndexer extends FormSolrIndexer {
 		Properties props = new Properties();
 		props.putAll(attributes);
 		return new HuddleSolrFormIndexer(props);
+	}
+	
+	
+	/**
+	 * Get all the forms associated with the current form group and remove those
+	 * forms from solr
+	 * 
+	 * Important Note:
+	 * If a form has been added to multiple form groups and is removed from one
+	 * it is still removed from solr even though it should stay.  This is a known
+	 * potential use case but since this is a custom indexer and sharing between
+	 * groups is not expected this is being left alone for the moment.
+	 * @param huddleGroupId
+	 */
+	public void clearByGroup(String huddleGroupId) {
+		StringBuilder sql = new StringBuilder(325);
+		sql.append("select FORM_ID from ").append(config.get(Constants.CUSTOM_DB_SCHEMA)).append("HUDDLE_FORM_GROUP ");
+		sql.append("where FORM_GROUP_ID = ?");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			StringBuilder ids = new StringBuilder();
+			ps.setString(1, huddleGroupId);
+			ResultSet rs = ps.executeQuery();
+			
+			while (rs.next()) {
+				if (ids.length() > 0) ids.append(" OR ");
+				ids.append(rs.getString("FORM_ID"));
+			}
+			if (ids.length() == 0) return;
+			log.debug(SearchDocumentHandler.DOCUMENT_ID + ":(" + ids + ")");
+			makeServer().deleteByQuery(SearchDocumentHandler.DOCUMENT_ID + ":(" + ids.toString()+")");
+		} catch (Exception e) {
+			log.error("Failed to get forms for group: " + huddleGroupId, e);
+		}
 	}
 	
 	
