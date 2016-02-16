@@ -6,8 +6,10 @@ package com.depuysynthes.huddle;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Properties;
 
 import com.depuysynthes.huddle.HuddleGroupVO.HuddleForm;
+import com.depuysynthes.huddle.solr.HuddleSolrFormIndexer;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
@@ -65,7 +67,7 @@ public class HuddleFormGroupAction extends SBActionAdapter {
 		 * Retrieve the HuddleGroupVO for the given formGroupId and place in
 		 * AdminModuleData. 
 		 */
-		super.putModuleData(getHuddleGroupVO(formGroupId, organizationId, true), 1, true);
+		super.putModuleData(getHuddleGroupVO(formGroupId, organizationId, true, false), 1, true);
 	}
 
 	public void update(SMTServletRequest req) throws ActionException {
@@ -82,11 +84,22 @@ public class HuddleFormGroupAction extends SBActionAdapter {
 		 * re-add based off formIds that are passed.
 		 */
 		if(formGroupId.length() > 0) {
+			Properties props = new Properties();
+			props.putAll(getAttributes());
+			HuddleSolrFormIndexer indexer = new HuddleSolrFormIndexer(props);
+			indexer.setDBConnection(getDBConnection());
+			
+			//Flush existing records from solr
+			indexer.clearByGroup(formGroupId);
+			
 			//Flush All Existing Records
 			flushGroup(formGroupId);
 
 			//Add New FormGroup Records
 			addForms(formGroupId, formIds);
+			
+			// Push the current forms to solr
+			indexer.pushSingleForm(formGroupId);
 		}
 	}
 
@@ -96,7 +109,7 @@ public class HuddleFormGroupAction extends SBActionAdapter {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		
 		// Get the forms for this group id
-		HuddleGroupVO forms = getHuddleGroupVO(formGroupId, site.getOrganizationId(), page.isPreviewMode());
+		HuddleGroupVO forms = getHuddleGroupVO(formGroupId, site.getOrganizationId(), page.isPreviewMode(), true);
 		
 		if (forms == null) throw new ActionException("No forms found");
 		
@@ -184,7 +197,7 @@ public class HuddleFormGroupAction extends SBActionAdapter {
 	 * @param actionId
 	 * @return
 	 */
-	private HuddleGroupVO getHuddleGroupVO(String formGroupId, String organizationId, boolean isPreview) {
+	private HuddleGroupVO getHuddleGroupVO(String formGroupId, String organizationId, boolean isPreview, boolean isRetrieve) {
 		HuddleGroupVO grp = new HuddleGroupVO();
 		try(PreparedStatement ps = dbConn.prepareStatement(getFormGroupSql())) {
 			ps.setString(1, formGroupId);
@@ -196,7 +209,7 @@ public class HuddleFormGroupAction extends SBActionAdapter {
 			log.error(e);
 		}
 
-		getFormList(grp, organizationId, isPreview);
+		getFormList(grp, organizationId, isPreview, isRetrieve);
 		return grp;
 	}
 
@@ -206,8 +219,8 @@ public class HuddleFormGroupAction extends SBActionAdapter {
 	 * @param grp
 	 * @param organizationId
 	 */
-	private void getFormList(HuddleGroupVO grp, String organizationId, boolean isPreview) {
-		try(PreparedStatement ps = dbConn.prepareStatement(getFormsSql())) {
+	private void getFormList(HuddleGroupVO grp, String organizationId, boolean isPreview, boolean isRetrieve) {
+		try(PreparedStatement ps = dbConn.prepareStatement(getFormsSql(isRetrieve))) {
 			ps.setString(1, StringUtil.checkVal(grp.getActionId()));
 			ps.setString(2, StringUtil.checkVal(organizationId));
 			ResultSet rs = ps.executeQuery();
@@ -263,12 +276,17 @@ public class HuddleFormGroupAction extends SBActionAdapter {
 	 * Helper method returns FormGroup List Lookup
 	 * @return
 	 */
-	private String getFormsSql() {
+	private String getFormsSql(boolean isRetrieve) {
 		StringBuilder sql = new StringBuilder(300);
 		sql.append("select * from FB_FORM a ");
 		sql.append("inner join SB_ACTION b ");
 		sql.append("on a.ACTION_ID = b.ACTION_ID ");
-		sql.append("left outer join ");
+		// On list all forms are needed, retrieve only need ones assigned to the widget
+		if (isRetrieve) {
+			sql.append("inner join ");
+		} else {
+			sql.append("left outer join ");
+		}
 		sql.append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("HUDDLE_FORM_GROUP c on b.ACTION_GROUP_ID = c.FORM_ID ");
 		sql.append("and c.FORM_GROUP_ID = ? where b.ORGANIZATION_ID = ? ");
