@@ -180,8 +180,6 @@ public class ResultsContainer implements Serializable {
      */
     public void setFilters(String[] filterVals) {
     	// check for filters, set procedures/products filter lists.
-    	//procFilters = new ArrayList<>();
-    	//prodFilters = new ArrayList<>();
     	procFilters.clear();
     	prodFilters.clear();
     	
@@ -208,7 +206,6 @@ public class ResultsContainer implements Serializable {
      * of the displayed list of surgeons.
      */
     private void setFilteredSurgeonsList() {
-    	//filteredSurgeonList = new ArrayList<>();
     	filteredSurgeonList.clear();
 		if (isProcFilters() || isProdFilters()) {
 			boolean filterOutSurgeon = false;			
