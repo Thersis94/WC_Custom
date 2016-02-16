@@ -20,7 +20,9 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.formbuilder.FormBuilderFacadeAction;
 import com.smt.sitebuilder.admin.action.SBModuleAction;
 import com.smt.sitebuilder.common.PageVO;
+import com.smt.sitebuilder.common.SiteBuilderUtil;
 import com.smt.sitebuilder.common.SiteVO;
+import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -294,5 +296,21 @@ public class HuddleFormGroupAction extends SBActionAdapter {
 
 		log.debug(sql.toString());
 		return sql.toString();
+	}
+	
+	public void delete(SMTServletRequest req) throws ActionException {
+		Properties props = new Properties();
+		props.putAll(getAttributes());
+		HuddleSolrFormIndexer indexer = new HuddleSolrFormIndexer(props);
+		indexer.setDBConnection(getDBConnection());
+
+		String formGroupId = StringUtil.checkVal(req.getParameter(SBModuleAction.SB_ACTION_ID));
+		indexer.clearByGroup(formGroupId);
+		
+		super.delete(req);
+		
+		Object msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
+		SiteBuilderUtil util = new SiteBuilderUtil();
+		util.moduleRedirect(req, msg, (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH));
 	}
 }
