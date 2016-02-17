@@ -65,7 +65,7 @@ public class HuddleSolrFormIndexer extends FormSolrIndexer {
 	@Override
 	protected SolrDocumentVO makeNewDocument(ResultSet rs) throws SQLException {
 		HuddleSolrFormVO doc = new HuddleSolrFormVO(getIndexType());
-		doc.setDocumentId(rs.getString("ACTION_GROUP_ID"));
+		doc.setDocumentId(rs.getString("FORM_ID"));
 		doc.addOrganization(rs.getString("ORGANIZATION_ID"));
 		doc.addRole(rs.getInt("ROLE_ORDER_NO"));
 		doc.setTitle(rs.getString("ACTION_NM"));
