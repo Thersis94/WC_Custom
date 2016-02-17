@@ -60,6 +60,15 @@ public class ShowpadDivisionUtil {
 	protected List <Exception> failures = new ArrayList<Exception>();
 
 
+	/**
+	 * construct a new DivisionUtil based on the given arguments.
+	 * These Divisions mirror those in Showpad and are loaded from the script's config file
+	 * @param props
+	 * @param divisionId
+	 * @param divisionNm
+	 * @param util
+	 * @throws QuotaException
+	 */
 	public ShowpadDivisionUtil(Properties props, String divisionId, 
 			String divisionNm, ShowpadApiUtil util) throws QuotaException {
 		this.props = props;
@@ -74,7 +83,15 @@ public class ShowpadDivisionUtil {
 
 
 
-	public void pushAsset(MediaBinDeltaVO vo) throws Exception {
+	/**
+	 * Push a single asset over to Showpad, for this Division.
+	 * - Does not push to Showpad if the asset is already there and has no changes to be made.
+	 * - Loads asset tags and adds new tags as needed
+	 * - Also checks to see if the asset is pre-existing, so we don't create a duplicate.
+	 * @param vo
+	 * @throws QuotaException
+	 */
+	public void pushAsset(MediaBinDeltaVO vo) throws QuotaException {
 		vo.setShowpadId(divisionAssets.get(vo.getDpySynMediaBinId()));
 		String postUrl;
 		Map<String, String> params = new HashMap<>();
@@ -84,7 +101,10 @@ public class ShowpadDivisionUtil {
 
 		if (isShowpadUpdate) {
 			//this asset can be ignored if we have it saved and there is no state change
-			if (State.Ignore == vo.getRecordState()) return;
+			if (State.Ignore == vo.getRecordState()) {
+				log.info("no changes needed to " + vo.getDpySynMediaBinId());
+				return;
+			}
 			
 			//send as an 'update' to Showpad
 			postUrl = props.getProperty("showpadApiUrl") + "/assets/" + vo.getShowpadId() + ".json";
@@ -98,6 +118,7 @@ public class ShowpadDivisionUtil {
 				//first capture it as an insert so we'll have it in our database next time.
 				if (State.Ignore == vo.getRecordState()) {
 					inserts.put(vo.getDpySynMediaBinId(), vo.getShowpadId());
+					log.info("no changes needed to " + vo.getDpySynMediaBinId() + ", adding to the insert roster for our DB.");
 					return;
 				}
 
@@ -126,16 +147,23 @@ public class ShowpadDivisionUtil {
 		log.info("uploading file: " + props.get("downloadDir") + vo.getFileName());
 		File mbFile = new File(props.get("downloadDir") + vo.getFileName());
 		log.info("sending to showpad: " + vo.getDpySynMediaBinId());
-		String resp = showpadUtil.executePostFile(postUrl, params, mbFile, header.toString());
-		JSONObject json = JSONObject.fromObject(resp);
-		JSONObject metaResp = json.getJSONObject("meta");
-		log.info(json);
-		if (!StringUtil.checkVal(metaResp.optString("code")).startsWith("20")) //trap all but a 200 or 201
-			throw new IOException(metaResp.optString("message"));
+		JSONObject json = null;
+		try {
+			String resp = showpadUtil.executePostFile(postUrl, params, mbFile, header.toString());
+			json = JSONObject.fromObject(resp);
+			JSONObject metaResp = json.getJSONObject("meta");
+			log.info(json);
+			if (!StringUtil.checkVal(metaResp.optString("code")).startsWith("20")) //trap all but a 200 or 201
+				throw new IOException(metaResp.optString("message"));
+			
+		} catch (IOException e) {
+			String msg = DSMediaBinImporterV2.makeMessage(vo, "Could not push file to showpad: " + e.getMessage());
+			failures.add(new Exception(msg));
+			return;
+		}
 
 		//check to see whether a Ticket or Asset got created.  If it's a Ticket, we'll need to re-query after a little while
 		//to get the actual AssetID of the asset.  A Ticket means the request was queued, which is common for videos and larger PDFs
-		//determine if we need the ID, and move on
 		if (!isShowpadUpdate) {
 			String assetId = null, ticketId = null;
 			JSONObject jsonResp = json.getJSONObject("response");
@@ -213,18 +241,23 @@ public class ShowpadDivisionUtil {
 	 * deletes an asset from Showpad.  Note this call sis not division centric, but the assetIds are.
 	 * Check to see if 'this' division has the given asset.  If so, fire the delete request
 	 * @param vo
-	 * @throws IOException
 	 * @throws QuotaException 
 	 */
-	public void deleteAsset(MediaBinDeltaVO vo) throws IOException, QuotaException {
+	public void deleteAsset(MediaBinDeltaVO vo) throws QuotaException {
 		String pkId = divisionAssets.get(vo.getDpySynMediaBinId());
 		if (pkId == null || pkId.length() == 0) return; //nothing to delete
 
 		//delete using the base /assets/ url, not the division url
 		String url = props.getProperty("showpadApiUrl") + "/assets/" + pkId + ".json";
-		String resp = showpadUtil.executeDelete(url);
-		log.info("showpad delete response: " + resp);
-		++deleteCount;
+		try {
+			String resp = showpadUtil.executeDelete(url);
+			log.info("showpad delete response: " + resp);
+			++deleteCount;
+		} catch (IOException ioe) {
+			String msg = DSMediaBinImporterV2.makeMessage(vo, "Could not delete file from showpad: " + ioe.getMessage());
+			failures.add(new Exception(msg));
+			log.error("could not delete from showpad", ioe);
+		}
 	}
 	
 	
