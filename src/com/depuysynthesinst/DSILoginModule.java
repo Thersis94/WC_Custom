@@ -171,12 +171,14 @@ public class DSILoginModule extends SAMLLoginModule {
 		
 		try {
 			req.setAttribute("registerSubmittalId", loadRSId(user, req, dbConn));
+			user.setSpecialty("1DS");
 			ra.saveUser(user);
 		
 			String[] regFields = new String[]{ RegField.DSI_TTLMS_ID.toString(), 
 															 RegField.DSI_SYNTHES_ID.toString(), 
 															 RegField.DSI_PROG_ELIGIBLE.toString(), 
-															 RegField.DSI_VERIFIED.toString() };
+															 RegField.DSI_VERIFIED.toString(),
+															 RegField.c0a80241b71d27b038342fcb3ab567a0.toString()};
 			
 			ra.captureLMSResponses(req, user, regFields);
 		} catch (Exception e) {

@@ -194,6 +194,7 @@ public class RegistrationAction extends SimpleActionAdapter {
 		//Otherwise only when modal #3 is submitted (which is page=4 on the request).
 		if ("4".equals(req.getParameter("page")) && req.hasParameter("newReg")) {
 			user.setCountryCode(req.getParameter("reg_||" + DSIUserDataVO.RegField.DSI_COUNTRY.toString()));
+			log.warn("user passed country=" + req.getParameter("reg_||" + DSIUserDataVO.RegField.DSI_COUNTRY.toString()) + " we stored country=" + user.getCountryCode());
 			boolean migrated = migrateUser(req, user);
 			
 			//if not migrated, call save (create||update)
