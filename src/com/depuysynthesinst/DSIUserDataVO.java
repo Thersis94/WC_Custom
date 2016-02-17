@@ -495,7 +495,7 @@ public class DSIUserDataVO extends UserDataVO {
 	}
 
 	public String getCountryCode() {
-		return user.getCountryCode();
+		return StringUtil.checkVal(user.getAttribute(RegField.DSI_COUNTRY.toString()), "US");
 	}
 
 	public String getCounty() {
@@ -599,7 +599,7 @@ public class DSIUserDataVO extends UserDataVO {
 	}
 
 	public void setCountryCode(String country) {
-		user.setCountryCode(country);
+		user.addAttribute(RegField.DSI_COUNTRY.toString(), country);
 	}
 
 	public void setCounty(String county) {
