@@ -580,7 +580,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	 * @param url
 	 * @return
 	 */
-	protected String makeMessage(MediaBinDeltaVO vo, String err) {
+	public static String makeMessage(MediaBinDeltaVO vo, String err) {
 		StringBuilder msg = new StringBuilder(200);
 		msg.append("<font color='red'>").append(err).append(":</font><br/>");
 		msg.append("Tracking number: ").append(vo.getTrackingNoTxt()).append("<br/>");
