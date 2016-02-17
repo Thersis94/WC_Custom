@@ -269,6 +269,9 @@ public class RegistrationAction extends SimpleActionAdapter {
 				case "DSI_VERIFIED": //RegField.DSI_VERIFIED - can't use an object here
 					vo.setUserValue((dsiUser.isVerified() ? "yes" : "no"));
 					break;
+				case "c0a80241b71d27b038342fcb3ab567a0": //RegField for specialty
+					vo.setUserValue(dsiUser.getSpecialty());
+					break;
 			}
 			regData.add(vo);
 		}
