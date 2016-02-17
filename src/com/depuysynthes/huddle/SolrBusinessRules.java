@@ -20,7 +20,6 @@ import com.smt.sitebuilder.search.SearchDocumentHandler;
 public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 
 	protected String cmsPath = "";
-	protected String reqParam1 = "";
 	protected String shareUrl; //different from pageUrl, for MB assets these reference LL directly
 	
 	public SolrBusinessRules() {
@@ -66,7 +65,6 @@ public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 					case "podcast":
 					case "video":
 						String url = HuddleUtils.ASSET_PG_ALIAS + super.getQsPath() + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
-						if (reqParam1 != null && reqParam1.length() > 0) url += "/" + reqParam1; 
 						pageUrl = url;
 						shareUrl = StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.DOCUMENT_URL));
 						break indexType;
@@ -207,7 +205,8 @@ public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 					return false;
 			}
 		} else if (IndexType.FORM == type) {
-			return true;
+			//return true if there's a PDF attached to this form
+			return (sd.getFieldValue(SearchDocumentHandler.DOCUMENT_URL) != null);
 		} else {
 			return false; //blog, events, sales consultants, etc.
 		}
@@ -220,13 +219,5 @@ public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 	
 	public String getCmsPath() {
 		return cmsPath;
-	}
-
-	public String getReqParam1() {
-		return reqParam1;
-	}
-
-	public void setReqParam1(String reqParam1) {
-		this.reqParam1 = reqParam1;
 	}
 }

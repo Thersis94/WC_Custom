@@ -1,6 +1,3 @@
-/**
- *
- */
 package com.depuysynthes.huddle;
 
 import java.sql.PreparedStatement;
@@ -8,7 +5,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Properties;
 
-import com.depuysynthes.huddle.HuddleGroupVO.HuddleForm;
 import com.depuysynthes.huddle.solr.HuddleSolrFormIndexer;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -16,40 +12,29 @@ import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
-import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.action.formbuilder.FormBuilderFacadeAction;
 import com.smt.sitebuilder.admin.action.SBModuleAction;
 import com.smt.sitebuilder.common.PageVO;
-import com.smt.sitebuilder.common.SiteBuilderUtil;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title</b>: HuddleFormGroupAction.java
- * <p/>
  * <b>Project</b>: WC_Custom
- * <p/>
  * <b>Description: </b> Action that wraps the FormBuilderFacadeAction with
  * a grouping system.
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2016
- * <p/>
  * <b>Company:</b> Silicon Mountain Technologies
- * <p/>
  * 
  * @author raptor
  * @version 1.0
  * @since Jan 15, 2016
- *        <p/>
- *        <b>Changes: </b>
  ****************************************************************************/
-public class HuddleFormGroupAction extends SBActionAdapter {
+public class HuddleFormGroupAction extends HuddleFormSolrAction {
 
-	/**
-	 * 
-	 */
 	public HuddleFormGroupAction() {
+		super();
 	}
 
 	/**
@@ -59,8 +44,9 @@ public class HuddleFormGroupAction extends SBActionAdapter {
 		super(actionInit);
 	}
 
-	public void list(SMTServletRequest req) throws ActionException {
 
+	@Override
+	public void list(SMTServletRequest req) throws ActionException {
 		//Get necessary information off request.
 		String formGroupId = StringUtil.checkVal(req.getParameter(SBModuleAction.SB_ACTION_ID));
 		String organizationId = StringUtil.checkVal(req.getParameter("organizationId"));
@@ -69,11 +55,12 @@ public class HuddleFormGroupAction extends SBActionAdapter {
 		 * Retrieve the HuddleGroupVO for the given formGroupId and place in
 		 * AdminModuleData. 
 		 */
-		super.putModuleData(getHuddleGroupVO(formGroupId, organizationId, true, false), 1, true);
+		super.putModuleData(getHuddleGroupVO(formGroupId, organizationId, true, false));
 	}
 
-	public void update(SMTServletRequest req) throws ActionException {
 
+	@Override
+	public void update(SMTServletRequest req) throws ActionException {
 		//update SBAction Record.
 		super.update(req);
 
@@ -85,76 +72,59 @@ public class HuddleFormGroupAction extends SBActionAdapter {
 		 * If we have a formGroupId, remove all existing group records and
 		 * re-add based off formIds that are passed.
 		 */
-		if(formGroupId.length() > 0) {
+		if (formGroupId.length() > 0) {
 			Properties props = new Properties();
 			props.putAll(getAttributes());
 			HuddleSolrFormIndexer indexer = new HuddleSolrFormIndexer(props);
 			indexer.setDBConnection(getDBConnection());
-			
+
 			//Flush existing records from solr
 			indexer.clearByGroup(formGroupId);
-			
-			//Flush All Existing Records
+
+			//Flush All Existing Records in the DB
 			flushGroup(formGroupId);
 
-			//Add New FormGroup Records
+			//Add New FormGroup Records to the DB
 			addForms(formGroupId, formIds);
-			
+
 			// Push the current forms to solr
 			indexer.pushSingleForm(formGroupId);
 		}
 	}
 
+
+	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		String formGroupId = actionInit.getActionId();
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		
+
 		// Get the forms for this group id
 		HuddleGroupVO forms = getHuddleGroupVO(formGroupId, site.getOrganizationId(), page.isPreviewMode(), true);
-		
+
 		if (forms == null) throw new ActionException("No forms found");
-		
-		/*
-		 * If there is a qs field on the request, forward the call to
-		 * FormBuilderFacadeActions build method.  Otherwise just retrieve the
-		 * HuddleFormGroupActions vo.
-		 */
-		if(req.hasParameter("reqParam_1")) {
-			HuddleForm form = forms.getFormsMap().get(req.getParameter("reqParam_1"));
-			if (form == null) throw new ActionException("No form found with id " + req.getParameter("reqParam_1"));
-			getFormBuilderFacadeAction(form.getActionId()).retrieve(req);
-		} else {
-			putModuleData(forms, 1, false);
-		}
+
+		putModuleData(forms);
 	}
 
-	/**
-	 * Proxy Build request through the FormBuilderFacadeAction Build method.
-	 */
-	public void build(SMTServletRequest req) throws ActionException {
 
-		/*
-		 * If there is a formId on the request, forward the call to
-		 * FormBuilderFacadeActions build method.
-		 */
-		if(req.hasParameter("formId")) {
-			getFormBuilderFacadeAction(req.getParameter("formId")).build(req);
-		}
+	@Override
+	public void delete(SMTServletRequest req) throws ActionException {
+		Properties props = new Properties();
+		props.putAll(getAttributes());
+		HuddleSolrFormIndexer indexer = new HuddleSolrFormIndexer(props);
+		indexer.setDBConnection(getDBConnection());
+
+		String formGroupId = StringUtil.checkVal(req.getParameter(SBModuleAction.SB_ACTION_ID));
+		indexer.clearByGroup(formGroupId);
+
+		super.delete(req);
+
+		Object msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
+		super.moduleRedirect(req, msg, (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH));
 	}
 
-	/**
-	 * Helper method that manages building a FormBuilderFacadeAction instance.
-	 * @param formId
-	 * @return
-	 */
-	public FormBuilderFacadeAction getFormBuilderFacadeAction(String formId) {
-		this.actionInit.setActionId(formId);
-		FormBuilderFacadeAction fbfa = new FormBuilderFacadeAction(this.actionInit);
-		fbfa.setDBConnection(getDBConnection());
-		fbfa.setAttributes(getAttributes());
-		return fbfa;
-	}
+
 
 	/**
 	 * Helper method that adds HuddleFormGroup records for a given list of
@@ -162,7 +132,7 @@ public class HuddleFormGroupAction extends SBActionAdapter {
 	 * @param formGroupId
 	 * @param formIds
 	 */
-	private void addForms(String formGroupId, String[] formIds) {
+	protected void addForms(String formGroupId, String[] formIds) {
 		try(PreparedStatement ps = dbConn.prepareStatement(getFormAddSql())) {
 			for(int i = 0; i < formIds.length; i++) {
 				int cnt = 1;
@@ -175,23 +145,25 @@ public class HuddleFormGroupAction extends SBActionAdapter {
 			}
 			ps.executeBatch();
 		} catch (SQLException e) {
-			log.error(e);
+			log.error("could not add forms", e);
 		}
 	}
+
 
 	/**
 	 * Helper method that removes all HuddleFormGroup records for a given
 	 * formGroupId.
 	 * @param formGroupId
 	 */
-	private void flushGroup(String formGroupId) {
-		try(PreparedStatement ps = dbConn.prepareStatement(getflushGroupSql())) {
+	protected void flushGroup(String formGroupId) {
+		try(PreparedStatement ps = dbConn.prepareStatement(getFlushGroupSql())) {
 			ps.setString(1, formGroupId);
 			ps.executeUpdate();
 		} catch (SQLException e) {
-			log.error(e);
+			log.error("could not flush form group", e);
 		}
 	}
+
 
 	/**
 	 * Helper method that returns all forms in system for an org along with any
@@ -208,7 +180,7 @@ public class HuddleFormGroupAction extends SBActionAdapter {
 				grp.setData(rs);
 			}
 		} catch (SQLException e) {
-			log.error(e);
+			log.error("could not load HuddleFormGroup", e);
 		}
 
 		getFormList(grp, organizationId, isPreview, isRetrieve);
@@ -239,37 +211,13 @@ public class HuddleFormGroupAction extends SBActionAdapter {
 		}
 	}
 
-	/**
-	 * Helper method that returns the sql for adding new HuddleFormRecords.
-	 * @return
-	 */
-	private String getFormAddSql() {
-		StringBuilder sql = new StringBuilder();
-		sql.append("insert into ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("HUDDLE_FORM_GROUP (FORM_GROUP_ID, FORM_ID, ORDER_NO, ");
-		sql.append("CREATE_DT, HUDDLE_GROUP_ID) values (?,?,?,?,?)");
-		return sql.toString();
-	}
-
-	/**
-	 * Helper method that returns the sql for Flushing all Huddle Form Records
-	 * for a particular Form Group
-	 * @return
-	 */
-	private String getflushGroupSql() {
-		StringBuilder sql = new StringBuilder(150);
-		sql.append("delete from ");
-		sql.append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("HUDDLE_FORM_GROUP where FORM_GROUP_ID = ?");
-		return sql.toString();
-	}
 
 	/**
 	 * Helper method that retrieves the HuddleGroup Action data. 
 	 * @return
 	 */
 	private String getFormGroupSql() {
-		StringBuilder sql = new StringBuilder(300);
+		StringBuilder sql = new StringBuilder(100);
 		sql.append("select * from SB_ACTION a where ACTION_ID = ?");
 		return sql.toString();
 	}
@@ -289,7 +237,7 @@ public class HuddleFormGroupAction extends SBActionAdapter {
 		} else {
 			sql.append("left outer join ");
 		}
-		sql.append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("HUDDLE_FORM_GROUP c on b.ACTION_GROUP_ID = c.FORM_ID ");
 		sql.append("and c.FORM_GROUP_ID = ? where b.ORGANIZATION_ID = ? ");
 		sql.append("order by c.ORDER_NO, b.PENDING_SYNC_FLG ");
@@ -297,20 +245,33 @@ public class HuddleFormGroupAction extends SBActionAdapter {
 		log.debug(sql.toString());
 		return sql.toString();
 	}
-	
-	public void delete(SMTServletRequest req) throws ActionException {
-		Properties props = new Properties();
-		props.putAll(getAttributes());
-		HuddleSolrFormIndexer indexer = new HuddleSolrFormIndexer(props);
-		indexer.setDBConnection(getDBConnection());
 
-		String formGroupId = StringUtil.checkVal(req.getParameter(SBModuleAction.SB_ACTION_ID));
-		indexer.clearByGroup(formGroupId);
-		
-		super.delete(req);
-		
-		Object msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
-		SiteBuilderUtil util = new SiteBuilderUtil();
-		util.moduleRedirect(req, msg, (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH));
+
+	/**
+	 * Helper method that returns the sql for adding new HuddleFormRecords.
+	 * @return
+	 */
+	protected String getFormAddSql() {
+		StringBuilder sql = new StringBuilder(200);
+		sql.append("insert into ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("HUDDLE_FORM_GROUP (FORM_GROUP_ID, FORM_ID, ORDER_NO, ");
+		sql.append("CREATE_DT, HUDDLE_GROUP_ID) values (?,?,?,?,?)");
+		log.debug(sql.toString());
+		return sql.toString();
+	}
+
+
+	/**
+	 * Helper method that returns the sql for Flushing all Huddle Form Records
+	 * for a particular Form Group
+	 * @return
+	 */
+	protected String getFlushGroupSql() {
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("delete from ");
+		sql.append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("HUDDLE_FORM_GROUP where FORM_GROUP_ID = ?");
+		log.debug(sql.toString());
+		return sql.toString();
 	}
 }

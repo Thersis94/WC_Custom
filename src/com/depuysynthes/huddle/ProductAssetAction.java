@@ -50,14 +50,22 @@ public class ProductAssetAction extends SimpleActionAdapter {
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		UserRoleVO role = (UserRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
-		String documentId = StringUtil.checkVal(req.getParameter("reqParam_1"));
+		String documentId = StringUtil.checkVal(req.getParameter(SMTServletRequest.PARAMETER_KEY + "1"));
 		
 		SolrDocument resp = querySolr(mod.getOrganizationId(), documentId, role.getRoleLevel(), false, null);
 		req.setAttribute("assetSolrDoc", resp);
 		
 		//don't bother with the product lookup if the asset is not there.
 		if (resp != null) {
-			req.setAttribute("productSolrDoc", querySolr(mod.getOrganizationId(), documentId, role.getRoleLevel(), true, req.getParameter("reqParam_2")));
+			//look at the referring page; if it was a product let's try and find that one instead of the 'first available'.
+			String referer = StringUtil.checkVal(req.getHeader("Referer"));
+			log.debug("referer=" + referer);
+			String productAlias = null;
+			int idx = referer.indexOf(HuddleUtils.PRODUCT_PG_ALIAS + getAttribute(Constants.QS_PATH));
+			if (idx > -1) {
+				productAlias = referer.substring(idx+(HuddleUtils.PRODUCT_PG_ALIAS + getAttribute(Constants.QS_PATH)).length());
+			}
+			req.setAttribute("productSolrDoc", querySolr(mod.getOrganizationId(), documentId, role.getRoleLevel(), true, productAlias));
 			//overwrite the browser title
 			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 			page.setTitleName(resp.getFieldValue(SearchDocumentHandler.TITLE).toString());
@@ -89,6 +97,7 @@ public class ProductAssetAction extends SimpleActionAdapter {
 			qData.addSolrField(field);
 			
 		} else if (productAlias != null && productAlias.length() > 0) {
+			log.debug("searching productAlias: " + productAlias);
 			//query product using documentUrl provided
 			SolrFieldVO field = new SolrFieldVO();
 			field.setBooleanType(BooleanType.AND);

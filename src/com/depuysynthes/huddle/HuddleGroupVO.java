@@ -35,14 +35,18 @@ import com.smt.sitebuilder.admin.action.SBModuleAction;
  ****************************************************************************/
 public class HuddleGroupVO extends SBModuleVO {
 
-	/**
-	 *
-	 */
 	private static final long serialVersionUID = 1L;
 	private Map<String, HuddleForm> forms;
+	
 	public HuddleGroupVO() {
 		forms = new LinkedHashMap<String, HuddleForm>();
 	}
+	
+	public HuddleGroupVO(ResultSet rs) {
+		this();
+		setData(rs);
+	}
+	
 
 	/**
 	 * Helper method to retrieve data off the Request.
@@ -67,6 +71,7 @@ public class HuddleGroupVO extends SBModuleVO {
 		actionGroupId = db.getStringVal("ACTION_GROUP_ID", rs);
 		pendingSyncFlag = db.getIntVal("PENDING_SYNC_FLG", rs);
 		setActionId(db.getStringVal("ACTION_ID", rs));
+		super.setAttribute(SBModuleVO.ATTRIBUTE_2, db.getStringVal("attrib2_txt", rs)); //used for Specialty
 	}
 
 	//Getter

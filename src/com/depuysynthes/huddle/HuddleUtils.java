@@ -39,6 +39,7 @@ import com.smt.sitebuilder.search.SearchDocumentHandler;
 public class HuddleUtils {
 	
 	/** page aliases **/
+	public static final String PRODUCT_PG_ALIAS = "/product/"; //used in ProductAssetAction for referer inspection
 	public static final String ASSET_PG_ALIAS = "/asset/"; //used in SolrBusinessRules & EmailAFriend
 	public static final String MEDIABIN_REDIR_URL = "/json?amid=MEDIA_BIN_AJAX&mbid="; //used in EmailAFriend
 	
@@ -170,7 +171,8 @@ public class HuddleUtils {
 		// Module Types used in the same way as index Types
 		DOCUMENT("Documents"),
 		EVENT("Courses & Events"),
-		BLOG("News");
+		BLOG("News"),
+		FORM_BUILDER("Forms");
 		
 		private String name;
 		IndexType(String name) { this.name = name; }
