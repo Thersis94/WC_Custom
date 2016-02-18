@@ -104,9 +104,9 @@ public class DSILoginModule extends SAMLLoginModule {
 		try {
 			LMSWSClient lms = new LMSWSClient((String)super.initVals.get(LMSWSClient.CFG_SECURITY_KEY));
 			dsiUser.setMyCourses(lms.getUserCourseList(dsiUser.getDsiId()));
-			
 		} catch (ActionException ae) {
-			log.warn("could not load user course list", ae);
+			//ignore these errors; most users don't have courses to be concerned about and this doesn't impact functionality - JM 02.18.16
+			//log.warn("could not load user course list", ae);
 		}
 
 		DSIRoleMgr dsiRoleMgr = new DSIRoleMgr();
