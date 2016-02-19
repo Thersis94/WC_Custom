@@ -13,6 +13,7 @@ import com.siliconmtn.util.UUIDGenerator;
 import com.siliconmtn.util.databean.FilePartDataBean;
 import com.siliconmtn.util.parser.AnnotationParser;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.security.SecurityController;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
@@ -47,10 +48,27 @@ public class ProductContactsAction extends SimpleActionAdapter {
 
 	@Override
 	public void update(SMTServletRequest req) throws ActionException {
-		super.update(req);
+		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
+		int saveCnt = 0;
 		
 		if (req.getFile("xlsFile") != null)
-			processUpload(req);
+			saveCnt = processUpload(req);
+
+		//return some stats to the administrator
+		super.adminRedirect(req, msg, buildRedirect(saveCnt));
+	}
+	
+	/**
+	 * Append extra parameters to the redirect url so we can display some stats
+	 * about the transaction performed
+	 * @param req
+	 * @return
+	 */
+	private String buildRedirect(int saveCnt) {
+		StringBuilder redirect = new StringBuilder(150);
+		redirect.append(getAttribute(AdminConstants.ADMIN_TOOL_PATH));
+		redirect.append("?saveCnt=").append(saveCnt);
+		return redirect.toString();
 	}
 	
 	
@@ -60,7 +78,8 @@ public class ProductContactsAction extends SimpleActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void processUpload(SMTServletRequest req) throws ActionException {
+	private int processUpload(SMTServletRequest req) throws ActionException {
+		int cnt = 0;
 		AnnotationParser parser;
 		FilePartDataBean fpdb = req.getFile("xlsFile");
 		try {
@@ -97,11 +116,13 @@ public class ProductContactsAction extends SimpleActionAdapter {
 			}
 			
 			//push the new assets to Solr
+			cnt = contacts.size();
 			pushToSolr(contacts);
 			
 		} catch (InvalidDataException e) {
 			log.error("could not process DSI calendar import", e);
 		}
+		return cnt;
 	}
 	
 	
