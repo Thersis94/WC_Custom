@@ -6,6 +6,7 @@ import com.depuysynthes.huddle.HuddleUtils.IndexType;
 import com.depuysynthes.lucene.MediaBinSolrIndex.MediaBinField;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
+import com.smt.sitebuilder.security.SecurityController;
 
 /****************************************************************************
  * <b>Title</b>: SolrBusinessRules.java<p/>
@@ -193,6 +194,9 @@ public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 		IndexType type = IndexType.quietValueOf(StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.INDEX_TYPE)));
 		if (IndexType.MEDIA_BIN == type ) {
 			return true; //public-facing PDFs, Podcasts and videos
+		} else if (this.getMinRoleLevel() > SecurityController.PUBLIC_ROLE_LEVEL) {
+			//secure assets are not permitted in the Briefcase
+			return false;
 		} else if (IndexType.CMS_QUICKSTREAM == type) {
 			//need to look at AssetType, only non-html can go into the briefcase
 			String cmsType = StringUtil.checkVal(sd.getFieldValue(MediaBinField.AssetType.getField())).toLowerCase();

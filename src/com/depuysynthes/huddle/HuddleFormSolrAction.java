@@ -10,6 +10,7 @@ import com.smt.sitebuilder.action.SBModuleVO;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.formbuilder.FormBuilderFacadeAction;
 import com.smt.sitebuilder.action.search.SolrAction;
+import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -46,18 +47,25 @@ public class HuddleFormSolrAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
+		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
+		
 		/*
 		 * If there is a qs field on the request, forward the call to
 		 * FormBuilderFacadeActions retrieve method.  Otherwise 
 		 * just query Solr for a list of Forms
 		 */
+		Object formData = null;
 		if (req.hasParameter("reqParam_1")) {
 			getFormBuilderFacadeAction(req.getParameter("reqParam_1")).retrieve(req);
-			return;
+			mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
+			formData = mod.getActionData();
+			
+			//the formId in reqParam_1 will slip through to Solr as documentId - coincidentally and necessary
+			//the solrResponse will provide a roleLevel for how this form appears on Huddle (Secure or public)
+			//this value determined whether the form can be added to the users briefcase or not.
 		}
 
 		//OTHERWISE: Do a solr search and forward to the grid view
-		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		Cookie rppCook = req.getCookie(HuddleUtils.RPP_COOKIE);
 		if (rppCook != null)
 			req.setParameter("rpp", rppCook.getValue());
@@ -76,8 +84,17 @@ public class HuddleFormSolrAction extends SimpleActionAdapter {
 		sa.setAttributes(getAttributes());
 		sa.setDBConnection(dbConn);
 		sa.retrieve(req);
-
 		req.setParameter("fmid", "", true);
+		
+		if (req.hasParameter("reqParam_1")) {
+			//separate the solr response from the form builder response
+			mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
+			SolrResponseVO solrResp = (SolrResponseVO) mod.getActionData();
+			if (solrResp != null && solrResp.getTotalResponses() == 1) 
+				req.setAttribute("SOLR_DOC", solrResp.getResultDocuments().get(0));
+			
+			mod.setActionData(formData);
+		}
 	}
 
 
