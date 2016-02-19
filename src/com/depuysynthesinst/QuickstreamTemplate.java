@@ -77,7 +77,8 @@ public class QuickstreamTemplate extends CMSSolrDocumentVO {
 					break;
 				case "Asset Type":
 					//lowercase here correlates to the JSP we use in the View "external site.jsp"
-					setAssetType(StringUtil.checkVal(field.getFieldValue()).toLowerCase()); 
+					//TODO fix lowercase issue for DSI, formerly: setAssetType(StringUtil.checkVal(field.getFieldValue()).toLowerCase());
+					setAssetType(StringUtil.checkVal(field.getFieldValue())); 
 					break;
 			}
 		}
