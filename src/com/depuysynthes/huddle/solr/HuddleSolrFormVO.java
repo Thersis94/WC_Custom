@@ -34,5 +34,11 @@ public class HuddleSolrFormVO extends SolrDocumentVO {
 	public String getSpecialty() {
 		return specialty;
 	}
+	
+	@SolrField(name="assetType_s")
+	public String getAssetType() {
+		//this allows us to marry with XLS and PDF forms (non-interactive) stored in the CMS, on the /forms page
+		return "Form";
+	}
 
 }

@@ -39,8 +39,7 @@ public class QuickstreamTemplate extends com.depuysynthesinst.QuickstreamTemplat
 
 			switch (field.getFieldName()) {
 				case "Specialty":
-					//lowercase here correlates to the JSP we use in the View "external site.jsp"
-					setOpco(StringUtil.checkVal(field.getFieldValue()).toLowerCase()); 
+					setOpco(StringUtil.checkVal(field.getFieldValue())); 
 					break;
 			}
 		}

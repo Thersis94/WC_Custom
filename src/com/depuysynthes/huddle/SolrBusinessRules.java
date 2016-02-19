@@ -203,6 +203,8 @@ public class SolrBusinessRules extends com.depuysynthesinst.SolrBusinessRules {
 			switch(cmsType) {
 				case "file (pdf, ppt, doc, xls, zip, etc.)":
 					return true;
+				case "form": 
+					return StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.DOCUMENT_URL)).length() > 0;
 				case "app":
 				case "external site":
 				default:
