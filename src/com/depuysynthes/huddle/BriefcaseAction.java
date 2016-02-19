@@ -10,7 +10,6 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.UserDataVO;
-import com.siliconmtn.security.UserDataVO.AuthenticationType;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.tools.MyFavoritesAction;
@@ -33,9 +32,9 @@ import com.smt.sitebuilder.security.SecurityController;
  ****************************************************************************/
 
 public class BriefcaseAction extends MyFavoritesAction {
-	public final String KEY_NAME = "briefcaseKey";
-	public final String GROUP_CD = "BRIEFCASE";
-	private final String API_KEY = "dsHuddl3K3y|SMT";
+	public static final String API_KEY_NAME = "key";
+	public static final String GROUP_CD = "BRIEFCASE";
+	private static final String API_KEY = "dsHuddl3K3y|SMT";
 
 	public BriefcaseAction() {
 		super();
@@ -159,7 +158,7 @@ public class BriefcaseAction extends MyFavoritesAction {
 	 * @return
 	 */
 	private void validateApiKey(SMTServletRequest req) throws ActionException {
-		if (!API_KEY.equals(req.getParameter("key")) && req.getSession().getAttribute(Constants.USER_DATA) == null) 
+		if (!API_KEY.equals(req.getParameter(API_KEY_NAME)) && req.getSession().getAttribute(Constants.USER_DATA) == null) 
 			throw new ActionException("Invalid or missing security key");
 	}
 	
@@ -184,21 +183,18 @@ public class BriefcaseAction extends MyFavoritesAction {
 		}
 		
 		//build a new UserDataVO using wwid
-		String roleNo = "" + SecurityController.PUBLIC_ROLE_LEVEL;
 		if (user == null) {
 			user = new UserDataVO();
-			//user.setAuthType(AuthenticationType.SAML);
-			String[] arr = getProfileIdFromWWID(req.getParameter("wwid"), site.getSiteId());
-			user.setProfileId(arr[0]);
-			//roleNo = arr[1];
+			user.setProfileId(getProfileIdFromWWID(req.getParameter("wwid"), site.getSiteId()));
 			req.getSession().setAttribute(Constants.USER_DATA, user);
 		}
 		
 		if (role == null) {
 			role = new SBUserRole();
-			role.setRoleLevel(Convert.formatInteger(roleNo));
-			log.debug("WWID role level is " + role.getRoleLevel());
+			role.setRoleLevel(SecurityController.PUBLIC_ROLE_LEVEL);
 			role.setOrganizationId(site.getOrganizationId());
+			role.setSiteId(site.getSiteId());
+			role.setIpAddress(req.getRemoteAddr());
 			req.getSession().setAttribute(Constants.ROLE_DATA, role);
 		}
 	}
@@ -211,12 +207,11 @@ public class BriefcaseAction extends MyFavoritesAction {
 	 * @return
 	 * @throws ActionException
 	 */
-	private String[] getProfileIdFromWWID(String wwid, String siteId) throws ActionException {
+	private String getProfileIdFromWWID(String wwid, String siteId) throws ActionException {
 		StringBuilder sql = new StringBuilder(250);
-		sql.append("select rs.profile_id, r.role_order_no from register_submittal rs ");
+		sql.append("select rs.profile_id from register_submittal rs ");
 		sql.append("inner join register_data rd on rs.register_submittal_id=rd.register_submittal_id and rd.register_field_id=? ");
 		sql.append("inner join profile_role pr on rs.profile_id=pr.profile_id and rs.site_id=pr.site_id and pr.status_id=? ");
-		sql.append("inner join role r on pr.role_id=r.role_id ");
 		sql.append("where cast(rd.value_txt as nvarchar(20))=? and rs.site_id=?");
 		log.debug(sql);
 		
@@ -226,9 +221,8 @@ public class BriefcaseAction extends MyFavoritesAction {
 			ps.setString(3, wwid);
 			ps.setString(4, siteId);
 			ResultSet rs = ps.executeQuery();
-			if (rs.next()) {
-				return new String[]{ rs.getString(1), rs.getString(2) };
-			}
+			if (rs.next())
+				return rs.getString(1);
 			
 		} catch (SQLException sqle) {
 			log.error("could not load profileIds from WWIDs", sqle);
