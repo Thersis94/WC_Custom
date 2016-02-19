@@ -102,7 +102,7 @@ public class HuddleFormSolrAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	protected FormBuilderFacadeAction getFormBuilderFacadeAction(String formId) {
-		this.actionInit.setActionId(formId);
+		this.actionInit.setActionGroupId(formId);
 		FormBuilderFacadeAction fbfa = new FormBuilderFacadeAction(this.actionInit);
 		fbfa.setDBConnection(getDBConnection());
 		fbfa.setAttributes(getAttributes());

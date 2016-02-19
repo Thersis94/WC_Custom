@@ -65,7 +65,7 @@ public class HuddleSolrFormIndexer extends FormSolrIndexer {
 	@Override
 	protected SolrDocumentVO makeNewDocument(ResultSet rs) throws SQLException {
 		HuddleSolrFormVO doc = new HuddleSolrFormVO(getIndexType());
-		doc.setDocumentId(rs.getString("FORM_ID"));
+		doc.setDocumentId(rs.getString("ACTION_GROUP_ID"));
 		doc.addOrganization(rs.getString("ORGANIZATION_ID"));
 		doc.addRole(rs.getInt("ROLE_ORDER_NO"));
 		doc.setTitle(rs.getString("ACTION_NM"));
@@ -95,8 +95,7 @@ public class HuddleSolrFormIndexer extends FormSolrIndexer {
 		sql.append("left join FORM_PDF fp on fp.ACTION_ID = ff.ACTION_ID ");
 		sql.append("inner join PAGE_MODULE pm on pm.ACTION_ID = sa.ACTION_ID ");
 		sql.append("inner join PAGE p on p.PAGE_ID = pm.PAGE_ID and p.PAGE_GROUP_ID is null ");
-		sql.append("inner join PAGE_MODULE_ROLE pmr ");
-		sql.append("on pmr.PAGE_MODULE_ID = pm.PAGE_MODULE_ID ");
+		sql.append("inner join PAGE_MODULE_ROLE pmr on pmr.PAGE_MODULE_ID = pm.PAGE_MODULE_ID ");
 		sql.append("left join ROLE r on r.ROLE_ID = pmr.ROLE_ID ");
 		sql.append("where sa.MODULE_TYPE_ID = ? ");
 		// We never want to add in-progress items to solr.
