@@ -1,12 +1,11 @@
 package com.depuysynthes.huddle;
 
-import ucar.unidata.util.StringUtil;
-
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.UserDataVO.AuthenticationType;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
