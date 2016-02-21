@@ -11,6 +11,7 @@ import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.user.LoginAction;
 import com.smt.sitebuilder.common.constants.AdminConstants;
+import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SAMLLoginModule;
 
 /****************************************************************************
@@ -80,7 +81,6 @@ public class HuddleLoginModule extends SAMLLoginModule {
 		String destPg = StringUtil.checkVal(ses.getAttribute(LoginAction.DESTN_URL));
 
 		// if this is an admintool login, preserver the destination page.
-		
 		if (isAdminToolPath(destPg)) return;
 		
 		if (homepage == null) {
@@ -104,11 +104,11 @@ public class HuddleLoginModule extends SAMLLoginModule {
 		//only initiate logic if the session is new.
 		//This traps an infinite redirect loop where something goes wrong on WC 
 		//but the user successfully authenticates to SSO. (go there, come back, fail, redir to homepage, go there, come back, fail, ...con't.)
-		if (!req.getSession().isNew() && !req.hasParameter("initiateSSO"))
+		if (!req.getSession().isNew() && !req.hasParameter(Constants.SSO_INITIATE))
 			return false;
 
 		//set a parameter to invoke SSO and leverage the superclass implementation
-		req.setParameter("initiateSSO", "true");
+		req.setParameter(Constants.SSO_INITIATE, "true");
 		return super.canInitiateLogin(req);
 	}
 	
