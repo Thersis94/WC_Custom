@@ -19,8 +19,6 @@ import javax.servlet.http.Cookie;
 // J2EE 1.4.0 Libs
 import javax.servlet.http.HttpSession;
 
-
-
 //wc-depuy libs
 import com.depuy.events.vo.CoopAdVO;
 import com.depuy.events_v2.vo.ConsigneeVO;
@@ -45,7 +43,6 @@ import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
-import com.smt.sitebuilder.security.SecurityController;
 
 
 /****************************************************************************
@@ -144,7 +141,8 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		
 		UserDataVO user = (UserDataVO) ses.getAttribute(Constants.USER_DATA);
 		SBUserRole roles = (SBUserRole) ses.getAttribute(Constants.ROLE_DATA);
-		int roleId = (roles != null) ? roles.getRoleLevel() : SecurityController.PUBLIC_ROLE_LEVEL;
+		if (roles == null) roles = new SBUserRole();
+		int roleId = roles.getRoleLevel();
 		String profileId = (user != null && roleId < 90) ? user.getProfileId() : null;
 		
 		//set a special role level for mitek coordinators so they can have read-only access to all seminars

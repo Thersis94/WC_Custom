@@ -1,27 +1,18 @@
 package com.depuysynthes.scripts;
 
-import java.io.File;
 import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
-
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
 
 import com.depuysynthes.scripts.MediaBinDeltaVO.State;
-import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.http.parser.StringEncoder;
-import com.siliconmtn.io.FileType;
 import com.siliconmtn.security.OAuth2TokenViaCLI;
 import com.siliconmtn.security.OAuth2TokenViaCLI.Config;
-import com.siliconmtn.util.Convert;
-import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -36,9 +27,8 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 
-	private ShowpadApiUtil showpadUtil;
-	private Map<String, String> showpadTags = new HashMap<>(1000);
-	private Map<String, String> ticketQueue = new HashMap<>();
+	private ShowpadApiUtil showpadApi;
+	private List<ShowpadDivisionUtil> divisions = new ArrayList<>();
 
 	/**
 	 * @param args
@@ -48,7 +38,7 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 		super(args);
 
 		//setup the oAuth util now that the config file has been loaded
-		showpadUtil = new ShowpadApiUtil(new OAuth2TokenViaCLI(new HashMap<Config, String>(){
+		showpadApi = new ShowpadApiUtil(new OAuth2TokenViaCLI(new HashMap<Config, String>(){
 			private static final long serialVersionUID = -8625615784451892590L;
 			{
 				put(Config.USER_ID, props.getProperty("showpadAcctName"));
@@ -60,127 +50,102 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 				put(Config.KEYSTORE, "showpad");
 			}}, Arrays.asList(props.getProperty("showpadScopes").split(","))));
 	}
-	
+
 
 	public static void main(String[] args) throws Exception {
 		//Create an instance of the MedianBinImporter
 		ShowpadMediaBinDecorator dmb = new ShowpadMediaBinDecorator(args);
 		dmb.run();
 	}
-	
+
 
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.util.CommandLineUtil#run()
 	 */
 	@Override
 	public void run() {
-		dataCounts.put("showpad", 1); //used as a boolean in the report email to print showpad stats
+		//load the divisions
+		try {
+			loadShowpadDivisionList();
+		} catch (QuotaException qe) {
+			log.error(qe);
+		}
 
-		//get a list of tags already at Showpad, so when we save the assets these are preloaded
-		loadShowpadTagList();
-		
-//		Map<String,MediaBinDeltaVO> records = loadManifest();
-//		Set<String> assetNames = new HashSet<>(records.size());
-//		Set<String> localShowpadIds = new HashSet<>(records.size());
-//		for (MediaBinDeltaVO vo : records.values()) {
-//			assetNames.add(makeShowpadAssetName(vo, new FileType(vo.getFileNm())));
-//			if (vo.getShowpadId() != null) localShowpadIds.add(vo.getShowpadId());
-//		}
-//		
-//		//use only for de-duplication
-//		cleanupShowpadDups(assetNames, localShowpadIds);
-		
+		/*
+		//use only for de-duplication
+		loadManifest();
+		for (ShowpadDivisionUtil util : divisions)
+			cleanupShowpadDups(assetNames, localShowpadIds);
+		 */
 		super.run();
 	}
 
-	
+
 
 	/**
 	 * Load a list of tags already at Showpad
 	 * If we try to add a tag to an asset without using it's ID, and it already existing in the system, it will fail.
+	 * @throws QuotaException 
 	 */
-	private void loadShowpadTagList() {
-		String tagUrl = props.getProperty("showpadApiUrl") + "/tags.json?limit=100000&fields=id,name";
-		try {
-			String resp = showpadUtil.executeGet(tagUrl);
-			JSONObject json = JSONObject.fromObject(resp);
-			log.info(json);
-			JSONObject metaResp = json.getJSONObject("meta");
-			if (!"200".equals(metaResp.getString("code")))
-				throw new IOException(metaResp.getString("message"));
-
-			JSONObject response = json.getJSONObject("response");
-			JSONArray items = response.getJSONArray("items");
-			for (int x=0; x < items.size(); x++) {
-				JSONObject tag = items.getJSONObject(x);
-				showpadTags.put(tag.getString("name"), tag.getString("id"));
-			}
-
-		} catch (IOException | NullPointerException ioe) {
-			failures.add(ioe);
-			log.error("could not load showpad tags", ioe);
+	private void loadShowpadDivisionList() throws QuotaException {
+		String[] divs = props.getProperty("showpadDivisions").split(",");
+		for (String d : divs) {
+			String[] div = d.split("=");
+			divisions.add(new ShowpadDivisionUtil(props, div[1], div[0], showpadApi));
 		}
-
-		log.info("loaded " + showpadTags.size() + " showpad tags: " + showpadTags);
+		log.info("loaded " + divisions.size() + " showpad divisions");
 	}
-	
-	
-	/**
-	 * removes duplicates from Showpad by looping the list of assets and 
-	 * maintaining a list of 'good' assets to keep
-	 */
-	protected void cleanupShowpadDups(Set<String> assetNames, Set<String> localShowpadIds) {
-		Map<String, String> showpadAssets = new HashMap<>(5000);
-		
-		//NOTE: THIS WILL INCLUDE SHOWPAD ASSETS IN THE TRASH! 
-		String tagUrl = props.getProperty("showpadApiUrl") + "/assets.json?limit=100000&fields=id,name";
-		try {
-			String resp = showpadUtil.executeGet(tagUrl);
-			JSONObject json = JSONObject.fromObject(resp);
-			log.info(json);
-			JSONObject metaResp = json.getJSONObject("meta");
-			if (!"200".equals(metaResp.getString("code")))
-				throw new IOException(metaResp.getString("message"));
 
-			JSONObject response = json.getJSONObject("response");
-			JSONArray items = response.getJSONArray("items");
-			for (int x=0; x < items.size(); x++) {
-				JSONObject asset = items.getJSONObject(x);
-				String assetNm = asset.getString("name");
-				if (showpadAssets.containsKey(assetNm) || assetNm.startsWith(" ")) {
-					log.error("dup or blank start, deleting:" + assetNm);
-					String url = props.getProperty("showpadApiUrl") + "/assets/" + asset.getString("id") + ".json";
-					showpadUtil.executeDelete(url);
-				} else if (!assetNames.contains(assetNm)) {
-					//delete from Showpad - files that shouldn't be there
-					log.info("deleting rogue asset: " + assetNm + " id=" + asset.getString("id"));
-					String url = props.getProperty("showpadApiUrl") + "/assets/" + asset.getString("id") + ".json";
-					showpadUtil.executeDelete(url);
-				} else {
-					log.info("saving:" + assetNm);
-					showpadAssets.put(assetNm, asset.getString("id"));
-					localShowpadIds.remove(asset.getString("id"));
+
+	/**
+	 * overloaded to include the showpad DB table.
+	 * retrieve the showpad data and store it into a Map for each Division
+	 * @param type
+	 * @return
+	 */
+	@Override
+	protected Map<String,MediaBinDeltaVO> loadManifest() {
+		StringBuilder sql = new StringBuilder(250);
+		sql.append("select division_id, asset_id, dpy_syn_mediabin_id ");
+		sql.append("from ").append(props.get(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_SHOWPAD ");
+		log.debug(sql);
+
+		Map<String, Map<String, String>> divisionAssets = new HashMap<>();
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				String division = rs.getString(1);
+				Map<String, String> assets = divisionAssets.get(division);
+				if (assets == null) assets = new HashMap<>();
+				assets.put(rs.getString(3), rs.getString(2));
+				divisionAssets.put(division, assets);
+			}
+		} catch (SQLException sqle) {
+			log.error("could not load showpad assets from DB", sqle);
+		}
+		log.info("loaded " + divisionAssets.size() + " divisions from the database");
+
+		//marry the divisionAssets to their respective util object
+		for (String divId : divisionAssets.keySet()) {
+			for (ShowpadDivisionUtil util : divisions) {
+				if (util.getDivisionId().equals(divId)) {
+					util.setDivisionAssets(divisionAssets.get(divId));
+					log.info("gave " + divisionAssets.get(divId).size() + " assets to division=" + divId);
+					break;
 				}
 			}
-
-		} catch (IOException | NullPointerException ioe) {
-			failures.add(ioe);
-			log.error("could not load showpad assets", ioe);
 		}
 
-		log.info("need to delete " + localShowpadIds.size() + " showpad records");
-		for (String s : localShowpadIds)
-			System.err.println("'" + s + "',");
-
-		log.info("loaded " + showpadAssets.size() + " showpad assets");
+		//lean on the superclass to load the roster of assets
+		return super.loadManifest();
 	}
 
-	
 
 	/**
 	 * override the saveRecords method to push the records to Showpad after 
 	 * super.saveRecords() saves them to the database.
 	 */
+	@Override
 	public void saveRecords(Map<String, MediaBinDeltaVO> masterRecords, boolean isInsert) {
 		super.saveRecords(masterRecords, isInsert);
 
@@ -193,473 +158,40 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 		//confirm we have something to add or update
 		if (getDataCount("inserted") == 0 && getDataCount("updated") == 0) return;
 
-		String postUrl;
-		int insertCnt=0, updateCnt=0;
 
 		//push all changes to Showpad
-		for (MediaBinDeltaVO vo : masterRecords.values()) {
+		outer: for (MediaBinDeltaVO vo : masterRecords.values()) {
 			//we need to sort out what gets pushed to Showpad on our own.
 			//if it's failed, being deleted, or unchanged and already in Showpad, skip it.
 			State s = vo.getRecordState();
-			if (s == State.Failed || s == State.Delete ||  (s == State.Ignore && vo.getShowpadId() != null))
+			if (s == State.Failed || s == State.Delete)
 				continue;
-			
-			Map<String, String> params = new HashMap<>();
-			FileType fType = new FileType(vo.getFileNm());
-			String title = makeShowpadAssetName(vo, fType);
-			boolean isShowpadUpdate = (vo.getShowpadId() != null && vo.getShowpadId().length() > 0); 
 
-			if (isShowpadUpdate) { //send as an 'update' to Showpad
-				postUrl = props.getProperty("showpadApiUrl") + "/assets/" + vo.getShowpadId() + ".json";
-			} else {
-				postUrl = props.getProperty("showpadApiUrl") + "/assets.json";
-				//check if this file is already in Showpad before treating it as new
-				vo.setShowpadId(findShowpadId(title));
-				if (vo.getShowpadId() != null) {
-					//if the file is already there, and doesn't need updating, simply move on.
-					if (s == State.Ignore) continue;
-					//do an update instead of an insert
-					postUrl = props.getProperty("showpadApiUrl") + "/assets/" + vo.getShowpadId() + ".json";
+			for (ShowpadDivisionUtil util : divisions) {
+				try {
+					util.pushAsset(vo);					
+				} catch (QuotaException qe) {
+					String msg = makeMessage(vo, "Could not push file to showpad: " + qe.getMessage());
+					failures.add(new Exception(msg));
+					log.error("could not push to showpad, quota reached", qe);
+					break outer;
 				}
 			}
-
-			params.put("name", title);
-			log.info("name=" + params.get("name"));
-			params.put("resourcetype", getResourceType(fType)); //Showpad Constant for all assets
-			params.put("suppress_response_codes","true"); //forces a 200 response header
-			params.put("description", vo.getDownloadTypeTxt());
-			params.put("isSensitive", "false");
-			params.put("isShareable", "true");
-			params.put("releasedAt", Convert.formatDate(vo.getModifiedDt(), Convert.DATE_TIME_SLASH_PATTERN));
-
-			//add any Link objects (Tags) we need to have attached to this asset
-			String linkHeader = generateTags(vo, params);
-
-			try {
-				File mbFile = new File(props.get("downloadDir") + vo.getFileName());
-				log.info("sending to showpad: " + vo.getDpySynMediaBinId());
-				String resp = showpadUtil.executePostFile(postUrl, params, mbFile, linkHeader);
-				JSONObject json = JSONObject.fromObject(resp);
-				JSONObject metaResp = json.getJSONObject("meta");
-				log.info(json);
-				if (!StringUtil.checkVal(metaResp.optString("code")).startsWith("20")) //trap all but a 200 or 201
-					throw new IOException(metaResp.optString("message"));
-
-				//check to see whether a Ticket or Asset got created.  If it's a Ticket, we'll need to re-query after a little while
-				//to get the actual AssetID of the asset.  A Ticket means the request was queued, which is common for videos and larger PDFs
-				//determine if we need the ID, and move on
-				if (!isShowpadUpdate) {
-					String assetId = null, ticketId = null;
-					JSONObject jsonResp = json.getJSONObject("response");
-					if ("Asset".equalsIgnoreCase(jsonResp.optString("resourcetype"))) {
-						assetId = jsonResp.optString("id");
-					} else if ("Ticket".equalsIgnoreCase(jsonResp.optString("resourcetype"))) {
-						//look for an asset
-						JSONObject asset =jsonResp.has("asset") ? jsonResp.optJSONObject("asset") : null;
-						assetId = (asset != null && !asset.isNullObject()) ? asset.optString("id") : "";
-						
-						//if there is no asset, capture the ticketId
-						ticketId = jsonResp.getString("id");
-					}
-					
-					if (assetId.length() == 0) {
-						//queue this one for later
-						ticketQueue.put(ticketId, vo.getDpySynMediaBinId());
-					} else {
-						vo.setShowpadId(assetId);
-					}
-					++insertCnt;
-					
-				} else { //remove the showpadId on updates so we don't create a dup in the SMT database (we need inserts only)
-					vo.setShowpadId(null);
-					++updateCnt;
-				}
-				
-			} catch (Exception ioe) {
-				vo.setShowpadId(null);
-				String msg = makeMessage(vo, "Could not push file to showpad: " + ioe.getMessage());
-				failures.add(new Exception(msg));
-				log.error("could not push file to showpad", ioe);
-			}
-			
-			//enforce a limit here while we bulk-load Showpad, who limits daily API calls to 5k requests
-			//if you expect to hit this limit make sure your database is purged first.  Tomorrow when you re-run, those assets will not have ShowpadIds, and get processed then.
-			if (insertCnt+updateCnt > 1500) {
-				log.fatal("Showpad limit reached");
-				break;
-			}
-
 			log.info("completed: " + vo.getFileNm());
 		}
-		
-		//process the ticket queue
-		processTicketQueue(masterRecords);
 
-		//save the newly created records to our database
-		insertNewRecords(masterRecords);
-
-		dataCounts.put("showpad-inserted", insertCnt);
-		dataCounts.put("showpad-updated", updateCnt);
-	}
-	
-	
-	private String makeShowpadAssetName(MediaBinDeltaVO vo, FileType fType ) {
-		String title = StringUtil.checkVal(vo.getTitleTxt(), vo.getFileNm());
-		title += " - " + vo.getTrackingNoTxt() + "." + fType.getFileExtension();
-		title = StringUtil.replace(title, "\"", ""); //remove double quotes, which break the JSON structure
-		title = StringUtil.replace(title, "/", "-").trim(); //Showpad doesn't like slashes either, which look like directory structures
-		
-		return title;
-	}
-	
-	/**
-	 * runs a loop around the ticket queue checking for status changes.  Returns only
-	 * once the queue is empty, which may take some time (on occasation)
-	 * @param masterRecords
-	 */
-	private void processTicketQueue(Map<String, MediaBinDeltaVO> masterRecords) {
-		//continue processing the queue until it's empty; meaning Showpad has processed all our assets
-		int count = ticketQueue.size();
-		int runCount = 0;
-		while (count > 0) {
-			if (runCount > 0) {
-				try {
-					log.info("sleeping 30 seconds");
-					Thread.sleep(30000);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-					break;
-				}
-			}
-			
-			Set<String> removes = new HashSet<>();
-			for (String ticketId : ticketQueue.keySet()) {
-				String assetId;
-				try {
-					assetId = getAssetIdFromTicket(ticketId);
-					if (assetId != null) {
-						log.info("found assetId=" + assetId + " for ticket=" + ticketId);
-						masterRecords.get(ticketQueue.get(ticketId)).setShowpadId(assetId);
-						removes.add(ticketId);
-						log.info("finished processing ticket " + ticketId + ", its now assetId=" + assetId);
-					}
-				} catch (InvalidDataException e) {
-					//this asset failed lookup.  or maybe failed adding to Showpad.
-					//remove it and set the ID=null, we'll try it again tomorrow.
-					masterRecords.get(ticketQueue.get(ticketId)).setShowpadId(null);
-					removes.add(ticketId);
-				}
-			}
-			//remove the processed ones from our ticketQueue.
-			//this cannot be done above (inline) because of concurrency issues (ConcurrentModificationException)
-			for (String t : removes) {
-				ticketQueue.remove(t);
-				--count;
-			}
-			++runCount;
-		}
-		log.info("iterated " + runCount + " times waiting for the Showpad queue to empty");
-	}
-	
-	
-	/**
-	 * this can be used to obtain showpadIds from file names if this script 
-	 * fails after uploading the files
-	 * @param fileName
-	 * @return
-	 */
-	private String findShowpadId(String fileName) {
-		String showpadId = null;
-		//encode the file Name as a URL parameter, since this is a GET request
-		String findUrl = props.getProperty("showpadApiUrl") + "/assets.json?fields=id&limit=100&name=" + StringEncoder.urlEncode(fileName);
+		//process the ticket queue for each division
 		try {
-			String resp = showpadUtil.executeGet(findUrl);
-			JSONObject json = JSONObject.fromObject(resp);
-			log.info(json);
-			JSONObject metaResp = json.getJSONObject("meta");
-			if (!"200".equals(metaResp.getString("code")))
-				throw new IOException(metaResp.getString("message"));
-
-			JSONObject response = json.getJSONObject("response");
-			JSONArray items = response.getJSONArray("items");
-			for (int x=0; x < items.size(); x++) {
-				JSONObject asset = items.getJSONObject(x);
-				//report duplicates
-				if (x>0) {
-					log.fatal("duplicate found!  delete " + asset.getString("id") + " in favor of " + showpadId);
-				} else {
-					showpadId = asset.getString("id");
-				}
-			}
-
-		} catch (IOException | NullPointerException ioe) {
-			failures.add(ioe);
-			log.error("could not load showpad id from name", ioe);
-		}
-		return showpadId;
-	}
-	
-	
-	/**
-	 * queries a ticket to check status and capture assetId once complete.
-	 * @param ticketId
-	 * @return
-	 */
-	private String getAssetIdFromTicket(String ticketId) throws InvalidDataException {
-		String ticketUrl = props.getProperty("showpadApiUrl") + "/tickets/" + ticketId + ".json?fields=status,asset";
-		try {
-			String resp = showpadUtil.executeGet(ticketUrl);
-			JSONObject json = JSONObject.fromObject(resp);
-			log.info(json);
-			JSONObject metaResp = json.getJSONObject("meta");
-			if (!"200".equals(metaResp.getString("code")))
-				throw new IOException(metaResp.getString("message"));
-
-			JSONObject response = json.getJSONObject("response");
-			String status = response.optString("status");
-			if ("failed".equalsIgnoreCase(status)) throw new InvalidDataException(status);
-			
-			JSONObject asset = response.getJSONObject("asset");
-			if (asset != null && !asset.isNullObject() && asset.optString("id").length() > 0)
-				return asset.getString("id");
-			
-			log.info(ticketId + " is not finished yet, status=" + status);
-
-		} catch (IOException | NullPointerException ioe) {
-			failures.add(ioe);
-			log.error("could not load showpad tags", ioe);
+			for (ShowpadDivisionUtil util : divisions)
+				util.processTicketQueue();
+		} catch (QuotaException qe) {
+			failures.add(qe);
+			log.error("could not process showpad queue, quota limit reached", qe);
 		}
 
-		return null;
-	}
-
-	
-
-	/**
-	 * adds the desired tags to the passed showpad asset
-	 * If the desired tag does not exist in Showpad, it must be added (there) first.
-	 * @param vo
-	 */
-	private String generateTags(MediaBinDeltaVO vo, Map<String, String> params) {
-		Map<String,String> assignedTags = null;
-		if (vo.getShowpadId() != null) assignedTags = loadAssetTags(vo.getShowpadId());
-		Set<String> desiredTags = new HashSet<>();
-		desiredTags.add("mediabin"); //a static tag for all assets, identifies their source
-		
-		//assign the tags this asset SHOULD have, attempt to backfill those from the known list of tags already in Showpad
-		FileType ft = new FileType(vo.getFileNm());
-		desiredTags.add(ft.getFileExtension());
-		if (vo.getLanguageCode() != null && vo.getLanguageCode().length() > 0)
-			desiredTags.addAll(Arrays.asList(vo.getLanguageCode().split(TOKENIZER)));
-		if (vo.getBodyRegionTxt() != null && vo.getBodyRegionTxt().length() > 0)
-			desiredTags.addAll(Arrays.asList(vo.getBodyRegionTxt().split(TOKENIZER)));
-		if (vo.getBusinessUnitNm() != null && vo.getBusinessUnitNm().length() > 0)
-			desiredTags.addAll(Arrays.asList(vo.getBusinessUnitNm().split(TOKENIZER)));
-		if (vo.getLiteratureTypeTxt() != null && vo.getLiteratureTypeTxt().length() > 0)
-			desiredTags.addAll(Arrays.asList(vo.getLiteratureTypeTxt().split(TOKENIZER)));
-		if (vo.getProdFamilyNm() != null && vo.getProdFamilyNm().length() > 0)
-			desiredTags.addAll(Arrays.asList(vo.getProdFamilyNm().split(TOKENIZER)));
-//		if (vo.getProdNm() != null && vo.getProdNm().length() > 0)
-//			desiredTags.addAll(Arrays.asList(vo.getProdNm().split(MB_TOKENIZER)));
-
-		//loop the tags the asset already has, removing them from the "need to add" list
-		if (assignedTags != null) {
-			for (String tag : assignedTags.keySet())
-				desiredTags.remove(tag);
-		}
-
-		//add what's left on the "need to add" list as new tags; both to the Asset, and to Showpad if they're new
-		StringBuilder tagHeader = new StringBuilder();
-		for (String tagNm : desiredTags) {
-			if (tagNm == null || tagNm.length() == 0) continue;
-			log.info("need tag " + tagNm + ", current id=" + showpadTags.get(tagNm));
-			if (showpadTags.get(tagNm) == null) {
-				//add it to the global list for the next iteration to leverage
-				showpadTags.put(tagNm, createTag(tagNm));
-			}
-
-			if (tagHeader.length() > 0) tagHeader.append(",");
-			tagHeader.append("<").append(showpadTags.get(tagNm)).append(">; rel=\"Tag\"");
-		}
-		return tagHeader.toString();
-	}
-
-
-
-	/**
-	 * creates a new tag within Showpad
-	 * returns the ID of the newly minted tag.
-	 * @param showpadId
-	 * @param tagNm
-	 * @param tagId
-	 */
-	private String createTag(String tagNm) {
-		String tagId = null;
-		String tagUrl = props.getProperty("showpadApiUrl") + "/tags.json";
-
-		Map<String,String> params = new HashMap<>();
-		params.put("name", tagNm);
-
-		try {
-			String resp = showpadUtil.executePost(tagUrl, params);
-			JSONObject json = JSONObject.fromObject(resp);
-			log.info(json);
-			JSONObject metaResp = json.getJSONObject("meta");
-			if (!"201".equals(metaResp.getString("code")))
-				throw new IOException(metaResp.getString("message"));
-
-			JSONObject response = json.getJSONObject("response");
-			tagId = response.getString("id");
-
-		} catch (IOException | NullPointerException ioe) {
-			failures.add(ioe);
-			log.error("could not create showpad tag " + tagNm, ioe);
-		}
-
-		log.info("created tag " + tagNm + " with id=" + tagId);
-		return tagId;
-	}
-
-
-	/**
-	 * returns a list of tags already attached to this asset
-	 * @param showpadId
-	 * @return
-	 */
-	private Map<String, String> loadAssetTags(String showpadId) {
-		Map<String,String> tags = new HashMap<>();
-		String tagUrl = props.getProperty("showpadApiUrl") + "/assets/" + showpadId + "/tags.json";
-		try {
-			String resp = showpadUtil.executeGet(tagUrl);
-			JSONObject json = JSONObject.fromObject(resp);
-			log.info(json);
-			JSONObject metaResp = json.getJSONObject("meta");
-			if (!"200".equals(metaResp.getString("code")))
-				throw new IOException(metaResp.getString("message"));
-
-			JSONObject response = json.getJSONObject("response");
-			JSONArray items = response.getJSONArray("items");
-			for (int x=0; x < items.size(); x++) {
-				JSONObject tag = items.getJSONObject(x);
-				showpadTags.put(tag.getString("name"), tag.getString("id"));
-			}
-
-		} catch (IOException | NullPointerException ioe) {
-			failures.add(ioe);
-			log.error("could not load showpad tags", ioe);
-		}
-
-		log.info("loaded " + tags.size() + " showpad tags: " + tags);
-		return tags;
-	}
-
-
-	/**
-	 * writes the newly pushed Showpad assets to SMT's database, so next time
-	 * we'll have showpadIDs for them and can run update transactions instead of insert.
-	 * @param masterRecords
-	 */
-	private void insertNewRecords(Map<String, MediaBinDeltaVO> masterRecords) {
-		StringBuilder sql = new StringBuilder(200);
-		sql.append("insert into ").append(props.get(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_SHOWPAD ");
-		sql.append("(DPY_SYN_SHOWPAD_ID, DPY_SYN_MEDIABIN_ID, CREATE_DT) values(?,?,?)");
-		log.debug(sql);
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			for (MediaBinDeltaVO vo : masterRecords.values()) {
-				if (vo.getShowpadId() == null || vo.getShowpadId().length() == 0) continue;
-				ps.setString(1, vo.getShowpadId());
-				ps.setString(2, vo.getDpySynMediaBinId());
-				ps.setTimestamp(3, Convert.getCurrentTimestamp());
-				ps.addBatch();
-			}
-			ps.executeBatch();
-
-		} catch (SQLException sqle) {
-			failures.add(sqle);
-		}
-	}
-
-
-	/**
-	 * return a predefined resource type based on the file extention
-	 * @param fileName
-	 * @return
-	 */
-	private String getResourceType(FileType fType) {
-		switch (fType.getFileExtension()) {
-			case "pdf":
-			case "txt":
-			case "rtf":
-			case "doc":
-			case "docx":
-			case "xls":
-			case "xlsx":
-			case "ppt":
-			case "pps":
-			case "ppsx":
-			case "pptx":
-				return "document";
-			case "m4v":
-			case "mp4":
-			case "mov":
-			case "mpg":
-			case "mpeg":
-			case "flv":
-			case "asf":
-			case "3gp":
-			case "avi":
-			case "wmv":
-				return "video";
-			case "mp3":
-			case "m4a":
-			case "wma":
-			case "wav":
-				return "audio";
-			case "jpg":
-			case "jpeg":
-			case "gif":
-			case "png":
-			case "tiff": 
-				return "image";
-
-			default: return "asset";
-		}
-	}
-
-
-	/**
-	 * overloaded to include the showpad DB table.
-	 * @param type
-	 * @return
-	 */
-	protected Map<String,MediaBinDeltaVO> loadManifest() {
-		Map<String,MediaBinDeltaVO> data = new HashMap<>(7000); //at time of writing, this was enough capacity to avoid resizing
-
-		StringBuilder sql = new StringBuilder(250);
-		sql.append("select a.*, b.META_CONTENT_TXT, s.DPY_SYN_SHOWPAD_ID ");
-		sql.append("from ").append(props.get(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_MEDIABIN a ");
-		sql.append("left join video_meta_content b on a.dpy_syn_mediabin_id=b.asset_id and b.asset_type='MEDIABIN' ");
-		sql.append("left join ").append(props.get(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_SHOWPAD s ");
-		sql.append("on a.dpy_syn_mediabin_id=s.dpy_syn_mediabin_id ");
-		sql.append("where a.import_file_cd=?");
-		log.debug(sql);
-
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setInt(1,  type);
-			ResultSet rs = ps.executeQuery();
-			while (rs.next()) {
-				MediaBinDeltaVO vo = new MediaBinDeltaVO(rs);
-				vo.setRecordState(State.Delete); //by default these will get deleted.  sortRecords will override this value as appropriate
-				data.put(vo.getDpySynMediaBinId(), vo);
-			}
-
-		} catch (SQLException sqle) {
-			log.error("could not load manifest", sqle);
-		}
-
-		dataCounts.put("existing", data.size());
-		log.info("loaded " + data.size() + " assets into manifest");
-		return data;
+		//save the newly created records to our database for each division
+		for (ShowpadDivisionUtil util : divisions)
+			util.saveDBRecords(dbConn);
 	}
 
 
@@ -668,6 +200,7 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 	 * override the deleteRecords methods to push deletions to Showpad after
 	 * super.deleteRecords() saves them to the database.
 	 */
+	@Override
 	public void deleteRecords(Map<String, MediaBinDeltaVO> masterRecords) {
 		super.deleteRecords(masterRecords);
 
@@ -678,7 +211,7 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 		// Build the SQL Statement
 		StringBuilder sql = new StringBuilder(350);
 		sql.append("delete from ").append(props.getProperty(Constants.CUSTOM_DB_SCHEMA)).append("dpy_syn_showpad ");
-		sql.append("where dpy_syn_showpad_id in ('~'");
+		sql.append("where dpy_syn_mediabin_id in ('~'");
 		for (MediaBinDeltaVO vo : masterRecords.values()) {
 			if (vo.getRecordState() == State.Delete) {
 				sql.append(",?");
@@ -695,17 +228,17 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 					if (vo.getRecordState() == State.Delete)  {
 						try {
 							//push deletions to Showpad
-							String url = props.getProperty("showpadApiUrl") + "/assets/" + vo.getShowpadId() + ".json";
-							String resp = showpadUtil.executeDelete(url);
-							log.info("showpad delete response: " + resp);
+							for (ShowpadDivisionUtil util : divisions)
+								util.deleteAsset(vo);
 
 							//if success, delete it from the DB as well
 							ps.setString(cnt++, vo.getDpySynMediaBinId());
 
-						} catch (Exception e) {
-							String msg = makeMessage(vo, "Could not delete file from showpad: " + e.getMessage());
+						} catch (QuotaException qe) {
+							String msg = makeMessage(vo, "Could not delete file from showpad: " + qe.getMessage());
 							failures.add(new Exception(msg));
-							log.error("could not delete from showpad", e);
+							log.error("could not delete from showpad", qe);
+							break;
 						}
 					}
 				}
@@ -714,7 +247,6 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 				failures.add(sqle);
 			}
 		}
-		dataCounts.put("showpad-deleted", cnt);
 	}
 
 
@@ -723,21 +255,25 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 	 * @param type
 	 * @return
 	 */
+	@Override
 	protected void countDBRecords() {
 		super.countDBRecords();
 
 		int cnt = 0;
 		StringBuilder sql = new StringBuilder(100);
-		sql.append("select count(*) from ").append(props.get(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("dpy_syn_showpad a inner join ").append(props.get(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("dpy_syn_mediabin b on a.dpy_syn_mediabin_id=b.dpy_syn_mediabin_id and b.import_file_cd=?");
+		sql.append("select count(*), division_id from ");
+		sql.append(props.get(Constants.CUSTOM_DB_SCHEMA)).append("dpy_syn_showpad ");
+		sql.append("group by division_id");
 		log.debug(sql);
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setInt(1, type);
 			ResultSet rs = ps.executeQuery();
-			if (rs.next())
-				cnt = rs.getInt(1);
+			while (rs.next()) {
+				for (ShowpadDivisionUtil util : divisions) {
+					if (rs.getString(2).equals(util.getDivisionId()))
+						util.setDbCount(rs.getInt(1));
+				}
+			}
 
 		} catch (SQLException sqle) {
 			log.error("could not count records", sqle);
@@ -745,5 +281,33 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 
 		dataCounts.put("showpad-total", cnt);
 		log.info("there are now " + cnt + " records in the showpad database");
+	}
+
+
+	/**
+	 * @param html
+	 */
+	@Override
+	protected void addSupplementalDetails(StringBuilder html) {
+		//does nothing here, but gets overwritten by the Showpad decorator 
+		//to add valueable stats to the admin email
+		for (ShowpadDivisionUtil util : divisions) {
+			html.append("<h3>Showpad ").append(util.getDivisionNm()).append(" Division</h3>");
+			html.append("Showpad Added: ").append(util.getInsertCount()).append("<br/>");
+			html.append("Showpad Updated: ").append(util.getUpdateCount()).append("<br/>");
+			html.append("Showpad Deleted: ").append(util.getDeleteCount()).append("<br/>");
+			html.append("Showpad Total: ").append(util.getDbCount()).append("<br/><br/>");
+
+			if (util.getFailures().size() > 0) {
+				html.append("<b>The following issues were reported:</b><br/><br/>");
+
+				// loop the errors and display them
+				for (int i=0; i < util.getFailures().size(); i++) {
+					html.append(util.getFailures().get(i).getMessage()).append("<hr/>\r\n");
+					log.warn(util.getFailures().get(i).getMessage());
+				}
+			}
+			html.append("<hr/>\r\n");
+		}
 	}
 }
