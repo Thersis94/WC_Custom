@@ -171,7 +171,7 @@ public class DSILoginModule extends SAMLLoginModule {
 		
 		try {
 			req.setAttribute("registerSubmittalId", loadRSId(user, req, dbConn));
-			user.setSpecialty("1DS");
+			user.setSpecialty("AAWDS");
 			ra.saveUser(user);
 		
 			String[] regFields = new String[]{ RegField.DSI_TTLMS_ID.toString(), 
