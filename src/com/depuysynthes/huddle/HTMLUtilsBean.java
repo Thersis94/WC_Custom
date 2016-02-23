@@ -1,5 +1,7 @@
 package com.depuysynthes.huddle;
 
+import com.smt.sitebuilder.security.SecurityController;
+
 /****************************************************************************
  * <b>Title</b>: HTMLUtilsBean.java<p/>
  * <b>Description: contains shareThisPage and addToCalendar html rendering functions.
@@ -18,10 +20,19 @@ public class HTMLUtilsBean {
 	 * @param pageUrl
 	 * @return
 	 */
-	public static String getShareOn(String pageUrl) {
+	public static String getShareOn(String pageUrl, int minRoleLevel) {
 		StringBuilder sb = new StringBuilder(250);
-		sb.append("<li><a href=\"javascript:;\" onclick=\"emailAFriend.shareEmail('").append(pageUrl).append("');\"><i class=\"fa fa-envelope\"></i> Share</a></li>");
+		sb.append("<li><a href=\"javascript:;\" onclick=\"emailAFriend.shareEmail('").append(pageUrl).append("',").append(minRoleLevel).append(");\"><i class=\"fa fa-envelope\"></i> Share</a></li>");
 		return sb.toString();
+	}
+	
+	/**
+	 * overload -- defaults to public role level
+	 * @param pageUrl
+	 * @return
+	 */
+	public static String getShareOn(String pageUrl) {
+		return getShareOn(pageUrl, SecurityController.PUBLIC_ROLE_LEVEL);
 	}
 	
 	/**
@@ -30,7 +41,7 @@ public class HTMLUtilsBean {
 	 * @return
 	 */
 	public static String getShareOn() {
-		return getShareOn("");
+		return getShareOn("", SecurityController.PUBLIC_ROLE_LEVEL);
 	}
 	
 	
