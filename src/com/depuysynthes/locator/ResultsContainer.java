@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.List;
 
 
+
 // Google Gson lib
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -16,6 +17,7 @@ import com.google.gson.JsonParser;
 // SMTBaseLibs 2.0
 import com.siliconmtn.data.Node;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title: </b>ResultsContainer.java <p/>
@@ -33,16 +35,28 @@ import com.siliconmtn.util.Convert;
 public class ResultsContainer implements Serializable {
 
 	private static final long serialVersionUID = 3940243103678420431L;
+	private final String FILTER_VALUE_DELIMITER_REGEX = "[|]";
 	private String json;
 	private int numResults;
 	private int pageSize;
 	private int specialtyId;
 	private int procedureId;
 	private int productId;
-	private List<Node> hierarchy;
-	private List<SurgeonBean> results;
 	private String resultCode;
 	private String message;
+	/**
+	 * Hierarchy of specialties, procedures (children of specialties), and 
+	 * products (children of procedures). Specialty/procedure/product IDs are 
+	 * set on Node.nodeId property as String values and are set on Node.depthLevel
+	 * as int values for flexibility.  Names are set on the Node.nodeName field.
+	 */
+	private List<Node> hierarchy;
+	/**
+	 * List of surgeons retrieved by locator search.  SurgeonBeans are composed
+	 * of a List of LocationBeans which contain that surgeon's location associations.
+	 */
+	private List<SurgeonBean> results;
+
 	
 	// JSTL helper members
 	private int startVal = 1; // starting result number
@@ -53,16 +67,35 @@ public class ResultsContainer implements Serializable {
 	private int displayTotalNo; // total number of results to display
 	
 	// filter members
+	/**
+	 * List of specialty IDs that are being filtered on. 
+	 */
+	private List<Integer> specFilters;
+	/**
+	 * List of procedures that a surgeon must match in order to be displayed
+	 */
 	private List<Integer> procFilters;
+	/** 
+	 * List of products that a surgeon must match in order to be displayed 
+	 * in search results.
+	 */
 	private List<Integer> prodFilters;
+	/**
+	 * List of surgeon IDs to exclude from display.
+	 */
 	private List<Integer> filteredSurgeonList;
+	private List<Integer> procFilterParents;
+	private List<Integer> globalSpecFilters;
 	
     public ResultsContainer() {
     	hierarchy = new ArrayList<>();
     	results = new ArrayList<>();
+    	specFilters = new ArrayList<>();
     	procFilters = new ArrayList<>();
     	prodFilters = new ArrayList<>();
     	filteredSurgeonList = new ArrayList<>();
+    	procFilterParents = new ArrayList<>(5);
+    	globalSpecFilters = new ArrayList<>(2);
     }
     
     public static void main(String[] args) {
@@ -180,64 +213,201 @@ public class ResultsContainer implements Serializable {
     }
     
     /**
-     * Sets filters and filtered surgeon list and display total number.
+     * Sets filters and filtered surgeon list and display total number.  Filter values
+     * are formatted as 'prefixID|specialtyID (e.g. pc9|5, pd550|9, where pc means 
+     * 'procedure' ID and pd means  'product' ID).
      * @param filterVals
      */
     public void setFilters(String[] filterVals) {
-    	// check for filters, set procedures/products filter lists.
+    	// clear filters
+    	specFilters.clear();
+    	specFilters.addAll(globalSpecFilters);
     	procFilters.clear();
     	prodFilters.clear();
-    	
+
+		List<Integer> procsToExclude = new ArrayList<>(5);
+		List<Integer> prodsToExclude = new ArrayList<>(5);
+		
+    	// parse filter values.
     	if (filterVals != null && filterVals.length > 0) {
+    		String[] split = null;
     		Integer tmpI = null;
+
+    		// loop the filter vals
 	    	for (String fVal : filterVals) {
-	    		if (fVal.length() > 4) {
-	    			tmpI = Convert.formatInteger(fVal.substring(4));
-		    		if (fVal.startsWith("proc")) {
-		    			procFilters.add(tmpI);
-		    		} else if (fVal.startsWith("prod")) {
-		    			prodFilters.add(tmpI);
-		    		}
+	    		// filter out invalid filter vals (null, length, no delimiter)
+	    		if (fVal == null) continue;
+	    		if (fVal.startsWith("pc") || fVal.startsWith("pd")) {
+	    			split = fVal.split(FILTER_VALUE_DELIMITER_REGEX);
+	    			if (split == null || split.length < 2) continue;
+	    			
+	    			// determine/add the specialty
+	    			if (split.length == 2) {
+	    				// is procedure
+	    				tmpI = Convert.formatInteger(StringUtil.checkVal(split[1]));
+	    			} else {
+	    				// is product
+	    				tmpI = Convert.formatInteger(StringUtil.checkVal(split[2]));
+	    			}
+	    			if (tmpI == 0) continue;
+	    			if (! specFilters.contains(tmpI)) {
+		    			specFilters.add(tmpI);
+	    			}
+	    			
+	    			// now determine/add the procedure or product.
+	    			tmpI = Convert.formatInteger(split[0].substring(2));
+	    			if (tmpI == 0) continue;
+	    			if (split[0].startsWith("pc")) {
+	    				procsToExclude.add(tmpI);
+	    			} else {
+	    				prodsToExclude.add(tmpI);
+	    			}
 	    		}
+	    		split = null;
 	    	}
+	    	
     	}
     	
+    	/* Look up all procedures/products for the specialties being filtered on and
+    	 * remove the IDs that are being filtered out.  That will leave us with just
+    	 * the lists of IDs to be displayed. */
+    	combineFilterLists(procsToExclude, prodsToExclude);
+    	
     	// determine which surgeons are filtered out of display
-    	setFilteredSurgeonsList();
+    	buildFilteredSurgeonsList();
+    }
+    
+    /**
+     * Loop the specialties filters and retrieve all procedure and product IDs
+     * for each filtered specialty.  Build the procedures and products filter lists by
+     * adding procedures and products to the respective lists only if the procedures
+     * and products IDs are not in the 'hide' lists.
+     * 
+     * @param proceduresToExclude
+     * @param productsToExclude
+     */
+    private void combineFilterLists(List<Integer> proceduresToExclude, 
+    		List<Integer> productsToExclude) {
+    	Integer procId = null;
+    	Integer prodId = null;
+    	procFilterParents.clear();
+    	for (Integer specId : specFilters) {
+    		for (Node spec : hierarchy) {
+    			if (specId == spec.getDepthLevel()) {
+    				// this is the specialty we are looking for
+    				if (spec.getNumberChildren() > 0) {
+    					// procedure level
+    					for (Node proc : spec.getChildren()) {
+    						procId = new Integer(proc.getDepthLevel());
+    						if (proceduresToExclude.contains(procId)) continue;
+    						
+    						/* Add procedure to 'allowed' filter and check products. */
+    						procFilters.add(procId);
+    						if (proc.getNumberChildren() > 0) {
+    							for (Node prod : proc.getChildren()) {
+    								prodId = new Integer(prod.getDepthLevel());
+    								// if product is in exclude list, don't add it to filter list.
+    								if (productsToExclude.contains(prodId)) continue;
+    								prodFilters.add(prodId);
+    								if (! procFilterParents.contains(procId)) {
+    									procFilterParents.add(procId);
+    								}
+    							}
+    						}
+    					}
+    				}
+    			}
+    		}
+    	}
     }
     
     /**
      * Builds a list of surgeons (surgeon ID) who should be filtered out
      * of the displayed list of surgeons.
      */
-    private void setFilteredSurgeonsList() {
+    private void buildFilteredSurgeonsList() {
     	filteredSurgeonList.clear();
+
+    	/* Perform filtering if necessary */
 		if (isProcFilters() || isProdFilters()) {
-			boolean filterOutSurgeon = false;			
+			boolean displaySurgeon = false;
+			int procMatchCount = 0;
 			for (SurgeonBean surgeon : results) {
 				List<Integer> surgeonFilterIds = null;
+				/* Process procedure filters if necessary */
 				if (isProcFilters()) {
+					/* loop procedure filter list, count procedures surgeon matches. */
 					surgeonFilterIds = surgeon.getProcedures();
-					for (Integer surgeonFilterId : surgeonFilterIds) {
-						if (procFilters.contains(surgeonFilterId)) {
-							filterOutSurgeon = true;
-							break;
+					for (Integer procFilterId : procFilters) {
+						if (surgeonFilterIds.contains(procFilterId)) {
+							if (! isProdFilters()) {
+								displaySurgeon = true;
+								break;
+							} else {
+								// count the number of procedure filter matches.
+								procMatchCount++;
+							}
 						}
 					}
 				}
 				
-				if (! filterOutSurgeon && isProdFilters()) {
+				/* Process product filters if necessary */
+				if (isProdFilters()) {
+					// 1. Check product filters for match
 					surgeonFilterIds = surgeon.getProducts();
-					for (Integer surgeonFilterId : surgeonFilterIds) {
-						if (prodFilters.contains(surgeonFilterId)) {
-							filterOutSurgeon = true;
+					for (Integer prodFilter : prodFilters) {
+						if (surgeonFilterIds.contains(prodFilter)) {
+							// Found matching product filter, we will display this surgeon.
+							displaySurgeon = true;
 							break;
+						}
+					}
+					
+					if (! displaySurgeon) {
+						/* No product filter match found for this surgeon, so we are going
+						 * to compare the procedure match(es) with the product filter
+						 * constraints in order to determine whether or not to display 
+						 * this surgeon. */
+						if (isProcFilters() && procMatchCount > 0) {
+							
+							if (procFilterParents.isEmpty()) {
+								/* Means none of the product filters are hierarchically-related
+								 * to any of the procedure filters.  Therefore we display this
+								 * surgeon based on the procedure match. */
+								displaySurgeon= true;
+							} else {
+								
+								if (procMatchCount == procFilters.size()) {
+									/* Means the surgeon matched ALL of the procedure
+									 * filters. If we matched more procedure filters than there
+									 * were hierarchically-related product filters, we display
+									 * the surgeon. */
+									if (procFilterParents.size() < procFilters.size()) {
+										displaySurgeon = true;
+									}
+								} else if (procMatchCount < procFilters.size()) {
+									/* Means the surgeon matched 1 or more, but not ALL
+									 * of the procedure filters.  We have to compare the 
+									 * surgeon's procedure filter membership with the parents
+									 * found and with the full procedure filter list. */
+									for (Integer surgeonProcFilterId : surgeon.getProcedures()) {
+										if (procFilters.contains(surgeonProcFilterId) && 
+												! procFilterParents.contains(surgeonProcFilterId)) {
+											displaySurgeon = true;
+											break;
+										}
+									}
+								}
+							}
 						}
 					}					
 				}
 				
-				if (filterOutSurgeon) filteredSurgeonList.add(surgeon.getSurgeonId());
-				filterOutSurgeon = false;
+				if (! displaySurgeon) filteredSurgeonList.add(surgeon.getSurgeonId());
+				
+				// reset flags
+				displaySurgeon = false;
+				procMatchCount = 0;
 			}
 			
 			// Set display count.  We only count surgeons who DO NOT MATCH a filter.
@@ -485,6 +655,20 @@ public class ResultsContainer implements Serializable {
 	public void setDisplayTotalNo(int displayTotalNo) {
 		this.displayTotalNo = displayTotalNo;
 	}
+	
+	/**
+	 * @return the specFilters
+	 */
+	public List<Integer> getSpecFilters() {
+		return specFilters;
+	}
+
+	/**
+	 * @param specFilters the specFilters to set
+	 */
+	public void setSpecFilters(List<Integer> specFilters) {
+		this.specFilters = specFilters;
+	}
 
 	/**
 	 * @return the procFilters
@@ -514,12 +698,12 @@ public class ResultsContainer implements Serializable {
 		this.prodFilters = prodFilters;
 	}
 
-	public boolean isProcFilters() {
+	private boolean isProcFilters() {
 		if (procFilters == null || procFilters.isEmpty()) return false;
 		return true;
 	}
 	
-	public boolean isProdFilters() {
+	private boolean isProdFilters() {
 		if (prodFilters == null || prodFilters.isEmpty()) return false;
 		return true;
 	}
@@ -530,5 +714,22 @@ public class ResultsContainer implements Serializable {
 	public List<Integer> getFilteredSurgeonList() {
 		return filteredSurgeonList;
 	}
-	
+
+	/**
+	 * @return the procFilterParents
+	 */
+	public List<Integer> getProcFilterParents() {
+		return procFilterParents;
+	}
+	public int getProcFilterParentsSize() {
+		if (procFilterParents == null) return 0;
+		return procFilterParents.size();
+	}
+
+	public void setGlobalSpecialtyFilter(String specId) {
+		Integer tmpId = Convert.formatInteger(specId);
+		if (tmpId > 0 && ! globalSpecFilters.contains(tmpId)) {
+			globalSpecFilters.add(tmpId);
+		}
+	}
 }
