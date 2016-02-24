@@ -170,15 +170,25 @@ public class DSILoginModule extends SAMLLoginModule {
 		ra.setDBConnection(dbConn);
 		
 		try {
-			req.setAttribute("registerSubmittalId", loadRSId(user, req, dbConn));
+			String rsId = loadRSId(user, req, dbConn);
+			if (rsId == null) return; //not a legitimately registered user
+			req.setAttribute("registerSubmittalId", rsId);
+			user.setCountryCode("US");
+			user.setHospital("WWID");
+			user.setProfession("PROF");
 			user.setSpecialty("AAWDS");
+			user.setEligible(false);
+			user.setVerified(false);
 			ra.saveUser(user);
 		
 			String[] regFields = new String[]{ RegField.DSI_TTLMS_ID.toString(), 
 															 RegField.DSI_SYNTHES_ID.toString(), 
 															 RegField.DSI_PROG_ELIGIBLE.toString(), 
 															 RegField.DSI_VERIFIED.toString(),
-															 RegField.c0a80241b71d27b038342fcb3ab567a0.toString()};
+															 RegField.DSI_ACAD_NM.toString(),
+															 RegField.DSI_COUNTRY.toString(),
+															 RegField.c0a80241b71c9d40a59dbd6f4b621260.toString(), //Prof
+															 RegField.c0a80241b71d27b038342fcb3ab567a0.toString()}; //Spec
 			
 			ra.captureLMSResponses(req, user, regFields);
 		} catch (Exception e) {
