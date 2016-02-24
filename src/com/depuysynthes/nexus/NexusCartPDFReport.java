@@ -11,6 +11,7 @@ import org.w3c.tidy.Tidy;
 import org.xhtmlrenderer.pdf.ITextRenderer;
 
 import com.lowagie.text.pdf.BaseFont;
+import com.siliconmtn.barcode.BarcodeBase;
 import com.siliconmtn.commerce.ShoppingCartItemVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -127,26 +128,25 @@ public class NexusCartPDFReport  extends AbstractSBReportVO {
 			html.append("<td style='font-size:12px; text-align:center;'>").append(item.getQuantity()).append("</td>");
 			// This ends off without closing the tag so that the single barcode option can add in a rowspan attribute
 			html.append("<td style='font-size:12px; width:400px;");
-			
+			String gtin = (String) item.getProduct().getProdAttributes().get("gtin");
 			if ("DM".equals(data.get("format"))) {
-				html.append(border).append("' rowspan='2'><span><img style='margin-left:28px;' src='/barcodeGenerator?barcodeData=01").append(item.getProduct().getProdAttributes().get("gtin"));
-				html.append("10").append(item.getProduct().getProdAttributes().get("lotNo")).append("&height=25&format=DM' /></span></td></tr>");
+				html.append(border).append("' rowspan='2'><span><img style='margin-left:28px;' src='/barcodeGenerator?barcodeData=01").append(gtin+BarcodeBase.calculateModule10CheckDigit(gtin));
+				html.append("10").append(item.getProduct().getProdAttributes().get("lotNo")).append("&format=DM' /></span></td></tr>");
 				html.append("<tr><td style='").append(border).append("'>&nbsp;</td>");
 				html.append("<td colspan='7' style='font-size:12px; width:400px;").append(border).append("'>");
 				html.append(item.getProduct().getShortDesc()).append("</td>");
 				
 			} else if ("single".equals(data.get("format"))){
-				html.append(border).append("' rowspan='2'><span><img style='position:relative;top:-10px;' src='/barcodeGenerator?textFormat=NEXUS&barcodeData=01").append(item.getProduct().getProdAttributes().get("gtin"));
-				html.append("10").append(item.getProduct().getProdAttributes().get("lotNo")).append("&height=15' /></span></td></tr>");
+				html.append(border).append("' rowspan='2'><span><img style='position:relative;top:0px;' src='/barcodeGenerator?textFormat=NEXUS&barcodeData=01").append(gtin+BarcodeBase.calculateModule10CheckDigit(gtin));
+				html.append("10").append(item.getProduct().getProdAttributes().get("lotNo")).append("'/></span></td></tr>");
 				html.append("<tr style='height:50px;'><td style='").append(border).append("'>&nbsp;</td>");
 				html.append("<td colspan='7' style='font-size:12px; width:400px;").append(border).append("'>");
 				html.append(item.getProduct().getShortDesc()).append("</td>");
 			} else {
-				html.append("'><span style='font-weight:bold;position:relative;top:-15px;'>GTIN</span><span><img style='margin-left:20px;' src='/barcodeGenerator?textFormat=NEXUS&barcodeData=01").append(item.getProduct().getProdAttributes().get("gtin")).append("&height=15' /></span></td></tr>");
+				html.append(border).append("' rowspan='2'><span><img style='margin-left:20px;' src='/barcodeGenerator?textFormat=NEXUS&barcodeData=01").append(gtin+BarcodeBase.calculateModule10CheckDigit(gtin)).append("'/></span></td></tr>");
 				html.append("<tr><td style='").append(border).append("'>&nbsp;</td>");
 				html.append("<td colspan='7' style='font-size:12px; width:400px;").append(border).append("'>");
-				html.append(item.getProduct().getShortDesc()).append("</td><td style='font-size:12px; margin-bottom:10px;").append(border).append("'>");
-				html.append("<span style='font-weight:bold;position:relative;top:-15px;'>LOT</span><span><img style='margin-left:25px;' src='/barcodeGenerator?textFormat=NEXUS&barcodeData=10").append(item.getProduct().getProdAttributes().get("lotNo")).append("&height=15' /></span>");
+				html.append(item.getProduct().getShortDesc()).append("</td>");
 			}
 			html.append("</span></td></tr>");
 			i++;
