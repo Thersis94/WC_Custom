@@ -88,6 +88,19 @@ public class SalesConsultantAction extends SimpleActionAdapter {
 		req.setParameter("fmid",mod.getPageModuleId());
 		//NOTE: page & start get picked up by SolrActionVO automatically, because we set "fmid"
 		
+		String customParam = "", value = "";
+		if (req.hasParameter("searchCity")) {
+			customParam = "qf|hierarchy_lcase^10";
+			value = req.getParameter("searchCity");
+		} else if (req.hasParameter("searchName")) {
+			customParam = "qf|title_lcase^10";
+			value = req.getParameter("searchName");
+		}
+		if (customParam.length() > 0) {
+			req.setParameter("customParam", customParam, true);
+			req.setParameter("searchData", "*"+ StringUtil.replace(value," ","\\ ") +"*");
+		}
+		
 
 		//call to solr for a list of sales consultants
 		String solrActionId = StringUtil.checkVal(mod.getAttribute(SBModuleVO.ATTRIBUTE_1)); //the solrActionId we're wrapping
