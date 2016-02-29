@@ -154,27 +154,30 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 	 */
 	private void indexProduct(ProductCategoryVO vo, int depth) {
 		for (ProductVO pVo : vo.getProducts()) { //these are actually 1:1, but we'll iterate the loop anyways
-				
-			ProductCatalogSolrDocumentVO solrDoc = products.get(vo.getProductId());
-			if (solrDoc == null) {
-				solrDoc = new ProductCatalogSolrDocumentVO(getIndexType());
-				solrDoc.setDocumentId(pVo.getProductId());
-				solrDoc.setTitle(pVo.getTitle());
-				solrDoc.setSummary(pVo.getDescText());
-				solrDoc.setDetailImage(pVo.getImage());
-				solrDoc.setDocumentUrl(pVo.getUrlAlias());
-				solrDoc.addOrganization(organizationId);
-				//solrDoc.setModule(getIndexType()); unused
-				solrDoc.addRole(SecurityController.PUBLIC_REGISTERED_LEVEL);
-				solrDoc.setModule(getIndexType());
+			try {
+				ProductCatalogSolrDocumentVO solrDoc = products.get(vo.getProductId());
+				if (solrDoc == null) {
+					solrDoc = new ProductCatalogSolrDocumentVO(getIndexType());
+					solrDoc.setDocumentId(pVo.getProductId());
+					solrDoc.setTitle(pVo.getTitle());
+					solrDoc.setSummary(pVo.getDescText());
+					solrDoc.setDetailImage(pVo.getImage());
+					solrDoc.setDocumentUrl(pVo.getUrlAlias());
+					solrDoc.addOrganization(organizationId);
+					//solrDoc.setModule(getIndexType()); unused
+					solrDoc.addRole(SecurityController.PUBLIC_REGISTERED_LEVEL);
+					solrDoc.setModule(getIndexType());
+					attachProductCategories(solrDoc, depth);
+					addProductAttributes(solrDoc, pVo);
+				}
+	
+				//add a new hierarchy to this product; its either Specialty or Category (we only support two)
 				attachProductCategories(solrDoc, depth);
-				addProductAttributes(solrDoc, pVo);
+				products.put(pVo.getProductId(), solrDoc);
+				log.info("added product " + solrDoc.getTitle());
+			} catch (Exception e) {
+				log.error("could not index product", e);
 			}
-
-			//add a new hierarchy to this product; its either Specialty or Category (we only support two)
-			attachProductCategories(solrDoc, depth);
-			products.put(pVo.getProductId(), solrDoc);
-			log.info("added product " + solrDoc.getTitle());
 		}
 	}
 	

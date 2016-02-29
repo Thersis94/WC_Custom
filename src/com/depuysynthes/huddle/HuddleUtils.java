@@ -112,7 +112,7 @@ public class HuddleUtils {
 	public static List<ProductAttributeVO> loadProductAttributes(SMTDBConnection dbConn, String orgId) {
 		List<ProductAttributeVO> data = new ArrayList<>();
 		String sql = "select attribute_id, attribute_nm, type_nm, display_order_no " +
-				"from PRODUCT_ATTRIBUTE where organization_id=? and active_flg=1 and attribute_group_id is null";
+				"from PRODUCT_ATTRIBUTE where organization_id=? and active_flg=1 and (attribute_group_id is null or len(attribute_group_id)=0)";
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			ps.setString(1, orgId);
 			ResultSet rs = ps.executeQuery();
