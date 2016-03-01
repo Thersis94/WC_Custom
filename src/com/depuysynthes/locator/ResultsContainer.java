@@ -35,7 +35,7 @@ import com.siliconmtn.util.StringUtil;
 public class ResultsContainer implements Serializable {
 
 	private static final long serialVersionUID = 3940243103678420431L;
-	private final String FILTER_VALUE_DELIMITER_REGEX = "[|]";
+	private final String FILTER_VALUE_DELIMITER_REGEX = "\\|";
 	private String json;
 	private int numResults;
 	private int pageSize;
