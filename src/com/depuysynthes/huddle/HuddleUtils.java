@@ -42,11 +42,7 @@ public class HuddleUtils {
 	public static final String PRODUCT_PG_ALIAS = "/product/"; //used in ProductAssetAction for referer inspection
 	public static final String ASSET_PG_ALIAS = "/asset/"; //used in SolrBusinessRules & EmailAFriend
 	public static final String MEDIABIN_REDIR_URL = "/json?amid=MEDIA_BIN_AJAX&mbid="; //used in EmailAFriend
-	
-	/** Catalog Constants **/
-	public static final String productCategoryCd = "HUDDLE_CATEGORY";
-	public static final String productCatalogId = "DS_HUDDLE";
-	
+		
 	/** Solr field names of product attributes **/
 	public static final String PROD_ATTR_PREFIX = "huddle_";
 
@@ -79,6 +75,10 @@ public class HuddleUtils {
 	public static final String CATALOG_ID = "DS_HUDDLE";
 	public static final String SPEC_PRODCAT_ID = "HUDDLE_SPECIALTY";
 	public static final String CAT_PRODCAT_ID = "HUDDLE_CATEGORY";
+	@Deprecated //old and duplicate, do not use - JM 02.29.16
+	public static final String productCategoryCd = CAT_PRODCAT_ID;
+	@Deprecated //old and duplicate, do not use - JM 02.29.16
+	public static final String productCatalogId = CATALOG_ID;
 	
 	//solr fields
 	public static final String SOLR_OPCO_FIELD = "opco_ss";
