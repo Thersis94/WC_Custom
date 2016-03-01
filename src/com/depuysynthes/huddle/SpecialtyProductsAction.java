@@ -102,13 +102,7 @@ public class SpecialtyProductsAction extends SimpleActionAdapter {
 		
 		return data;
 	}
-	
-	
-	@Override
-	public void update(SMTServletRequest req) throws ActionException {
-		super.update(req);
-	}
-	
+
 	
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
