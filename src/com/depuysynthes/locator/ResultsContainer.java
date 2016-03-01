@@ -221,7 +221,11 @@ public class ResultsContainer implements Serializable {
     public void setFilters(String[] filterVals) {
     	// clear filters
     	specFilters.clear();
-    	specFilters.addAll(globalSpecFilters);
+    	if (filterVals != null) {
+    		/* If filter values are passed in, we inform the bean as to which 
+    		 * specialties are to be considered. */
+    		specFilters.addAll(globalSpecFilters);
+    	}
     	procFilters.clear();
     	prodFilters.clear();
 
@@ -274,7 +278,7 @@ public class ResultsContainer implements Serializable {
     	combineFilterLists(procsToExclude, prodsToExclude);
     	
     	// determine which surgeons are filtered out of display
-    	buildFilteredSurgeonsList();
+    	buildFilteredSurgeonsList((filterVals != null && filterVals.length > 0));
     }
     
     /**
@@ -325,7 +329,7 @@ public class ResultsContainer implements Serializable {
      * Builds a list of surgeons (surgeon ID) who should be filtered out
      * of the displayed list of surgeons.
      */
-    private void buildFilteredSurgeonsList() {
+    private void buildFilteredSurgeonsList(boolean hasFilterVals) {
     	filteredSurgeonList.clear();
 
     	/* Perform filtering if necessary */
@@ -414,7 +418,16 @@ public class ResultsContainer implements Serializable {
 			displayTotalNo = results.size() - filteredSurgeonList.size();
 			
 		} else {
-			displayTotalNo = results.size();
+			/* If 'exclude' filters were specified that resulted in all procedures and 
+			 * products being excluded, then all physicians are excluded. */
+			if (hasFilterVals) {
+				for (SurgeonBean surgeon : results) {
+					filteredSurgeonList.add(surgeon.getSurgeonId());
+				}
+				displayTotalNo = results.size() - filteredSurgeonList.size();
+			} else {
+				displayTotalNo = results.size();
+			}
 		}
 		
 		// now calculate display values (start,end, page nav, etc.)
@@ -727,9 +740,13 @@ public class ResultsContainer implements Serializable {
 	}
 
 	public void setGlobalSpecialtyFilter(String specId) {
-		Integer tmpId = Convert.formatInteger(specId);
-		if (tmpId > 0 && ! globalSpecFilters.contains(tmpId)) {
-			globalSpecFilters.add(tmpId);
+		if (StringUtil.checkVal(specId, null) == null) return;
+		String[] vals = specId.split(FILTER_VALUE_DELIMITER_REGEX);
+		for (String val : vals) {
+			Integer tmpId = Convert.formatInteger(val);
+			if (tmpId > 0 && ! globalSpecFilters.contains(tmpId)) {
+				globalSpecFilters.add(tmpId);
+			}
 		}
 	}
 }
