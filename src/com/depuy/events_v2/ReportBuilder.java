@@ -208,6 +208,8 @@ public class ReportBuilder extends SBActionAdapter {
 
 		RsvpBreakdownReportVO rpt = new RsvpBreakdownReportVO();
 		rpt.setData(data.values());
+		rpt.setStart(start);
+		rpt.setEnd(end);
 		return rpt;
 	}
 
