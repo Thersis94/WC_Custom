@@ -322,7 +322,7 @@ public class LeihsetAction extends SBActionAdapter {
 			dbConn.commit();
 
 			// Put the new id on the request object so we update the NEW record and not the old one.
-			log.error("newId=" + ids.get(oldLeihset));
+			log.debug("newId=" + ids.get(oldLeihset));
 			req.setAttribute(ApprovalDecoratorAction.SB_ACTION_ID,ids.get(oldLeihset)); //for the ApprovalDecorator
 			req.setParameter("sbActionId",ids.get(oldLeihset)); //for the LeihsetVO
 			req.setParameter("leihsetGroupId", oldLeihset);

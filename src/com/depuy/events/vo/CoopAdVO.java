@@ -44,7 +44,7 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 	private String optionFileUrl = null;
 	private String optionFeedbackText = null;
 	private String territoryNo = null;
-	private Integer statusFlg = null;
+	private Integer statusFlg = Integer.valueOf(0);
 	private Map<String, Integer> eventCodes = new HashMap<String, Integer>();
 	private String adType = null;
 
