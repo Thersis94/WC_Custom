@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 // RAMDataFeed
-import com.ram.workflow.data.WorkflowVO;
+
 
 // SMTBaseLibs 2.0
 import com.siliconmtn.action.ActionException;
@@ -18,6 +18,7 @@ import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
+import com.siliconmtn.workflow.data.WorkflowVO;
 // WebCrescendo 2.0
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
