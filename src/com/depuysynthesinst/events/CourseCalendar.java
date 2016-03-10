@@ -5,8 +5,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
 import java.util.TreeMap;
 
 import com.depuysynthesinst.lms.FutureLeaderACGME;
@@ -17,6 +20,7 @@ import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.UUIDGenerator;
 import com.siliconmtn.util.databean.FilePartDataBean;
 import com.siliconmtn.util.parser.AnnotationParser;
 import com.smt.sitebuilder.action.SBModuleVO;
@@ -47,24 +51,24 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class CourseCalendar extends SimpleActionAdapter {
 
 	public CourseCalendar() {
+		super();
 	}
 
-	/**
-	 * @param arg0
-	 */
 	public CourseCalendar(ActionInitVO arg0) {
 		super(arg0);
 	}
 	
+	@Override
 	public void list(SMTServletRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 
-	
+	@Override
 	public void update(SMTServletRequest req) throws ActionException {
-		super.update(req);
+		if (!Convert.formatBoolean(req.getParameter("batchOnly")))
+			super.update(req);
 		
-		if (req.getFile("xlsFile") != null)
+		if (req.getFile("xlsFile") != null || req.getFile("batchFile") != null)
 			processUpload(req);
 		
 	}
@@ -79,6 +83,7 @@ public class CourseCalendar extends SimpleActionAdapter {
 	private void processUpload(SMTServletRequest req) throws ActionException {
 		AnnotationParser parser;
 		FilePartDataBean fpdb = req.getFile("xlsFile");
+		if (fpdb == null) fpdb = req.getFile("batchFile");
 		try {
 			parser = new AnnotationParser(CourseCalendarVO.class, fpdb.getExtension());
 		} catch(InvalidDataException e) {
@@ -87,19 +92,23 @@ public class CourseCalendar extends SimpleActionAdapter {
 		try {
 			//Gets the xls file from the request object, and passes it to the parser.
 			//Parser then returns the list of populated beans
-			Map< Class<?>, Collection<Object>> beans = parser.parseFile(fpdb, true);
+			Map<Class<?>, Collection<Object>> beans = parser.parseFile(fpdb, true);
 			
-			ArrayList<Object> beanList = null;
-			EventEntryAction eventAction = new EventEntryAction();
-			eventAction.setDBConnection(dbConn);
+			 UUIDGenerator uuid = new UUIDGenerator();
+			ArrayList<Object> beanList = new ArrayList<>(beans.get(CourseCalendarVO.class));
+			Set<String> eventIds = new HashSet<>(beanList.size());
 			
 			//Disable the db autocommit for the insert batch
 			dbConn.setAutoCommit(false);
 			
-			beanList = new ArrayList<>(beans.get(CourseCalendarVO.class));
+			EventEntryAction eventAction = new EventEntryAction();
+			eventAction.setDBConnection(dbConn);
+			
 			for (Object o : beanList) {
 				//set the eventTypeId for each
 				CourseCalendarVO vo = (CourseCalendarVO) o;
+				vo.setEventEntryId(uuid.getUUID());
+				eventIds.add(vo.getEventEntryId());
 				vo.setEventTypeId(req.getParameter("eventTypeId"));
 				vo.setStatusFlg(EventFacadeAction.STATUS_APPROVED);
 			}
@@ -107,6 +116,9 @@ public class CourseCalendar extends SimpleActionAdapter {
 			
 			//commit only after the entire import succeeds
 			dbConn.commit();
+			
+			//push the new assets to Solr
+			pushToSolr(eventIds);
 			
 		} catch (InvalidDataException | SQLException e) {
 			log.error("could not process DSI calendar import", e);
@@ -121,6 +133,7 @@ public class CourseCalendar extends SimpleActionAdapter {
 	/**
 	 * retrieves a list of Events tied to this porlet.  Filters the list to the passed anatomy, if present. 
 	 */
+	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
@@ -321,6 +334,7 @@ public class CourseCalendar extends SimpleActionAdapter {
 	/**
 	 * Build gets called for creating iCal files (downloads) of the passed eventEntryId
 	 */
+	@Override
 	public void build(SMTServletRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		
@@ -345,4 +359,12 @@ public class CourseCalendar extends SimpleActionAdapter {
 		efa.build(req);
 	}
 	
+	
+	protected void pushToSolr(Set<String> eventIds) {
+		Properties props = new Properties();
+		props.putAll(getAttributes());
+		CourseCalendarSolrIndexer indexer = new CourseCalendarSolrIndexer(props); 
+		indexer.setDBConnection(dbConn);
+		indexer.indexCertainItems(eventIds);
+	}
 }

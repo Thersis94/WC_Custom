@@ -36,8 +36,10 @@ public class MediaBinAdminAction extends SimpleActionAdapter {
      */
 	public void list(SMTServletRequest req) throws ActionException {
 		String orgId = req.getParameter("organizationId");
-		boolean isDSI = "DPY_SYN_INST".equals(orgId);
-		int typeCd = ("DPY_SYN".equals(orgId) || isDSI) ? 1 : 2; //1=US, 2=INTL - See com.depuy.scripts.DSMediaBinImporter
+		MediaBinDistChannels mb = new MediaBinDistChannels(orgId);
+		int typeCd = mb.getTypeCd();
+		String opCoNm = mb.getOpCoNm();
+
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("select * from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("DPY_SYN_MEDIABIN where import_file_cd=?");
@@ -73,7 +75,7 @@ public class MediaBinAdminAction extends SimpleActionAdapter {
 				ps.setString(++i, req.getParameter("sProduct") + "%");
 			}
 			if (req.hasParameter("sTracking")) ps.setString(++i, req.getParameter("sTracking") + "%");
-			if (typeCd == 1) ps.setString(++i, ((isDSI) ? "%DSI.com%" : "%USDS.com%"));
+			if (typeCd == 1) ps.setString(++i, "%" + opCoNm + "%");
 			
 			if ("quicktime".equalsIgnoreCase(assetType)) {
 				ps.setString(++i, "video");
