@@ -11,7 +11,7 @@ import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.io.mail.MessageVO;
-import com.siliconmtn.io.mail.AbstractMessageVO.InstanceName;
+import com.siliconmtn.io.mail.BaseMessageVO.InstanceName;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.approval.AbstractApprover;
