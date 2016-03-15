@@ -5,6 +5,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -109,12 +110,11 @@ public class HCPLandingPageAction extends SBActionAdapter {
 		vo.setSelProducts(this.loadProductDetails(pc, vo.getAdminSelProds(), req));
 		vo.setSelProcedures(this.loadProductDetails(pc, vo.getAdminSelProcs(), req));
 		
-		
 		/***********************************************************************
 		 *          everything below here is for 'our most popular'            *
 		 ***********************************************************************/
 		
-		//load PageView stats
+		//load PageView states
 		PageViewReportingAction pva = new PageViewReportingAction(actionInit);
 		pva.setDBConnection(dbConn);
 		pva.retrieve(req);
@@ -240,7 +240,7 @@ public class HCPLandingPageAction extends SBActionAdapter {
 	private List<ProductVO> loadProductDetails(ProductController pc, 
 			Map<String, Long> orderedProdIds, SMTServletRequest req) {
 		List<ProductVO> products = new ArrayList<ProductVO>();
-		
+			
 		try {
 			String[] selIds = orderedProdIds.keySet().toArray(new String[orderedProdIds.size()]);
 			//log.debug(StringUtil.getToString(selIds, false, true, ","));
@@ -251,16 +251,39 @@ public class HCPLandingPageAction extends SBActionAdapter {
 			List<Node> prodNodes = (List<Node>) mod.getActionData();
 			for (String prodId : orderedProdIds.keySet()) {
 				Long lng = orderedProdIds.get(prodId);
-				
 				//loop the list of Nodes until we find the one we need
 				//this is important to ensure proper ordering
-				for (Node n : prodNodes) {
-					if (n.getNodeId().equals(prodId)) {
-						ProductVO prodVo = (ProductVO) n.getUserObject();
-						prodVo.setDisplayOrderNo(lng.intValue());//set the pageView count
-						products.add(prodVo);
-						log.debug("added " + prodVo.getFullProductName());
-						break;
+			
+				if (req.getParameter("pagePreview") != null && !req.getParameter("pagePreview").isEmpty()){
+					 log.info(" preview page active");	
+					 for (Node n : prodNodes) {
+						 if (!n.getNodeId().equals(prodId)) {
+							 ProductVO prodVo = (ProductVO) n.getUserObject();
+							 if (prodVo.getProductGroupId() != null && prodVo.getProductGroupId().equals(prodId) ) {
+								 prodVo.setDisplayOrderNo(lng.intValue());//set the pageView count
+								 products.add(prodVo);
+								 log.debug("##### = id added " + prodVo.getFullProductName() + " product id " + prodVo.getProductId() );
+								 log.debug("####product size " + products.size());								 break;
+							 }
+						 }else if (n.getNodeId().equals(prodId)) {
+							 ProductVO prodVo = (ProductVO) n.getUserObject();
+							 prodVo.setDisplayOrderNo(lng.intValue());//set the pageView count
+							 products.add(prodVo);
+							 log.debug("####### = id added " + prodVo.getFullProductName() + " product id " + prodVo.getProductId() );
+							 log.debug("#####product size " + products.size());
+							 break;
+						 }
+					 }
+				
+				} else {
+					log.info("preview not active");
+					for (Node n : prodNodes) {
+						if (n.getNodeId().equals(prodId)) {
+							ProductVO prodVo = (ProductVO) n.getUserObject();
+							prodVo.setDisplayOrderNo(lng.intValue());//set the pageView count
+							products.add(prodVo);
+							break;
+						}
 					}
 				}
 			}
@@ -268,6 +291,7 @@ public class HCPLandingPageAction extends SBActionAdapter {
 			log.error("could not load products for " + StringUtil.getToString(orderedProdIds), e);
 		}
 		
+		log.debug(" product size " + products.size());
 		return products;
 	}
 	
