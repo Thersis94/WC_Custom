@@ -67,7 +67,7 @@ public class HCPLandingPageAction extends SBActionAdapter {
         ModuleVO mod = (ModuleVO) attributes.get(AdminConstants.ADMIN_MODULE_DATA);
         log.info("Starting HCPLandingPageAction Action - Delete: " + sbActionId);
         
-        StringBuilder sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder(60);
         sb.append("delete from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
         sb.append("DPY_SYN_HCP_LANDING where action_id = ?");
 
@@ -114,11 +114,12 @@ public class HCPLandingPageAction extends SBActionAdapter {
 		vo.setSelProducts(this.loadProductDetails(pc, vo.getAdminSelProds(), req));
 		vo.setSelProcedures(this.loadProductDetails(pc, vo.getAdminSelProcs(), req));
 		
+
 		/***********************************************************************
 		 *          everything below here is for 'our most popular'            *
 		 ***********************************************************************/
 		
-		//load PageView states
+		//load PageView stats
 		PageViewReportingAction pva = new PageViewReportingAction(actionInit);
 		pva.setDBConnection(dbConn);
 		pva.retrieve(req);
@@ -255,6 +256,7 @@ public class HCPLandingPageAction extends SBActionAdapter {
 			List<Node> prodNodes = (List<Node>) mod.getActionData();
 			for (String prodId : orderedProdIds.keySet()) {
 				Long lng = orderedProdIds.get(prodId);
+
 				//loop the list of Nodes until we find the one we need
 				//this is important to ensure proper ordering
 			
@@ -311,7 +313,7 @@ public class HCPLandingPageAction extends SBActionAdapter {
 	@Override
 	public void list(SMTServletRequest req) throws ActionException {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = new StringBuilder();
+		StringBuilder sql = new StringBuilder(400);
 		sql.append("select *, b.action_id as built ");
 		sql.append("from sb_action a inner join ").append(customDb).append("DPY_SYN_HCP_LANDING b on a.action_id=b.action_id ");
 		sql.append("left outer join ").append(customDb).append("DPY_SYN_HCP_LANDING_PROD_XR c ");
@@ -366,7 +368,7 @@ public class HCPLandingPageAction extends SBActionAdapter {
 		super.update(req);
 		
         // Build the sql
-        StringBuffer sql = new StringBuffer();
+        StringBuffer sql = new StringBuffer(150);
 		if (Convert.formatBoolean(req.getAttribute(INSERT_TYPE))) {
 			sql.append("insert into ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 	        sql.append("DPY_SYN_HCP_LANDING (education_txt, support_txt, tracking_no_txt, ");
