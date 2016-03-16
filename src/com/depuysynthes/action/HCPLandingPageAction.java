@@ -1,14 +1,16 @@
 package com.depuysynthes.action;
 
+//Java 7
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+
+//BaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.commerce.catalog.ProductCategoryVO;
@@ -19,6 +21,8 @@ import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
+
+//WebCrescendo 
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.SBModuleVO;
 import com.smt.sitebuilder.action.commerce.product.ProductController;
@@ -254,21 +258,20 @@ public class HCPLandingPageAction extends SBActionAdapter {
 				//loop the list of Nodes until we find the one we need
 				//this is important to ensure proper ordering
 			
+				//edited to check for previews mode and pick the right products
 				if (req.getParameter("pagePreview") != null && !req.getParameter("pagePreview").isEmpty()){
 					 log.info(" preview page active");	
 					 for (Node n : prodNodes) {
 						 if (!n.getNodeId().equals(prodId)) {
 							 ProductVO prodVo = (ProductVO) n.getUserObject();
 							 if (prodVo.getProductGroupId() != null && prodVo.getProductGroupId().equals(prodId) ) {
-								 prodVo.setDisplayOrderNo(lng.intValue());//set the pageView count
-								 products.add(prodVo);
+								 addProducts(products,prodVo,lng);
 								 log.debug("##### = id added " + prodVo.getFullProductName() + " product id " + prodVo.getProductId() );
 								 log.debug("####product size " + products.size());								 break;
 							 }
 						 }else if (n.getNodeId().equals(prodId)) {
 							 ProductVO prodVo = (ProductVO) n.getUserObject();
-							 prodVo.setDisplayOrderNo(lng.intValue());//set the pageView count
-							 products.add(prodVo);
+							 addProducts(products,prodVo,lng);
 							 log.debug("####### = id added " + prodVo.getFullProductName() + " product id " + prodVo.getProductId() );
 							 log.debug("#####product size " + products.size());
 							 break;
@@ -280,8 +283,7 @@ public class HCPLandingPageAction extends SBActionAdapter {
 					for (Node n : prodNodes) {
 						if (n.getNodeId().equals(prodId)) {
 							ProductVO prodVo = (ProductVO) n.getUserObject();
-							prodVo.setDisplayOrderNo(lng.intValue());//set the pageView count
-							products.add(prodVo);
+							addProducts(products,prodVo,lng);
 							break;
 						}
 					}
@@ -295,6 +297,17 @@ public class HCPLandingPageAction extends SBActionAdapter {
 		return products;
 	}
 	
+	/**
+	 * @param prodVo 
+	 * @param products 
+	 * @param lng 
+	 * @return
+	 */
+	private void addProducts(List<ProductVO> products, ProductVO prodVo, Long lng) {
+		prodVo.setDisplayOrderNo(lng.intValue());//set the pageView count
+		products.add(prodVo);
+	}
+
 	@Override
 	public void list(SMTServletRequest req) throws ActionException {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
