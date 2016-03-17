@@ -65,7 +65,7 @@ public class HCPLandingPageAction extends SBActionAdapter {
 		
         String sbActionId = req.getParameter(SBModuleAction.SB_ACTION_ID);
         ModuleVO mod = (ModuleVO) attributes.get(AdminConstants.ADMIN_MODULE_DATA);
-        log.info("Starting HCPLandingPageAction Action - Delete: " + sbActionId);
+        log.debug("Starting HCPLandingPageAction Action - Delete: " + sbActionId);
         
         StringBuilder sb = new StringBuilder(60);
         sb.append("delete from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
@@ -256,18 +256,37 @@ public class HCPLandingPageAction extends SBActionAdapter {
 			List<Node> prodNodes = (List<Node>) mod.getActionData();
 			for (String prodId : orderedProdIds.keySet()) {
 				Long lng = orderedProdIds.get(prodId);
+
 				//loop the list of Nodes until we find the one we need
 				//this is important to ensure proper ordering
-				for (Node n : prodNodes) {
-					if (n.getNodeId().equals(prodId)) {
-						ProductVO prodVo = (ProductVO) n.getUserObject();
-						prodVo.setDisplayOrderNo(lng.intValue());//set the pageView count
-						products.add(prodVo);
-						log.debug("added " + prodVo.getFullProductName());
-						break;
-					}
+			
+				//edited to check for previews mode and pick the right products
+				if (req.getParameter("pagePreview") != null && !req.getParameter("pagePreview").isEmpty()){
+					 log.debug(" preview active");	
+					 for (Node n : prodNodes) {
+						 if (!n.getNodeId().equals(prodId)) {
+							 ProductVO prodVo = (ProductVO) n.getUserObject();
+							 if (prodVo.getProductGroupId() != null && prodVo.getProductGroupId().equals(prodId) ) {
+								 addProducts(products,prodVo,lng);
+							 }
+						 }else if (n.getNodeId().equals(prodId)) {
+							 ProductVO prodVo = (ProductVO) n.getUserObject();
+							 addProducts(products,prodVo,lng);
+							 break;
+						 }
+					 }
+				
+				} else {
+					log.debug("preview not active");
+					for (Node n : prodNodes) {
+						if (n.getNodeId().equals(prodId)) {
+							ProductVO prodVo = (ProductVO) n.getUserObject();
+							addProducts(products,prodVo,lng);
+							break;
+						}
 					}
 				}
+			}
 		} catch (Exception e) {
 			log.error("could not load products for " + StringUtil.getToString(orderedProdIds), e);
 		}
@@ -276,6 +295,17 @@ public class HCPLandingPageAction extends SBActionAdapter {
 		return products;
 	}
 	
+	/**
+	 * @param prodVo 
+	 * @param products 
+	 * @param lng 
+	 * @return
+	 */
+	private void addProducts(List<ProductVO> products, ProductVO prodVo, Long lng) {
+		prodVo.setDisplayOrderNo(lng.intValue());//set the pageView count
+		products.add(prodVo);
+	}
+
 	@Override
 	public void list(SMTServletRequest req) throws ActionException {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
