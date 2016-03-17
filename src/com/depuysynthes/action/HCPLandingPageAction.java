@@ -259,34 +259,20 @@ public class HCPLandingPageAction extends SBActionAdapter {
 
 				//loop the list of Nodes until we find the one we need
 				//this is important to ensure proper ordering
-			
 				//edited to check for previews mode and pick the right products
-				if (req.getParameter("pagePreview") != null && !req.getParameter("pagePreview").isEmpty()){
-					 log.debug(" preview active");	
-					 for (Node n : prodNodes) {
-						 if (!n.getNodeId().equals(prodId)) {
-							 ProductVO prodVo = (ProductVO) n.getUserObject();
-							 if (prodVo.getProductGroupId() != null && prodVo.getProductGroupId().equals(prodId) ) {
-								 addProducts(products,prodVo,lng);
-							 }
-						 }else if (n.getNodeId().equals(prodId)) {
-							 ProductVO prodVo = (ProductVO) n.getUserObject();
-							 addProducts(products,prodVo,lng);
-							 break;
-						 }
-					 }
-				
-				} else {
-					log.debug("preview not active");
-					for (Node n : prodNodes) {
-						if (n.getNodeId().equals(prodId)) {
-							ProductVO prodVo = (ProductVO) n.getUserObject();
+				for (Node n : prodNodes) {
+					if (req.getParameter("pagePreview") != null && !req.getParameter("pagePreview").isEmpty() && !n.getNodeId().equals(prodId)) {
+						ProductVO prodVo = (ProductVO) n.getUserObject();
+						if (prodVo.getProductGroupId() != null && prodVo.getProductGroupId().equals(prodId) ) {
 							addProducts(products,prodVo,lng);
-							break;
 						}
+					}else if (n.getNodeId().equals(prodId)) {
+						ProductVO prodVo = (ProductVO) n.getUserObject();
+						addProducts(products,prodVo,lng);
+						break;
 					}
 				}
-			}
+			} 
 		} catch (Exception e) {
 			log.error("could not load products for " + StringUtil.getToString(orderedProdIds), e);
 		}
