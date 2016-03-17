@@ -258,14 +258,14 @@ public class HCPLandingPageAction extends SBActionAdapter {
 				Long lng = orderedProdIds.get(prodId);
 				//loop the list of Nodes until we find the one we need
 				//this is important to ensure proper ordering
-					for (Node n : prodNodes) {
-						if (n.getNodeId().equals(prodId)) {
-							ProductVO prodVo = (ProductVO) n.getUserObject();
-							prodVo.setDisplayOrderNo(lng.intValue());//set the pageView count
-							products.add(prodVo);
-							log.debug("added " + prodVo.getFullProductName());
-							break;
-						}
+				for (Node n : prodNodes) {
+					if (n.getNodeId().equals(prodId)) {
+						ProductVO prodVo = (ProductVO) n.getUserObject();
+						prodVo.setDisplayOrderNo(lng.intValue());//set the pageView count
+						products.add(prodVo);
+						log.debug("added " + prodVo.getFullProductName());
+						break;
+					}
 					}
 				}
 		} catch (Exception e) {
