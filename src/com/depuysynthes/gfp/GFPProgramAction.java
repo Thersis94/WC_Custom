@@ -94,10 +94,38 @@ public class GFPProgramAction extends SBActionAdapter {
 		
 		if (req.hasParameter("dashboard")) {
 			req.setAttribute("categories", getAllCategories());
+		}  else if (profileId != null && req.getSession().getAttribute("hospitalName") == null) {
+			req.getSession().setAttribute("hospitalName", getHospital(profileId));
 		}
 	}
 	
 	
+	/**
+	 * Get the supplied user's assigned hospital
+	 * @param profileId
+	 * @return
+	 */
+	private String getHospital(String profileId) {
+		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(240);
+		
+		sql.append("select HOSPITAL_NM from ").append(customDb).append("DPY_SYN_GFP_USER u ");
+		sql.append("left join ").append(customDb).append("DPY_SYN_GFP_HOSPITAL h ");
+		sql.append("ON u.HOSPITAL_ID = h.HOSPITAL_ID ");
+		sql.append("WHERE PROFILE_ID = ?");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, profileId);
+			
+			ResultSet rs = ps.executeQuery();
+			if (rs.next()) return rs.getString("HOSPITAL_NM");
+		} catch (SQLException e) {
+			log.error("No hospital found for profile id: " + profileId + "; returning null");
+		}
+		return null;
+	}
+
+
 	/**
 	 * Search through the resources that the user has access to for the supplied search terms
 	 */
