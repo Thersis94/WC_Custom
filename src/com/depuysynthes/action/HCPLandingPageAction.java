@@ -262,26 +262,24 @@ public class HCPLandingPageAction extends SBActionAdapter {
 			
 				//edited to check for previews mode and pick the right products
 				if (req.getParameter("pagePreview") != null && !req.getParameter("pagePreview").isEmpty()){
-					 log.info(" preview page active");	
+					 log.debug(" preview active");	
 					 for (Node n : prodNodes) {
 						 if (!n.getNodeId().equals(prodId)) {
 							 ProductVO prodVo = (ProductVO) n.getUserObject();
 							 if (prodVo.getProductGroupId() != null && prodVo.getProductGroupId().equals(prodId) ) {
 								 addProducts(products,prodVo,lng);
 								 log.debug("##### = id added " + prodVo.getFullProductName() + " product id " + prodVo.getProductId() );
-								 log.debug("####product size " + products.size());								 break;
 							 }
 						 }else if (n.getNodeId().equals(prodId)) {
 							 ProductVO prodVo = (ProductVO) n.getUserObject();
 							 addProducts(products,prodVo,lng);
 							 log.debug("####### = id added " + prodVo.getFullProductName() + " product id " + prodVo.getProductId() );
-							 log.debug("#####product size " + products.size());
 							 break;
 						 }
 					 }
 				
 				} else {
-					log.info("preview not active");
+					log.debug("preview not active");
 					for (Node n : prodNodes) {
 						if (n.getNodeId().equals(prodId)) {
 							ProductVO prodVo = (ProductVO) n.getUserObject();
