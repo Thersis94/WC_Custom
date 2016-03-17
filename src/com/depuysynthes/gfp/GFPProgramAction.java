@@ -94,7 +94,7 @@ public class GFPProgramAction extends SBActionAdapter {
 		
 		if (req.hasParameter("dashboard")) {
 			req.setAttribute("categories", getAllCategories());
-		}  else if (profileId != null) {
+		}  else if (profileId != null && req.getSession().getAttribute("hospitalName") == null) {
 			req.getSession().setAttribute("hospitalName", getHospital(profileId));
 		}
 	}
