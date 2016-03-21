@@ -10,6 +10,9 @@ import java.util.List;
 import java.util.Map;
 
 
+
+import org.htmlparser.lexer.Page;
+
 //BaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -244,6 +247,7 @@ public class HCPLandingPageAction extends SBActionAdapter {
 	@SuppressWarnings("unchecked")
 	private List<ProductVO> loadProductDetails(ProductController pc, 
 			Map<String, Long> orderedProdIds, SMTServletRequest req) {
+		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		List<ProductVO> products = new ArrayList<ProductVO>();
 			
 		try {
@@ -253,15 +257,16 @@ public class HCPLandingPageAction extends SBActionAdapter {
 			pc.retrieve(req);
 			ModuleVO mod = (ModuleVO) pc.getAttribute(Constants.MODULE_DATA);
 			
-			List<Node> prodNodes = (List<Node>) mod.getActionData();
+			
+			Map<String, Node> prodNodes = (Map<String, Node>) mod.getActionData();
 			for (String prodId : orderedProdIds.keySet()) {
 				Long lng = orderedProdIds.get(prodId);
 
 				//loop the list of Nodes until we find the one we need
 				//this is important to ensure proper ordering
 				//edited to check for previews mode and pick the right products
-				for (Node n : prodNodes) {
-					if (req.getParameter("pagePreview") != null && !req.getParameter("pagePreview").isEmpty() && !n.getNodeId().equals(prodId)) {
+				for (Node n : prodNodes.values()) {
+					if (page.isPreviewMode() && !n.getNodeId().equals(prodId)) {
 						ProductVO prodVo = (ProductVO) n.getUserObject();
 						if (prodVo.getProductGroupId() != null && prodVo.getProductGroupId().equals(prodId) ) {
 							addProducts(products,prodVo,lng);
