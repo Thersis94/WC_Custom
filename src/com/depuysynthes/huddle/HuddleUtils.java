@@ -218,7 +218,12 @@ public class HuddleUtils {
 		JointRecon("Joint Reconstruction","DJT","joint-reconstruction","000940"),
 		PowerTools("Power Tools","PWT", "", "001221"),
 		SportsMed("Sports Medicine","SPM","sports-medicine","001225"),
-		Trauma("Trauma","DJT", "", "001221");
+		Trauma("Trauma","DJT", "", "001221"),
+		// the below values are used for the Sales Consultant upload only; we need a code->name translation
+		DST("Trauma","DST","",""),
+		DC("CMF","DC","",""),
+		DPM("Sports Medicine","DPM","",""),
+		DCD("Codman Neuro","DCD","","");
 
 		private String name;
 		private String abbr;

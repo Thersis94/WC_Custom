@@ -1,11 +1,9 @@
 package com.depuysynthes.huddle;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -20,7 +18,6 @@ import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.databean.FilePartDataBean;
-import com.siliconmtn.util.parser.AnnotationExcelParser;
 import com.siliconmtn.util.parser.AnnotationParser;
 import com.smt.sitebuilder.action.SBModuleVO;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
@@ -160,9 +157,8 @@ public class SalesConsultantAction extends SimpleActionAdapter {
 		try {
 			//Gets the xls file from the request object, and passes it to the parser.
 			//Parser then returns the list of populated beans
-			Map< Class<?>, Collection<Object>> beans = parser.parseFile(fpdb, true);
+			Map<Class<?>, Collection<Object>> beans = parser.parseFile(fpdb, true);
 			return (Collection<Object>) beans.get(SalesConsultantAlignVO.class);
-			
 
 		} catch (Exception e) {
 			log.error("could not process Sales Consultant Alignment import", e);
@@ -178,13 +174,10 @@ public class SalesConsultantAction extends SimpleActionAdapter {
 	 * @throws ActionException
 	 */
 	private Map<String, SalesConsultantRepVO> parseRepFile(FilePartDataBean fpdb) throws ActionException {
-		AnnotationExcelParser parser;
+		AnnotationParser parser;
 		try {
-			List<Class<?>> lst = new ArrayList<>();
-			lst.add(SalesConsultantRepVO.class);
-			parser = new AnnotationExcelParser(lst);
-			parser.setSheetNo(2); //ACTIVE_SALES_REPS sheet.
-		} catch(Exception e) {
+			parser = new AnnotationParser(SalesConsultantRepVO.class, fpdb.getExtension());
+		} catch(InvalidDataException e) {
 			throw new ActionException("could not load import file", e);
 		}
 
@@ -192,7 +185,7 @@ public class SalesConsultantAction extends SimpleActionAdapter {
 		try {
 			//Gets the xls file from the request object, and passes it to the parser.
 			//Parser then returns the list of populated beans
-			Map<Class<?>, Collection<Object>> beans = parser.parseData(fpdb.getFileData(), true);
+			Map<Class<?>, Collection<Object>> beans = parser.parseFile(fpdb, true);
 			Collection<Object> rawData =  (Collection<Object>) beans.get(SalesConsultantRepVO.class);
 			Map<String, SalesConsultantRepVO> data = new HashMap<>();
 			for (Object obj : rawData) {
@@ -253,7 +246,7 @@ public class SalesConsultantAction extends SimpleActionAdapter {
 				vo.setDocumentId(documentId);
 				vo.setModule(HuddleUtils.IndexType.HUDDLE_CONSULTANTS.toString());
 				vo.addOrganization(orgId);
-				vo.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
+				vo.addRole(SecurityController.PUBLIC_REGISTERED_LEVEL);
 				vo.addHierarchies(newVo.getHierarchy()); //move the data from 3 separate fields to our hierarchy field
 				vo.setCity(null); //flush these, because they don't apply to these records in the context implied (we use them in hierarchy)
 				vo.setState(null);
