@@ -254,14 +254,14 @@ public class HCPLandingPageAction extends SBActionAdapter {
 			ModuleVO mod = (ModuleVO) pc.getAttribute(Constants.MODULE_DATA);
 			
 			
-			Map<String, Node> prodNodes = (Map<String, Node>) mod.getActionData();
+			List<Node> prodNodes = (List<Node>) mod.getActionData();
 			for (String prodId : orderedProdIds.keySet()) {
 				Long lng = orderedProdIds.get(prodId);
 
 				//loop the list of Nodes until we find the one we need
 				//this is important to ensure proper ordering
 				//edited to check for previews mode and pick the right products
-				for (Node n : prodNodes.values()) {
+				for (Node n : prodNodes) {
 					if (page.isPreviewMode() && !n.getNodeId().equals(prodId)) {
 						ProductVO prodVo = (ProductVO) n.getUserObject();
 						if (prodVo.getProductGroupId() != null && prodVo.getProductGroupId().equals(prodId) ) {
