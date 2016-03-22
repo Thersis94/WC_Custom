@@ -43,8 +43,11 @@ public class LeihsetFacadeAction extends FacadeActionAdapter {
 	}
 
 	public void list(SMTServletRequest req) throws ActionException {
+		//add a hook to save categories via ajax
+		ActionType type = (req.hasParameter("addCategory")) ? ActionType.category : ActionType.leihset;	
+		
 		//LeihsetAction handles both Leihset and LeihsetAsset lists
-		getAction(ActionType.leihset).list(req);
+		getAction(type).list(req);
 	}
 
 	public void delete(SMTServletRequest req) throws ActionException {

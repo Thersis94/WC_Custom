@@ -49,7 +49,7 @@ public class SeminarRollupReportVO extends AbstractSBReportVO {
 		for (DePuyEventSeminarVO sem : postcards) {
 			for (EventEntryVO vo : sem.getEvents()) {
 				buildRow(vo, sem, rpt);
-				log.debug("added row for Event: " + vo.getActionId());
+				log.debug("added row for Event: " + vo.getActionId() + " code=" + vo.getRSVPCode());
 			}
 		}
 
@@ -61,7 +61,11 @@ public class SeminarRollupReportVO extends AbstractSBReportVO {
 		Integer leadsCnt = sem.getTotalSelectedLeads();
 		Integer attendCnt = Convert.formatInteger(sem.getSurveyResponse("attendee_cnt"), 0);
 		Integer rsvpCnt = sem.getRsvpCount();
-		for ( CoopAdVO ad : sem.getAllAds()) {
+		int x = 0;
+		List<CoopAdVO> ads = sem.getAllAds();
+		do {
+			CoopAdVO ad = (ads != null && ads.size() > x) ? ads.get(x) : new CoopAdVO();
+			++x;
 			rpt.append("<tr><td>").append(sem.getJointLabel()).append("</td>");
 			rpt.append("<td>").append(vo.getEventTypeDesc()).append("</td>");
 			rpt.append("<td>").append(vo.getRSVPCode()).append("</td>");
@@ -71,7 +75,7 @@ public class SeminarRollupReportVO extends AbstractSBReportVO {
 			rpt.append("<td>").append(vo.getCityName()).append("</td>");
 			rpt.append("<td>").append(vo.getStateCode()).append("</td>");
 			rpt.append("<td>").append(Convert.formatDate(vo.getStartDate(), Convert.DATE_SLASH_PATTERN)).append("</td>");
-			rpt.append("<td>").append(vo.getLocationDesc()).append("</td>");
+			rpt.append("<td>").append(StringUtil.checkVal(vo.getLocationDesc())).append("</td>");
 			String surgeon = (sem.getSurgeon() != null) ? sem.getSurgeon().getSurgeonName() : "";
 			rpt.append("<td>").append(surgeon).append("</td>");
 			rpt.append("<td>").append(rsvpCnt).append("</td>");
@@ -102,7 +106,8 @@ public class SeminarRollupReportVO extends AbstractSBReportVO {
 			rpt.append("<td>").append(StringUtil.checkVal(sem.getTerritoryNumber())).append("</td>");
 			rpt.append("<td></td>");
 			rpt.append("<td></td></tr>\r");
-		}
+		} while (x < ads.size());
+		
 		return;
 	}
 

@@ -105,7 +105,7 @@ public class TTLMSSolrIndexer extends SMTAbstractIndex {
 	 */
 	@Override
 	public boolean isCMSConnection() {
-		return true;
+		return false;
 	}
 
 
