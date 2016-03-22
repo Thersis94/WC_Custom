@@ -376,7 +376,6 @@ public class PostcardSelectV2 extends SBActionAdapter {
 			}
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
-				log.debug("HERE");
 				if (vo == null) {
 					vo = new DePuyEventSeminarVO(rs);
 					vo.setProfileId(rs.getString("owner_profile_id"));

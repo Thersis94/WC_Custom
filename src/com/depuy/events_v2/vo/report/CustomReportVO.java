@@ -58,6 +58,7 @@ public class CustomReportVO extends AbstractSBReportVO {
 		COORDINATOR_FLG("coordinator_flg", "Seminar Coordinator"),
 		STATUS_FLG("status_flg", "Seminar Status"),
 		START_DATE_FLG("start_date_flg", "Seminar Date"),
+		END_DATE_FLG("start_date_flg", "Seminar Date"),
 		TIME_FLG("time_flg", "Seminar Time"),
 		SPEAKER_FLG("speaker_flg", "Seminar Speaker"),
 		RSVP_COUNT_FLG("rsvp_count_flg",  "RSVP Count"),
@@ -157,6 +158,8 @@ public class CustomReportVO extends AbstractSBReportVO {
 			filterMap.put(FieldList.SEMINAR_CODE_FLG, req.getParameter("rsvpCodeFilter"));
 		if (req.hasParameter("startDateFilter"))
 			filterMap.put(FieldList.START_DATE_FLG, req.getParameter("startDateFilter"));
+		if (req.hasParameter("endDateFilter"))
+			filterMap.put(FieldList.END_DATE_FLG, req.getParameter("endDateFilter"));
 	}
 	
 
@@ -347,6 +350,11 @@ public class CustomReportVO extends AbstractSBReportVO {
 			value = filterMap.get(FieldList.START_DATE_FLG);
 			Date d = Convert.formatDate(Convert.DATE_SLASH_PATTERN, value);
 			if (d.after(sem.getEarliestEventDate())) return false;
+		}
+		if (filterMap.containsKey(FieldList.END_DATE_FLG)) {
+			value = filterMap.get(FieldList.END_DATE_FLG);
+			Date d = Convert.formatDate(Convert.DATE_SLASH_PATTERN, value);
+			if (d.before(sem.getEarliestEventDate())) return false;
 		}
 		return true;
 	}

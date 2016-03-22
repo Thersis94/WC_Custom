@@ -297,6 +297,14 @@ public class LeihsetVO implements Approvable, Serializable, Comparable<LeihsetVO
 	@Override
 	public int compareTo(LeihsetVO vo) {
 		if (vo == null || !(vo instanceof LeihsetVO)) return -1;
+		
+		//sort categories alphabetically
+		String cat1 = StringUtil.checkVal(vo.getCategoryName());
+		if (!cat1.equals(this.getCategoryName())) {
+			return StringUtil.checkVal(getCategoryName()).compareTo(cat1);
+		}
+		
+		//compare using Liehset rank for two VOs in the same category
 		return Integer.compare(this.getOrderNo(), vo.getOrderNo());
 	}
 
