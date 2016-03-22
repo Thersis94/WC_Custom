@@ -35,7 +35,6 @@ public class QuickstreamTemplate extends CMSSolrDocumentVO {
 	}
 	
 	public QuickstreamTemplate() {
-		//TODO warning issued intentionally
 		this(QuickstreamSolrIndexer.INDEX_TYPE);
 	}
 	
