@@ -44,7 +44,6 @@ import com.smt.sitebuilder.security.SecurityController;
  * 		JM 10.15.14 - Added DSI/Solr support
  * 		JM 07.19.15 - Added DSI IndexTypes for Quickstream and LMS to the Solr query
  ****************************************************************************/
-@SuppressWarnings("deprecation")
 public class DePuySiteMapServlet extends SiteMapServlet {
 	private static final long serialVersionUID = 44784795996815006L;
 	
@@ -155,6 +154,7 @@ public class DePuySiteMapServlet extends SiteMapServlet {
 		qData.setOrganizationId(site.getOrganizationId()); //DPY_SYN_INST only
 		qData.setRoleLevel(SecurityController.PUBLIC_ROLE_LEVEL); //public assets only
 		qData.addIndexType(new SolrActionIndexVO(SearchDocumentHandler.INDEX_TYPE, MediaBinSolrIndex.INDEX_TYPE));
+		//TODO 
 		qData.addIndexType(new SolrActionIndexVO(SearchDocumentHandler.INDEX_TYPE, QuickstreamSolrIndexer.INDEX_TYPE));
 		qData.addIndexType(new SolrActionIndexVO(SearchDocumentHandler.INDEX_TYPE, TTLMSSolrIndexer.INDEX_TYPE));
 		SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, solrCollectionPath);
