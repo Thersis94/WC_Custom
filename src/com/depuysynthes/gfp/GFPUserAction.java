@@ -21,6 +21,7 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.action.user.ProfileRoleManager;
+import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
@@ -45,6 +46,7 @@ public class GFPUserAction extends SBActionAdapter {
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		String userId = StringUtil.checkVal(req.getParameter("userId"));
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		StringBuilder sql = new StringBuilder(400);
 		
 		sql.append("SELECT * FROM ").append(customDb).append("DPY_SYN_GFP_USER u ");
@@ -52,14 +54,16 @@ public class GFPUserAction extends SBActionAdapter {
 		sql.append("ON u.HOSPITAL_ID = h.HOSPITAL_ID ");
 		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_GFP_PROGRAM p ");
 		sql.append("ON u.PROGRAM_ID = p.PROGRAM_ID ");
-		sql.append("LEFT JOIN PROFILE pr on pr.PROFILE_ID = u.PROFILE_ID ");
-		if (userId.length() > 0) sql.append("WHERE u.USER_ID = ?");
+		sql.append("LEFT JOIN PROFILE pr on pr.PROFILE_ID = u.PROFILE_ID WHERE ");
+		if (userId.length() > 0) sql.append("u.USER_ID = ? and ");
+		sql.append("u.ACTION_ID = ? ");
 		List<GFPUserVO> users = new ArrayList<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			String encKey = (String) getAttribute(Constants.ENCRYPT_KEY);
 			StringEncrypter se = new StringEncrypter(encKey);
-			if (userId.length() > 0) ps.setString(1, userId);
-			
+			int i = 1;
+			if (userId.length() > 0) ps.setString(i++, userId);
+			ps.setString(i++, mod.getActionId());
 			ResultSet rs = ps.executeQuery();
 			
 			while(rs.next()) {
@@ -143,6 +147,7 @@ public class GFPUserAction extends SBActionAdapter {
 
 	public void update(SMTServletRequest req) throws ActionException {
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		StringBuilder sql = new StringBuilder(175);
 		GFPUserVO user = new GFPUserVO(req);
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
@@ -151,13 +156,13 @@ public class GFPUserAction extends SBActionAdapter {
 		
 		if (user.getUserId() == null) {
 			sql.append("INSERT INTO ").append(customDb).append("DPY_SYN_GFP_USER ");
-			sql.append("(HOSPITAL_ID, PROGRAM_ID, PROFILE_ID, ACTIVE_FLG, CREATE_DT, USER_ID) ");
-			sql.append("VALUES(?,?,?,?,?,?)");
+			sql.append("(HOSPITAL_ID, PROGRAM_ID, PROFILE_ID, ACTIVE_FLG, CREATE_DT, ACTION_ID, USER_ID) ");
+			sql.append("VALUES(?,?,?,?,?,?,?)");
 			user.setUserId(new UUIDGenerator().getUUID());
 		} else {
 			sql.append("UPDATE ").append(customDb).append("DPY_SYN_GFP_USER SET ");
 			sql.append("HOSPITAL_ID=?, PROGRAM_ID=?, PROFILE_ID=?, ACTIVE_FLG=?, ");
-			sql.append("CREATE_DT=? WHERE USER_ID=?");
+			sql.append("CREATE_DT=? WHERE ACTION_ID = ? and USER_ID=?");
 		}
 		log.debug(sql);
 		
@@ -168,6 +173,7 @@ public class GFPUserAction extends SBActionAdapter {
 			ps.setString(i++, user.getProfile().getProfileId());
 			ps.setInt(i++, user.getActiveFlg());
 			ps.setTimestamp(i++, Convert.getCurrentTimestamp());
+			ps.setString(i++, mod.getActionGroupId());
 			ps.setString(i++, user.getUserId());
 			
 			ps.executeUpdate();
