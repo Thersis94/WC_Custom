@@ -155,6 +155,14 @@ public class RegistrationAction extends SimpleActionAdapter {
 				mod.setErrorCondition(Boolean.TRUE);
 			}
 			return;
+		} else if (req.hasParameter("sendVerifiedEmailFromAdmintool")) {
+			//called from the admintool via an ajax call when the users account gets Verified
+			//send the Verified email out and return
+			RegistrationPostProcessor rpp = new RegistrationPostProcessor();
+			rpp.setDBConnection(dbConn);
+			rpp.setAttributes(getAttributes());
+			rpp.update(req);
+			return;
 		}
 
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
@@ -185,7 +193,9 @@ public class RegistrationAction extends SimpleActionAdapter {
 		//if this is an edit, call the LMS after each modal saves 1,2 and 3.  
 		//Otherwise only when modal #3 is submitted (which is page=4 on the request).
 		if ("4".equals(req.getParameter("page")) && req.hasParameter("newReg")) {
-			boolean migrated = migrateUser(req);
+			user.setCountryCode(req.getParameter("reg_||" + DSIUserDataVO.RegField.DSI_COUNTRY.toString()));
+			log.warn("user passed country=" + req.getParameter("reg_||" + DSIUserDataVO.RegField.DSI_COUNTRY.toString()) + " we stored country=" + user.getCountryCode());
+			boolean migrated = migrateUser(req, user);
 			
 			//if not migrated, call save (create||update)
 			if (!migrated) saveUser(user);
@@ -259,6 +269,9 @@ public class RegistrationAction extends SimpleActionAdapter {
 				case "DSI_VERIFIED": //RegField.DSI_VERIFIED - can't use an object here
 					vo.setUserValue((dsiUser.isVerified() ? "yes" : "no"));
 					break;
+				case "c0a80241b71d27b038342fcb3ab567a0": //RegField for specialty
+					vo.setUserValue(dsiUser.getSpecialty());
+					break;
 			}
 			regData.add(vo);
 		}
@@ -316,9 +329,8 @@ public class RegistrationAction extends SimpleActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	private boolean migrateUser(SMTServletRequest req) {
+	private boolean migrateUser(SMTServletRequest req, DSIUserDataVO user) {
 		log.debug("checking migrate");
-		DSIUserDataVO user = new DSIUserDataVO((UserDataVO) req.getSession().getAttribute(Constants.USER_DATA));
 		
 		//do not migrate the user if they didn't consent to migration
 		if ("1".equals(req.getParameter("reg_||DSI_DSRP_TRANSFER_AUTH"))) { //submitted a Yes
@@ -437,7 +449,6 @@ public class RegistrationAction extends SimpleActionAdapter {
 			EmailMessageVO msg = new EmailMessageVO();
 			msg.setFrom("no-reply@depuysynthesinstitute.com");
 			msg.addRecipient("MagellanDSI2@gmail.com");
-			//msg.addRecipient("mck222@gmail.com");
 			msg.setSubject(subject);
 			msg.setTextBody(body);
 			new MessageSender(getAttributes(), dbConn).sendMessage(msg);

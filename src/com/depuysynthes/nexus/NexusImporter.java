@@ -116,14 +116,19 @@ public class NexusImporter extends CommandLineUtil {
 			isLocal = Convert.formatBoolean(args[0]);
 		}
 		
-		if (args.length == 3) {
-			directory = args[1];
-			fileName = args[2];
+		if (args.length > 1) {
+			source = Source.valueOf(args[1]);
+		}
+		
+		if (args.length == 4) {
+			directory = args[2];
+			fileName = args[3];
 		} else {
 			fileName = props.getProperty("fileName");
 			directory = props.getProperty("directory");
 		}
-		determineSource();
+		if (source == null) 
+			determineSource();
 		
 		prepareValues();
 		errors = new ArrayList<>();
@@ -140,8 +145,6 @@ public class NexusImporter extends CommandLineUtil {
 		attributes.put("instanceName", props.get("instanceName"));
 		attributes.put("appName", props.get("appName"));
 		attributes.put("adminEmail", props.get("adminEmail"));
-		
-		
 		
 		DELIMITER = props.getProperty("delimiter");
 		user = props.getProperty("user");
@@ -278,7 +281,6 @@ public class NexusImporter extends CommandLineUtil {
 			while ((ze = zis.getNextEntry()) != null) {
 				if (!ze.getName().contains(".OUT")) 
 					continue;
-				determineSource(ze.getName());
 				// Get the file
 				byte[] b = new byte[2048];
 				ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -310,7 +312,6 @@ public class NexusImporter extends CommandLineUtil {
 			while ((ze = zis.getNextEntry()) != null) {
 				if (!ze.getName().contains(".OUT")) 
 					continue;
-				determineSource(ze.getName());
 				// Get the file
 				byte[] b = new byte[2048];
 				ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -341,7 +342,6 @@ public class NexusImporter extends CommandLineUtil {
 		for (String file : files) {
 			try {
 				InputStream input = new FileInputStream(directory+""+file);
-				determineSource();
 				// Get the file
 				byte[] b = new byte[2048];
 				ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -404,6 +404,21 @@ public class NexusImporter extends CommandLineUtil {
 				continue;
 			}
 			
+			if (source == Source.MDM && code != -1) {
+				if (cols[code] == null) continue;
+				String[] sku = cols[code].split("-");
+				// Check if this sku has a modification code
+				if (sku.length > 1) {
+					int regionCode = Convert.formatInteger(sku[sku.length-1]);
+					if (regionCode > 1) {
+						System.out.println("Got code " + code + ".  Skipping product");
+						continue;
+					}
+				}
+				
+			}
+			
+			
 			if (products.get(cols[code]) != null) {
 				p = products.get(cols[code]);
 				updateProduct(p, cols);
@@ -433,7 +448,7 @@ public class NexusImporter extends CommandLineUtil {
 	 * @param headerList
 	 */
 	private void getColumns(List<String> headerList) {
-		if (fileName.contains(".zip") || fileName.contains("|")) {
+		if (source == Source.MDM) {
 			org=headerList.indexOf("SLS_ORG_CO_CD");
 			status=headerList.indexOf("DCHAIN_SPCL_STAT_CD");
 			region=headerList.indexOf("REG_CD");
@@ -567,17 +582,10 @@ public class NexusImporter extends CommandLineUtil {
 	}
 	
 	/**
-	 * get the source from the overall file name
-	 */
-	private void determineSource() {
-		determineSource(fileName);
-	}
-	
-	/**
 	 * Set the source based on the filename
 	 * This is meant to be called when dealing with multiple files in a zip file.
 	 */
-	private void determineSource(String fileName) {
+	private void determineSource() {
 		if (fileName == null) {
 			
 		} else if (fileName.contains("MDM")) {
