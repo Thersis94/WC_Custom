@@ -44,6 +44,7 @@ import com.smt.sitebuilder.security.SecurityController;
  * 		JM 10.15.14 - Added DSI/Solr support
  * 		JM 07.19.15 - Added DSI IndexTypes for Quickstream and LMS to the Solr query
  ****************************************************************************/
+@SuppressWarnings("deprecation")
 public class DePuySiteMapServlet extends SiteMapServlet {
 	private static final long serialVersionUID = 44784795996815006L;
 	

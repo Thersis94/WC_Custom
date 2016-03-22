@@ -34,6 +34,7 @@ public class QuickstreamTemplate extends CMSSolrDocumentVO {
 		super.setUpdateDt(Calendar.getInstance().getTime());
 	}
 	
+	@SuppressWarnings("deprecation")
 	public QuickstreamTemplate() {
 		this(QuickstreamSolrIndexer.INDEX_TYPE);
 	}
