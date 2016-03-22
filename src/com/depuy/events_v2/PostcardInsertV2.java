@@ -538,7 +538,41 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	private void saveEventSurgeon(String eventPostcardId, SMTServletRequest req, SiteVO site) throws SQLException {
 		for (int x=1; req.hasParameter("surgeonName_" + x); x++)
 				this.saveEventSurgeon(eventPostcardId, req, site, x);
+		
+		//process any deletions
+		String[] dels = req.getParameterValues("deleteSurgeon");
+		this.deleteEventSurgeons(eventPostcardId, dels);
 	}
+	
+
+	/**
+	 * deletes a surgeon previously tied to the postcard.
+	 * @param eventPostcardId
+	 * @param dpyEvtSurgId
+	 */
+	private void deleteEventSurgeons(String eventPostcardId, String[] pkIds) {
+		if (pkIds == null || pkIds.length == 0) return;
+		
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("delete from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("DEPUY_EVENT_SURGEON where depuy_event_surgeon_id in (");
+		for (int x=0; x < pkIds.length; x++)
+			sql.append( ((x > 0) ? ",?" : "?") );
+		sql.append(") and event_postcard_id=?");
+		log.debug(sql);
+	
+		int x = 1;
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			for (String id : pkIds)
+				ps.setString(x++, id);
+			ps.setString(x, eventPostcardId);
+			ps.executeUpdate();
+			
+		} catch (SQLException sqle) {
+			log.error("could not delete postcard surgeons", sqle);
+		}
+	}
+	
 	
 	/**
 	 * inserts or updates the DEPUY_EVENT_SURGEON table.

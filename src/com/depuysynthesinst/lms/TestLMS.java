@@ -32,7 +32,7 @@ public class TestLMS {
 		
 		try {
 			//System.out.println("doJKTest: " + client.getUserActiveIDByEmail("jmckain@siliconmtn.com"));
-			String email = "ianb723@gmail.com";
+			String email = "depuy3migration@test.com";
 			System.out.println(client.getUserHoldingIDByEmail(email));
 			System.out.println(client.getUserActiveIDByEmail(email));
 			// format a test user VO and set on client.
