@@ -518,7 +518,7 @@ public class LocatorAction extends SBActionAdapter {
         	String sendValue=StringUtil.checkVal(req.getParameter("sendValue"));
         	boolean isValidSend = this.prepareMessageSendParameters(req, type, sendValue);
         	String errMsg = null;
-        	if (isValidSend) {
+        	if (isValidSend) { log.debug("isValidSend: " + isValidSend);
         		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
         		Map<String,String> surgeon = this.findSurgeon(req);
         		attributes.put(EmailFriendAction.MESSAGE_DATA_MAP, surgeon);
@@ -561,7 +561,7 @@ public class LocatorAction extends SBActionAdapter {
      * @param sendValue
      */
     private boolean prepareMessageSendParameters(SMTServletRequest req, String type, String sendValue) {
-    	log.debug("validating and preparing send values...");
+    	log.debug("validating and preparing send values...send value is: " + sendValue);
     	boolean isValidSend = false;
     	// determine if valid send
     	if (type.equalsIgnoreCase(EmailFriendAction.MESSAGE_TYPE_EMAIL)) {
@@ -685,9 +685,14 @@ public class LocatorAction extends SBActionAdapter {
     	log.debug("finding surgeon from session");
     	String uniqueId = StringUtil.checkVal(req.getParameter("uniqueId"));
     	String idFormat = StringUtil.checkVal(req.getParameter("idFormat"), null);
+    	String version = StringUtil.checkVal(req.getParameter("version"),"1");
     	if (idFormat != null) {
     		if (idFormat.equalsIgnoreCase("json")) {
-    			return findSurgeonFromJson(req, uniqueId);
+    			if (version.equals("2")) {
+    				return findSurgeonFromJsonV2(req, uniqueId);
+    			} else {
+    				return findSurgeonFromJson(req, uniqueId);
+    			}
     		} else {
     			return null;
     		}
@@ -767,6 +772,7 @@ public class LocatorAction extends SBActionAdapter {
      * @return
      */
     private Map<String,String> findSurgeonFromJson(SMTServletRequest req, String uniqueId) {
+    	log.debug("findSurgeonFromJson...");
     	Map<String,String> surgeon = null;
     	String json = (String)req.getSession().getAttribute("locData");
     	if (json == null) return surgeon;
@@ -801,6 +807,65 @@ public class LocatorAction extends SBActionAdapter {
 		}
 
     	return surgeon;
+    }
+    
+    /**
+     * Attempts to find a surgeon from the session's JSON search data parsing
+     * according to version 2 of the locator.  
+     * @param req
+     * @param uniqueId
+     * @return
+     */
+    private Map<String,String> findSurgeonFromJsonV2(SMTServletRequest req, 
+    		String uniqueId) {
+    	log.debug("findSurgeonFromJson...");
+    	Map<String,String> surgeonVals = null;
+    	String json = (String)req.getSession().getAttribute("locData");
+    	if (json == null) return surgeonVals;
+    	
+    	// parse the data from the session.
+		JsonParser parser = new JsonParser();
+		JsonElement jEle = null;
+		try {
+			jEle = parser.parse(json);
+			surgeonVals = new HashMap<>();
+		} catch (Exception e) {
+			log.error("Error parsing surgeon data from JSON on session, ", e);
+			return surgeonVals;
+		}
+		
+		// get the results container as an object
+		JsonObject ctnr = jEle.getAsJsonObject();
+		JsonArray surgeons = ctnr.getAsJsonArray("results");
+		JsonObject surgeon = null;
+		Iterator<JsonElement> surgeonIter = surgeons.iterator();
+		while (surgeonIter.hasNext()) {
+			// grab the current surgeon iteration
+			surgeon = surgeonIter.next().getAsJsonObject();
+			
+			// distance of first surgeon location, for display.
+			JsonArray surgeonLocs = surgeon.getAsJsonArray("locations");
+			if (surgeonLocs != null && surgeonLocs.size() > 0) {
+				JsonObject loc = surgeonLocs.get(0).getAsJsonObject();
+				if (loc.has("uniqueId")) {
+					String tmp = loc.get("uniqueId").getAsString();
+					if (uniqueId.equals(tmp)) {
+						// found surgeon record, add keys/values required by email/sms
+						surgeonVals.put("firstName", parseJsonStringValue(surgeon,"firstName"));
+						surgeonVals.put("lastName", parseJsonStringValue(surgeon,"lastName"));
+						surgeonVals.put("address1", parseJsonStringValue(loc,"address"));
+						surgeonVals.put("city", parseJsonStringValue(loc,"city"));
+						surgeonVals.put("state", parseJsonStringValue(loc,"state"));
+						surgeonVals.put("phone", parseJsonStringValue(loc,"phoneNumber"));
+						break;
+					} else {
+						continue;
+					}
+				}
+			}		
+		}
+
+    	return surgeonVals;
     }
     
     private String parseJsonStringValue(JsonObject jo, String propertyName) {
