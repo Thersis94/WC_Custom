@@ -53,7 +53,8 @@ public class DSIUserDataVO extends UserDataVO {
 		c0a80241b71d27b038342fcb3ab567a0, //specialty
 		DSI_PGY,
 		DSI_MIL_HOSP, //used for Proffer email notification
-		DSI_DSRP_TRANSFER_AUTH
+		DSI_DSRP_TRANSFER_AUTH,
+		DSI_COUNTRY
 		;
 	}
 	
@@ -86,7 +87,17 @@ public class DSIUserDataVO extends UserDataVO {
 	public String getSynthesId() {
 		return StringUtil.checkVal(user.getAttribute(RegField.DSI_SYNTHES_ID.toString()));
 	}
+	
+	
+	/**
+	 * the user is a transfer (@registration time) if they have a legacy Synthes ID
+	 * @return
+	 */
+	public boolean isTransfer() {
+		return (getSynthesId().length() > 0);
+	}
 
+	
 	/**
 	 * @param synthesId the synthesId to set
 	 */
@@ -484,7 +495,7 @@ public class DSIUserDataVO extends UserDataVO {
 	}
 
 	public String getCountryCode() {
-		return user.getCountryCode();
+		return StringUtil.checkVal(user.getAttribute(RegField.DSI_COUNTRY.toString()), "US");
 	}
 
 	public String getCounty() {
@@ -588,7 +599,7 @@ public class DSIUserDataVO extends UserDataVO {
 	}
 
 	public void setCountryCode(String country) {
-		user.setCountryCode(country);
+		user.addAttribute(RegField.DSI_COUNTRY.toString(), country);
 	}
 
 	public void setCounty(String county) {

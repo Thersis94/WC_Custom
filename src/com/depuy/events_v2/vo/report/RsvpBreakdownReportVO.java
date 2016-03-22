@@ -1,6 +1,7 @@
 package com.depuy.events_v2.vo.report;
 
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
@@ -34,6 +35,7 @@ public class RsvpBreakdownReportVO extends AbstractSBReportVO {
 	private static final long serialVersionUID = 1l;
 	private List<RsvpBreakdownVO> events = null;
 	private Set<String> referrers = null;
+	private Date start, end;
 
 	public RsvpBreakdownReportVO() {
 		super();
@@ -58,10 +60,9 @@ public class RsvpBreakdownReportVO extends AbstractSBReportVO {
 		//tabulate a list of ALL referral types across all the events we're displaying, so columns align across the set.
 		for (RsvpBreakdownVO vo : events) {
 	    		for (String stat : vo.getReferralStats().keySet()) {
-	    			if (!referrers.contains(stat))  {
-	    				if (stat == null || stat.equals("")) stat = "No Referrer";
+	    			if (stat == null || stat.equals("")) stat = "No Referrer";
+	    			if (!referrers.contains(stat))
 	    				referrers.add(stat);
-	    			}
 	    		}
 	    	}
 	}
@@ -105,7 +106,25 @@ public class RsvpBreakdownReportVO extends AbstractSBReportVO {
 
 	private StringBuffer getHeader() {
 		StringBuffer hdr = new StringBuffer();
-		hdr.append("<table border='1'>\r<tr style='background-color:#ccc;'>");
+		hdr.append("<table border='1'>\r");
+		
+		//put a date range header on the report to avoid confusion
+		if (start != null || end != null) {
+			hdr.append("\r<tr style='background-color:#ccc;'>");
+			hdr.append("<td colspan=\"").append(referrers.size()*2 + 4).append("\">");
+			hdr.append("This report only represents Seminar attendees enrolled ");
+			if (end == null && start != null) {
+				hdr.append("after ").append(Convert.formatDate(start, Convert.DATE_SLASH_PATTERN));
+			} else if (start == null && end != null) {
+				hdr.append("before ").append(Convert.formatDate(end, Convert.DATE_SLASH_PATTERN));
+			} else {
+				hdr.append("between ").append(Convert.formatDate(start, Convert.DATE_SLASH_PATTERN));
+				hdr.append(" and ").append(Convert.formatDate(end, Convert.DATE_SLASH_PATTERN));
+			}
+			hdr.append(" for each Seminar</td></tr>");
+		}
+		
+		hdr.append("\r<tr style='background-color:#ccc;'>");
 		hdr.append("<th>Seminar#</th>");
 		hdr.append("<th>Seminar_Host</th>");
 		hdr.append("<th>Seminar_Date</th>");
@@ -122,6 +141,22 @@ public class RsvpBreakdownReportVO extends AbstractSBReportVO {
 
 	private StringBuffer getFooter() {
 		return new StringBuffer("</table>");
+	}
+
+	public Date getStart() {
+		return start;
+	}
+
+	public void setStart(Date start) {
+		this.start = start;
+	}
+
+	public Date getEnd() {
+		return end;
+	}
+
+	public void setEnd(Date end) {
+		this.end = end;
 	}
 
 }
