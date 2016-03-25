@@ -10,10 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 // RAMDataFeed
-import com.ram.workflow.data.WorkflowVO;
-import com.ram.workflow.data.WorkflowModuleVO;
-import com.ram.workflow.data.WorkflowConfigParamVO;
-import com.ram.workflow.data.WorkflowModuleConfigXrVO;
+
 import com.ram.datafeed.data.CustomerLocationVO;
 
 // SMTBaseLibs 2.0
@@ -24,6 +21,10 @@ import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
+import com.siliconmtn.workflow.data.WorkflowConfigParamVO;
+import com.siliconmtn.workflow.data.WorkflowModuleConfigXrVO;
+import com.siliconmtn.workflow.data.WorkflowModuleVO;
+import com.siliconmtn.workflow.data.WorkflowVO;
 import com.siliconmtn.http.parser.StringEncoder;
 
 // WebCrescendo 2.0
