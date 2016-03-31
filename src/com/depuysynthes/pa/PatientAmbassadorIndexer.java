@@ -82,7 +82,9 @@ public class PatientAmbassadorIndexer extends SMTAbstractIndex {
 		ssv.setState(vo.getState());
 		ssv.setLat(vo.getLatitude().toString());
 		ssv.setLng(vo.getLongitude().toString());
-		ssv.setDetailImage(fields.get(PAFConst.PROFILE_IMAGE_ID.getId()).getResponses().get(0));
+		if(fields.get(PAFConst.PROFILE_IMAGE_ID.getId()) != null){
+			ssv.setDetailImage(fields.get(PAFConst.PROFILE_IMAGE_ID.getId()).getResponses().get(0));
+		}		
 		ssv.setCategories(fields.get(PAFConst.HOBBIES_ID.getId()).getResponses());
 		if (fields.get(PAFConst.SURGEON_NM.getId()) != null)
 			ssv.setSurgeonName(fields.get(PAFConst.SURGEON_NM.getId()).getResponses().get(0));
