@@ -37,7 +37,7 @@ public class ShowpadApiUtil {
 	private final int WRITE_TIMEOUT = 120000; //2 minutes
 
 	private static int requestCount = 0;
-	private static final int API_LIMIT = 14900; //stay below the 15k ceiling
+	private static final int API_LIMIT = 49900; //stay below the 15k ceiling
 
 	/**
 	 * This class requires an OAUTH token in order to function
