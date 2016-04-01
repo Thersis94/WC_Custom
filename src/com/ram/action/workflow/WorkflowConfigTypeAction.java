@@ -18,20 +18,15 @@ import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title</b>: WorkflowConfigTypeAction.java
- * <p/>
  * <b>Project</b>: WC_Custom
- * <p/>
- * <b>Description: </b> TODO
- * <p/>
+ * <b>Description: </b> Original Pass at WorkflowConfigType Configuration.  Code
+ * has since been rolled into the core and has a unified management interface.
  * <b>Copyright:</b> Copyright (c) 2015
- * <p/>
  * <b>Company:</b> Silicon Mountain Technologies
- * <p/>
  * 
  * @author raptor
  * @version 1.0
  * @since May 6, 2015
- *        <p/>
  *        <b>Changes: </b>
  ****************************************************************************/
 public class WorkflowConfigTypeAction extends AbstractWorkflowAction {

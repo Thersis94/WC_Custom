@@ -28,20 +28,17 @@ import com.smt.sitebuilder.security.SBUserRole;
 
 /****************************************************************************
  * <b>Title</b>: VSBarcodeLookupAction.java
- * <p/>
  * <b>Project</b>: WC_Custom
- * <p/>
- * <b>Description: </b> TODO
- * <p/>
+ * <b>Description: </b> Class that manages taking a Barcode input from the RAM
+ * VisionSystem scanner lookup, decoding it, and performing a lookup for a
+ * product.  If the product exists then we return information related to the
+ * scan.
  * <b>Copyright:</b> Copyright (c) 2015
- * <p/>
  * <b>Company:</b> Silicon Mountain Technologies
- * <p/>
  * 
  * @author raptor
  * @version 1.0
  * @since Jun 25, 2015
- *        <p/>
  *        <b>Changes: </b>
  ****************************************************************************/
 public class VSBarcodeLookupAction extends SBActionAdapter {

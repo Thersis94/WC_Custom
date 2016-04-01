@@ -29,7 +29,6 @@ public class AbandonedCartVO {
 	 * 
 	 */
 	public AbandonedCartVO() {
-		// TODO Auto-generated constructor stub
 	}
 
 	/**

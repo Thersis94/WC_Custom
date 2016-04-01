@@ -606,7 +606,6 @@ public class AssignmentRetriever {
 	 * Returns a map of certain patient contact form values for use in 'new assignment' emails.
 	 * @return
 	 */
-	// TODO 
 	private String retrieveSubmittedByInfo(PatientVO patient) {
 		ContactVO contactForm = contactForms.get(patient.getPatientProfileId());
 		ContactDataContainer contactData = cData.get(patient.getPatientProfileId());

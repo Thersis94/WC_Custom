@@ -1226,7 +1226,6 @@ public class NexusKitAction extends SBActionAdapter {
 			MessageSender ms = new MessageSender(attributes, dbConn);
 			ms.sendMessage(email);
 		} catch (InvalidDataException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
