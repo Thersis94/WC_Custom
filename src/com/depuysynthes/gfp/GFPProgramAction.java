@@ -135,7 +135,7 @@ public class GFPProgramAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(2000);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
-		sql.append("SELECT DISTINCT r.*, c.*, m.*, cr.CREATE_DT as COMPLETE_DT, w.WORKSHOP_NM ");
+		sql.append("SELECT DISTINCT r.*, c.*, m.*, cr.CREATE_DT as COMPLETE_DT, w.WORKSHOP_NM, w.WORKSHOP_ID ");
 		sql.append("FROM ").append(customDb).append("DPY_SYN_GFP_USER u ");
 		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_GFP_WORKSHOP w on w.PROGRAM_ID = u.PROGRAM_ID ");
 		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_GFP_WORKSHOP_XR wx on wx.WORKSHOP_ID = w.WORKSHOP_ID ");
@@ -145,7 +145,7 @@ public class GFPProgramAction extends SBActionAdapter {
 		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_MEDIABIN m ON m.DPY_SYN_MEDIABIN_ID = r.DPY_SYN_MEDIABIN_ID ");
 		sql.append("WHERE u.PROFILE_ID = ? and (r.RESOURCE_NM like ? or r.RESOURCE_DESC like ?) and ACTION_ID = ? ");
 		sql.append("union ");
-		sql.append("SELECT DISTINCT r.*, c.*, m.*, cr.CREATE_DT as COMPLETE_DT, null ");
+		sql.append("SELECT DISTINCT r.*, c.*, m.*, cr.CREATE_DT as COMPLETE_DT, null, px.PROGRAM_ID ");
 		sql.append("FROM ").append(customDb).append("DPY_SYN_GFP_USER u ");
 		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_GFP_PROGRAM_XR px ON px.PROGRAM_ID = u.PROGRAM_ID ");
 		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_GFP_RESOURCE r on r.RESOURCE_ID = px.RESOURCE_ID ");
@@ -153,6 +153,14 @@ public class GFPProgramAction extends SBActionAdapter {
 		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_GFP_COMPLETED_RESOURCE cr on cr.RESOURCE_ID = r.RESOURCE_ID ");
 		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_MEDIABIN m ON m.DPY_SYN_MEDIABIN_ID = r.DPY_SYN_MEDIABIN_ID ");
 		sql.append("WHERE u.PROFILE_ID = ? and (r.RESOURCE_NM like ? or r.RESOURCE_DESC like ?) and ACTION_ID = ? ");
+		sql.append("union ");
+		sql.append("SELECT DISTINCT r.*, c.*, m.*, null, null, null ");
+		sql.append("FROM ").append(customDb).append("DPY_SYN_GFP_USER u ");
+		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_GFP_SHARED_XR sx ON sx.ACTION_ID = u.ACTION_ID ");
+		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_GFP_RESOURCE r on r.RESOURCE_ID = sx.RESOURCE_ID ");
+		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_GFP_CATEGORY c on c.CATEGORY_ID = r.CATEGORY_ID ");
+		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_MEDIABIN m ON m.DPY_SYN_MEDIABIN_ID = r.DPY_SYN_MEDIABIN_ID ");
+		sql.append("WHERE u.PROFILE_ID = ? and r.RESOURCE_NM like ? and u.ACTION_ID = ? ");
 		
 		log.debug(sql+"|"+profileId+"|"+searchData);
 		List<GFPWorkshopVO> resources = new ArrayList<>();
@@ -165,6 +173,9 @@ public class GFPProgramAction extends SBActionAdapter {
 			ps.setString(i++, mod.getActionGroupId());
 			ps.setString(i++, profileId);
 			ps.setString(i++, searchData);
+			ps.setString(i++, searchData);
+			ps.setString(i++, mod.getActionGroupId());
+			ps.setString(i++, profileId);
 			ps.setString(i++, searchData);
 			ps.setString(i++, mod.getActionGroupId());
 			
@@ -209,12 +220,15 @@ public class GFPProgramAction extends SBActionAdapter {
 		sql.append(" FROM ").append(customDb).append("DPY_SYN_GFP_USER u ");
 		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_GFP_WORKSHOP w ");
 		sql.append("on w.PROGRAM_ID = u.PROGRAM_ID " );
+		sql.append("left join ").append(customDb).append("DPY_SYN_GFP_SHARED_XR sx ");
+		sql.append("on sx.ACTION_ID = u.ACTION_ID ");
 		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_GFP_WORKSHOP_XR wx ");
 		sql.append("on wx.WORKSHOP_ID = w.WORKSHOP_ID ");
 		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_GFP_PROGRAM_XR px ");
 		sql.append("ON px.PROGRAM_ID = u.PROGRAM_ID ");
 		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_GFP_RESOURCE r ");
 		sql.append("on r.RESOURCE_ID = wx.RESOURCE_ID or r.RESOURCE_ID = px.RESOURCE_ID ");
+		sql.append("or r.RESOURCE_ID =  sx.RESOURCE_ID ");
 		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_GFP_CATEGORY c ");
 		sql.append("on c.CATEGORY_ID = r.CATEGORY_ID ");
 		sql.append("LEFT JOIN ").append(customDb).append("DPY_SYN_GFP_COMPLETED_RESOURCE cr ");
@@ -233,10 +247,10 @@ public class GFPProgramAction extends SBActionAdapter {
 		if (downloaded) {
 			sql.append("and cr.CREATE_DT is not null ");
 		}
-		sql.append("and ACTION_ID = ? ");
+		sql.append("and u.ACTION_ID = ? ");
 		sql.append("ORDER BY r.CATEGORY_ID, r.").append(order.getSQL());
 		
-		log.debug(sql+"|"+profileId);
+		log.debug(sql+"|"+profileId+"|"+mod.getActionGroupId());
 		
 		String categoryNm = "";
 		List<GFPResourceVO> resources = null;
@@ -248,9 +262,9 @@ public class GFPProgramAction extends SBActionAdapter {
 			ResultSet rs = ps.executeQuery();
 			
 			while (rs.next()) {
-				if (!categoryNm.equals(rs.getString("CATEGORY_NM"))) {
+				if (!categoryNm.equals(rs.getString("CATEGORY_NM")+"~"+rs.getInt("SHARED_CATEGORY"))) {
 					if (resources != null) categories.put(categoryNm, resources);
-					categoryNm = rs.getString("CATEGORY_NM");
+					categoryNm = rs.getString("CATEGORY_NM")+"~"+rs.getInt("SHARED_CATEGORY");
 					resources = new ArrayList<>();
 				}
 				resources.add(new GFPResourceVO(rs));
@@ -272,6 +286,7 @@ public class GFPProgramAction extends SBActionAdapter {
 	private Map<String, String> getAllCategories() {
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("SELECT * FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_GFP_CATEGORY ");
+		sql.append("where SHARED_CATEGORY = 0 ");
 		
 		Map<String, String> categories = new HashMap<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -345,6 +360,9 @@ public class GFPProgramAction extends SBActionAdapter {
 		} catch (SQLException e) {
 			log.error("Unable to get GFP program with " + (isUser? "user id of" : "program id of ") + id, e);
 		}
+		// If this is a user's program we also get the shared resources.
+		if (isUser) program.setSharedResources(getSharedResources(mod.getActionGroupId()));
+		
 		return program;
 	}
 
@@ -799,6 +817,37 @@ public class GFPProgramAction extends SBActionAdapter {
 			throw new ActionException(e);
 			
 		}
+	}
+	
+	
+	/**
+	 * Get all resources shared between programs in the supplied GP widget.
+	 * @param actionId
+	 * @return
+	 */
+	private List<GFPResourceVO> getSharedResources(String actionId) {
+		List<GFPResourceVO> resources = new ArrayList<>();
+		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(250);
+		sql.append("select * from ").append(customDb).append("DPY_SYN_GFP_SHARED_XR s ");
+		sql.append("left join ").append(customDb).append("DPY_SYN_GFP_RESOURCE r ");
+		sql.append("on s.RESOURCE_ID = r.RESOURCE_ID ");
+		sql.append("where r.ACTION_ID = ? ");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, actionId);
+			
+			ResultSet rs = ps.executeQuery();
+			
+			while(rs.next()) {
+				resources.add(new GFPResourceVO(rs));
+			}
+		} catch(SQLException e) {
+			log.error("Unable to get shared resources for this GFP widget. Skipping shared resources.", e);
+		}
+		
+		return resources;
+		
 	}
 	
 }
