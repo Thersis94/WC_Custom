@@ -36,6 +36,7 @@ public class ResultsContainer implements Serializable {
 
 	private static final long serialVersionUID = 3940243103678420431L;
 	private final String FILTER_VALUE_DELIMITER_REGEX = "\\|";
+	private final double RADIUS_EXTENDED_SEARCH = 251;
 	private String json;
 	private int numResults;
 	private int pageSize;
@@ -57,6 +58,7 @@ public class ResultsContainer implements Serializable {
 	 */
 	private List<SurgeonBean> results;
 
+	private boolean isExtendedSearch;
 	
 	// JSTL helper members
 	private int startVal = 1; // starting result number
@@ -65,6 +67,7 @@ public class ResultsContainer implements Serializable {
 	private int currentPageNo = 1; // current page number
 	private int lastPageNo = 1; // last page number
 	private int displayTotalNo; // total number of results to display
+	private int radius = 50; // search radius parameter
 	
 	// filter members
 	/**
@@ -137,6 +140,7 @@ public class ResultsContainer implements Serializable {
 		parseSurgeons(ctnr.getAsJsonArray("results"));
 		if (ctnr.has("numResults")) numResults = ctnr.get("numResults").getAsInt();
 		if (ctnr.has("pageSize")) resultsPerPage = ctnr.get("pageSize").getAsInt();
+		if (ctnr.has("isExtendedSearch")) setExtendedSearch(ctnr.get("isExtendedSearch").getAsBoolean());
 		// set filters
 		this.setFilters(null);
     }
@@ -197,7 +201,9 @@ public class ResultsContainer implements Serializable {
     }
 
     /**
-     * 
+     * Parses surgeon JSONElements into SurgeonBeans. Excludes surgeons
+     * whose primary distance (first location) is greater than the extended
+     * search radius.
      * @param surgeons
      */
     private void parseSurgeons(JsonArray surgeons) {
@@ -207,7 +213,8 @@ public class ResultsContainer implements Serializable {
 			while (surgeonIter.hasNext()) {
 				// grab the current surgeon iteration
 				surgeon = new SurgeonBean(surgeonIter.next());
-				results.add(surgeon);
+				if (surgeon.getPrimaryDistance() < RADIUS_EXTENDED_SEARCH)
+					results.add(surgeon);
 			}
     	}
     }
@@ -326,12 +333,13 @@ public class ResultsContainer implements Serializable {
     }
     
     /**
-     * Builds a list of surgeons (surgeon ID) who should be filtered out
-     * of the displayed list of surgeons.
+     * Business logic that builds a list of surgeons (key: surgeon ID) who should be 
+     * filtered out of the displayed list of surgeons.
      */
     private void buildFilteredSurgeonsList(boolean hasFilterVals) {
     	filteredSurgeonList.clear();
-
+    	double radiusAsDouble = (double) (radius);
+    	boolean includeExtendedResults = false;
     	/* Perform filtering if necessary */
 		if (isProcFilters() || isProdFilters()) {
 			boolean displaySurgeon = false;
@@ -407,6 +415,20 @@ public class ResultsContainer implements Serializable {
 					}					
 				}
 				
+				/* Compare surgeon distance to radius in order to determine whether
+				 * or not to display. */
+				if (surgeon.getPrimaryDistance() > radiusAsDouble) {
+					/* If we reached the search radius but found no results, set flag
+					 * so that we maximize the possibility of returning at least 1 result. */
+					if (displayTotalNo == 0) {
+						includeExtendedResults = true;
+					} else {
+						/* Override display flag if appropriate to exclude results that fall
+						 * beyond the search radius. */
+						if (! includeExtendedResults) displaySurgeon = false;
+					}
+				}
+				
 				if (! displaySurgeon) filteredSurgeonList.add(surgeon.getSurgeonId());
 				
 				// reset flags
@@ -426,7 +448,13 @@ public class ResultsContainer implements Serializable {
 				}
 				displayTotalNo = results.size() - filteredSurgeonList.size();
 			} else {
-				displayTotalNo = results.size();
+				// no filters, loop surgeons displaying only those within search radius
+				for (SurgeonBean surgeon : results) {
+					if (surgeon.getPrimaryDistance() > radiusAsDouble) {
+						filteredSurgeonList.add(surgeon.getSurgeonId());
+					}
+				}
+				displayTotalNo = results.size() - filteredSurgeonList.size();
 			}
 		}
 		
@@ -749,4 +777,33 @@ public class ResultsContainer implements Serializable {
 			}
 		}
 	}
+
+	/**
+	 * @return the isExtendedSearch
+	 */
+	public boolean isExtendedSearch() {
+		return isExtendedSearch;
+	}
+
+	/**
+	 * @param isExtendedSearch the isExtendedSearch to set
+	 */
+	public void setExtendedSearch(boolean isExtendedSearch) {
+		this.isExtendedSearch = isExtendedSearch;
+	}
+
+	/**
+	 * @return the radius
+	 */
+	public int getRadius() {
+		return radius;
+	}
+
+	/**
+	 * @param radius the radius to set
+	 */
+	public void setRadius(int radius) {
+		this.radius = radius;
+	}
+	
 }
