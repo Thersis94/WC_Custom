@@ -67,6 +67,10 @@ public class ResultsContainer implements Serializable {
 	private int currentPageNo = 1; // current page number
 	private int lastPageNo = 1; // last page number
 	private int displayTotalNo; // total number of results to display
+	/**
+	 * Radius initialized to 50 to guarantee a default value if one not passed
+	 * to the container.
+	 */
 	private int radius = 50; // search radius parameter
 	
 	// filter members
@@ -140,6 +144,7 @@ public class ResultsContainer implements Serializable {
 		parseSurgeons(ctnr.getAsJsonArray("results"));
 		if (ctnr.has("numResults")) numResults = ctnr.get("numResults").getAsInt();
 		if (ctnr.has("pageSize")) resultsPerPage = ctnr.get("pageSize").getAsInt();
+		if (ctnr.has("radius")) radius = ctnr.get("radius").getAsInt();
 		if (ctnr.has("isExtendedSearch")) setExtendedSearch(ctnr.get("isExtendedSearch").getAsBoolean());
 		// set filters
 		this.setFilters(null);
