@@ -93,7 +93,7 @@ public class ResultsContainer implements Serializable {
 	private List<Integer> filteredSurgeonList;
 	private List<Integer> procFilterParents;
 	private List<Integer> globalSpecFilters;
-	
+		
     public ResultsContainer() {
     	hierarchy = new ArrayList<>();
     	results = new ArrayList<>();
@@ -344,6 +344,7 @@ public class ResultsContainer implements Serializable {
     private void buildFilteredSurgeonsList(boolean hasFilterVals) {
     	filteredSurgeonList.clear();
     	double radiusAsDouble = (double) (radius);
+    	int displayCount = 0;
     	boolean includeExtendedResults = false;
     	/* Perform filtering if necessary */
 		if (isProcFilters() || isProdFilters()) {
@@ -425,7 +426,7 @@ public class ResultsContainer implements Serializable {
 				if (surgeon.getPrimaryDistance() > radiusAsDouble) {
 					/* If we reached the search radius but found no results, set flag
 					 * so that we maximize the possibility of returning at least 1 result. */
-					if (displayTotalNo == 0) {
+					if (displayCount == 0) {
 						includeExtendedResults = true;
 					} else {
 						/* Override display flag if appropriate to exclude results that fall
@@ -434,7 +435,11 @@ public class ResultsContainer implements Serializable {
 					}
 				}
 				
-				if (! displaySurgeon) filteredSurgeonList.add(surgeon.getSurgeonId());
+				if (! displaySurgeon) {
+					filteredSurgeonList.add(surgeon.getSurgeonId());
+				} else {
+					displayCount++;
+				}
 				
 				// reset flags
 				displaySurgeon = false;
@@ -810,5 +815,5 @@ public class ResultsContainer implements Serializable {
 	public void setRadius(int radius) {
 		this.radius = radius;
 	}
-	
+
 }
