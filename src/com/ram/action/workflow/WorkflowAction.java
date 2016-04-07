@@ -44,7 +44,9 @@ import com.google.gson.JsonParser;
 /****************************************************************************
  * <b>Title: </b>WorkflowAction.java <p/>
  * <b>Project: </b>WC_Custom <p/>
- * <b>Description: </b>
+ * <b>Description: </b> Original Workflow Management Action for RAM.  Workflow
+ * has been rolled into the core and is part of a unified framework now so this
+ * should be re-evaluated for use and updated as necessary.
  * </p>
  * <b>Copyright: </b>Copyright (c) 2015<p/>
  * <b>Company: </b>Silicon Mountain Technologies<p/>
@@ -683,31 +685,23 @@ public class WorkflowAction extends AbstractWorkflowAction {
 
 	@Override
 	public void delete(SMTServletRequest req) throws ActionException {
-		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
 	public void update(SMTServletRequest req) throws ActionException {
-		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
 	public void list(SMTServletRequest req) throws ActionException {
-		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
 	protected String buildRedirectSupplement(SMTServletRequest req) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	protected String getInUseSql() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 }

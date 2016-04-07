@@ -423,7 +423,6 @@ public class PatientRetriever {
 	 * Returns a map of certain patient contact form values for use in 'new assignment' emails.
 	 * @return
 	 */
-	// TODO 
 	private Map<String, String> formatPatientContactValues(PatientVO patient) {
 		ContactVO contactForm = contactForms.get(patient.getPatientSourceFormId());
 		ContactDataContainer contactData = cData.get(patient.getPatientProfileId());

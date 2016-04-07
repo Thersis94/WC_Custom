@@ -44,7 +44,6 @@ public class SASReportServlet extends SMTBaseServlet {
 	 * 
 	 */
 	public SASReportServlet() {
-		// TODO Auto-generated constructor stub
 	}
 
 	/* (non-Javadoc)

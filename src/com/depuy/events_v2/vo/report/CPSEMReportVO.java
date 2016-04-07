@@ -24,7 +24,7 @@ public class CPSEMReportVO extends AbstractSBReportVO {
 
 	@Override
 	public byte[] generateReport() {
-		StringBuilder sb = new StringBuilder();
+		StringBuilder sb = new StringBuilder(5300);
 		//Build Header
 		sb.append("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">");
 		sb.append("<html><head><title>Compliance Form</title></head><body>");
@@ -97,8 +97,5 @@ public class CPSEMReportVO extends AbstractSBReportVO {
 
 	@Override
 	public void setData(Object o) {
-		// TODO Auto-generated method stub
-		
 	}
-
 }

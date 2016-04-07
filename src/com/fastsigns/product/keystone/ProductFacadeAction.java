@@ -65,17 +65,7 @@ public class ProductFacadeAction extends SimpleActionAdapter {
 		attributes.put(Constants.SITE_DATA, site);
 		ReqType type = null;
 		HttpSession ses = req.getSession();
-		
-		//TODO - remove this block after testing passes. -JM 03-04-14
-//		boolean first = req.hasParameter("firstEcommCall");
-//		if (!first && !req.hasParameter("amid") && !page.getAliasName().equals("cart")) {
-//			franId = site.getSiteId().replaceAll("^(.*)_([\\d]{1,5})_(.*)$", "$2");
-//			ses.setAttribute(FastsignsSessVO.FRANCHISE_ID, franId);
-//			req.setParameter("firstEcommCall", "true");
-//			if (site.getAliasPathName() != null)
-//				ses.setAttribute(FastsignsSessVO.ECOM_ALIAS_PATH, site.getAliasPathName());
-//		}
-		
+
 		configureSession(ses, req, attributes);
 		
 		

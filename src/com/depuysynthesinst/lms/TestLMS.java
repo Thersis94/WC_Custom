@@ -24,7 +24,6 @@ public class TestLMS {
 	 * 
 	 */
 	public TestLMS() {
-		// TODO Auto-generated constructor stub
 	}
 	
 	public static void main(String[] args) {

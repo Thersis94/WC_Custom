@@ -21,23 +21,19 @@ import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title</b>: AbstractWorkflowAction.java
- * <p/>
  * <b>Project</b>: WC_Custom
- * <p/>
  * <b>Description: </b> Action manages similarities between the Workflow Actions.
  * Utilizes the DBProcessor for managing db interactions and controls building of
  * the redirects.
- * <p/>
  * <b>Copyright:</b> Copyright (c) 2015
- * <p/>
  * <b>Company:</b> Silicon Mountain Technologies
- * <p/>
  * 
  * @author raptor
  * @version 1.0
  * @since May 8, 2015
- *        <p/>
  *        <b>Changes: </b>
+ *        TODO - Workflow Has been migrated to the core.  Determine if ram should
+ *        maintain the public facing workflow Management or use admin side. 
  ****************************************************************************/
 public abstract class AbstractWorkflowAction extends AbstractBaseAction {
 

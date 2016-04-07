@@ -481,7 +481,6 @@ public abstract class SiteWizardAction extends SBActionAdapter {
 	                ps.executeUpdate();
 	            }
 	        } catch (SQLException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} finally {
 	        	try {

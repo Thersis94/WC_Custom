@@ -46,8 +46,7 @@ public class GenerateSliderModules {
 			cgo.populateOptions();
 			cgo.execute();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			//e.printStackTrace();
 		}
 	}
 	

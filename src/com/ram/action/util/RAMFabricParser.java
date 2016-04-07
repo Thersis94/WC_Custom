@@ -10,21 +10,16 @@ import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.imageMap.FabricParser;
 
 /****************************************************************************
- * <b>Title</b>: RAMFabricParser.java
- * <p/>
- * <b>Project</b>: WC_Custom
- * <p/>
- * <b>Description: </b> TODO
- * <p/>
+ * <b>Title: </b>RAMFabricParser.java
+ * <b>Project: </b>WC_Custom
+ * <b>Description: </b> Class that manages converting a RAM Kit Coordinate set
+ * into an HTML ImageMap.
  * <b>Copyright:</b> Copyright (c) 2015
- * <p/>
  * <b>Company:</b> Silicon Mountain Technologies
- * <p/>
  * 
  * @author raptor
  * @version 1.0
  * @since Apr 14, 2015
- *        <p/>
  *        <b>Changes: </b>
  ****************************************************************************/
 public class RAMFabricParser<T extends LayerCoordinateVO> extends FabricParser<T> {
