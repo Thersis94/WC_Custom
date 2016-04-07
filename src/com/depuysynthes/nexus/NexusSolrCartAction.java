@@ -287,7 +287,6 @@ public class NexusSolrCartAction extends SBActionAdapter {
 			sa.setDBConnection(dbConn);
 			sa.setAttributes(attributes);
 		    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
-		    	log.debug((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 		    	actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 			SolrActionVO qData = sa.retrieveActionData(req);
 			SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, getCollection((String) mod.getAttribute(ModuleVO.ATTRIBUTE_1)));
@@ -308,10 +307,13 @@ public class NexusSolrCartAction extends SBActionAdapter {
 			} else {
 				filter.put("-owner", "[* TO *]");
 			}
-			filter.put("gtin", "[* TO *] or kit:true");
+			filter.put("gtin", "[* TO *]");
+			filter.put("-kit", "true");
 			log.debug(req.hasParameter("orgName"));
 			if (req.hasParameter("orgName")) {
 				if ("Standard".equals(req.getParameter("orgName"))) {
+					filter.remove("gtin");
+					filter.remove("-kit");
 					filter.put("kit", "true");
 					filter.put("-owner", "[* TO *]");
 				} else {
