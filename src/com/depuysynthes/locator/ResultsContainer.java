@@ -460,8 +460,16 @@ public class ResultsContainer implements Serializable {
 			} else {
 				// no filters, loop surgeons displaying only those within search radius
 				for (SurgeonBean surgeon : results) {
+					
 					if (surgeon.getPrimaryDistance() > radiusAsDouble) {
-						filteredSurgeonList.add(surgeon.getSurgeonId());
+						if (displayCount > 0) {
+							/* If display count > 0, that means we found surgeons w/in
+							 * the search radius so we exclude this surgeon from display. */
+							filteredSurgeonList.add(surgeon.getSurgeonId());
+						}
+					} else {
+						// surgeon is within search radius, add to count.
+						displayCount++;
 					}
 				}
 				displayTotalNo = results.size() - filteredSurgeonList.size();
