@@ -40,11 +40,11 @@ public class SalesConsultantAlignVO extends SolrDocumentVO {
 	private String repTitle;
 	
 	//their manager's attributes
-	private String CORE_REG_MGR_ID;
-	private String CORE_REG_MGR_FIRST_NM;
-	private String CORE_REG_MGR_LAST_NM;
-	private String CORE_REG_MGR_TEL_NO;
-	private String CORE_REG_MGR_EMAIL_ADDR;
+	private String CORE_DIV_MGR_ID;
+	private String CORE_DIV_MGR_FIRST_NM;
+	private String CORE_DIV_MGR_LAST_NM;
+	private String CORE_DIV_MGR_TEL_NO;
+	private String CORE_DIV_MGR_EMAIL_ADDR;
 	
 	private Set<String> hospitals;
 	
@@ -124,28 +124,28 @@ public class SalesConsultantAlignVO extends SolrDocumentVO {
 	}
 
 	@SolrField(name="mgr_id_i")
-	public String getCORE_REG_MGR_ID() {
-		return CORE_REG_MGR_ID;
+	public String getCORE_DIV_MGR_ID() {
+		return CORE_DIV_MGR_ID;
 	}
 
 	@SolrField(name="mgr_first_nm_s")
-	public String getCORE_REG_MGR_FIRST_NM() {
-		return CORE_REG_MGR_FIRST_NM;
+	public String getCORE_DIV_MGR_FIRST_NM() {
+		return CORE_DIV_MGR_FIRST_NM;
 	}
 
 	@SolrField(name="mgr_last_nm_s")
-	public String getCORE_REG_MGR_LAST_NM() {
-		return CORE_REG_MGR_LAST_NM;
+	public String getCORE_DIV_MGR_LAST_NM() {
+		return CORE_DIV_MGR_LAST_NM;
 	}
 
 	@SolrField(name="mgr_phone_s")
-	public String getCORE_REG_MGR_TEL_NO() {
-		return StringUtil.removeNonNumeric(CORE_REG_MGR_TEL_NO);
+	public String getCORE_DIV_MGR_TEL_NO() {
+		return StringUtil.removeNonNumeric(CORE_DIV_MGR_TEL_NO);
 	}
 
 	@SolrField(name="mgr_email_s")
-	public String getCORE_REG_MGR_EMAIL_ADDR() {
-		return CORE_REG_MGR_EMAIL_ADDR;
+	public String getCORE_DIV_MGR_EMAIL_ADDR() {
+		return CORE_DIV_MGR_EMAIL_ADDR;
 	}
 
 	@SolrField(name="rep_region_s")
@@ -213,34 +213,34 @@ public class SalesConsultantAlignVO extends SolrDocumentVO {
 		REP_EMAIL_ADDR = rEP_EMAIL_ADDR;
 	}
 
-	@Importable(name = "CORE_REG_MGR_ID", type = DataType.STRING)
-	public void setCORE_REG_MGR_ID(String cORE_REG_MGR_ID) {
-		CORE_REG_MGR_ID = cORE_REG_MGR_ID;
+	@Importable(name = "CORE_DIV_MGR_ID", type = DataType.STRING)
+	public void setCORE_DIV_MGR_ID(String id) {
+		CORE_DIV_MGR_ID = id;
 	}
 
-	@Importable(name = "CORE_REG_MGR_FIRST_NM", type = DataType.STRING)
-	public void setCORE_REG_MGR_FIRST_NM(String cORE_REG_MGR_FIRST_NM) {
-		CORE_REG_MGR_FIRST_NM = cORE_REG_MGR_FIRST_NM;
+	@Importable(name = "CORE_DIV_MGR_FIRST_NM", type = DataType.STRING)
+	public void setCORE_DIV_MGR_FIRST_NM(String firstNm) {
+		CORE_DIV_MGR_FIRST_NM = firstNm;
 	}
 
-	@Importable(name = "CORE_REG_MGR_LAST_NM", type = DataType.STRING)
-	public void setCORE_REG_MGR_LAST_NM(String cORE_REG_MGR_LAST_NM) {
-		CORE_REG_MGR_LAST_NM = cORE_REG_MGR_LAST_NM;
+	@Importable(name = "CORE_DIV_MGR_LAST_NM", type = DataType.STRING)
+	public void setCORE_DIV_MGR_LAST_NM(String lastNm) {
+		CORE_DIV_MGR_LAST_NM = lastNm;
 	}
 
-	@Importable(name = "CORE_REG_MGR_TEL_NO", type = DataType.STRING)
-	public void setCORE_REG_MGR_TEL_NO(String cORE_REG_MGR_TEL_NO) {
-		CORE_REG_MGR_TEL_NO = cORE_REG_MGR_TEL_NO;
+	@Importable(name = "CORE_DIV_MGR_TEL_NO", type = DataType.STRING)
+	public void setCORE_DIV_MGR_TEL_NO(String tel) {
+		CORE_DIV_MGR_TEL_NO = tel;
 	}
 
-	@Importable(name = "CORE_REG_MGR_EMAIL_ADDR", type = DataType.STRING)
-	public void setCORE_REG_MGR_EMAIL_ADDR(String cORE_REG_MGR_EMAIL_ADDR) {
-		CORE_REG_MGR_EMAIL_ADDR = cORE_REG_MGR_EMAIL_ADDR;
+	@Importable(name = "CORE_DIV_MGR_EMAIL_ADDR", type = DataType.STRING)
+	public void setCORE_DIV_MGR_EMAIL_ADDR(String email) {
+		CORE_DIV_MGR_EMAIL_ADDR = email;
 	}
 
 	@Importable(name = "ALGN_STRUC_CD", type = DataType.STRING)
-	public void setALGN_STRUC_CD(String aLGN_STRUC_CD) {
-		ALGN_STRUC_CD = aLGN_STRUC_CD;
+	public void setALGN_STRUC_CD(String str) {
+		ALGN_STRUC_CD = str;
 	}
 	
 	public String getHierarchy() {
