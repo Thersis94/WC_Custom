@@ -22,7 +22,6 @@ public class MediaBinDeltaVO extends MediaBinAssetVO {
 	
 	private State recordState;
 	private String errorReason;
-	private String checksum;
 	private String eCopyTrackingNo;
 	private String limeLightUrl;
 	private String fileName;
@@ -42,7 +41,6 @@ public class MediaBinDeltaVO extends MediaBinAssetVO {
 	public MediaBinDeltaVO(ResultSet rs) {
 		super(rs);
 		DBUtil db = new DBUtil();
-		setChecksum(db.getStringVal("file_checksum_txt", rs));
 		setShowpadId(db.getStringVal("DPY_SYN_SHOWPAD_ID", rs));
 		db = null;
 	}
@@ -65,14 +63,6 @@ public class MediaBinDeltaVO extends MediaBinAssetVO {
 
 	public void setErrorReason(String errorReason) {
 		this.errorReason = errorReason;
-	}
-
-	public String getChecksum() {
-		return checksum;
-	}
-
-	public void setChecksum(String checksum) {
-		this.checksum = checksum;
 	}
 	
 	
