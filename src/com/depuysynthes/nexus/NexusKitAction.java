@@ -1301,7 +1301,7 @@ public class NexusKitAction extends SBActionAdapter {
 		try (SolrActionUtil util = new SolrActionUtil(attributes, false)) {
 			util.addDocument(kit);
 		} catch (Exception e) {
-			
+			throw new ActionException(e);
 		}
 	}
 	
