@@ -4,6 +4,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -11,7 +12,8 @@ import java.util.Map;
 
 import javax.servlet.http.Cookie;
 
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 
@@ -1146,59 +1148,61 @@ public class NexusKitAction extends SBActionAdapter {
 				throw new ActionException(e1);
 			}
 		}
+
+		String baseUrl = StringUtil.checkVal(attributes.get(Constants.SOLR_BASE_URL), null);
+		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+		String collection = getSolrCollection((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
+		String path = StringUtil.checkVal(attributes.get(Constants.SOLR_BASE_PATH), null);
+		try (CloudSolrClient server = new CloudSolrClient(Arrays.asList(baseUrl.split(",")), path)){
+			server.setDefaultCollection(collection);
+			server.setParser(new XMLResponseParser());
 		
-		if (req.hasParameter("delete")) {
-			String kitId = req.getParameter("kitId");
-			removePermission(req.getParameter("profileId"), kitId);
-			
-			SolrInputDocument sdoc = new SolrInputDocument();
-			Map<String,Object> fieldModifier = new HashMap<>(1);
-			fieldModifier.put("remove",user.getProfileId());
-			sdoc.addField("owner", fieldModifier);
-			sdoc.addField("documentId",kitId);
-			
-			try {
-				String baseUrl = StringUtil.checkVal(attributes.get(Constants.SOLR_BASE_URL), null);
-				ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
-				String collection = getSolrCollection((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
-				HttpSolrServer server = new HttpSolrServer(baseUrl + collection);
-				server.add(sdoc);
-			} catch (Exception e) {
-				throw new ActionException(e);
-			}
-		} else {
-			UserDataVO owner = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
-			// Determine if the current user is adding someone else to their kit or someone else
-			// is requesting access to a kit.  If they are requesting access the share is placed
-			// in an awaiting approval state for the owner to accept or deny at a later date.
-			int request = 0;
-			if (!owner.getProfileId().equals(user.getProfileId())) request = 1;
-			List<SolrInputDocument> docUpdates = new ArrayList<>();
-			String[] ids = req.getParameterValues("kitId");
-			for (String kitId : ids) {
-				addPermission(user.getProfileId(), kitId, request);
-				if (request == 1) {
-					SolrInputDocument sdoc = new SolrInputDocument();
-					Map<String,Object> fieldModifier = new HashMap<>(1);
-					fieldModifier.put("add",user.getProfileId());
-					sdoc.addField("owner", fieldModifier);
-					sdoc.addField("documentId",kitId);
-					docUpdates.add(sdoc);
+			if (req.hasParameter("delete")) {
+				String kitId = req.getParameter("kitId");
+				removePermission(req.getParameter("profileId"), kitId);
+				
+				SolrInputDocument sdoc = new SolrInputDocument();
+				Map<String,Object> fieldModifier = new HashMap<>(1);
+				fieldModifier.put("remove",user.getProfileId());
+				sdoc.addField("owner", fieldModifier);
+				sdoc.addField("documentId",kitId);
+				
+				try {
+					server.add(sdoc);
+				} catch (Exception e) {
+					throw new ActionException(e);
 				}
-			}
-			
-			try {
-				String baseUrl = StringUtil.checkVal(attributes.get(Constants.SOLR_BASE_URL), null);
-				ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
-				String collection = getSolrCollection((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
-				HttpSolrServer server = new HttpSolrServer(baseUrl + collection);
-				for (SolrInputDocument doc : docUpdates) {
-					server.add( doc );
+			} else {
+				UserDataVO owner = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
+				// Determine if the current user is adding someone else to their kit or someone else
+				// is requesting access to a kit.  If they are requesting access the share is placed
+				// in an awaiting approval state for the owner to accept or deny at a later date.
+				int request = 0;
+				if (!owner.getProfileId().equals(user.getProfileId())) request = 1;
+				List<SolrInputDocument> docUpdates = new ArrayList<>();
+				String[] ids = req.getParameterValues("kitId");
+				for (String kitId : ids) {
+					addPermission(user.getProfileId(), kitId, request);
+					if (request == 1) {
+						SolrInputDocument sdoc = new SolrInputDocument();
+						Map<String,Object> fieldModifier = new HashMap<>(1);
+						fieldModifier.put("add",user.getProfileId());
+						sdoc.addField("owner", fieldModifier);
+						sdoc.addField("documentId",kitId);
+						docUpdates.add(sdoc);
+					}
 				}
-			} catch (Exception e) {
-				throw new ActionException(e);
+				try {
+					for (SolrInputDocument doc : docUpdates) {
+						server.add( doc );
+					}
+				} catch (Exception e) {
+					throw new ActionException(e);
+				}
+				sendEmail(user.getEmailAddress(), owner.getFullName(), ids.length);
 			}
-			sendEmail(user.getEmailAddress(), owner.getFullName(), ids.length);
+		} catch (Exception e) {
+			throw new ActionException(e);
 		}
 	}
 	
@@ -1294,7 +1298,11 @@ public class NexusKitAction extends SBActionAdapter {
 	private void addToSolr(NexusKitVO kit) throws ActionException {
 	    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		attributes.put(Constants.SOLR_COLLECTION_NAME, getSolrCollection((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1)));
-		new SolrActionUtil(attributes, false).addDocument(kit);
+		try (SolrActionUtil util = new SolrActionUtil(attributes, false)) {
+			util.addDocument(kit);
+		} catch (Exception e) {
+			
+		}
 	}
 	
 	

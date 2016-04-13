@@ -9,15 +9,15 @@ import java.util.Map;
 
 // Apache log4j
 import org.apache.log4j.Logger;
+import org.apache.log4j.PropertyConfigurator;
+
+import com.depuysynthesinst.DSIUserDataVO;
 
 // SMTBaseLibs 2
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.SMTSerializer;
 import com.siliconmtn.util.StringUtil;
-
-// WC_Custom
-import com.depuysynthesinst.DSIUserDataVO;
 
 //LMS SOAP Api
 import cfc.DSIResidentsCFCInvocationExceptionException;
@@ -26,12 +26,16 @@ import cfc.DSIResidentsStub.CourseList;
 import cfc.DSIResidentsStub.CourseListResponse;
 import cfc.DSIResidentsStub.CreateUser;
 import cfc.DSIResidentsStub.CreateUserResponse;
+import cfc.DSIResidentsStub.Entry1;
+import cfc.DSIResidentsStub.Entry2;
 import cfc.DSIResidentsStub.GetUserActiveIDbyEmail;
 import cfc.DSIResidentsStub.GetUserActiveIDbyEmailResponse;
 import cfc.DSIResidentsStub.GetUserHoldingIDbyEmail;
 import cfc.DSIResidentsStub.GetUserHoldingIDbyEmailResponse;
 import cfc.DSIResidentsStub.JKTest;
 import cfc.DSIResidentsStub.JKTestResponse;
+import cfc.DSIResidentsStub.Map1;
+import cfc.DSIResidentsStub.Map2;
 import cfc.DSIResidentsStub.MigrateUser;
 import cfc.DSIResidentsStub.MigrateUserResponse;
 import cfc.DSIResidentsStub.RegisterUserforCourse;
@@ -42,6 +46,7 @@ import cfc.DSIResidentsStub.UpdateUser;
 import cfc.DSIResidentsStub.UpdateUserResponse;
 import cfc.DSIResidentsStub.UserCourseList;
 import cfc.DSIResidentsStub.UserCourseListResponse;
+
 
 /****************************************************************************
  * <b>Title: </b>LMSWSClient.java <p/>
@@ -65,10 +70,23 @@ public class LMSWSClient {
 	private DSIResidentsStub dsi;
 	private Map<Double,String> errorCodeMap;
 
+
 	public LMSWSClient(String securityKey) {
 		log = Logger.getLogger(getClass());
 		this.securityKey = securityKey;
 		initErrorMap();
+	}
+
+	public static void main (String[] args) {
+		String secKeySMT = "183742B231C69E28";
+		//String secKeyTest = "SUSR802";
+		PropertyConfigurator.configure("scripts/dsi/lms_soap_log4j.properties");
+		LMSWSClient tc = new LMSWSClient(secKeySMT);
+		try {
+			log.debug("JKTest return value: " + tc.doJKTest());
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	/**
@@ -80,7 +98,7 @@ public class LMSWSClient {
 	 */
 	public double doJKTest() throws ActionException {
 		JKTest jTest = new JKTest();
-		double d = 0;
+		double d;
 		try {
 			// make sure we have a client stub
 			checkWSStub();
@@ -88,12 +106,12 @@ public class LMSWSClient {
 			// test WS 
 			JKTestResponse jRes = dsi.jKTest(jTest);
 			d = jRes.get_return();
+			if (d < 0) throw new ActionException(parseErrorCode(d));
+
 			log.debug("JKTest: " + d);
-			
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}
-		if (d < 0) throw new ActionException(parseErrorCode(d));
 		return d;
 	}
 
@@ -104,7 +122,7 @@ public class LMSWSClient {
 	 * @throws ActionException
 	 */
 	public double createUser(DSIUserDataVO user) throws ActionException {
-		double d = 0;
+		double d;
 		// build request
 		CreateUser cu = new CreateUser();
 		cu.setSecurityKey(securityKey);
@@ -127,12 +145,12 @@ public class LMSWSClient {
 			// get response
 			CreateUserResponse cur = dsi.createUser(cu);
 			d = cur.get_return();
-			log.warn("CreateUserResponse val: " + d + " for DSI_ID=" + user.getDsiId());
-			
+			if (d < 0) throw new ActionException(parseErrorCode(d));
+
+			log.debug("CreateUserResponse val: " + d);
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}
-		if (d < 0) throw new ActionException(parseErrorCode(d));
 		return d;
 	}
 
@@ -143,7 +161,7 @@ public class LMSWSClient {
 	 * @throws ActionException
 	 */
 	public double updateUser(DSIUserDataVO user) throws ActionException {
-		double d = 0;
+		double d;
 		// build request
 		UpdateUser uu = new UpdateUser();
 		uu.setSecurityKey(securityKey);
@@ -166,12 +184,14 @@ public class LMSWSClient {
 			// 	get response
 			UpdateUserResponse uur = dsi.updateUser(uu);
 			d = uur.get_return();
-			log.warn("UpdateUserResponse val: " + d + " for DSI_ID=" + user.getDsiId());
-			
+
+			log.debug("UpdateUserResponse val: " + d);
+			if (d < 0) throw new ActionException(parseErrorCode(d));
+
+			log.debug("UpdateUserResponse val: " + d);
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}
-		if (d < 0) throw new ActionException(parseErrorCode(d));
 		return d;
 	}
 
@@ -182,7 +202,7 @@ public class LMSWSClient {
 	 * @throws ActionException
 	 */
 	public double migrateUser(DSIUserDataVO user) throws ActionException {
-		double d = 0;
+		double d;
 		// format request data
 		MigrateUser mu = new MigrateUser();
 		mu.setSecurityKey(securityKey);
@@ -207,12 +227,15 @@ public class LMSWSClient {
 			d = mur.get_return();
 			
 			if (d == -2) d = 0;  //user doesn't exist, we've got a use case for that, fail quietly.
-			log.warn("MigrateUserResponse val: " + d + " for DSI_ID=" + user.getDsiId());
 			
+			if (d < 0) throw new ActionException(parseErrorCode(d));
+
+			// debug
+			log.debug("MigrateUserResponse val: " + d);
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}
-		if (d < 0) throw new ActionException(parseErrorCode(d));
+
 		return d;
 
 	}
@@ -228,7 +251,6 @@ public class LMSWSClient {
 	 * Error with value of -2 if user does not have a legacy user account
 	 * @throws ActionException
 	 */
-	@SuppressWarnings("unchecked")
 	public Map<Object,Object> getUserActiveIDByEmail(String emailAddress) 
 			throws ActionException {
 
@@ -238,30 +260,33 @@ public class LMSWSClient {
 		gube.setEmail(emailAddress);
 
 		// make WS and get response
-		Map<Object,Object> ret = null;
-		double errCd = 0;
+		Map<Object,Object> ret = new HashMap<>();
 		try {
 			// make sure we have a client stub
 			checkWSStub();
 
-			// get response, parse into Map.
+			// get response
 			GetUserActiveIDbyEmailResponse guder = dsi.getUserActiveIDbyEmail(gube);
+			Map1 m1 = new Map1();
+			m1 = guder.get_return();
+			log.debug("getUserActiveIDbyEmailResponse val: " + StringUtil.getToString(m1));
+
+			// parse the returned map into a standard Map.
+			if (m1 != null && m1.getEntry() != null) {
+				for (Entry1 e1 : m1.getEntry()) {
+					log.debug("key/value: " + e1.getKey() + "|" + e1.getValue());
+					ret.put(e1.getKey(),e1.getValue());
+				}
+			}
 			
-			/* get return val, default to empty String so that serializer will fail 
-			 * gracefully when trying to convert response to HashMap. */
-			String rawRet = StringUtil.checkVal(guder.get_return(), "");
-			ret = (HashMap<Object,Object>) SMTSerializer.fromJson(rawRet, HashMap.class);
-			
-			if (ret == null) ret = new HashMap<>();
-			errCd = Convert.formatDouble("" + ret.get("ERROR"));
-			log.warn("getUserActiveIDByEmailResponse: " + StringUtil.getToString(ret) + " for email=" + emailAddress);
+			//check for errors, -2 (user doesn't exist) is OK in this scenario
+			double errCd = Convert.formatDouble("" + ret.get("ERROR"));
+			if (errCd < 0 && errCd != -2) 
+				throw new ActionException(parseErrorCode(errCd));
 			
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}
-		//check for errors, -2 (user doesn't exist) is OK in this scenario
-		if (errCd < 0 && errCd != -2) 
-			throw new ActionException(parseErrorCode(errCd));
 
 		return ret;
 	}
@@ -277,7 +302,6 @@ public class LMSWSClient {
 	 * Error with value of -2 if user does not have a legacy user account
 	 * @throws ActionException
 	 */
-	@SuppressWarnings("unchecked")
 	public Map<Object,Object> getUserHoldingIDByEmail(String emailAddress) 
 			throws ActionException {
 
@@ -287,33 +311,35 @@ public class LMSWSClient {
 		gusi.setEmail(emailAddress);
 
 		// make WS and get response
-		Map<Object,Object> ret = null;
-		double errCd = 0;
+		Map<Object,Object> ret = new HashMap<>();
 		try {
 			// make sure we have a client stub
 			checkWSStub();
-			
-			// get response, parse into Map.
-			GetUserHoldingIDbyEmailResponse gusr = dsi.getUserHoldingIDbyEmail(gusi);
 
-			/* get return val, default to empty String so that serializer will fail 
-			 * gracefully when trying to convert response to HashMap. */
-			String rawRet = StringUtil.checkVal(gusr.get_return(), "");
-			ret = (HashMap<Object,Object>) SMTSerializer.fromJson(rawRet, HashMap.class);
+			// make WS call
+			GetUserHoldingIDbyEmailResponse gusr = dsi.getUserHoldingIDbyEmail(gusi);
+			Map2 m2 = gusr.get_return();
+			log.debug("getUserHoldingIDbyEmailResponse val: " + StringUtil.getToString(m2));
+
+			// parse the returned map into a standard Map.
+			if (m2 != null && m2.getEntry() != null) {
+				for (Entry2 e2 : m2.getEntry()) {
+					log.debug("key/value: " + e2.getKey() + "|" + e2.getValue());
+					ret.put(e2.getKey(), e2.getValue());
+				}
+			}
 			
-			if (ret == null) ret = new HashMap<>();
-			errCd = Convert.formatDouble("" + ret.get("ERROR"));
-			log.warn("getUserHoldingIDByEmail: " + StringUtil.getToString(ret) + " for email=" + emailAddress);
+			//check for errors
+			double errCd = Convert.formatDouble("" + ret.get("ERROR"));
+			if (errCd < 0 && errCd != -2) 
+				throw new ActionException(parseErrorCode(errCd));
 			
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}
-		//check for errors
-		if (errCd < 0 && errCd != -2) 
-			throw new ActionException(parseErrorCode(errCd));
+
 		return ret;
 	}
-	
 
 	/**
 	 * Returns the total number of points for a specified user.
@@ -324,11 +350,13 @@ public class LMSWSClient {
 	public double getTotalUserPoints(String dsiId) 
 			throws ActionException {
 
+		double d;
+
 		// build request
 		TotalUserPoints tup = new TotalUserPoints();
 		tup.setSecurityKey(securityKey);
 		tup.setDSI_ID(dsiId);
-		double d = 0;
+
 		try {
 			// make sure we have a client stub
 			checkWSStub();
@@ -336,15 +364,16 @@ public class LMSWSClient {
 			// get response
 			TotalUserPointsResponse tupr = dsi.totalUserPoints(tup);
 			d = tupr.get_return();
-			log.warn("TotalUserPoints val: " + d + " for DSI_ID=" + dsiId);
-			
+
+			if (d < 0) throw new ActionException(parseErrorCode(d));
+
+			log.debug("TotalUserPoints val: " + d);
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}
-		if (d < 0) throw new ActionException(parseErrorCode(d));
+
 		return d;
 	}
-	
 
 	/**
 	 * Returns an Object array of JSON-formatted structures containing a list of 
@@ -389,7 +418,7 @@ public class LMSWSClient {
 					MyLMSCourseVO data = (MyLMSCourseVO) SMTSerializer.fromJson(o.toString(), MyLMSCourseVO.class);
 					courses.add(data);
 				} catch (Exception e) {
-					log.warn("could not parse courseList JSON for DSI_ID=" + dsiId + " : " + o.toString());
+					log.error("could not parse JSON: " + o.toString(), e);
 				}
 			}
 			
@@ -398,10 +427,9 @@ public class LMSWSClient {
 		}
 		return courses;
 	}
-	
 
 	/**
-	 * Gets all available courses (user agnostic).
+	 * Gets all available courses.
 	 * JSON structure is returned which is an Object array (Object[]).  Each element
 	 * of the array contains:
 	 * Course ID
@@ -411,7 +439,6 @@ public class LMSWSClient {
 	 * Credits
 	 * Specialty ID List
 	 * Body Region ID List
-	 * This method is called by the overnight Solr Indexer - not the website
 	 * @return
 	 * @throws ActionException
 	 */
@@ -455,15 +482,18 @@ public class LMSWSClient {
 	 * @return
 	 * @throws ActionException
 	 */
+	@SuppressWarnings("unused")
 	public double registerUserForCourse(String dsiId, double courseId) 
 			throws ActionException {
+
+		double d;
+
 		// build request
 		RegisterUserforCourse rufc = new RegisterUserforCourse();
 		rufc.setSecurityKey(securityKey);
 		rufc.setDSI_ID(dsiId);
 		rufc.setC_ID(courseId);
-		double d = 0;
-		
+
 		// make call and get response
 		try {
 			// make sure we have a client stub
@@ -472,13 +502,13 @@ public class LMSWSClient {
 			// make the call
 			RegisterUserforCourseResponse rufcr = dsi.registerUserforCourse(rufc);
 			d = rufcr.get_return();
-			log.warn("registerUserforCourseResponse val: " + d + " for DSI_ID=" + dsiId + " and courseId=" + courseId);
 			
+			if (d < 0) throw new ActionException(parseErrorCode(d));
+
+			log.debug("registerUserforCourseResponse val: " + d);
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}
-		
-		if (d < 0) throw new ActionException(parseErrorCode(d));
 		return d;
 
 	}
