@@ -297,14 +297,17 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 
 			//prume verbose wording
 			if ("general principles & fundamentals".equals(rootLvl)) {
-				rootLvl = "general";
+				rootLvl = "futureleaders/kc/general";
 			} else if ("musculoskeletal oncology".equals(rootLvl)) {
-				rootLvl = "musculoskeletal";
+				rootLvl = "futureleaders/kc/musculoskeletal";
+			} else if ("graduation resources".equals(rootLvl)) {
+				rootLvl = "futureleaders/graduation-resources";
 			} else {
 				rootLvl =StringUtil.replace(rootLvl, " medicine", "");
 				rootLvl =StringUtil.replace(rootLvl, " surgery", "");
+				rootLvl = "futureleaders/kc/" + rootLvl;
 			}
-			rootLvl = "futureleaders/kc/" + rootLvl;
+			
 		}
 
 		//remove ampersands and replace spaces

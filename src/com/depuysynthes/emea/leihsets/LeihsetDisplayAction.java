@@ -32,7 +32,6 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @since Dec 09, 2015<p/>
  * <b>Changes: </b>
  ****************************************************************************/
-
 public class LeihsetDisplayAction extends SBActionAdapter {
 
 	public LeihsetDisplayAction() {
@@ -43,14 +42,15 @@ public class LeihsetDisplayAction extends SBActionAdapter {
 		super(init);
 	}
 
-	public void retrieve(SMTServletRequest req) throws ActionException {		
+	public void retrieve(SMTServletRequest req) throws ActionException {
+		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+		
 		// Get the default language - give the user a list to choose from if one wasn't passed
 		String category = StringUtil.checkVal(req.getParameter("category"), null);
 		if (category == null) {
-			super.putModuleData(this.loadCategoryTree());
+			super.putModuleData(this.loadCategoryTree(page.isPreviewMode()));
 		} else {
 			//grab PageVo for preview mode
-			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 			super.putModuleData(loadLeihsets(site.getOrganizationId(), category, page.isPreviewMode()));
 		}
@@ -76,22 +76,34 @@ public class LeihsetDisplayAction extends SBActionAdapter {
 
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
-				String groupId = rs.getString("leihset_group_id");
-				if (groupId == null || groupId.length() == 0) groupId = rs.getString("leihset_id");
-				LeihsetVO vo = data.get(groupId);
-				if (vo == null)
+				String unqId = rs.getString("category_nm") + "~" + rs.getString("leihset_id");
+				LeihsetVO vo = data.get(unqId);
+				if (vo == null) {
 					vo = new LeihsetVO(rs, false);
+					if (vo.getLeihsetGroupId() == null) 
+						vo.setLeihsetGroupId(vo.getLeihsetId());
+				}
 				
 				vo.setCategoryName(rs.getString("category_nm"));
 				vo.setParentCategoryName(rs.getString("parent_category_nm"));
 
-				if (vo.getLeihsetGroupId() == null) vo.setLeihsetGroupId(rs.getString("leihset_group_id"));
 				if (rs.getString("leihset_asset_id") != null) vo.addResource(new LeihsetVO(rs, true));
-				data.put(groupId, vo);
+				data.put(unqId, vo);
 			}
 		} catch (SQLException e) {
 			log.error("Unable to load leihsets", e);
 		}
+		
+		//if we're in preview mode, build a new list of Leihsets by inspecting and honoring groupIds from the VOs
+		//if we're not in preview mode none of this matters (has no effect because the query did not get us any pending records)
+		if (isPreviewMode) {
+			Map<String,LeihsetVO> unqLeihsets = new LinkedHashMap<>(data.size());
+			for (LeihsetVO vo : data.values())
+				unqLeihsets.put(vo.getCategoryName() + "~" + vo.getLeihsetGroupId(), vo);
+			
+			data = unqLeihsets;
+		}
+		
 
 		log.debug("loaded " + data.size() + " liehsets");
 		List<LeihsetVO> list = new ArrayList<LeihsetVO>(data.values());
@@ -129,10 +141,10 @@ public class LeihsetDisplayAction extends SBActionAdapter {
 	 * loads the categories tree for printing the selector hierarchy
 	 * @return
 	 */
-	private Tree loadCategoryTree() {
+	private Tree loadCategoryTree(boolean isPreview) {
 		LeihsetCategoryAction ca = new LeihsetCategoryAction();
 		ca.setDBConnection(dbConn);
 		ca.setAttributes(getAttributes());
-		return ca.loadCategoryTreeWithCounts();
+		return ca.loadCategoryTreeWithCounts(isPreview);
 	}
 }

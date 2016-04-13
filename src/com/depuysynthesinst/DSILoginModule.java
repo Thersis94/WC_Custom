@@ -104,9 +104,9 @@ public class DSILoginModule extends SAMLLoginModule {
 		try {
 			LMSWSClient lms = new LMSWSClient((String)super.initVals.get(LMSWSClient.CFG_SECURITY_KEY));
 			dsiUser.setMyCourses(lms.getUserCourseList(dsiUser.getDsiId()));
-			
 		} catch (ActionException ae) {
-			log.warn("could not load user course list", ae);
+			//ignore these errors; most users don't have courses to be concerned about and this doesn't impact functionality - JM 02.18.16
+			//log.warn("could not load user course list", ae);
 		}
 
 		DSIRoleMgr dsiRoleMgr = new DSIRoleMgr();
@@ -170,13 +170,25 @@ public class DSILoginModule extends SAMLLoginModule {
 		ra.setDBConnection(dbConn);
 		
 		try {
-			req.setAttribute("registerSubmittalId", loadRSId(user, req, dbConn));
+			String rsId = loadRSId(user, req, dbConn);
+			if (rsId == null) return; //not a legitimately registered user
+			req.setAttribute("registerSubmittalId", rsId);
+			user.setCountryCode("US");
+			user.setHospital("WWID");
+			user.setProfession("PROF");
+			user.setSpecialty("AAWDS");
+			user.setEligible(false);
+			user.setVerified(false);
 			ra.saveUser(user);
 		
 			String[] regFields = new String[]{ RegField.DSI_TTLMS_ID.toString(), 
 															 RegField.DSI_SYNTHES_ID.toString(), 
 															 RegField.DSI_PROG_ELIGIBLE.toString(), 
-															 RegField.DSI_VERIFIED.toString() };
+															 RegField.DSI_VERIFIED.toString(),
+															 RegField.DSI_ACAD_NM.toString(),
+															 RegField.DSI_COUNTRY.toString(),
+															 RegField.c0a80241b71c9d40a59dbd6f4b621260.toString(), //Prof
+															 RegField.c0a80241b71d27b038342fcb3ab567a0.toString()}; //Spec
 			
 			ra.captureLMSResponses(req, user, regFields);
 		} catch (Exception e) {
