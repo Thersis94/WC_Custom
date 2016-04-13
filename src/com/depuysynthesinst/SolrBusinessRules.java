@@ -8,6 +8,7 @@ import org.apache.solr.common.SolrDocument;
 
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
+import com.smt.sitebuilder.security.SecurityController;
 
 /****************************************************************************
  * <b>Title</b>: SolrBusinessRules.java<p/>
@@ -23,13 +24,13 @@ import com.smt.sitebuilder.search.SearchDocumentHandler;
 public class SolrBusinessRules {
 
 	//protected static Logger log;
-	private String pageUrl;
+	protected String pageUrl;
 	private String sectionNm;
 	private String hierarchy;
 	private String thumbnailImg;
-	private SolrDocument sd;
+	protected SolrDocument sd;
 	private String moduleType;
-	private String qsPath = "";
+	protected String qsPath = "";
 	private boolean isSiteSearch;
 	
 	public SolrBusinessRules() {
@@ -38,6 +39,10 @@ public class SolrBusinessRules {
 
 	public void setQsPath(String qsPath) {
 		this.qsPath = qsPath;
+	}
+	
+	public String getQsPath() {
+		return qsPath;
 	}
 	
 	public void setSolrDocument(SolrDocument sd) {
@@ -59,7 +64,7 @@ public class SolrBusinessRules {
 
 
 	@SuppressWarnings("unchecked")
-	private void buildSectionName() {
+	protected void buildSectionName() {
 		//hierarchy is a multi-valued field; if multiple values exist the object is an array instead of a String
 		//in either case we take the first one
 		try {
@@ -107,11 +112,11 @@ public class SolrBusinessRules {
 	}
 
 	
-	private void buildPageUrl() {
+	protected void buildPageUrl() {
 		if ("EVENT".equals(moduleType)) {
 			pageUrl = StringUtil.checkVal(sd.get(SearchDocumentHandler.DOCUMENT_URL));
 		} else {
-			pageUrl = SolrSearchWrapper.buildDSIUrl(hierarchy, (String)sd.get("documentId"), qsPath);
+			pageUrl = SolrSearchWrapper.buildDSIUrl(hierarchy, (String)sd.get(SearchDocumentHandler.DOCUMENT_ID), qsPath);
 		}
 	}
 
@@ -150,5 +155,29 @@ public class SolrBusinessRules {
 		if ("QUICKSTREAM_DSI".equals(sd.get("indexType"))) return "CMS";
 		if ("COURSE_CAL".equals(sd.get("indexType"))) return "EVENT";
 		else return "";
+	}
+	
+
+	
+	/**
+	 * Get the lowest role level associated with this document
+	 * @return
+	 */
+	public int getMinRoleLevel() {
+		// If we have no roles assume public
+		if (sd.getFieldValues(SearchDocumentHandler.ROLE) == null) return SecurityController.PUBLIC_ROLE_LEVEL;
+		
+		// Start at an unattainable value
+		int role = 1000;
+		for (Object o : sd.getFieldValues(SearchDocumentHandler.ROLE)) {
+			if (o == null) continue;
+			if ((int)o < role)
+				role = (int)o;
+		}
+		if (role == 1000) {
+			return SecurityController.PUBLIC_ROLE_LEVEL;
+		} else {
+			return role;
+		}
 	}
 }
