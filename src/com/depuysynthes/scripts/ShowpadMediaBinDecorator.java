@@ -171,14 +171,10 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 				try {
 					util.pushAsset(vo);					
 				} catch (QuotaException qe) {
-					String msg = makeMessage(vo, "Could not add file from showpad: " + qe.getMessage());
+					String msg = makeMessage(vo, "Could not push file to showpad: " + qe.getMessage());
 					failures.add(new Exception(msg));
 					log.error("could not push to showpad, quota reached", qe);
 					break outer;
-				} catch (Exception ioe) {
-					String msg = makeMessage(vo, "Could not push file to showpad: " + ioe.getMessage());
-					failures.add(new Exception(msg));
-					log.error("could not push file to showpad", ioe);
 				}
 			}
 			log.info("completed: " + vo.getFileNm());
@@ -243,10 +239,6 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 							failures.add(new Exception(msg));
 							log.error("could not delete from showpad", qe);
 							break;
-						} catch (Exception e) {
-							String msg = makeMessage(vo, "Could not delete file from showpad: " + e.getMessage());
-							failures.add(new Exception(msg));
-							log.error("could not delete from showpad", e);
 						}
 					}
 				}

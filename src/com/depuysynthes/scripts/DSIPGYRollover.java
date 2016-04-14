@@ -4,6 +4,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -89,34 +90,37 @@ public class DSIPGYRollover extends CommandLineUtil {
 		StringBuilder sql = new StringBuilder(400);
 		//grab all registration accounts for user who are of specific professions 
 		//and have a graduation date of today
-		sql.append("select pgy.value_txt, pgy.register_submittal_id ");
-		sql.append("from register_data pgy ");
-		sql.append("inner join register_submittal rs on pgy.register_submittal_id=rs.register_submittal_id and rs.site_id=? ");
+		sql.append("select pgy.value_txt, grad.value_txt, pgy.register_submittal_id ");
+		sql.append("from register_submittal rs ");
+		sql.append("inner join register_data pgy on pgy.register_submittal_id=rs.register_submittal_id and pgy.register_field_id=? and (pgy.update_dt is null or pgy.update_dt < cast(getdate() as DATE)) "); //we've not JUST (today) incremented their value; this could be damaging
 		sql.append("inner join register_data prof on rs.register_submittal_id=prof.register_submittal_id and prof.register_field_id=? and prof.value_txt in (?,?) ");
-		sql.append("inner join register_data grad on rs.register_submittal_id=grad.register_submittal_id and grad.register_field_id=? ");
-		sql.append("where 1=1 ");
-		sql.append("and pgy.update_dt < cast(getdate() as DATE) "); //we've not JUST (today) incremented their value; this could be damaging
-		sql.append("and convert(date,grad.value_txt,101) > convert(date,getDate(),101) "); //not graduated yet
-		sql.append("and SUBSTRING(grad.value_txt,0,6)=? and pgy.register_field_id=? "); //graduation aniversary is today
+		sql.append("inner join register_data grad on rs.register_submittal_id=grad.register_submittal_id and grad.register_field_id=? and SUBSTRING(grad.value_txt,0,6)=? ");
+		sql.append("where rs.site_id=? ");
 		sql.append("order by pgy.register_submittal_id");
-		log.debug(sql + " " + gradDateStr.substring(0, 5));
+		log.info(sql + " " + gradDateStr.substring(0, 5));
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, "DPY_SYN_INST_1"); // siteId for main site
+			ps.setString(1,  RegField.DSI_PGY.toString());
 			ps.setString(2, RegField.c0a80241b71c9d40a59dbd6f4b621260.toString()); //Profession field
 			ps.setString(3, "RESIDENT");
 			ps.setString(4, "CHIEF");
 			ps.setString(5, RegField.DSI_GRAD_DT.toString()); //Graduation Date field
 			ps.setString(6, gradDateStr.substring(0, 5));
-			ps.setString(7, RegField.DSI_PGY.toString()); //PGY field
+			ps.setString(7, "DPY_SYN_INST_1");
 			
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
-				DataVO vo = new DataVO();
-				vo.registerSubmittalId = rs.getString("register_submittal_id");
-				vo.profileFieldId = RegField.DSI_PGY.toString();
-				vo.value = "" + (Convert.formatInteger(rs.getString("value_txt"))+1);
-				regData.add(vo);
+				Date gradDt = Convert.formatDate(Convert.DATE_SLASH_PATTERN, rs.getString(2));
+				if (gradDt == null) continue;
+				
+				//if the student has graduated we stop rolling them over, so only act on those who haven't graduated
+				if (gradDt.after(Calendar.getInstance().getTime())) {
+					DataVO vo = new DataVO();
+					vo.registerSubmittalId = rs.getString("register_submittal_id");
+					vo.profileFieldId = RegField.DSI_PGY.toString();
+					vo.value = "" + (Convert.formatInteger(rs.getString(1))+1);
+					regData.add(vo);
+				}
 			}
 		} catch (SQLException sqle) {
 			log.error("could not load user accounts", sqle);

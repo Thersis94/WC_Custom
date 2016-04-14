@@ -197,7 +197,7 @@ public class CourseCalendar extends SimpleActionAdapter {
 				String specs = StringUtil.checkVal(vo.getServiceText(), "Other");
 				for (String spec : specs.split(",")) {
 					spec = StringUtil.checkVal(spec).trim();
-					if (isFutureLdrs) spec = FutureLeaderACGME.getNameFromCode(spec);
+					if (isFutureLdrs) spec = StringUtil.checkVal(FutureLeaderACGME.getNameFromCode(spec), spec);
 					if (specialties.containsKey(spec)) {
 						specialties.put(spec, specialties.get(spec)+1);
 					} else {
@@ -278,7 +278,7 @@ public class CourseCalendar extends SimpleActionAdapter {
 				if (spec == null || spec.length() == 0) spec = "Other";
 				outer:
 				for (String s : spec.split(",")) {
-					if (isFutureLdrs) s = FutureLeaderACGME.getNameFromCode(s);
+					if (isFutureLdrs) s = StringUtil.checkVal(FutureLeaderACGME.getNameFromCode(s), s);
 					log.debug("spec=" + s);
 					for (String f : filters) {
 						if (s.contains(f)) {
