@@ -61,7 +61,7 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 	
 	
 	public void indexCertainItems(Set<String> eventEntryIds) {
-		HttpSolrServer server = makeServer();
+		CloudSolrClient server = makeServer();
 		log.info("Indexing Certain Course Calendar Portlets");
 		
 		//if we're doing a full rebuild, make sure we purge what's in there
