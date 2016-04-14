@@ -7,8 +7,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+
 // log4j 1.2-15
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+
 
 // SMT Base Libs
 import com.depuysynthes.action.ProductCatalogUtil;
@@ -68,7 +70,7 @@ public class ProductCatalogSolrIndex extends SMTAbstractIndex {
 	 * @see com.smt.sitebuilder.search.lucene.custom.SMTCustomIndexIntfc#addIndexItems(java.sql.Connection, com.siliconmtn.cms.CMSConnection, org.apache.lucene.index.IndexWriter)
 	 */
 	@Override
-	public void addIndexItems(HttpSolrServer server) {
+	public void addIndexItems(CloudSolrClient server) {
 		log.info("Indexing DePuySynthes US Products & Procedures");
 		indexProducts("DS_PRODUCTS", server, SOLR_DOC_CLASS, 50, "DS_PRODUCT");
 		indexProducts("DS_PROCEDURES", server, SOLR_DOC_CLASS, 45, "DS_PROCEDURE");
@@ -80,7 +82,8 @@ public class ProductCatalogSolrIndex extends SMTAbstractIndex {
 	 * @param catalogId
 	 * @param server
 	 */
-	protected void indexProducts(String catalogId, HttpSolrServer server, String solrDocClass, int dsOrderNo, String moduleType) {
+	@SuppressWarnings("resource")
+	protected void indexProducts(String catalogId, CloudSolrClient server, String solrDocClass, int dsOrderNo, String moduleType) {
 		List<Node> nodes = getProductData(catalogId);
 		log.info("Found " + nodes.size() + " nodes to index for " + catalogId + ".");
 
@@ -222,7 +225,7 @@ public class ProductCatalogSolrIndex extends SMTAbstractIndex {
 	}
 
 	@Override
-	public void purgeIndexItems(HttpSolrServer server) throws IOException {
+	public void purgeIndexItems(CloudSolrClient server) throws IOException {
 		try {
 			StringBuilder solrQuery = new StringBuilder(60);
 			solrQuery.append(SearchDocumentHandler.INDEX_TYPE + ":" + getIndexType() + " AND ");

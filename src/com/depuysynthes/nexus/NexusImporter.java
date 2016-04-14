@@ -17,7 +17,8 @@ import java.util.TreeMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.XMLResponseParser;
 
 import com.siliconmtn.io.ftp.SFTPV3Client;
 import com.siliconmtn.action.ActionException;
@@ -168,12 +169,16 @@ public class NexusImporter extends CommandLineUtil {
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.util.CommandLineUtil#run()
 	 */
+	@SuppressWarnings("resource")
 	@Override
 	public void run() {
 		int cnt=0;
 		Map<String, NexusProductVO> products = new HashMap<>();
 		int fails = 0;
-		try {
+		try (CloudSolrClient server = new CloudSolrClient(Arrays.asList(props.getProperty(Constants.SOLR_BASE_URL).split(",")), props.getProperty(Constants.SOLR_BASE_PATH))){
+			server.setDefaultCollection(props.getProperty(Constants.SOLR_COLLECTION_NAME));
+			server.setParser(new XMLResponseParser());
+			
 			boolean mdm = fileName.contains(".zip") || fileName.contains("|");
 			// Get the files and parse them into products
 			if (isLocal) {
@@ -186,8 +191,6 @@ public class NexusImporter extends CommandLineUtil {
 				products = getProductsFromFile();
 			}
 			
-			// initialize the connection to the solr server
-			HttpSolrServer server = new HttpSolrServer(props.getProperty(Constants.SOLR_BASE_URL)+props.getProperty(Constants.SOLR_COLLECTION_NAME));
 			SolrActionUtil solr = new SolrActionUtil(server);
 			List<SolrDocumentVO> docs = new ArrayList<>();
 			for (String key : products.keySet()) {
@@ -219,7 +222,7 @@ public class NexusImporter extends CommandLineUtil {
 			if (docs.size() > 0)
 				solr.addDocuments(docs);
 
-		} catch(ActionException e) {
+		} catch(Exception e) {
 			log.error("Failed to complete transaction", e);
 		}
 		sendAlertEmail(cnt, products.size());
