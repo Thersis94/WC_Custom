@@ -10,7 +10,6 @@ import org.apache.solr.common.SolrDocument;
 
 import com.depuysynthes.action.ProductCatalogUtil;
 import com.depuysynthes.lucene.MediaBinSolrIndex;
-import com.depuysynthesinst.QuickstreamSolrIndexer;
 import com.depuysynthesinst.SolrSearchWrapper;
 import com.depuysynthesinst.TTLMSSolrIndexer;
 import com.siliconmtn.commerce.catalog.ProductCategoryVO;
@@ -29,6 +28,7 @@ import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.http.SiteMapServlet;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
+import com.smt.sitebuilder.search.solr.CMSSolrIndexer;
 import com.smt.sitebuilder.security.SecurityController;
 
 /****************************************************************************
@@ -155,6 +155,7 @@ public class DePuySiteMapServlet extends SiteMapServlet {
 		qData.setOrganizationId(site.getOrganizationId()); //DPY_SYN_INST only
 		qData.setRoleLevel(SecurityController.PUBLIC_ROLE_LEVEL); //public assets only
 		qData.addIndexType(new SolrActionIndexVO(SearchDocumentHandler.INDEX_TYPE, MediaBinSolrIndex.INDEX_TYPE));
+		qData.addIndexType(new SolrActionIndexVO(SearchDocumentHandler.INDEX_TYPE, CMSSolrIndexer.INDEX_TYPE));
 		qData.addIndexType(new SolrActionIndexVO(SearchDocumentHandler.INDEX_TYPE, TTLMSSolrIndexer.INDEX_TYPE));
 		SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, solrCollectionPath);
 		SolrResponseVO resp = sqp.processQuery(qData);
