@@ -147,6 +147,7 @@ public class DePuySiteMapServlet extends SiteMapServlet {
 	    solrWrapper.setAttribute(Constants.QS_PATH, sc.getAttribute(Constants.QS_PATH));
 	    
 	    attributes.put(Constants.SOLR_BASE_URL, sc.getAttribute(Constants.SOLR_BASE_URL));
+	    attributes.put(Constants.SOLR_BASE_PATH, sc.getAttribute(Constants.SOLR_BASE_PATH));
 	    String solrCollectionPath = (String) sc.getAttribute(Constants.SOLR_COLLECTION_NAME);
 
 	    SolrActionVO qData = new SolrActionVO();
@@ -154,7 +155,6 @@ public class DePuySiteMapServlet extends SiteMapServlet {
 		qData.setOrganizationId(site.getOrganizationId()); //DPY_SYN_INST only
 		qData.setRoleLevel(SecurityController.PUBLIC_ROLE_LEVEL); //public assets only
 		qData.addIndexType(new SolrActionIndexVO(SearchDocumentHandler.INDEX_TYPE, MediaBinSolrIndex.INDEX_TYPE));
-		qData.addIndexType(new SolrActionIndexVO(SearchDocumentHandler.INDEX_TYPE, QuickstreamSolrIndexer.INDEX_TYPE));
 		qData.addIndexType(new SolrActionIndexVO(SearchDocumentHandler.INDEX_TYPE, TTLMSSolrIndexer.INDEX_TYPE));
 		SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, solrCollectionPath);
 		SolrResponseVO resp = sqp.processQuery(qData);
