@@ -1,7 +1,5 @@
 package com.depuysynthesinst;
 
-import java.util.Calendar;
-
 import com.siliconmtn.annotations.SolrField;
 import com.siliconmtn.cms.TemplateFieldVO;
 import com.siliconmtn.cms.TemplateFieldVOContainer;
@@ -31,11 +29,10 @@ public class QuickstreamTemplate extends CMSSolrDocumentVO {
 	 */
 	public QuickstreamTemplate(String indexType) {
 		super(indexType);
-		super.setUpdateDt(Calendar.getInstance().getTime());
 	}
 	
 	public QuickstreamTemplate() {
-		this(QuickstreamSolrIndexer.INDEX_TYPE);
+		super();
 	}
 	
 	/**
@@ -76,8 +73,6 @@ public class QuickstreamTemplate extends CMSSolrDocumentVO {
 					setTrackingNo(StringUtil.checkVal(field.getFieldValue()));
 					break;
 				case "Asset Type":
-					//lowercase here correlates to the JSP we use in the View "external site.jsp"
-					//TODO fix lowercase issue for DSI, formerly: setAssetType(StringUtil.checkVal(field.getFieldValue()).toLowerCase());
 					setAssetType(StringUtil.checkVal(field.getFieldValue())); 
 					break;
 			}
