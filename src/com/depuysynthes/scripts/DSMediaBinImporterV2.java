@@ -5,6 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -18,10 +19,11 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+
 
 
 // SMT Base Libs
@@ -253,9 +255,11 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	 */
 	private void syncWithSolr(Map<String, MediaBinDeltaVO> masterRecords) {
 		// initialize the connection to the solr server
-		String baseUrl = props.getProperty("solrBaseUrl");
-		String collection = props.getProperty("solrCollectionName");
-		HttpSolrServer server = new HttpSolrServer(baseUrl + collection);
+		String baseUrl = props.getProperty(Constants.SOLR_BASE_URL);
+		String collection = props.getProperty(Constants.SOLR_COLLECTION_NAME);
+		String path = props.getProperty(Constants.SOLR_BASE_PATH);
+		CloudSolrClient server = new CloudSolrClient(Arrays.asList(baseUrl.split(",")), path);
+		server.setDefaultCollection(collection);
 		server.setParser(new XMLResponseParser());
 
 		pushToSolr(masterRecords.values(), server);
@@ -306,7 +310,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	 * @param masterRecords
 	 * @param server
 	 */
-	private void pushToSolr(Collection<MediaBinDeltaVO> records, HttpSolrServer server) {
+	private void pushToSolr(Collection<MediaBinDeltaVO> records, CloudSolrClient server) {
 		//bucketize what needs to be done so we can hit Solr in two batch transactions
 		List<String> deletes = new ArrayList<>(records.size());
 		List<MediaBinAssetVO> adds = new ArrayList<>(records.size());
