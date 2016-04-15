@@ -63,6 +63,7 @@ public class MediaBinAssetVO extends SBModuleVO {
 	private String anatomy = null;
 	private String metaKeywords = null;
 	private String videoChapters = null;
+	private String checksum;
 	private List<PropertyChangeEvent> deltas;
 	
 	public MediaBinAssetVO() {
@@ -96,6 +97,7 @@ public class MediaBinAssetVO extends SBModuleVO {
 		setMetaKeywords(db.getStringVal("meta_kywds_txt", rs));
 		setVideoChapters(db.getStringVal("META_CONTENT_TXT", rs));
 		seteCopyRevisionLvl(db.getStringVal("ecopy_revision_lvl_txt", rs));
+		setChecksum(db.getStringVal("file_checksum_txt", rs));
 		
 		String dims = db.getStringVal("dimensions_txt", rs);
 		if (dims != null && dims.indexOf("~") > 0) {
@@ -356,6 +358,14 @@ public class MediaBinAssetVO extends SBModuleVO {
 
 	public void setDimensionsTxt(String dimensionsTxt) {
 		this.dimensionsTxt = dimensionsTxt;
+	}
+
+	public String getChecksum() {
+		return checksum;
+	}
+
+	public void setChecksum(String checksum) {
+		this.checksum = checksum;
 	}
 
 	/**
