@@ -14,6 +14,7 @@ import java.sql.SQLException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
@@ -26,8 +27,11 @@ import java.util.Set;
 
 
 
+
+
 // SOLR Libs
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 
@@ -66,7 +70,7 @@ public class NexusKitImporter extends CommandLineUtil {
 	 * Instance of the solr server create when the program starts so that
 	 * it is not recreated with every kit. 
 	 */
-	private HttpSolrServer server;
+	private CloudSolrClient server;
 	
 	/**
 	 * Key for the index that should be used for the solr documents
@@ -232,6 +236,10 @@ public class NexusKitImporter extends CommandLineUtil {
 			sendEmail(getEmailMessage(messages), null);
 		} catch(Exception e) {
 			log.error("Unable to send email report", e);
+		} finally {
+			try {
+				server.close();
+			} catch (Exception e) {}
 		}
 		
 		log.info("Exports Completed");
@@ -851,9 +859,12 @@ public class NexusKitImporter extends CommandLineUtil {
 	 * @param props
 	 */
 	private void loadSolrServer(Properties props) {
-		String baseUrl = props.getProperty("solrBaseUrl");
-		String collection = props.getProperty("solrCollectionName");
-		server = new HttpSolrServer(baseUrl + collection);
+		String baseUrl = props.getProperty(Constants.SOLR_BASE_URL);
+		String collection =  props.getProperty(Constants.SOLR_COLLECTION_NAME);
+		String path =  props.getProperty(Constants.SOLR_BASE_PATH);
+		server = new CloudSolrClient(Arrays.asList(baseUrl.split(",")), path);
+		server.setDefaultCollection(collection);
+		server.setParser(new XMLResponseParser());
 	}
 	
 	
@@ -886,6 +897,7 @@ public class NexusKitImporter extends CommandLineUtil {
 	 * Add the supplied kit to solr
 	 * @param kit
 	 */
+	@SuppressWarnings("resource")
 	private void addToSolr(NexusKitVO kit) {
 		SolrActionUtil util = new SolrActionUtil(server);
 		try {
