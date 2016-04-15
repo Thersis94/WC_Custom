@@ -152,7 +152,7 @@ public class SolrBusinessRules {
 	public String getFavoriteType() {
 		if ("MEDIA_BIN".equals(sd.get("indexType"))) return "MEDIABIN";
 		if ("LMS_DSI".equals(sd.get("indexType"))) return "COURSE";
-		if ("QUICKSTREAM_DSI".equals(sd.get("indexType"))) return "CMS";
+		if ("CMS_QUICKSTREAM".equals(sd.get("indexType"))) return "CMS";
 		if ("COURSE_CAL".equals(sd.get("indexType"))) return "EVENT";
 		else return "";
 	}

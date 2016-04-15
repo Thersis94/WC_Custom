@@ -4,9 +4,11 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.XMLResponseParser;
 
 import com.siliconmtn.util.CommandLineUtil;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -80,11 +82,13 @@ public class NexusKitSolrIndexer extends CommandLineUtil {
 	}
 
 
+	@SuppressWarnings("resource")
 	@Override
 	public void run() {
-		try {
+		try (CloudSolrClient server = new CloudSolrClient(Arrays.asList(props.getProperty(Constants.SOLR_BASE_URL).split(",")), props.getProperty(Constants.SOLR_BASE_PATH))){
+			server.setDefaultCollection(props.getProperty(Constants.SOLR_COLLECTION_NAME));
+			server.setParser(new XMLResponseParser());
 			List<SolrDocumentVO> kits = loadKits();
-			HttpSolrServer server = new HttpSolrServer(props.getProperty(Constants.SOLR_BASE_URL)+props.getProperty(Constants.SOLR_COLLECTION_NAME));
 			SolrActionUtil solr = new SolrActionUtil(server);
 			System.out.println("Adding " + kits.size() + " Documents");
 			solr.addDocuments(kits);

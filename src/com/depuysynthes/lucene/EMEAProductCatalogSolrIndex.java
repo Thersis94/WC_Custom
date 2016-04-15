@@ -2,7 +2,7 @@ package com.depuysynthes.lucene;
 
 import java.util.Properties;
 
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 
 /****************************************************************************
  * <b>Title</b>: EMEAProductCatalogSolrIndex.java<p/>
@@ -28,7 +28,7 @@ public class EMEAProductCatalogSolrIndex extends ProductCatalogSolrIndex {
 	}
 
 	@Override
-	public void addIndexItems(HttpSolrServer server) {
+	public void addIndexItems(CloudSolrClient server) {
 		log.info("Indexing DePuySynthes EMEA Products & Procedures");
 		indexProducts("DS_PRODUCTS_EMEA", server, SOLR_DOC_CLASS, 50, "DS_PRODUCT");
 		indexProducts("DS_PROCEDURES_EMEA", server, SOLR_DOC_CLASS, 45, "DS_PROCEDURE");

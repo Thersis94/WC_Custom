@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Properties;
 
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 
 import com.depuysynthesinst.lms.CourseSolrTemplate;
 import com.depuysynthesinst.lms.LMSCourseVO;
@@ -38,10 +38,11 @@ public class TTLMSSolrIndexer extends SMTAbstractIndex {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#addIndexItems(org.apache.solr.client.solrj.impl.HttpSolrServer)
+	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#addIndexItems(org.apache.solr.client.solrj.impl.CloudSolrClient)
 	 */
+	@SuppressWarnings("resource")
 	@Override
-	public void addIndexItems(HttpSolrServer server) {
+	public void addIndexItems(CloudSolrClient server) {
 		//call the LMS and get a list of courses
 		LMSWSClient wcClient = new LMSWSClient(config.getProperty(LMSWSClient.CFG_SECURITY_KEY));
 		List<LMSCourseVO> courses = null;
@@ -81,10 +82,10 @@ public class TTLMSSolrIndexer extends SMTAbstractIndex {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#purgeIndexItems(org.apache.solr.client.solrj.impl.HttpSolrServer)
+	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#purgeIndexItems(org.apache.solr.client.solrj.impl.CloudSolrClient)
 	 */
 	@Override
-	public void purgeIndexItems(HttpSolrServer server) throws IOException {
+	public void purgeIndexItems(CloudSolrClient server) throws IOException {
 		try {
 			server.deleteByQuery(SearchDocumentHandler.INDEX_TYPE + ":" + getIndexType());
 		} catch (Exception e) {
