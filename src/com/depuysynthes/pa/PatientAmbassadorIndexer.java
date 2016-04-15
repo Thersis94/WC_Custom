@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 
 import com.depuysynthes.pa.PatientAmbassadorStoriesTool.PAFConst;
 import com.siliconmtn.exception.DatabaseException;
@@ -44,10 +44,11 @@ public class PatientAmbassadorIndexer extends SMTAbstractIndex {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#addIndexItems(org.apache.solr.client.solrj.impl.HttpSolrServer)
+	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#addIndexItems(org.apache.solr.client.solrj.impl.CloudSolrClient)
 	 */
+	@SuppressWarnings("resource")
 	@Override
-	public void addIndexItems(HttpSolrServer server) {
+	public void addIndexItems(CloudSolrClient server) {
 		SolrActionUtil solrUtil = new SolrActionUtil(server);
 		List<FormTransactionVO> formVOs = retreiveAllSubmissions();
 		
@@ -82,7 +83,9 @@ public class PatientAmbassadorIndexer extends SMTAbstractIndex {
 		ssv.setState(vo.getState());
 		ssv.setLat(vo.getLatitude().toString());
 		ssv.setLng(vo.getLongitude().toString());
-		ssv.setDetailImage(fields.get(PAFConst.PROFILE_IMAGE_ID.getId()).getResponses().get(0));
+		if(fields.get(PAFConst.PROFILE_IMAGE_ID.getId()) != null){
+			ssv.setDetailImage(fields.get(PAFConst.PROFILE_IMAGE_ID.getId()).getResponses().get(0));
+		}		
 		ssv.setCategories(fields.get(PAFConst.HOBBIES_ID.getId()).getResponses());
 		if (fields.get(PAFConst.SURGEON_NM.getId()) != null)
 			ssv.setSurgeonName(fields.get(PAFConst.SURGEON_NM.getId()).getResponses().get(0));
@@ -187,10 +190,10 @@ public class PatientAmbassadorIndexer extends SMTAbstractIndex {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#purgeIndexItems(org.apache.solr.client.solrj.impl.HttpSolrServer)
+	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#purgeIndexItems(org.apache.solr.client.solrj.impl.CloudSolrClient)
 	 */
 	@Override
-	public void purgeIndexItems(HttpSolrServer server) throws IOException {
+	public void purgeIndexItems(CloudSolrClient server) throws IOException {
 		try {
 			server.deleteByQuery(SearchDocumentHandler.INDEX_TYPE + ":" + getIndexType());
 		} catch (Exception e) {

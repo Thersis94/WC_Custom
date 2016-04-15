@@ -114,6 +114,15 @@ public class CourseCalendarVO extends EventEntryVO {
 	public void setObjectivesText(String objective) {
 		super.setObjectivesText(objective);
 	}
+	
+	/**
+	 * @param objective The Level 1 Event Type to set.
+	 */
+	@Importable(name = "Level 1 Event Type", type = DataType.STRING)
+	@DatabaseColumn(column = "LOCATION_DESC", dataType = "nvarchar(1000)", table = "EVENT_ENTRY")
+	public void setLocationDesc(String locn) {
+		super.setLocationDesc(locn);
+	}
 
 	/**
 	 * @param objective The objective2 to set.

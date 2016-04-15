@@ -29,6 +29,7 @@ public class ProductCatalogSolrDocumentVO extends SolrDocumentVO {
 
 	private String thumbImage = null;
 	private int dsOrderNo;
+	private String specialty = null;
 
 	/**
 	 * 
@@ -87,5 +88,14 @@ public class ProductCatalogSolrDocumentVO extends SolrDocumentVO {
 
 	public void setDsOrderNo(int dsOrderNo) {
 		this.dsOrderNo = dsOrderNo;
+	}
+
+	public void setSpecialty(String specialty) {
+		this.specialty = specialty;
+	}
+
+	@SolrField(name="opco_ss")
+	public String getSpecialty(){
+		return specialty;
 	}
 }
