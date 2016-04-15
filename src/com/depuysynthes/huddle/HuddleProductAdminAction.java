@@ -84,8 +84,11 @@ public class HuddleProductAdminAction extends SimpleActionAdapter {
 		String bType = StringUtil.checkVal(req.getParameter("bType"));
 		if ("Product".equals(bType)) {
 			//fire the delete to Solr
-			SolrActionUtil util = new SolrActionUtil(getAttributes());
-			util.removeDocument(req.getParameter("productId"));
+			try (SolrActionUtil util = new SolrActionUtil(getAttributes())) {
+				util.removeDocument(req.getParameter("productId"));
+			} catch (Exception e) {
+				log.error("could not delete product", e);
+			}
 		} else if (bType.contains("Product")) {
 			// We are deleting an attribute or a category on a product
 			// and need to update the related solr document.
