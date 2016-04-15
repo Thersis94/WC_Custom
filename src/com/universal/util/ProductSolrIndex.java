@@ -10,8 +10,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+
 // log4j 1.2-15
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+
 
 // SMT Base Libs
 import com.siliconmtn.commerce.catalog.ProductVO;
@@ -63,7 +65,7 @@ public class ProductSolrIndex extends SMTAbstractIndex {
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.search.lucene.custom.SMTCustomIndexIntfc#addIndexItems(java.sql.Connection, com.siliconmtn.cms.CMSConnection, org.apache.lucene.index.IndexWriter)
 	 */
-	public void addIndexItems(HttpSolrServer server) {
+	public void addIndexItems(CloudSolrClient server) {
 		log.info("Indexing USA Products");
 		
 		// Index the products
@@ -76,27 +78,28 @@ public class ProductSolrIndex extends SMTAbstractIndex {
      * Flattens out the hierarchy and stores all fields in the content fields
 	 * @param server
      */
-    private void indexProducts(HttpSolrServer server, List<Node> nodes) {
-    	log.info("Found " + nodes.size() + " nodes containing products to index.");
-    	
-    	SolrActionUtil solrUtil = new SolrActionUtil(server);
+    @SuppressWarnings("resource")
+    private void indexProducts(CloudSolrClient server, List<Node> nodes) {
+		log.info("Found " + nodes.size() + " nodes containing products to index.");
+		
+		SolrActionUtil solrUtil = new SolrActionUtil(server);
 		SolrDocumentVO solrDoc = null;
-
-    	for (Node n : nodes) {
-    		ProductVO vo = (ProductVO)n.getUserObject();
-    		log.debug("Full Path: " + CATALOG_PAGE_URL + "/" +  n.getFullPath());
-
-    		try {
-    			solrDoc = SolrActionUtil.newInstance(SOLR_DOC_CLASS);
-    			solrDoc.setData(vo);
-    			solrDoc.addOrganization(ORGANIZATON_ID);
-    			solrDoc.setDocumentUrl(CATALOG_PAGE_URL + n.getFullPath());
-    			log.debug("adding to Solr: " + solrDoc.toString());
+		
+		for (Node n : nodes) {
+			ProductVO vo = (ProductVO)n.getUserObject();
+			log.debug("Full Path: " + CATALOG_PAGE_URL + "/" +  n.getFullPath());
+		
+		try {
+			solrDoc = SolrActionUtil.newInstance(SOLR_DOC_CLASS);
+			solrDoc.setData(vo);
+			solrDoc.addOrganization(ORGANIZATON_ID);
+			solrDoc.setDocumentUrl(CATALOG_PAGE_URL + n.getFullPath());
+			log.debug("adding to Solr: " + solrDoc.toString());
 		        solrUtil.addDocument(solrDoc);
-    		} catch (Exception e) {
-    			log.error("Unable to index products",e);
-    		}
-    	}
+		} catch (Exception e) {
+			log.error("Unable to index products",e);
+			}
+		}
     }
     
     /**
@@ -169,7 +172,7 @@ public class ProductSolrIndex extends SMTAbstractIndex {
     }
 
 	@Override
-	public void purgeIndexItems(HttpSolrServer server) throws IOException {
+	public void purgeIndexItems(CloudSolrClient server) throws IOException {
 		try {
 			server.deleteByQuery(SearchDocumentHandler.INDEX_TYPE + ":" + getIndexType());
 		} catch (Exception e) {
