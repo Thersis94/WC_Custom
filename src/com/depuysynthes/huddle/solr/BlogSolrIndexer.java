@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 
 import com.depuysynthes.huddle.HuddleUtils;
@@ -65,7 +65,7 @@ public class BlogSolrIndexer extends SMTAbstractIndex {
 	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#addIndexItems(org.apache.solr.client.solrj.impl.HttpSolrServer)
 	 */
 	@Override
-	public void addIndexItems(HttpSolrServer server) {
+	public void addIndexItems(CloudSolrClient server) {
 		log.info("Indexing Huddle Blog Portlets");
 
 		// add blog portlets that are visible on site pages
@@ -79,7 +79,8 @@ public class BlogSolrIndexer extends SMTAbstractIndex {
 	 * @param server
 	 * @param data
 	 */
-	private void indexBlogs(HttpSolrServer server, List<BlogGroupVO> data, String blogId) {
+	@SuppressWarnings("resource")
+	private void indexBlogs(CloudSolrClient server, List<BlogGroupVO> data, String blogId) {
 		log.info("Found " + data.size() + " pages containing blogs to index.");
 		SolrActionUtil solrUtil = new SolrActionUtil(server);
 		SolrDocumentVO solrDoc = null;
@@ -203,7 +204,7 @@ public class BlogSolrIndexer extends SMTAbstractIndex {
 	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#purgeIndexItems(org.apache.solr.client.solrj.impl.HttpSolrServer)
 	 */
 	@Override
-	public void purgeIndexItems(HttpSolrServer server) throws IOException {
+	public void purgeIndexItems(CloudSolrClient server) throws IOException {
 		try {
 			server.deleteByQuery(SearchDocumentHandler.INDEX_TYPE + ":" + getIndexType());
 		} catch (Exception e) {
@@ -220,14 +221,13 @@ public class BlogSolrIndexer extends SMTAbstractIndex {
 	 */
 	public void pushSingleArticle(String blogId) {
 		log.info("Indexing Single Huddle Blog");
-		HttpSolrServer server = makeServer();
-
-		// load the blog portlet this blogId belongs to, inclusive of the indexable page that it's on
-		List<BlogGroupVO> data = getBlogs(blogId);
-		indexBlogs(server, data, blogId);
-		
-		try {
+		try (CloudSolrClient server = makeServer()) {
+			// load the blog portlet this blogId belongs to, inclusive of the indexable page that it's on
+			List<BlogGroupVO> data = getBlogs(blogId);
+			indexBlogs(server, data, blogId);
+			
 			server.commit(false, false); //commit, but don't wait for Solr to acknowledge
+			
 		} catch (Exception e) {
 			log.error("could not commit to Solr", e);
 		}

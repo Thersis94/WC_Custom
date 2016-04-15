@@ -214,48 +214,52 @@ public class SalesConsultantAction extends SimpleActionAdapter {
 		
 		Map<String, SalesConsultantAlignVO> finalData = new HashMap<>(data.size());
 		SalesConsultantAlignVO vo;
-		SolrActionUtil util = new SolrActionUtil(getAttributes());
-		util.setHardCommit(false); //let the insert handle the commit of the delete; so we only fire one commit to Solr.
-		
-		//delete all existing Solr records, since we don't have a means of managing deltas
-		util.removeByQuery(SearchDocumentHandler.INDEX_TYPE, HuddleUtils.IndexType.HUDDLE_CONSULTANTS.toString());
-		
-		//insert all records loaded from the file
-		util.setHardCommit(true);
-		
-		for (Object obj : data) {
-			SalesConsultantAlignVO newVo = (SalesConsultantAlignVO) obj;
-			if (Convert.formatInteger(newVo.getREP_ID()) == 0) continue;
+		try (SolrActionUtil util = new SolrActionUtil(getAttributes())) {
+			util.setHardCommit(false); //let the insert handle the commit of the delete; so we only fire one commit to Solr.
 			
-			String documentId = "dpy-rep-" + newVo.getREP_ID();
-			newVo.setCity(StringUtil.capitalizePhrase(newVo.getCity(), 3));
-			newVo.setCNSMR_NM(StringUtil.capitalizePhrase(newVo.getCNSMR_NM(), 3));
-			vo = finalData.get(documentId);
-			if (vo != null) {
-				//treat this as an additional hospital, add it to the existing VO
-				String hier = newVo.getHierarchy();
-				for (String existing : vo.getHierarchies()) {
-					if (existing.equals(hier)) { //do not add if we already have it
-						hier = null;
-						break;
+			//delete all existing Solr records, since we don't have a means of managing deltas
+			util.removeByQuery(SearchDocumentHandler.INDEX_TYPE, HuddleUtils.IndexType.HUDDLE_CONSULTANTS.toString());
+			
+			//insert all records loaded from the file
+			util.setHardCommit(true);
+			
+			for (Object obj : data) {
+				SalesConsultantAlignVO newVo = (SalesConsultantAlignVO) obj;
+				if (Convert.formatInteger(newVo.getREP_ID()) == 0) continue;
+				
+				String documentId = "dpy-rep-" + newVo.getREP_ID();
+				newVo.setCity(StringUtil.capitalizePhrase(newVo.getCity(), 3));
+				newVo.setCNSMR_NM(StringUtil.capitalizePhrase(newVo.getCNSMR_NM(), 3));
+				vo = finalData.get(documentId);
+				if (vo != null) {
+					//treat this as an additional hospital, add it to the existing VO
+					String hier = newVo.getHierarchy();
+					for (String existing : vo.getHierarchies()) {
+						if (existing.equals(hier)) { //do not add if we already have it
+							hier = null;
+							break;
+						}
 					}
+					if (hier != null) vo.addHierarchies(hier);
+				} else {
+					vo = newVo;
+					vo.setDocumentId(documentId);
+					vo.setModule(HuddleUtils.IndexType.HUDDLE_CONSULTANTS.toString());
+					vo.addOrganization(orgId);
+					vo.addRole(SecurityController.PUBLIC_REGISTERED_LEVEL);
+					vo.addHierarchies(newVo.getHierarchy()); //move the data from 3 separate fields to our hierarchy field
+					vo.setCity(null); //flush these, because they don't apply to these records in the context implied (we use them in hierarchy)
+					vo.setState(null);
+					if (repData.containsKey(vo.getREP_ID())) //REP_ID = WWID
+						vo.setRepTitle(repData.get(vo.getREP_ID()).getTitle());
 				}
-				if (hier != null) vo.addHierarchies(hier);
-			} else {
-				vo = newVo;
-				vo.setDocumentId(documentId);
-				vo.setModule(HuddleUtils.IndexType.HUDDLE_CONSULTANTS.toString());
-				vo.addOrganization(orgId);
-				vo.addRole(SecurityController.PUBLIC_REGISTERED_LEVEL);
-				vo.addHierarchies(newVo.getHierarchy()); //move the data from 3 separate fields to our hierarchy field
-				vo.setCity(null); //flush these, because they don't apply to these records in the context implied (we use them in hierarchy)
-				vo.setState(null);
-				if (repData.containsKey(vo.getREP_ID())) //REP_ID = WWID
-					vo.setRepTitle(repData.get(vo.getREP_ID()).getTitle());
+				finalData.put(documentId, vo);
 			}
-			finalData.put(documentId, vo);
+			
+			util.addDocuments(finalData.values());
+			
+		} catch (Exception e) {
+			log.error("could not index sales consultants", e);
 		}
-		
-		util.addDocuments(finalData.values());
 	}
 }
