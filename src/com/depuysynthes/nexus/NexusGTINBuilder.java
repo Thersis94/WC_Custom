@@ -131,6 +131,7 @@ public class NexusGTINBuilder extends CommandLineUtil {
 		// Add the solr info to the map
 		solrAttribs.put(Constants.SOLR_BASE_URL, props.get(Constants.SOLR_BASE_URL));
 		solrAttribs.put(Constants.SOLR_COLLECTION_NAME, props.get(Constants.SOLR_COLLECTION_NAME));
+		solrAttribs.put(Constants.SOLR_BASE_PATH, props.get(Constants.SOLR_BASE_PATH));
 	}
 
 	/**

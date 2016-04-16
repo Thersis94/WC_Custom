@@ -24,7 +24,7 @@ import java.util.Set;
 import org.xml.sax.ContentHandler;
 
 // Apche SolrJ 4.9
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 
 // Apache Tika 1.5
@@ -39,9 +39,11 @@ import org.apache.tika.sax.BodyContentHandler;
 
 
 
+
 // SMT Base Libs
 import com.depuysynthes.action.MediaBinAdminAction;
 import com.depuysynthes.action.MediaBinAssetVO;
+import com.depuysynthes.action.MediaBinDistChannels.DistChannel;
 import com.depuysynthes.scripts.MediaBinDeltaVO;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.StringUtil;
@@ -91,9 +93,11 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 		VideoChapters("videoChapters_s"),
 		DownloadType("downloadType_s"),
 		DSOrderNo("dsOrderNo_i"),
-		ImportFileCd("importFileCd_i");
-		MediaBinField(String s) { this.metaDataField = s; }
+		ImportFileCd("importFileCd_i"),
+		Checksum("checksum_s");
+
 		private String metaDataField = null;
+		MediaBinField(String s) { this.metaDataField = s; }
 		public String getField() { return metaDataField; }
 	}
 
@@ -114,7 +118,7 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 	 * @see com.smt.sitebuilder.search.lucene.custom.SMTCustomIndexIntfc#addIndexItems(java.sql.Connection, com.siliconmtn.cms.CMSConnection, org.apache.lucene.index.IndexWriter)
 	 */
 	@Override
-	public void addIndexItems(HttpSolrServer server) {
+	public void addIndexItems(CloudSolrClient server) {
 		log.info("Indexing DePuySynthes MediaBin PDF assets");
 		List<MediaBinAssetVO> metaData = loadMetaData(dbConn, config.getProperty(Constants.CUSTOM_DB_SCHEMA));
 		indexFiles(metaData, server, StringUtil.checkVal(config.getProperty("mediabinFiles")));
@@ -126,7 +130,7 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 	 * @param server
 	 * @param fileRepos
 	 */
-	public void indexFiles(List<MediaBinAssetVO> metaData, HttpSolrServer server, String fileRepos) {
+	public void indexFiles(List<MediaBinAssetVO> metaData, CloudSolrClient server, String fileRepos) {
 		int cnt = 0;
 		for (int i = 0; i < metaData.size(); i++) {
 			SolrInputDocument doc = new SolrInputDocument();
@@ -137,10 +141,9 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 			List<String> opCoList = Arrays.asList(vo.getOpCoNm().split("~"));
 			if (opCoList == null || opCoList.size() == 0) continue; //not authorized for any; we should never hit this.
 			List<String> orgList  = new ArrayList<String>();
-			if (opCoList.contains("INTDS.com")) orgList.add("DPY_SYN_EMEA");
-			if (opCoList.contains("DSI.com")) orgList.add("DPY_SYN_INST");
-			if (opCoList.contains("USDS.com")) orgList.add("DPY_SYN");
-			if (opCoList.contains("DSHuddle.com")) orgList.add("DPY_SYN_HUDDLE");
+			for (DistChannel dc : DistChannel.values()) {
+				if (opCoList.contains(dc.getChannel())) orgList.add(dc.getOrgId());
+			}
 
 			//ensure click-to URLs bounce through our redirector for version control.  leading slash added by WC's View.
 			String fileNm = "&name=" + StringEncoder.urlEncode(vo.getFileNm());
@@ -170,7 +173,9 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 				doc.setField(MediaBinField.DownloadType.getField(), parseDownloadType(vo.getDownloadTypeTxt(), vo.isVideo()));
 				
 				doc.setField(SearchDocumentHandler.META_KEYWORDS, vo.getMetaKeywords());
-				doc.setField(SearchDocumentHandler.MODULE_TYPE, INDEX_TYPE + "_" + (vo.isVideo() ? "VIDEO" : "DOWNLOAD"));
+				//TODO this was removed for huddle and breaks DS.com - fix!
+				//doc.setField(SearchDocumentHandler.MODULE_TYPE, INDEX_TYPE + "_" + (vo.isVideo() ? "VIDEO" : "DOWNLOAD"));
+				doc.setField(SearchDocumentHandler.MODULE_TYPE, "DOCUMENT");
 				doc.setField(SearchDocumentHandler.UPDATE_DATE, df.format(vo.getModifiedDt()));
 				doc.setField(SearchDocumentHandler.CONTENTS, vo.isVideo() ? "" : parseFile(vo, fileRepos));
 				doc.setField(MediaBinField.TrackingNo.getField(), vo.getTrackingNoTxt()); //DSI uses this to align supporting images and tag favorites
@@ -178,6 +183,7 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 				doc.setField(MediaBinField.AssetDesc.getField(), vo.getAssetDesc());
 				doc.setField(MediaBinField.DSOrderNo.getField(), vo.isVideo() ? 25 : 30); //used for moduleType sequencing on DS only
 				doc.setField(MediaBinField.ImportFileCd.getField(), vo.getImportFileCd());
+				doc.setField(MediaBinField.Checksum.getField(), vo.getChecksum());
 				if (vo.isVideo())
 					doc.setField(MediaBinField.VideoChapters.getField(), vo.getVideoChapters());
 
@@ -446,10 +452,10 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#purgeIndexItems(org.apache.solr.client.solrj.impl.HttpSolrServer)
+	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#purgeIndexItems(org.apache.solr.client.solrj.impl.CloudSolrClient)
 	 */
 	@Override
-	public void purgeIndexItems(HttpSolrServer server) throws IOException {
+	public void purgeIndexItems(CloudSolrClient server) throws IOException {
 		try {
 			server.deleteByQuery(SearchDocumentHandler.INDEX_TYPE + ":" + getIndexType());
 		} catch (Exception e) {

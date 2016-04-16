@@ -1,7 +1,5 @@
 package com.depuysynthesinst;
 
-import java.util.Calendar;
-
 import com.siliconmtn.annotations.SolrField;
 import com.siliconmtn.cms.TemplateFieldVO;
 import com.siliconmtn.cms.TemplateFieldVOContainer;
@@ -23,28 +21,31 @@ import com.smt.sitebuilder.search.SearchDocumentHandler;
 public class QuickstreamTemplate extends CMSSolrDocumentVO {
 
 	private String assetType;
-	private String assetUrl;
+	protected String assetUrl;
 	private String trackingNo;
 	
 	/**
 	 * @param solrIndex
 	 */
+	public QuickstreamTemplate(String indexType) {
+		super(indexType);
+	}
+	
 	public QuickstreamTemplate() {
-		super(QuickstreamSolrIndexer.INDEX_TYPE);
-		super.setUpdateDt(Calendar.getInstance().getTime());
+		super();
 	}
 	
 	/**
 	 * extension of superclass implementation; for DSI-specific template fields
 	 */
 	public void setData(Object o) {
-		super.setData(o);
-		CMSContentVO vo = (CMSContentVO) o;
 		//this is for debugging; trying to track down an NPE - JM 03.26.15
-		if (vo == null) {
+		if (o == null) {
 			log.error("passed a null vo, figure out why.");
 			return;
 		}
+		super.setData(o);
+		CMSContentVO vo = (CMSContentVO) o;
 		
 		TemplateFieldVOContainer templateData = vo.getTemplateData();
 		//this is for debugging; trying to track down an NPE - JM 03.26.15
@@ -55,7 +56,6 @@ public class QuickstreamTemplate extends CMSSolrDocumentVO {
 		
 		if (vo.getArticle() != null)
 			super.setSummary(StringUtil.checkVal(vo.getArticle().toString()));
-		
 		
 		
 		//some core fields are provided here-in:
@@ -73,8 +73,7 @@ public class QuickstreamTemplate extends CMSSolrDocumentVO {
 					setTrackingNo(StringUtil.checkVal(field.getFieldValue()));
 					break;
 				case "Asset Type":
-					//lowercase here correlates to the JSP we use in the View "external site.jsp"
-					setAssetType(StringUtil.checkVal(field.getFieldValue()).toLowerCase()); 
+					setAssetType(StringUtil.checkVal(field.getFieldValue())); 
 					break;
 			}
 		}
@@ -106,9 +105,15 @@ public class QuickstreamTemplate extends CMSSolrDocumentVO {
 		this.assetType = assetType;
 	}
 
+	@Override
 	@SolrField(name=SearchDocumentHandler.DOCUMENT_URL)
-	public String getAssetUrl() {
-		return assetUrl;
+	public String getDocumentUrl() {
+		//if there is nothing in assetUrl, return documentUrl, which is the /docs/ path to a likely XLS or PDF file
+		if (assetUrl != null && assetUrl.length() > 0) {
+			return assetUrl;
+		} else {
+			return super.getDocumentUrl();
+		}
 	}
 
 	public void setAssetUrl(String assetUrl) {
