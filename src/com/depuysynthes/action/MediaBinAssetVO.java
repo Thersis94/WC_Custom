@@ -74,7 +74,7 @@ public class MediaBinAssetVO extends SBModuleVO {
 		dpySynMediaBinId = db.getStringVal("dpy_syn_mediabin_id", rs);
 		assetNm = db.getStringVal("asset_nm", rs);
 		assetDesc = db.getStringVal("asset_desc", rs);
-		assetType = db.getStringVal("asset_type", rs);
+		setAssetType(db.getStringVal("asset_type", rs));
 		bodyRegionTxt = db.getStringVal("body_region_txt", rs);
 		businessUnitNm = db.getStringVal("business_unit_nm", rs);
 		businessUnitId = db.getIntegerVal("business_unit_id", rs);
