@@ -129,11 +129,11 @@ public class NexusCartPDFReport  extends AbstractSBReportVO {
 			html.append("<td style='font-size:12px; width:400px;");
 			String gtin = (String) item.getProduct().getProdAttributes().get("gtin");
 
-			html.append("'><span style='font-weight:bold;position:relative;top:30px;'>GTIN</span><span><img style='float:right' src='/barcodeGenerator?textFormat=NEXUS&barcodeData=01").append(gtin).append("&height=40' /></span></td></tr>");
+			html.append("'><span style='font-weight:bold;position:relative;top:30px;'>GTIN</span><span><img style='float:right' src='/barcodeGenerator?textFormat=NEXUS&barcodeData=01").append(gtin).append("&height=55' /></span></td></tr>");
 			html.append("<tr><td style='").append(border).append("'>&nbsp;</td>");
 			html.append("<td colspan='7' style='font-size:12px; width:400px;").append(border).append("'>");
 			html.append(item.getProduct().getShortDesc()).append("</td><td style='font-size:12px; margin-bottom:10px;").append(border).append("'>");
-			html.append("<span style='font-weight:bold;position:relative;top:30px;'>LOT</span><span><img style='float:right' src='/barcodeGenerator?textFormat=NEXUS&barcodeData=10").append(item.getProduct().getProdAttributes().get("lotNo")).append("&height=40' /></span>");
+			html.append("<span style='font-weight:bold;position:relative;top:30px;'>LOT</span><span><img style='float:right' src='/barcodeGenerator?textFormat=NEXUS&barcodeData=10").append(item.getProduct().getProdAttributes().get("lotNo")).append("&height=55' /></span>");
 			
 			html.append("</span></td></tr>");
 			i++;
