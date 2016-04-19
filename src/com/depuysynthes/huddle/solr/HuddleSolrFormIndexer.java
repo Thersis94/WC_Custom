@@ -15,7 +15,7 @@ public class HuddleSolrFormIndexer extends FormSolrIndexer {
 	
 	public HuddleSolrFormIndexer(Properties config) {
 		super(config);
-		moduleType = "DPY_SYN_HUDDLE_FORM_GROUP";
+		moduleType = "HUDDLE_FORM_GROUP";
 	}
 	
 	public static FormSolrIndexer makeInstance(Map<String, Object> attributes) {
