@@ -70,7 +70,7 @@ public class NexusCartPDFReport  extends AbstractSBReportVO {
 		html.append("<html><head><title>Case Summary</title></head><body>");
 		html.append("<link href='/binary/themes/CUSTOM/DEPUY/DPY_SYN_NEXUS/scripts/css/font-awesome.css' rel='stylesheet'>");
 		html.append("<style>@page{margin-bottom:50px;}body{font-family: 'MyriadWebPro';}th{margin-bottom:10px;border-bottom:solid black 2px; font-size:12px;}");
-		html.append("@page{margin-bottom:125px;@bottom-center {content: 'By annotating the case specific information it is understood that this document contains sensitive data that is highly restricted.'}}</style>");
+		html.append("</style>");
 		
 		
 		html.append("<table style='color:#636363;border-collapse:collapse;font-size:16px; width:100%;'><tbody>");

@@ -94,9 +94,6 @@ public class NexusKitPDFReport  extends AbstractSBReportVO {
 		html.append(" @page {@top-center { content: element(header); width:100%;}}");
 		html.append(" @page {@left-middle { content: element(layer); height:100%; vertical-align: top;}}");
 		html.append("@page {@bottom-right { content: counter(page) ' of ' counter(pages);page-break-after: always; }");
-		String disclaimer = "This form's sole purpose is for convenience of inventory and device usage identification.";
-		if (isForm) disclaimer = "By annotating the case specific information it is understood that this document contains sensitive data that is highly restricted. " + disclaimer;
-		html.append("@bottom-left {width:80%; content: \""+disclaimer+"\"}");
 		html.append("}");
 		html.append("@page {");
 		if (isForm) {
