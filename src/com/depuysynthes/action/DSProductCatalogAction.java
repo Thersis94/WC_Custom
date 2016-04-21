@@ -154,12 +154,11 @@ public class DSProductCatalogAction extends SimpleActionAdapter {
 	 */
 	private void updatePageVO(PageVO page, ProductVO pr, ProductCategoryVO p) {
 		//page title
-		String val = pr.getProductName() != null ? pr.getProductName() : p.getCategoryName();
+		String val = StringUtil.checkVal(pr.getTitle(), StringUtil.checkVal(pr.getProductName(), 
+				StringUtil.checkVal(p.getCategoryName(),  pr.getFullProductName())));	
 		if (StringUtil.checkVal(val).length() > 0) {
 			page.setTitleName(val);
-		} else if (StringUtil.checkVal(pr.getFullProductName()).length() > 0) {
-			page.setTitleName(pr.getFullProductName());
-		}
+		} 
 	
 		//meta keywords
 		val = pr.getMetaKywds() != null ? pr.getMetaKywds(): p.getMetaKeyword();
