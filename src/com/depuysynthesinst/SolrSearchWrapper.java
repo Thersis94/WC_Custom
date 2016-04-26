@@ -317,7 +317,7 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 		if ("nurse-education".equals(rootLvl)) {
 			rootLvl = "nurse-education/resource-library";
 		} else if ("bundled-payments".equals(rootLvl)) {
-			rootLvl = "bundled-payments/resource-library";
+			rootLvl = "bundled-payments";
 		}
 
 		//log.debug(rootLvl);
