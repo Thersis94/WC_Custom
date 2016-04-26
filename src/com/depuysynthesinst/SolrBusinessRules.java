@@ -102,6 +102,8 @@ public class SolrBusinessRules {
 				sectionNm ="Veterinary";
 			} else if (sectionNm.equals("future")) {
 				sectionNm ="Future Leaders";
+			} else if (sectionNm.equals("bundled payments")) {
+				sectionNm ="Bundled Payments";
 			}
 		}
 
