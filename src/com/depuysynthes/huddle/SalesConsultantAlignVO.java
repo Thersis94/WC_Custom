@@ -8,6 +8,7 @@ import java.util.Set;
 import com.siliconmtn.annotations.DataType;
 import com.siliconmtn.annotations.Importable;
 import com.siliconmtn.annotations.SolrField;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SolrDocumentVO;
@@ -66,8 +67,8 @@ public class SalesConsultantAlignVO extends SolrDocumentVO {
 	}
 
 	@SolrField(name="hospital_no_i")
-	public String getCNSMR_NO() {
-		return CNSMR_NO;
+	public Integer getCNSMR_NO() {
+		return Convert.formatInteger(CNSMR_NO);
 	}
 
 	@SolrField(name="hospital_nm_ss")
@@ -80,13 +81,13 @@ public class SalesConsultantAlignVO extends SolrDocumentVO {
 	}
 
 	@SolrField(name="territory_no_i")
-	public String getTERR_ID() {
-		return TERR_ID;
+	public Integer getTERR_ID() {
+		return Convert.formatInteger(TERR_ID);
 	}
 
 	@SolrField(name="rep_id_i")
-	public String getREP_ID() {
-		return REP_ID;
+	public Integer getREP_ID() {
+		return Convert.formatInteger(REP_ID);
 	}
 
 	@SolrField(name="rep_first_nm_s")
@@ -124,8 +125,8 @@ public class SalesConsultantAlignVO extends SolrDocumentVO {
 	}
 
 	@SolrField(name="mgr_id_i")
-	public String getCORE_DIV_MGR_ID() {
-		return CORE_DIV_MGR_ID;
+	public Integer getCORE_DIV_MGR_ID() {
+		return Convert.formatInteger(CORE_DIV_MGR_ID);
 	}
 
 	@SolrField(name="mgr_first_nm_s")
