@@ -94,7 +94,8 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 		DownloadType("downloadType_s"),
 		DSOrderNo("dsOrderNo_i"),
 		ImportFileCd("importFileCd_i"),
-		Checksum("checksum_s");
+		Checksum("checksum_s"),
+		SearchType("documentType_s");
 
 		private String metaDataField = null;
 		MediaBinField(String s) { this.metaDataField = s; }
@@ -173,8 +174,7 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 				doc.setField(MediaBinField.DownloadType.getField(), parseDownloadType(vo.getDownloadTypeTxt(), vo.isVideo()));
 				
 				doc.setField(SearchDocumentHandler.META_KEYWORDS, vo.getMetaKeywords());
-				//TODO this was removed for huddle and breaks DS.com - fix!
-				//doc.setField(SearchDocumentHandler.MODULE_TYPE, INDEX_TYPE + "_" + (vo.isVideo() ? "VIDEO" : "DOWNLOAD"));
+				doc.addField(MediaBinField.SearchType.getField(), vo.isVideo() ? "VIDEO" : "DOWNLOAD");
 				doc.setField(SearchDocumentHandler.MODULE_TYPE, "DOCUMENT");
 				doc.setField(SearchDocumentHandler.UPDATE_DATE, df.format(vo.getModifiedDt()));
 				doc.setField(SearchDocumentHandler.CONTENTS, vo.isVideo() ? "" : parseFile(vo, fileRepos));
