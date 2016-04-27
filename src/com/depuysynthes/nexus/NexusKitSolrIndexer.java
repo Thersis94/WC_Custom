@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.http.client.HttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 
@@ -85,7 +87,7 @@ public class NexusKitSolrIndexer extends CommandLineUtil {
 	@SuppressWarnings("resource")
 	@Override
 	public void run() {
-		try (CloudSolrClient server = new CloudSolrClient(Arrays.asList(props.getProperty(Constants.SOLR_BASE_URL).split(",")), props.getProperty(Constants.SOLR_BASE_PATH))){
+		try (CloudSolrClient server = new CloudSolrClient(Arrays.asList(props.getProperty(Constants.SOLR_BASE_URL).split(",")), props.getProperty(Constants.SOLR_BASE_PATH), HttpClientBuilder.create().build())){
 			server.setDefaultCollection(props.getProperty(Constants.SOLR_COLLECTION_NAME));
 			server.setParser(new XMLResponseParser());
 			List<SolrDocumentVO> kits = loadKits();

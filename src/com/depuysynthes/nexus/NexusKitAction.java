@@ -12,6 +12,8 @@ import java.util.Map;
 
 import javax.servlet.http.Cookie;
 
+import org.apache.http.client.HttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.common.SolrDocument;
@@ -1153,7 +1155,7 @@ public class NexusKitAction extends SBActionAdapter {
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		String collection = getSolrCollection((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 		String path = StringUtil.checkVal(attributes.get(Constants.SOLR_BASE_PATH), null);
-		try (CloudSolrClient server = new CloudSolrClient(Arrays.asList(baseUrl.split(",")), path)){
+		try (CloudSolrClient server = new CloudSolrClient(Arrays.asList(baseUrl.split(",")), path, HttpClientBuilder.create().build())){
 			server.setDefaultCollection(collection);
 			server.setParser(new XMLResponseParser());
 		

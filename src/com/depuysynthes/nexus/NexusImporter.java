@@ -17,6 +17,8 @@ import java.util.TreeMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import org.apache.http.client.HttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 
@@ -175,7 +177,7 @@ public class NexusImporter extends CommandLineUtil {
 		int cnt=0;
 		Map<String, NexusProductVO> products = new HashMap<>();
 		int fails = 0;
-		try (CloudSolrClient server = new CloudSolrClient(Arrays.asList(props.getProperty(Constants.SOLR_BASE_URL).split(",")), props.getProperty(Constants.SOLR_BASE_PATH))){
+		try (CloudSolrClient server = new CloudSolrClient(Arrays.asList(props.getProperty(Constants.SOLR_BASE_URL).split(",")), props.getProperty(Constants.SOLR_BASE_PATH), HttpClientBuilder.create().build())){
 			server.setDefaultCollection(props.getProperty(Constants.SOLR_COLLECTION_NAME));
 			server.setParser(new XMLResponseParser());
 			

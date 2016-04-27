@@ -29,6 +29,9 @@ import java.util.Set;
 
 
 
+
+import org.apache.http.client.HttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 // SOLR Libs
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
@@ -862,7 +865,7 @@ public class NexusKitImporter extends CommandLineUtil {
 		String baseUrl = props.getProperty(Constants.SOLR_BASE_URL);
 		String collection =  props.getProperty(Constants.SOLR_COLLECTION_NAME);
 		String path =  props.getProperty(Constants.SOLR_BASE_PATH);
-		server = new CloudSolrClient(Arrays.asList(baseUrl.split(",")), path);
+		server = new CloudSolrClient(Arrays.asList(baseUrl.split(",")), path, HttpClientBuilder.create().build());
 		server.setDefaultCollection(collection);
 		server.setParser(new XMLResponseParser());
 	}

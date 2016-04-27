@@ -18,11 +18,14 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
+import org.apache.http.client.HttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+
 
 
 
@@ -258,7 +261,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		String baseUrl = props.getProperty(Constants.SOLR_BASE_URL);
 		String collection = props.getProperty(Constants.SOLR_COLLECTION_NAME);
 		String path = props.getProperty(Constants.SOLR_BASE_PATH);
-		CloudSolrClient server = new CloudSolrClient(Arrays.asList(baseUrl.split(",")), path);
+		CloudSolrClient server = new CloudSolrClient(Arrays.asList(baseUrl.split(",")), path, HttpClientBuilder.create().build());
 		server.setDefaultCollection(collection);
 		server.setParser(new XMLResponseParser());
 
