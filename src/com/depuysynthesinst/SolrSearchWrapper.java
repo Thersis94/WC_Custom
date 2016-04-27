@@ -77,7 +77,7 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 			req.setParameter("fieldSort", "documentId");
 			req.setParameter("rpp", "3000");
 			req.setParameter("page", "0");
-		} else if ("credits_i".equals(sortType) || "title_sort".equals(sortType)) { 
+		} else if ("credits_i".equals(sortType) || "title_lcase".equals(sortType)) { 
 			//LMS course credits or Future Leaders Technique Guides 
 			//test for specific sorting values, or Solr will puke (@hack attempts)
 			req.setParameter("sortField", sortType);

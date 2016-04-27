@@ -90,7 +90,9 @@ public class PatientAmbassadorIndexer extends SMTAbstractIndex {
 		if (fields.get(PAFConst.SURGEON_NM.getId()) != null)
 			ssv.setSurgeonName(fields.get(PAFConst.SURGEON_NM.getId()).getResponses().get(0));
 		ssv.setHierarchies(fields.get(PAFConst.JOINT_ID.getId()).getResponses());
-		ssv.setOtherHobbies(fields.get(PAFConst.OTHER_HOBBY_ID.getId()).getResponses().get(0));
+		if (fields.get(PAFConst.OTHER_HOBBY_ID.getId()) != null) {
+				ssv.setOtherHobbies(fields.get(PAFConst.OTHER_HOBBY_ID.getId()).getResponses().get(0));
+		}
 		ssv.setTitle(fields.get(PAFConst.STORY_TITLE_ID.getId()).getResponses().get(0));
 		ssv.setSummary(fields.get(PAFConst.STORY_TEXT_ID.getId()).getResponses().get(0));
 		ssv.addOrganization(ORG_ID);
