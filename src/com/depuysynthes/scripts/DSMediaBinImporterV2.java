@@ -510,8 +510,10 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 					fos.write(byteBuffer, 0, nRead);
 				}
 				fos.flush();
-				vo.setFileSizeNo(byteCnt);
-				log.debug("wrote file " + fullPath);
+				int kbCnt = byteCnt;
+				try { kbCnt = byteCnt/1000; } catch (Exception e) {}
+				vo.setFileSizeNo(kbCnt);
+				log.debug("wrote file " + fullPath + " kb=" + kbCnt + " bytes=" + byteCnt);
 			}
 		} catch (FileNotFoundException fnfe) {
 			vo.setRecordState(State.Failed);
