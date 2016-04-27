@@ -250,13 +250,14 @@ public class SalesConsultantAction extends SimpleActionAdapter {
 					vo.addHierarchies(newVo.getHierarchy()); //move the data from 3 separate fields to our hierarchy field
 					vo.setCity(null); //flush these, because they don't apply to these records in the context implied (we use them in hierarchy)
 					vo.setState(null);
-					if (repData.containsKey(vo.getREP_ID())) //REP_ID = WWID
-						vo.setRepTitle(repData.get(vo.getREP_ID()).getTitle());
+					if (repData.containsKey(""+vo.getREP_ID())) //REP_ID = WWID
+						vo.setRepTitle(repData.get(""+vo.getREP_ID()).getTitle());
 				}
 				finalData.put(documentId, vo);
 			}
 			
-			util.addDocuments(finalData.values());
+			if (finalData.size() > 0) //don't push an empty collection to Solr, it gets angry. -JM 04.26.16
+				util.addDocuments(finalData.values());
 			
 		} catch (Exception e) {
 			log.error("could not index sales consultants", e);
