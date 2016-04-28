@@ -12,7 +12,7 @@ import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
 //Solr libs
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.SolrClient;
 
 // WC libs
 import com.siliconmtn.commerce.catalog.ProductAttributeContainer;
@@ -67,7 +67,7 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 	 * @see com.smt.sitebuilder.search.lucene.custom.SMTCustomIndexIntfc#addIndexItems(java.sql.Connection, com.siliconmtn.cms.CMSConnection, org.apache.lucene.index.IndexWriter)
 	 */
 	@Override
-	public void addIndexItems(CloudSolrClient server) {
+	public void addIndexItems(SolrClient server) {
 		log.info("Indexing DSHuddle Products");
 		prepareSortOrder();
 		indexProducts(server);
@@ -85,7 +85,7 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 	 * @param catalogId
 	 * @param server
 	 */
-	protected void indexProducts(CloudSolrClient server) {
+	protected void indexProducts(SolrClient server) {
 		log.info("Indexing products in " + HuddleUtils.CATALOG_ID);
 		Tree tree = getProductData(HuddleUtils.CATALOG_ID);
 		traverseTree(tree, server);
@@ -98,7 +98,7 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 	 * @param server
 	 */
 	@SuppressWarnings("resource")
-	private void traverseTree(Tree tree, CloudSolrClient server) {
+	private void traverseTree(Tree tree, SolrClient server) {
 		//begin iterating the category tree; this call is recursive and will iterate the entire tree sequentially
 		for (Node child : tree.getRootNode().getChildren()) {
 			loopNode(child);
@@ -291,7 +291,7 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 	
 
 	@Override
-	public void purgeIndexItems(CloudSolrClient server) throws IOException {
+	public void purgeIndexItems(SolrClient server) throws IOException {
 		try {
 			StringBuilder solrQuery = new StringBuilder(60);
 			solrQuery.append(SearchDocumentHandler.INDEX_TYPE + ":" + getIndexType() + " AND ");
@@ -317,7 +317,7 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 	 */
 	public void pushSingleProduct(Tree tree) {
 		log.debug("Indexing Single Huddle Product");
-		CloudSolrClient server = makeServer();
+		SolrClient server = makeServer();
 		prepareSortOrder();
 		traverseTree(tree, server);
 		
