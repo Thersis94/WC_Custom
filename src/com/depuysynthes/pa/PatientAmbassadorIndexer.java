@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.SolrClient;
 
 import com.depuysynthes.pa.PatientAmbassadorStoriesTool.PAFConst;
 import com.siliconmtn.exception.DatabaseException;
@@ -44,11 +44,11 @@ public class PatientAmbassadorIndexer extends SMTAbstractIndex {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#addIndexItems(org.apache.solr.client.solrj.impl.CloudSolrClient)
+	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#addIndexItems(org.apache.solr.client.solrj.SolrClient)
 	 */
 	@SuppressWarnings("resource")
 	@Override
-	public void addIndexItems(CloudSolrClient server) {
+	public void addIndexItems(SolrClient server) {
 		SolrActionUtil solrUtil = new SolrActionUtil(server);
 		List<FormTransactionVO> formVOs = retreiveAllSubmissions();
 		
@@ -192,10 +192,10 @@ public class PatientAmbassadorIndexer extends SMTAbstractIndex {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#purgeIndexItems(org.apache.solr.client.solrj.impl.CloudSolrClient)
+	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#purgeIndexItems(org.apache.solr.client.solrj.SolrClient)
 	 */
 	@Override
-	public void purgeIndexItems(CloudSolrClient server) throws IOException {
+	public void purgeIndexItems(SolrClient server) throws IOException {
 		try {
 			server.deleteByQuery(SearchDocumentHandler.INDEX_TYPE + ":" + getIndexType());
 		} catch (Exception e) {

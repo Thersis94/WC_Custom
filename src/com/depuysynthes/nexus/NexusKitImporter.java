@@ -14,7 +14,6 @@ import java.sql.SQLException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
@@ -24,17 +23,8 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
-
-
-
-
-
-
-import org.apache.http.client.HttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
 // SOLR Libs
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.XMLResponseParser;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 
@@ -45,6 +35,7 @@ import com.siliconmtn.util.CommandLineUtil;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
+import com.siliconmtn.util.solr.SolrClientBuilder;
 import com.smt.sitebuilder.action.search.SolrActionIndexVO;
 import com.smt.sitebuilder.action.search.SolrActionVO;
 import com.smt.sitebuilder.action.search.SolrQueryProcessor;
@@ -73,7 +64,7 @@ public class NexusKitImporter extends CommandLineUtil {
 	 * Instance of the solr server create when the program starts so that
 	 * it is not recreated with every kit. 
 	 */
-	private CloudSolrClient server;
+	private SolrClient server;
 	
 	/**
 	 * Key for the index that should be used for the solr documents
@@ -864,10 +855,7 @@ public class NexusKitImporter extends CommandLineUtil {
 	private void loadSolrServer(Properties props) {
 		String baseUrl = props.getProperty(Constants.SOLR_BASE_URL);
 		String collection =  props.getProperty(Constants.SOLR_COLLECTION_NAME);
-		String path =  props.getProperty(Constants.SOLR_BASE_PATH);
-		server = new CloudSolrClient(Arrays.asList(baseUrl.split(",")), path, HttpClientBuilder.create().build());
-		server.setDefaultCollection(collection);
-		server.setParser(new XMLResponseParser());
+		server = SolrClientBuilder.build(baseUrl, collection);
 	}
 	
 	

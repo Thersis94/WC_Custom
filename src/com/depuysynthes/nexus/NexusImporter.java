@@ -17,10 +17,7 @@ import java.util.TreeMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import org.apache.http.client.HttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.XMLResponseParser;
+import org.apache.solr.client.solrj.SolrClient;
 
 import com.siliconmtn.io.ftp.SFTPV3Client;
 import com.siliconmtn.action.ActionException;
@@ -30,6 +27,7 @@ import com.siliconmtn.io.mail.SMTMailHandler;
 import com.siliconmtn.util.CommandLineUtil;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.solr.SolrClientBuilder;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SecurityController;
 import com.smt.sitebuilder.util.MessageSender;
@@ -177,9 +175,7 @@ public class NexusImporter extends CommandLineUtil {
 		int cnt=0;
 		Map<String, NexusProductVO> products = new HashMap<>();
 		int fails = 0;
-		try (CloudSolrClient server = new CloudSolrClient(Arrays.asList(props.getProperty(Constants.SOLR_BASE_URL).split(",")), props.getProperty(Constants.SOLR_BASE_PATH), HttpClientBuilder.create().build())){
-			server.setDefaultCollection(props.getProperty(Constants.SOLR_COLLECTION_NAME));
-			server.setParser(new XMLResponseParser());
+		try (SolrClient server = SolrClientBuilder.build(props.getProperty(Constants.SOLR_BASE_URL), props.getProperty(Constants.SOLR_COLLECTION_NAME))){
 			
 			boolean mdm = fileName.contains(".zip") || fileName.contains("|");
 			// Get the files and parse them into products
