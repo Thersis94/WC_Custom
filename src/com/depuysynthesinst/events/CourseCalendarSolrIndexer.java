@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.SolrInputDocument;
 
 import com.depuysynthes.lucene.MediaBinSolrIndex.MediaBinField;
@@ -50,10 +50,10 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#addIndexItems(org.apache.solr.client.solrj.impl.CloudSolrClient)
+	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#addIndexItems(org.apache.solr.client.solrj.SolrClient)
 	 */
 	@Override
-	public void addIndexItems(CloudSolrClient server) {
+	public void addIndexItems(SolrClient server) {
 		log.info("Indexing Course Calendar Portlets");
 		List<EventEntryVO> data = loadEvents(dbConn, null);
 		indexEvents(server, data);
@@ -61,7 +61,7 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 	
 	
 	public void indexCertainItems(Set<String> eventEntryIds) {
-		CloudSolrClient server = makeServer();
+		SolrClient server = makeServer();
 		log.info("Indexing Certain Course Calendar Portlets");
 		
 		//if we're doing a full rebuild, make sure we purge what's in there
@@ -84,7 +84,7 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 	}
 	
 
-	protected void indexEvents(CloudSolrClient server, List<EventEntryVO> data) {
+	protected void indexEvents(SolrClient server, List<EventEntryVO> data) {
 		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 		List<SolrInputDocument> docs = new ArrayList<>(data.size());
 		
@@ -226,10 +226,10 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 
 
 	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#purgeIndexItems(org.apache.solr.client.solrj.impl.CloudSolrClient)
+	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#purgeIndexItems(org.apache.solr.client.solrj.SolrClient)
 	 */
 	@Override
-	public void purgeIndexItems(CloudSolrClient server) throws IOException {
+	public void purgeIndexItems(SolrClient server) throws IOException {
 		try {
 			server.deleteByQuery(SearchDocumentHandler.INDEX_TYPE + ":" + getIndexType() + " AND " + SearchDocumentHandler.ORGANIZATION + ":" + organizationId);
 		} catch (Exception e) {
