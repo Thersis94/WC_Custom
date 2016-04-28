@@ -124,8 +124,7 @@ public class EventCalendarAction extends CourseCalendar {
 			pushToSolr(events);
 		} else if (req.hasParameter("eventEntryId")) {
 			// This event is not approved so delete it from solr
-			SolrActionUtil util = new SolrActionUtil(getAttributes());
-			util.removeDocument(req.getParameter("eventEntryId"));
+			deleteSolrDocument(req.getParameter("eventEntryId"));
 		}
 	}
 
@@ -315,12 +314,24 @@ public class EventCalendarAction extends CourseCalendar {
 		sai.delete(req);
 		
 		if (req.hasParameter("eventEntryId")) {
-			SolrActionUtil util = new SolrActionUtil(getAttributes());
-			util.removeDocument(req.getParameter("eventEntryId"));
+			deleteSolrDocument(req.getParameter("eventEntryId"));
 		} else if (req.hasParameter("eventTypeId")) {
 			// If we deleted an entire group rebuild the index to be sure that
 			// the index is up to date with the current events.
 			pushToSolr(null);
+		}
+	}
+	
+	
+	/**
+	 * deletes a Document from Solr by documentId
+	 * @param blogId
+	 */
+	private void deleteSolrDocument(String docId) {
+		try (SolrActionUtil util = new SolrActionUtil(getAttributes())) {
+			util.removeDocument(docId);
+		} catch (Exception e) {
+			log.error("could not delte blog from solr", e);
 		}
 	}
 }

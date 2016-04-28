@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 
 import com.depuysynthes.huddle.HuddleUtils;
@@ -66,7 +66,7 @@ public class CalendarSolrIndexer extends CourseCalendarSolrIndexer {
 	/**
 	 * push the list of pased VOs into Solr.
 	 */
-	protected void indexEvents(HttpSolrServer server, List<EventEntryVO> data) {
+	protected void indexEvents(CloudSolrClient server, List<EventEntryVO> data) {
 		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 		List<SolrInputDocument> docs = new ArrayList<>(data.size());
 		
@@ -99,7 +99,7 @@ public class CalendarSolrIndexer extends CourseCalendarSolrIndexer {
 				doc.setField(SearchDocumentHandler.START_DATE + "Month_i", Convert.formatDate(vo.getStartDate(), "MM"));
 				doc.setField(SearchDocumentHandler.END_DATE + "Year_i", Convert.formatDate(vo.getEndDate(), "yyyy"));
 				doc.setField(SearchDocumentHandler.END_DATE + "Month_i", Convert.formatDate(vo.getEndDate(), "MM"));
-				doc.setField(HuddleUtils.SOLR_OPCO_FIELD, vo.getOpcoName());
+				doc.setField(HuddleUtils.SOLR_OPCO_FIELD, StringUtil.checkVal(vo.getOpcoName()).split(", "));
 				doc.setField(SearchDocumentHandler.CITY + "_s", vo.getCityName());
 				doc.setField(SearchDocumentHandler.STATE + "_s", StringUtil.checkVal(states.get(vo.getStateCode())));
 				doc.setField(SearchDocumentHandler.STATE, vo.getStateCode());

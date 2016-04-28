@@ -44,8 +44,7 @@ public class BlogAction extends SimpleActionAdapter {
 		if (!req.hasParameter("blogId")) return;
 		
 		//fire the delete to Solr
-		SolrActionUtil util = new SolrActionUtil(getAttributes());
-		util.removeDocument(req.getParameter("blogId"));
+		deleteSolrDocument(req.getParameter("blogId"));
 	}
 
 
@@ -68,14 +67,26 @@ public class BlogAction extends SimpleActionAdapter {
 		
 		//if the article is not "visible on website", delete it from Solr
 		if (!"1".equals(req.getParameter("approvalFlag"))) {
-			SolrActionUtil util = new SolrActionUtil(getAttributes());
-			util.removeDocument(req.getParameter("blogId"));
+			deleteSolrDocument(req.getParameter("blogId"));
 		} else {
 			//fire the VO to Solr, leverage the same lookup the "full rebuild" indexer uses, which joins to Site Pages
 			BlogSolrIndexer indexer = BlogSolrIndexer.makeInstance(getAttributes());
 			indexer.setDBConnection(getDBConnection());
 			log.debug("indexing blog article " + req.getParameter("blogId"));
 			indexer.pushSingleArticle(req.getParameter("blogId")); //null here would index the entire portlet, not just one article
+		}
+	}
+	
+	
+	/**
+	 * deletes a Document from Solr by documentId
+	 * @param blogId
+	 */
+	private void deleteSolrDocument(String docId) {
+		try (SolrActionUtil util = new SolrActionUtil(getAttributes())) {
+			util.removeDocument(docId);
+		} catch (Exception e) {
+			log.error("could not delte blog from solr", e);
 		}
 	}
 

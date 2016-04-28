@@ -238,7 +238,7 @@ public class HuddleFormGroupAction extends HuddleFormSolrAction {
 			sql.append("left outer join ");
 		}
 		sql.append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("HUDDLE_FORM_GROUP c on b.ACTION_GROUP_ID = c.FORM_ID ");
+		sql.append("DPY_SYN_HUDDLE_FORM_GROUP c on b.ACTION_GROUP_ID = c.FORM_ID ");
 		sql.append("and c.FORM_GROUP_ID = ? where b.ORGANIZATION_ID = ? ");
 		sql.append("order by c.ORDER_NO, b.PENDING_SYNC_FLG ");
 
@@ -254,7 +254,7 @@ public class HuddleFormGroupAction extends HuddleFormSolrAction {
 	protected String getFormAddSql() {
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("insert into ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("HUDDLE_FORM_GROUP (FORM_GROUP_ID, FORM_ID, ORDER_NO, ");
+		sql.append("DPY_SYN_HUDDLE_FORM_GROUP (FORM_GROUP_ID, FORM_ID, ORDER_NO, ");
 		sql.append("CREATE_DT, HUDDLE_GROUP_ID) values (?,?,?,?,?)");
 		log.debug(sql.toString());
 		return sql.toString();
@@ -270,7 +270,7 @@ public class HuddleFormGroupAction extends HuddleFormSolrAction {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("delete from ");
 		sql.append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("HUDDLE_FORM_GROUP where FORM_GROUP_ID = ?");
+		sql.append("DPY_SYN_HUDDLE_FORM_GROUP where FORM_GROUP_ID = ?");
 		log.debug(sql.toString());
 		return sql.toString();
 	}

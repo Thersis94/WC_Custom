@@ -38,7 +38,7 @@ public class HuddleSolrFormIndexer extends FormSolrIndexer {
 	 */
 	public void clearByGroup(String huddleGroupId) {
 		StringBuilder sql = new StringBuilder(325);
-		sql.append("select FORM_ID from ").append(config.get(Constants.CUSTOM_DB_SCHEMA)).append("HUDDLE_FORM_GROUP ");
+		sql.append("select FORM_ID from ").append(config.get(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_HUDDLE_FORM_GROUP ");
 		sql.append("where FORM_GROUP_ID = ?");
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -89,8 +89,8 @@ public class HuddleSolrFormIndexer extends FormSolrIndexer {
 		sql.append("fa.ORGANIZATION_ID,PDF_FILE_PATH, ff.FORM_ID, min(ROLE_ORDER_NO) as ROLE_ORDER_NO ");
 		sql.append("from SB_ACTION sa ");
 		sql.append("left join ").append(config.get(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("HUDDLE_FORM_GROUP hfg on hfg.FORM_GROUP_ID = sa.ACTION_GROUP_ID ");
-		sql.append("left join SB_ACTION fa on fa.ACTION_GROUP_ID = hfg.FORM_ID ");
+		sql.append("DPY_SYN_HUDDLE_FORM_GROUP hfg on hfg.FORM_GROUP_ID = sa.ACTION_GROUP_ID ");
+		sql.append("inner join SB_ACTION fa on fa.ACTION_GROUP_ID = hfg.FORM_ID ");
 		sql.append("left join FB_FORM ff on ff.ACTION_ID = fa.ACTION_ID ");
 		sql.append("left join FORM_PDF fp on fp.ACTION_ID = ff.ACTION_ID ");
 		sql.append("inner join PAGE_MODULE pm on pm.ACTION_ID = sa.ACTION_ID ");
