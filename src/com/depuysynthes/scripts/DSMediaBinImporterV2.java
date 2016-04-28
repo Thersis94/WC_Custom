@@ -5,7 +5,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -18,13 +17,10 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
-
-
 
 // SMT Base Libs
 import com.depuysynthes.action.MediaBinAdminAction;
@@ -41,6 +37,7 @@ import com.siliconmtn.io.mail.mta.MailTransportAgentIntfc;
 import com.siliconmtn.util.CommandLineUtil;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.solr.SolrClientBuilder;
 
 // Web Crescendo Libs
 import com.smt.sitebuilder.common.constants.Constants;
@@ -257,10 +254,8 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		// initialize the connection to the solr server
 		String baseUrl = props.getProperty(Constants.SOLR_BASE_URL);
 		String collection = props.getProperty(Constants.SOLR_COLLECTION_NAME);
-		String path = props.getProperty(Constants.SOLR_BASE_PATH);
-		CloudSolrClient server = new CloudSolrClient(Arrays.asList(baseUrl.split(",")), path);
-		server.setDefaultCollection(collection);
-		server.setParser(new XMLResponseParser());
+		
+		SolrClient server = SolrClientBuilder.build(baseUrl, collection);
 
 		pushToSolr(masterRecords.values(), server);
 
@@ -310,7 +305,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	 * @param masterRecords
 	 * @param server
 	 */
-	private void pushToSolr(Collection<MediaBinDeltaVO> records, CloudSolrClient server) {
+	private void pushToSolr(Collection<MediaBinDeltaVO> records, SolrClient server) {
 		//bucketize what needs to be done so we can hit Solr in two batch transactions
 		List<String> deletes = new ArrayList<>(records.size());
 		List<MediaBinAssetVO> adds = new ArrayList<>(records.size());

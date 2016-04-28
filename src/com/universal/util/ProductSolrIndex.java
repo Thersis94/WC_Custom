@@ -12,7 +12,7 @@ import java.util.Properties;
 
 
 // log4j 1.2-15
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.SolrClient;
 
 
 // SMT Base Libs
@@ -65,7 +65,7 @@ public class ProductSolrIndex extends SMTAbstractIndex {
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.search.lucene.custom.SMTCustomIndexIntfc#addIndexItems(java.sql.Connection, com.siliconmtn.cms.CMSConnection, org.apache.lucene.index.IndexWriter)
 	 */
-	public void addIndexItems(CloudSolrClient server) {
+	public void addIndexItems(SolrClient server) {
 		log.info("Indexing USA Products");
 		
 		// Index the products
@@ -79,7 +79,7 @@ public class ProductSolrIndex extends SMTAbstractIndex {
 	 * @param server
      */
     @SuppressWarnings("resource")
-    private void indexProducts(CloudSolrClient server, List<Node> nodes) {
+    private void indexProducts(SolrClient server, List<Node> nodes) {
 		log.info("Found " + nodes.size() + " nodes containing products to index.");
 		
 		SolrActionUtil solrUtil = new SolrActionUtil(server);
@@ -172,7 +172,7 @@ public class ProductSolrIndex extends SMTAbstractIndex {
     }
 
 	@Override
-	public void purgeIndexItems(CloudSolrClient server) throws IOException {
+	public void purgeIndexItems(SolrClient server) throws IOException {
 		try {
 			server.deleteByQuery(SearchDocumentHandler.INDEX_TYPE + ":" + getIndexType());
 		} catch (Exception e) {
