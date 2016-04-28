@@ -3,7 +3,7 @@ package com.depuysynthesinst;
 import java.io.IOException;
 import java.util.Properties;
 
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 
 import com.quickstream.doccentral.storage.DocSearchDataObject;
 import com.quickstream.doccentral.storage.DocSearchDataObjectContainer;
@@ -27,11 +27,12 @@ import com.smt.sitebuilder.util.solr.SolrDocumentVO;
  * @author James McKain
  * @version 1.0
  * @since Mar 3, 2015
+ * @updates Apr 14, 2016 - no longer used/referenced.  -JM
  ****************************************************************************/
 @Deprecated //the core indexer will do all this now, combined with the DSI QuickstreamTemplate -JM 01.31.2016
 public class QuickstreamSolrIndexer extends SMTAbstractIndex {
 	
-	public static final String INDEX_TYPE = "QUICKSTREAM_DSI";
+	public static final String INDEX_TYPE = "CMS_QUICKSTREAM"; //formerly QUICKSTREAM_DSI -JM 04.14.16
 	private static final String ORG_ID = "DPY_SYN_INST"; //in CMS and WC, must match.
 
 	public QuickstreamSolrIndexer(Properties config) {
@@ -40,10 +41,11 @@ public class QuickstreamSolrIndexer extends SMTAbstractIndex {
 	
 	
 	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#addIndexItems(org.apache.solr.client.solrj.impl.HttpSolrServer)
+	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#addIndexItems(org.apache.solr.client.solrj.impl.CloudSolrClient)
 	 */
+	@SuppressWarnings("resource")
 	@Override
-	public void addIndexItems(HttpSolrServer server) {
+	public void addIndexItems(CloudSolrClient server) {
 		//get a list of CMS documents for our org
 		DocumentAction da = new DocumentAction(); //use the WC core to load the articles
 		da.setCMSConnection(cmsConn);
@@ -90,10 +92,10 @@ public class QuickstreamSolrIndexer extends SMTAbstractIndex {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#purgeIndexItems(org.apache.solr.client.solrj.impl.HttpSolrServer)
+	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#purgeIndexItems(org.apache.solr.client.solrj.impl.CloudSolrClient)
 	 */
 	@Override
-	public void purgeIndexItems(HttpSolrServer server) throws IOException {
+	public void purgeIndexItems(CloudSolrClient server) throws IOException {
 		try {
 			server.deleteByQuery(SearchDocumentHandler.INDEX_TYPE + ":" + getIndexType());
 		} catch (Exception e) {

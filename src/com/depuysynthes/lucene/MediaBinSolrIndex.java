@@ -24,7 +24,7 @@ import java.util.Set;
 import org.xml.sax.ContentHandler;
 
 // Apche SolrJ 4.9
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 
 // Apache Tika 1.5
@@ -94,7 +94,8 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 		DownloadType("downloadType_s"),
 		DSOrderNo("dsOrderNo_i"),
 		ImportFileCd("importFileCd_i"),
-		Checksum("checksum_s");
+		Checksum("checksum_s"),
+		SearchType("documentType_s");
 
 		private String metaDataField = null;
 		MediaBinField(String s) { this.metaDataField = s; }
@@ -118,7 +119,7 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 	 * @see com.smt.sitebuilder.search.lucene.custom.SMTCustomIndexIntfc#addIndexItems(java.sql.Connection, com.siliconmtn.cms.CMSConnection, org.apache.lucene.index.IndexWriter)
 	 */
 	@Override
-	public void addIndexItems(HttpSolrServer server) {
+	public void addIndexItems(CloudSolrClient server) {
 		log.info("Indexing DePuySynthes MediaBin PDF assets");
 		List<MediaBinAssetVO> metaData = loadMetaData(dbConn, config.getProperty(Constants.CUSTOM_DB_SCHEMA));
 		indexFiles(metaData, server, StringUtil.checkVal(config.getProperty("mediabinFiles")));
@@ -130,7 +131,7 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 	 * @param server
 	 * @param fileRepos
 	 */
-	public void indexFiles(List<MediaBinAssetVO> metaData, HttpSolrServer server, String fileRepos) {
+	public void indexFiles(List<MediaBinAssetVO> metaData, CloudSolrClient server, String fileRepos) {
 		int cnt = 0;
 		for (int i = 0; i < metaData.size(); i++) {
 			SolrInputDocument doc = new SolrInputDocument();
@@ -173,8 +174,7 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 				doc.setField(MediaBinField.DownloadType.getField(), parseDownloadType(vo.getDownloadTypeTxt(), vo.isVideo()));
 				
 				doc.setField(SearchDocumentHandler.META_KEYWORDS, vo.getMetaKeywords());
-				//TODO this was removed for huddle and breaks DS.com - fix!
-				//doc.setField(SearchDocumentHandler.MODULE_TYPE, INDEX_TYPE + "_" + (vo.isVideo() ? "VIDEO" : "DOWNLOAD"));
+				doc.addField(MediaBinField.SearchType.getField(), vo.isVideo() ? "VIDEO" : "DOWNLOAD");
 				doc.setField(SearchDocumentHandler.MODULE_TYPE, "DOCUMENT");
 				doc.setField(SearchDocumentHandler.UPDATE_DATE, df.format(vo.getModifiedDt()));
 				doc.setField(SearchDocumentHandler.CONTENTS, vo.isVideo() ? "" : parseFile(vo, fileRepos));
@@ -452,10 +452,10 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#purgeIndexItems(org.apache.solr.client.solrj.impl.HttpSolrServer)
+	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#purgeIndexItems(org.apache.solr.client.solrj.impl.CloudSolrClient)
 	 */
 	@Override
-	public void purgeIndexItems(HttpSolrServer server) throws IOException {
+	public void purgeIndexItems(CloudSolrClient server) throws IOException {
 		try {
 			server.deleteByQuery(SearchDocumentHandler.INDEX_TYPE + ":" + getIndexType());
 		} catch (Exception e) {

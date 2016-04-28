@@ -1,5 +1,6 @@
 package com.depuysynthes.action;
 
+//Java 7
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -8,6 +9,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+//BaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.commerce.catalog.ProductCategoryVO;
@@ -18,6 +20,8 @@ import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
+
+//WebCrescendo 
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.SBModuleVO;
 import com.smt.sitebuilder.action.commerce.product.ProductController;
@@ -60,9 +64,9 @@ public class HCPLandingPageAction extends SBActionAdapter {
 		
         String sbActionId = req.getParameter(SBModuleAction.SB_ACTION_ID);
         ModuleVO mod = (ModuleVO) attributes.get(AdminConstants.ADMIN_MODULE_DATA);
-        log.info("Starting HCPLandingPageAction Action - Delete: " + sbActionId);
+        log.debug("Starting HCPLandingPageAction Action - Delete: " + sbActionId);
         
-        StringBuilder sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder(60);
         sb.append("delete from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
         sb.append("DPY_SYN_HCP_LANDING where action_id = ?");
 
@@ -109,7 +113,7 @@ public class HCPLandingPageAction extends SBActionAdapter {
 		vo.setSelProducts(this.loadProductDetails(pc, vo.getAdminSelProds(), req));
 		vo.setSelProcedures(this.loadProductDetails(pc, vo.getAdminSelProcs(), req));
 		
-		
+
 		/***********************************************************************
 		 *          everything below here is for 'our most popular'            *
 		 ***********************************************************************/
@@ -239,8 +243,9 @@ public class HCPLandingPageAction extends SBActionAdapter {
 	@SuppressWarnings("unchecked")
 	private List<ProductVO> loadProductDetails(ProductController pc, 
 			Map<String, Long> orderedProdIds, SMTServletRequest req) {
+		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		List<ProductVO> products = new ArrayList<ProductVO>();
-		
+			
 		try {
 			String[] selIds = orderedProdIds.keySet().toArray(new String[orderedProdIds.size()]);
 			//log.debug(StringUtil.getToString(selIds, false, true, ","));
@@ -248,33 +253,50 @@ public class HCPLandingPageAction extends SBActionAdapter {
 			pc.retrieve(req);
 			ModuleVO mod = (ModuleVO) pc.getAttribute(Constants.MODULE_DATA);
 			
+			
 			List<Node> prodNodes = (List<Node>) mod.getActionData();
 			for (String prodId : orderedProdIds.keySet()) {
 				Long lng = orderedProdIds.get(prodId);
-				
+
 				//loop the list of Nodes until we find the one we need
 				//this is important to ensure proper ordering
+				//edited to check for previews mode and pick the right products
 				for (Node n : prodNodes) {
-					if (n.getNodeId().equals(prodId)) {
+					if (page.isPreviewMode() && !n.getNodeId().equals(prodId)) {
 						ProductVO prodVo = (ProductVO) n.getUserObject();
-						prodVo.setDisplayOrderNo(lng.intValue());//set the pageView count
-						products.add(prodVo);
-						log.debug("added " + prodVo.getFullProductName());
+						if (prodVo.getProductGroupId() != null && prodVo.getProductGroupId().equals(prodId) ) {
+							addProducts(products,prodVo,lng);
+						}
+					}else if (n.getNodeId().equals(prodId)) {
+						ProductVO prodVo = (ProductVO) n.getUserObject();
+						addProducts(products,prodVo,lng);
 						break;
 					}
 				}
-			}
+			} 
 		} catch (Exception e) {
 			log.error("could not load products for " + StringUtil.getToString(orderedProdIds), e);
 		}
 		
+		log.debug(" product size " + products.size());
 		return products;
 	}
 	
+	/**
+	 * @param prodVo 
+	 * @param products 
+	 * @param lng 
+	 * @return
+	 */
+	private void addProducts(List<ProductVO> products, ProductVO prodVo, Long lng) {
+		prodVo.setDisplayOrderNo(lng.intValue());//set the pageView count
+		products.add(prodVo);
+	}
+
 	@Override
 	public void list(SMTServletRequest req) throws ActionException {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = new StringBuilder();
+		StringBuilder sql = new StringBuilder(400);
 		sql.append("select *, b.action_id as built ");
 		sql.append("from sb_action a inner join ").append(customDb).append("DPY_SYN_HCP_LANDING b on a.action_id=b.action_id ");
 		sql.append("left outer join ").append(customDb).append("DPY_SYN_HCP_LANDING_PROD_XR c ");
@@ -329,7 +351,7 @@ public class HCPLandingPageAction extends SBActionAdapter {
 		super.update(req);
 		
         // Build the sql
-        StringBuffer sql = new StringBuffer();
+        StringBuffer sql = new StringBuffer(150);
 		if (Convert.formatBoolean(req.getAttribute(INSERT_TYPE))) {
 			sql.append("insert into ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 	        sql.append("DPY_SYN_HCP_LANDING (education_txt, support_txt, tracking_no_txt, ");
