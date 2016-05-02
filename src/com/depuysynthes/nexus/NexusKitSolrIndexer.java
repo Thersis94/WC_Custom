@@ -4,13 +4,12 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.XMLResponseParser;
+import org.apache.solr.client.solrj.SolrClient;
 
 import com.siliconmtn.util.CommandLineUtil;
+import com.siliconmtn.util.solr.SolrClientBuilder;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
 import com.smt.sitebuilder.util.solr.SolrDocumentVO;
@@ -85,9 +84,7 @@ public class NexusKitSolrIndexer extends CommandLineUtil {
 	@SuppressWarnings("resource")
 	@Override
 	public void run() {
-		try (CloudSolrClient server = new CloudSolrClient(Arrays.asList(props.getProperty(Constants.SOLR_BASE_URL).split(",")), props.getProperty(Constants.SOLR_BASE_PATH))){
-			server.setDefaultCollection(props.getProperty(Constants.SOLR_COLLECTION_NAME));
-			server.setParser(new XMLResponseParser());
+		try (SolrClient server = SolrClientBuilder.build(props.getProperty(Constants.SOLR_BASE_URL), props.getProperty(Constants.SOLR_COLLECTION_NAME))) {
 			List<SolrDocumentVO> kits = loadKits();
 			SolrActionUtil solr = new SolrActionUtil(server);
 			System.out.println("Adding " + kits.size() + " Documents");

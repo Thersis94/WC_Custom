@@ -4,7 +4,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -12,8 +11,7 @@ import java.util.Map;
 
 import javax.servlet.http.Cookie;
 
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.XMLResponseParser;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 
@@ -29,6 +27,7 @@ import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.solr.SolrClientBuilder;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -1155,10 +1154,7 @@ public class NexusKitAction extends SBActionAdapter {
 		String baseUrl = StringUtil.checkVal(attributes.get(Constants.SOLR_BASE_URL), null);
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		String collection = getSolrCollection((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
-		String path = StringUtil.checkVal(attributes.get(Constants.SOLR_BASE_PATH), null);
-		try (CloudSolrClient server = new CloudSolrClient(Arrays.asList(baseUrl.split(",")), path)){
-			server.setDefaultCollection(collection);
-			server.setParser(new XMLResponseParser());
+		try (SolrClient server = SolrClientBuilder.build(baseUrl, collection)) {
 		
 			if (req.hasParameter("delete")) {
 				String kitId = req.getParameter("kitId");

@@ -313,9 +313,11 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 		//remove ampersands and replace spaces
 		rootLvl = StringUtil.replace(rootLvl, "& ", "");
 		rootLvl = StringUtil.replace(rootLvl, " ", "-");
-
+		
 		if ("nurse-education".equals(rootLvl)) {
 			rootLvl = "nurse-education/resource-library";
+		} else if ("bundled-payments".equals(rootLvl)) {
+			rootLvl = "bundled-payments";
 		}
 
 		//log.debug(rootLvl);
