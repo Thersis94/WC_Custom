@@ -195,7 +195,7 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 		
 		//determine if this is a Speciaty or Category tree; they get added to the document differently
 		if ("Specialties".equalsIgnoreCase(hierarchy.get(Integer.valueOf(1)))) { //level 1 of category tree
-			solrDoc.setSpecialty(hierarchy.get(depth));
+			solrDoc.addSpecialty(hierarchy.get(depth));
 			log.debug("set specialty= " + hierarchy.get(depth));
 		} else {
 			StringBuilder sb = new StringBuilder(100);
