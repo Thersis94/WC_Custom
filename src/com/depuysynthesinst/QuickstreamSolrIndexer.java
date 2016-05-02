@@ -3,7 +3,7 @@ package com.depuysynthesinst;
 import java.io.IOException;
 import java.util.Properties;
 
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.SolrClient;
 
 import com.quickstream.doccentral.storage.DocSearchDataObject;
 import com.quickstream.doccentral.storage.DocSearchDataObjectContainer;
@@ -41,11 +41,11 @@ public class QuickstreamSolrIndexer extends SMTAbstractIndex {
 	
 	
 	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#addIndexItems(org.apache.solr.client.solrj.impl.CloudSolrClient)
+	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#addIndexItems(org.apache.solr.client.solrj.SolrClient)
 	 */
 	@SuppressWarnings("resource")
 	@Override
-	public void addIndexItems(CloudSolrClient server) {
+	public void addIndexItems(SolrClient server) {
 		//get a list of CMS documents for our org
 		DocumentAction da = new DocumentAction(); //use the WC core to load the articles
 		da.setCMSConnection(cmsConn);
@@ -92,10 +92,10 @@ public class QuickstreamSolrIndexer extends SMTAbstractIndex {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#purgeIndexItems(org.apache.solr.client.solrj.impl.CloudSolrClient)
+	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#purgeIndexItems(org.apache.solr.client.solrj.SolrClient)
 	 */
 	@Override
-	public void purgeIndexItems(CloudSolrClient server) throws IOException {
+	public void purgeIndexItems(SolrClient server) throws IOException {
 		try {
 			server.deleteByQuery(SearchDocumentHandler.INDEX_TYPE + ":" + getIndexType());
 		} catch (Exception e) {

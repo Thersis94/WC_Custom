@@ -24,7 +24,7 @@ import java.util.Set;
 import org.xml.sax.ContentHandler;
 
 // Apche SolrJ 4.9
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.SolrInputDocument;
 
 // Apache Tika 1.5
@@ -119,7 +119,7 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 	 * @see com.smt.sitebuilder.search.lucene.custom.SMTCustomIndexIntfc#addIndexItems(java.sql.Connection, com.siliconmtn.cms.CMSConnection, org.apache.lucene.index.IndexWriter)
 	 */
 	@Override
-	public void addIndexItems(CloudSolrClient server) {
+	public void addIndexItems(SolrClient server) {
 		log.info("Indexing DePuySynthes MediaBin PDF assets");
 		List<MediaBinAssetVO> metaData = loadMetaData(dbConn, config.getProperty(Constants.CUSTOM_DB_SCHEMA));
 		indexFiles(metaData, server, StringUtil.checkVal(config.getProperty("mediabinFiles")));
@@ -131,7 +131,7 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 	 * @param server
 	 * @param fileRepos
 	 */
-	public void indexFiles(List<MediaBinAssetVO> metaData, CloudSolrClient server, String fileRepos) {
+	public void indexFiles(List<MediaBinAssetVO> metaData, SolrClient server, String fileRepos) {
 		int cnt = 0;
 		for (int i = 0; i < metaData.size(); i++) {
 			SolrInputDocument doc = new SolrInputDocument();
@@ -452,10 +452,10 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#purgeIndexItems(org.apache.solr.client.solrj.impl.CloudSolrClient)
+	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#purgeIndexItems(org.apache.solr.client.solrj.impl.SolrClient)
 	 */
 	@Override
-	public void purgeIndexItems(CloudSolrClient server) throws IOException {
+	public void purgeIndexItems(SolrClient server) throws IOException {
 		try {
 			server.deleteByQuery(SearchDocumentHandler.INDEX_TYPE + ":" + getIndexType());
 		} catch (Exception e) {
