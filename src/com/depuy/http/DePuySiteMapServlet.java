@@ -147,7 +147,6 @@ public class DePuySiteMapServlet extends SiteMapServlet {
 	    solrWrapper.setAttribute(Constants.QS_PATH, sc.getAttribute(Constants.QS_PATH));
 	    
 	    attributes.put(Constants.SOLR_BASE_URL, sc.getAttribute(Constants.SOLR_BASE_URL));
-	    attributes.put(Constants.SOLR_BASE_PATH, sc.getAttribute(Constants.SOLR_BASE_PATH));
 	    String solrCollectionPath = (String) sc.getAttribute(Constants.SOLR_COLLECTION_NAME);
 
 	    SolrActionVO qData = new SolrActionVO();
