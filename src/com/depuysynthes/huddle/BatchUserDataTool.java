@@ -167,7 +167,10 @@ public class BatchUserDataTool extends SimpleActionAdapter {
 		try (ByteArrayInputStream bais = new ByteArrayInputStream(fpdb.getFileData())) {
 			Workbook workbook = new XSSFWorkbook(bais);
 			Sheet sheet = workbook.getSheet("Terms");
-			if (sheet == null) throw new InvalidDataException("unknown file format");
+			if (sheet == null) {
+				workbook.close();
+				throw new InvalidDataException("unknown file format");
+			}
 			Iterator<Row> iterator = sheet.iterator();
 
 			Double d = null;
@@ -188,6 +191,7 @@ public class BatchUserDataTool extends SimpleActionAdapter {
 				if (d > 0)
 					wwids.add("" + d.intValue());
 			}
+			workbook.close();
 		} catch (Exception e) {
 			throw new InvalidDataException(e);
 		}

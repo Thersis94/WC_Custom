@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.SolrInputDocument;
 
 import com.depuysynthes.huddle.HuddleUtils;
@@ -66,7 +66,7 @@ public class CalendarSolrIndexer extends CourseCalendarSolrIndexer {
 	/**
 	 * push the list of pased VOs into Solr.
 	 */
-	protected void indexEvents(CloudSolrClient server, List<EventEntryVO> data) {
+	protected void indexEvents(SolrClient server, List<EventEntryVO> data) {
 		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 		List<SolrInputDocument> docs = new ArrayList<>(data.size());
 		

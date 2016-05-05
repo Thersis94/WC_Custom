@@ -11,6 +11,18 @@ import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.search.solr.FormSolrIndexer;
 import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 
+/**
+ * **************************************************************************
+ * <b>Title</b>: HuddleSolrFormIndexer.java<p/>
+ * <b>Description: indexes Forms via HuddleFormGroups, so the indexed documents are part of a grouping.</b> 
+ * <p/>
+ * <b>Copyright:</b> Copyright (c) 2016<p/>
+ * <b>Company:</b> Silicon Mountain Technologies<p/>
+ * @author James McKain
+ * @version 1.0
+ * @since Apr 29, 2016
+ ***************************************************************************
+ */
 public class HuddleSolrFormIndexer extends FormSolrIndexer {
 	
 	public HuddleSolrFormIndexer(Properties config) {
