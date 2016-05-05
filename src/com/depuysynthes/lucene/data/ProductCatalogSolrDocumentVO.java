@@ -1,6 +1,8 @@
 package com.depuysynthes.lucene.data;
 
 import java.util.Calendar;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
 
@@ -22,6 +24,8 @@ import com.smt.sitebuilder.util.solr.SolrDocumentVO;
  * @author Tim Johnson
  * @version 1.0
  * @since Aug 24, 2015
+ * @updates
+ * 		JM - 05.02.2016 - changed specialty from a String to a Set<String> internally; it's opco_ss field in Solr it needs to support multiple values
  ****************************************************************************/
 public class ProductCatalogSolrDocumentVO extends SolrDocumentVO {
 
@@ -29,7 +33,7 @@ public class ProductCatalogSolrDocumentVO extends SolrDocumentVO {
 
 	private String thumbImage = null;
 	private int dsOrderNo;
-	private String specialty = null;
+	private Set<String> specialties = new HashSet<>();
 
 	/**
 	 * 
@@ -90,12 +94,12 @@ public class ProductCatalogSolrDocumentVO extends SolrDocumentVO {
 		this.dsOrderNo = dsOrderNo;
 	}
 
-	public void setSpecialty(String specialty) {
-		this.specialty = specialty;
+	public void addSpecialty(String specialty) {
+		this.specialties.add(specialty);
 	}
 
 	@SolrField(name="opco_ss")
-	public String getSpecialty(){
-		return specialty;
+	public Set<String> getSpecialty(){
+		return specialties;
 	}
 }
