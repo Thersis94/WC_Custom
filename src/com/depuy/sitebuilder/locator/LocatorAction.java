@@ -836,6 +836,7 @@ public class LocatorAction extends SBActionAdapter {
     private Map<String,String> findSurgeonFromResultsContainer(SMTServletRequest req, 
     		String uniqueId) {
     	log.debug("findSurgeonFromResultsContainer...");
+    	String type = StringUtil.checkVal(req.getParameter("messageType"));
     	Map<String,String> surgeonVals = new HashMap<>();
     	ResultsContainer rc = (ResultsContainer)req.getSession().getAttribute(LOCATOR_SESSION_DATA_KEY_V2);
     	for (SurgeonBean sb : rc.getResults()) {
@@ -848,7 +849,18 @@ public class LocatorAction extends SBActionAdapter {
 				surgeonVals.put("firstName", sb.getFirstName());
 				surgeonVals.put("lastName", sb.getLastName());
 				surgeonVals.put("degree", sb.getDegreeDesc());
-				surgeonVals.put("website", StringUtil.checkVal(sb.getCustomUrl(), null) == null ? "" : sb.getCustomUrl());
+
+				StringBuilder website = new StringBuilder(75);
+				if (StringUtil.checkVal(sb.getCustomUrl(), null) != null) {
+					if (type.equalsIgnoreCase(EmailFriendAction.MESSAGE_TYPE_SMS)) {
+						website.append(sb.getCustomUrl());
+					} else if (type.equalsIgnoreCase(EmailFriendAction.MESSAGE_TYPE_EMAIL)) {
+						website.append("<a href=\"");
+						website.append(sb.getCustomUrl()).append("\">");
+						website.append(sb.getCustomUrl()).append("</a>");
+					}
+				}
+				surgeonVals.put("website", website.toString());
 
 				// get location vals from first location in locations list.
 				LocationBean loc = sb.getLocations().get(0);
