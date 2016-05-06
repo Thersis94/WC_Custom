@@ -70,6 +70,7 @@ public class LocationBean implements Serializable {
     	address2 = (loc.has("address2") ? loc.get("address2").getAsString() : null);
     	city = (loc.has("city") ? loc.get("city").getAsString() : null);
     	state =  (loc.has("state") ? loc.get("state").getAsString() : null);
+    	zip =  (loc.has("zip") ? loc.get("zip").getAsString() : null);
     	country = (loc.has("country") ? loc.get("country").getAsString() : null);
     	phoneNumber = (loc.has("phoneNumber") ? loc.get("phoneNumber").getAsString() : null);
     	statusId = (loc.has("statusId") ? loc.get("statusId").getAsInt() : 0);
