@@ -46,7 +46,6 @@ import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.util.RecordDuplicatorUtility;
 
 // WC_Custom
-
 import com.depuysynthes.locator.LocationBean;
 import com.depuysynthes.locator.ResultsContainer;
 import com.depuysynthes.locator.SurgeonBean;
@@ -842,6 +841,10 @@ public class LocatorAction extends SBActionAdapter {
     	for (SurgeonBean sb : rc.getResults()) {
     		if (sb.getUniqueId().equals(uniqueId)) {
 				//log.debug("found surgeon");
+    			/* NOTE: Map keys are used as FreeMarker tags in JSTL. (e.g. ${firstName})
+    			 * If you specify a key in JSTL but do not include it in your map, the
+    			 * JSTL will fail to render.  Having more keys in your map than you use in
+    			 * your JSTL has no detrimental effect to page rendering. */
 				surgeonVals.put("firstName", sb.getFirstName());
 				surgeonVals.put("lastName", sb.getLastName());
 				surgeonVals.put("degree", sb.getDegreeDesc());
