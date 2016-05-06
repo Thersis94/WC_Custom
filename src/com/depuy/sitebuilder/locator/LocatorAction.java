@@ -7,16 +7,9 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 
-
-
-
-import com.depuysynthes.locator.LocationBean;
-import com.depuysynthes.locator.ResultsContainer;
-import com.depuysynthes.locator.SurgeonBean;
 // Google Gson libs
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -52,8 +45,11 @@ import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.util.RecordDuplicatorUtility;
 
+// WC_Custom
 
-
+import com.depuysynthes.locator.LocationBean;
+import com.depuysynthes.locator.ResultsContainer;
+import com.depuysynthes.locator.SurgeonBean;
 
 // Xerces
 import org.apache.xerces.dom.DeferredDocumentImpl;
