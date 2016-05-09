@@ -72,6 +72,7 @@ public class TVSpotReportVO extends AbstractSBReportVO {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		try {
 			workbook.write(baos);
+			workbook.close();
 		} catch (IOException e) {
 			log.error("Could not serialize workbook properly ", e);
 			return null;
