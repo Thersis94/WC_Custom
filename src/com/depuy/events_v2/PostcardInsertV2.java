@@ -281,10 +281,10 @@ public class PostcardInsertV2 extends SBActionAdapter {
 			sql.append("language_cd=?, postcard_style_txt=?, PSTRS_FLYRS_SPECIAL_INST_TXT=?, ");
 			sql.append("invite_file_flg=? where event_postcard_id=?");
 		} else {
-			sql.append("insert into event_postcard (organization_id, profile_id, ");
+			sql.append("insert into event_postcard (organization_id, profile_id, status_flg, ");
 			sql.append("create_dt, quantity_no, mailing_addr_txt, label_txt, content_no, ");
 			sql.append("territory_no, language_cd, postcard_style_txt, PSTRS_FLYRS_SPECIAL_INST_TXT, ");
-			sql.append("invite_file_flg, event_postcard_id) values (?,?,?,?,?,?,?,?,?,?,?,?,?)");
+			sql.append("invite_file_flg, event_postcard_id) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 			if (label == null || label.length() == 0) label = "Local Orthopaedic Surgeon";
 		}
 		log.debug("saving event postcard: " + sql);
@@ -295,6 +295,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 				pkId = new UUIDGenerator().getUUID();
 				ps.setString(x++, site.getOrganizationId());
 				ps.setString(x++, user.getProfileId());
+				ps.setInt(x++, 0); //default postcard status is zero, which is not a constant defined in EventFacadeAction with the others
 			}
 			ps.setTimestamp(x++, Convert.getCurrentTimestamp());
 			ps.setInt(x++, Convert.formatInteger(req.getParameter("postcardQuantity"), 0));
