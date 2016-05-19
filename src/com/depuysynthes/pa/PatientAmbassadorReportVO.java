@@ -81,6 +81,7 @@ public class PatientAmbassadorReportVO extends AbstractSBReportVO {
 		//Write xls to ByteStream and return.
 		try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 			wb.write(baos);
+			wb.close();
 			return baos.toByteArray();
 		} catch (IOException e) {
 			log.error(e);
