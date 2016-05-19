@@ -108,6 +108,7 @@ public class CourseCalendar extends SimpleActionAdapter {
 				//set the eventTypeId for each
 				CourseCalendarVO vo = (CourseCalendarVO) o;
 				vo.setEventEntryId(uuid.getUUID());
+				vo.setActionId(vo.getEventEntryId()); //TODO remove, legacy compatability
 				eventIds.add(vo.getEventEntryId());
 				vo.setEventTypeId(req.getParameter("eventTypeId"));
 				vo.setStatusFlg(EventFacadeAction.STATUS_APPROVED);
