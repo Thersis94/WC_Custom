@@ -243,13 +243,13 @@ public class PostcardSelectV2 extends SBActionAdapter {
 			//this has to be a nested query to avoid duplicates in the RS - JM 03-28-14
 			sql.append("and (ep.event_postcard_id in (select event_postcard_id from ").append(customDb).append("DEPUY_EVENT_PERSON_XR where profile_id=?) or ");
 			sql.append("ep.profile_id=?) ");  //postcards I'm a part of (REPs & TGMs), or postcards that are mine (coordinators)
-		} else {
-			sql.append("and ep.status_flg != 0 ");  //exclude any that haven't been submitted yet.
+		} else if (profileId == null) {
+			sql.append("and ep.status_flg != 0 ");  //exclude any that haven't been submitted yet, for admins only
 		}
 		if (ReqType.completed == reqType) {
 			sql.append("and ep.status_flg = ").append(EventFacadeAction.STATUS_COMPLETE).append(" ");
 		} else if (ReqType.report != reqType) {
-			sql.append("and (ep.status_flg != ").append(EventFacadeAction.STATUS_COMPLETE).append(" or ep.status_flg is null) ");
+			sql.append("and (ep.status_flg != ").append(EventFacadeAction.STATUS_COMPLETE).append(" or ep.status_flg=0) ");
 		}
 		sql.append("group by e.event_entry_id, ep.event_postcard_id, e.RSVP_CODE_TXT, e.start_dt, ");
 		sql.append("et.type_nm, ep.PROFILE_ID, ep.postcard_file_status_no, e.event_nm, s.surgeon_nm, ");
