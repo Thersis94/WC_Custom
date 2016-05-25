@@ -61,6 +61,15 @@ public class DSIRoleMgr {
 	public boolean isDirector(UserDataVO user) {
 		return "DIRECTOR".equals(DSIUserDataVO.getProfession(user));
 	}
+
+	/**
+	 * returns true if the user's professing is Nurse (NURSE)
+	 * @param user
+	 * @return
+	 */
+	public boolean isNurse(UserDataVO user) {
+		return "NURSE".equals(DSIUserDataVO.getProfession(user));
+	}
 	
 	/**
 	 * returns true if the user's profession is any of the above; meaning they interact with the

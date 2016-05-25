@@ -15,6 +15,8 @@ public class FutureLeaderACGME {
 	/*
 	 * the key names here really have no meaning, since we can't put the "-" in them.  use getCode() instead
 	 * key(String ACGME Code, String full name, String hierarchy as seen by Solr, String wcPageAlias for this Anatomy)
+	 *
+	 * Added NURSE Key per DSI Phase IIC requirements.
 	 */
 	public enum ACGME {
 		GEN("GEN", "General Principles & Fundamentals","Future Leaders~General Principles & Fundamentals","general"),
@@ -33,7 +35,9 @@ public class FutureLeaderACGME {
 		OMS("OMS", "Oral Maxillofacial Surgery","Future Leaders~Oral Maxillofacial Surgery","oral-maxillofacial"),
 		PRS("PRS", "Plastic & Reconstructive Surgery","Future Leaders~Plastic & Reconstructive Surgery","plastic-reconstructive"),
 		POD("POD", "Podiatric Medicine","Future Leaders~Podiatric Medicine","podiatric"),
-		VET("VET", "Veterinary Medicine","Future Leaders~Veterinary Medicine","veterinary");
+		VET("VET", "Veterinary Medicine","Future Leaders~Veterinary Medicine","veterinary"),
+		NURSE("NURSE", "Nursing Education", "Nursing~Education", "nursing-education");
+
 
 		private String code;
 		private String name;
