@@ -96,13 +96,16 @@ public class NursingCertificateLabeler extends AbstractLabelPDF {
 		cb.showTextAligned(PdfContentByte.ALIGN_CENTER, getUserLabel(user), psize.getWidth() / 2, 482, 0);
 		cb.setFontAndSize(baseFont, 16);
 
-		//Write City and State
-		cb.showTextAligned(PdfContentByte.ALIGN_CENTER, user.getCity() + ", " + user.getState(), psize.getWidth() / 2, 414, 0);
+		/*
+		 * Write City and State
+		 * Update - No longer writing city and state.
+		 */
+		//cb.showTextAligned(PdfContentByte.ALIGN_CENTER, user.getCity() + ", " + user.getState(), psize.getWidth() / 2, 414, 0);
 
 		//Write Completed Date.
 		cb.showTextAligned(PdfContentByte.ALIGN_CENTER, Convert.formatDate(Convert.getCurrentTimestamp()), psize.getWidth() / 2, 389, 0);
 		cb.endText();
-		
+
 		// step 5: we close the document
 		document.close();
 
