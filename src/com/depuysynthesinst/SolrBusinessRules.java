@@ -32,6 +32,8 @@ public class SolrBusinessRules {
 	private String moduleType;
 	protected String qsPath = "";
 	private boolean isSiteSearch;
+	private DSIUserDataVO user;
+
 	
 	public SolrBusinessRules() {
 		//log = Logger.getLogger(getClass());
@@ -63,21 +65,13 @@ public class SolrBusinessRules {
 	}
 
 
-	@SuppressWarnings("unchecked")
 	protected void buildSectionName() {
-		//hierarchy is a multi-valued field; if multiple values exist the object is an array instead of a String
-		//in either case we take the first one
-		try {
-			Object obj = (Object)sd.get("hierarchy");
-			if (obj instanceof List) {
-				List<String> lst = (List<String>) obj;
-				hierarchy = StringUtil.checkVal(lst.get(0)).toLowerCase();
-			} else {
-				hierarchy = StringUtil.checkVal(obj).toLowerCase();
-			}
-		} catch (Exception e) {
-			//log.error("could not parse sectionName from SolrDoc", e);
-		}
+
+		/*
+		 * Set the Hierarchy for the SectionName.
+		 * Use the default first hierarchy behavior.
+		 */
+		setHierarchy(true);
 		sectionNm = hierarchy;
 
 		//for Vet and Nursing sections, bring level 2 of the hierarchy up to the surface
@@ -115,12 +109,81 @@ public class SolrBusinessRules {
 		}
 	}
 
-	
+
+	/**
+	 * Method determines the hierarchy that we should use for a solr record.
+	 * The old method was use the first record that appears and that worked when
+	 * a Hierarchy was only under one section, however now that Nurses have their
+	 * own hierarchy for eModules we need to have the ability to determine which
+	 * hierarchy to use based on Profession.
+	 * @param useDefault
+	 */
+	@SuppressWarnings("unchecked")
+	protected void setHierarchy(boolean useDefault) {
+		/* hierarchy is a multi-valued field; if multiple values exist the
+		 * object is an array instead of a String
+		 * in either case we take the first one
+		 */
+		try {
+			Object obj = (Object) sd.get("hierarchy");
+			if (obj instanceof List) {
+				List<String> lst = (List<String>) obj;
+
+				// If this isn't a default lookup
+				if (!useDefault) {
+
+					// Build a Role Manager and null out existing hierarchy.
+					DSIRoleMgr roleMgr = new DSIRoleMgr();
+					hierarchy = null;
+
+					/*
+					 * Iterate over the Hierarchies and determine which one we
+					 * want based on Profession.
+					 */
+					for (String s : lst) {
+
+						// Only one we care about in this case is NURSE.
+						if (roleMgr.isNurse(user) && s.startsWith("Nurse")) {
+							hierarchy = StringUtil.checkVal(s).toLowerCase();
+							break;
+						}
+					}
+
+					// If hierarchy is still null, grab first hierarchy in list.
+					if (hierarchy == null) {
+						hierarchy = StringUtil.checkVal(lst.get(0)).toLowerCase();
+					}
+				} else {
+					//If using Default lookup, grab first hierarchy in list.
+					hierarchy = StringUtil.checkVal(lst.get(0)).toLowerCase();
+				}
+			} else {
+
+				//If only one hierarchy.
+				hierarchy = StringUtil.checkVal(obj).toLowerCase();
+			}
+		} catch (Exception e) {
+			//log.error("could not parse sectionName from SolrDoc", e);
+		}
+	}
+
+	/**
+	 * Method manages building the detailsUrl for SolrSearch result links.
+	 */
 	protected void buildPageUrl() {
+
+		/*
+		 * If the User Profession is a Nurse, we need to set hierarchy based on
+		 * Category Type, not just the first to appear.
+		 */
+		if(user.getProfession().equals("NURSE")) {
+			setHierarchy(false);
+		}
+
 		if ("EVENT".equals(moduleType)) {
 			pageUrl = StringUtil.checkVal(sd.get(SearchDocumentHandler.DOCUMENT_URL));
 		} else {
-			pageUrl = SolrSearchWrapper.buildDSIUrl(hierarchy, (String)sd.get(SearchDocumentHandler.DOCUMENT_ID), qsPath);
+			pageUrl = SolrSearchWrapper.buildDSIUrl(hierarchy, (String)sd.get(SearchDocumentHandler.DOCUMENT_ID), qsPath, moduleType);
 		}
 	}
 
@@ -146,6 +209,14 @@ public class SolrBusinessRules {
 
 	public void setSiteSearch(boolean isSiteSearch) {
 		this.isSiteSearch = isSiteSearch;
+	}
+
+	/**
+	 * Helper method for setting the DSIUserDataVO for hierarchy determination.
+	 * @param user
+	 */
+	public void setUser(DSIUserDataVO user) {
+		this.user = user;
 	}
 	
 	
