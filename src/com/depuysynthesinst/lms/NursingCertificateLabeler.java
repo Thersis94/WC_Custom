@@ -5,8 +5,12 @@ package com.depuysynthesinst.lms;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Map;
 
+import com.depuysynthesinst.DSIUserDataVO;
 import com.lowagie.text.Document;
 import com.lowagie.text.DocumentException;
 import com.lowagie.text.Rectangle;
@@ -16,7 +20,6 @@ import com.lowagie.text.pdf.PdfImportedPage;
 import com.lowagie.text.pdf.PdfReader;
 import com.lowagie.text.pdf.PdfWriter;
 import com.siliconmtn.security.UserDataVO;
-import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.pdf.AbstractLabelPDF;
 import com.smt.sitebuilder.action.pdf.PDFLabelException;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -65,7 +68,7 @@ public class NursingCertificateLabeler extends AbstractLabelPDF {
 		// Get the user information
 		UserDataVO user = (UserDataVO) params.get(Constants.USER_DATA);
 		if (user == null)
-			user = new UserDataVO();
+			user = new DSIUserDataVO();
 
 		// Retrieve the cover letter
 		String file = this.getFileName(path);
@@ -92,18 +95,20 @@ public class NursingCertificateLabeler extends AbstractLabelPDF {
 		cb.addTemplate(page1, 1f, 0, 0, 1f, 0, 0);
 		cb.setFontAndSize(baseFont, 24);
 
-		//Write Name
+		// Need to call Begin and End Text otherwise Adobe wont recognize Text.
+		cb.beginText();
+
+		// Write Nurse Name
 		cb.showTextAligned(PdfContentByte.ALIGN_CENTER, getUserLabel(user), psize.getWidth() / 2, 482, 0);
 		cb.setFontAndSize(baseFont, 16);
 
-		/*
-		 * Write City and State
-		 * Update - No longer writing city and state.
-		 */
-		//cb.showTextAligned(PdfContentByte.ALIGN_CENTER, user.getCity() + ", " + user.getState(), psize.getWidth() / 2, 414, 0);
+		// Write the Course Name.
+		cb.showTextAligned(PdfContentByte.ALIGN_CENTER, getCourseName(params.get("courseName")), psize.getWidth() / 2, 414, 0);
 
-		//Write Completed Date.
-		cb.showTextAligned(PdfContentByte.ALIGN_CENTER, Convert.formatDate(Convert.getCurrentTimestamp()), psize.getWidth() / 2, 389, 0);
+		// Write the Course Complete Date
+		cb.showTextAligned(PdfContentByte.ALIGN_CENTER, getCourseCompleteDate(params.get("COURSECOMPLETEDATE")), psize.getWidth() / 2, 389, 0);
+
+		// Call EndText to ensure Adobe recognizes text.
 		cb.endText();
 
 		// step 5: we close the document
@@ -154,27 +159,59 @@ public class NursingCertificateLabeler extends AbstractLabelPDF {
 
 
 	/**
-	 * Method returns the UserName for the certificate
+	 * Method returns the UserName for the certificate.
 	 * @param doc
 	 * @param user
 	 * @throws DocumentException
 	 */
 	protected String getUserLabel(UserDataVO user) {
+		String userName = "";
+
 		// Make sure we have user info before displaying the header
 		if (user != null && user.getFullName().length() > 0) {
-			return user.getFullName();
-		} else {
-			return "";
+			userName = user.getFullName();
 		}
+
+		return userName;
 	}
 
+	/**
+	 * Method returns the CourseName for the certificate.
+	 * @param courseName
+	 * @return
+	 */
+	protected String getCourseName(Object courseName) {
+		String name = "";
+		if(courseName != null) {
+			name = ((String[])courseName)[0];
+		}
+
+		return name;
+	}
+
+	/**
+	 * MEthod returns the Course Complete Date for the certificate.
+	 * @param courseComplete
+	 * @return
+	 */
+	protected String getCourseCompleteDate(Object courseComplete) {
+		String completeDate = "";
+		try {
+			Date d = new SimpleDateFormat("yyyy-MM-dd").parse(((String[])courseComplete)[0]);
+			completeDate = new SimpleDateFormat("MMM dd, yyyy").format(d);
+		} catch (ParseException e) {
+			log.error(e);
+		}
+
+		return completeDate;
+	}
 
 	/**
 	 * Returns the FileName of the PDF in Templates directory.
 	 */
 	@Override
 	public String getFileName() {
-		return "Nurse_CertificateV2.pdf";
+		return "Nurse_CertificateV3.pdf";
 	}
 
 
@@ -184,7 +221,7 @@ public class NursingCertificateLabeler extends AbstractLabelPDF {
 	 * @return
 	 */
 	protected String getFileName(String path) {
-		String file = path + "Nurse_CertificateV2.pdf";
+		String file = path + "Nurse_CertificateV3.pdf";
 		return file;
 	}
 }

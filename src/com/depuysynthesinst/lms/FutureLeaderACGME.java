@@ -36,7 +36,7 @@ public class FutureLeaderACGME {
 		PRS("PRS", "Plastic & Reconstructive Surgery","Future Leaders~Plastic & Reconstructive Surgery","plastic-reconstructive"),
 		POD("POD", "Podiatric Medicine","Future Leaders~Podiatric Medicine","podiatric"),
 		VET("VET", "Veterinary Medicine","Future Leaders~Veterinary Medicine","veterinary"),
-		NURSE("NURSE", "Nursing Education", "Nursing~Education", "nursing-education");
+		NURSE("NURSE", "Nursing Education", "Nurse Education~Continuing Education", "nursing-education");
 
 
 		private String code;

@@ -1,9 +1,11 @@
 package com.depuysynthesinst;
 
-import java.util.Date;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
+
+import org.apache.solr.common.SolrDocument;
 
 import com.siliconmtn.security.UserDataVO;
 
@@ -209,12 +211,46 @@ public class DSIRoleMgr {
 	
 	/**
 	 * returns true is the user is authorized to launch the course.  This has no bearing on points of redemption
+	 * Is a pass-through method for backwards compatibility.
 	 * @param user
 	 * @return
 	 */
 	public boolean isCourseAuthorized(DSIUserDataVO user) {
+		return isCourseAuthorized(user, null);
+	}
+
+
+	/**
+	 * returns true is the user is authorized to launch the course.  This has no bearing on points of redemption
+	 * @param user
+	 * @return
+	 */
+	public boolean isCourseAuthorized(DSIUserDataVO user, SolrDocument course) {
 		if (user == null || user.getProfession() == null) return false;
-		
+
+		//If the User is a Nurse.
+		if(isNurse(user)) {
+			/*
+			 * Verify that the course isn't null.  Want a separate check here to
+			 * prevent accidental skippage and passage through into a potential
+			 * true situation later on.
+			 */
+			if(course != null) {
+
+				/*
+				 * Validate that cats isn't null and if Cats contains NURSE,
+				 * return true to enable access.
+				 */
+				List<?> cats = ((List<?>)course.getFieldValue("category"));
+				if(cats.contains("NURSE")) {
+					return true;
+				}
+			}
+
+			//If any of the above cases aren't true for a Nurse, return false.
+			return false;
+		}
+
 		//allow all J&J WWID users access
 		if (UserDataVO.AuthenticationType.SAML == user.getAuthType()) return true;
 		
