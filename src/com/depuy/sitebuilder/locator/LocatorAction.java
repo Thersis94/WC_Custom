@@ -45,6 +45,11 @@ import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.util.RecordDuplicatorUtility;
 
+// WC_Custom
+import com.depuysynthes.locator.LocationBean;
+import com.depuysynthes.locator.ResultsContainer;
+import com.depuysynthes.locator.SurgeonBean;
+
 // Xerces
 import org.apache.xerces.dom.DeferredDocumentImpl;
 
@@ -81,6 +86,14 @@ public class LocatorAction extends SBActionAdapter {
     public static final int SPECIFIC_PRODUCT = 6;
     public static final int SPECIFIC_JOINT_PRODUCTS_FOR_JOINT = 7;
     public static final String LOCATOR_SUBMITTAL_DATA = "locatorSubmittalData";
+    
+    /* !!! Locator v1 session data key.  MUST BE MATCHED IN v1 views so 
+     * that email/sms send works correctly.  */
+    public static final String LOCATOR_SESSION_DATA_KEY_V1 = "locData";
+    
+    /* !!! Locator v2 session data key.  MUST BE MATCHED IN v1 views so 
+     * that email/sms send works correctly.  */
+    public static final String LOCATOR_SESSION_DATA_KEY_V2 = "results";
     
     /**
      * 
@@ -689,7 +702,8 @@ public class LocatorAction extends SBActionAdapter {
     	if (idFormat != null) {
     		if (idFormat.equalsIgnoreCase("json")) {
     			if (version.equals("2")) {
-    				return findSurgeonFromJsonV2(req, uniqueId);
+    				//return findSurgeonFromJsonV2(req, uniqueId);
+    				return this.findSurgeonFromResultsContainer(req, uniqueId);
     			} else {
     				return findSurgeonFromJson(req, uniqueId);
     			}
@@ -810,64 +824,68 @@ public class LocatorAction extends SBActionAdapter {
     }
     
     /**
-     * Attempts to find a surgeon from the session's JSON search data parsing
-     * according to version 2 of the locator.  
+     * Retrieves the search results container from the session and iterates the 
+     * surgeon's list to find the specific surgeon.
      * @param req
-     * @param uniqueId
+     * @param uniqueId: dash-delimited String representing a combination of 
+     * surgeon ID, clinic ID, and location ID that identifies a specific surgeon at a 
+     * specific clinic and at a clinic's specific location. Format is typically 
+     * nnnnn-nnnnn-nnnnn where 'nnnnn' means a number greater than 1.
      * @return
      */
-    private Map<String,String> findSurgeonFromJsonV2(SMTServletRequest req, 
+    private Map<String,String> findSurgeonFromResultsContainer(SMTServletRequest req, 
     		String uniqueId) {
-    	log.debug("findSurgeonFromJson...");
-    	Map<String,String> surgeonVals = null;
-    	String json = (String)req.getSession().getAttribute("locData");
-    	if (json == null) return surgeonVals;
-    	
-    	// parse the data from the session.
-		JsonParser parser = new JsonParser();
-		JsonElement jEle = null;
-		try {
-			jEle = parser.parse(json);
-			surgeonVals = new HashMap<>();
-		} catch (Exception e) {
-			log.error("Error parsing surgeon data from JSON on session, ", e);
-			return surgeonVals;
-		}
-		
-		// get the results container as an object
-		JsonObject ctnr = jEle.getAsJsonObject();
-		JsonArray surgeons = ctnr.getAsJsonArray("results");
-		JsonObject surgeon = null;
-		Iterator<JsonElement> surgeonIter = surgeons.iterator();
-		while (surgeonIter.hasNext()) {
-			// grab the current surgeon iteration
-			surgeon = surgeonIter.next().getAsJsonObject();
-			
-			// distance of first surgeon location, for display.
-			JsonArray surgeonLocs = surgeon.getAsJsonArray("locations");
-			if (surgeonLocs != null && surgeonLocs.size() > 0) {
-				JsonObject loc = surgeonLocs.get(0).getAsJsonObject();
-				if (loc.has("uniqueId")) {
-					String tmp = loc.get("uniqueId").getAsString();
-					if (uniqueId.equals(tmp)) {
-						// found surgeon record, add keys/values required by email/sms
-						surgeonVals.put("firstName", parseJsonStringValue(surgeon,"firstName"));
-						surgeonVals.put("lastName", parseJsonStringValue(surgeon,"lastName"));
-						surgeonVals.put("address1", parseJsonStringValue(loc,"address"));
-						surgeonVals.put("city", parseJsonStringValue(loc,"city"));
-						surgeonVals.put("state", parseJsonStringValue(loc,"state"));
-						surgeonVals.put("phone", parseJsonStringValue(loc,"phoneNumber"));
-						break;
-					} else {
-						continue;
+    	log.debug("findSurgeonFromResultsContainer...");
+    	String type = StringUtil.checkVal(req.getParameter("messageType"));
+    	Map<String,String> surgeonVals = new HashMap<>();
+    	ResultsContainer rc = (ResultsContainer)req.getSession().getAttribute(LOCATOR_SESSION_DATA_KEY_V2);
+    	for (SurgeonBean sb : rc.getResults()) {
+    		if (sb.getUniqueId().equals(uniqueId)) {
+				//log.debug("found surgeon");
+    			/* NOTE: Map keys are used as FreeMarker tags in JSTL. (e.g. ${firstName})
+    			 * If you specify a key in JSTL but do not include it in your map, the
+    			 * JSTL will fail to render.  Having more keys in your map than you use in
+    			 * your JSTL has no detrimental effect to page rendering. */
+				surgeonVals.put("firstName", sb.getFirstName());
+				surgeonVals.put("lastName", sb.getLastName());
+				surgeonVals.put("degree", sb.getDegreeDesc());
+
+				StringBuilder website = new StringBuilder(75);
+				if (StringUtil.checkVal(sb.getCustomUrl(), null) != null) {
+					if (type.equalsIgnoreCase(EmailFriendAction.MESSAGE_TYPE_SMS)) {
+						website.append(sb.getCustomUrl());
+					} else if (type.equalsIgnoreCase(EmailFriendAction.MESSAGE_TYPE_EMAIL)) {
+						website.append("<a href=\"");
+						website.append(sb.getCustomUrl()).append("\">");
+						website.append(sb.getCustomUrl()).append("</a>");
 					}
 				}
-			}		
-		}
+				surgeonVals.put("website", website.toString());
 
+				// get location vals from first location in locations list.
+				LocationBean loc = sb.getLocations().get(0);
+				surgeonVals.put("address1", loc.getAddress());
+				surgeonVals.put("city", loc.getCity());
+				surgeonVals.put("state", loc.getState());
+				surgeonVals.put("zip", loc.getZip());
+				surgeonVals.put("phone", loc.getPhoneNumber());
+				/* log.debug("first/last/address/city/state: " + surgeonVals.get("firstName") + 
+						"|" + surgeonVals.get("lastName") + "|" + surgeonVals.get("address1") + 
+						"|" + surgeonVals.get("city") + "|" + surgeonVals.get("state") + 
+						"|" + surgeonVals.get("zip") + "|" + surgeonVals.get("phone")); */
+    			break;
+    		}
+    	}
+    	
     	return surgeonVals;
     }
     
+    /**
+     * Utility method to ensure that a value is returned for JSON properties.
+     * @param jo
+     * @param propertyName
+     * @return
+     */
     private String parseJsonStringValue(JsonObject jo, String propertyName) {
     	if (jo.has(propertyName)) {
     		return jo.get(propertyName).getAsString();

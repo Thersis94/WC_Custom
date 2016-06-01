@@ -101,7 +101,7 @@ public class PostcardEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(site.getAdminEmail());
-			mail.addRecipient("JStuntz@its.jnj.com");
+			mail.addRecipient("kshull@ITS.JNJ.com");
 			mail.addCC("educationalseminars@dpyus.jnj.com");
 			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
@@ -145,7 +145,7 @@ public class PostcardEmailer {
 			mail.addRecipient("amy.spencerman@hmktgroup.com");
 			mail.addRecipient("admgt@hmktgroup.com");
 			mail.addRecipient("sterling.hoham@hmktgroup.com");
-			mail.addRecipient("JStuntz@its.jnj.com");
+			mail.addRecipient("kshull@ITS.JNJ.com");
 			mail.addCC("educationalseminars@dpyus.jnj.com");
 			if (postcard.getEarliestEventDate().after(Convert.formatDate(Convert.DATE_SLASH_PATTERN,"01/01/2016"))) {
 				mail.addCC("Francisco.Gonzalez@umj3.com");
@@ -198,7 +198,7 @@ public class PostcardEmailer {
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipient("JStuntz@its.jnj.com");
+			mail.addRecipient("kshull@ITS.JNJ.com");
 			mail.addRecipient(site.getAdminEmail());
 			mail.addCC("educationalseminars@dpyus.jnj.com");
 			mail.setSubject(subject.toString());
@@ -244,7 +244,7 @@ public class PostcardEmailer {
 			mail.addRecipient("sterling.hoham@hmktgroup.com"); // Sterling Hoham
 			mail.addRecipient("amy.spencerman@hmktgroup.com");			
 			//Additional CC recipients
-			mail.addCC("JStuntz@its.jnj.com");
+			mail.addCC("kshull@ITS.JNJ.com");
 			mail.addCC("educationalseminars@dpyus.jnj.com");
 			if (sem.getEarliestEventDate().after(Convert.formatDate(Convert.DATE_SLASH_PATTERN,"01/01/2016"))) {
 				mail.addCC("Francisco.Gonzalez@umj3.com");
@@ -321,7 +321,7 @@ public class PostcardEmailer {
 			mail.addCC("amy.spencerman@hmktgroup.com");
 			//mail.addCC("WWilder@its.jnj.com");
 			//mail.addCC("RSmith68@its.jnj.com");
-			mail.addCC("JStuntz@its.jnj.com");
+			mail.addCC("kshull@ITS.JNJ.com");
 			mail.addCC("educationalseminars@dpyus.jnj.com");
 			mail.addCC(site.getAdminEmail());
 			for (PersonVO p : sem.getPeople()) { 
@@ -384,7 +384,7 @@ public class PostcardEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient("tkumfer@printlinc.net"); // Terrie
-			mail.addCC("JStuntz@its.jnj.com"); //Jill
+			mail.addCC("kshull@ITS.JNJ.com"); //Jill
 			mail.addCC("educationalseminars@dpyus.jnj.com");
 			mail.addCC(ownerEmail);
 			//if (StringUtil.isValidEmail(user.getEmailAddress()) && ownerEmail != user.getEmailAddress())
@@ -424,7 +424,7 @@ public class PostcardEmailer {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(sem.getOwner().getEmailAddress());
 			mail.addCC(site.getAdminEmail());
-			mail.addCC("JStuntz@its.jnj.com");
+			mail.addCC("kshull@ITS.JNJ.com");
 			mail.addCC("educationalseminars@dpyus.jnj.com");
 			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
@@ -463,7 +463,7 @@ public class PostcardEmailer {
 			mail.addCC("amy.spencerman@hmktgroup.com");
 			mail.addCC(site.getAdminEmail());
 			mail.addCC(sem.getOwner().getEmailAddress());
-			mail.addCC("JStuntz@its.jnj.com");
+			mail.addCC("kshull@ITS.JNJ.com");
 			mail.addCC("educationalseminars@dpyus.jnj.com");
 			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
@@ -506,7 +506,7 @@ public class PostcardEmailer {
 				mail.addRecipient("rita.harman@hmktgroup.com");
 			
 			mail.addCC(site.getAdminEmail());
-			mail.addCC("JStuntz@its.jnj.com");
+			mail.addCC("kshull@ITS.JNJ.com");
 			mail.addCC("educationalseminars@dpyus.jnj.com");
 			if (sem.getEarliestEventDate().after(Convert.formatDate(Convert.DATE_SLASH_PATTERN,"01/01/2016"))) {
 				mail.addCC("Francisco.Gonzalez@umj3.com");
@@ -562,7 +562,7 @@ public class PostcardEmailer {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient("Sterling.Hoham@hmktgroup.com");
 			mail.addRecipient(site.getAdminEmail());
-			mail.addRecipient("JStuntz@its.jnj.com");
+			mail.addRecipient("kshull@ITS.JNJ.com");
 			mail.addCC("educationalseminars@dpyus.jnj.com");
 			mail.setSubject("Postcard Declined - Seminar "+sem.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
@@ -602,7 +602,7 @@ public class PostcardEmailer {
 			//Recipients
 			mail.addRecipient( sem.getOwner().getEmailAddress() );
 			mail.addCC( site.getAdminEmail() );
-			mail.addCC("JStuntz@its.jnj.com");
+			mail.addCC("kshull@ITS.JNJ.com");
 			mail.addCC("educationalseminars@dpyus.jnj.com");
 			//set the email content
 			mail.setTextBody(msg.toString());
@@ -639,7 +639,7 @@ public class PostcardEmailer {
 			//Recipients
 			mail.addRecipient("sterling.hoham@hmktgroup.com");
 			mail.addCC("amy.spencerman@hmktgroup.com");
-			mail.addCC("JStuntz@its.jnj.com");
+			mail.addCC("kshull@ITS.JNJ.com");
 			mail.addCC(site.getAdminEmail());
 			mail.addCC("educationalseminars@dpyus.jnj.com");
 			mail.addCC(sem.getOwner().getEmailAddress());
@@ -674,7 +674,7 @@ public class PostcardEmailer {
 			
 			//recipients
 			mail.addRecipient(site.getAdminEmail());
-			mail.addRecipient("JStuntz@its.jnj.com");
+			mail.addRecipient("kshull@ITS.JNJ.com");
 			mail.addRecipient(sem.getOwner().getEmailAddress());
 			mail.addCC("educationalseminars@dpyus.jnj.com");
 			mail.addCC("amy.spencerman@hmktgroup.com");
@@ -709,7 +709,7 @@ public class PostcardEmailer {
 			
 			//recipients
 			mail.addRecipient(site.getAdminEmail());
-			mail.addRecipient("JStuntz@its.jnj.com");
+			mail.addRecipient("kshull@ITS.JNJ.com");
 			mail.addRecipient(sem.getOwner().getEmailAddress());
 			mail.addCC("educationalseminars@dpyus.jnj.com");
 			mail.addCC("amy.spencerman@hmktgroup.com");
@@ -748,7 +748,7 @@ public class PostcardEmailer {
 			mail.addRecipient("sterling.hoham@hmktgroup.com");
 			mail.addCC("amy.spencerman@hmktgroup.com");
 			mail.addCC(site.getAdminEmail());
-			mail.addCC("JStuntz@its.jnj.com");
+			mail.addCC("kshull@ITS.JNJ.com");
 			mail.addCC("educationalseminars@dpyus.jnj.com");
 			
 			MessageSender mailer = new MessageSender(attributes,dbConn);
