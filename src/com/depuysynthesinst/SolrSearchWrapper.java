@@ -327,7 +327,7 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 
 			//Since Nurses have eModules now, those live on continuingEducation.
 			if("COURSE".equals(moduleType)) {
-				rootLvl = "nurse-education/continuingEducation";
+				rootLvl = "nurse-education/continuing-education";
 			} else {
 				rootLvl = "nurse-education/resource-library";
 			}

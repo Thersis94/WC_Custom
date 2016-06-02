@@ -228,6 +228,12 @@ public class DSIRoleMgr {
 	public boolean isCourseAuthorized(DSIUserDataVO user, SolrDocument course) {
 		if (user == null || user.getProfession() == null) return false;
 
+		//allow all J&J WWID users access
+		if (UserDataVO.AuthenticationType.SAML == user.getAuthType()) return true;
+
+		//must have a TTLMS ID
+		if (user.getTtLmsId() == null || user.getTtLmsId().length() == 0) return false;
+
 		//If the User is a Nurse.
 		if(isNurse(user)) {
 			/*
@@ -242,21 +248,13 @@ public class DSIRoleMgr {
 				 * return true to enable access.
 				 */
 				List<?> cats = ((List<?>)course.getFieldValue("category"));
-				if(cats.contains("NURSE")) {
-					return true;
-				}
+				return cats.contains("NURSE");
 			}
 
 			//If any of the above cases aren't true for a Nurse, return false.
 			return false;
 		}
 
-		//allow all J&J WWID users access
-		if (UserDataVO.AuthenticationType.SAML == user.getAuthType()) return true;
-		
-		//must have a TTLMS ID
-		if (user.getTtLmsId() == null || user.getTtLmsId().length() == 0) return false;
-		
 		//this list comes from the ACGME roles - users authorized to launch courses based on their profession
 		List<String> approved = new ArrayList<>();
 		approved.add("RESIDENT");
