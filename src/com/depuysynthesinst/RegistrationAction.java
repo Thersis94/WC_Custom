@@ -189,21 +189,39 @@ public class RegistrationAction extends SimpleActionAdapter {
 
 		//if they're not using LMS, we're done:
 		if (!dsiRoleMgr.isLMSAuthorized(user)) {
+			return;
+		}
 
-			/*
-			 * If this is a Nurse and the the user is on page 3 of registration,
-			 * register them with LMS.
-			 */
-			if(dsiRoleMgr.isNurse(user) && "3".equals(req.getParameter("page"))) {
-				registerLMS(user, req);
-			}
+		/*
+		 * If this is a Nurse and the the user is on page 3 of registration,
+		 * register them with LMS.
+		 */
+		if(dsiRoleMgr.isNurse(user) && "3".equals(req.getParameter("page"))) {
+			saveUser(user);
+
+			String[] regFields = new String[]{ RegField.DSI_TTLMS_ID.toString()};
+//															 RegField.DSI_SYNTHES_ID.toString(),
+//															 RegField.DSI_PROG_ELIGIBLE.toString(),
+//															 RegField.DSI_VERIFIED.toString() };
+			captureLMSResponses(req, user, regFields);
 			return;
 		}
 
 		//if this is an edit, call the LMS after each modal saves 1,2 and 3.  
 		//Otherwise only when modal #3 is submitted (which is page=4 on the request).
 		if ("4".equals(req.getParameter("page")) && req.hasParameter("newReg")) {
-			registerLMS(user, req);
+			user.setCountryCode(req.getParameter("reg_||" + DSIUserDataVO.RegField.DSI_COUNTRY.toString()));
+			log.warn("user passed country=" + req.getParameter("reg_||" + DSIUserDataVO.RegField.DSI_COUNTRY.toString()) + " we stored country=" + user.getCountryCode());
+			boolean migrated = migrateUser(req, user);
+
+			//if not migrated, call save (create||update)
+			if (!migrated) saveUser(user);
+
+			String[] regFields = new String[]{ RegField.DSI_TTLMS_ID.toString(),
+															 RegField.DSI_SYNTHES_ID.toString(),
+															 RegField.DSI_PROG_ELIGIBLE.toString(),
+															 RegField.DSI_VERIFIED.toString() };
+			captureLMSResponses(req, user, regFields);
 			
 		} else if (!req.hasParameter("newReg")) {
 			String[] fieldList = new String[]{ RegField.DSI_TTLMS_ID.toString() };
@@ -240,27 +258,6 @@ public class RegistrationAction extends SimpleActionAdapter {
 		}
 	}
 
-
-	/**
-	 * Helper method that manages registering a user with the TTLMS System.
-	 * @param user
-	 * @param req
-	 * @throws ActionException
-	 */
-	protected void registerLMS(DSIUserDataVO user, SMTServletRequest req) throws ActionException {
-		user.setCountryCode(req.getParameter("reg_||" + DSIUserDataVO.RegField.DSI_COUNTRY.toString()));
-		log.warn("user passed country=" + req.getParameter("reg_||" + DSIUserDataVO.RegField.DSI_COUNTRY.toString()) + " we stored country=" + user.getCountryCode());
-		boolean migrated = migrateUser(req, user);
-
-		//if not migrated, call save (create||update)
-		if (!migrated) saveUser(user);
-
-		String[] regFields = new String[]{ RegField.DSI_TTLMS_ID.toString(),
-														 RegField.DSI_SYNTHES_ID.toString(),
-														 RegField.DSI_PROG_ELIGIBLE.toString(),
-														 RegField.DSI_VERIFIED.toString() };
-		captureLMSResponses(req, user, regFields);
-	}
 
 	/**
 	 * writes back to the register_data table to update a couple fields on the user's registration

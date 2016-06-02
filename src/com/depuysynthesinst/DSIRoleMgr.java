@@ -131,7 +131,7 @@ public class DSIRoleMgr {
 	 * @return
 	 */
 	public boolean isLMSAuthorized(UserDataVO user) {
-		return isResident(user) || isFellow(user) || isChiefResident(user) || isDirector(user);
+		return isResident(user) || isFellow(user) || isChiefResident(user) || isDirector(user) || isNurse(user);
 	}
 	
 	
