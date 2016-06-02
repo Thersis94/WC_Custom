@@ -130,7 +130,6 @@ public class NursingCertificateLabeler extends AbstractLabelPDF {
 		try {
 			writer = PdfWriter.getInstance(document, baos);
 		} catch (DocumentException e) {
-			log.debug("Error", e);
 			throw new PDFLabelException("Error getting instance", e);
 		}
 
@@ -150,7 +149,6 @@ public class NursingCertificateLabeler extends AbstractLabelPDF {
 		try {
 			reader = new PdfReader(file);
 		} catch (IOException e) {
-			log.debug("Error", e);
 			throw new PDFLabelException("Error getting instance", e);
 		}
 
@@ -200,7 +198,7 @@ public class NursingCertificateLabeler extends AbstractLabelPDF {
 			Date d = new SimpleDateFormat("yyyy-MM-dd").parse(((String[])courseComplete)[0]);
 			completeDate = new SimpleDateFormat("MMM dd, yyyy").format(d);
 		} catch (ParseException e) {
-			log.error(e);
+			log.error("Problem Formatting Nurse Certificate Course Complete Date", e);
 		}
 
 		return completeDate;

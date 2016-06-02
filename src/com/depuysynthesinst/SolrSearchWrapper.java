@@ -268,7 +268,7 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 			hierarchy= StringUtil.checkVal(sd.getFieldValues(SearchDocumentHandler.HIERARCHY).iterator().next());
 		} catch (Exception e) {};
 
-		return buildDSIUrl(hierarchy, (String)sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID), (String)attributes.get(Constants.QS_PATH), (String)sd.get("moduleType"));
+		return buildDSIUrl(hierarchy, (String)sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID), (String)attributes.get(Constants.QS_PATH), (String)sd.get(SearchDocumentHandler.MODULE_TYPE));
 	}
 
 	/**
