@@ -176,9 +176,9 @@ public class SolrBusinessRules {
 		 * If the User Profession is a Nurse, we need to set hierarchy based on
 		 * Category Type, not just the first to appear.
 		 */
-		if(user.getProfession().equals("NURSE")) {
-			setHierarchy(false);
-		}
+//		if(user.getProfession().equals("NURSE")) {
+//			setHierarchy(false);
+//		}
 
 		if ("EVENT".equals(moduleType)) {
 			pageUrl = StringUtil.checkVal(sd.get(SearchDocumentHandler.DOCUMENT_URL));
