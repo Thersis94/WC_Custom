@@ -247,8 +247,12 @@ public class DSIRoleMgr {
 				 * Validate that cats isn't null and if Cats contains NURSE,
 				 * return true to enable access.
 				 */
-				List<?> cats = ((List<?>)course.getFieldValue("category"));
-				return cats.contains("NURSE");
+				if(course.getFieldValue("category") instanceof List) {
+					List<?> cats = ((List<?>)course.getFieldValue("category"));
+					return cats.contains("NURSE");
+				} else {
+					return "NURSE".equals(course.getFieldValue("category"));
+				}
 			}
 
 			//If any of the above cases aren't true for a Nurse, return false.
