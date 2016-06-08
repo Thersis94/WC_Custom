@@ -63,7 +63,7 @@ public class AjaxMenuLoader extends SimpleActionAdapter {
 		
 		if (req.hasParameter(Constants.AJAX_MODULE_ID) 
 				&& !req.getParameter(Constants.AJAX_MODULE_ID).startsWith("hcp_") 
-				&& !req.getParameter(Constants.AJAX_MODULE_ID).startsWith("select_")) {
+				&& !req.getParameter(Constants.AJAX_MODULE_ID).startsWith("asc_")) {
 			loadSitePageMenu(req, site, mod);
 			return;
 		}
