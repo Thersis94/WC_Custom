@@ -266,7 +266,27 @@ public class DSIRoleMgr {
 		approved.add("CHIEF");
 		approved.add("DIRECTOR");
 		approved.add("ALLIED");
+
+		//Verify that the course being requested isn't a Nurse Education Course.
+		boolean isNurseCourse = false;
 		
-		return approved.contains(user.getProfession());
+		/*
+		 * Verify that the course isn't null.  Want a separate check here to
+		 * prevent accidental skippage and passage through into a potential
+		 * true situation later on.
+		 */
+		if(course != null) {
+
+			//Verify that the Course isn't for Nurses.
+			if(course.getFieldValue("category") instanceof List) {
+				List<?> cats = ((List<?>)course.getFieldValue("category"));
+				isNurseCourse = cats.contains("NURSE");
+			} else {
+				isNurseCourse = "NURSE".equals(course.getFieldValue("category"));
+			}
+		}
+
+		//Return true only if this isn't a Nurse Course and the User is approved.
+		return !isNurseCourse && approved.contains(user.getProfession());
 	}
 }
