@@ -64,9 +64,9 @@ public class PostcardSelectV2 extends SBActionAdapter {
 	
 	//GUIDS tied to the short term survey (a Survey portlet)
 	private enum SurveyConst {
-		surveyAction("c0a8021edb7fd91f57d3396eea06b0e9","c0a80237c2034fbfe0cea6bddfbf537d"),
+		surveyAction("c0a8021edb7fd91f57d3396eea06b0e9","c0a80237c203386c3339bee949f6a29e"),
 		rsvpCodeQuestion("c0a8021edb832b385a61675da76470a2", "c0a80237c2034fcfc5194464583dff35"),
-		venueCostQuestion("c0a802378e86f39749342d9a1b36ba68", "c0a80237c2034fcfc5194464583dff35"),
+		venueCostQuestion("c0a802378e86f39749342d9a1b36ba68", "c0a80237c2034fdcc5194464a04a7f18"),
 		refreshmentCostQuestion("c0a802378e87b9f229fbb0ae1e1c3e9a", "c0a80237c2034fddc5194464da186e94"),
 		attendeeCountQuestion("c0a8021edb84f3d3e235a9961df88afa", "c0a80237c2034fd0c51944641a8a690d");
 		
