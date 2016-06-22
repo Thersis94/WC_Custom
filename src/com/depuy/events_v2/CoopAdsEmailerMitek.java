@@ -60,7 +60,7 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			mail.addCC("mroderic@its.jnj.com");
 			mail.addCC("broides@its.jnj.com");
 			mail.addRecipient("Amy.Zimmerman@hmktgroup.com");
-			mail.addRecipient("Anthony.Manning@hmktgroup.com");
+			mail.addRecipient("Brittany.Neff@hmktgroup.com");
 			mail.addRecipient("LisaV@metrosn.com");
 			mail.addRecipient("Francisco.Gonzalez@umj3.com");
 			mail.addRecipient("Evan.Pring@umj3.com");
@@ -143,7 +143,7 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient("LisaV@metrosn.com");
 			mail.addRecipient("Amy.Zimmerman@hmktgroup.com");
-			mail.addRecipient("Anthony.Manning@hmktgroup.com");
+			mail.addRecipient("Brittany.Neff@hmktgroup.com");
 			mail.addCC("ksmith49@its.jnj.com");
 			mail.addCC("broides@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
@@ -287,7 +287,7 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient("LisaV@metrosn.com");
 			mail.addRecipient("Amy.Zimmerman@hmktgroup.com");
-			mail.addRecipient("Anthony.Manning@hmktgroup.com");
+			mail.addRecipient("Brittany.Neff@hmktgroup.com");
 			mail.addRecipient("Francisco.Gonzalez@umj3.com");
 			mail.addRecipient("Evan.Pring@umj3.com");
 			mail.addCC(sem.getOwner().getEmailAddress());
@@ -344,7 +344,7 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			mail.setFrom(site.getMainEmail());
 			mail.addRecipient("LisaV@metrosn.com");
 			mail.addRecipient("Amy.Zimmerman@hmktgroup.com");
-			mail.addRecipient("Anthony.Manning@hmktgroup.com");
+			mail.addRecipient("Brittany.Neff@hmktgroup.com");
 			mail.addCC("ksmith49@its.jnj.com");
 			mail.addCC("broides@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
@@ -383,7 +383,7 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			mail.addCC("mroderic@its.jnj.com");
 			mail.addCC("LisaV@metrosn.com");
 			mail.addCC("amy.zimmerman@hmktgroup.com");
-			mail.addCC("Anthony.Manning@hmktgroup.com");
+			mail.addCC("Brittany.Neff@hmktgroup.com");
 			mail.addCC("Francisco.Gonzalez@umj3.com");
 			mail.addCC("Evan.Pring@umj3.com");
 			
