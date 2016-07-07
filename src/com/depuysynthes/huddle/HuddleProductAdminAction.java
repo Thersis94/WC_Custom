@@ -5,11 +5,9 @@ import java.util.Properties;
 import com.depuysynthes.huddle.solr.HuddleProductCatalogSolrIndex;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.data.Tree;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
-import com.smt.sitebuilder.action.commerce.product.ProductCatalogAction;
 import com.smt.sitebuilder.action.commerce.product.ProductDataTool;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
 
@@ -58,19 +56,12 @@ public class HuddleProductAdminAction extends SimpleActionAdapter {
 	}
 	
 	private void indexProduct(String productId, String catalogId, SMTServletRequest req) {
-		
-		ProductCatalogAction pc = new ProductCatalogAction(actionInit);
-		pc.setAttributes(attributes);
-		pc.setDBConnection(dbConn);
-		
-		Tree t = pc.loadEntireCatalog(catalogId, true, req, productId);
-		
 		//fire the VO to Solr, leverage the same lookup the "full rebuild" indexer uses, which joins to Site Pages
 		Properties props = new Properties();
 		props.putAll(getAttributes());
 		HuddleProductCatalogSolrIndex indexer = new HuddleProductCatalogSolrIndex(props);
 		indexer.setDBConnection(getDBConnection());
-		indexer.pushSingleProduct(t);
+		indexer.addSingleItem(productId);
 	}
 	
 	public void delete(SMTServletRequest req) throws ActionException {

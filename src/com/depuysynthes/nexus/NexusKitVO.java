@@ -207,9 +207,19 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 		return count;
 	}
 
-	@SolrField(name=NexusProductVO.SOURCE)
 	public Source getSource() {
 		return source;
+	}
+
+	
+	/**
+	 * Return the String representation of the source
+	 * so that it is properly stored in solr
+	 * @return
+	 */
+	@SolrField(name=NexusProductVO.SOURCE)
+	public String getSourceString() {
+		return source.toString();
 	}
 
 	public void setSource(Source source) {

@@ -88,7 +88,7 @@ public class HuddleFormGroupAction extends HuddleFormSolrAction {
 			addForms(formGroupId, formIds);
 
 			// Push the current forms to solr
-			indexer.pushSingleForm(formGroupId);
+			indexer.addSingleItem(formGroupId);
 		}
 	}
 
