@@ -76,7 +76,7 @@ public class LocationInventoryReportAction extends SBActionAdapter {
 				gr.setData(data);
 
 				AbstractSBReportVO rpt = new WebCrescendoReport(gr);
-				rpt.setFileName(locationNm + ".xls");
+				rpt.setFileName(locationNm + " Inventory.xls");
 				req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, Boolean.TRUE);
 				req.setAttribute(Constants.BINARY_DOCUMENT, rpt);
 				return;
@@ -100,7 +100,9 @@ public class LocationInventoryReportAction extends SBActionAdapter {
 		List<CustomerLocationVO> cls = new ArrayList<CustomerLocationVO>();
 
 		/*
-		 * Determine which query we need to run to get locations.
+		 * Determine which query we need to run to get locations.  These have
+		 * been rate limited to only the locations with a LocationItemMaster
+		 * Record to prevent excessive listing.
 		 * OEM - Gathers Locations based on LocationItemMaster Records
 		 * PROVIDER - Gathers Locations based on Customer Id
 		 * Admin - Can see all Locations
@@ -176,7 +178,7 @@ public class LocationInventoryReportAction extends SBActionAdapter {
 	 * @return
 	 */
 	private String getOEMCustomerLocations() {
-		StringBuilder sql = new StringBuilder(125);
+		StringBuilder sql = new StringBuilder(450);
 		sql.append("select distinct c.* from ");
 		sql.append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("RAM_LOCATION_ITEM_MASTER a ");
@@ -195,10 +197,15 @@ public class LocationInventoryReportAction extends SBActionAdapter {
 	 * @return
 	 */
 	private String getProviderCustomerLocations() {
-		StringBuilder sql = new StringBuilder(125);
-		sql.append("select * from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("RAM_CUSTOMER_LOCATION where CUSTOMER_ID = ? order by LOCATION_NM");
-
+		StringBuilder sql = new StringBuilder(450);
+		sql.append("select distinct c.* from ");
+		sql.append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("RAM_LOCATION_ITEM_MASTER a ");
+		sql.append("inner join ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("RAM_PRODUCT b on a.PRODUCT_ID = b.PRODUCT_ID ");
+		sql.append("inner join ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("RAM_CUSTOMER_LOCATION c on a.CUSTOMER_LOCATION_ID = c.CUSTOMER_LOCATION_ID ");
+		sql.append("where c.CUSTOMER_ID = ? order by LOCATION_NM");
 		log.debug(sql.toString());
 		return sql.toString();
 	}
@@ -208,9 +215,14 @@ public class LocationInventoryReportAction extends SBActionAdapter {
 	 * @return
 	 */
 	private String getCustomerLocationSql() {
-		StringBuilder sql = new StringBuilder(125);
-		sql.append("select * from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("RAM_CUSTOMER_LOCATION order by LOCATION_NM");
+		StringBuilder sql = new StringBuilder(450);
+		sql.append("select distinct c.* from ");
+		sql.append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("RAM_LOCATION_ITEM_MASTER a ");
+		sql.append("inner join ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("RAM_PRODUCT b on a.PRODUCT_ID = b.PRODUCT_ID ");
+		sql.append("inner join ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("RAM_CUSTOMER_LOCATION c on a.CUSTOMER_LOCATION_ID = c.CUSTOMER_LOCATION_ID ");
 
 		log.debug(sql.toString());
 		return sql.toString();
@@ -221,7 +233,7 @@ public class LocationInventoryReportAction extends SBActionAdapter {
 	 * @return
 	 */
 	private String getLocationItemMasterSql(boolean filterByOem) {
-		StringBuilder sql = new StringBuilder(200);
+		StringBuilder sql = new StringBuilder(450);
 		sql.append("select * from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("RAM_LOCATION_ITEM_MASTER a inner join ");
 		sql.append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
