@@ -60,6 +60,13 @@ public class ResultsContainer implements Serializable {
 
 	private boolean isExtendedSearch;
 	
+	/**
+	 * Boolean indicating whether or not the results being displayed are from the
+	 * extended results set (results > than the requested search radius). This is 
+	 * used to inform the JSTL view as to whether or not we had to consult the
+	 * extended results set. */
+	private boolean useExtendedResults;
+	
 	// JSTL helper members
 	private int startVal = 1; // starting result number
 	private int endVal = 1; // ending result number
@@ -345,7 +352,7 @@ public class ResultsContainer implements Serializable {
     	filteredSurgeonList.clear();
     	double radiusAsDouble = (double) (radius);
     	int displayCount = 0;
-    	boolean includeExtendedResults = false;
+    	useExtendedResults = false;
     	/* Perform filtering if necessary */
 		if (isProcFilters() || isProdFilters()) {
 			boolean displaySurgeon = false;
@@ -427,11 +434,11 @@ public class ResultsContainer implements Serializable {
 					/* If we reached the search radius but found no results, set flag
 					 * so that we maximize the possibility of returning at least 1 result. */
 					if (displayCount == 0) {
-						includeExtendedResults = true;
+						useExtendedResults = true;
 					} else {
 						/* Override display flag if appropriate to exclude results that fall
 						 * beyond the search radius. */
-						if (! includeExtendedResults) displaySurgeon = false;
+						if (! useExtendedResults) displaySurgeon = false;
 					}
 				}
 				
@@ -462,9 +469,19 @@ public class ResultsContainer implements Serializable {
 				for (SurgeonBean surgeon : results) {
 					
 					if (surgeon.getPrimaryDistance() > radiusAsDouble) {
-						if (displayCount > 0) {
-							/* If display count > 0, that means we found surgeons w/in
-							 * the search radius so we exclude this surgeon from display. */
+						// this surgeon is outside the search radius.
+						if (displayCount == 0) {
+							/* since we haven't found anyone yet, turn 'on' extended
+							 * results consideration. */
+							useExtendedResults = true;
+						}
+						
+						if (useExtendedResults) {
+							// we are considering extended results, so display this surgeon.
+							displayCount++;
+						} else {
+							/* we are NOT considering extended results, exclude this
+							 * surgeon. */
 							filteredSurgeonList.add(surgeon.getSurgeonId());
 						}
 					} else {
@@ -808,6 +825,13 @@ public class ResultsContainer implements Serializable {
 	 */
 	public void setExtendedSearch(boolean isExtendedSearch) {
 		this.isExtendedSearch = isExtendedSearch;
+	}
+
+	/**
+	 * @return the useExtendedResults
+	 */
+	public boolean isUseExtendedResults() {
+		return useExtendedResults;
 	}
 
 	/**
