@@ -261,10 +261,10 @@ public class ResultsContainer implements Serializable {
 	    			// determine/add the specialty
 	    			if (split.length == 2) {
 	    				// is procedure
-	    				tmpI = Convert.formatInteger(StringUtil.checkVal(split[1]));
+	    				tmpI = Convert.formatInteger(split[1]);
 	    			} else {
 	    				// is product
-	    				tmpI = Convert.formatInteger(StringUtil.checkVal(split[2]));
+	    				tmpI = Convert.formatInteger(split[2]);
 	    			}
 	    			if (tmpI == 0) continue;
 	    			if (! specFilters.contains(tmpI)) specFilters.add(tmpI);
