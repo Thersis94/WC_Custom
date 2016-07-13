@@ -6,8 +6,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-
-
 // Google Gson lib
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -59,6 +57,13 @@ public class ResultsContainer implements Serializable {
 	private List<SurgeonBean> results;
 
 	private boolean isExtendedSearch;
+	
+	/**
+	 * Boolean indicating whether or not the results being displayed are from the
+	 * extended results set (results > than the requested search radius). This is 
+	 * used to inform the JSTL view as to whether or not we had to consult the
+	 * extended results set. */
+	private boolean useExtendedResults;
 	
 	// JSTL helper members
 	private int startVal = 1; // starting result number
@@ -146,7 +151,7 @@ public class ResultsContainer implements Serializable {
 		if (ctnr.has("pageSize")) resultsPerPage = ctnr.get("pageSize").getAsInt();
 		if (ctnr.has("radius")) radius = ctnr.get("radius").getAsInt();
 		if (ctnr.has("isExtendedSearch")) setExtendedSearch(ctnr.get("isExtendedSearch").getAsBoolean());
-		// set filters
+		// call setFilters to calculate what is displayed.
 		this.setFilters(null);
     }
     
@@ -233,19 +238,15 @@ public class ResultsContainer implements Serializable {
     public void setFilters(String[] filterVals) {
     	// clear filters
     	specFilters.clear();
-    	if (filterVals != null) {
-    		/* If filter values are passed in, we inform the bean as to which 
-    		 * specialties are to be considered. */
-    		specFilters.addAll(globalSpecFilters);
-    	}
     	procFilters.clear();
     	prodFilters.clear();
 
 		List<Integer> procsToExclude = new ArrayList<>(5);
 		List<Integer> prodsToExclude = new ArrayList<>(5);
-		
+		boolean hasFilterVals = (filterVals != null && filterVals.length > 0);
     	// parse filter values.
-    	if (filterVals != null && filterVals.length > 0) {
+    	if (hasFilterVals) {
+    		specFilters.addAll(globalSpecFilters);
     		String[] split = null;
     		Integer tmpI = null;
 
@@ -266,9 +267,7 @@ public class ResultsContainer implements Serializable {
 	    				tmpI = Convert.formatInteger(StringUtil.checkVal(split[2]));
 	    			}
 	    			if (tmpI == 0) continue;
-	    			if (! specFilters.contains(tmpI)) {
-		    			specFilters.add(tmpI);
-	    			}
+	    			if (! specFilters.contains(tmpI)) specFilters.add(tmpI);
 	    			
 	    			// now determine/add the procedure or product.
 	    			tmpI = Convert.formatInteger(split[0].substring(2));
@@ -290,7 +289,7 @@ public class ResultsContainer implements Serializable {
     	combineFilterLists(procsToExclude, prodsToExclude);
     	
     	// determine which surgeons are filtered out of display
-    	buildFilteredSurgeonsList((filterVals != null && filterVals.length > 0));
+    	buildFilteredSurgeonsList(hasFilterVals);
     }
     
     /**
@@ -345,7 +344,7 @@ public class ResultsContainer implements Serializable {
     	filteredSurgeonList.clear();
     	double radiusAsDouble = (double) (radius);
     	int displayCount = 0;
-    	boolean includeExtendedResults = false;
+    	useExtendedResults = false;
     	/* Perform filtering if necessary */
 		if (isProcFilters() || isProdFilters()) {
 			boolean displaySurgeon = false;
@@ -427,11 +426,11 @@ public class ResultsContainer implements Serializable {
 					/* If we reached the search radius but found no results, set flag
 					 * so that we maximize the possibility of returning at least 1 result. */
 					if (displayCount == 0) {
-						includeExtendedResults = true;
+						useExtendedResults = true;
 					} else {
 						/* Override display flag if appropriate to exclude results that fall
 						 * beyond the search radius. */
-						if (! includeExtendedResults) displaySurgeon = false;
+						if (! useExtendedResults) displaySurgeon = false;
 					}
 				}
 				
@@ -446,9 +445,6 @@ public class ResultsContainer implements Serializable {
 				procMatchCount = 0;
 			}
 			
-			// Set display count.  We only count surgeons who DO NOT MATCH a filter.
-			displayTotalNo = results.size() - filteredSurgeonList.size();
-			
 		} else {
 			/* If 'exclude' filters were specified that resulted in all procedures and 
 			 * products being excluded, then all physicians are excluded. */
@@ -456,27 +452,34 @@ public class ResultsContainer implements Serializable {
 				for (SurgeonBean surgeon : results) {
 					filteredSurgeonList.add(surgeon.getSurgeonId());
 				}
-				displayTotalNo = results.size() - filteredSurgeonList.size();
 			} else {
 				// no filters, loop surgeons displaying only those within search radius
 				for (SurgeonBean surgeon : results) {
 					
 					if (surgeon.getPrimaryDistance() > radiusAsDouble) {
-						if (displayCount > 0) {
-							/* If display count > 0, that means we found surgeons w/in
-							 * the search radius so we exclude this surgeon from display. */
+						// this surgeon is outside the search radius.
+						if (displayCount == 0) {
+							/* since we haven't found anyone yet, turn 'on' extended
+							 * results consideration. */
+							useExtendedResults = true;
+						}
+						
+						if (useExtendedResults) {
+							// we are including extended results, so display this surgeon.
+							displayCount++;
+						} else {
+							/* we are excluding extended results, so exclude this surgeon. */
 							filteredSurgeonList.add(surgeon.getSurgeonId());
 						}
 					} else {
-						// surgeon is within search radius, add to count.
+						// surgeon is within search radius, display this surgeon.
 						displayCount++;
 					}
 				}
-				displayTotalNo = results.size() - filteredSurgeonList.size();
 			}
 		}
 		
-		// now calculate display values (start,end, page nav, etc.)
+		// calculate display values (start,end, page nav, etc.)
 		calculateDisplayValues();		
     }
     
@@ -485,8 +488,14 @@ public class ResultsContainer implements Serializable {
      * current page number, etc.
      */
     private void calculateDisplayValues() {
+		// calculate display count.  We only count surgeons who DO NOT MATCH a filter.
+		displayTotalNo = results.size() - filteredSurgeonList.size();
+		
+		// ensure certain default vals
+		if (resultsPerPage < 1) resultsPerPage = 3;
+		if (currentPageNo < 1) currentPageNo = 1;
+		
 		// calculate nav vals
-		if (resultsPerPage < 1) resultsPerPage = 1;
 		if (displayTotalNo < resultsPerPage) {
 			lastPageNo = 1;
 		} else {
@@ -496,8 +505,6 @@ public class ResultsContainer implements Serializable {
 			}
 		}
 		// calc page number
-		//currentPageNo = Integer.parseInt(request.getParameter("page"));
-		if (currentPageNo < 1) currentPageNo = 1;
 		if (currentPageNo > lastPageNo) currentPageNo = lastPageNo;
 
 		// calc result start value
@@ -808,6 +815,13 @@ public class ResultsContainer implements Serializable {
 	 */
 	public void setExtendedSearch(boolean isExtendedSearch) {
 		this.isExtendedSearch = isExtendedSearch;
+	}
+
+	/**
+	 * @return the useExtendedResults
+	 */
+	public boolean isUseExtendedResults() {
+		return useExtendedResults;
 	}
 
 	/**
