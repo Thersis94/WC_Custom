@@ -14,22 +14,10 @@ import java.util.Properties;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
-
-
-
-
-
-
-
-
 //Solr libs
 import org.apache.solr.client.solrj.SolrClient;
-
-
-
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrException;
-
 import org.apache.solr.common.SolrException.ErrorCode;
 
 // WC libs
