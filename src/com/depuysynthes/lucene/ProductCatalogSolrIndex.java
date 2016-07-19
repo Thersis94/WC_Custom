@@ -8,8 +8,10 @@ import java.util.Map;
 import java.util.Properties;
 
 
+
 // log4j 1.2-15
 import org.apache.solr.client.solrj.SolrClient;
+
 
 
 // SMT Base Libs
@@ -240,5 +242,12 @@ public class ProductCatalogSolrIndex extends SMTAbstractIndex {
 	@Override
 	public String getIndexType() {
 		return INDEX_TYPE;
+	}
+
+	@Override
+	public void addSingleItem(String arg0) {
+		// Currently nothing makes use of single item inserts with this class.
+		// When products are added to the list of dynamic solr groups the class
+		// will have to be reworked to support this function.
 	}
 }

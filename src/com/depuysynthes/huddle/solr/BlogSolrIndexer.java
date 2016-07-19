@@ -12,7 +12,10 @@ import java.util.Properties;
 import java.util.Set;
 
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.SolrException.ErrorCode;
 
 import com.depuysynthes.huddle.HuddleUtils;
 import com.siliconmtn.action.ActionInitVO;
@@ -219,7 +222,8 @@ public class BlogSolrIndexer extends SMTAbstractIndex {
 	 * tomorrow for it to appear in search results (the next SolrIndexBuilder run).
 	 * @param blogId
 	 */
-	public void pushSingleArticle(String blogId) {
+	@Override
+	public void addSingleItem(String blogId) throws SolrException {
 		log.info("Indexing Single Huddle Blog");
 		try (SolrClient server = makeServer()) {
 			// load the blog portlet this blogId belongs to, inclusive of the indexable page that it's on
@@ -228,8 +232,12 @@ public class BlogSolrIndexer extends SMTAbstractIndex {
 			
 			server.commit(false, false); //commit, but don't wait for Solr to acknowledge
 			
-		} catch (Exception e) {
-			log.error("could not commit to Solr", e);
-		}
+		} catch (SolrServerException e) {
+			log.error("could not commit to Solr");
+			throw new SolrException(ErrorCode.BAD_REQUEST, e);
+		} catch (IOException e) {
+			log.error("could not create solr server");
+			throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, e);
+		} 
 	}
 }

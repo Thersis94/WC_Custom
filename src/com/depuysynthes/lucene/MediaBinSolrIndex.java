@@ -40,6 +40,7 @@ import org.apache.tika.sax.BodyContentHandler;
 
 
 
+
 // SMT Base Libs
 import com.depuysynthes.action.MediaBinAdminAction;
 import com.depuysynthes.action.MediaBinAssetVO;
@@ -461,5 +462,12 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 		} catch (Exception e) {
 			throw new IOException(e);
 		}
+	}
+	
+	
+	@Override
+	public void addSingleItem(String id) {
+		// As MediaBin items come to us wholesale from depuy there is 
+		// no reason to fill out the add single item method at the current time
 	}
 }

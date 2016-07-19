@@ -211,4 +211,11 @@ public class PatientAmbassadorIndexer extends SMTAbstractIndex {
 	public String getIndexType() {
 		return SolrStoryVO.INDEX_TYPE;
 	}
+	
+	
+	@Override
+	public void addSingleItem(String id) {
+		// Nothing uses this class's addSingleItem method right now.
+		// should it be required it can be filled out at that time.
+	}
 }
