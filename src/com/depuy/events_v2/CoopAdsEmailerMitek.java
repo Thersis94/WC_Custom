@@ -59,7 +59,7 @@ public class CoopAdsEmailerMitek extends CoopAdsEmailer {
 			mail.addRecipient("ksmith49@its.jnj.com");
 			mail.addCC("mroderic@its.jnj.com");
 			mail.addCC("broides@its.jnj.com");
-			mail.addRecipient("Amy.Zimmerman@hmktgroup.com");
+			mail.addRecipient("Amy.spencerman@hmktgroup.com");
 			mail.addRecipient("Brittany.Neff@hmktgroup.com");
 			mail.addRecipient("LisaV@metrosn.com");
 			mail.addRecipient("Francisco.Gonzalez@umj3.com");
