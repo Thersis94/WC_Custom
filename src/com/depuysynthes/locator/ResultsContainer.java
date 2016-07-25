@@ -231,8 +231,12 @@ public class ResultsContainer implements Serializable {
     
     /**
      * Sets filters and filtered surgeon list and display total number.  Filter values
-     * are formatted as 'prefixID|specialtyID (e.g. pc9|5, pd550|9, where pc means 
-     * 'procedure' ID and pd means  'product' ID).
+     * are formatted as follows:
+     * - procedures (prefix 'pc'):
+     * 	--- 'prefix+procedureID|specialtyID (e.g. pc9|5)
+     * - products (prefix 'pd'):
+     * --- 'prefix+productID|procedureID|specialtyID (pd546|20|9)
+     *
      * @param filterVals
      */
     public void setFilters(String[] filterVals) {
@@ -241,8 +245,8 @@ public class ResultsContainer implements Serializable {
     	procFilters.clear();
     	prodFilters.clear();
 
-		List<Integer> procsToExclude = new ArrayList<>(5);
-		List<Integer> prodsToExclude = new ArrayList<>(5);
+		List<Integer> procsToInclude = new ArrayList<>(5);
+		List<Integer> prodsToInclude = new ArrayList<>(5);
 		boolean hasFilterVals = (filterVals != null && filterVals.length > 0);
     	// parse filter values.
     	if (hasFilterVals) {
@@ -267,26 +271,27 @@ public class ResultsContainer implements Serializable {
 	    				tmpI = Convert.formatInteger(split[2]);
 	    			}
 	    			if (tmpI == 0) continue;
+	    			// add specialty ID to specialty filter if not already there.
 	    			if (! specFilters.contains(tmpI)) specFilters.add(tmpI);
 	    			
 	    			// now determine/add the procedure or product.
 	    			tmpI = Convert.formatInteger(split[0].substring(2));
 	    			if (tmpI == 0) continue;
 	    			if (split[0].startsWith("pc")) {
-	    				procsToExclude.add(tmpI);
+	    				procsToInclude.add(tmpI);
 	    			} else {
-	    				prodsToExclude.add(tmpI);
+	    				prodsToInclude.add(tmpI);
 	    			}
 	    		}
 	    		split = null;
 	    	}
-	    	
+
     	}
     	
     	/* Look up all procedures/products for the specialties being filtered on and
     	 * remove the IDs that are being filtered out.  That will leave us with just
     	 * the lists of IDs to be displayed. */
-    	combineFilterLists(procsToExclude, prodsToExclude);
+    	combineFilterLists(procsToInclude, prodsToInclude);
     	
     	// determine which surgeons are filtered out of display
     	buildFilteredSurgeonsList(hasFilterVals);
@@ -298,11 +303,11 @@ public class ResultsContainer implements Serializable {
      * adding procedures and products to the respective lists only if the procedures
      * and products IDs are not in the 'hide' lists.
      * 
-     * @param proceduresToExclude
-     * @param productsToExclude
+     * @param proceduresToInclude
+     * @param productsToInclude
      */
-    private void combineFilterLists(List<Integer> proceduresToExclude, 
-    		List<Integer> productsToExclude) {
+    private void combineFilterLists(List<Integer> proceduresToInclude, 
+    		List<Integer> productsToInclude) {
     	Integer procId = null;
     	Integer prodId = null;
     	procFilterParents.clear();
@@ -314,16 +319,19 @@ public class ResultsContainer implements Serializable {
     					// procedure level
     					for (Node proc : spec.getChildren()) {
     						procId = new Integer(proc.getDepthLevel());
-    						if (proceduresToExclude.contains(procId)) continue;
     						
-    						/* Add procedure to 'allowed' filter and check products. */
-    						procFilters.add(procId);
+    						if (proceduresToInclude.contains(procId)) {
+    							/* Add procedure to 'allowed' filter and check products. */
+    							procFilters.add(procId);
+    						}
+    						
     						if (proc.getNumberChildren() > 0) {
     							for (Node prod : proc.getChildren()) {
     								prodId = new Integer(prod.getDepthLevel());
-    								// if product is in exclude list, don't add it to filter list.
-    								if (productsToExclude.contains(prodId)) continue;
-    								prodFilters.add(prodId);
+    								// Add product to 'allowed' filter.
+    								if (productsToInclude.contains(prodId)) {
+    									prodFilters.add(prodId);
+    								}
     								if (! procFilterParents.contains(procId)) {
     									procFilterParents.add(procId);
     								}
@@ -361,7 +369,8 @@ public class ResultsContainer implements Serializable {
 								displaySurgeon = true;
 								break;
 							} else {
-								// count the number of procedure filter matches.
+								/* Count number of procedure filter matches 
+								 * for this surgeon. */
 								procMatchCount++;
 							}
 						}
