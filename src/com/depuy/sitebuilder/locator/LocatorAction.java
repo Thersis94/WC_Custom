@@ -300,8 +300,8 @@ public class LocatorAction extends SBActionAdapter {
             sql.append("organization_id, results_page_no, country_cd, ");
             sql.append("language_cd, header_txt, footer_txt, privacy_url, ");
             sql.append("survey_id, survey_req_flg, registration_id, registration_req_flg, ");
-            sql.append("email_friend_id, email_friend_req_flg, create_dt, action_id ) ");
-            sql.append("values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+            sql.append("email_friend_id, email_friend_req_flg, extd_radius_max_no, ");
+            sql.append("create_dt, action_id ) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
         } else {
             sql.append("update locator set search_id = ?, search_type_id = ?, ");
             sql.append("organization_id = ?, results_page_no = ?,  country_cd = ?, ");
@@ -309,35 +309,37 @@ public class LocatorAction extends SBActionAdapter {
             sql.append("privacy_url = ?, survey_id = ?, survey_req_flg = ?, ");
             sql.append("registration_id = ?, registration_req_flg = ?, ");
             sql.append("email_friend_id = ?, email_friend_req_flg = ?, ");
-            sql.append("update_dt = ? where action_id = ?");
+            sql.append("extd_radius_max_no = ?, update_dt = ? where action_id = ?");
         }
         
         log.info("Locator Data Update SQL: " + sql.toString());
         
         // perform the execute
         PreparedStatement ps = null;
+        int idx = 1;
         try {
             LocatorVO vo = new LocatorVO();
             vo.setData(req);
             
             ps = dbConn.prepareStatement(sql.toString());
-            ps.setString(1, vo.getSearchId());
-            ps.setInt(2, vo.getSearchTypeId());
-            ps.setString(3, vo.getOrganizationId());
-            ps.setInt(4, vo.getResultsPerPage());
-            ps.setString(5, vo.getCountry());
-            ps.setString(6, vo.getLanguage());
-            ps.setString(7, vo.getHeaderText());
-            ps.setString(8, vo.getFooterText());
-            ps.setString(9, vo.getPrivacyUrl());
-            ps.setString(10, vo.getSurveyId());
-            ps.setInt(11, vo.getSurveyReqFlag());
-            ps.setString(12, vo.getRegistrationId());
-            ps.setInt(13, vo.getRegistrationReqFlag());
-            ps.setString(14, vo.getEmailFriendId());
-            ps.setInt(15, vo.getEmailFriendReqFlag());
-            ps.setTimestamp(16, Convert.getCurrentTimestamp());
-            ps.setString(17, sbActionId);
+            ps.setString(idx++, vo.getSearchId());
+            ps.setInt(idx++, vo.getSearchTypeId());
+            ps.setString(idx++, vo.getOrganizationId());
+            ps.setInt(idx++, vo.getResultsPerPage());
+            ps.setString(idx++, vo.getCountry());
+            ps.setString(idx++, vo.getLanguage());
+            ps.setString(idx++, vo.getHeaderText());
+            ps.setString(idx++, vo.getFooterText());
+            ps.setString(idx++, vo.getPrivacyUrl());
+            ps.setString(idx++, vo.getSurveyId());
+            ps.setInt(idx++, vo.getSurveyReqFlag());
+            ps.setString(idx++, vo.getRegistrationId());
+            ps.setInt(idx++, vo.getRegistrationReqFlag());
+            ps.setString(idx++, vo.getEmailFriendId());
+            ps.setInt(idx++, vo.getEmailFriendReqFlag());
+            ps.setInt(idx++,  vo.getMaxExtendedSearchRadius());
+            ps.setTimestamp(idx++, Convert.getCurrentTimestamp());
+            ps.setString(idx++, sbActionId);
             
             if (ps.executeUpdate() < 1) {
                 msg = getAttribute(AdminConstants.KEY_ERROR_MESSAGE);
@@ -475,7 +477,8 @@ public class LocatorAction extends SBActionAdapter {
         sql.append("a.action_group_id, a.pending_sync_flg, ");
         sql.append("country_cd, language_cd, header_txt, footer_txt, privacy_url, ");
         sql.append("survey_id, survey_req_flg, registration_id, registration_req_flg, ");
-        sql.append("email_friend_id, email_friend_req_flg from sb_action a left outer join locator b ");
+        sql.append("email_friend_id, email_friend_req_flg, extd_radius_max_no ");
+        sql.append("from sb_action a left outer join locator b ");
         sql.append("ON a.action_id = b.action_id ");
         sql.append("where a.action_id = ? ");
         
