@@ -144,6 +144,7 @@ public class ResultsContainer implements Serializable {
      * @param json
      */
     private void parseResults() {
+    	System.out.println("parseResults...");
 		JsonParser parser = new JsonParser();
 		JsonElement jEle = null;
 		try {
@@ -161,7 +162,7 @@ public class ResultsContainer implements Serializable {
 		// parse surgeon results
 		parseSurgeons(ctnr.getAsJsonArray("results"));
 		// call setFilters to determine what is displayed.
-		this.setFilters(null);
+		//this.setFilters(null);
     }
     
     /**
@@ -254,6 +255,20 @@ public class ResultsContainer implements Serializable {
     }
     
     /**
+     * Receives filter values as a comma-delimited String, parses them into an
+     * array, and calls the standard setFilters method.
+     * @param filterString
+     */
+    public void setFilterString(String filterString) {
+    	System.out.println("setFilters(String)...filterVal is: " + filterString);
+    	String[] filterVals = null;
+    	if (StringUtil.checkVal(filterString,null) != null) {
+    		filterVals = filterString.split(",");
+    	}
+    	setFilters(filterVals);
+    }
+    
+    /**
      * Sets filters, filtered surgeon list, and 'display total' number.  Filter values
      * are formatted as follows:
      * - procedures (prefix 'pc'):
@@ -264,6 +279,7 @@ public class ResultsContainer implements Serializable {
      * @param filterVals
      */
     public void setFilters(String[] filterVals) {
+    	System.out.println("setFilters(String[])...filterVals is: " + filterVals);
     	// clear filters
     	specFilters.clear();
     	procFilters.clear();
@@ -315,7 +331,26 @@ public class ResultsContainer implements Serializable {
 	    	}
 
     	}
-    	   	
+    	if (specFilters != null) {
+    		System.out.println("specFilters: ");
+    		for (Integer in : specFilters) {
+    			System.out.print(in + ",");
+    		}
+    	}
+    	
+    	if (procFilters != null) {
+    		System.out.println("\nprocFilters: ");
+    		for (Integer in : procFilters) {
+    			System.out.print(in + ",");
+    		}
+    	}
+    	
+    	if (prodFilters != null) {
+    		System.out.println("\nprodFilters: ");
+    		for (Integer in : prodFilters) {
+    			System.out.print(in + ",");
+    		}
+    	}
     	// build list of surgeons that determine which surgeons are to display or not display
     	buildFilteredSurgeonsList(hasFilterVals);
     }
