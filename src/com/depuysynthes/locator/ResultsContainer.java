@@ -144,7 +144,6 @@ public class ResultsContainer implements Serializable {
      * @param json
      */
     private void parseResults() {
-    	System.out.println("parseResults...");
 		JsonParser parser = new JsonParser();
 		JsonElement jEle = null;
 		try {
@@ -161,8 +160,7 @@ public class ResultsContainer implements Serializable {
 		parseOverrideParams(ctnr);
 		// parse surgeon results
 		parseSurgeons(ctnr.getAsJsonArray("results"));
-		// call setFilters to determine what is displayed.
-		//this.setFilters(null);
+
     }
     
     /**
@@ -260,7 +258,6 @@ public class ResultsContainer implements Serializable {
      * @param filterString
      */
     public void setFilterString(String filterString) {
-    	System.out.println("setFilters(String)...filterVal is: " + filterString);
     	String[] filterVals = null;
     	if (StringUtil.checkVal(filterString,null) != null) {
     		filterVals = filterString.split(",");
@@ -279,7 +276,6 @@ public class ResultsContainer implements Serializable {
      * @param filterVals
      */
     public void setFilters(String[] filterVals) {
-    	System.out.println("setFilters(String[])...filterVals is: " + filterVals);
     	// clear filters
     	specFilters.clear();
     	procFilters.clear();
@@ -331,28 +327,48 @@ public class ResultsContainer implements Serializable {
 	    	}
 
     	}
-    	if (specFilters != null) {
-    		System.out.println("specFilters: ");
-    		for (Integer in : specFilters) {
-    			System.out.print(in + ",");
-    		}
-    	}
     	
-    	if (procFilters != null) {
-    		System.out.println("\nprocFilters: ");
-    		for (Integer in : procFilters) {
-    			System.out.print(in + ",");
-    		}
-    	}
-    	
-    	if (prodFilters != null) {
-    		System.out.println("\nprodFilters: ");
-    		for (Integer in : prodFilters) {
-    			System.out.print(in + ",");
-    		}
-    	}
+    	// determine if all filters were requested
+    	boolean useAllFilters = compareFilters(hasFilterVals);
+
     	// build list of surgeons that determine which surgeons are to display or not display
-    	buildFilteredSurgeonsList(hasFilterVals);
+    	buildFilteredSurgeonsList(useAllFilters);
+    }
+    
+    /**
+     * Counts the number of possible procedures and products and compares those
+     * counts with the number of procedure filters and product filters submitted.  If 
+     * the values match, then all possible filters were submitted and all results are
+     * eligible for display consideration relative to the radius requirements.
+     * @param hasFilterVals
+     * @return
+     */
+    private boolean compareFilters(boolean hasFilterVals) {
+    	if (! hasFilterVals) return true;
+    	int procMatch = 0;
+    	int prodMatch = 0;
+    	int procPossible = 0;
+    	int prodPossible = 0;
+    	for (Node spec : hierarchy) {
+    		if (specFilters.contains(spec.getDepthLevel())) {
+    			procPossible += spec.getNumberChildren();
+   				// loop procedures
+   				for (Node proc : spec.getChildren()) {
+   					prodPossible += proc.getNumberChildren();
+					if (procFilters.contains(proc.getDepthLevel())) {
+						procMatch++;
+						// loop products
+						for (Node prod : proc.getChildren()) {
+							if (prodFilters.contains(prod.getDepthLevel())) prodMatch++;
+						}
+					}
+   				}
+   			}
+    	}
+
+    	if (procMatch >= procPossible && 
+    			prodMatch >= prodPossible) 	return true;
+    	return false;
     }
     
     /**
@@ -360,12 +376,12 @@ public class ResultsContainer implements Serializable {
      * are not displayed.  This method builds a list of surgeons (key is surgeon ID) 
      * who should not be displayed given the search/filter parameters.
      */
-    private void buildFilteredSurgeonsList(boolean hasFilterVals) {
+    private void buildFilteredSurgeonsList(boolean useAllFilters) {
     	filteredSurgeonList.clear();
     	int displayCount = 0;
     	useExtendedResults = false;
     	/* Perform filtering if necessary */
-		if (hasProcFilters() || hasProdFilters()) {
+		if (! useAllFilters && (hasProcFilters() || hasProdFilters())) {
 			boolean displaySurgeon = false;
 			int procMatchCount = 0;
 			for (SurgeonBean surgeon : results) {
