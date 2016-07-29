@@ -411,20 +411,20 @@ public class FranchisePageAction extends SBActionAdapter {
 	private Map<String, ContentVO> getContentSyncRecords(List<MenuObj> pages) {
 		Map<String, ContentVO> data = new HashMap<>(pages.size());
 		StringBuilder s = new StringBuilder(350);
-		s.append("select isnull(g.action_id, f.action_id) as action_id, ");
-		s.append("isnull(g.action_group_id, f.action_group_id) as action_group_id, a.page_module_id, ");
-		s.append("isnull(g.attrib1_txt, f.attrib1_txt) as attrib1_txt, ");
-		s.append("isnull(g.attrib2_txt, f.attrib2_txt) as attrib2_txt, ");
-		s.append("isnull(g.action_nm,f.action_nm) as action_nm, ");
-		s.append("isnull(g.action_desc,f.action_desc) as action_desc, ws.*, a.page_id ");
+		s.append("select coalesce(g.action_id, f.action_id) as action_id, ");
+		s.append("coalesce(g.action_group_id, f.action_group_id) as action_group_id, a.page_module_id, ");
+		s.append("coalesce(g.attrib1_txt, f.attrib1_txt) as attrib1_txt, ");
+		s.append("coalesce(g.attrib2_txt, f.attrib2_txt) as attrib2_txt, ");
+		s.append("coalesce(g.action_nm,f.action_nm) as action_nm, ");
+		s.append("coalesce(g.action_desc,f.action_desc) as action_desc, ws.*, a.page_id ");
 		s.append("from page_module a ");
 		s.append("left join sb_action f on a.action_id = f.action_id "); //the approved record
 		s.append("left outer join sb_action g on f.action_group_id = g.action_group_id ");  //the pending record
-		s.append("left outer join CONTENT c on ISNULL(g.ACTION_ID, f.ACTION_ID)=c.ACTION_ID ");
-		s.append("left join wc_sync ws on (ISNULL(g.ACTION_ID, f.ACTION_ID) = ws.wc_key_id) and wc_sync_status_cd not in (?,?) ");
+		s.append("left outer join CONTENT c on coalesce(g.ACTION_ID, f.ACTION_ID)=c.ACTION_ID ");
+		s.append("left join wc_sync ws on (coalesce(g.ACTION_ID, f.ACTION_ID) = ws.wc_key_id) and wc_sync_status_cd not in (?,?) ");
 		s.append("where a.page_id in (''");
 		for (@SuppressWarnings("unused") MenuObj menu : pages) s.append(",?");
-		s.append(") order by ISNULL(c.update_dt, '1900-06-05T23:59:00') desc "); //ordering by date gets us the most recent revision and ensures nulls are left at the bottom of the list
+		s.append(") order by coalesce(c.update_dt, '1900-06-05T23:59:00') desc "); //ordering by date gets us the most recent revision and ensures nulls are left at the bottom of the list
 		
 		log.debug(s);
 		ContentVO content = null;
@@ -469,17 +469,17 @@ public class FranchisePageAction extends SBActionAdapter {
 		
 		StringBuilder s = new StringBuilder(300);
 		s.append("select top 1 c.action_id, c.article_txt, ");
-		s.append("isnull(g.action_group_id, f.action_group_id) as action_group_id, a.page_module_id, ");
-		s.append("isnull(g.attrib1_txt, f.attrib1_txt) as attrib1_txt, ");
-		s.append("isnull(g.attrib2_txt, f.attrib2_txt) as attrib2_txt, ");
-		s.append("isnull(g.action_nm,f.action_nm) as action_nm, ");
-		s.append("isnull(g.action_desc,f.action_desc) as action_desc, ws.* ");
+		s.append("coalesce(g.action_group_id, f.action_group_id) as action_group_id, a.page_module_id, ");
+		s.append("coalesce(g.attrib1_txt, f.attrib1_txt) as attrib1_txt, ");
+		s.append("coalesce(g.attrib2_txt, f.attrib2_txt) as attrib2_txt, ");
+		s.append("coalesce(g.action_nm,f.action_nm) as action_nm, ");
+		s.append("coalesce(g.action_desc,f.action_desc) as action_desc, ws.* ");
 		s.append("from page_module a ");
 		s.append("left join sb_action f on a.action_id = f.action_id "); //the approved record
 		s.append("left outer join sb_action g on f.action_group_id = g.action_group_id ");  //the pending record
-		s.append("left outer join CONTENT c on ISNULL(g.ACTION_ID, f.ACTION_ID)=c.ACTION_ID ");
-		s.append("left join wc_sync ws on (ISNULL(g.ACTION_ID, f.ACTION_ID) = ws.wc_key_id) and wc_sync_status_cd not in (?,?) ");
-		s.append("where a.page_id=? order by ISNULL(c.update_dt, '1900-06-05T23:59:00') desc "); //ordering by date gets us the most recent revision and ensures nulls are left at the bottom of the list
+		s.append("left outer join CONTENT c on coalesce(g.ACTION_ID, f.ACTION_ID)=c.ACTION_ID ");
+		s.append("left join wc_sync ws on (coalesce(g.ACTION_ID, f.ACTION_ID) = ws.wc_key_id) and wc_sync_status_cd not in (?,?) ");
+		s.append("where a.page_id=? order by coalesce(c.update_dt, '1900-06-05T23:59:00') desc "); //ordering by date gets us the most recent revision and ensures nulls are left at the bottom of the list
 		log.debug(s+"|"+page.getPageId());
 		ContentVO content = null;
 		try (PreparedStatement ps = dbConn.prepareStatement(s.toString())){

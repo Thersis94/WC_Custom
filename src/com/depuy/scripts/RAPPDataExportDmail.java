@@ -93,13 +93,13 @@ public class RAPPDataExportDmail {
 		Connection dbConn = getDBConnection(DB_AUTH[0], DB_AUTH[1], DB_DRIVER, DB_URL);
 		
 		StringBuffer sql = new StringBuffer();
-		sql.append("select SKU_DESC, a.PROFILE_ID, isnull(b.KIT_SENT_DT, b.process_start_dt) as 'kit_sent_dt', ");
+		sql.append("select SKU_DESC, a.PROFILE_ID, coalesce(b.KIT_SENT_DT, b.process_start_dt) as 'kit_sent_dt', ");
 		sql.append("b.PROCESS_FAIL_TXT, a.ATTEMPT_DT, b.CREATE_DT ");
 		sql.append("from DATA_FEED.dbo.CUSTOMER a ");
 		sql.append("inner join DATA_FEED.dbo.fulfillment b on a.customer_id=b.customer_id and b.FULFILLMENT_TYPE_CD='MAIL' ");
 		sql.append("inner join DATA_FEED.dbo.fulfillment_sku c on b.SKU_CD=c.SKU_CD ");
-		sql.append("where a.ATTEMPT_DT > '2009-01-01 00:00:00' and isnull(b.KIT_SENT_DT, b.process_start_dt) is not null ");
-		sql.append("group by a.PROFILE_ID, SKU_DESC, isnull(b.KIT_SENT_DT, b.process_start_dt), b.PROCESS_FAIL_TXT, a.ATTEMPT_DT, b.CREATE_DT ");
+		sql.append("where a.ATTEMPT_DT > '2009-01-01 00:00:00' and coalesce(b.KIT_SENT_DT, b.process_start_dt) is not null ");
+		sql.append("group by a.PROFILE_ID, SKU_DESC, coalesce(b.KIT_SENT_DT, b.process_start_dt), b.PROCESS_FAIL_TXT, a.ATTEMPT_DT, b.CREATE_DT ");
 		sql.append("order by a.ATTEMPT_DT desc, b.CREATE_DT desc");
 		
 		String lastProfileId = "";

@@ -115,8 +115,8 @@ public class DashboardReportAction extends SBActionAdapter {
 		
 		// Build the SQL statement
 		StringBuilder sql = new StringBuilder(1000);
-		sql.append("select region_nm, sum(isnull(rii.quantity_no, 0)) as item_count, ");
-		sql.append("sum(isnull(msrp_cost_no, 0)) as value from ").append(schema).append("ram_region rr ");
+		sql.append("select region_nm, sum(coalesce(rii.quantity_no, 0)) as item_count, ");
+		sql.append("sum(coalesce(msrp_cost_no, 0)) as value from ").append(schema).append("ram_region rr ");
 		sql.append("left outer join  ").append(schema);
 		sql.append("ram_customer_location rcl on rr.region_id = rcl.region_id ");
 		sql.append("left outer join ( ");
