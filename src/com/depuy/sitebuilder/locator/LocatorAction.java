@@ -242,7 +242,7 @@ public class LocatorAction extends SBActionAdapter {
         ModuleVO mod = (ModuleVO) attributes.get(AdminConstants.ADMIN_MODULE_DATA);
         log.info("Starting Locator Data Action - Delete: " + sbActionId);
         
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder(75);
         sb.append("delete from locator where action_id = ?");
 
         PreparedStatement ps = null;
@@ -288,7 +288,7 @@ public class LocatorAction extends SBActionAdapter {
         log.info("Starting Locator Data - Update: " + mod.toString());
         
         Object msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
-        StringBuffer sql = new StringBuffer();
+        StringBuilder sql = new StringBuilder(400);
         
 	    super.update(req);
 	    
@@ -399,7 +399,7 @@ public class LocatorAction extends SBActionAdapter {
         	mod.setActionData(new LocatorVO());
 	        attributes.put(Constants.MODULE_DATA, mod);
         } else {
-	        StringBuffer sql = new StringBuffer();
+	        StringBuilder sql = new StringBuilder(75);
 	        sql.append("select * from locator where action_id = ?");
 	        log.info("Locator Action Retrieve SQL: " + sql.toString());
 	        
@@ -471,7 +471,7 @@ public class LocatorAction extends SBActionAdapter {
         if (actionId == null || actionId.length() == 0) return;
         ModuleVO mod = (ModuleVO) attributes.get(AdminConstants.ADMIN_MODULE_DATA);
         
-        StringBuffer sql = new StringBuffer();
+        StringBuilder sql = new StringBuilder(450);
         sql.append("select search_id, a.action_id, action_nm, b.action_id, ");
         sql.append("a.organization_id, action_desc, search_type_id, results_page_no, ");
         sql.append("a.action_group_id, a.pending_sync_flg, ");
@@ -615,9 +615,9 @@ public class LocatorAction extends SBActionAdapter {
      * @param req
      * @return
      */
-    private StringBuffer buildSurgeonDetailUrl(SMTServletRequest req) {
+    private StringBuilder buildSurgeonDetailUrl(SMTServletRequest req) {
     	SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		StringBuffer url = new StringBuffer();
+		StringBuilder url = new StringBuilder(150);
 		url.append(site.getFullSiteAlias());
 		url.append(req.getParameter("locatorPage"));
 		url.append("?language=").append(StringUtil.checkVal(req.getParameter("language"), "en"));
