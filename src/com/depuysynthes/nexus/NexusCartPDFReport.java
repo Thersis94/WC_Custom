@@ -70,7 +70,7 @@ public class NexusCartPDFReport  extends AbstractSBReportVO {
 		html.append("<html><head><title>Case Summary</title></head><body>");
 		html.append("<link href='/binary/themes/CUSTOM/DEPUY/DPY_SYN_NEXUS/scripts/css/font-awesome.css' rel='stylesheet'>");
 		html.append("<style>@page{margin-bottom:50px;}body{font-family: 'MyriadWebPro';}th{margin-bottom:10px;border-bottom:solid black 2px; font-size:12px;}");
-		html.append("@page{margin-bottom:125px;@bottom-center {content: 'By annotating the case specific information it is understood that this document contains sensitive data that is highly restricted.'}}</style>");
+		html.append("</style>");
 		
 		
 		html.append("<table style='color:#636363;border-collapse:collapse;font-size:16px; width:100%;'><tbody>");
@@ -129,11 +129,11 @@ public class NexusCartPDFReport  extends AbstractSBReportVO {
 			html.append("<td style='font-size:12px; width:400px;");
 			String gtin = (String) item.getProduct().getProdAttributes().get("gtin");
 
-			html.append("'><span style='font-weight:bold;position:relative;top:30px;'>GTIN</span><span><img style='float:right' src='/barcodeGenerator?textFormat=NEXUS&barcodeData=01").append(gtin).append("&height=40' /></span></td></tr>");
+			html.append("'><span style='font-weight:bold;position:relative;top:30px;'>GTIN</span><span><img style='float:right' src='/barcodeGenerator?textFormat=NEXUS&barcodeData=01").append(gtin).append("&height=55' /></span></td></tr>");
 			html.append("<tr><td style='").append(border).append("'>&nbsp;</td>");
 			html.append("<td colspan='7' style='font-size:12px; width:400px;").append(border).append("'>");
 			html.append(item.getProduct().getShortDesc()).append("</td><td style='font-size:12px; margin-bottom:10px;").append(border).append("'>");
-			html.append("<span style='font-weight:bold;position:relative;top:30px;'>LOT</span><span><img style='float:right' src='/barcodeGenerator?textFormat=NEXUS&barcodeData=10").append(item.getProduct().getProdAttributes().get("lotNo")).append("&height=40' /></span>");
+			html.append("<span style='font-weight:bold;position:relative;top:30px;'>LOT</span><span><img style='float:right' src='/barcodeGenerator?textFormat=NEXUS&barcodeData=10").append(item.getProduct().getProdAttributes().get("lotNo")).append("&height=55' /></span>");
 			
 			html.append("</span></td></tr>");
 			i++;

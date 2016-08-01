@@ -26,6 +26,7 @@ public class MyLMSCourseVO implements Serializable {
 	private int POINTS;
 	private boolean FORPOINTS; 
 	private int POINTSEARNABLE;
+	private String COURSECOMPLETEDATE;
 	
 	public MyLMSCourseVO() {
 	}
@@ -60,6 +61,10 @@ public class MyLMSCourseVO implements Serializable {
 
 	public int getPointsEarnable() {
 		return POINTSEARNABLE;
+	}
+
+	public String getCOURSECOMPLETEDATE() {
+		return COURSECOMPLETEDATE;
 	}
 
 	public void setC_ID(int c_ID) {
@@ -100,6 +105,10 @@ public class MyLMSCourseVO implements Serializable {
 
 	public void setCOURSECOMPLETE(boolean cOURSECOMPLETE) {
 		COURSECOMPLETE = cOURSECOMPLETE;
+	}
+
+	public void setCOURSECOMPLETEDATE(String cOURSECOMPLETEDATE) {
+		this.COURSECOMPLETEDATE = cOURSECOMPLETEDATE;
 	}
 
 	public String toString() {
