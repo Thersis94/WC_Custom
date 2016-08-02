@@ -2,6 +2,7 @@ package com.depuy.events_v2.vo.report;
 
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
@@ -10,6 +11,8 @@ import java.util.TreeSet;
 
 import com.depuy.events_v2.vo.RsvpBreakdownVO;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
+import com.siliconmtn.data.report.ExcelReport;
+import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 
 /*****************************************************************************
@@ -68,79 +71,127 @@ public class RsvpBreakdownReportVO extends AbstractSBReportVO {
 	}
 
 	public byte[] generateReport() {
-		log.debug("starting generateReport()");
-		StringBuffer rpt = new StringBuffer(this.getHeader());
 		
-		for (RsvpBreakdownVO vo : events) {
-			//summate the overall total RSVPs
+		HashMap<String, String> header = this.getHeader();
+		
+		ExcelReport rpt = new ExcelReport(header);
+		
+		List<Map<String, Object>> rows = new ArrayList<>(events.size());
+		
+		rows = generateHeaderRows(rows,header);
+		
+		rows = generateDataRows(rows, header);
+		
+		rpt.setData(rows);
+		return rpt.generateReport();
+	}
+
+	/**
+	 * this method is used to generate the data rows of the excel sheet.
+	 * @param rows
+	 * @param header
+	 * @return
+	 */
+	private List<Map<String, Object>> generateDataRows(
+			List<Map<String, Object>> rows, HashMap<String, String> header) {
+		
+		for (RsvpBreakdownVO vo : events){
+			Map<String, Object> row = new HashMap<String, Object>();
+			//sum the overall total RSVPs
 			int rsvpTotal = 0;
-			log.debug(vo.getRsvpCode());
 			for (Integer cnt : vo.getReferralStats().values()) {
-				log.debug(cnt);
 				rsvpTotal += cnt;
 			}
+			row.put("SEMINAR_NO",vo.getRsvpCode());
 			
-			rpt.append("<tr><td>").append(vo.getRsvpCode()).append("</td>");
-			rpt.append("<td>").append(vo.getOwner().getFirstName()).append(" ").append(vo.getOwner().getLastName()).append("</td>");
-			rpt.append("<td>").append(Convert.formatDate(vo.getSeminarDate(), "MM/dd/yyyy")).append("</td>");
-
+			StringBuilder host = new StringBuilder(32);
+			host.append(vo.getOwner().getFirstName()).append(" ").append(vo.getOwner().getLastName());
+			row.put("SEMINAR_HOST", host.toString());
+			
+			row.put("SEMINAR_DATE", Convert.formatDate(vo.getSeminarDate(), "MM/dd/yyyy"));
+			
 			Map<String, Integer> rsvpStats = vo.getReferralStats();
+			
+			//TODO try and understand what this is doing, i feel like this might not be just making two cells
 			for (String stat : referrers) {
 				if (rsvpStats.containsKey(stat)) {
 					Integer cnt = rsvpStats.get(stat);
-					rpt.append("<td>").append(cnt).append("</td>");
+					row.put("count", cnt);
 					float percent = (Float.valueOf(cnt) / Float.valueOf(rsvpTotal)) * 100;
-					rpt.append("<td>").append(Math.round(percent)).append("%</td>");
+					row.put("percent",Math.round(percent));
 				} else {
-					rpt.append("<td>0</td><td>0</td>");
+					row.put("count",0);
+					row.put("percent",0);
 				}
 			}
-
-			rpt.append("<td>").append(rsvpTotal).append("</td>");
-			rpt.append("</tr>\r");
-		}
-
-		rpt.append(this.getFooter());
-		return rpt.toString().getBytes();
-	}
-
-	private StringBuffer getHeader() {
-		StringBuffer hdr = new StringBuffer();
-		hdr.append("<table border='1'>\r");
-		
-		//put a date range header on the report to avoid confusion
-		if (start != null || end != null) {
-			hdr.append("\r<tr style='background-color:#ccc;'>");
-			hdr.append("<td colspan=\"").append(referrers.size()*2 + 4).append("\">");
-			hdr.append("This report only represents Seminar attendees enrolled ");
-			if (end == null && start != null) {
-				hdr.append("after ").append(Convert.formatDate(start, Convert.DATE_SLASH_PATTERN));
-			} else if (start == null && end != null) {
-				hdr.append("before ").append(Convert.formatDate(end, Convert.DATE_SLASH_PATTERN));
-			} else {
-				hdr.append("between ").append(Convert.formatDate(start, Convert.DATE_SLASH_PATTERN));
-				hdr.append(" and ").append(Convert.formatDate(end, Convert.DATE_SLASH_PATTERN));
-			}
-			hdr.append(" for each Seminar</td></tr>");
+			rows.add(row);
 		}
 		
-		hdr.append("\r<tr style='background-color:#ccc;'>");
-		hdr.append("<th>Seminar#</th>");
-		hdr.append("<th>Seminar_Host</th>");
-		hdr.append("<th>Seminar_Date</th>");
-
-		for (String stat : referrers) {
-			hdr.append("<th nowrap>").append(stat).append("</th>");
-			hdr.append("<th>% of Total</th>");
-		}
-		hdr.append("<th>Total_RSVPs</th>");
-		hdr.append("</tr>\r");
-
-		return hdr;
+		return rows;
 	}
 
-	private StringBuffer getFooter() {
-		return new StringBuffer("</table>");
+	/**
+	 * generates the header section of the excel sheet.  then the rows map is
+	 *     pass on to other methods or objects to be filled with data
+	 * @param rows
+	 * @param header 
+	 * @return
+	 */
+	private List<Map<String, Object>> generateHeaderRows(
+			List<Map<String, Object>> rows, HashMap<String, String> header) {
+		
+		Map <String, Object> row1 = new HashMap<String, Object>();
+		
+		row1.put(ExcelReport.TITLE_CELL, getTitleNote() );
+		rows.add(row1);
+		//make the header rows
+		Map <String, Object> row2 = new HashMap<String, Object>();
+		
+		for (String key : header.keySet()){
+			row2.put(key, header.get(key));
+		}
+		
+		rows.add(row2);
+		
+		return rows;
+	}
+
+	/**
+	 * used to build the title note at the top of the excel document.
+	 * @return
+	 */
+	private Object getTitleNote() {
+		
+		//make the note for row 1
+		StringBuilder dateRange = new StringBuilder(51);
+		if (end == null && start != null) {
+			dateRange.append("after ").append(Convert.formatDate(start, Convert.DATE_SLASH_PATTERN));
+		} else if (start == null && end != null) {
+			dateRange.append("before ").append(Convert.formatDate(end, Convert.DATE_SLASH_PATTERN));
+		} else {
+			dateRange.append("between ").append(Convert.formatDate(start, Convert.DATE_SLASH_PATTERN));
+			dateRange.append(" and ").append(Convert.formatDate(end, Convert.DATE_SLASH_PATTERN));
+		}
+		
+		StringBuilder note = new StringBuilder();
+		note.append("This report only represents Seminar attendees enrolled ");
+		note.append(dateRange);
+		
+		return note.toString();
+	}
+
+	private HashMap<String, String> getHeader() {
+		
+		HashMap<String, String> headerMap = new HashMap<String, String>();
+		headerMap.put("SEMINAR_NO","Seminar#");
+		headerMap.put("SEMINAR_HOST","Seminar Host");
+		headerMap.put("SEMINAR_DATE","Seminar Date");
+		headerMap.put("COUNT","count");
+		headerMap.put("PRECENT","percent");
+		headerMap.put("TOTAL_RSVP","Total_RSVPs");
+		
+		return headerMap;
+		
 	}
 
 	public Date getStart() {
