@@ -2,7 +2,6 @@ package com.depuy.events_v2.vo.report;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -49,30 +48,12 @@ public class AttendeeSurveyReportVO extends AbstractSBReportVO {
 		ExcelReport rpt = new ExcelReport(questionMap);
 		
 		List<Map<String, Object>> rows = new ArrayList<>(data.size());
-		
-		rows.add(generateHeaderRow());
-		
 		for (AttendeeSurveyVO vo : data)
 			rows.add(vo.getResponses());
 		
 		rpt.setData(rows);
 		
 		return rpt.generateReport();
-	}
-
-	/**
-	 * this method creates the top rows of the excel sheet, this should be used
-	 *    for none data cells just headers.
-	 * @return
-	 */
-	private Map<String, Object> generateHeaderRow() {
-		Map <String, Object> row = new HashMap<String, Object>();
-		
-		for (String key : questionMap.keySet()){
-			row.put(key, questionMap.get(key));
-		}
-		
-		return row;
 	}
 
 	@SuppressWarnings("unchecked")
