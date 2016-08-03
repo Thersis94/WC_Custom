@@ -83,9 +83,10 @@ public class CoopAdsEmailer {
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(site.getAdminEmail());
 			mail.addRecipient("amy.spencerman@hmktgroup.com");
+			mail.addRecipient("Brittany.Neff@hmktgroup.com");
 			mail.addRecipient("kshull@ITS.JNJ.com");
 			mail.addCC("educationalseminars@dpyus.jnj.com");
-			mail.addCC("Sterling.Hoham@hmktgroup.com");
+			mail.addCC("jenn.davis@hmktgroup.com");
 			if (sem.getEarliestEventDate().after(Convert.formatDate(Convert.DATE_SLASH_PATTERN,"01/01/2016"))) {
 				mail.addCC("Francisco.Gonzalez@umj3.com");
 				mail.addCC("Evan.Pring@umj3.com");
@@ -172,10 +173,11 @@ public class CoopAdsEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient("amy.spencerman@hmktgroup.com");
+			mail.addRecipient("Brittany.Neff@hmktgroup.com");
 			mail.addCC(site.getAdminEmail());
 			mail.addCC("kshull@ITS.JNJ.com");
 			mail.addCC("educationalseminars@dpyus.jnj.com");
-			mail.addCC("Sterling.Hoham@hmktgroup.com");
+			mail.addCC("jenn.davis@hmktgroup.com");
 			if (! isCFSEM ){ //Additional recipients for DePuy Funded events
 				if (sem.getEarliestEventDate().after(Convert.formatDate(Convert.DATE_SLASH_PATTERN,"01/01/2016"))) {
 					mail.addCC("Francisco.Gonzalez@umj3.com");
@@ -353,7 +355,8 @@ public class CoopAdsEmailer {
 			EmailMessageVO mail = new EmailMessageVO();
 			if (! isCFSEM ){ //different recipients for DePuy Funded events
 				mail.addRecipient("amy.spencerman@hmktgroup.com");
-				mail.addCC("Sterling.Hoham@hmktgroup.com");
+				mail.addRecipient("Brittany.Neff@hmktgroup.com");
+				mail.addCC("jenn.davis@hmktgroup.com");
 				mail.addCC(sem.getOwner().getEmailAddress());
 				mail.addCC(site.getAdminEmail());
 				mail.addCC("kshull@ITS.JNJ.com");
@@ -370,9 +373,10 @@ public class CoopAdsEmailer {
 			} else {
 				//CFSEM recipients
 				mail.addRecipient("amy.spencerman@hmktgroup.com");
+				mail.addRecipient("Brittany.Neff@hmktgroup.com");
 				mail.addCC(site.getAdminEmail());
 				mail.addCC("kshull@ITS.JNJ.com");
-				mail.addCC("Sterling.Hoham@hmktgroup.com");
+				mail.addCC("jenn.davis@hmktgroup.com");
 			}
 			
 			mail.setSubject(subject.toString());
@@ -449,10 +453,11 @@ public class CoopAdsEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient("amy.spencerman@hmktgroup.com");
+			mail.addRecipient("Brittany.Neff@hmktgroup.com");
 			mail.addCC(site.getAdminEmail());
 			mail.addCC("kshull@ITS.JNJ.com");
 			mail.addCC("educationalseminars@dpyus.jnj.com");
-			mail.addCC("Sterling.Hoham@hmktgroup.com");
+			mail.addCC("jenn.davis@hmktgroup.com");
 			mail.addCC(sem.getOwner().getEmailAddress());
 			mail.setSubject(subject);
 			mail.setFrom(site.getMainEmail());
@@ -517,10 +522,11 @@ public class CoopAdsEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient("amy.spencerman@hmktgroup.com");
+			mail.addRecipient("Brittany.Neff@hmktgroup.com");
 			mail.addCC(site.getAdminEmail());
 			mail.addCC("kshull@ITS.JNJ.com");
 			mail.addCC("educationalseminars@dpyus.jnj.com");
-			mail.addCC("Sterling.Hoham@hmktgroup.com");
+			mail.addCC("jenn.davis@hmktgroup.com");
 			mail.addCC(sem.getOwner().getEmailAddress());
 			if (sem.getEarliestEventDate().after(Convert.formatDate(Convert.DATE_SLASH_PATTERN,"01/01/2016"))) {
 				mail.addCC("Francisco.Gonzalez@umj3.com");
@@ -568,10 +574,11 @@ public class CoopAdsEmailer {
 			mail.setSubject(subject.toString());
 			mail.setFrom(site.getMainEmail());
 			mail.addRecipient("amy.spencerman@hmktgroup.com");
+			mail.addRecipient("Brittany.Neff@hmktgroup.com");
 			mail.addCC(site.getAdminEmail());
 			mail.addCC("kshull@ITS.JNJ.com");
 			mail.addCC("educationalseminars@dpyus.jnj.com");
-			mail.addCC("Sterling.Hoham@hmktgroup.com");
+			mail.addCC("jenn.davis@hmktgroup.com");
 			if (sem.getEarliestEventDate().after(Convert.formatDate(Convert.DATE_SLASH_PATTERN,"01/01/2016"))) {
 				mail.addCC("Francisco.Gonzalez@umj3.com");
 				mail.addCC("Evan.Pring@umj3.com");
@@ -613,7 +620,8 @@ public class CoopAdsEmailer {
 			mail.addRecipient(sem.getOwner().getEmailAddress());
 			mail.addCC("educationalseminars@dpyus.jnj.com");
 			mail.addCC("amy.spencerman@hmktgroup.com");
-			mail.addCC("Sterling.Hoham@hmktgroup.com");
+			mail.addCC("Brittany.Neff@hmktgroup.com");
+			mail.addCC("jenn.davis@hmktgroup.com");
 			if (sem.getEarliestEventDate().after(Convert.formatDate(Convert.DATE_SLASH_PATTERN,"01/01/2016"))) {
 				mail.addCC("Francisco.Gonzalez@umj3.com");
 				mail.addCC("Evan.Pring@umj3.com");

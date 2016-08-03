@@ -396,7 +396,7 @@ public class DemoEventAction extends SBActionAdapter {
 	private InventoryEventAuditorVO getAuditor(int eventId) {
 		// Create AuditorVO and assign random auditor from list above.
 		AuditorVO a = new AuditorVO();
-		a.setAuditorId(25);
+		a.setAuditorId(13);
 
 		// build event AuditorVO and set auditor along with basic info.
 		InventoryEventAuditorVO auditor = new InventoryEventAuditorVO();
@@ -471,7 +471,7 @@ public class DemoEventAction extends SBActionAdapter {
 		o.setFulfillmentStrategyId("SMT_FULFILLMENT_TEST");
 
 		o.addLineItem(buildLineItem(1, 145101,1));
-		o.addLineItem(buildLineItem(2, 147450,1));
+		o.addLineItem(buildLineItem(2, 147451,1));
 		o.addLineItem(buildLineItem(3, 147454,1));
 		return o;
 	}
