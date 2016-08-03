@@ -10,12 +10,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-import com.depuy.datafeed.da.UserDataVO;
 import com.depuy.events_v2.vo.RsvpBreakdownVO;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.siliconmtn.data.report.ExcelReport;
 import com.siliconmtn.util.Convert;
-import com.siliconmtn.util.StringUtil;
 
 /*****************************************************************************
  * <p>
