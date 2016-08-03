@@ -118,7 +118,7 @@ public class RsvpBreakdownReportVO extends AbstractSBReportVO {
 						
 			for (String stat : referrers) {
 				
-				statName = sb.append(stat).append("-purcent").toString();
+				statName = sb.append(stat).append("-percent").toString();
 				sb.setLength(0);
 				
 				//log.debug("stat: " + stat);
@@ -179,19 +179,15 @@ public class RsvpBreakdownReportVO extends AbstractSBReportVO {
 		StringBuilder sb =  new StringBuilder(25);
 		
 		String statName = null;
-		String statValue = null;
-		
+				
 		for (String stat : referrers) {
 			
-			statName = sb.append(stat).append("-purcent").toString();
+			statName = sb.append(stat).append("-percent").toString();
 			sb.setLength(0);
-			statValue = sb.append(stat).append(" % of Total").toString();
-			sb.setLength(0);
-			
+				
 			//log.debug("stat: " + stat );
 			headerMap.put(stat, stat);
-			headerMap.put(statName,statValue);
-			
+			headerMap.put(statName,"% of Total");
 			
         }
 		
