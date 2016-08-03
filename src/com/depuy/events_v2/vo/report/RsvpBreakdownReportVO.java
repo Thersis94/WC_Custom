@@ -10,10 +10,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
+import com.depuy.datafeed.da.UserDataVO;
 import com.depuy.events_v2.vo.RsvpBreakdownVO;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.siliconmtn.data.report.ExcelReport;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 
 /*****************************************************************************
  * <p>
@@ -72,12 +74,11 @@ public class RsvpBreakdownReportVO extends AbstractSBReportVO {
 
 	public byte[] generateReport() {
 		
-
 		ExcelReport rpt = new ExcelReport(this.getHeader());
 		
 		List<Map<String, Object>> rows = new ArrayList<>(events.size());
 		
-		rpt.setExcelTitleCell(getTitleNote());
+		rpt.setTitleCell(getTitleNote());
 		
 		rows = generateDataRows(rows);
 		
@@ -113,19 +114,29 @@ public class RsvpBreakdownReportVO extends AbstractSBReportVO {
 			
 			Map<String, Integer> rsvpStats = vo.getReferralStats();
 			
-			//TODO cell names not printing to excel sheet from this calculation
+			StringBuilder sb =  new StringBuilder(25);
+			
+			String statName = null;
+						
 			for (String stat : referrers) {
+				
+				statName = sb.append(stat).append("-purcent").toString();
+				sb.setLength(0);
+				
 				//log.debug("stat: " + stat);
 				if (rsvpStats.containsKey(stat)) {
 					Integer cnt = rsvpStats.get(stat);
 					row.put(stat, cnt);
 					float percent = (Float.valueOf(cnt) / Float.valueOf(rsvpTotal)) * 100;
-					row.put(stat+"-purcent",Math.round(percent));
+					row.put(statName,sb.append(Math.round(percent)).append("%").toString());
+					sb.setLength(0);
 				} else {
 					row.put(stat,0);
-					row.put(stat+"-purcent",0);
+					row.put(statName,"0%");
 				}
 			}
+			
+			row.put("TOTAL_RSVP", rsvpTotal);
 			rows.add(row);
 		}
 		
@@ -167,11 +178,23 @@ public class RsvpBreakdownReportVO extends AbstractSBReportVO {
 		headerMap.put("SEMINAR_HOST","Seminar Host");
 		headerMap.put("SEMINAR_DATE","Seminar Date");
 		
+		StringBuilder sb =  new StringBuilder(25);
+		
+		String statName = null;
+		String statValue = null;
 		
 		for (String stat : referrers) {
+			
+			statName = sb.append(stat).append("-purcent").toString();
+			sb.setLength(0);
+			statValue = sb.append(stat).append(" % of Total").toString();
+			sb.setLength(0);
+			
 			//log.debug("stat: " + stat );
 			headerMap.put(stat, stat);
-			headerMap.put(stat+"-purcent",stat+" % of Total");
+			headerMap.put(statName,statValue);
+			
+			
         }
 		
 		headerMap.put("TOTAL_RSVP","Total RSVPs");
