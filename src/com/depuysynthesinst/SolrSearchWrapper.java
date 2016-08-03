@@ -268,10 +268,19 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 			hierarchy= StringUtil.checkVal(sd.getFieldValues(SearchDocumentHandler.HIERARCHY).iterator().next());
 		} catch (Exception e) {};
 
-		return buildDSIUrl(hierarchy, (String)sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID), (String)attributes.get(Constants.QS_PATH));
+		return buildDSIUrl(hierarchy, (String)sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID), (String)attributes.get(Constants.QS_PATH), (String)sd.get(SearchDocumentHandler.MODULE_TYPE));
 	}
 
-	public static String buildDSIUrl(String hierarchy, String documentId, String qsPath) {
+	/**
+	 * Method manages building the DSIUrl for Solr Records.
+	 * Update 6/1/2016 - Added moduleType to method signature for use with Nurses.
+	 * @param hierarchy
+	 * @param documentId
+	 * @param qsPath
+	 * @param moduleType
+	 * @return
+	 */
+	public static String buildDSIUrl(String hierarchy, String documentId, String qsPath, String moduleType) {
 		//log.debug(hierarchy);
 		if (hierarchy == null || hierarchy.length() == 0) return null;
 
@@ -313,9 +322,15 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 		//remove ampersands and replace spaces
 		rootLvl = StringUtil.replace(rootLvl, "& ", "");
 		rootLvl = StringUtil.replace(rootLvl, " ", "-");
-		
+
 		if ("nurse-education".equals(rootLvl)) {
-			rootLvl = "nurse-education/resource-library";
+
+			//Since Nurses have eModules now, those live on continuingEducation.
+			if("COURSE".equals(moduleType)) {
+				rootLvl = "nurse-education/continuing-education";
+			} else {
+				rootLvl = "nurse-education/resource-library";
+			}
 		} else if ("bundled-payments".equals(rootLvl)) {
 			rootLvl = "bundled-payments/resource-library";
 		}

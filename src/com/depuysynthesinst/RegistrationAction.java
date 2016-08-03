@@ -99,7 +99,7 @@ public class RegistrationAction extends SimpleActionAdapter {
 		reg.setAttributes(getAttributes());
 		reg.retrieve(req);
 		reg = null;
-		
+
 		//on the summary page, load the name(s) of this students Residency Director(s)
 		DSIUserDataVO dsiUser = new DSIUserDataVO((UserDataVO)req.getSession().getAttribute(Constants.USER_DATA));
 		DSIRoleMgr dsiRoleMgr = new DSIRoleMgr();
@@ -111,12 +111,12 @@ public class RegistrationAction extends SimpleActionAdapter {
 			dsiUser.setResDirs(resDirs);
 			req.getSession().setAttribute(Constants.USER_DATA, dsiUser.getUserDataVO());
 		}
-		
+
 		//if page=3 and this is a new registration, probe to see if the user is eligible for migration
 		//all users getting page 3 are TTLMS eligible; decision is made in the View of which modal comes next.
 		if ("3".equals(req.getParameter("pg")) && req.hasParameter("newReg"))
 			checkHoldingUser(req);
-		
+
 		//if there are no parameters on the request, this is the summary page/view.
 		//Reload the user's transcript each time so they always see their latest transcript
 		if (dsiUser.getTtLmsId() != null  && Convert.formatInteger(dsiUser.getTtLmsId()) > 0 && (req.hasParameter("coursesAjax") || StringUtil.checkVal(req.getQueryString()).length() == 0)) {
@@ -128,7 +128,7 @@ public class RegistrationAction extends SimpleActionAdapter {
 				log.warn("could not load user course list", ae);
 			}
 		}
-		
+
 	}
 	
 
@@ -188,21 +188,38 @@ public class RegistrationAction extends SimpleActionAdapter {
 		DSIRoleMgr dsiRoleMgr = new DSIRoleMgr();
 
 		//if they're not using LMS, we're done:
-		if (!dsiRoleMgr.isLMSAuthorized(user)) return;
-		
+		if (!dsiRoleMgr.isLMSAuthorized(user)) {
+			return;
+		}
+
+		/*
+		 * If this is a Nurse and the the user is on page 3 of registration,
+		 * register them with LMS.
+		 */
+		if(dsiRoleMgr.isNurse(user) && "3".equals(req.getParameter("page"))) {
+			saveUser(user);
+
+			String[] regFields = new String[]{ RegField.DSI_TTLMS_ID.toString()};
+//															 RegField.DSI_SYNTHES_ID.toString(),
+//															 RegField.DSI_PROG_ELIGIBLE.toString(),
+//															 RegField.DSI_VERIFIED.toString() };
+			captureLMSResponses(req, user, regFields);
+			return;
+		}
+
 		//if this is an edit, call the LMS after each modal saves 1,2 and 3.  
 		//Otherwise only when modal #3 is submitted (which is page=4 on the request).
 		if ("4".equals(req.getParameter("page")) && req.hasParameter("newReg")) {
 			user.setCountryCode(req.getParameter("reg_||" + DSIUserDataVO.RegField.DSI_COUNTRY.toString()));
 			log.warn("user passed country=" + req.getParameter("reg_||" + DSIUserDataVO.RegField.DSI_COUNTRY.toString()) + " we stored country=" + user.getCountryCode());
 			boolean migrated = migrateUser(req, user);
-			
+
 			//if not migrated, call save (create||update)
 			if (!migrated) saveUser(user);
-			
-			String[] regFields = new String[]{ RegField.DSI_TTLMS_ID.toString(), 
-															 RegField.DSI_SYNTHES_ID.toString(), 
-															 RegField.DSI_PROG_ELIGIBLE.toString(), 
+
+			String[] regFields = new String[]{ RegField.DSI_TTLMS_ID.toString(),
+															 RegField.DSI_SYNTHES_ID.toString(),
+															 RegField.DSI_PROG_ELIGIBLE.toString(),
 															 RegField.DSI_VERIFIED.toString() };
 			captureLMSResponses(req, user, regFields);
 			
@@ -240,8 +257,8 @@ public class RegistrationAction extends SimpleActionAdapter {
 			ses.setAttribute(Constants.USER_DATA, user.getUserDataVO());
 		}
 	}
-	
-	
+
+
 	/**
 	 * writes back to the register_data table to update a couple fields on the user's registration
 	 * @param user

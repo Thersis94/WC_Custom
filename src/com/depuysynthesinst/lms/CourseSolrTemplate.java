@@ -66,7 +66,7 @@ public class CourseSolrTemplate extends SolrDocumentVO {
 		
 		
 		if (super.getHierarchies() != null && super.getHierarchies().size() > 0)
-			setAssetUrl(SolrSearchWrapper.buildDSIUrl(super.getHierarchies().get(0), getDocumentId(), vo.getQsPath()));
+			setAssetUrl(SolrSearchWrapper.buildDSIUrl(super.getHierarchies().get(0), getDocumentId(), vo.getQsPath(), getModule()));
 		
 		//super.setMetaKeywords(StringUtil.checkVal(field.getFieldValue()));
 		//super.setMetaDesc(StringUtil.checkVal(field.getFieldValue()));
