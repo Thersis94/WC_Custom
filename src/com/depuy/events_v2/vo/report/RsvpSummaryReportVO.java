@@ -93,9 +93,9 @@ public class RsvpSummaryReportVO extends AbstractSBReportVO {
 	 * builds the header map for the excel report
 	 * @return
 	 */
-	private LinkedHashMap<String, String> getHeader() {
+	private HashMap<String, String> getHeader() {
 					
-		LinkedHashMap<String, String> headerMap = new LinkedHashMap<String, String>();
+		HashMap<String, String> headerMap = new LinkedHashMap<String, String>();
 		headerMap.put("SEMINAR_NO","Seminar#");
 		headerMap.put("SEMINAR_HOST","Seminar Host");
 		headerMap.put("WEB_RSVPS","Web RSVPs");

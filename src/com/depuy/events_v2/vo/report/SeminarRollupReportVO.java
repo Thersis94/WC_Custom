@@ -148,7 +148,7 @@ public class SeminarRollupReportVO extends AbstractSBReportVO {
 	 */
 	private Map<String, String> getHeader() {
 		
-		LinkedHashMap<String, String> headerMap = new LinkedHashMap<String, String>();
+		HashMap<String, String> headerMap = new LinkedHashMap<String, String>();
 		headerMap.put("JOINT", "Joint");
 		headerMap.put("SEMINAR_TYPE", "Seminar Type");
 		headerMap.put("SEMINAR_CODE", "Seminar Code");

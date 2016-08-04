@@ -409,9 +409,9 @@ public class CustomReportVO extends AbstractSBReportVO {
 	 * @param columns 
 	 * @return
 	 */
-	private LinkedHashMap<String, String> getHeader(List<FieldList> columns) {
+	private HashMap<String, String> getHeader(List<FieldList> columns) {
 		
-		LinkedHashMap<String, String> headerMap = new LinkedHashMap<String, String>();
+		HashMap<String, String> headerMap = new LinkedHashMap<String, String>();
 		//Loop through all of the parameters in the list to make a list of headers
 				for (FieldList key : columns) {
 					//log.debug("field name: " +key.getFieldName()+ " report label: " +key.getReportLabel());
