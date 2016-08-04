@@ -88,7 +88,6 @@ public class RsvpBreakdownReportVO extends AbstractSBReportVO {
 	/**
 	 * this method is used to generate the data rows of the excel sheet.
 	 * @param rows
-	 * @param header
 	 * @return
 	 */
 	private List<Map<String, Object>> generateDataRows(
