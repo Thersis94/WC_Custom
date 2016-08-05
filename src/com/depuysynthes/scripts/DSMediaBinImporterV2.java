@@ -265,6 +265,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		queryString += " AND importFileCd_i:" + type;
 		SolrQuery qry = new SolrQuery(queryString);
 		qry.setRows(50000);
+		qry.setFields(SearchDocumentHandler.DOCUMENT_ID); //we only need the documentId back from Solr - JM 08.04.16
 		SolrDocumentList solrData = null;
 		try {
 			solrData = server.query(qry).getResults();
@@ -280,12 +281,13 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		if (dbCnt != cnt) {
 			List<MediaBinDeltaVO> revisions = analyzeSolrRecords(masterRecords, solrData, true);
 			//if extra solr records were present and got deleted, commit that change and re-count the records
+			log.debug("revision count=" + revisions.size());
 			pushToSolr(revisions, server);
 			
 			try {
 				solrData = server.query(qry).getResults();
 				cnt = Convert.formatLong("" + solrData.getNumFound()).intValue();
-				log.info("solr count = " + cnt);
+				log.info("solr re-count = " + cnt);
 			} catch (Exception e) {
 				failures.add(e);
 				log.error("could not process read Solr query", e);
@@ -313,11 +315,13 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			switch (vo.getRecordState()) {
 				case Delete:
 				case Failed: //fails come from 404's at LimeLight; we don't want these showing up on DS if the linked file is MIA
+					log.debug("deleting from Solr: " + vo.getDpySynMediaBinId());
 					deletes.add(vo.getDpySynMediaBinId());
 					break;
 				case Update:
 				case Insert:
 				//case NewDownload: //we want the file contents to be re-indexed here, even though there are no meta-data changes
+					log.debug("adding to Solr: " + vo.getDpySynMediaBinId());
 					adds.add(vo);
 					break;
 				default:
@@ -363,15 +367,18 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	private List<MediaBinDeltaVO> analyzeSolrRecords(Map<String, MediaBinDeltaVO> masterRecords, 
 			SolrDocumentList solrData, boolean retrySolr) {
 		List<MediaBinDeltaVO> changes = new ArrayList<>();
+		log.debug("analyzeSolrRecords retry=" + retrySolr);
 		try {
 			//iterate solr against DB
 			for (SolrDocument sd : solrData) {
-				if (!masterRecords.containsKey(sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID))) {
+				if (!masterRecords.containsKey(StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID)))) {
+					log.debug("masterRecords does not have " + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID) + " which needs to be deleted from Solr");
 					//these should be deleted from Solr
 					if (retrySolr) {
 						MediaBinDeltaVO vo = new MediaBinDeltaVO();
 						vo.setDpySynMediaBinId("" + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID));
 						vo.setRecordState(State.Delete);
+						log.info("need to delete extra solr record for " + vo.getDpySynMediaBinId());
 						changes.add(vo);
 					} else {
 						failures.add(new Exception("Record exists in Solr but not database, and could't be deleted: " + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID)));
@@ -383,15 +390,23 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			dbLoop:
 			for (MediaBinDeltaVO vo: masterRecords.values()) {
 				//make sure only 'good' records get pushed to Solr. - this check filters out failed records, including 404's at LL. 
-				if (!vo.isUsable()) continue;
+				if (!vo.isUsable()) {
+					log.debug("DB record contains bad data and should not be added to Solr.  Likely a simple 404@LL: " + vo.getDpySynMediaBinId());
+					continue;
+				}
 				
+				String id = StringUtil.checkVal(vo.getDpySynMediaBinId());
 				for (SolrDocument sd : solrData) {
-					if (vo.getDpySynMediaBinId().equals(sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID))) {
+					if (id.equals(StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID)))) {
 						continue dbLoop;
 					}
 				}
 				if (retrySolr) {
+					//bug-fix: the record goes back into the Insert pool, but we aren't accounting for it in the Insert Count reported in the email.  
+					//tag the record so we can put an asterics in the report email. -JM 08.14.16
+					vo.setActionDesc("*");
 					vo.setRecordState(State.Insert);
+					log.info("need to add missing solr record for " + vo.getDpySynMediaBinId());
 					changes.add(vo);
 				} else {
 					failures.add(new Exception("Record exists in database but not Solr and couldn't be added: " + vo.getDpySynMediaBinId()));
@@ -1128,7 +1143,8 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		for (MediaBinDeltaVO vo : masterRecords.values()) {
 			if (st != vo.getRecordState()) continue; //only print the ones we want
 			msg.append("<tr>");
-			msg.append("<td nowrap>").append(StringUtil.checkVal(vo.getDpySynMediaBinId())).append("</td>");
+			//getActionDesc holds an asterisk when we have to re-add records to Solr unexpectedly.  - for SMT monitoring.  -JM 08.04.16
+			msg.append("<td nowrap>").append(StringUtil.checkVal(vo.getActionDesc())).append(StringUtil.checkVal(vo.getDpySynMediaBinId())).append("</td>");
 			msg.append("<td nowrap>").append(StringUtil.checkVal(vo.getEcopyTrackingNo())).append("</td>");
 			if (State.Delete == st) {
 				msg.append("<td>").append(vo.getFileNm()).append("</td>");
