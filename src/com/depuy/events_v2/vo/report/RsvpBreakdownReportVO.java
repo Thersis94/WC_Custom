@@ -3,6 +3,7 @@ package com.depuy.events_v2.vo.report;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
@@ -12,7 +13,6 @@ import java.util.TreeSet;
 import com.depuy.events_v2.vo.RsvpBreakdownVO;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.siliconmtn.data.report.ExcelReport;
-import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 
 /*****************************************************************************
@@ -72,34 +72,33 @@ public class RsvpBreakdownReportVO extends AbstractSBReportVO {
 
 	public byte[] generateReport() {
 		
-		HashMap<String, String> header = this.getHeader();
-		
-		ExcelReport rpt = new ExcelReport(header);
+		ExcelReport rpt = new ExcelReport(this.getHeader());
 		
 		List<Map<String, Object>> rows = new ArrayList<>(events.size());
 		
-		rows = generateHeaderRows(rows,header);
+		rpt.setTitleCell(getTitleNote());
 		
-		rows = generateDataRows(rows, header);
+		rows = generateDataRows(rows);
 		
 		rpt.setData(rows);
+		
 		return rpt.generateReport();
 	}
 
 	/**
 	 * this method is used to generate the data rows of the excel sheet.
 	 * @param rows
-	 * @param header
 	 * @return
 	 */
 	private List<Map<String, Object>> generateDataRows(
-			List<Map<String, Object>> rows, HashMap<String, String> header) {
+			List<Map<String, Object>> rows) {
 		
 		for (RsvpBreakdownVO vo : events){
 			Map<String, Object> row = new HashMap<String, Object>();
 			//sum the overall total RSVPs
 			int rsvpTotal = 0;
 			for (Integer cnt : vo.getReferralStats().values()) {
+				//log.debug("count"+ cnt);
 				rsvpTotal += cnt;
 			}
 			row.put("SEMINAR_NO",vo.getRsvpCode());
@@ -112,46 +111,31 @@ public class RsvpBreakdownReportVO extends AbstractSBReportVO {
 			
 			Map<String, Integer> rsvpStats = vo.getReferralStats();
 			
-			//TODO try and understand what this is doing, i feel like this might not be just making two cells
+			StringBuilder sb =  new StringBuilder(25);
+			
+			String statName = null;
+						
 			for (String stat : referrers) {
+				
+				statName = sb.append(stat).append("-percent").toString();
+				sb.setLength(0);
+				
+				//log.debug("stat: " + stat);
 				if (rsvpStats.containsKey(stat)) {
 					Integer cnt = rsvpStats.get(stat);
-					row.put("count", cnt);
+					row.put(stat, cnt);
 					float percent = (Float.valueOf(cnt) / Float.valueOf(rsvpTotal)) * 100;
-					row.put("percent",Math.round(percent));
+					row.put(statName,sb.append(Math.round(percent)).append("%").toString());
+					sb.setLength(0);
 				} else {
-					row.put("count",0);
-					row.put("percent",0);
+					row.put(stat,0);
+					row.put(statName,"0%");
 				}
 			}
+			
+			row.put("TOTAL_RSVP", rsvpTotal);
 			rows.add(row);
 		}
-		
-		return rows;
-	}
-
-	/**
-	 * generates the header section of the excel sheet.  then the rows map is
-	 *     pass on to other methods or objects to be filled with data
-	 * @param rows
-	 * @param header 
-	 * @return
-	 */
-	private List<Map<String, Object>> generateHeaderRows(
-			List<Map<String, Object>> rows, HashMap<String, String> header) {
-		
-		Map <String, Object> row1 = new HashMap<String, Object>();
-		
-		row1.put(ExcelReport.TITLE_CELL, getTitleNote() );
-		rows.add(row1);
-		//make the header rows
-		Map <String, Object> row2 = new HashMap<String, Object>();
-		
-		for (String key : header.keySet()){
-			row2.put(key, header.get(key));
-		}
-		
-		rows.add(row2);
 		
 		return rows;
 	}
@@ -160,7 +144,7 @@ public class RsvpBreakdownReportVO extends AbstractSBReportVO {
 	 * used to build the title note at the top of the excel document.
 	 * @return
 	 */
-	private Object getTitleNote() {
+	private String getTitleNote() {
 		
 		//make the note for row 1
 		StringBuilder dateRange = new StringBuilder(51);
@@ -180,16 +164,33 @@ public class RsvpBreakdownReportVO extends AbstractSBReportVO {
 		return note.toString();
 	}
 
+	/**
+	 * builds the header map for the excel report
+	 * @return
+	 */
 	private HashMap<String, String> getHeader() {
 		
-		HashMap<String, String> headerMap = new HashMap<String, String>();
+		HashMap<String, String> headerMap = new LinkedHashMap<String, String>();
 		headerMap.put("SEMINAR_NO","Seminar#");
 		headerMap.put("SEMINAR_HOST","Seminar Host");
 		headerMap.put("SEMINAR_DATE","Seminar Date");
-		headerMap.put("COUNT","count");
-		headerMap.put("PRECENT","percent");
-		headerMap.put("TOTAL_RSVP","Total_RSVPs");
 		
+		StringBuilder sb =  new StringBuilder(25);
+		
+		String statName = null;
+				
+		for (String stat : referrers) {
+			
+			statName = sb.append(stat).append("-percent").toString();
+			sb.setLength(0);
+				
+			//log.debug("stat: " + stat );
+			headerMap.put(stat, stat);
+			headerMap.put(statName,"% of Total");
+			
+        }
+		
+		headerMap.put("TOTAL_RSVP","Total RSVPs");
 		return headerMap;
 		
 	}
