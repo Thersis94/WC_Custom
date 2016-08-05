@@ -372,13 +372,13 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			//iterate solr against DB
 			for (SolrDocument sd : solrData) {
 				if (!masterRecords.containsKey(StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID)))) {
-					log.debug("masterRecords does not have " + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID) + " which needs to be deleted from Solr");
+					log.warn("masterRecords does not have " + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID) + " which needs to be deleted from Solr");
 					//these should be deleted from Solr
 					if (retrySolr) {
 						MediaBinDeltaVO vo = new MediaBinDeltaVO();
 						vo.setDpySynMediaBinId("" + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID));
 						vo.setRecordState(State.Delete);
-						log.info("need to delete extra solr record for " + vo.getDpySynMediaBinId());
+						log.warn("need to delete extra solr record for " + vo.getDpySynMediaBinId());
 						changes.add(vo);
 					} else {
 						failures.add(new Exception("Record exists in Solr but not database, and could't be deleted: " + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID)));
@@ -391,7 +391,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			for (MediaBinDeltaVO vo: masterRecords.values()) {
 				//make sure only 'good' records get pushed to Solr. - this check filters out failed records, including 404's at LL. 
 				if (!vo.isUsable()) {
-					log.debug("DB record contains bad data and should not be added to Solr.  Likely a simple 404@LL: " + vo.getDpySynMediaBinId());
+					log.warn("DB record contains bad data and should not be added to Solr.  Likely a simple 404@LL: " + vo.getDpySynMediaBinId());
 					continue;
 				}
 				
@@ -406,7 +406,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 					//tag the record so we can put an asterics in the report email. -JM 08.14.16
 					vo.setActionDesc("*");
 					vo.setRecordState(State.Insert);
-					log.info("need to add missing solr record for " + vo.getDpySynMediaBinId());
+					log.warn("need to add missing solr record for " + vo.getDpySynMediaBinId());
 					changes.add(vo);
 				} else {
 					failures.add(new Exception("Record exists in database but not Solr and couldn't be added: " + vo.getDpySynMediaBinId()));
