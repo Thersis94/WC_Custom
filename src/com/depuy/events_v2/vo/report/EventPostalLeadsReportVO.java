@@ -1,12 +1,16 @@
 package com.depuy.events_v2.vo.report;
 
 import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Map;
 
 import com.depuy.events_v2.vo.DePuyEventSeminarVO;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.event.vo.EventEntryVO;
+import com.siliconmtn.data.report.ExcelReport;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
@@ -55,6 +59,20 @@ public class EventPostalLeadsReportVO extends AbstractSBReportVO {
     
 	public byte[] generateReport() {
 		log.debug("starting generateReport()");
+		
+		ExcelReport rpt = new ExcelReport(this.getHeader(events.size()));
+		
+		List<Map<String, Object>> rows = new ArrayList<>(events.size());
+		
+		rpt.setTitleCell(getTitleNote());
+		
+		rows = generateDataRows(rows);
+		
+		rpt.setData(rows);
+		
+		return rpt.generateReport();
+		
+/*		
 		StringBuilder rpt = new StringBuilder(this.getHeader(events.size()));
 		String eventsData = this.buildEvents(); //only needs called once
 		String rsvpDateStr = Convert.formatDate(rsvpDate, "EEEE, MMMM dd, yyyy");
@@ -77,40 +95,40 @@ public class EventPostalLeadsReportVO extends AbstractSBReportVO {
 		}
 
 		rpt.append(this.getFooter());
-		return rpt.toString().getBytes();
+		return rpt.toString().getBytes();*/
 	}
 	
-	private StringBuilder getHeader(int eventCnt) {
-		StringBuilder hdr = new StringBuilder();
-		hdr.append("<table border='1'>\r<tr style='background-color:#ccc;'>");
-		hdr.append("<th>ProfileAddressId</th>");
-		hdr.append("<th>Title</th>");
-		hdr.append("<th>First_Name</th>");
-		hdr.append("<th>Last_Name</th>");
-		hdr.append("<th>Suffix</th>");
-		hdr.append("<th>Address1</th>");
-		hdr.append("<th>Address2</th>");
-		hdr.append("<th>City</th>");
-		hdr.append("<th>State</th>");
-		hdr.append("<th>Zip</th>");
-		hdr.append("<th>RSVP_Deadline</th>");
-		hdr.append("<th>RSVP_phone</th>");
+	private HashMap<String, String> getHeader(int eventCnt) {
+		
+		HashMap<String, String> headerMap = new LinkedHashMap<String, String>();
+		
+		headerMap.put("PROFILE_ADDRESSID", "Profile Address Id");
+		headerMap.put("TITLE", "Title");
+		headerMap.put("FIRST_NAME", "First Name");
+		headerMap.put("LAST_NAME", "Last Name");
+		headerMap.put("SUFFIX", "Suffix");
+		headerMap.put("ADDRESS1", "Address1");
+		headerMap.put("ADDRESS2", "Address2");
+		headerMap.put("CITY", "City");
+		headerMap.put("STATE", "State");
+		headerMap.put("RSVP_DEADLINE", "RSVP Deadline");
+		headerMap.put("RSVP_PHONE", "RSVP phone");
 		
 		for (int x=0; x < eventCnt; x++) {
-			hdr.append("<th>Date of Event</th>");
-			hdr.append("<th>Time</th>");
-			hdr.append("<th>Venue Name</th>");
-			hdr.append("<th>Address1</th>");
-			hdr.append("<th>Address2</th>");
-			hdr.append("<th>City</th>");
-			hdr.append("<th>State</th>");
-			hdr.append("<th>Zip</th>");
-			hdr.append("<th>Surgeon Name</th>");
-			hdr.append("<th>EventCode</th>");
+			headerMap.put("DATE_OF_EVENT", "Date of Event");
+			headerMap.put("TIME", "Time");
+			headerMap.put("VENUE_NAME", "Venue Name");
+			headerMap.put("ADDRESS1", "Address1");
+			headerMap.put("ADDRESS2", "Address2");
+			headerMap.put("CITY", "City");
+			headerMap.put("STATE", "State");
+			headerMap.put("ZIP", "Zip");
+			headerMap.put("SURGEON_NAME", "Surgeon Name");
+			headerMap.put("EVENTCODE", "Event Code");
+			
 		}
-		hdr.append("</tr>\r");
 		
-		return hdr;
+		return headerMap;
 	}
 	
 	
