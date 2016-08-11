@@ -468,7 +468,7 @@ public class DemoEventAction extends SBActionAdapter {
 		o.setOrderId("DEMO_ORDER");
 		o.setOrderStatusCd(OrderStatus.SUBMITTED);
 		o.setCustomerLocationId(175468001);
-		o.setFulfillmentStrategyId("SMT_FULFILLMENT_TEST");
+		o.setCustomerLocFstratId("CLOC_FSTRAT_9000");
 
 		o.addLineItem(buildLineItem(1, 145101,1));
 		o.addLineItem(buildLineItem(2, 147451,1));
@@ -487,6 +487,7 @@ public class DemoEventAction extends SBActionAdapter {
 		OrderLineItemVO l = new OrderLineItemVO();
 		l.setLineItemId("DEMO_EVENT_LINE_" + pos);
 		l.setOrderId("DEMO_ORDER");
+		l.setOrderNo(pos);
 		l.setProductId(productId);
 		l.setQtyNo(qty);
 		return l;
