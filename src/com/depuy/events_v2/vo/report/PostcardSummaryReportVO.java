@@ -479,7 +479,7 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 	 * @return
 	 */
 	private List<GenericVO> getSeminarRows() {
-		List<GenericVO> row = new ArrayList<GenericVO>();
+		List<GenericVO> row = new ArrayList<>();
 		
 		GenericVO vo = new GenericVO();
 		vo.setKey("Product");
