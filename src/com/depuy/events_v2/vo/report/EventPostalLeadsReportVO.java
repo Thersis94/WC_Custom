@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.Map;
 
 import com.depuy.events_v2.vo.DePuyEventSeminarVO;
-import com.depuy.events_v2.vo.RsvpBreakdownVO;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.event.vo.EventEntryVO;
 import com.siliconmtn.data.report.ExcelReport;
