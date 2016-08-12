@@ -62,9 +62,7 @@ public class EventPostalLeadsReportVO extends AbstractSBReportVO {
 		
 		ExcelReport rpt = new ExcelReport(this.getHeader(events.size()));
 		
-		List<Map<String, Object>> rows = new ArrayList<>(events.size());
-		
-		rpt.setTitleCell(getTitleNote());
+		List<Map<String, Object>> rows = new ArrayList<>(leads.size());
 		
 		rows = generateDataRows(rows);
 		
@@ -72,33 +70,82 @@ public class EventPostalLeadsReportVO extends AbstractSBReportVO {
 		
 		return rpt.generateReport();
 		
-/*		
-		StringBuilder rpt = new StringBuilder(this.getHeader(events.size()));
-		String eventsData = this.buildEvents(); //only needs called once
-		String rsvpDateStr = Convert.formatDate(rsvpDate, "EEEE, MMMM dd, yyyy");
-		
-		for (UserDataVO vo : leads) {
-			rpt.append("<tr><td>").append(StringUtil.checkVal(vo.getProfileId())).append("</td>");
-			rpt.append("<td>").append(StringUtil.checkVal(vo.getPrefixName())).append("</td>");
-			rpt.append("<td>").append(StringUtil.checkVal(vo.getFirstName())).append("</td>");
-			rpt.append("<td>").append(StringUtil.checkVal(vo.getLastName())).append("</td>");
-			rpt.append("<td>").append(StringUtil.checkVal(vo.getSuffixName())).append("</td>");
-			rpt.append("<td>").append(vo.getAddress()).append("</td>");
-			rpt.append("<td>").append(StringUtil.checkVal(vo.getAddress2())).append("</td>");
-			rpt.append("<td>").append(vo.getCity()).append("</td>");
-			rpt.append("<td>").append(vo.getState()).append("</td>");
-			rpt.append("<td type='text'>").append(vo.getZipCode()).append("</td>");
-			rpt.append("<td>").append(rsvpDateStr).append("</td>");
-			rpt.append("<td>1-800-256-1146</td>");
-			rpt.append(eventsData).append("</tr>\r");
-			vo = null;
-		}
-
-		rpt.append(this.getFooter());
-		return rpt.toString().getBytes();*/
 	}
 	
+	/**
+	 * @param rows
+	 * @return
+	 */
+	private List<Map<String, Object>> generateDataRows(
+			List<Map<String, Object>> rows) {
+		
+		String rsvpDateStr = Convert.formatDate(rsvpDate, "EEEE, MMMM dd, yyyy");
+		StringBuilder keySb = new StringBuilder(32);
+		StringEncoder se = new StringEncoder();
+		EventEntryVO evo = null;
+		for (UserDataVO vo : this.leads){
+			Map<String, Object> row = new HashMap<String, Object>();
+		
+			row.put("PROFILE_ADDRESSID", StringUtil.checkVal(vo.getProfileId()));
+			row.put("TITLE", StringUtil.checkVal(vo.getPrefixName()));
+			row.put("FIRST_NAME", StringUtil.checkVal(vo.getFirstName()));
+			row.put("LAST_NAME", StringUtil.checkVal(vo.getLastName()));
+			row.put("SUFFIX", StringUtil.checkVal(vo.getSuffixName()));
+			row.put("ADDRESS1", vo.getAddress());
+			row.put("ADDRESS2", StringUtil.checkVal(vo.getAddress2()));
+			row.put("CITY", vo.getCity());
+			row.put("STATE", vo.getState());
+			row.put("ZIP", vo.getZipCode());
+			row.put("RSVP_DEADLINE", rsvpDateStr);
+			row.put("RSVP_PHONE", "<td>1-800-256-1146</td>");
+			
+			
+			//need both the index and the vo
+			for (int x=0; x < events.size(); x++) {
+				evo = events.get(x);
+			
+			row.put(keySb.append("DATE_OF_EVENT_").append(x).toString()
+					, Convert.formatDate(evo.getStartDate(), "EEEE, MMMM dd, yyyy"));
+				keySb.setLength(0);
+			row.put(keySb.append("TIME_").append(x).toString()
+					,se.decodeValue(evo.getLocationDesc()));
+				keySb.setLength(0);
+			row.put(keySb.append("VENUE_NAME_").append(x).toString()
+					,se.decodeValue(evo.getEventName()));
+				keySb.setLength(0);
+			row.put(keySb.append("ADDRESS1_").append(x).toString()
+					,se.decodeValue(evo.getAddressText()));
+				keySb.setLength(0);
+			row.put(keySb.append("ADDRESS2_").append(x).toString()
+					,se.decodeValue(evo.getAddress2Text()));
+				keySb.setLength(0);
+			row.put(keySb.append("CITY_").append(x).toString()
+					,se.decodeValue(evo.getCityName()));
+				keySb.setLength(0);
+			row.put(keySb.append("STATE_").append(x).toString()
+					,evo.getStateCode());
+				keySb.setLength(0);
+			row.put(keySb.append("ZIP_").append(x).toString()
+					,evo.getZipCode());
+				keySb.setLength(0);
+			row.put(keySb.append("SURGEON_NAME_").append(x).toString()
+					,lalbelText);
+				keySb.setLength(0);
+			row.put(keySb.append("EVENTCODE_").append(x).toString()
+					,evo.getRSVPCode());
+				keySb.setLength(0);
+				evo = null;
+		}
+		
+		rows.add(row);
+		}
+
+		return rows;
+	}
+
 	private HashMap<String, String> getHeader(int eventCnt) {
+		
+		StringBuilder keySb = new StringBuilder(32);
 		
 		HashMap<String, String> headerMap = new LinkedHashMap<String, String>();
 		
@@ -111,47 +158,46 @@ public class EventPostalLeadsReportVO extends AbstractSBReportVO {
 		headerMap.put("ADDRESS2", "Address2");
 		headerMap.put("CITY", "City");
 		headerMap.put("STATE", "State");
+		headerMap.put("ZIP", "Zip");
 		headerMap.put("RSVP_DEADLINE", "RSVP Deadline");
 		headerMap.put("RSVP_PHONE", "RSVP phone");
 		
+		//use string builder to make a unique key for each events column
+		
 		for (int x=0; x < eventCnt; x++) {
-			headerMap.put("DATE_OF_EVENT", "Date of Event");
-			headerMap.put("TIME", "Time");
-			headerMap.put("VENUE_NAME", "Venue Name");
-			headerMap.put("ADDRESS1", "Address1");
-			headerMap.put("ADDRESS2", "Address2");
-			headerMap.put("CITY", "City");
-			headerMap.put("STATE", "State");
-			headerMap.put("ZIP", "Zip");
-			headerMap.put("SURGEON_NAME", "Surgeon Name");
-			headerMap.put("EVENTCODE", "Event Code");
+			headerMap.put(keySb.append("DATE_OF_EVENT_").append(x).toString()
+					, "Date of Event");
+				keySb.setLength(0);
+			headerMap.put(keySb.append("TIME_").append(x).toString()
+					, "Time");
+				keySb.setLength(0);
+			headerMap.put(keySb.append("VENUE_NAME_").append(x).toString()
+					, "Venue Name");
+				keySb.setLength(0);
+			headerMap.put(keySb.append("ADDRESS1_").append(x).toString()
+					, "Address1");
+				keySb.setLength(0);
+			headerMap.put(keySb.append("ADDRESS2_").append(x).toString()
+					, "Address2");
+				keySb.setLength(0);
+			headerMap.put(keySb.append("CITY_").append(x).toString()
+					, "City");
+				keySb.setLength(0);
+			headerMap.put(keySb.append("STATE_").append(x).toString()
+					, "State");
+				keySb.setLength(0);
+			headerMap.put(keySb.append("ZIP_").append(x).toString()
+					, "Zip");
+				keySb.setLength(0);
+			headerMap.put(keySb.append("SURGEON_NAME_").append(x).toString()
+					, "Surgeon Name");
+				keySb.setLength(0);
+			headerMap.put(keySb.append("EVENTCODE_").append(x).toString()
+					, "Event Code");
+				keySb.setLength(0);
 			
 		}
 		
 		return headerMap;
 	}
-	
-	
-	private String buildEvents() {
-		StringBuilder row = new StringBuilder();
-		StringEncoder se = new StringEncoder();
-		for (EventEntryVO event : this.events) {
-			row.append("<td>").append(Convert.formatDate(event.getStartDate(), "EEEE, MMMM dd, yyyy")).append("</td>");
-			row.append("<td>").append(se.decodeValue(event.getLocationDesc())).append("</td>");
-			row.append("<td>").append(se.decodeValue(event.getEventName())).append("</td>");
-			row.append("<td>").append(se.decodeValue(event.getAddressText())).append("</td>");
-			row.append("<td>").append(se.decodeValue(event.getAddress2Text())).append("</td>");
-			row.append("<td>").append(se.decodeValue(event.getCityName())).append("</td>");
-			row.append("<td>").append(event.getStateCode()).append("</td>");
-			row.append("<td>").append(event.getZipCode()).append("</td>");
-			row.append("<td>").append(lalbelText).append("</td>");
-			row.append("<td>").append(event.getRSVPCode()).append("</td>");
-		}
-		return row.toString();
-	}
-	
-	private StringBuilder getFooter() {
-		return new StringBuilder("</table>");
-	}
-		
 }
