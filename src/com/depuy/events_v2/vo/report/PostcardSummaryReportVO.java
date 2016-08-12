@@ -149,7 +149,7 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 	 * @return
 	 */
 	private List<GenericVO> getAdRows() {
-		List<GenericVO> row = new ArrayList<GenericVO>();
+		List<GenericVO> row = new ArrayList<>();
 		//add the Co-Op Ad data
 		if (sem.getAllAds() != null && !sem.getAllAds().isEmpty() ) {
 			StringBuilder sb = new StringBuilder(32);
