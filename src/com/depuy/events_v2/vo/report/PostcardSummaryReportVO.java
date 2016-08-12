@@ -74,72 +74,20 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 		//each row is two strings
 		List<GenericVO> row = getSeminarRows();
 	
-		for (GenericVO vo : row){
+		rowCnt = buildReportRows(s,r,row, rowCnt);
+		
+		List <GenericVO> eventRow = getEventRows();
+		
+		rowCnt = buildReportRows(s,r,eventRow, rowCnt);
+		//TODO come back to try and match cell merges
+		List <GenericVO> postRow = getPostcardRows();
+		
+		rowCnt = buildReportRows(s,r,postRow, rowCnt);
+		
+		List <GenericVO> speakerRow = getSpeakerRows();
+		
+		rowCnt = buildReportRows(s,r,speakerRow, rowCnt);
 			
-			log.debug(vo.getKey());
-			log.debug(vo.getValue());
-			c = r.createCell(0);
-			c.setCellType(Cell.CELL_TYPE_STRING);
-			c.setCellValue((String)vo.getKey());
-			c = r.createCell(1);
-			c.setCellType(Cell.CELL_TYPE_STRING);
-			c.setCellValue((String)vo.getValue());	
-
-			r = s.createRow(rowCnt++);
-		}
-		
-		Map <String, String> eventRow = getEventRows();
-		
-		for (String key : eventRow.keySet()){
-			
-			log.debug(key);
-			log.debug(eventRow.get(key));
-			c = r.createCell(0);
-			c.setCellType(Cell.CELL_TYPE_STRING);
-			c.setCellValue(key);
-			c = r.createCell(1);
-			c.setCellType(Cell.CELL_TYPE_STRING);
-			c.setCellValue(eventRow.get(key));	
-
-			r = s.createRow(rowCnt++);
-		}
-		
-		s.addMergedRegion(new CellRangeAddress(rowCnt-4,rowCnt-2,0,0));
-		
-		Map <String, String> postRow = getPostcardRows();
-		
-		for (String key : postRow.keySet()){
-			
-			log.debug(key);
-			log.debug(postRow.get(key));
-			c = r.createCell(0);
-			c.setCellType(Cell.CELL_TYPE_STRING);
-			c.setCellValue(key);
-			c = r.createCell(1);
-			c.setCellType(Cell.CELL_TYPE_STRING);
-			c.setCellValue(postRow.get(key));	
-
-			r = s.createRow(rowCnt++);
-		}
-		
-		s.addMergedRegion(new CellRangeAddress(rowCnt-5,rowCnt-2,0,0));
-		s.addMergedRegion(new CellRangeAddress(rowCnt-7,rowCnt-6,1,1));
-		
-		Map <String, String> speakerRow = getSpeakerRows();
-		
-		for (String key : speakerRow.keySet()){
-			
-			log.debug(key);
-			log.debug(speakerRow.get(key));
-			c = r.createCell(0);
-			c.setCellType(Cell.CELL_TYPE_STRING);
-			c.setCellValue(key);
-			c = r.createCell(1);
-			c.setCellType(Cell.CELL_TYPE_STRING);
-			c.setCellValue(speakerRow.get(key));	
-
-			r = s.createRow(rowCnt++);
-		}
 		r = s.createRow(rowCnt++);
 		c = r.createCell(0);
 		c.setCellType(Cell.CELL_TYPE_STRING);
@@ -149,32 +97,10 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 		
 		List<GenericVO> adRow = getAdRows();
 		
-/*				
-		//add the Co-Op Ad data
-		if (sem.getAllAds() != null && !sem.getAllAds().isEmpty() ) {
-			for (CoopAdVO ad : sem.getAllAds() ){
-				int adSts = Convert.formatInteger(ad.getStatusFlg(), 0).intValue();
-				
-				rpt.append("<tr><td colspan='2'>&nbsp;</td></tr>\r");
-				rpt.append("<tr><td colspan='2' style='background-color: #ccc;'><b>Newspaper Ad</td></tr>\r");
-				rpt.append("<tr><td>Ad Type:</td><td align='center'>").append(StringUtil.checkVal(ad.getAdType())).append("</td></tr>\r");
-				rpt.append("<tr><td>Sponsored Newspaper:</td><td align='center'>").append(StringUtil.checkVal(ad.getNewspaper1Text())).append(" (").append(ad.getNewspaper1Phone()).append(")</td></tr>\r");
-				rpt.append("<tr><td>Coordinator approved ad?:</td><td align='center'>").append((adSts == CoopAdsActionV2.CLIENT_APPROVED_AD) ? "Yes" : "No").append("</td></tr>\r");
-				rpt.append("<tr><td>Approved Paper:</td><td align='center'>").append(StringUtil.checkVal(ad.getApprovedPaperName())).append("</td></tr>\r");
-				rpt.append("<tr><td>Total Cost:</td><td align='center'>").append(ad.getTotalCostNo()).append("</td></tr>\r");
-				//calculate cost of ad to territory or surgeon
-				if ("CFSEM".equalsIgnoreCase(sem.getEvents().get(0).getEventTypeCd())) {
-					int surgSts = Convert.formatInteger(ad.getSurgeonStatusFlg(), 0).intValue();
-					rpt.append("<tr><td>Speaker approved ad?:</td><td align='center'>").append((surgSts == CoopAdsActionV2.SURG_APPROVED_AD) ? "Yes" : "No").append("</td></tr>\r");
-					rpt.append("<tr><td>Speaker paid for ad?:</td><td align='center'>").append((surgSts == CoopAdsActionV2.SURG_PAID_AD) ? "Yes" : "No").append("</td></tr>\r");
-					rpt.append("<tr><td>Ad Cost to Speaker:</td><td align='center'>").append(ad.getCostToRepNo()).append("</td></tr>\r");
-				} else {
-					rpt.append("<tr><td>Ad Cost to Territory:</td><td align='center'>").append(ad.getCostToRepNo()).append("</td></tr>\r");
-				}
-				if (ad.getAdFileUrl() != null)
-					rpt.append("<tr><td>Ad File:</td><td align='center'><a href=\"").append(sem.getBaseUrl()).append("/ads/").append(ad.getAdFileUrl()).append("\" target='_blank'>").append(ad.getAdFileUrl()).append("</a></td></tr>\r");
-			}
-		}
+		rowCnt = buildReportRows(s,r,adRow, rowCnt);
+			
+		
+		//existing commented out code
 		//add the Radio Ad data
 //		if (sem.getRadioAd() != null && sem.getRadioAd().getCoopAdId() != null) {
 //			CoopAdVO ad = sem.getRadioAd();
@@ -184,8 +110,7 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 //			rpt.append("<tr><td>Contact Name:</td><td align='center'>").append(StringUtil.checkVal(ad.getNewspaper2Text())).append(" (").append(StringUtil.checkVal(ad.getNewspaper2Phone())).append(")</td></tr>\r");
 //			rpt.append("<tr><td>Ad Deadline:</td><td align='center'>").append(StringUtil.checkVal(ad.getAdDatesText())).append("</td></tr>\r");
 //		}
-		
-		rpt.append(this.getFooter());*/
+
 		
 		try (ByteArrayOutputStream baos = new ByteArrayOutputStream()){
 			wb.write(baos);
@@ -199,15 +124,38 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 	}
 	
 	/**
+	 * takes the data in generic VOs and builds the rows and cells on the sheet
+	 * @param s
+	 * @param r
+	 * @param row
+	 * @return
+	 */
+	private int buildReportRows(Sheet s, Row r, List<GenericVO> row, int rowCnt) {
+		Cell c = null;
+		for (GenericVO vo : row){
+			
+				c = r.createCell(0);
+				c.setCellType(Cell.CELL_TYPE_STRING);
+				c.setCellValue((String)vo.getKey());
+				c = r.createCell(1);
+				c.setCellType(Cell.CELL_TYPE_STRING);
+				c.setCellValue((String)vo.getValue());	
+
+				r = s.createRow(rowCnt++);
+			}
+		return rowCnt;
+	}
+
+	/**
 	 * generates the ad section of the report
 	 * @return
 	 */
 	private List<GenericVO> getAdRows() {
-		
+		List<GenericVO> row = new ArrayList<GenericVO>();
 		//add the Co-Op Ad data
 		if (sem.getAllAds() != null && !sem.getAllAds().isEmpty() ) {
 			StringBuilder sb = new StringBuilder(32);
-			List<GenericVO> row = new ArrayList<GenericVO>();
+			
 			GenericVO vo = null;
 			for (CoopAdVO ad : sem.getAllAds() ){
 				int adSts = Convert.formatInteger(ad.getStatusFlg(), 0).intValue();
@@ -244,7 +192,7 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 				
 				vo = new GenericVO();
 				vo.setKey("Total Cost:");
-				vo.setValue(ad.getTotalCostNo());
+				vo.setValue(String.valueOf(ad.getTotalCostNo()));
 				row.add(vo);
 				
 					//calculate cost of ad to territory or surgeon
@@ -262,19 +210,19 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 					
 					vo = new GenericVO();
 					vo.setKey("Ad Cost to Speaker:");
-					vo.setValue(ad.getCostToRepNo());
+					vo.setValue(String.valueOf(ad.getCostToRepNo()));
 					row.add(vo);
 				}else{
 					vo = new GenericVO();
 					vo.setKey("Ad Cost to Territory:");
-					vo.setValue(ad.getCostToRepNo());
+					vo.setValue(String.valueOf(ad.getCostToRepNo()));
 					row.add(vo);
 				}
 				
 				if (ad.getAdFileUrl() != null){
 					vo = new GenericVO();
 					vo.setKey("Ad File:");
-					vo.setValue("");
+					vo.setValue(sb.append("<a href=\"").append(sem.getBaseUrl()).append("/ads/").append(ad.getAdFileUrl()).append("\" target='_blank'>").append(ad.getAdFileUrl()).append("</a>").toString());
 					row.add(vo);
 				}
 				
@@ -283,41 +231,101 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 			}
 		}
 		
-		
-		
-		/*
-		rpt.append("<tr><td></td><td align='center'><a href=\"").append(sem.getBaseUrl()).append("/ads/").append(ad.getAdFileUrl()).append("\" target='_blank'>").append(ad.getAdFileUrl()).append("</a></td></tr>\r");
-		}*/
-		return null;
+		return row;
 	}
 
 	/**
 	 * generates the speaker section of the report
 	 * @return
 	 */
-	private Map<String, String> getSpeakerRows() {
+	private List <GenericVO> getSpeakerRows() {
 		StringBuilder sb = new StringBuilder(32);
-		Map<String, String> row = new LinkedHashMap<String, String>();
+		List <GenericVO> row = new ArrayList<>();
 		
-		row.put("","");
-		row.put("Speaker Information","");
+		GenericVO vo = new GenericVO();
+		vo.setKey("");
+		vo.setValue("");
+		row.add(vo);
+		
+		vo = new GenericVO();
+		vo.setKey("Speaker Information");
+		vo.setValue("");
+		row.add(vo);
+		
 		for (DePuyEventSurgeonVO surg : sem.getSurgeonList()) {
-			row.put("Speaker Name:",surg.getSurgeonName());
-			row.put("The Field Marketing Director has reviewed the Speaker Guidelines with speaker?:",surg.getSeenGuidelinesFlg() == 1 ? "yes" : "no");
-			row.put("Years practicing: ", String.valueOf(surg.getExperienceYrs()));
-			row.put("Years at current practice:", String.valueOf(surg.getPractYrs()));
-			row.put("Employed by hospital?:",surg.getHospEmployeeFlg() == 1 ? "yes" : "no");
-			row.put("Hospital Address:",StringUtil.checkVal(surg.getHospAddress()));
+			
+			vo = new GenericVO();
+			vo.setKey("Speaker Name:");
+			vo.setValue(surg.getSurgeonName());
+			row.add(vo);
+			
+			vo = new GenericVO();
+			vo.setKey("The Field Marketing Director has reviewed the Speaker Guidelines with speaker?:");
+			vo.setValue(surg.getSeenGuidelinesFlg() == 1 ? "yes" : "no");
+			row.add(vo);
+			
+			vo = new GenericVO();
+			vo.setKey("Years practicing: ");
+			vo.setValue(String.valueOf(surg.getExperienceYrs()));
+			row.add(vo);
+			
+			vo = new GenericVO();
+			vo.setKey("Years at current practice:");
+			vo.setValue(String.valueOf(surg.getPractYrs()));
+			row.add(vo);
+			
+			vo = new GenericVO();
+			vo.setKey("Employed by hospital?:");
+			vo.setValue(surg.getHospEmployeeFlg() == 1 ? "yes" : "no");
+			row.add(vo);
+			
+			vo = new GenericVO();
+			vo.setKey("Hospital Address:");
+			vo.setValue(StringUtil.checkVal(surg.getHospAddress()));
+			row.add(vo);
+			
 			String location = (surg.getPractLocation() != null) ? surg.getPractLocation().getFormattedLocation() : "";
-			row.put("Practice Address:",location);
-			row.put("Practice Phone:", surg.getPractPhone());
-			row.put("Speaker/Office Email(s):",surg.getPractEmail());
-			row.put("Secondary Contact:",surg.getSecPhone());
-			row.put("Secondary Contact Email:",surg.getSecEmail());
-			row.put("Practice Website:",StringUtil.checkVal(surg.getPractWebsite()));
-			row.put("Speaker Photo:",surg.getLogoFileUrl());
-			row.put("Speaker Bio:",StringUtil.checkVal(surg.getSurgeonBio()));
-
+			
+			vo = new GenericVO();
+			vo.setKey("Practice Address:");
+			vo.setValue(location);
+			row.add(vo);
+			
+			vo = new GenericVO();
+			vo.setKey("Practice Phone:");
+			vo.setValue(surg.getPractPhone());
+			row.add(vo);
+			
+			vo = new GenericVO();
+			vo.setKey("Speaker/Office Email(s):");
+			vo.setValue(surg.getPractEmail());
+			row.add(vo);
+			
+			vo = new GenericVO();
+			vo.setKey("Secondary Contact:");
+			vo.setValue(surg.getSecPhone());
+			row.add(vo);
+			
+			vo = new GenericVO();
+			vo.setKey("Secondary Contact Email:");
+			vo.setValue(surg.getSecEmail());
+			row.add(vo);
+			
+			vo = new GenericVO();
+			vo.setKey("Practice Website:");
+			vo.setValue(StringUtil.checkVal(surg.getPractWebsite()));
+			row.add(vo);
+			
+			vo = new GenericVO();
+			vo.setKey("Speaker Photo:");
+			vo.setValue(surg.getLogoFileUrl());
+			row.add(vo);
+			
+			vo = new GenericVO();
+			vo.setKey("Speaker Bio:");
+			vo.setValue(StringUtil.checkVal(surg.getSurgeonBio()));
+			row.add(vo);
+			
 		}
 		
 		return row;
@@ -327,27 +335,65 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 	 * generates the post card section of the report
 	 * @return
 	 */
-	private Map<String, String> getPostcardRows() {
+	private List <GenericVO> getPostcardRows() {
 		StringBuilder sb = new StringBuilder(32);
-		Map<String, String> row = new LinkedHashMap<String, String>();
+		List <GenericVO> row = new ArrayList<>();
 		
-		row.put("","");
-		row.put("Date of Seminar",sb.append(Convert.formatDate(sem.getEarliestEventDate(), Convert.DATE_LONG)).toString());
+		GenericVO vo = new GenericVO();
+		vo.setKey("");
+		vo.setValue("");
+		row.add(vo);
+		
+		vo = new GenericVO();
+		vo.setKey("Date of Seminar");
+		vo.setValue(sb.append(Convert.formatDate(sem.getEarliestEventDate(), Convert.DATE_LONG)).toString());
 		sb.setLength(0);
-		row.put("RSVP Deadline",sb.append(Convert.formatDate(sem.getRSVPDate(), Convert.DATE_LONG)).toString());
+		row.add(vo);
+		
+		vo = new GenericVO();
+		vo.setKey("RSVP Deadline");
+		vo.setValue(sb.append(Convert.formatDate(sem.getRSVPDate(), Convert.DATE_LONG)).toString());
 		sb.setLength(0);
-		row.put("Initial Invitation Send Date", Convert.formatDate(sem.getPostcardSendDate(), Convert.DATE_LONG));
-		row.put("Additional Postcards Send Date: ",Convert.formatDate(sem.getAddtlPostcardSendDate(), Convert.DATE_LONG));
-		row.put("Additional cards should have the letter \"S\" at the end of the seminar#","");
+		row.add(vo);
+		
+		vo = new GenericVO();
+		vo.setKey("Initial Invitation Send Date");
+		vo.setValue(Convert.formatDate(sem.getPostcardSendDate(), Convert.DATE_LONG));
+		row.add(vo);
+		
+		vo = new GenericVO();
+		vo.setKey("Additional Postcards Send Date: ");
+		vo.setValue(Convert.formatDate(sem.getAddtlPostcardSendDate(), Convert.DATE_LONG));
+		row.add(vo);
+		
+		vo = new GenericVO();
+		vo.setKey("Additional cards should have the letter \"S\" at the end of the seminar#");
+		vo.setValue("");
+		row.add(vo);
+		
 		UserDataVO owner = sem.getOwner();
-		row.put("Additional Postcards","Send additional postcards to:");
 		
-		row.put("add1",sb.append(StringUtil.checkVal(owner.getFirstName())).append(" ").append(StringUtil.checkVal(owner.getLastName())).toString());
-		sb.setLength(0);
-		row.put("add2",StringUtil.checkVal(owner.getAddress()));
-		row.put("add3",sb.append(StringUtil.checkVal(owner.getCity())).append(", ").append(StringUtil.checkVal(owner.getState())).append(" ").append(StringUtil.checkVal(owner.getZipCode())).toString());
+		vo = new GenericVO();
+		vo.setKey("Additional Postcards");
+		vo.setValue("Send additional postcards to:");
+		row.add(vo);
+		
+		vo = new GenericVO();
+		vo.setKey("");
+		vo.setValue(sb.append(StringUtil.checkVal(owner.getFirstName())).append(" ").append(StringUtil.checkVal(owner.getLastName())).toString());
+		row.add(vo);
 		sb.setLength(0);
 		
+		vo = new GenericVO();
+		vo.setKey("");
+		vo.setValue(StringUtil.checkVal(owner.getAddress()));
+		row.add(vo);
+		
+		vo = new GenericVO();
+		vo.setKey("");
+		vo.setValue(sb.append(StringUtil.checkVal(owner.getCity())).append(", ").append(StringUtil.checkVal(owner.getState())).append(" ").append(StringUtil.checkVal(owner.getZipCode())).toString());
+		row.add(vo);
+		sb.setLength(0);
 		
 		return row;
 	}
@@ -356,26 +402,75 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 	 * generates the event section of the report
 	 * @return
 	 */
-	private Map<String, String> getEventRows() {
-		Map<String, String> row = new LinkedHashMap<String, String>();
+	private List<GenericVO> getEventRows() {
+		List<GenericVO> row = new ArrayList<>();
 		StringBuilder sb = new StringBuilder(32);
-		
+		GenericVO vo = null;
 		for (EventEntryVO event : sem.getEvents()) {
-			row.put("","");
-			row.put(sb.append("Seminar #").append(event.getRSVPCode()).toString(),event.getEventName());
+			
+			vo = new GenericVO();
+			vo.setKey("");
+			vo.setValue("");
+			row.add(vo);
+			
+			vo = new GenericVO();
+			vo.setKey(sb.append("Seminar #").append(event.getRSVPCode()).toString());
+			vo.setValue(event.getEventName());
+			row.add(vo);
 			sb.setLength(0);
-			row.put("Seminar Date/Time",sb.append(Convert.formatDate(event.getStartDate(),Convert.DATE_LONG)).append(" ").append(event.getLocationDesc()).toString());
+			vo = new GenericVO();
+			vo.setKey("Seminar Date/Time");
+			vo.setValue(sb.append(Convert.formatDate(event.getStartDate(),Convert.DATE_LONG)).append(" ").append(event.getLocationDesc()).toString());
 			sb.setLength(0);
-			row.put("Seminar Location",sb.append(event.getCityName()).append(", ").append(event.getStateCode()).append(" ").append(event.getZipCode()).toString());
+			row.add(vo);
+			
+			vo = new GenericVO();
+			vo.setKey("Seminar Location");
+			vo.setValue(sb.append(event.getCityName()).append(", ").append(event.getStateCode()).append(" ").append(event.getZipCode()).toString());
 			sb.setLength(0);
-			row.put("Joint",sem.getJointLabel());
-			if (sem.getProductCodes().length() > 0) row.put("Product",sem.getProductCodes());
-			row.put("Venue Location",event.getEventDesc());
-			row.put("Venue Name",event.getEventName());
-			row.put("Refreshment Choice",StringUtil.checkVal(event.getServiceText()));
-			row.put("Venue Address", event.getAddressText());
-			row.put("ven1", event.getAddress2Text());
-			row.put("ven2", sb.append(event.getCityName()).append(" " ).append(event.getStateCode()).append(", " ).append(event.getZipCode()).toString());
+			row.add(vo);
+			
+			vo = new GenericVO();
+			vo.setKey("Joint");
+			vo.setValue(sem.getJointLabel());
+			row.add(vo);
+			
+			if (sem.getProductCodes().length() > 0){
+				vo = new GenericVO();
+				vo.setKey("Product");
+				vo.setValue(sem.getProductCodes());
+				row.add(vo);
+			}
+			
+			vo = new GenericVO();
+			vo.setKey("Venue Location");
+			vo.setValue(event.getEventDesc());
+			row.add(vo);
+			
+			vo = new GenericVO();
+			vo.setKey("Venue Name");
+			vo.setValue(event.getEventName());
+			row.add(vo);
+			
+			vo = new GenericVO();
+			vo.setKey("Refreshment Choice");
+			vo.setValue(StringUtil.checkVal(event.getServiceText()));
+			row.add(vo);
+			
+			vo = new GenericVO();
+			vo.setKey("Venue Address");
+			vo.setValue(event.getAddressText());
+			row.add(vo);
+			
+			vo = new GenericVO();
+			vo.setKey("");
+			vo.setValue(event.getAddress2Text());
+			row.add(vo);
+			
+			vo = new GenericVO();
+			vo.setKey("");
+			vo.setValue(sb.append(event.getCityName()).append(" " ).append(event.getStateCode()).append(", " ).append(event.getZipCode()).toString());
+			row.add(vo);
 
 		}
 		return row;
