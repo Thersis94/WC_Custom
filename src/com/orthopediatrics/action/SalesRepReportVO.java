@@ -63,7 +63,7 @@ public class SalesRepReportVO extends AbstractSBReportVO {
 	private byte[] generateNonHtmlReport() {
 		ExcelReport rpt = new ExcelReport(this.getHeader());
 		List<Map<String, Object>> rows = null;
-		if (data != null && data.size() > 0) {
+		if (data != null && !data.isEmpty()) {
 			rows = new ArrayList<>(data.size());
 			rows = generateDataRows(rows);
 		} else {
@@ -83,7 +83,7 @@ public class SalesRepReportVO extends AbstractSBReportVO {
 	 * @return
 	 */
 	private List<Map<String, Object>> emptyRow(List<Map<String, Object>> rows) {
-		Map<String, Object> row = new HashMap<String, Object>();
+		Map<String, Object> row = new HashMap<>();
 		row.put("REGION_ID","No sales rep information found.");
 		rows.add(row);
 		return rows;
@@ -99,7 +99,7 @@ public class SalesRepReportVO extends AbstractSBReportVO {
 		PhoneNumberFormat pnf = new PhoneNumberFormat();
 		//loop/add the data
 		for(SalesRepVO sv : data) {
-			Map<String, Object> row = new HashMap<String, Object>();
+			Map<String, Object> row = new HashMap<>();
 			
 			row.put("REGION_ID",sv.getRegionId());
 			row.put("REGION_NAME",sv.getRegions().get(sv.getRegionId()));
@@ -123,7 +123,7 @@ public class SalesRepReportVO extends AbstractSBReportVO {
 	 */
 	private Map<String, String> getHeader() {
 		
-		HashMap<String, String> headerMap = new LinkedHashMap<String, String>();
+		HashMap<String, String> headerMap = new LinkedHashMap<>();
 		headerMap.put("REGION_ID",     "Region ID");
 		headerMap.put("REGION_NAME",   "Region Name");
 		headerMap.put("TERRITORY_ID",  "Territory ID");

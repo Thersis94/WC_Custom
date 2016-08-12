@@ -84,7 +84,7 @@ public class EventPostalLeadsReportVO extends AbstractSBReportVO {
 		StringEncoder se = new StringEncoder();
 		EventEntryVO evo = null;
 		for (UserDataVO vo : this.leads){
-			Map<String, Object> row = new HashMap<String, Object>();
+			Map<String, Object> row = new HashMap<>();
 		
 			row.put("PROFILE_ADDRESSID", StringUtil.checkVal(vo.getProfileId()));
 			row.put("TITLE", StringUtil.checkVal(vo.getPrefixName()));
@@ -147,7 +147,7 @@ public class EventPostalLeadsReportVO extends AbstractSBReportVO {
 		
 		StringBuilder keySb = new StringBuilder(32);
 		
-		HashMap<String, String> headerMap = new LinkedHashMap<String, String>();
+		HashMap<String, String> headerMap = new LinkedHashMap<>();
 		
 		headerMap.put("PROFILE_ADDRESSID", "Profile Address Id");
 		headerMap.put("TITLE", "Title");
