@@ -1,0 +1,44 @@
+<!--
+	This file is used by Jenkin's GitHub Pull Request Builder plugin.  
+	It defines the configuration passed to SonarQube for code analysis,
+	which automatically gets involed by GitHub when a developer opens a Pull Request.
+	@author James McKain
+	@version 1.0
+	@created Aug 12, 2016
+-->
+<project name="WC_Custom" default="sonar" basedir="." xmlns:sonar="antlib:org.sonar.ant">
+	
+  	<!-- Define the SonarQube global properties (the most usual way is to pass these properties via the command line) -->
+	<property environment="env"/>
+	<property name="sonar.analysis.mode" value="preview" />
+	<property name="sonar.github.pullRequest" value="${env.ghprbPullId}" />
+	<property name="sonar.github.repository" value="${env.ghprbGhRepository}" />
+	<property name="sonar.github.oauth" value="${githubAccessToken}" />
+	<property name="sonar.host.url" value="${env.SONAR_HOST_URL}" />
+	<property name="sonar.login" value="${env.SONAR_AUTH_TOKEN}" />
+	<property name="sonar.password" value="" />
+
+	<!-- Define the SonarQube project properties -->
+	<property name="sonar.projectKey" value="smtadmin:WC_Custom" />
+	<property name="sonar.projectName" value="WebCrescendo Custom" />
+	<property name="sonar.projectVersion" value="2.0.0" />
+	<property name="sonar.sources" value="src" />
+	<!--<property name="sonar.java.binaries" value="builds" />-->
+	<property name="sonar.sourceEncoding" value="UTF-8" />
+
+	<!--<path id="sonar.java.libraries">
+		<fileset dir="../SMTAppLibraries/lib" includes="**/*.jar" />
+	</path>-->
+		
+	 
+	<!-- Define the SonarQube target -->
+	<target name="sonar">
+		<taskdef uri="antlib:org.sonar.ant" resource="org/sonar/ant/antlib.xml">
+		    <!-- Update the following line, or put the "sonarqube-ant-task-*.jar" file in your "$HOME/.ant/lib" folder -->
+		    <classpath path="/apps/ant/lib/sonarqube-ant-task-*.jar" />
+		</taskdef>
+	 
+		<!-- Execute the SonarQube analysis -->
+		<sonar:sonar />
+	</target>
+</project>
