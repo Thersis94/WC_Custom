@@ -3,9 +3,7 @@ package com.depuy.events_v2.vo.report;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
@@ -79,7 +77,7 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 		List <GenericVO> eventRow = getEventRows();
 		
 		rowCnt = buildReportRows(s,r,eventRow, rowCnt);
-		//TODO come back to try and match cell merges
+		
 		List <GenericVO> postRow = getPostcardRows();
 		
 		rowCnt = buildReportRows(s,r,postRow, rowCnt);
@@ -239,7 +237,6 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 	 * @return
 	 */
 	private List <GenericVO> getSpeakerRows() {
-		StringBuilder sb = new StringBuilder(32);
 		List <GenericVO> row = new ArrayList<>();
 		
 		GenericVO vo = new GenericVO();
