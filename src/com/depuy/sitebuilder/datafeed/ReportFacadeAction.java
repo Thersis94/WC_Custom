@@ -46,6 +46,7 @@ public class ReportFacadeAction extends SBActionAdapter {
 	
 	protected static final String DF_SCHEMA = "DATA_FEED.dbo.";
 	private Map<String, String> reportType = null;
+	private Map<String, String> binaryReport = null;
 	
 	/**
 	 * 
@@ -82,6 +83,24 @@ public class ReportFacadeAction extends SBActionAdapter {
 		reportType.put(FULFILLMENT_REPORT, "com.depuy.sitebuilder.datafeed.FulfillmentReport");
 		reportType.put(SHARE_STORY_REPORT, "com.depuy.sitebuilder.datafeed.ShareMyStoryReport");
 		reportType.put(PEDO_KIT_REPORT, "com.depuy.sitebuilder.datafeed.PedoKitReport");
+		
+		binaryReport = new HashMap<String, String>();
+		binaryReport.put(TRANSACTION_REPORT, "com.depuy.sitebuilder.datafeed.TransactionReportVO");
+		binaryReport.put(LOCATION_REPORT, "com.depuy.sitebuilder.datafeed.LocationReportVO");
+		binaryReport.put(STATE_LOCATION_REPORT, "com.depuy.sitebuilder.datafeed.StateLocationReportVO");
+		binaryReport.put(QUALIFIED_CITY_REPORT, "com.depuy.sitebuilder.datafeed.QualifiedByCityReportVO");
+		binaryReport.put(DAILY_SOURCE_REPORT, "com.depuy.sitebuilder.datafeed.DailySourceReportVO");
+		binaryReport.put(TOLLFREE_SOURCE_REPORT, "com.depuy.sitebuilder.datafeed.TollFreeSourceReportVO");
+		binaryReport.put(QUALIFIED_LEAD_REPORT, "com.depuy.sitebuilder.datafeed.QualifiedReportVO");
+		binaryReport.put(CHANNEL_REPORT, "com.depuy.sitebuilder.datafeed.ChannelReportVO");
+		binaryReport.put(LEAD_SOURCE_REPORT, "com.depuy.sitebuilder.datafeed.LeadSourceReportVO");
+		binaryReport.put(REGISTRATION_REPORT, "com.depuy.sitebuilder.datafeed.RegistrationReportVO");
+		binaryReport.put(REGISTRATION_DATA_REPORT, "com.depuy.sitebuilder.datafeed.RegistrationDataReportVO");
+		binaryReport.put(FULFILLMENT_REPORT, "com.depuy.sitebuilder.datafeed.FulfillmentReportVO");
+		binaryReport.put(SHARE_STORY_REPORT, "com.depuy.sitebuilder.datafeed.ShareMyStoryReportVO");
+		binaryReport.put(PEDO_KIT_REPORT, "com.depuy.sitebuilder.datafeed.PedoKitReportVO");
+		
+		
 	}
 
 
@@ -100,6 +119,7 @@ public class ReportFacadeAction extends SBActionAdapter {
 		Report rep = null;
 		
 		try {
+			
 			// Call the Appropriate action for the Contact Data
 	    	String path = reportType.get(type);
 	    	if (path == null) throw new ActionException("Invalid Report Parameter");
@@ -108,17 +128,44 @@ public class ReportFacadeAction extends SBActionAdapter {
 	    	// Add the report data to the collection
 	    	SMTClassLoader scl = new SMTClassLoader();
 	    	rep = (Report)scl.getClassInstance(path);
+	    	
+	    	
 	    	rep.setDatabaseConnection(dbConn);
-	    	rep.setAttibutes(attributes);
-	    	mod.setActionData(rep.retrieveReport(req));
+			rep.setAttibutes(attributes);
+	    	
+	    	if ("excel".equals(req.getParameter("reportType"))){
+	    		
+	    		AbstractDataFeedReportVo rpt = null;
+	    		
+	    		String binaryPath = binaryReport.get(type);
+		    	if (binaryPath == null) throw new ActionException("Invalid Report Parameter");
+		    	log.info("binary report path " + binaryPath);
+		    	
+		    	rpt = (AbstractDataFeedReportVo)scl.getClassInstance(binaryPath);
+	    		
+		    	rpt.setRequestData(req);
+		    	
+				rpt.setData(rep.retrieveReport(req));
+				
+				req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, Boolean.TRUE);
+	   			req.setAttribute(Constants.BINARY_DOCUMENT, rpt);
+	   			
+			}else {
+				mod.setActionData(rep.retrieveReport(req));
+			}
+		
 		} catch(Exception e) {
 			log.error("Unable to retrieve " + type, e);
 			mod.setError("Unable to retrieve " + type, e);
 		}
 		
-		log.info("Finished Retrieving report for: " + type);
-		req.setAttribute(Constants.REDIRECT_DATATOOL, Boolean.TRUE);
-        this.setAttribute(AdminConstants.ADMIN_MODULE_DATA, mod);
+		//must not over add these attributes if we are generating a binary report
+		if (!"excel".equals(req.getParameter("reportType"))){
+		
+			log.info("Finished Retrieving report for: " + type);
+			req.setAttribute(Constants.REDIRECT_DATATOOL, Boolean.TRUE);
+			this.setAttribute(AdminConstants.ADMIN_MODULE_DATA, mod);
+		}
 	}
 	
 
