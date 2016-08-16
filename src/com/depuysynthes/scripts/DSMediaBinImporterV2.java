@@ -432,25 +432,27 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		//If the record exists in the master data mark it as an update
 		//if the record does not exist in the master data mark it as an insert
 		for (MediaBinDeltaVO vo : newRecords.values()) {
-			if (masterRecords.containsKey(vo.getDpySynMediaBinId())) {
-				//check to see if the data has changed, which implies we have an update
+			if (masterRecords.containsKey(vo.getDpySynMediaBinId())) { //legacy tracking#
 				MediaBinDeltaVO mr = masterRecords.get(vo.getDpySynMediaBinId());
-				if (! vo.lexicographyEquals(mr)) {
-					vo.setRecordState(State.Update);
-				} else if (vo.geteCopyRevisionLvl() != null && !vo.geteCopyRevisionLvl().equals(mr.geteCopyRevisionLvl())) {
-					//the file on LL should have changed, but there's nothing in the meta-data we need to save
-					vo.addDelta(new PropertyChangeEvent(vo,"eCopyRevisionLvl",mr.geteCopyRevisionLvl(), vo.geteCopyRevisionLvl()));
-					vo.setRecordState(State.Update);
-				} else {
-					//nothing changed, ignore this record.  99% of time this is the default use case
-					vo.setRecordState(State.Ignore);
-				}
-				//pass the checksum of the existing file to the new VO, so we can compare it to the new file
-				vo.setChecksum(mr.getChecksum());
-				//pass the video chapters as well
-				vo.setVideoChapters(mr.getVideoChapters());
+				setUpdateFields(vo, mr);
+				masterRecords.put(vo.getDpySynMediaBinId(), vo);
+				continue;
+			}
+			
+			//combined primary key - importFileCd+tracking# - adds support for global assets, 
+			//which present themselves in both EXP files. -JM 08.16.16
+			String combinedKey = "" + vo.getImportFileCd() + vo.getDpySynMediaBinId();
+			
+			if (masterRecords.containsKey(combinedKey)) {
+				MediaBinDeltaVO mr = masterRecords.get(combinedKey);
+				vo.setDpySynMediaBinId(combinedKey); //preserve the combined key
+				setUpdateFields(vo, mr);
+				
 			} else {
 				vo.setRecordState(State.Insert);
+				//Give all new assets a combined primary key of importFileCd+tracking#
+				//Supports global assets where the tracking# is the same in both feeds. - JM 08.16.16
+				vo.setDpySynMediaBinId(combinedKey);
 			}
 			masterRecords.put(vo.getDpySynMediaBinId(), vo);
 		}
@@ -458,6 +460,34 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		//by the above iteration are already earmarked for deletion, which is correct.
 		//Only the records in the incoming EXP file should persist in the system.
 	}
+	
+	
+	/**
+	 * compared the new/existing VOs to determine if we have changes to capture.
+	 * @param vo
+	 * @param mr
+	 */
+	private void setUpdateFields(MediaBinDeltaVO vo, MediaBinDeltaVO mr) {
+		//check to see if the data has changed, which implies we have an update
+		if (! vo.lexicographyEquals(mr)) {
+			vo.setRecordState(State.Update);
+			
+		} else if (vo.geteCopyRevisionLvl() != null && !vo.geteCopyRevisionLvl().equals(mr.geteCopyRevisionLvl())) {
+			//the file on LL should have changed, but there's nothing in the meta-data we need to save
+			vo.addDelta(new PropertyChangeEvent(vo,"eCopyRevisionLvl",mr.geteCopyRevisionLvl(), vo.geteCopyRevisionLvl()));
+			vo.setRecordState(State.Update);
+			
+		} else {
+			//nothing changed, ignore this record.  99% of time this is the default use case
+			vo.setRecordState(State.Ignore);
+		}
+		
+		//pass the checksum of the existing file to the new VO, so we can compare it to the new file
+		vo.setChecksum(mr.getChecksum());
+		//pass the video chapters as well
+		vo.setVideoChapters(mr.getVideoChapters());
+	}
+	
 
 	/**
 	 * call out to LL and download the asset.  Then write it to the dropbox folder
