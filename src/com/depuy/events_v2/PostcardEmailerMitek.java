@@ -126,7 +126,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			mail.addRecipient("Evan.Pring@umj3.com");
 			mail.addRecipient("LisaV@metrosn.com");
 			mail.addRecipient("amy.spencerman@hmktgroup.com");
-			mail.addRecipient("Anthony.Manning@hmktgroup.com");
+			mail.addRecipient("Brittany.Neff@hmktgroup.com");
 			mail.setSubject("DePuy Community Education; Postcard Canceled " + postcard.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
@@ -241,7 +241,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			mail.addCC("Evan.Pring@umj3.com");
 			mail.addCC("LisaV@metrosn.com");
 			mail.addCC("amy.spencerman@hmktgroup.com");
-			mail.addCC("Anthony.Manning@hmktgroup.com");
+			mail.addCC("Brittany.Neff@hmktgroup.com");
 			
 			for (PersonVO p : sem.getPeople()) { 
 				//add only the sales reps
@@ -424,7 +424,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			mail.addCC("Evan.Pring@umj3.com");
 			mail.addCC("LisaV@metrosn.com");
 			mail.addCC("amy.spencerman@hmktgroup.com");
-			mail.addCC("Anthony.Manning@hmktgroup.com");
+			mail.addCC("Brittany.Neff@hmktgroup.com");
 			
 			for (PersonVO p : sem.getPeople()) {
 				if (! StringUtil.isValidEmail(p.getEmailAddress())) continue;
@@ -616,7 +616,7 @@ public class PostcardEmailerMitek extends PostcardEmailer {
 			mail.addRecipient("broides@its.jnj.com");
 			mail.addRecipient("mroderic@its.jnj.com");
 			mail.addCC("amy.spencerman@hmktgroup.com");
-			mail.addCC("Anthony.Manning@hmktgroup.com");
+			mail.addCC("Brittany.Neff@hmktgroup.com");
 			mail.addCC("LisaV@metrosn.com");
 			
 			MessageSender mailer = new MessageSender(attributes,dbConn);
