@@ -4,9 +4,16 @@ package com.depuy.sitebuilder.datafeed;
 import java.util.HashMap;
 import java.util.Map;
 
+
+
+
+
+
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.exception.DatabaseException;
+import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.SMTClassLoader;
 import com.siliconmtn.util.StringUtil;
@@ -132,42 +139,53 @@ public class ReportFacadeAction extends SBActionAdapter {
 	    	
 	    	rep.setDatabaseConnection(dbConn);
 			rep.setAttibutes(attributes);
+			Object data = rep.retrieveReport(req);
 	    	
 	    	if ("excel".equals(req.getParameter("reportType"))){
-	    		
-	    		AbstractDataFeedReportVo rpt = null;
-	    		
-	    		String binaryPath = binaryReport.get(type);
-		    	if (binaryPath == null) throw new ActionException("Invalid Report Parameter");
-		    	log.info("binary report path " + binaryPath);
-		    	
-		    	rpt = (AbstractDataFeedReportVo)scl.getClassInstance(binaryPath);
-	    		
-		    	rpt.setRequestData(req);
-		    	
-				rpt.setData(rep.retrieveReport(req));
-				
+	    			
 				req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, Boolean.TRUE);
-	   			req.setAttribute(Constants.BINARY_DOCUMENT, rpt);
+	   			req.setAttribute(Constants.BINARY_DOCUMENT, (AbstractDataFeedReportVo)getBinaryReport(req,type,scl,data));
 	   			
 			}else {
-				mod.setActionData(rep.retrieveReport(req));
+				mod.setActionData(data);
+				log.info("Finished Retrieving report for: " + type);
+				req.setAttribute(Constants.REDIRECT_DATATOOL, Boolean.TRUE);
+				this.setAttribute(AdminConstants.ADMIN_MODULE_DATA, mod);
 			}
 		
 		} catch(Exception e) {
 			log.error("Unable to retrieve " + type, e);
 			mod.setError("Unable to retrieve " + type, e);
 		}
-		
-		//must not over add these attributes if we are generating a binary report
-		if (!"excel".equals(req.getParameter("reportType"))){
-		
-			log.info("Finished Retrieving report for: " + type);
-			req.setAttribute(Constants.REDIRECT_DATATOOL, Boolean.TRUE);
-			this.setAttribute(AdminConstants.ADMIN_MODULE_DATA, mod);
-		}
+	
 	}
 	
+
+	/**
+	 * @param scl 
+	 * @param type 
+	 * @param req 
+	 * @param data 
+	 * @return
+	 * @throws ActionException 
+	 * @throws ClassNotFoundException 
+	 * @throws InvalidDataException 
+	 * @throws DatabaseException 
+	 */
+	protected AbstractDataFeedReportVo getBinaryReport(SMTServletRequest req, String type, SMTClassLoader scl, Object data) throws ActionException, ClassNotFoundException {
+		AbstractDataFeedReportVo rpt = null;
+		
+		String binaryPath = binaryReport.get(type);
+    	if (binaryPath == null) throw new ActionException("Invalid Report Parameter");
+    	log.info("binary report path " + binaryPath);
+    	
+    	rpt = (AbstractDataFeedReportVo)scl.getClassInstance(binaryPath);
+		
+    	rpt.setRequestData(req);
+    	
+		rpt.setData(data);
+		return rpt;
+	}
 
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.action.AbstractActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
