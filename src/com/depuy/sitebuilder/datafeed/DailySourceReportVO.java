@@ -17,7 +17,7 @@ import com.siliconmtn.util.StringUtil;
 /****************************************************************************
  * <b>Title</b>: DailySourceReportVO.java <p/>
  * <b>Project</b>: WebCrescendo <p/>
- * <b>Description: </b> Put Something Here
+ * <b>Description: </b> processes a request for a non html daily source report vo
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2016<p/>
  * <b>Company:</b> Silicon Mountain Technologies<p/>
@@ -63,7 +63,7 @@ public class DailySourceReportVO extends AbstractDataFeedReportVo {
 
 		Map<String, String> headerMap = this.getHeader();
 		
-		ExcelReport rpt = new ExcelReport(this.getHeader());
+		ExcelReport rpt = new ExcelReport(headerMap);
 
 		List<Map<String, Object>> rows = new ArrayList<>();
 
