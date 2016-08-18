@@ -27,12 +27,12 @@ import com.siliconmtn.util.StringUtil;
  * @since Aug 16, 2016<p/>
  * @updates:
  ****************************************************************************/
-public class DailySourceReportVO extends AbstractDataFeedReportVo {
-	Map<Date, ReportData> dataSource = new TreeMap<>();
+public class DailySourceReportVO extends AbstractDataFeedReportVO {
+	private Map<Date, ReportData> dataSource = new TreeMap<>();
 	private String startDate=null;
 	private String endDate=null;
 	private String joint=null;
-	Map<String, Integer> headers = new TreeMap<>();
+	private Map<String, Integer> headers = new TreeMap<>();
 
 	private static final long serialVersionUID = 1L;
 

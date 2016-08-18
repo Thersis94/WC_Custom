@@ -16,7 +16,7 @@ import com.smt.sitebuilder.action.AbstractSBReportVO;
  * @since Aug 16, 2016<p/>
  * @updates:
  ****************************************************************************/
-public abstract class AbstractDataFeedReportVo extends AbstractSBReportVO {
+public abstract class AbstractDataFeedReportVO extends AbstractSBReportVO {
 	
 	private static final long serialVersionUID = 1L;
 

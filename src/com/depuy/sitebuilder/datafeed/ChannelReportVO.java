@@ -23,7 +23,7 @@ import com.siliconmtn.util.StringUtil;
  * @since Aug 16, 2016<p/>
  * @updates:
  ****************************************************************************/
-public class ChannelReportVO extends AbstractDataFeedReportVo  {
+public class ChannelReportVO extends AbstractDataFeedReportVO  {
 
 	private static final long serialVersionUID = 1L;
 	private Map<String, Object> data = new LinkedHashMap<>();

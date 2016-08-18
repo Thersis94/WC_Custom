@@ -25,11 +25,11 @@ import com.siliconmtn.http.SMTServletRequest;
  * @since Aug 18, 2016<p/>
  * @updates:
  ****************************************************************************/
-public class LocationReportVO extends AbstractDataFeedReportVo {
+public class LocationReportVO extends AbstractDataFeedReportVO {
 
 	private static final long serialVersionUID = 1L;
 	private List<String> reportHeader = new ArrayList<>();
-	List<ReportData> data = new ArrayList<>();
+	private List<ReportData> data = new ArrayList<>();
 	
 	public LocationReportVO() {
 		super();

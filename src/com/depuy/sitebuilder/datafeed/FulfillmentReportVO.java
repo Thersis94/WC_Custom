@@ -27,11 +27,11 @@ import com.siliconmtn.util.StringUtil;
  * @since Aug 17, 2016<p/>
  * @updates:
  ****************************************************************************/
-public class FulfillmentReportVO extends AbstractDataFeedReportVo {
+public class FulfillmentReportVO extends AbstractDataFeedReportVO {
 
 	private static final long serialVersionUID = 1L;
-	Map<String, Date> unconfirmedList = new LinkedHashMap<>();
-	Map<String, SummaryData> data =  new TreeMap<>();
+	private Map<String, Date> unconfirmedList = new LinkedHashMap<>();
+	private Map<String, SummaryData> data =  new TreeMap<>();
 	private int notStarted = 0;
 	private Boolean showCodes = null;
 
