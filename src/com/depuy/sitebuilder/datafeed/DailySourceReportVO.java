@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.TreeMap;
 
 import com.depuy.sitebuilder.datafeed.DailySourceReport.ReportData;
@@ -111,10 +112,10 @@ public class DailySourceReportVO extends AbstractDataFeedReportVo {
 	private List<Map<String, Object>> generateDataRows(
 			List<Map<String, Object>> rows, Map<String, String> headerMap) {
 		int total = 0;
-		for (Date d : dataSource.keySet()){
+		for (Entry<Date, ReportData> entry : dataSource.entrySet()){
 			Map<String, Object> row = new HashMap<>();
-			ReportData dateData = dataSource.get(d);
-			row.put("DATE",Convert.formatDate(d, "MM/dd/yy"));
+			ReportData dateData = entry.getValue();
+			row.put("DATE",Convert.formatDate(entry.getKey(), "MM/dd/yy"));
 			for(String key : headerMap.keySet()){
 
 				if (dateData.getDataSource().containsKey(key) ){
