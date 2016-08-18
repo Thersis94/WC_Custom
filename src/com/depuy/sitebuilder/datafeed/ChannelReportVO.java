@@ -74,15 +74,16 @@ public class ChannelReportVO extends AbstractDataFeedReportVo  {
 		int count = 0;	
 
 		for (Map<String, Object> map : rows){
-			for(String key :map.keySet()){
+			
+			for(Map.Entry<String, Object> entry : map.entrySet()){
 				//log.debug("adding: " + map.get(key).toString() + " for key: " + key);
-				if("TOTAL".equals(key)){
-					count +=  Convert.formatInteger(map.get(key).toString());
+				if("TOTAL".equals(entry.getKey())){
+					count +=  Convert.formatInteger(entry.getValue().toString());
 				}
 			}
 		}
 
-		Map<String, Object> row = new HashMap<String, Object>();
+		Map<String, Object> row = new HashMap<>();
 
 		row.put("CHANNEL_CODE", "Total: ");
 		row.put("TOTAL", count);
@@ -99,10 +100,10 @@ public class ChannelReportVO extends AbstractDataFeedReportVo  {
 	private List<Map<String, Object>> generateDataRows(
 			List<Map<String, Object>> rows) {
 
-		for (String key: data.keySet()) {
-			Map<String, Object> row = new HashMap<String, Object>();
-			row.put("CHANNEL_CODE", key);
-			row.put("TOTAL", data.get(key));
+		for (Map.Entry<String, Object> entry: data.entrySet()) {
+			Map<String, Object> row = new HashMap<>();
+			row.put("CHANNEL_CODE", entry.getValue());
+			row.put("TOTAL", entry.getValue());
 			rows.add(row);
 		}
 
@@ -114,7 +115,7 @@ public class ChannelReportVO extends AbstractDataFeedReportVo  {
 	 * @return
 	 */
 	private Map<String, String> getHeader() {
-		HashMap<String, String> headerMap = new LinkedHashMap<String, String>();
+		HashMap<String, String> headerMap = new LinkedHashMap<>();
 		headerMap.put("CHANNEL_CODE","Channel Code");
 		headerMap.put("TOTAL","Total");
 		return headerMap;

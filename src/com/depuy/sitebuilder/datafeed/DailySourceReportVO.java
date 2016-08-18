@@ -139,7 +139,7 @@ public class DailySourceReportVO extends AbstractDataFeedReportVo {
 	 * @return
 	 */
 	private Map<String, String> getHeader() {
-		HashMap<String, String> headerMap = new LinkedHashMap<String, String>();
+		HashMap<String, String> headerMap = new LinkedHashMap<>();
 
 		headerMap.put("DATE", "DATE");
 

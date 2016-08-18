@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.TreeMap;
 
 import com.depuy.sitebuilder.datafeed.FulfillmentReport.SummaryData;
@@ -107,10 +108,10 @@ public class FulfillmentReportVO extends AbstractDataFeedReportVo {
 
 			rows.add(row);
 
-			for (String key : unconfirmedList.keySet()){
+			for (Entry<String, Date> entry : unconfirmedList.entrySet()){
 				row=new HashMap<>();
-				row.put("COL_0", key);
-				row.put("COL_1", unconfirmedList.get(key));
+				row.put("COL_0", entry.getKey());
+				row.put("COL_1", entry.getValue());
 				rows.add(row);
 			}
 		}
@@ -169,17 +170,17 @@ public class FulfillmentReportVO extends AbstractDataFeedReportVo {
 	private List<Map<String, Object>> addDataConfirmedFF(
 			List<Map<String, Object>> rows) {
 		//add the data from the collection
-		for (String key : data.keySet()){
+		for (Entry<String, SummaryData> entry : data.entrySet()){
 			Map<String, Object> row=new HashMap<>();
 			if(showCodes){
-				row.put("COL_0", data.get(key).getCallSourceCode());
-				row.put("COL_1", data.get(key).getProcessDate());
-				row.put("COL_2", data.get(key).getSuccess());
-				row.put("COL_3", data.get(key).getUnconfirmed());
+				row.put("COL_0", entry.getValue().getCallSourceCode());
+				row.put("COL_1", entry.getValue().getProcessDate());
+				row.put("COL_2", entry.getValue().getSuccess());
+				row.put("COL_3", entry.getValue().getUnconfirmed());
 			}else{
-				row.put("COL_0", data.get(key).getProcessDate());
-				row.put("COL_1", data.get(key).getSuccess());
-				row.put("COL_2", data.get(key).getUnconfirmed());
+				row.put("COL_0", entry.getValue().getProcessDate());
+				row.put("COL_1", entry.getValue().getSuccess());
+				row.put("COL_2", entry.getValue().getUnconfirmed());
 			}
 			rows.add(row);
 		}
