@@ -67,7 +67,7 @@ public class DailySourceReportVO extends AbstractDataFeedReportVo {
 
 		List<Map<String, Object>> rows = new ArrayList<>();
 
-		StringBuilder sb = new StringBuilder();
+		StringBuilder sb = new StringBuilder(100);
 
 		sb.append("Daily Source Report for ").append(joint).append(" - From ").append(this.startDate).append(" to ").append(endDate);
 
