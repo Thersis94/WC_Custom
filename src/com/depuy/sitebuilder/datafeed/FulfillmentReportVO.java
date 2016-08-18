@@ -11,6 +11,8 @@ import java.util.TreeMap;
 import com.depuy.sitebuilder.datafeed.FulfillmentReport.SummaryData;
 import com.siliconmtn.data.report.ExcelReport;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: FulfillmentReportVO.java <p/>
@@ -29,6 +31,8 @@ public class FulfillmentReportVO extends AbstractDataFeedReportVo {
 	private static final long serialVersionUID = 1L;
 	Map<String, Date> unconfirmedList = new LinkedHashMap<>();
 	Map<String, SummaryData> data =  new TreeMap<>();
+	private int notStarted = 0;
+	private Boolean showCodes = null;
 
 	public FulfillmentReportVO() {
 		super();
@@ -44,6 +48,8 @@ public class FulfillmentReportVO extends AbstractDataFeedReportVo {
 	@Override
 	public void setRequestData(SMTServletRequest req) {
 		unconfirmedList  =  (Map<String, Date>) req.getAttribute("unconfirmedList");
+		notStarted = Convert.formatInteger(StringUtil.checkVal(req.getAttribute("notStarted")));
+		showCodes = Convert.formatBoolean((Boolean)req.getAttribute("showCodes"));
 
 	}
 
@@ -66,7 +72,7 @@ public class FulfillmentReportVO extends AbstractDataFeedReportVo {
 	}
 
 	/**
-	 * controls the flow of which rows
+	 * controls the flow of rows as they are created
 	 * @param rows
 	 * @return
 	 */
@@ -80,32 +86,146 @@ public class FulfillmentReportVO extends AbstractDataFeedReportVo {
 	}
 
 	/**
+	 * generates rows related to awaiting fulfillment.
 	 * @param rows
 	 * @return
 	 */
 	private List<Map<String, Object>> generateAwaitingFFRows(
 			List<Map<String, Object>> rows) {
-		// TODO Auto-generated method stub
+
+		if(!unconfirmedList.isEmpty()){
+			//adds a mid report title row
+			Map<String, Object> row = new HashMap<>();
+			row.put("COL_0", "Awaiting Fulfillment");
+			rows.add(row);
+
+			//mid report header row
+			row=new HashMap<>();
+
+			row.put("COL_0", "Fulfillment ID");
+			row.put("COL_1", "Date Sent for Fulfillment");
+
+			rows.add(row);
+
+			for (String key : unconfirmedList.keySet()){
+				row=new HashMap<>();
+				row.put("COL_0", key);
+				row.put("COL_1", unconfirmedList.get(key));
+				rows.add(row);
+			}
+		}
 		return rows;
 	}
 
 	/**
+	 * adds the two blank rows between sections of the report
+	 * @param rows
+	 * @return
+	 */
+	private List<Map<String, Object>> addBlankrows(
+			List<Map<String, Object>> rows) {
+
+		Map<String, Object> row = new HashMap<>();
+		row.put("COL_0", "");
+		rows.add(row);
+
+		row=new HashMap<>();
+		row.put("COL_0", "");
+		rows.add(row);
+
+		return rows;
+	}
+
+	/**
+	 * generates unconfirmed data rows
 	 * @param rows
 	 * @return
 	 */
 	private List<Map<String, Object>> generateConfirmedFFRows(
 			List<Map<String, Object>> rows) {
-		// TODO Auto-generated method stub
+		if(!data.isEmpty()){
+
+			//adds a mid report title row
+			Map<String, Object> row = new HashMap<>();
+			row.put("COL_0", "Confirmed Fulfillments");
+			rows.add(row);
+
+			//mid report header row
+			rows = addConfirmedFFHeader(rows);
+			
+			rows = addDataConfirmedFF(rows);
+			
+			rows=addBlankrows(rows);
+
+		}
 		return rows;
 	}
 
 	/**
+	 * adds the data rows to the confirmed fulfillment section
+	 * @param rows
+	 * @return
+	 */
+	private List<Map<String, Object>> addDataConfirmedFF(
+			List<Map<String, Object>> rows) {
+		//add the data from the collection
+		for (String key : data.keySet()){
+			Map<String, Object> row=new HashMap<>();
+			if(showCodes){
+				row.put("COL_0", data.get(key).getCallSourceCode());
+				row.put("COL_1", data.get(key).getProcessDate());
+				row.put("COL_2", data.get(key).getSuccess());
+				row.put("COL_3", data.get(key).getUnconfirmed());
+			}else{
+				row.put("COL_0", data.get(key).getProcessDate());
+				row.put("COL_1", data.get(key).getSuccess());
+				row.put("COL_2", data.get(key).getUnconfirmed());
+			}
+			rows.add(row);
+		}
+		return rows;
+	}
+
+	/**
+	 * adds the header to the confirmed fulfillment section of the report
+	 * @param rows
+	 * @return
+	 */
+	private List<Map<String, Object>> addConfirmedFFHeader(
+			List<Map<String, Object>> rows) {
+		Map<String, Object> row = new HashMap<>();
+
+		if(showCodes){
+			row.put("COL_0", "Call Source Code");
+			row.put("COL_1", "Transaction Date");
+			row.put("COL_2", "Completed Successfully");
+			row.put("COL_3", "Unconfirmed");
+		}else{	
+			row.put("COL_0", "Transaction Date");
+			row.put("COL_1", "Completed Successfully");
+			row.put("COL_2", "Unconfirmed");
+		}
+		rows.add(row);
+		return rows;
+	}
+
+	/**
+	 * generates rows related to awaiting processing
 	 * @param rows
 	 * @return
 	 */
 	private List<Map<String, Object>> generateAwaitingProcessingRows(
 			List<Map<String, Object>> rows) {
-		// TODO Auto-generated method stub
+
+		Map<String, Object> row = new HashMap<>();
+		row.put("COL_0", "Awaiting Processing");
+		rows.add(row);
+
+		row=new HashMap<>();
+		row.put("COL_0", notStarted);
+		rows.add(row);
+
+		rows=addBlankrows(rows);
 		return rows;
 	}
 
@@ -116,10 +236,10 @@ public class FulfillmentReportVO extends AbstractDataFeedReportVo {
 	 */
 	private Map<String, String> getHeader() {
 		HashMap<String, String> headerMap = new LinkedHashMap<>();
-		headerMap.put("CALL_SOURCE_CODE","");
-		headerMap.put("TRANSACTION_DATE","");
-		headerMap.put("COMPLETED","");
-		headerMap.put("UNCOMFIRMED","");
+		headerMap.put("COL_0","");
+		headerMap.put("COL_1","");
+		headerMap.put("COL_2","");
+		headerMap.put("COL_3","");
 		return headerMap;
 	}
 
