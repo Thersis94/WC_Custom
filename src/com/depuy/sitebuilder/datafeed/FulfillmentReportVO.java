@@ -27,16 +27,16 @@ import com.siliconmtn.http.SMTServletRequest;
 public class FulfillmentReportVO extends AbstractDataFeedReportVo {
 
 	private static final long serialVersionUID = 1L;
-	Map<String, Date> unconfirmedList = new LinkedHashMap<String, Date>();
-	Map<String, SummaryData> data =  new TreeMap<String, SummaryData>();
-	
+	Map<String, Date> unconfirmedList = new LinkedHashMap<>();
+	Map<String, SummaryData> data =  new TreeMap<>();
+
 	public FulfillmentReportVO() {
 		super();
 		setContentType("application/vnd.ms-excel");
 		isHeaderAttachment(Boolean.TRUE);
 		setFileName("FulfillmentReport.xls");
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.depuy.sitebuilder.datafeed.AbstractDataFeedReportVo#setRequestData(com.siliconmtn.http.SMTServletRequest)
 	 */
@@ -44,7 +44,7 @@ public class FulfillmentReportVO extends AbstractDataFeedReportVo {
 	@Override
 	public void setRequestData(SMTServletRequest req) {
 		unconfirmedList  =  (Map<String, Date>) req.getAttribute("unconfirmedList");
-		
+
 	}
 
 	/* (non-Javadoc)
@@ -53,7 +53,7 @@ public class FulfillmentReportVO extends AbstractDataFeedReportVo {
 	@Override
 	public byte[] generateReport() {
 		log.debug("starting generateReport()");
-		
+
 		ExcelReport rpt = new ExcelReport(this.getHeader());
 
 		List<Map<String, Object>> rows = new ArrayList<>();
@@ -72,7 +72,7 @@ public class FulfillmentReportVO extends AbstractDataFeedReportVo {
 	 */
 	private List<Map<String, Object>> generateDataRows(
 			List<Map<String, Object>> rows) {
-		
+
 		rows = generateAwaitingProcessingRows(rows);
 		rows = generateConfirmedFFRows(rows);
 		rows = generateAwaitingFFRows(rows);		
@@ -115,7 +115,7 @@ public class FulfillmentReportVO extends AbstractDataFeedReportVo {
 	 * @return
 	 */
 	private Map<String, String> getHeader() {
-		HashMap<String, String> headerMap = new LinkedHashMap<String, String>();
+		HashMap<String, String> headerMap = new LinkedHashMap<>();
 		headerMap.put("CALL_SOURCE_CODE","");
 		headerMap.put("TRANSACTION_DATE","");
 		headerMap.put("COMPLETED","");
@@ -131,7 +131,7 @@ public class FulfillmentReportVO extends AbstractDataFeedReportVo {
 	public void setData(Object o) {
 		Map<?,?> dataSource = (Map<?, ?> ) o;
 		this.data = (Map<String, SummaryData>) dataSource;
-		
+
 	}
 
 }

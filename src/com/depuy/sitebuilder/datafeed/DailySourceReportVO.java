@@ -27,11 +27,11 @@ import com.siliconmtn.util.StringUtil;
  * @updates:
  ****************************************************************************/
 public class DailySourceReportVO extends AbstractDataFeedReportVo {
-	Map<Date, ReportData> dataSource = new TreeMap<Date, ReportData>();
+	Map<Date, ReportData> dataSource = new TreeMap<>();
 	private String startDate=null;
 	private String endDate=null;
 	private String joint=null;
-	Map<String, Integer> headers = new TreeMap<String, Integer>();
+	Map<String, Integer> headers = new TreeMap<>();
 
 	private static final long serialVersionUID = 1L;
 
@@ -62,7 +62,7 @@ public class DailySourceReportVO extends AbstractDataFeedReportVo {
 		log.debug("starting generateReport()");
 
 		Map<String, String> headerMap = this.getHeader();
-		
+
 		ExcelReport rpt = new ExcelReport(headerMap);
 
 		List<Map<String, Object>> rows = new ArrayList<>();
@@ -74,7 +74,7 @@ public class DailySourceReportVO extends AbstractDataFeedReportVo {
 		rpt.setTitleCell(sb.toString());
 
 		rows = generateDataRows(rows,headerMap);
-		
+
 		rows = generateLastRow(rows);
 
 		rpt.setData(rows);
@@ -88,8 +88,8 @@ public class DailySourceReportVO extends AbstractDataFeedReportVo {
 	 */
 	private List<Map<String, Object>> generateLastRow(
 			List<Map<String, Object>> rows) {
-		Map<String, Object> row = new HashMap<String, Object>();
-		
+		Map<String, Object> row = new HashMap<>();
+
 		row.put("DATE","TOTAL");
 		int total = 0;
 		for(String key : headers.keySet()){
@@ -112,21 +112,21 @@ public class DailySourceReportVO extends AbstractDataFeedReportVo {
 			List<Map<String, Object>> rows, Map<String, String> headerMap) {
 		int total = 0;
 		for (Date d : dataSource.keySet()){
-			Map<String, Object> row = new HashMap<String, Object>();
+			Map<String, Object> row = new HashMap<>();
 			ReportData dateData = dataSource.get(d);
 			row.put("DATE",Convert.formatDate(d, "MM/dd/yy"));
 			for(String key : headerMap.keySet()){
-				
+
 				if (dateData.getDataSource().containsKey(key) ){
 					row.put(key,dateData.getDataSource().get(key));
 					total += dateData.getDataSource().get(key);
 				}else{
 					if (!"DATE".equals(key))
-					row.put(key,0);
+						row.put(key,0);
 				}
-				
+
 			}
-			
+
 			row.put("TOTAL_LEADS_STATE", total);
 			total = 0;
 			rows.add(row);
@@ -140,14 +140,14 @@ public class DailySourceReportVO extends AbstractDataFeedReportVo {
 	 */
 	private Map<String, String> getHeader() {
 		HashMap<String, String> headerMap = new LinkedHashMap<String, String>();
-		
+
 		headerMap.put("DATE", "DATE");
-		
+
 		for (String key : headers.keySet()) {
 			headerMap.put(key.toUpperCase(), key.toUpperCase());
 		}
 		headerMap.put("TOTAL_LEADS_STATE", "Total Leads/State");
-		
+
 		return headerMap;
 	}
 
