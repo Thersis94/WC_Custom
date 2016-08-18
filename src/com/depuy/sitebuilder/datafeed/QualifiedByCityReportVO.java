@@ -25,7 +25,7 @@ import com.siliconmtn.http.SMTServletRequest;
 public class QualifiedByCityReportVO  extends AbstractDataFeedReportVO {
 
 	private static final long serialVersionUID = 1L;
-	private List<ReportData> data = new ArrayList<ReportData>();
+	private List<ReportData> data = new ArrayList<>();
 	
 	public QualifiedByCityReportVO() {
 		super();
