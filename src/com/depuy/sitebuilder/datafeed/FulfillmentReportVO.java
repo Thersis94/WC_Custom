@@ -152,10 +152,10 @@ public class FulfillmentReportVO extends AbstractDataFeedReportVo {
 
 			//mid report header row
 			rows = addConfirmedFFHeader(rows);
-			
+
 			rows = addDataConfirmedFF(rows);
-			
-			rows=addBlankrows(rows);
+
+			rows= addBlankrows(rows);
 
 		}
 		return rows;
