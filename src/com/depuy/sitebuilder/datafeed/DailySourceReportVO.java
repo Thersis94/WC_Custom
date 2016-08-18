@@ -46,6 +46,7 @@ public class DailySourceReportVO extends AbstractDataFeedReportVo {
 	/* (non-Javadoc)
 	 * @see com.depuy.sitebuilder.datafeed.AbstractDataFeedReportVo#setRequestData(com.siliconmtn.http.SMTServletRequest)
 	 */
+	
 	@SuppressWarnings("unchecked")
 	@Override
 	public void setRequestData(SMTServletRequest req) {
