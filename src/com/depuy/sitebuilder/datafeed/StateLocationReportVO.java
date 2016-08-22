@@ -6,7 +6,10 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.TreeMap;
 
+import com.depuy.sitebuilder.datafeed.StateLocationReport.ReportData;
 import com.siliconmtn.data.report.ExcelReport;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.StringUtil;
@@ -28,15 +31,28 @@ public class StateLocationReportVO extends AbstractDataFeedReportVO {
 	private static final long serialVersionUID = 1L;
 	private String startDate=null;
 	private String endDate=null;
+	private String productCode=null;
+	private Map<String, Integer> reportHeader = new TreeMap<>();
+	private Map<String, ReportData> dataSource = new TreeMap<>();
+
+	public StateLocationReportVO() {
+		super();
+		setContentType("application/vnd.ms-excel");
+		isHeaderAttachment(Boolean.TRUE);
+		setFileName("StateLocationReport.xls");
+	}
 
 	/* (non-Javadoc)
 	 * @see com.depuy.sitebuilder.datafeed.AbstractDataFeedReportVO#setRequestData(com.siliconmtn.http.SMTServletRequest)
 	 */
+
+	@SuppressWarnings("unchecked")
 	@Override
 	public void setRequestData(SMTServletRequest req) {
 		startDate = StringUtil.checkVal(req.getParameter("startDate"));
 		endDate = StringUtil.checkVal(req.getParameter("endDate"));
-		
+		productCode = StringUtil.checkVal(req.getParameter("productCode"));
+		reportHeader = (Map<String, Integer>) req.getAttribute("reportHeader");
 	}
 
 	/* (non-Javadoc)
@@ -49,14 +65,18 @@ public class StateLocationReportVO extends AbstractDataFeedReportVO {
 		ExcelReport rpt = new ExcelReport(this.getHeader());
 
 		List<Map<String, Object>> rows = new ArrayList<>();
-		
+
 		StringBuilder sb = new StringBuilder(100);
 
-		sb.append("Channel Report From ").append(this.startDate).append(" to ").append(endDate);
+		if (this.endDate == null || this.endDate.isEmpty()) endDate = "Today";
+
+		sb.append("State Location Source Report for ").append(this.productCode);
+		sb.append(" - From ").append(this.startDate).append(" to ").append(endDate);
 
 		rpt.setTitleCell(sb.toString());
 
 		rows = generateDataRows(rows);
+		rows = generateTotalRow(rows);
 
 		rpt.setData(rows);
 
@@ -64,35 +84,87 @@ public class StateLocationReportVO extends AbstractDataFeedReportVO {
 	}
 
 	/**
+	 * generates the last line of data with totals for each column
+	 * @param rows
+	 * @return
+	 */
+	private List<Map<String, Object>> generateTotalRow(
+			List<Map<String, Object>> rows) {
+
+		Map<String, Object> row = new HashMap<>();
+		row.put("STATE", "TOTAL");
+		int total = 0;
+		for(Entry<String, Integer> entry : reportHeader.entrySet()){
+			row.put(entry.getKey(),entry.getValue());
+			total += entry.getValue();
+		}
+
+		row.put("TOTAL_LEADS_STATE", total);
+		rows.add(row);
+
+		return rows;
+	}
+
+	/**
+	 * generates the data rows
 	 * @param rows
 	 * @return
 	 */
 	private List<Map<String, Object>> generateDataRows(
 			List<Map<String, Object>> rows) {
-		// TODO Auto-generated method stub
+
+		for(Entry<String, ReportData> entry : dataSource.entrySet()){
+			int total = 0;
+			Map<String, Object> row = new HashMap<>();
+			row.put("STATE", entry.getKey());
+
+			Map<String, Integer> stateEntry = entry.getValue().getDataSource();
+			
+			for(String key : reportHeader.keySet() ){
+				if (stateEntry.containsKey(key)) {
+					row.put(key, stateEntry.get(key));
+					total += stateEntry.get(key);
+				}else{
+					row.put(key, 0);
+				}
+			}
+			
+			row.put("TOTAL_LEADS_STATE", total);
+			rows.add(row);
+
+		}
+
 		return rows;
 	}
 
 	/**
+	 * generates the report  header
 	 * @return
 	 */
 	private Map<String, String> getHeader() {
-		
+
 		HashMap<String, String> headerMap = new LinkedHashMap<>();
-		headerMap.put("COL_0","");
-		headerMap.put("COL_1","");
-		headerMap.put("COL_2","");
-		headerMap.put("COL_3","");
+
+		headerMap.put("STATE", "STATE");
+
+		for (String key : reportHeader.keySet()){
+			headerMap.put(key, key);
+		}
+
+		headerMap.put("TOTAL_LEADS_STATE", "Total Leads/State");
+
 		return headerMap;
 	}
 
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.data.report.AbstractReport#setData(java.lang.Object)
 	 */
+	@SuppressWarnings("unchecked")
 	@Override
 	public void setData(Object o) {
-		// TODO Auto-generated method stub
-		
+		Map<?,?> dataSource = (Map<?, ?> ) o;
+		this.dataSource = (Map<String, ReportData>) dataSource;
+
 	}
 
 }
