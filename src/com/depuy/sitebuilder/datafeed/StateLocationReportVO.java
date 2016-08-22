@@ -17,7 +17,7 @@ import com.siliconmtn.util.StringUtil;
 /****************************************************************************
  * <b>Title</b>: StateLocationReportVO.java <p/>
  * <b>Project</b>: WebCrescendo <p/>
- * <b>Description: </b> processes a request for a non HTML Fulfillment report vo
+ * <b>Description: </b> processes a request for a non HTML State Location report vo
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2016<p/>
  * <b>Company:</b> Silicon Mountain Technologies<p/>
