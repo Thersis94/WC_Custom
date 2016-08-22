@@ -90,7 +90,7 @@ public class DSProductCatalogAction extends SimpleActionAdapter {
 			//NOTE: these method calls are what also assign the URLs to each product, 
 			//we must always call into them, even when there are no pageViews.  -JM 03.31.14
 			//added support for DS-Select subsite.  -JM 05.20.14
-			if (page.getDepthLevel() > 2 || page.getFullPath().equals("/select/products")) {
+			if (page.getDepthLevel() > 2 || page.getFullPath().equals("/asc/products")) {
 				//these are 'this' page plus a query string
 				pc.assignPageviewsToCatalog(t.getPreorderList(), pageViews, page.getFullPath() + "/" + attributes.get(Constants.QS_PATH));
 			} else {
