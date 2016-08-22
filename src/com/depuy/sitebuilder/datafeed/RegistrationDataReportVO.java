@@ -75,7 +75,7 @@ public class RegistrationDataReportVO extends AbstractDataFeedReportVO {
 	}
 
 	/**
-	 * generates the addtional row that shows the data key
+	 * generates the additional row that shows the data key
 	 * @param rows
 	 * @return
 	 */
