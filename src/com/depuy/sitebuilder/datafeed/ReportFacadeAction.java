@@ -75,7 +75,7 @@ public class ReportFacadeAction extends SBActionAdapter {
 	 * 
 	 */
 	private void setVals() {
-		reportType = new HashMap<String, String>();
+		reportType = new HashMap<>();
 		reportType.put(TRANSACTION_REPORT, "com.depuy.sitebuilder.datafeed.TransactionReport");
 		reportType.put(LOCATION_REPORT, "com.depuy.sitebuilder.datafeed.LocationReport");
 		reportType.put(STATE_LOCATION_REPORT, "com.depuy.sitebuilder.datafeed.StateLocationReport");
@@ -91,7 +91,7 @@ public class ReportFacadeAction extends SBActionAdapter {
 		reportType.put(SHARE_STORY_REPORT, "com.depuy.sitebuilder.datafeed.ShareMyStoryReport");
 		reportType.put(PEDO_KIT_REPORT, "com.depuy.sitebuilder.datafeed.PedoKitReport");
 
-		binaryReport = new HashMap<String, String>();
+		binaryReport = new HashMap<>();
 		binaryReport.put(TRANSACTION_REPORT, "com.depuy.sitebuilder.datafeed.TransactionReportVO");
 		binaryReport.put(LOCATION_REPORT, "com.depuy.sitebuilder.datafeed.LocationReportVO");
 		binaryReport.put(STATE_LOCATION_REPORT, "com.depuy.sitebuilder.datafeed.StateLocationReportVO");

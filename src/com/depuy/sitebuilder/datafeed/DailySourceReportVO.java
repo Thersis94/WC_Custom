@@ -94,9 +94,10 @@ public class DailySourceReportVO extends AbstractDataFeedReportVO {
 
 		row.put("DATE","TOTAL");
 		int total = 0;
-		for(String key : headers.keySet()){
-			row.put(key, headers.get(key));
-			total += headers.get(key);
+		for( Entry<String, Integer> entry : headers.entrySet()){
+			
+			row.put(entry.getKey(), entry.getValue());
+			total += entry.getValue();
 		}
 
 		row.put("TOTAL_LEADS_STATE",total);
@@ -123,8 +124,7 @@ public class DailySourceReportVO extends AbstractDataFeedReportVO {
 					row.put(key,dateData.getDataSource().get(key));
 					total += dateData.getDataSource().get(key);
 				}else{
-					if (!"DATE".equals(key))
-						row.put(key,0);
+					row = zeroCell(row, key);
 				}
 
 			}
@@ -134,6 +134,18 @@ public class DailySourceReportVO extends AbstractDataFeedReportVO {
 			rows.add(row);
 		}
 		return rows;
+	}
+
+	/**
+	 * if not the date sets the value to zero
+	 * @param row
+	 * @param key 
+	 * @return
+	 */
+	private Map<String, Object> zeroCell(Map<String, Object> row, String key) {
+		if (!"DATE".equals(key))
+			row.put(key,0);
+		return row;
 	}
 
 	/**
