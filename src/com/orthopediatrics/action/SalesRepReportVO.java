@@ -62,7 +62,7 @@ public class SalesRepReportVO extends AbstractSBReportVO {
 	 */
 	private byte[] generateNonHtmlReport() {
 		ExcelReport rpt = new ExcelReport(this.getHeader());
-		List<Map<String, Object>> rows = null;
+		List<Map<String, Object>> rows;
 		if (data != null && !data.isEmpty()) {
 			rows = new ArrayList<>(data.size());
 			rows = generateDataRows(rows);
