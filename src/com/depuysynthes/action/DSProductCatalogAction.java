@@ -176,28 +176,74 @@ public class DSProductCatalogAction extends SimpleActionAdapter {
 		for (Node n : prods) {
 			ProductCategoryVO cat = (ProductCategoryVO) n.getUserObject();
 			String prodAlias = cat.getUrlAlias();
-			if (prodAlias == null || prodAlias.isEmpty()) continue; //skip anything that can't be seen on the website
-			if (cat.getProducts().isEmpty()) continue; //skip product families (these aren't actual products)
-			for (ProductVO product : cat.getProducts()) {
-				ProductAttributeContainer attrs = product.getAttributes();
-				for (Node n2 : attrs.getAllAttributes()) {
-					ProductAttributeVO attrVo = (ProductAttributeVO) n2.getUserObject();
-					if (attrVo == null || attrVo.getProductAttributeId() == null || !"MEDIABIN".equals(attrVo.getAttributeType())) 
-						continue; //skip attributes not bound to this product, or products with no attributes, or ones that aren't the MEDIABIN dynamic type we need to perform work on.
 
-					String type = attrVo.getTitle();
-					if ("manual-html".equals(type)) {
-						continue; //skip manual-html variations, no work is needed here.
-					} else if ("mediabin-sous".equals(type)) {
-						loadMediabinAssetsUsingProdNm(attrVo, product.getFullProductName(), site.getOrganizationId());
-					} else if ("mediabin-static".equals(type)) {
-						loadMediabinAssetsUsingID(attrVo);
-					}
-				}
-			}
+			//skip anything that can't be seen on the website
+			//skip product families (these aren't actual products)
+			if (prodAlias == null || prodAlias.isEmpty() || cat.getProducts().isEmpty()) 
+				continue;
+
+			iterateProducts(cat, site);
 		}
 		//watching this for performance interest...
-		log.debug("exec time = " + ((System.currentTimeMillis() - startTime)) + "ms");
+		log.debug("exec time = " + (System.currentTimeMillis() - startTime) + "ms");
+	}
+
+
+	/**
+	 * called from processDynamicAttributes - iterates the product passed from the 
+	 * iteration running in the parent method.  Extracted for readability per SonarQube.
+	 * @param cat
+	 * @param site
+	 */
+	private void iterateProducts(ProductCategoryVO cat, SiteVO site) {
+		for (ProductVO product : cat.getProducts()) {
+			ProductAttributeContainer attrs = product.getAttributes();
+			if (attrs == null || attrs.getAllAttributes() == null || attrs.getAllAttributes().isEmpty())
+				continue;
+
+			iterateAttributes(attrs.getAllAttributes(), product.getFullProductName(), site.getOrganizationId());
+		}
+	}
+
+
+	/**
+	 * called from iterateProducts - iterates the given list of ProductAttributes
+	 * to determine if a dynamic lookup is needed, then invokes the appropriate helper method.
+	 * Extracted for readability per SonarQube.
+	 * @param attrs
+	 * @param sousProductName
+	 * @param orgId
+	 */
+	private void iterateAttributes(List<Node> attrs, String sousProductName, String orgId) {
+		for (Node n : attrs) {
+			ProductAttributeVO attrVo = (ProductAttributeVO) n.getUserObject();
+
+			//skip attributes not bound to this product, 
+			//or products with no attributes, 
+			//or ones that aren't the MEDIABIN dynamic type we need to perform work on.
+			if (attrVo == null || attrVo.getProductAttributeId() == null || !"MEDIABIN".equals(attrVo.getAttributeType())) 
+				continue; 
+
+			enactOnAttribute(attrVo, sousProductName, orgId);
+		}
+	}
+
+	/**
+	 * called from iterateProducts above - determines if a dynamic lookup is 
+	 * needed for this attribute, and calls the appropriate builder method.
+	 * Extracted for readability per SonarQube.
+	 * @param attrVo
+	 * @param sousProductName
+	 * @param orgId
+	 */
+	private void enactOnAttribute(ProductAttributeVO attrVo, String sousProductName, String orgId) {
+		//Note: attrVo is tested for null by the invoking method.
+		String type = attrVo.getTitle();
+		if ("mediabin-sous".equals(type)) {
+			loadMediabinAssetsUsingProdNm(attrVo, sousProductName, orgId);
+		} else if ("mediabin-static".equals(type)) {
+			loadMediabinAssetsUsingID(attrVo);
+		}
 	}
 
 
@@ -336,7 +382,7 @@ public class DSProductCatalogAction extends SimpleActionAdapter {
 		String reqParam1 = req.getParameter(SMTServletRequest.PARAMETER_KEY + "1");
 
 		//If we don't have a request Parameter to parse, return.
-		if(reqParam1 == null || reqParam1.length() == 0) return;
+		if(reqParam1 == null || reqParam1.isEmpty()) return;
 		log.debug(reqParam1);
 
 		Tree t = (Tree) mod.getActionData();
