@@ -177,6 +177,7 @@ public class FulfillmentReport implements Report {
 			} catch(Exception e) {}
 		}
 		
+		req.setAttribute("showCodes", showCodes);
 		req.setAttribute("notStarted", notStarted);
 		return data;
 	}
