@@ -116,9 +116,12 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 		} catch (IOException ioe) {
 			log.error("could not write output stream", ioe);
 		}finally {
-			try { wb.close(); } catch (Exception e) {}
+			try { wb.close(); } catch (Exception e) {
+				log.error("could not close ", e );
+			}
 		}
-		return null;
+		
+		return new byte[0];
 	}
 	
 	/**
@@ -129,7 +132,7 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 	 * @return
 	 */
 	private int buildReportRows(Sheet s, Row r, List<GenericVO> row, int rowCnt) {
-		Cell c = null;
+		Cell c;
 		for (GenericVO vo : row){
 			
 				c = r.createCell(0);
@@ -154,7 +157,7 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 		if (sem.getAllAds() != null && !sem.getAllAds().isEmpty() ) {
 			StringBuilder sb = new StringBuilder(32);
 			
-			GenericVO vo = null;
+			GenericVO vo;
 			for (CoopAdVO ad : sem.getAllAds() ){
 				int adSts = Convert.formatInteger(ad.getStatusFlg(), 0).intValue();
 				
@@ -402,7 +405,7 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 	private List<GenericVO> getEventRows() {
 		List<GenericVO> row = new ArrayList<>();
 		StringBuilder sb = new StringBuilder(32);
-		GenericVO vo = null;
+		GenericVO vo;
 		for (EventEntryVO event : sem.getEvents()) {
 			
 			vo = new GenericVO();
