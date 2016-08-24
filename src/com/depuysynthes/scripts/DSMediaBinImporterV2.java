@@ -909,7 +909,9 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 				++cnt;
 			} catch (SQLException sqle) {
 				vo.setRecordState(State.Failed);
-				failures.add(sqle);
+				//create a custom exception that contains the data/record, so we can report it in the email
+				String msg = sqle.getMessage() + "<br/>" + StringUtil.getToString(vo, false, 0, "<br/>");
+				failures.add(new Exception(msg, sqle));
 			}
 		}
 
@@ -1087,7 +1089,8 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			// Build the email message
 			EmailMessageVO msg = new EmailMessageVO(); 
 			msg.addRecipients(props.getProperty("adminEmail" + type).split(","));
-			msg.setSubject("SMT MediaBin Import - " + ((type == 1) ? "US" : "EMEA"));
+			String subjectBase = StringUtil.checkVal(props.getProperty("emailSubject"), "SMT MediaBin Import -"); //allow the config file to override the default subject
+			msg.setSubject(subjectBase + ((type == 1) ? " US" : " EMEA"));
 			msg.setFrom("appsupport@siliconmtn.com");
 
 			StringBuilder html= new StringBuilder(1000);
