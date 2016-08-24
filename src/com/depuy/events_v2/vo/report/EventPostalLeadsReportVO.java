@@ -122,7 +122,6 @@ public class EventPostalLeadsReportVO extends AbstractSBReportVO {
 				keySb.setLength(0);
 				row.put(keySb.append("EVENTCODE_").append(x).toString(),evo.getRSVPCode());
 				keySb.setLength(0);
-				evo = null;
 			}
 			rows.add(row);
 		}

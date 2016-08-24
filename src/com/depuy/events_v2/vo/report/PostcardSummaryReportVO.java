@@ -85,11 +85,11 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 		// make title row, its the first row in the sheet (0)
 		addHeader(s, headingStyle);
 
-		addSeminarRows(s, headingStyle);
+		addSeminarRows(s);
 
-		addEventRows(s, headingStyle);
+		addEventRows(s);
 
-		addPostcardRows(s, headingStyle);
+		addPostcardRows(s);
 
 		addSpeakerRows(s, headingStyle);
 
@@ -164,7 +164,7 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 	 * generates the top part of the report as a map
 	 * @return
 	 */
-	private void addSeminarRows(Sheet s, CellStyle headingStyle) {
+	private void addSeminarRows(Sheet s) {
 		addRow(s, "Product", sem.getJointLabel());
 		addRow(s, "Seminar Type", sem.getEvents().get(0).getEventTypeDesc());
 		addRow(s, "Seminar Promotion #", sem.getRSVPCodes());
@@ -185,7 +185,7 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 	 * generates the event section of the report
 	 * @return
 	 */
-	private void addEventRows(Sheet s, CellStyle headingStyle) {
+	private void addEventRows(Sheet s) {
 		StringBuilder sb;
 		
 		for (EventEntryVO event : sem.getEvents()) {
@@ -224,7 +224,7 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 	 * generates the post card section of the report
 	 * @return
 	 */
-	private void addPostcardRows(Sheet s, CellStyle headingStyle) {
+	private void addPostcardRows(Sheet s) {
 		//empty spacer row
 		addRow(s, "","");
 
@@ -265,7 +265,7 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 
 			addRow(s, "Years practicing: ", String.valueOf(surg.getExperienceYrs()));
 			addRow(s, "Years at current practice:", String.valueOf(surg.getPractYrs()));
-			addRow(s, "Employed by hospital?:", (surg.getHospEmployeeFlg() == 1 ? "yes" : "no"));
+			addRow(s, "Employed by hospital?:", surg.getHospEmployeeFlg() == 1 ? "yes" : "no");
 			addRow(s, "Hospital Address:", surg.getHospAddress());
 			
 			String location = (surg.getPractLocation() != null) ? surg.getPractLocation().getFormattedLocation() : "";
