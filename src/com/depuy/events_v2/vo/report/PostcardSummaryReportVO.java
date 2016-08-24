@@ -2,11 +2,13 @@ package com.depuy.events_v2.vo.report;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.CreationHelper;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.Hyperlink;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -21,7 +23,6 @@ import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.event.vo.EventEntryVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.security.UserDataVO;
 
 /*****************************************************************************
@@ -32,497 +33,314 @@ import com.siliconmtn.security.UserDataVO;
  @author James McKain
  @version 1.0
  @since Jane 20, 2014
+ @updates
+ 		refactored from HTML stuffed in Excel file to a true POI Excel document.  - 08.24.2016 - JM
  ***************************************************************************/
 
 public class PostcardSummaryReportVO extends AbstractSBReportVO {
-    private static final long serialVersionUID = 1l;
-    private DePuyEventSeminarVO sem = new DePuyEventSeminarVO();
-    private static final String TITLE_TEXT = "Seminar Information";
-    public PostcardSummaryReportVO() {
-        super();
-        setContentType("application/vnd.ms-excel");
-        isHeaderAttachment(Boolean.TRUE);
-        setFileName("Seminar-Summary.xls");
-    }
-    
-    /**
-     * Assigns the event postcard data retrieved from the parent action
-     * variables
-     * @param data (List<DePuyEventPostcardVO>)
-     * @throws SQLException
-     */
-    public void setData(Object o) {
-	    this.sem = (DePuyEventSeminarVO) o;
-    }
-    
+	private static final long serialVersionUID = 11233634423123l;
+	private DePuyEventSeminarVO sem;
+
+	private CreationHelper createHelper; //used by Excel for making hyperlinks
+
+	public PostcardSummaryReportVO() {
+		super();
+		setContentType("application/vnd.ms-excel");
+		isHeaderAttachment(Boolean.TRUE);
+		setFileName("Seminar-Summary.xls");
+	}
+
+	
+	/**
+	 * Assigns the event postcard data retrieved from the parent action
+	 * variables
+	 * @param data (List<DePuyEventPostcardVO>)
+	 * @throws SQLException
+	 */
+	@Override
+	public void setData(Object o) {
+		this.sem = (DePuyEventSeminarVO) o;
+	}
+	
+
+	/**
+	 * main method - called by servlet when its time to stream the report back to the browser
+	 */
+	@Override
 	public byte[] generateReport() {
+		if (sem == null) return new byte[0];
 		log.debug("starting PostcardSummaryReport");
-		int rowCnt = 0;
-		
+
 		//Create Excel Object
 		Workbook wb = new HSSFWorkbook();
 		Sheet s = wb.createSheet();
-		Row r = s.createRow(rowCnt++);
-		Cell c = null;
+		createHelper = wb.getCreationHelper();
 		
-		// makes title row
-		this.getHeader(r,s);
-		r = s.createRow(rowCnt++);
+		//make a heading font we can use to separate the sections
+		CellStyle headingStyle = wb.createCellStyle();
+		Font font = wb.createFont();
+		font.setBoldweight(Font.BOLDWEIGHT_BOLD);
+		headingStyle.setFont(font);
 		
-		//each row is two strings
-		List<GenericVO> row = getSeminarRows();
-	
-		rowCnt = buildReportRows(s,r,row, rowCnt);
-		
-		List <GenericVO> eventRow = getEventRows();
-		
-		rowCnt = buildReportRows(s,r,eventRow, rowCnt);
-		
-		List <GenericVO> postRow = getPostcardRows();
-		
-		rowCnt = buildReportRows(s,r,postRow, rowCnt);
-		
-		List <GenericVO> speakerRow = getSpeakerRows();
-		
-		rowCnt = buildReportRows(s,r,speakerRow, rowCnt);
-			
-		r = s.createRow(rowCnt++);
-		c = r.createCell(0);
-		c.setCellType(Cell.CELL_TYPE_STRING);
-		c.setCellValue("Ad Information");
-		
-		r = s.createRow(rowCnt++);
-		
-		List<GenericVO> adRow = getAdRows();
-		
-		rowCnt = buildReportRows(s,r,adRow, rowCnt);
-			
-		
-		//existing commented out code
-		//add the Radio Ad data
-//		if (sem.getRadioAd() != null && sem.getRadioAd().getCoopAdId() != null) {
-//			CoopAdVO ad = sem.getRadioAd();
-//			rpt.append("<tr><td colspan='2'>&nbsp;</td></tr>\r");
-//			rpt.append("<tr><td colspan='2' style='background-color: #ccc;'><b>Radio Ad</td></tr>\r");
-//			rpt.append("<tr><td>Radio Station:</td><td align='center'>").append(StringUtil.checkVal(ad.getNewspaper1Text())).append(" (").append(StringUtil.checkVal(ad.getNewspaper1Phone())).append(")</td></tr>\r");
-//			rpt.append("<tr><td>Contact Name:</td><td align='center'>").append(StringUtil.checkVal(ad.getNewspaper2Text())).append(" (").append(StringUtil.checkVal(ad.getNewspaper2Phone())).append(")</td></tr>\r");
-//			rpt.append("<tr><td>Ad Deadline:</td><td align='center'>").append(StringUtil.checkVal(ad.getAdDatesText())).append("</td></tr>\r");
-//		}
+		// make title row, its the first row in the sheet (0)
+		addHeader(s, headingStyle);
 
-		
-		try (ByteArrayOutputStream baos = new ByteArrayOutputStream()){
+		addSeminarRows(s);
+
+		addEventRows(s);
+
+		addPostcardRows(s);
+
+		addSpeakerRows(s, headingStyle);
+
+		addAdRows(s, headingStyle);
+
+		//lastly, stream the WorkBook back to the browser
+		try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 			wb.write(baos);
 			return baos.toByteArray();
 		} catch (IOException ioe) {
 			log.error("could not write output stream", ioe);
-		}finally {
-			try { wb.close(); } catch (Exception e) {
+		} finally {
+			try { 
+				wb.close(); 
+			} catch (Exception e) {
 				log.error("could not close ", e );
 			}
 		}
-		
+
 		return new byte[0];
 	}
 	
+	
 	/**
-	 * takes the data in generic VOs and builds the rows and cells on the sheet
+	 * creates a row and populates the 2 columns using the data provided
+	 * supports heading rows (colspan=2) and hyperlinks (clickable links)
 	 * @param s
-	 * @param r
-	 * @param row
-	 * @return
+	 * @param label
+	 * @param value
+	 * @param headingStyle
+	 * @param link
 	 */
-	private int buildReportRows(Sheet s, Row r, List<GenericVO> row, int rowCnt) {
-		Cell c;
-		for (GenericVO vo : row){
+	private void addRow(Sheet s, String label, String value, CellStyle headingStyle, String link) {
+		int rowNo = s.getPhysicalNumberOfRows();
+		Row r = s.createRow(rowNo);
+		
+		// the label
+		Cell c = r.createCell(0);
+		c.setCellType(Cell.CELL_TYPE_STRING);
+		c.setCellValue(label);
+		
+		if (headingStyle != null) { //make it span both columns and use the heading font
+			c.setCellStyle(headingStyle);
+			s.addMergedRegion(new CellRangeAddress(rowNo, rowNo, 0, 1));
 			
-				c = r.createCell(0);
-				c.setCellType(Cell.CELL_TYPE_STRING);
-				c.setCellValue((String)vo.getKey());
-				c = r.createCell(1);
-				c.setCellType(Cell.CELL_TYPE_STRING);
-				c.setCellValue((String)vo.getValue());	
-
-				r = s.createRow(rowCnt++);
-			}
-		return rowCnt;
-	}
-
-	/**
-	 * generates the ad section of the report
-	 * @return
-	 */
-	private List<GenericVO> getAdRows() {
-		List<GenericVO> row = new ArrayList<>();
-		//add the Co-Op Ad data
-		if (sem.getAllAds() != null && !sem.getAllAds().isEmpty() ) {
-			StringBuilder sb = new StringBuilder(32);
-			
-			GenericVO vo;
-			for (CoopAdVO ad : sem.getAllAds() ){
-				int adSts = Convert.formatInteger(ad.getStatusFlg(), 0).intValue();
-				
-				vo = new GenericVO();
-				vo.setKey("");
-				vo.setValue("");
-				row.add(vo);
-				
-				vo = new GenericVO();
-				vo.setKey("Newspaper Ad");
-				vo.setValue("");
-				row.add(vo);
-				
-				vo = new GenericVO();
-				vo.setKey("Ad Type:");
-				vo.setValue(StringUtil.checkVal(ad.getAdType()));
-				row.add(vo);
-			
-				vo = new GenericVO();
-				vo.setKey("Sponsored Newspaper:");
-				vo.setValue(sb.append(StringUtil.checkVal(ad.getNewspaper1Text())).append(" (").append(ad.getNewspaper1Phone()).append(")").toString());
-				row.add(vo);
-				
-				vo = new GenericVO();
-				vo.setKey("Coordinator approved ad?:");
-				vo.setValue((adSts == CoopAdsActionV2.CLIENT_APPROVED_AD) ? "Yes" : "No");
-				row.add(vo);
-				
-				vo = new GenericVO();
-				vo.setKey("Approved Paper:");
-				vo.setValue(StringUtil.checkVal(ad.getApprovedPaperName()));
-				row.add(vo);
-				
-				vo = new GenericVO();
-				vo.setKey("Total Cost:");
-				vo.setValue(String.valueOf(ad.getTotalCostNo()));
-				row.add(vo);
-				
-					//calculate cost of ad to territory or surgeon
-				if ("CFSEM".equalsIgnoreCase(sem.getEvents().get(0).getEventTypeCd())) {
-					int surgSts = Convert.formatInteger(ad.getSurgeonStatusFlg(), 0).intValue();
-					vo = new GenericVO();
-					vo.setKey("Speaker approved ad?:");
-					vo.setValue(surgSts == CoopAdsActionV2.SURG_APPROVED_AD ? "Yes" : "No");
-					row.add(vo);
-					
-					vo = new GenericVO();
-					vo.setKey("Speaker paid for ad?:");
-					vo.setValue(surgSts == CoopAdsActionV2.SURG_PAID_AD ? "Yes" : "No");
-					row.add(vo);
-					
-					vo = new GenericVO();
-					vo.setKey("Ad Cost to Speaker:");
-					vo.setValue(String.valueOf(ad.getCostToRepNo()));
-					row.add(vo);
-				}else{
-					vo = new GenericVO();
-					vo.setKey("Ad Cost to Territory:");
-					vo.setValue(String.valueOf(ad.getCostToRepNo()));
-					row.add(vo);
-				}
-				
-				if (ad.getAdFileUrl() != null){
-					vo = new GenericVO();
-					vo.setKey("Ad File:");
-					vo.setValue(sb.append("<a href=\"").append(sem.getBaseUrl()).append("/ads/").append(ad.getAdFileUrl()).append("\" target='_blank'>").append(ad.getAdFileUrl()).append("</a>").toString());
-					row.add(vo);
-				}
-				
-				
-				
+		} else { //print the value in column 2
+			c = r.createCell(1);
+			c.setCellType(Cell.CELL_TYPE_STRING);
+			c.setCellValue(StringUtil.checkVal(value));
+			if (link != null) {
+				Hyperlink hLink = createHelper.createHyperlink(Hyperlink.LINK_URL);
+			        hLink.setAddress(link);
+			        c.setHyperlink(hLink);
 			}
 		}
-		
-		return row;
 	}
-
+	
+	
 	/**
-	 * generates the speaker section of the report
-	 * @return
+	 * overloaded for simplicity when added key/value pairs of plain text to the report.
+	 * @param s
+	 * @param label
+	 * @param value
 	 */
-	private List <GenericVO> getSpeakerRows() {
-		List <GenericVO> row = new ArrayList<>();
-		
-		GenericVO vo = new GenericVO();
-		vo.setKey("");
-		vo.setValue("");
-		row.add(vo);
-		
-		vo = new GenericVO();
-		vo.setKey("Speaker Information");
-		vo.setValue("");
-		row.add(vo);
-		
-		for (DePuyEventSurgeonVO surg : sem.getSurgeonList()) {
-			
-			vo = new GenericVO();
-			vo.setKey("Speaker Name:");
-			vo.setValue(surg.getSurgeonName());
-			row.add(vo);
-			
-			vo = new GenericVO();
-			vo.setKey("The Field Marketing Director has reviewed the Speaker Guidelines with speaker?:");
-			vo.setValue(surg.getSeenGuidelinesFlg() == 1 ? "yes" : "no");
-			row.add(vo);
-			
-			vo = new GenericVO();
-			vo.setKey("Years practicing: ");
-			vo.setValue(String.valueOf(surg.getExperienceYrs()));
-			row.add(vo);
-			
-			vo = new GenericVO();
-			vo.setKey("Years at current practice:");
-			vo.setValue(String.valueOf(surg.getPractYrs()));
-			row.add(vo);
-			
-			vo = new GenericVO();
-			vo.setKey("Employed by hospital?:");
-			vo.setValue(surg.getHospEmployeeFlg() == 1 ? "yes" : "no");
-			row.add(vo);
-			
-			vo = new GenericVO();
-			vo.setKey("Hospital Address:");
-			vo.setValue(StringUtil.checkVal(surg.getHospAddress()));
-			row.add(vo);
-			
-			String location = (surg.getPractLocation() != null) ? surg.getPractLocation().getFormattedLocation() : "";
-			
-			vo = new GenericVO();
-			vo.setKey("Practice Address:");
-			vo.setValue(location);
-			row.add(vo);
-			
-			vo = new GenericVO();
-			vo.setKey("Practice Phone:");
-			vo.setValue(surg.getPractPhone());
-			row.add(vo);
-			
-			vo = new GenericVO();
-			vo.setKey("Speaker/Office Email(s):");
-			vo.setValue(surg.getPractEmail());
-			row.add(vo);
-			
-			vo = new GenericVO();
-			vo.setKey("Secondary Contact:");
-			vo.setValue(surg.getSecPhone());
-			row.add(vo);
-			
-			vo = new GenericVO();
-			vo.setKey("Secondary Contact Email:");
-			vo.setValue(surg.getSecEmail());
-			row.add(vo);
-			
-			vo = new GenericVO();
-			vo.setKey("Practice Website:");
-			vo.setValue(StringUtil.checkVal(surg.getPractWebsite()));
-			row.add(vo);
-			
-			vo = new GenericVO();
-			vo.setKey("Speaker Photo:");
-			vo.setValue(surg.getLogoFileUrl());
-			row.add(vo);
-			
-			vo = new GenericVO();
-			vo.setKey("Speaker Bio:");
-			vo.setValue(StringUtil.checkVal(surg.getSurgeonBio()));
-			row.add(vo);
-			
-		}
-		
-		return row;
+	private void addRow(Sheet s, String label, String value) {
+		this.addRow(s, label, value, null, null);
 	}
 
-	/**
-	 * generates the post card section of the report
-	 * @return
-	 */
-	private List <GenericVO> getPostcardRows() {
-		StringBuilder sb = new StringBuilder(32);
-		List <GenericVO> row = new ArrayList<>();
-		
-		GenericVO vo = new GenericVO();
-		vo.setKey("");
-		vo.setValue("");
-		row.add(vo);
-		
-		vo = new GenericVO();
-		vo.setKey("Date of Seminar");
-		vo.setValue(sb.append(Convert.formatDate(sem.getEarliestEventDate(), Convert.DATE_LONG)).toString());
-		sb.setLength(0);
-		row.add(vo);
-		
-		vo = new GenericVO();
-		vo.setKey("RSVP Deadline");
-		vo.setValue(sb.append(Convert.formatDate(sem.getRSVPDate(), Convert.DATE_LONG)).toString());
-		sb.setLength(0);
-		row.add(vo);
-		
-		vo = new GenericVO();
-		vo.setKey("Initial Invitation Send Date");
-		vo.setValue(Convert.formatDate(sem.getPostcardSendDate(), Convert.DATE_LONG));
-		row.add(vo);
-		
-		vo = new GenericVO();
-		vo.setKey("Additional Postcards Send Date: ");
-		vo.setValue(Convert.formatDate(sem.getAddtlPostcardSendDate(), Convert.DATE_LONG));
-		row.add(vo);
-		
-		vo = new GenericVO();
-		vo.setKey("Additional cards should have the letter \"S\" at the end of the seminar#");
-		vo.setValue("");
-		row.add(vo);
-		
-		UserDataVO owner = sem.getOwner();
-		
-		vo = new GenericVO();
-		vo.setKey("Additional Postcards");
-		vo.setValue("Send additional postcards to:");
-		row.add(vo);
-		
-		vo = new GenericVO();
-		vo.setKey("");
-		vo.setValue(sb.append(StringUtil.checkVal(owner.getFirstName())).append(" ").append(StringUtil.checkVal(owner.getLastName())).toString());
-		row.add(vo);
-		sb.setLength(0);
-		
-		vo = new GenericVO();
-		vo.setKey("");
-		vo.setValue(StringUtil.checkVal(owner.getAddress()));
-		row.add(vo);
-		
-		vo = new GenericVO();
-		vo.setKey("");
-		vo.setValue(sb.append(StringUtil.checkVal(owner.getCity())).append(", ").append(StringUtil.checkVal(owner.getState())).append(" ").append(StringUtil.checkVal(owner.getZipCode())).toString());
-		row.add(vo);
-		sb.setLength(0);
-		
-		return row;
-	}
-
-	/**
-	 * generates the event section of the report
-	 * @return
-	 */
-	private List<GenericVO> getEventRows() {
-		List<GenericVO> row = new ArrayList<>();
-		StringBuilder sb = new StringBuilder(32);
-		GenericVO vo;
-		for (EventEntryVO event : sem.getEvents()) {
-			
-			vo = new GenericVO();
-			vo.setKey("");
-			vo.setValue("");
-			row.add(vo);
-			
-			vo = new GenericVO();
-			vo.setKey(sb.append("Seminar #").append(event.getRSVPCode()).toString());
-			vo.setValue(event.getEventName());
-			row.add(vo);
-			sb.setLength(0);
-			vo = new GenericVO();
-			vo.setKey("Seminar Date/Time");
-			vo.setValue(sb.append(Convert.formatDate(event.getStartDate(),Convert.DATE_LONG)).append(" ").append(event.getLocationDesc()).toString());
-			sb.setLength(0);
-			row.add(vo);
-			
-			vo = new GenericVO();
-			vo.setKey("Seminar Location");
-			vo.setValue(sb.append(event.getCityName()).append(", ").append(event.getStateCode()).append(" ").append(event.getZipCode()).toString());
-			sb.setLength(0);
-			row.add(vo);
-			
-			vo = new GenericVO();
-			vo.setKey("Joint");
-			vo.setValue(sem.getJointLabel());
-			row.add(vo);
-			
-			if (sem.getProductCodes().length() > 0){
-				vo = new GenericVO();
-				vo.setKey("Product");
-				vo.setValue(sem.getProductCodes());
-				row.add(vo);
-			}
-			
-			vo = new GenericVO();
-			vo.setKey("Venue Location");
-			vo.setValue(event.getEventDesc());
-			row.add(vo);
-			
-			vo = new GenericVO();
-			vo.setKey("Venue Name");
-			vo.setValue(event.getEventName());
-			row.add(vo);
-			
-			vo = new GenericVO();
-			vo.setKey("Refreshment Choice");
-			vo.setValue(StringUtil.checkVal(event.getServiceText()));
-			row.add(vo);
-			
-			vo = new GenericVO();
-			vo.setKey("Venue Address");
-			vo.setValue(event.getAddressText());
-			row.add(vo);
-			
-			vo = new GenericVO();
-			vo.setKey("");
-			vo.setValue(event.getAddress2Text());
-			row.add(vo);
-			
-			vo = new GenericVO();
-			vo.setKey("");
-			vo.setValue(sb.append(event.getCityName()).append(" " ).append(event.getStateCode()).append(", " ).append(event.getZipCode()).toString());
-			row.add(vo);
-
-		}
-		return row;
-	}
-
+	
 	/**
 	 * used generic vos so i could deal with areas that didn't have unique keys
 	 * generates the top part of the report as a map
 	 * @return
 	 */
-	private List<GenericVO> getSeminarRows() {
-		List<GenericVO> row = new ArrayList<>();
+	private void addSeminarRows(Sheet s) {
+		addRow(s, "Product", sem.getJointLabel());
+		addRow(s, "Seminar Type", sem.getEvents().get(0).getEventTypeDesc());
+		addRow(s, "Seminar Promotion #", sem.getRSVPCodes());
 		
-		GenericVO vo = new GenericVO();
-		vo.setKey("Product");
-		vo.setValue(sem.getJointLabel());
-		row.add(vo);
-		vo = new GenericVO();
-		vo.setKey("Seminar Type");
-		vo.setValue(sem.getEvents().get(0).getEventTypeDesc());
-		row.add(vo);
-		vo = new GenericVO();
-		vo.setKey("Seminar Promotion #");
-		vo.setValue(sem.getRSVPCodes());
-		row.add(vo);
-		vo = new GenericVO();
-		
-		StringBuilder sb = new StringBuilder();
-		
+		StringBuilder sb;
 		for (PersonVO p : sem.getPeople()) {
-			vo.setKey(p.getRoleCode().toString());
-			vo.setValue(sb.append(StringUtil.checkVal(p.getFirstName())).append(" ")
-						.append(StringUtil.checkVal(p.getLastName()))
-						.append(" (").append(p.getEmailAddress()).append(")").toString());
-			row.add(vo );
-			sb.setLength(0);
-			vo = new GenericVO();
+			sb = new StringBuilder(100);
+			sb.append(StringUtil.checkVal(p.getFirstName())).append(" ");
+			sb.append(StringUtil.checkVal(p.getLastName()));
+			sb.append(" (").append(p.getEmailAddress()).append(")");
+			
+			addRow(s, p.getRoleCode().toString(), sb.toString());
 		}
-		
-		return row;
 	}
 
-	/*
-	*		adds the title to this report
-	*/
-	private void getHeader(Row r, Sheet s) {
+
+	/**
+	 * generates the event section of the report
+	 * @return
+	 */
+	private void addEventRows(Sheet s) {
+		StringBuilder sb;
 		
-		Cell c = r.createCell(0);
-		c.setCellType(Cell.CELL_TYPE_STRING);
-		c.setCellValue(TITLE_TEXT);
-		//merge it the length of the report.
-		s.addMergedRegion(new CellRangeAddress(0,0,0,1));		
+		for (EventEntryVO event : sem.getEvents()) {
+			addRow(s, "", ""); //empty spacer
+			addRow(s, "Seminar #" + event.getRSVPCode(), event.getEventName());
+
+			sb = new StringBuilder(50);
+			sb.append(Convert.formatDate(event.getStartDate(),Convert.DATE_LONG)).append(" ").append(event.getLocationDesc());
+			addRow(s, "Seminar Date/Time", sb.toString());
+
+			sb = new StringBuilder(50);
+			sb.append(event.getCityName()).append(", ").append(event.getStateCode()).append(" ").append(event.getZipCode());
+			addRow(s, "Seminar Location", sb.toString());
+			
+			addRow(s, "Joint", sem.getJointLabel());
+			
+			if (!sem.getProductCodes().isEmpty())
+				addRow(s, "Product", sem.getProductCodes());
+
+
+			sb = new StringBuilder(100);
+			addRow(s, "Venue Location", event.getEventDesc());
+			addRow(s, "Venue Name", event.getEventName());
+			addRow(s, "Refreshment Choice", event.getServiceText());
+			addRow(s, "Venue Address", event.getAddressText());
+			if (!StringUtil.checkVal(event.getAddress2Text()).isEmpty())
+					addRow(s, "", event.getAddress2Text());
+			sb.append(event.getCityName()).append(" " ).append(event.getStateCode()).append(", " ).append(event.getZipCode());
+			addRow(s, "", sb.toString());
+
+		}
 	}
 	
+	
+	/**
+	 * generates the post card section of the report
+	 * @return
+	 */
+	private void addPostcardRows(Sheet s) {
+		//empty spacer row
+		addRow(s, "","");
+
+		addRow(s, "Date of Seminar", Convert.formatDate(sem.getEarliestEventDate(), Convert.DATE_LONG));
+		addRow(s, "RSVP Deadline", Convert.formatDate(sem.getRSVPDate(), Convert.DATE_LONG));
+		addRow(s, "Initial Invitation Send Date", Convert.formatDate(sem.getPostcardSendDate(), Convert.DATE_LONG));
+		addRow(s, "Additional Postcards Send Date: ", Convert.formatDate(sem.getAddtlPostcardSendDate(), Convert.DATE_LONG));
+		addRow(s, "Additional cards should have the letter \"S\" at the end of the seminar#", "");
+		
+		UserDataVO owner = sem.getOwner();
+		addRow(s, "Additional Postcards", "Send additional postcards to:");
+		//owner name
+		StringBuilder sb = new StringBuilder(50);
+		sb.append(StringUtil.checkVal(owner.getFirstName())).append(" ").append(StringUtil.checkVal(owner.getLastName()));
+		addRow(s, "", sb.toString());
+		//owner address
+		sb = new StringBuilder(100);
+		sb.append(StringUtil.checkVal(owner.getCity())).append(", ");
+		sb.append(StringUtil.checkVal(owner.getState())).append(" ");
+		sb.append(StringUtil.checkVal(owner.getZipCode()));
+		addRow(s, "", owner.getAddress());
+		addRow(s, "", sb.toString());
+	}
+
+
+	/**
+	 * generates the speaker section of the report
+	 * @return
+	 */
+	private void addSpeakerRows(Sheet s, CellStyle headingStyle) {
+		addRow(s, "", ""); //spacer row
+		addRow(s, "Speaker Information", "", headingStyle, null);
+
+		for (DePuyEventSurgeonVO surg : sem.getSurgeonList()) {
+			addRow(s, "Speaker Name:", surg.getSurgeonName());
+			addRow(s, "The Field Marketing Director has reviewed the Speaker Guidelines with speaker?:",
+					surg.getSeenGuidelinesFlg() == 1 ? "yes" : "no");
+
+			addRow(s, "Years practicing: ", String.valueOf(surg.getExperienceYrs()));
+			addRow(s, "Years at current practice:", String.valueOf(surg.getPractYrs()));
+			addRow(s, "Employed by hospital?:", surg.getHospEmployeeFlg() == 1 ? "yes" : "no");
+			addRow(s, "Hospital Address:", surg.getHospAddress());
+			
+			String location = (surg.getPractLocation() != null) ? surg.getPractLocation().getFormattedLocation() : "";
+			addRow(s, "Practice Address:", location);
+			addRow(s, "Practice Phone:", surg.getPractPhone());
+			addRow(s, "Speaker/Office Email(s):", surg.getPractEmail());
+			addRow(s, "Secondary Contact:", surg.getSecPhone());
+			addRow(s, "Secondary Contact Email:", surg.getSecEmail());
+			addRow(s, "Practice Website:", surg.getPractWebsite());
+			if (surg.getLogoFileUrl() != null && !surg.getLogoFileUrl().isEmpty()) 
+				addRow(s, "Speaker Photo:", "View file", null, surg.getLogoFileUrl());
+			addRow(s, "Speaker Bio:", surg.getSurgeonBio());
+		}
+	}
+	
+
+	/**
+	 * generates the ad section of the report
+	 * @return
+	 */
+	private void addAdRows(Sheet s, CellStyle headingStyle) {
+		if (sem.getAllAds() == null || sem.getAllAds().isEmpty())
+			return;
+
+		addRow(s, "", ""); //spacer row
+		addRow(s, "Ad Information", null, headingStyle, null);
+		
+		int cnt = 1;
+		StringBuilder sb;
+		for (CoopAdVO ad : sem.getAllAds() ){
+			int adSts = Convert.formatInteger(ad.getStatusFlg(), 0).intValue();
+
+			if (cnt > 1) addRow(s, "", ""); //spacer row
+			addRow(s, "Newspaper Ad #" + (cnt++), "");
+			addRow(s, "Ad Type:", ad.getAdType());
+			
+			sb = new StringBuilder(100);
+			sb.append(StringUtil.checkVal(ad.getNewspaper1Text())).append(" (").append(ad.getNewspaper1Phone()).append(")");
+			addRow(s, "Sponsored Newspaper:", sb.toString());
+			
+			addRow(s, "Coordinator approved ad?:", adSts == CoopAdsActionV2.CLIENT_APPROVED_AD ? "Yes" : "No");
+			addRow(s, "Approved Paper:", ad.getApprovedPaperName());
+			addRow(s, "Total Cost:", String.valueOf(ad.getTotalCostNo()));
+			
+			//calculate cost of ad to territory or surgeon
+			if ("CFSEM".equalsIgnoreCase(sem.getEvents().get(0).getEventTypeCd())) {
+				int surgSts = Convert.formatInteger(ad.getSurgeonStatusFlg(), 0).intValue();
+				addRow(s, "Speaker approved ad?:", surgSts == CoopAdsActionV2.SURG_APPROVED_AD ? "Yes" : "No");
+				addRow(s, "Speaker paid for ad?:", surgSts == CoopAdsActionV2.SURG_PAID_AD ? "Yes" : "No");
+				addRow(s, "Ad Cost to Speaker:", String.valueOf(ad.getCostToRepNo()));
+			} else {
+				addRow(s, "Ad Cost to Territory:", String.valueOf(ad.getCostToRepNo()));
+			}
+
+			if (ad.getAdFileUrl() != null) {
+				sb = new StringBuilder(250);
+				sb.append(sem.getBaseUrl()).append("/ads/").append(ad.getAdFileUrl());
+				addRow(s, "Ad File:", "View File", null, sb.toString());
+			}
+		}
+	}
+	
+	
+	/**
+	 * adds the title to this report
+	 * @param s
+	 * @param headingStyle
+	 */
+	private void addHeader(Sheet s, CellStyle headingStyle) {
+		Row r = s.createRow(0);
+		Cell c = r.createCell(0);
+		c.setCellType(Cell.CELL_TYPE_STRING);
+		c.setCellValue("Seminar Information");
+		c.setCellStyle(headingStyle);
+		//merge it the length of the report (2 columns).
+		s.addMergedRegion(new CellRangeAddress(0,0,0,1));		
+	}
 }
