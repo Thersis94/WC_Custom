@@ -35,9 +35,11 @@ import com.siliconmtn.security.UserDataVO;
  ***************************************************************************/
 
 public class PostcardSummaryReportVO extends AbstractSBReportVO {
-    private static final long serialVersionUID = 1l;
+    private static final long serialVersionUID = 11233634423123l;
     private DePuyEventSeminarVO sem = new DePuyEventSeminarVO();
     private static final String TITLE_TEXT = "Seminar Information";
+    
+    
     public PostcardSummaryReportVO() {
         super();
         setContentType("application/vnd.ms-excel");
@@ -97,19 +99,6 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 		
 		rowCnt = buildReportRows(s,r,adRow, rowCnt);
 			
-		
-		//existing commented out code
-		//add the Radio Ad data
-//		if (sem.getRadioAd() != null && sem.getRadioAd().getCoopAdId() != null) {
-//			CoopAdVO ad = sem.getRadioAd();
-//			rpt.append("<tr><td colspan='2'>&nbsp;</td></tr>\r");
-//			rpt.append("<tr><td colspan='2' style='background-color: #ccc;'><b>Radio Ad</td></tr>\r");
-//			rpt.append("<tr><td>Radio Station:</td><td align='center'>").append(StringUtil.checkVal(ad.getNewspaper1Text())).append(" (").append(StringUtil.checkVal(ad.getNewspaper1Phone())).append(")</td></tr>\r");
-//			rpt.append("<tr><td>Contact Name:</td><td align='center'>").append(StringUtil.checkVal(ad.getNewspaper2Text())).append(" (").append(StringUtil.checkVal(ad.getNewspaper2Phone())).append(")</td></tr>\r");
-//			rpt.append("<tr><td>Ad Deadline:</td><td align='center'>").append(StringUtil.checkVal(ad.getAdDatesText())).append("</td></tr>\r");
-//		}
-
-		
 		try (ByteArrayOutputStream baos = new ByteArrayOutputStream()){
 			wb.write(baos);
 			return baos.toByteArray();
@@ -124,6 +113,7 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 		return new byte[0];
 	}
 	
+	
 	/**
 	 * takes the data in generic VOs and builds the rows and cells on the sheet
 	 * @param s
@@ -133,8 +123,7 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 	 */
 	private int buildReportRows(Sheet s, Row r, List<GenericVO> row, int rowCnt) {
 		Cell c;
-		for (GenericVO vo : row){
-			
+		for (GenericVO vo : row) {
 				c = r.createCell(0);
 				c.setCellType(Cell.CELL_TYPE_STRING);
 				c.setCellValue((String)vo.getKey());
@@ -146,6 +135,7 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 			}
 		return rowCnt;
 	}
+	
 
 	/**
 	 * generates the ad section of the report
@@ -155,7 +145,7 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 		List<GenericVO> row = new ArrayList<>();
 		//add the Co-Op Ad data
 		if (sem.getAllAds() != null && !sem.getAllAds().isEmpty() ) {
-			StringBuilder sb = new StringBuilder(32);
+			StringBuilder sb = new StringBuilder(100);
 			
 			GenericVO vo;
 			for (CoopAdVO ad : sem.getAllAds() ){
@@ -178,7 +168,10 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 			
 				vo = new GenericVO();
 				vo.setKey("Sponsored Newspaper:");
-				vo.setValue(sb.append(StringUtil.checkVal(ad.getNewspaper1Text())).append(" (").append(ad.getNewspaper1Phone()).append(")").toString());
+				//concat paper name & phone#
+				sb.append(StringUtil.checkVal(ad.getNewspaper1Text())).append(" (").append(ad.getNewspaper1Phone()).append(")");
+				vo.setValue(sb.toString());
+				sb.delete(0, sb.length()); //flush the builder
 				row.add(vo);
 				
 				vo = new GenericVO();
@@ -223,7 +216,8 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 				if (ad.getAdFileUrl() != null){
 					vo = new GenericVO();
 					vo.setKey("Ad File:");
-					vo.setValue(sb.append("<a href=\"").append(sem.getBaseUrl()).append("/ads/").append(ad.getAdFileUrl()).append("\" target='_blank'>").append(ad.getAdFileUrl()).append("</a>").toString());
+					vo.setValue(sb.append(sem.getBaseUrl()).append("/ads/").append(ad.getAdFileUrl()).toString());
+					sb.delete(0, sb.length()); //flush the builder
 					row.add(vo);
 				}
 				
@@ -231,9 +225,9 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 				
 			}
 		}
-		
 		return row;
 	}
+	
 
 	/**
 	 * generates the speaker section of the report
@@ -242,6 +236,7 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 	private List <GenericVO> getSpeakerRows() {
 		List <GenericVO> row = new ArrayList<>();
 		
+		//empty row does what, Ryan?
 		GenericVO vo = new GenericVO();
 		vo.setKey("");
 		vo.setValue("");
@@ -253,7 +248,6 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 		row.add(vo);
 		
 		for (DePuyEventSurgeonVO surg : sem.getSurgeonList()) {
-			
 			vo = new GenericVO();
 			vo.setKey("Speaker Name:");
 			vo.setValue(surg.getSurgeonName());
@@ -330,6 +324,7 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 		
 		return row;
 	}
+	
 
 	/**
 	 * generates the post card section of the report
@@ -406,8 +401,8 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 		List<GenericVO> row = new ArrayList<>();
 		StringBuilder sb = new StringBuilder(32);
 		GenericVO vo;
+		
 		for (EventEntryVO event : sem.getEvents()) {
-			
 			vo = new GenericVO();
 			vo.setKey("");
 			vo.setValue("");
@@ -475,6 +470,7 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 		}
 		return row;
 	}
+	
 
 	/**
 	 * used generic vos so i could deal with areas that didn't have unique keys
@@ -498,7 +494,7 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 		row.add(vo);
 		vo = new GenericVO();
 		
-		StringBuilder sb = new StringBuilder();
+		StringBuilder sb = new StringBuilder(100);
 		
 		for (PersonVO p : sem.getPeople()) {
 			vo.setKey(p.getRoleCode().toString());
@@ -512,17 +508,16 @@ public class PostcardSummaryReportVO extends AbstractSBReportVO {
 		
 		return row;
 	}
+	
 
 	/*
 	*		adds the title to this report
 	*/
 	private void getHeader(Row r, Sheet s) {
-		
 		Cell c = r.createCell(0);
 		c.setCellType(Cell.CELL_TYPE_STRING);
 		c.setCellValue(TITLE_TEXT);
 		//merge it the length of the report.
 		s.addMergedRegion(new CellRangeAddress(0,0,0,1));		
 	}
-	
 }
