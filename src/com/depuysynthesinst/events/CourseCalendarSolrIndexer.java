@@ -182,6 +182,8 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 					continue;
 				else if ("".equals(subSiteAlias) && !"SURGEON".equals(rs.getString(3)))
 					continue;
+				else if ("outpatient-education".equals(subSiteAlias) && !"OUTPATIENT".equals(rs.getString(3)))
+					continue;
 				
 				EventEntryVO vo = new EventEntryVO(rs);
 				vo.setEventUrl(url + vo.getActionId());
