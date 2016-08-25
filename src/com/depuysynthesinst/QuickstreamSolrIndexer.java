@@ -127,4 +127,10 @@ public class QuickstreamSolrIndexer extends SMTAbstractIndex {
 	public String getIndexType() {
 		return INDEX_TYPE;
 	}
+
+	@Override
+	public void addSingleItem(String arg0) {
+		// As this class has been deprecated this has only been added to bring
+		// this in line with changes to the indexer interface.
+	}
 }

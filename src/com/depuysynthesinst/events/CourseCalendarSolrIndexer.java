@@ -270,5 +270,12 @@ public class CourseCalendarSolrIndexer extends SMTAbstractIndex {
 		}
 		return sql.toString();
 	}
+	
+	
+	@Override
+	public void addSingleItem(String id) {
+		// Nothing uses this class's addSingleItem method right now.
+		// should it be required it can be filled out at that time.
+	}
 
 }

@@ -117,4 +117,11 @@ public class TTLMSSolrIndexer extends SMTAbstractIndex {
 	public String getIndexType() {
 		return INDEX_TYPE;
 	}
+
+	
+	@Override
+	public void addSingleItem(String arg0) {
+		// This class is only used in the mass indexer and is never used
+		// in an area where precision updates are needed.
+	}
 }

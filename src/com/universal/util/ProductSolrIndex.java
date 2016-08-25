@@ -11,8 +11,10 @@ import java.util.Map;
 import java.util.Properties;
 
 
+
 // log4j 1.2-15
 import org.apache.solr.client.solrj.SolrClient;
+
 
 
 // SMT Base Libs
@@ -179,10 +181,20 @@ public class ProductSolrIndex extends SMTAbstractIndex {
 			throw new IOException(e);
 		}
 	}
+	
+	
 
 	@Override
 	public String getIndexType() {
 		return INDEX_TYPE;
+	}
+	
+	
+	@Override
+	public void addSingleItem(String id) {
+		// Universal products are loaded en mass from external documents and 
+		// solr requires full refreshes each time.  This should never be called
+		// from anywhere.
 	}
 
 }
