@@ -62,7 +62,7 @@ public class UnitAction extends SBActionAdapter {
 			put("serial","a.serial_no_txt");
 			put("status","f.status_nm");
 			put("account","d.account_nm");
-			put("date","isnull(a.deployed_dt,a.update_dt) desc");
+			put("date","coalesce(a.deployed_dt,a.update_dt) desc");
 		}
 	};
 
@@ -459,7 +459,7 @@ public class UnitAction extends SBActionAdapter {
 		sql.append("left outer join ").append(customDb);
 		sql.append("CODMAN_CU_PERSON g on d.PERSON_ID=g.PERSON_ID ");
 		sql.append("where a.unit_id=? or a.parent_id=? ");
-		sql.append("order by isnull(c.update_dt, c.create_dt), isnull(a.update_dt,a.create_dt)");
+		sql.append("order by coalesce(c.update_dt, c.create_dt), coalesce(a.update_dt,a.create_dt)");
 		String unitId = req.getParameter("unitId");
 		UnitSearchVO search = new UnitSearchVO(req, "MEDSTREAM");
 		log.debug(sql);

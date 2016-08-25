@@ -194,7 +194,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		StringBuilder sql = new StringBuilder(250);
 		sql.append("select a.*, ");
 		//only include video chapters when they've changed, because the delta's coming out of the EXP file won't have these to compare against
-		sql.append("case when isnull(b.update_dt, b.create_dt) > getDate()-1 then b.META_CONTENT_TXT else null end as META_CONTENT_TXT ");
+		sql.append("case when coalesce(b.update_dt, b.create_dt) > getDate()-1 then b.META_CONTENT_TXT else null end as META_CONTENT_TXT ");
 		sql.append("from ").append(props.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("dpy_syn_mediabin a ");
 		sql.append("left join video_meta_content b on a.dpy_syn_mediabin_id=b.asset_id and b.asset_type='MEDIABIN' ");
