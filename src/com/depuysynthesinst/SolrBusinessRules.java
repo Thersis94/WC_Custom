@@ -107,6 +107,8 @@ public class SolrBusinessRules {
 			}
 		} else if (sectionNm.equals("bundled payments")) {
 			sectionNm ="Bundled Payments";
+		} else if (sectionNm.equals("outpatient education")) {
+			sectionNm = "Outpatient Education";
 		}
 
 		if (sectionNm.indexOf("~") > -1) {

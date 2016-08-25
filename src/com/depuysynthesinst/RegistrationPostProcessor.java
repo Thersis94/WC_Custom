@@ -265,7 +265,6 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 	private void sendProfferEmail(DSIUserDataVO dsiUser, SiteVO site, MessageSender ms) {
 		try {
 			AbstractDSIEmailVO mail = new RegProfferVO();
-			mail.addRecipient("swest03@its.jnj.com");
 			mail.addRecipient("futureleaders@its.jnj.com");
 			mail.setFrom(site.getMainEmail());
 			mail.buildMessage(dsiUser, site);
