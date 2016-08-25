@@ -14,7 +14,7 @@ import com.siliconmtn.util.StringUtil;
 /****************************************************************************
  * <b>Title</b>: ChannelReportVO.java <p/>
  * <b>Project</b>: WebCrescendo <p/>
- * <b>Description: </b> Put Something Here
+ * <b>Description: </b> processes a request for a non html channel report vo
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2016<p/>
  * <b>Company:</b> Silicon Mountain Technologies<p/>
