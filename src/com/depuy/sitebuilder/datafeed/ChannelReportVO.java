@@ -14,7 +14,7 @@ import com.siliconmtn.util.StringUtil;
 /****************************************************************************
  * <b>Title</b>: ChannelReportVO.java <p/>
  * <b>Project</b>: WebCrescendo <p/>
- * <b>Description: </b> Put Something Here
+ * <b>Description: </b> processes a request for a non html channel report vo
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2016<p/>
  * <b>Company:</b> Silicon Mountain Technologies<p/>
@@ -76,7 +76,6 @@ public class ChannelReportVO extends AbstractDataFeedReportVO  {
 		for (Map<String, Object> map : rows){
 			
 			for(Map.Entry<String, Object> entry : map.entrySet()){
-				//log.debug("adding: " + map.get(key).toString() + " for key: " + key);
 				if("TOTAL".equals(entry.getKey())){
 					count +=  Convert.formatInteger(entry.getValue().toString());
 				}
@@ -127,8 +126,8 @@ public class ChannelReportVO extends AbstractDataFeedReportVO  {
 	@SuppressWarnings("unchecked")
 	@Override
 	public void setData(Object o) {
-		Map<?,?> data = (Map<?, ?> ) o;
-		this.data = (Map<String, Object>) data;
+		Map<?,?> methodData = (Map<?, ?> ) o;
+		this.data = (Map<String, Object>) methodData;
 
 	}
 
@@ -138,7 +137,6 @@ public class ChannelReportVO extends AbstractDataFeedReportVO  {
 	public void setRequestData(SMTServletRequest req){
 		startDate = StringUtil.checkVal(req.getParameter("startDate"));
 		endDate = StringUtil.checkVal(req.getParameter("endDate"));
-		//log.debug("start date: " + startDate + " end date: " + endDate);
 
 	}
 
