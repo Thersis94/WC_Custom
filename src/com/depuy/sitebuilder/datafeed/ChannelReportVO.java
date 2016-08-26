@@ -126,8 +126,8 @@ public class ChannelReportVO extends AbstractDataFeedReportVO  {
 	@SuppressWarnings("unchecked")
 	@Override
 	public void setData(Object o) {
-		Map<?,?> MethodData = (Map<?, ?> ) o;
-		this.data = (Map<String, Object>) MethodData;
+		Map<?,?> methodData = (Map<?, ?> ) o;
+		this.data = (Map<String, Object>) methodData;
 
 	}
 
