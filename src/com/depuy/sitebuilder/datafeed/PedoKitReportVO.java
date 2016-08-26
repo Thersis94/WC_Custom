@@ -195,11 +195,11 @@ public class PedoKitReportVO extends AbstractDataFeedReportVO {
 			}
 			row.put("AFFECTED_JOINT", vo.getProductCd());
 
-			String ResKey2 = "QUAL_"+vo.getProductCd().toUpperCase()+"_02";
-			String ResKey1 = "QUAL_"+vo.getProductCd().toUpperCase()+"_01";
+			String resKey2 = "QUAL_"+vo.getProductCd().toUpperCase()+"_02";
+			String resKey1 = "QUAL_"+vo.getProductCd().toUpperCase()+"_01";
 
-			row.put("DAYS_PER_WEEK_IN_PAIN", vo.getResponses().get(ResKey2));
-			row.put("PAIN_SEVERITY", vo.getResponses().get(ResKey1));
+			row.put("DAYS_PER_WEEK_IN_PAIN", vo.getResponses().get(resKey2));
+			row.put("PAIN_SEVERITY", vo.getResponses().get(resKey1));
 			row.put("YEARS_IN_PAIN", vo.getResponses().get("YEARS_IN_PAIN"));
 			row.put("MORE_REVIEWED_KIT", vo.getResponses().get("MORE_PREPARED"));
 			row.put("SURGERY_DATE", vo.getResponses().get("SURGERY_DATE"));
