@@ -8,6 +8,8 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.TreeMap;
 
 import com.depuy.sitebuilder.datafeed.LocationReport.ReportData;
 import com.siliconmtn.data.report.ExcelReport;
@@ -29,6 +31,7 @@ public class LocationReportVO extends AbstractDataFeedReportVO {
 
 	private static final long serialVersionUID = 1L;
 	private List<String> reportHeader = new ArrayList<>();
+	Map<String, Integer> reportTotal = new TreeMap<>();
 	private List<ReportData> data = new ArrayList<>();
 	
 	public LocationReportVO() {
@@ -45,6 +48,7 @@ public class LocationReportVO extends AbstractDataFeedReportVO {
 	@Override
 	public void setRequestData(SMTServletRequest req) {
 		reportHeader = (List<String>) req.getAttribute("reportHeader");
+		reportTotal = (Map<String, Integer>) req.getAttribute("reportTotal");
 		
 	}
 
@@ -60,10 +64,34 @@ public class LocationReportVO extends AbstractDataFeedReportVO {
 		List<Map<String, Object>> rows = new ArrayList<>();
 
 		rows = generateDataRows(rows);
+		rows = generateTotalRow(rows);
 
 		rpt.setData(rows);
 
 		return rpt.generateReport();
+	}
+
+	/**
+	 * generates the total row
+	 * @param rows
+	 * @return
+	 */
+	private List<Map<String, Object>> generateTotalRow(	List<Map<String, Object>> rows ) {
+		int total = 0;
+		Map<String, Object> row=new HashMap<>();
+		row.put("LOCATION", "Total");
+		
+		for( Entry<String, Integer> entry : reportTotal.entrySet()){
+			row.put(entry.getKey(), entry.getValue());
+			total += entry.getValue();
+		}
+		
+		row.put("TOTAL_LEADS_LOCATION",total);
+		
+		
+		rows.add(row);
+
+		return rows;
 	}
 
 	/**
@@ -77,11 +105,9 @@ public class LocationReportVO extends AbstractDataFeedReportVO {
 			int total = 0;
 			Map<String, Object> row=new HashMap<>();
 			row.put("LOCATION", rd.getLocation());
-			log.debug("# location " + rd.getLocation());
 			Map<String, Integer> values = rd.getDataSource();
 			for(String v : reportHeader){
 				if (values.containsKey(v)){
-				log.debug("### KEY to value " + v + " value: " + values.get(v));
 				row.put(v, values.get(v));
 				total += values.get(v);
 				}else{
