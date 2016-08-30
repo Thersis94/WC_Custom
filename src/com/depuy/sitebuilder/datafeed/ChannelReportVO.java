@@ -101,7 +101,7 @@ public class ChannelReportVO extends AbstractDataFeedReportVO  {
 
 		for (Map.Entry<String, Object> entry: data.entrySet()) {
 			Map<String, Object> row = new HashMap<>();
-			row.put("CHANNEL_CODE", entry.getValue());
+			row.put("CHANNEL_CODE", entry.getKey());
 			row.put("TOTAL", entry.getValue());
 			rows.add(row);
 		}
