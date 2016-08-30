@@ -27,8 +27,8 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 
-	private ShowpadApiUtil showpadApi;
-	private List<ShowpadDivisionUtil> divisions = new ArrayList<>();
+	protected ShowpadApiUtil showpadApi;
+	protected List<ShowpadDivisionUtil> divisions = new ArrayList<>();
 
 	/**
 	 * @param args
@@ -91,7 +91,7 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 		String[] divs = props.getProperty("showpadDivisions").split(",");
 		for (String d : divs) {
 			String[] div = d.split("=");
-			divisions.add(new ShowpadDivisionUtil(props, div[1], div[0], showpadApi));
+			divisions.add(new ShowpadDivisionUtil(props, div[1], div[0], showpadApi, dbConn));
 		}
 		log.info("loaded " + divisions.size() + " showpad divisions");
 	}
@@ -191,7 +191,7 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 
 		//save the newly created records to our database for each division
 		for (ShowpadDivisionUtil util : divisions)
-			util.saveDBRecords(dbConn);
+			util.saveDBRecords();
 	}
 
 

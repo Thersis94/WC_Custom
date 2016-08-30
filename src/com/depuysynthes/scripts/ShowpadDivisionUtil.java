@@ -53,11 +53,12 @@ public class ShowpadDivisionUtil {
 	private String divisionId;
 	private String divisionNm;
 	private String divisionUrl;
+	private Connection dbConn;
 
 	/**
 	 * List of errors 
 	 */
-	protected List <Exception> failures = new ArrayList<Exception>();
+	protected List <Exception> failures = new ArrayList<>();
 
 
 	/**
@@ -70,12 +71,13 @@ public class ShowpadDivisionUtil {
 	 * @throws QuotaException
 	 */
 	public ShowpadDivisionUtil(Properties props, String divisionId, 
-			String divisionNm, ShowpadApiUtil util) throws QuotaException {
+			String divisionNm, ShowpadApiUtil util, Connection conn) throws QuotaException {
 		this.props = props;
 		this.divisionId = divisionId;
 		this.divisionNm = divisionNm;
 		this.divisionUrl = props.get("showpadApiUrl") + "/divisions/" + divisionId;
 		this.showpadUtil = util;
+		this.dbConn = conn;
 
 		//get a list of tags already at Showpad, so when we save the assets these are preloaded
 		loadShowpadTagList();
@@ -105,10 +107,10 @@ public class ShowpadDivisionUtil {
 				log.info("no changes needed to " + vo.getDpySynMediaBinId());
 				return;
 			}
-			
+
 			//send as an 'update' to Showpad
 			postUrl = props.getProperty("showpadApiUrl") + "/assets/" + vo.getShowpadId() + ".json";
-			
+
 		} else {
 			//check if this file is already in Showpad before treating it as new
 			vo.setShowpadId(findShowpadId(title));
@@ -155,7 +157,7 @@ public class ShowpadDivisionUtil {
 			log.info(json);
 			if (!StringUtil.checkVal(metaResp.optString("code")).startsWith("20")) //trap all but a 200 or 201
 				throw new IOException(metaResp.optString("message"));
-			
+
 		} catch (IOException e) {
 			String msg = DSMediaBinImporterV2.makeMessage(vo, "Could not push file to showpad: " + e.getMessage());
 			failures.add(new Exception(msg));
@@ -178,7 +180,7 @@ public class ShowpadDivisionUtil {
 				ticketId = jsonResp.getString("id");
 			}
 
-			if (assetId.length() == 0) {
+			if (assetId == null || assetId.isEmpty()) {
 				//queue this one for later
 				insertTicketQueue.put(ticketId, vo.getDpySynMediaBinId());
 			} else {
@@ -190,14 +192,14 @@ public class ShowpadDivisionUtil {
 			updates.put(vo.getDpySynMediaBinId(), vo.getShowpadId());
 		}
 	}
-	
-	
+
+
 	/**
 	 * writes the newly pushed Showpad assets to SMT's database, so next time
 	 * we'll have showpadIDs for them and can run update transactions instead of insert.
 	 * @param masterRecords
 	 */
-	public void saveDBRecords(Connection dbConn) {
+	public void saveDBRecords() {
 		//run the inserts
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("insert into ").append(props.get(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_SHOWPAD ");
@@ -215,7 +217,7 @@ public class ShowpadDivisionUtil {
 		} catch (SQLException sqle) {
 			failures.add(sqle);
 		}
-		
+
 		//run the updates
 		sql = new StringBuilder(200);
 		sql.append("update ").append(props.get(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_SHOWPAD ");
@@ -232,8 +234,8 @@ public class ShowpadDivisionUtil {
 		} catch (SQLException sqle) {
 			failures.add(sqle);
 		}
-		
-		
+
+
 	}
 
 
@@ -259,21 +261,21 @@ public class ShowpadDivisionUtil {
 			log.error("could not delete from showpad", ioe);
 		}
 	}
-	
-	
+
+
 	/**
 	 * removes duplicates from Showpad by looping the list of assets and 
 	 * maintaining a list of 'good' assets to keep
 	protected void cleanupShowpadDups(Set<String> assetNames, Set<String> localShowpadIds) {
 		Map<String, String> showpadAssets = new HashMap<>(5000);
-		
+
 		Set<String> assetNames = new HashSet<>(records.size());
 		Set<String> localShowpadIds = new HashSet<>(records.size());
 		for (MediaBinDeltaVO vo : records.values()) {
 			assetNames.add(makeShowpadAssetName(vo, new FileType(vo.getFileNm())));
 			if (vo.getShowpadId() != null) localShowpadIds.add(vo.getShowpadId());
 		}
-		
+
 		//NOTE: THIS WILL INCLUDE SHOWPAD ASSETS IN THE TRASH! 
 		String tagUrl = divisionUrl + "/assets.json?id=" + divisionId + "&limit=100000&fields=id,name";
 		try {
@@ -317,11 +319,11 @@ public class ShowpadDivisionUtil {
 		log.info("loaded " + showpadAssets.size() + " showpad assets");
 	}
 	 **/
-	
 
-/*************************************************************
- * 					SHOWPAD TICKET FUNCTIONS
- *************************************************************/
+
+	/*************************************************************
+	 * 					SHOWPAD TICKET FUNCTIONS
+	 *************************************************************/
 
 	/**
 	 * runs a loop around the ticket queue checking for status changes.  Returns only
@@ -409,9 +411,9 @@ public class ShowpadDivisionUtil {
 	}
 
 
-/*************************************************************
- * 					SHOWPAD ASSET FUNCTIONS
- *************************************************************/
+	/*************************************************************
+	 * 					SHOWPAD ASSET FUNCTIONS
+	 *************************************************************/
 
 	/**
 	 * this can be used to obtain showpadIds from file names if this script 
@@ -450,7 +452,7 @@ public class ShowpadDivisionUtil {
 		}
 		return showpadId;
 	}
-	
+
 
 	/**
 	 * escapes special chars that Showpad is sensitive to seeing in asset names
@@ -467,9 +469,9 @@ public class ShowpadDivisionUtil {
 	}
 
 
-/*************************************************************
- * 					SHOWPAD TAG FUNCTIONS
- *************************************************************/
+	/*************************************************************
+	 * 					SHOWPAD TAG FUNCTIONS
+	 *************************************************************/
 
 	/**
 	 * Load a list of tags already at Showpad
@@ -519,15 +521,11 @@ public class ShowpadDivisionUtil {
 		desiredTags.add(ft.getFileExtension());
 		if (vo.getLanguageCode() != null && vo.getLanguageCode().length() > 0)
 			desiredTags.addAll(Arrays.asList(vo.getLanguageCode().split(DSMediaBinImporterV2.TOKENIZER)));
-		if (vo.getBodyRegionTxt() != null && vo.getBodyRegionTxt().length() > 0)
-			desiredTags.addAll(Arrays.asList(vo.getBodyRegionTxt().split(DSMediaBinImporterV2.TOKENIZER)));
 		if (vo.getBusinessUnitNm() != null && vo.getBusinessUnitNm().length() > 0)
 			desiredTags.addAll(Arrays.asList(vo.getBusinessUnitNm().split(DSMediaBinImporterV2.TOKENIZER)));
 		if (vo.getLiteratureTypeTxt() != null && vo.getLiteratureTypeTxt().length() > 0)
 			desiredTags.addAll(Arrays.asList(vo.getLiteratureTypeTxt().split(DSMediaBinImporterV2.TOKENIZER)));
-		if (vo.getProdFamilyNm() != null && vo.getProdFamilyNm().length() > 0)
-			desiredTags.addAll(Arrays.asList(vo.getProdFamilyNm().split(DSMediaBinImporterV2.TOKENIZER)));
-
+		
 		//loop the tags the asset already has, removing them from the "need to add" list
 		if (assignedTags != null) {
 			for (String tag : assignedTags.keySet())
@@ -536,7 +534,7 @@ public class ShowpadDivisionUtil {
 
 		//add what's left on the "need to add" list as new tags; both to the Asset, and to Showpad if they're new
 		for (String tagNm : desiredTags) {
-			if (tagNm == null || tagNm.length() == 0) continue;
+			if (tagNm == null || tagNm.isEmpty()) continue;
 			log.info("need tag " + tagNm + ", current id=" + showpadTags.get(tagNm));
 			if (showpadTags.get(tagNm) == null) {
 				//add it to the global list for the next iteration to leverage
@@ -591,7 +589,7 @@ public class ShowpadDivisionUtil {
 	 * @param tagId
 	 * @throws QuotaException 
 	 */
-	private String createTag(String tagNm) throws QuotaException {
+	protected String createTag(String tagNm) throws QuotaException {
 		String tagId = null;
 		String tagUrl = divisionUrl + "/tags.json";
 
@@ -613,15 +611,43 @@ public class ShowpadDivisionUtil {
 			failures.add(ioe);
 			log.error("could not create showpad tag " + tagNm, ioe);
 		}
+		
+		//if creating the tag succeeded, save it in SMT's database
+		if (tagId != null && !tagId.isEmpty())
+			createTagInDatabase(tagId, tagNm);
 
 		log.info("created tag " + tagNm + " with id=" + tagId);
 		return tagId;
 	}
+	
+	
+	/**
+	 * Persists tags we create a Showpad into the local database, so we have 
+	 * record of what we've created, and therefore are authorized to delete (later).
+	 * @param tagId
+	 * @param tagNm
+	 */
+	private void createTagInDatabase(String tagId, String tagNm) {
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("insert into ").append(props.get(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_SHOWPAD_TAG ");
+		sql.append("(DIVISION_ID, TAG_ID, TAG_NM, CREATE_DT) values (?,?,?,?)");
+		log.debug(sql);
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, divisionId);
+			ps.setString(2, tagId);
+			ps.setString(3, tagNm);
+			ps.setTimestamp(4, Convert.getCurrentTimestamp());
+			ps.executeUpdate();
+		} catch (SQLException sqle) {
+			failures.add(sqle);
+			log.error("could not save Showpad Tag to SMT database", sqle);
+		}
+	}
 
 
-/*************************************************************
- * 					UTILITY FUNCTIONS
- *************************************************************/
+	/*************************************************************
+	 * 					UTILITY FUNCTIONS
+	 *************************************************************/
 
 	/**
 	 * return a predefined resource type based on the file extention
@@ -629,7 +655,7 @@ public class ShowpadDivisionUtil {
 	 * @return
 	 */
 	private String getResourceType(FileType fType) {
-		switch (fType.getFileExtension()) {
+		switch (StringUtil.checkVal(fType.getFileExtension()).toLowerCase()) {
 			case "pdf":
 			case "txt":
 			case "rtf":
