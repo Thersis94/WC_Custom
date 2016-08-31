@@ -11,8 +11,10 @@ import java.util.Properties;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
+
 //Solr libs
 import org.apache.solr.client.solrj.SolrClient;
+
 
 // WC libs
 import com.siliconmtn.commerce.catalog.ProductAttributeContainer;
@@ -23,6 +25,7 @@ import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.pool.SMTDBConnection;
 
+import com.siliconmtn.exception.InvalidDataException;
 //WC Libs
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -251,16 +254,9 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 			switch (attr.getAttributeType()) {
 				case HuddleUtils.PROD_ATTR_MB_TYPE:
 					try {
-						JSONArray arr = JSONArray.fromObject(attr.getValueText());
-						for (int x=0; x < arr.size(); x++) {
-							if ("CMS".equals(((JSONObject)arr.get(x)).getString("type"))) {
-								values.add("CMS" + ((JSONObject)arr.get(x)).getString("id"));
-							} else {
-								values.add(((JSONObject)arr.get(x)).getString("id"));
-							}
-						}
-					} catch (Exception e) {
-						log.warn("could not add mediabin IDs to product attribute", e);
+						values.addAll(convertFromJSON(attr.getValueText()));
+					} catch (InvalidDataException ide) {
+						log.warn("could not add mediabin IDs to product attribute", ide);
 					}
 					break;
 				default:
@@ -270,6 +266,31 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 			
 			solrDoc.addAttribute(fieldNm, values);
 		}
+	}
+	
+	
+	/**
+	 * converts the JSON object stored in the product attribute into 
+	 * a List<String> assetIds that we can use to lookup in Solr/Mediabin-table/CMS/etc. 
+	 * @param jsonText
+	 * @return List<String> values
+	 * @throws InvalidDataException
+	 */
+	public static List<String> convertFromJSON(String jsonText) throws InvalidDataException {
+		List<String> values = new ArrayList<>();
+		try {
+			JSONArray arr = JSONArray.fromObject(jsonText);
+			for (int x=0; x < arr.size(); x++) {
+				if ("CMS".equals(((JSONObject)arr.get(x)).getString("type"))) {
+					values.add("CMS" + ((JSONObject)arr.get(x)).getString("id"));
+				} else {
+					values.add(((JSONObject)arr.get(x)).getString("id"));
+				}
+			}
+		} catch (Exception e) {
+			throw new InvalidDataException(e);
+		}
+		return values;
 	}
 	
 
