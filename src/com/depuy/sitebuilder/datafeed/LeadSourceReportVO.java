@@ -45,6 +45,8 @@ public class LeadSourceReportVO extends AbstractDataFeedReportVO {
 	private String productCode;
 	private Map<String, Integer> reportHeaders;
 	private String[] jointTypes;
+	private int cellCounter;
+	private int rowTotal;
 	private enum leadTypes {
 		CONTACT("Contact", 0), RESPONSE("Response", 1), LEAD("Lead", 5), QUALIFIED("Qualified", 10), 
 		POST_SURGERY("Post-Surgery", 15 );
@@ -244,24 +246,37 @@ public class LeadSourceReportVO extends AbstractDataFeedReportVO {
 		for (Entry<Date, ReportData> entry: dataSource.entrySet()){
 			int rowNo = s.getPhysicalNumberOfRows();
 			Row r = s.createRow(rowNo);
-			int counter = 0;
+			//must be set to zero every row
+			this.cellCounter = 0;
+			this.rowTotal = 0;
 
-			Cell c = r.createCell(counter);
+			Cell c = r.createCell(this.cellCounter);
 			c.setCellType(Cell.CELL_TYPE_STRING);
 			c.setCellStyle(greyCellStyle);
 			c.setCellValue(formatDate(entry.getKey()));
-			counter++;
-			int total = 0;
+			this.cellCounter++;
 			
-			fillDataCells(r, total, c, entry, counter, borderStyle);
 			
-			c = r.createCell(counter);
+			fillDataCells(r, c, entry, borderStyle);
+			
+			c = r.createCell(this.cellCounter);
 			c.setCellType(Cell.CELL_TYPE_STRING);
 			c.setCellStyle(greyCellStyle);
-			c.setCellValue(total);
+			c.setCellValue(this.rowTotal);
 		}
 	
 		//making an empty row
+		addEmptyRow(s, greyCellStyle, borderStyle);
+	}
+
+	/**
+	 * adds an empty row after all the data rows
+	 * @param borderStyle 
+	 * @param greyCellStyle 
+	 * @param s 
+	 * 
+	 */
+	private void addEmptyRow(Sheet s, CellStyle greyCellStyle, CellStyle borderStyle) {
 		Row r2 = s.createRow(s.getPhysicalNumberOfRows());
 		
 		Cell c2 = r2.createCell(0);
@@ -285,15 +300,14 @@ public class LeadSourceReportVO extends AbstractDataFeedReportVO {
 	}
 
 	/**
+	 * fills in each data cell
 	 * @param borderStyle 
-	 * @param counter 
 	 * @param entry 
 	 * @param c 
-	 * @param total 
 	 * @param r 
 	 * 
 	 */
-	private void fillDataCells(Row r, int total, Cell c, Entry<Date, ReportData> entry, int counter, CellStyle borderStyle) {
+	private void fillDataCells(Row r, Cell c, Entry<Date, ReportData> entry, CellStyle borderStyle) {
 		for(String callSrc : reportHeaders.keySet()){
 			for(String joint : jointTypes){
 				for (leadTypes type : leadTypes.values()){
@@ -301,17 +315,16 @@ public class LeadSourceReportVO extends AbstractDataFeedReportVO {
 					int srcCount = entry.getValue().getCount(callSrc, joint, type.rank);
 
 					// you must merge the cells before setting style
-					c = r.createCell(counter);
+					c = r.createCell(this.cellCounter);
 					c.setCellType(Cell.CELL_TYPE_STRING);
 					c.setCellStyle(borderStyle);
 					c.setCellValue(srcCount);
 
-					total += srcCount;
-					counter++;
+					this.rowTotal += srcCount;
+					this.cellCounter++;
 				}
 			}
 		}
-		
 	}
 
 	/**
