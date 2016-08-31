@@ -33,6 +33,8 @@ public class LocationReportVO extends AbstractDataFeedReportVO {
 	private List<String> reportHeader = new ArrayList<>();
 	Map<String, Integer> reportTotal = new TreeMap<>();
 	private List<ReportData> data = new ArrayList<>();
+	private final String LOCATION = "LOCATION";
+	private final String TOTAL_LEADS_LOC = "TOTAL_LEADS_LOCATION";
 	
 	public LocationReportVO() {
 		super();
@@ -79,14 +81,14 @@ public class LocationReportVO extends AbstractDataFeedReportVO {
 	private List<Map<String, Object>> generateTotalRow(	List<Map<String, Object>> rows ) {
 		int total = 0;
 		Map<String, Object> row=new HashMap<>();
-		row.put("LOCATION", "Total");
+		row.put(LOCATION, "Total");
 		
 		for( Entry<String, Integer> entry : reportTotal.entrySet()){
 			row.put(entry.getKey(), entry.getValue());
 			total += entry.getValue();
 		}
 		
-		row.put("TOTAL_LEADS_LOCATION",total);
+		row.put(TOTAL_LEADS_LOC,total);
 		
 		
 		rows.add(row);
@@ -104,7 +106,7 @@ public class LocationReportVO extends AbstractDataFeedReportVO {
 		for(ReportData rd : data){
 			int total = 0;
 			Map<String, Object> row=new HashMap<>();
-			row.put("LOCATION", rd.getLocation());
+			row.put(LOCATION, rd.getLocation());
 			Map<String, Integer> values = rd.getDataSource();
 			for(String v : reportHeader){
 				if (values.containsKey(v)){
@@ -115,7 +117,7 @@ public class LocationReportVO extends AbstractDataFeedReportVO {
 				}
 			}
 			
-			row.put("TOTAL_LEADS_LOCATION",total);
+			row.put(TOTAL_LEADS_LOC,total);
 			
 			
 			rows.add(row);
@@ -131,11 +133,11 @@ public class LocationReportVO extends AbstractDataFeedReportVO {
 	private Map<String, String> getHeader() {
 		
 		HashMap<String, String> headerMap = new LinkedHashMap<>();
-		headerMap.put("LOCATION","LOCATION");
+		headerMap.put(LOCATION,"LOCATION");
 		for (String s :reportHeader ){
 			headerMap.put(s,s);
 		}
-		headerMap.put("TOTAL_LEADS_LOCATION","Total Leads/Location");
+		headerMap.put(TOTAL_LEADS_LOC,"Total Leads/Location");
 		
 		return headerMap;
 	}
@@ -146,8 +148,8 @@ public class LocationReportVO extends AbstractDataFeedReportVO {
 	@SuppressWarnings("unchecked")
 	@Override
 	public void setData(Object o) {
-		List<?> data = (List<?> ) o;
-		this.data = (List<ReportData>) data;
+		List<?> methodData = (List<?> ) o;
+		this.data = (List<ReportData>) methodData;
 		
 	}
 

@@ -46,8 +46,8 @@ public class LeadSourceReportVO extends AbstractDataFeedReportVO {
 	private Map<String, Integer> reportHeaders;
 	private String[] jointTypes;
 	private enum leadTypes {
-		Contact("Contact", 0), Response("Response", 1), Lead("Lead", 5), Qualified("Qualified", 10), 
-		PostSurgery("Post-Surgery", 15 );
+		CONTACT("Contact", 0), RESPONSE("Response", 1), LEAD("Lead", 5), QUALIFIED("Qualified", 10), 
+		POST_SURGERY("Post-Surgery", 15 );
 		String textValue;
 		int rank; 
 
@@ -55,8 +55,8 @@ public class LeadSourceReportVO extends AbstractDataFeedReportVO {
 			this.textValue = textValue;
 			this.rank = rank;
 		}
-
 	}
+	
 
 
 	public LeadSourceReportVO() {
@@ -104,7 +104,7 @@ public class LeadSourceReportVO extends AbstractDataFeedReportVO {
 				
 		CellStyle greyCellStyle = getGreyStyle(font, wb);
 		
-		CellStyle borderStyle = getBorderStyle(font, wb);
+		CellStyle borderStyle = getBorderStyle( wb);
 
 		//generate the rows
 		addDateRow(s, titleStyle);
@@ -142,7 +142,7 @@ public class LeadSourceReportVO extends AbstractDataFeedReportVO {
 	 * @param wb
 	 * @return
 	 */
-	private CellStyle getBorderStyle(Font font, Workbook wb) {
+	private CellStyle getBorderStyle( Workbook wb) {
 		CellStyle borderStyle = wb.createCellStyle();
 		
 		borderStyle.setBorderBottom(CellStyle.BORDER_THIN);
@@ -252,23 +252,9 @@ public class LeadSourceReportVO extends AbstractDataFeedReportVO {
 			c.setCellValue(formatDate(entry.getKey()));
 			counter++;
 			int total = 0;
-			for(String callSrc : reportHeaders.keySet()){
-				for(String joint : jointTypes){
-					for (leadTypes type : leadTypes.values()){
-
-						int srcCount = entry.getValue().getCount(callSrc, joint, type.rank);
-
-						// you must merge the cells before setting style
-						c = r.createCell(counter);
-						c.setCellType(Cell.CELL_TYPE_STRING);
-						c.setCellStyle(borderStyle);
-						c.setCellValue(srcCount);
-
-						total += srcCount;
-						counter++;
-					}
-				}
-			}
+			
+			fillDataCells(r, total, c, entry, counter, borderStyle);
+			
 			c = r.createCell(counter);
 			c.setCellType(Cell.CELL_TYPE_STRING);
 			c.setCellStyle(greyCellStyle);
@@ -277,7 +263,6 @@ public class LeadSourceReportVO extends AbstractDataFeedReportVO {
 	
 		//making an empty row
 		Row r2 = s.createRow(s.getPhysicalNumberOfRows());
-		/*r2.setRowStyle(greyCellStyle);*/
 		
 		Cell c2 = r2.createCell(0);
 		c2.setCellType(Cell.CELL_TYPE_STRING);
@@ -297,6 +282,36 @@ public class LeadSourceReportVO extends AbstractDataFeedReportVO {
 		c2.setCellType(Cell.CELL_TYPE_STRING);
 		c2.setCellStyle(greyCellStyle);
 		c2.setCellValue("");
+	}
+
+	/**
+	 * @param borderStyle 
+	 * @param counter 
+	 * @param entry 
+	 * @param c 
+	 * @param total 
+	 * @param r 
+	 * 
+	 */
+	private void fillDataCells(Row r, int total, Cell c, Entry<Date, ReportData> entry, int counter, CellStyle borderStyle) {
+		for(String callSrc : reportHeaders.keySet()){
+			for(String joint : jointTypes){
+				for (leadTypes type : leadTypes.values()){
+
+					int srcCount = entry.getValue().getCount(callSrc, joint, type.rank);
+
+					// you must merge the cells before setting style
+					c = r.createCell(counter);
+					c.setCellType(Cell.CELL_TYPE_STRING);
+					c.setCellStyle(borderStyle);
+					c.setCellValue(srcCount);
+
+					total += srcCount;
+					counter++;
+				}
+			}
+		}
+		
 	}
 
 	/**
@@ -427,9 +442,9 @@ public class LeadSourceReportVO extends AbstractDataFeedReportVO {
 		StringBuilder sb = new StringBuilder();
 
 
-		if (groupType.equals("3")){
+		if ("3".equals(groupType)){
 			sb.append("Monthly ");
-		}else if (groupType.equals("2")) {
+		}else if ("2".equals(groupType)) {
 			sb.append("Weekly ");
 		}else {
 			sb.append("Daily ");
