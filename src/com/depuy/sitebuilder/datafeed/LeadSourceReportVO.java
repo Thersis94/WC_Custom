@@ -269,7 +269,7 @@ public class LeadSourceReportVO extends AbstractDataFeedReportVO {
 		c2.setCellStyle(greyCellStyle);
 		c2.setCellValue("");
 		
-		int colNum = (1+ (reportHeaders.size() * jointTypes.length * leadTypes.values().length));
+		int colNum = 1+ (reportHeaders.size() * jointTypes.length * leadTypes.values().length);
 		
 		for (int ct = 1 ; ct< colNum-1 ; ct++){
 		c2 = r2.createCell(ct);
@@ -464,7 +464,7 @@ public class LeadSourceReportVO extends AbstractDataFeedReportVO {
 		c.setCellStyle(headingStyle);
 
 		//number of columns
-		int colNum = (1+ (reportHeaders.size() * jointTypes.length * leadTypes.values().length));
+		int colNum = 1+ (reportHeaders.size() * jointTypes.length * leadTypes.values().length);
 
 		s.addMergedRegion(new CellRangeAddress(0,0,0,colNum));
 
