@@ -1,4 +1,4 @@
-package com.depuysynthes.scripts;
+package com.depuysynthes.scripts.showpad;
 
 import java.io.File;
 import java.io.IOException;

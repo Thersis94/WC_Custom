@@ -1,4 +1,4 @@
-package com.depuysynthes.scripts;
+package com.depuysynthes.scripts.showpad;
 
 import java.io.File;
 import java.io.IOException;
@@ -6,7 +6,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -16,6 +15,8 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 
+import com.depuysynthes.scripts.DSMediaBinImporterV2;
+import com.depuysynthes.scripts.MediaBinDeltaVO;
 import com.depuysynthes.scripts.MediaBinDeltaVO.State;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.parser.StringEncoder;
@@ -43,9 +44,8 @@ public class ShowpadDivisionUtil {
 	protected static Logger log = Logger.getLogger(ShowpadDivisionUtil.class);
 	protected Properties props = null;
 	private ShowpadApiUtil showpadUtil;
-	private Map<String, String> showpadTags = new HashMap<>(1000);
 	private Map<String, String> insertTicketQueue = new HashMap<>();
-	private Map<String, String> divisionAssets = new HashMap<>(1000);
+	private Map<String, String> divisionAssets = new HashMap<>(8000);
 	private Map<String, String> inserts = new HashMap<>();
 	private Map<String, String> updates = new HashMap<>();
 	private int dbCount = 0;
@@ -53,11 +53,15 @@ public class ShowpadDivisionUtil {
 	private String divisionId;
 	private String divisionNm;
 	private String divisionUrl;
+	private String showpadApiUrl;
+	private Connection dbConn;
+	
+	protected ShowpadTagManager tagMgr;
 
 	/**
 	 * List of errors 
 	 */
-	protected List <Exception> failures = new ArrayList<Exception>();
+	protected List <Exception> failures = new ArrayList<>();
 
 
 	/**
@@ -70,15 +74,17 @@ public class ShowpadDivisionUtil {
 	 * @throws QuotaException
 	 */
 	public ShowpadDivisionUtil(Properties props, String divisionId, 
-			String divisionNm, ShowpadApiUtil util) throws QuotaException {
+			String divisionNm, ShowpadApiUtil util, Connection conn) throws QuotaException {
 		this.props = props;
 		this.divisionId = divisionId;
 		this.divisionNm = divisionNm;
-		this.divisionUrl = props.get("showpadApiUrl") + "/divisions/" + divisionId;
+		this.showpadApiUrl = (String)props.get("showpadApiUrl");
+		this.divisionUrl = showpadApiUrl + "/divisions/" + divisionId;
 		this.showpadUtil = util;
+		this.dbConn = conn;
 
 		//get a list of tags already at Showpad, so when we save the assets these are preloaded
-		loadShowpadTagList();
+		tagMgr = new ShowpadTagManager(showpadApiUrl, divisionId, divisionUrl, showpadUtil);
 	}
 
 
@@ -97,7 +103,7 @@ public class ShowpadDivisionUtil {
 		Map<String, String> params = new HashMap<>();
 		FileType fType = new FileType(vo.getFileNm());
 		String title = makeShowpadAssetName(vo, fType);
-		boolean isShowpadUpdate = (vo.getShowpadId() != null && vo.getShowpadId().length() > 0); 
+		boolean isShowpadUpdate = (vo.getShowpadId() != null && !vo.getShowpadId().isEmpty()); 
 
 		if (isShowpadUpdate) {
 			//this asset can be ignored if we have it saved and there is no state change
@@ -105,10 +111,10 @@ public class ShowpadDivisionUtil {
 				log.info("no changes needed to " + vo.getDpySynMediaBinId());
 				return;
 			}
-			
+
 			//send as an 'update' to Showpad
-			postUrl = props.getProperty("showpadApiUrl") + "/assets/" + vo.getShowpadId() + ".json";
-			
+			postUrl = showpadApiUrl + "/assets/" + vo.getShowpadId() + ".json";
+
 		} else {
 			//check if this file is already in Showpad before treating it as new
 			vo.setShowpadId(findShowpadId(title));
@@ -123,7 +129,7 @@ public class ShowpadDivisionUtil {
 				}
 
 				//do an update instead of an insert
-				postUrl = props.getProperty("showpadApiUrl") + "/assets/" + vo.getShowpadId() + ".json";
+				postUrl = showpadApiUrl + "/assets/" + vo.getShowpadId() + ".json";
 			} else {
 				//send an 'add' to the division for the given asset
 				postUrl = divisionUrl + "/assets.json";
@@ -132,7 +138,7 @@ public class ShowpadDivisionUtil {
 
 		log.info("url=" + postUrl);
 		params.put("name", title);
-		params.put("resourcetype", getResourceType(fType)); //Showpad Constant for all assets
+		params.put("resourcetype", ShowpadResourceType.getResourceType(fType)); //Showpad Constant for all assets
 		params.put("suppress_response_codes","true"); //forces a 200 response header
 		params.put("description", vo.getDownloadTypeTxt());
 		params.put("isSensitive", "false");
@@ -142,7 +148,12 @@ public class ShowpadDivisionUtil {
 
 		//add any Link objects (Tags) we need to have attached to this asset
 		StringBuilder header = new StringBuilder(200);
-		addTags(vo, header);
+		try {
+			tagMgr.addTags(vo, header);
+		} catch (InvalidDataException e1) {
+			failures.add(e1);
+			log.error("asset not found on Showpad", e1);
+		}
 
 		log.info("uploading file: " + props.get("downloadDir") + vo.getFileName());
 		File mbFile = new File(props.get("downloadDir") + vo.getFileName());
@@ -155,7 +166,7 @@ public class ShowpadDivisionUtil {
 			log.info(json);
 			if (!StringUtil.checkVal(metaResp.optString("code")).startsWith("20")) //trap all but a 200 or 201
 				throw new IOException(metaResp.optString("message"));
-			
+
 		} catch (IOException e) {
 			String msg = DSMediaBinImporterV2.makeMessage(vo, "Could not push file to showpad: " + e.getMessage());
 			failures.add(new Exception(msg));
@@ -178,7 +189,7 @@ public class ShowpadDivisionUtil {
 				ticketId = jsonResp.getString("id");
 			}
 
-			if (assetId.length() == 0) {
+			if (assetId == null || assetId.isEmpty()) {
 				//queue this one for later
 				insertTicketQueue.put(ticketId, vo.getDpySynMediaBinId());
 			} else {
@@ -190,15 +201,26 @@ public class ShowpadDivisionUtil {
 			updates.put(vo.getDpySynMediaBinId(), vo.getShowpadId());
 		}
 	}
-	
-	
+
+
 	/**
 	 * writes the newly pushed Showpad assets to SMT's database, so next time
 	 * we'll have showpadIDs for them and can run update transactions instead of insert.
 	 * @param masterRecords
 	 */
-	public void saveDBRecords(Connection dbConn) {
+	public void saveDBRecords() {
 		//run the inserts
+		insertRecords();
+
+		//run the updates
+		updateRecords();
+	}
+	
+	
+	/**
+	 * runs SQL insert queries for the records we're adding
+	 */
+	private void insertRecords() {
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("insert into ").append(props.get(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_SHOWPAD ");
 		sql.append("(DIVISION_ID, ASSET_ID, DPY_SYN_MEDIABIN_ID, CREATE_DT) values(?,?,?,?)");
@@ -215,9 +237,14 @@ public class ShowpadDivisionUtil {
 		} catch (SQLException sqle) {
 			failures.add(sqle);
 		}
-		
-		//run the updates
-		sql = new StringBuilder(200);
+	}
+	
+	
+	/**
+	 * runs SQL update queries for the records we're updating
+	 */
+	private void updateRecords() {
+		StringBuilder sql = new StringBuilder(200);
 		sql.append("update ").append(props.get(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_SHOWPAD ");
 		sql.append("set update_dt=? where division_id=? and dpy_syn_mediabin_id=?");
 		log.debug(sql);
@@ -232,8 +259,6 @@ public class ShowpadDivisionUtil {
 		} catch (SQLException sqle) {
 			failures.add(sqle);
 		}
-		
-		
 	}
 
 
@@ -245,10 +270,10 @@ public class ShowpadDivisionUtil {
 	 */
 	public void deleteAsset(MediaBinDeltaVO vo) throws QuotaException {
 		String pkId = divisionAssets.get(vo.getDpySynMediaBinId());
-		if (pkId == null || pkId.length() == 0) return; //nothing to delete
+		if (pkId == null || pkId.isEmpty()) return; //nothing to delete
 
 		//delete using the base /assets/ url, not the division url
-		String url = props.getProperty("showpadApiUrl") + "/assets/" + pkId + ".json";
+		String url = showpadApiUrl + "/assets/" + pkId + ".json";
 		try {
 			String resp = showpadUtil.executeDelete(url);
 			log.info("showpad delete response: " + resp);
@@ -259,20 +284,16 @@ public class ShowpadDivisionUtil {
 			log.error("could not delete from showpad", ioe);
 		}
 	}
-	
-	
+
+
 	/**
 	 * removes duplicates from Showpad by looping the list of assets and 
 	 * maintaining a list of 'good' assets to keep
-	protected void cleanupShowpadDups(Set<String> assetNames, Set<String> localShowpadIds) {
+	 * @throws QuotaException 
+	 */ 
+	protected void cleanupShowpadDups(Set<String> assetNames, Set<String> localShowpadIds) 
+			throws QuotaException {
 		Map<String, String> showpadAssets = new HashMap<>(5000);
-		
-		Set<String> assetNames = new HashSet<>(records.size());
-		Set<String> localShowpadIds = new HashSet<>(records.size());
-		for (MediaBinDeltaVO vo : records.values()) {
-			assetNames.add(makeShowpadAssetName(vo, new FileType(vo.getFileNm())));
-			if (vo.getShowpadId() != null) localShowpadIds.add(vo.getShowpadId());
-		}
 		
 		//NOTE: THIS WILL INCLUDE SHOWPAD ASSETS IN THE TRASH! 
 		String tagUrl = divisionUrl + "/assets.json?id=" + divisionId + "&limit=100000&fields=id,name";
@@ -291,13 +312,16 @@ public class ShowpadDivisionUtil {
 				String assetNm = asset.getString("name");
 				if (showpadAssets.containsKey(assetNm) || assetNm.startsWith(" ")) {
 					log.error("dup or blank start, deleting:" + assetNm);
-					String url = props.getProperty("showpadApiUrl") + "/assets/" + asset.getString("id") + ".json";
+					String url = showpadApiUrl + "/assets/" + asset.getString("id") + ".json";
 					showpadUtil.executeDelete(url);
-//				} else if (!assetNames.contains(assetNm)) {
-//					//delete from Showpad - files that shouldn't be there
-//					log.info("deleting rogue asset: " + assetNm + " id=" + asset.getString("id"));
-//					String url = props.getProperty("showpadApiUrl") + "/assets/" + asset.getString("id") + ".json";
-//					showpadUtil.executeDelete(url);
+				/*
+				 * This would purge files that are not ours to delete; never run against the production J&J Account.
+				 	} else if (!assetNames.contains(assetNm)) {
+					//delete from Showpad - files that shouldn't be there
+					log.info("deleting rogue asset: " + assetNm + " id=" + asset.getString("id"));
+					String url = showpadApiUrl + "/assets/" + asset.getString("id") + ".json";
+					showpadUtil.executeDelete(url);
+				 */
 				} else {
 					log.info("saving:" + assetNm);
 					showpadAssets.put(assetNm, asset.getString("id"));
@@ -310,18 +334,17 @@ public class ShowpadDivisionUtil {
 			log.error("could not load showpad assets", ioe);
 		}
 
-		log.info("need to delete " + localShowpadIds.size() + " showpad records");
+		log.info("need to delete " + localShowpadIds.size() + " showpad records from local SQL database:");
 		for (String s : localShowpadIds)
-			System.err.println("'" + s + "',");
+			System.err.println("'" + s + "',"); //intentional use here; log redirection so we can copy/paste w/o the log4J garb.
 
 		log.info("loaded " + showpadAssets.size() + " showpad assets");
 	}
-	 **/
-	
 
-/*************************************************************
- * 					SHOWPAD TICKET FUNCTIONS
- *************************************************************/
+
+	/*************************************************************
+	 * 					SHOWPAD TICKET FUNCTIONS
+	 *************************************************************/
 
 	/**
 	 * runs a loop around the ticket queue checking for status changes.  Returns only
@@ -343,25 +366,7 @@ public class ShowpadDivisionUtil {
 					break;
 				}
 			}
-
-			Set<String> removes = new HashSet<>();
-			for (String ticketId : insertTicketQueue.keySet()) {
-				String assetId;
-				try {
-					assetId = getAssetIdFromTicket(ticketId);
-					if (assetId != null) {
-						log.info("found assetId=" + assetId + " for ticket=" + ticketId);
-						inserts.put(insertTicketQueue.get(ticketId), assetId);
-						removes.add(ticketId);
-						log.info("finished processing ticket " + ticketId + ", its now assetId=" + assetId);
-					}
-				} catch (InvalidDataException e) {
-					//this asset failed lookup.  or maybe failed adding to Showpad.
-					//remove it and set the ID=null, we'll try it again tomorrow.
-					inserts.remove(insertTicketQueue.get(ticketId));
-					removes.add(ticketId);
-				}
-			}
+			Set<String> removes = testForCompletion();
 			//remove the processed ones from our ticketQueue.
 			//this cannot be done above (inline) because of concurrency issues (ConcurrentModificationException)
 			for (String t : removes) {
@@ -372,6 +377,35 @@ public class ShowpadDivisionUtil {
 		}
 		log.info("iterated " + runCount + " times waiting for the Showpad queue to empty");
 	}
+	
+	
+	/**
+	 * queries Showpad for status changes for our queued assets.
+	 * @return
+	 * @throws QuotaException
+	 */
+	private Set<String> testForCompletion() throws QuotaException {
+		Set<String> removes = new HashSet<>();
+		for (Map.Entry<String,String> row : insertTicketQueue.entrySet()) {
+			String assetId;
+			String ticketId = row.getKey();
+			try {
+				assetId = getAssetIdFromTicket(ticketId);
+				if (assetId != null) {
+					log.info("found assetId=" + assetId + " for ticket=" + ticketId);
+					inserts.put(insertTicketQueue.get(ticketId), assetId);
+					removes.add(ticketId);
+					log.info("finished processing ticket " + ticketId + ", its now assetId=" + assetId);
+				}
+			} catch (InvalidDataException e) {
+				//this asset failed lookup.  or maybe failed adding to Showpad.
+				//remove it and set the ID=null, we'll try it again tomorrow.
+				inserts.remove(row.getValue());
+				removes.add(ticketId);
+			}
+		}
+		return removes;
+	}
 
 
 	/**
@@ -381,7 +415,7 @@ public class ShowpadDivisionUtil {
 	 * @throws QuotaException 
 	 */
 	private String getAssetIdFromTicket(String ticketId) throws InvalidDataException, QuotaException {
-		String ticketUrl = props.getProperty("showpadApiUrl") + "/tickets/" + ticketId + ".json?fields=status,asset";
+		String ticketUrl = showpadApiUrl + "/tickets/" + ticketId + ".json?fields=status,asset";
 		try {
 			String resp = showpadUtil.executeGet(ticketUrl);
 			JSONObject json = JSONObject.fromObject(resp);
@@ -409,9 +443,9 @@ public class ShowpadDivisionUtil {
 	}
 
 
-/*************************************************************
- * 					SHOWPAD ASSET FUNCTIONS
- *************************************************************/
+	/*************************************************************
+	 * 					SHOWPAD ASSET FUNCTIONS
+	 *************************************************************/
 
 	/**
 	 * this can be used to obtain showpadIds from file names if this script 
@@ -450,7 +484,7 @@ public class ShowpadDivisionUtil {
 		}
 		return showpadId;
 	}
-	
+
 
 	/**
 	 * escapes special chars that Showpad is sensitive to seeing in asset names
@@ -458,7 +492,7 @@ public class ShowpadDivisionUtil {
 	 * @param fType
 	 * @return
 	 */
-	private String makeShowpadAssetName(MediaBinDeltaVO vo, FileType fType ) {
+	protected static String makeShowpadAssetName(MediaBinDeltaVO vo, FileType fType ) {
 		String title = StringUtil.checkVal(vo.getTitleTxt(), vo.getFileNm());
 		title += " - " + vo.getTrackingNoTxt() + "." + fType.getFileExtension();
 		title = StringUtil.replace(title, "\"", ""); //remove double quotes, which break the JSON structure
@@ -466,209 +500,10 @@ public class ShowpadDivisionUtil {
 		return title;
 	}
 
-
-/*************************************************************
- * 					SHOWPAD TAG FUNCTIONS
- *************************************************************/
-
-	/**
-	 * Load a list of tags already at Showpad
-	 * If we try to add a tag to an asset without using it's ID, and it already existing in the system, it will fail.
-	 * @throws QuotaException 
-	 */
-	private void loadShowpadTagList() throws QuotaException {
-		String tagUrl = divisionUrl + "/tags.json?limit=100000&id=" + divisionId + "&fields=id,name";
-		try {
-			String resp = showpadUtil.executeGet(tagUrl);
-			JSONObject json = JSONObject.fromObject(resp);
-			log.info(json);
-			JSONObject metaResp = json.getJSONObject("meta");
-			if (!"200".equals(metaResp.getString("code")))
-				throw new IOException(metaResp.getString("message"));
-
-			JSONObject response = json.getJSONObject("response");
-			JSONArray items = response.getJSONArray("items");
-			for (int x=0; x < items.size(); x++) {
-				JSONObject tag = items.getJSONObject(x);
-				showpadTags.put(tag.getString("name"), tag.getString("id"));
-			}
-
-		} catch (IOException | NullPointerException ioe) {
-			failures.add(ioe);
-			log.error("could not load showpad tags", ioe);
-		}
-
-		log.info("loaded " + showpadTags.size() + " showpad tags: " + showpadTags);
-	}
-
-
-	/**
-	 * adds the desired tags to the passed showpad asset
-	 * If the desired tag does not exist in Showpad, it must be added (there) first.
-	 * @param vo
-	 * @throws QuotaException 
-	 */
-	private void addTags(MediaBinDeltaVO vo, StringBuilder header) throws QuotaException {
-		Map<String,String> assignedTags = null;
-		if (vo.getShowpadId() != null) assignedTags = loadAssetTags(vo.getShowpadId());
-		Set<String> desiredTags = new HashSet<>();
-		desiredTags.add("mediabin"); //a static tag for all assets, identifies their source
-
-		//assign the tags this asset SHOULD have, attempt to backfill those from the known list of tags already in Showpad
-		FileType ft = new FileType(vo.getFileNm());
-		desiredTags.add(ft.getFileExtension());
-		if (vo.getLanguageCode() != null && vo.getLanguageCode().length() > 0)
-			desiredTags.addAll(Arrays.asList(vo.getLanguageCode().split(DSMediaBinImporterV2.TOKENIZER)));
-		if (vo.getBodyRegionTxt() != null && vo.getBodyRegionTxt().length() > 0)
-			desiredTags.addAll(Arrays.asList(vo.getBodyRegionTxt().split(DSMediaBinImporterV2.TOKENIZER)));
-		if (vo.getBusinessUnitNm() != null && vo.getBusinessUnitNm().length() > 0)
-			desiredTags.addAll(Arrays.asList(vo.getBusinessUnitNm().split(DSMediaBinImporterV2.TOKENIZER)));
-		if (vo.getLiteratureTypeTxt() != null && vo.getLiteratureTypeTxt().length() > 0)
-			desiredTags.addAll(Arrays.asList(vo.getLiteratureTypeTxt().split(DSMediaBinImporterV2.TOKENIZER)));
-		if (vo.getProdFamilyNm() != null && vo.getProdFamilyNm().length() > 0)
-			desiredTags.addAll(Arrays.asList(vo.getProdFamilyNm().split(DSMediaBinImporterV2.TOKENIZER)));
-
-		//loop the tags the asset already has, removing them from the "need to add" list
-		if (assignedTags != null) {
-			for (String tag : assignedTags.keySet())
-				desiredTags.remove(tag);
-		}
-
-		//add what's left on the "need to add" list as new tags; both to the Asset, and to Showpad if they're new
-		for (String tagNm : desiredTags) {
-			if (tagNm == null || tagNm.length() == 0) continue;
-			log.info("need tag " + tagNm + ", current id=" + showpadTags.get(tagNm));
-			if (showpadTags.get(tagNm) == null) {
-				//add it to the global list for the next iteration to leverage
-				showpadTags.put(tagNm, createTag(tagNm));
-			}
-
-			if (header.length() > 0) header.append(",");
-			header.append("<").append(showpadTags.get(tagNm)).append(">; rel=\"Tag\"");
-		}
-	}
-
-
-	/**
-	 * returns a list of tags already attached to this asset
-	 * @param showpadId
-	 * @return
-	 * @throws QuotaException 
-	 */
-	private Map<String, String> loadAssetTags(String showpadId) throws QuotaException {
-		Map<String,String> tags = new HashMap<>();
-		String tagUrl = props.getProperty("showpadApiUrl") + "/assets/" + showpadId + "/tags.json";
-		try {
-			String resp = showpadUtil.executeGet(tagUrl);
-			JSONObject json = JSONObject.fromObject(resp);
-			log.info(json);
-			JSONObject metaResp = json.getJSONObject("meta");
-			if (!"200".equals(metaResp.getString("code")))
-				throw new IOException(metaResp.getString("message"));
-
-			JSONObject response = json.getJSONObject("response");
-			JSONArray items = response.getJSONArray("items");
-			for (int x=0; x < items.size(); x++) {
-				JSONObject tag = items.getJSONObject(x);
-				showpadTags.put(tag.getString("name"), tag.getString("id"));
-			}
-
-		} catch (IOException | NullPointerException ioe) {
-			failures.add(ioe);
-			log.error("could not load showpad tags", ioe);
-		}
-
-		log.info("loaded " + tags.size() + " showpad tags: " + tags);
-		return tags;
-	}
-
-
-	/**
-	 * creates a new tag within Showpad
-	 * returns the ID of the newly minted tag.
-	 * @param showpadId
-	 * @param tagNm
-	 * @param tagId
-	 * @throws QuotaException 
-	 */
-	private String createTag(String tagNm) throws QuotaException {
-		String tagId = null;
-		String tagUrl = divisionUrl + "/tags.json";
-
-		Map<String,String> params = new HashMap<>();
-		params.put("name", tagNm);
-
-		try {
-			String resp = showpadUtil.executePost(tagUrl, params);
-			JSONObject json = JSONObject.fromObject(resp);
-			log.info(json);
-			JSONObject metaResp = json.getJSONObject("meta");
-			if (!"201".equals(metaResp.getString("code")))
-				throw new IOException(metaResp.getString("message"));
-
-			JSONObject response = json.getJSONObject("response");
-			tagId = response.getString("id");
-
-		} catch (IOException | NullPointerException ioe) {
-			failures.add(ioe);
-			log.error("could not create showpad tag " + tagNm, ioe);
-		}
-
-		log.info("created tag " + tagNm + " with id=" + tagId);
-		return tagId;
-	}
-
-
-/*************************************************************
- * 					UTILITY FUNCTIONS
- *************************************************************/
-
-	/**
-	 * return a predefined resource type based on the file extention
-	 * @param fileName
-	 * @return
-	 */
-	private String getResourceType(FileType fType) {
-		switch (fType.getFileExtension()) {
-			case "pdf":
-			case "txt":
-			case "rtf":
-			case "doc":
-			case "docx":
-			case "xls":
-			case "xlsx":
-			case "ppt":
-			case "pps":
-			case "ppsx":
-			case "pptx":
-				return "document";
-			case "m4v":
-			case "mp4":
-			case "mov":
-			case "mpg":
-			case "mpeg":
-			case "flv":
-			case "asf":
-			case "3gp":
-			case "avi":
-			case "wmv":
-				return "video";
-			case "mp3":
-			case "m4a":
-			case "wma":
-			case "wav":
-				return "audio";
-			case "jpg":
-			case "jpeg":
-			case "gif":
-			case "png":
-			case "tiff": 
-				return "image";
-
-			default: return "asset";
-		}
-	}
-
+	
+	/*************************************************************
+	 * 					UTILITY FUNCTIONS
+	 *************************************************************/
 	public String getDivisionId() {
 		return divisionId;
 	}
@@ -678,11 +513,16 @@ public class ShowpadDivisionUtil {
 	}
 
 	public List<Exception> getFailures() {
+		if (tagMgr != null) failures.addAll(tagMgr.getFailures()); //include failures from the tagMgr in our report. 
 		return failures;
 	}
 
 	public void setDivisionAssets(Map<String, String> divisionAssets) {
 		this.divisionAssets = divisionAssets;
+	}
+	
+	public Map<String, String> getDivisionAssets() {
+		return divisionAssets;
 	}
 
 	public int getDbCount() {
@@ -701,5 +541,8 @@ public class ShowpadDivisionUtil {
 	}
 	public int getDeleteCount() {
 		return deleteCount;
+	}
+	public ShowpadTagManager getTagManager() {
+		return tagMgr;
 	}
 }
