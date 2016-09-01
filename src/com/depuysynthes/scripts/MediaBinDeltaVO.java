@@ -1,8 +1,12 @@
 package com.depuysynthes.scripts;
 
 import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 import com.depuysynthes.action.MediaBinAssetVO;
+import com.depuysynthes.scripts.showpad.ShowpadTagVO;
 import com.siliconmtn.db.DBUtil;
 
 /****************************************************************************
@@ -26,6 +30,13 @@ public class MediaBinDeltaVO extends MediaBinAssetVO {
 	private String limeLightUrl;
 	private String fileName;
 	
+	/*
+	 * used by ShowpadProductDecorator to pass-along the update date of the product to affiliated assets.
+	 */
+	private Date productUpdateDt;
+	
+	private List<ShowpadTagVO> tags;
+	
 	//added for Showpad support; all the other fields are reuseable
 	private String showpadId;
 	
@@ -36,6 +47,7 @@ public class MediaBinDeltaVO extends MediaBinAssetVO {
 
 	public MediaBinDeltaVO() {
 		super();
+		tags = new ArrayList<ShowpadTagVO>();
 	}
 	
 	public MediaBinDeltaVO(ResultSet rs) {
@@ -113,5 +125,27 @@ public class MediaBinDeltaVO extends MediaBinAssetVO {
 		this.showpadId = showpadId;
 	}
 
+	public List<ShowpadTagVO> getTags() {
+		return tags;
+	}
+
+	public void setTags(List<ShowpadTagVO> tags) {
+		this.tags = tags;
+	}
 	
+	public void addTag(ShowpadTagVO tag) {
+		tags.add(tag);
+	}
+	
+	public void addTag(String id, String name, String division, String externalId) {
+		tags.add(new ShowpadTagVO(id, name, division, externalId));
+	}
+
+	public Date getProductUpdateDt() {
+		return productUpdateDt;
+	}
+
+	public void setProductUpdateDt(Date productUpdateDt) {
+		this.productUpdateDt = productUpdateDt;
+	}
 }

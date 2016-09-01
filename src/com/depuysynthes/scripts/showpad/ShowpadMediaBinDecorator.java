@@ -1,4 +1,4 @@
-package com.depuysynthes.scripts;
+package com.depuysynthes.scripts.showpad;
 
 import java.io.IOException;
 import java.sql.PreparedStatement;
@@ -7,12 +7,18 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import com.depuysynthes.scripts.DSMediaBinImporterV2;
+import com.depuysynthes.scripts.MediaBinDeltaVO;
 import com.depuysynthes.scripts.MediaBinDeltaVO.State;
+import com.siliconmtn.io.FileType;
 import com.siliconmtn.security.OAuth2TokenViaCLI;
 import com.siliconmtn.security.OAuth2TokenViaCLI.Config;
+import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -29,6 +35,7 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 
 	protected ShowpadApiUtil showpadApi;
 	protected List<ShowpadDivisionUtil> divisions = new ArrayList<>();
+	private boolean deduplicate = false; //override via args[1];
 
 	/**
 	 * @param args
@@ -55,6 +62,7 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 	public static void main(String[] args) throws Exception {
 		//Create an instance of the MedianBinImporter
 		ShowpadMediaBinDecorator dmb = new ShowpadMediaBinDecorator(args);
+		dmb.deduplicate = Convert.formatBoolean(args[1]); //args[0] passes 'type' to the superclass
 		dmb.run();
 	}
 
@@ -71,12 +79,27 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 			log.error(qe);
 		}
 
-		/*
-		//use only for de-duplication
-		loadManifest();
-		for (ShowpadDivisionUtil util : divisions)
-			cleanupShowpadDups(assetNames, localShowpadIds);
-		 */
+		//used only for de-duplication, which is more crisis-cleanup than something we do regularly.
+		if (deduplicate) {
+			Map<String, MediaBinDeltaVO> records = loadManifest();
+			Set<String> assetNames = new HashSet<>(records.size());
+			Set<String> localShowpadIds = new HashSet<>(records.size());
+			
+			for (MediaBinDeltaVO vo : records.values()) {
+				assetNames.add(ShowpadDivisionUtil.makeShowpadAssetName(vo, new FileType(vo.getFileNm())));
+				if (vo.getShowpadId() != null) localShowpadIds.add(vo.getShowpadId());
+			}
+			
+			try {
+				for (ShowpadDivisionUtil util : divisions)
+					util.cleanupShowpadDups(assetNames, localShowpadIds);
+			} catch (QuotaException qe) {
+				log.error(qe);
+			}
+			log.info("deuplication complete");
+			return;
+		}
+		
 		super.run();
 	}
 
