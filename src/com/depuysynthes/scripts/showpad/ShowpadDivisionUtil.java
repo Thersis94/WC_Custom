@@ -386,8 +386,9 @@ public class ShowpadDivisionUtil {
 	 */
 	private Set<String> testForCompletion() throws QuotaException {
 		Set<String> removes = new HashSet<>();
-		for (String ticketId : insertTicketQueue.keySet()) {
+		for (Map.Entry<String,String> row : insertTicketQueue.entrySet()) {
 			String assetId;
+			String ticketId = row.getKey();
 			try {
 				assetId = getAssetIdFromTicket(ticketId);
 				if (assetId != null) {
@@ -399,7 +400,7 @@ public class ShowpadDivisionUtil {
 			} catch (InvalidDataException e) {
 				//this asset failed lookup.  or maybe failed adding to Showpad.
 				//remove it and set the ID=null, we'll try it again tomorrow.
-				inserts.remove(insertTicketQueue.get(ticketId));
+				inserts.remove(row.getValue());
 				removes.add(ticketId);
 			}
 		}

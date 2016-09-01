@@ -64,12 +64,12 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	/*
 	 * The product catalog this script is hard-coded around
 	 */
-	protected final String catalogId = EMEACarouselAction.CATALOG_ID;
+	protected static final String catalogId = EMEACarouselAction.CATALOG_ID;
 
 	/*
 	 * The constant used for the MEDIABIN product attribute type - comes from the database
 	 */
-	protected final static String MEDIABIN_ATTR_TYPE = HuddleUtils.PROD_ATTR_MB_TYPE;
+	protected static final String MEDIABIN_ATTR_TYPE = HuddleUtils.PROD_ATTR_MB_TYPE;
 
 
 	/**
@@ -106,7 +106,6 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 		pca.setDBConnection(new SMTDBConnection(dbConn));
 		pca.setAttributes(attributes);
 		Tree t = pca.loadEntireCatalog(catalogId, true, null, null);
-		pca = null;
 
 		parseProductCatalog(t);
 		log.info("loaded " + products.size() + " mediabin-using products in catalog " + catalogId);
@@ -227,7 +226,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 
 			log.info("pushing product tags to Division=" + util.getDivisionNm());
 
-			boolean needsUpdated = false;
+			boolean needsUpdated;
 			for (MediaBinDeltaVO mbAsset : masterRecords.values()) {
 				//if the asset is new or updated, or the product is updated, we need to push tag changes to Showpad (all: adds/updates/deletes)
 				needsUpdated = (State.Insert == mbAsset.getRecordState() || State.Update == mbAsset.getRecordState());
@@ -360,7 +359,8 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	 * @param masterRecords
 	 */
 	private void findEmptyProducts(Map<String, MediaBinDeltaVO> masterRecords) {
-		String name, sousName;
+		String name;
+		String sousName;
 		for (ProductVO prod : products) {
 			name = prod.getProductName();
 			sousName = prod.getFullProductName();

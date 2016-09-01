@@ -47,7 +47,7 @@ public class MediaBinDeltaVO extends MediaBinAssetVO {
 
 	public MediaBinDeltaVO() {
 		super();
-		tags = new ArrayList<ShowpadTagVO>();
+		tags = new ArrayList<>();
 	}
 	
 	public MediaBinDeltaVO(ResultSet rs) {

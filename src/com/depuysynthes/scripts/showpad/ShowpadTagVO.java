@@ -25,6 +25,7 @@ public class ShowpadTagVO implements Serializable {
 	private String divisionId;
 
 	public ShowpadTagVO() {
+		//default constructor
 	}
 	
 	public ShowpadTagVO(String id, String name, String division, String externalId) {
@@ -71,6 +72,7 @@ public class ShowpadTagVO implements Serializable {
 		this.externalId = externalId;
 	}
 	
+	@Override
 	public String toString() {
 		return StringUtil.getToString(this);
 	}

@@ -14,6 +14,11 @@ import com.siliconmtn.util.StringUtil;
  * @since Aug 31, 2016
  ****************************************************************************/
 public class ShowpadResourceType {
+	
+	private ShowpadResourceType() {
+		//per sonarqube, hide the public constructor since this class only 
+		//has static methods; we don't want people creating this object.
+	}
 
 	protected static String getResourceType(FileType fType) {
 		switch (StringUtil.checkVal(fType.getFileExtension()).toLowerCase()) {
