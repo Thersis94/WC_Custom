@@ -432,6 +432,8 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 			//split the product name field using the tokenizer, and see if any of the values match our SOUS name.
 			String[] sousVals = mbAsset.getProdNm().split(DSMediaBinImporterV2.TOKENIZER);
 			for (String val : sousVals) {
+				if (!isQualifiedSousValue(val)) continue;
+				
 				Set<String> trackingNos = mediabinSOUSNames.get(val);
 				if (trackingNos == null) trackingNos = new HashSet<>();
 				trackingNos.add(mbAsset.getTrackingNoTxt());
@@ -453,6 +455,23 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 		log.info("still have " + mediabinSOUSNames.size() + " unique SOUS names in Mediabin assets not used by products");
 	}
 
+	
+	/**
+	 * Tests the String from the EXP file against business rules of values to ignore.
+	 * Angi: It would be great if you could filter all SOUS – Product Names 
+	 * only containing a number out of the report list e.g. “319.010”
+	 * @param sousValue
+	 * @return
+	 */
+	private boolean isQualifiedSousValue(String sousVal) {
+		if (sousVal == null || sousVal.isEmpty()) return false;
+		//remove dots and dashes that commonly appear in number sequences.  e.g. "319.010"
+		sousVal = StringUtil.removeNonAlphaNumeric(sousVal);
+		//if all we have is numbers, this is not a qualified sous value
+		log.debug("sous " + sousVal + " matches? " + sousVal.matches("[0-9]+"));
+		return !sousVal.matches("[0-9]+");
+	}
+	
 
 	/**
 	 * adds additional information to the Admin notification email.
