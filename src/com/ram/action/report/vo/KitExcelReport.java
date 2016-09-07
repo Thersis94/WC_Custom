@@ -14,23 +14,22 @@ import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.CreationHelper;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.util.CellRangeAddress;
 
 import com.lowagie.text.Font;
 import com.ram.action.data.ORKitVO;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 
 /****************************************************************************
- * <b>Title</b>: NexusCartExcelReport.java <p/>
- * <b>Project</b>: WC_Custom <p/>
- * <b>Description: </b> Creates the excel report for all the items in the cart
+ * <b>Title</b>KitExcelReport.java<p/>
+ * <b>Description: Create an excel document listing basic information on
+ * all supplied kits </b> 
  * <p/>
- * <b>Copyright:</b> Copyright (c) 2015<p/>
+ * <b>Copyright:</b> Copyright (c) 2016<p/>
  * <b>Company:</b> Silicon Mountain Technologies<p/>
  * @author Eric Damschroder
  * @version 1.0
- * @since May 20, 2015<p/>
- * @updates:
+ * @since September 6, 2016
+ * <b>Changes: </b>
  ****************************************************************************/
 
 public class KitExcelReport extends  AbstractSBReportVO {
@@ -101,9 +100,6 @@ public class KitExcelReport extends  AbstractSBReportVO {
 			r.createCell(cellCnt++).setCellValue(kit.getOtherId());
 			r.createCell(cellCnt++).setCellValue(kit.getNumProducts());
 		}
-		
-		s.addMergedRegion(new CellRangeAddress(rowCnt+1, rowCnt+1, 0, 11));
-		s.createRow(rowCnt+1).createCell(0).setCellValue("This document contains sensitive data that is highly restricted");
 	}
 
 	@SuppressWarnings("unchecked")
