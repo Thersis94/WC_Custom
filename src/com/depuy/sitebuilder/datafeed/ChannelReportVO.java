@@ -51,8 +51,16 @@ public class ChannelReportVO extends AbstractDataFeedReportVO  {
 
 		StringBuilder sb = new StringBuilder(100);
 
-		sb.append("Channel Report From ").append(this.startDate).append(" to ").append(endDate);
-
+		sb.append("Channel Report");
+		
+		if (!this.startDate.isEmpty()){
+			sb.append(" From ").append(this.startDate);
+		}
+		
+		if (!this.endDate.isEmpty()){
+			sb.append(" To ").append(endDate);
+		}
+		
 		rpt.setTitleCell(sb.toString());
 
 		rows = generateDataRows(rows);

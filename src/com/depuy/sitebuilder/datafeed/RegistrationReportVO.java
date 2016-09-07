@@ -76,8 +76,17 @@ public class RegistrationReportVO extends AbstractDataFeedReportVO {
 
 		if (this.endDate == null || this.endDate.isEmpty()) endDate = "Today";
 
-		sb.append("Registration Report From ").append(this.startDate).append(" to ").append(endDate);
+		sb.append("Registration Report");
 
+		
+		if (!this.startDate.isEmpty()){
+			sb.append(" From ").append(this.startDate);
+		}
+		
+		if (!this.endDate.isEmpty()){
+			sb.append(" to ").append(endDate);
+		}
+		
 		rpt.setTitleCell(sb.toString());
 
 		rows = generateQLRows(rows);

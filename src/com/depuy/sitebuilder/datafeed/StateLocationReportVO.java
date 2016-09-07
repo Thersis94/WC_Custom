@@ -71,8 +71,16 @@ public class StateLocationReportVO extends AbstractDataFeedReportVO {
 		if (this.endDate == null || this.endDate.isEmpty()) endDate = "Today";
 
 		sb.append("State Location Source Report for ").append(this.productCode);
-		sb.append(" - From ").append(this.startDate).append(" to ").append(endDate);
-
+		
+		
+		if (!this.startDate.isEmpty()){
+			sb.append(" - From ").append(this.startDate);
+		}
+		
+		if (!this.endDate.isEmpty()){
+			sb.append(" to ").append(endDate);
+		}
+		
 		rpt.setTitleCell(sb.toString());
 
 		rows = generateDataRows(rows);

@@ -65,8 +65,16 @@ public class PedoKitReportVO extends AbstractDataFeedReportVO {
 
 		StringBuilder sb = new StringBuilder(100);
 
-		sb.append("Pedometer Kit Report From ").append(this.startDate).append(" To ").append(endDate);
+		sb.append("Pedometer Kit Report From ");
 
+		if (!this.startDate.isEmpty()){
+			sb.append(" From ").append(this.startDate);
+		}
+		
+		if (!this.endDate.isEmpty()){
+			sb.append(" To ").append(endDate);
+		}
+		
 		rpt.setTitleCell(sb.toString());
 
 		rows = generateHeaderRows(rows);
