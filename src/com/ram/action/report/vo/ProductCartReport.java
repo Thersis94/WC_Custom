@@ -2,7 +2,6 @@ package com.ram.action.report.vo;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.text.SimpleDateFormat;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
@@ -19,6 +18,18 @@ import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.pdf.Base64ImageReplacer;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
+
+/****************************************************************************
+ * <b>Title</b>ProductCartReport.java<p/>
+ * <b>Description: Creates a pdf with information about the current cart</b> 
+ * <p/>
+ * <b>Copyright:</b> Copyright (c) 2016<p/>
+ * <b>Company:</b> Silicon Mountain Technologies<p/>
+ * @author Eric Damschroder
+ * @version 1.0
+ * @since September 6, 2016
+ * <b>Changes: </b>
+ ****************************************************************************/
 
 public class ProductCartReport  extends AbstractSBReportVO {
 
@@ -41,6 +52,7 @@ public class ProductCartReport  extends AbstractSBReportVO {
 			log.debug(data.get("baseDomain"));
 			renderer.getFontResolver().addFont("http://"+data.get("baseDomain")+"/binary/themes/CUSTOM/DEPUY/DPY_SYN_NEXUS/scripts/fonts/fontawesome-webfont.ttf", BaseFont.IDENTITY_H, true);
 			renderer.setDocument(doc, "http://"+data.get("baseDomain")+"/");
+			// Add the replacer so that base64 images are rendered properly
 			renderer.getSharedContext().setReplacedElementFactory(new Base64ImageReplacer(renderer.getSharedContext().getReplacedElementFactory()));
 			renderer.layout();
 			renderer.createPDF(os);
@@ -64,8 +76,22 @@ public class ProductCartReport  extends AbstractSBReportVO {
 		html.append("@media print{div.sig-footer{position:fixed; bottom:0;}}");
 		html.append("</style>");
 		
-		html.append("<div class='sig-footer'><table><tr><td><p>Sales Rep</p><img style='height:50px;' src='").append(data.get("sales")).append("'/></td>");
-		html.append("<td><p>Hospital Administrator</p><img style='height:50px;' src='").append(data.get("admin")).append("'/></td></tr></table></div>");
+		html.append("<div class='sig-footer'><table><tr><td><p>Sales Rep</p>");
+		if (StringUtil.checkVal(data.get("sales")).startsWith("data")) {
+			html.append("<img style='height:50px;' src='").append(data.get("sales")).append("'/>");
+		} else {
+			html.append("<p style='font-family: \"Comic Sans MS\", cursive, sans-serif; font-style: italic;'>").append(data.get("sales")).append("</p>");
+			
+		}
+		html.append("</td>");
+		html.append("<td><p>Hospital Administrator</p>");
+		if (StringUtil.checkVal(data.get("sales")).startsWith("data")) {
+			html.append("<img style='height:50px;' src='").append(data.get("admin")).append("'/>");
+		} else {
+			html.append("<p style='font-family: \"Comic Sans MS\", cursive, sans-serif; font-style: italic;'>").append(data.get("admin")).append("</p>");
+			
+		}
+		html.append("</td></tr></table></div>");
 		html.append("<table style='color:#636363;border-collapse:collapse;font-size:16px; width:100%;'><tbody>");
 		html.append("<tr><td style='width:48%'><img style='width:200px' src='/binary/themes/CUSTOM/RAMGRP/MAIN/images/ramgrouplogo.png' /><span style='float:right'>");
 		html.append(data.get(ProductCartAction.COMPLETE_DT)).append("</span></td><td colspan='2' style='text-align:right;'>");
