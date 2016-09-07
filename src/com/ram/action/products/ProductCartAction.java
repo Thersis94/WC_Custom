@@ -13,8 +13,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.jdt.internal.compiler.ast.SuperReference;
-
 import com.ram.action.data.ORKitVO;
 import com.ram.action.report.vo.KitExcelReport;
 import com.ram.action.report.vo.ProductCartReport;
@@ -36,7 +34,6 @@ import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.action.SBModuleVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.util.MessageSender;
@@ -50,13 +47,13 @@ import com.smt.sitebuilder.util.MessageSender;
  * <b>Company:</b> Silicon Mountain Technologies<p/>
  * @author Eric Damschroder
  * @version 1.0
- * @since August 2, 2016
+ * @since September 6, 2016
  * <b>Changes: </b>
  ****************************************************************************/
 
 public class ProductCartAction extends SBActionAdapter {
 
-	// Names for the cookies related to this action
+	// Names for the request parameters related to this action
 	public static final String HOSPITAL = "hospital";
 	public static final String ROOM = "room";
 	public static final String SURGEON = "surgeon";
@@ -80,6 +77,7 @@ public class ProductCartAction extends SBActionAdapter {
 		productGTIN("c.GTIN_NUMBER_TXT + CAST(p.GTIN_PRODUCT_ID as NVARCHAR(64))"),
 		surgeonName("SURGEON_NM"),
 		hospital("HOSPITAL_NM"),
+		repId("REP_ID"),
 		caseId("CASE_ID");
 		
 		private String cloumnNm;
@@ -125,6 +123,14 @@ public class ProductCartAction extends SBActionAdapter {
 	}
 	
 	
+	/**
+	 * Add the supplied parameter to the user's session.
+	 * These values are sent along via post parameters in order to get around
+	 * the character limit in get requests and allow 64-bit image strings to be
+	 * added
+	 * @param req
+	 * @throws ActionException
+	 */
 	private void editAttr(SMTServletRequest req) throws ActionException {
 		StringBuilder postParam = new StringBuilder();
 		BufferedReader reader;
@@ -138,7 +144,8 @@ public class ProductCartAction extends SBActionAdapter {
 			throw new ActionException(e);
 		}
 	}
-
+	
+	
 	/**
 	 * Deals with the various actions that a user can enact that affect their cart
 	 * @param req
@@ -150,51 +157,62 @@ public class ProductCartAction extends SBActionAdapter {
 		if (Convert.formatBoolean(req.getParameter("clearCart"))) {
 			deleteItem(cart, req);
 		} else  {
-
 			List<GenericVO> addedItems = new ArrayList<>();
 			for (int i = 0; i < req.getParameterValues("productId").length; i++) {
 				String[] oldLots = req.getParameterValues("oldLot");
 				String oldLot = (oldLots!=null && oldLots.length > i)? oldLots[i] : "";
 				if (cart.getItems().containsKey(req.getParameterValues("productId")[i]+oldLot)) {
-	
-					ShoppingCartItemVO p = cart.getItems().get(req.getParameterValues("productId")[i] + oldLot);
-					p.setProductId(req.getParameterValues("productId")[i] + req.getParameterValues("lotNo")[i]);
-					p.getProduct().getProdAttributes().put("lotNo", req.getParameterValues("lotNo")[i]);
-					p.getProduct().getProdAttributes().put(WASTED, req.getParameterValues(WASTED)[i]);
-					p.getProduct().getProdAttributes().put(BILLABLE, req.getParameterValues(BILLABLE)[i]);
-					p.getProduct().getProdAttributes().put(PRODUCT_FROM, req.getParameterValues(PRODUCT_FROM)[i]);
-					p.getProduct().getProdAttributes().put("oldId", p.getProduct().getProductId() + oldLot);
-					int qty = Convert.formatInteger(req.getParameter("qty"),1);
-
-					String[] edits = req.getParameterValues("editItem");
-					boolean edit = edits!=null && edits.length > i? Convert.formatBoolean(edits[i]) : false;
-					
-					if (!edit)qty += p.getQuantity();
-					p.setQuantity(qty > 99? 99:qty);
-					cart.add(p);
-					
-					// Remove the old product if we have changed the lot no
-					if (!oldLot.equals(p.getProduct().getProdAttributes().get("lotNo")) ) {
-						cart.remove(p.getProduct().getProductId()+oldLot);
-					}
-					
-					addedItems.add(new GenericVO("update", p));
+					editCartProduct(req, i, addedItems, oldLot, cart);
 				} else {
 					ShoppingCartItemVO item = buildProduct(req, i);
 					addedItems.add(new GenericVO("insert", item));
 					addItem(cart, item, oldLot);
-					
-					// Return the cart item so the cart can be updated properly on the front end.
 				}
 
 			}
+			// Put the added products onto the request object so the page can
+			// be updated accordingly.
 			super.putModuleData(addedItems);
 		}
 		
 		store.save(cart);
 	}
 	
+	
+	/**
+	 * Edits a product in the cart with information from the request object
+	 * @param req
+	 * @param pos
+	 * @param addedItems
+	 * @param oldLot
+	 * @param cart
+	 */
+	private void editCartProduct(SMTServletRequest req, int pos, List<GenericVO> addedItems, String oldLot, ShoppingCartVO cart) {
+		ShoppingCartItemVO p = cart.getItems().get(req.getParameterValues("productId")[pos] + oldLot);
+		p.setProductId(req.getParameterValues("productId")[pos] + req.getParameterValues("lotNo")[pos]);
+		p.getProduct().getProdAttributes().put("lotNo", req.getParameterValues("lotNo")[pos]);
+		p.getProduct().getProdAttributes().put(WASTED, req.getParameterValues(WASTED)[pos]);
+		p.getProduct().getProdAttributes().put(BILLABLE, req.getParameterValues(BILLABLE)[pos]);
+		p.getProduct().getProdAttributes().put(PRODUCT_FROM, req.getParameterValues(PRODUCT_FROM)[pos]);
+		p.getProduct().getProdAttributes().put("oldId", p.getProduct().getProductId() + oldLot);
+		int qty = Convert.formatInteger(req.getParameter("qty"),1);
 
+		String[] edits = req.getParameterValues("editItem");
+		boolean edit = edits!=null && edits.length > pos? Convert.formatBoolean(edits[pos]) : false;
+		
+		if (!edit)qty += p.getQuantity();
+		p.setQuantity(qty > 99? 99:qty);
+		cart.add(p);
+		
+		// Remove the old product if we have changed the lot no
+		if (!oldLot.equals(p.getProduct().getProdAttributes().get("lotNo")) ) {
+			cart.remove(p.getProduct().getProductId()+oldLot);
+		}
+		
+		addedItems.add(new GenericVO("update", p));
+	}
+	
+	
 	/**
 	 * Deletes the requested item or clears the cart completely
 	 * @param cart
@@ -291,6 +309,12 @@ public class ProductCartAction extends SBActionAdapter {
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		// If a kitId has been passed along we need to load the kit first.
 		if (req.hasParameter(KIT_ID))populateCart(req);
+		
+		// If no reseller name has been set we default to the logged in user's name
+		if (req.getSession().getAttribute(RESELLER) == null) {
+			UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
+			req.getSession().setAttribute(RESELLER, user.getFullName());
+		}
 
 		if (req.getSession().getAttribute("companies") == null) getCustomers(req);
 		if (req.getSession().getAttribute("hospitals") == null) getHospitals(req);
@@ -299,21 +323,26 @@ public class ProductCartAction extends SBActionAdapter {
 		ShoppingCartVO cart = retrieveContainer(req).load();
 		req.setAttribute("cart", cart.getItems());
 		
-		// Check if we are building a file, create the report generator and set the pertinent information
 		if (req.hasParameter("exportKits")) {
 			buildKitSummaryReport(req);
 		}else if (req.hasParameter("buildFile")) {
 			buildReport(req);
 		} else if ("review".equals(req.getParameter("step"))) {
 			loadKits(req, 1);
-		} else if (req.hasParameter("searchData")) {
+		} else if ("load".equals(req.getParameter("step"))) {
 			searchProducts(req);
 		} else if (!req.hasParameter("pmid")) {
 			loadKits(req, 0);
 		}
 	}
 	
-	private void buildKitSummaryReport(SMTServletRequest req) {
+	
+	/**
+	 * Build an excel file with the all kits from the
+	 * current search and add it to the request
+	 * @param req
+	 */
+	private void buildKitSummaryReport(SMTServletRequest req) throws ActionException {
 		loadKits(req, 1);
 		AbstractSBReportVO report = new KitExcelReport();
 		report.setData(((ModuleVO)attributes.get(Constants.MODULE_DATA)).getActionData());
@@ -322,6 +351,12 @@ public class ProductCartAction extends SBActionAdapter {
 		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, true);
 	}
 	
+	
+	/**
+	 * Get a list of companies that produce parts 
+	 * that can be found in the OR module.
+	 * @param req
+	 */
 	private void getCustomers(SMTServletRequest req) {
 		StringBuilder sql = new StringBuilder(200);
 		
@@ -339,12 +374,17 @@ public class ProductCartAction extends SBActionAdapter {
 				companies.add(new GenericVO(rs.getString("CUSTOMER_ID"), rs.getString("CUSTOMER_NM")));
 			}
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			log.error("Unable to get list of hospitals", e);
 		} 
 		req.getSession().setAttribute("companies", companies);
 	}
 	
+	
+	/**
+	 * Get the valid hospitals that can be part of the OR module
+	 * @param req
+	 * @throws ActionException
+	 */
 	private void getHospitals(SMTServletRequest req) throws ActionException {
 		StringBuilder sql = new StringBuilder(150);
 		
@@ -366,30 +406,17 @@ public class ProductCartAction extends SBActionAdapter {
 	}
 	
 	
+	/**
+	 * Search for products that match the supplied search crteria
+	 * @param req
+	 * @throws ActionException
+	 */
 	private void searchProducts(SMTServletRequest req) throws ActionException {
 		List<RAMProductVO> products = new ArrayList<>();
-		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		String[] fields = req.getParameterValues("searchFields");
 		int searchType = Convert.formatInteger(req.getParameter("searchType"), 1);
 		// A search type greater than 2 means an exact search
-		String searchComaparator = searchType > 1? " like ":" = ";
-		StringBuilder sql = new StringBuilder(300);
-		sql.append("SELECT p.PRODUCT_ID, p.CUST_PRODUCT_ID, c.GTIN_NUMBER_TXT + CAST(p.GTIN_PRODUCT_ID as NVARCHAR(64)) as GTIN_NUMBER_TXT, PRODUCT_NM, ");
-		sql.append("DESC_TXT, SHORT_DESC, c.CUSTOMER_NM FROM ").append(customDb).append("RAM_PRODUCT p ");
-		sql.append("LEFT JOIN ").append(customDb).append("RAM_CUSTOMER c on c.CUSTOMER_ID = p.CUSTOMER_ID ");
-		sql.append("WHERE p.CUSTOMER_ID is not null and p.GTIN_PRODUCT_ID is not null AND ");
-		sql.append("p.CUSTOMER_ID != '' AND p.GTIN_PRODUCT_ID != '' ");
-		if (req.hasParameter("searchCustomer")) sql.append("AND p.CUSTOMER_ID = ? ");
-		if (fields != null) {
-			// Add fail condition to allow for multiple OR clauses
-			sql.append("AND (1=2 ");
-			for (String field : fields) {
-				sql.append("OR ").append(SearchFields.valueOf(field).getColumnName()).append(searchComaparator).append("? ");
-			}
-			sql.append(") ");
-		}
-		if (req.hasParameter("orgName")) sql.append("AND p.CUSTOMER_ID = ? ");
-		log.debug(sql);
+		String sql = getProductSearchSQL(req, fields, searchType);
 		int count = 0;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			int i = 1;
@@ -397,7 +424,7 @@ public class ProductCartAction extends SBActionAdapter {
 			if (fields != null) {
 				String searchData = req.getParameter("searchData");
 				for (int j=0; j<fields.length; j++) {
-					ps.setString(i++, (searchType > 1 ? "%":"") + searchData + (searchType == 3? "%":""));
+					ps.setString(i++, (searchType == 3? "%":"") + searchData + (searchType > 1 ? "%":""));
 				}
 			}
 			if (req.hasParameter("orgName")) ps.setString(i++, req.getParameter("orgName"));
@@ -416,6 +443,38 @@ public class ProductCartAction extends SBActionAdapter {
 		}
 		
 		super.putModuleData(products, count, false);
+	}
+	
+	
+	/**
+	 * Build the sql for the product search
+	 * @param req
+	 * @param fields
+	 * @param searchType
+	 * @return
+	 */
+	private String getProductSearchSQL (SMTServletRequest req, String[] fields, int searchType) {
+		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		String searchComaparator = searchType > 1? " like ":" = ";
+		StringBuilder sql = new StringBuilder(300);
+		sql.append("SELECT p.PRODUCT_ID, p.CUST_PRODUCT_ID, c.GTIN_NUMBER_TXT + CAST(p.GTIN_PRODUCT_ID as NVARCHAR(64)) as GTIN_NUMBER_TXT, PRODUCT_NM, ");
+		sql.append("DESC_TXT, SHORT_DESC, c.CUSTOMER_NM FROM ").append(customDb).append("RAM_PRODUCT p ");
+		sql.append("LEFT JOIN ").append(customDb).append("RAM_CUSTOMER c on c.CUSTOMER_ID = p.CUSTOMER_ID ");
+		sql.append("WHERE p.CUSTOMER_ID is not null and p.GTIN_PRODUCT_ID is not null AND  c.GTIN_NUMBER_TXT is not null ");
+		sql.append("AND p.CUSTOMER_ID != '' AND p.GTIN_PRODUCT_ID != '' AND c.GTIN_NUMBER_TXT != '' ");
+		if (req.hasParameter("searchCustomer")) sql.append("AND p.CUSTOMER_ID = ? ");
+		if (fields != null) {
+			// Add fail condition to allow for multiple OR clauses
+			sql.append("AND (1=2 ");
+			// Loop over the selected search fields and add each one to the query
+			for (String field : fields) {
+				sql.append("OR ").append(SearchFields.valueOf(field).getColumnName()).append(searchComaparator).append("? ");
+			}
+			sql.append(") ");
+		}
+		if (req.hasParameter("orgName")) sql.append("AND p.CUSTOMER_ID = ? ");
+		
+		return sql.toString();
 	}
 	
 	
@@ -460,6 +519,12 @@ public class ProductCartAction extends SBActionAdapter {
 		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, true);
 	}
 	
+	
+	/**
+	 * Delete a non finalized surgical case
+	 * @param req
+	 * @throws ActionException
+	 */
 	private void deleteCart(SMTServletRequest req) throws ActionException {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(125);
@@ -480,6 +545,13 @@ public class ProductCartAction extends SBActionAdapter {
 		super.putModuleData(req.getParameter(KIT_ID));
 	}
 	
+	
+	/**
+	 * Save the current cart and all products associated with it.
+	 * @param req
+	 * @param finalizeCart
+	 * @throws ActionException
+	 */
 	private void saveCart(SMTServletRequest req, int finalizeCart) throws ActionException {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(225);
@@ -526,7 +598,15 @@ public class ProductCartAction extends SBActionAdapter {
 		}
 	}
 	
+	
+	/**
+	 * Get all products from the cart and save them to the database
+	 * @param req
+	 * @param kitId
+	 * @throws ActionException
+	 */
 	private void saveProducts(SMTServletRequest req, String kitId) throws ActionException {
+		// Delete all associated products to prevent duplicates
 		purgeProducts(kitId);
 		
 		ShoppingCartVO cart = retrieveContainer(req).load();
@@ -558,6 +638,12 @@ public class ProductCartAction extends SBActionAdapter {
 		}
 	}
 	
+	
+	/**
+	 * Delete all products associated with the supplied kit
+	 * @param kitId
+	 * @throws ActionException
+	 */
 	private void purgeProducts(String kitId) throws ActionException {
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("DELETE ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
@@ -572,20 +658,15 @@ public class ProductCartAction extends SBActionAdapter {
 		}
 	}
 	
-	private void loadKits(SMTServletRequest req, int finalized) {
-		StringBuilder sql = new StringBuilder(300);
-		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+	
+	/**
+	 * Load all kits, potentially filtering them down based on supplied search criteria
+	 * @param req
+	 * @param finalized
+	 */
+	private void loadKits(SMTServletRequest req, int finalized) throws ActionException {
 		List<ORKitVO> kits = new ArrayList<>();
-		
-		sql.append("SELECT HOSPITAL_NM, OPERATING_ROOM, SURGERY_DT, SURGEON_NM, CASE_ID, RESELLER_NM, k.RAM_KIT_INFO_ID, COUNT(k.RAM_KIT_INFO_ID) as NUM_PRODUCTS, FINALIZED_FLG ");
-		sql.append("FROM ").append(customDb).append("RAM_KIT_INFO k ");
-		sql.append("LEFT JOIN ").append(customDb).append("RAM_KIT_PRODUCT_XR xr ");
-		sql.append("on k.RAM_KIT_INFO_ID = xr.RAM_KIT_INFO_ID ");
-		sql.append("WHERE k.PROFILE_ID = ? AND FINALIZED_FLG = ? ");
-		if (req.hasParameter("searchData") && req.hasParameter("searchType")) sql.append("AND ").append(SearchFields.valueOf(req.getParameter("searchType")).getColumnName()).append(" like ? ");
-		if (req.hasParameter("startDate")) sql.append("AND k.CREATE_DT > ? ");
-		if (req.hasParameter("endDate")) sql.append("AND k.CREATE_DT < ? ");
-		sql.append("GROUP BY HOSPITAL_NM, OPERATING_ROOM, SURGERY_DT, SURGEON_NM, CASE_ID, RESELLER_NM, k.RAM_KIT_INFO_ID, FINALIZED_FLG ");
+		String sql = buildKitSearchSQL(req);
 		log.debug(sql+"|"+finalized+"|"+req.getParameter("startDate")+"|"+req.getParameter("endDate"));
 		int count = 0;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -609,13 +690,41 @@ public class ProductCartAction extends SBActionAdapter {
 				kits.add(new ORKitVO(rs));
 			}
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			throw new ActionException(e);
 		}
 		
 		super.putModuleData(kits, count, false);
 	}
 	
+	
+	/**
+	 * Build the kit search sql query
+	 * @param req
+	 * @return
+	 */
+	private String buildKitSearchSQL(SMTServletRequest req) {
+		StringBuilder sql = new StringBuilder(300);
+		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		
+		sql.append("SELECT HOSPITAL_NM, OPERATING_ROOM, SURGERY_DT, SURGEON_NM, REP_ID, OTHER_ID, CASE_ID, RESELLER_NM, k.RAM_KIT_INFO_ID, COUNT(k.RAM_KIT_INFO_ID) as NUM_PRODUCTS, FINALIZED_FLG ");
+		sql.append("FROM ").append(customDb).append("RAM_KIT_INFO k ");
+		sql.append("LEFT JOIN ").append(customDb).append("RAM_KIT_PRODUCT_XR xr ");
+		sql.append("on k.RAM_KIT_INFO_ID = xr.RAM_KIT_INFO_ID ");
+		sql.append("WHERE k.PROFILE_ID = ? AND FINALIZED_FLG = ? ");
+		if (req.hasParameter("searchData") && req.hasParameter("searchType")) sql.append("AND ").append(SearchFields.valueOf(req.getParameter("searchType")).getColumnName()).append(" like ? ");
+		if (req.hasParameter("startDate")) sql.append("AND k.CREATE_DT > ? ");
+		if (req.hasParameter("endDate")) sql.append("AND k.CREATE_DT < ? ");
+		sql.append("GROUP BY HOSPITAL_NM, OPERATING_ROOM, SURGERY_DT, SURGEON_NM, CASE_ID, RESELLER_NM, k.RAM_KIT_INFO_ID, FINALIZED_FLG, REP_ID, OTHER_ID ");
+		
+		return sql.toString();
+	}
+	
+	
+	/**
+	 * Get all information and products associated with the current kit
+	 * @param req
+	 * @throws ActionException
+	 */
 	private void populateCart(SMTServletRequest req) throws ActionException {
 		StringBuilder sql = new StringBuilder(300);
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
@@ -627,10 +736,10 @@ public class ProductCartAction extends SBActionAdapter {
 		sql.append("on xr.PRODUCT_ID = p.PRODUCT_ID ");
 		sql.append("LEFT JOIN ").append(customDb).append("RAM_CUSTOMER c ");
 		sql.append("on c.CUSTOMER_ID = p.CUSTOMER_ID ");
-		sql.append("WHERE k.PROFILE_ID = ? ");
-		sql.append("and k.RAM_KIT_INFO_ID = ?");
+		sql.append("WHERE k.PROFILE_ID = ? and k.RAM_KIT_INFO_ID = ?");
 		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 		log.debug(sql+"|"+req.getParameter(KIT_ID)+"|"+user.getProfileId());
+		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, user.getProfileId());
 			ps.setString(2, req.getParameter(KIT_ID));
@@ -646,7 +755,8 @@ public class ProductCartAction extends SBActionAdapter {
 					req.getSession().setAttribute(HOSPITAL, rs.getString("HOSPITAL_NM"));
 					req.getSession().setAttribute(ROOM, rs.getString("OPERATING_ROOM"));
 					req.getSession().setAttribute(SURGEON, rs.getString("SURGEON_NM"));
-					req.getSession().setAttribute(TIME, new SimpleDateFormat("MM-dd-yyyy -- hh:mm").format(rs.getTimestamp("SURGERY_DT")));
+					if (rs.getTimestamp("SURGERY_DT") != null)
+						req.getSession().setAttribute(TIME, new SimpleDateFormat("MM-dd-yyyy -- hh:mm").format(rs.getTimestamp("SURGERY_DT")));
 					req.getSession().setAttribute(CASE_ID, rs.getString("CASE_ID"));
 					req.getSession().setAttribute(KIT_ID, rs.getString("RAM_KIT_INFO_ID"));
 					req.getSession().setAttribute("finalized", Convert.formatBoolean(rs.getString("FINALIZED_FLG")));
@@ -655,19 +765,26 @@ public class ProductCartAction extends SBActionAdapter {
 					req.getSession().setAttribute(ADMIN_SIGNATURE, rs.getString("ADMIN_SIGNATURE"));
 					req.getSession().setAttribute(OTHER_ID, rs.getString("OTHER_ID"));
 					req.getSession().setAttribute(REP_ID, rs.getString("REP_ID"));
-					req.getSession().setAttribute(COMPLETE_DT, new SimpleDateFormat("MM/dd/yyyy").format(rs.getTimestamp("UPDATE_DT")));
+					if (rs.getTimestamp("UPDATE_DT") != null)
+						req.getSession().setAttribute(COMPLETE_DT, new SimpleDateFormat("MM/dd/yyyy").format(rs.getTimestamp("UPDATE_DT")));
 				}
 				cart.add(buildProduct(rs));
 			}
 			
 			store.save(cart);
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			throw new ActionException(e);
 		}
 	
 	}
-
+	
+	
+	/**
+	 * Build a product from data in the result set
+	 * @param rs
+	 * @return
+	 * @throws SQLException
+	 */
 	private ShoppingCartItemVO buildProduct(ResultSet rs) throws SQLException {
 		ProductVO product = new ProductVO();
 		product.setProductId(rs.getString("PRODUCT_ID"));
@@ -685,6 +802,14 @@ public class ProductCartAction extends SBActionAdapter {
 		return item;
 	}
 	
+	
+	/**
+	 * Flush all paramters used to store kit information, flush the cart,
+	 * and save the empty cart in order to purge everything associated with
+	 * the current cart.
+	 * @param req
+	 * @throws ActionException
+	 */
 	private void newKit(SMTServletRequest req) throws ActionException {
 		req.getSession().removeAttribute(HOSPITAL);
 		req.getSession().removeAttribute(ROOM);
@@ -705,6 +830,11 @@ public class ProductCartAction extends SBActionAdapter {
 		store.save(cart);
 	}
 	
+	
+	/**
+	 * Send emails to the representative and the hospital
+	 * @param req
+	 */
 	private void sendEmails(SMTServletRequest req) {
 		
 		try {
@@ -732,6 +862,12 @@ public class ProductCartAction extends SBActionAdapter {
 		}
 	}
 
+	
+	/**
+	 * Get the hospital email address from the database
+	 * @param req
+	 * @return
+	 */
 	private String getHospitalEmail(SMTServletRequest req) {
 		StringBuilder sql = new StringBuilder(150);
 		
