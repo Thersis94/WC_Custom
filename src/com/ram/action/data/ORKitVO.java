@@ -7,6 +7,19 @@ import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
+/****************************************************************************
+ * <b>Title</b>ORKitVO.java<p/>
+ * <b>Description: Holds all information related to a particular kit without
+ * loading it into the user's cart</b> 
+ * <p/>
+ * <b>Copyright:</b> Copyright (c) 2016<p/>
+ * <b>Company:</b> Silicon Mountain Technologies<p/>
+ * @author Eric Damschroder
+ * @version 1.0
+ * @since September 6, 2016
+ * <b>Changes: </b>
+ ****************************************************************************/
+
 public class ORKitVO {
 	
 	private String kitId;
