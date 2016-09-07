@@ -79,8 +79,17 @@ public class ShareMyStoryReportVO extends AbstractDataFeedReportVO {
 
 		StringBuilder sb = new StringBuilder(100);
 
-		sb.append("Patient Stories Report From ").append(this.startDate).append(" To ").append(this.endDate);
+		sb.append("Patient Stories Report");
 
+		
+		if (!this.startDate.isEmpty()){
+			sb.append(" From ").append(this.startDate);
+		}
+		
+		if (!this.endDate.isEmpty()){
+			sb.append(" To ").append(this.endDate);
+		}
+		
 		rpt.setTitleCell(sb.toString());
 
 		rows = generateDataRows(rows);

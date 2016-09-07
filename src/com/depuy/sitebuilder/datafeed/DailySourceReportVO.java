@@ -29,6 +29,7 @@ import com.siliconmtn.util.StringUtil;
  ****************************************************************************/
 public class DailySourceReportVO extends AbstractDataFeedReportVO {
 	private Map<Date, ReportData> dataSource = new TreeMap<>();
+	private String groupType;
 	private String startDate=null;
 	private String endDate=null;
 	private String joint=null;
@@ -50,6 +51,7 @@ public class DailySourceReportVO extends AbstractDataFeedReportVO {
 	@SuppressWarnings("unchecked")
 	@Override
 	public void setRequestData(SMTServletRequest req) {
+		this.groupType = StringUtil.checkVal(req.getParameter("groupType"));
 		this.headers = (Map<String, Integer>) req.getAttribute("reportHeader");
 		this.joint = StringUtil.checkVal(req.getParameter("productCode"));
 		this.startDate = StringUtil.checkVal(req.getParameter("startDate"));
@@ -71,7 +73,25 @@ public class DailySourceReportVO extends AbstractDataFeedReportVO {
 
 		StringBuilder sb = new StringBuilder(100);
 
-		sb.append("Daily Source Report for ").append(joint).append(" - From ").append(this.startDate).append(" to ").append(endDate);
+		
+		if ("3".equals(groupType)){
+			sb.append("Monthly ");
+		}else if ("2".equals(groupType)) {
+			sb.append("Weekly ");
+		}else {
+			sb.append("Daily ");
+		}
+		
+		sb.append("Source Report for ").append(joint);
+		
+		
+		if (!this.startDate.isEmpty()){
+			sb.append(" - From ").append(this.startDate);
+		}
+		
+		if (!this.endDate.isEmpty()){
+			sb.append(" To ").append(endDate);
+		}
 
 		rpt.setTitleCell(sb.toString());
 
@@ -114,10 +134,13 @@ public class DailySourceReportVO extends AbstractDataFeedReportVO {
 	private List<Map<String, Object>> generateDataRows(
 			List<Map<String, Object>> rows, Map<String, String> headerMap) {
 		int total = 0;
+		
 		for (Entry<Date, ReportData> entry : dataSource.entrySet()){
 			Map<String, Object> row = new HashMap<>();
 			ReportData dateData = entry.getValue();
-			row.put("DATE",Convert.formatDate(entry.getKey(), "MM/dd/yy"));
+			
+			row.put("DATE",formatDate(entry.getKey()));
+			
 			for(String key : headerMap.keySet()){
 
 				if (dateData.getDataSource().containsKey(key) ){
@@ -136,6 +159,23 @@ public class DailySourceReportVO extends AbstractDataFeedReportVO {
 		return rows;
 	}
 
+	
+	/**
+	 * @param key
+	 * @return
+	 */
+	private String formatDate(Date key) {
+
+		if("1".equals(groupType)){
+			return Convert.formatDate(key, Convert.DATE_LONG);
+		}else if ("2".equals(groupType)){ 
+			return Convert.formatDate(key, "MMMM dd, yyyy");
+		}else{
+			return Convert.formatDate(key, "MMMM, yyyy");
+		}
+
+	}
+	
 	/**
 	 * if not the date sets the value to zero
 	 * @param row
