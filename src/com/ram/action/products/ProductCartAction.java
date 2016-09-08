@@ -329,9 +329,9 @@ public class ProductCartAction extends SBActionAdapter {
 			buildReport(req);
 		} else if ("review".equals(req.getParameter("step"))) {
 			loadKits(req, 1);
-		} else if ("load".equals(req.getParameter("step"))) {
+		} else if ("load".equals(req.getParameter("step")) && req.hasParameter("searchData")) {
 			searchProducts(req);
-		} else if (!req.hasParameter("pmid")) {
+		} else if (!"load".equals(req.getParameter("step"))) {
 			loadKits(req, 0);
 		}
 	}
@@ -667,13 +667,11 @@ public class ProductCartAction extends SBActionAdapter {
 	private void loadKits(SMTServletRequest req, int finalized) throws ActionException {
 		List<ORKitVO> kits = new ArrayList<>();
 		String sql = buildKitSearchSQL(req);
-		log.debug(sql+"|"+finalized+"|"+req.getParameter("startDate")+"|"+req.getParameter("endDate"));
 		int count = 0;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 			int i =1;
 			ps.setString(i++, user.getProfileId());
-			ps.setInt(i++, finalized);
 			if (req.hasParameter("searchData") && req.hasParameter("searchType")) ps.setString(i++, "%" + req.getParameter("searchData")+ "%");
 			if (req.hasParameter("startDate")) ps.setTimestamp(i++, Convert.getTimestamp(Convert.formatDate(Convert.DATE_TIME_SLASH_PATTERN, req.getParameter("startDate")), false));
 			if (req.hasParameter("endDate")) ps.setTimestamp(i++, Convert.getTimestamp(Convert.formatDate(Convert.DATE_TIME_SLASH_PATTERN, req.getParameter("endDate")), false));
@@ -710,11 +708,12 @@ public class ProductCartAction extends SBActionAdapter {
 		sql.append("FROM ").append(customDb).append("RAM_KIT_INFO k ");
 		sql.append("LEFT JOIN ").append(customDb).append("RAM_KIT_PRODUCT_XR xr ");
 		sql.append("on k.RAM_KIT_INFO_ID = xr.RAM_KIT_INFO_ID ");
-		sql.append("WHERE k.PROFILE_ID = ? AND FINALIZED_FLG = ? ");
+		sql.append("WHERE k.PROFILE_ID = ? ");
 		if (req.hasParameter("searchData") && req.hasParameter("searchType")) sql.append("AND ").append(SearchFields.valueOf(req.getParameter("searchType")).getColumnName()).append(" like ? ");
 		if (req.hasParameter("startDate")) sql.append("AND k.CREATE_DT > ? ");
 		if (req.hasParameter("endDate")) sql.append("AND k.CREATE_DT < ? ");
 		sql.append("GROUP BY HOSPITAL_NM, OPERATING_ROOM, SURGERY_DT, SURGEON_NM, CASE_ID, RESELLER_NM, k.RAM_KIT_INFO_ID, FINALIZED_FLG, REP_ID, OTHER_ID ");
+		sql.append("ORDER BY FINALIZED_FLG ");
 		
 		return sql.toString();
 	}
