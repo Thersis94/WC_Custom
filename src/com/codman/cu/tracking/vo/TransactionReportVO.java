@@ -4,20 +4,32 @@ import java.text.DateFormat;
 import java.util.Date;
 import java.util.List;
 
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.util.CellRangeAddress;
+
 import com.codman.cu.tracking.vo.UnitVO.ProdType;
+import com.siliconmtn.data.report.ExcelReport;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.common.SiteVO;
 
 /****************************************************************************
- * <b>Title</b>: DataExport.java<p/>
- * <b>Description: Exports a suite of data to an Excel report</b> 
+ * <b>Title</b>: TransactionReportVO<p/>
+ * <b>Description: Exports the Transaction data to an Excel report</b> 
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2011<p/>
  * <b>Company:</b> Silicon Mountain Technologies<p/>
  * @author James McKain
  * @version 1.0
  * @since Jan 25, 2011
+ * @updates
+ * 		09.07.2016, refactored from HTML to true Excel using the POI libraries - JM
  ****************************************************************************/
 public class TransactionReportVO extends AbstractSBReportVO {
 	private static final long serialVersionUID = -4473379747242916803L;
@@ -32,50 +44,162 @@ public class TransactionReportVO extends AbstractSBReportVO {
 		setFileName("Control Unit Transaction Report.xls");
 	}
 
+
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.AbstractSBReportVO#generateReport()
 	 */
 	@Override
 	public byte[] generateReport() {
 		log.debug("starting Physician Report");
-		StringBuilder rpt = new StringBuilder(this.getHeader());
+
+		//Create Excel Object
+		Workbook wb = new HSSFWorkbook();
+		Sheet s = wb.createSheet();
+
+		// make title row, its the first row in the sheet (0)
+		int rowNo = 0;
+		Row r = s.createRow(rowNo++);
+		addTitleRow(wb, s, r);
+
+		//make the column headings row
+		r = s.createRow(rowNo++);
+		addHeaderRow(wb, s, r);
 
 		//loop the accounts, physians, units, and requests
 		for (AccountVO acct : data) {
-			for (TransactionVO t : acct.getTransactions()) {
-				rpt.append("<tr>");
-				rpt.append("\t<td>").append(StringUtil.checkVal(acct.getAccountName())).append("</td>\r");
-				rpt.append("\t<td>").append(StringUtil.checkVal(t.getRequestorName())).append("</td>\r");
-				rpt.append("\t<td>").append(t.getPhysician().getFirstName()).append(" ").append(t.getPhysician().getLastName()).append("</td>\r");
-				rpt.append("\t<td>").append(t.getStatusStr()).append("</td>\r");
-				rpt.append("\t<td>").append(this.formatDate(t.getCreateDate())).append("</td>\r");
-				rpt.append("\t<td>").append(StringUtil.checkVal(t.getApprovorName())).append("</td>\r");
-				rpt.append("\t<td>").append(this.formatDate(t.getCompletedDate())).append("</td>\r");
-				rpt.append("\t<td>").append(StringUtil.checkVal(t.getRequestNo())).append("</td>\r");
-				//request type
-				if (t.getTransactionTypeId() == 2 && t.getProductType() == ProdType.ICP_EXPRESS) {
-					rpt.append("\t<td>Return</td>\r");
-				} else if (t.getTransactionTypeId() == 2) {
-					rpt.append("\t<td>Transfer</td>\r");
-				} else if (t.getTransactionTypeId() == 3) {
-					rpt.append("\t<td>Refurbish</td>\r");
-				} else {
-					rpt.append("\t<td>New Request</td>\r");
-				}
-				rpt.append("\t<td>").append(t.getProductTypeStr()).append("</td>\r");
-				rpt.append("\t<td>").append(t.getUnitCount()).append("</td>\r");
-				rpt.append("\t<td>").append(t.getUnits().size()).append("</td>\r");
-				rpt.append("\t<td>").append(t.getUnitSerialNos()).append("</td>\r");
-				rpt.append("\t<td>").append(t.getShipToName()).append("<br/>\r").append(t.getShippingAddress().getFormattedLocation()).append("</td>\r");
-				rpt.append("\t<td>").append(t.getRequestorName()).append("</td>\r");
-				rpt.append("\t<td>").append(this.formatDate(t.getCreateDate())).append("</td>\r");
-				rpt.append("\t<td>").append(StringUtil.checkVal(t.getNotesText())).append("</td>\r");
-				rpt.append("</tr>\r");
+			for (TransactionVO trans : acct.getTransactions()) {
+				r = s.createRow(rowNo++); //create a new row
+				formatData(acct.getAccountName(), trans, r); //populate the row
 			}
 		}
+		
+	    // Auto-size the columns.
+		for (int x=0; x < 17; x++)
+			s.autoSizeColumn(x);
 
-		rpt.append(this.getFooter());
-		return rpt.toString().getBytes();
+		//lastly, stream the WorkBook back to the browser
+		return ExcelReport.getBytes(wb);
+	}
+
+
+	/**
+	 * creates the initial title (header) row #1.
+	 * @param wb
+	 * @param s
+	 * @param r
+	 */
+	protected void addTitleRow(Workbook wb, Sheet s, Row r) {
+		r.setHeight((short)(r.getHeight()*2));
+		
+		//make a heading font for the title to be large and bold
+		CellStyle headingStyle = wb.createCellStyle();
+		Font font = wb.createFont();
+		font.setFontHeightInPoints((short)16);
+		font.setBoldweight(Font.BOLDWEIGHT_BOLD);
+		headingStyle.setFont(font);
+
+		Cell c = r.createCell(0);
+		c.setCellType(Cell.CELL_TYPE_STRING);
+		c.setCellValue("Codman CU Tracking System - Request Summary");
+		c.setCellStyle(headingStyle);
+		//merge it the length of the report (all columns).
+		s.addMergedRegion(new CellRangeAddress(0,0,0,17));
+	}
+
+
+	/**
+	 * adds row #2, the column headings
+	 * @param wb
+	 * @param s
+	 * @param r
+	 */
+	protected void addHeaderRow(Workbook wb, Sheet s, Row r) {
+		int cellCnt = 0;
+		createStringCell(r, "Account", cellCnt++);
+		createStringCell(r, "Request Submitted By", cellCnt++);
+		createStringCell(r, "Intended User (Physician)", cellCnt++);
+		createStringCell(r, "Request Status", cellCnt++);
+		createStringCell(r, "Date Submitted", cellCnt++);
+		createStringCell(r, "Request Overviewed By", cellCnt++);
+		createStringCell(r, "Date Completed", cellCnt++);
+		createStringCell(r, "Request No.", cellCnt++);
+		createStringCell(r, "Request Type", cellCnt++);
+		createStringCell(r, "Unit Type", cellCnt++);
+		createStringCell(r, "Units Requested", cellCnt++);
+		createStringCell(r, "Units Sent", cellCnt++);
+		createStringCell(r, "Unit Serial No.(s)", cellCnt++);
+		createStringCell(r, "Shipped To", cellCnt++);
+		createStringCell(r, "Transaction Assignee", cellCnt++);
+		createStringCell(r, "Transaction Date", cellCnt++);
+		createStringCell(r, "Comments", cellCnt++);
+	}
+
+
+	/**
+	 * formats the TransactionVO into a row on the Excel report
+	 * @param acctName
+	 * @param t
+	 * @param r
+	 */
+	private void formatData(String acctName, TransactionVO t, Row r) {
+		int cellCnt = 0;
+		createStringCell(r, acctName, cellCnt++);
+		createStringCell(r, t.getRequestorName(), cellCnt++);
+		String physNm = StringUtil.checkVal(t.getPhysician().getFirstName()) + " " + StringUtil.checkVal(t.getPhysician().getLastName());
+		createStringCell(r, physNm, cellCnt++);
+		createStringCell(r, t.getStatusStr(), cellCnt++);
+		createStringCell(r, this.formatDate(t.getCreateDate()), cellCnt++);
+		createStringCell(r, t.getApprovorName(), cellCnt++);
+		createStringCell(r, this.formatDate(t.getCompletedDate()), cellCnt++);
+		createStringCell(r, t.getRequestNo(), cellCnt++);
+		//request type
+		String type;
+		if (2 == t.getTransactionTypeId() && ProdType.ICP_EXPRESS == t.getProductType()) {
+			type = "Return";
+		} else if (2 == t.getTransactionTypeId()) {
+			type = "Transfer";
+		} else if (3 == t.getTransactionTypeId()) {
+			type = "Refurbish";
+		} else {
+			type = "New Request";
+		}
+		createStringCell(r, type, cellCnt++);
+		createStringCell(r, t.getProductTypeStr(), cellCnt++);
+		createStringCell(r, t.getUnitCount(), cellCnt++);
+		createStringCell(r, t.getUnits().size(), cellCnt++);
+		createStringCell(r, t.getUnitSerialNos(), cellCnt++);
+		String shipTo = StringUtil.checkVal(t.getShipToName());
+		if (t.getShippingAddress() != null) shipTo += "\n" + t.getShippingAddress().getFormattedLocation();
+		createStringCell(r, shipTo, cellCnt++);
+		createStringCell(r, t.getRequestorName(), cellCnt++);
+		createStringCell(r, this.formatDate(t.getCreateDate()), cellCnt++);
+		createStringCell(r, t.getNotesText(), cellCnt++);
+	}
+
+
+	/**
+	 * populates and returns a single String cell on the given row.
+	 * @param r
+	 * @param value
+	 * @param cellNo
+	 * @return
+	 */
+	protected Cell createStringCell(Row r, Object value, int cellNo) {
+		Cell c = r.createCell(cellNo);
+		c.setCellType(Cell.CELL_TYPE_STRING);
+		c.setCellValue(StringUtil.checkVal(value));
+		return c;
+	}
+
+
+	/**
+	 * date formatting helper - leverages the site's Locale for Intl localization
+	 * @param d
+	 * @return
+	 */
+	protected String formatDate(Date d) {
+		DateFormat df = DateFormat.getDateInstance(DateFormat.MEDIUM, siteVo.getLocale());
+		return (d != null) ? df.format(d) : "";
 	}
 
 
@@ -86,43 +210,5 @@ public class TransactionReportVO extends AbstractSBReportVO {
 	@SuppressWarnings("unchecked")
 	public void setData(Object o) {
 		data = (List<AccountVO>) o;
-
-	}
-
-	private StringBuilder getHeader() {
-		StringBuilder hdr = new StringBuilder();
-		hdr.append("<table border='1'>\r");
-		hdr.append("<tr><td colspan='16' style='background-color: #ccc;'><b>Codman CU Tracking System - Request Summary</b></td></tr>\r");
-		hdr.append("\t<tr><td>Account</td>");
-		hdr.append("\t<td>Request Submitted By</td>");
-		hdr.append("\t<td>Intended User (Physician)</td>");
-		hdr.append("\t<td>Request Status</td>");
-		hdr.append("\t<td>Date Submitted</td>");
-		hdr.append("\t<td>Request Overviewed By</td>");
-		hdr.append("\t<td>Date Completed</td>");
-		hdr.append("\t<td>Request No.</td>");
-		hdr.append("\t<td>Request Type</td>");
-		hdr.append("\t<td>Unit Type</td>");
-		hdr.append("\t<td>Units Requested</td>");
-		hdr.append("\t<td>Units Sent</td>");
-		hdr.append("\t<td>Unit Serial No.(s)</td>");
-		hdr.append("\t<td>Shipped To</td>");
-		hdr.append("\t<td>Transaction Assignee</td>");
-		hdr.append("\t<td>Transaction Date</td>");
-		hdr.append("\t<td>Comments</td></tr>\r");
-
-		return hdr;
-	}
-
-
-	private StringBuilder getFooter() {
-		return new StringBuilder("</table>");
-	}
-
-	protected String formatDate(Date d) {
-		DateFormat df = DateFormat.getDateInstance(DateFormat.MEDIUM, siteVo.getLocale());
-
-		if (d != null) return df.format(d);
-		else return "";
 	}
 }
