@@ -9,6 +9,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Savepoint;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -19,8 +20,10 @@ import java.util.Set;
 
 
 
+
 // Log4J 1.2.15
 import org.apache.log4j.Logger;
+
 
 
 
@@ -781,21 +784,23 @@ public class OptionsImporter extends AbstractImporter {
 		log.debug("product option attribute XR SQL: " + s.toString());
 		
 		PreparedStatement ps = null;
+		Savepoint sp = null;
 		int recCount = 0;
-		int[] batchCount = null;
-		int pCount = 0;
-		try {
-			int idx = 1;
-			ps = dbConn.prepareStatement(s.toString());
-			for (String hKey : voHierarchy.keySet()) {
-				//if (hKey.equals("CE2838")) log.debug("inserting options XR for product ID: " + hKey);
-				int limit = voHierarchy.get(hKey).size();
-				pCount = 0;
-				for (ProductAttributeVO pavo : voHierarchy.get(hKey)) {
-					/* if (hKey.equals("CE2838")) {
-						log.debug("building insert: productId|productAttribId|parentId|attrib2|value: " + pavo.getProductId() + "|" + pavo.getProductAttributeId() +"|"+pavo.getParentId()+"|"+pavo.getAttribute2()+"|"+pavo.getValueText());
-					} */
-					idx = 1;
+		//int[] batchCount = null;
+		//int pCount = 0;
+		int idx = 1;
+		for (String hKey : voHierarchy.keySet()) {
+			//if (hKey.equals("CE2838")) log.debug("inserting options XR for product ID: " + hKey);
+			//int limit = voHierarchy.get(hKey).size();
+			//pCount = 0;
+			for (ProductAttributeVO pavo : voHierarchy.get(hKey)) {
+				/* if (hKey.equals("CE2838")) {
+					log.debug("building insert: productId|productAttribId|parentId|attrib2|value: " + pavo.getProductId() + "|" + pavo.getProductAttributeId() +"|"+pavo.getParentId()+"|"+pavo.getAttribute2()+"|"+pavo.getValueText());
+				} */
+				idx = 1;
+				try {
+					sp = dbConn.setSavepoint();
+					ps = dbConn.prepareStatement(s.toString());
 					ps.setString(idx++, pavo.getProductAttributeId());
 					ps.setString(idx++, pavo.getParentId());
 					ps.setString(idx++, pavo.getAttributeId());
@@ -808,39 +813,24 @@ public class OptionsImporter extends AbstractImporter {
 					ps.setString(idx++, pavo.getAttribute1());
 					ps.setString(idx++, pavo.getAttribute2());
 					ps.setInt(idx++, pavo.getDisplayOrderNo());
-					ps.addBatch();
-					pCount++;
+					ps.executeUpdate();
+					//pCount++;
 					recCount++;
 					//log.debug("pCount: " + pCount);
-					if (pCount == limit) {
-						try {
-							batchCount = ps.executeBatch();
-							//if (hKey.equals("CE2838")) { log.debug("added records at batch count " + recCount); }
-						} catch (SQLException sqle) {
-							if (batchCount != null) {
-								int start = recCount - 200;
-								log.error("Error during options XR insert between record " + start + " and " + recCount);
-								log.error("Error message is: " + sqle.getMessage());
-								log.error("Looping batchCount[]: ");
-								for (int cnt = 0; cnt < batchCount.length; cnt++) {
-									log.debug("Record #|result: " + (start + 1) + "|" + batchCount[cnt]);
-								}
-							} else {
-								log.error("Error inserting entire batch, failure reason: " + sqle.getMessage());
-							}
-						}
+					dbConn.releaseSavepoint(sp);
+				} catch (SQLException sqle) {
+					log.error("Error inserting options XR records, ", sqle);
+					try {
+						dbConn.rollback(sp);
+					} catch (Exception e) {
+						log.error("Error rolling back options XR insert.");
 					}
-					
-				}
-				
+				} finally {
+					try {
+						ps.close();
+					} catch (Exception e) { log.error("Error closing PreparedStatement, " + e.getMessage()); }
+				}				
 			}
-			
-		} catch (SQLException sqle) {
-			log.error("Error inserting options XR records, ", sqle);
-		} finally {
-			try {
-				ps.close();
-			} catch (Exception e) { log.error("Error closing PreparedStatement, " + e.getMessage()); }
 		}
 		log.debug("inserted record count: " + recCount);
 	}

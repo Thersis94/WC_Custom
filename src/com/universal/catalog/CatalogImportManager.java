@@ -180,6 +180,7 @@ public class CatalogImportManager {
 				
 				// import the catalog
 				importCatalog(iCat);
+				
 			} catch (FileNotFoundException fnfe) {
 				errMsg = "IMPORT FAILED for catalog : " + catalogId + ", " + fnfe.getMessage() + BREAK;
 				log.error(errMsg);
@@ -190,6 +191,16 @@ public class CatalogImportManager {
 				log.error(errMsg);
 				addMessage(errMsg);
 				success = false;
+				try {
+					if (dbConn != null) dbConn.rollback();
+				} catch (Exception ex) {
+					log.error("Error rolling back catalog transaction.", ex);
+				}
+				try {
+					if (dbConn != null) dbConn.setAutoCommit(true);
+				} catch (Exception ex) {
+					log.error("Error setting dbConn auto commit to true.", e);
+				}
 			}
 			errMsg = null;
 		}

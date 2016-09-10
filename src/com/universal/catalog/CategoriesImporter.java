@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Savepoint;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -15,8 +16,10 @@ import java.util.Map;
 import java.util.Set;
 
 
+
 // Log4J 1.2.15
 import org.apache.log4j.Logger;
+
 
 
 //SMT Base Libs
@@ -232,31 +235,35 @@ public class CategoriesImporter extends AbstractImporter {
 		sb.append("meta_kywd_txt, category_url, short_desc, url_alias_txt) ");
 		sb.append("values(?,?,?,?,?,?,?,?,?,?,?,?)");
 		
-		PreparedStatement ps = dbConn.prepareStatement(sb.toString());
+		PreparedStatement ps = null;
+		ProductCategoryVO vo = null;
+		Savepoint sp = null;
 		int ctr = 0;
 		for (String key : categoryMap.keySet()) {
-			ProductCategoryVO vo = categoryMap.get(key);
-			String sDesc = this.buildShortDescription(vo, categoryMap);						
-			ps.setString(1, key);
-			ps.setString(2, catalog.getCatalogId());
-			ps.setString(3, null);
-			ps.setString(4, vo.getCategoryName());
-			ps.setInt(5, 1);
-			ps.setTimestamp(6, Convert.getCurrentTimestamp());
-			ps.setString(7, "");
-			ps.setString(8, "");
-			ps.setString(9, "");
-			ps.setString(10, vo.getCategoryUrl());
-			ps.setString(11, sDesc);
-			ps.setString(12, key);
-			
 			try {
+				sp = dbConn.setSavepoint();
+				ps = dbConn.prepareStatement(sb.toString());
+				vo = categoryMap.get(key);
+				String sDesc = this.buildShortDescription(vo, categoryMap);						
+				ps.setString(1, key);
+				ps.setString(2, catalog.getCatalogId());
+				ps.setString(3, null);
+				ps.setString(4, vo.getCategoryName());
+				ps.setInt(5, 1);
+				ps.setTimestamp(6, Convert.getCurrentTimestamp());
+				ps.setString(7, "");
+				ps.setString(8, "");
+				ps.setString(9, "");
+				ps.setString(10, vo.getCategoryUrl());
+				ps.setString(11, sDesc);
+				ps.setString(12, key);
 				ps.executeUpdate();
 				categoryParentMap.put(key, vo.getParentCode());
 				ctr++;
-
+				dbConn.releaseSavepoint(sp);
 			} catch (Exception e) {
 				log.error("Failed insert, key/parent/catname: " + key + "/" + vo.getParentCode() + "/" + vo.getCategoryName() + " ---> " + e.getMessage());
+				dbConn.rollback(sp);
 			}
 			
 			/*
@@ -283,27 +290,31 @@ public class CategoriesImporter extends AbstractImporter {
 	 * @param categoryParentMap
 	 * @throws SQLException
 	 */
-	public void updateCategoryParents(CatalogImportVO catalog, Map<String, String> categoryParentMap) 
-			throws SQLException {
+	public void updateCategoryParents(CatalogImportVO catalog, 
+			Map<String, String> categoryParentMap) 	throws SQLException {
 		log.info("Updating category parents...");
 		String sql = "update product_category set parent_cd = ? where product_catalog_id = ? and product_category_cd = ?";
-		PreparedStatement ps = dbConn.prepareStatement(sql);
+		PreparedStatement ps = null;
 		int ctr=0;
+		Savepoint sp = null;
 		for (String s : categoryParentMap.keySet()) {
-			if (categoryParentMap.get(s).endsWith(topLevelCategoryId)) {
-				ps.setString(1, null);
-			} else {
-				ps.setString(1, categoryParentMap.get(s));
-			}
-			ps.setString(2, catalog.getCatalogId());
-			ps.setString(3, s);
-			
 			try {
+				sp = dbConn.setSavepoint();
+				ps = dbConn.prepareStatement(sql);
+				if (categoryParentMap.get(s).endsWith(topLevelCategoryId)) {
+					ps.setString(1, null);
+				} else {
+					ps.setString(1, categoryParentMap.get(s));
+				}
+				ps.setString(2, catalog.getCatalogId());
+				ps.setString(3, s);
 				ps.executeUpdate();
 				ctr++;
-				
+				dbConn.releaseSavepoint(sp);
 			} catch (Exception e) {
+				log.error("Error updating category parent, mismatch, " + e.getMessage());
 				misMatchedParentCategories.add(categoryParentMap.get(s));
+				dbConn.rollback(sp);
 			}
 		}
 
