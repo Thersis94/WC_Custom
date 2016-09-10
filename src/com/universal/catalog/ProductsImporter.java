@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Savepoint;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -16,8 +17,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+
+
 // Log4J 1.2.15
 import org.apache.log4j.Logger;
+
+
 
 //SMT Base Libs
 import com.siliconmtn.commerce.catalog.ProductVO;
@@ -204,23 +209,28 @@ public class ProductsImporter extends AbstractImporter {
 	 */
 	private void updateProductGroups(CatalogImportVO catalog) throws SQLException {
 		String s = "update product set parent_id = ? where product_id = ? ";
-		PreparedStatement ps = dbConn.prepareStatement(s);
+		PreparedStatement ps = null;
 		int ctr=0;
 		String parentId = null;
 		String[] vals = null;
 		String prodId = null;
+		Savepoint sp = null;
 		for (Iterator<String> iter = productParents.keySet().iterator(); iter.hasNext();  ) {
 			parentId = iter.next();
 			vals = productParents.get(parentId);
 			for (int i=0; i < vals.length; i++) {
-				prodId = catalog.getCatalogPrefix() + vals[i];
-				ps.setString(1, parentId);
-				ps.setString(2, prodId);
-				ctr++;
 				try {
+					prodId = catalog.getCatalogPrefix() + vals[i];
+					sp = dbConn.setSavepoint();
+					ps = dbConn.prepareStatement(s);
+					ps.setString(1, parentId);
+					ps.setString(2, prodId);
 					ps.executeUpdate();
+					ctr++;
+					dbConn.releaseSavepoint(sp);
 				} catch (Exception e) {
 					log.error("Unable to add product parent: " + parentId + "|" + prodId + "\t\t" + e.getMessage());
+					dbConn.rollback(sp);
 				}
 			}
 		}
@@ -242,7 +252,8 @@ public class ProductsImporter extends AbstractImporter {
 		sb.append("insert into product_category_xr (product_category_cd, ");
 		sb.append("product_id, create_dt) values (?,?,?)");
 		
-		PreparedStatement ps = dbConn.prepareStatement(sb.toString());
+		PreparedStatement ps = null;
+		Savepoint sp = null;
 		int ctr=0;
 
 		// Load the categories.  If there are no categories, skip that entry
@@ -254,22 +265,26 @@ public class ProductsImporter extends AbstractImporter {
 			String[] cats = catIds.split(";");
 			dupeList = new ArrayList<>(cats.length);
 			for (int i=0; i < cats.length; i++) {
-				// if key is empty, continue.
-				if (StringUtil.checkVal(cats[i]).length() == 0) continue;
-				// if the category code is a duplicate, skip it.
-				if (dupeList.contains(cats[i])) continue;
-				
-				// process the category xr
-				dupeList.add(cats[i]);
-				String catCode = (catalog.getCatalogPrefix() + cats[i]);
-				ps.setString(1, catCode);
-				ps.setString(2, prodId);
-				ps.setTimestamp(3, Convert.getCurrentTimestamp());
-				ctr++;
 				try {
+					sp = dbConn.setSavepoint();
+					ps = dbConn.prepareStatement(sb.toString());
+					// if key is empty, continue.
+					if (StringUtil.checkVal(cats[i]).length() == 0) continue;
+					// if the category code is a duplicate, skip it.
+					if (dupeList.contains(cats[i])) continue;
+					
+					// process the category xr
+					dupeList.add(cats[i]);
+					String catCode = (catalog.getCatalogPrefix() + cats[i]);
+					ps.setString(1, catCode);
+					ps.setString(2, prodId);
+					ps.setTimestamp(3, Convert.getCurrentTimestamp());
 					ps.executeUpdate();
+					ctr++;
+					dbConn.releaseSavepoint(sp);
 				}catch (Exception e) {
 					misMatchedCategories.add(cats[i]);
+					dbConn.rollback(sp);
 				}
 			}
 		}
@@ -290,19 +305,23 @@ public class ProductsImporter extends AbstractImporter {
 	@SuppressWarnings("unused")
 	private void updateProducts(List<ProductVO> prods) throws SQLException {
 		String s = "update product set cust_product_no = ? where product_id = ?";
-		PreparedStatement ps = dbConn.prepareStatement(s);
+		PreparedStatement ps = null;
+		Savepoint sp = null;
 		int ctr=0;
 
 		for (int i=0; i < prods.size(); i++) {
 			ProductVO p = prods.get(i);
-			ps.setString(1, p.getCustProductNo());
-			ps.setString(2, p.getProductId());
-			
 			try {
+				sp = dbConn.setSavepoint();
+				ps = dbConn.prepareStatement(s);
+				ps.setString(1, p.getCustProductNo());
+				ps.setString(2, p.getProductId());
 				ps.executeUpdate();
 				ctr++;
+				dbConn.releaseSavepoint(sp);
 			} catch (Exception e) {
 				log.error("Error adding custom product number for product: " + p.getProductId() + ", " + e.getMessage());
+				dbConn.rollback(sp);
 			}
 		}
 
@@ -327,39 +346,46 @@ public class ProductsImporter extends AbstractImporter {
 		sb.append("discounted_cost_no, create_dt, image_url, thumbnail_url, short_desc,  ");		
 		sb.append("product_url, currency_type_id, title_nm, meta_desc, meta_kywd_txt, ");
 		sb.append("url_alias_txt, display_order_no) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
-		
-		PreparedStatement ps = dbConn.prepareStatement(sb.toString());
+		log.info("Product insert SQL: " + sb.toString());
+		PreparedStatement ps = null;
+		Savepoint sp = null;
 		int ctr=0;
 		int index = 0;
 		for (int i=0; i < prods.size(); i++) {
 			ProductVO p = prods.get(i);
+			// TODO remove after PostGreSQL testing.
+			//writeProductDebug(p, catalog.getCatalogId());
+			// END of DEBUG
 			index = 1;
-			ps.setString(index++, p.getProductId());
-			ps.setString(index++, catalog.getCatalogId());
-			ps.setString(index++, p.getParentId());
-			ps.setString(index++, p.getCustProductNo());
-			ps.setString(index++, p.getProductName());
-			ps.setString(index++, p.getDescText());
-			ps.setInt(index++, 5);
-			ps.setDouble(index++, p.getMsrpCostNo());
-			ps.setDouble(index++, p.getDiscountedCostNo());
-			ps.setTimestamp(index++, Convert.getCurrentTimestamp());
-			ps.setString(index++, p.getImage());
-			ps.setString(index++, p.getThumbnail());
-			ps.setString(index++, p.getShortDesc());
-			ps.setString(index++, p.getProductUrl());
-			ps.setString(index++, "dollars");
-			ps.setString(index++, p.getTitle());
-			ps.setString(index++, p.getMetaDesc());
-			ps.setString(index++, StringUtil.truncate(p.getMetaKywds(), 255));
-			ps.setString(index++, p.getUrlAlias());
-			ps.setInt(index++, p.getDisplayOrderNo());
-		
 			try {
+				sp = dbConn.setSavepoint();
+				ps = dbConn.prepareStatement(sb.toString());
+				ps.setString(index++, p.getProductId());
+				ps.setString(index++, catalog.getCatalogId());
+				ps.setString(index++, p.getParentId());
+				ps.setString(index++, p.getCustProductNo());
+				ps.setString(index++, p.getProductName());
+				ps.setString(index++, p.getDescText());
+				ps.setInt(index++, 5);
+				ps.setDouble(index++, p.getMsrpCostNo());
+				ps.setDouble(index++, p.getDiscountedCostNo());
+				ps.setTimestamp(index++, Convert.getCurrentTimestamp());
+				ps.setString(index++, p.getImage());
+				ps.setString(index++, p.getThumbnail());
+				ps.setString(index++, p.getShortDesc());
+				ps.setString(index++, p.getProductUrl());
+				ps.setString(index++, "dollars");
+				ps.setString(index++, p.getTitle());
+				ps.setString(index++, p.getMetaDesc());
+				ps.setString(index++, StringUtil.truncate(p.getMetaKywds(), 255));
+				ps.setString(index++, p.getUrlAlias());
+				ps.setInt(index++, p.getDisplayOrderNo());
 				ps.executeUpdate();
 				ctr++;
+				dbConn.releaseSavepoint(sp);
 			} catch (Exception e) {
 				log.error("Error inserting product: " + p.getProductId() + ", " + e);
+				dbConn.rollback(sp);
 			}
 		}
 		
@@ -369,6 +395,32 @@ public class ProductsImporter extends AbstractImporter {
 			} catch (Exception e) {log.error("Error closing PreparedStatement, ", e);}
 		}
 		log.info("Products inserted: " + ctr);
+	}
+	
+	@SuppressWarnings("unused")
+	private void writeProductDebug(ProductVO p, String catId) {
+		StringBuilder prod = new StringBuilder(200);
+		prod.append(p.getProductId()).append("|");
+		prod.append(catalog.getCatalogId()).append("|");
+		prod.append(p.getParentId()).append("|");
+		prod.append(p.getCustProductNo()).append("|");
+		prod.append(p.getProductName()).append("|");
+		prod.append(p.getDescText()).append("|");
+		prod.append(5).append("|");
+		prod.append(p.getMsrpCostNo()).append("|");
+		prod.append(p.getDiscountedCostNo()).append("|");
+		prod.append(Convert.getCurrentTimestamp()).append("|");
+		prod.append(p.getImage()).append("|");
+		prod.append(p.getThumbnail()).append("|");
+		prod.append(p.getShortDesc()).append("|");
+		prod.append(p.getProductUrl()).append("|");
+		prod.append("dollars").append("|");
+		prod.append(p.getTitle()).append("|");
+		prod.append(p.getMetaDesc()).append("|");
+		prod.append(StringUtil.truncate(p.getMetaKywds(), 255)).append("|");
+		prod.append(p.getUrlAlias()).append("|");
+		prod.append(p.getDisplayOrderNo());
+		log.debug(prod.toString());
 	}
 		
 	/**
@@ -380,13 +432,21 @@ public class ProductsImporter extends AbstractImporter {
 		s.append("update PRODUCT set PRICE_RANGE_LOW_NO = p2.LOW, PRICE_RANGE_HIGH_NO = p2.HIGH ");
 		s.append("from product p inner join ( ");
 		s.append("select PARENT_ID, max(msrp_cost_no) AS HIGH, MIN(msrp_cost_no) AS LOW "); 
-		s.append("from product where product_catalog_id='").append(catalog.getCatalogId()).append("' ");
+		s.append("from product where product_catalog_id = ? ");
 		s.append("and PARENT_ID is not null group by PARENT_ID ");
 		s.append(") as p2 on p.PRODUCT_ID = p2.PARENT_ID ");
 		
-		PreparedStatement ps = dbConn.prepareStatement(s.toString());
+		PreparedStatement ps = null;
+		Savepoint sp = null;
 		try {
+			sp = dbConn.setSavepoint();
+			ps = dbConn.prepareStatement(s.toString());
+			ps.setString(1, catalog.getCatalogId());
 			ps.executeUpdate();
+			dbConn.releaseSavepoint(sp);
+		} catch (SQLException sqle) {
+			log.error("Error updating price range for product." + sqle.getMessage());
+			dbConn.rollback(sp);
 		} finally {
 			if (ps != null) {
 				try {
