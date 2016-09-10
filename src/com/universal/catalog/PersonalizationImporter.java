@@ -8,14 +8,17 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Savepoint;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 
+
 // Log4J 1.2.15
 import org.apache.log4j.Logger;
+
 
 
 //SMT Base Libs
@@ -79,7 +82,8 @@ public class PersonalizationImporter extends AbstractImporter {
 			throw new FileNotFoundException(errMsg);
 		}
 
-		PreparedStatement ps = dbConn.prepareStatement(sb.toString());
+		PreparedStatement ps = null;
+		Savepoint sp = null;
 		int ctr = 0;
 		int orderNo = 0;
 		String temp = null;
@@ -103,6 +107,8 @@ public class PersonalizationImporter extends AbstractImporter {
 			}
 			
 			try {
+				sp = dbConn.setSavepoint();
+				ps = dbConn.prepareStatement(sb.toString());
 				ps.setString(1, new UUIDGenerator().getUUID());	//product_attribute_id
 				ps.setString(2, "USA_CUSTOM");	//attribute_id
 				ps.setString(3, prodId);	//product_id
@@ -121,7 +127,7 @@ public class PersonalizationImporter extends AbstractImporter {
 				ps.setInt(12, orderNo);
 				ps.executeUpdate();
 				ctr++;
-
+				dbConn.releaseSavepoint(sp);
 			} catch (Exception e) {
 				if (e.getMessage().contains("column 'PRODUCT_ID'")) {
 					//cause = "product ID foreign key not found";
@@ -129,6 +135,7 @@ public class PersonalizationImporter extends AbstractImporter {
 				} else {
 					log.error("Error adding personalization option for product: " + prodId + ", " + e.getMessage());
 				}
+				dbConn.rollback(sp);
 			}
 		}
 		
