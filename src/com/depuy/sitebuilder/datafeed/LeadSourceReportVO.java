@@ -6,7 +6,6 @@ import java.util.Date;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Font;
@@ -15,6 +14,7 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import com.depuy.sitebuilder.datafeed.LeadSourceReport.ReportData;
 import com.siliconmtn.http.SMTServletRequest;
@@ -91,7 +91,7 @@ public class LeadSourceReportVO extends AbstractDataFeedReportVO {
 		log.debug("starting generateReport()");
 
 		//Create Excel Object
-		Workbook wb = new HSSFWorkbook();
+		Workbook wb = new XSSFWorkbook();
 		Sheet s = wb.createSheet();
 
 		//make a heading font we can use to separate the sections

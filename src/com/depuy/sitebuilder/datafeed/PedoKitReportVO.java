@@ -9,6 +9,7 @@ import java.util.Map;
 
 import com.depuy.sitebuilder.datafeed.PedoKitReport.PedoKitVO;
 import com.siliconmtn.data.report.ExcelReport;
+import com.siliconmtn.data.report.ExcelStyleFactory;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
@@ -59,7 +60,7 @@ public class PedoKitReportVO extends AbstractDataFeedReportVO {
 	public byte[] generateReport() {
 		log.debug("starting generateReport()");
 
-		ExcelReport rpt = new ExcelReport(this.getHeader());
+		ExcelReport rpt = new ExcelReport(this.getHeader(), ExcelStyleFactory.getExcelStyles(ExcelStyleFactory.DEFAULT));
 
 		List<Map<String, Object>> rows = new ArrayList<>();
 
