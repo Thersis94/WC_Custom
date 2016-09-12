@@ -40,7 +40,7 @@ public class TransactionReportVO extends AbstractDataFeedReportVO {
 	 */
 	@Override
 	public void setRequestData(SMTServletRequest req) {
-		//this report needs not addtional data from the request object
+		//this report needs not additional data from the request object
 		//intentionally left blank
 		
 	}
@@ -52,7 +52,7 @@ public class TransactionReportVO extends AbstractDataFeedReportVO {
 	public byte[] generateReport() {
 		log.debug("starting generateReport()");
 
-		ExcelReport rpt = new ExcelReport(this.getHeader(), ExcelStyleFactory.getExcelStyles(ExcelStyleFactory.STANDARD));
+		ExcelReport rpt = new ExcelReport(this.getHeader(), ExcelStyleFactory.getExcelStyle(ExcelStyleFactory.Styles.Standard));
 
 		List<Map<String, Object>> rows = new ArrayList<>();
 
