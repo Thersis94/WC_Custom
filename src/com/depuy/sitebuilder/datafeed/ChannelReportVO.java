@@ -46,7 +46,7 @@ public class ChannelReportVO extends AbstractDataFeedReportVO  {
 	public byte[] generateReport() {
 		log.debug("starting generateReport()");
 
-		ExcelReport rpt = new ExcelReport(this.getHeader(), ExcelStyleFactory.getExcelStyle(ExcelStyleFactory.Styles.Standard));
+		ExcelReport rpt = new ExcelReport(this.getHeader(), ExcelStyleFactory.Styles.Standard);
 
 		List<Map<String, Object>> rows = new ArrayList<>();
 

@@ -68,7 +68,7 @@ public class DailySourceReportVO extends AbstractDataFeedReportVO {
 
 		Map<String, String> headerMap = this.getHeader();
 
-		ExcelReport rpt = new ExcelReport(headerMap, ExcelStyleFactory.getExcelStyle(ExcelStyleFactory.Styles.Standard));
+		ExcelReport rpt = new ExcelReport(headerMap, ExcelStyleFactory.Styles.Standard);
 
 		List<Map<String, Object>> rows = new ArrayList<>();
 
