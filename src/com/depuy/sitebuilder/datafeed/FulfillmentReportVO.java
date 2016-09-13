@@ -10,8 +10,8 @@ import java.util.Map.Entry;
 import java.util.TreeMap;
 
 import com.depuy.sitebuilder.datafeed.FulfillmentReport.SummaryData;
+import com.siliconmtn.data.report.BordersOnlyExcelReport;
 import com.siliconmtn.data.report.ExcelReport;
-import com.siliconmtn.data.report.ExcelStyleFactory;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -62,7 +62,7 @@ public class FulfillmentReportVO extends AbstractDataFeedReportVO {
 	public byte[] generateReport() {
 		log.debug("starting generateReport()");
 
-		ExcelReport rpt = new ExcelReport(this.getHeader(), ExcelStyleFactory.Styles.BordersOnly);
+		ExcelReport rpt = new BordersOnlyExcelReport(this.getHeader());;
 
 		List<Map<String, Object>> rows = new ArrayList<>();
 
