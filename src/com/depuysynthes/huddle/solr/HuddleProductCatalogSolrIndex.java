@@ -2,6 +2,9 @@ package com.depuysynthes.huddle.solr;
 
 //JDK 1.7
 import java.io.IOException;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -13,6 +16,9 @@ import net.sf.json.JSONObject;
 
 //Solr libs
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 
 // WC libs
 import com.siliconmtn.commerce.catalog.ProductAttributeContainer;
@@ -22,7 +28,7 @@ import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.pool.SMTDBConnection;
-
+import com.smt.sitebuilder.action.commerce.product.ProductCatalogAction;
 //WC Libs
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -315,16 +321,47 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 	 * a full rebuild or set up a regular rebuild of the index.
 	 * @param blogId
 	 */
-	public void pushSingleProduct(Tree tree) {
+	@Override
+	public void addSingleItem(String productId) throws SolrException {
 		log.debug("Indexing Single Huddle Product");
-		SolrClient server = makeServer();
-		prepareSortOrder();
-		traverseTree(tree, server);
-		
+		ProductCatalogAction pc = new ProductCatalogAction();
+		pc.setDBConnection((SMTDBConnection) dbConn);
 		try {
+			Tree t = pc.loadEntireCatalog(getCatalogId(productId), true, null, productId);
+		
+			SolrClient server = makeServer();
+			prepareSortOrder();
+			traverseTree(t, server);
+		
 			server.commit(false, false); //commit, but don't wait for Solr to acknowledge
-		} catch (Exception e) {
-			log.error("could not commit to Solr", e);
+		} catch (SolrServerException e) {
+			log.error("could not commit to Solr");
+			throw new SolrException(ErrorCode.BAD_REQUEST, e);
+		} catch (IOException e) {
+			log.error("could not create solr server");
+			throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, e);
+		} catch (SQLException e) {
+			log.error("Could not get catalog id from database");
+			throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, e);
+		} 
+	}
+	
+	
+	/**
+	 * Get the catalog that the current product is part of.
+	 * @param productId
+	 * @return
+	 * @throws SQLException
+	 */
+	private String getCatalogId(String productId) throws SQLException {
+		String sql = "select PRODUCT_CATALOG_ID from PRODUCT where PRODUCT_ID = ?";
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			ps.setString(1, productId);
+			
+			ResultSet rs = ps.executeQuery();
+			if (rs.next())
+				return rs.getString("PRODUCT_CATALOG_ID");
+			throw new SQLException("No Products Found");
 		}
 	}
 }

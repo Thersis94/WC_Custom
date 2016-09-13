@@ -230,7 +230,7 @@ public class IFUDisplayAction extends SBActionAdapter {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("select case b.language_cd when ").append(lang).append(" then 0 else 1 end as precedence, ");
 		sql.append("a.BUSINESS_UNIT_NM, a.order_no, a.version_txt, a.business_unit_nm,  ");
-		sql.append("isnull(a.depuy_ifu_group_id, a.depuy_ifu_id) as depuy_ifu_id, ");  //use pending records in place of approved ones
+		sql.append("coalesce(a.depuy_ifu_group_id, a.depuy_ifu_id) as depuy_ifu_id, ");  //use pending records in place of approved ones
 		sql.append("b.title_txt, b.url_txt, b.dpy_syn_mediabin_id, ");
 		sql.append("b.language_cd, b.create_dt, b.default_msg_txt, ");
 		sql.append("b.depuy_ifu_impl_id, xr.depuy_ifu_impl_id as xr_impl_id, ");
