@@ -13,6 +13,7 @@ import java.util.TreeMap;
 
 import com.depuy.sitebuilder.datafeed.LocationReport.ReportData;
 import com.siliconmtn.data.report.ExcelReport;
+import com.siliconmtn.data.report.StandardExcelReport;
 import com.siliconmtn.http.SMTServletRequest;
 
 /****************************************************************************
@@ -61,7 +62,7 @@ public class LocationReportVO extends AbstractDataFeedReportVO {
 	public byte[] generateReport() {
 		log.debug("starting generateReport()");
 
-		ExcelReport rpt = new ExcelReport(this.getHeader());
+		ExcelReport rpt = new StandardExcelReport(this.getHeader());;
 
 		List<Map<String, Object>> rows = new ArrayList<>();
 
