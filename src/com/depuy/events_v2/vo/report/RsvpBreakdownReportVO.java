@@ -2,6 +2,8 @@ package com.depuy.events_v2.vo.report;
 
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
@@ -10,6 +12,7 @@ import java.util.TreeSet;
 
 import com.depuy.events_v2.vo.RsvpBreakdownVO;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
+import com.siliconmtn.data.report.ExcelReport;
 import com.siliconmtn.util.Convert;
 
 /*****************************************************************************
@@ -68,79 +71,128 @@ public class RsvpBreakdownReportVO extends AbstractSBReportVO {
 	}
 
 	public byte[] generateReport() {
-		log.debug("starting generateReport()");
-		StringBuffer rpt = new StringBuffer(this.getHeader());
 		
-		for (RsvpBreakdownVO vo : events) {
-			//summate the overall total RSVPs
+		ExcelReport rpt = new ExcelReport(this.getHeader());
+		
+		List<Map<String, Object>> rows = new ArrayList<>(events.size());
+		
+		rpt.setTitleCell(getTitleNote());
+		
+		rows = generateDataRows(rows);
+		
+		rpt.setData(rows);
+		
+		return rpt.generateReport();
+	}
+
+	/**
+	 * this method is used to generate the data rows of the excel sheet.
+	 * @param rows
+	 * @return
+	 */
+	private List<Map<String, Object>> generateDataRows(
+			List<Map<String, Object>> rows) {
+		
+		for (RsvpBreakdownVO vo : events){
+			Map<String, Object> row = new HashMap<String, Object>();
+			//sum the overall total RSVPs
 			int rsvpTotal = 0;
-			log.debug(vo.getRsvpCode());
 			for (Integer cnt : vo.getReferralStats().values()) {
-				log.debug(cnt);
+				//log.debug("count"+ cnt);
 				rsvpTotal += cnt;
 			}
+			row.put("SEMINAR_NO",vo.getRsvpCode());
 			
-			rpt.append("<tr><td>").append(vo.getRsvpCode()).append("</td>");
-			rpt.append("<td>").append(vo.getOwner().getFirstName()).append(" ").append(vo.getOwner().getLastName()).append("</td>");
-			rpt.append("<td>").append(Convert.formatDate(vo.getSeminarDate(), "MM/dd/yyyy")).append("</td>");
-
+			StringBuilder host = new StringBuilder(32);
+			host.append(vo.getOwner().getFirstName()).append(" ").append(vo.getOwner().getLastName());
+			row.put("SEMINAR_HOST", host.toString());
+			
+			row.put("SEMINAR_DATE", Convert.formatDate(vo.getSeminarDate(), "MM/dd/yyyy"));
+			
 			Map<String, Integer> rsvpStats = vo.getReferralStats();
+			
+			StringBuilder sb =  new StringBuilder(25);
+			
+			String statName = null;
+						
 			for (String stat : referrers) {
+				
+				statName = sb.append(stat).append("-percent").toString();
+				sb.setLength(0);
+				
+				//log.debug("stat: " + stat);
 				if (rsvpStats.containsKey(stat)) {
 					Integer cnt = rsvpStats.get(stat);
-					rpt.append("<td>").append(cnt).append("</td>");
+					row.put(stat, cnt);
 					float percent = (Float.valueOf(cnt) / Float.valueOf(rsvpTotal)) * 100;
-					rpt.append("<td>").append(Math.round(percent)).append("%</td>");
+					row.put(statName,sb.append(Math.round(percent)).append("%").toString());
+					sb.setLength(0);
 				} else {
-					rpt.append("<td>0</td><td>0</td>");
+					row.put(stat,0);
+					row.put(statName,"0%");
 				}
 			}
-
-			rpt.append("<td>").append(rsvpTotal).append("</td>");
-			rpt.append("</tr>\r");
+			
+			row.put("TOTAL_RSVP", rsvpTotal);
+			rows.add(row);
 		}
-
-		rpt.append(this.getFooter());
-		return rpt.toString().getBytes();
+		
+		return rows;
 	}
 
-	private StringBuffer getHeader() {
-		StringBuffer hdr = new StringBuffer();
-		hdr.append("<table border='1'>\r");
+	/**
+	 * used to build the title note at the top of the excel document.
+	 * @return
+	 */
+	private String getTitleNote() {
 		
-		//put a date range header on the report to avoid confusion
-		if (start != null || end != null) {
-			hdr.append("\r<tr style='background-color:#ccc;'>");
-			hdr.append("<td colspan=\"").append(referrers.size()*2 + 4).append("\">");
-			hdr.append("This report only represents Seminar attendees enrolled ");
-			if (end == null && start != null) {
-				hdr.append("after ").append(Convert.formatDate(start, Convert.DATE_SLASH_PATTERN));
-			} else if (start == null && end != null) {
-				hdr.append("before ").append(Convert.formatDate(end, Convert.DATE_SLASH_PATTERN));
-			} else {
-				hdr.append("between ").append(Convert.formatDate(start, Convert.DATE_SLASH_PATTERN));
-				hdr.append(" and ").append(Convert.formatDate(end, Convert.DATE_SLASH_PATTERN));
-			}
-			hdr.append(" for each Seminar</td></tr>");
+		//make the note for row 1
+		StringBuilder dateRange = new StringBuilder(51);
+		if (end == null && start != null) {
+			dateRange.append("after ").append(Convert.formatDate(start, Convert.DATE_SLASH_PATTERN));
+		} else if (start == null && end != null) {
+			dateRange.append("before ").append(Convert.formatDate(end, Convert.DATE_SLASH_PATTERN));
+		} else {
+			dateRange.append("between ").append(Convert.formatDate(start, Convert.DATE_SLASH_PATTERN));
+			dateRange.append(" and ").append(Convert.formatDate(end, Convert.DATE_SLASH_PATTERN));
 		}
 		
-		hdr.append("\r<tr style='background-color:#ccc;'>");
-		hdr.append("<th>Seminar#</th>");
-		hdr.append("<th>Seminar_Host</th>");
-		hdr.append("<th>Seminar_Date</th>");
+		StringBuilder note = new StringBuilder();
+		note.append("This report only represents Seminar attendees enrolled ");
+		note.append(dateRange);
+		
+		return note.toString();
+	}
 
+	/**
+	 * builds the header map for the excel report
+	 * @return
+	 */
+	private HashMap<String, String> getHeader() {
+		
+		HashMap<String, String> headerMap = new LinkedHashMap<String, String>();
+		headerMap.put("SEMINAR_NO","Seminar#");
+		headerMap.put("SEMINAR_HOST","Seminar Host");
+		headerMap.put("SEMINAR_DATE","Seminar Date");
+		
+		StringBuilder sb =  new StringBuilder(25);
+		
+		String statName = null;
+				
 		for (String stat : referrers) {
-			hdr.append("<th nowrap>").append(stat).append("</th>");
-			hdr.append("<th>% of Total</th>");
-		}
-		hdr.append("<th>Total_RSVPs</th>");
-		hdr.append("</tr>\r");
-
-		return hdr;
-	}
-
-	private StringBuffer getFooter() {
-		return new StringBuffer("</table>");
+			
+			statName = sb.append(stat).append("-percent").toString();
+			sb.setLength(0);
+				
+			//log.debug("stat: " + stat );
+			headerMap.put(stat, stat);
+			headerMap.put(statName,"% of Total");
+			
+        }
+		
+		headerMap.put("TOTAL_RSVP","Total RSVPs");
+		return headerMap;
+		
 	}
 
 	public Date getStart() {
