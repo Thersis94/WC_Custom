@@ -28,6 +28,7 @@ public class GFPProgramVO {
 	private String programName;
 	private List<GFPWorkshopVO> workshops;
 	private List<GFPResourceVO> resources;
+	private List<GFPResourceVO> sharedResources;
 	private String userId;
 	
 	
@@ -98,6 +99,14 @@ public class GFPProgramVO {
 
 	public void addResource(GFPResourceVO resource) {
 		resources.add(resource);
+	}
+
+	public List<GFPResourceVO> getSharedResources() {
+		return sharedResources;
+	}
+
+	public void setSharedResources(List<GFPResourceVO> sharedResources) {
+		this.sharedResources = sharedResources;
 	}
 
 	public String getUserId() {
