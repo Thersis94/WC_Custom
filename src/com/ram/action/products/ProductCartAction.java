@@ -78,7 +78,8 @@ public class ProductCartAction extends SBActionAdapter {
 		surgeonName("SURGEON_NM"),
 		hospital("HOSPITAL_NM"),
 		repId("REP_ID"),
-		caseId("CASE_ID");
+		caseId("CASE_ID"),
+		surgeryDate("SURGERY_DT");
 		
 		private String cloumnNm;
 		SearchFields(String columnNm) {
@@ -110,7 +111,7 @@ public class ProductCartAction extends SBActionAdapter {
 			if (req.hasParameter("kitId")) {
 				populateCart(req);
 			} else {
-				loadKits(req, 0);
+				loadKits(req);
 			}
 		} else if (Convert.formatBoolean(req.getParameter("finalize"))) {
 			saveCart(req, 1);
@@ -327,12 +328,10 @@ public class ProductCartAction extends SBActionAdapter {
 			buildKitSummaryReport(req);
 		}else if (req.hasParameter("buildFile")) {
 			buildReport(req);
-		} else if ("review".equals(req.getParameter("step"))) {
-			loadKits(req, 1);
 		} else if ("load".equals(req.getParameter("step")) && req.hasParameter("searchData")) {
 			searchProducts(req);
 		} else if (!"load".equals(req.getParameter("step"))) {
-			loadKits(req, 0);
+			loadKits(req);
 		}
 	}
 	
@@ -343,7 +342,7 @@ public class ProductCartAction extends SBActionAdapter {
 	 * @param req
 	 */
 	private void buildKitSummaryReport(SMTServletRequest req) throws ActionException {
-		loadKits(req, 1);
+		loadKits(req);
 		AbstractSBReportVO report = new KitExcelReport();
 		report.setData(((ModuleVO)attributes.get(Constants.MODULE_DATA)).getActionData());
 		report.setFileName("kit_summary_report.xls");
@@ -664,7 +663,7 @@ public class ProductCartAction extends SBActionAdapter {
 	 * @param req
 	 * @param finalized
 	 */
-	private void loadKits(SMTServletRequest req, int finalized) throws ActionException {
+	private void loadKits(SMTServletRequest req) throws ActionException {
 		List<ORKitVO> kits = new ArrayList<>();
 		String sql = buildKitSearchSQL(req);
 		int count = 0;
@@ -710,10 +709,20 @@ public class ProductCartAction extends SBActionAdapter {
 		sql.append("on k.RAM_KIT_INFO_ID = xr.RAM_KIT_INFO_ID ");
 		sql.append("WHERE k.PROFILE_ID = ? ");
 		if (req.hasParameter("searchData") && req.hasParameter("searchType")) sql.append("AND ").append(SearchFields.valueOf(req.getParameter("searchType")).getColumnName()).append(" like ? ");
-		if (req.hasParameter("startDate")) sql.append("AND k.CREATE_DT > ? ");
-		if (req.hasParameter("endDate")) sql.append("AND k.CREATE_DT < ? ");
+		if (req.hasParameter("startDate")) sql.append("AND k.SURGERY_DT > ? ");
+		if (req.hasParameter("endDate")) sql.append("AND k.SURGERY_DT < ? ");
 		sql.append("GROUP BY HOSPITAL_NM, OPERATING_ROOM, SURGERY_DT, SURGEON_NM, CASE_ID, RESELLER_NM, k.RAM_KIT_INFO_ID, FINALIZED_FLG, REP_ID, OTHER_ID ");
 		sql.append("ORDER BY FINALIZED_FLG ");
+		
+
+		if (req.hasParameter("orderParam")) {
+			sql.append(", ").append(SearchFields.valueOf(req.getParameter("orderParam")).getColumnName());
+			if (Convert.formatBoolean(req.getParameter("reverseOrder"))) {
+				sql.append(" DESC ");
+			} else {
+				sql.append(" ASC ");
+			}
+		} 
 		
 		return sql.toString();
 	}
