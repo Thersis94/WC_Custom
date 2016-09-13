@@ -152,7 +152,14 @@ public class NexusKitAction extends SBActionAdapter {
 				case Clone:
 					kits = loadKits(req, true);
 					if (kits.size() > 0) {
+						UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 						NexusKitVO kit = kits.get(0);
+						if (user != null) {
+							kit.setOwnerId(user.getProfileId());
+						} else {
+							// Only clone kits when there is a user to claim ownership of the clone.
+							throw new ActionException("Sets can only be cloned while logged in.");
+						}
 						kit.setKitId("");
 						kit.setKitDesc("(Copy)"+kit.getKitDesc());
 						for (NexusKitLayerVO layer : kit.getLayers()) {
@@ -164,10 +171,6 @@ public class NexusKitAction extends SBActionAdapter {
 						}
 						kit.setOrgName(KitType.Custom.toString());
 						kit.setBranchCode(KitType.Custom.toString());
-						UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
-						if (user != null) {
-							kit.setOwnerId(user.getProfileId());
-						}
 						req.getSession().setAttribute(KIT_SESSION_NM, kit);
 						saveKit(req);
 					}
