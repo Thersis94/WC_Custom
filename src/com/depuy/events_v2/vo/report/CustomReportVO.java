@@ -12,6 +12,7 @@ import java.util.Map;
 
 import com.depuy.events.vo.CoopAdVO;
 import com.depuy.events_v2.vo.DePuyEventSeminarVO;
+import com.siliconmtn.data.report.ExcelReport;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
@@ -49,9 +50,10 @@ public class CustomReportVO extends AbstractSBReportVO {
 	};
 
 	/**
-	 * 
+	 * the ordering of the enum controls the ordering of the column in the geneated report
 	 */
 	public static enum FieldList {
+		
 		JOINT_FLG("joint_flg", "Joint"),
 		SEMINAR_TYPE_FLG("seminar_type_flg","Seminar Type"),
 		SEMINAR_CODE_FLG("seminar_code_flg", "Seminar Code"),
@@ -171,143 +173,162 @@ public class CustomReportVO extends AbstractSBReportVO {
 
 		//Creates a quick list of all active fields
 		List<FieldList> columns = new ArrayList<>(paramList.size());
+		
+		columns = fillColumns(columns);
+		
+		ExcelReport rpt = new ExcelReport(this.getHeader(columns));
+		
+		List<Map<String, Object>> rows = new ArrayList<>(semList.size());
+
+		rows = generateDataRows(rows, columns);
+
+		rpt.setData(rows);
+		
+		return rpt.generateReport();
+	}
+
+	
+	/**
+	 * loops the param list and fills the columns
+	 * @param columns
+	 * @return
+	 */
+	private List<FieldList> fillColumns(List<FieldList> columns) {
+		
 		for (String key : paramList.keySet()) {
 			if (paramList.get(key) ==1) 
 				columns.add(FieldList.valueOf(key.toUpperCase()) );
 		}
+		return columns;
+	}
 
-		StringBuilder report = new StringBuilder(10000);
-		//create headers
-		report.append(getHeader(columns));
-
+	/**
+	 * this method is used to generate the data rows of the excel sheet.
+	 * @param rows
+	 * @param columns 
+	 * @return
+	 */
+	private List<Map<String, Object>> generateDataRows(
+			List<Map<String, Object>> rows, List<FieldList> columns) {
 		//Loop over each seminar
 		for (DePuyEventSeminarVO vo : semList) {
-			StringBuilder row = new StringBuilder();
+			Map<String, Object> row = new HashMap<String, Object>();
 			
 			if (!semPassesFilters(vo)) continue;
 			
-			row.append("<tr>");
 			EventEntryVO event = vo.getEvents().get(0);
 			//loop over each field to be included in the results
 			for (FieldList col : columns ) {
-				row.append("<td>");
 				//change information appended based on the selected field
 				switch(col) {
 					case JOINT_FLG:
 						//Set of joints for this seminar
-						row.append(vo.getJointLabel());
+						row.put(col.name,vo.getJointLabel());
 						break;
 					case SEMINAR_TYPE_FLG:
 						String typeCd = StringUtil.checkVal(event.getEventTypeCd());
-						row.append(StringUtil.checkVal(typeMap.get(typeCd ) ));
+						row.put(col.name,StringUtil.checkVal(typeMap.get(typeCd ) ));
 						break;
 					case SEMINAR_CODE_FLG:
-						row.append(StringUtil.checkVal(event.getRSVPCode()));
+						row.put(col.name,StringUtil.checkVal(event.getRSVPCode()));
 						break;
 					case COORDINATOR_FLG:
-						row.append( StringUtil.checkVal(vo.getOwner().getFullName()));
+						row.put(col.name, StringUtil.checkVal(vo.getOwner().getFullName()));
 						break;
 					case STATUS_FLG:
-						row.append( StringUtil.checkVal(vo.getStatusName()));
+						row.put(col.name, StringUtil.checkVal(vo.getStatusName()));
 						break;
 					case START_DATE_FLG:
-						row.append(Convert.formatDate(event.getStartDate(), Convert.DATE_SLASH_PATTERN));
+						row.put(col.name,Convert.formatDate(event.getStartDate(), Convert.DATE_SLASH_PATTERN));
 						break;
 					case TIME_FLG:
-						row.append(StringUtil.checkVal(event.getLocationDesc()));
+						row.put(col.name,StringUtil.checkVal(event.getLocationDesc()));
 						break;
 					case SPEAKER_FLG:
-						row.append(StringUtil.checkVal(vo.getAllSurgeonNames()));
+						row.put(col.name,StringUtil.checkVal(vo.getAllSurgeonNames()));
 						break;
 					case RSVP_COUNT_FLG:
-						row.append( vo.getRsvpCount() );
+						row.put(col.name, vo.getRsvpCount() );
 						break;
 					case ATTENDEE_COUNT_FLG:
 						if ("HSEM".equals(event.getEventTypeCd())) {
-							row.append(Convert.formatInteger(vo.getPcAttribute1()));
+							row.put(col.name,Convert.formatInteger(vo.getPcAttribute1()));
 						} else {
-							row.append(Convert.formatInteger(vo.getSurveyResponse("attendee_cnt")));
+							row.put(col.name,Convert.formatInteger(vo.getSurveyResponse("attendee_cnt")));
 						}
 						break;
 //					case OPT_IN_FLG:
-//						row.append( (vo.getOptInFlag() == 1 ? "Yes" : "No") );
+//						row.put(col.name, (vo.getOptInFlag() == 1 ? "Yes" : "No") );
 //						break;
 					case LOCATION_NM_FLG:
 						if (StringUtil.checkVal(event.getShortDesc()).length() > 0) {
-							row.append(event.getShortDesc());
+							row.put(col.name,event.getShortDesc());
 						} else {
-							row.append(StringUtil.checkVal(event.getEventDesc()));
+							row.put(col.name,StringUtil.checkVal(event.getEventDesc()));
 						}
 						break;
 					case CITY_NM_FLG:
-						row.append(StringUtil.checkVal(event.getCityName()) );
+						row.put(col.name,StringUtil.checkVal(event.getCityName()) );
 						break;
 					case STATE_CD_FLG:
-						row.append(StringUtil.checkVal(event.getStateCode()));
+						row.put(col.name,StringUtil.checkVal(event.getStateCode()));
 						break;
 					case VENUE_COST_FLG:
-						row.append(StringUtil.checkVal(vo.getSurveyResponse("venue_cost")));
+						row.put(col.name,StringUtil.checkVal(vo.getSurveyResponse("venue_cost")));
 						break;
 					case REFRESHMENT_COST_FLG:
-						row.append(StringUtil.checkVal(vo.getSurveyResponse("refresh_cost")));
+						row.put(col.name,StringUtil.checkVal(vo.getSurveyResponse("refresh_cost")));
 						break;
 					case POSTCARD_DT_FLG:
-						row.append(Convert.formatDate(vo.getPostcardMailDate(), Convert.DATE_SLASH_PATTERN));
+						row.put(col.name,Convert.formatDate(vo.getPostcardMailDate(), Convert.DATE_SLASH_PATTERN));
 						break;
 					case NEWSPAPER_NM_FLG:
-						printMultiVal(row, "getNewspaper1Text",vo.getAllAds());
+						row.put(col.name,printMultiVal("getNewspaper1Text",vo.getAllAds()));
 						break;
 					case AD_DT_FLG:
-						printMultiVal(row, "getAdDatesText",vo.getAllAds());
+						row.put(col.name,printMultiVal("getAdDatesText",vo.getAllAds()));
 						break;
 					case AD_COST_FLG:
-						row.append(vo.getAdCost("total"));
+						row.put(col.name,vo.getAdCost("total"));
 						break;
 					case TERRITORY_COST_FLG:
-						row.append(vo.getAdCost("rep"));
+						row.put(col.name,vo.getAdCost("rep"));
 						break;
 					case SURGEON_COST_FLG:
-						row.append(vo.getAdCost("surgeon"));
+						row.put(col.name,vo.getAdCost("surgeon"));
 						break;
 //					case HOSPITAL_COST_FLG:
-//						row.append(vo.getAdCost("hospital"));
+//						row.put(col.name,vo.getAdCost("hospital"));
 //						break;
 //					case INVITATION_COST_NO:
-//						row.append(StringUtil.checkVal(vo.getPostcardCostNo()));
+//						row.put(col.name,StringUtil.checkVal(vo.getPostcardCostNo()));
 //						break;
 //					case INVITATION_COUNT_NO:
-//						row.append( StringUtil.checkVal(vo.getQuantityNo()));
+//						row.put(col.name, StringUtil.checkVal(vo.getQuantityNo()));
 //						break;
 					case POSTCARD_COST_NO:
-						row.append(StringUtil.checkVal(vo.getPostcardCostNo()));
+						row.put(col.name,StringUtil.checkVal(vo.getPostcardCostNo()));
 						break;
 					case POSTCARD_COUNT_NO:
-						row.append( StringUtil.checkVal(vo.getQuantityNo()));
+						row.put(col.name, StringUtil.checkVal(vo.getQuantityNo()));
 						break;
 					case TERRITORY_NO:
-						row.append(StringUtil.checkVal( vo.getTerritoryNumber() ));
+						row.put(col.name,StringUtil.checkVal( vo.getTerritoryNumber() ));
 						break;
 					case UPFRONT_FEE_FLG:
-						row.append( ( vo.getUpfrontFeeFlg() == 1 ? "Yes" : "No") );
+						row.put(col.name, ( vo.getUpfrontFeeFlg() == 1 ? "Yes" : "No") );
 						break;
 					default:
 						break;
 				}
-				row.append("</td>");
+				
 			}
-			row.append("</tr>\r");
-			report.append(row);
-			row = null;
+			
+			rows.add(row);
 		}
-
-		//append footer
-		report.append( getFooter() );
-
-		//Returns report as byte[]
-		return report.toString().getBytes();
+		return rows;
 	}
 
-	
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.data.report.AbstractReport#setData(java.lang.Object)
 	 */
@@ -365,44 +386,39 @@ public class CustomReportVO extends AbstractSBReportVO {
 	 * @param meth Getter method that returns value to be appended
 	 * @param list List of objects with the m method.
 	 */
-	private void printMultiVal(StringBuilder row, String meth, List<CoopAdVO> list) {
+	private String printMultiVal(String meth, List<CoopAdVO> list) {
+		StringBuilder sb = new StringBuilder(50);
 		for (int i = 0; i < list.size(); i++) {
 			Object obj = list.get(i);
 			try {
 				Method m = CoopAdVO.class.getDeclaredMethod(StringUtil.checkVal(meth));
-				row.append(StringUtil.checkVal( m.invoke(obj) ));
+				sb.append(StringUtil.checkVal( m.invoke(obj) ));
 			} catch (IllegalAccessException | IllegalArgumentException
 					| InvocationTargetException | NoSuchMethodException | SecurityException e) {
 				log.error("could not append multi-val", e);
 			}
 
 			if ( i < list.size() - 1)
-				row.append(",");
+				sb.append(",");
 		}
+		return sb.toString();
 	}
 
 	/**
-	 * Generates the header row for the report
+	 * builds the header map for the excel report
+	 * @param columns 
 	 * @return
 	 */
-	private StringBuilder getHeader(List<FieldList> columns) {
-		StringBuilder hdr = new StringBuilder();
-		hdr.append("<table border='1'>\r<tr style='background-color:#ccc;'>");
-
+	private HashMap<String, String> getHeader(List<FieldList> columns) {
+		
+		HashMap<String, String> headerMap = new LinkedHashMap<String, String>();
 		//Loop through all of the parameters in the list to make a list of headers
-		for (FieldList key : columns) {
-			hdr.append("<th>").append(key.getReportLabel()).append("</th>");
-		}
-		hdr.append("</tr>\r");
-		return hdr;
-	}
-
-	/**
-	 * Generates the footer for the report
-	 * @return
-	 */
-	private StringBuilder getFooter() {
-		return new StringBuilder("</table>");
+				for (FieldList key : columns) {
+					//log.debug("field name: " +key.getFieldName()+ " report label: " +key.getReportLabel());
+					headerMap.put(key.getFieldName() , key.getReportLabel());
+				}
+		
+		return headerMap;
 	}
 
 	public Map<String,Integer> getParamList(){

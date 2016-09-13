@@ -1,6 +1,5 @@
 package com.codman.cu.tracking.vo;
 
-import com.codman.cu.tracking.vo.UnitVO.ProdType;
 import com.smt.sitebuilder.common.SiteVO;
 
 /****************************************************************************
@@ -12,30 +11,15 @@ import com.smt.sitebuilder.common.SiteVO;
  * @author James McKain
  * @version 1.0
  * @since Jan 25, 2011
+ * @updates
+ * 		09.07.2016, refactored from HTML to true Excel using the POI libraries - JM
  ****************************************************************************/
 public class UnitHistoryReportRepsVO extends UnitHistoryReportVO {
 
-	private static final long serialVersionUID = 1407073622234040274L;
-	
+	private static final long serialVersionUID = 140999223404987654L;
+
 	public UnitHistoryReportRepsVO(SiteVO site) {
 		super(site);
+		super.isRepReport = true;
 	}
-
-	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.AbstractSBReportVO#generateReport()
-	 */
-	@Override
-	public byte[] generateReport() {
-		log.debug("starting Unit History Report");
-		boolean isMedstream = (data != null && data.size() > 0 && data.get(0).getProductType() == ProdType.MEDSTREAM);
-		StringBuilder rpt = new StringBuilder(getHeader(true, isMedstream));
-		
-		//loop the accounts, physians, units, and requests
-		for (UnitVO v : data) {
-			rpt.append(formatUnit(v, true));
-		}
-		
-		return rpt.toString().getBytes();
-	}	
-
 }
