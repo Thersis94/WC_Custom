@@ -321,6 +321,7 @@ public class CourseCalendar extends SimpleActionAdapter {
 		String alias = page.getAliasName().toLowerCase();
 		
 		if ("veterinary".equals(site.getAliasPathName())) return "Vet"; //vet section
+		else if ("outpatient-education".equals(site.getAliasPathName())) return "Outpatient Education"; //Outpatient Ed. section
 		else if ("bundled-payments".equals(site.getAliasPathName())) return "Bundled Payments"; // Bundled Payments section
 		else if ("nurse-education".equals(site.getAliasPathName())) return "Nurse Education"; //nursing section
 		else if ("futureleaders".equals(site.getAliasPathName())) return FutureLeaderACGME.getCodeFromAlias(alias);

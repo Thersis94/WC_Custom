@@ -4,8 +4,18 @@ import java.text.DateFormat;
 import java.util.Date;
 import java.util.List;
 
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.util.CellRangeAddress;
+
 import com.codman.cu.tracking.UnitAction;
 import com.codman.cu.tracking.vo.UnitVO.ProdType;
+import com.siliconmtn.data.report.ExcelReport;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.common.SiteVO;
@@ -19,12 +29,15 @@ import com.smt.sitebuilder.common.SiteVO;
  * @author James McKain
  * @version 1.0
  * @since Jan 25, 2011
+ * @updates
+ * 		09.07.2016, refactored from HTML to true Excel using the POI libraries - JM
  ****************************************************************************/
 public class UnitHistoryReportVO extends AbstractSBReportVO {
 
 	private static final long serialVersionUID = 1407073622234040274L;
 	protected List<UnitVO> data;
 	protected SiteVO siteVo;
+	protected boolean isRepReport = false;
 
 	public UnitHistoryReportVO(SiteVO site) {
 		super();
@@ -34,6 +47,7 @@ public class UnitHistoryReportVO extends AbstractSBReportVO {
 		setFileName("Control Unit History Report.xls");
 	}
 
+
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.AbstractSBReportVO#generateReport()
 	 */
@@ -41,15 +55,218 @@ public class UnitHistoryReportVO extends AbstractSBReportVO {
 	public byte[] generateReport() {
 		log.debug("starting Unit History Report");
 		boolean isMedstream = (data != null && data.size() > 0 && data.get(0).getProductType() == ProdType.MEDSTREAM);
-		StringBuilder rpt = new StringBuilder(this.getHeader(false, isMedstream));
+
+		//Create Excel Object
+		Workbook wb = new HSSFWorkbook();
+		Sheet s = wb.createSheet();
+
+		// make title row, its the first row in the sheet (0)
+		int rowNo = 0;
+		Row r = s.createRow(rowNo++);
+		addTitleRow(wb, s, r);
+
+		//make the column headings row
+		r = s.createRow(rowNo++);
+		addHeaderRow(wb, s, r, isMedstream);
+
+
 
 		//loop the accounts, physians, units, and requests
 		for (UnitVO v : data) {
-			rpt.append(formatUnit(v, false));
+			r = s.createRow(rowNo++); //create a new row
+			formatUnit(v, r); //populate the row
 		}
+		
+	    // Auto-size the columns.
+		int colCnt = isRepReport ? 24: 31;
+		for (int x=0; x < colCnt; x++)
+			s.autoSizeColumn(x);
 
-		return rpt.toString().getBytes();
+		//lastly, stream the WorkBook back to the browser
+		return ExcelReport.getBytes(wb);
 	}
+
+
+	/**
+	 * creates the initial title (header) row #1.
+	 * @param wb
+	 * @param s
+	 * @param r
+	 */
+	protected void addTitleRow(Workbook wb, Sheet s, Row r) {
+		int colCnt = isRepReport ? 24: 31;
+		
+		r.setHeight((short)(r.getHeight()*2));
+
+		//make a heading font for the title to be large and bold
+		CellStyle headingStyle = wb.createCellStyle();
+		Font font = wb.createFont();
+		font.setFontHeightInPoints((short)16);
+		font.setBoldweight(Font.BOLDWEIGHT_BOLD);
+		headingStyle.setFont(font);
+
+		Cell c = r.createCell(0);
+		c.setCellType(Cell.CELL_TYPE_STRING);
+		c.setCellValue("Codman CU Tracking System - Unit History");
+		c.setCellStyle(headingStyle);
+		//merge it the length of the report (all columns).
+		s.addMergedRegion(new CellRangeAddress(0,0,0,colCnt));
+	}
+
+
+	/**
+	 * adds row #2, the column headings
+	 * @param wb
+	 * @param s
+	 * @param r
+	 * @param isMedStream
+	 */
+	protected void addHeaderRow(Workbook wb, Sheet s, Row r, boolean isMedStream) {
+		int cellCnt = 0;
+		createStringCell(r, "Date", cellCnt++);
+		createStringCell(r, "Status", cellCnt++);
+		createStringCell(r, "Unit Type", cellCnt++);
+		createStringCell(r, "Transaction Type", cellCnt++);
+		createStringCell(r, "Serial No.", cellCnt++);
+		createStringCell(r, "User", cellCnt++);
+		createStringCell(r, "Software Rev No.", cellCnt++);
+		if (!isRepReport && isMedStream) { 
+			createStringCell(r, "Hardware Rev No.", cellCnt++);
+		}
+		if (isMedStream) {
+			createStringCell(r, "IFU Article No.", cellCnt++);
+			createStringCell(r, "IFU Rev No.", cellCnt++);
+			createStringCell(r, "Prog Article No.", cellCnt++);
+			createStringCell(r, "Prog Rev No.", cellCnt++);
+		}
+		if (!isRepReport) { 
+			createStringCell(r, "Battery Type", cellCnt++);
+			if (isMedStream) {
+				createStringCell(r, "Battery Serial No.", cellCnt++);
+			} else {
+				createStringCell(r, "Battery Recharge Date", cellCnt++);
+			}
+			createStringCell(r, "Lot No.", cellCnt++);
+			createStringCell(r, "Service/Repair No.", cellCnt++);
+			if (isMedStream) {
+				createStringCell(r, "Service/Repair Date", cellCnt++);
+			} else {
+				createStringCell(r, "Service/Refurb Date", cellCnt++);
+			}
+		}
+		createStringCell(r, "Comments", cellCnt++);
+		if (!isRepReport) {
+			createStringCell(r, "Production Comments", cellCnt++);
+		}
+		createStringCell(r, "Date Deployed", cellCnt++);
+		createStringCell(r, "Account", cellCnt++);
+		createStringCell(r, "Rep Name", cellCnt++);
+		createStringCell(r, "Physician Name", cellCnt++);
+		createStringCell(r, "Center", cellCnt++);
+		createStringCell(r, "Department", cellCnt++);
+		createStringCell(r, "Physician Phone#", cellCnt++);
+		createStringCell(r, "Physician Address", cellCnt++);
+		createStringCell(r, "Address2", cellCnt++);
+		createStringCell(r, "City", cellCnt++);
+		createStringCell(r, "State", cellCnt++);
+		createStringCell(r, "Zip/Postal", cellCnt++);
+		createStringCell(r, "Country", cellCnt++);
+	}
+
+
+	/**
+	 * transforms a UnitVO (piece of data) into a row of data on the report
+	 * @param u
+	 * @param restricted
+	 * @param r
+	 */
+	protected void formatUnit(UnitVO u, Row r) {
+		boolean isMedstream =  (u.getProductType() == ProdType.MEDSTREAM);
+		int cellCnt = 0;
+
+		createStringCell(r, this.formatDate(u.getCreateDate()), cellCnt++);
+		createStringCell(r, UnitAction.getStatusName(u.getStatusId()), cellCnt++);
+		String prodNm = (u.getProductType() != null) ? u.getProductType().toString() : "";
+		createStringCell(r, prodNm, cellCnt++);
+		String transType = "";
+		if (u.getTransactionType() == null || u.getTransactionType() == 0) transType = "Unit Update";
+		else if (u.getTransactionType() == 2 && !isMedstream) transType = "Return for Refurb";
+		else if (u.getTransactionType() == 2) transType = "Transfer";
+		else if (u.getTransactionType() == 3) transType = "Refurbish";
+		else if (u.getTransactionType() == 1) transType = "New Request";
+
+		createStringCell(r, transType, cellCnt++);
+		createStringCell(r, u.getSerialNo(), cellCnt++);
+		createStringCell(r, u.getModifyingUserName(), cellCnt++);
+		createStringCell(r, u.getSoftwareRevNo(), cellCnt++);
+		if (!isRepReport && isMedstream) {
+			createStringCell(r, u.getHardwareRevNo(), cellCnt++);
+		}
+		if (isMedstream) {
+			createStringCell(r, u.getIfuArticleNo(), cellCnt++);
+			createStringCell(r, u.getIfuRevNo(), cellCnt++);
+			createStringCell(r, u.getProgramArticleNo(), cellCnt++);
+			createStringCell(r, u.getProgramRevNo(), cellCnt++);
+		}
+		if (!isRepReport) {
+			createStringCell(r, u.getBatteryType(), cellCnt++);
+			if (isMedstream) {
+				createStringCell(r, u.getBatterySerNo(), cellCnt++);
+			} else {
+				createStringCell(r, this.formatDate(u.getBatteryRechargeDate()), cellCnt++);
+			}
+			createStringCell(r, u.getLotNo(), cellCnt++);
+			createStringCell(r, u.getServiceRefNo(), cellCnt++);
+			createStringCell(r, this.formatDate(u.getServiceDate()), cellCnt++);
+		}
+		createStringCell(r, u.getCommentsText(), cellCnt++);
+		if (!isRepReport) {
+			createStringCell(r, u.getProductionCommentsText(), cellCnt++);
+		}
+		createStringCell(r, this.formatDate(u.getDeployedDate()), cellCnt++);
+		createStringCell(r, u.getAccountName(), cellCnt++);
+		createStringCell(r, u.getRepName(), cellCnt++);
+		createStringCell(r, u.getPhysicianName(), cellCnt++);
+
+		PhysicianVO phys = u.getPhysician();
+		if (phys == null) return; //don't need the addtl cells if they're void of data.
+		createStringCell(r, phys.getCenterText(), cellCnt++);
+		createStringCell(r, phys.getDepartmentText(), cellCnt++);
+		createStringCell(r, phys.getMainPhone(), cellCnt++);
+		createStringCell(r, phys.getAddress(), cellCnt++);
+		createStringCell(r, phys.getAddress2(), cellCnt++);
+		createStringCell(r, phys.getCity(), cellCnt++);
+		createStringCell(r, phys.getState(), cellCnt++);
+		createStringCell(r, phys.getZipCode(), cellCnt++);
+		createStringCell(r, phys.getCountryCode(), cellCnt++);
+	}
+
+
+	/**
+	 * populates and returns a single String cell on the given row.
+	 * @param r
+	 * @param value
+	 * @param cellNo
+	 * @return
+	 */
+	protected Cell createStringCell(Row r, Object value, int cellNo) {
+		Cell c = r.createCell(cellNo);
+		c.setCellType(Cell.CELL_TYPE_STRING);
+		c.setCellValue(StringUtil.checkVal(value));
+		return c;
+	}
+
+
+	/**
+	 * date formatting helper - leverages the site's Locale for Intl localization
+	 * @param d
+	 * @return
+	 */
+	protected String formatDate(Date d) {
+		DateFormat df = DateFormat.getDateInstance(DateFormat.MEDIUM, siteVo.getLocale());
+		return (d != null) ? df.format(d) : "";
+	}
+
 
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.AbstractSBReportVO#setData(java.lang.Object)
@@ -59,136 +276,4 @@ public class UnitHistoryReportVO extends AbstractSBReportVO {
 	public void setData(Object o) {
 		data = (List<UnitVO>) o;
 	}
-
-	protected StringBuilder getHeader(boolean restricted, boolean isMedStream) {
-		int colCnt = restricted ? 24: 31;
-		StringBuilder hdr = new StringBuilder();
-		hdr.append("<tr><td><table border='1'>\r");
-		hdr.append("<tr><td colspan='").append(colCnt).append("' style='background-color: #ccc;'><b>Codman CU Tracking System - Unit History</b></td></tr>\r");
-		hdr.append("<tr><td>Date</td>");
-		hdr.append("\t<td>Status</td>");
-		hdr.append("\t<td>Unit Type</td>");
-		hdr.append("\t<td>Transaction Type</td>");
-		hdr.append("\t<td>Serial No.</td>");
-		hdr.append("\t<td>User</td>");
-		hdr.append("\t<td>Software Rev No.</td>");
-		if (!restricted && isMedStream) { 
-			hdr.append("\t<td>Hardware Rev No.</td>");
-		}
-		if (isMedStream) {
-			hdr.append("\t<td>IFU Article No.</td>");
-			hdr.append("\t<td>IFU Rev No.</td>");
-			hdr.append("\t<td>Prog Article No.</td>");
-			hdr.append("\t<td>Prog Rev No.</td>");
-		}
-		if (!restricted) { 
-			hdr.append("\t<td>Battery Type</td>");
-			if (isMedStream) {
-				hdr.append("\t<td>Battery Serial No.</td>");
-			} else {
-				hdr.append("\t<td>Battery Recharge Date.</td>");
-			}
-			hdr.append("\t<td>Lot No.</td>");
-			hdr.append("\t<td>Service/Repair No.</td>");
-			if (isMedStream) {
-				hdr.append("\t<td>Service/Repair Date</td>");
-			} else {
-				hdr.append("\t<td>Service/Refurb Date</td>");
-			}
-		}
-		hdr.append("\t<td>Comments</td>");
-		if (!restricted) {
-			hdr.append("\t<td>Production Comments</td>");
-		}
-		hdr.append("\t<td>Date Deployed</td>");
-		hdr.append("\t<td>Account</td>");
-		hdr.append("\t<td>Rep Name</td>");
-		hdr.append("\t<td>Physician Name</td>");
-		hdr.append("\t<td>Center</td>");
-		hdr.append("\t<td>Department</td>");
-		hdr.append("\t<td>Physician Phone#</td>");
-		hdr.append("\t<td>Physician Address</td>");
-		hdr.append("\t<td>Address2</td>");
-		hdr.append("\t<td>City</td>");
-		hdr.append("\t<td>State</td>");
-		hdr.append("\t<td>Zip/Postal</td>");
-		hdr.append("\t<td>Country</td>");
-		hdr.append("</tr>\r");
-
-		return hdr;
-	}
-
-
-	protected StringBuilder getFooter() {
-		return new StringBuilder("</table>");
-	}
-
-	protected String formatUnit(UnitVO u, boolean restricted) {
-		boolean isMedstream =  (u.getProductType() == ProdType.MEDSTREAM);
-		StringBuilder rpt = new StringBuilder();
-		rpt.append("<tr>");
-		rpt.append("\t<td>").append(this.formatDate(u.getCreateDate())).append("</td>\r");
-		rpt.append("\t<td>").append(UnitAction.getStatusName(u.getStatusId())).append("</td>\r");
-		rpt.append("\t<td>").append(u.getProductType().toString()).append("</td>\r");
-		String transType = "";
-		if (u.getTransactionType() == null || u.getTransactionType() == 0) transType = "Unit Update";
-		else if (u.getTransactionType() == 2 && !isMedstream) transType = "Return for Refurb";
-		else if (u.getTransactionType() == 2) transType = "Transfer";
-		else if (u.getTransactionType() == 3) transType = "Refurbish";
-		else if (u.getTransactionType() == 1) transType = "New Request";
-
-		rpt.append("\t<td>").append(transType).append("</td>\r");
-		rpt.append("\t<td>").append(StringUtil.checkVal(u.getSerialNo())).append("</td>\r");
-		rpt.append("\t<td>").append(StringUtil.checkVal(u.getModifyingUserName())).append("</td>\r");
-		rpt.append("\t<td>").append(StringUtil.checkVal(u.getSoftwareRevNo())).append("</td>\r");
-		if (!restricted && isMedstream) {
-			rpt.append("\t<td>").append(StringUtil.checkVal(u.getHardwareRevNo())).append("</td>\r");
-		}
-		if (isMedstream) {
-			rpt.append("\t<td>").append(StringUtil.checkVal(u.getIfuArticleNo())).append("</td>\r");
-			rpt.append("\t<td>").append(StringUtil.checkVal(u.getIfuRevNo())).append("</td>\r");
-			rpt.append("\t<td>").append(StringUtil.checkVal(u.getProgramArticleNo())).append("</td>\r");
-			rpt.append("\t<td>").append(StringUtil.checkVal(u.getProgramRevNo())).append("</td>\r");
-		}
-		if (!restricted) {
-			rpt.append("\t<td>").append(StringUtil.checkVal(u.getBatteryType())).append("</td>\r");
-			if (isMedstream) {
-				rpt.append("\t<td>").append(StringUtil.checkVal(u.getBatterySerNo())).append("</td>\r");
-			} else {
-				rpt.append("\t<td>").append(this.formatDate(u.getBatteryRechargeDate())).append("</td>\r");
-			}
-			rpt.append("\t<td>").append(StringUtil.checkVal(u.getLotNo())).append("</td>\r");
-			rpt.append("\t<td>").append(StringUtil.checkVal(u.getServiceRefNo())).append("</td>\r");
-			rpt.append("\t<td>").append(this.formatDate(u.getServiceDate())).append("</td>\r");
-		}
-		rpt.append("\t<td>").append(StringUtil.checkVal(u.getCommentsText())).append("</td>\r");
-		if (!restricted) {
-			rpt.append("\t<td>").append(StringUtil.checkVal(u.getProductionCommentsText())).append("</td>\r");
-		}
-		rpt.append("\t<td>").append(this.formatDate(u.getDeployedDate())).append("</td>\r");
-		rpt.append("\t<td>").append(StringUtil.checkVal(u.getAccountName())).append("</td>\r");
-		rpt.append("\t<td>").append(StringUtil.checkVal(u.getRepName())).append("</td>\r");
-		rpt.append("\t<td>").append(StringUtil.checkVal(u.getPhysicianName())).append("</td>\r");
-		rpt.append("\t<td>").append(StringUtil.checkVal(u.getPhysician().getCenterText())).append("</td>\r");
-		rpt.append("\t<td>").append(StringUtil.checkVal(u.getPhysician().getDepartmentText())).append("</td>\r");
-		rpt.append("\t<td>").append(StringUtil.checkVal(u.getPhysician().getMainPhone())).append("</td>\r");
-		rpt.append("\t<td>").append(StringUtil.checkVal(u.getPhysician().getAddress())).append("</td>\r");
-		rpt.append("\t<td>").append(StringUtil.checkVal(u.getPhysician().getAddress2())).append("</td>\r");
-		rpt.append("\t<td>").append(StringUtil.checkVal(u.getPhysician().getCity())).append("</td>\r");
-		rpt.append("\t<td>").append(StringUtil.checkVal(u.getPhysician().getState())).append("</td>\r");
-		rpt.append("\t<td>").append(StringUtil.checkVal(u.getPhysician().getZipCode())).append("</td>\r");
-		rpt.append("\t<td>").append(StringUtil.checkVal(u.getPhysician().getCountryCode())).append("</td>\r");
-		rpt.append("</tr>\r");
-
-		return rpt.toString();
-	}
-
-	protected String formatDate(Date d) {
-		DateFormat df = DateFormat.getDateInstance(DateFormat.MEDIUM, siteVo.getLocale());
-
-		if (d != null) return df.format(d);
-		else return "";
-	}
-
-
 }

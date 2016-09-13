@@ -1,12 +1,16 @@
 package com.depuy.events_v2.vo.report;
 
 import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Map;
 
 import com.depuy.events_v2.vo.DePuyEventSeminarVO;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.event.vo.EventEntryVO;
+import com.siliconmtn.data.report.ExcelReport;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
@@ -23,117 +27,149 @@ import com.siliconmtn.util.StringUtil;
  ***************************************************************************/
 
 public class EventPostalLeadsReportVO extends AbstractSBReportVO {
-    private static final long serialVersionUID = 1l;
-    private List<EventEntryVO> events = new ArrayList<EventEntryVO>();
-    private List<UserDataVO> leads = new ArrayList<UserDataVO>();
-    private Date rsvpDate = null;;
-    private String lalbelText = "";
+	private static final long serialVersionUID = 19843246851684541l;
+	private List<EventEntryVO> events = new ArrayList<>();
+	private List<UserDataVO> leads = new ArrayList<>();
+	private Date rsvpDate = null;;
+	private String labelText = "";
 
-    /**
-     * 
-     */
-    public EventPostalLeadsReportVO() {
-        super();
-        setContentType("application/vnd.ms-excel");
-        isHeaderAttachment(Boolean.TRUE);
-        setFileName("Leads-Report.xls");
-    }
-    
-    /**
-     * Assigns the event postcard data retrieved from the parent action
-     * variables
-     * @param data (List<DePuyEventPostcardVO>)
-     * @throws SQLException
-     */
-    public void setData(Object o) {
-    	DePuyEventSeminarVO postcard = (DePuyEventSeminarVO) o;
-    	this.events = postcard.getEvents();
-    	this.leads = postcard.getLeadsData();
-    	rsvpDate = postcard.getRSVPDate();
-    	lalbelText = postcard.getLabelText();
-    }
-    
+
+	public EventPostalLeadsReportVO() {
+		super();
+		setContentType("application/vnd.ms-excel");
+		isHeaderAttachment(Boolean.TRUE);
+		setFileName("Leads-Report.xls");
+	}
+	
+
+	/**
+	 * Assigns the event postcard data retrieved from the parent action
+	 * variables
+	 * @param data (List<DePuyEventPostcardVO>)
+	 * @throws SQLException
+	 */
+	@Override
+	public void setData(Object o) {
+		DePuyEventSeminarVO postcard = (DePuyEventSeminarVO) o;
+		this.events = postcard.getEvents();
+		this.leads = postcard.getLeadsData();
+		rsvpDate = postcard.getRSVPDate();
+		labelText = postcard.getLabelText();
+	}
+
+	
+	@Override
 	public byte[] generateReport() {
 		log.debug("starting generateReport()");
-		StringBuilder rpt = new StringBuilder(this.getHeader(events.size()));
-		String eventsData = this.buildEvents(); //only needs called once
+
+		ExcelReport rpt = new ExcelReport(this.getHeader(events.size()));
+		List<Map<String, Object>> rows = new ArrayList<>(leads.size());
+		rows = generateDataRows(rows);
+		rpt.setData(rows);
+		return rpt.generateReport();
+	}
+
+	
+	/**
+	 * @param rows
+	 * @return
+	 */
+	private List<Map<String, Object>> generateDataRows(
+			List<Map<String, Object>> rows) {
+
 		String rsvpDateStr = Convert.formatDate(rsvpDate, "EEEE, MMMM dd, yyyy");
+		StringBuilder keySb = new StringBuilder(32);
+		StringEncoder se = new StringEncoder();
+		EventEntryVO evo = null;
 		
-		for (UserDataVO vo : leads) {
-			rpt.append("<tr><td>").append(StringUtil.checkVal(vo.getProfileId())).append("</td>");
-			rpt.append("<td>").append(StringUtil.checkVal(vo.getPrefixName())).append("</td>");
-			rpt.append("<td>").append(StringUtil.checkVal(vo.getFirstName())).append("</td>");
-			rpt.append("<td>").append(StringUtil.checkVal(vo.getLastName())).append("</td>");
-			rpt.append("<td>").append(StringUtil.checkVal(vo.getSuffixName())).append("</td>");
-			rpt.append("<td>").append(vo.getAddress()).append("</td>");
-			rpt.append("<td>").append(StringUtil.checkVal(vo.getAddress2())).append("</td>");
-			rpt.append("<td>").append(vo.getCity()).append("</td>");
-			rpt.append("<td>").append(vo.getState()).append("</td>");
-			rpt.append("<td type='text'>").append(vo.getZipCode()).append("</td>");
-			rpt.append("<td>").append(rsvpDateStr).append("</td>");
-			rpt.append("<td>1-800-256-1146</td>");
-			rpt.append(eventsData).append("</tr>\r");
-			vo = null;
+		for (UserDataVO vo : this.leads) {
+			Map<String, Object> row = new HashMap<>();
+
+			row.put("PROFILE_ADDRESSID", StringUtil.checkVal(vo.getProfileId()));
+			row.put("TITLE", StringUtil.checkVal(vo.getPrefixName()));
+			row.put("FIRST_NAME", StringUtil.checkVal(vo.getFirstName()));
+			row.put("LAST_NAME", StringUtil.checkVal(vo.getLastName()));
+			row.put("SUFFIX", StringUtil.checkVal(vo.getSuffixName()));
+			row.put("ADDRESS1", vo.getAddress());
+			row.put("ADDRESS2", StringUtil.checkVal(vo.getAddress2()));
+			row.put("CITY", vo.getCity());
+			row.put("STATE", vo.getState());
+			row.put("ZIP", vo.getZipCode());
+			row.put("RSVP_DEADLINE", rsvpDateStr);
+			row.put("RSVP_PHONE", "1-800-256-1146");
+
+
+			//need both the index and the vo
+			for (int x=0; x < events.size(); x++) {
+				evo = events.get(x);
+				row.put(keySb.append("DATE_OF_EVENT_").append(x).toString(), Convert.formatDate(evo.getStartDate(), "EEEE, MMMM dd, yyyy"));
+				keySb.setLength(0);
+				row.put(keySb.append("TIME_").append(x).toString(),se.decodeValue(evo.getLocationDesc()));
+				keySb.setLength(0);
+				row.put(keySb.append("VENUE_NAME_").append(x).toString(),se.decodeValue(evo.getEventName()));
+				keySb.setLength(0);
+				row.put(keySb.append("ADDRESS1_").append(x).toString(),se.decodeValue(evo.getAddressText()));
+				keySb.setLength(0);
+				row.put(keySb.append("ADDRESS2_").append(x).toString(),se.decodeValue(evo.getAddress2Text()));
+				keySb.setLength(0);
+				row.put(keySb.append("CITY_").append(x).toString(),se.decodeValue(evo.getCityName()));
+				keySb.setLength(0);
+				row.put(keySb.append("STATE_").append(x).toString(),evo.getStateCode());
+				keySb.setLength(0);
+				row.put(keySb.append("ZIP_").append(x).toString(),evo.getZipCode());
+				keySb.setLength(0);
+				row.put(keySb.append("SURGEON_NAME_").append(x).toString(), labelText);
+				keySb.setLength(0);
+				row.put(keySb.append("EVENTCODE_").append(x).toString(),evo.getRSVPCode());
+				keySb.setLength(0);
+			}
+			rows.add(row);
+		}
+		return rows;
+	}
+
+	private HashMap<String, String> getHeader(int eventCnt) {
+		StringBuilder keySb = new StringBuilder(32);
+		
+		HashMap<String, String> headerMap = new LinkedHashMap<>();
+		headerMap.put("PROFILE_ADDRESSID", "Profile Address Id");
+		headerMap.put("TITLE", "Title");
+		headerMap.put("FIRST_NAME", "First Name");
+		headerMap.put("LAST_NAME", "Last Name");
+		headerMap.put("SUFFIX", "Suffix");
+		headerMap.put("ADDRESS1", "Address1");
+		headerMap.put("ADDRESS2", "Address2");
+		headerMap.put("CITY", "City");
+		headerMap.put("STATE", "State");
+		headerMap.put("ZIP", "Zip");
+		headerMap.put("RSVP_DEADLINE", "RSVP Deadline");
+		headerMap.put("RSVP_PHONE", "RSVP phone");
+
+		//use string builder to make a unique key for each events column
+
+		for (int x=0; x < eventCnt; x++) {
+			headerMap.put(keySb.append("DATE_OF_EVENT_").append(x).toString(), "Date of Event");
+			keySb.setLength(0);
+			headerMap.put(keySb.append("TIME_").append(x).toString(), "Time");
+			keySb.setLength(0);
+			headerMap.put(keySb.append("VENUE_NAME_").append(x).toString(), "Venue Name");
+			keySb.setLength(0);
+			headerMap.put(keySb.append("ADDRESS1_").append(x).toString(), "Address1");
+			keySb.setLength(0);
+			headerMap.put(keySb.append("ADDRESS2_").append(x).toString(), "Address2");
+			keySb.setLength(0);
+			headerMap.put(keySb.append("CITY_").append(x).toString(), "City");
+			keySb.setLength(0);
+			headerMap.put(keySb.append("STATE_").append(x).toString(), "State");
+			keySb.setLength(0);
+			headerMap.put(keySb.append("ZIP_").append(x).toString(), "Zip");
+			keySb.setLength(0);
+			headerMap.put(keySb.append("SURGEON_NAME_").append(x).toString(), "Surgeon Name");
+			keySb.setLength(0);
+			headerMap.put(keySb.append("EVENTCODE_").append(x).toString(), "Event Code");
+			keySb.setLength(0);
 		}
 
-		rpt.append(this.getFooter());
-		return rpt.toString().getBytes();
+		return headerMap;
 	}
-	
-	private StringBuilder getHeader(int eventCnt) {
-		StringBuilder hdr = new StringBuilder();
-		hdr.append("<table border='1'>\r<tr style='background-color:#ccc;'>");
-		hdr.append("<th>ProfileAddressId</th>");
-		hdr.append("<th>Title</th>");
-		hdr.append("<th>First_Name</th>");
-		hdr.append("<th>Last_Name</th>");
-		hdr.append("<th>Suffix</th>");
-		hdr.append("<th>Address1</th>");
-		hdr.append("<th>Address2</th>");
-		hdr.append("<th>City</th>");
-		hdr.append("<th>State</th>");
-		hdr.append("<th>Zip</th>");
-		hdr.append("<th>RSVP_Deadline</th>");
-		hdr.append("<th>RSVP_phone</th>");
-		
-		for (int x=0; x < eventCnt; x++) {
-			hdr.append("<th>Date of Event</th>");
-			hdr.append("<th>Time</th>");
-			hdr.append("<th>Venue Name</th>");
-			hdr.append("<th>Address1</th>");
-			hdr.append("<th>Address2</th>");
-			hdr.append("<th>City</th>");
-			hdr.append("<th>State</th>");
-			hdr.append("<th>Zip</th>");
-			hdr.append("<th>Surgeon Name</th>");
-			hdr.append("<th>EventCode</th>");
-		}
-		hdr.append("</tr>\r");
-		
-		return hdr;
-	}
-	
-	
-	private String buildEvents() {
-		StringBuilder row = new StringBuilder();
-		StringEncoder se = new StringEncoder();
-		for (EventEntryVO event : this.events) {
-			row.append("<td>").append(Convert.formatDate(event.getStartDate(), "EEEE, MMMM dd, yyyy")).append("</td>");
-			row.append("<td>").append(se.decodeValue(event.getLocationDesc())).append("</td>");
-			row.append("<td>").append(se.decodeValue(event.getEventName())).append("</td>");
-			row.append("<td>").append(se.decodeValue(event.getAddressText())).append("</td>");
-			row.append("<td>").append(se.decodeValue(event.getAddress2Text())).append("</td>");
-			row.append("<td>").append(se.decodeValue(event.getCityName())).append("</td>");
-			row.append("<td>").append(event.getStateCode()).append("</td>");
-			row.append("<td>").append(event.getZipCode()).append("</td>");
-			row.append("<td>").append(lalbelText).append("</td>");
-			row.append("<td>").append(event.getRSVPCode()).append("</td>");
-		}
-		return row.toString();
-	}
-	
-	private StringBuilder getFooter() {
-		return new StringBuilder("</table>");
-	}
-		
 }

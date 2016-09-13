@@ -333,6 +333,8 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 			}
 		} else if ("bundled-payments".equals(rootLvl)) {
 			rootLvl = "bundled-payments/resource-library";
+		} else if ("outpatient-education".equals(rootLvl)) {
+			rootLvl = "outpatient-education/resource-library";
 		}
 
 		//log.debug(rootLvl);
