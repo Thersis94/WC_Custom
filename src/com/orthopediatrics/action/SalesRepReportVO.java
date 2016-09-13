@@ -1,11 +1,18 @@
 package com.orthopediatrics.action;
 
 // JDK 1.6
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 // SMTBaseLibs 2.0
 
 
+
+import java.util.Map;
+
+import com.siliconmtn.data.report.ExcelReport;
 // SitebuilderII 2.0
 import com.siliconmtn.util.PhoneNumberFormat;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
@@ -42,9 +49,95 @@ public class SalesRepReportVO extends AbstractSBReportVO {
 	
 	@Override
 	public byte[] generateReport() {
+		if (fileName != null && fileName.endsWith(".xls") ){
+		return this.generateNonHtmlReport();
+		}else{
 		return this.generateStandardReport().toString().getBytes();
+		}
 	}
 	
+	/**
+	 * generates a non html report
+	 * @return
+	 */
+	private byte[] generateNonHtmlReport() {
+		ExcelReport rpt = new ExcelReport(this.getHeader());
+		List<Map<String, Object>> rows;
+		if (data != null && !data.isEmpty()) {
+			rows = new ArrayList<>(data.size());
+			rows = generateDataRows(rows);
+		} else {
+			rows = new ArrayList<>(1);
+			rows = emptyRow(rows);		
+		}
+		//Close the table.
+		
+		log.debug("report size: " + rows.size());
+		return rpt.generateReport();
+	}
+	
+	
+	/**
+	 * first non header row, first cell contains the message when there is no information to process
+	 * @param rows
+	 * @return
+	 */
+	private List<Map<String, Object>> emptyRow(List<Map<String, Object>> rows) {
+		Map<String, Object> row = new HashMap<>();
+		row.put("REGION_ID","No sales rep information found.");
+		rows.add(row);
+		return rows;
+	}
+
+	/**
+	 * generates a standard row of data
+	 * @param rows
+	 * @return
+	 */
+	private List<Map<String, Object>> generateDataRows(
+			List<Map<String, Object>> rows) {
+		PhoneNumberFormat pnf = new PhoneNumberFormat();
+		//loop/add the data
+		for(SalesRepVO sv : data) {
+			Map<String, Object> row = new HashMap<>();
+			
+			row.put("REGION_ID",sv.getRegionId());
+			row.put("REGION_NAME",sv.getRegions().get(sv.getRegionId()));
+			row.put("TERRITORY_ID",sv.getTerritoryId());
+			row.put("TERRITORY_NAME",sv.getTerritories().get(sv.getTerritoryId()));
+			row.put("ROLE",sv.getRoleName());
+			row.put("LAST_NAME",sv.getLastName());
+			row.put("FIRST_NAME",sv.getFirstName());
+			row.put("EMAIL_ADDRESS",sv.getEmailAddress());
+			pnf.setPhoneNumber(sv.getPhoneNumber());
+			row.put("PHONE",pnf.getFormattedNumber());
+			row.put("CLASS_ID",sv.getClassId());
+			rows.add(row);
+		}
+		return rows;
+	}
+
+	/**
+	 * generates the header map for the report
+	 * @return
+	 */
+	private Map<String, String> getHeader() {
+		
+		HashMap<String, String> headerMap = new LinkedHashMap<>();
+		headerMap.put("REGION_ID",     "Region ID");
+		headerMap.put("REGION_NAME",   "Region Name");
+		headerMap.put("TERRITORY_ID",  "Territory ID");
+		headerMap.put("TERRITORY_NAME","Territory Name");
+		headerMap.put("ROLE",          "Role");
+		headerMap.put("LAST_NAME",     "Last Name");
+		headerMap.put("FIRST_NAME",    "First Name");
+		headerMap.put("EMAIL_ADDRESS", "Email Address");
+		headerMap.put("PHONE",         "Phone");
+		headerMap.put("CLASS_ID",      "Class ID");
+		
+		return headerMap;
+	}
+
 	@Override
 	public void setFileName(String f) {
 		super.setFileName(f);
