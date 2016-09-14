@@ -171,7 +171,6 @@ public class LeadSourceReportVO extends AbstractDataFeedReportVO {
 		greyCellStyle.setBorderTop(CellStyle.BORDER_THIN);
 		greyCellStyle.setBorderRight(CellStyle.BORDER_THIN);
 		greyCellStyle.setBorderLeft(CellStyle.BORDER_THIN);
-		
 		greyCellStyle.setFont(font);
 		
 		return greyCellStyle;
