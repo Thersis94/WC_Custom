@@ -417,6 +417,7 @@ public class LeadSourceReportVO extends AbstractDataFeedReportVO {
 	}
 
 	/**
+	 * used to make the cells behind the a merged cell so styling can carry through
 	 * @param value 
 	 * @param r 
 	 * @param Max 
