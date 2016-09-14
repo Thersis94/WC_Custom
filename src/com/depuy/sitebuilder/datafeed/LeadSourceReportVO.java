@@ -91,6 +91,7 @@ public class LeadSourceReportVO extends AbstractDataFeedReportVO {
 		log.debug("starting generateReport()");
 
 		//Create Excel Object
+		//an HSSF workbook has a hard limit of 255 columns
 		Workbook wb = new HSSFWorkbook();
 		Sheet s = wb.createSheet();
 
