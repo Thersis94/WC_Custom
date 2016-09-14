@@ -58,7 +58,7 @@ public class LeadSourceReportVO extends AbstractDataFeedReportVO {
 			this.rank = rank;
 		}
 	}
-	
+
 
 
 	public LeadSourceReportVO() {
@@ -97,15 +97,15 @@ public class LeadSourceReportVO extends AbstractDataFeedReportVO {
 		//make a heading font we can use to separate the sections
 		Font font = wb.createFont();
 		font.setBoldweight(Font.BOLDWEIGHT_BOLD);
-		
+
 		// the cell styles to use in different sections of the report
 		CellStyle titleStyle = wb.createCellStyle();
 		titleStyle.setFont(font);
 
 		CellStyle centerStyle = getCenterStyle(font, wb);
-				
+
 		CellStyle greyCellStyle = getGreyStyle(font, wb);
-		
+
 		CellStyle borderStyle = getBorderStyle( wb);
 
 		//generate the rows
@@ -120,6 +120,13 @@ public class LeadSourceReportVO extends AbstractDataFeedReportVO {
 		addDataRows(s,greyCellStyle, borderStyle);
 
 		addTotalRow(s, centerStyle);
+
+		if (s.getLastRowNum() > 1){
+			Row r = s.getRow(s.getLastRowNum()-1);
+			for(Cell cell : r){
+				s.autoSizeColumn(cell.getColumnIndex());
+			}
+		}
 
 		//stream the WorkBook 
 		try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
@@ -146,12 +153,12 @@ public class LeadSourceReportVO extends AbstractDataFeedReportVO {
 	 */
 	private CellStyle getBorderStyle( Workbook wb) {
 		CellStyle borderStyle = wb.createCellStyle();
-		
+
 		borderStyle.setBorderBottom(CellStyle.BORDER_THIN);
 		borderStyle.setBorderTop(CellStyle.BORDER_THIN);
 		borderStyle.setBorderRight(CellStyle.BORDER_THIN);
 		borderStyle.setBorderLeft(CellStyle.BORDER_THIN);
-		
+
 		return borderStyle;
 	}
 
@@ -163,16 +170,16 @@ public class LeadSourceReportVO extends AbstractDataFeedReportVO {
 	 */
 	private CellStyle getGreyStyle(Font font, Workbook wb) {
 		CellStyle greyCellStyle = wb.createCellStyle();
-		
+
 		greyCellStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.index);
 		greyCellStyle.setFillPattern(CellStyle.SOLID_FOREGROUND);
-		
+
 		greyCellStyle.setBorderBottom(CellStyle.BORDER_THIN);
 		greyCellStyle.setBorderTop(CellStyle.BORDER_THIN);
 		greyCellStyle.setBorderRight(CellStyle.BORDER_THIN);
 		greyCellStyle.setBorderLeft(CellStyle.BORDER_THIN);
 		greyCellStyle.setFont(font);
-		
+
 		return greyCellStyle;
 	}
 
@@ -185,17 +192,17 @@ public class LeadSourceReportVO extends AbstractDataFeedReportVO {
 	private CellStyle getCenterStyle(Font font, Workbook wb) {
 		CellStyle centerStyle = wb.createCellStyle();
 		centerStyle.setAlignment(CellStyle.ALIGN_CENTER);
-		
+
 		centerStyle.setBorderBottom(CellStyle.BORDER_THIN);
 		centerStyle.setBorderTop(CellStyle.BORDER_THIN);
 		centerStyle.setBorderRight(CellStyle.BORDER_THIN);
 		centerStyle.setBorderLeft(CellStyle.BORDER_THIN);
-		
+
 		centerStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.index);
 		centerStyle.setFillPattern(CellStyle.SOLID_FOREGROUND);
-		
+
 		centerStyle.setFont(font);
-		
+
 		return centerStyle;
 	}
 
@@ -218,12 +225,14 @@ public class LeadSourceReportVO extends AbstractDataFeedReportVO {
 		for ( Entry<String, Integer> entry : reportHeaders.entrySet() ){
 			// you must merge the cells before setting style
 			s.addMergedRegion(new CellRangeAddress(rowNo,rowNo,counter,counter+19));
-			c = r.createCell(counter);
-			c.setCellType(Cell.CELL_TYPE_STRING);
-			c.setCellStyle(centerStyle);
-			c.setCellValue(entry.getValue());
+			//HSSF will not spread the borders along a merge you must build and style
+			//each cell of the merge
+			cellLoop(counter, 20, r,StringUtil.checkVal(entry.getValue()),centerStyle);
+			
 			total += entry.getValue();
 			counter += 20;
+			
+			
 		}
 
 		c = r.createCell(counter);
@@ -241,7 +250,7 @@ public class LeadSourceReportVO extends AbstractDataFeedReportVO {
 	 * @param headingStyle
 	 */
 	private void addDataRows(Sheet s, CellStyle greyCellStyle, CellStyle borderStyle) {
-		 
+
 		for (Entry<Date, ReportData> entry: dataSource.entrySet()){
 			int rowNo = s.getPhysicalNumberOfRows();
 			Row r = s.createRow(rowNo);
@@ -254,16 +263,16 @@ public class LeadSourceReportVO extends AbstractDataFeedReportVO {
 			c.setCellStyle(greyCellStyle);
 			c.setCellValue(formatDate(entry.getKey()));
 			this.cellCounter++;
-			
-			
+
+
 			fillDataCells(r, c, entry, borderStyle);
-			
+
 			c = r.createCell(this.cellCounter);
 			c.setCellType(Cell.CELL_TYPE_STRING);
 			c.setCellStyle(greyCellStyle);
 			c.setCellValue(this.rowTotal);
 		}
-	
+
 		//making an empty row
 		addEmptyRow(s, greyCellStyle, borderStyle);
 	}
@@ -277,21 +286,21 @@ public class LeadSourceReportVO extends AbstractDataFeedReportVO {
 	 */
 	private void addEmptyRow(Sheet s, CellStyle greyCellStyle, CellStyle borderStyle) {
 		Row r2 = s.createRow(s.getPhysicalNumberOfRows());
-		
+
 		Cell c2 = r2.createCell(0);
 		c2.setCellType(Cell.CELL_TYPE_STRING);
 		c2.setCellStyle(greyCellStyle);
 		c2.setCellValue("");
-		
+
 		int colNum = 1+ (reportHeaders.size() * jointTypes.length * leadTypes.values().length);
-		
+
 		for (int ct = 1 ; ct< colNum-1 ; ct++){
-		c2 = r2.createCell(ct);
-		c2.setCellType(Cell.CELL_TYPE_STRING);
-		c2.setCellStyle(borderStyle);
-		c2.setCellValue("");
+			c2 = r2.createCell(ct);
+			c2.setCellType(Cell.CELL_TYPE_STRING);
+			c2.setCellStyle(borderStyle);
+			c2.setCellValue("");
 		}
-		
+
 		c2 = r2.createCell(colNum);
 		c2.setCellType(Cell.CELL_TYPE_STRING);
 		c2.setCellStyle(greyCellStyle);
@@ -394,11 +403,9 @@ public class LeadSourceReportVO extends AbstractDataFeedReportVO {
 			for (int x=0; x<jointTypes.length; x++){
 				// you must merge the cells before setting style
 				s.addMergedRegion(new CellRangeAddress(rowNo,rowNo,counter,counter+4));
-				c = r.createCell(counter);
-				c.setCellType(Cell.CELL_TYPE_STRING);
-				c.setCellStyle(centerStyle);
-				c.setCellValue(jointTypes[x]);
-
+				
+				cellLoop(counter, 5, r,jointTypes[x],centerStyle);
+				
 				counter += 5;
 			}
 		}
@@ -407,6 +414,25 @@ public class LeadSourceReportVO extends AbstractDataFeedReportVO {
 		c.setCellStyle(centerStyle);
 		c.setCellValue("");
 
+	}
+
+	/**
+	 * @param value 
+	 * @param r 
+	 * @param Max 
+	 * @param counter 
+	 * @param style 
+	 * 
+	 */
+	private void cellLoop(int counter, int max, Row r, String value, CellStyle style) {
+		Cell c;
+		for(int ct = 0;ct < max;ct++){
+			c = r.createCell(counter+ct);
+			c.setCellType(Cell.CELL_TYPE_STRING);
+			c.setCellStyle(style);
+			c.setCellValue(value);
+		}
+		
 	}
 
 	/**
@@ -427,11 +453,9 @@ public class LeadSourceReportVO extends AbstractDataFeedReportVO {
 		for (String key : reportHeaders.keySet() ){
 			// you must merge the cells before setting style
 			s.addMergedRegion(new CellRangeAddress(rowNo,rowNo,counter,counter+19));
-			c = r.createCell(counter);
-			c.setCellType(Cell.CELL_TYPE_STRING);
-			c.setCellStyle(centerStyle);
-			c.setCellValue(key);
-
+			
+			cellLoop(counter, 20, r,key,centerStyle);
+			
 			counter += 20;
 		}
 
