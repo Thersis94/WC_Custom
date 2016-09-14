@@ -115,7 +115,7 @@ public class LeadSourceReportVO extends AbstractDataFeedReportVO {
 
 		addProdRow(s, centerStyle); 
 
-		addLeadTypeRow(s, greyCellStyle);
+		addLeadTypeRow(s, greyCellStyle, borderStyle);
 
 		addDataRows(s,greyCellStyle, borderStyle);
 
@@ -355,8 +355,9 @@ public class LeadSourceReportVO extends AbstractDataFeedReportVO {
 	 * adds the lead type row
 	 * @param s
 	 * @param greyCellStyle 
+	 * @param borderStyle 
 	 */
-	private void addLeadTypeRow(Sheet s, CellStyle greyCellStyle) {
+	private void addLeadTypeRow(Sheet s, CellStyle greyCellStyle, CellStyle borderStyle) {
 		int rowNo = s.getPhysicalNumberOfRows();
 		Row r = s.createRow(rowNo);
 		int counter = 0;
@@ -372,6 +373,7 @@ public class LeadSourceReportVO extends AbstractDataFeedReportVO {
 				// you must merge the cells before setting style
 				c = r.createCell(counter);
 				c.setCellType(Cell.CELL_TYPE_STRING);
+				c.setCellStyle(borderStyle);
 				c.setCellValue(leadTypes.values()[x].textValue);
 
 				counter++;
