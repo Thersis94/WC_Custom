@@ -506,6 +506,10 @@ public class LeadSourceReportVO extends AbstractDataFeedReportVO {
 		//number of columns
 		int colNum = 1+ (reportHeaders.size() * jointTypes.length * leadTypes.values().length);
 
+		if (colNum > 255 ){
+			log.error("an HSSF Workbook as a hard limit of 255 columns");
+		}
+		
 		s.addMergedRegion(new CellRangeAddress(0,0,0,colNum));
 
 	}
