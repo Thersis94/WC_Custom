@@ -517,7 +517,7 @@ public class ProductCartAction extends SBActionAdapter {
 		report.setFileName(filename + ".pdf");
 		
 		Map<String, Object> data = new HashMap<>();
-		data.put("cart", cart.getItems());
+		data.put("cart", cart.getItems().values());
 		data.put(HOSPITAL,StringUtil.checkVal(req.getSession().getAttribute(HOSPITAL)));
 		data.put(ROOM, StringUtil.checkVal(req.getSession().getAttribute(ROOM)));
 		data.put(SURGEON, StringUtil.checkVal(req.getSession().getAttribute(SURGEON)));
