@@ -11,7 +11,6 @@ import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.CreationHelper;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 
@@ -63,10 +62,9 @@ public class KitExcelReport extends  AbstractSBReportVO {
 		//Create Excel Object
 		HSSFWorkbook wb = new HSSFWorkbook();
 		generateStyles(wb);
-		CreationHelper helper = wb.getCreationHelper();
 		HSSFSheet s = wb.createSheet();
 		//Build the header section
-		int rowCnt = buildFileHeader(s, helper);
+		int rowCnt = buildFileHeader(s);
 		//Get the cart info from the data object and loop over it
 		buildReportBody(rowCnt, s);
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -98,7 +96,7 @@ public class KitExcelReport extends  AbstractSBReportVO {
 			r.createCell(cellCnt++).setCellValue(kit.getResellerNm());
 			r.createCell(cellCnt++).setCellValue(kit.getRepId());
 			r.createCell(cellCnt++).setCellValue(kit.getOtherId());
-			r.createCell(cellCnt++).setCellValue(kit.getNumProducts());
+			r.createCell(cellCnt).setCellValue(kit.getNumProducts());
 		}
 	}
 
@@ -114,10 +112,9 @@ public class KitExcelReport extends  AbstractSBReportVO {
 	/**
 	 * Build the header section of the file
 	 * @param s
-	 * @param helper
 	 * @return
 	 */
-	private int buildFileHeader(Sheet s, CreationHelper helper) {
+	private int buildFileHeader(Sheet s) {
 		int rowCnt = 0;
 		int cellCnt = 0;
 		Row r = s.createRow(rowCnt++);
@@ -145,7 +142,7 @@ public class KitExcelReport extends  AbstractSBReportVO {
 		c = r.createCell(cellCnt++);
 		c.setCellValue("Other Id");
 		c.setCellStyle(header);
-		c = r.createCell(cellCnt++);
+		c = r.createCell(cellCnt);
 		c.setCellValue("Number of Products in Case");
 		c.setCellStyle(header);
 		
