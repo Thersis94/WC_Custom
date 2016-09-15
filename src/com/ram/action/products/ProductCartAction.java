@@ -13,6 +13,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.servlet.http.HttpSession;
+
 import com.ram.action.data.ORKitVO;
 import com.ram.action.report.vo.KitExcelReport;
 import com.ram.action.report.vo.ProductCartReport;
@@ -35,6 +37,7 @@ import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.util.MessageSender;
 
@@ -69,6 +72,9 @@ public class ProductCartAction extends SBActionAdapter {
 	public static final String REP_ID = "repId";
 	public static final String KIT_ID = "kitId";
 	public static final String COMPLETE_DT = "formComplete";
+	public static final String FINALIZED = "finalized";
+	public static final String LOT_NO = "lotNo";
+	public static final String DATE_PATTERN = "MM-dd-yyyy -- hh:mm";
 	
 	private enum SearchFields {
 		productName("PRODUCT_NM"),
@@ -99,26 +105,39 @@ public class ProductCartAction extends SBActionAdapter {
 		super(avo);
 	}
 	
+	
+	@Override
 	public void build(SMTServletRequest req) throws ActionException {
+		// Check the request object for triggers that determine
+		// what we are going to do with it
 		if (req.hasParameter("deleteKit")) {
 			deleteCart(req);
 		} else if (req.hasParameter("editAttr")) {
 			editAttr(req);
+			// After each attribute change save the cart in order 
+			// to prevent potential loss of data from user error
 			saveCart(req, 0);
 		} else if(req.hasParameter("newCart")) {
 			newKit(req);
 		} else if (req.hasParameter("loadCart")){
+			// Check if there is a kit in particular that needs to be loaded,
+			// if so then load it, if not load them all.
 			if (req.hasParameter("kitId")) {
 				populateCart(req);
 			} else {
 				loadKits(req);
 			}
 		} else if (Convert.formatBoolean(req.getParameter("finalize"))) {
+			// Finalized carts need to be saved as such, be updated on the
+			// user's end to reflect that change, and the finalized documents
+			// be sent out to the the user and the hospital
 			saveCart(req, 1);
-			req.getSession().setAttribute("finalized", true);
+			req.getSession().setAttribute(FINALIZED, true);
 			sendEmails(req);
 		} else {
 			editCart(req);
+			// After each change to the products in the cart it must be saved
+			// to prevent potential loss of data from user error
 			saveCart(req, 0);
 		}
 	}
@@ -133,7 +152,7 @@ public class ProductCartAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	private void editAttr(SMTServletRequest req) throws ActionException {
-		StringBuilder postParam = new StringBuilder();
+		StringBuilder postParam = new StringBuilder(500);
 		BufferedReader reader;
 		try {
 			reader = req.getReader();
@@ -190,12 +209,13 @@ public class ProductCartAction extends SBActionAdapter {
 	 */
 	private void editCartProduct(SMTServletRequest req, int pos, List<GenericVO> addedItems, String oldLot, ShoppingCartVO cart) {
 		ShoppingCartItemVO p = cart.getItems().get(req.getParameterValues("productId")[pos] + oldLot);
-		p.setProductId(req.getParameterValues("productId")[pos] + req.getParameterValues("lotNo")[pos]);
-		p.getProduct().getProdAttributes().put("lotNo", req.getParameterValues("lotNo")[pos]);
-		p.getProduct().getProdAttributes().put(WASTED, req.getParameterValues(WASTED)[pos]);
-		p.getProduct().getProdAttributes().put(BILLABLE, req.getParameterValues(BILLABLE)[pos]);
-		p.getProduct().getProdAttributes().put(PRODUCT_FROM, req.getParameterValues(PRODUCT_FROM)[pos]);
-		p.getProduct().getProdAttributes().put("oldId", p.getProduct().getProductId() + oldLot);
+		Map<String, Object> prodAttributes = p.getProduct().getProdAttributes();
+		p.setProductId(req.getParameterValues("productId")[pos] + req.getParameterValues(LOT_NO)[pos]);
+		prodAttributes.put(LOT_NO, req.getParameterValues(LOT_NO)[pos]);
+		prodAttributes.put(WASTED, req.getParameterValues(WASTED)[pos]);
+		prodAttributes.put(BILLABLE, req.getParameterValues(BILLABLE)[pos]);
+		prodAttributes.put(PRODUCT_FROM, req.getParameterValues(PRODUCT_FROM)[pos]);
+		prodAttributes.put("oldId", p.getProduct().getProductId() + oldLot);
 		int qty = Convert.formatInteger(req.getParameter("qty"),1);
 
 		String[] edits = req.getParameterValues("editItem");
@@ -206,7 +226,7 @@ public class ProductCartAction extends SBActionAdapter {
 		cart.add(p);
 		
 		// Remove the old product if we have changed the lot no
-		if (!oldLot.equals(p.getProduct().getProdAttributes().get("lotNo")) ) {
+		if (!oldLot.equals(p.getProduct().getProdAttributes().get(LOT_NO)) ) {
 			cart.remove(p.getProduct().getProductId()+oldLot);
 		}
 		
@@ -223,10 +243,10 @@ public class ProductCartAction extends SBActionAdapter {
 		// Determine whether we are deleting a single item or the entire cart
 		if (req.hasParameter("productId")){
 			cart.remove(req.getParameter("productId"));
+			super.putModuleData(req.getParameter("productId"));
 		} else {
 			cart.flush();
 		}
-		super.putModuleData(req.getParameter("productId"));
 	}
 
 
@@ -242,12 +262,12 @@ public class ProductCartAction extends SBActionAdapter {
 		product.setProductName(req.getParameterValues("productName")[pos]);
 		product.addProdAttribute("customer", req.getParameterValues("customer")[pos]);
 		product.addProdAttribute("gtin", req.getParameterValues("gtin")[pos]);
-		product.addProdAttribute("lotNo", req.getParameterValues("lotNo")[pos]);
+		product.addProdAttribute(LOT_NO, req.getParameterValues(LOT_NO)[pos]);
 		product.addProdAttribute(BILLABLE, req.getParameterValues(BILLABLE)[pos]);
 		product.addProdAttribute(WASTED, req.getParameterValues(WASTED)[pos]);
 		product.addProdAttribute(PRODUCT_FROM, req.getParameterValues(PRODUCT_FROM)[pos]);
 		ShoppingCartItemVO item = new ShoppingCartItemVO(product);
-		item.setProductId(product.getProductId()+product.getProdAttributes().get("lotNo"));
+		item.setProductId(product.getProductId()+product.getProdAttributes().get(LOT_NO));
 		item.setQuantity(Convert.formatInteger(req.getParameter("qty"),1));
 		
 		return item;
@@ -266,12 +286,12 @@ public class ProductCartAction extends SBActionAdapter {
 		log.debug("Addded item with id of" + item.getProductId());
 		log.debug("Cart now contains " + cart.getSize() + " items.");
 		// Remove the old product if we have changed the lot no
-		if (!oldLot.equals(item.getProduct().getProdAttributes().get("lotNo")) ) {
+		if (!oldLot.equals(item.getProduct().getProdAttributes().get(LOT_NO)) ) {
 			cart.remove(item.getProduct().getProductId()+oldLot);
 		}
 		
 		// Ensure that the map is properly ordered by product id
-		List<String> sortedKeys = new ArrayList<String>(cart.getItems().keySet());
+		List<String> sortedKeys = new ArrayList<>(cart.getItems().keySet());
 		Collections.sort(sortedKeys);
 		Map<String, ShoppingCartItemVO> orderedCart = new LinkedHashMap<>();
 		for (String key : sortedKeys) {
@@ -316,8 +336,8 @@ public class ProductCartAction extends SBActionAdapter {
 			UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 			req.getSession().setAttribute(RESELLER, user.getFullName());
 		}
-
-		if (req.getSession().getAttribute("companies") == null) getCustomers(req);
+		
+		if (req.getSession().getAttribute("companies") == null) getCompanies(req);
 		if (req.getSession().getAttribute("hospitals") == null) getHospitals(req);
 		
 		// Load the cart first since it is always needed
@@ -352,11 +372,10 @@ public class ProductCartAction extends SBActionAdapter {
 	
 	
 	/**
-	 * Get a list of companies that produce parts 
-	 * that can be found in the OR module.
+	 * Get a list of companies from the customer table in the database with valid products
 	 * @param req
 	 */
-	private void getCustomers(SMTServletRequest req) {
+	private void getCompanies(SMTServletRequest req) {
 		StringBuilder sql = new StringBuilder(200);
 		
 		sql.append("SELECT CUSTOMER_ID, CUSTOMER_NM FROM ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
@@ -417,7 +436,7 @@ public class ProductCartAction extends SBActionAdapter {
 		// A search type greater than 2 means an exact search
 		String sql = getProductSearchSQL(req, fields, searchType);
 		int count = 0;
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			int i = 1;
 			if (req.hasParameter("searchCustomer")) ps.setString(i++, req.getParameter("searchCustomer"));
 			if (fields != null) {
@@ -492,7 +511,7 @@ public class ProductCartAction extends SBActionAdapter {
 		if (caseId.length() != 0) {
 			filename = "case-" + caseId;
 		} else {
-			filename = "RAM-" + new SimpleDateFormat("YYYYMMdd").format(Convert.getCurrentTimestamp());;
+			filename = "RAM-" + new SimpleDateFormat("YYYYMMdd").format(Convert.getCurrentTimestamp());
 		}
 		report = new ProductCartReport();
 		report.setFileName(filename + ".pdf");
@@ -574,7 +593,7 @@ public class ProductCartAction extends SBActionAdapter {
 			int i = 1;
 			ps.setString(i++, (String) req.getSession().getAttribute(HOSPITAL));
 			ps.setString(i++, (String) req.getSession().getAttribute(ROOM));
-			ps.setTimestamp(i++, Convert.formatTimestamp("MM-dd-yyyy -- hh:mm", (String) req.getSession().getAttribute(TIME)));
+			ps.setTimestamp(i++, Convert.formatTimestamp(DATE_PATTERN, (String) req.getSession().getAttribute(TIME)));
 			ps.setString(i++, (String) req.getSession().getAttribute(SURGEON));
 			ps.setString(i++, (String) req.getSession().getAttribute(RESELLER));
 			ps.setString(i++, (String) req.getSession().getAttribute(CASE_ID));
@@ -623,7 +642,7 @@ public class ProductCartAction extends SBActionAdapter {
 				ps.setInt(2, Convert.formatInteger(p.getProduct().getProductId()));
 				ps.setString(3, kitId);
 				ps.setInt(4, i++);
-				ps.setString(5, (String) p.getProduct().getProdAttributes().get("lotNo"));
+				ps.setString(5, (String) p.getProduct().getProdAttributes().get(LOT_NO));
 				ps.setInt(6, p.getQuantity());
 				ps.setInt(7, Convert.formatInteger(StringUtil.checkVal(p.getProduct().getProdAttributes().get(BILLABLE))));
 				ps.setInt(8, Convert.formatInteger(StringUtil.checkVal(p.getProduct().getProdAttributes().get(WASTED))));
@@ -667,7 +686,7 @@ public class ProductCartAction extends SBActionAdapter {
 		List<ORKitVO> kits = new ArrayList<>();
 		String sql = buildKitSearchSQL(req);
 		int count = 0;
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 			int i =1;
 			ps.setString(i++, user.getProfileId());
@@ -764,10 +783,10 @@ public class ProductCartAction extends SBActionAdapter {
 					req.getSession().setAttribute(ROOM, rs.getString("OPERATING_ROOM"));
 					req.getSession().setAttribute(SURGEON, rs.getString("SURGEON_NM"));
 					if (rs.getTimestamp("SURGERY_DT") != null)
-						req.getSession().setAttribute(TIME, new SimpleDateFormat("MM-dd-yyyy -- hh:mm").format(rs.getTimestamp("SURGERY_DT")));
+						req.getSession().setAttribute(TIME, new SimpleDateFormat(DATE_PATTERN).format(rs.getTimestamp("SURGERY_DT")));
 					req.getSession().setAttribute(CASE_ID, rs.getString("CASE_ID"));
 					req.getSession().setAttribute(KIT_ID, rs.getString("RAM_KIT_INFO_ID"));
-					req.getSession().setAttribute("finalized", Convert.formatBoolean(rs.getString("FINALIZED_FLG")));
+					req.getSession().setAttribute(FINALIZED, Convert.formatBoolean(rs.getString("FINALIZED_FLG")));
 					req.getSession().setAttribute(RESELLER, rs.getString("RESELLER_NM"));
 					req.getSession().setAttribute(SALES_SIGNATURE, rs.getString("RESELLER_SIGNATURE"));
 					req.getSession().setAttribute(ADMIN_SIGNATURE, rs.getString("ADMIN_SIGNATURE"));
@@ -776,6 +795,7 @@ public class ProductCartAction extends SBActionAdapter {
 					if (rs.getTimestamp("UPDATE_DT") != null)
 						req.getSession().setAttribute(COMPLETE_DT, new SimpleDateFormat("MM/dd/yyyy").format(rs.getTimestamp("UPDATE_DT")));
 				}
+				
 				cart.add(buildProduct(rs));
 			}
 			
@@ -799,12 +819,12 @@ public class ProductCartAction extends SBActionAdapter {
 		product.setProductName(rs.getString("PRODUCT_NM"));
 		product.addProdAttribute("customer", rs.getString("CUSTOMER_NM"));
 		product.addProdAttribute("gtin",rs.getString("CUSTOMER_ID") + rs.getString("GTIN_PRODUCT_ID"));
-		product.addProdAttribute("lotNo", StringUtil.checkVal(rs.getString("LOT_NO")));
+		product.addProdAttribute(LOT_NO, StringUtil.checkVal(rs.getString("LOT_NO")));
 		product.addProdAttribute(BILLABLE, rs.getInt("BILLABLE_FLG"));
 		product.addProdAttribute(PRODUCT_FROM, rs.getString("PRODUCT_FROM"));
 		product.addProdAttribute(WASTED, rs.getInt("WASTED_FLG"));
 		ShoppingCartItemVO item = new ShoppingCartItemVO(product);
-		item.setProductId(product.getProductId()+product.getProdAttributes().get("lotNo"));
+		item.setProductId(product.getProductId()+product.getProdAttributes().get(LOT_NO));
 		item.setQuantity(Convert.formatInteger(rs.getInt("QTY")));
 		
 		return item;
@@ -819,18 +839,19 @@ public class ProductCartAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	private void newKit(SMTServletRequest req) throws ActionException {
-		req.getSession().removeAttribute(HOSPITAL);
-		req.getSession().removeAttribute(ROOM);
-		req.getSession().removeAttribute(SURGEON);
-		req.getSession().removeAttribute(TIME);
-		req.getSession().removeAttribute(CASE_ID);
-		req.getSession().removeAttribute(KIT_ID);
-		req.getSession().removeAttribute("finalized");
-		req.getSession().removeAttribute(SALES_SIGNATURE);
-		req.getSession().removeAttribute(ADMIN_SIGNATURE);
-		req.getSession().removeAttribute(OTHER_ID);
-		req.getSession().removeAttribute(REP_ID);
-		req.getSession().removeAttribute(RESELLER);
+		HttpSession sess = req.getSession();
+		sess.removeAttribute(HOSPITAL);
+		sess.removeAttribute(ROOM);
+		sess.removeAttribute(SURGEON);
+		sess.removeAttribute(TIME);
+		sess.removeAttribute(CASE_ID);
+		sess.removeAttribute(KIT_ID);
+		sess.removeAttribute(FINALIZED);
+		sess.removeAttribute(SALES_SIGNATURE);
+		sess.removeAttribute(ADMIN_SIGNATURE);
+		sess.removeAttribute(OTHER_ID);
+		sess.removeAttribute(REP_ID);
+		sess.removeAttribute(RESELLER);
 		
 		Storage store = retrieveContainer(req);
 		ShoppingCartVO cart = store.load();
@@ -843,8 +864,7 @@ public class ProductCartAction extends SBActionAdapter {
 	 * Send emails to the representative and the hospital
 	 * @param req
 	 */
-	private void sendEmails(SMTServletRequest req) {
-		
+	private void sendEmails(SMTServletRequest req) throws ActionException {
 		try {
 			EmailMessageVO mail = new EmailMessageVO();
 			UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
@@ -853,9 +873,10 @@ public class ProductCartAction extends SBActionAdapter {
 			if (req.getSession().getAttribute(CASE_ID) != null) {
 				mail.setSubject("Product Summary for Case " + req.getSession().getAttribute(CASE_ID));
 			} else {
-				mail.setSubject("Product Summary for Surgery on " + new SimpleDateFormat("MM-dd-yyyy -- hh:mm").format(req.getSession().getAttribute(TIME)));
+				mail.setSubject("Product Summary for Surgery on " + new SimpleDateFormat(DATE_PATTERN).format(req.getSession().getAttribute(TIME)));
 			}
-			mail.setFrom("info@ramgrp.com");
+			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+			mail.setFrom(site.getAdminEmail());
 			buildReport(req);
 	
 			AbstractSBReportVO report = (AbstractSBReportVO) req.getAttribute(Constants.BINARY_DOCUMENT);
@@ -866,7 +887,7 @@ public class ProductCartAction extends SBActionAdapter {
 			MessageSender ms = new MessageSender(attributes, dbConn);
 			ms.sendMessage(mail);
 		} catch (Exception e) {
-			
+			throw new ActionException(e);
 		}
 	}
 
@@ -890,7 +911,7 @@ public class ProductCartAction extends SBActionAdapter {
 				return rs.getString("CASE_CONTACT_EMAIL");
 			}
 		} catch (SQLException e) {
-			log.error("Unable to get email for hospital");
+			log.error("Unable to get email for hospital", e);
 		}
 		return "";
 	}
