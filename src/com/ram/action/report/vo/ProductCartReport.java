@@ -2,6 +2,7 @@ package com.ram.action.report.vo;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.util.Collection;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
@@ -128,12 +129,11 @@ public class ProductCartReport  extends AbstractSBReportVO {
 
 		// Loop over all the items in the cart
 		@SuppressWarnings("unchecked")
-		Map<String, ShoppingCartItemVO> cart = (Map<String, ShoppingCartItemVO>) data.get("cart");
+		Collection<ShoppingCartItemVO> cart = (Collection<ShoppingCartItemVO>) data.get("cart");
 		int i=1;
 		String border="border-bottom:1px solid black;";
-		for(String key : cart.keySet()){
+		for(ShoppingCartItemVO item : cart){
 			if (i == cart.size()) border="";
-			ShoppingCartItemVO item = cart.get(key);
 			html.append("<tr><td style='font-size:12px;'>").append(i).append(".</td>");
 			html.append("<td style='font-size:12px;'>").append(item.getProduct().getProductName()).append("</td>");
 			html.append("<td style='font-size:12px;'>").append(item.getProduct().getProdAttributes().get("customer")).append("</td>");
