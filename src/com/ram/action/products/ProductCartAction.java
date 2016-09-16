@@ -517,18 +517,19 @@ public class ProductCartAction extends SBActionAdapter {
 		report.setFileName(filename + ".pdf");
 		
 		Map<String, Object> data = new HashMap<>();
+		HttpSession sess = req.getSession();
 		data.put("cart", cart.getItems().values());
-		data.put(HOSPITAL,StringUtil.checkVal(req.getSession().getAttribute(HOSPITAL)));
-		data.put(ROOM, StringUtil.checkVal(req.getSession().getAttribute(ROOM)));
-		data.put(SURGEON, StringUtil.checkVal(req.getSession().getAttribute(SURGEON)));
-		data.put(TIME, StringUtil.checkVal(req.getSession().getAttribute(TIME)));
-		data.put(CASE_ID, StringUtil.checkVal(req.getSession().getAttribute(CASE_ID)));
-		data.put(SALES_SIGNATURE, StringUtil.checkVal(req.getSession().getAttribute(SALES_SIGNATURE)));
-		data.put(ADMIN_SIGNATURE, StringUtil.checkVal(req.getSession().getAttribute(ADMIN_SIGNATURE)));
-		data.put(RESELLER, StringUtil.checkVal(req.getSession().getAttribute(RESELLER)));
-		data.put(OTHER_ID, StringUtil.checkVal(req.getSession().getAttribute(OTHER_ID)));
-		data.put(REP_ID, StringUtil.checkVal(req.getSession().getAttribute(REP_ID)));
-		data.put(COMPLETE_DT, req.getSession().getAttribute(COMPLETE_DT));
+		data.put(HOSPITAL,StringUtil.checkVal(sess.getAttribute(HOSPITAL)));
+		data.put(ROOM, StringUtil.checkVal(sess.getAttribute(ROOM)));
+		data.put(SURGEON, StringUtil.checkVal(sess.getAttribute(SURGEON)));
+		data.put(TIME, StringUtil.checkVal(sess.getAttribute(TIME)));
+		data.put(CASE_ID, StringUtil.checkVal(sess.getAttribute(CASE_ID)));
+		data.put(SALES_SIGNATURE, StringUtil.checkVal(sess.getAttribute(SALES_SIGNATURE)));
+		data.put(ADMIN_SIGNATURE, StringUtil.checkVal(sess.getAttribute(ADMIN_SIGNATURE)));
+		data.put(RESELLER, StringUtil.checkVal(sess.getAttribute(RESELLER)));
+		data.put(OTHER_ID, StringUtil.checkVal(sess.getAttribute(OTHER_ID)));
+		data.put(REP_ID, StringUtil.checkVal(sess.getAttribute(REP_ID)));
+		data.put(COMPLETE_DT, sess.getAttribute(COMPLETE_DT));
 		data.put("baseDomain", req.getHostName());
 		data.put("format", req.getParameter("format"));
 		
@@ -573,6 +574,7 @@ public class ProductCartAction extends SBActionAdapter {
 	private void saveCart(SMTServletRequest req, int finalizeCart) throws ActionException {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(225);
+		HttpSession sess = req.getSession();
 		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 		if (StringUtil.checkVal(req.getSession().getAttribute(KIT_ID)).length() == 0) {
 			sql.append("INSERT INTO ").append(customDb).append("RAM_KIT_INFO ");
@@ -580,7 +582,7 @@ public class ProductCartAction extends SBActionAdapter {
 			sql.append("RESELLER_NM,CASE_ID,CREATE_DT,PROFILE_ID,FINALIZED_FLG,");
 			sql.append("RESELLER_SIGNATURE,ADMIN_SIGNATURE,OTHER_ID,REP_ID,RAM_KIT_INFO_ID)");
 			sql.append("VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
-			req.getSession().setAttribute(KIT_ID, new UUIDGenerator().getUUID());
+			sess.setAttribute(KIT_ID, new UUIDGenerator().getUUID());
 		} else {
 			sql.append("UPDATE ").append(customDb).append("RAM_KIT_INFO SET ");
 			sql.append("HOSPITAL_NM=?,OPERATING_ROOM=?,SURGERY_DT=?,");
@@ -591,27 +593,27 @@ public class ProductCartAction extends SBActionAdapter {
 		log.debug(sql);
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())){
 			int i = 1;
-			ps.setString(i++, (String) req.getSession().getAttribute(HOSPITAL));
-			ps.setString(i++, (String) req.getSession().getAttribute(ROOM));
-			ps.setTimestamp(i++, Convert.formatTimestamp(DATE_PATTERN, (String) req.getSession().getAttribute(TIME)));
-			ps.setString(i++, (String) req.getSession().getAttribute(SURGEON));
-			ps.setString(i++, (String) req.getSession().getAttribute(RESELLER));
-			ps.setString(i++, (String) req.getSession().getAttribute(CASE_ID));
+			ps.setString(i++, (String) sess.getAttribute(HOSPITAL));
+			ps.setString(i++, (String) sess.getAttribute(ROOM));
+			ps.setTimestamp(i++, Convert.formatTimestamp(DATE_PATTERN, (String) sess.getAttribute(TIME)));
+			ps.setString(i++, (String) sess.getAttribute(SURGEON));
+			ps.setString(i++, (String) sess.getAttribute(RESELLER));
+			ps.setString(i++, (String) sess.getAttribute(CASE_ID));
 			ps.setTimestamp(i++, Convert.getCurrentTimestamp());
 			ps.setString(i++, user.getProfileId());
 			ps.setInt(i++, finalizeCart);
-			ps.setString(i++, (String) req.getSession().getAttribute(SALES_SIGNATURE));
-			ps.setString(i++, (String) req.getSession().getAttribute(ADMIN_SIGNATURE));
-			ps.setString(i++, (String) req.getSession().getAttribute(OTHER_ID));
-			ps.setString(i++, (String) req.getSession().getAttribute(REP_ID));
-			ps.setString(i++, (String)req.getSession().getAttribute(KIT_ID));
+			ps.setString(i++, (String) sess.getAttribute(SALES_SIGNATURE));
+			ps.setString(i++, (String) sess.getAttribute(ADMIN_SIGNATURE));
+			ps.setString(i++, (String) sess.getAttribute(OTHER_ID));
+			ps.setString(i++, (String) sess.getAttribute(REP_ID));
+			ps.setString(i++, (String)sess.getAttribute(KIT_ID));
 			
 			ps.executeUpdate();
 			
-			saveProducts(req, (String)req.getSession().getAttribute(KIT_ID));
+			saveProducts(req, (String)sess.getAttribute(KIT_ID));
 			
 		} catch (SQLException e) {
-			req.getSession().setAttribute(KIT_ID,"");
+			sess.setAttribute(KIT_ID,"");
 			throw new ActionException(e);
 		}
 	}
@@ -755,6 +757,7 @@ public class ProductCartAction extends SBActionAdapter {
 	private void populateCart(SMTServletRequest req) throws ActionException {
 		StringBuilder sql = new StringBuilder(300);
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		HttpSession sess = req.getSession();
 		
 		sql.append("SELECT * FROM ").append(customDb).append("RAM_KIT_INFO k ");
 		sql.append("LEFT JOIN ").append(customDb).append("RAM_KIT_PRODUCT_XR xr ");
@@ -764,7 +767,7 @@ public class ProductCartAction extends SBActionAdapter {
 		sql.append("LEFT JOIN ").append(customDb).append("RAM_CUSTOMER c ");
 		sql.append("on c.CUSTOMER_ID = p.CUSTOMER_ID ");
 		sql.append("WHERE k.PROFILE_ID = ? and k.RAM_KIT_INFO_ID = ?");
-		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
+		UserDataVO user = (UserDataVO) sess.getAttribute(Constants.USER_DATA);
 		log.debug(sql+"|"+req.getParameter(KIT_ID)+"|"+user.getProfileId());
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -779,21 +782,21 @@ public class ProductCartAction extends SBActionAdapter {
 				if (cart == null) {
 					cart = store.load();
 					cart.flush();
-					req.getSession().setAttribute(HOSPITAL, rs.getString("HOSPITAL_NM"));
-					req.getSession().setAttribute(ROOM, rs.getString("OPERATING_ROOM"));
-					req.getSession().setAttribute(SURGEON, rs.getString("SURGEON_NM"));
+					sess.setAttribute(HOSPITAL, rs.getString("HOSPITAL_NM"));
+					sess.setAttribute(ROOM, rs.getString("OPERATING_ROOM"));
+					sess.setAttribute(SURGEON, rs.getString("SURGEON_NM"));
 					if (rs.getTimestamp("SURGERY_DT") != null)
-						req.getSession().setAttribute(TIME, new SimpleDateFormat(DATE_PATTERN).format(rs.getTimestamp("SURGERY_DT")));
-					req.getSession().setAttribute(CASE_ID, rs.getString("CASE_ID"));
-					req.getSession().setAttribute(KIT_ID, rs.getString("RAM_KIT_INFO_ID"));
-					req.getSession().setAttribute(FINALIZED, Convert.formatBoolean(rs.getString("FINALIZED_FLG")));
-					req.getSession().setAttribute(RESELLER, rs.getString("RESELLER_NM"));
-					req.getSession().setAttribute(SALES_SIGNATURE, rs.getString("RESELLER_SIGNATURE"));
-					req.getSession().setAttribute(ADMIN_SIGNATURE, rs.getString("ADMIN_SIGNATURE"));
-					req.getSession().setAttribute(OTHER_ID, rs.getString("OTHER_ID"));
-					req.getSession().setAttribute(REP_ID, rs.getString("REP_ID"));
+						sess.setAttribute(TIME, new SimpleDateFormat(DATE_PATTERN).format(rs.getTimestamp("SURGERY_DT")));
+					sess.setAttribute(CASE_ID, rs.getString("CASE_ID"));
+					sess.setAttribute(KIT_ID, rs.getString("RAM_KIT_INFO_ID"));
+					sess.setAttribute(FINALIZED, Convert.formatBoolean(rs.getString("FINALIZED_FLG")));
+					sess.setAttribute(RESELLER, rs.getString("RESELLER_NM"));
+					sess.setAttribute(SALES_SIGNATURE, rs.getString("RESELLER_SIGNATURE"));
+					sess.setAttribute(ADMIN_SIGNATURE, rs.getString("ADMIN_SIGNATURE"));
+					sess.setAttribute(OTHER_ID, rs.getString("OTHER_ID"));
+					sess.setAttribute(REP_ID, rs.getString("REP_ID"));
 					if (rs.getTimestamp("UPDATE_DT") != null)
-						req.getSession().setAttribute(COMPLETE_DT, new SimpleDateFormat("MM/dd/yyyy").format(rs.getTimestamp("UPDATE_DT")));
+						sess.setAttribute(COMPLETE_DT, new SimpleDateFormat("MM/dd/yyyy").format(rs.getTimestamp("UPDATE_DT")));
 				}
 				
 				cart.add(buildProduct(rs));
