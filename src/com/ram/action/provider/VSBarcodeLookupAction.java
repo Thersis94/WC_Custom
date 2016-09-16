@@ -243,6 +243,7 @@ public class VSBarcodeLookupAction extends SBActionAdapter {
 
 			if(rs.next()) {
 				p = new RAMProductVO(rs);
+				p.setLotNumber(barcode.getLotCodeNumber());
 			}
 		} catch (SQLException e) {
 			log.error(e);
@@ -252,9 +253,11 @@ public class VSBarcodeLookupAction extends SBActionAdapter {
 
 	private String getProductSql(BarcodeType type) {
 		StringBuilder sql = new StringBuilder();
-		sql.append("select * from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("RAM_PRODUCT ");
-		sql.append("where CUSTOMER_ID = ? ");
+		sql.append("select p.*, p.GTIN_PRODUCT_ID as GTIN_NUMBER_TXT, c.CUSTOMER_NM from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("RAM_PRODUCT p ");
+		sql.append("LEFT JOIN ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("RAM_CUSTOMER c on p.CUSTOMER_ID = p.CUSTOMER_ID ");
+		sql.append("where p.CUSTOMER_ID = ? ");
 		if(type.equals(BarcodeType.GTIN)) {
 			sql.append("and GTIN_PRODUCT_ID = ?");
 		} else {
