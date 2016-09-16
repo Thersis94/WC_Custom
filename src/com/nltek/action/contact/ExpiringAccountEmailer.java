@@ -116,7 +116,7 @@ public class ExpiringAccountEmailer extends CommandLineUtil {
 	 * @throws EncryptionException 
 	 */
 	private void appendRowToEmail(StringBuilder emailMsg, ResultSet rs) 
-			throws SQLException, EncryptionException, IllegalArgumentException {
+			throws SQLException, EncryptionException {
 		String email = se.decrypt(StringUtil.checkVal(rs.getString("email_address_txt")));
 		String name = se.decrypt(StringUtil.checkVal(rs.getString("first_nm")));
 		name += " " + se.decrypt(StringUtil.checkVal(rs.getString("last_nm")));
