@@ -66,11 +66,11 @@ public class GriefEmailWrapper extends EmailWrapper {
 		List<ReportVO> data = new LinkedList<ReportVO>();
 		
 		StringBuilder sql = new StringBuilder();
-		sql.append("select a.profile_id, a.DEALER_LOCATION_ID, cast(e.value_txt as nvarchar(150)) as 'home_nm', ");
-		sql.append("cast(f.value_txt as nvarchar(150)) as 'deceased_nm', cast(g.value_txt as nvarchar(150)) as 'deceased_dt', ");
-		sql.append("cast(h.value_txt as nvarchar(150)) as 'relationship', a.contact_submittal_id, ");
-		sql.append("a.create_dt as 'first_dt', MAX(c.CREATE_DT) as 'last_dt', cast(i.value_txt as nvarchar(150)) as 'gifter_nm',");
-		sql.append("COUNT(c.CAMPAIGN_LOG_ID) as 'email_cnt', b.ALLOW_COMM_FLG, wc.record_no ");
+		sql.append("select a.profile_id, a.DEALER_LOCATION_ID, cast(e.value_txt as text) as home_nm, ");
+		sql.append("cast(f.value_txt as text) as deceased_nm, cast(g.value_txt as text) as deceased_dt, ");
+		sql.append("cast(h.value_txt as text) as relationship, a.contact_submittal_id, ");
+		sql.append("a.create_dt as first_dt, MAX(c.CREATE_DT) as last_dt, cast(i.value_txt as text) as gifter_nm,");
+		sql.append("COUNT(c.CAMPAIGN_LOG_ID) as email_cnt, b.ALLOW_COMM_FLG, wc.record_no ");
 		sql.append("from CONTACT_SUBMITTAL a ");
 		sql.append("inner join CONTACT_DATA f on a.CONTACT_SUBMITTAL_ID=f.CONTACT_SUBMITTAL_ID and f.CONTACT_FIELD_ID='c0a802375319b3d0302c74e29ae6d39b' "); //deceasedNm
 		sql.append("inner join CONTACT_DATA g on a.CONTACT_SUBMITTAL_ID=g.CONTACT_SUBMITTAL_ID and g.CONTACT_FIELD_ID='c0a80237531a65d43affa50416c0d30a' "); //deceasedDt
@@ -82,12 +82,12 @@ public class GriefEmailWrapper extends EmailWrapper {
 		sql.append("WILLOWGREEN_COUNTER wc on a.CONTACT_SUBMITTAL_ID=wc.CONTACT_SUBMITTAL_ID ");
 		sql.append("left outer join EMAIL_CAMPAIGN_LOG c on a.PROFILE_ID=c.PROFILE_ID and campaign_instance_id in (select campaign_instance_id from email_campaign_instance where EMAIL_CAMPAIGN_ID=?) ");
 		sql.append("inner join SB_ACTION sa on a.action_id=sa.action_group_id ");
-		sql.append("where sa.ACTION_ID=? and sa.pending_sync_flg=0 ");
+		sql.append("where a.ACTION_ID=? and sa.pending_sync_flg=0 ");
 		if (role.getRoleLevel() < SecurityController.ADMIN_ROLE_LEVEL)
 			sql.append("and a.DEALER_LOCATION_ID=? ");
-		sql.append("group by a.PROFILE_ID, a.DEALER_LOCATION_ID, a.contact_submittal_id, a.create_dt, b.ALLOW_COMM_FLG, cast(e.value_txt as nvarchar(150)), cast(f.value_txt as nvarchar(150)), cast(g.value_txt as nvarchar(150)), cast(h.value_txt as nvarchar(150)), cast(i.value_txt as nvarchar(150)),record_no ");
+		sql.append("group by a.PROFILE_ID, a.DEALER_LOCATION_ID, a.contact_submittal_id, a.create_dt, b.ALLOW_COMM_FLG, cast(e.value_txt as text), cast(f.value_txt as text), cast(g.value_txt as text), cast(h.value_txt as text), cast(i.value_txt as text),record_no ");
 		sql.append("order by record_no desc");
-		log.debug(sql + " " + role.getProfileId());
+		log.debug(sql + " " + contactActionId + " " + emailCampaignId + " " + site.getOrganizationId());
 		
 		PreparedStatement ps = null;
 		try {

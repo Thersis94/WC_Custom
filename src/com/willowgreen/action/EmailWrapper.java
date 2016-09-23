@@ -56,17 +56,13 @@ public class EmailWrapper extends SimpleActionAdapter {
 		super.delete(req);
 		String msg = "";
 		String sql = "delete from contact_submittal where contact_submittal_id=?";
-		PreparedStatement ps = null;
-		try {
-			ps = dbConn.prepareStatement(sql);
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			ps.setString(1, req.getParameter("del"));
 			ps.executeUpdate();
 			msg = "Enrollment+deleted+successfully";
 			
 		} catch (SQLException sqle) {
 			log.error("could not delete enrollment, csId=" + req.getParameter("del"), sqle);
-		} finally {
-			try { ps.close(); } catch (Exception e) {}
 		}
 		
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
@@ -112,7 +108,7 @@ public class EmailWrapper extends SimpleActionAdapter {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		
 		if (req.hasParameter("pfl_EMAIL_ADDRESS_TXT") && 
-				!isEnrolled(req.getParameter("pfl_EMAIL_ADDRESS_TXT"), (String)mod.getAttribute(SBModuleVO.ATTRIBUTE_2))) {
+				!isEnrolled(req.getParameter("pfl_EMAIL_ADDRESS_TXT"), (String)mod.getAttribute(SBModuleVO.ATTRIBUTE_2), (String)mod.getAttribute(SBModuleVO.ATTRIBUTE_1))) {
 			//bind the submitting user to this record via DealerLocationId
 			UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 			if (user != null)
@@ -143,14 +139,14 @@ public class EmailWrapper extends SimpleActionAdapter {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 		
-		Map<String, UserDataVO> profiles = new HashMap<String, UserDataVO>();
-		List<ReportVO> data = new LinkedList<ReportVO>();
+		Map<String, UserDataVO> profiles = new HashMap<>();
+		List<ReportVO> data = new LinkedList<>();
 		
-		StringBuilder sql = new StringBuilder();
-		sql.append("select a.profile_id, a.DEALER_LOCATION_ID, cast(e.value_txt as nvarchar(150)) as 'home_nm', ");
-		sql.append("cast(f.value_txt as nvarchar(150)) as 'gifter_nm', ");
-		sql.append("MIN(c.CREATE_DT) as 'first_dt', MAX(c.CREATE_DT) as 'last_dt', ");
-		sql.append("COUNT(c.CAMPAIGN_LOG_ID) as 'email_cnt', b.ALLOW_COMM_FLG, ");
+		StringBuilder sql = new StringBuilder(1000);
+		sql.append("select a.profile_id, a.DEALER_LOCATION_ID, cast(e.value_txt as text) as home_nm, ");
+		sql.append("cast(f.value_txt as text) as gifter_nm, ");
+		sql.append("MIN(c.CREATE_DT) as first_dt, MAX(c.CREATE_DT) as last_dt, ");
+		sql.append("COUNT(c.CAMPAIGN_LOG_ID) as email_cnt, b.ALLOW_COMM_FLG, ");
 		sql.append("a.contact_submittal_id, wc.record_no, a.create_dt ");
 		sql.append("from CONTACT_SUBMITTAL a ");
 		sql.append("left outer join CONTACT_DATA e on a.CONTACT_SUBMITTAL_ID=e.CONTACT_SUBMITTAL_ID and e.CONTACT_FIELD_ID='c0a80237c670c7f0abba7364a8fc9a85' "); //funeralHomeName
@@ -162,13 +158,11 @@ public class EmailWrapper extends SimpleActionAdapter {
 		sql.append("where a.ACTION_ID=? "); //this is actually actionGroupId, on the data level
 		if (role.getRoleLevel() < SecurityController.ADMIN_ROLE_LEVEL)
 			sql.append("and a.DEALER_LOCATION_ID=? ");
-		sql.append("group by a.PROFILE_ID, a.DEALER_LOCATION_ID, a.contact_submittal_id, a.create_dt, b.ALLOW_COMM_FLG, cast(e.value_txt as nvarchar(150)), cast(f.value_txt as nvarchar(150)), record_no, a.create_dt ");
+		sql.append("group by a.PROFILE_ID, a.DEALER_LOCATION_ID, a.contact_submittal_id, a.create_dt, b.ALLOW_COMM_FLG, cast(e.value_txt as text), cast(f.value_txt as text), record_no, a.create_dt ");
 		sql.append("order by record_no desc");
 		//log.debug(sql + "|" + role.getProfileId() + "|" + emailCampaignId + "|" + contactActionId);
 		
-		PreparedStatement ps = null;
-		try {
-			ps = dbConn.prepareStatement(sql.toString());
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, site.getOrganizationId());
 			ps.setString(2, emailCampaignId);
 			ps.setString(3, contactActionId);
@@ -187,8 +181,6 @@ public class EmailWrapper extends SimpleActionAdapter {
 			
 		} catch (SQLException sqle) {
 			log.error("could not load report", sqle);
-		} finally {
-			try { ps.close(); } catch (Exception e) {}
 		}
 		
 		//put a profile to all these peeps!
@@ -223,7 +215,7 @@ public class EmailWrapper extends SimpleActionAdapter {
 	 * @param emailAddress
 	 * @return
 	 */
-	protected boolean isEnrolled(String emailAddress, String emailCampaignId) {
+	protected boolean isEnrolled(String emailAddress, String emailCampaignId, String contactActionId) {
 		boolean isEnrolled = false;
 		String profileId = null;
 		
@@ -239,17 +231,29 @@ public class EmailWrapper extends SimpleActionAdapter {
 		}
 		log.debug("profileId=" + profileId);
 		if (profileId == null) return isEnrolled;
+
+		//they have to still be enrolled in the contact_submittal table; this is where Jim deletes them from
+		String sql2 = "select contact_submittal_id from contact_submittal where profile_id=? and action_id=?";
+		log.debug(sql2 + " " + profileId + " " + contactActionId);
+		try (PreparedStatement ps = dbConn.prepareStatement(sql2)) {
+			ps.setString(1, profileId);
+			ps.setString(2, contactActionId);
+			ResultSet rs = ps.executeQuery();
+			if (rs.next()) isEnrolled = true;
+			
+		} catch (SQLException sqle) {
+			log.error("could not check contact_submittal table", sqle);
+		}
+		if (!isEnrolled) return isEnrolled;
 		
-		StringBuilder sql = new StringBuilder();
+		StringBuilder sql = new StringBuilder(400);
 		sql.append("select count(a.campaign_instance_id), count(b.campaign_instance_id) ");
 		sql.append("from email_campaign_instance b left outer join email_campaign_log a ");
 		sql.append("on a.campaign_instance_id=b.campaign_instance_id and a.profile_id=? ");
 		sql.append("where b.email_campaign_id=?");
 		log.debug(sql);
 		
-		PreparedStatement ps = null;
-		try {
-			ps = dbConn.prepareStatement(sql.toString());
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, profileId);
 			ps.setString(2, emailCampaignId);
 			ResultSet rs = ps.executeQuery();
@@ -261,8 +265,6 @@ public class EmailWrapper extends SimpleActionAdapter {
 			}
 		} catch (SQLException sqle) {
 			log.error("could not lookup email count", sqle);
-		} finally {
-			try { ps.close(); } catch (Exception e) {}
 		}
 		
 		return isEnrolled;

@@ -116,9 +116,9 @@ public class DailyCaregiversEmailWrapper extends EmailWrapper {
 		List<ReportVO> data = new LinkedList<ReportVO>();
 		
 		StringBuilder sql = new StringBuilder(400);
-		sql.append("select a.profile_id, a.DEALER_LOCATION_ID, cast(e.value_txt as nvarchar(10)) as 'is_gatekeeper', ");
-		sql.append("MIN(c.CREATE_DT) as 'first_dt', MAX(c.CREATE_DT) as 'last_dt', ");
-		sql.append("COUNT(c.CAMPAIGN_LOG_ID) as 'email_cnt', b.ALLOW_COMM_FLG, ");
+		sql.append("select a.profile_id, a.DEALER_LOCATION_ID, cast(e.value_txt as text) as is_gatekeeper, ");
+		sql.append("MIN(c.CREATE_DT) as first_dt, MAX(c.CREATE_DT) as last_dt, ");
+		sql.append("COUNT(c.CAMPAIGN_LOG_ID) as email_cnt, b.ALLOW_COMM_FLG, ");
 		sql.append("a.contact_submittal_id, wc.record_no, a.create_dt ");
 		sql.append("from CONTACT_SUBMITTAL a ");
 		sql.append("left outer join CONTACT_DATA e on a.CONTACT_SUBMITTAL_ID=e.CONTACT_SUBMITTAL_ID and e.CONTACT_FIELD_ID='").append(GATEKEEPER_QUEST_ID).append("' "); //isGatekeeper
@@ -129,7 +129,7 @@ public class DailyCaregiversEmailWrapper extends EmailWrapper {
 		sql.append("where a.ACTION_ID=? "); //this is actually actionGroupId, on the data level
 		if (role.getRoleLevel() < SecurityController.ADMIN_ROLE_LEVEL)
 			sql.append("and a.DEALER_LOCATION_ID=? ");
-		sql.append("group by a.PROFILE_ID, a.DEALER_LOCATION_ID, a.contact_submittal_id, a.create_dt, b.ALLOW_COMM_FLG, cast(e.value_txt as nvarchar(10)), record_no, a.create_dt ");
+		sql.append("group by a.PROFILE_ID, a.DEALER_LOCATION_ID, a.contact_submittal_id, a.create_dt, b.ALLOW_COMM_FLG, cast(e.value_txt as text), record_no, a.create_dt ");
 		sql.append("order by record_no desc");
 		//log.debug(sql + "|" + role.getProfileId() + "|" + emailCampaignId + "|" + contactActionId);
 		
