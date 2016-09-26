@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.siliconmtn.data.report.ExcelReport;
+import com.siliconmtn.data.report.StandardExcelReport;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -45,22 +46,22 @@ public class ChannelReportVO extends AbstractDataFeedReportVO  {
 	public byte[] generateReport() {
 		log.debug("starting generateReport()");
 
-		ExcelReport rpt = new ExcelReport(this.getHeader());
+		ExcelReport rpt = new StandardExcelReport(this.getHeader());
 
 		List<Map<String, Object>> rows = new ArrayList<>();
 
 		StringBuilder sb = new StringBuilder(100);
 
 		sb.append("Channel Report");
-		
+
 		if (!this.startDate.isEmpty()){
 			sb.append(" From ").append(this.startDate);
 		}
-		
+
 		if (!this.endDate.isEmpty()){
 			sb.append(" To ").append(endDate);
 		}
-		
+
 		rpt.setTitleCell(sb.toString());
 
 		rows = generateDataRows(rows);
@@ -82,7 +83,7 @@ public class ChannelReportVO extends AbstractDataFeedReportVO  {
 		int count = 0;	
 
 		for (Map<String, Object> map : rows){
-			
+
 			for(Map.Entry<String, Object> entry : map.entrySet()){
 				if("TOTAL".equals(entry.getKey())){
 					count +=  Convert.formatInteger(entry.getValue().toString());
