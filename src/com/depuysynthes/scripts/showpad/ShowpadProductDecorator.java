@@ -495,7 +495,8 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	 * @param html
 	 */
 	private void addProductsWithNoAssetsToEmail(StringBuilder html) {
-		html.append("<h4>Products with no MediaBin Assets</h4>");
+		html.append("<h4>Products with no MediaBin Assets (");
+		html.append(productSOUSNames.size()).append(")</h4>");
 		html.append("The following Web Crescendo products indicate a SOUS ");
 		html.append("Product Name not matching any MediaBin assets.<br/>");
 		html.append("<table border='1' width='95%' align='center'><thead><tr>");
@@ -519,7 +520,8 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	 * @param html
 	 */
 	private void addAssetsWithNoProductsToEmail(StringBuilder html) {
-		html.append("<h4>Mediabin SOUS Values not used by Products</h4>");
+		html.append("<h4>Mediabin SOUS Values not used by Products (");
+		html.append(mediabinSOUSNames.size()).append(")</h4>");
 		html.append("The following MediaBin assets indicate a SOUS ");
 		html.append("Product Name not matching any Web Crescendo products.<br/>\r\n");
 		html.append("<table border='1' width='95%' align='center'><thead><tr>");
