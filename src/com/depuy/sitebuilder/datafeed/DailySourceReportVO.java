@@ -11,6 +11,7 @@ import java.util.TreeMap;
 
 import com.depuy.sitebuilder.datafeed.DailySourceReport.ReportData;
 import com.siliconmtn.data.report.ExcelReport;
+import com.siliconmtn.data.report.StandardExcelReport;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -67,7 +68,7 @@ public class DailySourceReportVO extends AbstractDataFeedReportVO {
 
 		Map<String, String> headerMap = this.getHeader();
 
-		ExcelReport rpt = new ExcelReport(headerMap);
+		ExcelReport rpt = new StandardExcelReport(headerMap);
 
 		List<Map<String, Object>> rows = new ArrayList<>();
 
