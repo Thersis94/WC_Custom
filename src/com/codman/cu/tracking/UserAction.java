@@ -426,7 +426,7 @@ public class UserAction extends SimpleActionAdapter {
 				vo.setAllowCommunication(1); //opt-in new users only
 				pm.updateProfile(vo, dbConn);
 			} else {
-				pm.updateProfilePartially(vo.getDataMap(), vo.getProfileId(), dbConn);
+				pm.updateProfilePartially(vo.getDataMap(), vo, dbConn);
 			}
 			log.debug("profile saved");
 		} catch (DatabaseException de) {

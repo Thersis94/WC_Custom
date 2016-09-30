@@ -96,7 +96,10 @@ public class DePuyEventSearchAction extends SimpleActionAdapter {
 		EventTypeAction eta = new EventTypeAction();
 		eta.setAttributes(attributes);
 		
-		String distSql = eta.buildSpatialClause(req); 
+		boolean isRobot = Convert.formatBoolean(req.getAttribute(Constants.BOT_REQUEST));
+		log.debug("robot? " + isRobot);
+		
+		String distSql = !isRobot ? eta.buildSpatialClause(req): String.valueOf(Integer.MAX_VALUE); //don't let bots find any seminars; set their distance impossibly high
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		String[] specialties = req.getParameterValues("specialty");
@@ -104,7 +107,7 @@ public class DePuyEventSearchAction extends SimpleActionAdapter {
 			specialties = req.getParameterValues("specialtyId");
 		if (specialties == null) specialties = new String[0];
 		
-		StringBuilder sql = new StringBuilder();
+		StringBuilder sql = new StringBuilder(300);
 		sql.append("select ee.*, et.*, eg.header_txt, ").append(distSql).append(" as distance, des.surgeon_nm as contact_nm ");
 		sql.append("from event_entry ee ");
 		sql.append("inner join event_type et on ee.event_type_id=et.event_type_id ");
