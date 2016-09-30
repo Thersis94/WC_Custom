@@ -67,15 +67,16 @@ public class LeadsDataToolV2Mitek extends LeadsDataToolV2 {
 		log.debug("event=" + event.getLatitude() + " " +  event.getLongitude());
 		StringBuilder sql = new StringBuilder(500);
 		sql.append("select a.*, lds.max_age_no, lds.event_lead_source_id ");
-		sql.append("from (select * from MITEK_SEMINARS_VIEW where valid_address_flg=1 and (latitude_no between ? and ?) and (longitude_no between ? and ?)) as a ");
+		sql.append("from (select * from MITEK_SEMINARS_VIEW where (latitude_no between ? and ?) and (longitude_no between ? and ?) and product_cd in (");
+		for (@SuppressWarnings("unused") String joint : sem.getJoints())
+			sql.append("?,");
+		sql.replace(sql.length() - 1, sql.length(), ")"); // replace trailing comma with closing paren
+		if (ReportType.leads != type) sql.append(" and valid_address_flg=1"); //if we're pulling a mailing list, we only want valid addresses
+		sql.append(") as a ");
 		//when targetting leads we may not have data the in _DATASOURCE table; use the join to denote 'checked' radio buttons.
 		sql.append((ReportType.leads == type) ? "left outer" : "inner").append(" join ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("DEPUY_EVENT_LEADS_DATASOURCE lds on a.state_cd=lds.state_cd and (a.city_nm=lds.city_nm or a.zip_cd=lds.zip_cd) ");
 		sql.append("and a.product_cd=lds.PRODUCT_CD and lds.event_postcard_id=? ");
-		sql.append("where  a.product_cd in (");
-		for (@SuppressWarnings("unused") String joint : sem.getJoints())
-			sql.append("?,");
-		sql.replace(sql.length() - 1, sql.length(), ")"); // remove trailing comma
 		log.debug(sql);
 
 		int x = 1;
@@ -84,10 +85,11 @@ public class LeadsDataToolV2Mitek extends LeadsDataToolV2 {
 			ps.setDouble(x++, coords.get(GeoLocation.MAX_BOUNDING_LOC).getLatitudeInDegrees());
 			ps.setDouble(x++, coords.get(GeoLocation.MIN_BOUNDING_LOC).getLongitudeInDegrees());
 			ps.setDouble(x++, coords.get(GeoLocation.MAX_BOUNDING_LOC).getLongitudeInDegrees());
-			ps.setString(x++, sem.getEventPostcardId());
 			for (String joint : sem.getJoints()) {
 				ps.setString(x++, sem.getJointName(joint));
 			}
+			ps.setString(x++, sem.getEventPostcardId());
+			
 			
 			ResultSet rs = ps.executeQuery();
 			DBUtil db = new DBUtil();
@@ -120,12 +122,15 @@ public class LeadsDataToolV2Mitek extends LeadsDataToolV2 {
 				vo.setPrefixName(pm.getStringValue("PREFIX_NM", db.getStringVal("prefix_nm", rs)));
 				vo.setFirstName(pm.getStringValue("FIRST_NM", db.getStringVal("first_nm", rs)));
 				vo.setLastName(pm.getStringValue("LAST_NM", db.getStringVal("last_nm", rs)));
+				vo.setEmailAddress(pm.getStringValue("EMAIL_ADDRESS_TXT", db.getStringVal("EMAIL_ADDRESS_TXT", rs)));
 				vo.setSuffixName(pm.getStringValue("SUFFIX_NM", db.getStringVal("suffix_nm", rs)));
 				vo.setAddress(pm.getStringValue("ADDRESS_TXT", db.getStringVal("address_txt", rs)));
 				vo.setAddress2(pm.getStringValue("ADDRESS2_TXT", db.getStringVal("address2_txt", rs)));
 				vo.setCity(pm.getStringValue("CITY_NM", db.getStringVal("city_nm", rs)));
 				vo.setState(pm.getStringValue("STATE_CD", db.getStringVal("state_cd", rs)));
 				vo.setZipCode(pm.getStringValue("ZIP_CD", db.getStringVal("zip_cd", rs)));
+				vo.setGlobalAdminFlag(rs.getInt("valid_address_flg"));
+				vo.setValidEmailFlag(rs.getInt("valid_email_flg"));
 				
 				//grab some extras we need for display cosmetics
 				if (ReportType.leads == type) {
@@ -139,8 +144,6 @@ public class LeadsDataToolV2Mitek extends LeadsDataToolV2 {
 					vo.setProfileId(rs.getString("profile_address_id"));
 				}
 
-//				if (vo.getState().equals("TX"))
-//					log.debug(vo.getLocation());
 				data.add(vo);
 			}
 		} catch (SQLException sqle) {
