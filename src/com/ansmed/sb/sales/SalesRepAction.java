@@ -203,7 +203,7 @@ public class SalesRepAction extends SBActionAdapter {
 		    	fields.put("FIRST_NM", user.getFirstName());
 		    	fields.put("LAST_NM", user.getLastName());
 		    	fields.put("EMAIL_ADDRESS_TXT", user.getEmailAddress());
-		    	pm.updateProfilePartially(fields, user.getProfileId(), dbConn); 
+		    	pm.updateProfilePartially(fields, user, dbConn); 
 	    	}
 	    	// Set the rep's communication flag to 1
 	    	SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);

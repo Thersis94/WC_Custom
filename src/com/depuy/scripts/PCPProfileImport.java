@@ -143,7 +143,7 @@ public class PCPProfileImport {
 					
 					//save the profile
 					if (user.getProfileId() != null) {
-						pm.updateProfilePartially(user.getDataMap(), user.getProfileId(), dbConn);
+						pm.updateProfilePartially(user.getDataMap(), user, dbConn);
 						log.info("updated profile " + user.getProfileId());
 					} else {
 						pm.updateProfile(user, dbConn); //runs insert query

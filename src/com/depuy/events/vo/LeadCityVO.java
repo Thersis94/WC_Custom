@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.depuy.events_v2.LeadsDataToolV2;
+import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
@@ -33,16 +34,22 @@ public class LeadCityVO implements Serializable {
     private Date lastMailingDt = null;
     private int maxAgeNo = 0;
     
-    private Map<Integer, Integer> leads = null;
+    private Map<Integer, LeadCount> leads = null;
     private boolean checkedTierOne = false;
     private boolean checkedTierTwo = false;
     private boolean checkedTierThree = false;
     private boolean checkedTierFour = false;
     
+    /* 
+     * classification of lead type; keeps our actions from using ints or booleans
+     */
+    public enum LeadType {
+	    Print, Email, Both;
+    }
     
     public LeadCityVO() {
     	super();
-    	setLeads(new HashMap<Integer, Integer>());
+    	setLeads(new HashMap<Integer, LeadCount>());
     }
     
 	public String getCityNm() {
@@ -112,19 +119,30 @@ public class LeadCityVO implements Serializable {
 		this.maxAgeNo = maxAgeNo;
 	}
 
-	public Map<Integer, Integer> getLeads() {
+	public Map<Integer, LeadCount> getLeads() {
 		return leads;
 	}
 
-	public void setLeads(Map<Integer, Integer> leads) {
+	public void setLeads(Map<Integer, LeadCount> leads) {
 		this.leads = leads;
 	}
 
-	public void addLead(Integer range, Integer leadCnt, boolean checked) {
-		Integer cnt = this.leads.get(range);
-		if (cnt == null) cnt = 0;
-		cnt += leadCnt;
-		this.leads.put(range, cnt);
+	public void addLead(UserDataVO user, Integer leadCnt, boolean checked) {
+		Integer range = user.getBirthYear();
+		LeadCount counts = this.leads.get(range);
+		if (counts == null) counts = new LeadCount();
+		
+		//count leads that are eligible for both separtely. - used for display purposes only
+		if (1 == user.getGlobalAdminFlag() && 1 == user.getValidEmailFlag()) {
+			counts.incrBothCnt(leadCnt);
+		}
+		//only count the lead as one or the other; print or email
+		if (1 == user.getGlobalAdminFlag()) {
+			counts.incrPrintCnt(leadCnt);
+		} else if (1 == user.getValidEmailFlag()) {
+			counts.incrEmailCnt(leadCnt);
+		}
+		this.leads.put(range, counts);
 		if (checked) this.setChecked(range, checked); //they're already false, only change to true
 	}
 	
@@ -135,16 +153,38 @@ public class LeadCityVO implements Serializable {
 	 * e.g. "all <12mos" =  all3mos + all6mos + all12mos.
 	 * @return
 	 */
-	public Integer getTierOne() {
-		return Convert.formatInteger(leads.get(LeadsDataToolV2.LeadTierOne));
+	public Integer getTierOne(LeadType type) {
+		LeadCount cnt = leads.get(LeadsDataToolV2.LeadTierOne);
+		if (cnt == null) cnt = new LeadCount();
+		
+		if (LeadType.Print == type) {
+			return Convert.formatInteger(cnt.getPrintCnt());
+		} else if (LeadType.Email == type) {
+			return Convert.formatInteger(cnt.getEmailCnt());
+		} else if (LeadType.Both == type) {
+			return Convert.formatInteger(cnt.getBothCnt());
+		} else {
+			return Convert.formatInteger(cnt.getTotal());
+		}
 	}
 	
 	/**
 	 * returns all leads <6mos.  sum all smaller (newer) buckets
 	 * @return
 	 */
-	public Integer getTierTwo() {
-		return Convert.formatInteger(leads.get(LeadsDataToolV2.LeadTierTwo)) + getTierOne();
+	public Integer getTierTwo(LeadType type) {
+		LeadCount cnt = leads.get(LeadsDataToolV2.LeadTierTwo);
+		if (cnt == null) cnt = new LeadCount();
+		
+		if (LeadType.Print == type) {
+			return Convert.formatInteger(cnt.getPrintCnt()) + getTierOne(type);
+		} else if (LeadType.Email == type) {
+			return Convert.formatInteger(cnt.getEmailCnt()) + getTierOne(type);
+		} else if (LeadType.Both == type) {
+			return Convert.formatInteger(cnt.getBothCnt()) + getTierOne(type);
+		} else {
+			return Convert.formatInteger(cnt.getTotal()) + getTierOne(type);
+		}
 	}
 	
 	/**
@@ -152,8 +192,19 @@ public class LeadCityVO implements Serializable {
 	 * tier 2 already includes 1+2
 	 * @return
 	 */
-	public Integer getTierThree() {
-		return Convert.formatInteger(leads.get(LeadsDataToolV2.LeadTierThree)) + getTierTwo();
+	public Integer getTierThree(LeadType type) {
+		LeadCount cnt = leads.get(LeadsDataToolV2.LeadTierThree);
+		if (cnt == null) cnt = new LeadCount();
+		
+		if (LeadType.Print == type) {
+			return Convert.formatInteger(cnt.getPrintCnt()) + getTierTwo(type);
+		} else if (LeadType.Email == type) {
+			return Convert.formatInteger(cnt.getEmailCnt()) + getTierTwo(type);
+		} else if (LeadType.Both == type) {
+			return Convert.formatInteger(cnt.getBothCnt()) + getTierTwo(type);
+		} else {
+			return Convert.formatInteger(cnt.getTotal()) + getTierTwo(type);
+		}
 	}
 	
 	/**
@@ -161,9 +212,51 @@ public class LeadCityVO implements Serializable {
 	 * tier 3 already includes 1+2
 	 * @return
 	 */
-	public Integer getTierFour() {
-		return Convert.formatInteger(leads.get(LeadsDataToolV2.LeadTierFour)) + getTierThree();
+	public Integer getTierFour(LeadType type) {
+		LeadCount cnt = leads.get(LeadsDataToolV2.LeadTierFour);
+		if (cnt == null) cnt = new LeadCount();
+		
+		if (LeadType.Print == type) {
+			return Convert.formatInteger(cnt.getPrintCnt()) + getTierThree(type);
+		} else if (LeadType.Email == type) {
+			return Convert.formatInteger(cnt.getEmailCnt()) + getTierThree(type);
+		} else if (LeadType.Both == type) {
+			return Convert.formatInteger(cnt.getBothCnt()) + getTierThree(type);
+		} else {
+			return Convert.formatInteger(cnt.getTotal()) + getTierThree(type);
+		}
 	}
+	
+	
+	/**
+	 * helper method for JSP; returns a count value based on conditions passed
+	 * @param tier
+	 * @param type
+	 * @return
+	 */
+	public Integer getTierCount(int tier, String type) {
+		LeadType lType = null;
+		if (type != null && type.length() > 0) {
+			try {
+				lType = LeadType.valueOf(type);
+			} catch (Exception e) {
+				//don't care about this, a blank value is acceptable
+			}
+		}
+		
+		//return a count based on the tier requested
+		switch (tier) {
+			case 4:
+				return getTierFour(lType);
+			case 3:
+				return getTierThree(lType);
+			case 2:
+				return getTierTwo(lType);
+			default:
+				return getTierOne(lType);
+			}
+	}
+	
 
 	public boolean getTierOneChecked() {
 		return checkedTierOne;
@@ -195,4 +288,46 @@ public class LeadCityVO implements Serializable {
 		}
 	}
 	
+	
+	/**
+	 * **************************************************************************
+	 * <b>Title</b>: LeadCityVO.java<p/>
+	 * <b>Description: holds the counts for email & postcard leads</b> 
+	 * <p/>
+	 * <b>Copyright:</b> Copyright (c) 2016<p/>
+	 * <b>Company:</b> Silicon Mountain Technologies<p/>
+	 * @author James McKain
+	 * @version 1.0
+	 * @since Jul 14, 2016
+	 ***************************************************************************
+	 */
+	public class LeadCount {
+		private int printCnt = 0;
+		private int emailCnt = 0;
+		private int bothCnt = 0;
+		
+		public LeadCount() {
+		}
+		public void incrEmailCnt(int emailCnt) {
+			this.emailCnt += emailCnt;
+		}
+		public void incrPrintCnt(int printCnt) {
+			this.printCnt += printCnt;
+		}
+		public void incrBothCnt(int bothCnt) {
+			this.bothCnt += bothCnt;
+		}
+		public int getEmailCnt() {
+			return emailCnt;
+		}
+		public int getPrintCnt() {
+			return printCnt;
+		}
+		public int getBothCnt() {
+			return bothCnt;
+		}
+		public int getTotal() {
+			return (printCnt + emailCnt);
+		}
+	}
 }
