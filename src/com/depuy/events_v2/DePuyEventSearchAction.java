@@ -116,7 +116,10 @@ public class DePuyEventSearchAction extends SimpleActionAdapter {
 		EventTypeAction eta = new EventTypeAction();
 		eta.setAttributes(attributes);
 		
-		String distSql = eta.buildSpatialClause(req); 
+		boolean isRobot = Convert.formatBoolean(req.getAttribute(Constants.BOT_REQUEST));
+		log.debug("robot? " + isRobot);
+		
+		String distSql = !isRobot ? eta.buildSpatialClause(req): String.valueOf(Integer.MAX_VALUE); //don't let bots find any seminars; set their distance impossibly high
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		String[] actionIds = StringUtil.checkVal(mod.getAttribute(ModuleVO.ATTRIBUTE_1)).split(",");
