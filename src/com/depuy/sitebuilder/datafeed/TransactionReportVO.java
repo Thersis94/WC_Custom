@@ -8,6 +8,7 @@ import java.util.Map;
 
 import com.depuy.sitebuilder.datafeed.TransactionReport.ReportData;
 import com.siliconmtn.data.report.ExcelReport;
+import com.siliconmtn.data.report.StandardExcelReport;
 import com.siliconmtn.http.SMTServletRequest;
 
 /****************************************************************************
@@ -39,7 +40,7 @@ public class TransactionReportVO extends AbstractDataFeedReportVO {
 	 */
 	@Override
 	public void setRequestData(SMTServletRequest req) {
-		//this report needs not addtional data from the request object
+		//this report needs not additional data from the request object
 		//intentionally left blank
 		
 	}
@@ -51,7 +52,7 @@ public class TransactionReportVO extends AbstractDataFeedReportVO {
 	public byte[] generateReport() {
 		log.debug("starting generateReport()");
 
-		ExcelReport rpt = new ExcelReport(this.getHeader());
+		ExcelReport rpt = new StandardExcelReport(this.getHeader());
 
 		List<Map<String, Object>> rows = new ArrayList<>();
 
