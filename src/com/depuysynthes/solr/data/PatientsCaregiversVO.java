@@ -49,7 +49,7 @@ public class PatientsCaregiversVO extends SolrDocumentVO {
 			super.addOrganization(s);
 		}
 		super.setTitle("Patients and Caregivers for " + StringUtil.capitalize(fileName.replace("-", " ").replace(".html", "")));
-		
+		super.addAttribute("pcg", "true");
 	}
 
 }
