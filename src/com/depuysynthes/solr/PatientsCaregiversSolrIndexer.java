@@ -13,6 +13,18 @@ import com.siliconmtn.action.ActionException;
 import com.smt.sitebuilder.search.solr.FileSolrIndexer;
 import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 
+/****************************************************************************
+ * <b>Title</b>: PatientsCaregiversSolrIndexer.java<p/>
+ * <b>Description: Patients and caregivers specific remote file indexer. 
+ * Contains all information specific to these document types for the file 
+ * indexer</b> 
+ * <p/>
+ * <b>Copyright:</b> Copyright (c) 2016<p/>
+ * <b>Company:</b> Silicon Mountain Technologies<p/>
+ * @author Eric Damschroder
+ * @since Oct 3, 2016
+ ****************************************************************************/
+
 public class PatientsCaregiversSolrIndexer extends FileSolrIndexer {
 	
 	public PatientsCaregiversSolrIndexer(Properties config) {
