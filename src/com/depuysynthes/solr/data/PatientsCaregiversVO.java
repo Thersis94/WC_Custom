@@ -41,9 +41,9 @@ public class PatientsCaregiversVO extends SolrDocumentVO {
 		
 		String fileName = StringUtil.checkVal(vo.getKey());
 		super.setDocumentId("PATIENTS_" + fileName.replace(".html", ""));
-		super.setFileName((String) vo.getKey());
+		super.setFileName(vo.getKey());
 		super.addSection("Other");
-		super.setDocumentUrl("/patients/" + ((String)vo.getKey()).replace(".html", ""));
+		super.setDocumentUrl("/patients/" + vo.getKey().replace(".html", ""));
 		super.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
 		for (String s : organizations) {
 			super.addOrganization(s);

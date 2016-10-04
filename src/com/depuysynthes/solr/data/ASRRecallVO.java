@@ -43,7 +43,7 @@ public class ASRRecallVO extends SolrDocumentVO {
 		
 		String fileName = StringUtil.checkVal(vo.getKey());
 		super.setDocumentId("ASR_" + fileName.replace(".html", ""));
-		super.setFileName((String) vo.getKey());
+		super.setFileName(vo.getKey());
 		super.addSection("Other");
 		super.setDocumentUrl("/asrrecall/" + vo.getKey());
 		super.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
