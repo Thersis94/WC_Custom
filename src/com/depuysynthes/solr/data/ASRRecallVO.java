@@ -3,7 +3,7 @@ package com.depuysynthes.solr.data;
 import java.util.Map.Entry;
 
 import com.siliconmtn.util.StringUtil;
-import com.smt.sitebuilder.search.solr.CMSSolrIndexer;
+import com.smt.sitebuilder.search.solr.FileSolrIndexer;
 import com.smt.sitebuilder.security.SecurityController;
 import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 
@@ -25,7 +25,7 @@ public class ASRRecallVO extends SolrDocumentVO {
 	private final String[] organizations = {"DPY_SYN"};
 	
 	public ASRRecallVO() {
-		this(CMSSolrIndexer.INDEX_TYPE);
+		this(FileSolrIndexer.INDEX_TYPE);
 	}
 
 	public ASRRecallVO(String solrIndex) {
