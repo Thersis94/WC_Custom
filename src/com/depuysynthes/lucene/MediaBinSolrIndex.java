@@ -274,11 +274,11 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 			Detector detector = new DefaultDetector();
 			detector.detect(input, metadata);
 			AutoDetectParser adp = new AutoDetectParser(detector);
-			ContentHandler handler = new BodyContentHandler(1000*1024*1024);
+			ContentHandler handler = new BodyContentHandler(-1); //removed body length limit of "1000*1024*1024". -JM 08.04.16
 			adp.parse(input, handler, metadata, new ParseContext());
 			data = handler.toString();
 		} catch (Exception e) {
-			log.error("could not load file " + fileRepos + fileNm);
+			log.error("could not load file " + fileRepos + fileNm, e);
 		}
 
 		return data;
@@ -303,9 +303,7 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 		log.debug(sql);
 
 		int i = 0;
-		PreparedStatement ps = null;
-		try {
-			ps = conn.prepareStatement(sql.toString());
+		try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
 			for (String at: MediaBinAdminAction.PDF_ASSETS) ps.setString(++i, at);
 			for (String vt: MediaBinAdminAction.VIDEO_ASSETS) ps.setString(++i, vt);
 			ResultSet rs = ps.executeQuery();
@@ -314,8 +312,6 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 
 		} catch (SQLException sqle) {
 			log.error("could not load MediaBin meta-data from DB", sqle);
-		} finally {
-			try { ps.close(); } catch (Exception e) {}
 		}
 
 		log.info("loaded " + data.size() + " records from the meta-data");
