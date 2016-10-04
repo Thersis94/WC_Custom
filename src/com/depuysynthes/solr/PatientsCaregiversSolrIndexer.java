@@ -1,21 +1,48 @@
 package com.depuysynthes.solr;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Map.Entry;
 
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrServerException;
+
+import com.depuysynthes.solr.data.PatientsCaregiversVO;
+import com.siliconmtn.action.ActionException;
 import com.smt.sitebuilder.search.solr.FileSolrIndexer;
+import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 
 public class PatientsCaregiversSolrIndexer extends FileSolrIndexer {
 	
 	public PatientsCaregiversSolrIndexer(Properties config) {
-		this.config = config;
-		this.prefix = "PC_";
-		buildParams();
+		super(config, "PC_");
 	}
 	
 	public static PatientsCaregiversSolrIndexer makeInstance(Map<String, Object> attributes) {
 		Properties props = new Properties();
 		props.putAll(attributes);
 		return new PatientsCaregiversSolrIndexer(props);
+	}
+
+	@Override
+	public void purgeIndexItems(SolrClient solr) throws IOException {
+		try {
+			solr.deleteByQuery("pcg_s:true");
+		} catch (SolrServerException e) {
+			throw new IOException(e);
+		}
+	}
+
+	@Override
+	public String getIndexType() {
+		return new PatientsCaregiversVO().getSolrIndex();
+	}
+
+	@Override
+	protected SolrDocumentVO getNewDoc(Entry<String, byte[]> file) throws ActionException {
+		SolrDocumentVO doc = new PatientsCaregiversVO();
+		if (file != null) doc.setData(file);
+		return doc;
 	}
 }
