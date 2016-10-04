@@ -17,6 +17,17 @@ import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.search.solr.FileSolrIndexer;
 import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 
+/****************************************************************************
+ * <b>Title</b>: ASRRecallSolrIndexer.java<p/>
+ * <b>Description: ASR Recall specific remote file indexer. Contains all 
+ * information specific to these document types for the file indexer</b> 
+ * <p/>
+ * <b>Copyright:</b> Copyright (c) 2016<p/>
+ * <b>Company:</b> Silicon Mountain Technologies<p/>
+ * @author Eric Damschroder
+ * @since Oct 3, 2016
+ ****************************************************************************/
+
 public class ASRRecallSolrIndexer extends FileSolrIndexer {
 	private List<String> bypass;
 	private Map<String, String> nameCases;
@@ -38,7 +49,7 @@ public class ASRRecallSolrIndexer extends FileSolrIndexer {
 	 * do not need to show up in solr
 	 */
 	private void buildBypass() {
-		bypass = new ArrayList<>();
+		bypass = new ArrayList<>(100);
 		bypass.add("cropatient.html");
 		bypass.add("koreaengpatient.html");
 		bypass.add("russiapatient.html");
