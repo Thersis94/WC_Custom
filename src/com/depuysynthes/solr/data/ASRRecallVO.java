@@ -51,5 +51,6 @@ public class ASRRecallVO extends SolrDocumentVO {
 			super.addOrganization(s);
 		}
 		super.addAttribute("ASR", "true");
+		super.setModule("CMS");
 	}
 }
