@@ -105,31 +105,30 @@ public class LeadsDataToolV2 extends SBActionAdapter {
 		GeoLocation points = GeoLocation.fromDegrees(event.getLatitude(), event.getLongitude());
 		Map<String, GeoLocation> coords = points.boundingCoordinates(MAX_DISTANCE);
 		log.debug("event=" + event.getLatitude() + " " +  event.getLongitude());
-		StringBuilder sql = new StringBuilder();
+		StringBuilder sql = new StringBuilder(500);
 		sql.append("select a.*, lds.max_age_no, lds.event_lead_source_id ");
-		sql.append("from (select * from DEPUY_SEMINARS_VIEW where valid_address_flg=1 and (latitude_no between ? and ?) and (longitude_no between ? and ?)) as a ");
+		sql.append("from (select * from DEPUY_SEMINARS_VIEW where (latitude_no between ? and ?) and (longitude_no between ? and ?) and product_cd in (");
+		for (@SuppressWarnings("unused") String joint : sem.getJoints())
+			sql.append("?,");
+		sql.replace(sql.length() - 1, sql.length(), ")"); // replace trailing comma with closing paren
+		if (ReportType.leads != type) sql.append(" and valid_address_flg=1"); //if we're pulling a mailing list, we only want valid addresses
+		sql.append(") as a ");
 		//when targetting leads we may not have data the in _DATASOURCE table; use the join to denote 'checked' radio buttons.
 		sql.append((ReportType.leads == type) ? "left outer" : "inner").append(" join ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("DEPUY_EVENT_LEADS_DATASOURCE lds on a.state_cd=lds.state_cd and (a.city_nm=lds.city_nm or a.zip_cd=lds.zip_cd) ");
 		sql.append("and a.product_cd=lds.PRODUCT_CD and lds.event_postcard_id=? ");
-		sql.append("where  a.product_cd in (");
-		for (@SuppressWarnings("unused") String joint : sem.getJoints())
-			sql.append("?,");
-		sql.replace(sql.length() - 1, sql.length(), ")"); // remove trailing comma
-		log.debug(sql);
+		log.debug(sql + coords.toString());
 
 		int x = 1;
-		PreparedStatement ps = null;
-		try {
-			ps = dbConn.prepareStatement(sql.toString());
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setDouble(x++, coords.get(GeoLocation.MIN_BOUNDING_LOC).getLatitudeInDegrees());
 			ps.setDouble(x++, coords.get(GeoLocation.MAX_BOUNDING_LOC).getLatitudeInDegrees());
 			ps.setDouble(x++, coords.get(GeoLocation.MIN_BOUNDING_LOC).getLongitudeInDegrees());
 			ps.setDouble(x++, coords.get(GeoLocation.MAX_BOUNDING_LOC).getLongitudeInDegrees());
-			ps.setString(x++, sem.getEventPostcardId());
 			for (String joint : sem.getJoints()) {
 				ps.setString(x++, sem.getJointName(joint));
 			}
+			ps.setString(x++, sem.getEventPostcardId());
 			
 			ResultSet rs = ps.executeQuery();
 			DBUtil db = new DBUtil();
@@ -154,7 +153,7 @@ public class LeadsDataToolV2 extends SBActionAdapter {
 					
 					//if the lead is not newer than the defined limit, skip it.
 					//bypass this for scoping leads, which needs a count for each date range.
-					if (!cal.getTime().before(createDt))  continue;
+					if (!cal.getTime().before(createDt)) continue;
 				}
 				
 				UserDataVO vo = new UserDataVO();
@@ -162,13 +161,16 @@ public class LeadsDataToolV2 extends SBActionAdapter {
 				vo.setPrefixName(pm.getStringValue("PREFIX_NM", db.getStringVal("prefix_nm", rs)));
 				vo.setFirstName(pm.getStringValue("FIRST_NM", db.getStringVal("first_nm", rs)));
 				vo.setLastName(pm.getStringValue("LAST_NM", db.getStringVal("last_nm", rs)));
+				vo.setEmailAddress(pm.getStringValue("EMAIL_ADDRESS_TXT", db.getStringVal("EMAIL_ADDRESS_TXT", rs)));
 				vo.setSuffixName(pm.getStringValue("SUFFIX_NM", db.getStringVal("suffix_nm", rs)));
 				vo.setAddress(pm.getStringValue("ADDRESS_TXT", db.getStringVal("address_txt", rs)));
 				vo.setAddress2(pm.getStringValue("ADDRESS2_TXT", db.getStringVal("address2_txt", rs)));
 				vo.setCity(pm.getStringValue("CITY_NM", db.getStringVal("city_nm", rs)));
 				vo.setState(pm.getStringValue("STATE_CD", db.getStringVal("state_cd", rs)));
 				vo.setZipCode(pm.getStringValue("ZIP_CD", db.getStringVal("zip_cd", rs)));
-				
+				vo.setGlobalAdminFlag(rs.getInt("valid_address_flg"));
+				vo.setValidEmailFlag(rs.getInt("valid_email_flg"));
+								
 				//grab some extras we need for display cosmetics
 				if (ReportType.leads == type) {
 					//we don't want max-age here (as an upper-limit), we want the LEAD'S age
@@ -180,15 +182,11 @@ public class LeadsDataToolV2 extends SBActionAdapter {
 				} else {
 					vo.setProfileId(rs.getString("profile_address_id"));
 				}
-
-//				if (vo.getState().equals("TX"))
-//					log.debug(vo.getLocation());
+				
 				data.add(vo);
 			}
 		} catch (SQLException sqle) {
 			log.error("pulling Leads data", sqle);
-		} finally {
-			try { ps.close(); } catch (Exception e) { }
 		}
 
 		log.debug("data size=" + data.size());
@@ -203,26 +201,30 @@ public class LeadsDataToolV2 extends SBActionAdapter {
 	 * @return
 	 */
 	protected List<UserDataVO> deduplicateUsers(List<UserDataVO> users) {
-		List<UserDataVO> data = new ArrayList<UserDataVO>(users.size());
-		List<String> dupls = new ArrayList<String>(users.size());
+		Map<String, UserDataVO> data = new HashMap<String,UserDataVO>(users.size());
 		String key = "";
 		
 		for (UserDataVO vo : users) {
 			try {
-				key = vo.getFirstName().concat(vo.getLastName()).concat(vo.getAddress());
+				key = StringUtil.checkVal(vo.getFirstName(), vo.getEmailAddress())
+						.concat(StringUtil.checkVal(vo.getLastName()))
+						.concat(StringUtil.checkVal(vo.getAddress(), vo.getZipCode()));
 			} catch (Exception e) {}
 			
-			if (dupls.contains(key)) {
-				continue;
+			if (data.containsKey(key)) {
+				//persist the email and print flags for this (existing) user
+				UserDataVO newUser = data.get(key);
+				if (1 == vo.getGlobalAdminFlag()) newUser.setGlobalAdminFlag(1);
+				if (1 == vo.getValidEmailFlag()) newUser.setValidEmailFlag(1);
+				data.put(key, newUser);
 			} else {
-				dupls.add(key);
-				data.add(vo);
+				data.put(key, vo);
 			}
 		}
-		log.debug("filtered size: " + data.size());
-		return data;
-	}
 
+		log.debug("filtered size: " + data.size());
+		return new ArrayList<UserDataVO>(data.values());
+	}
 	
 	
 	/**
@@ -254,14 +256,83 @@ public class LeadsDataToolV2 extends SBActionAdapter {
 			Location loc = this.polishAddressData(user, sortType);
 			LeadCityVO vo = locnData.get(loc);
 			if (vo == null) vo = new LeadCityVO();
-			vo.addLead(user.getBirthYear(), 1, isSelected(user)); //Alias holds 'checked' state, from the _XR table);  //holds maxAgeNo (range)
-//			if (loc.getCity().equals("Ohio City"))
-//				log.error("found: " + user.getPassword() + " " + user.getBirthYear() + " " +  user.getAttributes().get("savedMaxAge") + " " + user.getAliasName() + " " + isSelected(user));
+			vo.addLead(user, 1, isSelected(user)); //Alias holds 'checked' state, from the _XR table);  //holds maxAgeNo (range)
 			locnData.put(loc, vo);
 		}
 		
+		loadSoloKiosks(sortType, locnData);
+		
 		log.debug("data size: " + locnData.size());
 		sem.setTargetLeads(locnData);
+	}
+	
+	
+	/**
+	 * does a lookup of Solo kiosk that match the city/zip records we're about to display to the user
+	 * @param sortType
+	 * @param state
+	 * @param cityZips
+	 */
+	private void loadSoloKiosks(SortType sortType, Map<Location, LeadCityVO> locnData) {
+		List<String> unqStates = new ArrayList<String>();
+		
+		StringBuilder sql = new StringBuilder(250);
+		sql.append("select city_nm, state_cd, zip_cd from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("DEPUY_SOLO_KIOSK where ");
+		if (SortType.zip == sortType) {
+			sql.append(" zip_cd in ('~'");
+			for (int x=0; x<locnData.size(); x++) sql.append(",?");
+			sql.append(")");
+		} else {
+			//query all cities by name and all states by name, then worry about marrying the two server-side afterwards
+			sql.append("city_nm in ('~'");
+			for (Location loc : locnData.keySet()) {
+				sql.append(",?");
+				unqStates.add(loc.getState()); //we'll need these below.  90% of cities belong to the same state, so we don't need to repeat state names for each. e.g. IN,IN,IN,IN
+			}
+			sql.append(") and state_cd in ('~'");
+			for (int x=0; x<unqStates.size(); x++) sql.append(",?");
+			sql.append(")");
+		}
+		log.debug(sql);
+		
+		int cnt=0;
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			if (SortType.zip == sortType) {
+				for (Location loc: locnData.keySet())
+					ps.setString(++cnt, loc.getCity());
+			} else {
+				for (Location loc: locnData.keySet())
+					ps.setString(++cnt, loc.getCity());
+				for (String state : unqStates)
+					ps.setString(++cnt, state);
+			}
+			ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				//loop the locnData, find the city/state/zip that matches this RS record, and flag it as a kiosk location
+				if (SortType.zip == sortType) {
+					String zip = StringUtil.checkVal(rs.getString("zip_cd"));
+					for (Location loc : locnData.keySet()) {
+						if (zip.equals(loc.getCity())) {
+							loc.setBarCodeId("1"); //trigger used by a <c:if> in the UI
+							continue;
+						}
+					}
+				} else {
+					String city = StringUtil.checkVal(rs.getString("city_nm"));
+					String state = StringUtil.checkVal(rs.getString("state_cd"));
+					for (Location loc : locnData.keySet()) {
+						if (city.equalsIgnoreCase(loc.getCity()) && state.equalsIgnoreCase(loc.getState()) ) {
+							loc.setBarCodeId("1"); //trigger used by a <c:if> in the UI
+							continue;
+						}
+					}
+				}
+			}
+			
+		} catch (SQLException sqle) {
+			log.error("could not load Solo Kiosk list", sqle);
+		}
 	}
 	
 	/**
@@ -355,7 +426,7 @@ public class LeadsDataToolV2 extends SBActionAdapter {
 			diff++;
 			c1.add(Calendar.MONTH, 1);
 		}
-		log.debug("att=" + attemptDt + ", dif=" + diff);
+		//log.debug("att=" + attemptDt + ", dif=" + diff);
 		return diff;
 	}
 
