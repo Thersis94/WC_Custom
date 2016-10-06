@@ -16,6 +16,7 @@ import com.depuy.events_v2.OutstandingItems.ActionItem;
 import com.depuy.events_v2.vo.DePuyEventSurgeonVO;
 import com.depuy.events_v2.vo.PersonVO.Role;
 import com.depuy.events.vo.DePuyEventLeadSourceVO;
+import com.depuy.events.vo.LeadCityVO.LeadType;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.gis.Location;
 import com.siliconmtn.security.UserDataVO;
@@ -57,6 +58,8 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 	private Map<String, String> surveyResponses = null;
 	private Map<Location, LeadCityVO> targetLeads = null;
 	private int totalSelectedLeads = 0;
+	private int totalSelectedEmailLeads = 0;
+	private int totalSelectedBothLeads = 0;
 	private int upfrontFeeFlg = 0;
 	
 	private boolean readOnly = false;
@@ -447,22 +450,72 @@ public class DePuyEventSeminarVO extends EventPostcardVO {
 		this.targetLeads = targetLeads;
 	}
 	
-	
+	/**
+	 * returns the combined total of email leads plus print leads
+	 * @return
+	 */
 	public int getTotalSelectedLeads() {
-		//calculate the total based on targetLeads selected.  This is used on the leads page
+		return getTotalSelectedPrintLeads() + getTotalSelectedEmailLeads();
+	}
+	
+	/**
+	 * returns the total number of postcard-eligible leads based on the LeadCityVO selections
+	 * @return
+	 */
+	public int getTotalSelectedPrintLeads() {
 		if (totalSelectedLeads == 0 && targetLeads != null) {
 			for (Location loc : targetLeads.keySet()) {
 				LeadCityVO vo = targetLeads.get(loc);
-				if (vo.getTierFourChecked()) totalSelectedLeads += vo.getTierFour();
-				else if (vo.getTierThreeChecked()) totalSelectedLeads += vo.getTierThree();
-				else if (vo.getTierTwoChecked()) totalSelectedLeads += vo.getTierTwo();
-				else if (vo.getTierOneChecked()) totalSelectedLeads += vo.getTierOne();
+				if (vo.getTierFourChecked()) totalSelectedLeads += vo.getTierFour(LeadType.Print);
+				else if (vo.getTierThreeChecked()) totalSelectedLeads += vo.getTierThree(LeadType.Print);
+				else if (vo.getTierTwoChecked()) totalSelectedLeads += vo.getTierTwo(LeadType.Print);
+				else if (vo.getTierOneChecked()) totalSelectedLeads += vo.getTierOne(LeadType.Print);
 			}
 		} else if (targetLeads == null) {
 			totalSelectedLeads = Convert.formatInteger(super.getPcAttribute1(), 0);
 		}
-		
 		return totalSelectedLeads;
+	}
+	
+	
+	/**
+	 * returns the total number of email-eligible leads based on the LeadCityVO selections
+	 * @return
+	 */
+	public int getTotalSelectedEmailLeads() {
+		//calculate the total based on targetLeads selected.  This is used on the leads page
+		if (totalSelectedEmailLeads == 0 && targetLeads != null) {
+			for (Location loc : targetLeads.keySet()) {
+				LeadCityVO vo = targetLeads.get(loc);
+				if (vo.getTierFourChecked()) totalSelectedEmailLeads += vo.getTierFour(LeadType.Email);
+				else if (vo.getTierThreeChecked()) totalSelectedEmailLeads += vo.getTierThree(LeadType.Email);
+				else if (vo.getTierTwoChecked()) totalSelectedEmailLeads += vo.getTierTwo(LeadType.Email);
+				else if (vo.getTierOneChecked()) totalSelectedEmailLeads += vo.getTierOne(LeadType.Email);
+			}
+		} else if (targetLeads == null) {
+			totalSelectedEmailLeads = Convert.formatInteger(super.getPcAttribute3(), 0);
+		}
+		return totalSelectedEmailLeads;
+	}
+	
+	/**
+	 * returns the total number of email AND print eligible leads based on the LeadCityVO selections
+	 * @return
+	 */
+	public int getTotalSelectedBothLeads() {
+		//calculate the total based on targetLeads selected.  This is used on the leads page
+		if (totalSelectedBothLeads == 0 && targetLeads != null) {
+			for (Location loc : targetLeads.keySet()) {
+				LeadCityVO vo = targetLeads.get(loc);
+				if (vo.getTierFourChecked()) totalSelectedBothLeads += vo.getTierFour(LeadType.Both);
+				else if (vo.getTierThreeChecked()) totalSelectedBothLeads += vo.getTierThree(LeadType.Both);
+				else if (vo.getTierTwoChecked()) totalSelectedBothLeads += vo.getTierTwo(LeadType.Both);
+				else if (vo.getTierOneChecked()) totalSelectedBothLeads += vo.getTierOne(LeadType.Both);
+			}
+		} else if (targetLeads == null) {
+			totalSelectedBothLeads = Convert.formatInteger(super.getPcAttribute4(), 0);
+		}
+		return totalSelectedBothLeads;
 	}
 	
 	public boolean isDayOf() {
