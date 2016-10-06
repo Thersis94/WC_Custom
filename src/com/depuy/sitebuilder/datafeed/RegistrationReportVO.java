@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import com.depuy.sitebuilder.datafeed.RegistrationReport.RegistrationVO;
+import com.siliconmtn.data.report.BordersOnlyExcelReport;
 import com.siliconmtn.data.report.ExcelReport;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.StringUtil;
@@ -68,7 +69,7 @@ public class RegistrationReportVO extends AbstractDataFeedReportVO {
 	public byte[] generateReport() {
 		log.debug("starting generateReport()");
 
-		ExcelReport rpt = new ExcelReport(this.getHeader());
+		ExcelReport rpt = new BordersOnlyExcelReport(this.getHeader());;
 
 		List<Map<String, Object>> rows = new ArrayList<>();
 

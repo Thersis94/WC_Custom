@@ -263,7 +263,7 @@ public class PhysicianAction extends SBActionAdapter {
 				vo.setAllowCommunication(1); //opt-in new users only
 				pm.updateProfile(vo, dbConn);
 			} else {
-				pm.updateProfilePartially(vo.getDataMap(), vo.getProfileId(), dbConn);
+				pm.updateProfilePartially(vo.getDataMap(), vo, dbConn);
 			}
 		} catch (DatabaseException de) {
 			log.error(de);
