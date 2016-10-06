@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.siliconmtn.data.report.ExcelReport;
+import com.siliconmtn.data.report.StandardExcelReport;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.StringUtil;
 
@@ -73,7 +74,7 @@ public class ShareMyStoryReportVO extends AbstractDataFeedReportVO {
 	public byte[] generateReport() {
 		log.debug("starting generateReport()");
 
-		ExcelReport rpt = new ExcelReport(this.getHeader());
+		ExcelReport rpt = new StandardExcelReport(this.getHeader());
 
 		List<Map<String, Object>> rows = new ArrayList<>();
 

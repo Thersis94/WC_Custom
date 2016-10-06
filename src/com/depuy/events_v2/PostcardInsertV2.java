@@ -197,7 +197,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 					this.completePostcard(eventPostcardId);
 					
 					if ("HSEM".equalsIgnoreCase(req.getParameter("eventTypeCd")))
-						updatePostcardLeadsStats(Convert.formatInteger(req.getParameter("attendeeNo")), eventPostcardId, SortType.city);
+						updatePostcardLeadsStats(Convert.formatInteger(req.getParameter("attendeeNo")), 0, 0, eventPostcardId, SortType.city);
 					
 					nextPage = "";
 					eventPostcardId = null;
@@ -247,7 +247,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		String eventId = saveEventEntry(req);
 		saveEventPostcardAssoc(eventPostcardId, eventId);
 		saveLocatorXr(eventPostcardId, req);
-		updatePostcardLeadsStats(Convert.formatInteger(req.getParameter("attendeeNo")), eventPostcardId, SortType.city);
+		updatePostcardLeadsStats(Convert.formatInteger(req.getParameter("attendeeNo")), 0, 0, eventPostcardId, SortType.city);
 
 		changePostcardStatus(EventFacadeAction.STATUS_APPROVED, eventPostcardId);
 
@@ -783,7 +783,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		message = "Leads Saved Successfully";
 
 		// loop the cities on the request and insert each record
-		StringBuilder sql = new StringBuilder();
+		StringBuilder sql = new StringBuilder(350);
 		sql.append("insert into ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("depuy_event_leads_datasource (event_lead_source_id, ");
 		sql.append("event_postcard_id, state_cd, city_nm, zip_cd, ");
@@ -803,7 +803,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		Set<String> uniqueCities = new HashSet<>();
 		Enumeration<String> reqParams = req.getParameterNames();
 		UUIDGenerator uuid = new UUIDGenerator();
-		int totalLeadCnt = 0; //gets insert into the event_postcard table later.
+		int totalLeadCnt = 0, emailCnt = 0, combinedCnt=0; //gets insert into the event_postcard table later.
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			while (reqParams.hasMoreElements()) {
 				String param = reqParams.nextElement();
@@ -811,7 +811,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 
 				String[] tokens = param.split("\\|");
 				String[] vals = req.getParameter(param).split("\\|");
-				if (tokens.length != 6 || vals.length != 2) {
+				if (tokens.length != 6 || vals.length != 4) {
 					log.error("nonconfirmist: param: " + param + " val: " + req.getParameter(param));
 					log.error(StringUtil.getToString(tokens, false, false, "|"));
 					continue;
@@ -830,7 +830,6 @@ public class PostcardInsertV2 extends SBActionAdapter {
 					ps.setString(6, tokens[4].toUpperCase()); //product
 					ps.setInt(7, Convert.formatInteger(vals[1], 240));
 					ps.setTimestamp(8, Convert.getCurrentTimestamp());
-
 					ps.addBatch();
 					++batchCnt;
 
@@ -840,6 +839,8 @@ public class PostcardInsertV2 extends SBActionAdapter {
 						batchCnt= 0;
 					}
 					totalLeadCnt += Convert.formatInteger(vals[0]);
+					emailCnt += Convert.formatInteger(vals[2]);
+					combinedCnt += Convert.formatInteger(vals[3]);
 					uniqueCities.add(unqToken);
 
 				} catch (SQLException sqle) {
@@ -853,7 +854,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 
 		}
 
-		this.updatePostcardLeadsStats(totalLeadCnt, eventPostcardId, sortType);
+		this.updatePostcardLeadsStats(totalLeadCnt, emailCnt, combinedCnt, eventPostcardId, sortType);
 	}
 
 	/**
@@ -1371,23 +1372,20 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	 * @param sortType
 	 * @throws ActionException
 	 */
-	private void updatePostcardLeadsStats(int leadCnt, String eventPostcardId, SortType sortType)
+	private void updatePostcardLeadsStats(int leadCnt, int emailCnt, int combinedCnt, String eventPostcardId, SortType sortType)
 			throws SQLException {
-		PreparedStatement ps = null;
-		StringBuilder sql = new StringBuilder();
-		sql.append("update event_postcard set attrib_1_txt=?, attrib_2_txt=?, ");
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("update event_postcard set attrib_1_txt=?, attrib_2_txt=?, attrib_3_txt=?, attrib_4_txt=?, ");
 		sql.append("update_dt=? where event_postcard_id=?");
 		log.debug(sql);
-		try {
-			ps = dbConn.prepareStatement(sql.toString());
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, Integer.valueOf(leadCnt).toString());
 			ps.setString(2, sortType.toString());
-			ps.setTimestamp(3, Convert.getCurrentTimestamp());
-			ps.setString(4, eventPostcardId);
+			ps.setString(3, Integer.valueOf(emailCnt).toString());
+			ps.setString(4, Integer.valueOf(combinedCnt).toString());
+			ps.setTimestamp(5, Convert.getCurrentTimestamp());
+			ps.setString(6, eventPostcardId);
 			ps.executeUpdate();
-
-		} finally {
-			try { ps.close(); } catch (Exception e) { }
 		}
 	}
 

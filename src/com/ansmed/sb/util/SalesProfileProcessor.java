@@ -204,7 +204,7 @@ public class SalesProfileProcessor {
 					columns.put("LAST_NM", uVO.getLastName());
 					columns.put("EMAIL_ADDRESS_TXT", uVO.getEmailAddress());
 					
-					pm.updateProfilePartially(columns,uVO.getProfileId(),cn);
+					pm.updateProfilePartially(columns,uVO,cn);
 					synchMap.put(origId,uVO.getProfileId());
 					log.debug("Profile exists - performed partial update: " + uVO.getProfileId());
 					updated++;
