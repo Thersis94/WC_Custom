@@ -41,6 +41,12 @@ public class LocatorVO extends SBModuleVO {
     private Integer emailFriendReqFlag = null;
     private Integer searchTypeId = null;
     private Integer resultsPerPage = null;
+    /**
+     * maxExtendedSearchRadius - sets the maximum extended search radius to use with
+     * this locator.  Allows us to override the system max of 250 miles so that we
+     * can return results for locators with smaller data sets.
+     */
+    private Integer maxExtendedSearchRadius = null;
     private Map<String, Boolean> fields = null;
     
     /**
@@ -72,6 +78,7 @@ public class LocatorVO extends SBModuleVO {
         emailFriendReqFlag = Convert.formatInteger(req.getParameter("emailFriendReqFlag"));
         searchTypeId = Convert.formatInteger(req.getParameter("searchTypeId"));
         resultsPerPage = Convert.formatInteger(req.getParameter("resultsPerPage"));
+        maxExtendedSearchRadius = Convert.formatInteger(req.getParameter("maxExtendedSearchRadius"));
         pendingSyncFlag = Convert.formatInteger(req.getParameter("pendingSyncFlag"));
         actionGroupId = req.getParameter("sbActionGroupId");
     }
@@ -92,6 +99,7 @@ public class LocatorVO extends SBModuleVO {
         privacyUrl = db.getStringVal("privacy_url", rs);
         searchTypeId = db.getIntegerVal("search_type_id", rs);
         resultsPerPage = db.getIntegerVal("results_page_no", rs);
+        maxExtendedSearchRadius = db.getIntegerVal("extd_radius_max_no", rs);
         surveyReqFlag = db.getIntegerVal("survey_req_flg", rs);
         surveyId = db.getStringVal("survey_id", rs);
         surveyReqFlag = db.getIntegerVal("survey_req_flg", rs);
@@ -311,6 +319,20 @@ public class LocatorVO extends SBModuleVO {
 	 */
 	public void setEmailFriendReqFlag(Integer emailFriendReqFlag) {
 		this.emailFriendReqFlag = emailFriendReqFlag;
+	}
+
+	/**
+	 * @return the maxExtendedSearchRadius
+	 */
+	public Integer getMaxExtendedSearchRadius() {
+		return maxExtendedSearchRadius;
+	}
+
+	/**
+	 * @param maxExtendedSearchRadius the maxExtendedSearchRadius to set
+	 */
+	public void setMaxExtendedSearchRadius(Integer maxExtendedSearchRadius) {
+		this.maxExtendedSearchRadius = maxExtendedSearchRadius;
 	}
 
 }
