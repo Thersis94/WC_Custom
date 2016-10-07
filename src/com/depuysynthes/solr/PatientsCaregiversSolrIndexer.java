@@ -7,6 +7,7 @@ import java.util.Map.Entry;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.common.SolrException;
 
 import com.depuysynthes.solr.data.PatientsCaregiversVO;
 import com.siliconmtn.action.ActionException;
@@ -56,5 +57,11 @@ public class PatientsCaregiversSolrIndexer extends FileSolrIndexer {
 		SolrDocumentVO doc = new PatientsCaregiversVO();
 		if (file != null) doc.setData(file);
 		return doc;
+	}
+
+	@Override
+	public void addSingleItem(String arg0) throws SolrException {
+		// This function should never be called as the indexer will only
+		// be run for all documents at once
 	}
 }
