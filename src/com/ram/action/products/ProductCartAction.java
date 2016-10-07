@@ -134,6 +134,9 @@ public class ProductCartAction extends SBActionAdapter {
 			saveCart(req, 1);
 			req.getSession().setAttribute(FINALIZED, true);
 			sendEmails(req);
+		}else if (Convert.formatBoolean(req.getParameter("sendEmails"))) {
+			populateCart(req);
+			sendEmails(req);
 		} else {
 			editCart(req);
 			// After each change to the products in the cart it must be saved
@@ -875,8 +878,10 @@ public class ProductCartAction extends SBActionAdapter {
 			mail.addRecipient(getHospitalEmail(req));
 			if (req.getSession().getAttribute(CASE_ID) != null) {
 				mail.setSubject("Product Summary for Case " + req.getSession().getAttribute(CASE_ID));
-			} else {
+			} else if (req.getSession().getAttribute(TIME) != null) {
 				mail.setSubject("Product Summary for Surgery on " + new SimpleDateFormat(DATE_PATTERN).format(req.getSession().getAttribute(TIME)));
+			} else {
+				mail.setSubject("RAM OR Case Summary");
 			}
 			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 			mail.setFrom(site.getAdminEmail());
