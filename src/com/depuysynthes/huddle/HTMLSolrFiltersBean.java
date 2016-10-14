@@ -78,7 +78,7 @@ public class HTMLSolrFiltersBean {
 	 * @return
 	 */
 	public static String getFilterSimple(Count c, String filterNm, String onclick) {
-		return HTMLSolrFiltersBean.getFilterSimple(c, filterNm, onclick, null);
+		return getFilterSimple(c, filterNm, onclick, null);
 	}
 	
 	/**
@@ -144,7 +144,7 @@ public class HTMLSolrFiltersBean {
 			} else {
 				sb.append("<span class=\"count\">").append(formatCount(n.getUserObject())).append("</span>");
 			}
-			sb.append("<input type=\"checkbox\" class=\"parChkbx\" id=\"filter_simple_").append(uuid);
+			sb.append("<input type=\"checkbox\" class=\"").append(n.getNumberChildren() > 0 ? "parChkbx" : "").append("\" id=\"filter_simple_").append(uuid);
 			sb.append("\" data-filter-nm=\"").append(filterNm).append("\" value=\"");
 			sb.append(n.getNodeId()).append("\" onclick=\"").append(onclick);
 			sb.append("\" data-search-name=\"").append(StringUtil.removeNonAlpha((n.getNodeId()))).append("\">");
@@ -200,7 +200,7 @@ public class HTMLSolrFiltersBean {
 			String uuid = RandomAlphaNumeric.generateRandom(5);
 			sb.append("<li>");
 			sb.append("<span class=\"count\">").append(n.getUserObject()).append("</span>");
-			sb.append("<input type=\"checkbox\" class=\"parChkbx\" id=\"filter_simple_").append(uuid);
+			sb.append("<input type=\"checkbox\" class=\"").append(n.getNumberChildren() > 0 ? "parChkbx" : "").append("\" id=\"filter_simple_").append(uuid);
 			sb.append("\" data-filter-nm=\"").append(filterNm).append("\" value=\"");
 			sb.append(n.getNodeId()).append("\" onclick=\"").append(onclick);
 			sb.append("\" data-search-name=\"").append(StringUtil.removeNonAlpha(n.getNodeId())).append("\">");
@@ -219,7 +219,7 @@ public class HTMLSolrFiltersBean {
 		sb.append("<div class=\"collapse-panel-header\">");
 		sb.append("<a class=\"caret_wrap collapsed\" data-toggle=\"collapse\" href=\"#filter_onelevel_").append(uuid).append("\">");
 		sb.append("<span class=\"caret\"></span></a>\n");
-		sb.append("<input type=\"checkbox\" class=\"parChkbx\" id=\"main_check_").append(uuid);
+		sb.append("<input type=\"checkbox\" id=\"main_check_").append(uuid);
 		sb.append("\" data-filter-nm=\"").append(pf.getField()).append("\" value=\"");
 		sb.append(pf.getValue()).append("\" onclick=\"").append(onclick).append("\">");
 		sb.append("<label class=\"checkbox\" for=\"main_check_").append(uuid).append("\">").append(pf.getValue()).append("</label>");
