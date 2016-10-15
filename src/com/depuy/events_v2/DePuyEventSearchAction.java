@@ -3,11 +3,11 @@ package com.depuy.events_v2;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.siliconmtn.action.ActionException;
@@ -164,7 +164,7 @@ public class DePuyEventSearchAction extends SimpleActionAdapter {
 		sql.append("order by distance");
 		log.debug(sql + (String) mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 		
-		List<EventEntryVO> data = new ArrayList<EventEntryVO>();
+		Map<String,EventEntryVO> data = new HashMap<String,EventEntryVO>();
 		int x = 1;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			for (String s : actionIds) 
@@ -182,13 +182,23 @@ public class DePuyEventSearchAction extends SimpleActionAdapter {
 				ps.setDate(x++, Convert.formatSQLDate(Calendar.getInstance().getTime()));
 				ps.setInt(x++, Convert.formatInteger(req.getParameter("radius"), 50));
 			}
-			
+
+			EventEntryVO vo;
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
-				EventEntryVO vo = new EventEntryVO(rs);
-				vo.setActionDesc(rs.getString("header_txt"));
-				vo.setAttribute("jointId", rs.getInt("joint_id"));
-				data.add(vo);
+				vo = data.get(rs.getString("event_entry_id"));
+				if (vo == null) {
+					vo = new EventEntryVO(rs);
+					vo.setActionDesc(rs.getString("header_txt"));
+					vo.setAttribute("jointId", rs.getInt("joint_id"));
+				} else {
+					//add possible second speaker to an existing seminar - JM 10.15.16
+					String spkr2 = StringUtil.checkVal(rs.getString("contact_nm"));
+					//if there is a 2nd speaker, and we don't already have them listed, add them to the roster
+					if (!spkr2.isEmpty() && StringUtil.checkVal(vo.getContactName()).indexOf(spkr2) == -1)
+						vo.setContactName(vo.getContactName() + " and " + spkr2);
+				}
+				data.put(vo.getActionId(),vo);
 			}
 		} catch (SQLException sqle) {
 			log.error("could not load Seminars", sqle);
@@ -196,7 +206,7 @@ public class DePuyEventSearchAction extends SimpleActionAdapter {
 		
 		mod.setDataSize(data.size());
 		log.debug("loaded " + mod.getDataSize() + " Seminars");
-		mod.setActionData(data);
+		mod.setActionData(data.values());
 		setAttribute(Constants.MODULE_DATA, mod);
 	}
 	
