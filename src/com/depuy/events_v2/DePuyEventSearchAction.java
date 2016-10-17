@@ -3,6 +3,7 @@ package com.depuy.events_v2;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -203,10 +204,9 @@ public class DePuyEventSearchAction extends SimpleActionAdapter {
 		} catch (SQLException sqle) {
 			log.error("could not load Seminars", sqle);
 		}
-		
 		mod.setDataSize(data.size());
 		log.debug("loaded " + mod.getDataSize() + " Seminars");
-		mod.setActionData(data.values());
+		mod.setActionData(new ArrayList<EventEntryVO>(data.values()));
 		setAttribute(Constants.MODULE_DATA, mod);
 	}
 	
