@@ -158,7 +158,7 @@ public class EpiducerSubmittalAction extends SBActionAdapter {
 
 		//Update the user's profile based on the form data or add a new profile
 		if (user.getProfileId() != null) {
-			pm.updateProfilePartially(user.getDataMap(), user.getProfileId(), dbConn);
+			pm.updateProfilePartially(user.getDataMap(), user, dbConn);
 			
 			// **** NOTE: we are forcing the addition of the org_profile_comm record
 			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);

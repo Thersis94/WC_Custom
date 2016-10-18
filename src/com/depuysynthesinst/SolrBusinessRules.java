@@ -93,6 +93,7 @@ public class SolrBusinessRules {
 			if (sectionNm.indexOf("~") > 0)
 				sectionNm = sectionNm.substring(0, sectionNm.indexOf("~"));
 		} else if ("EVENT".equals(moduleType)) {  //this use-case is ONLY search results
+			//NOTE: These values come from EVENT_TYPE.TYPE_NM in the database, passed into Solr from the indexer
 			sectionNm = StringUtil.checkVal(sd.get("eventType_s")).toLowerCase();
 			if (sectionNm.equals("surgeon")) {
 				sectionNm = "Surgeon";
@@ -102,11 +103,15 @@ public class SolrBusinessRules {
 				sectionNm ="Veterinary";
 			} else if (sectionNm.equals("future")) {
 				sectionNm ="Future Leaders";
-			} else if (sectionNm.equals("bundled payments")) {
+			} else if (sectionNm.equals("bundled")) {
 				sectionNm ="Bundled Payments";
+			} else if (sectionNm.equals("outpatient")) {
+				sectionNm ="Outpatient Education";
 			}
 		} else if (sectionNm.equals("bundled payments")) {
 			sectionNm ="Bundled Payments";
+		} else if (sectionNm.equals("outpatient education")) {
+			sectionNm = "Outpatient Education";
 		}
 
 		if (sectionNm.indexOf("~") > -1) {

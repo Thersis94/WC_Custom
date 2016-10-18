@@ -6,8 +6,9 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.siliconmtn.action.ActionException;
@@ -15,6 +16,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.event.EventFacadeAction;
 import com.smt.sitebuilder.action.event.EventTypeAction;
@@ -32,6 +34,9 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @author James McKain
  * @version 1.0
  * @since Mar 4, 2014
+ * @updates
+ * 		JM - 7.14.16 - changed actionId (attrib1) to support multiple values (saved as a comma delimited String).
+ * 			this allows front-end searches to run across joint-recon seminars as well as Mitek seminars.
  ****************************************************************************/
 public class DePuyEventSearchAction extends SimpleActionAdapter {
 
@@ -42,6 +47,15 @@ public class DePuyEventSearchAction extends SimpleActionAdapter {
 	public DePuyEventSearchAction(ActionInitVO arg0) {
 		super(arg0);
 	}
+	
+	@Override
+	public void update(SMTServletRequest req) throws ActionException {		
+		String[] attr1 = req.getParameterValues("attrib1Text");
+		req.setParameter("attrib1Text", StringUtil.getToString(attr1, false, false, ","));
+		log.debug("set attrib1Text=" + req.getParameter("attrib1Text"));
+		super.update(req);
+	}
+	
 	
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {		
@@ -63,7 +77,14 @@ public class DePuyEventSearchAction extends SimpleActionAdapter {
 	@Override
 	public void build(SMTServletRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
-		actionInit.setActionId((String) mod.getAttribute(ModuleVO.ATTRIBUTE_1));
+		//use the actionId off the request if we have one; because the value for attrib1 could be multiple actionIds
+		String actionId = StringUtil.checkVal(req.getParameter("actionId"));
+		if (actionId.length() == 0) {
+			String[] actionIds = StringUtil.checkVal(mod.getAttribute(ModuleVO.ATTRIBUTE_1)).split(",");
+			if (actionIds != null && actionIds.length > 0) 
+				actionId = actionIds[0];
+		}
+		actionInit.setActionId(actionId);
 		mod.setActionId(actionInit.getActionId());
 		setAttribute(Constants.MODULE_DATA, mod);
 		
@@ -96,20 +117,30 @@ public class DePuyEventSearchAction extends SimpleActionAdapter {
 		EventTypeAction eta = new EventTypeAction();
 		eta.setAttributes(attributes);
 		
-		String distSql = eta.buildSpatialClause(req); 
+		boolean isRobot = Convert.formatBoolean(req.getAttribute(Constants.BOT_REQUEST));
+		log.debug("robot? " + isRobot);
+		
+		String distSql = !isRobot ? eta.buildSpatialClause(req): String.valueOf(Integer.MAX_VALUE); //don't let bots find any seminars; set their distance impossibly high
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		String[] actionIds = StringUtil.checkVal(mod.getAttribute(ModuleVO.ATTRIBUTE_1)).split(",");
 		String[] specialties = req.getParameterValues("specialty");
 		if (req.hasParameter("specialtyId"))
 			specialties = req.getParameterValues("specialtyId");
 		if (specialties == null) specialties = new String[0];
 		
-		StringBuilder sql = new StringBuilder();
-		sql.append("select ee.*, et.*, eg.header_txt, ").append(distSql).append(" as distance, des.surgeon_nm as contact_nm ");
+		StringBuilder sql = new StringBuilder(1000);
+		sql.append("select ee.*, et.*, eg.header_txt, ").append(distSql);
+		sql.append(" as distance, des.surgeon_nm as contact_nm, sxr.joint_id, sb.action_group_id ");
 		sql.append("from event_entry ee ");
 		sql.append("inner join event_type et on ee.event_type_id=et.event_type_id ");
 		sql.append("inner join event_group eg on et.action_id=eg.action_id ");
-		sql.append("inner join sb_action sb on eg.action_id=sb.action_group_id and sb.action_group_id=? ");
+		sql.append("inner join sb_action sb on eg.action_id=sb.action_group_id and sb.action_group_id in ( ");
+		for (int x=0; x < actionIds.length; x++) {
+			if (x > 0) sql.append(",");
+			sql.append("?");
+		}
+		sql.append(") ");
 		sql.append("inner join event_postcard_assoc epa on ee.event_entry_id=epa.event_entry_id ");
 		sql.append("inner join event_postcard ep on epa.event_postcard_id=ep.event_postcard_id ");
 		sql.append("inner join ").append(customDb).append("depuy_event_specialty_xr sxr on ep.event_postcard_id=sxr.event_postcard_id ");
@@ -134,12 +165,12 @@ public class DePuyEventSearchAction extends SimpleActionAdapter {
 		sql.append("order by distance");
 		log.debug(sql + (String) mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 		
-		List<EventEntryVO> data = new ArrayList<EventEntryVO>();
-		PreparedStatement ps = null;
+		Map<String,EventEntryVO> data = new HashMap<String,EventEntryVO>();
 		int x = 1;
-		try {
-			ps = dbConn.prepareStatement(sql.toString());
-			ps.setString(x++, (String) mod.getAttribute(ModuleVO.ATTRIBUTE_1));
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			for (String s : actionIds) 
+				ps.setString(x++, s);
+			
 			for (int i=0; i < specialties.length; i++) 
 				ps.setInt(x++, Convert.formatInteger(specialties[i]));
 			
@@ -152,21 +183,30 @@ public class DePuyEventSearchAction extends SimpleActionAdapter {
 				ps.setDate(x++, Convert.formatSQLDate(Calendar.getInstance().getTime()));
 				ps.setInt(x++, Convert.formatInteger(req.getParameter("radius"), 50));
 			}
+
+			EventEntryVO vo;
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
-				EventEntryVO vo = new EventEntryVO(rs);
-				vo.setActionDesc(rs.getString("header_txt"));
-				data.add(vo);
+				vo = data.get(rs.getString("event_entry_id"));
+				if (vo == null) {
+					vo = new EventEntryVO(rs);
+					vo.setActionDesc(rs.getString("header_txt"));
+					vo.setAttribute("jointId", rs.getInt("joint_id"));
+				} else {
+					//add possible second speaker to an existing seminar - JM 10.15.16
+					String spkr2 = StringUtil.checkVal(rs.getString("contact_nm"));
+					//if there is a 2nd speaker, and we don't already have them listed, add them to the roster
+					if (!spkr2.isEmpty() && StringUtil.checkVal(vo.getContactName()).indexOf(spkr2) == -1)
+						vo.setContactName(vo.getContactName() + " and " + spkr2);
+				}
+				data.put(vo.getActionId(),vo);
 			}
 		} catch (SQLException sqle) {
 			log.error("could not load Seminars", sqle);
-		} finally {
-			try { ps.close(); } catch (Exception e) {}
 		}
-		
 		mod.setDataSize(data.size());
 		log.debug("loaded " + mod.getDataSize() + " Seminars");
-		mod.setActionData(data);
+		mod.setActionData(new ArrayList<EventEntryVO>(data.values()));
 		setAttribute(Constants.MODULE_DATA, mod);
 	}
 	

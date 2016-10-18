@@ -1,11 +1,14 @@
 package com.depuy.events_v2.vo.report;
 
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.Map;
 
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.event.vo.EventEntryVO;
+import com.siliconmtn.data.report.ExcelReport;
 import com.siliconmtn.util.Convert;
 
 /*****************************************************************************
@@ -46,46 +49,61 @@ public class RsvpSummaryReportVO extends AbstractSBReportVO {
     
 	public byte[] generateReport() {
 		log.debug("starting generateReport()");
-		StringBuffer rpt = new StringBuffer(this.getHeader());
-		EventEntryVO vo = null;
+		
+		ExcelReport rpt = new ExcelReport(this.getHeader());
+		
+		List<Map<String, Object>> rows = new ArrayList<>(events.size());
+		
+		rows = generateDataRows(rows);
+		
+		rpt.setData(rows);
+		
+		return rpt.generateReport();
+				
+	}
+	
 
-		//for each postcard
-		Iterator<EventEntryVO> iter = events.iterator();
-		while (iter.hasNext()) {
-			vo = iter.next();
+	/**
+	 * this method is used to generate the data rows of the excel sheet.
+	 * @param rows
+	 * @return
+	 */
+	private List<Map<String, Object>> generateDataRows(
+			List<Map<String, Object>> rows) {
+		
+	
+		for (EventEntryVO vo : events){
+			Map<String, Object> row = new HashMap<String, Object>();
 			Integer rsvpTotal = vo.getRsvpTotal("call") + vo.getRsvpTotal("web");
-
-			rpt.append("<tr><td>").append(vo.getRSVPCode()).append("</td>");
-			rpt.append("<td>").append(vo.getContactName()).append("</td>");
-			rpt.append("<td>").append(vo.getRsvpTotal("web")).append("</td>");
-			rpt.append("<td>").append(vo.getRsvpTotal("call")).append("</td>");
-			rpt.append("<td>").append(rsvpTotal).append("</td>");
-			rpt.append("<td>").append(Convert.formatDate(vo.getStartDate(), "EEEE, MMMM dd, yyyy")).append("</td>");
-			rpt.append("</tr>\r");
-			vo = null;
+			row.put("SEMINAR_NO", vo.getRSVPCode());
+			row.put("SEMINAR_HOST", vo.getContactName());
+			row.put("WEB_RSVPS", vo.getRsvpTotal("web"));
+			row.put("CALL_IN_RSVPS", vo.getRsvpTotal("call"));
+			row.put("TOTAL_RSVPS", rsvpTotal);
+			row.put("SEMINAR_DATE", Convert.formatDate(vo.getStartDate(), "EEEE, MMMM dd, yyyy"));
+		
+			rows.add(row);
 		}
 		
-		rpt.append(this.getFooter());
-		return rpt.toString().getBytes();
-	}
-	
-	private StringBuffer getHeader() {
-		StringBuffer hdr = new StringBuffer();
-		hdr.append("<table border='1'>\r<tr style='background-color:#ccc;'>");
-		hdr.append("<th>Seminar#</th>");
-		hdr.append("<th>Seminar_Host</th>");
-		hdr.append("<th>Web_RSVPs</th>");
-		hdr.append("<th>Call-in_RSVPs</th>");
-		hdr.append("<th>Total_RSVPs</th>");
-		hdr.append("<th>Seminar_Date</th>");
-		hdr.append("</tr>\r");
 		
-		return hdr;
+		return rows;
 	}
 
-	
-	private StringBuffer getFooter() {
-		return new StringBuffer("</table>");
-	}
+	/**
+	 * builds the header map for the excel report
+	 * @return
+	 */
+	private HashMap<String, String> getHeader() {
+					
+		HashMap<String, String> headerMap = new LinkedHashMap<String, String>();
+		headerMap.put("SEMINAR_NO","Seminar#");
+		headerMap.put("SEMINAR_HOST","Seminar Host");
+		headerMap.put("WEB_RSVPS","Web RSVPs");
+		headerMap.put("CALL_IN_RSVPS", "Call-in RSVPs");
+		headerMap.put("TOTAL_RSVPS", "Total RSVPs");
+		headerMap.put("SEMINAR_DATE", "Seminar Date");
 		
+		return headerMap;
+	}
+
 }

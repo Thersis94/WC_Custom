@@ -7,7 +7,6 @@ import java.util.Iterator;
 import java.util.List;
 
 
-
 // Google Gson lib
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -36,7 +35,8 @@ public class ResultsContainer implements Serializable {
 
 	private static final long serialVersionUID = 3940243103678420431L;
 	private final String FILTER_VALUE_DELIMITER_REGEX = "\\|";
-	private final double RADIUS_EXTENDED_SEARCH = 251;
+	private final double RADIUS_SEARCH_DEFAULT = 50;
+	private final double RADIUS_EXTENDED_SEARCH_DEFAULT = 251;
 	private String json;
 	private int numResults;
 	private int pageSize;
@@ -60,6 +60,13 @@ public class ResultsContainer implements Serializable {
 
 	private boolean isExtendedSearch;
 	
+	/**
+	 * Boolean indicating whether or not the results being displayed are from the
+	 * extended results set (results > than the requested search radius). This is 
+	 * used to inform the JSTL view as to whether or not we had to consult the
+	 * extended results set. */
+	private boolean useExtendedResults;
+	
 	// JSTL helper members
 	private int startVal = 1; // starting result number
 	private int endVal = 1; // ending result number
@@ -68,11 +75,17 @@ public class ResultsContainer implements Serializable {
 	private int lastPageNo = 1; // last page number
 	private int displayTotalNo; // total number of results to display
 	/**
-	 * Radius initialized to 50 to guarantee a default value if one not passed
-	 * to the container.
+	 * radius: search radius
 	 */
-	private int radius = 50; // search radius parameter
+	private double radius;
 	
+	/**
+	 * extendedRadius: The maximum allowed search radius to use in filtering
+	 * results from search.  Defaults to RADIUS_EXTENDED_SEARCH_DEFAULT 
+	 * if not set. Defaults to RADIUS_EXTENDED_SEARCH_MAXIMUM if set to value
+	 * greater than RADIUS_EXTENDED_SEARCH_MAXIMUM. 
+	 */
+	private double extendedRadius;
 	// filter members
 	/**
 	 * List of specialty IDs that are being filtered on. 
@@ -140,14 +153,14 @@ public class ResultsContainer implements Serializable {
 		}
 		// get the results container as an object
 		JsonObject ctnr = jEle.getAsJsonObject();
+		// parse specialty/procedure/product hierarchy
 		parseHierarchy(ctnr.getAsJsonArray("productHierarchy"));
+		/* NOTE: Must parse override params BEFORE parsing surgeons because 
+		 * override params can affect how surgeon records are parsed for display. */
+		parseOverrideParams(ctnr);
+		// parse surgeon results
 		parseSurgeons(ctnr.getAsJsonArray("results"));
-		if (ctnr.has("numResults")) numResults = ctnr.get("numResults").getAsInt();
-		if (ctnr.has("pageSize")) resultsPerPage = ctnr.get("pageSize").getAsInt();
-		if (ctnr.has("radius")) radius = ctnr.get("radius").getAsInt();
-		if (ctnr.has("isExtendedSearch")) setExtendedSearch(ctnr.get("isExtendedSearch").getAsBoolean());
-		// set filters
-		this.setFilters(null);
+
     }
     
     /**
@@ -218,34 +231,61 @@ public class ResultsContainer implements Serializable {
 			while (surgeonIter.hasNext()) {
 				// grab the current surgeon iteration
 				surgeon = new SurgeonBean(surgeonIter.next());
-				if (surgeon.getPrimaryDistance() < RADIUS_EXTENDED_SEARCH)
+				if (surgeon.getPrimaryDistance() < extendedRadius);
 					results.add(surgeon);
 			}
     	}
     }
     
     /**
-     * Sets filters and filtered surgeon list and display total number.  Filter values
-     * are formatted as 'prefixID|specialtyID (e.g. pc9|5, pd550|9, where pc means 
-     * 'procedure' ID and pd means  'product' ID).
+     * Parses certain search parameter values returned by 
+     * the search container that override defaults.
+     * @param ctnr
+     */
+    private void parseOverrideParams(JsonObject ctnr) {
+		if (ctnr.has("numResults")) setNumResults(ctnr.get("numResults"));
+		if (ctnr.has("pageSize")) setResultsPerPage(ctnr.get("pageSize"));
+		if (ctnr.has("radius")) setRadius(ctnr.get("radius"));
+		if (ctnr.has("isExtendedSearch")) setExtendedSearch(ctnr.get("isExtendedSearch"));
+		if (isExtendedSearch) {
+			setExtendedRadius(ctnr.get("extendedRadius"));
+		}
+    }
+    
+    /**
+     * Receives filter values as a comma-delimited String, parses them into an
+     * array, and calls the standard setFilters method.
+     * @param filterString
+     */
+    public void setFilterString(String filterString) {
+    	String[] filterVals = null;
+    	if (StringUtil.checkVal(filterString,null) != null) {
+    		filterVals = filterString.split(",");
+    	}
+    	setFilters(filterVals);
+    }
+    
+    /**
+     * Sets filters, filtered surgeon list, and 'display total' number.  Filter values
+     * are formatted as follows:
+     * - procedures (prefix 'pc'):
+     * 	--- 'prefix+procedureID|specialtyID (e.g. pc9|5)
+     * - products (prefix 'pd'):
+     * --- 'prefix+productID|procedureID|specialtyID (pd546|20|9)
+     *
      * @param filterVals
      */
     public void setFilters(String[] filterVals) {
     	// clear filters
     	specFilters.clear();
-    	if (filterVals != null) {
-    		/* If filter values are passed in, we inform the bean as to which 
-    		 * specialties are to be considered. */
-    		specFilters.addAll(globalSpecFilters);
-    	}
     	procFilters.clear();
     	prodFilters.clear();
 
-		List<Integer> procsToExclude = new ArrayList<>(5);
-		List<Integer> prodsToExclude = new ArrayList<>(5);
-		
+		boolean hasFilterVals = (filterVals != null && filterVals.length > 0);
     	// parse filter values.
-    	if (filterVals != null && filterVals.length > 0) {
+    	if (hasFilterVals) {
+    		// search filter values were passed in, parse them
+    		specFilters.addAll(globalSpecFilters);
     		String[] split = null;
     		Integer tmpI = null;
 
@@ -260,109 +300,104 @@ public class ResultsContainer implements Serializable {
 	    			// determine/add the specialty
 	    			if (split.length == 2) {
 	    				// is procedure
-	    				tmpI = Convert.formatInteger(StringUtil.checkVal(split[1]));
+	    				tmpI = Convert.formatInteger(split[1]);
 	    			} else {
 	    				// is product
-	    				tmpI = Convert.formatInteger(StringUtil.checkVal(split[2]));
+	    				tmpI = Convert.formatInteger(split[2]);
 	    			}
 	    			if (tmpI == 0) continue;
-	    			if (! specFilters.contains(tmpI)) {
-		    			specFilters.add(tmpI);
-	    			}
+	    			// add specialty ID to specialty filter if not already there.
+	    			if (! specFilters.contains(tmpI)) specFilters.add(tmpI);
 	    			
 	    			// now determine/add the procedure or product.
 	    			tmpI = Convert.formatInteger(split[0].substring(2));
 	    			if (tmpI == 0) continue;
 	    			if (split[0].startsWith("pc")) {
-	    				procsToExclude.add(tmpI);
+	    				procFilters.add(tmpI);
 	    			} else {
-	    				prodsToExclude.add(tmpI);
+	    				prodFilters.add(tmpI);
+	    				// we also need to look at the product's parent procedure ID
+	    				tmpI = Convert.formatInteger(split[1]);
+	    				if (tmpI > 0 && ! procFilterParents.contains(tmpI)) {
+							procFilterParents.add(tmpI);
+						}
 	    			}
 	    		}
 	    		split = null;
 	    	}
-	    	
+
     	}
     	
-    	/* Look up all procedures/products for the specialties being filtered on and
-    	 * remove the IDs that are being filtered out.  That will leave us with just
-    	 * the lists of IDs to be displayed. */
-    	combineFilterLists(procsToExclude, prodsToExclude);
-    	
-    	// determine which surgeons are filtered out of display
-    	buildFilteredSurgeonsList((filterVals != null && filterVals.length > 0));
+    	// determine if all filters were requested
+    	boolean useAllFilters = compareFilters(hasFilterVals);
+
+    	// build list of surgeons that determine which surgeons are to display or not display
+    	buildFilteredSurgeonsList(useAllFilters);
     }
     
     /**
-     * Loop the specialties filters and retrieve all procedure and product IDs
-     * for each filtered specialty.  Build the procedures and products filter lists by
-     * adding procedures and products to the respective lists only if the procedures
-     * and products IDs are not in the 'hide' lists.
-     * 
-     * @param proceduresToExclude
-     * @param productsToExclude
+     * Counts the number of possible procedures and products and compares those
+     * counts with the number of procedure filters and product filters submitted.  If 
+     * the values match, then all possible filters were submitted and all results are
+     * eligible for display consideration relative to the radius requirements.
+     * @param hasFilterVals
+     * @return
      */
-    private void combineFilterLists(List<Integer> proceduresToExclude, 
-    		List<Integer> productsToExclude) {
-    	Integer procId = null;
-    	Integer prodId = null;
-    	procFilterParents.clear();
-    	for (Integer specId : specFilters) {
-    		for (Node spec : hierarchy) {
-    			if (specId == spec.getDepthLevel()) {
-    				// this is the specialty we are looking for
-    				if (spec.getNumberChildren() > 0) {
-    					// procedure level
-    					for (Node proc : spec.getChildren()) {
-    						procId = new Integer(proc.getDepthLevel());
-    						if (proceduresToExclude.contains(procId)) continue;
-    						
-    						/* Add procedure to 'allowed' filter and check products. */
-    						procFilters.add(procId);
-    						if (proc.getNumberChildren() > 0) {
-    							for (Node prod : proc.getChildren()) {
-    								prodId = new Integer(prod.getDepthLevel());
-    								// if product is in exclude list, don't add it to filter list.
-    								if (productsToExclude.contains(prodId)) continue;
-    								prodFilters.add(prodId);
-    								if (! procFilterParents.contains(procId)) {
-    									procFilterParents.add(procId);
-    								}
-    							}
-    						}
-    					}
-    				}
-    			}
-    		}
+    private boolean compareFilters(boolean hasFilterVals) {
+    	if (! hasFilterVals) return true;
+    	int procMatch = 0;
+    	int prodMatch = 0;
+    	int procPossible = 0;
+    	int prodPossible = 0;
+    	for (Node spec : hierarchy) {
+    		if (specFilters.contains(spec.getDepthLevel())) {
+    			procPossible += spec.getNumberChildren();
+   				// loop procedures
+   				for (Node proc : spec.getChildren()) {
+   					prodPossible += proc.getNumberChildren();
+					if (procFilters.contains(proc.getDepthLevel())) {
+						procMatch++;
+						// loop products
+						for (Node prod : proc.getChildren()) {
+							if (prodFilters.contains(prod.getDepthLevel())) prodMatch++;
+						}
+					}
+   				}
+   			}
     	}
+
+    	if (procMatch >= procPossible && 
+    			prodMatch >= prodPossible) 	return true;
+    	return false;
     }
     
     /**
-     * Business logic that builds a list of surgeons (key: surgeon ID) who should be 
-     * filtered out of the displayed list of surgeons.
+     * Core business logic that determines which surgeons are displayed and which
+     * are not displayed.  This method builds a list of surgeons (key is surgeon ID) 
+     * who should not be displayed given the search/filter parameters.
      */
-    private void buildFilteredSurgeonsList(boolean hasFilterVals) {
+    private void buildFilteredSurgeonsList(boolean useAllFilters) {
     	filteredSurgeonList.clear();
-    	double radiusAsDouble = (double) (radius);
     	int displayCount = 0;
-    	boolean includeExtendedResults = false;
+    	useExtendedResults = false;
     	/* Perform filtering if necessary */
-		if (isProcFilters() || isProdFilters()) {
+		if (! useAllFilters && (hasProcFilters() || hasProdFilters())) {
 			boolean displaySurgeon = false;
 			int procMatchCount = 0;
 			for (SurgeonBean surgeon : results) {
 				List<Integer> surgeonFilterIds = null;
+				
 				/* Process procedure filters if necessary */
-				if (isProcFilters()) {
+				if (hasProcFilters()) {
 					/* loop procedure filter list, count procedures surgeon matches. */
 					surgeonFilterIds = surgeon.getProcedures();
 					for (Integer procFilterId : procFilters) {
 						if (surgeonFilterIds.contains(procFilterId)) {
-							if (! isProdFilters()) {
+							if (! hasProdFilters()) {
 								displaySurgeon = true;
 								break;
 							} else {
-								// count the number of procedure filter matches.
+								/* Count procedure filter matches for this surgeon. */
 								procMatchCount++;
 							}
 						}
@@ -370,7 +405,7 @@ public class ResultsContainer implements Serializable {
 				}
 				
 				/* Process product filters if necessary */
-				if (isProdFilters()) {
+				if (hasProdFilters()) {
 					// 1. Check product filters for match
 					surgeonFilterIds = surgeon.getProducts();
 					for (Integer prodFilter : prodFilters) {
@@ -386,7 +421,7 @@ public class ResultsContainer implements Serializable {
 						 * to compare the procedure match(es) with the product filter
 						 * constraints in order to determine whether or not to display 
 						 * this surgeon. */
-						if (isProcFilters() && procMatchCount > 0) {
+						if (hasProcFilters() && procMatchCount > 0) {
 							
 							if (procFilterParents.isEmpty()) {
 								/* Means none of the product filters are hierarchically-related
@@ -423,15 +458,15 @@ public class ResultsContainer implements Serializable {
 				
 				/* Compare surgeon distance to radius in order to determine whether
 				 * or not to display. */
-				if (surgeon.getPrimaryDistance() > radiusAsDouble) {
+				if (surgeon.getPrimaryDistance() > radius) {
 					/* If we reached the search radius but found no results, set flag
 					 * so that we maximize the possibility of returning at least 1 result. */
 					if (displayCount == 0) {
-						includeExtendedResults = true;
+						useExtendedResults = true;
 					} else {
 						/* Override display flag if appropriate to exclude results that fall
 						 * beyond the search radius. */
-						if (! includeExtendedResults) displaySurgeon = false;
+						if (! useExtendedResults) displaySurgeon = false;
 					}
 				}
 				
@@ -446,37 +481,33 @@ public class ResultsContainer implements Serializable {
 				procMatchCount = 0;
 			}
 			
-			// Set display count.  We only count surgeons who DO NOT MATCH a filter.
-			displayTotalNo = results.size() - filteredSurgeonList.size();
-			
 		} else {
-			/* If 'exclude' filters were specified that resulted in all procedures and 
-			 * products being excluded, then all physicians are excluded. */
-			if (hasFilterVals) {
-				for (SurgeonBean surgeon : results) {
-					filteredSurgeonList.add(surgeon.getSurgeonId());
-				}
-				displayTotalNo = results.size() - filteredSurgeonList.size();
-			} else {
-				// no filters, loop surgeons displaying only those within search radius
-				for (SurgeonBean surgeon : results) {
-					
-					if (surgeon.getPrimaryDistance() > radiusAsDouble) {
-						if (displayCount > 0) {
-							/* If display count > 0, that means we found surgeons w/in
-							 * the search radius so we exclude this surgeon from display. */
-							filteredSurgeonList.add(surgeon.getSurgeonId());
-						}
-					} else {
-						// surgeon is within search radius, add to count.
-						displayCount++;
+			// no filters, loop surgeons displaying only those within search radius
+			for (SurgeonBean surgeon : results) {
+				
+				if (surgeon.getPrimaryDistance() > radius) {
+					// this surgeon is outside the search radius.
+					if (displayCount == 0) {
+						/* we haven't found anyone yet, enable extended results. */
+						useExtendedResults = true;
 					}
+					
+					if (useExtendedResults) {
+						// we are including extended results, so display this surgeon.
+						displayCount++;
+					} else {
+						/* we are excluding extended results, so exclude this surgeon. */
+						filteredSurgeonList.add(surgeon.getSurgeonId());
+					}
+				} else {
+					// surgeon is within search radius, display this surgeon.
+					displayCount++;
 				}
-				displayTotalNo = results.size() - filteredSurgeonList.size();
 			}
+
 		}
 		
-		// now calculate display values (start,end, page nav, etc.)
+		// calculate display values (start,end, page nav, etc.)
 		calculateDisplayValues();		
     }
     
@@ -485,8 +516,14 @@ public class ResultsContainer implements Serializable {
      * current page number, etc.
      */
     private void calculateDisplayValues() {
+		// calculate display count.  We only count surgeons who DO NOT MATCH a filter.
+		displayTotalNo = results.size() - filteredSurgeonList.size();
+		
+		// ensure certain default vals
+		if (resultsPerPage < 1) resultsPerPage = 3;
+		if (currentPageNo < 1) currentPageNo = 1;
+		
 		// calculate nav vals
-		if (resultsPerPage < 1) resultsPerPage = 1;
 		if (displayTotalNo < resultsPerPage) {
 			lastPageNo = 1;
 		} else {
@@ -496,8 +533,6 @@ public class ResultsContainer implements Serializable {
 			}
 		}
 		// calc page number
-		//currentPageNo = Integer.parseInt(request.getParameter("page"));
-		if (currentPageNo < 1) currentPageNo = 1;
 		if (currentPageNo > lastPageNo) currentPageNo = lastPageNo;
 
 		// calc result start value
@@ -516,30 +551,21 @@ public class ResultsContainer implements Serializable {
 	public int getNumResults() {
 		return numResults;
 	}
-	/**
-	 * @param numResults the numResults to set
-	 */
-	public void setNumResults(int numResults) {
-		this.numResults = numResults;
-	}
+
 	/**
 	 * @return the pageSize
 	 */
 	public int getPageSize() {
 		return pageSize;
 	}
-	/**
-	 * @param pageSize the pageSize to set
-	 */
-	public void setPageSize(int pageSize) {
-		this.pageSize = pageSize;
-	}
+		
 	/**
 	 * @return the message
 	 */
 	public String getMessage() {
 		return message;
 	}
+	
 	/**
 	 * @param message the message to set
 	 */
@@ -553,6 +579,7 @@ public class ResultsContainer implements Serializable {
 	public String getResultCode() {
 		return resultCode;
 	}
+	
 	/**
 	 * @param resultCode the resultCode to set
 	 */
@@ -638,8 +665,7 @@ public class ResultsContainer implements Serializable {
 	}
 	
 	/**
-	 * 
-	 * @param currentPageNo
+	 * @param currentPageNo the currentPageNo to set
 	 */
 	public void setCurrentPageNo(int currentPageNo) {
 		this.currentPageNo = currentPageNo;
@@ -653,24 +679,10 @@ public class ResultsContainer implements Serializable {
 	}
 
 	/**
-	 * @param startVal the startVal to set
-	 */
-	public void setStartVal(int startVal) {
-		this.startVal = startVal;
-	}
-
-	/**
 	 * @return the endVal
 	 */
 	public int getEndVal() {
 		return endVal;
-	}
-
-	/**
-	 * @param endVal the endVal to set
-	 */
-	public void setEndVal(int endVal) {
-		this.endVal = endVal;
 	}
 
 	/**
@@ -683,8 +695,19 @@ public class ResultsContainer implements Serializable {
 	/**
 	 * @param resultsPerPage the resultsPerPage to set
 	 */
-	public void setResultsPerPage(int resultsPerPage) {
-		this.resultsPerPage = resultsPerPage;
+	private void setResultsPerPage(JsonElement resultsPerPage) {
+		if (resultsPerPage != null) {
+			this.resultsPerPage = resultsPerPage.getAsInt();
+		}
+	}
+
+	/**
+	 * @param numResults the numResults to set
+	 */
+	private void setNumResults(JsonElement numResults) {
+		if (numResults != null) {
+			this.numResults = numResults.getAsInt();
+		} 
 	}
 
 	/**
@@ -695,54 +718,12 @@ public class ResultsContainer implements Serializable {
 	}
 
 	/**
-	 * @param lastPageNo the lastPageNo to set
-	 */
-	public void setLastPageNo(int lastPageNo) {
-		this.lastPageNo = lastPageNo;
-	}
-
-	/**
 	 * @return the displayTotalNo
 	 */
 	public int getDisplayTotalNo() {
 		return displayTotalNo;
 	}
-
-	/**
-	 * @param displayTotalNo the displayTotalNo to set
-	 */
-	public void setDisplayTotalNo(int displayTotalNo) {
-		this.displayTotalNo = displayTotalNo;
-	}
 	
-	/**
-	 * @return the specFilters
-	 */
-	public List<Integer> getSpecFilters() {
-		return specFilters;
-	}
-
-	/**
-	 * @param specFilters the specFilters to set
-	 */
-	public void setSpecFilters(List<Integer> specFilters) {
-		this.specFilters = specFilters;
-	}
-
-	/**
-	 * @return the procFilters
-	 */
-	public List<Integer> getProcFilters() {
-		return procFilters;
-	}
-
-	/**
-	 * @param procFilters the procFilters to set
-	 */
-	public void setProcFilters(List<Integer> procFilters) {
-		this.procFilters = procFilters;
-	}
-
 	/**
 	 * @return the prodFilters
 	 */
@@ -757,12 +738,12 @@ public class ResultsContainer implements Serializable {
 		this.prodFilters = prodFilters;
 	}
 
-	private boolean isProcFilters() {
+	private boolean hasProcFilters() {
 		if (procFilters == null || procFilters.isEmpty()) return false;
 		return true;
 	}
 	
-	private boolean isProdFilters() {
+	private boolean hasProdFilters() {
 		if (prodFilters == null || prodFilters.isEmpty()) return false;
 		return true;
 	}
@@ -806,22 +787,39 @@ public class ResultsContainer implements Serializable {
 	/**
 	 * @param isExtendedSearch the isExtendedSearch to set
 	 */
-	public void setExtendedSearch(boolean isExtendedSearch) {
-		this.isExtendedSearch = isExtendedSearch;
+	public void setExtendedSearch(JsonElement isExtendedSearch) {
+		if (isExtendedSearch != null) {
+			this.isExtendedSearch = isExtendedSearch.getAsBoolean();
+		}
 	}
 
 	/**
-	 * @return the radius
+	 * @return the useExtendedResults
 	 */
-	public int getRadius() {
-		return radius;
+	public boolean isUseExtendedResults() {
+		return useExtendedResults;
 	}
 
 	/**
 	 * @param radius the radius to set
 	 */
-	public void setRadius(int radius) {
-		this.radius = radius;
+	private void setRadius(JsonElement radius) {
+		if (radius != null) {
+			this.radius = radius.getAsInt();
+		} else {
+			this.radius = this.RADIUS_SEARCH_DEFAULT;
+		}
+	}
+
+	/**
+	 * @param extendedRadius the extendedRadius to set
+	 */
+	private void setExtendedRadius(JsonElement extendedRadius) {
+		if (extendedRadius != null) {
+			this.extendedRadius = extendedRadius.getAsInt();
+		} else { 
+			this.extendedRadius = RADIUS_EXTENDED_SEARCH_DEFAULT;
+		}
 	}
 
 }
