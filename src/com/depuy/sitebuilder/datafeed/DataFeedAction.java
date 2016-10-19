@@ -127,24 +127,37 @@ public class DataFeedAction extends AbstractActionController {
 		log.debug("Allow Comm: " + req.getParameter("allowCommunication") + "|" + customer.getOptStatus());
 		ChannelVO channel = new ChannelVO();
 		channel.setBrcCode(req.getParameter("brcCode"));
-		if (StringUtil.checkVal(req.getParameter("brcSignatureDate")).length() > 0) {
+		if (!StringUtil.checkVal(req.getParameter("brcSignatureDate")).isEmpty()) {
 			channel.setBrcSignatureDate(Convert.formatDate(req.getParameter("brcSignatureDate")));
 			channel.setBrcSignature(Boolean.TRUE);
 		}
 		customer.setChannel(channel);
 		
 		// Add the question responses
-		List<ResponseVO> responses = new ArrayList<ResponseVO>();
+		List<ResponseVO> responses = new ArrayList<>();
 		String[] codes = req.getParameterValues("questionCode");
 		String[] values = req.getParameterValues("responseText");
-		for (int i=0; i < codes.length; i++) {
-			String key = codes[i];
-			String value = values[i];
-			if (StringUtil.checkVal(key).length() > 0) {
-				ResponseVO response = new ResponseVO();
-				response.setQuestionId(key);
-				response.setResponseText(value);
-				responses.add(response);
+		if (req.hasParameter("usePairings")) {
+			for (Map.Entry<String, String[]> entry : req.getParameterMap().entrySet()) {
+				if (!entry.getKey().startsWith("resp_")) continue;
+				for (String val : entry.getValue()) {
+					ResponseVO response = new ResponseVO();
+					response.setQuestionId(entry.getKey().substring(5)); //take off the resp_ prefix
+					response.setResponseText(val);
+					responses.add(response);
+				}
+			}
+			
+		} else {
+			for (int i=0; i < codes.length; i++) {
+				String key = codes[i];
+				String value = values[i];
+				if (!StringUtil.checkVal(key).isEmpty()) {
+					ResponseVO response = new ResponseVO();
+					response.setQuestionId(key);
+					response.setResponseText(value);
+					responses.add(response);
+				}
 			}
 		}
 		
@@ -152,11 +165,10 @@ public class DataFeedAction extends AbstractActionController {
 		log.debug("Customer Data: " + customer);
 		
 		// Add the customer data to the db
-		String encryptKey = (String)this.getAttribute(Constants.ENCRYPT_KEY);
-		String geoUrl = (String)this.getAttribute("geocoderUrl");
-		String dbSchema = (String) this.getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		log.debug("CDP Call Data: " + encryptKey + "|" + geoUrl);
-		CustomerDataParser cdp = new CustomerDataParser(dbConn, encryptKey, "DATA_FEED.dbo", geoUrl);
+		String dbSchema = StringUtil.checkVal(getAttribute(Constants.DATA_FEED_SCHEMA));
+		if (dbSchema.endsWith(".")) dbSchema = dbSchema.substring(0, dbSchema.length()-1);
+		log.debug("CDP Call Data2: " + dbSchema);
+		CustomerDataParser cdp = new CustomerDataParser(dbConn, getAttributes());
 		try {
 			DataSourceVO source = new DataSourceVO();
 			source.setSourceId(1);
@@ -180,7 +192,6 @@ public class DataFeedAction extends AbstractActionController {
 	 */
 	@Override
 	public Map<String, Object> getAttributes() {
-		return null;
+		return attributes;
 	}
-
 }
