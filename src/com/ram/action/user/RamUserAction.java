@@ -27,6 +27,7 @@ import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.UUIDGenerator;
 
 // WebCrescendo 2.0
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -53,6 +54,7 @@ import com.smt.sitebuilder.security.SBUserRole;
  ****************************************************************************/
 public class RamUserAction extends SBActionAdapter {
 
+	public static final int ROLE_LEVEL_OR_MODULE = 10;
 	public static final int ROLE_LEVEL_AUDITOR = 15;
 	public static final int ROLE_LEVEL_OEM = 20;
 	public static final int ROLE_LEVEL_PROVIDER = 25;
@@ -199,6 +201,8 @@ public class RamUserAction extends SBActionAdapter {
 			int origRoleLevel = Convert.formatInteger(req.getParameter("origRoleLevel"), -1);
 			if (origRoleLevel == ROLE_LEVEL_AUDITOR || userRole.getRoleLevel() == ROLE_LEVEL_AUDITOR) {
 				manageAuditor(req, site, user, userRole, origRoleLevel);
+			} else if (origRoleLevel == ROLE_LEVEL_OR_MODULE) {
+				manageAssociatedHospitals(req, user.getProfileId());
 			}
 		} else {
 			// if non-admin and has changed email address, check auth record.
@@ -230,6 +234,56 @@ public class RamUserAction extends SBActionAdapter {
 			req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
 			req.setAttribute(Constants.REDIRECT_URL, url.toString());
 		}
+	}
+
+	
+	/**
+	 * Add the hospitals the user is associated with.
+	 */
+	private void manageAssociatedHospitals(SMTServletRequest req,
+			String profileId) {
+		
+		StringBuilder sql = new StringBuilder(200);
+		sql.append("INSERT INTO ").append(getAttribute("customDbSchema")).append("RAM_CUSTOMER_PROFILE_XR ");
+		sql.append("(CUSTOMER_PROFILE_XR_ID, PROFILE_ID, CUSTOMER_ID, CREATE_DT) ");
+		sql.append("VALUES(?,?,?,?)");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			// Delete the current hospitals associated with this user.
+			deleteCurrentHospitals(profileId);
+			String hospitals = StringUtil.checkVal(req.getParameter("associatedHospitals"));
+			for (String hospital : hospitals.split("\\|")) {
+				ps.setString(1, new UUIDGenerator().getUUID());
+				ps.setString(2, profileId);
+				ps.setString(3, hospital);
+				ps.setTimestamp(4, Convert.getCurrentTimestamp());
+				ps.addBatch();
+			}
+
+			ps.executeBatch();
+		} catch (SQLException e) {
+			log.error("Unable to add hospitals for user " + profileId, e);
+		}
+	}
+	
+	
+	/**
+	 * Delete any hospital associations this user has at the moment in order
+	 * to make way for the new list of 
+	 * @param profileId
+	 * @throws SQLException
+	 */
+	private void deleteCurrentHospitals(String profileId) throws SQLException {
+		StringBuilder sql = new StringBuilder(100);
+		sql.append("DELETE ").append(getAttribute("customDbSchema")).append("RAM_CUSTOMER_PROFILE_XR ");
+		sql.append("WHERE PROFILE_ID = ?");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, profileId);
+			
+			ps.executeUpdate();
+		}
+		
 	}
 
 	/**
