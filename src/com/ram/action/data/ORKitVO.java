@@ -53,7 +53,7 @@ public class ORKitVO {
 		otherId = StringUtil.checkVal(db.getStringVal("OTHER_ID", rs));
 		repId = StringUtil.checkVal(db.getStringVal("REP_ID", rs));
 		if (db.getDateVal("SURGERY_DT", rs) != null)
-			surgeryDt = new SimpleDateFormat("MM-dd-yyyy").format(db.getDateVal("SURGERY_DT", rs));
+			surgeryDt = new SimpleDateFormat("MM-dd-yyyy hh:mm a").format(db.getDateVal("SURGERY_DT", rs));
 		setNumProducts(db.getIntVal("NUM_PRODUCTS", rs));
 		finalizedFlg = db.getIntVal("FINALIZED_FLG", rs);
 		
