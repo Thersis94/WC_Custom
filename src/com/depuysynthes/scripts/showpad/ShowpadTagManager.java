@@ -102,7 +102,7 @@ public class ShowpadTagManager {
 	 */
 	public void addTags(MediaBinDeltaVO vo, StringBuilder header) throws QuotaException, InvalidDataException {
 		Map<String,ShowpadTagVO> assignedTags = null;
-		if (vo.getShowpadId() != null) assignedTags = loadAssetTags(vo.getShowpadId(), null);
+		if (vo.getShowpadId() != null) assignedTags = loadAssetTags(vo.getShowpadId(), null, true); //suppress404 because the asset may be new
 		Set<String> desiredTags = new HashSet<>();
 		desiredTags.add("mediabin"); //a static tag for all assets, identifies their source
 
@@ -144,7 +144,7 @@ public class ShowpadTagManager {
 	 * @throws QuotaException 
 	 * @throws InvalidDataException 
 	 */
-	private Map<String, ShowpadTagVO> loadAssetTags(String showpadId, String externalId) 
+	private Map<String, ShowpadTagVO> loadAssetTags(String showpadId, String externalId, boolean suppress404) 
 			throws QuotaException, InvalidDataException {
 		Map<String,ShowpadTagVO> tags = new HashMap<>();
 		String tagUrl = showpadApiUrl + "/assets/" + showpadId + "/tags.json?suppress_response_codes=true&fields=id,name,externalId";
@@ -165,11 +165,8 @@ public class ShowpadTagManager {
 			}
 
 		} catch (IOException | NullPointerException ioe) {
-			if ("Not Found".equals(ioe.getMessage()))
+			if (!suppress404 && "Not Found".equals(ioe.getMessage()))
 				throw new InvalidDataException("Asset not found in Showpad", ioe);
-			
-			failures.add(ioe);
-			log.error("could not load showpad tags", ioe);
 		}
 
 		log.info("loaded " + tags.size() + " showpad tags: " + tags);
@@ -226,7 +223,7 @@ public class ShowpadTagManager {
 		if (showpadId == null || showpadId.isEmpty()) 
 			throw new InvalidDataException("Asset not in Showpad" + mbAsset.getDpySynMediaBinId());
 
-		Map<String, ShowpadTagVO> assignedTags = loadAssetTags(showpadId, null);
+		Map<String, ShowpadTagVO> assignedTags = loadAssetTags(showpadId, null, false); //do not suppress404, asset should exist at this point
 		Map<String, ShowpadTagVO> tagsToAdd = new HashMap<>();
 
 		//put all the tags we want on the 'add' list, then we'll remove the ones that already exist
