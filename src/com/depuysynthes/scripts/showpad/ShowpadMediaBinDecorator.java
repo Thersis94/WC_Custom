@@ -57,7 +57,8 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 				put(Config.KEYSTORE, "showpad");
 			}}, Arrays.asList(props.getProperty("showpadScopes").split(","))));
 
-		deduplicate = Convert.formatBoolean(args[1]); //args[0] passes 'type' to the superclass, so we'll use args[1] here
+		if (args.length > 1)
+			deduplicate = Convert.formatBoolean(args[1]); //args[0] passes 'type' to the superclass, so we'll use args[1] here
 	}
 
 
