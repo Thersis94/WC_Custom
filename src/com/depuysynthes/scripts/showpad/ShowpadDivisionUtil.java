@@ -152,7 +152,7 @@ public class ShowpadDivisionUtil {
 			tagMgr.addTags(vo, header);
 		} catch (InvalidDataException e1) {
 			failures.add(e1);
-			log.error("asset not found on Showpad", e1);
+			log.warn("asset not found on Showpad: " + vo.getDpySynMediaBinId());
 		}
 
 		log.info("uploading file: " + props.get("downloadDir") + vo.getFileName());
