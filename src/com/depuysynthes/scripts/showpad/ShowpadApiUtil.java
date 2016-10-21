@@ -37,7 +37,7 @@ public class ShowpadApiUtil {
 	private final int WRITE_TIMEOUT = 120000; //2 minutes
 
 	private static int requestCount = 0;
-	private static final int API_LIMIT = 49900; //stay below the 15k ceiling
+	private static final int API_LIMIT = 49900; //stay below the 50k ceiling
 
 	/**
 	 * This class requires an OAUTH token in order to function
@@ -67,7 +67,10 @@ public class ShowpadApiUtil {
 		checkRequestCount();
 		Credential credential = new Credential(BearerToken.authorizationHeaderAccessMethod()).setAccessToken(oauthUtil.getToken().getAccessToken());
 		HttpRequestFactory requestFactory = OAuth2Token.transport.createRequestFactory(credential);
-		return requestFactory.buildGetRequest(url).setReadTimeout(READ_TIMEOUT).execute();
+		
+		HttpResponse resp = requestFactory.buildGetRequest(url).setReadTimeout(READ_TIMEOUT).execute();
+		if ("429".equals(resp.getStatusCode())) throw new QuotaException("rate limit exceeded");
+		return resp;
 	}
 
 
@@ -82,9 +85,11 @@ public class ShowpadApiUtil {
 		checkRequestCount();
 		Credential credential = new Credential(BearerToken.authorizationHeaderAccessMethod()).setAccessToken(oauthUtil.getToken().getAccessToken());
 		HttpRequestFactory requestFactory = OAuth2Token.transport.createRequestFactory(credential);
-
 		HttpContent content = new UrlEncodedContent(params);
-		return requestFactory.buildPostRequest(new GenericUrl(url), content).setReadTimeout(WRITE_TIMEOUT).execute().parseAsString();
+		
+		HttpResponse resp = requestFactory.buildPostRequest(new GenericUrl(url), content).setReadTimeout(WRITE_TIMEOUT).execute();
+		if ("429".equals(resp.getStatusCode())) throw new QuotaException("rate limit exceeded");
+		return resp.parseAsString();
 	}
 
 
@@ -125,7 +130,9 @@ public class ShowpadApiUtil {
 		if (linkHeader != null && linkHeader.length() > 0)
 			linkHeaders.set("Link", linkHeader);
 
-		return  requestFactory.buildPostRequest(gUrl, content).setReadTimeout(WRITE_TIMEOUT).setHeaders(linkHeaders).execute().parseAsString();
+		HttpResponse resp = requestFactory.buildPostRequest(gUrl, content).setReadTimeout(WRITE_TIMEOUT).setHeaders(linkHeaders).execute();
+		if ("429".equals(resp.getStatusCode())) throw new QuotaException("rate limit exceeded");
+		return resp.parseAsString();
 	}
 
 
@@ -150,7 +157,10 @@ public class ShowpadApiUtil {
 		checkRequestCount();
 		Credential credential = new Credential(BearerToken.authorizationHeaderAccessMethod()).setAccessToken(oauthUtil.getToken().getAccessToken());
 		HttpRequestFactory requestFactory = OAuth2Token.transport.createRequestFactory(credential);
-		return requestFactory.buildDeleteRequest(url).setReadTimeout(WRITE_TIMEOUT).execute();
+		
+		HttpResponse resp = requestFactory.buildDeleteRequest(url).setReadTimeout(WRITE_TIMEOUT).execute();
+		if ("429".equals(resp.getStatusCode())) throw new QuotaException("rate limit exceeded");
+		return resp;
 	}
 	
 	
