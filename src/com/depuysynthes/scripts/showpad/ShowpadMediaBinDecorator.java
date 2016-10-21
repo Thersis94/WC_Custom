@@ -56,13 +56,14 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 				put(Config.AUTH_SERVER_URL,  props.getProperty("showpadAuthUrl"));
 				put(Config.KEYSTORE, "showpad");
 			}}, Arrays.asList(props.getProperty("showpadScopes").split(","))));
+
+		deduplicate = Convert.formatBoolean(args[1]); //args[0] passes 'type' to the superclass, so we'll use args[1] here
 	}
 
 
 	public static void main(String[] args) throws Exception {
 		//Create an instance of the MedianBinImporter
 		ShowpadMediaBinDecorator dmb = new ShowpadMediaBinDecorator(args);
-		dmb.deduplicate = Convert.formatBoolean(args[1]); //args[0] passes 'type' to the superclass
 		dmb.run();
 	}
 
