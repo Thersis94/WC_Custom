@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.depuysynthes.action.EMEACarouselAction;
 import com.depuysynthes.huddle.HuddleUtils;
@@ -71,6 +73,19 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	 */
 	protected static final String MEDIABIN_ATTR_TYPE = HuddleUtils.PROD_ATTR_MB_TYPE;
 
+	/*
+	 * The constant used for the HTML product attribute type - comes from the database
+	 */
+	protected static final String HTML_ATTR_TYPE = HuddleUtils.PROD_ATTR_HTML_TYPE;
+
+	
+	/*
+	 * Regex used when parsing static HTML to find links to Mediabin assets
+	 * Reads: /json URL, amid=MEDIA_BIN_AJAX is present BEFORE mbid
+	 * 	grab mbid value up to the next & or ' or " (single or double quote presumed to end the href attribute, & to begin the next request param)
+	 * max-length of value at 32 chars, which is the pkId limit in the database 
+	 */
+	protected static final String MB_AJAX_HREF = "/json\\?([^'\"]+)?amid=MEDIA_BIN_AJAX([^'\"]+)?&(amp;)?mbid=([^&\\s]{1,32})";
 
 	/**
 	 * @param args
@@ -109,7 +124,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 
 		parseProductCatalog(t);
 		log.info("loaded " + products.size() + " mediabin-using products in catalog " + catalogId);
-
+		
 		return super.loadManifest();
 	}
 
@@ -118,7 +133,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	public void saveRecords(Map<String, MediaBinDeltaVO> masterRecords, boolean isInsert) {
 		super.saveRecords(masterRecords, isInsert);
 
-		//the below logic will process both inserts & updates at once.  
+		//this method gets called for both inserts & updates (superclass reusability!).
 		//Block here for updates so we don't process the records twice.
 		//Insert runs after deletes & updates, so wait for the 'inserts' invocation so 
 		//all the mediabin records are already in our database.
@@ -152,7 +167,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 
 			List<String> assetIds = new ArrayList<>();
 			for (ProductAttributeVO attrVo : mbAttribs) {
-				switch (attrVo.getTitle()) {
+				switch (StringUtil.checkVal(attrVo.getTitle())) {
 					case "mediabin-static":
 						assetIds.addAll(convertFromJson(attrVo.getValueText()));
 						break;
@@ -160,8 +175,8 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 						assetIds.addAll(findAssetsForSous(masterRecords, prod.getFullProductName()));
 						break;
 					default:
-						//static HTML, do nothing.
-						//If EMEA wanted us to parse the static HTML for nested assets, that hook would go here.
+						//static HTML, use a regex to parse the HTML for mediabin links
+						assetIds.addAll(findAssetsInHtml(attrVo.getValueText()));
 				}
 			}
 			//At this point we know all the mediabin assets that require the hierachy of 'this' product.
@@ -197,8 +212,10 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 				continue;
 
 			//attach the hierarchy values as tags to this asset
-			for (String tag : hierarchy)
+			for (String tag : hierarchy) {
 				mbAsset.addTag(null, tag, null, ShowpadTagManager.SMT_PRODUCT_EXTERNALID);
+				log.debug("added tag " + tag + " from a product to mbAsset " + mbAsset.getDpySynMediaBinId());
+			}
 
 			//pass-down the product's last update date, so when we push to 
 			//Showpad we know which assets need updated (because of updates at the product level).
@@ -281,7 +298,13 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	 * @param t
 	 */
 	private void parseProductCatalog(Tree t) {
-		parseNode(t.getRootNode());
+		//find the "Body Region" node, and start the parsing from there.  Only these descendants get pushed to Showpad
+		for (Node n : t.getRootNode().getChildren()) {
+			if ("Body Region".equals(n.getNodeName())) {
+				parseNode(n);
+				break;
+			}
+		}
 	}
 
 
@@ -302,7 +325,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 			String path = StringUtil.checkVal(thisNode.getFullPath());
 			if (!path.isEmpty()) path += DSMediaBinImporterV2.TOKENIZER;
 			path += nextNode.getNodeName();
-			log.debug("path=" + path);
+			//log.debug("path=" + path);
 			nextNode.setFullPath(path);
 
 			parseNode(nextNode);
@@ -340,9 +363,13 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 		ProductAttributeContainer pac = prod.getAttributes();
 		for (Node n : pac.getAllAttributes()) {
 			attrVo = (ProductAttributeVO) n.getUserObject();
-			if (attrVo.getProductAttributeId() == null || ! MEDIABIN_ATTR_TYPE.equals(attrVo.getAttributeType())) 
-				continue; //not what we're looking for, or not actually bound to this product (in _XR table).
-
+			if (attrVo.getProductAttributeId() == null) 
+				continue; //not actually bound to this product (in _XR table).
+			
+			//make sure it's one of our special attributes, or HTML we can parse for mediabin assets
+			if (!MEDIABIN_ATTR_TYPE.equals(attrVo.getAttributeType()) && !HTML_ATTR_TYPE.equals(attrVo.getAttributeType()))
+				continue;
+			
 			data.add(attrVo);
 
 			//found one, exit the loop b/c we have what we need.
@@ -416,6 +443,25 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 		}
 		return data;
 	}
+	
+	
+	/**
+	 * finds assets in HTML using a regex and returns them in a List<String>
+	 * @param masterRecords
+	 * @param prodSousName
+	 * @return
+	 */
+	private List<String> findAssetsInHtml(String html) {
+		List<String> data = new ArrayList<>();
+
+		Matcher m = Pattern.compile(MB_AJAX_HREF).matcher(html);
+		while (m.find()) {
+			data.add(m.group(4));
+			log.debug("found embedded link to asset " + m.group(4));
+		}
+			 
+		return data;
+	}
 
 
 	/**
@@ -468,8 +514,9 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 		//remove dots and dashes that commonly appear in number sequences.  e.g. "319.010"
 		sousVal = StringUtil.removeNonAlphaNumeric(sousVal);
 		//if all we have is numbers, this is not a qualified sous value
-		log.debug("sous " + sousVal + " matches? " + sousVal.matches("[0-9]+"));
-		return !sousVal.matches("[0-9]+");
+		boolean matches = sousVal.matches("[0-9]+");
+		log.debug("report unused sous name " + sousVal + " in email? " + matches);
+		return matches;
 	}
 	
 
