@@ -1233,9 +1233,9 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			}
 			if (State.Update == st) {
 				msg.append("<td>");
-				if (vo.getDeltas() != null) {
+				if (vo.deltaList() != null) {
 					if (vo.getErrorReason() != null) msg.append("<font color=\"red\">").append(vo.getErrorReason()).append("</font><br/>");
-					for (PropertyChangeEvent e : vo.getDeltas()) {
+					for (PropertyChangeEvent e : vo.deltaList()) {
 						msg.append(e.getPropertyName()).append("<br/>");
 						//msg.append("old=").append(e.getOldValue()).append("<br/>");
 						//msg.append("new=").append(e.getNewValue()).append("<br/>");
