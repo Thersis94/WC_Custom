@@ -503,7 +503,7 @@ public class DemoEventAction extends SBActionAdapter {
 		s.setOrderShipmentId("DEMO_SHIPMENT");
 		s.setOrderId("DEMO_ORDER");
 		s.setShipmentStatus(OrderStatus.SUBMITTED);
-		s.setAsnNoTXt("123456789");
+		s.setAsnNoTxt("123456789");
 		s.setTrackingNoTxt("123456789");
 		s.setExpQtyNo(3);
 		s.setReceipts(buildReceipts(o.getLineItems()));
