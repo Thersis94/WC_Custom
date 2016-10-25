@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-
 import java.util.Map;
 
 // RAMDataFeed Libs
@@ -116,7 +115,8 @@ public class RamUserFacadeAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder();
 		sql.append("select a.*, b.FIRST_NM, b.LAST_NM, b.EMAIL_ADDRESS_TXT, ");
 		sql.append("c.ROLE_ORDER_NO, c.ROLE_NM, d.PHONE_NUMBER_TXT, ");
-		sql.append("e.CUSTOMER_ID, e.CUSTOMER_NM, f.AUDITOR_ID ");
+		sql.append("e.CUSTOMER_ID, e.CUSTOMER_NM, f.AUDITOR_ID, ");
+		sql.append("hc.CUSTOMER_NM as HOSPITAL_NM, hc.CUSTOMER_ID as HOSPITAL_ID ");
 		sql.append("from PROFILE_ROLE a ");
 		sql.append("inner join PROFILE b on a.PROFILE_ID = b.PROFILE_ID ");
 		sql.append("inner join ROLE c on a.ROLE_ID = c.ROLE_ID ");
@@ -125,7 +125,10 @@ public class RamUserFacadeAction extends SBActionAdapter {
 		sql.append("on a.ATTRIB_TXT_1 = e.CUSTOMER_ID ");
 		sql.append("left outer join ").append(ramSchema).append("RAM_AUDITOR f ");
 		sql.append("on a.PROFILE_ID = f.PROFILE_ID ");
-		sql.append("where SITE_ID = ? ");
+		sql.append("left outer join ").append(ramSchema).append("RAM_CUSTOMER_PROFILE_XR h ");
+		sql.append("on h.PROFILE_ID = a.PROFILE_ID ");
+		sql.append("left outer join ").append(ramSchema).append("RAM_CUSTOMER hc ");
+		sql.append("on hc.CUSTOMER_ID = h.CUSTOMER_ID where SITE_ID = ? ");
 		
 		int statusId = Convert.formatInteger(srchStatusId, -1, false);
 		//log.debug("srchStatusId | statusId: " + srchStatusId + " | " + statusId);
@@ -162,9 +165,23 @@ public class RamUserFacadeAction extends SBActionAdapter {
 			}
 			
 			ResultSet rs = ps.executeQuery();
+
+			String currentProfile = "";
+			RAMUserVO user = null;
 			while (rs.next()) {
-				data.add(new RAMUserVO(rs));
+				if (!currentProfile.equals(rs.getString("PROFILE_ID"))) {
+					if (user != null) data.add(user);
+					user = new RAMUserVO(rs);
+					currentProfile = rs.getString("PROFILE_ID");
+				}
+				
+				if (rs.getString("HOSPITAL_ID") != null) {
+					log.debug("Added " + rs.getString("HOSPITAL_NM") + " to " + rs.getString("PROFILE_ID"));
+					user.addHospital(rs.getString("HOSPITAL_ID"), rs.getString("HOSPITAL_NM"));
+				}
 			}
+			
+			if (user != null) data.add(user);
 			
 		} catch (SQLException sqle) {
 			log.error("Error performing customer search, ", sqle);
