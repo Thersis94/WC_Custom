@@ -99,7 +99,8 @@ public class ProductCartReport  extends AbstractSBReportVO {
 		
 		html.append("<table style='color:#636363;border-collapse:collapse;font-size:16px; width:100%;'><tbody>");
 		html.append("<tr><td style='width:48%'><img alt='RAM Healthcare' style='width:200px' src='/binary/themes/CUSTOM/RAMGRP/MAIN/images/ramgrouplogo.png' /><span style='float:right'>");
-		html.append(data.get(ProductCartAction.COMPLETE_DT)).append("</span></td><td colspan='2' style='text-align:right;'>");
+		if (data.get(ProductCartAction.COMPLETE_DT) != null) html.append(data.get(ProductCartAction.COMPLETE_DT));
+		html.append("</span></td><td colspan='2' style='text-align:right;'>");
 		html.append("</td></tr>");
 		html.append("<tr><td rowspan='8'>");
 		if (StringUtil.checkVal(data.get(NexusSolrCartAction.CASE_ID)).length() > 0)
