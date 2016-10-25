@@ -90,7 +90,8 @@ public class RamUserAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder();
 		sql.append("select a.*, b.FIRST_NM, b.LAST_NM, b.EMAIL_ADDRESS_TXT, ");
 		sql.append("c.ROLE_ORDER_NO, c.ROLE_NM, d.PHONE_NUMBER_TXT, ");
-		sql.append("e.CUSTOMER_ID, e.CUSTOMER_NM, f.AUDITOR_ID ");
+		sql.append("e.CUSTOMER_ID, e.CUSTOMER_NM, f.AUDITOR_ID, ");
+		sql.append("hc.CUSTOMER_NM as HOSPITAL_NM, hc.CUSTOMER_ID as HOSPITAL_ID ");
 		sql.append("from PROFILE_ROLE a ");
 		sql.append("inner join PROFILE b on a.PROFILE_ID = b.PROFILE_ID ");
 		sql.append("inner join ROLE c on a.ROLE_ID = c.ROLE_ID ");
@@ -98,7 +99,11 @@ public class RamUserAction extends SBActionAdapter {
 		sql.append("left outer join ").append(schema).append("RAM_CUSTOMER e ");
 		sql.append("on a.ATTRIB_TXT_1 = e.CUSTOMER_ID ");
 		sql.append("left outer join ").append(schema).append("RAM_AUDITOR f ");
-		sql.append("on a.PROFILE_ID = f.PROFILE_ID where 1 = 1 ");
+		sql.append("on a.PROFILE_ID = f.PROFILE_ID ");
+		sql.append("left outer join ").append(schema).append("RAM_CUSTOMER_PROFILE_XR h ");
+		sql.append("on h.PROFILE_ID = a.PROFILE_ID ");
+		sql.append("left outer join ").append(schema).append("RAM_CUSTOMER hc ");
+		sql.append("on hc.CUSTOMER_ID = h.CUSTOMER_ID where 1 = 1 ");
 
 		// filter by site ID
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
@@ -133,9 +138,27 @@ public class RamUserAction extends SBActionAdapter {
 			 * Since we sort on userName, we need to retrieve all records each 
 			 * time to properly paginate the results.
 			 */
+			String currentProfile = "";
+			RAMUserVO user = null;
 			while (rs.next()) {
+				if (!currentProfile.equals(rs.getString("PROFILE_ID"))) {
+					if (user != null) {
+						recCtr++;
+						data.add(user);
+					}
+					user = new RAMUserVO(rs);
+					currentProfile = rs.getString("PROFILE_ID");
+				}
+				
+				if (rs.getString("HOSPITAL_ID") != null) {
+					log.debug("Added " + rs.getString("HOSPITAL_NM") + " to " + rs.getString("PROFILE_ID"));
+					user.addHospital(rs.getString("HOSPITAL_ID"), rs.getString("HOSPITAL_NM"));
+				}
+			}
+			
+			if (user != null) {
 				recCtr++;
-				data.add(new RAMUserVO(rs));
+				data.add(user);
 			}
 
 		} catch (SQLException sqle) {
