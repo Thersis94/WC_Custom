@@ -214,7 +214,7 @@ public class VisionAction extends SBActionAdapter {
 		//Iterate the Shapes
 		for(ImageMapAreaVO s : map.getShapes()) {
 			//Obtain the related ProductId from the Shape.
-			int id = Convert.formatInteger(s.getId().substring(s.getId().indexOf('-')));
+			int id = Convert.formatInteger(s.getId().substring(s.getId().indexOf('-') + 1));
 
 			//Lookup the Product and set the Title based on ProductName.
 			s.setTitle(k.getProducts().get(id).getProductName());
