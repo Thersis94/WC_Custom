@@ -148,15 +148,9 @@ public class PostcardEmailer {
 			mail.addRecipient("jenn.davis@hmktgroup.com");
 			mail.addRecipient("kshull@ITS.JNJ.com");
 			mail.addCC("educationalseminars@dpyus.jnj.com");
-			if (postcard.getEarliestEventDate().after(Convert.formatDate(Convert.DATE_SLASH_PATTERN,"01/01/2016"))) {
-				mail.addCC("Francisco.Gonzalez@umj3.com");
-				mail.addCC("Evan.Pring@umj3.com");
-				mail.addCC("lisav@metrosn.com");
-			} else {
-				mail.addCC("lisa.maiers@novusmediainc.com");
-				mail.addCC("anna.schwanz@novusmediainc.com");
-				mail.addCC("taylor.larson@novusmediainc.com");
-			}
+			mail.addCC("Francisco.Gonzalez@umj3.com");
+			mail.addCC("Evan.Pring@umj3.com");
+			mail.addCC("lisav@metrosn.com");
 			mail.setSubject("DePuy Community Education; Postcard Canceled " + postcard.getRSVPCodes());
 			mail.setFrom(site.getMainEmail());
 			mail.setTextBody(msg.toString());
@@ -248,15 +242,9 @@ public class PostcardEmailer {
 			//Additional CC recipients
 			mail.addCC("kshull@ITS.JNJ.com");
 			mail.addCC("educationalseminars@dpyus.jnj.com");
-			if (sem.getEarliestEventDate().after(Convert.formatDate(Convert.DATE_SLASH_PATTERN,"01/01/2016"))) {
-				mail.addCC("Francisco.Gonzalez@umj3.com");
-				mail.addCC("Evan.Pring@umj3.com");
-				mail.addCC("lisav@metrosn.com");
-			} else {
-				mail.addCC("lisa.maiers@novusmediainc.com");
-				mail.addCC("anna.schwanz@novusmediainc.com");
-				mail.addCC("taylor.larson@novusmediainc.com");
-			}
+			mail.addCC("Francisco.Gonzalez@umj3.com");
+			mail.addCC("Evan.Pring@umj3.com");
+			mail.addCC("lisav@metrosn.com");
 			mail.addCC(site.getAdminEmail());
 			
 			mail.setSubject(subject.toString());
@@ -510,15 +498,9 @@ public class PostcardEmailer {
 			mail.addCC(site.getAdminEmail());
 			mail.addCC("kshull@ITS.JNJ.com");
 			mail.addCC("educationalseminars@dpyus.jnj.com");
-			if (sem.getEarliestEventDate().after(Convert.formatDate(Convert.DATE_SLASH_PATTERN,"01/01/2016"))) {
-				mail.addCC("Francisco.Gonzalez@umj3.com");
-				mail.addCC("Evan.Pring@umj3.com");
-				mail.addCC("lisav@metrosn.com");
-			} else {
-				mail.addCC("lisa.maiers@novusmediainc.com");
-				mail.addCC("anna.schwanz@novusmediainc.com");
-				mail.addCC("taylor.larson@novusmediainc.com");
-			}
+			mail.addCC("Francisco.Gonzalez@umj3.com");
+			mail.addCC("Evan.Pring@umj3.com");
+			mail.addCC("lisav@metrosn.com");
 			
 			for (PersonVO p : sem.getPeople()) {
 				if (! StringUtil.isValidEmail(p.getEmailAddress())) continue;
