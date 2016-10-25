@@ -458,6 +458,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 			sb.append("and b.VALUE_TXT like ? ");
 
 		//Add Ordering for newest first.
+		sb.append("and (a.robot_flg is null or a.robot_flg=0) ");
 		sb.append("order by a.CREATE_DT desc");
 		return sb.toString();
 	}

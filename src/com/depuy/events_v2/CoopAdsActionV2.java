@@ -231,7 +231,7 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 			case PENDING_AD_OPTIONS:
 				log.debug("sending ad options email");
 				// ask the Rep to review their ad options
-				emailer.notifyNovusUpload(sem, site);
+				emailer.notifyMetroUpload(sem, site);
 				emailer.reviewAdOptions(sem, site, vo);
 				break;
 
