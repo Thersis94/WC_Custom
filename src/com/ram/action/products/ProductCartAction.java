@@ -8,6 +8,7 @@ import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -66,7 +67,9 @@ public class ProductCartAction extends SBActionAdapter {
 	public static final String BILLABLE = "billable";
 	public static final String WASTED = "wasted";
 	public static final String SALES_SIGNATURE = "sales";
+	public static final String SALES_SIGNATURE_DT = "salesDt";
 	public static final String ADMIN_SIGNATURE = "admin";
+	public static final String ADMIN_SIGNATURE_DT = "adminDt";
 	public static final String OTHER_ID = "other";
 	public static final String PRODUCT_FROM = "productFrom";
 	public static final String REP_ID = "repId";
@@ -74,7 +77,9 @@ public class ProductCartAction extends SBActionAdapter {
 	public static final String COMPLETE_DT = "formComplete";
 	public static final String FINALIZED = "finalized";
 	public static final String LOT_NO = "lotNo";
+	public static final String PRODUCT_SOURCE = "productSource";
 	public static final String DATE_PATTERN = "MM-dd-yyyy -- hh:mm";
+	public static final String SIGN_DATE_PATTERN = "MM/dd/yyyy hh:mm";
 	
 	private enum SearchFields {
 		productName("PRODUCT_NM"),
@@ -133,6 +138,8 @@ public class ProductCartAction extends SBActionAdapter {
 			// be sent out to the the user and the hospital
 			saveCart(req, 1);
 			req.getSession().setAttribute(FINALIZED, true);
+			UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
+			req.setParameter("emails", user.getEmailAddress());
 			sendEmails(req);
 		}else if (Convert.formatBoolean(req.getParameter("sendEmails"))) {
 			populateCart(req);
@@ -163,6 +170,13 @@ public class ProductCartAction extends SBActionAdapter {
 			while((line = reader.readLine()) != null) postParam.append(line);
 			
 			req.getSession().setAttribute(req.getParameter("editAttr"), postParam.toString());
+			if (SALES_SIGNATURE.equals(req.getParameter("editAttr"))) {
+				req.getSession().setAttribute(SALES_SIGNATURE_DT, new SimpleDateFormat(SIGN_DATE_PATTERN).format(new Date()));
+				log.debug(req.getSession().getAttribute(SALES_SIGNATURE_DT));
+			} else if (ADMIN_SIGNATURE.equals(req.getParameter("editAttr"))) {
+				req.getSession().setAttribute(ADMIN_SIGNATURE_DT,  new SimpleDateFormat(SIGN_DATE_PATTERN).format(new Date()));
+				log.debug(req.getSession().getAttribute(ADMIN_SIGNATURE_DT));
+			} 
 		} catch (IOException e) {
 			throw new ActionException(e);
 		}
@@ -218,6 +232,7 @@ public class ProductCartAction extends SBActionAdapter {
 		prodAttributes.put(WASTED, req.getParameterValues(WASTED)[pos]);
 		prodAttributes.put(BILLABLE, req.getParameterValues(BILLABLE)[pos]);
 		prodAttributes.put(PRODUCT_FROM, req.getParameterValues(PRODUCT_FROM)[pos]);
+		prodAttributes.put(PRODUCT_SOURCE, req.getParameterValues(PRODUCT_SOURCE)[pos]);
 		prodAttributes.put("oldId", p.getProduct().getProductId() + oldLot);
 		int qty = Convert.formatInteger(req.getParameter("qty"),1);
 
@@ -269,6 +284,7 @@ public class ProductCartAction extends SBActionAdapter {
 		product.addProdAttribute(BILLABLE, req.getParameterValues(BILLABLE)[pos]);
 		product.addProdAttribute(WASTED, req.getParameterValues(WASTED)[pos]);
 		product.addProdAttribute(PRODUCT_FROM, req.getParameterValues(PRODUCT_FROM)[pos]);
+		product.addProdAttribute(PRODUCT_SOURCE, req.getParameterValues(PRODUCT_SOURCE)[pos]);
 		ShoppingCartItemVO item = new ShoppingCartItemVO(product);
 		item.setProductId(product.getProductId()+product.getProdAttributes().get(LOT_NO));
 		item.setQuantity(Convert.formatInteger(req.getParameter("qty"),1));
@@ -408,11 +424,11 @@ public class ProductCartAction extends SBActionAdapter {
 	 */
 	private void getHospitals(SMTServletRequest req) throws ActionException {
 		StringBuilder sql = new StringBuilder(150);
-		
-		sql.append("SELECT CUSTOMER_NM FROM ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		// We will only ever need the provider customers
-		sql.append("RAM_CUSTOMER WHERE CUSTOMER_TYPE_ID = 'PROVIDER' ");
-		sql.append("ORDER BY CUSTOMER_NM DESC ");
+		String customDb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		sql.append("SELECT CUSTOMER_NM FROM ").append(customDb).append("RAM_CUSTOMER c ");
+		sql.append("inner join ").append(customDb).append("");
+		sql.append("RAM_CUSTOMER_PROFILE_XR xr on xr.CUSTOMER_ID = c.CUSTOMER_ID ");
+		sql.append("ORDER BY CUSTOMER_NM ASC ");
 		List<String> hospitals = new ArrayList<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ResultSet rs = ps.executeQuery();
@@ -457,7 +473,12 @@ public class ProductCartAction extends SBActionAdapter {
 			while(rs.next()) {
 				count++;
 				if (count <= rpp*page || count > rpp*(page+1)) continue;
-				products.add(new RAMProductVO(rs));
+				RAMProductVO p = new RAMProductVO(rs);
+				// Kits with layer ids can either come from kits or as a single
+				// product and must be marked as such.
+				if (!StringUtil.checkVal(rs.getString("KIT_LAYER_ID")).isEmpty())
+					p.setKitFlag(1);
+				products.add(p);
 			}
 		} catch (SQLException e) {
 			throw new ActionException(e);
@@ -479,8 +500,9 @@ public class ProductCartAction extends SBActionAdapter {
 		String searchComaparator = searchType > 1? " like ":" = ";
 		StringBuilder sql = new StringBuilder(300);
 		sql.append("SELECT p.PRODUCT_ID, p.CUST_PRODUCT_ID, c.GTIN_NUMBER_TXT + CAST(p.GTIN_PRODUCT_ID as NVARCHAR(64)) as GTIN_NUMBER_TXT, PRODUCT_NM, ");
-		sql.append("DESC_TXT, SHORT_DESC, c.CUSTOMER_NM FROM ").append(customDb).append("RAM_PRODUCT p ");
+		sql.append("DESC_TXT, SHORT_DESC, c.CUSTOMER_NM, l.KIT_LAYER_ID FROM ").append(customDb).append("RAM_PRODUCT p ");
 		sql.append("LEFT JOIN ").append(customDb).append("RAM_CUSTOMER c on c.CUSTOMER_ID = p.CUSTOMER_ID ");
+		sql.append("left join ").append(customDb).append("RAM_KIT_LAYER l on l.PRODUCT_ID = p.PRODUCT_ID ");
 		sql.append("WHERE p.CUSTOMER_ID is not null and p.GTIN_PRODUCT_ID is not null AND  c.GTIN_NUMBER_TXT is not null ");
 		sql.append("AND p.CUSTOMER_ID != '' AND p.GTIN_PRODUCT_ID != '' AND c.GTIN_NUMBER_TXT != '' ");
 		if (req.hasParameter("searchCustomer")) sql.append("AND p.CUSTOMER_ID = ? ");
@@ -529,6 +551,8 @@ public class ProductCartAction extends SBActionAdapter {
 		data.put(CASE_ID, StringUtil.checkVal(sess.getAttribute(CASE_ID)));
 		data.put(SALES_SIGNATURE, StringUtil.checkVal(sess.getAttribute(SALES_SIGNATURE)));
 		data.put(ADMIN_SIGNATURE, StringUtil.checkVal(sess.getAttribute(ADMIN_SIGNATURE)));
+		data.put(SALES_SIGNATURE_DT, StringUtil.checkVal(sess.getAttribute(SALES_SIGNATURE_DT)));
+		data.put(ADMIN_SIGNATURE_DT, StringUtil.checkVal(sess.getAttribute(ADMIN_SIGNATURE_DT)));
 		data.put(RESELLER, StringUtil.checkVal(sess.getAttribute(RESELLER)));
 		data.put(OTHER_ID, StringUtil.checkVal(sess.getAttribute(OTHER_ID)));
 		data.put(REP_ID, StringUtil.checkVal(sess.getAttribute(REP_ID)));
@@ -583,15 +607,17 @@ public class ProductCartAction extends SBActionAdapter {
 			sql.append("INSERT INTO ").append(customDb).append("RAM_KIT_INFO ");
 			sql.append("(HOSPITAL_NM,OPERATING_ROOM,SURGERY_DT,SURGEON_NM,");
 			sql.append("RESELLER_NM,CASE_ID,CREATE_DT,PROFILE_ID,FINALIZED_FLG,");
-			sql.append("RESELLER_SIGNATURE,ADMIN_SIGNATURE,OTHER_ID,REP_ID,RAM_KIT_INFO_ID)");
-			sql.append("VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+			sql.append("RESELLER_SIGNATURE,ADMIN_SIGNATURE,RESELLER_SIGN_DT,");
+			sql.append("ADMIN_SIGN_DT,OTHER_ID,REP_ID,RAM_KIT_INFO_ID)");
+			sql.append("VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 			sess.setAttribute(KIT_ID, new UUIDGenerator().getUUID());
 		} else {
 			sql.append("UPDATE ").append(customDb).append("RAM_KIT_INFO SET ");
 			sql.append("HOSPITAL_NM=?,OPERATING_ROOM=?,SURGERY_DT=?,");
 			sql.append("SURGEON_NM=?,RESELLER_NM=?,CASE_ID=?,UPDATE_DT=?, ");
 			sql.append("PROFILE_ID=?, FINALIZED_FLG=?, RESELLER_SIGNATURE=?, ");
-			sql.append("ADMIN_SIGNATURE=?,OTHER_ID=?,REP_ID=? WHERE RAM_KIT_INFO_ID=? ");
+			sql.append("ADMIN_SIGNATURE=?,RESELLER_SIGN_DT=?,");
+			sql.append("ADMIN_SIGN_DT=?,OTHER_ID=?,REP_ID=? WHERE RAM_KIT_INFO_ID=? ");
 		}
 		log.debug(sql);
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())){
@@ -607,9 +633,11 @@ public class ProductCartAction extends SBActionAdapter {
 			ps.setInt(i++, finalizeCart);
 			ps.setString(i++, (String) sess.getAttribute(SALES_SIGNATURE));
 			ps.setString(i++, (String) sess.getAttribute(ADMIN_SIGNATURE));
+			ps.setTimestamp(i++, Convert.formatTimestamp(SIGN_DATE_PATTERN, (String)  sess.getAttribute(SALES_SIGNATURE_DT)));
+			ps.setTimestamp(i++, Convert.formatTimestamp(SIGN_DATE_PATTERN, (String)  sess.getAttribute(ADMIN_SIGNATURE_DT)));
 			ps.setString(i++, (String) sess.getAttribute(OTHER_ID));
 			ps.setString(i++, (String) sess.getAttribute(REP_ID));
-			ps.setString(i++, (String)sess.getAttribute(KIT_ID));
+			ps.setString(i++, (String) sess.getAttribute(KIT_ID));
 			
 			ps.executeUpdate();
 			
@@ -636,8 +664,8 @@ public class ProductCartAction extends SBActionAdapter {
 		
 		StringBuilder sql = new StringBuilder(175);
 		sql.append("INSERT INTO ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("RAM_KIT_PRODUCT_XR (KIT_PRODUCT_ID, PRODUCT_ID,RAM_KIT_INFO_ID,ORDER_NO,LOT_NO,QTY,BILLABLE_FLG,WASTED_FLG,PRODUCT_FROM,CREATE_DT) ");
-		sql.append("VALUES(?,?,?,?,?,?,?,?,?,?)");
+		sql.append("RAM_KIT_PRODUCT_XR (KIT_PRODUCT_ID, PRODUCT_ID,RAM_KIT_INFO_ID,ORDER_NO,LOT_NO,QTY,BILLABLE_FLG,WASTED_FLG,PRODUCT_FROM,CREATE_DT, KIT_FLG) ");
+		sql.append("VALUES(?,?,?,?,?,?,?,?,?,?,?)");
 		
 		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			int i=1;
@@ -653,6 +681,7 @@ public class ProductCartAction extends SBActionAdapter {
 				ps.setInt(8, Convert.formatInteger(StringUtil.checkVal(p.getProduct().getProdAttributes().get(WASTED))));
 				ps.setString(9, (String) p.getProduct().getProdAttributes().get(PRODUCT_FROM));
 				ps.setTimestamp(10, Convert.getCurrentTimestamp());
+				ps.setInt(11, Convert.formatInteger(StringUtil.checkVal(p.getProduct().getProdAttributes().get(PRODUCT_SOURCE))));
 				ps.addBatch();
 			}
 			ps.executeBatch();
@@ -698,6 +727,7 @@ public class ProductCartAction extends SBActionAdapter {
 			if (req.hasParameter("searchData") && req.hasParameter("searchType")) ps.setString(i++, "%" + req.getParameter("searchData")+ "%");
 			if (req.hasParameter("startDate")) ps.setTimestamp(i++, Convert.getTimestamp(Convert.formatDate(Convert.DATE_TIME_SLASH_PATTERN, req.getParameter("startDate")), false));
 			if (req.hasParameter("endDate")) ps.setTimestamp(i++, Convert.getTimestamp(Convert.formatDate(Convert.DATE_TIME_SLASH_PATTERN, req.getParameter("endDate")), false));
+			if (req.hasParameter("finalized")) ps.setInt(i++, Convert.formatInteger(req.getParameter("finalized")));
 			
 			ResultSet rs = ps.executeQuery();
 			int page = Convert.formatInteger(req.getParameter("page"), 0);
@@ -735,6 +765,7 @@ public class ProductCartAction extends SBActionAdapter {
 		if (req.hasParameter("searchData") && req.hasParameter("searchType")) sql.append("AND ").append(SearchFields.valueOf(req.getParameter("searchType")).getColumnName()).append(" like ? ");
 		if (req.hasParameter("startDate")) sql.append("AND k.SURGERY_DT > ? ");
 		if (req.hasParameter("endDate")) sql.append("AND k.SURGERY_DT < ? ");
+		if (req.hasParameter("finalized")) sql.append("AND k.FINALIZED_FLG = ? ");
 		sql.append("GROUP BY HOSPITAL_NM, OPERATING_ROOM, SURGERY_DT, SURGEON_NM, CASE_ID, RESELLER_NM, k.RAM_KIT_INFO_ID, FINALIZED_FLG, REP_ID, OTHER_ID ");
 		sql.append("ORDER BY FINALIZED_FLG ");
 		
@@ -746,7 +777,9 @@ public class ProductCartAction extends SBActionAdapter {
 			} else {
 				sql.append(" ASC ");
 			}
-		} 
+		} else {
+			sql.append(", SURGERY_DT DESC");
+		}
 		
 		return sql.toString();
 	}
@@ -796,6 +829,8 @@ public class ProductCartAction extends SBActionAdapter {
 					sess.setAttribute(RESELLER, rs.getString("RESELLER_NM"));
 					sess.setAttribute(SALES_SIGNATURE, rs.getString("RESELLER_SIGNATURE"));
 					sess.setAttribute(ADMIN_SIGNATURE, rs.getString("ADMIN_SIGNATURE"));
+					sess.setAttribute(SALES_SIGNATURE_DT, rs.getString("RESELLER_SIGN_DT"));
+					sess.setAttribute(ADMIN_SIGNATURE_DT, rs.getString("ADMIN_SIGN_DT"));
 					sess.setAttribute(OTHER_ID, rs.getString("OTHER_ID"));
 					sess.setAttribute(REP_ID, rs.getString("REP_ID"));
 					if (rs.getTimestamp("UPDATE_DT") != null)
@@ -829,6 +864,7 @@ public class ProductCartAction extends SBActionAdapter {
 		product.addProdAttribute(BILLABLE, rs.getInt("BILLABLE_FLG"));
 		product.addProdAttribute(PRODUCT_FROM, rs.getString("PRODUCT_FROM"));
 		product.addProdAttribute(WASTED, rs.getInt("WASTED_FLG"));
+		product.addProdAttribute(PRODUCT_SOURCE, rs.getInt("KIT_FLG"));
 		ShoppingCartItemVO item = new ShoppingCartItemVO(product);
 		item.setProductId(product.getProductId()+product.getProdAttributes().get(LOT_NO));
 		item.setQuantity(Convert.formatInteger(rs.getInt("QTY")));
@@ -873,9 +909,7 @@ public class ProductCartAction extends SBActionAdapter {
 	private void sendEmails(SMTServletRequest req) throws ActionException {
 		try {
 			EmailMessageVO mail = new EmailMessageVO();
-			UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
-			mail.addRecipient(user.getEmailAddress());
-			mail.addRecipient(getHospitalEmail(req));
+			mail.addRecipients(req.getParameterValues("emails"));
 			if (req.getSession().getAttribute(CASE_ID) != null) {
 				mail.setSubject("Product Summary for Case " + req.getSession().getAttribute(CASE_ID));
 			} else if (req.getSession().getAttribute(TIME) != null) {
@@ -897,30 +931,5 @@ public class ProductCartAction extends SBActionAdapter {
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}
-	}
-
-	
-	/**
-	 * Get the hospital email address from the database
-	 * @param req
-	 * @return
-	 */
-	private String getHospitalEmail(SMTServletRequest req) {
-		StringBuilder sql = new StringBuilder(150);
-		
-		sql.append("SELECT CASE_CONTACT_EMAIL FROM ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		// We will only ever need the provider customers
-		sql.append("RAM_CUSTOMER WHERE CUSTOMER_NM = ? ");
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, (String) req.getSession().getAttribute(HOSPITAL));
-			ResultSet rs = ps.executeQuery();
-			
-			if (rs.next()) {
-				return rs.getString("CASE_CONTACT_EMAIL");
-			}
-		} catch (SQLException e) {
-			log.error("Unable to get email for hospital", e);
-		}
-		return "";
 	}
 }

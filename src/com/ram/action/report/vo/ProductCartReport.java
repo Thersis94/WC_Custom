@@ -52,6 +52,7 @@ public class ProductCartReport  extends AbstractSBReportVO {
 			ITextRenderer renderer = new ITextRenderer();
 			log.debug(data.get("baseDomain"));
 			renderer.getFontResolver().addFont("http://"+data.get("baseDomain")+"/binary/themes/CUSTOM/DEPUY/DPY_SYN_NEXUS/scripts/fonts/fontawesome-webfont.ttf", BaseFont.IDENTITY_H, true);
+			renderer.getFontResolver().addFont("http://"+data.get("baseDomain")+"/binary/common/fonts/GreatVibes-Regular.ttf", BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
 			renderer.setDocument(doc, "http://"+data.get("baseDomain")+"/");
 			// Add the replacer so that base64 images are rendered properly
 			renderer.getSharedContext().setReplacedElementFactory(new Base64ImageReplacer(renderer.getSharedContext().getReplacedElementFactory()));
@@ -71,31 +72,35 @@ public class ProductCartReport  extends AbstractSBReportVO {
 	private byte[] getPageHtml() {
 		StringBuilder html = new StringBuilder(3000);
 		html.append("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">");
-		html.append("<html><head><title>Case Summary</title></head><body>");
-		html.append("<link href='/binary/themes/CUSTOM/DEPUY/DPY_SYN_NEXUS/scripts/css/font-awesome.css' rel='stylesheet'>");
-		html.append("<style>@page{margin-bottom:50px;}body{font-family: 'MyriadWebPro';}th{margin-bottom:10px;border-bottom:solid black 2px; font-size:12px;}");
-		html.append("@media print{div.sig-footer{position:fixed; bottom:0;}}");
+		html.append("<html><head><title>Case Summary</title>");
+		html.append("<link href='/binary/themes/CUSTOM/DEPUY/DPY_SYN_NEXUS/scripts/css/font-awesome.css' type='text/css' rel='stylesheet'>");
+		html.append("<link type='text/css'  href=\"https://fonts.googleapis.com/css?family=Great+Vibes\" rel=\"stylesheet\">");
+		html.append("<style type='text/css'>");
+		html.append("@page{margin-bottom:50px;}th{margin-bottom:10px;border-bottom:solid black 2px; font-size:12px;}");
+		html.append("@media print{div.sig-footer{position:absolute; bottom:-50px;}}");
 		html.append("</style>");
+		html.append("</head><body>");
+		html.append("<div class='sig-footer'><table><tr><td><p>Manufacturer Rep:</p></td><td>");
+		if (StringUtil.checkVal(data.get("sales")).startsWith("data")) {
+			html.append("<img alt='Signature' style='height:50px;' src='").append(data.get("sales")).append("'/>");
+		} else {
+			html.append("<p style='font-family: \"Great Vibes\", cursive;font-size:20px;'>").append(data.get(ProductCartAction.SALES_SIGNATURE)).append("</p>");
+		}
+		html.append("</td><td style='font-size:10px;'>").append(data.get(ProductCartAction.SALES_SIGNATURE_DT)).append("</td>");
+		html.append("<td><p>Hospital Administrator:</p></td><td>");
+		if (StringUtil.checkVal(data.get("sales")).startsWith("data")) {
+			html.append("<img alt='Signature' style='height:50px;' src='").append(data.get("admin")).append("'/>");
+		} else {
+			html.append("<p style='font-family: \"Great Vibes\", cursive;font-size:20px;'>").append(data.get(ProductCartAction.ADMIN_SIGNATURE)).append("</p>");
+			
+		}
 		
-		html.append("<div class='sig-footer'><table><tr><td><p>Sales Rep</p>");
-		if (StringUtil.checkVal(data.get("sales")).startsWith("data")) {
-			html.append("<img style='height:50px;' src='").append(data.get("sales")).append("'/>");
-		} else {
-			html.append("<p style='font-family: \"Comic Sans MS\", cursive, sans-serif; font-style: italic;'>").append(data.get("sales")).append("</p>");
-			
-		}
-		html.append("</td>");
-		html.append("<td><p>Hospital Administrator</p>");
-		if (StringUtil.checkVal(data.get("sales")).startsWith("data")) {
-			html.append("<img style='height:50px;' src='").append(data.get("admin")).append("'/>");
-		} else {
-			html.append("<p style='font-family: \"Comic Sans MS\", cursive, sans-serif; font-style: italic;'>").append(data.get("admin")).append("</p>");
-			
-		}
-		html.append("</td></tr></table></div>");
+		html.append("</td><td style='font-size:10px;'>").append(data.get(ProductCartAction.ADMIN_SIGNATURE_DT)).append("</td>").append("</tr></table></div>");
+		
 		html.append("<table style='color:#636363;border-collapse:collapse;font-size:16px; width:100%;'><tbody>");
-		html.append("<tr><td style='width:48%'><img style='width:200px' src='/binary/themes/CUSTOM/RAMGRP/MAIN/images/ramgrouplogo.png' /><span style='float:right'>");
-		html.append(data.get(ProductCartAction.COMPLETE_DT)).append("</span></td><td colspan='2' style='text-align:right;'>");
+		html.append("<tr><td style='width:48%'><img alt='RAM Healthcare' style='width:200px' src='/binary/themes/CUSTOM/RAMGRP/MAIN/images/ramgrouplogo.png' /><span style='float:right'>");
+		if (data.get(ProductCartAction.COMPLETE_DT) != null) html.append(data.get(ProductCartAction.COMPLETE_DT));
+		html.append("</span></td><td colspan='2' style='text-align:right;'>");
 		html.append("</td></tr>");
 		html.append("<tr><td rowspan='8'>");
 		if (StringUtil.checkVal(data.get(NexusSolrCartAction.CASE_ID)).length() > 0)
@@ -117,7 +122,7 @@ public class ProductCartReport  extends AbstractSBReportVO {
 		html.append("<td style='font-size:14px;'>").append(data.get(ProductCartAction.RESELLER)).append("</td></tr>");
 		html.append("<tr><td style='border-left: solid 1px black; padding-left:10px;font-size:14px;'>Reseller ID:</td>");
 		html.append("<td style='font-size:14px;'>").append(data.get(ProductCartAction.REP_ID)).append("</td></tr></tbody></table>");
-		html.append("<span style='font-size:24px; color:#636363;'><i class='fa fa-2'>&#xf0b1;</i>&nbsp;Products</span>");
+		html.append("<span style='font-size:24px; color:#636363;'>Products</span>");
 		html.append("<table style='color:#636363;border-collapse:collapse;font-size:16px; width:100%'>");
 		html.append("<tbody><tr style='margin-bottom:10px;'><th style='width:2%'>&nbsp;</th><th style='width:15%'>Product Name</th>");
 		html.append("<th style='width:14%'>Company</th><th style='width:13%;'>GTIN</th><th style='width:10%'>LOT No.</th>");
@@ -134,27 +139,29 @@ public class ProductCartReport  extends AbstractSBReportVO {
 		String border="border-bottom:1px solid black;";
 		for(ShoppingCartItemVO item : cart){
 			if (i == cart.size()) border="";
-			html.append("<tr><td style='font-size:12px;'>").append(i).append(".</td>");
-			html.append("<td style='font-size:12px;'>").append(item.getProduct().getProductName()).append("</td>");
-			html.append("<td style='font-size:12px;'>").append(item.getProduct().getProdAttributes().get("customer")).append("</td>");
-			html.append("<td style='font-size:12px;'>").append(item.getProduct().getProdAttributes().get("gtin")).append("</td>");
-			html.append("<td style='font-size:12px;'>").append(item.getProduct().getProdAttributes().get("lotNo")).append("</td>");
-			html.append("<td style='font-size:12px; text-align:center;'>").append(item.getQuantity()).append("</td>");
-			html.append("<td style='font-size:12px; text-align:center;'>");
+			html.append("<tr style='height:60px;page-break-inside: avoid;'><td style='font-size:12px;'>").append(i).append(".</td>");
+			html.append("<td style='font-size:12px;margin-bottom:20px;").append(border).append("'>").append(item.getProduct().getProductName()).append("</td>");
+			html.append("<td style='font-size:12px;margin-bottom:20px;").append(border).append("'>").append(item.getProduct().getProdAttributes().get("customer")).append("</td>");
+			html.append("<td style='font-size:12px;margin-bottom:20px;").append(border).append("'>").append(item.getProduct().getProdAttributes().get("gtin")).append("</td>");
+			html.append("<td style='font-size:12px;margin-bottom:20px;").append(border).append("'>").append(item.getProduct().getProdAttributes().get("lotNo")).append("</td>");
+			html.append("<td style='font-size:12px; text-align:center;margin-bottom:20px;").append(border).append("'>").append(item.getQuantity()).append("</td>");
+			html.append("<td style='font-size:12px; text-align:center;margin-bottom:20px;").append(border).append("'>");
 			if (Convert.formatBoolean(item.getProduct().getProdAttributes().get("billable"))) html.append("<i class='fa'>&#xf00c;</i>");
 			html.append("</td>");
-			html.append("<td style='font-size:12px; text-align:center;'>");
+			html.append("<td style='font-size:12px; text-align:center;margin-bottom:20px;").append(border).append("'>");
 			if (Convert.formatBoolean(item.getProduct().getProdAttributes().get("wasted"))) html.append("<i class='fa'>&#xf00c;</i>");
 			html.append("</td>");
 			// This ends off without closing the tag so that the single barcode option can add in a rowspan attribute
-			html.append("<td style='font-size:12px; width:400px; text-align:right;");
-			String gtin = (String) item.getProduct().getProdAttributes().get("gtin");
-			html.append("'><span style='font-weight:bold;position:relative;top:30px;'>GTIN</span><span><img style='float:right' src='/barcodeGenerator?barcodeData=011").append(gtin).append("&height=55' /></span></td></tr>");
-			html.append("<tr><td style='").append(border).append("'>&nbsp;</td>");
-			html.append("<td colspan='9' style='font-size:12px; margin-bottom:10px; text-align:right;").append(border).append("'>");
-			html.append("<span style='font-weight:bold;position:relative;top:30px;'>LOT</span><span><img style='float:right' src='/barcodeGenerator?barcodeData=17").append(item.getProduct().getProdAttributes().get("lotNo")).append("&height=55' /></span>");
+			html.append("<td style='font-size:12px; width:400px; text-align:right;margin-bottom:20px;").append(border);
+			StringBuilder barcodeData = new StringBuilder(50);
+			barcodeData.append("011").append(item.getProduct().getProdAttributes().get("gtin"));
+			if (StringUtil.checkVal(item.getProduct().getProdAttributes().get("lotNo")).length() > 0) {
+				barcodeData.append("17").append(item.getProduct().getProdAttributes().get("lotNo"));
+			}
 			
-			html.append("</span></td></tr>");
+			html.append("'><span><img style='float:right' alt='").append(barcodeData).append("' src='/barcodeGenerator?format=DM&amp;barcodeData=011").append(barcodeData);
+			
+			html.append("&amp;height=40' /></span></td></tr>");
 			i++;
 		}
 		
