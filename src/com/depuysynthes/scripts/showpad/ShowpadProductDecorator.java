@@ -256,8 +256,8 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 				mbAsset.setShowpadId(divisionAssets.get(mbAsset.getDpySynMediaBinId()));
 
 				log.info("************************ Starting Asset *******************************");
-				log.debug("showpadId=" + mbAsset.getShowpadId() + " mbId=" + mbAsset.getDpySynMediaBinId());
-				log.debug("asset tags (" + mbAsset.getTags().size() + ") " + mbAsset.getTags());
+				log.info("showpadId=" + mbAsset.getShowpadId() + " mbId=" + mbAsset.getDpySynMediaBinId());
+				log.info("asset tags (" + mbAsset.getTags().size() + ") " + mbAsset.getTags());
 
 				/**
 				 * push the tags to Showpad.  Note this will do 3 things:
