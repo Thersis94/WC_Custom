@@ -361,6 +361,8 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 		List<ProductAttributeVO> data = new ArrayList<>();
 		ProductAttributeVO attrVo;
 		ProductAttributeContainer pac = prod.getAttributes();
+		if (pac == null) return data;
+		
 		for (Node n : pac.getAllAttributes()) {
 			attrVo = (ProductAttributeVO) n.getUserObject();
 			if (attrVo.getProductAttributeId() == null) 
