@@ -514,9 +514,9 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 		//remove dots and dashes that commonly appear in number sequences.  e.g. "319.010"
 		sousVal = StringUtil.removeNonAlphaNumeric(sousVal);
 		//if all we have is numbers, this is not a qualified sous value
-		boolean matches = sousVal.matches("[0-9]+");
-		log.debug("report unused sous name " + sousVal + " in email? " + matches);
-		return matches;
+		boolean ignorable = sousVal.matches("[0-9]+");
+		log.debug("report unused sous name " + sousVal + " in email? " + !ignorable);
+		return !ignorable;
 	}
 	
 
