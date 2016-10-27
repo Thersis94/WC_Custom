@@ -119,7 +119,7 @@ public class ShowpadDivisionUtil {
 			//check if this file is already in Showpad before treating it as new
 			vo.setShowpadId(findShowpadId(title));
 
-			if (vo.getShowpadId() != null) {
+			if (vo.getShowpadId() != null && !vo.getShowpadId().isEmpty()) {
 				//if the file is already there, and doesn't need updating, simply move on.
 				//first capture it as an insert so we'll have it in our database next time.
 				if (State.Ignore == vo.getRecordState()) {
@@ -130,6 +130,7 @@ public class ShowpadDivisionUtil {
 
 				//do an update instead of an insert
 				postUrl = showpadApiUrl + "/assets/" + vo.getShowpadId() + ".json";
+				isShowpadUpdate = true;
 			} else {
 				//send an 'add' to the division for the given asset
 				postUrl = divisionUrl + "/assets.json";
@@ -352,7 +353,7 @@ public class ShowpadDivisionUtil {
 	 * @param masterRecords
 	 * @throws QuotaException 
 	 */
-	public void processTicketQueue() throws QuotaException {
+	public void processTicketQueue(Map<String, MediaBinDeltaVO> masterRecords) throws QuotaException {
 		//continue processing the queue until it's empty; meaning Showpad has processed all our assets
 		int count = insertTicketQueue.size();
 		int runCount = 0;
@@ -366,7 +367,7 @@ public class ShowpadDivisionUtil {
 					break;
 				}
 			}
-			Set<String> removes = testForCompletion();
+			Set<String> removes = testForCompletion(masterRecords);
 			//remove the processed ones from our ticketQueue.
 			//this cannot be done above (inline) because of concurrency issues (ConcurrentModificationException)
 			for (String t : removes) {
@@ -384,7 +385,7 @@ public class ShowpadDivisionUtil {
 	 * @return
 	 * @throws QuotaException
 	 */
-	private Set<String> testForCompletion() throws QuotaException {
+	private Set<String> testForCompletion(Map<String, MediaBinDeltaVO> masterRecords) throws QuotaException {
 		Set<String> removes = new HashSet<>();
 		for (Map.Entry<String,String> row : insertTicketQueue.entrySet()) {
 			String assetId;
@@ -394,6 +395,9 @@ public class ShowpadDivisionUtil {
 				if (assetId != null) {
 					log.info("found assetId=" + assetId + " for ticket=" + ticketId);
 					inserts.put(insertTicketQueue.get(ticketId), assetId);
+					//set the assetId onto the master record for downstream processing to use
+					masterRecords.get(insertTicketQueue.get(ticketId)).setShowpadId(assetId);
+					
 					removes.add(ticketId);
 					log.info("finished processing ticket " + ticketId + ", its now assetId=" + assetId);
 				}

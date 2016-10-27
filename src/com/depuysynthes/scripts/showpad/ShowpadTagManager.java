@@ -221,7 +221,7 @@ public class ShowpadTagManager {
 	public void updateProductTags(MediaBinDeltaVO mbAsset) throws QuotaException, InvalidDataException {
 		String showpadId = mbAsset.getShowpadId();
 		if (showpadId == null || showpadId.isEmpty()) 
-			throw new InvalidDataException("Asset not in Showpad" + mbAsset.getDpySynMediaBinId());
+			throw new InvalidDataException("Asset not found in Showpad: " + mbAsset.getTrackingNoTxt());
 
 		Map<String, ShowpadTagVO> assignedTags = loadAssetTags(showpadId, null, false); //do not suppress404, asset should exist at this point
 		Map<String, ShowpadTagVO> tagsToAdd = new HashMap<>();
