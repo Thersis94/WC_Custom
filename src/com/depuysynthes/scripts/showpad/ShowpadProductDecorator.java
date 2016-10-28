@@ -85,7 +85,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	 * 	grab mbid value up to the next & or ' or " (single or double quote presumed to end the href attribute, & to begin the next request param)
 	 * max-length of value at 32 chars, which is the pkId limit in the database 
 	 */
-	protected static final String MB_AJAX_HREF = "/json\\?([^'\"]+)?amid=MEDIA_BIN_AJAX([^'\"]+)?&(amp;)?mbid=([^&\\s]{1,32})";
+	protected static final String MB_AJAX_HREF = "/json\\?([^'\"]+)?amid=MEDIA_BIN_AJAX([^'\"]+)?&(amp;)?mbid=([^&\\s'\"]{1,32})";
 
 	/**
 	 * @param args
@@ -163,8 +163,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 			//get the Mediabin attributes off the product.  There could be several.
 			List<ProductAttributeVO> mbAttribs = getMediabinAttributes(prod, false); //this will never be null or empty, per early executed code
 			String[] hierarchy = StringUtil.checkVal(prod.getAttrib1Txt()).split(DSMediaBinImporterV2.TOKENIZER);
-			if (hierarchy.length == 0) continue; //there are no tags we need to add (to mb assets).
-
+			
 			List<String> assetIds = new ArrayList<>();
 			for (ProductAttributeVO attrVo : mbAttribs) {
 				switch (StringUtil.checkVal(attrVo.getTitle())) {
