@@ -1020,7 +1020,11 @@ public class NexusKitAction extends SBActionAdapter {
 				int i = 1;
 				insertState.setString(i++, product.getProductId());
 				insertState.setInt(i++, product.getQuantity());
-				insertState.setString(i++, product.getUomLevel().get(0));
+				if (product.getUomLevel().isEmpty()) {
+					insertState.setString(i++, "");
+				} else {
+					insertState.setString(i++, product.getUomLevel().get(0));
+				}
 				insertState.setTimestamp(i++, Convert.formatTimestamp(product.getStart()));
 				insertState.setTimestamp(i++, Convert.formatTimestamp(product.getEnd()));
 				insertState.setString(i++, product.getPrimaryDeviceId());
