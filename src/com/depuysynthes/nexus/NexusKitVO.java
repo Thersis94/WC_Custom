@@ -37,12 +37,8 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 	 */
 	private static final long serialVersionUID = 2414243653179753113L;
 	
-	private String kitId;
-	private String kitSKU;
-	private String kitDesc;
 	private String kitGTIN;
 	private String ownerId;
-	private String orgId;
 	private String orgName;
 	private String branchCode;
 	private Map<String, String> sharedWith;
@@ -74,9 +70,9 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 	}
  	
 	public void setData(SMTServletRequest req) {
-		kitId = req.getParameter("kitId");
-		kitSKU = req.getParameter("kitSKU");
-		kitDesc = req.getParameter("kitDesc");
+		super.setDocumentId(req.getParameter("kitId"));
+		super.setTitle(req.getParameter("kitSKU"));
+		super.setSummary(req.getParameter("kitDesc"));
 		branchCode = req.getParameter("branchCode");
 		kitGTIN = req.getParameter("kitGTIN");
 		orgName = req.getParameter("orgName");
@@ -85,41 +81,38 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 	
 	public void setData(ResultSet rs) {
 		DBUtil db = new DBUtil();
-		kitId = db.getStringVal("SET_INFO_ID", rs);
-		setKitSKU(db.getStringVal("SET_SKU_TXT", rs));
+		super.setDocumentId(db.getStringVal("SET_INFO_ID", rs));
+		super.setTitle(db.getStringVal("SET_SKU_TXT", rs));
 		orgName = db.getStringVal("ORGANIZATION_ID", rs);
 		kitGTIN = db.getStringVal("GTIN_TXT", rs);
-		kitDesc = db.getStringVal("DESCRIPTION_TXT", rs);
+		super.setSummary(db.getStringVal("DESCRIPTION_TXT", rs));
 		branchCode = db.getStringVal("BRANCH_PLANT_CD", rs);
 		ownerId = db.getStringVal("PROFILE_ID", rs);
 	}
 
-	@SolrField(name=SearchDocumentHandler.DOCUMENT_ID)
 	public String getKitId() {
-		return kitId;
+		return super.getDocumentId();
 	}
 	public void setKitId(String kitId) {
-		this.kitId = kitId;
+		super.setDocumentId(kitId);
 	}
 
-
-	@SolrField(name=SearchDocumentHandler.TITLE)
 	public String getKitSKU() {
-		return kitSKU;
+		return super.getTitle();
 	}
 
 	public void setKitSKU(String kitSKU) {
-		this.kitSKU = kitSKU;
+		super.setTitle(kitSKU);
 	}
 
-	@SolrField(name=SearchDocumentHandler.SUMMARY)
 	public String getKitDesc() {
-		return kitDesc;
+		return super.getSummary();
 	}
 
 	public void setKitDesc(String kitDesc) {
-		this.kitDesc = kitDesc;
+		super.setSummary(kitDesc);
 	}
+	
 	@SolrField(name=NexusProductVO.DEVICE_ID)
 	public String getKitGTIN() {
 		return kitGTIN;
@@ -216,13 +209,25 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 		this.source = source;
 	}
 
-	@SolrField(name=SearchDocumentHandler.ORGANIZATION)
 	public String getOrgId() {
-		return orgId;
+		if (super.getOrganization().isEmpty()) {
+			return null;
+		} else {
+			return super.getOrganization().get(0);
+		}
 	}
 
+	/**
+	 * Kits will never have more than one organization and that
+	 * rule is enforced here.
+	 * @param orgId
+	 */
 	public void setOrgId(String orgId) {
-		this.orgId = orgId;
+		if (super.getOrganization().isEmpty()) {
+			super.addOrganization(orgId);
+		} else {
+			super.getOrganization().set(0, orgId);
+		}
 	}
 
 	@SolrField(name=NexusProductVO.ORGANIZATION_NM)
@@ -250,11 +255,12 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 	 * @return
 	 */
 	@SolrField(name=SearchDocumentHandler.CONTENTS)
-	public String getAutocomplete() {
+	@Override
+	public String getContents() {
 		StringBuilder auto = new StringBuilder();
-		auto.append(kitSKU).append(" ");
+		auto.append(super.getTitle()).append(" ");
 		auto.append(kitGTIN).append(" ");
-		auto.append(kitDesc);
+		auto.append(super.getSummary());
 		return auto.toString();
 	}
 	
@@ -273,8 +279,8 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 	}
 	@SolrField(name=NexusProductVO.SEARCHABLE_NM)
 	public String getSearchableName() {
-		if (kitSKU == null) return null;
-		return kitSKU.replaceAll("[\\-\\/\\.]", "");
+		if (super.getTitle() == null) return null;
+		return super.getTitle().replaceAll("[\\-\\/\\.]", "");
 	}
 
 	public boolean isShared() {
