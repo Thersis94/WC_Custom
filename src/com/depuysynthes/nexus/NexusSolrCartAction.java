@@ -319,7 +319,6 @@ public class NexusSolrCartAction extends SBActionAdapter {
 				} else if ("Custom".equals(req.getParameter("orgName"))) {
 					filter.remove("gtin");
 					filter.remove("-kit");
-					filter.remove("owner");
 					filter.put("kit", "true");
 					filter.put("owner", user.getProfileId());
 				} else {
