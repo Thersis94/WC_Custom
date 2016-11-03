@@ -108,8 +108,7 @@ public class NexusKitAction extends SBActionAdapter {
 	 * @throws ActionException 
 	 */
 	private Object getSharedKits(SMTServletRequest req) throws ActionException {
-	    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
-		NexusKitVO kit = new NexusKitVO(getSolrCollection((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1)));
+		NexusKitVO kit = new NexusKitVO(NexusProductVO.solrIndex);
 		StringBuilder sql = new StringBuilder(300);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT *, u.PROFILE_ID as SHARED_ID FROM ").append(customDb).append("DPY_SYN_NEXUS_SET_INFO s ");
@@ -207,8 +206,7 @@ public class NexusKitAction extends SBActionAdapter {
 					super.putModuleData("Item Successfully Copied."+successMsgEnd);
 					break;
 				case NewKit:
-				    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
-					NexusKitVO newKit = new NexusKitVO((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
+					NexusKitVO newKit = new NexusKitVO(NexusProductVO.solrIndex);
 					UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 					newKit.setKitDesc("Empty Kit");
 					newKit.setOwnerId(user.getProfileId());
@@ -674,7 +672,7 @@ public class NexusKitAction extends SBActionAdapter {
 						if (kit != null) kits.add(kit);
 					}
 					currentKit = rs.getString("SET_INFO_ID");
-					kit = new NexusKitVO(rs, collection);
+					kit = new NexusKitVO(rs, NexusProductVO.solrIndex);
 					if (StringUtil.checkVal(rs.getString("SHARED_ID")).length() > 0) {
 						kit.setShared(true);
 					}
@@ -765,9 +763,8 @@ public class NexusKitAction extends SBActionAdapter {
 				editProduct(req);
 				break;
 			case Kit:
-			    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 				NexusKitVO kit = (NexusKitVO)req.getSession().getAttribute(KIT_SESSION_NM);
-				if (kit == null) kit = new NexusKitVO((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
+				if (kit == null) kit = new NexusKitVO(NexusProductVO.solrIndex);
 				kit.setData(req);
 				req.getSession().setAttribute(KIT_SESSION_NM, kit);
 				break;
@@ -783,9 +780,8 @@ public class NexusKitAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	private void editProduct(SMTServletRequest req) throws ActionException {
-	    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		NexusKitVO kit = (NexusKitVO)req.getSession().getAttribute(KIT_SESSION_NM);
-		if(kit == null) kit = new NexusKitVO((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
+		if(kit == null) kit = new NexusKitVO(NexusProductVO.solrIndex);
 		NexusKitLayerVO layer = kit.findLayer(req.getParameter("layerId"));
 		if (req.hasParameter("products")) {
 			int order = layer.getProducts().size() + 1;
@@ -814,9 +810,8 @@ public class NexusKitAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	private void editLayer(SMTServletRequest req) throws ActionException {
-	    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		NexusKitVO kit = (NexusKitVO)req.getSession().getAttribute(KIT_SESSION_NM);
-		if(kit == null) kit = new NexusKitVO((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
+		if(kit == null) kit = new NexusKitVO(NexusProductVO.solrIndex);
 		NexusKitLayerVO layer = kit.findLayer(req.getParameter("layerId"));
 		if (layer == null) {
 			layer = new NexusKitLayerVO(req);
@@ -1025,7 +1020,11 @@ public class NexusKitAction extends SBActionAdapter {
 				int i = 1;
 				insertState.setString(i++, product.getProductId());
 				insertState.setInt(i++, product.getQuantity());
-				insertState.setString(i++, product.getUomLevel().get(0));
+				if (product.getUomLevel().isEmpty()) {
+					insertState.setString(i++, "");
+				} else {
+					insertState.setString(i++, product.getUomLevel().get(0));
+				}
 				insertState.setTimestamp(i++, Convert.formatTimestamp(product.getStart()));
 				insertState.setTimestamp(i++, Convert.formatTimestamp(product.getEnd()));
 				insertState.setString(i++, product.getPrimaryDeviceId());
@@ -1104,7 +1103,7 @@ public class NexusKitAction extends SBActionAdapter {
 				for (int i=0; i < req.getParameterValues("kitId").length; i++) {
 					sql.append("OR (SET_INFO_ID = ? and PROFILE_ID = ?) ");
 				}
-
+				super.retrieve(req);
 			    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 				try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 					int i = 1;
