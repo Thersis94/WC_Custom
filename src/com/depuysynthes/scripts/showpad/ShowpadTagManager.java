@@ -166,7 +166,7 @@ public class ShowpadTagManager {
 
 		} catch (IOException | NullPointerException ioe) {
 			if (!suppress404 && "Not Found".equals(ioe.getMessage()))
-				throw new InvalidDataException("Asset not found in Showpad", ioe);
+				throw new InvalidDataException("Asset not found in Showpad.  Delete Showpad pointers & update Mediabin record on SMT's side to recreate: " + showpadId, ioe);
 		}
 
 		log.info("loaded " + tags.size() + " showpad tags: " + tags);

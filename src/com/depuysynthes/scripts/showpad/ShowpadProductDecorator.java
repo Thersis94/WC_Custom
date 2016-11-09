@@ -141,6 +141,15 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 
 		//replicate product (tag) changes out to Showpad
 		syncTags(masterRecords);
+		
+		//now that all products have attached their tags to the mediabin 
+		//assets, iterate through them and push to Showpad.
+		try {
+			pushTagsToShowpad(masterRecords);
+		} catch (QuotaException qe) {
+			failures.add(qe);
+			log.error(qe);
+		}
 
 		//parse the product list for SOUS products containing no MediaBin assets
 		findEmptyProducts(masterRecords);
@@ -179,16 +188,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 				}
 			}
 			//At this point we know all the mediabin assets that require the hierachy of 'this' product.
-			marryTagsToAssets(masterRecords, hierarchy, assetIds, prod.getLastUpdate());
-		}
-
-		//now that all products have attached their tags to the mediabin 
-		//assets, iterate through them and push to Showpad.
-		try {
-			pushTagsToShowpad(masterRecords);
-		} catch (QuotaException qe) {
-			failures.add(qe);
-			log.error(qe);
+			marryProductTagsToAssets(masterRecords, hierarchy, assetIds, prod.getLastUpdate());
 		}
 	}
 
@@ -200,7 +200,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	 * @param hierarchy
 	 * @param assetIds
 	 */
-	private void marryTagsToAssets(Map<String, MediaBinDeltaVO> masterRecords, 
+	private void marryProductTagsToAssets(Map<String, MediaBinDeltaVO> masterRecords, 
 			String[] hierarchy, List<String> assetIds, Date prodUpdDt) {
 		boolean relevant = false;
 		for (MediaBinDeltaVO mbAsset : masterRecords.values()) {
@@ -249,7 +249,10 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 				if (!needsUpdated && mbAsset.getProductUpdateDt() != null)
 					needsUpdated = thresDate.before(mbAsset.getProductUpdateDt());
 
-				if (!needsUpdated) continue;
+				if (!needsUpdated) {
+					log.info("asset does not need updated based on logic: " + mbAsset.getDpySynMediaBinId());
+					continue;
+				}
 
 				//get the showpad asset id for this mediabin asset id, so the ShowpadTagMgr knows how to talk to Showpad
 				mbAsset.setShowpadId(divisionAssets.get(mbAsset.getDpySynMediaBinId()));
