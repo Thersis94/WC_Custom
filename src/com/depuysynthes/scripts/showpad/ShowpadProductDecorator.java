@@ -175,21 +175,39 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 			
 			List<String> assetIds = new ArrayList<>();
 			for (ProductAttributeVO attrVo : mbAttribs) {
+				Collection<String> foundIds;
 				switch (StringUtil.checkVal(attrVo.getTitle())) {
 					case "mediabin-static":
-						assetIds.addAll(convertFromJson(attrVo.getValueText()));
+						foundIds = convertFromJson(attrVo.getValueText());
 						break;
 					case "mediabin-sous":
-						assetIds.addAll(findAssetsForSous(masterRecords, prod.getFullProductName()));
+						//take the update date of the Attribute if it's newer than the product and contains assets.
+						foundIds = findAssetsForSous(masterRecords, prod.getFullProductName());
 						break;
 					default:
 						//static HTML, use a regex to parse the HTML for mediabin links
-						assetIds.addAll(findAssetsInHtml(attrVo.getValueText()));
+						foundIds = findAssetsInHtml(attrVo.getValueText());
 				}
+				setProdUpdDate(prod, attrVo, foundIds);
+				assetIds.addAll(foundIds);
 			}
 			//At this point we know all the mediabin assets that require the hierachy of 'this' product.
 			marryProductTagsToAssets(masterRecords, hierarchy, assetIds, prod.getLastUpdate());
 		}
+	}
+	
+	
+	/**
+	 * set the update date of the product to that of the Attribute if it's newer than the product and contains assets.
+	 * @param prod
+	 * @param attr
+	 * @param ids
+	 */
+	private void setProdUpdDate(ProductVO prod, ProductAttributeVO attr, Collection<String> ids) {
+		if (ids == null || ids.isEmpty()) return; //this attribute has no assets we care about.
+		if (attr.getUpdateDt() == null) return; //this attribute does not have an update date, for whatever reason
+		if (attr.getUpdateDt().after(prod.getLastUpdate())) //the attribute has a more recent updateDt than the product.
+			prod.setLastUpdate(attr.getUpdateDt());
 	}
 
 
