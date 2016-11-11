@@ -54,8 +54,9 @@ public class ShowpadDivisionUtil {
 	private Map<String, String> divisionAssets = new HashMap<>(8000);
 	private Map<String, String> inserts = new HashMap<>();
 	private Map<String, String> updates = new HashMap<>();
-	private int dbCount = 0;
-	private int deleteCount = 0;
+	private int dbCount;
+	private int deleteCount;
+	private int failCount;
 	private String divisionId;
 	private String divisionNm;
 	private String divisionUrl;
@@ -536,15 +537,17 @@ public class ShowpadDivisionUtil {
 	public Map<String, String> getDivisionAssets() {
 		return divisionAssets;
 	}
+	
+	public ShowpadTagManager getTagManager() {
+		return tagMgr;
+	}
 
 	public int getDbCount() {
 		return dbCount;
 	}
-
 	public void setDbCount(int dbCount) {
 		this.dbCount = dbCount;
 	}
-
 	public int getInsertCount() {
 		return inserts.size();
 	}
@@ -554,7 +557,10 @@ public class ShowpadDivisionUtil {
 	public int getDeleteCount() {
 		return deleteCount;
 	}
-	public ShowpadTagManager getTagManager() {
-		return tagMgr;
+	public int getFailCount() {
+		return failCount;
+	}
+	public void setFailCount(int failCount) {
+		this.failCount = failCount;
 	}
 }

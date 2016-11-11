@@ -71,7 +71,7 @@ public class ShowpadTagManager {
 	 * @throws QuotaException 
 	 */
 	private void loadDivisionTagList() throws QuotaException {
-		String tagUrl = divisionUrl + "/tags.json?limit=100000&divisionId=" + divisionId + "&fields=id,name,externalId";
+		String tagUrl = divisionUrl + "/tags.json?limit=10000&fields=id,name,externalId";
 		log.debug(tagUrl);
 		try {
 			String resp = showpadUtil.executeGet(tagUrl);
