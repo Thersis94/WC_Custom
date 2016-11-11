@@ -40,6 +40,8 @@ import net.sf.json.JSONObject;
  * @since Feb 8, 2016
  ****************************************************************************/
 public class ShowpadDivisionUtil {
+	
+	protected static String FAILED_PROCESSING = "FAILED_PROCESSING"; //something we record for items that fail to add to Showpad
 
 	protected static Logger log = Logger.getLogger(ShowpadDivisionUtil.class);
 	protected Properties props = null;
@@ -103,14 +105,16 @@ public class ShowpadDivisionUtil {
 		Map<String, String> params = new HashMap<>();
 		FileType fType = new FileType(vo.getFileNm());
 		String title = makeShowpadAssetName(vo, fType);
-		boolean isShowpadUpdate = (vo.getShowpadId() != null && !vo.getShowpadId().isEmpty()); 
+		boolean isShowpadUpdate = !StringUtil.isEmpty(vo.getShowpadId()); 
 
-		if (isShowpadUpdate) {
-			//this asset can be ignored if we have it saved and there is no state change
-			if (State.Ignore == vo.getRecordState()) {
-				log.info("no changes needed to " + vo.getDpySynMediaBinId());
-				return;
-			}
+		//this asset can be ignored if we have it saved and there is no state change
+		if (isShowpadUpdate && State.Ignore == vo.getRecordState()) {
+			log.info("no changes needed to " + vo.getDpySynMediaBinId());
+			return;
+			
+		} else if (isShowpadUpdate && !FAILED_PROCESSING.equals(vo.getShowpadId())) {
+			//this record needs to be updated, and didn't previous fail to add to Showpad.
+			//failures need to be treated as Adds (below), meaning we'll try to add them as new even though they failed last time.
 
 			//send as an 'update' to Showpad
 			postUrl = showpadApiUrl + "/assets/" + vo.getShowpadId() + ".json";
@@ -119,7 +123,7 @@ public class ShowpadDivisionUtil {
 			//check if this file is already in Showpad before treating it as new
 			vo.setShowpadId(findShowpadId(title));
 
-			if (vo.getShowpadId() != null && !vo.getShowpadId().isEmpty()) {
+			if (!StringUtil.isEmpty(vo.getShowpadId())) {
 				//if the file is already there, and doesn't need updating, simply move on.
 				//first capture it as an insert so we'll have it in our database next time.
 				if (State.Ignore == vo.getRecordState()) {
@@ -430,17 +434,17 @@ public class ShowpadDivisionUtil {
 
 			JSONObject response = json.getJSONObject("response");
 			String status = response.optString("status");
-			if ("failed".equalsIgnoreCase(status)) throw new InvalidDataException(status);
+			if ("failed".equalsIgnoreCase(status)) return FAILED_PROCESSING;
 
 			JSONObject asset = response.getJSONObject("asset");
-			if (asset != null && !asset.isNullObject() && asset.optString("id").length() > 0)
+			if (asset != null && !asset.isNullObject() && !StringUtil.isEmpty(asset.optString("id")))
 				return asset.getString("id");
 
 			log.info(ticketId + " is not finished yet, status=" + status);
 
 		} catch (IOException | NullPointerException ioe) {
 			failures.add(ioe);
-			log.error("could not load showpad tags", ioe);
+			log.error("could not load showpad assetId from queue ticket", ioe);
 		}
 
 		return null;
