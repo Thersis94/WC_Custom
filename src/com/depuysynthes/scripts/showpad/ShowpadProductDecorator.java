@@ -30,6 +30,7 @@ import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.commerce.product.ProductCatalogAction;
@@ -436,7 +437,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 		Set<String> prodNames = productSOUSNames.get(prodSousName);
 		if (prodNames == null) prodNames = new HashSet<>();
 		prodNames.add(prodName);
-		productSOUSNames.put(prodSousName, prodNames);
+		productSOUSNames.put(scrubString(prodSousName), prodNames);
 	}
 
 
@@ -449,7 +450,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	 */
 	private List<String> findAssetsForSous(Map<String, MediaBinDeltaVO> masterRecords, String prodSousName) {
 		List<String> data = new ArrayList<>();
-
+		
 		for (MediaBinDeltaVO mbAsset : masterRecords.values()) {
 			if (State.Delete == mbAsset.getRecordState() || StringUtil.checkVal(mbAsset.getProdNm()).isEmpty())
 				continue; //nothing to do here, this asset has no SOUS value, or is being deleted.
@@ -466,6 +467,15 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 		return data;
 	}
 	
+	
+	/**
+	 * returns a cleaned-up version of the string.  remove trademarks, etc. then lowercases
+	 * @param sous
+	 * @return
+	 */
+	private String scrubString(String sous) {
+		return StringEncoder.encodeExtendedAscii(sous);
+	}
 	
 	/**
 	 * finds assets in HTML using a regex and returns them in a List<String>
@@ -505,7 +515,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 				Set<String> trackingNos = mediabinSOUSNames.get(val);
 				if (trackingNos == null) trackingNos = new HashSet<>();
 				trackingNos.add(mbAsset.getTrackingNoTxt());
-				mediabinSOUSNames.put(val, trackingNos);
+				mediabinSOUSNames.put(scrubString(val), trackingNos);
 			}
 		}
 		log.info("found " + mediabinSOUSNames.size() + " unique SOUS names in Mediabin assets");
@@ -532,12 +542,11 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	 * @return
 	 */
 	private boolean isQualifiedSousValue(String sousVal) {
-		if (sousVal == null || sousVal.isEmpty()) return false;
+		if (StringUtil.isEmpty(sousVal)) return false;
 		//remove dots and dashes that commonly appear in number sequences.  e.g. "319.010"
 		sousVal = StringUtil.removeNonAlphaNumeric(sousVal);
 		//if all we have is numbers, this is not a qualified sous value
 		boolean ignorable = sousVal.matches("[0-9]+");
-		log.debug("report unused sous name " + sousVal + " in email? " + !ignorable);
 		return !ignorable;
 	}
 	

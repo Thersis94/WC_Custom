@@ -59,7 +59,7 @@ public class ShowpadTagManager {
 		this.divisionUrl = divisionUrl;
 		this.showpadUtil = util;
 		showpadTags = new HashMap<>(1000);
-		loadShowpadTagList();
+		loadDivisionTagList();
 	}
 
 
@@ -68,8 +68,9 @@ public class ShowpadTagManager {
 	 * If we try to add a tag to an asset without using it's ID, and it already existing in the system, it will fail.
 	 * @throws QuotaException 
 	 */
-	private void loadShowpadTagList() throws QuotaException {
-		String tagUrl = divisionUrl + "/tags.json?limit=100000&id=" + divisionId + "&fields=id,name,externalId";
+	private void loadDivisionTagList() throws QuotaException {
+		String tagUrl = divisionUrl + "/tags.json?limit=100000&divisionId=" + divisionId + "&fields=id,name,externalId";
+		log.debug(tagUrl);
 		try {
 			String resp = showpadUtil.executeGet(tagUrl);
 			JSONObject json = JSONObject.fromObject(resp);

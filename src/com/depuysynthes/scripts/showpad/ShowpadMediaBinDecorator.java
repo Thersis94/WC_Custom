@@ -117,6 +117,7 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 		for (String d : divs) {
 			String[] div = d.split("=");
 			divisions.add(new ShowpadDivisionUtil(props, div[1], div[0], showpadApi, dbConn));
+			log.debug("created division " + div[0] + " with id " + div[1]);
 		}
 		log.info("loaded " + divisions.size() + " showpad divisions");
 	}
@@ -179,10 +180,6 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 		//Insert runs after deletes & updates, so wait for the 'inserts' invocation so 
 		//all the mediabin records are already in our database.
 		if (!isInsert) return;
-
-		//confirm we have something to add or update
-		if (getDataCount("inserted") == 0 && getDataCount("updated") == 0) return;
-
 
 		//push all changes to Showpad
 		outer: for (MediaBinDeltaVO vo : masterRecords.values()) {
