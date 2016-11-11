@@ -256,7 +256,6 @@ public class ShowpadTagManager {
 		log.debug("asset=" + mbAsset.getDpySynMediaBinId() + ", linking tags: " + tagsToAdd.keySet());
 		unlinkAssetFromTags(showpadId, tagsToDelete.values());
 		linkAssetToTags(showpadId, tagsToAdd.values());
-		//put the added tags onto the asset - s
 	}
 	
 	
