@@ -436,7 +436,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 		log.debug("no Mediabin matches for PROD_NM=" + prodSousName);
 		Set<String> prodNames = productSOUSNames.get(prodSousName);
 		if (prodNames == null) prodNames = new HashSet<>();
-		prodNames.add(prodName);
+		prodNames.add(scrubString(prodName));
 		productSOUSNames.put(scrubString(prodSousName), prodNames);
 	}
 

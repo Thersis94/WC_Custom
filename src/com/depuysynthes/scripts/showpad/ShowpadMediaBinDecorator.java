@@ -280,30 +280,28 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 	@Override
 	protected void countDBRecords() {
 		super.countDBRecords();
-
-		int cnt = 0;
-		StringBuilder sql = new StringBuilder(100);
-		sql.append("select count(*), division_id from ");
+		
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("select count(*), division_id, case when asset_id='FAILED_PROCESSING' then 1 else 0 end as status from ");
 		sql.append(props.get(Constants.CUSTOM_DB_SCHEMA)).append("dpy_syn_showpad ");
-		sql.append("where asset_id != ? group by division_id");
+		sql.append("group by division_id, case when asset_id='FAILED_PROCESSING' then 1 else 0 end");
 		log.debug(sql);
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, ShowpadDivisionUtil.FAILED_PROCESSING);
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				for (ShowpadDivisionUtil util : divisions) {
-					if (rs.getString(2).equals(util.getDivisionId()))
+					if (rs.getString(2).equals(util.getDivisionId()) && rs.getInt("status") == 0) {
 						util.setDbCount(rs.getInt(1));
+					} else if (rs.getString(2).equals(util.getDivisionId()) && rs.getInt("status") == 1) {
+						util.setFailCount(rs.getInt(1));
+					}
 				}
 			}
 
 		} catch (SQLException sqle) {
 			log.error("could not count records", sqle);
 		}
-
-		dataCounts.put("showpad-total", cnt);
-		log.info("there are now " + cnt + " records in the showpad database");
 	}
 
 
@@ -316,10 +314,11 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 		//to add valueable stats to the admin email
 		for (ShowpadDivisionUtil util : divisions) {
 			html.append("<h3>Showpad ").append(util.getDivisionNm()).append(" Division</h3>");
-			html.append("Showpad Added: ").append(util.getInsertCount()).append("<br/>");
-			html.append("Showpad Updated: ").append(util.getUpdateCount()).append("<br/>");
-			html.append("Showpad Deleted: ").append(util.getDeleteCount()).append("<br/>");
-			html.append("Showpad Total: ").append(util.getDbCount()).append("<br/><br/>");
+			html.append("Added: ").append(util.getInsertCount()).append("<br/>");
+			html.append("Updated: ").append(util.getUpdateCount()).append("<br/>");
+			html.append("Deleted: ").append(util.getDeleteCount()).append("<br/>");
+			html.append("Total: ").append(util.getDbCount()).append("<br/>");
+			html.append("Failed to Ingest: ").append(util.getFailCount()).append("<br/><br/>");
 
 			List<Exception> failures = util.getFailures();
 			if (!failures.isEmpty()) {
