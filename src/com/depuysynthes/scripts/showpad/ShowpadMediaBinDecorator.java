@@ -285,10 +285,11 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("select count(*), division_id from ");
 		sql.append(props.get(Constants.CUSTOM_DB_SCHEMA)).append("dpy_syn_showpad ");
-		sql.append("group by division_id");
+		sql.append("where asset_id != ? group by division_id");
 		log.debug(sql);
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, ShowpadDivisionUtil.FAILED_PROCESSING);
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				for (ShowpadDivisionUtil util : divisions) {
