@@ -150,7 +150,7 @@ public class ShowpadTagManager {
 	private Map<String, ShowpadTagVO> loadAssetTags(String showpadId, String externalId, boolean suppress404) 
 			throws QuotaException, InvalidDataException {
 		Map<String,ShowpadTagVO> tags = new HashMap<>();
-		String tagUrl = showpadApiUrl + "/assets/" + showpadId + "/tags.json?suppress_response_codes=true&fields=id,name,externalId";
+		String tagUrl = showpadApiUrl + "/assets/" + showpadId + "/tags.json?limit=1000&suppress_response_codes=true&fields=id,name,externalId";
 		if (externalId != null) tagUrl += "&externalId=" + externalId; //filters to only tags on this asset with this externalId
 		try {
 			String resp = showpadUtil.executeGet(tagUrl);
@@ -242,8 +242,10 @@ public class ShowpadTagManager {
 		for (ShowpadTagVO tag : assignedTags.values()) {
 			//do not delete any that aren't smt-product tags; meaning they 
 			//were created by someone else or something else and are not ours to delete.
-			if (tag.getExternalId() == null || !SMT_PRODUCT_EXTERNALID.equals(tag.getExternalId()))
+			if (tag.getExternalId() == null || !SMT_PRODUCT_EXTERNALID.equals(tag.getExternalId())) {
+				log.warn("cannot remove tag " + tag + " from asset " + mbAsset.getTrackingNoTxt() + " it is not ours");
 				tagsToDelete.remove(tag.getName());
+			}
 		}
 
 		//remove from the 'add' list any tags we want to keep that are already tied to the asset.
@@ -251,8 +253,9 @@ public class ShowpadTagManager {
 			tagsToAdd.remove(tVo.getName());
 		
 		//do the work
-		log.debug("asset=" + mbAsset.getDpySynMediaBinId() + ", unlinking assets " + tagsToDelete.keySet());
-		log.debug("asset=" + mbAsset.getDpySynMediaBinId() + ", linking assets " + tagsToAdd.keySet());
+		log.debug("asset=" + mbAsset.getDpySynMediaBinId() + ", previous tags: " + assignedTags.keySet());
+		log.debug("asset=" + mbAsset.getDpySynMediaBinId() + ", unlinking tags: " + tagsToDelete.keySet());
+		log.debug("asset=" + mbAsset.getDpySynMediaBinId() + ", linking tags: " + tagsToAdd.keySet());
 		unlinkAssetFromTags(showpadId, tagsToDelete.values());
 		linkAssetToTags(showpadId, tagsToAdd.values());
 	}
@@ -306,9 +309,13 @@ public class ShowpadTagManager {
 	 * @throws QuotaException
 	 */
 	private void executeAssetTagXR(String tagId, String showpadAssetId, String method) throws QuotaException {
-		String url = showpadApiUrl + "/tags/" + tagId + "/assets/" + showpadAssetId + ".json?method=" + method;
+		String url = showpadApiUrl + "/tags/" + tagId + "/assets/" + showpadAssetId + ".json?suppress_response_codes=true&method=" + method;
 		try {
-			showpadUtil.executeGet(url);
+			String resp = showpadUtil.executeGet(url);
+			JSONObject metaResp = JSONObject.fromObject(resp).getJSONObject("meta");
+			if (!"200".equals(metaResp.getString("code")))
+				throw new IOException(metaResp.getString("description"));
+			
 			log.debug("asset-tag altered by executing: " + url);
 		} catch (IOException e) {
 			failures.add(e);
