@@ -321,15 +321,17 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 			html.append("Showpad Deleted: ").append(util.getDeleteCount()).append("<br/>");
 			html.append("Showpad Total: ").append(util.getDbCount()).append("<br/><br/>");
 
-			if (util.getFailures().size() > 0) {
+			List<Exception> failures = util.getFailures();
+			if (!failures.isEmpty()) {
 				html.append("<b>The following issues were reported:</b><br/><br/>");
 
 				// loop the errors and display them
-				for (int i=0; i < util.getFailures().size(); i++) {
-					html.append(util.getFailures().get(i).getMessage()).append("<hr/>\r\n");
-					log.warn(util.getFailures().get(i).getMessage());
+				for (int i=0; i < failures.size(); i++) {
+					html.append(failures.get(i).getMessage()).append("<hr/>\r\n");
+					log.warn(failures.get(i).getMessage());
 				}
 			}
+			
 			html.append("<hr/>\r\n");
 		}
 	}

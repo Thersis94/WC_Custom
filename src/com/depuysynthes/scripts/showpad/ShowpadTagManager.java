@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import opennlp.tools.util.StringUtil;
+
 import org.apache.log4j.Logger;
 
 import net.sf.json.JSONArray;
@@ -221,7 +223,7 @@ public class ShowpadTagManager {
 	 */
 	public void updateProductTags(MediaBinDeltaVO mbAsset) throws QuotaException, InvalidDataException {
 		String showpadId = mbAsset.getShowpadId();
-		if (showpadId == null || showpadId.isEmpty()) 
+		if (StringUtil.isEmpty(showpadId)) 
 			throw new InvalidDataException("Asset not found in Showpad: " + mbAsset.getTrackingNoTxt());
 
 		Map<String, ShowpadTagVO> assignedTags = loadAssetTags(showpadId, null, false); //do not suppress404, asset should exist at this point
