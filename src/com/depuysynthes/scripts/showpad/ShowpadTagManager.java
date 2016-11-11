@@ -10,8 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import opennlp.tools.util.StringUtil;
-
 import org.apache.log4j.Logger;
 
 import net.sf.json.JSONArray;
@@ -21,6 +19,7 @@ import com.depuysynthes.scripts.DSMediaBinImporterV2;
 import com.depuysynthes.scripts.MediaBinDeltaVO;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.io.FileType;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: ShowpadTagManager.java<p/>
