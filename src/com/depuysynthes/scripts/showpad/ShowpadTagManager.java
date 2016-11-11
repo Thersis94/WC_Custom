@@ -242,10 +242,8 @@ public class ShowpadTagManager {
 		for (ShowpadTagVO tag : assignedTags.values()) {
 			//do not delete any that aren't smt-product tags; meaning they 
 			//were created by someone else or something else and are not ours to delete.
-			if (tag.getExternalId() == null || !SMT_PRODUCT_EXTERNALID.equals(tag.getExternalId())) {
-				log.warn("cannot remove tag " + tag + " from asset " + mbAsset.getTrackingNoTxt() + " it is not ours");
+			if (tag.getExternalId() == null || !SMT_PRODUCT_EXTERNALID.equals(tag.getExternalId()))
 				tagsToDelete.remove(tag.getName());
-			}
 		}
 
 		//remove from the 'add' list any tags we want to keep that are already tied to the asset.
@@ -258,6 +256,7 @@ public class ShowpadTagManager {
 		log.debug("asset=" + mbAsset.getDpySynMediaBinId() + ", linking tags: " + tagsToAdd.keySet());
 		unlinkAssetFromTags(showpadId, tagsToDelete.values());
 		linkAssetToTags(showpadId, tagsToAdd.values());
+		//put the added tags onto the asset - s
 	}
 	
 	
