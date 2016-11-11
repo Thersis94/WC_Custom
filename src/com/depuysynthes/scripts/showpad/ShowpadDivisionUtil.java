@@ -41,7 +41,11 @@ import net.sf.json.JSONObject;
  ****************************************************************************/
 public class ShowpadDivisionUtil {
 	
-	protected static String FAILED_PROCESSING = "FAILED_PROCESSING"; //something we record for items that fail to add to Showpad
+	/*
+	 * a string constant we record for items that fail to add to Showpad - 
+	 * this enables us to 
+	 */
+	protected static final String FAILED_PROCESSING = "FAILED_PROCESSING";
 
 	protected static Logger log = Logger.getLogger(ShowpadDivisionUtil.class);
 	protected Properties props = null;
