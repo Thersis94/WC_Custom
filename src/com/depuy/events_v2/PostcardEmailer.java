@@ -356,15 +356,20 @@ public class PostcardEmailer {
 		msg.append("Seminar #: ").append(sem.getRSVPCodes()).append("\r");
 		msg.append("Seminar Date: ").append(Convert.formatDate(sem.getEarliestEventDate(), Convert.DATE_FULL_MONTH)).append("\r");
 		msg.append("Seminar Type: ").append(sem.getEvents().get(0).getEventTypeDesc()).append("\r\r");
-		msg.append("Consumable Type(s) Requested:\r");
-		String[] vals = req.getParameterValues("boxType");
-		for (int i=0; i < vals.length; i++) {
-			if (i > 0) msg.append(", ");
-			msg.append(vals[i]);
+		if (req.hasParameter("boxType")) {
+			msg.append("Consumable Type(s) Requested:\r");
+			String[] vals = req.getParameterValues("boxType");
+			for (int i=0; i < vals.length; i++) {
+				if (i > 0) msg.append(", ");
+				msg.append(vals[i]);
+			}
+			msg.append("\r\r");
 		}
-		msg.append("\r\rQuantity Needed:\r");
-		msg.append(req.getParameter("qnty"));
-		msg.append("\r\rMailing Address:\r");
+		if (req.hasParameter("qnty")) {
+			msg.append("Quantity Needed:\r");
+			msg.append(req.getParameter("qnty")).append("\r\r");
+		}
+		msg.append("Mailing Address:\r");
 		msg.append(req.getParameter("mailingAddress")).append("\r\r");
 		msg.append("For more information about this Seminar please visit the website.\r");
 		msg.append(site.getFullSiteAlias()).append("/?reqType=summary&eventPostcardId=");
