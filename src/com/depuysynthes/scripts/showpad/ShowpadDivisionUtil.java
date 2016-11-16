@@ -362,7 +362,7 @@ public class ShowpadDivisionUtil {
 	 * @param masterRecords
 	 * @throws QuotaException 
 	 */
-	public void processTicketQueue(Map<String, MediaBinDeltaVO> masterRecords) throws QuotaException {
+	public void processTicketQueue() throws QuotaException {
 		//continue processing the queue until it's empty; meaning Showpad has processed all our assets
 		int count = insertTicketQueue.size();
 		int runCount = 0;
@@ -376,7 +376,7 @@ public class ShowpadDivisionUtil {
 					break;
 				}
 			}
-			Set<String> removes = testForCompletion(masterRecords);
+			Set<String> removes = testForCompletion();
 			//remove the processed ones from our ticketQueue.
 			//this cannot be done above (inline) because of concurrency issues (ConcurrentModificationException)
 			for (String t : removes) {
@@ -394,7 +394,7 @@ public class ShowpadDivisionUtil {
 	 * @return
 	 * @throws QuotaException
 	 */
-	private Set<String> testForCompletion(Map<String, MediaBinDeltaVO> masterRecords) throws QuotaException {
+	private Set<String> testForCompletion() throws QuotaException {
 		Set<String> removes = new HashSet<>();
 		for (Map.Entry<String,String> row : insertTicketQueue.entrySet()) {
 			String assetId;
@@ -404,8 +404,8 @@ public class ShowpadDivisionUtil {
 				if (assetId != null) {
 					log.info("found assetId=" + assetId + " for ticket=" + ticketId);
 					inserts.put(insertTicketQueue.get(ticketId), assetId);
-					//set the assetId onto the master record for downstream processing to use
-					masterRecords.get(insertTicketQueue.get(ticketId)).setShowpadId(assetId);
+					//set the assetId onto the mapping of division assets
+					divisionAssets.put(insertTicketQueue.get(ticketId), assetId);
 					
 					removes.add(ticketId);
 					log.info("finished processing ticket " + ticketId + ", its now assetId=" + assetId);
