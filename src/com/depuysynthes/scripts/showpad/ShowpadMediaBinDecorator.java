@@ -205,7 +205,7 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 		//process the ticket queue for each division
 		try {
 			for (ShowpadDivisionUtil util : divisions)
-				util.processTicketQueue(masterRecords);
+				util.processTicketQueue();
 		} catch (QuotaException qe) {
 			failures.add(qe);
 			log.error("could not process showpad queue, quota limit reached", qe);
