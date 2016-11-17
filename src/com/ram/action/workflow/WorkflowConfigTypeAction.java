@@ -9,11 +9,11 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.ram.workflow.data.WorkflowConfigTypeVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.workflow.data.WorkflowConfigTypeVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************

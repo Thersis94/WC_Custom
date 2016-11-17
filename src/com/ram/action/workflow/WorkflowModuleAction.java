@@ -10,10 +10,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-//RAMDataFeed
-import com.ram.workflow.data.WorkflowModuleVO;
-import com.ram.workflow.data.WorkflowConfigParamVO;
-
 //SMTBaseLibs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -21,7 +17,8 @@ import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
-
+import com.siliconmtn.workflow.data.WorkflowConfigParamVO;
+import com.siliconmtn.workflow.data.WorkflowModuleVO;
 //WebCrescendo 2.0
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
