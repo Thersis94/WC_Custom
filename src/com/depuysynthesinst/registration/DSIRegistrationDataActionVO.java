@@ -6,11 +6,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.depuysynthesinst.DSIUserDataVO;
 import com.siliconmtn.data.report.ExcelReport;
 import com.siliconmtn.data.report.StandardExcelReport;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.registration.RegistrationDataContainer;
 import com.smt.sitebuilder.action.registration.RegistrationDataModuleVO;
@@ -46,7 +46,7 @@ public class DSIRegistrationDataActionVO extends AbstractSBReportVO {
 	public byte[] generateReport() {
 		log.debug("starting generateReport()");
 
-		ExcelReport rpt = new StandardExcelReport(this.getHeader());;
+		ExcelReport rpt = new StandardExcelReport(this.getHeader());
 
 		List<Map<String, Object>> rows = new ArrayList<>();
 
@@ -65,13 +65,18 @@ public class DSIRegistrationDataActionVO extends AbstractSBReportVO {
 	private List<Map<String, Object>> generateDataRows(
 			List<Map<String, Object>> rows) {
 
+		//profession and specialty are in the form as guids placed into strings for readablity
+		String profession = DSIUserDataVO.RegField.c0a80241b71c9d40a59dbd6f4b621260.name();
+		String Specialty = DSIUserDataVO.RegField.c0a80241b71d27b038342fcb3ab567a0.name();
+		
+		
 		for (RegistrationDataModuleVO rdm : cdc.getData()) {
 			Map<String, Object> row = new HashMap<>();
 
 			row.put("DATE", Convert.formatDate(rdm.getSubmittalDate(), "MMMM dd, yyyy"));
 			row.put("TIME", Convert.formatDate(rdm.getSubmittalDate(), Convert.TIME_SHORT_PATTERN));
 			row.put("PROFILE", rdm.getProfileId());
-			row.put("DSI_TTLMS_ID", StringUtil.checkVal(rdm.getExtData().get("DSI_TTLMS_ID")));
+			row.put(DSIUserDataVO.RegField.DSI_TTLMS_ID.name(), StringUtil.checkVal(rdm.getExtData().get(DSIUserDataVO.RegField.DSI_TTLMS_ID.name())));
 			row.put("SUBMITTAL_ID", rdm.getRegisterSubmittalId());
 			row.put("ROLE_LEVEL", rdm.getRoleName());
 			row.put("ROLE_STATUS", rdm.getRoleStatus());
@@ -80,18 +85,17 @@ public class DSIRegistrationDataActionVO extends AbstractSBReportVO {
 			row.put("DSI_DEGREE", StringUtil.checkVal(rdm.getExtData("DSI_DEGREE")));
 			row.put("EMAIL_ADDRESS", rdm.getEmailAddress());
 			row.put("COUNTRY", rdm.getCountryCode());
-			//profession and specialty are in the form as guids
-			row.put("c0a80241b71c9d40a59dbd6f4b621260", StringUtil.checkVal(rdm.getExtData("c0a80241b71c9d40a59dbd6f4b621260")));
-			row.put("c0a80241b71d27b038342fcb3ab567a0", StringUtil.checkVal(rdm.getExtData("c0a80241b71d27b038342fcb3ab567a0")));
-			row.put("DSI_PGY", StringUtil.checkVal(rdm.getExtData("DSI_PGY")));
-			row.put("DSI_ACAD_NM", StringUtil.checkVal(rdm.getExtData("DSI_ACAD_NM")));
+			row.put(profession, StringUtil.checkVal(rdm.getExtData(profession)));
+			row.put(Specialty, StringUtil.checkVal(rdm.getExtData(Specialty)));
+			row.put(DSIUserDataVO.RegField.DSI_PGY.name(), StringUtil.checkVal(rdm.getExtData(DSIUserDataVO.RegField.DSI_PGY.name())));
+			row.put(DSIUserDataVO.RegField.DSI_ACAD_NM.name(), StringUtil.checkVal(rdm.getExtData(DSIUserDataVO.RegField.DSI_ACAD_NM.name())));
 			row.put("DSI_ACAD_CITY", StringUtil.checkVal(rdm.getExtData("DSI_ACAD_CITY")));
 			row.put("DSI_ACAD_STATE", StringUtil.checkVal(rdm.getExtData("DSI_ACAD_STATE")));
-			row.put("DSI_PROG_ELIGIBLE", StringUtil.checkVal(rdm.getExtData("DSI_PROG_ELIGIBLE")));
-			row.put("DSI_MIL_HOSP", StringUtil.checkVal(rdm.getExtData("DSI_MIL_HOSP")));
-			row.put("DSI_GRAD_DT", StringUtil.checkVal(rdm.getExtData("DSI_GRAD_DT")));
-			row.put("ALLOW_COMMUNICATION", rdm.getAllowCommunication());
-			row.put("DSI_VERIFIED", StringUtil.checkVal(rdm.getExtData("DSI_VERIFIED")));
+			row.put(DSIUserDataVO.RegField.DSI_PROG_ELIGIBLE.name(), StringUtil.checkVal(rdm.getExtData(DSIUserDataVO.RegField.DSI_PROG_ELIGIBLE.name())));
+			row.put(DSIUserDataVO.RegField.DSI_MIL_HOSP.name(), StringUtil.checkVal(rdm.getExtData(DSIUserDataVO.RegField.DSI_MIL_HOSP.name())));
+			row.put(DSIUserDataVO.RegField.DSI_GRAD_DT.name(), StringUtil.checkVal(rdm.getExtData(DSIUserDataVO.RegField.DSI_GRAD_DT.name())));
+			row.put("ALLOW_COMMUNICATION", Convert.formatInteger(rdm.getAllowCommunication()) == 1 ? "Yes":"No");
+			row.put(DSIUserDataVO.RegField.DSI_VERIFIED.name(), StringUtil.checkVal(rdm.getExtData(DSIUserDataVO.RegField.DSI_VERIFIED.name())));
 	
 			rows.add(row);
 		}
@@ -106,10 +110,14 @@ public class DSIRegistrationDataActionVO extends AbstractSBReportVO {
 	private Map<String, String> getHeader() {
 		HashMap<String, String> headerMap = new LinkedHashMap<>();
 
+		//profession and specialty are in the form as guids placed into strings for readablity
+		String profession = DSIUserDataVO.RegField.c0a80241b71c9d40a59dbd6f4b621260.name();
+		String Specialty = DSIUserDataVO.RegField.c0a80241b71d27b038342fcb3ab567a0.name();
+		
 		headerMap.put("DATE", "Date");
 		headerMap.put("TIME", "Time");
 		headerMap.put("PROFILE", "Profile ID");
-		headerMap.put("DSI_TTLMS_ID", cdc.getFields().get("DSI_TTLMS_ID"));
+		headerMap.put(DSIUserDataVO.RegField.DSI_TTLMS_ID.name(), cdc.getFields().get(DSIUserDataVO.RegField.DSI_TTLMS_ID.name()));
 		headerMap.put("SUBMITTAL_ID", "Submittal ID");
 		headerMap.put("ROLE_LEVEL", "Role Level");
 		headerMap.put("ROLE_STATUS", "Role Status");
@@ -119,17 +127,17 @@ public class DSIRegistrationDataActionVO extends AbstractSBReportVO {
 		headerMap.put("EMAIL_ADDRESS", "Email Address");
 		headerMap.put("COUNTRY", "Country");
 		//profession and specialty are in the form as guids
-		headerMap.put("c0a80241b71c9d40a59dbd6f4b621260", cdc.getFields().get("c0a80241b71c9d40a59dbd6f4b621260"));
-		headerMap.put("c0a80241b71d27b038342fcb3ab567a0", cdc.getFields().get("c0a80241b71d27b038342fcb3ab567a0"));
-		headerMap.put("DSI_PGY", cdc.getFields().get("DSI_PGY"));
-		headerMap.put("DSI_ACAD_NM", cdc.getFields().get("DSI_ACAD_NM"));
+		headerMap.put(profession, cdc.getFields().get(profession));
+		headerMap.put(Specialty, cdc.getFields().get(Specialty));
+		headerMap.put(DSIUserDataVO.RegField.DSI_PGY.name(), cdc.getFields().get(DSIUserDataVO.RegField.DSI_PGY.name()));
+		headerMap.put(DSIUserDataVO.RegField.DSI_ACAD_NM.name(), cdc.getFields().get(DSIUserDataVO.RegField.DSI_ACAD_NM.name()));
 		headerMap.put("DSI_ACAD_CITY", cdc.getFields().get("DSI_ACAD_CITY"));
 		headerMap.put("DSI_ACAD_STATE", cdc.getFields().get("DSI_ACAD_STATE"));
-		headerMap.put("DSI_PROG_ELIGIBLE", cdc.getFields().get("DSI_PROG_ELIGIBLE"));
-		headerMap.put("DSI_MIL_HOSP", cdc.getFields().get("DSI_MIL_HOSP"));
-		headerMap.put("DSI_GRAD_DT", cdc.getFields().get("DSI_GRAD_DT"));
+		headerMap.put(DSIUserDataVO.RegField.DSI_PROG_ELIGIBLE.name(), cdc.getFields().get(DSIUserDataVO.RegField.DSI_PROG_ELIGIBLE.name()));
+		headerMap.put(DSIUserDataVO.RegField.DSI_MIL_HOSP.name(), cdc.getFields().get(DSIUserDataVO.RegField.DSI_MIL_HOSP.name()));
+		headerMap.put(DSIUserDataVO.RegField.DSI_GRAD_DT.name(), cdc.getFields().get(DSIUserDataVO.RegField.DSI_GRAD_DT.name()));
 		headerMap.put("ALLOW_COMMUNICATION", "Allow Communication");
-		headerMap.put("DSI_VERIFIED", cdc.getFields().get("DSI_VERIFIED"));
+		headerMap.put(DSIUserDataVO.RegField.DSI_VERIFIED.name(), cdc.getFields().get(DSIUserDataVO.RegField.DSI_VERIFIED.name()));
 
 		return headerMap;
 	}
