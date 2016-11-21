@@ -276,6 +276,10 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 				//get the showpad asset id for this mediabin asset id, so the ShowpadTagMgr knows how to talk to Showpad
 				mbAsset.setShowpadId(divisionAssets.get(mbAsset.getDpySynMediaBinId()));
 
+				//skip any that have failed to ingest into Showpad
+				if (ShowpadDivisionUtil.FAILED_PROCESSING.equals(mbAsset.getShowpadId()))
+					continue;
+
 				log.info("************************ Starting Asset *******************************");
 				log.info("showpadId=" + mbAsset.getShowpadId() + " mbId=" + mbAsset.getDpySynMediaBinId());
 				log.info("asset tags (" + mbAsset.getTags().size() + ") " + mbAsset.getTags());
