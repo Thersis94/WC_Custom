@@ -125,7 +125,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 
 		parseProductCatalog(t);
 		log.info("loaded " + products.size() + " mediabin-using products in catalog " + catalogId);
-		
+
 		return super.loadManifest();
 	}
 
@@ -365,10 +365,17 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	private void parseProduct(Node n) {
 		ProductCategoryVO cat = (ProductCategoryVO) n.getUserObject();
 		if (cat.getProducts() == null || StringUtil.checkVal(cat.getUrlAlias()).isEmpty()) return; //not a product!
+		
+		//remove the product name from the hierarchy tree - Pierre - 11.28.16
+		StringBuilder path = new StringBuilder(n.getFullPath().length());
+		String[] lvls = n.getFullPath().split(DSMediaBinImporterV2.TOKENIZER);
+		for (int x=0; x < lvls.length-1; x++)
+			path.append(lvls[x]).append(DSMediaBinImporterV2.TOKENIZER);
+		if (path.length() > 0) path = new StringBuilder(path.substring(0, path.length()-1));
 
 		for (ProductVO prod : cat.getProducts()) {
 			prod.setProductName(n.getNodeName()); //preserve the name, it is not populated by the initial catalog load
-			prod.setAttrib1Txt(n.getFullPath()); //pass the parent hierarchy from the Node down to the Product.
+			prod.setAttrib1Txt(path.toString()); //pass the parent hierarchy from the Node down to the Product.
 			prod.setLastUpdate(cat.getLastUpdate()); //pass the last update date, which was put into the CategoryVO from the ResultSet.
 
 			if (!getMediabinAttributes(prod, true).isEmpty())
