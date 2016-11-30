@@ -986,11 +986,11 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		log.debug(sql);
 
 		if (cnt > 0) { //don't run the query if we don't need to
-			cnt = 1;
+			cnt = 0;
 			try (PreparedStatement ps  = dbConn.prepareStatement(sql.toString())) {
 				for (MediaBinDeltaVO vo : masterRecords.values()) {
 					if (vo.getRecordState() == State.Delete) 
-						ps.setString(cnt++, vo.getDpySynMediaBinId());
+						ps.setString(++cnt, vo.getDpySynMediaBinId());
 				}
 				cnt = ps.executeUpdate();
 			} catch (SQLException sqle) {
