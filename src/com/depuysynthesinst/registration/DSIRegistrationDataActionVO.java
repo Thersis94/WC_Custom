@@ -36,7 +36,7 @@ public class DSIRegistrationDataActionVO extends AbstractSBReportVO {
 		super();
 		setContentType("application/vnd.ms-excel");
 		isHeaderAttachment(Boolean.TRUE);
-		setFileName("RegistrationDataAction.xls");
+		setFileName("Registration Report.xls");
 	}
 
 	/* (non-Javadoc)
@@ -84,7 +84,8 @@ public class DSIRegistrationDataActionVO extends AbstractSBReportVO {
 			row.put("LAST_NAME", rdm.getLastName());
 			row.put("DSI_DEGREE", StringUtil.checkVal(rdm.getExtData("DSI_DEGREE")));
 			row.put("EMAIL_ADDRESS", rdm.getEmailAddress());
-			row.put("COUNTRY", rdm.getCountryCode());
+			row.put(DSIUserDataVO.RegField.DSI_COUNTRY.name(), StringUtil.checkVal(rdm.getExtData(DSIUserDataVO.RegField.DSI_COUNTRY.name())));
+			
 			row.put(profession, StringUtil.checkVal(rdm.getExtData(profession)));
 			row.put(Specialty, StringUtil.checkVal(rdm.getExtData(Specialty)));
 			row.put(DSIUserDataVO.RegField.DSI_PGY.name(), StringUtil.checkVal(rdm.getExtData(DSIUserDataVO.RegField.DSI_PGY.name())));
@@ -125,7 +126,7 @@ public class DSIRegistrationDataActionVO extends AbstractSBReportVO {
 		headerMap.put("LAST_NAME", "Last Name");
 		headerMap.put("DSI_DEGREE", cdc.getFields().get("DSI_DEGREE"));
 		headerMap.put("EMAIL_ADDRESS", "Email Address");
-		headerMap.put("COUNTRY", "Country");
+		headerMap.put(DSIUserDataVO.RegField.DSI_COUNTRY.name(), cdc.getFields().get(DSIUserDataVO.RegField.DSI_COUNTRY.name()));
 		//profession and specialty are in the form as guids
 		headerMap.put(profession, cdc.getFields().get(profession));
 		headerMap.put(Specialty, cdc.getFields().get(Specialty));
