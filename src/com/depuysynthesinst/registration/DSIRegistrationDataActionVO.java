@@ -36,7 +36,7 @@ public class DSIRegistrationDataActionVO extends AbstractSBReportVO {
 		super();
 		setContentType("application/vnd.ms-excel");
 		isHeaderAttachment(Boolean.TRUE);
-		setFileName("DSIRegistrationDataAction.xls");
+		setFileName("Registration Report.xls");
 	}
 
 	/* (non-Javadoc)
