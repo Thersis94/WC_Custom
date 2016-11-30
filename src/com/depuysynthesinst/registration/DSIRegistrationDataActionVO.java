@@ -98,8 +98,6 @@ public class DSIRegistrationDataActionVO extends AbstractSBReportVO {
 			row.put("ALLOW_COMMUNICATION", Convert.formatInteger(rdm.getAllowCommunication()) == 1 ? "Yes":"No");
 			row.put(DSIUserDataVO.RegField.DSI_VERIFIED.name(), StringUtil.checkVal(rdm.getExtData(DSIUserDataVO.RegField.DSI_VERIFIED.name())));
 	
-			
-			
 			rows.add(row);
 		}
 
