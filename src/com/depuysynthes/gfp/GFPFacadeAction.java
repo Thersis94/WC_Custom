@@ -35,6 +35,10 @@ public class GFPFacadeAction extends FacadeActionAdapter {
 		this.actionInit = init;
 	}
 	
+	public void list(SMTServletRequest req) throws ActionException {
+		super.retrieve(req);
+	}
+	
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 		SMTActionInterface sai = null;
