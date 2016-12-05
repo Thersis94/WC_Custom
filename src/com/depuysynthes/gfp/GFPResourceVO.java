@@ -46,7 +46,6 @@ public class GFPResourceVO {
 	
 	public void assignData(SMTServletRequest req) {
 		setResourceId(req.getParameter("resourceId"));
-		System.out.println(req.getParameter("parentId"));
 		setParentId(req.getParameter("parentId"));
 		setCategoryId(req.getParameter("categoryId"));
 		setName(req.getParameter("resourceName"));
