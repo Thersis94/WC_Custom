@@ -31,26 +31,6 @@ public class DSIRegistrationDataActionVO extends AbstractSBReportVO {
 
 	private static final long serialVersionUID = 1L;
 	RegistrationDataContainer cdc = null;
-	/*
-	 * a shorten copy of the list from the dsi user vo, used to limit the number of fields returned for post sql processing
-	 */
-	public enum usedFields {
-		DSI_TTLMS_ID,
-		DSI_GRAD_DT,
-		DSI_PROG_ELIGIBLE,
-		DSI_VERIFIED,
-		DSI_ACAD_NM,
-		DSI_ACAD_CITY,
-		DSI_ACAD_STATE,
-		DSI_DEGREE,
-		ALLOW_COMMUNICATION,
-		c0a80241b71c9d40a59dbd6f4b621260, //profession
-		c0a80241b71d27b038342fcb3ab567a0, //specialty
-		DSI_PGY,
-		DSI_MIL_HOSP, //used for Proffer email notification
-		DSI_COUNTRY
-		;
-	}
 	
 
 	public DSIRegistrationDataActionVO() {

@@ -3,7 +3,6 @@ package com.depuysynthesinst.registration;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-import com.depuysynthesinst.registration.DSIRegistrationDataActionVO.usedFields;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
@@ -48,10 +47,6 @@ public class DSIRegistrationDataAction extends RegistrationDataAction {
 	protected void setSqlVars(PreparedStatement ps, int i, String regId, boolean useDates, String start, String end, String regSubtlId ) throws SQLException {
 		ps.setString(++i, regId);
 
-		for (usedFields each : DSIRegistrationDataActionVO.usedFields.values()){
-			ps.setString(++i, each.name());
-		}
-		
 		if (useDates) {
 			ps.setDate(++i, Convert.formatSQLDate(Convert.formatStartDate(start, "1/1/2000")));
 			ps.setDate(++i, Convert.formatSQLDate(Convert.formatEndDate(end)));
@@ -85,13 +80,7 @@ public class DSIRegistrationDataAction extends RegistrationDataAction {
 		sql.append("left outer join profile_role pr on p.profile_id=pr.profile_id and pr.site_id=b.site_id ");
 		sql.append("left outer join role r on pr.role_id=r.role_id ");
 		sql.append("left outer join status st on pr.status_id=st.status_id ");
-		sql.append("where b.action_id=?  and a.register_field_id in ( ");
-		sql.append(" ?");
-		
-		for (int x=0 ; x < DSIRegistrationDataActionVO.usedFields.values().length -1 ;x++){
-			sql.append(", ?");
-		}
-		sql.append(" ) ");
+		sql.append("where b.action_id=? ");
 		if (useDates) sql.append("and b.create_dt between ? and ? ");
 		if (regSubtlId != null) sql.append("and b.register_submittal_id=? ");
 		sql.append("and (b.robot_flg is null or b.robot_flg=0) ");
