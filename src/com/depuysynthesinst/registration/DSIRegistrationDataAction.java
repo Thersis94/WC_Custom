@@ -1,10 +1,6 @@
 package com.depuysynthesinst.registration;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-
 import com.siliconmtn.http.SMTServletRequest;
-import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.registration.RegistrationDataAction;
 
@@ -30,28 +26,6 @@ public class DSIRegistrationDataAction extends RegistrationDataAction {
 	@Override
 	protected AbstractSBReportVO buildReport(SMTServletRequest req) {
 			return new DSIRegistrationDataActionVO();
-	}
-	
-
-	/**
-	 * moved to a protected method so it can be overrid in extending classes
-	 * @param ps
-	 * @param regId 
-	 * @param regSubtlId 
-	 * @param end 
-	 * @param start 
-	 * @param useDates 
-	 * @throws SQLException 
-	 */
-	@Override
-	protected void setSqlVars(PreparedStatement ps, int i, String regId, boolean useDates, String start, String end, String regSubtlId ) throws SQLException {
-		ps.setString(++i, regId);
-
-		if (useDates) {
-			ps.setDate(++i, Convert.formatSQLDate(Convert.formatStartDate(start, "1/1/2000")));
-			ps.setDate(++i, Convert.formatSQLDate(Convert.formatEndDate(end)));
-		}
-		if (regSubtlId != null) ps.setString(++i, regSubtlId);
 	}
 	
 	/**
