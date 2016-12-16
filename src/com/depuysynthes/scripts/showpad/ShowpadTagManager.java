@@ -113,8 +113,6 @@ public class ShowpadTagManager {
 		desiredTags.add(ft.getFileExtension());
 		if (vo.getLanguageCode() != null && vo.getLanguageCode().length() > 0)
 			desiredTags.addAll(Arrays.asList(vo.getLanguageCode().split(DSMediaBinImporterV2.TOKENIZER)));
-		if (vo.getBusinessUnitNm() != null && vo.getBusinessUnitNm().length() > 0)
-			desiredTags.addAll(Arrays.asList(vo.getBusinessUnitNm().split(DSMediaBinImporterV2.TOKENIZER)));
 		if (vo.getLiteratureTypeTxt() != null && vo.getLiteratureTypeTxt().length() > 0)
 			desiredTags.addAll(Arrays.asList(vo.getLiteratureTypeTxt().split(DSMediaBinImporterV2.TOKENIZER)));
 
