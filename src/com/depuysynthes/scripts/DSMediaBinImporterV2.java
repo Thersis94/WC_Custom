@@ -80,12 +80,12 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	/**
 	 * Delimiter used in the EXP file
 	 */
-	protected String DELIMITER = "\\|";
+	protected static final String DELIMITER = "\\|";
 	
 	/**
 	 * Delimiterd used in the EXP file to tokenize multiple values stuffed into a single meta-data field
 	 */
-	protected static String TOKENIZER = "~";
+	public static final String TOKENIZER = "~";
 
 	/**
 	 * debug mode runs individual insert queries instead of a batch query, to be able to track row failures.
@@ -510,7 +510,8 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	 */
 	private void downloadFiles(Map<String, MediaBinDeltaVO> masterRecords) {
 		String dropboxFolder = (String) props.get("downloadDir");
-
+		boolean fileExists = true; //true - we don't check the file system by default
+		
 		for (MediaBinDeltaVO vo : masterRecords.values()) {
 			//escape certain chars on the asset path/name.  Note we cannot do a full URLEncode because of the directory separators
 			String fileUrl = StringUtil.replace(vo.getAssetNm(), " ","%20");
@@ -518,7 +519,13 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			vo.setLimeLightUrl(limeLightUrl + fileUrl);
 			vo.setFileName(StringUtil.replace((type == 1 ? "US" : "EMEA") + "/" + vo.getAssetNm(), "/", File.separator));
 
-			if (fileOnLLChanged(vo))
+			//check for files on disk. If we have the file we need then that's good enough. - use in development to get around extensive http calls on repeated trial runs.
+			if (Convert.formatBoolean(props.getProperty("honorExistingFiles"))) {
+				fileExists = new File(dropboxFolder + vo.getFileName()).exists();
+				if (fileExists) continue;
+			}
+			
+			if (!fileExists || fileOnLLChanged(vo))
 				downloadFile(dropboxFolder, vo);
 		}
 	}
@@ -533,12 +540,6 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	private void downloadFile(String dropboxFolder, MediaBinDeltaVO vo) {
 		log.info("retrieving " + vo.getLimeLightUrl());
 		try {
-			//this is a work-around for development use, so we don't have to download files we already have
-			if (Convert.formatBoolean(props.getProperty("honorExistingFiles"))) {
-				File f1 = new File(dropboxFolder + vo.getFileName());
-				if (f1.exists()) return;
-			}
-				
 			SMTHttpConnectionManager conn = new SMTHttpConnectionManager();
 			InputStream is = conn.retrieveConnectionStream(vo.getLimeLightUrl(), null);				
 
@@ -985,11 +986,11 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		log.debug(sql);
 
 		if (cnt > 0) { //don't run the query if we don't need to
-			cnt = 1;
+			cnt = 0;
 			try (PreparedStatement ps  = dbConn.prepareStatement(sql.toString())) {
 				for (MediaBinDeltaVO vo : masterRecords.values()) {
 					if (vo.getRecordState() == State.Delete) 
-						ps.setString(cnt++, vo.getDpySynMediaBinId());
+						ps.setString(++cnt, vo.getDpySynMediaBinId());
 				}
 				cnt = ps.executeUpdate();
 			} catch (SQLException sqle) {
@@ -1233,9 +1234,9 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			}
 			if (State.Update == st) {
 				msg.append("<td>");
-				if (vo.getDeltas() != null) {
+				if (vo.deltaList() != null) {
 					if (vo.getErrorReason() != null) msg.append("<font color=\"red\">").append(vo.getErrorReason()).append("</font><br/>");
-					for (PropertyChangeEvent e : vo.getDeltas()) {
+					for (PropertyChangeEvent e : vo.deltaList()) {
 						msg.append(e.getPropertyName()).append("<br/>");
 						//msg.append("old=").append(e.getOldValue()).append("<br/>");
 						//msg.append("new=").append(e.getNewValue()).append("<br/>");

@@ -443,7 +443,7 @@ public class MediaBinAssetVO extends SBModuleVO {
 		if (!compareStr(videoChapters, other.videoChapters))
 			this.addDelta(new PropertyChangeEvent(this,"videoChapters",other.videoChapters, videoChapters));
 		
-		return getDeltas() == null;
+		return deltaList() == null;
 	}
 	
 	/**
@@ -487,7 +487,7 @@ public class MediaBinAssetVO extends SBModuleVO {
 	
 	@Override
 	public String toString() {
-		return StringUtil.getToString(this, false, 1, "|");
+		return StringUtil.getToString(this, false, 0, "|");
 	}
 	
 
@@ -503,7 +503,7 @@ public class MediaBinAssetVO extends SBModuleVO {
 		deltas.add(evt);
 	}
 
-	public List<PropertyChangeEvent> getDeltas() {
+	public List<PropertyChangeEvent> deltaList() {
 		return deltas;
 	}
 

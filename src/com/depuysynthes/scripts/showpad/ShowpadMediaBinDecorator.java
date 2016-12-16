@@ -1,4 +1,4 @@
-package com.depuysynthes.scripts;
+package com.depuysynthes.scripts.showpad;
 
 import java.io.IOException;
 import java.sql.PreparedStatement;
@@ -7,12 +7,18 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import com.depuysynthes.scripts.DSMediaBinImporterV2;
+import com.depuysynthes.scripts.MediaBinDeltaVO;
 import com.depuysynthes.scripts.MediaBinDeltaVO.State;
+import com.siliconmtn.io.FileType;
 import com.siliconmtn.security.OAuth2TokenViaCLI;
 import com.siliconmtn.security.OAuth2TokenViaCLI.Config;
+import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -27,8 +33,9 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 
-	private ShowpadApiUtil showpadApi;
-	private List<ShowpadDivisionUtil> divisions = new ArrayList<>();
+	protected ShowpadApiUtil showpadApi;
+	protected List<ShowpadDivisionUtil> divisions = new ArrayList<>();
+	private boolean deduplicate = false; //override via args[1];
 
 	/**
 	 * @param args
@@ -49,6 +56,9 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 				put(Config.AUTH_SERVER_URL,  props.getProperty("showpadAuthUrl"));
 				put(Config.KEYSTORE, "showpad");
 			}}, Arrays.asList(props.getProperty("showpadScopes").split(","))));
+
+		if (args.length > 1)
+			deduplicate = Convert.formatBoolean(args[1]); //args[0] passes 'type' to the superclass, so we'll use args[1] here
 	}
 
 
@@ -71,12 +81,27 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 			log.error(qe);
 		}
 
-		/*
-		//use only for de-duplication
-		loadManifest();
-		for (ShowpadDivisionUtil util : divisions)
-			cleanupShowpadDups(assetNames, localShowpadIds);
-		 */
+		//used only for de-duplication, which is more crisis-cleanup than something we do regularly.
+		if (deduplicate) {
+			Map<String, MediaBinDeltaVO> records = loadManifest();
+			Set<String> assetNames = new HashSet<>(records.size());
+			Set<String> localShowpadIds = new HashSet<>(records.size());
+			
+			for (MediaBinDeltaVO vo : records.values()) {
+				assetNames.add(ShowpadDivisionUtil.makeShowpadAssetName(vo, new FileType(vo.getFileNm())));
+				if (vo.getShowpadId() != null) localShowpadIds.add(vo.getShowpadId());
+			}
+			
+			try {
+				for (ShowpadDivisionUtil util : divisions)
+					util.cleanupShowpadDups(assetNames, localShowpadIds);
+			} catch (QuotaException qe) {
+				log.error(qe);
+			}
+			log.info("deuplication complete");
+			return;
+		}
+		
 		super.run();
 	}
 
@@ -91,7 +116,8 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 		String[] divs = props.getProperty("showpadDivisions").split(",");
 		for (String d : divs) {
 			String[] div = d.split("=");
-			divisions.add(new ShowpadDivisionUtil(props, div[1], div[0], showpadApi));
+			divisions.add(new ShowpadDivisionUtil(props, div[1], div[0], showpadApi, dbConn));
+			log.debug("created division " + div[0] + " with id " + div[1]);
 		}
 		log.info("loaded " + divisions.size() + " showpad divisions");
 	}
@@ -155,10 +181,6 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 		//all the mediabin records are already in our database.
 		if (!isInsert) return;
 
-		//confirm we have something to add or update
-		if (getDataCount("inserted") == 0 && getDataCount("updated") == 0) return;
-
-
 		//push all changes to Showpad
 		outer: for (MediaBinDeltaVO vo : masterRecords.values()) {
 			//we need to sort out what gets pushed to Showpad on our own.
@@ -191,7 +213,7 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 
 		//save the newly created records to our database for each division
 		for (ShowpadDivisionUtil util : divisions)
-			util.saveDBRecords(dbConn);
+			util.saveDBRecords();
 	}
 
 
@@ -258,29 +280,28 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 	@Override
 	protected void countDBRecords() {
 		super.countDBRecords();
-
-		int cnt = 0;
-		StringBuilder sql = new StringBuilder(100);
-		sql.append("select count(*), division_id from ");
+		
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("select count(*), division_id, case when asset_id='FAILED_PROCESSING' then 1 else 0 end as status from ");
 		sql.append(props.get(Constants.CUSTOM_DB_SCHEMA)).append("dpy_syn_showpad ");
-		sql.append("group by division_id");
+		sql.append("group by division_id, case when asset_id='FAILED_PROCESSING' then 1 else 0 end");
 		log.debug(sql);
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				for (ShowpadDivisionUtil util : divisions) {
-					if (rs.getString(2).equals(util.getDivisionId()))
+					if (rs.getString(2).equals(util.getDivisionId()) && rs.getInt("status") == 0) {
 						util.setDbCount(rs.getInt(1));
+					} else if (rs.getString(2).equals(util.getDivisionId()) && rs.getInt("status") == 1) {
+						util.setFailCount(rs.getInt(1));
+					}
 				}
 			}
 
 		} catch (SQLException sqle) {
 			log.error("could not count records", sqle);
 		}
-
-		dataCounts.put("showpad-total", cnt);
-		log.info("there are now " + cnt + " records in the showpad database");
 	}
 
 
@@ -293,20 +314,23 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 		//to add valueable stats to the admin email
 		for (ShowpadDivisionUtil util : divisions) {
 			html.append("<h3>Showpad ").append(util.getDivisionNm()).append(" Division</h3>");
-			html.append("Showpad Added: ").append(util.getInsertCount()).append("<br/>");
-			html.append("Showpad Updated: ").append(util.getUpdateCount()).append("<br/>");
-			html.append("Showpad Deleted: ").append(util.getDeleteCount()).append("<br/>");
-			html.append("Showpad Total: ").append(util.getDbCount()).append("<br/><br/>");
+			html.append("Added: ").append(util.getInsertCount()).append("<br/>");
+			html.append("Updated: ").append(util.getUpdateCount()).append("<br/>");
+			html.append("Deleted: ").append(util.getDeleteCount()).append("<br/>");
+			html.append("Total: ").append(util.getDbCount()).append("<br/>");
+			html.append("Failed to Ingest: ").append(util.getFailCount()).append("<br/><br/>");
 
-			if (util.getFailures().size() > 0) {
+			List<Exception> failures = util.getFailures();
+			if (!failures.isEmpty()) {
 				html.append("<b>The following issues were reported:</b><br/><br/>");
 
 				// loop the errors and display them
-				for (int i=0; i < util.getFailures().size(); i++) {
-					html.append(util.getFailures().get(i).getMessage()).append("<hr/>\r\n");
-					log.warn(util.getFailures().get(i).getMessage());
+				for (int i=0; i < failures.size(); i++) {
+					html.append(failures.get(i).getMessage()).append("<hr/>\r\n");
+					log.warn(failures.get(i).getMessage());
 				}
 			}
+			
 			html.append("<hr/>\r\n");
 		}
 	}
