@@ -367,6 +367,7 @@ public class DSProductCatalogAction extends SimpleActionAdapter {
 
 		int x = 0;
 		for (MediaBinAssetVO vo: assets.values()) {
+			if (vo == null) continue; //typically null for a JSON pointer to an asset that no longer exists in Mediabin
 			if (x % 2 == 0 && x > 0) html.append("</tr>"); //close prev row
 			if (x % 2 == 0) html.append("<tr>"); //open new row
 			if (StringUtil.checkVal(vo.getFileNm()).toLowerCase().endsWith(".pdf")) {
