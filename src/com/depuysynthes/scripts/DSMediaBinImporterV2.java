@@ -72,7 +72,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	/**
 	 * Delimiterd used in the EXP file to tokenize multiple values stuffed into a single meta-data field
 	 */
-	public static String TOKENIZER = "~";
+	public static final String TOKENIZER = "~";
 
 	/**
 	 * debug mode runs individual insert queries instead of a batch query, to be able to track row failures.
