@@ -319,7 +319,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	 * @param jsonText
 	 * @return
 	 */
-	private Collection<String> convertFromJson(String jsonText) {
+	protected Collection<String> convertFromJson(String jsonText) {
 		try {
 			return HuddleProductCatalogSolrIndex.convertFromJSON(jsonText);
 		} catch (InvalidDataException ide) {
@@ -363,7 +363,6 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 			String path = StringUtil.checkVal(thisNode.getFullPath());
 			if (!path.isEmpty()) path += DSMediaBinImporterV2.TOKENIZER;
 			path += nextNode.getNodeName();
-			//log.debug("path=" + path);
 			nextNode.setFullPath(path);
 
 			parseNode(nextNode, products);
