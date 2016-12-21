@@ -31,7 +31,7 @@ public class ShowpadProductDecoratorUnpublished extends ShowpadProductDecorator 
 	/*
 	 * The product catalog this script is hard-coded around
 	 */
-	protected static final String privCatalogId = "DS_PRIVATE_PRODUCTS_EMEA";
+	protected static final String PRIV_CATALOG_ID = "DS_PRIVATE_PRODUCTS_EMEA";
 
 	/**
 	 * @param args
@@ -61,9 +61,9 @@ public class ShowpadProductDecoratorUnpublished extends ShowpadProductDecorator 
 	 */
 	@Override
 	protected Map<String, MediaBinDeltaVO> loadManifest() {
-		Tree t = loadProductCatalog(privCatalogId);
+		Tree t = loadProductCatalog(PRIV_CATALOG_ID);
 		parseProductCatalog(t, unpublishedProducts);
-		log.info("loaded " + unpublishedProducts.size() + " mediabin-using unpublished products in catalog " + privCatalogId);
+		log.info("loaded " + unpublishedProducts.size() + " mediabin-using unpublished products in catalog " + PRIV_CATALOG_ID);
 
 		return super.loadManifest();
 	}

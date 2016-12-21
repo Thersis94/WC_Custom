@@ -67,7 +67,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	/*
 	 * The product catalog this script is hard-coded around
 	 */
-	protected static final String catalogId = EMEACarouselAction.CATALOG_ID;
+	protected static final String CATALOG_ID = EMEACarouselAction.CATALOG_ID;
 
 	/*
 	 * The constant used for the MEDIABIN product attribute type - comes from the database
@@ -112,9 +112,9 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 
 	@Override
 	protected Map<String, MediaBinDeltaVO> loadManifest() {
-		Tree t = loadProductCatalog(catalogId);
+		Tree t = loadProductCatalog(CATALOG_ID);
 		parseProductCatalog(t, products);
-		log.info("loaded " + products.size() + " mediabin-using products in catalog " + catalogId);
+		log.info("loaded " + products.size() + " mediabin-using products in catalog " + CATALOG_ID);
 
 		return super.loadManifest();
 	}
@@ -219,7 +219,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	 * @param attr
 	 * @param ids
 	 */
-	private void setProdUpdDate(ProductVO prod, ProductAttributeVO attr, Collection<String> ids) {
+	protected void setProdUpdDate(ProductVO prod, ProductAttributeVO attr, Collection<String> ids) {
 		if (ids == null || ids.isEmpty()) return; //this attribute has no assets we care about.
 		if (attr.getUpdateDt() == null) return; //this attribute does not have an update date, for whatever reason
 		if (attr.getUpdateDt().after(prod.getLastUpdate())) //the attribute has a more recent updateDt than the product.
@@ -234,9 +234,9 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	 * @param hierarchy
 	 * @param assetIds
 	 */
-	private void marryProductTagsToAssets(Map<String, MediaBinDeltaVO> masterRecords, 
+	protected void marryProductTagsToAssets(Map<String, MediaBinDeltaVO> masterRecords, 
 			String[] hierarchy, List<String> assetIds, Date prodUpdDt) {
-		boolean relevant = false;
+		boolean relevant;
 		for (MediaBinDeltaVO mbAsset : masterRecords.values()) {
 			relevant = assetIds.contains(mbAsset.getDpySynMediaBinId());
 
@@ -263,7 +263,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	 * @param masterRecords
 	 * @throws QuotaException 
 	 */
-	private void pushTagsToShowpad(Map<String, MediaBinDeltaVO> masterRecords) throws QuotaException {
+	protected void pushTagsToShowpad(Map<String, MediaBinDeltaVO> masterRecords) throws QuotaException {
 		Calendar cal = Calendar.getInstance();
 		//consider a product change within 24hrs something we need to pay attention to.
 		//set the config value to reflect the frequency of the script execution.  e.g. if we run once a week threshold should be -7.
@@ -279,21 +279,19 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 			boolean needsUpdated;
 			for (MediaBinDeltaVO mbAsset : masterRecords.values()) {
 				//if the asset is new or updated, or the product is updated, we need to push tag changes to Showpad (all: adds/updates/deletes)
-				needsUpdated = (State.Insert == mbAsset.getRecordState() || State.Update == mbAsset.getRecordState());
+				needsUpdated = State.Insert == mbAsset.getRecordState() || State.Update == mbAsset.getRecordState();
 				if (!needsUpdated && mbAsset.getProductUpdateDt() != null)
 					needsUpdated = thresDate.before(mbAsset.getProductUpdateDt());
-
-				if (!needsUpdated) {
-					log.info("asset does not need updated based on logic: " + mbAsset.getDpySynMediaBinId());
-					continue;
-				}
 
 				//get the showpad asset id for this mediabin asset id, so the ShowpadTagMgr knows how to talk to Showpad
 				mbAsset.setShowpadId(divisionAssets.get(mbAsset.getDpySynMediaBinId()));
 
-				//skip any that have failed to ingest into Showpad
-				if (ShowpadDivisionUtil.FAILED_PROCESSING.equals(mbAsset.getShowpadId()))
+				//skip any that have failed to ingest into Showpad or do not need updated
+				if (!needsUpdated || ShowpadDivisionUtil.FAILED_PROCESSING.equals(mbAsset.getShowpadId())) {
+					log.info("asset does not need updated based on logic: " + mbAsset.getDpySynMediaBinId());
 					continue;
+				}
+
 
 				log.info("************************ Starting Asset *******************************");
 				log.info("showpadId=" + mbAsset.getShowpadId() + " mbId=" + mbAsset.getDpySynMediaBinId());
@@ -434,7 +432,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	 * it's SOUS Product Name.  If we don't report them to the Admins.
 	 * @param masterRecords
 	 */
-	private void findEmptyProducts(Map<String, MediaBinDeltaVO> masterRecords) {
+	protected void findEmptyProducts(Map<String, MediaBinDeltaVO> masterRecords) {
 		String name;
 		String sousName;
 		for (ProductVO prod : products) {
@@ -451,7 +449,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	 * @param sousName
 	 * @param prodName
 	 */
-	private void checkProdSousAgainstMediabin(Map<String, MediaBinDeltaVO> masterRecords, String prodSousName, String prodName) {
+	protected void checkProdSousAgainstMediabin(Map<String, MediaBinDeltaVO> masterRecords, String prodSousName, String prodName) {
 		List<String> assetIds = findAssetsForSous(masterRecords, prodSousName);
 
 		if (assetIds != null && !assetIds.isEmpty()) 
@@ -474,7 +472,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	 * @param prodSousName
 	 * @return
 	 */
-	private List<String> findAssetsForSous(Map<String, MediaBinDeltaVO> masterRecords, String prodSousName) {
+	protected List<String> findAssetsForSous(Map<String, MediaBinDeltaVO> masterRecords, String prodSousName) {
 		List<String> data = new ArrayList<>();
 
 		for (MediaBinDeltaVO mbAsset : masterRecords.values()) {
@@ -499,7 +497,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	 * @param sous
 	 * @return
 	 */
-	private String scrubString(String sous) {
+	protected String scrubString(String sous) {
 		return StringEncoder.encodeExtendedAscii(sous);
 	}
 
@@ -509,7 +507,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	 * @param prodSousName
 	 * @return
 	 */
-	private List<String> findAssetsInHtml(String html) {
+	protected List<String> findAssetsInHtml(String html) {
 		List<String> data = new ArrayList<>();
 
 		Matcher m = Pattern.compile(MB_AJAX_HREF).matcher(html);
@@ -527,7 +525,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	 * are not being used (in the product catalog).  (via SOUS Product Name)
 	 * @param masterRecords
 	 */
-	private void findUnusedAssets(Map<String, MediaBinDeltaVO> masterRecords) {
+	protected void findUnusedAssets(Map<String, MediaBinDeltaVO> masterRecords) {
 		//iterate Mediabin into a unique set of productNames.
 		for (MediaBinDeltaVO mbAsset : masterRecords.values()) {
 			if (State.Delete == mbAsset.getRecordState() || StringUtil.checkVal(mbAsset.getProdNm()).isEmpty())
@@ -545,8 +543,15 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 			}
 		}
 		log.info("found " + mediabinSOUSNames.size() + " unique SOUS names in Mediabin assets");
+		removeProductReferences(masterRecords);
+	}
 
 
+	/**
+	 * trims the mediabinSOUSNames list of assets bound to products
+	 * @param masterRecords
+	 */
+	protected void removeProductReferences(Map<String, MediaBinDeltaVO> masterRecords) {
 		String prodSousNm;
 		for (ProductVO prod : products) {
 			//remove mbSousName values if they match values at the product level
@@ -567,12 +572,12 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	 * @param sousValue
 	 * @return
 	 */
-	private boolean isQualifiedSousValue(String sousVal) {
+	protected boolean isQualifiedSousValue(String sousVal) {
 		if (StringUtil.isEmpty(sousVal)) return false;
 		//remove dots and dashes that commonly appear in number sequences.  e.g. "319.010"
-		sousVal = StringUtil.removeNonAlphaNumeric(sousVal);
+		String val = StringUtil.removeNonAlphaNumeric(sousVal);
 		//if all we have is numbers, this is not a qualified sous value
-		boolean ignorable = sousVal.matches("[0-9]+");
+		boolean ignorable = val.matches("[0-9]+");
 		return !ignorable;
 	}
 
@@ -598,7 +603,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	 * that doesn't match any mediabin assets.
 	 * @param html
 	 */
-	private void addProductsWithNoAssetsToEmail(StringBuilder html) {
+	protected void addProductsWithNoAssetsToEmail(StringBuilder html) {
 		html.append("<h4>Products with no MediaBin Assets (");
 		html.append(productSOUSNames.size()).append(")</h4>");
 		html.append("The following Web Crescendo products indicate a SOUS ");
@@ -623,7 +628,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	 * that doesn't match any mediabin assets.
 	 * @param html
 	 */
-	private void addAssetsWithNoProductsToEmail(StringBuilder html) {
+	protected void addAssetsWithNoProductsToEmail(StringBuilder html) {
 		html.append("<h4>Mediabin SOUS Values not used by Products (");
 		html.append(mediabinSOUSNames.size()).append(")</h4>");
 		html.append("The following MediaBin assets indicate a SOUS ");
