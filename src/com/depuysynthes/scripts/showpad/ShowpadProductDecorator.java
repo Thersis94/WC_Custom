@@ -79,7 +79,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	 */
 	protected static final String HTML_ATTR_TYPE = HuddleUtils.PROD_ATTR_HTML_TYPE;
 
-	
+
 	/*
 	 * Regex used when parsing static HTML to find links to Mediabin assets
 	 * Reads: /json URL, amid=MEDIA_BIN_AJAX is present BEFORE mbid
@@ -112,21 +112,36 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 
 	@Override
 	protected Map<String, MediaBinDeltaVO> loadManifest() {
-		//convert the properties object to a Map, required by the WC Action framework
-		Map<String, Object> attributes = new HashMap<>(props.size());
-		for (Entry<Object, Object> entry : props.entrySet())
-			attributes.put((String) entry.getKey(), entry.getValue());
-
-		//load the entire product catalog for EMEA
-		ProductCatalogAction pca = new ProductCatalogAction();
-		pca.setDBConnection(new SMTDBConnection(dbConn));
-		pca.setAttributes(attributes);
-		Tree t = pca.loadEntireCatalog(catalogId, true, null, null);
-
-		parseProductCatalog(t);
+		Tree t = loadProductCatalog(catalogId);
+		parseProductCatalog(t, products);
 		log.info("loaded " + products.size() + " mediabin-using products in catalog " + catalogId);
 
 		return super.loadManifest();
+	}
+
+
+	/**
+	 * reusable method to load product catalogs from WC
+	 * @param catalogId
+	 * @return
+	 */
+	protected Tree loadProductCatalog(String catalogId) {
+		ProductCatalogAction pca = new ProductCatalogAction();
+		pca.setDBConnection(new SMTDBConnection(dbConn));
+		pca.setAttributes(convertPropertiesToMap());
+		return pca.loadEntireCatalog(catalogId, true, null, null);
+	}
+
+
+	/**
+	 * converts the properties object to a Map, required by the WC Action framework
+	 * @return
+	 */
+	protected Map<String, Object> convertPropertiesToMap() {
+		Map<String, Object>  attributes = new HashMap<>(props.size());
+		for (Entry<Object, Object> entry : props.entrySet())
+			attributes.put((String) entry.getKey(), entry.getValue());
+		return attributes;
 	}
 
 
@@ -141,8 +156,8 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 		if (!isInsert) return;
 
 		//replicate product (tag) changes out to Showpad
-		syncTags(masterRecords);
-		
+		syncTags(masterRecords, products);
+
 		//now that all products have attached their tags to the mediabin 
 		//assets, iterate through them and push to Showpad.
 		try {
@@ -167,13 +182,13 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	 * shouldn't be there, but were added by us.  We can only delete tags we've added.
 	 * @param masterRecords
 	 */
-	private void syncTags(Map<String, MediaBinDeltaVO> masterRecords) {
+	protected void syncTags(Map<String, MediaBinDeltaVO> masterRecords,  List<ProductVO> products) {
 		//for each product containing the dynamic Product Attribute
 		for (ProductVO prod : products) {
 			//get the Mediabin attributes off the product.  There could be several.
 			List<ProductAttributeVO> mbAttribs = getMediabinAttributes(prod, false); //this will never be null or empty, per early executed code
 			String[] hierarchy = StringUtil.checkVal(prod.getAttrib1Txt()).split(DSMediaBinImporterV2.TOKENIZER);
-			
+
 			List<String> assetIds = new ArrayList<>();
 			for (ProductAttributeVO attrVo : mbAttribs) {
 				Collection<String> foundIds;
@@ -196,8 +211,8 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 			marryProductTagsToAssets(masterRecords, hierarchy, assetIds, prod.getLastUpdate());
 		}
 	}
-	
-	
+
+
 	/**
 	 * set the update date of the product to that of the Attribute if it's newer than the product and contains assets.
 	 * @param prod
@@ -322,11 +337,11 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	 * push those across to Mediabin.
 	 * @param t
 	 */
-	private void parseProductCatalog(Tree t) {
+	protected void parseProductCatalog(Tree t, List<ProductVO> products) {
 		//find the "Body Region" node, and start the parsing from there.  Only these descendants get pushed to Showpad
 		for (Node n : t.getRootNode().getChildren()) {
 			if ("Body Region".equals(n.getNodeName())) {
-				parseNode(n);
+				parseNode(n, products);
 				break;
 			}
 		}
@@ -338,10 +353,10 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	 * Note: This is a recursive method.
 	 * @param thisNode
 	 */
-	private void parseNode(Node thisNode) {
+	protected void parseNode(Node thisNode, List<ProductVO> products) {
 		if (thisNode.getNumberChildren() == 0) {
 			//this is the lowest level of 'this' branch.  Perform work on the product.
-			parseProduct(thisNode);
+			parseProduct(thisNode, products);
 			return;
 		}
 
@@ -353,7 +368,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 			//log.debug("path=" + path);
 			nextNode.setFullPath(path);
 
-			parseNode(nextNode);
+			parseNode(nextNode, products);
 		}
 	}
 
@@ -362,10 +377,10 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	 * Iterates the products found in the given lowest-level Category (Node).
 	 * @param n
 	 */
-	private void parseProduct(Node n) {
+	protected void parseProduct(Node n, List<ProductVO> products) {
 		ProductCategoryVO cat = (ProductCategoryVO) n.getUserObject();
 		if (cat.getProducts() == null || StringUtil.checkVal(cat.getUrlAlias()).isEmpty()) return; //not a product!
-		
+
 		//remove the product name from the hierarchy tree - Pierre - 11.28.16
 		StringBuilder path = new StringBuilder(n.getFullPath().length());
 		String[] lvls = n.getFullPath().split(DSMediaBinImporterV2.TOKENIZER);
@@ -389,21 +404,21 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	 * If it does we're going to keep it for future tasks.  If it doesn't its dead to us and can be discarded.
 	 * @param prod
 	 */
-	private List<ProductAttributeVO> getMediabinAttributes(ProductVO prod, boolean firstOnly) {
+	protected List<ProductAttributeVO> getMediabinAttributes(ProductVO prod, boolean firstOnly) {
 		List<ProductAttributeVO> data = new ArrayList<>();
 		ProductAttributeVO attrVo;
 		ProductAttributeContainer pac = prod.getAttributes();
 		if (pac == null) return data;
-		
+
 		for (Node n : pac.getAllAttributes()) {
 			attrVo = (ProductAttributeVO) n.getUserObject();
 			if (attrVo.getProductAttributeId() == null) 
 				continue; //not actually bound to this product (in _XR table).
-			
+
 			//make sure it's one of our special attributes, or HTML we can parse for mediabin assets
 			if (!MEDIABIN_ATTR_TYPE.equals(attrVo.getAttributeType()) && !HTML_ATTR_TYPE.equals(attrVo.getAttributeType()))
 				continue;
-			
+
 			data.add(attrVo);
 
 			//found one, exit the loop b/c we have what we need.
@@ -461,7 +476,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	 */
 	private List<String> findAssetsForSous(Map<String, MediaBinDeltaVO> masterRecords, String prodSousName) {
 		List<String> data = new ArrayList<>();
-		
+
 		for (MediaBinDeltaVO mbAsset : masterRecords.values()) {
 			if (State.Delete == mbAsset.getRecordState() || StringUtil.checkVal(mbAsset.getProdNm()).isEmpty())
 				continue; //nothing to do here, this asset has no SOUS value, or is being deleted.
@@ -477,8 +492,8 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 		}
 		return data;
 	}
-	
-	
+
+
 	/**
 	 * returns a cleaned-up version of the string.  remove trademarks, etc. then lowercases
 	 * @param sous
@@ -487,7 +502,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	private String scrubString(String sous) {
 		return StringEncoder.encodeExtendedAscii(sous);
 	}
-	
+
 	/**
 	 * finds assets in HTML using a regex and returns them in a List<String>
 	 * @param masterRecords
@@ -502,7 +517,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 			data.add(m.group(4));
 			log.debug("found embedded link to asset " + m.group(4));
 		}
-			 
+
 		return data;
 	}
 
@@ -522,7 +537,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 			String[] sousVals = mbAsset.getProdNm().split(DSMediaBinImporterV2.TOKENIZER);
 			for (String val : sousVals) {
 				if (!isQualifiedSousValue(val)) continue;
-				
+
 				Set<String> trackingNos = mediabinSOUSNames.get(val);
 				if (trackingNos == null) trackingNos = new HashSet<>();
 				trackingNos.add(mbAsset.getTrackingNoTxt());
@@ -544,7 +559,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 		log.info("still have " + mediabinSOUSNames.size() + " unique SOUS names in Mediabin assets not used by products");
 	}
 
-	
+
 	/**
 	 * Tests the String from the EXP file against business rules of values to ignore.
 	 * Angi: It would be great if you could filter all SOUS – Product Names 
@@ -560,7 +575,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 		boolean ignorable = sousVal.matches("[0-9]+");
 		return !ignorable;
 	}
-	
+
 
 	/**
 	 * adds additional information to the Admin notification email.
