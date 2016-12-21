@@ -409,11 +409,10 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 
 		for (Node n : pac.getAllAttributes()) {
 			attrVo = (ProductAttributeVO) n.getUserObject();
-			if (attrVo.getProductAttributeId() == null) 
-				continue; //not actually bound to this product (in _XR table).
 
 			//make sure it's one of our special attributes, or HTML we can parse for mediabin assets
-			if (!MEDIABIN_ATTR_TYPE.equals(attrVo.getAttributeType()) && !HTML_ATTR_TYPE.equals(attrVo.getAttributeType()))
+			if (attrVo.getProductAttributeId() == null || 
+					(!MEDIABIN_ATTR_TYPE.equals(attrVo.getAttributeType()) && !HTML_ATTR_TYPE.equals(attrVo.getAttributeType())))
 				continue;
 
 			data.add(attrVo);
