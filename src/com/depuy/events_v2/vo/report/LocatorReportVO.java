@@ -1,25 +1,25 @@
 package com.depuy.events_v2.vo.report;
 
-
-// JDK 1.5.0
+// JDK 1.7
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 
-
 // DOM4J libs
-import org.dom4j.Document;
-import org.dom4j.DocumentException;
-import org.dom4j.Element;
-//import org.dom4j.Node;
-import org.dom4j.io.SAXReader;
+import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
+import org.w3c.dom.Node;
+import org.w3c.dom.Element;
+import org.xml.sax.SAXException;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 
 // Log4j 1.2.8
 import org.apache.log4j.Logger;
@@ -27,8 +27,8 @@ import org.apache.log4j.Logger;
 import com.depuy.events_v2.vo.DePuyEventSeminarVO;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
-import com.siliconmtn.util.PhoneNumberFormat;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.PhoneNumberFormat;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.event.vo.EventEntryVO;
 
@@ -45,15 +45,13 @@ import com.smt.sitebuilder.action.event.vo.EventEntryVO;
  ****************************************************************************/
 public class LocatorReportVO extends AbstractSBReportVO {
 	private static final long serialVersionUID = 6l;
-	protected static Logger log = null;
+	protected static Logger log;
 	public static final int DEFAULT_RADIUS = 50;  //miles
 	protected int radius = DEFAULT_RADIUS;
-	protected DePuyEventSeminarVO sem = null;
-	protected EventEntryVO event = null;
+	protected DePuyEventSeminarVO sem;
+	protected EventEntryVO event;
+	private String aamdUrl;
 
-	/**
-	 * 
-	 */
 	public LocatorReportVO() {
 		super();
 		log = Logger.getLogger(getClass());
@@ -100,7 +98,7 @@ public class LocatorReportVO extends AbstractSBReportVO {
 
 
 	protected StringBuilder getHeader() {
-		StringBuilder sb = new StringBuilder();
+		StringBuilder sb = new StringBuilder(5000);
 		sb.append("<html><head><title>Surgeon Locator Report</title></head><body>");
 		sb.append("<u>Today's Seminar:</u><br/>"); 
 		sb.append(Convert.formatDate(event.getStartDate(),Convert.DATE_LONG)).append("<br/>");
@@ -111,51 +109,50 @@ public class LocatorReportVO extends AbstractSBReportVO {
 		sb.append("<h1>LOCAL ORTHOPAEDIC SURGEONS</h1>\n");
 
 		// Load the header into
-		sb.append("<p>We are pleased to supply you with a list of orthopaedic surgeons in your area who use DePuy products.  ");
+		sb.append("<p>We are pleased to supply you with a list of orthopaedic surgeons in your area who use DePuy Synthes products.  ");
 		sb.append("While our database of orthopaedic surgeons is large, it is not a complete ");
 		sb.append("listing of all orthopaedic surgeons in your area.  A surgeon's use of ");
-		sb.append("DePuy products is the sole criterion for being listed below. No orthopaedic ");
-		sb.append("surgeon has paid a fee to participate.  DePuy Orthopaedics Inc., ");
+		sb.append("DePuy Synthes products is the sole criterion for being listed below. No orthopaedic ");
+		sb.append("surgeon has paid a fee to participate.  DePuy Synthes Inc., ");
 		sb.append("does not make any recommendation or referral regarding any of these specific surgeons.</p>");
-		sb.append("<p>For general information about DePuy Orthopaedics, visit www.depuy.com</p>");
+		sb.append("<p>For general information about DePuy Synthes, visit www.depuysynthes.com</p>");
 
 		return sb;
 	}
 
 	@SuppressWarnings("rawtypes")
-	protected StringBuilder formatDisplay(StringBuilder xml) throws DocumentException {
+	protected StringBuilder formatDisplay(StringBuilder xml) 
+			throws ParserConfigurationException, UnsupportedEncodingException, SAXException, IOException {
 		// Parse out the XML Data and create the root element
-		ByteArrayInputStream bais = null;
-		try {
-			bais = new ByteArrayInputStream(xml.toString().getBytes("UTF-8"));
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		SAXReader reader = new SAXReader();
-		Document doc = reader.read(bais);
-		//Element e = doc.getRootElement();
+		DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+		DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+		Document doc = dBuilder.parse(new ByteArrayInputStream(xml.toString().getBytes("UTF-8")));
 
 		// Create an html formatted table structure
-		StringBuilder out = new StringBuilder();
+		StringBuilder out = new StringBuilder(1000);
 		out.append("<table border=\"0\"><tr><td colspan='3'>");
 		out.append("(Orthopaedic Surgeons are listed in alphabetical order)</td></tr>");
 
-		//log.info("Message: " + doc.selectSingleNode("//*[name()='message']").getStringValue());
-		//log.info("Specialty: " + doc.selectSingleNode("//*[name()='specialty']").getStringValue());
-
-		List result = doc.selectNodes("//*[name()='result']");
-		Map<String, String> rowData = new HashMap<String, String>();
-		//log.info("Number Results: " + result.size());
+		NodeList result = doc.getElementsByTagName("result");
+		Map<String, String> rowData = new HashMap<>();
+		log.info("Number Results: " + result.getLength());
 		PhoneNumberFormat pnf = null;
 		StringEncoder se = new StringEncoder();
 
-		for(int i=0; i < result.size(); i++) {
-			Element ele = (Element) result.get(i);
-			Iterator iter = ele.elementIterator();
-
-			while (iter.hasNext()) {
-				Element ne = (Element) iter.next();
-				rowData.put(ne.getName(), ne.getStringValue());
+		for (int i=0; i < result.getLength() && i < 100; i++) { //limit by size of results, and a max of 100 surgeons
+			Node n = result.item(i);
+			if (Node.ELEMENT_NODE != n.getNodeType()) continue; //make sure it's an Element
+			Element ele = (Element) n;
+			
+			//turn the Node into a Map<k,v> to keep separation of XML parsing and view generation
+			NodeList children = ele.getChildNodes();
+			for (int x=0; x < children.getLength(); x++) { //limit by size of results, and a max of 100 surgeons
+				Node child = children.item(x);
+				if (Node.ELEMENT_NODE != child.getNodeType()) continue; //make sure it's an Element
+				Element childEle = (Element) child;
+				if (log.isDebugEnabled())
+						log.debug(childEle.getNodeName() + "=" + childEle.getTextContent());
+				rowData.put(childEle.getNodeName(), childEle.getTextContent());
 			}
 
 			// Setup the columns
@@ -179,9 +176,9 @@ public class LocatorReportVO extends AbstractSBReportVO {
 			out.append("<b>").append(rowData.get("clinicName")).append("</b><br/>");
 			out.append(rowData.get("address1"));
 
-			if (rowData.get("address2").length() > 0) {
+			if (!StringUtil.isEmpty(rowData.get("address2")))
 				out.append(", ").append(rowData.get("address2"));
-			}
+
 			out.append("<br/>");
 
 			out.append(rowData.get("city")).append(", ");
@@ -189,11 +186,8 @@ public class LocatorReportVO extends AbstractSBReportVO {
 			out.append("<br/>");
 
 			out.append("<b>Phone: ").append(pnf.getFormattedNumber()).append("</b><br/>");
-			if (rowData.get("siteURL").length() > 0 && !rowData.get("siteURL").endsWith("null")) 
+			if (!StringUtil.isEmpty(rowData.get("siteURL")) && !rowData.get("siteURL").endsWith("null")) 
 				out.append(rowData.get("siteURL")).append("<br/>");
-
-			if (rowData.get("site2URL").length() > 0) 
-				out.append(rowData.get("site2URL")).append("<br/>");
 
 			// Setup the columns
 			if ((i % 2) == 0) {
@@ -207,13 +201,6 @@ public class LocatorReportVO extends AbstractSBReportVO {
 		out.append("<tr><td colspan='3'><p>&nbsp;</p></td></tr>\n");
 		out.append("<tr><td colspan='3'>To learn more about joint replacement, ");
 		out.append("or to find additional surgeons in your area, please visit ");
-		//		if (productId.equals("4")) {
-		//			out.append("www.hipreplacement.com");
-		//		} else if (productId.equals("6")) {
-		//			out.append("www.shoulderpainsolutions.com");
-		//		} else {
-		//			out.append("www.kneereplacement.com");
-		//		}
 		out.append("www.reallifetested.com or www.aaos.org.</td></tr>\n");
 		out.append("</table>");
 		return out;
@@ -268,33 +255,31 @@ public class LocatorReportVO extends AbstractSBReportVO {
 	 * @return URL Formatted for AAMD Locator Request
 	 */
 	protected String buildUrl() {
-		StringBuilder s = new StringBuilder();
-		s.append("http://www.allaboutmydoc.com/AAMD/locator?");
+		StringBuilder s = new StringBuilder(300);
+		s.append(aamdUrl).append("/json?amid=locator&");
 		s.append("display_template=/xml_display.jsp&company=1");
-		s.append("&site_location=PATIENT_ACTIVATION&accept=true&country=US&language=en");
+		s.append("&site_location=PATIENT_ACTIVATION&country=US&language=en");
 		s.append("&address=").append(encode(event.getAddressText()));
 		s.append("&city=").append(encode(event.getCityName()));
 		s.append("&state=").append(encode(event.getStateCode()));
 		s.append("&zip=").append(encode(event.getZipCode()));
-		//if (productId.equals("4")) { //hip events query by specialty, knee by product
-		s.append("&product=&specialty=").append(sem.getJointCodes());
-		//} else {
-		//s.append("&specialty=&product=").append(productId);
-		//}
+		s.append("&specialty=").append(sem.getJointCodes());
 		s.append("&radius=").append(radius);
 		s.append("&order=last");
-		s.append("&resultCount=10");
 
 		log.info("URL: " + s);
 		return s.toString();
 	}
 
 	protected String encode(String s) {
-		try {
-			s = java.net.URLEncoder.encode(StringUtil.checkVal(s), "UTF-8");
-		} catch (Exception e) {}
-
-		return s;
+		return StringEncoder.urlEncode(s);
 	}
 
+	public String getAamdUrl() {
+		return aamdUrl;
+	}
+
+	public void setAamdUrl(String aamdUrl) {
+		this.aamdUrl = aamdUrl;
+	}
 }
