@@ -5,7 +5,6 @@ import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.HashMap;
@@ -16,10 +15,8 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 import org.w3c.dom.Node;
 import org.w3c.dom.Element;
-import org.xml.sax.SAXException;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 
 // Log4j 1.2.8
 import org.apache.log4j.Logger;
@@ -121,8 +118,7 @@ public class LocatorReportVO extends AbstractSBReportVO {
 	}
 
 	@SuppressWarnings("rawtypes")
-	protected StringBuilder formatDisplay(StringBuilder xml) 
-			throws ParserConfigurationException, UnsupportedEncodingException, SAXException, IOException {
+	protected StringBuilder formatDisplay(StringBuilder xml) throws Exception {
 		// Parse out the XML Data and create the root element
 		DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
 		DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
