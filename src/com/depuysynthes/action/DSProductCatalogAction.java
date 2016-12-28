@@ -10,6 +10,7 @@ import java.util.Map;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
+import com.depuysynthes.scripts.DSMediaBinImporterV2;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.commerce.catalog.ProductAttributeContainer;
@@ -172,20 +173,17 @@ public class DSProductCatalogAction extends SimpleActionAdapter {
 		List<Node> prods = t.getPreorderList();
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 
-		long startTime = System.currentTimeMillis();
 		for (Node n : prods) {
 			ProductCategoryVO cat = (ProductCategoryVO) n.getUserObject();
 			String prodAlias = cat.getUrlAlias();
 
 			//skip anything that can't be seen on the website
 			//skip product families (these aren't actual products)
-			if (prodAlias == null || prodAlias.isEmpty() || cat.getProducts().isEmpty()) 
+			if (StringUtil.isEmpty(prodAlias) || cat.getProducts().isEmpty()) 
 				continue;
 
 			iterateProducts(cat, site);
 		}
-		//watching this for performance interest...
-		log.debug("exec time = " + (System.currentTimeMillis() - startTime) + "ms");
 	}
 
 
@@ -255,7 +253,7 @@ public class DSProductCatalogAction extends SimpleActionAdapter {
 	 */
 	private void loadMediabinAssetsUsingProdNm(ProductAttributeVO attrVo, String sousProductName, String orgId) {
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("select dpy_syn_mediabin_id, file_nm, title_txt from ");
+		sql.append("select dpy_syn_mediabin_id, file_nm, title_txt, prod_nm from ");
 		sql.append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_MEDIABIN ");
 		sql.append("where prod_nm like ? and opco_nm like ? and import_file_cd=? ");
 		sql.append("order by title_txt");
@@ -270,6 +268,9 @@ public class DSProductCatalogAction extends SimpleActionAdapter {
 			ps.setInt(3, mbChannel.getTypeCd());
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
+				if (!isExactSousMatch(sousProductName, rs.getString(4))) 
+					continue;
+				
 				vo = new MediaBinAssetVO();
 				vo.setDpySynMediaBinId(rs.getString(1));
 				vo.setFileNm(rs.getString(2));
@@ -282,6 +283,23 @@ public class DSProductCatalogAction extends SimpleActionAdapter {
 		}
 
 		attrVo.setValueText(this.generateHtmlTable(assets));
+	}
+
+
+	/**
+	 * Make sure we got an exact match to the sousProdName String - SQL limits 
+	 * our ability to tokenize or regex the string fully.
+	 * Method is public and static so we can use it in the admin JSP via a <jsp:useBean> syntax.
+	 * @param sousProductName
+	 * @param dbTokenStr
+	 * @return
+	 */
+	public static boolean isExactSousMatch(String sousProductName, String dbTokenStr) {
+		String[] tokens = StringUtil.checkVal(dbTokenStr).split(DSMediaBinImporterV2.TOKENIZER);
+		for (String t : tokens)
+			if (t.equals(sousProductName)) return true;
+
+		return false;
 	}
 
 
@@ -349,6 +367,7 @@ public class DSProductCatalogAction extends SimpleActionAdapter {
 
 		int x = 0;
 		for (MediaBinAssetVO vo: assets.values()) {
+			if (vo == null) continue; //typically null for a JSON pointer to an asset that no longer exists in Mediabin
 			if (x % 2 == 0 && x > 0) html.append("</tr>"); //close prev row
 			if (x % 2 == 0) html.append("<tr>"); //open new row
 			if (StringUtil.checkVal(vo.getFileNm()).toLowerCase().endsWith(".pdf")) {
@@ -382,7 +401,7 @@ public class DSProductCatalogAction extends SimpleActionAdapter {
 		String reqParam1 = req.getParameter(SMTServletRequest.PARAMETER_KEY + "1");
 
 		//If we don't have a request Parameter to parse, return.
-		if(reqParam1 == null || reqParam1.isEmpty()) return;
+		if (StringUtil.isEmpty(reqParam1)) return;
 		log.debug(reqParam1);
 
 		Tree t = (Tree) mod.getActionData();
@@ -422,18 +441,18 @@ public class DSProductCatalogAction extends SimpleActionAdapter {
 		val = StringUtil.checkVal(pr.getProductName(), val);
 		val = StringUtil.checkVal(pr.getTitle(), val);
 
-		if (StringUtil.checkVal(val).length() > 0) {
+		//page title
+		if (!StringUtil.isEmpty(val))
 			page.setTitleName(val);
-		} 
 
 		//meta keywords
 		val = pr.getMetaKywds() != null ? pr.getMetaKywds(): p.getMetaKeyword();
-		if (StringUtil.checkVal(val).length() > 0)
+		if (!StringUtil.isEmpty(val))
 			page.setMetaKeyword(val);
 
 		//meta desc
 		val = pr.getMetaDesc() != null ? pr.getMetaDesc(): p.getMetaDesc();
-		if (StringUtil.checkVal(val).length() > 0)
+		if (!StringUtil.isEmpty(val))
 			page.setMetaDesc(val);
 
 		//set canonical URL of the page to the case-proper UrlAlias of this product
