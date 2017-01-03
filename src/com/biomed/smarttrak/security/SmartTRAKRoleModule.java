@@ -13,11 +13,11 @@ import com.smt.sitebuilder.security.SBUserRoleContainer;
  <p><b>Title</b>: SmartTRAKRoleModule</p>
  <p><b>Description: </b></p>
  <p> 
- <p>Copyright: (c) 2000 - 2016 SMT, All Rights Reserved</p>
+ <p>Copyright: (c) 2000 - 2017 SMT, All Rights Reserved</p>
  <p>Company: Silicon Mountain Technologies</p>
- @author groot
+ @author David Bargerhuff
  @version 1.0
- @since Dec 20, 2016
+ @since Jan 03, 2017
  <b>Changes:</b> 
  ***************************************************************************/
 public class SmartTRAKRoleModule extends DBRoleModule {
