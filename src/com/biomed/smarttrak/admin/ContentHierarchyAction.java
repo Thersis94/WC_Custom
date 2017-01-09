@@ -69,25 +69,25 @@ public class ContentHierarchyAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
-		list(req);
-	}
+		ModuleVO modVo = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 
-	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
-	 */
-	@Override
-	public void build(SMTServletRequest req) throws ActionException {
-		throw new ActionException("Method not supported.");
-	}
-
-	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.http.SMTServletRequest)
-	 */
-	@Override
-	public void list(SMTServletRequest req) throws ActionException {
-		ModuleVO modVo = (ModuleVO) attributes.get(AdminConstants.ADMIN_MODULE_DATA);
 		String sectionId = req.getParameter("sectionId");
 
+		//Build a Tree from the list.
+		Tree tree = getHierarchy(sectionId);
+		List<Node> nodeList = tree.preorderList();
+		modVo.setActionData(nodeList);
+		modVo.setDataSize(tree.getDepth());
+
+		this.setAttribute(Constants.MODULE_DATA, modVo);
+	}
+
+	/**
+	 * 
+	 * @param sectionId
+	 * @return
+	 */
+	public Tree getHierarchy(String sectionId) {
 		boolean isEdit = !StringUtil.isEmpty(sectionId);
 		Map<String, Node> data = new LinkedHashMap<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(getContentHierarchyListSql(isEdit))) {
@@ -108,7 +108,6 @@ public class ContentHierarchyAction extends SBActionAdapter {
 			}
 		} catch (SQLException sqle) {
 			log.error("Unable to get content hierarchies", sqle);
-			modVo.setError("Unable to get retrieve content hierarchies: ", sqle);
 		}
 
 		//Sort the Nodes.
@@ -119,10 +118,30 @@ public class ContentHierarchyAction extends SBActionAdapter {
 		//Build a Tree from the list.
 		Tree tree = new Tree(sections);
 		List<Node> nodeList = tree.preorderList();
-		modVo.setActionData(nodeList);
-		modVo.setDataSize(tree.getDepth());
 
-		this.setAttribute(AdminConstants.ADMIN_MODULE_DATA, modVo);
+		return tree;
+	}
+
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
+	 */
+	@Override
+	public void build(SMTServletRequest req) throws ActionException {
+		SectionVO s = new SectionVO(req);
+
+		saveSectionVO(s);
+	}
+
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.http.SMTServletRequest)
+	 */
+	@Override
+	public void list(SMTServletRequest req) throws ActionException {
+		if(!StringUtil.isEmpty(req.getParameter(SBActionAdapter.SB_ACTION_ID))) {
+			super.retrieve(req);
+		} else {
+			super.list(req);
+		}
 	}
 
 	/**
@@ -149,9 +168,10 @@ public class ContentHierarchyAction extends SBActionAdapter {
 	 */
 	@Override
 	public void update(SMTServletRequest req) throws ActionException {
-		SectionVO s = new SectionVO(req);
+		super.update(req);
 
-		saveSectionVO(s);
+		 // Redirect after the update
+        sbUtil.adminRedirect(req, attributes.get(Constants.ACTION_SUCCESS_KEY), (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH));
 	}
 
 	/**
