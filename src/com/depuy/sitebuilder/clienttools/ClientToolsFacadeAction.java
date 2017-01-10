@@ -5,7 +5,7 @@ package com.depuy.sitebuilder.clienttools;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
 
 // SB Libs
@@ -49,7 +49,7 @@ public class ClientToolsFacadeAction extends SimpleActionAdapter {
      * @see com.siliconmtn.action.AbstractActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
      */
     @Override
-    public void retrieve(SMTServletRequest req) throws ActionException {
+    public void retrieve(ActionRequest req) throws ActionException {
     	SMTActionInterface eg = null;
     	String type = StringUtil.checkVal(req.getParameter("type"));
 
@@ -78,7 +78,7 @@ public class ClientToolsFacadeAction extends SimpleActionAdapter {
      * @see com.siliconmtn.action.AbstractActionController#list(com.siliconmtn.http.SMTServletRequest)
      */
     @Override
-    public void list(SMTServletRequest req) throws ActionException {
+    public void list(ActionRequest req) throws ActionException {
     	log.info("Starting client tools - list");
         super.retrieve(req);
     }

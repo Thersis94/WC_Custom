@@ -4,7 +4,7 @@ package com.ansmed.sb.patienttracker;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
@@ -41,13 +41,13 @@ public class AdhocCreateAction extends TrackerAction {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {	}
+	public void retrieve(ActionRequest req) throws ActionException {	}
 	
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		log.debug("AdhocCreateAction build...");
 		// need patientId and assignmentId from the request
 		AssignmentVO avo = new AssignmentVO();
@@ -81,7 +81,7 @@ public class AdhocCreateAction extends TrackerAction {
 	 * @return
 	 * @throws ActionException
 	 */
-	private PatientVO createPatient(SMTServletRequest req) throws ActionException {
+	private PatientVO createPatient(ActionRequest req) throws ActionException {
 		PatientVO newPatient = null;
 		
 		// preserve the 'interaction' formId which is on the request as 'sbActionId'
@@ -97,7 +97,7 @@ public class AdhocCreateAction extends TrackerAction {
 		return newPatient;		
 	}
 	
-	private void manageAssignment(SMTServletRequest req, AssignmentVO avo) 
+	private void manageAssignment(ActionRequest req, AssignmentVO avo) 
 		throws ActionException {
 		log.debug("managing assignment...");
 		// create the assignment
@@ -138,7 +138,7 @@ public class AdhocCreateAction extends TrackerAction {
 	 * @param avo
 	 * @throws ActionException
 	 */
-	private void updateAssignment(SMTServletRequest req, AssignmentVO avo) 
+	private void updateAssignment(ActionRequest req, AssignmentVO avo) 
 			throws ActionException {
 		// update the assignment
 		if (avo.getAssignmentId() != null) {
@@ -162,7 +162,7 @@ public class AdhocCreateAction extends TrackerAction {
 	 * @param avo
 	 * @throws ActionException
 	 */
-	private void createInteraction(SMTServletRequest req, AssignmentVO avo) 
+	private void createInteraction(ActionRequest req, AssignmentVO avo) 
 		throws ActionException {
 		log.debug("creating adhoc interaction entry...");
 		req.setParameter("processInteraction", "true");
@@ -175,7 +175,7 @@ public class AdhocCreateAction extends TrackerAction {
 		req.setParameter("formSubmittalId", null); // clean-up
 	}
 	
-	private void resetLoggingParameters(SMTServletRequest req) {
+	private void resetLoggingParameters(ActionRequest req) {
 		// clear logging params
 		req.setParameter(AssignmentLogManager.LOG_STATUS_ID, null);
 		req.setParameter(AssignmentLogManager.LOG_RESPONSE_ID, null);

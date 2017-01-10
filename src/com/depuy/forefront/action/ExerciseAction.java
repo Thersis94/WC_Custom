@@ -11,7 +11,7 @@ import com.depuy.forefront.action.vo.ExerciseIntensityVO;
 import com.depuy.forefront.action.vo.ExerciseVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -35,7 +35,7 @@ public class ExerciseAction extends SBActionAdapter {
 		super(ai);
 	}
 	
-	public void delete(SMTServletRequest req) {
+	public void delete(ActionRequest req) {
 		final String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		msg = (String) getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
 		String pkId = req.getParameter("delId");
@@ -59,7 +59,7 @@ public class ExerciseAction extends SBActionAdapter {
 		}
 	}
 	
-	public void retrieve(SMTServletRequest req) throws ActionException{
+	public void retrieve(ActionRequest req) throws ActionException{
 		log.debug("Beginning ExerciseAction retrieve");
 		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 		String programId = (String) req.getSession().getAttribute(ProgramAction.PROGRAM_ID);
@@ -145,7 +145,7 @@ public class ExerciseAction extends SBActionAdapter {
 		mod.setActionData(vos);
 	}
 	
-	private String writeFile(SMTServletRequest req, String paramNm) {
+	private String writeFile(ActionRequest req, String paramNm) {
 		log.debug("starting writeFile");
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 
@@ -183,7 +183,7 @@ public class ExerciseAction extends SBActionAdapter {
 		return fileNm;
 	}
 	
-	private void updateExercise(SMTServletRequest req) throws ActionException{
+	private void updateExercise(ActionRequest req) throws ActionException{
 		log.debug("Beginning Exercise update");
 		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 		ExerciseVO vo = new ExerciseVO(req);
@@ -250,7 +250,7 @@ public class ExerciseAction extends SBActionAdapter {
 		mod.setActionData(vo);
 		}
 	
-	private void updateExerciseIntensity(SMTServletRequest req) throws ActionException {
+	private void updateExerciseIntensity(ActionRequest req) throws ActionException {
 		log.debug("Beginning ExerciseIntensity update");
 		List<ExerciseIntensityVO> vos = loadIntensities(req);
 		
@@ -294,7 +294,7 @@ public class ExerciseAction extends SBActionAdapter {
 
 	}
 	
-	private void updateExerciseAttributes(SMTServletRequest req, int iLvl) throws ActionException {
+	private void updateExerciseAttributes(ActionRequest req, int iLvl) throws ActionException {
 		log.debug("Beginning ExerciseAttributes update");
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		final String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
@@ -344,7 +344,7 @@ public class ExerciseAction extends SBActionAdapter {
 		mod.setActionData(vos);	
 	}
 	
-	private List<ExerciseIntensityVO> loadIntensities(SMTServletRequest req){
+	private List<ExerciseIntensityVO> loadIntensities(ActionRequest req){
 		List<ExerciseIntensityVO> vos = new ArrayList<ExerciseIntensityVO>();
 		
 		for(int i = 1; i <= 3; i++) {
@@ -357,7 +357,7 @@ public class ExerciseAction extends SBActionAdapter {
 		return vos;
 	}
 	
-	private List<ExerciseAttributeVO> loadAttributes(SMTServletRequest req, int iLvl) {
+	private List<ExerciseAttributeVO> loadAttributes(ActionRequest req, int iLvl) {
 		int count = 1;
 		List<ExerciseAttributeVO> vos = new ArrayList<ExerciseAttributeVO>();
 		ExerciseAttributeVO vo = new ExerciseAttributeVO(req, iLvl, count);
@@ -373,7 +373,7 @@ public class ExerciseAction extends SBActionAdapter {
 	}
 
 	
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		msg = (String) getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
 		req.setValidateInput(Boolean.FALSE);
 		Boolean addAttr = Boolean.parseBoolean(StringUtil.checkVal(req.getParameter("addAttributes")));

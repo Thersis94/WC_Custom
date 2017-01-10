@@ -21,7 +21,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -86,7 +86,7 @@ public abstract class SiteWizardAction extends SBActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		log.debug("Starting Site Wizard");
 		String msg = negMsg1 + ": " + req.getParameter("hospitalName") + negMsg3;
 		attributes.put(AdminConstants.ADMIN_MODULE_DATA, new ModuleVO());
@@ -151,7 +151,7 @@ public abstract class SiteWizardAction extends SBActionAdapter {
 		
 	}
 	
-	public void addHospital(SMTServletRequest req, HospitalInstanceVO vo){
+	public void addHospital(ActionRequest req, HospitalInstanceVO vo){
 		StringBuilder sb = new StringBuilder();
 		sb.append("insert into ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sb.append("FOREFRONT_HOSPITAL (HOSPITAL_NM, CREATE_DT, HOSPITAL_ID) values");
@@ -173,7 +173,7 @@ public abstract class SiteWizardAction extends SBActionAdapter {
 		}}
 	}
 	
-	public void updateHospitalInst(SMTServletRequest req, HospitalInstanceVO vo){
+	public void updateHospitalInst(ActionRequest req, HospitalInstanceVO vo){
 		StringBuilder sb = new StringBuilder();
 		sb.append("insert into ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sb.append("FOREFRONT_HOSPITAL_INST (HOSPITAL_ID, PROGRAM_ID, SITE_ID, ");
@@ -228,7 +228,7 @@ public abstract class SiteWizardAction extends SBActionAdapter {
 	 * @param layoutId
 	 * @param page
 	 */
-	public void addMyRoutinePage(String layoutId, SMTServletRequest req) 
+	public void addMyRoutinePage(String layoutId, ActionRequest req) 
 	throws Exception {
 
 		SMTActionInterface sai = new SitePageAction(this.actionInit);
@@ -253,7 +253,7 @@ public abstract class SiteWizardAction extends SBActionAdapter {
 		sai.update(req);
 	}
 	
-	public void addMyActionPlanPage(String layoutId, SMTServletRequest req) 
+	public void addMyActionPlanPage(String layoutId, ActionRequest req) 
 	throws Exception {
 
 		SMTActionInterface sai = new SitePageAction(this.actionInit);
@@ -278,7 +278,7 @@ public abstract class SiteWizardAction extends SBActionAdapter {
 		sai.update(req);
 	}
 	
-	public void addMyMilestonesPage(String layoutId, SMTServletRequest req) 
+	public void addMyMilestonesPage(String layoutId, ActionRequest req) 
 	throws Exception {
 
 		SMTActionInterface sai = new SitePageAction(this.actionInit);
@@ -353,7 +353,7 @@ public abstract class SiteWizardAction extends SBActionAdapter {
 	 * @param vo
 	 * @throws IOException
 	 */
-	public void addWebsite(HospitalInstanceVO vo, SMTServletRequest req) throws Exception {
+	public void addWebsite(HospitalInstanceVO vo, ActionRequest req) throws Exception {
 		String email = req.getParameter("contactEmail");
 		SMTActionInterface sai = new SiteAction(this.actionInit);
 		sai.setAttributes(attributes);
@@ -377,7 +377,7 @@ public abstract class SiteWizardAction extends SBActionAdapter {
 	 * This method adds the hospital organization to the database.
 	 * @param vo
 	 */
-	public void addOrganization(HospitalInstanceVO vo, SMTServletRequest req) throws Exception {
+	public void addOrganization(HospitalInstanceVO vo, ActionRequest req) throws Exception {
 		SMTActionInterface sai = new OrganizationAction(this.actionInit);
 		sai.setAttributes(attributes);
 		sai.setDBConnection(dbConn);
@@ -441,7 +441,7 @@ public abstract class SiteWizardAction extends SBActionAdapter {
 		return roles;
 	}
 	
-	public void assignPageModules(SMTServletRequest req, String layoutId){
+	public void assignPageModules(ActionRequest req, String layoutId){
 		for (int i = 0; i < defDisplay.size(); i++) {
 				PageModuleVO vo = defDisplay.get(i);
 				String pageId = pageIds.get(i);

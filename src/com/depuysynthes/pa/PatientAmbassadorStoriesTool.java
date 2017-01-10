@@ -12,7 +12,7 @@ import java.util.Map;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.exception.DatabaseException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -102,7 +102,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 	 * Calls out to solr to remove the story from the index and adds the hidden
 	 * flag to the FORM_DATA for the given submission.
 	 */
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		String msg = "Story successfuly removed.";
 		try {
 			if(req.hasParameter("fsi"))
@@ -124,7 +124,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 	 * and call out to solr to update the index.
 	 */
 	@Override 
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		String submittalId = req.getParameter("fsi");
 		String msg = "Story Successfully Saved";
 
@@ -188,7 +188,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 	 * of Form Submissions matching given search criteria.
 	 */
 	@Override
-	public void list(SMTServletRequest req) throws ActionException {		
+	public void list(ActionRequest req) throws ActionException {		
 
 		/*
 		 * Choose whether we Export a report, retrieve a particular submission
@@ -210,7 +210,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 	 * on the solrVO.
 	 * @param req
 	 */
-	private SolrStoryVO createStoryVO(SMTServletRequest req) {
+	private SolrStoryVO createStoryVO(ActionRequest req) {
 		SolrStoryVO ssv = new SolrStoryVO();
 
 		//Retrieve Submittal Data
@@ -342,7 +342,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 	 * FormSubmittalId
 	 * @param req
 	 */
-	protected void retrieveSubmittalData(SMTServletRequest req) {
+	protected void retrieveSubmittalData(ActionRequest req) {
 		FormFacadeAction ffa = new FormFacadeAction(actionInit);
 		ffa.setDBConnection(dbConn);
 		ffa.setAttributes(attributes);
@@ -358,7 +358,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 	 * @param req
 	 * @return 
 	 */
-	private List<FormTransactionVO> retreiveAllSubmissions(SMTServletRequest req, boolean filterHidden) {
+	private List<FormTransactionVO> retreiveAllSubmissions(ActionRequest req, boolean filterHidden) {
 
 		List<FormTransactionVO> vos = new ArrayList<FormTransactionVO>();
 		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
@@ -470,7 +470,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 	 * for formatting before redirecting back to the browser.
 	 * @param req
 	 */
-	private void exportAllSubmissions(SMTServletRequest req) {
+	private void exportAllSubmissions(ActionRequest req) {
 		DataContainer results = new DataContainer();
 
 		/*
@@ -516,7 +516,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	protected String saveFile(SMTServletRequest req) {
+	protected String saveFile(ActionRequest req) {
 		// Build the file location
 		log.debug("attempting to save any files uploaded");
 		String pathToBinary = (String) getAttribute("pathToBinary");
@@ -540,7 +540,7 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 	}
 
 	//send the browser back to the appropriate page
-	private void sendRedirect(SMTServletRequest req, String msg) {
+	private void sendRedirect(ActionRequest req, String msg) {
 		StringBuilder pg = new StringBuilder(250);
 		pg.append("/").append(attributes.get(Constants.CONTEXT_NAME));
 		pg.append(getAttribute(AdminConstants.ADMIN_TOOL_PATH));

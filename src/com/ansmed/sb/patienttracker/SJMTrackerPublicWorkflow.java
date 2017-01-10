@@ -11,7 +11,7 @@ import java.util.Locale;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
 
 // Sitebuilder II libs
@@ -55,7 +55,7 @@ public class SJMTrackerPublicWorkflow extends TrackerAction {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("SJMTrackerPublicWorkflow retrieve...");
 		TrackerDataContainer tdc = new TrackerDataContainer();
 		// 1. retrieve form
@@ -76,7 +76,7 @@ public class SJMTrackerPublicWorkflow extends TrackerAction {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		log.debug("SJMTrackerPublicWorkflow build...");
 		
 		// 1. look up patient form actionId
@@ -138,7 +138,7 @@ public class SJMTrackerPublicWorkflow extends TrackerAction {
 	 * @param patient
 	 * @return
 	 */
-	private void chooseAmbassador(SMTServletRequest req, PatientVO patient) {
+	private void chooseAmbassador(ActionRequest req, PatientVO patient) {
 		String assigneeId = StringUtil.checkVal(req.getParameter("assigneeId"));
 		// if assigneeId does not exist on request, find an ambassador match
 		if (assigneeId.length() == 0) {

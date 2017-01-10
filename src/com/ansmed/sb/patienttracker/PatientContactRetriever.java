@@ -10,7 +10,7 @@ import java.util.List;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.StringUtil;
@@ -52,7 +52,7 @@ public class PatientContactRetriever extends SBActionAdapter {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("PatientContactDataRetriever retrieve...");
 		String contactFormId = StringUtil.checkVal(req.getAttribute("sourceFormId"));
 		String contactSubmittalId = StringUtil.checkVal(req.getAttribute("sourceSubmittalId"));
@@ -87,12 +87,12 @@ public class PatientContactRetriever extends SBActionAdapter {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException { }
+	public void build(ActionRequest req) throws ActionException { }
 	
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.action.AbstractActionController#update(com.siliconmtn.http.SMTServletRequest)
 	 */
-	private ContactDataContainer retrieveContactData(SMTServletRequest req, String contactFormId, String contactSubmittalId) 
+	private ContactDataContainer retrieveContactData(ActionRequest req, String contactFormId, String contactSubmittalId) 
 		throws ActionException {
 		log.debug("Starting retrieveContactData...");
 		ContactDataContainer cdc = new ContactDataContainer();

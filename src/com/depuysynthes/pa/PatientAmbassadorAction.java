@@ -2,7 +2,7 @@ package com.depuysynthes.pa;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
@@ -39,7 +39,7 @@ public class PatientAmbassadorAction extends SimpleActionAdapter {
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		String storyId = StringUtil.checkVal(req.getParameter("reqParam_1"));
@@ -65,7 +65,7 @@ public class PatientAmbassadorAction extends SimpleActionAdapter {
 	 * calls the data tool action to load the desired patient story from the black box
 	 * @param req
 	 */
-	private void loadStory(SMTServletRequest req, String storyId, String formId) {
+	private void loadStory(ActionRequest req, String storyId, String formId) {
 		req.setParameter("fsi", storyId);
 		req.setParameter("formId", formId);
 		PatientAmbassadorStoriesTool pa = new PatientAmbassadorStoriesTool(actionInit);
@@ -82,7 +82,7 @@ public class PatientAmbassadorAction extends SimpleActionAdapter {
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 }

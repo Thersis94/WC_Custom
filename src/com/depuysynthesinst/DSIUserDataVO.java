@@ -8,9 +8,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
-
 import com.depuysynthesinst.lms.MyLMSCourseVO;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.gis.GeocodeLocation;
 import com.siliconmtn.gis.Location;
 import com.siliconmtn.security.PhoneVO;
@@ -354,7 +353,7 @@ public class DSIUserDataVO extends UserDataVO {
 		user.setData(rs);
 	}
 
-	public void setData(HttpServletRequest req) {
+	public void setData(ActionRequest req) {
 		user.setData(req);
 	}
 

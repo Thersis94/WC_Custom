@@ -15,7 +15,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.exception.DatabaseException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 
@@ -60,7 +60,7 @@ public class AdhocFacadeAction extends TrackerAction {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) {
+	public void retrieve(ActionRequest req) {
 		log.debug("AdhocInteractionFacadeAction retrieve...");
 		String patientId = StringUtil.checkVal(req.getParameter("patientId"));
 		List<AssignmentVO> patientData = null;
@@ -105,7 +105,7 @@ public class AdhocFacadeAction extends TrackerAction {
 	 * @param req
 	 * @return
 	 */
-	private String checkAssignee(SMTServletRequest req) {
+	private String checkAssignee(ActionRequest req) {
 		String assigneeId = null;
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 		if (role.getRoleLevel() < SecurityController.ADMIN_ROLE_LEVEL) {
@@ -122,7 +122,7 @@ public class AdhocFacadeAction extends TrackerAction {
 	 * @param req
 	 * @return
 	 */
-	private String retrieveAssigneeId(SMTServletRequest req) {
+	private String retrieveAssigneeId(ActionRequest req) {
 		String id = null;
 		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 		String sql = "select assignee_id from pt_assignee where assignee_profile_id = ? ";
@@ -152,7 +152,7 @@ public class AdhocFacadeAction extends TrackerAction {
 	 * @param req
 	 * @return
 	 */
-	private Map<String, AssignmentVO> retrieveBaseData(SMTServletRequest req, String assigneeId) {
+	private Map<String, AssignmentVO> retrieveBaseData(ActionRequest req, String assigneeId) {
 		StringBuilder sql = new StringBuilder();
 		sql.append("select b.pt_assignment_id, b.assignee_id, a.patient_profile_id, a.patient_id ");
 		sql.append("from pt_patient a ");
@@ -238,7 +238,7 @@ public class AdhocFacadeAction extends TrackerAction {
 	 * given patientId.
 	 * @throws PatientException
 	 */
-	private PatientVO retrievePatient(SMTServletRequest req, String patientId) 
+	private PatientVO retrievePatient(ActionRequest req, String patientId) 
 		throws PatientException {
 		log.debug("retrieving patient records for patientID: " + patientId);
 		
@@ -280,7 +280,7 @@ public class AdhocFacadeAction extends TrackerAction {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) {
+	public void build(ActionRequest req) {
 		log.debug("AdhocFacadeAction build...");
 		String patientId = StringUtil.checkVal(req.getParameter("patientId"));
 		SMTActionInterface sai = null;

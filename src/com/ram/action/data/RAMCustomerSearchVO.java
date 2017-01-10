@@ -3,7 +3,7 @@
  */
 package com.ram.action.data;
 
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
@@ -38,11 +38,11 @@ public class RAMCustomerSearchVO extends EXTJSDataVO {
 	public RAMCustomerSearchVO() {
 	}
 
-	public RAMCustomerSearchVO(SMTServletRequest req) {
+	public RAMCustomerSearchVO(ActionRequest req) {
 		setData(req);
 	}
 
-	public void setData(SMTServletRequest req) {
+	public void setData(ActionRequest req) {
 		super.setData(req);
 		customerId = Convert.formatInteger(req.getParameter("customerId"), 0);
 		isAddCustomer = Convert.formatBoolean(req.getParameter("addCustomer"));

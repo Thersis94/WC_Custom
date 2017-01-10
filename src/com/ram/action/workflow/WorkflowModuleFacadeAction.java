@@ -6,7 +6,7 @@ package com.ram.action.workflow;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.smt.sitebuilder.action.SBActionAdapter;
 
 /****************************************************************************
@@ -43,42 +43,42 @@ public class WorkflowModuleFacadeAction extends SBActionAdapter {
 	}
 
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		CallType type = getCallType(req.getParameter(CALL_TYPE));
 		if(type != null)
 			getAction(type).build(req);
 	}
 
 	@Override
-	public void copy(SMTServletRequest req) throws ActionException {
+	public void copy(ActionRequest req) throws ActionException {
 		CallType type = getCallType(req.getParameter(CALL_TYPE));
 		if(type != null)
 			getAction(type).copy(req);
 	}
 
 	@Override
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		CallType type = getCallType(req.getParameter(CALL_TYPE));
 		if(type != null)
 			getAction(type).delete(req);
 	}
 
 	@Override
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		CallType type = getCallType(req.getParameter(CALL_TYPE));
 		if(type != null)
 			getAction(type).list(req);
 	}
 
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		CallType type = getCallType(req.getParameter(CALL_TYPE));
 		if(type != null)
 			getAction(type).retrieve(req);
 	}
 
 	@Override
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		CallType type = getCallType(req.getParameter(CALL_TYPE));
 		getAction(type).update(req);
 	}

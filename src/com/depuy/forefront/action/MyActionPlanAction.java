@@ -9,7 +9,7 @@ import com.depuy.forefront.action.vo.ListItemVO;
 import com.depuy.forefront.action.vo.MyActionPlanVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -25,7 +25,7 @@ public class MyActionPlanAction extends SBActionAdapter{
 		super(ai);
 	}
 
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("Beginning retrieve for MyActionPlan");
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		final String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);

@@ -18,7 +18,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.exception.MailException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.SMTMail;
@@ -77,7 +77,7 @@ public class EpiducerRegistrationAction extends SimpleActionAdapter {
         loadCollections();
     }
      
-    public void list(SMTServletRequest req) throws ActionException {
+    public void list(ActionRequest req) throws ActionException {
     	super.retrieve(req);    	
     }
 	
@@ -85,7 +85,7 @@ public class EpiducerRegistrationAction extends SimpleActionAdapter {
      * @see com.siliconmtn.action.AbstractActionController#build(com.siliconmtn.http.SMTServletRequest)
      */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
     	log.debug("Starting EpiducerRegistrationAction build...");
     	String courseFieldId = COURSE_SELECTION_FIELD_ID;
     	StringEncoder se = new StringEncoder();
@@ -122,7 +122,7 @@ public class EpiducerRegistrationAction extends SimpleActionAdapter {
      * @see com.siliconmtn.action.AbstractActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
      */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("Starting EpiducerRegistrationAction retrieve...");
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
     	String oldInitId = actionInit.getActionId();
@@ -151,7 +151,7 @@ public class EpiducerRegistrationAction extends SimpleActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	private SurgeonVO findSurgeon(SMTServletRequest req, StringEncoder se) {
+	private SurgeonVO findSurgeon(ActionRequest req, StringEncoder se) {
 		SurgeonVO surgeon = findSurgeonByLicense(req);
 		if (surgeon == null) {
 			surgeon = findSurgeonByName(req, se);
@@ -180,7 +180,7 @@ public class EpiducerRegistrationAction extends SimpleActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	private SurgeonVO findSurgeonByLicense(SMTServletRequest req) {
+	private SurgeonVO findSurgeonByLicense(ActionRequest req) {
 		// if no license number submitted, return
 		log.debug("checking surgeon by license");
 		SurgeonVO surgeon = null;
@@ -218,7 +218,7 @@ public class EpiducerRegistrationAction extends SimpleActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	private SurgeonVO findSurgeonByName(SMTServletRequest req, StringEncoder se) {
+	private SurgeonVO findSurgeonByName(ActionRequest req, StringEncoder se) {
 		log.debug("checking surgeon by name");
 		SurgeonVO surgeon = null;
 		StringBuffer sql = new StringBuffer();
@@ -255,7 +255,7 @@ public class EpiducerRegistrationAction extends SimpleActionAdapter {
 	 * @return
 	 * @throws SQLException
 	 */
-	private String processResponseType(SMTServletRequest req, SurgeonVO surgeon, 
+	private String processResponseType(ActionRequest req, SurgeonVO surgeon, 
 			String oldInitId, String contactFormId, String courseRequested)	throws SQLException {
 		String responseType = NOT_APPROVED;
 		if (surgeon == null || surgeon.getProductApprovalFlag() < 1) return responseType;
@@ -357,7 +357,7 @@ public class EpiducerRegistrationAction extends SimpleActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void processForm(SMTServletRequest req, SurgeonVO surgeon, String responseType) throws ActionException {
+	private void processForm(ActionRequest req, SurgeonVO surgeon, String responseType) throws ActionException {
 		// if surgeon object is not null and responseType is either 'approved' or 'data other' then we persist the form data
 		if ( surgeon != null && (responseType.equalsIgnoreCase(APPROVED) || responseType.equalsIgnoreCase(WAIT_LIST)) ) {
 			// set the surgeon's profileId on the request
@@ -387,7 +387,7 @@ public class EpiducerRegistrationAction extends SimpleActionAdapter {
 	 * @param type
 	 * @throws ActionException
 	 */
-	private void sendEmail(SMTServletRequest req, String actionId, String type, String formId) throws ActionException {
+	private void sendEmail(ActionRequest req, String actionId, String type, String formId) throws ActionException {
 		log.debug("type is: " + type);
 		if (type.equals(APPROVED) || 
 				type.equals(NOT_APPROVED) || 
@@ -403,7 +403,7 @@ public class EpiducerRegistrationAction extends SimpleActionAdapter {
     * Send a copy of the form submission to the designated recipient.
     * @param req
     */
-	private void sendEmail(SMTServletRequest req, String actionId, String type, String formId, String target) throws ActionException {
+	private void sendEmail(ActionRequest req, String actionId, String type, String formId, String target) throws ActionException {
 		EpiducerMailFormatter emf = this.loadEmailFormatter(req, actionId, formId, type, target);
 		
 		if (emf == null) return;
@@ -438,7 +438,7 @@ public class EpiducerRegistrationAction extends SimpleActionAdapter {
 	 * @param target
 	 * @return
 	 */
-	private EpiducerMailFormatter loadEmailFormatter(SMTServletRequest req, String actionId, String formId, String responseType, String target) {
+	private EpiducerMailFormatter loadEmailFormatter(ActionRequest req, String actionId, String formId, String responseType, String target) {
 		EpiducerMailFormatter emf = null;
 		emf = new EpiducerMailFormatter(req, responseType);
 		log.debug("responseType/target is: " + emf.getType() + "/" + target);
@@ -470,7 +470,7 @@ public class EpiducerRegistrationAction extends SimpleActionAdapter {
 	 * @param courseRequested
 	 * @return
 	 */
-	private StringBuffer buildRedirect(SMTServletRequest req, String actionId, String responseType, String courseRequested) {
+	private StringBuffer buildRedirect(ActionRequest req, String actionId, String responseType, String courseRequested) {
 		StringBuffer url = new StringBuffer();
     	url.append(req.getRequestURI()).append("?contactSubmitted=true");
     	url.append("&responseId=").append(req.getParameter("pmid"));
@@ -569,7 +569,7 @@ public class EpiducerRegistrationAction extends SimpleActionAdapter {
 	 * loads Epiducer events
 	 * @param req
 	 */
-	private void loadEvents(SMTServletRequest req) {
+	private void loadEvents(ActionRequest req) {
 		StringBuffer sql = new StringBuffer();
 		sql.append("select * from event_entry where event_type_id = 'c0a802374bbe61db5cc63cd3ebd5f37f' ");
 		sql.append("order by start_dt");

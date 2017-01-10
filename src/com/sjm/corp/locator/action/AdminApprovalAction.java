@@ -8,14 +8,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 // J2EE 1.5
-import javax.servlet.http.HttpSession;
+import com.siliconmtn.http.session.SMTSession;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.exception.MailException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.AuthenticationException;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
@@ -66,7 +66,7 @@ public class AdminApprovalAction extends SBActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		if (StringUtil.checkVal(req.getParameter("dealerLocationId")).length() > 0) {
 			req.setAttribute("dealerLocationId", req.getParameter("parentId"));
 			SMTActionInterface sai = new ClinicManagerAction(this.actionInit);
@@ -76,7 +76,7 @@ public class AdminApprovalAction extends SBActionAdapter {
 			return;
 		}
 		
-		HttpSession ses = req.getSession();
+		SMTSession ses = req.getSession();
 		SBUserRole role = (SBUserRole) ses.getAttribute(Constants.ROLE_DATA);
 		if (role.getRoleLevel() < 70) return;
 		
@@ -99,7 +99,7 @@ public class AdminApprovalAction extends SBActionAdapter {
 	 * @param req
 	 * @throws SQLException
 	 */
-	public void deletePending(SMTServletRequest req) throws SQLException {
+	public void deletePending(ActionRequest req) throws SQLException {
 		String s = "delete from dealer_location where dealer_location_id = ?";
 		PreparedStatement ps = dbConn.prepareStatement(s);
 		ps.setString(1, req.getParameter("dealerLocationId"));
@@ -112,7 +112,7 @@ public class AdminApprovalAction extends SBActionAdapter {
 	 * @param req
 	 * @throws SQLException
 	 */
-	public void setOptOut(SMTServletRequest req) throws SQLException {
+	public void setOptOut(ActionRequest req) throws SQLException {
 		String s = "update dealer_location set region_cd = 'OPT-OUT' where dealer_location_id = ?";
 		PreparedStatement ps = dbConn.prepareStatement(s);
 		ps.setString(1, req.getParameter("dealerLocationId"));
@@ -124,7 +124,7 @@ public class AdminApprovalAction extends SBActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		log.debug("Building the approvals");
 		
 		String msg = (String) getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
@@ -190,7 +190,7 @@ public class AdminApprovalAction extends SBActionAdapter {
 	 * @param req
 	 * @throws AuthenticationException
 	 */
-	public void checkAuth(SMTServletRequest req) throws AuthenticationException {
+	public void checkAuth(ActionRequest req) throws AuthenticationException {
 		SBUserRole role = (SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA);
 		
 		// If the user is a site admin, do nothing more
@@ -235,7 +235,7 @@ public class AdminApprovalAction extends SBActionAdapter {
 	 * @return
 	 * @throws SQLException
 	 */
-	public boolean updateTransaction(SMTServletRequest req) throws SQLException {
+	public boolean updateTransaction(ActionRequest req) throws SQLException {
 		String cdb = (String) this.getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder tr = new StringBuilder();
 		tr.append("insert into ").append(cdb).append("sjm_loc_transaction ");
@@ -285,7 +285,7 @@ public class AdminApprovalAction extends SBActionAdapter {
 	 * @param req
 	 * @throws Exception
 	 */
-	public void movePending(SMTServletRequest req, int optOut) throws SQLException {
+	public void movePending(ActionRequest req, int optOut) throws SQLException {
 		StringBuilder s = new StringBuilder();
 		s.append("update dealer_location set location_nm = b.location_nm,");
 		s.append("address_txt = b.address_txt, address2_txt = b.address2_txt, ");
@@ -398,7 +398,7 @@ public class AdminApprovalAction extends SBActionAdapter {
 	 * @param optOut
 	 * @throws MailException
 	 */
-	public void sendEmail(SMTServletRequest req, boolean approved, boolean optOut) 
+	public void sendEmail(ActionRequest req, boolean approved, boolean optOut) 
 	throws MailException, SQLException  {
 		// Get the necessary params
 		String dlid = StringUtil.checkVal(req.getParameter("parentId"));
@@ -462,7 +462,7 @@ public class AdminApprovalAction extends SBActionAdapter {
 	 * @return
 	 * @throws SQLException
 	 */
-	public List<String> getAdminEmail(String val, int type, SMTServletRequest req) 
+	public List<String> getAdminEmail(String val, int type, ActionRequest req) 
 	throws SQLException {
 		String encKey = (String) this.getAttribute(Constants.ENCRYPT_KEY);
 		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);

@@ -9,7 +9,7 @@ import com.depuysynthesinst.DSIRoleMgr;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
@@ -41,7 +41,7 @@ public class AssignmentsFacadeAction extends SimpleActionAdapter {
 		super(arg0);
 	}
 
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 		DSIRoleMgr dsiRoleMgr = new DSIRoleMgr();
 		boolean isProfessor = dsiRoleMgr.isAssgAdmin(user);
@@ -66,7 +66,7 @@ public class AssignmentsFacadeAction extends SimpleActionAdapter {
 	/**
 	 * calls to build are 'write' actions on an assignment; reflective of retrieve which is read from DB.
 	 */
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 		DSIRoleMgr dsiRoleMgr = new DSIRoleMgr();
 		boolean isProfessor = dsiRoleMgr.isAssgAdmin(user);
@@ -107,7 +107,7 @@ public class AssignmentsFacadeAction extends SimpleActionAdapter {
 		}
 	}
 
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 	
@@ -119,7 +119,7 @@ public class AssignmentsFacadeAction extends SimpleActionAdapter {
 	 * @param user
 	 * @throws ActionException
 	 */
-	private void loadResidentDirector(SMTServletRequest req, UserDataVO user) throws ActionException {
+	private void loadResidentDirector(ActionRequest req, UserDataVO user) throws ActionException {
 		String customDb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("select res_dir_id from ").append(customDb).append("DPY_SYN_INST_RES_DIR where profile_id=?");

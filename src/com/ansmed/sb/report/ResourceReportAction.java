@@ -11,7 +11,7 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
 
 // SB Libs
@@ -52,7 +52,7 @@ public class ResourceReportAction extends SBActionAdapter {
 	 * 
 	 */
 	@SuppressWarnings("unchecked")
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		
 		String report = StringUtil.checkVal(req.getParameter("report"));
 		String surgeonId = StringUtil.checkVal(req.getParameter("surgeonId"));

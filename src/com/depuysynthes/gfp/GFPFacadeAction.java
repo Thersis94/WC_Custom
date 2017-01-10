@@ -3,7 +3,7 @@ package com.depuysynthes.gfp;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.smt.sitebuilder.action.FacadeActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
@@ -35,11 +35,11 @@ public class GFPFacadeAction extends FacadeActionAdapter {
 		this.actionInit = init;
 	}
 	
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 	
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 		SMTActionInterface sai = null;
 		// Determine if we are working with a user or programs
@@ -56,7 +56,7 @@ public class GFPFacadeAction extends FacadeActionAdapter {
 	}
 	
 
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 		// The only reason a non-admin will reach here is to change the
 		// Completedness state of a resource, all others are turned back here
@@ -101,7 +101,7 @@ public class GFPFacadeAction extends FacadeActionAdapter {
 	 * Build a redirect from the request object to keep the user in the dashboard
 	 * when an update or delete occurs.
 	 */
-	private void buildRedirect(SMTServletRequest req) {
+	private void buildRedirect(ActionRequest req) {
 		StringBuilder redirect = new StringBuilder(50);
 		redirect.append(req.getRequestURI());
 		redirect.append("?dashboard=true");

@@ -3,7 +3,7 @@ package com.depuy.forefront.action;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SBActionAdapter;
 
@@ -26,23 +26,23 @@ public class AdminFacadeAction extends SBActionAdapter {
 	public final static String CACHE_GROUP = "PILOT_1";
 	
 
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		loadAction(req).delete(req);
 	}
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		loadAction(req).retrieve(req);
 	}
 	
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 	
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		loadAction(req).build(req);
 		super.clearCacheByGroup(CACHE_GROUP);
 	}
 	
-	private SMTActionInterface loadAction(SMTServletRequest req) {
+	private SMTActionInterface loadAction(ActionRequest req) {
 		SMTActionInterface sb = null;
 		int type = Convert.formatInteger(req.getParameter("actionType"));
 		switch(type) {

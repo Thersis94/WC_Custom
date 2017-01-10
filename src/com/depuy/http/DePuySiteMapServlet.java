@@ -12,6 +12,7 @@ import com.depuysynthes.action.ProductCatalogUtil;
 import com.depuysynthes.lucene.MediaBinSolrIndex;
 import com.depuysynthesinst.SolrSearchWrapper;
 import com.depuysynthesinst.TTLMSSolrIndexer;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.commerce.catalog.ProductCategoryVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;

@@ -8,7 +8,7 @@ import java.util.List;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -34,7 +34,7 @@ public class MediaBinAdminAction extends SimpleActionAdapter {
 	/* (non-Javadoc)
      * @see com.siliconmtn.action.ActionController#list(com.siliconmtn.http.SMTServletRequest)
      */
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		String orgId = req.getParameter("organizationId");
 		MediaBinDistChannels mb = new MediaBinDistChannels(orgId);
 		int typeCd = mb.getTypeCd();

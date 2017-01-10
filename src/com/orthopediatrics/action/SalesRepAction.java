@@ -16,7 +16,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.common.constants.GlobalConfig;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.security.AbstractLoginModule;
 import com.siliconmtn.security.PhoneVO;
@@ -72,7 +72,7 @@ public class SalesRepAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#delete(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		super.delete(req);
 	}
 	
@@ -81,7 +81,7 @@ public class SalesRepAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	public void deleteRep(SMTServletRequest req) throws ActionException {
+	public void deleteRep(ActionRequest req) throws ActionException {
 		String salesRepId = req.getParameter("salesRepId");
 		String message = "You have successfully deleted the sales rep";
 		
@@ -105,7 +105,7 @@ public class SalesRepAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	public void deleteSiteRole(SMTServletRequest req) throws ActionException {
+	public void deleteSiteRole(ActionRequest req) throws ActionException {
 		UserAction ua = new UserAction(this.actionInit);
 		ua.setAttributes(attributes);
 		ua.setDBConnection(dbConn);
@@ -140,7 +140,7 @@ public class SalesRepAction extends SBActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		String s = "select * from sb_action where action_id = ?";
 		PreparedStatement ps = null;
 		try {
@@ -173,7 +173,7 @@ public class SalesRepAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("Retrieving sales reps");
 		String order = StringUtil.checkVal(req.getParameter("order"), "last_nm, first_nm");
 		Boolean repInfo = Convert.formatBoolean(req.getParameter("repInfo"));
@@ -252,7 +252,7 @@ public class SalesRepAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#update(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		if (Convert.formatBoolean(req.getParameter("deleteRep"))) {
 			this.deleteRep(req);
 		} else if (Convert.formatBoolean(req.getParameter("exportRepData"))) {
@@ -267,7 +267,7 @@ public class SalesRepAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	public void manageUsers(SMTServletRequest req) throws ActionException {
+	public void manageUsers(ActionRequest req) throws ActionException {
 		SalesRepVO rep = new SalesRepVO(req);
 		String salesRepId = StringUtil.checkVal(req.getParameter("salesRepId"));
 
@@ -301,7 +301,7 @@ public class SalesRepAction extends SBActionAdapter {
 	 * @param user
 	 * @param req
 	 */
-	public void manageAuthUpdate(UserDataVO user, SMTServletRequest req) {
+	public void manageAuthUpdate(UserDataVO user, ActionRequest req) {
 		boolean expirePassword = Convert.formatBoolean(req.getParameter("expirePassword"));
 		if (StringUtil.checkVal(user.getPassword()).length() > 0 || expirePassword) {
 			log.debug("** Updating password and/or password reset flag **");
@@ -348,7 +348,7 @@ public class SalesRepAction extends SBActionAdapter {
 	 * @param req
 	 * @throws DatabaseException
 	 */
-	public String manageUserRole(SMTServletRequest req, String profileId) 
+	public String manageUserRole(ActionRequest req, String profileId) 
 	throws DatabaseException {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		ProfileRoleManager prm = new ProfileRoleManager();
@@ -423,7 +423,7 @@ public class SalesRepAction extends SBActionAdapter {
 	 * @return
 	 * @throws DatabaseException
 	 */
-	public UserDataVO manageWCProfile(SMTServletRequest req, SalesRepVO rep) 
+	public UserDataVO manageWCProfile(ActionRequest req, SalesRepVO rep) 
 	throws DatabaseException {
 		// Initialize the Profile Manager
 	    ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
@@ -491,7 +491,7 @@ public class SalesRepAction extends SBActionAdapter {
 	 * Calls appropriate action to export sales rep data in the requested format.
 	 * @param req
 	 */
-	private void exportSalesRepData(SMTServletRequest req) {
+	private void exportSalesRepData(ActionRequest req) {
 		log.debug("exporting sales rep data");
 		SMTActionInterface sai = new SalesRepReportAction();
 		sai.setDBConnection(dbConn);

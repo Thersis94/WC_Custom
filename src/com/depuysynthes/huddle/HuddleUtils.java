@@ -12,15 +12,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
-import javax.servlet.http.Cookie;
-
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
 import org.apache.solr.client.solrj.response.FacetField;
 
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.commerce.catalog.ProductAttributeVO;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.pool.SMTDBConnection;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.http.session.SMTCookie;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
@@ -264,7 +263,7 @@ public class HuddleUtils {
 	}
 	
 	
-	public static void determineSortParameters(SMTServletRequest req) {
+	public static void determineSortParameters(ActionRequest req) {
 		determineSortParameters(req, "titleAZ");
 	}
 	
@@ -273,11 +272,11 @@ public class HuddleUtils {
 	 * Get the sort type and rpp from cookies and assign them to the request
 	 * @param req
 	 */
-	public static void determineSortParameters(SMTServletRequest req, String defaultSort) {
+	public static void determineSortParameters(ActionRequest req, String defaultSort) {
 		if (req.getCookie(HuddleUtils.RPP_COOKIE) != null)
 			req.setParameter("rpp", req.getCookie(HuddleUtils.RPP_COOKIE).getValue());
 
-		Cookie sortCook = req.getCookie(HuddleUtils.SORT_COOKIE);
+		SMTCookie sortCook = req.getCookie(HuddleUtils.SORT_COOKIE);
 		String sort = (sortCook != null) ? sortCook.getValue() : defaultSort;
 		
 		setSearchParameters(req, sort);
@@ -287,7 +286,7 @@ public class HuddleUtils {
 	/**
 	 * Set the sort field and direction.
 	 */
-	public static void setSearchParameters(SMTServletRequest req, String sort) {
+	public static void setSearchParameters(ActionRequest req, String sort) {
 		if ("recentlyAdded".equals(sort)) {
 			req.setParameter("fieldSort", SearchDocumentHandler.UPDATE_DATE, true);
 			req.setParameter("sortDirection", ORDER.desc.toString(), true);

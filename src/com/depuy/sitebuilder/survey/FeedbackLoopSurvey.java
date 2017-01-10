@@ -5,7 +5,7 @@ import java.util.Map;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.exception.DatabaseException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -32,7 +32,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 
 public class FeedbackLoopSurvey extends SimpleActionAdapter {
 	
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		log.debug("starting FeedbackLoopSurvey build");
 		String emailAddress = StringUtil.checkVal(req.getParameter("SURVEY_c0a8022ddd3b8ecaaea94f9cc6a8888b")); //from KNEE survey
 		if (emailAddress.length() == 0) 
@@ -60,12 +60,12 @@ public class FeedbackLoopSurvey extends SimpleActionAdapter {
 		survey.build(req);
 	}
 	
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 	
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		String wrapperId = actionInit.getActionId();
 		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));

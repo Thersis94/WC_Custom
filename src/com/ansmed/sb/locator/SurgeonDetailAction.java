@@ -20,7 +20,7 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 
 // SB Libs
 import com.smt.sitebuilder.action.gis.MapAction;
@@ -58,7 +58,7 @@ public class SurgeonDetailAction extends SBActionAdapter {
 	}
 
 
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		// Setup the map info
 		MapVO map = new MapVO();
 		map.setMapZoomFlag(true);
@@ -85,7 +85,7 @@ public class SurgeonDetailAction extends SBActionAdapter {
 	
 	
 	@SuppressWarnings("unchecked")
-	public void getData(SMTServletRequest req) 
+	public void getData(ActionRequest req) 
 	throws ActionException {
 		log.debug("Getting the detail info for a surgeon");
 		int count = 0;
@@ -156,7 +156,7 @@ public class SurgeonDetailAction extends SBActionAdapter {
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.action.AbstractActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void retrieve1(SMTServletRequest req) throws ActionException {
+	public void retrieve1(ActionRequest req) throws ActionException {
 		log.debug("Retrieving full surgeon information");
 		String dbSch = (String)this.getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuffer sql = new StringBuffer();

@@ -10,7 +10,7 @@ import java.util.Date;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
@@ -55,7 +55,7 @@ public class AmbassadorResponseManager extends TrackerAction {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) {
+	public void build(ActionRequest req) {
 		log.debug("Starting AmbassadorResponseManager build...");
 		
 		// check for a valid response value on the request
@@ -88,7 +88,7 @@ public class AmbassadorResponseManager extends TrackerAction {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) {
+	public void retrieve(ActionRequest req) {
 		log.debug("Starting AmbassadorResponseManager retrieve...");
 		String process = StringUtil.checkVal(req.getParameter("process"));
 		if (process.equalsIgnoreCase("true")) {
@@ -102,7 +102,7 @@ public class AmbassadorResponseManager extends TrackerAction {
 	 * @param req
 	 * @return
 	 */
-	private boolean checkResponse(SMTServletRequest req) {
+	private boolean checkResponse(ActionRequest req) {
 		String response = StringUtil.checkVal(req.getParameter("response"));
 		if (response.length() > 0) {
 			if (response.equalsIgnoreCase("accept")) {
@@ -125,7 +125,7 @@ public class AmbassadorResponseManager extends TrackerAction {
 	 * Retrieves and processes assignment
 	 * @param req
 	 */
-	private void processAssignment(SMTServletRequest req) {
+	private void processAssignment(ActionRequest req) {
 		AssignmentVO avo = null;
 		String assignmentId = StringUtil.checkVal(req.getParameter("assignmentId"));
 		String assigneeProfileId = StringUtil.checkVal(req.getParameter("pid"));
@@ -243,7 +243,7 @@ public class AmbassadorResponseManager extends TrackerAction {
 	 * @return
 	 * @throws ActionException
 	 */
-	private AssignmentVO retrieveFullAssignment(SMTServletRequest req, AssignmentVO avo) throws ActionException {
+	private AssignmentVO retrieveFullAssignment(ActionRequest req, AssignmentVO avo) throws ActionException {
 		log.debug("retrieving full assignment (assignment, assignee, patient): " + req.getParameter("assignmentId"));
 		AssignmentVO fullVo = null;
 		// add role data to impersonate a 'registered user' so that 
@@ -290,7 +290,7 @@ public class AmbassadorResponseManager extends TrackerAction {
 	 * @param avo
 	 * @throws ActionException
 	 */
-	private void updateAssignment(SMTServletRequest req, AssignmentVO avo) throws ActionException {
+	private void updateAssignment(ActionRequest req, AssignmentVO avo) throws ActionException {
 		log.debug("updating original assignment");
 		// set the current status
 		avo.setCurrentStatusId(avo.getAssignmentStatusId());

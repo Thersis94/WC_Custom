@@ -15,7 +15,7 @@ import com.siliconmtn.commerce.catalog.ProductCategoryVO;
 import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.menu.MenuBuilder;
@@ -55,7 +55,7 @@ public class AjaxMenuLoader extends SimpleActionAdapter {
 	
 	
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.info("Starting menu loader - retrieve");
 
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
@@ -203,7 +203,7 @@ public class AjaxMenuLoader extends SimpleActionAdapter {
 	 * @param site
 	 * @param mod
 	 */
-	private void loadSitePageMenu(SMTServletRequest req, SiteVO site, ModuleVO mod) {
+	private void loadSitePageMenu(ActionRequest req, SiteVO site, ModuleVO mod) {
 		log.debug("loading site-page menus");
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 		if (role == null) role = new SBUserRole(site.getSiteId());
@@ -237,7 +237,7 @@ public class AjaxMenuLoader extends SimpleActionAdapter {
 		}
 	}
 	
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 }

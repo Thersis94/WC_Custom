@@ -12,7 +12,7 @@ import com.depuysynthes.action.MediaBinAdminAction;
 import com.depuysynthes.gfp.GFPFacadeAction.GFPLevel;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.io.FileManager;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
@@ -61,7 +61,7 @@ public class GFPProgramAction extends SBActionAdapter {
 		
 	}
 
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		String programId = StringUtil.checkVal(req.getParameter("programId"));
 		UserDataVO user = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
 		String profileId = null;
@@ -456,7 +456,7 @@ public class GFPProgramAction extends SBActionAdapter {
 	}
 	
 
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		StringBuilder sql = new StringBuilder(120);
 		GFPLevel level;
 
@@ -485,7 +485,7 @@ public class GFPProgramAction extends SBActionAdapter {
 	}
 
 	
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		GFPLevel level;
 		try {
 			level = GFPLevel.valueOf(req.getParameter("level"));
@@ -692,7 +692,7 @@ public class GFPProgramAction extends SBActionAdapter {
 		}
 	}
 	
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		BuildType build;
 		try {
 			build = BuildType.valueOf(req.getParameter("programBuild"));
@@ -729,7 +729,7 @@ public class GFPProgramAction extends SBActionAdapter {
 	/**
 	 * Change the order of resources to match the order presented in the request object
 	 */
-	private void reorderResources(SMTServletRequest req) throws ActionException {
+	private void reorderResources(ActionRequest req) throws ActionException {
 		StringBuilder sql = new StringBuilder(250);
 		GFPLevel parent;
 		try {
@@ -766,7 +766,7 @@ public class GFPProgramAction extends SBActionAdapter {
 	/**
 	 * Change the order of workshops to match the order presented in the request object
 	 */
-	private void reorderWorkshops(SMTServletRequest req) throws ActionException {
+	private void reorderWorkshops(ActionRequest req) throws ActionException {
 		StringBuilder sql = new StringBuilder(150);
 		
 		sql.append("UPDATE ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
@@ -793,7 +793,7 @@ public class GFPProgramAction extends SBActionAdapter {
 	/**
 	 * Creates a complete record for the supplied resource/user pair
 	 */
-	private void completeResource(SMTServletRequest req) throws ActionException {
+	private void completeResource(ActionRequest req) throws ActionException {
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(250);
 		sql.append("INSERT INTO ").append(customDb);

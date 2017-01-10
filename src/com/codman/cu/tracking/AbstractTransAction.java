@@ -10,7 +10,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.UUIDGenerator;
@@ -101,7 +101,7 @@ public abstract class AbstractTransAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	protected List<UserDataVO> retrieveAdministrators(SMTServletRequest req) throws ActionException {
+	protected List<UserDataVO> retrieveAdministrators(ActionRequest req) throws ActionException {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		UserAction ua = new UserAction(this.actionInit);
 		ua.setAttributes(attributes);
@@ -118,7 +118,7 @@ public abstract class AbstractTransAction extends SBActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	protected List<UserDataVO> retrieveUsers(SMTServletRequest req, Integer roleLevel) throws ActionException {
+	protected List<UserDataVO> retrieveUsers(ActionRequest req, Integer roleLevel) throws ActionException {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		UserAction ua = new UserAction(this.actionInit);
 		ua.setAttributes(attributes);
@@ -136,7 +136,7 @@ public abstract class AbstractTransAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	@SuppressWarnings("unchecked")
-	protected AccountVO retrieveRecord(SMTServletRequest req, TransactionVO trans)
+	protected AccountVO retrieveRecord(ActionRequest req, TransactionVO trans)
 	 throws ActionException {
 		
 		log.debug("trans=" + trans.toString());

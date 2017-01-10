@@ -11,7 +11,7 @@ import com.depuy.events.vo.report.SigninReportVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
@@ -51,7 +51,7 @@ public class DePuyEventManageAction extends SimpleActionAdapter {
     }
 
     
-    public void list(SMTServletRequest req) throws ActionException {
+    public void list(ActionRequest req) throws ActionException {
     	super.retrieve(req);    	
     }
 
@@ -59,7 +59,7 @@ public class DePuyEventManageAction extends SimpleActionAdapter {
      * @see com.siliconmtn.action.AbstractActionController#build(com.siliconmtn.http.SMTServletRequest)
      */
     @Override
-    public void build(SMTServletRequest req) throws ActionException {
+    public void build(ActionRequest req) throws ActionException {
     	log.debug("DePuyEventManageAction:build() starting...");
     	String ft = StringUtil.checkVal(req.getParameter(AdminConstants.FACADE_TYPE));
     	SMTActionInterface ee = null;
@@ -110,7 +110,7 @@ public class DePuyEventManageAction extends SimpleActionAdapter {
      * @see com.siliconmtn.action.AbstractActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
      */
 	@Override
-    public void retrieve(SMTServletRequest req) throws ActionException {
+    public void retrieve(ActionRequest req) throws ActionException {
 		String ft = req.getParameter(AdminConstants.FACADE_TYPE);
 		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 		String facadeActionId = actionInit.getActionId();

@@ -19,7 +19,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.MailException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.PhoneVO;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
@@ -83,7 +83,7 @@ public class SJMTrackerFormWrapper extends TrackerAction {
 	/* (non-Javadoc)
      * @see com.siliconmtn.action.ActionController#delete(com.siliconmtn.http.SMTServletRequest)
      */
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		Object msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
 		super.delete(req);
         
@@ -96,7 +96,7 @@ public class SJMTrackerFormWrapper extends TrackerAction {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 	
@@ -104,7 +104,7 @@ public class SJMTrackerFormWrapper extends TrackerAction {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("SJMTrackerFormWrapper retrieve...");
 		
 		// 1. retrieve the wrapped form
@@ -140,7 +140,7 @@ public class SJMTrackerFormWrapper extends TrackerAction {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		log.debug("SJMTrackerFormWrapper build...");
 		
 		// 1. preserve the actionIds from the build request.
@@ -233,7 +233,7 @@ public class SJMTrackerFormWrapper extends TrackerAction {
 	 * @param req
 	 * @return True if the patient exists.  False if the patient does not exist.
 	 */
-	private String checkForProfile(SMTServletRequest req) {
+	private String checkForProfile(ActionRequest req) {
 		log.debug("checking for duplicate patient profile...");
 		String profileId = null;
 		UserDataVO user = new UserDataVO(req);
@@ -388,7 +388,7 @@ public class SJMTrackerFormWrapper extends TrackerAction {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void createPatient(SMTServletRequest req) throws ActionException {
+	private void createPatient(ActionRequest req) throws ActionException {
 		log.debug("creating patient base record, extended data, and profile...");
 		// set request parameters needed downstream to create patient
 		req.setParameter("sbActionId", PATIENT_FORM_ID, true);
@@ -405,7 +405,7 @@ public class SJMTrackerFormWrapper extends TrackerAction {
 	 * @param patient
 	 * @throws ActionException
 	 */
-	private void writeWrappedFormData(SMTServletRequest req, String contactInitId, PatientVO patient) throws ActionException {
+	private void writeWrappedFormData(ActionRequest req, String contactInitId, PatientVO patient) throws ActionException {
     	// pull the logged in user's data off of the session for now.
     	log.debug("Removing proxy user's session data temporarily.");
     	UserDataVO proxyUser = null;
@@ -510,7 +510,7 @@ public class SJMTrackerFormWrapper extends TrackerAction {
 		}
 	}
 	
-	private PatientVO retrieveFullPatientRecord(SMTServletRequest req, PatientVO patient, boolean isDuplicate) {
+	private PatientVO retrieveFullPatientRecord(ActionRequest req, PatientVO patient, boolean isDuplicate) {
 		log.debug("retrieving new patient's full data");
 		PatientVO newPatient = null;
 		// set patient's patient ID and form submittal ID on request
@@ -570,7 +570,7 @@ public class SJMTrackerFormWrapper extends TrackerAction {
 	 * @param patient
 	 * @throws ActionException
 	 */
-	private AssigneeVO assignAmbassador(SMTServletRequest req, FormVO assigneeForm, 
+	private AssigneeVO assignAmbassador(ActionRequest req, FormVO assigneeForm, 
 			PatientVO patient) throws ActionException {
 		log.debug("choosing and assigning ambassador...");
 		AssigneeVO assignee = null;
@@ -614,7 +614,7 @@ public class SJMTrackerFormWrapper extends TrackerAction {
 	 * @param patient
 	 * @return
 	 */
-	private AssigneeVO chooseAmbassador(SMTServletRequest req, FormVO assigneeForm, PatientVO patient) {
+	private AssigneeVO chooseAmbassador(ActionRequest req, FormVO assigneeForm, PatientVO patient) {
 		AssigneeVO match = null;
 		// retrieve today's active ambassadors, including admins
 		List<AssigneeVO> ambassadors = this.retrieveAmbassadors();
@@ -702,7 +702,7 @@ public class SJMTrackerFormWrapper extends TrackerAction {
 	 * @param req
 	 * @param formActionId
 	 */
-	private void loadPatientRequestFields(SMTServletRequest req, String formActionId) {
+	private void loadPatientRequestFields(ActionRequest req, String formActionId) {
 		log.debug("loading patient request fields");
 		Map<String, String> contactFieldMap = new HashMap<String, String>();
 		// key, contact field id
@@ -789,7 +789,7 @@ public class SJMTrackerFormWrapper extends TrackerAction {
 	 * @param req
 	 * @param contactFieldMap
 	 */
-	private void addPatientRequestParameters(SMTServletRequest req, Map<String, String> contactFieldMap, String formActionId) {
+	private void addPatientRequestParameters(ActionRequest req, Map<String, String> contactFieldMap, String formActionId) {
 		log.debug("adding patient request parameters for 'black box' field equivalents...");
 		// loop the field map for the given contact form and look for a corresponding field
 		// in the black box form
@@ -849,7 +849,7 @@ public class SJMTrackerFormWrapper extends TrackerAction {
 	 * whom was assigned to the patient.
 	 * @param req
 	 */
-	private void sendRepEmail(SMTServletRequest req, AssigneeVO assignee) {
+	private void sendRepEmail(ActionRequest req, AssigneeVO assignee) {
 		log.debug("sending ambassador assignment email notification to rep...");
 		String repEmail = StringUtil.checkVal(req.getParameter("submittingRepEmailAddress"));
 		log.debug("submittingRepEmailAddress param: " + req.getParameter("submittingRepEmailAddress"));
@@ -872,7 +872,7 @@ public class SJMTrackerFormWrapper extends TrackerAction {
 	 * @param assignee
 	 * @param patient
 	 */
-	private void sendSJMMemberEmail(SMTServletRequest req, AssigneeVO assignee, PatientVO patient) {
+	private void sendSJMMemberEmail(ActionRequest req, AssigneeVO assignee, PatientVO patient) {
 		log.debug("sending copy of field form submission to team member");
 		TrackerDataContainer tdc = null;
 		try {
@@ -902,7 +902,7 @@ public class SJMTrackerFormWrapper extends TrackerAction {
 	 * @param patient
 	 * @return
 	 */
-	private TrackerDataContainer retrieveSourceFormData(SMTServletRequest req, PatientVO patient) 
+	private TrackerDataContainer retrieveSourceFormData(ActionRequest req, PatientVO patient) 
 		throws Exception {
 		log.debug("retrieving source form data.");
 		PatientContactDataRetriever pcd = new PatientContactDataRetriever();

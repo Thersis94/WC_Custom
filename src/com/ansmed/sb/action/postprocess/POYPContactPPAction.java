@@ -4,7 +4,7 @@ package com.ansmed.sb.action.postprocess;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.exception.MailException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -43,7 +43,7 @@ public class POYPContactPPAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		log.info("Starting POYP action build");
 		String rcpt = req.getParameter("pfl_EMAIL_ADDRESS_TXT");
 		if (!StringUtil.isValidEmail(rcpt)) return;  //can't send an email to an invalid address!
@@ -74,7 +74,7 @@ public class POYPContactPPAction extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	protected String getMessage(SMTServletRequest req) {
+	protected String getMessage(ActionRequest req) {
 		StringBuilder msg = new StringBuilder(6500);
 
 		//Get the current site info
