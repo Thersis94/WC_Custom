@@ -31,6 +31,7 @@ public class DSIRegistrationDataActionVO extends AbstractSBReportVO {
 
 	private static final long serialVersionUID = 1L;
 	RegistrationDataContainer cdc = null;
+	
 
 	public DSIRegistrationDataActionVO() {
 		super();
