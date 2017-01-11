@@ -23,7 +23,6 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -69,17 +68,13 @@ public class ContentHierarchyAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
-		ModuleVO modVo = (ModuleVO) getAttribute(Constants.MODULE_DATA);
-
 		String sectionId = req.getParameter("sectionId");
 
 		//Build a Tree from the list.
 		Tree tree = getHierarchy(sectionId);
 		List<Node> nodeList = tree.preorderList();
-		modVo.setActionData(nodeList);
-		modVo.setDataSize(tree.getDepth());
 
-		this.setAttribute(Constants.MODULE_DATA, modVo);
+		this.putModuleData(nodeList, nodeList.size(), false);
 	}
 
 	/**
@@ -117,7 +112,6 @@ public class ContentHierarchyAction extends SBActionAdapter {
 
 		//Build a Tree from the list.
 		Tree tree = new Tree(sections);
-		List<Node> nodeList = tree.preorderList();
 
 		return tree;
 	}
