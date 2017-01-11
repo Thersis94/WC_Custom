@@ -79,7 +79,7 @@ public class SectionVO {
 	/**
 	 * @return the parentId
 	 */
-	@Column(name="PARENT_ID")
+	@Column(name="PARENT_ID", isReadOnly=true)
 	public String getParentId() {
 		return parentId;
 	}
@@ -100,21 +100,21 @@ public class SectionVO {
 	/**
 	 * @return the solrTokenTxt
 	 */
-	@Column(name="SOLR_TOKEN_TXT")
+	@Column(name="SOLR_TOKEN_TXT", isReadOnly=true)
 	public String getSolrTokenTxt() {
 		return solrTokenTxt;
 	}
 	/**
 	 * @return the createDt
 	 */
-	@Column(name="CREATE_DT")
+	@Column(name="CREATE_DT", isAutoGen=true, isInsertOnly=true)
 	public Date getCreateDt() {
 		return createDt;
 	}
 	/**
 	 * @return the updateDt
 	 */
-	@Column(name="UPDATE_DT")
+	@Column(name="UPDATE_DT", isAutoGen=true, isUpdateOnly=true)
 	public Date getUpdateDt() {
 		return updateDt;
 	}

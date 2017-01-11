@@ -71,10 +71,14 @@ public class ContentHierarchyAction extends SBActionAdapter {
 		String sectionId = req.getParameter("sectionId");
 
 		//Build a Tree from the list.
-		Tree tree = getHierarchy(sectionId);
-		List<Node> nodeList = tree.preorderList();
+		List<Node> sections = getHierarchy(sectionId);
+		if(sections.size() > 1) {
+			//Build a Tree from the list.
+			Tree tree = new Tree(sections);
+			sections = tree.preorderList();
+		}
 
-		this.putModuleData(nodeList, nodeList.size(), false);
+		this.putModuleData(sections, sections.size(), false);
 	}
 
 	/**
@@ -82,7 +86,7 @@ public class ContentHierarchyAction extends SBActionAdapter {
 	 * @param sectionId
 	 * @return
 	 */
-	public Tree getHierarchy(String sectionId) {
+	public List<Node> getHierarchy(String sectionId) {
 		boolean isEdit = !StringUtil.isEmpty(sectionId);
 		Map<String, Node> data = new LinkedHashMap<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(getContentHierarchyListSql(isEdit))) {
@@ -110,10 +114,7 @@ public class ContentHierarchyAction extends SBActionAdapter {
 		Collections.sort(sections, new SectionComparator());
 		log.debug("cnt=" + sections.size());
 
-		//Build a Tree from the list.
-		Tree tree = new Tree(sections);
-
-		return tree;
+		return sections;
 	}
 
 	/* (non-Javadoc)
