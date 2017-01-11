@@ -70,8 +70,9 @@ public class ContentHierarchyAction extends SBActionAdapter {
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		String sectionId = req.getParameter("sectionId");
 
-		//Build a Tree from the list.
 		List<Node> sections = getHierarchy(sectionId);
+
+		//Build a Tree from the list if we have more than one.
 		if(sections.size() > 1) {
 			//Build a Tree from the list.
 			Tree tree = new Tree(sections);
@@ -82,7 +83,7 @@ public class ContentHierarchyAction extends SBActionAdapter {
 	}
 
 	/**
-	 * 
+	 * Helper method that returns List of Nodes containing Sections.
 	 * @param sectionId
 	 * @return
 	 */
@@ -98,12 +99,11 @@ public class ContentHierarchyAction extends SBActionAdapter {
 
 			while (rs.next()) {
 				SectionVO segment = new SectionVO(rs);
-				String nodeId = segment.getSectionId();
 
-				Node n = new Node(nodeId, segment.getParentId());
+				Node n = new Node(segment.getSectionId(), segment.getParentId());
 				n.setNodeName(segment.getSectionNm());
 				n.setUserObject(segment);
-				data.put(nodeId, n);
+				data.put(n.getNodeId(), n);
 			}
 		} catch (SQLException sqle) {
 			log.error("Unable to get content hierarchies", sqle);
