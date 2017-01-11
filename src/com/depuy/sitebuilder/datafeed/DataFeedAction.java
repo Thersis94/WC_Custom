@@ -16,8 +16,9 @@ import com.depuy.datafeed.tms.modules.ResponseVO;
 import com.siliconmtn.action.AbstractActionController;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.exception.DatabaseException;
+import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -194,4 +195,31 @@ public class DataFeedAction extends AbstractActionController {
 	public Map<String, Object> getAttributes() {
 		return attributes;
 	}
+	
+	/**======Implement deprecated methods to satisfy interface=========**/
+	@Override
+	public void build(SMTServletRequest req) throws ActionException {
+		//Not Implemented
+	}
+	@Override
+	public void copy(SMTServletRequest req) throws ActionException {
+		//Not Implemented
+	}
+	@Override
+	public void retrieve(SMTServletRequest req) throws ActionException {
+		//Not Implemented
+	}
+	@Override
+	public void list(SMTServletRequest req) throws ActionException {
+		//Not Implemented
+	}
+	@Override
+	public void update(SMTServletRequest req) throws ActionException {
+		//Not Implemented
+	}
+	@Override
+	public void delete(SMTServletRequest req) throws ActionException {
+		//Not Implemented
+	}
+
 }

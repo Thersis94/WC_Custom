@@ -8,10 +8,10 @@ import java.util.Map;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.commerce.catalog.ProductCategoryVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
-import com.siliconmtn.action.ActionRequest;
 import com.smt.sitebuilder.action.AbstractBaseAction;
 import com.smt.sitebuilder.action.commerce.product.ProductCatalogAction;
 import com.smt.sitebuilder.action.tools.StatVO;
@@ -288,5 +288,4 @@ public class ProductCatalogUtil extends AbstractBaseAction {
 	@Override
 	public void copy(ActionRequest req) throws ActionException {
 	}
-
 }
