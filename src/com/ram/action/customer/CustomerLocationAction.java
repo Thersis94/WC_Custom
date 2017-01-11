@@ -11,17 +11,17 @@ import java.util.Map;
 
 // RAMDataFeed
 import com.ram.datafeed.data.CustomerLocationVO;
-
 // SMTBaseLibs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.gis.AbstractGeocoder;
 import com.siliconmtn.gis.GeocodeFactory;
 import com.siliconmtn.gis.GeocodeLocation;
 import com.siliconmtn.gis.GeocodeType;
 import com.siliconmtn.gis.Location;
 import com.siliconmtn.gis.MatchCode;
-import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -111,11 +111,18 @@ public class CustomerLocationAction extends SBActionAdapter {
         this.setAttribute(Constants.MODULE_DATA, modVo);
 	}
 
+
+	@Override
+	public void build(ActionRequest req) throws ActionException {
+		//TODO Update the CustomerLocationVO inside RAMDataFeed then complete body
+	}
+	
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void build(ActionRequest req) throws ActionException {
+	@Deprecated
+	public void build(SMTServletRequest req) throws ActionException {
 		log.debug("CustomerLocationAction build...");
 		// instantiate a vo using the values on the request.
 		CustomerLocationVO vo = new CustomerLocationVO(req);
