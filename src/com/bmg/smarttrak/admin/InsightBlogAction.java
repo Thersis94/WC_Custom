@@ -56,10 +56,8 @@ public class InsightBlogAction extends SBActionAdapter {
 	 */
 	@Override
 	public void list(SMTServletRequest req) throws ActionException {
-		log.debug("insite blog action retrive called " + actionInit.getActionId());
+		log.debug("insite blog action list called " + actionInit.getActionId());
 		
-		super.list(req);
-				
 		//TODO get the correct blog id for the insight blog
 		
 		//TODO change action id to the right blog id
