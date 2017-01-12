@@ -1,4 +1,4 @@
-package com.bmg.smarttrak.admin;
+package com.biomed.smarttrak.admin;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
