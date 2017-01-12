@@ -41,9 +41,24 @@ public class InsightBlogAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
+	
+		log.debug("insite blog action retrieve called " + actionInit.getActionId());
+		//TODO catching the page to i can build the public admin widget directly
+		super.retrieve(req);
+		this.list(req);
+		
+	}
+	
+	
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
+	 */
+	@Override
+	public void list(SMTServletRequest req) throws ActionException {
 		log.debug("insite blog action retrive called " + actionInit.getActionId());
 		
-		super.retrieve(req);
+		super.list(req);
 				
 		//TODO get the correct blog id for the insight blog
 		
@@ -139,7 +154,7 @@ public class InsightBlogAction extends SBActionAdapter {
 	 * @param sb 
 	 * @return 
 	 */
-	private void wrapPageSite(SiteVO site, PageVO page, SMTServletRequest req) {
+/*	private void wrapPageSite(SiteVO site, PageVO page, SMTServletRequest req) {
 		
 		if (site != null && site.getMainEmail() == null)
 			site.setMainEmail(AdminConstants.ADMIN_FROM_EMAIL);
@@ -152,6 +167,6 @@ public class InsightBlogAction extends SBActionAdapter {
 			req.setAttribute(Constants.PAGE_DATA, page);
 		}
 		
-	}
+	}*/
 	
 }
