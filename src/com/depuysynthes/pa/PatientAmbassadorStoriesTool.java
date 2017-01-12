@@ -132,13 +132,13 @@ public class PatientAmbassadorStoriesTool extends SBActionAdapter {
 			//Create SolrStoryVO
 			SolrStoryVO ssv = createStoryVO(req);
 
-			try {
+			try (SolrActionUtil util = new SolrActionUtil(attributes)) {
 				//Update Status Element.
 				writeStoryElement(getElement(PAFStatus.published.name(), PAFConst.STATUS_ID.getId(), req.getParameter("storyStatusDataId")), submittalId);
 				log.debug("Status Written");
 
 				//Submit to Solr
-				new SolrActionUtil(attributes).addDocument(ssv);
+				util.addDocument(ssv);
 				log.debug("Solr Updated");
 
 				msg = "Story Successfully Published";
