@@ -13,6 +13,7 @@ import com.depuysynthes.lucene.MediaBinSolrIndex;
 import com.depuysynthesinst.SolrSearchWrapper;
 import com.depuysynthesinst.TTLMSSolrIndexer;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.action.ActionRequestBuilder;
 import com.siliconmtn.commerce.catalog.ProductCategoryVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
@@ -89,7 +90,8 @@ public class DePuySiteMapServlet extends SiteMapServlet {
 		pc.setDBConnection(dbConn);
     	
     	try {
-    		Tree prodTree = pc.loadCatalog(catalogId, null, false, req);
+    		ActionRequest actReq = ActionRequestBuilder.fromHttpRequest(req);
+    		Tree prodTree = pc.loadCatalog(catalogId, null, false, actReq);
     		List<String> completed = new ArrayList<String>();
     		String divisionUrl = null;
             String countryNodeId = null;
