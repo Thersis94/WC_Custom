@@ -34,11 +34,13 @@ public class SectionVO {
 	private Date createDt;
 	private Date updateDt;
 
-	public SectionVO() {}
+	public SectionVO() {super();}
 	public SectionVO(ResultSet rs) {
+		this();
 		setData(rs);
 	}
 	public SectionVO(SMTServletRequest req) {
+		this();
 		setData(req);
 	}
 

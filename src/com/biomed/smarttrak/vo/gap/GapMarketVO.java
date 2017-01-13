@@ -30,11 +30,13 @@ public class GapMarketVO {
 	private Date createDt;
 	private Date updateDt;
 
-	public GapMarketVO(){}
+	public GapMarketVO(){super();}
 	public GapMarketVO(SMTServletRequest req) {
+		this();
 		setData(req);
 	}
 	public GapMarketVO(ResultSet rs) {
+		this();
 		setData(rs);
 	}
 

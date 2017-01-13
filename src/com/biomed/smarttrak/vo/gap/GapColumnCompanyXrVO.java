@@ -30,11 +30,13 @@ public class GapColumnCompanyXrVO {
 	private String gaColumnId;
 	private Date createDt;
 
-	public GapColumnCompanyXrVO() {}
+	public GapColumnCompanyXrVO() {super();}
 	public GapColumnCompanyXrVO(SMTServletRequest req) {
+		this();
 		setData(req);
 	}
 	public GapColumnCompanyXrVO(ResultSet rs) {
+		this();
 		setData(rs);
 	}
 

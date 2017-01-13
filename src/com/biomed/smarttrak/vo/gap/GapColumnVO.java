@@ -33,11 +33,13 @@ public class GapColumnVO {
 	private Date createDt;
 	private Date updateDt;
 
-	public GapColumnVO() {}
+	public GapColumnVO() {super();}
 	public GapColumnVO(SMTServletRequest req) {
+		this();
 		setData(req);
 	}
 	public GapColumnVO(ResultSet rs) {
+		this();
 		setData(rs);
 	}
 
