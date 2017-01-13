@@ -199,6 +199,8 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 					case "mediabin-sous":
 						//take the update date of the Attribute if it's newer than the product and contains assets.
 						foundIds = findAssetsForSous(masterRecords, prod.getFullProductName());
+						//tag the product as using the dynamic SOUS-value connector - this gets used when generating the report email
+						prod.setImage("isDynamic");
 						break;
 					default:
 						//static HTML, use a regex to parse the HTML for mediabin links
@@ -434,9 +436,13 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 		String name;
 		String sousName;
 		for (ProductVO prod : products) {
+			//check to see if the product is using the new dynamic connector and attaching dynamic assets.
+			//those are the only ones they want reported.  ("SOUS attempted & failed")
+			if (!"isDynamic".equals(prod.getImage())) continue;
+			
 			name = prod.getProductName();
 			sousName = prod.getFullProductName();
-			checkProdSousAgainstMediabin(masterRecords, sousName, name);
+			checkProdSousAgainstMediabin(masterRecords, sousName, name, productSOUSNames);
 		}
 	}
 
@@ -447,7 +453,8 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	 * @param sousName
 	 * @param prodName
 	 */
-	protected void checkProdSousAgainstMediabin(Map<String, MediaBinDeltaVO> masterRecords, String prodSousName, String prodName) {
+	protected void checkProdSousAgainstMediabin(Map<String, MediaBinDeltaVO> masterRecords, String prodSousName, 
+			String prodName, Map<String, Set<String>> sousNames) {
 		List<String> assetIds = findAssetsForSous(masterRecords, prodSousName);
 
 		if (assetIds != null && !assetIds.isEmpty()) 
@@ -456,10 +463,10 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 		//finished checking all assets.  Apparently none of them use the same 
 		//SOUS name the product uses.  Let's report these to the Admins.
 		log.debug("no Mediabin matches for PROD_NM=" + prodSousName);
-		Set<String> prodNames = productSOUSNames.get(prodSousName);
+		Set<String> prodNames = sousNames.get(prodSousName);
 		if (prodNames == null) prodNames = new HashSet<>();
 		prodNames.add(scrubString(prodName));
-		productSOUSNames.put(scrubString(prodSousName), prodNames);
+		sousNames.put(scrubString(prodSousName), prodNames);
 	}
 
 
@@ -474,7 +481,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 		List<String> data = new ArrayList<>();
 
 		for (MediaBinDeltaVO mbAsset : masterRecords.values()) {
-			if (State.Delete == mbAsset.getRecordState() || StringUtil.checkVal(mbAsset.getProdNm()).isEmpty())
+			if (State.Delete == mbAsset.getRecordState() || StringUtil.isEmpty(mbAsset.getProdNm()))
 				continue; //nothing to do here, this asset has no SOUS value, or is being deleted.
 
 			//split the product name field using the tokenizer, and see if any of the values match our SOUS name.
@@ -541,7 +548,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 			}
 		}
 		log.info("found " + mediabinSOUSNames.size() + " unique SOUS names in Mediabin assets");
-		removeProductReferences(masterRecords);
+		removeProductReferences(masterRecords, products);
 	}
 
 
@@ -549,12 +556,12 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	 * trims the mediabinSOUSNames list of assets bound to products
 	 * @param masterRecords
 	 */
-	protected void removeProductReferences(Map<String, MediaBinDeltaVO> masterRecords) {
+	protected void removeProductReferences(Map<String, MediaBinDeltaVO> masterRecords, List<ProductVO> products) {
 		String prodSousNm;
 		for (ProductVO prod : products) {
 			//remove mbSousName values if they match values at the product level
 			prodSousNm = prod.getFullProductName();
-			if (prodSousNm == null || prodSousNm.isEmpty()) continue;
+			if (StringUtil.isEmpty(prodSousNm)) continue;
 
 			if (mediabinSOUSNames.containsKey(prodSousNm))
 				mediabinSOUSNames.remove(prodSousNm);
@@ -588,11 +595,8 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	protected void addSupplementalDetails(StringBuilder html) {
 		super.addSupplementalDetails(html);
 
-		if (!productSOUSNames.isEmpty())
-			addProductsWithNoAssetsToEmail(html);
-
-		if (!mediabinSOUSNames.isEmpty())
-			addAssetsWithNoProductsToEmail(html);
+		addProductsWithNoAssetsToEmail(html);
+		addAssetsWithNoProductsToEmail(html, mediabinSOUSNames);
 	}
 
 
@@ -602,10 +606,12 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	 * @param html
 	 */
 	protected void addProductsWithNoAssetsToEmail(StringBuilder html) {
-		html.append("<h4>Products with no MediaBin Assets (");
+		if (productSOUSNames.isEmpty()) return;
+		
+		html.append("<h4>Public Products with no MediaBin Assets (");
 		html.append(productSOUSNames.size()).append(")</h4>");
-		html.append("The following Web Crescendo products indicate a SOUS ");
-		html.append("Product Name not matching any MediaBin assets.<br/>");
+		html.append("The following products (from the Public Catalog) indicate a ");
+		html.append("SOUS Product Name not matching any MediaBin assets:<br/>");
 		html.append("<table border='1' width='95%' align='center'><thead><tr>");
 		html.append("<th>Product Name(s)</th>");
 		html.append("<th>SOUS Product Name</th>");
@@ -626,17 +632,18 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	 * that doesn't match any mediabin assets.
 	 * @param html
 	 */
-	protected void addAssetsWithNoProductsToEmail(StringBuilder html) {
-		html.append("<h4>Mediabin SOUS Values not used by Products (");
+	protected void addAssetsWithNoProductsToEmail(StringBuilder html, Map<String, Set<String>> assets) {
+		if (assets.isEmpty()) return;
+			
+		html.append("<h4>Assets (Mediabin SOUS Values) not used by any Products (");
 		html.append(mediabinSOUSNames.size()).append(")</h4>");
-		html.append("The following MediaBin assets indicate a SOUS ");
-		html.append("Product Name not matching any Web Crescendo products.<br/>\r\n");
+		html.append("The following assets are not matching any existing SOUS Product Name in Web Crescendo:<br/>\r\n");
 		html.append("<table border='1' width='95%' align='center'><thead><tr>");
 		html.append("<th>SOUS Product Name</th>");
 		html.append("<th>Mediabin Tracking #(s)</th>");
 		html.append("</tr></thead>\r\n<tbody>");
 
-		for (Entry<String, Set<String>> entry : mediabinSOUSNames.entrySet()) {
+		for (Entry<String, Set<String>> entry : assets.entrySet()) {
 			Set<String> prodNames = entry.getValue();
 			String[] array = prodNames.toArray(new String[prodNames.size()]);
 			html.append("<tr><td>").append(entry.getKey()).append("</td>");
