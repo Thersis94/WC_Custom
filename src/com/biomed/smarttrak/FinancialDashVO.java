@@ -62,8 +62,9 @@ public class FinancialDashVO extends SBModuleVO {
 		for (int i=0; i < 15; i++) {
 			row = new FinancialDashDataRowVO();
 			row.setName("Company " + i);
+			row.setPrimaryKey(uuidGen.getUUID());
 			for (String key : colHeaders.keySet()) {
-				row.addColumn(key, uuidGen.getUUID(), rand.nextInt(25000), rand.nextDouble());
+				row.addColumn(key, rand.nextInt(25000), rand.nextDouble());
 			}
 			this.addRow(row);
 		}

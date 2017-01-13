@@ -21,6 +21,7 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 
 	private static final long serialVersionUID = 1L;
 	private String name = "";
+	private String primaryKey = "";
 	private Map<String, FinancialDashDataColumnVO> columns;
 	
 	public FinancialDashDataRowVO() {
@@ -54,6 +55,13 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 	}
 
 	/**
+	 * @return the primaryKey
+	 */
+	public String getPrimaryKey() {
+		return primaryKey;
+	}
+
+	/**
 	 * @param name the name to set
 	 */
 	public void setName(String name) {
@@ -68,6 +76,13 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 	}
 	
 	/**
+	 * @param primaryKey the primaryKey to set
+	 */
+	public void setPrimaryKey(String primaryKey) {
+		this.primaryKey = primaryKey;
+	}
+
+	/**
 	 * Adds a column to the list of columns
 	 * 
 	 * @param colId
@@ -75,9 +90,8 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 	 * @param val
 	 * @param pctDiff
 	 */
-	public void addColumn(String colId, String pk, Integer val, Double pctDiff) {
+	public void addColumn(String colId, Integer val, Double pctDiff) {
 		FinancialDashDataColumnVO col = new FinancialDashDataColumnVO();
-		col.setPrimaryKey(pk);
 		col.setDollarValue(val);
 		col.setPctDiff(pctDiff);
 		

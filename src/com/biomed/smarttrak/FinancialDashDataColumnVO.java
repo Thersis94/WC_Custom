@@ -18,7 +18,6 @@ import com.smt.sitebuilder.action.SBModuleVO;
 public class FinancialDashDataColumnVO extends SBModuleVO {
 
 	private static final long serialVersionUID = 1L;
-	private String primaryKey;
 	private Integer dollarValue;
 	private Double pctDiff;
 	
@@ -38,13 +37,6 @@ public class FinancialDashDataColumnVO extends SBModuleVO {
 	}
 
 	/**
-	 * @return the primaryKey
-	 */
-	public String getPrimaryKey() {
-		return primaryKey;
-	}
-
-	/**
 	 * @return the dollarValue
 	 */
 	public Integer getDollarValue() {
@@ -56,13 +48,6 @@ public class FinancialDashDataColumnVO extends SBModuleVO {
 	 */
 	public Double getPctDiff() {
 		return pctDiff;
-	}
-
-	/**
-	 * @param primaryKey the primaryKey to set
-	 */
-	public void setPrimaryKey(String primaryKey) {
-		this.primaryKey = primaryKey;
 	}
 
 	/**
