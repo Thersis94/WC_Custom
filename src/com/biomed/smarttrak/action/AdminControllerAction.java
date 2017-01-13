@@ -78,7 +78,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	 * @throws ActionException
 	 */
 	private SMTActionInterface loadAction(String cPage) throws ActionException {
-		SMTActionInterface action = null;
+		SMTActionInterface action;
 		switch (StringUtil.checkVal(cPage)) {
 			case "gapAnalysis":
 				action = new GapFacadeAction();
@@ -89,6 +89,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 			default:
 				throw new ActionException("Action type not supported.");
 		}
+
 		if(action != null) {
 			action.setDBConnection(dbConn);
 			action.setAttributes(getAttributes());
