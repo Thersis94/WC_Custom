@@ -41,6 +41,10 @@ public class GapColumnVO {
 		setData(rs);
 	}
 
+	/**
+	 * Set Gap Column Data off the Request
+	 * @param req
+	 */
 	public void setData(SMTServletRequest req) {
 		this.gaColumnId = req.getParameter("gaColumnId");
 		this.gaMarketId = req.getParameter("gaMarketId");
@@ -48,6 +52,10 @@ public class GapColumnVO {
 		this.orderNo = Convert.formatInteger(req.getParameter("orderNo"));
 	}
 
+	/**
+	 * Set Gap Column Data off the ResultSet
+	 * @param rs
+	 */
 	public void setData(ResultSet rs) {
 		DBUtil db = new DBUtil();
 		this.gaColumnId = db.getStringVal("GA_COLUMN_ID", rs);

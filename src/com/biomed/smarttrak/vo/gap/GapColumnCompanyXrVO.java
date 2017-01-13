@@ -38,12 +38,20 @@ public class GapColumnCompanyXrVO {
 		setData(rs);
 	}
 
+	/**
+	 * Set Gap Column Company XR Data off the Request
+	 * @param req
+	 */
 	private void setData(SMTServletRequest req) {
 		this.xrId = req.getParameter("xrId");
 		this.companyId = req.getParameter("companyId");
 		this.gaColumnId = req.getParameter("columnId");
 	}
 
+	/**
+	 * Set Gap Column Company XR Data off the ResultSet
+	 * @param rs
+	 */
 	private void setData(ResultSet rs) {
 		DBUtil db = new DBUtil();
 		this.xrId = db.getStringVal("XR_ID", rs);
