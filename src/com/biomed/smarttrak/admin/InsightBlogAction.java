@@ -56,32 +56,30 @@ public class InsightBlogAction extends SBActionAdapter {
 	@Override
 	public void list(SMTServletRequest req) throws ActionException {
 		log.debug("insite blog action list called " + actionInit.getActionId());
-		if(Convert.formatBoolean(req.getParameter("manmod"))){
-			
-			super.list(req);
-		}else {
-			super.retrieve(req);
-		}
 		
-		
-		//TODO get the correct blog id for the insight blog
-		
-		//TODO change action id to the right blog id
-		if(Convert.formatBoolean(req.getParameter("manmod"))){
 		log.debug("bbbbbbbb action id: " + actionInit.getActionId());
 		actionInit.setActionId("eb19b0e489ade9bd7f000101577715c8");
 		log.debug("bbbbbbbb action id: " + actionInit.getActionId());
 		
-		
-		//TODO call retrive on BFA with the right id
-		BlogFacadeAction bfa = new BlogFacadeAction();
-		
-		bfa.setDBConnection(dbConn);
-		bfa.setActionInit(actionInit);
-		bfa.setAttributes(attributes);
-		bfa.retrieve(req);
+		if(Convert.formatBoolean(req.getParameter("manmod"))){
+			
+			super.list(req);
+			BlogFacadeAction bfa = new BlogFacadeAction();
+			
+			bfa.setDBConnection(dbConn);
+			bfa.setActionInit(actionInit);
+			bfa.setAttributes(attributes);
+			bfa.list(req);
+		}else {
+			super.retrieve(req);
+			
+			BlogFacadeAction bfa = new BlogFacadeAction();
+			
+			bfa.setDBConnection(dbConn);
+			bfa.setActionInit(actionInit);
+			bfa.setAttributes(attributes);
+			bfa.retrieve(req);
 		}
-		//TODO might need to move data from admin module to public module
 		
 		log.debug("post super call " + actionInit.getActionId());
 		
