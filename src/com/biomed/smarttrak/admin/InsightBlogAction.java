@@ -3,12 +3,9 @@ package com.biomed.smarttrak.admin;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.blog.BlogFacadeAction;
-import com.smt.sitebuilder.common.PageVO;
-import com.smt.sitebuilder.common.SiteVO;
-import com.smt.sitebuilder.common.constants.AdminConstants;
-import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title</b>: insightBlogAction.java <p/>
@@ -45,8 +42,10 @@ public class InsightBlogAction extends SBActionAdapter {
 		log.debug("insite blog action retrieve called " + actionInit.getActionId());
 		//TODO catching the page to i can build the public admin widget directly
 		super.retrieve(req);
+		//TODO is this a good way to tell i am not in the admintool?
+		if(!Convert.formatBoolean(req.getParameter("manMod"))){
 		this.list(req);
-		
+		}
 	}
 	
 	
@@ -57,10 +56,18 @@ public class InsightBlogAction extends SBActionAdapter {
 	@Override
 	public void list(SMTServletRequest req) throws ActionException {
 		log.debug("insite blog action list called " + actionInit.getActionId());
+		if(Convert.formatBoolean(req.getParameter("manmod"))){
+			
+			super.list(req);
+		}else {
+			super.retrieve(req);
+		}
+		
 		
 		//TODO get the correct blog id for the insight blog
 		
 		//TODO change action id to the right blog id
+		if(Convert.formatBoolean(req.getParameter("manmod"))){
 		log.debug("bbbbbbbb action id: " + actionInit.getActionId());
 		actionInit.setActionId("eb19b0e489ade9bd7f000101577715c8");
 		log.debug("bbbbbbbb action id: " + actionInit.getActionId());
@@ -73,7 +80,7 @@ public class InsightBlogAction extends SBActionAdapter {
 		bfa.setActionInit(actionInit);
 		bfa.setAttributes(attributes);
 		bfa.retrieve(req);
-		
+		}
 		//TODO might need to move data from admin module to public module
 		
 		log.debug("post super call " + actionInit.getActionId());
