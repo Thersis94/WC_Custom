@@ -6,10 +6,10 @@ import java.util.Map;
 // Dom4j
 import org.dom4j.Element;
 
-import com.siliconmtn.action.ActionRequest;
 // SMT Base Libs
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.AbstractLoginModule;
 import com.siliconmtn.security.AuthenticationException;
 import com.siliconmtn.security.EmailAddressNotFoundException;
@@ -145,7 +145,7 @@ public class USALoginModule extends AbstractLoginModule {
 	 */
 	private String retrieveLoginSiteId() {
 		String catalogSiteId = null;
-		ActionRequest req = (ActionRequest) initVals.get(GlobalConfig.HTTP_REQUEST);
+		SMTServletRequest req = (SMTServletRequest) initVals.get(GlobalConfig.HTTP_REQUEST);
 		if (req != null) {
 			SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 			catalogSiteId = site.getSiteId();
