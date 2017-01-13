@@ -86,10 +86,13 @@ public class AdminControllerAction extends SimpleActionAdapter {
 			case "contentHierarchy":
 				action = new ContentHierarchyAction();
 				break;
+			default:
+				throw new ActionException("Action type not supported.");
 		}
-
-		action.setDBConnection(dbConn);
-		action.setAttributes(getAttributes());
+		if(action != null) {
+			action.setDBConnection(dbConn);
+			action.setAttributes(getAttributes());
+		}
 		return action;
 	}
 }
