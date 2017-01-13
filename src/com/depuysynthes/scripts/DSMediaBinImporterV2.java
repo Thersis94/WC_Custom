@@ -13,9 +13,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.beans.PropertyChangeEvent;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -67,7 +80,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	/**
 	 * Delimiter used in the EXP file
 	 */
-	protected String DELIMITER = "\\|";
+	protected static final String DELIMITER = "\\|";
 	
 	/**
 	 * Delimiterd used in the EXP file to tokenize multiple values stuffed into a single meta-data field
@@ -85,7 +98,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	/**
 	 * List of errors 
 	 */
-	protected List <Exception> failures = new ArrayList<Exception>();
+	protected List <Exception> failures = new ArrayList<>();
 
 	private Map<String,String> languages = new HashMap<>();
 
@@ -265,6 +278,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		queryString += " AND importFileCd_i:" + type;
 		SolrQuery qry = new SolrQuery(queryString);
 		qry.setRows(50000);
+		qry.setFields(SearchDocumentHandler.DOCUMENT_ID); //we only need the documentId back from Solr - JM 08.04.16
 		SolrDocumentList solrData = null;
 		try {
 			solrData = server.query(qry).getResults();
@@ -280,12 +294,13 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		if (dbCnt != cnt) {
 			List<MediaBinDeltaVO> revisions = analyzeSolrRecords(masterRecords, solrData, true);
 			//if extra solr records were present and got deleted, commit that change and re-count the records
+			log.debug("revision count=" + revisions.size());
 			pushToSolr(revisions, server);
 			
 			try {
 				solrData = server.query(qry).getResults();
 				cnt = Convert.formatLong("" + solrData.getNumFound()).intValue();
-				log.info("solr count = " + cnt);
+				log.info("solr re-count = " + cnt);
 			} catch (Exception e) {
 				failures.add(e);
 				log.error("could not process read Solr query", e);
@@ -313,11 +328,13 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			switch (vo.getRecordState()) {
 				case Delete:
 				case Failed: //fails come from 404's at LimeLight; we don't want these showing up on DS if the linked file is MIA
+					log.debug("deleting from Solr: " + vo.getDpySynMediaBinId());
 					deletes.add(vo.getDpySynMediaBinId());
 					break;
 				case Update:
 				case Insert:
 				//case NewDownload: //we want the file contents to be re-indexed here, even though there are no meta-data changes
+					log.debug("adding to Solr: " + vo.getDpySynMediaBinId());
 					adds.add(vo);
 					break;
 				default:
@@ -363,15 +380,18 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	private List<MediaBinDeltaVO> analyzeSolrRecords(Map<String, MediaBinDeltaVO> masterRecords, 
 			SolrDocumentList solrData, boolean retrySolr) {
 		List<MediaBinDeltaVO> changes = new ArrayList<>();
+		log.debug("analyzeSolrRecords retry=" + retrySolr);
 		try {
 			//iterate solr against DB
 			for (SolrDocument sd : solrData) {
-				if (!masterRecords.containsKey(sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID))) {
+				if (!masterRecords.containsKey(StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID)))) {
+					log.warn("masterRecords does not have " + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID) + " which needs to be deleted from Solr");
 					//these should be deleted from Solr
 					if (retrySolr) {
 						MediaBinDeltaVO vo = new MediaBinDeltaVO();
 						vo.setDpySynMediaBinId("" + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID));
 						vo.setRecordState(State.Delete);
+						log.warn("need to delete extra solr record for " + vo.getDpySynMediaBinId());
 						changes.add(vo);
 					} else {
 						failures.add(new Exception("Record exists in Solr but not database, and could't be deleted: " + sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID)));
@@ -383,15 +403,23 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			dbLoop:
 			for (MediaBinDeltaVO vo: masterRecords.values()) {
 				//make sure only 'good' records get pushed to Solr. - this check filters out failed records, including 404's at LL. 
-				if (!vo.isUsable()) continue;
+				if (!vo.isUsable()) {
+					log.warn("DB record contains bad data and should not be added to Solr.  Likely a simple 404@LL: " + vo.getDpySynMediaBinId());
+					continue;
+				}
 				
+				String id = StringUtil.checkVal(vo.getDpySynMediaBinId());
 				for (SolrDocument sd : solrData) {
-					if (vo.getDpySynMediaBinId().equals(sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID))) {
+					if (id.equals(StringUtil.checkVal(sd.getFieldValue(SearchDocumentHandler.DOCUMENT_ID)))) {
 						continue dbLoop;
 					}
 				}
 				if (retrySolr) {
+					//bug-fix: the record goes back into the Insert pool, but we aren't accounting for it in the Insert Count reported in the email.  
+					//tag the record so we can put an asterics in the report email. -JM 08.14.16
+					vo.setActionDesc("*");
 					vo.setRecordState(State.Insert);
+					log.warn("need to add missing solr record for " + vo.getDpySynMediaBinId());
 					changes.add(vo);
 				} else {
 					failures.add(new Exception("Record exists in database but not Solr and couldn't be added: " + vo.getDpySynMediaBinId()));
@@ -417,25 +445,27 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		//If the record exists in the master data mark it as an update
 		//if the record does not exist in the master data mark it as an insert
 		for (MediaBinDeltaVO vo : newRecords.values()) {
-			if (masterRecords.containsKey(vo.getDpySynMediaBinId())) {
-				//check to see if the data has changed, which implies we have an update
+			if (masterRecords.containsKey(vo.getDpySynMediaBinId())) { //legacy tracking#
 				MediaBinDeltaVO mr = masterRecords.get(vo.getDpySynMediaBinId());
-				if (! vo.lexicographyEquals(mr)) {
-					vo.setRecordState(State.Update);
-				} else if (vo.geteCopyRevisionLvl() != null && !vo.geteCopyRevisionLvl().equals(mr.geteCopyRevisionLvl())) {
-					//the file on LL should have changed, but there's nothing in the meta-data we need to save
-					vo.addDelta(new PropertyChangeEvent(vo,"eCopyRevisionLvl",mr.geteCopyRevisionLvl(), vo.geteCopyRevisionLvl()));
-					vo.setRecordState(State.Update);
-				} else {
-					//nothing changed, ignore this record.  99% of time this is the default use case
-					vo.setRecordState(State.Ignore);
-				}
-				//pass the checksum of the existing file to the new VO, so we can compare it to the new file
-				vo.setChecksum(mr.getChecksum());
-				//pass the video chapters as well
-				vo.setVideoChapters(mr.getVideoChapters());
+				setUpdateFields(vo, mr);
+				masterRecords.put(vo.getDpySynMediaBinId(), vo);
+				continue;
+			}
+			
+			//combined primary key - importFileCd+tracking# - adds support for global assets, 
+			//which present themselves in both EXP files. -JM 08.16.16
+			String combinedKey = "" + vo.getImportFileCd() + vo.getDpySynMediaBinId();
+			
+			if (masterRecords.containsKey(combinedKey)) {
+				MediaBinDeltaVO mr = masterRecords.get(combinedKey);
+				vo.setDpySynMediaBinId(combinedKey); //preserve the combined key
+				setUpdateFields(vo, mr);
+				
 			} else {
 				vo.setRecordState(State.Insert);
+				//Give all new assets a combined primary key of importFileCd+tracking#
+				//Supports global assets where the tracking# is the same in both feeds. - JM 08.16.16
+				vo.setDpySynMediaBinId(combinedKey);
 			}
 			masterRecords.put(vo.getDpySynMediaBinId(), vo);
 		}
@@ -443,6 +473,34 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		//by the above iteration are already earmarked for deletion, which is correct.
 		//Only the records in the incoming EXP file should persist in the system.
 	}
+	
+	
+	/**
+	 * compared the new/existing VOs to determine if we have changes to capture.
+	 * @param vo
+	 * @param mr
+	 */
+	private void setUpdateFields(MediaBinDeltaVO vo, MediaBinDeltaVO mr) {
+		//check to see if the data has changed, which implies we have an update
+		if (! vo.lexicographyEquals(mr)) {
+			vo.setRecordState(State.Update);
+			
+		} else if (vo.geteCopyRevisionLvl() != null && !vo.geteCopyRevisionLvl().equals(mr.geteCopyRevisionLvl())) {
+			//the file on LL should have changed, but there's nothing in the meta-data we need to save
+			vo.addDelta(new PropertyChangeEvent(vo,"eCopyRevisionLvl",mr.geteCopyRevisionLvl(), vo.geteCopyRevisionLvl()));
+			vo.setRecordState(State.Update);
+			
+		} else {
+			//nothing changed, ignore this record.  99% of time this is the default use case
+			vo.setRecordState(State.Ignore);
+		}
+		
+		//pass the checksum of the existing file to the new VO, so we can compare it to the new file
+		vo.setChecksum(mr.getChecksum());
+		//pass the video chapters as well
+		vo.setVideoChapters(mr.getVideoChapters());
+	}
+	
 
 	/**
 	 * call out to LL and download the asset.  Then write it to the dropbox folder
@@ -452,7 +510,8 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	 */
 	private void downloadFiles(Map<String, MediaBinDeltaVO> masterRecords) {
 		String dropboxFolder = (String) props.get("downloadDir");
-
+		boolean fileExists = true; //true - we don't check the file system by default
+		
 		for (MediaBinDeltaVO vo : masterRecords.values()) {
 			//escape certain chars on the asset path/name.  Note we cannot do a full URLEncode because of the directory separators
 			String fileUrl = StringUtil.replace(vo.getAssetNm(), " ","%20");
@@ -460,7 +519,13 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			vo.setLimeLightUrl(limeLightUrl + fileUrl);
 			vo.setFileName(StringUtil.replace((type == 1 ? "US" : "EMEA") + "/" + vo.getAssetNm(), "/", File.separator));
 
-			if (fileOnLLChanged(vo))
+			//check for files on disk. If we have the file we need then that's good enough. - use in development to get around extensive http calls on repeated trial runs.
+			if (Convert.formatBoolean(props.getProperty("honorExistingFiles"))) {
+				fileExists = new File(dropboxFolder + vo.getFileName()).exists();
+				if (fileExists) continue;
+			}
+			
+			if (!fileExists || fileOnLLChanged(vo))
 				downloadFile(dropboxFolder, vo);
 		}
 	}
@@ -475,12 +540,6 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	private void downloadFile(String dropboxFolder, MediaBinDeltaVO vo) {
 		log.info("retrieving " + vo.getLimeLightUrl());
 		try {
-			//this is a work-around for development use, so we don't have to download files we already have
-			if (Convert.formatBoolean(props.getProperty("honorExistingFiles"))) {
-				File f1 = new File(dropboxFolder + vo.getFileName());
-				if (f1.exists()) return;
-			}
-				
 			SMTHttpConnectionManager conn = new SMTHttpConnectionManager();
 			InputStream is = conn.retrieveConnectionStream(vo.getLimeLightUrl(), null);				
 
@@ -602,16 +661,18 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	 * @param String importFile file path
 	 * @throws Exception
 	 */
-	public List<Map<String, String>> loadFile(String url) throws IOException {
+	public List<Map<String, String>> loadFile(String path) throws IOException {
 		log.info("starting file parser");
 
 		// Set the importFile so we can access it for the success email
 		// append a randomized value to the URL to bypass upstream network caches
-		importFile = url + "?t=" + System.currentTimeMillis();
-
-		URL page = new URL(importFile);
-		BufferedReader buffer = new BufferedReader(new InputStreamReader(page.openStream(), "UTF-16"));
-
+		importFile = path + "?t=" + System.currentTimeMillis();
+		URL url = new URL(importFile);
+		BufferedReader buffer = new BufferedReader(new InputStreamReader(url.openStream(), "UTF-16"));
+		
+		//possibly create a Writer object to store the EXP file onto persistent disk, for archiving.
+		BufferedWriter writer = makeArchiveWriter();
+		
 		// first row contains column names; must match UserDataVO mappings
 		String line = StringUtil.checkVal(buffer.readLine());
 		String tokens[] = new String[0];
@@ -620,6 +681,10 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		for (int i = 0; i < tokens.length; i++) {
 			columns[i] = tokens[i];
 		}
+		
+		//write the header line to disk
+		writer.write(line);
+		writer.newLine();
 
 		String rowStr = null;
 		Map<String, String> entry = null;
@@ -629,6 +694,10 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		// execution in this loop WILL throw NoSuchElementException.
 		// This is not trapped so you can cleanup data issue prior to import
 		for (int y = 0; (rowStr = buffer.readLine()) != null; y++) {
+			//write the line to disk
+			writer.write(rowStr);
+			writer.newLine();
+			
 			tokens = rowStr.split(DELIMITER, -1);
 
 			// test quality of data
@@ -638,7 +707,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 				continue;
 			}
 
-			entry = new HashMap<String, String>(20);
+			entry = new HashMap<>(20);
 			for (int x = 0; x < tokens.length; x++) {
 				String value = StringUtil.checkVal(tokens[x].trim());
 
@@ -653,12 +722,34 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			data.add(entry);
 			entry = null;
 		}
-		// log.error(colSizes);
+		// close the archive file
+		writer.close();
 
 		dataCounts.put("exp-raw", data.size());
 		log.info("file size is " + data.size() + " rows");
 		return data;
 	}
+	
+	
+	/**
+	 * Creates a FileWriter used for writing the contents of the EXP file to persistent disk.
+	 * @return
+	 * @throws IOException
+	 */
+	private BufferedWriter makeArchiveWriter() throws IOException {
+		String archivePath = props.getProperty("expArchivePath");
+		if (archivePath == null || archivePath.isEmpty()) {
+			OutputStream nullOS = new OutputStream() { @Override public void write(int b) {/* does nothing */} };
+			return new BufferedWriter(new OutputStreamWriter(nullOS));
+		}
+		
+		String fileName = type + "-Metadata.exp-" + Convert.formatDate(new Date(), Convert.DATE_TIME_NOSPACE_PATTERN);
+		log.info("archiving EXP file to " + archivePath + fileName);
+		
+		Path dstPath = Paths.get(archivePath + fileName);
+		return Files.newBufferedWriter(dstPath, StandardCharsets.UTF_16);
+	}
+	
 
 	/**
 	 * Inserts the data in the supplied list of maps into the database
@@ -864,7 +955,9 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 				++cnt;
 			} catch (SQLException sqle) {
 				vo.setRecordState(State.Failed);
-				failures.add(sqle);
+				//create a custom exception that contains the data/record, so we can report it in the email
+				String msg = sqle.getMessage() + "<br/>" + StringUtil.getToString(vo, false, 0, "<br/>");
+				failures.add(new Exception(msg, sqle));
 			}
 		}
 
@@ -893,11 +986,11 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		log.debug(sql);
 
 		if (cnt > 0) { //don't run the query if we don't need to
-			cnt = 1;
+			cnt = 0;
 			try (PreparedStatement ps  = dbConn.prepareStatement(sql.toString())) {
 				for (MediaBinDeltaVO vo : masterRecords.values()) {
 					if (vo.getRecordState() == State.Delete) 
-						ps.setString(cnt++, vo.getDpySynMediaBinId());
+						ps.setString(++cnt, vo.getDpySynMediaBinId());
 				}
 				cnt = ps.executeUpdate();
 			} catch (SQLException sqle) {
@@ -1042,7 +1135,8 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			// Build the email message
 			EmailMessageVO msg = new EmailMessageVO(); 
 			msg.addRecipients(props.getProperty("adminEmail" + type).split(","));
-			msg.setSubject("SMT MediaBin Import - " + ((type == 1) ? "US" : "EMEA"));
+			String subjectBase = StringUtil.checkVal(props.getProperty("emailSubject"), "SMT MediaBin Import -"); //allow the config file to override the default subject
+			msg.setSubject(subjectBase + ((type == 1) ? " US" : " EMEA"));
 			msg.setFrom("appsupport@siliconmtn.com");
 
 			StringBuilder html= new StringBuilder(1000);
@@ -1109,6 +1203,8 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	 * @param st
 	 */
 	private void addSummaryTable(StringBuilder msg, Map<String, MediaBinDeltaVO> masterRecords, State st) {
+		if (masterRecords == null) return; //occurs when we have a fatal exception like can't download EXP file or connect database. -JM 08.25.16
+		
 		//first determine if there's any output to actually print
 		int cnt = 0;
 		for (MediaBinDeltaVO vo : masterRecords.values()) {
@@ -1128,7 +1224,8 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		for (MediaBinDeltaVO vo : masterRecords.values()) {
 			if (st != vo.getRecordState()) continue; //only print the ones we want
 			msg.append("<tr>");
-			msg.append("<td nowrap>").append(StringUtil.checkVal(vo.getDpySynMediaBinId())).append("</td>");
+			//getActionDesc holds an asterisk when we have to re-add records to Solr unexpectedly.  - for SMT monitoring.  -JM 08.04.16
+			msg.append("<td nowrap>").append(StringUtil.checkVal(vo.getActionDesc())).append(StringUtil.checkVal(vo.getDpySynMediaBinId())).append("</td>");
 			msg.append("<td nowrap>").append(StringUtil.checkVal(vo.getEcopyTrackingNo())).append("</td>");
 			if (State.Delete == st) {
 				msg.append("<td>").append(vo.getFileNm()).append("</td>");
@@ -1137,9 +1234,9 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			}
 			if (State.Update == st) {
 				msg.append("<td>");
-				if (vo.getDeltas() != null) {
+				if (vo.deltaList() != null) {
 					if (vo.getErrorReason() != null) msg.append("<font color=\"red\">").append(vo.getErrorReason()).append("</font><br/>");
-					for (PropertyChangeEvent e : vo.getDeltas()) {
+					for (PropertyChangeEvent e : vo.deltaList()) {
 						msg.append(e.getPropertyName()).append("<br/>");
 						//msg.append("old=").append(e.getOldValue()).append("<br/>");
 						//msg.append("new=").append(e.getNewValue()).append("<br/>");

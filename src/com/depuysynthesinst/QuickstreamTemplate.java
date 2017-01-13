@@ -35,6 +35,7 @@ public class QuickstreamTemplate extends CMSSolrDocumentVO {
 		super();
 	}
 	
+	
 	/**
 	 * extension of superclass implementation; for DSI-specific template fields
 	 */

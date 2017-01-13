@@ -5,8 +5,6 @@ import java.sql.Connection;
 import java.util.Calendar;
 import java.util.Map;
 
-
-
 // SMTBaseLibs 2.0
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.http.SMTServletRequest;
@@ -18,8 +16,8 @@ import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.common.constants.ErrorCodes;
+import com.smt.sitebuilder.security.SAMLAuthenticationUtil;
 import com.smt.sitebuilder.security.SAMLLoginModule;
-import com.smt.sitebuilder.security.SSOProviderVO;
 
 /****************************************************************************
  * <b>Title: </b>SAMLProxyLoginModule.java <p/>
@@ -69,18 +67,15 @@ public class SAMLProxyLoginModule extends SAMLLoginModule {
 			
 		} else if (req.hasParameter("SAMLResponse")) {
 			/* process the response, redirect tokens calling site.  
-			 * WC does not consume this response. */
-		
-			// retrieve provider info
-			SSOProviderVO provider = retrieveProviderData(req, conn, site);
-
-			/* parse response and build UserDataVO from response
+			 * WC does not consume this response.
+			 * parse response and build UserDataVO from response
 			 * We try/catch to ensure that we capture any parsing exceptions
 			 * so that we can send these back in a custom manner to the legacy
 			 * calling site.  */
 			UserDataVO baseUser = null;
+			SAMLAuthenticationUtil sau = new SAMLAuthenticationUtil();
 			try {
-				baseUser = parseSSOResponse(req, site, provider);
+				baseUser = sau.parseSAMLResponse(req, conn, site);
 			} catch (AuthenticationException ae) {
 				log.error("Intercepted the parent SSO response parsing exception.");
 			}

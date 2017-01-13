@@ -29,8 +29,8 @@ public class MediaBinDistChannels {
 	public static enum DistChannel {
 		INTDS("INTDS.com", 2, "DPY_SYN_EMEA"),
 		USDS("USDS.com", 1, "DPY_SYN"),
-		DSI("DSI.com", 1, "DPY_SYN_INST");
-		//DSHuddle("DSHuddle.com", 1, "DPY_SYN_HUDDLE");
+		DSI("DSI.com", 1, "DPY_SYN_INST"),
+		DSHuddle("DSHuddle.com", 1, "DPY_SYN_HUDDLE");
 		
 		private String orgId;
 		private int typeCd;
