@@ -38,6 +38,10 @@ public class GapMarketVO {
 		setData(rs);
 	}
 
+	/**
+	 * Set Gap Market data off Request
+	 * @param req
+	 */
 	private void setData(SMTServletRequest req) {
 		this.gaMarketId = req.getParameter("gaMarketId");
 		this.parentId = req.getParameter("parentId");
@@ -46,6 +50,10 @@ public class GapMarketVO {
 		this.sectionFlg = Convert.formatInteger(req.getParameter("sectionFlg"));
 	}
 
+	/**
+	 * Set Gap Market data off ResultSet
+	 * @param rs
+	 */
 	private void setData(ResultSet rs) {
 		DBUtil db = new DBUtil();
 		this.gaMarketId = db.getStringVal("GA_MARKET_ID", rs);
