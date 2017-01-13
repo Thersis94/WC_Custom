@@ -47,7 +47,6 @@ public class BioMedAjaxControllerAction extends SBActionAdapter {
 	@Override
 	public void build(SMTServletRequest req) throws ActionException {
 		String cPage = StringUtil.checkVal(req.getParameter("cPage"));
-		String callType = StringUtil.checkVal(req.getParameter("callType"));
 		String msg = (String) attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 
 		/*
@@ -55,22 +54,7 @@ public class BioMedAjaxControllerAction extends SBActionAdapter {
 		 * copy and delete.
 		 */
 		try {
-			SMTActionInterface sai = loadAction(cPage);
-			switch(callType) {
-				case AdminConstants.REQ_BUILD :
-					sai.build(req);
-					break;
-				case AdminConstants.REQ_UPDATE :
-					sai.update(req);
-					break;
-				case AdminConstants.REQ_COPY :
-					sai.copy(req);
-					break;
-				case AdminConstants.REQ_DELETE :
-					sai.delete(req);
-				default:
-					throw new ActionException("Action Not Supported.");
-			}
+			loadAction(cPage).build(req);
 		} catch (ActionException ae) {
 			log.error("could not forward requested Action.", ae.getCause());
 			msg = (String) attributes.get(AdminConstants.KEY_ERROR_MESSAGE);
@@ -87,26 +71,7 @@ public class BioMedAjaxControllerAction extends SBActionAdapter {
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		String cPage = StringUtil.checkVal(req.getParameter("cPage"));
-		String callType = StringUtil.checkVal(req.getParameter("callType"));
-
-		/*
-		 * Perform pass through of data retrieval calls via list and retrieve.
-		 */
-		try {
-			SMTActionInterface sai = loadAction(cPage);
-			switch(callType) {
-				case AdminConstants.REQ_RETRIEVE :
-					sai.retrieve(req);
-					break;
-				case AdminConstants.REQ_LIST :
-					sai.list(req);
-					break;
-				default:
-					throw new ActionException("Action Not Supported.");
-			}
-		} catch (ActionException ae) {
-			log.error("could not forward requested Action.", ae.getCause());
-		}
+		loadAction(cPage).retrieve(req);
 	}
 
 
