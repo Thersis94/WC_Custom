@@ -20,7 +20,6 @@ import com.depuy.events_v2.vo.report.AttendeeSurveyReportVO;
 import com.depuy.events_v2.vo.report.ComplianceReportVO;
 import com.depuy.events_v2.vo.report.EventPostalLeadsReportVO;
 import com.depuy.events_v2.vo.report.LocatorReportVO;
-import com.depuy.events_v2.vo.report.LocatorReportVOMitek;
 import com.depuy.events_v2.vo.report.PostcardSummaryReportVO;
 import com.depuy.events_v2.vo.report.RsvpBreakdownReportVO;
 import com.depuy.events_v2.vo.report.RsvpSummaryReportVO;
@@ -325,13 +324,11 @@ public class ReportBuilder extends SBActionAdapter {
 		LocatorReportVO rpt = new LocatorReportVO();
 		rpt.setData(data);
 		rpt.setRadius(radius);
+		rpt.setAamdUrl((String)getAttribute("aamdUrl"));
 		return rpt;
 	}
 	public AbstractSBReportVO generateLocatorReportMitek(Object data, String radius) {
-		LocatorReportVO rpt = new LocatorReportVOMitek();
-		rpt.setData(data);
-		rpt.setRadius(radius);
-		return rpt;
+		return generateLocatorReport(data, radius); //they're the same now.  -JM 12.27.2016
 	}
 
 	/**
