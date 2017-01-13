@@ -90,10 +90,9 @@ public class AdminControllerAction extends SimpleActionAdapter {
 				throw new ActionException("Action type not supported.");
 		}
 
-		if(action != null) {
-			action.setDBConnection(dbConn);
-			action.setAttributes(getAttributes());
-		}
+		action.setDBConnection(dbConn);
+		action.setAttributes(getAttributes());
+
 		return action;
 	}
 }
