@@ -19,7 +19,6 @@ import com.siliconmtn.util.StringUtil;
 // WebCrescendo
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
-import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /*****************************************************************************
@@ -39,13 +38,21 @@ public class UserActivityAction extends SimpleActionAdapter {
 	private static final String OP_LIST_SESSION_IDS = "listSessionIds";
 	private static final String KEY_SITE_TRACK_ID = "siteTrackId";
 	private static final String KEY_USER_DATA = "userData";
-		
+	
+	
 	public void retrieve(SMTServletRequest req) throws ActionException {
-		ModuleVO modVo = (ModuleVO) getAttribute(Constants.MODULE_DATA);
+		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		// TODO consider wrapping method call with try/catch so we can set an error msg if needed.
 		List<UserActivityVO> userActivity = getUserActivity(req, (String)getAttribute(Constants.CONTEXT_PATH));
-		modVo.setActionData(userActivity);
-		setAttribute(Constants.MODULE_DATA, modVo);
+		mod.setActionData(userActivity);
+		this.putModuleData(mod);
+	}
+	
+	/**
+	 * Override to do nothing.
+	 */
+	public void build(SMTServletRequest req) throws ActionException {
+		return;
 	}
 		
 	/**
@@ -165,6 +172,10 @@ public class UserActivityAction extends SimpleActionAdapter {
 		 * 		2a. add new vo to List for each user who has log data within requested TIME_INTERVAL
 		 * 			but who currently doesn't have a session.  Determine 'last accessed' time from 
 		 * 			user's log data timestamp.
+		 * 		2b. Need to use a field on the PageVO as an indicator as to the page link type 
+		 * 			 (archives, markets, companies, products, or just a page) for the links we will
+		 * 			 build in the JSTL.  We don't build a link for a page, but do build a link for a company or an
+		 * 			 article.
 		 * 3. sort via comparator?
 		 */
 	}
