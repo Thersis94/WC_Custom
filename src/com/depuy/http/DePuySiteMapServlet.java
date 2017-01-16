@@ -90,7 +90,7 @@ public class DePuySiteMapServlet extends SiteMapServlet {
 		pc.setDBConnection(dbConn);
     	
     	try {
-    		ActionRequest actReq = ActionRequestBuilder.fromHttpRequest(req);
+    		ActionRequest actReq = new ActionRequestBuilder(req).buildActionRequest();
     		Tree prodTree = pc.loadCatalog(catalogId, null, false, actReq);
     		List<String> completed = new ArrayList<String>();
     		String divisionUrl = null;

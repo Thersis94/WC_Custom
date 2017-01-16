@@ -7,11 +7,10 @@ import java.util.Map;
 
 // SMTBaseLibs 2.0
 import com.siliconmtn.common.constants.GlobalConfig;
-import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.AuthenticationException;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
-
 // WebCrescendo 2.0
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -57,7 +56,7 @@ public class SAMLProxyLoginModule extends SAMLLoginModule {
 	public UserDataVO retrieveUserData(String user, String pwd) 
 			throws AuthenticationException {
 
-		ActionRequest req = (ActionRequest)initVals.get(GlobalConfig.HTTP_REQUEST);
+		SMTServletRequest req = (SMTServletRequest)initVals.get(GlobalConfig.HTTP_REQUEST);
 		Connection conn = (Connection) initVals.get(GlobalConfig.KEY_DB_CONN);
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 
@@ -110,7 +109,7 @@ public class SAMLProxyLoginModule extends SAMLLoginModule {
 	 * @see com.siliconmtn.security.AbstractLoginModule#initiateLogin()
 	 */
 	@Override
-	public boolean canInitiateLogin(ActionRequest req) throws AuthenticationException {
+	public boolean canInitiateLogin(SMTServletRequest req) throws AuthenticationException {
 		//only initiate logic if the session is new.
 		//This traps an infinite redirect loop where something goes wrong on WC 
 		//but the user successfully authenticates to SSO. (go there, come back, fail, redir to homepage, go there, come back, fail, ...con't.)

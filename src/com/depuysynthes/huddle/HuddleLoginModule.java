@@ -2,10 +2,10 @@ package com.depuysynthes.huddle;
 
 import java.util.Map;
 
-import com.siliconmtn.http.session.SMTSession;
-
-import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.common.constants.GlobalConfig;
+import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.security.AuthenticationException;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
@@ -100,7 +100,7 @@ public class HuddleLoginModule extends SAMLLoginModule {
 	 * @see com.siliconmtn.security.AbstractLoginModule#initiateLogin()
 	 */
 	@Override
-	public boolean canInitiateLogin(ActionRequest req) throws AuthenticationException {
+	public boolean canInitiateLogin(SMTServletRequest req) throws AuthenticationException {
 		//only initiate logic if the session is new.
 		//This traps an infinite redirect loop where something goes wrong on WC 
 		//but the user successfully authenticates to SSO. (go there, come back, fail, redir to homepage, go there, come back, fail, ...con't.)
