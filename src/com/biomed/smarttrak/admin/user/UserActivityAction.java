@@ -21,7 +21,6 @@ import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
-import com.smt.sitebuilder.http.UserActivityVO;
 
 /*****************************************************************************
  <p><b>Title</b>: UserActivityAction.java</p>
@@ -141,7 +140,7 @@ public class UserActivityAction extends SimpleActionAdapter {
 							vo = new UserActivityVO();
 							vo.setSessionId(sessionId);
 							vo.setProfile(profile);
-							vo.setSessionLastAccessed(lastAccess);
+							vo.setLastAccessTime(lastAccess);
 							userActivity.add(vo);
 						}
 					}
@@ -157,12 +156,15 @@ public class UserActivityAction extends SimpleActionAdapter {
 	 * Retrieves user activity log data and merges it with user session data. 
 	 */
 	private void retrieveLoggedActivity(List<UserActivityVO> activityLog) {
-		// 1. retrieve activity log data for the past TIME_INTERVAL (? 8, 12, 24 hours ?)
-		for (UserActivityVO activity : activityLog) {
-			//TODO retrieve user data from activity log (page views, etc.).
-		}
-		
-		//TODO sort via comparator?
+		// 1. retrieve activity log data for a certain time TIME_INTERVAL (? 8, 12, 24 hours ?)
+		/* TODO 
+		 * 1. retrieve user activity data from activity log (page views, etc.)
+		 * 2. merge activity data with user's session data
+		 * 		2a. add new vo to List for each user who has log data within requested TIME_INTERVAL
+		 * 			but who currently doesn't have a session.  Determine 'last accessed' time from 
+		 * 			user's log data timestamp.
+		 * 3. sort via comparator?
+		 */
 	}
 
 }

@@ -1,6 +1,7 @@
 package com.biomed.smarttrak.admin.user;
 
-// Java 7
+//Java 7
+import java.util.Date;
 import java.util.List;
 
 // SMTBaseLibs
@@ -11,7 +12,8 @@ import com.smt.sitebuilder.common.PageVO;
 
 /*****************************************************************************
  <p><b>Title</b>: UserActivityVO.java</p>
- <p><b>Description: </b></p>
+ <p><b>Description: </b>Bean that contains a user's session activity and page activity
+ log for a given time interval.</p>
  <p> 
  <p>Copyright: (c) 2000 - 2017 SMT, All Rights Reserved</p>
  <p>Company: Silicon Mountain Technologies</p>
@@ -26,7 +28,7 @@ public class UserActivityVO {
 	private String sessionId;
 	private UserDataVO profile;
 	private List<PageVO> pages;
-	private long sessionLastAccessed;
+	private Date lastAccessTime;
 	/**
 	 * @return the siteId
 	 */
@@ -76,16 +78,28 @@ public class UserActivityVO {
 		this.sessionId = sessionId;
 	}
 	/**
-	 * @return the sessionLastAccessed
+	 * @return the lastAccessTime
 	 */
-	public long getSessionLastAccessed() {
-		return sessionLastAccessed;
+	public Date getLastAccessTime() {
+		return lastAccessTime;
 	}
 	/**
-	 * @param sessionLastAccessed the sessionLastAccessed to set
+	 * @param lastAccessTime the lastAccessTime to set
 	 */
-	public void setSessionLastAccessed(long sessionLastAccessed) {
-		this.sessionLastAccessed = sessionLastAccessed;
+	public void setLastAccessTime(Date lastAccessTime) {
+		this.lastAccessTime = lastAccessTime;
 	}
-	
+	/**
+	 * @param lastAccessTime the lastAccessTime to set
+	 */
+	public void setLastAccessTime(long lastAccessTimeInMillis) {
+		this.lastAccessTime = new Date(lastAccessTimeInMillis);
+	}
+	/**
+	 * @return the lastAccessTime
+	 */
+	public long getLastAccessTimeInMillis() {
+		if (lastAccessTime == null) return -1;
+		return lastAccessTime.getTime();
+	}
 }
