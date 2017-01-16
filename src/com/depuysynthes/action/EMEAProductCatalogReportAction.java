@@ -189,10 +189,10 @@ public class EMEAProductCatalogReportAction extends SimpleActionAdapter {
 	 * @param prod
 	 */
 	protected List<ProductAttributeVO> getMediabinAttributes(ProductVO prod, boolean firstOnly) {
-		List<ProductAttributeVO> data = new ArrayList<>();
+		List<ProductAttributeVO> attrs = new ArrayList<>();
 		ProductAttributeVO attrVo;
 		ProductAttributeContainer pac = prod.getAttributes();
-		if (pac == null) return data;
+		if (pac == null) return attrs;
 
 		for (Node n : pac.getAllAttributes()) {
 			attrVo = (ProductAttributeVO) n.getUserObject();
@@ -202,13 +202,13 @@ public class EMEAProductCatalogReportAction extends SimpleActionAdapter {
 					(!MEDIABIN_ATTR_TYPE.equals(attrVo.getAttributeType()) && !HTML_ATTR_TYPE.equals(attrVo.getAttributeType())))
 				continue;
 
-			data.add(attrVo);
+			attrs.add(attrVo);
 
 			//found one, exit the loop b/c we have what we need.
 			if (firstOnly)
 				break;
 		}
-		return data;
+		return attrs;
 	}
 
 
