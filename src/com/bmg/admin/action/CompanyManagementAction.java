@@ -33,7 +33,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 
 public class CompanyManagementAction extends SimpleActionAdapter {
 	
-	private final String ACTION_TYPE = "actionType";
+	public static final String ACTION_TYPE = "actionType";
 	
 	private enum actionType {
 		COMPANY, LOCATION, ALLIANCE
