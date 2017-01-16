@@ -41,9 +41,11 @@ public class UserActivityAction extends SimpleActionAdapter {
 	private static final String KEY_USER_DATA = "userData";
 		
 	public void retrieve(SMTServletRequest req) throws ActionException {
-		ModuleVO modVo = (ModuleVO) getAttribute(AdminConstants.ADMIN_MODULE_DATA);
+		ModuleVO modVo = (ModuleVO) getAttribute(Constants.MODULE_DATA);
+		// TODO consider wrapping method call with try/catch so we can set an error msg if needed.
 		List<UserActivityVO> userActivity = getUserActivity(req, (String)getAttribute(Constants.CONTEXT_PATH));
 		modVo.setActionData(userActivity);
+		setAttribute(Constants.MODULE_DATA, modVo);
 	}
 		
 	/**
