@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.siliconmtn.commerce.catalog.ProductAttributeVO;
 import com.siliconmtn.commerce.catalog.ProductVO;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: EMEAProductCatalogReportVO.java<p/>
@@ -18,7 +19,7 @@ import com.siliconmtn.commerce.catalog.ProductVO;
  * @since Jan 14, 2017
  * @update
  ****************************************************************************/
-public class EMEAProductCatalogReportVO {
+public class EMEAProductCatalogReportVO implements Comparable<EMEAProductCatalogReportVO> {
 
 	private String productId;
 	private String productName;
@@ -106,5 +107,21 @@ public class EMEAProductCatalogReportVO {
 
 	public void setAttrs(List<ProductAttributeVO> attrs) {
 		this.attrs = attrs;
+	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Comparable#compareTo(java.lang.Object)
+	 */
+	@Override
+	public int compareTo(EMEAProductCatalogReportVO o) {
+		if (o == null || StringUtil.isEmpty(getProductName())) 
+			return -1;
+		
+		//if the names are the same, compare hierarchy values
+		if (getProductName().equals(o.getProductName()) && !StringUtil.isEmpty(getHierarchy())) {
+			return getHierarchy().toLowerCase().compareTo(StringUtil.checkVal(o.getHierarchy()).toLowerCase());
+		} else {
+			return getProductName().toLowerCase().compareTo(StringUtil.checkVal(o.getProductName()).toLowerCase());
+		}
 	}
 }

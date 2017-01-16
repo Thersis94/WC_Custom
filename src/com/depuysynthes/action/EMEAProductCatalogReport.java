@@ -1,13 +1,17 @@
 package com.depuysynthes.action;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.depuysynthes.scripts.DSMediaBinImporterV2;
 import com.siliconmtn.data.report.ExcelStyleFactory;
 import com.siliconmtn.data.report.MultisheetExcelReport;
+import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 
 /****************************************************************************
@@ -25,6 +29,7 @@ public class EMEAProductCatalogReport extends AbstractSBReportVO {
 
 	private static final long serialVersionUID = 969372461467629288L;
 	private transient List<EMEAProductCatalogReportVO> data;
+	private String catalogNm;
 	private transient MultisheetExcelReport rpt;
 
 	public EMEAProductCatalogReport() {
@@ -44,11 +49,15 @@ public class EMEAProductCatalogReport extends AbstractSBReportVO {
 		log.debug("generateReport(): " + this.getClass());
 
 		if (data != null && !data.isEmpty()) {
-			rpt.addSheet("Products", "Web Crescendo Products", getProductsHdr(), getProductData());
+			rpt.addSheet("Products", "Web Crescendo Products - " + catalogNm, getProductsHdr(), getProductData());
 			rpt.addSheet("Assets", "MediaBin Assets", getAssetHdr(), getAssetData());
 		}
 
 		return rpt.generateReport();
+	}
+	
+	public void setCatalogName(String nm) {
+		this.catalogNm = nm;
 	}
 
 
@@ -81,7 +90,7 @@ public class EMEAProductCatalogReport extends AbstractSBReportVO {
 			row.put("urlAlias", vo.getUrlAlias());
 			row.put("sousName", vo.getSousProductName());
 			row.put("assetCnt", vo.getAssetCount());
-			row.put("hierarchy", vo.getHierarchy());
+			row.put("hierarchy", StringUtil.replace(vo.getHierarchy(), DSMediaBinImporterV2.TOKENIZER, ", "));
 			rows.add(row);
 		}
 		return rows;
@@ -98,8 +107,10 @@ public class EMEAProductCatalogReport extends AbstractSBReportVO {
 		row.put("prodNm", "Product Name");
 		row.put("trackingNo", "Tracking #");
 		row.put("assetTitle", "Title");
-		row.put("assetType", "Asset Type");
-		row.put("assetFile", "File Name");
+		row.put("assetLang", "Language");
+		row.put("assetDesc", "Asset Desc");
+		row.put("assetUpdateDt", "Last Updated");
+		row.put("assetFile", "LL File Path/Name");
 		return row;
 	}
 
@@ -109,10 +120,14 @@ public class EMEAProductCatalogReport extends AbstractSBReportVO {
 	 * @return
 	 */
 	protected List<Map<String, Object>> getAssetData() {
-		List<Map<String, Object>> rows = new ArrayList<>();
+		List<Map<String, Object>> rows = new ArrayList<>(data.size());
+		List<String> completedProds = new ArrayList<>(data.size());
+		
 		for (EMEAProductCatalogReportVO vo : data) {
 			List<MediaBinAssetVO> assets = vo.getAssets();
-			if (assets == null || assets.isEmpty()) continue;
+			//skip products with no assets, or products we've already iterated. (sheet1 can contain duplicate entries)
+			if (assets == null || assets.isEmpty() || completedProds.contains(vo.getProductId())) continue;
+			completedProds.add(vo.getProductId());
 
 			for (MediaBinAssetVO asset : assets) {
 				Map<String, Object> row = new HashMap<>();
@@ -120,8 +135,10 @@ public class EMEAProductCatalogReport extends AbstractSBReportVO {
 				row.put("prodNm", vo.getProductName());
 				row.put("trackingNo", asset.getTrackingNoTxt());
 				row.put("assetTitle", asset.getTitleTxt());
-				row.put("assetType", asset.getAssetType());
-				row.put("assetFile", asset.getFileNm());
+				row.put("assetLang", asset.getLanguageCode());
+				row.put("assetDesc", asset.getAssetDesc());
+				row.put("assetUpdateDt", Convert.formatDate(asset.getModifiedDt(), Convert.DATETIME_DASH_PATTERN));
+				row.put("assetFile", asset.getAssetNm());
 				rows.add(row);
 			}
 		}
@@ -133,5 +150,6 @@ public class EMEAProductCatalogReport extends AbstractSBReportVO {
 	@Override
 	public void setData(Object o) {
 		data = (List<EMEAProductCatalogReportVO>) o;
+		Collections.sort(data); //put the products into alphabetical order using the Compareable interface
 	}
 }

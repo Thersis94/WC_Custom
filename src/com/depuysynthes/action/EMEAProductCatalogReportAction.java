@@ -97,6 +97,7 @@ public class EMEAProductCatalogReportAction extends SimpleActionAdapter {
 
 		EMEAProductCatalogReport rpt = new EMEAProductCatalogReport();
 		rpt.setData(data);
+		rpt.setCatalogName(req.getParameter("catalogNm"));
 		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, true);
 		req.setAttribute(Constants.BINARY_DOCUMENT, rpt);
 	}
