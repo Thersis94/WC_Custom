@@ -46,11 +46,11 @@ public class AdminControllerAction extends SimpleActionAdapter {
 
 	@Override
 	public void build(SMTServletRequest req) throws ActionException {
-		String cPage = StringUtil.checkVal(req.getParameter("cPage"));
+		String actionType = StringUtil.checkVal(req.getParameter("actionType"));
 		String msg = (String) attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 
 		try {
-			loadAction(cPage).build(req);
+			loadAction(actionType).build(req);
 		} catch (ActionException ae) {
 			log.error("could not forward requested Action.", ae.getCause());
 			msg = (String) attributes.get(AdminConstants.KEY_ERROR_MESSAGE);
@@ -59,15 +59,15 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		StringBuilder url = new StringBuilder(200);
 		url.append(page.getFullPath()).append("?msg=").append(msg);
-		url.append("&cPage=").append(cPage);
+		url.append("&actionType=").append(actionType);
 
 		sbUtil.manualRedirect(req, url.toString());
 	}
 
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
-		String cPage = StringUtil.checkVal(req.getParameter("cPage"));
-		loadAction(cPage).retrieve(req);
+		String actionType = StringUtil.checkVal(req.getParameter("actionType"));
+		loadAction(actionType).retrieve(req);
 	}
 
 
@@ -77,9 +77,9 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	private SMTActionInterface loadAction(String cPage) throws ActionException {
+	private SMTActionInterface loadAction(String actionType) throws ActionException {
 		SMTActionInterface action;
-		switch (StringUtil.checkVal(cPage)) {
+		switch (StringUtil.checkVal(actionType)) {
 			case "gapAnalysis":
 				action = new GapFacadeAction();
 				break;
@@ -90,10 +90,9 @@ public class AdminControllerAction extends SimpleActionAdapter {
 				throw new ActionException("Action type not supported.");
 		}
 
-		if(action != null) {
-			action.setDBConnection(dbConn);
-			action.setAttributes(getAttributes());
-		}
+		action.setDBConnection(dbConn);
+		action.setAttributes(getAttributes());
+
 		return action;
 	}
 }
