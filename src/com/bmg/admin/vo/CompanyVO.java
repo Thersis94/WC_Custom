@@ -84,8 +84,7 @@ public class CompanyVO {
 		peopleNo = Convert.formatInteger(req.getParameter("peopleNo"));
 		fiscalYearEnd = req.getParameter("fiscalYearEnd");
 		if (req.hasParameter("investors")) {
-			for (String s : req.getParameterValues(("investors"))) {
-				System.out.println(s+"|"+(investors == null));
+			for (String s : req.getParameterValues("investors")) {
 				investors.add(s);
 			}
 		}
