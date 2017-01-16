@@ -37,7 +37,8 @@ public class LocationVO {
 	private int primaryLocFlg;
 	
 	public LocationVO() {
-		
+		// Default constructor created to allow creation of this
+		// vo without needing a servlet request.
 	}
 	
 	public LocationVO(SMTServletRequest req) {

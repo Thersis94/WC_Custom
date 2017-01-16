@@ -32,7 +32,10 @@ public class AllianceVO {
 	private String referenceText;
 	private int orderNo;
 	
-	public AllianceVO(){}
+	public AllianceVO(){
+		// Default constructor created to allow creation of this
+		// vo without needing a servlet request.
+	}
 	
 	public AllianceVO(SMTServletRequest req) {
 		setData(req);

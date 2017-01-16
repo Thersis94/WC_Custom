@@ -33,6 +33,8 @@ import com.smt.sitebuilder.common.constants.Constants;
 
 public class CompanyManagementAction extends SimpleActionAdapter {
 	
+	private final String ACTION_TYPE = "actionType";
+	
 	private enum actionType {
 		COMPANY, LOCATION, ALLIANCE
 	}
@@ -78,7 +80,6 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 */
 	private void retrieveCompanies(SMTServletRequest req) throws ActionException {
 		List<Object> params = new ArrayList<>();
-		List<Object> companies = null;
 		String customDb = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("select c.*, CASE WHEN (ci.investee_company_id  is null) THEN 0 ELSE 1 end as INVESTED_FLG ");
@@ -96,7 +97,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 		int page = Convert.formatInteger(req.getParameter("page"), 0);
 		
 		DBProcessor db = new DBProcessor(dbConn);
-		companies = db.executeSelect(sql.toString(), params, new CompanyVO());
+		List<Object> companies = db.executeSelect(sql.toString(), params, new CompanyVO());
 		int end = companies.size() < rpp*(page+1)? companies.size() : rpp*(page+1);
 		super.putModuleData(companies.subList(rpp*page, end), companies.size(), false);
 	}
@@ -206,45 +207,88 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 * @throws ActionException
 	 */
 	private void updateElement(SMTServletRequest req) throws ActionException {
-		actionType action = actionType.valueOf(req.getParameter("actionType"));
+		actionType action = actionType.valueOf(req.getParameter(ACTION_TYPE));
 		DBProcessor db = new DBProcessor(dbConn, (String) attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		switch(action) {
+			case COMPANY:
+				CompanyVO c = new CompanyVO(req);
+				saveCompany(c, db);
+				break;
+			case LOCATION:
+				LocationVO l = new LocationVO(req);
+				saveLocation(l, db);
+				break;
+			case ALLIANCE:
+				AllianceVO a = new AllianceVO(req);
+				saveAlliance(a, db);
+				break;
+		}
+	}
+
+	
+	/**
+	 * Check whether the supplied alliance needs to be updated or inserted and do so.
+	 * @param a
+	 * @param db
+	 * @throws ActionException
+	 */
+	private void saveAlliance(AllianceVO a, DBProcessor db) throws ActionException {
 		try {
-			switch(action) {
-				case COMPANY:
-					CompanyVO c = new CompanyVO(req);
-					if (StringUtil.isEmpty(c.getCompanyId())) {
-						c.setCompanyId(new UUIDGenerator().getUUID());
-						db.insert(c);
-					} else {
-						db.update(c);
-					}
-					updateInvestors(c);
-					break;
-				case LOCATION:
-					LocationVO l = new LocationVO(req);
-					if (StringUtil.isEmpty(l.getLocationId())) {
-						l.setLocationId(new UUIDGenerator().getUUID());
-						db.insert(l);
-					} else {
-						db.update(l);
-					}
-					break;
-				case ALLIANCE:
-					AllianceVO a = new AllianceVO(req);
-					if (StringUtil.isEmpty(a.getAllianceId())) {
-						a.setAllianceId(new UUIDGenerator().getUUID());
-						db.insert(a);
-					} else {
-						db.update(a);
-					}
-					break;
+			if (StringUtil.isEmpty(a.getAllianceId())) {
+				a.setAllianceId(new UUIDGenerator().getUUID());
+				db.insert(a);
+			} else {
+				db.update(a);
+			}
+		} catch (Exception e) {
+			throw new ActionException(e);
+		}
+		
+	}
+
+	
+	/**
+	 * Check whether the supplied location needs to be updated or inserted and do so.
+	 * @param l
+	 * @param db
+	 * @throws ActionException
+	 */
+	private void saveLocation(LocationVO l, DBProcessor db) throws ActionException {
+		try {
+			if (StringUtil.isEmpty(l.getLocationId())) {
+				l.setLocationId(new UUIDGenerator().getUUID());
+				db.insert(l);
+			} else {
+				db.update(l);
 			}
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}
 	}
 
-	
+
+	/**
+	 * Check whether we need to insert or update the supplied vo and do so.
+	 * Then update the investors for the company.
+	 * @param c
+	 * @param db
+	 * @throws ActionException
+	 */
+	private void saveCompany(CompanyVO c, DBProcessor db) throws ActionException {
+		try {
+			if (StringUtil.isEmpty(c.getCompanyId())) {
+				c.setCompanyId(new UUIDGenerator().getUUID());
+					db.insert(c);
+			} else {
+				db.update(c);
+			}
+			updateInvestors(c);
+		} catch (Exception e) {
+			throw new ActionException(e);
+		}
+	}
+
+
 	/**
 	 * Update the investors of a company but deleting all current investors and
 	 * adding all supplied investors as the new list.
@@ -300,7 +344,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 * @throws ActionException
 	 */
 	private void deleteElement(SMTServletRequest req) throws ActionException {
-		actionType action = actionType.valueOf(req.getParameter("actionType"));
+		actionType action = actionType.valueOf(req.getParameter(ACTION_TYPE));
 		DBProcessor db = new DBProcessor(dbConn, (String) attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		try {
 		switch(action) {
@@ -362,7 +406,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 		
 		//if a company is being deleted do not redirect the user to a company page
 		if (!"delete".equals(buildAction) || 
-				actionType.valueOf(req.getParameter("actionType")) != actionType.COMPANY) {
+				actionType.valueOf(req.getParameter(ACTION_TYPE)) != actionType.COMPANY) {
 			url.append("&companyId=").append(req.getParameter("companyId"));
 		}
 		
