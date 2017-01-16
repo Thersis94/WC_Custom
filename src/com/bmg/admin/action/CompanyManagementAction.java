@@ -35,7 +35,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	
 	public static final String ACTION_TYPE = "actionType";
 	
-	private enum actionType {
+	private enum ActionType {
 		COMPANY, LOCATION, ALLIANCE
 	}
 	
@@ -207,7 +207,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 * @throws ActionException
 	 */
 	private void updateElement(SMTServletRequest req) throws ActionException {
-		actionType action = actionType.valueOf(req.getParameter(ACTION_TYPE));
+		ActionType action = ActionType.valueOf(req.getParameter(ACTION_TYPE));
 		DBProcessor db = new DBProcessor(dbConn, (String) attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		switch(action) {
 			case COMPANY:
@@ -344,7 +344,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 * @throws ActionException
 	 */
 	private void deleteElement(SMTServletRequest req) throws ActionException {
-		actionType action = actionType.valueOf(req.getParameter(ACTION_TYPE));
+		ActionType action = ActionType.valueOf(req.getParameter(ACTION_TYPE));
 		DBProcessor db = new DBProcessor(dbConn, (String) attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		try {
 		switch(action) {
@@ -406,7 +406,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 		
 		//if a company is being deleted do not redirect the user to a company page
 		if (!"delete".equals(buildAction) || 
-				actionType.valueOf(req.getParameter(ACTION_TYPE)) != actionType.COMPANY) {
+				ActionType.valueOf(req.getParameter(ACTION_TYPE)) != ActionType.COMPANY) {
 			url.append("&companyId=").append(req.getParameter("companyId"));
 		}
 		
