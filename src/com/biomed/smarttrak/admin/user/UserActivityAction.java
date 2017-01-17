@@ -134,28 +134,27 @@ public class UserActivityAction extends SimpleActionAdapter {
 		UserDataVO profile;
 		long lastAccess;
 		UserActivityVO vo;
-		if (sessionIds != null) {
-			for (String sessionId : sessionIds) {
-				if (sessionId.length() == 0) continue;
-				try {
-					// retrieve the site tracking ID and compare with our target site ID.
-					sessionTrackId = (String)mbServer.invoke(mbObj, OP_GET_ATTRIBUTE, new Object[]{sessionId, KEY_SITE_TRACK_ID}, new String[]{String.class.getName(),String.class.getName()});
-					if (sessionTrackId.equals(targetSiteId)) {
-						// retrieve the user's profile.
-						profile = (UserDataVO)mbServer.invoke(mbObj, OP_GET_ATTRIBUTE, new Object[]{sessionId, KEY_USER_DATA}, new String[]{String.class.getName(),String.class.getName()});
-						if (profile != null) {
-							// retrieve the user's most recent access time.
-							lastAccess = (Long)mbServer.invoke(mbObj, OP_GET_LAST_ACCESS, new Object[]{sessionId}, new String[]{String.class.getName()});
-							vo = new UserActivityVO();
-							vo.setSessionId(sessionId);
-							vo.setProfile(profile);
-							vo.setLastAccessTime(lastAccess);
-							userActivity.add(vo);
-						}
+		if (sessionIds == null) return userActivity; 
+		for (String sessionId : sessionIds) {
+			if (sessionId.length() == 0) continue;
+			try {
+				// retrieve the site tracking ID and compare with our target site ID.
+				sessionTrackId = (String)mbServer.invoke(mbObj, OP_GET_ATTRIBUTE, new Object[]{sessionId, KEY_SITE_TRACK_ID}, new String[]{String.class.getName(),String.class.getName()});
+				if (sessionTrackId.equals(targetSiteId)) {
+					// retrieve the user's profile.
+					profile = (UserDataVO)mbServer.invoke(mbObj, OP_GET_ATTRIBUTE, new Object[]{sessionId, KEY_USER_DATA}, new String[]{String.class.getName(),String.class.getName()});
+					if (profile != null) {
+						// retrieve the user's most recent access time.
+						lastAccess = (Long)mbServer.invoke(mbObj, OP_GET_LAST_ACCESS, new Object[]{sessionId}, new String[]{String.class.getName()});
+						vo = new UserActivityVO();
+						vo.setSessionId(sessionId);
+						vo.setProfile(profile);
+						vo.setLastAccessTime(lastAccess);
+						userActivity.add(vo);
 					}
-				} catch (Exception e) {
-					log.error("Error retrieving session data for session ID: " + sessionId + ", ", e);
 				}
+			} catch (Exception e) {
+				log.error("Error retrieving session data for session ID: " + sessionId + ", ", e);
 			}
 		}
 		return userActivity;
