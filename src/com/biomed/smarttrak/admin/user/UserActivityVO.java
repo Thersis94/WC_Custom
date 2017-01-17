@@ -1,7 +1,7 @@
 package com.biomed.smarttrak.admin.user;
 
-import java.util.Calendar;
 //Java 7
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
