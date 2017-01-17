@@ -71,6 +71,7 @@ public class EMEAProductCatalogReport extends AbstractSBReportVO {
 		row.put("prodNm", "Product Name");
 		row.put("urlAlias", "URL Alias");
 		row.put("sousName", "SOUS Product Name");
+		row.put("types", "Attribute Type(s)");
 		row.put("assetCnt", "Asset Count");
 		row.put("hierarchy", "Body Region Hierarchy");
 		return row;
@@ -89,6 +90,7 @@ public class EMEAProductCatalogReport extends AbstractSBReportVO {
 			row.put("prodNm", vo.getProductName());
 			row.put("urlAlias", vo.getUrlAlias());
 			row.put("sousName", vo.getSousProductName());
+			row.put("types", StringUtil.getToString(vo.getAttributeTypes(), false, false, ", "));
 			row.put("assetCnt", vo.getAssetCount());
 			row.put("hierarchy", StringUtil.replace(vo.getHierarchy(), DSMediaBinImporterV2.TOKENIZER, ", "));
 			rows.add(row);

@@ -226,14 +226,17 @@ public class EMEAProductCatalogReportAction extends SimpleActionAdapter {
 			switch (StringUtil.checkVal(attr.getTitle())) {
 			case "mediabin-static":
 				foundIds = convertFromJson(attr.getValueText());
+				vo.addAttributeType("static-json");
 				break;
 			case "mediabin-sous":
 				//take the update date of the Attribute if it's newer than the product and contains assets.
 				foundIds = findAssetsForSous(vo.getSousProductName());
+				vo.addAttributeType("dynamic-sous");
 				break;
 			default:
 				//static HTML, use a regex to parse the HTML for mediabin links
 				foundIds = findAssetsInHtml(attr.getValueText());
+				vo.addAttributeType("static-html");
 			}
 			assetIds.addAll(foundIds);
 		}

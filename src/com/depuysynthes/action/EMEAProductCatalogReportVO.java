@@ -1,7 +1,9 @@
 package com.depuysynthes.action;
 
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.siliconmtn.commerce.catalog.ProductAttributeVO;
 import com.siliconmtn.commerce.catalog.ProductVO;
@@ -29,6 +31,7 @@ public class EMEAProductCatalogReportVO implements Comparable<EMEAProductCatalog
 	private Date updateDate;
 	private List<MediaBinAssetVO> assets;
 	private List<ProductAttributeVO> attrs;
+	private Set<String> attributeTypes;
 
 	public EMEAProductCatalogReportVO(ProductVO prod, List<ProductAttributeVO> attrs) {
 		super();
@@ -39,6 +42,7 @@ public class EMEAProductCatalogReportVO implements Comparable<EMEAProductCatalog
 		setSousProductName(prod.getFullProductName());
 		setHierarchy(prod.getAttrib1Txt());
 		setUpdateDate(prod.getLastUpdate());
+		attributeTypes = new HashSet<>();
 	}
 
 	public String getProductId() {
@@ -123,5 +127,13 @@ public class EMEAProductCatalogReportVO implements Comparable<EMEAProductCatalog
 		} else {
 			return getProductName().toLowerCase().compareTo(StringUtil.checkVal(o.getProductName()).toLowerCase());
 		}
+	}
+
+	public String[] getAttributeTypes() {
+		return attributeTypes.toArray(new String[attributeTypes.size()]);
+	}
+
+	public void addAttributeType(String type) {
+		attributeTypes.add(type);
 	}
 }
