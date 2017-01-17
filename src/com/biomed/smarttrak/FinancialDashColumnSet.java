@@ -1,10 +1,7 @@
 package com.biomed.smarttrak;
 
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
-import org.mortbay.log.Log;
 
 /****************************************************************************
  * <b>Title</b>: FinancialDashColumnSet.java<p/>
