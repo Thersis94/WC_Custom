@@ -20,8 +20,8 @@ import com.smt.sitebuilder.action.SBModuleVO;
 public class FinancialDashDataRowVO extends SBModuleVO {
 
 	private static final long serialVersionUID = 1L;
-	private String name = "";
-	private String primaryKey = "";
+	private String name;
+	private String primaryKey;
 	private Map<String, FinancialDashDataColumnVO> columns;
 	
 	public FinancialDashDataRowVO() {

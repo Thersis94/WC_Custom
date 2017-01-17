@@ -24,10 +24,10 @@ import com.smt.sitebuilder.action.SBModuleVO;
 public class FinancialDashVO extends SBModuleVO {
 	
 	private static final long serialVersionUID = 1L;
-	private String nameCol = "";
+	private String nameCol;
 	private Map<String, String> colHeaders;
 	private List<FinancialDashDataRowVO> rows;
-
+	
 	public FinancialDashVO() {
 		colHeaders = new LinkedHashMap<>();
 		rows = new ArrayList<>();
@@ -49,13 +49,6 @@ public class FinancialDashVO extends SBModuleVO {
 	// TODO: Remove this after there is real data to work with.
 	public void setTempData() {
 		Random rand = new Random();
-		
-		this.setNameCol("Company / Partner");
-		this.addColHeader("q116", "Q116");
-		this.addColHeader("q216", "Q216");
-		this.addColHeader("q316", "Q316");
-		this.addColHeader("q416", "Q416");
-		this.addColHeader("cy16", "CY2016");
 		
 		FinancialDashDataRowVO row;
 		UUIDGenerator uuidGen = new UUIDGenerator();
@@ -98,6 +91,20 @@ public class FinancialDashVO extends SBModuleVO {
 		this.colHeaders = colHeaders;
 	}
 	
+	/**
+	 * Sets a list of columns for the dynamically generated tables/columns,
+	 * based on the passed display type.
+	 * 
+	 * @param displayType
+	 * @param calendarYear
+	 */
+	public void setColHeaders(String displayType, Integer calendarYear) {
+		this.setNameCol("Company / Partner");
+		
+		FinancialDashColumnSet colSet = new FinancialDashColumnSet(displayType, calendarYear);
+		this.setColHeaders(colSet.getColumns());
+	}
+
 	/**
 	 * @param rows the rows to set
 	 */

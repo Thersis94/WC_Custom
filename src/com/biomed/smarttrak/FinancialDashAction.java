@@ -3,6 +3,7 @@ package com.biomed.smarttrak;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -37,8 +38,13 @@ public class FinancialDashAction extends SBActionAdapter {
 		super.retrieve(req);
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		
+		String displayType = StringUtil.checkVal(req.getParameter("displayType"), "CURYR");
+		Integer calendarYear = Convert.formatInteger(req.getParameter("calendarYear"), Convert.getCurrentYear());
+
 		FinancialDashVO dash = new FinancialDashVO();
+		dash.setColHeaders(displayType, calendarYear);
 		dash.setTempData();
+
 		this.putModuleData(dash);
 	}
 	
@@ -58,12 +64,5 @@ public class FinancialDashAction extends SBActionAdapter {
 
 	public void update(SMTServletRequest req) throws ActionException {
 		super.update(req);
-	}
-	
-	/**
-	 * Gets a list of columns for the dynamically generated tables
-	 */
-	private void getColumns() {
-		
 	}
 }
