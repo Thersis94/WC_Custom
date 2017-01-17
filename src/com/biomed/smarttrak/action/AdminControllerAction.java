@@ -3,6 +3,7 @@
  */
 package com.biomed.smarttrak.action;
 
+import com.biomed.smarttrak.FinancialDashAction;
 import com.biomed.smarttrak.admin.ContentHierarchyAction;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -81,6 +82,9 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		switch (StringUtil.checkVal(actionType)) {
 			case "contentHierarchy":
 				action = new ContentHierarchyAction();
+				break;
+			case "financialDashboard":
+				action = new FinancialDashAction();
 				break;
 			default:
 				throw new ActionException("Action type not supported.");
