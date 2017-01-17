@@ -66,19 +66,19 @@ public class InsightBlogAction extends SBActionAdapter {
 			super.list(req);
 			BlogFacadeAction bfa = new BlogFacadeAction();
 			
-			bfa.setDBConnection(dbConn);
+			/*bfa.setDBConnection(dbConn);
 			bfa.setActionInit(actionInit);
 			bfa.setAttributes(attributes);
-			bfa.list(req);
+			bfa.list(req);*/
 		}else {
 			super.retrieve(req);
 			
 			BlogFacadeAction bfa = new BlogFacadeAction();
 			
-			bfa.setDBConnection(dbConn);
+			/*bfa.setDBConnection(dbConn);
 			bfa.setActionInit(actionInit);
 			bfa.setAttributes(attributes);
-			bfa.retrieve(req);
+			bfa.retrieve(req);*/
 		}
 		
 		log.debug("post super call " + actionInit.getActionId());
@@ -106,10 +106,10 @@ public class InsightBlogAction extends SBActionAdapter {
 		//TODO call retrive on BFA with the right id
 		BlogFacadeAction bfa = new BlogFacadeAction();
 		
-		bfa.setDBConnection(dbConn);
+		/*bfa.setDBConnection(dbConn);
 		bfa.setActionInit(actionInit);
 		bfa.setAttributes(attributes);
-		bfa.update(req);
+		bfa.update(req);*/
 		
 		//TODO might need to move data from admin module to public module
 		
@@ -138,10 +138,10 @@ public class InsightBlogAction extends SBActionAdapter {
 		//TODO call retrive on BFA with the right id
 		BlogFacadeAction bfa = new BlogFacadeAction();
 		
-		bfa.setDBConnection(dbConn);
+		/*bfa.setDBConnection(dbConn);
 		bfa.setActionInit(actionInit);
 		bfa.setAttributes(attributes);
-		bfa.delete(req);
+		bfa.delete(req);*/
 		
 		
 		
