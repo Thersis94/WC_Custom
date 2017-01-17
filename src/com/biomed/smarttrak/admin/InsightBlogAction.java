@@ -5,7 +5,6 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.action.blog.BlogFacadeAction;
 
 /****************************************************************************
  * <b>Title</b>: insightBlogAction.java <p/>
@@ -57,28 +56,16 @@ public class InsightBlogAction extends SBActionAdapter {
 	public void list(SMTServletRequest req) throws ActionException {
 		log.debug("insite blog action list called " + actionInit.getActionId());
 		
-		log.debug("bbbbbbbb action id: " + actionInit.getActionId());
+		log.debug(" action id: " + actionInit.getActionId());
 		actionInit.setActionId("eb19b0e489ade9bd7f000101577715c8");
-		log.debug("bbbbbbbb action id: " + actionInit.getActionId());
+		log.debug(" action id: " + actionInit.getActionId());
 		
 		if(Convert.formatBoolean(req.getParameter("manmod"))){
 			
 			super.list(req);
-			BlogFacadeAction bfa = new BlogFacadeAction();
-			
-			/*bfa.setDBConnection(dbConn);
-			bfa.setActionInit(actionInit);
-			bfa.setAttributes(attributes);
-			bfa.list(req);*/
+		
 		}else {
 			super.retrieve(req);
-			
-			BlogFacadeAction bfa = new BlogFacadeAction();
-			
-			/*bfa.setDBConnection(dbConn);
-			bfa.setActionInit(actionInit);
-			bfa.setAttributes(attributes);
-			bfa.retrieve(req);*/
 		}
 		
 		log.debug("post super call " + actionInit.getActionId());
@@ -95,23 +82,14 @@ public class InsightBlogAction extends SBActionAdapter {
 		
 		super.update(req);
 		
-		//TODO get the correct blog id for the insight blog
+		// get the correct blog id for the insight blog
 		
-		//TODO change action id to the right blog id
-		log.debug("bbbbbbbb action id: " + actionInit.getActionId());
+		// change action id to the right blog id
+		log.debug(" action id: " + actionInit.getActionId());
 		actionInit.setActionId("eb19b0e489ade9bd7f000101577715c8");
-		log.debug("bbbbbbbb action id: " + actionInit.getActionId());
+		log.debug(" action id: " + actionInit.getActionId());
 		
-		
-		//TODO call retrive on BFA with the right id
-		BlogFacadeAction bfa = new BlogFacadeAction();
-		
-		/*bfa.setDBConnection(dbConn);
-		bfa.setActionInit(actionInit);
-		bfa.setAttributes(attributes);
-		bfa.update(req);*/
-		
-		//TODO might need to move data from admin module to public module
+		// might need to move data from admin module to public module
 		
 		log.debug("post super call " + actionInit.getActionId());
 	
@@ -127,49 +105,15 @@ public class InsightBlogAction extends SBActionAdapter {
 		log.debug("insite blog action delete called");
 		super.delete(req);
 		
-		//TODO get the correct blog id for the insight blog
+		// get the correct blog id for the insight blog
 		
-		//TODO change action id to the right blog id
-		log.debug("bbbbbbbb action id: " + actionInit.getActionId());
+		// change action id to the right blog id
+		log.debug(" action id: " + actionInit.getActionId());
 		actionInit.setActionId("eb19b0e489ade9bd7f000101577715c8");
-		log.debug("bbbbbbbb action id: " + actionInit.getActionId());
+		log.debug(" action id: " + actionInit.getActionId());
 		
-		
-		//TODO call retrive on BFA with the right id
-		BlogFacadeAction bfa = new BlogFacadeAction();
-		
-		/*bfa.setDBConnection(dbConn);
-		bfa.setActionInit(actionInit);
-		bfa.setAttributes(attributes);
-		bfa.delete(req);*/
-		
-		
-		
+
 	}
-	
-	/**
-	 * in the admintool parts of the site and pageVOs were missing.  data for use in the 
-	 *      admintool is added in this method.
-	 * @param page 
-	 * @param site 
-	 * @param req
-	 * @param sb 
-	 * @param sb 
-	 * @return 
-	 */
-/*	private void wrapPageSite(SiteVO site, PageVO page, SMTServletRequest req) {
-		
-		if (site != null && site.getMainEmail() == null)
-			site.setMainEmail(AdminConstants.ADMIN_FROM_EMAIL);
 
-		req.setAttribute(Constants.SITE_DATA, site);
-
-		if (page == null) {
-			page = new PageVO();
-			page.setRequestURI("/" + getAttribute(Constants.CONTEXT_NAME) +  getAttribute(AdminConstants.ADMIN_TOOL_PATH));
-			req.setAttribute(Constants.PAGE_DATA, page);
-		}
-		
-	}*/
 	
 }
