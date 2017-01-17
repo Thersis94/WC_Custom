@@ -121,43 +121,59 @@ public class UserActivityAction extends SimpleActionAdapter {
 	 * Retrieves session attributes for a list of sessions that match a target site ID.
 	 * @param mbServer
 	 * @param mbObj
-	 * @param userActivity
+	 * @param sessionLog
 	 * @param sessionIdList
 	 * @param targetSiteId
-	 * @return List of UserActivityVO
+	 * @return
 	 */
 	private List<UserActivityVO> retrieveSessionAttributes(MBeanServer mbServer, ObjectName mbObj, 
-			List<UserActivityVO> userActivity, String sessionIdList, String targetSiteId) {
+			List<UserActivityVO> sessionLogs, String sessionIdList, String targetSiteId) {
 		// parse the session ID list into an array
 		String[] sessionIds = sessionIdList.split(" ");
-		String sessionTrackId;
-		UserDataVO profile;
-		long lastAccess;
-		UserActivityVO vo;
-		if (sessionIds == null) return userActivity; 
+		if (sessionIds == null) return sessionLogs;
+		
 		for (String sessionId : sessionIds) {
 			if (sessionId.length() == 0) continue;
 			try {
-				// retrieve the site tracking ID and compare with our target site ID.
-				sessionTrackId = (String)mbServer.invoke(mbObj, OP_GET_ATTRIBUTE, new Object[]{sessionId, KEY_SITE_TRACK_ID}, new String[]{String.class.getName(),String.class.getName()});
-				if (sessionTrackId.equals(targetSiteId)) {
-					// retrieve the user's profile.
-					profile = (UserDataVO)mbServer.invoke(mbObj, OP_GET_ATTRIBUTE, new Object[]{sessionId, KEY_USER_DATA}, new String[]{String.class.getName(),String.class.getName()});
-					if (profile != null) {
-						// retrieve the user's most recent access time.
-						lastAccess = (Long)mbServer.invoke(mbObj, OP_GET_LAST_ACCESS, new Object[]{sessionId}, new String[]{String.class.getName()});
-						vo = new UserActivityVO();
-						vo.setSessionId(sessionId);
-						vo.setProfile(profile);
-						vo.setLastAccessTime(lastAccess);
-						userActivity.add(vo);
-					}
-				}
+				// process user session
+				processUserSession(mbServer,mbObj, sessionLogs, sessionId,targetSiteId);
 			} catch (Exception e) {
 				log.error("Error retrieving session data for session ID: " + sessionId + ", ", e);
 			}
 		}
-		return userActivity;
+		return sessionLogs;
+	}
+	
+	/**
+	 * Retrieves and processes user's session.
+	 * @param mbServer
+	 * @param mbObj
+	 * @param sessionLogs
+	 * @param sessionId
+	 * @param targetSiteId
+	 * @throws InstanceNotFoundException
+	 * @throws ReflectionException
+	 * @throws MBeanException
+	 */
+	private void processUserSession(MBeanServer mbServer, ObjectName mbObj, 
+			List<UserActivityVO> sessionLogs, String sessionId, String targetSiteId) 
+					throws InstanceNotFoundException, ReflectionException, MBeanException {
+		String userTrackId = (String)mbServer.invoke(mbObj, OP_GET_ATTRIBUTE, new Object[]{sessionId, KEY_SITE_TRACK_ID}, new String[]{String.class.getName(),String.class.getName()});
+		if (userTrackId.equals(targetSiteId)) {
+			long lastAccess;
+			UserActivityVO vo;
+			// retrieve the user's profile.
+			UserDataVO profile = (UserDataVO)mbServer.invoke(mbObj, OP_GET_ATTRIBUTE, new Object[]{sessionId, KEY_USER_DATA}, new String[]{String.class.getName(),String.class.getName()});
+			if (profile != null) {
+				// retrieve the user's most recent access time.
+				lastAccess = (Long)mbServer.invoke(mbObj, OP_GET_LAST_ACCESS, new Object[]{sessionId}, new String[]{String.class.getName()});
+				vo = new UserActivityVO();
+				vo.setSessionId(sessionId);
+				vo.setProfile(profile);
+				vo.setLastAccessTime(lastAccess);
+				sessionLogs.add(vo);
+			}
+		}
 	}
 
 	/**
