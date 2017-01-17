@@ -130,10 +130,10 @@ public class UserActivityAction extends SimpleActionAdapter {
 			List<UserActivityVO> userActivity, String sessionIdList, String targetSiteId) {
 		// parse the session ID list into an array
 		String[] sessionIds = sessionIdList.split(" ");
-		String sessionTrackId = null;
-		UserDataVO profile = null;
-		long lastAccess = 0;
-		UserActivityVO vo = null;
+		String sessionTrackId;
+		UserDataVO profile;
+		long lastAccess;
+		UserActivityVO vo;
 		if (sessionIds != null) {
 			for (String sessionId : sessionIds) {
 				if (sessionId.length() == 0) continue;
@@ -164,20 +164,52 @@ public class UserActivityAction extends SimpleActionAdapter {
 	/**
 	 * Retrieves user activity log data and merges it with user session data. 
 	 */
-	private void retrieveLoggedActivity(List<UserActivityVO> activityLog) {
+	private void retrieveLoggedActivity(List<UserActivityVO> sessionLogs) {
 		// 1. retrieve activity log data for a certain time TIME_INTERVAL (? 8, 12, 24 hours ?)
 		/* TODO 
-		 * 1. retrieve user activity data from activity log (page views, etc.)
-		 * 2. merge activity data with user's session data
+		 * 1. retrieve user activity data from activity log (page views, etc.) */
+		List<UserActivityVO> pageLogs = retrievePageLogs();
+		/* 2. merge activity data with user's session data
 		 * 		2a. add new vo to List for each user who has log data within requested TIME_INTERVAL
 		 * 			but who currently doesn't have a session.  Determine 'last accessed' time from 
 		 * 			user's log data timestamp.
 		 * 		2b. Need to use a field on the PageVO as an indicator as to the page link type 
 		 * 			 (archives, markets, companies, products, or just a page) for the links we will
 		 * 			 build in the JSTL.  We don't build a link for a page, but do build a link for a company or an
-		 * 			 article.
-		 * 3. sort via comparator?
+		 * 			 article. */
+		mergeLogs(sessionLogs, pageLogs);
+		 /* 3. sort via comparator?
 		 */
+	}
+	
+	/**
+	 * 
+	 * @return
+	 */
+	private List<UserActivityVO> retrievePageLogs() {
+		/* retrieve logged data from db */
+		List<UserActivityVO> pageLogs = new ArrayList<>();
+		/*
+		 * retrieve logs from db for given time interval
+		 * collate/aggregate logs for each user into a vo
+		 */
+		return pageLogs;
+	}
+	
+	/**
+	 * 
+	 * @param sessionLogs
+	 * @param pageLogs
+	 */
+	private void mergeLogs(List<UserActivityVO> sessionLogs, List<UserActivityVO> pageLogs) {
+		/* loop page logs and merge session data into the list  */
+		for (UserActivityVO session : sessionLogs) {
+			for (UserActivityVO pages : pageLogs) {
+				if (session.getProfile().getProfileId().equals(pages.getProfile().getProfileId())) {
+					// merge.
+				}
+			}
+		}
 	}
 
 }
