@@ -13,7 +13,7 @@ import org.apache.solr.common.SolrDocument;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserRoleVO;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBModuleVO;
@@ -55,15 +55,15 @@ public class HuddleProductAction extends SimpleActionAdapter {
 	}
 
 	@Override
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
-		String param1 = StringUtil.checkVal(req.getParameter(SMTServletRequest.PARAMETER_KEY + "1"), null);
+		String param1 = StringUtil.checkVal(req.getParameter(ActionRequest.PARAMETER_KEY + "1"), null);
 
 		if (param1 != null) {
 			//load the details view for a single product
@@ -79,7 +79,7 @@ public class HuddleProductAction extends SimpleActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void detailSearch(SMTServletRequest req) throws ActionException {
+	private void detailSearch(ActionRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		UserRoleVO role = (UserRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
@@ -135,7 +135,7 @@ public class HuddleProductAction extends SimpleActionAdapter {
 	 * @param doc
 	 * @param req
 	 */
-	private void addProductAttributes(HuddleProductVO p, SolrDocument doc, SMTServletRequest req) {
+	private void addProductAttributes(HuddleProductVO p, SolrDocument doc, ActionRequest req) {
 		Map<String, Collection<Object>> subqueryList = new HashMap<>();
 		
 		// Loop through all items on the document looking for any prefixed with attribute types
@@ -184,7 +184,7 @@ public class HuddleProductAction extends SimpleActionAdapter {
 	/**
 	 * sends a suplimental Solr query for assets tied to this product
 	 */
-	private void runAssetLookup(HuddleProductVO p, Map<String, Collection<Object>> subqueryList, SMTServletRequest req) {
+	private void runAssetLookup(HuddleProductVO p, Map<String, Collection<Object>> subqueryList, ActionRequest req) {
 		//build a list of documentIds we need to lookup
 		Map<String, SolrDocument> solrDocs = new HashMap<>();
 		for (String name : subqueryList.keySet()) {
@@ -259,7 +259,7 @@ public class HuddleProductAction extends SimpleActionAdapter {
 	 * @param mediabin
 	 * @return 
 	 */
-	private List<SolrDocument> loadAttributeAssets(SMTServletRequest req, Set<String> mediabin) {
+	private List<SolrDocument> loadAttributeAssets(ActionRequest req, Set<String> mediabin) {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		UserRoleVO role = (UserRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
 		SolrQueryProcessor sqp = new SolrQueryProcessor(getAttributes(), getAttribute(Constants.SOLR_COLLECTION_NAME).toString());
@@ -288,7 +288,7 @@ public class HuddleProductAction extends SimpleActionAdapter {
 	 * @param mainCol
 	 * @throws ActionException
 	 */
-	private void listSearch(SMTServletRequest req, boolean mainCol) throws ActionException {
+	private void listSearch(ActionRequest req, boolean mainCol) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		String solrActionId = StringUtil.checkVal(mod.getAttribute(SBModuleVO.ATTRIBUTE_1));
 		actionInit.setActionId(solrActionId);
@@ -309,7 +309,7 @@ public class HuddleProductAction extends SimpleActionAdapter {
 	/**
 	 * Prepare the filter queries for solr
 	 */
-	private void prepareFilterQueries(SMTServletRequest req) {
+	private void prepareFilterQueries(ActionRequest req) {
 		// honor category and specialty pre-filters coming off the section homepages
 		if (req.hasParameter("category")) {
 			//String cat = StringUtil.capitalizePhrase(req.getParameter("category"), 0, " -");

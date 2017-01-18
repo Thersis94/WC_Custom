@@ -18,7 +18,7 @@ import com.siliconmtn.gis.GeocodeFactory;
 import com.siliconmtn.gis.GeocodeLocation;
 import com.siliconmtn.gis.Location;
 import com.siliconmtn.gis.USStateCoordinate;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
@@ -59,7 +59,7 @@ public class DataMapAction extends SBActionAdapter {
     /* (non-Javadoc)
      * @see com.siliconmtn.action.ActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
      */
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		String state = StringUtil.checkVal(req.getParameter("state"));
 		String zip = StringUtil.checkVal(req.getParameter("zip"));
 		GISCoordinateVO coord = new GISCoordinateVO();
@@ -89,7 +89,7 @@ public class DataMapAction extends SBActionAdapter {
 	}
 	
 	
-	public Map<Object, Object> getZipCodes(SMTServletRequest req, GISCoordinateVO coord) 
+	public Map<Object, Object> getZipCodes(ActionRequest req, GISCoordinateVO coord) 
 	throws ActionException {
 		log.debug("Getting zip codes near by");
 		if (StringUtil.checkVal(req.getParameter("zip")).length() == 0) return null;
@@ -223,7 +223,7 @@ public class DataMapAction extends SBActionAdapter {
 	
 	
 	@Override
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 }

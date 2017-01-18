@@ -1,11 +1,10 @@
 package com.depuysynthes.huddle;
 
-import javax.servlet.http.Cookie;
-
 import com.depuysynthes.huddle.solr.BlogSolrIndexer;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.http.session.SMTCookie;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBModuleVO;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
@@ -36,7 +35,7 @@ public class BlogAction extends SimpleActionAdapter {
 	}
 
 	@Override
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		BlogFacadeAction bfa = new BlogFacadeAction(actionInit);
 		bfa.setAttributes(getAttributes());
 		bfa.setDBConnection(dbConn);
@@ -49,7 +48,7 @@ public class BlogAction extends SimpleActionAdapter {
 
 
 	@Override
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		BlogFacadeAction bfa = new BlogFacadeAction(actionInit);
 		bfa.setAttributes(getAttributes());
 		bfa.setDBConnection(dbConn);
@@ -58,7 +57,7 @@ public class BlogAction extends SimpleActionAdapter {
 
 
 	@Override
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		BlogFacadeAction bfa = new BlogFacadeAction(actionInit);
 		bfa.setAttributes(getAttributes());
 		bfa.setDBConnection(dbConn);
@@ -96,10 +95,10 @@ public class BlogAction extends SimpleActionAdapter {
 	 * Solr makes faceting easy; otherwise it's a ton of manual labor we need to code.
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 
-		Cookie rppCook = req.getCookie(HuddleUtils.RPP_COOKIE);
+		SMTCookie rppCook = req.getCookie(HuddleUtils.RPP_COOKIE);
 		if (rppCook != null)
 			req.setParameter("rpp", rppCook.getValue());
 		

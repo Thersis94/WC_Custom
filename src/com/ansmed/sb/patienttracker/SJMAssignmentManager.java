@@ -14,7 +14,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.exception.MailException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -66,7 +66,7 @@ public class SJMAssignmentManager extends TrackerAction {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("SJMAssignmentManager retrieve...");
 		
 		SMTActionInterface sai = null;
@@ -94,7 +94,7 @@ public class SJMAssignmentManager extends TrackerAction {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		log.debug("SJMAssignmentManager build...");
 		AssignmentVO avo = new AssignmentVO();
 		avo.setData(req);
@@ -133,7 +133,7 @@ public class SJMAssignmentManager extends TrackerAction {
 	 * @param avo
 	 * @throws ActionException
 	 */
-	private void processAssignment(SMTServletRequest req, AssignmentVO avo,	boolean isCreateNewAssignment) 
+	private void processAssignment(ActionRequest req, AssignmentVO avo,	boolean isCreateNewAssignment) 
 			throws ActionException {
 		log.debug("processing assignment...");
 		
@@ -168,7 +168,7 @@ public class SJMAssignmentManager extends TrackerAction {
 	 * @param req
 	 * @param avo
 	 */
-	private void processRedirect(SMTServletRequest req, AssignmentVO avo, 
+	private void processRedirect(ActionRequest req, AssignmentVO avo, 
 			boolean isCreateNewAssignment, boolean isPatientCreated, boolean isDuplicate) {
 		// set up the redirect
 		StringBuffer url = new StringBuffer();
@@ -240,7 +240,7 @@ public class SJMAssignmentManager extends TrackerAction {
 	 * @param isInsert
 	 * @return
 	 */
-	private boolean checkForDuplicateAssignment(SMTServletRequest req, AssignmentVO avo) {
+	private boolean checkForDuplicateAssignment(ActionRequest req, AssignmentVO avo) {
 		log.debug("checking for duplicate assignment attempt");
 		boolean isDuplicate = false;
 		// only check for duplicate attempt if this is an insert.
@@ -276,7 +276,7 @@ public class SJMAssignmentManager extends TrackerAction {
 	 * @return
 	 * @throws ActionException
 	 */
-	private PatientVO createPatient (SMTServletRequest req) throws ActionException {
+	private PatientVO createPatient (ActionRequest req) throws ActionException {
 		log.debug("creating new patient...");
 		SMTActionInterface sai = new SJMPatientManager(actionInit);
 		sai.setDBConnection(dbConn);
@@ -293,7 +293,7 @@ public class SJMAssignmentManager extends TrackerAction {
 	 * Retrieves ambassadors and matches one with the patient.
 	 * @param avo
 	 */
-	private void retrieveAssigneeMatch(SMTServletRequest req, AssignmentVO avo) {
+	private void retrieveAssigneeMatch(ActionRequest req, AssignmentVO avo) {
 		log.debug("retrieving assignee match...");
 		AmbassadorRetriever sar = new AmbassadorRetriever();
 		sar.setDbConn(dbConn);
@@ -325,7 +325,7 @@ public class SJMAssignmentManager extends TrackerAction {
 	 * Processes status change and sets flags based on whether or not a status change has occurred.
 	 * @param req
 	 */
-	private void processEmailFlags(SMTServletRequest req, AssignmentVO avo) {
+	private void processEmailFlags(ActionRequest req, AssignmentVO avo) {
 		log.debug("processing flags...");
 		if (avo.getAssignmentId() != null) {  // is an UPDATE
 			// process certain status changes
@@ -385,7 +385,7 @@ public class SJMAssignmentManager extends TrackerAction {
 	 * @param req
 	 * @param avo
 	 */
-	private void processLoggingParameters(SMTServletRequest req, AssignmentVO avo) {
+	private void processLoggingParameters(ActionRequest req, AssignmentVO avo) {
 		boolean insert = false;
 		String actionType = StringUtil.checkVal(req.getParameter("actionType"));
 		if (avo.getAssignmentId() == null) insert = true;
@@ -484,7 +484,7 @@ public class SJMAssignmentManager extends TrackerAction {
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
-	private List<AssigneeVO> lookupAssignee(SMTServletRequest req, AssignmentVO avo) {
+	private List<AssigneeVO> lookupAssignee(ActionRequest req, AssignmentVO avo) {
 		log.debug("retrieving assignee data for assignment insert...");
 		SMTActionInterface sai = new AssigneeAction(actionInit);
 		sai.setAttributes(attributes);
@@ -510,7 +510,7 @@ public class SJMAssignmentManager extends TrackerAction {
 	 * @param actionType
 	 * @return
 	 */
-	private void retrieveTodaysAmbassadors(SMTServletRequest req, TrackerDataContainer tdc) {
+	private void retrieveTodaysAmbassadors(ActionRequest req, TrackerDataContainer tdc) {
 		log.debug("checking to see if need to retrieve today's ambassadors");
 		boolean getAmbs = false;
 		boolean checkLimit = true;
@@ -554,7 +554,7 @@ public class SJMAssignmentManager extends TrackerAction {
 	 * @param req
 	 * @param tdc
 	 */
-	private void retrieveAdditionalData(SMTServletRequest req, TrackerDataContainer tdc) 
+	private void retrieveAdditionalData(ActionRequest req, TrackerDataContainer tdc) 
 		throws ActionException {
 		log.debug("retrieving additional data...");
 		if ((StringUtil.checkVal(req.getParameter("actionType")).equals("assignment") || 
@@ -571,7 +571,7 @@ public class SJMAssignmentManager extends TrackerAction {
 	 * @param req
 	 * @param tdc
 	 */
-	private void doCustomSort(SMTServletRequest req, TrackerDataContainer tdc) {
+	private void doCustomSort(ActionRequest req, TrackerDataContainer tdc) {
 		String sortField = StringUtil.checkVal(req.getParameter("sortField"));
 		if (sortField.equalsIgnoreCase("actionStatus")) {
 			log.debug("sorting by actionStatus");
@@ -589,7 +589,7 @@ public class SJMAssignmentManager extends TrackerAction {
 	 * @throws ActionException
 	 * @throws MailException
 	 */
-	private void processNotifications(SMTServletRequest req, boolean isCreateNewAssignment) 
+	private void processNotifications(ActionRequest req, boolean isCreateNewAssignment) 
 		throws ActionException, MailException {
 		log.debug("processing notifications...");
 		if (emailType == 0) return;
@@ -615,7 +615,7 @@ public class SJMAssignmentManager extends TrackerAction {
 	 * @param avo
 	 * @throws SQLException
 	 */
-	private void updateCurrentAssignmentCount(SMTServletRequest req, AssignmentVO avo) {
+	private void updateCurrentAssignmentCount(ActionRequest req, AssignmentVO avo) {
 		log.debug("determining assignment count update");
 		int addCount = 0;
 		if (avo.getAssignmentId() == null) { // INSERT
@@ -690,7 +690,7 @@ public class SJMAssignmentManager extends TrackerAction {
 	 * @param emailType
 	 * @throws ActionException
 	 */
-	private void retrieveAdditionalNotificationData(SMTServletRequest req, TrackerDataContainer tdc) 
+	private void retrieveAdditionalNotificationData(ActionRequest req, TrackerDataContainer tdc) 
 		throws ActionException {
 		log.debug("retrieving additional notification data...");
 		if (emailType.equals(SJMTrackerConstants.STATUS_PENDING)) {
@@ -714,7 +714,7 @@ public class SJMAssignmentManager extends TrackerAction {
 	 * @param tdc
 	 * @throws ActionException
 	 */
-	private void retrievePatientSourceData(SMTServletRequest req, TrackerDataContainer tdc) throws ActionException {
+	private void retrievePatientSourceData(ActionRequest req, TrackerDataContainer tdc) throws ActionException {
 		log.debug("retrieving patient source data...");
 		// retrieve the contact submittal id for this patient from the assignment VO
 		// make sure we have data for retrieving patient source data.
@@ -745,7 +745,7 @@ public class SJMAssignmentManager extends TrackerAction {
 	 * @param req
 	 * @param tdc
 	 */
-	private void retrievePatientInteraction(SMTServletRequest req, TrackerDataContainer tdc) {
+	private void retrievePatientInteraction(ActionRequest req, TrackerDataContainer tdc) {
 		log.debug("retrieving patient interaction data for complaint email...");
 		
 		// make sure there aren't form submittal ids on the request
@@ -805,7 +805,7 @@ public class SJMAssignmentManager extends TrackerAction {
 	 * @param assignment
 	 * @throws MailException
 	 */
-	private void sendEmail(SMTServletRequest req, TrackerDataContainer tdc, boolean isCreateNewAssignment) 
+	private void sendEmail(ActionRequest req, TrackerDataContainer tdc, boolean isCreateNewAssignment) 
 			throws MailException {
 		log.debug("sending email...");
 		if (tdc.getAssignments() == null || tdc.getAssignments().isEmpty()) return;
@@ -846,7 +846,7 @@ public class SJMAssignmentManager extends TrackerAction {
 	 * @param tdc
 	 * @throws MailException
 	 */
-	private void sendAlternateEmail(SMTServletRequest req, TrackerDataContainer tdc) throws MailException {
+	private void sendAlternateEmail(ActionRequest req, TrackerDataContainer tdc) throws MailException {
 		log.debug("checking for alternate email send...");
 		if (emailType.equals(SJMTrackerConstants.STATUS_PENDING)) {
 

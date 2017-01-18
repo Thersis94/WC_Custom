@@ -3,7 +3,7 @@ package com.sjm.corp.locator.action;
 // WC 2.0 libs
 import java.io.Serializable;
 
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 
 /****************************************************************************
@@ -47,7 +47,7 @@ public class ClinicRegisterFormFieldsVO implements Serializable {
 	 * Constructor
 	 * @param req
 	 */
-	public ClinicRegisterFormFieldsVO(SMTServletRequest req) {
+	public ClinicRegisterFormFieldsVO(ActionRequest req) {
 		setData(req);
 	}
 	
@@ -55,7 +55,7 @@ public class ClinicRegisterFormFieldsVO implements Serializable {
 	 * Sets bean values based on the request parameters.
 	 * @param req
 	 */
-	private void setData(SMTServletRequest req) {
+	private void setData(ActionRequest req) {
 		setAdminSubmitted(Convert.formatBoolean(req.getParameter("adminSubmitted")));
 		setFirstName(req.getParameter("firstName"));
 		setLastName(req.getParameter("lastName"));

@@ -6,7 +6,7 @@ import java.util.Map;
 
 import com.depuy.events_v2.CoopAdsActionV2;
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.AbstractSiteBuilderVO;
@@ -80,11 +80,11 @@ public class CoopAdVO extends AbstractSiteBuilderVO {
 		this.setData(rs);
 	}
 
-	public CoopAdVO(SMTServletRequest req) {
+	public CoopAdVO(ActionRequest req) {
 		this.setData(req);
 	}
 
-	public void setData(SMTServletRequest req) {
+	public void setData(ActionRequest req) {
 		coopAdId = req.getParameter("coopAdId");
 		eventPostcardId = req.getParameter("eventPostcardId");
 		newspaper1Text = req.getParameter("newspaper1Text");

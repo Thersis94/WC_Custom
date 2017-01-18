@@ -6,14 +6,14 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.StringTokenizer;
 
-import javax.servlet.http.HttpSession;
+import com.siliconmtn.http.session.SMTSession;
 
 
 // SMT BaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.UUIDGenerator;
@@ -56,8 +56,8 @@ public class PostcardInsert extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
-		HttpSession ses = req.getSession();
+	public void build(ActionRequest req) throws ActionException {
+		SMTSession ses = req.getSession();
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		UserDataVO user = (UserDataVO) ses.getAttribute(Constants.USER_DATA);
 		String reqType = StringUtil.checkVal(req.getParameter("reqType"));
@@ -182,7 +182,7 @@ public class PostcardInsert extends SBActionAdapter {
 	}
 
 	
-	private String saveEventPostcard(SMTServletRequest req, SiteVO site, UserDataVO user) 
+	private String saveEventPostcard(ActionRequest req, SiteVO site, UserDataVO user) 
 		throws ActionException {
 		String eventPostcardId = StringUtil.checkVal(req.getParameter("eventPostcardId"));
 		if (eventPostcardId.equalsIgnoreCase("ADD")) eventPostcardId = "";
@@ -262,7 +262,7 @@ public class PostcardInsert extends SBActionAdapter {
 		return eventPostcardId;
 	}
 
-	private void saveEventAddtlPostcards(SMTServletRequest req, String eventEntryId) 
+	private void saveEventAddtlPostcards(ActionRequest req, String eventEntryId) 
 	throws ActionException {
 		UUIDGenerator uuid = new UUIDGenerator();
 		PreparedStatement ps = null;
@@ -340,7 +340,7 @@ public class PostcardInsert extends SBActionAdapter {
 		return;
 	}
 
-	private String saveEvent(SMTServletRequest req) throws ActionException {
+	private String saveEvent(ActionRequest req) throws ActionException {
 		String eventEntryId = "";
 		message = "You have successfully entered your Event";
 		
@@ -419,7 +419,7 @@ public class PostcardInsert extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void saveLeads(SMTServletRequest req, String eventPostcardId, UserDataVO user, Integer roleId) 
+	private void saveLeads(ActionRequest req, String eventPostcardId, UserDataVO user, Integer roleId) 
 	throws ActionException {
 		message = "Leads Saved Successfully";
 		PreparedStatement ps = null;
@@ -551,7 +551,7 @@ public class PostcardInsert extends SBActionAdapter {
 	 * @param eventPostcardId
 	 * @throws ActionException
 	 */
-	private void submitPostcard(SMTServletRequest req, String eventPostcardId) throws ActionException {
+	private void submitPostcard(ActionRequest req, String eventPostcardId) throws ActionException {
 		PreparedStatement ps = null;
 		StringBuilder sql = new StringBuilder();
 		sql.append("update event_postcard set status_flg=1, update_dt=? where event_postcard_id=?");
@@ -605,7 +605,7 @@ public class PostcardInsert extends SBActionAdapter {
 	 * @param eventPostcardId
 	 * @throws ActionException
 	 */
-	private void approvePostcard(SMTServletRequest req, String eventPostcardId) throws ActionException {
+	private void approvePostcard(ActionRequest req, String eventPostcardId) throws ActionException {
 		PreparedStatement ps = null;
 		StringBuilder sql = new StringBuilder();
 		sql.append("update event_postcard set status_flg=2, update_dt=? where event_postcard_id=?");
@@ -685,7 +685,7 @@ public class PostcardInsert extends SBActionAdapter {
 		return;
 	}
 	
-	private void deletePostcard(SMTServletRequest req, String eventPostcardId) throws ActionException {
+	private void deletePostcard(ActionRequest req, String eventPostcardId) throws ActionException {
 		PreparedStatement ps = null;
 		StringBuilder sql = new StringBuilder();
 		sql.append("update event_postcard set status_flg=4, update_dt=? where event_postcard_id=?");
@@ -727,7 +727,7 @@ public class PostcardInsert extends SBActionAdapter {
 	}
 	
 	
-	private void cancelPostcard(SMTServletRequest req, String eventPostcardId) throws ActionException {
+	private void cancelPostcard(ActionRequest req, String eventPostcardId) throws ActionException {
 		PreparedStatement ps = null;
 		StringBuilder sql = new StringBuilder();
 		sql.append("update event_postcard set status_flg=3, update_dt=? where event_postcard_id=?");
@@ -793,7 +793,7 @@ public class PostcardInsert extends SBActionAdapter {
 		return;
 	}
 	
-	private void cancelEvent(SMTServletRequest req, String eventEntryId) throws ActionException {
+	private void cancelEvent(ActionRequest req, String eventEntryId) throws ActionException {
 		PreparedStatement ps = null;
 		StringBuilder sql = new StringBuilder();
 		sql.append("update event_entry set status_flg=?, update_dt=? where event_entry_id=?");
@@ -816,7 +816,7 @@ public class PostcardInsert extends SBActionAdapter {
 		return;
 	}
 	
-	private String saveLogoImage(SMTServletRequest req) {
+	private String saveLogoImage(ActionRequest req) {
 		log.debug("starting saveLogoImage");
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 
@@ -868,7 +868,7 @@ public class PostcardInsert extends SBActionAdapter {
 	}
 
 	
-	private String saveAuthFile(SMTServletRequest req, String paramName) {
+	private String saveAuthFile(ActionRequest req, String paramName) {
 		log.debug("starting saveAuthFile");
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 
@@ -905,7 +905,7 @@ public class PostcardInsert extends SBActionAdapter {
 	}
 	
 	
-	private void updatePreAuth(SMTServletRequest req, SiteVO site, UserDataVO user, String eventPostcardId) 
+	private void updatePreAuth(ActionRequest req, SiteVO site, UserDataVO user, String eventPostcardId) 
 			throws ActionException {
 		StringBuilder venueDesc = new StringBuilder();
 		String[] venues = req.getParameterValues("venueDesc");

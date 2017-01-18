@@ -5,7 +5,7 @@ import java.util.Properties;
 import com.depuysynthes.huddle.solr.HuddleProductCatalogSolrIndex;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.commerce.product.ProductDataTool;
@@ -33,14 +33,14 @@ public class HuddleProductAdminAction extends SimpleActionAdapter {
 		super(arg0);
 	}
 	
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		ProductDataTool bfa = new ProductDataTool(actionInit);
 		bfa.setAttributes(getAttributes());
 		bfa.setDBConnection(dbConn);
 		bfa.list(req);
 	}
 	
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		ProductDataTool bfa = new ProductDataTool(actionInit);
 		bfa.setAttributes(getAttributes());
 		bfa.setDBConnection(dbConn);
@@ -55,7 +55,7 @@ public class HuddleProductAdminAction extends SimpleActionAdapter {
 		}
 	}
 	
-	private void indexProduct(String productId, String catalogId, SMTServletRequest req) {
+	private void indexProduct(String productId, String catalogId, ActionRequest req) {
 		//fire the VO to Solr, leverage the same lookup the "full rebuild" indexer uses, which joins to Site Pages
 		Properties props = new Properties();
 		props.putAll(getAttributes());
@@ -64,7 +64,7 @@ public class HuddleProductAdminAction extends SimpleActionAdapter {
 		indexer.addSingleItem(productId);
 	}
 	
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		ProductDataTool bfa = new ProductDataTool(actionInit);
 		bfa.setAttributes(getAttributes());
 		bfa.setDBConnection(dbConn);

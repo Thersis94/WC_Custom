@@ -9,7 +9,7 @@ import com.codman.cu.tracking.vo.UnitVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.AdminConstants;
@@ -45,7 +45,7 @@ public class ICPExpressTransAction extends AbstractTransAction {
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void build( SMTServletRequest req ) throws ActionException {
+	public void build( ActionRequest req ) throws ActionException {
 		Object msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
 
 		//Create the transaction 
@@ -123,7 +123,7 @@ public class ICPExpressTransAction extends AbstractTransAction {
 	 * Redirects after the build method is completed
 	 * @param req
 	 */
-	private void setupRedir(SMTServletRequest req, Object msg) {
+	private void setupRedir(ActionRequest req, Object msg) {
 		StringBuilder url = new StringBuilder(100);
 		url.append(req.getRequestURI());
 		url.append("?type=").append(req.getParameter("type"));
@@ -181,7 +181,7 @@ public class ICPExpressTransAction extends AbstractTransAction {
 	 * @param req
 	 * @param trans
 	 */
-	private void sendEmail(SMTServletRequest req, TransactionVO trans) 
+	private void sendEmail(ActionRequest req, TransactionVO trans) 
 			throws ActionException {
 		//get admins
 		//List<UserDataVO> adminList = super.retrieveAdministrators(req);

@@ -10,7 +10,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.exception.ApplicationException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
 
 // WC Libs
@@ -70,7 +70,7 @@ public class InventoryEventFacadeAction extends SBActionAdapter {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		String transType = StringUtil.checkVal(req.getParameter("transType"), DEFAULT_ACTION);
 		ActionInitVO ai = new ActionInitVO(transactionType.get(transType));
 		ActionControllerFactoryImpl factory = new ActionControllerFactoryImpl();
@@ -92,7 +92,7 @@ public class InventoryEventFacadeAction extends SBActionAdapter {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		
 		SMTActionInterface sai = null;
 		try {
@@ -115,7 +115,7 @@ public class InventoryEventFacadeAction extends SBActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 }

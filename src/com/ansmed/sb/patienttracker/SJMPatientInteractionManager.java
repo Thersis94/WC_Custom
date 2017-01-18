@@ -10,7 +10,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.exception.MailException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
@@ -51,7 +51,7 @@ public class SJMPatientInteractionManager extends TrackerAction {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("SJMPatientInteractionManager retrieve...");
 				
 		// retrieve interaction(s)	
@@ -87,7 +87,7 @@ public class SJMPatientInteractionManager extends TrackerAction {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		log.debug("SJMPatientInteractionManager build...");
 		boolean isAdmin = false;
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
@@ -228,7 +228,7 @@ public class SJMPatientInteractionManager extends TrackerAction {
 	 * that will be used upon return
 	 * @param req
 	 */
-	private void processReviews(SMTServletRequest req, boolean isAdmin, StringBuffer msg) {
+	private void processReviews(ActionRequest req, boolean isAdmin, StringBuffer msg) {
 		if (! isAdmin || ! StringUtil.checkVal(req.getParameter("processReviews")).equalsIgnoreCase("true")) return;
 		log.debug("processing reviews");
 		// retrieve the interaction IDs from the request
@@ -265,7 +265,7 @@ public class SJMPatientInteractionManager extends TrackerAction {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private String checkAssignment(SMTServletRequest req, boolean isAdmin, boolean isComplaint) throws ActionException {
+	private String checkAssignment(ActionRequest req, boolean isAdmin, boolean isComplaint) throws ActionException {
 		log.debug("checking for assignment update...");
 		// check to see if we need to update the assignment also
 		boolean processAssignment = Convert.formatBoolean(req.getParameter("processAssignment"));
@@ -298,7 +298,7 @@ public class SJMPatientInteractionManager extends TrackerAction {
 	 * @param isAdmin
 	 * @return
 	 */
-	private TrackerDataContainer retrieveInteractionSummary(SMTServletRequest req, boolean isAdmin) {
+	private TrackerDataContainer retrieveInteractionSummary(ActionRequest req, boolean isAdmin) {
 		log.debug("checking for retrieval of interaction summary");
 		TrackerDataContainer tdc = null;
 		if (StringUtil.checkVal(req.getParameter("emailFieldRep")).length() == 0 &&
@@ -354,7 +354,7 @@ public class SJMPatientInteractionManager extends TrackerAction {
 	 * @param tdc
 	 * @return
 	 */
-	private StringBuffer processSummaryEmailSends(SMTServletRequest req, TrackerDataContainer tdc) {
+	private StringBuffer processSummaryEmailSends(ActionRequest req, TrackerDataContainer tdc) {
 		log.debug("checking for summary email sends");
 		StringBuffer msg = new StringBuffer();
 		if (StringUtil.checkVal(req.getParameter("emailFieldRep")).length() == 0 &&

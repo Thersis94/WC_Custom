@@ -28,7 +28,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -69,11 +69,11 @@ public class DemoEventAction extends SBActionAdapter {
 		super(actionInit);
 	}
 
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		super.list(req);
 	}
 
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		schema = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		db = new DBProcessor(getDBConnection(), schema);
 		
@@ -88,7 +88,7 @@ public class DemoEventAction extends SBActionAdapter {
 		}
 	}
 
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 
 		//Flush all existing Demo Data
 		deleteDemoData();

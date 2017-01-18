@@ -6,7 +6,7 @@ import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
@@ -50,7 +50,7 @@ public class PhysicianDataFacadeAction extends SimpleActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		log.debug("building Phys info");
 		SMTActionInterface aac = null;
 		String surgeonId = StringUtil.checkVal(req.getParameter("surgeonId"));
@@ -139,7 +139,7 @@ public class PhysicianDataFacadeAction extends SimpleActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#list(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 	
@@ -147,7 +147,7 @@ public class PhysicianDataFacadeAction extends SimpleActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.info("ANS Phys Facade retrieve...");
 		String surgeonId = StringUtil.checkVal(req.getParameter("surgeonId"));
 		Boolean deactivate = Convert.formatBoolean(req.getParameter("deactivate"));
@@ -259,7 +259,7 @@ public class PhysicianDataFacadeAction extends SimpleActionAdapter {
 	 * @param req
 	 * @param type
 	 */
-	public void createTransaction(SMTServletRequest req, String type) throws ActionException {
+	public void createTransaction(ActionRequest req, String type) throws ActionException {
 		
 		// if transaction type is specified, log it.
 		if (type != null) {

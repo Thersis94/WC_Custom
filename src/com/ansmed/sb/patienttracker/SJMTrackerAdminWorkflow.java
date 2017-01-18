@@ -9,7 +9,7 @@ import java.sql.SQLException;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 
@@ -47,7 +47,7 @@ public class SJMTrackerAdminWorkflow extends TrackerAction {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("SJMTrackerAdminWorkflow retrieve...");
 		String actionType = req.getParameter("actionType");
 		String subType = req.getParameter("subType");
@@ -103,7 +103,7 @@ public class SJMTrackerAdminWorkflow extends TrackerAction {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		log.debug("SJMTrackerAdminWorkflow build...");
 		SMTActionInterface sai = null;
 		String actionType = req.getParameter("actionType");
@@ -136,7 +136,7 @@ public class SJMTrackerAdminWorkflow extends TrackerAction {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void checkUserRole(SMTServletRequest req) throws ActionException {
+	private void checkUserRole(ActionRequest req) throws ActionException {
 		log.debug("checking user role...");
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
@@ -145,7 +145,7 @@ public class SJMTrackerAdminWorkflow extends TrackerAction {
 		}
 	}
 	
-	private void checkAmbassadorProfile(SMTServletRequest req, String profileId) {
+	private void checkAmbassadorProfile(ActionRequest req, String profileId) {
 		log.debug("checking ambassador profile using profileId: " + profileId);
 		StringBuffer sql = new StringBuffer();
 		sql.append("select assignee_id, assignee_profile_id from pt_assignee where assignee_profile_id = ?");

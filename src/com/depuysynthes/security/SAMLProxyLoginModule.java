@@ -11,7 +11,6 @@ import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.AuthenticationException;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
-
 // WebCrescendo 2.0
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;

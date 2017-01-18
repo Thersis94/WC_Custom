@@ -17,7 +17,7 @@ import com.siliconmtn.gis.GeocodeLocation;
 import com.siliconmtn.gis.Location;
 import com.siliconmtn.gis.MatchCode;
 import com.siliconmtn.common.constants.GlobalConfig;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.PhoneVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -54,7 +54,7 @@ public class PhysicianClinicAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		log.debug("Deleting Clinic ... " + req.getParameter("deleteEle"));
 		if(Convert.formatBoolean(req.getParameter("deleteEle"))) {
 			delete(req);
@@ -68,7 +68,7 @@ public class PhysicianClinicAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#delete(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		log.debug("****************** Deleting clinic");
 		String message = "You have successfully deleted the clinic information";
 		String schema = (String)getAttribute("customDbSchema");
@@ -100,7 +100,7 @@ public class PhysicianClinicAction extends SBActionAdapter {
 	 */
 	@SuppressWarnings("unchecked")
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		String schema = (String)getAttribute("customDbSchema");
 		String clinicId = StringUtil.checkVal(req.getParameter("clinicId"));
 		StringBuffer sql = new StringBuffer();
@@ -152,7 +152,7 @@ public class PhysicianClinicAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#update(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		log.debug("Updating clinic");
 		String message = "You have successfully updated the clinic information";
 		ClinicVO vo = new ClinicVO(req);

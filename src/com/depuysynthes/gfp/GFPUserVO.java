@@ -3,7 +3,7 @@ package com.depuysynthes.gfp;
 import java.sql.ResultSet;
 
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 
@@ -20,11 +20,11 @@ public class GFPUserVO {
 		
 	}
 	
-	public GFPUserVO(SMTServletRequest req) {
+	public GFPUserVO(ActionRequest req) {
 		assignData(req);
 	}
 	
-	public void assignData(SMTServletRequest req) {
+	public void assignData(ActionRequest req) {
 		userId = req.getParameter("userId");
 		activeFlg = Convert.formatInteger(req.getParameter("activeFlg"));
 		hospitalId = req.getParameter("hospitalId");

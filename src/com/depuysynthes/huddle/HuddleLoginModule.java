@@ -2,10 +2,10 @@ package com.depuysynthes.huddle;
 
 import java.util.Map;
 
-import javax.servlet.http.HttpSession;
-
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.security.AuthenticationException;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
@@ -76,8 +76,8 @@ public class HuddleLoginModule extends SAMLLoginModule {
 	 */
 	private void applyRedirectLogic(UserDataVO userData) {
 		String homepage = StringUtil.checkVal(userData.getAttribute(HuddleUtils.HOMEPAGE_REGISTER_FIELD_ID), null);
-		SMTServletRequest req = (SMTServletRequest) initVals.get(GlobalConfig.HTTP_REQUEST);
-		HttpSession ses = req.getSession();
+		ActionRequest req = (ActionRequest) initVals.get(GlobalConfig.HTTP_REQUEST);
+		SMTSession ses = req.getSession();
 		String destPg = StringUtil.checkVal(ses.getAttribute(LoginAction.DESTN_URL));
 
 		// if this is an admintool login, preserver the destination page.

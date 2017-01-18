@@ -12,7 +12,7 @@ import java.util.TreeMap;
 import com.depuy.sitebuilder.datafeed.FulfillmentReport.SummaryData;
 import com.siliconmtn.data.report.BordersOnlyExcelReport;
 import com.siliconmtn.data.report.ExcelReport;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
@@ -48,7 +48,7 @@ public class FulfillmentReportVO extends AbstractDataFeedReportVO {
 	 */
 	@SuppressWarnings("unchecked")
 	@Override
-	public void setRequestData(SMTServletRequest req) {
+	public void setRequestData(ActionRequest req) {
 		unconfirmedList  =  (Map<String, Date>) req.getAttribute("unconfirmedList");
 		notStarted = Convert.formatInteger(StringUtil.checkVal(req.getAttribute("notStarted")));
 		showCodes = Convert.formatBoolean((Boolean)req.getAttribute("showCodes"));

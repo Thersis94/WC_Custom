@@ -3,7 +3,7 @@ package com.depuysynthes.ifu;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.constants.AdminConstants;
@@ -44,7 +44,7 @@ public class IFUFacadeAction extends SimpleActionAdapter {
 		super();
 	}
 
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		if (req.hasParameter("dataMod")) {
 			SMTActionInterface sai = getAction(StringUtil.checkVal(req.getParameter(AdminConstants.FACADE_TYPE), "ifu"));
 			sai.list(req);
@@ -54,7 +54,7 @@ public class IFUFacadeAction extends SimpleActionAdapter {
 		}
 	}
 
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		SMTActionInterface sai = getAction(req.getParameter(AdminConstants.FACADE_TYPE));
 		if (sai != null) {
 			sai.delete(req);
@@ -64,7 +64,7 @@ public class IFUFacadeAction extends SimpleActionAdapter {
 		}
 	}
 
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		SMTActionInterface sai = getAction(req.getParameter(AdminConstants.FACADE_TYPE));
 		if (sai != null) {
 			sai.update(req);
@@ -120,7 +120,7 @@ public class IFUFacadeAction extends SimpleActionAdapter {
 	}
 
 
-	public void copy(SMTServletRequest req) throws ActionException {
+	public void copy(ActionRequest req) throws ActionException {
 		getAction(ActionType.ifu).copy(req);
 	}
 }

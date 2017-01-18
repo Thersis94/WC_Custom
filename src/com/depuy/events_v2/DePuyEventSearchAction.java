@@ -14,7 +14,7 @@ import java.util.Set;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
@@ -49,7 +49,7 @@ public class DePuyEventSearchAction extends SimpleActionAdapter {
 	}
 	
 	@Override
-	public void update(SMTServletRequest req) throws ActionException {		
+	public void update(ActionRequest req) throws ActionException {		
 		String[] attr1 = req.getParameterValues("attrib1Text");
 		req.setParameter("attrib1Text", StringUtil.getToString(attr1, false, false, ","));
 		log.debug("set attrib1Text=" + req.getParameter("attrib1Text"));
@@ -58,7 +58,7 @@ public class DePuyEventSearchAction extends SimpleActionAdapter {
 	
 	
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {		
+	public void retrieve(ActionRequest req) throws ActionException {		
 		//test to ensure we're not asking for the search form; only load data if we have the params to do so!
 		if (! req.hasParameter("specialty") && ! req.hasParameter("eventEntryId") && 
 				! req.hasParameter("rsc") && ! req.hasParameter("locatorSubmit")) return;
@@ -75,7 +75,7 @@ public class DePuyEventSearchAction extends SimpleActionAdapter {
 	}
 	
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		//use the actionId off the request if we have one; because the value for attrib1 could be multiple actionIds
 		String actionId = StringUtil.checkVal(req.getParameter("actionId"));
@@ -103,7 +103,7 @@ public class DePuyEventSearchAction extends SimpleActionAdapter {
 	
 	
 	@Override
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 	
@@ -113,7 +113,7 @@ public class DePuyEventSearchAction extends SimpleActionAdapter {
 	 * that are also within driving distance of the requestee, and are not CPSEMs.
 	 * @param req
 	 */
-	private void loadData(SMTServletRequest req) {
+	private void loadData(ActionRequest req) {
 		EventTypeAction eta = new EventTypeAction();
 		eta.setAttributes(attributes);
 		

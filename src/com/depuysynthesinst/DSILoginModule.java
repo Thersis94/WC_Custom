@@ -15,7 +15,7 @@ import com.depuysynthesinst.lms.LMSWSClient;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.db.pool.SMTDBConnection;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.AuthenticationException;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
@@ -63,7 +63,7 @@ public class DSILoginModule extends SAMLLoginModule {
 			dsiUser.addAttribute("incomplete", true);
 		} else if (UserDataVO.AuthenticationType.SAML == dsiUser.getAuthType()) { 
 			//allow all J&J WWID users through, but they need to be given a TTLMS account first
-			SMTServletRequest req = (SMTServletRequest)initVals.get(GlobalConfig.HTTP_REQUEST);
+			ActionRequest req = (ActionRequest)initVals.get(GlobalConfig.HTTP_REQUEST);
 			makeLMSAccount(dsiUser, req);
 		}
 		
@@ -163,7 +163,7 @@ public class DSILoginModule extends SAMLLoginModule {
 	 * that we're not aware of first.
 	 * @param user
 	 */
-	private void makeLMSAccount(DSIUserDataVO user, SMTServletRequest req) {
+	private void makeLMSAccount(DSIUserDataVO user, ActionRequest req) {
 		SMTDBConnection dbConn = new SMTDBConnection((Connection)initVals.get(GlobalConfig.KEY_DB_CONN));
 		RegistrationAction ra = new RegistrationAction();
 		ra.setAttributes(getInitVals());
@@ -201,7 +201,7 @@ public class DSILoginModule extends SAMLLoginModule {
 	 * retrieves the register_submittal_id for this user on this website.
 	 * If a registration record does not exist it gets created.
 	 */
-	private String loadRSId(DSIUserDataVO user, SMTServletRequest req, SMTDBConnection dbConn) 
+	private String loadRSId(DSIUserDataVO user, ActionRequest req, SMTDBConnection dbConn) 
 			throws SQLException {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		StringBuilder sql = new StringBuilder(100);

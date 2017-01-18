@@ -5,7 +5,7 @@ import java.sql.ResultSet;
 
 import com.depuy.forefront.action.ProgramAction;
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
@@ -65,7 +65,7 @@ public class ListItemVO implements Serializable {
 		db = null;
 	}
 	
-	public ListItemVO(SMTServletRequest req) {
+	public ListItemVO(ActionRequest req) {
 		listItemId = req.getParameter("listItemId");
 		programId = (String) req.getSession().getAttribute(ProgramAction.PROGRAM_ID);
 		hospitalId = StringUtil.checkVal(req.getParameter("hospitalId"), null);

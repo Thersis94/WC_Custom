@@ -11,7 +11,7 @@ import java.util.TreeMap;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -63,7 +63,7 @@ public class EpiducerSubmittalAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		log.debug("Starting EpiducerSubmittalAction build...");
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		log.debug("Action ID's: module/actionInit: " + mod.getActionId() + "/" + actionInit.getActionId());
@@ -127,7 +127,7 @@ public class EpiducerSubmittalAction extends SBActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	private void managePhysicianProfile(SMTServletRequest req) throws Exception {
+	private void managePhysicianProfile(ActionRequest req) throws Exception {
 		log.debug("starting managePhysicianProfile");
 		UserDataVO user = new UserDataVO();
 		Map<String,Object> profileData = new TreeMap<String,Object>();

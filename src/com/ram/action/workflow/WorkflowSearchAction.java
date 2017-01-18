@@ -14,7 +14,7 @@ import java.util.List;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
@@ -57,7 +57,7 @@ public class WorkflowSearchAction extends SBActionAdapter {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("WorkflowSearchAction retrieve...");
 		
 		String srchServiceCd = StringUtil.checkVal(req.getParameter("srchServiceCd"));
@@ -103,7 +103,7 @@ public class WorkflowSearchAction extends SBActionAdapter {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {}
+	public void build(ActionRequest req) throws ActionException {}
 	
 	public int getTotal(String srchServiceCd, String srchEventTypeCd, int limit, int srchActiveFlag) {
 		StringBuilder sql = new StringBuilder();

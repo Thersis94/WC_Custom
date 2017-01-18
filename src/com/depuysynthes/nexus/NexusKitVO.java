@@ -10,7 +10,7 @@ import java.util.Map;
 import com.depuysynthes.nexus.NexusImporter.Source;
 import com.siliconmtn.annotations.SolrField;
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SolrDocumentVO;
@@ -52,7 +52,7 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 		sharedWith = new HashMap<>();
 	}
 	
-	NexusKitVO(SMTServletRequest req, String solrIndex) {
+	NexusKitVO(ActionRequest req, String solrIndex) {
 		this(solrIndex);
 		setData(req);
 	}
@@ -69,7 +69,7 @@ public class NexusKitVO extends SolrDocumentVO implements Serializable {
 		return StringUtil.getToString(this, false, 1, "|");
 	}
  	
-	public void setData(SMTServletRequest req) {
+	public void setData(ActionRequest req) {
 		super.setDocumentId(req.getParameter("kitId"));
 		super.setTitle(req.getParameter("kitSKU"));
 		super.setSummary(req.getParameter("kitDesc"));

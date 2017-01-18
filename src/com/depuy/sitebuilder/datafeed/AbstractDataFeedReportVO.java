@@ -1,6 +1,6 @@
 package com.depuy.sitebuilder.datafeed;
 
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 
 /****************************************************************************
@@ -26,7 +26,7 @@ public abstract class AbstractDataFeedReportVO extends AbstractSBReportVO {
 	 * must be overwritten by all implementing classes.
 	 * 
 	 */
-	public abstract void setRequestData(SMTServletRequest req);
+	public abstract void setRequestData(ActionRequest req);
 	
 
 }

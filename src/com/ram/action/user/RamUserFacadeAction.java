@@ -19,7 +19,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.common.constants.GlobalConfig;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.Convert;
@@ -66,7 +66,7 @@ public class RamUserFacadeAction extends SBActionAdapter {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("RamUserFacadeAction retrieve...");
 		boolean searchSubmitted = Convert.formatBoolean(req.getParameter("searchSubmitted"));
 		if (searchSubmitted) {
@@ -83,7 +83,7 @@ public class RamUserFacadeAction extends SBActionAdapter {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		log.debug("RamUserFacadeAction build...");
 		SMTActionInterface sai = null;
 		sai = new RamUserAction(actionInit);
@@ -96,7 +96,7 @@ public class RamUserFacadeAction extends SBActionAdapter {
 	 * Performs search against customer table(s)
 	 * @param req
 	 */
-	private void performSearch(SMTServletRequest req) {
+	private void performSearch(ActionRequest req) {
 		log.debug("RamUserFacadeAction performSearch...");
 		// determine the site ID we need to use for the search
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
@@ -199,7 +199,7 @@ public class RamUserFacadeAction extends SBActionAdapter {
 	 * @param ln
 	 * @return
 	 */
-	private List<RAMUserVO> filterByUser(SMTServletRequest req, List<RAMUserVO> users, String fn, String ln) {
+	private List<RAMUserVO> filterByUser(ActionRequest req, List<RAMUserVO> users, String fn, String ln) {
 		StringEncrypter se = null;
 		try {
 			se = new StringEncrypter((String)attributes.get(Constants.ENCRYPT_KEY));
@@ -263,7 +263,7 @@ public class RamUserFacadeAction extends SBActionAdapter {
 	 * @param sortedList
 	 * @return
 	 */
-	private List<RAMUserVO> paginateData(SMTServletRequest req, List<RAMUserVO> sortedList) {
+	private List<RAMUserVO> paginateData(ActionRequest req, List<RAMUserVO> sortedList) {
 		int navStart = Convert.formatInteger(req.getParameter("start"), 0);
 		int navLimit = Convert.formatInteger(req.getParameter("limit"), 25);
 		int navEnd = navStart + navLimit;
@@ -290,7 +290,7 @@ public class RamUserFacadeAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#list(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
         super.retrieve(req);
 	}
 

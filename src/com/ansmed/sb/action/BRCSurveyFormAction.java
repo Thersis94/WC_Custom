@@ -10,7 +10,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.exception.MailException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.SMTMail;
 import com.siliconmtn.util.StringUtil;
@@ -57,7 +57,7 @@ public class BRCSurveyFormAction extends SimpleActionAdapter {
         super(arg0);
     }
     
-    public void list(SMTServletRequest req) throws ActionException {
+    public void list(ActionRequest req) throws ActionException {
     	super.retrieve(req);    	
     }
 	
@@ -66,7 +66,7 @@ public class BRCSurveyFormAction extends SimpleActionAdapter {
      */
     @SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		
     	log.debug("Starting build...");
     	
@@ -117,7 +117,7 @@ public class BRCSurveyFormAction extends SimpleActionAdapter {
      */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
-    public void retrieve(SMTServletRequest req) throws ActionException {
+    public void retrieve(ActionRequest req) throws ActionException {
 		
 		String flag = (String) req.getParameter("surveySubmitted");
 
@@ -165,7 +165,7 @@ public class BRCSurveyFormAction extends SimpleActionAdapter {
     * Send a copy of the form submission to the designated recipient.
     * @param req
     */
-	private void sendEmail(SMTServletRequest req) throws ActionException {
+	private void sendEmail(ActionRequest req) throws ActionException {
     	
     	SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
     	List<String> emailTo = new ArrayList<String>();

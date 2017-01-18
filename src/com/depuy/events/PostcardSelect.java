@@ -14,7 +14,7 @@ import java.util.Iterator;
 import java.util.TreeMap;
 
 // J2EE 1.4.0 Libs
-import javax.servlet.http.HttpSession;
+import com.siliconmtn.http.session.SMTSession;
 
 // SMT BaseLibs
 import com.depuy.events.vo.*;
@@ -22,7 +22,7 @@ import com.depuy.events.vo.report.*;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.security.UserDataVO;
@@ -72,10 +72,10 @@ public class PostcardSelect extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
-		HttpSession ses = req.getSession();
+		SMTSession ses = req.getSession();
 		String eventPostcardId = StringUtil.checkVal(req.getParameter("eventPostcardId"));
 		String eventEntryId = StringUtil.checkVal(req.getParameter("eventEntryId"));
 		String reqType = StringUtil.checkVal(req.getParameter("reqType"));
@@ -463,7 +463,7 @@ public class PostcardSelect extends SBActionAdapter {
 
 
 	
-	private void formatReport(SMTServletRequest req) throws ActionException {
+	private void formatReport(ActionRequest req) throws ActionException {
 		log.debug("starting postcard Reporting");
 		AbstractSBReportVO rpt = null;
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);

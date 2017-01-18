@@ -11,7 +11,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.exception.MailException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.SMTMail;
@@ -61,7 +61,7 @@ public class PatientAmbassadorFormAction extends SimpleActionAdapter {
         super(arg0);
     }
     
-    public void list(SMTServletRequest req) throws ActionException {
+    public void list(ActionRequest req) throws ActionException {
     	super.retrieve(req);    	
     }
 	
@@ -70,7 +70,7 @@ public class PatientAmbassadorFormAction extends SimpleActionAdapter {
      */
     @SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		
     	log.debug("PatientAmbassadorFormAction: Starting build...");
     	
@@ -121,7 +121,7 @@ public class PatientAmbassadorFormAction extends SimpleActionAdapter {
      */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
-    public void retrieve(SMTServletRequest req) throws ActionException {
+    public void retrieve(ActionRequest req) throws ActionException {
 		
 		String flag = (String) req.getParameter("surveySubmitted");
 
@@ -169,7 +169,7 @@ public class PatientAmbassadorFormAction extends SimpleActionAdapter {
     * Send a copy of the form submission to the designated recipient.
     * @param req
     */
-	private void sendEmail(SMTServletRequest req) throws ActionException {
+	private void sendEmail(ActionRequest req) throws ActionException {
     	
 		StringEncoder se = new StringEncoder();
     	SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);

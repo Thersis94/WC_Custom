@@ -12,7 +12,7 @@ import com.ram.datafeed.data.KitLayerProductVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -64,7 +64,7 @@ public class KitLayerProductAction extends SBActionAdapter {
 	 * coordinate data for each ProductXR.
 	 */
 	@Override
-	public void copy(SMTServletRequest req) throws ActionException {
+	public void copy(ActionRequest req) throws ActionException {
 		@SuppressWarnings("unchecked")
 		Map<String, Object> replaceVals = (Map<String, Object>) attributes.get(RecordDuplicatorUtility.REPLACE_VALS);
 		RecordDuplicatorUtility rdu = new RecordDuplicatorUtility(attributes, dbConn, "RAM_PRODUCT_LAYER_XR", "PRODUCT_KIT_ID", true);
@@ -84,7 +84,7 @@ public class KitLayerProductAction extends SBActionAdapter {
 	 * Retrieve the product layer xr bound to a given kitLayer with 
 	 * associated product information.
 	 */
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		
 		//Fast fail if kitLayerId is missing.
 		if(!req.hasParameter("kitLayerId"))
@@ -128,7 +128,7 @@ public class KitLayerProductAction extends SBActionAdapter {
 	 * Send the results of the processing through the relevant insert and update methods.
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		
 		//Get the CustomDb
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
@@ -150,7 +150,7 @@ public class KitLayerProductAction extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	private Map<String, List<KitLayerProductVO>> getChanges(SMTServletRequest req) {
+	private Map<String, List<KitLayerProductVO>> getChanges(ActionRequest req) {
 		
 		//Build Containers
 		Map<String, List<KitLayerProductVO>> changes = new HashMap<String, List<KitLayerProductVO>>();

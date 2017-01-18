@@ -9,7 +9,7 @@ import java.util.Map;
 import com.depuy.sitebuilder.datafeed.QualifiedByCityReport.ReportData;
 import com.siliconmtn.data.report.ExcelReport;
 import com.siliconmtn.data.report.StandardExcelReport;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 
 /****************************************************************************
  * <b>Title</b>: QualifiedByCityReportVO.java <p/>
@@ -39,7 +39,7 @@ public class QualifiedByCityReportVO  extends AbstractDataFeedReportVO {
 	 * @see com.depuy.sitebuilder.datafeed.AbstractDataFeedReportVo#setRequestData(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void setRequestData(SMTServletRequest req) {
+	public void setRequestData(ActionRequest req) {
 		// Qualified by city report does not need any additional request items
 		//    this method left intentionally empty
 		

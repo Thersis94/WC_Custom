@@ -9,7 +9,7 @@ import java.sql.SQLException;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
@@ -43,7 +43,7 @@ public class SJMAssignmentFacade extends TrackerAction {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("SJMAssignmentFacade retrieve...");
 		SMTActionInterface sai = null;
 		String actionType = StringUtil.checkVal(req.getParameter("actionType"));
@@ -61,7 +61,7 @@ public class SJMAssignmentFacade extends TrackerAction {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		log.debug("SJMAssignmentFacade build...");
 		SMTActionInterface sai = null;
 		String actionType = StringUtil.checkVal(req.getParameter("actionType"));
@@ -88,7 +88,7 @@ public class SJMAssignmentFacade extends TrackerAction {
 	 * @param avo
 	 * @return
 	 */
-	private boolean checkForReassignment(SMTServletRequest req, AssignmentVO avo) {
+	private boolean checkForReassignment(ActionRequest req, AssignmentVO avo) {
 		boolean isReassignment = false;
 		// check for certain changes in status
 		if (avo.getAssignmentId() != null) {
@@ -125,7 +125,7 @@ public class SJMAssignmentFacade extends TrackerAction {
 	 * @param avo
 	 * @return
 	 */
-	private boolean checkForAdminOwnerOfAssignment(SMTServletRequest req, AssignmentVO avo) {
+	private boolean checkForAdminOwnerOfAssignment(ActionRequest req, AssignmentVO avo) {
 		log.debug("complaint detected, determining if updated assignment belongs to admin");
 		boolean isAdminOwner = false;
 		StringBuffer sql = new StringBuffer();

@@ -18,7 +18,7 @@ import com.siliconmtn.gis.AbstractGeocoder;
 import com.siliconmtn.gis.GeocodeFactory;
 import com.siliconmtn.gis.GeocodeLocation;
 import com.siliconmtn.gis.GeocodeType;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.PhoneVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.NumberFormat;
@@ -75,7 +75,7 @@ public class ImplanterReportAction extends SBActionAdapter {
 
 	
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("Starting in ImplanterReportAction retrieve...");
 		
 		String reportType = StringUtil.checkVal(req.getParameter("reportType"));
@@ -221,7 +221,7 @@ public class ImplanterReportAction extends SBActionAdapter {
 	 * @return
 	 */
 	protected List<SurgeonVO> querySurgeons(int type, GeocodeLocation loc, int radius, 
-											int start, int rpp, SMTServletRequest req) {
+											int start, int rpp, ActionRequest req) {
 		
 		List<SurgeonVO> data = new ArrayList<SurgeonVO>();
 		

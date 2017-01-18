@@ -14,7 +14,7 @@ import java.util.Map;
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.security.UserRoleVO;
@@ -65,7 +65,7 @@ public class ERPReportAction extends SBActionAdapter {
 	}
 	
 	@Override
-	public void copy(SMTServletRequest req) throws ActionException {
+	public void copy(ActionRequest req) throws ActionException {
 		super.copy(req);	
 		RecordDuplicatorUtility rdu = new RecordDuplicatorUtility(attributes, dbConn, "Web_Crescendo_SB_Custom.dbo.op_srs_field", "ACTION_ID", true);
 		rdu.addWhereClause(DB_ACTION_ID, req.getParameter(SB_ACTION_ID));
@@ -77,7 +77,7 @@ public class ERPReportAction extends SBActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#delete(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		Object msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
 		
 		if (! Convert.formatBoolean(req.getParameter("facadeType"))) {
@@ -99,7 +99,7 @@ public class ERPReportAction extends SBActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		try {
 			// Get the field data
 			SRSReportVO data = getFieldMap(actionInit.getActionId());
@@ -143,7 +143,7 @@ public class ERPReportAction extends SBActionAdapter {
 		byte[] b = conn.retrieveData(url);
 		return (parseData(b, reportType));
 	} */
-	public byte[] retrieveReportData(SMTServletRequest req, String url, String reportType) throws IOException {
+	public byte[] retrieveReportData(ActionRequest req, String url, String reportType) throws IOException {
 		SMTHttpConnectionManager conn = new SMTHttpConnectionManager();
 		byte[] b = null;
 		success = true;
@@ -178,7 +178,7 @@ public class ERPReportAction extends SBActionAdapter {
 	 * @return
 	 */
 	@SuppressWarnings("unused")
-	private byte[] parseData(SMTServletRequest req, byte[] b, String reportType) {
+	private byte[] parseData(ActionRequest req, byte[] b, String reportType) {
 		log.debug("parsing data...for report type: " + reportType);
 		ERPReportParser parser = new ERPReportParser(req);
 		parser.setRequest(req);
@@ -200,7 +200,7 @@ public class ERPReportAction extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	public String buildUrl(SRSReportVO data, SMTServletRequest req) {
+	public String buildUrl(SRSReportVO data, ActionRequest req) {
 		UserDataVO user = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
 		UserRoleVO role = (UserRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
 		SalesRepVO rep = (SalesRepVO)user.getUserExtendedInfo();
@@ -291,7 +291,7 @@ public class ERPReportAction extends SBActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		try {
 			SRSReportVO data = getFieldMap(actionInit.getActionId());
 			this.putModuleData(data, data.getFields().size(), false);
@@ -304,7 +304,7 @@ public class ERPReportAction extends SBActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		log.debug("Updating info");
 		if (! Convert.formatBoolean(req.getParameter("facadeType"))) {
 			super.update(req);
@@ -327,7 +327,7 @@ public class ERPReportAction extends SBActionAdapter {
 	 * @param req
 	 * @throws SQLException
 	 */
-	public void updateField(SMTServletRequest req) throws SQLException {
+	public void updateField(ActionRequest req) throws SQLException {
 		String cds = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		
 		StringBuilder s = new StringBuilder();
@@ -353,7 +353,7 @@ public class ERPReportAction extends SBActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		log.debug("Listing SRS Fields");
 		super.retrieve(req);
 		

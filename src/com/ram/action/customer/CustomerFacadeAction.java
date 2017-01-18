@@ -4,7 +4,7 @@ package com.ram.action.customer;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 
 import com.siliconmtn.util.StringUtil;
@@ -48,7 +48,7 @@ public class CustomerFacadeAction extends SBActionAdapter {
 	 * updated to use getAction method.
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("CustomerFacadeAction retrieve...");
 		boolean searchSubmitted = Convert.formatBoolean(req.getParameter("searchSubmitted"));
 		if (searchSubmitted) {
@@ -65,7 +65,7 @@ public class CustomerFacadeAction extends SBActionAdapter {
 	 * updated to use getAction method
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		log.debug("CustomerFacadeAction build...");
 		String bType = req.getParameter(STEP_PARAM);
 		getAction(bType).build(req);
@@ -99,7 +99,7 @@ public class CustomerFacadeAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException 
 	 */
-	private void performSearch(SMTServletRequest req) throws ActionException {
+	private void performSearch(ActionRequest req) throws ActionException {
 		log.debug("CustomerFacadeAction performSearch...");
 		SMTActionInterface sai = new CustomerSearchAction(actionInit);
 		sai.setAttributes(attributes);
@@ -111,7 +111,7 @@ public class CustomerFacadeAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#list(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
         super.retrieve(req);
 	}
 

@@ -8,7 +8,7 @@ import java.sql.SQLException;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
 
 // SB Libs
@@ -49,7 +49,7 @@ public class PSPSiteWizardAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		log.debug("Calling Custom SJM Code for the site wizard");
 		
 		ModuleVO mod = (ModuleVO) attributes.get(AdminConstants.ADMIN_MODULE_DATA);		
@@ -64,7 +64,7 @@ public class PSPSiteWizardAction extends SBActionAdapter {
 	 * @param mod
 	 * @throws ActionException
 	 */
-	private void createPspContent(SMTServletRequest req, ModuleVO mod)
+	private void createPspContent(ActionRequest req, ModuleVO mod)
 	throws ActionException {
 		
 		// create the 'address' content'
@@ -130,7 +130,7 @@ public class PSPSiteWizardAction extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	private String retrievePhysicianAddress(SMTServletRequest req) {
+	private String retrievePhysicianAddress(ActionRequest req) {
 		// Format the content
 		StringBuilder sb = new StringBuilder();
 		sb.append("<table><tr><td>").append(req.getParameter("locationDesc")).append("</td></tr>");
@@ -150,7 +150,7 @@ public class PSPSiteWizardAction extends SBActionAdapter {
 	 * @param siteName
 	 * @return
 	 */
-	private String retrieveDisclaimer(SMTServletRequest req) {
+	private String retrieveDisclaimer(ActionRequest req) {
 		
 		// organizationName is site name
 		String siteName = (StringUtil.checkVal(req.getParameter("organizationName"))).toUpperCase();
@@ -232,7 +232,7 @@ public class PSPSiteWizardAction extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	private String retrieveDisclaimerContentActionId(SMTServletRequest req, String actionName) {
+	private String retrieveDisclaimerContentActionId(ActionRequest req, String actionName) {
 		
 		String id = null;
 		

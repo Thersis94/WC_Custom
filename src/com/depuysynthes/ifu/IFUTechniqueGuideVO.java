@@ -3,7 +3,7 @@ package com.depuysynthes.ifu;
 import java.sql.ResultSet;
 
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 
 /****************************************************************************
@@ -34,7 +34,7 @@ public class IFUTechniqueGuideVO {
 			
 	}
 
-	public IFUTechniqueGuideVO(SMTServletRequest req) {
+	public IFUTechniqueGuideVO(ActionRequest req) {
 		this.setTgId(req.getParameter("tgId"));
 		this.setTgName(req.getParameter("tgName"));
 		this.setUrlText(req.getParameter("urlText"));

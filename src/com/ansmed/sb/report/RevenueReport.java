@@ -10,7 +10,7 @@ import java.util.Map;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 
 // SMT Base Libs
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 
 // SB ANS Libs
@@ -43,7 +43,7 @@ public class RevenueReport extends AbstractSBReportVO {
         super();		
 	}
 	
-	public RevenueReport(SMTServletRequest req) {
+	public RevenueReport(ActionRequest req) {
 		super();
 		this.useRawData = Convert.formatBoolean(req.getParameter("useRawData")).booleanValue();
 	}

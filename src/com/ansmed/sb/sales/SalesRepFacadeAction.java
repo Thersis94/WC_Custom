@@ -5,7 +5,7 @@ import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 
 // SB Libs
@@ -44,7 +44,7 @@ public class SalesRepFacadeAction extends SimpleActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		SMTActionInterface sbac = null;
 		if (Convert.formatBoolean(req.getParameter("repUpdate"))) {
 			log.debug("Updating Sales Rep Info");
@@ -87,7 +87,7 @@ public class SalesRepFacadeAction extends SimpleActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#list(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 	      super.retrieve(req);
 	}
 
@@ -95,7 +95,7 @@ public class SalesRepFacadeAction extends SimpleActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("Getting Sales Rep Info");
 		
 		SMTActionInterface sbac = null;

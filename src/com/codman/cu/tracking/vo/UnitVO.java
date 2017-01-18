@@ -6,7 +6,7 @@ import java.util.Comparator;
 import java.util.Date;
 
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.SiteVO;
@@ -80,7 +80,7 @@ public class UnitVO implements Serializable {
 	public UnitVO() {
 	}
 
-	public UnitVO(SMTServletRequest req) {
+	public UnitVO(ActionRequest req) {
 		unitId = req.getParameter("unitId");
 		softwareRevNo = req.getParameter("softwareRevNo");
 		hardwareRevNo = req.getParameter("hardwareRevNo");

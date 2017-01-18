@@ -7,28 +7,39 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 
+// Xerces
+import org.apache.xerces.dom.DeferredDocumentImpl;
+// W3C
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+// WC_Custom
+import com.depuysynthes.locator.LocationBean;
+import com.depuysynthes.locator.ResultsContainer;
+import com.depuysynthes.locator.SurgeonBean;
 // Google Gson libs
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-
 // SMT Base Libs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.exception.MailException;
-import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.http.parser.StringEncoder;
+import com.siliconmtn.http.session.SMTCookie;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.PhoneNumberFormat;
 import com.siliconmtn.util.StringUtil;
-
 // SB Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.registration.RegistrationAction;
@@ -44,19 +55,6 @@ import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.util.RecordDuplicatorUtility;
-
-// WC_Custom
-import com.depuysynthes.locator.LocationBean;
-import com.depuysynthes.locator.ResultsContainer;
-import com.depuysynthes.locator.SurgeonBean;
-
-// Xerces
-import org.apache.xerces.dom.DeferredDocumentImpl;
-
-// W3C
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
 /*****************************************************************************
  <p><b>Title</b>: LocatorAction.java</p>
@@ -115,7 +113,7 @@ public class LocatorAction extends SBActionAdapter {
      * @see com.siliconmtn.action.AbstractActionController#update(com.siliconmtn.http.SMTServletRequest)
      */
     @Override
-    public void build(SMTServletRequest req) throws ActionException {
+    public void build(ActionRequest req) throws ActionException {
 	    log.debug("LocatorAction build...");
 	    // Only process the survey if requested
 	    Boolean processSurvey = Convert.formatBoolean(req.getParameter("processSurvey"));
@@ -224,7 +222,7 @@ public class LocatorAction extends SBActionAdapter {
     /**
 	 * New Copy method utilizing the record Duplicator.
 	 */
-	public void copy(SMTServletRequest req) throws ActionException{
+	public void copy(ActionRequest req) throws ActionException{
 		super.copy(req);	
 		
 		RecordDuplicatorUtility rdu = new RecordDuplicatorUtility(attributes, dbConn, "LOCATOR", "ACTION_ID", true);
@@ -236,7 +234,7 @@ public class LocatorAction extends SBActionAdapter {
      * @see com.siliconmtn.action.AbstractActionController#delete(com.siliconmtn.http.SMTServletRequest)
      */
     @Override
-    public void delete(SMTServletRequest req) throws ActionException {
+    public void delete(ActionRequest req) throws ActionException {
     	Object msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
         String sbActionId = req.getParameter(SBModuleAction.SB_ACTION_ID);
         ModuleVO mod = (ModuleVO) attributes.get(AdminConstants.ADMIN_MODULE_DATA);
@@ -283,7 +281,7 @@ public class LocatorAction extends SBActionAdapter {
      * @see com.siliconmtn.action.AbstractActionController#update(com.siliconmtn.http.SMTServletRequest)
      */
     @Override
-    public void update(SMTServletRequest req) throws ActionException {
+    public void update(ActionRequest req) throws ActionException {
         ModuleVO mod = (ModuleVO) attributes.get(AdminConstants.ADMIN_MODULE_DATA);
         log.info("Starting Locator Data - Update: " + mod.toString());
         
@@ -373,14 +371,14 @@ public class LocatorAction extends SBActionAdapter {
      */
     @SuppressWarnings("unchecked")
     @Override
-    public void retrieve(SMTServletRequest req) throws ActionException {
+    public void retrieve(ActionRequest req) throws ActionException {
     	log.debug("LocatorAction retrieve...");
     	
     	Boolean locatorSubmit = Convert.formatBoolean(req.getParameter("locatorSubmit"));
     	String surveyId = StringUtil.checkVal(req.getParameter("surveyId"));
     	String registrationId = StringUtil.checkVal(req.getParameter("registrationId"));
         Boolean locatorSurveySubmitted = Convert.formatBoolean(req.getSession().getAttribute("locatorSurveySubmitted"));
-        Cookie c = req.getCookie("locatorRegistrationSubmitted");
+        SMTCookie c = req.getCookie("locatorRegistrationSubmitted");
         Boolean locRegSubmitted = Boolean.FALSE;
         if (c != null) locRegSubmitted = Convert.formatBoolean(c.getValue());
         log.debug("Boolean: " + locatorSubmit + "|" + surveyId.length() + "|" +  registrationId.length() + "|" + locRegSubmitted);
@@ -465,7 +463,7 @@ public class LocatorAction extends SBActionAdapter {
      */
     @SuppressWarnings("unchecked")
     @Override
-    public void list(SMTServletRequest req) throws ActionException {
+    public void list(ActionRequest req) throws ActionException {
         String actionId = req.getParameter(SBModuleAction.SB_ACTION_ID);
         
         if (actionId == null || actionId.length() == 0) return;
@@ -526,7 +524,7 @@ public class LocatorAction extends SBActionAdapter {
      * @param req
      * @param loc
      */
-    private void processMessageSend(SMTServletRequest req, LocatorSubmittalVO loc) {
+    private void processMessageSend(ActionRequest req, LocatorSubmittalVO loc) {
     	log.debug("processing locator message send...");
     	String type = StringUtil.checkVal(req.getParameter("messageType"));
     	log.debug("type is: " + type);
@@ -576,7 +574,7 @@ public class LocatorAction extends SBActionAdapter {
      * @param type
      * @param sendValue
      */
-    private boolean prepareMessageSendParameters(SMTServletRequest req, String type, String sendValue) {
+    private boolean prepareMessageSendParameters(ActionRequest req, String type, String sendValue) {
     	log.debug("validating and preparing send values...send value is: " + sendValue);
     	boolean isValidSend = false;
     	// determine if valid send
@@ -615,7 +613,7 @@ public class LocatorAction extends SBActionAdapter {
      * @param req
      * @return
      */
-    private StringBuilder buildSurgeonDetailUrl(SMTServletRequest req) {
+    private StringBuilder buildSurgeonDetailUrl(ActionRequest req) {
     	SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		StringBuilder url = new StringBuilder(150);
 		url.append(site.getFullSiteAlias());
@@ -645,7 +643,7 @@ public class LocatorAction extends SBActionAdapter {
      * @param surgeonId
      * @return
      */
-    private Map<String,String> findSurgeon(SMTServletRequest req) {
+    private Map<String,String> findSurgeon(ActionRequest req) {
     	log.debug("finding surgeon...");
     	Map<String,String> surgeon = null;
     	// try from session first
@@ -676,7 +674,7 @@ public class LocatorAction extends SBActionAdapter {
      * @param req
      * @return
      */
-    private Map<String,String> findSurgeonFromLookup(SMTServletRequest req) {
+    private Map<String,String> findSurgeonFromLookup(ActionRequest req) {
     	log.debug("finding surgeon by lookup...");
     	LocatorQueryUtil lq = new LocatorQueryUtil();
     	lq.setSpecialty(Convert.formatInteger(req.getParameter("specialty")));
@@ -697,7 +695,7 @@ public class LocatorAction extends SBActionAdapter {
      * @param req
      * @return
      */
-    private Map<String,String> findSurgeonFromJSTLSessionVar(SMTServletRequest req) {
+    private Map<String,String> findSurgeonFromJSTLSessionVar(ActionRequest req) {
     	log.debug("finding surgeon from session");
     	String uniqueId = StringUtil.checkVal(req.getParameter("uniqueId"));
     	String idFormat = StringUtil.checkVal(req.getParameter("idFormat"), null);
@@ -727,7 +725,7 @@ public class LocatorAction extends SBActionAdapter {
      * @param uniqueId
      * @return
      */
-    private Map<String,String> findSurgeonFromXml(SMTServletRequest req, String uniqueId) {
+    private Map<String,String> findSurgeonFromXml(ActionRequest req, String uniqueId) {
     	DeferredDocumentImpl ddi = (DeferredDocumentImpl) req.getSession().getAttribute("locData");
     	Map<String,String> surgeon = null;
     	if (ddi != null) {
@@ -788,7 +786,7 @@ public class LocatorAction extends SBActionAdapter {
      * @param uniqueId
      * @return
      */
-    private Map<String,String> findSurgeonFromJson(SMTServletRequest req, String uniqueId) {
+    private Map<String,String> findSurgeonFromJson(ActionRequest req, String uniqueId) {
     	log.debug("findSurgeonFromJson...");
     	Map<String,String> surgeon = null;
     	String json = (String)req.getSession().getAttribute("locData");
@@ -836,7 +834,7 @@ public class LocatorAction extends SBActionAdapter {
      * nnnnn-nnnnn-nnnnn where 'nnnnn' means a number greater than 1.
      * @return
      */
-    private Map<String,String> findSurgeonFromResultsContainer(SMTServletRequest req, 
+    private Map<String,String> findSurgeonFromResultsContainer(ActionRequest req, 
     		String uniqueId) {
     	log.debug("findSurgeonFromResultsContainer...");
     	String type = StringUtil.checkVal(req.getParameter("messageType"));

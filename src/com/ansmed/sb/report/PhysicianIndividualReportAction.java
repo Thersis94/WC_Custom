@@ -9,7 +9,7 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 
 // SB Libs
 import com.smt.sitebuilder.common.ModuleVO;
@@ -50,7 +50,7 @@ public class PhysicianIndividualReportAction extends SBActionAdapter {
 	 * 
 	 */
 	@SuppressWarnings("unchecked")
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		
 		SMTActionInterface sai = new BusinessAssessmentAction(this.actionInit);
 		sai.setAttributes(this.attributes);

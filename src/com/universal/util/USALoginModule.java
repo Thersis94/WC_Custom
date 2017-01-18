@@ -3,10 +3,8 @@ package com.universal.util;
 // JDK 1.6.x
 import java.util.Map;
 
-
 // Dom4j
 import org.dom4j.Element;
-
 
 // SMT Base Libs
 import com.siliconmtn.common.constants.GlobalConfig;
@@ -16,7 +14,6 @@ import com.siliconmtn.security.AbstractLoginModule;
 import com.siliconmtn.security.AuthenticationException;
 import com.siliconmtn.security.EmailAddressNotFoundException;
 import com.siliconmtn.security.UserDataVO;
-
 // WC libs
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;

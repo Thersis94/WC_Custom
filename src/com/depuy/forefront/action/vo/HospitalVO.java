@@ -4,7 +4,7 @@ import java.sql.ResultSet;
 import java.util.Date;
 
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SBModuleVO;
 
@@ -27,7 +27,7 @@ public class HospitalVO extends SBModuleVO{
 		setData(rs);
 	}
 	
-	public HospitalVO(SMTServletRequest req){
+	public HospitalVO(ActionRequest req){
 		setData(req);
 	}
 	
@@ -40,7 +40,7 @@ public class HospitalVO extends SBModuleVO{
 		db = null;
 	}
 	
-	public void setData(SMTServletRequest req){
+	public void setData(ActionRequest req){
 		hospitalId = req.getParameter("hospitalId");
 		hospitalName = req.getParameter("hospitalName");
 		createDate = Convert.formatDate(req.getParameter("createDate"));

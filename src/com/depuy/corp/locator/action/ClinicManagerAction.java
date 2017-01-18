@@ -10,7 +10,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.exception.DatabaseException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -55,7 +55,7 @@ public class ClinicManagerAction extends DealerInfoAction {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		req.setValidateInput(false);
 		String msg = (String)getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
 		boolean insertAction = Convert.formatBoolean(req.getParameter("insertAction"));
@@ -107,7 +107,7 @@ public class ClinicManagerAction extends DealerInfoAction {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.dealer.DealerInfoAction#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		String dlid = (String) req.getSession().getAttribute("dealerLocationId");
 		SBUserRole role = (SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA);
 
@@ -177,7 +177,7 @@ public class ClinicManagerAction extends DealerInfoAction {
 		return data;
 	}
 	
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		SMTActionInterface ai = new SimpleActionAdapter(actionInit);
 		ai.setAttributes(attributes);
 		ai.setDBConnection(dbConn);

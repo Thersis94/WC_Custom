@@ -15,7 +15,7 @@ import org.apache.solr.common.SolrDocument;
 
 import com.depuysynthesinst.assg.ResidentVO.ResidentGrouping;
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -77,7 +77,7 @@ public class AssignmentVO implements Serializable {
 		util = null;
 	}
 	
-	public AssignmentVO(SMTServletRequest req) {
+	public AssignmentVO(ActionRequest req) {
 		this();
 		assgId = StringUtil.checkVal(req.getParameter("assgId"), null);
 		parentId = StringUtil.checkVal(req.getParameter("parentId"), null);

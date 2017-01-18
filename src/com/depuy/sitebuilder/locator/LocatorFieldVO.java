@@ -5,7 +5,7 @@ import java.sql.ResultSet;
 
 // SMT base Libs 2.0
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 
 // SB Imports
 import com.smt.sitebuilder.action.AbstractSiteBuilderVO;
@@ -35,7 +35,7 @@ public class LocatorFieldVO extends AbstractSiteBuilderVO {
      * Sets the data from the request object to the param value
      * @param req
      */
-    public void setData(SMTServletRequest req) {
+    public void setData(ActionRequest req) {
         actionId = req.getParameter("locatorFieldId");
         fieldName = req.getParameter("fieldName");
     }
