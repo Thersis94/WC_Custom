@@ -8,6 +8,7 @@ import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: CompanyVO.java <p/>
@@ -49,12 +50,14 @@ public class CompanyVO {
 	private List<String> investors;
 	private List<LocationVO> locations;
 	private List<AllianceVO> alliances;
+	private List<CompanyAttributeVO> attributes;
 	
 	
 	public CompanyVO() {
 		investors = new ArrayList<>();
 		locations = new ArrayList<>();
 		alliances = new ArrayList<>();
+		attributes = new ArrayList<>();
 	}
 	
 	public CompanyVO(SMTServletRequest req) {
@@ -64,7 +67,7 @@ public class CompanyVO {
 	
 	public void setData(SMTServletRequest req) {
 		companyId = req.getParameter("companyId");
-		parentId = req.getParameter("parentId");
+		parentId = StringUtil.checkVal(req.getParameter("parentId"), null);
 		companyName = req.getParameter("companyName");
 		shortName = req.getParameter("shortName");
 		aliasName = req.getParameter("aliasName");
@@ -274,6 +277,18 @@ public class CompanyVO {
 	
 	public void addAlliance(AllianceVO alliance) {
 		this.alliances.add(alliance);
+	}
+	
+	public List<CompanyAttributeVO> getAttributes() {
+		return attributes;
+	}
+
+	public void setAttributes(List<CompanyAttributeVO> attributes) {
+		this.attributes = attributes;
+	}
+	
+	public void addAttribute(CompanyAttributeVO attribute) {
+		this.attributes.add(attribute);
 	}
 	
 
