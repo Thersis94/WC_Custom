@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.bmg.admin.vo.AllianceVO;
+import com.bmg.admin.vo.CompanyAttributeVO;
 import com.bmg.admin.vo.CompanyVO;
 import com.bmg.admin.vo.LocationVO;
 import com.siliconmtn.action.ActionException;
@@ -36,7 +37,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	public static final String ACTION_TYPE = "actionType";
 	
 	private enum ActionType {
-		COMPANY, LOCATION, ALLIANCE
+		COMPANY, LOCATION, ALLIANCE, COMPANYATTRIBUTE
 	}
 	
 	public void list(SMTServletRequest req) throws ActionException {
@@ -45,7 +46,9 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	
 	
 	public void retrieve(SMTServletRequest req) throws ActionException {
-		if (req.hasParameter("locationId")) {
+		if (req.hasParameter("companyAttributeId")) {
+			retrieveAttribute(req.getParameter("companyAttributeId"));
+		} if (req.hasParameter("locationId")) {
 			retrieveLocation(req.getParameter("locationId"));
 		} else if (req.hasParameter("companyId") && ! req.hasParameter("add")) {
 			retrieveCompany(req.getParameter("companyId"));
@@ -55,6 +58,19 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	}
 	
 	
+	private void retrieveAttribute(String attributeId) {
+		StringBuilder sql = new StringBuilder(100);
+		sql.append("SELECT * FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR ");
+		sql.append("WHERE COMPANY_ATTRIBUTE_ID = ? ");
+		
+		List<Object> params = new ArrayList<>();
+		params.add(attributeId);
+		DBProcessor db = new DBProcessor(dbConn);
+		CompanyAttributeVO attr = (CompanyAttributeVO) db.executeSelect(sql.toString(), params, new CompanyAttributeVO()).get(0);
+		super.putModuleData(attr);
+	}
+
+
 	/**
 	 * Get the details of the supplied location
 	 * @param locationId
@@ -123,11 +139,33 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 		addInvestors(company);
 		addLocations(company);
 		addAlliances(company);
+		addAttributes(company);
 		
 		super.putModuleData(company);
 	}
 	
 	
+	/**
+	 * Get all attributes associated with the supplied company.
+	 * @param company
+	 */
+	private void addAttributes(CompanyVO company) {
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("SELECT * FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR ");
+		sql.append("WHERE COMPANY_ID = ? ");
+		log.debug(sql+"|"+company.getCompanyId());
+		List<Object> params = new ArrayList<>();
+		params.add(company.getCompanyId());
+		DBProcessor db = new DBProcessor(dbConn);
+		
+		// DBProcessor returns a list of objects that need to be individually cast to attributes
+		List<Object> results = db.executeSelect(sql.toString(), params, new CompanyAttributeVO());
+		for (Object o : results) {
+			company.addAttribute((CompanyAttributeVO)o);
+		}
+	}
+
+
 	/**
 	 * Get all companies that have invested in the supplied company and add
 	 * them to the vo.
@@ -170,7 +208,6 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 		List<Object> results = db.executeSelect(sql.toString(), params, new LocationVO());
 		for (Object o : results) {
 			company.addLocation((LocationVO)o);
-			log.debug(o);
 		}
 	}
 	
@@ -222,10 +259,34 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 				AllianceVO a = new AllianceVO(req);
 				saveAlliance(a, db);
 				break;
+			case COMPANYATTRIBUTE:
+				CompanyAttributeVO attr = new CompanyAttributeVO(req);
+				saveAttribute(attr, db);
+				break;
 		}
 	}
 
 	
+	/**
+	 * Check whether the supplied attribute needs to be inserted or updated and do so.
+	 * @param attr
+	 * @param db
+	 * @throws ActionException
+	 */
+	private void saveAttribute(CompanyAttributeVO attr, DBProcessor db) throws ActionException {
+		try {
+			if (StringUtil.isEmpty(attr.getCompanyAttributeId())) {
+				attr.setCompanyAttributeId(new UUIDGenerator().getUUID());
+				db.insert(attr);
+			} else {
+				db.update(attr);
+			}
+		} catch (Exception e) {
+			throw new ActionException(e);
+		}
+	}
+
+
 	/**
 	 * Check whether the supplied alliance needs to be updated or inserted and do so.
 	 * @param a
@@ -359,6 +420,10 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 			case ALLIANCE:
 				AllianceVO a = new AllianceVO(req);
 				db.delete(a);
+				break;
+			case COMPANYATTRIBUTE:
+				CompanyAttributeVO attr = new CompanyAttributeVO(req);
+				db.delete(attr);
 				break;
 		}
 		} catch (Exception e) {
