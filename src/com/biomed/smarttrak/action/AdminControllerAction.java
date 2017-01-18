@@ -3,7 +3,7 @@
  */
 package com.biomed.smarttrak.action;
 
-import com.biomed.smarttrak.action.gap.GapFacadeAction;
+import com.biomed.smarttrak.FinancialDashAction;
 import com.biomed.smarttrak.admin.ContentHierarchyAction;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -80,11 +80,11 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	private SMTActionInterface loadAction(String actionType) throws ActionException {
 		SMTActionInterface action;
 		switch (StringUtil.checkVal(actionType)) {
-			case "gapAnalysis":
-				action = new GapFacadeAction();
-				break;
 			case "contentHierarchy":
 				action = new ContentHierarchyAction();
+				break;
+			case "financialDashboard":
+				action = new FinancialDashAction();
 				break;
 			default:
 				throw new ActionException("Action type not supported.");
