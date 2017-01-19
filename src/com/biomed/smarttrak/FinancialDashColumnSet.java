@@ -144,6 +144,13 @@ public class FinancialDashColumnSet {
 	}
 
 	/**
+	 * @return the displayName
+	 */
+	public String getDisplayName() {
+		return displayType.getName();
+	}
+
+	/**
 	 * @param calendarYear the calendarYear to set
 	 */
 	public void setCalendarYear(Integer calendarYear) {
@@ -155,5 +162,12 @@ public class FinancialDashColumnSet {
 	 */
 	public void setDisplayType(DisplayType displayType) {
 		this.displayType = displayType;
+	}
+
+	/**
+	 * @param displayType the displayType to set
+	 */
+	public void setDisplayType(String displayType) {
+		this.displayType = DisplayType.valueOf(displayType);
 	}
 }

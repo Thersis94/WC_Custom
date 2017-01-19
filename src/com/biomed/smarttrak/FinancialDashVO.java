@@ -24,12 +24,51 @@ import com.smt.sitebuilder.action.SBModuleVO;
 public class FinancialDashVO extends SBModuleVO {
 	
 	private static final long serialVersionUID = 1L;
-	private String nameCol;
-	private Map<String, String> colHeaders;
+	private List<CountryType> countryTypes;
+	private NameColType nameColType;
+	private FinancialDashColumnSet colHeaders;
 	private List<FinancialDashDataRowVO> rows;
 	
+	/**
+	 * Default name column.
+	 */
+	public static final String DEFAULT_NAME_COL = "MARKET";
+	
+	private enum NameColType {
+		MARKET("Market"), COMPANY("Company / Partner");
+		
+		private String name;
+		
+		NameColType(String name) {
+			this.name= name;
+		}
+		
+		public String getName() {
+			return name;
+		}
+	}
+	
+	/**
+	 * Default country type.
+	 */
+	public static final String DEFAULT_COUNTRY_TYPE = "US";
+	
+	private enum CountryType {
+		US("United States"), EU("European Union"), ROW("Rest-of-World"), WW("World-Wide");
+		
+		private String name;
+		
+		CountryType(String name) {
+			this.name= name;
+		}
+		
+		public String getName() {
+			return name;
+		}
+	}
+	
 	public FinancialDashVO() {
-		colHeaders = new LinkedHashMap<>();
+		countryTypes = new ArrayList<>();
 		rows = new ArrayList<>();
 	}
 
@@ -54,9 +93,9 @@ public class FinancialDashVO extends SBModuleVO {
 		UUIDGenerator uuidGen = new UUIDGenerator();
 		for (int i=0; i < 15; i++) {
 			row = new FinancialDashDataRowVO();
-			row.setName("Company " + i);
+			row.setName(nameColType.getName() + " " + i);
 			row.setPrimaryKey(uuidGen.getUUID());
-			for (String key : colHeaders.keySet()) {
+			for (String key : colHeaders.getColumns().keySet()) {
 				row.addColumn(key, rand.nextInt(25000), rand.nextDouble());
 			}
 			this.addRow(row);
@@ -66,7 +105,7 @@ public class FinancialDashVO extends SBModuleVO {
 	/**
 	 * @return the colHeaders
 	 */
-	public Map<String, String> getColHeaders() {
+	public FinancialDashColumnSet getColHeaders() {
 		return colHeaders;
 	}
 
@@ -78,16 +117,30 @@ public class FinancialDashVO extends SBModuleVO {
 	}
 
 	/**
-	 * @return the nameCol
+	 * @return the countryTypes
 	 */
-	public String getNameCol() {
-		return nameCol;
+	public List<CountryType> getCountryTypes() {
+		return countryTypes;
+	}
+
+	/**
+	 * @return the nameColType
+	 */
+	public NameColType getNameColType() {
+		return nameColType;
+	}
+
+	/**
+	 * @return the nameColName
+	 */
+	public String getNameColName() {
+		return nameColType.getName();
 	}
 
 	/**
 	 * @param colHeaders the colHeaders to set
 	 */
-	public void setColHeaders(Map<String, String> colHeaders) {
+	public void setColHeaders(FinancialDashColumnSet colHeaders) {
 		this.colHeaders = colHeaders;
 	}
 	
@@ -99,10 +152,7 @@ public class FinancialDashVO extends SBModuleVO {
 	 * @param calendarYear
 	 */
 	public void setColHeaders(String displayType, Integer calendarYear) {
-		this.setNameCol("Company / Partner");
-		
-		FinancialDashColumnSet colSet = new FinancialDashColumnSet(displayType, calendarYear);
-		this.setColHeaders(colSet.getColumns());
+		this.colHeaders = new FinancialDashColumnSet(displayType, calendarYear);
 	}
 
 	/**
@@ -113,20 +163,38 @@ public class FinancialDashVO extends SBModuleVO {
 	}
 	
 	/**
-	 * @param nameCol the nameCol to set
+	 * @param countryTypes the countryTypes to set
 	 */
-	public void setNameCol(String nameCol) {
-		this.nameCol = nameCol;
+	public void setCountryTypes(List<CountryType> countryTypes) {
+		this.countryTypes = countryTypes;
 	}
 
 	/**
-	 * Adds a column header to the header list
-	 * 
-	 * @param order
-	 * @param colId
+	 * @param countryType the countryType to add
 	 */
-	public void addColHeader(String colId, String name) {
-		colHeaders.put(colId, name);
+	public void addCountryType(CountryType countryType) {
+		this.countryTypes.add(countryType);
+	}
+
+	/**
+	 * @param countryType the countryType to add
+	 */
+	public void addCountryType(String countryType) {
+		this.countryTypes.add(CountryType.valueOf(countryType));
+	}
+
+	/**
+	 * @param nameColType the nameColType to set
+	 */
+	public void setNameColType(NameColType nameColType) {
+		this.nameColType = nameColType;
+	}
+
+	/**
+	 * @param nameColType the nameColType to set
+	 */
+	public void setNameColType(String nameColType) {
+		this.nameColType = NameColType.valueOf(nameColType);
 	}
 
 	/**
