@@ -4,6 +4,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 
 /****************************************************************************
@@ -39,12 +40,7 @@ public class InsightBlogAction extends SBActionAdapter {
 	public void retrieve(SMTServletRequest req) throws ActionException {
 	
 		log.debug("insite blog action retrieve called " + actionInit.getActionId());
-		//TODO catching the page to i can build the public admin widget directly
-		super.retrieve(req);
-		//TODO is this a good way to tell i am not in the admintool?
-		if(!Convert.formatBoolean(req.getParameter("manMod"))){
-		this.list(req);
-		}
+
 	}
 	
 	
@@ -55,9 +51,9 @@ public class InsightBlogAction extends SBActionAdapter {
 	@Override
 	public void list(SMTServletRequest req) throws ActionException {
 		log.debug("insite blog action list called " + actionInit.getActionId());
-		String type = req.getParameter("type");
+		String type = StringUtil.checkVal(req.getParameter("type"));
 		
-		if (type.equals("author")) {
+		if ("author".equals(type)) {
 			type = "team";
 		}
 		log.debug(" action id: " + actionInit.getActionId());
@@ -68,13 +64,7 @@ public class InsightBlogAction extends SBActionAdapter {
 
 		log.debug(" action id: " + actionInit.getActionId());
 		
-		if(Convert.formatBoolean(req.getParameter("manmod"))){
-			
-			super.list(req);
-		
-		}else {
-			super.retrieve(req);
-		}
+	
 		
 		log.debug("post super call " + actionInit.getActionId());
 		
@@ -88,12 +78,12 @@ public class InsightBlogAction extends SBActionAdapter {
 	public void update(SMTServletRequest req) throws ActionException{
 		log.debug("insite blog action update called");
 		
-		super.update(req);
+	
 		
 		// get the correct blog id for the insight blog
-	String type = req.getParameter("type");
+		String type = StringUtil.checkVal(req.getParameter("type"));
 		
-		if (type.equals("author")) {
+		if ("author".equals(type)) {
 			type = "team";
 		}
 		// change action id to the right blog id
@@ -118,10 +108,10 @@ public class InsightBlogAction extends SBActionAdapter {
 	@Override
 	public void delete(SMTServletRequest req) throws ActionException{
 		log.debug("insite blog action delete called");
-		super.delete(req);
-	String type = req.getParameter("type");
 		
-		if (type.equals("author")) {
+		String type = StringUtil.checkVal(req.getParameter("type"));
+		
+		if ("author".equals(type)) {
 			type = "team";
 		}
 		// get the correct blog id for the insight blog
