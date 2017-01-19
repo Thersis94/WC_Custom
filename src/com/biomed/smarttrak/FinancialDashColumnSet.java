@@ -23,7 +23,7 @@ public class FinancialDashColumnSet {
 	/**
 	 * Default display type.
 	 */
-	public static final String DEFAULT_DISPLAY = "CURYR";
+	public static final String DEFAULT_DISPLAY_TYPE = "CURYR";
 	
 	private enum DisplayType {
 		CURYR("Current Year"), SIXQTR("Six Quarter Running"), FOURYR("Four-Year Comparison"),

@@ -25,21 +25,21 @@ public class FinancialDashVO extends SBModuleVO {
 	
 	private static final long serialVersionUID = 1L;
 	private List<CountryType> countryTypes;
-	private NameColType nameColType;
+	private TableType tableType;
 	private FinancialDashColumnSet colHeaders;
 	private List<FinancialDashDataRowVO> rows;
 	
 	/**
-	 * Default name column.
+	 * Default table type.
 	 */
-	public static final String DEFAULT_NAME_COL = "MARKET";
+	public static final String DEFAULT_TABLE_TYPE = "MARKET";
 	
-	private enum NameColType {
+	private enum TableType {
 		MARKET("Market"), COMPANY("Company / Partner");
 		
 		private String name;
 		
-		NameColType(String name) {
+		TableType(String name) {
 			this.name= name;
 		}
 		
@@ -93,7 +93,7 @@ public class FinancialDashVO extends SBModuleVO {
 		UUIDGenerator uuidGen = new UUIDGenerator();
 		for (int i=0; i < 15; i++) {
 			row = new FinancialDashDataRowVO();
-			row.setName(nameColType.getName() + " " + i);
+			row.setName(tableType.getName() + " " + i);
 			row.setPrimaryKey(uuidGen.getUUID());
 			for (String key : colHeaders.getColumns().keySet()) {
 				row.addColumn(key, rand.nextInt(25000), rand.nextDouble());
@@ -124,17 +124,17 @@ public class FinancialDashVO extends SBModuleVO {
 	}
 
 	/**
-	 * @return the nameColType
+	 * @return the tableType
 	 */
-	public NameColType getNameColType() {
-		return nameColType;
+	public TableType getTableType() {
+		return tableType;
 	}
 
 	/**
-	 * @return the nameColName
+	 * @return the tableTypeName
 	 */
-	public String getNameColName() {
-		return nameColType.getName();
+	public String getTableTypeName() {
+		return tableType.getName();
 	}
 
 	/**
@@ -184,17 +184,17 @@ public class FinancialDashVO extends SBModuleVO {
 	}
 
 	/**
-	 * @param nameColType the nameColType to set
+	 * @param tableType the tableType to set
 	 */
-	public void setNameColType(NameColType nameColType) {
-		this.nameColType = nameColType;
+	public void setTableType(TableType tableType) {
+		this.tableType = tableType;
 	}
 
 	/**
-	 * @param nameColType the nameColType to set
+	 * @param tableType the tableType to set
 	 */
-	public void setNameColType(String nameColType) {
-		this.nameColType = NameColType.valueOf(nameColType);
+	public void setTableType(String tableType) {
+		this.tableType = TableType.valueOf(tableType);
 	}
 
 	/**

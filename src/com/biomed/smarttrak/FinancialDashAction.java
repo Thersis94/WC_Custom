@@ -38,13 +38,13 @@ public class FinancialDashAction extends SBActionAdapter {
 		super.retrieve(req);
 		//ModuleVO modVo = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		
-		String displayType = StringUtil.checkVal(req.getParameter("displayType"), FinancialDashColumnSet.DEFAULT_DISPLAY);
+		String displayType = StringUtil.checkVal(req.getParameter("displayType"), FinancialDashColumnSet.DEFAULT_DISPLAY_TYPE);
 		Integer calendarYear = Convert.formatInteger(req.getParameter("calendarYear"), Convert.getCurrentYear());
-		String tableType = StringUtil.checkVal(req.getParameter("tableType"), FinancialDashVO.DEFAULT_NAME_COL);
+		String tableType = StringUtil.checkVal(req.getParameter("tableType"), FinancialDashVO.DEFAULT_TABLE_TYPE);
 		String[] countryTypes = req.getParameterValues("countryTypes[]") == null ? new String[]{FinancialDashVO.DEFAULT_COUNTRY_TYPE} : req.getParameterValues("countryTypes[]");
 		
 		FinancialDashVO dash = new FinancialDashVO();
-		dash.setNameColType(tableType);
+		dash.setTableType(tableType);
 		dash.setColHeaders(displayType, calendarYear);
 		for(String countryType : countryTypes) {
 			dash.addCountryType(countryType);
