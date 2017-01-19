@@ -55,9 +55,17 @@ public class InsightBlogAction extends SBActionAdapter {
 	@Override
 	public void list(SMTServletRequest req) throws ActionException {
 		log.debug("insite blog action list called " + actionInit.getActionId());
+		String type = req.getParameter("type");
 		
+		if (type.equals("author")) {
+			type = "team";
+		}
 		log.debug(" action id: " + actionInit.getActionId());
 		actionInit.setActionId("eb19b0e489ade9bd7f000101577715c8");
+		req.setParameter(SB_ACTION_ID, "eb19b0e489ade9bd7f000101577715c8");
+		req.setAttribute(SB_ACTION_ID, "eb19b0e489ade9bd7f000101577715c8");
+		req.setParameter("display", "/custom/biomed/smarttrak/admin/smarttrak_insight/" + type  + ".jsp");
+
 		log.debug(" action id: " + actionInit.getActionId());
 		
 		if(Convert.formatBoolean(req.getParameter("manmod"))){
@@ -83,10 +91,17 @@ public class InsightBlogAction extends SBActionAdapter {
 		super.update(req);
 		
 		// get the correct blog id for the insight blog
+	String type = req.getParameter("type");
 		
+		if (type.equals("author")) {
+			type = "team";
+		}
 		// change action id to the right blog id
 		log.debug(" action id: " + actionInit.getActionId());
 		actionInit.setActionId("eb19b0e489ade9bd7f000101577715c8");
+		req.setParameter(SB_ACTION_ID, "eb19b0e489ade9bd7f000101577715c8");
+		req.setAttribute(SB_ACTION_ID, "eb19b0e489ade9bd7f000101577715c8");
+		req.setParameter("display", "/custom/biomed/smarttrak/admin/smarttrak_insight/" + type  + ".jsp");
 		log.debug(" action id: " + actionInit.getActionId());
 		
 		// might need to move data from admin module to public module
@@ -104,12 +119,20 @@ public class InsightBlogAction extends SBActionAdapter {
 	public void delete(SMTServletRequest req) throws ActionException{
 		log.debug("insite blog action delete called");
 		super.delete(req);
+	String type = req.getParameter("type");
 		
+		if (type.equals("author")) {
+			type = "team";
+		}
 		// get the correct blog id for the insight blog
 		
 		// change action id to the right blog id
 		log.debug(" action id: " + actionInit.getActionId());
 		actionInit.setActionId("eb19b0e489ade9bd7f000101577715c8");
+		req.setParameter(SB_ACTION_ID, "eb19b0e489ade9bd7f000101577715c8");
+		req.setAttribute(SB_ACTION_ID, "eb19b0e489ade9bd7f000101577715c8");
+		req.setParameter("display", "/custom/biomed/smarttrak/admin/smarttrak_insight/" + type  + ".jsp");
+
 		log.debug(" action id: " + actionInit.getActionId());
 		
 
