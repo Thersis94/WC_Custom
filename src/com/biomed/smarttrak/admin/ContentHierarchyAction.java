@@ -23,6 +23,7 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -39,6 +40,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class ContentHierarchyAction extends SBActionAdapter {
 
+	public static final String CONTENT_HIERARCHY_CACHE_KEY = "BIOMED_CONTENT_HIERARCHY";
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#copy(com.siliconmtn.http.SMTServletRequest)
 	 */
@@ -70,16 +72,56 @@ public class ContentHierarchyAction extends SBActionAdapter {
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		String sectionId = req.getParameter("sectionId");
 
-		List<Node> sections = getHierarchy(sectionId);
+		//Attempt to read ContentHierarchy Data from Cache.
+		ModuleVO mod = super.readFromCache(CONTENT_HIERARCHY_CACHE_KEY);
 
-		//Build a Tree from the list if we have more than one.
-		if(sections.size() > 1) {
-			//Build a Tree from the list.
-			Tree tree = new Tree(sections);
-			sections = tree.preorderList();
+		//If not found in cache Load data.
+		if(mod == null) {
+			mod = loadContentHierarchyModule();
 		}
 
-		this.putModuleData(sections, sections.size(), false);
+		//Get the Tree off the actionData
+		Tree t = (Tree) mod.getActionData();
+
+		//Place requested data on the request.
+		if(!StringUtil.isEmpty(sectionId)) {
+			//Put the requested Section Node on the request.
+			this.putModuleData(t.findNode(sectionId));
+		} else {
+			List<Node> sections = t.preorderList();
+			this.putModuleData(sections, sections.size(), false);
+		}
+	}
+
+	/**
+	 * Helper method that manages creating a ModuleVO, loading the entire
+	 * hierarchy tree and storing it in cache.
+	 * @return
+	 */
+	private ModuleVO loadContentHierarchyModule() {
+		//Use a new ModuleVO so as to prevent issues with cache.
+		ModuleVO mod = new ModuleVO();
+
+		List<Node> sections = getHierarchy();
+
+
+		//Build a Tree from the list.
+		Tree tree = new Tree(sections);
+
+		mod.setActionData(tree);
+		mod.setDataSize(sections.size());
+		mod.setCacheable(true);
+
+		//Common Cache Group for Content Hierarchy Data.
+		mod.addCacheGroup("CONTENT_HIERARCHY");
+
+		//Store All Content Hierarchy in single location as this is a custom action managing all the data.
+		mod.setPageModuleId(CONTENT_HIERARCHY_CACHE_KEY);
+
+		//Write to Cache.
+		super.writeToCache(mod);
+
+		return mod;
 	}
 
 	/**
@@ -87,13 +129,9 @@ public class ContentHierarchyAction extends SBActionAdapter {
 	 * @param sectionId
 	 * @return
 	 */
-	public List<Node> getHierarchy(String sectionId) {
-		boolean isEdit = !StringUtil.isEmpty(sectionId);
+	public List<Node> getHierarchy() {
 		Map<String, Node> data = new LinkedHashMap<>();
-		try (PreparedStatement ps = dbConn.prepareStatement(getContentHierarchyListSql(isEdit))) {
-			if(isEdit) {
-				ps.setString(1, sectionId);
-			}
+		try (PreparedStatement ps = dbConn.prepareStatement(getContentHierarchyListSql())) {
 
 			ResultSet rs = ps.executeQuery();
 
@@ -125,6 +163,8 @@ public class ContentHierarchyAction extends SBActionAdapter {
 		SectionVO s = new SectionVO(req);
 
 		saveSectionVO(s);
+
+		this.clearCacheByKey(CONTENT_HIERARCHY_CACHE_KEY);
 	}
 
 	/* (non-Javadoc)
@@ -143,14 +183,10 @@ public class ContentHierarchyAction extends SBActionAdapter {
 	 * Helper method that returns the Sql Query for retrieving Segments. 
 	 * @return
 	 */
-	private String getContentHierarchyListSql(boolean isEdit) {
+	private String getContentHierarchyListSql() {
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select * from ");
 		sql.append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("BIOMEDGPS_SECTION a ");
-
-		if(isEdit) {
-			sql.append("where a.SECTION_ID = ? ");
-		}
 
 		//sql databases treat ordering nulls in different ways, by coalescing on blank we guarantee nulls first
 		sql.append("order by PARENT_ID, ORDER_NO, SECTION_NM");
