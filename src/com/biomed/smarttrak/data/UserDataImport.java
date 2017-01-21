@@ -36,10 +36,13 @@ import com.smt.sitebuilder.security.UserLogin;
  ****************************************************************************/
 public class UserDataImport extends ProfileImport {
 
-	private static String FILE_PATH="/home/groot/Downloads/smarttrak/user-import/test/smarttrak-user-import-TEST-2017-01-19.csv";
-	private static Map<String,String> regFieldMap = createRegFieldMap();
+	//private static String FILE_PATH="/home/groot/Downloads/smarttrak/user-import/test/smarttrak-profiles-ACTIVE-USERS-WIP-2017-01-20-1803pm.csv";
+	private static String FILE_PATH="/home/groot/Downloads/smarttrak/user-import/test/smarttrak-profiles-INACTIVE-USERS-WIP-2017-01-20-1803pm.csv";
+	
 	private final String GEOCODE_CLASS="com.siliconmtn.gis.SMTGeocoder";
 	private final String GEOCODE_URL="http://localhost:9000/websvc/geocoder";
+	private final String REGISTRATION_PAGE_URL = "http://smarttrak.siliconmtn.com/subscribe";
+	private static Map<String,String> regFieldMap = createRegFieldMap();
 	
 	public UserDataImport() {
 		super();
@@ -53,13 +56,62 @@ public class UserDataImport extends ProfileImport {
 		try {
 			System.out.println("importFile=" + FILE_PATH);
 			List<Map<String,String>> data = db.parseFile(FILE_PATH);
+			db.fixFieldData(data);
 			db.insertRecords(data);
-			//db.insertRegistrationRecords(data);
 		} catch (Exception e) {
 			e.printStackTrace();
 			System.err.println("Error Processing ... " + e.getMessage());
 		}
 		db = null;
+	}
+	
+	protected void fixFieldData(List<Map<String,String>> records) {
+		log.debug("parsing phones...");
+		String country;
+		for (Map<String,String> record: records) {
+			country = StringUtil.checkVal(record.get("COUNTRY_CD"));
+			//log.debug("main before: " + record.get("MAIN_PHONE_TXT"));
+			//log.debug("mobile before: " + record.get("MOBILE_PHONE_TXT"));
+			record.put("ZIP_CD",fixZipCode(record.get("ZIP_CD"),country));
+			record.put("MAIN_PHONE_TXT", stripPhoneExtension(record.get("MAIN_PHONE_TXT"),country));
+			record.put("MOBILE_PHONE_TXT",stripPhoneExtension(record.get("MOBILE_PHONE_TXT"),country));
+			//log.debug("main after: " + record.get("MAIN_PHONE_TXT"));
+			//log.debug("mobile after: " + record.get("MOBILE_PHONE_TXT"));
+		}
+	}
+	
+	/**
+	 * Fixes US zip codes that need a leading 0.
+	 * @param zip
+	 * @param country
+	 * @return
+	 */
+	protected String fixZipCode(String zip, String country) {
+		if ("US".equalsIgnoreCase(country)) {
+			if (StringUtil.checkVal(zip).length() == 4) {
+				return "0" + zip;
+			}
+		}
+		return zip;
+	}
+	
+	/**
+	 * Strips out any extension (e.g. ext. 123, xt 123, etc.)
+	 * from a phone number.
+	 * @param phone
+	 * @param country
+	 * @return
+	 */
+	protected String stripPhoneExtension(String phone, String country) {
+		if (StringUtil.checkVal(phone,null) == null) return phone;
+		phone = phone.toLowerCase();
+		int idx = phone.indexOf(',');
+		if (idx == -1) {
+			idx = phone.indexOf('e');
+			if (idx == -1) idx = phone.indexOf('x');
+		}
+		if (idx > -1) return phone.substring(0, idx).trim();
+		return phone.trim();
 	}
 	
 	/**
@@ -69,10 +121,12 @@ public class UserDataImport extends ProfileImport {
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	protected void insertRecords(List<Map<String,String>> records) throws Exception {
+		log.debug("inserting records..., records list size is: " + records.size());
 		int recordCnt = 0;
 		int successCnt = 0;
 		int failedCnt = 0;
 		int skipCnt = 0;
+		String currRecord;
 		//Open DB Connection
 		Connection dbConn = getDBConnection(DESTINATION_AUTH[0], DESTINATION_AUTH[1], DESTINATION_DB_DRIVER, DESTINATION_DB_URL);
 		
@@ -91,28 +145,30 @@ public class UserDataImport extends ProfileImport {
 		Iterator iter = records.iterator();
 		while (iter.hasNext()) {
 			recordCnt++;
-			
 			// populate user data vo
 			user = new SiteUserVO();
 			Map<String,Object> dataSet = (Map<String,Object>) iter.next();
+			currRecord = (String)dataSet.get("SMARTTRAK_ID");
 			user.setData(dataSet);
 			if (!StringUtil.isValidEmail(user.getEmailAddress())) {
 				log.warn("Invalid email found, skipping record|email: " + recordCnt + "|" + user.getEmailAddress());
-				profileIdMap.put((String)dataSet.get("SMARTTRAK_ID"),"Profile creation failed");
+				profileIdMap.put(currRecord,"Profile creation failed - invalid email address.");
 				failedCnt++;
 				continue;
 			}
 			
 			user.setValidEmailFlag(1);
 			
-			//check for pre-existing user
+try {			
+			// check for pre-existing user profile
 			if (!dataSet.containsKey("PROFILE_ID")) 
 				user.setProfileId(pm.checkProfile(user, dbConn));
 			
-			// If password was supplied, check for existing auth ID
+			/* If password was supplied, check for existing auth ID.
+			 * Create an auth record only if an auth record doesn't 
+			 * already exist because we don't want to overwrite what
+			 * is already there. */
 			if (dataSet.containsKey("PASSWORD_TXT")) {
-				/* Check for auth ID.  Create auth record only if it doesn't already 
-				 * exist.  We don't want to overwrite what is already there. */
 				user.setAuthenticationId(ul.checkAuth(user.getEmailAddress()));
 				if (user.getAuthenticationId() == null) {
 					//pwd will be encrypted at qry, 0 sets password reset flag to false
@@ -121,7 +177,8 @@ public class UserDataImport extends ProfileImport {
 				}
 			}
 		
-			/* 2017-01-19: INSERT profile only.  If profile already exists, we do nothing.	 */
+			/* 2017-01-19: If profile doesn't exist, insert it.  Otherwise leave the existing 
+			 * profile alone. */
 			if (user.getProfileId() == null) {
 				 //runs insert query
 				pm.updateProfile(user, dbConn);
@@ -130,32 +187,37 @@ public class UserDataImport extends ProfileImport {
 				//pm.updateProfilePartially(dataSet, user, dbConn); //runs dynamic update query; impacts on the columns we're importing
 			}
 			
-			// Add comm flag for this org
+			/* If an org ID and comm flag were supplied, opt-in this user for the given org.	 */
 			if (dataSet.containsKey("ALLOW_COMM_FLG") && dataSet.containsKey("ORGANIZATION_ID"))
 				pm.assignCommunicationFlg((String)dataSet.get("ORGANIZATION_ID"), user.getProfileId(), Convert.formatInteger((String)dataSet.get("ALLOW_COMM_FLG")), dbConn);
 			
-			// Add profile roles for the specified site.
+			/* Add profile roles for this user for the specified site ID. */
 			if (dataSet.containsKey("ROLE_ID") && dataSet.containsKey("SITE_ID")) {
-				if (!prm.roleExists(user.getProfileId(), (String)dataSet.get("SITE_ID"), (String)dataSet.get("ROLE_ID"), dbConn)) {
-					SBUserRole userRole = new SBUserRole();
-					userRole.setSiteId((String)dataSet.get("SITE_ID"));
-					userRole.setRoleId((String)dataSet.get("ROLE_ID"));
-					userRole.setStatusId(20);
-					userRole.setProfileId(user.getProfileId());
-					try {
-						prm.addRole(userRole, dbConn);
-					} catch (Exception e) {
-						log.error("Error: Cannot add role for this record number: ", e);
+				// If both columns are populated, process role.
+				if (StringUtil.checkVal(dataSet.get("ROLE_ID"),null) != null &&
+						StringUtil.checkVal(dataSet.get("SITE_ID"),null) != null) {
+					if (!prm.roleExists(user.getProfileId(), (String)dataSet.get("SITE_ID"), (String)dataSet.get("ROLE_ID"), dbConn)) {
+						SBUserRole userRole = new SBUserRole();
+						userRole.setSiteId((String)dataSet.get("SITE_ID"));
+						userRole.setRoleId((String)dataSet.get("ROLE_ID"));
+						userRole.setStatusId(20);
+						userRole.setProfileId(user.getProfileId());
+						try {
+							prm.addRole(userRole, dbConn);
+						} catch (Exception e) {
+							log.error("Error: Cannot add role for this record number: ", e);
+						}
 					}
 				}
 			}
-			
-			//increment our counter
+		} catch(Exception ex) {
+			log.error("Error processing source ID " + currRecord + ", " + ex.getMessage());
+		}
+			//increment our counters
 			if (user.getProfileId() != null) {
 				successCnt++;
 				profileIds.add(user.getProfileId());
-				profileIdMap.put((String)dataSet.get("SMARTTRAK_ID"), user.getProfileId());
-				
+				profileIdMap.put(currRecord, user.getProfileId());
 				try {
 					insertRegistrationRecords(dataSet);
 				} catch (Exception e) {
@@ -172,6 +234,7 @@ public class UserDataImport extends ProfileImport {
 		//close DB Connection
 		this.closeConnection(dbConn);
 		
+		/* Output the source ID mapped to the WC profile ID found/created. */
 		for (Map.Entry<String,String> entry : profileIdMap.entrySet()) {
 			log.debug("SmartTRAK ID --> WC profile ID: " + entry.getKey() + " --> " + entry.getValue());
 		}
@@ -185,13 +248,12 @@ public class UserDataImport extends ProfileImport {
 			throws Exception {
 		int count=0;
 		int failCnt = 0;
-		String PAGE_URL = "http://smarttrak.siliconmtn.com/subscribe";
 		
 		SMTHttpConnectionManager conn = null;
 		
 		try {
 			conn = new SMTHttpConnectionManager();
-			conn.retrieveDataViaPost(PAGE_URL, buildParams(record));
+			conn.retrieveDataViaPost(REGISTRATION_PAGE_URL, buildRegistrationParams(record));
 			log.info("retStatus= " + conn.getResponseCode());
 			if (conn.getResponseCode() == 200) { ++count; } else { ++failCnt; };
 			//if (count == 10) return;
@@ -212,7 +274,7 @@ public class UserDataImport extends ProfileImport {
 	 * @param data
 	 * @return
 	 */
-	private String buildParams(Map<String, Object> data) {
+	private String buildRegistrationParams(Map<String, Object> data) {
 		StringBuilder params = new StringBuilder("1=1");		
 		//append any runtime requests of the calling class.  (login would pass username & password here)
 		int fieldIndex = -1;
@@ -242,22 +304,6 @@ public class UserDataImport extends ProfileImport {
 		}
 		
 		//append some form constants that WC passed in hidden fields
-		/*
-		params.append("&formFields=7f000001397b18842a834a598cdeafa");
-		params.append("&formFields=7f000001427b18842a834a598cdeafa");
-		params.append("&formFields=7f000001447b18842a834a598cdeafa");
-		params.append("&formFields=7f000001467b18842a834a598cdeafa");
-		params.append("&formFields=7f000001477b18842a834a598cdeafa");
-		params.append("&formFields=7f000001487b18842a834a598cdeafa");
-		params.append("&formFields=7f000001497b18842a834a598cdeafa");
-		params.append("&formFields=7f000001507b18842a834a598cdeafa");
-		params.append("&formFields=7f000001517b18842a834a598cdeafa");		
-		params.append("&formFields=7f000001527b18842a834a598cdeafa");
-		params.append("&formFields=7f000001577b18842a834a598cdeafa");
-		params.append("&formFields=dd64d07fb37c2c067f0001012b4210ff");
-		params.append("&formFields=9b079506b37cc0de7f0001014b63ad3c");
-		params.append("&formFields=d5ed674eb37da7fd7f000101d875b114");
-		*/
 		params.append("&pmid=6d9674d8b7dc54077f0001019b2cb979");
 		params.append("&requestType=reqBuild");
 		params.append("&actionName=");
