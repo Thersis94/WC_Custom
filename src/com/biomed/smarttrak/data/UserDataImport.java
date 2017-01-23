@@ -2,7 +2,10 @@ package com.biomed.smarttrak.data;
 
 // Java 7
 import java.io.IOException;
+import java.sql.BatchUpdateException;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -14,6 +17,7 @@ import java.util.TreeMap;
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.UUIDGenerator;
 
 // WebCrescendo libs
 import com.smt.sitebuilder.action.user.ProfileManager;
@@ -43,9 +47,11 @@ public class UserDataImport extends ProfileImport {
 	private static Map<String,String> regFieldMap = createRegFieldMap();
 	private final String GEOCODE_CLASS="com.siliconmtn.gis.SMTGeocoder";
 	private final String GEOCODE_URL="http://localhost:9000/websvc/geocoder";
-	private final String REGISTRATION_PAGE_URL = "http://smarttrak.siliconmtn.com/subscribe";
+	private final String REGISTRATION_PAGE_URL = "http://smarttrak.siliconmtn.com/my-account";
 	//private static String FILE_PATH="/home/groot/Downloads/smarttrak/user-import/test/smarttrak-profiles-ACTIVE-USERS-WIP-2017-01-20-1803pm.csv";
-	private static String FILE_PATH="/home/groot/Downloads/smarttrak/user-import/test/smarttrak-profiles-INACTIVE-USERS-WIP-2017-01-20-1803pm.csv";
+	//private static String FILE_PATH="/home/groot/Downloads/smarttrak/user-import/test/smarttrak-profiles-INACTIVE-USERS-WIP-2017-01-20-1803pm.csv";
+	private static String FILE_PATH="/home/groot/Downloads/smarttrak/user-import/test/smarttrak-profiles-TEST-2017-01-23-1411pm.csv";
+	private static String REG_ACTION_ID = "ea884793b2ef163f7f0001011a253456";
 	
 	public UserDataImport() {
 		super();
@@ -59,7 +65,6 @@ public class UserDataImport extends ProfileImport {
 		try {
 			System.out.println("importFile=" + FILE_PATH);
 			List<Map<String,String>> data = db.parseFile(FILE_PATH);
-			db.sanitizeFieldData(data);
 			db.insertRecords(data);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -68,58 +73,6 @@ public class UserDataImport extends ProfileImport {
 		db = null;
 	}
 	
-	/**
-	 * Sanitizes/cleans import data for certain fields
-	 * @param records
-	 */
-	protected void sanitizeFieldData(List<Map<String,String>> records) {
-		log.debug("parsing phones...");
-		String country;
-		for (Map<String,String> record: records) {
-			country = StringUtil.checkVal(record.get("COUNTRY_CD"));
-			record.put("ZIP_CD",fixZipCode(record.get("ZIP_CD"),country));
-			record.put("MAIN_PHONE_TXT", stripPhoneExtension(record.get("MAIN_PHONE_TXT"),country));
-			record.put("MOBILE_PHONE_TXT",stripPhoneExtension(record.get("MOBILE_PHONE_TXT"),country));
-		}
-	}
-	
-	/**
-	 * Fixes US zip codes that need a leading 0.
-	 * @param zip
-	 * @param country
-	 * @return
-	 */
-	protected String fixZipCode(String zip, String country) {
-		if ("US".equalsIgnoreCase(country)) {
-			if (StringUtil.checkVal(zip).length() == 4) {
-				return "0" + zip;
-			}
-		}
-		return zip;
-	}
-	
-	/**
-	 * Strips out any extension text that was included as part of a phone number
-	 * e.g.
-	 * 		123-456-7890 ext 123 ('ext 123' is removed)
-	 * 		123-456-7890, xt 456 (', xt 456' is removed)
-	 * 		123-456-7890,9999 (',9999' is removed)
-	 * 
-	 * @param phone
-	 * @param country
-	 * @return
-	 */
-	protected String stripPhoneExtension(String phone, String country) {
-		if (StringUtil.checkVal(phone,null) == null) return phone;
-		phone = phone.toLowerCase();
-		int idx = phone.indexOf(',');
-		if (idx == -1) {
-			idx = phone.indexOf('e');
-			if (idx == -1) idx = phone.indexOf('x');
-		}
-		if (idx > -1) return phone.substring(0, idx).trim();
-		return phone.trim();
-	}
 	
 	/**
 	 * 
@@ -156,15 +109,18 @@ public class UserDataImport extends ProfileImport {
 			user = new SiteUserVO();
 			Map<String,Object> dataSet = (Map<String,Object>) iter.next();
 			currRecord = (String)dataSet.get("SMARTTRAK_ID");
-			user.setData(dataSet);
-			if (!StringUtil.isValidEmail(user.getEmailAddress())) {
-				log.warn("Invalid email found, skipping record|email: " + recordCnt + "|" + user.getEmailAddress());
-				profileIdMap.put(currRecord,"Profile creation failed - invalid email address.");
-				failedCnt++;
-				continue;
-			}
 			
-			user.setValidEmailFlag(1);
+			// clean up certain values before we use them.
+			sanitizeFieldData(dataSet);
+			user.setData(dataSet);
+
+			// check email address
+			if (!StringUtil.isValidEmail(user.getEmailAddress())) {
+				user.setEmailAddress(null);
+				log.warn("Invalid email found, setting to null for source id|email: " + currRecord + "|" + user.getEmailAddress());
+			} else {
+				user.setValidEmailFlag(1);
+			}
 			
 			try {
 				// check for pre-existing user profile
@@ -175,7 +131,8 @@ public class UserDataImport extends ProfileImport {
 				 * Create an auth record only if an auth record doesn't 
 				 * already exist because we don't want to overwrite what
 				 * is already there. */
-				if (dataSet.containsKey("PASSWORD_TXT")) {
+				if (dataSet.containsKey("PASSWORD_TXT") && 
+						dataSet.get("PASSWORD_TXT") != null) {
 					user.setAuthenticationId(ul.checkAuth(user.getEmailAddress()));
 					if (user.getAuthenticationId() == null) {
 						//pwd will be encrypted at qry, 0 sets password reset flag to false
@@ -226,7 +183,7 @@ public class UserDataImport extends ProfileImport {
 				profileIds.add(user.getProfileId());
 				profileIdMap.put(currRecord, user.getProfileId());
 				try {
-					insertRegistrationRecords(dataSet);
+					insertRegistrationRecords(dbConn, dataSet, user);
 				} catch (Exception e) {
 					log.error("Error inserting registration records for this record: " + recordCnt);
 				}
@@ -241,18 +198,95 @@ public class UserDataImport extends ProfileImport {
 		//close DB Connection
 		this.closeConnection(dbConn);
 		
-		/* Output the source ID mapped to the WC profile ID found/created. */
+		/* Output update queries for the source ID mapped to the WC profile ID found/created. */
 		for (Map.Entry<String,String> entry : profileIdMap.entrySet()) {
-			log.debug("SmartTRAK ID --> WC profile ID: " + entry.getKey() + " --> " + entry.getValue());
+			//log.debug("SmartTRAK ID --> WC profile ID: " + entry.getKey() + " --> " + entry.getValue());
+			log.debug("update biomedgps.profiles_user set wc_profile_id = '"+ entry.getValue() + "' where id = " + entry.getKey() + ";");
 		}
+	}
+	
+	protected void insertRegistrationRecords(Connection dbConn, Map<String,Object> record, SiteUserVO user) 
+			throws Exception {
+		if (user.getEmailAddress() == null) {
+			insertRegistrationRecordsManually(dbConn, record, user);
+		} else {
+			insertRegistrationRecordsViaForm(record);
+		}
+		
+	}
+	
+	/**
+	 * Used to insert registration records for profiles with no email address.  If we try to push these through the API, 
+	 * WC creates a new profile for this user in addition to creating the registration records.  This results in multiple
+	 * duplicated profiles.  Additionally, the API does not return the profile ID that was created so we don't have
+	 * a way of mapping the original source ID to the WC profile ID.
+	 * @param dbConn
+	 * @param record
+	 * @param user
+	 * @throws Exception
+	 */
+	private void insertRegistrationRecordsManually(Connection dbConn, Map<String, Object> record, 
+			SiteUserVO user) throws Exception {
+		log.debug("insertRegistrationRecordsManually...");
+		StringBuilder regSub = new StringBuilder(122);
+		regSub.append("insert into register_submittal (register_submittal_id, site_id, action_id, profile_id, create_dt) ");
+		regSub.append("values (?,?,?,?,?)");
+		int idx = 1;
+		String regSubId = new UUIDGenerator().getUUID();
+		try (PreparedStatement ps = dbConn.prepareStatement(regSub.toString())) {
+			ps.setString(idx++, regSubId);
+			ps.setString(idx++, (String)record.get("SITE_ID"));
+			ps.setString(idx++, REG_ACTION_ID);
+			ps.setString(idx++, user.getProfileId());
+			ps.setTimestamp(idx++, Convert.getCurrentTimestamp());
+			ps.execute();
+		} catch (SQLException sqle) {
+			log.error("Error inserting registration submittal records manually, ", sqle);
+			throw new Exception(sqle.getMessage());
+		}
+
+		regSub = new StringBuilder(132);
+		regSub.append("insert into register_data (register_data_id, register_submittal_id, register_field_id, value_txt, create_dt) ");
+		regSub.append("values (?,?,?,?,?)");
+
+		try (PreparedStatement ps = dbConn.prepareStatement(regSub.toString())) {
+			for (int recCnt = 1; recCnt < 4; recCnt++) {
+				idx = 1;
+				ps.setString(idx++, new UUIDGenerator().getUUID());
+				ps.setString(idx++, regSubId);
+				switch(recCnt) {
+					case 1:
+						ps.setString(idx++, "dd64d07fb37c2c067f0001012b4210ff");
+						ps.setString(idx++, (String)record.get("TITLE"));
+						break;
+					case 2:
+						ps.setString(idx++, "9b079506b37cc0de7f0001014b63ad3c");
+						ps.setString(idx++, (String)record.get("UPDATE_FREQ"));
+						break;
+					case 3:
+						ps.setString(idx++, "d5ed674eb37da7fd7f000101d875b114");
+						ps.setString(idx++, (String)record.get("UPDATE_FAVORITES_FREQ"));
+				}
+				ps.setTimestamp(idx++, Convert.getCurrentTimestamp());
+				ps.addBatch();
+			}
+			int[] recs = ps.executeBatch();
+			if (recs == null || recs.length < 3) {
+				log.warn("Warning: Number of registration records inserted is less than 3.");
+			}
+		} catch (BatchUpdateException sqle) {
+			log.error("Error inserting registration submittal records manually, ", sqle.getNextException());
+			throw new Exception(sqle.getNextException().getMessage());
+		}
+		
 	}
 	
 	/**
 	 * @param records
 	 * @throws Exception
 	 */
-	protected void insertRegistrationRecords(Map<String, Object> record) 
-			throws Exception {
+	private void insertRegistrationRecordsViaForm(Map<String, Object> record) throws Exception {
+		log.debug("insertRegistrationRecordsViaForm...");
 		int count=0;
 		int failCnt = 0;
 		
@@ -263,7 +297,6 @@ public class UserDataImport extends ProfileImport {
 			conn.retrieveDataViaPost(REGISTRATION_PAGE_URL, buildRegistrationParams(record));
 			log.info("retStatus= " + conn.getResponseCode());
 			if (conn.getResponseCode() == 200) { ++count; } else { ++failCnt; };
-			//if (count == 10) return;
 			conn = null;
 		} catch (IOException ioe) {
 			log.error("Error: IOException during registration " + ioe.getMessage(), ioe);
@@ -313,7 +346,7 @@ public class UserDataImport extends ProfileImport {
 		params.append("&pmid=6d9674d8b7dc54077f0001019b2cb979");
 		params.append("&requestType=reqBuild");
 		params.append("&actionName=");
-		params.append("&sbActionId=ea884793b2ef163f7f0001011a253456");
+		params.append("&sbActionId=").append(REG_ACTION_ID);
 		params.append("&page=2");
 		params.append("&registerSubmittalId=");
 		params.append("&postProcess=");
@@ -347,5 +380,74 @@ public class UserDataImport extends ProfileImport {
 		fieldMap.put("UPDATE_FREQ","reg_||9b079506b37cc0de7f0001014b63ad3c");
 		fieldMap.put("UPDATE_FAVORITES_FREQ","reg_||d5ed674eb37da7fd7f000101d875b114");
 		return fieldMap;
+	}
+	
+	/**
+	 * Sanitizes/cleans import data for certain fields
+	 * @param records
+	 */
+	protected void sanitizeFieldData(Map<String,Object> record) {
+		log.debug("sanitizing field data...");
+		String country = StringUtil.checkVal(record.get("COUNTRY_CD"));
+		String tmpVal = (String)record.get("ZIP_CD");
+		record.put("ZIP_CD",fixZipCode(tmpVal,country));
+		tmpVal = (String)record.get("MAIN_PHONE_TXT");
+		record.put("MAIN_PHONE_TXT", stripPhoneExtension(tmpVal,country));
+		tmpVal = (String)record.get("MOBILE_PHONE_TXT");
+		record.put("MOBILE_PHONE_TXT",stripPhoneExtension(tmpVal,country));
+		tmpVal = (String)record.get("FIRST_NM");
+		record.put("FIRST_NM", checkField(tmpVal));
+		tmpVal = (String)record.get("LAST_NM");
+		record.put("LAST_NM", checkField(tmpVal));
+	}
+	
+	/**
+	 * Fixes US zip codes that need a leading 0.
+	 * @param zip
+	 * @param country
+	 * @return
+	 */
+	protected String fixZipCode(String zip, String country) {
+		if ("US".equalsIgnoreCase(country)) {
+			if (StringUtil.checkVal(zip).length() == 4) {
+				return "0" + zip;
+			}
+		}
+		return zip;
+	}
+	
+	/**
+	 * Strips out any extension text that was included as part of a phone number
+	 * e.g.
+	 * 		123-456-7890 ext 123 ('ext 123' is removed)
+	 * 		123-456-7890, xt 456 (', xt 456' is removed)
+	 * 		123-456-7890,9999 (',9999' is removed)
+	 * 
+	 * @param phone
+	 * @param country
+	 * @return
+	 */
+	protected String stripPhoneExtension(String phone, String country) {
+		if (StringUtil.checkVal(phone,null) == null) return phone;
+		phone = phone.toLowerCase();
+		int idx = phone.indexOf(',');
+		if (idx == -1) {
+			idx = phone.indexOf('e');
+			if (idx == -1) idx = phone.indexOf('x');
+		}
+		if (idx > -1) return phone.substring(0, idx).trim();
+		return phone.trim();
+	}
+	
+	/**
+	 * Returns a String whose length is less than or equal to the maxLength.
+	 * @param val
+	 * @param maxLength
+	 * @return
+	 */
+	protected String checkField(String val) {
+		if (val == null) return val;
+		if (val.indexOf(",") > -1) return val.substring(0,val.indexOf(","));
+		return val;
 	}
 }
