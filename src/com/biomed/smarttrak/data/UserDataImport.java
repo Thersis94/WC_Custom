@@ -73,13 +73,9 @@ public class UserDataImport extends ProfileImport {
 		String country;
 		for (Map<String,String> record: records) {
 			country = StringUtil.checkVal(record.get("COUNTRY_CD"));
-			//log.debug("main before: " + record.get("MAIN_PHONE_TXT"));
-			//log.debug("mobile before: " + record.get("MOBILE_PHONE_TXT"));
 			record.put("ZIP_CD",fixZipCode(record.get("ZIP_CD"),country));
 			record.put("MAIN_PHONE_TXT", stripPhoneExtension(record.get("MAIN_PHONE_TXT"),country));
 			record.put("MOBILE_PHONE_TXT",stripPhoneExtension(record.get("MOBILE_PHONE_TXT"),country));
-			//log.debug("main after: " + record.get("MAIN_PHONE_TXT"));
-			//log.debug("mobile after: " + record.get("MOBILE_PHONE_TXT"));
 		}
 	}
 	
@@ -166,60 +162,60 @@ public class UserDataImport extends ProfileImport {
 			
 			user.setValidEmailFlag(1);
 			
-try {			
-			// check for pre-existing user profile
-			if (!dataSet.containsKey("PROFILE_ID")) 
-				user.setProfileId(pm.checkProfile(user, dbConn));
-			
-			/* If password was supplied, check for existing auth ID.
-			 * Create an auth record only if an auth record doesn't 
-			 * already exist because we don't want to overwrite what
-			 * is already there. */
-			if (dataSet.containsKey("PASSWORD_TXT")) {
-				user.setAuthenticationId(ul.checkAuth(user.getEmailAddress()));
-				if (user.getAuthenticationId() == null) {
-					//pwd will be encrypted at qry, 0 sets password reset flag to false
-					user.setAuthenticationId(ul.modifyUser(user.getAuthenticationId(), 
-							user.getEmailAddress(), user.getPassword(), 0));
+			try {
+				// check for pre-existing user profile
+				if (!dataSet.containsKey("PROFILE_ID")) 
+					user.setProfileId(pm.checkProfile(user, dbConn));
+				
+				/* If password was supplied, check for existing auth ID.
+				 * Create an auth record only if an auth record doesn't 
+				 * already exist because we don't want to overwrite what
+				 * is already there. */
+				if (dataSet.containsKey("PASSWORD_TXT")) {
+					user.setAuthenticationId(ul.checkAuth(user.getEmailAddress()));
+					if (user.getAuthenticationId() == null) {
+						//pwd will be encrypted at qry, 0 sets password reset flag to false
+						user.setAuthenticationId(ul.modifyUser(user.getAuthenticationId(), 
+								user.getEmailAddress(), user.getPassword(), 0));
+					}
 				}
-			}
 		
-			/* 2017-01-19: If profile doesn't exist, insert it.  Otherwise leave the existing 
-			 * profile alone. */
-			if (user.getProfileId() == null) {
-				 //runs insert query
-				pm.updateProfile(user, dbConn);
-			} else {
-				skipCnt++;
-				//pm.updateProfilePartially(dataSet, user, dbConn); //runs dynamic update query; impacts on the columns we're importing
-			}
-			
-			/* If an org ID and comm flag were supplied, opt-in this user for the given org.	 */
-			if (dataSet.containsKey("ALLOW_COMM_FLG") && dataSet.containsKey("ORGANIZATION_ID"))
-				pm.assignCommunicationFlg((String)dataSet.get("ORGANIZATION_ID"), user.getProfileId(), Convert.formatInteger((String)dataSet.get("ALLOW_COMM_FLG")), dbConn);
-			
-			/* Add profile roles for this user for the specified site ID. */
-			if (dataSet.containsKey("ROLE_ID") && dataSet.containsKey("SITE_ID")) {
-				// If both columns are populated, process role.
-				if (StringUtil.checkVal(dataSet.get("ROLE_ID"),null) != null &&
-						StringUtil.checkVal(dataSet.get("SITE_ID"),null) != null) {
-					if (!prm.roleExists(user.getProfileId(), (String)dataSet.get("SITE_ID"), (String)dataSet.get("ROLE_ID"), dbConn)) {
-						SBUserRole userRole = new SBUserRole();
-						userRole.setSiteId((String)dataSet.get("SITE_ID"));
-						userRole.setRoleId((String)dataSet.get("ROLE_ID"));
-						userRole.setStatusId(20);
-						userRole.setProfileId(user.getProfileId());
-						try {
-							prm.addRole(userRole, dbConn);
-						} catch (Exception e) {
-							log.error("Error: Cannot add role for this record number: ", e);
+				/* 2017-01-19: If profile doesn't exist, insert it.  Otherwise leave the existing 
+				 * profile alone. */
+				if (user.getProfileId() == null) {
+					 //runs insert query
+					pm.updateProfile(user, dbConn);
+				} else {
+					skipCnt++;
+					//pm.updateProfilePartially(dataSet, user, dbConn); //runs dynamic update query; impacts on the columns we're importing
+				}
+				
+				/* If an org ID and comm flag were supplied, opt-in this user for the given org.	 */
+				if (dataSet.containsKey("ALLOW_COMM_FLG") && dataSet.containsKey("ORGANIZATION_ID"))
+					pm.assignCommunicationFlg((String)dataSet.get("ORGANIZATION_ID"), user.getProfileId(), Convert.formatInteger((String)dataSet.get("ALLOW_COMM_FLG")), dbConn);
+				
+				/* Add profile roles for this user for the specified site ID. */
+				if (dataSet.containsKey("ROLE_ID") && dataSet.containsKey("SITE_ID")) {
+					// If both columns are populated, process role.
+					if (StringUtil.checkVal(dataSet.get("ROLE_ID"),null) != null &&
+							StringUtil.checkVal(dataSet.get("SITE_ID"),null) != null) {
+						if (!prm.roleExists(user.getProfileId(), (String)dataSet.get("SITE_ID"), (String)dataSet.get("ROLE_ID"), dbConn)) {
+							SBUserRole userRole = new SBUserRole();
+							userRole.setSiteId((String)dataSet.get("SITE_ID"));
+							userRole.setRoleId((String)dataSet.get("ROLE_ID"));
+							userRole.setStatusId(20);
+							userRole.setProfileId(user.getProfileId());
+							try {
+								prm.addRole(userRole, dbConn);
+							} catch (Exception e) {
+								log.error("Error: Cannot add role for this record number: ", e);
+							}
 						}
 					}
 				}
+			} catch(Exception ex) {
+				log.error("Error processing source ID " + currRecord + ", " + ex.getMessage());
 			}
-		} catch(Exception ex) {
-			log.error("Error processing source ID " + currRecord + ", " + ex.getMessage());
-		}
 			//increment our counters
 			if (user.getProfileId() != null) {
 				successCnt++;
@@ -288,7 +284,6 @@ try {
 		String param;
 		// only append the field names and values that we have specified in the reg field map.
 		for (String p : data.keySet()) {
-			//String key = StringUtil.replace(p, "%", "|");
 			param = (String)data.get(p);
 			if (param == null) continue;
 			String fieldKey = regFieldMap.get(p);
