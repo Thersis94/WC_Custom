@@ -36,13 +36,12 @@ import com.smt.sitebuilder.security.UserLogin;
  ****************************************************************************/
 public class UserDataImport extends ProfileImport {
 
-	//private static String FILE_PATH="/home/groot/Downloads/smarttrak/user-import/test/smarttrak-profiles-ACTIVE-USERS-WIP-2017-01-20-1803pm.csv";
-	private static String FILE_PATH="/home/groot/Downloads/smarttrak/user-import/test/smarttrak-profiles-INACTIVE-USERS-WIP-2017-01-20-1803pm.csv";
-	
+	private static Map<String,String> regFieldMap = createRegFieldMap();
 	private final String GEOCODE_CLASS="com.siliconmtn.gis.SMTGeocoder";
 	private final String GEOCODE_URL="http://localhost:9000/websvc/geocoder";
 	private final String REGISTRATION_PAGE_URL = "http://smarttrak.siliconmtn.com/subscribe";
-	private static Map<String,String> regFieldMap = createRegFieldMap();
+	//private static String FILE_PATH="/home/groot/Downloads/smarttrak/user-import/test/smarttrak-profiles-ACTIVE-USERS-WIP-2017-01-20-1803pm.csv";
+	private static String FILE_PATH="/home/groot/Downloads/smarttrak/user-import/test/smarttrak-profiles-INACTIVE-USERS-WIP-2017-01-20-1803pm.csv";
 	
 	public UserDataImport() {
 		super();
@@ -56,7 +55,7 @@ public class UserDataImport extends ProfileImport {
 		try {
 			System.out.println("importFile=" + FILE_PATH);
 			List<Map<String,String>> data = db.parseFile(FILE_PATH);
-			db.fixFieldData(data);
+			db.sanitizeFieldData(data);
 			db.insertRecords(data);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -65,7 +64,11 @@ public class UserDataImport extends ProfileImport {
 		db = null;
 	}
 	
-	protected void fixFieldData(List<Map<String,String>> records) {
+	/**
+	 * Sanitizes/cleans import data for certain fields
+	 * @param records
+	 */
+	protected void sanitizeFieldData(List<Map<String,String>> records) {
 		log.debug("parsing phones...");
 		String country;
 		for (Map<String,String> record: records) {
@@ -96,8 +99,12 @@ public class UserDataImport extends ProfileImport {
 	}
 	
 	/**
-	 * Strips out any extension (e.g. ext. 123, xt 123, etc.)
-	 * from a phone number.
+	 * Strips out any extension text that was included as part of a phone number
+	 * e.g.
+	 * 		123-456-7890 ext 123 ('ext 123' is removed)
+	 * 		123-456-7890, xt 456 (', xt 456' is removed)
+	 * 		123-456-7890,9999 (',9999' is removed)
+	 * 
 	 * @param phone
 	 * @param country
 	 * @return
