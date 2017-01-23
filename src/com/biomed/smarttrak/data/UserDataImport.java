@@ -1,5 +1,6 @@
 package com.biomed.smarttrak.data;
 
+// Java 7
 import java.io.IOException;
 import java.sql.Connection;
 import java.util.ArrayList;
@@ -9,9 +10,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+// SMTBaseLibs
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+
+// WebCrescendo libs
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileRoleManager;
 import com.smt.sitebuilder.action.user.SBProfileManager;
