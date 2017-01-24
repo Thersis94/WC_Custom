@@ -52,6 +52,7 @@ public class UserDataImport extends ProfileImport {
 	//private static String FILE_PATH="/home/groot/Downloads/smarttrak/user-import/test/smarttrak-profiles-ACTIVE-USERS-WIP-2017-01-20-1803pm.csv";
 	//private static String FILE_PATH="/home/groot/Downloads/smarttrak/user-import/test/smarttrak-profiles-INACTIVE-USERS-WIP-2017-01-23-1449pm.csv";
 	private static String FILE_PATH="/home/groot/Downloads/smarttrak/user-import/test/smarttrak-user-import-TEST-2017-01-24.csv";
+	private static String REG_PMID = "6d9674d8b7dc54077f0001019b2cb979";
 	private static String REG_ACTION_ID = "ea884793b2ef163f7f0001011a253456";
 	
 	public UserDataImport() {
@@ -344,7 +345,7 @@ public class UserDataImport extends ProfileImport {
 		}
 		
 		//append some form constants that WC passed in hidden fields
-		params.append("&pmid=6d9674d8b7dc54077f0001019b2cb979");
+		params.append("&pmid=").append(REG_PMID);
 		params.append("&requestType=reqBuild");
 		params.append("&actionName=");
 		params.append("&sbActionId=").append(REG_ACTION_ID);
