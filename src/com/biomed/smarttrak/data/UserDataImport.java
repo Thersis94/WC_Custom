@@ -6,6 +6,7 @@ import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -49,8 +50,8 @@ public class UserDataImport extends ProfileImport {
 	private final String GEOCODE_URL="http://localhost:9000/websvc/geocoder";
 	private final String REGISTRATION_PAGE_URL = "http://smarttrak.siliconmtn.com/my-account";
 	//private static String FILE_PATH="/home/groot/Downloads/smarttrak/user-import/test/smarttrak-profiles-ACTIVE-USERS-WIP-2017-01-20-1803pm.csv";
-	//private static String FILE_PATH="/home/groot/Downloads/smarttrak/user-import/test/smarttrak-profiles-INACTIVE-USERS-WIP-2017-01-20-1803pm.csv";
-	private static String FILE_PATH="/home/groot/Downloads/smarttrak/user-import/test/smarttrak-profiles-TEST-2017-01-23-1411pm.csv";
+	//private static String FILE_PATH="/home/groot/Downloads/smarttrak/user-import/test/smarttrak-profiles-INACTIVE-USERS-WIP-2017-01-23-1449pm.csv";
+	private static String FILE_PATH="/home/groot/Downloads/smarttrak/user-import/test/smarttrak-user-import-TEST-2017-01-24.csv";
 	private static String REG_ACTION_ID = "ea884793b2ef163f7f0001011a253456";
 	
 	public UserDataImport() {
@@ -198,10 +199,10 @@ public class UserDataImport extends ProfileImport {
 		//close DB Connection
 		this.closeConnection(dbConn);
 		
-		/* Output update queries for the source ID mapped to the WC profile ID found/created. */
+		/* Output inserts for the source ID mapped to the WC profile ID found/created. */
+		Timestamp now = Convert.getCurrentTimestamp();
 		for (Map.Entry<String,String> entry : profileIdMap.entrySet()) {
-			//log.debug("SmartTRAK ID --> WC profile ID: " + entry.getKey() + " --> " + entry.getValue());
-			log.debug("update biomedgps.profiles_user set wc_profile_id = '"+ entry.getValue() + "' where id = " + entry.getKey() + ";");
+			log.info("insert into custom.biomedgps_user (user_id, profile_id, create_dt) values ('"+ entry.getKey() + "','" + entry.getValue() + "','" + now + "');");
 		}
 	}
 	
