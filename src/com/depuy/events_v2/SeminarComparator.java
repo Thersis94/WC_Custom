@@ -43,13 +43,24 @@ public final class SeminarComparator {
 	}
 	
 	/*
-	 * Simple Date Comparator that sorts based on the Events Start Date
+	 * Simple Date Comparator that sorts based on the Events Start Date - oldest first
 	 */
 	public class DateComparator implements Comparator<DePuyEventSeminarVO> {
 		public int compare(DePuyEventSeminarVO o1, DePuyEventSeminarVO o2) {
 			Date d1 = o1.getEarliestEventDate();
 			Date d2 = o2.getEarliestEventDate();
 			return d1.compareTo(d2);
+		}
+	}
+	
+	/*
+	 * Simple Date Comparator that sorts based on the Events Start Date - newest first
+	 */
+	public class DateDescComparator implements Comparator<DePuyEventSeminarVO> {
+		public int compare(DePuyEventSeminarVO o1, DePuyEventSeminarVO o2) {
+			Date d1 = o1.getEarliestEventDate();
+			Date d2 = o2.getEarliestEventDate();
+			return d2.compareTo(d1);
 		}
 	}
 	
