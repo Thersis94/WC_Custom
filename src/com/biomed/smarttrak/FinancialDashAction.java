@@ -42,6 +42,7 @@ public class FinancialDashAction extends SBActionAdapter {
 		Integer calendarYear = Convert.formatInteger(req.getParameter("calendarYear"), Convert.getCurrentYear());
 		String tableType = StringUtil.checkVal(req.getParameter("tableType"), FinancialDashVO.DEFAULT_TABLE_TYPE);
 		String[] countryTypes = req.getParameterValues("countryTypes[]") == null ? new String[]{FinancialDashVO.DEFAULT_COUNTRY_TYPE} : req.getParameterValues("countryTypes[]");
+		String sectionId = StringUtil.checkVal(req.getParameter("sectionId"), "MASTER_ROOT");
 		
 		FinancialDashVO dash = new FinancialDashVO();
 		dash.setTableType(tableType);
@@ -49,6 +50,7 @@ public class FinancialDashAction extends SBActionAdapter {
 		for(String countryType : countryTypes) {
 			dash.addCountryType(countryType);
 		}
+		dash.setSectionId(sectionId);
 		dash.setTempData();
 
 		this.putModuleData(dash);

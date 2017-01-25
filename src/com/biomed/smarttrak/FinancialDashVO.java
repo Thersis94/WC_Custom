@@ -28,6 +28,7 @@ public class FinancialDashVO extends SBModuleVO {
 	private TableType tableType;
 	private FinancialDashColumnSet colHeaders;
 	private List<FinancialDashDataRowVO> rows;
+	private String sectionId;
 	
 	/**
 	 * Default table type.
@@ -138,6 +139,13 @@ public class FinancialDashVO extends SBModuleVO {
 	}
 
 	/**
+	 * @return the sectionId
+	 */
+	public String getSectionId() {
+		return sectionId;
+	}
+
+	/**
 	 * @param colHeaders the colHeaders to set
 	 */
 	public void setColHeaders(FinancialDashColumnSet colHeaders) {
@@ -204,5 +212,12 @@ public class FinancialDashVO extends SBModuleVO {
 	 */
 	public void addRow(FinancialDashDataRowVO row) {
 		rows.add(row);
+	}
+
+	/**
+	 * @param sectionId the sectionId to set
+	 */
+	public void setSectionId(String sectionId) {
+		this.sectionId = sectionId;
 	}
 }
