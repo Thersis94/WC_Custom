@@ -65,7 +65,7 @@ public class FFDBRoleModule extends DBRoleModule {
     
     private void loadCustomData(String profileId) throws AuthorizationException {
     	Connection dbConn = (Connection)initVals.get(GlobalConfig.KEY_DB_CONN);
-		ActionRequest req = (ActionRequest)this.initVals.get(GlobalConfig.HTTP_REQUEST);
+		ActionRequest req = (ActionRequest)this.initVals.get(GlobalConfig.ACTION_REQUEST);
     	
         StringBuilder sql = new StringBuilder();
         sql.append("select d.value_txt as 'surgery_dt', e.alias_path_nm ");

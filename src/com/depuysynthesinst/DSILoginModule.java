@@ -63,7 +63,7 @@ public class DSILoginModule extends SAMLLoginModule {
 			dsiUser.addAttribute("incomplete", true);
 		} else if (UserDataVO.AuthenticationType.SAML == dsiUser.getAuthType()) { 
 			//allow all J&J WWID users through, but they need to be given a TTLMS account first
-			ActionRequest req = (ActionRequest)initVals.get(GlobalConfig.HTTP_REQUEST);
+			ActionRequest req = (ActionRequest)initVals.get(GlobalConfig.ACTION_REQUEST);
 			makeLMSAccount(dsiUser, req);
 		}
 		
