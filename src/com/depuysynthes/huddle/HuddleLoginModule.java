@@ -4,7 +4,6 @@ import java.util.Map;
 
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.constants.GlobalConfig;
-import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.security.AuthenticationException;
 import com.siliconmtn.security.UserDataVO;
@@ -76,7 +75,7 @@ public class HuddleLoginModule extends SAMLLoginModule {
 	 */
 	private void applyRedirectLogic(UserDataVO userData) {
 		String homepage = StringUtil.checkVal(userData.getAttribute(HuddleUtils.HOMEPAGE_REGISTER_FIELD_ID), null);
-		ActionRequest req = (ActionRequest) initVals.get(GlobalConfig.HTTP_REQUEST);
+		ActionRequest req = (ActionRequest) initVals.get(GlobalConfig.ACTION_REQUEST);
 		SMTSession ses = req.getSession();
 		String destPg = StringUtil.checkVal(ses.getAttribute(LoginAction.DESTN_URL));
 
@@ -100,7 +99,7 @@ public class HuddleLoginModule extends SAMLLoginModule {
 	 * @see com.siliconmtn.security.AbstractLoginModule#initiateLogin()
 	 */
 	@Override
-	public boolean canInitiateLogin(SMTServletRequest req) throws AuthenticationException {
+	public boolean canInitiateLogin(ActionRequest req) throws AuthenticationException {
 		//only initiate logic if the session is new.
 		//This traps an infinite redirect loop where something goes wrong on WC 
 		//but the user successfully authenticates to SSO. (go there, come back, fail, redir to homepage, go there, come back, fail, ...con't.)
