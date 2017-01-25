@@ -54,11 +54,8 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		if (req.hasParameter("companyAttributeId")) {
 			retrieveAttribute(req);
-		} else if ("attribute".equals(req.getParameter("add"))) {
-			// New attribute xrs only require the attribute list
+		} else if ("attribute".equals(req.getParameter("add")) || req.hasParameter("edit")) {
 			retrieveAttributes(req);	
-		} else if (req.hasParameter("edit")) {
-			retrieveAttributes(req);
 		} else if (req.hasParameter("allianceId")) {
 			retrieveAlliance(req.getParameter("allianceId"));
 		} else if (req.hasParameter("attributeId") && "attributeType".equals(req.getParameter("add"))) {
