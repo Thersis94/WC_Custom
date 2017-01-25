@@ -109,9 +109,7 @@ public class AllianceVO {
 		this.orderNo = orderNo;
 	}
 	// These functions exists only to give the DBProcessor a hook to autogenerate dates on
-	@Column(name="UPDATE_DT", isAutoGen=true, isUpdateOnly=true)
-	public Date getUpdateDate() {return null;}
-	@Column(name="CREATE_DT", isAutoGen=true, isInsertOnly=true)
+	@Column(name="CREATE_DT", isAutoGen=true)
 	public Date getCreateDate() {return null;}
 
 }
