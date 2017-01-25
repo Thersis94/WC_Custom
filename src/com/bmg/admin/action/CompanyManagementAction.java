@@ -17,6 +17,7 @@ import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -460,9 +461,10 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 * @param req
 	 */
 	private void redirectRequest(String msg, String buildAction, SMTServletRequest req) {
+		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		// Redirect the user to the appropriate page
 		StringBuilder url = new StringBuilder(128);
-		url.append("/companies?").append("msg=").append(msg);
+		url.append(page.getFullPath()).append("?").append("msg=").append(msg);
 		
 		// Only add a tab parameter if one was provided.
 		if (req.hasParameter("tab")) {
