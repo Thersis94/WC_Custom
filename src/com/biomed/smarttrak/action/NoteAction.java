@@ -14,6 +14,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
@@ -103,7 +104,12 @@ public class NoteAction extends SimpleActionAdapter {
 			ps.setString(11, n.getFilePathText());
 			ps.setTimestamp(12, Convert.formatTimestamp(n.getExpirationDate()));
 			ps.setTimestamp(13, Convert.getCurrentTimestamp());
-			ps.setString(14, n.getNoteId());
+			
+			if(n.getNoteId() != null || !n.getNoteId().isEmpty()){		
+				ps.setString(14, n.getNoteId());
+			}else{
+				ps.setString(14, new UUIDGenerator().getUUID());
+			}
 
 			ps.executeUpdate();
 
@@ -133,7 +139,6 @@ public class NoteAction extends SimpleActionAdapter {
 			sql.append("PRODUCT_ATTRIBUTE_ID, MARKET_ID,     MARKET_ATTRIBUTE_ID, NOTE_NM,              NOTE_TXT, ");
 			sql.append("FILE_PATH_TXT,        EXPIRATION_DT, UPDATE_DT,           NOTE_ID ");
 			sql.append("values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
-			//TODO ask about the id on insert seems wrong
 		}else{
 			sql.append("update ").append((String)attributes.get("customDbSchema")).append("biomedgps_note ");
 			sql.append(" set USER_ID = ?, TEAM_ID = ?, COMPANY_ID = ?, COMPANY_ATTRIBUTE_ID = ?, PRODUCT_ID = ?, ");
