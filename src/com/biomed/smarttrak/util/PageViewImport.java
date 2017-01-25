@@ -237,8 +237,8 @@ public class PageViewImport extends CommandLineUtil {
 	private List<PageViewVO> retrieveSourceRecords() throws SQLException {
 		StringBuilder sql = new StringBuilder(120);
 		sql.append("select pageview_id, site_id, profile_id, session_id, page_id, request_uri_txt, ");
-		sql.append("query_str_txt, wc_instance_cd, visit_dt from pageview ");
-		sql.append("where wc_instance_cd = ? and visit_dt > ? order by visit_dt");
+		sql.append("query_str_txt, visit_dt from pageview ");
+		sql.append("where wc_instance_cd = ? and visit_dt > ? and profile_id is not null order by visit_dt");
 		log.debug("Source page view SQL: " + sql.toString());
 		PageViewVO pvo = null;
 		List<PageViewVO> pageViews = new ArrayList<>();
@@ -246,8 +246,6 @@ public class PageViewImport extends CommandLineUtil {
 			ps.setString(1, props.getProperty(PROP_WC_INSTANCE_CD));
 			ps.setString(2, importTimestamp.toString());
 			ResultSet rs = ps.executeQuery();
-			//SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-			//Date d;
 			while (rs.next()) {
 				pvo = new PageViewVO();
 				pvo.setPageViewId(rs.getInt("pageview_id"));
@@ -257,9 +255,8 @@ public class PageViewImport extends CommandLineUtil {
 				pvo.setPageId(rs.getString("page_id"));
 				pvo.setRequestUri(rs.getString("request_uri_txt"));
 				pvo.setQueryString(rs.getString("query_str_txt"));
-				pvo.setWcInstance(rs.getString("wc_instance_cd"));
 				lastTimestampProcessed = rs.getString("visit_dt");
-				pvo.setVisitDate(Convert.formatDate(lastTimestampProcessed));
+				pvo.setVisitDate(Convert.formatDate(Convert.DATE_TIME_DASH_PATTERN,lastTimestampProcessed));
 				pageViews.add(pvo);
 			}
 		} catch (SQLException sqle) {
@@ -281,8 +278,8 @@ public class PageViewImport extends CommandLineUtil {
 		if (pageViews.isEmpty()) return;
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("insert into pageview_user (pageview_user_id, site_id, profile_id, session_id, ");
-		sql.append("page_id, request_uri_txt, query_str_txt, wc_instance_cd, visit_dt) ");
-		sql.append("values (?,?,?,?,?,?,?,?,?)");
+		sql.append("page_id, request_uri_txt, query_str_txt, src_pageview_id, visit_dt, create_dt) ");
+		sql.append("values (?,?,?,?,?,?,?,?,?,?)");
 		log.debug("Destination table insert SQL: " + sql.toString());
 		
 		try (PreparedStatement ps = destDbConn.prepareStatement(sql.toString())) {
@@ -296,8 +293,9 @@ public class PageViewImport extends CommandLineUtil {
 				ps.setString(idx++, vo.getPageId());
 				ps.setString(idx++, vo.getRequestUri());
 				ps.setString(idx++, vo.getQueryString());
-				ps.setString(idx++, vo.getWcInstance());
-				ps.setDate(idx++, Convert.formatSQLDate(vo.getVisitDate()));
+				ps.setInt(idx++, vo.getPageViewId());
+				ps.setTimestamp(idx++, Convert.formatTimestamp(vo.getVisitDate()));
+				ps.setTimestamp(idx++, Convert.getCurrentTimestamp());
 				ps.addBatch();
 				idx = 1;
 				recCnt++;
