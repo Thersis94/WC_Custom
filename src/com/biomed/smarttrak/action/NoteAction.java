@@ -64,6 +64,7 @@ public class NoteAction extends SimpleActionAdapter {
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		log.debug("Notes Action Retrieve called");
+		//TODO add a testing call here.
 	}
 
 	/*
