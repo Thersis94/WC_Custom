@@ -1,6 +1,6 @@
 package com.biomed.smarttrak.util;
 
-//JDK 1.8.x
+//Java 7
 import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -8,23 +8,25 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-//Log4j 1.2.17
+//Log4j
 import org.apache.log4j.xml.DOMConfigurator;
 
 //SMT Base Libs
 import com.siliconmtn.db.DatabaseConnection;
-import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.util.CommandLineUtil;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
+
+// WebCrescendo
 import com.smt.sitebuilder.util.PageViewVO;
 
 /*****************************************************************************
@@ -42,61 +44,29 @@ source db table and inserts them into a destination db table.</p>
 ***************************************************************************/
 public class PageViewImporter extends CommandLineUtil {
 	
-	// SQLLite database connection
-	private Connection sourceConn = null;
+	// SQLLite db connection
+	private Connection sourceConn;
 
-	// Instances to write the summary data
-	private Map<String, Connection> destConns = new HashMap<>();
+	// WC db connections
+	private Map<String, Connection> destConns;
 
-	private Map<String, Object> messages = new LinkedHashMap<>();
-
-	private List<StringBuilder>eMessages = new ArrayList<>();
-	private List<Throwable> exceptions = new ArrayList<>();
+	private List<Throwable> exceptions;
+	private Map<String,List<Throwable>> ctxExceptions;
 
 	/**
 	 * @param args
 	 */
-	public PageViewImporter(String[] args) 
-			throws DatabaseException, InvalidDataException, SQLException {
+	public PageViewImporter(String[] args) 	throws Exception {
 		super(args);
-		
-		log.debug("Initializing Page View Importer");
 		
 		// Initialize the logger
 		DOMConfigurator.configure("scripts/pageViewImporter_log4j.xml");
 		
-		try {
-			init();
-		} catch (Exception e) {
-			addException(e);
-			notifyAdmin();
-			System.exit(-1);
-		}
+		// Init
+		init();
+
 	}
 	
-	/**
-	 * Initializes and checks params for this importer.
-	 * @throws Exception
-	 */
-	private void init() throws Exception {
-		// make sure the config params are loaded
-		if (args.length == 0) 
-			throw new InvalidDataException("Usage: PageViewImporter /path/to/configuration/properties.file");
-		
-		// Load the properties files
-		loadProperties(args[0]);
-		if (props == null)
-			throw new InvalidDataException("Error: Unable to load properties file.");
-		
-		// Load the source and destination databases
-		try {
-			getDBConnections();
-		} catch (Exception e) {
-			closeDBConnections();
-			throw new SQLException("Error: One or more db connections failed.");
-		}
-	}
-
 	/**
 	 * At command line pass the config file path.
 	 * @param args
@@ -107,9 +77,8 @@ public class PageViewImporter extends CommandLineUtil {
 		// Get the database connections
 		try {
 			pvi = new PageViewImporter(args);
-		} catch (DatabaseException | InvalidDataException | SQLException e) {
+		} catch (Exception e) {
 			log.error("Error initializing page view importer, ", e);
-			// TODO notify admin
 			System.exit(-1);
 		}
 		
@@ -130,40 +99,71 @@ public class PageViewImporter extends CommandLineUtil {
 			// NOTE: key is WC instance context (e.g. sb)
 			try {
 				log.info("Importing page views...");
-				// 1. init the last record read value or die
+				// 1. find the visit date of the last page view record imported
 				minVisitDate = retrieveMinVisitDate(destConns.get(key));
 
-				// 2. retrieve source records or die
+				// 2. retrieve source page view records or die
 				pageViews = retrieveSourceRecords(sourceConn, key, minVisitDate);
 
-				// 3. process source records
+				// 3. process source page view records records
 				processSourceRecords(destConns.get(key), pageViews);
 
 			} catch(Exception e) {
-				log.error("Unable to import page views for: " + key, e);
+				exceptions.add(e);
+				log.error("Unable to import page views for WC instance" + key + ", ", e);
+			}
+
+			if (! exceptions.isEmpty()) {
+				ctxExceptions.put(key, exceptions);
+				exceptions = new ArrayList<>();
 			}
 		}
-		
-		eMessages.add(this.buildEmailMessage(true, "All"));
-		
-		// send the email
-		StringBuilder msg = new StringBuilder(destConns.size() * 1024);
-		for (StringBuilder s : eMessages) {
-			msg.append("<p>").append(s).append("</p>");
+
+		if (! ctxExceptions.isEmpty()) {
+			try {
+				notifyAdmin();
+			} catch(Exception e) {
+				log.error("Error notifying admin of script failure, ", e);
+			}
 		}
-		
-		try {
-			this.sendEmail(msg, null);
-		} catch(Exception e) {
-			log.error("Unable to send email message", e);
-		}
-		
+
 		closeDBConnections();
 		
 	}
 	
-	
-	
+	/**
+	 * Initializes and checks params for this importer.
+	 * @throws Exception
+	 */
+	private void init() throws Exception {
+		log.info("Initializing Page View Importer");
+		exceptions = new ArrayList<>();
+		ctxExceptions = new HashMap<>();
+		destConns = new HashMap<>();
+
+		try {
+			// make sure the config params are loaded
+			if (args.length == 0) {
+				throw new InvalidDataException("Usage: PageViewImporter /path/to/configuration/properties.file");
+			}
+
+			// Load the properties files
+			loadProperties(args[0]);
+			if (props == null) {
+				throw new InvalidDataException("Error: Unable to load properties file.");
+			}
+
+			// Load the source and destination databases
+			getDBConnections();
+
+		} catch (Exception e) {
+			exceptions.add(e);
+			ctxExceptions.put("init", exceptions);
+			closeDBConnections();
+			notifyAdmin();
+			throw e;
+		}
+	}
 	
 	
 	/**
@@ -182,12 +182,57 @@ public class PageViewImporter extends CommandLineUtil {
 			ResultSet rs = ps.executeQuery();
 			if (rs.next()) retVal = rs.getString(1);
 		} catch (SQLException sqle) {
-			log.error("Warning: Unable to retrieve latest recorded visit date for next import: ", sqle);
-			addException(sqle);
-			throw new SQLException();
+			log.error("Error: Unable to retrieve latest recorded visit date for next import: ", sqle);
+			throw new SQLException(sqle);
 		}
 
+		/* If the returned value is null, then this is the first time the importer has 
+		 * been run.  We will use the default starting date specified in the properties 
+		 * file. */
+		if (retVal == null) retVal = buildImportStartDate();
+		log.info("Using minimum visit date of: " + retVal);
 		return retVal;
+	}
+
+	/**
+	 * Builds a String representing the initial import date value to use.
+	 * Format is YYYY-MM-dd HH:mm:SS.sss
+	 * @return
+	 */
+	private String buildImportStartDate() {
+		Calendar cal = GregorianCalendar.getInstance();
+		cal.add(Calendar.DAY_OF_YEAR, -180);
+		StringBuilder sb = new StringBuilder(24);
+		sb.append(cal.get(Calendar.YEAR));
+		sb.append("-");
+		int val = cal.get(Calendar.MONTH) + 1;
+		padTime(sb,val,"-");
+		val = cal.get(Calendar.DAY_OF_MONTH);
+		padTime(sb,val," ");
+		val = cal.get(Calendar.HOUR_OF_DAY);
+		padTime(sb,val,":");
+		val = cal.get(Calendar.MINUTE);
+		padTime(sb,val,":");
+		val = cal.get(Calendar.SECOND);
+		padTime(sb,val,".");
+		val = cal.get(Calendar.MILLISECOND);
+		if (val < 100) sb.append("0");
+		padTime(sb,val,null);
+
+		return sb.toString();
+	}
+
+	/**
+	 * Pads time values with a 0 and delimiter.
+	 * @param sb
+	 * @param val
+	 * @param delim
+	 */
+	private void padTime(StringBuilder sb, int val, String delim) {
+		if (val < 10) sb.append("0");
+		sb.append(val);
+		if (delim == null) return;
+		sb.append(delim);
 	}
 	
 	/**
@@ -223,7 +268,7 @@ public class PageViewImporter extends CommandLineUtil {
 			}
 		} catch (SQLException sqle) {
 			log.error("Error retrieving source page view records, ", sqle);
-			throw new SQLException("Error: Unable to retrieve source page view records, " + sqle.getMessage());
+			throw new SQLException(sqle);
 		}
 
 		log.debug("pageViews retrieved: " + pageViews.size());
@@ -269,77 +314,48 @@ public class PageViewImporter extends CommandLineUtil {
 			if (recCnt % 100 > 0) ps.executeBatch();
 			
 		} catch (BatchUpdateException bue) {
-			throw new SQLException(bue.getNextException().getMessage());
+			log.error("Error batch processing source page view records, attempting to get next Exception, " + bue.getMessage());
+			if (bue.getNextException() != null) {
+				log.error("Next Exception, ", bue.getNextException());
+			}
+			throw new SQLException(bue.getNextException());
+		} catch (SQLException sqle) {
+			log.error("Error batch processing source page view records, ",sqle);
+			throw new SQLException(sqle);
 		}
 
 	}
-	
-	/**
-	 * Sends an email message using the messages map for the data
-	 */
-	public StringBuilder buildEmailMessage(boolean delete, String ctx) {
-		StringBuilder msg = new StringBuilder(1024);
-		try {
-			
-			msg.append("<style> ");
-			msg.append("th { background:silver; color:black; } ");
-			msg.append("td { border:solid black 1px; padding:5px; background:#F0FFFF;white-space: nowrap;} ");
-			msg.append("</style>");
-			msg.append("<table style='border:solid black 1px;border-collapse:collapse;'>");
-			msg.append("<tr><th colspan='2'>Context: ").append(ctx).append("</th></tr>");
-			msg.append("<tr><th>Type</th><th>Message</th></tr>");
-			if (! delete) msg.append("<tr><td>Sites Visited</td><td>").append(messages.get("SITE_COUNT")).append("</td></tr>");
-			if (! delete) msg.append("<tr><td>Pages Visited</td><td>").append(messages.get("PAGE_COUNT")).append("</td></tr>");
-			if (! delete) msg.append("<tr><td>Human Pageviews</td><td>").append(messages.get("HUMAN_PAGEVIEWS")).append("</td></tr>");
-			if (! delete) msg.append("<tr><td>Robot Pageviews</td><td>").append(messages.get("ROBOT_PAGEVIEWS")).append("</td></tr>");
-			if (delete) msg.append("<tr><td>Rows Deleted</td><td>").append(messages.get("DELETE_COUNT")).append("</td></tr>");
-			msg.append("<tr><th colspan='2'>Errors</th></tr>");
-			
-			// loop the errors
-			for(String key : messages.keySet()) {
-				if ((key.equals("SITE_COUNT") || key.equals("PAGE_COUNT") || key.equals("DELETE_COUNT") 
-						|| key.equals("HUMAN_PAGEVIEWS") || key.equals("ROBOT_PAGEVIEWS")))
-					continue;
-				
-				msg.append("<tr><td>").append(key).append("</td><td>");
-				msg.append(messages.get(key)).append("</td></tr>");
-			}
-			msg.append("</table>");
-			log.debug(msg);
-		} catch(Exception e) {
-			log.error("Unable to send email", e);
-		}
-		
-		return msg;
-	}
-	
+
 	/**
 	 * Gets the source and destination data.  Destination data is in the following format:
 	 * destDBConn_0 = ctx|Driver|Url|user|password
 	 * destDBConn_1 = ctx|Driver|Url|user|password
-	 * @throws DatabaseException
-	 * @throws InvalidDataException
+	 * @throws Exception
 	 */
-	public void getDBConnections() throws DatabaseException, InvalidDataException, SQLException  {
-		// Load the SQLite Source Connection
-		sourceConn = DriverManager.getConnection(props.getProperty("sourceDBUrl"));
+	public void getDBConnections() throws Exception  {
+		try {
+			// Load the SQLite Source Connection
+			sourceConn = DriverManager.getConnection(props.getProperty("sourceDBUrl"));
+			
+			DatabaseConnection dbc = new DatabaseConnection();
+			for (int i=0; i < 10; i++) {
+				//Get the database destination 
+				String data = StringUtil.checkVal(props.getProperty("destDBConn_" + i));
+				if (data.length() == 0) break;
 
-		DatabaseConnection dbc = new DatabaseConnection();
-		for (int i=0; i < 10; i++) {
-			//Get the database destination 
-			String data = StringUtil.checkVal(props.getProperty("destDBConn_" + i));
-			if (data.length() == 0) break;
-			
-			String[] vals = data.split("\\|");
-			dbc = new DatabaseConnection();
-			dbc.setDriverClass(vals[1]);
-			dbc.setUrl(vals[2]);
-			dbc.setUserName(vals[3]);
-			dbc.setPassword(vals[4]);
-			
-			// store the ctx and connection in the Map
-			destConns.put(vals[0], dbc.getConnection());
-			log.debug("Added DB Dest Connection for: " + vals[0]);
+				String[] vals = data.split("\\|");
+				dbc = new DatabaseConnection();
+				dbc.setDriverClass(vals[1]);
+				dbc.setUrl(vals[2]);
+				dbc.setUserName(vals[3]);
+				dbc.setPassword(vals[4]);
+
+				// store the ctx and connection in the Map
+				destConns.put(vals[0], dbc.getConnection());
+				log.debug("Added DB Dest Connection for: " + vals[0]);
+			}
+		} catch (Exception e) {
+			throw new Exception("Error: One or more db connections failed to load, " + e.getMessage());
 		}
 
 	}
@@ -363,24 +379,15 @@ public class PageViewImporter extends CommandLineUtil {
 			}
 		}
 	}
-	
+
 	/**
-	 * Notifies admin if an error ocurred during import.
-	 * @param exception
+	 * Notify admin if errors occurred.
 	 */
 	private void notifyAdmin() {
-		StringBuilder errMsg = new StringBuilder(150);
-		for (Throwable t : exceptions) {
-			errMsg.append("Error occurred, type | message: ");
-			errMsg.append(t.getClass().getSimpleName());
-			errMsg.append("<br/>");
-			errMsg.append(t.getMessage());
-			errMsg.append("<br/>").append("<br/>");
-		}
+		StringBuilder body = buildEmailMessage();
 		EmailMessageVO evo = new EmailMessageVO();
 		evo.setSubject("Pageview Importer: Error, import failed, check logs!");
-		evo.setHtmlBody(errMsg.toString());
-		evo.setTextBody(errMsg.toString());
+		evo.setHtmlBody(body.toString());
 		try {
 			evo.setFrom(props.getProperty("fromAddress"));
 			evo.addRecipient(props.getProperty("toAddress"));
@@ -403,12 +410,35 @@ public class PageViewImporter extends CommandLineUtil {
 	}
 	
 	/**
-	 * 
-	 * @param thrown
+	 * Sends an email message using the messages map for the data
 	 */
-	private void addException(Throwable thrown) {
-		if (exceptions == null) exceptions = new ArrayList<>();
-		exceptions.add(thrown);
+	public StringBuilder buildEmailMessage() {
+		StringBuilder msg = new StringBuilder(1024);
+		try {
+			msg.append("<style> ");
+			msg.append("th { background:silver; color:black; } ");
+			msg.append("td { border:solid black 1px; padding:5px; background:#F0FFFF;white-space: nowrap;} ");
+			msg.append("</style>");
+
+			for (String ctx : ctxExceptions.keySet()) {
+				msg.append("<table style='border:solid black 1px;border-collapse:collapse;'>");
+				msg.append("<tr><th colspan='2'>Context: ").append(ctx).append("</th></tr>");
+				msg.append("<tr><th>Error</th><th>Message</th></tr>");
+				for (Throwable t : ctxExceptions.get(ctx)) {
+					msg.append("<tr>");
+					msg.append("<td>").append(t.getClass().getSimpleName()).append("</td>");
+					msg.append("<td>").append(t.getMessage()).append("</td>");
+					msg.append("</tr>");
+					msg.append("<tr><td colspan=\"2\"").append(t.toString()).append("</td></tr>");
+				}
+				msg.append("<tr><th colspan='2'>&nbsp;</th></tr>");
+				msg.append("</table>");
+			}
+		} catch(Exception e) {
+			log.error("Error: Unable to send admin notification email", e);
+		}
+
+		return msg;
 	}
-	
+
 }
