@@ -51,6 +51,7 @@ public class UserActivityVO {
 	 * @return the profile
 	 */
 	public UserDataVO getProfile() {
+		if (profile == null) profile = new UserDataVO();
 		return profile;
 	}
 	/**
@@ -139,5 +140,47 @@ public class UserActivityVO {
 	 */
 	public long getLastAccessDisplayMinutes() {
 		return lastAccessMinutes;
+	}
+	/**
+	 * Helper method for retrieving user's profile Id.
+	 * @return
+	 */
+	public String getProfileId() {
+		return getProfile().getProfileId();
+	}
+	/**
+	 * Helper method for setting profile ID
+	 * @param profileId
+	 */
+	public void setProfileId(String profileId) {
+		getProfile().setProfileId(profileId);
+	}
+	/**
+	 * Helper method for retrieving user's first name.
+	 * @return
+	 */
+	public String getFirstName() {
+		return getProfile().getFirstName();
+	}
+	/**
+	 * Helper method for setting first name
+	 * @param firstName
+	 */
+	public void setFirstName(String firstName) {
+		getProfile().setFirstName(firstName);
+	}
+	/**
+	 * Helper method for retrieving user's last name.
+	 * @return
+	 */
+	public String getLastName() {
+		return getProfile().getLastName();
+	}
+	/**
+	 * Helper method for setting last name
+	 * @param lastName
+	 */
+	public void setLastName(String lastName) {
+		getProfile().setLastName(lastName);
 	}
 }
