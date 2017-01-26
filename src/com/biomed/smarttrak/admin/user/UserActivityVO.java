@@ -9,7 +9,7 @@ import java.util.List;
 import com.siliconmtn.security.UserDataVO;
 
 // WebCrescendo
-import com.smt.sitebuilder.common.PageVO;
+import com.smt.sitebuilder.util.PageViewVO;
 
 /*****************************************************************************
  <p><b>Title</b>: UserActivityVO.java</p>
@@ -30,10 +30,10 @@ public class UserActivityVO {
 	private String siteId;
 	private String sessionId;
 	private UserDataVO profile;
-	private List<PageVO> pages;
+	private List<PageViewVO> pageViews;
 	private Date lastAccessTime;
-	private long lastAccessDisplayHours;
-	private long lastAccessDisplayMinutes;
+	private long lastAccessHours;
+	private long lastAccessMinutes;
 	
 	/**
 	 * @return the siteId
@@ -60,16 +60,16 @@ public class UserActivityVO {
 		this.profile = profile;
 	}
 	/**
-	 * @return the pages
+	 * @return the pageViews
 	 */
-	public List<PageVO> getPages() {
-		return pages;
+	public List<PageViewVO> getPageViews() {
+		return pageViews;
 	}
 	/**
-	 * @param pages the pages to set
+	 * @param pageViews the pageViews to set
 	 */
-	public void setPages(List<PageVO> pages) {
-		this.pages = pages;
+	public void setPageViews(List<PageViewVO> pageViews) {
+		this.pageViews = pageViews;
 	}
 	/**
 	 * @return the sessionId
@@ -121,15 +121,15 @@ public class UserActivityVO {
 	private void formatLastAccessDisplayText() {
 		long now = Calendar.getInstance().getTimeInMillis();
 		long diffTime = now - lastAccessTime.getTime();
-		lastAccessDisplayHours = diffTime/MILLIS_HOUR;
-		lastAccessDisplayMinutes = (diffTime%MILLIS_HOUR)/MILLIS_MINUTE;
+		lastAccessHours = diffTime/MILLIS_HOUR;
+		lastAccessMinutes = (diffTime%MILLIS_HOUR)/MILLIS_MINUTE;
 	}
 	/**
 	 * Returns the number of hours ago that the user last generated activity
 	 * @return
 	 */
 	public long getLastAccessDisplayHours() {
-		return lastAccessDisplayHours;
+		return lastAccessHours;
 	}
 	/**
 	 * Returns the number of minutes ago (within the last hour) that the user last generated activity.
@@ -138,6 +138,6 @@ public class UserActivityVO {
 	 * @return
 	 */
 	public long getLastAccessDisplayMinutes() {
-		return lastAccessDisplayMinutes;
+		return lastAccessMinutes;
 	}
 }
