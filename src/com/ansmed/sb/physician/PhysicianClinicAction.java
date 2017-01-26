@@ -9,7 +9,7 @@ import java.util.List;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.address.AbstractAddressFormatter;
 import com.siliconmtn.gis.AbstractGeocoder;
 import com.siliconmtn.gis.GeocodeFactory;
@@ -125,7 +125,7 @@ public class PhysicianClinicAction extends SBActionAdapter {
 				req.setAttribute(SurgeonSearchAction.CLINIC_ID, cl.getClinicId());
 				
 				// Get the phone data
-				SMTActionInterface ca = new PhysicianPhoneAction(this.actionInit);
+				ActionInterface ca = new PhysicianPhoneAction(this.actionInit);
 				ca.setAttributes(this.attributes);
 				ca.setDBConnection(dbConn);
 				ca.retrieve(req);
@@ -279,7 +279,7 @@ public class PhysicianClinicAction extends SBActionAdapter {
 		
 		// Update the phones for the clinic
 		req.setAttribute(SurgeonSearchAction.CLINIC_ID, clinicId);
-		SMTActionInterface ca = new PhysicianPhoneAction(this.actionInit);
+		ActionInterface ca = new PhysicianPhoneAction(this.actionInit);
 		ca.setAttributes(this.attributes);
 		ca.setDBConnection(dbConn);
 		ca.update(req);

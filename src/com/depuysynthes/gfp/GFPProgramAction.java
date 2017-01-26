@@ -11,7 +11,7 @@ import java.util.Map;
 import com.depuysynthes.action.MediaBinAdminAction;
 import com.depuysynthes.gfp.GFPFacadeAction.GFPLevel;
 import com.siliconmtn.action.ActionException;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.io.FileManager;
 import com.siliconmtn.security.UserDataVO;
@@ -714,7 +714,7 @@ public class GFPProgramAction extends SBActionAdapter {
 			break;
 		case MediaBin:
 			req.setParameter("organizationId", ((SiteVO)req.getAttribute(Constants.SITE_DATA)).getAliasPathOrgId());
-			SMTActionInterface sai = new MediaBinAdminAction();
+			ActionInterface sai = new MediaBinAdminAction();
 			sai.setDBConnection(dbConn);
 			sai.setAttributes(attributes);
 			sai.setActionInit(actionInit);

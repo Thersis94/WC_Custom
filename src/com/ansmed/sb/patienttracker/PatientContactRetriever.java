@@ -9,7 +9,7 @@ import java.util.List;
 // SMB Baselibs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.security.StringEncrypter;
@@ -61,7 +61,7 @@ public class PatientContactRetriever extends SBActionAdapter {
 		String oldActionId = req.getParameter("actionId");
 		req.setParameter("actionId", contactFormId, true);
 		
-		SMTActionInterface sai = new ContactAction(actionInit);
+		ActionInterface sai = new ContactAction(actionInit);
 		sai.setAttributes(attributes);
 		sai.setDBConnection(dbConn);
 		sai.retrieve(req);

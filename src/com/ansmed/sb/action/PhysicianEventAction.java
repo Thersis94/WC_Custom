@@ -8,7 +8,7 @@ import com.siliconmtn.http.session.SMTSession;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -105,7 +105,7 @@ public class PhysicianEventAction extends SimpleActionAdapter {
 	    		req.setParameter(EventFacadeAction.USER_SIGNUP, "true");
 				
 				//pass-through users signing up for individual events (not eventTypes)
-				SMTActionInterface ai = new UserEventAction(actionInit);
+				ActionInterface ai = new UserEventAction(actionInit);
 				ai.setDBConnection(dbConn);
 				ai.setAttributes(attributes);
 				ai.build(req);
@@ -135,7 +135,7 @@ public class PhysicianEventAction extends SimpleActionAdapter {
     		req.setAttribute(EventFacadeAction.STATUS_OVERRIDE, EventFacadeAction.STATUS_APPROVED);
 			
 			//pass-through users signing up for individual events (not eventTypes)
-			SMTActionInterface ai = new UserEventAction(actionInit);
+			ActionInterface ai = new UserEventAction(actionInit);
 			ai.setDBConnection(dbConn);
 			ai.setAttributes(attributes);
 			ai.build(req);
@@ -186,7 +186,7 @@ public class PhysicianEventAction extends SimpleActionAdapter {
     	//THIS CONDITIONAL CHECK HAD TO BE REMOVED BECAUSE WE CAN'T TELL WHEN/IF THE
     	//SCS USAGE DATA OR SCS_START_DT FIELDS HAVE BEEN CHANGED ONCE THIS DATA IS 
     	//STORED IN THE SESSION - JM 07-22-09
-			SMTActionInterface pqda = null;
+			ActionInterface pqda = null;
 			
 			// If alternate qualifying data was requested, retrieve it.
 			if (useAltData || useAltQualData || vo.getIsAltData()) {
@@ -219,7 +219,7 @@ public class PhysicianEventAction extends SimpleActionAdapter {
 			String oldActionId = mod.getActionId();
 			actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 			
-			SMTActionInterface ai = new EventFacadeAction(actionInit);
+			ActionInterface ai = new EventFacadeAction(actionInit);
 			ai.setDBConnection(dbConn);
 			ai.setAttributes(attributes);
 			ai.retrieve(req);

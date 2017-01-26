@@ -16,7 +16,7 @@ import java.util.Map;
 // SMT base libs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.MailException;
 import com.siliconmtn.action.ActionRequest;
@@ -116,7 +116,7 @@ public class SJMTrackerFormWrapper extends TrackerAction {
     	req.setParameter("actionGroupId", newInitId);
     	log.debug ("oldInitId/attribute_1 actionId: " + oldInitId + "/" + actionInit.getActionId());
     	
-    	SMTActionInterface eg = new ContactAction(this.actionInit);
+    	ActionInterface eg = new ContactAction(this.actionInit);
     	eg.setAttributes(this.attributes);
     	eg.setDBConnection(dbConn);
     	eg.retrieve(req);
@@ -393,7 +393,7 @@ public class SJMTrackerFormWrapper extends TrackerAction {
 		// set request parameters needed downstream to create patient
 		req.setParameter("sbActionId", PATIENT_FORM_ID, true);
 		// patient base record and extended data records
-		SMTActionInterface sai = new PatientManager(this.actionInit);
+		ActionInterface sai = new PatientManager(this.actionInit);
 		sai.setDBConnection(dbConn);
 		sai.setAttributes(attributes);
 		sai.build(req);
@@ -464,7 +464,7 @@ public class SJMTrackerFormWrapper extends TrackerAction {
         req.setAttribute(SubmittalAction.CONTACT_SUBMITTAL_ID, contactSubmittalId);
         
         // Call the action to set the specific field data
-        SMTActionInterface aac = new SubmittalDataAction(this.actionInit);
+        ActionInterface aac = new SubmittalDataAction(this.actionInit);
         aac.setAttributes(this.attributes);
         aac.setDBConnection(dbConn);
         aac.build(req);
@@ -534,7 +534,7 @@ public class SJMTrackerFormWrapper extends TrackerAction {
     	req.getSession().setAttribute(Constants.ROLE_DATA, proxyRole);
 		
 		// retrieve patient
-		SMTActionInterface sai = new PatientManager(actionInit);
+		ActionInterface sai = new PatientManager(actionInit);
 		sai.setDBConnection(dbConn);
 		sai.setAttributes(attributes);
 		try {
@@ -595,7 +595,7 @@ public class SJMTrackerFormWrapper extends TrackerAction {
 				toText.append(assignee.getFirstName()).append(" ").append(assignee.getLastName().substring(0,1));
 				req.setParameter("logSystemText", toText.toString());
 				
-				SMTActionInterface sai = new SJMAssignmentFacade(this.actionInit);
+				ActionInterface sai = new SJMAssignmentFacade(this.actionInit);
 				sai.setDBConnection(dbConn);
 				sai.setAttributes(attributes);
 				sai.build(req);

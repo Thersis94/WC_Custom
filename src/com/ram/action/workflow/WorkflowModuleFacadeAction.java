@@ -5,7 +5,7 @@ package com.ram.action.workflow;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.smt.sitebuilder.action.SBActionAdapter;
 
@@ -88,8 +88,8 @@ public class WorkflowModuleFacadeAction extends SBActionAdapter {
 	 * @param type
 	 * @return
 	 */
-	public SMTActionInterface getAction(CallType type) {
-		SMTActionInterface action = null;
+	public ActionInterface getAction(CallType type) {
+		ActionInterface action = null;
 		switch(type) {
 			default:
 			case module:

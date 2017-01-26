@@ -22,7 +22,7 @@ import com.ram.datafeed.data.CustomerLocationVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.data.GenericVO;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -125,7 +125,7 @@ public class AJAXUtilAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		SMTActionInterface sai = null;
+		ActionInterface sai = null;
 		String type = req.getParameter("type");
 		
 		// Call the appropriate action
@@ -218,7 +218,7 @@ public class AJAXUtilAction extends SBActionAdapter {
 	 */
 	protected void saveEventGroup(ActionRequest req) throws ActionException {
 		// Save the Event group data
-		SMTActionInterface sai = new InventoryEventGroupAction(getActionInit());
+		ActionInterface sai = new InventoryEventGroupAction(getActionInit());
 		sai.setDBConnection(getDBConnection());
 		sai.setAttributes(getAttributes());
 		sai.update(req);
@@ -234,7 +234,7 @@ public class AJAXUtilAction extends SBActionAdapter {
 	 * @param sai
 	 */
 	@SuppressWarnings({"unchecked" })
-	protected void processLocations(SMTActionInterface sai) {
+	protected void processLocations(ActionInterface sai) {
 		ModuleVO modVo = (ModuleVO)sai.getAttribute(Constants.MODULE_DATA);
 		List<CustomerLocationVO> data = (List<CustomerLocationVO>) modVo.getActionData();
 		

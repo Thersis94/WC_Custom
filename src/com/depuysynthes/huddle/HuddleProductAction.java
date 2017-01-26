@@ -12,7 +12,7 @@ import org.apache.solr.common.SolrDocument;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserRoleVO;
 import com.siliconmtn.util.StringUtil;
@@ -297,7 +297,7 @@ public class HuddleProductAction extends SimpleActionAdapter {
 		req.setParameter("fmid", mod.getPageModuleId());
 		prepareFilterQueries(req);
 
-		SMTActionInterface sai = new SolrAction(actionInit);
+		ActionInterface sai = new SolrAction(actionInit);
 		sai.setAttributes(getAttributes());
 		sai.setDBConnection(dbConn);
 		sai.retrieve(req);

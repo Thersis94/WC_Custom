@@ -7,7 +7,7 @@ import java.sql.SQLException;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
 
@@ -51,7 +51,7 @@ public class SJMPatientManager extends SBActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("SJMPatientManager retrieve...");
 		TrackerDataContainer data = new TrackerDataContainer();
-		SMTActionInterface sai = null;
+		ActionInterface sai = null;
 		// retrieve patients
 		sai = new PatientManager(actionInit);
 		sai.setDBConnection(dbConn);
@@ -97,7 +97,7 @@ public class SJMPatientManager extends SBActionAdapter {
 		log.debug("isUpdate: " + isUpdate);
 		
 		// insert/update the assignment
-		SMTActionInterface sai = null;
+		ActionInterface sai = null;
 		sai = new PatientManager(actionInit);
 		sai.setDBConnection(dbConn);
 		sai.setAttributes(attributes);

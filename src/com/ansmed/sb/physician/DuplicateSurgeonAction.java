@@ -16,7 +16,7 @@ import com.ansmed.sb.action.TransactionLoggingAction;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
@@ -448,7 +448,7 @@ public class DuplicateSurgeonAction extends SimpleActionAdapter {
 		// if transaction type is specified, log it.
 		if (type != null) {
 			// set the transaction type on the request
-       		SMTActionInterface sai = new TransactionLoggingAction(this.actionInit);
+       		ActionInterface sai = new TransactionLoggingAction(this.actionInit);
        		sai.setAttribute(TransactionLoggingAction.TRANSACTION_TYPE, type);
        		sai.setAttribute(TransactionLoggingAction.SURGEON_ID, newSurgeonId);
        		sai.setAttributes(this.attributes);

@@ -3,7 +3,7 @@ package com.depuy.sitebuilder.survey;
 import java.util.Map;
 
 import com.siliconmtn.action.ActionException;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
@@ -54,7 +54,7 @@ public class FeedbackLoopSurvey extends SimpleActionAdapter {
 		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 		
 		//process the survey as usual now that we've added UserDataVO to the session
-		SMTActionInterface survey = new SurveyFacadeAction(actionInit);
+		ActionInterface survey = new SurveyFacadeAction(actionInit);
 		survey.setAttributes(attributes);
 		survey.setDBConnection(dbConn);
 		survey.build(req);
@@ -71,7 +71,7 @@ public class FeedbackLoopSurvey extends SimpleActionAdapter {
 		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 
 		//process the survey as usual
-		SMTActionInterface survey = new SurveyFacadeAction(actionInit);
+		ActionInterface survey = new SurveyFacadeAction(actionInit);
 		survey.setAttributes(attributes);
 		survey.setDBConnection(dbConn);
 		survey.retrieve(req);

@@ -2,7 +2,7 @@ package com.depuysynthes.huddle;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBModuleVO;
@@ -72,7 +72,7 @@ public class HuddleSolrSearch  extends SimpleActionAdapter {
 		
 		
 		
-		SMTActionInterface sai = new SolrAction(actionInit);
+		ActionInterface sai = new SolrAction(actionInit);
 		sai.setAttributes(attributes);
 		sai.setDBConnection(dbConn);
 		sai.retrieve(req);

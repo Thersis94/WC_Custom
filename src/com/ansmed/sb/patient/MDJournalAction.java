@@ -13,7 +13,7 @@ import java.util.Map;
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.exception.MailException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.StringEncoder;
@@ -135,7 +135,7 @@ public class MDJournalAction extends SBActionAdapter {
 			req.setAttribute(Constants.BINARY_DOCUMENT, rpt);
 		} else {
 			log.info("Starting MD Journal Retrieval");
-			SMTActionInterface sai = new StimTrackerAction();
+			ActionInterface sai = new StimTrackerAction();
 			sai.setAttributes(attributes);
 			sai.setDBConnection(dbConn);
 			sai.retrieve(req);

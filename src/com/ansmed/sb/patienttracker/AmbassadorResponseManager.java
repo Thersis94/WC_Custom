@@ -9,7 +9,7 @@ import java.util.Date;
 // SMT base libs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -258,7 +258,7 @@ public class AmbassadorResponseManager extends TrackerAction {
 		req.setParameter("patientId", avo.getPatientId());
 		
 		// retrieve the assignment.
-		SMTActionInterface sai = new SJMAssignmentFacade(actionInit);
+		ActionInterface sai = new SJMAssignmentFacade(actionInit);
 		sai.setAttributes(attributes);
 		sai.setDBConnection(dbConn);
 		// If exception thrown, catch it here so that we can ensure that the role impersonation 
@@ -325,7 +325,7 @@ public class AmbassadorResponseManager extends TrackerAction {
 		req.setParameter("assignmentNotes", avo.getAssignmentNotes());
 		req.setParameter("organizationId", SJMTrackerConstants.TRACKER_ORG_ID);
 		// update the assignment
-		SMTActionInterface sai = new SJMAssignmentFacade(actionInit);
+		ActionInterface sai = new SJMAssignmentFacade(actionInit);
 		sai.setAttributes(attributes);
 		sai.setDBConnection(dbConn);
 		sai.build(req);

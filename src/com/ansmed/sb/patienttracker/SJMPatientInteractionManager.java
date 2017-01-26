@@ -8,7 +8,7 @@ import java.util.List;
 //SMT Baselibs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.exception.MailException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
@@ -55,7 +55,7 @@ public class SJMPatientInteractionManager extends TrackerAction {
 		log.debug("SJMPatientInteractionManager retrieve...");
 				
 		// retrieve interaction(s)	
-		SMTActionInterface sai = null;
+		ActionInterface sai = null;
 		sai = new PatientInteractionManager(actionInit);
 		sai.setDBConnection(dbConn);
 		sai.setAttributes(attributes);
@@ -120,7 +120,7 @@ public class SJMPatientInteractionManager extends TrackerAction {
 		if (processInteraction) {
 			// insert patient interaction base record.
 			try {
-				SMTActionInterface sai = null;
+				ActionInterface sai = null;
 				sai = new PatientInteractionManager(this.actionInit);
 				sai.setDBConnection(dbConn);
 				sai.setAttributes(attributes);
@@ -283,7 +283,7 @@ public class SJMPatientInteractionManager extends TrackerAction {
 			}
 			
 			// update the assignment
-			SMTActionInterface sai = new SJMAssignmentFacade(this.actionInit);
+			ActionInterface sai = new SJMAssignmentFacade(this.actionInit);
 			sai.setDBConnection(dbConn);
 			sai.setAttributes(attributes);
 			sai.build(req);

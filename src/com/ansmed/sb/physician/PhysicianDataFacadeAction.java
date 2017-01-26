@@ -5,7 +5,7 @@ import com.ansmed.sb.action.TransactionLoggingAction;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -52,7 +52,7 @@ public class PhysicianDataFacadeAction extends SimpleActionAdapter {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		log.debug("building Phys info");
-		SMTActionInterface aac = null;
+		ActionInterface aac = null;
 		String surgeonId = StringUtil.checkVal(req.getParameter("surgeonId"));
 		String transType = null;
 		
@@ -156,7 +156,7 @@ public class PhysicianDataFacadeAction extends SimpleActionAdapter {
 		Boolean viewDetail = Convert.formatBoolean(req.getParameter("viewDetail"));
 		Boolean duplicate = Convert.formatBoolean(req.getParameter("duplicate"));
 		
-		SMTActionInterface aac = null;
+		ActionInterface aac = null;
 		if (surgeonId.length() > 1 && deactivate) {
 			log.info("passing to SSA");
 			Boolean deleteEntries = Convert.formatBoolean(req.getParameter("deleteEntries"));
@@ -263,7 +263,7 @@ public class PhysicianDataFacadeAction extends SimpleActionAdapter {
 		
 		// if transaction type is specified, log it.
 		if (type != null) {
-       		SMTActionInterface sai = new TransactionLoggingAction(this.actionInit);
+       		ActionInterface sai = new TransactionLoggingAction(this.actionInit);
        		sai.setAttributes(this.attributes);
        		sai.setAttribute(TransactionLoggingAction.TRANSACTION_TYPE, type);
        		sai.setDBConnection(dbConn);

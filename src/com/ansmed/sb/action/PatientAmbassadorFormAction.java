@@ -9,7 +9,7 @@ import java.util.Map;
 //SMT Base Libs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.exception.MailException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.StringEncoder;
@@ -80,7 +80,7 @@ public class PatientAmbassadorFormAction extends SimpleActionAdapter {
     	
     	Integer nextPgNo = Convert.formatInteger(req.getParameter("page"));
 
-    	SMTActionInterface ee = new SurveyResponseAction(this.actionInit);
+    	ActionInterface ee = new SurveyResponseAction(this.actionInit);
     	ee.setAttributes(this.attributes);
     	ee.setDBConnection(dbConn);
     	ee.build(req);
@@ -90,7 +90,7 @@ public class PatientAmbassadorFormAction extends SimpleActionAdapter {
 		
 		// Get the response text and add it to the session 
 		//(This is displayed instead of the chart)
-		SMTActionInterface sa = new SurveyAction(this.actionInit);
+		ActionInterface sa = new SurveyAction(this.actionInit);
 		sa.setAttributes(this.attributes);
 		sa.setDBConnection(dbConn);
 		sa.retrieve(req);
@@ -152,7 +152,7 @@ public class PatientAmbassadorFormAction extends SimpleActionAdapter {
     	String oldInitId = actionInit.getActionId();
     	actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 		
-		SMTActionInterface eg = new SurveyAction(this.actionInit);
+		ActionInterface eg = new SurveyAction(this.actionInit);
     	eg.setAttributes(this.attributes);
     	eg.setDBConnection(dbConn);
     	eg.retrieve(req);
@@ -230,7 +230,7 @@ public class PatientAmbassadorFormAction extends SimpleActionAdapter {
 	    	//call surveyDataAction to retrieve the completed survey
 	    	// this action runs against "transId", which was put on the request by SurveyResponseAction
 	    	attributes.put(AdminConstants.ADMIN_MODULE_DATA, new ModuleVO());
-	    	SMTActionInterface ai = new SurveyDataAction(this.actionInit);
+	    	ActionInterface ai = new SurveyDataAction(this.actionInit);
 	    	ai.setAttributes(this.attributes);
 	    	ai.setDBConnection(this.dbConn);
 	    	ai.update(req);

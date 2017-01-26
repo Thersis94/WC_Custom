@@ -4,7 +4,7 @@ package com.ansmed.sb.sales;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.common.SiteBuilderUtil;
@@ -48,17 +48,17 @@ public class SalesAreaFacadeAction extends SimpleActionAdapter {
 	public void build(ActionRequest req) throws ActionException {
 		
 		if (Convert.formatBoolean(req.getParameter("editArea"))) {
-			SMTActionInterface sbac = new SalesAreaAction(actionInit);
+			ActionInterface sbac = new SalesAreaAction(actionInit);
 	        sbac.setAttributes(this.attributes);
 	        sbac.setDBConnection(dbConn);
 	        sbac.update(req);
 		} else if (Convert.formatBoolean(req.getParameter("editRegion"))) {
-			SMTActionInterface sbac = new SalesRegionAction(actionInit);
+			ActionInterface sbac = new SalesRegionAction(actionInit);
 	        sbac.setAttributes(this.attributes);
 	        sbac.setDBConnection(dbConn);
 	        sbac.update(req);
 		} else if (Convert.formatBoolean(req.getParameter("deleteRegion"))) {
-			SMTActionInterface sbac = new SalesRegionAction(actionInit);
+			ActionInterface sbac = new SalesRegionAction(actionInit);
 	        sbac.setAttributes(this.attributes);
 	        sbac.setDBConnection(dbConn);
 	        sbac.delete(req);
@@ -88,7 +88,7 @@ public class SalesAreaFacadeAction extends SimpleActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("Getting Area Info");
-		SMTActionInterface sbac = new SalesAreaAction(actionInit);
+		ActionInterface sbac = new SalesAreaAction(actionInit);
         sbac.setAttributes(this.attributes);
         sbac.setDBConnection(dbConn);
         sbac.retrieve(req);

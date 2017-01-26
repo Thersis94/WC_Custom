@@ -19,7 +19,7 @@ import com.depuy.forefront.action.vo.HospitalVO;
 import com.depuy.forefront.action.vo.ProgramVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
@@ -231,7 +231,7 @@ public abstract class SiteWizardAction extends SBActionAdapter {
 	public void addMyRoutinePage(String layoutId, ActionRequest req) 
 	throws Exception {
 
-		SMTActionInterface sai = new SitePageAction(this.actionInit);
+		ActionInterface sai = new SitePageAction(this.actionInit);
 		sai.setAttributes(attributes);
 		sai.setDBConnection(dbConn);
 		req.setParameter("templateId", layoutId);
@@ -256,7 +256,7 @@ public abstract class SiteWizardAction extends SBActionAdapter {
 	public void addMyActionPlanPage(String layoutId, ActionRequest req) 
 	throws Exception {
 
-		SMTActionInterface sai = new SitePageAction(this.actionInit);
+		ActionInterface sai = new SitePageAction(this.actionInit);
 		sai.setAttributes(attributes);
 		sai.setDBConnection(dbConn);
 		req.setParameter("templateId", layoutId);
@@ -281,7 +281,7 @@ public abstract class SiteWizardAction extends SBActionAdapter {
 	public void addMyMilestonesPage(String layoutId, ActionRequest req) 
 	throws Exception {
 
-		SMTActionInterface sai = new SitePageAction(this.actionInit);
+		ActionInterface sai = new SitePageAction(this.actionInit);
 		sai.setAttributes(attributes);
 		sai.setDBConnection(dbConn);
 		req.setParameter("templateId", layoutId);
@@ -355,7 +355,7 @@ public abstract class SiteWizardAction extends SBActionAdapter {
 	 */
 	public void addWebsite(HospitalInstanceVO vo, ActionRequest req) throws Exception {
 		String email = req.getParameter("contactEmail");
-		SMTActionInterface sai = new SiteAction(this.actionInit);
+		ActionInterface sai = new SiteAction(this.actionInit);
 		sai.setAttributes(attributes);
 		sai.setDBConnection(dbConn);
 		req.setParameter("actionId", "SITE");
@@ -378,7 +378,7 @@ public abstract class SiteWizardAction extends SBActionAdapter {
 	 * @param vo
 	 */
 	public void addOrganization(HospitalInstanceVO vo, ActionRequest req) throws Exception {
-		SMTActionInterface sai = new OrganizationAction(this.actionInit);
+		ActionInterface sai = new OrganizationAction(this.actionInit);
 		sai.setAttributes(attributes);
 		sai.setDBConnection(dbConn);
 		req.setParameter("actionId", "ORG");

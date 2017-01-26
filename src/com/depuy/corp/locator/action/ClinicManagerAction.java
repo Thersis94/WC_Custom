@@ -8,7 +8,7 @@ import java.util.Map;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
@@ -178,7 +178,7 @@ public class ClinicManagerAction extends DealerInfoAction {
 	}
 	
 	public void list(ActionRequest req) throws ActionException {
-		SMTActionInterface ai = new SimpleActionAdapter(actionInit);
+		ActionInterface ai = new SimpleActionAdapter(actionInit);
 		ai.setAttributes(attributes);
 		ai.setDBConnection(dbConn);
 		ai.retrieve(req);

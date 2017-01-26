@@ -13,7 +13,7 @@ import java.util.Map;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.commerce.ShoppingCartItemVO;
 import com.siliconmtn.commerce.ShoppingCartVO;
 import com.siliconmtn.commerce.cart.storage.Storage;
@@ -77,7 +77,7 @@ public class NexusSolrCartAction extends SBActionAdapter {
 		req.setParameter("moduleStore", "true");
 		req.setParameter("rpp", "5");
 		req.setParameter("page", "1");
-	    	SMTActionInterface sai = new NexusKitAction();
+	    	ActionInterface sai = new NexusKitAction();
 	    	sai.setActionInit(actionInit);
 	    	sai.setDBConnection(dbConn);
 	    	sai.setAttributes(attributes);

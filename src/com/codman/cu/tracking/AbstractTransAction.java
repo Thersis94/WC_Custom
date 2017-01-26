@@ -8,7 +8,7 @@ import com.codman.cu.tracking.vo.AccountVO;
 import com.codman.cu.tracking.vo.TransactionVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
@@ -145,7 +145,7 @@ public abstract class AbstractTransAction extends SBActionAdapter {
 		req.setParameter("accountId", trans.getAccountId());
 		req.setParameter("unfiltered", "true"); //this bypasses all search filtering that normally would apply from the SearchVO stored on session
 		
-		SMTActionInterface ai = new AccountFacadeAction(actionInit);
+		ActionInterface ai = new AccountFacadeAction(actionInit);
 		ai.setAttributes(attributes);
 		ai.setDBConnection(dbConn);
 		ai.retrieve(req);

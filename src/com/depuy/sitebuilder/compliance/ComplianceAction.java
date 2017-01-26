@@ -10,7 +10,7 @@ import java.util.List;
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.gis.AbstractGeocoder;
 import com.siliconmtn.gis.GeocodeFactory;
@@ -64,7 +64,7 @@ public class ComplianceAction extends SBActionAdapter {
 	public void list(ActionRequest req) throws ActionException {
 		log.debug("FT: " + req.getParameter("facadeType"));
 		if (Convert.formatBoolean(req.getParameter("facadeType"))) {
-			SMTActionInterface aac = new ComplianceFacadeAction(actionInit);
+			ActionInterface aac = new ComplianceFacadeAction(actionInit);
 			aac.setAttributes(attributes);
 			aac.setDBConnection(dbConn);
 			aac.list(req);
@@ -178,7 +178,7 @@ public class ComplianceAction extends SBActionAdapter {
 		Object msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
 		
 		if (Convert.formatBoolean(req.getParameter("facadeType"))) {
-			SMTActionInterface aac = new ComplianceFacadeAction(actionInit);
+			ActionInterface aac = new ComplianceFacadeAction(actionInit);
 			aac.setAttributes(attributes);
 			aac.setDBConnection(dbConn);
 			aac.update(req);
@@ -198,7 +198,7 @@ public class ComplianceAction extends SBActionAdapter {
 		Object msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
 		
 		if (Convert.formatBoolean(req.getParameter("facadeType"))) {
-			SMTActionInterface aac = new ComplianceFacadeAction(actionInit);
+			ActionInterface aac = new ComplianceFacadeAction(actionInit);
 			aac.setAttributes(attributes);
 			aac.setDBConnection(dbConn);
 			aac.delete(req);

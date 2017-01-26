@@ -3,7 +3,7 @@ package com.ram.action.customer;
 //SMTBaseLibs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 
@@ -76,8 +76,8 @@ public class CustomerFacadeAction extends SBActionAdapter {
 	 * @param action
 	 * @return
 	 */
-	public SMTActionInterface getAction(String action) {
-		SMTActionInterface sai = null;
+	public ActionInterface getAction(String action) {
+		ActionInterface sai = null;
 		switch(CUSTOMER_TYPE.valueOf(action)) {
 		case location: 
 			sai = new CustomerLocationAction(actionInit);
@@ -101,7 +101,7 @@ public class CustomerFacadeAction extends SBActionAdapter {
 	 */
 	private void performSearch(ActionRequest req) throws ActionException {
 		log.debug("CustomerFacadeAction performSearch...");
-		SMTActionInterface sai = new CustomerSearchAction(actionInit);
+		ActionInterface sai = new CustomerSearchAction(actionInit);
 		sai.setAttributes(attributes);
 		sai.setDBConnection(dbConn);
 		sai.retrieve(req);

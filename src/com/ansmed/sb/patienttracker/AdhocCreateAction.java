@@ -3,7 +3,7 @@ package com.ansmed.sb.patienttracker;
 // SMT Base libs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -88,7 +88,7 @@ public class AdhocCreateAction extends TrackerAction {
 		String iFormId = req.getParameter("sbActionId");
 		req.setParameter("sbActionId", "", true);
 		
-		SMTActionInterface sai = new SJMPatientManager(actionInit);
+		ActionInterface sai = new SJMPatientManager(actionInit);
 		sai.setDBConnection(dbConn);
 		sai.setAttributes(attributes);
 		sai.build(req);
@@ -146,7 +146,7 @@ public class AdhocCreateAction extends TrackerAction {
 		}
 		req.setParameter("assignmentStatusId", avo.getAssignmentStatusId().toString(), true);
 		req.setParameter("assignmentResponseId", avo.getAssignmentResponseId().toString(), true);
-		SMTActionInterface sai = null;
+		ActionInterface sai = null;
 		sai = new SJMAssignmentManager(actionInit);
 		sai.setDBConnection(dbConn);
 		sai.setAttributes(attributes);
@@ -167,7 +167,7 @@ public class AdhocCreateAction extends TrackerAction {
 		log.debug("creating adhoc interaction entry...");
 		req.setParameter("processInteraction", "true");
 		req.setParameter("formSubmittalId", null); // prep
-		SMTActionInterface sai = null;
+		ActionInterface sai = null;
 		sai = new SJMPatientInteractionManager(actionInit);
 		sai.setDBConnection(dbConn);
 		sai.setAttributes(attributes);

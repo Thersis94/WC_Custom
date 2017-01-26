@@ -7,7 +7,7 @@ import java.sql.SQLException;
 import com.ram.action.provider.VisionAction;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -90,8 +90,8 @@ public class ProductFacadeAction extends SBActionAdapter {
 	 * @param step
 	 * @return
 	 */
-	public SMTActionInterface getAction(String step) {
-		SMTActionInterface action = null;
+	public ActionInterface getAction(String step) {
+		ActionInterface action = null;
 		try {
 			switch(KIT_STEP.valueOf(step)) {
 				case kitLayer:

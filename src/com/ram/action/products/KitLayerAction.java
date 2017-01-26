@@ -15,7 +15,7 @@ import net.sf.json.JSONObject;
 import com.ram.datafeed.data.KitLayerVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
@@ -201,7 +201,7 @@ public class KitLayerAction extends SBActionAdapter {
 		 * get the Coordinate data for the kit layer products.
 		 */
 		if(req.hasParameter(KIT_LAYER_ID)) {
-			SMTActionInterface sai = new KitCoordinateAction(this.actionInit);
+			ActionInterface sai = new KitCoordinateAction(this.actionInit);
 			sai.setAttributes(attributes);
 			sai.setDBConnection(dbConn);
 			sai.build(req);

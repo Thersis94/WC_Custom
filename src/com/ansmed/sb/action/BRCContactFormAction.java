@@ -14,7 +14,7 @@ import java.util.Set;
 //SMT Base Libs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.exception.MailException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
@@ -100,7 +100,7 @@ public class BRCContactFormAction extends SimpleActionAdapter {
 
 		// Process the contact form information to create profile based on the  
     	// submitted information.
-    	SMTActionInterface eg = new SubmittalAction(this.actionInit);
+    	ActionInterface eg = new SubmittalAction(this.actionInit);
     	eg.setAttributes(this.attributes);
     	eg.setDBConnection(dbConn);
     	eg.build(req);
@@ -137,7 +137,7 @@ public class BRCContactFormAction extends SimpleActionAdapter {
     	actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
     	
 		// Retrieve the Contact Data
-    	SMTActionInterface eg = new ContactAction(this.actionInit);
+    	ActionInterface eg = new ContactAction(this.actionInit);
     	eg.setAttributes(this.attributes);
     	eg.setDBConnection(dbConn);
     	eg.retrieve(req);

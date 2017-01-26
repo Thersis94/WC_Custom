@@ -90,7 +90,7 @@ public class ANSEventAction extends SBActionAdapter {
 			// Delete any records if necessary
 			if (isDeleteStatus) {
 				log.debug("Deleting ...");
-				SMTActionInterface sai = new EventApprovalAction(this.actionInit);
+				ActionInterface sai = new EventApprovalAction(this.actionInit);
 				sai.setDBConnection(dbConn);
 				sai.delete(req);
 			}

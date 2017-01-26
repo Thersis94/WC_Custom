@@ -8,7 +8,7 @@ import java.sql.SQLException;
 // SMT Base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
@@ -61,7 +61,7 @@ public class SJMTrackerAdminWorkflow extends TrackerAction {
 		// look-up assignee_id if this is not an admin
 		checkUserRole(req);
 		
-		SMTActionInterface sai = null;
+		ActionInterface sai = null;
 		if (actionType == null || actionType.length() == 0) {
 			// retrieve dashboard metrics
 			sai = new TrackerDashboardAction(actionInit);
@@ -105,7 +105,7 @@ public class SJMTrackerAdminWorkflow extends TrackerAction {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		log.debug("SJMTrackerAdminWorkflow build...");
-		SMTActionInterface sai = null;
+		ActionInterface sai = null;
 		String actionType = req.getParameter("actionType");
 		if (actionType == null) {
 			sai = new TrackerDashboardAction(actionInit);

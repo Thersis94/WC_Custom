@@ -13,7 +13,7 @@ import java.util.Set;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -88,7 +88,7 @@ public class DePuyEventSearchAction extends SimpleActionAdapter {
 		mod.setActionId(actionInit.getActionId());
 		setAttribute(Constants.MODULE_DATA, mod);
 		
-		SMTActionInterface ae = new EventFacadeAction(actionInit);
+		ActionInterface ae = new EventFacadeAction(actionInit);
 		ae.setAttributes(attributes);
 		ae.setDBConnection(dbConn);
 		ae.build(req);

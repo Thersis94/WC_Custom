@@ -10,7 +10,7 @@ import java.util.List;
 //SMB Baselibs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.exception.MailException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
@@ -62,7 +62,7 @@ public class SJMReassignmentManager extends TrackerAction {
 	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("SJMReassignmentManager retrieve...");
 		
-		SMTActionInterface sai = null;
+		ActionInterface sai = null;
 		req.setParameter("assignmentId", req.getParameter("fromAssignmentId"));
 		// retrieve the assignment
 		sai = new SJMAssignmentManager(actionInit);
@@ -170,7 +170,7 @@ public class SJMReassignmentManager extends TrackerAction {
 	 */
 	private void retrievePatient(ActionRequest req, AssignmentVO avo) {
 		log.debug("retrieving patient data...");
-		SMTActionInterface sai = new PatientManager(this.actionInit);
+		ActionInterface sai = new PatientManager(this.actionInit);
 		sai.setAttributes(attributes);
 		sai.setDBConnection(dbConn);
 		try {
@@ -197,7 +197,7 @@ public class SJMReassignmentManager extends TrackerAction {
 	private void retrieveAmbassador(ActionRequest req, AssignmentVO avo) {
 		log.debug("retrieving ambassador data...");
 		// assigneeId is already on the request
-		SMTActionInterface sai = new AssigneeManager(this.actionInit);
+		ActionInterface sai = new AssigneeManager(this.actionInit);
 		sai.setAttributes(attributes);
 		sai.setDBConnection(dbConn);
 		try {
@@ -233,7 +233,7 @@ public class SJMReassignmentManager extends TrackerAction {
 		if (StringUtil.checkVal(req.getParameter("actionType")).equals("reassign")) {
 			req.setParameter("assignmentId", req.getParameter("fromAssignmentId"));
 		}
-		SMTActionInterface sai = new SJMAssignmentManager(this.actionInit);
+		ActionInterface sai = new SJMAssignmentManager(this.actionInit);
 		sai.setAttributes(attributes);
 		sai.setDBConnection(dbConn);
 		try {
@@ -317,7 +317,7 @@ public class SJMReassignmentManager extends TrackerAction {
 		}
 		
 		// de-assign the assignment from the original assignee.
-		SMTActionInterface sai = new SJMAssignmentManager(actionInit);
+		ActionInterface sai = new SJMAssignmentManager(actionInit);
 		sai.setAttributes(attributes);
 		sai.setDBConnection(dbConn);			
 		try {
@@ -361,7 +361,7 @@ public class SJMReassignmentManager extends TrackerAction {
 			this.processByAssignmentStatus(req, avo, "reassign");
 		}
 		// create the new assignment
-		SMTActionInterface sai = new SJMAssignmentManager(actionInit);
+		ActionInterface sai = new SJMAssignmentManager(actionInit);
 		sai.setAttributes(attributes);
 		sai.setDBConnection(dbConn);
 		try {
@@ -644,7 +644,7 @@ public class SJMReassignmentManager extends TrackerAction {
 		req.setParameter("assignmentId", avo.getAssignmentId(), true);
 		log.debug("assignmentId/assigneeId/patientId on req: " + req.getParameter("assignmentId") + "/" + req.getParameter("assigneeId") + "/" + req.getParameter("patientId"));
 		try {
-			SMTActionInterface sai = new PatientInteractionManager(this.actionInit);
+			ActionInterface sai = new PatientInteractionManager(this.actionInit);
 			sai.setAttributes(attributes);
 			sai.setDBConnection(dbConn);
 			sai.retrieve(req);

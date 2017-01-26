@@ -8,7 +8,7 @@ import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 
 // SB Libs
@@ -52,7 +52,7 @@ public class PhysicianIndividualReportAction extends SBActionAdapter {
 	@SuppressWarnings("unchecked")
 	public void retrieve(ActionRequest req) throws ActionException {
 		
-		SMTActionInterface sai = new BusinessAssessmentAction(this.actionInit);
+		ActionInterface sai = new BusinessAssessmentAction(this.actionInit);
 		sai.setAttributes(this.attributes);
 		sai.setDBConnection(dbConn);
 		sai.retrieve(req);

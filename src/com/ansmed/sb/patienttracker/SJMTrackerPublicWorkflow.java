@@ -10,7 +10,7 @@ import java.util.Locale;
 // SMT base libs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
 
@@ -85,7 +85,7 @@ public class SJMTrackerPublicWorkflow extends TrackerAction {
 		log.debug("formActionId: " + formActionId);
 		
 		// 2. build patient base record and form data
-		SMTActionInterface sai = null;
+		ActionInterface sai = null;
 		sai = new PatientManager(this.actionInit);
 		sai.setDBConnection(dbConn);
 		sai.setAttributes(attributes);

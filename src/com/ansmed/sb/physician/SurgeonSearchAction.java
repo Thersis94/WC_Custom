@@ -18,7 +18,7 @@ import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.MailException;
 import com.siliconmtn.action.ActionRequest;
@@ -91,7 +91,7 @@ public class SurgeonSearchAction extends SBActionAdapter {
 		// If not, roll back and set the error message
 		if (success > -1 && ! physOnly) {
 			// Update the clinic
-			SMTActionInterface aac = new PhysicianClinicAction(this.actionInit);
+			ActionInterface aac = new PhysicianClinicAction(this.actionInit);
 			aac.setAttributes(this.attributes);
 			aac.setDBConnection(dbConn);
 			aac.update(req);
@@ -224,7 +224,7 @@ public class SurgeonSearchAction extends SBActionAdapter {
 				vo = new SurgeonVO(rs);
 				
 				// Get the Clinic Info
-				SMTActionInterface ca = new PhysicianClinicAction(this.actionInit);
+				ActionInterface ca = new PhysicianClinicAction(this.actionInit);
 				ca.setAttributes(this.attributes);
 				ca.setDBConnection(dbConn);
 				ca.retrieve(req);
@@ -232,7 +232,7 @@ public class SurgeonSearchAction extends SBActionAdapter {
 				vo.setClinics(clinics);
 				
 				// Get the Staff Info
-				SMTActionInterface sa = new PhysicianStaffAction(this.actionInit);
+				ActionInterface sa = new PhysicianStaffAction(this.actionInit);
 				sa.setAttributes(this.attributes);
 				sa.setDBConnection(dbConn);
 				sa.retrieve(req);
@@ -241,7 +241,7 @@ public class SurgeonSearchAction extends SBActionAdapter {
 				
 				// Get the Documents Info
 				log.debug("Getting docs:");
-				SMTActionInterface pd = new PhysicianDocumentAction(this.actionInit);
+				ActionInterface pd = new PhysicianDocumentAction(this.actionInit);
 				pd.setAttributes(this.attributes);
 				pd.setDBConnection(dbConn);
 				pd.retrieve(req);

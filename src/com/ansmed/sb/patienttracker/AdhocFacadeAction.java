@@ -13,7 +13,7 @@ import java.util.Map;
 // SMT Base libs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
@@ -253,7 +253,7 @@ public class AdhocFacadeAction extends TrackerAction {
 		String origAssigneeId = StringUtil.checkVal(req.getParameter("assigneeId"));
 		req.setParameter("assigneeId", req.getParameter("currAssigneeId"), true);
 		log.debug("original/proxy assigneeId is: " + origAssigneeId + "/" + req.getParameter("assigneeId"));
-		SMTActionInterface sai = new PatientManager(actionInit);
+		ActionInterface sai = new PatientManager(actionInit);
 		sai.setDBConnection(dbConn);
 		sai.setAttributes(attributes);
 		try {
@@ -283,7 +283,7 @@ public class AdhocFacadeAction extends TrackerAction {
 	public void build(ActionRequest req) {
 		log.debug("AdhocFacadeAction build...");
 		String patientId = StringUtil.checkVal(req.getParameter("patientId"));
-		SMTActionInterface sai = null;
+		ActionInterface sai = null;
 		if (patientId.length() == 0) {
 			sai = new AdhocCreateAction(actionInit);
 		} else {

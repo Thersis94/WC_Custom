@@ -15,7 +15,7 @@ import org.apache.solr.common.SolrInputDocument;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.parser.StringEncoder;
@@ -89,7 +89,7 @@ public class NexusKitAction extends SBActionAdapter {
 		    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		    	log.debug((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 		    	actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
-		    	SMTActionInterface sai = new SolrAction(actionInit);
+		    	ActionInterface sai = new SolrAction(actionInit);
 		    	sai.setDBConnection(dbConn);
 		    	sai.setAttributes(attributes);
 			sai.retrieve(req);
