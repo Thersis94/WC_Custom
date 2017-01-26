@@ -115,7 +115,7 @@ public class NoteAction extends SimpleActionAdapter {
 			ps.executeUpdate();
 
 		} catch(SQLException sqle) {
-			log.error("could not load note", sqle);
+			log.error("could not insert or update note", sqle);
 		}
 
 		//Return results to view.
@@ -257,7 +257,7 @@ public class NoteAction extends SimpleActionAdapter {
 			}
 
 		}catch(SQLException sqle) {
-			log.error("could not deletenote ", sqle);
+			log.error("could not select company notes ", sqle);
 		}
 
 		return data;
@@ -297,7 +297,7 @@ public class NoteAction extends SimpleActionAdapter {
 			}
 
 		}catch(SQLException sqle) {
-			log.error("could not deletenote ", sqle);
+			log.error("could not select product notes ", sqle);
 		}
 
 		return data;
@@ -337,7 +337,7 @@ public class NoteAction extends SimpleActionAdapter {
 			}
 
 		}catch(SQLException sqle) {
-			log.error("could not deletenote ", sqle);
+			log.error("could not select market notes ", sqle);
 		}
 
 		return data;
