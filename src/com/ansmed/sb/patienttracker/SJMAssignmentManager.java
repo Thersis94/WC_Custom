@@ -12,7 +12,7 @@ import java.util.List;
 // SMB Baselibs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.exception.MailException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.StringEncoder;
@@ -69,7 +69,7 @@ public class SJMAssignmentManager extends TrackerAction {
 	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("SJMAssignmentManager retrieve...");
 		
-		SMTActionInterface sai = null;
+		ActionInterface sai = null;
 		// retrieve assignments
 		sai = new AssignmentManager(actionInit);
 		sai.setDBConnection(dbConn);
@@ -144,7 +144,7 @@ public class SJMAssignmentManager extends TrackerAction {
 		this.processLoggingParameters(req, avo);
 				
 		// insert/update the assignment
-		SMTActionInterface sai = null;
+		ActionInterface sai = null;
 		sai = new AssignmentManager(actionInit);
 		sai.setDBConnection(dbConn);
 		sai.setAttributes(attributes);
@@ -278,7 +278,7 @@ public class SJMAssignmentManager extends TrackerAction {
 	 */
 	private PatientVO createPatient (ActionRequest req) throws ActionException {
 		log.debug("creating new patient...");
-		SMTActionInterface sai = new SJMPatientManager(actionInit);
+		ActionInterface sai = new SJMPatientManager(actionInit);
 		sai.setDBConnection(dbConn);
 		sai.setAttributes(attributes);
 		sai.build(req);
@@ -486,7 +486,7 @@ public class SJMAssignmentManager extends TrackerAction {
 	@SuppressWarnings("unchecked")
 	private List<AssigneeVO> lookupAssignee(ActionRequest req, AssignmentVO avo) {
 		log.debug("retrieving assignee data for assignment insert...");
-		SMTActionInterface sai = new AssigneeAction(actionInit);
+		ActionInterface sai = new AssigneeAction(actionInit);
 		sai.setAttributes(attributes);
 		sai.setDBConnection(dbConn);
 		try {
@@ -753,7 +753,7 @@ public class SJMAssignmentManager extends TrackerAction {
 		req.setParameter("formSubmittalId", null);
 		
 		try {
-			SMTActionInterface sai = new PatientInteractionManager(this.actionInit);
+			ActionInterface sai = new PatientInteractionManager(this.actionInit);
 			sai.setAttributes(attributes);
 			sai.setDBConnection(dbConn);
 			sai.retrieve(req);

@@ -11,7 +11,7 @@ import com.ansmed.sb.security.ANSRoleFilter;
 import com.ansmed.sb.security.AnsRoleModule;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.PhoneVO;
 import com.siliconmtn.security.StringEncrypter;
@@ -171,7 +171,7 @@ public class StimTrackerAction extends SBActionAdapter {
 			
 			// Update the procedure information
 			req.setParameter("patientId", patientId);
-			SMTActionInterface action = new PatientProcedureAction(this.actionInit);
+			ActionInterface action = new PatientProcedureAction(this.actionInit);
 			action.setDBConnection(dbConn);
 			action.setAttributes(attributes);
 			action.build(req);

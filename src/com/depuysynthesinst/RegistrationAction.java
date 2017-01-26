@@ -19,7 +19,7 @@ import com.depuysynthesinst.assg.MyResidentsAction;
 import com.depuysynthesinst.lms.LMSWSClient;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.security.UserDataVO;
@@ -94,7 +94,7 @@ public class RegistrationAction extends SimpleActionAdapter {
 		mod.setActionGroupId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_2));
 		setAttribute(Constants.MODULE_DATA, mod);
 
-		SMTActionInterface reg = new RegistrationFacadeAction(actionInit);
+		ActionInterface reg = new RegistrationFacadeAction(actionInit);
 		reg.setDBConnection(dbConn);
 		reg.setAttributes(getAttributes());
 		reg.retrieve(req);
@@ -140,7 +140,7 @@ public class RegistrationAction extends SimpleActionAdapter {
 		//these 'hooks' are here because they live on the Registration/"My Profile" page in the UI.
 		if (req.hasParameter("revokeDirector") || req.hasParameter("approveDirector")) {
 			req.setParameter("reqType", "manageProctor");
-			SMTActionInterface act = new MyResidentsAction();
+			ActionInterface act = new MyResidentsAction();
 			act.setAttributes(getAttributes());
 			act.setDBConnection(dbConn);
 			act.build(req);
@@ -178,7 +178,7 @@ public class RegistrationAction extends SimpleActionAdapter {
 			unloadSessionIfNoRole = true;
 			req.setAttribute("dontUnloadSession", "true");
 		}
-		SMTActionInterface reg = new RegistrationFacadeAction(actionInit);
+		ActionInterface reg = new RegistrationFacadeAction(actionInit);
 		reg.setDBConnection(dbConn);
 		reg.setAttributes(getAttributes());
 		reg.build(req);

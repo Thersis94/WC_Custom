@@ -16,7 +16,7 @@ import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -152,7 +152,7 @@ public class RankReportAction extends SBActionAdapter {
 		
 		log.debug("RankActualVO list size: " + data.size());
 		
-		SMTActionInterface aa = new ActualsAction(this.actionInit);
+		ActionInterface aa = new ActualsAction(this.actionInit);
 		aa.setAttributes(this.attributes);
 		aa.setDBConnection(dbConn);
 		aa.retrieve(req);

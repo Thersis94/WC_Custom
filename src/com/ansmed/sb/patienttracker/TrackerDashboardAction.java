@@ -12,7 +12,7 @@ import java.util.Map;
 // SMT base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
@@ -62,7 +62,7 @@ public class TrackerDashboardAction extends SBActionAdapter {
 		}
 		TrackerDataContainer data = new TrackerDataContainer();
 		Map<String, Object> dataMap = new HashMap<String, Object>();
-		SMTActionInterface sai = null;
+		ActionInterface sai = null;
 		
 		if (admin) {
 			// sort the assignments by assign date if we are not already doing a view sort, etc.

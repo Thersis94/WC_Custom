@@ -278,7 +278,7 @@ public class LeihsetAction extends SBActionAdapter {
 
 
 	/* (non-Javadoc)
-	 * @see com.siliconmtn.action.SMTActionInterface#copy(com.siliconmtn.http.SMTServletRequest)
+	 * @see com.siliconmtn.action.ActionInterface#copy(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@SuppressWarnings("unchecked")
 	@Override

@@ -8,7 +8,7 @@ import java.util.Map;
 //SMT Base Libs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.exception.MailException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.StringEncoder;
@@ -73,7 +73,7 @@ public class ProductComplaintFormAction extends SBActionAdapter {
     	actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 		
 		// load form
-		SMTActionInterface ffa = new FormFacadeAction(this.actionInit);
+		ActionInterface ffa = new FormFacadeAction(this.actionInit);
 		ffa.setAttributes(attributes);
 		ffa.setDBConnection(dbConn);
 		ffa.retrieve(req);
@@ -99,7 +99,7 @@ public class ProductComplaintFormAction extends SBActionAdapter {
 		req.setParameter(TransactionParserIntfc.PROCESS_PROFILE, "false");
 		
 		// save form data for the given page ('currentPageNo' param on request)
-		SMTActionInterface ffa = new FormFacadeAction(this.actionInit);
+		ActionInterface ffa = new FormFacadeAction(this.actionInit);
 		ffa.setAttributes(attributes);
 		ffa.setDBConnection(dbConn);
 		ffa.build(req);

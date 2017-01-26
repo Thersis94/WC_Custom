@@ -248,42 +248,42 @@ public class ProductCatalogUtil extends AbstractBaseAction {
 	 */
 	
 	/* (non-Javadoc)
-	 * @see com.siliconmtn.action.SMTActionInterface#delete(com.siliconmtn.http.SMTServletRequest)
+	 * @see com.siliconmtn.action.ActionInterface#delete(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
 	public void delete(ActionRequest req) throws ActionException {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.siliconmtn.action.SMTActionInterface#update(com.siliconmtn.http.SMTServletRequest)
+	 * @see com.siliconmtn.action.ActionInterface#update(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
 	public void update(ActionRequest req) throws ActionException {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.siliconmtn.action.SMTActionInterface#build(com.siliconmtn.http.SMTServletRequest)
+	 * @see com.siliconmtn.action.ActionInterface#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.siliconmtn.action.SMTActionInterface#retrieve(com.siliconmtn.http.SMTServletRequest)
+	 * @see com.siliconmtn.action.ActionInterface#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.siliconmtn.action.SMTActionInterface#list(com.siliconmtn.http.SMTServletRequest)
+	 * @see com.siliconmtn.action.ActionInterface#list(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
 	public void list(ActionRequest req) throws ActionException {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.siliconmtn.action.SMTActionInterface#copy(com.siliconmtn.http.SMTServletRequest)
+	 * @see com.siliconmtn.action.ActionInterface#copy(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
 	public void copy(ActionRequest req) throws ActionException {

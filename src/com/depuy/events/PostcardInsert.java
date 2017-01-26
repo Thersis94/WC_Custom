@@ -12,7 +12,7 @@ import com.siliconmtn.http.session.SMTSession;
 // SMT BaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
@@ -134,13 +134,13 @@ public class PostcardInsert extends SBActionAdapter {
 			nextPage = "review";
 
 		} else if (reqType.startsWith("coopAds")) {
-			SMTActionInterface ac = new CoopAdsAction(this.actionInit);
+			ActionInterface ac = new CoopAdsAction(this.actionInit);
 			ac.setDBConnection(dbConn);
 			ac.setAttributes(this.attributes);
 			ac.build(req);
 			
 		} else if (reqType.startsWith("radioAds")) {
-			SMTActionInterface ac = new CoopAdsAction(this.actionInit);
+			ActionInterface ac = new CoopAdsAction(this.actionInit);
 			ac.setDBConnection(dbConn);
 			ac.setAttributes(this.attributes);
 			ac.build(req);

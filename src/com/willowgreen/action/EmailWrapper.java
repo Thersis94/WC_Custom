@@ -11,7 +11,7 @@ import java.util.Map;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
@@ -91,7 +91,7 @@ public class EmailWrapper extends SimpleActionAdapter {
 			actionInit.setActionId(contactActionId);
 			req.setParameter("actionGroupId", contactActionId);
 			
-			SMTActionInterface ai = new ContactFacadeAction(actionInit);
+			ActionInterface ai = new ContactFacadeAction(actionInit);
 			ai.setDBConnection(dbConn);
 			ai.setAttributes(attributes);
 			ai.retrieve(req);
@@ -115,7 +115,7 @@ public class EmailWrapper extends SimpleActionAdapter {
 				req.setParameter(Constants.DEALER_LOCATION_ID_KEY, user.getProfileId());
 			
 			actionInit.setActionId((String)mod.getAttribute(SBModuleVO.ATTRIBUTE_1));
-			SMTActionInterface ai = new ContactFacadeAction(actionInit);
+			ActionInterface ai = new ContactFacadeAction(actionInit);
 			ai.setDBConnection(dbConn);
 			ai.setAttributes(attributes);
 			ai.build(req);

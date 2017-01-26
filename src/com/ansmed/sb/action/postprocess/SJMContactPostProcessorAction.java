@@ -17,7 +17,7 @@ import com.ansmed.sb.locator.LocatorSearchAction;
 import com.ansmed.sb.physician.SurgeonVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.MailException;
 import com.siliconmtn.action.ActionRequest;
@@ -552,7 +552,7 @@ public class SJMContactPostProcessorAction extends SimpleActionAdapter {
 				
 		// retrieve the surgeon nearest to this person and get the rep for that surgeon
 		try {
-			SMTActionInterface sai = new LocatorSearchAction(this.actionInit);
+			ActionInterface sai = new LocatorSearchAction(this.actionInit);
 			sai.setAttributes(this.attributes);
 			sai.setDBConnection(dbConn);
 			sai.retrieve(req);

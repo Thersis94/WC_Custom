@@ -185,22 +185,11 @@ public class CustomerAction extends SBActionAdapter {
 		return customers.size();
 	}
 
-	
-	//TODO Add the 
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		//TODO Update the CustomerVO inside RAMDataFeed then complete body
-	}
-	
-	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.http.SMTServletRequest)
-	 */
-	@Override
-	@Deprecated
-	public void build(SMTServletRequest req) throws ActionException {
 		//Gather Req Params.
 		CustomerVO vo = new CustomerVO(req);
 		boolean reactivate = (Convert.formatBoolean(req.getParameter("activate")));

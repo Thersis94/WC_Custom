@@ -16,7 +16,7 @@ import com.ansmed.sb.physician.SurgeonVO;
 //SMT Base Libs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.exception.MailException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.StringEncoder;
@@ -134,7 +134,7 @@ public class EpiducerRegistrationAction extends SimpleActionAdapter {
     	loadMaxAttendees();
     	retrieveAvailableCourses(oldInitId, contactFormId);
 		// Retrieve the Contact Data
-    	SMTActionInterface eg = new ContactAction(this.actionInit);
+    	ActionInterface eg = new ContactAction(this.actionInit);
     	eg.setAttributes(this.attributes);
     	eg.setDBConnection(dbConn);
     	eg.retrieve(req);
@@ -372,7 +372,7 @@ public class EpiducerRegistrationAction extends SimpleActionAdapter {
 	    	
 			// Process the contact form information.  User's profile is NOT updated by 
 	    	// the action.  This is on purpose.
-	    	SMTActionInterface eg = new EpiducerSubmittalAction(this.actionInit);
+	    	ActionInterface eg = new EpiducerSubmittalAction(this.actionInit);
 	    	eg.setAttributes(this.attributes);
 	    	eg.setDBConnection(dbConn);
 	    	eg.build(req);

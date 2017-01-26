@@ -17,7 +17,7 @@ import com.ram.datafeed.data.RAMUserVO;
 //SMTBaseLibs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.EncryptionException;
@@ -72,7 +72,7 @@ public class RamUserFacadeAction extends SBActionAdapter {
 		if (searchSubmitted) {
 			performSearch(req);
 		} else {
-			SMTActionInterface sai = new RamUserAction(actionInit);
+			ActionInterface sai = new RamUserAction(actionInit);
 			sai.setAttributes(attributes);
 			sai.setDBConnection(dbConn);
 			sai.retrieve(req);
@@ -85,7 +85,7 @@ public class RamUserFacadeAction extends SBActionAdapter {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		log.debug("RamUserFacadeAction build...");
-		SMTActionInterface sai = null;
+		ActionInterface sai = null;
 		sai = new RamUserAction(actionInit);
 		sai.setAttributes(attributes);
 		sai.setDBConnection(dbConn);

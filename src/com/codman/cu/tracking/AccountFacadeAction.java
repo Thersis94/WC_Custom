@@ -20,8 +20,8 @@ import com.codman.cu.tracking.vo.TransactionVO;
 import com.codman.cu.tracking.vo.UnitVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.action.SMTActionInterface;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
@@ -66,7 +66,7 @@ public class AccountFacadeAction extends SBActionAdapter {
 		
 		log.debug("facadeType: " + type);
 		
-		SMTActionInterface sai = null;
+		ActionInterface sai = null;
 		if (type.equalsIgnoreCase("account")) {
 			sai = new AccountAction(actionInit);
 		} else if (type.equalsIgnoreCase("physician")) {
@@ -345,7 +345,7 @@ public class AccountFacadeAction extends SBActionAdapter {
 			if (req.getParameter("toAcctId") != null)
 				req.setParameter("accountId", req.getParameter("toAcctId"));
 			
-			SMTActionInterface sai = new PhysicianAction(actionInit);
+			ActionInterface sai = new PhysicianAction(actionInit);
 			sai.setAttributes(attributes);
 			sai.setDBConnection(dbConn);
 			sai.retrieve(req);

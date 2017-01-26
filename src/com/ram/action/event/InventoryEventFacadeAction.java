@@ -8,7 +8,7 @@ import java.util.Map;
 import com.siliconmtn.action.ActionControllerFactoryImpl;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.exception.ApplicationException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
@@ -73,10 +73,9 @@ public class InventoryEventFacadeAction extends SBActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		String transType = StringUtil.checkVal(req.getParameter("transType"), DEFAULT_ACTION);
 		ActionInitVO ai = new ActionInitVO(transactionType.get(transType));
-		ActionControllerFactoryImpl factory = new ActionControllerFactoryImpl();
 		log.debug("retrieving " + transType);
 		try {
-			SMTActionInterface sai = factory.getInstance(ai);
+			ActionInterface sai = new ActionControllerFactoryImpl().getActionInstance(ai);
 			sai.setAttributes(getAttributes());
 			sai.setDBConnection(getDBConnection());
 			sai.retrieve(req);
@@ -93,14 +92,12 @@ public class InventoryEventFacadeAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		
-		SMTActionInterface sai = null;
+		ActionInterface sai;
 		try {
 			for (String key : transactionType.keySet()) {
 				log.debug("building " + key);
 				ActionInitVO ai = new ActionInitVO(transactionType.get(key));
-				ActionControllerFactoryImpl factory = new ActionControllerFactoryImpl();
-				sai = factory.getInstance(ai);
+				sai = new ActionControllerFactoryImpl().getActionInstance(ai);
 				sai.setAttributes(getAttributes());
 				sai.setDBConnection(getDBConnection());
 				sai.update(req);

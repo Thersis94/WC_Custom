@@ -8,7 +8,7 @@ import java.sql.SQLException;
 //SMB Baselibs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -45,7 +45,7 @@ public class SJMAssignmentFacade extends TrackerAction {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("SJMAssignmentFacade retrieve...");
-		SMTActionInterface sai = null;
+		ActionInterface sai = null;
 		String actionType = StringUtil.checkVal(req.getParameter("actionType"));
 		if (actionType.equals("reassign")) {
 			sai = new SJMReassignmentManager(this.actionInit);
@@ -63,7 +63,7 @@ public class SJMAssignmentFacade extends TrackerAction {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		log.debug("SJMAssignmentFacade build...");
-		SMTActionInterface sai = null;
+		ActionInterface sai = null;
 		String actionType = StringUtil.checkVal(req.getParameter("actionType"));
 		if (actionType.equals("reassign")) {
 			sai = new SJMReassignmentManager(this.actionInit);

@@ -112,17 +112,11 @@ public class CustomerLocationAction extends SBActionAdapter {
 	}
 
 
-	@Override
-	public void build(ActionRequest req) throws ActionException {
-		//TODO Update the CustomerLocationVO inside RAMDataFeed then complete body
-	}
-	
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	@Deprecated
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		log.debug("CustomerLocationAction build...");
 		// instantiate a vo using the values on the request.
 		CustomerLocationVO vo = new CustomerLocationVO(req);

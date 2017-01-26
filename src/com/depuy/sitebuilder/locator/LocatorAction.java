@@ -31,7 +31,7 @@ import com.google.gson.JsonParser;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.exception.MailException;
@@ -345,7 +345,7 @@ public class LocatorAction extends SBActionAdapter {
             }
             
             // update the list of fields for the action
-            SMTActionInterface lfaa = new LocatorFieldAssocAction(actionInit);
+            ActionInterface lfaa = new LocatorFieldAssocAction(actionInit);
             lfaa.setAttributes(this.attributes);
             lfaa.setDBConnection(dbConn);
             lfaa.update(req);
@@ -419,7 +419,7 @@ public class LocatorAction extends SBActionAdapter {
 	        }
 	        
 	        // retrieve the list of fields for the action
-	        SMTActionInterface sbac = new LocatorFieldAssocAction(actionInit);
+	        ActionInterface sbac = new LocatorFieldAssocAction(actionInit);
 	        sbac.setAttributes(this.attributes);
 	        sbac.setDBConnection(dbConn);
 	        sbac.retrieve(req);
@@ -507,7 +507,7 @@ public class LocatorAction extends SBActionAdapter {
         }
         
         // retrieve the list of fields for the action
-        SMTActionInterface sbac = new LocatorFieldAssocAction(actionInit);
+        ActionInterface sbac = new LocatorFieldAssocAction(actionInit);
         sbac.setAttributes(this.attributes);
         sbac.setDBConnection(dbConn);
         sbac.list(req);

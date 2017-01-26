@@ -21,7 +21,7 @@ import com.depuy.events.vo.*;
 import com.depuy.events.vo.report.*;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -315,7 +315,7 @@ public class PostcardSelect extends SBActionAdapter {
 		//get coopAds if requested
 		} else if (reqType.equals("coopAdsForm") || reqType.equals("coopAdsReview") 
 				|| rptType == LeadsDataTool.POSTCARD_SUMMARY_PULL) {
-			SMTActionInterface sai = new CoopAdsAction(actionInit);
+			ActionInterface sai = new CoopAdsAction(actionInit);
 			sai.setAttributes(attributes);
 			sai.setDBConnection(dbConn);
 			sai.retrieve(req);

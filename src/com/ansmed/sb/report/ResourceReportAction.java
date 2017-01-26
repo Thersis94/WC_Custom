@@ -10,7 +10,7 @@ import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
 
@@ -63,7 +63,7 @@ public class ResourceReportAction extends SBActionAdapter {
 			fileName = "ResourceIndividualDetailReport.";
 		}
 		
-		SMTActionInterface sai = new ResourceAction(this.actionInit);
+		ActionInterface sai = new ResourceAction(this.actionInit);
 		sai.setAttributes(this.attributes);
 		sai.setDBConnection(dbConn);
 		sai.retrieve(req);

@@ -13,7 +13,7 @@ import com.siliconmtn.http.session.SMTSession;
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.exception.MailException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.AuthenticationException;
@@ -69,7 +69,7 @@ public class AdminApprovalAction extends SBActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		if (StringUtil.checkVal(req.getParameter("dealerLocationId")).length() > 0) {
 			req.setAttribute("dealerLocationId", req.getParameter("parentId"));
-			SMTActionInterface sai = new ClinicManagerAction(this.actionInit);
+			ActionInterface sai = new ClinicManagerAction(this.actionInit);
 			sai.setAttributes(attributes);
 			sai.setDBConnection(dbConn);
 			sai.retrieve(req);

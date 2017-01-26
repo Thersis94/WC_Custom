@@ -3,7 +3,7 @@ package com.ansmed.sb.locator;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
 
@@ -46,7 +46,7 @@ public class LocatorFacadeAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void list(ActionRequest req) throws ActionException {
-		SMTActionInterface sbac = null;
+		ActionInterface sbac = null;
         sbac = new SurgeonLocatorAction(actionInit);
         sbac.setAttributes(this.attributes);
         sbac.setDBConnection(dbConn);
@@ -58,7 +58,7 @@ public class LocatorFacadeAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		SMTActionInterface sbac = null;
+		ActionInterface sbac = null;
         
         if ( StringUtil.checkVal(req.getParameter("surgeonId")).length() == 0) {
         	sbac = new LocatorSearchAction(actionInit);

@@ -8,7 +8,7 @@ import java.sql.Statement;
 import com.depuysynthesinst.DSIRoleMgr;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
@@ -46,7 +46,7 @@ public class AssignmentsFacadeAction extends SimpleActionAdapter {
 		DSIRoleMgr dsiRoleMgr = new DSIRoleMgr();
 		boolean isProfessor = dsiRoleMgr.isAssgAdmin(user);
 
-		SMTActionInterface action;
+		ActionInterface action;
 		if (isProfessor && "residents".equals(req.getParameter("pg"))) {
 			action = new MyResidentsAction();
 		} else if ((isProfessor && req.hasParameter("view")) || dsiRoleMgr.isDirector(user)) {
@@ -75,7 +75,7 @@ public class AssignmentsFacadeAction extends SimpleActionAdapter {
 		if (req.getSession().getAttribute(RES_DIR_ID) == null)
 			loadResidentDirector(req, user);
 
-		SMTActionInterface action;
+		ActionInterface action;
 		if (isProfessor && "residents".equals(req.getParameter("pg"))) {
 			action = new MyResidentsAction();
 		} else if (isProfessor && req.hasParameter("view")) {

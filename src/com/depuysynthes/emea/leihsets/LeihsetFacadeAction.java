@@ -2,7 +2,7 @@ package com.depuysynthes.emea.leihsets;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.databean.FilePartDataBean;
 import com.smt.sitebuilder.action.FacadeActionAdapter;
@@ -90,7 +90,7 @@ public class LeihsetFacadeAction extends FacadeActionAdapter {
 	 * @param actionType
 	 * @return
 	 */
-	private SMTActionInterface getAction(String actionType) throws ActionException {
+	private ActionInterface getAction(String actionType) throws ActionException {
 		ActionType at = null;
 		try {
 			at = ActionType.valueOf(actionType);
@@ -106,8 +106,8 @@ public class LeihsetFacadeAction extends FacadeActionAdapter {
 	 * @param actionType
 	 * @return
 	 */
-	private SMTActionInterface getAction(ActionType type) {
-		SMTActionInterface ai = null;
+	private ActionInterface getAction(ActionType type) {
+		ActionInterface ai = null;
 		log.debug("Loading action " + type);
 		switch(type) {
 			case leihset:

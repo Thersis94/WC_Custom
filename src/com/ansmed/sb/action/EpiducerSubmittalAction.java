@@ -10,7 +10,7 @@ import java.util.TreeMap;
 //SMT Base Libs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
@@ -114,7 +114,7 @@ public class EpiducerSubmittalAction extends SBActionAdapter {
         req.setAttribute(CONTACT_SUBMITTAL_ID, id);
         
         // Call the action to set the specific field data
-        SMTActionInterface aac = new SubmittalDataAction(this.actionInit);
+        ActionInterface aac = new SubmittalDataAction(this.actionInit);
         aac.setAttributes(this.attributes);
         aac.setDBConnection(dbConn);
         aac.build(req);

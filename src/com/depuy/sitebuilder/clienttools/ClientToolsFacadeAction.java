@@ -4,7 +4,7 @@ package com.depuy.sitebuilder.clienttools;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
 
@@ -50,7 +50,7 @@ public class ClientToolsFacadeAction extends SimpleActionAdapter {
      */
     @Override
     public void retrieve(ActionRequest req) throws ActionException {
-    	SMTActionInterface eg = null;
+    	ActionInterface eg = null;
     	String type = StringUtil.checkVal(req.getParameter("type"));
 
 		ModuleVO modVO = (ModuleVO) getAttribute(Constants.MODULE_DATA);

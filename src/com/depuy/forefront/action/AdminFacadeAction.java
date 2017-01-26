@@ -2,7 +2,7 @@ package com.depuy.forefront.action;
 
 
 import com.siliconmtn.action.ActionException;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -42,8 +42,8 @@ public class AdminFacadeAction extends SBActionAdapter {
 		super.clearCacheByGroup(CACHE_GROUP);
 	}
 	
-	private SMTActionInterface loadAction(ActionRequest req) {
-		SMTActionInterface sb = null;
+	private ActionInterface loadAction(ActionRequest req) {
+		ActionInterface sb = null;
 		int type = Convert.formatInteger(req.getParameter("actionType"));
 		switch(type) {
 			case HOSPITAL_INST_ACTION:

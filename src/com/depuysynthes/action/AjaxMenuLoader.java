@@ -7,7 +7,7 @@ import java.util.Map;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.commerce.catalog.ProductAttributeContainer;
 import com.siliconmtn.commerce.catalog.ProductAttributeVO;
 import com.siliconmtn.commerce.catalog.ProductCategoryContainer;
@@ -216,7 +216,7 @@ public class AjaxMenuLoader extends SimpleActionAdapter {
 		log.debug("siteId=" + site.getSiteId());
 		ModuleVO menuMod = new ModuleVO(null, role.getCachePmid(site.getSiteId()), true, "MENU");
 		attributes.put(Constants.MODULE_DATA, menuMod);
-		SMTActionInterface ac = null;
+		ActionInterface ac = null;
 		try {
 			ac = new MenuBuilder(ai);
 			ac.setAttributes(attributes);

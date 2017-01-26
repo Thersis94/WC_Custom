@@ -19,7 +19,7 @@ import com.depuysynthesinst.events.CourseCalendar;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.http.session.SMTCookie;
 import com.siliconmtn.io.mail.CalendarEventMessageVO;
 import com.siliconmtn.io.mail.CalendarEventMessageVO.Method;
@@ -75,7 +75,7 @@ public class EventCalendarAction extends CourseCalendar {
 			
 			if (!Convert.formatBoolean(req.hasParameter("isBatch"))) {
 				req.setParameter("eventBypass", "true");
-				SMTActionInterface sai = new EventFacadeAction(actionInit);
+				ActionInterface sai = new EventFacadeAction(actionInit);
 				sai.setDBConnection(dbConn);
 				sai.setAttributes(attributes);
 				sai.update(req);
@@ -105,7 +105,7 @@ public class EventCalendarAction extends CourseCalendar {
 	 */
 	private void updateEvent(ActionRequest req) throws ActionException {
 
-		SMTActionInterface sai = new EventFacadeAction(actionInit);
+		ActionInterface sai = new EventFacadeAction(actionInit);
 		sai.setDBConnection(dbConn);
 		sai.setAttributes(attributes);
 		sai.update(req);
@@ -143,7 +143,7 @@ public class EventCalendarAction extends CourseCalendar {
 	 * @throws ActionException
 	 */
 	private void listEvent(ActionRequest req) throws ActionException {
-		SMTActionInterface sai = new EventFacadeAction(actionInit);
+		ActionInterface sai = new EventFacadeAction(actionInit);
 		sai.setDBConnection(dbConn);
 		sai.setAttributes(attributes);
 		sai.list(req);
@@ -307,7 +307,7 @@ public class EventCalendarAction extends CourseCalendar {
 	 * @throws ActionException
 	 */
 	private void deleteEvent(ActionRequest req) throws ActionException {
-		SMTActionInterface sai = new EventFacadeAction(actionInit);
+		ActionInterface sai = new EventFacadeAction(actionInit);
 		sai.setDBConnection(dbConn);
 		sai.setAttributes(attributes);
 		sai.delete(req);

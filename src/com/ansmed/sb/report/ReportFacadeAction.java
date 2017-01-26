@@ -4,7 +4,7 @@ package com.ansmed.sb.report;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -62,7 +62,7 @@ public class ReportFacadeAction extends SimpleActionAdapter {
 		boolean submitted = Convert.formatBoolean(req.getParameter("searchSubmitted")).booleanValue();
 		log.debug("reportId: " + reportId);
 		log.debug("searchSubmitted: " + submitted);
-		SMTActionInterface ai = null;
+		ActionInterface ai = null;
 		
 		// If form is submitted, process.
 		if (submitted && reportId > 0) {

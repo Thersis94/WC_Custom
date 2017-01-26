@@ -7,7 +7,7 @@ import java.sql.SQLException;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
 
@@ -78,7 +78,7 @@ public class PSPSiteWizardAction extends SBActionAdapter {
 		req.setParameter(SB_ACTION_ID, null);
 			
         // Call the action
-        SMTActionInterface sai = new ContentAction(this.actionInit);
+        ActionInterface sai = new ContentAction(this.actionInit);
         sai.setDBConnection(dbConn);
         sai.setAttributes(attributes);
         sai.update(req);

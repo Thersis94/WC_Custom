@@ -10,7 +10,7 @@ import com.ansmed.sb.patienttracker.comparator.AssigneeAvailabilityComparator;
 // SMTBaseLibs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
 
@@ -55,7 +55,7 @@ public class SJMAssigneeManager extends SBActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("SJMAssigneeManager retrieve...");
 
-		SMTActionInterface sai = null;
+		ActionInterface sai = null;
 		// retrieve assignees
 		sai = new AssigneeManager(actionInit);
 		sai.setDBConnection(dbConn);
@@ -93,7 +93,7 @@ public class SJMAssigneeManager extends SBActionAdapter {
 		}
 		
 		// insert/update the assignment
-		SMTActionInterface sai = null;
+		ActionInterface sai = null;
 		sai = new AssigneeManager(actionInit);
 		sai.setDBConnection(dbConn);
 		sai.setAttributes(attributes);

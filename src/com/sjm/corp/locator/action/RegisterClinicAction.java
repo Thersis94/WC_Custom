@@ -14,7 +14,7 @@ import com.octo.captcha.service.image.ImageCaptchaService;
 // SMT BAseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.MailException;
 import com.siliconmtn.action.ActionRequest;
@@ -85,7 +85,7 @@ public class RegisterClinicAction extends SBActionAdapter {
 			ActionInitVO ai = new ActionInitVO();
 			ai.setActionId((String) mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 			ai.setName(actionInit.getName());
-			SMTActionInterface sai = new DealerLocatorAction(ai);
+			ActionInterface sai = new DealerLocatorAction(ai);
 			sai.setAttributes(attributes);
 			sai.setDBConnection(dbConn);
 			sai.retrieve(req);

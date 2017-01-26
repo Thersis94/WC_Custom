@@ -2,7 +2,7 @@ package com.depuysynthes.gfp;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.smt.sitebuilder.action.FacadeActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -41,7 +41,7 @@ public class GFPFacadeAction extends FacadeActionAdapter {
 	
 	public void retrieve(ActionRequest req) throws ActionException {
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
-		SMTActionInterface sai = null;
+		ActionInterface sai = null;
 		// Determine if we are working with a user or programs
 		if (req.hasParameter("editUser") && role != null && role.getRoleLevel() == 100) {
 			sai = new GFPUserAction();
@@ -61,7 +61,7 @@ public class GFPFacadeAction extends FacadeActionAdapter {
 		// The only reason a non-admin will reach here is to change the
 		// Completedness state of a resource, all others are turned back here
 		if (req.hasParameter("programBuild")) {
-			SMTActionInterface sai = new GFPProgramAction();
+			ActionInterface sai = new GFPProgramAction();
 			sai.setActionInit(actionInit);
 			sai.setAttributes(attributes);
 			sai.setDBConnection(dbConn);
@@ -71,7 +71,7 @@ public class GFPFacadeAction extends FacadeActionAdapter {
 			return;
 		}
 		
-		SMTActionInterface sai = null;
+		ActionInterface sai = null;
 		// Determine if we are working with a user or programs
 		if (req.hasParameter("editUser")) {
 			sai = new GFPUserAction();

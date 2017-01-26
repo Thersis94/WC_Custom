@@ -8,7 +8,7 @@ import java.util.List;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
@@ -73,7 +73,7 @@ public class BatchClinicUpdaterAction extends SBActionAdapter {
 		flushClinics(clinicTypeId, orgId);
 		
 		// Set up the dealerInforAction and have it handle the upload for us
-		SMTActionInterface dia = new DealerInfoAction(actionInit);
+		ActionInterface dia = new DealerInfoAction(actionInit);
 		dia.setDBConnection(dbConn);
 		dia.setAttributes(attributes);
 		req.setParameter("dealerImport", "true");

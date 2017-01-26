@@ -8,7 +8,7 @@ import com.depuy.events_v2.ReportBuilder.ReportType;
 // SMT Base libs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -72,7 +72,7 @@ public class DePuyEventManageActionV2 extends SimpleActionAdapter {
 	public void build(ActionRequest req) throws ActionException {
 		log.debug("DePuyEventManageAction:build() starting...");
 		String ft = StringUtil.checkVal(req.getParameter(AdminConstants.FACADE_TYPE));
-		SMTActionInterface ee = null;
+		ActionInterface ee = null;
 		String oldInitId = actionInit.getActionId();
 		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 		actionInit.setActionId((String) mod.getAttribute(ModuleVO.ATTRIBUTE_1));
@@ -182,7 +182,7 @@ public class DePuyEventManageActionV2 extends SimpleActionAdapter {
 		actionInit.setActionId((String) mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 
 		// Retrieve the postcard Data
-		SMTActionInterface eg = null;
+		ActionInterface eg = null;
 		Object data = null;
 
 		if (req.hasParameter(AdminConstants.FACADE_TYPE)) {

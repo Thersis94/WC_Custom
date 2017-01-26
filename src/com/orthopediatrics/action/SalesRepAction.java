@@ -14,7 +14,7 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.SBModuleVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.StringEncoder;
@@ -493,7 +493,7 @@ public class SalesRepAction extends SBActionAdapter {
 	 */
 	private void exportSalesRepData(ActionRequest req) {
 		log.debug("exporting sales rep data");
-		SMTActionInterface sai = new SalesRepReportAction();
+		ActionInterface sai = new SalesRepReportAction();
 		sai.setDBConnection(dbConn);
 		sai.setAttributes(attributes);
 		try {

@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.ram.action.workflow;
 
 import java.sql.PreparedStatement;
@@ -13,7 +10,6 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.workflow.data.BaseDBReqVO;
 import com.smt.sitebuilder.action.AbstractBaseAction;
@@ -63,32 +59,6 @@ public abstract class AbstractWorkflowAction extends AbstractBaseAction {
 
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		//Not Implemented
-	}
-	
-	/**======Implement deprecated methods to satisfy interface=========**/
-	@Override
-	public void build(SMTServletRequest req) throws ActionException {
-		//Not Implemented
-	}
-	@Override
-	public void copy(SMTServletRequest req) throws ActionException {
-		//Not Implemented
-	}
-	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
-		//Not Implemented
-	}
-	@Override
-	public void list(SMTServletRequest req) throws ActionException {
-		//Not Implemented
-	}
-	@Override
-	public void update(SMTServletRequest req) throws ActionException {
-		//Not Implemented
-	}
-	@Override
-	public void delete(SMTServletRequest req) throws ActionException {
 		//Not Implemented
 	}
 

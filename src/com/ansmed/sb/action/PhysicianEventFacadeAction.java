@@ -15,7 +15,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 //SMT Base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -67,7 +67,7 @@ public class PhysicianEventFacadeAction extends SimpleActionAdapter {
 		url.append("&surgeonId=").append(req.getParameter("surgeonId"));
 		
 		// Execute the action
-    	SMTActionInterface sai = null;
+    	ActionInterface sai = null;
 		
 		if (action.equalsIgnoreCase("insertAlt")) {
 			// insert the new or updated alternate qualifying data.
@@ -112,7 +112,7 @@ public class PhysicianEventFacadeAction extends SimpleActionAdapter {
     	
     	String action = StringUtil.checkVal(req.getParameter("tabAction"));
     	
-		SMTActionInterface sai = null;
+		ActionInterface sai = null;
 		
 		if (action.equalsIgnoreCase("editAltData")) {
 			log.debug("action = editAltData");
