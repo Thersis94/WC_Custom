@@ -83,6 +83,8 @@ public class ContentHierarchyAction extends SBActionAdapter {
 		//Get the Tree off the actionData
 		Tree t = (Tree) mod.getActionData();
 
+		t.calculateTotalChildren(t.getRootNode());
+
 		//Place requested data on the request.
 		if(!StringUtil.isEmpty(sectionId)) {
 			//Put the requested Section Node on the request.
