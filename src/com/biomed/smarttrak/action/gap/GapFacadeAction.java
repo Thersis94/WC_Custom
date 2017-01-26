@@ -22,7 +22,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 /****************************************************************************
  * <b>Title</b>: GapFacadeAction.java
  * <b>Project</b>: WC_Custom
- * <b>Description: </b> TODO
+ * <b>Description: </b> Facade Action for Processing GAP Analysis Requests.
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
  * 
@@ -54,6 +54,7 @@ public class GapFacadeAction extends SBActionAdapter {
 	}
 
 	/**
+	 * Helper method that returns the Gap Hierarchy Tree.
 	 * @param rootNode
 	 * @return
 	 */
