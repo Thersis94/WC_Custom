@@ -337,4 +337,8 @@ public class NoteVO implements Serializable {
 		this.userName = userName;
 	}
 
+	public String toString() {
+		return StringUtil.getToString(this);
+	}
+	
 }

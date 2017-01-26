@@ -11,14 +11,13 @@ import java.util.Map;
 import com.biomed.smarttrak.vo.NoteVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.http.SMTServletRequest;
-import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
-import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -39,10 +38,10 @@ public class NoteAction extends SimpleActionAdapter {
 	public static final String TEAM_TYPE = "teamType";
 	public static final String ATTR_TYPE = "AttrType";
 	
-	public enum NoteTypes {
+	public enum NoteType {
 	    COMPANY,
 	    PRODUCT,
-	    MARKET
+	    MARKET, 
 	}
 
 	public NoteAction() {
@@ -64,7 +63,6 @@ public class NoteAction extends SimpleActionAdapter {
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		log.debug("Notes Action Retrieve called");
-		//TODO add a testing call here.
 	}
 
 	/*
@@ -74,178 +72,154 @@ public class NoteAction extends SimpleActionAdapter {
 	@Override
 	public void build(SMTServletRequest req) throws ActionException {
 		log.debug("Notes Action Build called");
+		DBProcessor db = new DBProcessor(dbConn, (String) attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		NoteVO vo= new NoteVO(req);
+		
 		if(req.hasParameter("isDelete")) {
-			deleteNote(req);
-		} else {
-			insertUpdateNote(req);
+			deleteNote(vo, db);	
+		} else {			
+			saveNote(vo, db);
 		}
 
 	}
 
 	/**
 	 * inserts or updates a note
-	 * @param req
+	 * @param vo
+	 * @param db2 
+	 * @throws ActionException 
 	 */
-	private void insertUpdateNote(SMTServletRequest req) {
+	private void saveNote(NoteVO vo, DBProcessor db) throws ActionException {
 		log.debug("Notes Action insert note called");
 
-		NoteVO n = new NoteVO(req);		
-		//Execute and store Data
-		try (PreparedStatement ps = dbConn.prepareStatement( getInsertUpdateStatement(req) )) {
-			ps.setString(1, n.getUserId());
-			ps.setString(2, n.getTeamId());
-			ps.setString(3, n.getCompanyId());
-			ps.setString(4, n.getCompanyAttributeId());
-			ps.setString(5, n.getProductId());
-			ps.setString(6, n.getProductAttributeId());
-			ps.setString(7, n.getMarketId());
-			ps.setString(8, n.getMarketAttributeId());
-			ps.setString(9, n.getNoteName());
-			ps.setString(10, n.getNoteText());
-			ps.setString(11, n.getFilePathText());
-			ps.setTimestamp(12, Convert.formatTimestamp(n.getExpirationDate()));
-			ps.setTimestamp(13, Convert.getCurrentTimestamp());
-			
-			if(n.getNoteId() != null || !n.getNoteId().isEmpty()){		
-				ps.setString(14, n.getNoteId());
-			}else{
-				ps.setString(14, new UUIDGenerator().getUUID());
+		try {
+			if (StringUtil.isEmpty(vo.getNoteId())) {
+				vo.setCompanyId(new UUIDGenerator().getUUID());
+				log.debug("inserting new note with id: " + vo.getNoteId());
+					db.insert(vo);
+			} else {
+				db.update(vo);
 			}
-
-			ps.executeUpdate();
-
-		} catch(SQLException sqle) {
-			log.error("could not insert or update note", sqle);
+		} catch (Exception e) {
+			throw new ActionException(e);
 		}
-
-		//Return results to view.
-		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
-		if (mod == null) mod = new ModuleVO(); //this is null when we call from other actions and intentionally don't pass attributes (Map)
-		setAttribute(Constants.MODULE_DATA, mod);
-
-	}
-
-	/**
-	 * returns an insert of update statement depending on an attribute 
-	 * @param req 
-	 * @return
-	 */
-	private String getInsertUpdateStatement(SMTServletRequest req) {
-		//Build Sql statement
-		StringBuilder sql = new StringBuilder(320);
-
-		if (Convert.formatBoolean(req.getAttribute(INSERT_TYPE))) {
-			sql.append("insert into ").append((String)attributes.get("customDbSchema")).append("biomedgps_note ");
-			sql.append("USER_ID,              TEAM_ID,       COMPANY_ID,          COMPANY_ATTRIBUTE_ID, PRODUCT_ID, ");
-			sql.append("PRODUCT_ATTRIBUTE_ID, MARKET_ID,     MARKET_ATTRIBUTE_ID, NOTE_NM,              NOTE_TXT, ");
-			sql.append("FILE_PATH_TXT,        EXPIRATION_DT, UPDATE_DT,           NOTE_ID ");
-			sql.append("values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
-		}else{
-			sql.append("update ").append((String)attributes.get("customDbSchema")).append("biomedgps_note ");
-			sql.append(" set USER_ID = ?, TEAM_ID = ?, COMPANY_ID = ?, COMPANY_ATTRIBUTE_ID = ?, PRODUCT_ID = ?, ");
-			sql.append("PRODUCT_ATTRIBUTE_ID = ?, MARKET_ID = ?, MARKET_ATTRIBUTE_ID = ?, NOTE_NM = ?, NOTE_TXT = ?, ");
-			sql.append("FILE_PATH_TXT = ?, EXPIRATION_DT = ?, UPDATE_DT =? where NOTE_ID = ? ");
-		}
-
-		log.debug(sql);
-
-		return sql.toString();
+		
 	}
 
 	/**
 	 * deletes a note
 	 * @param req
+	 * @throws ActionException 
 	 */
-	private void deleteNote(SMTServletRequest req) {
+	private void deleteNote(NoteVO vo, DBProcessor db) throws ActionException {
 		log.debug("Notes Action delete note  called");
 
-		StringBuilder sql = new StringBuilder(320);
-
-		if (Convert.formatBoolean(req.getAttribute(INSERT_TYPE))) {
-			sql.append("delete from ").append((String)attributes.get("customDbSchema")).append("biomedgps_note ");
-			sql.append("where NOTE_ID = ? ");
-		}
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, StringUtil.checkVal(req.getParameter("NOTE_ID")));
-
-			ps.execute();
-		}catch(SQLException sqle) {
-			log.error("could not deletenote ", sqle);
-		}
-	}
-
-
-	/**
-	 * loops the list of notes and adds the notes to an other list when conditions are correct
-	 * 
-	 * @param team
-	 * @param list
-	 * @param teamType
-	 * @return
-	 */
-	private List<NoteVO> processNotes(String targetId, List<NoteVO> allNotes, String searchType, String noteRequestType) {
-		
-		List<NoteVO> processedList = new ArrayList<>();
-		
-		for (NoteVO vo : allNotes){
-			if (searchType.equals(TEAM_TYPE)){
-				if(targetId.equals(vo.getTeamId())){
-					processedList.add(vo);
-				}
-			}else{
-				if(targetId.equals(getAttrValue(vo, noteRequestType))){
-					processedList.add(vo);
-				}
+		try {
+			if (StringUtil.isEmpty(vo.getNoteId())) {
+			db.delete(vo);
 			}
+			
+		}catch(Exception e) {
+			throw new ActionException(e);
 		}
-	
-		return processedList;
 	}
 
 	/**
-	 * based on the note request type the switch sends back the correct string to test.
+	 * based on the note request type and the size of the attributes list returns the where clause.
 	 * @param vo
 	 * @param noteRequestType
 	 * @return
 	 */
-	private String getAttrValue(NoteVO vo, String noteRequestType) {
+	private String getWhereSql(List<String> teams, List<String> attrIds, NoteType type) {
+		StringBuilder sb = new StringBuilder(90);
 		
-		switch(noteRequestType) {
-		   case "company" :
-			   return vo.getCompanyAttributeId();
-		   case "product" :
-			   return vo.getProductAttributeId();
-		   case "market" :
-			   return vo.getMarketAttributeId();
-		   default :
-			   return null;
+		switch(type) {
+		   case COMPANY :
+			  sb.append("where company_id = ? ");
+			  break;
+		   case PRODUCT :
+			   sb.append("where product_id = ? ");
+			   break;
+		   case MARKET :
+			   sb.append("where market_id = ? ");
+			   break;
 		}
+		
+		sb.append("and ( n.user_id = ? ");
+		
+		if (teams != null && teams.size() > 0){
+			sb.append("or  n.team_id in ( ?");
+			appendSqlPlaceholder(teams.size(), sb);
+		}
+		
+		sb.append(") ");
+		
+		if (attrIds != null && attrIds.size() > 0){
+			sb.append("and n.").append(type.name().toLowerCase()).append("_attribute_id in ( ?");
+			appendSqlPlaceholder(attrIds.size(), sb);
+		}
+
+		return sb.toString();
+	}
+
+	/**
+	 * @param listSize
+	 * @param sb 
+	 * @return
+	 */
+	private void appendSqlPlaceholder(int listSize, StringBuilder sb) {
+		for (int x = 0 ; x < listSize; x++ ){
+			   sb.append(", ?");
+		   }
+		   sb.append(" ) ");
 	}
 
 	/**
 	 * pulls every note with the accompanying company id
 	 * @param companyId 
+	 * @param companyAttrIds 
+	 * @param teams 
+	 * @param userId 
+	 * @param company 
 	 * @return
 	 */
-	private List<NoteVO> getFullCompanyList(String companyId) {
+	private List<NoteVO> getNoteList(String targetId, NoteType noteType, String userId, List<String> teams, List<String> attrIds) {
 
-		StringBuilder sql = new StringBuilder(320);
+		StringBuilder sql = new StringBuilder(207);
 		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
 		List<NoteVO> data = new ArrayList<>();
 
-		sql.append("select * from ").append((String)attributes.get("customDbSchema")).append("biomedgps_note n");
-		sql.append("inner join ").append((String)attributes.get("customDbSchema")).append("BIOMEDGPS_USERS u on u.user_id = n.user_id ");
+		sql.append("select * from ").append((String)attributes.get("customDbSchema")).append("biomedgps_note n ");
+		sql.append("inner join ").append((String)attributes.get("customDbSchema")).append("BIOMEDGPS_USER u on u.user_id = n.user_id ");
 		sql.append("inner join PROFILE p  on p.profile_id = u.profile_id ");
-		sql.append("where company_id = ? ");
+	
+		sql.append(getWhereSql(teams, attrIds, NoteType.COMPANY));
 
-		log.debug(sql.toString() +"|" + companyId);
+		log.debug(sql.toString() +"|" + targetId +"|"+ userId );
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, companyId);
+			int i = 1;
+			ps.setString(i++, targetId);
+			ps.setString(i++, userId);
+			
+			if (teams != null){
+				for (String team : teams){
+				  ps.setString(i++, team);
+				}
+			}
+			
+			if (attrIds != null){
+				for (String attr : attrIds){
+					  ps.setString(i++, attr);
+					}
+			}
+			
+			log.debug("prepared statment has: " + (i-1) +" variables ");
 
 			ResultSet rs = ps.executeQuery();
 
-			if (rs.next()) {
+			while (rs.next()) {
+				
 				NoteVO vo = new NoteVO(rs);
 
 				String firstName = pm.getStringValue("FIRST_NM", rs.getString("FIRST_NM"));
@@ -254,96 +228,34 @@ public class NoteAction extends SimpleActionAdapter {
 				vo.setUserName(firstName +" "+ lastName);
 
 				data.add(vo);
+				log.debug("loop: " + vo);
 			}
 
 		}catch(SQLException sqle) {
 			log.error("could not select company notes ", sqle);
 		}
 
+		log.debug("data size " + data.size());
 		return data;
 	}
 	
+
 	/**
-	 * pulls every note with the accompanying product id
-	 * @param productId
-	 * @return
-	 */
-	private List<NoteVO> getFullProductList(String productId) {
-		StringBuilder sql = new StringBuilder(320);
-		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
-		List<NoteVO> data = new ArrayList<>();
-
-		sql.append("select * from ").append((String)attributes.get("customDbSchema")).append("biomedgps_note n");
-		sql.append("inner join ").append((String)attributes.get("customDbSchema")).append("BIOMEDGPS_USERS u on u.user_id = n.user_id ");
-		sql.append("inner join PROFILE p  on p.profile_id = u.profile_id ");
-		sql.append("where product_id = ? ");
-
-		log.debug(sql.toString() +"|" + productId);
-
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, productId);
-
-			ResultSet rs = ps.executeQuery();
-
-			if (rs.next()) {
-				NoteVO vo = new NoteVO(rs);
-
-				String firstName = pm.getStringValue("FIRST_NM", rs.getString("FIRST_NM"));
-				String lastName = pm.getStringValue("LAST_NM", rs.getString("LAST_NM"));
-
-				vo.setUserName(firstName +" "+ lastName);
-
-				data.add(vo);
-			}
-
-		}catch(SQLException sqle) {
-			log.error("could not select product notes ", sqle);
-		}
-
-		return data;
-	}
-	
-	/**
-	 * pulls every note with the accompanying market id
+	 * allows the call with a single id
+	 * @param userId
+	 * @param teams
+	 * @param marketAttrIds
 	 * @param marketId
 	 * @return
 	 */
-	private List<NoteVO> getFullMarketList(String marketId) {
-		StringBuilder sql = new StringBuilder(320);
-		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
-		List<NoteVO> data = new ArrayList<>();
-
-		sql.append("select * from ").append((String)attributes.get("customDbSchema")).append("biomedgps_note n");
-		sql.append("inner join ").append((String)attributes.get("customDbSchema")).append("BIOMEDGPS_USERS u on u.user_id = n.user_id ");
-		sql.append("inner join PROFILE p  on p.profile_id = u.profile_id ");
-		sql.append("where market_id = ? ");
-
-		log.debug(sql.toString() +"|" + marketId);
-
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, marketId);
-
-			ResultSet rs = ps.executeQuery();
-
-			if (rs.next()) {
-				NoteVO vo = new NoteVO(rs);
-
-				String firstName = pm.getStringValue("FIRST_NM", rs.getString("FIRST_NM"));
-				String lastName = pm.getStringValue("LAST_NM", rs.getString("LAST_NM"));
-
-				vo.setUserName(firstName +" "+ lastName);
-
-				data.add(vo);
-			}
-
-		}catch(SQLException sqle) {
-			log.error("could not select market notes ", sqle);
-		}
-
-		return data;
+	public Map<String, List<NoteVO>> getCompanyNotes(String userId, List<String> teams, List<String> companyAttrIds, String companyId){
+		List<String> companyIds = new ArrayList<>();
+		companyIds.add(companyId);
+		
+		return getCompanyNotes(userId, teams, companyAttrIds, companyIds);
+		
 	}
-
-
+	
 	/**
 	 * when called will return a map of note lists.  these lists will be keyed by 
 	 * the team id or the attribute id, a list of all note with the primary id is also returned
@@ -353,21 +265,34 @@ public class NoteAction extends SimpleActionAdapter {
 	 * @param companyId
 	 * @return 
 	 */
-	public Map<String, List<NoteVO>> getCompanyNotes(String userId, List<String> teams, List<String> companyAttrIds, String companyId){
+	public Map<String, List<NoteVO>> getCompanyNotes(String userId, List<String> teams, List<String> companyAttrIds, List<String> companyIds){
 		log.debug("Notes Action get company notes called");
 
 		Map<String, List<NoteVO>> noteResult = new HashMap<>();
 
-		noteResult.put(NoteAction.ALL_NOTES, getFullCompanyList(companyId));
+		for (String companyId : companyIds){
 		
-		for ( String team : teams){
-			noteResult.put(team, processNotes(team, noteResult.get(NoteAction.ALL_NOTES), TEAM_TYPE, NoteTypes.COMPANY.name()));
+		noteResult.put(companyId, getNoteList(companyId, NoteType.COMPANY, userId, teams, companyAttrIds));
+		
 		}
-		for (String attribute:companyAttrIds ){
-			noteResult.put(attribute, processNotes(attribute, noteResult.get(NoteAction.ALL_NOTES), ATTR_TYPE, NoteTypes.COMPANY.name()));
-		}
-
+		
 		return noteResult;
+	}
+	
+	/**
+	 * allows the call with a single id
+	 * @param userId
+	 * @param teams
+	 * @param marketAttrIds
+	 * @param marketId
+	 * @return
+	 */
+	public Map<String, List<NoteVO>> getProductNotes(String userId, List<String> teams, List<String> productAttrIds, String productId){
+		List<String> productIds = new ArrayList<>();
+		productIds.add(productId);
+		
+		return getProductNotes(userId, teams, productAttrIds, productIds);
+		
 	}
 	
 	/**
@@ -379,24 +304,36 @@ public class NoteAction extends SimpleActionAdapter {
 	 * @param companyId
 	 * @return 
 	 */
-	public Map<String, List<NoteVO>> getProductNotes(String userId, List<String> teams, List<String> productAttrIds, String productId){
+	public Map<String, List<NoteVO>> getProductNotes(String userId, List<String> teams, List<String> productAttrIds, List<String> productIds){
 		log.debug("Notes Action get product notes called");
-
 		Map<String, List<NoteVO>> noteResult = new HashMap<>();
 
-		noteResult.put(NoteAction.ALL_NOTES, getFullProductList(productId));
+		for (String productId : productIds){
 		
-		for ( String team : teams){
-			noteResult.put(team, processNotes(team, noteResult.get(NoteAction.ALL_NOTES), TEAM_TYPE, NoteTypes.PRODUCT.name()));
+		noteResult.put(productId, getNoteList(productId, NoteType.PRODUCT, userId, teams, productAttrIds));
+		
 		}
-		for (String attribute:productAttrIds ){
-			noteResult.put(attribute, processNotes(attribute, noteResult.get(NoteAction.ALL_NOTES), ATTR_TYPE, NoteTypes.PRODUCT.name()));
-		}
-
+		
 		return noteResult;
 	}
 
 
+	/**
+	 * allows the call with a single id
+	 * @param userId
+	 * @param teams
+	 * @param marketAttrIds
+	 * @param marketId
+	 * @return
+	 */
+	public Map<String, List<NoteVO>> getMarketNotes(String userId, List<String> teams, List<String> marketAttrIds, String marketId){
+		List<String> marketIds = new ArrayList<>();
+		marketIds.add(marketId);
+		
+		return getMarketNotes(userId, teams, marketAttrIds, marketIds);
+		
+	}
+	
 	/**
 	 * when called will return a map of note lists.  these lists will be keyed by 
 	 * the team id or the attribute id, a list of all note with the primary id is also returned 
@@ -406,20 +343,16 @@ public class NoteAction extends SimpleActionAdapter {
 	 * @param companyId
 	 * @return 
 	 */
-	public Map<String, List<NoteVO>> getMarketNotes(String userId, List<String> teams, List<String> marketAttrIds, String marketId){
+	public Map<String, List<NoteVO>> getMarketNotes(String userId, List<String> teams, List<String> marketAttrIds, List<String> marketIds){
 		log.debug("Notes Action get market notes called");
-
 		Map<String, List<NoteVO>> noteResult = new HashMap<>();
 
-		noteResult.put(NoteAction.ALL_NOTES, getFullMarketList(marketId));
+		for (String marketId : marketIds){
 		
-		for ( String team : teams){
-			noteResult.put(team, processNotes(team, noteResult.get(NoteAction.ALL_NOTES), TEAM_TYPE, NoteTypes.MARKET.name()));
+		noteResult.put(marketId, getNoteList(marketId, NoteType.MARKET, userId, teams, marketAttrIds));
+		
 		}
-		for (String attribute:marketAttrIds ){
-			noteResult.put(attribute, processNotes(attribute, noteResult.get(NoteAction.ALL_NOTES), ATTR_TYPE, NoteTypes.MARKET.name()));
-		}
-
+		
 		return noteResult;
 	}
 
