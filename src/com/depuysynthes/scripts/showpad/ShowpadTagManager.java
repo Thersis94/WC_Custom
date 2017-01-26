@@ -111,11 +111,13 @@ public class ShowpadTagManager {
 		//assign the tags this asset SHOULD have, attempt to backfill those from the known list of tags already in Showpad
 		FileType ft = new FileType(vo.getFileNm());
 		desiredTags.add(ft.getFileExtension());
-		if (vo.getLanguageCode() != null && vo.getLanguageCode().length() > 0)
+		if (!StringUtil.isEmpty(vo.getLanguageCode()))
 			desiredTags.addAll(Arrays.asList(vo.getLanguageCode().split(DSMediaBinImporterV2.TOKENIZER)));
-		if (vo.getLiteratureTypeTxt() != null && vo.getLiteratureTypeTxt().length() > 0)
+		if (!StringUtil.isEmpty(vo.getLiteratureTypeTxt()))
 			desiredTags.addAll(Arrays.asList(vo.getLiteratureTypeTxt().split(DSMediaBinImporterV2.TOKENIZER)));
-
+		if (!StringUtil.isEmpty(vo.getProdNm()))
+				desiredTags.addAll(Arrays.asList(vo.getProdNm().split(DSMediaBinImporterV2.TOKENIZER)));
+		
 		//loop the tags the asset already has, removing them from the "need to add" list
 		if (assignedTags != null) {
 			for (String tag : assignedTags.keySet())
