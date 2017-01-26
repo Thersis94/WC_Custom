@@ -11,10 +11,8 @@ import java.util.Properties;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
-
 //Solr libs
 import org.apache.solr.client.solrj.SolrClient;
-
 
 // WC libs
 import com.siliconmtn.commerce.catalog.ProductAttributeContainer;
@@ -168,6 +166,8 @@ public class HuddleProductCatalogSolrIndex extends SMTAbstractIndex {
 					solrDoc.setDetailImage(pVo.getImage());
 					solrDoc.setDocumentUrl(pVo.getUrlAlias());
 					solrDoc.addOrganization(organizationId);
+					solrDoc.setMetaDesc(pVo.getMetaDesc());
+					solrDoc.setMetaKeywords(pVo.getMetaKywds());
 					//solrDoc.setModule(getIndexType()); unused
 					solrDoc.addRole(SecurityController.PUBLIC_REGISTERED_LEVEL);
 					solrDoc.setModule(getIndexType());
