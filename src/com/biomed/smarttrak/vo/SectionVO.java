@@ -1,6 +1,3 @@
-/**
- *
- */
 package com.biomed.smarttrak.vo;
 
 import java.io.Serializable;
@@ -27,9 +24,6 @@ import com.siliconmtn.util.Convert;
 @Table(name="BIOMEDGPS_SECTION")
 public class SectionVO implements Serializable {
 
-	/**
-	 *
-	 */
 	private static final long serialVersionUID = -4660750788956185315L;
 	private String sectionId;
 	private String parentId;
