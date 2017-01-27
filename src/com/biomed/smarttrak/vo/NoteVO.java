@@ -43,52 +43,52 @@ public class NoteVO implements Serializable {
 	private Date creationDate;
 	private Date updateDate;
 	private String userName;
-	
-	
+
+
 	public NoteVO() {super();}
 	public NoteVO(ResultSet rs) {
 		this();
 		setData(rs);
 	}
-	
+
 	public NoteVO(SMTServletRequest req) {
 		this();
 		setData(req);
 	}
-	
+
 	/**
 	 * @param req
 	 */
 	private void setData(SMTServletRequest req) {
-		
-		this.noteId = StringUtil.checkVal(req.getParameter("NOTE_ID"));
-		this.userId = StringUtil.checkVal(req.getParameter("USER_ID"));
-		this.teamId = req.getParameter("TEAM_ID");
-		this.companyId = req.getParameter("COMPANY_ID");
-		this.companyAttributeId = req.getParameter("COMPANY_ATTRIBUTE_ID");
-		this.productId = req.getParameter("PRODUCT_ID");
-		this.productAttributeId = req.getParameter("PRODUCT_ATTRIBUTE_ID");
-		this.marketId  = req.getParameter("MARKET_ID");
-		this.marketAttributeId = req.getParameter("MARKET_ATTRIBUTE_ID");
-		this.noteName = StringUtil.checkVal(req.getParameter("NOTE_NM"));
-		this.noteText = StringUtil.checkVal(req.getParameter("NOTE_TXT"));
-		this.filePathText = StringUtil.checkVal(req.getParameter("FILE_PATH_TXT"));
+
+		this.noteId = StringUtil.checkVal(req.getParameter("noteId"));
+		this.userId = StringUtil.checkVal(req.getParameter("userId"));
+		this.teamId = req.getParameter("teamId");
+		this.companyId = req.getParameter("companyId");
+		this.companyAttributeId = req.getParameter("companyAttributeId");
+		this.productId = req.getParameter("productId");
+		this.productAttributeId = req.getParameter("productAttributeId");
+		this.marketId  = req.getParameter("marketId");
+		this.marketAttributeId = req.getParameter("marketAttributeId");
+		this.noteName = StringUtil.checkVal(req.getParameter("noteNm"));
+		this.noteText = StringUtil.checkVal(req.getParameter("noteTxt"));
+		this.filePathText = StringUtil.checkVal(req.getParameter("filePathTxt"));
 		this.expirationDate = Convert.formatDate(Convert.DATE_SLASH_PATTERN, 
-    			StringUtil.checkVal(req.getParameter("EXPIRATION_DT")));
+				StringUtil.checkVal(req.getParameter("expirationDt")));
 		this.creationDate = Convert.formatDate(Convert.DATE_SLASH_PATTERN, 
-    			StringUtil.checkVal(req.getParameter("CREATE_DT")));
+				StringUtil.checkVal(req.getParameter("createDt")));
 		this.updateDate = Convert.formatDate(Convert.DATE_SLASH_PATTERN, 
-    			StringUtil.checkVal(req.getParameter("UPDATE_DT")));
-	
+				StringUtil.checkVal(req.getParameter("updateDt")));
+
 
 	}
 	/**
 	 * @param rs
 	 */
 	private void setData(ResultSet rs) {
-		
+
 		DBUtil util = new DBUtil();
-		
+
 		this.noteId = util.getStringVal("NOTE_ID", rs);
 		this.userId = util.getStringVal("USER_ID", rs);
 		this.teamId = util.getStringVal("TEAM_ID", rs);
@@ -104,7 +104,7 @@ public class NoteVO implements Serializable {
 		this.expirationDate = util.getDateVal("EXPIRATION_DT", rs);
 		this.creationDate = util.getDateVal("CREATE_DT", rs);
 		this.updateDate = util.getDateVal("UPDATE_DT", rs);
-		
+
 	}
 	/**
 	 * @return the noteId
@@ -113,7 +113,7 @@ public class NoteVO implements Serializable {
 	public String getNoteId() {
 		return noteId;
 	}
-	
+
 	/**
 	 * @return the userId
 	 */
@@ -128,7 +128,7 @@ public class NoteVO implements Serializable {
 	public String getTeamId() {
 		return teamId;
 	}
-	
+
 	/**
 	 * @return the companyId
 	 */
@@ -136,7 +136,7 @@ public class NoteVO implements Serializable {
 	public String getCompanyId() {
 		return companyId;
 	}
-	
+
 	/**
 	 * @return the companyAttributeId
 	 */
@@ -144,7 +144,7 @@ public class NoteVO implements Serializable {
 	public String getCompanyAttributeId() {
 		return companyAttributeId;
 	}
-	
+
 	/**
 	 * @return the productId
 	 */
@@ -152,7 +152,7 @@ public class NoteVO implements Serializable {
 	public String getProductId() {
 		return productId;
 	}
-	
+
 	/**
 	 * @return the productAttributeId
 	 */
@@ -174,7 +174,7 @@ public class NoteVO implements Serializable {
 	public String getMarketAttributeId() {
 		return marketAttributeId;
 	}
-	
+
 	/**
 	 * @return the noteName
 	 */
@@ -196,7 +196,7 @@ public class NoteVO implements Serializable {
 	public String getFilePathText() {
 		return filePathText;
 	}
-	
+
 	/**
 	 * @return the expirationDate
 	 */
@@ -218,14 +218,14 @@ public class NoteVO implements Serializable {
 	public Date getUpdateDate() {
 		return updateDate;
 	}
-	
+
 	/**
 	 * @param noteId the noteId to set
 	 */
 	public void setNoteId(String noteId) {
 		this.noteId = noteId;
 	}
-	
+
 	/**
 	 * @param userId the userId to set
 	 */
@@ -240,14 +240,14 @@ public class NoteVO implements Serializable {
 	public void setTeamId(String teamId) {
 		this.teamId = teamId;
 	}
-	
+
 	/**
 	 * @param companyId the companyId to set
 	 */
 	public void setCompanyId(String companyId) {
 		this.companyId = companyId;
 	}
-	
+
 	/**
 	 * @param companyAttributeId the companyAttributeId to set
 	 */
@@ -261,14 +261,14 @@ public class NoteVO implements Serializable {
 	public void setProductId(String productId) {
 		this.productId = productId;
 	}
-	
+
 	/**
 	 * @param productAttributeId the productAttributeId to set
 	 */
 	public void setProductAttributeId(String productAttributeId) {
 		this.productAttributeId = productAttributeId;
 	}
-	
+
 	/**
 	 * @param marketId the marketId to set
 	 */
@@ -282,14 +282,14 @@ public class NoteVO implements Serializable {
 	public void setMarketAttributeId(String marketAttributeId) {
 		this.marketAttributeId = marketAttributeId;
 	}
-	
+
 	/**
 	 * @param noteName the noteName to set
 	 */
 	public void setNoteName(String noteName) {
 		this.noteName = noteName;
 	}
-	
+
 	/**
 	 * @param noteText the noteText to set
 	 */
@@ -337,8 +337,13 @@ public class NoteVO implements Serializable {
 		this.userName = userName;
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
 	public String toString() {
 		return StringUtil.getToString(this);
 	}
-	
+
 }

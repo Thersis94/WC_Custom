@@ -86,7 +86,7 @@ public class NoteAction extends SimpleActionAdapter {
 	 * @throws ActionException 
 	 */
 	private void saveNote(NoteVO vo, DBProcessor db) throws ActionException {
-		log.debug("Notes Action insert note called");
+		log.debug("Notes Action insert note called ");
 
 		try {
 			if (StringUtil.isEmpty(vo.getNoteId())) {
@@ -108,10 +108,10 @@ public class NoteAction extends SimpleActionAdapter {
 	 * @throws ActionException 
 	 */
 	private void deleteNote(NoteVO vo, DBProcessor db) throws ActionException {
-		log.debug("Notes Action delete note  called");
+		log.debug("Notes Action delete note called");
 
 		try {
-			if (StringUtil.isEmpty(vo.getNoteId())) {
+			if (!StringUtil.isEmpty(vo.getNoteId())) {
 				db.delete(vo);
 			}
 
@@ -126,18 +126,21 @@ public class NoteAction extends SimpleActionAdapter {
 	 * @param noteRequestType
 	 * @return
 	 */
-	private String getWhereSql(List<String> teams, List<String> attrIds, NoteType type) {
+	private String getWhereSql(List<String> targetIds, List<String> teams, List<String> attrIds, NoteType type) {
 		StringBuilder sb = new StringBuilder(90);
 
 		switch(type) {
 		case COMPANY :
-			sb.append("where company_id = ? ");
+			sb.append("where company_id in (? ");
+			appendSqlPlaceholder(targetIds.size(), sb);
 			break;
 		case PRODUCT :
-			sb.append("where product_id = ? ");
+			sb.append("where product_id in ( ? ");
+			appendSqlPlaceholder(targetIds.size(), sb);
 			break;
 		case MARKET :
-			sb.append("where market_id = ? ");
+			sb.append("where market_id in ( ? ");
+			appendSqlPlaceholder(targetIds.size(), sb);
 			break;
 		}
 
@@ -179,35 +182,39 @@ public class NoteAction extends SimpleActionAdapter {
 	 * @param company 
 	 * @return
 	 */
-	private List<NoteVO> getNoteList(String targetId, NoteType noteType, String userId, List<String> teams, List<String> attrIds) {
+	private Map<String, List<NoteVO>> getNoteList(List<String> targetIds, NoteType noteType, String userId, List<String> teams, List<String> attrIds) {
 
 		StringBuilder sql = new StringBuilder(207);
 		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
-		List<NoteVO> data = new ArrayList<>();
+		Map<String, List<NoteVO>> data = new HashMap<>();
 
 		sql.append("select * from ").append((String)attributes.get("customDbSchema")).append("biomedgps_note n ");
 		sql.append("inner join ").append((String)attributes.get("customDbSchema")).append("BIOMEDGPS_USER u on u.user_id = n.user_id ");
 		sql.append("inner join PROFILE p  on p.profile_id = u.profile_id ");
 
-		sql.append(getWhereSql(teams, attrIds, noteType));
+		sql.append(getWhereSql(targetIds, teams, attrIds, noteType));
 
-		log.debug(sql.toString() +"|" + targetId +"|"+ userId );
+		log.debug(sql.toString() +"|" + targetIds +"|"+ userId );
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			int i = 1;
-			ps.setString(i++, targetId);
+
+			if (targetIds != null){
+				for (String targetId : targetIds){
+					ps.setString(i++, targetId);
+				}
+			}
+
 			ps.setString(i++, userId);
 
 			if (teams != null){
 				for (String team : teams){
-					log.debug("team: " + team);
 					ps.setString(i++, team);
 				}
 			}
 
 			if (attrIds != null){
 				for (String attr : attrIds){
-					log.debug("attr: "+ attr);
 					ps.setString(i++, attr);
 				}
 			}
@@ -225,8 +232,8 @@ public class NoteAction extends SimpleActionAdapter {
 
 				vo.setUserName(firstName +" "+ lastName);
 
-				data.add(vo);
-				log.debug("loop: " + vo);
+				processNote(noteType, data, vo);
+
 			}
 
 		}catch(SQLException sqle) {
@@ -237,6 +244,41 @@ public class NoteAction extends SimpleActionAdapter {
 		return data;
 	}
 
+
+	/**
+	 * looks at the note type and the current map and places the note vo on the correct list.
+	 * @param noteType
+	 * @param data
+	 * @param vo
+	 */
+	private void processNote(NoteType noteType, Map<String, List<NoteVO>> data, NoteVO vo) {
+
+		String targetKey = null;
+
+		switch(noteType) {
+		case COMPANY :
+			targetKey = vo.getCompanyId();
+			break;
+		case PRODUCT :
+			targetKey = vo.getProductId();
+			break;
+		case MARKET :
+			targetKey = vo.getMarketId();
+			break;
+		}
+
+		List<NoteVO> lvo;
+
+		if (data.containsKey(targetKey)){
+			lvo = data.get(targetKey);
+			lvo.add(vo);
+		}else {
+			lvo = new ArrayList<>();
+			lvo.add(vo);
+			data.put(targetKey, lvo);
+		}
+
+	}
 
 	/**
 	 * allows the call with a single id
@@ -266,15 +308,9 @@ public class NoteAction extends SimpleActionAdapter {
 	public Map<String, List<NoteVO>> getCompanyNotes(String userId, List<String> teams, List<String> companyAttrIds, List<String> companyIds){
 		log.debug("Notes Action get company notes called");
 
-		Map<String, List<NoteVO>> noteResult = new HashMap<>();
+		return getNoteList(companyIds, NoteType.COMPANY, userId, teams, companyAttrIds);
 
-		for (String companyId : companyIds){
 
-			noteResult.put(companyId, getNoteList(companyId, NoteType.COMPANY, userId, teams, companyAttrIds));
-
-		}
-
-		return noteResult;
 	}
 
 	/**
@@ -304,15 +340,8 @@ public class NoteAction extends SimpleActionAdapter {
 	 */
 	public Map<String, List<NoteVO>> getProductNotes(String userId, List<String> teams, List<String> productAttrIds, List<String> productIds){
 		log.debug("Notes Action get product notes called");
-		Map<String, List<NoteVO>> noteResult = new HashMap<>();
 
-		for (String productId : productIds){
-
-			noteResult.put(productId, getNoteList(productId, NoteType.PRODUCT, userId, teams, productAttrIds));
-
-		}
-
-		return noteResult;
+		return getNoteList(productIds, NoteType.PRODUCT, userId, teams, productAttrIds);
 	}
 
 
@@ -343,15 +372,9 @@ public class NoteAction extends SimpleActionAdapter {
 	 */
 	public Map<String, List<NoteVO>> getMarketNotes(String userId, List<String> teams, List<String> marketAttrIds, List<String> marketIds){
 		log.debug("Notes Action get market notes called");
-		Map<String, List<NoteVO>> noteResult = new HashMap<>();
 
-		for (String marketId : marketIds){
+		return getNoteList(marketIds, NoteType.MARKET, userId, teams, marketAttrIds);
 
-			noteResult.put(marketId, getNoteList(marketId, NoteType.MARKET, userId, teams, marketAttrIds));
-
-		}
-
-		return noteResult;
 	}
 
 
