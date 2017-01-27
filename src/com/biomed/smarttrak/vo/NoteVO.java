@@ -63,13 +63,13 @@ public class NoteVO implements Serializable {
 		
 		this.noteId = StringUtil.checkVal(req.getParameter("NOTE_ID"));
 		this.userId = StringUtil.checkVal(req.getParameter("USER_ID"));
-		this.teamId = StringUtil.checkVal(req.getParameter("TEAM_ID"));
-		this.companyId = StringUtil.checkVal(req.getParameter("COMPANY_ID"));
-		this.companyAttributeId = StringUtil.checkVal(req.getParameter("COMPANY_ATTRIBUTE_ID"));
-		this.productId = StringUtil.checkVal(req.getParameter("PRODUCT_ID"));
-		this.productAttributeId = StringUtil.checkVal(req.getParameter("PRODUCT_ATTRIBUTE_ID"));
-		this.marketId  = StringUtil.checkVal(req.getParameter("MARKET_ID"));
-		this.marketAttributeId = StringUtil.checkVal(req.getParameter("MARKET_ATTRIBUTE_ID"));
+		this.teamId = req.getParameter("TEAM_ID");
+		this.companyId = req.getParameter("COMPANY_ID");
+		this.companyAttributeId = req.getParameter("COMPANY_ATTRIBUTE_ID");
+		this.productId = req.getParameter("PRODUCT_ID");
+		this.productAttributeId = req.getParameter("PRODUCT_ATTRIBUTE_ID");
+		this.marketId  = req.getParameter("MARKET_ID");
+		this.marketAttributeId = req.getParameter("MARKET_ATTRIBUTE_ID");
 		this.noteName = StringUtil.checkVal(req.getParameter("NOTE_NM"));
 		this.noteText = StringUtil.checkVal(req.getParameter("NOTE_TXT"));
 		this.filePathText = StringUtil.checkVal(req.getParameter("FILE_PATH_TXT"));

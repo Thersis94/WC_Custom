@@ -1,9 +1,15 @@
 package com.biomed.smarttrak.admin;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import com.biomed.smarttrak.action.NoteAction;
+import com.biomed.smarttrak.vo.NoteVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
-import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SBActionAdapter;
 
 /****************************************************************************
@@ -37,14 +43,53 @@ public class InsightBlogAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
-	
-		log.debug("insite blog action retrieve called " + actionInit.getActionId());
+
+		log.debug("************************************************* start notes test");
+		
+		NoteAction na = new NoteAction();
+		na.setDBConnection(dbConn);
+		na.setAttributes(attributes);
+		
+		
+		List<String> testIds = new ArrayList<>();
+		testIds.add("ryan");
+		testIds.add("rogelio");
+		testIds.add("Loa");
+		
+		Map<String, List<NoteVO>> testList1 = na.getCompanyNotes("8080", testIds, testIds, "2792");
+		
+		for( Entry<String, List<NoteVO>> entry : testList1.entrySet() ){
+			log.debug("key: " + entry.getKey() );
+			log.debug("value: " + entry.getValue())
+		}
+		
+		//req.setParameter("NOTE_ID",);
+		//new note test
+		req.setParameter("USER_ID","8080");
+		//req.setParameter("TEAM_ID",);
+		req.setParameter("COMPANY_ID","2792");
+		//req.setParameter("COMPANY_ATTRIBUTE_ID",);
+		//req.setParameter("PRODUCT_ID",);
+		//req.setParameter("PRODUCT_ATTRIBUTE_ID",);
+		//req.setParameter("MARKET_ID",);
+		//req.setParameter("MARKET_ATTRIBUTE_ID",);
+		req.setParameter("NOTE_NM","testing the insert method");
+		req.setParameter("NOTE_TXT","this is a new note added to the req object for testing");
+		req.setParameter("FILE_PATH_TXT","/nope/not/a/real/path");
+
+		na.build(req);
+		
+		na.getCompanyNotes("8080", null, null, "2792");
+		
+		log.debug("************************************************ end notes test");
+		
+	/*	log.debug("insite blog action retrieve called " + actionInit.getActionId());
 		//TODO catching the page to i can build the public admin widget directly
 		super.retrieve(req);
 		//TODO is this a good way to tell i am not in the admintool?
 		if(!Convert.formatBoolean(req.getParameter("manMod"))){
 		this.list(req);
-		}
+		}*/
 	}
 	
 	
@@ -54,7 +99,7 @@ public class InsightBlogAction extends SBActionAdapter {
 	 */
 	@Override
 	public void list(SMTServletRequest req) throws ActionException {
-		log.debug("insite blog action list called " + actionInit.getActionId());
+	/*	log.debug("insite blog action list called " + actionInit.getActionId());
 		
 		log.debug(" action id: " + actionInit.getActionId());
 		actionInit.setActionId("eb19b0e489ade9bd7f000101577715c8");
@@ -68,7 +113,7 @@ public class InsightBlogAction extends SBActionAdapter {
 			super.retrieve(req);
 		}
 		
-		log.debug("post super call " + actionInit.getActionId());
+		log.debug("post super call " + actionInit.getActionId());*/
 		
 	}
 	

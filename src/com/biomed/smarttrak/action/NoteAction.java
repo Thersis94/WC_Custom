@@ -34,14 +34,10 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class NoteAction extends SimpleActionAdapter {
 
-	public static final String ALL_NOTES = "AllNotes";
-	public static final String TEAM_TYPE = "teamType";
-	public static final String ATTR_TYPE = "AttrType";
-	
 	public enum NoteType {
-	    COMPANY,
-	    PRODUCT,
-	    MARKET, 
+		COMPANY,
+		PRODUCT,
+		MARKET, 
 	}
 
 	public NoteAction() {
@@ -74,7 +70,7 @@ public class NoteAction extends SimpleActionAdapter {
 		log.debug("Notes Action Build called");
 		DBProcessor db = new DBProcessor(dbConn, (String) attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		NoteVO vo= new NoteVO(req);
-		
+
 		if(req.hasParameter("isDelete")) {
 			deleteNote(vo, db);	
 		} else {			
@@ -94,16 +90,16 @@ public class NoteAction extends SimpleActionAdapter {
 
 		try {
 			if (StringUtil.isEmpty(vo.getNoteId())) {
-				vo.setCompanyId(new UUIDGenerator().getUUID());
+				vo.setNoteId(new UUIDGenerator().getUUID());
 				log.debug("inserting new note with id: " + vo.getNoteId());
-					db.insert(vo);
+				db.insert(vo);
 			} else {
 				db.update(vo);
 			}
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}
-		
+
 	}
 
 	/**
@@ -116,9 +112,9 @@ public class NoteAction extends SimpleActionAdapter {
 
 		try {
 			if (StringUtil.isEmpty(vo.getNoteId())) {
-			db.delete(vo);
+				db.delete(vo);
 			}
-			
+
 		}catch(Exception e) {
 			throw new ActionException(e);
 		}
@@ -132,29 +128,29 @@ public class NoteAction extends SimpleActionAdapter {
 	 */
 	private String getWhereSql(List<String> teams, List<String> attrIds, NoteType type) {
 		StringBuilder sb = new StringBuilder(90);
-		
+
 		switch(type) {
-		   case COMPANY :
-			  sb.append("where company_id = ? ");
-			  break;
-		   case PRODUCT :
-			   sb.append("where product_id = ? ");
-			   break;
-		   case MARKET :
-			   sb.append("where market_id = ? ");
-			   break;
+		case COMPANY :
+			sb.append("where company_id = ? ");
+			break;
+		case PRODUCT :
+			sb.append("where product_id = ? ");
+			break;
+		case MARKET :
+			sb.append("where market_id = ? ");
+			break;
 		}
-		
+
 		sb.append("and ( n.user_id = ? ");
-		
-		if (teams != null && teams.size() > 0){
+
+		if (teams != null && !teams.isEmpty()){
 			sb.append("or  n.team_id in ( ?");
 			appendSqlPlaceholder(teams.size(), sb);
 		}
-		
+
 		sb.append(") ");
-		
-		if (attrIds != null && attrIds.size() > 0){
+
+		if (attrIds != null && !attrIds.isEmpty()){
 			sb.append("and n.").append(type.name().toLowerCase()).append("_attribute_id in ( ?");
 			appendSqlPlaceholder(attrIds.size(), sb);
 		}
@@ -168,10 +164,10 @@ public class NoteAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	private void appendSqlPlaceholder(int listSize, StringBuilder sb) {
-		for (int x = 0 ; x < listSize; x++ ){
-			   sb.append(", ?");
-		   }
-		   sb.append(" ) ");
+		for (int x = 0 ; x < listSize-1; x++ ){
+			sb.append(", ?");
+		}
+		sb.append(" ) ");
 	}
 
 	/**
@@ -192,8 +188,8 @@ public class NoteAction extends SimpleActionAdapter {
 		sql.append("select * from ").append((String)attributes.get("customDbSchema")).append("biomedgps_note n ");
 		sql.append("inner join ").append((String)attributes.get("customDbSchema")).append("BIOMEDGPS_USER u on u.user_id = n.user_id ");
 		sql.append("inner join PROFILE p  on p.profile_id = u.profile_id ");
-	
-		sql.append(getWhereSql(teams, attrIds, NoteType.COMPANY));
+
+		sql.append(getWhereSql(teams, attrIds, noteType));
 
 		log.debug(sql.toString() +"|" + targetId +"|"+ userId );
 
@@ -201,25 +197,27 @@ public class NoteAction extends SimpleActionAdapter {
 			int i = 1;
 			ps.setString(i++, targetId);
 			ps.setString(i++, userId);
-			
+
 			if (teams != null){
 				for (String team : teams){
-				  ps.setString(i++, team);
+					log.debug("team: " + team);
+					ps.setString(i++, team);
 				}
 			}
-			
+
 			if (attrIds != null){
 				for (String attr : attrIds){
-					  ps.setString(i++, attr);
-					}
+					log.debug("attr: "+ attr);
+					ps.setString(i++, attr);
+				}
 			}
-			
+
 			log.debug("prepared statment has: " + (i-1) +" variables ");
 
 			ResultSet rs = ps.executeQuery();
 
 			while (rs.next()) {
-				
+
 				NoteVO vo = new NoteVO(rs);
 
 				String firstName = pm.getStringValue("FIRST_NM", rs.getString("FIRST_NM"));
@@ -238,7 +236,7 @@ public class NoteAction extends SimpleActionAdapter {
 		log.debug("data size " + data.size());
 		return data;
 	}
-	
+
 
 	/**
 	 * allows the call with a single id
@@ -251,11 +249,11 @@ public class NoteAction extends SimpleActionAdapter {
 	public Map<String, List<NoteVO>> getCompanyNotes(String userId, List<String> teams, List<String> companyAttrIds, String companyId){
 		List<String> companyIds = new ArrayList<>();
 		companyIds.add(companyId);
-		
+
 		return getCompanyNotes(userId, teams, companyAttrIds, companyIds);
-		
+
 	}
-	
+
 	/**
 	 * when called will return a map of note lists.  these lists will be keyed by 
 	 * the team id or the attribute id, a list of all note with the primary id is also returned
@@ -271,14 +269,14 @@ public class NoteAction extends SimpleActionAdapter {
 		Map<String, List<NoteVO>> noteResult = new HashMap<>();
 
 		for (String companyId : companyIds){
-		
-		noteResult.put(companyId, getNoteList(companyId, NoteType.COMPANY, userId, teams, companyAttrIds));
-		
+
+			noteResult.put(companyId, getNoteList(companyId, NoteType.COMPANY, userId, teams, companyAttrIds));
+
 		}
-		
+
 		return noteResult;
 	}
-	
+
 	/**
 	 * allows the call with a single id
 	 * @param userId
@@ -290,11 +288,11 @@ public class NoteAction extends SimpleActionAdapter {
 	public Map<String, List<NoteVO>> getProductNotes(String userId, List<String> teams, List<String> productAttrIds, String productId){
 		List<String> productIds = new ArrayList<>();
 		productIds.add(productId);
-		
+
 		return getProductNotes(userId, teams, productAttrIds, productIds);
-		
+
 	}
-	
+
 	/**
 	 * when called will return a map of note lists.  these lists will be keyed by 
 	 * the team id or the attribute id, a list of all note with the primary id is also returned
@@ -309,11 +307,11 @@ public class NoteAction extends SimpleActionAdapter {
 		Map<String, List<NoteVO>> noteResult = new HashMap<>();
 
 		for (String productId : productIds){
-		
-		noteResult.put(productId, getNoteList(productId, NoteType.PRODUCT, userId, teams, productAttrIds));
-		
+
+			noteResult.put(productId, getNoteList(productId, NoteType.PRODUCT, userId, teams, productAttrIds));
+
 		}
-		
+
 		return noteResult;
 	}
 
@@ -329,11 +327,11 @@ public class NoteAction extends SimpleActionAdapter {
 	public Map<String, List<NoteVO>> getMarketNotes(String userId, List<String> teams, List<String> marketAttrIds, String marketId){
 		List<String> marketIds = new ArrayList<>();
 		marketIds.add(marketId);
-		
+
 		return getMarketNotes(userId, teams, marketAttrIds, marketIds);
-		
+
 	}
-	
+
 	/**
 	 * when called will return a map of note lists.  these lists will be keyed by 
 	 * the team id or the attribute id, a list of all note with the primary id is also returned 
@@ -348,11 +346,11 @@ public class NoteAction extends SimpleActionAdapter {
 		Map<String, List<NoteVO>> noteResult = new HashMap<>();
 
 		for (String marketId : marketIds){
-		
-		noteResult.put(marketId, getNoteList(marketId, NoteType.MARKET, userId, teams, marketAttrIds));
-		
+
+			noteResult.put(marketId, getNoteList(marketId, NoteType.MARKET, userId, teams, marketAttrIds));
+
 		}
-		
+
 		return noteResult;
 	}
 
