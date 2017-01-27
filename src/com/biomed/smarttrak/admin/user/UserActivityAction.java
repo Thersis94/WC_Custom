@@ -4,10 +4,6 @@ package com.biomed.smarttrak.admin.user;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,15 +13,13 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.StringEncrypter;
-import com.siliconmtn.util.Convert;
 
 // WebCrescendo libs
 import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.action.user.ProfileManager;
-import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.util.PageViewRetriever;
 import com.smt.sitebuilder.util.PageViewVO;
 
 /*****************************************************************************
@@ -41,8 +35,6 @@ import com.smt.sitebuilder.util.PageViewVO;
  ***************************************************************************/
 public class UserActivityAction extends SBActionAdapter {
 
-	private final int HISTORY_INTERVAL_DEFAULT = -12;
-	
 	/**
 	 * Constructor
 	 */
@@ -65,18 +57,35 @@ public class UserActivityAction extends SBActionAdapter {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		
 		Map<String,UserActivityVO> userActivity =  null;
-		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		String siteId = parseSiteId(req);
 		String profileId = (req.hasParameter("profileId") ? req.getParameter("profileId") : null);
 		String dateStart = (req.hasParameter("dateStart") ? req.getParameter("dateStart") : null);
 		String dateEnd = (req.hasParameter("dateEnd") ? req.getParameter("dateEnd") : null);
 		
 		try {
-			userActivity = retrieveUserPageViews(site, profileId, dateStart, dateEnd);
+			userActivity = retrieveUserPageViews(siteId, profileId, dateStart, dateEnd);
+			// merge certain profile data (first/last names) with user activity data
+			mergeUserNames(userActivity);
+			
 		} catch (ActionException ae) {
 			mod.setError(ae);
 		}
 		
 		mod.setActionData(userActivity);
+	}
+	
+	/**
+	 * Determines the siteId value to use for this retrieving page views.
+	 * @param req
+	 * @return
+	 */
+	private String parseSiteId(SMTServletRequest req) {
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		if (req.hasParameter("siteId")) {
+			return req.getParameter("siteId");
+		} else {
+			return (site.getAliasPathParentId() != null ? site.getAliasPathParentId() : site.getSiteId());
+		}
 	}
 
 	/**
@@ -89,103 +98,46 @@ public class UserActivityAction extends SBActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	protected Map<String,UserActivityVO> retrieveUserPageViews(SiteVO site, String profileId,
+	private Map<String,UserActivityVO> retrieveUserPageViews(String siteId, String profileId,
 			String dateStart, String dateEnd) throws ActionException {
 		
 		/* Retrieve page views from db, parse into PageViewVO
 		 * and return list */
-		StringBuilder sql = formatQuery(site, profileId, dateStart, dateEnd);
-		Map<String,UserActivityVO> userActivity = new HashMap<>();
-		//List<UserActivityVO> userActivity = new ArrayList<>();
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			
-			formatPreparedStatement(ps, site, profileId, dateStart, dateEnd);
-			
-			ResultSet rs = ps.executeQuery();
-			parseResults(rs, userActivity);
-
-		} catch (SQLException sqle) {
-			log.error("Error retrieving user page views, ", sqle);
-			throw new ActionException(sqle.getMessage());
-		}
-		
-		// retrieve user data
-		retrieveUsers(userActivity);
-		
-		return userActivity;
+		PageViewRetriever pvr = new PageViewRetriever(dbConn);
+		List<PageViewVO> pageViews = pvr.retrievePageViews(siteId, profileId, dateStart, dateEnd);
+		return parseResults(pageViews);
 	}
 	
 	/**
-	 * Formats the prepared statement for the query
-	 * @param ps
-	 * @param site
-	 * @param profileId
-	 * @param dateStart
-	 * @param dateEnd
-	 * @throws SQLException
-	 */
-	private void formatPreparedStatement(PreparedStatement ps, SiteVO site, 
-			String profileId, String dateStart, String dateEnd) throws SQLException {
-		int idx = 1;
-		if (useSingleDate(dateStart,dateEnd)) {
-			ps.setDate(idx++, Convert.formatSQLDate(formatSingleStartDate(dateStart)));
-		} else {
-			ps.setDate(idx++, Convert.formatSQLDate(Convert.formatStartDate(dateStart)));
-			ps.setDate(idx++, Convert.formatSQLDate(Convert.formatEndDate(dateEnd)));
-		}
-		if (site.getSiteId() != null) ps.setString(idx++, site.getSiteId());
-		if (profileId != null) ps.setString(idx++, profileId);		
-	}
-	
-	/**
-	 * Parses the result set.
-	 * @param rs
-	 * @param userActivity
+	 * Parses the resulting list of page views into a map of profile IDs mapped to UserActivityVOs.
+	 * @param pageViews
 	 * @return
-	 * @throws SQLException
 	 */
-	private void parseResults(ResultSet rs, Map<String,UserActivityVO> userActivity) 
-			throws SQLException {
+	private Map<String,UserActivityVO> parseResults(List<PageViewVO> pageViews) {
 		UserActivityVO user = null;
-		PageViewVO pageView = null;
-		List<PageViewVO> pageViews = null;
+		Map<String,UserActivityVO> userActivity = new HashMap<>();
 		String prevPid = null;
 		String currPid;
 		
-		while (rs.next()) {
-			currPid = rs.getString("profile_id");
-
-			// capture the current page view
-			pageView = new PageViewVO();
-			pageView.setSiteId(rs.getString("siteId"));
-			pageView.setProfileId(rs.getString("profileId"));
-			pageView.setSessionId(rs.getString("session_id"));
-			pageView.setPageId(rs.getString("page_id"));
-			pageView.setRequestUri(rs.getString("request_uri_txt"));
-			pageView.setQueryString(rs.getString("query_str_txt"));
-			pageView.setPageViewId(rs.getInt("src_pageviewId"));
-			pageView.setVisitDate(rs.getDate("visit_dt"));
+		for (PageViewVO pageView : pageViews ) {
 			
+			currPid = pageView.getProfileId();
 			if (currPid.equals(prevPid)) {
-				// add the pageview to the current user's list
-				pageViews.add(pageView);
+				// add pageview to current user's list
+				user.addPageView(pageView);
+				
 			} else {
-				// either first time through or we changed users
-				if (pageViews != null) {
-					// changed users, close out prev user
-					// capture the 'last accessed' time from the last page view.
+				// first time through loop or we changed users
+				if (user != null) {
+					// close out prev user
 					user.setLastAccessTime(pageViews.get(pageViews.size() - 1).getVisitDate());
-					user.setPageViews(pageViews);
-					//userActivity.add(user);
 					userActivity.put(user.getProfileId(), user);
 				}
-				// establish new user data
-				pageViews = new ArrayList<>();
-				pageViews.add(pageView);
-				
+				// capture new user
 				user = new UserActivityVO();
 				user.setSiteId(pageView.getSiteId());
 				user.setProfileId(pageView.getProfileId());
+				user.addPageView(pageView);
 			}
 			
 		}
@@ -198,31 +150,86 @@ public class UserActivityAction extends SBActionAdapter {
 			userActivity.put(user.getProfileId(), user);
 		}
 		
+		return userActivity;
 	}
-	
-	private void retrieveUsers(Map<String,UserActivityVO> userActivity) {
+		
+	/**
+	 * Retrieves and merges specific profile data values into user activity VOs. This uses
+	 * a batching mechanism for efficiency.
+	 * @param userActivity
+	 */
+	private void mergeUserNames(Map<String,UserActivityVO> userActivity) {
+		// instantiate StringEncrypter or die
 		StringEncrypter se = null;
 		try {
-			se = new StringEncrypter("");
+			se = new StringEncrypter((String)getAttributes().get(Constants.ENCRYPT_KEY));
 		} catch (Exception e) {
 			log.error("Error instantiating StringEncrypter, ", e);
 			return;
 		}
+		// batch loop the profile IDs and retrieve just the first/last names encrypted
 		int listSize = userActivity.keySet().size();
 		int maxBatch = 100;
 		int start = 0;
 		int end = (listSize > maxBatch) ? maxBatch : listSize;
+		// convert profile IDs into an iterable object with guaranteed order.
+		String[] ids = userActivity.keySet().toArray(new String[0]);
 		do {
-			retrieveUserNames(se, userActivity.keySet(), start, end);
+			retrieveUserNames(se, userActivity, ids, start, end);
 			start = end;
 			end = (listSize > end + maxBatch) ? end + maxBatch : listSize;
-			
 		} while (start < listSize);
 	}
 	
+	/**
+	 * Retrieves and merges specific profile data values (first/last names) into user activity VOs.
+	 * This purposely does not leverage ProfileManager as we do not need entire profiles 
+	 * returned (expensive!).  Instead, this directly queries the profile table for
+	 * just the encrypted first/last name values and decrypts them before setting them on the
+	 * appropriate user activity VO.
+	 * @param se
+	 * @param userActivity
+	 * @param profileIds
+	 * @param start
+	 * @param end
+	 */
+	private void retrieveUserNames(StringEncrypter se, Map<String,UserActivityVO> userActivity, 
+			String[] profileIds, int start, int end) {
+		StringBuilder sql = new StringBuilder(200);
+		sql.append("select profile_id, first_nm, last_nm from profile where profile_id in ");
+		sql.append("(");
+		for (int i = start; i < end; i++) {
+			if (i > start) sql.append(",");
+			sql.append("?");
+		}
+		sql.append(")");
+		int idx = 1;
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			for (int i = start; i < end; i++) {
+				ps.setString(idx++, profileIds[i]);
+			}
+			ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				formatNameValues(se, rs, userActivity.get(rs.getString("profile_id")));
+			}
+		} catch (SQLException sqle) {
+			log.error("Error retrieving user profile data (first/last names), ", sqle);
+		}
+	}
 	
-	private void retrieveUserNames(StringEncrypter se, Set<String> profileIds, start, end) {
-		
+	/**
+	 * Parses and decrypts user's first/last name from result set and sets values
+	 * on user's activity VO.
+	 * @param se
+	 * @param rs
+	 * @param user
+	 * @throws SQLException
+	 */
+	private void formatNameValues(StringEncrypter se, ResultSet rs, 
+			UserActivityVO user) throws SQLException {
+		if (user == null) return;
+		user.setFirstName(decryptName(se,rs.getString("first_nm")));
+		user.setLastName(decryptName(se,rs.getString("las_nm")));
 	}
 	
 	/**
@@ -231,7 +238,7 @@ public class UserActivityAction extends SBActionAdapter {
 	 * @param encrypted
 	 * @return
 	 */
-	private String decrypt(StringEncrypter se, String encrypted) {
+	private String decryptName(StringEncrypter se, String encrypted) {
 		if (encrypted == null) return encrypted;
 		try {
 			return se.decrypt(encrypted);
@@ -239,67 +246,5 @@ public class UserActivityAction extends SBActionAdapter {
 			log.error("Error decrypting String, ", e);
 			return encrypted;
 		}
-		
-	}
-	
-	/**
-	 * Formats the page view retrieval query
-	 * @param site
-	 * @param profileId
-	 * @param dateStart
-	 * @param dateEnd
-	 * @return
-	 */
-	private StringBuilder formatQuery(SiteVO site, String profileId, 
-			String dateStart, String dateEnd) {
-		/* Retrieve page views from db, parse into PageViewVO
-		 * and return list */
-		StringBuilder sql = new StringBuilder(350);
-		sql.append("select pageview_user_id, site_id, profile_id, session_id, ");
-		sql.append("page_id, request_uri_txt, query_str_txt, src_pageview_id, ");
-		sql.append("visit_dt from pageview_user ");
-		if (useSingleDate(dateStart,dateEnd)) {
-			sql.append("where visit_dt >= ?  ");
-		} else {
-			sql.append("where visit_dt between ? and ? ");
-		}
-		
-		if (site.getSiteId() != null) sql.append("and site_id = ? ");
-		if (profileId != null) sql.append("and profile_id = ? ");
-		sql.append("order by site_id, profile_id, visit_dt");
-		return sql;
-	}
-	
-	/**
-	 * Formats the start date to use for the page view query.  If no start date is supplied
-	 * we use "now minus 12 hours".
-	 * @param dateStart
-	 * @param noDates
-	 * @return
-	 */
-	private Date formatSingleStartDate(String dateStart) {
-		if (dateStart == null) {
-			// return "now minus 12 hours"
-			Calendar cal = GregorianCalendar.getInstance();
-			cal.setTime(Convert.formatDate(dateStart));
-			cal.add(Calendar.HOUR_OF_DAY, HISTORY_INTERVAL_DEFAULT);
-			return cal.getTime();
-		} else {
-			// return "today @ 00:00:00"
-			return Convert.formatStartDate(dateStart);
-		}
-	}
-
-	/**
-	 * Convenience method to determine whether or not to use a single
-	 * date when formatting/executing for this query. Returns true only
-	 * if dateEnd is null, otherwise returns false.
-	 * @param dateStart
-	 * @param dateEnd
-	 * @return
-	 */
-	private boolean useSingleDate(String dateStart, String dateEnd) {
-		if (dateEnd == null) return true;
-		return false;
 	}
 }
