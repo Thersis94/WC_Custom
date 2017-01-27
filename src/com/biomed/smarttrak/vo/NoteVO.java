@@ -1,9 +1,11 @@
 package com.biomed.smarttrak.vo;
 
+// java
 import java.io.Serializable;
 import java.sql.ResultSet;
 import java.util.Date;
 
+//SMT baselibs
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;

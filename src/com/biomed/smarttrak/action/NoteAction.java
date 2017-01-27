@@ -1,5 +1,6 @@
 package com.biomed.smarttrak.action;
 
+//java
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -8,13 +9,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+//WC custom
 import com.biomed.smarttrak.vo.NoteVO;
+
+//STM baselibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
+
+//WebCrescendo
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
@@ -23,7 +29,8 @@ import com.smt.sitebuilder.common.constants.Constants;
 /****************************************************************************
  * <b>Title</b>: NoteAction.java <p/>
  * <b>Project</b>: WebCrescendo <p/>
- * <b>Description: </b> Put Something Here
+ * <b>Description: </b> can be used to request a map of list of notes, and build can be called to 
+ * add update or delete a note.
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2017<p/>
  * <b>Company:</b> Silicon Mountain Technologies<p/>
@@ -162,6 +169,7 @@ public class NoteAction extends SimpleActionAdapter {
 	}
 
 	/**
+	 * used to place the correct number of commans and question marks in the prepared statement
 	 * @param listSize
 	 * @param sb 
 	 * @return
