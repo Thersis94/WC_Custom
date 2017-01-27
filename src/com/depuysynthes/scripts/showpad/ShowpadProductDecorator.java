@@ -455,18 +455,19 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	 */
 	protected void checkProdSousAgainstMediabin(Map<String, MediaBinDeltaVO> masterRecords, String prodSousName, 
 			String prodName, Map<String, Set<String>> sousNames) {
-		List<String> assetIds = findAssetsForSous(masterRecords, prodSousName);
 
+		String cleanSousName = scrubString(prodSousName);
+		List<String> assetIds = findAssetsForSous(masterRecords, cleanSousName);
 		if (assetIds != null && !assetIds.isEmpty()) 
 			return; //we have our answer; there are matches here.
 
 		//finished checking all assets.  Apparently none of them use the same 
 		//SOUS name the product uses.  Let's report these to the Admins.
-		log.debug("no Mediabin matches for PROD_NM=" + prodSousName);
-		Set<String> prodNames = sousNames.get(prodSousName);
+		log.debug("no Mediabin matches for PROD_NM=" + cleanSousName);
+		Set<String> prodNames = sousNames.get(cleanSousName);
 		if (prodNames == null) prodNames = new HashSet<>();
 		prodNames.add(scrubString(prodName));
-		sousNames.put(scrubString(prodSousName), prodNames);
+		sousNames.put(cleanSousName, prodNames);
 	}
 
 
@@ -477,7 +478,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	 * @param prodSousName
 	 * @return
 	 */
-	protected List<String> findAssetsForSous(Map<String, MediaBinDeltaVO> masterRecords, String prodSousName) {
+	protected List<String> findAssetsForSous(Map<String, MediaBinDeltaVO> masterRecords, String cleanSousName) {
 		List<String> data = new ArrayList<>();
 
 		for (MediaBinDeltaVO mbAsset : masterRecords.values()) {
@@ -486,10 +487,10 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 
 			//split the product name field using the tokenizer, and see if any of the values match our SOUS name.
 			String[] sousVals = mbAsset.getProdNm().split(DSMediaBinImporterV2.TOKENIZER);
-			if (Arrays.asList(sousVals).contains(prodSousName)) {
+			if (Arrays.asList(sousVals).contains(cleanSousName)) {
 				//Product's SOUS matches at least one Mediabin record.  
 				//Success!  Return; nothing else we need to do besides verifying we have at least one match.
-				log.debug("SOUS match using " + prodSousName + " for " + mbAsset.getDpySynMediaBinId());
+				log.debug("SOUS match using " + cleanSousName + " for " + mbAsset.getDpySynMediaBinId());
 				data.add(mbAsset.getDpySynMediaBinId());
 			}
 		}
@@ -533,18 +534,19 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	protected void findUnusedAssets(Map<String, MediaBinDeltaVO> masterRecords) {
 		//iterate Mediabin into a unique set of productNames.
 		for (MediaBinDeltaVO mbAsset : masterRecords.values()) {
-			if (State.Delete == mbAsset.getRecordState() || StringUtil.checkVal(mbAsset.getProdNm()).isEmpty())
+			if (State.Delete == mbAsset.getRecordState() || StringUtil.isEmpty(mbAsset.getProdNm()))
 				continue; //nothing to do here, this asset has no SOUS value, or is being deleted.
 
 			//split the product name field using the tokenizer, and see if any of the values match our SOUS name.
 			String[] sousVals = mbAsset.getProdNm().split(DSMediaBinImporterV2.TOKENIZER);
 			for (String val : sousVals) {
+				val = scrubString(val);
 				if (!isQualifiedSousValue(val)) continue;
 
 				Set<String> trackingNos = mediabinSOUSNames.get(val);
 				if (trackingNos == null) trackingNos = new HashSet<>();
 				trackingNos.add(mbAsset.getTrackingNoTxt());
-				mediabinSOUSNames.put(scrubString(val), trackingNos);
+				mediabinSOUSNames.put(val, trackingNos);
 			}
 		}
 		log.info("found " + mediabinSOUSNames.size() + " unique SOUS names in Mediabin assets");
@@ -582,8 +584,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 		//remove dots and dashes that commonly appear in number sequences.  e.g. "319.010"
 		String val = StringUtil.removeNonAlphaNumeric(sousVal);
 		//if all we have is numbers, this is not a qualified sous value
-		boolean ignorable = val.matches("[0-9]+");
-		return !ignorable;
+		return !val.matches("[0-9]+");
 	}
 
 
