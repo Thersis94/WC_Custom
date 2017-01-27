@@ -9,14 +9,18 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Set;
 
+import org.apache.commons.lang.ArrayUtils;
+
+import com.biomed.smarttrak.admin.ContentHierarchyAction;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.StringUtil;
-import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -30,7 +34,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @version 1.0
  * @since Jan 13, 2017
  ****************************************************************************/
-public class GapFacadeAction extends SBActionAdapter {
+public class GapFacadeAction extends ContentHierarchyAction {
 
 	public GapFacadeAction() {
 		super();
@@ -43,14 +47,47 @@ public class GapFacadeAction extends SBActionAdapter {
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
+	@SuppressWarnings("unchecked")
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
-		if(req.hasParameter("selItems")) {
-			String [] selNodes = StringUtil.checkVal(req.getParameter("selItems")).split(",");
-			List<Node> gapNodes = getGapHierarchy(selNodes);
+		if(req.hasParameter("selNodes")) {
+			super.retrieve(req);
+			ModuleVO mod = (ModuleVO) this.getAttribute(Constants.MODULE_DATA);
+			List<Node> nodes = (List<Node>) mod.getActionData();
+			String [] selNodes = req.getParameterValues("selNodes");
 
-			super.putModuleData(gapNodes, gapNodes.size(), false);
+			nodes = filterNodes(nodes, selNodes);
+			
+
+			super.putModuleData(nodes, nodes.size(), false);
 		}
+	}
+
+	/**
+	 * @param selNodes
+	 * @return
+	 */
+	private List<Node> filterNodes(List<Node> nodes, String[] selNodes) {
+		List<Node> filteredNodes = new ArrayList<>();
+		for(Node g : nodes) {
+			for(Node p : g.getChildren()) {
+				for(Node c : p.getChildren()) {
+					ListIterator<Node> nIter = c.getChildren().listIterator();
+					while(nIter.hasNext()) {
+						Node n = nIter.next();
+						for(int i = 0; i < selNodes.length; i++) {
+							if(n.getNodeId().equals(selNodes[i])) {
+								filteredNodes.add(n);
+								nIter.remove();
+								selNodes = (String[]) ArrayUtils.remove(selNodes, i);
+								break;
+							}
+						}
+					}
+				}
+			}
+		}
+		return filteredNodes;
 	}
 
 	/**
