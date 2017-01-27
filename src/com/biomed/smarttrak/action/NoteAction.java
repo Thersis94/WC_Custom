@@ -164,6 +164,8 @@ public class NoteAction extends SimpleActionAdapter {
 			sb.append("and n.").append(type.name().toLowerCase()).append("_attribute_id in ( ?");
 			appendSqlPlaceholder(attrIds.size(), sb);
 		}
+		
+		sb.append("and ( EXPIRATION_DT >= CURRENT_TIMESTAMP or EXPIRATION_DT is null ) ");
 
 		return sb.toString();
 	}
