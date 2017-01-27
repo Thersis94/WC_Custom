@@ -1,12 +1,5 @@
 package com.biomed.smarttrak.admin;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-
-import com.biomed.smarttrak.action.NoteAction;
-import com.biomed.smarttrak.vo.NoteVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
@@ -63,7 +56,7 @@ public class InsightBlogAction extends SBActionAdapter {
 	 */
 	@Override
 	public void list(SMTServletRequest req) throws ActionException {
-	/*	log.debug("insite blog action list called " + actionInit.getActionId());
+		log.debug("insite blog action list called " + actionInit.getActionId());
 		
 		log.debug(" action id: " + actionInit.getActionId());
 		actionInit.setActionId("eb19b0e489ade9bd7f000101577715c8");
@@ -77,7 +70,7 @@ public class InsightBlogAction extends SBActionAdapter {
 			super.retrieve(req);
 		}
 		
-		log.debug("post super call " + actionInit.getActionId());*/
+		log.debug("post super call " + actionInit.getActionId());
 		
 	}
 	
