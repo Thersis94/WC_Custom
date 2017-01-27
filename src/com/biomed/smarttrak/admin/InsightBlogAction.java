@@ -37,16 +37,14 @@ public class InsightBlogAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
-
+		
 		log.debug("insite blog action retrieve called " + actionInit.getActionId());
 		//TODO catching the page to i can build the public admin widget directly
 		super.retrieve(req);
 		//TODO is this a good way to tell i am not in the admintool?
 		if(!Convert.formatBoolean(req.getParameter("manMod"))){
-			this.list(req);
+		this.list(req);
 		}
-		
-	
 	}
 	
 	
