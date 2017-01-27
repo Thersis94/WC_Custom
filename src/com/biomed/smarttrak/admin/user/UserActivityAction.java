@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.servlet.http.HttpSession;
 
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
@@ -19,6 +20,8 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.SBUserRole;
+import com.smt.sitebuilder.security.SecurityController;
 import com.smt.sitebuilder.util.PageViewRetriever;
 import com.smt.sitebuilder.util.PageViewVO;
 
@@ -54,6 +57,7 @@ public class UserActivityAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
+		
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		
 		Map<String,UserActivityVO> userActivity =  null;
@@ -61,17 +65,39 @@ public class UserActivityAction extends SBActionAdapter {
 		String profileId = (req.hasParameter("profileId") ? req.getParameter("profileId") : null);
 		String dateStart = (req.hasParameter("dateStart") ? req.getParameter("dateStart") : null);
 		String dateEnd = (req.hasParameter("dateEnd") ? req.getParameter("dateEnd") : null);
+		log.debug("siteId | profileId: " + siteId + " | " + profileId);
+		log.debug("dateStart | dateEnd: " + dateStart + " | " + dateEnd);
 		
 		try {
+			/* Check caller security here so that we can gracefully catch/set the error 
+			 * on the module response if the caller has an insufficient role level. */
+			checkSecurityRole(req);
+			
 			userActivity = retrieveUserPageViews(siteId, profileId, dateStart, dateEnd);
 			// merge certain profile data (first/last names) with user activity data
 			mergeUserNames(userActivity);
 			
 		} catch (ActionException ae) {
-			mod.setError(ae);
+			mod.setError(ae.getMessage(), ae);
 		}
 		
-		mod.setActionData(userActivity);
+		if (userActivity == null) userActivity = new HashMap<>();
+		this.putModuleData(userActivity, userActivity.size(), false, mod.getErrorMessage(), mod.getErrorCondition());
+		
+	}
+	
+	/**
+	 * Checks caller's security role and throws an exception if insufficient role level is found.
+	 * @param req
+	 * @throws ActionException
+	 */
+	private void checkSecurityRole(SMTServletRequest req) throws ActionException {
+		String errMsg = "Widget access not authorized, Site Administrator role required.";
+		HttpSession sess = req.getSession();
+		if (sess == null) throw new ActionException(errMsg);
+		SBUserRole roles = (SBUserRole)sess.getAttribute(Constants.ROLE_DATA);
+		if (roles == null || roles.getRoleLevel() < SecurityController.ADMIN_ROLE_LEVEL) 
+			throw new ActionException(errMsg);
 	}
 	
 	/**
@@ -80,11 +106,11 @@ public class UserActivityAction extends SBActionAdapter {
 	 * @return
 	 */
 	private String parseSiteId(SMTServletRequest req) {
-		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		if (req.hasParameter("siteId")) {
 			return req.getParameter("siteId");
 		} else {
-			return (site.getAliasPathParentId() != null ? site.getAliasPathParentId() : site.getSiteId());
+			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+			return (site.getSiteId());
 		}
 	}
 
@@ -159,6 +185,7 @@ public class UserActivityAction extends SBActionAdapter {
 	 * @param userActivity
 	 */
 	private void mergeUserNames(Map<String,UserActivityVO> userActivity) {
+		if (userActivity.isEmpty()) return;
 		// instantiate StringEncrypter or die
 		StringEncrypter se = null;
 		try {
@@ -203,6 +230,7 @@ public class UserActivityAction extends SBActionAdapter {
 			sql.append("?");
 		}
 		sql.append(")");
+		log.debug("Profile names SQL: " + sql.toString());
 		int idx = 1;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			for (int i = start; i < end; i++) {
@@ -229,7 +257,7 @@ public class UserActivityAction extends SBActionAdapter {
 			UserActivityVO user) throws SQLException {
 		if (user == null) return;
 		user.setFirstName(decryptName(se,rs.getString("first_nm")));
-		user.setLastName(decryptName(se,rs.getString("las_nm")));
+		user.setLastName(decryptName(se,rs.getString("last_nm")));
 	}
 	
 	/**
