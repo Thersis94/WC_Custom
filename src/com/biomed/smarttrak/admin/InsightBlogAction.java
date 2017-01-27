@@ -37,7 +37,7 @@ public class InsightBlogAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
-		
+	
 		log.debug("insite blog action retrieve called " + actionInit.getActionId());
 		//TODO catching the page to i can build the public admin widget directly
 		super.retrieve(req);
