@@ -1,13 +1,12 @@
 package com.biomed.smarttrak;
 
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Random;
 
-import com.siliconmtn.util.UUIDGenerator;
+import org.apache.log4j.Logger;
+
 import com.smt.sitebuilder.action.SBModuleVO;
 
 /****************************************************************************
@@ -30,6 +29,11 @@ public class FinancialDashVO extends SBModuleVO {
 	private List<FinancialDashDataRowVO> rows;
 	private String sectionId;
 	
+	/**
+	 * Provides a logger
+	 */
+	protected static Logger log;
+
 	/**
 	 * Default table type.
 	 */
@@ -54,7 +58,7 @@ public class FinancialDashVO extends SBModuleVO {
 	 */
 	public static final String DEFAULT_COUNTRY_TYPE = "US";
 	
-	private enum CountryType {
+	public enum CountryType {
 		US("United States"), EU("European Union"), ROW("Rest-of-World"), WW("World-Wide");
 		
 		private String name;
@@ -71,10 +75,11 @@ public class FinancialDashVO extends SBModuleVO {
 	public FinancialDashVO() {
 		countryTypes = new ArrayList<>();
 		rows = new ArrayList<>();
+		log = Logger.getLogger(getClass());
 	}
 
 	public FinancialDashVO(ResultSet rs) {
-		super(rs);
+		this();
 		setData(rs);
 	}
 	
@@ -83,26 +88,17 @@ public class FinancialDashVO extends SBModuleVO {
 	 * @param rs
 	 */
 	public void setData(ResultSet rs) {
-		
-	}
-	
-	// TODO: Remove this after there is real data to work with.
-	public void setTempData() {
-		Random rand = new Random();
-		
 		FinancialDashDataRowVO row;
-		UUIDGenerator uuidGen = new UUIDGenerator();
-		for (int i=0; i < 15; i++) {
-			row = new FinancialDashDataRowVO();
-			row.setName(tableType.getName() + " " + i);
-			row.setPrimaryKey(uuidGen.getUUID());
-			for (String key : colHeaders.getColumns().keySet()) {
-				row.addColumn(key, rand.nextInt(25000), rand.nextDouble());
+		try {
+			while (rs.next()) {
+				row = new FinancialDashDataRowVO(rs);
+				this.addRow(row);
 			}
-			this.addRow(row);
+		} catch (SQLException sqle) {
+			log.error("Unable to set financial dashboard row data", sqle);
 		}
 	}
-
+	
 	/**
 	 * @return the colHeaders
 	 */

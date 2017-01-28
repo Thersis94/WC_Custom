@@ -1,9 +1,14 @@
 package com.biomed.smarttrak;
 
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.log4j.Logger;
+
+import com.siliconmtn.db.DBUtil;
 import com.smt.sitebuilder.action.SBModuleVO;
 
 /****************************************************************************
@@ -24,11 +29,18 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 	private String primaryKey;
 	private Map<String, FinancialDashDataColumnVO> columns;
 	
+	/**
+	 * Provides a logger
+	 */
+	protected static Logger log;
+	
 	public FinancialDashDataRowVO() {
 		columns = new HashMap<>();
+		log = Logger.getLogger(getClass());
 	}
 	
 	public FinancialDashDataRowVO(ResultSet rs) {
+		this();
 		setData(rs);
 	}
 	
@@ -37,7 +49,11 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 	 * @param rs
 	 */
 	public void setData(ResultSet rs) {
+		DBUtil util = new DBUtil();
 		
+		this.setName(util.getStringVal("COMPANY_NM", rs));
+		this.setPrimaryKey(util.getStringVal("COMPANY_ID", rs));
+		this.setColumns(util, rs);
 	}
 
 	/**
@@ -76,6 +92,58 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 	}
 	
 	/**
+	 *  Sets all financial data columns found in the result set
+	 * 
+	 * @param util
+	 * @param rs
+	 */
+	public void setColumns(DBUtil util, ResultSet rs) {
+		
+		try {
+			// just need the last two digits of the year for the column id
+			int year = util.getIntVal("YEAR_NO", rs) % 100;
+			int total = 0, pyTotal = 0;
+			
+			ResultSetMetaData rsmd;
+			rsmd = rs.getMetaData();
+			
+			int colCount = rsmd.getColumnCount();
+			for (int i = 1; i <= colCount; i++) {
+				String colName = rsmd.getColumnName(i); 
+				switch (colName) {
+					case "q1_y1":
+					case "q2_y1":
+					case "q3_y1":
+					case "q4_y1":
+						String quarter = colName.substring(0,2);
+						
+						int dollarValue = util.getIntVal(colName, rs);
+						total += dollarValue;
+						
+						int pyDollarValue = util.getIntVal(quarter + "_y2", rs);
+						pyTotal += pyDollarValue;
+
+						Double pctChange = null;
+						if (pyDollarValue > 0) {
+							pctChange = (double) (dollarValue - pyDollarValue) / pyDollarValue;
+						}
+						
+						this.addColumn(quarter + year, dollarValue, pctChange);
+						break;
+				}
+			}
+			
+			Double pctChange = null;
+			if (pyTotal > 0) {
+				pctChange = (double) (total - pyTotal) / pyTotal;
+			}
+			this.addColumn("cy" + year, total, pctChange);
+		} catch (SQLException sqle) {
+			log.error("Unable to set financial dashboard row data columns", sqle);
+		}
+	}
+	
+	/**
 	 * @param primaryKey the primaryKey to set
 	 */
 	public void setPrimaryKey(String primaryKey) {
@@ -83,18 +151,29 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 	}
 
 	/**
-	 * Adds a column to the list of columns
+	 * Adds a column to the map of columns
 	 * 
 	 * @param colId
 	 * @param pk
 	 * @param val
 	 * @param pctDiff
 	 */
-	public void addColumn(String colId, Integer val, Double pctDiff) {
+	public void addColumn(String colId, int val, Double pctDiff) {
 		FinancialDashDataColumnVO col = new FinancialDashDataColumnVO();
 		col.setDollarValue(val);
 		col.setPctDiff(pctDiff);
+		col.setColId(colId);
 		
+		this.addColumn(colId, col);
+	}
+
+	/**
+	 * Adds a column to the map of columns
+	 * 
+	 * @param colId
+	 * @param col
+	 */
+	public void addColumn(String colId, FinancialDashDataColumnVO col) {
 		columns.put(colId, col);
 	}
 

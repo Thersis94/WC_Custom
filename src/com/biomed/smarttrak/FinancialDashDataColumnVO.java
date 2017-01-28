@@ -18,7 +18,8 @@ import com.smt.sitebuilder.action.SBModuleVO;
 public class FinancialDashDataColumnVO extends SBModuleVO {
 
 	private static final long serialVersionUID = 1L;
-	private Integer dollarValue;
+	private String colId;
+	private int dollarValue;
 	private Double pctDiff;
 	
 	public FinancialDashDataColumnVO() {
@@ -37,9 +38,16 @@ public class FinancialDashDataColumnVO extends SBModuleVO {
 	}
 
 	/**
+	 * @return the colId
+	 */
+	public String getColId() {
+		return colId;
+	}
+
+	/**
 	 * @return the dollarValue
 	 */
-	public Integer getDollarValue() {
+	public int getDollarValue() {
 		return dollarValue;
 	}
 
@@ -49,11 +57,28 @@ public class FinancialDashDataColumnVO extends SBModuleVO {
 	public Double getPctDiff() {
 		return pctDiff;
 	}
+	
+	/**
+	 * Since the JSON parser converts null Doubles to zero, this will carry through whether
+	 * it was in fact a null value or really is zero.
+	 * 
+	 * @return
+	 */
+	public boolean getPctDiffIsNull() {
+		return pctDiff == null;
+	}
+
+	/**
+	 * @param colId the colId to set
+	 */
+	public void setColId(String colId) {
+		this.colId = colId;
+	}
 
 	/**
 	 * @param dollarValue the dollarValue to set
 	 */
-	public void setDollarValue(Integer dollarValue) {
+	public void setDollarValue(int dollarValue) {
 		this.dollarValue = dollarValue;
 	}
 
