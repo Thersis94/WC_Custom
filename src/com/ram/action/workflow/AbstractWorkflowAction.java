@@ -7,7 +7,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import com.ram.workflow.data.BaseDBReqVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.db.orm.DBProcessor;
@@ -15,6 +14,7 @@ import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.workflow.data.BaseDBReqVO;
 import com.smt.sitebuilder.action.AbstractBaseAction;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
