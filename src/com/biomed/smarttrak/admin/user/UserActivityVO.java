@@ -49,7 +49,6 @@ public class UserActivityVO extends UserPageViewVO {
 			setLastAccessTime(null);
 		} else {
 			setLastAccessTime(new Date(lastAccessTimeInMillis));
-			formatLastAccessDisplayText();
 		}
 	}
 	/**
