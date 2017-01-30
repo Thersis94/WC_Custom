@@ -21,7 +21,6 @@ import com.siliconmtn.gis.GeocodeLocation;
 import com.siliconmtn.gis.GeocodeType;
 import com.siliconmtn.gis.Location;
 import com.siliconmtn.gis.MatchCode;
-import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;

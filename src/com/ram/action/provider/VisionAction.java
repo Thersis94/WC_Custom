@@ -452,11 +452,14 @@ public class VisionAction extends SBActionAdapter {
 		if(selItems != null) {
 			for(String s : selItems) {
 				int layerId = Convert.formatInteger(s.substring(0, s.indexOf('-')));
-				int layerProdId = Convert.formatInteger(s.substring(s.indexOf('-')));
+				int layerProdId = Convert.formatInteger(s.substring(s.indexOf('-') + 1));
 	
 				for(KitLayerVO l : p.getKitLayers()) {
 					if(l.getKitLayerId() == layerId) {
-						l.getProducts().get(layerProdId).setQuantity(0);
+						KitLayerProductVO k = l.getProducts().get(layerProdId);
+						if(k != null) {
+							k.setQuantity(0);
+						}
 					}
 				}
 			}

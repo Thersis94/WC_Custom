@@ -335,6 +335,7 @@ public class PostcardEmailer {
 	
 	protected void orderConsumableBox(ActionRequest req) {
 		// send email to site admin
+		req.setValidateInput(Boolean.FALSE);
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
 		boolean isHosp = sem.isHospitalSponsored();
@@ -356,18 +357,35 @@ public class PostcardEmailer {
 		msg.append("Seminar #: ").append(sem.getRSVPCodes()).append("\r");
 		msg.append("Seminar Date: ").append(Convert.formatDate(sem.getEarliestEventDate(), Convert.DATE_FULL_MONTH)).append("\r");
 		msg.append("Seminar Type: ").append(sem.getEvents().get(0).getEventTypeDesc()).append("\r\r");
-		if (req.hasParameter("boxType")) {
-			msg.append("Consumable Type(s) Requested:\r");
-			String[] vals = req.getParameterValues("boxType");
+		
+		if (req.hasParameter("brochure")) {
+			msg.append("Optional Brochure(s) Requested:\r");
+			String[] vals = req.getParameterValues("brochure");
 			for (int i=0; i < vals.length; i++) {
-				if (i > 0) msg.append(", ");
-				msg.append(vals[i]);
+				if (i > 0) msg.append("\r");
+				msg.append("\t").append(vals[i]);
 			}
 			msg.append("\r\r");
 		}
 		if (req.hasParameter("qnty")) {
-			msg.append("Quantity Needed:\r");
+			msg.append("Folders needed:\r");
 			msg.append(req.getParameter("qnty")).append("\r\r");
+		}
+		if (req.hasParameter("first-aid-kits")) {
+			msg.append("Boxes of First-Aid kits needed:\r");
+			msg.append(req.getParameter("first-aid-kits")).append("\r\r");
+		}
+		if (req.hasParameter("cups")) {
+			msg.append("Boxes of cups needed:\r");
+			msg.append(req.getParameter("cups")).append("\r\r");
+		}
+		if (req.hasParameter("napkins")) {
+			msg.append("Boxes of napkins needed:\r");
+			msg.append(req.getParameter("napkins")).append("\r\r");
+		}
+		if (req.hasParameter("nametags")) {
+			msg.append("Boxes of name badges needed:\r");
+			msg.append(req.getParameter("nametags")).append("\r\r");
 		}
 		msg.append("Mailing Address:\r");
 		msg.append(req.getParameter("mailingAddress")).append("\r\r");
@@ -395,6 +413,8 @@ public class PostcardEmailer {
 		} catch (Exception me) {
 			log.error("EventPostcardSubmitEmail", me);
 		}
+
+		req.setValidateInput(Boolean.TRUE);
 		return;
 	}
 	
