@@ -1,9 +1,11 @@
 package com.biomed.smarttrak.admin;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.action.ActionException;
+import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
@@ -30,6 +32,13 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class ContentHierarchyAction extends AbstractTreeAction {
 
 	public static final String CONTENT_HIERARCHY_CACHE_KEY = "BIOMED_CONTENT_HIERARCHY";
+
+	/**
+	 * @param init
+	 */
+	public ContentHierarchyAction(ActionInitVO init) {super(init);}
+	public ContentHierarchyAction() {super();}
+
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#copy(com.siliconmtn.http.SMTServletRequest)
 	 */
@@ -86,11 +95,15 @@ public class ContentHierarchyAction extends AbstractTreeAction {
 			t = (Tree) mod.getActionData();
 		}
 
+		t.calculateTotalChildren(t.getRootNode());
+
 		//Place requested data on the request.
 		if(!StringUtil.isEmpty(sectionId)) {
 			//Put the requested Section Node on the request.
 			Node n = t.findNode(sectionId);
-			this.putModuleData(n);
+			List<Node> sections = new ArrayList<>();
+			sections.add(n);
+			this.putModuleData(sections);
 		} else {
 			List<Node> sections = t.preorderList();
 			this.putModuleData(sections, sections.size(), false);
