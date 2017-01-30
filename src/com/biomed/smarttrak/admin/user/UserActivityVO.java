@@ -9,7 +9,8 @@ import com.smt.sitebuilder.util.UserPageViewVO;
 
 /*****************************************************************************
  <p><b>Title</b>: UserActivityVO.java</p>
- <p><b>Description: </b>Bean that contains a user's page view activity.</p>
+ <p><b>Description: </b>Bean that extends UserPageViewVO and adds certain time-based
+ fields required for displaying user activity.</p>
  <p> 
  <p>Copyright: (c) 2000 - 2017 SMT, All Rights Reserved</p>
  <p>Company: Silicon Mountain Technologies</p>
