@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.biomed.smarttrak.vo.SectionVO;
+import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.util.StringUtil;
@@ -34,6 +35,12 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @since Jan 23, 2017
  ****************************************************************************/
 public abstract class AbstractTreeAction extends SBActionAdapter {
+
+	/**
+	 * @param init
+	 */
+	public AbstractTreeAction(ActionInitVO init) {super(init);}
+	public AbstractTreeAction() {super();}
 
 	/**
 	 * Helper method that writes an object to cache with the given parameters.

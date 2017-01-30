@@ -9,15 +9,22 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+//Google Gson 2.2.4
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+// WC_Custom 2.0
+import com.ram.action.customer.CustomerLocationAction;
 // RAMDataFeed
-
 import com.ram.datafeed.data.CustomerLocationVO;
-
+import com.ram.workflow.data.vo.RAMWorkflowVO;
 // SMTBaseLibs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.db.util.RecordDuplicator;
 import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -25,21 +32,11 @@ import com.siliconmtn.workflow.data.WorkflowConfigParamVO;
 import com.siliconmtn.workflow.data.WorkflowModuleConfigXrVO;
 import com.siliconmtn.workflow.data.WorkflowModuleVO;
 import com.siliconmtn.workflow.data.WorkflowVO;
-import com.siliconmtn.http.parser.StringEncoder;
 
 // WebCrescendo 2.0
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.Constants;
-
-// WC_Custom 2.0
-import com.ram.action.customer.CustomerLocationAction;
-
-//Google Gson 2.2.4
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
 
 /****************************************************************************
  * <b>Title: </b>WorkflowAction.java <p/>
@@ -358,7 +355,7 @@ public class WorkflowAction extends AbstractWorkflowAction {
 	 * @return
 	 */
 	public WorkflowVO getWorkflowData(String workflowId) {
-		WorkflowVO data = null;
+		RAMWorkflowVO data = null;
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 
 		//Build Query.
@@ -398,7 +395,7 @@ public class WorkflowAction extends AbstractWorkflowAction {
 			while(rs.next()) {
 				//If this is the first row, instantiate the WorkflowVO
 				if (data == null) {
-					data = new WorkflowVO(rs);
+					data = new RAMWorkflowVO(rs);
 				}
 
 				//Add the WorkflowModuleVO for the row to the Workflow Module List.
@@ -549,7 +546,7 @@ public class WorkflowAction extends AbstractWorkflowAction {
 		String msg = null;
 		
 		//Get WorkflowVO off the request.
-		WorkflowVO wf = new WorkflowVO(req);
+		RAMWorkflowVO wf = new RAMWorkflowVO(req);
 		wf.setModules(getWorkflowModuleData(req));
 		wf.setLocations(getCustomerLocationData(req));
 		
