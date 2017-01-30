@@ -127,24 +127,16 @@ public class UserDataImport extends ProfileImport {
 			}
 			
 			try {
-				// check for pre-existing user profile
+				/* check for pre-existing user profile */
 				tmpField1 = StringUtil.checkVal(dataSet.get("PROFILE_ID"),null);
-				checkForProfileId(dbConn, pm, user, tmpField1);
+				findProfile(dbConn, pm, user, tmpField1);
 				
 				/* Process a password if supplied for the user */
 				tmpField1 = StringUtil.checkVal(dataSet.get("PASSWORD_TXT"),null);
 				checkForPassword(ul, user,tmpField1);
 
-		
-				/* 2017-01-19: If profile doesn't exist, insert it.  Otherwise leave the existing 
-				 * profile alone. */
-				if (user.getProfileId() == null) {
-					 //runs insert query
-					pm.updateProfile(user, dbConn);
-				} else {
-					skipCnt++;
-					//pm.updateProfilePartially(dataSet, user, dbConn); //runs dynamic update query; impacts on the columns we're importing
-				}
+				/* create a profile if appropriate */
+				createProfile(dbConn, pm, user, skipCnt);
 				
 				/* If an org ID and comm flag were supplied, opt-in this user for the given org.	 */
 				tmpField1 = StringUtil.checkVal(dataSet.get("ORGANIZATION_ID"),null);
@@ -159,6 +151,7 @@ public class UserDataImport extends ProfileImport {
 			} catch(Exception ex) {
 				log.error("Error processing source ID " + currRecord + ", " + ex.getMessage());
 			}
+			
 			//increment our counters
 			if (user.getProfileId() != null) {
 				successCnt++;
@@ -195,7 +188,7 @@ public class UserDataImport extends ProfileImport {
 	 * @param profileId
 	 * @throws DatabaseException
 	 */
-	private void checkForProfileId(Connection dbConn, ProfileManager pm, SiteUserVO user, 
+	private void findProfile(Connection dbConn, ProfileManager pm, SiteUserVO user, 
 			String profileId) throws DatabaseException {
 		if (profileId == null)  
 			user.setProfileId(pm.checkProfile(user, dbConn));
@@ -217,6 +210,29 @@ public class UserDataImport extends ProfileImport {
 			//pwd will be encrypted at qry, 0 sets password reset flag to false
 			user.setAuthenticationId(ul.modifyUser(user.getAuthenticationId(), 
 					user.getEmailAddress(), user.getPassword(), 0));
+		}
+	}
+
+	/**
+	 * Checks for the existence of a user profile ID on the user object.  If no 
+	 * profile ID is found we attempt to create the profile.  If a profile ID is
+	 * found we update the 'skipped profiles' count.
+	 * @param dbConn
+	 * @param pm
+	 * @param user
+	 * @param skipCnt
+	 * @return
+	 * @throws DatabaseException
+	 */
+	private int createProfile(Connection dbConn, ProfileManager pm, 
+			SiteUserVO user, int skipCnt) throws DatabaseException {
+		/* 2017-01-19: If profile doesn't exist, insert it.  Otherwise leave the existing 
+		 * profile alone. */
+		if (user.getProfileId() == null) {
+			pm.updateProfile(user, dbConn);
+			return skipCnt;
+		} else {
+			return skipCnt + 1;
 		}
 	}
 	
