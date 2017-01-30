@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import com.biomed.smarttrak.vo.NoteVO;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.http.SMTServletRequest;
@@ -51,6 +52,7 @@ public class CompanyVO {
 	private List<LocationVO> locations;
 	private List<AllianceVO> alliances;
 	private List<CompanyAttributeVO> attributes;
+	private List<NoteVO> notes;
 	
 	
 	public CompanyVO() {
@@ -297,6 +299,20 @@ public class CompanyVO {
 	public Date getUpdateDate() {return null;}
 	@Column(name="CREATE_DT", isAutoGen=true, isInsertOnly=true)
 	public Date getCreateDate() {return null;}
+
+	/**
+	 * @return the notes
+	 */
+	public List<NoteVO> getNotes() {
+		return notes;
+	}
+
+	/**
+	 * @param notes the notes to set
+	 */
+	public void setNotes(List<NoteVO> notes) {
+		this.notes = notes;
+	}
 	
 
 }

@@ -44,8 +44,8 @@ public class NoteAction extends SimpleActionAdapter {
 	public enum NoteType {
 		COMPANY,
 		PRODUCT,
-		MARKET, 
-	}
+		MARKET,
+	};
 
 	public NoteAction() {
 		super();
@@ -95,6 +95,7 @@ public class NoteAction extends SimpleActionAdapter {
 	private void saveNote(NoteVO vo, DBProcessor db) throws ActionException {
 		log.debug("Notes Action insert note called ");
 
+		//TODO add a new file or update a file respectively.
 		try {
 			if (StringUtil.isEmpty(vo.getNoteId())) {
 				vo.setNoteId(new UUIDGenerator().getUUID());
@@ -142,36 +143,36 @@ public class NoteAction extends SimpleActionAdapter {
 			appendSqlPlaceholder(targetIds.size(), sb);
 			break;
 		case PRODUCT :
-			sb.append("where product_id in ( ? ");
+			sb.append("where product_id in (? ");
 			appendSqlPlaceholder(targetIds.size(), sb);
 			break;
 		case MARKET :
-			sb.append("where market_id in ( ? ");
+			sb.append("where market_id in (? ");
 			appendSqlPlaceholder(targetIds.size(), sb);
 			break;
 		}
 
-		sb.append("and ( n.user_id = ? ");
+		sb.append("and (n.user_id = ? ");
 
 		if (teams != null && !teams.isEmpty()){
-			sb.append("or  n.team_id in ( ?");
+			sb.append("or  n.team_id in (?");
 			appendSqlPlaceholder(teams.size(), sb);
 		}
 
 		sb.append(") ");
 
 		if (attrIds != null && !attrIds.isEmpty()){
-			sb.append("and n.").append(type.name().toLowerCase()).append("_attribute_id in ( ?");
+			sb.append("and n.").append(type.name().toLowerCase()).append("_attribute_id in (?");
 			appendSqlPlaceholder(attrIds.size(), sb);
 		}
 		
-		sb.append("and ( EXPIRATION_DT >= CURRENT_TIMESTAMP or EXPIRATION_DT is null ) ");
+		sb.append("and (EXPIRATION_DT > CURRENT_TIMESTAMP or EXPIRATION_DT is null) ");
 
 		return sb.toString();
 	}
 
 	/**
-	 * used to place the correct number of commans and question marks in the prepared statement
+	 * used to place the correct number of commas and question marks in the prepared statement
 	 * @param listSize
 	 * @param sb 
 	 * @return
@@ -180,7 +181,7 @@ public class NoteAction extends SimpleActionAdapter {
 		for (int x = 0 ; x < listSize-1; x++ ){
 			sb.append(", ?");
 		}
-		sb.append(" ) ");
+		sb.append(") ");
 	}
 
 	/**
