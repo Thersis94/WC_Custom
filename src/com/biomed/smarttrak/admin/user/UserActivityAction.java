@@ -71,7 +71,7 @@ public class UserActivityAction extends SBActionAdapter {
 		try {
 			/* Check caller security here so that we can gracefully catch/set the error 
 			 * on the module response if the caller has an insufficient role level. */
-			checkSecurityRole(req);
+			checkSecurity(req, siteId);
 			
 			userActivity = retrieveUserPageViews(siteId, profileId, dateStart, dateEnd);
 			// merge certain profile data (first/last names) with user activity data
@@ -90,15 +90,22 @@ public class UserActivityAction extends SBActionAdapter {
 	/**
 	 * Checks caller's security role and throws an exception if insufficient role level is found.
 	 * @param req
+	 * @param siteId
 	 * @throws ActionException
 	 */
-	private void checkSecurityRole(SMTServletRequest req) throws ActionException {
-		String errMsg = "Activity Log access not authorized.  Administrative role required.";
+	private void checkSecurity(SMTServletRequest req, String siteId) throws ActionException {
+		String errMsg = "User Activity access not authorized.";
 		HttpSession sess = req.getSession();
 		if (sess == null) throw new ActionException(errMsg);
+
 		SBUserRole roles = (SBUserRole)sess.getAttribute(Constants.ROLE_DATA);
-		if (roles == null || roles.getRoleLevel() < SecurityController.ADMIN_ROLE_LEVEL) 
+
+		if (roles == null || 
+				! roles.getSiteId().equalsIgnoreCase(siteId) ||
+				roles.getRoleLevel() < SecurityController.ADMIN_ROLE_LEVEL) {
 			throw new ActionException(errMsg);
+		}
+
 	}
 	
 	/**
