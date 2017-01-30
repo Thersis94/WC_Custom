@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import com.siliconmtn.exception.DatabaseException;
 // SMTBaseLibs
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
 import com.siliconmtn.util.Convert;
@@ -45,18 +46,17 @@ import com.smt.sitebuilder.security.UserLogin;
  ****************************************************************************/
 public class UserDataImport extends ProfileImport {
 
-	private static Map<String,String> regFieldMap = createRegFieldMap();
+	private Map<String,String> regFieldMap;
 	private final String GEOCODE_CLASS="com.siliconmtn.gis.SMTGeocoder";
 	private final String GEOCODE_URL="http://localhost:9000/websvc/geocoder";
 	private final String REGISTRATION_PAGE_URL = "http://smarttrak.siliconmtn.com/my-account";
-	//private static String FILE_PATH="/home/groot/Downloads/smarttrak/user-import/test/smarttrak-profiles-ACTIVE-USERS-WIP-2017-01-20-1803pm.csv";
-	//private static String FILE_PATH="/home/groot/Downloads/smarttrak/user-import/test/smarttrak-profiles-INACTIVE-USERS-WIP-2017-01-23-1449pm.csv";
 	private static String FILE_PATH="/home/groot/Downloads/smarttrak/user-import/test/smarttrak-user-import-TEST-2017-01-24.csv";
 	private static String REG_PMID = "6d9674d8b7dc54077f0001019b2cb979";
 	private static String REG_ACTION_ID = "ea884793b2ef163f7f0001011a253456";
 	
 	public UserDataImport() {
 		super();
+		regFieldMap = createRegFieldMap();
 	}
 	
 	/**
@@ -102,14 +102,16 @@ public class UserDataImport extends ProfileImport {
 		ProfileRoleManager prm = new ProfileRoleManager();
 		UserLogin ul = new UserLogin(dbConn, encKey);
 		SiteUserVO user = null;
-		
+		Map<String,Object> dataSet;
+		String tmpField1;
+		String tmpField2;
 		//iterate the records, inserting each
 		Iterator iter = records.iterator();
 		while (iter.hasNext()) {
 			recordCnt++;
 			// populate user data vo
 			user = new SiteUserVO();
-			Map<String,Object> dataSet = (Map<String,Object>) iter.next();
+			dataSet = (Map<String,Object>) iter.next();
 			currRecord = (String)dataSet.get("SMARTTRAK_ID");
 			
 			// clean up certain values before we use them.
@@ -126,22 +128,13 @@ public class UserDataImport extends ProfileImport {
 			
 			try {
 				// check for pre-existing user profile
-				if (!dataSet.containsKey("PROFILE_ID")) 
-					user.setProfileId(pm.checkProfile(user, dbConn));
+				tmpField1 = StringUtil.checkVal(dataSet.get("PROFILE_ID"),null);
+				checkForProfileId(dbConn, pm, user, tmpField1);
 				
-				/* If password was supplied, check for existing auth ID.
-				 * Create an auth record only if an auth record doesn't 
-				 * already exist because we don't want to overwrite what
-				 * is already there. */
-				if (dataSet.containsKey("PASSWORD_TXT") && 
-						dataSet.get("PASSWORD_TXT") != null) {
-					user.setAuthenticationId(ul.checkAuth(user.getEmailAddress()));
-					if (user.getAuthenticationId() == null) {
-						//pwd will be encrypted at qry, 0 sets password reset flag to false
-						user.setAuthenticationId(ul.modifyUser(user.getAuthenticationId(), 
-								user.getEmailAddress(), user.getPassword(), 0));
-					}
-				}
+				/* Process a password if supplied for the user */
+				tmpField1 = StringUtil.checkVal(dataSet.get("PASSWORD_TXT"),null);
+				checkForPassword(ul, user,tmpField1);
+
 		
 				/* 2017-01-19: If profile doesn't exist, insert it.  Otherwise leave the existing 
 				 * profile alone. */
@@ -154,28 +147,15 @@ public class UserDataImport extends ProfileImport {
 				}
 				
 				/* If an org ID and comm flag were supplied, opt-in this user for the given org.	 */
-				if (dataSet.containsKey("ALLOW_COMM_FLG") && dataSet.containsKey("ORGANIZATION_ID"))
-					pm.assignCommunicationFlg((String)dataSet.get("ORGANIZATION_ID"), user.getProfileId(), Convert.formatInteger((String)dataSet.get("ALLOW_COMM_FLG")), dbConn);
-				
+				tmpField1 = StringUtil.checkVal(dataSet.get("ORGANIZATION_ID"),null);
+				tmpField2 = StringUtil.checkVal(dataSet.get("ALLOW_COMM_FLG"),null);
+				checkForCommFlag(dbConn, pm, user.getProfileId(), tmpField1, tmpField2);
+
 				/* Add profile roles for this user for the specified site ID. */
-				if (dataSet.containsKey("ROLE_ID") && dataSet.containsKey("SITE_ID")) {
-					// If both columns are populated, process role.
-					if (StringUtil.checkVal(dataSet.get("ROLE_ID"),null) != null &&
-							StringUtil.checkVal(dataSet.get("SITE_ID"),null) != null) {
-						if (!prm.roleExists(user.getProfileId(), (String)dataSet.get("SITE_ID"), (String)dataSet.get("ROLE_ID"), dbConn)) {
-							SBUserRole userRole = new SBUserRole();
-							userRole.setSiteId((String)dataSet.get("SITE_ID"));
-							userRole.setRoleId((String)dataSet.get("ROLE_ID"));
-							userRole.setStatusId(20);
-							userRole.setProfileId(user.getProfileId());
-							try {
-								prm.addRole(userRole, dbConn);
-							} catch (Exception e) {
-								log.error("Error: Cannot add role for this record number: ", e);
-							}
-						}
-					}
-				}
+				tmpField1 = StringUtil.checkVal(dataSet.get("ROLE_ID"),null);
+				tmpField2 = StringUtil.checkVal(dataSet.get("SITE_ID"),null);
+				checkForRole(dbConn, prm, user.getProfileId(), tmpField1, tmpField2);
+				
 			} catch(Exception ex) {
 				log.error("Error processing source ID " + currRecord + ", " + ex.getMessage());
 			}
@@ -207,6 +187,90 @@ public class UserDataImport extends ProfileImport {
 		}
 	}
 	
+	/**
+	 * Checks for the existence of a profile if no profileId was supplied for the user record.
+	 * @param dbConn
+	 * @param pm
+	 * @param user
+	 * @param profileId
+	 * @throws DatabaseException
+	 */
+	private void checkForProfileId(Connection dbConn, ProfileManager pm, SiteUserVO user, 
+			String profileId) throws DatabaseException {
+		if (profileId == null)  
+			user.setProfileId(pm.checkProfile(user, dbConn));
+	}
+	
+	/**
+	 * Checks for existence of a password for the user record and attempts to create one
+	 * if password was supplied.
+	 * @param ul
+	 * @param user
+	 * @param password
+	 * @throws DatabaseException
+	 */
+	private void checkForPassword(UserLogin ul, SiteUserVO user, 
+			String password) throws DatabaseException {
+		if (password == null) return;
+		user.setAuthenticationId(ul.checkAuth(user.getEmailAddress()));
+		if (user.getAuthenticationId() == null) {
+			//pwd will be encrypted at qry, 0 sets password reset flag to false
+			user.setAuthenticationId(ul.modifyUser(user.getAuthenticationId(), 
+					user.getEmailAddress(), user.getPassword(), 0));
+		}
+	}
+	
+	/**
+	 * Checks to see if an 'allow communications flag' (a.k.a. opt-in flag) was supplied
+	 * for this user.
+	 * @param dbConn
+	 * @param pm
+	 * @param profileId
+	 * @param orgId
+	 * @param allowCommFlag
+	 * @throws DatabaseException
+	 */
+	private void checkForCommFlag(Connection dbConn, ProfileManager pm, String profileId, 
+			String orgId, String allowCommFlag) throws DatabaseException {
+		if (orgId == null || allowCommFlag == null) return;
+		pm.assignCommunicationFlg(orgId, profileId, Convert.formatInteger(allowCommFlag), dbConn);
+	}
+	
+	/**
+	 * Checks to see if valid role ID and site ID were supplied on record, then checks
+	 * for an existing role for this user.  If no role is found we add the role.
+	 * @param dbConn
+	 * @param prm
+	 * @param profileId
+	 * @param roleId
+	 * @param siteId
+	 * @throws DatabaseException
+	 */
+	private void checkForRole(Connection dbConn, ProfileRoleManager prm, String profileId, 
+			String roleId, String siteId) throws DatabaseException {
+		if (roleId == null || siteId == null) return;
+		
+		if (! prm.roleExists(profileId, siteId, roleId, dbConn)) {
+			SBUserRole userRole = new SBUserRole();
+			userRole.setSiteId(siteId);
+			userRole.setRoleId(roleId);
+			userRole.setStatusId(20);
+			userRole.setProfileId(profileId);
+			try {
+				prm.addRole(userRole, dbConn);
+			} catch (Exception e) {
+				log.error("Error: Cannot add role for this record number: ", e);
+			}
+		}
+	}
+	
+	/**
+	 * 
+	 * @param dbConn
+	 * @param record
+	 * @param user
+	 * @throws Exception
+	 */
 	protected void insertRegistrationRecords(Connection dbConn, Map<String,Object> record, SiteUserVO user) 
 			throws Exception {
 		if (user.getEmailAddress() == null) {
@@ -231,8 +295,8 @@ public class UserDataImport extends ProfileImport {
 			SiteUserVO user) throws Exception {
 		log.debug("insertRegistrationRecordsManually...");
 		StringBuilder regSub = new StringBuilder(122);
-		regSub.append("insert into register_submittal (register_submittal_id, site_id, action_id, profile_id, create_dt) ");
-		regSub.append("values (?,?,?,?,?)");
+		regSub.append("insert into register_submittal (register_submittal_id, site_id, action_id, ");
+		regSub.append("profile_id, create_dt) values (?,?,?,?,?)");
 		int idx = 1;
 		String regSubId = new UUIDGenerator().getUUID();
 		try (PreparedStatement ps = dbConn.prepareStatement(regSub.toString())) {
@@ -248,8 +312,8 @@ public class UserDataImport extends ProfileImport {
 		}
 
 		regSub = new StringBuilder(132);
-		regSub.append("insert into register_data (register_data_id, register_submittal_id, register_field_id, value_txt, create_dt) ");
-		regSub.append("values (?,?,?,?,?)");
+		regSub.append("insert into register_data (register_data_id, register_submittal_id, register_field_id, ");
+		regSub.append("value_txt, create_dt) values (?,?,?,?,?)");
 
 		try (PreparedStatement ps = dbConn.prepareStatement(regSub.toString())) {
 			for (int recCnt = 1; recCnt < 4; recCnt++) {
@@ -449,7 +513,8 @@ public class UserDataImport extends ProfileImport {
 	 */
 	protected String checkField(String val) {
 		if (val == null) return val;
-		if (val.indexOf(",") > -1) return val.substring(0,val.indexOf(","));
+		if (val.indexOf(",") > -1) 
+			return val.substring(0,val.indexOf(","));
 		return val;
 	}
 }
