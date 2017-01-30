@@ -83,6 +83,7 @@ public class UserActivityAction extends SBActionAdapter {
 		
 		if (userActivity == null) userActivity = new HashMap<>();
 		this.putModuleData(userActivity, userActivity.size(), false, mod.getErrorMessage(), mod.getErrorCondition());
+		log.debug("error condition | message: " + mod.getErrorCondition() + "|" + mod.getErrorMessage());
 		
 	}
 	
@@ -92,7 +93,7 @@ public class UserActivityAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	private void checkSecurityRole(SMTServletRequest req) throws ActionException {
-		String errMsg = "Widget access not authorized, Site Administrator role required.";
+		String errMsg = "Activity Log access not authorized.  Administrative role required.";
 		HttpSession sess = req.getSession();
 		if (sess == null) throw new ActionException(errMsg);
 		SBUserRole roles = (SBUserRole)sess.getAttribute(Constants.ROLE_DATA);
@@ -130,6 +131,7 @@ public class UserActivityAction extends SBActionAdapter {
 		/* Retrieve page views from db, parse into PageViewVO
 		 * and return list */
 		PageViewRetriever pvr = new PageViewRetriever(dbConn);
+		pvr.setSortDescending(true);
 		List<PageViewVO> pageViews = pvr.retrievePageViews(siteId, profileId, dateStart, dateEnd);
 		log.debug("Total number of raw page views found: " + pageViews.size());
 		return parseResults(pageViews);
@@ -157,7 +159,6 @@ public class UserActivityAction extends SBActionAdapter {
 				// first time through loop or we changed users
 				if (user != null) {
 					// close out prev user
-					user.setLastAccessTime();
 					userActivity.put(user.getProfileId(), user);
 				}
 				// capture new user
@@ -165,6 +166,10 @@ public class UserActivityAction extends SBActionAdapter {
 				user.setSiteId(pageView.getSiteId());
 				user.setProfileId(pageView.getProfileId());
 				user.addPageView(pageView);
+				/* Since we sorted visit date descending, we set the 'last 
+				 * accessed time' using the first page view record found for
+				 * this user. */
+				user.setLastAccessTime(pageView.getVisitDate());
 			}
 			
 			prevPid = currPid;
@@ -172,7 +177,6 @@ public class UserActivityAction extends SBActionAdapter {
 		
 		// tie off the dangling user
 		if (user != null) {
-			user.setLastAccessTime();
 			userActivity.put(user.getProfileId(), user);
 		}
 		log.debug("Unique users with page views: " + userActivity.size());

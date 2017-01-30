@@ -34,15 +34,6 @@ public class UserActivityVO extends UserPageViewVO {
 		return lastAccessTime;
 	}
 	/**
-	 * Helper method for calculating the lastAccessTime
-	 */
-	public void setLastAccessTime() {
-		if (! pageViews.isEmpty()) {
-			lastAccessTime = pageViews.get(pageViews.size() - 1).getVisitDate();
-			formatLastAccessDisplayText();
-		}
-	}
-	/**
 	 * @param lastAccessTime the lastAccessTime to set
 	 */
 	public void setLastAccessTime(Date lastAccessTime) {
