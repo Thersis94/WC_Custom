@@ -94,16 +94,21 @@ public class UserActivityAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	private void checkSecurity(SMTServletRequest req, String siteId) throws ActionException {
-		String errMsg = "User Activity access not authorized.";
+		StringBuilder errMsg = new StringBuilder(100);
+		errMsg.append("Active session monitoring access not authorized.");
 		HttpSession sess = req.getSession();
-		if (sess == null) throw new ActionException(errMsg);
+		if (sess == null) {
+			errMsg.append(" Invalid session.");
+			throw new ActionException(errMsg.toString());
+		}
 
 		SBUserRole roles = (SBUserRole)sess.getAttribute(Constants.ROLE_DATA);
 
 		if (roles == null || 
 				! roles.getSiteId().equalsIgnoreCase(siteId) ||
 				roles.getRoleLevel() < SecurityController.ADMIN_ROLE_LEVEL) {
-			throw new ActionException(errMsg);
+			errMsg.append(" Administrative access required for the site data requested.");
+			throw new ActionException(errMsg.toString());
 		}
 
 	}
