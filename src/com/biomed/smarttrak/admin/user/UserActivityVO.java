@@ -34,6 +34,15 @@ public class UserActivityVO extends UserPageViewVO {
 		return lastAccessTime;
 	}
 	/**
+	 * Helper method for calculating the lastAccessTime
+	 */
+	public void setLastAccessTime() {
+		if (! pageViews.isEmpty()) {
+			lastAccessTime = pageViews.get(pageViews.size() - 1).getVisitDate();
+			formatLastAccessDisplayText();
+		}
+	}
+	/**
 	 * @param lastAccessTime the lastAccessTime to set
 	 */
 	public void setLastAccessTime(Date lastAccessTime) {
@@ -42,13 +51,15 @@ public class UserActivityVO extends UserPageViewVO {
 			formatLastAccessDisplayText();
 	}
 	/**
-	 * @param lastAccessTime the lastAccessTime to set
+	 * @param lastAccessTimeinMillis the lastAccessTime to set
 	 */
 	public void setLastAccessTime(long lastAccessTimeInMillis) {
-		if (lastAccessTimeInMillis < 0)
+		if (lastAccessTimeInMillis < 0) {
 			setLastAccessTime(null);
-		else
+		} else {
 			setLastAccessTime(new Date(lastAccessTimeInMillis));
+			formatLastAccessDisplayText();
+		}
 	}
 	/**
 	 * @return the lastAccessTime
@@ -72,7 +83,7 @@ public class UserActivityVO extends UserPageViewVO {
 	 * Returns the number of hours ago that the user last generated activity
 	 * @return
 	 */
-	public long getLastAccessDisplayHours() {
+	public long getLastAccessHours() {
 		return lastAccessHours;
 	}
 	/**
@@ -81,7 +92,7 @@ public class UserActivityVO extends UserPageViewVO {
 	 * left over after calculating the number of hours ago that the user last generated activity.
 	 * @return
 	 */
-	public long getLastAccessDisplayMinutes() {
+	public long getLastAccessMinutes() {
 		return lastAccessMinutes;
 	}
 }

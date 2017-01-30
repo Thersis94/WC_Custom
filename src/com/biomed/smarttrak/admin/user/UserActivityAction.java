@@ -131,6 +131,7 @@ public class UserActivityAction extends SBActionAdapter {
 		 * and return list */
 		PageViewRetriever pvr = new PageViewRetriever(dbConn);
 		List<PageViewVO> pageViews = pvr.retrievePageViews(siteId, profileId, dateStart, dateEnd);
+		log.debug("Total number of raw page views found: " + pageViews.size());
 		return parseResults(pageViews);
 	}
 	
@@ -156,7 +157,7 @@ public class UserActivityAction extends SBActionAdapter {
 				// first time through loop or we changed users
 				if (user != null) {
 					// close out prev user
-					user.setLastAccessTime(pageViews.get(pageViews.size() - 1).getVisitDate());
+					user.setLastAccessTime();
 					userActivity.put(user.getProfileId(), user);
 				}
 				// capture new user
@@ -166,16 +167,15 @@ public class UserActivityAction extends SBActionAdapter {
 				user.addPageView(pageView);
 			}
 			
+			prevPid = currPid;
 		}
 		
 		// tie off the dangling user
 		if (user != null) {
-			user.setLastAccessTime(pageViews.get(pageViews.size() - 1).getVisitDate());
-			user.setPageViews(pageViews);
-			//userActivity.add(user);
+			user.setLastAccessTime();
 			userActivity.put(user.getProfileId(), user);
 		}
-		
+		log.debug("Unique users with page views: " + userActivity.size());
 		return userActivity;
 	}
 		
