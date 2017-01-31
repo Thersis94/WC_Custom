@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+
 //WC_Custom
 import com.biomed.smarttrak.action.NoteAction.NoteType;
 import com.biomed.smarttrak.vo.NoteVO;
@@ -98,16 +99,28 @@ public class NoteLoader extends SimpleActionAdapter {
 			Map<String, List<NoteVO>> results = processNoteAction(na, type, targetIds);
 
 			if(results != null){
-				for (NoteEntityInterface co : targetVOs) {
-					if (results.containsKey(co.getId())){
-						log.debug("size of note list added to " + co.getId() + " is " + results.get(co.getId()).size());
-						co.setNotes(results.get(co.getId()));
-					}
-				}
+				processTargetVos(targetVOs, results);
 			}
 		}
 	}
 
+
+	/**
+	 * handles looping through the target VOs and adding lists of notes on to the 
+	 * correct VO
+	 * @param results 
+	 * @param targetVOs 
+	 * 
+	 */
+	private void processTargetVos(List<NoteEntityInterface> targetVOs, Map<String, List<NoteVO>> results) {
+		for (NoteEntityInterface co : targetVOs) {
+			if (results.containsKey(co.getId())){
+				log.debug("size of note list added to " + co.getId() + " is " + results.get(co.getId()).size());
+				co.setNotes(results.get(co.getId()));
+			}
+		}
+		
+	}
 
 	/**
 	 * based on note type returns the correct method call.
