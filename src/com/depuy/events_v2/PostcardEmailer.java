@@ -145,7 +145,7 @@ public class PostcardEmailer {
 			mail.addRecipient("amy.spencerman@hmktgroup.com");
 			mail.addRecipient("Brittany.Neff@hmktgroup.com");
 			mail.addRecipient("admgt@hmktgroup.com");
-			mail.addRecipient("jenn.davis@hmktgroup.com");
+			mail.addRecipient("stephanie.balsley@hmktgroup.com");
 			mail.addRecipient("kshull@ITS.JNJ.com");
 			mail.addCC("educationalseminars@dpyus.jnj.com");
 			mail.addCC("Francisco.Gonzalez@umj3.com");
@@ -236,7 +236,7 @@ public class PostcardEmailer {
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipient("jenn.davis@hmktgroup.com");
+			mail.addRecipient("stephanie.balsley@hmktgroup.com");
 			mail.addRecipient("amy.spencerman@hmktgroup.com");	
 			mail.addRecipient("Brittany.Neff@hmktgroup.com");
 			//Additional CC recipients
@@ -306,7 +306,7 @@ public class PostcardEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(sem.getOwner().getEmailAddress()); //Coordinator
-			mail.addRecipient("Jenn.Davis@hmktgroup.com"); // Jenn Parrish-Davis
+			mail.addRecipient("stephanie.balsley@hmktgroup.com"); // Jenn Parrish-Davis
 			mail.addCC("amy.spencerman@hmktgroup.com");
 			mail.addCC("Brittany.Neff@hmktgroup.com");
 			//mail.addCC("WWilder@its.jnj.com");
@@ -473,7 +473,7 @@ public class PostcardEmailer {
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipient("Jenn.Davis@hmktgroup.com"); // Jenn Parrish-Davis);
+			mail.addRecipient("stephanie.balsley@hmktgroup.com"); // Jenn Parrish-Davis);
 			mail.addCC("amy.spencerman@hmktgroup.com");
 			mail.addCC("Brittany.Neff@hmktgroup.com");
 			mail.addCC(site.getAdminEmail());
@@ -513,7 +513,7 @@ public class PostcardEmailer {
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipient("Jenn.Davis@hmktgroup.com"); // Jenn Parrish-Davis
+			mail.addRecipient("stephanie.balsley@hmktgroup.com"); // Jenn Parrish-Davis
 			mail.addRecipient("amy.spencerman@hmktgroup.com");
 			mail.addRecipient("Brittany.Neff@hmktgroup.com");
 			mail.addRecipient(sem.getOwner().getEmailAddress());
@@ -569,7 +569,7 @@ public class PostcardEmailer {
 		
 		try{
 			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipient("jenn.davis@hmktgroup.com");
+			mail.addRecipient("stephanie.balsley@hmktgroup.com");
 			mail.addRecipient(site.getAdminEmail());
 			mail.addRecipient("kshull@ITS.JNJ.com");
 			mail.addCC("educationalseminars@dpyus.jnj.com");
@@ -646,7 +646,7 @@ public class PostcardEmailer {
 			mail.setTextBody(msg.toString());
 			
 			//Recipients
-			mail.addRecipient("jenn.davis@hmktgroup.com");
+			mail.addRecipient("stephanie.balsley@hmktgroup.com");
 			mail.addCC("amy.spencerman@hmktgroup.com");
 			mail.addCC("Brittany.Neff@hmktgroup.com");
 			mail.addCC("kshull@ITS.JNJ.com");
@@ -689,7 +689,7 @@ public class PostcardEmailer {
 			mail.addCC("educationalseminars@dpyus.jnj.com");
 			mail.addCC("amy.spencerman@hmktgroup.com");
 			mail.addCC("Brittany.Neff@hmktgroup.com");
-			mail.addCC("jenn.davis@hmktgroup.com");
+			mail.addCC("stephanie.balsley@hmktgroup.com");
 			
 			MessageSender mailer = new MessageSender(attributes,dbConn);
 			mailer.sendMessage(mail);
@@ -725,7 +725,7 @@ public class PostcardEmailer {
 			mail.addCC("educationalseminars@dpyus.jnj.com");
 			mail.addCC("amy.spencerman@hmktgroup.com");
 			mail.addCC("Brittany.Neff@hmktgroup.com");
-			mail.addCC("jenn.davis@hmktgroup.com");
+			mail.addCC("stephanie.balsley@hmktgroup.com");
 			
 			MessageSender mailer = new MessageSender(attributes,dbConn);
 			mailer.sendMessage(mail);
@@ -757,7 +757,7 @@ public class PostcardEmailer {
 			mail.setTextBody(msg.toString());
 			
 			//recipients
-			mail.addRecipient("jenn.davis@hmktgroup.com");
+			mail.addRecipient("stephanie.balsley@hmktgroup.com");
 			mail.addCC("amy.spencerman@hmktgroup.com");
 			mail.addCC("Brittany.Neff@hmktgroup.com");
 			mail.addCC(site.getAdminEmail());
