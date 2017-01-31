@@ -41,12 +41,12 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class NoteAction extends SimpleActionAdapter {
 
-	public static enum NoteType {
+	public enum NoteType {
 		COMPANY,
 		PRODUCT,
 		MARKET,
 		
-	};
+	}
 
 	public NoteAction() {
 		super();

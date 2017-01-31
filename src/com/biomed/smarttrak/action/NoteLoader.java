@@ -51,7 +51,7 @@ public class NoteLoader extends SimpleActionAdapter {
 	 */
 	public void addCompanyNotes(List<NoteEntityInterface> companyVOs){
 		log.debug("add company notes called");
-		
+
 		loadNotes((List<NoteEntityInterface>) companyVOs, NoteType.COMPANY);
 	}
 
@@ -59,21 +59,21 @@ public class NoteLoader extends SimpleActionAdapter {
 	 * takes the VOs provided and loads any notes on to those VOs, sets type to product
 	 * @param ProductVOs
 	 */
-	public void addProductNotes(List<NoteEntityInterface> ProductVOs){
+	public void addProductNotes(List<NoteEntityInterface> productVOs){
 		log.debug("add product notes called");
-		
-		loadNotes((List<NoteEntityInterface>) ProductVOs, NoteType.PRODUCT);
+
+		loadNotes((List<NoteEntityInterface>) productVOs, NoteType.PRODUCT);
 	}
 	/**
 	 * takes the VOs provided and loads any notes on to those VOs, sets type to market
 	 * @param MarketVOs
 	 */
-	public void addMarketNotes(List<NoteEntityInterface> MarketVOs){
+	public void addMarketNotes(List<NoteEntityInterface> marketVOs){
 		log.debug("add market notes called");
-		
-		loadNotes((List<NoteEntityInterface>) MarketVOs, NoteType.MARKET);
+
+		loadNotes((List<NoteEntityInterface>) marketVOs, NoteType.MARKET);
 	}
-	
+
 	/**
 	 * takes the vo and a note type and processes the right note action methods for
 	 * each type and sorts the notes into the matching vo.  
@@ -93,14 +93,16 @@ public class NoteLoader extends SimpleActionAdapter {
 		NoteAction na = new NoteAction();	
 		na.setDBConnection(dbConn);
 		na.setAttributes(attributes);
-		
+
 		if (this.userId != null){
 			Map<String, List<NoteVO>> results = processNoteAction(na, type, targetIds);
 
-			for (NoteEntityInterface co : targetVOs) {
-				if (results.containsKey(co.getId())){
-					log.debug("size of note list added to " + co.getId() + " is " + results.get(co.getId()).size());
-					co.setNotes(results.get(co.getId()));
+			if(results != null){
+				for (NoteEntityInterface co : targetVOs) {
+					if (results.containsKey(co.getId())){
+						log.debug("size of note list added to " + co.getId() + " is " + results.get(co.getId()).size());
+						co.setNotes(results.get(co.getId()));
+					}
 				}
 			}
 		}
@@ -115,7 +117,7 @@ public class NoteLoader extends SimpleActionAdapter {
 	 * @return
 	 */
 	private Map<String, List<NoteVO>> processNoteAction(NoteAction na, NoteType type, List<String> targetIds) {
-		
+
 		switch(type) {
 		case COMPANY :
 			return na.getCompanyNotes(this.userId, this.teamIds, null, targetIds);
@@ -127,7 +129,7 @@ public class NoteLoader extends SimpleActionAdapter {
 			return null;
 		}
 	}
-	
+
 	/**
 	 * checks the database for a user with the profile from the sent user data vo.  sets the note loaders 
 	 * user id. 
