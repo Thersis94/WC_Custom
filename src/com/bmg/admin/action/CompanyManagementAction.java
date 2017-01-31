@@ -116,8 +116,10 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 * @throws ActionException
 	 */
 	private void companyAttributeRetrieve(SMTServletRequest req) throws ActionException {
-		if (req.hasParameter("companyAttributeId"))
+		if (req.hasParameter("companyAttributeId")) {
 			retrieveAttribute(req);
+		}
+		retrieveAttributes(req);
 	}
 	
 	
@@ -297,7 +299,6 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 		CompanyAttributeVO attr = (CompanyAttributeVO) db.executeSelect(sql.toString(), params, new CompanyAttributeVO()).get(0);
 		super.putModuleData(attr);
 		req.setParameter("attributeTypeName", attr.getAttributeTypeName());
-		retrieveAttributes(req);
 	}
 
 
