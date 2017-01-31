@@ -71,7 +71,8 @@ public class GapFacadeAction extends ContentHierarchyAction {
 		List<Node> filteredNodes = new ArrayList<>();
 		for(Node g : nodes) {
 			for(Node p : g.getChildren()) {
-					ListIterator<Node> nIter = p.getChildren().listIterator();
+				for(Node c : p.getChildren()) {
+					ListIterator<Node> nIter = c.getChildren().listIterator();
 					while(nIter.hasNext()) {
 						Node n = nIter.next();
 						for(int i = 0; i < selNodes.length; i++) {
@@ -83,6 +84,7 @@ public class GapFacadeAction extends ContentHierarchyAction {
 							}
 						}
 					}
+				}
 			}
 		}
 		return filteredNodes;

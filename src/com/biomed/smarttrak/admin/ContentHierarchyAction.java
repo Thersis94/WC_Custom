@@ -70,7 +70,9 @@ public class ContentHierarchyAction extends AbstractTreeAction {
 	public void build(SMTServletRequest req) throws ActionException {
 		SectionVO s = new SectionVO(req);
 
-		saveSectionVO(s);
+		String actionPerform = req.getParameter("actionPerform");
+
+		updateSectionVO(actionPerform, s);
 
 		this.clearCacheByKey(CONTENT_HIERARCHY_CACHE_KEY);
 	}
@@ -137,11 +139,15 @@ public class ContentHierarchyAction extends AbstractTreeAction {
 	 * Helper method that inserts/updates a SectionVO.
 	 * @param s
 	 */
-	private void saveSectionVO(SectionVO s) {
+	private void updateSectionVO(String actionPerform, SectionVO s) {
 		DBProcessor dbp = new DBProcessor(dbConn, (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
 
 		try {
-			dbp.save(s);
+			if(!StringUtil.isEmpty(actionPerform) && "delete".equals(actionPerform)) {
+				dbp.delete(s);
+			} else {
+				dbp.save(s);
+			}
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error(e);
 		}
