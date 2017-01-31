@@ -59,7 +59,7 @@ public class ShowpadTagManager {
 		this.divisionId = divisionId;
 		this.divisionUrl = divisionUrl;
 		this.showpadUtil = util;
-		showpadTags = new HashMap<>(1000);
+		showpadTags = new HashMap<>(3000);
 		loadDivisionTagList();
 	}
 
@@ -70,7 +70,24 @@ public class ShowpadTagManager {
 	 * @throws QuotaException 
 	 */
 	private void loadDivisionTagList() throws QuotaException {
-		String tagUrl = divisionUrl + "/tags.json?limit=10000&fields=id,name,externalId";
+		int fetchSize = 1000;
+		for (int offset=0; true; offset += fetchSize) {
+			loadTags(fetchSize, offset);
+			
+			//if we've retrieve less than the maximum amount of tags, we're done.  If the #s are equal we need to iterate.
+			if (showpadTags.size() < (offset+fetchSize)) break;
+		}
+	}
+
+
+	/**
+	 * loads a list of tags for the given division.  Takes into consideration the range limit (1000) and offset (for repeated calls).
+	 * @param limit
+	 * @param offset
+	 * @throws QuotaException
+	 */
+	private void loadTags(int limit, int offset) throws QuotaException {
+		String tagUrl = divisionUrl + "/tags.json?limit=" + limit + "&fields=id,name,externalId&offset=" + offset;
 		log.debug(tagUrl);
 		try {
 			String resp = showpadUtil.executeGet(tagUrl);
