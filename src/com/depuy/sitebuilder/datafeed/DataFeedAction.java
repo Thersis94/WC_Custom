@@ -13,12 +13,11 @@ import com.depuy.datafeed.tms.modules.CustomerVO;
 import com.depuy.datafeed.tms.modules.DataSourceVO;
 import com.depuy.datafeed.tms.modules.ProfileVO;
 import com.depuy.datafeed.tms.modules.ResponseVO;
-import com.siliconmtn.action.AbstractActionController;
+import com.siliconmtn.action.AbstractAction;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.exception.DatabaseException;
-import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -37,7 +36,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @since Aug 28, 2008
  * <b>Changes: </b>
  ****************************************************************************/
-public class DataFeedAction extends AbstractActionController {
+public class DataFeedAction extends AbstractAction {
 	
 	/**
 	 * 
@@ -194,32 +193,6 @@ public class DataFeedAction extends AbstractActionController {
 	@Override
 	public Map<String, Object> getAttributes() {
 		return attributes;
-	}
-	
-	/**======Implement deprecated methods to satisfy interface=========**/
-	@Override
-	public void build(SMTServletRequest req) throws ActionException {
-		//Not Implemented
-	}
-	@Override
-	public void copy(SMTServletRequest req) throws ActionException {
-		//Not Implemented
-	}
-	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
-		//Not Implemented
-	}
-	@Override
-	public void list(SMTServletRequest req) throws ActionException {
-		//Not Implemented
-	}
-	@Override
-	public void update(SMTServletRequest req) throws ActionException {
-		//Not Implemented
-	}
-	@Override
-	public void delete(SMTServletRequest req) throws ActionException {
-		//Not Implemented
 	}
 
 }

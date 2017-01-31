@@ -104,6 +104,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		product	{  Comparator<DePuyEventSeminarVO> getComparator() { return new SeminarComparator().new ProductComparator(); } },
 		rsvp	{  Comparator<DePuyEventSeminarVO> getComparator() { return new SeminarComparator().new RSVPComparator(); } },
 		date	{  Comparator<DePuyEventSeminarVO> getComparator() { return new SeminarComparator().new DateComparator(); } },
+		dateDesc{  Comparator<DePuyEventSeminarVO> getComparator() { return new SeminarComparator().new DateDescComparator(); } },
 		status	{  Comparator<DePuyEventSeminarVO> getComparator() { return new SeminarComparator().new StatusComparator(); } },
 		owner	{  Comparator<DePuyEventSeminarVO> getComparator() { return new SeminarComparator().new OwnerComparator(); } };
 		
@@ -196,7 +197,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 	}
 	
 	/**
-	 * runs a simple PIVOT query to colate the data server-side instead of WC-side.
+	 * runs a simple PIVOT query to collate the data server-side instead of WC-side.
 	 * This query only grabs the data used to display the Active and Completed Seminars pages.
 	 * @param profileId
 	 * @param string 
@@ -319,11 +320,11 @@ public class PostcardSelectV2 extends SBActionAdapter {
 	 * @return
 	 */
 	private List<DePuyEventSeminarVO> sortData(List<DePuyEventSeminarVO> data, String sortType) {
-		if (sortType == null || sortType.length() == 0) sortType = "date";
+		if (StringUtil.isEmpty(sortType)) sortType = "dateDesc";
 		try {
 			Collections.sort(data, SortOrder.valueOf(sortType).getComparator());
 		} catch (Exception e) {
-			
+			//suppressed
 		}
 		log.debug("data sorted");
 		return data;

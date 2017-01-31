@@ -6,20 +6,19 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Date;
 
+// RAM Data Feed Libs
+import com.ram.datafeed.data.InventoryEventGroupVO;
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.action.ActionInterface;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
-import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
-// RAM Data Feed Libs
-import com.ram.datafeed.data.InventoryEventGroupVO;
 
 /****************************************************************************
  * <b>Title</b>: InventoryEventGroupAction.java <p/>
