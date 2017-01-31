@@ -60,7 +60,7 @@ public class UserActivityAction extends SBActionAdapter {
 		
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		
-		Map<String,UserActivityVO> userActivity = new HashMap<>();
+		Map<String,UserActivityVO> userActivity;
 		String siteId = parseSiteId(req);
 		String profileId = req.hasParameter("profileId") ? req.getParameter("profileId") : null;
 		String dateStart = req.hasParameter("dateStart") ? req.getParameter("dateStart") : null;
@@ -78,6 +78,7 @@ public class UserActivityAction extends SBActionAdapter {
 			mergeUserNames(userActivity);
 			
 		} catch (ActionException ae) {
+			userActivity = new HashMap<>();
 			mod.setError(ae.getMessage(), ae);
 		}
 		
