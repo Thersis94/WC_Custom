@@ -60,11 +60,11 @@ public class UserActivityAction extends SBActionAdapter {
 		
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		
-		Map<String,UserActivityVO> userActivity =  null;
+		Map<String,UserActivityVO> userActivity = new HashMap<>();
 		String siteId = parseSiteId(req);
-		String profileId = (req.hasParameter("profileId") ? req.getParameter("profileId") : null);
-		String dateStart = (req.hasParameter("dateStart") ? req.getParameter("dateStart") : null);
-		String dateEnd = (req.hasParameter("dateEnd") ? req.getParameter("dateEnd") : null);
+		String profileId = req.hasParameter("profileId") ? req.getParameter("profileId") : null;
+		String dateStart = req.hasParameter("dateStart") ? req.getParameter("dateStart") : null;
+		String dateEnd = req.hasParameter("dateEnd") ? req.getParameter("dateEnd") : null;
 		log.debug("siteId | profileId: " + siteId + " | " + profileId);
 		log.debug("dateStart | dateEnd: " + dateStart + " | " + dateEnd);
 		
@@ -81,7 +81,6 @@ public class UserActivityAction extends SBActionAdapter {
 			mod.setError(ae.getMessage(), ae);
 		}
 		
-		if (userActivity == null) userActivity = new HashMap<>();
 		this.putModuleData(userActivity, userActivity.size(), false, mod.getErrorMessage(), mod.getErrorCondition());
 		log.debug("error condition | message: " + mod.getErrorCondition() + "|" + mod.getErrorMessage());
 		
@@ -123,7 +122,7 @@ public class UserActivityAction extends SBActionAdapter {
 			return req.getParameter("siteId");
 		} else {
 			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-			return (site.getSiteId());
+			return site.getSiteId();
 		}
 	}
 
