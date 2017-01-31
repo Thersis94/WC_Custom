@@ -52,23 +52,94 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	
 	
 	public void retrieve(SMTServletRequest req) throws ActionException {
-		if (req.hasParameter("companyAttributeId")) {
-			retrieveAttribute(req);
-		} else if ("attribute".equals(req.getParameter("add")) || req.hasParameter("edit")) {
-			retrieveAttributes(req);	
-		} else if (req.hasParameter("allianceId")) {
-			retrieveAlliance(req.getParameter("allianceId"));
-		} else if (req.hasParameter("attributeId") && "attributeType".equals(req.getParameter("add"))) {
-			retrieveCompanyAttribute(req.getParameter("attributeId"));
-		}  else if ("section".equals(req.getParameter("add"))) {
-			retrieveSections(req);
-		} else if (req.hasParameter("locationId")) {
-			retrieveLocation(req.getParameter("locationId"));
-		} else if (req.hasParameter("companyId") && ! req.hasParameter("add")) {
+		ActionType type;
+		if (req.hasParameter("type")) {
+			type = ActionType.valueOf(req.getParameter("type"));
+		} else {
+			type = ActionType.COMPANY;
+		}
+		
+		switch (type) {
+			case ATTRIBUTE:
+				attributeRetrieve(req);
+				break;
+			case COMPANYATTRIBUTE:
+				companyAttributeRetrieve(req);
+				break;
+			case LOCATION:
+				locationRetrieve(req);
+				break;
+			case SECTION:
+				retrieveSections(req);
+				break;
+			case COMPANY:
+				companyRetrieve(req);
+				break;
+			case ALLIANCE:
+				allianceRetrieve(req);
+				break;
+		}
+	}
+	
+	
+	/**
+	 * Determine how to retrieve company information and do so.
+	 * @param req
+	 * @throws ActionException
+	 */
+	private void companyRetrieve(SMTServletRequest req) throws ActionException {
+		if (req.hasParameter("companyId") && ! req.hasParameter("add")) {
 			retrieveCompany(req.getParameter("companyId"));
 		} else if (!req.hasParameter("add")) {
 			retrieveCompanies(req);
 		}
+	}
+	
+	
+	/**
+	 * Determine how to retrieve company information and do so.
+	 * @param req
+	 * @throws ActionException
+	 */
+	private void attributeRetrieve(SMTServletRequest req) throws ActionException {
+		if (req.hasParameter("attributeId") && "attributeType".equals(req.getParameter("add"))) {
+			retrieveCompanyAttribute(req.getParameter("attributeId"));
+		} else if (req.hasParameter("attributeId")) {
+			retrieveAttributes(req);	
+		}
+	}
+	
+	
+	/**
+	 * Determine how to retrieve company information and do so.
+	 * @param req
+	 * @throws ActionException
+	 */
+	private void companyAttributeRetrieve(SMTServletRequest req) throws ActionException {
+		if (req.hasParameter("companyAttributeId"))
+			retrieveAttribute(req);
+	}
+	
+	
+	/**
+	 * Determine how to retrieve company information and do so.
+	 * @param req
+	 * @throws ActionException
+	 */
+	private void locationRetrieve(SMTServletRequest req) throws ActionException {
+		if (req.hasParameter("locationId"))
+			retrieveLocation(req.getParameter("locationId"));
+	}
+	
+	
+	/**
+	 * Determine how to retrieve company information and do so.
+	 * @param req
+	 * @throws ActionException
+	 */
+	private void allianceRetrieve(SMTServletRequest req) throws ActionException {
+		if (req.hasParameter("allianceId"))
+			retrieveAlliance(req.getParameter("allianceId"));
 	}
 	
 	
@@ -725,8 +796,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 				deleteElement(req);
 			}
 		} catch (Exception e) {
-			msg = StringUtil.capitalizePhrase(buildAction) + "failed to complete successfully. Please contact an administrator for assistance";
-			e.printStackTrace();
+			msg = StringUtil.capitalizePhrase(buildAction) + " failed to complete successfully. Please contact an administrator for assistance";
 		}
 		
 		redirectRequest(msg, buildAction, req);
