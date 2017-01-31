@@ -1,19 +1,24 @@
 package com.biomed.smarttrak.action;
 
+//Java
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
+//WC_Custom
+import com.biomed.smarttrak.action.NoteAction.NoteType;
 import com.biomed.smarttrak.vo.NoteVO;
-import com.bmg.admin.vo.CompanyVO;
+import com.bmg.admin.vo.NoteEntityInterface;
+
+//SMTBaselibs
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.security.UserDataVO;
+
+//WebCrescendo
 import com.smt.sitebuilder.action.SimpleActionAdapter;
-import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title</b>: NoteLoder.java <p/>
@@ -41,18 +46,48 @@ public class NoteLoader extends SimpleActionAdapter {
 	}
 
 	/**
-	 * takes the VOs provided and gets all the 
+	 * takes the VOs provided and loads any notes on to those VOs, sets type to company
 	 * @param companyVOs
 	 */
-	public void addCompanyNotes(List<CompanyVO> companyVOs){
+	public void addCompanyNotes(List<NoteEntityInterface> companyVOs){
 		log.debug("add company notes called");
+		
+		loadNotes((List<NoteEntityInterface>) companyVOs, NoteType.COMPANY);
+	}
 
-		List<String>companyIds = new ArrayList<>();
+	/**
+	 * takes the VOs provided and loads any notes on to those VOs, sets type to product
+	 * @param ProductVOs
+	 */
+	public void addProductNotes(List<NoteEntityInterface> ProductVOs){
+		log.debug("add product notes called");
+		
+		loadNotes((List<NoteEntityInterface>) ProductVOs, NoteType.PRODUCT);
+	}
+	/**
+	 * takes the VOs provided and loads any notes on to those VOs, sets type to market
+	 * @param MarketVOs
+	 */
+	public void addMarketNotes(List<NoteEntityInterface> MarketVOs){
+		log.debug("add market notes called");
+		
+		loadNotes((List<NoteEntityInterface>) MarketVOs, NoteType.MARKET);
+	}
+	
+	/**
+	 * takes the vo and a note type and processes the right note action methods for
+	 * each type and sorts the notes into the matching vo.  
+	 * @param company 
+	 * @param companyVOs
+	 * @param company
+	 */
+	private void loadNotes(List<NoteEntityInterface> targetVOs, NoteType type) {
+		List<String>targetIds = new ArrayList<>();
 
-		if (companyVOs == null) return;
+		if (targetVOs == null) return;
 
-		for (CompanyVO co : companyVOs){
-			companyIds.add(co.getCompanyId());
+		for ( NoteEntityInterface vo : targetVOs){
+			targetIds.add(vo.getId());
 		}
 
 		NoteAction na = new NoteAction();	
@@ -60,57 +95,41 @@ public class NoteLoader extends SimpleActionAdapter {
 		na.setAttributes(attributes);
 		
 		if (this.userId != null){
-			Map<String, List<NoteVO>> results = na.getCompanyNotes(this.userId, this.teamIds, null, companyIds);
+			Map<String, List<NoteVO>> results = processNoteAction(na, type, targetIds);
 
-			
-			for (CompanyVO co : companyVOs) {
-				if (results.containsKey(co.getCompanyId())){
-					log.debug("size of note list added to " + co.getCompanyId() + " is " + results.get(co.getCompanyId()).size());
-					co.setNotes(results.get(co.getCompanyId()));
+			for (NoteEntityInterface co : targetVOs) {
+				if (results.containsKey(co.getId())){
+					log.debug("size of note list added to " + co.getId() + " is " + results.get(co.getId()).size());
+					co.setNotes(results.get(co.getId()));
 				}
 			}
 		}
 	}
 
 
-	public void addProductNotes(List<Object> ProductVOs){
-		//TODO replace with the right vo when it exists or make one now
-
-	}
-
-	public void addMarketNotes(List<Object> MarketVOs){
-		//TODO replace with the right vo when it exists or make one now
-	}
 	/**
-	 * @return the userId
+	 * based on note type returns the correct method call.
+	 * @param na
+	 * @param type
+	 * @param targetIds 
+	 * @return
 	 */
-	public String getUserId() {
-		return userId;
+	private Map<String, List<NoteVO>> processNoteAction(NoteAction na, NoteType type, List<String> targetIds) {
+		
+		switch(type) {
+		case COMPANY :
+			return na.getCompanyNotes(this.userId, this.teamIds, null, targetIds);
+		case PRODUCT :
+			return na.getProductNotes(this.userId, this.teamIds, null, targetIds);
+		case MARKET :
+			return na.getMarketNotes(this.userId, this.teamIds, null, targetIds);
+		default :
+			return null;
+		}
 	}
-
+	
 	/**
-	 * @param userId the userId to set
-	 */
-	public void setUserId(String userId) {
-		this.userId = userId;
-	}
-
-	/**
-	 * @return the teamIds
-	 */
-	public List<String> getTeamIds() {
-		return teamIds;
-	}
-
-	/**
-	 * @param teamIds the teamIds to set
-	 */
-	public void setTeamIds(List<String> teamIds) {
-		this.teamIds = teamIds;
-	}
-
-	/**
-	 * checks the database for a user with the profile on the sent user data vo.  sets the note loaders 
+	 * checks the database for a user with the profile from the sent user data vo.  sets the note loaders 
 	 * user id. 
 	 * @param user
 	 */
@@ -146,8 +165,31 @@ public class NoteLoader extends SimpleActionAdapter {
 		return;
 	}
 
+	/**
+	 * @return the userId
+	 */
+	public String getUserId() {
+		return userId;
+	}
 
+	/**
+	 * @param userId the userId to set
+	 */
+	public void setUserId(String userId) {
+		this.userId = userId;
+	}
 
+	/**
+	 * @return the teamIds
+	 */
+	public List<String> getTeamIds() {
+		return teamIds;
+	}
 
-
+	/**
+	 * @param teamIds the teamIds to set
+	 */
+	public void setTeamIds(List<String> teamIds) {
+		this.teamIds = teamIds;
+	}
 }

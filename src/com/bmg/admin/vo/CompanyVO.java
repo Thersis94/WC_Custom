@@ -26,7 +26,7 @@ import com.siliconmtn.util.StringUtil;
  ****************************************************************************/
 
 @Table(name="BIOMEDGPS_COMPANY")
-public class CompanyVO {
+public class CompanyVO  implements NoteEntityInterface {
 	private String companyId;
 	private String parentId;
 	private String companyName;
@@ -300,18 +300,28 @@ public class CompanyVO {
 	@Column(name="CREATE_DT", isAutoGen=true, isInsertOnly=true)
 	public Date getCreateDate() {return null;}
 
-	/**
-	 * @return the notes
+	/* (non-Javadoc)
+	 * @see com.bmg.admin.vo.BiomedNoteInterface#setNotes(java.util.List)
 	 */
-	public List<NoteVO> getNotes() {
+	@Override
+	public void setNotes(List<NoteVO> notes) {
+		this.notes = notes;
+	}
+	
+	/*
+	 * returns the list of notes
+	 */
+	public List<NoteVO> getNotes(){
 		return notes;
 	}
 
-	/**
-	 * @param notes the notes to set
+	/* (non-Javadoc)
+	 * @see com.bmg.admin.vo.BiomedNoteInterface#getId()
 	 */
-	public void setNotes(List<NoteVO> notes) {
-		this.notes = notes;
+	@Override
+	public String getId() {
+		//each vo will return its own primary id.
+		return getCompanyId();
 	}
 	
 
