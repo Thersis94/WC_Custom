@@ -34,9 +34,10 @@ import com.smt.sitebuilder.security.UserLogin;
 /****************************************************************************
  * <b>Title</b>: UserDataImport.java<p/>
  * <b>Description: This class was created to batch-load legacy SmartTRAK data for the
- * BiomedGPS SmartTRAK site.  This class inserts/updates profiles, created roles, and 
- * pushes the registration records from an Excel file through the front door of the website's
- * registration page, rather than doing direct database insertion.</b>
+ * BiomedGPS SmartTRAK site.  This class uses an Excel file as the source data for 
+ * inserting/updating profiles, creating roles, and creating registration records for a user.
+ * Registration records are either created by pushing them through the front door of the website's
+ * registration page or by manual insertion, depending upon the profile of the user.</b>
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2017<p/>
  * <b>Company:</b> Silicon Mountain Technologies<p/>
