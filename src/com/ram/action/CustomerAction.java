@@ -8,7 +8,7 @@ import java.util.List;
 import com.ram.action.data.CustomerVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -51,7 +51,7 @@ public class CustomerAction extends SBActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 		if (user == null) return;
 		String customerId = StringUtil.checkVal(user.getUserExtendedInfo());

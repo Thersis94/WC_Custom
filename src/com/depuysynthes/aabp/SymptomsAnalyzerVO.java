@@ -3,7 +3,7 @@
  */
 package com.depuysynthes.aabp;
 
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
@@ -41,7 +41,7 @@ public class SymptomsAnalyzerVO {
 	public SymptomsAnalyzerVO() {
 	}
 
-	public SymptomsAnalyzerVO(SMTServletRequest req) {
+	public SymptomsAnalyzerVO(ActionRequest req) {
 		setData(req);
 	}
 
@@ -49,7 +49,7 @@ public class SymptomsAnalyzerVO {
 	 * Pull data out of fields on request.
 	 * @param req
 	 */
-	private void setData(SMTServletRequest req) {
+	private void setData(ActionRequest req) {
 		pain = StringUtil.checkVal(req.getParameter("pain"));
 		onset = StringUtil.checkVal(req.getParameter("onset"));
 		legPain = Convert.formatBoolean(req.getParameter("leg_pain"));

@@ -13,7 +13,7 @@ import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.util.MessageSender;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.security.UserDataVO;
 
@@ -54,7 +54,7 @@ public class MitekPostcardEmailer extends AbstractPostcardEmailer {
 	 * sends event approval request to the site administrator
 	 * @param req
 	 */
-	public void sendApprovalRequest(SMTServletRequest req) {
+	public void sendApprovalRequest(ActionRequest req) {
 		AbstractPostcardEmailer ape = new DePuyPostcardEmailer(super.attributes, dbConn);
 		ape.sendApprovalRequest(req);
 	}
@@ -63,7 +63,7 @@ public class MitekPostcardEmailer extends AbstractPostcardEmailer {
 	 * sends event owner notification their event/postcard was approved
 	 * @param req
 	 */
-	public void sendApprovedResponse(SMTServletRequest req) {
+	public void sendApprovedResponse(ActionRequest req) {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 		String rcptEmail = site.getAdminEmail();
@@ -107,7 +107,7 @@ public class MitekPostcardEmailer extends AbstractPostcardEmailer {
 	 * @param req
 	 * @param eventPostcardId
 	 */
-	public void sendVendorSummary(SMTServletRequest req) {
+	public void sendVendorSummary(ActionRequest req) {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		DePuyEventPostcardVO postcard = (DePuyEventPostcardVO) req.getAttribute("postcard");
 		AbstractSBReportVO rpt = (AbstractSBReportVO) req.getAttribute(Constants.BINARY_DOCUMENT);
@@ -157,7 +157,7 @@ public class MitekPostcardEmailer extends AbstractPostcardEmailer {
 	 * send DePuy TGMs and sales rep an email with postcard info and authorization approvals
 	 * @param req
 	 */
-	public void sendPreAuthPaperwork(SMTServletRequest req) {
+	public void sendPreAuthPaperwork(ActionRequest req) {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		DePuyEventPostcardVO postcard = (DePuyEventPostcardVO) req.getAttribute("postcard");
 		AbstractSBReportVO rpt = (AbstractSBReportVO) req.getAttribute(Constants.BINARY_DOCUMENT);
@@ -211,7 +211,7 @@ public class MitekPostcardEmailer extends AbstractPostcardEmailer {
 	 * @param req
 	 * @param eventPostcardId
 	 */
-	public void sendPostcardCancellation(SMTServletRequest req) {
+	public void sendPostcardCancellation(ActionRequest req) {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		DePuyEventPostcardVO postcard = (DePuyEventPostcardVO) req.getAttribute("postcard");
 		AbstractSBReportVO rpt = (AbstractSBReportVO) req.getAttribute(Constants.BINARY_DOCUMENT);

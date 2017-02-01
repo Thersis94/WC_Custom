@@ -12,7 +12,7 @@ import java.util.Map;
 import com.depuy.forefront.action.vo.ExerciseIntensityVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -30,11 +30,11 @@ public class ExerciseAssocAction extends SBActionAdapter {
 		super(ai);
 	}
 	
-	public void delete(SMTServletRequest req) {
+	public void delete(ActionRequest req) {
 	}
 	
 	
-	public void retrieve(SMTServletRequest req) throws ActionException{
+	public void retrieve(ActionRequest req) throws ActionException{
 		log.debug("Beginning ExerciseAssocAction retrieve");
 		final String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
@@ -86,7 +86,7 @@ public class ExerciseAssocAction extends SBActionAdapter {
 	}
 	
 
-	private void updateRoutineAssoc(SMTServletRequest req) throws ActionException {
+	private void updateRoutineAssoc(ActionRequest req) throws ActionException {
 		log.debug("Beginning RoutineAction update");
 		String msg = "Exercise Added to Routine Successfully";
 		final String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
@@ -154,7 +154,7 @@ public class ExerciseAssocAction extends SBActionAdapter {
 	
 	
 	
-	private void reorderRoutine(SMTServletRequest req) throws ActionException{
+	private void reorderRoutine(ActionRequest req) throws ActionException{
 		log.debug("Beginning Routine Reorder update");
 		String msg = "Routine ReOrdered Successfully";
 		List<ExerciseIntensityVO> vos = new ArrayList<ExerciseIntensityVO>();
@@ -198,7 +198,7 @@ public class ExerciseAssocAction extends SBActionAdapter {
 	
 
 	
-	private ExerciseIntensityVO getNextUpdate(SMTServletRequest req, int i) {
+	private ExerciseIntensityVO getNextUpdate(ActionRequest req, int i) {
 		String ers = StringUtil.checkVal(req.getParameter("exerciseRoutineId_" + i));
 		log.debug(i + " : " + ers);
 		if (ers.length() == 0) return null;
@@ -245,7 +245,7 @@ public class ExerciseAssocAction extends SBActionAdapter {
 	}	
 	
 
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		if (Boolean.parseBoolean(req.getParameter("reorder"))) {
 			reorderRoutine(req);
 		} else if (Boolean.parseBoolean(req.getParameter("assoc"))) {

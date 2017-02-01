@@ -15,7 +15,7 @@ import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.user.ProfileManager;
@@ -61,7 +61,7 @@ public class PedoKitReport implements Report {
 	 * @see com.depuy.sitebuilder.datafeed.Report#retrieveReport(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public Object retrieveReport(SMTServletRequest req) throws DatabaseException, InvalidDataException {
+	public Object retrieveReport(ActionRequest req) throws DatabaseException, InvalidDataException {
 		log.info("Retrieving PedoKit Report");
 		
 		// Get the Dates - this campaign didn't start until Q1 2013, so don't bother going back farther than that.

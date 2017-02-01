@@ -13,7 +13,7 @@ import java.util.Map;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
@@ -62,7 +62,7 @@ public class SalesRepAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#delete(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		StringBuffer sql = new StringBuffer();
 		String message = "You have successfully deleted the sales rep";
 		String schema = (String)getAttribute("customDbSchema");
@@ -95,7 +95,7 @@ public class SalesRepAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("Retrieving sales reps");
 		String order = StringUtil.checkVal(req.getParameter("order"), "last_nm, first_nm");
 		Boolean repInfo = Convert.formatBoolean(req.getParameter("repInfo"));
@@ -159,7 +159,7 @@ public class SalesRepAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#update(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		StringBuffer sql = new StringBuffer();
 		String salesRepId = StringUtil.checkVal(req.getParameter("salesRepId"));
 		SalesRepVO rep = new SalesRepVO(req);

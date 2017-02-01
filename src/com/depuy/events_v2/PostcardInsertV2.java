@@ -15,7 +15,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.exception.DatabaseException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.UUIDGenerator;
@@ -81,7 +81,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	 * http.SMTServletRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		// validate the request is something we can understand
 		ReqType reqType = null;
 		try {
@@ -240,7 +240,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	 * @throws SQLException
 	 * @throws ActionException
 	 */
-	private void saveHospitalSponsored(SMTServletRequest req, SiteVO site, UserDataVO user) 
+	private void saveHospitalSponsored(ActionRequest req, SiteVO site, UserDataVO user) 
 			throws SQLException, ActionException {
 		//Create the event
 		String eventPostcardId = saveEventPostcard(req, site, user, null);
@@ -272,7 +272,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	 * @return
 	 * @throws SQLException
 	 */
-	private String saveEventPostcard(SMTServletRequest req, SiteVO site, UserDataVO user, String pkId) throws SQLException {
+	private String saveEventPostcard(ActionRequest req, SiteVO site, UserDataVO user, String pkId) throws SQLException {
 		StringBuilder sql = new StringBuilder();
 		String label = req.getParameter("postcardLabel");
 		if (pkId != null) {
@@ -324,7 +324,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	 * @return
 	 * @throws SQLException
 	 */
-	private String saveEventEntry(SMTServletRequest req) throws SQLException {
+	private String saveEventEntry(ActionRequest req) throws SQLException {
 		EventEntryVO vo = new EventEntryVO(req);
 		EventEntryAction ac = new EventEntryAction();
 		ac.setAttributes(attributes);
@@ -397,7 +397,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	 * @param req
 	 * @throws SQLException
 	 */
-	private void saveLocatorXr(String eventPostcardId, SMTServletRequest req) throws SQLException {
+	private void saveLocatorXr(String eventPostcardId, ActionRequest req) throws SQLException {
 		PreparedStatement ps = null;
 		StringBuilder sql = new StringBuilder();
 		sql.append("insert into ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
@@ -432,7 +432,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	 * @param req
 	 * @throws SQLException
 	 */
-	private void saveEventPersonXr(String eventPostcardId, SMTServletRequest req) throws SQLException {
+	private void saveEventPersonXr(String eventPostcardId, ActionRequest req) throws SQLException {
 		PreparedStatement ps = null;
 		StringBuilder sql = new StringBuilder();
 
@@ -518,7 +518,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	 * @param req
 	 * @throws SQLException
 	 */
-	private void saveNewspaperAd(String eventPostcardId, SMTServletRequest req) throws SQLException {		
+	private void saveNewspaperAd(String eventPostcardId, ActionRequest req) throws SQLException {		
 		CoopAdsActionV2 caa = new CoopAdsActionV2(actionInit);
 		caa.setAttributes(attributes);
 		caa.setDBConnection(dbConn);
@@ -536,7 +536,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	 * @param req
 	 * @throws SQLException
 	 */
-	private void saveEventSurgeon(String eventPostcardId, SMTServletRequest req, SiteVO site) throws SQLException {
+	private void saveEventSurgeon(String eventPostcardId, ActionRequest req, SiteVO site) throws SQLException {
 		for (int x=1; req.hasParameter("surgeonName_" + x); x++)
 				this.saveEventSurgeon(eventPostcardId, req, site, x);
 		
@@ -581,7 +581,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	 * @param req
 	 * @throws SQLException
 	 */
-	private void saveEventSurgeon(String eventPostcardId, SMTServletRequest req, SiteVO site, int cnt) throws SQLException {
+	private void saveEventSurgeon(String eventPostcardId, ActionRequest req, SiteVO site, int cnt) throws SQLException {
 		String pkId = req.hasParameter("surgeonId_" + cnt) ? req.getParameter("surgeonId_" + cnt) : null;
 		StringBuilder sql = new StringBuilder(350);
 		if (pkId != null) {
@@ -658,7 +658,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	 * @param req
 	 * @throws SQLException
 	 */
-	private void saveConsignee(String eventPostcardId, int type, SMTServletRequest req) throws SQLException {
+	private void saveConsignee(String eventPostcardId, int type, ActionRequest req) throws SQLException {
 		String pkId = req.hasParameter("consigneeId" + type) ? req.getParameter("consigneeId" + type) : null;
 		StringBuilder sql = new StringBuilder();
 		if (pkId != null) {
@@ -703,7 +703,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	 * @param site
 	 * @return
 	 */
-	protected String saveFile(SMTServletRequest req, String paramNm, String subPath, SiteVO site) {
+	protected String saveFile(ActionRequest req, String paramNm, String subPath, SiteVO site) {
 		//build a file-system path the server can understand, using WC config
 		StringBuilder absPath = new StringBuilder((String) getAttribute("pathToBinary"));
 		absPath.append(getAttribute("orgAlias")).append(site.getOrganizationId());
@@ -778,7 +778,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void saveLeadCities(SMTServletRequest req, String eventPostcardId,
+	private void saveLeadCities(ActionRequest req, String eventPostcardId,
 			UserDataVO user, Integer roleId) throws SQLException {
 		message = "Leads Saved Successfully";
 
@@ -864,7 +864,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	 * @param eventPostcardId
 	 * @throws ActionException
 	 */
-	private void submitPostcard(SMTServletRequest req, String eventPostcardId)
+	private void submitPostcard(ActionRequest req, String eventPostcardId)
 			throws ActionException {
 		// change the postcard status to submitted
 		this.changePostcardStatus(EventFacadeAction.STATUS_PENDING, eventPostcardId);
@@ -895,7 +895,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	 * @param eventPostcardId
 	 * @throws ActionException
 	 */
-	private void advApprovePostcard(SMTServletRequest req, String eventPostcardId, UserDataVO user)
+	private void advApprovePostcard(ActionRequest req, String eventPostcardId, UserDataVO user)
 			throws SQLException, ActionException {
 		// change the postcard status to approved
 		this.changePostcardStatus(EventFacadeAction.STATUS_PENDING_PREV_ATT, eventPostcardId);
@@ -953,7 +953,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	 * @param eventPostcardId
 	 * @throws ActionException
 	 */
-	private void srcApprovePostcard(SMTServletRequest req, String eventPostcardId)
+	private void srcApprovePostcard(ActionRequest req, String eventPostcardId)
 			throws ActionException {
 		// change the postcard status to approved
 		this.changePostcardStatus(EventFacadeAction.STATUS_APPROVED_SRC, eventPostcardId);
@@ -977,7 +977,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	 * @param eventPostcardId
 	 * @throws ActionException
 	 */
-	private void pendingSurgeonReview(SMTServletRequest req, String eventPostcardId)
+	private void pendingSurgeonReview(ActionRequest req, String eventPostcardId)
 			throws ActionException {
 		// change the postcard status to approved
 		this.changePostcardStatus(EventFacadeAction.STATUS_PENDING_SURG, eventPostcardId);
@@ -994,7 +994,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	 * @param eventPostcardId
 	 * @throws ActionException
 	 */
-	private void approvedMedAffairs(SMTServletRequest req, String eventPostcardId)
+	private void approvedMedAffairs(ActionRequest req, String eventPostcardId)
 			throws ActionException {
 		// change the postcard status to approved
 		this.changePostcardStatus(EventFacadeAction.STATUS_APPROVED, eventPostcardId);
@@ -1035,7 +1035,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	private DePuyEventSeminarVO fetchSeminar(SMTServletRequest req, ReportType reportType) {
+	private DePuyEventSeminarVO fetchSeminar(ActionRequest req, ReportType reportType) {
 		DePuyEventManageActionV2 epsa = new DePuyEventManageActionV2(actionInit);
 		epsa.setDBConnection(dbConn);
 		epsa.setAttributes(attributes);
@@ -1112,7 +1112,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	}
 
 	/*
-	private void deletePostcard(SMTServletRequest req, String eventPostcardId)
+	private void deletePostcard(ActionRequest req, String eventPostcardId)
 			throws ActionException {
 		// change the postcard status to deleted
 		this.changePostcardStatus(EventFacadeAction.STATUS_DELETED, eventPostcardId);
@@ -1120,7 +1120,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 		return;
 	}
 	 */
-	private void cancelPostcard(SMTServletRequest req, String eventPostcardId)
+	private void cancelPostcard(ActionRequest req, String eventPostcardId)
 			throws ActionException {
 		// change the postcard status to deleted
 		this.changePostcardStatus(EventFacadeAction.STATUS_CANCELLED,eventPostcardId);
@@ -1153,7 +1153,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	}
 
 
-	private void uploadPostcard(SMTServletRequest req, String eventPostcardId, SiteVO site)
+	private void uploadPostcard(ActionRequest req, String eventPostcardId, SiteVO site)
 			throws ActionException, SQLException {
 		StringBuilder sql = new StringBuilder(125);
 		sql.append("update event_postcard set postcard_file_url=?, postcard_file_status_no=?, ");
@@ -1198,7 +1198,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	 * @throws ActionException
 	 * @throws SQLException
 	 */
-	private void uploadPCPLeads(SMTServletRequest req, String eventPostcardId, SiteVO site)
+	private void uploadPCPLeads(ActionRequest req, String eventPostcardId, SiteVO site)
 			throws ActionException, SQLException {
 		String sql = "update event_postcard set invite_file_url=?,  update_dt=? where event_postcard_id=?";
 		log.debug(sql);
@@ -1224,7 +1224,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	}
 	
 
-	private void approvePostcardFile(SMTServletRequest req, String eventPostcardId)
+	private void approvePostcardFile(ActionRequest req, String eventPostcardId)
 			throws SQLException {
 		changePostcardFileStatus(eventPostcardId, CoopAdsActionV2.CLIENT_APPROVED_AD);
 
@@ -1250,7 +1250,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	 * @param eventPostcardId
 	 * @throws ActionException
 	 */
-	private void declinePostcardFile( SMTServletRequest req, String eventPostcardId )
+	private void declinePostcardFile( ActionRequest req, String eventPostcardId )
 			throws SQLException {
 		changePostcardFileStatus( eventPostcardId, CoopAdsActionV2.CLIENT_DECLINED_AD);
 		
@@ -1292,7 +1292,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	 * @param req
 	 * @param eventPostcardId
 	 */
-	private void markPostcardSent( SMTServletRequest req, String eventPostcardId)
+	private void markPostcardSent( ActionRequest req, String eventPostcardId)
 			throws SQLException {		
 		//build sql statement
 		StringBuilder sql = new StringBuilder(100);
@@ -1321,7 +1321,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 			mailer.notifyPostcardSent(req);
 	}
 
-	private void orderBox(SMTServletRequest req, String eventPostcardId) throws ActionException{
+	private void orderBox(ActionRequest req, String eventPostcardId) throws ActionException{
 		orderBox( req, eventPostcardId, null);
 	}
 
@@ -1332,7 +1332,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	 * @param eventPostcardId
 	 * @throws ActionException
 	 */
-	private void orderBox(SMTServletRequest req, String eventPostcardId, DePuyEventSeminarVO vo)
+	private void orderBox(ActionRequest req, String eventPostcardId, DePuyEventSeminarVO vo)
 			throws ActionException {
 		log.debug("starting consumable box email");
 		
@@ -1398,7 +1398,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	 * @param site
 	 * @throws ActionException
 	 */
-	private void savePosterBlock(SMTServletRequest req, String eventPostcardId, SiteVO site)
+	private void savePosterBlock(ActionRequest req, String eventPostcardId, SiteVO site)
 			throws ActionException {
 		StringBuilder sql = new StringBuilder(125);
 		sql.append("update event_postcard set ");
@@ -1440,7 +1440,7 @@ public class PostcardInsertV2 extends SBActionAdapter {
 	 * @param vo
 	 * @throws ActionException
 	 */
-	private void saveInvoiceFile(SMTServletRequest req, SiteVO site, String eventPostcardId) throws ActionException {
+	private void saveInvoiceFile(ActionRequest req, SiteVO site, String eventPostcardId) throws ActionException {
 		//Create the SQL
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("update EVENT_POSTCARD set INVOICE_FILE_URL=?, ");

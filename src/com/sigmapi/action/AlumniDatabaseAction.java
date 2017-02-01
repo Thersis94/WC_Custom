@@ -14,7 +14,7 @@ import java.util.Map;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.exception.DatabaseException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataComparator;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
@@ -46,7 +46,7 @@ public class AlumniDatabaseAction extends SimpleActionAdapter {
 
 	private static final String SIGMAPI_FORM = ""; //pkId of the Form inside the black box
 	
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		
 		//get the profileIds of all our users...
@@ -133,11 +133,11 @@ public class AlumniDatabaseAction extends SimpleActionAdapter {
 	}
 	
 	
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		
 	}
 	
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 	

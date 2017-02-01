@@ -10,13 +10,13 @@ import java.util.List;
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.gis.AbstractGeocoder;
 import com.siliconmtn.gis.GeocodeFactory;
 import com.siliconmtn.gis.GeocodeLocation;
 import com.siliconmtn.gis.Location;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.NavManager;
 import com.siliconmtn.util.NumberFormat;
@@ -61,10 +61,10 @@ public class ComplianceAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		log.debug("FT: " + req.getParameter("facadeType"));
 		if (Convert.formatBoolean(req.getParameter("facadeType"))) {
-			SMTActionInterface aac = new ComplianceFacadeAction(actionInit);
+			ActionInterface aac = new ComplianceFacadeAction(actionInit);
 			aac.setAttributes(attributes);
 			aac.setDBConnection(dbConn);
 			aac.list(req);
@@ -78,7 +78,7 @@ public class ComplianceAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		if (! Convert.formatBoolean(req.getParameter("searchSubmitted")))
 			return;
 		
@@ -173,12 +173,12 @@ public class ComplianceAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		log.debug("FT: " + req.getParameter("facadeType"));
 		Object msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
 		
 		if (Convert.formatBoolean(req.getParameter("facadeType"))) {
-			SMTActionInterface aac = new ComplianceFacadeAction(actionInit);
+			ActionInterface aac = new ComplianceFacadeAction(actionInit);
 			aac.setAttributes(attributes);
 			aac.setDBConnection(dbConn);
 			aac.update(req);
@@ -193,12 +193,12 @@ public class ComplianceAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		log.debug("FT: " + req.getParameter("facadeType"));
 		Object msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
 		
 		if (Convert.formatBoolean(req.getParameter("facadeType"))) {
-			SMTActionInterface aac = new ComplianceFacadeAction(actionInit);
+			ActionInterface aac = new ComplianceFacadeAction(actionInit);
 			aac.setAttributes(attributes);
 			aac.setDBConnection(dbConn);
 			aac.delete(req);

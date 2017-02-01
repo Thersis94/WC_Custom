@@ -16,7 +16,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.gis.GeocodeLocation;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -65,7 +65,7 @@ public class InventoryLocationAction extends SBActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		String ilId = StringUtil.checkVal(req.getParameter("inventoryLocationId"));
 		boolean add = Convert.formatBoolean(req.getParameter("addLocation")); 
 		if (add && ilId.length() == 0) return;
@@ -110,7 +110,7 @@ public class InventoryLocationAction extends SBActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		String dbs = (String) this.getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		InventoryLocationVO ilVo = new InventoryLocationVO(req);
 		

@@ -3,7 +3,7 @@ package com.ansmed.sb.report;
 import java.sql.ResultSet;
 
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
 
@@ -52,7 +52,7 @@ public class FellowsDetailVO extends AbstractSiteBuilderVO {
 	 * Initializes the VO to the params provided in the request object
 	 * @param rs
 	 */
-	public FellowsDetailVO(SMTServletRequest req) {
+	public FellowsDetailVO(ActionRequest req) {
 		super();
 		setData(req);
 	}
@@ -79,7 +79,7 @@ public class FellowsDetailVO extends AbstractSiteBuilderVO {
 	 * Sets the VO to the params provided in the request object
 	 * @param req
 	 */
-	public void setData(SMTServletRequest req) {
+	public void setData(ActionRequest req) {
 		StringEncoder se = new StringEncoder();
 		repFirstNm = se.decodeValue(req.getParameter("repFirstNm"));
 		repLastNm = se.decodeValue(req.getParameter("repLastNm"));

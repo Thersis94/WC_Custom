@@ -13,7 +13,7 @@ import com.siliconmtn.gis.AbstractGeocoder;
 import com.siliconmtn.gis.GeocodeFactory;
 import com.siliconmtn.gis.GeocodeLocation;
 import com.siliconmtn.gis.Location;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.NavManager;
 import com.siliconmtn.util.StringUtil;
@@ -47,7 +47,7 @@ public class ComplianceFacadeAction extends SBActionAdapter {
 	}
 
 	@Override
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		// Get the search params
 		String lastName = StringUtil.checkVal(req.getParameter("lastName"));
 		String state = StringUtil.checkVal(req.getParameter("state"));
@@ -119,7 +119,7 @@ public class ComplianceFacadeAction extends SBActionAdapter {
 	}
 
 	@Override
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
         Object msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
 		StringBuffer sql = new StringBuffer();
 		String complianceId = StringUtil.checkVal(req.getParameter("complianceId"));

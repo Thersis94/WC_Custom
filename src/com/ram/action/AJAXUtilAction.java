@@ -21,9 +21,9 @@ import com.ram.datafeed.data.CustomerLocationVO;
 //SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.data.GenericVO;
-import com.siliconmtn.http.SMTServletRequest;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.report.ReportDataAction;
@@ -124,8 +124,8 @@ public class AJAXUtilAction extends SBActionAdapter {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
-		SMTActionInterface sai = null;
+	public void retrieve(ActionRequest req) throws ActionException {
+		ActionInterface sai = null;
 		String type = req.getParameter("type");
 		
 		// Call the appropriate action
@@ -216,9 +216,9 @@ public class AJAXUtilAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	protected void saveEventGroup(SMTServletRequest req) throws ActionException {
+	protected void saveEventGroup(ActionRequest req) throws ActionException {
 		// Save the Event group data
-		SMTActionInterface sai = new InventoryEventGroupAction(getActionInit());
+		ActionInterface sai = new InventoryEventGroupAction(getActionInit());
 		sai.setDBConnection(getDBConnection());
 		sai.setAttributes(getAttributes());
 		sai.update(req);
@@ -234,7 +234,7 @@ public class AJAXUtilAction extends SBActionAdapter {
 	 * @param sai
 	 */
 	@SuppressWarnings({"unchecked" })
-	protected void processLocations(SMTActionInterface sai) {
+	protected void processLocations(ActionInterface sai) {
 		ModuleVO modVo = (ModuleVO)sai.getAttribute(Constants.MODULE_DATA);
 		List<CustomerLocationVO> data = (List<CustomerLocationVO>) modVo.getActionData();
 		
@@ -253,7 +253,7 @@ public class AJAXUtilAction extends SBActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 

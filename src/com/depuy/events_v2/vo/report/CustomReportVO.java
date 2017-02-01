@@ -14,7 +14,7 @@ import com.depuy.events.vo.CoopAdVO;
 import com.depuy.events_v2.vo.DePuyEventSeminarVO;
 import com.siliconmtn.data.report.ExcelReport;
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
@@ -139,7 +139,7 @@ public class CustomReportVO extends AbstractSBReportVO {
 	 * Populate report with request object
 	 * @param req
 	 */
-	public CustomReportVO(SMTServletRequest req) {
+	public CustomReportVO(ActionRequest req) {
 		this(); //for setting up file info
 
 		reportId = req.getParameter("reportId");

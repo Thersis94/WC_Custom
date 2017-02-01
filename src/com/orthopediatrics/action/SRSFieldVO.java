@@ -3,7 +3,7 @@ package com.orthopediatrics.action;
 import java.sql.ResultSet;
 
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SBModuleVO;
 
@@ -48,7 +48,7 @@ public class SRSFieldVO extends SBModuleVO {
 		this.assignData(rs);
 	}
 	
-	public SRSFieldVO(SMTServletRequest req) {
+	public SRSFieldVO(ActionRequest req) {
 		this.assignData(req);
 	}
 	
@@ -73,7 +73,7 @@ public class SRSFieldVO extends SBModuleVO {
 	 * 
 	 * @param req
 	 */
-	public void assignData(SMTServletRequest req) {
+	public void assignData(ActionRequest req) {
 		actionId = req.getParameter("sbActionId");
 		fieldName = req.getParameter("fieldName");
 		fieldId = req.getParameter("fieldId");

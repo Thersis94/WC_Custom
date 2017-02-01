@@ -11,7 +11,7 @@ import java.util.List;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.data.GenericVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 
 // WebCrescendo 2.0
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -51,7 +51,7 @@ public class WorkflowEventTypesAction extends SBActionAdapter {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("WorkflowEventTypesAction retrieve...");
 		
 		List<GenericVO> data = new ArrayList<>();
@@ -87,7 +87,7 @@ public class WorkflowEventTypesAction extends SBActionAdapter {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		
 	}
 }

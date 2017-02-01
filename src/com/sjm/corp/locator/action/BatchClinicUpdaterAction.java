@@ -8,8 +8,8 @@ import java.util.List;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionInterface;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -43,7 +43,7 @@ public class BatchClinicUpdaterAction extends SBActionAdapter {
 		super(ai);
 	}
 	
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("Retrieve");
 		if (Convert.formatBoolean(req.getParameter("formSubmit"))) {
 		    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
@@ -66,14 +66,14 @@ public class BatchClinicUpdaterAction extends SBActionAdapter {
 	 * @param clinicTypeId
 	 * @throws ActionException
 	 */
-	private void updateClinics(SMTServletRequest req, int clinicTypeId) throws ActionException {
+	private void updateClinics(ActionRequest req, int clinicTypeId) throws ActionException {
     		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
     		String orgId = site.getOrganizationId();
     		// Delete all clinics in the database so as to start fresh with the up to date list of clinics
 		flushClinics(clinicTypeId, orgId);
 		
 		// Set up the dealerInforAction and have it handle the upload for us
-		SMTActionInterface dia = new DealerInfoAction(actionInit);
+		ActionInterface dia = new DealerInfoAction(actionInit);
 		dia.setDBConnection(dbConn);
 		dia.setAttributes(attributes);
 		req.setParameter("dealerImport", "true");
@@ -90,7 +90,7 @@ public class BatchClinicUpdaterAction extends SBActionAdapter {
 	 * @param req
 	 * @param clinicTypeId
 	 */
-	private void exportClinics(SMTServletRequest req, int clinicTypeId) {
+	private void exportClinics(ActionRequest req, int clinicTypeId) {
 		List<DealerVO> clinics = getClinicList(clinicTypeId);
 		AbstractSBReportVO rpt = new ClinicReportVO();
 		rpt.setData(clinics);
@@ -169,17 +169,17 @@ public class BatchClinicUpdaterAction extends SBActionAdapter {
 		}
 	}
 	
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		log.debug("Delete");
 		super.delete(req);		
 	}
 	
-	public void list(SMTServletRequest req) throws ActionException  {
+	public void list(ActionRequest req) throws ActionException  {
 		log.debug("List");
 		super.list(req);
 	}
 	
-	public void update(SMTServletRequest req) throws ActionException  {
+	public void update(ActionRequest req) throws ActionException  {
 		log.debug("Update");
 		super.update(req);
 	}

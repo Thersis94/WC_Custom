@@ -13,7 +13,7 @@ import org.apache.solr.common.SolrDocument;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.exception.DatabaseException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -65,7 +65,7 @@ public class MyAssignmentsAction extends SBActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA); //used to load Solr assets
@@ -109,7 +109,7 @@ public class MyAssignmentsAction extends SBActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		String reqType = StringUtil.checkVal(req.getParameter("reqType"), "");
 		switch (reqType) {
 			case "complete":
@@ -128,7 +128,7 @@ public class MyAssignmentsAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void captureSkipAhead(SMTServletRequest req) throws ActionException {
+	private void captureSkipAhead(ActionRequest req) throws ActionException {
 		String resAssgId = StringUtil.checkVal(req.getParameter("resAssgId"), null);
 		String assgId = StringUtil.checkVal(req.getParameter("assgId"), null);
 		
@@ -157,7 +157,7 @@ public class MyAssignmentsAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void captureResAssgAsset(SMTServletRequest req) throws ActionException {
+	private void captureResAssgAsset(ActionRequest req) throws ActionException {
 		String assgAssetId = StringUtil.checkVal(req.getParameter("assgAssetId"), null);
 		String resAssgId = StringUtil.checkVal(req.getParameter("resAssgId"), null);
 		

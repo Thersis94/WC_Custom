@@ -1,6 +1,6 @@
 package com.depuysynthesinst.registration;
 
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.registration.RegistrationDataAction;
 
@@ -24,7 +24,7 @@ public class DSIRegistrationDataAction extends RegistrationDataAction {
 	 * @see com.smt.sitebuilder.action.registration.RegistrationDataAction#buildReport(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	protected AbstractSBReportVO buildReport(SMTServletRequest req) {
+	protected AbstractSBReportVO buildReport(ActionRequest req) {
 			return new DSIRegistrationDataActionVO();
 	}
 	
@@ -39,7 +39,7 @@ public class DSIRegistrationDataAction extends RegistrationDataAction {
 	 * @return
 	 */
 	@Override
-	protected String buildSql(SMTServletRequest req, boolean useDates, String regSubtlId, String regId) {
+	protected String buildSql(ActionRequest req, boolean useDates, String regSubtlId, String regId) {
 		log.debug("over ride");
 		//"actionId" used in this query is actually the actionGroupId, which aligns all historical data
 		StringBuilder sql = new StringBuilder(400);

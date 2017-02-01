@@ -11,8 +11,6 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.TimeZone;
 
-import javax.servlet.http.Cookie;
-
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
 import org.apache.solr.common.SolrDocument;
 
@@ -20,11 +18,12 @@ import com.depuysynthes.huddle.solr.CalendarSolrIndexer;
 import com.depuysynthesinst.events.CourseCalendar;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.action.ActionInterface;
+import com.siliconmtn.http.session.SMTCookie;
 import com.siliconmtn.io.mail.CalendarEventMessageVO;
-import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.io.mail.CalendarEventMessageVO.Method;
+import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.io.mail.MessageVO;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
@@ -65,7 +64,7 @@ public class EventCalendarAction extends CourseCalendar {
 	}
 
 	@Override
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		if (!req.hasParameter("cPage")) {
 			if (Convert.formatBoolean(req.hasParameter("isBatch"))) {
 				req.setParameter("batchOnly", "true");
@@ -76,7 +75,7 @@ public class EventCalendarAction extends CourseCalendar {
 			
 			if (!Convert.formatBoolean(req.hasParameter("isBatch"))) {
 				req.setParameter("eventBypass", "true");
-				SMTActionInterface sai = new EventFacadeAction(actionInit);
+				ActionInterface sai = new EventFacadeAction(actionInit);
 				sai.setDBConnection(dbConn);
 				sai.setAttributes(attributes);
 				sai.update(req);
@@ -104,9 +103,9 @@ public class EventCalendarAction extends CourseCalendar {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void updateEvent(SMTServletRequest req) throws ActionException {
+	private void updateEvent(ActionRequest req) throws ActionException {
 
-		SMTActionInterface sai = new EventFacadeAction(actionInit);
+		ActionInterface sai = new EventFacadeAction(actionInit);
 		sai.setDBConnection(dbConn);
 		sai.setAttributes(attributes);
 		sai.update(req);
@@ -129,7 +128,7 @@ public class EventCalendarAction extends CourseCalendar {
 	}
 
 	@Override
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		super.list(req);
 		
 		if (req.hasParameter("facadeType")) {
@@ -143,8 +142,8 @@ public class EventCalendarAction extends CourseCalendar {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void listEvent(SMTServletRequest req) throws ActionException {
-		SMTActionInterface sai = new EventFacadeAction(actionInit);
+	private void listEvent(ActionRequest req) throws ActionException {
+		ActionInterface sai = new EventFacadeAction(actionInit);
 		sai.setDBConnection(dbConn);
 		sai.setAttributes(attributes);
 		sai.list(req);
@@ -161,10 +160,10 @@ public class EventCalendarAction extends CourseCalendar {
 	 * retrieves a list of Events tied to this porlet.  Filters the list to the passed anatomy, if present. 
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 
-		Cookie rppCook = req.getCookie(HuddleUtils.RPP_COOKIE);
+		SMTCookie rppCook = req.getCookie(HuddleUtils.RPP_COOKIE);
 		if (rppCook != null)
 			req.setParameter("rpp", rppCook.getValue());
 
@@ -204,7 +203,7 @@ public class EventCalendarAction extends CourseCalendar {
 	 * Build gets called for creating iCal files (downloads) of the passed eventEntryId
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 
 		if (req.hasParameter("rptType")) { //iCal downloads - url depends on which page of the site they're on
@@ -291,7 +290,7 @@ public class EventCalendarAction extends CourseCalendar {
 	
 	
 	@Override
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		if (!req.hasParameter("cPage")) {
 			super.delete(req);
 			pushToSolr(null);
@@ -307,8 +306,8 @@ public class EventCalendarAction extends CourseCalendar {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void deleteEvent(SMTServletRequest req) throws ActionException {
-		SMTActionInterface sai = new EventFacadeAction(actionInit);
+	private void deleteEvent(ActionRequest req) throws ActionException {
+		ActionInterface sai = new EventFacadeAction(actionInit);
 		sai.setDBConnection(dbConn);
 		sai.setAttributes(attributes);
 		sai.delete(req);

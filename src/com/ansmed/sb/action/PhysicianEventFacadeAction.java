@@ -5,7 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import javax.servlet.http.HttpSession;
+import com.siliconmtn.http.session.SMTSession;
 
 // SB 2.0
 import com.smt.sitebuilder.action.SimpleActionAdapter;
@@ -15,8 +15,8 @@ import com.smt.sitebuilder.common.constants.Constants;
 //SMT Base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionInterface;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
@@ -55,7 +55,7 @@ public class PhysicianEventFacadeAction extends SimpleActionAdapter {
      * @see com.siliconmtn.action.AbstractActionController#build(com.siliconmtn.http.SMTServletRequest)
      */
 	@Override
-    public void build(SMTServletRequest req) throws ActionException {
+    public void build(ActionRequest req) throws ActionException {
 		log.debug("Starting PhysicianEventFacadeAction build action");
 		String action = StringUtil.checkVal(req.getParameter("tabAction"));
 
@@ -67,7 +67,7 @@ public class PhysicianEventFacadeAction extends SimpleActionAdapter {
 		url.append("&surgeonId=").append(req.getParameter("surgeonId"));
 		
 		// Execute the action
-    	SMTActionInterface sai = null;
+    	ActionInterface sai = null;
 		
 		if (action.equalsIgnoreCase("insertAlt")) {
 			// insert the new or updated alternate qualifying data.
@@ -104,15 +104,15 @@ public class PhysicianEventFacadeAction extends SimpleActionAdapter {
      * @see com.siliconmtn.action.AbstractActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
      */
 	@Override
-    public void retrieve(SMTServletRequest req) throws ActionException {
+    public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("Starting PhysEventFacadeAction retrieve...");
 		
-		HttpSession ses = (HttpSession) req.getSession();
+		SMTSession ses = (SMTSession) req.getSession();
     	PhysQualDataVO vo = (PhysQualDataVO) ses.getAttribute(PHYS_QUAL_DATA);
     	
     	String action = StringUtil.checkVal(req.getParameter("tabAction"));
     	
-		SMTActionInterface sai = null;
+		ActionInterface sai = null;
 		
 		if (action.equalsIgnoreCase("editAltData")) {
 			log.debug("action = editAltData");
@@ -227,7 +227,7 @@ public class PhysicianEventFacadeAction extends SimpleActionAdapter {
      * @see com.siliconmtn.action.AbstractActionController#list(com.siliconmtn.http.SMTServletRequest)
      */
 	@Override
-    public void list(SMTServletRequest req) throws ActionException {
+    public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 	
@@ -237,7 +237,7 @@ public class PhysicianEventFacadeAction extends SimpleActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	private String retrieveMostRecentQualSource(SMTServletRequest req) {
+	private String retrieveMostRecentQualSource(ActionRequest req) {
 		
 		final String schema = (String) this.getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		String surgeonId = StringUtil.checkVal(req.getParameter("surgeonId"));

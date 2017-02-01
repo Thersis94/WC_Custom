@@ -13,7 +13,7 @@ import org.apache.log4j.Logger;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
@@ -43,7 +43,7 @@ public class FulfillmentReport implements Report {
 	/* (non-Javadoc)
 	 * @see com.depuy.sitebuilder.datafeed.Report#retrieveReport(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public Object retrieveReport(SMTServletRequest req)
+	public Object retrieveReport(ActionRequest req)
 	throws DatabaseException, InvalidDataException {
 		// Calculate the start date
 		Date start = Convert.formatEndDate(req.getParameter("startDate"));
@@ -95,7 +95,7 @@ public class FulfillmentReport implements Report {
 	 * @param schema
 	 * @return
 	 */
-	protected Map<String, SummaryData> getSummaryData(Date start, Date end, String schema, SMTServletRequest req) {
+	protected Map<String, SummaryData> getSummaryData(Date start, Date end, String schema, ActionRequest req) {
 		
 		String[] codes = req.getParameterValues("callSourceCode");
 		Boolean showCodes = (codes != null && codes.length > 0);

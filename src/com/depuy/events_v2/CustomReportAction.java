@@ -8,14 +8,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.http.HttpSession;
+import com.siliconmtn.http.session.SMTSession;
 
 import com.depuy.events_v2.vo.report.CustomReportVO;
 import com.depuy.events_v2.vo.report.CustomReportVO.FieldList;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -60,9 +60,9 @@ public class CustomReportAction extends SimpleActionAdapter {
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void build(SMTServletRequest req) throws ActionException{
+	public void build(ActionRequest req) throws ActionException{
 		ReqType rt = ReqType.valueOf(StringUtil.checkVal( req.getParameter("reqType")));
-		HttpSession ses = req.getSession();
+		SMTSession ses = req.getSession();
 		UserDataVO usr = (UserDataVO) ses.getAttribute(Constants.USER_DATA);
 		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 		ReportBuilder rb = null;
@@ -133,7 +133,7 @@ public class CustomReportAction extends SimpleActionAdapter {
 	 * @param fields
 	 * @param filters
 	 */
-	private void parseParameters( SMTServletRequest req, Map<FieldList,Integer> fields) {
+	private void parseParameters( ActionRequest req, Map<FieldList,Integer> fields) {
 		//For each valid field, check for values to be collected
 		for (FieldList fl : FieldList.values()) {
 			if (req.hasParameter(fl.getFieldName()))
