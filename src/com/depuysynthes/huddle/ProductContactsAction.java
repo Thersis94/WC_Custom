@@ -7,7 +7,7 @@ import java.util.Map;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.siliconmtn.util.databean.FilePartDataBean;
@@ -41,13 +41,13 @@ public class ProductContactsAction extends SimpleActionAdapter {
 	}
 
 	@Override
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 
 
 	@Override
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 		int saveCnt = 0;
 		
@@ -78,7 +78,7 @@ public class ProductContactsAction extends SimpleActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private int processUpload(SMTServletRequest req) throws ActionException {
+	private int processUpload(ActionRequest req) throws ActionException {
 		int cnt = 0;
 		AnnotationParser parser;
 		FilePartDataBean fpdb = req.getFile("xlsFile");

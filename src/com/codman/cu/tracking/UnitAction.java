@@ -20,7 +20,7 @@ import com.codman.cu.tracking.vo.UnitVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.db.MSSQLRangeQuery;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -86,7 +86,7 @@ public class UnitAction extends SBActionAdapter {
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.action.ActionController#build(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		try {
 			this.saveUnit(new UnitVO(req));
 		} catch (SQLException sqle) {
@@ -242,7 +242,7 @@ public class UnitAction extends SBActionAdapter {
 	 *
 	 * modified 2/13/2012, added city and country to query.
 	 */
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		final String custom_db = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
@@ -437,7 +437,7 @@ public class UnitAction extends SBActionAdapter {
 	}
 
 
-	private void historyReport(SMTServletRequest req, int roleLevel) throws ActionException {
+	private void historyReport(ActionRequest req, int roleLevel) throws ActionException {
 		final String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		List<String> profileIds = new ArrayList<String>();
 		List<UnitVO> data = new ArrayList<UnitVO>();
@@ -567,7 +567,7 @@ public class UnitAction extends SBActionAdapter {
 	}
 
 
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 }

@@ -4,7 +4,7 @@ import java.util.List;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.dealer.DealerLocationVO;
@@ -44,7 +44,7 @@ public class AdminClinicAction extends SBActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		// Retrieve the clinic data
 		String dealerLocationId = StringUtil.checkVal(req.getSession().getAttribute("dealerLocationId"));
 		DealerLocatorAction dla = new DealerLocatorAction(this.actionInit);

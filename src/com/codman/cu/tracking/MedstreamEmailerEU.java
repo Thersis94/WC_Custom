@@ -8,7 +8,7 @@ import com.codman.cu.tracking.vo.PhysicianVO;
 import com.codman.cu.tracking.vo.TransactionVO;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.exception.MailException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
@@ -44,7 +44,7 @@ public class MedstreamEmailerEU extends MedstreamEmailer {
 	 * @param req
 	 * @param vo
 	 */
-	public void submitRequest(SMTServletRequest req, List<UserDataVO> admins, PersonVO rep, 
+	public void submitRequest(ActionRequest req, List<UserDataVO> admins, PersonVO rep, 
 			PhysicianVO phys, TransactionVO trans, AccountVO acct) {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 					
@@ -90,7 +90,7 @@ public class MedstreamEmailerEU extends MedstreamEmailer {
 	 * sends request approval to the customer service rep and admin
 	 * @param req
 	 */
-	public void approveRequestCS(SMTServletRequest req, List<UserDataVO> admins, PersonVO rep, 
+	public void approveRequestCS(ActionRequest req, List<UserDataVO> admins, PersonVO rep, 
 			PhysicianVO phys, TransactionVO trans, AccountVO acct) {
 		//send email to site admin
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
@@ -153,7 +153,7 @@ public class MedstreamEmailerEU extends MedstreamEmailer {
 	 * sends request approval to the rep and alloc
 	 * @param req
 	 */
-	public void approveRequestRep(SMTServletRequest req, List<UserDataVO> alloc, PersonVO rep, 
+	public void approveRequestRep(ActionRequest req, List<UserDataVO> alloc, PersonVO rep, 
 			PhysicianVO phys, TransactionVO trans) {
 		//send email to site admin
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
@@ -201,7 +201,7 @@ public class MedstreamEmailerEU extends MedstreamEmailer {
 	 * @param req
 	 * @param vo
 	 */
-	public void unitShipped(SMTServletRequest req, List<UserDataVO> admins, PersonVO rep, 
+	public void unitShipped(ActionRequest req, List<UserDataVO> admins, PersonVO rep, 
 			PhysicianVO phys, TransactionVO trans, AccountVO acct) {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		
@@ -255,7 +255,7 @@ public class MedstreamEmailerEU extends MedstreamEmailer {
 	}
 	
 	
-	public void requestDeclined(SMTServletRequest req, List<UserDataVO> admins, 
+	public void requestDeclined(ActionRequest req, List<UserDataVO> admins, 
 			PersonVO rep, TransactionVO trans, AccountVO acct, PhysicianVO phys) {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		

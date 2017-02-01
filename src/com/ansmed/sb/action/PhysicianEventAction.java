@@ -4,12 +4,12 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Calendar;
 
-import javax.servlet.http.HttpSession;
+import com.siliconmtn.http.session.SMTSession;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionInterface;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -53,7 +53,7 @@ public class PhysicianEventAction extends SimpleActionAdapter {
      * @see com.siliconmtn.action.AbstractActionController#build(com.siliconmtn.http.SMTServletRequest)
      */
 	@Override
-    public void build(SMTServletRequest req) throws ActionException {
+    public void build(ActionRequest req) throws ActionException {
 		log.debug("starting PhysicianEventAction build action");
 		String action = StringUtil.checkVal(req.getParameter("action"));
 		final String schema = (String) this.getAttribute(Constants.CUSTOM_DB_SCHEMA);
@@ -62,7 +62,7 @@ public class PhysicianEventAction extends SimpleActionAdapter {
 		if (action.equalsIgnoreCase("nominate")) {
 			
 			//determine data source used for the nomination and set value.
-			HttpSession ses = (HttpSession) req.getSession();
+			SMTSession ses = (SMTSession) req.getSession();
 			boolean altData = ((PhysQualDataVO) ses.getAttribute(PHYS_QUAL_DATA)).getIsAltData();
 			String source = "";
 			if (altData) {
@@ -105,7 +105,7 @@ public class PhysicianEventAction extends SimpleActionAdapter {
 	    		req.setParameter(EventFacadeAction.USER_SIGNUP, "true");
 				
 				//pass-through users signing up for individual events (not eventTypes)
-				SMTActionInterface ai = new UserEventAction(actionInit);
+				ActionInterface ai = new UserEventAction(actionInit);
 				ai.setDBConnection(dbConn);
 				ai.setAttributes(attributes);
 				ai.build(req);
@@ -135,7 +135,7 @@ public class PhysicianEventAction extends SimpleActionAdapter {
     		req.setAttribute(EventFacadeAction.STATUS_OVERRIDE, EventFacadeAction.STATUS_APPROVED);
 			
 			//pass-through users signing up for individual events (not eventTypes)
-			SMTActionInterface ai = new UserEventAction(actionInit);
+			ActionInterface ai = new UserEventAction(actionInit);
 			ai.setDBConnection(dbConn);
 			ai.setAttributes(attributes);
 			ai.build(req);
@@ -169,9 +169,9 @@ public class PhysicianEventAction extends SimpleActionAdapter {
      * @see com.siliconmtn.action.AbstractActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
      */
 	@Override
-    public void retrieve(SMTServletRequest req) throws ActionException {
+    public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("Starting PhysEventAction retrieve...");
-		HttpSession ses = (HttpSession) req.getSession();
+		SMTSession ses = (SMTSession) req.getSession();
     	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
     	PhysQualDataVO vo = (PhysQualDataVO) ses.getAttribute(PHYS_QUAL_DATA);
     	
@@ -186,7 +186,7 @@ public class PhysicianEventAction extends SimpleActionAdapter {
     	//THIS CONDITIONAL CHECK HAD TO BE REMOVED BECAUSE WE CAN'T TELL WHEN/IF THE
     	//SCS USAGE DATA OR SCS_START_DT FIELDS HAVE BEEN CHANGED ONCE THIS DATA IS 
     	//STORED IN THE SESSION - JM 07-22-09
-			SMTActionInterface pqda = null;
+			ActionInterface pqda = null;
 			
 			// If alternate qualifying data was requested, retrieve it.
 			if (useAltData || useAltQualData || vo.getIsAltData()) {
@@ -219,7 +219,7 @@ public class PhysicianEventAction extends SimpleActionAdapter {
 			String oldActionId = mod.getActionId();
 			actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 			
-			SMTActionInterface ai = new EventFacadeAction(actionInit);
+			ActionInterface ai = new EventFacadeAction(actionInit);
 			ai.setDBConnection(dbConn);
 			ai.setAttributes(attributes);
 			ai.retrieve(req);
@@ -242,7 +242,7 @@ public class PhysicianEventAction extends SimpleActionAdapter {
      * @see com.siliconmtn.action.AbstractActionController#list(com.siliconmtn.http.SMTServletRequest)
      */
 	@Override
-    public void list(SMTServletRequest req) throws ActionException {
+    public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 	

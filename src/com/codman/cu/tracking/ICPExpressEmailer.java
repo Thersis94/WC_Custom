@@ -11,7 +11,7 @@ import com.codman.cu.tracking.vo.PersonVO;
 import com.codman.cu.tracking.vo.TransactionVO;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.exception.DatabaseException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
@@ -50,7 +50,7 @@ public class ICPExpressEmailer extends MedstreamEmailer {
 		super(arg0);
 	}
 
-	public void sendTransactionMessage(SMTServletRequest req, TransactionVO trans) {
+	public void sendTransactionMessage(ActionRequest req, TransactionVO trans) {
 		AccountVO acct = retrieveAccount(trans.getAccountId());
 
 		//lookup rep information
@@ -83,7 +83,7 @@ public class ICPExpressEmailer extends MedstreamEmailer {
 	 * @param acct
 	 */
 	@SuppressWarnings("incomplete-switch")
-	public void sendTransactionMessage(SMTServletRequest req, TransactionVO trans, AccountVO acct) {
+	public void sendTransactionMessage(ActionRequest req, TransactionVO trans, AccountVO acct) {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		PersonVO rep = acct.getRep();
 
@@ -127,7 +127,7 @@ public class ICPExpressEmailer extends MedstreamEmailer {
 	 * @param phys
 	 * @param trans
 	 */
-	private void newOrderInit(SMTServletRequest req, List<String> admins, 
+	private void newOrderInit(ActionRequest req, List<String> admins, 
 			PersonVO rep, TransactionVO trans, SiteVO site, AccountVO acct){
 
 		StringBuilder subject = new StringBuilder();
@@ -172,7 +172,7 @@ public class ICPExpressEmailer extends MedstreamEmailer {
 	 * @param phys
 	 * @param trans
 	 */
-	private void newOrderShipped(SMTServletRequest req, List<String> admins, PersonVO rep,
+	private void newOrderShipped(ActionRequest req, List<String> admins, PersonVO rep,
 			TransactionVO trans, SiteVO site, AccountVO acct){
 		StringBuilder subject = new StringBuilder();
 		subject.append("Information for your ICP Express Unit: Request# ").append(trans.getRequestNo());
@@ -218,7 +218,7 @@ public class ICPExpressEmailer extends MedstreamEmailer {
 	 * @param phys
 	 * @param trans
 	 */
-	private void repairInitiated(SMTServletRequest req, List<String> admins, 
+	private void repairInitiated(ActionRequest req, List<String> admins, 
 			PersonVO rep, TransactionVO trans, SiteVO site, AccountVO acct){
 
 		if (trans.getCreateDate() == null)
@@ -266,7 +266,7 @@ public class ICPExpressEmailer extends MedstreamEmailer {
 	 * @param phys
 	 * @param trans
 	 */
-	private void repairReceived(SMTServletRequest req, List<String> admins, 
+	private void repairReceived(ActionRequest req, List<String> admins, 
 			PersonVO rep, TransactionVO trans, SiteVO site, AccountVO acct) {
 
 		StringBuilder subject = new StringBuilder(200);
@@ -310,7 +310,7 @@ public class ICPExpressEmailer extends MedstreamEmailer {
 	 * @param phys
 	 * @param trans
 	 */
-	private void repairPartialRefund(SMTServletRequest req, List<String> admins, 
+	private void repairPartialRefund(ActionRequest req, List<String> admins, 
 			PersonVO rep, TransactionVO trans, SiteVO site, AccountVO acct) {
 
 		StringBuilder subject = new StringBuilder(200);
@@ -354,7 +354,7 @@ public class ICPExpressEmailer extends MedstreamEmailer {
 	 * @param phys
 	 * @param trans
 	 */
-	private void repairComplete(SMTServletRequest req, List<String> admins, 
+	private void repairComplete(ActionRequest req, List<String> admins, 
 			PersonVO rep, TransactionVO trans, SiteVO site, AccountVO acct) {
 
 		StringBuilder subject = new StringBuilder(200);
@@ -396,7 +396,7 @@ public class ICPExpressEmailer extends MedstreamEmailer {
 	 * @param phys
 	 * @param trans
 	 */
-	private void repairSentToEDC(SMTServletRequest req, List<String> admins, 
+	private void repairSentToEDC(ActionRequest req, List<String> admins, 
 			PersonVO rep, TransactionVO trans,  SiteVO site, AccountVO acct) {
 
 		StringBuilder subject = new StringBuilder(80);
@@ -440,7 +440,7 @@ public class ICPExpressEmailer extends MedstreamEmailer {
 	 * @param phys
 	 * @param trans
 	 */
-	private void repairSentToRep(SMTServletRequest req, List<String> admins, PersonVO rep,
+	private void repairSentToRep(ActionRequest req, List<String> admins, PersonVO rep,
 			TransactionVO trans, SiteVO site, AccountVO acct) {
 
 		StringBuilder subject = new StringBuilder(200);

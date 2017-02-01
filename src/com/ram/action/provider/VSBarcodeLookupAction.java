@@ -20,7 +20,7 @@ import com.siliconmtn.barcode.BarcodeItemVO;
 import com.siliconmtn.barcode.BarcodeItemVO.BarcodeType;
 import com.siliconmtn.barcode.BarcodeManager;
 import com.siliconmtn.barcode.BarcodeOEM;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -66,7 +66,7 @@ public class VSBarcodeLookupAction extends SBActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 
 		SBUserRole r = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 
@@ -261,7 +261,7 @@ public class VSBarcodeLookupAction extends SBActionAdapter {
 		return sql.toString();
 	}
 
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		super.list(req);
 	}
 }

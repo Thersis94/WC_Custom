@@ -3,8 +3,8 @@ package com.ansmed.sb.locator;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionInterface;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
@@ -45,8 +45,8 @@ public class LocatorFacadeAction extends SimpleActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#list(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void list(SMTServletRequest req) throws ActionException {
-		SMTActionInterface sbac = null;
+	public void list(ActionRequest req) throws ActionException {
+		ActionInterface sbac = null;
         sbac = new SurgeonLocatorAction(actionInit);
         sbac.setAttributes(this.attributes);
         sbac.setDBConnection(dbConn);
@@ -57,8 +57,8 @@ public class LocatorFacadeAction extends SimpleActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
-		SMTActionInterface sbac = null;
+	public void retrieve(ActionRequest req) throws ActionException {
+		ActionInterface sbac = null;
         
         if ( StringUtil.checkVal(req.getParameter("surgeonId")).length() == 0) {
         	sbac = new LocatorSearchAction(actionInit);

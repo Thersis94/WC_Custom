@@ -6,7 +6,7 @@ import java.sql.SQLException;
 import java.util.List;
 
 // J2EE
-import javax.servlet.http.HttpSession;
+import com.siliconmtn.http.session.SMTSession;
 
 // JCaptcha
 import com.octo.captcha.service.image.ImageCaptchaService;
@@ -14,10 +14,10 @@ import com.octo.captcha.service.image.ImageCaptchaService;
 // SMT BAseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.MailException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.security.AbstractRoleModule;
 import com.siliconmtn.security.UserDataVO;
@@ -74,7 +74,7 @@ public class RegisterClinicAction extends SBActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 		log.debug("************ " + mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 		
@@ -85,7 +85,7 @@ public class RegisterClinicAction extends SBActionAdapter {
 			ActionInitVO ai = new ActionInitVO();
 			ai.setActionId((String) mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 			ai.setName(actionInit.getName());
-			SMTActionInterface sai = new DealerLocatorAction(ai);
+			ActionInterface sai = new DealerLocatorAction(ai);
 			sai.setAttributes(attributes);
 			sai.setDBConnection(dbConn);
 			sai.retrieve(req);
@@ -96,7 +96,7 @@ public class RegisterClinicAction extends SBActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		log.debug("Starting Clinic Build Action: " + req.getParameter("adminPhone"));
 		String msg = "You have successfully updated the clinic.";
 		Boolean adminSubmitted = Convert.formatBoolean(req.getParameter("adminSubmitted"));
@@ -150,9 +150,9 @@ public class RegisterClinicAction extends SBActionAdapter {
 	 * @param req
 	 * @return Returns true if captcha response is valid.  Otherwise, returns false.
 	 */
-	private boolean validateCaptcha(SMTServletRequest req) {
+	private boolean validateCaptcha(ActionRequest req) {
 		log.debug("verifying captcha");
-		HttpSession ses = req.getSession();
+		SMTSession ses = req.getSession();
 		boolean isValid = false;
 		ImageCaptchaService service = CaptchaServiceSingleton.getInstance();
 		if (service.validateResponseForID(ses.getId(), req.getParameter("captchaText"))) {
@@ -168,7 +168,7 @@ public class RegisterClinicAction extends SBActionAdapter {
 	 * @param adminSubmitted
 	 * @param isValidCaptcha
 	 */
-	private void manageSessionBean(SMTServletRequest req, boolean isBuild, boolean isValidCaptcha) {
+	private void manageSessionBean(ActionRequest req, boolean isBuild, boolean isValidCaptcha) {
 		if (isBuild) {
 			// build op, remove stale bean
 			req.getSession().removeAttribute(CLINIC_FORM_VALUES);
@@ -194,7 +194,7 @@ public class RegisterClinicAction extends SBActionAdapter {
 	 * @param req
 	 * @throws MailException
 	 */
-	public void sendEmail(SMTServletRequest req) throws MailException {
+	public void sendEmail(ActionRequest req) throws MailException {
 		// Share the data form the dmin approval action
 		AdminApprovalAction aaa = new AdminApprovalAction(this.actionInit);
 		aaa.setAttributes(attributes);
@@ -243,7 +243,7 @@ public class RegisterClinicAction extends SBActionAdapter {
 	 * @param req
 	 * @throws DatabaseException 
 	 */
-	public void assignUserData(SMTServletRequest req, String dlid) 
+	public void assignUserData(ActionRequest req, String dlid) 
 	throws DatabaseException {
 		log.debug("assigning user data");
 		
@@ -284,7 +284,7 @@ public class RegisterClinicAction extends SBActionAdapter {
 	 * @param req
 	 * @throws DatabaseException
 	 */
-	public void addRole(SMTServletRequest req, String profileId, String dlid) 
+	public void addRole(ActionRequest req, String profileId, String dlid) 
 	throws DatabaseException {
 		String siteId = ((SiteVO)req.getAttribute(Constants.SITE_DATA)).getSiteId();
 		if (this.isRoleAssigned(profileId, siteId)) return;
@@ -324,7 +324,7 @@ public class RegisterClinicAction extends SBActionAdapter {
 	 * @throws DatabaseException 
 	 * @throws Exception
 	 */
-	public String addDealerLocation(SMTServletRequest req) 
+	public String addDealerLocation(ActionRequest req) 
 	throws ActionException, SQLException, DatabaseException {
 		DealerInfoAction sai = new DealerInfoAction(this.actionInit);
 		String dealerLocationId = new UUIDGenerator().getUUID();
@@ -358,7 +358,7 @@ public class RegisterClinicAction extends SBActionAdapter {
 	 * Adds the extended clinic data
 	 * @param req
 	 */
-	public void updateClinicParams(SMTServletRequest req, String id) {
+	public void updateClinicParams(ActionRequest req, String id) {
 		StringBuilder s = new StringBuilder();
 		s.append("update dealer_location set cass_validate_flg = ?, ");
 		s.append("bar_code_id = ? where dealer_location_id = ?");
@@ -383,7 +383,7 @@ public class RegisterClinicAction extends SBActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		super.update(req);
 	}
 	

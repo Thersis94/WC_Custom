@@ -10,7 +10,7 @@ import java.util.Map;
 // SMTBaseLibs 2.0
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
 
 // WebCrescendo 2.0
@@ -47,7 +47,7 @@ public class ProductAttributesRetriever extends SimpleActionAdapter {
 	 * and the parent (product attribute) ID passed on the request.  Returns
 	 * a List of ProductAttributeVOs representing the attributes in the hierarchy.
 	 */
-	public void retrieve(SMTServletRequest req) {
+	public void retrieve(ActionRequest req) {
 		String productId = StringUtil.checkVal(req.getParameter("productId"));
 		String parentId = StringUtil.checkVal(req.getParameter("parentId"));
 		String childLevel = StringUtil.checkVal(req.getParameter("childLevel"));
@@ -91,7 +91,7 @@ public class ProductAttributesRetriever extends SimpleActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	private String parseProductPrefix(SMTServletRequest req) {
+	private String parseProductPrefix(ActionRequest req) {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		return site.getSiteId() + "_";
 	}

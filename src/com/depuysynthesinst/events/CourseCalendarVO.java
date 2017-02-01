@@ -5,7 +5,7 @@ import java.sql.ResultSet;
 import com.siliconmtn.annotations.DataType;
 import com.siliconmtn.annotations.DatabaseColumn;
 import com.siliconmtn.annotations.Importable;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.smt.sitebuilder.action.event.vo.EventEntryVO;
 
 /*****************************************************************************
@@ -39,7 +39,7 @@ public class CourseCalendarVO extends EventEntryVO {
 	/**
 	 * @param req
 	 */
-	public CourseCalendarVO(SMTServletRequest req) {
+	public CourseCalendarVO(ActionRequest req) {
 		super(req);
 	}
 

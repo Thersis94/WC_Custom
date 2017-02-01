@@ -5,7 +5,7 @@ package com.codman.cu.tracking.vo;
 
 import java.io.Serializable;
 
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
@@ -28,7 +28,7 @@ public class UserSearchVO implements Serializable {
 	private String orderBy = null;
 	public static final String SESSION_VAR = "CodmanCUSearchVO";
 	
-	public UserSearchVO(SMTServletRequest req) {
+	public UserSearchVO(ActionRequest req) {
 		if (req.getParameter("sBtn") != null) { //indicates a search was performed
 			lastName = StringUtil.checkVal(req.getParameter("sLastName"), null);
 			emailAddress = StringUtil.checkVal(req.getParameter("sEmailAddress"), null);

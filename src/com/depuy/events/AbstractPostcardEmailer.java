@@ -7,7 +7,7 @@ import java.util.Map;
 import org.apache.log4j.Logger;
 
 import com.depuy.events.vo.DePuyEventPostcardVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 
 // SB Libs
@@ -50,27 +50,27 @@ public abstract class AbstractPostcardEmailer  {
 	 * sends event approval request to the site administrator
 	 * @param req
 	 */
-	public abstract void sendApprovalRequest(SMTServletRequest req);
+	public abstract void sendApprovalRequest(ActionRequest req);
 
 	/**
 	 * sends event owner notification their event/postcard was approved
 	 * @param req
 	 */
-	public abstract void sendApprovedResponse(SMTServletRequest req);
+	public abstract void sendApprovedResponse(ActionRequest req);
 	
 	/**
 	 * send vendor and DePuy PMs an email with postcard info/layout and critical dates
 	 * @param req
 	 * @param eventPostcardId
 	 */
-	public abstract void sendVendorSummary(SMTServletRequest req);
+	public abstract void sendVendorSummary(ActionRequest req);
 	
 	
 	/**
 	 * send DePuy TGMs and sales rep an email with postcard info and authorization approvals
 	 * @param req
 	 */
-	public abstract void sendPreAuthPaperwork(SMTServletRequest req);
+	public abstract void sendPreAuthPaperwork(ActionRequest req);
 	
 	
 	/**
@@ -78,7 +78,7 @@ public abstract class AbstractPostcardEmailer  {
 	 * @param req
 	 * @param eventPostcardId
 	 */
-	public abstract void sendPostcardCancellation(SMTServletRequest req);
+	public abstract void sendPostcardCancellation(ActionRequest req);
 	
 	
 	protected Object getAttribute(String nm) {

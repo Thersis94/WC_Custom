@@ -23,7 +23,7 @@ import com.ram.datafeed.data.RAMProductVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.db.orm.DBProcessor;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.imageMap.FabricParserInterface;
@@ -75,7 +75,7 @@ public class VisionAction extends SBActionAdapter {
 	}
 
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 
 		if(req.hasParameter("exportBOM")) {
 			sendReport(Convert.formatInteger(req.getParameter("productId")), req);
@@ -439,7 +439,7 @@ public class VisionAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	public void sendReport(int productId, SMTServletRequest req) throws ActionException {
+	public void sendReport(int productId, ActionRequest req) throws ActionException {
 		KitBOMPdfReport report;
 		RAMProductVO p = getProduct(productId);
 		p.setKitLayers(loadKitLayers(p));

@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
@@ -43,7 +43,7 @@ public class MobileCollectionActionData extends SBActionAdapter{
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void retrieve(SMTServletRequest req){
+	public void retrieve(ActionRequest req){
 		log.debug("Attempting to retrieve");
 	}
 	
@@ -51,7 +51,7 @@ public class MobileCollectionActionData extends SBActionAdapter{
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void update(SMTServletRequest req){
+	public void update(ActionRequest req){
 		practiceTable = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA) + "sjm_mobile_practice";
 		goalsTable = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA) + "sjm_mobile_goals";
 		templateTable = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA) + "sjm_mobile_template_practice";	
@@ -97,7 +97,7 @@ public class MobileCollectionActionData extends SBActionAdapter{
 	 * @param req
 	 * @param vo
 	 */
-	public void getGoalData(SMTServletRequest req, MobileDataVO vo) {
+	public void getGoalData(ActionRequest req, MobileDataVO vo) {
 		StringBuffer sql = new StringBuffer();
 		sql.append("select new_practice, rebrand_practice, consolidate, overall_patients, ");
 		sql.append("interventional, hcp_patients from ").append(goalsTable).append(" where goal_id = ?");
@@ -131,7 +131,7 @@ public class MobileCollectionActionData extends SBActionAdapter{
 	 * @param req
 	 * @param vo
 	 */
-	public void getTemplateData(SMTServletRequest req, MobileDataVO vo) {
+	public void getTemplateData(ActionRequest req, MobileDataVO vo) {
 		StringBuffer sql = new StringBuffer();
 		
 		/******************************************
@@ -180,7 +180,7 @@ public class MobileCollectionActionData extends SBActionAdapter{
 	 * @param req
 	 * @param vo
 	 */
-	public void getPracticeData(SMTServletRequest req, MobileDataVO vo){
+	public void getPracticeData(ActionRequest req, MobileDataVO vo){
 		StringBuffer sql = new StringBuffer();
 		sql.append("select primary_contact_name, primary_contact_email, ");
 		sql.append("primary_contact_phone, primary_contact_title, alt_contact_name, ");

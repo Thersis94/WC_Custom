@@ -10,7 +10,7 @@ import java.util.List;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.PhoneVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -48,7 +48,7 @@ public class PhysicianPhoneAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#delete(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		log.debug("Deleting clinic phone data...");
 		String schema = (String)getAttribute("customDbSchema");
 		StringBuffer sql = new StringBuffer();
@@ -74,7 +74,7 @@ public class PhysicianPhoneAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		String schema = (String)getAttribute("customDbSchema");
 		StringBuffer sql = new StringBuffer();
 		sql.append("select a.phone_number_txt, a.phone_type_id, type_nm from ");
@@ -123,7 +123,7 @@ public class PhysicianPhoneAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#update(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		log.debug("Updating phone numbers for the clinic");
 		
 		// Updating phone 2 step process.  

@@ -11,7 +11,7 @@ import org.apache.solr.common.SolrDocument;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBModuleVO;
@@ -56,11 +56,11 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 		super(arg0);
 	}
 
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		//determine if custom sort is needed
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		String sortType = StringUtil.checkVal(req.getParameter("fieldSort"));
@@ -121,7 +121,7 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 	 * @param resp
 	 * @param req
 	 */
-	private void applyPageData(SolrDocument doc, SMTServletRequest req) {
+	private void applyPageData(SolrDocument doc, ActionRequest req) {
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		page.setTitleName(StringUtil.checkVal(doc.getFieldValue("title"), page.getTitleName()));
 		//set a canonical that points to the first proclaimed hierarchy level
@@ -136,7 +136,7 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void sortByFavorite(SolrResponseVO resp, SMTServletRequest req, Integer pageNo) 
+	private void sortByFavorite(SolrResponseVO resp, ActionRequest req, Integer pageNo) 
 			throws ActionException {
 		Collection<String> favs = loadFavorites(req);
 
@@ -161,7 +161,7 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void sortByPopular(SolrResponseVO resp, SMTServletRequest req, Integer pageNo) 
+	private void sortByPopular(SolrResponseVO resp, ActionRequest req, Integer pageNo) 
 			throws ActionException {
 		Map<String, Integer> favs = loadPageViews(req);
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
@@ -192,7 +192,7 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 	 * (since the user is interested in this type of sort).
 	 */
 	@SuppressWarnings("unchecked")
-	private Collection<String> loadFavorites(SMTServletRequest req) throws ActionException {
+	private Collection<String> loadFavorites(ActionRequest req) throws ActionException {
 		if (req.getSession().getAttribute(FAVORITES) != null)
 			return (List<String>) req.getSession().getAttribute(FAVORITES);
 
@@ -224,7 +224,7 @@ public class SolrSearchWrapper extends SimpleActionAdapter {
 	 * @throws ActionException
 	 */
 	@SuppressWarnings("unchecked")
-	private Map<String, Integer> loadPageViews(SMTServletRequest req) throws ActionException {
+	private Map<String, Integer> loadPageViews(ActionRequest req) throws ActionException {
 		//check for cached data
 		if (req.getSession().getAttribute(PAGEVIEWS) != null)
 			return (Map<String, Integer>) req.getSession().getAttribute(PAGEVIEWS);

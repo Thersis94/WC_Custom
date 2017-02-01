@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.ram.action.workflow;
 
 import java.sql.PreparedStatement;
@@ -9,10 +6,10 @@ import java.sql.SQLException;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.workflow.data.BaseDBReqVO;
 import com.smt.sitebuilder.action.AbstractBaseAction;
@@ -51,17 +48,17 @@ public abstract class AbstractWorkflowAction extends AbstractBaseAction {
 	}
 
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		//Not Implemented
 	}
 
 	@Override
-	public void copy(SMTServletRequest req) throws ActionException {
+	public void copy(ActionRequest req) throws ActionException {
 		//Not Implemented
 	}
 
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		//Not Implemented
 	}
 
@@ -119,7 +116,7 @@ public abstract class AbstractWorkflowAction extends AbstractBaseAction {
 		return inUse;
 	}
 	
-	protected void setRedirect(SMTServletRequest req, String msg) {
+	protected void setRedirect(ActionRequest req, String msg) {
 		//Build Redirect
 		StringBuilder pg = new StringBuilder(125);
 		pg.append("/").append(getAttribute(Constants.CONTEXT_NAME));
@@ -136,6 +133,6 @@ public abstract class AbstractWorkflowAction extends AbstractBaseAction {
 		req.setAttribute(Constants.REDIRECT_URL, pg.toString());
 	}
 
-	protected abstract String buildRedirectSupplement(SMTServletRequest req);
+	protected abstract String buildRedirectSupplement(ActionRequest req);
 	protected abstract String getInUseSql();
 }

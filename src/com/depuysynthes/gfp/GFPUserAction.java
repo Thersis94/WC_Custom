@@ -10,7 +10,7 @@ import java.util.Map;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.exception.DatabaseException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
@@ -43,7 +43,7 @@ import com.smt.sitebuilder.security.UserLogin;
 public class GFPUserAction extends SBActionAdapter {
 	
 	
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		String userId = StringUtil.checkVal(req.getParameter("userId"));
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
@@ -129,7 +129,7 @@ public class GFPUserAction extends SBActionAdapter {
 	}
 	
 
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		StringBuilder sql = new StringBuilder(75);
 		
 		sql.append("DELETE ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
@@ -145,7 +145,7 @@ public class GFPUserAction extends SBActionAdapter {
 	}
 	
 
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		StringBuilder sql = new StringBuilder(175);

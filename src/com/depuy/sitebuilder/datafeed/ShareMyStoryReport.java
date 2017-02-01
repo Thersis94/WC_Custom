@@ -10,7 +10,7 @@ import org.apache.log4j.Logger;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 
 /****************************************************************************
@@ -49,7 +49,7 @@ public class ShareMyStoryReport implements Report {
 	 * @see com.depuy.sitebuilder.datafeed.Report#retrieveReport(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public Object retrieveReport(SMTServletRequest req) throws DatabaseException, InvalidDataException {
+	public Object retrieveReport(ActionRequest req) throws DatabaseException, InvalidDataException {
 		final String dfSchema = ReportFacadeAction.DF_SCHEMA;
 		log.debug("Retrieving ShareMyStory Report: " + dfSchema);
 		

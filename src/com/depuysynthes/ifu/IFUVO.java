@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.approval.Approvable;
 import com.smt.sitebuilder.approval.ApprovalVO;
@@ -43,7 +43,7 @@ public class IFUVO implements Approvable {
 		ifuDocuments = new HashMap<String, IFUDocumentVO>();
 	}
 	
-	public IFUVO(SMTServletRequest req) {
+	public IFUVO(ActionRequest req) {
 		this();
 		this.setIfuId(req.getParameter("ifuId"));
 		this.setIfuGroupId(req.getParameter("ifuGroupId"));

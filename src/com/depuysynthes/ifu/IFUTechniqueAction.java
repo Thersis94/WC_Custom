@@ -8,7 +8,7 @@ import java.util.List;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -43,7 +43,7 @@ public class IFUTechniqueAction extends SBActionAdapter {
 	/**
 	 * Determine if we are getting all the technique guides or just one
 	 */
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		if (req.hasParameter("tgId") || req.hasParameter("add")) {
 			getSingleTechniqueGuide(req);
 		} else {
@@ -57,7 +57,7 @@ public class IFUTechniqueAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void getSingleTechniqueGuide(SMTServletRequest req) {
+	private void getSingleTechniqueGuide(ActionRequest req) {
 		String tgId = req.getParameter("tgId");
 		log.debug("Getting single technique guide with id: " + tgId);
 		
@@ -101,7 +101,7 @@ public class IFUTechniqueAction extends SBActionAdapter {
 	 * Get all the technique guides for the current IFU document instance.
 	 * @param req
 	 */
-	private void getAllTechniqueGuides(SMTServletRequest req) {
+	private void getAllTechniqueGuides(ActionRequest req) {
 		String instanceId = req.getParameter("documentId");
 		log.debug("Getting all technique guides for document instance: " + instanceId);
 		String sql = buildListSql();
@@ -139,7 +139,7 @@ public class IFUTechniqueAction extends SBActionAdapter {
 	/**
 	 * Delete the supplied technique guide
 	 */
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		String tgId = req.getParameter("tgId");
@@ -165,7 +165,7 @@ public class IFUTechniqueAction extends SBActionAdapter {
 	 * to a vo based update method then redirect the user to the technique guide's
 	 * parent IFU document instance
 	 */
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 		try {
 			this.update(new IFUTechniqueGuideVO(req));
@@ -271,7 +271,7 @@ public class IFUTechniqueAction extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	private String buildRedirect(SMTServletRequest req) {
+	private String buildRedirect(ActionRequest req) {
 		StringBuilder redirect = new StringBuilder(100);
 		redirect.append(getAttribute(AdminConstants.ADMIN_TOOL_PATH));
 		redirect.append("?facadeType=instance");

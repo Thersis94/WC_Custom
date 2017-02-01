@@ -22,7 +22,7 @@ import org.apache.log4j.Logger;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
@@ -53,7 +53,7 @@ public class TollFreeSourceReport implements Report {
 	/* (non-Javadoc)
 	 * @see com.depuy.sitebuilder.datafeed.Report#retrieveReport(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public Object retrieveReport(SMTServletRequest req)
+	public Object retrieveReport(ActionRequest req)
 	throws DatabaseException, InvalidDataException {
 		log.debug("Starting Toll Free Source Report");
 		

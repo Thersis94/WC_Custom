@@ -8,7 +8,7 @@ import java.sql.SQLException;
 import com.codman.cu.tracking.vo.UnitVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.UUIDGenerator;
 
@@ -45,7 +45,7 @@ public class UnitLedgerAction extends SBActionAdapter {
 	 * 
 	 * updates all existing ledger entries tied to this Unit and sets the activeFlag=0 (inactive)
 	 */
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		StringBuffer sql = new StringBuffer();
 		sql.append("update ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("codman_cu_unit_ledger set active_record_flg=0 where unit_id=?");
@@ -65,7 +65,7 @@ public class UnitLedgerAction extends SBActionAdapter {
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.action.ActionController#update(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		int unitCnt = Convert.formatInteger(req.getParameter("unitCnt"), 1);
 		String transactionId = req.getParameter("transactionId");
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);

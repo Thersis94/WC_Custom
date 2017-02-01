@@ -19,8 +19,8 @@ import com.ansmed.sb.physician.SurgeonVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionInterface;
+import com.siliconmtn.action.ActionRequest;
 
 // SB Libs
 import com.smt.sitebuilder.action.gis.MapAction;
@@ -58,7 +58,7 @@ public class SurgeonDetailAction extends SBActionAdapter {
 	}
 
 
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		// Setup the map info
 		MapVO map = new MapVO();
 		map.setMapZoomFlag(true);
@@ -85,7 +85,7 @@ public class SurgeonDetailAction extends SBActionAdapter {
 	
 	
 	@SuppressWarnings("unchecked")
-	public void getData(SMTServletRequest req) 
+	public void getData(ActionRequest req) 
 	throws ActionException {
 		log.debug("Getting the detail info for a surgeon");
 		int count = 0;
@@ -113,7 +113,7 @@ public class SurgeonDetailAction extends SBActionAdapter {
 				vo = new SurgeonVO(rs);
 				
 				// Get the Clinic Info
-				SMTActionInterface ca = new PhysicianClinicAction(this.actionInit);
+				ActionInterface ca = new PhysicianClinicAction(this.actionInit);
 				ca.setAttributes(this.attributes);
 				ca.setDBConnection(dbConn);
 				ca.retrieve(req);
@@ -121,7 +121,7 @@ public class SurgeonDetailAction extends SBActionAdapter {
 				vo.setClinics(clinics);
 				
 				// Get the Staff Info
-				SMTActionInterface sa = new PhysicianStaffAction(this.actionInit);
+				ActionInterface sa = new PhysicianStaffAction(this.actionInit);
 				sa.setAttributes(this.attributes);
 				sa.setDBConnection(dbConn);
 				sa.retrieve(req);
@@ -130,7 +130,7 @@ public class SurgeonDetailAction extends SBActionAdapter {
 				
 				// Get the Documents Info
 				log.debug("Getting docs:");
-				SMTActionInterface pd = new PhysicianDocumentAction(this.actionInit);
+				ActionInterface pd = new PhysicianDocumentAction(this.actionInit);
 				pd.setAttributes(this.attributes);
 				pd.setDBConnection(dbConn);
 				pd.retrieve(req);
@@ -156,7 +156,7 @@ public class SurgeonDetailAction extends SBActionAdapter {
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.action.AbstractActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void retrieve1(SMTServletRequest req) throws ActionException {
+	public void retrieve1(ActionRequest req) throws ActionException {
 		log.debug("Retrieving full surgeon information");
 		String dbSch = (String)this.getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuffer sql = new StringBuffer();
