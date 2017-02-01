@@ -80,7 +80,7 @@ public class SectionVO implements Serializable {
 	/**
 	 * @return the parentId
 	 */
-	@Column(name="PARENT_ID", isReadOnly=true)
+	@Column(name="PARENT_ID")
 	public String getParentId() {
 		return parentId;
 	}
@@ -101,7 +101,7 @@ public class SectionVO implements Serializable {
 	/**
 	 * @return the solrTokenTxt
 	 */
-	@Column(name="SOLR_TOKEN_TXT", isReadOnly=true)
+	@Column(name="SOLR_TOKEN_TXT")
 	public String getSolrTokenTxt() {
 		return solrTokenTxt;
 	}
