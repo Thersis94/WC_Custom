@@ -7,14 +7,13 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.servlet.http.HttpSession;
 
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.security.StringEncrypter;
-
 // WebCrescendo libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -53,10 +52,10 @@ public class UserActivityAction extends SBActionAdapter {
 	}
 	
 	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.ActionRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		
@@ -93,10 +92,10 @@ public class UserActivityAction extends SBActionAdapter {
 	 * @param siteId
 	 * @throws ActionException
 	 */
-	private void checkSecurity(SMTServletRequest req, String siteId) throws ActionException {
+	private void checkSecurity(ActionRequest req, String siteId) throws ActionException {
 		StringBuilder errMsg = new StringBuilder(100);
 		errMsg.append("Active session monitoring access not authorized.");
-		HttpSession sess = req.getSession();
+		SMTSession sess = req.getSession();
 		if (sess == null) {
 			errMsg.append(" Invalid session.");
 			throw new ActionException(errMsg.toString());
@@ -118,7 +117,7 @@ public class UserActivityAction extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	private String parseSiteId(SMTServletRequest req) {
+	private String parseSiteId(ActionRequest req) {
 		if (req.hasParameter("siteId")) {
 			return req.getParameter("siteId");
 		} else {
