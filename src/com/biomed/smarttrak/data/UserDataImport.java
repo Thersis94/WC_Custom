@@ -48,12 +48,18 @@ import com.smt.sitebuilder.security.UserLogin;
 public class UserDataImport extends ProfileImport {
 
 	private Map<String,String> regFieldMap;
-	private final String GEOCODE_CLASS="com.siliconmtn.gis.SMTGeocoder";
-	private final String GEOCODE_URL="http://localhost:9000/websvc/geocoder";
-	private final String REGISTRATION_PAGE_URL = "http://smarttrak.siliconmtn.com/my-account";
-	private static String FILE_PATH="/home/groot/Downloads/smarttrak/user-import/test/smarttrak-user-import-TEST-2017-01-24.csv";
-	private static String REG_PMID = "6d9674d8b7dc54077f0001019b2cb979";
-	private static String REG_ACTION_ID = "ea884793b2ef163f7f0001011a253456";
+	private static final String GEOCODE_CLASS="com.siliconmtn.gis.SMTGeocoder";
+	private static final String GEOCODE_URL="http://localhost:9000/websvc/geocoder";
+	private static final String REGISTRATION_PAGE_URL = "http://smarttrak.siliconmtn.com/my-account";
+	private static final String FILE_PATH="/home/groot/Downloads/smarttrak/user-import/test/smarttrak-user-import-TEST-2017-01-24.csv";
+	private static final String REG_PMID = "6d9674d8b7dc54077f0001019b2cb979";
+	private static final String REG_ACTION_ID = "ea884793b2ef163f7f0001011a253456";
+	private static final String FIRST_NM = "FIRST_NM";
+	private static final String LAST_NM = "LAST_NM";
+	private static final String ZIP_CD = "ZIP_CD";
+	private static final String MAIN_PHONE_TXT = "MAIN_PHONE_TXT";
+	private static final String MOBILE_PHONE_TXT = "MOBILE_PHONE_TXT";
+	
 	
 	public UserDataImport() {
 		super();
@@ -66,14 +72,12 @@ public class UserDataImport extends ProfileImport {
 	public static void main(String[] args) {        
         UserDataImport db = new UserDataImport();
 		try {
-			System.out.println("importFile=" + FILE_PATH);
+			log.info("importFile=" + FILE_PATH);
 			List<Map<String,String>> data = db.parseFile(FILE_PATH);
 			db.insertRecords(data);
 		} catch (Exception e) {
-			e.printStackTrace();
-			System.err.println("Error Processing ... " + e.getMessage());
+			log.error("Error Processing ... " + e.getMessage());
 		}
-		db = null;
 	}
 	
 	
@@ -93,16 +97,16 @@ public class UserDataImport extends ProfileImport {
 		//Open DB Connection
 		Connection dbConn = getDBConnection(DESTINATION_AUTH[0], DESTINATION_AUTH[1], DESTINATION_DB_DRIVER, DESTINATION_DB_URL);
 		
-		List<String> profileIds = new ArrayList<String>();
+		List<String> profileIds = new ArrayList<>();
 		Map<String,String> profileIdMap = new HashMap<>();
-		Map<String, Object> config = new HashMap<String, Object>();
+		Map<String, Object> config = new HashMap<>();
 		config.put(Constants.ENCRYPT_KEY, encKey);
 		config.put(Constants.GEOCODE_CLASS, GEOCODE_CLASS);
 		config.put(Constants.GEOCODE_URL, GEOCODE_URL);
 	    ProfileManager pm = new SBProfileManager(config);
 		ProfileRoleManager prm = new ProfileRoleManager();
 		UserLogin ul = new UserLogin(dbConn, encKey);
-		SiteUserVO user = null;
+		SiteUserVO user;
 		Map<String,Object> dataSet;
 		String tmpField1;
 		String tmpField2;
@@ -337,6 +341,7 @@ public class UserDataImport extends ProfileImport {
 				idx = 1;
 				ps.setString(idx++, new UUIDGenerator().getUUID());
 				ps.setString(idx++, regSubId);
+				if (recCnt == 1)
 				switch(recCnt) {
 					case 1:
 						ps.setString(idx++, "dd64d07fb37c2c067f0001012b4210ff");
@@ -349,6 +354,9 @@ public class UserDataImport extends ProfileImport {
 					case 3:
 						ps.setString(idx++, "d5ed674eb37da7fd7f000101d875b114");
 						ps.setString(idx++, (String)record.get("UPDATE_FAVORITES_FREQ"));
+						break;
+					default:
+						throw new Exception();
 				}
 				ps.setTimestamp(idx++, Convert.getCurrentTimestamp());
 				ps.addBatch();
@@ -379,8 +387,11 @@ public class UserDataImport extends ProfileImport {
 			conn = new SMTHttpConnectionManager();
 			conn.retrieveDataViaPost(REGISTRATION_PAGE_URL, buildRegistrationParams(record));
 			log.info("retStatus= " + conn.getResponseCode());
-			if (conn.getResponseCode() == 200) { ++count; } else { ++failCnt; };
-			conn = null;
+			if (conn.getResponseCode() == 200) { 
+				++count; 
+			} else { 
+				++failCnt; 
+			};
 		} catch (IOException ioe) {
 			log.error("Error: IOException during registration " + ioe.getMessage(), ioe);
 			throw new Exception();
@@ -400,7 +411,6 @@ public class UserDataImport extends ProfileImport {
 	private String buildRegistrationParams(Map<String, Object> data) {
 		StringBuilder params = new StringBuilder("1=1");		
 		//append any runtime requests of the calling class.  (login would pass username & password here)
-		int fieldIndex = -1;
 		String param;
 		// only append the field names and values that we have specified in the reg field map.
 		for (String p : data.keySet()) {
@@ -413,10 +423,11 @@ public class UserDataImport extends ProfileImport {
 		}
 		
 		// now append the formFields params.
-		for (String regFieldKey : data.keySet()) {
-			param = regFieldMap.get(regFieldKey);
+		int fieldIndex;
+		for (Map.Entry<String, Object> entry : data.entrySet()) {
+			param = regFieldMap.get(entry.getKey());
 			if (param == null) continue;
-			fieldIndex = (param.lastIndexOf("|"));
+			fieldIndex = param.lastIndexOf('|');
 			params.append("&formFields=");
 			if (fieldIndex == -1) {
 				params.append(param);
@@ -445,18 +456,18 @@ public class UserDataImport extends ProfileImport {
 	 * @return
 	 */
 	private static final Map<String, String> createRegFieldMap() {
-		Map<String, String> fieldMap = new TreeMap<String,String>();
+		Map<String, String> fieldMap = new TreeMap<>();
 		// profile fields
 		fieldMap.put("EMAIL_ADDRESS_TXT","reg_enc|EMAIL_ADDRESS_TXT|7f000001397b18842a834a598cdeafa");
-		fieldMap.put("FIRST_NM","reg_enc|FIRST_NM|7f000001427b18842a834a598cdeafa");
-		fieldMap.put("LAST_NM","reg_enc|LAST_NM|7f000001447b18842a834a598cdeafa");
+		fieldMap.put(FIRST_NM,"reg_enc|FIRST_NM|7f000001427b18842a834a598cdeafa");
+		fieldMap.put(LAST_NM,"reg_enc|LAST_NM|7f000001447b18842a834a598cdeafa");
 		fieldMap.put("ADDRESS_TXT","reg_enc|ADDRESS_TXT|7f000001467b18842a834a598cdeafa");
 		fieldMap.put("ADDRESS2_TXT","reg_enc|ADDRESS2_TXT|7f000001477b18842a834a598cdeafa");
 		fieldMap.put("CITY_NM","reg_enc|CITY_NM|7f000001487b18842a834a598cdeafa");
 		fieldMap.put("STATE_CD","reg_enc|STATE_CD|7f000001497b18842a834a598cdeafa");
-		fieldMap.put("ZIP_CD","reg_enc|ZIP_CD|7f000001507b18842a834a598cdeafa");
-		fieldMap.put("MOBILE_PHONE_TXT","reg_enc|MOBILE_PHONE_TXT|7f000001517b18842a834a598cdeafa");
-		fieldMap.put("MAIN_PHONE_TXT","reg_enc|MAIN_PHONE_TXT|7f000001527b18842a834a598cdeafa");
+		fieldMap.put(ZIP_CD,"reg_enc|ZIP_CD|7f000001507b18842a834a598cdeafa");
+		fieldMap.put(MOBILE_PHONE_TXT,"reg_enc|MOBILE_PHONE_TXT|7f000001517b18842a834a598cdeafa");
+		fieldMap.put(MAIN_PHONE_TXT,"reg_enc|MAIN_PHONE_TXT|7f000001527b18842a834a598cdeafa");
 		fieldMap.put("COUNTRY_CD","pfl_COUNTRY_CD");
 		// non-profile fields
 		fieldMap.put("TITLE","reg_||dd64d07fb37c2c067f0001012b4210ff");
@@ -472,16 +483,16 @@ public class UserDataImport extends ProfileImport {
 	protected void sanitizeFieldData(Map<String,Object> record) {
 		log.debug("sanitizing field data...");
 		String country = StringUtil.checkVal(record.get("COUNTRY_CD"));
-		String tmpVal = (String)record.get("ZIP_CD");
-		record.put("ZIP_CD",fixZipCode(tmpVal,country));
-		tmpVal = (String)record.get("MAIN_PHONE_TXT");
-		record.put("MAIN_PHONE_TXT", stripPhoneExtension(tmpVal,country));
-		tmpVal = (String)record.get("MOBILE_PHONE_TXT");
-		record.put("MOBILE_PHONE_TXT",stripPhoneExtension(tmpVal,country));
-		tmpVal = (String)record.get("FIRST_NM");
-		record.put("FIRST_NM", checkField(tmpVal));
-		tmpVal = (String)record.get("LAST_NM");
-		record.put("LAST_NM", checkField(tmpVal));
+		String tmpVal = (String)record.get(ZIP_CD);
+		record.put(ZIP_CD,fixZipCode(tmpVal,country));
+		tmpVal = (String)record.get(MAIN_PHONE_TXT);
+		record.put(MAIN_PHONE_TXT, stripPhoneExtension(tmpVal,country));
+		tmpVal = (String)record.get(MOBILE_PHONE_TXT);
+		record.put(MOBILE_PHONE_TXT,stripPhoneExtension(tmpVal,country));
+		tmpVal = (String)record.get(FIRST_NM);
+		record.put(FIRST_NM, checkField(tmpVal));
+		tmpVal = (String)record.get(LAST_NM);
+		record.put(LAST_NM, checkField(tmpVal));
 	}
 	
 	/**
@@ -491,10 +502,9 @@ public class UserDataImport extends ProfileImport {
 	 * @return
 	 */
 	protected String fixZipCode(String zip, String country) {
-		if ("US".equalsIgnoreCase(country)) {
-			if (StringUtil.checkVal(zip).length() == 4) {
-				return "0" + zip;
-			}
+		if ("US".equalsIgnoreCase(country) &&
+				StringUtil.checkVal(zip).length() == 4) {
+					return "0" + zip;
 		}
 		return zip;
 	}
@@ -512,14 +522,14 @@ public class UserDataImport extends ProfileImport {
 	 */
 	protected String stripPhoneExtension(String phone, String country) {
 		if (StringUtil.checkVal(phone,null) == null) return phone;
-		phone = phone.toLowerCase();
-		int idx = phone.indexOf(',');
+		String tmpPhone = phone.toLowerCase();
+		int idx = tmpPhone.indexOf(',');
 		if (idx == -1) {
-			idx = phone.indexOf('e');
-			if (idx == -1) idx = phone.indexOf('x');
+			idx = tmpPhone.indexOf('e');
+			if (idx == -1) idx = tmpPhone.indexOf('x');
 		}
-		if (idx > -1) return phone.substring(0, idx).trim();
-		return phone.trim();
+		if (idx > -1) return tmpPhone.substring(0, idx).trim();
+		return tmpPhone.trim();
 	}
 	
 	/**
@@ -530,8 +540,9 @@ public class UserDataImport extends ProfileImport {
 	 */
 	protected String checkField(String val) {
 		if (val == null) return val;
-		if (val.indexOf(",") > -1) 
-			return val.substring(0,val.indexOf(","));
+		
+		if (val.indexOf(',') > -1) 
+			return val.substring(0,val.indexOf(','));
 		return val;
 	}
 }
