@@ -3,11 +3,15 @@ package com.biomed.smarttrak.security;
 // Java 7
 import java.sql.Connection;
 
-// WC Custom libs
-import com.biomed.smarttrak.vo.SmartTRAKUserVO;
+//WC_Custom libs
+import com.biomed.smarttrak.admin.user.TeamManagerAction;
+import com.biomed.smarttrak.admin.user.UserManagerAction;
+import com.biomed.smarttrak.vo.SmarttrakUserVO;
 
-// SMTBaseLibs
+//SMTBaseLibs
+import com.siliconmtn.action.ActionException;
 import com.siliconmtn.common.constants.GlobalConfig;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.security.AuthenticationException;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
@@ -44,17 +48,56 @@ public class SmartTRAKLoginModule extends DBLoginLockoutModule {
 		// 1. Authenticate against WC core
 		UserDataVO wcUser = super.authenticateUser(userNm,pwd);
 
-		// 2. Retrieve SmartTRAK-specific user data
-		Connection conn = (Connection)initVals.get(GlobalConfig.KEY_DB_CONN);
-
-		SmartTRAKUserAction sta = new SmartTRAKUserAction();
-		sta.setDBConnection(conn);
-		sta.setAttributes(getInitVals());
-
-		SmartTRAKUserVO tkUser = sta.retrieveUserData(wcUser.getProfileId());
+		// 2. create/populate SmarttrakUserVO
+		SmarttrakUserVO tkUser = new SmarttrakUserVO();
 		tkUser.setData(wcUser.getDataMap());
-
+		
+		// 3. Retrieve SmartTRAK-specific user data
+		Connection conn = (Connection)initVals.get(GlobalConfig.KEY_DB_CONN);
+		retrieveBaseUser(conn, tkUser);
+		retrieveBaseUserTeams(conn, tkUser);
+		
 		return tkUser;
+	}
+	
+	/**
+	 * Retrieves base user data for the user represented by the
+	 * WC profile ID and populates the ST user bean with that data.
+	 * @param conn
+	 * @param tkUser
+	 * @return
+	 * @throws AuthenticationException
+	 */
+	private SmarttrakUserVO retrieveBaseUser(Connection conn, 
+			SmarttrakUserVO tkUser) throws AuthenticationException {
+		UserManagerAction uma = new UserManagerAction();
+		uma.setDBConnection(new SMTDBConnection(conn));
+		uma.setAttributes(getInitVals());
+		try {
+			uma.retrieveBaseUser(tkUser);
+		} catch(ActionException ae) {
+			throw new AuthenticationException(ae.getMessage());
+		}
+		return tkUser;
+	}
+	
+	/**
+	 * Retrieves list of teams to which a user belongs and populates
+	 * the user VO with the list of teams.
+	 * @param conn
+	 * @param tkUser
+	 * @throws AuthenticationException
+	 */
+	private void retrieveBaseUserTeams(Connection conn, 
+			SmarttrakUserVO tkUser) throws AuthenticationException {
+		TeamManagerAction tma = new TeamManagerAction();
+		tma.setDBConnection(new SMTDBConnection(conn));
+		tma.setAttributes(getInitVals());
+		try {
+			tma.retrieveUserTeams(tkUser);
+		} catch (ActionException ae) {
+			throw new AuthenticationException(ae.getMessage());
+		}
 	}
 
 	/* (non-Javadoc)

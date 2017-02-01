@@ -10,7 +10,7 @@ import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.UserDataVO;
 
 /*****************************************************************************
- <p><b>Title</b>: SmartTRAKUserVO.java</p>
+ <p><b>Title</b>: SmarttrakUserVO.java</p>
  <p><b>Description: </b></p>
  <p> 
  <p>Copyright: (c) 2000 - 2017 SMT, All Rights Reserved</p>
@@ -20,26 +20,28 @@ import com.siliconmtn.security.UserDataVO;
  @since Jan 31, 2017
  <b>Changes:</b> 
  ***************************************************************************/
-public class SmartTRAKUserVO extends UserDataVO {
+public class SmarttrakUserVO extends UserDataVO {
 
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = -8619730513300299951L;
+	private String accountId;
 	private String userId;
-	private List<SmartTRAKTeamVO> teams;
+	private String registerSubmittalId;
+	private List<SmarttrakTeamVO> teams;
 
 	/**
 	* Constructor
 	*/
-	public SmartTRAKUserVO() {
+	public SmarttrakUserVO() {
 		teams = new ArrayList<>();
 	}
 
 	/**
 	* Constructor
 	*/
-	public SmartTRAKUserVO(SMTServletRequest req) {
+	public SmarttrakUserVO(SMTServletRequest req) {
 		super(req);
 		teams = new ArrayList<>();
 	}
@@ -47,7 +49,7 @@ public class SmartTRAKUserVO extends UserDataVO {
 	/**
 	* Constructor
 	*/
-	public SmartTRAKUserVO(ResultSet rs) {
+	public SmarttrakUserVO(ResultSet rs) {
 		super(rs);
 		teams = new ArrayList<>();
 	}
@@ -67,16 +69,44 @@ public class SmartTRAKUserVO extends UserDataVO {
 	}
 
 	/**
+	 * @return the accountId
+	 */
+	public String getAccountId() {
+		return accountId;
+	}
+
+	/**
+	 * @param accountId the accountId to set
+	 */
+	public void setAccountId(String accountId) {
+		this.accountId = accountId;
+	}
+
+	/**
+	 * @return the registerSubmittalId
+	 */
+	public String getRegisterSubmittalId() {
+		return registerSubmittalId;
+	}
+
+	/**
+	 * @param registerSubmittalId the registerSubmittalId to set
+	 */
+	public void setRegisterSubmittalId(String registerSubmittalId) {
+		this.registerSubmittalId = registerSubmittalId;
+	}
+
+	/**
 	 * @return the teams
 	 */
-	public List<SmartTRAKTeamVO> getTeams() {
+	public List<SmarttrakTeamVO> getTeams() {
 		return teams;
 	}
 
 	/**
 	 * @param teams the teams to set
 	 */
-	public void setTeams(List<SmartTRAKTeamVO> teams) {
+	public void setTeams(List<SmarttrakTeamVO> teams) {
 		this.teams = teams;
 	}
 	
@@ -84,7 +114,7 @@ public class SmartTRAKUserVO extends UserDataVO {
 	 * Helper method for adding a team to the List of teams
 	 * @param team
 	 */
-	public void addTeam(SmartTRAKTeamVO team) {
+	public void addTeam(SmarttrakTeamVO team) {
 		teams.add(team);
 	}
 

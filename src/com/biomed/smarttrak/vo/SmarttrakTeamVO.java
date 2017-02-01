@@ -1,7 +1,11 @@
 package com.biomed.smarttrak.vo;
 
+// Java 7
+import java.util.ArrayList;
+import java.util.List;
+
 /*****************************************************************************
- <p><b>Title</b>: SmartTRAKTeamVO.java</p>
+ <p><b>Title</b>: SmarttrakTeamVO.java</p>
  <p><b>Description: </b></p>
  <p> 
  <p>Copyright: (c) 2000 - 2017 SMT, All Rights Reserved</p>
@@ -11,19 +15,20 @@ package com.biomed.smarttrak.vo;
  @since Jan 31, 2017
  <b>Changes:</b> 
  ***************************************************************************/
-public class SmartTRAKTeamVO {
+public class SmarttrakTeamVO {
 
 	private String teamId;
 	private String accountId;
 	private String teamName;
 	private int defaultFlag;
 	private String ownerProfileId;
+	private List<SmarttrakUserVO> members;
 	
 	/**
 	* Constructor
 	*/
-	public SmartTRAKTeamVO() {
-		// Auto-generated constructor stub
+	public SmarttrakTeamVO() {
+		members = new ArrayList<>();
 	}
 
 	/**
@@ -95,5 +100,27 @@ public class SmartTRAKTeamVO {
 	public void setOwnerProfileId(String ownerProfileId) {
 		this.ownerProfileId = ownerProfileId;
 	}
+
+	/**
+	 * @return the members
+	 */
+	public List<SmarttrakUserVO> getMembers() {
+		return members;
+	}
+
+	/**
+	 * @param members the members to set
+	 */
+	public void setMembers(List<SmarttrakUserVO> members) {
+		this.members = members;
+	}
 	
+	/**
+	 * Helper method for adding members to a team.
+	 * @param member
+	 */
+	public void addMember(SmarttrakUserVO member) {
+		if (members == null) members = new ArrayList<>();
+		members.add(member);
+	}
 }
