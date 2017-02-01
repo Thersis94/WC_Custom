@@ -58,11 +58,7 @@ public class ProductManagementAction extends SimpleActionAdapter {
 		
 		switch (action) {
 			case PRODUCT:
-				if (req.hasParameter("productId") && ! req.hasParameter("add")) {
-					retrieveProduct(req.getParameter("productId"));
-				} else if (!req.hasParameter("add")) {
-					retrieveProducts(req);
-				}
+				retrieveProduct(req);
 				break;
 			case PRODUCTATTRIBUTE:
 				if (req.hasParameter("productAttributeId"))
@@ -82,6 +78,20 @@ public class ProductManagementAction extends SimpleActionAdapter {
 	}
 	
 	
+	/**
+	 * Determine whether to get one product or all and do so.
+	 * @param req
+	 * @throws ActionException
+	 */
+	private void retrieveProduct(ActionRequest req) throws ActionException {
+		if (req.hasParameter("productId") && ! req.hasParameter("add")) {
+			retrieveProduct(req.getParameter("productId"));
+		} else if (!req.hasParameter("add")) {
+			retrieveProducts(req);
+		}
+	}
+
+
 	/**
 	 * get a particular product attribute from the database for editing
 	 * @param req
@@ -163,7 +173,7 @@ public class ProductManagementAction extends SimpleActionAdapter {
 		params.add(attributeId);
 		DBProcessor db = new DBProcessor(dbConn);
 		List<Object> res = db.executeSelect(sql.toString(), params, new ProductAttributeTypeVO());
-		if (res.size() > 0) {
+		if (res.isEmpty()) {
 			ProductAttributeTypeVO attr = (ProductAttributeTypeVO) db.executeSelect(sql.toString(), params, new ProductAttributeTypeVO()).get(0);
 			super.putModuleData(attr);
 		} else {
@@ -362,7 +372,7 @@ public class ProductManagementAction extends SimpleActionAdapter {
 			case SECTION:
 				saveSections(req);
 				break;
-			default:;
+			default:break;
 		}
 	}
 
@@ -484,7 +494,7 @@ public class ProductManagementAction extends SimpleActionAdapter {
 			case SECTION:
 				deleteSection(false, req.getParameter("sectionId"));
 				break;
-			default:;
+			default:break;
 		}
 		} catch (Exception e) {
 			throw new ActionException(e);
