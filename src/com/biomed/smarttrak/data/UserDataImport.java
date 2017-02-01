@@ -388,9 +388,9 @@ public class UserDataImport extends ProfileImport {
 			conn.retrieveDataViaPost(REGISTRATION_PAGE_URL, buildRegistrationParams(record));
 			log.info("retStatus= " + conn.getResponseCode());
 			if (conn.getResponseCode() == 200) { 
-				++count; 
+				count++; 
 			} else { 
-				++failCnt; 
+				failCnt++; 
 			};
 		} catch (IOException ioe) {
 			log.error("Error: IOException during registration " + ioe.getMessage(), ioe);
@@ -413,12 +413,13 @@ public class UserDataImport extends ProfileImport {
 		//append any runtime requests of the calling class.  (login would pass username & password here)
 		String param;
 		// only append the field names and values that we have specified in the reg field map.
-		for (String p : data.keySet()) {
-			param = (String)data.get(p);
+		for (Map.Entry<String, Object> entry : data.entrySet()) {
+			param = (String)data.get(entry.getKey());
 			if (param == null) continue;
-			String fieldKey = regFieldMap.get(p);
+			String fieldKey = regFieldMap.get(entry.getKey());
 			if (fieldKey != null) {
-				params.append("&").append(fieldKey).append("=").append(StringUtil.replace(param, "\\n","\n").trim());
+				params.append("&").append(fieldKey);
+				params.append("=").append(StringUtil.replace(param, "\\n","\n").trim());
 			}
 		}
 		
