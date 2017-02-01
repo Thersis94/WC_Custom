@@ -5,7 +5,7 @@ import java.util.List;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 
@@ -30,11 +30,11 @@ public class FinancialDashScenarioAction extends SBActionAdapter {
 		super(actionInit);
 	}
 
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		super.delete(req);
 	}
 	
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 
 		List<FinancialDashScenarioVO> scenarios = new ArrayList<>();
@@ -47,20 +47,20 @@ public class FinancialDashScenarioAction extends SBActionAdapter {
 		this.putModuleData(scenarios);
 	}
 	
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		super.build(req);
 		String scenarioName = StringUtil.checkVal(req.getParameter("scenarioName"));
 		String scenarioRole = StringUtil.checkVal(req.getParameter("scenarioRole"));
 		String updateType = StringUtil.checkVal(req.getParameter("type")); 
 
-
+		log.debug("Editing Scenario: Name - " + scenarioName + " | Role - " + scenarioRole + " | Update Type: " + updateType);
 	}
 	
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		super.list(req);
 	}
 
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		super.update(req);
 	}
 }
