@@ -17,7 +17,7 @@ import com.ram.datafeed.data.RAMProductVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -70,7 +70,7 @@ public class ProductAction extends SBActionAdapter {
 	 */
 	@SuppressWarnings("unchecked")
 	@Override
-	public void copy(SMTServletRequest req) throws ActionException {
+	public void copy(ActionRequest req) throws ActionException {
 		try {
 
 			//Diable AutoCommit.
@@ -118,7 +118,7 @@ public class ProductAction extends SBActionAdapter {
 	 * inactive.  This handles marking a given product as inactive.
 	 */
 	@Override
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		
 		//Build Query, we deactivate, not delete.
 		StringBuilder sb = new StringBuilder(140);
@@ -148,7 +148,7 @@ public class ProductAction extends SBActionAdapter {
 	 * return the full list of products.
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		if(req.hasParameter("productId"))
 			retrieveProducts(req);
 		//Prevent double call at page load.  This ensures only the ajax call triggers load.
@@ -161,7 +161,7 @@ public class ProductAction extends SBActionAdapter {
 	 * on the request.
 	 * @param req
 	 */
-	private void retrieveProducts(SMTServletRequest req) throws ActionException {			
+	private void retrieveProducts(ActionRequest req) throws ActionException {			
 		
 		//Instantiate the products list for results and check for lookup type.
 		List<RAMProductVO> products = new ArrayList<RAMProductVO>();
@@ -210,7 +210,7 @@ public class ProductAction extends SBActionAdapter {
 	 * request.
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		Map<String, String> result = new HashMap<String, String>();
 		result.put("success", "true");
 		result.put("msg", "Data Successfully Updated");
@@ -277,7 +277,7 @@ public class ProductAction extends SBActionAdapter {
 	 * update - returns filtered list for providers and oems.
 	 */
 	@Override
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		
 		//Instantiate necessary items
 		List<RAMProductVO> products = new ArrayList<RAMProductVO>();
@@ -411,7 +411,7 @@ public class ProductAction extends SBActionAdapter {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		super.update(req);
 	}
 	

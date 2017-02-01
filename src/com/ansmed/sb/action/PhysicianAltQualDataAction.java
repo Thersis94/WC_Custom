@@ -13,7 +13,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 // SMT base libs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -53,7 +53,7 @@ public class PhysicianAltQualDataAction extends SimpleActionAdapter {
      * @see com.siliconmtn.action.AbstractActionController#build(com.siliconmtn.http.SMTServletRequest)
      */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		
 		// delete the surgeon's existing alternate qualification data.
 		this.delete(req);
@@ -100,7 +100,7 @@ public class PhysicianAltQualDataAction extends SimpleActionAdapter {
      * @see com.siliconmtn.action.AbstractActionController#delete(com.siliconmtn.http.SMTServletRequest)
      */
 	@Override
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		
 		final String schema = (String) this.getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		String surgeonId = StringUtil.checkVal(req.getParameter("surgeonId"));
@@ -135,7 +135,7 @@ public class PhysicianAltQualDataAction extends SimpleActionAdapter {
      * @see com.siliconmtn.action.AbstractActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
      */
 	@Override
-    public void retrieve(SMTServletRequest req) throws ActionException {
+    public void retrieve(ActionRequest req) throws ActionException {
 		
     	PhysQualDataVO vo = null;
     	
@@ -183,7 +183,7 @@ public class PhysicianAltQualDataAction extends SimpleActionAdapter {
 	 * @param req
 	 * @throws SQLException
 	 */
-	private void updateSurgeonData(SMTServletRequest req) throws SQLException {
+	private void updateSurgeonData(ActionRequest req) throws SQLException {
 		
 		// If specialty_id and/or scs_start_dt are not valid, return.
 		String specialty = StringUtil.checkVal(req.getParameter("altSpecialtyId"));

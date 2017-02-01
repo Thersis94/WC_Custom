@@ -9,7 +9,7 @@ import java.sql.SQLException;
 import com.depuy.events.vo.CoopAdVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -58,7 +58,7 @@ public class CoopAdsAction extends SBActionAdapter {
 		super(arg0);
 	}
 
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 		String reqType = StringUtil.checkVal(req.getParameter("reqType"));
@@ -99,7 +99,7 @@ public class CoopAdsAction extends SBActionAdapter {
 	}
 	
 	private void sendNotificationEmail(CoopAdVO vo, String reqType, SiteVO site, 
-			UserDataVO user, SMTServletRequest req ) {
+			UserDataVO user, ActionRequest req ) {
 
 		// send appropriate notification emails
 		CoopAdsEmailer emailer = new CoopAdsEmailer(actionInit);
@@ -150,7 +150,7 @@ public class CoopAdsAction extends SBActionAdapter {
 		}
 	}
 
-	private CoopAdVO saveAd(SMTServletRequest req, SiteVO site, CoopAdVO vo)
+	private CoopAdVO saveAd(ActionRequest req, SiteVO site, CoopAdVO vo)
 			throws ActionException {
 		StringBuilder sql = new StringBuilder();
 		PreparedStatement ps = null;
@@ -287,7 +287,7 @@ public class CoopAdsAction extends SBActionAdapter {
 	 * @param vo
 	 * @param req
 	 */
-	private void saveAdXR(CoopAdVO vo, SMTServletRequest req)
+	private void saveAdXR(CoopAdVO vo, ActionRequest req)
 			throws ActionException {
 		StringBuilder sql = new StringBuilder();
 		PreparedStatement ps = null;
@@ -334,7 +334,7 @@ public class CoopAdsAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void saveAdApproval(SMTServletRequest req) throws ActionException {
+	private void saveAdApproval(ActionRequest req) throws ActionException {
 		StringBuilder sql = new StringBuilder();
 		PreparedStatement ps = null;
 		int statusLvl = Convert
@@ -374,7 +374,7 @@ public class CoopAdsAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void saveSurgeonsAdApproval(SMTServletRequest req)
+	private void saveSurgeonsAdApproval(ActionRequest req)
 			throws ActionException {
 		StringBuilder sql = new StringBuilder();
 		PreparedStatement ps = null;
@@ -409,7 +409,7 @@ public class CoopAdsAction extends SBActionAdapter {
 		return;
 	}
 
-	private String saveFile(SMTServletRequest req, String paramNm,
+	private String saveFile(ActionRequest req, String paramNm,
 			String oldParamNm) {
 		log.debug("starting saveAdFile");
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
@@ -465,7 +465,7 @@ public class CoopAdsAction extends SBActionAdapter {
 	/**
 	 * retrieves the ad for the requested postcard
 	 */
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		CoopAdVO vo = retrieve(req.getParameter("coopAdId"),
 				req.getParameter("eventPostcardId"));
 		req.setAttribute(RETR_ADS, vo);

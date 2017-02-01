@@ -3,7 +3,7 @@ package com.ansmed.sb.physician;
 import java.sql.ResultSet;
 
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.smt.sitebuilder.action.AbstractSiteBuilderVO;
 
 /****************************************************************************
@@ -31,7 +31,7 @@ public class DocumentVO extends AbstractSiteBuilderVO {
 		setData(rs);
 	}
 	
-	public DocumentVO(SMTServletRequest req) {
+	public DocumentVO(ActionRequest req) {
 		setData(req);
 	}
 	
@@ -52,7 +52,7 @@ public class DocumentVO extends AbstractSiteBuilderVO {
 	 * Assigns the elements of a request to the appropriate variable
 	 * @param rs
 	 */
-	public void setData(SMTServletRequest req) {
+	public void setData(ActionRequest req) {
 		actionId = req.getParameter("documentId");
 		documentTypeId = req.getParameter("documentTypeId");
 		surgeonId = req.getParameter("surgeonId");

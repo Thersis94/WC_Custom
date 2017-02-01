@@ -9,7 +9,7 @@ import java.sql.SQLException;
 import com.depuy.events.vo.DePuyEventEntryVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 
 // SB Libs
@@ -39,7 +39,7 @@ public class DePuyEventEntryAction extends SBActionAdapter {
 	}
 
 
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		//call EventEntryAction for the core-table insertion
 		DePuyEventEntryVO vo = new DePuyEventEntryVO(req);
 		vo.setEventGroupId(actionInit.getActionId());

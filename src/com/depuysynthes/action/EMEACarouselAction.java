@@ -16,7 +16,7 @@ import com.siliconmtn.commerce.catalog.ProductCategoryVO;
 import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -61,7 +61,7 @@ public class EMEACarouselAction extends SBActionAdapter {
 	}
 
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		//load the action's data via a quick call to list()
 		req.setParameter(SB_ACTION_ID, actionInit.getActionId());
 		this.list(req);
@@ -125,7 +125,7 @@ public class EMEACarouselAction extends SBActionAdapter {
 	}
 	
 	@Override
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder();
 		sql.append("select *, b.action_id as built ");
@@ -169,7 +169,7 @@ public class EMEACarouselAction extends SBActionAdapter {
 	}
 
 	@Override
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		super.update(req);
 		
         // Build the sql
@@ -218,7 +218,7 @@ public class EMEACarouselAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void saveProductXRs(SMTServletRequest req) throws SQLException {
+	private void saveProductXRs(ActionRequest req) throws SQLException {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		String actionId = (String) req.getAttribute(SB_ACTION_ID);
 		String sql = "delete from " + customDb + "DPY_SYN_HCP_LANDING_PROD_XR where action_id=?";

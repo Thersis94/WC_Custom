@@ -7,7 +7,7 @@ import java.sql.SQLException;
 import com.biomed.smarttrak.FinancialDashColumnSet.DisplayType;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -44,11 +44,11 @@ public class FinancialDashAction extends SBActionAdapter {
 		super(actionInit);
 	}
 
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		super.delete(req);
 	}
 	
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 		
 		String displayType = StringUtil.checkVal(req.getParameter("displayType"), FinancialDashColumnSet.DEFAULT_DISPLAY_TYPE);
@@ -141,7 +141,7 @@ public class FinancialDashAction extends SBActionAdapter {
 		return sql.toString();
 	}
 
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		super.build(req);
 		
 		String priKey = StringUtil.checkVal(req.getParameter("pk"));
@@ -151,11 +151,11 @@ public class FinancialDashAction extends SBActionAdapter {
 		log.debug("Updating Record: " + priKey + " | " + fieldName + "=" + updateValue + " ********************************");
 	}
 	
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		super.list(req);
 	}
 
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		super.update(req);
 	}
 }

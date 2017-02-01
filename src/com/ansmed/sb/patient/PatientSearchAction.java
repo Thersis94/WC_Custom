@@ -14,7 +14,7 @@ import com.ansmed.sb.security.AnsRoleModule;
 // SMT Bse Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.PhoneVO;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.Convert;
@@ -60,7 +60,7 @@ public class PatientSearchAction extends SBActionAdapter {
 	/**
 	 * Performs a search for all patient information on the MD Journal
 	 */
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		String patientId = StringUtil.checkVal(req.getParameter("patientId"));
 		Boolean searchSubmitted = Convert.formatBoolean(req.getParameter("searchSubmitted"));
 		Boolean isReport = Convert.formatBoolean(req.getParameter("report"));
@@ -110,7 +110,7 @@ public class PatientSearchAction extends SBActionAdapter {
 	 * @param id
 	 * @throws ActionException
 	 */
-	public void retrievePatient(SMTServletRequest req, String id) throws ActionException {
+	public void retrievePatient(ActionRequest req, String id) throws ActionException {
 		log.debug("Searching for patients");
 
 		// Retrieve attributes needed
@@ -159,7 +159,7 @@ public class PatientSearchAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	public void retrieveAll(SMTServletRequest req) throws ActionException {
+	public void retrieveAll(ActionRequest req) throws ActionException {
 		log.debug("Searching for patients");
 		
 		// Get the search params

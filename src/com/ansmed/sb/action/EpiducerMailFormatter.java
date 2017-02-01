@@ -20,7 +20,7 @@ import java.util.Set;
 import com.ansmed.sb.physician.SurgeonVO;
 
 // SMT Baselibs 2.0
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
@@ -48,7 +48,7 @@ public class EpiducerMailFormatter {
 	//private static final String FROM_SENDER = "dave@siliconmtn.com";
 	//private static final String CC_NAME = "dave@siliconmtn.com";
 	
-	private SMTServletRequest req = null;
+	private ActionRequest req = null;
 	private String type = null;
 	private String subject = null;
 	private String body = null;
@@ -67,7 +67,7 @@ public class EpiducerMailFormatter {
 		emailTo = new ArrayList<String>();
 	}
 	
-	public EpiducerMailFormatter(SMTServletRequest req, String type) {
+	public EpiducerMailFormatter(ActionRequest req, String type) {
 		this();
 		this.req = req;
 		this.type = type;
@@ -121,7 +121,7 @@ public class EpiducerMailFormatter {
 	 * @return
 	 * @throws SQLException
 	 */
-	private String formatSjmEmailBody(SMTServletRequest req)  throws SQLException {
+	private String formatSjmEmailBody(ActionRequest req)  throws SQLException {
 		StringEncoder se = new StringEncoder();
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		StringBuffer body = new StringBuffer();
@@ -290,7 +290,7 @@ public class EpiducerMailFormatter {
 		return url;
 	}
 
-	public void setReq(SMTServletRequest req) {
+	public void setReq(ActionRequest req) {
 		this.req = req;
 	}
 

@@ -7,14 +7,13 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import javax.servlet.http.Cookie;
-
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.http.session.SMTCookie;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.databean.FilePartDataBean;
@@ -50,7 +49,7 @@ public class SalesConsultantAction extends SimpleActionAdapter {
 	}
 
 	@Override
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req); 
 	}
 
@@ -59,15 +58,15 @@ public class SalesConsultantAction extends SimpleActionAdapter {
 	 * loads a list of Sales Consultant records from Solr.
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 
 		//change sort order to DESC if the results are sorted that way.  Otherwise the default is correct
-		Cookie sort = req.getCookie(HuddleUtils.SORT_COOKIE);
+		SMTCookie sort = req.getCookie(HuddleUtils.SORT_COOKIE);
 		if (sort != null && sort.getValue() != null && "titleZA".equals(sort.getValue().toString()))
 			req.setParameter("sortDirection", ORDER.desc.toString());
 
-		Cookie rppCook = req.getCookie(HuddleUtils.RPP_COOKIE);
+		SMTCookie rppCook = req.getCookie(HuddleUtils.RPP_COOKIE);
 		if (rppCook != null)
 			req.setParameter("rpp", rppCook.getValue());
 		
@@ -113,7 +112,7 @@ public class SalesConsultantAction extends SimpleActionAdapter {
 	 * processes batch file upload using Annotations to DPY_SYN_HUDDLE_CONSULTANT
 	 */
 	@Override
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		super.update(req);
 
 		if (req.getFile("xlsFile") != null)
@@ -126,7 +125,7 @@ public class SalesConsultantAction extends SimpleActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void processUpload(SMTServletRequest req) throws ActionException {
+	private void processUpload(ActionRequest req) throws ActionException {
 		Collection<Object> alignData = parseAlignmentFile(req.getFile("xlsFileAlignment"));
 		Map<String, SalesConsultantRepVO> repData = parseRepFile(req.getFile("xlsFile"));
 		

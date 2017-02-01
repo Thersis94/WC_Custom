@@ -11,18 +11,17 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.http.Cookie;
-
 import com.siliconmtn.action.ActionException;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.commerce.ShoppingCartItemVO;
 import com.siliconmtn.commerce.ShoppingCartVO;
 import com.siliconmtn.commerce.cart.storage.Storage;
 import com.siliconmtn.commerce.cart.storage.StorageFactory;
 import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.common.constants.GlobalConfig;
-import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.http.parser.StringEncoder;
+import com.siliconmtn.http.session.SMTCookie;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -57,7 +56,7 @@ public class NexusSolrCartAction extends SBActionAdapter {
 	public static final String TIME = "time";
 	public static final String CASE_ID = "caseId";
 	
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		if (req.hasParameter("loadKit")) {
 			getKitProducts(req);
 		} else if (req.hasParameter("multiprod")) {
@@ -73,12 +72,12 @@ public class NexusSolrCartAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void getKitProducts(SMTServletRequest req) throws ActionException {
+	private void getKitProducts(ActionRequest req) throws ActionException {
 		req.setParameter("kitAction", "Load");
 		req.setParameter("moduleStore", "true");
 		req.setParameter("rpp", "5");
 		req.setParameter("page", "1");
-	    	SMTActionInterface sai = new NexusKitAction();
+	    	ActionInterface sai = new NexusKitAction();
 	    	sai.setActionInit(actionInit);
 	    	sai.setDBConnection(dbConn);
 	    	sai.setAttributes(attributes);
@@ -92,7 +91,7 @@ public class NexusSolrCartAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void addMultiple(SMTServletRequest req) throws ActionException {
+	private void addMultiple(ActionRequest req) throws ActionException {
 		String dateLot = getDateLot(req);
 		Storage store = retrieveContainer(req);
 		ShoppingCartVO cart = store.load();
@@ -122,7 +121,7 @@ public class NexusSolrCartAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void editCart(SMTServletRequest req) throws ActionException {
+	private void editCart(ActionRequest req) throws ActionException {
 		Storage store = retrieveContainer(req);
 		ShoppingCartVO cart = store.load();
 		String dateLot = getDateLot(req);
@@ -149,7 +148,7 @@ public class NexusSolrCartAction extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	private String getDateLot(SMTServletRequest req) {
+	private String getDateLot(ActionRequest req) {
 		String dateLot;
 		if (getCookie(req, TIME).length() > 0) {
 			String time = getCookie(req, TIME);
@@ -166,7 +165,7 @@ public class NexusSolrCartAction extends SBActionAdapter {
 	 * @param cart
 	 * @param req
 	 */
-	private void deleteItem(ShoppingCartVO cart, SMTServletRequest req) {
+	private void deleteItem(ShoppingCartVO cart, ActionRequest req) {
 		// Determine whether we are deleting a single item or the entire cart
 		if (req.hasParameter("removeItem")){
 			cart.remove(req.getParameter("removeItem"));
@@ -182,7 +181,7 @@ public class NexusSolrCartAction extends SBActionAdapter {
 	 * @param cart
 	 * @param req
 	 */
-	private void changeLot(ShoppingCartVO cart, SMTServletRequest req) {
+	private void changeLot(ShoppingCartVO cart, ActionRequest req) {
 		for (String key : cart.getItems().keySet()) {
 			ProductVO p = cart.getItems().get(key).getProduct();
 			if (Convert.formatBoolean(p.getProdAttributes().get("dateLot"))) {
@@ -199,7 +198,7 @@ public class NexusSolrCartAction extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	private ShoppingCartItemVO buildProduct(SMTServletRequest req) {
+	private ShoppingCartItemVO buildProduct(ActionRequest req) {
 		String dateLot = getDateLot(req);
 		ProductVO product = new ProductVO();
 		product.setProductId(req.getParameter("productId"));
@@ -250,7 +249,7 @@ public class NexusSolrCartAction extends SBActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	private Storage retrieveContainer(SMTServletRequest req) 
+	private Storage retrieveContainer(ActionRequest req) 
 			throws ActionException {
 		Map<String, Object> attrs = new HashMap<>();
 		attrs.put(GlobalConfig.HTTP_REQUEST, req);
@@ -268,7 +267,7 @@ public class NexusSolrCartAction extends SBActionAdapter {
 
 
 
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		// Load the cart first since it is always needed
 		ShoppingCartVO cart = retrieveContainer(req).load();
 		req.setAttribute("cart", cart.getItems());
@@ -339,7 +338,7 @@ public class NexusSolrCartAction extends SBActionAdapter {
 	 * @param cart
 	 * @param req
 	 */
-	private void buildReport(ShoppingCartVO cart, SMTServletRequest req) {
+	private void buildReport(ShoppingCartVO cart, ActionRequest req) {
 		AbstractSBReportVO report;
 		String filename;
 		String caseId = getCookie(req, CASE_ID);
@@ -376,8 +375,8 @@ public class NexusSolrCartAction extends SBActionAdapter {
 	 * Checks if a cookie exists and returns either the cookie's value or an
 	 * empty string
 	 */
-	private String getCookie(SMTServletRequest req, String name) {
-		Cookie c = req.getCookie(name);
+	private String getCookie(ActionRequest req, String name) {
+		SMTCookie c = req.getCookie(name);
 		if (c == null) return "";
 		return StringEncoder.urlDecode(c.getValue());
 	}

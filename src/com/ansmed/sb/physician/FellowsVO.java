@@ -5,7 +5,7 @@ import java.util.List;
 import java.sql.ResultSet;
 
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.smt.sitebuilder.action.AbstractSiteBuilderVO;
 
@@ -60,7 +60,7 @@ public class FellowsVO extends AbstractSiteBuilderVO {
 	 * Initializes the VO to the params provided in the request object
 	 * @param rs
 	 */
-	public FellowsVO(SMTServletRequest req) {
+	public FellowsVO(ActionRequest req) {
 		super();
 		fellowsGoal = new ArrayList<FellowsGoalVO>();
 		fellowsSurgeon = new ArrayList<FellowsSurgeonVO>();
@@ -93,7 +93,7 @@ public class FellowsVO extends AbstractSiteBuilderVO {
 	 * Sets the VO to the params provided in the request object
 	 * @param req
 	 */
-	public void setData(SMTServletRequest req) {
+	public void setData(ActionRequest req) {
 		fellowsId = req.getParameter("fellowsId");
 		programNm = req.getParameter("programNm");
 		programNotes = req.getParameter("programNotes");

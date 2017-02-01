@@ -4,7 +4,7 @@ import java.sql.ResultSet;
 import java.util.Date;
 
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 
 /****************************************************************************
@@ -40,11 +40,11 @@ public class GFPResourceVO {
 	public GFPResourceVO() {
 	}
 	
-	public GFPResourceVO(SMTServletRequest req) {
+	public GFPResourceVO(ActionRequest req) {
 		assignData(req);
 	}
 	
-	public void assignData(SMTServletRequest req) {
+	public void assignData(ActionRequest req) {
 		setResourceId(req.getParameter("resourceId"));
 		setParentId(req.getParameter("parentId"));
 		setCategoryId(req.getParameter("categoryId"));

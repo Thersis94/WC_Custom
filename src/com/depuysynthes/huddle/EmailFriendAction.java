@@ -3,12 +3,11 @@ package com.depuysynthes.huddle;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.servlet.http.Cookie;
-
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.StringEncoder;
+import com.siliconmtn.http.session.SMTCookie;
 import com.siliconmtn.util.SMTSerializer;
 import com.smt.sitebuilder.action.SBModuleVO;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
@@ -39,12 +38,12 @@ public class EmailFriendAction extends SimpleActionAdapter {
 	}
 	
 	@Override
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 	
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		//if the request is for a product's assets, call the HuddleProductAction to load
 		//everything we need to know about this particular Product
 		if (req.hasParameter("productId")) {
@@ -68,8 +67,8 @@ public class EmailFriendAction extends SimpleActionAdapter {
 	 * use them in the View
 	 * @param req
 	 */
-	private void loadSharePOJOs(SMTServletRequest req) {
-		Cookie prods = req.getCookie(HuddleUtils.PROD_SHARE_COOKIE);
+	private void loadSharePOJOs(ActionRequest req) {
+		SMTCookie prods = req.getCookie(HuddleUtils.PROD_SHARE_COOKIE);
 		if  (prods == null || prods.getValue() == null) return;
 		
 		try {
@@ -87,7 +86,7 @@ public class EmailFriendAction extends SimpleActionAdapter {
 	
 	
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		log.debug("**********************");
 		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 		
@@ -116,7 +115,7 @@ public class EmailFriendAction extends SimpleActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	private String buildProductEmailBody(SMTServletRequest req) {
+	private String buildProductEmailBody(ActionRequest req) {
 		StringBuilder sb = new StringBuilder(500);
 		sb.append("<p>I thought you might be interested in the attached information from DePuy Synthes.</p>\n");
 		sb.append("<ul>");

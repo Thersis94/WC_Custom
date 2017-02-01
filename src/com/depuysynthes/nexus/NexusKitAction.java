@@ -9,32 +9,24 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.http.Cookie;
-
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 
 import com.siliconmtn.action.ActionException;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.http.parser.StringEncoder;
+import com.siliconmtn.http.session.SMTCookie;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
-import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.solr.SolrClientBuilder;
-import com.smt.sitebuilder.common.ModuleVO;
-import com.smt.sitebuilder.common.SiteVO;
-import com.smt.sitebuilder.common.constants.Constants;
-import com.smt.sitebuilder.search.SearchDocumentHandler;
-import com.smt.sitebuilder.security.SecurityController;
-import com.smt.sitebuilder.util.MessageSender;
-import com.smt.sitebuilder.util.solr.SolrActionUtil;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
@@ -44,6 +36,13 @@ import com.smt.sitebuilder.action.search.SolrQueryProcessor;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
+import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.SiteVO;
+import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.search.SearchDocumentHandler;
+import com.smt.sitebuilder.security.SecurityController;
+import com.smt.sitebuilder.util.MessageSender;
+import com.smt.sitebuilder.util.solr.SolrActionUtil;
 
 /****************************************************************************
  * <b>Title</b>: NexusKitAction.java<p/>
@@ -80,7 +79,7 @@ public class NexusKitAction extends SBActionAdapter {
 	}
 	
 	
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		if (req.hasParameter("searchData")) {
 			String searchData = StringUtil.checkVal(req.getParameter("searchData"));
 			req.setParameter("searchData", "*"+searchData+"*", true);
@@ -90,7 +89,7 @@ public class NexusKitAction extends SBActionAdapter {
 		    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		    	log.debug((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 		    	actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
-		    	SMTActionInterface sai = new SolrAction(actionInit);
+		    	ActionInterface sai = new SolrAction(actionInit);
 		    	sai.setDBConnection(dbConn);
 		    	sai.setAttributes(attributes);
 			sai.retrieve(req);
@@ -107,7 +106,7 @@ public class NexusKitAction extends SBActionAdapter {
 	 * Get all users a kit has been shared with
 	 * @throws ActionException 
 	 */
-	private Object getSharedKits(SMTServletRequest req) throws ActionException {
+	private Object getSharedKits(ActionRequest req) throws ActionException {
 		NexusKitVO kit = new NexusKitVO(NexusProductVO.solrIndex);
 		StringBuilder sql = new StringBuilder(300);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
@@ -134,7 +133,7 @@ public class NexusKitAction extends SBActionAdapter {
 	}
 
 
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		KitAction action;
 		try {
 			action = KitAction.valueOf(req.getParameter("kitAction"));
@@ -241,7 +240,7 @@ public class NexusKitAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException 
 	 */
-	private void buildReport(SMTServletRequest req) throws ActionException {
+	private void buildReport(ActionRequest req) throws ActionException {
 		AbstractSBReportVO report;
 
 		List<NexusKitVO> kits = loadKits(req, true);
@@ -266,7 +265,7 @@ public class NexusKitAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void copyItem(SMTServletRequest req) throws ActionException {
+	private void copyItem(ActionRequest req) throws ActionException {
 		EditLevel level;
 		try {
 			level = EditLevel.valueOf(req.getParameter("editLevel"));
@@ -320,7 +319,7 @@ public class NexusKitAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void changeLayer(SMTServletRequest req) throws ActionException {
+	private void changeLayer(ActionRequest req) throws ActionException {
 		EditLevel level;
 		try {
 			level = EditLevel.valueOf(req.getParameter("editLevel"));
@@ -343,7 +342,7 @@ public class NexusKitAction extends SBActionAdapter {
 	 * Change which layer the supplied layer is kept under
 	 * @param req
 	 */
-	private void changeSubLayer(SMTServletRequest req) {
+	private void changeSubLayer(ActionRequest req) {
 		NexusKitVO kit = (NexusKitVO) req.getSession().getAttribute(KIT_SESSION_NM);
 		int index = Convert.formatInteger(req.getParameter("index"));
 		NexusKitLayerVO layer;
@@ -380,7 +379,7 @@ public class NexusKitAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void changeProductLayer(SMTServletRequest req) throws ActionException {
+	private void changeProductLayer(ActionRequest req) throws ActionException {
 		NexusKitVO kit = (NexusKitVO) req.getSession().getAttribute(KIT_SESSION_NM);
 		String newParent = req.getParameter("newParentId");
 		String[] indexes = req.getParameterValues("index");
@@ -417,7 +416,7 @@ public class NexusKitAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void reorderKit(SMTServletRequest req) throws ActionException {
+	private void reorderKit(ActionRequest req) throws ActionException {
 		EditLevel level;
 		try {
 			level = EditLevel.valueOf(req.getParameter("editLevel"));
@@ -441,7 +440,7 @@ public class NexusKitAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void reorderProduct (SMTServletRequest req) throws ActionException {
+	private void reorderProduct (ActionRequest req) throws ActionException {
 		NexusKitVO kit = (NexusKitVO) req.getSession().getAttribute(KIT_SESSION_NM);
 		NexusKitLayerVO layer = kit.findLayer(req.getParameter("layerId"));
 		int index = Convert.formatInteger(req.getParameter("index"));
@@ -457,7 +456,7 @@ public class NexusKitAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void reorderLayer(SMTServletRequest req) throws ActionException {
+	private void reorderLayer(ActionRequest req) throws ActionException {
 		NexusKitVO kit = (NexusKitVO) req.getSession().getAttribute(KIT_SESSION_NM);
 		int index = Convert.formatInteger(req.getParameter("index"));
 		int newIndex =Convert.formatInteger( req.getParameter("newIndex"));
@@ -497,7 +496,7 @@ public class NexusKitAction extends SBActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	private List<NexusKitVO> loadKits(SMTServletRequest req, boolean fullLoad) throws ActionException {
+	private List<NexusKitVO> loadKits(ActionRequest req, boolean fullLoad) throws ActionException {
 		StringBuilder sql = new StringBuilder(1300);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		String kitId = StringUtil.checkVal(req.getParameter("kitId"));
@@ -747,7 +746,7 @@ public class NexusKitAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException 
 	 */
-	private void editKit(SMTServletRequest req) throws ActionException {
+	private void editKit(ActionRequest req) throws ActionException {
 		EditLevel level;
 		try {
 			level = EditLevel.valueOf(req.getParameter("editLevel"));
@@ -779,7 +778,7 @@ public class NexusKitAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void editProduct(SMTServletRequest req) throws ActionException {
+	private void editProduct(ActionRequest req) throws ActionException {
 		NexusKitVO kit = (NexusKitVO)req.getSession().getAttribute(KIT_SESSION_NM);
 		if(kit == null) kit = new NexusKitVO(NexusProductVO.solrIndex);
 		NexusKitLayerVO layer = kit.findLayer(req.getParameter("layerId"));
@@ -809,7 +808,7 @@ public class NexusKitAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void editLayer(SMTServletRequest req) throws ActionException {
+	private void editLayer(ActionRequest req) throws ActionException {
 		NexusKitVO kit = (NexusKitVO)req.getSession().getAttribute(KIT_SESSION_NM);
 		if(kit == null) kit = new NexusKitVO(NexusProductVO.solrIndex);
 		NexusKitLayerVO layer = kit.findLayer(req.getParameter("layerId"));
@@ -857,7 +856,7 @@ public class NexusKitAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException 
 	 */
-	private void saveKit(SMTServletRequest req) throws ActionException {
+	private void saveKit(ActionRequest req) throws ActionException {
 		NexusKitVO kit = (NexusKitVO) req.getSession().getAttribute(KIT_SESSION_NM);
 		StringBuilder sql = new StringBuilder(300);
 		boolean insert = false;
@@ -1050,7 +1049,7 @@ public class NexusKitAction extends SBActionAdapter {
 	 * Deletes the kit from both the database and solr
 	 * @param req
 	 */
-	private void deleteKit(SMTServletRequest req) throws ActionException {
+	private void deleteKit(ActionRequest req) throws ActionException {
 		EditLevel level;
 		NexusKitVO kit;
 		try {
@@ -1134,7 +1133,7 @@ public class NexusKitAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException 
 	 */
-	private void modifyPermissions(SMTServletRequest req) throws ActionException {
+	private void modifyPermissions(ActionRequest req) throws ActionException {
 		UserDataVO user = new UserDataVO(req);
 		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
 		if (!req.hasParameter("profileId")) {
@@ -1335,8 +1334,8 @@ public class NexusKitAction extends SBActionAdapter {
 	 * Checks if a cookie exists and returns either the cookie's value or an
 	 * empty string
 	 */
-	private String getCookie(SMTServletRequest req, String name) {
-		Cookie c = req.getCookie(name);
+	private String getCookie(ActionRequest req, String name) {
+		SMTCookie c = req.getCookie(name);
 		if (c == null) return "";
 		return StringEncoder.urlDecode(c.getValue());
 	}

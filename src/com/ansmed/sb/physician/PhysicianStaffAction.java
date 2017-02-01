@@ -11,7 +11,7 @@ import java.util.List;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.PhoneVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -49,7 +49,7 @@ public class PhysicianStaffAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		log.debug("Updating staff info: " + req.getParameter("surgeonId"));
 		if(Convert.formatBoolean(req.getParameter("deleteEle"))) {
 			delete(req);
@@ -62,7 +62,7 @@ public class PhysicianStaffAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#delete(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		log.debug("****************** Deleting Staff");
 		String message = "You have successfully deleted the staff information";
 		String schema = (String)getAttribute("customDbSchema");
@@ -92,7 +92,7 @@ public class PhysicianStaffAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		String schema = (String)getAttribute("customDbSchema");
 		StringBuffer sql = new StringBuffer();
 		sql.append("select * from ").append(schema).append("ans_staff ");
@@ -124,7 +124,7 @@ public class PhysicianStaffAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#update(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		String message = "You have successfully updated the staff information";
 		// Build the SQL Statement
 		String schema = (String)getAttribute("customDbSchema");

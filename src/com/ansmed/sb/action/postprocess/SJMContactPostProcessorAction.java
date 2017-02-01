@@ -17,10 +17,10 @@ import com.ansmed.sb.locator.LocatorSearchAction;
 import com.ansmed.sb.physician.SurgeonVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.MailException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.PhoneNumberFormat;
@@ -70,7 +70,7 @@ public class SJMContactPostProcessorAction extends SimpleActionAdapter {
         super(arg0);
     }
     
-    public void list(SMTServletRequest req) throws ActionException {
+    public void list(ActionRequest req) throws ActionException {
     	super.retrieve(req);    	
     }
 
@@ -108,7 +108,7 @@ public class SJMContactPostProcessorAction extends SimpleActionAdapter {
      * @see com.siliconmtn.action.AbstractActionController#build(com.siliconmtn.http.SMTServletRequest)
      */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
     	log.debug("Starting SJMContactPostProcessorAction build...");
     	String actionId = StringUtil.checkVal(req.getParameter("sbActionGroupId"));
     	if (actionId.length() == 0) actionId = actionInit.getActionId();
@@ -136,7 +136,7 @@ public class SJMContactPostProcessorAction extends SimpleActionAdapter {
      * @see com.siliconmtn.action.AbstractActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
      */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {}
+	public void retrieve(ActionRequest req) throws ActionException {}
 	
 	/**
 	 * Processes specific Contact Us portlet form fields to determine who should 
@@ -145,7 +145,7 @@ public class SJMContactPostProcessorAction extends SimpleActionAdapter {
 	 * @param formId
 	 * @return
 	 */
-	private void postProcess(SMTServletRequest req, SJMFormId form)
+	private void postProcess(ActionRequest req, SJMFormId form)
 	throws ActionException {
 		log.debug("Starting post processing");
 		List<String> mailTo = new ArrayList<String>();
@@ -292,7 +292,7 @@ public class SJMContactPostProcessorAction extends SimpleActionAdapter {
 	 * @param recipients
 	 * @throws ActionException
 	 */
-	private void sendEmail(SMTServletRequest req, SJMFormId contactForm, 
+	private void sendEmail(ActionRequest req, SJMFormId contactForm, 
 			List<String> recipients) throws ActionException {
 		
     	SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
@@ -343,7 +343,7 @@ public class SJMContactPostProcessorAction extends SimpleActionAdapter {
 	 * @param header
 	 * @return
 	 */
-	private String buildEmailBody(SMTServletRequest req, String siteName, String header, SJMFormId contactForm) {
+	private String buildEmailBody(ActionRequest req, String siteName, String header, SJMFormId contactForm) {
 		StringEncoder se = new StringEncoder();
     	StringBuffer body = new StringBuffer();
     	
@@ -453,7 +453,7 @@ public class SJMContactPostProcessorAction extends SimpleActionAdapter {
 	 * who requested contact by rep.
 	 * @param req
 	 */
-	private UserDataVO retrieveNearestFieldManager(SMTServletRequest req) {
+	private UserDataVO retrieveNearestFieldManager(ActionRequest req) {
 		log.debug("retrieving nearest field manager");
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		// retrieves nearest 'CFM' rep, not just any rep.
@@ -545,14 +545,14 @@ public class SJMContactPostProcessorAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
-	private String retrieveNearestSurgeon(SMTServletRequest req) {
+	private String retrieveNearestSurgeon(ActionRequest req) {
 		
 		// set values the locator will need to perform a search		
 		this.setLocatorSearchParams(req);
 				
 		// retrieve the surgeon nearest to this person and get the rep for that surgeon
 		try {
-			SMTActionInterface sai = new LocatorSearchAction(this.actionInit);
+			ActionInterface sai = new LocatorSearchAction(this.actionInit);
 			sai.setAttributes(this.attributes);
 			sai.setDBConnection(dbConn);
 			sai.retrieve(req);
@@ -576,7 +576,7 @@ public class SJMContactPostProcessorAction extends SimpleActionAdapter {
 	 * perform the search for surgeons
 	 * @param req
 	 */
-	private void setLocatorSearchParams(SMTServletRequest req) {
+	private void setLocatorSearchParams(ActionRequest req) {
 		//set the 'address' params
 		req.setParameter("address", req.getParameter("pfl_ADDRESS_TXT"));
 		req.setParameter("city", req.getParameter("pfl_CITY_NM"));

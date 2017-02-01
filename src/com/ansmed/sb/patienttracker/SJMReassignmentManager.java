@@ -10,9 +10,9 @@ import java.util.List;
 //SMB Baselibs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.exception.MailException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
@@ -59,10 +59,10 @@ public class SJMReassignmentManager extends TrackerAction {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("SJMReassignmentManager retrieve...");
 		
-		SMTActionInterface sai = null;
+		ActionInterface sai = null;
 		req.setParameter("assignmentId", req.getParameter("fromAssignmentId"));
 		// retrieve the assignment
 		sai = new SJMAssignmentManager(actionInit);
@@ -80,7 +80,7 @@ public class SJMReassignmentManager extends TrackerAction {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		log.debug("SJMReassignmentManager build...");
 		AssignmentVO avo = new AssignmentVO();
 		avo.setData(req);
@@ -109,7 +109,7 @@ public class SJMReassignmentManager extends TrackerAction {
 	 * @param isInsert
 	 * @return
 	 */
-	private boolean checkForDuplicateAssignment(SMTServletRequest req, AssignmentVO avo) {
+	private boolean checkForDuplicateAssignment(ActionRequest req, AssignmentVO avo) {
 		log.debug("checking for duplicate assignment attempt");
 		String actionType = StringUtil.checkVal(req.getParameter("actionType"));
 		if (! actionType.equalsIgnoreCase("reassign")) return false;
@@ -168,9 +168,9 @@ public class SJMReassignmentManager extends TrackerAction {
 	 * @param req
 	 * @param avo
 	 */
-	private void retrievePatient(SMTServletRequest req, AssignmentVO avo) {
+	private void retrievePatient(ActionRequest req, AssignmentVO avo) {
 		log.debug("retrieving patient data...");
-		SMTActionInterface sai = new PatientManager(this.actionInit);
+		ActionInterface sai = new PatientManager(this.actionInit);
 		sai.setAttributes(attributes);
 		sai.setDBConnection(dbConn);
 		try {
@@ -194,10 +194,10 @@ public class SJMReassignmentManager extends TrackerAction {
 	 * @param req
 	 * @param avo
 	 */
-	private void retrieveAmbassador(SMTServletRequest req, AssignmentVO avo) {
+	private void retrieveAmbassador(ActionRequest req, AssignmentVO avo) {
 		log.debug("retrieving ambassador data...");
 		// assigneeId is already on the request
-		SMTActionInterface sai = new AssigneeManager(this.actionInit);
+		ActionInterface sai = new AssigneeManager(this.actionInit);
 		sai.setAttributes(attributes);
 		sai.setDBConnection(dbConn);
 		try {
@@ -226,14 +226,14 @@ public class SJMReassignmentManager extends TrackerAction {
 	 * @return
 	 */
 	@SuppressWarnings("unused")
-	private AssignmentVO retrieveAssignmentData(SMTServletRequest req) {
+	private AssignmentVO retrieveAssignmentData(ActionRequest req) {
 		log.debug("retrieving full assignment data...");
 		AssignmentVO avo = null;
 		// set the assignment ID on the request if need be
 		if (StringUtil.checkVal(req.getParameter("actionType")).equals("reassign")) {
 			req.setParameter("assignmentId", req.getParameter("fromAssignmentId"));
 		}
-		SMTActionInterface sai = new SJMAssignmentManager(this.actionInit);
+		ActionInterface sai = new SJMAssignmentManager(this.actionInit);
 		sai.setAttributes(attributes);
 		sai.setDBConnection(dbConn);
 		try {
@@ -261,7 +261,7 @@ public class SJMReassignmentManager extends TrackerAction {
 	 * Processes status change and sets flags based on whether or not a status change has occurred.
 	 * @param req
 	 */
-	private void processFlags(SMTServletRequest req, AssignmentVO avo) {
+	private void processFlags(ActionRequest req, AssignmentVO avo) {
 		log.debug("processing reassignment flags...");
 		
 		if (StringUtil.checkVal(req.getParameter("actionType")).equals("reassign")) {
@@ -303,7 +303,7 @@ public class SJMReassignmentManager extends TrackerAction {
 	 * @param avo
 	 * @throws ActionException
 	 */
-	private void processDeAssignFrom(SMTServletRequest req, AssignmentVO avo) 
+	private void processDeAssignFrom(ActionRequest req, AssignmentVO avo) 
 		throws ActionException {
 		log.debug("starting processDeAssignFrom...");
 		String actionType = StringUtil.checkVal(req.getParameter("actionType"));
@@ -317,7 +317,7 @@ public class SJMReassignmentManager extends TrackerAction {
 		}
 		
 		// de-assign the assignment from the original assignee.
-		SMTActionInterface sai = new SJMAssignmentManager(actionInit);
+		ActionInterface sai = new SJMAssignmentManager(actionInit);
 		sai.setAttributes(attributes);
 		sai.setDBConnection(dbConn);			
 		try {
@@ -348,7 +348,7 @@ public class SJMReassignmentManager extends TrackerAction {
 	 * @param avo
 	 * @throws ActionException
 	 */
-	private void processReAssignTo(SMTServletRequest req, AssignmentVO avo) throws ActionException {
+	private void processReAssignTo(ActionRequest req, AssignmentVO avo) throws ActionException {
 		log.debug("starting processReAssignTo...");
 		String actionType = StringUtil.checkVal(req.getParameter("actionType"));
 		// set additional parameters
@@ -361,7 +361,7 @@ public class SJMReassignmentManager extends TrackerAction {
 			this.processByAssignmentStatus(req, avo, "reassign");
 		}
 		// create the new assignment
-		SMTActionInterface sai = new SJMAssignmentManager(actionInit);
+		ActionInterface sai = new SJMAssignmentManager(actionInit);
 		sai.setAttributes(attributes);
 		sai.setDBConnection(dbConn);
 		try {
@@ -400,7 +400,7 @@ public class SJMReassignmentManager extends TrackerAction {
 	 * @param avo
 	 * @param toFrom
 	 */
-	private void processByReassignType(SMTServletRequest req, AssignmentVO avo, String toFrom) {
+	private void processByReassignType(ActionRequest req, AssignmentVO avo, String toFrom) {
 		if (toFrom.equalsIgnoreCase("deassign")) {
 			log.debug("deassigning from 'reassign' action type");
 			// set original assignment parameters on the request for the update, patientId is already on request
@@ -454,7 +454,7 @@ public class SJMReassignmentManager extends TrackerAction {
 	 * @param avo
 	 * @param type
 	 */
-	private void processByAdhocType (SMTServletRequest req, AssignmentVO avo, String type) {
+	private void processByAdhocType (ActionRequest req, AssignmentVO avo, String type) {
 		log.debug("processing by 'adhoc' actionType, type is: " + type);
 		log.debug("assignmentId: " + req.getParameter("assignmentId"));
 		log.debug("assigneeId: " + req.getParameter("assigneeId"));
@@ -499,7 +499,7 @@ public class SJMReassignmentManager extends TrackerAction {
 	 * @param avo
 	 * @param toFrom
 	 */
-	private void processByAssignmentStatus (SMTServletRequest req, AssignmentVO avo, String toFrom) {
+	private void processByAssignmentStatus (ActionRequest req, AssignmentVO avo, String toFrom) {
 		log.debug(toFrom + " processing by assignment status...");
 		if (toFrom.equalsIgnoreCase("deassign")) { // deassign from
 			// replace params with original values so it can be updated properly.
@@ -627,7 +627,7 @@ public class SJMReassignmentManager extends TrackerAction {
 	 * @param req
 	 * @param tdc
 	 */
-	private List<PatientInteractionVO> retrievePatientInteractions(SMTServletRequest req, AssignmentVO avo) {
+	private List<PatientInteractionVO> retrievePatientInteractions(ActionRequest req, AssignmentVO avo) {
 		log.debug("retrieving patient interaction data for request_reassignment email...");
 		List<PatientInteractionVO> livo = null;
 		// make sure there aren't form submittal ids on the request
@@ -644,7 +644,7 @@ public class SJMReassignmentManager extends TrackerAction {
 		req.setParameter("assignmentId", avo.getAssignmentId(), true);
 		log.debug("assignmentId/assigneeId/patientId on req: " + req.getParameter("assignmentId") + "/" + req.getParameter("assigneeId") + "/" + req.getParameter("patientId"));
 		try {
-			SMTActionInterface sai = new PatientInteractionManager(this.actionInit);
+			ActionInterface sai = new PatientInteractionManager(this.actionInit);
 			sai.setAttributes(attributes);
 			sai.setDBConnection(dbConn);
 			sai.retrieve(req);
@@ -673,7 +673,7 @@ public class SJMReassignmentManager extends TrackerAction {
 	 * @param req
 	 * @param avo
 	 */
-	private void processRedirect(SMTServletRequest req, AssignmentVO avo) {
+	private void processRedirect(ActionRequest req, AssignmentVO avo) {
 		log.debug("building redirect...");
 		// redirect back to the original assignment
     	StringBuffer url = new StringBuffer();
@@ -693,7 +693,7 @@ public class SJMReassignmentManager extends TrackerAction {
 	 * @param actionType
 	 * @return
 	 */
-	private List<AssigneeVO> retrieveTodaysAmbassadors(SMTServletRequest req, Integer ambType) {
+	private List<AssigneeVO> retrieveTodaysAmbassadors(ActionRequest req, Integer ambType) {
 		log.debug("retrieving today's available ambassadors...");
 		List<AssigneeVO> ambs = null;
 		log.debug("retrieving today's ambassadors");
@@ -736,7 +736,7 @@ public class SJMReassignmentManager extends TrackerAction {
 	 * @param assignment
 	 * @throws MailException
 	 */
-	private void sendEmail(SMTServletRequest req, Integer emailType, TrackerDataContainer tdc) throws MailException {
+	private void sendEmail(ActionRequest req, Integer emailType, TrackerDataContainer tdc) throws MailException {
 		if (tdc.getAssignments() == null || tdc.getAssignments().isEmpty()) return;
 		if (emailType == 0) return;
 		log.debug("setting TrackerMailFormatter...");

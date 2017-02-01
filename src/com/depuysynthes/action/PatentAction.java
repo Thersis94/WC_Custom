@@ -13,7 +13,7 @@ import java.util.Map;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.databean.FilePartDataBean;
@@ -49,7 +49,7 @@ public class PatentAction extends SimpleActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		super.update(req);
 
 		//save the Excel file if one was uploaded
@@ -62,7 +62,7 @@ public class PatentAction extends SimpleActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 
@@ -71,7 +71,7 @@ public class PatentAction extends SimpleActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		//ensure we were given something to search for, otherwise a query is not needed (the search form is displayed)
 		if (!req.hasParameter("code")) return;
 
@@ -101,7 +101,7 @@ public class PatentAction extends SimpleActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void importExcelFile(SMTServletRequest req) throws ActionException {
+	private void importExcelFile(ActionRequest req) throws ActionException {
 		String actionId = StringUtil.checkVal(req.getAttribute(SB_ACTION_ID), req.getParameter(SB_ACTION_ID));
 		AnnotationParser parser;
 		FilePartDataBean fpdb = req.getFile("xlsFile");

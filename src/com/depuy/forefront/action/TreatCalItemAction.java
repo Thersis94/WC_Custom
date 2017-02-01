@@ -9,7 +9,7 @@ import java.util.List;
 import com.depuy.forefront.action.vo.TreatCalItemVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -30,7 +30,7 @@ public class TreatCalItemAction extends SBActionAdapter {
 		super(ai);
 	}
 	
-	public void delete(SMTServletRequest req) {
+	public void delete(ActionRequest req) {
 		final String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		msg = (String) getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
 		String pkId = req.getParameter("delId");
@@ -53,7 +53,7 @@ public class TreatCalItemAction extends SBActionAdapter {
 	}
 	
 	
-	public void retrieve(SMTServletRequest req) throws ActionException{
+	public void retrieve(ActionRequest req) throws ActionException{
 		log.debug("Beginning TreatCalItem retrieve");
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		String programId = (String) req.getSession().getAttribute(ProgramAction.PROGRAM_ID);
@@ -100,7 +100,7 @@ public class TreatCalItemAction extends SBActionAdapter {
 		mod.setActionData(data);
 	}
 	
-	private void updateList(SMTServletRequest req) throws ActionException{
+	private void updateList(ActionRequest req) throws ActionException{
 		log.debug("Beginning TreatCalItemAction update");
 		msg = "Calendar Item Added Successfully";
 		TreatCalItemVO vo = new TreatCalItemVO(req);
@@ -141,7 +141,7 @@ public class TreatCalItemAction extends SBActionAdapter {
 		}
 	}
 	
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		if (req.hasParameter("delId")) {
 			this.delete(req);
 		} else {

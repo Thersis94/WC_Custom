@@ -11,7 +11,7 @@ import java.util.TreeMap;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -51,7 +51,7 @@ public class SalesAreaAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest arg0) throws ActionException {
+	public void retrieve(ActionRequest arg0) throws ActionException {
 		StringBuffer sql = new StringBuffer();
 		String schema = (String)getAttribute("customDbSchema");
 		sql.append("select a.*, b.* from ").append(schema).append("ans_sales_area a ");
@@ -92,7 +92,7 @@ public class SalesAreaAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#update(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		StringBuffer sql = new StringBuffer();
 		String areaId = StringUtil.checkVal(req.getParameter("areaId"));
 		String schema = (String)getAttribute("customDbSchema");

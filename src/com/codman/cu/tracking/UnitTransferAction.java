@@ -7,7 +7,7 @@ import java.sql.SQLException;
 import com.codman.cu.tracking.vo.TransactionVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -49,7 +49,7 @@ public class UnitTransferAction extends SBActionAdapter {
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.action.ActionController#update(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void build(SMTServletRequest req) throws ActionException {			
+	public void build(ActionRequest req) throws ActionException {			
 		String fromAccountId = StringUtil.checkVal(req.getParameter("accountId"));
 		String toAccountId = StringUtil.checkVal(req.getParameter("toAccountId"));
 		String unitId = StringUtil.checkVal(req.getParameter("unitId"));
@@ -134,7 +134,7 @@ public class UnitTransferAction extends SBActionAdapter {
 	 * @param transIds
 	 * @param accountId
 	 */
-	private String writeTransaction(SMTServletRequest req, TransactionVO tvo) throws SQLException {
+	private String writeTransaction(ActionRequest req, TransactionVO tvo) throws SQLException {
 		tvo.setTransactionId(new UUIDGenerator().getUUID());
 		log.debug("trans pkId=" + tvo.getTransactionId());
 		

@@ -10,8 +10,8 @@ import com.ansmed.sb.patienttracker.comparator.AssigneeAvailabilityComparator;
 // SMTBaseLibs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionInterface;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
 
 // SiteBuilder II libs
@@ -52,10 +52,10 @@ public class SJMAssigneeManager extends SBActionAdapter {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("SJMAssigneeManager retrieve...");
 
-		SMTActionInterface sai = null;
+		ActionInterface sai = null;
 		// retrieve assignees
 		sai = new AssigneeManager(actionInit);
 		sai.setDBConnection(dbConn);
@@ -77,7 +77,7 @@ public class SJMAssigneeManager extends SBActionAdapter {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		log.debug("SJMAssigneeManager build...");
 		
 		boolean isUpdate = false;
@@ -93,7 +93,7 @@ public class SJMAssigneeManager extends SBActionAdapter {
 		}
 		
 		// insert/update the assignment
-		SMTActionInterface sai = null;
+		ActionInterface sai = null;
 		sai = new AssigneeManager(actionInit);
 		sai.setDBConnection(dbConn);
 		sai.setAttributes(attributes);
@@ -107,7 +107,7 @@ public class SJMAssigneeManager extends SBActionAdapter {
 	 * @param req
 	 * @param isUpdate
 	 */
-	private void processRedirect(SMTServletRequest req, boolean isUpdate) {
+	private void processRedirect(ActionRequest req, boolean isUpdate) {
     	SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 		if (role != null) {
 	    	StringBuffer url = new StringBuffer();
@@ -147,7 +147,7 @@ public class SJMAssigneeManager extends SBActionAdapter {
 	 * @param isUpdate
 	 * @return
 	 */
-	private String processRedirectMessage(SMTServletRequest req, SBUserRole role, boolean isUpdate) {
+	private String processRedirectMessage(ActionRequest req, SBUserRole role, boolean isUpdate) {
 		StringBuffer buildMsg = new StringBuffer();
 		StringBuffer redirectMsg = new StringBuffer();
 		if (req.getAttribute(TrackerAction.TRACKER_BUILD_MSG) != null) {
@@ -211,7 +211,7 @@ public class SJMAssigneeManager extends SBActionAdapter {
 	 * @param req
 	 * @param sortField
 	 */
-	private void sortByDayValue(SMTServletRequest req, List<AssigneeVO> ambs) {
+	private void sortByDayValue(ActionRequest req, List<AssigneeVO> ambs) {
 		String day = StringUtil.checkVal(req.getParameter("day"));
 		if (day.length() == 0) return;
 		log.debug("sorting by day: " + day);

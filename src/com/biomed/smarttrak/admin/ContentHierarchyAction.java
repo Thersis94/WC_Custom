@@ -6,12 +6,12 @@ import java.util.List;
 import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -40,18 +40,18 @@ public class ContentHierarchyAction extends AbstractTreeAction {
 	public ContentHierarchyAction() {super();}
 
 	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#copy(com.siliconmtn.http.SMTServletRequest)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#copy(com.siliconmtn.http.ActionRequest)
 	 */
 	@Override
-	public void copy(SMTServletRequest req) throws ActionException {
+	public void copy(ActionRequest req) throws ActionException {
 		throw new ActionException("Method not supported.");
 	}
 
 	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#delete(com.siliconmtn.http.SMTServletRequest)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#delete(com.siliconmtn.http.ActionRequest)
 	 */
 	@Override
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		SectionVO s = new SectionVO(req);
 
 		DBProcessor dbp = new DBProcessor(dbConn, (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
@@ -64,22 +64,24 @@ public class ContentHierarchyAction extends AbstractTreeAction {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.ActionRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		SectionVO s = new SectionVO(req);
 
-		saveSectionVO(s);
+		String actionPerform = req.getParameter("actionPerform");
+
+		updateSectionVO(actionPerform, s);
 
 		this.clearCacheByKey(CONTENT_HIERARCHY_CACHE_KEY);
 	}
 
 	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.ActionRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		String sectionId = req.getParameter("sectionId");
 
 		Tree t;
@@ -111,10 +113,10 @@ public class ContentHierarchyAction extends AbstractTreeAction {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.http.SMTServletRequest)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.http.ActionRequest)
 	 */
 	@Override
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		if(!StringUtil.isEmpty(req.getParameter(SBActionAdapter.SB_ACTION_ID))) {
 			super.retrieve(req);
 		} else {
@@ -123,10 +125,10 @@ public class ContentHierarchyAction extends AbstractTreeAction {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.http.SMTServletRequest)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.http.ActionRequest)
 	 */
 	@Override
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		super.update(req);
 
 		 // Redirect after the update
@@ -137,11 +139,15 @@ public class ContentHierarchyAction extends AbstractTreeAction {
 	 * Helper method that inserts/updates a SectionVO.
 	 * @param s
 	 */
-	private void saveSectionVO(SectionVO s) {
+	private void updateSectionVO(String actionPerform, SectionVO s) {
 		DBProcessor dbp = new DBProcessor(dbConn, (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
 
 		try {
-			dbp.save(s);
+			if(!StringUtil.isEmpty(actionPerform) && "delete".equals(actionPerform)) {
+				dbp.delete(s);
+			} else {
+				dbp.save(s);
+			}
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error(e);
 		}

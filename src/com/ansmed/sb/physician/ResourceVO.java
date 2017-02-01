@@ -3,7 +3,7 @@ package com.ansmed.sb.physician;
 import java.sql.ResultSet;
 
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.AbstractSiteBuilderVO;
@@ -57,7 +57,7 @@ public class ResourceVO extends AbstractSiteBuilderVO {
 	 * Initializes the VO to the params provided in the request object
 	 * @param rs
 	 */
-	public ResourceVO(SMTServletRequest req) {
+	public ResourceVO(ActionRequest req) {
 		super();
 		setData(req);
 	}
@@ -90,7 +90,7 @@ public class ResourceVO extends AbstractSiteBuilderVO {
 	 * Sets the VO to the params provided in the request object
 	 * @param req
 	 */
-	public void setData(SMTServletRequest req) {
+	public void setData(ActionRequest req) {
 		resourceId = req.getParameter("resourceId");
 		surgeonId = req.getParameter("surgeonId");
 		resourceTypeId = Convert.formatInteger(req.getParameter("resourceTypeId"));

@@ -11,7 +11,7 @@ import java.util.List;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 
 // SB Libs
 import com.smt.sitebuilder.common.ModuleVO;
@@ -50,7 +50,7 @@ public class AssignRepAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("Retrieving Sales rep for assignment");
 		StringBuffer sql = new StringBuffer();
 		String schema = (String)getAttribute("customDbSchema");
@@ -87,7 +87,7 @@ public class AssignRepAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#update(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		log.debug("Ressigning reps");
 		String schema = (String)getAttribute("customDbSchema");
 		String message = "You have successfully reassigned the physicians";

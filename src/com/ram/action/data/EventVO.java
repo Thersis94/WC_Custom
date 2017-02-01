@@ -9,7 +9,7 @@ import java.util.List;
 
 // SMT BAse Libs
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
@@ -59,7 +59,7 @@ public class EventVO implements Serializable {
 	 * Assigns the data from the request object to the appropriate variables
 	 * @param rs
 	 */
-	public EventVO(SMTServletRequest req) {
+	public EventVO(ActionRequest req) {
 		
 	}
 	

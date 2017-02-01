@@ -14,7 +14,7 @@ import java.util.TreeMap;
 import com.depuy.sitebuilder.datafeed.LocationReport.ReportData;
 import com.siliconmtn.data.report.ExcelReport;
 import com.siliconmtn.data.report.StandardExcelReport;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 
 /****************************************************************************
  * <b>Title</b>: LocationReportVO.java <p/>
@@ -49,7 +49,7 @@ public class LocationReportVO extends AbstractDataFeedReportVO {
 	 */
 	@SuppressWarnings("unchecked")
 	@Override
-	public void setRequestData(SMTServletRequest req) {
+	public void setRequestData(ActionRequest req) {
 		reportHeader = (List<String>) req.getAttribute("reportHeader");
 		reportTotal = (Map<String, Integer>) req.getAttribute("reportTotal");
 		

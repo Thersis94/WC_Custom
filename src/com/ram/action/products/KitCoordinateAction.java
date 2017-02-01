@@ -16,7 +16,7 @@ import com.ram.datafeed.data.LayerCoordinateVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.imageMap.FabricParserInterface;
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -66,7 +66,7 @@ public class KitCoordinateAction extends SBActionAdapter {
 	 * replaceVals Map.
 	 */
 	@Override
-	public void copy(SMTServletRequest req) throws ActionException {
+	public void copy(ActionRequest req) throws ActionException {
 		@SuppressWarnings("unchecked")
 		Map<String, Object> replaceVals = (Map<String, Object>) attributes.get(RecordDuplicatorUtility.REPLACE_VALS);
 		RecordDuplicatorUtility rdu = new RecordDuplicatorUtility(attributes, dbConn, "RAM_LAYER_COORDINATE", "LAYER_COORDINATE_ID", true);
@@ -80,7 +80,7 @@ public class KitCoordinateAction extends SBActionAdapter {
 	 * This method handles the business logic for what must happen to parse and update
 	 * the Coordinate data.
 	 */
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		
 		//If there is no jsonData, quick fail.
 		if(!req.hasParameter("jsonData"))

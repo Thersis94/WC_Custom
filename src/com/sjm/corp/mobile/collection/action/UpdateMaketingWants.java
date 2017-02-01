@@ -1,6 +1,6 @@
 package com.sjm.corp.mobile.collection.action;
 
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.sjm.corp.mobile.collection.MobileCollectionVO;
 
@@ -23,7 +23,7 @@ public class UpdateMaketingWants extends CollectionAbstractAction {
 	 * (non-Javadoc)
 	 * @see com.sjm.corp.mobile.collection.action.CollectionAbstractAction#update(com.siliconmtn.http.SMTServletRequest, com.sjm.corp.mobile.collection.MobileCollectionVO)
 	 */
-	public void update(SMTServletRequest req, MobileCollectionVO vo) {
+	public void update(ActionRequest req, MobileCollectionVO vo) {
 		vo.getMarketing().getWants().setWantAppointmentCards(Convert.formatBoolean(req.getParameter("appointmentCards")));
 		vo.getMarketing().getWants().setWantBrochures(Convert.formatBoolean(req.getParameter("brochures")));
 		vo.getMarketing().getWants().setWantBusinessCards(Convert.formatBoolean(req.getParameter("businessCards")));

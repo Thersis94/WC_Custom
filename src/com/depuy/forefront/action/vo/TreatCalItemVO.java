@@ -5,7 +5,7 @@ import java.sql.ResultSet;
 
 import com.depuy.forefront.action.ProgramAction;
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
@@ -60,7 +60,7 @@ public class TreatCalItemVO implements Serializable {
 		db = null;
 	}
 	
-	public TreatCalItemVO(SMTServletRequest req) {
+	public TreatCalItemVO(ActionRequest req) {
 		if (req.hasParameter("treatCalItemId")) setTreatCalItemId(req.getParameter("treatCalItemId"));
 		programId = (String) req.getSession().getAttribute(ProgramAction.PROGRAM_ID);
 		if (req.hasParameter("hospitalId")) setHospitalId(req.getParameter("hospitalId"));

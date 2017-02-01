@@ -12,7 +12,7 @@ import com.depuy.forefront.action.vo.MyRoutineVO;
 import com.depuy.forefront.action.vo.RoutineVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
@@ -32,7 +32,7 @@ public class MyRoutineAction extends SBActionAdapter {
 		super(ai);
 	}
 
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("Beginning retrieve for MyRoutine");
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		final String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
@@ -115,7 +115,7 @@ public class MyRoutineAction extends SBActionAdapter {
 	
 	
 	@SuppressWarnings("rawtypes")
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		StringBuilder sql = new StringBuilder();
 		sql.append("insert into ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("FOREFRONT_EXERCISE_LOG (ATTRIBUTE_ID, PROFILE_ID, STAGE_ID, ");

@@ -3,7 +3,7 @@ package com.sjm.corp.mobile.collection.action;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 
 /****************************************************************************
  * <b>Title</b>: CollectionActionFactory.java <p/>
@@ -37,7 +37,7 @@ public class CollectionActionFactory {
 		}
 	}
 
-	public CollectionActionFactory(SMTServletRequest req){
+	public CollectionActionFactory(ActionRequest req){
 	
 	}
 	/**

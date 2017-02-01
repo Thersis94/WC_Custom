@@ -3,8 +3,8 @@ package com.ram.action.workflow;
 //SMTBaseLibs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionInterface;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 
 import com.siliconmtn.util.StringUtil;
@@ -48,7 +48,7 @@ public class WorkflowFacadeAction extends SBActionAdapter {
 	 * updated to use getAction method.
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("WorkflowFacadeAction retrieve...");
 		boolean searchSubmitted = Convert.formatBoolean(req.getParameter("searchSubmitted"));
 		if (searchSubmitted) {
@@ -65,7 +65,7 @@ public class WorkflowFacadeAction extends SBActionAdapter {
 	 * updated to use getAction method
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		// check to see if we are cloning a workflow or module
 		boolean isCopy = Convert.formatBoolean(req.getParameter("isCopy"));
 		if (isCopy) {
@@ -82,7 +82,7 @@ public class WorkflowFacadeAction extends SBActionAdapter {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#copy(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void copy(SMTServletRequest req) throws ActionException{
+	public void copy(ActionRequest req) throws ActionException{
 		log.debug("WorkflowFacadeAction copy...");
 		String bType = req.getParameter(STEP_PARAM);
 		getAction(bType).copy(req);
@@ -93,8 +93,8 @@ public class WorkflowFacadeAction extends SBActionAdapter {
 	 * @param action
 	 * @return
 	 */
-	public SMTActionInterface getAction(String action) {
-		SMTActionInterface sai = null;
+	public ActionInterface getAction(String action) {
+		ActionInterface sai = null;
 		switch(WORKFLOW_TYPE.valueOf(action)) {
 		case transaction:
 			sai = new WorkflowTransactionAction(actionInit);
@@ -119,9 +119,9 @@ public class WorkflowFacadeAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException 
 	 */
-	private void performSearch(SMTServletRequest req) throws ActionException {
+	private void performSearch(ActionRequest req) throws ActionException {
 		log.debug("WorkflowFacadeAction performSearch...");
-		SMTActionInterface sai = new WorkflowSearchAction(actionInit);
+		ActionInterface sai = new WorkflowSearchAction(actionInit);
 		sai.setAttributes(attributes);
 		sai.setDBConnection(dbConn);
 		sai.retrieve(req);
@@ -131,7 +131,7 @@ public class WorkflowFacadeAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#list(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
         super.retrieve(req);
 	}
 

@@ -7,7 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 
 /****************************************************************************
  * <b>Title</b>: IFUDocumentInstanceVO.java <p/>
@@ -45,7 +45,7 @@ public class IFUDocumentVO extends IFUVO implements Serializable{
 		defaultLangTgList = new LinkedHashMap<>();
 	}
 
-	public IFUDocumentVO(SMTServletRequest req) {
+	public IFUDocumentVO(ActionRequest req) {
 		super(req);
 		nativeLangTgList = new LinkedHashMap<>();
 		defaultLangTgList = new LinkedHashMap<>();
