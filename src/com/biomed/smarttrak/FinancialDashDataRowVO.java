@@ -9,6 +9,7 @@ import java.util.Map;
 import org.apache.log4j.Logger;
 
 import com.siliconmtn.db.DBUtil;
+import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SBModuleVO;
 
 /****************************************************************************
@@ -100,44 +101,34 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 	public void setColumns(DBUtil util, ResultSet rs) {
 		
 		try {
-			// just need the last two digits of the year for the column id
-			int year = util.getIntVal("YEAR_NO", rs) % 100;
-			int total = 0, pyTotal = 0;
+			int maxYear = util.getIntVal("YEAR_NO", rs);
+			Map<Integer, Integer> totals = new HashMap<>();
 			
 			ResultSetMetaData rsmd;
 			rsmd = rs.getMetaData();
 			
 			int colCount = rsmd.getColumnCount();
 			for (int i = 1; i <= colCount; i++) {
-				String colName = rsmd.getColumnName(i); 
-				switch (colName) {
-					case "q1_y1":
-					case "q2_y1":
-					case "q3_y1":
-					case "q4_y1":
-						String quarter = colName.substring(0,2);
-						
-						int dollarValue = util.getIntVal(colName, rs);
-						total += dollarValue;
-						
-						int pyDollarValue = util.getIntVal(quarter + "_y2", rs);
-						pyTotal += pyDollarValue;
+				String colName = rsmd.getColumnName(i).toUpperCase();
+				String qtr = colName.substring(0,2);
+				int yearIdx = Convert.formatInteger(colName.substring(colName.length() - 1, colName.length()));
 
-						Double pctChange = null;
-						if (pyDollarValue > 0) {
-							pctChange = (double) (dollarValue - pyDollarValue) / pyDollarValue;
+				switch (qtr) {
+					case FinancialDashAction.QUARTER_1:
+					case FinancialDashAction.QUARTER_2:
+					case FinancialDashAction.QUARTER_3:
+					case FinancialDashAction.QUARTER_4:
+						if (yearIdx < FinancialDashAction.MAX_DATA_YEARS) {
+							this.addColumn(qtr, yearIdx, maxYear, util, rs);
 						}
-						
-						this.addColumn(quarter + year, dollarValue, pctChange);
+						this.incrementTotal(totals, yearIdx, util.getIntVal(colName, rs));
+						break;
+					default:
 						break;
 				}
 			}
 			
-			Double pctChange = null;
-			if (pyTotal > 0) {
-				pctChange = (double) (total - pyTotal) / pyTotal;
-			}
-			this.addColumn("cy" + year, total, pctChange);
+			this.addSummaryColumns(totals, maxYear);
 		} catch (SQLException sqle) {
 			log.error("Unable to set financial dashboard row data columns", sqle);
 		}
@@ -177,4 +168,64 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 		columns.put(colId, col);
 	}
 
+	/**
+	 * Adds a column to the map of columns while adding to the total year value
+	 * 
+	 * @param qtr
+	 * @param yearIdx - each increment of the year index represents an earlier year in the query results
+	 * @param maxYear - the most recent year in the query
+	 * @param util
+	 * @param rs
+	 */
+	private void addColumn(String qtr, int yearIdx, int maxYear, DBUtil util, ResultSet rs) {
+		int dollarValue = util.getIntVal(qtr + "_" + yearIdx, rs);
+		int pyDollarValue = util.getIntVal(qtr + "_" + (yearIdx + 1), rs);
+
+		Double pctChange = null;
+		if (pyDollarValue > 0) {
+			pctChange = (double) (dollarValue - pyDollarValue) / pyDollarValue;
+		}
+		
+		// Subtracting the year index from the most recent year in the query,
+		// gives the year for that column. One row in the returned data could
+		// represent data from more than one year.
+		this.addColumn(qtr + "-" + (maxYear - yearIdx), dollarValue, pctChange);
+	}
+	
+	/**
+	 * Creates the summary YTD/CY columns.
+	 * 
+	 * @param totals
+	 * @param maxYear - the most recent year from the query
+	 */
+	private void addSummaryColumns(Map<Integer, Integer> totals, int maxYear) {
+		for (int i = 0; i < totals.size() - 1; i++) {
+			Integer cyTotal = totals.get(i);
+			Integer pyTotal = totals.get(i + 1);
+			
+			Double pctChange = null;
+			if (pyTotal > 0) {
+				pctChange = (double) (cyTotal - pyTotal) / pyTotal;
+			}
+			
+			// Each iteration signifies one year earlier
+			this.addColumn(FinancialDashAction.CALENDAR_YEAR + "-" + (maxYear - i), cyTotal, pctChange);
+			this.addColumn(FinancialDashAction.YEAR_TO_DATE + "-" + (maxYear - i), cyTotal, pctChange);
+		}
+	}
+
+	/**
+	 * Increments the totals for the summary YTD/CY columns.
+	 * 
+	 * @param totals
+	 * @param key
+	 * @param dollarValue
+	 */
+	private void incrementTotal(Map<Integer, Integer> totals, int key, int dollarValue) {
+		if (totals.get(key) == null) {
+			totals.put(key, 0);
+		};
+		
+		totals.put(key, totals.get(key) + dollarValue);
+	}
 }

@@ -4,14 +4,13 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import com.biomed.smarttrak.FinancialDashColumnSet.DisplayType;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
-//import com.smt.sitebuilder.common.ModuleVO;
-//import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -26,6 +25,16 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 
 public class FinancialDashAction extends SBActionAdapter {
+	
+	public static final int MAX_DATA_YEARS = 4;
+	
+	public static final String CALENDAR_YEAR = "CY";
+	public static final String YEAR_TO_DATE = "YTD";
+	
+	public static final String QUARTER_1 = "Q1";
+	public static final String QUARTER_2 = "Q2";
+	public static final String QUARTER_3 = "Q3";
+	public static final String QUARTER_4 = "Q4";
 
 	public FinancialDashAction() {
 		super();
@@ -41,7 +50,6 @@ public class FinancialDashAction extends SBActionAdapter {
 	
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		super.retrieve(req);
-		//ModuleVO modVo = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		
 		String displayType = StringUtil.checkVal(req.getParameter("displayType"), FinancialDashColumnSet.DEFAULT_DISPLAY_TYPE);
 		Integer calendarYear = Convert.formatInteger(req.getParameter("calendarYear"), Convert.getCurrentYear());
@@ -57,7 +65,17 @@ public class FinancialDashAction extends SBActionAdapter {
 		}
 		dash.setSectionId(sectionId);
 		
-		String sql = getFinancialDataSql();
+		this.getFinancialData(dash);
+		this.putModuleData(dash);
+	}
+	
+	/**
+	 * Gets the financial data to display in the table and charts
+	 * 
+	 * @param dash
+	 */
+	private void getFinancialData(FinancialDashVO dash) {
+		String sql = getFinancialDataSql(dash);
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			int idx = 0;
@@ -65,29 +83,48 @@ public class FinancialDashAction extends SBActionAdapter {
 				ps.setString(++idx, dash.getSectionId());
 			}
 			ps.setString(++idx, dash.getCountryTypes().get(0).name());
-			ps.setInt(++idx, calendarYear);
+			ps.setInt(++idx, dash.getColHeaders().getCalendarYear());
 			
 			ResultSet rs = ps.executeQuery();
 			dash.setData(rs);
 		} catch (SQLException sqle) {
 			log.error("Unable to get financial dashboard data", sqle);
 		}
-
-		this.putModuleData(dash);
 	}
 	
 	/**
 	 * Returns the sql for retrieving financial data. 
 	 * @return
 	 */
-	private String getFinancialDataSql() {
+	private String getFinancialDataSql(FinancialDashVO dash) {
 		String custom = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		DisplayType dt = dash.getColHeaders().getDisplayType();
 		
-		StringBuilder sql = new StringBuilder(1200);
-		sql.append("select r.COMPANY_ID, c.COMPANY_NM, r.YEAR_NO, sum(r.Q1_NO) as q1_y1, sum(r.Q2_NO) as q2_y1, sum(r.Q3_NO) as q3_y1, sum(r.Q4_NO) as q4_y1, ");
-		sql.append("sum(r2.Q1_NO) as q1_y2, sum(r2.Q2_NO) as q2_y2, sum(r2.Q3_NO) as q3_y2, sum(r2.Q4_NO) as q4_y2 ");
+		StringBuilder sql = new StringBuilder(2500);
+		sql.append("select r.COMPANY_ID, c.COMPANY_NM, r.YEAR_NO, sum(r.Q1_NO) as Q1_0, sum(r.Q2_NO) as Q2_0, sum(r.Q3_NO) as Q3_0, sum(r.Q4_NO) as Q4_0, ");
+		sql.append("sum(r2.Q1_NO) as Q1_1, sum(r2.Q2_NO) as Q2_1, sum(r2.Q3_NO) as Q3_1, sum(r2.Q4_NO) as Q4_1 "); // Needed for all column display types to get percent change from prior year
+		
+		// Columns needed only for specific display types
+		if (dt == DisplayType.YOY || dt == DisplayType.FOURYR || dt == DisplayType.SIXQTR) {
+			sql.append(", sum(r3.Q1_NO) as Q1_2, sum(r3.Q2_NO) as Q2_2, sum(r3.Q3_NO) as Q3_2, sum(r3.Q4_NO) as Q4_2 ");
+		}
+		if (dt == DisplayType.FOURYR) {
+			sql.append(", sum(r4.Q1_NO) as Q1_3, sum(r4.Q2_NO) as Q2_3, sum(r4.Q3_NO) as Q3_3, sum(r4.Q4_NO) as Q4_3 ");
+			sql.append(", sum(r5.Q1_NO) as Q1_4, sum(r5.Q2_NO) as Q2_4, sum(r5.Q3_NO) as Q3_4, sum(r5.Q4_NO) as Q4_4 "); // Needed to get percent change from prior year in the fourth year
+		}
+
 		sql.append("from ").append(custom).append("BIOMEDGPS_FD_REVENUE r ");
 		sql.append("left join ").append(custom).append("BIOMEDGPS_FD_REVENUE r2 on r.COMPANY_ID = r2.COMPANY_ID and r.REGION_CD = r2.REGION_CD and r.SECTION_ID = r2.SECTION_ID and r.YEAR_NO - 1 = r2.YEAR_NO ");
+
+		// Joins to get columns needed only for specific display types
+		if (dt == DisplayType.YOY || dt == DisplayType.FOURYR || dt == DisplayType.SIXQTR) {
+			sql.append("left join ").append(custom).append("BIOMEDGPS_FD_REVENUE r3 on r.COMPANY_ID = r3.COMPANY_ID and r.REGION_CD = r3.REGION_CD and r.SECTION_ID = r3.SECTION_ID and r.YEAR_NO - 2 = r3.YEAR_NO ");
+		}
+		if (dt == DisplayType.FOURYR) {
+			sql.append("left join ").append(custom).append("BIOMEDGPS_FD_REVENUE r4 on r.COMPANY_ID = r4.COMPANY_ID and r.REGION_CD = r4.REGION_CD and r.SECTION_ID = r4.SECTION_ID and r.YEAR_NO - 3 = r4.YEAR_NO ");
+			sql.append("left join ").append(custom).append("BIOMEDGPS_FD_REVENUE r5 on r.COMPANY_ID = r5.COMPANY_ID and r.REGION_CD = r5.REGION_CD and r.SECTION_ID = r5.SECTION_ID and r.YEAR_NO - 4 = r5.YEAR_NO ");
+		}
+
 		sql.append("inner join ").append(custom).append("BIOMEDGPS_COMPANY c on r.COMPANY_ID = c.COMPANY_ID ");
 		sql.append("inner join ").append(custom).append("BIOMEDGPS_SECTION s1 on r.SECTION_ID = s1.SECTION_ID ");
 		sql.append("left join ").append(custom).append("BIOMEDGPS_SECTION s2 on s1.PARENT_ID = s2.SECTION_ID ");

@@ -58,7 +58,7 @@ public class FinancialDashVO extends SBModuleVO {
 	 */
 	public static final String DEFAULT_COUNTRY_TYPE = "US";
 	
-	public enum CountryType {
+	protected enum CountryType {
 		US("United States"), EU("European Union"), ROW("Rest-of-World"), WW("World-Wide");
 		
 		private String name;

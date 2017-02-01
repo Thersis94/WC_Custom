@@ -25,7 +25,7 @@ public class FinancialDashColumnSet {
 	 */
 	public static final String DEFAULT_DISPLAY_TYPE = "CURYR";
 	
-	private enum DisplayType {
+	protected enum DisplayType {
 		CURYR("Current Year"), SIXQTR("Six Quarter Running"), FOURYR("Four-Year Comparison"),
 		YOY("Year-Over-Year"), CALYR("Calendar Year");
 		
@@ -74,12 +74,12 @@ public class FinancialDashColumnSet {
 		Integer lastYrTwoDigit = (calendarYear - 1) % 100;
 		Integer twoDigitYr = calendarYear % 100;
 		
-		this.addColumn("q3" + lastYrTwoDigit, "Q3" + lastYrTwoDigit);
-		this.addColumn("q4" + lastYrTwoDigit, "Q4" + lastYrTwoDigit);
-		this.addColumn("q1" + twoDigitYr, "Q1" + twoDigitYr);
-		this.addColumn("q2" + twoDigitYr, "Q2" + twoDigitYr);
-		this.addColumn("q3" + twoDigitYr, "Q3" + twoDigitYr);
-		this.addColumn("q4" + twoDigitYr, "Q4" + twoDigitYr);
+		this.addColumn(FinancialDashAction.QUARTER_3 + "-" + (calendarYear - 1), FinancialDashAction.QUARTER_3 + lastYrTwoDigit);
+		this.addColumn(FinancialDashAction.QUARTER_4 + "-" + (calendarYear - 1), FinancialDashAction.QUARTER_4 + lastYrTwoDigit);
+		this.addColumn(FinancialDashAction.QUARTER_1 + "-" + calendarYear, FinancialDashAction.QUARTER_1 + twoDigitYr);
+		this.addColumn(FinancialDashAction.QUARTER_2 + "-" + calendarYear, FinancialDashAction.QUARTER_2  + twoDigitYr);
+		this.addColumn(FinancialDashAction.QUARTER_3 + "-" + calendarYear, FinancialDashAction.QUARTER_3 + twoDigitYr);
+		this.addColumn(FinancialDashAction.QUARTER_4 + "-" + calendarYear, FinancialDashAction.QUARTER_4 + twoDigitYr);
 	}
 
 	/**
@@ -87,10 +87,10 @@ public class FinancialDashColumnSet {
 	 * Adds all columns for a four-year comparison display type.
 	 */
 	private void addFourYearColumns() {
-		this.addColumn("cy" + (calendarYear - 4), "CY" + (calendarYear - 4));
-		this.addColumn("cy" + (calendarYear - 3), "CY" + (calendarYear - 3));
-		this.addColumn("cy" + (calendarYear - 2), "CY" + (calendarYear - 2));
-		this.addColumn("cy" + (calendarYear - 1), "CY" + (calendarYear - 1));
+		this.addColumn(FinancialDashAction.CALENDAR_YEAR + "-" + (calendarYear - 3), FinancialDashAction.CALENDAR_YEAR + (calendarYear - 3));
+		this.addColumn(FinancialDashAction.CALENDAR_YEAR + "-" + (calendarYear - 2), FinancialDashAction.CALENDAR_YEAR + (calendarYear - 2));
+		this.addColumn(FinancialDashAction.CALENDAR_YEAR + "-" + (calendarYear - 1), FinancialDashAction.CALENDAR_YEAR + (calendarYear - 1));
+		this.addColumn(FinancialDashAction.CALENDAR_YEAR + "-" + calendarYear, FinancialDashAction.CALENDAR_YEAR + calendarYear);
 	}
 
 	/**
@@ -100,23 +100,28 @@ public class FinancialDashColumnSet {
 	private void addYearOverYearColumns() {
 		Integer twoDigitYr = calendarYear % 100;
 		
-		this.addColumn("q4" + (twoDigitYr - 1), "Q4" + (twoDigitYr - 1));
-		this.addColumn("q4" + twoDigitYr, "Q4" + twoDigitYr);
-		this.addColumn("ytd" + (twoDigitYr - 1), "YTD" + (calendarYear - 1));
-		this.addColumn("ytd" + twoDigitYr, "YTD" + calendarYear);
+		this.addColumn(FinancialDashAction.QUARTER_4 + "-" + (calendarYear - 1), FinancialDashAction.QUARTER_4 + (twoDigitYr - 1));
+		this.addColumn(FinancialDashAction.QUARTER_4 + "-" + calendarYear, FinancialDashAction.QUARTER_4 + twoDigitYr);
+		this.addColumn(FinancialDashAction.YEAR_TO_DATE + "-" + (calendarYear - 1), FinancialDashAction.YEAR_TO_DATE + (calendarYear - 1));
+		this.addColumn(FinancialDashAction.YEAR_TO_DATE + "-" + calendarYear, FinancialDashAction.YEAR_TO_DATE + calendarYear);
 	}
 
 	/**
-	 * Adds all columns for a calendar year display type.
+	 * Adds all columns for a calendar year display type or a current year display type.
 	 */
 	private void addCalendarYearColumns() {
 		Integer twoDigitYr = calendarYear % 100;
 		
-		this.addColumn("q1" + twoDigitYr, "Q1" + twoDigitYr);
-		this.addColumn("q2" + twoDigitYr, "Q2" + twoDigitYr);
-		this.addColumn("q3" + twoDigitYr, "Q3" + twoDigitYr);
-		this.addColumn("q4" + twoDigitYr, "Q4" + twoDigitYr);
-		this.addColumn("cy" + twoDigitYr, "CY" + calendarYear);
+		this.addColumn(FinancialDashAction.QUARTER_1 + "-" + calendarYear, FinancialDashAction.QUARTER_1 + twoDigitYr);
+		this.addColumn(FinancialDashAction.QUARTER_2 + "-" + calendarYear, FinancialDashAction.QUARTER_2 + twoDigitYr);
+		this.addColumn(FinancialDashAction.QUARTER_3 + "-" + calendarYear, FinancialDashAction.QUARTER_3 + twoDigitYr);
+		this.addColumn(FinancialDashAction.QUARTER_4 + "-" + calendarYear, FinancialDashAction.QUARTER_4 + twoDigitYr);
+		
+		if (this.getDisplayType() == DisplayType.CURYR) {
+			this.addColumn(FinancialDashAction.YEAR_TO_DATE + "-" + calendarYear, FinancialDashAction.YEAR_TO_DATE + calendarYear);
+		} else {
+			this.addColumn(FinancialDashAction.CALENDAR_YEAR + "-" + calendarYear, FinancialDashAction.CALENDAR_YEAR + calendarYear);
+		}
 	}
 
 	/**
