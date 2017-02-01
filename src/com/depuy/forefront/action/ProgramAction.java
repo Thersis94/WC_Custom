@@ -9,7 +9,7 @@ import java.util.List;
 import com.depuy.forefront.action.vo.ProgramVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -30,10 +30,10 @@ public class ProgramAction extends SBActionAdapter {
 		super(ai);
 	}
 
-	public void delete(SMTServletRequest req) {
+	public void delete(ActionRequest req) {
 	}
 
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("Beginning ProgramAction retrieve");
 		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 		String programId = (req.hasParameter("programId")) ? req.getParameter("programId") : null;
@@ -67,7 +67,7 @@ public class ProgramAction extends SBActionAdapter {
 
 	}
 
-	private void updateProgram(SMTServletRequest req) throws ActionException{
+	private void updateProgram(ActionRequest req) throws ActionException{
 		log.debug("Beginning ProgramAction update");
 		String msg = "Program Added Successfully";
 		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
@@ -116,7 +116,7 @@ public class ProgramAction extends SBActionAdapter {
 		this.sendRedirect(page.getFullPath() + "?actionType=" + AdminFacadeAction.PROGRAM_ACTION, msg, req);
 	}
 
-	public void build(SMTServletRequest req) throws ActionException{
+	public void build(ActionRequest req) throws ActionException{
 		this.updateProgram(req);
 	}
 }

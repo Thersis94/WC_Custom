@@ -4,9 +4,9 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
-import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
@@ -60,12 +60,12 @@ public class CompanyVO {
 		attributes = new ArrayList<>();
 	}
 	
-	public CompanyVO(SMTServletRequest req) {
+	public CompanyVO(ActionRequest req) {
 		this();
 		setData(req);
 	}
 	
-	public void setData(SMTServletRequest req) {
+	public void setData(ActionRequest req) {
 		companyId = req.getParameter("companyId");
 		parentId = StringUtil.checkVal(req.getParameter("parentId"), null);
 		companyName = req.getParameter("companyName");

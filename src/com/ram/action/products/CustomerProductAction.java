@@ -13,7 +13,7 @@ import com.ram.datafeed.data.CustomerVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -47,7 +47,7 @@ public class CustomerProductAction extends SBActionAdapter {
 	}
 	
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		
 		//Instantiate List and determine lookup method.

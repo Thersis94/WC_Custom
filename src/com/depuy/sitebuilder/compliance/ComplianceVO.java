@@ -6,7 +6,7 @@ import java.sql.ResultSet;
 
 // SMT Base Libs 2.0
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -69,7 +69,7 @@ public class ComplianceVO implements Serializable {
 		setData(rs);
 	}
 	
-	public ComplianceVO(SMTServletRequest req) {
+	public ComplianceVO(ActionRequest req) {
 		setData(req);
 	}
 	
@@ -77,7 +77,7 @@ public class ComplianceVO implements Serializable {
 	 * Assigns request data to variables
 	 * @param req
 	 */
-	public void setData(SMTServletRequest req) {
+	public void setData(ActionRequest req) {
 		complianceId = req.getParameter("complianceId");
 		companyName = req.getParameter("companyName");
 		lastName = req.getParameter("physLastName");

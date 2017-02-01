@@ -8,7 +8,7 @@ import java.util.Properties;
 import com.depuysynthes.huddle.solr.HuddleSolrFormIndexer;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -46,7 +46,7 @@ public class HuddleFormGroupAction extends HuddleFormSolrAction {
 
 
 	@Override
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		//Get necessary information off request.
 		String formGroupId = StringUtil.checkVal(req.getParameter(SBModuleAction.SB_ACTION_ID));
 		String organizationId = StringUtil.checkVal(req.getParameter("organizationId"));
@@ -60,7 +60,7 @@ public class HuddleFormGroupAction extends HuddleFormSolrAction {
 
 
 	@Override
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		//update SBAction Record.
 		super.update(req);
 
@@ -94,7 +94,7 @@ public class HuddleFormGroupAction extends HuddleFormSolrAction {
 
 
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		String formGroupId = actionInit.getActionId();
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
@@ -109,7 +109,7 @@ public class HuddleFormGroupAction extends HuddleFormSolrAction {
 
 
 	@Override
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		Properties props = new Properties();
 		props.putAll(getAttributes());
 		HuddleSolrFormIndexer indexer = new HuddleSolrFormIndexer(props);

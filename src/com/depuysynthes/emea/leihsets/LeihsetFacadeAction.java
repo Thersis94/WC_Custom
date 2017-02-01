@@ -2,8 +2,8 @@ package com.depuysynthes.emea.leihsets;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionInterface;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.databean.FilePartDataBean;
 import com.smt.sitebuilder.action.FacadeActionAdapter;
 import com.smt.sitebuilder.action.FileLoader;
@@ -42,7 +42,7 @@ public class LeihsetFacadeAction extends FacadeActionAdapter {
 		leihset, asset, category; 
 	}
 
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		//add a hook to save categories via ajax
 		ActionType type = (req.hasParameter("addCategory")) ? ActionType.category : ActionType.leihset;	
 		
@@ -50,15 +50,15 @@ public class LeihsetFacadeAction extends FacadeActionAdapter {
 		getAction(type).list(req);
 	}
 
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		getAction(req.getParameter(AdminConstants.FACADE_TYPE)).delete(req);
 	}
 
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		getAction(req.getParameter(AdminConstants.FACADE_TYPE)).update(req);
 	}
 
-	public void copy(SMTServletRequest req) throws ActionException {
+	public void copy(ActionRequest req) throws ActionException {
 		//LeihsetAction handles both Leihset and LeihsetAsset copies
 		getAction(ActionType.leihset).copy(req);
 	}
@@ -90,7 +90,7 @@ public class LeihsetFacadeAction extends FacadeActionAdapter {
 	 * @param actionType
 	 * @return
 	 */
-	private SMTActionInterface getAction(String actionType) throws ActionException {
+	private ActionInterface getAction(String actionType) throws ActionException {
 		ActionType at = null;
 		try {
 			at = ActionType.valueOf(actionType);
@@ -106,8 +106,8 @@ public class LeihsetFacadeAction extends FacadeActionAdapter {
 	 * @param actionType
 	 * @return
 	 */
-	private SMTActionInterface getAction(ActionType type) {
-		SMTActionInterface ai = null;
+	private ActionInterface getAction(ActionType type) {
+		ActionInterface ai = null;
 		log.debug("Loading action " + type);
 		switch(type) {
 			case leihset:

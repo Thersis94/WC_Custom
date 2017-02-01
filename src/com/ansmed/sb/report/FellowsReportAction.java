@@ -12,7 +12,7 @@ import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
@@ -55,7 +55,7 @@ public class FellowsReportAction extends SBActionAdapter {
 	/**
 	 * 
 	 */
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		
 		String report = StringUtil.checkVal(req.getParameter("report"));
 		String surgeonId = StringUtil.checkVal(req.getParameter("surgeonId"));
@@ -68,7 +68,7 @@ public class FellowsReportAction extends SBActionAdapter {
 		}
 	}
 	
-	public void createDetailReport(SMTServletRequest req) {
+	public void createDetailReport(ActionRequest req) {
 		StringBuffer sql = new StringBuffer();
 		String schema = (String)getAttribute("customDbSchema");
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
@@ -148,7 +148,7 @@ public class FellowsReportAction extends SBActionAdapter {
 		req.setAttribute(Constants.BINARY_DOCUMENT, rpt);
 	}
 	
-	public void createSummaryReport(SMTServletRequest req) {
+	public void createSummaryReport(ActionRequest req) {
 		StringBuffer sql = new StringBuffer();
 		String schema = (String)getAttribute("customDbSchema");
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);

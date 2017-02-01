@@ -6,7 +6,7 @@ package com.codman.cu.tracking.vo;
 import java.io.Serializable;
 
 import com.codman.cu.tracking.UnitAction;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 
 /****************************************************************************
  * <b>Title</b>: UnitSearchVO<p/>
@@ -24,7 +24,7 @@ public class UnitSearchVO extends RequestSearchVO implements Serializable {
 	
 	public static final String SESSION_VAR = "CodmanCUUnitSearchVO";
 	
-	public UnitSearchVO(SMTServletRequest req, String prodCd) {
+	public UnitSearchVO(ActionRequest req, String prodCd) {
 		super(req, SESSION_VAR + prodCd);
 	}
 	

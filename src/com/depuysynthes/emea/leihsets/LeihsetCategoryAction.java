@@ -12,7 +12,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -44,7 +44,7 @@ public class LeihsetCategoryAction extends SBActionAdapter {
 	
 	
 	@Override
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		if (!req.hasParameter("addCategory")) return;
 		
 		String catId = addCategory(req.getParameter("addCategory"), req.getParameter("parentId"));

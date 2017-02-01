@@ -13,7 +13,7 @@ import java.util.List;
 //SMTBaseLibs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -55,7 +55,7 @@ public class WorkflowModuleAction extends AbstractWorkflowAction {
 	}
 
 	@Override
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		//Get the workflowModuleId off the request.
 		WorkflowModuleVO wfmv = new WorkflowModuleVO(req);
 		String msg = "Workflow Module deleted Successfully";
@@ -83,7 +83,7 @@ public class WorkflowModuleAction extends AbstractWorkflowAction {
 	}
 
 	@Override
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 
 		//Get List of Workflow Module VOs
 		List<WorkflowModuleVO> data = listWorkflowModules(req.getParameter("workflowModuleId"));
@@ -93,7 +93,7 @@ public class WorkflowModuleAction extends AbstractWorkflowAction {
 	}
 
 	@Override
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 
 		boolean success = true;
 		String msg = null;
@@ -179,7 +179,7 @@ public class WorkflowModuleAction extends AbstractWorkflowAction {
 	 * @see com.ram.action.workflow.AbstractWorkflowAction#buildRedirectSupplement(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	protected String buildRedirectSupplement(SMTServletRequest req) {
+	protected String buildRedirectSupplement(ActionRequest req) {
 		return "&callType=module&bType=listModules";
 	}
 
@@ -187,7 +187,7 @@ public class WorkflowModuleAction extends AbstractWorkflowAction {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("WorkflowModuleAction retrieve...");
 		List<WorkflowModuleVO> data = null;
 

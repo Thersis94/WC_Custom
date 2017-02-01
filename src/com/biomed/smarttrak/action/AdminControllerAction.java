@@ -3,13 +3,13 @@
  */
 package com.biomed.smarttrak.action;
 
-import com.biomed.smarttrak.action.gap.GapFacadeAction;
 import com.biomed.smarttrak.FinancialDashAction;
+import com.biomed.smarttrak.action.gap.GapFacadeAction;
 import com.biomed.smarttrak.admin.ContentHierarchyAction;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionInterface;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.PageVO;
@@ -39,19 +39,19 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	}
 
 	@Override
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		//pass to superclass for portlet registration (WC admintool)
 		//this method is not called from the front-end UI
 		super.retrieve(req);
 	}
 
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		String actionType = StringUtil.checkVal(req.getParameter("actionType"));
 		String msg = (String) attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 
 		try {
-			SMTActionInterface act = loadAction(actionType);
+			ActionInterface act = loadAction(actionType);
 			if(act != null) {
 				act.build(req);
 			}
@@ -69,9 +69,9 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	}
 
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		String actionType = StringUtil.checkVal(req.getParameter("actionType"));
-		SMTActionInterface act = loadAction(actionType);
+		ActionInterface act = loadAction(actionType);
 		if(act != null) {
 			act.retrieve(req);
 		}
@@ -84,8 +84,8 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	private SMTActionInterface loadAction(String actionType) throws ActionException {
-		SMTActionInterface action;
+	private ActionInterface loadAction(String actionType) throws ActionException {
+		ActionInterface action;
 		switch (StringUtil.checkVal(actionType)) {
 			case "contentHierarchy":
 				action = new ContentHierarchyAction();

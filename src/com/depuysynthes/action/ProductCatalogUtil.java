@@ -8,10 +8,10 @@ import java.util.Map;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.commerce.catalog.ProductCategoryVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
-import com.siliconmtn.http.SMTServletRequest;
 import com.smt.sitebuilder.action.AbstractBaseAction;
 import com.smt.sitebuilder.action.commerce.product.ProductCatalogAction;
 import com.smt.sitebuilder.action.tools.StatVO;
@@ -52,7 +52,7 @@ public class ProductCatalogUtil extends AbstractBaseAction {
 	 * @param req
 	 * @return
 	 */
-	public Tree loadCatalog(String catalogId, String rootNodeId,  boolean loadAttributes, SMTServletRequest req) {
+	public Tree loadCatalog(String catalogId, String rootNodeId,  boolean loadAttributes, ActionRequest req) {
 		ProductCatalogAction pca = new ProductCatalogAction(this.actionInit);
 		pca.setDBConnection(dbConn);
 		pca.setAttributes(attributes);
@@ -248,45 +248,44 @@ public class ProductCatalogUtil extends AbstractBaseAction {
 	 */
 	
 	/* (non-Javadoc)
-	 * @see com.siliconmtn.action.SMTActionInterface#delete(com.siliconmtn.http.SMTServletRequest)
+	 * @see com.siliconmtn.action.ActionInterface#delete(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.siliconmtn.action.SMTActionInterface#update(com.siliconmtn.http.SMTServletRequest)
+	 * @see com.siliconmtn.action.ActionInterface#update(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.siliconmtn.action.SMTActionInterface#build(com.siliconmtn.http.SMTServletRequest)
+	 * @see com.siliconmtn.action.ActionInterface#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.siliconmtn.action.SMTActionInterface#retrieve(com.siliconmtn.http.SMTServletRequest)
+	 * @see com.siliconmtn.action.ActionInterface#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.siliconmtn.action.SMTActionInterface#list(com.siliconmtn.http.SMTServletRequest)
+	 * @see com.siliconmtn.action.ActionInterface#list(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.siliconmtn.action.SMTActionInterface#copy(com.siliconmtn.http.SMTServletRequest)
+	 * @see com.siliconmtn.action.ActionInterface#copy(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void copy(SMTServletRequest req) throws ActionException {
+	public void copy(ActionRequest req) throws ActionException {
 	}
-
 }

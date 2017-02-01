@@ -11,8 +11,8 @@ import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionInterface;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -51,7 +51,7 @@ public class CoopAdsEmailer extends SBActionAdapter {
 	 * @param type
 	 * @param site
 	 */
-	public void notifyAdminOfAdSubmittal(CoopAdVO vo, SiteVO site, UserDataVO user, SMTServletRequest req) {
+	public void notifyAdminOfAdSubmittal(CoopAdVO vo, SiteVO site, UserDataVO user, ActionRequest req) {
 		StringBuilder msg = new StringBuilder();
 		msg.append(user.getFirstName()).append(" ").append(user.getLastName());
 		msg.append(" (").append(user.getEmailAddress()).append(") has submitted ");
@@ -61,7 +61,7 @@ public class CoopAdsEmailer extends SBActionAdapter {
 		//get the postcard data to generate the summary report
 		AbstractSBReportVO rpt = new PostcardSummaryReportVO();
 		try {
-			SMTActionInterface ai = new PostcardSelect(actionInit);
+			ActionInterface ai = new PostcardSelect(actionInit);
 			ai.setAttributes(attributes);
 			ai.setDBConnection(dbConn);
 			ai.retrieve(req);

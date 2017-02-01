@@ -13,11 +13,11 @@ import com.depuy.datafeed.tms.modules.CustomerVO;
 import com.depuy.datafeed.tms.modules.DataSourceVO;
 import com.depuy.datafeed.tms.modules.ProfileVO;
 import com.depuy.datafeed.tms.modules.ResponseVO;
-import com.siliconmtn.action.AbstractActionController;
+import com.siliconmtn.action.AbstractAction;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.exception.DatabaseException;
-import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -36,7 +36,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @since Aug 28, 2008
  * <b>Changes: </b>
  ****************************************************************************/
-public class DataFeedAction extends AbstractActionController {
+public class DataFeedAction extends AbstractAction {
 	
 	/**
 	 * 
@@ -54,38 +54,38 @@ public class DataFeedAction extends AbstractActionController {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.siliconmtn.action.SMTActionInterface#build(com.siliconmtn.http.SMTServletRequest)
+	 * @see com.siliconmtn.action.ActionInterface#build(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		
 	}
 
 	/* (non-Javadoc)
-	 * @see com.siliconmtn.action.SMTActionInterface#delete(com.siliconmtn.http.SMTServletRequest)
+	 * @see com.siliconmtn.action.ActionInterface#delete(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		
 	}
 
 	/* (non-Javadoc)
-	 * @see com.siliconmtn.action.SMTActionInterface#list(com.siliconmtn.http.SMTServletRequest)
+	 * @see com.siliconmtn.action.ActionInterface#list(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		log.debug("Listing Customer Data");
 
 	}
 
 	/* (non-Javadoc)
-	 * @see com.siliconmtn.action.SMTActionInterface#retrieve(com.siliconmtn.http.SMTServletRequest)
+	 * @see com.siliconmtn.action.ActionInterface#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		
 	}
 
 	/* (non-Javadoc)
-	 * @see com.siliconmtn.action.SMTActionInterface#update(com.siliconmtn.http.SMTServletRequest)
+	 * @see com.siliconmtn.action.ActionInterface#update(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		log.debug("Updating Customer Data");
 		CustomerVO customer = new CustomerVO();
 		
@@ -188,10 +188,11 @@ public class DataFeedAction extends AbstractActionController {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.siliconmtn.action.SMTActionInterface#getAttributes()
+	 * @see com.siliconmtn.action.ActionInterface#getAttributes()
 	 */
 	@Override
 	public Map<String, Object> getAttributes() {
 		return attributes;
 	}
+
 }

@@ -9,7 +9,7 @@ import java.util.List;
 import com.depuy.forefront.action.vo.StageVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -27,12 +27,12 @@ public class StageAction extends SBActionAdapter {
 		super(ai);
 	}
 	
-	public void delete(SMTServletRequest req){
+	public void delete(ActionRequest req){
 		return;
 	}
 	
 	
-	public void retrieve(SMTServletRequest req) throws ActionException{
+	public void retrieve(ActionRequest req) throws ActionException{
 		log.debug("Beginning StageAction retrieve");
 		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 		String stageId = StringUtil.checkVal(req.getParameter("stageId"));
@@ -67,7 +67,7 @@ public class StageAction extends SBActionAdapter {
 		mod.setActionData(data);
 	}
 	
-	private void updateStage(SMTServletRequest req) throws ActionException{
+	private void updateStage(ActionRequest req) throws ActionException{
 		log.debug("Beginning StageAction update");
 		String msg = "Stage Saved Successfully";
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
@@ -113,7 +113,7 @@ public class StageAction extends SBActionAdapter {
 		this.sendRedirect(page.getFullPath() + "?actionType=" + AdminFacadeAction.STAGE_ACTION, msg, req);
 	}
 	
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		updateStage(req);
 	}
 }
