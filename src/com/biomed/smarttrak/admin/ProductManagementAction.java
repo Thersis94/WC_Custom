@@ -528,14 +528,14 @@ public class ProductManagementAction extends SimpleActionAdapter {
 		try {
 			if ("update".equals(buildAction)) {			
 				updateElement(req);
-				redirectRequest(msg, buildAction, req);
 			} else if("delete".equals(buildAction)) {
 				deleteElement(req);
-				redirectRequest(msg, buildAction, req);
 			}
 		} catch (Exception e) {
 			msg = StringUtil.capitalizePhrase(buildAction) + " failed to complete successfully. Please contact an administrator for assistance";
 		}
+		
+		redirectRequest(msg, buildAction, req);
 	}
 
 
