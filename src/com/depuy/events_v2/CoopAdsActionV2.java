@@ -14,7 +14,7 @@ import com.depuy.events_v2.vo.DePuyEventSeminarVO;
 import com.depuy.events.vo.CoopAdVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -69,7 +69,7 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 		super(arg0);
 	}
 
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 		String reqType = StringUtil.checkVal(req.getParameter("reqType"));
@@ -141,7 +141,7 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	private List<CoopAdVO> createAdList(SMTServletRequest req) {
+	private List<CoopAdVO> createAdList(ActionRequest req) {
 		//determine how many iterations to run.  Internet ads start at #4
 		//current UI supports 3
 		final int MAX_ADS = 3;
@@ -168,7 +168,7 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 	 * @param suffix
 	 * @param onlineFlg 0 for print ads, 1 for online ads
 	 */
-	private void assignAdFields(SMTServletRequest req, CoopAdVO vo, int suffix, int onlineFlg) {
+	private void assignAdFields(ActionRequest req, CoopAdVO vo, int suffix, int onlineFlg) {
 		vo.setNewspaper1Text(req.getParameter("newspaperText_"+suffix));
 		vo.setNewspaper1Phone(req.getParameter("newspaperPhone_"+suffix));
 		vo.setContactName(req.getParameter("contactName_"+suffix));
@@ -186,7 +186,7 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 
 	
 	private void sendNotificationEmail(CoopAdVO vo, String reqType, SiteVO site, 
-			UserDataVO user, SMTServletRequest req) {
+			UserDataVO user, ActionRequest req) {
 
 		DePuyEventManageActionV2 epsa = new DePuyEventManageActionV2(actionInit);
 		epsa.setDBConnection(dbConn);
@@ -321,7 +321,7 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	private CoopAdVO saveAd(SMTServletRequest req, SiteVO site, CoopAdVO vo)
+	private CoopAdVO saveAd(ActionRequest req, SiteVO site, CoopAdVO vo)
 			throws ActionException {
 		StringBuilder sql = new StringBuilder(300);
 		boolean insertRecord = StringUtil.checkVal(vo.getCoopAdId()).length() == 0;
@@ -412,7 +412,7 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void updateAdStatus(CoopAdVO vo, SMTServletRequest req) 
+	private void updateAdStatus(CoopAdVO vo, ActionRequest req) 
 			throws ActionException {
 		Integer statusLvl = Convert.formatInteger( vo.getStatusFlg() );
 
@@ -546,7 +546,7 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 	 * @param site
 	 * @return
 	 */
-	private String saveFile(SMTServletRequest req, String paramNm, String subPath, SiteVO site) {
+	private String saveFile(ActionRequest req, String paramNm, String subPath, SiteVO site) {
 		//log.debug("starting saveAdFile");
 		PostcardInsertV2 pi2 = new PostcardInsertV2();
 		pi2.setAttributes(attributes);
@@ -598,7 +598,7 @@ public class CoopAdsActionV2 extends SBActionAdapter {
 	 * @param coopAdId
 	 * @throws ActionException
 	 */
-	private void savePromoteAdData(SMTServletRequest req, SiteVO site, 
+	private void savePromoteAdData(ActionRequest req, SiteVO site, 
 			CoopAdVO vo) throws ActionException {
 		final String customDB = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		

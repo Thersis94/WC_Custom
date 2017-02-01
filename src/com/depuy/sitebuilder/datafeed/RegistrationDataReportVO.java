@@ -10,7 +10,7 @@ import java.util.Map.Entry;
 import com.depuy.sitebuilder.datafeed.RegistrationDataReport.RegistrationDataVO;
 import com.siliconmtn.data.report.ExcelReport;
 import com.siliconmtn.data.report.StandardExcelReport;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
@@ -43,7 +43,7 @@ public class RegistrationDataReportVO extends AbstractDataFeedReportVO {
 	 * @see com.depuy.sitebuilder.datafeed.AbstractDataFeedReportVO#setRequestData(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void setRequestData(SMTServletRequest req) {
+	public void setRequestData(ActionRequest req) {
 		startDate = StringUtil.checkVal(req.getParameter("startDate"));
 		endDate = StringUtil.checkVal(req.getParameter("endDate"));
 

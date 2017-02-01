@@ -17,8 +17,8 @@ import org.apache.commons.lang.ArrayUtils;
 import com.biomed.smarttrak.admin.ContentHierarchyAction;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
-import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -45,11 +45,11 @@ public class GapFacadeAction extends ContentHierarchyAction {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.ActionRequest)
 	 */
 	@SuppressWarnings("unchecked")
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		if(req.hasParameter("selNodes")) {
 			super.retrieve(req);
 			ModuleVO mod = (ModuleVO) this.getAttribute(Constants.MODULE_DATA);
@@ -208,11 +208,11 @@ public class GapFacadeAction extends ContentHierarchyAction {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.ActionRequest)
 	 * TODO - COMPLETE METHOD BODY
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		//super.build(req);
 	}
 

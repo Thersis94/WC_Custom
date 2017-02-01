@@ -12,7 +12,7 @@ import java.util.Map;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.exception.DatabaseException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
@@ -48,7 +48,7 @@ public class DailyCaregiversEmailWrapper extends EmailWrapper {
 	}
 	
 	
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		String programNm = (actionInit.getName().toLowerCase().indexOf("free") > -1) ? "DIFC-FREE" : "DIFC";
 		req.setAttribute("series", programNm);
 		super.build(req);
@@ -108,7 +108,7 @@ public class DailyCaregiversEmailWrapper extends EmailWrapper {
 	}
 	
 	
-	protected void loadReport(SMTServletRequest req, String contactActionId, String emailCampaignId) {
+	protected void loadReport(ActionRequest req, String contactActionId, String emailCampaignId) {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 		
@@ -191,7 +191,7 @@ public class DailyCaregiversEmailWrapper extends EmailWrapper {
 	/**
 	 * converts a gatekeeper subscription  (62 emails) into a full (365 emails) one
 	 */
-	protected void convert(SMTServletRequest req) throws ActionException {
+	protected void convert(ActionRequest req) throws ActionException {
 		String msg = "";
 		String sql = "update contact_data set value_txt=0, update_dt=getDate() where contact_field_id=? and contact_submittal_id=?";
 		

@@ -12,7 +12,7 @@ import org.dom4j.DocumentException;
 import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
 
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.security.UserRoleVO;
 import com.siliconmtn.util.Convert;
@@ -35,7 +35,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class ERPReportParser  {
 	
 	public static final Integer ROLE_AVP = new Integer(60);
-	private SMTServletRequest request = null;
+	private ActionRequest request = null;
 	private byte[] reportData = null;
 	private byte[] formattedReport = null;
 	private String reportFormat = "html";
@@ -44,7 +44,7 @@ public class ERPReportParser  {
 	/**
 	 * 
 	 */
-	public ERPReportParser(SMTServletRequest req) {
+	public ERPReportParser(ActionRequest req) {
 		this.request = req;
 		reportFormat = "html";
 	}
@@ -189,7 +189,7 @@ public class ERPReportParser  {
 	 * @param req
 	 * @return
 	 */
-	private String checkDistributorId(SMTServletRequest req) {
+	private String checkDistributorId(ActionRequest req) {
 		UserDataVO user = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
 		UserRoleVO role = (UserRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
 		SalesRepVO rep = (SalesRepVO)user.getUserExtendedInfo();
@@ -258,14 +258,14 @@ public class ERPReportParser  {
 	/**
 	 * @return the request
 	 */
-	public SMTServletRequest getRequest() {
+	public ActionRequest getRequest() {
 		return request;
 	}
 
 	/**
 	 * @param request the request to set
 	 */
-	public void setRequest(SMTServletRequest request) {
+	public void setRequest(ActionRequest request) {
 		this.request = request;
 	}
 	

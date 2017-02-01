@@ -9,7 +9,7 @@ import java.util.List;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
@@ -24,7 +24,7 @@ public class PathologiesAction extends SimpleActionAdapter {
 		super(arg0);
 	}
 	
-	public void delete(SMTServletRequest req){
+	public void delete(ActionRequest req){
 		String dlrLocnId = req.getParameter("dealerLocationId");
 	
 		StringBuilder sql = new StringBuilder();
@@ -43,7 +43,7 @@ public class PathologiesAction extends SimpleActionAdapter {
 		}
 	}
 	
-	public void update(SMTServletRequest req){
+	public void update(ActionRequest req){
 		String dlrLocnId = req.getParameter("dealerLocationId");
 		String [] pathologyIds = req.getParameter("pathologies").split(",");
 		if (pathologyIds == null || pathologyIds.length == 0) return;
@@ -74,7 +74,7 @@ public class PathologiesAction extends SimpleActionAdapter {
 			try { ps.close(); } catch (Exception e) {}
 		}
 	}
-	public void retrieve(SMTServletRequest req) {
+	public void retrieve(ActionRequest req) {
 		String dlrLocnId = req.getParameter("dealerLocationId");
 		List<Node> nodes = new ArrayList<Node>();
 		

@@ -20,7 +20,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.MailException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.AbstractLoginModule;
 import com.siliconmtn.security.SecurityModuleFactoryImpl;
 import com.siliconmtn.security.UserDataComparator;
@@ -72,12 +72,12 @@ public class UserAction extends SimpleActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#list(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 	
 	@Override
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		Object msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
 		SBUserRole roleVo = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
@@ -130,7 +130,7 @@ public class UserAction extends SimpleActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		log.debug("Starting UserAction build...");
 
 		PersonVO vo = new PersonVO(req);
@@ -198,7 +198,7 @@ public class UserAction extends SimpleActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		
 		//handle deletions gracefully
 		if (req.hasParameter("del"))
@@ -251,7 +251,7 @@ public class UserAction extends SimpleActionAdapter {
 	 * @throws SQLException
 	 * @throws DatabaseException
 	 */
-	public List<PersonVO> retrieveUsers(SMTServletRequest req) 
+	public List<PersonVO> retrieveUsers(ActionRequest req) 
 	throws SQLException, DatabaseException {
 		
 		Map<String, PersonVO> data = new HashMap<String, PersonVO>();
@@ -342,7 +342,7 @@ public class UserAction extends SimpleActionAdapter {
 	 * @param vo
 	 * @param pm
 	 */
-	public void createUserProfile(SMTServletRequest req, ProfileManager pm, SiteVO site, PersonVO vo) {
+	public void createUserProfile(ActionRequest req, ProfileManager pm, SiteVO site, PersonVO vo) {
 		log.debug("creating/updating user's profile...");
 		
 		//force new users to change their password
@@ -376,7 +376,7 @@ public class UserAction extends SimpleActionAdapter {
 		
 	}
 	
-	private void saveProfileRole(SMTServletRequest req, SiteVO site, PersonVO vo) {
+	private void saveProfileRole(ActionRequest req, SiteVO site, PersonVO vo) {
 		ProfileRoleManager prm = new ProfileRoleManager();
 		
 		//create a base ROLE VO
@@ -415,7 +415,7 @@ public class UserAction extends SimpleActionAdapter {
 	 * @param pm
 	 * @param vo
 	 */
-	public void checkProfile(SMTServletRequest req, ProfileManager pm, PersonVO vo) {
+	public void checkProfile(ActionRequest req, ProfileManager pm, PersonVO vo) {
 		//save core PROFILE, PHONE_NO, & PROFILE_ADDRESS
 		try {
 			if (vo.getProfileId() == null || vo.getProfileId().length() == 0) {
@@ -441,7 +441,7 @@ public class UserAction extends SimpleActionAdapter {
 	 * @param site
 	 * @param vo
 	 */
-	private void sendEmail(SMTServletRequest req, SiteVO site, PersonVO vo) {
+	private void sendEmail(ActionRequest req, SiteVO site, PersonVO vo) {
 				
 		if (msg == null && Convert.formatBoolean(req.getParameter("email"))) {
 			MedstreamEmailer emailer = null;

@@ -14,7 +14,7 @@ import java.util.Set;
 
 // SMT Base Libs
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
@@ -94,7 +94,7 @@ public class SurgeonVO extends AbstractSiteBuilderVO {
 		setData(rs);
 	}
 	
-	public SurgeonVO(SMTServletRequest req) {
+	public SurgeonVO(ActionRequest req) {
 		this();
 		setData(req);
 	}
@@ -104,7 +104,7 @@ public class SurgeonVO extends AbstractSiteBuilderVO {
 	 * Takes the request object params and parses them into the appropriate vars
 	 * @param req
 	 */
-	public void setData(SMTServletRequest req) {
+	public void setData(ActionRequest req) {
 		StringEncoder se = new StringEncoder();
 		surgeonId = req.getParameter("surgeonId");
 		surgeonTypeId = req.getParameter("surgeonTypeId");

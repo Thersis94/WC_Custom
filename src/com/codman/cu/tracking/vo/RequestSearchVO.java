@@ -3,7 +3,7 @@ package com.codman.cu.tracking.vo;
 import java.io.Serializable;
 
 import com.codman.cu.tracking.AbstractTransAction;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
@@ -33,13 +33,13 @@ public class RequestSearchVO implements Serializable {
 	protected String sort = null;
 	private String SESSION_VAR = "CodmanCURequestSearchVO";
 	
-	public RequestSearchVO(SMTServletRequest req, String sessionVarNm) {
+	public RequestSearchVO(ActionRequest req, String sessionVarNm) {
 		this.SESSION_VAR = sessionVarNm;
 		this.init(req);
 		
 	}
 	
-	private void init(SMTServletRequest req) {
+	private void init(ActionRequest req) {
 		if (req.getParameter("sBtn") != null) { //indicates a search was performed
 			accountName = StringUtil.checkVal(req.getParameter("sAccountName"), null);
 			statusId = Convert.formatInteger(req.getParameter("sStatusId"), null);

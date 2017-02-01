@@ -16,7 +16,7 @@ import com.depuysynthesinst.lms.FutureLeaderACGME;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -59,12 +59,12 @@ public class CourseCalendar extends SimpleActionAdapter {
 	}
 	
 	@Override
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 
 	@Override
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		if (!Convert.formatBoolean(req.getParameter("batchOnly")))
 			super.update(req);
 		
@@ -80,7 +80,7 @@ public class CourseCalendar extends SimpleActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void processUpload(SMTServletRequest req) throws ActionException {
+	private void processUpload(ActionRequest req) throws ActionException {
 		AnnotationParser parser;
 		FilePartDataBean fpdb = req.getFile("xlsFile");
 		if (fpdb == null) fpdb = req.getFile("batchFile");
@@ -135,7 +135,7 @@ public class CourseCalendar extends SimpleActionAdapter {
 	 * retrieves a list of Events tied to this porlet.  Filters the list to the passed anatomy, if present. 
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 
@@ -202,7 +202,7 @@ public class CourseCalendar extends SimpleActionAdapter {
 	 * @param req
 	 * @param grpVo
 	 */
-	private void prepareSpecialtyFacets(SMTServletRequest req, EventGroupVO grpVo) {
+	private void prepareSpecialtyFacets(ActionRequest req, EventGroupVO grpVo) {
 		//one for specialties, put on the request by Type
 		for (EventTypeVO typeVo : grpVo.getTypes().values()) {
 			Map<String, Integer> specialties = new TreeMap<String, Integer>();
@@ -224,7 +224,7 @@ public class CourseCalendar extends SimpleActionAdapter {
 		}
 	}
 	
-	private void prepareLocationFacets(SMTServletRequest req, EventGroupVO grpVo) {
+	private void prepareLocationFacets(ActionRequest req, EventGroupVO grpVo) {
 		//one for Location (city & state), put on the request by Type
 		for (EventTypeVO typeVo : grpVo.getTypes().values()) {
 			Map<String, Integer> locations = new TreeMap<String, Integer>();
@@ -252,7 +252,7 @@ public class CourseCalendar extends SimpleActionAdapter {
 	 * @param req
 	 * @param vo
 	 */
-	private void filterDataByLocation(SMTServletRequest req, EventGroupVO grpVo) {
+	private void filterDataByLocation(ActionRequest req, EventGroupVO grpVo) {
 		if (!req.hasParameter("location")) return;
 		List<String> filters = Arrays.asList(req.getParameter("location").split("~"));
 		if (filters == null || filters.size() == 0) return;
@@ -276,7 +276,7 @@ public class CourseCalendar extends SimpleActionAdapter {
 	 * @param req
 	 * @param vo
 	 */
-	private void filterDataBySpecialty(SMTServletRequest req, EventGroupVO grpVo) {
+	private void filterDataBySpecialty(ActionRequest req, EventGroupVO grpVo) {
 		if (!req.hasParameter("specialty")) return;
 		List<String> filters = Arrays.asList(req.getParameter("specialty").split("~"));
 		if (filters == null || filters.size() == 0) return;
@@ -338,7 +338,7 @@ public class CourseCalendar extends SimpleActionAdapter {
 	 * Build gets called for creating iCal files (downloads) of the passed eventEntryId
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		
 		//for event RSVP signups

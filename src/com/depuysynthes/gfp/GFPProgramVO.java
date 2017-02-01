@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 
 /****************************************************************************
  * <b>Title</b>: GFPProgramVO.java
@@ -37,12 +37,12 @@ public class GFPProgramVO {
 		resources = new ArrayList<>();
 	}
 	
-	public GFPProgramVO(SMTServletRequest req) {
+	public GFPProgramVO(ActionRequest req) {
 		this();
 		assignData(req);
 	}
 	
-	public void assignData(SMTServletRequest req) {
+	public void assignData(ActionRequest req) {
 		programName = req.getParameter("programName");
 		programId = req.getParameter("programId");
 		userId = req.getParameter("userId");

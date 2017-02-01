@@ -2,7 +2,7 @@ package com.ansmed.sb.orderlit;
 
 //JDK 1.6.0 imports
 
-import javax.servlet.http.HttpSession;
+import com.siliconmtn.http.session.SMTSession;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -12,7 +12,7 @@ import java.sql.SQLException;
 // SMT Base Libs 2.0
 
 import com.siliconmtn.action.ActionException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 
 // SB Libs
@@ -34,7 +34,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class OrderLitAction extends SimpleActionAdapter {
 	
 	@Override
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 	
@@ -42,9 +42,9 @@ public class OrderLitAction extends SimpleActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		
-		HttpSession ses = req.getSession(); 
+		SMTSession ses = req.getSession(); 
 		
 		UserDataVO uvo = (UserDataVO)ses.getAttribute(Constants.USER_DATA);
 		String ansEmail = uvo.getEmailAddress();

@@ -9,7 +9,7 @@ import com.depuy.events_v2.vo.DePuyEventSeminarVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.PageVO;
@@ -99,7 +99,7 @@ public class PostcardDeleteV2 extends SBActionAdapter {
 	 * http.SMTServletRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException{
+	public void build(ActionRequest req) throws ActionException{
 		String resultMsg = successMsg;
 		//Validate request type
 		ReqType reqType = null;
@@ -155,7 +155,7 @@ public class PostcardDeleteV2 extends SBActionAdapter {
 	 * @param req
 	 * @param eventPostcardId
 	 */
-	private void deleteSeminar( SMTServletRequest req, String eventPostcardId,
+	private void deleteSeminar( ActionRequest req, String eventPostcardId,
 			DePuyEventSeminarVO vo) throws SQLException, InvalidDataException{
 		//if either the postcard_id or the event_entry id is missing, return now
 		String epId = StringUtil.checkVal(eventPostcardId);

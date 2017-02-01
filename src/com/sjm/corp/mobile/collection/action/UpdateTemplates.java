@@ -3,7 +3,7 @@ package com.sjm.corp.mobile.collection.action;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.sjm.corp.mobile.collection.MobileCollectionVO;
 
 /****************************************************************************
@@ -24,7 +24,7 @@ public class UpdateTemplates extends CollectionAbstractAction{
 	 * (non-Javadoc)
 	 * @see com.sjm.corp.mobile.collection.action.CollectionAbstractAction#update(com.siliconmtn.http.SMTServletRequest, com.sjm.corp.mobile.collection.MobileCollectionVO)
 	 */
-	public void update(SMTServletRequest req, MobileCollectionVO vo) {
+	public void update(ActionRequest req, MobileCollectionVO vo) {
 		List<String> temp = new ArrayList<String>();
 		log.debug("Size of themes: " + vo.getTemplates().getThemes().size());
 		

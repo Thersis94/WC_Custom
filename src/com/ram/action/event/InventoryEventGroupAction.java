@@ -4,23 +4,16 @@ package com.ram.action.event;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-
-
-
 import java.util.Date;
 
-
-
 // RAM Data Feed Libs
-
-
 import com.ram.datafeed.data.InventoryEventGroupVO;
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
-import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 // WC Libs
@@ -60,7 +53,7 @@ public class InventoryEventGroupAction extends SBActionAdapter {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		String id = req.getParameter("inventoryEventGroupId");
 		
 		try {
@@ -97,13 +90,14 @@ public class InventoryEventGroupAction extends SBActionAdapter {
 		ps.close();
 		return vo;
 	}
+
 	
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		boolean isRecurrence = Convert.formatBoolean(req.getParameter("isRecurrence"));
 		int inventoryEventId = Convert.formatInteger(req.getParameter("inventoryEventId"));
 		
@@ -144,10 +138,11 @@ public class InventoryEventGroupAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void refactorEvents(InventoryEventGroupVO eventGroup, SMTServletRequest req) 
+	private void refactorEvents(InventoryEventGroupVO eventGroup, ActionRequest req) 
 			throws ActionException {
+		//TODO update this method to take an ActionRequest after updating InventoryEventGroupVO
 		attributes.put(InventoryEventRecurrenceAction.EVENT_GRP_OBJ, eventGroup);
-		SMTActionInterface action = new InventoryEventRecurrenceAction(actionInit);
+		ActionInterface action = new InventoryEventRecurrenceAction(actionInit);
 		action.setDBConnection(dbConn);
 		action.setAttributes(attributes);
 		action.update(req);

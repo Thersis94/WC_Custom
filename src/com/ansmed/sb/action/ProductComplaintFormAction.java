@@ -8,9 +8,9 @@ import java.util.Map;
 //SMT Base Libs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.exception.MailException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.SMTMail;
@@ -66,14 +66,14 @@ public class ProductComplaintFormAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("Starting ProductComplaintWrapperAction retrieve...");
 	   	String oldInitId = actionInit.getActionId();
     	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
     	actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 		
 		// load form
-		SMTActionInterface ffa = new FormFacadeAction(this.actionInit);
+		ActionInterface ffa = new FormFacadeAction(this.actionInit);
 		ffa.setAttributes(attributes);
 		ffa.setDBConnection(dbConn);
 		ffa.retrieve(req);
@@ -86,7 +86,7 @@ public class ProductComplaintFormAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		log.debug("Starting ProductComplaintWrapperAction build...");
 	   	String oldInitId = actionInit.getActionId();
     	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
@@ -99,7 +99,7 @@ public class ProductComplaintFormAction extends SBActionAdapter {
 		req.setParameter(TransactionParserIntfc.PROCESS_PROFILE, "false");
 		
 		// save form data for the given page ('currentPageNo' param on request)
-		SMTActionInterface ffa = new FormFacadeAction(this.actionInit);
+		ActionInterface ffa = new FormFacadeAction(this.actionInit);
 		ffa.setAttributes(attributes);
 		ffa.setDBConnection(dbConn);
 		ffa.build(req);
@@ -126,7 +126,7 @@ public class ProductComplaintFormAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#list(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-    public void list(SMTServletRequest req) throws ActionException {
+    public void list(ActionRequest req) throws ActionException {
     	super.retrieve(req);    	
     }
 	
@@ -135,7 +135,7 @@ public class ProductComplaintFormAction extends SBActionAdapter {
 	 * fields selected on the first page of the form.  The map is then placed on the session.
 	 * @param req
 	 */
-	private void checkPageMap(SMTServletRequest req) {
+	private void checkPageMap(ActionRequest req) {
 		log.debug("checking page map...");
 		// if first page, build page map from request params.
 		if (Convert.formatInteger(req.getParameter("currentPageNo")) == 1) {
@@ -165,7 +165,7 @@ public class ProductComplaintFormAction extends SBActionAdapter {
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
-	private int findNextPage(SMTServletRequest req) {
+	private int findNextPage(ActionRequest req) {
 		log.debug("determining next form page to display...");
 		int currentPageNo = Convert.formatInteger(req.getParameter("currentPageNo"));
 		log.debug("currentPageNo: " + currentPageNo);
@@ -207,7 +207,7 @@ public class ProductComplaintFormAction extends SBActionAdapter {
 	 * @param req
 	 */
 	@SuppressWarnings("unchecked")
-	private void processNotification(SMTServletRequest req) {
+	private void processNotification(ActionRequest req) {
 		log.debug("processing notification...");
 	   	DataContainer formData = this.retrieveSubmittedForm(req);
     	if (formData.hasErrors()) {
@@ -235,7 +235,7 @@ public class ProductComplaintFormAction extends SBActionAdapter {
 	 * @param formData
 	 * @param pageList
 	 */
-    private void sendAdminEmail(SMTServletRequest req, SiteVO site, StringBuilder msg) {
+    private void sendAdminEmail(ActionRequest req, SiteVO site, StringBuilder msg) {
     	log.debug("sending admin email...");
 
 		//allow actions to overwrite the source email address
@@ -257,7 +257,7 @@ public class ProductComplaintFormAction extends SBActionAdapter {
      * @param site
      * @param formData
      */
-    private void sendResponseEmail(SMTServletRequest req, SiteVO site, DataContainer formData, StringBuilder msg) {
+    private void sendResponseEmail(ActionRequest req, SiteVO site, DataContainer formData, StringBuilder msg) {
     	String subject = "SalesNet Complaint Form Submission";
     	FormVO form = formData.getForm();
     	StringBuilder sb = new StringBuilder(form.getResponseText());
@@ -278,7 +278,7 @@ public class ProductComplaintFormAction extends SBActionAdapter {
      * @param subject
      * @param msg
      */
-    private void sendEmail(SMTServletRequest req, String senderEmail, String[] recipients, String subject, StringBuilder msg) {    	
+    private void sendEmail(ActionRequest req, String senderEmail, String[] recipients, String subject, StringBuilder msg) {    	
 		SMTMail mail = new SMTMail((String)getAttribute(Constants.CFG_SMTP_SERVER));
 		mail.setUser((String)getAttribute(Constants.CFG_SMTP_USER));
 		mail.setPassword((String)getAttribute(Constants.CFG_SMTP_PASSWORD));
@@ -314,7 +314,7 @@ public class ProductComplaintFormAction extends SBActionAdapter {
      * @param pageList
      * @return
      */
-    private StringBuilder buildMessageBody(SMTServletRequest req, SiteVO site, DataContainer formData, List<Integer> pageList) {
+    private StringBuilder buildMessageBody(ActionRequest req, SiteVO site, DataContainer formData, List<Integer> pageList) {
 		// unpack the data container
 		List<FormPageVO> pages = null;
 		FormTransactionVO submittal = null;
@@ -388,7 +388,7 @@ public class ProductComplaintFormAction extends SBActionAdapter {
      * @param req
      * @return
      */
-    private DataContainer retrieveSubmittedForm(SMTServletRequest req) {
+    private DataContainer retrieveSubmittedForm(ActionRequest req) {
        	log.debug("retrieving submitted form data...");
     	String formId = req.getParameter("formId");
     	String formSubmittalId = req.getParameter("fsi");
@@ -413,7 +413,7 @@ public class ProductComplaintFormAction extends SBActionAdapter {
 	 * @param nextPage
 	 * @param finalPageSubmitted
 	 */
-	private void processRedirect(SMTServletRequest req, int nextPage, boolean finalPageSubmitted) {
+	private void processRedirect(ActionRequest req, int nextPage, boolean finalPageSubmitted) {
 		log.debug("lastPage: " + isLastPage());
 		// redirect
 		StringBuffer url = new StringBuffer();

@@ -16,7 +16,7 @@ import org.apache.commons.lang.StringUtils;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -52,7 +52,7 @@ public class IFUDisplayAction extends SBActionAdapter {
 		super(init);
 	}
 
-	public void retrieve(SMTServletRequest req) throws ActionException {		
+	public void retrieve(ActionRequest req) throws ActionException {		
 		// Get the default language - give the user a list to choose from if one wasn't passed
 		String language = StringUtil.checkVal(req.getParameter("lang"), null);
 		if (language == null) {

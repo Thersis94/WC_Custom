@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 
 /****************************************************************************
  * <b>Title</b>: NexusKitLayerVO.java<p/>
@@ -34,12 +34,12 @@ public class NexusKitLayerVO implements Cloneable {
 		sublayers = new ArrayList<>();
 	}
 	
-	NexusKitLayerVO(SMTServletRequest req) {
+	NexusKitLayerVO(ActionRequest req) {
 		this();
 		setData(req);
 	}
 	
-	public void setData(SMTServletRequest req) {
+	public void setData(ActionRequest req) {
 		layerId = req.getParameter("layerId");
 		layerName = req.getParameter("layerNm");
 		parentId = req.getParameter("parentId");

@@ -4,10 +4,10 @@ import java.io.Serializable;
 import java.sql.ResultSet;
 import java.util.Date;
 
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
-import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 
 /****************************************************************************
@@ -38,7 +38,7 @@ public class SectionVO implements Serializable {
 		this();
 		setData(rs);
 	}
-	public SectionVO(SMTServletRequest req) {
+	public SectionVO(ActionRequest req) {
 		this();
 		setData(req);
 	}
@@ -62,7 +62,7 @@ public class SectionVO implements Serializable {
 	 * Helper method that sets data from the SMTServletRequest.
 	 * @param req
 	 */
-	public void setData(SMTServletRequest req) {
+	public void setData(ActionRequest req) {
 		this.sectionId = req.getParameter("sectionId");
 		this.parentId = req.getParameter("parentId");
 		this.sectionNm = req.getParameter("sectionNm");

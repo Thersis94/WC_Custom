@@ -8,7 +8,7 @@ import org.apache.solr.common.SolrDocument;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.search.SolrActionVO;
@@ -45,7 +45,7 @@ public class ContentReportAction extends SBActionAdapter {
 		this.actionInit = actionInit;
 	}
 	
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		AbstractSBReportVO report = new ContentReportVO();
 		report.setData(getSolrDocuments(req.getParameter("organizationId")));
 		report.setFileName(reportName);

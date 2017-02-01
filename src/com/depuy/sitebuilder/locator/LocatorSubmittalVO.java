@@ -1,6 +1,6 @@
 package com.depuy.sitebuilder.locator;
 
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.smt.sitebuilder.action.SBModuleVO;
 
 /****************************************************************************
@@ -46,7 +46,7 @@ public class LocatorSubmittalVO extends SBModuleVO {
 	/**
 	 * 
 	 */
-	public LocatorSubmittalVO(SMTServletRequest req) {
+	public LocatorSubmittalVO(ActionRequest req) {
 		super();
 		this.setData(req);
 	}
@@ -55,7 +55,7 @@ public class LocatorSubmittalVO extends SBModuleVO {
 	 * 
 	 * @param req
 	 */
-	public void setData(SMTServletRequest req) {
+	public void setData(ActionRequest req) {
 		language = req.getParameter("language");
 		country = req.getParameter("country");
 		resultsPerPage = req.getParameter("number_of_results_per_page");

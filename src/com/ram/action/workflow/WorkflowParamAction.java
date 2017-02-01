@@ -11,7 +11,7 @@ import java.util.List;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.workflow.data.WorkflowConfigParamVO;
@@ -48,7 +48,7 @@ public class WorkflowParamAction extends AbstractWorkflowAction {
 	}
 
 	@Override
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		//Get the configTypeCd off the request.
 		WorkflowConfigParamVO wcp = new WorkflowConfigParamVO(req);
 		String msg = "Workflow Module Param deleted Successfully";
@@ -78,7 +78,7 @@ public class WorkflowParamAction extends AbstractWorkflowAction {
 	}
 
 	@Override
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 
 		//Get List of WorkflowModule Config VOs
 		List<WorkflowConfigParamVO> data = listWorkflowParams(req.getParameter("workflowModuleId"));
@@ -104,7 +104,7 @@ public class WorkflowParamAction extends AbstractWorkflowAction {
 	}
 
 	@Override
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 
 		boolean success = true;
 		String msg = null;
@@ -174,7 +174,7 @@ public class WorkflowParamAction extends AbstractWorkflowAction {
 	 * @see com.ram.action.workflow.AbstractWorkflowAction#buildRedirectSupplement(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	protected String buildRedirectSupplement(SMTServletRequest req) {
+	protected String buildRedirectSupplement(ActionRequest req) {
 		StringBuilder sb = new StringBuilder(95);
 		sb.append("&callType=param&bType=listModuleParams&workflowModuleId=");
 		sb.append(req.getParameter("workflowModuleId"));

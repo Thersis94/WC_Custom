@@ -13,7 +13,7 @@ import com.codman.cu.tracking.AbstractTransAction.Status;
 import com.codman.cu.tracking.vo.UnitVO.ProdType;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.gis.Location;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
@@ -53,7 +53,7 @@ public class TransactionVO {
 	public TransactionVO() {
 	}
 	
-	public TransactionVO(SMTServletRequest req) {
+	public TransactionVO(ActionRequest req) {
 		
 		transactionId = req.getParameter("transactionId");
 		transactionTypeId = Convert.formatInteger(req.getParameter("transactionTypeId"));

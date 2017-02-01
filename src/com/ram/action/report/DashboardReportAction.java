@@ -16,7 +16,7 @@ import java.util.Map;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.data.report.highchart.SeriesDataVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
@@ -77,7 +77,7 @@ public class DashboardReportAction extends SBActionAdapter {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		// The transaction type must be passed or the action will exit
 		String transType = StringUtil.checkVal(req.getParameter("transType"));
 		if (transType.length() == 0) return;
@@ -86,7 +86,7 @@ public class DashboardReportAction extends SBActionAdapter {
 		String methodName = transactionType.get(transType);
 		log.debug("retrieving " + transType);
 		try {
-			Method method = this.getClass().getMethod(methodName, SMTServletRequest.class);
+			Method method = this.getClass().getMethod(methodName, ActionRequest.class);
 			method.invoke(this, req);
 		} catch (Exception e) {
 			throw new ActionException("Unable to retrieve data for " + transType, e);
@@ -98,7 +98,7 @@ public class DashboardReportAction extends SBActionAdapter {
 	 * Retrieves the Line Item Counts By Region Data
 	 * @param req
 	 */
-	public void getRegionLineItems(SMTServletRequest req) throws SQLException{
+	public void getRegionLineItems(ActionRequest req) throws SQLException{
 		Object schema = attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		SBUserRole user = ((SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA));
 		String customerId = StringUtil.checkVal(user.getAttribute(0));
@@ -172,7 +172,7 @@ public class DashboardReportAction extends SBActionAdapter {
 	 * Retrieves the Events Scheduled by region data
 	 * @param req
 	 */
-	public void getEventScheduled(SMTServletRequest req) throws SQLException {
+	public void getEventScheduled(ActionRequest req) throws SQLException {
 		Object schema = attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		SBUserRole user = ((SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA));
 		String customerId = StringUtil.checkVal(user.getAttribute(0));
@@ -230,7 +230,7 @@ public class DashboardReportAction extends SBActionAdapter {
 	 * Retrieves the Line Item Counts By Region for the week data
 	 * @param req
 	 */
-	public void getWeeklyItemsScheduled(SMTServletRequest req) throws SQLException {
+	public void getWeeklyItemsScheduled(ActionRequest req) throws SQLException {
 		Object schema = attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		SBUserRole user = ((SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA));
 		String customerId = StringUtil.checkVal(user.getAttribute(0));
@@ -288,7 +288,7 @@ public class DashboardReportAction extends SBActionAdapter {
 	 * Retrieves the receipts and returns by region
 	 * @param req
 	 */
-	public void getRegionReturns(SMTServletRequest req) throws SQLException {
+	public void getRegionReturns(ActionRequest req) throws SQLException {
 		Object schema = attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		SBUserRole user = ((SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA));
 		String customerId = StringUtil.checkVal(user.getAttribute(0));
@@ -358,7 +358,7 @@ public class DashboardReportAction extends SBActionAdapter {
 	 * Retrieves the product count per OEM for the provider
 	 * @param req
 	 */
-	public void getProductCountOEM(SMTServletRequest req) throws SQLException {
+	public void getProductCountOEM(ActionRequest req) throws SQLException {
 		Object schema = attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		SBUserRole user = ((SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA));
 		Integer customerId = Convert.formatInteger(user.getAttribute(0) + "");
@@ -436,7 +436,7 @@ public class DashboardReportAction extends SBActionAdapter {
 	 * Retrieves the Line Item Counts By joint for the provider
 	 * @param req
 	 */
-	public void getProductCountJoint(SMTServletRequest req) throws SQLException {
+	public void getProductCountJoint(ActionRequest req) throws SQLException {
 
 		// Add the base chart information
 		Map<String, Object> data = new HashMap<>();
@@ -454,7 +454,7 @@ public class DashboardReportAction extends SBActionAdapter {
 	 * Retrieves a list of upcoming events for a provider
 	 * @param req
 	 */
-	public void getUpcomingEvent(SMTServletRequest req) throws SQLException {
+	public void getUpcomingEvent(ActionRequest req) throws SQLException {
 		Object schema = attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		SBUserRole user = ((SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA));
 		Integer customerId = Convert.formatInteger(user.getAttribute(0) + "");
@@ -499,7 +499,7 @@ public class DashboardReportAction extends SBActionAdapter {
 	 * Retrieves the upcoming expiry data for a provider
 	 * @param req
 	 */
-	public void getUpcomingExpiry(SMTServletRequest req) throws SQLException {
+	public void getUpcomingExpiry(ActionRequest req) throws SQLException {
 		Object schema = attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		SBUserRole user = ((SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA));
 		Integer customerId = Convert.formatInteger(user.getAttribute(0) + "");

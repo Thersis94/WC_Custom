@@ -1,6 +1,6 @@
 package com.sjm.corp.mobile.collection.action;
 
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.sjm.corp.mobile.collection.MobileCollectionVO;
 
 /****************************************************************************
@@ -21,7 +21,7 @@ public class UpdatePatients extends CollectionAbstractAction {
 	 * (non-Javadoc)
 	 * @see com.sjm.corp.mobile.collection.action.CollectionAbstractAction#update(com.siliconmtn.http.SMTServletRequest, com.sjm.corp.mobile.collection.MobileCollectionVO)
 	 */
-	public void update(SMTServletRequest req, MobileCollectionVO vo) {
+	public void update(ActionRequest req, MobileCollectionVO vo) {
 		vo.getPatients().setChiropractorRef(parseInt(req.getParameter("chiropractorRef")));
 		vo.getPatients().setOrthopedicRef(parseInt(req.getParameter("orthopedicRef")));
 		vo.getPatients().setOtherRef(parseInt(req.getParameter("otherRef")));

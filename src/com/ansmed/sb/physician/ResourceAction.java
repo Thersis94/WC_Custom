@@ -12,7 +12,7 @@ import com.ansmed.sb.security.ANSRoleFilter;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -54,7 +54,7 @@ public class ResourceAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		log.debug("Building resources...");
 		
 		String deleteEle = StringUtil.checkVal(req.getParameter("deleteEle"));
@@ -70,7 +70,7 @@ public class ResourceAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		String schema = (String)getAttribute("customDbSchema");
 		String message = "You have successfully updated the resource information.";
 		
@@ -136,7 +136,7 @@ public class ResourceAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#delete(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		String schema = (String)getAttribute("customDbSchema");
 		String message = "You have successfully deleted the resource information.";
 		
@@ -171,7 +171,7 @@ public class ResourceAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("Retrieving Resource data...");
 		
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);

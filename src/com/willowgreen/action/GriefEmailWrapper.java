@@ -12,7 +12,7 @@ import java.util.Map;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.exception.DatabaseException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
@@ -43,7 +43,7 @@ public class GriefEmailWrapper extends EmailWrapper {
 	}
 	
 	
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		req.setAttribute("series", "GHP");
 		super.build(req);
 	}
@@ -58,7 +58,7 @@ public class GriefEmailWrapper extends EmailWrapper {
 	/**
 	 * 
 	 */
-	protected void loadReport(SMTServletRequest req, String contactActionId, String emailCampaignId) {
+	protected void loadReport(ActionRequest req, String contactActionId, String emailCampaignId) {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 		

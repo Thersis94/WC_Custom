@@ -19,7 +19,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.exception.MailException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.SMTMail;
 import com.siliconmtn.http.parser.StringEncoder;
@@ -61,7 +61,7 @@ public class PAPrContactPPAction extends SimpleActionAdapter {
         super(arg0);
     }
     
-    public void list(SMTServletRequest req) throws ActionException {
+    public void list(ActionRequest req) throws ActionException {
     	super.retrieve(req);    	
     }
 
@@ -69,7 +69,7 @@ public class PAPrContactPPAction extends SimpleActionAdapter {
      * @see com.siliconmtn.action.AbstractActionController#build(com.siliconmtn.http.SMTServletRequest)
      */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
     	log.debug("Starting PAPrContactPPAction build...");
     	this.postProcess(req);
     	
@@ -81,7 +81,7 @@ public class PAPrContactPPAction extends SimpleActionAdapter {
      * @see com.siliconmtn.action.AbstractActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
      */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {}
+	public void retrieve(ActionRequest req) throws ActionException {}
 	
 	/**
 	 * Processes specific Contact Us portlet form fields to determine who should 
@@ -90,7 +90,7 @@ public class PAPrContactPPAction extends SimpleActionAdapter {
 	 * @param formId
 	 * @return
 	 */
-	private void postProcess(SMTServletRequest req)
+	private void postProcess(ActionRequest req)
 	throws ActionException {
 		
 		List<String> mailTo = new ArrayList<String>();
@@ -139,7 +139,7 @@ public class PAPrContactPPAction extends SimpleActionAdapter {
 	 * @param recipients
 	 * @throws ActionException
 	 */
-	private void sendEmail(SMTServletRequest req, List<String> recipients) throws ActionException {
+	private void sendEmail(ActionRequest req, List<String> recipients) throws ActionException {
 		
     	SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
     	
@@ -186,7 +186,7 @@ public class PAPrContactPPAction extends SimpleActionAdapter {
 	 * @param header
 	 * @return
 	 */
-	private String buildEmailBody(SMTServletRequest req, String siteName, String header) {
+	private String buildEmailBody(ActionRequest req, String siteName, String header) {
 		StringEncoder se = new StringEncoder();
     	StringBuffer body = new StringBuffer();
     	
@@ -282,7 +282,7 @@ public class PAPrContactPPAction extends SimpleActionAdapter {
 	 * Sets a temporary cookie to hold submitter's name for use in JSTL
 	 * @param req
 	 */
-	private void setNameCookie(SMTServletRequest req) {
+	private void setNameCookie(ActionRequest req) {
         try {
 			// Create/set temporary cookie with lifespan of 120 seconds.
 			Cookie cookie = new Cookie("SJM_TEMP_VISITOR", StringUtil.checkVal(req.getParameter("pfl_FIRST_NM")));
