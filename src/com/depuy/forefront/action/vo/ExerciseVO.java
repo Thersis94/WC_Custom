@@ -7,7 +7,7 @@ import java.util.List;
 
 import com.depuy.forefront.action.ProgramAction;
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
 
 public class ExerciseVO implements Serializable {
@@ -46,7 +46,7 @@ public class ExerciseVO implements Serializable {
 		db = null;
 	}
 	
-	public ExerciseVO(SMTServletRequest req){
+	public ExerciseVO(ActionRequest req){
 		exerciseId = req.getParameter("exerciseId");
 		programId = (String) req.getSession().getAttribute(ProgramAction.PROGRAM_ID);
 		hospitalId = StringUtil.checkVal(req.getParameter("hospitalId"), null);

@@ -2,8 +2,8 @@ package com.depuysynthes.ifu;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionInterface;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.constants.AdminConstants;
@@ -44,9 +44,9 @@ public class IFUFacadeAction extends SimpleActionAdapter {
 		super();
 	}
 
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		if (req.hasParameter("dataMod")) {
-			SMTActionInterface sai = getAction(StringUtil.checkVal(req.getParameter(AdminConstants.FACADE_TYPE), "ifu"));
+			ActionInterface sai = getAction(StringUtil.checkVal(req.getParameter(AdminConstants.FACADE_TYPE), "ifu"));
 			sai.list(req);
 		} else {
 			//list the portlet instances in the admintool
@@ -54,8 +54,8 @@ public class IFUFacadeAction extends SimpleActionAdapter {
 		}
 	}
 
-	public void delete(SMTServletRequest req) throws ActionException {
-		SMTActionInterface sai = getAction(req.getParameter(AdminConstants.FACADE_TYPE));
+	public void delete(ActionRequest req) throws ActionException {
+		ActionInterface sai = getAction(req.getParameter(AdminConstants.FACADE_TYPE));
 		if (sai != null) {
 			sai.delete(req);
 		} else {
@@ -64,8 +64,8 @@ public class IFUFacadeAction extends SimpleActionAdapter {
 		}
 	}
 
-	public void update(SMTServletRequest req) throws ActionException {
-		SMTActionInterface sai = getAction(req.getParameter(AdminConstants.FACADE_TYPE));
+	public void update(ActionRequest req) throws ActionException {
+		ActionInterface sai = getAction(req.getParameter(AdminConstants.FACADE_TYPE));
 		if (sai != null) {
 			sai.update(req);
 		} else {
@@ -80,7 +80,7 @@ public class IFUFacadeAction extends SimpleActionAdapter {
 	 * @param actionType
 	 * @return
 	 */
-	private SMTActionInterface getAction(String actionType) {
+	private ActionInterface getAction(String actionType) {
 		ActionType at = null;
 		try {
 			at = ActionType.valueOf(actionType);
@@ -97,8 +97,8 @@ public class IFUFacadeAction extends SimpleActionAdapter {
 	 * @param actionType
 	 * @return
 	 */
-	private SMTActionInterface getAction(ActionType type) {
-		SMTActionInterface ai = null;
+	private ActionInterface getAction(ActionType type) {
+		ActionInterface ai = null;
 		log.debug("Loading action " + type);
 		switch(type) {
 			case ifu:
@@ -120,7 +120,7 @@ public class IFUFacadeAction extends SimpleActionAdapter {
 	}
 
 
-	public void copy(SMTServletRequest req) throws ActionException {
+	public void copy(ActionRequest req) throws ActionException {
 		getAction(ActionType.ifu).copy(req);
 	}
 }

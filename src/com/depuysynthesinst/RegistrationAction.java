@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.servlet.http.HttpSession;
+import com.siliconmtn.http.session.SMTSession;
 
 import com.depuysynthesinst.DSIUserDataVO.RegField;
 import com.depuysynthesinst.assg.MyAssignmentsAction;
@@ -19,8 +19,8 @@ import com.depuysynthesinst.assg.MyResidentsAction;
 import com.depuysynthesinst.lms.LMSWSClient;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionInterface;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
@@ -68,12 +68,12 @@ public class RegistrationAction extends SimpleActionAdapter {
 		specialProfs.add("DIRECTOR");
 	}
 
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 	
 	
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		String[] regAction = req.getParameter("attrib1Text").split("~");
 		//need to capture the actionId as well as the actionGroupId for submitting/retrieving Registration on the front end
 		if (regAction != null && regAction.length == 2) {
@@ -87,14 +87,14 @@ public class RegistrationAction extends SimpleActionAdapter {
 	/**
 	 * Invokes WC Registration's retrieve method.  No further logic is needed.
 	 */
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 		mod.setActionId(actionInit.getActionId());
 		mod.setActionGroupId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_2));
 		setAttribute(Constants.MODULE_DATA, mod);
 
-		SMTActionInterface reg = new RegistrationFacadeAction(actionInit);
+		ActionInterface reg = new RegistrationFacadeAction(actionInit);
 		reg.setDBConnection(dbConn);
 		reg.setAttributes(getAttributes());
 		reg.retrieve(req);
@@ -136,11 +136,11 @@ public class RegistrationAction extends SimpleActionAdapter {
 	 * extend Registration's build method with added logic for:
 	 * determining if we need to display pages 3 & 4 of registration
 	 */
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		//these 'hooks' are here because they live on the Registration/"My Profile" page in the UI.
 		if (req.hasParameter("revokeDirector") || req.hasParameter("approveDirector")) {
 			req.setParameter("reqType", "manageProctor");
-			SMTActionInterface act = new MyResidentsAction();
+			ActionInterface act = new MyResidentsAction();
 			act.setAttributes(getAttributes());
 			act.setDBConnection(dbConn);
 			act.build(req);
@@ -170,7 +170,7 @@ public class RegistrationAction extends SimpleActionAdapter {
 		mod.setActionId(actionInit.getActionId());
 		mod.setActionGroupId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_2));
 		setAttribute(Constants.MODULE_DATA, mod);
-		HttpSession ses = (HttpSession) req.getSession();
+		SMTSession ses = (SMTSession) req.getSession();
 
 		//set a parameter to tell Registration to NOT dump the userVO if the user completes without logging in, we need it
 		boolean unloadSessionIfNoRole = false;
@@ -178,7 +178,7 @@ public class RegistrationAction extends SimpleActionAdapter {
 			unloadSessionIfNoRole = true;
 			req.setAttribute("dontUnloadSession", "true");
 		}
-		SMTActionInterface reg = new RegistrationFacadeAction(actionInit);
+		ActionInterface reg = new RegistrationFacadeAction(actionInit);
 		reg.setDBConnection(dbConn);
 		reg.setAttributes(getAttributes());
 		reg.build(req);
@@ -263,7 +263,7 @@ public class RegistrationAction extends SimpleActionAdapter {
 	 * writes back to the register_data table to update a couple fields on the user's registration
 	 * @param user
 	 */
-	protected void captureLMSResponses(SMTServletRequest req, UserDataVO user, String[] formFields) {
+	protected void captureLMSResponses(ActionRequest req, UserDataVO user, String[] formFields) {
 		String registerSubmittalId = StringUtil.checkVal(req.getAttribute("registerSubmittalId"));
 		req.setParameter("formFields", formFields, Boolean.TRUE);
 		DSIUserDataVO dsiUser = new DSIUserDataVO(user);
@@ -306,7 +306,7 @@ public class RegistrationAction extends SimpleActionAdapter {
 	 * transaction on the next modal save.
 	 * @param req
 	 */
-	private void checkHoldingUser(SMTServletRequest req) {
+	private void checkHoldingUser(ActionRequest req) {
 		DSIUserDataVO user = new DSIUserDataVO((UserDataVO)req.getSession().getAttribute(Constants.USER_DATA));
 		String pswd = getLegacyPassword(user.getEmailAddress());
 		log.debug("holdingPwd=" + pswd);
@@ -346,7 +346,7 @@ public class RegistrationAction extends SimpleActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	private boolean migrateUser(SMTServletRequest req, DSIUserDataVO user) {
+	private boolean migrateUser(ActionRequest req, DSIUserDataVO user) {
 		log.debug("checking migrate");
 		
 		//do not migrate the user if they didn't consent to migration

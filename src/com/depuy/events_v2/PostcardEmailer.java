@@ -11,7 +11,7 @@ import com.depuy.events_v2.vo.DePuyEventSeminarVO;
 import com.depuy.events_v2.vo.DePuyEventSurgeonVO;
 import com.depuy.events_v2.vo.PersonVO;
 import com.depuy.events_v2.vo.PersonVO.Role;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
@@ -77,7 +77,7 @@ public class PostcardEmailer {
 	 * 
 	 * @param req
 	 */
-	public void sendApprovalRequest(SMTServletRequest req) {
+	public void sendApprovalRequest(ActionRequest req) {
 		// send email to site admin
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
@@ -124,7 +124,7 @@ public class PostcardEmailer {
 	 * @param req
 	 * @param eventPostcardId
 	 */
-	public void sendPostcardCancellation(SMTServletRequest req) {
+	public void sendPostcardCancellation(ActionRequest req) {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		DePuyEventSeminarVO postcard = (DePuyEventSeminarVO) req.getAttribute("postcard");
 		AbstractSBReportVO rpt = (AbstractSBReportVO) req.getAttribute(Constants.BINARY_DOCUMENT);
@@ -145,7 +145,7 @@ public class PostcardEmailer {
 			mail.addRecipient("amy.spencerman@hmktgroup.com");
 			mail.addRecipient("Brittany.Neff@hmktgroup.com");
 			mail.addRecipient("admgt@hmktgroup.com");
-			mail.addRecipient("jenn.davis@hmktgroup.com");
+			mail.addRecipient("stephanie.balsley@hmktgroup.com");
 			mail.addRecipient("kshull@ITS.JNJ.com");
 			mail.addCC("educationalseminars@dpyus.jnj.com");
 			mail.addCC("Francisco.Gonzalez@umj3.com");
@@ -171,7 +171,7 @@ public class PostcardEmailer {
 	/* (non-Javadoc)
 	 * @see com.depuy.events.AbstractPostcardEmailer#sendSRCApprovalRequest(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void sendAdvApprovalRequest(SMTServletRequest req) {
+	public void sendAdvApprovalRequest(ActionRequest req) {
 		
 		// send email to site admin
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
@@ -215,7 +215,7 @@ public class PostcardEmailer {
 	 * compliance form (PDF) and clicks to approve their portion of the seminar.
 	 * @param req
 	 */
-	protected void sendAdvApproved(SMTServletRequest req) {
+	protected void sendAdvApproved(ActionRequest req) {
 		// send email to site admin
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
@@ -236,7 +236,7 @@ public class PostcardEmailer {
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipient("jenn.davis@hmktgroup.com");
+			mail.addRecipient("stephanie.balsley@hmktgroup.com");
 			mail.addRecipient("amy.spencerman@hmktgroup.com");	
 			mail.addRecipient("Brittany.Neff@hmktgroup.com");
 			//Additional CC recipients
@@ -267,7 +267,7 @@ public class PostcardEmailer {
 	 * announcement email triggered by Site Admin once SRC approves the Seminar
 	 * @param req
 	 */
-	protected void sendSrcApproved(SMTServletRequest req) {
+	protected void sendSrcApproved(ActionRequest req) {
 		// send email to site admin
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
@@ -306,7 +306,7 @@ public class PostcardEmailer {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
 			mail.addRecipient(sem.getOwner().getEmailAddress()); //Coordinator
-			mail.addRecipient("Jenn.Davis@hmktgroup.com"); // Jenn Parrish-Davis
+			mail.addRecipient("stephanie.balsley@hmktgroup.com"); // Jenn Parrish-Davis
 			mail.addCC("amy.spencerman@hmktgroup.com");
 			mail.addCC("Brittany.Neff@hmktgroup.com");
 			//mail.addCC("WWilder@its.jnj.com");
@@ -333,7 +333,7 @@ public class PostcardEmailer {
 		return;
 	}
 	
-	protected void orderConsumableBox(SMTServletRequest req) {
+	protected void orderConsumableBox(ActionRequest req) {
 		// send email to site admin
 		req.setValidateInput(Boolean.FALSE);
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
@@ -419,7 +419,7 @@ public class PostcardEmailer {
 	}
 	
 	
-	protected void requestPostcardApproval(SMTServletRequest req) {
+	protected void requestPostcardApproval(ActionRequest req) {
 		// send email to site admin
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
@@ -455,7 +455,7 @@ public class PostcardEmailer {
 	}
 	
 	
-	protected void sendPostcardApproved(SMTServletRequest req) {
+	protected void sendPostcardApproved(ActionRequest req) {
 		// send email to site admin
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
@@ -473,7 +473,7 @@ public class PostcardEmailer {
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipient("Jenn.Davis@hmktgroup.com"); // Jenn Parrish-Davis);
+			mail.addRecipient("stephanie.balsley@hmktgroup.com"); // Jenn Parrish-Davis);
 			mail.addCC("amy.spencerman@hmktgroup.com");
 			mail.addCC("Brittany.Neff@hmktgroup.com");
 			mail.addCC(site.getAdminEmail());
@@ -494,7 +494,7 @@ public class PostcardEmailer {
 	}
 	
 	
-	protected void sendMedicalAffairsApprovedNotice(SMTServletRequest req) {
+	protected void sendMedicalAffairsApprovedNotice(ActionRequest req) {
 		// send email to site admin
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
@@ -513,7 +513,7 @@ public class PostcardEmailer {
 		try {
 			// Create the mail object and send
 			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipient("Jenn.Davis@hmktgroup.com"); // Jenn Parrish-Davis
+			mail.addRecipient("stephanie.balsley@hmktgroup.com"); // Jenn Parrish-Davis
 			mail.addRecipient("amy.spencerman@hmktgroup.com");
 			mail.addRecipient("Brittany.Neff@hmktgroup.com");
 			mail.addRecipient(sem.getOwner().getEmailAddress());
@@ -552,7 +552,7 @@ public class PostcardEmailer {
 	 * Sent when the coordinator has declined the postcard.
 	 * @param req
 	 */
-	protected void sendPostcardDeclined(SMTServletRequest req){
+	protected void sendPostcardDeclined(ActionRequest req){
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
 		String reason = StringUtil.checkVal( req.getParameter("notesText") );
@@ -569,7 +569,7 @@ public class PostcardEmailer {
 		
 		try{
 			EmailMessageVO mail = new EmailMessageVO();
-			mail.addRecipient("jenn.davis@hmktgroup.com");
+			mail.addRecipient("stephanie.balsley@hmktgroup.com");
 			mail.addRecipient(site.getAdminEmail());
 			mail.addRecipient("kshull@ITS.JNJ.com");
 			mail.addCC("educationalseminars@dpyus.jnj.com");
@@ -591,7 +591,7 @@ public class PostcardEmailer {
 	 * Sent when the PCP invitation is ready for approval.
 	 * @param req
 	 */
-	protected void sendInvitationApprovalRequest( SMTServletRequest req ){
+	protected void sendInvitationApprovalRequest( ActionRequest req ){
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
 		
@@ -630,7 +630,7 @@ public class PostcardEmailer {
 	 * Notification that the coordinator has approved the PCP invitation
 	 * @param req
 	 */
-	protected void sendInvitationApproved( SMTServletRequest req ){
+	protected void sendInvitationApproved( ActionRequest req ){
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
 		
@@ -646,7 +646,7 @@ public class PostcardEmailer {
 			mail.setTextBody(msg.toString());
 			
 			//Recipients
-			mail.addRecipient("jenn.davis@hmktgroup.com");
+			mail.addRecipient("stephanie.balsley@hmktgroup.com");
 			mail.addCC("amy.spencerman@hmktgroup.com");
 			mail.addCC("Brittany.Neff@hmktgroup.com");
 			mail.addCC("kshull@ITS.JNJ.com");
@@ -668,7 +668,7 @@ public class PostcardEmailer {
 	 * Notification that the PCP Invitations have been sent.
 	 * @param req
 	 */
-	protected void notifyInvitationSent( SMTServletRequest req ){
+	protected void notifyInvitationSent( ActionRequest req ){
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
 		
@@ -689,7 +689,7 @@ public class PostcardEmailer {
 			mail.addCC("educationalseminars@dpyus.jnj.com");
 			mail.addCC("amy.spencerman@hmktgroup.com");
 			mail.addCC("Brittany.Neff@hmktgroup.com");
-			mail.addCC("jenn.davis@hmktgroup.com");
+			mail.addCC("stephanie.balsley@hmktgroup.com");
 			
 			MessageSender mailer = new MessageSender(attributes,dbConn);
 			mailer.sendMessage(mail);
@@ -704,7 +704,7 @@ public class PostcardEmailer {
 	 * Notification that the Postcards have been sent.
 	 * @param req
 	 */
-	protected void notifyPostcardSent( SMTServletRequest req ){
+	protected void notifyPostcardSent( ActionRequest req ){
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
 		
@@ -725,7 +725,7 @@ public class PostcardEmailer {
 			mail.addCC("educationalseminars@dpyus.jnj.com");
 			mail.addCC("amy.spencerman@hmktgroup.com");
 			mail.addCC("Brittany.Neff@hmktgroup.com");
-			mail.addCC("jenn.davis@hmktgroup.com");
+			mail.addCC("stephanie.balsley@hmktgroup.com");
 			
 			MessageSender mailer = new MessageSender(attributes,dbConn);
 			mailer.sendMessage(mail);
@@ -740,7 +740,7 @@ public class PostcardEmailer {
 	 * notifies Harmony when a PCP coordinator uploads their leads
 	 * @param req
 	 */
-	protected void inviteFileUploaded(SMTServletRequest req) {
+	protected void inviteFileUploaded(ActionRequest req) {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		DePuyEventSeminarVO sem = (DePuyEventSeminarVO) req.getAttribute("postcard");
 		
@@ -757,7 +757,7 @@ public class PostcardEmailer {
 			mail.setTextBody(msg.toString());
 			
 			//recipients
-			mail.addRecipient("jenn.davis@hmktgroup.com");
+			mail.addRecipient("stephanie.balsley@hmktgroup.com");
 			mail.addCC("amy.spencerman@hmktgroup.com");
 			mail.addCC("Brittany.Neff@hmktgroup.com");
 			mail.addCC(site.getAdminEmail());

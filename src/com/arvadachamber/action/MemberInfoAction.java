@@ -10,7 +10,7 @@ import java.util.List;
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -56,7 +56,7 @@ public class MemberInfoAction extends SBActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 		if (! Convert.formatBoolean(req.getParameter("formSubmitted"))) return;
 		int mId = Convert.formatInteger(req.getParameter("memberInfoId"));
@@ -144,7 +144,7 @@ public class MemberInfoAction extends SBActionAdapter {
 	 * @return
 	 * @throws SQLException
 	 */
-	public List<MemberInfoVO> getResults(SMTServletRequest req, int start, int end) 
+	public List<MemberInfoVO> getResults(ActionRequest req, int start, int end) 
 	throws SQLException {
 		// Get the custom schema DB
 		String dbs = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
@@ -227,7 +227,7 @@ public class MemberInfoAction extends SBActionAdapter {
 	 * @param req
 	 * @param dlr
 	 */
-	protected void setMapResults(SMTServletRequest req, List<MemberInfoVO> dlrs, boolean bestFit) {
+	protected void setMapResults(ActionRequest req, List<MemberInfoVO> dlrs, boolean bestFit) {
 		// Setup the map info
 		MapVO map = new MapVO();
 		map.setMapZoomFlag(true);

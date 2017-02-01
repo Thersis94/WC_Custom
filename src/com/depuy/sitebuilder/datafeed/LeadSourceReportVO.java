@@ -17,7 +17,7 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.util.CellRangeAddress;
 
 import com.depuy.sitebuilder.datafeed.LeadSourceReport.ReportData;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
@@ -73,7 +73,7 @@ public class LeadSourceReportVO extends AbstractDataFeedReportVO {
 	 */
 	@SuppressWarnings("unchecked")
 	@Override
-	public void setRequestData(SMTServletRequest req) {
+	public void setRequestData(ActionRequest req) {
 		this.groupType = StringUtil.checkVal(req.getParameter("groupType"));
 		this.startDate = StringUtil.checkVal(req.getParameter("startDate"));
 		this.endDate = StringUtil.checkVal(req.getParameter("endDate"));

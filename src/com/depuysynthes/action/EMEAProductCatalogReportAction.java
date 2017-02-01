@@ -13,6 +13,7 @@ import java.util.regex.Pattern;
 import com.depuysynthes.scripts.DSMediaBinImporterV2;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.commerce.catalog.ProductAttributeContainer;
 import com.siliconmtn.commerce.catalog.ProductAttributeVO;
 import com.siliconmtn.commerce.catalog.ProductCategoryVO;
@@ -20,7 +21,6 @@ import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.commerce.product.ProductCatalogAction;
@@ -84,7 +84,7 @@ public class EMEAProductCatalogReportAction extends SimpleActionAdapter {
 	 * generates the report
 	 */
 	@Override
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		//load the entire catalog
 		Tree catalog = loadCatalog(req);
 
@@ -326,7 +326,7 @@ public class EMEAProductCatalogReportAction extends SimpleActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	protected Tree loadCatalog(SMTServletRequest req) throws ActionException {
+	protected Tree loadCatalog(ActionRequest req) throws ActionException {
 		String catalogId = req.getParameter("catalogId");
 
 		ProductCatalogAction act = new ProductCatalogAction();
@@ -343,7 +343,7 @@ public class EMEAProductCatalogReportAction extends SimpleActionAdapter {
 	 * @throws ActionException
 	 */
 	@SuppressWarnings("unchecked")
-	protected List<MediaBinAssetVO> loadMediabinAssets(SMTServletRequest req) throws ActionException {
+	protected List<MediaBinAssetVO> loadMediabinAssets(ActionRequest req) throws ActionException {
 		MediaBinAdminAction act = new MediaBinAdminAction();
 		act.setAttributes(getAttributes());
 		act.setDBConnection(dbConn);

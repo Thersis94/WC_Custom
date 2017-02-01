@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.HashCodeUtil;
 import com.siliconmtn.util.StringUtil;
@@ -51,7 +51,7 @@ public class ExerciseIntensityVO extends ExerciseVO implements Serializable {
 		db = null;
 	}
 	
-	public ExerciseIntensityVO(SMTServletRequest req) {
+	public ExerciseIntensityVO(ActionRequest req) {
 		super(req);
 		hospitalInstId = StringUtil.checkVal(req.getParameter("hospitalInstId"), null);
 		routineId = StringUtil.checkVal(req.getParameter("routineId"), null);
@@ -63,7 +63,7 @@ public class ExerciseIntensityVO extends ExerciseVO implements Serializable {
 		shortDescText = req.getParameter("shortDescText");
 	}
 	
-	public ExerciseIntensityVO(SMTServletRequest req, int iLvl) {
+	public ExerciseIntensityVO(ActionRequest req, int iLvl) {
 		super(req);
 		intensityLvlNo = Convert.formatInteger(req.getParameter("intensityLvlNo_" + iLvl));
 		reqSetsNo = Convert.formatInteger(req.getParameter("reqSetsNo_" + iLvl), 0);

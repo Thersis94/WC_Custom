@@ -48,6 +48,7 @@ public class AnsRoleModule extends AbstractRoleModule {
 	 */
 	public static final String DB_CONN = GlobalConfig.KEY_DB_CONN;
 	public static final String HTTP_REQUEST = GlobalConfig.HTTP_REQUEST;
+	public static final String ACTION_REQUEST = GlobalConfig.ACTION_REQUEST;
 	private static final Logger log = Logger.getLogger(AnsRoleModule.class);
 	
 	public AnsRoleModule() {

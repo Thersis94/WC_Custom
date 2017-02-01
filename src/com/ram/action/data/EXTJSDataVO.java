@@ -3,7 +3,7 @@
  */
 package com.ram.action.data;
 
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 
 /****************************************************************************
@@ -39,12 +39,12 @@ public class EXTJSDataVO {
 	public EXTJSDataVO() {
 	}
 
-	public EXTJSDataVO(SMTServletRequest req) {
+	public EXTJSDataVO(ActionRequest req) {
 		this();
 		setData(req);
 	}
 
-	protected void setData(SMTServletRequest req) {
+	protected void setData(ActionRequest req) {
 		start = Convert.formatInteger(req.getParameter("start"), 0);
 		limit = Convert.formatInteger(req.getParameter("limit"), 25) + start;
 		isPaginated = req.hasParameter("isPaginated") ? Convert.formatBoolean(req.getParameter("isPaginated")) : req.hasParameter("limit");

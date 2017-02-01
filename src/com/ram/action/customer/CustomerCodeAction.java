@@ -15,7 +15,7 @@ import com.ram.datafeed.data.CustomerCodeVO.CodeType;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -60,7 +60,7 @@ public class CustomerCodeAction extends SBActionAdapter {
 	 * Retrieve all the Customer Codes for a given CustomerId
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		
 		//Fast fail if customerId is missing.
 		if(!req.hasParameter("customerId"))
@@ -102,7 +102,7 @@ public class CustomerCodeAction extends SBActionAdapter {
 	 * values into individual Codes and send them to be saved.
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		
 		//Get the List of parameter Names.
 		List<String> paramNames =Collections.list(req.getParameterNames());

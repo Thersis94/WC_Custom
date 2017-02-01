@@ -6,7 +6,7 @@ import java.sql.ResultSet;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.gis.GeocodeLocation;
 import com.siliconmtn.gis.Location;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 
@@ -79,7 +79,7 @@ public class InventoryLocationVO extends GeocodeLocation {
 	 * 
 	 * @param rs
 	 */
-	public InventoryLocationVO(SMTServletRequest req) {
+	public InventoryLocationVO(ActionRequest req) {
 		super();
 		this.setData(req);
 	}
@@ -117,7 +117,7 @@ public class InventoryLocationVO extends GeocodeLocation {
 	 * (non-Javadoc)
 	 * @see com.siliconmtn.gis.Location#setData(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void setData(SMTServletRequest req) {
+	public void setData(ActionRequest req) {
 		super.setData(req);
 		
 		profileId = req.getParameter("profileId");

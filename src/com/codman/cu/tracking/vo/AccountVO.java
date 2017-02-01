@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataComparator;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.SiteVO;
@@ -49,7 +49,7 @@ public class AccountVO implements java.io.Serializable {
 	public AccountVO() {
 	}
 	
-	public AccountVO(SMTServletRequest req) {
+	public AccountVO(ActionRequest req) {
 		accountId = req.getParameter("accountId");
 		accountNo = req.getParameter("accountNo");
 		accountName = req.getParameter("accountName");

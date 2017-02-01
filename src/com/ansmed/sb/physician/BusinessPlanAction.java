@@ -13,7 +13,7 @@ import java.util.TreeMap;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -60,7 +60,7 @@ public class BusinessPlanAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		log.debug("Building business plan...");
 		String schema = (String)getAttribute("customDbSchema");
 		String message = "You have successfully updated the business plan information.";
@@ -180,7 +180,7 @@ public class BusinessPlanAction extends SBActionAdapter {
 	 * @param data
 	 * @return
 	 */
-	private Object[] processVals(SMTServletRequest req, String key, String[] data) {
+	private Object[] processVals(ActionRequest req, String key, String[] data) {
 		Object[] vals = new Object[2];
 		
 		// Loop the array and process the data
@@ -228,7 +228,7 @@ public class BusinessPlanAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#delete(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		String schema = (String)getAttribute("customDbSchema");
 		StringBuffer del = new StringBuffer();
 		del.append("delete from ").append(schema).append("ans_xr_surgeon_busplan ");
@@ -256,7 +256,7 @@ public class BusinessPlanAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("Retrieving Business Plan");
 		// bpPlanType set to 2 to ensure business plan data query is successful.
 		int bpPlanType = 2;

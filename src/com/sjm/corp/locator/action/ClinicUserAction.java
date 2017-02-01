@@ -8,13 +8,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 // J2EE 1.5
-import javax.servlet.http.HttpSession;
+import com.siliconmtn.http.session.SMTSession;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.exception.DatabaseException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.AbstractRoleModule;
 import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.StringEncrypter;
@@ -75,7 +75,7 @@ public class ClinicUserAction extends SBActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#delete(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		String s = "delete from profile_role where profile_role_id = ? and site_id = ?";
 		String msg = (String)attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 
@@ -102,14 +102,14 @@ public class ClinicUserAction extends SBActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		if (Convert.formatBoolean(req.getParameter("delete"))) {
 			this.delete(req);
 			return;
 		}
 		
 		log.debug("Updating user permissions");
-		HttpSession ses = req.getSession();
+		SMTSession ses = req.getSession();
 		String msg = (String)attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 		String dealerLocationId = StringUtil.checkVal(ses.getAttribute("dealerLocationId"));
 		SBUserRole role = (SBUserRole) ses.getAttribute(Constants.ROLE_DATA);
@@ -162,7 +162,7 @@ public class ClinicUserAction extends SBActionAdapter {
 	 * @param req
 	 * @throws DatabaseException
 	 */
-	public void assignUserData(SMTServletRequest req, String attrib, String roleId) 
+	public void assignUserData(ActionRequest req, String attrib, String roleId) 
 	throws DatabaseException {
 		// Add user profile
 		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
@@ -207,7 +207,7 @@ public class ClinicUserAction extends SBActionAdapter {
 	 * @param req
 	 * @throws DatabaseException
 	 */
-	public void addRole(SMTServletRequest req, String profileId, String roleId, String attrib, String rpid) 
+	public void addRole(ActionRequest req, String profileId, String roleId, String attrib, String rpid) 
 	throws DatabaseException {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		RegisterClinicAction rca = new RegisterClinicAction();
@@ -233,11 +233,11 @@ public class ClinicUserAction extends SBActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		if (Convert.formatBoolean(req.getParameter("add"))) return;
 		
 		// Get the session data
-		HttpSession ses = req.getSession();
+		SMTSession ses = req.getSession();
 		SBUserRole userRole =  (SBUserRole) ses.getAttribute(Constants.ROLE_DATA);
 		int roleLevel = userRole.getRoleLevel(); 
 		int role = CLINIC_ADMIN_USER;

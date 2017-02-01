@@ -20,7 +20,7 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.exception.MailException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.SMTMail;
 import com.siliconmtn.util.UUIDGenerator;
@@ -56,7 +56,7 @@ public class SurgeonEventAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		log.debug("building Surgeon Event");
 		String message = "You have successfully assigned the events";
 		String schema = (String)getAttribute("customDbSchema");
@@ -123,7 +123,7 @@ public class SurgeonEventAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#list(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		log.debug("retrieving Physician Events");
 		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 		String schema = (String)getAttribute("customDbSchema");
@@ -168,7 +168,7 @@ public class SurgeonEventAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("retrieving Physician Events");
 		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 		String schema = (String)getAttribute("customDbSchema");

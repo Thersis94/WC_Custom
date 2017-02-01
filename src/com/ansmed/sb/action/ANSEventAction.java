@@ -10,7 +10,7 @@ import java.util.List;
 import com.ansmed.sb.security.ANSRoleFilter;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -49,7 +49,7 @@ public class ANSEventAction extends SBActionAdapter {
      * @see com.siliconmtn.action.AbstractActionController#build(com.siliconmtn.http.SMTServletRequest)
      */
 	@Override
-    public void build(SMTServletRequest req) throws ActionException {
+    public void build(ActionRequest req) throws ActionException {
 		String msg = "You have sucessfully updated the event status";
 		/*
 		 * THIS CODE WAS LEFT BECAUSE SOMEDAY ANS WILL PROBABLY WANT TO APPROVE EVENTS *AND* EVENT TYPES.
@@ -90,7 +90,7 @@ public class ANSEventAction extends SBActionAdapter {
 			// Delete any records if necessary
 			if (isDeleteStatus) {
 				log.debug("Deleting ...");
-				SMTActionInterface sai = new EventApprovalAction(this.actionInit);
+				ActionInterface sai = new EventApprovalAction(this.actionInit);
 				sai.setDBConnection(dbConn);
 				sai.delete(req);
 			}
@@ -116,7 +116,7 @@ public class ANSEventAction extends SBActionAdapter {
      * @see com.siliconmtn.action.AbstractActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
      */
 	@Override
-    public void retrieve(SMTServletRequest req) throws ActionException {
+    public void retrieve(ActionRequest req) throws ActionException {
 		// Handle the admin searches
 		String sbActionId = StringUtil.checkVal(req.getParameter(SB_ACTION_ID));
 		if (sbActionId.length() > 0) {
@@ -177,7 +177,7 @@ public class ANSEventAction extends SBActionAdapter {
      * @see com.siliconmtn.action.AbstractActionController#update(com.siliconmtn.http.SMTServletRequest)
      */
 	@Override
-    public void update(SMTServletRequest req) throws ActionException {
+    public void update(ActionRequest req) throws ActionException {
 		super.update(req);
 		StringBuilder url = new StringBuilder("/");
 		url.append(attributes.get(Constants.CONTEXT_NAME)).append("/admintool");
@@ -188,7 +188,7 @@ public class ANSEventAction extends SBActionAdapter {
 		log.debug("ANS Events Redirect URL: " + url);
 	}
 	
-	private void loadEventTypeSignups(SMTServletRequest req) {
+	private void loadEventTypeSignups(ActionRequest req) {
     	final String schema = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
     	ANSRoleFilter filter = new ANSRoleFilter();
     	SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
@@ -236,7 +236,7 @@ public class ANSEventAction extends SBActionAdapter {
 	}
 	
 	
-	public void saveEventTypeSignups(SMTServletRequest req) throws ActionException {
+	public void saveEventTypeSignups(ActionRequest req) throws ActionException {
 		final String schema = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sb = new StringBuilder();
 		sb.append("update ").append(schema).append("ans_event_type_approval ");

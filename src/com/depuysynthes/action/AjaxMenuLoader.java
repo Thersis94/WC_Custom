@@ -7,7 +7,7 @@ import java.util.Map;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.commerce.catalog.ProductAttributeContainer;
 import com.siliconmtn.commerce.catalog.ProductAttributeVO;
 import com.siliconmtn.commerce.catalog.ProductCategoryContainer;
@@ -15,7 +15,7 @@ import com.siliconmtn.commerce.catalog.ProductCategoryVO;
 import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.menu.MenuBuilder;
@@ -55,7 +55,7 @@ public class AjaxMenuLoader extends SimpleActionAdapter {
 	
 	
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.info("Starting menu loader - retrieve");
 
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
@@ -203,7 +203,7 @@ public class AjaxMenuLoader extends SimpleActionAdapter {
 	 * @param site
 	 * @param mod
 	 */
-	private void loadSitePageMenu(SMTServletRequest req, SiteVO site, ModuleVO mod) {
+	private void loadSitePageMenu(ActionRequest req, SiteVO site, ModuleVO mod) {
 		log.debug("loading site-page menus");
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 		if (role == null) role = new SBUserRole(site.getSiteId());
@@ -216,7 +216,7 @@ public class AjaxMenuLoader extends SimpleActionAdapter {
 		log.debug("siteId=" + site.getSiteId());
 		ModuleVO menuMod = new ModuleVO(null, role.getCachePmid(site.getSiteId()), true, "MENU");
 		attributes.put(Constants.MODULE_DATA, menuMod);
-		SMTActionInterface ac = null;
+		ActionInterface ac = null;
 		try {
 			ac = new MenuBuilder(ai);
 			ac.setAttributes(attributes);
@@ -237,7 +237,7 @@ public class AjaxMenuLoader extends SimpleActionAdapter {
 		}
 	}
 	
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 }

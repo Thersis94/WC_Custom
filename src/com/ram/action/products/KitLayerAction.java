@@ -15,9 +15,9 @@ import net.sf.json.JSONObject;
 import com.ram.datafeed.data.KitLayerVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -73,7 +73,7 @@ public class KitLayerAction extends SBActionAdapter {
 	 */
 	@SuppressWarnings("unchecked")
 	@Override
-	public void copy(SMTServletRequest req) throws ActionException {
+	public void copy(ActionRequest req) throws ActionException {
 		//Clone the Kit Product Layers.
 		Map<String, Object> replaceVals = (Map<String, Object>) attributes.get(RecordDuplicatorUtility.REPLACE_VALS);
 		RecordDuplicatorUtility rdu = new RecordDuplicatorUtility(attributes, dbConn, "RAM_KIT_LAYER", "KIT_LAYER_ID", true);
@@ -130,7 +130,7 @@ public class KitLayerAction extends SBActionAdapter {
 	 * preparedStatement and return that to the view.
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		
 		//Deactivate request validation so we can save the Json Data for canvas element.
 		req.setValidateInput(false);
@@ -201,7 +201,7 @@ public class KitLayerAction extends SBActionAdapter {
 		 * get the Coordinate data for the kit layer products.
 		 */
 		if(req.hasParameter(KIT_LAYER_ID)) {
-			SMTActionInterface sai = new KitCoordinateAction(this.actionInit);
+			ActionInterface sai = new KitCoordinateAction(this.actionInit);
 			sai.setAttributes(attributes);
 			sai.setDBConnection(dbConn);
 			sai.build(req);
@@ -215,7 +215,7 @@ public class KitLayerAction extends SBActionAdapter {
 	 * inactive.  This handles marking a given kitLayer as inactive.
 	 */
 	@Override
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		//Build Query
 		StringBuilder sb = new StringBuilder();
 		sb.append("update ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
@@ -246,7 +246,7 @@ public class KitLayerAction extends SBActionAdapter {
 	 * Retrieve all the kit layers for a given productId
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		
 		List<KitLayerVO> layers = new ArrayList<KitLayerVO>();
 		KitLayerVO layer = new KitLayerVO();
@@ -290,7 +290,7 @@ public class KitLayerAction extends SBActionAdapter {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		
 	}
 

@@ -16,7 +16,7 @@ import org.apache.log4j.Logger;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
@@ -64,7 +64,7 @@ public class QualifiedReport implements Report {
 	/* (non-Javadoc)
 	 * @see com.depuy.sitebuilder.datafeed.Report#retrieveReport(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public Object retrieveReport(SMTServletRequest req)
+	public Object retrieveReport(ActionRequest req)
 	throws DatabaseException, InvalidDataException {
 		log.debug("Starting Qualified Lead Report");
 

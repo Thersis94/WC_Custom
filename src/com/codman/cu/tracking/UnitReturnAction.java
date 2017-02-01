@@ -9,7 +9,7 @@ import com.codman.cu.tracking.vo.UnitVO;
 import com.codman.cu.tracking.vo.UnitVO.ProdType;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -44,7 +44,7 @@ public class UnitReturnAction extends AbstractTransAction {
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.action.ActionController#update(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void build(SMTServletRequest req) throws ActionException {	
+	public void build(ActionRequest req) throws ActionException {	
 		Object msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
 		String fromAccountId = StringUtil.checkVal(req.getParameter("accountId"));
 		String unitId = StringUtil.checkVal(req.getParameter("unitId"));
@@ -153,7 +153,7 @@ public class UnitReturnAction extends AbstractTransAction {
 		log.debug("cleared activeRecordFlag for unit " + unitId);
 	}
 	
-	private void sendNotifications(SMTServletRequest req, TransactionVO tvo) 
+	private void sendNotifications(ActionRequest req, TransactionVO tvo) 
 			throws ActionException {
 		//send a notification email for ICP products only
 		if (tvo.getProductType() != ProdType.ICP_EXPRESS) return;

@@ -22,7 +22,7 @@ import com.siliconmtn.gis.AbstractGeocoder;
 import com.siliconmtn.gis.GeocodeFactory;
 import com.siliconmtn.gis.GeocodeLocation;
 import com.siliconmtn.gis.Location;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.NumberFormat;
 import com.siliconmtn.util.StringUtil;
@@ -51,7 +51,7 @@ public class QualifiedByCityReport implements Report {
 	/* (non-Javadoc)
 	 * @see com.depuy.sitebuilder.datafeed.Report#retrieveReport(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public Object retrieveReport(SMTServletRequest req)
+	public Object retrieveReport(ActionRequest req)
 	throws DatabaseException, InvalidDataException {
 		List<ReportData> data = new ArrayList<ReportData>();
 		

@@ -11,7 +11,7 @@ import java.sql.SQLException;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 
 // 
@@ -49,7 +49,7 @@ public class MediaBinLinkAction extends SimpleActionAdapter {
 	}
 
 	
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO)attributes.get(AdminConstants.ADMIN_MODULE_DATA);
 		mod.setSimpleAction(Boolean.TRUE);
 	}
@@ -58,7 +58,7 @@ public class MediaBinLinkAction extends SimpleActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		//boolean success = false;
 		try {
 			req.setValidateInput(Boolean.FALSE);

@@ -12,7 +12,7 @@ import java.util.Map;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -49,11 +49,11 @@ public class ExtendedDataAction extends SimpleActionAdapter {
 	}
 
 
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		
 	}
 	
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		if (!req.hasParameter("dealerLocationId"))
 			throw new ActionException("extData save will fail, no dealerLocationId");
 			
@@ -124,7 +124,7 @@ public class ExtendedDataAction extends SimpleActionAdapter {
 		}
 	}
 
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		final String customDb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		int sType = Convert.formatInteger(req.getParameter("sType"), 0); //searchType
 		String[] dlrs = req.getParameterValues("dealerLocationId");
@@ -207,7 +207,7 @@ public class ExtendedDataAction extends SimpleActionAdapter {
 	}
 	
 	
-	private void flushPathologies(SMTServletRequest req) throws ActionException {
+	private void flushPathologies(ActionRequest req) throws ActionException {
 		SimpleActionAdapter saa = new PathologiesAction(this.actionInit);
 		saa.setAttributes(attributes);
 		saa.setDBConnection(dbConn);
@@ -261,7 +261,7 @@ public class ExtendedDataAction extends SimpleActionAdapter {
 		}
 	}
 	
-	private void savePathologies(SMTServletRequest req) throws ActionException {
+	private void savePathologies(ActionRequest req) throws ActionException {
 		SimpleActionAdapter saa = new PathologiesAction(this.actionInit);
 		saa.setAttributes(attributes);
 		saa.setDBConnection(dbConn);
@@ -269,7 +269,7 @@ public class ExtendedDataAction extends SimpleActionAdapter {
 	}
 	
 	
-	private String writeFile(SMTServletRequest req, String paramNm) {
+	private String writeFile(ActionRequest req, String paramNm) {
 		log.debug("starting writeFile");
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 

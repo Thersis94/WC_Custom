@@ -12,8 +12,8 @@ import java.util.Map;
 // SMT base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionInterface;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 
@@ -52,7 +52,7 @@ public class TrackerDashboardAction extends SBActionAdapter {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("SJMTrackerDashboardAction retrieve...");
 		// retrieve role
 		boolean admin = false;
@@ -62,7 +62,7 @@ public class TrackerDashboardAction extends SBActionAdapter {
 		}
 		TrackerDataContainer data = new TrackerDataContainer();
 		Map<String, Object> dataMap = new HashMap<String, Object>();
-		SMTActionInterface sai = null;
+		ActionInterface sai = null;
 		
 		if (admin) {
 			// sort the assignments by assign date if we are not already doing a view sort, etc.
@@ -117,7 +117,7 @@ public class TrackerDashboardAction extends SBActionAdapter {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		log.debug("SJMTrackerDashboardAction build...");
 		this.retrieve(req);
 	}
@@ -129,7 +129,7 @@ public class TrackerDashboardAction extends SBActionAdapter {
 	 * @param dataMap
 	 * @param isAdmin
 	 */
-	private void countAssignments(SMTServletRequest req, List<AssignmentVO> assignments, 
+	private void countAssignments(ActionRequest req, List<AssignmentVO> assignments, 
 			Map<String, Object> dataMap, boolean isAdmin) {
 		log.debug("counting assignments...");
 		int totalAssignments = 0;

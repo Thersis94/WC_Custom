@@ -13,7 +13,7 @@ import com.codman.cu.tracking.vo.PhysicianVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.exception.DatabaseException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataComparator;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
@@ -53,7 +53,7 @@ public class PhysicianAction extends SBActionAdapter {
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.action.ActionController#delete(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		final String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
 		String physicianId = req.getParameter("del");
@@ -96,7 +96,7 @@ public class PhysicianAction extends SBActionAdapter {
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.action.ActionController#update(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		log.info("Starting PhysicianAction build...");
 		msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
@@ -164,7 +164,7 @@ public class PhysicianAction extends SBActionAdapter {
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.action.ActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("Starting PhysicianAction retrieve...");
 		if (req.getParameter("del") != null) 
 			delete(req);
@@ -253,7 +253,7 @@ public class PhysicianAction extends SBActionAdapter {
 	 * @param pm
 	 * @param vo
 	 */
-	public void checkPhysicianProfile(SMTServletRequest req, ProfileManager pm, PhysicianVO vo) {
+	public void checkPhysicianProfile(ActionRequest req, ProfileManager pm, PhysicianVO vo) {
 		//save core PROFILE, PHONE_NO, & PROFILE_ADDRESS
 		try {
 			if (vo.getProfileId() == null || vo.getProfileId().length() == 0)

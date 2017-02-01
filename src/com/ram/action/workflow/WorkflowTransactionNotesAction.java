@@ -9,7 +9,7 @@ import java.util.List;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.workflow.data.WorkflowTransactionStepNoteVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -55,12 +55,12 @@ public class WorkflowTransactionNotesAction extends SBActionAdapter {
 	 * Returns transaction note/error data for the specified workflow transaction
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		//Prevent double call at page load.  This ensures only the ajax call triggers load.
 		if(req.hasParameter("amid")) retrieveTransactionNotes(req);
 	}
 	
-	public void retrieveTransactionNotes(SMTServletRequest req) throws ActionException {
+	public void retrieveTransactionNotes(ActionRequest req) throws ActionException {
 		//Instantiate the transaction note list for results
 		List<WorkflowTransactionStepNoteVO> transactionNotes = new ArrayList<WorkflowTransactionStepNoteVO>();
 		String schema = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
