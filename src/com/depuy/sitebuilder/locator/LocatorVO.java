@@ -7,7 +7,7 @@ import java.util.Map;
 
 // SMT Base Libs 2.0
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 
 // SB Libs
@@ -61,7 +61,7 @@ public class LocatorVO extends SBModuleVO {
      * Sets the data from the request object to the param value
      * @param req
      */
-    public void setData(SMTServletRequest req) {
+    public void setData(ActionRequest req) {
         actionId = req.getParameter("sbActionId");
         organizationId = req.getParameter("organizationId");
         searchId = req.getParameter("searchId");

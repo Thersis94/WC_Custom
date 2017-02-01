@@ -9,7 +9,7 @@ import java.util.Map;
 import com.depuy.sitebuilder.datafeed.TransactionReport.ReportData;
 import com.siliconmtn.data.report.ExcelReport;
 import com.siliconmtn.data.report.StandardExcelReport;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 
 /****************************************************************************
  * <b>Title</b>: TransactionReportVO.java <p/>
@@ -39,7 +39,7 @@ public class TransactionReportVO extends AbstractDataFeedReportVO {
 	 * @see com.depuy.sitebuilder.datafeed.AbstractDataFeedReportVO#setRequestData(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void setRequestData(SMTServletRequest req) {
+	public void setRequestData(ActionRequest req) {
 		//this report needs not additional data from the request object
 		//intentionally left blank
 		

@@ -9,9 +9,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.codman.cu.tracking.vo.AccountReportVO;
 import com.codman.cu.tracking.vo.AccountUnitReportVO;
 import com.codman.cu.tracking.vo.AccountVO;
-import com.codman.cu.tracking.vo.AccountReportVO;
 import com.codman.cu.tracking.vo.PhysicianReportVO;
 import com.codman.cu.tracking.vo.PhysicianVO;
 import com.codman.cu.tracking.vo.RequestSearchVO;
@@ -20,9 +20,9 @@ import com.codman.cu.tracking.vo.TransactionVO;
 import com.codman.cu.tracking.vo.UnitVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.exception.DatabaseException;
-import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -60,13 +60,13 @@ public class AccountFacadeAction extends SBActionAdapter {
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.action.ActionController#update(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		String type = StringUtil.checkVal(req.getParameter("type"));
 		String prodCd = StringUtil.checkVal(req.getParameter("productType"),UnitVO.ProdType.MEDSTREAM.toString());
 		
 		log.debug("facadeType: " + type);
 		
-		SMTActionInterface sai = null;
+		ActionInterface sai = null;
 		if (type.equalsIgnoreCase("account")) {
 			sai = new AccountAction(actionInit);
 		} else if (type.equalsIgnoreCase("physician")) {
@@ -90,7 +90,7 @@ public class AccountFacadeAction extends SBActionAdapter {
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.action.ActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		final String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		String type = StringUtil.checkVal(req.getParameter("type"));
@@ -345,7 +345,7 @@ public class AccountFacadeAction extends SBActionAdapter {
 			if (req.getParameter("toAcctId") != null)
 				req.setParameter("accountId", req.getParameter("toAcctId"));
 			
-			SMTActionInterface sai = new PhysicianAction(actionInit);
+			ActionInterface sai = new PhysicianAction(actionInit);
 			sai.setAttributes(attributes);
 			sai.setDBConnection(dbConn);
 			sai.retrieve(req);
@@ -354,7 +354,7 @@ public class AccountFacadeAction extends SBActionAdapter {
 	}
 	
 	
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 	

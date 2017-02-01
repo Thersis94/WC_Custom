@@ -12,7 +12,7 @@ import com.depuysynthesinst.emails.TransferEligibleVO;
 import com.depuysynthesinst.emails.TransferIneligibleVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -50,7 +50,7 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 	/**
 	 * this is called from the admintool, to notify the user their account has been verified.
 	 */
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		DSIUserDataVO dsiUser = new DSIUserDataVO();
 		req.setValidateInput(false);
@@ -74,7 +74,7 @@ public class RegistrationPostProcessor extends SimpleActionAdapter {
 	 * gateway into the other methods here-in.
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		Integer page = Convert.formatInteger(req.getParameter("page"),0);
 		log.debug("starting post-processor, " + page);
 

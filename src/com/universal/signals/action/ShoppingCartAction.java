@@ -34,7 +34,7 @@ import com.siliconmtn.commerce.payment.PaymentVO;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.security.AuthenticationException;
 import com.siliconmtn.security.EncryptionException;
@@ -103,7 +103,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("ShoppingCartAction retrieve...");
 		String orgId = ((SiteVO)req.getAttribute(Constants.SITE_DATA)).getOrganizationId();
 		this.setCatalogSiteId(req);
@@ -126,7 +126,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		log.debug("ShoppingCartAction build....");
 		this.setCatalogSiteId(req);
 		// Retrieve the cart
@@ -162,7 +162,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 	 * @throws DocumentException
 	 * @throws IOException
 	 */
-	public ShoppingCartVO manageCart(SMTServletRequest req) 
+	public ShoppingCartVO manageCart(ActionRequest req) 
 			throws ActionException, DocumentException, IOException {
 		log.debug("managing cart...");
 		StringEncoder se = new StringEncoder();
@@ -245,7 +245,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 	 * @param cart
 	 * @throws ActionException
 	 */
-	private void saveCart(SMTServletRequest req, Storage container, ShoppingCartVO cart) 
+	private void saveCart(ActionRequest req, Storage container, ShoppingCartVO cart) 
 			throws ActionException {
 		// Resave the cart for persistence reasons
 		UserDataVO sessUser = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
@@ -260,7 +260,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	protected Storage retrieveContainer(SMTServletRequest req) 
+	protected Storage retrieveContainer(ActionRequest req) 
 			throws ActionException {
 		Map<String, Object> attrs = new HashMap<>();
 		attrs.put(GlobalConfig.HTTP_REQUEST, req);
@@ -289,7 +289,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	private boolean isPayPalCheckout(SMTServletRequest req) {
+	private boolean isPayPalCheckout(ActionRequest req) {
 		boolean doPayPal = false;
 		if (StringUtil.checkVal(req.getParameter("type")).equalsIgnoreCase("paypal")) {
 			// if this is a 'start' operation, we return false.
@@ -309,7 +309,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 	 * @param productId
 	 * @return
 	 */
-	private boolean isFinalCheckout(SMTServletRequest req, String productId) {
+	private boolean isFinalCheckout(ActionRequest req, String productId) {
 		log.debug("processing initial 'finalCheckout' check...");
 		boolean isFinalCheckOut = false;
 		if (Convert.formatBoolean(req.getParameter("finalCheckout"))) {
@@ -326,7 +326,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 	 * @param container
 	 * @param cart
 	 */
-	private ShoppingCartVO processFinalCheckOut(SMTServletRequest req, Storage container,
+	private ShoppingCartVO processFinalCheckOut(ActionRequest req, Storage container,
 			ShoppingCartVO cart) {
 		log.debug("processing final checkout...");
 		// format the payment
@@ -363,7 +363,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 	 * @param cart
 	 * @return
 	 */
-	private ShoppingCartVO processPayPalCheckout(SMTServletRequest req, 
+	private ShoppingCartVO processPayPalCheckout(ActionRequest req, 
 			Storage container, ShoppingCartVO cart) throws DocumentException {
 		log.debug("processPayPalCheckout...");
 		String payPalAction = StringUtil.checkVal(req.getParameter("paypal"));
@@ -471,7 +471,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 	 * @param req
 	 * @param cart
 	 */
-	private void formatPayment(SMTServletRequest req, ShoppingCartVO cart) {
+	private void formatPayment(ActionRequest req, ShoppingCartVO cart) {
 		String encKey = (String)this.getAttribute(Constants.ENCRYPT_KEY);
 		PaymentVO payment = new PaymentVO(encKey);
 		payment.setExpirationMonth(req.getParameter("expMonth"));
@@ -488,7 +488,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 	 * @param cart
 	 * @throws DocumentException
 	 */
-	public void payForOrder(SMTServletRequest req, ShoppingCartVO cart) 
+	public void payForOrder(ActionRequest req, ShoppingCartVO cart) 
 			throws DocumentException {
 		WebServiceAction wsa = new WebServiceAction(this.actionInit);
 		wsa.setDBConnection(dbConn); // for use by transaction logger
@@ -532,7 +532,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 	 * @param req
 	 * @param cart
 	 */
-	private void retrieveCartUserData(SMTServletRequest req, ShoppingCartVO cart) {
+	private void retrieveCartUserData(ActionRequest req, ShoppingCartVO cart) {
 		log.debug("processing retrieval of cart user data from session...");
 		// See if there is data on the session to assign from login
 		UserDataVO user = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
@@ -553,7 +553,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 	 * @param cart
 	 * @param productId
 	 */
-	private void processItem(SMTServletRequest req, ShoppingCartVO cart, String productId) 
+	private void processItem(ActionRequest req, ShoppingCartVO cart, String productId) 
 			throws DocumentException {
 		ShoppingCartItemVO item = null;
 		//attempt to retrieve item from the cart.
@@ -623,7 +623,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 	 * @param cart
 	 * @param req
 	 */
-	protected void manageShippingInfo(ShoppingCartVO cart, SMTServletRequest req) {
+	protected void manageShippingInfo(ShoppingCartVO cart, ActionRequest req) {
 		log.debug("manageShippingInfo...");
 		String shippingType = StringUtil.checkVal(req.getParameter("shippingType"));
 		log.debug("shippingType: " + shippingType);
@@ -670,7 +670,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 	 * @param req
 	 * @param user
 	 */
-	private void retrieveProfileId(SMTServletRequest req, UserDataVO user) {
+	private void retrieveProfileId(ActionRequest req, UserDataVO user) {
 		log.debug("retrieving profileId...");
 		String profileId = null;
 		ProfileManager pm = null;
@@ -719,7 +719,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 	 * @throws DocumentException
 	 */
 	@SuppressWarnings("unchecked")
-	public void manageShipping(SMTServletRequest req, ShoppingCartVO cart, 
+	public void manageShipping(ActionRequest req, ShoppingCartVO cart, 
 			boolean isShippingMethodUpdate) throws DocumentException {
 		log.debug("manageShipping...");
 		//log.debug("isShippingMethodUpdate: " + isShippingMethodUpdate);
@@ -810,7 +810,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 	 * Calls the webservice to authenticate a user login if appropriate.
 	 * @param req
 	 */
-	public void checkAuth(SMTServletRequest req) {
+	public void checkAuth(ActionRequest req) {
 		log.debug("checking auth...");
 		if (! Convert.formatBoolean(req.getParameter("login"))) {
 			return;
@@ -844,7 +844,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		SBModuleVO vo = null;
 		String msg = (String)getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
 		
@@ -977,7 +977,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 	 * @param req
 	 * @param cartItem
 	 */
-	private void addProductAttributes(SMTServletRequest req, ShoppingCartItemVO cartItem) {
+	private void addProductAttributes(ActionRequest req, ShoppingCartItemVO cartItem) {
 		if (cartItem == null || cartItem.getProduct() == null) return;
 		
 		// 1: Retrieve product attributes for this product
@@ -1097,7 +1097,7 @@ public class ShoppingCartAction extends SBActionAdapter {
 	 * Sets the catalog site ID based on site ID.
 	 * @param req
 	 */
-	private void setCatalogSiteId(SMTServletRequest req) {
+	private void setCatalogSiteId(ActionRequest req) {
 		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 		catalogSiteId = site.getSiteId();
 	}

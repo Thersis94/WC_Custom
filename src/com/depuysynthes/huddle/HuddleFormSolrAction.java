@@ -1,10 +1,9 @@
 package com.depuysynthes.huddle;
 
-import javax.servlet.http.Cookie;
-
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.http.session.SMTCookie;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBModuleVO;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
@@ -36,7 +35,7 @@ public class HuddleFormSolrAction extends SimpleActionAdapter {
 
 
 	@Override
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 
@@ -46,7 +45,7 @@ public class HuddleFormSolrAction extends SimpleActionAdapter {
 	 * Solr makes faceting easy; otherwise it's a ton of manual labor we need to code.
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		
 		/*
@@ -66,7 +65,7 @@ public class HuddleFormSolrAction extends SimpleActionAdapter {
 		}
 
 		//OTHERWISE: Do a solr search and forward to the grid view
-		Cookie rppCook = req.getCookie(HuddleUtils.RPP_COOKIE);
+		SMTCookie rppCook = req.getCookie(HuddleUtils.RPP_COOKIE);
 		if (rppCook != null)
 			req.setParameter("rpp", rppCook.getValue());
 
@@ -102,7 +101,7 @@ public class HuddleFormSolrAction extends SimpleActionAdapter {
 	 * Proxy Build request through the FormBuilderFacadeAction Build method.
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		/*
 		 * If there is a formId on the request, forward the call to
 		 * FormBuilderFacadeActions build method.

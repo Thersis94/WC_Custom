@@ -9,7 +9,7 @@ import java.util.Date;
 //SMT Base Libs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -48,7 +48,7 @@ public class EpiducerReassignmentAction extends SimpleActionAdapter {
         super(arg0);
     }
     
-    public void list(SMTServletRequest req) throws ActionException {
+    public void list(ActionRequest req) throws ActionException {
     	super.retrieve(req);    	
     }
 	
@@ -56,7 +56,7 @@ public class EpiducerReassignmentAction extends SimpleActionAdapter {
      * @see com.siliconmtn.action.AbstractActionController#build(com.siliconmtn.http.SMTServletRequest)
      */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
     	log.debug("Starting EpiducerReassignmentAction build...");
     	StringBuffer url = new StringBuffer(req.getRequestURI());    	
 		String id = StringUtil.checkVal(req.getParameter("contactSubmittalId"));
@@ -91,7 +91,7 @@ public class EpiducerReassignmentAction extends SimpleActionAdapter {
      * @see com.siliconmtn.action.AbstractActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
      */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("EpiducerReassignmentAction retrieve...");
 		String id = StringUtil.checkVal(req.getParameter("contactSubmittalId"));
 		log.debug("contactSubmittalId: " + id);
@@ -116,7 +116,7 @@ public class EpiducerReassignmentAction extends SimpleActionAdapter {
 	 * Updates user's course name
 	 * @param req
 	 */
-	private void processSubmittalUpdate(SMTServletRequest req) throws SQLException {
+	private void processSubmittalUpdate(ActionRequest req) throws SQLException {
 		if (StringUtil.checkVal(req.getParameter("newCourseValue")).length() == 0) return;
 		log.debug("processing submittal...");
 		StringBuffer sql = new StringBuffer();
@@ -144,7 +144,7 @@ public class EpiducerReassignmentAction extends SimpleActionAdapter {
 	 * @param req
 	 * @throws SQLException
 	 */
-	private void processOptOut(SMTServletRequest req) {
+	private void processOptOut(ActionRequest req) {
 		if (StringUtil.checkVal(req.getParameter("optOut")).length() == 0) return;
 		if (StringUtil.checkVal(req.getParameter("profileId")).length() == 0) {
 			msg = "No profile ID provided for physician. Unable to update opt-out data.";
@@ -283,7 +283,7 @@ public class EpiducerReassignmentAction extends SimpleActionAdapter {
 	/**
 	 * Retrieves physician's name info from the custom db table
 	 */
-	private void retrieveUserData(SMTServletRequest req) {
+	private void retrieveUserData(ActionRequest req) {
 		log.debug("retrieving user data...");
 		String schema = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		// get physician data

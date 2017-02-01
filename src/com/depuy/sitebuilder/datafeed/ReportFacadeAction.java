@@ -4,20 +4,14 @@ package com.depuy.sitebuilder.datafeed;
 import java.util.HashMap;
 import java.util.Map;
 
-
-
-
-
-
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.SMTClassLoader;
 import com.siliconmtn.util.StringUtil;
-
 // SiteBuilder Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -115,7 +109,7 @@ public class ReportFacadeAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#list(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		// Get Params
 		String type = StringUtil.checkVal(req.getParameter("dfReportType"));
 		log.info("Getting Data Feed Report for: " + type);
@@ -172,7 +166,7 @@ public class ReportFacadeAction extends SBActionAdapter {
 	 * @throws InvalidDataException 
 	 * @throws DatabaseException 
 	 */
-	protected AbstractDataFeedReportVO getBinaryReport(SMTServletRequest req, String type, SMTClassLoader scl, Object data) throws ActionException, ClassNotFoundException {
+	protected AbstractDataFeedReportVO getBinaryReport(ActionRequest req, String type, SMTClassLoader scl, Object data) throws ActionException, ClassNotFoundException {
 		AbstractDataFeedReportVO rpt = null;
 
 		String binaryPath = binaryReport.get(type);
@@ -191,14 +185,14 @@ public class ReportFacadeAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void list(SMTServletRequest arg0) throws ActionException {
+	public void list(ActionRequest arg0) throws ActionException {
 	}
 
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.action.AbstractActionController#update(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void update(SMTServletRequest arg0) throws ActionException {
+	public void update(ActionRequest arg0) throws ActionException {
 	}
 
 }

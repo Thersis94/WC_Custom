@@ -9,7 +9,7 @@ import java.util.List;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.workflow.data.WorkflowTransactionVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -61,12 +61,12 @@ public class WorkflowTransactionAction extends SBActionAdapter {
 	 * We only return transactions created within the configured amount of time above.
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		//Prevent double call at page load.  This ensures only the ajax call triggers load.
 		if(req.hasParameter("amid")) retrieveTransactions(req);
 	}
 	
-	public void retrieveTransactions(SMTServletRequest req) throws ActionException {
+	public void retrieveTransactions(ActionRequest req) throws ActionException {
 		//Instantiate the transaction list for results and check for lookup type.
 		List<WorkflowTransactionVO> transactions = new ArrayList<WorkflowTransactionVO>();
 		String schema = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);

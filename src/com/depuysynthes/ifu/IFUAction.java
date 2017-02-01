@@ -10,7 +10,7 @@ import java.util.Map;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -47,7 +47,7 @@ public class IFUAction  extends SBActionAdapter {
 	/**
 	 * Determine whether or not we are getting a single IFU or all of them
 	 */
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		if (req.hasParameter("ifuId") || req.hasParameter("add")) {
 			getSingleIFU(req);
 		} else {
@@ -60,7 +60,7 @@ public class IFUAction  extends SBActionAdapter {
 	 * Get all IFU documents
 	 * @param req
 	 */
-	private void getAllIFU(SMTServletRequest req) {
+	private void getAllIFU(ActionRequest req) {
 		log.debug("Listing all IFUs");
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(55);
@@ -94,7 +94,7 @@ public class IFUAction  extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	public void getSingleIFU(SMTServletRequest req) throws ActionException {
+	public void getSingleIFU(ActionRequest req) throws ActionException {
 		log.debug("Reftriving IFUs");
 		String ifuId = req.getParameter("ifuId");
 		String sql = buildSingleIFUSql();
@@ -147,7 +147,7 @@ public class IFUAction  extends SBActionAdapter {
 	/**
 	 * Delete the supplied IFU document
 	 */
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		log.debug("Deleting document");
 		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
@@ -174,7 +174,7 @@ public class IFUAction  extends SBActionAdapter {
 	 * Create an IFUVO from the request object and and send it to the
 	 *  vo specific updater
 	 */
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 		try {
 			IFUVO ifu = new IFUVO(req);
@@ -251,7 +251,7 @@ public class IFUAction  extends SBActionAdapter {
 	 * Create a copy of the supplied IFU 
 	 */
 	@SuppressWarnings("unchecked")
-	public void copy(SMTServletRequest req) throws ActionException {
+	public void copy(ActionRequest req) throws ActionException {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		String oldIFU = req.getParameter("ifuId");
 		// Get id of the item that was potentially deleted to trigger this copy in order to exclude it from the new IFU

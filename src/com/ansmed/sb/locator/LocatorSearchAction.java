@@ -18,7 +18,7 @@ import com.siliconmtn.gis.AbstractGeocoder;
 import com.siliconmtn.gis.GeocodeFactory;
 import com.siliconmtn.gis.GeocodeLocation;
 import com.siliconmtn.gis.GeocodeType;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.PhoneVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.NumberFormat;
@@ -70,7 +70,7 @@ public class LocatorSearchAction extends SBActionAdapter {
 
 	
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		Integer radius = Convert.formatInteger(req.getParameter("radius"));
 		boolean locatorSearchSubmitted = Convert.formatBoolean(req.getParameter("locatorSearchSubmitted"));
 		Integer minNum = Convert.formatInteger(req.getParameter("minReturned"), DEFAULT_MIN_RETURNED);
@@ -216,7 +216,7 @@ public class LocatorSearchAction extends SBActionAdapter {
 	 * @return
 	 */
 	protected List<SurgeonVO> querySurgeons(int type, GeocodeLocation loc, int radius, 
-											int start, int rpp, SMTServletRequest req) {
+											int start, int rpp, ActionRequest req) {
 		
 		List<SurgeonVO> data = new ArrayList<SurgeonVO>();
 		

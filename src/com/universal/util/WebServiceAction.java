@@ -28,7 +28,7 @@ import com.siliconmtn.commerce.ShoppingCartItemVO;
 import com.siliconmtn.commerce.ShoppingCartVO;
 import com.siliconmtn.commerce.catalog.ProductAttributeVO;
 import com.siliconmtn.commerce.catalog.ProductVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.io.http.HttpsSocketFactoryManager;
 import com.siliconmtn.io.http.HttpsSocketFactoryManager.SSLContextType;
@@ -106,7 +106,7 @@ public class WebServiceAction extends SBActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void build(SMTServletRequest req) throws ActionException {}
+	public void build(ActionRequest req) throws ActionException {}
 	
 	/**
 	 * 
@@ -228,7 +228,7 @@ public class WebServiceAction extends SBActionAdapter {
 	 * @return
 	 * @throws DocumentException
 	 */
-	public Element placeOrder(SMTServletRequest req, ShoppingCartVO cart, String ipAddr) 
+	public Element placeOrder(ActionRequest req, ShoppingCartVO cart, String ipAddr) 
 			throws DocumentException {
 		boolean useSSL = true;
 		String siteId = StringUtil.checkVal(getAttribute(CATALOG_SITE_ID));
@@ -337,7 +337,7 @@ public class WebServiceAction extends SBActionAdapter {
 	 * @throws IllegalArgumentException 
 	 * @throws EncryptionException 
 	 */
-	private StringBuilder createOrderRequest(SMTServletRequest req, 
+	private StringBuilder createOrderRequest(ActionRequest req, 
 			ShoppingCartVO cart, String ipAddr) throws EncryptionException, 
 			IllegalArgumentException {
 		// Build the XML Request

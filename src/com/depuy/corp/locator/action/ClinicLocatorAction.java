@@ -13,7 +13,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.smt.sitebuilder.db.DatabaseException;
 import com.smt.sitebuilder.security.SBUserRole;
 import com.smt.sitebuilder.security.SecurityController;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -48,7 +48,7 @@ public class ClinicLocatorAction extends SimpleActionAdapter {
 	public ClinicLocatorAction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		req.setValidateInput(false);
 		boolean insertAction = Convert.formatBoolean(req.getParameter("insertAction"));
 		String msg = (String)getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
@@ -85,7 +85,7 @@ public class ClinicLocatorAction extends SimpleActionAdapter {
 		this.sendRedirect(((PageVO)req.getAttribute(Constants.PAGE_DATA)).getFullPath() + "?sType=1&dlrInfoSub=true&dealerLocationId=" + dlId, msg, req);
 	}
 	
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		int sType = Convert.formatInteger(req.getParameter("sType"));
 		log.debug("starting retrieve for sType=" + sType);
 		if (Convert.formatBoolean(req.getParameter("dlrInfoSub")))
@@ -115,7 +115,7 @@ public class ClinicLocatorAction extends SimpleActionAdapter {
 	 * @throws ActionException
 	 */
 	@SuppressWarnings("unchecked")
-	private void searchByLocation(SMTServletRequest req) throws ActionException {
+	private void searchByLocation(ActionRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		ActionInitVO ai = new ActionInitVO();
 		ai.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
@@ -201,7 +201,7 @@ public class ClinicLocatorAction extends SimpleActionAdapter {
 	 * @throws ActionException
 	 */
 	@SuppressWarnings("unchecked")
-	private void searchByCustomData(SMTServletRequest req) throws ActionException {
+	private void searchByCustomData(ActionRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		
 		//load a list of dealers using the passed criteria, from the custom data
@@ -278,12 +278,12 @@ public class ClinicLocatorAction extends SimpleActionAdapter {
 	}
 	
 	
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 	
 	
-	private void setMapResults(SMTServletRequest req, Map<String, DePuyCorpLocationVO> dlrs, DealerLocatorVO loc) {
+	private void setMapResults(ActionRequest req, Map<String, DePuyCorpLocationVO> dlrs, DealerLocatorVO loc) {
 		if (loc == null) loc = new DealerLocatorVO();
 		
 		// Setup the map info
@@ -306,7 +306,7 @@ public class ClinicLocatorAction extends SimpleActionAdapter {
 		req.setAttribute(MapAction.MAP_ALT_DATA, map);
 	}
 	
-	private void getPathologyData(SMTServletRequest req) throws ActionException{
+	private void getPathologyData(ActionRequest req) throws ActionException{
 		SimpleActionAdapter saa = new PathologiesAction(this.actionInit);
 		saa.setAttributes(attributes);
 		saa.setDBConnection(dbConn);

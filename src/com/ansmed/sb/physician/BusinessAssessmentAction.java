@@ -12,7 +12,7 @@ import com.ansmed.sb.security.ANSRoleFilter;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -56,7 +56,7 @@ public class BusinessAssessmentAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		log.debug("Building business assessments/goals...");
 		
 		String deleteEle = StringUtil.checkVal(req.getParameter("deleteEle"));
@@ -71,7 +71,7 @@ public class BusinessAssessmentAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		String schema = (String)getAttribute("customDbSchema");
 		String message = "You have successfully updated the business assessment information.";
 		
@@ -162,7 +162,7 @@ public class BusinessAssessmentAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#delete(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		String schema = (String)getAttribute("customDbSchema");
 		String message = "You have successfully deleted the business assessment information.";
 		String processType = StringUtil.checkVal(req.getParameter("processType"));
@@ -205,7 +205,7 @@ public class BusinessAssessmentAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("Retrieving Business Assessment data...");
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);

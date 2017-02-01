@@ -10,7 +10,7 @@ import java.util.Map;
 import com.depuy.forefront.action.vo.TreatCalVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -28,10 +28,10 @@ public class TreatCalAction extends SBActionAdapter {
 		super(ai);
 	}
 	
-	public void delete(SMTServletRequest req) {
+	public void delete(ActionRequest req) {
 	}
 	
-	public void retrieve(SMTServletRequest req) throws ActionException{
+	public void retrieve(ActionRequest req) throws ActionException{
 		log.debug("Beginning TreatCalAction retrieve");
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		String hospitalInstId = StringUtil.checkVal(req.getSession().getAttribute(HospitalInstanceAction.HOSP_INST_ID), null);
@@ -85,7 +85,7 @@ public class TreatCalAction extends SBActionAdapter {
 	}
 	
 	
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		req.setValidateInput(Boolean.FALSE);
 		log.debug("Beginning TreatCal update");
 		String msg = "Treatment Calendar Saved Successfully";

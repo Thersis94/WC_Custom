@@ -8,7 +8,7 @@ import java.util.List;
 
 import com.depuy.events.vo.DePuyEventAddtlPostcardVO;
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.event.vo.EventEntryVO;
 
@@ -60,7 +60,7 @@ public class DePuyEventEntryVO extends EventEntryVO {
      * Parses the request data and stores it in the appropriate variables
      * @param req
      */
-	public DePuyEventEntryVO(SMTServletRequest req) {
+	public DePuyEventEntryVO(ActionRequest req) {
 		super(req); //call parent class
     	showNameOnPostcardFlg = Convert.formatInteger(req.getParameter("displayNameFlg"),0);
         featuredProductFlg = Convert.formatInteger(req.getParameter("featProductFlg"),0);

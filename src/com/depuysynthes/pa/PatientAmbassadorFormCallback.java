@@ -3,7 +3,7 @@ package com.depuysynthes.pa;
 import com.depuysynthes.pa.PatientAmbassadorStoriesTool.PAFConst;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.SiteVO;
@@ -36,7 +36,7 @@ public class PatientAmbassadorFormCallback extends SBActionAdapter {
 		super(actionInit);
 	}
 
-	public void build(SMTServletRequest req) {
+	public void build(ActionRequest req) {
 		DataContainer dc = (DataContainer)req.getAttribute("formDataVO");
 		
 		FormTransactionVO trans = dc.getTransactions().values().iterator().next();

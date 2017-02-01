@@ -18,10 +18,10 @@ import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.MailException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
@@ -74,7 +74,7 @@ public class SurgeonSearchAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		String message = "You have successfully updated the physician information";
 		
 		// Set auto commit off so you can roll back
@@ -91,7 +91,7 @@ public class SurgeonSearchAction extends SBActionAdapter {
 		// If not, roll back and set the error message
 		if (success > -1 && ! physOnly) {
 			// Update the clinic
-			SMTActionInterface aac = new PhysicianClinicAction(this.actionInit);
+			ActionInterface aac = new PhysicianClinicAction(this.actionInit);
 			aac.setAttributes(this.attributes);
 			aac.setDBConnection(dbConn);
 			aac.update(req);
@@ -130,7 +130,7 @@ public class SurgeonSearchAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#delete(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		log.info("deactivating surgeon: " + req.getParameter("surgeonId"));
 		String message = "You have successfully deactivated the physician";
 		StringEncoder se = new StringEncoder();
@@ -189,7 +189,7 @@ public class SurgeonSearchAction extends SBActionAdapter {
 	 */
 	@SuppressWarnings("unchecked")
 	@Override
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		log.debug("Getting the detail info for a surgeon");
 		int count = 0;
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
@@ -224,7 +224,7 @@ public class SurgeonSearchAction extends SBActionAdapter {
 				vo = new SurgeonVO(rs);
 				
 				// Get the Clinic Info
-				SMTActionInterface ca = new PhysicianClinicAction(this.actionInit);
+				ActionInterface ca = new PhysicianClinicAction(this.actionInit);
 				ca.setAttributes(this.attributes);
 				ca.setDBConnection(dbConn);
 				ca.retrieve(req);
@@ -232,7 +232,7 @@ public class SurgeonSearchAction extends SBActionAdapter {
 				vo.setClinics(clinics);
 				
 				// Get the Staff Info
-				SMTActionInterface sa = new PhysicianStaffAction(this.actionInit);
+				ActionInterface sa = new PhysicianStaffAction(this.actionInit);
 				sa.setAttributes(this.attributes);
 				sa.setDBConnection(dbConn);
 				sa.retrieve(req);
@@ -241,7 +241,7 @@ public class SurgeonSearchAction extends SBActionAdapter {
 				
 				// Get the Documents Info
 				log.debug("Getting docs:");
-				SMTActionInterface pd = new PhysicianDocumentAction(this.actionInit);
+				ActionInterface pd = new PhysicianDocumentAction(this.actionInit);
 				pd.setAttributes(this.attributes);
 				pd.setDBConnection(dbConn);
 				pd.retrieve(req);
@@ -268,7 +268,7 @@ public class SurgeonSearchAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("Searching for physicians");
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		String schema = (String) this.getAttribute("customDbSchema");
@@ -384,7 +384,7 @@ public class SurgeonSearchAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#update(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		log.debug("Updating physician");
 		Integer success = 100;
 		String schema = (String) this.getAttribute("customDbSchema");
@@ -490,7 +490,7 @@ public class SurgeonSearchAction extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	private UserDataVO retrieveSalesRep(SMTServletRequest req) {
+	private UserDataVO retrieveSalesRep(ActionRequest req) {
 		UserDataVO rep = null;
 		String profileId = StringUtil.checkVal(req.getParameter("salesRepId"));
 		Map<String,Object> config = new HashMap<String,Object>();
@@ -512,7 +512,7 @@ public class SurgeonSearchAction extends SBActionAdapter {
 	 * @param recipients
 	 * @throws ActionException
 	 */
-	private void sendEmailNotification(SMTServletRequest req) {
+	private void sendEmailNotification(ActionRequest req) {
 		SurgeonVO phys = new SurgeonVO(req);
 		// using req params for first/last name to prevent possible name pollution from first/last name
 		// params used in search strings

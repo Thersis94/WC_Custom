@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 
 public class ActionPlanVO extends StageVO implements Serializable {
 
@@ -33,7 +33,7 @@ public class ActionPlanVO extends StageVO implements Serializable {
 		db = null;
 	}
 	
-	public ActionPlanVO(SMTServletRequest req) {
+	public ActionPlanVO(ActionRequest req) {
 		super(req);
 		if (req.hasParameter("actionPlanId")) setActionPlanId(req.getParameter("actionPlanId"));
 		if (req.hasParameter("hospitalInstId")) setHospitalInstId(req.getParameter("hospitalInstId"));

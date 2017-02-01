@@ -5,7 +5,7 @@ import org.apache.solr.common.SolrDocument;
 import com.depuysynthes.lucene.MediaBinSolrIndex;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.search.SolrActionVO;
 import com.smt.sitebuilder.action.search.SolrFieldVO;
@@ -42,11 +42,11 @@ public class MediaBinVideo extends SimpleActionAdapter {
 		super(arg0);
 	}
 	
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 	
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);

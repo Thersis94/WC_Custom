@@ -21,7 +21,7 @@ import com.siliconmtn.commerce.catalog.ProductAttributeVO;
 import com.siliconmtn.commerce.catalog.ProductCategoryVO;
 import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.NavManager;
 import com.siliconmtn.util.StringUtil;
@@ -68,7 +68,7 @@ public class ProductAction extends SBActionAdapter {
 		super(actionInit);
 	}
 	
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 
 	}
 	
@@ -76,7 +76,7 @@ public class ProductAction extends SBActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		String sitePrefix = site.getSiteId() + "_";
 		log.debug("sitePrefix: " + sitePrefix);
@@ -89,7 +89,7 @@ public class ProductAction extends SBActionAdapter {
 		log.debug("catalogId, catUrl: " + catalogId + ", " + cat);
 		
 		try {
-			String cat1 = StringUtil.checkVal(req.getParameter(SMTServletRequest.PARAMETER_KEY + "1"));
+			String cat1 = StringUtil.checkVal(req.getParameter(ActionRequest.PARAMETER_KEY + "1"));
 			log.debug("paramKey1 (cat1): " + cat1);
 			if (PARAM_DETAIL.equalsIgnoreCase(cat1)) {
 				// retrieve product detail
@@ -166,7 +166,7 @@ public class ProductAction extends SBActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 	
@@ -175,12 +175,12 @@ public class ProductAction extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	private String buildCatUrlFromQueryString(SMTServletRequest req) {
+	private String buildCatUrlFromQueryString(ActionRequest req) {
 		String cat = "";
 		String qsParam = null;
 		for (int i = 1; i < 11; i++) {
 			//log.debug("evaluating cat qs param #" + i);
-			qsParam = StringUtil.checkVal(req.getParameter(SMTServletRequest.PARAMETER_KEY + i));
+			qsParam = StringUtil.checkVal(req.getParameter(ActionRequest.PARAMETER_KEY + i));
 			if (qsParam.length() == 0) break; // if param key has no value, we're done.
 			if (i == 1) {
 				// if 'detail' or 'featured' skip param 1.
@@ -206,7 +206,7 @@ public class ProductAction extends SBActionAdapter {
 	 * @return
 	 * @throws SQLException
 	 */
-	private Collection<ProductVO> getGroupInfo(SMTServletRequest req, String catalogId) 
+	private Collection<ProductVO> getGroupInfo(ActionRequest req, String catalogId) 
 	throws SQLException {
 		String url = StringUtil.checkVal(req.getRequestURL().toString());
 		String cat = url.substring(url.lastIndexOf("/") + 1);
@@ -242,9 +242,9 @@ public class ProductAction extends SBActionAdapter {
 	 * @return
 	 * @throws SQLException
 	 */
-	private ProductVO retrieveProductDetail(SMTServletRequest req, 
+	private ProductVO retrieveProductDetail(ActionRequest req, 
 			String catalogId, String sitePrefix) throws SQLException {
-		String siteProductId = sitePrefix + req.getParameter(SMTServletRequest.PARAMETER_KEY + "2");
+		String siteProductId = sitePrefix + req.getParameter(ActionRequest.PARAMETER_KEY + "2");
 		StringBuilder s = new StringBuilder();
 		s.append("select * from product a ");
 		s.append("left outer join product_attribute_xr b on a.product_id = b.product_id ");
@@ -413,7 +413,7 @@ public class ProductAction extends SBActionAdapter {
 	 * @param req
 	 * @param product
 	 */
-	private void checkAvailability(SMTServletRequest req, ProductVO product) {
+	private void checkAvailability(ActionRequest req, ProductVO product) {
 		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 		WebServiceAction wsa = new WebServiceAction(this.actionInit);
 		wsa.setAttributes(attributes);
@@ -474,7 +474,7 @@ public class ProductAction extends SBActionAdapter {
 	 * @return
 	 * @throws SQLException
 	 */
-	private Collection<ProductVO> retrieveProductList(SMTServletRequest req, String catalogId, String cat, boolean useNav) 
+	private Collection<ProductVO> retrieveProductList(ActionRequest req, String catalogId, String cat, boolean useNav) 
 	throws SQLException {
 		StringBuilder s = new StringBuilder();
 		s.append("select * from product a ");
@@ -532,7 +532,7 @@ public class ProductAction extends SBActionAdapter {
 	 * @return
 	 * @throws SQLException
 	 */
-	private ProductCategoryVO retrieveCategoryProductList(SMTServletRequest req, String catalogId, String cat, boolean useNav) 
+	private ProductCategoryVO retrieveCategoryProductList(ActionRequest req, String catalogId, String cat, boolean useNav) 
 			throws SQLException {
 
 		StringBuilder s = new StringBuilder();
@@ -603,7 +603,7 @@ public class ProductAction extends SBActionAdapter {
 	 * @param kywd
 	 * @param desc
 	 */
-	private void setPageData(SMTServletRequest req, String title, String kywd, String desc) {
+	private void setPageData(ActionRequest req, String title, String kywd, String desc) {
 		PageVO sPage = (PageVO)req.getAttribute(Constants.PAGE_DATA);
 		sPage.setTitleName(title);
 		sPage.setMetaDesc(kywd);
@@ -639,7 +639,7 @@ public class ProductAction extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	private List<ProductCategoryVO> retrieveCat(SMTServletRequest req, String catalogId, String cat) 
+	private List<ProductCategoryVO> retrieveCat(ActionRequest req, String catalogId, String cat) 
 	throws SQLException {
 		StringBuilder s = new StringBuilder();
 		
@@ -676,7 +676,7 @@ public class ProductAction extends SBActionAdapter {
 	 * @return
 	 * @throws SQLException
 	 */
-	private List<ProductCategoryVO> retrieveSubCat(SMTServletRequest req, String catalogId, String cat) 
+	private List<ProductCategoryVO> retrieveSubCat(ActionRequest req, String catalogId, String cat) 
 	throws SQLException {
 		StringBuilder s = new StringBuilder();
 		

@@ -8,7 +8,7 @@ import java.util.Map;
 
 import com.siliconmtn.data.report.ExcelReport;
 import com.siliconmtn.data.report.StandardExcelReport;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
@@ -143,7 +143,7 @@ public class ChannelReportVO extends AbstractDataFeedReportVO  {
 	/*
 	 * pulls any needed data off the request and stores it in the report
 	 */
-	public void setRequestData(SMTServletRequest req){
+	public void setRequestData(ActionRequest req){
 		startDate = StringUtil.checkVal(req.getParameter("startDate"));
 		endDate = StringUtil.checkVal(req.getParameter("endDate"));
 

@@ -12,7 +12,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 // SMT base libs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 
 //SB ANS Medical libs
@@ -53,7 +53,7 @@ public class PhysicianQualDataAction extends SimpleActionAdapter {
      * @see com.siliconmtn.action.AbstractActionController#build(com.siliconmtn.http.SMTServletRequest)
      */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		
 		final String schema = (String) this.getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		
@@ -103,7 +103,7 @@ public class PhysicianQualDataAction extends SimpleActionAdapter {
      * @see com.siliconmtn.action.AbstractActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
      */
 	@Override
-    public void retrieve(SMTServletRequest req) throws ActionException {
+    public void retrieve(ActionRequest req) throws ActionException {
     	//BusinessPlanUtil bpu = new BusinessPlanUtil();
 		//retrieve the current SJM business calendar
 		SJMBusinessCalendar bc = null;

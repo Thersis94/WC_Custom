@@ -10,7 +10,7 @@ import java.util.List;
 // SMTBaseLibs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
 
 // SitebuilderII 2.x
@@ -49,7 +49,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 	 * @see com.siliconmtn.action.AbstractActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		String schema = (String)getAttribute("customDbSchema");
 		StringBuffer sql = new StringBuffer();
 		sql.append("select a.region_id, a.region_nm, b.territory_id, b.territory_nm, ");

@@ -16,7 +16,7 @@ import com.ram.datafeed.data.ProductRecallItemVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
@@ -68,7 +68,7 @@ public class ProductRecallAction extends SBActionAdapter {
 	 * inactive.  This handles marking a given productRecall as inactive.
 	 */
 	@Override
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		
 		//Build Query.  We don't delete and rows, we only deactivate them.
 		StringBuilder sb = new StringBuilder();
@@ -94,7 +94,7 @@ public class ProductRecallAction extends SBActionAdapter {
 	 * Retrieve all the Product Recalls for a given ProductId
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		
 		//Fast fail if productId is missing.
 		if(!req.hasParameter("productId"))
@@ -136,7 +136,7 @@ public class ProductRecallAction extends SBActionAdapter {
 	 * values into individual recalls and send them to be saved.
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		
 		//Get the List of parameter Names.
 		List<String> paramNames =Collections.list(req.getParameterNames());
@@ -210,14 +210,14 @@ public class ProductRecallAction extends SBActionAdapter {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 	}
 
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 	}
 	
 }

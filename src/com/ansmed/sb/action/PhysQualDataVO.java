@@ -8,7 +8,7 @@ import java.util.Date;
 
 import com.ansmed.sb.physician.SurgeonVO;
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
@@ -73,7 +73,7 @@ public class PhysQualDataVO implements Serializable {
 	 * Sets certain standard fields used by various actions using the request.
 	 * @param req
 	 */
-	public void setData(SMTServletRequest req) {
+	public void setData(ActionRequest req) {
 		if (req.getParameter("scsStartDate") != null)
 			scsStartDate = Convert.formatDate(req.getParameter("scsStartDate"));
 		

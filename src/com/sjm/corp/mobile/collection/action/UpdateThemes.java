@@ -3,7 +3,7 @@ package com.sjm.corp.mobile.collection.action;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.sjm.corp.mobile.collection.MobileCollectionVO;
 
 /****************************************************************************
@@ -27,7 +27,7 @@ public class UpdateThemes extends CollectionAbstractAction{
 	 * (non-Javadoc)
 	 * @see com.sjm.corp.mobile.collection.action.CollectionAbstractAction#update(com.siliconmtn.http.SMTServletRequest, com.sjm.corp.mobile.collection.MobileCollectionVO)
 	 */
-	public void update(SMTServletRequest req, MobileCollectionVO vo) {
+	public void update(ActionRequest req, MobileCollectionVO vo) {
 		if(req.getParameter("remove") != null){
 			req.setParameter("pageNumber", Integer.toString(8));
 

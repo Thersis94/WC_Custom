@@ -8,7 +8,7 @@ import java.sql.ResultSet;
 import java.util.Date;
 
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.SiteVO;
@@ -38,7 +38,7 @@ public class PersonVO extends UserDataVO {
 	public PersonVO() {
 	}
 	
-	public PersonVO(SMTServletRequest req) {
+	public PersonVO(ActionRequest req) {
 		super(req);
 		personId = req.getParameter("personId");
 		territoryId = req.getParameter("territoryId");

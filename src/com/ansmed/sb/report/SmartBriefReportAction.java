@@ -9,7 +9,7 @@ import java.util.List;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
@@ -46,7 +46,7 @@ public class SmartBriefReportAction extends SBActionAdapter {
 	/**
 	 * 
 	 */
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		
 		log.debug("Starting SmartBrief report retrieval...");
 

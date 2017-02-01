@@ -15,7 +15,7 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.exception.MailException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.SMTMail;
@@ -61,7 +61,7 @@ public class FellowsAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		log.debug("Build FellowsAction...");
 		
 		String deleteEle = StringUtil.checkVal(req.getParameter("deleteEle"));
@@ -76,7 +76,7 @@ public class FellowsAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#delete(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		String schema = (String)getAttribute("customDbSchema");
 		String type = StringUtil.checkVal(req.getParameter("processType"));
 		String fellowsId = StringUtil.checkVal(req.getParameter("fellowsId"));
@@ -132,7 +132,7 @@ public class FellowsAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 		//ANSRoleFilter filter = new ANSRoleFilter();
 		
@@ -234,7 +234,7 @@ public class FellowsAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#update(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		log.debug("Updating Fellows program/goal/surgeon information...");
 		
 		String schema = (String)getAttribute("customDbSchema");
@@ -409,7 +409,7 @@ public class FellowsAction extends SBActionAdapter {
 		return sb.toString();
 	}
 	
-	public void sendEmail(SMTServletRequest req, FellowsSurgeonVO fsvo, String[] reps) throws MailException {
+	public void sendEmail(ActionRequest req, FellowsSurgeonVO fsvo, String[] reps) throws MailException {
 		
 		//No reps, no email.
 		if (reps == null || reps.length == 0 || (reps.length == 1 && reps[0].length() == 0)) return;

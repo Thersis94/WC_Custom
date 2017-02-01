@@ -5,7 +5,7 @@ import java.util.Map;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 
 /****************************************************************************
  * <b>Title</b>: Report.java<p/>
@@ -39,6 +39,6 @@ public interface Report {
 	 * @throws DatabaseException When database in inaccessible or the qwuery fails
 	 * @throws InvalidDataException Not enough data provided to generate the report
 	 */
-	public Object retrieveReport(SMTServletRequest req) 
+	public Object retrieveReport(ActionRequest req) 
 	throws DatabaseException,InvalidDataException; 
 }

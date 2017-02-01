@@ -19,7 +19,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.exception.ApplicationException;
 import com.siliconmtn.exception.DatabaseException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.AbstractLoginModule;
 import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.SecurityModuleFactoryImpl;
@@ -74,7 +74,7 @@ public class RamUserAction extends SBActionAdapter {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("RamUserAction retrieve...");
 		// if this is an 'add user' operation, simply return.
 		if (StringUtil.checkVal(req.getParameter("addUser")).length() > 0) return;
@@ -161,7 +161,7 @@ public class RamUserAction extends SBActionAdapter {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		log.debug("RamUserAction build...");
 		Object msg = null;
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
@@ -239,7 +239,7 @@ public class RamUserAction extends SBActionAdapter {
 	 * @param isProfileInsert
 	 * @param msg
 	 */
-	private void manageProfile(SMTServletRequest req, UserDataVO user, boolean isProfileInsert, Object msg) {
+	private void manageProfile(ActionRequest req, UserDataVO user, boolean isProfileInsert, Object msg) {
 		log.debug("managing user profile...");
 		user.setMainPhone(StringUtil.removeNonNumeric(req.getParameter("phoneNumber")));
 		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
@@ -258,7 +258,7 @@ public class RamUserAction extends SBActionAdapter {
 	 * @param isProfileInsert
 	 * @param msg
 	 */
-	private void manageRole(SMTServletRequest req, SBUserRole userRole, boolean isProfileInsert, Object msg) {
+	private void manageRole(ActionRequest req, SBUserRole userRole, boolean isProfileInsert, Object msg) {
 		log.debug("managing user role...");
 		try {
 			ProfileRoleManager prm = new ProfileRoleManager();
@@ -282,7 +282,7 @@ public class RamUserAction extends SBActionAdapter {
 	 * @param msg
 	 * @throws ApplicationException 
 	 */
-	private void manageAuthentication(SMTServletRequest req, SiteVO site, UserDataVO user, SBUserRole userRole) 
+	private void manageAuthentication(ActionRequest req, SiteVO site, UserDataVO user, SBUserRole userRole) 
 			throws ApplicationException {
 		log.debug("managing authentication...");
 		String loginClass = site.getLoginModule();
@@ -349,7 +349,7 @@ public class RamUserAction extends SBActionAdapter {
 	 * @param userRole
 	 * @param origRoleLevel
 	 */
-	private void manageAuditor(SMTServletRequest req, SiteVO site, UserDataVO user, SBUserRole userRole, int origRoleLevel) {
+	private void manageAuditor(ActionRequest req, SiteVO site, UserDataVO user, SBUserRole userRole, int origRoleLevel) {
 		log.debug("Managing auditor...");
 		String auditorId = checkAuditor(user.getProfileId());
 		if (origRoleLevel != -1 && origRoleLevel != userRole.getRoleLevel() && origRoleLevel == ROLE_LEVEL_AUDITOR) {
@@ -506,7 +506,7 @@ public class RamUserAction extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	private String retrieveNonAdminProfileId(SMTServletRequest req) {
+	private String retrieveNonAdminProfileId(ActionRequest req) {
 		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 		return user.getProfileId(); 
 	}
@@ -517,7 +517,7 @@ public class RamUserAction extends SBActionAdapter {
 	 * @param user
 	 * @return
 	 */
-	private SBUserRole preformatUserRoleData(SMTServletRequest req, SiteVO site, UserDataVO user) {
+	private SBUserRole preformatUserRoleData(ActionRequest req, SiteVO site, UserDataVO user) {
 		log.debug("formatUserRoleData...");
 		SBUserRole userRole = new SBUserRole();
 		userRole.setProfileId(user.getProfileId());
@@ -548,7 +548,7 @@ public class RamUserAction extends SBActionAdapter {
 	 * @param sortedList
 	 * @return
 	 */
-	private List<RAMUserVO> paginateData(SMTServletRequest req, List<RAMUserVO> sortedList) {
+	private List<RAMUserVO> paginateData(ActionRequest req, List<RAMUserVO> sortedList) {
 		int navStart = Convert.formatInteger(req.getParameter("start"), 0);
 		int navLimit = Convert.formatInteger(req.getParameter("limit"), 25);
 		int navEnd = navStart + navLimit;

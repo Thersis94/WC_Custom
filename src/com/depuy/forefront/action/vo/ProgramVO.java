@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.sql.ResultSet;
 
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 
 public class ProgramVO implements Serializable {
 	
@@ -30,7 +30,7 @@ public class ProgramVO implements Serializable {
 		db = null;
 	}
 	
-	public ProgramVO(SMTServletRequest req) {
+	public ProgramVO(ActionRequest req) {
 		if (req.hasParameter("programId")) programId = req.getParameter("programId");
 		programName = req.getParameter("programName");
 		fullProgramName = req.getParameter("fullProgramName");

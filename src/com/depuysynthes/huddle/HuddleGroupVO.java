@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.smt.sitebuilder.action.SBModuleVO;
 import com.smt.sitebuilder.action.formbuilder.vo.FBFormVO;
 import com.smt.sitebuilder.admin.action.SBModuleAction;
@@ -52,7 +52,7 @@ public class HuddleGroupVO extends SBModuleVO {
 	 * Helper method to retrieve data off the Request.
 	 * @param req
 	 */
-	public void setData(SMTServletRequest req) {
+	public void setData(ActionRequest req) {
 		setActionId(req.getParameter(SBModuleAction.SB_ACTION_ID));
 		setActionName(req.getParameter("actionName"));
 		setActionDesc(req.getParameter("actionDesc"));

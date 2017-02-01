@@ -4,11 +4,10 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import javax.servlet.http.Cookie;
-
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.http.session.SMTCookie;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -46,7 +45,7 @@ public class BriefcaseAction extends MyFavoritesAction {
 	
 
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		try {
 			executeRetrieve(req);
 		} catch (Exception e) {
@@ -60,7 +59,7 @@ public class BriefcaseAction extends MyFavoritesAction {
 	
 	
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		if (req.hasParameter("amid")) mod.setDisplayPage(null); //circumvents going to view.
 		try {
@@ -79,12 +78,12 @@ public class BriefcaseAction extends MyFavoritesAction {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void executeRetrieve(SMTServletRequest req) throws ActionException {
+	private void executeRetrieve(ActionRequest req) throws ActionException {
 		//perform token validation to deter deviants
 		validateApiKey(req);
 		setSessionArgs(req);
 
-		Cookie sort = req.getCookie(HuddleUtils.SORT_COOKIE);
+		SMTCookie sort = req.getCookie(HuddleUtils.SORT_COOKIE);
 		if (sort != null) req.setParameter("sort", sort.getValue());
 		
 		req.setParameter("formatJson", "true");
@@ -99,7 +98,7 @@ public class BriefcaseAction extends MyFavoritesAction {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void executeBuild(SMTServletRequest req) throws ActionException {
+	private void executeBuild(ActionRequest req) throws ActionException {
 		//perform token validation to deter deviants
 		validateApiKey(req);
 		setSessionArgs(req);
@@ -124,7 +123,7 @@ public class BriefcaseAction extends MyFavoritesAction {
 	 * @param req
 	 * @throws ActionException 
 	 */
-	private void deleteItem(SMTServletRequest req) throws ActionException {
+	private void deleteItem(ActionRequest req) throws ActionException {
 		UserDataVO user = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
 		String[] assets = req.getParameterValues("briefcaseAssetId");
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
@@ -157,7 +156,7 @@ public class BriefcaseAction extends MyFavoritesAction {
 	 * @param key
 	 * @return
 	 */
-	private void validateApiKey(SMTServletRequest req) throws ActionException {
+	private void validateApiKey(ActionRequest req) throws ActionException {
 		if (!API_KEY.equals(req.getParameter(API_KEY_NAME)) && req.getSession().getAttribute(Constants.USER_DATA) == null) 
 			throw new ActionException("Invalid or missing security key");
 	}
@@ -168,7 +167,7 @@ public class BriefcaseAction extends MyFavoritesAction {
 	 * which are required by our two superclasses.
 	 * @param req
 	 */
-	private void setSessionArgs(SMTServletRequest req) throws ActionException {
+	private void setSessionArgs(ActionRequest req) throws ActionException {
 		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 		UserDataVO user = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
