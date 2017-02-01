@@ -25,7 +25,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
  * 
- * @author raptor
+ * @author Billy Larsen
  * @version 1.0
  * @since Jan 6, 2017
  ****************************************************************************/

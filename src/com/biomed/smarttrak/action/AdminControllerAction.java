@@ -4,8 +4,8 @@
 package com.biomed.smarttrak.action;
 
 import com.biomed.smarttrak.FinancialDashAction;
-import com.biomed.smarttrak.action.gap.GapFacadeAction;
 import com.biomed.smarttrak.admin.ContentHierarchyAction;
+import com.biomed.smarttrak.admin.GapAnalysisAdminAction;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionInterface;
@@ -24,7 +24,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
  * 
- * @author raptor
+ * @author Billy Larsen
  * @version 1.0
  * @since Jan 13, 2017
  ****************************************************************************/
@@ -50,6 +50,10 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		String actionType = StringUtil.checkVal(req.getParameter("actionType"));
 		String msg = (String) attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 
+		/*
+		 * TODO add some means of verifying user role/permission before executing
+		 * Actions.  Need to protect Admin functionality from the public side.
+		 */
 		try {
 			ActionInterface act = loadAction(actionType);
 			if(act != null) {
@@ -70,6 +74,10 @@ public class AdminControllerAction extends SimpleActionAdapter {
 
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		/*
+		 * TODO add some means of verifying user role/permission before executing
+		 * Actions.  Need to protect Admin functionality from the public side.
+		 */
 		String actionType = StringUtil.checkVal(req.getParameter("actionType"));
 		ActionInterface act = loadAction(actionType);
 		if(act != null) {
@@ -91,7 +99,10 @@ public class AdminControllerAction extends SimpleActionAdapter {
 				action = new ContentHierarchyAction();
 				break;
 			case "gapAnalysis":
-				action = new GapFacadeAction();
+				action = new GapAnalysisAction();
+				break;
+			case "gapAnalysisAdmin":
+				action = new GapAnalysisAdminAction();
 				break;
 			case "financialDashboard":
 				action = new FinancialDashAction();
