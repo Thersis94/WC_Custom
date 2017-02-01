@@ -341,7 +341,6 @@ public class UserDataImport extends ProfileImport {
 				idx = 1;
 				ps.setString(idx++, new UUIDGenerator().getUUID());
 				ps.setString(idx++, regSubId);
-				if (recCnt == 1)
 				switch(recCnt) {
 					case 1:
 						ps.setString(idx++, "dd64d07fb37c2c067f0001012b4210ff");
@@ -391,7 +390,7 @@ public class UserDataImport extends ProfileImport {
 				count++; 
 			} else { 
 				failCnt++; 
-			};
+			}
 		} catch (IOException ioe) {
 			log.error("Error: IOException during registration " + ioe.getMessage(), ioe);
 			throw new Exception();
