@@ -193,7 +193,7 @@ public class UserDataImport extends ProfileImport {
 	 * @param profileId
 	 * @throws DatabaseException
 	 */
-	private void findProfile(Connection dbConn, ProfileManager pm, SiteUserVO user, 
+	protected void findProfile(Connection dbConn, ProfileManager pm, SiteUserVO user, 
 			String profileId) throws DatabaseException {
 		if (profileId == null)  
 			user.setProfileId(pm.checkProfile(user, dbConn));
@@ -207,7 +207,7 @@ public class UserDataImport extends ProfileImport {
 	 * @param password
 	 * @throws DatabaseException
 	 */
-	private void checkForPassword(UserLogin ul, SiteUserVO user, 
+	protected void checkForPassword(UserLogin ul, SiteUserVO user, 
 			String password) throws DatabaseException {
 		if (password == null) return;
 		user.setAuthenticationId(ul.checkAuth(user.getEmailAddress()));
@@ -229,7 +229,7 @@ public class UserDataImport extends ProfileImport {
 	 * @return
 	 * @throws DatabaseException
 	 */
-	private int createProfile(Connection dbConn, ProfileManager pm, 
+	protected int createProfile(Connection dbConn, ProfileManager pm, 
 			SiteUserVO user, int skipCnt) throws DatabaseException {
 		/* 2017-01-19: If profile doesn't exist, insert it.  Otherwise leave the existing 
 		 * profile alone. */
@@ -251,7 +251,7 @@ public class UserDataImport extends ProfileImport {
 	 * @param allowCommFlag
 	 * @throws DatabaseException
 	 */
-	private void checkForCommFlag(Connection dbConn, ProfileManager pm, String profileId, 
+	protected void checkForCommFlag(Connection dbConn, ProfileManager pm, String profileId, 
 			String orgId, String allowCommFlag) throws DatabaseException {
 		if (orgId == null || allowCommFlag == null) return;
 		pm.assignCommunicationFlg(orgId, profileId, Convert.formatInteger(allowCommFlag), dbConn);
@@ -267,7 +267,7 @@ public class UserDataImport extends ProfileImport {
 	 * @param siteId
 	 * @throws DatabaseException
 	 */
-	private void checkForRole(Connection dbConn, ProfileRoleManager prm, String profileId, 
+	protected void checkForRole(Connection dbConn, ProfileRoleManager prm, String profileId, 
 			String roleId, String siteId) throws DatabaseException {
 		if (roleId == null || siteId == null) return;
 		
@@ -312,7 +312,7 @@ public class UserDataImport extends ProfileImport {
 	 * @param user
 	 * @throws Exception
 	 */
-	private void insertRegistrationRecordsManually(Connection dbConn, Map<String, Object> record, 
+	protected void insertRegistrationRecordsManually(Connection dbConn, Map<String, Object> record, 
 			SiteUserVO user) throws Exception {
 		log.debug("insertRegistrationRecordsManually...");
 		StringBuilder regSub = new StringBuilder(122);
@@ -375,7 +375,7 @@ public class UserDataImport extends ProfileImport {
 	 * @param records
 	 * @throws Exception
 	 */
-	private void insertRegistrationRecordsViaForm(Map<String, Object> record) throws Exception {
+	protected void insertRegistrationRecordsViaForm(Map<String, Object> record) throws Exception {
 		log.debug("insertRegistrationRecordsViaForm...");
 		int count=0;
 		int failCnt = 0;
@@ -407,7 +407,7 @@ public class UserDataImport extends ProfileImport {
 	 * @param data
 	 * @return
 	 */
-	private String buildRegistrationParams(Map<String, Object> data) {
+	protected String buildRegistrationParams(Map<String, Object> data) {
 		StringBuilder params = new StringBuilder("1=1");		
 		//append any runtime requests of the calling class.  (login would pass username & password here)
 		String param;
@@ -455,7 +455,7 @@ public class UserDataImport extends ProfileImport {
 	 * Created Map of column name to registration field name.
 	 * @return
 	 */
-	private static final Map<String, String> createRegFieldMap() {
+	protected static final Map<String, String> createRegFieldMap() {
 		Map<String, String> fieldMap = new TreeMap<>();
 		// profile fields
 		fieldMap.put("EMAIL_ADDRESS_TXT","reg_enc|EMAIL_ADDRESS_TXT|7f000001397b18842a834a598cdeafa");
