@@ -23,7 +23,7 @@ public class SmartTRAKTeamVO {
 	* Constructor
 	*/
 	public SmartTRAKTeamVO() {
-		// TODO Auto-generated constructor stub
+		// Auto-generated constructor stub
 	}
 
 	/**

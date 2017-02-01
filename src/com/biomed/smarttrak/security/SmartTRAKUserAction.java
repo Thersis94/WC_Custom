@@ -42,6 +42,7 @@ public class SmartTRAKUserAction {
 	* Constructor
 	*/
 	public SmartTRAKUserAction() {
+		// constructor stub
 	}
 	
 	/**
