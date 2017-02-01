@@ -413,7 +413,6 @@ public class ProductManagementAction extends SimpleActionAdapter {
 				db.update(attr);
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
 			throw new ActionException(e);
 		}
 	}
@@ -435,7 +434,6 @@ public class ProductManagementAction extends SimpleActionAdapter {
 				db.update(c);
 			}
 		} catch (Exception e) {
-			log.error(e);
 			throw new ActionException(e);
 		}
 	}
