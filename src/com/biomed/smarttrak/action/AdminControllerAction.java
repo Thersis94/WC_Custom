@@ -51,7 +51,10 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		String msg = (String) attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 
 		try {
-			loadAction(actionType).build(req);
+			SMTActionInterface act = loadAction(actionType);
+			if(act != null) {
+				act.build(req);
+			}
 		} catch (ActionException ae) {
 			log.error("could not forward requested Action.", ae.getCause());
 			msg = (String) attributes.get(AdminConstants.KEY_ERROR_MESSAGE);
@@ -68,7 +71,10 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		String actionType = StringUtil.checkVal(req.getParameter("actionType"));
-		loadAction(actionType).retrieve(req);
+		SMTActionInterface act = loadAction(actionType);
+		if(act != null) {
+			act.retrieve(req);
+		}
 	}
 
 
@@ -91,7 +97,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 				action = new FinancialDashAction();
 				break;
 			default:
-				throw new ActionException("Action type not supported.");
+				return null;
 		}
 
 		action.setDBConnection(dbConn);
