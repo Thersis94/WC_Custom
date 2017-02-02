@@ -1,23 +1,19 @@
 package com.biomed.smarttrak.action;
 
 //Java
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 
+
 //WC_Custom
 import com.biomed.smarttrak.action.NoteAction.NoteType;
 import com.biomed.smarttrak.vo.NoteVO;
+import com.bmg.admin.vo.CompanyAttributeVO;
 import com.bmg.admin.vo.NoteEntityInterface;
 
-//SMTBaselibs
-import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.security.UserDataVO;
-
+import com.bmg.admin.vo.NoteInterface;
 //WebCrescendo
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 
@@ -38,12 +34,11 @@ public class NoteLoader extends SimpleActionAdapter {
 	private String userId = null;
 	private List<String> teamIds = null;
 
-	public NoteLoader() {
+	//the loader requires an smart track user id and a list of team ids. 
+	public NoteLoader(String userId, List<String> teamIds) {
 		super();
-	}
-
-	public NoteLoader(ActionInitVO arg0) {
-		super(arg0);
+		this.userId= userId;
+		this.teamIds = teamIds;
 	}
 
 	/**
@@ -84,11 +79,18 @@ public class NoteLoader extends SimpleActionAdapter {
 	 */
 	private void loadNotes(List<NoteEntityInterface> targetVOs, NoteType type) {
 		List<String>targetIds = new ArrayList<>();
-
+		List<String> attributeIds = new ArrayList<>();
 		if (targetVOs == null) return;
 
 		for ( NoteEntityInterface vo : targetVOs){
 			targetIds.add(vo.getId());
+			
+			List<NoteInterface> results =  vo.getAttributes();
+
+			for (NoteInterface vo2 : results){
+				attributeIds.add(((CompanyAttributeVO) vo2).getId());
+			}
+
 		}
 
 		NoteAction na = new NoteAction();	
@@ -96,10 +98,11 @@ public class NoteLoader extends SimpleActionAdapter {
 		na.setAttributes(attributes);
 
 		if (this.userId != null){
-			Map<String, List<NoteVO>> results = processNoteAction(na, type, targetIds);
+
+			Map<String, List<NoteVO>> results = na.getNotes(this.userId, this.teamIds, attributeIds, targetIds, type);
 
 			if(results != null){
-				processTargetVos(targetVOs, results);
+				attachNotes(targetVOs, results);
 			}
 		}
 	}
@@ -112,72 +115,29 @@ public class NoteLoader extends SimpleActionAdapter {
 	 * @param targetVOs 
 	 * 
 	 */
-	private void processTargetVos(List<NoteEntityInterface> targetVOs, Map<String, List<NoteVO>> results) {
-		for (NoteEntityInterface co : targetVOs) {
-			if (results.containsKey(co.getId())){
-				log.debug("size of note list added to " + co.getId() + " is " + results.get(co.getId()).size());
-				co.setNotes(results.get(co.getId()));
+	private void attachNotes(List<NoteEntityInterface> targetVOs, Map<String, List<NoteVO>> results) {
+		for (NoteEntityInterface vo : targetVOs) {
+			if (results.containsKey(vo.getId())){
+				log.debug("size of note list added to " + vo.getId() + " is " + results.get(vo.getId()).size());
+				vo.setNotes(results.get(vo.getId()));
 			}
-		}
-		
-	}
-
-	/**
-	 * based on note type returns the correct method call.
-	 * @param na
-	 * @param type
-	 * @param targetIds 
-	 * @return
-	 */
-	private Map<String, List<NoteVO>> processNoteAction(NoteAction na, NoteType type, List<String> targetIds) {
-
-		switch(type) {
-		case COMPANY :
-			return na.getCompanyNotes(this.userId, this.teamIds, null, targetIds);
-		case PRODUCT :
-			return na.getProductNotes(this.userId, this.teamIds, null, targetIds);
-		case MARKET :
-			return na.getMarketNotes(this.userId, this.teamIds, null, targetIds);
-		default :
-			return null;
+			List<NoteInterface> attriTargetVos = vo.getAttributes();
+			attachAttributeNotes(attriTargetVos, results);
 		}
 	}
 
 	/**
-	 * checks the database for a user with the profile from the sent user data vo.  sets the note loaders 
-	 * user id. 
-	 * @param user
+	 * loops attribute VOs if they exists and adds any notes from the results assigned to that attribute
+	 * @param results 
+	 * @param attriTargetVos 
 	 */
-	public void setUser(UserDataVO user) {
-
-		if (user == null || user.getProfileId() ==null || user.getProfileId().isEmpty()){
-			log.debug("returned no possible profile id");
-			return;
-		}
-
-
-		StringBuilder sb = new StringBuilder(60);
-
-		sb.append("select * from ").append((String)attributes.get("customDbSchema")).append("biomedgps_user u ");
-		sb.append("where profile_id = ? ");
-
-
-		try (PreparedStatement ps = dbConn.prepareStatement(sb.toString())) {
-
-			ps.setString(1, user.getProfileId());
-
-			ResultSet rs = ps.executeQuery();
-
-			if(rs.next()) {
-				this.setUserId(rs.getString("user_id"));
-				log.debug("user id set to " + userId);
+	private void attachAttributeNotes(List<NoteInterface> attriTargetVos, Map<String, List<NoteVO>> results) {
+		if(attriTargetVos != null && results != null){
+			for(NoteInterface avo : attriTargetVos ){
+				log.debug("size of note list added to " + avo.getId() + " is " + results.get(avo.getId()).size());
+				avo.setNotes(results.get(avo.getId()));
 			}
-
-		}catch(SQLException sqle) {
-			log.error("could not select biomed smarttrak user ", sqle);
 		}
-
-		return;
 	}
 
 	/**

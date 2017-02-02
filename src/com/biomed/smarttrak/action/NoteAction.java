@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+
 //WC custom
 import com.biomed.smarttrak.vo.NoteVO;
 
@@ -45,7 +46,7 @@ public class NoteAction extends SimpleActionAdapter {
 		COMPANY,
 		PRODUCT,
 		MARKET,
-		
+
 	}
 
 	public NoteAction() {
@@ -96,6 +97,10 @@ public class NoteAction extends SimpleActionAdapter {
 	private void saveNote(NoteVO vo, DBProcessor db) throws ActionException {
 		log.debug("Notes Action insert note called ");
 
+		if (vo.isNoteSaveable()) {
+			return;
+		}
+
 		//TODO add a new file or update a file respectively.
 		try {
 			if (StringUtil.isEmpty(vo.getNoteId())) {
@@ -135,7 +140,7 @@ public class NoteAction extends SimpleActionAdapter {
 	 * @param noteRequestType
 	 * @return
 	 */
-	private String getWhereSql(List<String> targetIds, List<String> teams, List<String> attrIds, NoteType type) {
+	private String getWhereSql(List<String> targetIds, List<String> teams, NoteType type) {
 		StringBuilder sb = new StringBuilder(90);
 
 		switch(type) {
@@ -160,14 +165,7 @@ public class NoteAction extends SimpleActionAdapter {
 			appendSqlPlaceholder(teams.size(), sb);
 		}
 
-		sb.append(") ");
-
-		if (attrIds != null && !attrIds.isEmpty()){
-			sb.append("and n.").append(type.name().toLowerCase()).append("_attribute_id in (?");
-			appendSqlPlaceholder(attrIds.size(), sb);
-		}
-		
-		sb.append("and (EXPIRATION_DT > CURRENT_TIMESTAMP or EXPIRATION_DT is null) ");
+		sb.append(") and (EXPIRATION_DT > CURRENT_TIMESTAMP or EXPIRATION_DT is null) ");
 
 		return sb.toString();
 	}
@@ -185,6 +183,28 @@ public class NoteAction extends SimpleActionAdapter {
 		sb.append(") ");
 	}
 
+
+	/**
+	 * based on note type returns the correct method call.
+	 * @param na
+	 * @param type
+	 * @param targetIds 
+	 * @return
+	 */
+	public Map<String, List<NoteVO>> getNotes(String userId, List<String> teams,List<String> attributeIds, List<String> targetIds, NoteType type ) {
+
+		switch(type) {
+		case COMPANY :
+			return this.getCompanyNotes(userId, teams, attributeIds, targetIds);
+		case PRODUCT :
+			return this.getProductNotes(userId, teams, attributeIds, targetIds);
+		case MARKET :
+			return this.getMarketNotes(userId, teams, attributeIds, targetIds);
+		default :
+			return null;
+		}
+	}
+
 	/**
 	 * pulls every note with the accompanying company id
 	 * @param companyId 
@@ -194,7 +214,7 @@ public class NoteAction extends SimpleActionAdapter {
 	 * @param company 
 	 * @return
 	 */
-	private Map<String, List<NoteVO>> getNoteList(List<String> targetIds, NoteType noteType, String userId, List<String> teams, List<String> attrIds) {
+	private Map<String, List<NoteVO>> getNoteList(List<String> targetIds, NoteType noteType, String userId, List<String> teams) {
 
 		StringBuilder sql = new StringBuilder(207);
 		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
@@ -204,7 +224,7 @@ public class NoteAction extends SimpleActionAdapter {
 		sql.append("inner join ").append((String)attributes.get("customDbSchema")).append("BIOMEDGPS_USER u on u.user_id = n.user_id ");
 		sql.append("inner join PROFILE p  on p.profile_id = u.profile_id ");
 
-		sql.append(getWhereSql(targetIds, teams, attrIds, noteType));
+		sql.append(getWhereSql(targetIds, teams, noteType));
 
 		log.debug(sql.toString() +"|" + targetIds +"|"+ userId );
 
@@ -225,12 +245,6 @@ public class NoteAction extends SimpleActionAdapter {
 				}
 			}
 
-			if (attrIds != null){
-				for (String attr : attrIds){
-					ps.setString(i++, attr);
-				}
-			}
-
 			log.debug("prepared statment has: " + (i-1) +" variables ");
 
 			ResultSet rs = ps.executeQuery();
@@ -245,7 +259,6 @@ public class NoteAction extends SimpleActionAdapter {
 				vo.setUserName(firstName +" "+ lastName);
 
 				processNote(noteType, data, vo);
-
 			}
 
 		}catch(SQLException sqle) {
@@ -277,6 +290,10 @@ public class NoteAction extends SimpleActionAdapter {
 		case MARKET :
 			targetKey = vo.getMarketId();
 			break;
+		}
+
+		if(vo.getAttributeId() != null && !vo.getAttributeId().isEmpty()){
+			targetKey = vo.getAttributeId();
 		}
 
 		List<NoteVO> lvo;
@@ -320,7 +337,7 @@ public class NoteAction extends SimpleActionAdapter {
 	public Map<String, List<NoteVO>> getCompanyNotes(String userId, List<String> teams, List<String> companyAttrIds, List<String> companyIds){
 		log.debug("Notes Action get company notes called");
 
-		return getNoteList(companyIds, NoteType.COMPANY, userId, teams, companyAttrIds);
+		return getNoteList(companyIds, NoteType.COMPANY, userId, teams);
 
 
 	}
@@ -353,7 +370,7 @@ public class NoteAction extends SimpleActionAdapter {
 	public Map<String, List<NoteVO>> getProductNotes(String userId, List<String> teams, List<String> productAttrIds, List<String> productIds){
 		log.debug("Notes Action get product notes called");
 
-		return getNoteList(productIds, NoteType.PRODUCT, userId, teams, productAttrIds);
+		return getNoteList(productIds, NoteType.PRODUCT, userId, teams);
 	}
 
 
@@ -385,7 +402,7 @@ public class NoteAction extends SimpleActionAdapter {
 	public Map<String, List<NoteVO>> getMarketNotes(String userId, List<String> teams, List<String> marketAttrIds, List<String> marketIds){
 		log.debug("Notes Action get market notes called");
 
-		return getNoteList(marketIds, NoteType.MARKET, userId, teams, marketAttrIds);
+		return getNoteList(marketIds, NoteType.MARKET, userId, teams);
 
 	}
 

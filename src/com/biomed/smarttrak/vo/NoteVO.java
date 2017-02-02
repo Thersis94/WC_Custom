@@ -33,11 +33,9 @@ public class NoteVO implements Serializable {
 	private String userId;
 	private String teamId;
 	private String companyId;
-	private String companyAttributeId;
+	private String attributeId;
 	private String productId;
-	private String productAttributeId;
 	private String marketId;
-	private String marketAttributeId;
 	private String noteName;
 	private String noteText;
 	private String filePathText;
@@ -67,11 +65,9 @@ public class NoteVO implements Serializable {
 		this.userId = StringUtil.checkVal(req.getParameter("userId"));
 		this.teamId = req.getParameter("teamId");
 		this.companyId = req.getParameter("companyId");
-		this.companyAttributeId = req.getParameter("companyAttributeId");
+		this.attributeId = req.getParameter("attributeId");
 		this.productId = req.getParameter("productId");
-		this.productAttributeId = req.getParameter("productAttributeId");
 		this.marketId  = req.getParameter("marketId");
-		this.marketAttributeId = req.getParameter("marketAttributeId");
 		this.noteName = StringUtil.checkVal(req.getParameter("noteNm"));
 		this.noteText = StringUtil.checkVal(req.getParameter("noteTxt"));
 		this.filePathText = StringUtil.checkVal(req.getParameter("filePathTxt"));
@@ -95,11 +91,9 @@ public class NoteVO implements Serializable {
 		this.userId = util.getStringVal("USER_ID", rs);
 		this.teamId = util.getStringVal("TEAM_ID", rs);
 		this.companyId = util.getStringVal("COMPANY_ID", rs);
-		this.companyAttributeId = util.getStringVal("COMPANY_ATTRIBUTE_ID", rs);
+		this.attributeId = util.getStringVal("ATTRIBUTE_ID", rs);
 		this.productId = util.getStringVal("PRODUCT_ID", rs);
-		this.productAttributeId = util.getStringVal("PRODUCT_ATTRIBUTE_ID", rs);
 		this.marketId  = util.getStringVal("MARKET_ID", rs);
-		this.marketAttributeId = util.getStringVal("MARKET_ATTRIBUTE_ID", rs);
 		this.noteName = util.getStringVal("NOTE_NM", rs);
 		this.noteText = util.getStringVal("NOTE_TXT", rs);
 		this.filePathText = util.getStringVal("FILE_PATH_TXT", rs);
@@ -108,6 +102,15 @@ public class NoteVO implements Serializable {
 		this.updateDate = util.getDateVal("UPDATE_DT", rs);
 
 	}
+
+	public boolean isNoteSaveable() {
+		if (StringUtil.isEmpty(userId)) return false;
+		if (StringUtil.isEmpty(noteText) || StringUtil.isEmpty(noteName)) return false;
+
+		//ensure we have one of the 3 bindings - company, market or product
+		return !StringUtil.isEmpty(companyId) || !StringUtil.isEmpty(marketId) || !StringUtil.isEmpty(productId);
+	}
+
 	/**
 	 * @return the noteId
 	 */
@@ -140,14 +143,6 @@ public class NoteVO implements Serializable {
 	}
 
 	/**
-	 * @return the companyAttributeId
-	 */
-	@Column(name="COMPANY_ATTRIBUTE_ID" )
-	public String getCompanyAttributeId() {
-		return companyAttributeId;
-	}
-
-	/**
 	 * @return the productId
 	 */
 	@Column(name="PRODUCT_ID" )
@@ -156,27 +151,12 @@ public class NoteVO implements Serializable {
 	}
 
 	/**
-	 * @return the productAttributeId
-	 */
-	@Column(name="PRODUCT_ATTRIBUTE_ID" )
-	public String getProductAttributeId() {
-		return productAttributeId;
-	}
-	/**
 	 * @return the marketId
 	 */
 	@Column(name="MARKET_ID" )
 	public String getMarketId() {
 		return marketId;
 	}
-	/**
-	 * @return the marketAttributeId
-	 */
-	@Column(name="MARKET_ATTRIBUTE_ID" )
-	public String getMarketAttributeId() {
-		return marketAttributeId;
-	}
-
 	/**
 	 * @return the noteName
 	 */
@@ -251,13 +231,6 @@ public class NoteVO implements Serializable {
 	}
 
 	/**
-	 * @param companyAttributeId the companyAttributeId to set
-	 */
-	public void setCompanyAttributeId(String companyAttributeId) {
-		this.companyAttributeId = companyAttributeId;
-	}
-
-	/**
 	 * @param productId the productId to set
 	 */
 	public void setProductId(String productId) {
@@ -265,24 +238,10 @@ public class NoteVO implements Serializable {
 	}
 
 	/**
-	 * @param productAttributeId the productAttributeId to set
-	 */
-	public void setProductAttributeId(String productAttributeId) {
-		this.productAttributeId = productAttributeId;
-	}
-
-	/**
 	 * @param marketId the marketId to set
 	 */
 	public void setMarketId(String marketId) {
 		this.marketId = marketId;
-	}
-
-	/**
-	 * @param marketAttributeId the marketAttributeId to set
-	 */
-	public void setMarketAttributeId(String marketAttributeId) {
-		this.marketAttributeId = marketAttributeId;
 	}
 
 	/**
@@ -346,6 +305,18 @@ public class NoteVO implements Serializable {
 	@Override
 	public String toString() {
 		return StringUtil.getToString(this);
+	}
+	/**
+	 * @return the attributeId
+	 */
+	public String getAttributeId() {
+		return attributeId;
+	}
+	/**
+	 * @param attributeId the attributeId to set
+	 */
+	public void setAttributeId(String attributeId) {
+		this.attributeId = attributeId;
 	}
 
 }

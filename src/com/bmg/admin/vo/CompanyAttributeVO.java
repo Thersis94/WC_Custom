@@ -1,7 +1,9 @@
 package com.bmg.admin.vo;
 
 import java.util.Date;
+import java.util.List;
 
+import com.biomed.smarttrak.vo.NoteVO;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.http.SMTServletRequest;
@@ -22,7 +24,7 @@ import com.siliconmtn.util.Convert;
  ****************************************************************************/
 
 @Table(name="BIOMEDGPS_COMPANY_ATTRIBUTE_XR")
-public class CompanyAttributeVO {
+public class CompanyAttributeVO implements NoteInterface  {
 	private String companyAttributeId;
 	private String companyId;
 	private String attributeId;
@@ -31,6 +33,8 @@ public class CompanyAttributeVO {
 	private String attr1Text;
 	private String attr2Text;
 	private String attr3Text;
+	private List<NoteVO> notes;
+	
 	private int orderNo;
 	
 	public CompanyAttributeVO() {
@@ -42,6 +46,7 @@ public class CompanyAttributeVO {
 		setData(req);
 	}
 	
+
 	
 	public void setData(SMTServletRequest req) {
 		companyAttributeId = req.getParameter("companyAttributeId");
@@ -126,5 +131,32 @@ public class CompanyAttributeVO {
 	public Date getUpdateDate() {return null;}
 	@Column(name="CREATE_DT", isAutoGen=true, isInsertOnly=true)
 	public Date getCreateDate() {return null;}
+
+
+	/* (non-Javadoc)
+	 * @see com.bmg.admin.vo.NoteEntityInterface#setNotes(java.util.List)
+	 */
+	@Override
+	public void setNotes(List<NoteVO> notes) {
+		this.notes= notes;
+	}
+
+
+	/* (non-Javadoc)
+	 * @see com.bmg.admin.vo.NoteEntityInterface#getId()
+	 */
+	@Override
+	public String getId() {
+		return this.attributeId;
+	}
+
+
+	/* (non-Javadoc)
+	 * @see com.bmg.admin.vo.NoteEntityAttributeInterface#getNotes()
+	 */
+	@Override
+	public List<NoteVO> getNotes() {
+		return this.notes;
+	}
 
 }

@@ -51,7 +51,7 @@ public class CompanyVO  implements NoteEntityInterface {
 	private List<String> investors;
 	private List<LocationVO> locations;
 	private List<AllianceVO> alliances;
-	private List<CompanyAttributeVO> attributes;
+	private List<NoteInterface> attributes;
 	private List<NoteVO> notes;
 	
 	
@@ -281,11 +281,16 @@ public class CompanyVO  implements NoteEntityInterface {
 		this.alliances.add(alliance);
 	}
 	
-	public List<CompanyAttributeVO> getAttributes() {
+	/*
+	 * (non-Javadoc)
+	 * @see com.bmg.admin.vo.NoteEntityInterface#getAttributes()
+	 */
+	@Override
+	public List<NoteInterface> getAttributes() {
 		return attributes;
 	}
 
-	public void setAttributes(List<CompanyAttributeVO> attributes) {
+	public void setAttributes(List<NoteInterface> attributes) {
 		this.attributes = attributes;
 	}
 	
@@ -323,6 +328,5 @@ public class CompanyVO  implements NoteEntityInterface {
 		//each vo will return its own primary id.
 		return getCompanyId();
 	}
-	
 
 }
