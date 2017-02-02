@@ -3,6 +3,7 @@ package com.biomed.smarttrak.vo;
 // Java 7
 import java.sql.ResultSet;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 // SMTBaseLibs
@@ -11,7 +12,7 @@ import com.siliconmtn.security.UserDataVO;
 
 /*****************************************************************************
  <p><b>Title</b>: SmarttrakUserVO.java</p>
- <p><b>Description: </b></p>
+ <p><b>Description: </b>Value object that encapsulates a Smarttrak user.</p>
  <p> 
  <p>Copyright: (c) 2000 - 2017 SMT, All Rights Reserved</p>
  <p>Company: Silicon Mountain Technologies</p>
@@ -20,28 +21,27 @@ import com.siliconmtn.security.UserDataVO;
  @since Jan 31, 2017
  <b>Changes:</b> 
  ***************************************************************************/
-public class SmarttrakUserVO extends UserDataVO {
+public class UserVO extends UserDataVO {
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = -8619730513300299951L;
 	private String accountId;
 	private String userId;
 	private String registerSubmittalId;
-	private List<SmarttrakTeamVO> teams;
+	private List<TeamVO> teams;
+	private Date createDate;
+	private Date updateDate;
 
 	/**
 	* Constructor
 	*/
-	public SmarttrakUserVO() {
+	public UserVO() {
 		teams = new ArrayList<>();
 	}
 
 	/**
 	* Constructor
 	*/
-	public SmarttrakUserVO(SMTServletRequest req) {
+	public UserVO(SMTServletRequest req) {
 		super(req);
 		teams = new ArrayList<>();
 	}
@@ -49,7 +49,7 @@ public class SmarttrakUserVO extends UserDataVO {
 	/**
 	* Constructor
 	*/
-	public SmarttrakUserVO(ResultSet rs) {
+	public UserVO(ResultSet rs) {
 		super(rs);
 		teams = new ArrayList<>();
 	}
@@ -99,14 +99,14 @@ public class SmarttrakUserVO extends UserDataVO {
 	/**
 	 * @return the teams
 	 */
-	public List<SmarttrakTeamVO> getTeams() {
+	public List<TeamVO> getTeams() {
 		return teams;
 	}
 
 	/**
 	 * @param teams the teams to set
 	 */
-	public void setTeams(List<SmarttrakTeamVO> teams) {
+	public void setTeams(List<TeamVO> teams) {
 		this.teams = teams;
 	}
 	
@@ -114,8 +114,36 @@ public class SmarttrakUserVO extends UserDataVO {
 	 * Helper method for adding a team to the List of teams
 	 * @param team
 	 */
-	public void addTeam(SmarttrakTeamVO team) {
+	public void addTeam(TeamVO team) {
 		teams.add(team);
+	}
+
+	/**
+	 * @return the createDate
+	 */
+	public Date getCreateDate() {
+		return createDate;
+	}
+
+	/**
+	 * @param createDate the createDate to set
+	 */
+	public void setCreateDate(Date createDate) {
+		this.createDate = createDate;
+	}
+
+	/**
+	 * @return the updateDate
+	 */
+	public Date getUpdateDate() {
+		return updateDate;
+	}
+
+	/**
+	 * @param updateDate the updateDate to set
+	 */
+	public void setUpdateDate(Date updateDate) {
+		this.updateDate = updateDate;
 	}
 
 }

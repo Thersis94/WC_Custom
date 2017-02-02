@@ -1,68 +1,65 @@
 package com.biomed.smarttrak.admin.user;
 
-// Java 7
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-// WC Custom libs
-import com.biomed.smarttrak.vo.UserVO;
-
-//SMTBaseLibs
+import com.biomed.smarttrak.vo.AccountVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
-
-//WebCrescendo libs
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /*****************************************************************************
- <p><b>Title</b>: UserManagerAction.java</p>
+ <p><b>Title</b>: AccountManagerAction.java</p>
  <p><b>Description: </b></p>
  <p> 
  <p>Copyright: (c) 2000 - 2017 SMT, All Rights Reserved</p>
  <p>Company: Silicon Mountain Technologies</p>
- @author DBargerhuff
+ @author groot
  @version 1.0
- @since Feb 1, 2017
+ @since Feb 2, 2017
  <b>Changes:</b> 
  ***************************************************************************/
-public class UserManagerAction extends SBActionAdapter {
-	
+public class AccountManagerAction extends SBActionAdapter {
+
 	/**
 	* Constructor
 	*/
-	public UserManagerAction() {
-		// constructor stub
-		super();
+	public AccountManagerAction() {
 	}
-	
-	public UserManagerAction(ActionInitVO actionInit) {
+
+	/**
+	* Constructor
+	*/
+	public AccountManagerAction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		// for admin subsite: retrieve Smarttrak user (WC profile, Smarttrak userId, etc.).
-		ModuleVO mod = (ModuleVO) req.getAttribute(Constants.MODULE_DATA);
-		List<UserVO> users;
+		log.debug("AccountManagerAction retrieve...");
+		ModuleVO mod = (ModuleVO)req.getAttribute(Constants.MODULE_DATA);
 		
+		AccountManager am = new AccountManager(dbConn, attributes);
+		am.setAccountId(StringUtil.checkVal(req.getParameter("accountId"),null));
+		
+		List<AccountVO> accounts;
 		try {
-			UserManager um = new UserManager(dbConn,attributes);
-			um.setUserId(req.getParameter("userId"));
-			users = um.retrieveCompleteUser();
-			
-		} catch (ActionException ae) {
-			users = new ArrayList<>();
-			mod.setError(ae.getMessage(),ae);
+			accounts = am.retrieveAccounts();
+		} catch(SQLException sqle) {
+			accounts = new ArrayList<>();
+			mod.setError(sqle.getMessage(),sqle);
 		}
 		
-		this.putModuleData(users, users.size(), false, mod.getErrorMessage(), mod.getErrorCondition());
-		
+		this.putModuleData(accounts, accounts.size(), false, mod.getErrorMessage(), mod.getErrorCondition());
+			
 	}
 	
 	/* (non-Javadoc)
@@ -70,7 +67,11 @@ public class UserManagerAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		// for admin subsite: will update Smarttrak user data.
+		// Auto-generated method stub
+		// call acct mgr
+		// if has acct id, is update
+		// else is acct add.
 	}
 	
+
 }
