@@ -3,7 +3,7 @@ package com.sjm.corp.mobile.collection.action;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.sjm.corp.mobile.collection.MobileCollectionVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
 
@@ -29,28 +29,28 @@ public abstract class CollectionAbstractAction extends SBActionAdapter {
 	 * Blocks the user from clicking the next button
 	 * @param req
 	 */
-	protected void blockNext(SMTServletRequest req){
+	protected void blockNext(ActionRequest req){
 		req.setParameter("nextBlock", "true");
 	}
 	/**
 	 * Blocks the user from clicking the back button
 	 * @param req
 	 */
-	protected void blockBack(SMTServletRequest req){
+	protected void blockBack(ActionRequest req){
 		req.setParameter("backBlock", "true");
 	}
 	/**
 	 * Unblocks a previously blocked next button
 	 * @param req
 	 */
-	protected void unblockNext(SMTServletRequest req){
+	protected void unblockNext(ActionRequest req){
 		req.setParameter("nextBlock", "");
 	}
 	/**
 	 * Unblocks a perviously blocked back button
 	 * @param req
 	 */
-	protected void unblockBack(SMTServletRequest req){
+	protected void unblockBack(ActionRequest req){
 		req.setParameter("backBlock", "");
 	}
 	
@@ -95,6 +95,6 @@ public abstract class CollectionAbstractAction extends SBActionAdapter {
 	 * @param req
 	 * @param vo
 	 */
-	public abstract void update(SMTServletRequest req, MobileCollectionVO vo);
+	public abstract void update(ActionRequest req, MobileCollectionVO vo);
 
 }

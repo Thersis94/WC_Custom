@@ -9,15 +9,23 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+//Google Gson 2.2.4
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+//WC_Custom 2.0
+import com.ram.action.customer.CustomerLocationAction;
 // RAMDataFeed
-
 import com.ram.datafeed.data.CustomerLocationVO;
+import com.ram.workflow.data.vo.RAMWorkflowVO;
 
 // SMTBaseLibs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.db.util.RecordDuplicator;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -25,21 +33,11 @@ import com.siliconmtn.workflow.data.WorkflowConfigParamVO;
 import com.siliconmtn.workflow.data.WorkflowModuleConfigXrVO;
 import com.siliconmtn.workflow.data.WorkflowModuleVO;
 import com.siliconmtn.workflow.data.WorkflowVO;
-import com.siliconmtn.http.parser.StringEncoder;
 
 // WebCrescendo 2.0
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.Constants;
-
-// WC_Custom 2.0
-import com.ram.action.customer.CustomerLocationAction;
-
-//Google Gson 2.2.4
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
 
 /****************************************************************************
  * <b>Title: </b>WorkflowAction.java <p/>
@@ -75,7 +73,7 @@ public class WorkflowAction extends AbstractWorkflowAction {
 	/* (non-Javadoc)
 	 * @see com.ram.action.workflow.AbstractWorkflowAction#copy(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void copy(SMTServletRequest req) throws ActionException {
+	public void copy(ActionRequest req) throws ActionException {
 
 		//Validate we have a workflowId to copy.
 		if(req.hasParameter("workflowId")) {
@@ -259,7 +257,7 @@ public class WorkflowAction extends AbstractWorkflowAction {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("WorkflowAction retrieve...");
 		String workflowId = StringUtil.checkVal(req.getParameter("workflowId"));
 		String customerId = StringUtil.checkVal(req.getParameter("customerId"));
@@ -358,7 +356,7 @@ public class WorkflowAction extends AbstractWorkflowAction {
 	 * @return
 	 */
 	public WorkflowVO getWorkflowData(String workflowId) {
-		WorkflowVO data = null;
+		RAMWorkflowVO data = null;
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 
 		//Build Query.
@@ -398,7 +396,7 @@ public class WorkflowAction extends AbstractWorkflowAction {
 			while(rs.next()) {
 				//If this is the first row, instantiate the WorkflowVO
 				if (data == null) {
-					data = new WorkflowVO(rs);
+					data = new RAMWorkflowVO(rs);
 				}
 
 				//Add the WorkflowModuleVO for the row to the Workflow Module List.
@@ -543,13 +541,13 @@ public class WorkflowAction extends AbstractWorkflowAction {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		boolean success = true;
 		boolean isInsert = false;
 		String msg = null;
 		
 		//Get WorkflowVO off the request.
-		WorkflowVO wf = new WorkflowVO(req);
+		RAMWorkflowVO wf = new RAMWorkflowVO(req);
 		wf.setModules(getWorkflowModuleData(req));
 		wf.setLocations(getCustomerLocationData(req));
 		
@@ -619,7 +617,7 @@ public class WorkflowAction extends AbstractWorkflowAction {
 	 * @param req
 	 * @return
 	 */
-	private List<WorkflowModuleVO> getWorkflowModuleData(SMTServletRequest req) {
+	private List<WorkflowModuleVO> getWorkflowModuleData(ActionRequest req) {
 		StringEncoder se = new StringEncoder();
 		String modules = se.decodeValue(req.getParameter("modules"));
 		log.debug(modules);
@@ -642,7 +640,7 @@ public class WorkflowAction extends AbstractWorkflowAction {
 	 * @param req
 	 * @return
 	 */
-	private List<CustomerLocationVO> getCustomerLocationData(SMTServletRequest req) {
+	private List<CustomerLocationVO> getCustomerLocationData(ActionRequest req) {
 		StringEncoder se = new StringEncoder();
 		String locations = se.decodeValue(req.getParameter("locations"));
 		log.debug(locations);
@@ -684,19 +682,19 @@ public class WorkflowAction extends AbstractWorkflowAction {
 	}
 
 	@Override
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 	}
 
 	@Override
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 	}
 
 	@Override
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 	}
 
 	@Override
-	protected String buildRedirectSupplement(SMTServletRequest req) {
+	protected String buildRedirectSupplement(ActionRequest req) {
 		return null;
 	}
 

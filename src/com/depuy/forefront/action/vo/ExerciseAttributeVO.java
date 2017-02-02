@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.HashCodeUtil;
 
 public class ExerciseAttributeVO implements Serializable {
@@ -36,7 +36,7 @@ public class ExerciseAttributeVO implements Serializable {
 		db = null;
 	}
 	
-	public ExerciseAttributeVO(SMTServletRequest req) {
+	public ExerciseAttributeVO(ActionRequest req) {
 		exerciseAttributeId = req.getParameter("exerciseAttributeId");
 		exerciseIntensityId = req.getParameter("exerciseIntensityId");
 		labelText = req.getParameter("labelText");
@@ -46,11 +46,11 @@ public class ExerciseAttributeVO implements Serializable {
 		values = new HashMap<Integer, String>();
 	}
 	
-	public ExerciseAttributeVO(SMTServletRequest req, int iLvl, int count) {
+	public ExerciseAttributeVO(ActionRequest req, int iLvl, int count) {
 		setData(req, iLvl, count);
 	}
 	
-	public void setData(SMTServletRequest req, int iLvl, int count) {
+	public void setData(ActionRequest req, int iLvl, int count) {
 		exerciseAttributeId = req.getParameter("exerciseAttributeId_" + iLvl + "_" + count);
 		exerciseIntensityId = req.getParameter("exerciseIntensityId_" + iLvl);
 		labelText = req.getParameter("labelText_" + iLvl + "_" + count);

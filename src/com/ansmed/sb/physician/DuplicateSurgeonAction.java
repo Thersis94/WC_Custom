@@ -16,9 +16,9 @@ import com.ansmed.sb.action.TransactionLoggingAction;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.exception.DatabaseException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -63,7 +63,7 @@ public class DuplicateSurgeonAction extends SimpleActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		String message = "";
 		String surgeonId = StringUtil.checkVal(req.getParameter("surgeonId"));
 		String newSurgeonId = "";
@@ -125,7 +125,7 @@ public class DuplicateSurgeonAction extends SimpleActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		String surgeon = StringUtil.checkVal(req.getParameter("surgeonId"));
 		Boolean dupePhys = Convert.formatBoolean(req.getParameter("dupePhys"));
 		
@@ -144,7 +144,7 @@ public class DuplicateSurgeonAction extends SimpleActionAdapter {
 	 * @param newSurgeonId
 	 * @throws DatabaseException
 	 */
-	private void duplicatePhysician(SMTServletRequest req, String newSurgeonId) throws DatabaseException {
+	private void duplicatePhysician(ActionRequest req, String newSurgeonId) throws DatabaseException {
 		log.debug("Retrieving/duplicating physician data...");
 		StringBuffer sql = new StringBuffer();
 		String schema = (String) this.getAttribute("customDbSchema");
@@ -195,7 +195,7 @@ public class DuplicateSurgeonAction extends SimpleActionAdapter {
 	 * @param newSurgeon
 	 * @throws DatabaseException
 	 */
-	private void duplicateClinics(SMTServletRequest req, String newSurgeon) throws DatabaseException {
+	private void duplicateClinics(ActionRequest req, String newSurgeon) throws DatabaseException {
 		log.debug("Retrieving/duplicating clinic data...");
 		StringBuffer sql = new StringBuffer();
 		List<String> clinics = new ArrayList<String>();
@@ -276,7 +276,7 @@ public class DuplicateSurgeonAction extends SimpleActionAdapter {
 	 * @param mClinics
 	 * @throws DatabaseException
 	 */
-	private void duplicatePhones(SMTServletRequest req, Map<String,String> mClinics) throws DatabaseException {
+	private void duplicatePhones(ActionRequest req, Map<String,String> mClinics) throws DatabaseException {
 		log.debug("Retrieving/duplicating phone data...");
 		StringBuffer sql = new StringBuffer();
 		String schema = (String) this.getAttribute("customDbSchema");
@@ -367,7 +367,7 @@ public class DuplicateSurgeonAction extends SimpleActionAdapter {
 	 * @param newSurgeon
 	 * @throws DatabaseException
 	 */
-	private void duplicateStaff(SMTServletRequest req, String newSurgeon) throws DatabaseException {
+	private void duplicateStaff(ActionRequest req, String newSurgeon) throws DatabaseException {
 		log.debug("Retrieving/duplicating staff data...");
 		StringBuffer sql = new StringBuffer();
 		List<String> staff = new ArrayList<String>();
@@ -443,12 +443,12 @@ public class DuplicateSurgeonAction extends SimpleActionAdapter {
 	 * @param req
 	 * @param type
 	 */
-	public void createTransaction(SMTServletRequest req, String type, String newSurgeonId) throws ActionException {
+	public void createTransaction(ActionRequest req, String type, String newSurgeonId) throws ActionException {
 		
 		// if transaction type is specified, log it.
 		if (type != null) {
 			// set the transaction type on the request
-       		SMTActionInterface sai = new TransactionLoggingAction(this.actionInit);
+       		ActionInterface sai = new TransactionLoggingAction(this.actionInit);
        		sai.setAttribute(TransactionLoggingAction.TRANSACTION_TYPE, type);
        		sai.setAttribute(TransactionLoggingAction.SURGEON_ID, newSurgeonId);
        		sai.setAttributes(this.attributes);

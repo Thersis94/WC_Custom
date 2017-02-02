@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 
 
 public class TreatCalVO extends StageVO {
@@ -32,7 +32,7 @@ public class TreatCalVO extends StageVO {
 		setHeaderText(db.getStringVal("header_txt", rs));
 	}
 	
-	public TreatCalVO(SMTServletRequest req) {
+	public TreatCalVO(ActionRequest req) {
 		super(req);
 		if (req.hasParameter("treatCalId")) setTreatCalId(req.getParameter("treatCalId"));
 		if (req.hasParameter("hospitalInstId")) setHospitalInstId(req.getParameter("hospitalInstId"));

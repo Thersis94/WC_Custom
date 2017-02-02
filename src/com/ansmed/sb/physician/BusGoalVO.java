@@ -3,7 +3,7 @@ package com.ansmed.sb.physician;
 import java.sql.ResultSet;
 
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.StringEncoder;
 
 import com.smt.sitebuilder.action.AbstractSiteBuilderVO;
@@ -52,7 +52,7 @@ public class BusGoalVO extends AbstractSiteBuilderVO {
 	 * Initializes the VO to the params provided in the request object
 	 * @param rs
 	 */
-	public BusGoalVO(SMTServletRequest req) {
+	public BusGoalVO(ActionRequest req) {
 		super();
 		setData(req);
 	}
@@ -80,7 +80,7 @@ public class BusGoalVO extends AbstractSiteBuilderVO {
 	 * Sets the VO to the params provided in the request object
 	 * @param req
 	 */
-	public void setData(SMTServletRequest req) {
+	public void setData(ActionRequest req) {
 		busGoalId = req.getParameter("goalId");
 		goal = req.getParameter("goalName");
 		goalAction = req.getParameter("goalAction");

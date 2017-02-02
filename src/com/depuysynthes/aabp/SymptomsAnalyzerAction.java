@@ -11,7 +11,7 @@ import java.util.Map;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -49,11 +49,11 @@ public class SymptomsAnalyzerAction extends SimpleActionAdapter {
 		super(init);
 	}
 
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 
-	public void retrieve(SMTServletRequest req) {
+	public void retrieve(ActionRequest req) {
 
 		//Extract Data from Request into Search VO.
 		SymptomsAnalyzerVO data = new SymptomsAnalyzerVO(req);

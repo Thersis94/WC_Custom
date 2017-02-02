@@ -9,7 +9,7 @@ import java.util.List;
 import com.depuy.forefront.action.vo.HospitalVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -33,10 +33,10 @@ public class HospitalAction extends SBActionAdapter {
 		super(ai);
 	}
 
-	public void delete(SMTServletRequest req) {
+	public void delete(ActionRequest req) {
 	}
 	
-	public void retrieve(SMTServletRequest req) throws ActionException{
+	public void retrieve(ActionRequest req) throws ActionException{
 		log.debug("Beginning HospitalAction retrieve");
 		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 		List<HospitalVO> vos = new ArrayList<HospitalVO>();
@@ -70,7 +70,7 @@ public class HospitalAction extends SBActionAdapter {
 		mod.setActionData(vos);
 	}
 
-	private void updateHospital(SMTServletRequest req) throws ActionException{
+	private void updateHospital(ActionRequest req) throws ActionException{
 		log.debug("Beginning HospitalAction update");
 		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 		String msg = "Hospital Added Successfully";
@@ -113,7 +113,7 @@ public class HospitalAction extends SBActionAdapter {
 		this.sendRedirect(page.getFullPath() + "?actionType=" + AdminFacadeAction.HOSPITAL_ACTION, msg, req);
 	}
 
-	public void build(SMTServletRequest req) throws ActionException{
+	public void build(ActionRequest req) throws ActionException{
 		updateHospital(req);
 	}
 }

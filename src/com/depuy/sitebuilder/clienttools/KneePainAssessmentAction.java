@@ -1,7 +1,7 @@
 package com.depuy.sitebuilder.clienttools;
 
 // JDK 5.0 
-import javax.servlet.http.HttpSession;
+import com.siliconmtn.http.session.SMTSession;
 
 import java.util.Enumeration;
 import java.util.Map;
@@ -10,7 +10,7 @@ import java.util.HashMap;
 //SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
 
 // SB Libs
@@ -52,14 +52,14 @@ public class KneePainAssessmentAction extends SBActionAdapter {
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.action.ActionController#build(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		
 	}
     
     /* (non-Javadoc)
      * @see com.siliconmtn.action.ActionController#list(com.siliconmtn.http.SMTServletRequest)
      */
-    public void list(SMTServletRequest req) throws ActionException {
+    public void list(ActionRequest req) throws ActionException {
     }
 
 
@@ -67,9 +67,9 @@ public class KneePainAssessmentAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.ActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
     @SuppressWarnings({ "unchecked", "rawtypes" })
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		String page = StringUtil.checkVal(req.getParameter("page"));
-		HttpSession ses = req.getSession();
+		SMTSession ses = req.getSession();
 		
 		//store all request values into the session for the results page display
 		Map<String,String> vals = (Map<String,String>) ses.getAttribute("kneePainAssessmentMap");

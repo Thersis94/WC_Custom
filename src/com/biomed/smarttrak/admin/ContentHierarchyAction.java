@@ -1,28 +1,20 @@
-/**
- *
- */
 package com.biomed.smarttrak.admin;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.action.ActionException;
+import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -37,21 +29,29 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @version 1.0
  * @since Jan 6, 2017
  ****************************************************************************/
-public class ContentHierarchyAction extends SBActionAdapter {
+public class ContentHierarchyAction extends AbstractTreeAction {
+
+	public static final String CONTENT_HIERARCHY_CACHE_KEY = "BIOMED_CONTENT_HIERARCHY";
+
+	/**
+	 * @param init
+	 */
+	public ContentHierarchyAction(ActionInitVO init) {super(init);}
+	public ContentHierarchyAction() {super();}
 
 	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#copy(com.siliconmtn.http.SMTServletRequest)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#copy(com.siliconmtn.http.ActionRequest)
 	 */
 	@Override
-	public void copy(SMTServletRequest req) throws ActionException {
+	public void copy(ActionRequest req) throws ActionException {
 		throw new ActionException("Method not supported.");
 	}
 
 	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#delete(com.siliconmtn.http.SMTServletRequest)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#delete(com.siliconmtn.http.ActionRequest)
 	 */
 	@Override
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		SectionVO s = new SectionVO(req);
 
 		DBProcessor dbp = new DBProcessor(dbConn, (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
@@ -64,74 +64,59 @@ public class ContentHierarchyAction extends SBActionAdapter {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.ActionRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
-		String sectionId = req.getParameter("sectionId");
-
-		List<Node> sections = getHierarchy(sectionId);
-
-		//Build a Tree from the list if we have more than one.
-		if(sections.size() > 1) {
-			//Build a Tree from the list.
-			Tree tree = new Tree(sections);
-			sections = tree.preorderList();
-		}
-
-		this.putModuleData(sections, sections.size(), false);
-	}
-
-	/**
-	 * Helper method that returns List of Nodes containing Sections.
-	 * @param sectionId
-	 * @return
-	 */
-	public List<Node> getHierarchy(String sectionId) {
-		boolean isEdit = !StringUtil.isEmpty(sectionId);
-		Map<String, Node> data = new LinkedHashMap<>();
-		try (PreparedStatement ps = dbConn.prepareStatement(getContentHierarchyListSql(isEdit))) {
-			if(isEdit) {
-				ps.setString(1, sectionId);
-			}
-
-			ResultSet rs = ps.executeQuery();
-
-			while (rs.next()) {
-				SectionVO segment = new SectionVO(rs);
-
-				Node n = new Node(segment.getSectionId(), segment.getParentId());
-				n.setNodeName(segment.getSectionNm());
-				n.setUserObject(segment);
-				data.put(n.getNodeId(), n);
-			}
-		} catch (SQLException sqle) {
-			log.error("Unable to get content hierarchies", sqle);
-		}
-
-		//Sort the Nodes.
-		List<Node> sections = new ArrayList<>(data.values());
-		Collections.sort(sections, new SectionComparator());
-		log.debug("cnt=" + sections.size());
-
-		return sections;
-	}
-
-	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
-	 */
-	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		SectionVO s = new SectionVO(req);
 
-		saveSectionVO(s);
+		String actionPerform = req.getParameter("actionPerform");
+
+		updateSectionVO(actionPerform, s);
+
+		this.clearCacheByKey(CONTENT_HIERARCHY_CACHE_KEY);
 	}
 
 	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.http.SMTServletRequest)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.ActionRequest)
 	 */
 	@Override
-	public void list(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
+		String sectionId = req.getParameter("sectionId");
+
+		Tree t;
+
+		//Attempt to read ContentHierarchy Data from Cache.
+		ModuleVO mod = super.readFromCache(getCacheKey());
+
+		//If not found in cache Load data.
+		if(mod == null) {
+			t = loadTree(null);
+		} else {
+			//Get the Tree off the actionData
+			t = (Tree) mod.getActionData();
+		}
+
+		t.calculateTotalChildren(t.getRootNode());
+
+		//Place requested data on the request.
+		if(!StringUtil.isEmpty(sectionId)) {
+			//Put the requested Section Node on the request.
+			Node n = t.findNode(sectionId);
+			List<Node> sections = new ArrayList<>();
+			sections.add(n);
+			this.putModuleData(sections);
+		} else {
+			List<Node> sections = t.preorderList();
+			this.putModuleData(sections, sections.size(), false);
+		}
+	}
+
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.http.ActionRequest)
+	 */
+	@Override
+	public void list(ActionRequest req) throws ActionException {
 		if(!StringUtil.isEmpty(req.getParameter(SBActionAdapter.SB_ACTION_ID))) {
 			super.retrieve(req);
 		} else {
@@ -139,30 +124,11 @@ public class ContentHierarchyAction extends SBActionAdapter {
 		}
 	}
 
-	/**
-	 * Helper method that returns the Sql Query for retrieving Segments. 
-	 * @return
-	 */
-	private String getContentHierarchyListSql(boolean isEdit) {
-		StringBuilder sql = new StringBuilder(200);
-		sql.append("select * from ");
-		sql.append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("BIOMEDGPS_SECTION a ");
-
-		if(isEdit) {
-			sql.append("where a.SECTION_ID = ? ");
-		}
-
-		//sql databases treat ordering nulls in different ways, by coalescing on blank we guarantee nulls first
-		sql.append("order by PARENT_ID, ORDER_NO, SECTION_NM");
-
-		return sql.toString();
-	}
-
 	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.http.SMTServletRequest)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.http.ActionRequest)
 	 */
 	@Override
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		super.update(req);
 
 		 // Redirect after the update
@@ -173,36 +139,25 @@ public class ContentHierarchyAction extends SBActionAdapter {
 	 * Helper method that inserts/updates a SectionVO.
 	 * @param s
 	 */
-	private void saveSectionVO(SectionVO s) {
+	private void updateSectionVO(String actionPerform, SectionVO s) {
 		DBProcessor dbp = new DBProcessor(dbConn, (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
 
 		try {
-			dbp.save(s);
+			if(!StringUtil.isEmpty(actionPerform) && "delete".equals(actionPerform)) {
+				dbp.delete(s);
+			} else {
+				dbp.save(s);
+			}
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error(e);
 		}
 	}
 
-	/**
-	 * **************************************************************************
-	 * <b>Title: </b>SectionComparator<p/>
-	 * <b>Description: </b> Reorders list of Content Sections.
-	 * <p/>
-	 * <b>Copyright:</b> Copyright (c) 2015<p/>
-	 * <b>Company:</b> Silicon Mountain Technologies<p/>
-	 * @author Billy Larsen
-	 * @version 1.0
-	 * @since Jan 6, 2017
-	 ***************************************************************************
+	/* (non-Javadoc)
+	 * @see com.biomed.smarttrak.admin.AbstractTreeAction#getCacheKey()
 	 */
-	private class SectionComparator implements Comparator<Node> {
-		public int compare(Node o1, Node o2) {
-			SectionVO p1 = (SectionVO) o1.getUserObject();
-			SectionVO p2 = (SectionVO) o2.getUserObject();
-			if (p1 == null || p2 == null) return 0;
-
-			return p1.getOrderNo().compareTo(p2.getOrderNo());
-		}
-		
+	@Override
+	public String getCacheKey() {
+		return CONTENT_HIERARCHY_CACHE_KEY;
 	}
 }

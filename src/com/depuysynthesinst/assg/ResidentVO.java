@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -58,7 +58,7 @@ public class ResidentVO implements Serializable {
 		setConsentTimedOut(util.getDateVal("invite_sent_dt", rs));
 	}
 	
-	public ResidentVO(SMTServletRequest req) {
+	public ResidentVO(ActionRequest req) {
 		this();
 		profileId = StringUtil.checkVal(req.getParameter("profileId"), null);
 		residentId = StringUtil.checkVal(req.getParameter("residentId"), null);

@@ -9,7 +9,7 @@ import java.util.Map;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.io.SMBFileManager;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.io.mail.SMTMailHandler;
@@ -41,7 +41,7 @@ public class EndActions extends CollectionAbstractAction {
 	 * (non-Javadoc)
 	 * @see com.sjm.corp.mobile.collection.action.CollectionAbstractAction#update(com.siliconmtn.http.SMTServletRequest, com.sjm.corp.mobile.collection.MobileCollectionVO)
 	 */
-	public void update(SMTServletRequest req, MobileCollectionVO vo) {
+	public void update(ActionRequest req, MobileCollectionVO vo) {
 		practiceTable =  req.getAttribute("custom") + "sjm_mobile_practice";
 		marketingTable =  req.getAttribute("custom") + "sjm_mobile_marketing";
 		goalsTable =  req.getAttribute("custom") + "sjm_mobile_goals";
@@ -68,7 +68,7 @@ public class EndActions extends CollectionAbstractAction {
 	 * @param req
 	 * @param vo
 	 */
-	public void updatePractice(SMTServletRequest req, MobileCollectionVO vo){
+	public void updatePractice(ActionRequest req, MobileCollectionVO vo){
 		vo.getPractice().setAltContactEmail(req.getParameter("altContactEmail"));
 		vo.getPractice().setAltContactName(req.getParameter("altContactName"));
 		vo.getPractice().setAltContactPhone(req.getParameter("altContactPhone"));
@@ -93,7 +93,7 @@ public class EndActions extends CollectionAbstractAction {
 	 * @param req
 	 * @param vo
 	 */
-	public void sendEmail(SMTServletRequest req, MobileCollectionVO vo){
+	public void sendEmail(ActionRequest req, MobileCollectionVO vo){
 		vo.setEmailSent(true);
 		emailAdmin(req,vo);
 		emailDoc(req, vo);
@@ -104,7 +104,7 @@ public class EndActions extends CollectionAbstractAction {
 	 * @param req
 	 * @param vo
 	 */
-	public void emailDoc(SMTServletRequest req, MobileCollectionVO vo){
+	public void emailDoc(ActionRequest req, MobileCollectionVO vo){
 		EmailMessageVO messageVO = new EmailMessageVO();
 		messageVO.setSubject("Thank you for taking our survey");
 		try {
@@ -152,7 +152,7 @@ public class EndActions extends CollectionAbstractAction {
 	 * @param req
 	 * @param vo
 	 */
-	public void emailAdmin(SMTServletRequest req, MobileCollectionVO vo){
+	public void emailAdmin(ActionRequest req, MobileCollectionVO vo){
 		EmailMessageVO messageVO = new EmailMessageVO();
 		messageVO.setSubject("New Order");
 		try {
@@ -212,7 +212,7 @@ public class EndActions extends CollectionAbstractAction {
 	 * @param req
 	 * @param vo
 	 */
-	public void dbUpdate(SMTServletRequest req, MobileCollectionVO vo){
+	public void dbUpdate(ActionRequest req, MobileCollectionVO vo){
 		try{
 			dbConn.setAutoCommit(false);
 			updateTablePractice(req, vo);
@@ -240,7 +240,7 @@ public class EndActions extends CollectionAbstractAction {
 	 * @param req
 	 * @param vo
 	 */
-	public void updateTablePractice(SMTServletRequest req, MobileCollectionVO vo){
+	public void updateTablePractice(ActionRequest req, MobileCollectionVO vo){
 		StringBuffer sql = new StringBuffer();
 		
 		String goalId = vo.getGoals().getGoalId();
@@ -338,7 +338,7 @@ public class EndActions extends CollectionAbstractAction {
 	 * @param req
 	 * @param vo
 	 */
-	public void updateTablePatients(SMTServletRequest req, MobileCollectionVO vo){
+	public void updateTablePatients(ActionRequest req, MobileCollectionVO vo){
 		StringBuffer sql = new StringBuffer();
 		boolean isInsert = false;
 		if(req.getAttribute("patientsId") != null){
@@ -385,7 +385,7 @@ public class EndActions extends CollectionAbstractAction {
 	 * @param req
 	 * @param vo
 	 */
-	public void updateTableGoals(SMTServletRequest req, MobileCollectionVO vo){
+	public void updateTableGoals(ActionRequest req, MobileCollectionVO vo){
 		StringBuffer sql = new StringBuffer();
 		boolean isInsert = false;
 		if(req.getAttribute("goalId") != null){
@@ -430,14 +430,14 @@ public class EndActions extends CollectionAbstractAction {
 	 * @param req
 	 * @param vo
 	 */
-	public void updateTableMarketing(SMTServletRequest req, MobileCollectionVO vo){
+	public void updateTableMarketing(ActionRequest req, MobileCollectionVO vo){
 		updateTableMarketingUsing(req, vo);
 		updateTableMarketingWants(req, vo);
 	}
 	 
 	//Put the data for the MarketingWants object into the Marketing table
 	//the exsistance of this table is guarenteed, since this method is called after the MarketingUsing method 
-	public void updateTableMarketingWants(SMTServletRequest req, MobileCollectionVO vo){
+	public void updateTableMarketingWants(ActionRequest req, MobileCollectionVO vo){
 		StringBuffer sql = new StringBuffer();
 		sql.append("update ").append(marketingTable).append(" set WANT_APPOINTMENT_CARD = ?, ");
 		sql.append("WANT_FAX_REFFERALS = ?, want_newsletters = ?, want_brochures = ?, ");
@@ -484,7 +484,7 @@ public class EndActions extends CollectionAbstractAction {
 	 * @param req
 	 * @param vo
 	 */
-	public void updateTableMarketingUsing(SMTServletRequest req, MobileCollectionVO vo){
+	public void updateTableMarketingUsing(ActionRequest req, MobileCollectionVO vo){
 		StringBuffer sql = new StringBuffer();
 		boolean isInsert = false;
 		if(req.getAttribute("marketingId") != null){
@@ -534,7 +534,7 @@ public class EndActions extends CollectionAbstractAction {
 	 * @param req
 	 * @param vo
 	 */
-	public void updateTableTemplatePractice(SMTServletRequest req, MobileCollectionVO vo){
+	public void updateTableTemplatePractice(ActionRequest req, MobileCollectionVO vo){
 		StringBuffer sql = new StringBuffer();
 		boolean isInsert = false;
 		if(req.getAttribute("templatesId") != null){

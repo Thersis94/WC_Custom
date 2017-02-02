@@ -16,8 +16,8 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
-import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -46,12 +46,12 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 		COMPANY, LOCATION, ALLIANCE, COMPANYATTRIBUTE, ATTRIBUTE, SECTION
 	}
 	
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 	
 	
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		ActionType type;
 		if (req.hasParameter("type")) {
 			type = ActionType.valueOf(req.getParameter("type"));
@@ -325,7 +325,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void retrieveCompanies(SMTServletRequest req) throws ActionException {
+	private void retrieveCompanies(ActionRequest req) throws ActionException {
 		List<Object> params = new ArrayList<>();
 		String customDb = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(100);
@@ -402,8 +402,8 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 			throw new ActionException(e);
 		}
 	}
-
-
+	
+	
 	/**
 	 * Get all attributes associated with the supplied company.
 	 * @param company
@@ -502,7 +502,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void updateElement(SMTServletRequest req) throws ActionException {
+	private void updateElement(ActionRequest req) throws ActionException {
 		ActionType action = ActionType.valueOf(req.getParameter(ACTION_TYPE));
 		DBProcessor db = new DBProcessor(dbConn, (String) attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		switch(action) {
@@ -721,11 +721,10 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void deleteElement(SMTServletRequest req) throws ActionException {
+	private void deleteElement(ActionRequest req) throws ActionException {
 		ActionType action = ActionType.valueOf(req.getParameter(ACTION_TYPE));
 		DBProcessor db = new DBProcessor(dbConn, (String) attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		try {
-			log.debug(action);
 		switch(action) {
 			case COMPANY:
 				CompanyVO c = new CompanyVO(req);
@@ -782,12 +781,12 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 			throw new ActionException(e);
 		}
 	}
-
-
+	
+	
 	/**
 	 * Take in front end requests and direct them to the proper delete or update method
 	 */
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		String buildAction = req.getParameter("buildAction");
 		String msg = StringUtil.capitalizePhrase(buildAction) + " completed successfully.";
 		try {
@@ -811,7 +810,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 * @param buildAction
 	 * @param req
 	 */
-	private void redirectRequest(String msg, String buildAction, SMTServletRequest req) {
+	private void redirectRequest(String msg, String buildAction, ActionRequest req) {
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		// Redirect the user to the appropriate page
 		StringBuilder url = new StringBuilder(128);

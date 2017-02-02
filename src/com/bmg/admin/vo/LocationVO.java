@@ -2,9 +2,9 @@ package com.bmg.admin.vo;
 
 import java.util.Date;
 
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
-import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 
 /****************************************************************************
@@ -41,11 +41,11 @@ public class LocationVO {
 		// vo without needing a servlet request.
 	}
 	
-	public LocationVO(SMTServletRequest req) {
+	public LocationVO(ActionRequest req) {
 		setData(req);
 	}
 	
-	public void setData(SMTServletRequest req) {
+	public void setData(ActionRequest req) {
 		locationId = req.getParameter("locationId");
 		companyId = req.getParameter("companyId");
 		locationName = req.getParameter("locationName");

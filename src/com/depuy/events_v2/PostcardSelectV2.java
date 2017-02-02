@@ -14,15 +14,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.servlet.http.Cookie;
-
-// J2EE 1.4.0 Libs
-import javax.servlet.http.HttpSession;
-
 //wc-depuy libs
 import com.depuy.events.vo.CoopAdVO;
 import com.depuy.events_v2.vo.ConsigneeVO;
-
 // SMT BaseLibs
 import com.depuy.events_v2.vo.DePuyEventSeminarVO;
 import com.depuy.events_v2.vo.DePuyEventSurgeonVO;
@@ -30,11 +24,13 @@ import com.depuy.events_v2.vo.PersonVO;
 import com.depuy.events_v2.vo.report.CustomReportVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.exception.DatabaseException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.http.session.SMTCookie;
+// J2EE 1.4.0 Libs
+import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
-
 // SB Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.event.EventFacadeAction;
@@ -108,6 +104,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 		product	{  Comparator<DePuyEventSeminarVO> getComparator() { return new SeminarComparator().new ProductComparator(); } },
 		rsvp	{  Comparator<DePuyEventSeminarVO> getComparator() { return new SeminarComparator().new RSVPComparator(); } },
 		date	{  Comparator<DePuyEventSeminarVO> getComparator() { return new SeminarComparator().new DateComparator(); } },
+		dateDesc{  Comparator<DePuyEventSeminarVO> getComparator() { return new SeminarComparator().new DateDescComparator(); } },
 		status	{  Comparator<DePuyEventSeminarVO> getComparator() { return new SeminarComparator().new StatusComparator(); } },
 		owner	{  Comparator<DePuyEventSeminarVO> getComparator() { return new SeminarComparator().new OwnerComparator(); } };
 		
@@ -129,8 +126,8 @@ public class PostcardSelectV2 extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
-		HttpSession ses = req.getSession();
+	public void retrieve(ActionRequest req) throws ActionException {
+		SMTSession ses = req.getSession();
 		String eventPostcardId = StringUtil.checkVal(req.getParameter("eventPostcardId"));
 		ReqType reqType = null;
 		try {
@@ -186,7 +183,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 			
 			} else {
 				//load the list of postcards (screen# 1)
-				Cookie c = req.getCookie("seminarSortType");
+				SMTCookie c = req.getCookie("seminarSortType");
 				String sortType =  c != null ? c.getValue() : null;
 				data = loadSeminarList(actionInit.getActionId(), reqType, profileId, sortType, roleId);
 			}
@@ -200,7 +197,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 	}
 	
 	/**
-	 * runs a simple PIVOT query to colate the data server-side instead of WC-side.
+	 * runs a simple PIVOT query to collate the data server-side instead of WC-side.
 	 * This query only grabs the data used to display the Active and Completed Seminars pages.
 	 * @param profileId
 	 * @param string 
@@ -323,11 +320,11 @@ public class PostcardSelectV2 extends SBActionAdapter {
 	 * @return
 	 */
 	private List<DePuyEventSeminarVO> sortData(List<DePuyEventSeminarVO> data, String sortType) {
-		if (sortType == null || sortType.length() == 0) sortType = "date";
+		if (StringUtil.isEmpty(sortType)) sortType = "dateDesc";
 		try {
 			Collections.sort(data, SortOrder.valueOf(sortType).getComparator());
 		} catch (Exception e) {
-			
+			//suppressed
 		}
 		log.debug("data sorted");
 		return data;
@@ -573,7 +570,7 @@ public class PostcardSelectV2 extends SBActionAdapter {
 	 * Get a list of the outstanding items for this user
 	 * @param req
 	 */
-	private Collection<DePuyEventSeminarVO> loadOutstandingItems(SMTServletRequest req, 
+	private Collection<DePuyEventSeminarVO> loadOutstandingItems(ActionRequest req, 
 			String profileId, ReqType reqType) {
 
 		//if this is a count and the value was already calculated, we don't have any work to do here.

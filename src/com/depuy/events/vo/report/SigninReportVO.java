@@ -4,7 +4,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
@@ -29,7 +29,7 @@ public class SigninReportVO extends AbstractSBReportVO {
 	private String eventDate = null;
 	private List<EventRsvpVO> dataSet = null;
 	
-	public SigninReportVO(SMTServletRequest req) {
+	public SigninReportVO(ActionRequest req) {
         super();
         setContentType("application/ms-word");
         isHeaderAttachment(Boolean.TRUE);

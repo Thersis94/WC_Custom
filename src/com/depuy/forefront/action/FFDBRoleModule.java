@@ -8,10 +8,10 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Map;
 
-import javax.servlet.http.HttpSession;
+import com.siliconmtn.http.session.SMTSession;
 
 import com.siliconmtn.common.constants.GlobalConfig;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.AuthorizationException;
 import com.siliconmtn.security.UserRoleVO;
 import com.siliconmtn.util.Convert;
@@ -65,7 +65,7 @@ public class FFDBRoleModule extends DBRoleModule {
     
     private void loadCustomData(String profileId) throws AuthorizationException {
     	Connection dbConn = (Connection)initVals.get(GlobalConfig.KEY_DB_CONN);
-		SMTServletRequest req = (SMTServletRequest)this.initVals.get(GlobalConfig.HTTP_REQUEST);
+		ActionRequest req = (ActionRequest)this.initVals.get(GlobalConfig.ACTION_REQUEST);
     	
         StringBuilder sql = new StringBuilder();
         sql.append("select d.value_txt as 'surgery_dt', e.alias_path_nm ");
@@ -114,7 +114,7 @@ public class FFDBRoleModule extends DBRoleModule {
         
     }
     
-    private void setScopeVariables(SMTServletRequest req, String surgDtStr, String siteAliasPath) {
+    private void setScopeVariables(ActionRequest req, String surgDtStr, String siteAliasPath) {
     	//calc week# offset between 'today' and their surgery date
 		Long currentTime = Calendar.getInstance().getTime().getTime();
 		Date surgDt = Convert.formatDate(Convert.DATE_SLASH_PATTERN, surgDtStr);
@@ -128,7 +128,7 @@ public class FFDBRoleModule extends DBRoleModule {
 		if (wkNo < -4) wkNo = -4;
 		
 		log.debug("surgWeek=" + wkNo + ", from " + surgDt);
-		HttpSession ses = req.getSession();
+		SMTSession ses = req.getSession();
 		ses.setAttribute("surgeryWeek", wkNo);
 		ses.setAttribute("surgeryDate", surgDt);
 		ses.setAttribute("hospSitePath", siteAliasPath);

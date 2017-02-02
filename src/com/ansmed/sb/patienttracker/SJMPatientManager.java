@@ -7,8 +7,8 @@ import java.sql.SQLException;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionInterface;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
 
 // SiteBuilder II libs
@@ -48,10 +48,10 @@ public class SJMPatientManager extends SBActionAdapter {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("SJMPatientManager retrieve...");
 		TrackerDataContainer data = new TrackerDataContainer();
-		SMTActionInterface sai = null;
+		ActionInterface sai = null;
 		// retrieve patients
 		sai = new PatientManager(actionInit);
 		sai.setDBConnection(dbConn);
@@ -88,7 +88,7 @@ public class SJMPatientManager extends SBActionAdapter {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		log.debug("SJMPatientManager build...");
 		
 		// insert or update?
@@ -97,7 +97,7 @@ public class SJMPatientManager extends SBActionAdapter {
 		log.debug("isUpdate: " + isUpdate);
 		
 		// insert/update the assignment
-		SMTActionInterface sai = null;
+		ActionInterface sai = null;
 		sai = new PatientManager(actionInit);
 		sai.setDBConnection(dbConn);
 		sai.setAttributes(attributes);
@@ -171,7 +171,7 @@ public class SJMPatientManager extends SBActionAdapter {
 	 * @param req
 	 * @param isUpdate
 	 */
-	private void processRedirect(SMTServletRequest req, boolean isUpdate) {
+	private void processRedirect(ActionRequest req, boolean isUpdate) {
 		StringBuffer url = new StringBuffer();
 		String fromType = StringUtil.checkVal(req.getParameter("fromType"));
 		

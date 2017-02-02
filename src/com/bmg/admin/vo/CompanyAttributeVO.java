@@ -2,9 +2,9 @@ package com.bmg.admin.vo;
 
 import java.util.Date;
 
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
-import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 
 /****************************************************************************
@@ -39,12 +39,12 @@ public class CompanyAttributeVO {
 	}
 	
 	
-	public CompanyAttributeVO(SMTServletRequest req) {
+	public CompanyAttributeVO(ActionRequest req) {
 		setData(req);
 	}
 	
 	
-	public void setData(SMTServletRequest req) {
+	public void setData(ActionRequest req) {
 		companyAttributeId = req.getParameter("companyAttributeId");
 		companyId = req.getParameter("companyId");
 		attributeId = req.getParameter("attributeId");

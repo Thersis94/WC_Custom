@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.servlet.http.HttpSession;
+import com.siliconmtn.http.session.SMTSession;
 
 import com.depuysynthesinst.DSIRoleMgr;
 import com.depuysynthesinst.emails.AbstractDSIEmailVO;
@@ -19,7 +19,7 @@ import com.depuysynthesinst.emails.AssgPublishVO;
 import com.depuysynthesinst.emails.AssgRepublishVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -62,7 +62,7 @@ public class MyAssignmentsAdminAction extends SBActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
@@ -115,12 +115,12 @@ public class MyAssignmentsAdminAction extends SBActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 		String reqType = StringUtil.checkVal(req.getParameter("reqType"), null);
 		AssignmentVO assg = new AssignmentVO(req);
-		HttpSession ses = req.getSession();
+		SMTSession ses = req.getSession();
 		
 		switch (reqType) {
 			case "edit":
@@ -172,7 +172,7 @@ public class MyAssignmentsAdminAction extends SBActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	private void searchAssets(ModuleVO mod, SMTServletRequest req) throws ActionException {
+	private void searchAssets(ModuleVO mod, ActionRequest req) throws ActionException {
 		//Solr necessary params
 		req.setParameter("fieldSort", "score");
 		req.setParameter("rpp", "3000");
@@ -338,7 +338,7 @@ public class MyAssignmentsAdminAction extends SBActionAdapter {
 	 * @param assgAsset
 	 * @throws ActionException
 	 */
-	private void saveAssgAssets(AssignmentVO assg, SMTServletRequest req) throws ActionException {
+	private void saveAssgAssets(AssignmentVO assg, ActionRequest req) throws ActionException {
 		String customDb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("update ").append(customDb).append("DPY_SYN_INST_ASSG_ASSET ");
@@ -366,7 +366,7 @@ public class MyAssignmentsAdminAction extends SBActionAdapter {
 	 * @param resident
 	 * @throws ActionException
 	 */
-	private void saveAssgResidents(AssignmentVO assg, SMTServletRequest req) throws ActionException {
+	private void saveAssgResidents(AssignmentVO assg, ActionRequest req) throws ActionException {
 		String[] residentKeys= req.getParameterValues("residentId");
 		log.debug(req.getParameterValues("residentId"));
 		log.debug(req.getParameter("residentId"));
@@ -461,7 +461,7 @@ public class MyAssignmentsAdminAction extends SBActionAdapter {
 	 * @param assg
 	 * @throws ActionException
 	 */
-	private void addAssgAssets(AssignmentVO assg, SMTServletRequest req) throws ActionException {
+	private void addAssgAssets(AssignmentVO assg, ActionRequest req) throws ActionException {
 		String[] assets = req.getParameterValues("solrDocumentId");
 		if (assets == null || assets.length == 0) return;
 		
@@ -568,7 +568,7 @@ public class MyAssignmentsAdminAction extends SBActionAdapter {
 	
 
 	//increment the count displayed in the left menu for DIRECTORs only
-	private void adjustAssgCount(HttpSession ses, UserDataVO user, int incr) {
+	private void adjustAssgCount(SMTSession ses, UserDataVO user, int incr) {
 		DSIRoleMgr dsiRoleMgr = new DSIRoleMgr();
 		if (! dsiRoleMgr.isDirector(user)) return;
 		

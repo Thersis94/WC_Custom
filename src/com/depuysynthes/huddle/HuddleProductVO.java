@@ -7,7 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import com.siliconmtn.commerce.catalog.ProductVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 
 /****************************************************************************
  * <b>Title</b>: HuddleProductVO.java<p/>
@@ -33,7 +33,7 @@ public class HuddleProductVO extends ProductVO {
 		super();
 	}
 
-	public HuddleProductVO(SMTServletRequest req) {
+	public HuddleProductVO(ActionRequest req) {
 		super(req);
 	}
 

@@ -1,15 +1,13 @@
-/**
- *
- */
 package com.biomed.smarttrak.vo;
 
+import java.io.Serializable;
 import java.sql.ResultSet;
 import java.util.Date;
 
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
-import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 
 /****************************************************************************
@@ -24,8 +22,9 @@ import com.siliconmtn.util.Convert;
  * @since Jan 6, 2017
  ****************************************************************************/
 @Table(name="BIOMEDGPS_SECTION")
-public class SectionVO {
+public class SectionVO implements Serializable {
 
+	private static final long serialVersionUID = -4660750788956185315L;
 	private String sectionId;
 	private String parentId;
 	private String sectionNm;
@@ -34,11 +33,13 @@ public class SectionVO {
 	private Date createDt;
 	private Date updateDt;
 
-	public SectionVO() {}
+	public SectionVO() {super();}
 	public SectionVO(ResultSet rs) {
+		this();
 		setData(rs);
 	}
-	public SectionVO(SMTServletRequest req) {
+	public SectionVO(ActionRequest req) {
+		this();
 		setData(req);
 	}
 
@@ -61,7 +62,7 @@ public class SectionVO {
 	 * Helper method that sets data from the SMTServletRequest.
 	 * @param req
 	 */
-	public void setData(SMTServletRequest req) {
+	public void setData(ActionRequest req) {
 		this.sectionId = req.getParameter("sectionId");
 		this.parentId = req.getParameter("parentId");
 		this.sectionNm = req.getParameter("sectionNm");
@@ -79,7 +80,7 @@ public class SectionVO {
 	/**
 	 * @return the parentId
 	 */
-	@Column(name="PARENT_ID", isReadOnly=true)
+	@Column(name="PARENT_ID")
 	public String getParentId() {
 		return parentId;
 	}
@@ -100,7 +101,7 @@ public class SectionVO {
 	/**
 	 * @return the solrTokenTxt
 	 */
-	@Column(name="SOLR_TOKEN_TXT", isReadOnly=true)
+	@Column(name="SOLR_TOKEN_TXT")
 	public String getSolrTokenTxt() {
 		return solrTokenTxt;
 	}

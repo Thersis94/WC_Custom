@@ -11,7 +11,7 @@ import java.util.List;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.workflow.data.WorkflowConfigTypeVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -45,7 +45,7 @@ public class WorkflowConfigTypeAction extends AbstractWorkflowAction {
 	}
 
 	@Override
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		//Get the configTypeCd off the request.
 		WorkflowConfigTypeVO ctvo = new WorkflowConfigTypeVO(req);
 		String msg = "Config Type deleted Successfully";
@@ -75,7 +75,7 @@ public class WorkflowConfigTypeAction extends AbstractWorkflowAction {
 	}
 
 	@Override
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 
 		//Get List of Workflow ConfigType VOs
 		List<WorkflowConfigTypeVO> data = listConfigTypes(req.getParameter("configTypeCd"));
@@ -85,7 +85,7 @@ public class WorkflowConfigTypeAction extends AbstractWorkflowAction {
 	}
 
 	@Override
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 
 		boolean success = true;
 		String msg = null;
@@ -162,7 +162,7 @@ public class WorkflowConfigTypeAction extends AbstractWorkflowAction {
 	 * @see com.ram.action.workflow.AbstractWorkflowAction#buildRedirectSupplement(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	protected String buildRedirectSupplement(SMTServletRequest req) {
+	protected String buildRedirectSupplement(ActionRequest req) {
 		return "&callType=config&bType=listConfigTypes";
 	}
 

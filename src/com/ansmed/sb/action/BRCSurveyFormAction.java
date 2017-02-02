@@ -8,9 +8,9 @@ import java.util.Map;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.exception.MailException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.SMTMail;
 import com.siliconmtn.util.StringUtil;
@@ -57,7 +57,7 @@ public class BRCSurveyFormAction extends SimpleActionAdapter {
         super(arg0);
     }
     
-    public void list(SMTServletRequest req) throws ActionException {
+    public void list(ActionRequest req) throws ActionException {
     	super.retrieve(req);    	
     }
 	
@@ -66,7 +66,7 @@ public class BRCSurveyFormAction extends SimpleActionAdapter {
      */
     @SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		
     	log.debug("Starting build...");
     	
@@ -76,7 +76,7 @@ public class BRCSurveyFormAction extends SimpleActionAdapter {
     	
     	Integer nextPgNo = Convert.formatInteger(req.getParameter("page"));
 
-    	SMTActionInterface ee = new SurveyResponseAction(this.actionInit);
+    	ActionInterface ee = new SurveyResponseAction(this.actionInit);
     	ee.setAttributes(this.attributes);
     	ee.setDBConnection(dbConn);
     	ee.build(req);
@@ -86,7 +86,7 @@ public class BRCSurveyFormAction extends SimpleActionAdapter {
 		
 		// Get the response text and add it to the session 
 		//(This is displayed instead of the chart)
-		SMTActionInterface sa = new SurveyAction(this.actionInit);
+		ActionInterface sa = new SurveyAction(this.actionInit);
 		sa.setAttributes(this.attributes);
 		sa.setDBConnection(dbConn);
 		sa.retrieve(req);
@@ -117,7 +117,7 @@ public class BRCSurveyFormAction extends SimpleActionAdapter {
      */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
-    public void retrieve(SMTServletRequest req) throws ActionException {
+    public void retrieve(ActionRequest req) throws ActionException {
 		
 		String flag = (String) req.getParameter("surveySubmitted");
 
@@ -148,7 +148,7 @@ public class BRCSurveyFormAction extends SimpleActionAdapter {
     	String oldInitId = actionInit.getActionId();
     	actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 		
-		SMTActionInterface eg = new SurveyAction(this.actionInit);
+		ActionInterface eg = new SurveyAction(this.actionInit);
     	eg.setAttributes(this.attributes);
     	eg.setDBConnection(dbConn);
     	eg.retrieve(req);
@@ -165,7 +165,7 @@ public class BRCSurveyFormAction extends SimpleActionAdapter {
     * Send a copy of the form submission to the designated recipient.
     * @param req
     */
-	private void sendEmail(SMTServletRequest req) throws ActionException {
+	private void sendEmail(ActionRequest req) throws ActionException {
     	
     	SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
     	List<String> emailTo = new ArrayList<String>();
@@ -209,7 +209,7 @@ public class BRCSurveyFormAction extends SimpleActionAdapter {
 	    	//call surveyDataAction to retrieve the completed survey
 	    	// this action runs against "transId", which was put on the request by SurveyResponseAction
 	    	attributes.put(AdminConstants.ADMIN_MODULE_DATA, new ModuleVO());
-	    	SMTActionInterface ai = new SurveyDataAction(this.actionInit);
+	    	ActionInterface ai = new SurveyDataAction(this.actionInit);
 	    	ai.setAttributes(this.attributes);
 	    	ai.setDBConnection(this.dbConn);
 	    	ai.update(req);

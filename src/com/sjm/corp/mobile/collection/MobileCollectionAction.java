@@ -9,7 +9,7 @@ import java.util.Map;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.io.SMBFileManager;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -55,7 +55,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.action.AbstractActionControllerdelete(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		Object msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
 		practiceTable = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA) + "sjm_mobile_practice";
 		themeTable = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA) + "sjm_mobile_theme";
@@ -79,7 +79,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.action.AbstractActionControllerdelete(com.siliconmtn.http.SMTServletRequest)
 	 */
-	 public void update(SMTServletRequest req) throws ActionException{
+	 public void update(ActionRequest req) throws ActionException{
 		practiceTable = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA) + "sjm_mobile_practice";
 		themeTable = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA) + "sjm_mobile_theme";
 		
@@ -95,7 +95,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 	  * (non-Javadoc)
 	  * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.http.SMTServletRequest)
 	  */
-	 public void list(SMTServletRequest req) throws ActionException{
+	 public void list(ActionRequest req) throws ActionException{
 		String facadeType = req.getParameter("facadeType");
 		if(facadeType != null && !facadeType.isEmpty()){
 			listThemes(req);
@@ -108,7 +108,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 	  * @param req
 	  * @throws ActionException
 	  */
-	 public void listThemes(SMTServletRequest req) throws ActionException{
+	 public void listThemes(ActionRequest req) throws ActionException{
 		ThemeVO vo = new ThemeVO();
 		themeTable = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA) + "sjm_mobile_theme";
 		StringBuffer sql = new StringBuffer();
@@ -155,7 +155,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 	  * Lists the details for the main non-facade portlet
 	  * @param req
 	  */
-	 public void listMainPortlet(SMTServletRequest req) throws ActionException{
+	 public void listMainPortlet(ActionRequest req) throws ActionException{
 		MobileCollectionVO vo = new MobileCollectionVO();
 		ModuleVO mod = (ModuleVO) attributes.get(AdminConstants.ADMIN_MODULE_DATA);
 		if(mod.getActionData() == null)
@@ -194,7 +194,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 	  * (non-Javadoc)
 	  * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	  */
-	public void retrieve(SMTServletRequest req) throws ActionException{		
+	public void retrieve(ActionRequest req) throws ActionException{		
 		MobileCollectionVO vo = (MobileCollectionVO) req.getSession().getAttribute("vo");
 		if(req.getParameter("cPage") != null && req.getParameter("cPage").equals("facade")){
 			ModuleVO mod = (ModuleVO) attributes.get(AdminConstants.ADMIN_MODULE_DATA);
@@ -223,7 +223,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 	 * @param req
 	 * @return Total number of themes
 	 */
-	public int getThemeSize(SMTServletRequest req) {
+	public int getThemeSize(ActionRequest req) {
 		int size = 0;
 		themeTable = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA) + "sjm_mobile_theme";
 		StringBuffer sql = new StringBuffer();
@@ -252,7 +252,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 	 * @param req
 	 * @return
 	 */
-	public String getPath(SMTServletRequest req){
+	public String getPath(ActionRequest req){
 		StringBuilder path = new StringBuilder();
 		path.append(StringUtil.checkVal(attributes.get("pathToBinary")));
 		path.append((String)attributes.get("orgAlias") + req.getParameter("organizationId") + "/");
@@ -266,7 +266,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 	  * @param req
 	  * @return
 	  */
-	 public int getPageNumber(SMTServletRequest req){
+	 public int getPageNumber(ActionRequest req){
 		try{
 			int page = Integer.parseInt(req.getParameter("pageNumber"));
 			if(req.getParameter("back") != null){
@@ -286,7 +286,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 	  * @param req
 	  * @param vo
 	  */
-	 public void updateData(SMTServletRequest req, MobileCollectionVO vo){
+	 public void updateData(ActionRequest req, MobileCollectionVO vo){
 		 int pageNumber = getPageNumber(req);
 		 req.setAttribute("dbConn", dbConn);
 		 req.setAttribute("custom", (String) getAttribute(Constants.CUSTOM_DB_SCHEMA));
@@ -308,7 +308,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 	  * Updates the SJM_MOBILE_REGION table with max data
 	  * @param req
 	  */
-	 public void updateRegion(SMTServletRequest req){
+	 public void updateRegion(ActionRequest req){
 		 List<String> names = getRegions(req);
 		 for(String s : names){
 			 writeRegion(req,s);
@@ -318,7 +318,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 	  * Grabs the pre-exsisting regions from 
 	  * @param req
 	  */
-	 public List<String> getRegions(SMTServletRequest req){
+	 public List<String> getRegions(ActionRequest req){
 		List<String> names = new ArrayList<String>();
 		StringBuffer sql = new StringBuffer();
 		sql.append("select region_nm from ").append((String) getAttribute(Constants.CUSTOM_DB_SCHEMA));
@@ -347,7 +347,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 	  * @param req
 	  * @param s
 	  */
-	 public void writeRegion(SMTServletRequest req,String s){
+	 public void writeRegion(ActionRequest req,String s){
 		 StringBuffer sql = new StringBuffer();
 		 boolean isInsert =  (StringUtil.checkVal(req.getParameter(SB_ACTION_ID))).length() == 0;
 		 if(isInsert){
@@ -384,7 +384,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 	 * Stores the files from the facade, as well as 
 	 * @param req
 	 */
-	public void updateFacade(SMTServletRequest req){
+	public void updateFacade(ActionRequest req){
 		Object msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
 		String path = getPath(req); // Get the filesystem path for where we're putting the file
 		List<FilePartDataBean>files = req.getFiles();
@@ -430,7 +430,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 	 * @param req
 	 * @return
 	 */
-	public String urlPath(SMTServletRequest req){
+	public String urlPath(ActionRequest req){
 		StringBuilder path = new StringBuilder();
    		path.append((String)attributes.get("orgAlias"));
 		path.append(req.getParameter("organizationId") + "/");
@@ -444,7 +444,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 	 * @param req
 	 * @param paths
 	 */
-	public void updateThemeTable(SMTServletRequest req, List<String> paths, String loc){
+	public void updateThemeTable(ActionRequest req, List<String> paths, String loc){
 		Boolean isInsert = (req.getParameter("themeId").equals(""));
 		StringBuilder sb = new StringBuilder();
 		String themeId;
@@ -491,7 +491,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 	 * Deletes all of the tables for the portlet, not the theme however
 	 * @param req
 	 */
-	public void deleteTables(SMTServletRequest req){
+	public void deleteTables(ActionRequest req){
 		StringBuffer sql = new StringBuffer();
 		sql.append("delete from ").append(practiceTable).append(" where action_id = ?");
 		
@@ -518,7 +518,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 	 * @param keyId
 	 */
 	//because there is both data for the theme in the table as well as in the fs, this method is separated out
-	public void deleteTheme(SMTServletRequest req, String keyId){
+	public void deleteTheme(ActionRequest req, String keyId){
 		deleteThemeFiles(req, keyId);
 		deleteThemeTable(req, keyId);
 	}
@@ -528,7 +528,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 	 * @param req
 	 * @param keyId
 	 */
-	public void deleteThemeFiles(SMTServletRequest req, String keyId){
+	public void deleteThemeFiles(ActionRequest req, String keyId){
 		StringBuffer sql = new StringBuffer();
 		sql.append("select thumb_loc, color_1_front, color_1_back, color_2_front, ");
 		sql.append("color_2_back, theme_pdf from ").append(themeTable).append(" where ");
@@ -569,7 +569,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 	 * @param paths
 	 * @return number of themes with the same path for the thumb_loc column
 	 */
-	public int getNumberOfSimilarThemes(SMTServletRequest req, List<String> paths){
+	public int getNumberOfSimilarThemes(ActionRequest req, List<String> paths){
 		//We need to find out if this is the last theme refering to these files
 		StringBuffer sql = new StringBuffer();
 		sql.append("select thumb_loc from ").append(themeTable).append(" where thumb_loc like ?");
@@ -600,7 +600,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 	 * @param req
 	 * @param keyId
 	 */
-	public void deleteThemeTable(SMTServletRequest req, String keyId){
+	public void deleteThemeTable(ActionRequest req, String keyId){
 		StringBuffer sql = new StringBuffer();
 		sql.append("delete from ").append(themeTable).append(" where theme_id = ?");
 		 
@@ -625,7 +625,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 	 * @param req
 	 * @param paths
 	 */
-	public void removeFiles(SMTServletRequest req, List<String> paths){
+	public void removeFiles(ActionRequest req, List<String> paths){
 		for(String path : paths){
 			try{ 
 				SMBFileManager fm = new SMBFileManager();
@@ -640,7 +640,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 	 * Deletes the region config for a specific sjm mobile data collection portlet
 	 * @param req
 	 */
-	public void deleteRegion(SMTServletRequest req){
+	public void deleteRegion(ActionRequest req){
 		StringBuffer sql = new StringBuffer();
 		sql.append("delete from ").append((String) getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("sjm_mobile_region where action_id = ?");
@@ -666,7 +666,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 	 * @param req
 	 * @param vo
 	 */
-	public void getNameAndDesc(SMTServletRequest req, MobileCollectionVO vo){
+	public void getNameAndDesc(ActionRequest req, MobileCollectionVO vo){
 		StringBuffer sql = new StringBuffer();
 		sql.append("Select action_nm, action_desc from sb_action where action_id = ?");
 		

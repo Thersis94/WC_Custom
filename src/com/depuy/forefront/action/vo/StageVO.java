@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.sql.ResultSet;
 import com.depuy.forefront.action.ProgramAction;
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 
 public class StageVO implements Serializable {
@@ -30,7 +30,7 @@ public class StageVO implements Serializable {
 		db = null;
 	}
 	
-	public StageVO(SMTServletRequest req) {
+	public StageVO(ActionRequest req) {
 		stageId = req.getParameter("stageId");
 		programId = (String) req.getSession().getAttribute(ProgramAction.PROGRAM_ID);
 		stageName = req.getParameter("stageName");

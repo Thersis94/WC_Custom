@@ -3,6 +3,7 @@ package com.depuysynthes.action;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,7 +20,8 @@ import com.siliconmtn.commerce.catalog.ProductCategoryVO;
 import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.tools.PageViewReportingAction;
@@ -58,7 +60,7 @@ public class DSProductCatalogAction extends SimpleActionAdapter {
 	 * @see com.siliconmtn.action.ActionController#list(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 
@@ -67,7 +69,7 @@ public class DSProductCatalogAction extends SimpleActionAdapter {
 	 * @see com.siliconmtn.action.ActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		boolean isPreview = page.isPreviewMode();
@@ -100,7 +102,8 @@ public class DSProductCatalogAction extends SimpleActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	private ModuleVO loadProductData(SMTServletRequest req) {
+	private ModuleVO loadProductData(ActionRequest req) {
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		String catalogId = (String) mod.getAttribute(ModuleVO.ATTRIBUTE_1);
 		String rootNodeId = (String) mod.getAttribute(ModuleVO.ATTRIBUTE_2);
@@ -114,7 +117,7 @@ public class DSProductCatalogAction extends SimpleActionAdapter {
 		attachPageviewsToCatalog(req, pc, t);
 
 		//process dynamic attributes - goes to Solr for data
-		processDynamicAttributes(req, pc, t);
+		processDynamicAttributes(site.getOrganizationId(), t);
 
 
 		mod.setActionData(t);
@@ -131,7 +134,7 @@ public class DSProductCatalogAction extends SimpleActionAdapter {
 	 * @param t
 	 */
 	@SuppressWarnings("unchecked")
-	private void attachPageviewsToCatalog(SMTServletRequest req, ProductCatalogUtil pc, Tree t) {
+	private void attachPageviewsToCatalog(ActionRequest req, ProductCatalogUtil pc, Tree t) {
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		try {
@@ -169,9 +172,8 @@ public class DSProductCatalogAction extends SimpleActionAdapter {
 	 * @param pc
 	 * @param t
 	 */
-	private void processDynamicAttributes(SMTServletRequest req, ProductCatalogUtil pc, Tree t) {
+	private void processDynamicAttributes(String orgId, Tree t) {
 		List<Node> prods = t.getPreorderList();
-		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 
 		for (Node n : prods) {
 			ProductCategoryVO cat = (ProductCategoryVO) n.getUserObject();
@@ -182,7 +184,7 @@ public class DSProductCatalogAction extends SimpleActionAdapter {
 			if (StringUtil.isEmpty(prodAlias) || cat.getProducts().isEmpty()) 
 				continue;
 
-			iterateProducts(cat, site);
+			iterateProducts(cat, orgId);
 		}
 	}
 
@@ -193,13 +195,13 @@ public class DSProductCatalogAction extends SimpleActionAdapter {
 	 * @param cat
 	 * @param site
 	 */
-	private void iterateProducts(ProductCategoryVO cat, SiteVO site) {
+	private void iterateProducts(ProductCategoryVO cat, String orgId) {
 		for (ProductVO product : cat.getProducts()) {
 			ProductAttributeContainer attrs = product.getAttributes();
 			if (attrs == null || attrs.getAllAttributes() == null || attrs.getAllAttributes().isEmpty())
 				continue;
 
-			iterateAttributes(attrs.getAllAttributes(), product.getFullProductName(), site.getOrganizationId());
+			iterateAttributes(attrs.getAllAttributes(), product.getFullProductName(), orgId);
 		}
 	}
 
@@ -397,8 +399,8 @@ public class DSProductCatalogAction extends SimpleActionAdapter {
 	 * @param mod
 	 * @param page
 	 */
-	private void updatePageData(SMTServletRequest req, ModuleVO mod, PageVO page) {
-		String reqParam1 = req.getParameter(SMTServletRequest.PARAMETER_KEY + "1");
+	private void updatePageData(ActionRequest req, ModuleVO mod, PageVO page) {
+		String reqParam1 = req.getParameter(ActionRequest.PARAMETER_KEY + "1");
 
 		//If we don't have a request Parameter to parse, return.
 		if (StringUtil.isEmpty(reqParam1)) return;
@@ -457,5 +459,31 @@ public class DSProductCatalogAction extends SimpleActionAdapter {
 
 		//set canonical URL of the page to the case-proper UrlAlias of this product
 		page.setCanonicalPageUrl(page.getRequestURI() + "/" + attributes.get(Constants.QS_PATH) + pr.getUrlAlias());
+	}
+
+
+	/**
+	 * converts the JSON object stored in the product attribute into 
+	 * a List<String> assetIds that we can use to lookup in Solr/Mediabin-table/CMS/etc. 
+	 * @param jsonText
+	 * @return List<String> values
+	 * @throws InvalidDataException
+	 */
+	//TODO duplicated in HuddleProductCatalogSolrIndex - from ds-huddle branch
+	public static List<String> convertFromJSON(String jsonText) throws InvalidDataException {
+		List<String> values = new ArrayList<>();
+		try {
+			JSONArray arr = JSONArray.fromObject(jsonText);
+			for (int x=0; x < arr.size(); x++) {
+				if ("CMS".equals(((JSONObject)arr.get(x)).getString("type"))) {
+					values.add("CMS" + ((JSONObject)arr.get(x)).getString("id"));
+				} else {
+					values.add(((JSONObject)arr.get(x)).getString("id"));
+				}
+			}
+		} catch (Exception e) {
+			throw new InvalidDataException(e);
+		}
+		return values;
 	}
 }

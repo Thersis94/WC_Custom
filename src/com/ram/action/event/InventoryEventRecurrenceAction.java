@@ -17,7 +17,7 @@ import com.ram.datafeed.data.InventoryEventVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.DateRecurrenceUtil;
 import com.siliconmtn.util.StringUtil;
@@ -56,7 +56,7 @@ public class InventoryEventRecurrenceAction extends SBActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		InventoryEventGroupVO eventGroup = (InventoryEventGroupVO) getAttribute(EVENT_GRP_OBJ);
 		log.debug("eventGroup=" + StringUtil.getToString(eventGroup));
 		

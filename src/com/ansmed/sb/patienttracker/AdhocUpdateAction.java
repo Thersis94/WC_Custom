@@ -3,8 +3,8 @@ package com.ansmed.sb.patienttracker;
 // SMT Base libs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionInterface;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
@@ -41,7 +41,7 @@ public class AdhocUpdateAction extends TrackerAction {
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		log.debug("AdhocUpdateAction build...");
 		// need patientId and assignmentId from the request
 		AssignmentVO avo = new AssignmentVO();
@@ -81,7 +81,7 @@ public class AdhocUpdateAction extends TrackerAction {
 	 * @param fullVO
 	 * @throws ActionException
 	 */
-	private void processOwnersAssignment(SMTServletRequest req, AssignmentVO fullVO) 
+	private void processOwnersAssignment(ActionRequest req, AssignmentVO fullVO) 
 		throws ActionException {
 		log.debug("processing 'owner' assignment...");
 		// re-open to 'in progress', log to 'in progress'
@@ -108,7 +108,7 @@ public class AdhocUpdateAction extends TrackerAction {
 	 * @param req
 	 * @param fullVO
 	 */
-	private void processNonOwnersAssignment(SMTServletRequest req, AssignmentVO avo, AssignmentVO fullVO) 
+	private void processNonOwnersAssignment(ActionRequest req, AssignmentVO avo, AssignmentVO fullVO) 
 		throws ActionException {
 		log.debug("processing 'non-owner' assignment...");
 		if (fullVO.getAssignmentStatusId().equals(SJMTrackerConstants.STATUS_COMPLETED)) {
@@ -163,14 +163,14 @@ public class AdhocUpdateAction extends TrackerAction {
 	 * Retrieves 
 	 * @param avo
 	 */
-	private AssignmentVO retrieveLatestAssignmentData(SMTServletRequest req, AssignmentVO avo) 
+	private AssignmentVO retrieveLatestAssignmentData(ActionRequest req, AssignmentVO avo) 
 		throws ActionException {
 		log.debug("retrieving latest assignment data...");
 		log.debug("assignment ID is: " + req.getParameter("assignmentId"));
 		//req.setParameter("logs", "true"); // include the assignment logs
 		req.setParameter("assigneeId", req.getParameter("currAssigneeId"), true);
 		log.debug("orig/req assigneeId: " + avo.getAssigneeId() + "/" + req.getParameter("assigneeId"));
-		SMTActionInterface sai = new SJMAssignmentManager(actionInit);
+		ActionInterface sai = new SJMAssignmentManager(actionInit);
 		sai.setDBConnection(dbConn);
 		sai.setAttributes(attributes);
 		try {
@@ -231,13 +231,13 @@ public class AdhocUpdateAction extends TrackerAction {
 	 * @param avo
 	 * @throws ActionException
 	 */
-	private void updateAssignment(SMTServletRequest req, AssignmentVO avo) 
+	private void updateAssignment(ActionRequest req, AssignmentVO avo) 
 			throws ActionException {
 		// update the assignment
 		req.setParameter("currentAssignmentStatusId", avo.getCurrentStatusId().toString(), true);
 		req.setParameter("assignmentStatusId", avo.getAssignmentStatusId().toString(), true);
 		req.setParameter("assignmentResponseId", avo.getAssignmentResponseId().toString(), true);
-		SMTActionInterface sai = null;
+		ActionInterface sai = null;
 		sai = new SJMAssignmentManager(actionInit);
 		sai.setDBConnection(dbConn);
 		sai.setAttributes(attributes);
@@ -253,12 +253,12 @@ public class AdhocUpdateAction extends TrackerAction {
 	 * @param avo
 	 * @throws ActionException
 	 */
-	private void createInteraction(SMTServletRequest req, AssignmentVO avo) 
+	private void createInteraction(ActionRequest req, AssignmentVO avo) 
 		throws ActionException {
 		log.debug("creating adhoc interaction entry...");
 		req.setParameter("processInteraction", "true");
 		req.setParameter("formSubmittalId", null); // prep
-		SMTActionInterface sai = null;
+		ActionInterface sai = null;
 		sai = new SJMPatientInteractionManager(actionInit);
 		sai.setDBConnection(dbConn);
 		sai.setAttributes(attributes);
@@ -266,7 +266,7 @@ public class AdhocUpdateAction extends TrackerAction {
 		req.setParameter("formSubmittalId", null); // clean-up
 	}
 	
-	private void resetLoggingParameters(SMTServletRequest req) {
+	private void resetLoggingParameters(ActionRequest req) {
 		// clear logging params
 		req.setParameter(AssignmentLogManager.LOG_STATUS_ID, null);
 		req.setParameter(AssignmentLogManager.LOG_RESPONSE_ID, null);

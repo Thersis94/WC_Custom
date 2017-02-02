@@ -6,7 +6,7 @@ package com.codman.cu.tracking.vo;
 import java.sql.ResultSet;
 
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.SiteVO;
@@ -34,7 +34,7 @@ public class PhysicianVO extends UserDataVO {
 	public PhysicianVO() {
 	}
 	
-	public PhysicianVO(SMTServletRequest req) {
+	public PhysicianVO(ActionRequest req) {
 		super(req);
 		physicianId = req.getParameter("physicianId");
 		accountId = req.getParameter("accountId");
