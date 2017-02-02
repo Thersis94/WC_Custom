@@ -6,6 +6,7 @@ package com.biomed.smarttrak.action;
 import com.biomed.smarttrak.FinancialDashAction;
 import com.biomed.smarttrak.action.gap.GapFacadeAction;
 import com.biomed.smarttrak.admin.ContentHierarchyAction;
+import com.biomed.smarttrak.admin.ProductManagementAction;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionInterface;
@@ -60,12 +61,13 @@ public class AdminControllerAction extends SimpleActionAdapter {
 			msg = (String) attributes.get(AdminConstants.KEY_ERROR_MESSAGE);
 		}
 
-		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
-		StringBuilder url = new StringBuilder(200);
-		url.append(page.getFullPath()).append("?msg=").append(msg);
-		url.append("&actionType=").append(actionType);
-
-		sbUtil.manualRedirect(req, url.toString());
+		if (StringUtil.checkVal(req.getAttribute(Constants.REDIRECT_URL)).isEmpty()) {
+			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+			StringBuilder url = new StringBuilder(200);
+			url.append(page.getFullPath()).append("?msg=").append(msg);
+			url.append("&actionType=").append(actionType);
+			sbUtil.manualRedirect(req, url.toString());
+		}
 	}
 
 	@Override
@@ -95,6 +97,9 @@ public class AdminControllerAction extends SimpleActionAdapter {
 				break;
 			case "financialDashboard":
 				action = new FinancialDashAction();
+				break;
+			case "productAdmin":
+				action = new ProductManagementAction();
 				break;
 			default:
 				return null;
