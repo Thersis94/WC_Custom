@@ -5,6 +5,10 @@ import java.io.Serializable;
 import java.sql.ResultSet;
 import java.util.Date;
 
+import org.mortbay.log.Log;
+
+
+import com.siliconmtn.action.ActionRequest;
 //SMT baselibs
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.Column;
@@ -51,7 +55,7 @@ public class NoteVO implements Serializable {
 		setData(rs);
 	}
 
-	public NoteVO(SMTServletRequest req) {
+	public NoteVO(ActionRequest req) {
 		this();
 		setData(req);
 	}
@@ -59,7 +63,7 @@ public class NoteVO implements Serializable {
 	/**
 	 * @param req
 	 */
-	private void setData(SMTServletRequest req) {
+	private void setData(ActionRequest req) {
 
 		this.noteId = StringUtil.checkVal(req.getParameter("noteId"));
 		this.userId = StringUtil.checkVal(req.getParameter("userId"));
@@ -106,12 +110,12 @@ public class NoteVO implements Serializable {
 	public boolean isNoteSaveable() {
 		if (StringUtil.isEmpty(userId)) return false;
 		if (StringUtil.isEmpty(noteText) || StringUtil.isEmpty(noteName)) return false;
-
+	
 		//ensure we have one of the 3 bindings - company, market or product
 		return !StringUtil.isEmpty(companyId) || !StringUtil.isEmpty(marketId) || !StringUtil.isEmpty(productId);
 	}
 
-	/**
+	/*
 	 * @return the noteId
 	 */
 	@Column(name="NOTE_ID", isPrimaryKey=true)
