@@ -30,10 +30,6 @@ public class FinancialDashScenarioAction extends SBActionAdapter {
 		super(actionInit);
 	}
 
-	public void delete(ActionRequest req) throws ActionException {
-		super.delete(req);
-	}
-	
 	public void retrieve(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 
@@ -54,13 +50,5 @@ public class FinancialDashScenarioAction extends SBActionAdapter {
 		String updateType = StringUtil.checkVal(req.getParameter("type")); 
 
 		log.debug("Editing Scenario: Name - " + scenarioName + " | Role - " + scenarioRole + " | Update Type: " + updateType);
-	}
-	
-	public void list(ActionRequest req) throws ActionException {
-		super.list(req);
-	}
-
-	public void update(ActionRequest req) throws ActionException {
-		super.update(req);
 	}
 }

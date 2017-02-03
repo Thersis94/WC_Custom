@@ -25,6 +25,7 @@ public class FinancialDashScenarioVO extends SBModuleVO {
 	private String scenarioRole;
 	
 	public FinancialDashScenarioVO() {
+		super();
 	}
 
 	public FinancialDashScenarioVO(ResultSet rs) {
@@ -37,7 +38,7 @@ public class FinancialDashScenarioVO extends SBModuleVO {
 	 * @param rs
 	 */
 	public void setData(ResultSet rs) {
-		
+		// TODO - Complete this method
 	}
 	
 	// TODO: Remove this after there is real data to work with.

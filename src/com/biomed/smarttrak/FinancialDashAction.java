@@ -45,10 +45,6 @@ public class FinancialDashAction extends SBActionAdapter {
 		super(actionInit);
 	}
 
-	public void delete(ActionRequest req) throws ActionException {
-		super.delete(req);
-	}
-	
 	public void retrieve(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 		
@@ -177,13 +173,5 @@ public class FinancialDashAction extends SBActionAdapter {
 		String updateValue = StringUtil.checkVal(req.getParameter("value")); 
 		
 		log.debug("Updating Record: " + priKey + " | " + fieldName + "=" + updateValue + " ********************************");
-	}
-	
-	public void list(ActionRequest req) throws ActionException {
-		super.list(req);
-	}
-
-	public void update(ActionRequest req) throws ActionException {
-		super.update(req);
 	}
 }
