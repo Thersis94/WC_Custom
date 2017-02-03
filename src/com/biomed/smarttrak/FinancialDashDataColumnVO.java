@@ -23,6 +23,7 @@ public class FinancialDashDataColumnVO extends SBModuleVO {
 	private Double pctDiff;
 	
 	public FinancialDashDataColumnVO() {
+		super();
 	}
 	
 	public FinancialDashDataColumnVO(ResultSet rs) {
@@ -34,7 +35,7 @@ public class FinancialDashDataColumnVO extends SBModuleVO {
 	 * @param rs
 	 */
 	public void setData(ResultSet rs) {
-		
+		// TODO - Complete this method
 	}
 
 	/**

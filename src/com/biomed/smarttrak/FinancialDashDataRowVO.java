@@ -118,9 +118,7 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 					case FinancialDashAction.QUARTER_2:
 					case FinancialDashAction.QUARTER_3:
 					case FinancialDashAction.QUARTER_4:
-						if (yearIdx < FinancialDashAction.MAX_DATA_YEARS) {
-							this.addColumn(qtr, yearIdx, maxYear, util, rs);
-						}
+						this.addColumn(qtr, yearIdx, maxYear, util, rs);
 						this.incrementTotal(totals, yearIdx, util.getIntVal(colName, rs));
 						break;
 					default:
@@ -178,6 +176,10 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 	 * @param rs
 	 */
 	private void addColumn(String qtr, int yearIdx, int maxYear, DBUtil util, ResultSet rs) {
+		if (yearIdx >= FinancialDashAction.MAX_DATA_YEARS) {
+			return;
+		}
+		
 		int dollarValue = util.getIntVal(qtr + "_" + yearIdx, rs);
 		int pyDollarValue = util.getIntVal(qtr + "_" + (yearIdx + 1), rs);
 
