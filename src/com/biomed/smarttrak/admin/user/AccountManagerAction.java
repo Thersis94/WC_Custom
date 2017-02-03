@@ -151,8 +151,13 @@ public class AccountManagerAction extends SBActionAdapter {
 			accounts.get(accountId).setOwnerName();
 		}
 	}
-	
-	private List<UserVO> findAccountOwners(Map<String, AccountVO> accounts) {
+
+	/**
+	 * Finds account owners
+	 * @param accounts
+	 * @return
+	 */
+	protected List<UserVO> findAccountOwners(Map<String, AccountVO> accounts) {
 		List<UserVO> owners = new ArrayList<>();
 		
 		// loop the accounts, find the owners
@@ -162,14 +167,10 @@ public class AccountManagerAction extends SBActionAdapter {
 			UserVO user = new UserVO();
 			user.setProfileId(profileId);
 			if (! owners.contains(user)) owners.add(user);
-			log.debug("added owner with profileId of: " + user.getProfileId());
 		}
 		
-		log.debug("Owners list size: " + owners.size());
 		return owners;
 	}
-	
-	
 	
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
