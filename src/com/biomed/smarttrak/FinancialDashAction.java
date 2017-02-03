@@ -74,18 +74,21 @@ public class FinancialDashAction extends SBActionAdapter {
 	private void getFinancialData(FinancialDashVO dash) {
 		String sql = getFinancialDataSql(dash);
 		TableType tt = dash.getTableType();
+		int regionCnt = dash.getCountryTypes().size();
 		
-		int loopCnt = 7;
+		int sectionCnt = 7;
 		if (tt == TableType.MARKET) {
-			loopCnt = 21;
+			sectionCnt = 21;
 		}
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			int idx = 0;
-			for (int i = 0; i < loopCnt; i++) {
+			for (int i = 0; i < sectionCnt; i++) {
 				ps.setString(++idx, dash.getSectionId());
 			}
-			ps.setString(++idx, dash.getCountryTypes().get(0).name());
+			for (int i = 0; i < regionCnt; i++) {
+				ps.setString(++idx, dash.getCountryTypes().get(i).name());
+			}
 			ps.setInt(++idx, dash.getColHeaders().getCalendarYear());
 			
 			ResultSet rs = ps.executeQuery();
@@ -101,9 +104,11 @@ public class FinancialDashAction extends SBActionAdapter {
 	 */
 	private String getFinancialDataSql(FinancialDashVO dash) {
 		String custom = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(2000);
+
 		DisplayType dt = dash.getColHeaders().getDisplayType();
 		TableType tt = dash.getTableType();
-		StringBuilder sql = new StringBuilder(2000);
+		int regionCnt = dash.getCountryTypes().size();
 
 		if (tt == TableType.COMPANY) {
 			sql.append("select r.COMPANY_ID as ROW_ID, c.COMPANY_NM as ROW_NM, ");
@@ -158,7 +163,18 @@ public class FinancialDashAction extends SBActionAdapter {
 		sql.append("left join ").append(custom).append("BIOMEDGPS_SECTION s6 on s5.PARENT_ID = s6.SECTION_ID ");
 		sql.append("left join ").append(custom).append("BIOMEDGPS_SECTION s7 on s6.PARENT_ID = s7.SECTION_ID ");
 		sql.append("where (s1.SECTION_ID = ? OR s2.SECTION_ID = ? OR s3.SECTION_ID = ? OR s4.SECTION_ID = ? OR s5.SECTION_ID = ? OR s6.SECTION_ID = ? OR s7.SECTION_ID = ?) ");
-		sql.append("and r.REGION_CD = ? and r.YEAR_NO = ? ");
+		
+		sql.append("and r.REGION_CD in (");
+		for (int i = 1; i <= regionCnt; i++) {
+			if (i == 1) {
+				sql.append("?");
+			} else {
+				sql.append(",?");
+			}
+		}
+		sql.append(") ");
+		
+		sql.append("and r.YEAR_NO = ? ");
 		sql.append("group by ROW_ID, ROW_NM, r.YEAR_NO ");
 		sql.append("order by ROW_NM ");
 
