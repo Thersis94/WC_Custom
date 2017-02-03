@@ -2,16 +2,16 @@ package com.biomed.smarttrak.security;
 
 // Java 7
 import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.List;
 
 //WC_Custom libs
-import com.biomed.smarttrak.admin.user.TeamManagerAction;
-import com.biomed.smarttrak.admin.user.UserManagerAction;
-import com.biomed.smarttrak.vo.SmarttrakUserVO;
+import com.biomed.smarttrak.admin.user.TeamManager;
+import com.biomed.smarttrak.admin.user.UserManager;
+import com.biomed.smarttrak.vo.UserVO;
 
 //SMTBaseLibs
-import com.siliconmtn.action.ActionException;
 import com.siliconmtn.common.constants.GlobalConfig;
-import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.security.AuthenticationException;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
@@ -49,10 +49,10 @@ public class SmartTRAKLoginModule extends DBLoginLockoutModule {
 		UserDataVO wcUser = super.authenticateUser(userNm,pwd);
 
 		// 2. create/populate SmarttrakUserVO
-		SmarttrakUserVO tkUser = new SmarttrakUserVO();
+		UserVO tkUser = new UserVO();
 		tkUser.setData(wcUser.getDataMap());
 		
-		// 3. Retrieve SmartTRAK-specific user data
+		// 3. Retrieve SmartTRAK-specific user data using the WC profileId.
 		Connection conn = (Connection)initVals.get(GlobalConfig.KEY_DB_CONN);
 		retrieveBaseUser(conn, tkUser);
 		retrieveBaseUserTeams(conn, tkUser);
@@ -61,24 +61,35 @@ public class SmartTRAKLoginModule extends DBLoginLockoutModule {
 	}
 	
 	/**
-	 * Retrieves base user data for the user represented by the
+	 * Retrieves base SmartTRAK-specific user data for a user based on 
+	 * the user ID field or the profile ID field poplated
 	 * WC profile ID and populates the ST user bean with that data.
 	 * @param conn
 	 * @param tkUser
 	 * @return
 	 * @throws AuthenticationException
 	 */
-	private SmarttrakUserVO retrieveBaseUser(Connection conn, 
-			SmarttrakUserVO tkUser) throws AuthenticationException {
-		UserManagerAction uma = new UserManagerAction();
-		uma.setDBConnection(new SMTDBConnection(conn));
-		uma.setAttributes(getInitVals());
+	private void retrieveBaseUser(Connection conn, 
+			UserVO tkUser) throws AuthenticationException {
+		UserManager um = new UserManager(conn,getInitVals());
+		// use profile ID as that is all we have at the moment.
+		um.setProfileId(tkUser.getProfileId());
+		
+		List<UserVO> users;
 		try {
-			uma.retrieveBaseUser(tkUser);
-		} catch(ActionException ae) {
+			users = um.retrieveBaseUser();
+		} catch(SQLException ae) {
 			throw new AuthenticationException(ae.getMessage());
 		}
-		return tkUser;
+
+		if (users.isEmpty()) throw new AuthenticationException("SmartTRAK user does not exist.");
+		
+		UserVO resultUser = users.get(0);
+		tkUser.setUserId(resultUser.getUserId());
+		tkUser.setAccountId(resultUser.getAccountId());
+		tkUser.setRegisterSubmittalId(resultUser.getRegisterSubmittalId());
+		tkUser.setCreateDate(resultUser.getCreateDate());
+		tkUser.setUpdateDate(resultUser.getUpdateDate());
 	}
 	
 	/**
@@ -89,15 +100,17 @@ public class SmartTRAKLoginModule extends DBLoginLockoutModule {
 	 * @throws AuthenticationException
 	 */
 	private void retrieveBaseUserTeams(Connection conn, 
-			SmarttrakUserVO tkUser) throws AuthenticationException {
-		TeamManagerAction tma = new TeamManagerAction();
-		tma.setDBConnection(new SMTDBConnection(conn));
-		tma.setAttributes(getInitVals());
+			UserVO tkUser) throws AuthenticationException {
+		TeamManager tm = new TeamManager(conn,getInitVals());
+		// retrieve teams based on user ID.
+		tm.setUserId(tkUser.getUserId());
+		
 		try {
-			tma.retrieveUserTeams(tkUser);
-		} catch (ActionException ae) {
+			tkUser.setTeams(tm.retrieveTeams());
+		} catch (SQLException ae) {
 			throw new AuthenticationException(ae.getMessage());
 		}
+
 	}
 
 	/* (non-Javadoc)
