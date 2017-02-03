@@ -97,18 +97,19 @@ public class NoteAction extends SimpleActionAdapter {
 	private void saveNote(NoteVO vo, DBProcessor db) throws ActionException {
 		log.debug("Notes Action insert note called ");
 
-		if (vo.isNoteSaveable()) {
-			return;
-		}
-
-		//TODO add a new file or update a file respectively.
 		try {
 			if (StringUtil.isEmpty(vo.getNoteId())) {
 				vo.setNoteId(new UUIDGenerator().getUUID());
-				log.debug("inserting new note with id: " + vo.getNoteId());
-				db.insert(vo);
+				log.debug("inserting new note with id: " + vo.getNoteId() + " is it savable " + vo.isNoteSaveable() );
+				if (vo.isNoteSaveable()) {
+					db.insert(vo);
+				}
+
 			} else {
-				db.update(vo);
+				log.debug("updating note with id: " + vo.getNoteId() + " is it savable " + vo.isNoteSaveable() );
+				if (vo.isNoteSaveable()) {
+					db.update(vo);
+				}
 			}
 		} catch (Exception e) {
 			throw new ActionException(e);
