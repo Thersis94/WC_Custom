@@ -132,7 +132,7 @@ public class UserManager extends AbstractManager {
 	 * @return
 	 * @throws DatabaseException
 	 */
-	private Map<String, UserDataVO> retrieveProfiles(List<UserVO> users) 
+	public Map<String, UserDataVO> retrieveProfiles(List<UserVO> users) 
 			throws DatabaseException {
 		ProfileManager pm = ProfileManagerFactory.getInstance(getAttributes());
 		List<String> profileIds = new ArrayList<>();
@@ -141,7 +141,7 @@ public class UserManager extends AbstractManager {
 		}
 		return pm.searchProfileMap(getDbConn(), profileIds);
 	}
-	
+
 	/**
 	 * Formats the base user retrieve query statement.
 	 * @return

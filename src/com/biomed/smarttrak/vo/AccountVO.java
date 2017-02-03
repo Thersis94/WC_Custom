@@ -28,6 +28,7 @@ public class AccountVO {
 	private String companyId;
 	private String typeId;
 	private String ownerProfileId;
+	private String ownerName;
 	private Location location;
 	private String statusNo;
 	private Date startDate;
@@ -275,6 +276,33 @@ public class AccountVO {
 	 */
 	public void addUser(UserVO user) {
 		if (user != null) users.add(user);
+	}
+	
+	/**
+	 * Helper method to return account owner's name (rep).
+	 * @return
+	 */
+	public String getOwnerName() {
+		return ownerName;
+	}
+	
+	public void setOwnerName() {
+		if (ownerProfileId ==  null || 
+				users == null) return;
+		for (UserVO user : users) {
+			if (user.getProfileId().equals(ownerProfileId)) {
+				ownerName = user.getFirstName();
+			}
+		}
+	}
+
+	
+	/**
+	 * Helper field for JSTL view.
+	 * @param ownerName
+	 */
+	public void setOwnerName(String ownerName) {
+		this.ownerName = ownerName;
 	}
 
 }

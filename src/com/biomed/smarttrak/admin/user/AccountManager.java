@@ -6,6 +6,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 // Log4j
@@ -28,10 +29,12 @@ import com.smt.sitebuilder.common.constants.Constants;
  ***************************************************************************/
 public class AccountManager extends AbstractManager {
 
+	private static final String STATUS_NO_INACTIVE = "I";
 	private Logger log = Logger.getLogger(AccountManager.class);
 	private String accountId;
 	private String teamId;
 	private String userId;
+	private boolean excludeInactiveAccounts;
 	
 	/**
 	* Constructor
@@ -70,7 +73,10 @@ public class AccountManager extends AbstractManager {
 		Map<String,AccountVO> accounts;
 		try (PreparedStatement ps = getDbConn().prepareStatement(sql.toString())) {
 			AccountVO account;
-			accounts =  new HashMap<>();
+			accounts =  new LinkedHashMap<>();
+			int idx = 1;
+			if (accountId != null) ps.setString(idx++, accountId);
+			if (excludeInactiveAccounts) ps.setString(idx, STATUS_NO_INACTIVE);
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				account = new AccountVO(rs);
@@ -96,6 +102,7 @@ public class AccountManager extends AbstractManager {
 		sql.append("a.status_no, a.create_dt, a.update_dt ");
 		sql.append("from ").append(schema).append("biomedgps_account a where 1=1 ");		
 		if (accountId != null) sql.append("and a.account_id = ? ");
+		if (excludeInactiveAccounts) sql.append("and status_no != ? ");
 		sql.append("order by a.account_nm");
 		return sql;
 	}
@@ -140,6 +147,13 @@ public class AccountManager extends AbstractManager {
 	 */
 	public void setUserId(String userId) {
 		this.userId = userId;
+	}
+
+	/**
+	 * @param includeInactiveAccounts the includeInactiveAccounts to set
+	 */
+	public void setExcludeInactiveAccounts(boolean excludeInactiveAccounts) {
+		this.excludeInactiveAccounts = excludeInactiveAccounts;
 	}
 	
 }

@@ -2,6 +2,7 @@ package com.biomed.smarttrak.admin.user;
 
 // Java 7
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,6 +17,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.exception.DatabaseException;
+import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 
 // WebCrescendo
@@ -84,6 +86,7 @@ public class AccountManagerAction extends SBActionAdapter {
 		
 		AccountManager am = new AccountManager(dbConn, attributes);
 		am.setAccountId(accountId);
+		am.setExcludeInactiveAccounts(true);
 		accounts = am.retrieveAccounts();
 		
 		// Retrieve account teams
@@ -123,14 +126,50 @@ public class AccountManagerAction extends SBActionAdapter {
 	 */
 	protected void retrieveUsers(Map<String, AccountVO> accounts, 
 			String accountId) throws DatabaseException, SQLException {
-		if (accountId == null) return;
-
 		log.debug("Retrieving users for account...");
+
 		UserManager um = new UserManager(dbConn, attributes);
 		um.setAccountId(accountId);
-		List<UserVO> users = um.retrieveCompleteUser();
-		accounts.get(accountId).setUsers(users);
+		List<UserVO> users;
+		
+		if (accountId == null) {
+			/* This is a request for all accounts, so we only want to retrieve
+			 * profiles each account owner, a very small set */
+			users = findAccountOwners(accounts);
+			Map<String, UserDataVO> ownerProfiles = um.retrieveProfiles(users);
+			for (Map.Entry<String, AccountVO> entry : accounts.entrySet()) {
+				String ownerProfileId = entry.getValue().getOwnerProfileId();
+				if (ownerProfileId == null) continue;
+				entry.getValue().setOwnerName(ownerProfiles.get(ownerProfileId).getFirstName());
+			}
+		} else {
+			// retrieve users for this acct.
+			users = um.retrieveCompleteUser();
+			// set users on the account bean
+			accounts.get(accountId).setUsers(users);
+			// set the owner name (first name only) for view's use.
+			accounts.get(accountId).setOwnerName();
+		}
 	}
+	
+	private List<UserVO> findAccountOwners(Map<String, AccountVO> accounts) {
+		List<UserVO> owners = new ArrayList<>();
+		
+		// loop the accounts, find the owners
+		for (Map.Entry<String, AccountVO> entry : accounts.entrySet()) {
+			String profileId = entry.getValue().getOwnerProfileId();
+			if (profileId == null) continue;
+			UserVO user = new UserVO();
+			user.setProfileId(profileId);
+			if (! owners.contains(user)) owners.add(user);
+			log.debug("added owner with profileId of: " + user.getProfileId());
+		}
+		
+		log.debug("Owners list size: " + owners.size());
+		return owners;
+	}
+	
+	
 	
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
