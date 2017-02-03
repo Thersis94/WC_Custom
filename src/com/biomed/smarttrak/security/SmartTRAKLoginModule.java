@@ -2,6 +2,7 @@ package com.biomed.smarttrak.security;
 
 // Java 7
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.List;
 
 //WC_Custom libs
@@ -10,7 +11,6 @@ import com.biomed.smarttrak.admin.user.UserManager;
 import com.biomed.smarttrak.vo.UserVO;
 
 //SMTBaseLibs
-import com.siliconmtn.action.ActionException;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.security.AuthenticationException;
 import com.siliconmtn.security.UserDataVO;
@@ -78,7 +78,7 @@ public class SmartTRAKLoginModule extends DBLoginLockoutModule {
 		List<UserVO> users;
 		try {
 			users = um.retrieveBaseUser();
-		} catch(ActionException ae) {
+		} catch(SQLException ae) {
 			throw new AuthenticationException(ae.getMessage());
 		}
 
@@ -107,7 +107,7 @@ public class SmartTRAKLoginModule extends DBLoginLockoutModule {
 		
 		try {
 			tkUser.setTeams(tm.retrieveTeams());
-		} catch (ActionException ae) {
+		} catch (SQLException ae) {
 			throw new AuthenticationException(ae.getMessage());
 		}
 

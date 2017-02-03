@@ -42,22 +42,26 @@ public class TeamManager extends AbstractManager {
 	private String accountId;
 	
 	/**
-	* Constructor
-	*/
+	 * Constructor
+	 */
 	public TeamManager() {
 		// constructor stub
 	}
 	
+	/**
+	 * Constructor
+	 */
 	public TeamManager(Connection dbConn) {
 		setDbConn(dbConn);
 		setAttributes(new HashMap<String,Object>());
-		
 	}
-	
+
+	/**
+	 * Constructor
+	 */
 	public TeamManager(Connection dbConn, Map<String,Object> attributes) {
 		this(dbConn);
 		setAttributes(attributes);
-		
 	}
 	
 	/**
@@ -66,8 +70,7 @@ public class TeamManager extends AbstractManager {
 	 * @return
 	 * @throws ActionException
 	 */
-	public List<TeamVO> retrieveTeams() 
-			throws ActionException {
+	public List<TeamVO> retrieveTeams() throws SQLException {
 		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(325);
 		sql.append("select a.account_id, a.team_id, a.team_nm, a.default_flg, a.private_flg, "); 
@@ -80,7 +83,7 @@ public class TeamManager extends AbstractManager {
 		sql.append("where 1=1 ");
 		if (userId != null) sql.append("and b.user_id = ? ");
 		sql.append("order by a.team_nm ");
-		log.debug("SmartTRAK teams SQL: " + sql.toString());
+		log.debug("SmartTRAK retrieve team(s) SQL: " + sql.toString());
 
 		StringBuilder errMsg = new StringBuilder(100);
 		errMsg.append("Error retrieving SmartTRAK teams: ");
@@ -102,7 +105,7 @@ public class TeamManager extends AbstractManager {
 			}
 		} catch (SQLException sqle) {
 			errMsg.append(sqle.getMessage());
-			throw new ActionException(errMsg.toString());
+			throw new SQLException(errMsg.toString());
 		}
 		
 		return teams;

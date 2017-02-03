@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import com.siliconmtn.db.DBUtil;
 // SMTBaseLibs
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.UserDataVO;
@@ -51,7 +52,19 @@ public class UserVO extends UserDataVO {
 	*/
 	public UserVO(ResultSet rs) {
 		super(rs);
+		this.setData(rs);
 		teams = new ArrayList<>();
+	}
+	
+	/**
+	 * 
+	 */
+	public void setData(ResultSet rs) {
+		DBUtil db = new DBUtil();
+		setAccountId(db.getStringVal("account_id", rs));
+		setUserId(db.getStringVal("user_id", rs));
+		setProfileId(db.getStringVal("profile_id", rs));
+		setRegisterSubmittalId(db.getStringVal("register_submittal_id", rs));
 	}
 
 	/**

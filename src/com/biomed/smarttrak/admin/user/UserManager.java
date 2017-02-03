@@ -19,7 +19,6 @@ import com.biomed.smarttrak.vo.UserVO;
 
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
-import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.security.UserDataVO;
 
@@ -42,6 +41,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class UserManager extends AbstractManager {
 
 	private Logger log = Logger.getLogger(UserManager.class);
+	private String accountId;
 	private String userId;
 	private String profileId;
 	private String registerSubmittalId;
@@ -69,8 +69,9 @@ public class UserManager extends AbstractManager {
 	 * @return
 	 * @throws ActionException
 	 */
-	public List<UserVO> retrieveBaseUser() throws ActionException {
+	public List<UserVO> retrieveBaseUser() throws SQLException {
 		StringBuilder sql = formatBaseRetrieveQuery();
+		if (accountId != null) sql.append("and account_id = ? ");
 		if (userId != null) sql.append("and user_id = ? ");
 		if (profileId != null) sql.append("and profile_id = ? ");
 		if (registerSubmittalId != null) sql.append("and register_submittal_id = ? ");
@@ -83,24 +84,20 @@ public class UserManager extends AbstractManager {
 		UserVO user;
 		List<UserVO> users = new ArrayList<>();
 		try (PreparedStatement ps = getDbConn().prepareStatement(sql.toString())) {
+			if (accountId != null) ps.setString(idx++, accountId);
 			if (userId != null) ps.setString(idx++, userId);
 			if (profileId != null) ps.setString(idx++, profileId);
 			if (registerSubmittalId != null) ps.setString(idx, registerSubmittalId);
-			
-			DBUtil db = new DBUtil();
-			
+
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
-				user = new UserVO();
-				user.setUserId(db.getStringVal("user_id", rs));
-				user.setProfileId(db.getStringVal("profile_id", rs));
-				user.setRegisterSubmittalId(db.getStringVal("register_submittal_id", rs));
+				user = new UserVO(rs);
 				users.add(user);
 			}
 			
 		} catch (SQLException sqle) {
 			errMsg.append(sqle.getMessage());
-			throw new ActionException(errMsg.toString());
+			throw new SQLException(errMsg.toString());
 		}
 		
 		return users;
@@ -111,28 +108,22 @@ public class UserManager extends AbstractManager {
 	 * for SmartTRAK users using field values found on the UserVO object that is passed in 
 	 * as the argument. If a null argument is passed, all users are returned in the list.
 	 * @param searchParams
-	 * @throws ActionException
+	 * @throws SQLException 
+	 * @throws DatabaseException 
 	 */
 	public List<UserVO> retrieveCompleteUser() 
-			throws ActionException {
-		List<UserVO> users;
-		try {
-			users = retrieveBaseUser();
-			Map<String, UserDataVO> profiles = retrieveProfiles(users);
-			
-			for (UserVO user : users) {
-				UserDataVO profile = profiles.get(user.getProfileId());
-				if (profile == null) continue;
-				user.setData(profile.getDataMap());
-			}
-			
-		} catch (Exception ae) {
-			throw new ActionException(ae.getMessage());
-		}
+			throws SQLException, DatabaseException {
+		List<UserVO> users = retrieveBaseUser();
+		Map<String, UserDataVO> profiles = retrieveProfiles(users);
 		
+		for (UserVO user : users) {
+			UserDataVO profile = profiles.get(user.getProfileId());
+			if (profile == null) continue;
+			user.setData(profile.getDataMap());
+		}
+
 		// sort by profile name if appropriate
 		if (users.size() > 1) Collections.sort(users, new UserNameComparator());
-
 		return users;
 	}
 	
@@ -163,6 +154,13 @@ public class UserManager extends AbstractManager {
 		sql.append(getAttributes().get(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_user ");
 		sql.append("where 1=1 ");
 		return sql;
+	}
+
+	/**
+	 * @param accountId the accountId to set
+	 */
+	public void setAccountId(String accountId) {
+		this.accountId = accountId;
 	}
 
 	/**

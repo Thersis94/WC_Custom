@@ -5,13 +5,13 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
+// Log4j
 import org.apache.log4j.Logger;
 
+// WC_Custom
 import com.biomed.smarttrak.vo.AccountVO;
 
 /*****************************************************************************
@@ -39,11 +39,17 @@ public class AccountManager extends AbstractManager {
 		// constructor stub
 	}
 	
+	/**
+	* Constructor
+	*/
 	public AccountManager(Connection dbConn) {
 		setDbConn(dbConn);
 		setAttributes(new HashMap<String,Object>());
 	}
-	
+
+	/**
+	* Constructor
+	*/
 	public AccountManager(Connection dbConn, Map<String,Object> attributes) {
 		this(dbConn);
 		setAttributes(attributes);
@@ -60,18 +66,18 @@ public class AccountManager extends AbstractManager {
 	 * @return
 	 * @throws SQLException
 	 */
-	public List<AccountVO> retrieveAccounts() 
-			throws SQLException {
+	public Map<String, AccountVO> retrieveAccounts() throws SQLException {
 		StringBuilder sql = formatRetrieveQuery();
 		log.debug("Smarttrak account retrieve SQL: " + sql.toString());
-		List<AccountVO> accounts;
+		
+		Map<String,AccountVO> accounts;
 		try (PreparedStatement ps = getDbConn().prepareStatement(sql.toString())) {
 			AccountVO account;
-			accounts =  new ArrayList<>();
+			accounts =  new HashMap<>();
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				account = new AccountVO(rs);
-				accounts.add(account);
+				accounts.put(account.getAccountId(), account);
 			}
 		} catch (SQLException sqle) {
 			log.error("Error retrieving account data, ", sqle);
