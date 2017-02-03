@@ -55,14 +55,12 @@ public class GapAnalysisAdminAction extends GapAnalysisAction {
 
 	@Override
 	public void retrieve(ActionRequest req) {
-		String attributeType = req.getParameter("attributeType");
 		String sectionId = req.getParameter("sectionId");
 		String gaColumnId = req.getParameter("gaColumnId");
-		if(StringUtil.isEmpty(attributeType)) {
+
+		if(!StringUtil.isEmpty(sectionId)) {
 			List<GapColumnVO> cols = loadColumns(sectionId, gaColumnId);
 			this.putModuleData(cols, cols.size(), false);
-		} else {
-			loadAttributeXRs(gaColumnId, attributeType);
 		}
 	}
 
@@ -80,10 +78,20 @@ public class GapAnalysisAdminAction extends GapAnalysisAction {
 			}
 
 			ResultSet rs = ps.executeQuery();
-
+			GapColumnVO gap = null;
+			String gaColId = null;
 			while(rs.next()) {
-				columns.add(new GapColumnVO(rs));
+				if(!rs.getString("ga_column_id").equals(gaColId)) {
+					if(gap != null) {
+						columns.add(gap);
+					}
+					gap = new GapColumnVO(rs);
+					gaColId = rs.getString("ga_column_id");
+				}
+				gap.addAttribute(new GapColumnAttributeVO(rs));
 			}
+
+			columns.add(gap);
 		} catch (SQLException e) {
 			log.error(e);
 		}
@@ -98,36 +106,17 @@ public class GapAnalysisAdminAction extends GapAnalysisAction {
 	private String getColumnSql(boolean hasColumnId) {
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select * from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("biomedgps_ga_column where section_id = ? ");
+		sql.append("biomedgps_ga_column a ");
+
 		if(hasColumnId) {
-			sql.append("and ga_column_id = ? ");
+			sql.append("inner join ga_column_attribute_xr b ");
+			sql.append("on a.ga_column_id = b.ga_column_id ");
 		}
-		sql.append("order by order_no");
-		return sql.toString();
-	}
-
-	private List<Object> loadAttributeXRs(String gaColumnId, String attributeType) {
-		List<Object> columnAttributes;
-
-		DBProcessor dbp = new DBProcessor(dbConn, (String) attributes.get(Constants.CUSTOM_DB_SCHEMA));
-
-		try {
-			List<Object> params = new ArrayList<>();
-			params.add(gaColumnId);
-			columnAttributes = dbp.executeSelect(getAttributesSql(), params, (Object)new GapColumnAttributeVO());
-		} catch(Exception e) {
-			log.error("Problem retrieving attributes", e);
-			columnAttributes = null;
+		sql.append("where a.section_id = ? ");
+		if(hasColumnId) {
+			sql.append("and a.ga_column_id = ? ");
 		}
-
-		return columnAttributes;
-	}
-
-	private String getAttributesSql() {
-		StringBuilder sql = new StringBuilder(150);
-		sql.append("select * from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("biomedgps_ga_column_attribute_xr where ga_column_id = ?");
-
+		sql.append("order by a.order_no");
 		return sql.toString();
 	}
 

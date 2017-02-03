@@ -4,6 +4,8 @@
 package com.biomed.smarttrak.action;
 
 import com.biomed.smarttrak.FinancialDashAction;
+
+import com.biomed.smarttrak.FinancialDashScenarioAction;
 import com.biomed.smarttrak.admin.ContentHierarchyAction;
 import com.biomed.smarttrak.admin.GapAnalysisAdminAction;
 import com.siliconmtn.action.ActionException;
@@ -106,6 +108,9 @@ public class AdminControllerAction extends SimpleActionAdapter {
 				break;
 			case "financialDashboard":
 				action = new FinancialDashAction();
+				break;
+			case "financialDashScenario":
+				action = new FinancialDashScenarioAction();
 				break;
 			default:
 				return null;
