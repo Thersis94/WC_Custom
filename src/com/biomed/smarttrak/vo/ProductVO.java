@@ -31,19 +31,15 @@ public class ProductVO {
 	private String parentId;
 	private String companyId;
 	private String productName;
-	private String fullName;
-	private String descText;
 	private int orderNo;
 	private String metaKeyword;
 	private String metaDesc;
-	private String titleName;
-	private String shortDesc;
-	private String imageUrl;
-	private String thumnailUrl;
 	private int gaFlag;
 	private String refText;
 	private String authorProfileId;
-	private int statusNo;
+	private String statusNo;
+	private String shortName;
+	private String aliasName;
 	private String productGroupId;
 	private List<ProductAttributeVO> attributes;
 	private List<GenericVO> sections;
@@ -65,19 +61,15 @@ public class ProductVO {
 		parentId = req.getParameter("parentId");
 		companyId = req.getParameter("companyId");
 		productName = req.getParameter("productName");
-		fullName = req.getParameter("fullName");
-		descText = req.getParameter("descText");
+		shortName = req.getParameter("shortName");
+		aliasName = req.getParameter("aliasName");
 		orderNo = Convert.formatInteger(req.getParameter("orderNo"));
 		metaKeyword = req.getParameter("metaKeyword");
 		metaDesc = req.getParameter("metaDesc");
-		titleName = req.getParameter("titleName");
-		shortDesc = req.getParameter("shortDesc");
-		imageUrl = req.getParameter("imageUrl");
-		thumnailUrl = req.getParameter("thumnailUrl");
 		gaFlag = Convert.formatInteger(req.getParameter("gaFlag"));
 		refText = req.getParameter("refText");
 		authorProfileId = req.getParameter("authorProfileId");
-		statusNo = Convert.formatInteger(req.getParameter("statusNo"));
+		statusNo = req.getParameter("statusNo");
 		productGroupId = req.getParameter("productGroupId");
 	}
 
@@ -110,20 +102,6 @@ public class ProductVO {
 	public void setProductName(String productName) {
 		this.productName = productName;
 	}
-	@Column(name="full_product_nm")
-	public String getFullName() {
-		return fullName;
-	}
-	public void setFullName(String fullName) {
-		this.fullName = fullName;
-	}
-	@Column(name="desc_txt")
-	public String getDescText() {
-		return descText;
-	}
-	public void setDescText(String descText) {
-		this.descText = descText;
-	}
 	@Column(name="order_no")
 	public int getOrderNo() {
 		return orderNo;
@@ -144,34 +122,6 @@ public class ProductVO {
 	}
 	public void setMetaDesc(String metaDesc) {
 		this.metaDesc = metaDesc;
-	}
-	@Column(name="title_nm")
-	public String getTitleName() {
-		return titleName;
-	}
-	public void setTitleName(String titleName) {
-		this.titleName = titleName;
-	}
-	@Column(name="short_desc")
-	public String getShortDesc() {
-		return shortDesc;
-	}
-	public void setShortDesc(String shortDesc) {
-		this.shortDesc = shortDesc;
-	}
-	@Column(name="image_url")
-	public String getImageUrl() {
-		return imageUrl;
-	}
-	public void setImageUrl(String imageUrl) {
-		this.imageUrl = imageUrl;
-	}
-	@Column(name="thumbnail_url")
-	public String getThumnailUrl() {
-		return thumnailUrl;
-	}
-	public void setThumnailUrl(String thumnailUrl) {
-		this.thumnailUrl = thumnailUrl;
 	}
 	@Column(name="ga_usage_flg")
 	public int getGaFlag() {
@@ -195,12 +145,34 @@ public class ProductVO {
 		this.authorProfileId = authorProfileId;
 	}
 	@Column(name="status_no")
-	public int getStatusNo() {
+	public String getStatusNo() {
 		return statusNo;
 	}
-	public void setStatusNo(int statusNo) {
+	public void setStatusNo(String statusNo) {
 		this.statusNo = statusNo;
 	}
+	@Column(name="short_nm")
+	public String getShortName() {
+		return shortName;
+	}
+
+
+	public void setShortName(String shortName) {
+		this.shortName = shortName;
+	}
+
+
+	@Column(name="alias_nm")
+	public String getAliasName() {
+		return aliasName;
+	}
+
+
+	public void setAliasName(String aliasName) {
+		this.aliasName = aliasName;
+	}
+
+
 	@Column(name="product_group_id")
 	public String getProductGroupId() {
 		return productGroupId;
