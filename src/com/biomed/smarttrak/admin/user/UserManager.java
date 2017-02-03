@@ -147,9 +147,10 @@ public class UserManager extends AbstractManager {
 	 * @return
 	 */
 	private StringBuilder formatBaseRetrieveQuery() {
+		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(175);
 		sql.append("select user_id, profile_id, account_id, register_submittal_id from ");
-		sql.append(getAttributes().get(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_user ");
+		sql.append(schema).append("biomedgps_user ");
 		sql.append("where 1=1 ");
 		return sql;
 	}

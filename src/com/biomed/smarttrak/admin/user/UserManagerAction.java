@@ -50,7 +50,7 @@ public class UserManagerAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		ModuleVO mod = (ModuleVO) req.getAttribute(Constants.MODULE_DATA);
+		ModuleVO mod = (ModuleVO)getAttribute(Constants.MODULE_DATA);
 		List<UserVO> users;
 		
 		try {

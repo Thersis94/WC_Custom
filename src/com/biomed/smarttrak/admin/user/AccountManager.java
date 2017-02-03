@@ -13,6 +13,7 @@ import org.apache.log4j.Logger;
 
 // WC_Custom
 import com.biomed.smarttrak.vo.AccountVO;
+import com.smt.sitebuilder.common.constants.Constants;
 
 /*****************************************************************************
  <p><b>Title</b>: AccountManager.java</p>
@@ -76,7 +77,6 @@ public class AccountManager extends AbstractManager {
 				accounts.put(account.getAccountId(), account);
 			}
 		} catch (SQLException sqle) {
-			log.error("Error retrieving account data, ", sqle);
 			throw new SQLException(sqle.getMessage());
 		}
 		
@@ -88,12 +88,13 @@ public class AccountManager extends AbstractManager {
 	 * @return
 	 */
 	public StringBuilder formatRetrieveQuery() {
+		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(300);
 		sql.append("select a.account_id, a.company_id, a.account_nm, a.type_id, ");
 		sql.append("a.start_dt, a.expiration_dt, a.owner_profile_id, a.address_txt, ");
 		sql.append("a.address2_txt, a.city_nm, a.state_cd, a.zip_cd, a.country_cd, ");
 		sql.append("a.status_no, a.create_dt, a.update_dt ");
-		sql.append("from biomedgps_account a where 1=1 ");		
+		sql.append("from ").append(schema).append("biomedgps_account a where 1=1 ");		
 		if (accountId != null) sql.append("and a.account_id = ? ");
 		sql.append("order by a.account_nm");
 		return sql;

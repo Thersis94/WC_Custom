@@ -55,8 +55,8 @@ public class AccountManagerAction extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("AccountManagerAction retrieve...");
-		ModuleVO mod = (ModuleVO)req.getAttribute(Constants.MODULE_DATA);
-		
+		ModuleVO mod = (ModuleVO)getAttribute(Constants.MODULE_DATA);
+
 		Map<String, AccountVO> accounts;
 		try {
 			accounts = retrieveAccounts(req);
@@ -64,8 +64,8 @@ public class AccountManagerAction extends SBActionAdapter {
 			mod.setError(e.getMessage(),e);
 			accounts = new HashMap<>();
 		}
-		
-		this.putModuleData(accounts, accounts.size(), false, mod.getErrorMessage(), mod.getErrorCondition());
+
+		putModuleData(accounts, accounts.size(), false, mod.getErrorMessage(), mod.getErrorCondition());
 
 	}
 	
@@ -80,10 +80,10 @@ public class AccountManagerAction extends SBActionAdapter {
 			throws DatabaseException, SQLException {
 		String accountId = StringUtil.checkVal(req.getParameter("accountId"),null);
 		String teamId = StringUtil.checkVal(req.getParameter("teamId"),null);
+		Map<String, AccountVO> accounts;
+		
 		AccountManager am = new AccountManager(dbConn, attributes);
 		am.setAccountId(accountId);
-		
-		Map<String, AccountVO> accounts;
 		accounts = am.retrieveAccounts();
 		
 		// Retrieve account teams
