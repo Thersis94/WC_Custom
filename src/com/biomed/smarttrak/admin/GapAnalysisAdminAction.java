@@ -15,6 +15,8 @@ import com.biomed.smarttrak.admin.vo.GapColumnVO;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.util.DatabaseException;
+import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -36,6 +38,19 @@ public class GapAnalysisAdminAction extends GapAnalysisAction {
 
 	public GapAnalysisAdminAction(ActionInitVO init) {
 		super(init);
+	}
+
+	@Override
+	public void delete(ActionRequest req) {
+		GapColumnVO col = new GapColumnVO(req);
+
+		DBProcessor dbp = new DBProcessor(dbConn, (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
+
+		try {
+			dbp.delete(col);
+		} catch (InvalidDataException | DatabaseException e) {
+			log.error(e);
+		}
 	}
 
 	@Override
