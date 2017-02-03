@@ -42,6 +42,7 @@ public class AccountManagerAction extends SBActionAdapter {
 	 * Constructor
 	 */
 	public AccountManagerAction() {
+		// constructor stub
 	}
 
 	/**

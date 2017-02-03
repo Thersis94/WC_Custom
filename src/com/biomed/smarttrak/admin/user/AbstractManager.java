@@ -26,7 +26,7 @@ public class AbstractManager {
 	* Constructor
 	*/
 	public AbstractManager() {
-		// TODO Auto-generated constructor stub
+		// constructor stub
 	}
 
 	/**
