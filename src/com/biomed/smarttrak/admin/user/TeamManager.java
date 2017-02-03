@@ -17,7 +17,6 @@ import org.apache.log4j.Logger;
 import com.biomed.smarttrak.vo.TeamVO;
 
 // SMTBaseLibs
-import com.siliconmtn.action.ActionException;
 import com.siliconmtn.util.StringUtil;
 
 // WebCrescendo
@@ -66,9 +65,8 @@ public class TeamManager extends AbstractManager {
 	
 	/**
 	 * Retrieves a list of teams depending upon the fields that have been set (e.g. account ID, user ID, etc.)
-	 * @param searchParams
 	 * @return
-	 * @throws ActionException
+	 * @throws SQLException
 	 */
 	public List<TeamVO> retrieveTeams() throws SQLException {
 		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);

@@ -54,11 +54,7 @@ public class AccountManager extends AbstractManager {
 		this(dbConn);
 		setAttributes(attributes);
 	}
-	
-	/**
-	 * 
-	 * @return
-	 */
+
 	/**
 	 * Retrieves account data.  Query format is based on 
 	 * the values of the ID fields that are set on this object
@@ -68,7 +64,7 @@ public class AccountManager extends AbstractManager {
 	 */
 	public Map<String, AccountVO> retrieveAccounts() throws SQLException {
 		StringBuilder sql = formatRetrieveQuery();
-		log.debug("Smarttrak account retrieve SQL: " + sql.toString());
+		log.debug("Smarttrak account(s) retrieve SQL: " + sql.toString());
 		
 		Map<String,AccountVO> accounts;
 		try (PreparedStatement ps = getDbConn().prepareStatement(sql.toString())) {

@@ -28,6 +28,9 @@ public class TeamManagerAction extends SBActionAdapter {
 		super();
 	}
 	
+	/**
+	 * Constructor
+	 */
 	public TeamManagerAction(ActionInitVO actionInit) {
 		super(actionInit);
 	}

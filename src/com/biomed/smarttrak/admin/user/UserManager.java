@@ -18,7 +18,6 @@ import org.apache.log4j.Logger;
 import com.biomed.smarttrak.vo.UserVO;
 
 // SMTBaseLibs
-import com.siliconmtn.action.ActionException;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.security.UserDataVO;
 
@@ -65,9 +64,8 @@ public class UserManager extends AbstractManager {
 	
 	/**
 	 * Retrieves SmartTRAK-specific user data from custom table(s).
-	 * @param searchParams
 	 * @return
-	 * @throws ActionException
+	 * @throws SQLException
 	 */
 	public List<UserVO> retrieveBaseUser() throws SQLException {
 		StringBuilder sql = formatBaseRetrieveQuery();
@@ -107,9 +105,9 @@ public class UserManager extends AbstractManager {
 	 * Returns a list of complete profiles (i.e. WebCrescendo and SmartTRAK profile data) 
 	 * for SmartTRAK users using field values found on the UserVO object that is passed in 
 	 * as the argument. If a null argument is passed, all users are returned in the list.
-	 * @param searchParams
-	 * @throws SQLException 
-	 * @throws DatabaseException 
+	 * @return
+	 * @throws SQLException
+	 * @throws DatabaseException
 	 */
 	public List<UserVO> retrieveCompleteUser() 
 			throws SQLException, DatabaseException {

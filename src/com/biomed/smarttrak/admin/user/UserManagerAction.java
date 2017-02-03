@@ -31,13 +31,16 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class UserManagerAction extends SBActionAdapter {
 	
 	/**
-	* Constructor
-	*/
+	 * Constructor
+	 */
 	public UserManagerAction() {
 		// constructor stub
 		super();
 	}
 	
+	/**
+	 * Constructor
+	 */
 	public UserManagerAction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
@@ -47,7 +50,6 @@ public class UserManagerAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		// for admin subsite: retrieve Smarttrak user (WC profile, Smarttrak userId, etc.).
 		ModuleVO mod = (ModuleVO) req.getAttribute(Constants.MODULE_DATA);
 		List<UserVO> users;
 		
@@ -56,7 +58,7 @@ public class UserManagerAction extends SBActionAdapter {
 			um.setUserId(req.getParameter("userId"));
 			users = um.retrieveCompleteUser();
 			
-		} catch (ActionException ae) {
+		} catch (Exception ae) {
 			users = new ArrayList<>();
 			mod.setError(ae.getMessage(),ae);
 		}

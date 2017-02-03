@@ -69,6 +69,13 @@ public class AccountManagerAction extends SBActionAdapter {
 
 	}
 	
+	/**
+	 * Retrieves account(s) data.
+	 * @param req
+	 * @return
+	 * @throws DatabaseException
+	 * @throws SQLException
+	 */
 	protected Map<String, AccountVO> retrieveAccounts(ActionRequest req) 
 			throws DatabaseException, SQLException {
 		String accountId = StringUtil.checkVal(req.getParameter("accountId"),null);
@@ -92,7 +99,8 @@ public class AccountManagerAction extends SBActionAdapter {
 	 * Retrieves all teams or a specific team for an account.
 	 * @param accounts
 	 * @param accountId
-	 * @throws ActionException
+	 * @param teamId
+	 * @throws SQLException
 	 */
 	protected void retrieveTeams(Map<String, AccountVO> accounts, 
 			String accountId, String teamId) throws SQLException {
