@@ -52,8 +52,8 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 	public void setData(ResultSet rs) {
 		DBUtil util = new DBUtil();
 		
-		this.setName(util.getStringVal("COMPANY_NM", rs));
-		this.setPrimaryKey(util.getStringVal("COMPANY_ID", rs));
+		this.setName(util.getStringVal("ROW_NM", rs));
+		this.setPrimaryKey(util.getStringVal("ROW_ID", rs));
 		this.setColumns(util, rs);
 	}
 

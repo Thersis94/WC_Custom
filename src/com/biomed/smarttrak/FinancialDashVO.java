@@ -39,7 +39,7 @@ public class FinancialDashVO extends SBModuleVO {
 	 */
 	public static final String DEFAULT_TABLE_TYPE = "MARKET";
 	
-	private enum TableType {
+	protected enum TableType {
 		MARKET("Market"), COMPANY("Company / Partner");
 		
 		private String name;

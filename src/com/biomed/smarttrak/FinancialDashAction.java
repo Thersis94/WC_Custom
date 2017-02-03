@@ -5,6 +5,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import com.biomed.smarttrak.FinancialDashColumnSet.DisplayType;
+import com.biomed.smarttrak.FinancialDashVO.TableType;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -76,10 +77,16 @@ public class FinancialDashAction extends SBActionAdapter {
 	 */
 	private void getFinancialData(FinancialDashVO dash) {
 		String sql = getFinancialDataSql(dash);
+		TableType tt = dash.getTableType();
+		
+		int loopCnt = 7;
+		if (tt == TableType.MARKET) {
+			loopCnt = 21;
+		}
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			int idx = 0;
-			for (int i = 0; i < 7; i++) {
+			for (int i = 0; i < loopCnt; i++) {
 				ps.setString(++idx, dash.getSectionId());
 			}
 			ps.setString(++idx, dash.getCountryTypes().get(0).name());
@@ -99,9 +106,30 @@ public class FinancialDashAction extends SBActionAdapter {
 	private String getFinancialDataSql(FinancialDashVO dash) {
 		String custom = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		DisplayType dt = dash.getColHeaders().getDisplayType();
+		TableType tt = dash.getTableType();
+		StringBuilder sql = new StringBuilder(2000);
+
+		if (tt == TableType.COMPANY) {
+			sql.append("select r.COMPANY_ID as ROW_ID, c.COMPANY_NM as ROW_NM, ");
+		} else {
+			sql.append("select ");
+			sql.append("CASE WHEN s7.PARENT_ID = ? THEN s7.SECTION_ID ");
+			sql.append("WHEN s6.PARENT_ID = ? THEN s6.SECTION_ID ");
+			sql.append("WHEN s5.PARENT_ID = ? THEN s5.SECTION_ID ");
+			sql.append("WHEN s4.PARENT_ID = ? THEN s4.SECTION_ID ");
+			sql.append("WHEN s3.PARENT_ID = ? THEN s3.SECTION_ID ");
+			sql.append("WHEN s2.PARENT_ID = ? THEN s2.SECTION_ID ");
+			sql.append("WHEN s1.PARENT_ID = ? THEN s1.SECTION_ID END as ROW_ID, ");
+			sql.append("CASE WHEN s7.PARENT_ID = ? THEN s7.SECTION_NM ");
+			sql.append("WHEN s6.PARENT_ID = ? THEN s6.SECTION_NM ");
+			sql.append("WHEN s5.PARENT_ID = ? THEN s5.SECTION_NM ");
+			sql.append("WHEN s4.PARENT_ID = ? THEN s4.SECTION_NM ");
+			sql.append("WHEN s3.PARENT_ID = ? THEN s3.SECTION_NM ");
+			sql.append("WHEN s2.PARENT_ID = ? THEN s2.SECTION_NM ");
+			sql.append("WHEN s1.PARENT_ID = ? THEN s1.SECTION_NM END as ROW_NM, ");
+		}
 		
-		StringBuilder sql = new StringBuilder(2500);
-		sql.append("select r.COMPANY_ID, c.COMPANY_NM, r.YEAR_NO, sum(r.Q1_NO) as Q1_0, sum(r.Q2_NO) as Q2_0, sum(r.Q3_NO) as Q3_0, sum(r.Q4_NO) as Q4_0, ");
+		sql.append("r.YEAR_NO, sum(r.Q1_NO) as Q1_0, sum(r.Q2_NO) as Q2_0, sum(r.Q3_NO) as Q3_0, sum(r.Q4_NO) as Q4_0, ");
 		sql.append("sum(r2.Q1_NO) as Q1_1, sum(r2.Q2_NO) as Q2_1, sum(r2.Q3_NO) as Q3_1, sum(r2.Q4_NO) as Q4_1 "); // Needed for all column display types to get percent change from prior year
 		
 		// Columns needed only for specific display types
@@ -116,7 +144,7 @@ public class FinancialDashAction extends SBActionAdapter {
 		sql.append("from ").append(custom).append("BIOMEDGPS_FD_REVENUE r ");
 		sql.append("left join ").append(custom).append("BIOMEDGPS_FD_REVENUE r2 on r.COMPANY_ID = r2.COMPANY_ID and r.REGION_CD = r2.REGION_CD and r.SECTION_ID = r2.SECTION_ID and r.YEAR_NO - 1 = r2.YEAR_NO ");
 
-		// Joins to get columns needed only for specific display types
+		// Joins to get columns that are needed only for specific display types
 		if (dt == DisplayType.YOY || dt == DisplayType.FOURYR || dt == DisplayType.SIXQTR) {
 			sql.append("left join ").append(custom).append("BIOMEDGPS_FD_REVENUE r3 on r.COMPANY_ID = r3.COMPANY_ID and r.REGION_CD = r3.REGION_CD and r.SECTION_ID = r3.SECTION_ID and r.YEAR_NO - 2 = r3.YEAR_NO ");
 		}
@@ -135,8 +163,8 @@ public class FinancialDashAction extends SBActionAdapter {
 		sql.append("left join ").append(custom).append("BIOMEDGPS_SECTION s7 on s6.PARENT_ID = s7.SECTION_ID ");
 		sql.append("where (s1.SECTION_ID = ? OR s2.SECTION_ID = ? OR s3.SECTION_ID = ? OR s4.SECTION_ID = ? OR s5.SECTION_ID = ? OR s6.SECTION_ID = ? OR s7.SECTION_ID = ?) ");
 		sql.append("and r.REGION_CD = ? and r.YEAR_NO = ? ");
-		sql.append("group by r.COMPANY_ID, c.COMPANY_NM, r.YEAR_NO ");
-		sql.append("order by c.COMPANY_NM ");
+		sql.append("group by ROW_ID, ROW_NM, r.YEAR_NO ");
+		sql.append("order by ROW_NM ");
 
 		return sql.toString();
 	}
