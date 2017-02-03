@@ -3,7 +3,7 @@ package com.ansmed.sb.sales;
 import java.sql.ResultSet;
 
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.security.PhoneVO;
 import com.siliconmtn.security.UserDataVO;
@@ -56,7 +56,7 @@ public class SalesRepVO extends AbstractSiteBuilderVO {
 	 * Initializes the object using a browser request element
 	 * @param rs
 	 */
-	public SalesRepVO(SMTServletRequest req) {
+	public SalesRepVO(ActionRequest req) {
 		super();
 		setData(req);
 	}
@@ -65,7 +65,7 @@ public class SalesRepVO extends AbstractSiteBuilderVO {
 	 * Stores the data from a servlet request into the appropriate variable values
 	 * @param req
 	 */
-	public void setData(SMTServletRequest req) {
+	public void setData(ActionRequest req) {
 		StringEncoder se = new StringEncoder();
 		actionId = req.getParameter("salesRepId");
 		profileId = req.getParameter("profileId");

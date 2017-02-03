@@ -20,8 +20,8 @@ import com.siliconmtn.commerce.catalog.ProductCategoryVO;
 import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.tools.PageViewReportingAction;
@@ -60,7 +60,7 @@ public class DSProductCatalogAction extends SimpleActionAdapter {
 	 * @see com.siliconmtn.action.ActionController#list(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 
@@ -69,7 +69,7 @@ public class DSProductCatalogAction extends SimpleActionAdapter {
 	 * @see com.siliconmtn.action.ActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		boolean isPreview = page.isPreviewMode();
@@ -102,7 +102,7 @@ public class DSProductCatalogAction extends SimpleActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	private ModuleVO loadProductData(SMTServletRequest req) {
+	private ModuleVO loadProductData(ActionRequest req) {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		String catalogId = (String) mod.getAttribute(ModuleVO.ATTRIBUTE_1);
@@ -134,7 +134,7 @@ public class DSProductCatalogAction extends SimpleActionAdapter {
 	 * @param t
 	 */
 	@SuppressWarnings("unchecked")
-	private void attachPageviewsToCatalog(SMTServletRequest req, ProductCatalogUtil pc, Tree t) {
+	private void attachPageviewsToCatalog(ActionRequest req, ProductCatalogUtil pc, Tree t) {
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		try {
@@ -399,8 +399,8 @@ public class DSProductCatalogAction extends SimpleActionAdapter {
 	 * @param mod
 	 * @param page
 	 */
-	private void updatePageData(SMTServletRequest req, ModuleVO mod, PageVO page) {
-		String reqParam1 = req.getParameter(SMTServletRequest.PARAMETER_KEY + "1");
+	private void updatePageData(ActionRequest req, ModuleVO mod, PageVO page) {
+		String reqParam1 = req.getParameter(ActionRequest.PARAMETER_KEY + "1");
 
 		//If we don't have a request Parameter to parse, return.
 		if (StringUtil.isEmpty(reqParam1)) return;

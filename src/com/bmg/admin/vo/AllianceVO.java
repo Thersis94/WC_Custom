@@ -2,9 +2,9 @@ package com.bmg.admin.vo;
 
 import java.util.Date;
 
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
-import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 
 /****************************************************************************
@@ -37,11 +37,11 @@ public class AllianceVO {
 		// vo without needing a servlet request.
 	}
 	
-	public AllianceVO(SMTServletRequest req) {
+	public AllianceVO(ActionRequest req) {
 		setData(req);
 	}
 	
-	private void setData(SMTServletRequest req) {
+	private void setData(ActionRequest req) {
 		allianceId = req.getParameter("allianceId");
 		companyId = req.getParameter("companyId");
 		allianceTypeId = req.getParameter("allianceTypeId");

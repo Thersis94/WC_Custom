@@ -19,7 +19,8 @@ import org.apache.solr.common.SolrException.ErrorCode;
 
 import com.depuysynthes.huddle.HuddleUtils;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -139,7 +140,7 @@ public class BlogSolrIndexer extends SMTAbstractIndex {
 	 * @return
 	 */
 	private List<BlogGroupVO> getBlogs(String blogId) {
-		SMTActionInterface sai = null;
+		ActionInterface sai = null;
 		List<BlogGroupVO> data = new ArrayList<BlogGroupVO>();
 
 		try(PreparedStatement ps = dbConn.prepareStatement(getBlogDataSql(blogId))) {
@@ -158,7 +159,7 @@ public class BlogSolrIndexer extends SMTAbstractIndex {
 				Map<String, Object> map = new HashMap<String, Object>();
 				map.put(Constants.MODULE_DATA, new ModuleVO());
 				sai.setAttributes(map);
-				sai.retrieve(null);
+				sai.retrieve(new ActionRequest()); //avoid ambiguity 
 				ModuleVO mod = (ModuleVO) sai.getAttribute(Constants.MODULE_DATA);
 
 				//add the blog data to the list

@@ -1,13 +1,12 @@
 package com.biomed.smarttrak;
 
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Random;
 
-import com.siliconmtn.util.UUIDGenerator;
+import org.apache.log4j.Logger;
+
 import com.smt.sitebuilder.action.SBModuleVO;
 
 /****************************************************************************
@@ -24,17 +23,63 @@ import com.smt.sitebuilder.action.SBModuleVO;
 public class FinancialDashVO extends SBModuleVO {
 	
 	private static final long serialVersionUID = 1L;
-	private String nameCol;
-	private Map<String, String> colHeaders;
+	private List<CountryType> countryTypes;
+	private TableType tableType;
+	private FinancialDashColumnSet colHeaders;
 	private List<FinancialDashDataRowVO> rows;
+	private String sectionId;
+	
+	/**
+	 * Provides a logger
+	 */
+	protected static Logger log;
+
+	/**
+	 * Default table type.
+	 */
+	public static final String DEFAULT_TABLE_TYPE = "MARKET";
+	
+	protected enum TableType {
+		MARKET("Market"), COMPANY("Company / Partner");
+		
+		private String name;
+		
+		TableType(String name) {
+			this.name= name;
+		}
+		
+		public String getName() {
+			return name;
+		}
+	}
+	
+	/**
+	 * Default country type.
+	 */
+	public static final String DEFAULT_COUNTRY_TYPE = "US";
+	
+	protected enum CountryType {
+		US("United States"), EU("European Union"), ROW("Rest-of-World"), WW("World-Wide");
+		
+		private String name;
+		
+		CountryType(String name) {
+			this.name= name;
+		}
+		
+		public String getName() {
+			return name;
+		}
+	}
 	
 	public FinancialDashVO() {
-		colHeaders = new LinkedHashMap<>();
+		countryTypes = new ArrayList<>();
 		rows = new ArrayList<>();
+		log = Logger.getLogger(getClass());
 	}
 
 	public FinancialDashVO(ResultSet rs) {
-		super(rs);
+		this();
 		setData(rs);
 	}
 	
@@ -43,30 +88,21 @@ public class FinancialDashVO extends SBModuleVO {
 	 * @param rs
 	 */
 	public void setData(ResultSet rs) {
-		
-	}
-	
-	// TODO: Remove this after there is real data to work with.
-	public void setTempData() {
-		Random rand = new Random();
-		
 		FinancialDashDataRowVO row;
-		UUIDGenerator uuidGen = new UUIDGenerator();
-		for (int i=0; i < 15; i++) {
-			row = new FinancialDashDataRowVO();
-			row.setName("Company " + i);
-			row.setPrimaryKey(uuidGen.getUUID());
-			for (String key : colHeaders.keySet()) {
-				row.addColumn(key, rand.nextInt(25000), rand.nextDouble());
+		try {
+			while (rs.next()) {
+				row = new FinancialDashDataRowVO(rs);
+				this.addRow(row);
 			}
-			this.addRow(row);
+		} catch (SQLException sqle) {
+			log.error("Unable to set financial dashboard row data", sqle);
 		}
 	}
-
+	
 	/**
 	 * @return the colHeaders
 	 */
-	public Map<String, String> getColHeaders() {
+	public FinancialDashColumnSet getColHeaders() {
 		return colHeaders;
 	}
 
@@ -78,16 +114,37 @@ public class FinancialDashVO extends SBModuleVO {
 	}
 
 	/**
-	 * @return the nameCol
+	 * @return the countryTypes
 	 */
-	public String getNameCol() {
-		return nameCol;
+	public List<CountryType> getCountryTypes() {
+		return countryTypes;
+	}
+
+	/**
+	 * @return the tableType
+	 */
+	public TableType getTableType() {
+		return tableType;
+	}
+
+	/**
+	 * @return the tableTypeName
+	 */
+	public String getTableTypeName() {
+		return tableType.getName();
+	}
+
+	/**
+	 * @return the sectionId
+	 */
+	public String getSectionId() {
+		return sectionId;
 	}
 
 	/**
 	 * @param colHeaders the colHeaders to set
 	 */
-	public void setColHeaders(Map<String, String> colHeaders) {
+	public void setColHeaders(FinancialDashColumnSet colHeaders) {
 		this.colHeaders = colHeaders;
 	}
 	
@@ -99,10 +156,7 @@ public class FinancialDashVO extends SBModuleVO {
 	 * @param calendarYear
 	 */
 	public void setColHeaders(String displayType, Integer calendarYear) {
-		this.setNameCol("Company / Partner");
-		
-		FinancialDashColumnSet colSet = new FinancialDashColumnSet(displayType, calendarYear);
-		this.setColHeaders(colSet.getColumns());
+		this.colHeaders = new FinancialDashColumnSet(displayType, calendarYear);
 	}
 
 	/**
@@ -113,20 +167,38 @@ public class FinancialDashVO extends SBModuleVO {
 	}
 	
 	/**
-	 * @param nameCol the nameCol to set
+	 * @param countryTypes the countryTypes to set
 	 */
-	public void setNameCol(String nameCol) {
-		this.nameCol = nameCol;
+	public void setCountryTypes(List<CountryType> countryTypes) {
+		this.countryTypes = countryTypes;
 	}
 
 	/**
-	 * Adds a column header to the header list
-	 * 
-	 * @param order
-	 * @param colId
+	 * @param countryType the countryType to add
 	 */
-	public void addColHeader(String colId, String name) {
-		colHeaders.put(colId, name);
+	public void addCountryType(CountryType countryType) {
+		this.countryTypes.add(countryType);
+	}
+
+	/**
+	 * @param countryType the countryType to add
+	 */
+	public void addCountryType(String countryType) {
+		this.countryTypes.add(CountryType.valueOf(countryType));
+	}
+
+	/**
+	 * @param tableType the tableType to set
+	 */
+	public void setTableType(TableType tableType) {
+		this.tableType = tableType;
+	}
+
+	/**
+	 * @param tableType the tableType to set
+	 */
+	public void setTableType(String tableType) {
+		this.tableType = TableType.valueOf(tableType);
 	}
 
 	/**
@@ -136,5 +208,12 @@ public class FinancialDashVO extends SBModuleVO {
 	 */
 	public void addRow(FinancialDashDataRowVO row) {
 		rows.add(row);
+	}
+
+	/**
+	 * @param sectionId the sectionId to set
+	 */
+	public void setSectionId(String sectionId) {
+		this.sectionId = sectionId;
 	}
 }

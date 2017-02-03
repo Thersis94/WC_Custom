@@ -4,9 +4,9 @@ import java.util.Date;
 import java.util.List;
 
 import com.biomed.smarttrak.vo.NoteVO;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
-import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 
 /****************************************************************************
@@ -42,13 +42,13 @@ public class CompanyAttributeVO implements NoteInterface  {
 	}
 	
 	
-	public CompanyAttributeVO(SMTServletRequest req) {
+	public CompanyAttributeVO(ActionRequest req) {
 		setData(req);
 	}
 	
 
 	
-	public void setData(SMTServletRequest req) {
+	public void setData(ActionRequest req) {
 		companyAttributeId = req.getParameter("companyAttributeId");
 		companyId = req.getParameter("companyId");
 		attributeId = req.getParameter("attributeId");

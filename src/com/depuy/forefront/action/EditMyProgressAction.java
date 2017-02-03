@@ -13,7 +13,7 @@ import com.depuy.forefront.action.vo.MyRoutineVO;
 import com.depuy.forefront.action.vo.RoutineVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -32,7 +32,7 @@ public class EditMyProgressAction extends SBActionAdapter {
 		super(ai);
 	}
 	
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		log.debug("Beginning build for MyProgress");
 		
 		/*
@@ -59,7 +59,7 @@ public class EditMyProgressAction extends SBActionAdapter {
 		
 	}
 
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("Beginning retrieve for MyProgress");
 		
 		//Initialise local variables

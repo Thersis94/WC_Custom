@@ -11,9 +11,9 @@ import java.util.Map;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.exception.DatabaseException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.UUIDGenerator;
@@ -52,7 +52,7 @@ public class EmailWrapper extends SimpleActionAdapter {
 	}
 	
 
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		super.delete(req);
 		String msg = "";
 		String sql = "delete from contact_submittal where contact_submittal_id=?";
@@ -70,7 +70,7 @@ public class EmailWrapper extends SimpleActionAdapter {
 	}
 	
 	
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		
 		if (mod.getDisplayPage().endsWith("report.jsp")) {
@@ -91,7 +91,7 @@ public class EmailWrapper extends SimpleActionAdapter {
 			actionInit.setActionId(contactActionId);
 			req.setParameter("actionGroupId", contactActionId);
 			
-			SMTActionInterface ai = new ContactFacadeAction(actionInit);
+			ActionInterface ai = new ContactFacadeAction(actionInit);
 			ai.setDBConnection(dbConn);
 			ai.setAttributes(attributes);
 			ai.retrieve(req);
@@ -104,7 +104,7 @@ public class EmailWrapper extends SimpleActionAdapter {
 	}
 	
 	
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		
 		if (req.hasParameter("pfl_EMAIL_ADDRESS_TXT") && 
@@ -115,7 +115,7 @@ public class EmailWrapper extends SimpleActionAdapter {
 				req.setParameter(Constants.DEALER_LOCATION_ID_KEY, user.getProfileId());
 			
 			actionInit.setActionId((String)mod.getAttribute(SBModuleVO.ATTRIBUTE_1));
-			SMTActionInterface ai = new ContactFacadeAction(actionInit);
+			ActionInterface ai = new ContactFacadeAction(actionInit);
 			ai.setDBConnection(dbConn);
 			ai.setAttributes(attributes);
 			ai.build(req);
@@ -135,7 +135,7 @@ public class EmailWrapper extends SimpleActionAdapter {
 		}
 	}
 	
-	protected void loadReport(SMTServletRequest req, String contactActionId, String emailCampaignId) {
+	protected void loadReport(ActionRequest req, String contactActionId, String emailCampaignId) {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 		
@@ -270,7 +270,7 @@ public class EmailWrapper extends SimpleActionAdapter {
 		return isEnrolled;
 	}
 	
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 	
@@ -308,7 +308,7 @@ public class EmailWrapper extends SimpleActionAdapter {
 		}
 	}
 	
-	protected void convert(SMTServletRequest req) throws ActionException {
+	protected void convert(ActionRequest req) throws ActionException {
 		//stub to be overloaded in DailyCaregiversEmailWrapper
 	}
 }

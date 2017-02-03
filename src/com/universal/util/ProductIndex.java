@@ -25,7 +25,7 @@ import com.siliconmtn.cms.CMSConnection;
 import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
@@ -180,7 +180,7 @@ public class ProductIndex implements SMTCustomIndexIntfc {
     		
     		if (n.getParentId() == null) continue;
     		else 
-    			n.setFullPath("/" + SMTServletRequest.DIRECTORY_KEY + "/detail/" + ((ProductVO)n.getUserObject()).getProductId());
+    			n.setFullPath("/" + ActionRequest.DIRECTORY_KEY + "/detail/" + ((ProductVO)n.getUserObject()).getProductId());
     		
     		log.debug("Full Path: " + n.getFullPath());
     		fp.put(n.getNodeId(), n.getFullPath());

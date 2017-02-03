@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBModuleVO;
 import com.smt.sitebuilder.admin.action.ModuleAction;
@@ -43,7 +43,7 @@ public class SRSReportVO extends SBModuleVO {
 		this.assignData(rs);
 	}
 	
-	public SRSReportVO(SMTServletRequest req) {
+	public SRSReportVO(ActionRequest req) {
 		this.assignData(req);
 	}
 	
@@ -69,7 +69,7 @@ public class SRSReportVO extends SBModuleVO {
 	 * 
 	 * @param req
 	 */
-	public void assignData(SMTServletRequest req) {
+	public void assignData(ActionRequest req) {
 		actionId = req.getParameter(ModuleAction.SB_ACTION_ID);
 		actionName = req.getParameter("actionName");
 		actionDesc = req.getParameter("actionDesc");

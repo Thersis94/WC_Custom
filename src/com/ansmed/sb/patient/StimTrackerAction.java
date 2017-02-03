@@ -11,8 +11,8 @@ import com.ansmed.sb.security.ANSRoleFilter;
 import com.ansmed.sb.security.AnsRoleModule;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionInterface;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.PhoneVO;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.Convert;
@@ -57,7 +57,7 @@ public class StimTrackerAction extends SBActionAdapter {
 	/**
 	 * 
 	 */
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.info("Starting Stim Tracker Retrieval");
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		String schema = (String) this.getAttribute("customDbSchema");
@@ -105,7 +105,7 @@ public class StimTrackerAction extends SBActionAdapter {
 	/**
 	 * Inserts or updates a record in the database
 	 */
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		log.debug("Updating Stim Tracker");
 		String msg = STIM_UPDATE_SUCCESS_MSG;
 		
@@ -171,7 +171,7 @@ public class StimTrackerAction extends SBActionAdapter {
 			
 			// Update the procedure information
 			req.setParameter("patientId", patientId);
-			SMTActionInterface action = new PatientProcedureAction(this.actionInit);
+			ActionInterface action = new PatientProcedureAction(this.actionInit);
 			action.setDBConnection(dbConn);
 			action.setAttributes(attributes);
 			action.build(req);

@@ -4,7 +4,7 @@
 package com.ram.action.data;
 
 import com.ram.action.user.RamUserAction;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -43,7 +43,7 @@ public class RAMProductSearchVO extends EXTJSDataVO {
 	/**
 	 * @param req 
 	 */
-	public RAMProductSearchVO(SMTServletRequest req) {
+	public RAMProductSearchVO(ActionRequest req) {
 		setData(req);
 	}
 
@@ -51,7 +51,7 @@ public class RAMProductSearchVO extends EXTJSDataVO {
 	 * Helper method that parses the necessary req params off the RequestObject.
 	 * @param req
 	 */
-	protected void setData(SMTServletRequest req) {
+	protected void setData(ActionRequest req) {
 		super.setData(req);
 		SBUserRole r = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 

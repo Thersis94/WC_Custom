@@ -13,9 +13,9 @@ import java.util.Map;
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.exception.MailException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.SMTMail;
@@ -120,7 +120,7 @@ public class MDJournalAction extends SBActionAdapter {
 	/**
 	 * 
 	 */
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		Boolean searchSubmitted = Convert.formatBoolean(req.getParameter("searchSubmitted"));
 		if (searchSubmitted) {
 			this.createReport(req);
@@ -135,7 +135,7 @@ public class MDJournalAction extends SBActionAdapter {
 			req.setAttribute(Constants.BINARY_DOCUMENT, rpt);
 		} else {
 			log.info("Starting MD Journal Retrieval");
-			SMTActionInterface sai = new StimTrackerAction();
+			ActionInterface sai = new StimTrackerAction();
 			sai.setAttributes(attributes);
 			sai.setDBConnection(dbConn);
 			sai.retrieve(req);
@@ -146,7 +146,7 @@ public class MDJournalAction extends SBActionAdapter {
 	 * Generates the report for the MD Journal
 	 * @param req
 	 */
-	public void createReport(SMTServletRequest req) {
+	public void createReport(ActionRequest req) {
 		// Format the Dates
 		String salesRepId = StringUtil.checkVal(req.getParameter("salesRepId"));
 		String surgeonId = StringUtil.checkVal(req.getParameter("surgeonId"));
@@ -211,7 +211,7 @@ public class MDJournalAction extends SBActionAdapter {
 	/**
 	 * 
 	 */
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		log.debug("Updating MD Journal");
 		String msg = JOURNAL_UPDATE_SUCCESS_MSG;
 		String schema = (String) this.getAttribute("customDbSchema");
@@ -405,7 +405,7 @@ public class MDJournalAction extends SBActionAdapter {
 	 * @param req
 	 * @param msg
 	 */
-	private void setRedirectURL(SMTServletRequest req, String msg, boolean success) {
+	private void setRedirectURL(ActionRequest req, String msg, boolean success) {
 		String url = null;
 		url = req.getRequestURI();
 		log.debug("requestURI: " + url);
@@ -432,7 +432,7 @@ public class MDJournalAction extends SBActionAdapter {
 	 * @param inServiceDate
 	 * @throws MailException
 	 */
-	private void sendEmail(SMTServletRequest req, String repName, String physName, 
+	private void sendEmail(ActionRequest req, String repName, String physName, 
 			List<String> visitStaff, String visitName, String handleName, String resName, String inServiceDate) 
 			throws MailException {
 		

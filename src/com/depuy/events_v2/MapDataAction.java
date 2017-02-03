@@ -20,7 +20,7 @@ import com.siliconmtn.gis.GeocodeFactory;
 import com.siliconmtn.gis.GeocodeLocation;
 import com.siliconmtn.gis.Location;
 import com.siliconmtn.gis.parser.GeoLocation;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 
 // WC Libs
@@ -52,7 +52,7 @@ public class MapDataAction extends SimpleActionAdapter {
 	}
 
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		// Get the geocode for the city center
 		GeocodeLocation gl = getGeocode(req.getParameter("city"), req.getParameter("state"),
 				req.getParameter("address_text"), req.getParameter("zip") );

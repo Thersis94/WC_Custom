@@ -12,7 +12,7 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.exception.FileException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.UUIDGenerator;
 import com.siliconmtn.util.databean.FilePartDataBean;
@@ -53,7 +53,7 @@ public class PhysicianDocumentAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		if(Convert.formatBoolean(req.getParameter("deleteEle"))) {
 			delete(req);
 		} else {
@@ -65,7 +65,7 @@ public class PhysicianDocumentAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#delete(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		log.debug("deleting document");
 		String message = "Successfully deleted file";
 		String schema = (String) this.getAttribute(Constants.CUSTOM_DB_SCHEMA);
@@ -101,7 +101,7 @@ public class PhysicianDocumentAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("retrieving document ...");
 		String schema = (String) this.getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuffer sql = new StringBuffer();
@@ -136,7 +136,7 @@ public class PhysicianDocumentAction extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#update(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		log.debug("Updating document");
 		String message = "You have successfully added a document";
 		String schema = (String) this.getAttribute(Constants.CUSTOM_DB_SCHEMA);
@@ -181,7 +181,7 @@ public class PhysicianDocumentAction extends SBActionAdapter {
 	 * @param req
 	 * @throws FileException
 	 */
-	protected void deleteFiles(SMTServletRequest req) 
+	protected void deleteFiles(ActionRequest req) 
 	throws FileException {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		String orgAlias = (String)getAttribute("orgAlias");
@@ -208,7 +208,7 @@ public class PhysicianDocumentAction extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	protected String writeFile(SMTServletRequest req) 
+	protected String writeFile(ActionRequest req) 
 	throws ActionException  {
 		FilePartDataBean fpdb = req.getFile("documentName");
 		if (fpdb == null) return null;

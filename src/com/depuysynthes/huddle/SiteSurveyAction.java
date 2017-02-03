@@ -13,7 +13,7 @@ import java.util.Map;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -62,7 +62,7 @@ public class SiteSurveyAction extends SBActionAdapter {
 	public SiteSurveyAction() {
 	}
 
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 
 		//Get parameters off request.
 		String actionId = req.getParameter(SB_ACTION_ID);
@@ -80,7 +80,7 @@ public class SiteSurveyAction extends SBActionAdapter {
 	}
 
 	@Override
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 		String siteSurveyId = req.getParameter(SB_ACTION_ID);
 		try(PreparedStatement ps = dbConn.prepareStatement(getSiteSurveyDeleteSql())) {
@@ -94,7 +94,7 @@ public class SiteSurveyAction extends SBActionAdapter {
         sbUtil.adminRedirect(req, msg, (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH), req.getParameter(SBModuleAction.SB_ACTION_ID));
 	}
 
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		//Update SB_ACTION record
 		super.update(req);
 
@@ -111,7 +111,7 @@ public class SiteSurveyAction extends SBActionAdapter {
         sbUtil.adminRedirect(req, attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE), (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH), ssv.getSiteSurveyId());
 	}
 
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 
 		//Get the Site Survey Info
 		retrieve(req);
@@ -291,7 +291,7 @@ public class SiteSurveyAction extends SBActionAdapter {
 		return ssv;
 	}
 
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		//Get parameters off request.
 		UserDataVO user = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
 		if (user == null) return;

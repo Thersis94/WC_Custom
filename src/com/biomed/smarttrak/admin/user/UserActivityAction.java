@@ -1,230 +1,293 @@
 package com.biomed.smarttrak.admin.user;
 
-// Java 7
-import java.lang.management.ManagementFactory;
-import java.util.ArrayList;
+//Java 7
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.List;
-import javax.management.InstanceNotFoundException;
-import javax.management.MBeanException;
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
-import javax.management.ReflectionException;
+import java.util.Map;
 
-// SMTBaseLibs 2
+// SMTBaseLibs
 import com.siliconmtn.action.ActionException;
-import com.siliconmtn.http.SMTServletRequest;
-import com.siliconmtn.security.UserDataVO;
-import com.siliconmtn.util.StringUtil;
-
-// WebCrescendo
-import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.http.session.SMTSession;
+import com.siliconmtn.security.StringEncrypter;
+// WebCrescendo libs
+import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.SBUserRole;
+import com.smt.sitebuilder.security.SecurityController;
+import com.smt.sitebuilder.util.PageViewRetriever;
+import com.smt.sitebuilder.util.PageViewVO;
 
 /*****************************************************************************
  <p><b>Title</b>: UserActivityAction.java</p>
- <p><b>Description: </b></p>
+ <p><b>Description: </b>Retrieves user activity based on page view history data.</p>
  <p> 
  <p>Copyright: (c) 2000 - 2017 SMT, All Rights Reserved</p>
  <p>Company: Silicon Mountain Technologies</p>
  @author DBargerhuff
  @version 1.0
- @since Jan 13, 2017
+ @since Jan 17, 2017
  <b>Changes:</b> 
  ***************************************************************************/
-public class UserActivityAction extends SimpleActionAdapter {
-	private static final String OP_GET_LAST_ACCESS = "getLastAccessedTimestamp";
-	private static final String OP_GET_ATTRIBUTE = "getSessionAttribute";
-	private static final String OP_LIST_SESSION_IDS = "listSessionIds";
-	private static final String KEY_SITE_TRACK_ID = "siteTrackId";
-	private static final String KEY_USER_DATA = "userData";
-	
-	
-	public void retrieve(SMTServletRequest req) throws ActionException {
-		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
-		// TODO consider wrapping method call with try/catch so we can set an error msg if needed.
-		List<UserActivityVO> userActivity = getUserActivity(req, (String)getAttribute(Constants.CONTEXT_PATH));
-		mod.setActionData(userActivity);
-		this.putModuleData(mod);
+public class UserActivityAction extends SBActionAdapter {
+
+	/**
+	 * Constructor
+	 */
+	public UserActivityAction() {
+		super();
 	}
 	
 	/**
-	 * Override to do nothing.
+	 * Constructor
 	 */
-	public void build(SMTServletRequest req) throws ActionException {
-		return;
+	public UserActivityAction(ActionInitVO actionInit) {
+		super(actionInit);
 	}
+	
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.ActionRequest)
+	 */
+	@Override
+	public void retrieve(ActionRequest req) throws ActionException {
 		
+		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
+		
+		Map<String,UserActivityVO> userActivity;
+		String siteId = parseSiteId(req);
+		String profileId = req.hasParameter("profileId") ? req.getParameter("profileId") : null;
+		String dateStart = req.hasParameter("dateStart") ? req.getParameter("dateStart") : null;
+		String dateEnd = req.hasParameter("dateEnd") ? req.getParameter("dateEnd") : null;
+		log.debug("siteId | profileId: " + siteId + " | " + profileId);
+		log.debug("dateStart | dateEnd: " + dateStart + " | " + dateEnd);
+		
+		try {
+			/* Check caller security here so that we can gracefully catch/set the error 
+			 * on the module response if the caller has an insufficient role level. */
+			checkSecurity(req, siteId);
+			
+			userActivity = retrieveUserPageViews(siteId, profileId, dateStart, dateEnd);
+			// merge certain profile data (first/last names) with user activity data
+			mergeUserNames(userActivity);
+			
+		} catch (ActionException ae) {
+			userActivity = new HashMap<>();
+			mod.setError(ae.getMessage(), ae);
+		}
+		
+		this.putModuleData(userActivity, userActivity.size(), false, mod.getErrorMessage(), mod.getErrorCondition());
+		log.debug("error condition | message: " + mod.getErrorCondition() + "|" + mod.getErrorMessage());
+		
+	}
+	
 	/**
-	 * 
+	 * Checks caller's security role and throws an exception if insufficient role level is found.
 	 * @param req
-	 * @param context
+	 * @param siteId
+	 * @throws ActionException
 	 */
-	private List<UserActivityVO> getUserActivity(SMTServletRequest req, String context) {
-		String targetSiteId = StringUtil.checkVal(req.getParameter(KEY_SITE_TRACK_ID));
-		List<UserActivityVO> userActivity = new ArrayList<>();
+	private void checkSecurity(ActionRequest req, String siteId) throws ActionException {
+		StringBuilder errMsg = new StringBuilder(100);
+		errMsg.append("Active session monitoring access not authorized.");
+		SMTSession sess = req.getSession();
+		if (sess == null) {
+			errMsg.append(" Invalid session.");
+			throw new ActionException(errMsg.toString());
+		}
 
-		// 1. retrieve session activity
-		retrieveSessionActivity(context, targetSiteId, userActivity);
+		SBUserRole roles = (SBUserRole)sess.getAttribute(Constants.ROLE_DATA);
 
-		// 2. retrieve user activity data
-		retrieveLoggedActivity(userActivity);
+		if (roles == null || 
+				! roles.getSiteId().equalsIgnoreCase(siteId) ||
+				roles.getRoleLevel() < SecurityController.ADMIN_ROLE_LEVEL) {
+			errMsg.append(" Administrative access required for the site data requested.");
+			throw new ActionException(errMsg.toString());
+		}
 
+	}
+	
+	/**
+	 * Determines the siteId value to use for this retrieving page views.
+	 * @param req
+	 * @return
+	 */
+	private String parseSiteId(ActionRequest req) {
+		if (req.hasParameter("siteId")) {
+			return req.getParameter("siteId");
+		} else {
+			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+			return site.getSiteId();
+		}
+	}
+
+	/**
+	 * Retrieves page view history for all logged in users within the requested timeframe.  If
+	 * no dates are specified, page view history for the last 12 hours is returned. 
+	 * @param site
+	 * @param profileId
+	 * @param dateStart
+	 * @param dateEnd
+	 * @return
+	 * @throws ActionException
+	 */
+	private Map<String,UserActivityVO> retrieveUserPageViews(String siteId, String profileId,
+			String dateStart, String dateEnd) throws ActionException {
+		
+		/* Retrieve page views from db, parse into PageViewVO
+		 * and return list */
+		PageViewRetriever pvr = new PageViewRetriever(dbConn);
+		pvr.setSortDescending(true);
+		List<PageViewVO> pageViews = pvr.retrievePageViews(siteId, profileId, dateStart, dateEnd);
+		log.debug("Total number of raw page views found: " + pageViews.size());
+		return parseResults(pageViews);
+	}
+	
+	/**
+	 * Parses the resulting list of page views into a map of profile IDs mapped to UserActivityVOs.
+	 * @param pageViews
+	 * @return
+	 */
+	private Map<String,UserActivityVO> parseResults(List<PageViewVO> pageViews) {
+		UserActivityVO user = null;
+		Map<String,UserActivityVO> userActivity = new HashMap<>();
+		String prevPid = null;
+		String currPid;
+		
+		for (PageViewVO pageView : pageViews ) {
+			
+			currPid = pageView.getProfileId();
+			if (currPid.equals(prevPid)) {
+				// add pageview to current user's list
+				user.addPageView(pageView);
+				
+			} else {
+				// first time through loop or we changed users
+				if (user != null) {
+					// close out prev user
+					userActivity.put(user.getProfileId(), user);
+				}
+				// capture new user
+				user = new UserActivityVO();
+				user.setSiteId(pageView.getSiteId());
+				user.setProfileId(pageView.getProfileId());
+				user.addPageView(pageView);
+				/* Since we sorted visit date descending, we set the 'last 
+				 * accessed time' using the first page view record found for
+				 * this user. */
+				user.setLastAccessTime(pageView.getVisitDate());
+			}
+			
+			prevPid = currPid;
+		}
+		
+		// tie off the dangling user
+		if (user != null) {
+			userActivity.put(user.getProfileId(), user);
+		}
+		log.debug("Unique users with page views: " + userActivity.size());
 		return userActivity;
 	}
-	
+		
 	/**
-	 * 
-	 * @param context
-	 * @param targetSiteId
+	 * Retrieves and merges specific profile data values into user activity VOs. This uses
+	 * a batching mechanism for efficiency.
 	 * @param userActivity
 	 */
-	private void retrieveSessionActivity(String context, String targetSiteId, List<UserActivityVO> userActivity) {
-		MBeanServer mbServer;
-		ObjectName mbObj; 
+	private void mergeUserNames(Map<String,UserActivityVO> userActivity) {
+		if (userActivity.isEmpty()) return;
+		// instantiate StringEncrypter or die
+		StringEncrypter se = null;
 		try {
-			// establish mgmt object for this app context
-			mbServer = ManagementFactory.getPlatformMBeanServer();
-			mbObj = new ObjectName("Catalina:type=Manager,context="+context+",host=localhost");
+			se = new StringEncrypter((String)getAttributes().get(Constants.ENCRYPT_KEY));
 		} catch (Exception e) {
-			log.error("Error obtaining handle to management context, ", e);
+			log.error("Error instantiating StringEncrypter, ", e);
 			return;
 		}
-		
-		String sessionIdList;
+		// batch loop the profile IDs and retrieve just the first/last names encrypted
+		int listSize = userActivity.keySet().size();
+		int maxBatch = 100;
+		int start = 0;
+		int end = (listSize > maxBatch) ? maxBatch : listSize;
+		// convert profile IDs into an iterable object with guaranteed order.
+		String[] ids = userActivity.keySet().toArray(new String[0]);
+		do {
+			retrieveUserNames(se, userActivity, ids, start, end);
+			start = end;
+			end = (listSize > end + maxBatch) ? end + maxBatch : listSize;
+		} while (start < listSize);
+	}
+	
+	/**
+	 * Retrieves and merges specific profile data values (first/last names) into user activity VOs.
+	 * This purposely does not leverage ProfileManager as we do not need entire profiles 
+	 * returned (expensive!).  Instead, this directly queries the profile table for
+	 * just the encrypted first/last name values and decrypts them before setting them on the
+	 * appropriate user activity VO.
+	 * @param se
+	 * @param userActivity
+	 * @param profileIds
+	 * @param start
+	 * @param end
+	 */
+	private void retrieveUserNames(StringEncrypter se, Map<String,UserActivityVO> userActivity, 
+			String[] profileIds, int start, int end) {
+		StringBuilder sql = new StringBuilder(200);
+		sql.append("select profile_id, first_nm, last_nm from profile where profile_id in ");
+		sql.append("(");
+		for (int i = start; i < end; i++) {
+			if (i > start) sql.append(",");
+			sql.append("?");
+		}
+		sql.append(")");
+		log.debug("Profile names SQL: " + sql.toString());
+		int idx = 1;
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			for (int i = start; i < end; i++) {
+				ps.setString(idx++, profileIds[i]);
+			}
+			ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				formatNameValues(se, rs, userActivity.get(rs.getString("profile_id")));
+			}
+		} catch (SQLException sqle) {
+			log.error("Error retrieving user profile data (first/last names), ", sqle);
+		}
+	}
+	
+	/**
+	 * Parses and decrypts user's first/last name from result set and sets values
+	 * on user's activity VO.
+	 * @param se
+	 * @param rs
+	 * @param user
+	 * @throws SQLException
+	 */
+	private void formatNameValues(StringEncrypter se, ResultSet rs, 
+			UserActivityVO user) throws SQLException {
+		if (user == null) return;
+		user.setFirstName(decryptName(se,rs.getString("first_nm")));
+		user.setLastName(decryptName(se,rs.getString("last_nm")));
+	}
+	
+	/**
+	 * Decrypts an encrypted String value.
+	 * @param se
+	 * @param encrypted
+	 * @return
+	 */
+	private String decryptName(StringEncrypter se, String encrypted) {
+		if (encrypted == null) return encrypted;
 		try {
-			sessionIdList = retrieveSessionIdList(mbServer, mbObj);
+			return se.decrypt(encrypted);
 		} catch (Exception e) {
-			log.error("Error retrieving session ID list, ", e);
-			return;
-		}
-
-		retrieveSessionAttributes(mbServer, mbObj, userActivity, sessionIdList, targetSiteId);
-		
-	}
-	
-	/**
-	 * 
-	 * @param mbServer
-	 * @param mbObj
-	 * @return
-	 * @throws InstanceNotFoundException
-	 * @throws ReflectionException
-	 * @throws MBeanException
-	 */
-	private String retrieveSessionIdList(MBeanServer mbServer, ObjectName mbObj) 
-			throws InstanceNotFoundException, ReflectionException, MBeanException {
-		return (String) mbServer.invoke(mbObj, OP_LIST_SESSION_IDS, new Object[]{}, new String[]{});
-	}
-	
-	/**
-	 * Retrieves session attributes for a list of sessions that match a target site ID.
-	 * @param mbServer
-	 * @param mbObj
-	 * @param sessionLog
-	 * @param sessionIdList
-	 * @param targetSiteId
-	 * @return
-	 */
-	private List<UserActivityVO> retrieveSessionAttributes(MBeanServer mbServer, ObjectName mbObj, 
-			List<UserActivityVO> sessionLogs, String sessionIdList, String targetSiteId) {
-		// parse the session ID list into an array
-		String[] sessionIds = sessionIdList.split(" ");
-		if (sessionIds == null) return sessionLogs;
-		
-		for (String sessionId : sessionIds) {
-			if (sessionId.length() == 0) continue;
-			try {
-				// process user session
-				processUserSession(mbServer,mbObj, sessionLogs, sessionId,targetSiteId);
-			} catch (Exception e) {
-				log.error("Error retrieving session data for session ID: " + sessionId + ", ", e);
-			}
-		}
-		return sessionLogs;
-	}
-	
-	/**
-	 * Retrieves and processes user's session.
-	 * @param mbServer
-	 * @param mbObj
-	 * @param sessionLogs
-	 * @param sessionId
-	 * @param targetSiteId
-	 * @throws InstanceNotFoundException
-	 * @throws ReflectionException
-	 * @throws MBeanException
-	 */
-	private void processUserSession(MBeanServer mbServer, ObjectName mbObj, 
-			List<UserActivityVO> sessionLogs, String sessionId, String targetSiteId) 
-					throws InstanceNotFoundException, ReflectionException, MBeanException {
-		String userTrackId = (String)mbServer.invoke(mbObj, OP_GET_ATTRIBUTE, new Object[]{sessionId, KEY_SITE_TRACK_ID}, new String[]{String.class.getName(),String.class.getName()});
-		if (userTrackId.equals(targetSiteId)) {
-			long lastAccess;
-			UserActivityVO vo;
-			// retrieve the user's profile.
-			UserDataVO profile = (UserDataVO)mbServer.invoke(mbObj, OP_GET_ATTRIBUTE, new Object[]{sessionId, KEY_USER_DATA}, new String[]{String.class.getName(),String.class.getName()});
-			if (profile != null) {
-				// retrieve the user's most recent access time.
-				lastAccess = (Long)mbServer.invoke(mbObj, OP_GET_LAST_ACCESS, new Object[]{sessionId}, new String[]{String.class.getName()});
-				vo = new UserActivityVO();
-				vo.setSessionId(sessionId);
-				vo.setProfile(profile);
-				vo.setLastAccessTime(lastAccess);
-				sessionLogs.add(vo);
-			}
+			log.error("Error decrypting String, ", e);
+			return encrypted;
 		}
 	}
-
-	/**
-	 * Retrieves user activity log data and merges it with user session data. 
-	 */
-	private void retrieveLoggedActivity(List<UserActivityVO> sessionLogs) {
-		// 1. retrieve activity log data for a certain time TIME_INTERVAL (? 8, 12, 24 hours ?)
-		/* TODO 
-		 * 1. retrieve user activity data from activity log (page views, etc.) */
-		List<UserActivityVO> pageLogs = retrievePageLogs();
-		/* 2. merge activity data with user's session data
-		 * 		2a. add new vo to List for each user who has log data within requested TIME_INTERVAL
-		 * 			but who currently doesn't have a session.  Determine 'last accessed' time from 
-		 * 			user's log data timestamp.
-		 * 		2b. Need to use a field on the PageVO as an indicator as to the page link type 
-		 * 			 (archives, markets, companies, products, or just a page) for the links we will
-		 * 			 build in the JSTL.  We don't build a link for a page, but do build a link for a company or an
-		 * 			 article. */
-		mergeLogs(sessionLogs, pageLogs);
-		 /* 3. sort via comparator?
-		 */
-	}
-	
-	/**
-	 * 
-	 * @return
-	 */
-	private List<UserActivityVO> retrievePageLogs() {
-		/* retrieve logged data from db */
-		List<UserActivityVO> pageLogs = new ArrayList<>();
-		/*
-		 * retrieve logs from db for given time interval
-		 * collate/aggregate logs for each user into a vo
-		 */
-		return pageLogs;
-	}
-	
-	/**
-	 * 
-	 * @param sessionLogs
-	 * @param pageLogs
-	 */
-	private void mergeLogs(List<UserActivityVO> sessionLogs, List<UserActivityVO> pageLogs) {
-		/* loop page logs and merge session data into the list  */
-		for (UserActivityVO session : sessionLogs) {
-			for (UserActivityVO pages : pageLogs) {
-				if (session.getProfile().getProfileId().equals(pages.getProfile().getProfileId())) {
-					// merge.
-				}
-			}
-		}
-	}
-
 }

@@ -4,7 +4,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
 import com.siliconmtn.db.pool.SMTDBConnection;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.sjm.corp.mobile.collection.MobileCollectionVO;
 import com.sjm.corp.mobile.collection.ThemeVO;
@@ -31,7 +31,7 @@ public class FetchData extends CollectionAbstractAction{
 	 * (non-Javadoc)
 	 * @see com.sjm.corp.mobile.collection.action.CollectionAbstractAction#update(com.siliconmtn.http.SMTServletRequest, com.sjm.corp.mobile.collection.MobileCollectionVO)
 	 */
-	public void update(SMTServletRequest req, MobileCollectionVO vo){
+	public void update(ActionRequest req, MobileCollectionVO vo){
 		practiceTable = req.getAttribute("custom") + "sjm_mobile_practice";
 		themeTable = req.getAttribute("custom") + "sjm_mobile_theme";
 		templateTable = req.getAttribute("custom") + "sjm_mobile_template_practice";
@@ -54,7 +54,7 @@ public class FetchData extends CollectionAbstractAction{
 	 * @param id
 	 * @param vo
 	 */
-	public void getLocation(SMTServletRequest req, String id, MobileCollectionVO vo){
+	public void getLocation(ActionRequest req, String id, MobileCollectionVO vo){
 		StringBuffer sql = new StringBuffer();
 		dbConn = (SMTDBConnection) req.getAttribute("dbConn");
 		sql.append("select region_nm, reg.region_id from ").append((String)req.getAttribute("custom"));
@@ -91,7 +91,7 @@ public class FetchData extends CollectionAbstractAction{
 	 * @param req
 	 * @param vo
 	 */
-	public void getMaxSelected(SMTServletRequest req, MobileCollectionVO vo){
+	public void getMaxSelected(ActionRequest req, MobileCollectionVO vo){
 		StringBuffer sql = new StringBuffer();
 		dbConn = (SMTDBConnection) req.getAttribute("dbConn");
 		sql.append("Select max_selected from ").append((String)req.getAttribute("custom"));
@@ -124,7 +124,7 @@ public class FetchData extends CollectionAbstractAction{
 	 * @param vo
 	 * @return
 	 */
-	public boolean updatePractice(SMTServletRequest req, MobileCollectionVO vo){
+	public boolean updatePractice(ActionRequest req, MobileCollectionVO vo){
 		vo.getPractice().setPracticioner(req.getParameter("docName"));
 		vo.getPractice().setName(vo.getPractice().getPracticioner());
 		//vo.getPractice().setLocation(req.getParameter("docLoc"));
@@ -152,7 +152,7 @@ public class FetchData extends CollectionAbstractAction{
 	 * @param req
 	 * @param vo
 	 */
-	public void fetchKeys(SMTServletRequest req, MobileCollectionVO vo) {
+	public void fetchKeys(ActionRequest req, MobileCollectionVO vo) {
 		StringBuffer sql = new StringBuffer();
 		sql.append("select goal_id, marketing_id, template_id, patient_id, region_id from ");
 		sql.append(practiceTable).append(" where name like ? and location like ?");
@@ -188,7 +188,7 @@ public class FetchData extends CollectionAbstractAction{
 	 * @param req
 	 * @param vo
 	 */
-	public void fetchThemes(SMTServletRequest req,MobileCollectionVO vo){
+	public void fetchThemes(ActionRequest req,MobileCollectionVO vo){
 		StringBuffer sql = new StringBuffer();
 		
 		/*

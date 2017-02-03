@@ -9,7 +9,7 @@ import java.util.List;
 import com.depuy.forefront.action.vo.ExerciseAttributeVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -26,11 +26,11 @@ public class ExerciseAttributeAction extends SBActionAdapter {
 		super(ai);
 	}
 
-	public void delete(SMTServletRequest req) {
+	public void delete(ActionRequest req) {
 		return;
 	}
 
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("Beginning ExerciseAttributeAction retrieve");
 		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 		List<ExerciseAttributeVO> data = new ArrayList<ExerciseAttributeVO>();
@@ -60,7 +60,7 @@ public class ExerciseAttributeAction extends SBActionAdapter {
 		mod.setActionData(data);
 	}
 	
-	private List<ExerciseAttributeVO> loadAttributes(SMTServletRequest req){
+	private List<ExerciseAttributeVO> loadAttributes(ActionRequest req){
 		int count= 1;
 		List<ExerciseAttributeVO> vos = new ArrayList<ExerciseAttributeVO>();
 		ExerciseAttributeVO vo = new ExerciseAttributeVO(req, 0, count);
@@ -73,7 +73,7 @@ public class ExerciseAttributeAction extends SBActionAdapter {
 		return vos;
 	}
 
-	private void updateExerciseAttribute(SMTServletRequest req) throws ActionException {
+	private void updateExerciseAttribute(ActionRequest req) throws ActionException {
 		log.debug("Beginning ExerciseAttributeAction update");
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		List<ExerciseAttributeVO> vos = loadAttributes(req);
@@ -122,7 +122,7 @@ public class ExerciseAttributeAction extends SBActionAdapter {
 		mod.setActionData(vos);	
 	}
 	
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		updateExerciseAttribute(req);
 	}
 }

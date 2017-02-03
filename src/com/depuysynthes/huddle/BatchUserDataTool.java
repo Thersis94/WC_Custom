@@ -18,7 +18,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.databean.FilePartDataBean;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
@@ -53,7 +53,7 @@ public class BatchUserDataTool extends SimpleActionAdapter {
 	 * @throws ActionException
 	 */
 	@Override
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 		FilePartDataBean fpdb = req.getFile("xlsFile");
 		String siteId = req.getParameter("targetSiteId");

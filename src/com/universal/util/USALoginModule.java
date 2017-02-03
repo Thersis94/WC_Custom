@@ -3,20 +3,17 @@ package com.universal.util;
 // JDK 1.6.x
 import java.util.Map;
 
-
 // Dom4j
 import org.dom4j.Element;
 
-
+import com.siliconmtn.action.ActionRequest;
 // SMT Base Libs
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.AbstractLoginModule;
 import com.siliconmtn.security.AuthenticationException;
 import com.siliconmtn.security.EmailAddressNotFoundException;
 import com.siliconmtn.security.UserDataVO;
-
 // WC libs
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -148,7 +145,7 @@ public class USALoginModule extends AbstractLoginModule {
 	 */
 	private String retrieveLoginSiteId() {
 		String catalogSiteId = null;
-		SMTServletRequest req = (SMTServletRequest) initVals.get(GlobalConfig.HTTP_REQUEST);
+		ActionRequest req = (ActionRequest) initVals.get(GlobalConfig.ACTION_REQUEST);
 		if (req != null) {
 			SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 			catalogSiteId = site.getSiteId();

@@ -6,7 +6,7 @@ import java.sql.SQLException;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -42,7 +42,7 @@ public class IFUInstanceAction extends SBActionAdapter {
 		super(actionInit);
 	}
 	
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		if (req.hasParameter("implId") || req.hasParameter("add")) {
 			getSingleInstance(req);
 		} else {
@@ -54,7 +54,7 @@ public class IFUInstanceAction extends SBActionAdapter {
 	 * Get a single IFU document instance along with its related technique guides
 	 * @param req
 	 */
-	public void getSingleInstance(SMTServletRequest req) {
+	public void getSingleInstance(ActionRequest req) {
 		String implId = req.getParameter("implId");
 		log.debug("Retriving instance " + implId);
 		
@@ -115,7 +115,7 @@ public class IFUInstanceAction extends SBActionAdapter {
 	 * Get all the instances of the supplied IFU document
 	 * @param req
 	 */
-	private void getAllInstances(SMTServletRequest req) {
+	private void getAllInstances(ActionRequest req) {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		String ifuId = req.getParameter("ifuId");
 		StringBuilder sql = new StringBuilder(260);
@@ -153,7 +153,7 @@ public class IFUInstanceAction extends SBActionAdapter {
 	 * Delete the supplied IFU document instance and redirect the user to the 
 	 * parent IFU document.
 	 */
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 		String implId = req.getParameter("implId");
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
@@ -177,7 +177,7 @@ public class IFUInstanceAction extends SBActionAdapter {
 	 * vo specific update method and then redirects the user to the parent IFU
 	 * document's page.
 	 */
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 		try {
 			IFUDocumentVO vo = new IFUDocumentVO(req);
@@ -197,7 +197,7 @@ public class IFUInstanceAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException 
 	 */
-	private String writeNewFile(SMTServletRequest req) throws ActionException {
+	private String writeNewFile(ActionRequest req) throws ActionException {
 		try {
 			FilePartDataBean file = req.getFile("instanceFile");
 			String path = (String)getAttribute(Constants.BINARY_PATH) + IFUFacadeAction.ORG_PATH + req.getParameter("businessUnitName")+"/";
@@ -280,7 +280,7 @@ public class IFUInstanceAction extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	private String buildRedirect(SMTServletRequest req) {
+	private String buildRedirect(ActionRequest req) {
 		StringBuilder redirect = new StringBuilder(100);
 		redirect.append(getAttribute(AdminConstants.ADMIN_TOOL_PATH));
 		redirect.append("?facadeType=ifu");

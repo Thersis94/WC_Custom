@@ -1,10 +1,9 @@
 package com.depuysynthes.huddle;
 
-import javax.servlet.http.Cookie;
-
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.http.session.SMTCookie;
 import com.smt.sitebuilder.action.tools.MyFavoritesAction;
 
 /****************************************************************************
@@ -29,8 +28,8 @@ public class FavoritesAction extends MyFavoritesAction {
 
 
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
-		Cookie sort = req.getCookie(HuddleUtils.SORT_COOKIE);
+	public void retrieve(ActionRequest req) throws ActionException {
+		SMTCookie sort = req.getCookie(HuddleUtils.SORT_COOKIE);
 		if (sort != null) req.setParameter("sort", sort.getValue());
 		super.retrieve(req);
 	}

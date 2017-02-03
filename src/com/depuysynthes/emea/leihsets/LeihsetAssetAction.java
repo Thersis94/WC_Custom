@@ -5,7 +5,7 @@ import java.sql.SQLException;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -41,7 +41,7 @@ public class LeihsetAssetAction extends SBActionAdapter {
 	/**
 	 * Delete the supplied Leihset and redirect the user
 	 */
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 		String leihsetAssetId = req.getParameter("leihsetAssetId");
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
@@ -65,7 +65,7 @@ public class LeihsetAssetAction extends SBActionAdapter {
 	 * Builds a LeihsetVO from the request object and passes it along to the
 	 * vo specific update method and then redirects the user
 	 */
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 		try {
 			LeihsetVO vo = new LeihsetVO(req, true);
@@ -159,7 +159,7 @@ public class LeihsetAssetAction extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	private String buildRedirect(SMTServletRequest req) {
+	private String buildRedirect(ActionRequest req) {
 		StringBuilder redirect = new StringBuilder(100);
 		redirect.append(getAttribute(AdminConstants.ADMIN_TOOL_PATH));
 		redirect.append("?facadeType=leihset&cPage=manage_leihset");

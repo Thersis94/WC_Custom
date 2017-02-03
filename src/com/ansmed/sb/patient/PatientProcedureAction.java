@@ -5,7 +5,7 @@ import java.sql.PreparedStatement;
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.UUIDGenerator;
 
@@ -43,7 +43,7 @@ public class PatientProcedureAction extends SBActionAdapter {
 	/**
 	 * Inserts or updates a record in the database
 	 */
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		log.debug("Updating Stim Tracker");
 
 		// Build the sql statement

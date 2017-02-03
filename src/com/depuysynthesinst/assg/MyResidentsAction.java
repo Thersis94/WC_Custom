@@ -16,7 +16,7 @@ import com.depuysynthesinst.emails.InviteResidentVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.exception.DatabaseException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -63,7 +63,7 @@ public class MyResidentsAction extends SBActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		UserDataVO user = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
@@ -84,7 +84,7 @@ public class MyResidentsAction extends SBActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		String reqType = StringUtil.checkVal(req.getParameter("reqType"), null);
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 
@@ -118,7 +118,7 @@ public class MyResidentsAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void findAndAddResident(String email, SMTServletRequest req) throws ActionException {
+	private void findAndAddResident(String email, ActionRequest req) throws ActionException {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		ProfileManager pm = ProfileManagerFactory.getInstance(getAttributes());
 		UserDataVO user = new UserDataVO();
@@ -550,7 +550,7 @@ public class MyResidentsAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void manageMyDirector(ResidentVO resident, SMTServletRequest req) throws ActionException {
+	private void manageMyDirector(ResidentVO resident, ActionRequest req) throws ActionException {
 		StringBuilder sql = new StringBuilder(100);
 		boolean isRevoke = Convert.formatBoolean(req.getParameter("revokeDirector"));
 		if (isRevoke) {

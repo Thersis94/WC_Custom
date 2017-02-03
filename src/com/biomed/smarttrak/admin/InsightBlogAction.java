@@ -2,7 +2,7 @@ package com.biomed.smarttrak.admin;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SBActionAdapter;
 
@@ -33,10 +33,10 @@ public class InsightBlogAction extends SBActionAdapter {
 
 	/*
 	 * (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.ActionRequest)
 	 */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 	
 		log.debug("insite blog action retrieve called " + actionInit.getActionId());
 		//TODO catching the page to i can build the public admin widget directly
@@ -50,10 +50,10 @@ public class InsightBlogAction extends SBActionAdapter {
 	
 	/*
 	 * (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.SMTServletRequest)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.ActionRequest)
 	 */
 	@Override
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		log.debug("insite blog action list called " + actionInit.getActionId());
 		
 		log.debug(" action id: " + actionInit.getActionId());
@@ -74,10 +74,10 @@ public class InsightBlogAction extends SBActionAdapter {
 	
 	/*
 	 * (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.http.SMTServletRequest)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.http.ActionRequest)
 	 */
 	@Override
-	public void update(SMTServletRequest req) throws ActionException{
+	public void update(ActionRequest req) throws ActionException{
 		log.debug("insite blog action update called");
 		
 		super.update(req);
@@ -98,10 +98,10 @@ public class InsightBlogAction extends SBActionAdapter {
 	
 	/*
 	 * (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.http.SMTServletRequest)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.http.ActionRequest)
 	 */
 	@Override
-	public void delete(SMTServletRequest req) throws ActionException{
+	public void delete(ActionRequest req) throws ActionException{
 		log.debug("insite blog action delete called");
 		super.delete(req);
 		
