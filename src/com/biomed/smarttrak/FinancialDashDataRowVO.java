@@ -118,8 +118,8 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 					case FinancialDashAction.QUARTER_2:
 					case FinancialDashAction.QUARTER_3:
 					case FinancialDashAction.QUARTER_4:
-						this.addColumn(qtr, yearIdx, maxYear, util, rs);
-						this.incrementTotal(totals, yearIdx, util.getIntVal(colName, rs));
+						addColumn(qtr, yearIdx, maxYear, util, rs);
+						incrementTotal(totals, yearIdx, util.getIntVal(colName, rs));
 						break;
 					default:
 						break;
@@ -226,7 +226,7 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 	private void incrementTotal(Map<Integer, Integer> totals, int key, int dollarValue) {
 		if (totals.get(key) == null) {
 			totals.put(key, 0);
-		};
+		}
 		
 		totals.put(key, totals.get(key) + dollarValue);
 	}
