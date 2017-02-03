@@ -90,6 +90,8 @@ public class AdminControllerAction extends SimpleActionAdapter {
 			case "financialDashboard":
 				action = new FinancialDashAction();
 				break;
+			case "noteAction":
+				action = new NoteAction();
 			default:
 				throw new ActionException("Action type not supported.");
 		}

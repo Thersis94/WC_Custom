@@ -68,6 +68,9 @@ public class NoteAction extends SimpleActionAdapter {
 	@Override
 	public void retrieve(SMTServletRequest req) throws ActionException {
 		log.debug("Notes Action Retrieve called");
+		
+		//TODO put a list of notes on mod data
+		
 	}
 
 	/*
