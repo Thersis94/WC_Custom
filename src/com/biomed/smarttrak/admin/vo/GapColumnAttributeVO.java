@@ -5,8 +5,8 @@ package com.biomed.smarttrak.admin.vo;
 
 import java.io.Serializable;
 import java.sql.ResultSet;
-import java.util.Date;
 
+import com.biomed.smarttrak.vo.ProductAttributeTypeVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.Column;
@@ -24,13 +24,11 @@ import com.siliconmtn.db.orm.Table;
  * @since Feb 1, 2017
  ****************************************************************************/
 @Table(name="biomedgps_ga_column_attribute_xr")
-public class GapColumnAttributeVO implements Serializable {
+public class GapColumnAttributeVO extends ProductAttributeTypeVO implements Serializable {
 
 	private static final long serialVersionUID = -2155190732531775349L;
 	private String columnAttributeXRId;
 	private String gaColumnId;
-	private String attributeId;
-	private Date createDt;
 
 	public GapColumnAttributeVO() {
 		super();
@@ -46,18 +44,17 @@ public class GapColumnAttributeVO implements Serializable {
 		setData(rs);
 	}
 
-	private void setData(ActionRequest req) {
+	protected void setData(ActionRequest req) {
+		super.setData(req);
 		columnAttributeXRId = req.getParameter("columnAttributeXRId");
 		gaColumnId = req.getParameter("gaColumnId");
-		attributeId = req.getParameter("attributeId");
 	}
 
-	private void setData(ResultSet rs) {
+	protected void setData(ResultSet rs) {
+		super.setData(rs);
 		DBUtil db = new DBUtil();
 		columnAttributeXRId = db.getStringVal("column_attribute_xr_id", rs);
 		gaColumnId = db.getStringVal("ga_column_id", rs);
-		attributeId = db.getStringVal("attribute_id", rs);
-		createDt = db.getDateVal("create_dt", rs);
 	}
 
 	/**
@@ -77,22 +74,6 @@ public class GapColumnAttributeVO implements Serializable {
 	}
 
 	/**
-	 * @return the attributeId
-	 */
-	@Column(name="attribute_id")
-	public String getAttributeId() {
-		return attributeId;
-	}
-
-	/**
-	 * @return the createDt
-	 */
-	@Column(name="create_dt", isInsertOnly=true, isAutoGen=true)
-	public Date getCreateDt() {
-		return createDt;
-	}
-
-	/**
 	 * @param columnAttributeXRId the columnAttributeXRId to set.
 	 */
 	public void setColumnAttributeXRId(String columnAttributeXRId) {
@@ -104,19 +85,5 @@ public class GapColumnAttributeVO implements Serializable {
 	 */
 	public void setGaColumnId(String gaColumnId) {
 		this.gaColumnId = gaColumnId;
-	}
-
-	/**
-	 * @param attributeId the attributeId to set.
-	 */
-	public void setAttributeId(String attributeId) {
-		this.attributeId = attributeId;
-	}
-
-	/**
-	 * @param createDt the createDt to set.
-	 */
-	public void setCreateDt(Date createDt) {
-		this.createDt = createDt;
 	}
 }

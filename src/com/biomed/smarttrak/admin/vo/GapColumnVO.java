@@ -5,9 +5,9 @@ package com.biomed.smarttrak.admin.vo;
 
 import java.io.Serializable;
 import java.sql.ResultSet;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
@@ -38,9 +38,9 @@ public class GapColumnVO implements Serializable {
 	private String specialRulesTxt;
 	private Date createDt;
 	private Date updateDt;
-	private List<GapColumnAttributeVO> attributes;
+	private Map<String, GapColumnAttributeVO> attributes;
 	public GapColumnVO() {
-		attributes = new ArrayList<>();
+		attributes = new HashMap<>();
 	}
 
 	public GapColumnVO(ActionRequest req) {
@@ -140,7 +140,7 @@ public class GapColumnVO implements Serializable {
 	 * 
 	 * @return the attributes
 	 */
-	public List<GapColumnAttributeVO> getAttributes() {
+	public Map<String, GapColumnAttributeVO> getAttributes() {
 		return attributes;
 	}
 
@@ -204,7 +204,7 @@ public class GapColumnVO implements Serializable {
 	 * 
 	 * @param attributes the attributes to set.
 	 */
-	public void setAttributes(List<GapColumnAttributeVO> attributes) {
+	public void setAttributes(Map<String, GapColumnAttributeVO> attributes) {
 		this.attributes = attributes;
 	}
 
@@ -213,6 +213,6 @@ public class GapColumnVO implements Serializable {
 	 * @param attribute the attribute to add.
 	 */
 	public void addAttribute(GapColumnAttributeVO attribute) {
-		this.attributes.add(attribute);
+		this.attributes.put(attribute.getParentId(), attribute);
 	}
 }

@@ -7,13 +7,17 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.biomed.smarttrak.action.GapAnalysisAction;
 import com.biomed.smarttrak.admin.vo.GapColumnAttributeVO;
 import com.biomed.smarttrak.admin.vo.GapColumnVO;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.Node;
+import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
@@ -60,6 +64,9 @@ public class GapAnalysisAdminAction extends GapAnalysisAction {
 
 		if(!StringUtil.isEmpty(sectionId)) {
 			List<GapColumnVO> cols = loadColumns(sectionId, gaColumnId);
+			if(!StringUtil.isEmpty(gaColumnId)) {
+				req.setAttribute("gapAttributes", getProdAttributes(gaColumnId));
+			}
 			this.putModuleData(cols, cols.size(), false);
 		}
 	}
@@ -99,17 +106,55 @@ public class GapAnalysisAdminAction extends GapAnalysisAction {
 		return columns;
 	}
 
+	public Node getProdAttributes(String gaColumnId) {
+		Map<String, Node> nodes = new LinkedHashMap<String, Node>();
+		Tree t = null;
+
+		try(PreparedStatement ps = dbConn.prepareStatement(getProdAttributesSql())) {
+			ps.setString(1, gaColumnId);
+
+			ResultSet rs = ps.executeQuery();
+			while(rs.next()) {
+				GapColumnAttributeVO a = new GapColumnAttributeVO(rs);
+				Node n = new Node(a.getAttributeId(), a.getParentId());
+				n.setNodeName(a.getAttributeName());
+				n.setUserObject(a);
+				nodes.put(n.getNodeId(), n);
+			}
+			t = new Tree(new ArrayList<Node>(nodes.values()));
+		} catch (SQLException e) {
+			log.error(e);
+		}
+
+		return t.findNode("DETAILS_ROOT");
+	}
+
+	public String getProdAttributesSql() {
+		StringBuilder sql = new StringBuilder(400);
+		String custom = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		sql.append("select * from ").append(custom);
+		sql.append("biomedgps_product_attribute a ");
+		sql.append("left outer join ").append(custom);
+		sql.append("biomedgps_ga_column_attribute_xr b ");
+		sql.append("on a.attribute_id = b.attribute_id and ga_column_id = ? ");
+		sql.append("where a.active_flg = 1 ");
+		sql.append("order by a.parent_id desc, a.order_no, a.attribute_nm");
+
+		return sql.toString();
+	}
 	/**
 	 * @param empty
 	 * @return
 	 */
 	private String getColumnSql(boolean hasColumnId) {
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("select * from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		String custom = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		sql.append("select * from ").append(custom);
 		sql.append("biomedgps_ga_column a ");
 
 		if(hasColumnId) {
-			sql.append("inner join ga_column_attribute_xr b ");
+			sql.append("inner join ").append(custom);
+			sql.append("biomedgps_ga_column_attribute_xr b ");
 			sql.append("on a.ga_column_id = b.ga_column_id ");
 		}
 		sql.append("where a.section_id = ? ");
