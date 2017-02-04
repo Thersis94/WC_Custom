@@ -20,6 +20,7 @@ import com.biomed.smarttrak.vo.UserVO;
 // SMTBaseLibs
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.security.UserDataVO;
+import com.siliconmtn.util.StringUtil;
 
 // WebCrescendo
 import com.smt.sitebuilder.action.user.ProfileManager;
@@ -92,12 +93,12 @@ public class UserManager extends AbstractManager {
 				user = new UserVO(rs);
 				users.add(user);
 			}
-			
+
 		} catch (SQLException sqle) {
 			errMsg.append(sqle.getMessage());
 			throw new SQLException(errMsg.toString());
 		}
-		
+
 		return users;
 	}
 	
@@ -159,28 +160,28 @@ public class UserManager extends AbstractManager {
 	 * @param accountId the accountId to set
 	 */
 	public void setAccountId(String accountId) {
-		this.accountId = accountId;
+		this.accountId = StringUtil.checkVal(accountId,null);
 	}
 
 	/**
 	 * @param userId the userId to set
 	 */
 	public void setUserId(String userId) {
-		this.userId = userId;
+		this.userId = StringUtil.checkVal(userId,null);
 	}
 
 	/**
 	 * @param profileId the profileId to set
 	 */
 	public void setProfileId(String profileId) {
-		this.profileId = profileId;
+		this.profileId = StringUtil.checkVal(profileId,null);
 	}
 
 	/**
 	 * @param registerSubmittalId the registerSubmittalId to set
 	 */
 	public void setRegisterSubmittalId(String registerSubmittalId) {
-		this.registerSubmittalId = registerSubmittalId;
+		this.registerSubmittalId = StringUtil.checkVal(registerSubmittalId,null);
 	}
 
 }
