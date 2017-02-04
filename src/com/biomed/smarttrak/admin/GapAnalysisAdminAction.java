@@ -107,7 +107,7 @@ public class GapAnalysisAdminAction extends GapAnalysisAction {
 	}
 
 	public Node getProdAttributes(String gaColumnId) {
-		Map<String, Node> nodes = new LinkedHashMap<String, Node>();
+		Map<String, Node> nodes = new LinkedHashMap<>();
 		Tree t = null;
 
 		try(PreparedStatement ps = dbConn.prepareStatement(getProdAttributesSql())) {
@@ -122,11 +122,12 @@ public class GapAnalysisAdminAction extends GapAnalysisAction {
 				nodes.put(n.getNodeId(), n);
 			}
 			t = new Tree(new ArrayList<Node>(nodes.values()));
+
+			return t.findNode("DETAILS_ROOT");
 		} catch (SQLException e) {
 			log.error(e);
 		}
-
-		return t.findNode("DETAILS_ROOT");
+		return null;
 	}
 
 	public String getProdAttributesSql() {
