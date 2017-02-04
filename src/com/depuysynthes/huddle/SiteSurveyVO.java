@@ -6,7 +6,7 @@ package com.depuysynthes.huddle;
 import java.sql.ResultSet;
 
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.SBModuleVO;
@@ -51,7 +51,7 @@ public class SiteSurveyVO extends SBModuleVO {
 		setData(rs);
 	}
 
-	public SiteSurveyVO(SMTServletRequest req) {
+	public SiteSurveyVO(ActionRequest req) {
 		setData(req);
 	}
 
@@ -59,7 +59,7 @@ public class SiteSurveyVO extends SBModuleVO {
 	 * Save data off a SMTServletRequest
 	 * @param req
 	 */
-	public void setData(SMTServletRequest req) {
+	public void setData(ActionRequest req) {
 		siteSurveyId = StringUtil.checkVal(req.getAttribute(SBActionAdapter.SB_ACTION_ID));
 		if(siteSurveyId.length() == 0) {
 			siteSurveyId = req.getParameter("amid");

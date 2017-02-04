@@ -6,7 +6,7 @@ import java.sql.SQLException;
 import com.codman.cu.tracking.vo.AccountVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -42,7 +42,7 @@ public class AccountAction extends SBActionAdapter {
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.action.ActionController#update(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		Object msg = null;
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		final String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);

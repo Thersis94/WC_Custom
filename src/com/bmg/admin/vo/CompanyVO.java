@@ -4,9 +4,10 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import com.biomed.smarttrak.vo.NoteVO;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
-import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
@@ -25,7 +26,7 @@ import com.siliconmtn.util.StringUtil;
  ****************************************************************************/
 
 @Table(name="BIOMEDGPS_COMPANY")
-public class CompanyVO {
+public class CompanyVO  implements NoteEntityInterface {
 	private String companyId;
 	private String parentId;
 	private String companyName;
@@ -50,7 +51,8 @@ public class CompanyVO {
 	private List<String> investors;
 	private List<LocationVO> locations;
 	private List<AllianceVO> alliances;
-	private List<CompanyAttributeVO> attributes;
+	private List<NoteInterface> attributes;
+	private List<NoteVO> notes;
 	
 	
 	public CompanyVO() {
@@ -60,12 +62,12 @@ public class CompanyVO {
 		attributes = new ArrayList<>();
 	}
 	
-	public CompanyVO(SMTServletRequest req) {
+	public CompanyVO(ActionRequest req) {
 		this();
 		setData(req);
 	}
 	
-	public void setData(SMTServletRequest req) {
+	public void setData(ActionRequest req) {
 		companyId = req.getParameter("companyId");
 		parentId = StringUtil.checkVal(req.getParameter("parentId"), null);
 		companyName = req.getParameter("companyName");
@@ -279,11 +281,16 @@ public class CompanyVO {
 		this.alliances.add(alliance);
 	}
 	
-	public List<CompanyAttributeVO> getAttributes() {
+	/*
+	 * (non-Javadoc)
+	 * @see com.bmg.admin.vo.NoteEntityInterface#getAttributes()
+	 */
+	@Override
+	public List<NoteInterface> getAttributes() {
 		return attributes;
 	}
 
-	public void setAttributes(List<CompanyAttributeVO> attributes) {
+	public void setAttributes(List<NoteInterface> attributes) {
 		this.attributes = attributes;
 	}
 	
@@ -297,6 +304,29 @@ public class CompanyVO {
 	public Date getUpdateDate() {return null;}
 	@Column(name="CREATE_DT", isAutoGen=true, isInsertOnly=true)
 	public Date getCreateDate() {return null;}
+
+	/* (non-Javadoc)
+	 * @see com.bmg.admin.vo.BiomedNoteInterface#setNotes(java.util.List)
+	 */
+	@Override
+	public void setNotes(List<NoteVO> notes) {
+		this.notes = notes;
+	}
 	
+	/*
+	 * returns the list of notes
+	 */
+	public List<NoteVO> getNotes(){
+		return notes;
+	}
+
+	/* (non-Javadoc)
+	 * @see com.bmg.admin.vo.BiomedNoteInterface#getId()
+	 */
+	@Override
+	public String getId() {
+		//each vo will return its own primary id.
+		return getCompanyId();
+	}
 
 }

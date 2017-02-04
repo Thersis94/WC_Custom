@@ -9,7 +9,7 @@ import java.util.List;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.data.GenericVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -47,7 +47,7 @@ public class RTFReportAction extends SBActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		log.debug("Getting zip report");
 		Date startDate = Convert.formatStartDate(req.getParameter("startDate"), "1/1/2000");
 		Date endDate = Convert.formatEndDate(req.getParameter("endDate"));
@@ -111,7 +111,7 @@ public class RTFReportAction extends SBActionAdapter {
 	}
 	
 	
-	private void buildByState(SMTServletRequest req) throws ActionException {
+	private void buildByState(ActionRequest req) throws ActionException {
 		log.debug("Getting state report");
 		Date startDate = Convert.formatStartDate(req.getParameter("startDate"), "1/1/2000");
 		Date endDate = Convert.formatEndDate(req.getParameter("endDate"));

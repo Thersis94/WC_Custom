@@ -3,7 +3,7 @@ package com.ansmed.sb.physician;
 import java.sql.ResultSet;
 
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.AbstractSiteBuilderVO;
@@ -51,7 +51,7 @@ public class BusAssessVO extends AbstractSiteBuilderVO {
 	 * Initializes the VO to the params provided in the request object
 	 * @param rs
 	 */
-	public BusAssessVO(SMTServletRequest req) {
+	public BusAssessVO(ActionRequest req) {
 		super();
 		setData(req);
 	}
@@ -78,7 +78,7 @@ public class BusAssessVO extends AbstractSiteBuilderVO {
 	 * Sets the VO to the params provided in the request object
 	 * @param req
 	 */
-	public void setData(SMTServletRequest req) {
+	public void setData(ActionRequest req) {
 		busAssessId = req.getParameter("assessId");
 		assessType = Convert.formatInteger(req.getParameter("assessType"));
 		assessTxt = req.getParameter("assessTxt");

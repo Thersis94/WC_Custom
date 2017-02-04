@@ -14,9 +14,9 @@ import java.util.Set;
 //SMT Base Libs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.SMTActionInterface;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.exception.MailException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.SMTMail;
@@ -66,7 +66,7 @@ public class BRCContactFormAction extends SimpleActionAdapter {
         super(arg0);
     }
     
-    public void list(SMTServletRequest req) throws ActionException {
+    public void list(ActionRequest req) throws ActionException {
     	super.retrieve(req);    	
     }
 	
@@ -74,7 +74,7 @@ public class BRCContactFormAction extends SimpleActionAdapter {
      * @see com.siliconmtn.action.AbstractActionController#build(com.siliconmtn.http.SMTServletRequest)
      */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		log.debug("Starting BRC build...");
     	
     	String oldInitId = actionInit.getActionId();
@@ -100,7 +100,7 @@ public class BRCContactFormAction extends SimpleActionAdapter {
 
 		// Process the contact form information to create profile based on the  
     	// submitted information.
-    	SMTActionInterface eg = new SubmittalAction(this.actionInit);
+    	ActionInterface eg = new SubmittalAction(this.actionInit);
     	eg.setAttributes(this.attributes);
     	eg.setDBConnection(dbConn);
     	eg.build(req);
@@ -130,14 +130,14 @@ public class BRCContactFormAction extends SimpleActionAdapter {
      * @see com.siliconmtn.action.AbstractActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
      */
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
     	String oldInitId = actionInit.getActionId();
     	actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
     	
 		// Retrieve the Contact Data
-    	SMTActionInterface eg = new ContactAction(this.actionInit);
+    	ActionInterface eg = new ContactAction(this.actionInit);
     	eg.setAttributes(this.attributes);
     	eg.setDBConnection(dbConn);
     	eg.retrieve(req);
@@ -153,7 +153,7 @@ public class BRCContactFormAction extends SimpleActionAdapter {
     * Send a copy of the form submission to the designated recipient.
     * @param req
     */
-	private void sendEmail(SMTServletRequest req) throws ActionException {
+	private void sendEmail(ActionRequest req) throws ActionException {
 		
 		StringEncoder se = new StringEncoder();
     	SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);

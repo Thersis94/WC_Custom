@@ -28,7 +28,7 @@ import com.depuy.events_v2.vo.report.CustomReportVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.exception.DatabaseException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -77,7 +77,7 @@ public class ReportBuilder extends SBActionAdapter {
 	}
 
 	@SuppressWarnings("incomplete-switch")
-	public void generateReport(SMTServletRequest req, Object data) throws ActionException {
+	public void generateReport(ActionRequest req, Object data) throws ActionException {
 		ReportType type = null;
 		try {
 			type= ReportType.valueOf(req.getParameter("rptType"));
@@ -338,7 +338,7 @@ public class ReportBuilder extends SBActionAdapter {
 	 * @param data
 	 * @return
 	 */
-	public AbstractSBReportVO generateCustomSeminarReport(SMTServletRequest req, Object data) {
+	public AbstractSBReportVO generateCustomSeminarReport(ActionRequest req, Object data) {
 		CustomReportVO rpt = new CustomReportVO(req);
 		rpt.setData(data);
 		return rpt;
@@ -351,7 +351,7 @@ public class ReportBuilder extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	public AbstractSBReportVO generateAttendeeSurveyReport(SMTServletRequest req) {
+	public AbstractSBReportVO generateAttendeeSurveyReport(ActionRequest req) {
 		final String dfSchema = (String)attributes.get(Constants.DATA_FEED_SCHEMA);
 		Set<String> profileIds = new HashSet<>();
 		Map<String, AttendeeSurveyVO> data = new LinkedHashMap<>(); //keep in the order defined by the query

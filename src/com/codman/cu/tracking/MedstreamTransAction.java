@@ -11,7 +11,7 @@ import com.codman.cu.tracking.vo.TransactionVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.common.SiteVO;
@@ -45,7 +45,7 @@ public class MedstreamTransAction extends AbstractTransAction {
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.action.ActionController#build(com.siliconmtn.http.SMTServletRequest)
 	 */
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		Object msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
 		TransactionVO vo = new TransactionVO(req);
 
@@ -95,7 +95,7 @@ public class MedstreamTransAction extends AbstractTransAction {
 	 * @param vo
 	 * @param msg
 	 */
-	private void sendEmail(SMTServletRequest req, TransactionVO trans)
+	private void sendEmail(ActionRequest req, TransactionVO trans)
 			throws ActionException, NullPointerException {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		MedstreamEmailer emailer = null;

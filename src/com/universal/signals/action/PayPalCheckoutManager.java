@@ -27,7 +27,7 @@ import com.siliconmtn.commerce.payment.PaymentTransactionRequestVO.TransactionTy
 import com.siliconmtn.commerce.payment.PaymentTransactionResponseVO;
 import com.siliconmtn.commerce.payment.PaymentVO;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
 import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.PhoneVO;
@@ -65,7 +65,7 @@ public class PayPalCheckoutManager {
 	 * @param cart
 	 * @throws InvalidDataException
 	 */
-	public PayPalCheckoutManager(SMTServletRequest req, ShoppingCartVO cart) 
+	public PayPalCheckoutManager(ActionRequest req, ShoppingCartVO cart) 
 			throws InvalidDataException {
 		this.cart = cart;
 		this.attributes = new HashMap<>();

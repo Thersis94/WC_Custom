@@ -7,7 +7,7 @@ import java.util.List;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.gis.GeocodeLocation;
 import com.siliconmtn.gis.Location;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.security.PhoneVO;
 import com.siliconmtn.util.Convert;
@@ -53,7 +53,7 @@ public class ClinicVO extends GeocodeLocation {
 	}
 	
 	
-	public ClinicVO(SMTServletRequest req) {
+	public ClinicVO(ActionRequest req) {
 		super();
 		phones = new ArrayList<PhoneVO>();
 		setData(req);
@@ -64,7 +64,7 @@ public class ClinicVO extends GeocodeLocation {
 	}
 	
 	
-	public void setData(SMTServletRequest req) {
+	public void setData(ActionRequest req) {
 		StringEncoder se = new StringEncoder();
 		clinicId = req.getParameter("clinicId");
 		clinicName = se.decodeValue(req.getParameter("clinicName"));

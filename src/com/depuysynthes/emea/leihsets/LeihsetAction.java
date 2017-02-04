@@ -12,7 +12,7 @@ import java.util.Map;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -47,7 +47,7 @@ public class LeihsetAction extends SBActionAdapter {
 
 
 
-	public void list(SMTServletRequest req) throws ActionException {
+	public void list(ActionRequest req) throws ActionException {
 		loadLeihsets(req);
 	}
 
@@ -56,7 +56,7 @@ public class LeihsetAction extends SBActionAdapter {
 	 * Get a single IFU document instance along with its related technique guides
 	 * @param req
 	 */
-	protected void loadLeihsets(SMTServletRequest req) {
+	protected void loadLeihsets(ActionRequest req) {
 		String leihsetId = StringUtil.checkVal(req.getParameter("leihsetId"), null);
 		String leihsetAssetId = StringUtil.checkVal(req.getParameter("leihsetAssetId"), null);
 		log.debug("Retriving leihsets " + leihsetId + "|" + leihsetAssetId);
@@ -132,7 +132,7 @@ public class LeihsetAction extends SBActionAdapter {
 	/**
 	 * Delete the supplied Leihset and redirect the user
 	 */
-	public void delete(SMTServletRequest req) throws ActionException {
+	public void delete(ActionRequest req) throws ActionException {
 		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 		String leihsetId = req.getParameter("leihsetId");
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
@@ -156,7 +156,7 @@ public class LeihsetAction extends SBActionAdapter {
 	 * Builds a LeihsetVO from the request object and passes it along to the
 	 * vo specific update method and then redirects the user
 	 */
-	public void update(SMTServletRequest req) throws ActionException {
+	public void update(ActionRequest req) throws ActionException {
 		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 		try {
 			LeihsetVO vo = new LeihsetVO(req, false);
@@ -264,7 +264,7 @@ public class LeihsetAction extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	private String buildRedirect(SMTServletRequest req) {
+	private String buildRedirect(ActionRequest req) {
 		StringBuilder redirect = new StringBuilder(100);
 		redirect.append(getAttribute(AdminConstants.ADMIN_TOOL_PATH));
 		if (req.hasParameter("wasDelete")) {
@@ -278,11 +278,11 @@ public class LeihsetAction extends SBActionAdapter {
 
 
 	/* (non-Javadoc)
-	 * @see com.siliconmtn.action.SMTActionInterface#copy(com.siliconmtn.http.SMTServletRequest)
+	 * @see com.siliconmtn.action.ActionInterface#copy(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@SuppressWarnings("unchecked")
 	@Override
-	public void copy(SMTServletRequest req) throws ActionException {
+	public void copy(ActionRequest req) throws ActionException {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		String oldLeihset = req.getParameter("sbActionId");
 		// Get id of the item that was potentially deleted to trigger this copy in order to exclude it from the new Leihset

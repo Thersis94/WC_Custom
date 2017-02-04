@@ -3,7 +3,7 @@ package com.depuysynthes.huddle;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.common.constants.GlobalConfig;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO.AuthenticationType;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -31,7 +31,7 @@ public class LoginAction extends com.smt.sitebuilder.action.user.LoginAction {
 	}
 	
 	@Override
-	public void retrieve(SMTServletRequest req) throws ActionException {
+	public void retrieve(ActionRequest req) throws ActionException {
 		//do not redirect logOff requests
 		if (req.hasParameter("logOff")) return;
 		
@@ -48,7 +48,7 @@ public class LoginAction extends com.smt.sitebuilder.action.user.LoginAction {
 			url = StringUtil.replace(url, "/" + getAttribute(Constants.CONTEXT_NAME), "" + getAttribute(Constants.CONTEXT_PATH));
 			
 			//append the query string, but not for /qs/ URL structures
-			if (req.getQueryString() != null && SMTServletRequest.DIRECTORY_TYPE != req.getReqType()) url += "?" + req.getQueryString();
+			if (req.getQueryString() != null && ActionRequest.DIRECTORY_TYPE != req.getReqType()) url += "?" + req.getQueryString();
 			
 			//set the redirectUrl
 			req.setParameter(DESTN_URL, url);

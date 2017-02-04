@@ -2,7 +2,7 @@ package com.nltek.action.contact;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.SMTMail;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -31,7 +31,7 @@ public class NLTAutoIngestPostProcessor extends SBActionAdapter {
 	 * @see com.siliconmtn.action.AbstractActionController#build(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void build(SMTServletRequest req) throws ActionException {
+	public void build(ActionRequest req) throws ActionException {
 		log.info("starting NLT post processor");
 		
 		String rcpt = req.getParameter("pfl_EMAIL_ADDRESS_TXT");
@@ -54,7 +54,7 @@ public class NLTAutoIngestPostProcessor extends SBActionAdapter {
 		
 	}
 	
-	protected String getMessage(SMTServletRequest req) {
+	protected String getMessage(ActionRequest req) {
 		StringBuilder msg = new StringBuilder();
 		msg.append("<p>Dear ").append(req.getParameter("pfl_PREFIX_NM"));
 		msg.append(" ").append(req.getParameter("pfl_FIRST_NM")).append(" ");

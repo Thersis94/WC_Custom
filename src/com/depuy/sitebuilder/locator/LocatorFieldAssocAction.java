@@ -11,7 +11,7 @@ import java.util.Map;
 // SMT Base Libs 2.0
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.UUIDGenerator;
 
 // SB Libs
@@ -57,7 +57,7 @@ public class LocatorFieldAssocAction extends SBActionAdapter {
      * @see com.siliconmtn.action.AbstractActionController#delete(com.siliconmtn.http.SMTServletRequest)
      */
     @Override
-    public void delete(SMTServletRequest req) throws ActionException {
+    public void delete(ActionRequest req) throws ActionException {
         StringBuffer sb = new StringBuffer();
         sb.append("delete from locator_field_assoc where action_id = ?");
         String actionId = (String) req.getAttribute(SBModuleAction.SB_ACTION_ID);
@@ -84,7 +84,7 @@ public class LocatorFieldAssocAction extends SBActionAdapter {
      * @see com.siliconmtn.action.AbstractActionController#update(com.siliconmtn.http.SMTServletRequest)
      */
     @Override
-    public void update(SMTServletRequest req) throws ActionException {
+    public void update(ActionRequest req) throws ActionException {
         Object msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
         
         // Delete the current entries
@@ -141,7 +141,7 @@ public class LocatorFieldAssocAction extends SBActionAdapter {
      * @see com.siliconmtn.action.AbstractActionController#retrieve(com.siliconmtn.http.SMTServletRequest)
      */
     @Override
-    public void retrieve(SMTServletRequest req) throws ActionException {
+    public void retrieve(ActionRequest req) throws ActionException {
         log.info("Listing fields for locator");
         
         StringBuffer sql = new StringBuffer();
@@ -180,7 +180,7 @@ public class LocatorFieldAssocAction extends SBActionAdapter {
      * @see com.siliconmtn.action.AbstractActionController#list(com.siliconmtn.http.SMTServletRequest)
      */
     @Override
-    public void list(SMTServletRequest req) throws ActionException {
+    public void list(ActionRequest req) throws ActionException {
         log.info("Listing fields for locator");
         String sbActionId = req.getParameter(SBModuleAction.SB_ACTION_ID);
         

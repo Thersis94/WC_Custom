@@ -10,7 +10,7 @@ import java.util.Map;
 import com.depuy.sitebuilder.datafeed.PedoKitReport.PedoKitVO;
 import com.siliconmtn.data.report.BordersOnlyExcelReport;
 import com.siliconmtn.data.report.ExcelReport;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -46,7 +46,7 @@ public class PedoKitReportVO extends AbstractDataFeedReportVO {
 	 * @see com.depuy.sitebuilder.datafeed.AbstractDataFeedReportVO#setRequestData(com.siliconmtn.http.SMTServletRequest)
 	 */
 	@Override
-	public void setRequestData(SMTServletRequest req) {
+	public void setRequestData(ActionRequest req) {
 		startDate = StringUtil.checkVal(req.getParameter("startDate"));
 		endDate = StringUtil.checkVal(req.getParameter("endDate"));
 		includePII = req.getParameter("includePII");

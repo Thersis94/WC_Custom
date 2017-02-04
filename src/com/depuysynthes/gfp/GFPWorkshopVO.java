@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.databean.FilePartDataBean;
 
@@ -44,12 +44,12 @@ public class GFPWorkshopVO {
 		setResources(new ArrayList<GFPResourceVO>());
 	}
 	
-	public GFPWorkshopVO(SMTServletRequest req) {
+	public GFPWorkshopVO(ActionRequest req) {
 		this();
 		assignData(req);
 	}
 	
-	public void assignData(SMTServletRequest req) {
+	public void assignData(ActionRequest req) {
 		setWorkshopId(req.getParameter("workshopId"));
 		setParentId(req.getParameter("parentId"));
 		setName(req.getParameter("workshopName"));

@@ -15,7 +15,7 @@ import java.util.Set;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.approval.Approvable;
@@ -96,7 +96,7 @@ public class LeihsetVO implements Approvable, Serializable, Comparable<LeihsetVO
 		db = null;
 	}
 	
-	public LeihsetVO(SMTServletRequest req, boolean isSet) {
+	public LeihsetVO(ActionRequest req, boolean isSet) {
 		this();
 		setLeihsetGroupId(StringUtil.checkVal(req.getParameter("leihsetGroupId"), null));
 		setLeihsetId(req.getParameter("sbActionId"));
