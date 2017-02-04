@@ -113,6 +113,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 				break;
 			case "financialDashScenario":
 				action = new FinancialDashScenarioAction();
+				break;
 			case "productAdmin":
 				action = new ProductManagementAction();
 				break;
