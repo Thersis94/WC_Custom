@@ -203,7 +203,7 @@ public class SmartTRAKLoginModule extends DBLoginLockoutModule {
 			log.error("Error attempting to retrieve WebCrescendo profile: " + e.getMessage());
 			throw new AuthenticationException(ErrorCodes.ERR_INVALID_LOGIN);
 		}
-		
+
 		return wcUser;
 
 	}
