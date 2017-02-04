@@ -5,15 +5,11 @@ import java.io.Serializable;
 import java.sql.ResultSet;
 import java.util.Date;
 
-import org.mortbay.log.Log;
-
-
-import com.siliconmtn.action.ActionRequest;
 //SMT baselibs
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
-import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
