@@ -5,6 +5,7 @@ import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.biomed.smarttrak.vo.ProductAllianceVO;
 import com.biomed.smarttrak.vo.ProductAttributeTypeVO;
 import com.biomed.smarttrak.vo.ProductAttributeVO;
 import com.biomed.smarttrak.vo.ProductVO;
@@ -39,19 +40,22 @@ public class ProductManagementAction extends SimpleActionAdapter {
 	public static final String ACTION_TARGET = "actionTarget";
 	
 	private enum ActionTarget {
-		PRODUCT, PRODUCTATTRIBUTE, ATTRIBUTE, SECTION, ATTRIBUTELIST
+		PRODUCT, PRODUCTATTRIBUTE, ATTRIBUTE, SECTION, 
+		ATTRIBUTELIST, ALLIANCE, DETAILSATTRIBUTE
 	}
-	
+
+	@Override
 	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
 	
 	
+	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		ActionTarget action;
 		
-		if (req.hasParameter("type")) {
-			action = ActionTarget.valueOf(req.getParameter("type"));
+		if (req.hasParameter(ACTION_TARGET)) {
+			action = ActionTarget.valueOf(req.getParameter(ACTION_TARGET));
 		} else {
 			action = ActionTarget.PRODUCT;
 		}
@@ -63,10 +67,15 @@ public class ProductManagementAction extends SimpleActionAdapter {
 			case PRODUCTATTRIBUTE:
 				if (req.hasParameter("productAttributeId"))
 					retrieveProductAttribute(req);
+				req.setParameter("getList", "true");
 				retrieveAttributes(req);
 				break;
 			case ATTRIBUTE:
-				retrieveAttribute(req.getParameter("attributeId"));
+				if (req.hasParameter("attributeId")) {
+					retrieveAttribute(req.getParameter("attributeId"));
+				} else {
+					retrieveAttributes(req);
+				}
 				break;
 			case SECTION:
 				retrieveSections(req);
@@ -74,7 +83,114 @@ public class ProductManagementAction extends SimpleActionAdapter {
 			case ATTRIBUTELIST:
 				super.putModuleData(getProductAttributes(req.getParameter("productId")));
 				break;
+			case ALLIANCE:
+				allianceRetrieve(req);
+				break;
+			case DETAILSATTRIBUTE:
+				retrieveModuleSets(req);
+				break;
 		}
+	}
+	
+	
+	/**
+	 * Get all available module sets and flag all that are assigned to a product
+	 * @param req
+	 * @throws ActionException
+	 */
+	private void retrieveModuleSets(ActionRequest req) throws ActionException {
+		StringBuilder sql = new StringBuilder(550);
+		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		sql.append("select a.attribute_id, a.parent_id, a.attribute_nm, string_agg(pm.moduleset_id, ',') as section_ids ");
+		sql.append("from ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE a ");
+		sql.append("left join ").append(customDb).append("BIOMEDGPS_PRODUCT_MODULESET_XR xr ");
+		sql.append("on xr.attribute_id = a.attribute_id ");
+		sql.append("left join ").append(customDb).append("BIOMEDGPS_PRODUCT_MODULESET pm ");
+		sql.append("on pm.moduleset_id = xr.moduleset_id ");
+		sql.append("group by a.attribute_id, a.parent_id, a.attribute_nm ");
+		sql.append("order by a.order_no ");
+		log.debug(sql);
+		List<Node> attributes = new ArrayList<>();
+		
+		List<String> activeDetails = getAssingedAttributes(req.getParameter("productId"));
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ResultSet rs = ps.executeQuery();
+			
+			while (rs.next()) {
+				ProductAttributeTypeVO attr = new ProductAttributeTypeVO();
+				attr.setAttributeId(rs.getString("attribute_id"));
+				attr.setAttributeName(rs.getString("attribute_nm"));
+				attr.addSectionIds(rs.getString("section_ids"));
+				attr.setParentId(rs.getString("parent_id"));
+				if (activeDetails.contains(attr.getAttributeId()))
+					attr.setActiveFlag(1);
+				Node n = new Node(attr.getAttributeId(), attr.getParentId());
+				n.setUserObject(attr);
+				attributes.add(n);
+			}
+		} catch (Exception e) {
+			throw new ActionException(e);
+		}
+		
+		Tree t = new Tree(attributes);
+		super.putModuleData(t.preorderList(t.findNode(req.getParameter("rootNode"))));
+		
+	}
+
+
+	/**
+	 * Get a list of all assigned attributes for a product
+	 * @param productId
+	 * @return
+	 * @throws ActionException
+	 */
+	private List<String> getAssingedAttributes(String productId) throws ActionException {
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("select ATTRIBUTE_ID from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR where PRODUCT_ID = ? ");
+		List<String> activeDetails = new ArrayList<>();
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, productId);
+			
+			ResultSet rs = ps.executeQuery();
+			
+			while(rs.next()) {
+				activeDetails.add(rs.getString("ATTRIBUTE_ID"));
+			}
+		} catch (Exception e) {
+			throw new ActionException(e);
+		}
+		
+		return activeDetails;
+	}
+
+
+	/**
+	 * Determine how to retrieve company information and do so.
+	 * @param req
+	 * @throws ActionException
+	 */
+	private void allianceRetrieve(ActionRequest req) throws ActionException {
+		if (req.hasParameter("allianceId"))
+			retrieveAlliance(req.getParameter("allianceId"));
+	}
+
+
+	/**
+	 * Retrieve all information pertaining to a particular alliance
+	 * @param allianceId
+	 */
+	private void retrieveAlliance(String allianceId) {
+		StringBuilder sql = new StringBuilder(100);
+		sql.append("SELECT * FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("BIOMEDGPS_COMPANY_ALLIANCE_XR ");
+		sql.append("WHERE COMPANY_ALLIANCE_XR_ID = ? ");
+		
+		List<Object> params = new ArrayList<>();
+		params.add(allianceId);
+		DBProcessor db = new DBProcessor(dbConn);
+		ProductAllianceVO alliance = (ProductAllianceVO) db.executeSelect(sql.toString(), params, new ProductAllianceVO()).get(0);
+		super.putModuleData(alliance);
 	}
 	
 	
@@ -109,8 +225,7 @@ public class ProductManagementAction extends SimpleActionAdapter {
 		DBProcessor db = new DBProcessor(dbConn);
 		ProductAttributeVO attr = (ProductAttributeVO) db.executeSelect(sql.toString(), params, new ProductAttributeVO()).get(0);
 		super.putModuleData(attr);
-		req.setParameter("attributeTypeCd", attr.getAttributeTypeCd());
-		retrieveAttributes(req);
+		req.setParameter("rootNode", attr.getAttributeId());
 	}
 	
 	
@@ -132,7 +247,7 @@ public class ProductManagementAction extends SimpleActionAdapter {
 		}
 		
 		sql.append("ORDER BY ORDER_NO ");
-
+		log.debug(sql);
 		DBProcessor db = new DBProcessor(dbConn);
 		List<Object> results = db.executeSelect(sql.toString(), params, new ProductAttributeTypeVO());
 		List<Node> orderedResults = new ArrayList<>();
@@ -150,8 +265,22 @@ public class ProductManagementAction extends SimpleActionAdapter {
 		// If all attributes of a type is being requested set it as a request attribute since it is
 		// being used to supplement the attribute xr editing.
 		// Search data should not be turned into a tree after a search as requisite nodes may be missing
-		if (req.hasParameter("attributeTypeCd")) {
-			req.getSession().setAttribute("attributeList", new Tree(orderedResults).getPreorderList());
+		if (req.hasParameter("attributeTypeCd") || Convert.formatBoolean(req.getParameter("getList"))) {
+			Tree t = new Tree(orderedResults);
+			Node rootNode = null;
+			if (req.hasParameter("rootNode")) {
+				rootNode = t.findNode(req.getParameter("rootNode"));
+				if (rootNode.getParentId() != null) {
+					rootNode = getTopParent(t, rootNode);
+				}
+			}
+			
+			if (rootNode != null && rootNode.getNumberChildren() > 0) {
+				req.getSession().setAttribute("attributeList", t.preorderList(rootNode));
+			} else {
+				req.getSession().setAttribute("attributeList", t.preorderList());
+			}
+
 		} else if (req.hasParameter("searchData")) {
 			super.putModuleData(orderedResults.subList(rpp*page, end), orderedResults.size(), false);
 		} else {
@@ -161,19 +290,34 @@ public class ProductManagementAction extends SimpleActionAdapter {
 
 
 	/**
+	 * Ensure that we are getting a top level root node.
+	 * @param t
+	 * @param rootNode
+	 * @return
+	 */
+	private Node getTopParent(Tree t, Node rootNode) {
+		if (rootNode.getParentId() != null) {
+			return getTopParent(t, t.findNode(rootNode.getParentId()));
+		}
+		return rootNode;
+	}
+
+
+	/**
 	 * Get the details of the supplied attribute type
 	 * @param attributeId
 	 */
 	private void retrieveAttribute(String attributeId) {
 		StringBuilder sql = new StringBuilder(100);
+		List<Object> params = new ArrayList<>();
 		sql.append("SELECT * FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("BIOMEDGPS_PRODUCT_ATTRIBUTE ");
 		sql.append("WHERE ATTRIBUTE_ID = ? ");
-		
-		List<Object> params = new ArrayList<>();
 		params.add(attributeId);
+		log.debug(sql);
 		DBProcessor db = new DBProcessor(dbConn);
 		List<Object> res = db.executeSelect(sql.toString(), params, new ProductAttributeTypeVO());
-		if (res.isEmpty()) {
+
+		if (!res.isEmpty()) {
 			ProductAttributeTypeVO attr = (ProductAttributeTypeVO) db.executeSelect(sql.toString(), params, new ProductAttributeTypeVO()).get(0);
 			super.putModuleData(attr);
 		} else {
@@ -229,8 +373,37 @@ public class ProductManagementAction extends SimpleActionAdapter {
 		// Get specifics on product details
 		addAttributes(product);
 		addSections(product);
+		addAlliances(product);
 		
 		super.putModuleData(product);
+	}
+	
+	
+	/**
+	 * Get all alliances the supplied company is in and add them to the vo
+	 * @param company
+	 */
+	private void addAlliances(ProductVO product) {
+		StringBuilder sql = new StringBuilder(525);
+		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_PRODUCT_ALLIANCE_XR pax ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_ALLIANCE_TYPE at ");
+		sql.append("ON pax.ALLIANCE_TYPE_ID = at.ALLIANCE_TYPE_ID ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT p  ");
+		sql.append("ON p.PRODUCT_ID = pax.PRODUCT_ID ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY c ");
+		sql.append("ON c.COMPANY_ID = pax.COMPANY_ID ");
+		sql.append("WHERE pax.PRODUCT_ID = ? ");
+		
+		List<Object> params = new ArrayList<>();
+		params.add(product.getProductId());
+		DBProcessor db = new DBProcessor(dbConn);
+		
+		// DBProcessor returns a list of objects that need to be individually cast to alliances
+		List<Object> results = db.executeSelect(sql.toString(), params, new ProductAllianceVO());
+		for (Object o : results) {
+			product.addAlliance((ProductAllianceVO)o);
+		}
 	}
 	
 	
@@ -372,8 +545,33 @@ public class ProductManagementAction extends SimpleActionAdapter {
 			case SECTION:
 				saveSections(req);
 				break;
+			case ALLIANCE:
+				ProductAllianceVO a = new ProductAllianceVO(req);
+				saveAlliance(a, db);
+				break;
 			default:break;
 		}
+	}
+
+
+	/**
+	 * Check whether the supplied alliance needs to be updated or inserted and do so.
+	 * @param a
+	 * @param db
+	 * @throws ActionException
+	 */
+	private void saveAlliance(ProductAllianceVO a, DBProcessor db) throws ActionException {
+		try {
+			if (StringUtil.isEmpty(a.getAllianceId())) {
+				a.setAllianceId(new UUIDGenerator().getUUID());
+				db.insert(a);
+			} else {
+				db.update(a);
+			}
+		} catch (Exception e) {
+			throw new ActionException(e);
+		}
+		
 	}
 
 
@@ -494,6 +692,10 @@ public class ProductManagementAction extends SimpleActionAdapter {
 			case SECTION:
 				deleteSection(false, req.getParameter("sectionId"));
 				break;
+			case ALLIANCE:
+				ProductAllianceVO a = new ProductAllianceVO(req);
+				db.delete(a);
+				break;
 			default:break;
 		}
 		} catch (Exception e) {
@@ -532,6 +734,7 @@ public class ProductManagementAction extends SimpleActionAdapter {
 	/**
 	 * Take in front end requests and direct them to the proper delete or update method
 	 */
+	@Override
 	public void build(ActionRequest req) throws ActionException {
 		String buildAction = req.getParameter("buildAction");
 		String msg = StringUtil.capitalizePhrase(buildAction) + " completed successfully.";

@@ -34,6 +34,11 @@ public class GapColumnAttributeVO extends ProductAttributeTypeVO implements Seri
 		super();
 	}
 
+	public GapColumnAttributeVO(String attributeId) {
+		this();
+		setAttributeId(attributeId);
+	}
+
 	public GapColumnAttributeVO(ActionRequest req) {
 		this();
 		setData(req);

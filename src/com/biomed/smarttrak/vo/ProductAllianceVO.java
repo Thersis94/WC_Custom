@@ -1,4 +1,4 @@
-package com.bmg.admin.vo;
+package com.biomed.smarttrak.vo;
 
 import java.util.Date;
 
@@ -8,42 +8,43 @@ import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
 
 /****************************************************************************
- * <b>Title</b>: AllianceVO.java <p/>
+ * <b>Title</b>: ProductAllianceVO.java <p/>
  * <b>Project</b>: WC_Custom <p/>
  * <b>Description: </b> DBProcessor enabled VO that stores information regarding
- * alliances a company can enter into.
+ * the alliances that can be assigned to a product.
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2017<p/>
  * <b>Company:</b> Silicon Mountain Technologies<p/>
  * @author Eric Damschroder
  * @version 1.0
- * @since Jan 16, 2017<p/>
+ * @since Feb 3, 2017<p/>
  * <b>Changes: </b>
  ****************************************************************************/
 
-@Table(name="BIOMEDGPS_COMPANY_ALLIANCE_XR")
-public class AllianceVO {
+@Table(name="BIOMEDGPS_PRODUCT_ALLIANCE_XR")
+public class ProductAllianceVO {
 	private String allianceId;
-	private String companyId;
+	private String productId;
 	private String allianceTypeId;
 	private String allianceTypeName;
 	private String allyId;
 	private String allyName;
 	private String referenceText;
 	private int orderNo;
+	private int gaFlag;
 	
-	public AllianceVO(){
+	public ProductAllianceVO(){
 		// Default constructor created to allow creation of this
 		// vo without needing a servlet request.
 	}
 	
-	public AllianceVO(ActionRequest req) {
+	public ProductAllianceVO(ActionRequest req) {
 		setData(req);
 	}
 	
 	private void setData(ActionRequest req) {
 		allianceId = req.getParameter("allianceId");
-		companyId = req.getParameter("companyId");
+		productId = req.getParameter("productId");
 		allianceTypeId = req.getParameter("allianceTypeId");
 		allianceTypeName = req.getParameter("allianceTypeName");
 		allyId = req.getParameter("allyId");
@@ -52,19 +53,19 @@ public class AllianceVO {
 		orderNo = Convert.formatInteger(req.getParameter("orderNo"));
 	}
 
-	@Column(name="company_alliance_xr_id", isPrimaryKey=true)
+	@Column(name="product_alliance_xr_id", isPrimaryKey=true)
 	public String getAllianceId() {
 		return allianceId;
 	}
 	public void setAllianceId(String allianceId) {
 		this.allianceId = allianceId;
 	}
-	@Column(name="company_id")
-	public String getCompanyId() {
-		return companyId;
+	@Column(name="product_id")
+	public String getProductId() {
+		return productId;
 	}
-	public void setCompanyId(String companyId) {
-		this.companyId = companyId;
+	public void setProductId(String productId) {
+		this.productId = productId;
 	}
 	@Column(name="alliance_type_id")
 	public String getAllianceTypeId() {
@@ -80,7 +81,7 @@ public class AllianceVO {
 	public void setAllianceTypeName(String allianceTypeName) {
 		this.allianceTypeName = allianceTypeName;
 	}
-	@Column(name="rel_company_id")
+	@Column(name="company_id")
 	public String getAllyId() {
 		return allyId;
 	}
@@ -108,8 +109,19 @@ public class AllianceVO {
 	public void setOrderNo(int orderNo) {
 		this.orderNo = orderNo;
 	}
+	@Column(name="ga_display_flg")
+	public int getGaFlag() {
+		return gaFlag;
+	}
+
+	public void setGaFlag(int gaFlag) {
+		this.gaFlag = gaFlag;
+	}
+
 	// These functions exists only to give the DBProcessor a hook to autogenerate dates on
-	@Column(name="CREATE_DT", isAutoGen=true)
+	@Column(name="UPDATE_DT", isAutoGen=true, isUpdateOnly=true)
+	public Date getUpdateDate() {return null;}
+	@Column(name="CREATE_DT", isAutoGen=true, isInsertOnly=true)
 	public Date getCreateDate() {return null;}
 
 }

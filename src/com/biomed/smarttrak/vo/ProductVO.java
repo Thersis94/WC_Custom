@@ -43,10 +43,12 @@ public class ProductVO {
 	private String productGroupId;
 	private List<ProductAttributeVO> attributes;
 	private List<GenericVO> sections;
+	private List<ProductAllianceVO> alliances;
 	
 	public ProductVO () {
 		attributes = new ArrayList<>();
 		sections = new ArrayList<>();
+		alliances = new ArrayList<>();
 	}
 	
 	
@@ -206,6 +208,20 @@ public class ProductVO {
 	
 	public void addSection(GenericVO section) {
 		this.sections.add(section);
+	}
+
+
+	public List<ProductAllianceVO> getAlliances() {
+		return alliances;
+	}
+
+
+	public void setAlliances(List<ProductAllianceVO> alliances) {
+		this.alliances = alliances;
+	}
+	
+	public void addAlliance(ProductAllianceVO alliance) {
+		this.alliances.add(alliance);
 	}
 
 

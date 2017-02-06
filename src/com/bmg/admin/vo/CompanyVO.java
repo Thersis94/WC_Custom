@@ -5,6 +5,7 @@ import java.util.Date;
 import java.util.List;
 
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
@@ -40,7 +41,7 @@ public class CompanyVO {
 	private int startupFlag;
 	private String statusNo;
 	private double revenueNo;
-	private int revenueYear;
+	private String revenueYear;
 	private int foundedYear;
 	private int completionScore;
 	private int productNo;
@@ -51,6 +52,7 @@ public class CompanyVO {
 	private List<LocationVO> locations;
 	private List<AllianceVO> alliances;
 	private List<CompanyAttributeVO> attributes;
+	private List<GenericVO> sections;
 	
 	
 	public CompanyVO() {
@@ -58,6 +60,7 @@ public class CompanyVO {
 		locations = new ArrayList<>();
 		alliances = new ArrayList<>();
 		attributes = new ArrayList<>();
+		sections = new ArrayList<>();
 	}
 	
 	public CompanyVO(ActionRequest req) {
@@ -79,7 +82,7 @@ public class CompanyVO {
 		startupFlag = Convert.formatInteger(req.getParameter("startupFlag"));
 		statusNo = req.getParameter("statusNo");
 		revenueNo = Convert.formatDouble(req.getParameter("revenueNo"));
-		revenueYear = Convert.formatInteger(req.getParameter("revenueYear"));
+		revenueYear = req.getParameter("revenueYear");
 		foundedYear = Convert.formatInteger(req.getParameter("foundedYear"));
 		completionScore = Convert.formatInteger(req.getParameter("completionScore"));
 		productNo = Convert.formatInteger(req.getParameter("productNo"));
@@ -181,16 +184,16 @@ public class CompanyVO {
 	public double getRevenueNo() {
 		return revenueNo;
 	}
-	public int getRevenueYear() {
-		return revenueYear;
-	}
-
-	public void setRevenueYear(int revenueYear) {
-		this.revenueYear = revenueYear;
-	}
 
 	public void setRevenueNo(double revenueNo) {
 		this.revenueNo = revenueNo;
+	}
+	@Column(name="revenue_yr")
+	public String getRevenueYear() {
+		return revenueYear;
+	}
+	public void setRevenueYear(String revenueYear) {
+		this.revenueYear = revenueYear;
 	}
 	@Column(name="startup_flg")
 	public int getStartupFlag() {
@@ -289,6 +292,18 @@ public class CompanyVO {
 	
 	public void addAttribute(CompanyAttributeVO attribute) {
 		this.attributes.add(attribute);
+	}
+
+	public List<GenericVO> getSections() {
+		return sections;
+	}
+
+	public void setSections(List<GenericVO> sections) {
+		this.sections = sections;
+	}
+	
+	public void addSection(GenericVO section) {
+		this.sections.add(section);
 	}
 	
 
