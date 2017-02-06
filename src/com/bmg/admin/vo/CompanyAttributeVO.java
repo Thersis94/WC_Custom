@@ -32,6 +32,7 @@ public class CompanyAttributeVO {
 	private String attr2Text;
 	private String attr3Text;
 	private int orderNo;
+	private String attributeTypeName;
 	
 	public CompanyAttributeVO() {
 		// Empty default constructor
@@ -118,6 +119,15 @@ public class CompanyAttributeVO {
 	}
 	public void setOrderNo(int orderNo) {
 		this.orderNo = orderNo;
+	}
+	
+
+	@Column(name="type_nm", isReadOnly=true)
+	public String getAttributeTypeName() {
+		return attributeTypeName;
+	}
+	public void setAttributeTypeName(String attributeTypeName) {
+		this.attributeTypeName = attributeTypeName;
 	}
 	
 
