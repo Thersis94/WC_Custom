@@ -2,32 +2,31 @@ package com.biomed.smarttrak.security;
 
 // Java 7
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
 //WC_Custom libs
-import com.biomed.smarttrak.admin.user.TeamManager;
-import com.biomed.smarttrak.admin.user.UserManager;
+import com.biomed.smarttrak.vo.TeamVO;
 import com.biomed.smarttrak.vo.UserVO;
 
 //SMTBaseLibs
-import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.security.AuthenticationException;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 
 //WebCrescendo libs
-import com.smt.sitebuilder.action.user.ProfileManager;
-import com.smt.sitebuilder.action.user.ProfileManagerFactory;
-import com.smt.sitebuilder.common.SiteVO;
-import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.common.constants.ErrorCodes;
-import com.smt.sitebuilder.security.DBLoginLockoutModule;
+import com.smt.sitebuilder.security.DBLoginModule;
 
 /*****************************************************************************
  <p><b>Title</b>: SmartTRAKLoginModule</p>
- <p><b>Description: </b></p>
+ <p><b>Description: </b>Custom login module for SmartTRAK user login.  Authenticates 
+ user against WebCrescendo core, then retrieves SmartTRAK user data and teams 
+ membership.</p>
  <p> 
  <p>Copyright: (c) 2000 - 2017 SMT, All Rights Reserved</p>
  <p>Company: Silicon Mountain Technologies</p>
@@ -36,7 +35,7 @@ import com.smt.sitebuilder.security.DBLoginLockoutModule;
  @since Jan 03, 2017
  <b>Changes:</b>
  ***************************************************************************/
-public class SmartTRAKLoginModule extends DBLoginLockoutModule {
+public class SmartTRAKLoginModule extends DBLoginModule {
 
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.security.DBLoginModule#retrieveUserData(java.lang.String, java.lang.String)
@@ -51,18 +50,15 @@ public class SmartTRAKLoginModule extends DBLoginLockoutModule {
 				StringUtil.checkVal(pwd,null) == null)
 			throw new AuthenticationException("No login information was supplied for authentication.");
 
-		// get a db connection
-		Connection conn = (Connection)initVals.get(GlobalConfig.KEY_DB_CONN);
-
 		// 1. Authenticate against WC core and load WC profile
-		UserDataVO wcUser = doAuthentication(conn, userNm, pwd);
+		UserDataVO wcUser = authenticateUserReturnFullProfile(userNm, pwd);
 
 		// 2. create/populate SmarttrakUserVO
-		UserVO tkUser = populateUser(wcUser, new UserVO());
+		UserVO tkUser = initializeSmartTRAKUser(wcUser, new UserVO());
 
-		// 3. Retrieve SmartTRAK-specific user data using the WC profileId.
+		// 3. Retrieve SmartTRAK-specific user data
+		Connection conn = (Connection)initVals.get(GlobalConfig.KEY_DB_CONN);
 		retrieveBaseUser(conn, tkUser);
-		retrieveBaseUserTeams(conn, tkUser);
 		log.debug("Retrieved SmartTRAK user and user-teams data...");
 
 		return tkUser;
@@ -74,7 +70,7 @@ public class SmartTRAKLoginModule extends DBLoginLockoutModule {
 	 * @param tkUser
 	 * @return
 	 */
-	private UserVO populateUser(UserDataVO wcUser, UserVO tkUser) {
+	private UserVO initializeSmartTRAKUser(UserDataVO wcUser, UserVO tkUser) {
 		// set fields from the WC UserDataVO data map
 		tkUser.setData(wcUser.getDataMap());
 		// set attributes
@@ -101,113 +97,44 @@ public class SmartTRAKLoginModule extends DBLoginLockoutModule {
 	 */
 	private void retrieveBaseUser(Connection conn, 
 			UserVO tkUser) throws AuthenticationException {
-		UserManager um = new UserManager(conn,getInitVals());
 		// use profile ID as that is all we have at the moment.
-		um.setProfileId(tkUser.getProfileId());
-		log.debug("searching for SmartTRAK user using profileId: " + tkUser.getProfileId());
+		StringBuilder sql = new StringBuilder(410);
+		sql.append("select u.user_id, u.profile_id, u.account_id, u.register_submittal_id, ");
+		sql.append("u.create_dt, u.update_dt, 	xr.create_dt as assigned_dt, 	t.team_nm, ");
+		sql.append("t.default_flg, t.private_flg from custom.biomedgps_user u ");
+		sql.append("left outer join custom.biomedgps_user_team_xr xr on u.user_id = xr.user_id ");
+		sql.append("inner join custom.biomedgps_team t on xr.team_id = t.team_id ");
+		sql.append("where u.profile_id = ? 	order by t.team_nm");
+		log.debug("Retrieve base user w/teams SQL: " + sql.toString());
+		log.debug("Using profileId: " + tkUser.getProfileId());
+		
+		try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+			ps.setString(1, tkUser.getProfileId());
+			ResultSet rs = ps.executeQuery();
 
-		List<UserVO> users;
-		try {
-			users = um.retrieveBaseUser();
+			UserVO resultUser = null;
+			List<TeamVO> teams = new ArrayList<>();
+			while (rs.next()) {
+				if (resultUser == null) {
+					resultUser = new UserVO(rs);
+					tkUser.setUserId(resultUser.getUserId());
+					tkUser.setAccountId(resultUser.getAccountId());
+					tkUser.setRegisterSubmittalId(resultUser.getRegisterSubmittalId());
+					tkUser.setCreateDate(resultUser.getCreateDate());
+					tkUser.setUpdateDate(resultUser.getUpdateDate());
+				}
+				TeamVO team = new TeamVO(rs);
+				teams.add(team);
+			}
+			log.debug("resultUser userId: " + resultUser.getUserId());
+			if (resultUser.getUserId() == null) {
+				throw new SQLException(ErrorCodes.ERR_INVALID_LOGIN);
+			}
 		} catch(SQLException ae) {
 			throw new AuthenticationException(ae.getMessage());
 		}
-
-		if (users.isEmpty() || 
-				users.size() > 1) {
-			log.error("Error retrieving SmartTRAK user; records found: " + users.size());
-			throw new AuthenticationException();
-		}
-
-		UserVO resultUser = users.get(0);
-		tkUser.setUserId(resultUser.getUserId());
-		tkUser.setAccountId(resultUser.getAccountId());
-		tkUser.setRegisterSubmittalId(resultUser.getRegisterSubmittalId());
-		tkUser.setCreateDate(resultUser.getCreateDate());
-		tkUser.setUpdateDate(resultUser.getUpdateDate());
 	}
 	
-	/**
-	 * Retrieves list of teams to which a user belongs and populates
-	 * the user VO with the list of teams.
-	 * @param conn
-	 * @param tkUser
-	 * @throws AuthenticationException
-	 */
-	private void retrieveBaseUserTeams(Connection conn, 
-			UserVO tkUser) throws AuthenticationException {
-		TeamManager tm = new TeamManager(conn,getInitVals());
-		// retrieve teams based on user ID.
-		tm.setUserId(tkUser.getUserId());
-		
-		try {
-			tkUser.setTeams(tm.retrieveTeams());
-		} catch (SQLException ae) {
-			throw new AuthenticationException(ae.getMessage());
-		}
-
-	}
-
-	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.security.DBLoginLockoutModule#authenticateUser(java.lang.String, java.lang.String)
-	 */
-	@Override
-	public UserDataVO authenticateUser(String userNm, String pwd) throws AuthenticationException {
-		log.debug("starting SmartTRAK login module's authenticate user, about to call my own retrieveUserData");
-		return this.retrieveUserData(userNm, pwd);
-	}
-	
-	/**
-	 * Calls base class' authentication method, checks for valid authentication and lockout.  If 
-	 * user authenticated and is not locked out, attempt to load profile.
-	 * @param conn
-	 * @param userNm
-	 * @param pwd
-	 * @return
-	 * @throws AuthenticationException
-	 */
-	private UserDataVO doAuthentication(Connection conn, String userNm, String pwd) 
-			throws AuthenticationException {
-		/* Get the user's auth record, check for isAuthenticated and isLockedOut.
-		 * Then and only then do we try to retrieve a profile. */
-		UserDataVO authUser = super.authenticateUser(userNm,pwd);
-		
-		if (! authUser.isAuthenticated()) {
-			throw new AuthenticationException(ErrorCodes.ERR_INVALID_LOGIN);
-		} else if (authUser.isLockedOut()) {
-			throw new AuthenticationException(ErrorCodes.ERR_ACCOUNT_LOCKOUT);
-		}
-	
-		// Obtain the orgId for the profile lookup by auth Id.
-		ActionRequest req = (ActionRequest)initVals.get(GlobalConfig.ACTION_REQUEST);
-		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
-		String orgId = site.getOrganizationId();
-		
-		// Retrieve the full profile by authentication ID lookup
-		ProfileManager pm = ProfileManagerFactory.getInstance(initVals);
-		UserDataVO wcUser;
-		try {
-			wcUser = pm.getProfile(authUser.getAuthenticationId(), conn, ProfileManager.AUTH_ID_LOOKUP, orgId);
-			// If the lookup failed, bail.
-			if (wcUser.getProfileId() == null) 
-				throw new AuthenticationException();
-			wcUser.setAuthenticated(authUser.isAuthenticated());
-			wcUser.setAuthenticationLogId(authUser.getAuthenticationLogId());
-			wcUser.setPasswordResetFlag(authUser.getPasswordResetFlag());
-			if (authUser.getPasswordResetFlag() == 1) {
-				wcUser.setPasswordHistory(authUser.getPasswordHistory());
-			}
-			// set the 'password changed date' so we can check for expired password.
-			wcUser.setPasswordChangeDate(authUser.getPasswordChangeDate());
-		} catch (Exception e) {
-			log.error("Error attempting to retrieve WebCrescendo profile: " + e.getMessage());
-			throw new AuthenticationException(ErrorCodes.ERR_INVALID_LOGIN);
-		}
-
-		return wcUser;
-
-	}
-
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.security.AbstractLoginModule#hasUserProfile()
 	 */
