@@ -59,7 +59,7 @@ public abstract class AbstractTreeAction extends SBActionAdapter {
 
 		//Common Cache Group for Content Hierarchy Data.
 		mod.setCacheGroups(cacheGroups);
-		mod.addCacheGroup(getCacheKey());
+		mod.setPageModuleId(getCacheKey());
 
 		//Write to Cache.
 		super.writeToCache(mod);
