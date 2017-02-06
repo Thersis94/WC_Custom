@@ -29,6 +29,7 @@ public class FinancialDashVO extends SBModuleVO {
 	private FinancialDashColumnSet colHeaders;
 	private List<FinancialDashDataRowVO> rows;
 	private String sectionId;
+	private String scenarioId;
 	
 	/**
 	 * Provides a logger
@@ -156,6 +157,13 @@ public class FinancialDashVO extends SBModuleVO {
 	}
 
 	/**
+	 * @return the scenarioId
+	 */
+	public String getScenarioId() {
+		return scenarioId;
+	}
+
+	/**
 	 * @param colHeaders the colHeaders to set
 	 */
 	public void setColHeaders(FinancialDashColumnSet colHeaders) {
@@ -239,5 +247,12 @@ public class FinancialDashVO extends SBModuleVO {
 	 */
 	public void setSectionId(String sectionId) {
 		this.sectionId = sectionId;
+	}
+	
+	/**
+	 * @param scenarioId the scenarioId to set
+	 */
+	public void setScenarioId(String scenarioId) {
+		this.scenarioId = scenarioId;
 	}
 }
