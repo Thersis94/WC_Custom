@@ -1,7 +1,9 @@
 package com.biomed.smarttrak.vo;
 
 import java.sql.ResultSet;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
@@ -34,9 +36,10 @@ public class ProductAttributeTypeVO {
 	private String abbrName;
 	private int orderNo;
 	private int activeFlag;
+	private List<String> sectionIds;
 	
 	public ProductAttributeTypeVO () {
-		// default constructor
+		this.sectionIds = new ArrayList<>();
 	}
 	
 	public ProductAttributeTypeVO (ActionRequest req) {
@@ -103,6 +106,24 @@ public class ProductAttributeTypeVO {
 	}
 	public void setActiveFlag(int activeFlag) {
 		this.activeFlag = activeFlag;
+	}
+	public List<String> getSectionIds() {
+		return sectionIds;
+	}
+	public void setSectionIds(List<String> sectionIds) {
+		this.sectionIds = sectionIds;
+	}
+	public void addSectionIds(String sectionIds) {
+		if (sectionIds == null) return;
+		for (String sectionId : sectionIds.split(",")) 
+			this.sectionIds.add(sectionId);
+	}
+	public String getSectionIdClassList() {
+		StringBuilder classes = new StringBuilder();
+		for (String s : sectionIds) {
+			classes.append(s).append(" ");
+		}
+		return classes.toString();
 	}
 
 
