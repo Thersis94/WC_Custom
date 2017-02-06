@@ -4,6 +4,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 
 /****************************************************************************
@@ -39,12 +40,7 @@ public class InsightBlogAction extends SBActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 	
 		log.debug("insite blog action retrieve called " + actionInit.getActionId());
-		//TODO catching the page to i can build the public admin widget directly
-		super.retrieve(req);
-		//TODO is this a good way to tell i am not in the admintool?
-		if(!Convert.formatBoolean(req.getParameter("manMod"))){
-		this.list(req);
-		}
+
 	}
 	
 	
@@ -55,18 +51,20 @@ public class InsightBlogAction extends SBActionAdapter {
 	@Override
 	public void list(ActionRequest req) throws ActionException {
 		log.debug("insite blog action list called " + actionInit.getActionId());
+		String type = StringUtil.checkVal(req.getParameter("type"));
 		
+		if ("author".equals(type)) {
+			type = "team";
+		}
 		log.debug(" action id: " + actionInit.getActionId());
 		actionInit.setActionId("eb19b0e489ade9bd7f000101577715c8");
+		req.setParameter(SB_ACTION_ID, "eb19b0e489ade9bd7f000101577715c8");
+		req.setAttribute(SB_ACTION_ID, "eb19b0e489ade9bd7f000101577715c8");
+		req.setParameter("display", "/custom/biomed/smarttrak/admin/smarttrak_insight/" + type  + ".jsp");
+
 		log.debug(" action id: " + actionInit.getActionId());
 		
-		if(Convert.formatBoolean(req.getParameter("manmod"))){
-			
-			super.list(req);
-		
-		}else {
-			super.retrieve(req);
-		}
+	
 		
 		log.debug("post super call " + actionInit.getActionId());
 		
@@ -80,13 +78,20 @@ public class InsightBlogAction extends SBActionAdapter {
 	public void update(ActionRequest req) throws ActionException{
 		log.debug("insite blog action update called");
 		
-		super.update(req);
+	
 		
 		// get the correct blog id for the insight blog
+		String type = StringUtil.checkVal(req.getParameter("type"));
 		
+		if ("author".equals(type)) {
+			type = "team";
+		}
 		// change action id to the right blog id
 		log.debug(" action id: " + actionInit.getActionId());
 		actionInit.setActionId("eb19b0e489ade9bd7f000101577715c8");
+		req.setParameter(SB_ACTION_ID, "eb19b0e489ade9bd7f000101577715c8");
+		req.setAttribute(SB_ACTION_ID, "eb19b0e489ade9bd7f000101577715c8");
+		req.setParameter("display", "/custom/biomed/smarttrak/admin/smarttrak_insight/" + type  + ".jsp");
 		log.debug(" action id: " + actionInit.getActionId());
 		
 		// might need to move data from admin module to public module
@@ -103,13 +108,21 @@ public class InsightBlogAction extends SBActionAdapter {
 	@Override
 	public void delete(ActionRequest req) throws ActionException{
 		log.debug("insite blog action delete called");
-		super.delete(req);
 		
+		String type = StringUtil.checkVal(req.getParameter("type"));
+		
+		if ("author".equals(type)) {
+			type = "team";
+		}
 		// get the correct blog id for the insight blog
 		
 		// change action id to the right blog id
 		log.debug(" action id: " + actionInit.getActionId());
 		actionInit.setActionId("eb19b0e489ade9bd7f000101577715c8");
+		req.setParameter(SB_ACTION_ID, "eb19b0e489ade9bd7f000101577715c8");
+		req.setAttribute(SB_ACTION_ID, "eb19b0e489ade9bd7f000101577715c8");
+		req.setParameter("display", "/custom/biomed/smarttrak/admin/smarttrak_insight/" + type  + ".jsp");
+
 		log.debug(" action id: " + actionInit.getActionId());
 		
 
