@@ -71,7 +71,7 @@ public class FinancialDashAction extends SBActionAdapter {
 	 * 
 	 * @param dash
 	 */
-	private void getFinancialData(FinancialDashVO dash) {
+	protected void getFinancialData(FinancialDashVO dash) {
 		String sql = getFinancialDataSql(dash);
 		TableType tt = dash.getTableType();
 		int regionCnt = dash.getCountryTypes().size();
@@ -102,7 +102,7 @@ public class FinancialDashAction extends SBActionAdapter {
 	 * Returns the sql for retrieving financial data. 
 	 * @return
 	 */
-	private String getFinancialDataSql(FinancialDashVO dash) {
+	protected String getFinancialDataSql(FinancialDashVO dash) {
 		String custom = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(2000);
 
