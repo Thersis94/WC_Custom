@@ -108,7 +108,7 @@ public class NoteAction extends SBActionAdapter {
 		//TODO no company, product, or market to test it in yet
 		vo.setCompanyId("2792");
 
-		if ("user".equals(vo.getTeamId().toLowerCase())){
+		if ("user".equalsIgnoreCase(vo.getTeamId().toLowerCase())){
 			vo.setTeamId(null);
 		}
 
