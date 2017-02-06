@@ -132,12 +132,13 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 					tkUser.setRegisterSubmittalId(resultUser.getRegisterSubmittalId());
 					tkUser.setCreateDate(resultUser.getCreateDate());
 					tkUser.setUpdateDate(resultUser.getUpdateDate());
+					log.debug("resultUser userId: " + resultUser.getUserId());
 				}
 				TeamVO team = new TeamVO(rs);
 				teams.add(team);
 			}
-			log.debug("resultUser userId: " + resultUser.getUserId());
-			if (resultUser.getUserId() == null) {
+
+			if (resultUser == null || resultUser.getUserId() == null) {
 				throw new SQLException(ErrorCodes.ERR_INVALID_LOGIN);
 			}
 		} catch(SQLException ae) {
