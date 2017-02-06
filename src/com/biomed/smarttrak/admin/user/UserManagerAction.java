@@ -51,18 +51,10 @@ public class UserManagerAction extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO)getAttribute(Constants.MODULE_DATA);
-		List<UserVO> users;
+		List<UserVO> users = new ArrayList<>();
+		// Retrieve users stub
 		
-		try {
-			UserManager um = new UserManager(dbConn,attributes);
-			um.setUserId(req.getParameter("userId"));
-			users = um.retrieveCompleteUser();
-			
-		} catch (Exception ae) {
-			users = new ArrayList<>();
-			mod.setError(ae.getMessage(),ae);
-		}
-		
+		// put module data
 		this.putModuleData(users, users.size(), false, mod.getErrorMessage(), mod.getErrorCondition());
 		
 	}
