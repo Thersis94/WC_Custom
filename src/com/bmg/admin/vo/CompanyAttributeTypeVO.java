@@ -2,9 +2,9 @@ package com.bmg.admin.vo;
 
 import java.util.Date;
 
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
-import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
@@ -37,11 +37,11 @@ public class CompanyAttributeTypeVO {
 		// default constructor
 	}
 	
-	public CompanyAttributeTypeVO (SMTServletRequest req) {
+	public CompanyAttributeTypeVO (ActionRequest req) {
 		setData(req);
 	}
 	
-	private void setData(SMTServletRequest req) {
+	private void setData(ActionRequest req) {
 		attributeId = req.getParameter("attributeId");
 		attributeName = req.getParameter("attributeName");
 		attributeTypeName = req.getParameter("attributeTypeName");
