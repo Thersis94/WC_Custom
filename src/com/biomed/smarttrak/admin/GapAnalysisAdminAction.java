@@ -21,7 +21,9 @@ import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -64,7 +66,9 @@ public class GapAnalysisAdminAction extends GapAnalysisAction {
 
 		if(!StringUtil.isEmpty(sectionId)) {
 			List<GapColumnVO> cols = loadColumns(sectionId, gaColumnId);
-			if(!StringUtil.isEmpty(gaColumnId)) {
+
+			//If requesting a specific Column, load Product Attributes.
+			if(!StringUtil.isEmpty(gaColumnId) || Convert.formatBoolean(req.getParameter("isAdd"))) {
 				req.setAttribute("gapAttributes", getProdAttributes(gaColumnId));
 			}
 			this.putModuleData(cols, cols.size(), false);
@@ -72,6 +76,7 @@ public class GapAnalysisAdminAction extends GapAnalysisAction {
 	}
 
 	/**
+	 * Helper method loads all the Gap Column Data on the request.
 	 * @param sectionId
 	 * @param gaColumnId
 	 * @return 
@@ -88,16 +93,25 @@ public class GapAnalysisAdminAction extends GapAnalysisAction {
 			GapColumnVO gap = null;
 			String gaColId = null;
 			while(rs.next()) {
+
+				//Check if ga_column_id is new.
 				if(!rs.getString("ga_column_id").equals(gaColId)) {
+
+					//If gap isn't null add it to the list.
 					if(gap != null) {
 						columns.add(gap);
 					}
+
+					//Instantiate new GapColumnVO and update gaColId.
 					gap = new GapColumnVO(rs);
 					gaColId = rs.getString("ga_column_id");
 				}
+
+				//Add Column Attribute on each call.
 				gap.addAttribute(new GapColumnAttributeVO(rs));
 			}
 
+			//Add Trailing GapColumnVO.
 			columns.add(gap);
 		} catch (SQLException e) {
 			log.error(e);
@@ -106,7 +120,12 @@ public class GapAnalysisAdminAction extends GapAnalysisAction {
 		return columns;
 	}
 
-	public Node getProdAttributes(String gaColumnId) {
+	/**
+	 * Helper method loads all Product Attributes.
+	 * @param gaColumnId
+	 * @return
+	 */
+	private Node getProdAttributes(String gaColumnId) {
 		Map<String, Node> nodes = new LinkedHashMap<>();
 		Tree t = null;
 
@@ -130,7 +149,11 @@ public class GapAnalysisAdminAction extends GapAnalysisAction {
 		return null;
 	}
 
-	public String getProdAttributesSql() {
+	/**
+	 * Helper method that retrieves all Product Attributes in the system.
+	 * @return
+	 */
+	private String getProdAttributesSql() {
 		StringBuilder sql = new StringBuilder(400);
 		String custom = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("select * from ").append(custom);
@@ -143,7 +166,10 @@ public class GapAnalysisAdminAction extends GapAnalysisAction {
 
 		return sql.toString();
 	}
+
 	/**
+	 * Helper method retrieves list of Gap Columns or Gap Column with all
+	 * attributes depending on if a column Id is passed.
 	 * @param empty
 	 * @return
 	 */
@@ -154,7 +180,7 @@ public class GapAnalysisAdminAction extends GapAnalysisAction {
 		sql.append("biomedgps_ga_column a ");
 
 		if(hasColumnId) {
-			sql.append("inner join ").append(custom);
+			sql.append("left outer join ").append(custom);
 			sql.append("biomedgps_ga_column_attribute_xr b ");
 			sql.append("on a.ga_column_id = b.ga_column_id ");
 		}
@@ -168,16 +194,93 @@ public class GapAnalysisAdminAction extends GapAnalysisAction {
 
 	@Override
 	public void build(ActionRequest req) {
-		if(req.hasParameter("gaColumnId")) {
+		String actionPerform = req.getParameter("actionPerform");
+
+		if(!StringUtil.isEmpty(actionPerform) && "delete".equals(actionPerform)) {
+			delete(req);
+		} else if(req.hasParameter("gaColumnId") || Convert.formatBoolean(req.getParameter("isAdd"))) {
 			updateColumn(new GapColumnVO(req));
 		}
 	}
 
-	public void updateColumn(GapColumnVO col) {
+	/**
+	 * Helper method saves all the attributes for a Given GapColumnVO.
+	 * @param req
+	 */
+	private void saveAttributes(GapColumnVO col) {
+		deleteAttributes(col.getGaColumnId());
+
+		try(PreparedStatement ps = dbConn.prepareStatement(getAttributeCreateSql())) {
+			UUIDGenerator uuid = new UUIDGenerator();
+			for(GapColumnAttributeVO attr : col.getAttributes().values()) {
+				ps.setString(1, attr.getAttributeId());
+				ps.setString(2, col.getGaColumnId());
+				ps.setTimestamp(3, Convert.getCurrentTimestamp());
+				ps.setString(4, uuid.getUUID());
+				ps.addBatch();
+			}
+
+			int [] res = ps.executeBatch();
+
+			log.info("Inserted " + res[0] + " attributes");
+		} catch (SQLException e) {
+			log.error("Error updating attributes", e);
+			log.error("Next Exception", e.getNextException());
+		}
+	}
+
+	/**
+	 * Helper method builds the Attribute Creation Sql Statement.
+	 * @return
+	 */
+	private String getAttributeCreateSql() {
+		StringBuilder sql = new StringBuilder(200);
+		sql.append("insert into ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("biomedgps_ga_column_attribute_xr (attribute_id, ");
+		sql.append("ga_column_id, create_dt, column_attribute_xr_id) "); 
+		sql.append("values (?,?,?,?)");
+		return sql.toString();
+	}
+
+	/**
+	 * Helper method deletes all Gap Column Attributes.
+	 * @param gaColumnId
+	 */
+	private void deleteAttributes(String gaColumnId) {
+		try(PreparedStatement ps = dbConn.prepareStatement(getDeleteAttributeSql())) {
+			ps.setString(1, gaColumnId);
+
+			ps.executeUpdate();
+		} catch (SQLException e) {
+			log.error("Error Deleting Attributes", e);
+		}
+	}
+
+	/**
+	 * Helper method builds Gap Column Attribute Delete Sql.
+	 * @return
+	 */
+	private String getDeleteAttributeSql() {
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("delete from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("biomedgps_ga_column_attribute_xr where ga_column_id = ?");
+
+		return sql.toString();
+	}
+
+	/**
+	 * Helper method saves Gap Column.
+	 * @param col
+	 */
+	private void updateColumn(GapColumnVO col) {
 		DBProcessor dbp = new DBProcessor(dbConn, (String) getAttribute(Constants.CUSTOM_DB_SCHEMA));
 
 		try {
 			dbp.save(col);
+			if(StringUtil.isEmpty(col.getGaColumnId())) {
+				col.setGaColumnId(dbp.getGeneratedPKId());
+			}
+			saveAttributes(col);
 		} catch(Exception e) {
 			log.error("Problem saving Column.", e);
 		}
