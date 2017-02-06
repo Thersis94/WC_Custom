@@ -51,12 +51,22 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 			throw new AuthenticationException("No login information was supplied for authentication.");
 
 		// 1. Authenticate against WC core and load WC profile
-		UserDataVO wcUser = authenticateUserReturnFullProfile(userNm, pwd);
+		UserDataVO wcUser = authenticateUser(userNm, pwd);
+		
+		// 2. If authenticated, load full profile and user registration, otherwise reject login.
+		if (wcUser.isAuthenticated()) {
+			retrieveFullUserProfile(wcUser);
+			retrieveUserRegistration(wcUser);
+		} else if (wcUser.isLockedOut()) {
+			throw new AuthenticationException(ErrorCodes.ERR_ACCOUNT_LOCKOUT);
+		} else {
+			throw new AuthenticationException(ErrorCodes.ERR_INVALID_LOGIN);
+		}
 
-		// 2. create/populate SmarttrakUserVO
+		// 3. create/populate SmarttrakUserVO based on the WC user data
 		UserVO tkUser = initializeSmartTRAKUser(wcUser, new UserVO());
 
-		// 3. Retrieve SmartTRAK-specific user data
+		// 4. Retrieve SmartTRAK-specific user data
 		Connection conn = (Connection)initVals.get(GlobalConfig.KEY_DB_CONN);
 		retrieveBaseUser(conn, tkUser);
 		log.debug("Retrieved SmartTRAK user and user-teams data...");
@@ -88,7 +98,7 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 	
 	/**
 	 * Retrieves base SmartTRAK-specific user data for a user based on 
-	 * the user ID field or the profile ID field poplated
+	 * the user ID field or the profile ID field populated
 	 * WC profile ID and populates the ST user bean with that data.
 	 * @param conn
 	 * @param tkUser
