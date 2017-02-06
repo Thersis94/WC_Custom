@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 
 
-
 //WC custom
 import com.biomed.smarttrak.vo.NoteVO;
 
@@ -21,11 +20,12 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
+import com.smt.sitebuilder.action.SBActionAdapter;
 
 //WebCrescendo
-import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
+import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -41,7 +41,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @since Jan 24, 2017<p/>
  * @updates:
  ****************************************************************************/
-public class NoteAction extends SimpleActionAdapter {
+public class NoteAction extends SBActionAdapter {
 
 	public enum NoteType {
 		COMPANY,
@@ -81,15 +81,29 @@ public class NoteAction extends SimpleActionAdapter {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		log.debug("Notes Action Build called");
+	
 		DBProcessor db = new DBProcessor(dbConn, (String) attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		NoteVO vo= new NoteVO(req);
 
+		//TODO biomed user data vo not present on request
+		vo.setUserId("8080");
+		//TODO no company, product, or market to test it in yet
+		vo.setCompanyId("2792");
+		 
+		if ("user".equals(vo.getTeamId().toLowerCase())){
+			vo.setTeamId(null);
+		}
+		
 		if(req.hasParameter("isDelete")) {
 			deleteNote(vo, db);	
 		} else {			
 			saveNote(vo, db);
 		}
 
+		//TODO add the new id back to the mod data
+		 ModuleVO modVo = (ModuleVO) attributes.get(Constants.MODULE_DATA);
+	       modVo.setAttribute("newNoteId", vo.getNoteId() );
+	       attributes.put(Constants.MODULE_DATA, modVo);
 	}
 
 	/**
