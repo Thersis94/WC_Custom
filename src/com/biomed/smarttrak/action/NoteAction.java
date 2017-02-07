@@ -5,11 +5,11 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-
 
 //WC custom
 import com.biomed.smarttrak.vo.NoteVO;
@@ -19,19 +19,21 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
-import com.siliconmtn.http.SMTServletRequest;
+import com.siliconmtn.security.EncryptionException;
+import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
+import com.smt.sitebuilder.action.SBActionAdapter;
 
 //WebCrescendo
-import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
+import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title</b>: NoteAction.java <p/>
- * <b>Project</b>: WebCrescendo <p/>
+ * <b>Project</b>: WC_Custom <p/>
  * <b>Description: </b> can be used to request a map of list of notes, and build can be called to 
  * add update or delete a note.
  * <p/>
@@ -42,7 +44,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @since Jan 24, 2017<p/>
  * @updates:
  ****************************************************************************/
-public class NoteAction extends SimpleActionAdapter {
+public class NoteAction extends SBActionAdapter {
 
 	public enum NoteType {
 		COMPANY,
@@ -70,9 +72,24 @@ public class NoteAction extends SimpleActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("Notes Action Retrieve called");
-		
-		//TODO put a list of notes on mod data
-		
+		String encKey = (String) getAttribute(Constants.ENCRYPT_KEY);
+		Calendar cal = Calendar.getInstance();
+		cal.setTime(new Date()); 
+		cal.add(Calendar.HOUR_OF_DAY, 3);
+
+		try  {
+			StringEncrypter se = new StringEncrypter(encKey);
+
+			String fileToken = se.encrypt(cal.getTime().toString());
+			log.debug("note lode time " + cal.getTime().toString());
+			ModuleVO modVo = (ModuleVO) attributes.get(Constants.MODULE_DATA);
+			modVo.setAttribute("noteToken", fileToken );
+			attributes.put(Constants.MODULE_DATA, modVo);
+
+		} catch (EncryptionException e) {
+			log.error("error during string encryption " + e);
+		}
+
 	}
 
 	/*
@@ -82,15 +99,33 @@ public class NoteAction extends SimpleActionAdapter {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		log.debug("Notes Action Build called");
+
 		DBProcessor db = new DBProcessor(dbConn, (String) attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		NoteVO vo= new NoteVO(req);
+		
+		//TODO biomed user data vo not present on request
+		vo.setUserId("8080");
+		//TODO no company, product, or market to test it in yet
+		vo.setCompanyId("2792");
+		
+		if ("user".equalsIgnoreCase(vo.getTeamId().toLowerCase())){
+			vo.setTeamId(null);
+		}
 
+		ModuleVO modVo = (ModuleVO) attributes.get(Constants.MODULE_DATA);
+		
 		if(req.hasParameter("isDelete")) {
 			deleteNote(vo, db);	
 		} else {			
 			saveNote(vo, db);
+			modVo.setAttribute("newNoteId", vo.getNoteId() );
+			modVo.setAttribute("newNote", vo);
+			log.debug("added new note " + vo);
 		}
 
+		
+		
+		attributes.put(Constants.MODULE_DATA, modVo);
 	}
 
 	/**

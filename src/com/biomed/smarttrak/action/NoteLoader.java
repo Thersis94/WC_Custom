@@ -19,7 +19,7 @@ import com.smt.sitebuilder.action.SimpleActionAdapter;
 
 /****************************************************************************
  * <b>Title</b>: NoteLoder.java <p/>
- * <b>Project</b>: WebCrescendo <p/>
+ * <b>Project</b>: WC_Custom <p/>
  * <b>Description: </b> takes a list of VOs, and gets notes related to that VOs type
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2017<p/>

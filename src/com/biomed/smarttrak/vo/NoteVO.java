@@ -5,21 +5,17 @@ import java.io.Serializable;
 import java.sql.ResultSet;
 import java.util.Date;
 
-import org.mortbay.log.Log;
-
-
-import com.siliconmtn.action.ActionRequest;
 //SMT baselibs
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
-import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: NoteVO.java <p/>
- * <b>Project</b>: WebCrescendo <p/>
+ * <b>Project</b>: WC_Custom <p/>
  * <b>Description: </b> Value object that will hold all the data for one note
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2017<p/>
@@ -72,16 +68,15 @@ public class NoteVO implements Serializable {
 		this.attributeId = req.getParameter("attributeId");
 		this.productId = req.getParameter("productId");
 		this.marketId  = req.getParameter("marketId");
-		this.noteName = StringUtil.checkVal(req.getParameter("noteNm"));
-		this.noteText = StringUtil.checkVal(req.getParameter("noteTxt"));
-		this.filePathText = StringUtil.checkVal(req.getParameter("filePathTxt"));
-		this.expirationDate = Convert.formatDate(Convert.DATE_SLASH_PATTERN, 
-				StringUtil.checkVal(req.getParameter("expirationDt")));
-		this.creationDate = Convert.formatDate(Convert.DATE_SLASH_PATTERN, 
-				StringUtil.checkVal(req.getParameter("createDt")));
-		this.updateDate = Convert.formatDate(Convert.DATE_SLASH_PATTERN, 
-				StringUtil.checkVal(req.getParameter("updateDt")));
-
+		this.noteName = StringUtil.checkVal(req.getParameter("noteName"));
+		this.noteText = StringUtil.checkVal(req.getParameter("noteText"));
+		this.filePathText = StringUtil.checkVal(req.getParameter("filePath"));
+		this.expirationDate = Convert.formatDate(Convert.DATE_SLASH_SHORT_PATTERN, 
+				StringUtil.checkVal(req.getParameter("expirationDate")));
+		this.creationDate = Convert.formatDate(Convert.DATE_SLASH_SHORT_PATTERN, 
+				StringUtil.checkVal(req.getParameter("createDate")));
+		this.updateDate = Convert.formatDate(Convert.DATE_SLASH_SHORT_PATTERN, 
+				StringUtil.checkVal(req.getParameter("updateDate")));
 
 	}
 	/**
@@ -110,7 +105,6 @@ public class NoteVO implements Serializable {
 	public boolean isNoteSaveable() {
 		if (StringUtil.isEmpty(userId)) return false;
 		if (StringUtil.isEmpty(noteText) || StringUtil.isEmpty(noteName)) return false;
-	
 		//ensure we have one of the 3 bindings - company, market or product
 		return !StringUtil.isEmpty(companyId) || !StringUtil.isEmpty(marketId) || !StringUtil.isEmpty(productId);
 	}
