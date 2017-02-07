@@ -29,11 +29,11 @@ public class GapTableVO implements Serializable {
 	 */
 	private static final long serialVersionUID = 7621234595265372737L;
 	private Map<String, GapCompanyVO> companies;
-	private List<Node> columns;
+	private List<Node> headers;
 
 	public GapTableVO() {
 		companies = new HashMap<>();
-		columns = new ArrayList<>();
+		headers = new ArrayList<>();
 	}
 
 	/**
@@ -46,8 +46,8 @@ public class GapTableVO implements Serializable {
 	/**
 	 * @return the columns
 	 */
-	public List<Node> getColumns() {
-		return columns;
+	public List<Node> getHeaders() {
+		return headers;
 	}
 
 	/**
@@ -60,7 +60,26 @@ public class GapTableVO implements Serializable {
 	/**
 	 * @param columns the columns to set.
 	 */
-	public void setColumns(List<Node> columns) {
-		this.columns = columns;
+	public void setHeaders(List<Node> headers) {
+		this.headers = headers;
+	}
+
+	public List<Node> getColumns() {
+		List<Node> cols = new ArrayList<>();
+
+		for(Node g : headers) {
+			for(Node p : g.getChildren()) {
+				if(p.isLeaf()) {
+					cols.add(p);
+				} else {
+					for(Node c : p.getChildren()) {
+						if(c.isLeaf()) {
+							cols.add(c);
+						}
+					}
+				}
+			}
+		}
+		return cols;
 	}
 }

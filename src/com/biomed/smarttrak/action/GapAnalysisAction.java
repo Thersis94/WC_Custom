@@ -39,6 +39,7 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 
 	public static final String GAP_ROOT_ID = "GAP_ANALYSIS_ROOT";
 	public static final String GAP_CACHE_KEY = "GAP_ANALYSIS_TREE_CACHE_KEY";
+	private String [] selNodes;
 	public GapAnalysisAction() {
 		super();
 	}
@@ -54,14 +55,13 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 	public void retrieve(ActionRequest req) throws ActionException {
 		if(req.hasParameter("selNodes")) {
 
-			List<Node> colData = getColData(req);
 
 			//Instantiate GapTableVO to Store Data.
 			GapTableVO gtv = new GapTableVO();
 
 			//Filter the List of Nodes to just the ones we want.
-			String [] selNodes = req.getParameterValues("selNodes");
-			gtv.setColumns(filterNodes(colData, selNodes));
+			selNodes = req.getParameterValues("selNodes");
+			gtv.setColumns(filterNodes(getColData(req)));
 
 			//Get Table Body Data based on columns in the GTV.
 			//loadGapTableData(gtv);
@@ -72,6 +72,11 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 
 	/**
 	 * Helper method that returns all the representing Columns Data.
+	 * 
+	 * TODO Figure out how to cache the full tree.  Was running into weird
+	 * cache poisoning issues after initial request where the cached tree
+	 * was filtered already and couldn't re-filter it when selOptions were
+	 * changed.
 	 * @param req
 	 * @return
 	 * @throws ActionException
@@ -81,34 +86,20 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 
 		List<Node> nodes = null;
 
-		//Attempt to read GapColumnData from Cache.
-		ModuleVO mod = super.readFromCache(GAP_CACHE_KEY);
+		//Get Sections from super.
+		super.retrieve(req);
+		ModuleVO mod = (ModuleVO) this.getAttribute(Constants.MODULE_DATA);
+		nodes = (List<Node>) mod.getActionData();
 
-		//If not found in cache Load data.
-		if(mod == null) {
+		//Get All the columns.
+		nodes.addAll(getColumns());
 
-			//Get Sections from super.
-			super.retrieve(req);
-			mod = (ModuleVO) this.getAttribute(Constants.MODULE_DATA);
-			nodes = (List<Node>) mod.getActionData();
+		//Build a tree and sort nodes so children are set properly.
+		Tree t = new Tree(nodes);
 
-			//Get All the columns.
-			nodes.addAll(getColumns());
-
-			//Build a tree and sort nodes so children are set properly.
-			Tree t = new Tree(nodes);
-
-			//Filter down to the Gap Node and retrieve it's children.
-			Node n = t.findNode(GAP_ROOT_ID);
-			nodes = n.getChildren();
-
-			//Save List to cache.
-			super.writeToCache(nodes, "SMARTTRAK", GAP_CACHE_KEY);
-
-		} else {
-			//Get the Tree off the actionData
-			nodes = (List<Node>) mod.getActionData();
-		}
+		//Filter down to the Gap Node and retrieve it's children.
+		Node n = t.findNode(GAP_ROOT_ID);
+		nodes = n.getChildren();
 
 		//Get Columns
 		return nodes;
@@ -119,7 +110,7 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 	 * @param selNodes
 	 * @return
 	 */
-	private List<Node> filterNodes(List<Node> nodes, String[] selNodes) {
+	private List<Node> filterNodes(List<Node> nodes) {
 		List<Node> filteredNodes = new ArrayList<>();
 		for(Node g : nodes) {
 			for(Node p : g.getChildren()) {
