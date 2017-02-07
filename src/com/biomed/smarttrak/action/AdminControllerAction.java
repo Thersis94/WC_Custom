@@ -99,13 +99,13 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	private ActionInterface loadAction(String actionType) throws ActionException {
 		ActionInterface action;
 		switch (StringUtil.checkVal(actionType)) {
-			case "contentHierarchy":
+			case "hierarchy":
 				action = new ContentHierarchyAction();
 				break;
 			case "gapAnalysis":
 				action = new GapAnalysisAction();
 				break;
-			case "gapAnalysisAdmin":
+			case "agap":
 				action = new GapAnalysisAdminAction();
 				break;
 			case "financialDashboard":
