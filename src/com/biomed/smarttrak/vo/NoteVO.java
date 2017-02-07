@@ -15,7 +15,7 @@ import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: NoteVO.java <p/>
- * <b>Project</b>: WebCrescendo <p/>
+ * <b>Project</b>: WC_Custom <p/>
  * <b>Description: </b> Value object that will hold all the data for one note
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2017<p/>

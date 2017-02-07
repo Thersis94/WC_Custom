@@ -33,7 +33,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title</b>: NoteAction.java <p/>
- * <b>Project</b>: WebCrescendo <p/>
+ * <b>Project</b>: WC_Custom <p/>
  * <b>Description: </b> can be used to request a map of list of notes, and build can be called to 
  * add update or delete a note.
  * <p/>
@@ -81,7 +81,7 @@ public class NoteAction extends SBActionAdapter {
 			StringEncrypter se = new StringEncrypter(encKey);
 
 			String fileToken = se.encrypt(cal.getTime().toString());
-
+			log.debug("note lode time " + cal.getTime().toString());
 			ModuleVO modVo = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 			modVo.setAttribute("noteToken", fileToken );
 			attributes.put(Constants.MODULE_DATA, modVo);
@@ -112,14 +112,19 @@ public class NoteAction extends SBActionAdapter {
 			vo.setTeamId(null);
 		}
 
+		ModuleVO modVo = (ModuleVO) attributes.get(Constants.MODULE_DATA);
+		
 		if(req.hasParameter("isDelete")) {
 			deleteNote(vo, db);	
 		} else {			
 			saveNote(vo, db);
+			modVo.setAttribute("newNoteId", vo.getNoteId() );
+			modVo.setAttribute("newNote", vo);
+			log.debug("added new note " + vo);
 		}
 
-		ModuleVO modVo = (ModuleVO) attributes.get(Constants.MODULE_DATA);
-		modVo.setAttribute("newNoteId", vo.getNoteId() );
+		
+		
 		attributes.put(Constants.MODULE_DATA, modVo);
 	}
 
