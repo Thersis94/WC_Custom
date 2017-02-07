@@ -102,9 +102,6 @@ public class AdminControllerAction extends SimpleActionAdapter {
 			case "hierarchy":
 				action = new ContentHierarchyAction();
 				break;
-			case "gapAnalysis":
-				action = new GapAnalysisAction();
-				break;
 			case "agap":
 				action = new GapAnalysisAdminAction();
 				break;
