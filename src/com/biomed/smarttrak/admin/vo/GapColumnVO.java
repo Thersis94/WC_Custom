@@ -6,6 +6,7 @@ package com.biomed.smarttrak.admin.vo;
 import java.io.Serializable;
 import java.sql.ResultSet;
 import java.util.Date;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -60,8 +61,26 @@ public class GapColumnVO implements Serializable {
 		orderNo = Convert.formatInteger(req.getParameter("orderNo"));
 		buttonTxt = req.getParameter("buttonTxt");
 		specialRulesTxt = req.getParameter("specialRulesTxt");
+
+		/*
+		 * Loop over Request Param names looking for keys starting with attr-
+		 * that denote Column Attribute Ids are present.
+		 */
+		Enumeration<String> names = req.getParameterNames();
+		while(names.hasMoreElements()) {
+			String name = names.nextElement();
+			if(name.startsWith("attr-")) {
+				for(String attributeId : req.getParameterValues(name)) {
+					attributes.put(attributeId, new GapColumnAttributeVO(attributeId));
+				}
+			}
+		}
 	}
 
+	/**
+	 * Helper method sets Data for a GapColumn off the Result Set.
+	 * @param rs
+	 */
 	public void setData(ResultSet rs) {
 		DBUtil db = new DBUtil();
 		gaColumnId = db.getStringVal("ga_column_id", rs);
