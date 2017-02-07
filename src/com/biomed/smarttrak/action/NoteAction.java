@@ -103,6 +103,8 @@ public class NoteAction extends SBActionAdapter {
 		DBProcessor db = new DBProcessor(dbConn, (String) attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		NoteVO vo= new NoteVO(req);
 
+		
+		
 		//TODO biomed user data vo not present on request
 		vo.setUserId("8080");
 		//TODO no company, product, or market to test it in yet

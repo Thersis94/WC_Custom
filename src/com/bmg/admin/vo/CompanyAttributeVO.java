@@ -36,6 +36,7 @@ public class CompanyAttributeVO implements NoteInterface  {
 	private List<NoteVO> notes;
 	
 	private int orderNo;
+	private String attributeTypeName;
 	
 	public CompanyAttributeVO() {
 		// Empty default constructor
@@ -123,6 +124,15 @@ public class CompanyAttributeVO implements NoteInterface  {
 	}
 	public void setOrderNo(int orderNo) {
 		this.orderNo = orderNo;
+	}
+	
+
+	@Column(name="type_nm", isReadOnly=true)
+	public String getAttributeTypeName() {
+		return attributeTypeName;
+	}
+	public void setAttributeTypeName(String attributeTypeName) {
+		this.attributeTypeName = attributeTypeName;
 	}
 	
 

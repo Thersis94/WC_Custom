@@ -1,57 +1,52 @@
-package com.biomed.smarttrak.vo;
+package com.bmg.admin.vo;
 
-import java.sql.ResultSet;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
- * <b>Title</b>: ProductAttributeTypeVO.java <p/>
+ * <b>Title</b>: CompanyAttributeTypeVO.java <p/>
  * <b>Project</b>: WC_Custom <p/>
  * <b>Description: </b> DBProcessor enabled VO that stores information regarding
- * the types of attributes that can be assigned to a product.
+ * the types of attributes that can be assigned to a company.
  * <p/>
  * <b>Copyright:</b> Copyright (c) 2017<p/>
  * <b>Company:</b> Silicon Mountain Technologies<p/>
  * @author Eric Damschroder
  * @version 1.0
- * @since Jan 30, 2017<p/>
+ * @since Jan 25, 2017<p/>
  * <b>Changes: </b>
  ****************************************************************************/
 
-@Table(name="BIOMEDGPS_PRODUCT_ATTRIBUTE")
-public class ProductAttributeTypeVO {
+@Table(name="BIOMEDGPS_COMPANY_ATTRIBUTE")
+public class CompanyAttributeTypeVO {
 	
 	private String attributeId;
 	private String attributeName;
+	private String attributeTypeName;
+	private String urlAlias;
 	private String parentId;
-	private String typeCd;
-	private String abbrName;
 	private int orderNo;
 	private int activeFlag;
-	private List<String> sectionIds;
 	
-	public ProductAttributeTypeVO () {
-		this.sectionIds = new ArrayList<>();
+	public CompanyAttributeTypeVO () {
+		// default constructor
 	}
 	
-	public ProductAttributeTypeVO (ActionRequest req) {
+	public CompanyAttributeTypeVO (ActionRequest req) {
 		setData(req);
 	}
 	
-	protected void setData(ActionRequest req) {
+	private void setData(ActionRequest req) {
 		attributeId = req.getParameter("attributeId");
 		attributeName = req.getParameter("attributeName");
+		attributeTypeName = req.getParameter("attributeTypeName");
+		urlAlias = req.getParameter("urlAlias");
 		parentId = StringUtil.checkVal(req.getParameter("parentId"), null);
-		typeCd = req.getParameter("typeCd");
-		abbrName = req.getParameter("abbrName");
 		orderNo = Convert.formatInteger(req.getParameter("orderNo"));
 		activeFlag = Convert.formatInteger(req.getParameter("activeFlag"));
 	}
@@ -70,6 +65,20 @@ public class ProductAttributeTypeVO {
 	public void setAttributeName(String attributeName) {
 		this.attributeName = attributeName;
 	}
+	@Column(name="type_nm")
+	public String getAttributeTypeName() {
+		return attributeTypeName;
+	}
+	public void setAttributeTypeName(String attributeTypeName) {
+		this.attributeTypeName = attributeTypeName;
+	}
+	@Column(name="url_alias_txt")
+	public String getUrlAlias() {
+		return urlAlias;
+	}
+	public void setUrlAlias(String urlAlias) {
+		this.urlAlias = urlAlias;
+	}
 	@Column(name="parent_id")
 	public String getParentId() {
 		return parentId;
@@ -77,23 +86,7 @@ public class ProductAttributeTypeVO {
 	public void setParentId(String parentId) {
 		this.parentId = parentId;
 	}
-	@Column(name="type_cd")
-	public String getTypeCd() {
-		return typeCd;
-	}
-	public void setTypeCd(String typeCd) {
-		this.typeCd = typeCd;
-	}
-
-	@Column(name="abbr_name")
-	public String getAbbrName() {
-		return abbrName;
-	}
-	public void setAbbrName(String abbrName) {
-		this.abbrName = abbrName;
-	}
-
-	@Column(name="order_no")
+	@Column(name="display_order_no")
 	public int getOrderNo() {
 		return orderNo;
 	}
@@ -107,24 +100,6 @@ public class ProductAttributeTypeVO {
 	public void setActiveFlag(int activeFlag) {
 		this.activeFlag = activeFlag;
 	}
-	public List<String> getSectionIds() {
-		return sectionIds;
-	}
-	public void setSectionIds(List<String> sectionIds) {
-		this.sectionIds = sectionIds;
-	}
-	public void addSectionIds(String sectionIds) {
-		if (sectionIds == null) return;
-		for (String sectionId : sectionIds.split(",")) 
-			this.sectionIds.add(sectionId);
-	}
-	public String getSectionIdClassList() {
-		StringBuilder classes = new StringBuilder();
-		for (String s : sectionIds) {
-			classes.append(s).append(" ");
-		}
-		return classes.toString();
-	}
 
 
 	// These functions exists only to give the DBProcessor a hook to autogenerate dates on
@@ -132,18 +107,4 @@ public class ProductAttributeTypeVO {
 	public Date getUpdateDate() {return null;}
 	@Column(name="CREATE_DT", isAutoGen=true, isInsertOnly=true)
 	public Date getCreateDate() {return null;}
-
-	/**
-	 * @param rs
-	 */
-	protected void setData(ResultSet rs) {
-		DBUtil db = new DBUtil();
-		attributeId = db.getStringVal("attribute_id", rs);
-		parentId = db.getStringVal("parent_id", rs);
-		attributeName = db.getStringVal("attribute_nm", rs);
-		activeFlag = db.getIntVal("active_flg", rs);
-		orderNo = db.getIntVal("order_no", rs);
-		typeCd = db.getStringVal("type_cd", rs);
-		abbrName = db.getStringVal("abbr_nm", rs);
-	}
 }
