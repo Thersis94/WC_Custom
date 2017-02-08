@@ -431,7 +431,6 @@ public class MarketManagementAction extends SimpleActionAdapter {
 				db.update(attr);
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
 			throw new ActionException(e);
 		}
 	}
@@ -453,7 +452,6 @@ public class MarketManagementAction extends SimpleActionAdapter {
 				db.update(m);
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
 			throw new ActionException(e);
 		}
 	}
@@ -505,8 +503,6 @@ public class MarketManagementAction extends SimpleActionAdapter {
 			}
 			ps.executeBatch();
 		} catch (SQLException e) {
-			e.printStackTrace();
-			log.error(e.getNextException());
 			throw new ActionException(e);
 		}
 	}
@@ -566,8 +562,6 @@ public class MarketManagementAction extends SimpleActionAdapter {
 			
 			ps.executeUpdate();
 		} catch (SQLException e) {
-			e.printStackTrace();
-			log.error(e.getNextException());
 			throw new ActionException(e);
 		}
 	}
