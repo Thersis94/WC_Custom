@@ -85,7 +85,7 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 	 * @throws ActionException
 	 */
 	@SuppressWarnings("unchecked")
-	private List<Node> getColData(ActionRequest req) throws ActionException {
+	protected List<Node> getColData(ActionRequest req) throws ActionException {
 
 		List<Node> nodes;
 
@@ -113,7 +113,7 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 	 * @param selNodes
 	 * @return
 	 */
-	private List<Node> filterNodes(List<Node> nodes) {
+	protected List<Node> filterNodes(List<Node> nodes) {
 		List<Node> filteredNodes = new ArrayList<>();
 		for(Node g : nodes) {
 			for(Node p : g.getChildren()) {
@@ -139,7 +139,7 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 	 * @param gtv
 	 * @param selNodes
 	 */
-	private List<Node> getColumns() {
+	protected List<Node> getColumns() {
 		List<Node> nodes = new ArrayList<>();
 		try(PreparedStatement ps = dbConn.prepareStatement(getColumnListSql())) {
 			ResultSet rs = ps.executeQuery();
@@ -162,7 +162,7 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 	 * @param size
 	 * @return
 	 */
-	private String getColumnListSql() {
+	protected String getColumnListSql() {
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("select * from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("biomedgps_ga_column order by order_no");
@@ -174,7 +174,7 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 	 * @param selNodes
 	 * @return
 	 */
-	private void loadGapTableData(GapTableVO gtv) {
+	protected void loadGapTableData(GapTableVO gtv) {
 		Map<String, GapCompanyVO> companies = new LinkedHashMap<>();
 		try(PreparedStatement ps = dbConn.prepareStatement(getTableBuilderSql(gtv.getColumns().size()))) {
 			int i = 1;
@@ -207,7 +207,7 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 	 * @param length
 	 * @return
 	 */
-	private String getTableBuilderSql(int numColumns) {
+	protected String getTableBuilderSql(int numColumns) {
 		StringBuilder sql = new StringBuilder(850);
 
 		String custom = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
