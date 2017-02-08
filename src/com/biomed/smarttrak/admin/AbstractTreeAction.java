@@ -155,10 +155,8 @@ public abstract class AbstractTreeAction extends SBActionAdapter {
 
 		List<Node> sections = getHierarchy(sectionId);
 
-		//Build a Tree from the list.
-		Tree tree = new Tree(sections);
-
-		return tree;
+		//Build and return a Tree from the list.
+		return new Tree(sections);
 	}
 
 	/**

@@ -87,7 +87,7 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 	@SuppressWarnings("unchecked")
 	private List<Node> getColData(ActionRequest req) throws ActionException {
 
-		List<Node> nodes = null;
+		List<Node> nodes;
 
 		//Get Sections from super.
 		super.retrieve(req);
@@ -140,7 +140,7 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 	 * @param selNodes
 	 */
 	private List<Node> getColumns() {
-		List<Node> nodes = new ArrayList<Node>();
+		List<Node> nodes = new ArrayList<>();
 		try(PreparedStatement ps = dbConn.prepareStatement(getColumnListSql())) {
 			ResultSet rs = ps.executeQuery();
 			while(rs.next()) {

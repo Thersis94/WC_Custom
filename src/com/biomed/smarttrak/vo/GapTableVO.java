@@ -6,6 +6,7 @@ package com.biomed.smarttrak.vo;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -100,6 +101,6 @@ public class GapTableVO implements Serializable {
 		if(columnMap != null) {
 			return columnMap.values();
 		}
-		return null;
+		return Collections.<Node>emptyList();
 	}
 }
