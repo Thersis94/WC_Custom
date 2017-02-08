@@ -52,8 +52,8 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	
 	public void retrieve(ActionRequest req) throws ActionException {
 		ActionType type;
-		if (req.hasParameter("type")) {
-			type = ActionType.valueOf(req.getParameter("type"));
+		if (req.hasParameter(ACTION_TYPE)) {
+			type = ActionType.valueOf(req.getParameter(ACTION_TYPE));
 		} else {
 			type = ActionType.COMPANY;
 		}
@@ -101,9 +101,10 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 * @throws ActionException
 	 */
 	private void attributeRetrieve(ActionRequest req) throws ActionException {
-		if (req.hasParameter("attributeId") && "attributeType".equals(req.getParameter("add"))) {
-			retrieveCompanyAttribute(req.getParameter("attributeId"));
-		} else if (req.hasParameter("attributeId")) {
+		if (req.hasParameter("attributeId")) {
+			retrieveCompanyAttribute(req);
+		}
+		if (!"attributeType".equals(req.getParameter("add"))) {
 			retrieveAttributes(req);	
 		}
 	}
@@ -117,6 +118,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	private void companyAttributeRetrieve(ActionRequest req) throws ActionException {
 		if (req.hasParameter("companyAttributeId"))
 			retrieveAttribute(req);
+		retrieveAttributes(req);
 	}
 	
 	
@@ -265,16 +267,18 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 * Get the details of the supplied attribute type
 	 * @param attributeId
 	 */
-	private void retrieveCompanyAttribute(String attributeId) {
+	private void retrieveCompanyAttribute(ActionRequest req) {
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("SELECT * FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("BIOMEDGPS_COMPANY_ATTRIBUTE ");
 		sql.append("WHERE ATTRIBUTE_ID = ? ");
 		
 		List<Object> params = new ArrayList<>();
-		params.add(attributeId);
+		params.add(req.getParameter("attributeId"));
 		DBProcessor db = new DBProcessor(dbConn);
 		CompanyAttributeTypeVO attr = (CompanyAttributeTypeVO) db.executeSelect(sql.toString(), params, new CompanyAttributeTypeVO()).get(0);
 		super.putModuleData(attr);
+		if (!req.hasParameter("attributeTypeName"))
+			req.setParameter("attributeTypeName", attr.getAttributeTypeName());
 	}
 
 
@@ -295,8 +299,8 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 		DBProcessor db = new DBProcessor(dbConn);
 		CompanyAttributeVO attr = (CompanyAttributeVO) db.executeSelect(sql.toString(), params, new CompanyAttributeVO()).get(0);
 		super.putModuleData(attr);
-		req.setParameter("attributeTypeName", attr.getAttributeTypeName());
-		retrieveAttributes(req);
+		if (!req.hasParameter("attributeTypeName"))
+			req.setParameter("attributeTypeName", attr.getAttributeTypeName());
 	}
 
 
@@ -600,6 +604,8 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 				db.update(attr);
 			}
 		} catch (Exception e) {
+			e.printStackTrace();
+			log.error(e);
 			throw new ActionException(e);
 		}
 	}
@@ -832,6 +838,9 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 		if (req.hasParameter("edit")) {
 			url.append("&edit=").append(req.getParameter("edit"));
 		}
+		
+		if ("ATTRIBUTE".equals(req.getParameter(ACTION_TYPE)))
+			url.append("&").append(ACTION_TYPE).append("=ATTRIBUTE");
 		
 		req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
 		req.setAttribute(Constants.REDIRECT_URL, url.toString());
