@@ -52,7 +52,7 @@ public class CompanyVO  implements NoteEntityInterface {
 	private List<String> investors;
 	private List<LocationVO> locations;
 	private List<AllianceVO> alliances;
-	private List<NoteInterface> attributes;
+	private List<CompanyAttributeVO> attributes;
 	private List<NoteVO> notes;
 	private List<GenericVO> sections;
 	
@@ -289,11 +289,11 @@ public class CompanyVO  implements NoteEntityInterface {
 	 * @see com.bmg.admin.vo.NoteEntityInterface#getAttributes()
 	 */
 	@Override
-	public List<NoteInterface> getAttributes() {
+	public List<CompanyAttributeVO> getAttributes() {
 		return attributes;
 	}
 
-	public void setAttributes(List<NoteInterface> attributes) {
+	public void setAttributes(List<CompanyAttributeVO> attributes) {
 		this.attributes = attributes;
 	}
 	

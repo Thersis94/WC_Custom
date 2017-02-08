@@ -5,12 +5,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-
-
 //WC_Custom
 import com.biomed.smarttrak.action.NoteAction.NoteType;
 import com.biomed.smarttrak.vo.NoteVO;
-import com.bmg.admin.vo.CompanyAttributeVO;
 import com.bmg.admin.vo.NoteEntityInterface;
 
 import com.bmg.admin.vo.NoteInterface;
@@ -85,12 +82,11 @@ public class NoteLoader extends SimpleActionAdapter {
 		for ( NoteEntityInterface vo : targetVOs){
 			targetIds.add(vo.getId());
 			
-			List<NoteInterface> results =  vo.getAttributes();
+			List<? extends NoteInterface> results =  vo.getAttributes();
 
 			for (NoteInterface vo2 : results){
-				attributeIds.add(((CompanyAttributeVO) vo2).getId());
+				attributeIds.add(vo2.getId());
 			}
-
 		}
 
 		NoteAction na = new NoteAction();	
@@ -121,7 +117,7 @@ public class NoteLoader extends SimpleActionAdapter {
 				log.debug("size of note list added to " + vo.getId() + " is " + results.get(vo.getId()).size());
 				vo.setNotes(results.get(vo.getId()));
 			}
-			List<NoteInterface> attriTargetVos = vo.getAttributes();
+			List<? extends NoteInterface> attriTargetVos = vo.getAttributes();
 			attachAttributeNotes(attriTargetVos, results);
 		}
 	}
@@ -131,7 +127,7 @@ public class NoteLoader extends SimpleActionAdapter {
 	 * @param results 
 	 * @param attriTargetVos 
 	 */
-	private void attachAttributeNotes(List<NoteInterface> attriTargetVos, Map<String, List<NoteVO>> results) {
+	private void attachAttributeNotes(List<? extends NoteInterface> attriTargetVos, Map<String, List<NoteVO>> results) {
 		if(attriTargetVos != null && results != null){
 			for(NoteInterface avo : attriTargetVos ){
 				log.debug("size of note list added to " + avo.getId() + " is " + results.get(avo.getId()).size());
