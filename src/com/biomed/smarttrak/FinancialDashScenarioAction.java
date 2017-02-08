@@ -34,6 +34,7 @@ public class FinancialDashScenarioAction extends SBActionAdapter {
 		super(actionInit);
 	}
 
+	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 
@@ -86,6 +87,7 @@ public class FinancialDashScenarioAction extends SBActionAdapter {
 		return sql.toString();
 	}
 	
+	@Override
 	public void build(ActionRequest req) throws ActionException {
 		super.build(req);
 		String scenarioName = StringUtil.checkVal(req.getParameter("scenarioName"));

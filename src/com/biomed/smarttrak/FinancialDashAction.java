@@ -28,6 +28,7 @@ public class FinancialDashAction extends SBActionAdapter {
 		super(actionInit);
 	}
 
+	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 		
@@ -35,6 +36,7 @@ public class FinancialDashAction extends SBActionAdapter {
 		ai.retrieve(req);
 	}
 	
+	@Override
 	public void build(ActionRequest req) throws ActionException {
 		super.build(req);
 		

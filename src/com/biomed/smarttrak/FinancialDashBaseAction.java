@@ -45,16 +45,20 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		super(actionInit);
 	}
 
+	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 		
+		// Get the paramters required to generate the requested table
 		String displayType = StringUtil.checkVal(req.getParameter("displayType"), FinancialDashColumnSet.DEFAULT_DISPLAY_TYPE);
 		Integer calendarYear = Convert.formatInteger(req.getParameter("calendarYear"), Convert.getCurrentYear());
 		String tableType = StringUtil.checkVal(req.getParameter("tableType"), FinancialDashVO.DEFAULT_TABLE_TYPE);
 		String[] countryTypes = req.getParameterValues("countryTypes[]") == null ? new String[]{FinancialDashVO.DEFAULT_COUNTRY_TYPE} : req.getParameterValues("countryTypes[]");
 		String sectionId = StringUtil.checkVal(req.getParameter("sectionId"), "MASTER_ROOT");
+		boolean leafMode = Convert.formatBoolean(req.getParameter("leafMode"));
 		String scenarioId = StringUtil.checkVal(req.getParameter("scenarioId"));
 		
+		// Set the parameters so they can be used to generate the table
 		FinancialDashVO dash = new FinancialDashVO();
 		dash.setTableType(tableType);
 		dash.setColHeaders(displayType, calendarYear);
@@ -62,8 +66,10 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 			dash.addCountryType(countryType);
 		}
 		dash.setSectionId(sectionId);
+		dash.setLeafMode(leafMode);
 		dash.setScenarioId(scenarioId);
 		
+		// Get the data for the table/chart and return it
 		this.getFinancialData(dash);
 		this.putModuleData(dash);
 	}
@@ -113,7 +119,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		int regionCnt = dash.getCountryTypes().size();
 
 		if (tt == TableType.COMPANY) {
-			sql.append("select r.COMPANY_ID as ROW_ID, c.COMPANY_NM as ROW_NM, ");
+			sql.append("select ").append(dash.getLeafMode() ? "r.REVENUE_ID " : "r.COMPANY_ID ").append("as ROW_ID, c.COMPANY_NM as ROW_NM, ");
 		} else {
 			sql.append("select ");
 			sql.append("CASE WHEN s7.PARENT_ID = ? THEN s7.SECTION_ID ");
@@ -183,13 +189,51 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		return sql.toString();
 	}
 
+	@Override
 	public void build(ActionRequest req) throws ActionException {
 		super.build(req);
-		
-		String priKey = StringUtil.checkVal(req.getParameter("pk"));
+		this.updateData(req);
+	}
+	
+	/**
+	 * Inserts or updates the data
+	 * 
+	 * @param req
+	 * @throws ActionException 
+	 */
+	protected void updateData(ActionRequest req) throws ActionException {
+		log.debug("Updating SmartTRAK Base Data");
+
+		String revenueId = StringUtil.checkVal(req.getParameter("pk"));
 		String fieldName = StringUtil.checkVal(req.getParameter("name"));
-		String updateValue = StringUtil.checkVal(req.getParameter("value")); 
+		String quarter = this.getQuarterFromField(fieldName);
+		String value = StringUtil.checkVal(req.getParameter("value"));
 		
-		log.debug("Updating Record: " + priKey + " | " + fieldName + "=" + updateValue + " ********************************");
+		log.debug("Updating Revenue Record: " + revenueId + " | " + quarter + "=" + value);
+	}
+	
+	/**
+	 * Gets the field's quarter from the editable's field name.
+	 * 
+	 * @param fieldName
+	 * @return
+	 * @throws ActionException
+	 */
+	protected String getQuarterFromField(String fieldName) throws ActionException {
+		String[] parts = fieldName.split("-");
+		String qtrString = parts[0];
+		
+		// Check to make sure the quarter is valid
+		switch(qtrString) {
+			case QUARTER_1:
+			case QUARTER_2:
+			case QUARTER_3:
+			case QUARTER_4:
+				break;
+			default:
+				throw new ActionException("Invalid quarter on financial data save.");
+		}
+		
+		return qtrString;
 	}
 }

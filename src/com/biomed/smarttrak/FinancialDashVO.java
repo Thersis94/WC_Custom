@@ -29,6 +29,7 @@ public class FinancialDashVO extends SBModuleVO {
 	private FinancialDashColumnSet colHeaders;
 	private List<FinancialDashDataRowVO> rows;
 	private String sectionId;
+	private boolean leafMode;
 	private String scenarioId;
 	
 	/**
@@ -157,6 +158,13 @@ public class FinancialDashVO extends SBModuleVO {
 	}
 
 	/**
+	 * @return the leafMode
+	 */
+	public boolean getLeafMode() {
+		return leafMode;
+	}
+
+	/**
 	 * @return the scenarioId
 	 */
 	public String getScenarioId() {
@@ -249,6 +257,13 @@ public class FinancialDashVO extends SBModuleVO {
 		this.sectionId = sectionId;
 	}
 	
+	/**
+	 * @param leafMode the leafMode to set
+	 */
+	public void setLeafMode(boolean leafMode) {
+		this.leafMode = leafMode;
+	}
+
 	/**
 	 * @param scenarioId the scenarioId to set
 	 */

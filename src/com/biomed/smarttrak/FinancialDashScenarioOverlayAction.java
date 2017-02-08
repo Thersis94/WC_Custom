@@ -6,7 +6,10 @@ import java.sql.SQLException;
 
 import com.biomed.smarttrak.FinancialDashColumnSet.DisplayType;
 import com.biomed.smarttrak.FinancialDashVO.TableType;
+import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -35,6 +38,7 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 	 * 
 	 * @param dash
 	 */
+	@Override
 	protected void getFinancialData(FinancialDashVO dash) {
 		String sql = getFinancialDataSql(dash);
 		TableType tt = dash.getTableType();
@@ -80,6 +84,7 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 	 * Returns the sql for retrieving financial data. 
 	 * @return
 	 */
+	@Override
 	protected String getFinancialDataSql(FinancialDashVO dash) {
 		String custom = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(2000);
@@ -89,7 +94,7 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 		int regionCnt = dash.getCountryTypes().size();
 
 		if (tt == TableType.COMPANY) {
-			sql.append("select r.COMPANY_ID as ROW_ID, c.COMPANY_NM as ROW_NM, ");
+			sql.append("select ").append(dash.getLeafMode() ? "r.REVENUE_ID " : "r.COMPANY_ID ").append("as ROW_ID, c.COMPANY_NM as ROW_NM, ");
 		} else {
 			sql.append("select ");
 			sql.append("CASE WHEN s7.PARENT_ID = ? THEN s7.SECTION_ID ");
@@ -166,4 +171,18 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 
 		return sql.toString();
 	}
+	
+	@Override
+	protected void updateData(ActionRequest req) throws ActionException {
+		log.debug("Updating Scenario Data");
+		
+		String revenueId = StringUtil.checkVal(req.getParameter("pk"));
+		String fieldName = StringUtil.checkVal(req.getParameter("name"));
+		String quarter = this.getQuarterFromField(fieldName);
+		String value = StringUtil.checkVal(req.getParameter("value"));
+		String scenarioId = StringUtil.checkVal(req.getParameter("scenarioId"));
+		
+		log.debug("Updating Revenue Record: " + revenueId + " | Scenario: " + scenarioId + " | " + quarter + "=" + value);
+	}
+
 }
