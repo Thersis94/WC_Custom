@@ -204,6 +204,7 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 	}
 
 	/**
+	 * Helper methdo that builds the Table Body Query
 	 * @param length
 	 * @return
 	 */
@@ -211,7 +212,7 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 		StringBuilder sql = new StringBuilder(850);
 
 		String custom = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("select c.ga_column_id, g.company_nm, g.company_id, r.* ");
+		sql.append("select c.ga_column_id, g.short_nm_txt, g.company_nm, g.company_id, r.* ");
 		sql.append("from ").append(custom).append("biomedgps_section a ");
 		sql.append("inner join ").append(custom).append("biomedgps_section b ");
 		sql.append("on a.section_id = b.parent_id ");

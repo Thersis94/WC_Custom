@@ -24,6 +24,7 @@ public class GapCompanyVO {
 
 	private Map<String, Map<String, RegulationVO>> regulations;
 	private String companyName;
+	private String shortCompanyName;
 	private String companyId;
 	private int portfolioNo;
 
@@ -40,6 +41,7 @@ public class GapCompanyVO {
 		DBUtil db = new DBUtil();
 		companyName = db.getStringVal("company_nm", rs);
 		companyId = db.getStringVal("company_id", rs);
+		shortCompanyName = db.getStringVal("short_nm_txt", rs);
 	}
 
 	/**
@@ -54,6 +56,13 @@ public class GapCompanyVO {
 	 */
 	public String getCompanyName() {
 		return companyName;
+	}
+
+	/**
+	 * @return the shortCompanyName
+	 */
+	public String getShortCompanyName() {
+		return shortCompanyName;
 	}
 
 	/**
@@ -75,6 +84,13 @@ public class GapCompanyVO {
 	 */
 	public void setCompanyName(String companyName) {
 		this.companyName = companyName;
+	}
+
+	/**
+	 * @param shortCompanyName the shortCompanyName to set.
+	 */
+	public void setShortCompanyName(String shortCompanyName) {
+		this.shortCompanyName = shortCompanyName;
 	}
 
 	/**
