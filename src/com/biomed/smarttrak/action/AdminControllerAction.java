@@ -1,10 +1,6 @@
-/**
- *
- */
 package com.biomed.smarttrak.action;
 
 import com.biomed.smarttrak.FinancialDashAction;
-
 import com.biomed.smarttrak.FinancialDashScenarioAction;
 import com.biomed.smarttrak.admin.ContentHierarchyAction;
 import com.biomed.smarttrak.admin.GapAnalysisAdminAction;
@@ -51,43 +47,31 @@ public class AdminControllerAction extends SimpleActionAdapter {
 
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		String actionType = StringUtil.checkVal(req.getParameter("actionType"));
-		String msg = (String) attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
+		String actionType = req.getParameter("actionType");
+		String msg;
 
-		/*
-		 * TODO add some means of verifying user role/permission before executing
-		 * Actions.  Need to protect Admin functionality from the public side.
-		 */
 		try {
-			ActionInterface act = loadAction(actionType);
-			if(act != null) {
-				act.build(req);
-			}
+			loadAction(actionType).build(req);
+			msg = (String) attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
+
 		} catch (ActionException ae) {
-			log.error("could not forward requested Action.", ae.getCause());
+			log.error("could not execute requested Action::build()", ae.getCause());
 			msg = (String) attributes.get(AdminConstants.KEY_ERROR_MESSAGE);
 		}
 
-		if (StringUtil.checkVal(req.getAttribute(Constants.REDIRECT_URL)).isEmpty()) {
+		if (StringUtil.isEmpty((String)req.getAttribute(Constants.REDIRECT_URL))) {
 			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 			StringBuilder url = new StringBuilder(200);
-			url.append(page.getFullPath()).append("?msg=").append(msg);
-			url.append("&actionType=").append(actionType);
-			sbUtil.manualRedirect(req, url.toString());
+			url.append(page.getFullPath());
+			if (!StringUtil.isEmpty(actionType)) url.append("?actionType=").append(actionType);
+			sendRedirect(url.toString(), msg, req);
 		}
 	}
 
+
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		/*
-		 * TODO add some means of verifying user role/permission before executing
-		 * Actions.  Need to protect Admin functionality from the public side.
-		 */
-		String actionType = StringUtil.checkVal(req.getParameter("actionType"));
-		ActionInterface act = loadAction(actionType);
-		if(act != null) {
-			act.retrieve(req);
-		}
+		loadAction(req.getParameter("actionType")).retrieve(req);
 	}
 
 
@@ -98,6 +82,10 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	 * @throws ActionException
 	 */
 	private ActionInterface loadAction(String actionType) throws ActionException {
+		/*
+		 * TODO add some means of verifying user role/permission before executing
+		 * Actions.  Need to protect Admin functionality from the public side.
+		 */
 		ActionInterface action;
 		switch (StringUtil.checkVal(actionType)) {
 			case "contentHierarchy":
@@ -118,16 +106,15 @@ public class AdminControllerAction extends SimpleActionAdapter {
 			case "productAdmin":
 				action = new ProductManagementAction();
 				break;
-			case "manageAccounts":
+			case "accounts":
 				action = new AccountManagerAction();
 				break;
 			default:
-				return null;
+				throw new ActionException("unknown action type:" + actionType);
 		}
 
 		action.setDBConnection(dbConn);
 		action.setAttributes(getAttributes());
-
 		return action;
 	}
 }
