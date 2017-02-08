@@ -7,14 +7,18 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
 
 import org.apache.commons.lang.ArrayUtils;
 
 import com.biomed.smarttrak.admin.ContentHierarchyAction;
 import com.biomed.smarttrak.admin.vo.GapColumnVO;
+import com.biomed.smarttrak.vo.GapCompanyVO;
 import com.biomed.smarttrak.vo.GapTableVO;
+import com.biomed.smarttrak.vo.RegulationVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -55,16 +59,15 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 	public void retrieve(ActionRequest req) throws ActionException {
 		if(req.hasParameter("selNodes")) {
 
-
 			//Instantiate GapTableVO to Store Data.
 			GapTableVO gtv = new GapTableVO();
 
 			//Filter the List of Nodes to just the ones we want.
 			selNodes = req.getParameterValues("selNodes");
-			gtv.setColumns(filterNodes(getColData(req)));
+			gtv.setHeaders(filterNodes(getColData(req)));
 
 			//Get Table Body Data based on columns in the GTV.
-			//loadGapTableData(gtv);
+			loadGapTableData(gtv);
 
 			super.putModuleData(gtv);
 		}
@@ -166,56 +169,75 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 		return sql.toString();
 	}
 
-//	/**
-//	 * Helper method that manages retrieving the Gap Table Data and organizing it into the GapTable
-//	 * @param selNodes
-//	 * @return
-//	 */
-//	private void loadGapTableData(GapTableVO gtv) {
-//
-//		try(PreparedStatement ps = dbConn.prepareStatement(getTableBuilderSql(gtv.getColumns.size()))) {
-//
-//		} catch (SQLException e) {
-//			log.error("Problem Retrieving Gap Table Data", e);
-//		}
-//	}
+	/**
+	 * Helper method that manages retrieving the Gap Table Data and organizing it into the GapTable
+	 * @param selNodes
+	 * @return
+	 */
+	private void loadGapTableData(GapTableVO gtv) {
+		Map<String, GapCompanyVO> companies = new LinkedHashMap<>();
+		try(PreparedStatement ps = dbConn.prepareStatement(getTableBuilderSql(gtv.getColumns().size()))) {
+			int i = 1;
+			for(String id : gtv.getColumnMap().keySet()) {
+				ps.setString(i++, id);
+			}
 
-//	/**
-//	 * @param length
-//	 * @return
-//	 */
-//	private String getTableBuilderSql(int length) {
-//		StringBuilder sql = new StringBuilder(850);
-//
-//		String custom = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
-//		sql.append("select a.section_id, a.section_nm, b.section_id, b.section_nm, ");
-//		sql.append("c.section_id, c.button_txt, c.ga_column_id, r.*, g.company_nm ");
-//		sql.append("from ").append(custom).append("biomedgps_section a ");
-//		sql.append("inner join ").append(custom).append("biomedgps_section b ");
-//		sql.append("on a.section_id = b.parent_id ");
-//		sql.append("inner join ").append(custom).append("biomedgps_ga_column c ");
-//		sql.append("on b.section_id = c.section_id ");
-//		sql.append("left outer join ").append(custom).append("biomedgps_ga_column_attribute_xr d ");
-//		sql.append("on d.ga_column_id = c.ga_column_id ");
-//		sql.append("left outer join ").append(custom).append("biomedgps_product_attribute_xr e ");
-//		sql.append("on d.attribute_id = e.attribute_id ");
-//		sql.append("left outer join ").append(custom).append("biomedgps_product f ");
-//		sql.append("on e.product_id = f.product_id ");
-//		sql.append("left outer join ").append(custom).append("biomedgps_product_regulatory r ");
-//		sql.append("on f.product_id = r.product_id ");
-//		sql.append("left outer join ").append(custom).append("biomedgps_company g ");
-//		sql.append("on f.company_id = g.company_id ");
-//		sql.append("where b.section_nm in ( ");
-//		for(int i = 0; i < length; i++) {
-//			if(i > 0) {
-//				sql.append(", ");
-//			}
-//			sql.append("?");
-//		}
-//		sql.append(") order by a.order_no, b.order_no, c.order_no, g.company_nm");
-//
-//		return sql.toString();
-//	}
+			ResultSet rs = ps.executeQuery();
+
+			GapCompanyVO c;
+			while(rs.next()) {
+				if(companies.containsKey(rs.getString("company_id"))) {
+					c = companies.get(rs.getString("company_id"));
+				} else {
+					c = new GapCompanyVO(rs);
+					companies.put(c.getCompanyId(), c);
+				}
+
+				c.addRegulation(rs.getString("ga_column_id"), new RegulationVO(rs));
+			}
+		} catch (SQLException e) {
+			log.error("Problem Retrieving Gap Table Data", e);
+		}
+
+		log.debug("Retrieved " + companies.size() + " company Records.");
+		gtv.setCompanies(companies);
+	}
+
+	/**
+	 * @param length
+	 * @return
+	 */
+	private String getTableBuilderSql(int numColumns) {
+		StringBuilder sql = new StringBuilder(850);
+
+		String custom = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		sql.append("select c.ga_column_id, g.company_nm, g.company_id, r.* ");
+		sql.append("from ").append(custom).append("biomedgps_section a ");
+		sql.append("inner join ").append(custom).append("biomedgps_section b ");
+		sql.append("on a.section_id = b.parent_id ");
+		sql.append("inner join ").append(custom).append("biomedgps_ga_column c ");
+		sql.append("on b.section_id = c.section_id ");
+		sql.append("left outer join ").append(custom).append("biomedgps_ga_column_attribute_xr d ");
+		sql.append("on d.ga_column_id = c.ga_column_id ");
+		sql.append("inner join ").append(custom).append("biomedgps_product_attribute_xr e ");
+		sql.append("on d.attribute_id = e.attribute_id ");
+		sql.append("inner join ").append(custom).append("biomedgps_product f ");
+		sql.append("on e.product_id = f.product_id ");
+		sql.append("inner join ").append(custom).append("biomedgps_product_regulatory r ");
+		sql.append("on f.product_id = r.product_id ");
+		sql.append("inner join ").append(custom).append("biomedgps_company g ");
+		sql.append("on f.company_id = g.company_id ");
+		sql.append("where c.ga_column_id in ( ");
+		for(int i = 0; i < numColumns; i++) {
+			if(i > 0) {
+				sql.append(", ");
+			}
+			sql.append("?");
+		}
+		sql.append(") order by g.company_nm, a.order_no, b.order_no, c.order_no");
+
+		return sql.toString();
+	}
 
 	public String getCacheKey() {
 		return GAP_CACHE_KEY;
