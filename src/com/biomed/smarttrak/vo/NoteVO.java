@@ -102,6 +102,10 @@ public class NoteVO implements Serializable {
 
 	}
 
+	/**
+	 * checks the feilds that are requred in order to save a note,
+	 * @return
+	 */
 	public boolean isNoteSaveable() {
 		if (StringUtil.isEmpty(userId)) return false;
 		if (StringUtil.isEmpty(noteText) || StringUtil.isEmpty(noteName)) return false;

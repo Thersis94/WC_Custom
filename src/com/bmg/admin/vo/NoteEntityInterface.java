@@ -17,6 +17,6 @@ import java.util.List;
  ****************************************************************************/
 public interface NoteEntityInterface extends NoteInterface  {
 	
-	public List<NoteInterface> getAttributes();
+	public List<? extends NoteInterface> getAttributes();
 
 }

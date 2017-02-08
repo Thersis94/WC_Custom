@@ -87,9 +87,8 @@ public class NoteAction extends SBActionAdapter {
 			attributes.put(Constants.MODULE_DATA, modVo);
 
 		} catch (EncryptionException e) {
-			log.error("error during string encryption " + e);
+			log.error("error during string encryption " , e);
 		}
-
 	}
 
 	/*
@@ -102,18 +101,21 @@ public class NoteAction extends SBActionAdapter {
 
 		DBProcessor db = new DBProcessor(dbConn, (String) attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		NoteVO vo= new NoteVO(req);
-		
+
 		//TODO biomed user data vo not present on request
 		vo.setUserId("8080");
 		//TODO no company, product, or market to test it in yet
 		vo.setCompanyId("2792");
-		
+
+
+		//if a user decided to not share the note, then the team id is set to null 
+		//  to stop everyone else in the same team from seeing it
 		if ("user".equalsIgnoreCase(vo.getTeamId().toLowerCase())){
 			vo.setTeamId(null);
 		}
 
 		ModuleVO modVo = (ModuleVO) attributes.get(Constants.MODULE_DATA);
-		
+
 		if(req.hasParameter("isDelete")) {
 			deleteNote(vo, db);	
 		} else {			
@@ -122,9 +124,6 @@ public class NoteAction extends SBActionAdapter {
 			modVo.setAttribute("newNote", vo);
 			log.debug("added new note " + vo);
 		}
-
-		
-		
 		attributes.put(Constants.MODULE_DATA, modVo);
 	}
 
@@ -138,23 +137,13 @@ public class NoteAction extends SBActionAdapter {
 		log.debug("Notes Action insert note called ");
 
 		try {
-			if (StringUtil.isEmpty(vo.getNoteId())) {
-				vo.setNoteId(new UUIDGenerator().getUUID());
-				log.debug("inserting new note with id: " + vo.getNoteId() + " is it savable " + vo.isNoteSaveable() );
-				if (vo.isNoteSaveable()) {
-					db.insert(vo);
-				}
-
-			} else {
-				log.debug("updating note with id: " + vo.getNoteId() + " is it savable " + vo.isNoteSaveable() );
-				if (vo.isNoteSaveable()) {
-					db.update(vo);
-				}
+			log.debug("save note with id: " + vo.getNoteId() + " is it savable " + vo.isNoteSaveable() );
+			if (vo.isNoteSaveable()) {
+				db.save(vo);
 			}
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}
-
 	}
 
 	/**
@@ -347,11 +336,10 @@ public class NoteAction extends SBActionAdapter {
 			lvo.add(vo);
 			data.put(targetKey, lvo);
 		}
-
 	}
 
 	/**
-	 * allows the call with a single id
+	 * allows the call with a single id, wraps string in a list and forwards to other message signature
 	 * @param userId
 	 * @param teams
 	 * @param marketAttrIds
@@ -384,7 +372,7 @@ public class NoteAction extends SBActionAdapter {
 	}
 
 	/**
-	 * allows the call with a single id
+	 * allows the call with a single id, wraps string in a list and forwards to other message signature
 	 * @param userId
 	 * @param teams
 	 * @param marketAttrIds
@@ -416,7 +404,7 @@ public class NoteAction extends SBActionAdapter {
 
 
 	/**
-	 * allows the call with a single id
+	 * allows the call with a single id, wraps string in a list and forwards to other message signature
 	 * @param userId
 	 * @param teams
 	 * @param marketAttrIds
