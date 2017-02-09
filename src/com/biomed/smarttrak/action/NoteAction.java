@@ -82,7 +82,7 @@ public class NoteAction extends SBActionAdapter {
 			String fileToken = se.encrypt(cal.getTime().toString());
 			log.debug("note lode time " + cal.getTime().toString());
 			ModuleVO modVo = (ModuleVO) attributes.get(Constants.MODULE_DATA);
-			modVo.setAttribute("noteToken", fileToken );
+			modVo.setAttribute("noteToken", fileToken );	
 			attributes.put(Constants.MODULE_DATA, modVo);
 
 		} catch (EncryptionException e) {
@@ -101,11 +101,13 @@ public class NoteAction extends SBActionAdapter {
 		DBProcessor db = new DBProcessor(dbConn, (String) attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		NoteVO vo= new NoteVO(req);
 
-		//TODO biomed user data vo not present on request
+		//TODO testing locally when ajax action is public.  change that after log in is correct.
+		//TODO biomed user data vo not present on request remove after that part is in place
 		vo.setUserId("8080");
-		//TODO no company, product, or market to test it in yet
+		//TODO remove after testing, make sure the function called after this gets the right id.
 		vo.setCompanyId("2792");
 
+		setTargetId(req, vo);
 
 		//if a user decided to not share the note, then the team id is set to null 
 		//  to stop everyone else in the same team from seeing it
@@ -124,6 +126,24 @@ public class NoteAction extends SBActionAdapter {
 			log.debug("added new note " + vo);
 		}
 		attributes.put(Constants.MODULE_DATA, modVo);
+	}
+
+	/**
+	 * looks for the different params on the request and sets the id needed
+	 * 
+	 * @param req
+	 * @param vo 
+	 */
+	private void setTargetId(ActionRequest req, NoteVO vo) {
+		
+		if (!StringUtil.checkVal(req.getParameter("companyId")).isEmpty()){
+			vo.setCompanyId(StringUtil.checkVal(req.getParameter("companyId")));
+		}else if (!StringUtil.checkVal(req.getParameter("productId")).isEmpty()){
+			vo.setProductId(StringUtil.checkVal(req.getParameter("productId")));
+		}else if (!StringUtil.checkVal(req.getParameter("marketId")).isEmpty()){
+			vo.setMarketId(StringUtil.checkVal(req.getParameter("marketId")));
+		}
+		
 	}
 
 	/**
