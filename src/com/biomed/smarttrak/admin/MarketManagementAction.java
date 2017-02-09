@@ -166,6 +166,16 @@ public class MarketManagementAction extends SimpleActionAdapter {
 			n.setUserObject(attr);
 			orderedResults.add(n);
 		}
+		setAttributeData(orderedResults, req);
+	}
+
+
+	/**
+	 * Determine how the supplied results should be added to the module data.
+	 * @param orderedResults
+	 * @param req
+	 */
+	private void setAttributeData(List<Node> orderedResults, ActionRequest req) {
 
 		int rpp = Convert.formatInteger(req.getParameter("rpp"), 10);
 		int page = Convert.formatInteger(req.getParameter("page"), 0);
