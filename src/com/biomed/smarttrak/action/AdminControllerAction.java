@@ -8,6 +8,7 @@ import com.biomed.smarttrak.FinancialDashAction;
 import com.biomed.smarttrak.FinancialDashScenarioAction;
 import com.biomed.smarttrak.admin.ContentHierarchyAction;
 import com.biomed.smarttrak.admin.GapAnalysisAdminAction;
+import com.biomed.smarttrak.admin.MarketManagementAction;
 import com.biomed.smarttrak.admin.ProductManagementAction;
 import com.biomed.smarttrak.admin.user.AccountManagerAction;
 import com.siliconmtn.action.ActionException;
@@ -117,6 +118,9 @@ public class AdminControllerAction extends SimpleActionAdapter {
 				break;
 			case "manageAccounts":
 				action = new AccountManagerAction();
+				break;
+			case "marketAdmin":
+				action = new MarketManagementAction();
 				break;
 			default:
 				return null;
