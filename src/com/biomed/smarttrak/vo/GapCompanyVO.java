@@ -27,7 +27,7 @@ public class GapCompanyVO {
 	public static final String OUS = "OUS";
 
 	//Status Codes
-	public enum StatusVal { usa(10), ousa(10), usid(5), ousid(5), usd(2), ousd(2), usg(0), ousg(0);
+	public enum StatusVal { USA(10), OUSA(10), USID(5), OUSID(5), USD(2), OUSD(2), USG(0), OUSG(0);
 
 		//Score Weight for given Status.
 		private int score;
@@ -36,6 +36,9 @@ public class GapCompanyVO {
 		}
 		public int getScore() {
 			return score;
+		}
+		public String getClassName() {
+			return this.toString().toLowerCase();
 		}
 	};
 	private Map<String, StatusVal> regulations;
@@ -125,6 +128,8 @@ public class GapCompanyVO {
 	 * @return
 	 */
 	public int getPortfolioNo() {
+
+		//If portfolioNo is -1, attempt to summarize regulations scores.
 		if(portfolioNo == -1) {
 			for(StatusVal s : this.regulations.values()) {
 				portfolioNo += s.getScore();
@@ -175,9 +180,9 @@ public class GapCompanyVO {
 			case 26:
 			case 42:
 				if(US.equals(rKey)) {
-					tStatus = StatusVal.usd;
+					tStatus = StatusVal.USD;
 				} else {
-					tStatus = StatusVal.ousd;
+					tStatus = StatusVal.OUSD;
 				}
 				break;
 
@@ -188,9 +193,9 @@ public class GapCompanyVO {
 			case 14:
 			case 43:
 				if(US.equals(rKey)) {
-					tStatus = StatusVal.usa;
+					tStatus = StatusVal.USA;
 				} else {
-					tStatus = StatusVal.ousa;
+					tStatus = StatusVal.OUSA;
 				}
 				break;
 
@@ -220,18 +225,18 @@ public class GapCompanyVO {
 			case 37:
 			case 40:
 				if(US.equals(rKey)) {
-					tStatus = StatusVal.usid;
+					tStatus = StatusVal.USID;
 				} else {
-					tStatus = StatusVal.ousid;
+					tStatus = StatusVal.OUSID;
 				}
 				break;
 
 			//Default Gap Status.
 			default:
 				if(US.equals(rKey)) {
-					tStatus = StatusVal.usg;
+					tStatus = StatusVal.USG;
 				} else {
-					tStatus = StatusVal.ousg;
+					tStatus = StatusVal.OUSG;
 				}
 				break;
 		}
