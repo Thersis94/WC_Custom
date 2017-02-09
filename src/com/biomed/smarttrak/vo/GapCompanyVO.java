@@ -125,7 +125,13 @@ public class GapCompanyVO {
 	 * @return
 	 */
 	public int getPortfolioNo() {
-		return this.portfolioNo;
+		if(portfolioNo == -1) {
+			for(StatusVal s : this.regulations.values()) {
+				portfolioNo += s.getScore();
+			}
+		}
+
+		return portfolioNo;
 	}
 
 	/**
@@ -145,12 +151,6 @@ public class GapCompanyVO {
 
 		//Retrieve Status
 		StatusVal tStatus = getStatus(statusId, rKey);
-
-		/*
-		 * Increment portfolio score for each regulation found.  This ensures
-		 * multiple products under the same column get counted.
-		 */
-		portfolioNo += tStatus.getScore();
 
 		//If this is a better status, update.
 		if(status == null || tStatus.getScore() > status.getScore()) {
