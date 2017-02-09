@@ -6,12 +6,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Map.Entry;
 
 import com.depuysynthes.scripts.MediaBinDeltaVO;
 import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.data.Tree;
-import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: ShowpadProductDecoratorUnpublished.java<p/>
@@ -125,36 +123,5 @@ public class ShowpadProductDecoratorUnpublished extends ShowpadProductDecorator 
 		super.removeProductReferences(masterRecords, products);
 		//run against the unpublished catalog
 		super.removeProductReferences(masterRecords, unpublishedProducts);
-	}
-
-
-	/**
-	 * Appends a table to the email notification for products containing SOUS product name
-	 * that doesn't match any mediabin assets.
-	 * @param html
-	 */
-	@Override
-	protected void addProductsWithNoAssetsToEmail(StringBuilder html) {
-		super.addProductsWithNoAssetsToEmail(html);
-
-		if (unpubProductSOUSNames.isEmpty()) return;
-		
-		html.append("<h4>Unpublished Products with no MediaBin Assets (");
-		html.append(unpubProductSOUSNames.size()).append(")</h4>");
-		html.append("The following products (from the Unpublished Catalog) indicate a ");
-		html.append("SOUS Product Name not matching any MediaBin assets:<br/>");
-		html.append("<table border='1' width='95%' align='center'><thead><tr>");
-		html.append("<th>Product Name(s)</th>");
-		html.append("<th>SOUS Product Name</th>");
-		html.append("</tr></thead><tbody>");
-
-		for (Entry<String, Set<String>> entry : unpubProductSOUSNames.entrySet()) {
-			Set<String> prodNames = entry.getValue();
-			String[] array = prodNames.toArray(new String[prodNames.size()]);
-			html.append("<tr><td>").append(StringUtil.getToString(array, false, false, ", ")).append("</td>");
-			html.append("<td>").append(entry.getKey()).append("</td></tr>");
-		}
-		html.append("</tbody></table><br/><hr/>");
-
 	}
 }
