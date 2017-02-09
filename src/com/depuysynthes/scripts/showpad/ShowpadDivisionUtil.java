@@ -199,7 +199,7 @@ public class ShowpadDivisionUtil {
 				ticketId = jsonResp.getString("id");
 			}
 
-			if (assetId == null || assetId.isEmpty()) {
+			if (StringUtil.isEmpty(assetId)) {
 				//queue this one for later
 				insertTicketQueue.put(ticketId, vo.getDpySynMediaBinId());
 			} else {
@@ -210,6 +210,10 @@ public class ShowpadDivisionUtil {
 		} else { //remove the showpadId on updates so we don't create a dup in the SMT database (we need inserts only)
 			updates.put(vo.getDpySynMediaBinId(), vo.getShowpadId());
 		}
+
+		//if we don't have this Showpad ID captured yet, do so now.
+		if (!StringUtil.isEmpty(vo.getShowpadId()) && StringUtil.isEmpty(divisionAssets.get(vo.getDpySynMediaBinId())))
+			divisionAssets.put(vo.getDpySynMediaBinId(), vo.getShowpadId());
 	}
 
 

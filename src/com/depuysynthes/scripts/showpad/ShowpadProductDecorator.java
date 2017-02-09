@@ -456,18 +456,17 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	protected void checkProdSousAgainstMediabin(Map<String, MediaBinDeltaVO> masterRecords, String prodSousName, 
 			String prodName, Map<String, Set<String>> sousNames) {
 
-		String cleanSousName = scrubString(prodSousName);
-		List<String> assetIds = findAssetsForSous(masterRecords, cleanSousName);
+		List<String> assetIds = findAssetsForSous(masterRecords, prodSousName);
 		if (assetIds != null && !assetIds.isEmpty()) 
 			return; //we have our answer; there are matches here.
 
 		//finished checking all assets.  Apparently none of them use the same 
 		//SOUS name the product uses.  Let's report these to the Admins.
-		log.debug("no Mediabin matches for PROD_NM=" + cleanSousName);
-		Set<String> prodNames = sousNames.get(cleanSousName);
+		log.debug("no Mediabin matches for PROD_NM=" + prodSousName);
+		Set<String> prodNames = sousNames.get(prodSousName);
 		if (prodNames == null) prodNames = new HashSet<>();
-		prodNames.add(scrubString(prodName));
-		sousNames.put(cleanSousName, prodNames);
+		prodNames.add(prodName);
+		sousNames.put(prodSousName, prodNames);
 	}
 
 
@@ -540,7 +539,6 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 			//split the product name field using the tokenizer, and see if any of the values match our SOUS name.
 			String[] sousVals = mbAsset.getProdNm().split(DSMediaBinImporterV2.TOKENIZER);
 			for (String val : sousVals) {
-				val = scrubString(val);
 				if (!isQualifiedSousValue(val)) continue;
 
 				Set<String> trackingNos = mediabinSOUSNames.get(val);
@@ -621,8 +619,13 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 		for (Entry<String, Set<String>> entry : productSOUSNames.entrySet()) {
 			Set<String> prodNames = entry.getValue();
 			String[] array = prodNames.toArray(new String[prodNames.size()]);
-			html.append("<tr><td>").append(StringUtil.getToString(array, false, false, ", ")).append("</td>");
-			html.append("<td>").append(entry.getKey()).append("</td></tr>");
+			html.append("<tr><td>");
+			for (int x=0; x < array.length; x++) {
+				if (x > 0) html.append(", ");
+				html.append(scrubString(array[x]));
+			}
+			html.append("</td>");
+			html.append("<td>").append(scrubString(entry.getKey())).append("</td></tr>");
 		}
 		html.append("</tbody></table><br/><hr/>");
 	}
@@ -647,8 +650,13 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 		for (Entry<String, Set<String>> entry : assets.entrySet()) {
 			Set<String> prodNames = entry.getValue();
 			String[] array = prodNames.toArray(new String[prodNames.size()]);
-			html.append("<tr><td>").append(entry.getKey()).append("</td>");
-			html.append("<td>").append(StringUtil.getToString(array, false, false, ", ")).append("</td></tr>\r\n");
+			html.append("<tr><td>").append(scrubString(entry.getKey())).append("</td>");
+			html.append("<td>");
+			for (int x=0; x < array.length; x++) {
+				if (x > 0) html.append(", ");
+				html.append(scrubString(array[x]));
+			}
+			html.append("</td></tr>\r\n");
 		}
 		html.append("</tbody></table>\r\n<br/><hr/>");
 	}
