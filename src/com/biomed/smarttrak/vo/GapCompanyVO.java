@@ -40,7 +40,8 @@ public class GapCompanyVO {
 		public String getClassName() {
 			return this.toString().toLowerCase();
 		}
-	};
+	}
+
 	private Map<String, StatusVal> regulations;
 	private String companyName;
 	private String shortCompanyName;
