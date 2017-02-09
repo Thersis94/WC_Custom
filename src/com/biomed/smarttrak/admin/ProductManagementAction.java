@@ -73,11 +73,7 @@ public class ProductManagementAction extends SimpleActionAdapter {
 				retrieveAttributes(req);
 				break;
 			case ATTRIBUTE:
-				if (req.hasParameter("attributeId")) {
-					retrieveAttribute(req.getParameter("attributeId"));
-				} else if (!req.hasParameter("add")){
-					retrieveAttributes(req);
-				}
+				attributeRetrieve(req);
 				break;
 			case SECTION:
 				retrieveSections(req);
@@ -95,6 +91,19 @@ public class ProductManagementAction extends SimpleActionAdapter {
 	}
 	
 	
+	/**
+	 * Determine what kind of attribute data needs to be retrieved and do so.
+	 * @param req
+	 */
+	protected void attributeRetrieve(ActionRequest req) {
+		if (req.hasParameter("attributeId")) {
+			retrieveAttribute(req.getParameter("attributeId"));
+		} else if (!req.hasParameter("add")){
+			retrieveAttributes(req);
+		}
+	}
+
+
 	/**
 	 * Get all available module sets and flag all that are assigned to a product
 	 * @param req
