@@ -9,6 +9,8 @@ import com.biomed.smarttrak.FinancialDashVO.TableType;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -27,6 +29,8 @@ import com.smt.sitebuilder.common.constants.Constants;
 
 public class FinancialDashBaseAction extends SBActionAdapter {
 	
+	DBProcessor dbp;
+
 	public static final int MAX_DATA_YEARS = 4;
 	
 	public static final String CALENDAR_YEAR = "CY";
@@ -45,6 +49,12 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		super(actionInit);
 	}
 
+	@Override
+	public void setDBConnection(SMTDBConnection dbc) {
+		super.setDBConnection(dbc);
+		dbp = new DBProcessor(dbConn, (String) attributes.get(Constants.CUSTOM_DB_SCHEMA));
+	}
+	
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		super.retrieve(req);
@@ -196,7 +206,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	}
 	
 	/**
-	 * Publishes the data from a scenario
+	 * Publishes the data from a scenario.
 	 * 
 	 * @param req
 	 * @throws ActionException 
@@ -204,5 +214,25 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	// TODO: Needs secured so that unauthorized users don't publish data.
 	protected void updateData(ActionRequest req) throws ActionException {
 		log.debug("Publishing SmartTRAK Base Data");
+	}
+	
+	/**
+	 * Returns a single revenue record.
+	 * 
+	 * @param revenueId
+	 * @return
+	 * @throws ActionException
+	 */
+	protected FinancialDashRevenueVO getRevenueRecord(String revenueId) throws ActionException {
+		FinancialDashRevenueVO rvo = new FinancialDashRevenueVO();
+		rvo.setRevenueId(revenueId);
+		
+		try {
+			dbp.getByPrimaryKey(rvo);
+		} catch (Exception e) {
+			throw new ActionException("Couldn't get financial dashboard revenue record.", e);
+		}
+		
+		return rvo;
 	}
 }

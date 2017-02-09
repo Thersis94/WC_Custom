@@ -21,7 +21,7 @@ import com.smt.sitebuilder.action.SBModuleVO;
  * @since Feb 8, 2017
  ****************************************************************************/
 
-@Table(name="BIOMEDGPS_FD_REVENUE")
+@Table(name="biomedgps_fd_revenue")
 public class FinancialDashRevenueVO extends SBModuleVO {
 	
 	private static final long serialVersionUID = 1L;
@@ -30,10 +30,10 @@ public class FinancialDashRevenueVO extends SBModuleVO {
 	private String sectionId;
 	private String regionCd;
 	private int yearNo;
-	private int q1No;
-	private int q2No;
-	private int q3No;
-	private int q4No;
+	private long q1No;
+	private long q2No;
+	private long q3No;
+	private long q4No;
 	private Date createDt;
 	private Date updateDt;
 	
@@ -91,7 +91,7 @@ public class FinancialDashRevenueVO extends SBModuleVO {
 	/**
 	 * @return the revenueId
 	 */
-	@Column(name="REVENUE_ID", isPrimaryKey=true)
+	@Column(name="revenue_id", isPrimaryKey=true)
 	public String getRevenueId() {
 		return revenueId;
 	}
@@ -99,7 +99,7 @@ public class FinancialDashRevenueVO extends SBModuleVO {
 	/**
 	 * @return the companyId
 	 */
-	@Column(name="COMPANY_ID")
+	@Column(name="company_id")
 	public String getCompanyId() {
 		return companyId;
 	}
@@ -107,7 +107,7 @@ public class FinancialDashRevenueVO extends SBModuleVO {
 	/**
 	 * @return the sectionId
 	 */
-	@Column(name="SECTION_ID")
+	@Column(name="section_id")
 	public String getSectionId() {
 		return sectionId;
 	}
@@ -115,7 +115,7 @@ public class FinancialDashRevenueVO extends SBModuleVO {
 	/**
 	 * @return the regionCd
 	 */
-	@Column(name="REGION_CD")
+	@Column(name="region_cd")
 	public String getRegionCd() {
 		return regionCd;
 	}
@@ -123,7 +123,7 @@ public class FinancialDashRevenueVO extends SBModuleVO {
 	/**
 	 * @return the yearNo
 	 */
-	@Column(name="YEAR_NO")
+	@Column(name="year_no")
 	public int getYearNo() {
 		return yearNo;
 	}
@@ -131,39 +131,39 @@ public class FinancialDashRevenueVO extends SBModuleVO {
 	/**
 	 * @return the q1No
 	 */
-	@Column(name="Q1_NO")
-	public int getQ1No() {
+	@Column(name="q1_no")
+	public long getQ1No() {
 		return q1No;
 	}
 
 	/**
 	 * @return the q2No
 	 */
-	@Column(name="Q2_NO")
-	public int getQ2No() {
+	@Column(name="q2_no")
+	public long getQ2No() {
 		return q2No;
 	}
 
 	/**
 	 * @return the q3No
 	 */
-	@Column(name="Q3_NO")
-	public int getQ3No() {
+	@Column(name="q3_no")
+	public long getQ3No() {
 		return q3No;
 	}
 
 	/**
 	 * @return the q4No
 	 */
-	@Column(name="Q4_NO")
-	public int getQ4No() {
+	@Column(name="q4_no")
+	public long getQ4No() {
 		return q4No;
 	}
 
 	/**
 	 * @return the createDt
 	 */
-	@Column(name="CREATE_DT", isAutoGen=true, isInsertOnly=true)
+	@Column(name="create_dt", isAutoGen=true, isInsertOnly=true)
 	public Date getCreateDt() {
 		return createDt;
 	}
@@ -171,7 +171,7 @@ public class FinancialDashRevenueVO extends SBModuleVO {
 	/**
 	 * @return the updateDt
 	 */
-	@Column(name="UPDATE_DT", isAutoGen=true, isUpdateOnly=true)
+	@Column(name="update_dt", isAutoGen=true, isUpdateOnly=true)
 	public Date getUpdateDt() {
 		return updateDt;
 	}
@@ -214,28 +214,28 @@ public class FinancialDashRevenueVO extends SBModuleVO {
 	/**
 	 * @param q1No the q1No to set
 	 */
-	public void setQ1No(int q1No) {
+	public void setQ1No(long q1No) {
 		this.q1No = q1No;
 	}
 
 	/**
 	 * @param q2No the q2No to set
 	 */
-	public void setQ2No(int q2No) {
+	public void setQ2No(long q2No) {
 		this.q2No = q2No;
 	}
 
 	/**
 	 * @param q3No the q3No to set
 	 */
-	public void setQ3No(int q3No) {
+	public void setQ3No(long q3No) {
 		this.q3No = q3No;
 	}
 
 	/**
 	 * @param q4No the q4No to set
 	 */
-	public void setQ4No(int q4No) {
+	public void setQ4No(long q4No) {
 		this.q4No = q4No;
 	}
 

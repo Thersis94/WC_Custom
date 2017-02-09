@@ -4,13 +4,15 @@ import java.lang.reflect.Method;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import com.biomed.smarttrak.FinancialDashColumnSet.DisplayType;
 import com.biomed.smarttrak.FinancialDashVO.TableType;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -177,40 +179,71 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 	
 	@Override
 	protected void updateData(ActionRequest req) throws ActionException {
-		String revenueId = StringUtil.checkVal(req.getParameter("pk"));
-		String editableFieldName = StringUtil.checkVal(req.getParameter("name"));
-		String quarter = this.getQuarterFromField(editableFieldName);
-		int value = Convert.formatInteger(StringUtil.checkVal(req.getParameter("value")));
 		String scenarioId = StringUtil.checkVal(req.getParameter("scenarioId"));
+		String revenueId = StringUtil.checkVal(req.getParameter("pk"));
+		String quarter = getQuarterFromField(StringUtil.checkVal(req.getParameter("name")));
+		long value = Convert.formatInteger(StringUtil.checkVal(req.getParameter("value")));
 		
-		log.debug("Updating Scenario Overlay Record | Revenue: " + revenueId + " | Scenario: " + scenarioId + " | " + quarter + "=" + value);
-		
-		// Set the data on the VO
-		FinancialDashRevenueVO rvo = new FinancialDashRevenueVO();
-		rvo.setRevenueId(revenueId);
 		try {
-			Method method = rvo.getClass().getMethod("set" + quarter + "No", int.class);
-			method.invoke(rvo, value);
-		} catch (Exception e) {
-			throw new ActionException("Couldn't set financial dashboard quarter data on VO.", e);
-		}
+			// Get the complete current overlay data if it exists
+			FinancialDashScenarioOverlayVO sovo = getOverlayRecord(revenueId, scenarioId);
+			
+			// If an overlay record doesn't exist, get the current revenue data to create an overlay
+			if (sovo == null) {
+				FinancialDashRevenueVO rvo = getRevenueRecord(revenueId);
+				sovo = new FinancialDashScenarioOverlayVO(rvo);
+				sovo.setScenarioId(scenarioId);
+			}
+			
+			// Dynamically set the specific quarter being updated
+			Method method = sovo.getClass().getMethod("set" + quarter + "No", long.class);
+			method.invoke(sovo, value);
 
-		// Save the updated data
-		DBProcessor dbp = new DBProcessor(dbConn, (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		try {
-			dbp.save(rvo);
+			// Update or insert the record as applicable
+			dbp.save(sovo);
 		} catch (Exception e) {
-			throw new ActionException("Couldn't save financial dashboard quarter data to database.", e);
+			throw new ActionException("Couldn't save updated financial dashboard quarter data to database.", e);
 		}
+	}
+	
+	/**
+	 * Returns a single scenario overlay record.
+	 * May return null if the record doesn't exist.
+	 * 
+	 * @param revenueId
+	 * @param scenarioId
+	 * @return
+	 */
+	protected FinancialDashScenarioOverlayVO getOverlayRecord(String revenueId, String scenarioId) {
+		FinancialDashScenarioOverlayVO sovo = null;
+		
+		String sql = getOverlayRecordSql();
+		List<Object> params = new ArrayList<>();
+		params.addAll(Arrays.asList(revenueId, scenarioId));
+		
+		List<Object> overlay = dbp.executeSelect(sql, params, new FinancialDashScenarioOverlayVO());
+		
+		if (!overlay.isEmpty()) {
+			// For a given revenueId & scenarioId, there will only be one record if it exists
+			sovo = (FinancialDashScenarioOverlayVO) overlay.get(0);
+		}
+		
+		return sovo;
 	}
 
 	/**
-	 * Returns the sql for updating scenario overlay data
+	 * Returns the sql necessary for retrieving a single overlay record
 	 * 
 	 * @return
 	 */
-	protected String getUpdateSql() {
-		return "";
+	protected String getOverlayRecordSql() {
+		String custom = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(100);
+		
+		sql.append("select * from ").append(custom).append("BIOMEDGPS_FD_SCENARIO_OVERLAY ");
+		sql.append("where REVENUE_ID = ? and SCENARIO_ID = ? ");
+		
+		return sql.toString();
 	}
 	
 	/**
