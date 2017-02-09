@@ -75,7 +75,7 @@ public class ProductManagementAction extends SimpleActionAdapter {
 			case ATTRIBUTE:
 				if (req.hasParameter("attributeId")) {
 					retrieveAttribute(req.getParameter("attributeId"));
-				} else {
+				} else if (!req.hasParameter("add")){
 					retrieveAttributes(req);
 				}
 				break;
@@ -729,6 +729,7 @@ public class ProductManagementAction extends SimpleActionAdapter {
 				db.update(t);
 			}
 		} catch (Exception e) {
+			e.printStackTrace();
 			throw new ActionException(e);
 		}
 	}
@@ -840,6 +841,10 @@ public class ProductManagementAction extends SimpleActionAdapter {
 				ActionTarget.valueOf(req.getParameter(ACTION_TARGET)) != ActionTarget.PRODUCT) {
 			url.append("&productId=").append(req.getParameter("productId"));
 		}
+		
+		if ("ATTRIBUTE".equals(req.getParameter(ACTION_TARGET)))
+			url.append("&").append(ACTION_TARGET).append("=ATTRIBUTE");
+		
 		req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
 		req.setAttribute(Constants.REDIRECT_URL, url.toString());
 	}
