@@ -729,7 +729,6 @@ public class ProductManagementAction extends SimpleActionAdapter {
 				db.update(t);
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
 			throw new ActionException(e);
 		}
 	}

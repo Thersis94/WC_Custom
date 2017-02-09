@@ -604,8 +604,6 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 				db.update(attr);
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
-			log.error(e);
 			throw new ActionException(e);
 		}
 	}
