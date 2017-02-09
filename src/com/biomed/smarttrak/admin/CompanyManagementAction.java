@@ -177,7 +177,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	private List<String> getActiveSections(String companyId) throws ActionException {
+	protected List<String> getActiveSections(String companyId) throws ActionException {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("SELECT SECTION_ID FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("BIOMEDGPS_COMPANY_SECTION WHERE COMPANY_ID = ? ");
