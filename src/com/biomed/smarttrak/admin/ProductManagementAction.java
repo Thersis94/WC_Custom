@@ -67,10 +67,7 @@ public class ProductManagementAction extends SimpleActionAdapter {
 				retrieveProduct(req);
 				break;
 			case PRODUCTATTRIBUTE:
-				if (req.hasParameter("productAttributeId"))
-					retrieveProductAttribute(req);
-				req.setParameter("getList", "true");
-				retrieveAttributes(req);
+				productAttributeRetrieve(req);
 				break;
 			case ATTRIBUTE:
 				attributeRetrieve(req);
@@ -92,6 +89,18 @@ public class ProductManagementAction extends SimpleActionAdapter {
 	
 	
 	/**
+	 * Get information neccesary to populate product attribute pages
+	 * @param req
+	 */
+	private void productAttributeRetrieve(ActionRequest req) {
+		if (req.hasParameter("productAttributeId"))
+			retrieveProductAttribute(req);
+		req.setParameter("getList", "true");
+		retrieveAttributes(req);
+	}
+
+
+	/**
 	 * Determine what kind of attribute data needs to be retrieved and do so.
 	 * @param req
 	 */
@@ -109,7 +118,7 @@ public class ProductManagementAction extends SimpleActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void retrieveModuleSets(ActionRequest req) throws ActionException {
+	protected void retrieveModuleSets(ActionRequest req) throws ActionException {
 		StringBuilder sql = new StringBuilder(550);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("select a.attribute_id, a.parent_id, a.attribute_nm, string_agg(pm.moduleset_id, ',') as section_ids ");
@@ -157,7 +166,7 @@ public class ProductManagementAction extends SimpleActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	private List<String> getAssingedAttributes(String productId) throws ActionException {
+	protected List<String> getAssingedAttributes(String productId) throws ActionException {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select ATTRIBUTE_ID from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR where PRODUCT_ID = ? ");
@@ -179,11 +188,11 @@ public class ProductManagementAction extends SimpleActionAdapter {
 
 
 	/**
-	 * Determine how to retrieve company information and do so.
+	 * Determine how to retrieve product information and do so.
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void allianceRetrieve(ActionRequest req) throws ActionException {
+	protected void allianceRetrieve(ActionRequest req) throws ActionException {
 		if (req.hasParameter("allianceId"))
 			retrieveAlliance(req.getParameter("allianceId"));
 	}
@@ -193,10 +202,10 @@ public class ProductManagementAction extends SimpleActionAdapter {
 	 * Retrieve all information pertaining to a particular alliance
 	 * @param allianceId
 	 */
-	private void retrieveAlliance(String allianceId) {
+	protected void retrieveAlliance(String allianceId) {
 		StringBuilder sql = new StringBuilder(100);
-		sql.append("SELECT * FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("BIOMEDGPS_COMPANY_ALLIANCE_XR ");
-		sql.append("WHERE COMPANY_ALLIANCE_XR_ID = ? ");
+		sql.append("SELECT * FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("BIOMEDGPS_PRODUCT_ALLIANCE_XR ");
+		sql.append("WHERE PRODUCT_ALLIANCE_XR_ID = ? ");
 		
 		List<Object> params = new ArrayList<>();
 		params.add(allianceId);
@@ -211,7 +220,7 @@ public class ProductManagementAction extends SimpleActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void retrieveProduct(ActionRequest req) throws ActionException {
+	protected void retrieveProduct(ActionRequest req) throws ActionException {
 		if (req.hasParameter("productId") && ! req.hasParameter("add")) {
 			retrieveProduct(req.getParameter("productId"));
 		} else if (!req.hasParameter("add")) {
@@ -224,7 +233,7 @@ public class ProductManagementAction extends SimpleActionAdapter {
 	 * get a particular product attribute from the database for editing
 	 * @param req
 	 */
-	private void retrieveProductAttribute(ActionRequest req) {
+	protected void retrieveProductAttribute(ActionRequest req) {
 		StringBuilder sql = new StringBuilder(300);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT xr.*, a.TYPE_CD FROM ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR xr ");
@@ -242,10 +251,10 @@ public class ProductManagementAction extends SimpleActionAdapter {
 	
 	
 	/**
-	 *Retrieve all attributes available to the company.
+	 *Retrieve all attributes available to the product.
 	 * @param req
 	 */
-	private void retrieveAttributes(ActionRequest req) {
+	protected void retrieveAttributes(ActionRequest req) {
 		StringBuilder sql = new StringBuilder(100);
 		List<Object> params = new ArrayList<>();
 		sql.append("SELECT * FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("BIOMEDGPS_PRODUCT_ATTRIBUTE ");
@@ -269,6 +278,17 @@ public class ProductManagementAction extends SimpleActionAdapter {
 			n.setUserObject(attr);
 			orderedResults.add(n);
 		}
+		storeAttributeData(req, orderedResults);
+	}
+
+
+	/**
+	 * Determine where and how much attribute data to save.
+	 * @param req
+	 * @param orderedResults
+	 */
+	private void storeAttributeData(ActionRequest req,
+			List<Node> orderedResults) {
 
 		int rpp = Convert.formatInteger(req.getParameter("rpp"), 10);
 		int page = Convert.formatInteger(req.getParameter("page"), 0);
@@ -307,7 +327,7 @@ public class ProductManagementAction extends SimpleActionAdapter {
 	 * @param rootNode
 	 * @return
 	 */
-	private Node getTopParent(Tree t, Node rootNode) {
+	protected Node getTopParent(Tree t, Node rootNode) {
 		if (rootNode.getParentId() != null) {
 			return getTopParent(t, t.findNode(rootNode.getParentId()));
 		}
@@ -319,7 +339,7 @@ public class ProductManagementAction extends SimpleActionAdapter {
 	 * Get the details of the supplied attribute type
 	 * @param attributeId
 	 */
-	private void retrieveAttribute(String attributeId) {
+	protected void retrieveAttribute(String attributeId) {
 		StringBuilder sql = new StringBuilder(100);
 		List<Object> params = new ArrayList<>();
 		sql.append("SELECT * FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("BIOMEDGPS_PRODUCT_ATTRIBUTE ");
@@ -344,7 +364,7 @@ public class ProductManagementAction extends SimpleActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void retrieveProducts(ActionRequest req) throws ActionException {
+	protected void retrieveProducts(ActionRequest req) throws ActionException {
 		List<Object> params = new ArrayList<>();
 		String customDb = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(100);
@@ -371,7 +391,7 @@ public class ProductManagementAction extends SimpleActionAdapter {
 	 * @param productId
 	 * @throws ActionException
 	 */
-	private void retrieveProduct(String productId) throws ActionException {
+	protected void retrieveProduct(String productId) throws ActionException {
 		ProductVO product;
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("SELECT * FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("BIOMEDGPS_PRODUCT ");
@@ -392,10 +412,10 @@ public class ProductManagementAction extends SimpleActionAdapter {
 	
 	
 	/**
-	 * Get all alliances the supplied company is in and add them to the vo
-	 * @param company
+	 * Get all alliances the supplied product is in and add them to the vo
+	 * @param product
 	 */
-	private void addAlliances(ProductVO product) {
+	protected void addAlliances(ProductVO product) {
 		StringBuilder sql = new StringBuilder(525);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_PRODUCT_ALLIANCE_XR pax ");
@@ -420,11 +440,11 @@ public class ProductManagementAction extends SimpleActionAdapter {
 	
 	
 	/**
-	 * Get all the sections that are associated with the supplied company
-	 * @param company
+	 * Get all the sections that are associated with the supplied product
+	 * @param product
 	 * @throws ActionException
 	 */
-	private void addSections(ProductVO product) throws ActionException {
+	protected void addSections(ProductVO product) throws ActionException {
 		StringBuilder sql = new StringBuilder(275);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT SECTION_NM, xr.PRODUCT_SECTION_XR_ID FROM ").append(customDb).append("BIOMEDGPS_PRODUCT_SECTION xr ");
@@ -451,7 +471,7 @@ public class ProductManagementAction extends SimpleActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void retrieveSections(ActionRequest req) throws ActionException {
+	protected void retrieveSections(ActionRequest req) throws ActionException {
 		ContentHierarchyAction c = new ContentHierarchyAction();
 		c.setActionInit(actionInit);
 		c.setAttributes(attributes);
@@ -461,7 +481,7 @@ public class ProductManagementAction extends SimpleActionAdapter {
 		List<String> activeNodes = getActiveSections(req.getParameter("productId"));
 		
 		// Loop over all sections and set the leaf property to 
-		// signify it being in use by the current company.
+		// signify it being in use by the current product.
 		for (Node n : hierarchy) {
 			if (activeNodes.contains(n.getNodeId())) {
 				n.setLeaf(true);
@@ -474,12 +494,12 @@ public class ProductManagementAction extends SimpleActionAdapter {
 
 
 	/**
-	 * Gets all sections that have been assigned to the supplied company
-	 * @param companyId
+	 * Gets all sections that have been assigned to the supplied product
+	 * @param productId
 	 * @return
 	 * @throws ActionException
 	 */
-	private List<String> getActiveSections(String productId) throws ActionException {
+	protected List<String> getActiveSections(String productId) throws ActionException {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("SELECT SECTION_ID FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("BIOMEDGPS_PRODUCT_SECTION WHERE PRODUCT_ID = ? ");
@@ -506,7 +526,7 @@ public class ProductManagementAction extends SimpleActionAdapter {
 	 * Get all attributes associated with the supplied product.
 	 * @param product
 	 */
-	private void addAttributes(ProductVO product) {
+	protected void addAttributes(ProductVO product) {
 		List<Object> results = getProductAttributes(product.getProductId());
 		for (Object o : results) {
 			product.addAttribute((ProductAttributeVO)o);
@@ -520,7 +540,7 @@ public class ProductManagementAction extends SimpleActionAdapter {
 	 * @param productId
 	 * @return
 	 */
-	private List<Object> getProductAttributes(String productId) {
+	protected List<Object> getProductAttributes(String productId) {
 		StringBuilder sql = new StringBuilder(150);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR ");
@@ -545,7 +565,7 @@ public class ProductManagementAction extends SimpleActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void updateElement(ActionRequest req) throws ActionException {
+	protected void updateElement(ActionRequest req) throws ActionException {
 		ActionTarget action = ActionTarget.valueOf(req.getParameter(ACTION_TARGET));
 		DBProcessor db = new DBProcessor(dbConn, (String) attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		switch(action) {
@@ -576,7 +596,7 @@ public class ProductManagementAction extends SimpleActionAdapter {
 	}
 
 
-	private void saveDetailsAttribute(ActionRequest req) throws ActionException {
+	protected void saveDetailsAttribute(ActionRequest req) throws ActionException {
 		deleteCurrentDetails(req);
 		
 		StringBuilder sql = new StringBuilder(225);
@@ -607,7 +627,7 @@ public class ProductManagementAction extends SimpleActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void deleteCurrentDetails(ActionRequest req) throws ActionException {
+	protected void deleteCurrentDetails(ActionRequest req) throws ActionException {
 		StringBuilder sql = new StringBuilder(475);
 		String customDb = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("DELETE FROM ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR ");
@@ -636,7 +656,7 @@ public class ProductManagementAction extends SimpleActionAdapter {
 	 * @param db
 	 * @throws ActionException
 	 */
-	private void saveAlliance(ProductAllianceVO a, DBProcessor db) throws ActionException {
+	protected void saveAlliance(ProductAllianceVO a, DBProcessor db) throws ActionException {
 		try {
 			if (StringUtil.isEmpty(a.getAllianceId())) {
 				a.setAllianceId(new UUIDGenerator().getUUID());
@@ -652,14 +672,14 @@ public class ProductManagementAction extends SimpleActionAdapter {
 
 
 	/**
-	 * Add the supplied sections to the company xr table
+	 * Add the supplied sections to the product xr table
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void saveSections(ActionRequest req) throws ActionException {
-		// Delete all sections currently assigned to this company before adding
+	protected void saveSections(ActionRequest req) throws ActionException {
+		// Delete all sections currently assigned to this product before adding
 		// what is on the request object.
-		deleteSection(true, req.getParameter("companyId"));
+		deleteSection(true, req.getParameter("productId"));
 		
 		StringBuilder sql = new StringBuilder(225);
 		sql.append("INSERT INTO ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
@@ -688,7 +708,7 @@ public class ProductManagementAction extends SimpleActionAdapter {
 	 * @param db
 	 * @throws ActionException
 	 */
-	private void saveAttribute(ProductAttributeVO attr, DBProcessor db) throws ActionException {
+	protected void saveAttribute(ProductAttributeVO attr, DBProcessor db) throws ActionException {
 		try {
 			if (StringUtil.isEmpty(attr.getProductAttributeId())) {
 				attr.setProductAttributeId(new UUIDGenerator().getUUID());
@@ -709,7 +729,7 @@ public class ProductManagementAction extends SimpleActionAdapter {
 	 * @param db
 	 * @throws ActionException
 	 */
-	private void saveProduct(ProductVO c, DBProcessor db) throws ActionException {
+	protected void saveProduct(ProductVO c, DBProcessor db) throws ActionException {
 		try {
 			if (StringUtil.isEmpty(c.getProductId())) {
 				c.setProductId(new UUIDGenerator().getUUID());
@@ -730,7 +750,7 @@ public class ProductManagementAction extends SimpleActionAdapter {
 	 * @param boolean1 
 	 * @throws ActionException
 	 */
-	private void saveAttributeType(ProductAttributeTypeVO t, DBProcessor db, Boolean insert) throws ActionException {
+	protected void saveAttributeType(ProductAttributeTypeVO t, DBProcessor db, Boolean insert) throws ActionException {
 		try {
 			if (insert) {
 				db.insert(t);
@@ -748,7 +768,7 @@ public class ProductManagementAction extends SimpleActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void deleteElement(ActionRequest req) throws ActionException {
+	protected void deleteElement(ActionRequest req) throws ActionException {
 		ActionTarget action = ActionTarget.valueOf(req.getParameter(ACTION_TARGET));
 		DBProcessor db = new DBProcessor(dbConn, (String) attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		try {
@@ -781,13 +801,13 @@ public class ProductManagementAction extends SimpleActionAdapter {
 	
 	
 	/**
-	 * Delete section xrs for a company. Deletes come in single xr deletion and
+	 * Delete section xrs for a product. Deletes come in single xr deletion and
 	 * full wipes used when new xrs are being saved.
 	 * @param full
 	 * @param id
 	 * @throws ActionException
 	 */
-	private void deleteSection(boolean full, String id) throws ActionException {
+	protected void deleteSection(boolean full, String id) throws ActionException {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("DELETE FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("BIOMEDGPS_PRODUCT_SECTION WHERE ");
@@ -834,7 +854,7 @@ public class ProductManagementAction extends SimpleActionAdapter {
 	 * @param buildAction
 	 * @param req
 	 */
-	private void redirectRequest(String msg, String buildAction, ActionRequest req) {
+	protected void redirectRequest(String msg, String buildAction, ActionRequest req) {
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		// Redirect the user to the appropriate page
 		StringBuilder url = new StringBuilder(128);

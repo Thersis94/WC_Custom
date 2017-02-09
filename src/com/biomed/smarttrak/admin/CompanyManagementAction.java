@@ -86,7 +86,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void companyRetrieve(ActionRequest req) throws ActionException {
+	protected void companyRetrieve(ActionRequest req) throws ActionException {
 		if (req.hasParameter("companyId") && ! req.hasParameter("add")) {
 			retrieveCompany(req.getParameter("companyId"));
 		} else if (!req.hasParameter("add")) {
@@ -100,7 +100,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void attributeRetrieve(ActionRequest req) throws ActionException {
+	protected void attributeRetrieve(ActionRequest req) throws ActionException {
 		if (req.hasParameter("attributeId")) {
 			retrieveCompanyAttribute(req);
 		}
@@ -115,7 +115,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void companyAttributeRetrieve(ActionRequest req) throws ActionException {
+	protected void companyAttributeRetrieve(ActionRequest req) throws ActionException {
 		if (req.hasParameter("companyAttributeId"))
 			retrieveAttribute(req);
 		retrieveAttributes(req);
@@ -127,7 +127,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void locationRetrieve(ActionRequest req) throws ActionException {
+	protected void locationRetrieve(ActionRequest req) throws ActionException {
 		if (req.hasParameter("locationId"))
 			retrieveLocation(req.getParameter("locationId"));
 	}
@@ -138,7 +138,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void allianceRetrieve(ActionRequest req) throws ActionException {
+	protected void allianceRetrieve(ActionRequest req) throws ActionException {
 		if (req.hasParameter("allianceId"))
 			retrieveAlliance(req.getParameter("allianceId"));
 	}
@@ -149,7 +149,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void retrieveSections(ActionRequest req) throws ActionException {
+	protected void retrieveSections(ActionRequest req) throws ActionException {
 		ContentHierarchyAction c = new ContentHierarchyAction();
 		c.setActionInit(actionInit);
 		c.setAttributes(attributes);
@@ -204,7 +204,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 * Retrieve all information pertaining to a particular alliance
 	 * @param allianceId
 	 */
-	private void retrieveAlliance(String allianceId) {
+	protected void retrieveAlliance(String allianceId) {
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("SELECT * FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("BIOMEDGPS_COMPANY_ALLIANCE_XR ");
 		sql.append("WHERE COMPANY_ALLIANCE_XR_ID = ? ");
@@ -221,7 +221,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 *Retrieve all attributes available to the company.
 	 * @param req
 	 */
-	private void retrieveAttributes(ActionRequest req) {
+	protected void retrieveAttributes(ActionRequest req) {
 		StringBuilder sql = new StringBuilder(100);
 		List<Object> params = new ArrayList<>();
 		sql.append("SELECT * FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("BIOMEDGPS_COMPANY_ATTRIBUTE ");
@@ -267,7 +267,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 * Get the details of the supplied attribute type
 	 * @param attributeId
 	 */
-	private void retrieveCompanyAttribute(ActionRequest req) {
+	protected void retrieveCompanyAttribute(ActionRequest req) {
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("SELECT * FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("BIOMEDGPS_COMPANY_ATTRIBUTE ");
 		sql.append("WHERE ATTRIBUTE_ID = ? ");
@@ -286,7 +286,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 * Get the details of the supplied company attribute
 	 * @param attributeId
 	 */
-	private void retrieveAttribute(ActionRequest req) {
+	protected void retrieveAttribute(ActionRequest req) {
 		StringBuilder sql = new StringBuilder(100);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR xr ");
@@ -308,7 +308,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 * Get the details of the supplied location
 	 * @param locationId
 	 */
-	private void retrieveLocation(String locationId) {
+	protected void retrieveLocation(String locationId) {
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("SELECT * FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("BIOMEDGPS_COMPANY_LOCATION ");
 		sql.append("WHERE LOCATION_ID = ? ");
@@ -327,7 +327,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void retrieveCompanies(ActionRequest req) throws ActionException {
+	protected void retrieveCompanies(ActionRequest req) throws ActionException {
 		List<Object> params = new ArrayList<>();
 		String customDb = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(100);
@@ -357,7 +357,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 * @param companyId
 	 * @throws ActionException
 	 */
-	private void retrieveCompany(String companyId) throws ActionException {
+	protected void retrieveCompany(String companyId) throws ActionException {
 		CompanyVO company;
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("SELECT * FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("BIOMEDGPS_COMPANY ");
@@ -384,7 +384,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 * @param company
 	 * @throws ActionException
 	 */
-	private void addSections(CompanyVO company) throws ActionException {
+	protected void addSections(CompanyVO company) throws ActionException {
 		StringBuilder sql = new StringBuilder(275);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT SECTION_NM, xr.COMPANY_SECTION_XR_ID FROM ").append(customDb).append("BIOMEDGPS_COMPANY_SECTION xr ");
@@ -410,7 +410,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 * Get all attributes associated with the supplied company.
 	 * @param company
 	 */
-	private void addAttributes(CompanyVO company) {
+	protected void addAttributes(CompanyVO company) {
 		StringBuilder sql = new StringBuilder(150);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR xr ");
@@ -435,7 +435,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 * them to the vo.
 	 * @param company
 	 */
-	private void addInvestors(CompanyVO company) throws ActionException {
+	protected void addInvestors(CompanyVO company) throws ActionException {
 		StringBuilder sql = new StringBuilder(175);
 		sql.append("SELECT INVESTOR_COMPANY_ID FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("BIOMEDGPS_COMPANY_INVESTOR WHERE INVESTEE_COMPANY_ID = ? ");
@@ -459,7 +459,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 * Get all locations supported by the supplied company and add them to the vo.
 	 * @param company
 	 */
-	private void addLocations(CompanyVO company) {
+	protected void addLocations(CompanyVO company) {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("SELECT * FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("BIOMEDGPS_COMPANY_LOCATION ");
 		sql.append("WHERE COMPANY_ID = ? ");
@@ -480,7 +480,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 * Get all alliances the supplied company is in and add them to the vo
 	 * @param company
 	 */
-	private void addAlliances(CompanyVO company) {
+	protected void addAlliances(CompanyVO company) {
 		StringBuilder sql = new StringBuilder(400);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_COMPANY_ALLIANCE_XR cax ");
@@ -507,7 +507,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void updateElement(ActionRequest req) throws ActionException {
+	protected void updateElement(ActionRequest req) throws ActionException {
 		ActionType action = ActionType.valueOf(req.getParameter(ACTION_TYPE));
 		DBProcessor db = new DBProcessor(dbConn, (String) attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		switch(action) {
@@ -543,7 +543,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void saveSections(ActionRequest req) throws ActionException {
+	protected void saveSections(ActionRequest req) throws ActionException {
 		// Delete all sections currently assigned to this company before adding
 		// what is on the request object.
 		deleteSection(true, req.getParameter("companyId"));
@@ -576,7 +576,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 * @param boolean1 
 	 * @throws ActionException
 	 */
-	private void saveAttributeType(CompanyAttributeTypeVO t, DBProcessor db, Boolean insert) throws ActionException {
+	protected void saveAttributeType(CompanyAttributeTypeVO t, DBProcessor db, Boolean insert) throws ActionException {
 		try {
 			if (insert) {
 				db.insert(t);
@@ -595,7 +595,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 * @param db
 	 * @throws ActionException
 	 */
-	private void saveAttribute(CompanyAttributeVO attr, DBProcessor db) throws ActionException {
+	protected void saveAttribute(CompanyAttributeVO attr, DBProcessor db) throws ActionException {
 		try {
 			if (StringUtil.isEmpty(attr.getCompanyAttributeId())) {
 				attr.setCompanyAttributeId(new UUIDGenerator().getUUID());
@@ -615,7 +615,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 * @param db
 	 * @throws ActionException
 	 */
-	private void saveAlliance(AllianceVO a, DBProcessor db) throws ActionException {
+	protected void saveAlliance(AllianceVO a, DBProcessor db) throws ActionException {
 		try {
 			if (StringUtil.isEmpty(a.getAllianceId())) {
 				a.setAllianceId(new UUIDGenerator().getUUID());
@@ -636,7 +636,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 * @param db
 	 * @throws ActionException
 	 */
-	private void saveLocation(LocationVO l, DBProcessor db) throws ActionException {
+	protected void saveLocation(LocationVO l, DBProcessor db) throws ActionException {
 		try {
 			if (StringUtil.isEmpty(l.getLocationId())) {
 				l.setLocationId(new UUIDGenerator().getUUID());
@@ -657,7 +657,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 * @param db
 	 * @throws ActionException
 	 */
-	private void saveCompany(CompanyVO c, DBProcessor db) throws ActionException {
+	protected void saveCompany(CompanyVO c, DBProcessor db) throws ActionException {
 		try {
 			if (StringUtil.isEmpty(c.getCompanyId())) {
 				c.setCompanyId(new UUIDGenerator().getUUID());
@@ -677,7 +677,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 * adding all supplied investors as the new list.
 	 * @param c
 	 */
-	private void updateInvestors(CompanyVO c) throws ActionException {
+	protected void updateInvestors(CompanyVO c) throws ActionException {
 		deleteInvestors(c.getCompanyId());
 		StringBuilder sql = new StringBuilder(225);
 		sql.append("INSERT INTO ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
@@ -707,7 +707,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 * field for the complete list.
 	 * @param companyId
 	 */
-	private void deleteInvestors(String companyId) throws ActionException {
+	protected void deleteInvestors(String companyId) throws ActionException {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("DELETE FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("BIOMEDGPS_COMPANY_INVESTOR WHERE INVESTEE_COMPANY_ID = ? ");
@@ -726,7 +726,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void deleteElement(ActionRequest req) throws ActionException {
+	protected void deleteElement(ActionRequest req) throws ActionException {
 		ActionType action = ActionType.valueOf(req.getParameter(ACTION_TYPE));
 		DBProcessor db = new DBProcessor(dbConn, (String) attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		try {
@@ -769,7 +769,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 * @param id
 	 * @throws ActionException
 	 */
-	private void deleteSection(boolean full, String id) throws ActionException {
+	protected void deleteSection(boolean full, String id) throws ActionException {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("DELETE FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("BIOMEDGPS_COMPANY_SECTION WHERE ");
@@ -816,7 +816,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 * @param buildAction
 	 * @param req
 	 */
-	private void redirectRequest(String msg, String buildAction, ActionRequest req) {
+	protected void redirectRequest(String msg, String buildAction, ActionRequest req) {
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		// Redirect the user to the appropriate page
 		StringBuilder url = new StringBuilder(128);
