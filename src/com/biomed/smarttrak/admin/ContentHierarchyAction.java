@@ -87,11 +87,12 @@ public class ContentHierarchyAction extends AbstractTreeAction {
 		Tree t;
 
 		//Attempt to read ContentHierarchy Data from Cache.
-		ModuleVO mod = super.readFromCache(getCacheKey());
+		ModuleVO mod = super.readFromCache(CONTENT_HIERARCHY_CACHE_KEY);
 
 		//If not found in cache Load data.
 		if(mod == null) {
 			t = loadTree(null);
+			super.writeToCache(t, "SMARTTRAK", "SECTION");
 		} else {
 			//Get the Tree off the actionData
 			t = (Tree) mod.getActionData();
