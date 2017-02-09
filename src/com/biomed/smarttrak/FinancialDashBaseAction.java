@@ -196,44 +196,13 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	}
 	
 	/**
-	 * Inserts or updates the data
+	 * Publishes the data from a scenario
 	 * 
 	 * @param req
 	 * @throws ActionException 
 	 */
+	// TODO: Needs secured so that unauthorized users don't publish data.
 	protected void updateData(ActionRequest req) throws ActionException {
-		log.debug("Updating SmartTRAK Base Data");
-
-		String revenueId = StringUtil.checkVal(req.getParameter("pk"));
-		String fieldName = StringUtil.checkVal(req.getParameter("name"));
-		String quarter = this.getQuarterFromField(fieldName);
-		String value = StringUtil.checkVal(req.getParameter("value"));
-		
-		log.debug("Updating Revenue Record: " + revenueId + " | " + quarter + "=" + value);
-	}
-	
-	/**
-	 * Gets the field's quarter from the editable's field name.
-	 * 
-	 * @param fieldName
-	 * @return
-	 * @throws ActionException
-	 */
-	protected String getQuarterFromField(String fieldName) throws ActionException {
-		String[] parts = fieldName.split("-");
-		String qtrString = parts[0];
-		
-		// Check to make sure the quarter is valid
-		switch(qtrString) {
-			case QUARTER_1:
-			case QUARTER_2:
-			case QUARTER_3:
-			case QUARTER_4:
-				break;
-			default:
-				throw new ActionException("Invalid quarter on financial data save.");
-		}
-		
-		return qtrString;
+		log.debug("Publishing SmartTRAK Base Data");
 	}
 }

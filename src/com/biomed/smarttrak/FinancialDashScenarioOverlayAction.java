@@ -1,5 +1,6 @@
 package com.biomed.smarttrak;
 
+import java.lang.reflect.Method;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -9,6 +10,8 @@ import com.biomed.smarttrak.FinancialDashVO.TableType;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -174,15 +177,68 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 	
 	@Override
 	protected void updateData(ActionRequest req) throws ActionException {
-		log.debug("Updating Scenario Data");
-		
 		String revenueId = StringUtil.checkVal(req.getParameter("pk"));
-		String fieldName = StringUtil.checkVal(req.getParameter("name"));
-		String quarter = this.getQuarterFromField(fieldName);
-		String value = StringUtil.checkVal(req.getParameter("value"));
+		String editableFieldName = StringUtil.checkVal(req.getParameter("name"));
+		String quarter = this.getQuarterFromField(editableFieldName);
+		int value = Convert.formatInteger(StringUtil.checkVal(req.getParameter("value")));
 		String scenarioId = StringUtil.checkVal(req.getParameter("scenarioId"));
 		
-		log.debug("Updating Revenue Record: " + revenueId + " | Scenario: " + scenarioId + " | " + quarter + "=" + value);
+		log.debug("Updating Scenario Overlay Record | Revenue: " + revenueId + " | Scenario: " + scenarioId + " | " + quarter + "=" + value);
+		
+		// Set the data on the VO
+		FinancialDashRevenueVO rvo = new FinancialDashRevenueVO();
+		rvo.setRevenueId(revenueId);
+		try {
+			Method method = rvo.getClass().getMethod("set" + quarter + "No", int.class);
+			method.invoke(rvo, value);
+		} catch (Exception e) {
+			throw new ActionException("Couldn't set financial dashboard quarter data on VO.", e);
+		}
+
+		// Save the updated data
+		DBProcessor dbp = new DBProcessor(dbConn, (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		try {
+			dbp.save(rvo);
+		} catch (Exception e) {
+			throw new ActionException("Couldn't save financial dashboard quarter data to database.", e);
+		}
 	}
 
+	/**
+	 * Returns the sql for updating scenario overlay data
+	 * 
+	 * @return
+	 */
+	protected String getUpdateSql() {
+		return "";
+	}
+	
+	/**
+	 * A row of data in the financial dashboard may have data for more than one year depending
+	 * on the chosen column display set, so this helper method gets the field's quarter from the
+	 * bootstrap-table-editable's field name parameter.
+	 * 
+	 * The format for the field name parameter is "qtr-year", for example: Q1-2016.
+	 * 
+	 * @param fieldName
+	 * @return
+	 * @throws ActionException
+	 */
+	protected String getQuarterFromField(String fieldName) throws ActionException {
+		String[] parts = fieldName.split("-");
+		String qtrString = parts[0];
+		
+		// Check to make sure the quarter is valid
+		switch(qtrString) {
+			case QUARTER_1:
+			case QUARTER_2:
+			case QUARTER_3:
+			case QUARTER_4:
+				break;
+			default:
+				throw new ActionException("Invalid quarter on financial data save.");
+		}
+		
+		return qtrString;
+	}
 }
