@@ -43,6 +43,7 @@ public class NoteVO implements Serializable {
 	private Date creationDate;
 	private Date updateDate;
 	private String userName;
+	private String teamName;
 
 
 	public NoteVO() {super();}
@@ -319,6 +320,18 @@ public class NoteVO implements Serializable {
 	 */
 	public void setAttributeId(String attributeId) {
 		this.attributeId = attributeId;
+	}
+	/**
+	 * @return the teamName
+	 */
+	public String getTeamName() {
+		return teamName;
+	}
+	/**
+	 * @param teamName the teamName to set
+	 */
+	public void setTeamName(String teamName) {
+		this.teamName = teamName;
 	}
 
 }
