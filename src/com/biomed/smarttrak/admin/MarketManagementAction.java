@@ -64,17 +64,10 @@ public class MarketManagementAction extends SimpleActionAdapter {
 				retrieveMarket(req);
 				break;
 			case MARKETATTRIBUTE:
-				if (req.hasParameter("marketAttributeId"))
-					retrieveMarketAttribute(req);
-				req.setParameter("getList", "true");
-				retrieveAttributes(req);
+				retireveMarketAttributes(req);
 				break;
 			case ATTRIBUTE:
-				if (req.hasParameter("attributeId")) {
-					retrieveAttribute(req.getParameter("attributeId"));
-				} else if (!req.hasParameter("add")) {
-					retrieveAttributes(req);
-				}
+				retrieveAttributes(req);
 				break;
 			case SECTION:
 				retrieveSections(req);
@@ -83,8 +76,31 @@ public class MarketManagementAction extends SimpleActionAdapter {
 	}
 	
 	
-	
-	
+	/**
+	 * Determine which attributes need to be retrieved and do so.
+	 * @param req
+	 */
+	private void retrieveAttributes(ActionRequest req) {
+		if (req.hasParameter("attributeId")) {
+			retrieveAttribute(req.getParameter("attributeId"));
+		} else if (!req.hasParameter("add")) {
+			retrieveAllAttributes(req);
+		}
+	}
+
+
+	/**
+	 * Get attributes assigned to a particular market.
+	 * @param req
+	 */
+	private void retireveMarketAttributes(ActionRequest req) {
+		if (req.hasParameter("marketAttributeId"))
+			retrieveMarketAttribute(req);
+		req.setParameter("getList", "true");
+		retrieveAllAttributes(req);
+	}
+
+
 	/**
 	 * Determine whether to get one market or all and do so.
 	 * @param req
@@ -126,7 +142,7 @@ public class MarketManagementAction extends SimpleActionAdapter {
 	 *Retrieve all attributes available to the market.
 	 * @param req
 	 */
-	private void retrieveAttributes(ActionRequest req) {
+	private void retrieveAllAttributes(ActionRequest req) {
 		StringBuilder sql = new StringBuilder(100);
 		List<Object> params = new ArrayList<>();
 		sql.append("SELECT * FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("BIOMEDGPS_MARKET_ATTRIBUTE ");
@@ -162,10 +178,7 @@ public class MarketManagementAction extends SimpleActionAdapter {
 			Tree t = new Tree(orderedResults);
 			Node rootNode = null;
 			if (req.hasParameter("rootNode")) {
-				rootNode = t.findNode(req.getParameter("rootNode"));
-				if (rootNode.getParentId() != null) {
-					rootNode = getTopParent(t, rootNode);
-				}
+				rootNode = getTopParent(t, t.findNode(req.getParameter("rootNode")));
 			}
 			
 			if (rootNode != null && rootNode.getNumberChildren() > 0) {
@@ -189,7 +202,7 @@ public class MarketManagementAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	protected Node getTopParent(Tree t, Node rootNode) {
-		if (rootNode.getParentId() != null) {
+		if (rootNode != null && rootNode.getParentId() != null) {
 			return getTopParent(t, t.findNode(rootNode.getParentId()));
 		}
 		return rootNode;
