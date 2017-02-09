@@ -7,7 +7,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -18,7 +18,6 @@ import com.biomed.smarttrak.admin.ContentHierarchyAction;
 import com.biomed.smarttrak.admin.vo.GapColumnVO;
 import com.biomed.smarttrak.vo.GapCompanyVO;
 import com.biomed.smarttrak.vo.GapTableVO;
-import com.biomed.smarttrak.vo.RegulationVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -175,7 +174,7 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 	 * @return
 	 */
 	protected void loadGapTableData(GapTableVO gtv) {
-		Map<String, GapCompanyVO> companies = new LinkedHashMap<>();
+		Map<String, GapCompanyVO> companies = new HashMap<>();
 		try(PreparedStatement ps = dbConn.prepareStatement(getTableBuilderSql(gtv.getColumns().size()))) {
 			int i = 1;
 			for(String id : gtv.getColumnMap().keySet()) {
@@ -193,7 +192,7 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 					companies.put(c.getCompanyId(), c);
 				}
 
-				c.addRegulation(rs.getString("ga_column_id"), new RegulationVO(rs));
+				c.addRegulation(rs.getString("ga_column_id"), rs.getInt("status_id"), rs.getInt("region_Id"));
 			}
 		} catch (SQLException e) {
 			log.error("Problem Retrieving Gap Table Data", e);
@@ -204,7 +203,7 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 	}
 
 	/**
-	 * Helper methdo that builds the Table Body Query
+	 * Helper method that builds the Table Body Query
 	 * @param length
 	 * @return
 	 */
@@ -212,7 +211,7 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 		StringBuilder sql = new StringBuilder(850);
 
 		String custom = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("select c.ga_column_id, g.short_nm_txt, g.company_nm, g.company_id, r.* ");
+		sql.append("select distinct c.ga_column_id, g.short_nm_txt, g.company_nm, g.company_id, r.status_id, r.region_id ");
 		sql.append("from ").append(custom).append("biomedgps_section a ");
 		sql.append("inner join ").append(custom).append("biomedgps_section b ");
 		sql.append("on a.section_id = b.parent_id ");
@@ -235,7 +234,7 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 			}
 			sql.append("?");
 		}
-		sql.append(") order by g.company_nm, a.order_no, b.order_no, c.order_no");
+		sql.append(") order by g.company_nm");
 
 		return sql.toString();
 	}
