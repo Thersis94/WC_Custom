@@ -39,6 +39,8 @@ public class ProductManagementAction extends SimpleActionAdapter {
 	
 	public static final String ACTION_TARGET = "actionTarget";
 	
+	public static final String DETAILS_ID = "DETAILS_ROOT";
+	
 	private enum ActionTarget {
 		PRODUCT, PRODUCTATTRIBUTE, ATTRIBUTE, SECTION, 
 		ATTRIBUTELIST, ALLIANCE, DETAILSATTRIBUTE
@@ -134,7 +136,8 @@ public class ProductManagementAction extends SimpleActionAdapter {
 		}
 		
 		Tree t = new Tree(attributes);
-		super.putModuleData(t.preorderList(t.findNode(req.getParameter("rootNode"))));
+		t.setRootNode(t.findNode(req.getParameter("attributeId")));
+		super.putModuleData(t);
 		
 	}
 
@@ -503,17 +506,24 @@ public class ProductManagementAction extends SimpleActionAdapter {
 	
 	
 	/**
-	 * Returns a list of attributes for a product
+	 * Returns a list of attributes for a product, excluding attributes that
+	 * fall under the Product Details tree of attributes.
 	 * @param productId
 	 * @return
 	 */
 	private List<Object> getProductAttributes(String productId) {
 		StringBuilder sql = new StringBuilder(150);
-		sql.append("SELECT * FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR ");
-		sql.append("WHERE PRODUCT_ID = ? ");
+		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR ");
+		sql.append("WHERE PRODUCT_ID = ? AND ATTRIBUTE_ID not in ( ");
+		sql.append("SELECT child.ATTRIBUTE_ID from ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE child ");
+		sql.append("INNER JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE parent ");
+		sql.append("on parent.ATTRIBUTE_ID = child.PARENT_ID ");
+		sql.append("where parent.PARENT_ID = ? ) ");
 		log.debug(sql+"|"+productId);
 		List<Object> params = new ArrayList<>();
 		params.add(productId);
+		params.add(DETAILS_ID);
 		DBProcessor db = new DBProcessor(dbConn);
 		
 		// DBProcessor returns a list of objects that need to be individually cast to attributes
@@ -549,8 +559,65 @@ public class ProductManagementAction extends SimpleActionAdapter {
 				ProductAllianceVO a = new ProductAllianceVO(req);
 				saveAlliance(a, db);
 				break;
+			case DETAILSATTRIBUTE:
+				saveDetailsAttribute(req);
+				break;
 			default:break;
 		}
+	}
+
+
+	private void saveDetailsAttribute(ActionRequest req) throws ActionException {
+		deleteCurrentDetails(req);
+		
+		StringBuilder sql = new StringBuilder(225);
+		sql.append("INSERT INTO ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR ");
+		sql.append("(PRODUCT_ATTRIBUTE_ID, ATTRIBUTE_ID, PRODUCT_ID, CREATE_DT) ");
+		sql.append("VALUES(?,?,?,?)");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			String productId = req.getParameter("productId");
+			for (String s : req.getParameterValues("attributeId")) {
+				ps.setString(1, new UUIDGenerator().getUUID());
+				ps.setString(2, s);
+				ps.setString(3, productId);
+				ps.setTimestamp(4, Convert.getCurrentTimestamp());
+				
+				ps.addBatch();
+			}
+			ps.executeBatch();
+		} catch (Exception e) {
+			throw new ActionException(e);
+		}
+	}
+
+
+	/**
+	 * Delete all attribute xrs associated with the current product that are
+	 * grandchildren of the supplied root attribute id.
+	 * @param req
+	 * @throws ActionException
+	 */
+	private void deleteCurrentDetails(ActionRequest req) throws ActionException {
+		StringBuilder sql = new StringBuilder(475);
+		String customDb = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		sql.append("DELETE FROM ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR ");
+		sql.append("WHERE ATTRIBUTE_ID in ( ");
+		sql.append("SELECT child.ATTRIBUTE_ID from ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE child ");
+		sql.append("INNER JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE parent ");
+		sql.append("on parent.ATTRIBUTE_ID = child.PARENT_ID ");
+		sql.append("where parent.PARENT_ID = ? ) ");
+		sql.append("and PRODUCT_ID = ? ");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, DETAILS_ID);
+			ps.setString(2, req.getParameter("productId"));
+			
+			ps.executeUpdate();
+		} catch (Exception e) {
+			throw new ActionException(e);
+		}
+		
 	}
 
 
