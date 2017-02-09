@@ -51,7 +51,7 @@ public class ProductAttributeTypeVO {
 		attributeName = req.getParameter("attributeName");
 		parentId = StringUtil.checkVal(req.getParameter("parentId"), null);
 		typeCd = req.getParameter("typeCd");
-		abbrName = req.getParameter("abbrName");
+		abbrName = StringUtil.checkVal(req.getParameter("abbrName"), null);
 		orderNo = Convert.formatInteger(req.getParameter("orderNo"));
 		activeFlag = Convert.formatInteger(req.getParameter("activeFlag"));
 	}
@@ -85,7 +85,7 @@ public class ProductAttributeTypeVO {
 		this.typeCd = typeCd;
 	}
 
-	@Column(name="abbr_name")
+	@Column(name="abbr_nm")
 	public String getAbbrName() {
 		return abbrName;
 	}
