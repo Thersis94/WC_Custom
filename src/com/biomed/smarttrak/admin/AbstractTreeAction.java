@@ -59,7 +59,7 @@ public abstract class AbstractTreeAction extends SBActionAdapter {
 
 		//Common Cache Group for Content Hierarchy Data.
 		mod.setCacheGroups(cacheGroups);
-		mod.addCacheGroup(getCacheKey());
+		mod.setPageModuleId(getCacheKey());
 
 		//Write to Cache.
 		super.writeToCache(mod);
@@ -155,10 +155,8 @@ public abstract class AbstractTreeAction extends SBActionAdapter {
 
 		List<Node> sections = getHierarchy(sectionId);
 
-		//Build a Tree from the list.
-		Tree tree = new Tree(sections);
-
-		return tree;
+		//Build and return a Tree from the list.
+		return new Tree(sections);
 	}
 
 	/**

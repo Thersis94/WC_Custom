@@ -1,7 +1,9 @@
-package com.biomed.smarttrak.vo;
+package com.bmg.admin.vo;
 
 import java.util.Date;
+import java.util.List;
 
+import com.biomed.smarttrak.vo.NoteVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
@@ -22,12 +24,14 @@ import com.siliconmtn.util.Convert;
  ****************************************************************************/
 
 @Table(name="BIOMEDGPS_COMPANY_ATTRIBUTE_XR")
-public class CompanyAttributeVO {
+public class CompanyAttributeVO implements NoteInterface  {
 	private String companyAttributeId;
 	private String companyId;
 	private String attributeId;
 	private String valueText;
 	private String titleText;
+	private List<NoteVO> notes;
+	
 	private int orderNo;
 	private String attributeTypeName;
 	
@@ -109,5 +113,32 @@ public class CompanyAttributeVO {
 	public Date getUpdateDate() {return null;}
 	@Column(name="CREATE_DT", isAutoGen=true, isInsertOnly=true)
 	public Date getCreateDate() {return null;}
+
+
+	/* (non-Javadoc)
+	 * @see com.bmg.admin.vo.NoteEntityInterface#setNotes(java.util.List)
+	 */
+	@Override
+	public void setNotes(List<NoteVO> notes) {
+		this.notes= notes;
+	}
+
+
+	/* (non-Javadoc)
+	 * @see com.bmg.admin.vo.NoteEntityInterface#getId()
+	 */
+	@Override
+	public String getId() {
+		return this.attributeId;
+	}
+
+
+	/* (non-Javadoc)
+	 * @see com.bmg.admin.vo.NoteEntityAttributeInterface#getNotes()
+	 */
+	@Override
+	public List<NoteVO> getNotes() {
+		return this.notes;
+	}
 
 }

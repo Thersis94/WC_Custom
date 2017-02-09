@@ -9,6 +9,7 @@ import com.biomed.smarttrak.FinancialDashScenarioAction;
 import com.biomed.smarttrak.admin.CompanyManagementAction;
 import com.biomed.smarttrak.admin.ContentHierarchyAction;
 import com.biomed.smarttrak.admin.GapAnalysisAdminAction;
+import com.biomed.smarttrak.admin.MarketManagementAction;
 import com.biomed.smarttrak.admin.ProductManagementAction;
 import com.biomed.smarttrak.admin.user.AccountManagerAction;
 import com.siliconmtn.action.ActionException;
@@ -101,13 +102,10 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	private ActionInterface loadAction(String actionType) throws ActionException {
 		ActionInterface action;
 		switch (StringUtil.checkVal(actionType)) {
-			case "contentHierarchy":
+			case "hierarchy":
 				action = new ContentHierarchyAction();
 				break;
-			case "gapAnalysis":
-				action = new GapAnalysisAction();
-				break;
-			case "gapAnalysisAdmin":
+			case "agap":
 				action = new GapAnalysisAdminAction();
 				break;
 			case "financialDashboard":
@@ -124,6 +122,9 @@ public class AdminControllerAction extends SimpleActionAdapter {
 				break;
 			case "manageAccounts":
 				action = new AccountManagerAction();
+				break;
+			case "marketAdmin":
+				action = new MarketManagementAction();
 				break;
 			default:
 				return null;

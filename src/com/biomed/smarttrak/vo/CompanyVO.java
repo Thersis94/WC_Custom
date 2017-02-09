@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import com.biomed.smarttrak.vo.NoteVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.Column;
@@ -26,7 +27,7 @@ import com.siliconmtn.util.StringUtil;
  ****************************************************************************/
 
 @Table(name="BIOMEDGPS_COMPANY")
-public class CompanyVO {
+public class CompanyVO  implements NoteEntityInterface {
 	private String companyId;
 	private String parentId;
 	private String companyName;
@@ -52,6 +53,7 @@ public class CompanyVO {
 	private List<LocationVO> locations;
 	private List<AllianceVO> alliances;
 	private List<CompanyAttributeVO> attributes;
+	private List<NoteVO> notes;
 	private List<GenericVO> sections;
 	
 	
@@ -282,6 +284,11 @@ public class CompanyVO {
 		this.alliances.add(alliance);
 	}
 	
+	/*
+	 * (non-Javadoc)
+	 * @see com.bmg.admin.vo.NoteEntityInterface#getAttributes()
+	 */
+	@Override
 	public List<CompanyAttributeVO> getAttributes() {
 		return attributes;
 	}
@@ -312,6 +319,29 @@ public class CompanyVO {
 	public Date getUpdateDate() {return null;}
 	@Column(name="CREATE_DT", isAutoGen=true, isInsertOnly=true)
 	public Date getCreateDate() {return null;}
+
+	/* (non-Javadoc)
+	 * @see com.bmg.admin.vo.BiomedNoteInterface#setNotes(java.util.List)
+	 */
+	@Override
+	public void setNotes(List<NoteVO> notes) {
+		this.notes = notes;
+	}
 	
+	/*
+	 * returns the list of notes
+	 */
+	public List<NoteVO> getNotes(){
+		return notes;
+	}
+
+	/* (non-Javadoc)
+	 * @see com.bmg.admin.vo.BiomedNoteInterface#getId()
+	 */
+	@Override
+	public String getId() {
+		//each vo will return its own primary id.
+		return getCompanyId();
+	}
 
 }
