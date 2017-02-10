@@ -439,7 +439,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 			//check to see if the product is using the new dynamic connector and attaching dynamic assets.
 			//those are the only ones they want reported.  ("SOUS attempted & failed")
 			if (!"isDynamic".equals(prod.getImage())) continue;
-			
+
 			name = prod.getProductName();
 			sousName = prod.getFullProductName();
 			checkProdSousAgainstMediabin(masterRecords, sousName, name, productSOUSNames);
@@ -457,7 +457,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 			String prodName, Map<String, Set<String>> sousNames) {
 
 		List<String> assetIds = findAssetsForSous(masterRecords, prodSousName);
-		if (assetIds != null && !assetIds.isEmpty()) 
+		if (!assetIds.isEmpty()) 
 			return; //we have our answer; there are matches here.
 
 		//finished checking all assets.  Apparently none of them use the same 
@@ -606,7 +606,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	 */
 	protected void addProductsWithNoAssetsToEmail(StringBuilder html) {
 		if (productSOUSNames.isEmpty()) return;
-		
+
 		html.append("<h4>Public Products with no MediaBin Assets (");
 		html.append(productSOUSNames.size()).append(")</h4>");
 		html.append("The following products (from the Public Catalog) indicate a ");
@@ -638,9 +638,9 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	 */
 	protected void addAssetsWithNoProductsToEmail(StringBuilder html, Map<String, Set<String>> assets) {
 		if (assets.isEmpty()) return;
-			
+
 		html.append("<h4>Assets (Mediabin SOUS Values) not used by any Products (");
-		html.append(mediabinSOUSNames.size()).append(")</h4>");
+		html.append(assets.size()).append(")</h4>");
 		html.append("The following assets are not matching any existing SOUS Product Name in Web Crescendo:<br/>\r\n");
 		html.append("<table border='1' width='95%' align='center'><thead><tr>");
 		html.append("<th>SOUS Product Name</th>");

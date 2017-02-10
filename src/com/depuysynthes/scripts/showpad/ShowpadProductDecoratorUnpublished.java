@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import com.depuysynthes.scripts.MediaBinDeltaVO;
@@ -98,7 +99,7 @@ public class ShowpadProductDecoratorUnpublished extends ShowpadProductDecorator 
 	@Override
 	protected void findEmptyProducts(Map<String, MediaBinDeltaVO> masterRecords) {
 		super.findEmptyProducts(masterRecords);
-		
+
 		String name;
 		String sousName;
 		for (ProductVO prod : unpublishedProducts) {
@@ -123,5 +124,41 @@ public class ShowpadProductDecoratorUnpublished extends ShowpadProductDecorator 
 		super.removeProductReferences(masterRecords, products);
 		//run against the unpublished catalog
 		super.removeProductReferences(masterRecords, unpublishedProducts);
+	}
+
+
+	/**
+	 * Appends a table to the email notification for products containing SOUS product name
+	 * that doesn't match any mediabin assets.
+	 * @param html
+	 */
+	@Override
+	protected void addProductsWithNoAssetsToEmail(StringBuilder html) {
+		super.addProductsWithNoAssetsToEmail(html);
+
+		if (unpubProductSOUSNames.isEmpty()) return;
+
+		html.append("<h4>Unpublished Products with no MediaBin Assets (");
+		html.append(unpubProductSOUSNames.size()).append(")</h4>");
+		html.append("The following products (from the Unpublished Catalog) indicate a ");
+		html.append("SOUS Product Name not matching any MediaBin assets:<br/>");
+		html.append("<table border='1' width='95%' align='center'><thead><tr>");
+		html.append("<th>Product Name(s)</th>");
+		html.append("<th>SOUS Product Name</th>");
+		html.append("</tr></thead><tbody>");
+
+		for (Entry<String, Set<String>> entry : unpubProductSOUSNames.entrySet()) {
+			Set<String> prodNames = entry.getValue();
+			String[] array = prodNames.toArray(new String[prodNames.size()]);
+			html.append("<tr><td>");
+			for (int x=0; x < array.length; x++) {
+				if (x > 0) html.append(", ");
+				html.append(scrubString(array[x]));
+			}
+			html.append("</td>");
+			html.append("<td>").append(scrubString(entry.getKey())).append("</td></tr>");
+		}
+		html.append("</tbody></table><br/><hr/>");
+
 	}
 }
