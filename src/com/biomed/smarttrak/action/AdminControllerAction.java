@@ -2,6 +2,7 @@ package com.biomed.smarttrak.action;
 
 import com.biomed.smarttrak.FinancialDashAction;
 import com.biomed.smarttrak.FinancialDashScenarioAction;
+import com.biomed.smarttrak.admin.CompanyManagementAction;
 import com.biomed.smarttrak.admin.ContentHierarchyAction;
 import com.biomed.smarttrak.admin.GapAnalysisAdminAction;
 import com.biomed.smarttrak.admin.MarketManagementAction;
@@ -103,6 +104,9 @@ public class AdminControllerAction extends SimpleActionAdapter {
 				break;
 			case "productAdmin":
 				action = new ProductManagementAction();
+				break;
+			case "companyAdmin":
+				action = new CompanyManagementAction();
 				break;
 			case "accounts":
 				action = new AccountManagerAction();
