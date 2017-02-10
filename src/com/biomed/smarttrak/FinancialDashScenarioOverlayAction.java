@@ -86,37 +86,15 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 	}
 	
 	/**
-	 * Returns the sql for retrieving financial data. 
+	 * Gets the select part of the query specific to the Scenario Overlay data.
+	 * 
+	 * @param dash
 	 * @return
 	 */
 	@Override
-	protected String getFinancialDataSql(FinancialDashVO dash) {
-		String custom = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = new StringBuilder(2000);
-
+	protected StringBuilder getSelectSql(FinancialDashVO dash) {
+		StringBuilder sql = new StringBuilder(700);
 		DisplayType dt = dash.getColHeaders().getDisplayType();
-		TableType tt = dash.getTableType();
-		int regionCnt = dash.getCountryTypes().size();
-
-		if (tt == TableType.COMPANY) {
-			sql.append("select ").append(dash.getLeafMode() ? "r.REVENUE_ID " : "r.COMPANY_ID ").append("as ROW_ID, c.COMPANY_NM as ROW_NM, ");
-		} else {
-			sql.append("select ");
-			sql.append("CASE WHEN s7.PARENT_ID = ? THEN s7.SECTION_ID ");
-			sql.append("WHEN s6.PARENT_ID = ? THEN s6.SECTION_ID ");
-			sql.append("WHEN s5.PARENT_ID = ? THEN s5.SECTION_ID ");
-			sql.append("WHEN s4.PARENT_ID = ? THEN s4.SECTION_ID ");
-			sql.append("WHEN s3.PARENT_ID = ? THEN s3.SECTION_ID ");
-			sql.append("WHEN s2.PARENT_ID = ? THEN s2.SECTION_ID ");
-			sql.append("WHEN s1.PARENT_ID = ? THEN s1.SECTION_ID END as ROW_ID, ");
-			sql.append("CASE WHEN s7.PARENT_ID = ? THEN s7.SECTION_NM ");
-			sql.append("WHEN s6.PARENT_ID = ? THEN s6.SECTION_NM ");
-			sql.append("WHEN s5.PARENT_ID = ? THEN s5.SECTION_NM ");
-			sql.append("WHEN s4.PARENT_ID = ? THEN s4.SECTION_NM ");
-			sql.append("WHEN s3.PARENT_ID = ? THEN s3.SECTION_NM ");
-			sql.append("WHEN s2.PARENT_ID = ? THEN s2.SECTION_NM ");
-			sql.append("WHEN s1.PARENT_ID = ? THEN s1.SECTION_NM END as ROW_NM, ");
-		}
 		
 		// Usinig coalesce here to "prefer" the overlay data over the standard data where applicable
 		sql.append("r.YEAR_NO, sum(coalesce(o.Q1_NO, r.Q1_NO)) as Q1_0, sum(coalesce(o.Q2_NO, r.Q2_NO)) as Q2_0, sum(coalesce(o.Q3_NO, r.Q3_NO)) as Q3_0, sum(coalesce(o.Q4_NO, r.Q4_NO)) as Q4_0, ");
@@ -130,7 +108,23 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 			sql.append(", sum(coalesce(o4.Q1_NO, r4.Q1_NO)) as Q1_3, sum(coalesce(o4.Q2_NO, r4.Q2_NO)) as Q2_3, sum(coalesce(o4.Q3_NO, r4.Q3_NO)) as Q3_3, sum(coalesce(o4.Q4_NO, r4.Q4_NO)) as Q4_3 ");
 			sql.append(", sum(coalesce(o5.Q1_NO, r5.Q1_NO)) as Q1_4, sum(coalesce(o5.Q2_NO, r5.Q2_NO)) as Q2_4, sum(coalesce(o5.Q3_NO, r5.Q3_NO)) as Q3_4, sum(coalesce(o5.Q4_NO, r5.Q4_NO)) as Q4_4 "); // Needed to get percent change from prior year in the fourth year
 		}
-
+		
+		return sql;
+	}
+	
+	/**
+	 * Gets the join part of the query specific to the Scenario Overlay data.
+	 * 
+	 * @param dash
+	 * @return
+	 */
+	@Override
+	protected StringBuilder getJoinSql(FinancialDashVO dash) {
+		StringBuilder sql = new StringBuilder();
+		
+		String custom = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		DisplayType dt = dash.getColHeaders().getDisplayType();
+		
 		sql.append("from ").append(custom).append("BIOMEDGPS_FD_REVENUE r ");
 		sql.append("left join ").append(custom).append("BIOMEDGPS_FD_SCENARIO_OVERLAY o on r.REVENUE_ID = o.REVENUE_ID and o.SCENARIO_ID = ? ");
 
@@ -149,34 +143,10 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 			sql.append("left join ").append(custom).append("BIOMEDGPS_FD_REVENUE r5 on r.COMPANY_ID = r5.COMPANY_ID and r.REGION_CD = r5.REGION_CD and r.SECTION_ID = r5.SECTION_ID and r.YEAR_NO - 4 = r5.YEAR_NO ");
 			sql.append("left join ").append(custom).append("BIOMEDGPS_FD_SCENARIO_OVERLAY o5 on r5.REVENUE_ID = o5.REVENUE_ID and o5.SCENARIO_ID = ? ");
 		}
-
-		sql.append("inner join ").append(custom).append("BIOMEDGPS_COMPANY c on r.COMPANY_ID = c.COMPANY_ID ");
-		sql.append("inner join ").append(custom).append("BIOMEDGPS_SECTION s1 on r.SECTION_ID = s1.SECTION_ID ");
-		sql.append("left join ").append(custom).append("BIOMEDGPS_SECTION s2 on s1.PARENT_ID = s2.SECTION_ID ");
-		sql.append("left join ").append(custom).append("BIOMEDGPS_SECTION s3 on s2.PARENT_ID = s3.SECTION_ID ");
-		sql.append("left join ").append(custom).append("BIOMEDGPS_SECTION s4 on s3.PARENT_ID = s4.SECTION_ID ");
-		sql.append("left join ").append(custom).append("BIOMEDGPS_SECTION s5 on s4.PARENT_ID = s5.SECTION_ID ");
-		sql.append("left join ").append(custom).append("BIOMEDGPS_SECTION s6 on s5.PARENT_ID = s6.SECTION_ID ");
-		sql.append("left join ").append(custom).append("BIOMEDGPS_SECTION s7 on s6.PARENT_ID = s7.SECTION_ID ");
-		sql.append("where (s1.SECTION_ID = ? OR s2.SECTION_ID = ? OR s3.SECTION_ID = ? OR s4.SECTION_ID = ? OR s5.SECTION_ID = ? OR s6.SECTION_ID = ? OR s7.SECTION_ID = ?) ");
 		
-		sql.append("and r.REGION_CD in (");
-		for (int i = 1; i <= regionCnt; i++) {
-			if (i == 1) {
-				sql.append("?");
-			} else {
-				sql.append(",?");
-			}
-		}
-		sql.append(") ");
-		
-		sql.append("and r.YEAR_NO = ? ");
-		sql.append("group by ROW_ID, ROW_NM, r.YEAR_NO ");
-		sql.append("order by ROW_NM ");
-
-		return sql.toString();
+		return sql;
 	}
-	
+
 	@Override
 	protected void updateData(ActionRequest req) throws ActionException {
 		String scenarioId = StringUtil.checkVal(req.getParameter("scenarioId"));

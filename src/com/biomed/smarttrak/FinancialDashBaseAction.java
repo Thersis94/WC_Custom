@@ -68,7 +68,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		boolean leafMode = Convert.formatBoolean(req.getParameter("leafMode"));
 		String scenarioId = StringUtil.checkVal(req.getParameter("scenarioId"));
 		
-		// Set the parameters so they can be used to generate the table
+		// Set the parameters so they can be used to generate the query/table
 		FinancialDashVO dash = new FinancialDashVO();
 		dash.setTableType(tableType);
 		dash.setColHeaders(displayType, calendarYear);
@@ -121,13 +121,26 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	 * @return
 	 */
 	protected String getFinancialDataSql(FinancialDashVO dash) {
-		String custom = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = new StringBuilder(2000);
+		StringBuilder sql = new StringBuilder(2600);
 
-		DisplayType dt = dash.getColHeaders().getDisplayType();
+		sql.append(getCommonSelectSql(dash));
+		sql.append(getSelectSql(dash));
+		sql.append(getJoinSql(dash));
+		sql.append(getCommonEndSql(dash));
+
+		return sql.toString();
+	}
+	
+	/**
+	 * Gets the select part of the query common to the Base and Overlay data.
+	 * 
+	 * @param dash
+	 * @return
+	 */
+	private StringBuilder getCommonSelectSql(FinancialDashVO dash) {
+		StringBuilder sql = new StringBuilder(700);
 		TableType tt = dash.getTableType();
-		int regionCnt = dash.getCountryTypes().size();
-
+		
 		if (tt == TableType.COMPANY) {
 			sql.append("select ").append(dash.getLeafMode() ? "r.REVENUE_ID " : "r.COMPANY_ID ").append("as ROW_ID, c.COMPANY_NM as ROW_NM, ");
 		} else {
@@ -148,6 +161,19 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 			sql.append("WHEN s1.PARENT_ID = ? THEN s1.SECTION_NM END as ROW_NM, ");
 		}
 		
+		return sql;
+	}
+	
+	/**
+	 * Gets the select part of the query specific to the Base revenue data.
+	 * 
+	 * @param dash
+	 * @return
+	 */
+	protected StringBuilder getSelectSql(FinancialDashVO dash) {
+		StringBuilder sql = new StringBuilder(500);
+		DisplayType dt = dash.getColHeaders().getDisplayType();
+		
 		sql.append("r.YEAR_NO, sum(r.Q1_NO) as Q1_0, sum(r.Q2_NO) as Q2_0, sum(r.Q3_NO) as Q3_0, sum(r.Q4_NO) as Q4_0, ");
 		sql.append("sum(r2.Q1_NO) as Q1_1, sum(r2.Q2_NO) as Q2_1, sum(r2.Q3_NO) as Q3_1, sum(r2.Q4_NO) as Q4_1 "); // Needed for all column display types to get percent change from prior year
 		
@@ -159,7 +185,22 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 			sql.append(", sum(r4.Q1_NO) as Q1_3, sum(r4.Q2_NO) as Q2_3, sum(r4.Q3_NO) as Q3_3, sum(r4.Q4_NO) as Q4_3 ");
 			sql.append(", sum(r5.Q1_NO) as Q1_4, sum(r5.Q2_NO) as Q2_4, sum(r5.Q3_NO) as Q3_4, sum(r5.Q4_NO) as Q4_4 "); // Needed to get percent change from prior year in the fourth year
 		}
-
+		
+		return sql;
+	}
+	
+	/**
+	 * Gets the join part of the query specific to the Base revenue data.
+	 * 
+	 * @param dash
+	 * @return
+	 */
+	protected StringBuilder getJoinSql(FinancialDashVO dash) {
+		StringBuilder sql = new StringBuilder(700);
+		
+		String custom = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		DisplayType dt = dash.getColHeaders().getDisplayType();
+		
 		sql.append("from ").append(custom).append("BIOMEDGPS_FD_REVENUE r ");
 		sql.append("left join ").append(custom).append("BIOMEDGPS_FD_REVENUE r2 on r.COMPANY_ID = r2.COMPANY_ID and r.REGION_CD = r2.REGION_CD and r.SECTION_ID = r2.SECTION_ID and r.YEAR_NO - 1 = r2.YEAR_NO ");
 
@@ -172,6 +213,21 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 			sql.append("left join ").append(custom).append("BIOMEDGPS_FD_REVENUE r5 on r.COMPANY_ID = r5.COMPANY_ID and r.REGION_CD = r5.REGION_CD and r.SECTION_ID = r5.SECTION_ID and r.YEAR_NO - 4 = r5.YEAR_NO ");
 		}
 
+		return sql;
+	}
+
+	/**
+	 * Gets the end part of the query common to the Base and Overlay data.
+	 * 
+	 * @param dash
+	 * @return
+	 */
+	private StringBuilder getCommonEndSql(FinancialDashVO dash) {
+		StringBuilder sql = new StringBuilder(700);
+		
+		String custom = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		int regionCnt = dash.getCountryTypes().size();
+		
 		sql.append("inner join ").append(custom).append("BIOMEDGPS_COMPANY c on r.COMPANY_ID = c.COMPANY_ID ");
 		sql.append("inner join ").append(custom).append("BIOMEDGPS_SECTION s1 on r.SECTION_ID = s1.SECTION_ID ");
 		sql.append("left join ").append(custom).append("BIOMEDGPS_SECTION s2 on s1.PARENT_ID = s2.SECTION_ID ");
@@ -195,8 +251,8 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		sql.append("and r.YEAR_NO = ? ");
 		sql.append("group by ROW_ID, ROW_NM, r.YEAR_NO ");
 		sql.append("order by ROW_NM ");
-
-		return sql.toString();
+		
+		return sql;
 	}
 
 	@Override
