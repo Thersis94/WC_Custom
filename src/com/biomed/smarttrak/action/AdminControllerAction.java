@@ -2,12 +2,12 @@ package com.biomed.smarttrak.action;
 
 import com.biomed.smarttrak.FinancialDashAction;
 import com.biomed.smarttrak.FinancialDashScenarioAction;
+import com.biomed.smarttrak.admin.AccountAction;
 import com.biomed.smarttrak.admin.CompanyManagementAction;
 import com.biomed.smarttrak.admin.ContentHierarchyAction;
 import com.biomed.smarttrak.admin.GapAnalysisAdminAction;
 import com.biomed.smarttrak.admin.MarketManagementAction;
 import com.biomed.smarttrak.admin.ProductManagementAction;
-import com.biomed.smarttrak.admin.user.AccountManagerAction;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionInterface;
@@ -53,11 +53,18 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		String msg;
 
 		try {
-			loadAction(actionType).build(req);
+			ActionInterface action = loadAction(actionType);
+
+			//allow either deletes or saves (build) to be called directly from the controller
+			if (AdminConstants.REQ_DELETE.equals(req.getParameter("actionPerform"))) {
+				action.delete(req);
+			} else {
+				action.build(req);
+			}
 			msg = (String) attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 
 		} catch (ActionException ae) {
-			log.error("could not execute requested Action::build()", ae.getCause());
+			log.error("could not execute " + actionType, ae.getCause());
 			msg = (String) attributes.get(AdminConstants.KEY_ERROR_MESSAGE);
 		}
 
@@ -109,7 +116,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 				action = new CompanyManagementAction();
 				break;
 			case "accounts":
-				action = new AccountManagerAction();
+				action = new AccountAction();
 				break;
 			case "marketAdmin":
 				action = new MarketManagementAction();
