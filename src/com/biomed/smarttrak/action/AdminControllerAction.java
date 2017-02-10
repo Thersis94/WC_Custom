@@ -1,17 +1,13 @@
-/**
- *
- */
 package com.biomed.smarttrak.action;
 
 import com.biomed.smarttrak.FinancialDashAction;
-
 import com.biomed.smarttrak.FinancialDashScenarioAction;
+import com.biomed.smarttrak.admin.AccountAction;
 import com.biomed.smarttrak.admin.CompanyManagementAction;
 import com.biomed.smarttrak.admin.ContentHierarchyAction;
 import com.biomed.smarttrak.admin.GapAnalysisAdminAction;
 import com.biomed.smarttrak.admin.MarketManagementAction;
 import com.biomed.smarttrak.admin.ProductManagementAction;
-import com.biomed.smarttrak.admin.user.AccountManagerAction;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionInterface;
@@ -53,43 +49,38 @@ public class AdminControllerAction extends SimpleActionAdapter {
 
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		String actionType = StringUtil.checkVal(req.getParameter("actionType"));
-		String msg = (String) attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
+		String actionType = req.getParameter("actionType");
+		String msg;
 
-		/*
-		 * TODO add some means of verifying user role/permission before executing
-		 * Actions.  Need to protect Admin functionality from the public side.
-		 */
 		try {
-			ActionInterface act = loadAction(actionType);
-			if(act != null) {
-				act.build(req);
+			ActionInterface action = loadAction(actionType);
+
+			//allow either deletes or saves (build) to be called directly from the controller
+			if (AdminConstants.REQ_DELETE.equals(req.getParameter("actionPerform"))) {
+				action.delete(req);
+			} else {
+				action.build(req);
 			}
+			msg = (String) attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
+
 		} catch (ActionException ae) {
-			log.error("could not forward requested Action.", ae.getCause());
+			log.error("could not execute " + actionType, ae.getCause());
 			msg = (String) attributes.get(AdminConstants.KEY_ERROR_MESSAGE);
 		}
 
-		if (StringUtil.checkVal(req.getAttribute(Constants.REDIRECT_URL)).isEmpty()) {
+		if (StringUtil.isEmpty((String)req.getAttribute(Constants.REDIRECT_URL))) {
 			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 			StringBuilder url = new StringBuilder(200);
-			url.append(page.getFullPath()).append("?msg=").append(msg);
-			url.append("&actionType=").append(actionType);
-			sbUtil.manualRedirect(req, url.toString());
+			url.append(page.getFullPath());
+			if (!StringUtil.isEmpty(actionType)) url.append("?actionType=").append(actionType);
+			sendRedirect(url.toString(), msg, req);
 		}
 	}
 
+
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		/*
-		 * TODO add some means of verifying user role/permission before executing
-		 * Actions.  Need to protect Admin functionality from the public side.
-		 */
-		String actionType = StringUtil.checkVal(req.getParameter("actionType"));
-		ActionInterface act = loadAction(actionType);
-		if(act != null) {
-			act.retrieve(req);
-		}
+		loadAction(req.getParameter("actionType")).retrieve(req);
 	}
 
 
@@ -100,6 +91,10 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	 * @throws ActionException
 	 */
 	private ActionInterface loadAction(String actionType) throws ActionException {
+		/*
+		 * TODO add some means of verifying user role/permission before executing
+		 * Actions.  Need to protect Admin functionality from the public side.
+		 */
 		ActionInterface action;
 		switch (StringUtil.checkVal(actionType)) {
 			case "hierarchy":
@@ -120,19 +115,18 @@ public class AdminControllerAction extends SimpleActionAdapter {
 			case "companyAdmin":
 				action = new CompanyManagementAction();
 				break;
-			case "manageAccounts":
-				action = new AccountManagerAction();
+			case "accounts":
+				action = new AccountAction();
 				break;
 			case "marketAdmin":
 				action = new MarketManagementAction();
 				break;
 			default:
-				return null;
+				throw new ActionException("unknown action type:" + actionType);
 		}
 
 		action.setDBConnection(dbConn);
 		action.setAttributes(getAttributes());
-
 		return action;
 	}
 }
