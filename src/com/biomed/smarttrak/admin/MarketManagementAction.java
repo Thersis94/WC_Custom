@@ -632,6 +632,10 @@ public class MarketManagementAction extends SimpleActionAdapter {
 				ActionTarget.valueOf(req.getParameter(ACTION_TARGET)) != ActionTarget.MARKET) {
 			url.append("&marketId=").append(req.getParameter("marketId"));
 		}
+		
+		if ("ATTRIBUTE".equals(req.getParameter(ACTION_TARGET)))
+			url.append("&").append(ACTION_TARGET).append("=ATTRIBUTE");
+		
 		req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
 		req.setAttribute(Constants.REDIRECT_URL, url.toString());
 	}

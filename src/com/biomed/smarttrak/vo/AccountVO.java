@@ -2,17 +2,20 @@ package com.biomed.smarttrak.vo;
 
 //Java 7
 import java.sql.ResultSet;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
-// SMTBaseLibs
+import com.siliconmtn.db.orm.Column;
+import com.siliconmtn.db.orm.Table;
+
 import com.siliconmtn.gis.Location;
+import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 
 /*****************************************************************************
- <p><b>Title</b>: SmarttrakAccountVO.java</p>
- <p><b>Description: </b>Value object that encapsulates a Smarttrak account.</p>
+ <p><b>Title</b>: AccountVO.java</p>
+ <p><b>Description: </b>VO representing a Smarttrak account.</p>
  <p> 
  <p>Copyright: (c) 2000 - 2017 SMT, All Rights Reserved</p>
  <p>Company: Silicon Mountain Technologies</p>
@@ -21,46 +24,29 @@ import com.siliconmtn.gis.Location;
  @since Feb 2, 2017
  <b>Changes:</b> 
  ***************************************************************************/
+@Table(name="BIOMEDGPS_ACCOUNT")
 public class AccountVO {
-
 	private String accountId;
-	private String accountName;
 	private String companyId;
+	private String accountName;
 	private String typeId;
 	private String ownerProfileId;
-	private String ownerName;
 	private Location location;
 	private String statusNo;
 	private Date startDate;
 	private Date expirationDate;
-	private List<TeamVO> teams;
-	private List<UserVO> users;
 	private Date createDate;
 	private Date updateDate;
-	
-	/**
-	* Constructor
-	*/
+	private String firstName;
+	private String lastName;
+
 	public AccountVO() {
-		// constructor stub
-		teams = new ArrayList<>();
-		users = new ArrayList<>();
-	}
-	
-	/**
-	* Constructor
-	 */
-	public AccountVO(ResultSet rs) {
-		this();
-		setData(rs);
+		super();
+		location = new Location();
 	}
 
-	/**
-	 * Helper method for populating bean properties from
-	 * a result set.
-	 * @param rs
-	 */
-	public void setData(ResultSet rs) {
+	public AccountVO(ResultSet rs) {
+		this();
 		DBUtil db = new DBUtil();
 		setAccountId(db.getStringVal("account_id", rs));
 		setAccountName(db.getStringVal("account_nm", rs));
@@ -72,19 +58,37 @@ public class AccountVO {
 		setExpirationDate(db.getDateVal("expiration_dt", rs));
 		setCreateDate(db.getDateVal("create_dt", rs));
 		setUpdateDate(db.getDateVal("update_dt", rs));
-		Location loc = new Location();
-		loc.setAddress(db.getStringVal("address_txt", rs));
-		loc.setAddress2(db.getStringVal("address2_txt", rs));
-		loc.setCity(db.getStringVal("city_nm", rs));
-		loc.setState(db.getStringVal("state_cd", rs));
-		loc.setZipCode(db.getStringVal("zip_cd", rs));
-		loc.setCountry(db.getStringVal("country_cd", rs));
-		setLocation(loc);
+		setAddress(db.getStringVal("address_txt", rs));
+		setAddress2(db.getStringVal("address2_txt", rs));
+		setCity(db.getStringVal("city_nm", rs));
+		setState(db.getStringVal("state_cd", rs));
+		setZipCode(db.getStringVal("zip_cd", rs));
+		setCountry(db.getStringVal("country_cd", rs));
 	}
-	
+
+	public AccountVO(ActionRequest req) {
+		this();
+		setAccountId(req.getParameter("accountId"));
+		setAccountName(req.getParameter("accountName"));
+		setCompanyId(req.getParameter("companyId"));
+		setTypeId(req.getParameter("typeId"));
+		setOwnerProfileId(req.getParameter("ownerProfileId"));
+		setStatusNo(req.getParameter("statusNo"));
+		setStartDate(Convert.formatDate(Convert.DATE_SLASH_PATTERN, req.getParameter("startDate")));
+		setExpirationDate(Convert.formatDate(Convert.DATE_SLASH_PATTERN, req.getParameter("expirationDate")));
+		setAddress(req.getParameter("addressText"));
+		setAddress2(req.getParameter("address2Text"));
+		setCity(req.getParameter("cityName"));
+		setState(req.getParameter("stateCode"));
+		setZipCode(req.getParameter("zipCode"));
+		setCountry(req.getParameter("countryCode"));
+	}
+
+
 	/**
 	 * @return the accountId
 	 */
+	@Column(name="account_id", isPrimaryKey=true)
 	public String getAccountId() {
 		return accountId;
 	}
@@ -99,6 +103,7 @@ public class AccountVO {
 	/**
 	 * @return the accountName
 	 */
+	@Column(name="account_nm")
 	public String getAccountName() {
 		return accountName;
 	}
@@ -113,6 +118,7 @@ public class AccountVO {
 	/**
 	 * @return the companyId
 	 */
+	@Column(name="company_id")
 	public String getCompanyId() {
 		return companyId;
 	}
@@ -127,6 +133,7 @@ public class AccountVO {
 	/**
 	 * @return the typeId
 	 */
+	@Column(name="type_id")
 	public String getTypeId() {
 		return typeId;
 	}
@@ -139,8 +146,55 @@ public class AccountVO {
 	}
 
 	/**
+	 * @param stringVal
+	 */
+	public void setAddress(String stringVal) {
+		getLocation().setAddress(stringVal);		
+	}
+
+
+	/**
+	 * @param stringVal
+	 */
+	public void setAddress2(String stringVal) {
+		getLocation().setAddress2(stringVal);
+	}
+
+
+	/**
+	 * @param stringVal
+	 */
+	public void setCity(String stringVal) {
+		getLocation().setCity(stringVal);
+	}
+
+
+	/**
+	 * @param stringVal
+	 */
+	public void setState(String stringVal) {
+		getLocation().setState(stringVal);
+	}
+
+
+	/**
+	 * @param stringVal
+	 */
+	public void setZipCode(String stringVal) {
+		getLocation().setZipCode(stringVal);
+	}
+
+	/**
+	 * @param stringVal
+	 */
+	public void setCountry(String stringVal) {
+		getLocation().setCountry(stringVal);
+	}
+
+	/**
 	 * @return the ownerProfileId
 	 */
+	@Column(name="owner_profile_id")
 	public String getOwnerProfileId() {
 		return ownerProfileId;
 	}
@@ -154,23 +208,63 @@ public class AccountVO {
 
 	/**
 	 * @return the location
+	 *NOTE no setter for location - we don't want outsiders to be able to nullify it, or our setter/getters around address will fail
 	 */
 	public Location getLocation() {
 		return location;
 	}
 
-	/**
-	 * @param location the location to set
-	 */
-	public void setLocation(Location location) {
-		this.location = location;
+	@Column(name="address_txt")
+	public String getAddress() {
+		return getLocation().getAddress();
+	}
+
+	@Column(name="address2_txt")
+	public String getAddress2() {
+		return getLocation().getAddress2();
+	}
+
+	@Column(name="city_nm")
+	public String getCity() {
+		return getLocation().getCity();
+	}
+
+	@Column(name="state_cd")
+	public String getState() {
+		return getLocation().getState();
+	}
+
+	@Column(name="zip_cd")
+	public String getZipCode() {
+		return getLocation().getZipCode();
+	}
+
+	@Column(name="country_cd")
+	public String getCountry() {
+		return getLocation().getCountry();
 	}
 
 	/**
 	 * @return the statusNo
 	 */
+	@Column(name="status_no")
 	public String getStatusNo() {
 		return statusNo;
+	}
+
+	public String getStatusName() {
+		switch (StringUtil.checkVal(getStatusNo())) {
+			case "A":
+				return "Active";
+			case "S":
+				return "Staff";
+			case "T":
+				return "Trial";
+			case "U":
+				return "Updates";
+			default:
+				return "Inactive";
+		}
 	}
 
 	/**
@@ -183,6 +277,7 @@ public class AccountVO {
 	/**
 	 * @return the startDate
 	 */
+	@Column(name="start_dt")
 	public Date getStartDate() {
 		return startDate;
 	}
@@ -197,6 +292,7 @@ public class AccountVO {
 	/**
 	 * @return the expirationDate
 	 */
+	@Column(name="expiration_dt")
 	public Date getExpirationDate() {
 		return expirationDate;
 	}
@@ -211,6 +307,7 @@ public class AccountVO {
 	/**
 	 * @return the createDate
 	 */
+	@Column(name="create_dt", isAutoGen=true, isInsertOnly=true)
 	public Date getCreateDate() {
 		return createDate;
 	}
@@ -225,6 +322,7 @@ public class AccountVO {
 	/**
 	 * @return the updateDate
 	 */
+	@Column(name="update_dt", isAutoGen=true, isUpdateOnly=true)
 	public Date getUpdateDate() {
 		return updateDate;
 	}
@@ -236,73 +334,21 @@ public class AccountVO {
 		this.updateDate = updateDate;
 	}
 
-	/**
-	 * @return the teams
-	 */
-	public List<TeamVO> getTeams() {
-		return teams;
+	@Column(name="first_nm", isReadOnly=true)
+	public String getFirstName() {
+		return firstName;
 	}
 
-	/**
-	 * @param teams the teams to set
-	 */
-	public void setTeams(List<TeamVO> teams) {
-		this.teams = teams;
-	}
-	
-	/**
-	 * @param team
-	 */
-	public void addTeam(TeamVO team) {
-		if (team != null) teams.add(team);
+	public void setFirstName(String firstName) {
+		this.firstName = firstName;
 	}
 
-	/**
-	 * @return the users
-	 */
-	public List<UserVO> getUsers() {
-		return users;
+	@Column(name="last_nm", isReadOnly=true)
+	public String getLastName() {
+		return lastName;
 	}
 
-	/**
-	 * @param users the users to set
-	 */
-	public void setUsers(List<UserVO> users) {
-		this.users = users;
+	public void setLastName(String lastName) {
+		this.lastName = lastName;
 	}
-	
-	/**
-	 * @param user
-	 */
-	public void addUser(UserVO user) {
-		if (user != null) users.add(user);
-	}
-	
-	/**
-	 * Helper method to return account owner's name (rep).
-	 * @return
-	 */
-	public String getOwnerName() {
-		return ownerName;
-	}
-	
-	public void setOwnerName() {
-		if (ownerProfileId ==  null || 
-				users == null) return;
-		for (UserVO user : users) {
-			if (user.getProfileId().equals(ownerProfileId)) {
-				ownerName = user.getFirstName();
-			}
-		}
-	}
-
-	
-	/**
-	 * Helper field for JSTL view.
-	 * @param ownerName
-	 */
-	public void setOwnerName(String ownerName) {
-		this.ownerName = ownerName;
-	}
-
 }

@@ -1,10 +1,11 @@
-package com.bmg.admin.vo;
+package com.biomed.smarttrak.vo;
 
 import java.util.Date;
 import java.util.List;
 
 import com.biomed.smarttrak.vo.NoteInterface;
 import com.biomed.smarttrak.vo.NoteVO;
+import com.bmg.admin.vo.NoteInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
@@ -31,9 +32,6 @@ public class CompanyAttributeVO implements NoteInterface  {
 	private String attributeId;
 	private String valueText;
 	private String titleText;
-	private String attr1Text;
-	private String attr2Text;
-	private String attr3Text;
 	private List<NoteVO> notes;
 	
 	private int orderNo;
@@ -48,7 +46,6 @@ public class CompanyAttributeVO implements NoteInterface  {
 		setData(req);
 	}
 	
-
 	
 	public void setData(ActionRequest req) {
 		companyAttributeId = req.getParameter("companyAttributeId");
@@ -56,9 +53,6 @@ public class CompanyAttributeVO implements NoteInterface  {
 		attributeId = req.getParameter("attributeId");
 		valueText = req.getParameter("valueText");
 		titleText = req.getParameter("titleText");
-		attr1Text = req.getParameter("attr1Text");
-		attr2Text = req.getParameter("attr2Text");
-		attr3Text = req.getParameter("attr3Text");
 		orderNo = Convert.formatInteger(req.getParameter("orderNo"));
 	}
 
@@ -97,27 +91,6 @@ public class CompanyAttributeVO implements NoteInterface  {
 	}
 	public void setTitleText(String titleText) {
 		this.titleText = titleText;
-	}
-	@Column(name="attrib1_txt")
-	public String getAttr1Text() {
-		return attr1Text;
-	}
-	public void setAttr1Text(String attr1Text) {
-		this.attr1Text = attr1Text;
-	}
-	@Column(name="attrib2_txt")
-	public String getAttr2Text() {
-		return attr2Text;
-	}
-	public void setAttr2Text(String attr2Text) {
-		this.attr2Text = attr2Text;
-	}
-	@Column(name="attrib3_txt")
-	public String getAttr3Text() {
-		return attr3Text;
-	}
-	public void setAttr3Text(String attr3Text) {
-		this.attr3Text = attr3Text;
 	}
 	@Column(name="order_no")
 	public int getOrderNo() {
