@@ -2,8 +2,11 @@ package com.biomed.smarttrak.admin;
 
 //Java 7
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
+import com.biomed.smarttrak.action.AdminControllerAction;
 // WC_Custom
 import com.biomed.smarttrak.vo.AccountVO;
 
@@ -16,9 +19,11 @@ import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.StringEncrypter;
+import com.siliconmtn.util.StringUtil;
 // WebCrescendo
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.SecurityController;
 
 /*****************************************************************************
  <p><b>Title</b>: AccountAction.java</p>
@@ -31,8 +36,8 @@ import com.smt.sitebuilder.common.constants.Constants;
  <b>Changes:</b> 
  ***************************************************************************/
 public class AccountAction extends SBActionAdapter {
-	
-	private static final String ACCOUNT_ID = "accountId"; //req param
+
+	protected static final String ACCOUNT_ID = "accountId"; //req param
 
 	public AccountAction() {
 		super();
@@ -64,9 +69,42 @@ public class AccountAction extends SBActionAdapter {
 		log.debug("loaded " + accounts.size() + " accounts");
 
 		//decrypt the owner profiles
-		decryptOwnerNames(accounts);
+		decryptNames(accounts);
 
-		putModuleData(accounts, accounts.size(), false);
+		//if this is the edit form, we need a list of BiomedGPS Staff for the "Manager" dropdown
+		if (accountId != null)
+			loadManagerList(req, schema);
+
+		putModuleData(accounts);
+	}
+
+
+	/**
+	 * loads a list of profileId|Names for the BiomedGPS Staff role level - these are their Account Managers
+	 * @param req
+	 * @throws ActionException
+	 */
+	protected void loadManagerList(ActionRequest req, String schema) throws ActionException {
+		StringBuilder sql = new StringBuilder(200);
+		sql.append("select a.profile_id as owner_profile_id, a.first_nm, a.last_nm from profile a ");
+		sql.append("inner join profile_role b on a.profile_id=b.profile_id and b.status_id=?");
+		sql.append("and b.site_id=? and b.role_id=?");
+		log.debug(sql);
+
+		List<Object> params = new ArrayList<>();
+		params.add(SecurityController.STATUS_ACTIVE);
+		params.add(AdminControllerAction.PUBLIC_SITE_ID);
+		params.add(AdminControllerAction.STAFF_ROLE_ID);
+
+		DBProcessor db = new DBProcessor(dbConn, schema);
+		List<Object>  accounts = db.executeSelect(sql.toString(), params, new AccountVO());
+		log.debug("loaded " + accounts.size() + " managers");
+
+		//decrypt the owner profiles
+		decryptNames(accounts);
+		Collections.sort(accounts, new NameComparator());
+
+		req.setAttribute("managers", accounts);
 	}
 
 
@@ -74,7 +112,7 @@ public class AccountAction extends SBActionAdapter {
 	 * loop and decrypt owner names, which came from the profile table
 	 * @param accounts
 	 */
-	private void decryptOwnerNames(List<Object>  accounts) {
+	protected void decryptNames(List<Object>  accounts) {
 		StringEncrypter se;
 		try {
 			se = new StringEncrypter((String)getAttribute(Constants.ENCRYPT_KEY));
@@ -98,7 +136,7 @@ public class AccountAction extends SBActionAdapter {
 	 * Formats the account retrieval query.
 	 * @return
 	 */
-	public String formatRetrieveQuery(String accountId, String schema) {
+	protected String formatRetrieveQuery(String accountId, String schema) {
 		StringBuilder sql = new StringBuilder(300);
 		sql.append("select a.account_id, a.company_id, a.account_nm, a.type_id, ");
 		sql.append("a.start_dt, a.expiration_dt, a.owner_profile_id, a.address_txt, ");
@@ -119,12 +157,7 @@ public class AccountAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		try {
-			db.save(new AccountVO(req));
-		} catch (InvalidDataException | DatabaseException e) {
-			throw new ActionException(e);
-		}
+		saveRecord(req, false);
 	}
 
 
@@ -133,11 +166,52 @@ public class AccountAction extends SBActionAdapter {
 	 */
 	@Override
 	public void delete(ActionRequest req) throws ActionException {
+		saveRecord(req, true);
+	}
+
+
+	/**
+	 * reusable internal method for invoking DBProcessor
+	 * @param req
+	 * @param isDelete
+	 * @throws ActionException
+	 */
+	protected void saveRecord(ActionRequest req, boolean isDelete) throws ActionException {
 		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		try {
-			db.delete(new AccountVO(req));
+			if (isDelete) {
+				db.delete(new AccountVO(req));
+			} else {
+				db.save(new AccountVO(req));
+			}
 		} catch (InvalidDataException | DatabaseException e) {
 			throw new ActionException(e);
+		}
+	}
+	
+	
+	/****************************************************************************
+	 * <b>Title</b>: NameComparator.java<p/>
+	 * <b>Description: Compares AccountVOs and sorts them by name</b> 
+	 * <p/>
+	 * <b>Copyright:</b> Copyright (c) 2017<p/>
+	 * <b>Company:</b> Silicon Mountain Technologies<p/>
+	 * @author James McKain
+	 * @version 1.0
+	 * @since Feb 11, 2017
+	 ****************************************************************************/
+	protected class NameComparator implements Comparator<Object> {
+
+		/* (non-Javadoc)
+		 * @see java.lang.Comparable#compareTo(java.lang.Object)
+		 */
+		@Override
+		public int compare(Object o1, Object o2) {
+			AccountVO vo1 = (AccountVO) o1;
+			String name1 = vo1.getFirstName() + vo1.getLastName();
+			AccountVO vo2 = (AccountVO) o2;
+			String name2 = vo2.getFirstName() + vo2.getLastName();
+			return StringUtil.checkVal(name1).compareTo(name2);
 		}
 	}
 }
