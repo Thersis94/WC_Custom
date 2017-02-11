@@ -5,11 +5,22 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+
+
+
+
+
+
+import java.util.Map.Entry;
+
+
 
 //WC custom
 import com.biomed.smarttrak.vo.NoteVO;
@@ -18,9 +29,11 @@ import com.biomed.smarttrak.vo.NoteVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.StringEncrypter;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 
@@ -72,22 +85,106 @@ public class NoteAction extends SBActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("Notes Action Retrieve called");
 		String encKey = (String) getAttribute(Constants.ENCRYPT_KEY);
-		Calendar cal = Calendar.getInstance();
-		cal.setTime(new Date()); 
-		cal.add(Calendar.HOUR_OF_DAY, 3);
+
+		String productId = StringUtil.checkVal(req.getParameter("productId"));
+		String companyId = StringUtil.checkVal(req.getParameter("companyId"));
+		String marketId = StringUtil.checkVal(req.getParameter("marketId"));
+		String attributeId = StringUtil.checkVal(req.getParameter("attributeId"));
+
+		Date cal = Convert.formatDate(new Date(), Calendar.HOUR_OF_DAY, 3);
 
 		try  {
 			StringEncrypter se = new StringEncrypter(encKey);
 
-			String fileToken = se.encrypt(cal.getTime().toString());
-			log.debug("note lode time " + cal.getTime().toString());
+			String fileToken = se.encrypt(cal.getTime()+"");
+
+			log.debug("note lode time " + cal.getTime()+"");
 			ModuleVO modVo = (ModuleVO) attributes.get(Constants.MODULE_DATA);
-			modVo.setAttribute("noteToken", fileToken );	
+
+
+			List<NoteVO> targetNotes = refreshNoteList(productId, marketId,companyId, attributeId);
+			modVo.setActionData(targetNotes);
+
+			modVo.setAttribute("noteToken", fileToken );
+			modVo.setAttribute("primaryId", setPrimaryId(productId, companyId, marketId, attributeId));
 			attributes.put(Constants.MODULE_DATA, modVo);
 
 		} catch (EncryptionException e) {
 			log.error("error during string encryption " , e);
 		}
+
+
+
+	}
+
+	/**
+	 * looks at the ids, and sets a primary id for use in the jsp files.  if there attr id exists
+	 * it has priority.
+	 * @param attributeId 
+	 * @param marketId 
+	 * @param companyId 
+	 * @param productId 
+	 * @return
+	 */
+	private Object setPrimaryId(String productId, String companyId, String marketId, String attributeId) {
+		if (StringUtil.isEmpty(attributeId)){
+
+			String placeHolder = StringUtil.checkVal(productId, 
+					StringUtil.checkVal(companyId, marketId));
+			return placeHolder;
+		}
+		return attributeId;
+	}
+
+	/**
+	 * @param productId
+	 * @param marketId
+	 * @param companyId
+	 * @param attributeId
+	 * @return
+	 */
+	private List<NoteVO> refreshNoteList(String productId, String marketId,	String companyId, String attributeId) {
+
+		//in the generic note the key is the target id and the value is the note type
+		GenericVO type = calculateNoteType(marketId, productId, companyId);
+
+		//TODO replace with the dynamic User id and dynamic teams when it is finished
+		String userId = "8080";
+		List<String> teams = null;
+
+		List<String> attributes = Arrays.asList(attributeId);
+		List<String> targetIds = Arrays.asList((String)type.getKey());
+
+		getNoteList(targetIds, NoteType.COMPANY, userId, teams);
+
+		Map<String, List<NoteVO>> targetNotes = getNotes(userId, teams,attributes, targetIds, (NoteType)type.getValue() );		
+
+		if (targetNotes.containsKey(attributes.get(0))) {
+			log.debug("return att list");
+			return targetNotes.get(attributes.get(0));
+		}
+
+		if (targetNotes.containsKey(targetIds.get(0) )){
+			log.debug("return tar id list");
+			return targetNotes.get(targetIds.get(0));
+		}
+
+		log.debug("The target list was not located null returned");
+		return null;
+	}
+
+	/**
+	 * looks at the ids sent and returns the correct note type
+	 * @param marketId
+	 * @param productId
+	 * @param companyId
+	 * @return
+	 */
+	private GenericVO calculateNoteType(String marketId, String productId,String companyId) {
+
+		if (!StringUtil.isEmpty(productId, true))return new GenericVO(productId,NoteType.PRODUCT);
+		if (!StringUtil.isEmpty(companyId, true))return new GenericVO(companyId,NoteType.COMPANY);
+		else return new GenericVO(marketId,NoteType.MARKET);
 	}
 
 	/*
@@ -135,7 +232,7 @@ public class NoteAction extends SBActionAdapter {
 	 * @param vo 
 	 */
 	private void setTargetId(ActionRequest req, NoteVO vo) {
-		
+
 		if (!StringUtil.checkVal(req.getParameter("companyId")).isEmpty()){
 			vo.setCompanyId(StringUtil.checkVal(req.getParameter("companyId")));
 		}else if (!StringUtil.checkVal(req.getParameter("productId")).isEmpty()){
@@ -143,7 +240,7 @@ public class NoteAction extends SBActionAdapter {
 		}else if (!StringUtil.checkVal(req.getParameter("marketId")).isEmpty()){
 			vo.setMarketId(StringUtil.checkVal(req.getParameter("marketId")));
 		}
-		
+
 	}
 
 	/**
@@ -255,7 +352,7 @@ public class NoteAction extends SBActionAdapter {
 	}
 
 	/**
-	 * pulls every note with the accompanying company id
+	 * pulls every note with the accompanying  id
 	 * @param companyId 
 	 * @param companyAttrIds 
 	 * @param teams 

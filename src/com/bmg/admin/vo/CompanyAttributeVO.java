@@ -3,6 +3,7 @@ package com.bmg.admin.vo;
 import java.util.Date;
 import java.util.List;
 
+import com.biomed.smarttrak.vo.NoteInterface;
 import com.biomed.smarttrak.vo.NoteVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;

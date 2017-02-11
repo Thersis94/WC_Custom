@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import com.biomed.smarttrak.vo.NoteEntityInterface;
 import com.biomed.smarttrak.vo.NoteVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
