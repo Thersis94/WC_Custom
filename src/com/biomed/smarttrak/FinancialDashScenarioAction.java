@@ -38,27 +38,30 @@ public class FinancialDashScenarioAction extends SBActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 
-		List<FinancialDashScenarioVO> scenarios = new ArrayList<>();
-		getScenarios(scenarios);
-		
+		// TODO: Where do I get the team/user values from?
+		List<FinancialDashScenarioVO> scenarios = getScenarios("3", "6614");
 		this.putModuleData(scenarios);
 	}
 	
 	/**
-	 * Gets the list of scenarios available to the user
+	 * Gets the scenarios available to the user
 	 * 
 	 * @param scenarios
 	 */
-	private void getScenarios(List<FinancialDashScenarioVO> scenarios) {
-		String sql = getScenarioListSql();
+	private List<FinancialDashScenarioVO> getScenarios(String teamId, String userId) {
+		List<FinancialDashScenarioVO> scenarios = new ArrayList<>();
+		boolean getAll = (teamId == null && userId == null);
+		
+		String sql = getScenarioSql(getAll);
 		FinancialDashScenarioVO svo = null;
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			int idx = 0;
 			
-			// TODO: Where do I get the team/user values from?
-			ps.setString(++idx, "3");
-			ps.setString(++idx, "6614");
+			if (!getAll) {
+				ps.setString(++idx, teamId);
+				ps.setString(++idx, userId);
+			}
 			
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
@@ -68,20 +71,35 @@ public class FinancialDashScenarioAction extends SBActionAdapter {
 		} catch (SQLException sqle) {
 			log.error("Unable to get financial dashboard scenario list ", sqle);
 		}
+		
+		return scenarios;
 	}
 	
 	/**
-	 * Gets the sql for the user's scenario list
+	 * Gets all of the existing scenarios
 	 * 
 	 * @return
 	 */
-	private String getScenarioListSql() {
+	protected List<FinancialDashScenarioVO> getScenarios() {
+		return getScenarios(null, null);
+	}
+	
+	/**
+	 * Gets the sql to return a scenario list
+	 * 
+	 * @return
+	 */
+	private String getScenarioSql(boolean getAll) {
 		String custom = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = new StringBuilder(500);
+		StringBuilder sql = new StringBuilder(200);
 		
 		sql.append("select * ");
 		sql.append("from ").append(custom).append("BIOMEDGPS_FD_SCENARIO s ");
-		sql.append("where team_id = ? or user_id = ? ");
+		
+		if (!getAll) {
+			sql.append("where team_id = ? or user_id = ? ");
+		}
+		
 		sql.append("order by scenario_nm ");
 		
 		return sql.toString();

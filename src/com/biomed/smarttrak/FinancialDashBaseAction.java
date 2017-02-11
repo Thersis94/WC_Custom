@@ -3,6 +3,8 @@ package com.biomed.smarttrak;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.biomed.smarttrak.FinancialDashColumnSet.DisplayType;
 import com.biomed.smarttrak.FinancialDashVO.TableType;
@@ -262,14 +264,13 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	}
 	
 	/**
-	 * Publishes the data from a scenario.
+	 * TODO: Not sure this is going to be needed any more. Data is published to the base from scenarios.
 	 * 
 	 * @param req
 	 * @throws ActionException 
 	 */
-	// TODO: Needs secured so that unauthorized users don't publish data.
 	protected void updateData(ActionRequest req) throws ActionException {
-		log.debug("Publishing SmartTRAK Base Data");
+		log.debug("Update SmartTRAK Base Data");
 	}
 	
 	/**
@@ -290,5 +291,22 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		}
 		
 		return rvo;
+	}
+
+	/**
+	 * Gets the existing base revenue data related to a scenario.
+	 * 
+	 * @param sectionId
+	 * @param countryType
+	 * @param year
+	 * @param scenarioId
+	 * @return
+	 */
+	protected Map<String, FinancialDashRevenueVO> getBaseData(String sectionId, String countryType, int year, String scenarioId) {
+		Map<String, FinancialDashRevenueVO> baseData = new HashMap<>();
+		
+		// get the data
+		
+		return baseData;
 	}
 }

@@ -6,7 +6,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.biomed.smarttrak.FinancialDashColumnSet.DisplayType;
 import com.biomed.smarttrak.FinancialDashVO.TableType;
@@ -149,10 +151,16 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 
 	@Override
 	protected void updateData(ActionRequest req) throws ActionException {
+		String actionPerform = StringUtil.checkVal(req.getParameter("actionPerform"));
+		if ("publish".equals(actionPerform)) {
+			publishScenario(req);
+			return;
+		}
+		
 		String scenarioId = StringUtil.checkVal(req.getParameter("scenarioId"));
 		String revenueId = StringUtil.checkVal(req.getParameter("pk"));
 		String quarter = getQuarterFromField(StringUtil.checkVal(req.getParameter("name")));
-		long value = Convert.formatInteger(StringUtil.checkVal(req.getParameter("value")));
+		long value = Convert.formatLong(StringUtil.checkVal(req.getParameter("value")));
 		
 		try {
 			// Get the complete current overlay data if it exists
@@ -243,5 +251,99 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 		}
 		
 		return qtrString;
+	}
+	
+	/**
+	 * Publishes data from a selected scenario/section/year/region combination.
+	 * 
+	 * @param req
+	 */
+	// TODO: Finish out all methods related to scenario publishing 
+	protected void publishScenario(ActionRequest req) {
+		String sectionId = StringUtil.checkVal(req.getParameter("sectionId"));
+		String scenarioId = StringUtil.checkVal(req.getParameter("scenarioId"));
+		String countryType = StringUtil.checkVal(req.getParameter("countryType"));
+		int year = Convert.formatInteger(StringUtil.checkVal(req.getParameter("year")));
+		
+		// We pass scenarioId to the base data for efficiency, to get only the related records
+		// that are also in the scenario, rather than getting every record.
+		Map<String, FinancialDashRevenueVO> baseData = getBaseData(sectionId, countryType, year, scenarioId);
+		Map<String, FinancialDashScenarioOverlayVO> overlayData = getScenarioData(sectionId, countryType, year, scenarioId);
+		
+		updateAllScenarios(baseData, overlayData, sectionId, countryType, year);
+		updateBaseData(baseData, overlayData);
+	}
+	
+	/**
+	 * Gets the existing overlay revenue data for a specific scenario.
+	 * 
+	 * @param sectionId
+	 * @param countryType
+	 * @param year
+	 * @param scenarioId
+	 * @return
+	 */
+	protected Map<String, FinancialDashScenarioOverlayVO> getScenarioData(String sectionId, String countryType, int year, String scenarioId) {
+		Map<String, FinancialDashScenarioOverlayVO> overlayData = new HashMap<>();
+		
+		// get the data
+		
+		return overlayData;
+	}
+	
+	/**
+	 * Brings the base data current with the published scenario data.
+	 * 
+	 * @param baseData
+	 * @param overlayData
+	 */
+	protected void updateBaseData(Map<String, FinancialDashRevenueVO> baseData, Map<String, FinancialDashScenarioOverlayVO> overlayData) {
+		for (String revenueId : overlayData.keySet()) {
+			FinancialDashRevenueVO baseRecord = baseData.get(revenueId);
+			if (baseRecord == null) {
+				// create the record
+			} else {
+				// update the record
+			}
+			// save record to database
+		}
+	}
+
+	/**
+	 * Brings all existing scenarios up-to-date with the published scenario data.
+	 * 
+	 * @param baseData
+	 * @param overlayData
+	 */
+	protected void updateAllScenarios(Map<String, FinancialDashRevenueVO> baseData, Map<String, FinancialDashScenarioOverlayVO> overlayData, String sectionId, String countryType, int year) {
+		// Get the list of scenarios that will need to be updated
+		FinancialDashScenarioAction sa = new FinancialDashScenarioAction(this.actionInit);
+		sa.setAttributes(this.attributes);
+		sa.setDBConnection(dbConn);
+		List<FinancialDashScenarioVO> scenarios = sa.getScenarios();
+		
+		// Quarters to check for changes
+		List<String> quarters = new ArrayList<>();
+		quarters.addAll(Arrays.asList(FinancialDashBaseAction.QUARTER_1, FinancialDashBaseAction.QUARTER_2, FinancialDashBaseAction.QUARTER_3, FinancialDashBaseAction.QUARTER_4));
+		
+		// Loop through each scenario
+		for (FinancialDashScenarioVO scenario : scenarios) {
+			Map<String, FinancialDashScenarioOverlayVO> scenarioData = getScenarioData(sectionId, countryType, year, scenario.getScenarioId());
+			
+			// Loop through all the records in the overlay data
+			for (String revenueId : overlayData.keySet()) {
+				FinancialDashScenarioOverlayVO scenarioRecord = scenarioData.get(revenueId);
+				if (scenarioRecord == null) {
+					// create the record
+				} else {
+					FinancialDashRevenueVO baseRecord = baseData.get(revenueId);
+					for (String quarter : quarters) {
+						// if base record quarter value is same as scenario record quarter value
+						// then replace with overlay record quarter value
+					}
+				}
+				// save record to database
+			}
+		}
 	}
 }
