@@ -151,7 +151,7 @@ public class TeamVO {
 		this.updateDate = updateDate;
 	}
 
-	//@Column(name="members", isReadOnly=true)
+	@Column(name="members", isReadOnly=true)
 	public int getMemberCount() {
 		return memberCount;
 	}

@@ -83,7 +83,7 @@ public class TeamAction extends SBActionAdapter {
 	 */
 	public String formatRetrieveQuery(String teamId, String schema) {
 		StringBuilder sql = new StringBuilder(300);
-		sql.append("select a.team_id, a.account_id, a.team_nm, a.default_flg, a.private_flg, count(b.user_id) as members ");
+		sql.append("select a.team_id, a.account_id, a.team_nm, a.default_flg, a.private_flg, cast(count(b.user_id) as integer) as members ");
 		sql.append("from ").append(schema).append("biomedgps_team a ");
 		sql.append("left outer join ").append(schema).append("biomedgps_user_team_xr b on a.team_id=b.team_id ");
 		sql.append("where a.account_id=? ");
