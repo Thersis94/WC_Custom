@@ -6,10 +6,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import com.biomed.smarttrak.action.AdminControllerAction;
-// WC_Custom
-import com.biomed.smarttrak.vo.AccountVO;
-
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -20,30 +16,34 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.StringUtil;
+
 // WebCrescendo
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
-import com.smt.sitebuilder.security.SecurityController;
+
+//WC_Custom
+import com.biomed.smarttrak.vo.TeamMemberVO;
 
 /*****************************************************************************
- <p><b>Title</b>: AccountAction.java</p>
- <p><b>Description: Manages the Account records for Smartrak.</b></p>
+ <p><b>Title</b>: TeamMemberAction.java</p>
+ <p><b>Description: Manages the _XR records (relationship) between Teams and Users (for an Account) for Smartrak.</b></p>
  <p>Copyright: (c) 2000 - 2017 SMT, All Rights Reserved</p>
  <p>Company: Silicon Mountain Technologies</p>
  @author James McKain
  @version 1.0
- @since Feb 2, 2017
+ @since Feb 11, 2017
  <b>Changes:</b> 
  ***************************************************************************/
-public class AccountAction extends SBActionAdapter {
+public class TeamMemberAction extends SBActionAdapter {
 
-	protected static final String ACCOUNT_ID = "accountId"; //req param
+	protected static final String ACCOUNT_ID = AccountAction.ACCOUNT_ID; //req param
+	protected static final String TEAM_ID = TeamAction.TEAM_ID; //req param
 
-	public AccountAction() {
+	public TeamMemberAction() {
 		super();
 	}
 
-	public AccountAction(ActionInitVO actionInit) {
+	public TeamMemberAction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
 
@@ -53,58 +53,27 @@ public class AccountAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		//loadData gets passed on the ajax call.  If we're not loading data simply go to view to render the bootstrap 
-		//table into the view (which will come back for the data).
-		if (!req.hasParameter("loadData") && !req.hasParameter(ACCOUNT_ID)) return;
+		//this action requires accountId & teamId.  If not present throw an exception
+		String accountId = req.getParameter(ACCOUNT_ID);
+		String teamId = req.hasParameter(TEAM_ID) ? req.getParameter(TEAM_ID) : null;
+		if (teamId == null || accountId == null) throw new ActionException("missing teamId and/or accountId");
 
 		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
-		String accountId = req.hasParameter(ACCOUNT_ID) ? req.getParameter(ACCOUNT_ID) : null;
-		String sql = formatRetrieveQuery(accountId, schema);
+		String sql = formatRetrieveQuery(schema);
 
 		List<Object> params = new ArrayList<>();
-		if (accountId != null) params.add(accountId);
+		params.add(teamId);
+		params.add(accountId);
 
 		DBProcessor db = new DBProcessor(dbConn, schema);
-		List<Object>  accounts = db.executeSelect(sql, params, new AccountVO());
-		log.debug("loaded " + accounts.size() + " accounts");
+		List<Object>  data = db.executeSelect(sql, params, new TeamMemberVO());
+		log.debug("loaded " + data.size() + " records");
 
 		//decrypt the owner profiles
-		decryptNames(accounts);
+		decryptNames(data);
 
-		//if this is the edit form, we need a list of BiomedGPS Staff for the "Manager" dropdown
-		if (accountId != null)
-			loadManagerList(req, schema);
-
-		putModuleData(accounts);
-	}
-
-
-	/**
-	 * loads a list of profileId|Names for the BiomedGPS Staff role level - these are their Account Managers
-	 * @param req
-	 * @throws ActionException
-	 */
-	protected void loadManagerList(ActionRequest req, String schema) throws ActionException {
-		StringBuilder sql = new StringBuilder(200);
-		sql.append("select a.profile_id as owner_profile_id, a.first_nm, a.last_nm from profile a ");
-		sql.append("inner join profile_role b on a.profile_id=b.profile_id and b.status_id=?");
-		sql.append("and b.site_id=? and b.role_id=?");
-		log.debug(sql);
-
-		List<Object> params = new ArrayList<>();
-		params.add(SecurityController.STATUS_ACTIVE);
-		params.add(AdminControllerAction.PUBLIC_SITE_ID);
-		params.add(AdminControllerAction.STAFF_ROLE_ID);
-
-		DBProcessor db = new DBProcessor(dbConn, schema);
-		List<Object>  accounts = db.executeSelect(sql.toString(), params, new AccountVO());
-		log.debug("loaded " + accounts.size() + " managers");
-
-		//decrypt the owner profiles
-		decryptNames(accounts);
-		Collections.sort(accounts, new NameComparator());
-
-		req.setAttribute("managers", accounts);
+		Collections.sort(data, new NameComparator());
+		putModuleData(data);
 	}
 
 
@@ -112,7 +81,7 @@ public class AccountAction extends SBActionAdapter {
 	 * loop and decrypt owner names, which came from the profile table
 	 * @param accounts
 	 */
-	protected void decryptNames(List<Object>  accounts) {
+	protected void decryptNames(List<Object>  data) {
 		StringEncrypter se;
 		try {
 			se = new StringEncrypter((String)getAttribute(Constants.ENCRYPT_KEY));
@@ -120,9 +89,9 @@ public class AccountAction extends SBActionAdapter {
 			return; //cannot use the decrypter, fail fast
 		}
 
-		for (Object o : accounts) {
+		for (Object o : data) {
 			try {
-				AccountVO acct = (AccountVO) o;
+				TeamMemberVO acct = (TeamMemberVO) o;
 				acct.setFirstName(se.decrypt(acct.getFirstName()));
 				acct.setLastName(se.decrypt(acct.getLastName()));
 			} catch (Exception e) {
@@ -136,17 +105,13 @@ public class AccountAction extends SBActionAdapter {
 	 * Formats the account retrieval query.
 	 * @return
 	 */
-	protected String formatRetrieveQuery(String accountId, String schema) {
+	protected String formatRetrieveQuery(String schema) {
 		StringBuilder sql = new StringBuilder(300);
-		sql.append("select a.account_id, a.company_id, a.account_nm, a.type_id, ");
-		sql.append("a.start_dt, a.expiration_dt, a.owner_profile_id, a.address_txt, ");
-		sql.append("a.address2_txt, a.city_nm, a.state_cd, a.zip_cd, a.country_cd, ");
-		sql.append("a.status_no, a.create_dt, a.update_dt, p.first_nm, p.last_nm ");
-		sql.append("from ").append(schema).append("biomedgps_account a ");
-		sql.append("left outer join profile p on a.owner_profile_id=p.profile_id ");		
-		if (accountId != null) sql.append("where a.account_id=? ");
-		sql.append("order by a.account_nm");
-
+		sql.append("select p.first_nm, p.last_nm, u.user_id, x.team_id, newid() as user_team_xr_id, x.user_team_xr_id as pkid ");
+		sql.append("from ").append(schema).append("biomedgps_user u ");
+		sql.append("inner join profile p on p.profile_id=u.profile_id ");
+		sql.append("left outer join ").append(schema).append("biomedgps_user_team_xr x on u.user_id=x.user_id and x.team_id=? ");
+		sql.append("where u.account_id=? ");
 		log.debug(sql);
 		return sql.toString();
 	}
@@ -180,19 +145,21 @@ public class AccountAction extends SBActionAdapter {
 		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		try {
 			if (isDelete) {
-				db.delete(new AccountVO(req));
+				db.delete(new TeamMemberVO(req));
+				putModuleData("deleted"); //unused placeholder to prevent redirection
 			} else {
-				db.save(new AccountVO(req));
+				db.save(new TeamMemberVO(req));
+				putModuleData(db.getGeneratedPKId());
 			}
 		} catch (InvalidDataException | DatabaseException e) {
 			throw new ActionException(e);
 		}
 	}
-	
-	
+
+
 	/****************************************************************************
 	 * <b>Title</b>: NameComparator.java<p/>
-	 * <b>Description: Compares AccountVOs and sorts them by name</b> 
+	 * <b>Description: Compares TeamMemberVO and sorts them by name</b> 
 	 * <p/>
 	 * <b>Copyright:</b> Copyright (c) 2017<p/>
 	 * <b>Company:</b> Silicon Mountain Technologies<p/>
@@ -207,9 +174,9 @@ public class AccountAction extends SBActionAdapter {
 		 */
 		@Override
 		public int compare(Object o1, Object o2) {
-			AccountVO vo1 = (AccountVO) o1;
+			TeamMemberVO vo1 = (TeamMemberVO) o1;
 			String name1 = vo1.getFirstName() + vo1.getLastName();
-			AccountVO vo2 = (AccountVO) o2;
+			TeamMemberVO vo2 = (TeamMemberVO) o2;
 			String name2 = vo2.getFirstName() + vo2.getLastName();
 			return StringUtil.checkVal(name1).compareTo(name2);
 		}
