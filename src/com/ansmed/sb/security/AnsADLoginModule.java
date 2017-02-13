@@ -12,6 +12,7 @@ import java.util.Map;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.exception.NotAuthorizedException;
 import com.siliconmtn.security.AbstractLoginModule;
 import com.siliconmtn.security.AuthenticationException;
 import com.siliconmtn.security.EmailAddressNotFoundException;
@@ -107,16 +108,17 @@ public class AnsADLoginModule extends AbstractLoginModule {
             UserLogin ul = new UserLogin(dbConn, encKey);
             
 	        // Connect to the EJB and check the user Credentials
-        	UserDataVO authData = ul.checkExistingCredentials(user, pwd);
+        	UserDataVO authData = null;
+        	try {
+        		authData = ul.checkExistingCredentials(user, pwd);
+        	} catch (NotAuthorizedException nae) {
+        		throw new AuthenticationException(ErrorCodes.ERR_INVALID_LOGIN);
+        	}
         	
-            if (authData == null) {
-            	// specified user does not exist in the authentication table.
-            	throw new AuthenticationException(ErrorCodes.ERR_INVALID_LOGIN);	
-            } else {
-            	log.debug("authData password history: " + authData.getPasswordHistory());
-            	// set the authenticationId for logging, etc.
-            	profile.setAuthenticationId(authData.getAuthenticationId());
-            }
+        	//NOTE: authData cannot be null at this location
+       	log.debug("authData password history: " + authData.getPasswordHistory());
+       	// set the authenticationId for logging, etc.
+       	profile.setAuthenticationId(authData.getAuthenticationId());
             
         	if (authData.isAuthenticated()) {
         		// user exists and is authenticated, retrieve profile
