@@ -294,7 +294,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	}
 
 	/**
-	 * Gets the existing base revenue data related to a scenario.
+	 * Gets the existing base revenue data that is related to a specific scenario.
 	 * 
 	 * @param sectionId
 	 * @param countryType
@@ -305,7 +305,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	protected Map<String, FinancialDashRevenueVO> getBaseData(String sectionId, String countryType, int year, String scenarioId) {
 		Map<String, FinancialDashRevenueVO> baseData = new HashMap<>();
 		
-		// get the data
+		// TODO: get the data
 		
 		return baseData;
 	}

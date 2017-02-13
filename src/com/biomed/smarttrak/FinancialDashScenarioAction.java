@@ -50,7 +50,7 @@ public class FinancialDashScenarioAction extends SBActionAdapter {
 	 */
 	private List<FinancialDashScenarioVO> getScenarios(String teamId, String userId) {
 		List<FinancialDashScenarioVO> scenarios = new ArrayList<>();
-		boolean getAll = (teamId == null && userId == null);
+		boolean getAll = teamId == null && userId == null;
 		
 		String sql = getScenarioSql(getAll);
 		FinancialDashScenarioVO svo = null;

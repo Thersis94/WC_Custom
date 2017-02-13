@@ -56,7 +56,7 @@ public class FinancialDashAction extends SBActionAdapter {
 	 */
 	private ActionInterface getAction(ActionRequest req) throws ActionException {
 		String scenarioId = StringUtil.checkVal(req.getParameter("scenarioId"));
-		ActionInterface ai = null;
+		ActionInterface ai;
 		
 		// Determine the request type and forward to the appropriate action
 		if (scenarioId.length() > 0) {
