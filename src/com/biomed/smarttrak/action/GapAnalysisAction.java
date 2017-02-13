@@ -89,7 +89,7 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 	 * @return
 	 */
 	private List<SaveStateVO> getSaveStates(String userId, String saveStateId) {
-		List<SaveStateVO> saveStates = new ArrayList<SaveStateVO>();
+		List<SaveStateVO> saveStates = new ArrayList<>();
 		boolean hasSaveStateId = !StringUtil.isEmpty(saveStateId);
 		try(PreparedStatement ps = dbConn.prepareStatement(getSaveStateSql(hasSaveStateId))) {
 			ps.setString(1, userId);
