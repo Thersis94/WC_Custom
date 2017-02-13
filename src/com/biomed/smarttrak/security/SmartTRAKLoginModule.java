@@ -134,8 +134,9 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 					tkUser.setUpdateDate(resultUser.getUpdateDate());
 					log.debug("resultUser userId: " + resultUser.getUserId());
 				}
-				TeamVO team = new TeamVO(rs);
-				teams.add(team);
+				//TODO - change all of this to DBProcessor
+//				TeamVO team = new TeamVO(rs);
+//				teams.add(team);
 			}
 
 			if (resultUser == null || resultUser.getUserId() == null) {
