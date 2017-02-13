@@ -75,6 +75,8 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 
 			super.putModuleData(gtv);
 		} else {
+
+			//TODO - replace with actual userId value.
 			String userId = StringUtil.checkVal(req.getParameter("userId"), "user1");
 			String saveStateId = req.getParameter("saveStateId");
 			super.putModuleData(getSaveStates(userId, saveStateId));
@@ -292,6 +294,10 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 		return sql.toString();
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see com.biomed.smarttrak.admin.ContentHierarchyAction#build(com.siliconmtn.action.ActionRequest)
+	 */
 	public void build(ActionRequest req) {
 		SaveStateVO ss = new SaveStateVO(req);
 
@@ -300,9 +306,13 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 		try {
 			dbp.save(ss);
 		} catch (InvalidDataException | DatabaseException e) {
-			log.error(e);
+			log.error("Problem Saving State Object.", e.getCause());
 		}
 	}
+
+	/**
+	 * Helper method returns cache key for Content Hierarchy Object.
+	 */
 	public String getCacheKey() {
 		return GAP_CACHE_KEY;
 	}

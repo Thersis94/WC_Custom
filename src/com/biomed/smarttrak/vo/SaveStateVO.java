@@ -7,11 +7,14 @@ import java.io.Serializable;
 import java.sql.ResultSet;
 import java.util.Date;
 
+import org.apache.commons.lang.StringEscapeUtils;
+
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: SaveStateVO.java
@@ -61,11 +64,13 @@ public class SaveStateVO implements Serializable {
 
 	protected void setData(ActionRequest req) {
 		this.saveStateId = req.getParameter("saveStateId");
-		this.userId = req.getParameter("userId");
+		//TODO Make actual userId lookup.
+		this.userId = StringUtil.checkVal(req.getParameter("userId"), "user1");
 		this.layoutNm = req.getParameter("layoutNm");
 		this.orderNo = Convert.formatInteger(req.getParameter("orderNo"));
+		this.saveData = StringEscapeUtils.unescapeHtml(req.getParameter("saveData"));
 		this.slugTxt = req.getParameter("slugTxt");
-		this.saveData = req.getParameter("saveData");
+
 	}
 
 	/**
@@ -108,10 +113,13 @@ public class SaveStateVO implements Serializable {
 		return slugTxt;
 	}
 
+	@Column(name="object_blob")
+	public byte [] getObjectBloc() {
+		return saveData.getBytes();
+	}
 	/**
 	 * @return the objectBlob
 	 */
-	@Column(name="object_blob")
 	public String getSaveData() {
 		return saveData;
 	}
@@ -120,7 +128,7 @@ public class SaveStateVO implements Serializable {
 	 * 
 	 * @return the createDt
 	 */
-	@Column(name="create_dt", isInsertOnly=true)
+	@Column(name="create_dt", isInsertOnly=true, isAutoGen=true)
 	public Date getCreateDt() {
 		return createDt;
 	}
@@ -129,7 +137,7 @@ public class SaveStateVO implements Serializable {
 	 * 
 	 * @return the updateDt
 	 */
-	@Column(name="update_dt", isUpdateOnly=true)
+	@Column(name="update_dt", isUpdateOnly=true, isAutoGen=true)
 	public Date getUpdateDt() {
 		return updateDt;
 	}
