@@ -22,6 +22,10 @@ import java.util.Map.Entry;
 
 
 
+
+
+
+
 //WC custom
 import com.biomed.smarttrak.vo.NoteVO;
 
@@ -90,6 +94,10 @@ public class NoteAction extends SBActionAdapter {
 		String companyId = StringUtil.checkVal(req.getParameter("companyId"));
 		String marketId = StringUtil.checkVal(req.getParameter("marketId"));
 		String attributeId = StringUtil.checkVal(req.getParameter("attributeId"));
+		String noteId = StringUtil.checkVal(req.getParameter("noteId"));
+		
+		String noteType = StringUtil.checkVal(req.getParameter("noteType"));
+		String noteEntityId = StringUtil.checkVal(req.getParameter("noteEntityId"));
 
 		Date cal = Convert.formatDate(new Date(), Calendar.HOUR_OF_DAY, 3);
 
@@ -102,11 +110,38 @@ public class NoteAction extends SBActionAdapter {
 			ModuleVO modVo = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 
 
-			List<NoteVO> targetNotes = refreshNoteList(productId, marketId,companyId, attributeId);
-			modVo.setActionData(targetNotes);
+			if (!noteId.isEmpty()){
+
+				//TODO replace with the dynamic User id and dynamic teams when it is finished
+				String userId = "8080";
+
+				//send the userId so we are sure the requester can see the note.
+				NoteVO vo = getNote(noteId, userId);
+				modVo.setActionData(vo);
+			}
+
+			if (!productId.isEmpty() || !marketId.isEmpty()|| !companyId.isEmpty()){
+				modVo.setActionData(refreshNoteList(productId, marketId,companyId, attributeId));
+			}
 
 			modVo.setAttribute("noteToken", fileToken );
 			modVo.setAttribute("primaryId", setPrimaryId(productId, companyId, marketId, attributeId));
+			
+			if (noteType.isEmpty()){
+			modVo.setAttribute("noteType", getNoteType(productId, companyId, marketId));
+			}else{
+				modVo.setAttribute("noteType", noteType);	
+			}
+			
+			modVo.setAttribute("attributeId", attributeId);
+			
+			if(noteEntityId.isEmpty()){
+				modVo.setAttribute("noteEntityId", setEntityId(productId, companyId, marketId));
+			}else{
+				modVo.setAttribute("noteEntityId", noteEntityId);
+			}
+			
+			
 			attributes.put(Constants.MODULE_DATA, modVo);
 
 		} catch (EncryptionException e) {
@@ -115,6 +150,77 @@ public class NoteAction extends SBActionAdapter {
 
 
 
+	}
+
+	/**
+	 * gets the id of the main object in this case the main company product or market
+	 * @param productId
+	 * @param companyId
+	 * @param marketId
+	 * @return
+	 */
+	private Object setEntityId(String productId, String companyId, String marketId) {
+		return StringUtil.checkVal(productId, StringUtil.checkVal(companyId, marketId));
+	}
+
+	/**
+	 * used the ids to tell which note type it is and mark it on the mod vo
+	 * @param productId
+	 * @param companyId
+	 * @param marketId
+	 * @return
+	 */
+	private String getNoteType(String productId, String companyId, String marketId) {
+		if (!StringUtil.isEmpty(productId)) {
+			return NoteType.PRODUCT.name();
+		}
+		if (!StringUtil.isEmpty(companyId)){
+			return NoteType.COMPANY.name();
+		}
+		if (!StringUtil.isEmpty(marketId)){
+			return NoteType.MARKET.name();
+		}
+		
+		return null;
+	}
+
+	/**
+	 * looks up a note by id and user
+	 * @param noteId
+	 * @param teams 
+	 * @param userId 
+	 * @return
+	 */
+	private NoteVO getNote(String noteId, String userId) {
+
+		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
+
+		StringBuilder sb = new StringBuilder(32);
+		sb.append("select * from ").append((String)attributes.get("customDbSchema")).append("biomedgps_note n ");
+		sb.append("where note_id = ? and user_id = ?");
+
+		log.debug(sb.toString() +"|" + noteId +"|"+ userId );
+
+		try (PreparedStatement ps = dbConn.prepareStatement(sb.toString())) {
+
+			ps.setString(1, noteId);
+			ps.setString(2, userId);
+
+			ResultSet rs = ps.executeQuery();
+
+			if (rs.next()) {
+
+				NoteVO vo = new NoteVO(rs);
+				log.debug("name on note !!!!!!!!!!!!!!!! " + vo.getUserName());
+
+				return vo;
+			}
+		} catch(SQLException sqle) {
+			log.error("could not select notes by id ", sqle);
+		}
+
+
+		return null;
 	}
 
 	/**
@@ -195,6 +301,11 @@ public class NoteAction extends SBActionAdapter {
 	public void build(ActionRequest req) throws ActionException {
 		log.debug("Notes Action Build called");
 
+		String noteType = StringUtil.checkVal(req.getParameter("noteType"));
+		String attributeId = StringUtil.checkVal(req.getParameter("attributeId"));
+		String noteEntityId = StringUtil.checkVal(req.getParameter("noteEntityId"));
+		
+		
 		DBProcessor db = new DBProcessor(dbConn, (String) attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		NoteVO vo= new NoteVO(req);
 
@@ -222,6 +333,10 @@ public class NoteAction extends SBActionAdapter {
 			modVo.setAttribute("newNote", vo);
 			log.debug("added new note " + vo);
 		}
+		
+		modVo.setAttribute("noteType", noteType);
+		modVo.setAttribute("attributeId", attributeId);
+		modVo.setAttribute("noteEntityid", noteEntityId);
 		attributes.put(Constants.MODULE_DATA, modVo);
 	}
 
