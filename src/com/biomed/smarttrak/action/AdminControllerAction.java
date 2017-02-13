@@ -1,5 +1,7 @@
 package com.biomed.smarttrak.action;
 
+import org.apache.commons.lang.StringEscapeUtils;
+
 import com.biomed.smarttrak.FinancialDashAction;
 import com.biomed.smarttrak.FinancialDashScenarioAction;
 import com.biomed.smarttrak.admin.AccountAction;
@@ -8,29 +10,39 @@ import com.biomed.smarttrak.admin.ContentHierarchyAction;
 import com.biomed.smarttrak.admin.GapAnalysisAdminAction;
 import com.biomed.smarttrak.admin.MarketManagementAction;
 import com.biomed.smarttrak.admin.ProductManagementAction;
+import com.biomed.smarttrak.admin.TeamAction;
+import com.biomed.smarttrak.admin.TeamMemberAction;
+
+//SMT base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.StringUtil;
+
+// WC core
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
- * <b>Title</b>: BioMedAjaxAction.java
+ * <b>Title</b>: AdminControllerAction.java
  * <b>Project</b>: WC_Custom
- * <b>Description: </b> BioMed Ajax Action that will facade the proper call for
- * each Action.
+ * <b>Description: </b> Controller for the SMARTTRAK Admin website (/manage).  
+ * Loads and invokes all internal functions after permissions are validated.
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
- * 
  * @author Billy Larsen
  * @version 1.0
  * @since Jan 13, 2017
  ****************************************************************************/
 public class AdminControllerAction extends SimpleActionAdapter {
+
+	// application constants  - these could be moved to sb_config if subject to change
+	public static final String PUBLIC_SITE_ID = "BMG_SMARTTRAK_1";
+	public static final String STAFF_ROLE_ID = "3eef678eb39e87277f000101dfd4f140";
 
 	public AdminControllerAction() {
 		super();
@@ -68,13 +80,17 @@ public class AdminControllerAction extends SimpleActionAdapter {
 			msg = (String) attributes.get(AdminConstants.KEY_ERROR_MESSAGE);
 		}
 
-		if (StringUtil.isEmpty((String)req.getAttribute(Constants.REDIRECT_URL))) {
+		//setup the redirect.  Build a URL for 'this' page if a child action didn't build one of it's own.
+		//NOTE: the controller should (and does) control the redirect.  It also sets 'msg' properly if the child action pukes.
+		String redirUrl = (String)req.getAttribute(Constants.REDIRECT_URL);
+		if (StringUtil.isEmpty(redirUrl)) {
 			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 			StringBuilder url = new StringBuilder(200);
 			url.append(page.getFullPath());
 			if (!StringUtil.isEmpty(actionType)) url.append("?actionType=").append(actionType);
-			sendRedirect(url.toString(), msg, req);
+			redirUrl = url.toString();
 		}
+		sendRedirect(redirUrl, msg, req);
 	}
 
 
@@ -118,6 +134,12 @@ public class AdminControllerAction extends SimpleActionAdapter {
 			case "accounts":
 				action = new AccountAction();
 				break;
+			case "teams":
+				action = new TeamAction();
+				break;
+			case "team-members":
+				action = new TeamMemberAction();
+				break;
 			case "marketAdmin":
 				action = new MarketManagementAction();
 				break;
@@ -128,5 +150,16 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		action.setDBConnection(dbConn);
 		action.setAttributes(getAttributes());
 		return action;
+	}
+
+
+	/**
+	 * takes the pain out of passing Strings in and out of URLs/forms.  Typically these form values arrive HTML encoded.  
+	 * Use encodeURIComponent in your JS to compliment what this is doing server-side (at the client).
+	 * @param value
+	 * @return
+	 */
+	public static String urlEncode(String value) {
+		return StringEncoder.urlEncode(StringEscapeUtils.unescapeHtml(value)).replace("+", "%20");
 	}
 }

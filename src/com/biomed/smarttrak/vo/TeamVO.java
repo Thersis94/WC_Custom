@@ -1,16 +1,16 @@
 package com.biomed.smarttrak.vo;
 
 // Java 7
-import java.sql.ResultSet;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 
-import com.siliconmtn.db.DBUtil;
+import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.orm.Column;
+import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.Convert;
 
 /*****************************************************************************
- <p><b>Title</b>: SmarttrakTeamVO.java</p>
- <p><b>Description: </b>Value object that encapsulates a Smarttrak team.</p>
+ <p><b>Title</b>: TeamVO.java</p>
+ <p><b>Description: </b>VO that encapsulates a Smarttrak team.</p>
  <p> 
  <p>Copyright: (c) 2000 - 2017 SMT, All Rights Reserved</p>
  <p>Company: Silicon Mountain Technologies</p>
@@ -19,51 +19,37 @@ import com.siliconmtn.db.DBUtil;
  @since Jan 31, 2017
  <b>Changes:</b> 
  ***************************************************************************/
+@Table(name="BIOMEDGPS_TEAM")
 public class TeamVO {
-
 	private String accountId;
 	private String teamId;
 	private String teamName;
-	private int defaultFlag;
-	private int privateFlag;
-	private List<UserVO> members;
-	private Date assignedDate; // XR table create_dt value
+	private int memberCount;
+	private int defaultFlg;
+	private int privateFlg;
 	private Date createDate;
 	private Date updateDate;
-	
+
 	/**
-	* Constructor
-	*/
+	 * Constructor
+	 */
 	public TeamVO() {
-		members = new ArrayList<>();
+		super();
 	}
-	
-	/**
-	* Constructor
-	 */
-	public TeamVO(ResultSet rs) {
-		setData(rs);
-	}
-	
-	/**
-	 * Helper method to populate bean based on result set
-	 * @param rs
-	 */
-	public void setData(ResultSet rs) {
-		DBUtil db = new DBUtil();
-		setAccountId(db.getStringVal("account_id", rs));
-		setTeamId(db.getStringVal("team_id", rs));
-		setTeamName(db.getStringVal("team_nm", rs));
-		setDefaultFlag(db.getIntVal("default_flg", rs));
-		setPrivateFlag(db.getIntVal("private_flg", rs));
-		setAssignedDate(db.getDateVal("assigned_dt", rs));
-		setCreateDate(db.getDateVal("create_dt", rs));
-		setUpdateDate(db.getDateVal("update_dt", rs));
+
+	public TeamVO(ActionRequest req) {
+		this();
+		setAccountId(req.getParameter("accountId"));
+		setTeamId(req.getParameter("teamId"));
+		setTeamName(req.getParameter("teamName"));
+		setDefaultFlg(Convert.formatInteger(req.getParameter("defaultFlag")));
+		setPrivateFlg(Convert.formatInteger(req.getParameter("privateFlag")));
 	}
 
 	/**
 	 * @return the teamId
 	 */
+	@Column(name="team_id", isPrimaryKey=true)
 	public String getTeamId() {
 		return teamId;
 	}
@@ -78,6 +64,7 @@ public class TeamVO {
 	/**
 	 * @return the accountId
 	 */
+	@Column(name="account_id")
 	public String getAccountId() {
 		return accountId;
 	}
@@ -92,6 +79,7 @@ public class TeamVO {
 	/**
 	 * @return the teamName
 	 */
+	@Column(name="team_nm")
 	public String getTeamName() {
 		return teamName;
 	}
@@ -104,89 +92,39 @@ public class TeamVO {
 	}
 
 	/**
-	 * @return the defaultFlag
+	 * @return the defaultFlg
 	 */
-	public int getDefaultFlag() {
-		return defaultFlag;
+	@Column(name="default_flg")
+	public int getDefaultFlg() {
+		return defaultFlg;
 	}
 
 	/**
-	 * @param defaultFlag the defaultFlag to set
+	 * @param defaultFlg the defaultFlg to set
 	 */
-	public void setDefaultFlag(int defaultFlag) {
-		this.defaultFlag = defaultFlag;
+	public void setDefaultFlg(int defaultFlg) {
+		this.defaultFlg = defaultFlg;
 	}
 
 	/**
-	 * @return
+	 * @return the privateFlg
 	 */
-	public boolean isDefault() {
-		if (defaultFlag == 1) return true;
-		return false;
-	}
-	
-	/**
-	 * @return the privateFlag
-	 */
-	public int getPrivateFlag() {
-		return privateFlag;
+	@Column(name="private_flg")
+	public int getPrivateFlg() {
+		return privateFlg;
 	}
 
 	/**
-	 * @param privateFlag the privateFlag to set
+	 * @param privateFlg the privateFlg to set
 	 */
-	public void setPrivateFlag(int privateFlag) {
-		this.privateFlag = privateFlag;
-	}
-
-	/**
-	 * @return
-	 */
-	public boolean isPrivate() {
-		if (privateFlag == 1) return true;
-		return false;
-	}
-
-	/**
-	 * @return the members
-	 */
-	public List<UserVO> getMembers() {
-		return members;
-	}
-
-	/**
-	 * @param members the members to set
-	 */
-	public void setMembers(List<UserVO> members) {
-		this.members = members;
-	}
-	
-	/**
-	 * Helper method for adding members to a team.
-	 * @param member
-	 */
-	public void addMember(UserVO member) {
-		if (members == null) members = new ArrayList<>();
-		members.add(member);
-	}
-
-	/**
-	 * @return the assignedDate
-	 */
-	public Date getAssignedDate() {
-		return assignedDate;
-	}
-
-	/**
-	 * @param assignedDate the assignedDate to set
-	 */
-	public void setAssignedDate(Date assignedDate) {
-		this.assignedDate = assignedDate;
+	public void setPrivateFlg(int privateFlg) {
+		this.privateFlg = privateFlg;
 	}
 
 	/**
 	 * @return the createDate
 	 */
+	@Column(name="create_dt", isAutoGen=true, isInsertOnly=true)
 	public Date getCreateDate() {
 		return createDate;
 	}
@@ -201,6 +139,7 @@ public class TeamVO {
 	/**
 	 * @return the updateDate
 	 */
+	@Column(name="update_dt", isAutoGen=true, isUpdateOnly=true)
 	public Date getUpdateDate() {
 		return updateDate;
 	}
@@ -211,5 +150,13 @@ public class TeamVO {
 	public void setUpdateDate(Date updateDate) {
 		this.updateDate = updateDate;
 	}
-	
+
+	@Column(name="members", isReadOnly=true)
+	public int getMemberCount() {
+		return memberCount;
+	}
+
+	public void setMemberCount(int memberCount) {
+		this.memberCount = memberCount;
+	}
 }

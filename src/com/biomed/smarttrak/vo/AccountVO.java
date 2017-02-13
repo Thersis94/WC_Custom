@@ -1,27 +1,24 @@
 package com.biomed.smarttrak.vo;
 
 //Java 7
-import java.sql.ResultSet;
 import java.util.Date;
 
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 
 import com.siliconmtn.gis.Location;
 import com.siliconmtn.util.Convert;
-import com.siliconmtn.util.StringUtil;
 
 /*****************************************************************************
  <p><b>Title</b>: AccountVO.java</p>
- <p><b>Description: </b>VO representing a Smarttrak account.</p>
+ <p><b>Description: </b>VO representing a Smarttrak Account database record.</p>
  <p> 
  <p>Copyright: (c) 2000 - 2017 SMT, All Rights Reserved</p>
  <p>Company: Silicon Mountain Technologies</p>
- @author DBargerhuff
+ @author James McKain
  @version 1.0
- @since Feb 2, 2017
+ @since Feb 10, 2017
  <b>Changes:</b> 
  ***************************************************************************/
 @Table(name="BIOMEDGPS_ACCOUNT")
@@ -40,30 +37,36 @@ public class AccountVO {
 	private String firstName;
 	private String lastName;
 
+	/*
+	 * Account Type enum - not to be confused with status, which is Active or Inactive only.  (e.g. Inactive Staff account)
+	 * The labels here are used on the "Edit Account" form (<select>).
+	 */
+	public enum Type {
+		FULL("1","Full Access"),
+		STAFF("2","Staff"),
+		TRIAL("3","Trial"),
+		UPDATE("4", "Updates");
+
+		String id;
+		String label;
+		private Type(String id, String label) {
+			this.id = id;
+			this.label = label;
+		}
+		public String getId() { return id; }
+		public String getLabel() { return label; }
+
+		public static Type getFromId(String id) {
+			for (Type t : Type.values()) {
+				if (t.getId().equals(id)) return t;
+			}
+			return null;
+		}
+	}
+
 	public AccountVO() {
 		super();
 		location = new Location();
-	}
-
-	public AccountVO(ResultSet rs) {
-		this();
-		DBUtil db = new DBUtil();
-		setAccountId(db.getStringVal("account_id", rs));
-		setAccountName(db.getStringVal("account_nm", rs));
-		setCompanyId(db.getStringVal("company_id", rs));
-		setTypeId(db.getStringVal("type_id", rs));
-		setOwnerProfileId(db.getStringVal("owner_profile_id", rs));
-		setStatusNo(db.getStringVal("status_no", rs));
-		setStartDate(db.getDateVal("start_dt", rs));
-		setExpirationDate(db.getDateVal("expiration_dt", rs));
-		setCreateDate(db.getDateVal("create_dt", rs));
-		setUpdateDate(db.getDateVal("update_dt", rs));
-		setAddress(db.getStringVal("address_txt", rs));
-		setAddress2(db.getStringVal("address2_txt", rs));
-		setCity(db.getStringVal("city_nm", rs));
-		setState(db.getStringVal("state_cd", rs));
-		setZipCode(db.getStringVal("zip_cd", rs));
-		setCountry(db.getStringVal("country_cd", rs));
 	}
 
 	public AccountVO(ActionRequest req) {
@@ -136,6 +139,11 @@ public class AccountVO {
 	@Column(name="type_id")
 	public String getTypeId() {
 		return typeId;
+	}
+
+	public String getTypeName() {
+		Type t = Type.getFromId(getTypeId());
+		return t != null ? t.getLabel() : null;
 	}
 
 	/**
@@ -253,18 +261,7 @@ public class AccountVO {
 	}
 
 	public String getStatusName() {
-		switch (StringUtil.checkVal(getStatusNo())) {
-			case "A":
-				return "Active";
-			case "S":
-				return "Staff";
-			case "T":
-				return "Trial";
-			case "U":
-				return "Updates";
-			default:
-				return "Inactive";
-		}
+		return "A".equals(getStatusNo()) ? "Active" : "Inactive";
 	}
 
 	/**
