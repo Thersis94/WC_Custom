@@ -423,7 +423,7 @@ public class BusinessPlanAction extends SBActionAdapter {
 		int ptlFactor = 0;
 		int rank = 0;
 
-		if (data != null && !data.isEmpty()) {			
+		if (!data.isEmpty()) {			
 			// Calculate the totals, factors, and ranking.
 			pTotal =0;
 			pTotal += getDataEle(data.get("permQ1"));

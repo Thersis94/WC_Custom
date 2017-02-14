@@ -2,12 +2,10 @@ package com.biomed.smarttrak;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.common.ModuleVO;
-import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title</b>: FinancialDashAction.java<p/>
@@ -17,11 +15,11 @@ import com.smt.sitebuilder.common.constants.Constants;
  * <b>Company:</b> Silicon Mountain Technologies<p/>
  * @author Tim Johnson
  * @version 1.0
- * @since Jan 04, 2017
+ * @since Feb 06, 2017
  ****************************************************************************/
 
 public class FinancialDashAction extends SBActionAdapter {
-
+	
 	public FinancialDashAction() {
 		super();
 	}
@@ -30,39 +28,47 @@ public class FinancialDashAction extends SBActionAdapter {
 		super(actionInit);
 	}
 
-	public void delete(ActionRequest req) throws ActionException {
-		super.delete(req);
-	}
-	
+	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		super.retrieve(req);
-		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		
-		String displayType = StringUtil.checkVal(req.getParameter("displayType"), "CURYR");
-		Integer calendarYear = Convert.formatInteger(req.getParameter("calendarYear"), Convert.getCurrentYear());
-
-		FinancialDashVO dash = new FinancialDashVO();
-		dash.setColHeaders(displayType, calendarYear);
-		dash.setTempData();
-
-		this.putModuleData(dash);
+		ActionInterface ai = getAction(req);
+		ai.retrieve(req);
 	}
 	
+	@Override
 	public void build(ActionRequest req) throws ActionException {
 		super.build(req);
 		
-		String priKey = StringUtil.checkVal(req.getParameter("pk"));
-		String updateValue = StringUtil.checkVal(req.getParameter("value")); 
-		String fieldName = StringUtil.checkVal(req.getParameter("name"));
-		
-		
+		ActionInterface ai = getAction(req);
+		ai.build(req);
 	}
 	
-	public void list(ActionRequest req) throws ActionException {
-		super.list(req);
-	}
+	/**
+	 * Gets the appropriate action based on the passed data.
+	 * 
+	 * Base: Standard display of data.
+	 * Overlay: Display of data with scenario data used in place of standard data (where applicable).
+	 * 
+	 * @param req
+	 * @return
+	 * @throws ActionException
+	 */
+	private ActionInterface getAction(ActionRequest req) throws ActionException {
+		String scenarioId = StringUtil.checkVal(req.getParameter("scenarioId"));
+		ActionInterface ai;
+		
+		// Determine the request type and forward to the appropriate action
+		if (scenarioId.length() > 0) {
+			ai = new FinancialDashScenarioOverlayAction(this.actionInit);
+		} else {
+			ai = new FinancialDashBaseAction(this.actionInit);
+		}
 
-	public void update(ActionRequest req) throws ActionException {
-		super.update(req);
+		// Set the appropriate attributes for the action
+		ai.setAttributes(this.attributes);
+		ai.setDBConnection(dbConn);
+
+		return ai;
 	}
 }

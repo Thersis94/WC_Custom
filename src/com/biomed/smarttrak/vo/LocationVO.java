@@ -1,4 +1,4 @@
-package com.bmg.admin.vo;
+package com.biomed.smarttrak.vo;
 
 import java.util.Date;
 
@@ -50,7 +50,7 @@ public class LocationVO {
 		companyId = req.getParameter("companyId");
 		locationName = req.getParameter("locationName");
 		addressText = req.getParameter("addressText");
-		address2Text = req.getParameter("address2Tex");
+		address2Text = req.getParameter("address2Text");
 		cityName = req.getParameter("cityName");
 		stateCode = req.getParameter("stateCode");
 		zipCode = req.getParameter("zipCode");

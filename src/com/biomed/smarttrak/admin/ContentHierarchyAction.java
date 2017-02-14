@@ -25,7 +25,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
  * 
- * @author raptor
+ * @author Billy Larsen
  * @version 1.0
  * @since Jan 6, 2017
  ****************************************************************************/
@@ -58,6 +58,9 @@ public class ContentHierarchyAction extends AbstractTreeAction {
 
 		try {
 			dbp.delete(s);
+
+			this.clearCacheByKey(CONTENT_HIERARCHY_CACHE_KEY);
+
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error(e);
 		}
@@ -87,11 +90,12 @@ public class ContentHierarchyAction extends AbstractTreeAction {
 		Tree t;
 
 		//Attempt to read ContentHierarchy Data from Cache.
-		ModuleVO mod = super.readFromCache(getCacheKey());
+		ModuleVO mod = super.readFromCache(CONTENT_HIERARCHY_CACHE_KEY);
 
 		//If not found in cache Load data.
 		if(mod == null) {
 			t = loadTree(null);
+			super.writeToCache(t, "SMARTTRAK", "SECTION");
 		} else {
 			//Get the Tree off the actionData
 			t = (Tree) mod.getActionData();
