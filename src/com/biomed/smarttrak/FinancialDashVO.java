@@ -23,11 +23,14 @@ import com.smt.sitebuilder.action.SBModuleVO;
 public class FinancialDashVO extends SBModuleVO {
 	
 	private static final long serialVersionUID = 1L;
-	private List<CountryType> countryTypes;
+	private List<CountryType> countryTypes;			// used for data aggregation
+	private List<CountryType> selectedCountryTypes;	// used for selecting items on a menu
 	private TableType tableType;
 	private FinancialDashColumnSet colHeaders;
 	private List<FinancialDashDataRowVO> rows;
 	private String sectionId;
+	private boolean leafMode;
+	private String scenarioId;
 	
 	/**
 	 * Provides a logger
@@ -74,6 +77,7 @@ public class FinancialDashVO extends SBModuleVO {
 	
 	public FinancialDashVO() {
 		countryTypes = new ArrayList<>();
+		selectedCountryTypes = new ArrayList<>();
 		rows = new ArrayList<>();
 		log = Logger.getLogger(getClass());
 	}
@@ -114,10 +118,22 @@ public class FinancialDashVO extends SBModuleVO {
 	}
 
 	/**
+	 * Country types for data aggregation.
+	 * 
 	 * @return the countryTypes
 	 */
 	public List<CountryType> getCountryTypes() {
 		return countryTypes;
+	}
+
+	/**
+	 * Country types for menu display.
+	 * Example: WW aggregates US, EU, and ROW, but we only want to show WW on the menu.
+	 * 
+	 * @return the selectedCountryTypes
+	 */
+	public List<CountryType> getSelectedCountryTypes() {
+		return selectedCountryTypes;
 	}
 
 	/**
@@ -139,6 +155,20 @@ public class FinancialDashVO extends SBModuleVO {
 	 */
 	public String getSectionId() {
 		return sectionId;
+	}
+
+	/**
+	 * @return the leafMode
+	 */
+	public boolean getLeafMode() {
+		return leafMode;
+	}
+
+	/**
+	 * @return the scenarioId
+	 */
+	public String getScenarioId() {
+		return scenarioId;
 	}
 
 	/**
@@ -177,14 +207,24 @@ public class FinancialDashVO extends SBModuleVO {
 	 * @param countryType the countryType to add
 	 */
 	public void addCountryType(CountryType countryType) {
-		this.countryTypes.add(countryType);
+		if (countryType == CountryType.WW) {
+			this.countryTypes.add(CountryType.US);
+			this.countryTypes.add(CountryType.EU);
+			this.countryTypes.add(CountryType.ROW);
+		} else {
+			this.countryTypes.add(countryType);
+		}
+
+		// Allows for selecting only specific items on the menu.
+		// Since WW aggregates the US/EU/ROW data, we only want WW selected on the menu.
+		this.selectedCountryTypes.add(countryType);
 	}
 
 	/**
 	 * @param countryType the countryType to add
 	 */
 	public void addCountryType(String countryType) {
-		this.countryTypes.add(CountryType.valueOf(countryType));
+		this.addCountryType(CountryType.valueOf(countryType));
 	}
 
 	/**
@@ -215,5 +255,19 @@ public class FinancialDashVO extends SBModuleVO {
 	 */
 	public void setSectionId(String sectionId) {
 		this.sectionId = sectionId;
+	}
+	
+	/**
+	 * @param leafMode the leafMode to set
+	 */
+	public void setLeafMode(boolean leafMode) {
+		this.leafMode = leafMode;
+	}
+
+	/**
+	 * @param scenarioId the scenarioId to set
+	 */
+	public void setScenarioId(String scenarioId) {
+		this.scenarioId = scenarioId;
 	}
 }

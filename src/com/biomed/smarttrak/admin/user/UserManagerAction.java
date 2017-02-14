@@ -116,8 +116,8 @@ public class UserManagerAction extends SBActionAdapter {
 			if (accountId != null) ps.setString(idx++, accountId);
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
-				user = new UserVO(rs);
-				users.put(user.getProfileId(), user);
+				//user = new UserVO(rs);
+				//users.put(user.getProfileId(), user);
 			}
 			
 		} catch (SQLException sqle) {
