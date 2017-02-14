@@ -1,9 +1,8 @@
 package com.biomed.smarttrak;
 
 import java.sql.ResultSet;
-import java.util.Random;
 
-import com.siliconmtn.util.UUIDGenerator;
+import com.siliconmtn.db.DBUtil;
 import com.smt.sitebuilder.action.SBModuleVO;
 
 /****************************************************************************
@@ -38,16 +37,10 @@ public class FinancialDashScenarioVO extends SBModuleVO {
 	 * @param rs
 	 */
 	public void setData(ResultSet rs) {
-		// TODO - Complete this method
-	}
-	
-	// TODO: Remove this after there is real data to work with.
-	public void setTempData() {
-		Random rand = new Random();
-		UUIDGenerator uuidGen = new UUIDGenerator();
-
-		this.setScenarioId(uuidGen.getUUID());
-		this.setScenarioName("Scenario " + rand.nextInt(25));
+		DBUtil util = new DBUtil();
+		
+		this.setScenarioId(util.getStringVal("SCENARIO_ID", rs));
+		this.setScenarioName(util.getStringVal("SCENARIO_NM", rs));
 		this.setScenarioRole("test");
 	}
 

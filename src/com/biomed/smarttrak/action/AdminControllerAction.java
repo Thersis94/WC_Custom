@@ -119,10 +119,10 @@ public class AdminControllerAction extends SimpleActionAdapter {
 			case "agap":
 				action = new GapAnalysisAdminAction();
 				break;
-			case "financialDashboard":
+			case "fd":
 				action = new FinancialDashAction();
 				break;
-			case "financialDashScenario":
+			case "fdScenario":
 				action = new FinancialDashScenarioAction();
 				break;
 			case "productAdmin":

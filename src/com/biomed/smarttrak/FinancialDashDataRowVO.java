@@ -114,10 +114,10 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 				int yearIdx = Convert.formatInteger(colName.substring(colName.length() - 1, colName.length()));
 
 				switch (qtr) {
-					case FinancialDashAction.QUARTER_1:
-					case FinancialDashAction.QUARTER_2:
-					case FinancialDashAction.QUARTER_3:
-					case FinancialDashAction.QUARTER_4:
+					case FinancialDashBaseAction.QUARTER_1:
+					case FinancialDashBaseAction.QUARTER_2:
+					case FinancialDashBaseAction.QUARTER_3:
+					case FinancialDashBaseAction.QUARTER_4:
 						addColumn(qtr, yearIdx, maxYear, util, rs);
 						incrementTotal(totals, yearIdx, util.getIntVal(colName, rs));
 						break;
@@ -176,7 +176,7 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 	 * @param rs
 	 */
 	private void addColumn(String qtr, int yearIdx, int maxYear, DBUtil util, ResultSet rs) {
-		if (yearIdx >= FinancialDashAction.MAX_DATA_YEARS) {
+		if (yearIdx >= FinancialDashBaseAction.MAX_DATA_YEARS) {
 			return;
 		}
 		
@@ -211,8 +211,8 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 			}
 			
 			// Each iteration signifies one year earlier
-			this.addColumn(FinancialDashAction.CALENDAR_YEAR + "-" + (maxYear - i), cyTotal, pctChange);
-			this.addColumn(FinancialDashAction.YEAR_TO_DATE + "-" + (maxYear - i), cyTotal, pctChange);
+			this.addColumn(FinancialDashBaseAction.CALENDAR_YEAR + "-" + (maxYear - i), cyTotal, pctChange);
+			this.addColumn(FinancialDashBaseAction.YEAR_TO_DATE + "-" + (maxYear - i), cyTotal, pctChange);
 		}
 	}
 
