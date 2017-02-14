@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import com.biomed.smarttrak.FinancialDashColumnSet.DisplayType;
 import com.biomed.smarttrak.FinancialDashVO.TableType;
@@ -328,9 +329,9 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 	 * @throws ActionException 
 	 */
 	protected void updateBaseData(Map<String, FinancialDashRevenueVO> baseData, Map<String, FinancialDashScenarioOverlayVO> overlayData) throws ActionException {
-		for (String revenueId : overlayData.keySet()) {
-			FinancialDashRevenueVO baseRecord = baseData.get(revenueId);
-			FinancialDashScenarioOverlayVO overlayRecord = overlayData.get(revenueId);
+		for (Entry<String, FinancialDashScenarioOverlayVO> entry : overlayData.entrySet()) {
+			FinancialDashRevenueVO baseRecord = baseData.get(entry.getKey());
+			FinancialDashScenarioOverlayVO overlayRecord = overlayData.get(entry.getKey());
 			
 			if (baseRecord == null) {
 				// TODO: There isn't enough data from a scenario overlay record to create a revenue record, do we create a
@@ -385,10 +386,10 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 	private void updateScenario(Map<String, FinancialDashRevenueVO> baseData, Map<String, FinancialDashScenarioOverlayVO> overlayData, Map<String, FinancialDashScenarioOverlayVO> scenarioData) throws ActionException {
 		// Loop through all the records available in the overlay data
 		// and add/update the scenario data as necessary
-		for (String revenueId : overlayData.keySet()) {
-			FinancialDashRevenueVO baseRecord = baseData.get(revenueId);
-			FinancialDashScenarioOverlayVO overlayRecord = overlayData.get(revenueId);
-			FinancialDashScenarioOverlayVO scenarioRecord = scenarioData.get(revenueId);
+		for (Entry<String, FinancialDashScenarioOverlayVO> entry : overlayData.entrySet()) {
+			FinancialDashRevenueVO baseRecord = baseData.get(entry.getKey());
+			FinancialDashScenarioOverlayVO overlayRecord = overlayData.get(entry.getKey());
+			FinancialDashScenarioOverlayVO scenarioRecord = scenarioData.get(entry.getKey());
 			
 			if (scenarioRecord != null) {
 				updateScenarioRecord(baseRecord, overlayRecord, scenarioRecord);
