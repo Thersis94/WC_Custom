@@ -58,6 +58,9 @@ public class ContentHierarchyAction extends AbstractTreeAction {
 
 		try {
 			dbp.delete(s);
+
+			this.clearCacheByKey(CONTENT_HIERARCHY_CACHE_KEY);
+
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error(e);
 		}

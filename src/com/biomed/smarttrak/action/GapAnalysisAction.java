@@ -18,11 +18,16 @@ import com.biomed.smarttrak.admin.ContentHierarchyAction;
 import com.biomed.smarttrak.admin.vo.GapColumnVO;
 import com.biomed.smarttrak.vo.GapCompanyVO;
 import com.biomed.smarttrak.vo.GapTableVO;
+import com.biomed.smarttrak.vo.SaveStateVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
+import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.util.DatabaseException;
+import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -69,9 +74,57 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 			loadGapTableData(gtv);
 
 			super.putModuleData(gtv);
-		} else if(req.hasParameter("saveState")) {
-			//TODO add code to handle SaveState Retrieval.
+		} else {
+
+			//TODO - replace with actual userId value.
+			String userId = StringUtil.checkVal(req.getParameter("userId"), "user1");
+			String saveStateId = req.getParameter("saveStateId");
+			super.putModuleData(getSaveStates(userId, saveStateId));
 		}
+	}
+
+	/**
+	 * Helper method returns list of SaveStates.
+	 * @param req
+	 * @return
+	 */
+	private List<SaveStateVO> getSaveStates(String userId, String saveStateId) {
+		List<SaveStateVO> saveStates = new ArrayList<>();
+		boolean hasSaveStateId = !StringUtil.isEmpty(saveStateId);
+		try(PreparedStatement ps = dbConn.prepareStatement(getSaveStateSql(hasSaveStateId))) {
+			ps.setString(1, userId);
+
+			if(hasSaveStateId) {
+				ps.setString(2, saveStateId);
+			}
+
+			ResultSet rs = ps.executeQuery();
+
+			while(rs.next()) {
+				saveStates.add(new SaveStateVO(rs));
+			}
+		} catch (SQLException e) {
+			log.error(e);
+		}
+		return saveStates;
+	}
+
+	/**
+	 * Helper method retrieves Gap Analysis Save States.
+	 * @param hasSaveStateId
+	 * @return
+	 */
+	private String getSaveStateSql(boolean hasSaveStateId) {
+		StringBuilder sql = new StringBuilder(200);
+		sql.append("select * from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("biomedgps_ga_savestate where user_id = ? ");
+
+		if(hasSaveStateId) {
+			sql.append("and save_state_id = ? ");
+		}
+
+		sql.append("order by order_no");
+		return sql.toString();
 	}
 
 	/**
@@ -241,6 +294,25 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 		return sql.toString();
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see com.biomed.smarttrak.admin.ContentHierarchyAction#build(com.siliconmtn.action.ActionRequest)
+	 */
+	public void build(ActionRequest req) {
+		SaveStateVO ss = new SaveStateVO(req);
+
+		DBProcessor dbp = new DBProcessor(dbConn, (String) getAttribute(Constants.CUSTOM_DB_SCHEMA));
+
+		try {
+			dbp.save(ss);
+		} catch (InvalidDataException | DatabaseException e) {
+			log.error("Problem Saving State Object.", e.getCause());
+		}
+	}
+
+	/**
+	 * Helper method returns cache key for Content Hierarchy Object.
+	 */
 	public String getCacheKey() {
 		return GAP_CACHE_KEY;
 	}
