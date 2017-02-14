@@ -22,7 +22,6 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
-import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.Convert;
@@ -49,14 +48,20 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @updates:
  ****************************************************************************/
 public class NoteAction extends SBActionAdapter {
-
+	
 	public enum NoteType {
 		COMPANY,
 		PRODUCT,
 		MARKET,
-
 	}
 
+	private final String PRODUCT_ID = "productId" ;
+	private final String MARKET_ID = "marketId";
+	private final String COMPANY_ID = "companyId";
+	private final String ATTRIBUTE_ID = "attributeId";
+	private final String NOTE_TYPE = "noteType";
+	private final String NOTE_ENTITY_ID = "noteEntityId";
+	
 	public NoteAction() {
 		super();
 	}
@@ -78,14 +83,14 @@ public class NoteAction extends SBActionAdapter {
 		log.debug("Notes Action Retrieve called");
 		String encKey = (String) getAttribute(Constants.ENCRYPT_KEY);
 
-		String productId = StringUtil.checkVal(req.getParameter("productId"));
-		String companyId = StringUtil.checkVal(req.getParameter("companyId"));
-		String marketId = StringUtil.checkVal(req.getParameter("marketId"));
-		String attributeId = StringUtil.checkVal(req.getParameter("attributeId"));
+		String productId = StringUtil.checkVal(req.getParameter(PRODUCT_ID));
+		String companyId = StringUtil.checkVal(req.getParameter(COMPANY_ID));
+		String marketId = StringUtil.checkVal(req.getParameter(MARKET_ID));
+		String attributeId = StringUtil.checkVal(req.getParameter(ATTRIBUTE_ID));
 		String noteId = StringUtil.checkVal(req.getParameter("noteId"));
 		
-		String noteType = StringUtil.checkVal(req.getParameter("noteType"));
-		String noteEntityId = StringUtil.checkVal(req.getParameter("noteEntityId"));
+		String noteType = StringUtil.checkVal(req.getParameter(NOTE_TYPE));
+		String noteEntityId = StringUtil.checkVal(req.getParameter(NOTE_ENTITY_ID));
 
 		
 		Date cal = Convert.formatDate(new Date(), Calendar.HOUR_OF_DAY, 3);
@@ -93,7 +98,7 @@ public class NoteAction extends SBActionAdapter {
 		try  {
 			StringEncrypter se = new StringEncrypter(encKey);
 		
-			String fileToken = se.encrypt(cal.getTime()+"");
+			String fileToken = se.encrypt(Long.toString(cal.getTime()));
 
 			log.debug("file token " + fileToken);
 			
@@ -119,17 +124,17 @@ public class NoteAction extends SBActionAdapter {
 			modVo.setAttribute("primaryId", setPrimaryId(productId, companyId, marketId, attributeId));
 			
 			if (noteType.isEmpty()){
-			modVo.setAttribute("noteType", getNoteType(productId, companyId, marketId));
+			modVo.setAttribute(NOTE_TYPE, getNoteType(productId, companyId, marketId));
 			}else{
-				modVo.setAttribute("noteType", noteType);	
+				modVo.setAttribute(NOTE_TYPE, noteType);	
 			}
 			
-			modVo.setAttribute("attributeId", attributeId);
+			modVo.setAttribute(ATTRIBUTE_ID, attributeId);
 			
 			if(noteEntityId.isEmpty()){
-				modVo.setAttribute("noteEntityId", setEntityId(productId, companyId, marketId));
+				modVo.setAttribute(NOTE_ENTITY_ID, setEntityId(productId, companyId, marketId));
 			}else{
-				modVo.setAttribute("noteEntityId", noteEntityId);
+				modVo.setAttribute(NOTE_ENTITY_ID, noteEntityId);
 			}
 			
 			attributes.put(Constants.MODULE_DATA, modVo);
@@ -197,10 +202,7 @@ public class NoteAction extends SBActionAdapter {
 			ResultSet rs = ps.executeQuery();
 
 			if (rs.next()) {
-
-				NoteVO vo = new NoteVO(rs);
-
-				return vo;
+				return new NoteVO(rs);
 			}
 		} catch(SQLException sqle) {
 			log.error("could not select notes by id ", sqle);
@@ -222,9 +224,9 @@ public class NoteAction extends SBActionAdapter {
 	private Object setPrimaryId(String productId, String companyId, String marketId, String attributeId) {
 		if (StringUtil.isEmpty(attributeId)){
 
-			String placeHolder = StringUtil.checkVal(productId, 
+			return StringUtil.checkVal(productId, 
 					StringUtil.checkVal(companyId, marketId));
-			return placeHolder;
+			
 		}
 		return attributeId;
 	}
@@ -252,18 +254,16 @@ public class NoteAction extends SBActionAdapter {
 
 		Map<String, List<NoteVO>> targetNotes = getNotes(userId, teams,attributes, targetIds, (NoteType)type.getValue() );		
 
-		if (targetNotes.containsKey(attributes.get(0))) {
-			log.debug("return att list");
+		if (targetNotes != null && targetNotes.containsKey(attributes.get(0))) {
 			return targetNotes.get(attributes.get(0));
 		}
 
-		if (targetNotes.containsKey(targetIds.get(0) )){
-			log.debug("return tar id list");
+		if (targetNotes != null && targetNotes.containsKey(targetIds.get(0) )){
 			return targetNotes.get(targetIds.get(0));
 		}
 
-		log.debug("The target list was not located null returned");
-		return null;
+		log.debug("The target list was not located empty list returned");
+		return new ArrayList<NoteVO>();
 	}
 
 	/**
@@ -288,9 +288,9 @@ public class NoteAction extends SBActionAdapter {
 	public void build(ActionRequest req) throws ActionException {
 		log.debug("Notes Action Build called");
 
-		String noteType = StringUtil.checkVal(req.getParameter("noteType"));
-		String attributeId = StringUtil.checkVal(req.getParameter("attributeId"));
-		String noteEntityId = StringUtil.checkVal(req.getParameter("noteEntityId"));
+		String noteType = StringUtil.checkVal(req.getParameter(NOTE_TYPE));
+		String attributeId = StringUtil.checkVal(req.getParameter(ATTRIBUTE_ID));
+		String noteEntityId = StringUtil.checkVal(req.getParameter(NOTE_ENTITY_ID));
 		
 		
 		DBProcessor db = new DBProcessor(dbConn, (String) attributes.get(Constants.CUSTOM_DB_SCHEMA));
@@ -321,9 +321,9 @@ public class NoteAction extends SBActionAdapter {
 			log.debug("added new note " + vo);
 		}
 		
-		modVo.setAttribute("noteType", noteType);
-		modVo.setAttribute("attributeId", attributeId);
-		modVo.setAttribute("noteEntityid", noteEntityId);
+		modVo.setAttribute(NOTE_TYPE, noteType);
+		modVo.setAttribute(ATTRIBUTE_ID, attributeId);
+		modVo.setAttribute(NOTE_ENTITY_ID, noteEntityId);
 		attributes.put(Constants.MODULE_DATA, modVo);
 	}
 
@@ -335,12 +335,12 @@ public class NoteAction extends SBActionAdapter {
 	 */
 	private void setTargetId(ActionRequest req, NoteVO vo) {
 
-		if (!StringUtil.checkVal(req.getParameter("companyId")).isEmpty()){
-			vo.setCompanyId(StringUtil.checkVal(req.getParameter("companyId")));
-		}else if (!StringUtil.checkVal(req.getParameter("productId")).isEmpty()){
-			vo.setProductId(StringUtil.checkVal(req.getParameter("productId")));
-		}else if (!StringUtil.checkVal(req.getParameter("marketId")).isEmpty()){
-			vo.setMarketId(StringUtil.checkVal(req.getParameter("marketId")));
+		if (!StringUtil.checkVal(req.getParameter(COMPANY_ID)).isEmpty()){
+			vo.setCompanyId(StringUtil.checkVal(req.getParameter(COMPANY_ID)));
+		}else if (!StringUtil.checkVal(req.getParameter(PRODUCT_ID)).isEmpty()){
+			vo.setProductId(StringUtil.checkVal(req.getParameter(PRODUCT_ID)));
+		}else if (!StringUtil.checkVal(req.getParameter(MARKET_ID)).isEmpty()){
+			vo.setMarketId(StringUtil.checkVal(req.getParameter(MARKET_ID)));
 		}
 
 	}
