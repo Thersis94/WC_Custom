@@ -48,7 +48,6 @@ import com.smt.sitebuilder.security.SBUserRole;
  @since Sep 5, 2007
  Last Updated:
  ***************************************************************************/
-
 public class SalesRepAction extends SBActionAdapter {
 	public static final long serialVersionUID = 1l;
 	public static final String TM1_FKEY_VALUE = "SALES_REP_ATM_FKEY";
@@ -326,14 +325,10 @@ public class SalesRepAction extends SBActionAdapter {
 				
 				log.debug("Auth ID from lookup: " + user.getAuthenticationId());
 				
-				// if password didn't change, retrieve current password since we may need it for an update
-				if (StringUtil.checkVal(user.getPassword()).length() == 0) {
-					user.setPassword(loginModule.retrievePassword(user.getEmailAddress()));
-				}
 				// determine what the password reset value should be
 				int resetVal = expirePassword ? 1 : 0;
 				//insert or update the AUTHENTICATION table and set ID on the user object; pwd will be encrypted at qry
-				user.setAuthenticationId(loginModule.manageUser(user.getAuthenticationId(), user.getEmailAddress(),	user.getPassword(), resetVal));
+				user.setAuthenticationId(loginModule.saveAuthRecord(user.getAuthenticationId(), user.getEmailAddress(),	user.getPassword(), resetVal));
 				
 				// update profile with auth ID if applicable
 				if (updateProfileAuth) this.updateProfileAuth(user);

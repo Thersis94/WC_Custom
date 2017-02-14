@@ -327,7 +327,7 @@ public class RamUserAction extends SBActionAdapter {
 
 			// create or update the auth record.  We are depending upon the form
 			// for password and thus we are not setting the password reset flag to true.
-			authId = loginModule.manageUser(authId, user.getEmailAddress(), authPwd, 0);
+			authId = loginModule.saveAuthRecord(authId, user.getEmailAddress(), authPwd, 0);
 			user.setAuthenticationId(authId);
 
 			// update profile with auth record

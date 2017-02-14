@@ -27,9 +27,6 @@ import com.smt.sitebuilder.security.SAMLLoginModule;
  ****************************************************************************/
 public class HuddleLoginModule extends SAMLLoginModule {
 
-	/**
-	 * 
-	 */
 	public HuddleLoginModule() {
 		super();
 	}
@@ -42,9 +39,9 @@ public class HuddleLoginModule extends SAMLLoginModule {
 	}
 
 	@Override
-	public UserDataVO retrieveUserData(String user, String pwd)
+	public UserDataVO authenticateUser(String user, String pwd)
 			throws AuthenticationException {
-		UserDataVO userData = super.retrieveUserData(user, pwd);
+		UserDataVO userData = super.authenticateUser(user, pwd);
 
 		//redirect to the user's personal homepage.
 		applyRedirectLogic(userData);
@@ -58,8 +55,8 @@ public class HuddleLoginModule extends SAMLLoginModule {
 	 * Note: This is not a real use-case for Huddle b/c there is no login form.
 	 */
 	@Override
-	public UserDataVO retrieveUserData(String encProfileId) throws AuthenticationException {
-		UserDataVO userData = super.retrieveUserData(encProfileId);
+	public UserDataVO authenticateUser(String encProfileId) throws AuthenticationException {
+		UserDataVO userData = super.authenticateUser(encProfileId);
 
 		//redirect to the user's personal homepage.
 		applyRedirectLogic(userData);
@@ -75,13 +72,13 @@ public class HuddleLoginModule extends SAMLLoginModule {
 	 */
 	private void applyRedirectLogic(UserDataVO userData) {
 		String homepage = StringUtil.checkVal(userData.getAttribute(HuddleUtils.HOMEPAGE_REGISTER_FIELD_ID), null);
-		ActionRequest req = (ActionRequest) initVals.get(GlobalConfig.ACTION_REQUEST);
+		ActionRequest req = (ActionRequest) getAttribute(GlobalConfig.ACTION_REQUEST);
 		SMTSession ses = req.getSession();
 		String destPg = StringUtil.checkVal(ses.getAttribute(LoginAction.DESTN_URL));
 
 		// if this is an admintool login, preserver the destination page.
 		if (isAdminToolPath(destPg)) return;
-		
+
 		if (homepage == null) {
 			//no homepage, this is a first-time login.
 			//send them to our registration page to setup their account
@@ -110,7 +107,7 @@ public class HuddleLoginModule extends SAMLLoginModule {
 		req.setParameter(Constants.SSO_INITIATE, "true");
 		return super.canInitiateLogin(req);
 	}
-	
+
 	/**
 	 * Helper method used to determine if the destination page is an admin tool 
 	 * path.  If so, the destintation page is left untouched.
@@ -118,9 +115,8 @@ public class HuddleLoginModule extends SAMLLoginModule {
 	 * @return
 	 */
 	private boolean isAdminToolPath(String destPg) {
-		String adminToolPath = StringUtil.checkVal(initVals.get(AdminConstants.ADMIN_TOOL_PATH),null);
+		String adminToolPath = StringUtil.checkVal(getAttribute(AdminConstants.ADMIN_TOOL_PATH),null);
 		if (adminToolPath != null && destPg.contains(adminToolPath)) return true;
 		return false;
 	}
-
 }

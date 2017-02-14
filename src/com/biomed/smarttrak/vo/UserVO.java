@@ -1,12 +1,12 @@
 package com.biomed.smarttrak.vo;
 
 // Java 7
-import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import com.siliconmtn.db.DBUtil;
+import com.siliconmtn.db.orm.Column;
+import com.siliconmtn.db.orm.Table;
 // SMTBaseLibs
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.UserDataVO;
@@ -22,6 +22,7 @@ import com.siliconmtn.security.UserDataVO;
  @since Jan 31, 2017
  <b>Changes:</b> 
  ***************************************************************************/
+@Table(name="BIOMEDGPS_USER")
 public class UserVO extends UserDataVO {
 
 	private static final long serialVersionUID = -8619730513300299951L;
@@ -31,45 +32,23 @@ public class UserVO extends UserDataVO {
 	private List<TeamVO> teams;
 	private Date createDate;
 	private Date updateDate;
-
-	/**
-	* Constructor
-	*/
+	
 	public UserVO() {
 		teams = new ArrayList<>();
 	}
 
-	/**
-	* Constructor
-	*/
 	public UserVO(SMTServletRequest req) {
 		super(req);
+		setAccountId(req.getParameter("accountId"));
+		setUserId(req.getParameter("userId"));
+		setRegisterSubmittalId(req.getParameter("registerSubmittalId"));
 		teams = new ArrayList<>();
-	}
-
-	/**
-	* Constructor
-	*/
-	public UserVO(ResultSet rs) {
-		super(rs);
-		this.setData(rs);
-		teams = new ArrayList<>();
-	}
-	
-	/**
-	 * 
-	 */
-	public void setData(ResultSet rs) {
-		DBUtil db = new DBUtil();
-		setAccountId(db.getStringVal("account_id", rs));
-		setUserId(db.getStringVal("user_id", rs));
-		setProfileId(db.getStringVal("profile_id", rs));
-		setRegisterSubmittalId(db.getStringVal("register_submittal_id", rs));
 	}
 
 	/**
 	 * @return the userId
 	 */
+	@Column(name="user_id")
 	public String getUserId() {
 		return userId;
 	}
@@ -84,6 +63,7 @@ public class UserVO extends UserDataVO {
 	/**
 	 * @return the accountId
 	 */
+	@Column(name="account_id")
 	public String getAccountId() {
 		return accountId;
 	}
@@ -98,6 +78,7 @@ public class UserVO extends UserDataVO {
 	/**
 	 * @return the registerSubmittalId
 	 */
+	@Column(name="register_submittal_id")
 	public String getRegisterSubmittalId() {
 		return registerSubmittalId;
 	}
@@ -115,13 +96,6 @@ public class UserVO extends UserDataVO {
 	public List<TeamVO> getTeams() {
 		return teams;
 	}
-
-	/**
-	 * @param teams the teams to set
-	 */
-	public void setTeams(List<TeamVO> teams) {
-		this.teams = teams;
-	}
 	
 	/**
 	 * Helper method for adding a team to the List of teams
@@ -134,6 +108,7 @@ public class UserVO extends UserDataVO {
 	/**
 	 * @return the createDate
 	 */
+	@Column(name="create_dt", isInsertOnly=true)
 	public Date getCreateDate() {
 		return createDate;
 	}
@@ -148,6 +123,7 @@ public class UserVO extends UserDataVO {
 	/**
 	 * @return the updateDate
 	 */
+	@Column(name="update_dt", isUpdateOnly=true)
 	public Date getUpdateDate() {
 		return updateDate;
 	}
@@ -158,5 +134,4 @@ public class UserVO extends UserDataVO {
 	public void setUpdateDate(Date updateDate) {
 		this.updateDate = updateDate;
 	}
-
 }
