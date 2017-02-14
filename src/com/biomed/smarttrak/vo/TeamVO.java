@@ -1,5 +1,7 @@
 package com.biomed.smarttrak.vo;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 // Java 7
 import java.util.Date;
 
@@ -45,6 +47,16 @@ public class TeamVO {
 		setDefaultFlg(Convert.formatInteger(req.getParameter("defaultFlag")));
 		setPrivateFlg(Convert.formatInteger(req.getParameter("privateFlag")));
 	}
+
+	public TeamVO(ResultSet rs) throws SQLException {
+		this();
+		setTeamId(rs.getString("team_id"));
+		setAccountId(rs.getString("account_id"));
+		setTeamName(rs.getString("team_nm"));
+		setDefaultFlg(rs.getInt("default_flg"));
+		setPrivateFlg(rs.getInt("private_flg"));
+	}
+
 
 	/**
 	 * @return the teamId

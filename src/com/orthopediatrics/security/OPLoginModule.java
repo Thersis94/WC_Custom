@@ -18,6 +18,7 @@ import com.siliconmtn.security.UserDataVO;
 // WC 2.0 libs
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
+import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.DBLoginModule;
 
 /****************************************************************************
@@ -36,11 +37,8 @@ import com.smt.sitebuilder.security.DBLoginModule;
  ****************************************************************************/
 public class OPLoginModule extends DBLoginModule {
 
-	/**
-	 * 
-	 */
 	public OPLoginModule() {
-		this.setUserProfile(true);
+		super();
 	}
 
 	/**
@@ -48,14 +46,14 @@ public class OPLoginModule extends DBLoginModule {
 	 */
 	public OPLoginModule(Map<String, Object> arg0) {
 		super(arg0);
-		this.setUserProfile(true);
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.siliconmtn.security.AbstractLoginModule#retrieveUserData(java.lang.String, java.lang.String)
 	 */
-	public UserDataVO retrieveUserData(String loginName, String password) 
+	@Override
+	public UserDataVO authenticateUser(String loginName, String password) 
 			throws AuthenticationException {
 		UserDataVO authUser = this.authenticateUser(loginName, password);
 		UserDataVO user = new UserDataVO();
@@ -64,30 +62,31 @@ public class OPLoginModule extends DBLoginModule {
 		user.setPasswordHistory(authUser.getPasswordHistory());
 		if (authUser.isAuthenticated()) {
 			// Retrieve the profile
-		    ProfileManager pm = ProfileManagerFactory.getInstance(this.initVals);
-	        Connection dbConn = (Connection)initVals.get(GlobalConfig.KEY_DB_CONN);
-	        try {
-	        	user = pm.getProfile(user.getAuthenticationId(), dbConn, ProfileManager.AUTH_ID_LOOKUP, null);
-	        	 // Retrieve the User's Extended Information
-	        	user.setUserExtendedInfo(this.getRepInfo(user.getProfileId(), dbConn));
-	        	user.setAuthenticated(true);
-	        	log.debug("retrieved user profile");
-	        } catch(Exception e) {
-	        	log.error("Unable to retrieve profile: " + e.getMessage());
-	        }
+			ProfileManager pm = ProfileManagerFactory.getInstance(getAttributes());
+			Connection dbConn = (Connection)getAttribute(GlobalConfig.KEY_DB_CONN);
+			try {
+				user = pm.getProfile(user.getAuthenticationId(), dbConn, ProfileManager.AUTH_ID_LOOKUP, null);
+				// Retrieve the User's Extended Information
+				user.setUserExtendedInfo(this.getRepInfo(user.getProfileId(), dbConn));
+				user.setAuthenticated(true);
+				log.debug("retrieved user profile");
+			} catch(Exception e) {
+				log.error("Unable to retrieve profile: " + e.getMessage());
+			}
 		}
 		return user;
 	}
-	
+
 	/**
 	 * Retrieves user data based on the encrypted profileId passed in.
 	 * @param encProfileId
 	 */
-	public UserDataVO retrieveUserData(String encProfileId) throws AuthenticationException {
-		UserDataVO user =  super.retrieveUserData(encProfileId);
+	@Override
+	public UserDataVO authenticateUser(String encProfileId) throws AuthenticationException {
+		UserDataVO user =  super.authenticateUser(encProfileId);
 		if (user != null) {
 			// Retrieve the User's Extended Information
-			Connection dbConn = (Connection)initVals.get(GlobalConfig.KEY_DB_CONN);
+			Connection dbConn = (Connection)getAttribute(GlobalConfig.KEY_DB_CONN);
 			try {
 				user.setUserExtendedInfo(this.getRepInfo(user.getProfileId(), dbConn));
 			} catch (SQLException sqle) {
@@ -96,7 +95,7 @@ public class OPLoginModule extends DBLoginModule {
 		}
 		return user;
 	}
-	
+
 	/**
 	 * 
 	 * @param profileId
@@ -104,21 +103,21 @@ public class OPLoginModule extends DBLoginModule {
 	 * @return
 	 * @throws SQLException
 	 */
-	public SalesRepVO getRepInfo(String profileId, Connection conn) throws SQLException {
+	protected SalesRepVO getRepInfo(String profileId, Connection conn) throws SQLException {
 		log.debug("retrieving sales rep info...");
-		String dbs = (String)initVals.get("customDbSchema");
+		String dbs = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		SalesRepVO rep = null;
 		StringBuilder s = new StringBuilder();
 		s.append("select * from ").append(dbs).append("op_sales_rep a ");
 		s.append("where profile_id = ? ");
 		log.debug("Sales Rep Info on login: " + s + "|" + profileId);
-		
+
 		PreparedStatement ps = conn.prepareStatement(s.toString());
 		ps.setString(1, profileId);
-		
+
 		ResultSet rs = ps.executeQuery();
 		if (rs.next()) rep = new SalesRepVO(rs);
-		
+
 		return rep;
 	}
 }
