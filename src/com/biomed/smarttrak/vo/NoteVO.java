@@ -312,12 +312,14 @@ public class NoteVO implements Serializable {
 	/**
 	 * @return the attributeId
 	 */
+	@Column(name="ATTRIBUTE_ID" )
 	public String getAttributeId() {
 		return attributeId;
 	}
 	/**
 	 * @param attributeId the attributeId to set
 	 */
+	
 	public void setAttributeId(String attributeId) {
 		this.attributeId = attributeId;
 	}

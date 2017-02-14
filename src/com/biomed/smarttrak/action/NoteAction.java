@@ -13,19 +13,6 @@ import java.util.List;
 import java.util.Map;
 
 
-
-
-
-
-
-import java.util.Map.Entry;
-
-
-
-
-
-
-
 //WC custom
 import com.biomed.smarttrak.vo.NoteVO;
 
@@ -35,6 +22,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.Convert;
@@ -99,14 +87,17 @@ public class NoteAction extends SBActionAdapter {
 		String noteType = StringUtil.checkVal(req.getParameter("noteType"));
 		String noteEntityId = StringUtil.checkVal(req.getParameter("noteEntityId"));
 
+		
 		Date cal = Convert.formatDate(new Date(), Calendar.HOUR_OF_DAY, 3);
 
 		try  {
 			StringEncrypter se = new StringEncrypter(encKey);
-
+		
 			String fileToken = se.encrypt(cal.getTime()+"");
 
-			log.debug("note lode time " + cal.getTime()+"");
+			log.debug("file token " + fileToken);
+			
+			
 			ModuleVO modVo = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 
 
@@ -140,7 +131,6 @@ public class NoteAction extends SBActionAdapter {
 			}else{
 				modVo.setAttribute("noteEntityId", noteEntityId);
 			}
-			
 			
 			attributes.put(Constants.MODULE_DATA, modVo);
 
@@ -193,8 +183,6 @@ public class NoteAction extends SBActionAdapter {
 	 */
 	private NoteVO getNote(String noteId, String userId) {
 
-		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
-
 		StringBuilder sb = new StringBuilder(32);
 		sb.append("select * from ").append((String)attributes.get("customDbSchema")).append("biomedgps_note n ");
 		sb.append("where note_id = ? and user_id = ?");
@@ -211,7 +199,6 @@ public class NoteAction extends SBActionAdapter {
 			if (rs.next()) {
 
 				NoteVO vo = new NoteVO(rs);
-				log.debug("name on note !!!!!!!!!!!!!!!! " + vo.getUserName());
 
 				return vo;
 			}
@@ -312,9 +299,9 @@ public class NoteAction extends SBActionAdapter {
 		//TODO testing locally when ajax action is public.  change that after log in is correct.
 		//TODO biomed user data vo not present on request remove after that part is in place
 		vo.setUserId("8080");
-		//TODO remove after testing, make sure the function called after this gets the right id.
-		vo.setCompanyId("2792");
-
+		
+		log.debug("companyId " + vo.getCompanyId());
+		
 		setTargetId(req, vo);
 
 		//if a user decided to not share the note, then the team id is set to null 
