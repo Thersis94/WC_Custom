@@ -8,11 +8,12 @@ import com.biomed.smarttrak.admin.AccountAction;
 import com.biomed.smarttrak.admin.CompanyManagementAction;
 import com.biomed.smarttrak.admin.ContentHierarchyAction;
 import com.biomed.smarttrak.admin.GapAnalysisAdminAction;
+import com.biomed.smarttrak.admin.ListAction;
 import com.biomed.smarttrak.admin.MarketManagementAction;
 import com.biomed.smarttrak.admin.ProductManagementAction;
 import com.biomed.smarttrak.admin.TeamAction;
 import com.biomed.smarttrak.admin.TeamMemberAction;
-
+import com.biomed.smarttrak.admin.UpdatesAction;
 //SMT base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -142,6 +143,12 @@ public class AdminControllerAction extends SimpleActionAdapter {
 				break;
 			case "marketAdmin":
 				action = new MarketManagementAction();
+				break;
+			case "updates":
+				action = new UpdatesAction();
+				break;
+			case "list":
+				action = new ListAction();
 				break;
 			default:
 				throw new ActionException("unknown action type:" + actionType);

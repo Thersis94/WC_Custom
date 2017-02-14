@@ -19,6 +19,7 @@ import com.biomed.smarttrak.admin.vo.GapColumnVO;
 import com.biomed.smarttrak.vo.GapCompanyVO;
 import com.biomed.smarttrak.vo.GapTableVO;
 import com.biomed.smarttrak.vo.SaveStateVO;
+import com.biomed.smarttrak.vo.UserVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -27,6 +28,7 @@ import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -76,8 +78,10 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 			super.putModuleData(gtv);
 		} else {
 
-			//TODO - replace with actual userId value.
-			String userId = StringUtil.checkVal(req.getParameter("userId"), "user1");
+			SMTSession ses = req.getSession();
+			UserVO vo = (UserVO) ses.getAttribute(Constants.USER_DATA);
+			String userId = StringUtil.checkVal(vo.getUserId());
+
 			String saveStateId = req.getParameter("saveStateId");
 			super.putModuleData(getSaveStates(userId, saveStateId));
 		}
