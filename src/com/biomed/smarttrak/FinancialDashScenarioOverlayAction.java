@@ -157,6 +157,7 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 			return;
 		}
 		
+		log.debug("Updating Scenario Overlay Data Record");
 		String scenarioId = StringUtil.checkVal(req.getParameter("scenarioId"));
 		String revenueId = StringUtil.checkVal(req.getParameter("pk"));
 		String quarter = getQuarterFromField(StringUtil.checkVal(req.getParameter("name")));
@@ -214,7 +215,7 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 	 * 
 	 * @return
 	 */
-	protected String getOverlayRecordSql() {
+	private String getOverlayRecordSql() {
 		String custom = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(100);
 		
@@ -257,9 +258,11 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 	 * Publishes data from a selected scenario/section/year/region combination.
 	 * 
 	 * @param req
+	 * @throws ActionException 
 	 */
-	// TODO: Finish out all methods related to scenario publishing 
-	protected void publishScenario(ActionRequest req) {
+	protected void publishScenario(ActionRequest req) throws ActionException {
+		log.debug("Publishing Scenario Overlay Records");
+
 		String sectionId = StringUtil.checkVal(req.getParameter("sectionId"));
 		String scenarioId = StringUtil.checkVal(req.getParameter("scenarioId"));
 		String countryType = StringUtil.checkVal(req.getParameter("countryType"));
@@ -286,9 +289,35 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 	protected Map<String, FinancialDashScenarioOverlayVO> getScenarioData(String sectionId, String countryType, int year, String scenarioId) {
 		Map<String, FinancialDashScenarioOverlayVO> overlayData = new HashMap<>();
 		
-		// TODO: get the data
+		String sql = getSectionOverlaySql();
+		List<Object> params = new ArrayList<>();
+		params.addAll(Arrays.asList(scenarioId, year, countryType, sectionId));
+		
+		List<Object> overlays = dbp.executeSelect(sql, params, new FinancialDashScenarioOverlayVO());
+		
+		for (Object overlayObj : overlays) {
+			FinancialDashScenarioOverlayVO overlay = (FinancialDashScenarioOverlayVO) overlayObj;
+			overlayData.put(overlay.getRevenueId(), overlay);
+		}
 		
 		return overlayData;
+	}
+	
+	/**
+	 * Returns the sql necessary for retrieving all overlay records
+	 * for a given scenario.
+	 * 
+	 * @return
+	 */
+	private String getSectionOverlaySql() {
+		String custom = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(300);
+		
+		sql.append("select so.* from ").append(custom).append("BIOMEDGPS_FD_SCENARIO_OVERLAY so ");
+		sql.append("inner join ").append(custom).append("BIOMEDGPS_FD_REVENUE r on so.REVENUE_ID = r.REVENUE_ID ");
+		sql.append("where so.SCENARIO_ID = ? and so.YEAR_NO = ? and r.REGION_CD = ? and r.SECTION_ID = ? ");
+		
+		return sql.toString();
 	}
 	
 	/**
@@ -296,16 +325,28 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 	 * 
 	 * @param baseData
 	 * @param overlayData
+	 * @throws ActionException 
 	 */
-	protected void updateBaseData(Map<String, FinancialDashRevenueVO> baseData, Map<String, FinancialDashScenarioOverlayVO> overlayData) {
+	protected void updateBaseData(Map<String, FinancialDashRevenueVO> baseData, Map<String, FinancialDashScenarioOverlayVO> overlayData) throws ActionException {
 		for (String revenueId : overlayData.keySet()) {
 			FinancialDashRevenueVO baseRecord = baseData.get(revenueId);
+			FinancialDashScenarioOverlayVO overlayRecord = overlayData.get(revenueId);
+			
 			if (baseRecord == null) {
-				// create the record
+				// TODO: There isn't enough data from a scenario overlay record to create a revenue record, do we create a
+				// new revenue record when a new overlay record is created?
 			} else {
-				// update the record
+				baseRecord.setQ1No(overlayRecord.getQ1No());
+				baseRecord.setQ2No(overlayRecord.getQ2No());
+				baseRecord.setQ3No(overlayRecord.getQ3No());
+				baseRecord.setQ4No(overlayRecord.getQ4No());
 			}
-			// save record to database
+			
+			try {
+				dbp.save(baseRecord);
+			} catch (Exception e) {
+				throw new ActionException("Couldn't save updated base data from overlay.", e);
+			}
 		}
 	}
 
@@ -314,36 +355,84 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 	 * 
 	 * @param baseData
 	 * @param overlayData
+	 * @throws ActionException 
 	 */
-	protected void updateAllScenarios(Map<String, FinancialDashRevenueVO> baseData, Map<String, FinancialDashScenarioOverlayVO> overlayData, String sectionId, String countryType, int year) {
+	protected void updateAllScenarios(Map<String, FinancialDashRevenueVO> baseData, Map<String, FinancialDashScenarioOverlayVO> overlayData, String sectionId, String countryType, int year) throws ActionException {
 		// Get the list of scenarios that will need to be updated
 		FinancialDashScenarioAction sa = new FinancialDashScenarioAction(this.actionInit);
 		sa.setAttributes(this.attributes);
 		sa.setDBConnection(dbConn);
 		List<FinancialDashScenarioVO> scenarios = sa.getScenarios();
 		
+		// Loop through each scenario to update
+		for (FinancialDashScenarioVO scenario : scenarios) {
+			Map<String, FinancialDashScenarioOverlayVO> scenarioData = getScenarioData(sectionId, countryType, year, scenario.getScenarioId());
+			updateScenario(baseData, overlayData, scenarioData);
+		}
+	}
+
+	/**
+	 * Updates a scenario based on the new overlay data. If the scenario data has changed as compared
+	 * to the base data, we leave it alone per the requirements. If it has not changed, we update it with
+	 * the new overlay data.
+	 * 
+	 * @param baseData
+	 * @param overlayData
+	 * @param scenarioData
+	 * @param scenarioId
+	 * @throws ActionException 
+	 */
+	private void updateScenario(Map<String, FinancialDashRevenueVO> baseData, Map<String, FinancialDashScenarioOverlayVO> overlayData, Map<String, FinancialDashScenarioOverlayVO> scenarioData) throws ActionException {
+		// Loop through all the records available in the overlay data
+		// and add/update the scenario data as necessary
+		for (String revenueId : overlayData.keySet()) {
+			FinancialDashRevenueVO baseRecord = baseData.get(revenueId);
+			FinancialDashScenarioOverlayVO overlayRecord = overlayData.get(revenueId);
+			FinancialDashScenarioOverlayVO scenarioRecord = scenarioData.get(revenueId);
+			
+			if (scenarioRecord != null) {
+				updateScenarioRecord(baseRecord, overlayRecord, scenarioRecord);
+			}
+		}
+	}
+	
+	/**
+	 * If the scenario data has changed as compared to the base data, we leave it alone per the requirements.
+	 * If it has not changed, we update it with the new overlay data.
+	 * 
+	 * @param baseRecord
+	 * @param overlayRecord
+	 * @param scenarioRecord
+	 * @param quarters
+	 * @throws ActionException 
+	 */
+	private void updateScenarioRecord(FinancialDashRevenueVO baseRecord, FinancialDashScenarioOverlayVO overlayRecord, FinancialDashScenarioOverlayVO scenarioRecord) throws ActionException {
 		// Quarters to check for changes
 		List<String> quarters = new ArrayList<>();
 		quarters.addAll(Arrays.asList(FinancialDashBaseAction.QUARTER_1, FinancialDashBaseAction.QUARTER_2, FinancialDashBaseAction.QUARTER_3, FinancialDashBaseAction.QUARTER_4));
 		
-		// Loop through each scenario
-		for (FinancialDashScenarioVO scenario : scenarios) {
-			Map<String, FinancialDashScenarioOverlayVO> scenarioData = getScenarioData(sectionId, countryType, year, scenario.getScenarioId());
-			
-			// Loop through all the records in the overlay data
-			for (String revenueId : overlayData.keySet()) {
-				FinancialDashScenarioOverlayVO scenarioRecord = scenarioData.get(revenueId);
-				if (scenarioRecord == null) {
-					// create the record
-				} else {
-					FinancialDashRevenueVO baseRecord = baseData.get(revenueId);
-					for (String quarter : quarters) {
-						// if base record quarter value is same as scenario record quarter value
-						// then replace with overlay record quarter value
-					}
+		try {
+			for (String quarter : quarters) {
+				// Dynamically check values for each quarter
+				Method rvoGet = baseRecord.getClass().getMethod("get" + quarter + "No");
+				long baseVal = (long) rvoGet.invoke(baseRecord);
+
+				Method sovoGet = scenarioRecord.getClass().getMethod("get" + quarter + "No");
+				long scenarioVal = (long) sovoGet.invoke(scenarioRecord);
+
+				// if base record quarter value is same as scenario record quarter value
+				// then replace with overlay record quarter value
+				if (baseVal == scenarioVal) {
+					long overlayVal = (long) sovoGet.invoke(overlayRecord);
+
+					Method sovoSet = scenarioRecord.getClass().getMethod("set" + quarter + "No", long.class);
+					sovoSet.invoke(scenarioRecord, overlayVal);
 				}
-				// save record to database
 			}
+
+			dbp.save(scenarioRecord);
+		} catch (Exception e) {
+			throw new ActionException("Couldn't save updated scenario data from overlay.", e);
 		}
 	}
 }

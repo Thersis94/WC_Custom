@@ -3,7 +3,10 @@ package com.biomed.smarttrak;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.biomed.smarttrak.FinancialDashColumnSet.DisplayType;
@@ -305,8 +308,33 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	protected Map<String, FinancialDashRevenueVO> getBaseData(String sectionId, String countryType, int year, String scenarioId) {
 		Map<String, FinancialDashRevenueVO> baseData = new HashMap<>();
 		
-		// TODO: get the data
+		String sql = getRevenueSql();
+		List<Object> params = new ArrayList<>();
+		params.addAll(Arrays.asList(sectionId, year, countryType, scenarioId));
+		
+		List<?> revenueRecords = dbp.executeSelect(sql, params, new FinancialDashRevenueVO());
+		
+		for (Object revenueRecord : revenueRecords) {
+			FinancialDashRevenueVO rvo = (FinancialDashRevenueVO) revenueRecord;
+			baseData.put(rvo.getRevenueId(), rvo);
+		}
 		
 		return baseData;
+	}
+	
+	/**
+	 * Returns the sql required for getting all base data associated to a scenario.
+	 * 
+	 * @return
+	 */
+	private String getRevenueSql() {
+		String custom = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(300);
+		
+		sql.append("select r.* from ").append(custom).append("BIOMEDGPS_FD_REVENUE r ");
+		sql.append("inner join ").append(custom).append("BIOMEDGPS_FD_SCENARIO_OVERLAY so on r.REVENUE_ID = so.REVENUE_ID ");
+		sql.append("where r.SECTION_ID = ? and r.YEAR_NO = ? and r.REGION_CD = ? and so.SCENARIO_ID = ? ");
+		
+		return sql.toString();
 	}
 }
