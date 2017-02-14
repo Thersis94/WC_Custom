@@ -39,6 +39,7 @@ public class ShowpadTagManager {
 	 * a Constant put into the 'externalId' field to "tag the tags" that are product related.
 	 */
 	public static final String SMT_PRODUCT_EXTERNALID = "smt-product";
+	public static final String SMT_MEDIABIN_EXTERNALID = "smt-mediabin";
 
 	protected String divisionId;
 	protected String divisionUrl;
@@ -147,7 +148,7 @@ public class ShowpadTagManager {
 			log.info("asset needs tag " + tagNm);
 			if (showpadTags.get(tagNm) == null) {
 				//add it to the global list for the next iteration to leverage
-				showpadTags.put(tagNm, createTag(tagNm, null));
+				showpadTags.put(tagNm, createTag(tagNm, SMT_MEDIABIN_EXTERNALID));
 			}
 
 			if (header.length() > 0) header.append(",");
