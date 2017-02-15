@@ -12,12 +12,15 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
-
+import com.siliconmtn.security.UserDataVO;
 // WebCrescendo
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.registration.RegistrationAction;
 import com.smt.sitebuilder.action.registration.ResponseLoader;
+import com.smt.sitebuilder.action.user.ProfileManager;
+import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 //WC_Custom
@@ -128,9 +131,30 @@ public class AccountUserAction extends SBActionAdapter {
 		ResponseLoader rl = new ResponseLoader();
 		rl.setDbConn(dbConn);
 		rl.loadRegistrationResponses(user, AdminControllerAction.PUBLIC_SITE_ID);
+
+		//load the user's profile data
+		loadProfileData(user, req);
+
 		users.set(0, user); //make sure the record gets back on the list, though it probably does by reference anyways
 	}
 
+
+	/**
+	 * loads the users profile record from the WC core
+	 * @param user
+	 * @param req
+	 */
+	protected void loadProfileData(UserVO user, ActionRequest req) {
+		//load the users profile data
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		ProfileManager pm = ProfileManagerFactory.getInstance(getAttributes());
+		try {
+			UserDataVO vo = pm.getProfile(user.getProfileId(), dbConn, ProfileManager.PROFILE_ID_LOOKUP, site.getOrganizationId());
+			user.setData(vo.getDataMap());
+		} catch (com.siliconmtn.exception.DatabaseException de) {
+			log.error("could not load user profile", de);
+		}
+	}
 
 	/**
 	 * loop and decrypt owner names, which came from the profile table
