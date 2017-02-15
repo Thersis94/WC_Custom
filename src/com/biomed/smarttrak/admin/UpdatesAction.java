@@ -33,6 +33,33 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class UpdatesAction extends SBActionAdapter {
 	protected static final String UPDATE_ID = "updateId"; //req param
 
+	public enum UpdateType {
+		Market(12, "Market"),
+		Revenues(15, "Revenues"),
+		NewProducts(17, "New Products"),
+		DealsFinancing(20, "Deals/Financing"),
+		ClinicalRegulatory(30, "Clinical/Regulatory"),
+		Patents(35, "Patents"),
+		Reimbursement(37, "Reimbursement"),
+		Announcements(38, "Announcements"),
+		Studies(40, "Studies");
+
+		private int val;
+		private String text;
+
+		UpdateType(int val, String text) {
+			this.val = val;
+			this.text = text;
+		}
+
+		public int getVal() {
+			return this.val;
+		}
+		public String getText() {
+			return this.text;
+		}
+	}
+
 	public UpdatesAction() {
 		super();
 	}
