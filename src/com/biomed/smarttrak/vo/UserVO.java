@@ -44,14 +44,75 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 
 	public UserVO(ActionRequest req) {
 		super(req);
+		teams = new ArrayList<>();
 		setUserId(req.getParameter("userId"));
 		setAccountId(req.getParameter("accountId"));
-		this.setProfileId(req.getParameter("profileId"));
 		setRegisterSubmittalId(req.getParameter("registerSubmittalId"));
 		setStatusCode(req.getParameter("statusCode"));
 		setExpirationDate(Convert.formatDate(Convert.DATE_SLASH_PATTERN, req.getParameter("expirationDate")));
-		teams = new ArrayList<>();
+		populateRegistrationFields(req);
 	}
+
+	/**
+	 * Smarttrak status dropdowns - stored in the DB using code, label displayed on user mgmt screens.
+	 */
+	public enum Status {
+		COMPUPDATES("T","Comp Updates"),
+		ACTIVE("A","SmartTRAK User"),
+		REPORTS("M","EU Reports"),
+		EUPLUS("P","EU Plus"),
+		TRIAL("K","SmartTRAK Trial"),
+		COMPLIMENTART("C","SmartTRAK Complimentary"),
+		EXTRA("E","SmartTRAK Extra Seat"),
+		UPDATES("U","Updates Only"),
+		TEST("D","Temporary/ Test"),
+		STAFF("S","Staff");
+
+		private String cd;
+		private String label;
+		private Status(String cd, String lbl) {
+			this.cd = cd;
+			this.label = lbl;
+		}
+		public String getCode() { return cd; }
+		public String getLabel() { return label; }
+	}
+
+
+	/**
+	 * Static mapping to the registration fields stored in the database.
+	 * The reqParam value is what we use on our forms, so we know what to expect on the incoming request 
+	 * when we go to save the data.
+	 */
+	public enum RegistrationMap {
+		TITLE("dd64d07fb37c2c067f0001012b4210ff", "title"),
+		UPDATES("9b079506b37cc0de7f0001014b63ad3c", "updates"),
+		FAVORITEUPDATES("d5ed674eb37da7fd7f000101d875b114", "favUpdates"),
+		COMPANY("e6890a383eecc13f0a001421223e1a8b", "comany"),
+		COMPANYURL("8e326f4c3ef49ae10a0014218aae436b", "companyUrl"),
+		//below are all on the 'sales' tab on the admin edit form
+		SOURCE("9cc5d1003ef592210a001421ccb8df2e", "source"),
+		DEMODT("63347a903ef637ee0a001421c0d224c9", "demoDate"),
+		TRAININGDT("5b44eca13ef688fe0a001421b4f167c8", "trainingDate"),
+		INITTRAININGDT("b84694683ef8913b0a001421809cb366", "initialTrainingDate"),
+		ADVTRAININGDT("b0be57103ef8f5b70a0014219084f190", "advancedTrainingDate"),
+		OTHERTRAININGDT("9512e1b23f762ff70a0014211c33fc78", "otherTrainingDate"),
+		NOTES("4bf7dbae3f767aa40a0014217d25df70", "notes"),
+		JOBCATEGORY("ef6444293f7c69630a001421545e4917", "jobCategory"),
+		JOBLEVEL("7bff2e9e3f7f7fb90a0014217397e884", "jobLevel"),
+		INDUSTRY("5291b7693f8104240a001421db8d04ab", "industry"),
+		DIVISIONS("31037d2e3f859f100a001421e77994f4", "divisions");
+
+		private String fieldId;
+		private String reqParam;
+		private RegistrationMap(String registerFieldId, String reqParam) { 
+			this.fieldId = registerFieldId;
+			this.reqParam = reqParam;
+		}
+		public String getFieldId() { return fieldId; }
+		public String getReqParam() { return reqParam; }
+	}
+
 
 	/**
 	 * @return the userId
@@ -170,8 +231,82 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		this.loginDate = loginDate;
 	}
 
+	/**
+	 * iterates the RegistrationMap, taking each value off the request object and putting it into the UserVO.
+	 * When we save this data we'll do a similar iteration (in the Action's save method).
+	 *		e.g. forEach(enum) saveRegField(e.fieldId, user.getAttribute(e.fieldId));
+	 * @param req
+	 */
+	private void populateRegistrationFields(ActionRequest req) {
+		for (RegistrationMap entry : RegistrationMap.values())
+			addAttribute(entry.getFieldId(), req.getParameter(entry.getReqParam()));
+	}
+
 	/*********************
-	 *  SOME OVERRIDES FOR ORM TO WORK PROPERLY WITH SUPERCLASS FIELDS
+	 *  SOME DECOUPLING OF FIELDS STORED IN REGISTRATION DATA
+	 *********************/
+
+	public String getTitle() {
+		return (String)getAttribute(RegistrationMap.TITLE.getFieldId());
+	}
+	public String getUpdates() {
+		return (String)getAttribute(RegistrationMap.UPDATES.getFieldId());
+	}
+	public String getFavoriteUpdates() {
+		return (String)getAttribute(RegistrationMap.FAVORITEUPDATES.getFieldId());
+	}
+	public String getCompany() {
+		return (String)getAttribute(RegistrationMap.COMPANY.getFieldId());
+	}
+	public String getCompanyUrl() {
+		return (String)getAttribute(RegistrationMap.COMPANYURL.getFieldId());
+	}
+	public String getSource() {
+		return (String)getAttribute(RegistrationMap.SOURCE.getFieldId());
+	}
+	public Date getDemoDate() {
+		return formatDateField(getAttribute(RegistrationMap.DEMODT.getFieldId()));
+	}
+	public Date getTrainingDate() {
+		return formatDateField(getAttribute(RegistrationMap.TRAININGDT.getFieldId()));
+	}
+	public Date getInitialTrainingDate() {
+		return formatDateField(getAttribute(RegistrationMap.INITTRAININGDT.getFieldId()));
+	}
+	public Date getAdvancedTrainingDate() {
+		return formatDateField(getAttribute(RegistrationMap.ADVTRAININGDT.getFieldId()));
+	}
+	public Date getOtherTrainingDate() {
+		return formatDateField(getAttribute(RegistrationMap.OTHERTRAININGDT.getFieldId()));
+	}
+	public String getNotes() {
+		return (String)getAttribute(RegistrationMap.NOTES.getFieldId());
+	}
+	public String getJobCategory() {
+		return (String)getAttribute(RegistrationMap.JOBCATEGORY.getFieldId());
+	}
+	public String getJobLevel() {
+		return (String)getAttribute(RegistrationMap.JOBLEVEL.getFieldId());
+	}
+	public String getIndustry() {
+		return (String)getAttribute(RegistrationMap.INDUSTRY.getFieldId());
+	}
+	public String getDivisions() {
+		return (String)getAttribute(RegistrationMap.DIVISIONS.getFieldId());
+	}
+
+	/**
+	 * turns an object...likely a String...into a Date with our given default MM/DD/YYY format used site-wide
+	 * @param dt
+	 * @return
+	 */
+	private Date formatDateField(Object dt) {
+		if (dt == null) return null;
+		return Convert.formatDate(Convert.DATE_SLASH_PATTERN, (String)dt);
+	}
+
+	/*********************
+	 *  SOME OVERRIDES FOR O.R.M. TO WORK PROPERLY WITH SUPERCLASS FIELDS
 	 *********************/
 
 	@Column(name="profile_id")
