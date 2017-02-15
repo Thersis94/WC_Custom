@@ -2,6 +2,7 @@ package com.biomed.smarttrak.action;
 
 import org.apache.commons.lang.StringEscapeUtils;
 
+// WC custom
 import com.biomed.smarttrak.FinancialDashAction;
 import com.biomed.smarttrak.FinancialDashScenarioAction;
 import com.biomed.smarttrak.admin.AccountAction;
@@ -154,6 +155,9 @@ public class AdminControllerAction extends SimpleActionAdapter {
 				break;
 			case "list":
 				action = new ListAction();
+				break;
+			case "activityLog":
+				action = new UserActivityAction();
 				break;
 			default:
 				throw new ActionException("unknown action type:" + actionType);
