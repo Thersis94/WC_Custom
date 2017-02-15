@@ -3,10 +3,13 @@
  */
 package com.biomed.smarttrak.admin;
 
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
 import com.biomed.smarttrak.vo.UpdatesVO;
+import com.biomed.smarttrak.vo.UpdatesXRVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -18,6 +21,8 @@ import com.siliconmtn.security.StringEncrypter;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
+
+import opennlp.tools.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: UpdatesAction.java
@@ -86,10 +91,6 @@ public class UpdatesAction extends SBActionAdapter {
 
 		decryptNames(updates);
 
-		if (updateId != null) {
-			loadSections(req, schema);
-		}
-
 		putModuleData(updates);
 	}
 
@@ -103,7 +104,7 @@ public class UpdatesAction extends SBActionAdapter {
 		sql.append("from ").append(schema).append("biomedgps_update a ");
 		sql.append("inner join profile p on a.creator_profile_id=p.profile_id ");
 		sql.append("left outer join ").append(schema).append("biomedgps_update_section b ");
-		sql.append("on a.update_id=b.update_id ");		
+		sql.append("on a.update_id=b.update_id ");
 		if (updateId != null) sql.append("where a.update_id=? ");
 		sql.append("order by a.create_dt");
 
@@ -173,15 +174,61 @@ public class UpdatesAction extends SBActionAdapter {
 	 */
 	protected void saveRecord(ActionRequest req, boolean isDelete) throws ActionException {
 		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		UpdatesVO u = new UpdatesVO(req);
 		try {
 			if (isDelete) {
-				db.delete(new UpdatesVO(req));
+				db.delete(u);
 			} else {
-				db.save(new UpdatesVO(req));
+				db.save(u);
 
-				//TODO Save Sections.
+				if(StringUtil.isEmpty(u.getUpdateId())) {
+					u.setUpdateId(db.getGeneratedPKId());
+					for(UpdatesXRVO uxr : u.getSections()) {
+						uxr.setUpdateId(u.getUpdateId());
+					}
+				}
+				//Save Update Sections.
+				saveSections(u);
 			}
 		} catch (InvalidDataException | DatabaseException e) {
+			throw new ActionException(e);
+		}
+	}
+
+	/**
+	 * Delete old Update Sections and save new ones.
+	 * @param u
+	 * @throws ActionException
+	 * @throws InvalidDataException
+	 * @throws DatabaseException
+	 */
+	protected void saveSections(UpdatesVO u) throws ActionException, InvalidDataException, DatabaseException {
+
+		//Delete old Update Section XRs
+		deleteSections(u.getUpdateId());
+
+		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
+
+		//Save new Sections.
+		for(UpdatesXRVO uxr : u.getSections()) {
+			db.save(uxr);
+		}
+	}
+
+	/**
+	 * Delete old Update Section XRs 
+	 * @param updateId
+	 * @throws ActionException 
+	 */
+	private void deleteSections(String updateId) throws ActionException {
+		StringBuilder sql = new StringBuilder(100);
+		sql.append("delete from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("biomedgps_update_section where update_id = ?");
+
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, updateId);
+			ps.executeUpdate();
+		} catch (SQLException e) {
 			throw new ActionException(e);
 		}
 	}

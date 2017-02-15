@@ -9,10 +9,13 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import com.biomed.smarttrak.admin.UpdatesAction.UpdateType;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.http.session.SMTSession;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -36,7 +39,7 @@ public class UpdatesVO implements Serializable {
 	private String productId;
 	private String companyId;
 	private String titleTxt;
-	private String typeNm;
+	private int typeCd;
 	private String messageTxt;
 	private String twitterTxt;
 	private String creatorProfileId;
@@ -47,7 +50,7 @@ public class UpdatesVO implements Serializable {
 	private Date createDt;
 	private Date updateDt;
 
-	private List<String> sections;
+	private List<UpdatesXRVO> sections;
 	public UpdatesVO() {
 		sections = new ArrayList<>();
 	}
@@ -70,22 +73,21 @@ public class UpdatesVO implements Serializable {
 		SMTSession ses = req.getSession();
 		UserVO vo = (UserVO) ses.getAttribute(Constants.USER_DATA);
 		if(vo != null) {
-			this.creatorProfileId = StringUtil.checkVal(vo.getUserId());
+			this.creatorProfileId = StringUtil.checkVal(req.getParameter("creatorProfileId"), vo.getProfileId());
 		}
 		this.updateId = req.getParameter("updateId");
-		this.marketId = req.getParameter("marketId");
-		this.productId = req.getParameter("productId");
-		this.companyId = req.getParameter("companyId");
+		this.marketId = StringUtil.checkVal(req.getParameter("marketId"), null);
+		this.productId = StringUtil.checkVal(req.getParameter("productId"), null);
+		this.companyId = StringUtil.checkVal(req.getParameter("companyId"), null);
 		this.titleTxt = req.getParameter("titleTxt");
-		this.typeNm = req.getParameter("typeNm");
+		this.typeCd = Convert.formatInteger(req.getParameter("typeCd"));
 		this.messageTxt = req.getParameter("messageTxt");
 		this.twitterTxt = req.getParameter("twitterTxt");
 		this.statusCd = req.getParameter("statusCd");
-
-		if(req.hasParameter("sections")) {
-			String [] s = req.getParameterValues("sections");
+		if(req.hasParameter("sectionId")) {
+			String [] s = req.getParameterValues("sectionId");
 			for(String sec : s) {
-				this.sections.add(sec);
+				this.sections.add(new UpdatesXRVO(updateId, sec));
 			}
 		}
 	}
@@ -93,7 +95,7 @@ public class UpdatesVO implements Serializable {
 	/**
 	 * @return the updateId
 	 */
-	@Column(name="update_id", isPrimaryKey=true, isAutoGen=true)
+	@Column(name="update_id", isPrimaryKey=true)
 	public String getUpdateId() {
 		return updateId;
 	}
@@ -133,11 +135,18 @@ public class UpdatesVO implements Serializable {
 	/**
 	 * @return the typeNm
 	 */
-	@Column(name="type_nm")
-	public String getTypeNm() {
-		return typeNm;
+	@Column(name="type_cd")
+	public int getTypeCd() {
+		return typeCd;
 	}
 
+	public String getTypeNm() {
+		UpdateType t = getType();
+		if(t != null)
+			return t.getText();
+		else
+			return "";
+	}
 	/**
 	 * @return the messageTxt
 	 */
@@ -212,8 +221,14 @@ public class UpdatesVO implements Serializable {
 	/**
 	 * @return the sections
 	 */
-	public List<String> getSections() {
+	public List<UpdatesXRVO> getSections() {
 		return sections;
+	}
+
+	@BeanSubElement()
+	public void addUpdateXrVO(UpdatesXRVO u) {
+		if(u != null)
+			this.sections.add(u);
 	}
 
 	/**
@@ -254,8 +269,8 @@ public class UpdatesVO implements Serializable {
 	/**
 	 * @param typeNm the typeNm to set.
 	 */
-	public void setTypeNm(String typeNm) {
-		this.typeNm = typeNm;
+	public void setTypeCd(int typeCd) {
+		this.typeCd = typeCd;
 	}
 
 	/**
@@ -324,7 +339,36 @@ public class UpdatesVO implements Serializable {
 	/**
 	 * @param sections the sections to set.
 	 */
-	public void setSections(List<String> sections) {
+	public void setSections(List<UpdatesXRVO> sections) {
 		this.sections = sections;
+	}
+
+	/**
+	 * Helper method gets the UpdateType for the internal typeCd.
+	 * @return
+	 */
+	public UpdateType getType() {
+		switch(typeCd) {
+			case 12 :
+				return UpdateType.MARKET;
+			case 15 :
+				return UpdateType.REVENUES;
+			case 17 :
+				return UpdateType.NEW_PRODUCTS;
+			case 20 :
+				return UpdateType.DEALS_FINANCING;
+			case 30 :
+				return UpdateType.CLINICAL_REGULATORY;
+			case 35 :
+				return UpdateType.PATENTS;
+			case 37 :
+				return UpdateType.REIMBURSEMENT;
+			case 38 :
+				return UpdateType.ANNOUNCEMENTS;
+			case 40 :
+				return UpdateType.STUDIES;
+			default :
+				return null;
+		}
 	}
 }
