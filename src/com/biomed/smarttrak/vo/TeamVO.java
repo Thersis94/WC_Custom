@@ -1,5 +1,6 @@
 package com.biomed.smarttrak.vo;
 
+import java.io.Serializable;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 // Java 7
@@ -22,7 +23,8 @@ import com.siliconmtn.util.Convert;
  <b>Changes:</b> 
  ***************************************************************************/
 @Table(name="BIOMEDGPS_TEAM")
-public class TeamVO {
+public class TeamVO implements Serializable {
+	private static final long serialVersionUID = 2439528902387069016L;
 	private String accountId;
 	private String teamId;
 	private String teamName;
