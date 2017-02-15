@@ -1,6 +1,6 @@
-package com.biomed.smarttrak.admin.user;
+package com.biomed.smarttrak.vo;
 
-//Java 7
+//Java 8
 import java.util.Calendar;
 import java.util.Date;
 
