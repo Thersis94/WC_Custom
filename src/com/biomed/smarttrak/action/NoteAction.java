@@ -12,22 +12,22 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-
 //WC custom
 import com.biomed.smarttrak.vo.NoteVO;
-
+import com.biomed.smarttrak.vo.TeamVO;
+import com.biomed.smarttrak.vo.UserVO;
 //STM baselibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
-
 //WebCrescendo
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
@@ -48,7 +48,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @updates:
  ****************************************************************************/
 public class NoteAction extends SBActionAdapter {
-	
+
 	public enum NoteType {
 		COMPANY,
 		PRODUCT,
@@ -61,7 +61,7 @@ public class NoteAction extends SBActionAdapter {
 	private final String ATTRIBUTE_ID = "attributeId";
 	private final String NOTE_TYPE = "noteType";
 	private final String NOTE_ENTITY_ID = "noteEntityId";
-	
+
 	public NoteAction() {
 		super();
 	}
@@ -87,56 +87,58 @@ public class NoteAction extends SBActionAdapter {
 		String companyId = StringUtil.checkVal(req.getParameter(COMPANY_ID));
 		String marketId = StringUtil.checkVal(req.getParameter(MARKET_ID));
 		String attributeId = StringUtil.checkVal(req.getParameter(ATTRIBUTE_ID));
+
 		String noteId = StringUtil.checkVal(req.getParameter("noteId"));
-		
+
 		String noteType = StringUtil.checkVal(req.getParameter(NOTE_TYPE));
 		String noteEntityId = StringUtil.checkVal(req.getParameter(NOTE_ENTITY_ID));
-
 		
 		Date cal = Convert.formatDate(new Date(), Calendar.HOUR_OF_DAY, 3);
 
 		try  {
 			StringEncrypter se = new StringEncrypter(encKey);
-		
+
 			String fileToken = se.encrypt(Long.toString(cal.getTime()));
 
 			log.debug("file token " + fileToken);
-			
-			
+
 			ModuleVO modVo = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 
-
+			SMTSession ses = req.getSession();
+			//if the request is for a particular note get that note
 			if (!noteId.isEmpty()){
 
-				//TODO replace with the dynamic User id and dynamic teams when it is finished
-				String userId = "8080";
+				UserVO uvo = (UserVO) ses.getAttribute(Constants.USER_DATA);
+				log.debug("teams=" + uvo.getTeams().size());
+				log.debug("user id = " + uvo.getUserId());
 
 				//send the userId so we are sure the requester can see the note.
-				NoteVO vo = getNote(noteId, userId);
+				NoteVO vo = getNote(noteId, uvo.getUserId());
 				modVo.setActionData(vo);
 			}
 
+			//if there is an id for a list of notes ret that list of notes
 			if (!productId.isEmpty() || !marketId.isEmpty()|| !companyId.isEmpty()){
-				modVo.setActionData(refreshNoteList(productId, marketId,companyId, attributeId));
+				modVo.setActionData(refreshNoteList(productId, marketId,companyId, attributeId,ses));
 			}
 
 			modVo.setAttribute("noteToken", fileToken );
 			modVo.setAttribute("primaryId", setPrimaryId(productId, companyId, marketId, attributeId));
-			
+
 			if (noteType.isEmpty()){
-			modVo.setAttribute(NOTE_TYPE, getNoteType(productId, companyId, marketId));
+				modVo.setAttribute(NOTE_TYPE, getNoteType(productId, companyId, marketId));
 			}else{
 				modVo.setAttribute(NOTE_TYPE, noteType);	
 			}
-			
+
 			modVo.setAttribute(ATTRIBUTE_ID, attributeId);
-			
+
 			if(noteEntityId.isEmpty()){
 				modVo.setAttribute(NOTE_ENTITY_ID, setEntityId(productId, companyId, marketId));
 			}else{
 				modVo.setAttribute(NOTE_ENTITY_ID, noteEntityId);
 			}
-			
+
 			attributes.put(Constants.MODULE_DATA, modVo);
 
 		} catch (EncryptionException e) {
@@ -175,7 +177,7 @@ public class NoteAction extends SBActionAdapter {
 		if (!StringUtil.isEmpty(marketId)){
 			return NoteType.MARKET.name();
 		}
-		
+
 		return null;
 	}
 
@@ -221,31 +223,46 @@ public class NoteAction extends SBActionAdapter {
 	 * @param productId 
 	 * @return
 	 */
-	private Object setPrimaryId(String productId, String companyId, String marketId, String attributeId) {
+	private String setPrimaryId(String productId, String companyId, String marketId, String attributeId) {
 		if (StringUtil.isEmpty(attributeId)){
 
 			return StringUtil.checkVal(productId, 
 					StringUtil.checkVal(companyId, marketId));
-			
+
 		}
 		return attributeId;
 	}
 
 	/**
+	 * used to return a single directly requested list of notes
 	 * @param productId
 	 * @param marketId
 	 * @param companyId
 	 * @param attributeId
+	 * @param ses2 
 	 * @return
 	 */
-	private List<NoteVO> refreshNoteList(String productId, String marketId,	String companyId, String attributeId) {
+	private List<NoteVO> refreshNoteList(String productId, String marketId,	String companyId, String attributeId, SMTSession ses) {
 
 		//in the generic note the key is the target id and the value is the note type
 		GenericVO type = calculateNoteType(marketId, productId, companyId);
 
-		//TODO replace with the dynamic User id and dynamic teams when it is finished
-		String userId = "8080";
-		List<String> teams = null;
+		UserVO uvo = (UserVO) ses.getAttribute(Constants.USER_DATA);
+		//if no user return an empty list
+		if (uvo == null){
+			log.debug("no logged in user");
+			return new ArrayList<>();
+		}
+
+		log.debug("teams=" + uvo.getTeams().size());
+		log.debug("user id = " + uvo.getUserId());
+
+		String userId = uvo.getUserId();
+		List<String> teams = new ArrayList<>();
+
+		for (TeamVO tvo : uvo.getTeams()){
+			teams.add(tvo.getTeamId());
+		}
 
 		List<String> attributes = Arrays.asList(attributeId);
 		List<String> targetIds = Arrays.asList((String)type.getKey());
@@ -255,10 +272,12 @@ public class NoteAction extends SBActionAdapter {
 		Map<String, List<NoteVO>> targetNotes = getNotes(userId, teams,attributes, targetIds, (NoteType)type.getValue() );		
 
 		if (targetNotes != null && targetNotes.containsKey(attributes.get(0))) {
+			log.debug("sending back a list of notes with the attribute id " + attributes.get(0));
 			return targetNotes.get(attributes.get(0));
 		}
 
-		if (targetNotes != null && targetNotes.containsKey(targetIds.get(0) )){
+		if (targetNotes != null && targetNotes.containsKey(targetIds.get(0)) && StringUtil.isEmpty(attributes.get(0))){
+			log.debug("sending back a list of notes with the company id ");
 			return targetNotes.get(targetIds.get(0));
 		}
 
@@ -291,17 +310,19 @@ public class NoteAction extends SBActionAdapter {
 		String noteType = StringUtil.checkVal(req.getParameter(NOTE_TYPE));
 		String attributeId = StringUtil.checkVal(req.getParameter(ATTRIBUTE_ID));
 		String noteEntityId = StringUtil.checkVal(req.getParameter(NOTE_ENTITY_ID));
-		
-		
+
+
 		DBProcessor db = new DBProcessor(dbConn, (String) attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		NoteVO vo= new NoteVO(req);
 
-		//TODO testing locally when ajax action is public.  change that after log in is correct.
-		//TODO biomed user data vo not present on request remove after that part is in place
-		vo.setUserId("8080");
-		
+		SMTSession ses = req.getSession();
+		UserVO uvo = (UserVO) ses.getAttribute(Constants.USER_DATA);
+		log.debug("user id = " + uvo.getUserId());
+
+		vo.setUserId(uvo.getUserId());
+
 		log.debug("companyId " + vo.getCompanyId());
-		
+
 		setTargetId(req, vo);
 
 		//if a user decided to not share the note, then the team id is set to null 
@@ -320,7 +341,7 @@ public class NoteAction extends SBActionAdapter {
 			modVo.setAttribute("newNote", vo);
 			log.debug("added new note " + vo);
 		}
-		
+
 		modVo.setAttribute(NOTE_TYPE, noteType);
 		modVo.setAttribute(ATTRIBUTE_ID, attributeId);
 		modVo.setAttribute(NOTE_ENTITY_ID, noteEntityId);
@@ -413,7 +434,7 @@ public class NoteAction extends SBActionAdapter {
 			appendSqlPlaceholder(teams.size(), sb);
 		}
 
-		sb.append(") and (EXPIRATION_DT > CURRENT_TIMESTAMP or EXPIRATION_DT is null) ");
+		sb.append(") and (n.EXPIRATION_DT > CURRENT_TIMESTAMP or n.EXPIRATION_DT is null) ");
 
 		return sb.toString();
 	}
@@ -500,7 +521,6 @@ public class NoteAction extends SBActionAdapter {
 			while (rs.next()) {
 
 				NoteVO vo = new NoteVO(rs);
-
 				String firstName = pm.getStringValue("FIRST_NM", rs.getString("FIRST_NM"));
 				String lastName = pm.getStringValue("LAST_NM", rs.getString("LAST_NM"));
 
