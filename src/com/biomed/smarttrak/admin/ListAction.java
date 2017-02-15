@@ -3,11 +3,12 @@ package com.biomed.smarttrak.admin;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.GenericVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -30,7 +31,7 @@ public class ListAction extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		String listType = req.getParameter("ajaxListType");
-		Map<String, String> vals = getList(listType);
+		List<GenericVO> vals = getList(listType);
 		putModuleData(vals, vals.size(), false);
 	}
 
@@ -41,7 +42,7 @@ public class ListAction extends SBActionAdapter {
 	 * @return
 	 * @throws ActionException 
 	 */
-	protected Map<String, String> getList(String listType) throws ActionException {
+	protected List<GenericVO> getList(String listType) throws ActionException {
 		String sql;
 		switch(ListType.valueOf(listType)) {
 			case COMPANY:
@@ -60,11 +61,11 @@ public class ListAction extends SBActionAdapter {
 				throw new ActionException("Invalid List Type.");
 		}
 
-		Map<String, String> vals = new LinkedHashMap<>(2000);
+		List<GenericVO> vals = new ArrayList<>(2000);
 		try(PreparedStatement ps = dbConn.prepareCall(sql)) {
 			ResultSet rs = ps.executeQuery();
 			while(rs.next())
-				vals.put(rs.getString("id"), rs.getString("val"));
+				vals.add(new GenericVO(rs.getString("id"), rs.getString("val")));
 
 		} catch (SQLException sqle) {
 			log.error("could not load select list options", sqle);
