@@ -2,17 +2,20 @@ package com.biomed.smarttrak.action;
 
 import org.apache.commons.lang.StringEscapeUtils;
 
+// WC custom
 import com.biomed.smarttrak.FinancialDashAction;
 import com.biomed.smarttrak.FinancialDashScenarioAction;
 import com.biomed.smarttrak.admin.AccountAction;
+import com.biomed.smarttrak.admin.AccountUserAction;
 import com.biomed.smarttrak.admin.CompanyManagementAction;
 import com.biomed.smarttrak.admin.ContentHierarchyAction;
 import com.biomed.smarttrak.admin.GapAnalysisAdminAction;
+import com.biomed.smarttrak.admin.ListAction;
 import com.biomed.smarttrak.admin.MarketManagementAction;
 import com.biomed.smarttrak.admin.ProductManagementAction;
 import com.biomed.smarttrak.admin.TeamAction;
 import com.biomed.smarttrak.admin.TeamMemberAction;
-
+import com.biomed.smarttrak.admin.UpdatesAction;
 //SMT base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -43,6 +46,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	// application constants  - these could be moved to sb_config if subject to change
 	public static final String PUBLIC_SITE_ID = "BMG_SMARTTRAK_1";
 	public static final String STAFF_ROLE_ID = "3eef678eb39e87277f000101dfd4f140";
+	public static final String REGISTRATION_GRP_ID = "ea884793b2ef163f7f0001011a253456";
 
 	public AdminControllerAction() {
 		super();
@@ -134,6 +138,9 @@ public class AdminControllerAction extends SimpleActionAdapter {
 			case "accounts":
 				action = new AccountAction();
 				break;
+			case "users":
+				action = new AccountUserAction();
+				break;
 			case "teams":
 				action = new TeamAction();
 				break;
@@ -142,6 +149,15 @@ public class AdminControllerAction extends SimpleActionAdapter {
 				break;
 			case "marketAdmin":
 				action = new MarketManagementAction();
+				break;
+			case "updates":
+				action = new UpdatesAction();
+				break;
+			case "list":
+				action = new ListAction();
+				break;
+			case "activityLog":
+				action = new UserActivityAction();
 				break;
 			default:
 				throw new ActionException("unknown action type:" + actionType);

@@ -13,8 +13,10 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title</b>: SaveStateVO.java
@@ -63,9 +65,13 @@ public class SaveStateVO implements Serializable {
 	}
 
 	protected void setData(ActionRequest req) {
+		SMTSession ses = req.getSession();
+		UserVO vo = (UserVO) ses.getAttribute(Constants.USER_DATA);
+		if(vo != null) {
+			this.userId = StringUtil.checkVal(vo.getUserId());
+		}
+
 		this.saveStateId = req.getParameter("saveStateId");
-		//TODO Make actual userId lookup.
-		this.userId = StringUtil.checkVal(req.getParameter("userId"), "user1");
 		this.layoutNm = req.getParameter("layoutNm");
 		this.orderNo = Convert.formatInteger(req.getParameter("orderNo"));
 		this.saveData = StringEscapeUtils.unescapeHtml(req.getParameter("saveData"));

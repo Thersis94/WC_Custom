@@ -3,6 +3,7 @@ package com.biomed.smarttrak.vo;
 //Java 7
 import java.util.Date;
 
+import com.biomed.smarttrak.admin.user.HumanNameIntfc;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
@@ -22,7 +23,7 @@ import com.siliconmtn.util.Convert;
  <b>Changes:</b> 
  ***************************************************************************/
 @Table(name="BIOMEDGPS_ACCOUNT")
-public class AccountVO {
+public class AccountVO implements HumanNameIntfc {
 	private String accountId;
 	private String companyId;
 	private String accountName;

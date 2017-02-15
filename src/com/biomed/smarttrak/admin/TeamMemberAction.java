@@ -3,7 +3,6 @@ package com.biomed.smarttrak.admin;
 //Java 7
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 // SMTBaseLibs
@@ -13,9 +12,6 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.security.EncryptionException;
-import com.siliconmtn.security.StringEncrypter;
-import com.siliconmtn.util.StringUtil;
 
 // WebCrescendo
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -23,6 +19,8 @@ import com.smt.sitebuilder.common.constants.Constants;
 
 //WC_Custom
 import com.biomed.smarttrak.vo.TeamMemberVO;
+import com.biomed.smarttrak.admin.user.HumanNameIntfc;
+import com.biomed.smarttrak.admin.user.NameComparator;
 
 /*****************************************************************************
  <p><b>Title</b>: TeamMemberAction.java</p>
@@ -71,8 +69,8 @@ public class TeamMemberAction extends SBActionAdapter {
 
 		//decrypt the owner profiles
 		decryptNames(data);
-
 		Collections.sort(data, new NameComparator());
+		
 		putModuleData(data);
 	}
 
@@ -81,23 +79,9 @@ public class TeamMemberAction extends SBActionAdapter {
 	 * loop and decrypt owner names, which came from the profile table
 	 * @param accounts
 	 */
-	protected void decryptNames(List<Object>  data) {
-		StringEncrypter se;
-		try {
-			se = new StringEncrypter((String)getAttribute(Constants.ENCRYPT_KEY));
-		} catch (EncryptionException e1) {
-			return; //cannot use the decrypter, fail fast
-		}
-
-		for (Object o : data) {
-			try {
-				TeamMemberVO acct = (TeamMemberVO) o;
-				acct.setFirstName(se.decrypt(acct.getFirstName()));
-				acct.setLastName(se.decrypt(acct.getLastName()));
-			} catch (Exception e) {
-				//ignoreable
-			}
-		}
+	@SuppressWarnings("unchecked")
+	protected void decryptNames(List<Object> data) {
+		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)data, (String)getAttribute(Constants.ENCRYPT_KEY));
 	}
 
 
@@ -153,32 +137,6 @@ public class TeamMemberAction extends SBActionAdapter {
 			}
 		} catch (InvalidDataException | DatabaseException e) {
 			throw new ActionException(e);
-		}
-	}
-
-
-	/****************************************************************************
-	 * <b>Title</b>: NameComparator.java<p/>
-	 * <b>Description: Compares TeamMemberVO and sorts them by name</b> 
-	 * <p/>
-	 * <b>Copyright:</b> Copyright (c) 2017<p/>
-	 * <b>Company:</b> Silicon Mountain Technologies<p/>
-	 * @author James McKain
-	 * @version 1.0
-	 * @since Feb 11, 2017
-	 ****************************************************************************/
-	protected class NameComparator implements Comparator<Object> {
-
-		/* (non-Javadoc)
-		 * @see java.lang.Comparable#compareTo(java.lang.Object)
-		 */
-		@Override
-		public int compare(Object o1, Object o2) {
-			TeamMemberVO vo1 = (TeamMemberVO) o1;
-			String name1 = vo1.getFirstName() + vo1.getLastName();
-			TeamMemberVO vo2 = (TeamMemberVO) o2;
-			String name2 = vo2.getFirstName() + vo2.getLastName();
-			return StringUtil.checkVal(name1).compareTo(name2);
 		}
 	}
 }
