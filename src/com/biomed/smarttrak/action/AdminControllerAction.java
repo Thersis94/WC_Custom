@@ -5,6 +5,7 @@ import org.apache.commons.lang.StringEscapeUtils;
 import com.biomed.smarttrak.FinancialDashAction;
 import com.biomed.smarttrak.FinancialDashScenarioAction;
 import com.biomed.smarttrak.admin.AccountAction;
+import com.biomed.smarttrak.admin.AccountUserAction;
 import com.biomed.smarttrak.admin.CompanyManagementAction;
 import com.biomed.smarttrak.admin.ContentHierarchyAction;
 import com.biomed.smarttrak.admin.GapAnalysisAdminAction;
@@ -44,6 +45,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	// application constants  - these could be moved to sb_config if subject to change
 	public static final String PUBLIC_SITE_ID = "BMG_SMARTTRAK_1";
 	public static final String STAFF_ROLE_ID = "3eef678eb39e87277f000101dfd4f140";
+	public static final String REGISTRATION_GRP_ID = "ea884793b2ef163f7f0001011a253456";
 
 	public AdminControllerAction() {
 		super();
@@ -134,6 +136,9 @@ public class AdminControllerAction extends SimpleActionAdapter {
 				break;
 			case "accounts":
 				action = new AccountAction();
+				break;
+			case "users":
+				action = new AccountUserAction();
 				break;
 			case "teams":
 				action = new TeamAction();
