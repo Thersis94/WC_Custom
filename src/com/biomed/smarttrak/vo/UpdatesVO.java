@@ -19,11 +19,11 @@ import com.smt.sitebuilder.common.constants.Constants;
 /****************************************************************************
  * <b>Title</b>: UpdatesVO.java
  * <b>Project</b>: WC_Custom
- * <b>Description: </b> TODO
+ * <b>Description: </b> VO for managing Biomed Updates.
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
  * 
- * @author raptor
+ * @author Billy Larsen
  * @version 1.0
  * @since Feb 14, 2017
  ****************************************************************************/
@@ -197,7 +197,7 @@ public class UpdatesVO implements Serializable {
 	/**
 	 * @return the firstNm
 	 */
-	@Column(name="first_nm")
+	@Column(name="first_nm", isReadOnly=true)
 	public String getFirstNm() {
 		return firstNm;
 	}
@@ -205,7 +205,7 @@ public class UpdatesVO implements Serializable {
 	/**
 	 * @return the lastNm
 	 */
-	@Column(name="last_nm")
+	@Column(name="last_nm", isReadOnly=true)
 	public String getLastNm() {
 		return lastNm;
 	}

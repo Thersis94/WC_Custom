@@ -33,6 +33,33 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class UpdatesAction extends SBActionAdapter {
 	protected static final String UPDATE_ID = "updateId"; //req param
 
+	public enum UpdateType {
+		MARKET(12, "Market"),
+		REVENUES(15, "Revenues"),
+		NEW_PRODUCTS(17, "New Products"),
+		DEALS_FINANCING(20, "Deals/Financing"),
+		CLINICAL_REGULATORY(30, "Clinical/Regulatory"),
+		PATENTS(35, "Patents"),
+		REIMBURSEMENT(37, "Reimbursement"),
+		ANNOUNCEMENTS(38, "Announcements"),
+		STUDIES(40, "Studies");
+
+		private int val;
+		private String text;
+
+		UpdateType(int val, String text) {
+			this.val = val;
+			this.text = text;
+		}
+
+		public int getVal() {
+			return this.val;
+		}
+		public String getText() {
+			return this.text;
+		}
+	}
+
 	public UpdatesAction() {
 		super();
 	}
@@ -151,6 +178,8 @@ public class UpdatesAction extends SBActionAdapter {
 				db.delete(new UpdatesVO(req));
 			} else {
 				db.save(new UpdatesVO(req));
+
+				//TODO Save Sections.
 			}
 		} catch (InvalidDataException | DatabaseException e) {
 			throw new ActionException(e);
