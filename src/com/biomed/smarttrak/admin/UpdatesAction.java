@@ -34,15 +34,15 @@ public class UpdatesAction extends SBActionAdapter {
 	protected static final String UPDATE_ID = "updateId"; //req param
 
 	public enum UpdateType {
-		Market(12, "Market"),
-		Revenues(15, "Revenues"),
-		NewProducts(17, "New Products"),
-		DealsFinancing(20, "Deals/Financing"),
-		ClinicalRegulatory(30, "Clinical/Regulatory"),
-		Patents(35, "Patents"),
-		Reimbursement(37, "Reimbursement"),
-		Announcements(38, "Announcements"),
-		Studies(40, "Studies");
+		MARKET(12, "Market"),
+		REVENUES(15, "Revenues"),
+		NEW_PRODUCTS(17, "New Products"),
+		DEALS_FINANCING(20, "Deals/Financing"),
+		CLINICAL_REGULATORY(30, "Clinical/Regulatory"),
+		PATENTS(35, "Patents"),
+		REIMBURSEMENT(37, "Reimbursement"),
+		ANNOUNCEMENTS(38, "Announcements"),
+		STUDIES(40, "Studies");
 
 		private int val;
 		private String text;
@@ -178,6 +178,8 @@ public class UpdatesAction extends SBActionAdapter {
 				db.delete(new UpdatesVO(req));
 			} else {
 				db.save(new UpdatesVO(req));
+
+				//TODO Save Sections.
 			}
 		} catch (InvalidDataException | DatabaseException e) {
 			throw new ActionException(e);

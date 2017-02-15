@@ -197,7 +197,7 @@ public class UpdatesVO implements Serializable {
 	/**
 	 * @return the firstNm
 	 */
-	@Column(name="first_nm")
+	@Column(name="first_nm", isReadOnly=true)
 	public String getFirstNm() {
 		return firstNm;
 	}
@@ -205,7 +205,7 @@ public class UpdatesVO implements Serializable {
 	/**
 	 * @return the lastNm
 	 */
-	@Column(name="last_nm")
+	@Column(name="last_nm", isReadOnly=true)
 	public String getLastNm() {
 		return lastNm;
 	}

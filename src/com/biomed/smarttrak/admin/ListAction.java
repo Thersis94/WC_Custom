@@ -7,10 +7,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
-import com.biomed.smarttrak.admin.UpdatesAction.UpdateType;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -30,7 +28,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class ListAction extends SBActionAdapter {
 
-	public enum ListType {COMPANY, PRODUCT, MARKET, UPDATE_TYPE}
+	public enum ListType {COMPANY, PRODUCT, MARKET}
 
 	public void retrieve(ActionRequest req) throws ActionException {
 		String listType = req.getParameter("ajaxListType");
@@ -58,8 +56,6 @@ public class ListAction extends SBActionAdapter {
 			case PRODUCT:
 				sql = getProductSql();
 				break;
-			case UPDATE_TYPE:
-				return getUpdateTypes();
 			default:
 				throw new ActionException("Invalid List Type.");
 		}
@@ -75,20 +71,6 @@ public class ListAction extends SBActionAdapter {
 		} catch (SQLException e) {
 			log.error(e);
 		}
-		return vals;
-	}
-
-	/**
-	 * Return List of UpdateTypes.
-	 * @return
-	 */
-	private Map<String, String> getUpdateTypes() {
-		Map<String, String> vals = new LinkedHashMap<>();
-
-		for(UpdateType u : UpdateType.values()) {
-			vals.put("" + u.getVal(), u.getText());
-		}
-
 		return vals;
 	}
 
