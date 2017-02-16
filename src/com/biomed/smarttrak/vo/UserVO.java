@@ -38,21 +38,6 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	private Date createDate;
 	private Date updateDate;
 
-	public UserVO() {
-		teams = new ArrayList<>();
-	}
-
-	public UserVO(ActionRequest req) {
-		super(req);
-		teams = new ArrayList<>();
-		setUserId(req.getParameter("userId"));
-		setAccountId(req.getParameter("accountId"));
-		setRegisterSubmittalId(req.getParameter("registerSubmittalId"));
-		setStatusCode(req.getParameter("statusCode"));
-		setExpirationDate(Convert.formatDate(Convert.DATE_SLASH_PATTERN, req.getParameter("expirationDate")));
-		populateRegistrationFields(req);
-	}
-
 	/**
 	 * Smarttrak status dropdowns - stored in the DB using code, label displayed on user mgmt screens.
 	 */
@@ -88,7 +73,7 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		TITLE("dd64d07fb37c2c067f0001012b4210ff", "title"),
 		UPDATES("9b079506b37cc0de7f0001014b63ad3c", "updates"),
 		FAVORITEUPDATES("d5ed674eb37da7fd7f000101d875b114", "favUpdates"),
-		COMPANY("e6890a383eecc13f0a001421223e1a8b", "comany"),
+		COMPANY("e6890a383eecc13f0a001421223e1a8b", "company"),
 		COMPANYURL("8e326f4c3ef49ae10a0014218aae436b", "companyUrl"),
 		//below are all on the 'sales' tab on the admin edit form
 		SOURCE("9cc5d1003ef592210a001421ccb8df2e", "source"),
@@ -111,6 +96,21 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		}
 		public String getFieldId() { return fieldId; }
 		public String getReqParam() { return reqParam; }
+	}
+
+	public UserVO() {
+		teams = new ArrayList<>();
+	}
+
+	public UserVO(ActionRequest req) {
+		super(req);
+		teams = new ArrayList<>();
+		setUserId(req.getParameter("userId"));
+		setAccountId(req.getParameter("accountId"));
+		setRegisterSubmittalId(req.getParameter("registerSubmittalId"));
+		setStatusCode(req.getParameter("statusCode"));
+		setExpirationDate(Convert.formatDate(Convert.DATE_SLASH_PATTERN, req.getParameter("expirationDate")));
+		populateRegistrationFields(req);
 	}
 
 

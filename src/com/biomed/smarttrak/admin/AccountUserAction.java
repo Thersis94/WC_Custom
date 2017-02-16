@@ -3,7 +3,9 @@ package com.biomed.smarttrak.admin;
 //Java 7
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
@@ -13,18 +15,24 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.security.UserDataVO;
+import com.siliconmtn.util.StringUtil;
+
 // WebCrescendo
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.registration.RegistrationAction;
 import com.smt.sitebuilder.action.registration.ResponseLoader;
+import com.smt.sitebuilder.action.registration.SubmittalAction;
+import com.smt.sitebuilder.action.registration.SubmittalDataVO;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 //WC_Custom
 import com.biomed.smarttrak.vo.UserVO;
+import com.biomed.smarttrak.vo.UserVO.RegistrationMap;
 import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.admin.user.HumanNameIntfc;
 import com.biomed.smarttrak.admin.user.NameComparator;
@@ -133,25 +141,29 @@ public class AccountUserAction extends SBActionAdapter {
 		rl.loadRegistrationResponses(user, AdminControllerAction.PUBLIC_SITE_ID);
 
 		//load the user's profile data
-		loadProfileData(user, req);
+		callProfileManager(user, req, false);
 
 		users.set(0, user); //make sure the record gets back on the list, though it probably does by reference anyways
 	}
 
 
 	/**
-	 * loads the users profile record from the WC core
+	 * Calls ProfileManager for both read and write transaction for core user data
 	 * @param user
 	 * @param req
 	 */
-	protected void loadProfileData(UserVO user, ActionRequest req) {
+	protected void callProfileManager(UserVO user, ActionRequest req, boolean isSave) {
 		//load the users profile data
-		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		ProfileManager pm = ProfileManagerFactory.getInstance(getAttributes());
 		try {
-			UserDataVO vo = pm.getProfile(user.getProfileId(), dbConn, ProfileManager.PROFILE_ID_LOOKUP, site.getOrganizationId());
-			user.setData(vo.getDataMap());
-		} catch (com.siliconmtn.exception.DatabaseException de) {
+			if (isSave) {
+				pm.updateProfile(user, dbConn);
+			} else {
+				SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+				UserDataVO vo = pm.getProfile(user.getProfileId(), dbConn, ProfileManager.PROFILE_ID_LOOKUP, site.getOrganizationId());
+				user.setData(vo.getDataMap());
+			}
+		} catch (com.siliconmtn.exception.DatabaseException de) { //this is a different DatabaseException than DBProcessor
 			log.error("could not load user profile", de);
 		}
 	}
@@ -193,7 +205,54 @@ public class AccountUserAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		saveRecord(req, false);
+		UserVO user = new UserVO(req);
+
+		//save their WC profile
+		callProfileManager(user, req, true);
+
+		//save their registration data
+		saveRegistrationData(req, user);
+
+		//save their UserVO (smarttrak user table)
+		saveRecord(req, user, false);
+
+		setupRedirect(req);
+	}
+
+
+	/**
+	 * Transposes the registration fields off the request into a list of Fields, and passes them to the 
+	 * Registration action to be saved.
+	 * @param req
+	 * @param user
+	 * @throws ActionException
+	 */
+	protected void saveRegistrationData(ActionRequest req, UserVO user) throws ActionException {
+		SubmittalAction sa = new SubmittalAction();
+		sa.setAttributes(getAttributes());
+		sa.setDBConnection(dbConn);
+		Set<String> formFields = new HashSet<>(30);
+
+		//possibly create a new registration record.  This would be for the 'add user' scenario
+		if (StringUtil.isEmpty(user.getRegisterSubmittalId())) {
+			req.setParameter(SBActionAdapter.SB_ACTION_ID, AdminControllerAction.REGISTRATION_GRP_ID);
+			user.setRegisterSubmittalId(sa.insertRegisterSubmittal(req, user.getProfileId(), AdminControllerAction.PUBLIC_SITE_ID));
+		}
+
+		//build a list of values to insert based on the ones we're going to delete
+		List<SubmittalDataVO> regData = new ArrayList<>();
+		SubmittalDataVO vo;
+		for (RegistrationMap field : UserVO.RegistrationMap.values()) {
+			vo = new SubmittalDataVO(null);
+			vo.setRegisterFieldId(field.getFieldId());
+			vo.setUserValue(req.getParameter(field.getReqParam()));
+			regData.add(vo);
+			formFields.add(field.getFieldId());
+		}
+
+		//put the fields we're going to be saving onto the request - Registration won't save what we can't prove we're passing
+		req.setParameter("formFields", formFields.toArray(new String[formFields.size()]) , Boolean.TRUE);
+		sa.updateRegisterData(req, user, user.getRegisterSubmittalId(), regData, false); //false = do not reload responses onto session
 	}
 
 
@@ -202,7 +261,23 @@ public class AccountUserAction extends SBActionAdapter {
 	 */
 	@Override
 	public void delete(ActionRequest req) throws ActionException {
-		saveRecord(req, true);
+		saveRecord(req, new UserVO(req), true); //we're going to delete them from Smartrak here, but not from the WC core
+		setupRedirect(req);
+	}
+
+
+	/**
+	 * builds the redirect URL that takes us back to the list of teams page.
+	 * @param req
+	 */
+	protected void setupRedirect(ActionRequest req) {
+		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+		StringBuilder url = new StringBuilder(200);
+		url.append(page.getFullPath());
+		url.append("?actionType=").append(req.getParameter("actionType"));
+		url.append("&accountId=").append(req.getParameter("accountId"));
+		url.append("&accountName=").append(AdminControllerAction.urlEncode(req.getParameter("accountName")));
+		req.setAttribute(Constants.REDIRECT_URL, url.toString());
 	}
 
 
@@ -212,13 +287,13 @@ public class AccountUserAction extends SBActionAdapter {
 	 * @param isDelete
 	 * @throws ActionException
 	 */
-	protected void saveRecord(ActionRequest req, boolean isDelete) throws ActionException {
+	protected void saveRecord(ActionRequest req, UserVO user, boolean isDelete) throws ActionException {
 		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		try {
 			if (isDelete) {
-				db.delete(new UserVO(req));
+				db.delete(user);
 			} else {
-				db.save(new UserVO(req));
+				db.save(user);
 			}
 		} catch (InvalidDataException | DatabaseException e) {
 			throw new ActionException(e);
