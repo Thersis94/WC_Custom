@@ -79,6 +79,9 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 			for (int i = 0; i < regionCnt; i++) {
 				ps.setString(++idx, dash.getCountryTypes().get(i).name());
 			}
+			if (!"".equals(dash.getCompanyId())) {
+				ps.setString(++idx, dash.getCompanyId());
+			}
 			ps.setInt(++idx, dash.getColHeaders().getCalendarYear());
 			
 			ResultSet rs = ps.executeQuery();
@@ -266,8 +269,8 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 
 		String sectionId = StringUtil.checkVal(req.getParameter("sectionId"));
 		String scenarioId = StringUtil.checkVal(req.getParameter("scenarioId"));
-		String countryType = StringUtil.checkVal(req.getParameter("countryType"));
-		int year = Convert.formatInteger(StringUtil.checkVal(req.getParameter("year")));
+		String countryType = StringUtil.checkVal(req.getParameter("pubCountryType"));
+		int year = Convert.formatInteger(StringUtil.checkVal(req.getParameter("calendarYear")));
 		
 		// We pass scenarioId to the base data for efficiency, to get only the related records
 		// that are also in the scenario, rather than getting every record.
@@ -359,6 +362,11 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 	 * @throws ActionException 
 	 */
 	protected void updateAllScenarios(Map<String, FinancialDashRevenueVO> baseData, Map<String, FinancialDashScenarioOverlayVO> overlayData, String sectionId, String countryType, int year) throws ActionException {
+		// Get the overlay's scenario id so we can exclude it. It doesn't need to be updated
+		// since this is the one we're updating from.
+		Entry<String, FinancialDashScenarioOverlayVO> entry = overlayData.entrySet().iterator().next();
+		String overlayScenarioId = entry.getValue().getScenarioId();
+		
 		// Get the list of scenarios that will need to be updated
 		FinancialDashScenarioAction sa = new FinancialDashScenarioAction(this.actionInit);
 		sa.setAttributes(this.attributes);
@@ -367,6 +375,10 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 		
 		// Loop through each scenario to update
 		for (FinancialDashScenarioVO scenario : scenarios) {
+			if (scenario.getScenarioId().equals(overlayScenarioId)) {
+				continue;
+			}
+			
 			Map<String, FinancialDashScenarioOverlayVO> scenarioData = getScenarioData(sectionId, countryType, year, scenario.getScenarioId());
 			updateScenario(baseData, overlayData, scenarioData);
 		}

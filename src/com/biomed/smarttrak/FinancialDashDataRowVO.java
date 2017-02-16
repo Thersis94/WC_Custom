@@ -28,6 +28,7 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 	private static final long serialVersionUID = 1L;
 	private String name;
 	private String primaryKey;
+	private String companyId;
 	private Map<String, FinancialDashDataColumnVO> columns;
 	
 	/**
@@ -54,6 +55,7 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 		
 		this.setName(util.getStringVal("ROW_NM", rs));
 		this.setPrimaryKey(util.getStringVal("ROW_ID", rs));
+		this.setCompanyId(util.getStringVal("COMPANY_ID", rs));
 		this.setColumns(util, rs);
 	}
 
@@ -76,6 +78,13 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 	 */
 	public String getPrimaryKey() {
 		return primaryKey;
+	}
+
+	/**
+	 * @return the companyId
+	 */
+	public String getCompanyId() {
+		return companyId;
 	}
 
 	/**
@@ -137,6 +146,13 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 	 */
 	public void setPrimaryKey(String primaryKey) {
 		this.primaryKey = primaryKey;
+	}
+
+	/**
+	 * @param companyId the companyId to set
+	 */
+	public void setCompanyId(String companyId) {
+		this.companyId = companyId;
 	}
 
 	/**
