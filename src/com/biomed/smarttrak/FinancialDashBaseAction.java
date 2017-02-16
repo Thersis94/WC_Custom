@@ -118,9 +118,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		cha.retrieve(req);
 		
 		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
-		List<Node> sections = (List<Node>) mod.getActionData();
-		
-		return sections;
+		return (List<Node>) mod.getActionData();
 	}
 	
 	/**

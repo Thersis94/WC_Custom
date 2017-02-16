@@ -280,25 +280,25 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 	}
 	
 	/**
-	 * Sets the parent/grandparent in the hierarchy applicable to this data row
+	 * Sets the parent/grandparent in the hierarchy applicable to this particular data row
 	 * 
 	 * @param tree
 	 */
 	public void setAncestry(Tree tree) {
-		String parentId = null;
-		String grandparentId = null;
+		String pId = null;
+		String gpId = null;
 		
 		Node childNode = tree.findNode(this.getPrimaryKey());
 		if (childNode != null) {
-			parentId = childNode.getParentId();
+			pId = childNode.getParentId();
 			
-			Node parentNode = tree.findNode(parentId);
+			Node parentNode = tree.findNode(pId);
 			if (parentNode != null) {
-				grandparentId = parentNode.getParentId();
+				gpId = parentNode.getParentId();
 			}
 		}
 		
-		this.setParentId(parentId);
-		this.setGrandparentId(grandparentId);
+		this.setParentId(pId);
+		this.setGrandparentId(gpId);
 	}
 }
