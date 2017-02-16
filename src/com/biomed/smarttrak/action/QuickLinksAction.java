@@ -1,11 +1,17 @@
 package com.biomed.smarttrak.action;
 
+import java.util.List;
+import java.util.Map;
+
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.session.SMTSession;
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.util.PageViewVO;
 
 /*****************************************************************************
  <p><b>Title</b>: QuickLinksAction.java</p>
@@ -73,15 +79,19 @@ public class QuickLinksAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
+	@SuppressWarnings("unchecked")
 	protected void loadFavorites(ActionRequest req) throws ActionException {
 		// call FavoritesAction
 		ActionInterface ai = new FavoritesAction(actionInit);
 		ai.setAttributes(getAttributes());
 		ai.setDBConnection(dbConn);
-		
 		ai.retrieve(req);
-		
-		req.getSession().setAttribute(USER_FAVORITES, new Object());
+		ModuleVO mod = (ModuleVO)getAttribute(Constants.MODULE_DATA);
+		if (! mod.getErrorCondition()) {
+			SMTSession sess = req.getSession();
+			Map<String, List<PageViewVO>> fv = (Map<String, List<PageViewVO>>) mod.getActionData();
+			sess.setAttribute(USER_FAVORITES,fv);
+		}
 	}
 	
 	/**
@@ -89,35 +99,46 @@ public class QuickLinksAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
+	@SuppressWarnings("unchecked")
 	protected void loadRecentlyViewed(ActionRequest req) throws ActionException {
 		// call RecentlyViewedAction
 		ActionInterface ai = new RecentlyViewedAction(actionInit);
 		ai.setAttributes(getAttributes());
 		ai.setDBConnection(dbConn);
-		
 		ai.retrieve(req);
-		
-		req.getSession().setAttribute(USER_RECENTLY_VIEWED, new Object());
+		ModuleVO mod = (ModuleVO)getAttribute(Constants.MODULE_DATA);
+		if (! mod.getErrorCondition()) {
+			SMTSession sess = req.getSession();
+			Map<String, List<PageViewVO>> rv = (Map<String, List<PageViewVO>>) mod.getActionData();
+			sess.setAttribute(USER_RECENTLY_VIEWED,rv);
+		}
 	}
 	
 	/**
 	 * 
 	 * @param req
+	 * @throws ActionException 
 	 */
-	protected void manageFavorites(ActionRequest req) {
+	protected void manageFavorites(ActionRequest req) 
+			throws ActionException {
 		// manage Favorites session obj
-		Object favs = (Object)req.getSession().getAttribute(USER_FAVORITES);
-		if (favs == null) return;
+		ActionInterface ai = new FavoritesAction(actionInit);
+		ai.setAttributes(getAttributes());
+		ai.setDBConnection(dbConn);
+		ai.build(req);
 	}
 	
 	/**
 	 * 
 	 * @param req
+	 * @throws ActionException 
 	 */
-	protected void manageRecentlyViewed(ActionRequest req) {
+	protected void manageRecentlyViewed(ActionRequest req) 
+			throws ActionException {
 		// manage Recently Viewed session obj
-		Object rv = (Object)req.getSession().getAttribute(USER_RECENTLY_VIEWED);
-		if (rv == null) return;
+		ActionInterface ai = new RecentlyViewedAction(actionInit);
+		ai.setAttributes(getAttributes());
+		ai.setDBConnection(dbConn);
+		ai.build(req);
 	}
-	
 }
