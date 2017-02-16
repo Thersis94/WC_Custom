@@ -8,6 +8,8 @@ import java.util.Map;
 
 import org.apache.log4j.Logger;
 
+import com.siliconmtn.data.Node;
+import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SBModuleVO;
@@ -28,6 +30,8 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 	private static final long serialVersionUID = 1L;
 	private String name;
 	private String primaryKey;
+	private String parentId;
+	private String grandparentId;
 	private String companyId;
 	private Map<String, FinancialDashDataColumnVO> columns;
 	
@@ -85,6 +89,20 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 	 */
 	public String getCompanyId() {
 		return companyId;
+	}
+
+	/**
+	 * @return the parentId
+	 */
+	public String getParentId() {
+		return parentId;
+	}
+
+	/**
+	 * @return the grandparentId
+	 */
+	public String getGrandparentId() {
+		return grandparentId;
 	}
 
 	/**
@@ -245,5 +263,42 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 		}
 		
 		totals.put(key, totals.get(key) + dollarValue);
+	}
+
+	/**
+	 * @param parentId the parentId to set
+	 */
+	public void setParentId(String parentId) {
+		this.parentId = parentId;
+	}
+
+	/**
+	 * @param grandparentId the grandparentId to set
+	 */
+	public void setGrandparentId(String grandparentId) {
+		this.grandparentId = grandparentId;
+	}
+	
+	/**
+	 * Sets the parent/grandparent in the hierarchy applicable to this data row
+	 * 
+	 * @param tree
+	 */
+	public void setAncestry(Tree tree) {
+		String parentId = null;
+		String grandparentId = null;
+		
+		Node childNode = tree.findNode(this.getPrimaryKey());
+		if (childNode != null) {
+			parentId = childNode.getParentId();
+			
+			Node parentNode = tree.findNode(parentId);
+			if (parentNode != null) {
+				grandparentId = parentNode.getParentId();
+			}
+		}
+		
+		this.setParentId(parentId);
+		this.setGrandparentId(grandparentId);
 	}
 }

@@ -11,14 +11,17 @@ import java.util.Map;
 
 import com.biomed.smarttrak.FinancialDashColumnSet.DisplayType;
 import com.biomed.smarttrak.FinancialDashVO.TableType;
+import com.biomed.smarttrak.admin.ContentHierarchyAction;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.Node;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -91,9 +94,33 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		dash.setScenarioId(scenarioId);
 		dash.setCompanyId(companyId);
 		
+		// Get the hierarchy at the requested level
+		List<Node> sections = this.getHierarchy(req);
+		dash.setHierarchy(sections);
+		
 		// Get the data for the table/chart and return it
 		this.getFinancialData(dash);
 		this.putModuleData(dash);
+	}
+	
+	/**
+	 * Gets the hierarchy for the requested level
+	 * 
+	 * @param req
+	 * @return
+	 * @throws ActionException
+	 */
+	@SuppressWarnings("unchecked")
+	protected List<Node> getHierarchy(ActionRequest req) throws ActionException {
+		ContentHierarchyAction cha = new ContentHierarchyAction(this.actionInit);
+		cha.setAttributes(this.attributes);
+		cha.setDBConnection(dbConn);
+		cha.retrieve(req);
+		
+		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
+		List<Node> sections = (List<Node>) mod.getActionData();
+		
+		return sections;
 	}
 	
 	/**
