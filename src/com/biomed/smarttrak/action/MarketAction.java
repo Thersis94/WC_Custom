@@ -36,6 +36,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 
 public class MarketAction extends SBActionAdapter {
+	private final static String DEFAULT_GROUP = "Other";
 	
 	public MarketAction() {
 		super();
@@ -183,7 +184,7 @@ public class MarketAction extends SBActionAdapter {
 		log.debug(sql);
 		Map<String, List<MarketVO>> markets = new TreeMap<>();
 		// Add the default group here.
-		markets.put("Other", new ArrayList<MarketVO>());
+		markets.put(DEFAULT_GROUP, new ArrayList<MarketVO>());
 		Tree attributeTree = buildAttributeTree();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			
@@ -227,7 +228,7 @@ public class MarketAction extends SBActionAdapter {
 		// and are sorted accordingly. Markets without those attributes are
 		// placed into the extras group.
 		if (market.getMarketAttributes().isEmpty()) {
-			markets.get("Other").add(market);
+			markets.get(DEFAULT_GROUP).add(market);
 			return;
 		}
 		
@@ -237,7 +238,7 @@ public class MarketAction extends SBActionAdapter {
 		// Markets using attributes too high up in the tree do not have enough
 		// information to be sorted properly and are placed in the extras group.
 		if (path.length < 2) {
-			markets.get("Other").add(market);
+			markets.get(DEFAULT_GROUP).add(market);
 			return;
 		}
 		

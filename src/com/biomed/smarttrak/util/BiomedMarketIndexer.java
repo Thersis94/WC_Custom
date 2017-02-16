@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import opennlp.tools.util.StringUtil;
+
 import org.apache.solr.client.solrj.SolrClient;
 
 import com.biomed.smarttrak.vo.MarketVO;
@@ -60,7 +62,6 @@ public class BiomedMarketIndexer  extends SMTAbstractIndex {
 				log.error("could add to Solr", e);
 			}
 		}
-		solrUtil = null;
 	}
 	
 	/**
@@ -85,7 +86,7 @@ public class BiomedMarketIndexer  extends SMTAbstractIndex {
 					if (market != null) markets.add(market);
 					market = new MarketVO();
 					db.executePopulate(market, rs);
-					if (!(rs.getTimestamp("UPDATE_DT") == null)) {
+					if (rs.getTimestamp("UPDATE_DT") != null)) {
 						market.setUpdateDt(rs.getDate("UPDATE_DT"));
 					} else {
 						market.setUpdateDt(rs.getDate("CREATE_DT"));
@@ -94,7 +95,7 @@ public class BiomedMarketIndexer  extends SMTAbstractIndex {
 					market.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
 					currentMarket = rs.getString("MARKET_ID");
 				}
-				if (rs.getString("SECTION_ID") != null) {
+				if (StringUtil.isEmpty(rs.getString("SECTION_ID"))) {
 					market.addSection(new GenericVO(rs.getString("SECTION_ID"),
 							hierarchies.get(rs.getString("SECTION_ID"))));
 				}
@@ -120,7 +121,7 @@ public class BiomedMarketIndexer  extends SMTAbstractIndex {
 		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT m.*, ms.SECTION_ID FROM ").append(customDb).append("BIOMEDGPS_MARKET m ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_MARKET_SECTION ms ");
-		sql.append("ON ms.MARKET_ID = m.MARKET_ID ");;
+		sql.append("ON ms.MARKET_ID = m.MARKET_ID ");
 		if (id != null) sql.append("WHERE m.MARKET_ID = ? ");
 		return sql.toString();
 	}
