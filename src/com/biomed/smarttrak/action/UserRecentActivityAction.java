@@ -1,6 +1,7 @@
 package com.biomed.smarttrak.action;
 
 //Java 8
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,7 +20,7 @@ import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.util.PageViewRetriever;
 import com.smt.sitebuilder.util.PageViewVO;
-import com.smt.sitebuilder.util.UserPageViewVO;
+
 
 /*****************************************************************************
  <p><b>Title</b>: UserRecentActivityAction.java</p>
@@ -63,7 +64,7 @@ public class UserRecentActivityAction extends SBActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("UserRecentActivityAction retrieve...");
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
-		Map<String,UserPageViewVO> recentActivity;
+		Map<String, List<PageViewVO>> recentActivity;
 		try {
 			String siteId = parseSiteId(req);
 			String profileId = checkProfileId(req);
@@ -131,7 +132,7 @@ public class UserRecentActivityAction extends SBActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	private Map<String, UserPageViewVO> retrieveRecentlyViewedPages(String siteId, 
+	private Map<String, List<PageViewVO>> retrieveRecentlyViewedPages(String siteId, 
 			String profileId, String dateStart, String dateEnd) throws ActionException {
 		/* Retrieve page views from db, parse into PageViewVO and return list */
 		PageViewRetriever pvr = new PageViewRetriever(dbConn);
@@ -146,23 +147,28 @@ public class UserRecentActivityAction extends SBActionAdapter {
 	 * @param pageViews
 	 * @return
 	 */
-	private Map<String,UserPageViewVO> parseResults(List<PageViewVO> pageViews) {
-		UserPageViewVO markets = new UserPageViewVO();
-		UserPageViewVO companies = new UserPageViewVO();
-		UserPageViewVO products = new UserPageViewVO();
-		UserPageViewVO tools = new UserPageViewVO();
-		Map<String,UserPageViewVO> recentActivity = new HashMap<>();
-
-		for (PageViewVO pageView : pageViews ) {
-			if (parsePage(markets,pageView, SLASH + MARKETS)) {
-				continue;
-			} else if (parsePage(companies, pageView, SLASH + COMPANIES)) {
-				continue;
-			} else if (parsePage(products, pageView, SLASH + PRODUCTS)) {
-				continue;
-			} else {
-				parsePage(tools, pageView, SLASH + TOOLS);
+	private Map<String, List<PageViewVO>> parseResults(List<PageViewVO> pageViews) {
+		List<PageViewVO> markets = new ArrayList<>();
+		List<PageViewVO> companies = new ArrayList<>();
+		List<PageViewVO> products = new ArrayList<>();
+		List<PageViewVO> tools = new ArrayList<>();
+		
+		Map<String, List<PageViewVO>> recentActivity = new HashMap<>();
+		
+		// loop pages, parse into buckets, filter out duplicates.
+		List<String> dupeList = new ArrayList<>();
+		for (PageViewVO page : pageViews) {
+			if (dupeList.contains(page.getRequestUri())) continue;
+			if (page.getRequestUri().indexOf(SLASH + MARKETS) > -1) {
+				addMarketPage(markets,page);
+			} else if (page.getRequestUri().indexOf(SLASH + COMPANIES) > -1) {
+				addCompaniesPage(companies,page);
+			} else if (page.getRequestUri().indexOf(SLASH + PRODUCTS) > -1) {
+				addProductsPage(products,page);
+			} else if (page.getRequestUri().indexOf(SLASH + TOOLS) > -1) {
+				addToolsPage(tools, page);
 			}
+			dupeList.add(page.getRequestUri());
 		}
 
 		recentActivity.put(MARKETS, markets);
@@ -173,23 +179,20 @@ public class UserRecentActivityAction extends SBActionAdapter {
 		return recentActivity;
 	}
 	
-	/**
-	 * Adds pageview to the UserPageViewVO if the request URI of the pageview
-	 * contains the id String.  If the UserPageViewVO's pageview list is full,
-	 * nothing is added and we return true so that the calling loop continues to 
-	 * the next iteration.
-	 * @param vo
-	 * @param page
-	 * @param id
-	 * @return
-	 */
-	private boolean parsePage(UserPageViewVO vo, PageViewVO page, String id) {
-		if (page.getRequestUri().indexOf(id) > -1) {
-			if (vo.getPageViews().size() < MAX_LIST_SIZE) {
-				vo.addPageView(page);
-			}
-			return true;
-		}
-		return false;
+	private void addMarketPage(List<PageViewVO> markets, PageViewVO page) {
+		// TODO process markets page url here.
 	}
+	
+	private void addCompaniesPage(List<PageViewVO> companies, PageViewVO page) {
+		// TODO process companies page url here.
+	}
+	
+	private void addProductsPage(List<PageViewVO> products, PageViewVO page) {
+		// TODO process products page url here.
+	}
+	
+	private void addToolsPage(List<PageViewVO> tools, PageViewVO page) {
+		// TODO process tools page url here.
+	}
+	
 }
