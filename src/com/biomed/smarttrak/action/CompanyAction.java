@@ -57,6 +57,8 @@ import com.smt.sitebuilder.search.SearchDocumentHandler;
 
 public class CompanyAction extends SBActionAdapter {
 	
+	private static final String DEFAULT_GROUP = "Other";
+	
 	public CompanyAction() {
 		super();
 	}
@@ -99,7 +101,7 @@ public class CompanyAction extends SBActionAdapter {
 		CompanyVO company;
 		try {
 			List<Object> results = db.executeSelect(sql.toString(), params, new CompanyVO());
-			if (results.size() == 0) throw new ActionException("No company found with id " + companyId);
+			if (results.isEmpty()) throw new ActionException("No company found with id " + companyId);
 			
 			company = (CompanyVO) results.get(0);
 			addAttributes(company);
@@ -194,7 +196,7 @@ public class CompanyAction extends SBActionAdapter {
 		// Markets using attributes too high up in the tree do not have enough
 		// information to be sorted properly and are placed in the extras group.
 		if (path.length < 2) {
-			company.addProduct("Other", prod);
+			company.addProduct(DEFAULT_GROUP, prod);
 			return;
 		}
 		
@@ -400,8 +402,7 @@ public class CompanyAction extends SBActionAdapter {
 		sa.setAttributes(attributes);
 	    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 	    	actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
-		SolrActionVO qData = sa.retrieveActionData(req);
-		return qData;
+		return sa.retrieveActionData(req);
 	}
 
 
@@ -417,8 +418,8 @@ public class CompanyAction extends SBActionAdapter {
 		// Markets using attributes too high up in the tree do not have enough
 		// information to be sorted properly and are placed in the extras group.
 		if (path.length < 2) {
-			attr.setGroupName("Other");
-			attrMap.get("Other").add(attr);
+			attr.setGroupName(DEFAULT_GROUP);
+			attrMap.get(DEFAULT_GROUP).add(attr);
 			return;
 		}
 		

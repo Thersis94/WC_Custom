@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import opennlp.tools.util.StringUtil;
+
 import org.apache.solr.client.solrj.SolrClient;
 
 import com.siliconmtn.data.Node;
@@ -59,7 +61,6 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 				log.error("could add to Solr", e);
 			}
 		}
-		solrUtil = null;
 	}
 	
 	
@@ -85,7 +86,7 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 					company = buildSolrDocument(rs);
 					currentCompany = rs.getString("COMPANY_ID");
 				}
-				if (rs.getString("SECTION_ID") != null) {
+				if (!StringUtil.isEmpty(rs.getString("SECTION_ID")) && company != null) {
 					company.addSection(hierarchies.get(rs.getString("SECTION_ID")));
 				}
 				
@@ -112,7 +113,7 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 		company.setContentType(rs.getString("STATUS_NO"));
 		company.addAttribute("ticker", rs.getString("NAME_TXT"));
 		
-		if (!(rs.getTimestamp("UPDATE_DT") == null)) {
+		if (rs.getTimestamp("UPDATE_DT") != null) {
 			company.setUpdateDt(rs.getDate("UPDATE_DT"));
 		} else {
 			company.setUpdateDt(rs.getDate("CREATE_DT"));
