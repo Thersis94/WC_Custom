@@ -30,8 +30,6 @@ import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.action.file.transfer.ProfileDocumentAction;
-import com.smt.sitebuilder.action.file.transfer.ProfileDocumentVO;
 //WebCrescendo
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
@@ -59,12 +57,12 @@ public class NoteAction extends SBActionAdapter {
 		MARKET,
 	}
 
-	private final String PRODUCT_ID = "productId" ;
-	private final String MARKET_ID = "marketId";
-	private final String COMPANY_ID = "companyId";
-	private final String ATTRIBUTE_ID = "attributeId";
-	private final String NOTE_TYPE = "noteType";
-	private final String NOTE_ENTITY_ID = "noteEntityId";
+	private static final String PRODUCT_ID = "productId" ;
+	private static final String MARKET_ID = "marketId";
+	private static final String COMPANY_ID = "companyId";
+	private static final String ATTRIBUTE_ID = "attributeId";
+	private static final String NOTE_TYPE = "noteType";
+	private static final String NOTE_ENTITY_ID = "noteEntityId";
 
 	public NoteAction() {
 		super();
@@ -214,7 +212,7 @@ public class NoteAction extends SBActionAdapter {
 	private NoteVO getNote(String noteId, String userId) {
 
 		StringBuilder sb = new StringBuilder(32);
-		sb.append("select * from ").append((String)attributes.get("customDbSchema")).append("biomedgps_note n ");
+		sb.append("select * from ").append((String)attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_note n ");
 		sb.append("where note_id = ? and user_id = ?");
 
 		log.debug(sb.toString() +"|" + noteId +"|"+ userId );
@@ -305,7 +303,7 @@ public class NoteAction extends SBActionAdapter {
 		}
 
 		log.debug("The target list was not located empty list returned");
-		return new ArrayList<NoteVO>();
+		return new ArrayList<>();
 	}
 
 	/**
@@ -512,8 +510,8 @@ public class NoteAction extends SBActionAdapter {
 		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
 		Map<String, List<NoteVO>> data = new HashMap<>();
 
-		sql.append("select * from ").append((String)attributes.get("customDbSchema")).append("biomedgps_note n ");
-		sql.append("inner join ").append((String)attributes.get("customDbSchema")).append("BIOMEDGPS_USER u on u.user_id = n.user_id ");
+		sql.append("select * from ").append((String)attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_note n ");
+		sql.append("inner join ").append((String)attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("BIOMEDGPS_USER u on u.user_id = n.user_id ");
 		sql.append("inner join PROFILE p  on p.profile_id = u.profile_id ");
 
 		sql.append(getWhereSql(targetIds, teams, noteType));
