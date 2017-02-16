@@ -87,8 +87,7 @@ public class NoteAction extends SBActionAdapter {
 		log.debug("Notes Action Retrieve called");
 
 		if (!StringUtil.isEmpty(req.getParameter("productDocumentId"))){
-		
-			
+	
 			
 					log.debug("product document id is "+  req.getParameter("productDocumentId"));
 					
@@ -101,10 +100,7 @@ public class NoteAction extends SBActionAdapter {
 					
 					// build the product document vo
 					
-					//place it on the mod vo for the file handler to pick it off
-			}	
-			
-			
+					//place it on the mod vo for the file handler to pick it off	
 			
 		}else{
 
