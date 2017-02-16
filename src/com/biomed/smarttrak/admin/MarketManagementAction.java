@@ -301,7 +301,7 @@ public class MarketManagementAction extends SimpleActionAdapter {
 	protected void addAttributes(MarketVO market) {
 		List<Object> results = getMarketAttributes(market.getMarketId());
 		for (Object o : results) {
-			market.addAttribute((MarketAttributeVO)o);
+			market.addMarketAttribute((MarketAttributeVO)o);
 		}
 	}
 	
