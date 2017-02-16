@@ -86,7 +86,7 @@ public class BiomedMarketIndexer  extends SMTAbstractIndex {
 					if (market != null) markets.add(market);
 					market = new MarketVO();
 					db.executePopulate(market, rs);
-					if (rs.getTimestamp("UPDATE_DT") != null)) {
+					if (rs.getTimestamp("UPDATE_DT") != null) {
 						market.setUpdateDt(rs.getDate("UPDATE_DT"));
 					} else {
 						market.setUpdateDt(rs.getDate("CREATE_DT"));
