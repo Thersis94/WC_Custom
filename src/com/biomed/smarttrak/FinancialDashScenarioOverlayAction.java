@@ -79,6 +79,9 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 			for (int i = 0; i < regionCnt; i++) {
 				ps.setString(++idx, dash.getCountryTypes().get(i).name());
 			}
+			if (!"".equals(dash.getCompanyId())) {
+				ps.setString(++idx, dash.getCompanyId());
+			}
 			ps.setInt(++idx, dash.getColHeaders().getCalendarYear());
 			
 			ResultSet rs = ps.executeQuery();
