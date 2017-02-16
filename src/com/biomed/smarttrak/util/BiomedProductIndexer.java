@@ -65,7 +65,6 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 				log.error("could add to Solr", e);
 			}
 		}
-		solrUtil = null;
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -88,7 +87,7 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 					product = buildSolrDocument(rs);
 					currentProduct = rs.getString("PRODUCT_ID");
 				}
-				if (rs.getString("SECTION_ID") != null) {
+				if (rs.getString("SECTION_ID") != null && product != null) {
 					product.addSection(hierarchies.get(rs.getString("SECTION_ID")));
 					if (!product.getAttributes().keySet().contains("sectionName")) {
 						product.addAttribute("sectionName", new ArrayList<String>());
@@ -229,7 +228,7 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		product.addAttribute("companyId", rs.getString("COMPANY_ID"));
 		product.addAttribute("alias", rs.getString("ALIAS_NM"));
 		
-		if (!(rs.getTimestamp("UPDATE_DT") == null)) {
+		if (rs.getTimestamp("UPDATE_DT") != null) {
 			product.setUpdateDt(rs.getDate("UPDATE_DT"));
 		} else {
 			product.setUpdateDt(rs.getDate("CREATE_DT"));

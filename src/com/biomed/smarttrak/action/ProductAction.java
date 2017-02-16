@@ -79,7 +79,7 @@ public class ProductAction extends SBActionAdapter {
 		}
 	}
 
-	private void retrieveProduct(String productId) throws ActionException {
+	protected void retrieveProduct(String productId) throws ActionException {
 		ProductVO product;
 		StringBuilder sql = new StringBuilder(100);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
@@ -102,7 +102,7 @@ public class ProductAction extends SBActionAdapter {
 		super.putModuleData(product);
 	}
 
-	private void addRegulatory(ProductVO product) {
+	protected void addRegulatory(ProductVO product) {
 		StringBuilder sql = new StringBuilder(475);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		
@@ -165,7 +165,7 @@ public class ProductAction extends SBActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	private Tree buildAttributeTree() throws ActionException {
+	protected Tree buildAttributeTree() throws ActionException {
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("SELECT ATTRIBUTE_ID, PARENT_ID, ATTRIBUTE_NM, ORDER_NO ");
 		sql.append("FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
@@ -196,7 +196,7 @@ public class ProductAction extends SBActionAdapter {
 	 * @param attr
 	 * @param product
 	 */
-	private void addToAttributeMap(Map<String, List<ProductAttributeVO>> attrMap, Tree attributeTree, ProductAttributeVO attr, ProductVO product) {
+	protected void addToAttributeMap(Map<String, List<ProductAttributeVO>> attrMap, Tree attributeTree, ProductAttributeVO attr, ProductVO product) {
 		Node n = attributeTree.findNode(attr.getAttributeId());
 		
 		String[] path = n.getFullPath().split("/");
@@ -355,7 +355,7 @@ public class ProductAction extends SBActionAdapter {
 	 * @param doc
 	 * @return
 	 */
-	private String buildUpdateMsg(SolrDocument doc) {
+	protected String buildUpdateMsg(SolrDocument doc) {
 		// Unpublished companies can be skipped
 		if (!"P".equals(doc.get(SearchDocumentHandler.CONTENT_TYPE))) {
 			return "Unpublished";
@@ -390,14 +390,13 @@ public class ProductAction extends SBActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	private SolrActionVO buildSolrAction(ActionRequest req) throws ActionException {
+	protected SolrActionVO buildSolrAction(ActionRequest req) throws ActionException {
 		SolrAction sa = new SolrAction(actionInit);
 		sa.setDBConnection(dbConn);
 		sa.setAttributes(attributes);
 	    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 	    	actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
-		SolrActionVO qData = sa.retrieveActionData(req);
-		return qData;
+		return sa.retrieveActionData(req);
 	}
 
 }
