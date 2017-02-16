@@ -12,6 +12,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+
+
 //WC custom
 import com.biomed.smarttrak.vo.NoteVO;
 import com.biomed.smarttrak.vo.TeamVO;
@@ -28,6 +30,8 @@ import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.action.file.transfer.ProfileDocumentAction;
+import com.smt.sitebuilder.action.file.transfer.ProfileDocumentVO;
 //WebCrescendo
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
@@ -81,71 +85,94 @@ public class NoteAction extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("Notes Action Retrieve called");
-		String encKey = (String) getAttribute(Constants.ENCRYPT_KEY);
 
-		String productId = StringUtil.checkVal(req.getParameter(PRODUCT_ID));
-		String companyId = StringUtil.checkVal(req.getParameter(COMPANY_ID));
-		String marketId = StringUtil.checkVal(req.getParameter(MARKET_ID));
-		String attributeId = StringUtil.checkVal(req.getParameter(ATTRIBUTE_ID));
-
-		String noteId = StringUtil.checkVal(req.getParameter("noteId"));
-
-		String noteType = StringUtil.checkVal(req.getParameter(NOTE_TYPE));
-		String noteEntityId = StringUtil.checkVal(req.getParameter(NOTE_ENTITY_ID));
+		if (!StringUtil.isEmpty(req.getParameter("productDocumentId"))){
 		
-		Date cal = Convert.formatDate(new Date(), Calendar.HOUR_OF_DAY, 3);
+			
+			
+					log.debug("product document id is "+  req.getParameter("productDocumentId"));
+					
+					SMTSession ses = req.getSession();
+					UserVO uvo = (UserVO) ses.getAttribute(Constants.USER_DATA);
+					log.debug("teams=" + uvo.getTeams().size());
+					log.debug("user id = " + uvo.getUserId());
+				
+					//TODO check to make sure the user or team is valid for the doc
+					
+					// build the product document vo
+					
+					//place it on the mod vo for the file handler to pick it off
+			}	
+			
+			
+			
+		}else{
 
-		try  {
-			StringEncrypter se = new StringEncrypter(encKey);
+			String encKey = (String) getAttribute(Constants.ENCRYPT_KEY);
 
-			String fileToken = se.encrypt(Long.toString(cal.getTime()));
+			String productId = StringUtil.checkVal(req.getParameter(PRODUCT_ID));
+			String companyId = StringUtil.checkVal(req.getParameter(COMPANY_ID));
+			String marketId = StringUtil.checkVal(req.getParameter(MARKET_ID));
+			String attributeId = StringUtil.checkVal(req.getParameter(ATTRIBUTE_ID));
 
-			log.debug("file token " + fileToken);
+			String noteId = StringUtil.checkVal(req.getParameter("noteId"));
 
-			ModuleVO modVo = (ModuleVO) attributes.get(Constants.MODULE_DATA);
+			String noteType = StringUtil.checkVal(req.getParameter(NOTE_TYPE));
+			String noteEntityId = StringUtil.checkVal(req.getParameter(NOTE_ENTITY_ID));
 
-			SMTSession ses = req.getSession();
-			//if the request is for a particular note get that note
-			if (!noteId.isEmpty()){
+			Date cal = Convert.formatDate(new Date(), Calendar.HOUR_OF_DAY, 3);
 
-				UserVO uvo = (UserVO) ses.getAttribute(Constants.USER_DATA);
-				log.debug("teams=" + uvo.getTeams().size());
-				log.debug("user id = " + uvo.getUserId());
+			try  {
+				StringEncrypter se = new StringEncrypter(encKey);
 
-				//send the userId so we are sure the requester can see the note.
-				NoteVO vo = getNote(noteId, uvo.getUserId());
-				modVo.setActionData(vo);
+				String fileToken = se.encrypt(Long.toString(cal.getTime()));
+
+				log.debug("file token " + fileToken);
+
+				ModuleVO modVo = (ModuleVO) attributes.get(Constants.MODULE_DATA);
+
+				SMTSession ses = req.getSession();
+				//if the request is for a particular note get that note
+				if (!noteId.isEmpty()){
+
+					UserVO uvo = (UserVO) ses.getAttribute(Constants.USER_DATA);
+					log.debug("teams=" + uvo.getTeams().size());
+					log.debug("user id = " + uvo.getUserId());
+
+					//send the userId so we are sure the requester can see the note.
+					NoteVO vo = getNote(noteId, uvo.getUserId());
+					modVo.setActionData(vo);
+				}
+
+				//if there is an id for a list of notes ret that list of notes
+				if (!productId.isEmpty() || !marketId.isEmpty()|| !companyId.isEmpty()){
+					modVo.setActionData(refreshNoteList(productId, marketId,companyId, attributeId,ses));
+				}
+
+				modVo.setAttribute("noteToken", fileToken );
+				modVo.setAttribute("primaryId", setPrimaryId(productId, companyId, marketId, attributeId));
+
+				if (noteType.isEmpty()){
+					modVo.setAttribute(NOTE_TYPE, getNoteType(productId, companyId, marketId));
+				}else{
+					modVo.setAttribute(NOTE_TYPE, noteType);	
+				}
+
+				modVo.setAttribute(ATTRIBUTE_ID, attributeId);
+
+				if(noteEntityId.isEmpty()){
+					modVo.setAttribute(NOTE_ENTITY_ID, setEntityId(productId, companyId, marketId));
+				}else{
+					modVo.setAttribute(NOTE_ENTITY_ID, noteEntityId);
+				}
+
+				attributes.put(Constants.MODULE_DATA, modVo);
+
+			} catch (EncryptionException e) {
+				log.error("error during string encryption " , e);
 			}
 
-			//if there is an id for a list of notes ret that list of notes
-			if (!productId.isEmpty() || !marketId.isEmpty()|| !companyId.isEmpty()){
-				modVo.setActionData(refreshNoteList(productId, marketId,companyId, attributeId,ses));
-			}
-
-			modVo.setAttribute("noteToken", fileToken );
-			modVo.setAttribute("primaryId", setPrimaryId(productId, companyId, marketId, attributeId));
-
-			if (noteType.isEmpty()){
-				modVo.setAttribute(NOTE_TYPE, getNoteType(productId, companyId, marketId));
-			}else{
-				modVo.setAttribute(NOTE_TYPE, noteType);	
-			}
-
-			modVo.setAttribute(ATTRIBUTE_ID, attributeId);
-
-			if(noteEntityId.isEmpty()){
-				modVo.setAttribute(NOTE_ENTITY_ID, setEntityId(productId, companyId, marketId));
-			}else{
-				modVo.setAttribute(NOTE_ENTITY_ID, noteEntityId);
-			}
-
-			attributes.put(Constants.MODULE_DATA, modVo);
-
-		} catch (EncryptionException e) {
-			log.error("error during string encryption " , e);
 		}
-
-
 
 	}
 
