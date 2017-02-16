@@ -2,7 +2,10 @@ package com.biomed.smarttrak.vo;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 import com.biomed.smarttrak.vo.NoteVO;
 import com.bmg.admin.vo.NoteEntityInterface;
@@ -31,6 +34,7 @@ import com.siliconmtn.util.StringUtil;
 public class CompanyVO  implements NoteEntityInterface {
 	private String companyId;
 	private String parentId;
+	private String parentName;
 	private String companyName;
 	private String shortName;
 	private String aliasName;
@@ -50,20 +54,24 @@ public class CompanyVO  implements NoteEntityInterface {
 	private int profileNo;
 	private int peopleNo;
 	private int investedFlag;
-	private List<String> investors;
+	private Map<String, String> investors;
 	private List<LocationVO> locations;
 	private List<AllianceVO> alliances;
 	private List<CompanyAttributeVO> attributes;
 	private List<NoteVO> notes;
 	private List<GenericVO> sections;
+	private Map<String, List<ProductVO>> products;
+	private Date updateDate;
+	private String updateMsg;
 	
 	
 	public CompanyVO() {
-		investors = new ArrayList<>();
+		investors = new HashMap<>();
 		locations = new ArrayList<>();
 		alliances = new ArrayList<>();
 		attributes = new ArrayList<>();
 		sections = new ArrayList<>();
+		products = new TreeMap<>();
 	}
 	
 	public CompanyVO(ActionRequest req) {
@@ -94,7 +102,7 @@ public class CompanyVO  implements NoteEntityInterface {
 		fiscalYearEnd = req.getParameter("fiscalYearEnd");
 		if (req.hasParameter("investors")) {
 			for (String s : req.getParameterValues("investors")) {
-				investors.add(s);
+				investors.put(s, "");
 			}
 		}
 	}
@@ -113,6 +121,15 @@ public class CompanyVO  implements NoteEntityInterface {
 	public void setParentId(String parentId) {
 		this.parentId = parentId;
 	}
+	@Column(name="parent_nm", isReadOnly=true)
+	public String getParentName() {
+		return parentName;
+	}
+
+	public void setParentName(String parentName) {
+		this.parentName = parentName;
+	}
+
 	@Column(name="company_nm")
 	public String getCompanyName() {
 		return companyName;
@@ -249,16 +266,16 @@ public class CompanyVO  implements NoteEntityInterface {
 		this.investedFlag = investedFlag;
 	}
 
-	public List<String> getInvestors() {
+	public Map<String, String> getInvestors() {
 		return investors;
 	}
 
-	public void setInvestors(List<String> investors) {
+	public void setInvestors(Map<String, String> investors) {
 		this.investors = investors;
 	}
 	
-	public void addInvestor(String investor) {
-		investors.add(investor);
+	public void addInvestor(String id, String name) {
+		investors.put(id, name);
 	}
 
 	public List<LocationVO> getLocations() {
@@ -313,11 +330,26 @@ public class CompanyVO  implements NoteEntityInterface {
 	public void addSection(GenericVO section) {
 		this.sections.add(section);
 	}
+	public Map<String, List<ProductVO>> getProducts() {
+		return products;
+	}
+
+	public void setProducts(Map<String, List<ProductVO>> products) {
+		this.products = products;
+	}
+
+	public void addProduct(String group, ProductVO product) {
+		if (!this.products.keySet().contains(group))
+			this.products.put(group, new ArrayList<ProductVO>());
+		this.products.get(group).add(product);
+	}
+
+	@Column(name="UPDATE_DT", isAutoGen=true, isUpdateOnly=true)
+	public Date getUpdateDate() {return updateDate;}
+	public void setUpdateDate(Date updateDate) {this.updateDate = updateDate;}
 	
 
 	// These functions exists only to give the DBProcessor a hook to autogenerate dates on
-	@Column(name="UPDATE_DT", isAutoGen=true, isUpdateOnly=true)
-	public Date getUpdateDate() {return null;}
 	@Column(name="CREATE_DT", isAutoGen=true, isInsertOnly=true)
 	public Date getCreateDate() {return null;}
 
@@ -343,6 +375,14 @@ public class CompanyVO  implements NoteEntityInterface {
 	public String getId() {
 		//each vo will return its own primary id.
 		return getCompanyId();
+	}
+
+	public String getUpdateMsg() {
+		return updateMsg;
+	}
+
+	public void setUpdateMsg(String updateMsg) {
+		this.updateMsg = updateMsg;
 	}
 
 }

@@ -437,8 +437,11 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 */
 	protected void addInvestors(CompanyVO company) throws ActionException {
 		StringBuilder sql = new StringBuilder(175);
-		sql.append("SELECT INVESTOR_COMPANY_ID FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("BIOMEDGPS_COMPANY_INVESTOR WHERE INVESTEE_COMPANY_ID = ? ");
+		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		sql.append("SELECT i.INVESTOR_COMPANY_ID, c.COMPANY_NM FROM ").append(customDb).append("BIOMEDGPS_COMPANY_INVESTOR i ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY c ");
+		sql.append("ON c.COMPANY_ID = i.INVESTOR_ID ");
+		sql.append("WHERE i.INVESTEE_COMPANY_ID = ? ");
 		log.debug(sql+"|"+company.getCompanyId());
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, company.getCompanyId());
@@ -446,7 +449,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 			ResultSet rs = ps.executeQuery();
 			
 			while (rs.next()) {
-				company.addInvestor(rs.getString("INVESTOR_COMPANY_ID"));
+				company.addInvestor(rs.getString("INVESTOR_COMPANY_ID"), rs.getString("COMPANY_NM"));
 			}
 		} catch (SQLException e) {
 			throw new ActionException(e);
@@ -685,7 +688,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 		sql.append("INVESTEE_COMPANY_ID, CREATE_DT) ");
 		sql.append("VALUES(?,?,?,?)");
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			for (String s : c.getInvestors()) {
+			for (String s : c.getInvestors().keySet()) {
 				int i = 1;
 				ps.setString(i++, new UUIDGenerator().getUUID());
 				ps.setString(i++, s);

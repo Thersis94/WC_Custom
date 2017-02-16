@@ -5,10 +5,13 @@ import java.util.Date;
 import java.util.List;
 
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.annotations.SolrField;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
+import com.smt.sitebuilder.search.SearchDocumentHandler;
+import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 
 /****************************************************************************
  * <b>Title</b>: MarketVO.java <p/>
@@ -25,7 +28,9 @@ import com.siliconmtn.util.Convert;
  ****************************************************************************/
 
 @Table(name="BIOMEDGPS_MARKET")
-public class MarketVO {
+public class MarketVO extends SolrDocumentVO {
+	
+	public static final String SOLR_INDEX = "BIOMEDGPS_MARKET";
 	
 	private String marketId;
 	private String parentId;
@@ -36,15 +41,18 @@ public class MarketVO {
 	private String aliasName;
 	private List<MarketAttributeVO> attributes;
 	private List<GenericVO> sections;
+	private String updateMsg;
+	private Date updateDate;
 	
 	public MarketVO () {
+		super(SOLR_INDEX);
 		attributes = new ArrayList<>();
 		sections = new ArrayList<>();
 	}
 	
 	
 	public MarketVO(ActionRequest req) {
-		super();
+		this();
 		setData(req);
 	}
 	
@@ -65,6 +73,7 @@ public class MarketVO {
 		return marketId;
 	}
 	public void setMarketId(String marketId) {
+		super.setDocumentId(marketId);
 		this.marketId = marketId;
 	}
 	@Column(name="parent_id")
@@ -74,6 +83,7 @@ public class MarketVO {
 	public void setParentId(String parentId) {
 		this.parentId = parentId;
 	}
+	@SolrField(name=SearchDocumentHandler.TITLE)
 	@Column(name="market_nm")
 	public String getMarketName() {
 		return marketName;
@@ -88,6 +98,7 @@ public class MarketVO {
 	public void setOrderNo(int orderNo) {
 		this.orderNo = orderNo;
 	}
+	@SolrField(name=SearchDocumentHandler.CONTENT_TYPE)
 	@Column(name="status_no")
 	public String getStatusNo() {
 		return statusNo;
@@ -117,20 +128,20 @@ public class MarketVO {
 	}
 	
 
-	public List<MarketAttributeVO> getAttributes() {
+	public List<MarketAttributeVO> getMarketAttributes() {
 		return attributes;
 	}
 
 
-	public void setAttributes(List<MarketAttributeVO> attributes) {
+	public void setMarketAttributes(List<MarketAttributeVO> attributes) {
 		this.attributes = attributes;
 	}
 	
-	public void addAttribute(MarketAttributeVO attribute) {
+	public void addMarketAttribute(MarketAttributeVO attribute) {
 		this.attributes.add(attribute);
 	}
 
-	public List<GenericVO> getSections() {
+	public List<GenericVO> getMarketSections() {
 		return sections;
 	}
 
@@ -142,13 +153,46 @@ public class MarketVO {
 	public void addSection(GenericVO section) {
 		this.sections.add(section);
 	}
+	
+	/**
+	 * Turn the list of generic vos
+	 * @return
+	 */
+	@SolrField(name=SearchDocumentHandler.HIERARCHY)
+	public List<String>getSectionNames() {
+		List<String> nameList = new ArrayList<>();
+		for (GenericVO vo : sections) {
+			nameList.add((String)vo.getValue());
+		}
+		return nameList;
+	}
+	
+	@Override
+	@SolrField(name=SearchDocumentHandler.UPDATE_DATE)
+	@Column(name="UPDATE_DT", isAutoGen=true, isUpdateOnly=true)
+	public Date getUpdateDt() {
+		return updateDate;
+	}
+	
+	@Column(name="UPDATE_DT", isAutoGen=true, isUpdateOnly=true)
+	public void setUpdateDt(Date updateDate) {
+		this.updateDate = updateDate;
+	}
 
 
 	// These functions exists only to give the DBProcessor a hook to autogenerate dates on
-	@Column(name="UPDATE_DT", isAutoGen=true, isUpdateOnly=true)
-	public Date getUpdateDate() {return null;}
 	@Column(name="CREATE_DT", isAutoGen=true, isInsertOnly=true)
 	public Date getCreateDate() {return null;}
+
+
+	public String getUpdateMsg() {
+		return updateMsg;
+	}
+
+
+	public void setUpdateMsg(String updateMsg) {
+		this.updateMsg = updateMsg;
+	}
 
 	
 }
