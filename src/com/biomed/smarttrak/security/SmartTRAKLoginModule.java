@@ -16,7 +16,6 @@ import com.siliconmtn.security.DjangoPasswordHasher;
 import com.siliconmtn.security.SHAEncrypt;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
-import com.siliconmtn.util.RandomAlphaNumeric;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -222,27 +221,11 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 		String encKey = (String)getAttribute(Constants.ENCRYPT_KEY);
 		UserLogin ul = new UserLogin(dbConn, encKey);
 
-		String encPswd = encryptPassword(password);
 		try {
-			return ul.saveAuthRecord(authId, userName, encPswd, resetFlag, null); //ditch password history
+			return ul.modifyUser(authId, userName, password, resetFlag);
 		} catch (DatabaseException de) {
 			throw new InvalidDataException(de);
 		}
-	}
-
-
-	/**
-	 * takes the incoming plain-text password and runs it through the password hasher.  
-	 * Returns a String that looks like this:
-	 * <algorithm>$<iterations>$<salt>$<encPassword>
-	 * pbkdf2_sha256$10000$q1XDOcKaMm4B$jJ+tf5gAtOsgppIBnZmL1vw1SMmjKQ0cy771WKOLnpY=
-	 * @param password
-	 * @return
-	 */
-	protected String encryptPassword(String password) {
-		DjangoPasswordHasher hasher = new DjangoPasswordHasher();
-		String salt = RandomAlphaNumeric.generateRandom(12);
-		return hasher.encode(password, salt); //uses default # for iterations
 	}
 
 

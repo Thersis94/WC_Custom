@@ -176,6 +176,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	public static String urlEncode(String value) {
+		if (StringUtil.isEmpty(value)) return ""; //going in a URL, we don't want to return a null
 		return StringEncoder.urlEncode(StringEscapeUtils.unescapeHtml(value)).replace("+", "%20");
 	}
 }
