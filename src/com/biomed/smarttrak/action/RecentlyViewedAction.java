@@ -60,8 +60,7 @@ public class RecentlyViewedAction extends SBActionAdapter {
 	private static final String MARKETS = "/markets";
 	private static final String COMPANIES = "/companies";
 	private static final String PRODUCTS = "/products";
-	private static final int MAX_LIST_SIZE = 10;
-	
+
 	/**
 	 * Constructor
 	 */
@@ -330,7 +329,7 @@ public class RecentlyViewedAction extends SBActionAdapter {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		SMTSession sess = (SMTSession)req.getSession();
-		Map<String, List<PageViewVO>> recent = (Map<String,List<PageViewVO>>)sess.getAttribute(QuickLinksAction.USER_RECENTLY_VIEWED);
+		Map<String, List<PageViewVO>> recent = (Map<String,List<PageViewVO>>)sess.getAttribute(QuickLinksAction.MY_RECENTLY_VIEWED);
 		if (recent == null) return;
 
 		// determine page collection type
@@ -353,11 +352,11 @@ public class RecentlyViewedAction extends SBActionAdapter {
 		pages.add(0,page);
 
 		// if list size > max, remove 1
-		if (pages.size() > MAX_LIST_SIZE) 
+		if (pages.size() > QuickLinksAction.MAX_LIST_SIZE) 
 			pages.remove(pages.size() - 1);
 
 		// set update collection on session
-		sess.setAttribute(QuickLinksAction.USER_RECENTLY_VIEWED, pages);
+		sess.setAttribute(QuickLinksAction.MY_RECENTLY_VIEWED, pages);
 	}
 
 	/**

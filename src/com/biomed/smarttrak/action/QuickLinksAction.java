@@ -1,14 +1,19 @@
 package com.biomed.smarttrak.action;
 
+// Java 8
 import java.util.List;
 import java.util.Map;
 
+// SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.session.SMTSession;
+
+// WebCrescendo
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.action.tools.MyFavoritesAction;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.util.PageViewVO;
@@ -26,17 +31,17 @@ import com.smt.sitebuilder.util.PageViewVO;
  ***************************************************************************/
 public class QuickLinksAction extends SBActionAdapter {
 
-	public static final String USER_FAVORITES = "userFavorites";
-	public static final String USER_RECENTLY_VIEWED = "userRecentlyViewed";
+	public static final String MY_RECENTLY_VIEWED = "myRecentlyViewed";
 	public static final String LINK_TYPE = "type";
 	public static final String LINK_TYPE_FAVORITES = "fv";
 	public static final String LINK_TYPE_RECENTLY_VIEWED = "rv";
+	public static final int MAX_LIST_SIZE = 10;
 	
 	/**
 	* Constructor
 	*/
 	public QuickLinksAction() {
-		// constructor stub
+		super();
 	}
 
 	/**
@@ -44,7 +49,6 @@ public class QuickLinksAction extends SBActionAdapter {
 	*/
 	public QuickLinksAction(ActionInitVO actionInit) {
 		super(actionInit);
-		// constructor stub
 	}
 	
 	/* (non-Javadoc)
@@ -53,10 +57,10 @@ public class QuickLinksAction extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		SMTSession sess = (SMTSession)req.getSession();
-		if (sess.getAttribute(USER_FAVORITES) == null) {
+		if (sess.getAttribute(MyFavoritesAction.MY_FAVORITES) == null) {
 			loadFavorites(req);
 		}
-		if (sess.getAttribute(USER_RECENTLY_VIEWED) == null) {
+		if (sess.getAttribute(MY_RECENTLY_VIEWED) == null) {
 			loadRecentlyViewed(req);
 		}
 	}
@@ -90,7 +94,7 @@ public class QuickLinksAction extends SBActionAdapter {
 		if (! mod.getErrorCondition()) {
 			SMTSession sess = req.getSession();
 			Map<String, List<PageViewVO>> fv = (Map<String, List<PageViewVO>>) mod.getActionData();
-			sess.setAttribute(USER_FAVORITES,fv);
+			sess.setAttribute(MyFavoritesAction.MY_FAVORITES,fv);
 		}
 	}
 	
@@ -110,7 +114,7 @@ public class QuickLinksAction extends SBActionAdapter {
 		if (! mod.getErrorCondition()) {
 			SMTSession sess = req.getSession();
 			Map<String, List<PageViewVO>> rv = (Map<String, List<PageViewVO>>) mod.getActionData();
-			sess.setAttribute(USER_RECENTLY_VIEWED,rv);
+			sess.setAttribute(MY_RECENTLY_VIEWED,rv);
 		}
 	}
 	
