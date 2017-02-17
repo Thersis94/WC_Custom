@@ -64,6 +64,11 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 		
+		// Filter out invalid requests (i.e initial page load vs. json call)
+		if (!req.hasParameter("tableType")) {
+			return;
+		}
+		
 		// Get the paramters required to generate the requested table
 		String displayType = StringUtil.checkVal(req.getParameter("displayType"), FinancialDashColumnSet.DEFAULT_DISPLAY_TYPE);
 		Integer calendarYear = Convert.formatInteger(req.getParameter("calendarYear"), Convert.getCurrentYear());
@@ -72,6 +77,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		String sectionId = StringUtil.checkVal(req.getParameter("sectionId"), "MASTER_ROOT");
 		boolean leafMode = Convert.formatBoolean(req.getParameter("leafMode"));
 		String scenarioId = StringUtil.checkVal(req.getParameter("scenarioId"));
+		String companyId = StringUtil.checkVal(req.getParameter("companyId"));
 		
 		// Set the parameters so they can be used to generate the query/table
 		FinancialDashVO dash = new FinancialDashVO();
@@ -83,6 +89,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		dash.setSectionId(sectionId);
 		dash.setLeafMode(leafMode);
 		dash.setScenarioId(scenarioId);
+		dash.setCompanyId(companyId);
 		
 		// Get the data for the table/chart and return it
 		this.getFinancialData(dash);
@@ -111,6 +118,9 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 			}
 			for (int i = 0; i < regionCnt; i++) {
 				ps.setString(++idx, dash.getCountryTypes().get(i).name());
+			}
+			if (!"".equals(dash.getCompanyId())) {
+				ps.setString(++idx, dash.getCompanyId());
 			}
 			ps.setInt(++idx, dash.getColHeaders().getCalendarYear());
 			
@@ -147,23 +157,27 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		TableType tt = dash.getTableType();
 		
 		if (tt == TableType.COMPANY) {
-			sql.append("select ").append(dash.getLeafMode() ? "r.REVENUE_ID " : "r.COMPANY_ID ").append("as ROW_ID, c.COMPANY_NM as ROW_NM, ");
-		} else {
-			sql.append("select ");
-			sql.append("CASE WHEN s7.PARENT_ID = ? THEN s7.SECTION_ID ");
-			sql.append("WHEN s6.PARENT_ID = ? THEN s6.SECTION_ID ");
-			sql.append("WHEN s5.PARENT_ID = ? THEN s5.SECTION_ID ");
-			sql.append("WHEN s4.PARENT_ID = ? THEN s4.SECTION_ID ");
-			sql.append("WHEN s3.PARENT_ID = ? THEN s3.SECTION_ID ");
-			sql.append("WHEN s2.PARENT_ID = ? THEN s2.SECTION_ID ");
-			sql.append("WHEN s1.PARENT_ID = ? THEN s1.SECTION_ID END as ROW_ID, ");
-			sql.append("CASE WHEN s7.PARENT_ID = ? THEN s7.SECTION_NM ");
-			sql.append("WHEN s6.PARENT_ID = ? THEN s6.SECTION_NM ");
-			sql.append("WHEN s5.PARENT_ID = ? THEN s5.SECTION_NM ");
-			sql.append("WHEN s4.PARENT_ID = ? THEN s4.SECTION_NM ");
-			sql.append("WHEN s3.PARENT_ID = ? THEN s3.SECTION_NM ");
-			sql.append("WHEN s2.PARENT_ID = ? THEN s2.SECTION_NM ");
-			sql.append("WHEN s1.PARENT_ID = ? THEN s1.SECTION_NM END as ROW_NM, ");
+			sql.append("select ").append(dash.getLeafMode() ? "r.REVENUE_ID " : "r.COMPANY_ID ").append("as ROW_ID, c.COMPANY_NM as ROW_NM, r.COMPANY_ID, ");
+		} else { // TableType.MARKET
+			
+			// When viewing market data for a specific company, we always list/summarize 3 levels lower in the heirarchy
+			int offset = 0;
+			if (!"".equals(dash.getCompanyId())) {
+				offset = 3;
+			}
+			
+			// Group by the appropriate parent in the heirarchy
+			sql.append("select CASE ");
+			for (int i = 7; i > 0; i--) {
+				sql.append("WHEN s").append(i).append(".PARENT_ID = ? THEN s").append(i-offset < 1 ? 1 : i-offset).append(".SECTION_ID ");
+			}
+			sql.append("END as ROW_ID, ");
+
+			sql.append("CASE ");
+			for (int i = 7; i > 0; i--) {
+				sql.append("WHEN s").append(i).append(".PARENT_ID = ? THEN s").append(i-offset < 1 ? 1 : i-offset).append(".SECTION_NM ");
+			}
+			sql.append("END as ROW_NM, ");
 		}
 		
 		return sql;
@@ -232,6 +246,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		
 		String custom = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		int regionCnt = dash.getCountryTypes().size();
+		TableType tt = dash.getTableType();
 		
 		sql.append("inner join ").append(custom).append("BIOMEDGPS_COMPANY c on r.COMPANY_ID = c.COMPANY_ID ");
 		sql.append("inner join ").append(custom).append("BIOMEDGPS_SECTION s1 on r.SECTION_ID = s1.SECTION_ID ");
@@ -253,8 +268,17 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		}
 		sql.append(") ");
 		
+		if (!"".equals(dash.getCompanyId())) {
+			sql.append("and r.COMPANY_ID = ? ");
+		}
+		
 		sql.append("and r.YEAR_NO = ? ");
+		
 		sql.append("group by ROW_ID, ROW_NM, r.YEAR_NO ");
+		if (tt == TableType.COMPANY) {
+			sql.append(", r.COMPANY_ID ");
+		}
+		
 		sql.append("order by ROW_NM ");
 		
 		return sql;
