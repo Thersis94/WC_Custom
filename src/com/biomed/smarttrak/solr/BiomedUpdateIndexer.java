@@ -94,6 +94,6 @@ public class BiomedUpdateIndexer extends SMTAbstractIndex {
 		ua.setDBConnection(new SMTDBConnection(this.dbConn));
 		ua.setAttribute(Constants.CUSTOM_DB_SCHEMA, config.getProperty(Constants.CUSTOM_DB_SCHEMA));
 		ua.setAttribute(Constants.QS_PATH, config.getProperty(Constants.QS_PATH));
-		return (List<SolrDocumentVO>)(List<?>) ua.getUpdates(documentId);
+		return (List<SolrDocumentVO>)(List<?>) ua.getUpdates(documentId, null, null, null);
 	}
 }

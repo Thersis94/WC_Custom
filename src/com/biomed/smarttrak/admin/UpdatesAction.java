@@ -19,6 +19,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -38,6 +39,7 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
  ****************************************************************************/
 public class UpdatesAction extends SBActionAdapter {
 	protected static final String UPDATE_ID = "updateId"; //req param
+	public static final String ROOT_NODE_ID = "MASTER_ROOT";
 
 	public enum UpdateType {
 		MARKET(12, "Market"),
@@ -80,38 +82,54 @@ public class UpdatesAction extends SBActionAdapter {
 		if (!req.hasParameter("loadData") && !req.hasParameter(UPDATE_ID) ) return;
 
 		String updateId = req.hasParameter(UPDATE_ID) ? req.getParameter(UPDATE_ID) : null;
-		List<Object> updates = getUpdates(updateId);
+		String statusCd = req.getParameter("statusCd");
+		String typeCd = req.getParameter("typeCd");
+		String dateRange = req.getParameter("dateRange");
+		List<Object> updates = getUpdates(updateId, statusCd, typeCd, dateRange);
 
 		decryptNames(updates);
 
 		putModuleData(updates);
 	}
 
-	public List<Object> getUpdates(String updateId) {
+	public List<Object> getUpdates(String updateId, String statusCd, String typeCd, String dateRange) {
 
 		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
-		String sql = formatRetrieveQuery(updateId, schema);
+		String sql = formatRetrieveQuery(updateId, statusCd, typeCd, dateRange, schema);
 
 		List<Object> params = new ArrayList<>();
-		if (updateId != null) params.add(updateId);
+		if (!StringUtil.isEmpty(updateId)) params.add(updateId);
+		if (!StringUtil.isEmpty(statusCd)) params.add(statusCd);
+		if (!StringUtil.isEmpty(typeCd)) params.add(Convert.formatInteger(typeCd));
 
 		DBProcessor db = new DBProcessor(dbConn, schema);
 		List<Object>  updates = db.executeSelect(sql, params, new UpdatesVO());
 		log.debug("loaded " + updates.size() + " updates");
 		return updates;
 	}
+
 	/**
 	 * Formats the account retrieval query.
 	 * @return
 	 */
-	public static String formatRetrieveQuery(String updateId, String schema) {
+	public static String formatRetrieveQuery(String updateId, String statusCd, String typeCd, String dateRange, String schema) {
 		StringBuilder sql = new StringBuilder(400);
 		sql.append("select a.*, p.first_nm, p.last_nm, b.section_id ");
 		sql.append("from ").append(schema).append("biomedgps_update a ");
 		sql.append("inner join profile p on a.creator_profile_id=p.profile_id ");
 		sql.append("left outer join ").append(schema).append("biomedgps_update_section b ");
-		sql.append("on a.update_id=b.update_id ");
-		if (updateId != null) sql.append("where a.update_id=? ");
+		sql.append("on a.update_id=b.update_id where 1=1 ");
+		if (!StringUtil.isEmpty(updateId)) sql.append("and a.update_id=? ");
+		if (!StringUtil.isEmpty(statusCd)) sql.append("and a.status_cd=? ");
+		if (!StringUtil.isEmpty(typeCd)) sql.append("and a.type_cd=? ");
+		if (!StringUtil.isEmpty(dateRange)) {
+			if("1".equals(dateRange)) {
+				sql.append("and a.create_Dt > CURRENT_DATE - INTERVAL '6 months' ");
+			} else if ("2".equals(dateRange)) {
+				sql.append("and a.create_Dt < CURRENT_DATE - INTERVAL '6 months' ");
+			}
+		}
+
 		sql.append("order by a.create_dt");
 
 		log.debug(sql);
