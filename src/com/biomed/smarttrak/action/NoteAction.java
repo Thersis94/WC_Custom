@@ -430,9 +430,7 @@ public class NoteAction extends SBActionAdapter {
 				
 				//if there are files to delete remove then and they document record
 				if (vo.getProfileDocuments() != null && vo.getProfileDocuments().size() >0){
-					for (ProfileDocumentVO pvo : vo.getProfileDocuments()){
-						pda.delete(pvo);
-					}
+					deleteProfileDocuments(pda , vo.getProfileDocuments());
 
 				}
 
@@ -461,13 +459,26 @@ public class NoteAction extends SBActionAdapter {
 		attributes.put(Constants.MODULE_DATA, modVo);
 	}
 
+	
+	/**
+	 * loops the profile documemts deleting each one from the file system.
+	 * @param pda 
+	 * @param profileDocuments
+	 * @throws ActionException 
+	 */
+	protected void deleteProfileDocuments(ProfileDocumentAction pda, List<ProfileDocumentVO> profileDocuments) throws ActionException {
+		for (ProfileDocumentVO pvo : profileDocuments){
+			pda.delete(pvo);
+		}
+	}
+
 	/**
 	 * this method will make and save a profile document entry for the new note.
 	 * @param vo
 	 * @param req
 	 * @param profileId 
 	 */
-	private void processProfileDocumentCreation(NoteVO vo, ActionRequest req, String profileId) {
+	protected void processProfileDocumentCreation(NoteVO vo, ActionRequest req, String profileId) {
 		log.debug("process profile document creation called ");
 		ProfileDocumentAction pda = new ProfileDocumentAction();
 		pda.setAttributes(attributes);
