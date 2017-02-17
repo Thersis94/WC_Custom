@@ -146,4 +146,13 @@ public class QuickLinksAction extends SBActionAdapter {
 		ai.setDBConnection(dbConn);
 		ai.build(req);
 	}
+
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
+	public void list(ActionRequest req) throws ActionException {
+		super.retrieve(req);
+	}
+
 }

@@ -116,9 +116,11 @@ public class RecentlyViewedAction extends SBActionAdapter {
 		int idx = 0;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			for (Section section : Section.values()) {
+				log.debug("section|siteid|profileId: " + section.name() + "|" + site.getSiteId() + "|" + profileId);
 				ps.setString(++idx, profileId);
 				ps.setString(++idx, site.getSiteId());
 				ps.setString(++idx, StringUtil.checkVal(section.getURLToken()+QuickLinksAction.URL_STUB));
+				log.debug("urltoken: " + section.getURLToken() + QuickLinksAction.URL_STUB);
 			}
 			ResultSet rs = ps.executeQuery();
 			PageViewVO page = null;
@@ -252,11 +254,14 @@ public class RecentlyViewedAction extends SBActionAdapter {
 		qData.setOrganizationId(orgId);
 		qData.addIndexType(new SolrActionIndexVO("", indexer));
 
-		SolrResponseVO resp = sqp.processQuery(qData);
 		Map<String,String> names = new HashMap<>();
+		SolrResponseVO resp = sqp.processQuery(qData);
+		if (resp == null) return names;
+		
 		for (SolrDocument doc : resp.getResultDocuments()) {
 			names.put(doc.getFieldValue(SearchDocumentHandler.DOCUMENT_ID).toString(), doc.getFieldValue(SearchDocumentHandler.TITLE).toString());
 		}
+		log.debug("names size: " + names.size());
 		return names;
 	}
 	
