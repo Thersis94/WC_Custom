@@ -267,7 +267,7 @@ public class NexusGTINBuilder extends CommandLineUtil {
 			Object uom = prod.get("uomLvl");
 			Object gtin = prod.get("deviceId");
 			
-			if (col != null && col.size() > 0 && gtin != null && uomCol != null) {
+			if (col != null && col.isEmpty() && StringUtil.isEmpty((String)gtin) && uomCol != null) {
 				Object[] o = col.toArray();
 				for (int i = 0; i < col.size(); i++) {
 					if (gtin.equals(o[i]) && uomCol.size() > i) {
