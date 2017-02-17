@@ -13,15 +13,15 @@ import java.util.Map;
 import org.apache.solr.common.SolrDocument;
 
 // WC custom
+import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.util.BiomedCompanyIndexer;
-import com.biomed.smarttrak.util.BiomedMarketIndexer;
 import com.biomed.smarttrak.util.BiomedProductIndexer;
+import com.biomed.smarttrak.vo.MarketVO;
 
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.security.UserRoleVO;
@@ -57,9 +57,7 @@ import com.smt.sitebuilder.util.PageViewVO;
 public class RecentlyViewedAction extends SBActionAdapter {
 	
 	private static final char CHAR_SLASH = '/';
-	private static final String MARKETS = "/markets";
-	private static final String COMPANIES = "/companies";
-	private static final String PRODUCTS = "/products";
+	private static final String URL_STUB = "/qs/%";
 
 	/**
 	 * Constructor
@@ -74,12 +72,7 @@ public class RecentlyViewedAction extends SBActionAdapter {
 	public RecentlyViewedAction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
-	
-	// Enum used as Map keys and for literals where appropriate.
-	public enum KEY_TYPE {
-		MARKET,COMPANY,PRODUCT
-	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.ActionRequest)
 	 */
@@ -88,10 +81,12 @@ public class RecentlyViewedAction extends SBActionAdapter {
 		log.debug("UserRecentActivityAction retrieve...");
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		Map<String, List<PageViewVO>> recentActivity;
+		SMTSession sess = (SMTSession)req.getSession();
+		UserDataVO user = (UserDataVO)sess.getAttribute(Constants.USER_DATA);
+		if (user == null) throw new ActionException("Not logged in.");
+		
 		try {
-			String siteId = parseSiteId(req);
-			String profileId = checkProfileId(req);
-			recentActivity = retrieveRecentlyViewedPages(req, siteId, profileId);
+			recentActivity = retrieveRecentlyViewedPages(req, user.getProfileId());
 			
 		} catch (ActionException ae) {
 			recentActivity = new HashMap<>();
@@ -103,108 +98,80 @@ public class RecentlyViewedAction extends SBActionAdapter {
 	}
 
 	/**
-	 * Determines the siteId value to use for this retrieving page views.
-	 * @param req
-	 * @return
-	 */
-	protected String parseSiteId(ActionRequest req) {
-		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		return site.getSiteId();
-	}
-
-	/**
-	 * Validates a user's security role and then returns a profile ID or null value based
-	 * on the role of the of the logged in user.
-	 * @param req
-	 * @param siteId
-	 * @return
-	 * @throws ActionException
-	 */
-	protected String checkProfileId(ActionRequest req) throws ActionException {
-		StringBuilder errMsg = new StringBuilder(100);
-		errMsg.append("User activity access not authorized. ");
-		
-		SMTSession sess = (SMTSession)req.getSession();
-		if (sess == null) {
-			errMsg.append("Session is Invalid.");
-			throw new ActionException(errMsg.toString());
-		}
-		
-		UserDataVO user = (UserDataVO)sess.getAttribute(Constants.USER_DATA);
-		if (user == null || user.getProfileId() == null) {
-			errMsg.append("Not logged in.");
-			throw new ActionException(errMsg.toString());
-		}
-		return user.getProfileId();
-
-	}
-	
-	/**
 	 * Retrieves recently viewed pages for a specific user on a specific site. 
-	 * @param site
+	 * @param req
 	 * @param profileId
 	 * @return
 	 * @throws ActionException
 	 */
 	protected Map<String, List<PageViewVO>> retrieveRecentlyViewedPages(ActionRequest req, 
-			String siteId, String profileId) throws ActionException {
+			String profileId) throws ActionException {
 		/* Retrieve page views from db, parse into PageViewVO and return list */
-		List<PageViewVO> pages = new ArrayList<>();
 		
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		UserRoleVO userRole = (UserRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
+		
+		List<PageViewVO> pages = new ArrayList<>();
+
 		StringBuilder sql = formatRecentlyViewedQuery();
 		int idx = 0;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(++idx, StringUtil.checkVal(KEY_TYPE.MARKET.name(),true));
+			/* NOTE: order of these setString's for Section.MARKET/COMPANY/PRODUCT 
+			 * url prefix has to match the order of the literals ('MARKET', 'COMPANY', etc.) 
+			 * set in the formatted query. */
 			ps.setString(++idx, profileId);
-			ps.setString(++idx, siteId);
-			ps.setString(++idx, StringUtil.checkVal(MARKETS+"%",true));
-			ps.setString(++idx, StringUtil.checkVal(KEY_TYPE.COMPANY.name(),true));
+			ps.setString(++idx, site.getSiteId());
+			ps.setString(++idx, StringUtil.checkVal(Section.MARKET.getURLToken()+URL_STUB));
 			ps.setString(++idx, profileId);
-			ps.setString(++idx, siteId);
-			ps.setString(++idx, StringUtil.checkVal(COMPANIES+"%",true));
-			ps.setString(++idx, StringUtil.checkVal(KEY_TYPE.PRODUCT.name(),true));
+			ps.setString(++idx, site.getSiteId());
+			ps.setString(++idx, StringUtil.checkVal(Section.COMPANY.getURLToken()+URL_STUB));
 			ps.setString(++idx, profileId);
-			ps.setString(++idx, siteId);
-			ps.setString(++idx, StringUtil.checkVal(PRODUCTS+"%",true));
-			
+			ps.setString(++idx, site.getSiteId());
+			ps.setString(++idx, StringUtil.checkVal(Section.PRODUCT.getURLToken()+URL_STUB));
+
 			ResultSet rs = ps.executeQuery();
 			PageViewVO page = null;
-			DBUtil db = new DBUtil();
 			while(rs.next()) {
 				page = new PageViewVO();
-				page.setReferenceCode(db.getStringVal("reference_cd", rs));
-				page.setRequestUri(db.getStringVal("request_uri_txt", rs));
-				pages.add(page);
+				page.setReferenceCode(rs.getString("reference_cd"));
+				page.setRequestUri(rs.getString("request_uri_txt"));
+				
+				/* Use page bean's page ID field to represent entity ID 
+				 * (e.g. market ID, company ID, etc.) */
+				setPageId(page);
+				// only add to list if we set a page ID value.l
+				if (page.getPageId() != null) 
+					pages.add(page);
 			}
 		} catch (SQLException sqle) {
-			log.error("Error retrieving recently viewed pages for profile ID: " + profileId);
 			throw new ActionException(sqle.getMessage());
 		}
-				
+
 		log.debug("Total number of raw page views found: " + pages.size());
-		return parseResults(req, pages);
+		return parseResults(site, userRole, pages);
 	}
 
 	/**
 	 * Parses the resulting list of page views into a map of profile IDs mapped to UserActivityVOs.
-	 * @param pageViews
+	 * @param site
+	 * @param userRole
+	 * @param pages
 	 * @return
 	 */
-	protected Map<String, List<PageViewVO>> parseResults(ActionRequest req, List<PageViewVO> pages) {
+	protected Map<String, List<PageViewVO>> parseResults(SiteVO site, 
+			UserRoleVO userRole, List<PageViewVO> pages) {
 		// collate pages into buckets
 		Map<String, List<PageViewVO>> recentViewed = collatePages(pages);
-		
+
 		// leverage solr to retrieve display names
-		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
-		UserRoleVO role = (UserRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
 		for (Map.Entry<String, List<PageViewVO>> entry : recentViewed.entrySet()) {
 			try {
-				formatNamesFromPage(site.getOrganizationId(), role.getRoleLevel(), entry);
+				formatNamesFromPage(site.getOrganizationId(), userRole.getRoleLevel(), entry);
 			} catch(ActionException ae) {
 				continue;
 			}
 		}
-		
+
 		return recentViewed;
 	}
 	
@@ -215,18 +182,14 @@ public class RecentlyViewedAction extends SBActionAdapter {
 	 */
 	protected Map<String,List<PageViewVO>> collatePages(List<PageViewVO> pages) {
 		Map<String, List<PageViewVO>> pageMap = initializePageMap();
-		// loop pages, parse into buckets, filter out duplicates.
+		// loop pages, parse into buckets
 		for (PageViewVO page : pages) {
-			// set page ID to represent entity ID (e.g. market ID, company ID, etc.)
-			formatIdFromPage(page);
-			// skip root pages.
-			if (page.getPageId() == null) continue;
 			// add page to the appropriate List.
-			pageMap.get(page.getReferenceCode()).add(page);
+			if (pageMap.get(page.getReferenceCode()) != null)
+				pageMap.get(page.getReferenceCode()).add(page);
 		}
 		return pageMap;
 	}
-
 	
 	/**
 	 * Initialize a Map of List of PageViewVO based on the key types enum.
@@ -234,24 +197,24 @@ public class RecentlyViewedAction extends SBActionAdapter {
 	 */
 	protected Map<String,List<PageViewVO>> initializePageMap() {
 		Map<String,List<PageViewVO>> pm = new HashMap<>();
-		for (KEY_TYPE kt : KEY_TYPE.values()) {
-			pm.put(kt.name(), new ArrayList<>());
+		for (Section sect : Section.values()) {
+			pm.put(sect.name(), new ArrayList<>());
 		}
 		return pm;
 	}
-	
+
 	/**
-	 * Formats the page ID of the recently viewed page.  We use page ID to represent
-	 * the ID of the entity we are dealing with.  For a market entity, page ID represents 
-	 * the market ID, for company, the company ID, and so on.
+	 * We use page ID on the PageViewVO to represent the ID of the 
+	 * section entity we are dealing with. For a market entity, page ID 
+	 * represents the market ID, for company, the company ID, and so on.
 	 * @param page
 	 */
-	protected void formatIdFromPage(PageViewVO page) {
+	protected void setPageId(PageViewVO page) {
 		int idx = page.getRequestUri().lastIndexOf(CHAR_SLASH);
 		if (idx == 0 || idx == page.getRequestUri().length() - 1) return;
 		page.setPageId(page.getRequestUri().substring(idx+1));
 	}
-	
+
 	/**
 	 * Formats entity names
 	 * @param orgId
@@ -260,20 +223,20 @@ public class RecentlyViewedAction extends SBActionAdapter {
 	 * @throws ActionException 
 	 */
 	protected void formatNamesFromPage(String orgId, int roleLevel, 
-			Map.Entry<String, List<PageViewVO>> entry) throws ActionException {
-		Map<String,String> pageNames = retrieveEntityNames(orgId,roleLevel,entry);
-		for (PageViewVO page : entry.getValue()) {
+			Map.Entry<String, List<PageViewVO>> pages) throws ActionException {
+		Map<String,String> pageNames = retrieveEntityNames(orgId,roleLevel,pages);
+		for (PageViewVO page : pages.getValue()) {
 			page.setPageDisplayName(pageNames.get(page.getPageId()));
 		}
 	}
-	
+
 	/**
 	 * Leverages Solr to query for entity names.
 	 * @param orgId
 	 * @param roleLevel
-	 * @param pages
+	 * @param entry
 	 * @return
-	 * @throws ActionException 
+	 * @throws ActionException
 	 */
 	protected Map<String,String> retrieveEntityNames(String orgId, int roleLevel, 
 			Map.Entry<String, List<PageViewVO>> entry) throws ActionException {
@@ -309,13 +272,13 @@ public class RecentlyViewedAction extends SBActionAdapter {
 	 * @return
 	 */
 	protected String findIndexerType(String key) throws ActionException {
-		switch(key) {
-			case MARKETS:
-				BiomedMarketIndexer bmi = new BiomedMarketIndexer(null);
-				return bmi.getIndexType();
-			case COMPANIES:
+		Section s = Section.valueOf(key);
+		switch(s) {
+			case MARKET:
+				return MarketVO.SOLR_INDEX;
+			case COMPANY:
 				return BiomedCompanyIndexer.INDEX_TYPE;
-			case PRODUCTS:
+			case PRODUCT:
 				return BiomedProductIndexer.INDEX_TYPE;
 			default:
 				throw new ActionException("Error: Unknown indexer type: " + key);
@@ -367,14 +330,14 @@ public class RecentlyViewedAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	protected String getEntityString(String val) throws ActionException {
-		if (val.indexOf(MARKETS) > -1) {
-			return KEY_TYPE.MARKET.name();
-		} else if (val.indexOf(COMPANIES) > -1) {
-			return KEY_TYPE.COMPANY.name();
-		} else if (val.indexOf(PRODUCTS) > -1) {
-			return KEY_TYPE.PRODUCT.name();
+		if (val.indexOf(Section.MARKET.getURLToken()) > -1) {
+			return Section.MARKET.name();
+		} else if (val.indexOf(Section.COMPANY.getURLToken()) > -1) {
+			return Section.COMPANY.name();
+		} else if (val.indexOf(Section.PRODUCT.getURLToken()) > -1) {
+			return Section.PRODUCT.name();
 		}
-		throw new ActionException("Unknown entity value.");
+		throw new ActionException("Unknown section value.");
 	}
 	
 	/**
@@ -383,23 +346,22 @@ public class RecentlyViewedAction extends SBActionAdapter {
 	 */
 	protected StringBuilder formatRecentlyViewedQuery() {
 		StringBuilder sql = new StringBuilder(850);
-		sql.append("select ? as reference_cd, request_uri_txt, visit_dt from ( ");
+		sql.append("select 'MARKET' as reference_cd, request_uri_txt, visit_dt from ( ");
 		sql.append("select distinct(request_uri_txt), visit_dt from pageview_user ");
 		sql.append("where profile_id = ? and site_id = ? and request_uri_txt like ? ");
 		sql.append("order by visit_dt desc limit 10 ) as x ");
 		sql.append("union all ");
-		sql.append("select ? as reference_cd, request_uri_txt, visit_dt from ( ");
+		sql.append("select 'COMPANY' as reference_cd, request_uri_txt, visit_dt from ( ");
 		sql.append("select distinct(request_uri_txt), visit_dt from pageview_user ");
 		sql.append("where profile_id = ? and site_id = ? and request_uri_txt like ? ");
 		sql.append("order by visit_dt desc limit 10 ) as y ");
 		sql.append("union all ");
-		sql.append("select ? as reference_cd, request_uri_txt, visit_dt from ( ");
+		sql.append("select 'PRODUCT' as reference_cd, request_uri_txt, visit_dt from ( ");
 		sql.append("select distinct(request_uri_txt), visit_dt from pageview_user ");
 		sql.append("where profile_id = ? and site_id = ? and request_uri_txt like ? ");
 		sql.append("order by visit_dt desc limit 10 ) as z ");
 		sql.append("order by visit_dt desc ");
 		return sql;
 	}
-
 
 }
