@@ -1,4 +1,4 @@
-package com.bmg.admin.vo;
+package com.biomed.smarttrak.vo;
 
 import java.util.List;
 
