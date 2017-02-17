@@ -35,6 +35,7 @@ public class QuickLinksAction extends SBActionAdapter {
 	public static final String LINK_TYPE = "type";
 	public static final String LINK_TYPE_FAVORITES = "fv";
 	public static final String LINK_TYPE_RECENTLY_VIEWED = "rv";
+	public static final String URL_STUB = "qs/";
 	public static final int MAX_LIST_SIZE = 10;
 	
 	/**

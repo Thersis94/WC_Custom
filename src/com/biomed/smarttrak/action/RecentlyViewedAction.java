@@ -57,7 +57,6 @@ import com.smt.sitebuilder.util.PageViewVO;
 public class RecentlyViewedAction extends SBActionAdapter {
 	
 	private static final char CHAR_SLASH = '/';
-	private static final String URL_STUB = "/qs/%";
 
 	/**
 	 * Constructor
@@ -79,12 +78,12 @@ public class RecentlyViewedAction extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("UserRecentActivityAction retrieve...");
-		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
-		Map<String, List<PageViewVO>> recentActivity;
 		SMTSession sess = (SMTSession)req.getSession();
 		UserDataVO user = (UserDataVO)sess.getAttribute(Constants.USER_DATA);
 		if (user == null) throw new ActionException("Not logged in.");
-		
+
+		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
+		Map<String, List<PageViewVO>> recentActivity;
 		try {
 			recentActivity = retrieveRecentlyViewedPages(req, user.getProfileId());
 			
@@ -116,19 +115,11 @@ public class RecentlyViewedAction extends SBActionAdapter {
 		StringBuilder sql = formatRecentlyViewedQuery();
 		int idx = 0;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			/* NOTE: order of these setString's for Section.MARKET/COMPANY/PRODUCT 
-			 * url prefix has to match the order of the literals ('MARKET', 'COMPANY', etc.) 
-			 * set in the formatted query. */
-			ps.setString(++idx, profileId);
-			ps.setString(++idx, site.getSiteId());
-			ps.setString(++idx, StringUtil.checkVal(Section.MARKET.getURLToken()+URL_STUB));
-			ps.setString(++idx, profileId);
-			ps.setString(++idx, site.getSiteId());
-			ps.setString(++idx, StringUtil.checkVal(Section.COMPANY.getURLToken()+URL_STUB));
-			ps.setString(++idx, profileId);
-			ps.setString(++idx, site.getSiteId());
-			ps.setString(++idx, StringUtil.checkVal(Section.PRODUCT.getURLToken()+URL_STUB));
-
+			for (Section section : Section.values()) {
+				ps.setString(++idx, profileId);
+				ps.setString(++idx, site.getSiteId());
+				ps.setString(++idx, StringUtil.checkVal(section.getURLToken()+QuickLinksAction.URL_STUB));
+			}
 			ResultSet rs = ps.executeQuery();
 			PageViewVO page = null;
 			while(rs.next()) {
@@ -183,10 +174,13 @@ public class RecentlyViewedAction extends SBActionAdapter {
 	protected Map<String,List<PageViewVO>> collatePages(List<PageViewVO> pages) {
 		Map<String, List<PageViewVO>> pageMap = initializePageMap();
 		// loop pages, parse into buckets
+		List<PageViewVO> pList;
 		for (PageViewVO page : pages) {
 			// add page to the appropriate List.
-			if (pageMap.get(page.getReferenceCode()) != null)
-				pageMap.get(page.getReferenceCode()).add(page);
+			pList = pageMap.get(page.getReferenceCode());
+			if (pList != null && 
+					pList.size() < QuickLinksAction.MAX_LIST_SIZE)
+				pList.add(page);
 		}
 		return pageMap;
 	}
@@ -346,21 +340,24 @@ public class RecentlyViewedAction extends SBActionAdapter {
 	 */
 	protected StringBuilder formatRecentlyViewedQuery() {
 		StringBuilder sql = new StringBuilder(850);
-		sql.append("select 'MARKET' as reference_cd, request_uri_txt, visit_dt from ( ");
-		sql.append("select distinct(request_uri_txt), visit_dt from pageview_user ");
-		sql.append("where profile_id = ? and site_id = ? and request_uri_txt like ? ");
-		sql.append("order by visit_dt desc limit 10 ) as x ");
-		sql.append("union all ");
-		sql.append("select 'COMPANY' as reference_cd, request_uri_txt, visit_dt from ( ");
-		sql.append("select distinct(request_uri_txt), visit_dt from pageview_user ");
-		sql.append("where profile_id = ? and site_id = ? and request_uri_txt like ? ");
-		sql.append("order by visit_dt desc limit 10 ) as y ");
-		sql.append("union all ");
-		sql.append("select 'PRODUCT' as reference_cd, request_uri_txt, visit_dt from ( ");
-		sql.append("select distinct(request_uri_txt), visit_dt from pageview_user ");
-		sql.append("where profile_id = ? and site_id = ? and request_uri_txt like ? ");
-		sql.append("order by visit_dt desc limit 10 ) as z ");
+		int count = 1;
+		for (Section section : Section.values()) {
+			sql.append("select '");
+			sql.append(section.name());
+			sql.append("' as reference_cd, request_uri_txt, visit_dt from ( ");
+			sql.append("select distinct(request_uri_txt), visit_dt from pageview_user ");
+			sql.append("where profile_id = ? and site_id = ? and request_uri_txt like ? ");
+			sql.append("order by visit_dt desc limit ");
+			sql.append(QuickLinksAction.MAX_LIST_SIZE);
+			sql.append(" ) as ").append(section.name()).append(" ");
+
+			if (count < Section.values().length)
+				sql.append("union all ");
+			
+			count++;
+		}
 		sql.append("order by visit_dt desc ");
+		log.debug("Recently viewed SQL: " + sql.toString());
 		return sql;
 	}
 
