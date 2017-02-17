@@ -29,6 +29,7 @@ import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.SecurityController;
 
 /****************************************************************************
  * <b>Title</b>: AdminControllerAction.java
@@ -47,6 +48,22 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	public static final String PUBLIC_SITE_ID = "BMG_SMARTTRAK_1";
 	public static final String STAFF_ROLE_ID = "3eef678eb39e87277f000101dfd4f140";
 	public static final String REGISTRATION_GRP_ID = "ea884793b2ef163f7f0001011a253456";
+
+	public static final int DEFAULT_ROLE_LEVEL = SecurityController.PUBLIC_REGISTERED_LEVEL;
+	public static final String BIOMED_ORG_ID = "BMG_SMARTTRAK"; 
+	public enum Section {
+		MARKET("market/"), PRODUCT("products/"), COMPANY("companies/");
+
+		private String path;
+
+		Section(String path) {
+			this.path = path;
+		}
+
+		public String getURLToken() {
+			return path;
+		}
+	}
 
 	public AdminControllerAction() {
 		super();
