@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+
 //WC custom
 import com.biomed.smarttrak.vo.NoteVO;
 import com.biomed.smarttrak.vo.TeamVO;
@@ -282,12 +283,6 @@ public class NoteAction extends SBActionAdapter {
 
 				vo.setProfileDocuments(pda.getDocumentByFeatureId(vo.getNoteId()));
 
-				if( vo.getProfileDocuments() != null){
-					for(ProfileDocumentVO t : vo.getProfileDocuments()){
-						//TODO here
-						log.debug("eeeee found this pro doc in list " + t.toString());
-					}
-				}
 				return vo;
 			}
 		} catch(SQLException | ActionException sqle) {
@@ -422,15 +417,38 @@ public class NoteAction extends SBActionAdapter {
 		ModuleVO modVo = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 
 		if(req.hasParameter("isDelete")) {
-			deleteNote(vo, db);	
-		} else {			
-			saveNote(vo, db);
+			if (!StringUtil.isEmpty(vo.getNoteId())) {
 
+				ProfileDocumentAction pda = new ProfileDocumentAction();
+				pda.setAttributes(attributes);
+				pda.setDBConnection(dbConn);
+				pda.setActionInit(actionInit);
+				//goes looking for documents to delete
+				vo.setProfileDocuments(pda.getDocumentByFeatureId(vo.getNoteId()));
+				//deletes the note
+				deleteNote(vo, db);	
+				
+				//if there are files to delete remove then and they document record
+				if (vo.getProfileDocuments() != null && vo.getProfileDocuments().size() >0){
+					for (ProfileDocumentVO pvo : vo.getProfileDocuments()){
+						pda.delete(pvo);
+					}
+
+				}
+
+			}
+
+		} else {		
+			log.debug("save note with id: " + vo.getNoteId() + " is it savable " + vo.isNoteSaveable() );
+			if (vo.isNoteSaveable()) {
+				saveNote(vo, db);
+			}
 			vo.setNoteId(db.getGeneratedPKId());
 
 			if(!StringUtil.isEmpty(vo.getFilePathText())){
 				processProfileDocumentCreation(vo, req, uvo.getProfileId());
 			}
+
 
 			modVo.setAttribute("newNoteId", vo.getNoteId() );
 			modVo.setAttribute("newNote", vo);
@@ -498,11 +516,7 @@ public class NoteAction extends SBActionAdapter {
 		log.debug("Notes Action insert note called ");
 
 		try {
-			log.debug("save note with id: " + vo.getNoteId() + " is it savable " + vo.isNoteSaveable() );
-			if (vo.isNoteSaveable()) {
-				db.save(vo);
-			}
-
+			db.save(vo);
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}
@@ -517,16 +531,18 @@ public class NoteAction extends SBActionAdapter {
 		log.debug("Notes Action delete note called");
 
 		try {
-			if (!StringUtil.isEmpty(vo.getNoteId())) {
-				db.delete(vo);
-			}
-
+			db.delete(vo);
 		}catch(Exception e) {
 			throw new ActionException(e);
 		}
 	}
 
 	/**
+				if( vo.getProfileDocuments() != null){
+					for(ProfileDocumentVO pvo : vo.getProfileDocuments()){
+
+					}
+				}
 	 * based on the note request type and the size of the attributes list returns the where clause.
 	 * @param vo
 	 * @param noteRequestType
