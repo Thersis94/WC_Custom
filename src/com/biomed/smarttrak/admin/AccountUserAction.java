@@ -15,6 +15,7 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.security.UserDataVO;
+import com.siliconmtn.util.RandomAlphaNumeric;
 import com.siliconmtn.util.StringUtil;
 
 // WebCrescendo
@@ -25,10 +26,13 @@ import com.smt.sitebuilder.action.registration.SubmittalAction;
 import com.smt.sitebuilder.action.registration.SubmittalDataVO;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
+import com.smt.sitebuilder.action.user.ProfileRoleManager;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.SecurityController;
+import com.smt.sitebuilder.security.UserLogin;
 
 //WC_Custom
 import com.biomed.smarttrak.vo.UserVO;
@@ -151,8 +155,9 @@ public class AccountUserAction extends SBActionAdapter {
 	 * Calls ProfileManager for both read and write transaction for core user data
 	 * @param user
 	 * @param req
+	 * @throws ActionException 
 	 */
-	protected void callProfileManager(UserVO user, ActionRequest req, boolean isSave) {
+	protected void callProfileManager(UserVO user, ActionRequest req, boolean isSave) throws ActionException {
 		//load the users profile data
 		ProfileManager pm = ProfileManagerFactory.getInstance(getAttributes());
 		try {
@@ -177,6 +182,23 @@ public class AccountUserAction extends SBActionAdapter {
 		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)data, (String)getAttribute(Constants.ENCRYPT_KEY));
 	}
 
+
+	/**
+	 * gives the user a dummy randomly-generated password and creates the authentication record.
+	 * puts authenticationId onto the userVo for storage in the profile table.
+	 * @param user
+	 */
+	protected void createAuthRecord(UserVO user) throws ActionException {
+		user.setPassword(RandomAlphaNumeric.generateRandom(8));
+		UserLogin ul = new UserLogin(dbConn, (String)getAttribute(Constants.ENCRYPT_KEY));
+		//save the record.  Flag it for password reset immediately.
+		try {
+			String authId = ul.modifyUser(null, user.getEmailAddress(), user.getPassword(), 1);
+			user.setAuthenticationId(authId);
+		} catch (com.siliconmtn.exception.DatabaseException e) {
+			throw new ActionException(e);
+		}
+	}
 
 
 	/**
@@ -207,8 +229,15 @@ public class AccountUserAction extends SBActionAdapter {
 	public void build(ActionRequest req) throws ActionException {
 		UserVO user = new UserVO(req);
 
+		//create an auth record before saving profile data, if this is a new user
+		if (StringUtil.isEmpty(user.getAuthenticationId()))
+			createAuthRecord(user);
+
 		//save their WC profile
 		callProfileManager(user, req, true);
+
+		//check & create profile_role if needed
+		saveProfileRole(user, false);
 
 		//save their registration data
 		saveRegistrationData(req, user);
@@ -217,6 +246,33 @@ public class AccountUserAction extends SBActionAdapter {
 		saveRecord(req, user, false);
 
 		setupRedirect(req);
+	}
+
+
+	/**
+	 * checks and creates the profile_role record tied to the public site, if necessary
+	 * @param user
+	 * @throws ActionException
+	 */
+	protected void saveProfileRole(UserVO user, boolean isDelete) throws ActionException {
+		String siteId = AdminControllerAction.PUBLIC_SITE_ID;
+		String roleId = Integer.toString(SecurityController.PUBLIC_REGISTERED_LEVEL);
+		int status = SecurityController.STATUS_ACTIVE;
+		ProfileRoleManager prm = new ProfileRoleManager();
+
+		try {
+			if (isDelete) {
+				prm.removeRole(user.getAuthenticationId(), dbConn);
+				return;
+			}
+			//check, then add
+			if (prm.roleExists(user.getProfileId(), siteId, roleId, dbConn))
+				return;
+
+			prm.addRole(user.getProfileId(), siteId, roleId, status, dbConn);
+		} catch (com.siliconmtn.exception.DatabaseException e) {
+			throw new ActionException(e);
+		} 
 	}
 
 
@@ -243,11 +299,16 @@ public class AccountUserAction extends SBActionAdapter {
 		List<SubmittalDataVO> regData = new ArrayList<>();
 		SubmittalDataVO vo;
 		for (RegistrationMap field : UserVO.RegistrationMap.values()) {
-			vo = new SubmittalDataVO(null);
-			vo.setRegisterFieldId(field.getFieldId());
-			vo.setUserValue(req.getParameter(field.getReqParam()));
-			regData.add(vo);
 			formFields.add(field.getFieldId());
+			String[] values = req.getParameterValues(field.getReqParam());
+			if (values == null) continue; //we're still going to flush the old data, but have nothing to save in it's place
+
+			for (String val : values) {
+				vo = new SubmittalDataVO(null);
+				vo.setRegisterFieldId(field.getFieldId());
+				vo.setUserValue(val);
+				regData.add(vo);
+			}
 		}
 
 		//put the fields we're going to be saving onto the request - Registration won't save what we can't prove we're passing
@@ -261,7 +322,9 @@ public class AccountUserAction extends SBActionAdapter {
 	 */
 	@Override
 	public void delete(ActionRequest req) throws ActionException {
-		saveRecord(req, new UserVO(req), true); //we're going to delete them from Smartrak here, but not from the WC core
+		UserVO user = new UserVO(req);
+		saveRecord(req, user, true); //deletes them from Smartrak, but not from the WC core
+		saveProfileRole(user, true); //revoke website access
 		setupRedirect(req);
 	}
 
