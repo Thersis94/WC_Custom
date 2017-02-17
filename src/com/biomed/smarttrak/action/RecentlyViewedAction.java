@@ -254,7 +254,7 @@ public class RecentlyViewedAction extends SBActionAdapter {
 
 		qData.setNumberResponses(entry.getValue().size());
 		qData.setStartLocation(0);
-		qData.setRoleLevel(roleLevel);
+		qData.setRoleLevel(AdminControllerAction.DEFAULT_ROLE_LEVEL);
 		qData.setOrganizationId(orgId);
 		qData.addIndexType(new SolrActionIndexVO("", indexer));
 
