@@ -8,6 +8,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.biomed.smarttrak.admin.user.HumanNameIntfc;
+import com.biomed.smarttrak.admin.user.NameComparator;
 import com.biomed.smarttrak.vo.UpdatesVO;
 import com.biomed.smarttrak.vo.UpdatesXRVO;
 import com.siliconmtn.action.ActionException;
@@ -16,13 +18,11 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.security.EncryptionException;
-import com.siliconmtn.security.StringEncrypter;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
-
-import opennlp.tools.util.StringUtil;
+import com.smt.sitebuilder.util.solr.SolrActionUtil;
 
 /****************************************************************************
  * <b>Title</b>: UpdatesAction.java
@@ -31,7 +31,7 @@ import opennlp.tools.util.StringUtil;
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
  * 
- * @author raptor
+ * @author Billy Larsen
  * @version 1.0
  * @since Feb 14, 2017
  ****************************************************************************/
@@ -76,10 +76,19 @@ public class UpdatesAction extends SBActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		//loadData gets passed on the ajax call.  If we're not loading data simply go to view to render the bootstrap 
 		//table into the view (which will come back for the data).
-		if (!req.hasParameter("loadData") && !req.hasParameter(UPDATE_ID)) return;
+		if (!req.hasParameter("loadData") && !req.hasParameter(UPDATE_ID) ) return;
+
+		String updateId = req.hasParameter(UPDATE_ID) ? req.getParameter(UPDATE_ID) : null;
+		List<Object> updates = getUpdates(updateId);
+
+		decryptNames(updates);
+
+		putModuleData(updates);
+	}
+
+	public List<Object> getUpdates(String updateId) {
 
 		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
-		String updateId = req.hasParameter(UPDATE_ID) ? req.getParameter(UPDATE_ID) : null;
 		String sql = formatRetrieveQuery(updateId, schema);
 
 		List<Object> params = new ArrayList<>();
@@ -88,17 +97,13 @@ public class UpdatesAction extends SBActionAdapter {
 		DBProcessor db = new DBProcessor(dbConn, schema);
 		List<Object>  updates = db.executeSelect(sql, params, new UpdatesVO());
 		log.debug("loaded " + updates.size() + " updates");
-
-		decryptNames(updates);
-
-		putModuleData(updates);
+		return updates;
 	}
-
 	/**
 	 * Formats the account retrieval query.
 	 * @return
 	 */
-	protected String formatRetrieveQuery(String updateId, String schema) {
+	public static String formatRetrieveQuery(String updateId, String schema) {
 		StringBuilder sql = new StringBuilder(400);
 		sql.append("select a.*, p.first_nm, p.last_nm, b.section_id ");
 		sql.append("from ").append(schema).append("biomedgps_update a ");
@@ -116,23 +121,9 @@ public class UpdatesAction extends SBActionAdapter {
 	 * loop and decrypt owner names, which came from the profile table
 	 * @param accounts
 	 */
-	protected void decryptNames(List<Object>  updates) {
-		StringEncrypter se;
-		try {
-			se = new StringEncrypter((String)getAttribute(Constants.ENCRYPT_KEY));
-		} catch (EncryptionException e1) {
-			return; //cannot use the decrypter, fail fast
-		}
-
-		for (Object o : updates) {
-			try {
-				UpdatesVO u = (UpdatesVO) o;
-				u.setFirstNm(se.decrypt(u.getFirstNm()));
-				u.setLastNm(se.decrypt(u.getLastNm()));
-			} catch (Exception e) {
-				//ignoreable
-			}
-		}
+	@SuppressWarnings("unchecked")
+	protected void decryptNames(List<Object> data) {
+		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)data, (String)getAttribute(Constants.ENCRYPT_KEY));
 	}
 
 	/**
@@ -183,12 +174,22 @@ public class UpdatesAction extends SBActionAdapter {
 
 				if(StringUtil.isEmpty(u.getUpdateId())) {
 					u.setUpdateId(db.getGeneratedPKId());
-					for(UpdatesXRVO uxr : u.getSections()) {
+					for(UpdatesXRVO uxr : u.getUpdateSections()) {
 						uxr.setUpdateId(u.getUpdateId());
 					}
 				}
 				//Save Update Sections.
 				saveSections(u);
+
+				//Add to Solr if published
+				if("R".equals(u.getStatusCd())) {
+					try(SolrActionUtil sau = new SolrActionUtil(getAttributes())) {
+						sau.addDocument(u);
+					} catch (Exception e) {
+						log.error("Error Saving to Solr.", e);
+					}
+					log.debug("added document to solr");
+				}
 			}
 		} catch (InvalidDataException | DatabaseException e) {
 			throw new ActionException(e);
@@ -210,7 +211,7 @@ public class UpdatesAction extends SBActionAdapter {
 		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 
 		//Save new Sections.
-		for(UpdatesXRVO uxr : u.getSections()) {
+		for(UpdatesXRVO uxr : u.getUpdateSections()) {
 			db.save(uxr);
 		}
 	}

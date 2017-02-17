@@ -3,14 +3,17 @@
  */
 package com.biomed.smarttrak.vo;
 
-import java.io.Serializable;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import com.biomed.smarttrak.action.AdminControllerAction;
+import com.biomed.smarttrak.action.AdminControllerAction.ContentPath;
 import com.biomed.smarttrak.admin.UpdatesAction.UpdateType;
+import com.biomed.smarttrak.admin.user.HumanNameIntfc;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.annotations.SolrField;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
@@ -18,6 +21,8 @@ import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.search.SearchDocumentHandler;
+import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 
 /****************************************************************************
  * <b>Title</b>: UpdatesVO.java
@@ -31,10 +36,11 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @since Feb 14, 2017
  ****************************************************************************/
 @Table(name="biomedgps_update")
-public class UpdatesVO implements Serializable {
+public class UpdatesVO extends SolrDocumentVO implements HumanNameIntfc {
 
-	private static final long serialVersionUID = 8939343932469876513L;
+	public static final String INDEX_TYPE = "BIOMED_UPDATE";
 	private String updateId;
+	//Create single point url or field for id/type
 	private String marketId;
 	private String productId;
 	private String companyId;
@@ -51,9 +57,14 @@ public class UpdatesVO implements Serializable {
 	private Date updateDt;
 
 	private List<UpdatesXRVO> sections;
+
 	public UpdatesVO() {
+		super(INDEX_TYPE);
 		sections = new ArrayList<>();
+		super.addOrganization(AdminControllerAction.BIOMED_ORG_ID);
+		super.addRole(0);
 	}
+
 
 	public UpdatesVO(ResultSet rs) {
 		this();
@@ -75,7 +86,7 @@ public class UpdatesVO implements Serializable {
 		if(vo != null) {
 			this.creatorProfileId = StringUtil.checkVal(req.getParameter("creatorProfileId"), vo.getProfileId());
 		}
-		this.updateId = req.getParameter("updateId");
+		setUpdateId(req.getParameter("updateId"));
 		this.marketId = StringUtil.checkVal(req.getParameter("marketId"), null);
 		this.productId = StringUtil.checkVal(req.getParameter("productId"), null);
 		this.companyId = StringUtil.checkVal(req.getParameter("companyId"), null);
@@ -84,12 +95,43 @@ public class UpdatesVO implements Serializable {
 		this.messageTxt = req.getParameter("messageTxt");
 		this.twitterTxt = req.getParameter("twitterTxt");
 		this.statusCd = req.getParameter("statusCd");
+		if("R".equals(statusCd)) {
+			this.setPublishDt(new Date());
+		}
 		if(req.hasParameter("sectionId")) {
 			String [] s = req.getParameterValues("sectionId");
 			for(String sec : s) {
 				this.sections.add(new UpdatesXRVO(updateId, sec));
 			}
 		}
+	}
+
+	@Override
+	@SolrField(name=SearchDocumentHandler.DOCUMENT_URL)
+	public String getDocumentUrl() {
+		StringBuilder url = new StringBuilder(50);
+		if(!StringUtil.isEmpty(marketId)) {
+			url.append(ContentPath.MARKET.getPath()).append("qs/").append(marketId);
+		} else if(!StringUtil.isEmpty(productId)) {
+			url.append(ContentPath.PRODUCT.getPath()).append("qs/").append(productId);
+		} else if(!StringUtil.isEmpty(companyId)) {
+			url.append(ContentPath.COMPANY.getPath()).append("qs/").append(companyId);
+		}
+
+		return url.toString();
+	}
+
+	@Override
+	@SolrField(name=SearchDocumentHandler.CONTENT_TYPE)
+	public String getContentType() {
+		if(!StringUtil.isEmpty(marketId)) {
+			super.setContentType(ContentPath.MARKET.toString());
+		} else if(!StringUtil.isEmpty(productId)) {
+			super.setContentType(ContentPath.PRODUCT.toString());
+		} else if(!StringUtil.isEmpty(companyId)) {
+			super.setContentType(ContentPath.COMPANY.toString());
+		}
+		return super.getContentType();
 	}
 
 	/**
@@ -128,6 +170,7 @@ public class UpdatesVO implements Serializable {
 	 * @return the titleTxt
 	 */
 	@Column(name="title_txt")
+	@SolrField(name=SearchDocumentHandler.TITLE)
 	public String getTitleTxt() {
 		return titleTxt;
 	}
@@ -135,6 +178,7 @@ public class UpdatesVO implements Serializable {
 	/**
 	 * @return the typeNm
 	 */
+	@SolrField(name=SearchDocumentHandler.MODULE_TYPE)
 	@Column(name="type_cd")
 	public int getTypeCd() {
 		return typeCd;
@@ -151,6 +195,7 @@ public class UpdatesVO implements Serializable {
 	 * @return the messageTxt
 	 */
 	@Column(name="message_txt")
+	@SolrField(name=SearchDocumentHandler.SUMMARY)
 	public String getMessageTxt() {
 		return messageTxt;
 	}
@@ -182,6 +227,7 @@ public class UpdatesVO implements Serializable {
 	/**
 	 * @return the publishDt
 	 */
+	@SolrField(name=SearchDocumentHandler.UPDATE_DATE)
 	@Column(name="publish_dt")
 	public Date getPublishDt() {
 		return publishDt;
@@ -204,24 +250,9 @@ public class UpdatesVO implements Serializable {
 	}
 
 	/**
-	 * @return the firstNm
-	 */
-	@Column(name="first_nm", isReadOnly=true)
-	public String getFirstNm() {
-		return firstNm;
-	}
-
-	/**
-	 * @return the lastNm
-	 */
-	@Column(name="last_nm", isReadOnly=true)
-	public String getLastNm() {
-		return lastNm;
-	}
-	/**
 	 * @return the sections
 	 */
-	public List<UpdatesXRVO> getSections() {
+	public List<UpdatesXRVO> getUpdateSections() {
 		return sections;
 	}
 
@@ -231,11 +262,21 @@ public class UpdatesVO implements Serializable {
 			this.sections.add(u);
 	}
 
+	@Override
+	@SolrField(name=SearchDocumentHandler.SECTION)
+	public List<String> getSections() {
+		List<String> secList = new ArrayList<>();
+		for(UpdatesXRVO uxr : sections) {
+			secList.add(uxr.getSectionId());
+		}
+		return secList;
+	}
 	/**
 	 * @param updateId the updateId to set.
 	 */
 	public void setUpdateId(String updateId) {
 		this.updateId = updateId;
+		setDocumentId(updateId);
 	}
 
 	/**
@@ -323,20 +364,6 @@ public class UpdatesVO implements Serializable {
 	}
 
 	/**
-	 * @param firstNm the firstNm to set.
-	 */
-	public void setFirstNm(String firstNm) {
-		this.firstNm = firstNm;
-	}
-
-	/**
-	 * @param lastNm the lastNm to set.
-	 */
-	public void setLastNm(String lastNm) {
-		this.lastNm = lastNm;
-	}
-
-	/**
 	 * @param sections the sections to set.
 	 */
 	public void setSections(List<UpdatesXRVO> sections) {
@@ -370,5 +397,38 @@ public class UpdatesVO implements Serializable {
 			default :
 				return null;
 		}
+	}
+
+	/* (non-Javadoc)
+	 * @see com.biomed.smarttrak.admin.user.HumanNameIntfc#getFirstName()
+	 */
+	@Override
+	@Column(name="first_nm", isReadOnly=true)
+	public String getFirstName() {
+		return firstNm;
+	}
+
+	/**
+	 * @return the lastNm
+	 */
+	@Column(name="last_nm", isReadOnly=true)
+	public String getLastName() {
+		return lastNm;
+	}
+
+	/* (non-Javadoc)
+	 * @see com.biomed.smarttrak.admin.user.HumanNameIntfc#setFirstName(java.lang.String)
+	 */
+	@Override
+	public void setFirstName(String firstNm) {
+		this.firstNm = firstNm;
+	}
+
+	/* (non-Javadoc)
+	 * @see com.biomed.smarttrak.admin.user.HumanNameIntfc#setLastName(java.lang.String)
+	 */
+	@Override
+	public void setLastName(String lastNm) {
+		this.lastNm = lastNm;
 	}
 }
