@@ -14,7 +14,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 
 import com.biomed.smarttrak.admin.UpdatesAction;
-import com.biomed.smarttrak.vo.UpdatesVO;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SMTAbstractIndex;
@@ -34,6 +33,7 @@ import com.smt.sitebuilder.util.solr.SolrDocumentVO;
  * @since Feb 16, 2017
  ****************************************************************************/
 public class BiomedUpdateIndexer extends SMTAbstractIndex {
+	public static final String INDEX_TYPE = "BIOMED_UPDATE";
 
 	public BiomedUpdateIndexer(Properties config) {
 		super(config);
@@ -49,7 +49,7 @@ public class BiomedUpdateIndexer extends SMTAbstractIndex {
 	public void addIndexItems(SolrClient server) throws SolrException {
 		try (SolrActionUtil util = new SolrActionUtil(makeServer())) {
 			List<SolrDocumentVO> docs = getDocuments(null);
-			if (docs.size() < 1) {
+			if (docs.isEmpty()) {
 				throw new Exception("No Documents found");
 			}
 			util.addDocuments(docs);
@@ -85,7 +85,7 @@ public class BiomedUpdateIndexer extends SMTAbstractIndex {
 
 	@Override
 	public String getIndexType() {
-		return UpdatesVO.INDEX_TYPE;
+		return INDEX_TYPE;
 	}
 
 	@SuppressWarnings("unchecked")

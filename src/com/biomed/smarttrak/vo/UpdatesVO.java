@@ -12,6 +12,7 @@ import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.admin.UpdatesAction.UpdateType;
 import com.biomed.smarttrak.admin.user.HumanNameIntfc;
+import com.biomed.smarttrak.solr.BiomedUpdateIndexer;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.annotations.SolrField;
 import com.siliconmtn.db.orm.BeanSubElement;
@@ -49,7 +50,6 @@ public class UpdatesVO extends SolrDocumentVO implements HumanNameIntfc {
 		}
 	}
 
-	public static final String INDEX_TYPE = "BIOMED_UPDATE";
 	private String updateId;
 	//Create single point url or field for id/type
 	private String marketId;
@@ -70,10 +70,10 @@ public class UpdatesVO extends SolrDocumentVO implements HumanNameIntfc {
 	private List<UpdatesXRVO> sections;
 
 	public UpdatesVO() {
-		super(INDEX_TYPE);
+		super(BiomedUpdateIndexer.INDEX_TYPE);
 		sections = new ArrayList<>();
 		super.addOrganization(AdminControllerAction.BIOMED_ORG_ID);
-		super.addRole(0);
+		super.addRole(AdminControllerAction.DEFAULT_ROLE_LEVEL);
 	}
 
 
@@ -107,12 +107,12 @@ public class UpdatesVO extends SolrDocumentVO implements HumanNameIntfc {
 		this.twitterTxt = req.getParameter("twitterTxt");
 		this.statusCd = req.getParameter("statusCd");
 		if(UpdateStatusCd.R.toString().equals(statusCd)) {
-			this.setPublishDt(new Date());
+			setPublishDt(new Date());
 		}
 		if(req.hasParameter("sectionId")) {
 			String [] s = req.getParameterValues("sectionId");
 			for(String sec : s) {
-				this.sections.add(new UpdatesXRVO(updateId, sec));
+				sections.add(new UpdatesXRVO(updateId, sec));
 			}
 		}
 	}
