@@ -7,8 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import com.biomed.smarttrak.vo.NoteEntityInterface;
 import com.biomed.smarttrak.vo.NoteVO;
-import com.bmg.admin.vo.NoteEntityInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.Column;
