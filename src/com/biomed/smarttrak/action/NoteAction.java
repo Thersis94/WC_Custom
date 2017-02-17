@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.Map;
 
 
+
+
 //WC custom
 import com.biomed.smarttrak.vo.NoteVO;
 import com.biomed.smarttrak.vo.TeamVO;
@@ -24,6 +26,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.exception.NotAuthorizedException;
+import com.siliconmtn.http.filter.fileupload.ProfileDocumentFileManagerStructureImpl;
 import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.StringEncrypter;
@@ -67,6 +70,7 @@ public class NoteAction extends SBActionAdapter {
 	private static final String NOTE_TYPE = "noteType";
 	private static final String NOTE_ENTITY_ID = "noteEntityId";
 	private static final String CUSTOM_SCHEMA = "custom.";
+	private static final String NOTES_DIRECTORY_PATH = "/note/";
 
 	public NoteAction() {
 		super();
@@ -128,7 +132,13 @@ public class NoteAction extends SBActionAdapter {
 			String noteId = StringUtil.checkVal(req.getParameter("noteId"));
 			String noteType = StringUtil.checkVal(req.getParameter(NOTE_TYPE));
 			String noteEntityId = StringUtil.checkVal(req.getParameter(NOTE_ENTITY_ID));
-
+			String orgId = ((SiteVO)req.getAttribute(Constants.SITE_DATA)).getOrganizationId();
+			
+			StringBuilder filePrefix = new StringBuilder(65);
+			filePrefix.append(StringUtil.checkVal(attributes.get(Constants.PROFILE_DOCUMENT_DIR)));
+			filePrefix.append(orgId).append(NOTES_DIRECTORY_PATH);
+			
+			
 			Date cal = Convert.formatDate(new Date(), Calendar.HOUR_OF_DAY, 3);
 
 			try  {
@@ -151,8 +161,8 @@ public class NoteAction extends SBActionAdapter {
 					modVo.setActionData(refreshNoteList(productId, marketId,companyId, attributeId,ses));
 				}
 
-				modVo.setAttribute("noteToken", fileToken );
-				modVo.setAttribute("filePrefix", attributes.get("smarttrakPathToBinary"));
+				modVo.setAttribute(ProfileDocumentFileManagerStructureImpl.DOC_TOKEN, fileToken );
+				modVo.setAttribute("filePrefix", filePrefix.toString() );
 				modVo.setAttribute("primaryId", setPrimaryId(productId, companyId, marketId, attributeId));
 				modVo.setAttribute(NOTE_TYPE, noteType.isEmpty()? getNoteType(productId, companyId, marketId) : noteType);
 				modVo.setAttribute(ATTRIBUTE_ID, attributeId);
@@ -468,7 +478,7 @@ public class NoteAction extends SBActionAdapter {
 	 */
 	protected void deleteProfileDocuments(ProfileDocumentAction pda, List<ProfileDocumentVO> profileDocuments) throws ActionException {
 		for (ProfileDocumentVO pvo : profileDocuments){
-			pda.delete(pvo);
+			pda.deleteFileFromDisk(pvo);
 		}
 	}
 

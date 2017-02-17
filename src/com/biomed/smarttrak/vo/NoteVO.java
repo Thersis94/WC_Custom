@@ -64,21 +64,21 @@ public class NoteVO extends SBModuleVO {
 	 */
 	private void setData(ActionRequest req) {
 
-		this.setNoteId(StringUtil.checkVal(req.getParameter("noteId")));
-		this.setUserId(StringUtil.checkVal(req.getParameter("userId")));
-		this.setTeamId(req.getParameter("teamId"));
-		this.setCompanyId(req.getParameter("companyId"));
-		this.setAttributeId(req.getParameter("attributeId"));
-		this.setProductId(req.getParameter("productId"));
-		this.setMarketId(req.getParameter("marketId"));
-		this.setNoteName(StringUtil.checkVal(req.getParameter("noteName")));
-		this.setNoteText(StringUtil.checkVal(req.getParameter("noteText")));
-		this.setFilePathText(StringUtil.checkVal(req.getParameter("filePathText")));
-		this.setExpirationDate(Convert.formatDate(Convert.DATE_SLASH_SHORT_PATTERN, 
+		setNoteId(StringUtil.checkVal(req.getParameter("noteId")));
+		setUserId(StringUtil.checkVal(req.getParameter("userId")));
+		setTeamId(req.getParameter("teamId"));
+		setCompanyId(req.getParameter("companyId"));
+		setAttributeId(req.getParameter("attributeId"));
+		setProductId(req.getParameter("productId"));
+		setMarketId(req.getParameter("marketId"));
+		setNoteName(StringUtil.checkVal(req.getParameter("noteName")));
+		setNoteText(StringUtil.checkVal(req.getParameter("noteText")));
+		setFilePathText(StringUtil.checkVal(req.getParameter("filePathText")));
+		setExpirationDate(Convert.formatDate(Convert.DATE_SLASH_SHORT_PATTERN, 
 				StringUtil.checkVal(req.getParameter("expirationDate"))));
-		this.setCreateDate(Convert.formatDate(Convert.DATE_SLASH_SHORT_PATTERN, 
+		setCreateDate(Convert.formatDate(Convert.DATE_SLASH_SHORT_PATTERN, 
 				StringUtil.checkVal(req.getParameter("createDate"))));
-		this.setUpdateDate(Convert.formatDate(Convert.DATE_SLASH_SHORT_PATTERN, 
+		setUpdateDate(Convert.formatDate(Convert.DATE_SLASH_SHORT_PATTERN, 
 				StringUtil.checkVal(req.getParameter("updateDate"))));
 
 	}
@@ -89,19 +89,19 @@ public class NoteVO extends SBModuleVO {
 
 		DBUtil util = new DBUtil();
 
-		this.setNoteId(util.getStringVal("NOTE_ID", rs));
-		this.setUserId(util.getStringVal("USER_ID", rs));
-		this.setTeamId(util.getStringVal("TEAM_ID", rs));
-		this.setCompanyId(util.getStringVal("COMPANY_ID", rs));
-		this.setAttributeId(util.getStringVal("ATTRIBUTE_ID", rs));
-		this.setProductId(util.getStringVal("PRODUCT_ID", rs));
-		this.setMarketId(util.getStringVal("MARKET_ID", rs));
-		this.setNoteName(util.getStringVal("NOTE_NM", rs));
-		this.setNoteText(util.getStringVal("NOTE_TXT", rs));
-		this.setFilePathText( util.getStringVal("FILE_PATH_TXT", rs));
-		this.setExpirationDate(util.getDateVal("EXPIRATION_DT", rs));
-		this.setCreateDate(util.getDateVal("CREATE_DT", rs));
-		this.setUpdateDate(util.getDateVal("UPDATE_DT", rs));
+		setNoteId(util.getStringVal("NOTE_ID", rs));
+		setUserId(util.getStringVal("USER_ID", rs));
+		setTeamId(util.getStringVal("TEAM_ID", rs));
+		setCompanyId(util.getStringVal("COMPANY_ID", rs));
+		setAttributeId(util.getStringVal("ATTRIBUTE_ID", rs));
+		setProductId(util.getStringVal("PRODUCT_ID", rs));
+		setMarketId(util.getStringVal("MARKET_ID", rs));
+		setNoteName(util.getStringVal("NOTE_NM", rs));
+		setNoteText(util.getStringVal("NOTE_TXT", rs));
+		setFilePathText( util.getStringVal("FILE_PATH_TXT", rs));
+		setExpirationDate(util.getDateVal("EXPIRATION_DT", rs));
+		setCreateDate(util.getDateVal("CREATE_DT", rs));
+		setUpdateDate(util.getDateVal("UPDATE_DT", rs));
 
 	}
 
