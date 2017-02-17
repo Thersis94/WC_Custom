@@ -4,6 +4,7 @@ package com.biomed.smarttrak.action;
 import java.util.List;
 import java.util.Map;
 
+import com.biomed.smarttrak.action.AdminControllerAction.Section;
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -37,21 +38,21 @@ public class QuickLinksAction extends SBActionAdapter {
 	public static final String LINK_TYPE_RECENTLY_VIEWED = "rv";
 	public static final String URL_STUB = "qs/";
 	public static final int MAX_LIST_SIZE = 10;
-	
+
 	/**
-	* Constructor
-	*/
+	 * Constructor
+	 */
 	public QuickLinksAction() {
 		super();
 	}
 
 	/**
-	* Constructor
-	*/
+	 * Constructor
+	 */
 	public QuickLinksAction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
 	 */
@@ -76,9 +77,9 @@ public class QuickLinksAction extends SBActionAdapter {
 			manageFavorites(req);
 		} else if (type.equalsIgnoreCase(LINK_TYPE_RECENTLY_VIEWED)) {
 			manageRecentlyViewed(req);
-		}		
+		}
 	}
-	
+
 	/**
 	 * 
 	 * @param req
@@ -98,7 +99,7 @@ public class QuickLinksAction extends SBActionAdapter {
 			sess.setAttribute(MyFavoritesAction.MY_FAVORITES,fv);
 		}
 	}
-	
+
 	/**
 	 * 
 	 * @param req
@@ -118,7 +119,7 @@ public class QuickLinksAction extends SBActionAdapter {
 			sess.setAttribute(MY_RECENTLY_VIEWED,rv);
 		}
 	}
-	
+
 	/**
 	 * 
 	 * @param req
@@ -132,7 +133,7 @@ public class QuickLinksAction extends SBActionAdapter {
 		ai.setDBConnection(dbConn);
 		ai.build(req);
 	}
-	
+
 	/**
 	 * 
 	 * @param req
@@ -153,6 +154,20 @@ public class QuickLinksAction extends SBActionAdapter {
 	@Override
 	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
+	}
+
+
+	/**
+	 * iterates the session-stored List<PageViewVO> to see if the given ID for the given Section is on the list.
+	 * Used in views to set button colors for 'Favorite' buttons.
+	 * @param sec
+	 * @param pkId
+	 * @return
+	 */
+	public static boolean isFavorite(Map<String, List<PageViewVO>> data, Section sec, String pkId) {
+		//TODO iterate session object, see if we have a match;
+
+		return false;
 	}
 
 }
