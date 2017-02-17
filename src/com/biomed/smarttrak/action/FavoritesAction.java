@@ -125,7 +125,7 @@ public class FavoritesAction extends SBActionAdapter {
 		List<FavoriteVO> favs = (List<FavoriteVO>)mod.getActionData();
 		Map<String, List<PageViewVO>> pageMap = initializePageMap();
 
-		SolrDocument sDoc = null;
+		SolrDocument sDoc;
 		for (FavoriteVO fav : favs) {
 			if (fav.getAsset() == null) continue; 
 			sDoc = (SolrDocument)fav.getAsset();
