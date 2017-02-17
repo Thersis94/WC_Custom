@@ -86,16 +86,22 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		JOBCATEGORY("ef6444293f7c69630a001421545e4917", "jobCategory"),
 		JOBLEVEL("7bff2e9e3f7f7fb90a0014217397e884", "jobLevel"),
 		INDUSTRY("5291b7693f8104240a001421db8d04ab", "industry"),
-		DIVISIONS("31037d2e3f859f100a001421e77994f4", "divisions");
+		DIVISIONS("31037d2e3f859f100a001421e77994f4", "divisions", true);
 
+		private boolean isArray;
 		private String fieldId;
 		private String reqParam;
 		private RegistrationMap(String registerFieldId, String reqParam) { 
+			this(registerFieldId, reqParam, false);
+		}
+		private RegistrationMap(String registerFieldId, String reqParam, boolean isArray) { 
 			this.fieldId = registerFieldId;
 			this.reqParam = reqParam;
+			this.isArray = isArray;
 		}
 		public String getFieldId() { return fieldId; }
 		public String getReqParam() { return reqParam; }
+		public boolean isArray() { return isArray; }
 	}
 
 	public UserVO() {
@@ -110,7 +116,6 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		setRegisterSubmittalId(req.getParameter("registerSubmittalId"));
 		setStatusCode(req.getParameter("statusCode"));
 		setExpirationDate(Convert.formatDate(Convert.DATE_SLASH_PATTERN, req.getParameter("expirationDate")));
-		populateRegistrationFields(req);
 	}
 
 
@@ -177,7 +182,7 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	/**
 	 * @return the createDate
 	 */
-	@Column(name="create_dt", isInsertOnly=true)
+	@Column(name="create_dt", isAutoGen=true, isInsertOnly=true)
 	public Date getCreateDate() {
 		return createDate;
 	}
@@ -192,7 +197,7 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	/**
 	 * @return the updateDate
 	 */
-	@Column(name="update_dt", isUpdateOnly=true)
+	@Column(name="update_dt", isAutoGen=true, isUpdateOnly=true)
 	public Date getUpdateDate() {
 		return updateDate;
 	}
@@ -231,17 +236,6 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		this.loginDate = loginDate;
 	}
 
-	/**
-	 * iterates the RegistrationMap, taking each value off the request object and putting it into the UserVO.
-	 * When we save this data we'll do a similar iteration (in the Action's save method).
-	 *		e.g. forEach(enum) saveRegField(e.fieldId, user.getAttribute(e.fieldId));
-	 * @param req
-	 */
-	private void populateRegistrationFields(ActionRequest req) {
-		for (RegistrationMap entry : RegistrationMap.values())
-			addAttribute(entry.getFieldId(), req.getParameter(entry.getReqParam()));
-	}
-
 	/*********************
 	 *  SOME DECOUPLING OF FIELDS STORED IN REGISTRATION DATA
 	 *********************/
@@ -264,20 +258,20 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	public String getSource() {
 		return (String)getAttribute(RegistrationMap.SOURCE.getFieldId());
 	}
-	public Date getDemoDate() {
-		return formatDateField(getAttribute(RegistrationMap.DEMODT.getFieldId()));
+	public String getDemoDate() {
+		return (String)getAttribute(RegistrationMap.DEMODT.getFieldId());
 	}
-	public Date getTrainingDate() {
-		return formatDateField(getAttribute(RegistrationMap.TRAININGDT.getFieldId()));
+	public String getTrainingDate() {
+		return (String)getAttribute(RegistrationMap.TRAININGDT.getFieldId());
 	}
-	public Date getInitialTrainingDate() {
-		return formatDateField(getAttribute(RegistrationMap.INITTRAININGDT.getFieldId()));
+	public String getInitialTrainingDate() {
+		return (String)getAttribute(RegistrationMap.INITTRAININGDT.getFieldId());
 	}
-	public Date getAdvancedTrainingDate() {
-		return formatDateField(getAttribute(RegistrationMap.ADVTRAININGDT.getFieldId()));
+	public String getAdvancedTrainingDate() {
+		return (String)getAttribute(RegistrationMap.ADVTRAININGDT.getFieldId());
 	}
-	public Date getOtherTrainingDate() {
-		return formatDateField(getAttribute(RegistrationMap.OTHERTRAININGDT.getFieldId()));
+	public String getOtherTrainingDate() {
+		return (String)getAttribute(RegistrationMap.OTHERTRAININGDT.getFieldId());
 	}
 	public String getNotes() {
 		return (String)getAttribute(RegistrationMap.NOTES.getFieldId());
@@ -291,18 +285,37 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	public String getIndustry() {
 		return (String)getAttribute(RegistrationMap.INDUSTRY.getFieldId());
 	}
-	public String getDivisions() {
-		return (String)getAttribute(RegistrationMap.DIVISIONS.getFieldId());
-	}
 
 	/**
-	 * turns an object...likely a String...into a Date with our given default MM/DD/YYY format used site-wide
-	 * @param dt
+	 * this is a multi-select, it could be returned from responseloader as a String or List depending on the values stored.
 	 * @return
 	 */
-	private Date formatDateField(Object dt) {
-		if (dt == null) return null;
-		return Convert.formatDate(Convert.DATE_SLASH_PATTERN, (String)dt);
+	@SuppressWarnings("unchecked")
+	public List<String> getDivisions() {
+		Object obj = getAttribute(RegistrationMap.DIVISIONS.getFieldId());
+		List<String> data;
+		if (obj instanceof String) {
+			data = new ArrayList<>();
+			data.add((String)obj);
+		} else {
+			data = (List<String>) obj;
+		}
+		return (data);
+	}
+	
+	
+	/**
+	 * returns a list of fields presented on the public side of registration, so we know which fields to manage 
+	 * when the user submits their form.  These fields will get deleted in SubmittalAction of registration, before 
+	 * the new data is written.
+	 * @return
+	 */
+	public static List<RegistrationMap> getPublicRegFields() {
+		List<RegistrationMap> data = new ArrayList<>();
+		data.add(RegistrationMap.TITLE);
+		data.add(RegistrationMap.UPDATES);
+		data.add(RegistrationMap.FAVORITEUPDATES);
+		return data;
 	}
 
 	/*********************
