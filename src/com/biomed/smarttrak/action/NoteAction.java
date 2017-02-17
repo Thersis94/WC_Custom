@@ -15,6 +15,7 @@ import java.util.Map;
 
 
 
+
 //WC custom
 import com.biomed.smarttrak.vo.NoteVO;
 import com.biomed.smarttrak.vo.TeamVO;
@@ -27,6 +28,7 @@ import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.exception.NotAuthorizedException;
 import com.siliconmtn.http.filter.fileupload.ProfileDocumentFileManagerStructureImpl;
+import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.StringEncrypter;
@@ -144,11 +146,11 @@ public class NoteAction extends SBActionAdapter {
 			try  {
 				ModuleVO modVo = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 				StringEncrypter se = new StringEncrypter(encKey);
-
+				
 				String fileToken = se.encrypt(Long.toString(cal.getTime()));
-
+				fileToken = StringEncoder.urlEncode(fileToken);
+				
 				log.debug("file token " + fileToken);
-
 				//if the request is for a particular note get that note
 				if (!noteId.isEmpty()){
 					//send the userId so we are sure the requester can see the note.
@@ -336,6 +338,8 @@ public class NoteAction extends SBActionAdapter {
 		//in the generic note the key is the target id and the value is the note type
 		GenericVO type = calculateNoteType(marketId, productId, companyId);
 
+		log.debug("note type: " + type);
+		
 		UserVO uvo = (UserVO) ses.getAttribute(Constants.USER_DATA);
 		//if no user return an empty list
 		if (uvo == null){
@@ -387,8 +391,8 @@ public class NoteAction extends SBActionAdapter {
 	 */
 	private GenericVO calculateNoteType(String marketId, String productId,String companyId) {
 
-		if (!StringUtil.isEmpty(productId, true))return new GenericVO(productId,NoteType.PRODUCT);
-		if (!StringUtil.isEmpty(companyId, true))return new GenericVO(companyId,NoteType.COMPANY);
+		if (!StringUtil.isEmpty(productId))return new GenericVO(productId,NoteType.PRODUCT);
+		if (!StringUtil.isEmpty(companyId))return new GenericVO(companyId,NoteType.COMPANY);
 		else return new GenericVO(marketId,NoteType.MARKET);
 	}
 
