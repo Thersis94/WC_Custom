@@ -47,13 +47,16 @@ public class UpdatesAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	private SolrActionVO buildSolrAction(ActionRequest req) throws ActionException {
+
+		//Set SolrSearch ActionId on actionInit
+		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+    	actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
+
+    	//Get SolrSearch ActionVO.
 		SolrAction sa = new SolrAction(actionInit);
 		sa.setDBConnection(dbConn);
 		sa.setAttributes(attributes);
-    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
-    	actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
-		SolrActionVO qData = sa.retrieveActionData(req);
-		return qData;
+		return sa.retrieveActionData(req);
 	}
 
 	/**
@@ -88,7 +91,7 @@ public class UpdatesAction extends SBActionAdapter {
 		}
 
 		//Add Start - End Date Range
-		if (req.hasParameter("startDt")) {
+		if (req.hasParameter("startDt") && req.hasParameter("endDt")) {
 			StringBuilder dates = new StringBuilder(50);
 			dates.append("[").append(req.getParameter("startDt"));
 			dates.append("-").append(req.getParameter("endDt"));

@@ -9,7 +9,7 @@ import java.util.Date;
 import java.util.List;
 
 import com.biomed.smarttrak.action.AdminControllerAction;
-import com.biomed.smarttrak.action.AdminControllerAction.ContentPath;
+import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.admin.UpdatesAction.UpdateType;
 import com.biomed.smarttrak.admin.user.HumanNameIntfc;
 import com.siliconmtn.action.ActionRequest;
@@ -37,6 +37,17 @@ import com.smt.sitebuilder.util.solr.SolrDocumentVO;
  ****************************************************************************/
 @Table(name="biomedgps_update")
 public class UpdatesVO extends SolrDocumentVO implements HumanNameIntfc {
+
+	public enum UpdateStatusCd {N("New"), R("Reviewed"), A("Archived");
+		private String statusName;
+		UpdateStatusCd(String statusName) {
+			this.statusName = statusName;
+		}
+
+		public String getStatusName() {
+			return statusName;
+		}
+	}
 
 	public static final String INDEX_TYPE = "BIOMED_UPDATE";
 	private String updateId;
@@ -95,7 +106,7 @@ public class UpdatesVO extends SolrDocumentVO implements HumanNameIntfc {
 		this.messageTxt = req.getParameter("messageTxt");
 		this.twitterTxt = req.getParameter("twitterTxt");
 		this.statusCd = req.getParameter("statusCd");
-		if("R".equals(statusCd)) {
+		if(UpdateStatusCd.R.toString().equals(statusCd)) {
 			this.setPublishDt(new Date());
 		}
 		if(req.hasParameter("sectionId")) {
@@ -111,11 +122,11 @@ public class UpdatesVO extends SolrDocumentVO implements HumanNameIntfc {
 	public String getDocumentUrl() {
 		StringBuilder url = new StringBuilder(50);
 		if(!StringUtil.isEmpty(marketId)) {
-			url.append(ContentPath.MARKET.getPath()).append("qs/").append(marketId);
+			url.append(Section.MARKET.getURLToken()).append("qs/").append(marketId);
 		} else if(!StringUtil.isEmpty(productId)) {
-			url.append(ContentPath.PRODUCT.getPath()).append("qs/").append(productId);
+			url.append(Section.PRODUCT.getURLToken()).append("qs/").append(productId);
 		} else if(!StringUtil.isEmpty(companyId)) {
-			url.append(ContentPath.COMPANY.getPath()).append("qs/").append(companyId);
+			url.append(Section.COMPANY.getURLToken()).append("qs/").append(companyId);
 		}
 
 		return url.toString();
@@ -125,11 +136,11 @@ public class UpdatesVO extends SolrDocumentVO implements HumanNameIntfc {
 	@SolrField(name=SearchDocumentHandler.CONTENT_TYPE)
 	public String getContentType() {
 		if(!StringUtil.isEmpty(marketId)) {
-			super.setContentType(ContentPath.MARKET.toString());
+			super.setContentType(Section.MARKET.toString());
 		} else if(!StringUtil.isEmpty(productId)) {
-			super.setContentType(ContentPath.PRODUCT.toString());
+			super.setContentType(Section.PRODUCT.toString());
 		} else if(!StringUtil.isEmpty(companyId)) {
-			super.setContentType(ContentPath.COMPANY.toString());
+			super.setContentType(Section.COMPANY.toString());
 		}
 		return super.getContentType();
 	}

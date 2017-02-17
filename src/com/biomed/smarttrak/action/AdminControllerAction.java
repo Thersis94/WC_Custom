@@ -49,19 +49,19 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	public static final String REGISTRATION_GRP_ID = "ea884793b2ef163f7f0001011a253456";
 
 	public static final String BIOMED_ORG_ID = "BMG_SMARTTRAK"; 
-	public enum ContentPath {
+	public enum Section {
 		MARKET("market/"), PRODUCT("products/"), COMPANY("companies/");
 
 		private String path;
 
-		ContentPath(String path) {
+		Section(String path) {
 			this.path = path;
 		}
 
-		public String getPath() {
+		public String getURLToken() {
 			return path;
 		}
-	};
+	}
 
 	public AdminControllerAction() {
 		super();

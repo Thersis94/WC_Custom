@@ -64,7 +64,7 @@ public class BiomedUpdateIndexer extends SMTAbstractIndex {
 		log.debug("Adding single item.");
 		try (SolrActionUtil util = new SolrActionUtil(makeServer())) {
 			List<SolrDocumentVO> docs = getDocuments(itemId);
-			if (docs.size() < 1) {
+			if (docs.isEmpty()) {
 				throw new Exception("Document " + itemId + " not found");
 			}
 			util.addDocuments(docs);
@@ -94,8 +94,6 @@ public class BiomedUpdateIndexer extends SMTAbstractIndex {
 		ua.setDBConnection(new SMTDBConnection(this.dbConn));
 		ua.setAttribute(Constants.CUSTOM_DB_SCHEMA, config.getProperty(Constants.CUSTOM_DB_SCHEMA));
 		ua.setAttribute(Constants.QS_PATH, config.getProperty(Constants.QS_PATH));
-		List<SolrDocumentVO> docs = (List<SolrDocumentVO>)(List<?>) ua.getUpdates(documentId);
-
-		return docs;
+		return (List<SolrDocumentVO>)(List<?>) ua.getUpdates(documentId);
 	}
 }

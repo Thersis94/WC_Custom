@@ -12,6 +12,7 @@ import com.biomed.smarttrak.admin.user.HumanNameIntfc;
 import com.biomed.smarttrak.admin.user.NameComparator;
 import com.biomed.smarttrak.vo.UpdatesVO;
 import com.biomed.smarttrak.vo.UpdatesXRVO;
+import com.biomed.smarttrak.vo.UpdatesVO.UpdateStatusCd;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -182,18 +183,26 @@ public class UpdatesAction extends SBActionAdapter {
 				saveSections(u);
 
 				//Add to Solr if published
-				if("R".equals(u.getStatusCd())) {
-					try(SolrActionUtil sau = new SolrActionUtil(getAttributes())) {
-						sau.addDocument(u);
-					} catch (Exception e) {
-						log.error("Error Saving to Solr.", e);
-					}
-					log.debug("added document to solr");
+				if(UpdateStatusCd.R.toString().equals(u.getStatusCd())) {
+					saveToSolr(u);
 				}
 			}
 		} catch (InvalidDataException | DatabaseException e) {
 			throw new ActionException(e);
 		}
+	}
+
+	/**
+	 * Save an UpdatesVO to solr.
+	 * @param u
+	 */
+	protected void saveToSolr(UpdatesVO u) {
+		try(SolrActionUtil sau = new SolrActionUtil(getAttributes())) {
+			sau.addDocument(u);
+		} catch (Exception e) {
+			log.error("Error Saving to Solr.", e);
+		}
+		log.debug("added document to solr");
 	}
 
 	/**
@@ -221,7 +230,7 @@ public class UpdatesAction extends SBActionAdapter {
 	 * @param updateId
 	 * @throws ActionException 
 	 */
-	private void deleteSections(String updateId) throws ActionException {
+	protected void deleteSections(String updateId) throws ActionException {
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("delete from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("biomedgps_update_section where update_id = ?");
