@@ -1,9 +1,10 @@
 package com.biomed.smarttrak.action;
 
 //Java 8
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,10 +21,11 @@ import com.biomed.smarttrak.util.BiomedProductIndexer;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.security.UserRoleVO;
-import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 
 // WebCrescendo libs
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -38,7 +40,6 @@ import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
-import com.smt.sitebuilder.util.PageViewRetriever;
 import com.smt.sitebuilder.util.PageViewVO;
 
 /*****************************************************************************
@@ -55,13 +56,12 @@ import com.smt.sitebuilder.util.PageViewVO;
  ***************************************************************************/
 public class RecentlyViewedAction extends SBActionAdapter {
 	
-	private static final String SLASH = "/";
-	private static final String MARKETS = "markets";
-	private static final String COMPANIES = "companies";
-	private static final String PRODUCTS = "products";
-	private static final String TOOLS = "tools";
+	private static final char CHAR_SLASH = '/';
+	private static final String MARKETS = "/markets";
+	private static final String COMPANIES = "/companies";
+	private static final String PRODUCTS = "/products";
 	private static final int MAX_LIST_SIZE = 10;
-	private static final int DATE_START_DAY_OFFSET = -30;
+	
 	/**
 	 * Constructor
 	 */
@@ -76,6 +76,11 @@ public class RecentlyViewedAction extends SBActionAdapter {
 		super(actionInit);
 	}
 	
+	// Enum used as Map keys and for literals where appropriate.
+	public enum KEY_TYPE {
+		MARKET,COMPANY,PRODUCT
+	}
+	
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.ActionRequest)
 	 */
@@ -87,7 +92,7 @@ public class RecentlyViewedAction extends SBActionAdapter {
 		try {
 			String siteId = parseSiteId(req);
 			String profileId = checkProfileId(req);
-			recentActivity = retrieveRecentlyViewedPages(req, siteId, profileId, formatStartDate());
+			recentActivity = retrieveRecentlyViewedPages(req, siteId, profileId);
 			
 		} catch (ActionException ae) {
 			recentActivity = new HashMap<>();
@@ -97,7 +102,17 @@ public class RecentlyViewedAction extends SBActionAdapter {
 		
 		this.putModuleData(recentActivity, recentActivity.size(), false, mod.getErrorMessage(), mod.getErrorCondition());
 	}
-	
+
+	/**
+	 * Determines the siteId value to use for this retrieving page views.
+	 * @param req
+	 * @return
+	 */
+	protected String parseSiteId(ActionRequest req) {
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		return site.getSiteId();
+	}
+
 	/**
 	 * Validates a user's security role and then returns a profile ID or null value based
 	 * on the role of the of the logged in user.
@@ -116,60 +131,61 @@ public class RecentlyViewedAction extends SBActionAdapter {
 			throw new ActionException(errMsg.toString());
 		}
 		
-		String profileId = null;
 		UserDataVO user = (UserDataVO)sess.getAttribute(Constants.USER_DATA);
-		if (user != null) profileId = user.getProfileId();
-		if (profileId == null) {
+		if (user == null || user.getProfileId() == null) {
 			errMsg.append("Not logged in.");
 			throw new ActionException(errMsg.toString());
 		}
-		return profileId;
+		return user.getProfileId();
 
 	}
-
+	
 	/**
-	 * Determines the siteId value to use for this retrieving page views.
-	 * @param req
-	 * @return
-	 */
-	protected String parseSiteId(ActionRequest req) {
-		if (req.hasParameter("siteId")) {
-			return req.getParameter("siteId");
-		} else {
-			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-			return site.getAliasPathParentId() != null ? site.getAliasPathParentId() : site.getSiteId();
-		}
-	}
-
-	/**
-	 * Retrieves page view history for all logged in users within the requested timeframe.  If
-	 * no dates are specified, page view history for the last 12 hours is returned. 
+	 * Retrieves recently viewed pages for a specific user on a specific site. 
 	 * @param site
 	 * @param profileId
-	 * @param dateStart
 	 * @return
 	 * @throws ActionException
 	 */
 	protected Map<String, List<PageViewVO>> retrieveRecentlyViewedPages(ActionRequest req, 
-			String siteId, String profileId, String dateStart) throws ActionException {
+			String siteId, String profileId) throws ActionException {
 		/* Retrieve page views from db, parse into PageViewVO and return list */
-		PageViewRetriever pvr = new PageViewRetriever(dbConn);
-		pvr.setSortDescending(true);
-		List<PageViewVO> pageViews = pvr.retrieveRecentlyViewedPages(siteId, profileId, dateStart);
-		log.debug("Total number of raw page views found: " + pageViews.size());
-		return parseResults(req, pageViews);
+		List<PageViewVO> pages = new ArrayList<>();
+		
+		StringBuilder sql = formatRecentlyViewedQuery();
+		int idx = 0;
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(++idx, StringUtil.checkVal(KEY_TYPE.MARKET.name(),true));
+			ps.setString(++idx, profileId);
+			ps.setString(++idx, siteId);
+			ps.setString(++idx, StringUtil.checkVal(MARKETS+"%",true));
+			ps.setString(++idx, StringUtil.checkVal(KEY_TYPE.COMPANY.name(),true));
+			ps.setString(++idx, profileId);
+			ps.setString(++idx, siteId);
+			ps.setString(++idx, StringUtil.checkVal(COMPANIES+"%",true));
+			ps.setString(++idx, StringUtil.checkVal(KEY_TYPE.PRODUCT.name(),true));
+			ps.setString(++idx, profileId);
+			ps.setString(++idx, siteId);
+			ps.setString(++idx, StringUtil.checkVal(PRODUCTS+"%",true));
+			
+			ResultSet rs = ps.executeQuery();
+			PageViewVO page = null;
+			DBUtil db = new DBUtil();
+			while(rs.next()) {
+				page = new PageViewVO();
+				page.setReferenceCode(db.getStringVal("reference_cd", rs));
+				page.setRequestUri(db.getStringVal("request_uri_txt", rs));
+				pages.add(page);
+			}
+		} catch (SQLException sqle) {
+			log.error("Error retrieving recently viewed pages for profile ID: " + profileId);
+			throw new ActionException(sqle.getMessage());
+		}
+				
+		log.debug("Total number of raw page views found: " + pages.size());
+		return parseResults(req, pages);
 	}
-	
-	/**
-	 * Returns a String representing a start date of 'today minus 30 days'.
-	 * @return
-	 */
-	protected String formatStartDate() {
-		Calendar cal = GregorianCalendar.getInstance();
-		cal.add(Calendar.DAY_OF_YEAR, DATE_START_DAY_OFFSET);
-		return Convert.formatDate(cal.getTime(),Convert.DATE_TIME_DASH_PATTERN);
-	}
-	
+
 	/**
 	 * Parses the resulting list of page views into a map of profile IDs mapped to UserActivityVOs.
 	 * @param pageViews
@@ -177,12 +193,12 @@ public class RecentlyViewedAction extends SBActionAdapter {
 	 */
 	protected Map<String, List<PageViewVO>> parseResults(ActionRequest req, List<PageViewVO> pages) {
 		// collate pages into buckets
-		Map<String, List<PageViewVO>> recentActivity = collatePages(pages);
+		Map<String, List<PageViewVO>> recentViewed = collatePages(pages);
 		
 		// leverage solr to retrieve display names
 		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 		UserRoleVO role = (UserRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
-		for (Map.Entry<String, List<PageViewVO>> entry : recentActivity.entrySet()) {
+		for (Map.Entry<String, List<PageViewVO>> entry : recentViewed.entrySet()) {
 			try {
 				formatNamesFromPage(site.getOrganizationId(), role.getRoleLevel(), entry);
 			} catch(ActionException ae) {
@@ -190,7 +206,7 @@ public class RecentlyViewedAction extends SBActionAdapter {
 			}
 		}
 		
-		return recentActivity;
+		return recentViewed;
 	}
 	
 	/**
@@ -199,34 +215,30 @@ public class RecentlyViewedAction extends SBActionAdapter {
 	 * @return
 	 */
 	protected Map<String,List<PageViewVO>> collatePages(List<PageViewVO> pages) {
-		List<PageViewVO> markets = new ArrayList<>();
-		List<PageViewVO> companies = new ArrayList<>();
-		List<PageViewVO> products = new ArrayList<>();
-		List<PageViewVO> tools = new ArrayList<>();
+		Map<String, List<PageViewVO>> pageMap = initializePageMap();
 		// loop pages, parse into buckets, filter out duplicates.
 		for (PageViewVO page : pages) {
 			// set page ID to represent entity ID (e.g. market ID, company ID, etc.)
 			formatIdFromPage(page);
 			// skip root pages.
 			if (page.getPageId() == null) continue;
-			// collate according to type
-			if (page.getRequestUri().indexOf(SLASH + MARKETS) > -1) {
-				if (markets.size() < MAX_LIST_SIZE) markets.add(page);
-			} else if (page.getRequestUri().indexOf(SLASH + COMPANIES) > -1) {
-				if (companies.size() < MAX_LIST_SIZE) companies.add(page);
-			} else if (page.getRequestUri().indexOf(SLASH + PRODUCTS) > -1) {
-				if (products.size() < MAX_LIST_SIZE) products.add(page);
-			} else if (page.getRequestUri().indexOf(SLASH + TOOLS) > -1) {
-				if (tools.size() < MAX_LIST_SIZE) tools.add(page);
-			}
+			// add page to the appropriate List.
+			pageMap.get(page.getReferenceCode()).add(page);
 		}
-		
-		Map<String, List<PageViewVO>> recentActivity = new HashMap<>();
-		recentActivity.put(MARKETS, markets);
-		recentActivity.put(COMPANIES, companies);
-		recentActivity.put(PRODUCTS, products);
-		recentActivity.put(TOOLS, tools);
-		return recentActivity;
+		return pageMap;
+	}
+
+	
+	/**
+	 * Initialize a Map of List of PageViewVO based on the key types enum.
+	 * @return
+	 */
+	protected Map<String,List<PageViewVO>> initializePageMap() {
+		Map<String,List<PageViewVO>> pm = new HashMap<>();
+		for (KEY_TYPE kt : KEY_TYPE.values()) {
+			pm.put(kt.name(), new ArrayList<>());
+		}
+		return pm;
 	}
 	
 	/**
@@ -236,7 +248,7 @@ public class RecentlyViewedAction extends SBActionAdapter {
 	 * @param page
 	 */
 	protected void formatIdFromPage(PageViewVO page) {
-		int idx = page.getRequestUri().lastIndexOf('/');
+		int idx = page.getRequestUri().lastIndexOf(CHAR_SLASH);
 		if (idx == 0 || idx == page.getRequestUri().length() - 1) return;
 		page.setPageId(page.getRequestUri().substring(idx+1));
 	}
@@ -321,16 +333,16 @@ public class RecentlyViewedAction extends SBActionAdapter {
 		Map<String, List<PageViewVO>> recent = (Map<String,List<PageViewVO>>)sess.getAttribute(QuickLinksAction.USER_RECENTLY_VIEWED);
 		if (recent == null) return;
 
-		// determine page type
-		String entity;
+		// determine page collection type
+		String collKey;
 		try {
-			entity = getEntityString(req.getRequestURI());
+			collKey = getEntityString(req.getRequestURI());
 		} catch(Exception e) {
 			return;
 		}
 
 		// get the proper collection
-		List<PageViewVO> pages = recent.get(entity);
+		List<PageViewVO> pages = recent.get(collKey);
 
 		PageViewVO page = new PageViewVO();
 		page.setPageId(req.getParameter("id"));
@@ -356,16 +368,39 @@ public class RecentlyViewedAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	protected String getEntityString(String val) throws ActionException {
-		if (val.indexOf(SLASH+MARKETS) > -1) {
-			return MARKETS;
-		} else if (val.indexOf(SLASH+COMPANIES) > -1) {
-			return COMPANIES;
-		} else if (val.indexOf(SLASH+PRODUCTS) > -1) {
-			return PRODUCTS;
-		} else if (val.indexOf(SLASH+TOOLS) > -1) {
-			return TOOLS;
+		if (val.indexOf(MARKETS) > -1) {
+			return KEY_TYPE.MARKET.name();
+		} else if (val.indexOf(COMPANIES) > -1) {
+			return KEY_TYPE.COMPANY.name();
+		} else if (val.indexOf(PRODUCTS) > -1) {
+			return KEY_TYPE.PRODUCT.name();
 		}
 		throw new ActionException("Unknown entity value.");
 	}
+	
+	/**
+	 * Formats the query to retrieve the top 10 rows from each entity type.
+	 * @return
+	 */
+	protected StringBuilder formatRecentlyViewedQuery() {
+		StringBuilder sql = new StringBuilder(850);
+		sql.append("select ? as reference_cd, request_uri_txt, visit_dt from ( ");
+		sql.append("select distinct(request_uri_txt), visit_dt from pageview_user ");
+		sql.append("where profile_id = ? and site_id = ? and request_uri_txt like ? ");
+		sql.append("order by visit_dt desc limit 10 ) as x ");
+		sql.append("union all ");
+		sql.append("select ? as reference_cd, request_uri_txt, visit_dt from ( ");
+		sql.append("select distinct(request_uri_txt), visit_dt from pageview_user ");
+		sql.append("where profile_id = ? and site_id = ? and request_uri_txt like ? ");
+		sql.append("order by visit_dt desc limit 10 ) as y ");
+		sql.append("union all ");
+		sql.append("select ? as reference_cd, request_uri_txt, visit_dt from ( ");
+		sql.append("select distinct(request_uri_txt), visit_dt from pageview_user ");
+		sql.append("where profile_id = ? and site_id = ? and request_uri_txt like ? ");
+		sql.append("order by visit_dt desc limit 10 ) as z ");
+		sql.append("order by visit_dt desc ");
+		return sql;
+	}
+
 
 }
