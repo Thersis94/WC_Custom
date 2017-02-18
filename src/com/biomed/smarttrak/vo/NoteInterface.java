@@ -1,8 +1,6 @@
-package com.bmg.admin.vo;
+package com.biomed.smarttrak.vo;
 
 import java.util.List;
-
-import com.biomed.smarttrak.vo.NoteVO;
 
 /****************************************************************************
  * <b>Title</b>: NoteEntityAttributeInterface.java <p/>
