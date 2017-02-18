@@ -16,6 +16,7 @@ import com.biomed.smarttrak.admin.ProductManagementAction;
 import com.biomed.smarttrak.admin.TeamAction;
 import com.biomed.smarttrak.admin.TeamMemberAction;
 import com.biomed.smarttrak.admin.UpdatesAction;
+import com.biomed.smarttrak.admin.InsightAction;
 //SMT base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -157,6 +158,9 @@ public class AdminControllerAction extends SimpleActionAdapter {
 				break;
 			case "users":
 				action = new AccountUserAction();
+				break;
+			case "insights":
+				action = new InsightAction();
 				break;
 			case "teams":
 				action = new TeamAction();
