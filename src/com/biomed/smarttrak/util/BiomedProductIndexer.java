@@ -13,6 +13,7 @@ import java.util.Properties;
 
 import org.apache.solr.client.solrj.SolrClient;
 
+import com.biomed.smarttrak.vo.ProductAllianceVO;
 import com.biomed.smarttrak.vo.ProductAttributeVO;
 import com.biomed.smarttrak.vo.RegulationVO;
 import com.siliconmtn.data.Node;
@@ -70,7 +71,6 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 	@SuppressWarnings("unchecked")
 	private Map<String, SolrDocumentVO> retreiveProducts(String id) {
 		Map<String, SolrDocumentVO> products = new HashMap<>();
-		Map<String, String> hierarchies = createHierarchies();
 		String sql = buildRetrieveSql(id);
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
@@ -88,7 +88,7 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 					currentProduct = rs.getString("PRODUCT_ID");
 				}
 				if (rs.getString("SECTION_ID") != null && product != null) {
-					product.addSection(hierarchies.get(rs.getString("SECTION_ID")));
+					product.addSection(rs.getString("SECTION_ID"));
 					if (!product.getAttributes().keySet().contains("sectionName")) {
 						product.addAttribute("sectionName", new ArrayList<String>());
 					}
@@ -104,10 +104,65 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		}
 		buildDetails(products);
 		buildRegulatory(products);
+		buildAlliances(products);
 		
 		return products;
 	}
 	
+	
+	/**
+	 * Add all alliances to the products
+	 * @param products
+	 */
+	@SuppressWarnings("unchecked")
+	protected void buildAlliances(Map<String, SolrDocumentVO> products) {
+		Map<String, List<ProductAllianceVO>> alliances = retrieveAlliances();
+		for (Entry<String, List<ProductAllianceVO>> entry : alliances.entrySet()) {
+			SolrDocumentVO p = products.get(entry.getKey());
+			p.addAttribute("ally", new ArrayList<String>());
+			p.addAttribute("alliance", new ArrayList<String>());
+			p.addAttribute("allyId", new ArrayList<String>());
+			p.addAttribute("allianceId", new ArrayList<String>());
+			for (ProductAllianceVO alliance : entry.getValue()) {
+				((List<String>)p.getAttribute("ally")).add(alliance.getAllyName());
+				((List<String>)p.getAttribute("alliance")).add(alliance.getAllianceTypeName());
+				((List<String>)p.getAttribute("allyId")).add(alliance.getAllyId());
+				((List<String>)p.getAttribute("allianceId")).add(alliance.getAllianceTypeId());
+			}
+		}
+	}
+
+	
+	/**
+	 * Get all alliances from the database and put them into a map with a
+	 * product id key
+	 * @return
+	 */
+	protected Map<String, List<ProductAllianceVO>> retrieveAlliances() {
+		StringBuilder sql = new StringBuilder(475);
+		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
+		
+		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_PRODUCT_ALLIANCE_XR xr ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_ALLIANCE_TYPE t ");
+		sql.append("on t.ALLIANCE_TYPE_ID = xr.ALLIANCE_TYPE_ID ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY c ");
+		sql.append("on c.COMPANY_ID = xr.COMPANY_ID ");
+		
+		DBProcessor db = new DBProcessor(dbConn);
+		
+		List<Object> results = db.executeSelect(sql.toString(), null, new ProductAllianceVO());
+		Map<String, List<ProductAllianceVO>> alliances = new HashMap<>();
+		for (Object o : results) {
+			ProductAllianceVO vo = (ProductAllianceVO) o;
+			if (!alliances.containsKey(vo.getProductId())) {
+				alliances.put(vo.getProductId(), new ArrayList<ProductAllianceVO>());
+			}
+			alliances.get(vo.getProductId()).add(vo);
+		}
+		
+		return alliances;
+	}
+
 	/**
 	 * Add regulatory information to all products
 	 * @param products
@@ -304,39 +359,6 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		if (id != null) sql.append("WHERE p.PRODUCT_ID = ? ");
 		log.info(sql);
 		return sql.toString();
-	}
-	
-	
-	/**
-	 * Create a full hierarchy list
-	 * @return
-	 */
-	private Map<String, String> createHierarchies() {
-		Map<String, String> hierarchies = new HashMap<>();
-		StringBuilder sql = new StringBuilder(125);
-		sql.append("SELECT * FROM ").append(config.getProperty(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("BIOMEDGPS_SECTION ");
-		log.info(sql);
-		List<Node> companies = new ArrayList<>();
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ResultSet rs = ps.executeQuery();
-			while(rs.next()) {
-				Node n = new Node(rs.getString("SECTION_ID"), rs.getString("PARENT_ID"));
-				n.setNodeName(rs.getString("SECTION_NM"));
-				companies.add(n);
-			}
-		} catch (SQLException e) {
-			log.error(e);
-		}
-		
-		Tree t = new Tree(companies);
-		t.buildNodePaths("~");
-		
-		for (Node n : t.preorderList()) {
-			hierarchies.put(n.getNodeId(), n.getFullPath());
-		}
-		
-		return hierarchies;
 	}
 
 	/* (non-Javadoc)
