@@ -16,13 +16,12 @@ import com.biomed.smarttrak.vo.UpdatesVO.UpdateStatusCd;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
 
@@ -37,7 +36,7 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
  * @version 1.0
  * @since Feb 14, 2017
  ****************************************************************************/
-public class UpdatesAction extends SBActionAdapter {
+public class UpdatesAction extends AbstractTreeAction {
 	protected static final String UPDATE_ID = "updateId"; //req param
 	public static final String ROOT_NODE_ID = "MASTER_ROOT";
 
@@ -146,17 +145,18 @@ public class UpdatesAction extends SBActionAdapter {
 	}
 
 	/**
-	 * loads a list of profileId|Names for the BiomedGPS Staff role level - these are their Account Managers
+	 * Load the Section Tree so that Hierarchies can be generated.
 	 * @param req
 	 * @throws ActionException
 	 */
-	protected void loadSections(ActionRequest req, String schema) throws ActionException {
-		ContentHierarchyAction cha = new ContentHierarchyAction(this.actionInit);
-		cha.setDBConnection(dbConn);
-		cha.setAttributes(getAttributes());
-		cha.retrieve(req);
+	public Tree loadSections() {
 
-		req.setAttribute("sections", ((ModuleVO)getAttribute(Constants.MODULE_DATA)).getActionData());	
+		//Get Tree
+		Tree t = super.loadTree(null);
+
+		//Generate the Node Paths using Node Names.
+		t.buildNodePaths(t.getRootNode(), "~", true);
+		return t;
 	}
 
 	/* (non-Javadoc)
@@ -185,12 +185,14 @@ public class UpdatesAction extends SBActionAdapter {
 	protected void saveRecord(ActionRequest req, boolean isDelete) throws ActionException {
 		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		UpdatesVO u = new UpdatesVO(req);
+
 		try {
 			if (isDelete) {
 				db.delete(u);
 			} else {
 				db.save(u);
 
+				//Set the UpdateId on UpdatesXRVOs
 				if(StringUtil.isEmpty(u.getUpdateId())) {
 					u.setUpdateId(db.getGeneratedPKId());
 					for(UpdatesXRVO uxr : u.getUpdateSections()) {
@@ -202,6 +204,11 @@ public class UpdatesAction extends SBActionAdapter {
 
 				//Add to Solr if published
 				if(UpdateStatusCd.R.toString().equals(u.getStatusCd())) {
+
+					//Add hierarchies to the Section
+					u.setHierarchies(loadSections());
+
+					//Save the Update Document to Solr
 					saveToSolr(u);
 				}
 			}
@@ -259,5 +266,10 @@ public class UpdatesAction extends SBActionAdapter {
 		} catch (SQLException e) {
 			throw new ActionException(e);
 		}
+	}
+
+	@Override
+	public String getCacheKey() {
+		return null;
 	}
 }
