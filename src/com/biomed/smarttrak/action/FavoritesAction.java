@@ -120,9 +120,11 @@ public class FavoritesAction extends SBActionAdapter {
 	@SuppressWarnings("unchecked")
 	protected Map<String, List<PageViewVO>> parseFavorites(ModuleVO mod) 
 			throws ActionException {
+		log.debug("parsing favorites...");
 		if (mod.getErrorCondition()) return new HashMap<>();
 
 		List<FavoriteVO> favs = (List<FavoriteVO>)mod.getActionData();
+		log.debug("favs size: " + favs != null ? favs.size() : "null");
 		Map<String, List<PageViewVO>> pageMap = initializePageMap();
 
 		SolrDocument sDoc;
