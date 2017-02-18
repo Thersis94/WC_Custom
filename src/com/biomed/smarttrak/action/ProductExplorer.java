@@ -56,13 +56,11 @@ public class ProductExplorer extends SBActionAdapter {
 		TECH(false, "technology_ss"),
 		APPROACH(false, "approach_ss"),
 		CLASSIFICATION(false, "classification_ss"),
-		COUNTRY(false, SearchDocumentHandler.COUNTRY),
 		INTREG(false, "intregionnm_ss"),
 		INTPATH(false, "intpathnm_ss"),
 		INTSTAT(false, "intstatusnm_ss"),
 		USPATH(false, "uspathnm_ss"),
 		USSTAT(false, "usstatus_ss"),
-		STATE(false, SearchDocumentHandler.STATE),
 		ALLY(true, "ally_ss"),
 		ID(false, SearchDocumentHandler.DOCUMENT_ID);
 		private boolean contains;
@@ -125,19 +123,8 @@ public class ProductExplorer extends SBActionAdapter {
 		if (req.hasParameter("selNodes")) buildNodeParams(req, qData);
 
 		qData.addIndexType(new SolrActionIndexVO("", BiomedProductIndexer.INDEX_TYPE));
-
-		qData.addSolrField(new SolrFieldVO(FieldType.FACET, "sectionname_ss", null, null));
-		qData.addSolrField(new SolrFieldVO(FieldType.FACET, "target_market_ss", null, null));
-		qData.addSolrField(new SolrFieldVO(FieldType.FACET, "indication_ss", null, null));
-		qData.addSolrField(new SolrFieldVO(FieldType.FACET, "approach_ss", null, null));
-		qData.addSolrField(new SolrFieldVO(FieldType.FACET, "technology_ss", null, null));
-		qData.addSolrField(new SolrFieldVO(FieldType.FACET, "classification_ss", null, null));
-		qData.addSolrField(new SolrFieldVO(FieldType.FACET, "country", null, null));
-		qData.addSolrField(new SolrFieldVO(FieldType.FACET, "intregionnm_ss", null, null));
-		qData.addSolrField(new SolrFieldVO(FieldType.FACET, "intstatusnm_ss", null, null));
-		qData.addSolrField(new SolrFieldVO(FieldType.FACET, "intpathnm_ss", null, null));
-		qData.addSolrField(new SolrFieldVO(FieldType.FACET, "usstatusnm_ss", null, null));
-		qData.addSolrField(new SolrFieldVO(FieldType.FACET, "uspathnm_ss", null, null));
+		
+		addFacetFields(req, qData);
 		
 		qData.setFieldSort(SearchDocumentHandler.TITLE_LCASE);
 		qData.setSortDirection(ORDER.asc);
@@ -146,6 +133,33 @@ public class ProductExplorer extends SBActionAdapter {
 	}
 	
 	
+	/**
+	 * Add the facet filters to the qData. 
+	 * @param compare
+	 * @param qData
+	 * @return
+	 */
+	protected void addFacetFields(ActionRequest req, SolrActionVO qData) {
+		// Product Compare only uses two facets.
+		if (!Convert.formatBoolean(req.getParameter("compare"))) {
+			qData.addSolrField(new SolrFieldVO(FieldType.FACET, "target_market_ss", null, null));
+			qData.addSolrField(new SolrFieldVO(FieldType.FACET, "indication_ss", null, null));
+			qData.addSolrField(new SolrFieldVO(FieldType.FACET, "approach_ss", null, null));
+
+			//Text compare only uses five
+			if (!Convert.formatBoolean(req.getParameter("textCompare"))) {
+				qData.addSolrField(new SolrFieldVO(FieldType.FACET, "sectionname_ss", null, null));
+				qData.addSolrField(new SolrFieldVO(FieldType.FACET, "intregionnm_ss", null, null));
+				qData.addSolrField(new SolrFieldVO(FieldType.FACET, "intstatusnm_ss", null, null));
+				qData.addSolrField(new SolrFieldVO(FieldType.FACET, "intpathnm_ss", null, null));
+				qData.addSolrField(new SolrFieldVO(FieldType.FACET, "usstatusnm_ss", null, null));
+				qData.addSolrField(new SolrFieldVO(FieldType.FACET, "uspathnm_ss", null, null));
+			}
+		}
+		qData.addSolrField(new SolrFieldVO(FieldType.FACET, "classification_ss", null, null));
+		qData.addSolrField(new SolrFieldVO(FieldType.FACET, "technology_ss", null, null));
+	}
+
 	/**
 	 * Loop over the selected nodes in the hierarchy list and add them to 
 	 * the solr request.
