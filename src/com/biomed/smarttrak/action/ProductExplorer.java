@@ -174,8 +174,7 @@ public class ProductExplorer extends SBActionAdapter {
 	protected void buildSearchParams(ActionRequest req, SolrActionVO qData) {
 		for (String name : req.getParameterMap().keySet()) {
 			// If this value is not in the list of enums skip it.
-			if (!enumNames.contains(name)) continue;
-			if (StringUtil.isEmpty(req.getParameter(name))) continue;
+			if (!enumNames.contains(name) || StringUtil.isEmpty(req.getParameter(name))) continue;
 			
 			SearchField search = SearchField.valueOf(name);
 			String value = buildValues(req.getParameterValues(name), search.isContains());
@@ -261,8 +260,7 @@ public class ProductExplorer extends SBActionAdapter {
 		sa.setAttributes(attributes);
 	    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 	    	actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
-		SolrActionVO qData = sa.retrieveActionData(req);
-		return qData;
+		return sa.retrieveActionData(req);
 	}
 
 }
