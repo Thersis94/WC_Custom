@@ -25,7 +25,6 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.security.UserRoleVO;
-import com.siliconmtn.util.StringUtil;
 
 // WebCrescendo libs
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -119,8 +118,8 @@ public class RecentlyViewedAction extends SBActionAdapter {
 				log.debug("section|siteid|profileId: " + section.name() + "|" + site.getSiteId() + "|" + profileId);
 				ps.setString(++idx, profileId);
 				ps.setString(++idx, site.getSiteId());
-				ps.setString(++idx, StringUtil.checkVal(section.getURLToken()+QuickLinksAction.URL_STUB));
-				log.debug("urltoken: " + section.getURLToken() + QuickLinksAction.URL_STUB);
+				ps.setString(++idx, section.getURLToken()+QuickLinksAction.URL_STUB + "%");
+				log.debug("urltoken: " + section.getURLToken() + QuickLinksAction.URL_STUB + "%");
 			}
 			ResultSet rs = ps.executeQuery();
 			PageViewVO page = null;
