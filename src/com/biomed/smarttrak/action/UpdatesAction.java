@@ -70,24 +70,25 @@ public class UpdatesAction extends SBActionAdapter {
 		qData.setNumberResponses(15);
 		qData.setStartLocation(Convert.formatInteger(req.getParameter("pageNo"), 0) * 15);
 		qData.setOrganizationId(((SiteVO)req.getAttribute(Constants.SITE_DATA)).getOrganizationId());
-		qData.setRoleLevel(0);
+		qData.setRoleLevel(AdminControllerAction.DEFAULT_ROLE_LEVEL);
 		qData.addSolrField(new SolrFieldVO(FieldType.BOOST, SearchDocumentHandler.TITLE, "", BooleanType.AND));
-		qData.addSolrField(new SolrFieldVO(FieldType.BOOST, "section", "", BooleanType.AND));
+		qData.addSolrField(new SolrFieldVO(FieldType.BOOST, SearchDocumentHandler.HIERARCHY, "", BooleanType.AND));
+		qData.addSolrField(new SolrFieldVO(FieldType.FACET, SearchDocumentHandler.HIERARCHY, null, null));
 
 		//Add Search Parameters.
 		if (req.hasParameter("searchData")) 
 			qData.setSearchData("*"+req.getParameter("searchData")+"*");
 
 		//Add Sections Check.
-		if (req.hasParameter("sectionId")) {
+		if (req.hasParameter("hierarchyId")) {
 			StringBuilder selected = new StringBuilder(50);
 			selected.append("(");
-			for (String s : req.getParameterValues("sectionId")) {
+			for (String s : req.getParameterValues("hierarchyId")) {
 				if (selected.length() > 2) selected.append(" OR ");
 				selected.append("*").append(s);
 			}
 			selected.append(")");
-			qData.addSolrField(new SolrFieldVO(FieldType.FILTER, SearchDocumentHandler.SECTION, selected.toString(), BooleanType.AND));
+			qData.addSolrField(new SolrFieldVO(FieldType.FILTER, SearchDocumentHandler.HIERARCHY, selected.toString(), BooleanType.AND));
 		}
 
 		//Add Start - End Date Range
