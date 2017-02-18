@@ -31,7 +31,7 @@ import com.smt.sitebuilder.util.solr.SolrDocumentVO;
  * <b>Description: </b> VO for managing Biomed Updates.
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
- * 
+ *
  * @author Billy Larsen
  * @version 1.0
  * @since Feb 14, 2017
