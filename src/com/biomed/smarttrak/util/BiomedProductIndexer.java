@@ -119,7 +119,6 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		Map<String, List<ProductAllianceVO>> alliances = retrieveAlliances();
 		for (Entry<String, List<ProductAllianceVO>> entry : alliances.entrySet()) {
 			SolrDocumentVO p = products.get(entry.getKey());
-			if (p == null) log.error("Failed to get product " + entry.getKey());
 			p.addAttribute("ally", new ArrayList<String>());
 			p.addAttribute("alliance", new ArrayList<String>());
 			p.addAttribute("allyId", new ArrayList<String>());
