@@ -98,7 +98,7 @@ public class UpdatesAction extends SBActionAdapter {
 
 		//If we have a date range, add it as a solr field.
 		if(!StringUtil.isEmpty(dates)) {
-			qData.addSolrField(new SolrFieldVO(FieldType.FILTER, SearchDocumentHandler.UPDATE_DATE, dates.toString(), BooleanType.AND));
+			qData.addSolrField(new SolrFieldVO(FieldType.FILTER, SearchDocumentHandler.UPDATE_DATE, dates, BooleanType.AND));
 		}
 
 		//Add TypeId
