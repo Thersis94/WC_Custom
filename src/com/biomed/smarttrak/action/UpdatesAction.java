@@ -3,6 +3,12 @@
  */
 package com.biomed.smarttrak.action;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
 
 import com.biomed.smarttrak.solr.BiomedUpdateIndexer;
@@ -92,14 +98,38 @@ public class UpdatesAction extends SBActionAdapter {
 		}
 
 		//Add Start - End Date Range
+		ZonedDateTime sdz, edz;
+		StringBuilder dates = new StringBuilder(50);
+
 		if (req.hasParameter("startDt") && req.hasParameter("endDt")) {
-			StringBuilder dates = new StringBuilder(50);
-			dates.append("[").append(req.getParameter("startDt"));
-			dates.append("-").append(req.getParameter("endDt"));
+
+			//Parse Start Date
+			LocalDateTime sd = LocalDateTime.from(LocalDate.parse(req.getParameter("startDt"), DateTimeFormatter.ofPattern("MM/dd/yyyy")).atStartOfDay());
+		    sdz = ZonedDateTime.of(sd, ZoneId.systemDefault());
+
+	    	LocalDateTime ed = LocalDateTime.from(LocalDate.parse(req.getParameter("endDt"), DateTimeFormatter.ofPattern("MM/dd/yyyy")).atStartOfDay());
+	    	edz = ZonedDateTime.of(ed, ZoneId.systemDefault());
+
+	    	dates.append("[").append(DateTimeFormatter.ISO_INSTANT.format(sdz));
+			dates.append(" TO ").append(DateTimeFormatter.ISO_INSTANT.format(edz));
 			dates.append("]");
-			qData.addSolrField(new SolrFieldVO(FieldType.FILTER, SearchDocumentHandler.UPDATE_DATE, dates.toString(), BooleanType.AND));
+
+		} else if(req.hasParameter("startDt")) {
+			LocalDateTime sd = LocalDateTime.from(LocalDate.parse(req.getParameter("startDt"), DateTimeFormatter.ofPattern("MM/dd/yyyy")).atStartOfDay());
+		    sdz = ZonedDateTime.of(sd, ZoneId.systemDefault());
+
+	    	dates.append("[").append(DateTimeFormatter.ISO_INSTANT.format(sdz));
+			dates.append(" TO *]");
+		} else if(req.hasParameter("endDt")) {
+			LocalDateTime ed = LocalDateTime.from(LocalDate.parse(req.getParameter("endDt"), DateTimeFormatter.ofPattern("MM/dd/yyyy")).atStartOfDay());
+	    	edz = ZonedDateTime.of(ed, ZoneId.systemDefault());
+
+	    	dates.append("[* TO ").append(DateTimeFormatter.ISO_INSTANT.format(edz)).append("]");
 		}
 
+		if(dates.length() > 0) {
+			qData.addSolrField(new SolrFieldVO(FieldType.FILTER, SearchDocumentHandler.UPDATE_DATE, dates.toString(), BooleanType.AND));
+		}
 		//Add TypeId
 		if(req.hasParameter("typeId")) {
 			qData.addSolrField(new SolrFieldVO(FieldType.FILTER, SearchDocumentHandler.MODULE_TYPE, req.getParameter("typeId"), BooleanType.AND));
