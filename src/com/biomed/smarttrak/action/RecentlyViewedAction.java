@@ -25,6 +25,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.security.UserRoleVO;
+import com.siliconmtn.util.StringUtil;
 
 // WebCrescendo libs
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -55,8 +56,6 @@ import com.smt.sitebuilder.util.PageViewVO;
  ***************************************************************************/
 public class RecentlyViewedAction extends SBActionAdapter {
 	
-	private static final char CHAR_SLASH = '/';
-
 	/**
 	 * Constructor
 	 */
@@ -76,7 +75,7 @@ public class RecentlyViewedAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		log.debug("UserRecentActivityAction retrieve...");
+		log.debug("RecentlyViewedAction retrieve...");
 		SMTSession sess = (SMTSession)req.getSession();
 		UserDataVO user = (UserDataVO)sess.getAttribute(Constants.USER_DATA);
 		if (user == null) throw new ActionException("Not logged in.");
@@ -205,7 +204,7 @@ public class RecentlyViewedAction extends SBActionAdapter {
 	 * @param page
 	 */
 	protected void setPageId(PageViewVO page) {
-		int idx = page.getRequestUri().lastIndexOf(CHAR_SLASH);
+		int idx = page.getRequestUri().lastIndexOf(QuickLinksAction.CHAR_SLASH);
 		if (idx == 0 || idx == page.getRequestUri().length() - 1) return;
 		page.setPageId(page.getRequestUri().substring(idx+1));
 	}
@@ -289,53 +288,87 @@ public class RecentlyViewedAction extends SBActionAdapter {
 	@SuppressWarnings("unchecked")
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		SMTSession sess = (SMTSession)req.getSession();
-		Map<String, List<PageViewVO>> recent = (Map<String,List<PageViewVO>>)sess.getAttribute(QuickLinksAction.MY_RECENTLY_VIEWED);
-		if (recent == null) return;
+		log.debug("RecentlyViewedAction build...");
 
 		// determine page collection type
 		String collKey;
 		try {
-			collKey = getEntityString(req.getRequestURI());
+			collKey = checkCollectionKey(req.getParameter(QuickLinksAction.PARAM_KEY_SECTION));
 		} catch(Exception e) {
+			log.error("Error: " + e.getMessage());
 			return;
 		}
 
-		// get the proper collection
-		List<PageViewVO> pages = recent.get(collKey);
-
+		SMTSession sess = (SMTSession)req.getSession();
+		Map<String, List<PageViewVO>> rvMap = (Map<String,List<PageViewVO>>)sess.getAttribute(QuickLinksAction.MY_RECENTLY_VIEWED);
+		// if map doesn't exist, create it.
+		if (rvMap == null) rvMap = new HashMap<>();
+		log.debug("rvMap size is: " + rvMap.size());
+		// get the proper collection or create it if it doesn't exist
+		List<PageViewVO> pages = rvMap.get(collKey);
+		if (pages == null) {
+			pages = new ArrayList<>();
+		}
+		
+		log.debug("pages is size: " + pages.size());
 		PageViewVO page = new PageViewVO();
-		page.setPageId(req.getParameter("id"));
-		page.setPageDisplayName(req.getParameter("name"));
-		page.setRequestUri(req.getRequestURI());
+		page.setPageDisplayName(req.getParameter(QuickLinksAction.PARAM_KEY_NAME));
+		page.setRequestUri(req.getParameter(QuickLinksAction.PARAM_KEY_URI_TXT));
+		int idx = page.getRequestUri().lastIndexOf(QuickLinksAction.CHAR_SLASH);
+		if (idx < page.getRequestUri().length()) 
+			page.setPageId(page.getRequestUri().substring(idx+1));
+		if (isDuplicatePage(pages, page)) return;
+
+		log.debug("section name | url: " + page.getPageDisplayName() + "|" + page.getRequestUri());
 
 		// add to top of list
 		pages.add(0,page);
 
-		// if list size > max, remove 1
+		// if list size > max, remove the last one in the list
 		if (pages.size() > QuickLinksAction.MAX_LIST_SIZE) 
 			pages.remove(pages.size() - 1);
 
-		// set update collection on session
-		sess.setAttribute(QuickLinksAction.MY_RECENTLY_VIEWED, pages);
+		// replace the collection on the map.
+		rvMap.put(collKey, pages);
+		// update the collection map on session
+		sess.setAttribute(QuickLinksAction.MY_RECENTLY_VIEWED, rvMap);
+
 	}
 
 	/**
 	 * Helper method for returning a valid key for retrieving the correct 
 	 * collection from the 'recently viewed' map on the session. 
-	 * @param val
+	 * @param section
 	 * @return
 	 * @throws ActionException
 	 */
-	protected String getEntityString(String val) throws ActionException {
-		if (val.indexOf(Section.MARKET.getURLToken()) > -1) {
-			return Section.MARKET.name();
-		} else if (val.indexOf(Section.COMPANY.getURLToken()) > -1) {
-			return Section.COMPANY.name();
-		} else if (val.indexOf(Section.PRODUCT.getURLToken()) > -1) {
-			return Section.PRODUCT.name();
+	protected String checkCollectionKey(String section) throws ActionException {
+		log.debug("evaluating section val: " + section);
+		String key = StringUtil.checkVal(section).toUpperCase();
+		log.debug("using key val: " + key);
+		try {
+			Section.valueOf(key);
+		} catch (Exception e) {
+			log.debug("exception!  " + e);
+			throw new ActionException("Unknown section value: " + section);
 		}
-		throw new ActionException("Unknown section value.");
+		log.debug("returning key: " + key);
+		return key;
+	}
+	
+	/**
+	 * Checks to see if the page being viewed is already on the list for the given collection.
+	 * @param pages
+	 * @param page
+	 * @return
+	 */
+	protected boolean isDuplicatePage(List<PageViewVO> pages, PageViewVO page) {
+		if (page.getPageId() == null) return true;
+		for (PageViewVO tmp : pages) {
+			if (page.getPageId().equalsIgnoreCase(tmp.getPageId())) 
+				return true;
+		}
+		return false;
 	}
 	
 	/**

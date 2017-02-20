@@ -18,7 +18,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.session.SMTSession;
-
+import com.siliconmtn.util.StringUtil;
 // WebCrescendo libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.tools.FavoriteVO;
@@ -61,6 +61,7 @@ public class FavoritesAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		log.debug("FavoritesAction retrieve...");
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
 		if (role == null) throw new ActionException("Not logged in.");
 		ModuleVO mod;
@@ -80,24 +81,114 @@ public class FavoritesAction extends SBActionAdapter {
 		Map<String, List<PageViewVO>> favs = parseFavorites(mod);
 
 		log.debug("FavoritesAction retrieve error condition | message: " + mod.getErrorCondition() + "|" + mod.getErrorMessage());
+		log.debug("favs size: " + favs.size());
 		this.putModuleData(favs, favs.size(), false, mod.getErrorMessage(), mod.getErrorCondition());
 	}
 
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
 	 */
-	@SuppressWarnings("unchecked")
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		SMTSession sess = (SMTSession)req.getSession();
-		List<PageViewVO> favs = (List<PageViewVO>)sess.getAttribute(MyFavoritesAction.MY_FAVORITES);
-		if (favs == null) return;
+		log.debug("FavoritesAction build...");
+		
+		PageViewVO fav = buildFavoritePage(req);
+		if (fav == null) return;
+		
+		// 1. add favorite to user's profile favorites
+		updateProfileFavorites(req,fav);
 
-		PageViewVO fav = new PageViewVO();
+	}
+	
 
-		fav.setPageId(req.getParameter("id"));
-		fav.setPageDisplayName(req.getParameter("name"));
-		fav.setRequestUri(req.getRequestURI());
+	/**
+	 * Builds a PageViewVO representing the page being favorited using request params.
+	 * @param req
+	 * @return
+	 */
+	protected PageViewVO buildFavoritePage(ActionRequest req) {
+		PageViewVO fav = null;
+		String collKey = req.getParameter(QuickLinksAction.PARAM_KEY_SECTION);
+		try {
+			checkCollectionKey(collKey);
+		} catch (ActionException ae) {
+			log.error("Error: " + ae.getMessage());
+			return fav;
+		}
+		
+		String uriTxt = req.getParameter(QuickLinksAction.PARAM_KEY_URI_TXT);
+		String pkId = parsePrimaryId(uriTxt);
+		if (pkId == null) return fav;
+		
+		// format fav page
+		fav = new PageViewVO();
+		fav.setReferenceCode(collKey);
+		fav.setPageId(pkId);
+		fav.setRequestUri(uriTxt);
+		fav.setPageDisplayName(req.getParameter(QuickLinksAction.PARAM_KEY_NAME));
+		
+		return fav;
+	}
+	
+	/**
+	 * Parses the primary section entity ID from the request uri.
+	 * @param uriTxt
+	 * @return
+	 */
+	protected String parsePrimaryId(String uriTxt) {
+		String id = null;
+		int idx = uriTxt.lastIndexOf(QuickLinksAction.CHAR_SLASH);
+		if (idx < uriTxt.length()) 
+			id = uriTxt.substring(idx+1);
+		return id;
+	}
+
+	/**
+	 * Adds the favorite to the user's profile favorites.
+	 * @param req
+	 * @param page
+	 * @throws ActionException
+	 */
+	@SuppressWarnings("unchecked")
+	protected void updateProfileFavorites(ActionRequest req, PageViewVO page) throws ActionException {
+		log.debug("persistProfileFavorite...");
+		// set additional req params needed downstream for inserts.
+		req.setParameter(QuickLinksAction.PARAM_KEY_TYPE_CD, page.getReferenceCode());
+		req.setParameter(QuickLinksAction.PARAM_KEY_REL_ID, page.getPageId());
+		
+		ActionInterface ai = new MyFavoritesAction(getActionInit());
+		ai.setAttributes(getAttributes());
+		ai.setDBConnection(dbConn);
+		ai.build(req);
+		
+		/* now retrieve favorites again as the action we called removes favorites
+		 * from the user's session. */
+		this.retrieve(req);
+		ModuleVO mod = (ModuleVO)getAttribute(Constants.MODULE_DATA);
+		if (mod != null) {
+			Map<String,List<PageViewVO>> favs = (Map<String,List<PageViewVO>>)mod.getActionData();
+			req.getSession().setAttribute(MyFavoritesAction.MY_FAVORITES, favs);
+		}
+	}
+	
+	/**
+	 * Retrieves collection map from session and updates the appropriate collection with 
+	 * the passed in favorite.
+	 * @param req
+	 * @param fav
+	 */
+	@SuppressWarnings("unchecked")
+	protected void updateSessionMap(ActionRequest req, PageViewVO fav) {
+		SMTSession sess = req.getSession();
+		Map<String, List<PageViewVO>> favMap = (Map<String,List<PageViewVO>>)sess.getAttribute(MyFavoritesAction.MY_FAVORITES);
+		// if no map found on session, create a map.
+		if (favMap == null) favMap = new HashMap<>();
+
+		// get the proper collection or create it if it doesn't exist
+		List<PageViewVO> favs = favMap.get(fav.getReferenceCode());
+		if (favs == null) {
+			favs = new ArrayList<>();
+		}
 
 		// add to top of list
 		favs.add(0,fav);
@@ -106,8 +197,29 @@ public class FavoritesAction extends SBActionAdapter {
 		if (favs.size() > QuickLinksAction.MAX_LIST_SIZE) 
 			favs.remove(favs.size() - 1);
 
-		// set update collection on session
-		sess.setAttribute(MyFavoritesAction.MY_FAVORITES, favs);
+		// update collection on map
+		favMap.put(fav.getReferenceCode(), favs);
+
+		// update collection on session
+		sess.setAttribute(MyFavoritesAction.MY_FAVORITES, favMap);
+	}
+	
+	/**
+	 * Retrieves the map collection key by using the enum to validate the 
+	 * section value passed in.
+	 * @param section
+	 * @return
+	 * @throws ActionException 
+	 */
+	protected String checkCollectionKey(String section) throws ActionException {
+		log.debug("evaluating section val: " + section);
+		String key = StringUtil.checkVal(section).toUpperCase();
+		try {
+			Section.valueOf(key);
+		} catch (Exception e) {
+			throw new ActionException("Unknown section value: " + section);
+		}
+		return key;
 	}
 	
 	/**
@@ -127,11 +239,10 @@ public class FavoritesAction extends SBActionAdapter {
 		log.debug("favs size: " + favs != null ? favs.size() : "null");
 		Map<String, List<PageViewVO>> pageMap = initializePageMap();
 
-		SolrDocument sDoc;
 		for (FavoriteVO fav : favs) {
+			log.debug("found fav, typeCd | relId | uriTxt: " + fav.getTypeCd() + "|" + fav.getRelId() + "|" + fav.getUriTxt());
 			if (fav.getAsset() == null) continue; 
-			sDoc = (SolrDocument)fav.getAsset();
-			parseFavoriteAsset(pageMap,sDoc);
+			parseFavorite(pageMap,fav);
 		}
 		return pageMap;
 	}
@@ -140,41 +251,34 @@ public class FavoritesAction extends SBActionAdapter {
 	 * Parses a Favorite asset to determine if it is a section page favorite. If so, the asset is
 	 * parsed into a PageViewVO and is added to the appropriate collection of pages on the page map.
 	 * @param pages
-	 * @param asset
+	 * @param fav
 	 */
-	protected void parseFavoriteAsset(Map<String,List<PageViewVO>> pages, SolrDocument asset) {
-		String docUrl = asset.getFieldValue(SearchDocumentHandler.DOCUMENT_URL).toString();
-		String sectionType = checkAssetSectionType(docUrl);
-		if (sectionType == null) return;
+	protected void parseFavorite(Map<String,List<PageViewVO>> pages, FavoriteVO fav) {
+		try {
+			checkCollectionKey(fav.getTypeCd());
+		} catch (Exception e) {
+			// this fav is not a 'Section' type so return.
+			return;
+		}
 
 		PageViewVO page = new PageViewVO();
-		page.setReferenceCode(sectionType);
-		page.setPageId(asset.getFieldValue(SearchDocumentHandler.DOCUMENT_ID).toString());
-		page.setRequestUri(docUrl);
-		page.setPageDisplayName(asset.getFieldValue(SearchDocumentHandler.TITLE).toString());
+		page.setReferenceCode(fav.getTypeCd());
+		page.setPageId(fav.getRelId());
+		page.setRequestUri(fav.getUriTxt());
+
+		if (fav.getAsset() != null) {
+			SolrDocument sDoc = (SolrDocument)fav.getAsset();
+			page.setPageDisplayName(sDoc.getFieldValue(SearchDocumentHandler.TITLE).toString());
+		}
+
+		log.debug("adding favorite: ref cd | pageId | uri | name: " + page.getReferenceCode() +"|"+page.getPageId() +"|"+page.getRequestUri() +"|"+page.getPageDisplayName());
 
 		List<PageViewVO>pList = pages.get(page.getReferenceCode());
 		if (pList != null && 
 				pList.size() < QuickLinksAction.MAX_LIST_SIZE)
 			pList.add(page);
 	}
-	
-	/**
-	 * Tests the pageUrl to see if it is a reference to a section (Market, Company, etc.).
-	 * @param pageUrl
-	 * @return
-	 */
-	protected String checkAssetSectionType(String pageUrl) {
-		String type = null;
-		for (Section section : Section.values()) {
-			if (pageUrl.indexOf(section.getURLToken() + QuickLinksAction.URL_STUB) > -1) {
-				type = section.name();
-				break;
-			}
-		}
-		return type;
-	}
-	
+
 	/**
 	 * Initialize a Map of List of PageViewVO based on the key types enum.
 	 * @return
