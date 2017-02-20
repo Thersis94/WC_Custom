@@ -3,18 +3,13 @@
  */
 package com.biomed.smarttrak.action;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
 
 import com.biomed.smarttrak.solr.BiomedUpdateIndexer;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrActionIndexVO;
@@ -28,6 +23,7 @@ import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
+import com.smt.sitebuilder.util.solr.SolrActionUtil;
 
 /****************************************************************************
  * <b>Title</b>: UpdatesAction.java
@@ -97,31 +93,11 @@ public class UpdatesAction extends SBActionAdapter {
 			qData.addSolrField(new SolrFieldVO(FieldType.FILTER, SearchDocumentHandler.HIERARCHY, selected.toString(), BooleanType.AND));
 		}
 
-		//Add Start - End Date Range
-		StringBuilder dates = new StringBuilder(75);
-
-		if (req.hasParameter("startDt") && req.hasParameter("endDt")) {
-
-			//Parse Start Date
-			ZonedDateTime sdz = getSolrDate(req.getParameter("startDt"));
-
-			//Parse End Date
-			ZonedDateTime edz = getSolrDate(req.getParameter("endDt"));
-
-			dates.append("[").append(DateTimeFormatter.ISO_INSTANT.format(sdz));
-			dates.append(" TO ").append(DateTimeFormatter.ISO_INSTANT.format(edz));
-			dates.append("]");
-
-		} else if(req.hasParameter("startDt")) {
-			ZonedDateTime sdz = getSolrDate(req.getParameter("startDt"));
-	    	dates.append("[").append(DateTimeFormatter.ISO_INSTANT.format(sdz)).append(" TO *]");
-		} else if(req.hasParameter("endDt")) {
-			ZonedDateTime edz = getSolrDate(req.getParameter("endDt"));
-	    	dates.append("[* TO ").append(DateTimeFormatter.ISO_INSTANT.format(edz)).append("]");
-		}
+		//Get a Date Range String.
+		String dates = SolrActionUtil.makeSolrDateRange(req.getParameter("startDt"), req.getParameter("endDt"), Convert.DATE_SLASH_PATTERN);
 
 		//If we have a date range, add it as a solr field.
-		if(dates.length() > 0) {
+		if(!StringUtil.isEmpty(dates)) {
 			qData.addSolrField(new SolrFieldVO(FieldType.FILTER, SearchDocumentHandler.UPDATE_DATE, dates.toString(), BooleanType.AND));
 		}
 
@@ -136,16 +112,5 @@ public class UpdatesAction extends SBActionAdapter {
 		qData.setSortDirection(ORDER.desc);
 
 		return sqp.processQuery(qData);
-	}
-
-	protected ZonedDateTime getSolrDate(String dateText) {
-		ZonedDateTime zdt = null;
-		try {
-			LocalDateTime ldt = LocalDateTime.from(LocalDate.parse(dateText, DateTimeFormatter.ofPattern("MM/dd/yyyy")).atStartOfDay());
-			zdt = ZonedDateTime.of(ldt, ZoneId.systemDefault());
-		} catch (Exception e) {
-			log.error("Could not parse date : " + dateText, e);
-		}
-		return zdt;
 	}
 }
