@@ -189,6 +189,7 @@ public class UpdatesAction extends AbstractTreeAction {
 		try {
 			if (isDelete) {
 				db.delete(u);
+				deleteFromSolr(u);
 			} else {
 				db.save(u);
 
@@ -215,6 +216,19 @@ public class UpdatesAction extends AbstractTreeAction {
 		} catch (InvalidDataException | DatabaseException e) {
 			throw new ActionException(e);
 		}
+	}
+
+	/**
+	 * Removes an Updates Record from Solr.
+	 * @param u
+	 */
+	protected void deleteFromSolr(UpdatesVO u) {
+		try(SolrActionUtil sau = new SolrActionUtil(getAttributes())) {
+			sau.removeDocument(u.getUpdateId());
+		} catch (Exception e) {
+			log.error("Error Deleting from Solr.", e);
+		}
+		log.debug("removed document from solr");
 	}
 
 	/**

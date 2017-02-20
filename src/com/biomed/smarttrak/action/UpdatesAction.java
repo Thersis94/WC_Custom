@@ -94,7 +94,7 @@ public class UpdatesAction extends SBActionAdapter {
 		}
 
 		//Get a Date Range String.
-		String dates = SolrActionUtil.makeSolrDateRange(req.getParameter("startDt"), req.getParameter("endDt"), Convert.DATE_SLASH_PATTERN);
+		String dates = SolrActionUtil.makeRangeQuery(FieldType.DATE, req.getParameter("startDt"), req.getParameter("endDt"));
 
 		//If we have a date range, add it as a solr field.
 		if(!StringUtil.isEmpty(dates)) {
