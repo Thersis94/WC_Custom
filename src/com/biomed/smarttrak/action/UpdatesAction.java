@@ -9,6 +9,7 @@ import com.biomed.smarttrak.solr.BiomedUpdateIndexer;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrActionIndexVO;
@@ -22,6 +23,7 @@ import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
+import com.smt.sitebuilder.util.solr.SolrActionUtil;
 
 /****************************************************************************
  * <b>Title</b>: UpdatesAction.java
@@ -70,33 +72,33 @@ public class UpdatesAction extends SBActionAdapter {
 		qData.setNumberResponses(15);
 		qData.setStartLocation(Convert.formatInteger(req.getParameter("pageNo"), 0) * 15);
 		qData.setOrganizationId(((SiteVO)req.getAttribute(Constants.SITE_DATA)).getOrganizationId());
-		qData.setRoleLevel(0);
+		qData.setRoleLevel(AdminControllerAction.DEFAULT_ROLE_LEVEL);
 		qData.addSolrField(new SolrFieldVO(FieldType.BOOST, SearchDocumentHandler.TITLE, "", BooleanType.AND));
-		qData.addSolrField(new SolrFieldVO(FieldType.BOOST, "section", "", BooleanType.AND));
+		qData.addSolrField(new SolrFieldVO(FieldType.BOOST, SearchDocumentHandler.HIERARCHY, "", BooleanType.AND));
+		qData.addSolrField(new SolrFieldVO(FieldType.FACET, SearchDocumentHandler.HIERARCHY, null, null));
 
 		//Add Search Parameters.
-		if (req.hasParameter("searchData")) 
+		if (req.hasParameter("searchData"))
 			qData.setSearchData("*"+req.getParameter("searchData")+"*");
 
 		//Add Sections Check.
-		if (req.hasParameter("sectionId")) {
+		if (req.hasParameter("hierarchyId")) {
 			StringBuilder selected = new StringBuilder(50);
 			selected.append("(");
-			for (String s : req.getParameterValues("sectionId")) {
+			for (String s : req.getParameterValues("hierarchyId")) {
 				if (selected.length() > 2) selected.append(" OR ");
 				selected.append("*").append(s);
 			}
 			selected.append(")");
-			qData.addSolrField(new SolrFieldVO(FieldType.FILTER, SearchDocumentHandler.SECTION, selected.toString(), BooleanType.AND));
+			qData.addSolrField(new SolrFieldVO(FieldType.FILTER, SearchDocumentHandler.HIERARCHY, selected.toString(), BooleanType.AND));
 		}
 
-		//Add Start - End Date Range
-		if (req.hasParameter("startDt") && req.hasParameter("endDt")) {
-			StringBuilder dates = new StringBuilder(50);
-			dates.append("[").append(req.getParameter("startDt"));
-			dates.append("-").append(req.getParameter("endDt"));
-			dates.append("]");
-			qData.addSolrField(new SolrFieldVO(FieldType.FILTER, SearchDocumentHandler.UPDATE_DATE, dates.toString(), BooleanType.AND));
+		//Get a Date Range String.
+		String dates = SolrActionUtil.makeRangeQuery(FieldType.DATE, req.getParameter("startDt"), req.getParameter("endDt"));
+
+		//If we have a date range, add it as a solr field.
+		if(!StringUtil.isEmpty(dates)) {
+			qData.addSolrField(new SolrFieldVO(FieldType.FILTER, SearchDocumentHandler.UPDATE_DATE, dates, BooleanType.AND));
 		}
 
 		//Add TypeId

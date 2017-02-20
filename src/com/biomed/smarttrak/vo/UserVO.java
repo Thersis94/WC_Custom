@@ -300,7 +300,7 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		} else {
 			data = (List<String>) obj;
 		}
-		return (data);
+		return data;
 	}
 	
 	

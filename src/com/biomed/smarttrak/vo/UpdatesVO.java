@@ -15,6 +15,8 @@ import com.biomed.smarttrak.admin.user.HumanNameIntfc;
 import com.biomed.smarttrak.solr.BiomedUpdateIndexer;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.annotations.SolrField;
+import com.siliconmtn.data.Node;
+import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
@@ -31,7 +33,7 @@ import com.smt.sitebuilder.util.solr.SolrDocumentVO;
  * <b>Description: </b> VO for managing Biomed Updates.
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
- * 
+ *
  * @author Billy Larsen
  * @version 1.0
  * @since Feb 14, 2017
@@ -273,15 +275,6 @@ public class UpdatesVO extends SolrDocumentVO implements HumanNameIntfc {
 			this.sections.add(u);
 	}
 
-	@Override
-	@SolrField(name=SearchDocumentHandler.SECTION)
-	public List<String> getSections() {
-		List<String> secList = new ArrayList<>();
-		for(UpdatesXRVO uxr : sections) {
-			secList.add(uxr.getSectionId());
-		}
-		return secList;
-	}
 	/**
 	 * @param updateId the updateId to set.
 	 */
@@ -441,5 +434,21 @@ public class UpdatesVO extends SolrDocumentVO implements HumanNameIntfc {
 	@Override
 	public void setLastName(String lastNm) {
 		this.lastNm = lastNm;
+	}
+
+
+	/**
+	 * Helper method that builds hierarchy path.
+	 * 
+	 * Replace spaces with _ and replace & and and
+	 * @param loadSections
+	 */
+	public void setHierarchies(Tree t) {
+		for(UpdatesXRVO uxr : sections) {
+			Node n = t.findNode(uxr.getSectionId());
+			if(n != null && !StringUtil.isEmpty(n.getFullPath())) {
+				super.addHierarchies(n.getFullPath().replaceAll(" ", "_").replaceAll("&", "and"));
+			}
+		}
 	}
 }

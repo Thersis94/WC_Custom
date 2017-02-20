@@ -5,12 +5,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+
+
 //WC_Custom
 import com.biomed.smarttrak.action.NoteAction.NoteType;
+import com.biomed.smarttrak.vo.NoteEntityInterface;
+import com.biomed.smarttrak.vo.NoteInterface;
 import com.biomed.smarttrak.vo.NoteVO;
-import com.bmg.admin.vo.NoteEntityInterface;
-
-import com.bmg.admin.vo.NoteInterface;
 //WebCrescendo
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 

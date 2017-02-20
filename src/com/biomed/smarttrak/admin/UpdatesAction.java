@@ -16,12 +16,12 @@ import com.biomed.smarttrak.vo.UpdatesVO.UpdateStatusCd;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
 
@@ -36,8 +36,9 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
  * @version 1.0
  * @since Feb 14, 2017
  ****************************************************************************/
-public class UpdatesAction extends SBActionAdapter {
+public class UpdatesAction extends AbstractTreeAction {
 	protected static final String UPDATE_ID = "updateId"; //req param
+	public static final String ROOT_NODE_ID = "MASTER_ROOT";
 
 	public enum UpdateType {
 		MARKET(12, "Market"),
@@ -80,38 +81,54 @@ public class UpdatesAction extends SBActionAdapter {
 		if (!req.hasParameter("loadData") && !req.hasParameter(UPDATE_ID) ) return;
 
 		String updateId = req.hasParameter(UPDATE_ID) ? req.getParameter(UPDATE_ID) : null;
-		List<Object> updates = getUpdates(updateId);
+		String statusCd = req.getParameter("statusCd");
+		String typeCd = req.getParameter("typeCd");
+		String dateRange = req.getParameter("dateRange");
+		List<Object> updates = getUpdates(updateId, statusCd, typeCd, dateRange);
 
 		decryptNames(updates);
 
 		putModuleData(updates);
 	}
 
-	public List<Object> getUpdates(String updateId) {
+	public List<Object> getUpdates(String updateId, String statusCd, String typeCd, String dateRange) {
 
 		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
-		String sql = formatRetrieveQuery(updateId, schema);
+		String sql = formatRetrieveQuery(updateId, statusCd, typeCd, dateRange, schema);
 
 		List<Object> params = new ArrayList<>();
-		if (updateId != null) params.add(updateId);
+		if (!StringUtil.isEmpty(updateId)) params.add(updateId);
+		if (!StringUtil.isEmpty(statusCd)) params.add(statusCd);
+		if (!StringUtil.isEmpty(typeCd)) params.add(Convert.formatInteger(typeCd));
 
 		DBProcessor db = new DBProcessor(dbConn, schema);
 		List<Object>  updates = db.executeSelect(sql, params, new UpdatesVO());
 		log.debug("loaded " + updates.size() + " updates");
 		return updates;
 	}
+
 	/**
 	 * Formats the account retrieval query.
 	 * @return
 	 */
-	public static String formatRetrieveQuery(String updateId, String schema) {
+	public static String formatRetrieveQuery(String updateId, String statusCd, String typeCd, String dateRange, String schema) {
 		StringBuilder sql = new StringBuilder(400);
 		sql.append("select a.*, p.first_nm, p.last_nm, b.section_id ");
 		sql.append("from ").append(schema).append("biomedgps_update a ");
 		sql.append("inner join profile p on a.creator_profile_id=p.profile_id ");
 		sql.append("left outer join ").append(schema).append("biomedgps_update_section b ");
-		sql.append("on a.update_id=b.update_id ");
-		if (updateId != null) sql.append("where a.update_id=? ");
+		sql.append("on a.update_id=b.update_id where 1=1 ");
+		if (!StringUtil.isEmpty(updateId)) sql.append("and a.update_id=? ");
+		if (!StringUtil.isEmpty(statusCd)) sql.append("and a.status_cd=? ");
+		if (!StringUtil.isEmpty(typeCd)) sql.append("and a.type_cd=? ");
+		if (!StringUtil.isEmpty(dateRange)) {
+			if("1".equals(dateRange)) {
+				sql.append("and a.create_Dt > CURRENT_DATE - INTERVAL '6 months' ");
+			} else if ("2".equals(dateRange)) {
+				sql.append("and a.create_Dt < CURRENT_DATE - INTERVAL '6 months' ");
+			}
+		}
+
 		sql.append("order by a.create_dt");
 
 		log.debug(sql);
@@ -128,17 +145,18 @@ public class UpdatesAction extends SBActionAdapter {
 	}
 
 	/**
-	 * loads a list of profileId|Names for the BiomedGPS Staff role level - these are their Account Managers
+	 * Load the Section Tree so that Hierarchies can be generated.
 	 * @param req
 	 * @throws ActionException
 	 */
-	protected void loadSections(ActionRequest req, String schema) throws ActionException {
-		ContentHierarchyAction cha = new ContentHierarchyAction(this.actionInit);
-		cha.setDBConnection(dbConn);
-		cha.setAttributes(getAttributes());
-		cha.retrieve(req);
+	public Tree loadSections() {
 
-		req.setAttribute("sections", ((ModuleVO)getAttribute(Constants.MODULE_DATA)).getActionData());	
+		//Get Tree
+		Tree t = super.loadTree(null);
+
+		//Generate the Node Paths using Node Names.
+		t.buildNodePaths(t.getRootNode(), "~", true);
+		return t;
 	}
 
 	/* (non-Javadoc)
@@ -167,12 +185,15 @@ public class UpdatesAction extends SBActionAdapter {
 	protected void saveRecord(ActionRequest req, boolean isDelete) throws ActionException {
 		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		UpdatesVO u = new UpdatesVO(req);
+
 		try {
 			if (isDelete) {
 				db.delete(u);
+				deleteFromSolr(u);
 			} else {
 				db.save(u);
 
+				//Set the UpdateId on UpdatesXRVOs
 				if(StringUtil.isEmpty(u.getUpdateId())) {
 					u.setUpdateId(db.getGeneratedPKId());
 					for(UpdatesXRVO uxr : u.getUpdateSections()) {
@@ -184,12 +205,30 @@ public class UpdatesAction extends SBActionAdapter {
 
 				//Add to Solr if published
 				if(UpdateStatusCd.R.toString().equals(u.getStatusCd())) {
+
+					//Add hierarchies to the Section
+					u.setHierarchies(loadSections());
+
+					//Save the Update Document to Solr
 					saveToSolr(u);
 				}
 			}
 		} catch (InvalidDataException | DatabaseException e) {
 			throw new ActionException(e);
 		}
+	}
+
+	/**
+	 * Removes an Updates Record from Solr.
+	 * @param u
+	 */
+	protected void deleteFromSolr(UpdatesVO u) {
+		try(SolrActionUtil sau = new SolrActionUtil(getAttributes())) {
+			sau.removeDocument(u.getUpdateId());
+		} catch (Exception e) {
+			log.error("Error Deleting from Solr.", e);
+		}
+		log.debug("removed document from solr");
 	}
 
 	/**
@@ -241,5 +280,10 @@ public class UpdatesAction extends SBActionAdapter {
 		} catch (SQLException e) {
 			throw new ActionException(e);
 		}
+	}
+
+	@Override
+	public String getCacheKey() {
+		return null;
 	}
 }
