@@ -82,7 +82,7 @@ public class UpdatesAction extends SBActionAdapter {
 		qData.addSolrField(new SolrFieldVO(FieldType.FACET, SearchDocumentHandler.HIERARCHY, null, null));
 
 		//Add Search Parameters.
-		if (req.hasParameter("searchData")) 
+		if (req.hasParameter("searchData"))
 			qData.setSearchData("*"+req.getParameter("searchData")+"*");
 
 		//Add Sections Check.
@@ -98,38 +98,33 @@ public class UpdatesAction extends SBActionAdapter {
 		}
 
 		//Add Start - End Date Range
-		ZonedDateTime sdz, edz;
-		StringBuilder dates = new StringBuilder(50);
+		StringBuilder dates = new StringBuilder(75);
 
 		if (req.hasParameter("startDt") && req.hasParameter("endDt")) {
 
 			//Parse Start Date
-			LocalDateTime sd = LocalDateTime.from(LocalDate.parse(req.getParameter("startDt"), DateTimeFormatter.ofPattern("MM/dd/yyyy")).atStartOfDay());
-		    sdz = ZonedDateTime.of(sd, ZoneId.systemDefault());
+			ZonedDateTime sdz = getSolrDate(req.getParameter("startDt"));
 
-	    	LocalDateTime ed = LocalDateTime.from(LocalDate.parse(req.getParameter("endDt"), DateTimeFormatter.ofPattern("MM/dd/yyyy")).atStartOfDay());
-	    	edz = ZonedDateTime.of(ed, ZoneId.systemDefault());
+			//Parse End Date
+			ZonedDateTime edz = getSolrDate(req.getParameter("endDt"));
 
-	    	dates.append("[").append(DateTimeFormatter.ISO_INSTANT.format(sdz));
+			dates.append("[").append(DateTimeFormatter.ISO_INSTANT.format(sdz));
 			dates.append(" TO ").append(DateTimeFormatter.ISO_INSTANT.format(edz));
 			dates.append("]");
 
 		} else if(req.hasParameter("startDt")) {
-			LocalDateTime sd = LocalDateTime.from(LocalDate.parse(req.getParameter("startDt"), DateTimeFormatter.ofPattern("MM/dd/yyyy")).atStartOfDay());
-		    sdz = ZonedDateTime.of(sd, ZoneId.systemDefault());
-
-	    	dates.append("[").append(DateTimeFormatter.ISO_INSTANT.format(sdz));
-			dates.append(" TO *]");
+			ZonedDateTime sdz = getSolrDate(req.getParameter("startDt"));
+	    	dates.append("[").append(DateTimeFormatter.ISO_INSTANT.format(sdz)).append(" TO *]");
 		} else if(req.hasParameter("endDt")) {
-			LocalDateTime ed = LocalDateTime.from(LocalDate.parse(req.getParameter("endDt"), DateTimeFormatter.ofPattern("MM/dd/yyyy")).atStartOfDay());
-	    	edz = ZonedDateTime.of(ed, ZoneId.systemDefault());
-
+			ZonedDateTime edz = getSolrDate(req.getParameter("endDt"));
 	    	dates.append("[* TO ").append(DateTimeFormatter.ISO_INSTANT.format(edz)).append("]");
 		}
 
+		//If we have a date range, add it as a solr field.
 		if(dates.length() > 0) {
 			qData.addSolrField(new SolrFieldVO(FieldType.FILTER, SearchDocumentHandler.UPDATE_DATE, dates.toString(), BooleanType.AND));
 		}
+
 		//Add TypeId
 		if(req.hasParameter("typeId")) {
 			qData.addSolrField(new SolrFieldVO(FieldType.FILTER, SearchDocumentHandler.MODULE_TYPE, req.getParameter("typeId"), BooleanType.AND));
@@ -141,5 +136,16 @@ public class UpdatesAction extends SBActionAdapter {
 		qData.setSortDirection(ORDER.desc);
 
 		return sqp.processQuery(qData);
+	}
+
+	protected ZonedDateTime getSolrDate(String dateText) {
+		ZonedDateTime zdt = null;
+		try {
+			LocalDateTime ldt = LocalDateTime.from(LocalDate.parse(dateText, DateTimeFormatter.ofPattern("MM/dd/yyyy")).atStartOfDay());
+			zdt = ZonedDateTime.of(ldt, ZoneId.systemDefault());
+		} catch (Exception e) {
+			log.error("Could not parse date : " + dateText, e);
+		}
+		return zdt;
 	}
 }
