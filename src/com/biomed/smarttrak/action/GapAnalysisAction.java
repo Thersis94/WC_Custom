@@ -105,13 +105,12 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 		List<Object> params = new ArrayList<>();
 		params.add(companyId);
 		params.add(columnId);
-		params.add(columnId);
 		params.add("1");
 
 		log.debug(this.getProductListSql("usa".equalsIgnoreCase(regionId)));
 		DBProcessor db = new DBProcessor(dbConn, (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA));
 		List<Object>  data = db.executeSelect(getProductListSql("usa".equalsIgnoreCase(regionId)), params, new GapProductVO());
-		log.debug("loaded " + data.size() + " users");
+		log.debug("loaded " + data.size() + " products");
 
 		return data;
 	}
@@ -123,13 +122,11 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 	private String getProductListSql(boolean isUSRegion) {
 		StringBuilder sql = new StringBuilder(750);
 		String custom = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("select f.product_nm, f.product_id, c.column_nm, g.company_nm, a.section_nm as section_parent_nm, b.section_nm ");
+		sql.append("select distinct f.product_nm, f.product_id, c.column_nm, g.company_nm, a.section_nm ");
 		sql.append("from ").append(custom).append("biomedgps_section a ");
-		sql.append("inner join ").append(custom).append("biomedgps_section b ");
-		sql.append("on a.section_id = b.parent_id ");
 		sql.append("inner join ").append(custom).append("biomedgps_ga_column c ");
-		sql.append("on b.section_id = c.section_id ");
-		sql.append("left outer join ").append(custom).append("biomedgps_ga_column_attribute_xr d ");
+		sql.append("on a.section_id = c.section_id ");
+		sql.append("inner join ").append(custom).append("biomedgps_ga_column_attribute_xr d ");
 		sql.append("on d.ga_column_id = c.ga_column_id ");
 		sql.append("inner join ").append(custom).append("biomedgps_product_attribute_xr e ");
 		sql.append("on d.attribute_id = e.attribute_id ");
@@ -139,11 +136,11 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 		sql.append("on f.product_id = r.product_id ");
 		sql.append("inner join ").append(custom).append("biomedgps_company g ");
 		sql.append("on f.company_id = g.company_id ");
-		sql.append("where g.company_id = ? and c.ga_column_id = ? or c.section_id = ? ");
+		sql.append("where g.company_id = ? and c.ga_column_id = ? ");
 		if(isUSRegion) {
-			sql.append("and region_id = ? ");
+			sql.append("and r.region_id = ? ");
 		} else {
-			sql.append("and region_id != ? ");
+			sql.append("and r.region_id != ? ");
 		}
 
 		return sql.toString();
