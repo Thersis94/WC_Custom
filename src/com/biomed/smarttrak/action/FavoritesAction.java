@@ -4,6 +4,7 @@ package com.biomed.smarttrak.action;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 
 // Apache Solr
@@ -17,6 +18,8 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.http.session.SMTSession;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
 // WebCrescendo libs
@@ -102,16 +105,17 @@ public class FavoritesAction extends SBActionAdapter {
 		String pkId = parsePrimaryId(req.getParameter(QuickLinksAction.PARAM_KEY_URI_TXT));
 		if (pkId == null) return;
 
-		// set additional req params needed downstream for inserts.
-		req.setParameter(QuickLinksAction.PARAM_KEY_TYPE_CD, collKey);
-		req.setParameter(QuickLinksAction.PARAM_KEY_REL_ID, pkId);
+		PageViewVO fav = new PageViewVO();
+		fav.setReferenceCode(collKey);
+		fav.setPageId(pkId);
+		fav.setRequestUri(req.getParameter(QuickLinksAction.PARAM_KEY_URI_TXT));
+		fav.setPageDisplayName(QuickLinksAction.PARAM_KEY_NAME);
 
 		ModuleVO mod = new ModuleVO();
 		String data = "failure";
 		// add favorite to user's profile favorites
-
 		try {
-			updateProfileFavorites(req);
+			updateProfileFavorites(req,fav);
 			data = "success";
 			mod.setErrorCondition(false);
 		} catch (Exception e) {
@@ -140,27 +144,74 @@ public class FavoritesAction extends SBActionAdapter {
 	/**
 	 * Adds the favorite to the user's profile favorites.
 	 * @param req
+	 * @param fav
 	 * @throws ActionException
 	 */
-	@SuppressWarnings("unchecked")
-	protected void updateProfileFavorites(ActionRequest req) throws ActionException {
-		log.debug("updateProfileFavorite...");
-		ActionInterface ai = new MyFavoritesAction(getActionInit());
-		ai.setAttributes(getAttributes());
-		ai.setDBConnection(dbConn);
-		ai.build(req);
-		
-		/* NOTE: MyFavoritesAction 'build' method removes a user's favorites from their
-		 * session.  We have to call retrieve now to retrieve favorites and place
-		 * them on the session again.	 */
-		this.retrieve(req);
-		ModuleVO mod = (ModuleVO)getAttribute(Constants.MODULE_DATA);
-		if (mod != null) {
-			Map<String,List<PageViewVO>> favs = (Map<String,List<PageViewVO>>)mod.getActionData();
-			req.getSession().setAttribute(MyFavoritesAction.MY_FAVORITES, favs);
+	protected void updateProfileFavorites(ActionRequest req, PageViewVO fav) throws ActionException {
+		log.debug("updateProfileFavorites...");
+
+		MyFavoritesAction mfa = new MyFavoritesAction(getActionInit());
+		mfa.setAttributes(getAttributes());
+		mfa.setDBConnection(dbConn);
+
+		boolean isDelete = Convert.formatBoolean(req.getParameter("isDelete"));
+		if (isDelete) {
+			mfa.deleteFavorite(req);
+		} else {
+			// set additional req params needed for inserts.
+			req.setParameter(QuickLinksAction.PARAM_KEY_TYPE_CD, fav.getReferenceCode());
+			req.setParameter(QuickLinksAction.PARAM_KEY_REL_ID, fav.getPageId());
+			mfa.insertFavorite(req);
 		}
+
+		updateSessionFavorites(req.getSession(),fav,isDelete);
+
 	}
 
+	/**
+	 * Updates the appropriate Favorite collection on the session.
+	 * @param session
+	 * @param fav
+	 * @param isDelete
+	 */
+	@SuppressWarnings("unchecked")
+	protected void updateSessionFavorites(SMTSession session, PageViewVO fav, boolean isDelete) {
+		// get the Favs map off of the session.
+		Map<String,List<PageViewVO>> favMap = (Map<String,List<PageViewVO>>)session.getAttribute(MyFavoritesAction.MY_FAVORITES);
+		List<PageViewVO> favs = favMap.get(fav.getReferenceCode());
+		if (favs == null) favs = new ArrayList<>();
+		if (isDelete) {
+			// remove fav
+			removeFromSession(favs, fav.getPageId());
+		} else {
+			// add fav
+			if (favs.size() < QuickLinksAction.MAX_LIST_SIZE) {
+				favs.add(fav);
+			}
+		}
+		// replace the favs map on the session.
+		session.setAttribute(MyFavoritesAction.MY_FAVORITES, favs);
+	}
+	
+	/**
+	 * Iterates a List of PageViewVO and removes the page that matches the pageId 
+	 * passed in.
+	 * @param pages
+	 * @param favPageId
+	 */
+	protected void removeFromSession(List<PageViewVO> pages, String favPageId) {
+		if (pages.isEmpty()) return;
+		// loop and remove
+		ListIterator<PageViewVO> li = pages.listIterator();
+		while (li.hasNext()) {
+			PageViewVO tmp = li.next();
+			if (favPageId.equalsIgnoreCase(tmp.getPageId())) {
+				li.remove();
+				break;
+			}
+		}
+	}
+	
 	/**
 	 * Retrieves the map collection key by using the enum to validate the 
 	 * section value passed in.
@@ -190,10 +241,10 @@ public class FavoritesAction extends SBActionAdapter {
 	protected Map<String, List<PageViewVO>> processUserFavorites(ModuleVO mod) 
 			throws ActionException {
 		log.debug("processUserFavorites...");
-		if (mod.getErrorCondition()) return new HashMap<>();
+		Map<String, List<PageViewVO>> pageMap = initializePageMap();
+		if (mod.getErrorCondition()) return pageMap;
 
 		List<FavoriteVO> favs = (List<FavoriteVO>)mod.getActionData();
-		Map<String, List<PageViewVO>> pageMap = initializePageMap();
 
 		for (FavoriteVO fav : favs) {
 			log.debug("found fav, typeCd | relId | uriTxt: " + fav.getTypeCd() + "|" + fav.getRelId() + "|" + fav.getUriTxt());
