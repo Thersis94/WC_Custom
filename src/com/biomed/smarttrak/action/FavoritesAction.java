@@ -193,7 +193,6 @@ public class FavoritesAction extends SBActionAdapter {
 		if (mod.getErrorCondition()) return new HashMap<>();
 
 		List<FavoriteVO> favs = (List<FavoriteVO>)mod.getActionData();
-		log.debug("favs size: " + favs != null ? favs.size() : "null");
 		Map<String, List<PageViewVO>> pageMap = initializePageMap();
 
 		for (FavoriteVO fav : favs) {
