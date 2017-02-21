@@ -106,7 +106,7 @@ public class InsightAction extends SBActionAdapter {
 	}
 
 	public void retrieve(ActionRequest req) throws ActionException {
-		//TODO whole class copied directly from updates will need altered for insights
+		//TODO Class altered to include insight vos rather then update
 		
 		//loadData gets passed on the ajax call.  If we're not loading data simply go to view to render the bootstrap 
 		//table into the view (which will come back for the data).
