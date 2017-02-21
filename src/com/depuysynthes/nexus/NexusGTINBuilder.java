@@ -212,6 +212,8 @@ public class NexusGTINBuilder extends CommandLineUtil {
 			
 			// Execute the query
 			SolrQueryProcessor sqp = new SolrQueryProcessor(solrAttribs);
+			vo.setSortDirection("desc");
+			vo.setFieldSort("documentId");
 			SolrResponseVO res = sqp.processQuery(vo);
 			addRow(res.getResultDocuments(), sheet, start);
 			
@@ -261,12 +263,18 @@ public class NexusGTINBuilder extends CommandLineUtil {
 			// get the gtin and uom value (This value may contain multiples.  
 			// Need to pull the primary (0 location) first
 			Collection<Object> col = prod.getFieldValues("gtin");
-			Object gtin = prod.get("gtin");
-			if (col != null && col.size() > 0) gtin = col.toArray()[0];
-			
-			col = prod.getFieldValues("uomLvl");
+			Collection<Object> uomCol = prod.getFieldValues("uomLvl");
 			Object uom = prod.get("uomLvl");
-			if (col != null && col.size() > 0) uom = col.toArray()[0];
+			Object gtin = prod.get("deviceId");
+			
+			if (col != null && !col.isEmpty() && !StringUtil.isEmpty((String)gtin) && uomCol != null) {
+				Object[] o = col.toArray();
+				for (int i = 0; i < col.size(); i++) {
+					if (gtin.equals(o[i]) && uomCol.size() > i) {
+						uom = uomCol.toArray()[i];
+					}
+				}
+			}
 			
 			// Split the spine opco label
 			String opco = StringUtil.checkVal(prod.get("organizationName")); 
