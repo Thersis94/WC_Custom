@@ -114,11 +114,9 @@ public class RecentlyViewedAction extends SBActionAdapter {
 		int idx = 0;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			for (Section section : Section.values()) {
-				log.debug("section|siteid|profileId: " + section.name() + "|" + site.getSiteId() + "|" + profileId);
 				ps.setString(++idx, profileId);
 				ps.setString(++idx, site.getSiteId());
 				ps.setString(++idx, section.getURLToken()+QuickLinksAction.URL_STUB + "%");
-				log.debug("urltoken: " + section.getURLToken() + QuickLinksAction.URL_STUB + "%");
 			}
 			ResultSet rs = ps.executeQuery();
 			PageViewVO page = null;
@@ -343,16 +341,13 @@ public class RecentlyViewedAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	protected String checkCollectionKey(String section) throws ActionException {
-		log.debug("evaluating section val: " + section);
 		String key = StringUtil.checkVal(section).toUpperCase();
-		log.debug("using key val: " + key);
 		try {
 			Section.valueOf(key);
 		} catch (Exception e) {
 			log.debug("exception!  " + e);
 			throw new ActionException("Unknown section value: " + section);
 		}
-		log.debug("returning key: " + key);
 		return key;
 	}
 	

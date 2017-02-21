@@ -17,8 +17,8 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.util.StringUtil;
+
 // WebCrescendo libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.tools.FavoriteVO;
@@ -78,7 +78,7 @@ public class FavoritesAction extends SBActionAdapter {
 			mod.setError(ae);
 		}
 
-		Map<String, List<PageViewVO>> favs = parseFavorites(mod);
+		Map<String, List<PageViewVO>> favs = processUserFavorites(mod);
 
 		log.debug("FavoritesAction retrieve error condition | message: " + mod.getErrorCondition() + "|" + mod.getErrorMessage());
 		log.debug("favs size: " + favs.size());
@@ -91,45 +91,26 @@ public class FavoritesAction extends SBActionAdapter {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		log.debug("FavoritesAction build...");
-		
-		PageViewVO fav = buildFavoritePage(req);
-		if (fav == null) return;
-		
-		// 1. add favorite to user's profile favorites
-		updateProfileFavorites(req,fav);
-
-	}
-	
-
-	/**
-	 * Builds a PageViewVO representing the page being favorited using request params.
-	 * @param req
-	 * @return
-	 */
-	protected PageViewVO buildFavoritePage(ActionRequest req) {
-		PageViewVO fav = null;
 		String collKey = req.getParameter(QuickLinksAction.PARAM_KEY_SECTION);
 		try {
 			checkCollectionKey(collKey);
 		} catch (ActionException ae) {
 			log.error("Error: " + ae.getMessage());
-			return fav;
+			return;
 		}
+
+		String pkId = parsePrimaryId(req.getParameter(QuickLinksAction.PARAM_KEY_URI_TXT));
+		if (pkId == null) return;
+
+		// set additional req params needed downstream for inserts.
+		req.setParameter(QuickLinksAction.PARAM_KEY_TYPE_CD, collKey);
+		req.setParameter(QuickLinksAction.PARAM_KEY_REL_ID, pkId);
 		
-		String uriTxt = req.getParameter(QuickLinksAction.PARAM_KEY_URI_TXT);
-		String pkId = parsePrimaryId(uriTxt);
-		if (pkId == null) return fav;
-		
-		// format fav page
-		fav = new PageViewVO();
-		fav.setReferenceCode(collKey);
-		fav.setPageId(pkId);
-		fav.setRequestUri(uriTxt);
-		fav.setPageDisplayName(req.getParameter(QuickLinksAction.PARAM_KEY_NAME));
-		
-		return fav;
+		// add favorite to user's profile favorites
+		updateProfileFavorites(req);
+
 	}
-	
+
 	/**
 	 * Parses the primary section entity ID from the request uri.
 	 * @param uriTxt
@@ -146,23 +127,19 @@ public class FavoritesAction extends SBActionAdapter {
 	/**
 	 * Adds the favorite to the user's profile favorites.
 	 * @param req
-	 * @param page
 	 * @throws ActionException
 	 */
 	@SuppressWarnings("unchecked")
-	protected void updateProfileFavorites(ActionRequest req, PageViewVO page) throws ActionException {
-		log.debug("persistProfileFavorite...");
-		// set additional req params needed downstream for inserts.
-		req.setParameter(QuickLinksAction.PARAM_KEY_TYPE_CD, page.getReferenceCode());
-		req.setParameter(QuickLinksAction.PARAM_KEY_REL_ID, page.getPageId());
-		
+	protected void updateProfileFavorites(ActionRequest req) throws ActionException {
+		log.debug("updateProfileFavorite...");
 		ActionInterface ai = new MyFavoritesAction(getActionInit());
 		ai.setAttributes(getAttributes());
 		ai.setDBConnection(dbConn);
 		ai.build(req);
 		
-		/* now retrieve favorites again as the action we called removes favorites
-		 * from the user's session. */
+		/* NOTE: MyFavoritesAction 'build' method removes a user's favorites from their
+		 * session.  We have to call retrieve now to retrieve favorites and place
+		 * them on the session again.	 */
 		this.retrieve(req);
 		ModuleVO mod = (ModuleVO)getAttribute(Constants.MODULE_DATA);
 		if (mod != null) {
@@ -170,40 +147,7 @@ public class FavoritesAction extends SBActionAdapter {
 			req.getSession().setAttribute(MyFavoritesAction.MY_FAVORITES, favs);
 		}
 	}
-	
-	/**
-	 * Retrieves collection map from session and updates the appropriate collection with 
-	 * the passed in favorite.
-	 * @param req
-	 * @param fav
-	 */
-	@SuppressWarnings("unchecked")
-	protected void updateSessionMap(ActionRequest req, PageViewVO fav) {
-		SMTSession sess = req.getSession();
-		Map<String, List<PageViewVO>> favMap = (Map<String,List<PageViewVO>>)sess.getAttribute(MyFavoritesAction.MY_FAVORITES);
-		// if no map found on session, create a map.
-		if (favMap == null) favMap = new HashMap<>();
 
-		// get the proper collection or create it if it doesn't exist
-		List<PageViewVO> favs = favMap.get(fav.getReferenceCode());
-		if (favs == null) {
-			favs = new ArrayList<>();
-		}
-
-		// add to top of list
-		favs.add(0,fav);
-
-		// if list size > max, remove 1
-		if (favs.size() > QuickLinksAction.MAX_LIST_SIZE) 
-			favs.remove(favs.size() - 1);
-
-		// update collection on map
-		favMap.put(fav.getReferenceCode(), favs);
-
-		// update collection on session
-		sess.setAttribute(MyFavoritesAction.MY_FAVORITES, favMap);
-	}
-	
 	/**
 	 * Retrieves the map collection key by using the enum to validate the 
 	 * section value passed in.
@@ -221,7 +165,7 @@ public class FavoritesAction extends SBActionAdapter {
 		}
 		return key;
 	}
-	
+
 	/**
 	 * Parses a user's favorites into a map of page views keyed by section (e.g. MARKET,
 	 * COMPANY, etc.).
@@ -230,9 +174,9 @@ public class FavoritesAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	@SuppressWarnings("unchecked")
-	protected Map<String, List<PageViewVO>> parseFavorites(ModuleVO mod) 
+	protected Map<String, List<PageViewVO>> processUserFavorites(ModuleVO mod) 
 			throws ActionException {
-		log.debug("parsing favorites...");
+		log.debug("processUserFavorites...");
 		if (mod.getErrorCondition()) return new HashMap<>();
 
 		List<FavoriteVO> favs = (List<FavoriteVO>)mod.getActionData();
@@ -242,7 +186,7 @@ public class FavoritesAction extends SBActionAdapter {
 		for (FavoriteVO fav : favs) {
 			log.debug("found fav, typeCd | relId | uriTxt: " + fav.getTypeCd() + "|" + fav.getRelId() + "|" + fav.getUriTxt());
 			if (fav.getAsset() == null) continue; 
-			parseFavorite(pageMap,fav);
+			processFavorite(pageMap,fav);
 		}
 		return pageMap;
 	}
@@ -253,14 +197,15 @@ public class FavoritesAction extends SBActionAdapter {
 	 * @param pages
 	 * @param fav
 	 */
-	protected void parseFavorite(Map<String,List<PageViewVO>> pages, FavoriteVO fav) {
+	protected void processFavorite(Map<String,List<PageViewVO>> pages, FavoriteVO fav) {
 		try {
 			checkCollectionKey(fav.getTypeCd());
 		} catch (Exception e) {
 			// this fav is not a 'Section' type so return.
 			return;
 		}
-
+		
+		// convert favorite into a PageViewVO
 		PageViewVO page = new PageViewVO();
 		page.setReferenceCode(fav.getTypeCd());
 		page.setPageId(fav.getRelId());

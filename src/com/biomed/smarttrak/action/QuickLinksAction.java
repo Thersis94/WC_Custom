@@ -164,7 +164,6 @@ public class QuickLinksAction extends SBActionAdapter {
 		super.retrieve(req);
 	}
 
-
 	/**
 	 * iterates the session-stored List<PageViewVO> to see if the given ID for the given Section is on the list.
 	 * Used in views to set button colors for 'Favorite' buttons.
