@@ -105,9 +105,22 @@ public class FavoritesAction extends SBActionAdapter {
 		// set additional req params needed downstream for inserts.
 		req.setParameter(QuickLinksAction.PARAM_KEY_TYPE_CD, collKey);
 		req.setParameter(QuickLinksAction.PARAM_KEY_REL_ID, pkId);
-		
+
+		ModuleVO mod = new ModuleVO();
+		String data = "failure";
 		// add favorite to user's profile favorites
-		updateProfileFavorites(req);
+
+		try {
+			updateProfileFavorites(req);
+			data = "success";
+			mod.setErrorCondition(false);
+		} catch (Exception e) {
+			mod.setErrorCondition(true);
+			mod.setErrorMessage(e.getMessage());
+		}
+		
+		// return a module vo to inform the AJAX caller of the result of this operation.
+		putModuleData(data, 0, false, mod.getErrorMessage(), mod.getErrorCondition());
 
 	}
 

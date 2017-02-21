@@ -4,7 +4,6 @@ package com.biomed.smarttrak.action;
 import java.util.List;
 import java.util.Map;
 
-import com.biomed.smarttrak.action.AdminControllerAction.Section;
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -167,11 +166,12 @@ public class QuickLinksAction extends SBActionAdapter {
 	/**
 	 * iterates the session-stored List<PageViewVO> to see if the given ID for the given Section is on the list.
 	 * Used in views to set button colors for 'Favorite' buttons.
+	 * @param data
 	 * @param sec
 	 * @param pkId
 	 * @return
 	 */
-	public static boolean isFavorite(Map<String, List<PageViewVO>> data, Section sec, String pkId) {
+	public static boolean isFavorite(Map<String, List<PageViewVO>> data, String sec, String pkId) {
 		log.debug("isFavorite...");
 		// no data, no match.
 		if (data == null) return false;
@@ -181,7 +181,9 @@ public class QuickLinksAction extends SBActionAdapter {
 		if (section == null || section.isEmpty()) return false;
 		// loop pageviews looking for match.
 		for (PageViewVO page : section) {
-			if (pkId == page.getPageId()) return true;
+			if (pkId.equalsIgnoreCase(page.getPageId())) {
+				return true;
+			}
 		}
 		return false;
 	}
