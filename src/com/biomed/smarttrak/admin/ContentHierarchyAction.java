@@ -103,6 +103,8 @@ public class ContentHierarchyAction extends AbstractTreeAction {
 
 		t.calculateTotalChildren(t.getRootNode());
 
+		t.buildNodePaths();
+
 		//Place requested data on the request.
 		if(!StringUtil.isEmpty(sectionId)) {
 			//Put the requested Section Node on the request.

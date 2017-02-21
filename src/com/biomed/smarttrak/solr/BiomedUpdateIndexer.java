@@ -14,6 +14,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 
 import com.biomed.smarttrak.admin.UpdatesAction;
+import com.biomed.smarttrak.vo.UpdatesVO;
+import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SMTAbstractIndex;
@@ -94,6 +96,14 @@ public class BiomedUpdateIndexer extends SMTAbstractIndex {
 		ua.setDBConnection(new SMTDBConnection(this.dbConn));
 		ua.setAttribute(Constants.CUSTOM_DB_SCHEMA, config.getProperty(Constants.CUSTOM_DB_SCHEMA));
 		ua.setAttribute(Constants.QS_PATH, config.getProperty(Constants.QS_PATH));
-		return (List<SolrDocumentVO>)(List<?>) ua.getUpdates(documentId, null, null, null);
+		List<Object> list = ua.getUpdates(documentId, null, null, null);
+
+		//Load the Section Tree and set all the Hierarchies.
+		Tree t = ua.loadSections();
+		for(Object o : list) {
+			UpdatesVO u = (UpdatesVO)o;
+			u.setHierarchies(t);
+		}
+		return(List<SolrDocumentVO>)(List<?>) list;
 	}
 }
