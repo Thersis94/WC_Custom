@@ -94,7 +94,7 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 	}
 
 	/**
-	 * 
+	 * Return list of products that are of a given regionId, companyId and columnId
 	 * @param regionId
 	 * @param companyId
 	 * @param columnId
@@ -104,6 +104,7 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 
 		List<Object> params = new ArrayList<>();
 		params.add(companyId);
+		params.add(columnId);
 		params.add(columnId);
 		params.add("1");
 
@@ -138,7 +139,7 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 		sql.append("on f.product_id = r.product_id ");
 		sql.append("inner join ").append(custom).append("biomedgps_company g ");
 		sql.append("on f.company_id = g.company_id ");
-		sql.append("where g.company_id = ? and c.ga_column_id = ? ");
+		sql.append("where g.company_id = ? and c.ga_column_id = ? or c.section_id = ? ");
 		if(isUSRegion) {
 			sql.append("and region_id = ? ");
 		} else {
