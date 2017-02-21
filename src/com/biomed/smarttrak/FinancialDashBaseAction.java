@@ -200,7 +200,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		TableType tt = dash.getTableType();
 		
 		if (tt == TableType.COMPANY) {
-			sql.append("select ").append(dash.getLeafMode() ? "r.REVENUE_ID " : "r.COMPANY_ID ").append("as ROW_ID, c.COMPANY_NM as ROW_NM, r.COMPANY_ID, ");
+			sql.append("select ").append(dash.getLeafMode() ? "r.REVENUE_ID " : "r.COMPANY_ID ").append("as ROW_ID, c.COMPANY_NM as ROW_NM, r.COMPANY_ID, r.REGION_CD, ");
 		} else { // TableType.MARKET
 			
 			// When viewing market data for a specific company, we always list/summarize 3 levels lower in the heirarchy
@@ -319,7 +319,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		
 		sql.append("group by ROW_ID, ROW_NM, r.YEAR_NO ");
 		if (tt == TableType.COMPANY) {
-			sql.append(", r.COMPANY_ID ");
+			sql.append(", r.COMPANY_ID, r.REGION_CD ");
 		}
 		
 		sql.append("order by ROW_NM ");

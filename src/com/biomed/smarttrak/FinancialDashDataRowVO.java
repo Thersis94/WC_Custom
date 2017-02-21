@@ -33,6 +33,7 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 	private String parentId;
 	private String grandparentId;
 	private String companyId;
+	private String regionCd;
 	private Map<String, FinancialDashDataColumnVO> columns;
 	
 	/**
@@ -57,10 +58,11 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 	public void setData(ResultSet rs) {
 		DBUtil util = new DBUtil();
 		
-		this.setName(util.getStringVal("ROW_NM", rs));
-		this.setPrimaryKey(util.getStringVal("ROW_ID", rs));
-		this.setCompanyId(util.getStringVal("COMPANY_ID", rs));
-		this.setColumns(util, rs);
+		setName(util.getStringVal("ROW_NM", rs));
+		setPrimaryKey(util.getStringVal("ROW_ID", rs));
+		setCompanyId(util.getStringVal("COMPANY_ID", rs));
+		setRegionCd(util.getStringVal("REGION_CD", rs));
+		setColumns(util, rs);
 	}
 
 	/**
@@ -89,6 +91,13 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 	 */
 	public String getCompanyId() {
 		return companyId;
+	}
+
+	/**
+	 * @return the regionCd
+	 */
+	public String getRegionCd() {
+		return regionCd;
 	}
 
 	/**
@@ -171,6 +180,13 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 	 */
 	public void setCompanyId(String companyId) {
 		this.companyId = companyId;
+	}
+
+	/**
+	 * @param regionCd the regionCd to set
+	 */
+	public void setRegionCd(String regionCd) {
+		this.regionCd = regionCd;
 	}
 
 	/**
