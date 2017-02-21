@@ -98,9 +98,27 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		List<Node> sections = this.getHierarchy(req);
 		dash.setHierarchy(sections);
 		
-		// Get the data for the table/chart and return it
+		// Get the data for the table/chart/report
 		this.getFinancialData(dash);
+		
+		if (req.hasParameter("report")) {
+			processReport(req, dash);
+		}
+		
 		this.putModuleData(dash);
+	}
+	
+	/**
+	 * Handles generation of the report based on the current selections in the dashboard
+	 * 
+	 * @param req
+	 * @param dash
+	 */
+	protected void processReport(ActionRequest req, FinancialDashVO dash) {
+		FinancialDashReportVO rpt = new FinancialDashReportVO();
+		rpt.setData(dash);
+		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, true);
+		req.setAttribute(Constants.BINARY_DOCUMENT, rpt);
 	}
 	
 	/**
