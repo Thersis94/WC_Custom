@@ -37,6 +37,9 @@ public class AccountVO implements HumanNameIntfc {
 	private Date updateDate;
 	private String firstName;
 	private String lastName;
+	private int fdAuthFlg;
+	private int gaAuthFlg;
+	private int mktAuthFlg;
 
 	/*
 	 * Account Type enum - not to be confused with status, which is Active or Inactive only.  (e.g. Inactive Staff account)
@@ -86,6 +89,9 @@ public class AccountVO implements HumanNameIntfc {
 		setState(req.getParameter("stateCode"));
 		setZipCode(req.getParameter("zipCode"));
 		setCountry(req.getParameter("countryCode"));
+		setFdAuthFlg(Convert.formatInteger(req.getParameter("fdAuthFlg")));
+		setGaAuthFlg(Convert.formatInteger(req.getParameter("gaAuthFlg")));
+		setMktAuthFlg(Convert.formatInteger(req.getParameter("mktAuthFlg")));
 	}
 
 
@@ -348,5 +354,32 @@ public class AccountVO implements HumanNameIntfc {
 
 	public void setLastName(String lastName) {
 		this.lastName = lastName;
+	}
+
+	@Column(name="fd_auth_flg")
+	public int getFdAuthFlg() {
+		return fdAuthFlg;
+	}
+
+	public void setFdAuthFlg(int fdAuthFlg) {
+		this.fdAuthFlg = fdAuthFlg;
+	}
+
+	@Column(name="ga_auth_flg")
+	public int getGaAuthFlg() {
+		return gaAuthFlg;
+	}
+
+	public void setGaAuthFlg(int gaAuthFlg) {
+		this.gaAuthFlg = gaAuthFlg;
+	}
+
+	@Column(name="mkt_auth_flg")
+	public int getMktAuthFlg() {
+		return mktAuthFlg;
+	}
+
+	public void setMktAuthFlg(int mktAuthFlg) {
+		this.mktAuthFlg = mktAuthFlg;
 	}
 }

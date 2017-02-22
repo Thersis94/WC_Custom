@@ -12,7 +12,6 @@ import com.biomed.smarttrak.admin.user.HumanNameIntfc;
 import com.biomed.smarttrak.admin.user.NameComparator;
 import com.biomed.smarttrak.vo.UpdatesVO;
 import com.biomed.smarttrak.vo.UpdatesXRVO;
-import com.biomed.smarttrak.vo.UpdatesVO.UpdateStatusCd;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -67,13 +66,8 @@ public class UpdatesAction extends AbstractTreeAction {
 		}
 	}
 
-	public UpdatesAction() {
-		super();
-	}
-
-	public UpdatesAction(ActionInitVO actionInit) {
-		super(actionInit);
-	}
+	public UpdatesAction() {super();}
+	public UpdatesAction(ActionInitVO actionInit) {super(actionInit);}
 
 	public void retrieve(ActionRequest req) throws ActionException {
 		//loadData gets passed on the ajax call.  If we're not loading data simply go to view to render the bootstrap 
@@ -91,6 +85,14 @@ public class UpdatesAction extends AbstractTreeAction {
 		putModuleData(updates);
 	}
 
+	/**
+	 * Retrieve all the updates
+	 * @param updateId
+	 * @param statusCd
+	 * @param typeCd
+	 * @param dateRange
+	 * @return
+	 */
 	public List<Object> getUpdates(String updateId, String statusCd, String typeCd, String dateRange) {
 
 		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
@@ -150,9 +152,8 @@ public class UpdatesAction extends AbstractTreeAction {
 	 * @throws ActionException
 	 */
 	public Tree loadSections() {
-
-		//Get Tree
-		Tree t = super.loadTree(null);
+		//load the section hierarchy Tree from superclass
+		Tree t = loadDefaultTree();
 
 		//Generate the Node Paths using Node Names.
 		t.buildNodePaths(t.getRootNode(), "~", true);
@@ -188,33 +189,44 @@ public class UpdatesAction extends AbstractTreeAction {
 
 		try {
 			if (isDelete) {
+				u.setUpdateId("pkId");
 				db.delete(u);
 				deleteFromSolr(u);
 			} else {
 				db.save(u);
 
-				//Set the UpdateId on UpdatesXRVOs
-				if(StringUtil.isEmpty(u.getUpdateId())) {
-					u.setUpdateId(db.getGeneratedPKId());
-					for(UpdatesXRVO uxr : u.getUpdateSections()) {
-						uxr.setUpdateId(u.getUpdateId());
-					}
-				}
+				fixPkids(u, db.getGeneratedPKId());
+
 				//Save Update Sections.
 				saveSections(u);
 
-				//Add to Solr if published
-				if(UpdateStatusCd.R.toString().equals(u.getStatusCd())) {
+				//Add hierarchies to the Section
+				u.setHierarchies(loadSections());
 
-					//Add hierarchies to the Section
-					u.setHierarchies(loadSections());
-
-					//Save the Update Document to Solr
-					saveToSolr(u);
-				}
+				//Save the Update Document to Solr
+				saveToSolr(u);
 			}
 		} catch (InvalidDataException | DatabaseException e) {
 			throw new ActionException(e);
+		}
+	}
+
+	/**
+	 * Manages updating given UpdatesVO with generated PKID and updates sections
+	 * to match.
+	 * @param u
+	 * @param generatedPKId
+	 */
+	private void fixPkids(UpdatesVO u, String generatedPKId) {
+		//Set the UpdateId on UpdatesXRVOs
+		if(StringUtil.isEmpty(u.getUpdateId())) {
+
+			//Ensure proper UpdateId and Publish Dt are set.
+			u.setUpdateId(generatedPKId);
+
+			for(UpdatesXRVO uxr : u.getUpdateSections()) {
+				uxr.setUpdateId(u.getUpdateId());
+			}
 		}
 	}
 
