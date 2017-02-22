@@ -3,6 +3,8 @@ package com.biomed.smarttrak;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import com.smt.sitebuilder.action.SBModuleVO;
+
 /****************************************************************************
  * <b>Title</b>: FinancialDashColumnSet.java<p/>
  * <b>Description: </b> 
@@ -14,7 +16,9 @@ import java.util.Map;
  * @since Jan 17, 2017
  ****************************************************************************/
 
-public class FinancialDashColumnSet {
+public class FinancialDashColumnSet extends SBModuleVO {
+
+	private static final long serialVersionUID = -7706158396915419770L;
 
 	private Integer calendarYear;
 	private DisplayType displayType;
