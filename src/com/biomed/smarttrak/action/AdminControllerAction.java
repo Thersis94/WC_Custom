@@ -6,9 +6,10 @@ import org.apache.commons.lang.StringEscapeUtils;
 import com.biomed.smarttrak.FinancialDashAction;
 import com.biomed.smarttrak.FinancialDashScenarioAction;
 import com.biomed.smarttrak.admin.AccountAction;
+import com.biomed.smarttrak.admin.AccountPermissionAction;
 import com.biomed.smarttrak.admin.AccountUserAction;
 import com.biomed.smarttrak.admin.CompanyManagementAction;
-import com.biomed.smarttrak.admin.ContentHierarchyAction;
+import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.admin.GapAnalysisAdminAction;
 import com.biomed.smarttrak.admin.ListAction;
 import com.biomed.smarttrak.admin.MarketManagementAction;
@@ -46,12 +47,13 @@ import com.smt.sitebuilder.security.SecurityController;
 public class AdminControllerAction extends SimpleActionAdapter {
 
 	// application constants  - these could be moved to sb_config if subject to change
+	public static final String BIOMED_ORG_ID = "BMG_SMARTTRAK"; 
 	public static final String PUBLIC_SITE_ID = "BMG_SMARTTRAK_1";
 	public static final String STAFF_ROLE_ID = "3eef678eb39e87277f000101dfd4f140";
 	public static final String REGISTRATION_GRP_ID = "ea884793b2ef163f7f0001011a253456";
 
 	public static final int DEFAULT_ROLE_LEVEL = SecurityController.PUBLIC_REGISTERED_LEVEL;
-	public static final String BIOMED_ORG_ID = "BMG_SMARTTRAK"; 
+	
 	public enum Section {
 		MARKET("market/"), PRODUCT("products/"), COMPANY("companies/");
 
@@ -65,6 +67,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 			return path;
 		}
 	}
+	
 
 	public AdminControllerAction() {
 		super();
@@ -136,7 +139,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		ActionInterface action;
 		switch (StringUtil.checkVal(actionType)) {
 			case "hierarchy":
-				action = new ContentHierarchyAction();
+				action = new SectionHierarchyAction();
 				break;
 			case "agap":
 				action = new GapAnalysisAdminAction();
@@ -155,6 +158,9 @@ public class AdminControllerAction extends SimpleActionAdapter {
 				break;
 			case "accounts":
 				action = new AccountAction();
+				break;
+			case "account-permissions":
+				action = new AccountPermissionAction();
 				break;
 			case "users":
 				action = new AccountUserAction();

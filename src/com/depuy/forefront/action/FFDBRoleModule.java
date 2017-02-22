@@ -13,11 +13,11 @@ import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.AuthorizationException;
-import com.siliconmtn.security.UserRoleVO;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.user.LoginAction;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.DBRoleModule;
+import com.smt.sitebuilder.security.SBUserRole;
 
 /*****************************************************************************
  <p><b>Title</b>: FFDBLoginModule.java</p>
@@ -51,10 +51,10 @@ public class FFDBRoleModule extends DBRoleModule {
      * @see com.siliconmtn.security.AbstractLoginModule#authenticate(java.lang.String, java.lang.String)
      */
     @Override
-    public UserRoleVO getUserRole(String profileId, String siteId)
+    public SBUserRole getUserRole(String profileId, String siteId)
     		throws AuthorizationException {
     	log.debug("loading custom FF role");
-        UserRoleVO vo = super.getUserRole(profileId, siteId);
+    	SBUserRole vo = super.getUserRole(profileId, siteId);
         
         //load the user's siteId (hospital) and surgery date based on their regisration data.
         this.loadCustomData(profileId);
