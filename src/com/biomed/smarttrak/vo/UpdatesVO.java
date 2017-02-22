@@ -236,6 +236,19 @@ public class UpdatesVO extends SolrDocumentVO implements HumanNameIntfc {
 	}
 
 	/**
+	 * Get Full Status Nm.
+	 * @return
+	 */
+	public String getStatusNm() {
+		String nm = "";
+		try {
+			nm = UpdateStatusCd.valueOf(statusCd).getStatusName();
+		} catch(Exception e) {}
+
+		return nm;
+	}
+
+	/**
 	 * @return the publishDt
 	 */
 	@SolrField(name=SearchDocumentHandler.UPDATE_DATE)
