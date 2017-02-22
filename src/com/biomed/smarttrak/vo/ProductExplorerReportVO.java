@@ -79,7 +79,6 @@ public class ProductExplorerReportVO extends AbstractSBReportVO {
 		// Loop the queries until all rows have been retrieved
 		int i = 1;
 		for (SolrDocument doc : data) {
-			System.out.println("ANother");
 			Row row = sheet.createRow(i++);
 			
 			int j = 0;
