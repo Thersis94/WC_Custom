@@ -152,9 +152,8 @@ public class UpdatesAction extends AbstractTreeAction {
 	 * @throws ActionException
 	 */
 	public Tree loadSections() {
-
-		//Get Tree
-		Tree t = super.loadTree(null);
+		//load the section hierarchy Tree from superclass
+		Tree t = loadDefaultTree();
 
 		//Generate the Node Paths using Node Names.
 		t.buildNodePaths(t.getRootNode(), "~", true);
