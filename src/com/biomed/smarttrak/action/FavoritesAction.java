@@ -190,7 +190,7 @@ public class FavoritesAction extends SBActionAdapter {
 			}
 		}
 		// replace the favs map on the session.
-		session.setAttribute(MyFavoritesAction.MY_FAVORITES, favs);
+		session.setAttribute(MyFavoritesAction.MY_FAVORITES, favMap);
 	}
 	
 	/**
