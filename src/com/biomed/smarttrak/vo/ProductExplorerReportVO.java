@@ -95,7 +95,7 @@ public class ProductExplorerReportVO extends AbstractSBReportVO {
 			row.createCell(j++).setCellValue(buildContentList(doc.getFieldValues("intregionnm_ss")));
 			row.createCell(j++).setCellValue(buildContentList(doc.getFieldValues("intpathnm_ss")));
 			row.createCell(j++).setCellValue(buildContentList(doc.getFieldValues("intstatusnm_ss")));
-			row.createCell(j++).setCellValue(buildAllyList(doc));
+			row.createCell(j).setCellValue(buildAllyList(doc));
 		}
 	}
 	
@@ -152,7 +152,7 @@ public class ProductExplorerReportVO extends AbstractSBReportVO {
 	 * @param wb
 	 */
 	private void createHeader(Sheet sheet, Workbook wb) {
-		List<String> headers = new ArrayList<String>();
+		List<String> headers = new ArrayList<>();
 		headers.add("Product Name");
 		headers.add("Company");
 		headers.add("Segment");
