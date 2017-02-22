@@ -37,21 +37,9 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	private Date loginDate;
 	private Date createDate;
 	private Date updateDate;
-
-	public UserVO() {
-		teams = new ArrayList<>();
-	}
-
-	public UserVO(ActionRequest req) {
-		super(req);
-		teams = new ArrayList<>();
-		setUserId(req.getParameter("userId"));
-		setAccountId(req.getParameter("accountId"));
-		setRegisterSubmittalId(req.getParameter("registerSubmittalId"));
-		setStatusCode(req.getParameter("statusCode"));
-		setExpirationDate(Convert.formatDate(Convert.DATE_SLASH_PATTERN, req.getParameter("expirationDate")));
-		populateRegistrationFields(req);
-	}
+	private int fdAuthFlg;
+	private int gaAuthFlg;
+	private int mktAuthFlg;
 
 	/**
 	 * Smarttrak status dropdowns - stored in the DB using code, label displayed on user mgmt screens.
@@ -88,7 +76,7 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		TITLE("dd64d07fb37c2c067f0001012b4210ff", "title"),
 		UPDATES("9b079506b37cc0de7f0001014b63ad3c", "updates"),
 		FAVORITEUPDATES("d5ed674eb37da7fd7f000101d875b114", "favUpdates"),
-		COMPANY("e6890a383eecc13f0a001421223e1a8b", "comany"),
+		COMPANY("e6890a383eecc13f0a001421223e1a8b", "company"),
 		COMPANYURL("8e326f4c3ef49ae10a0014218aae436b", "companyUrl"),
 		//below are all on the 'sales' tab on the admin edit form
 		SOURCE("9cc5d1003ef592210a001421ccb8df2e", "source"),
@@ -101,16 +89,39 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		JOBCATEGORY("ef6444293f7c69630a001421545e4917", "jobCategory"),
 		JOBLEVEL("7bff2e9e3f7f7fb90a0014217397e884", "jobLevel"),
 		INDUSTRY("5291b7693f8104240a001421db8d04ab", "industry"),
-		DIVISIONS("31037d2e3f859f100a001421e77994f4", "divisions");
+		DIVISIONS("31037d2e3f859f100a001421e77994f4", "divisions", true);
 
+		private boolean isArray;
 		private String fieldId;
 		private String reqParam;
 		private RegistrationMap(String registerFieldId, String reqParam) { 
+			this(registerFieldId, reqParam, false);
+		}
+		private RegistrationMap(String registerFieldId, String reqParam, boolean isArray) { 
 			this.fieldId = registerFieldId;
 			this.reqParam = reqParam;
+			this.isArray = isArray;
 		}
 		public String getFieldId() { return fieldId; }
 		public String getReqParam() { return reqParam; }
+		public boolean isArray() { return isArray; }
+	}
+
+	public UserVO() {
+		teams = new ArrayList<>();
+	}
+
+	public UserVO(ActionRequest req) {
+		super(req);
+		teams = new ArrayList<>();
+		setUserId(req.getParameter("userId"));
+		setAccountId(req.getParameter("accountId"));
+		setRegisterSubmittalId(req.getParameter("registerSubmittalId"));
+		setStatusCode(req.getParameter("statusCode"));
+		setExpirationDate(Convert.formatDate(Convert.DATE_SLASH_PATTERN, req.getParameter("expirationDate")));
+		setFdAuthFlg(Convert.formatInteger(req.getParameter("fdAuthFlg")));
+		setGaAuthFlg(Convert.formatInteger(req.getParameter("gaAuthFlg")));
+		setMktAuthFlg(Convert.formatInteger(req.getParameter("mktAuthFlg")));
 	}
 
 
@@ -177,7 +188,7 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	/**
 	 * @return the createDate
 	 */
-	@Column(name="create_dt", isInsertOnly=true)
+	@Column(name="create_dt", isAutoGen=true, isInsertOnly=true)
 	public Date getCreateDate() {
 		return createDate;
 	}
@@ -192,7 +203,7 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	/**
 	 * @return the updateDate
 	 */
-	@Column(name="update_dt", isUpdateOnly=true)
+	@Column(name="update_dt", isAutoGen=true, isUpdateOnly=true)
 	public Date getUpdateDate() {
 		return updateDate;
 	}
@@ -231,17 +242,6 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		this.loginDate = loginDate;
 	}
 
-	/**
-	 * iterates the RegistrationMap, taking each value off the request object and putting it into the UserVO.
-	 * When we save this data we'll do a similar iteration (in the Action's save method).
-	 *		e.g. forEach(enum) saveRegField(e.fieldId, user.getAttribute(e.fieldId));
-	 * @param req
-	 */
-	private void populateRegistrationFields(ActionRequest req) {
-		for (RegistrationMap entry : RegistrationMap.values())
-			addAttribute(entry.getFieldId(), req.getParameter(entry.getReqParam()));
-	}
-
 	/*********************
 	 *  SOME DECOUPLING OF FIELDS STORED IN REGISTRATION DATA
 	 *********************/
@@ -264,20 +264,20 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	public String getSource() {
 		return (String)getAttribute(RegistrationMap.SOURCE.getFieldId());
 	}
-	public Date getDemoDate() {
-		return formatDateField(getAttribute(RegistrationMap.DEMODT.getFieldId()));
+	public String getDemoDate() {
+		return (String)getAttribute(RegistrationMap.DEMODT.getFieldId());
 	}
-	public Date getTrainingDate() {
-		return formatDateField(getAttribute(RegistrationMap.TRAININGDT.getFieldId()));
+	public String getTrainingDate() {
+		return (String)getAttribute(RegistrationMap.TRAININGDT.getFieldId());
 	}
-	public Date getInitialTrainingDate() {
-		return formatDateField(getAttribute(RegistrationMap.INITTRAININGDT.getFieldId()));
+	public String getInitialTrainingDate() {
+		return (String)getAttribute(RegistrationMap.INITTRAININGDT.getFieldId());
 	}
-	public Date getAdvancedTrainingDate() {
-		return formatDateField(getAttribute(RegistrationMap.ADVTRAININGDT.getFieldId()));
+	public String getAdvancedTrainingDate() {
+		return (String)getAttribute(RegistrationMap.ADVTRAININGDT.getFieldId());
 	}
-	public Date getOtherTrainingDate() {
-		return formatDateField(getAttribute(RegistrationMap.OTHERTRAININGDT.getFieldId()));
+	public String getOtherTrainingDate() {
+		return (String)getAttribute(RegistrationMap.OTHERTRAININGDT.getFieldId());
 	}
 	public String getNotes() {
 		return (String)getAttribute(RegistrationMap.NOTES.getFieldId());
@@ -291,18 +291,64 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	public String getIndustry() {
 		return (String)getAttribute(RegistrationMap.INDUSTRY.getFieldId());
 	}
-	public String getDivisions() {
-		return (String)getAttribute(RegistrationMap.DIVISIONS.getFieldId());
-	}
 
 	/**
-	 * turns an object...likely a String...into a Date with our given default MM/DD/YYY format used site-wide
-	 * @param dt
+	 * this is a multi-select, it could be returned from responseloader as a String or List depending on the values stored.
 	 * @return
 	 */
-	private Date formatDateField(Object dt) {
-		if (dt == null) return null;
-		return Convert.formatDate(Convert.DATE_SLASH_PATTERN, (String)dt);
+	@SuppressWarnings("unchecked")
+	public List<String> getDivisions() {
+		Object obj = getAttribute(RegistrationMap.DIVISIONS.getFieldId());
+		List<String> data;
+		if (obj instanceof String) {
+			data = new ArrayList<>();
+			data.add((String)obj);
+		} else {
+			data = (List<String>) obj;
+		}
+		return data;
+	}
+
+
+	/**
+	 * returns a list of fields presented on the public side of registration, so we know which fields to manage 
+	 * when the user submits their form.  These fields will get deleted in SubmittalAction of registration, before 
+	 * the new data is written.
+	 * @return
+	 */
+	public static List<RegistrationMap> getPublicRegFields() {
+		List<RegistrationMap> data = new ArrayList<>();
+		data.add(RegistrationMap.TITLE);
+		data.add(RegistrationMap.UPDATES);
+		data.add(RegistrationMap.FAVORITEUPDATES);
+		return data;
+	}
+
+	@Column(name="fd_auth_flg")
+	public int getFdAuthFlg() {
+		return fdAuthFlg;
+	}
+
+	public void setFdAuthFlg(int fdAuthFlg) {
+		this.fdAuthFlg = fdAuthFlg;
+	}
+
+	@Column(name="ga_auth_flg")
+	public int getGaAuthFlg() {
+		return gaAuthFlg;
+	}
+
+	public void setGaAuthFlg(int gaAuthFlg) {
+		this.gaAuthFlg = gaAuthFlg;
+	}
+
+	@Column(name="mkt_auth_flg")
+	public int getMktAuthFlg() {
+		return mktAuthFlg;
+	}
+
+	public void setMktAuthFlg(int mktAuthFlg) {
+		this.mktAuthFlg = mktAuthFlg;
 	}
 
 	/*********************

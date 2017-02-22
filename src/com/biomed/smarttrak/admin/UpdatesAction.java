@@ -3,21 +3,26 @@
  */
 package com.biomed.smarttrak.admin;
 
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.biomed.smarttrak.admin.user.HumanNameIntfc;
+import com.biomed.smarttrak.admin.user.NameComparator;
 import com.biomed.smarttrak.vo.UpdatesVO;
+import com.biomed.smarttrak.vo.UpdatesXRVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.security.EncryptionException;
-import com.siliconmtn.security.StringEncrypter;
-import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.common.ModuleVO;
+import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.util.solr.SolrActionUtil;
 
 /****************************************************************************
  * <b>Title</b>: UpdatesAction.java
@@ -26,12 +31,13 @@ import com.smt.sitebuilder.common.constants.Constants;
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
  * 
- * @author raptor
+ * @author Billy Larsen
  * @version 1.0
  * @since Feb 14, 2017
  ****************************************************************************/
-public class UpdatesAction extends SBActionAdapter {
+public class UpdatesAction extends AbstractTreeAction {
 	protected static final String UPDATE_ID = "updateId"; //req param
+	public static final String ROOT_NODE_ID = "MASTER_ROOT";
 
 	public enum UpdateType {
 		MARKET(12, "Market"),
@@ -60,51 +66,71 @@ public class UpdatesAction extends SBActionAdapter {
 		}
 	}
 
-	public UpdatesAction() {
-		super();
-	}
-
-	public UpdatesAction(ActionInitVO actionInit) {
-		super(actionInit);
-	}
+	public UpdatesAction() {super();}
+	public UpdatesAction(ActionInitVO actionInit) {super(actionInit);}
 
 	public void retrieve(ActionRequest req) throws ActionException {
 		//loadData gets passed on the ajax call.  If we're not loading data simply go to view to render the bootstrap 
 		//table into the view (which will come back for the data).
-		if (!req.hasParameter("loadData") && !req.hasParameter(UPDATE_ID)) return;
+		if (!req.hasParameter("loadData") && !req.hasParameter(UPDATE_ID) ) return;
+
+		String updateId = req.hasParameter(UPDATE_ID) ? req.getParameter(UPDATE_ID) : null;
+		String statusCd = req.getParameter("statusCd");
+		String typeCd = req.getParameter("typeCd");
+		String dateRange = req.getParameter("dateRange");
+		List<Object> updates = getUpdates(updateId, statusCd, typeCd, dateRange);
+
+		decryptNames(updates);
+
+		putModuleData(updates);
+	}
+
+	/**
+	 * Retrieve all the updates
+	 * @param updateId
+	 * @param statusCd
+	 * @param typeCd
+	 * @param dateRange
+	 * @return
+	 */
+	public List<Object> getUpdates(String updateId, String statusCd, String typeCd, String dateRange) {
 
 		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
-		String updateId = req.hasParameter(UPDATE_ID) ? req.getParameter(UPDATE_ID) : null;
-		String sql = formatRetrieveQuery(updateId, schema);
+		String sql = formatRetrieveQuery(updateId, statusCd, typeCd, dateRange, schema);
 
 		List<Object> params = new ArrayList<>();
-		if (updateId != null) params.add(updateId);
+		if (!StringUtil.isEmpty(updateId)) params.add(updateId);
+		if (!StringUtil.isEmpty(statusCd)) params.add(statusCd);
+		if (!StringUtil.isEmpty(typeCd)) params.add(Convert.formatInteger(typeCd));
 
 		DBProcessor db = new DBProcessor(dbConn, schema);
 		List<Object>  updates = db.executeSelect(sql, params, new UpdatesVO());
 		log.debug("loaded " + updates.size() + " updates");
-
-		decryptNames(updates);
-
-		if (updateId != null) {
-			loadSections(req, schema);
-		}
-
-		putModuleData(updates);
+		return updates;
 	}
 
 	/**
 	 * Formats the account retrieval query.
 	 * @return
 	 */
-	protected String formatRetrieveQuery(String updateId, String schema) {
+	public static String formatRetrieveQuery(String updateId, String statusCd, String typeCd, String dateRange, String schema) {
 		StringBuilder sql = new StringBuilder(400);
 		sql.append("select a.*, p.first_nm, p.last_nm, b.section_id ");
 		sql.append("from ").append(schema).append("biomedgps_update a ");
 		sql.append("inner join profile p on a.creator_profile_id=p.profile_id ");
 		sql.append("left outer join ").append(schema).append("biomedgps_update_section b ");
-		sql.append("on a.update_id=b.update_id ");		
-		if (updateId != null) sql.append("where a.update_id=? ");
+		sql.append("on a.update_id=b.update_id where 1=1 ");
+		if (!StringUtil.isEmpty(updateId)) sql.append("and a.update_id=? ");
+		if (!StringUtil.isEmpty(statusCd)) sql.append("and a.status_cd=? ");
+		if (!StringUtil.isEmpty(typeCd)) sql.append("and a.type_cd=? ");
+		if (!StringUtil.isEmpty(dateRange)) {
+			if("1".equals(dateRange)) {
+				sql.append("and a.create_Dt > CURRENT_DATE - INTERVAL '6 months' ");
+			} else if ("2".equals(dateRange)) {
+				sql.append("and a.create_Dt < CURRENT_DATE - INTERVAL '6 months' ");
+			}
+		}
+
 		sql.append("order by a.create_dt");
 
 		log.debug(sql);
@@ -115,37 +141,23 @@ public class UpdatesAction extends SBActionAdapter {
 	 * loop and decrypt owner names, which came from the profile table
 	 * @param accounts
 	 */
-	protected void decryptNames(List<Object>  updates) {
-		StringEncrypter se;
-		try {
-			se = new StringEncrypter((String)getAttribute(Constants.ENCRYPT_KEY));
-		} catch (EncryptionException e1) {
-			return; //cannot use the decrypter, fail fast
-		}
-
-		for (Object o : updates) {
-			try {
-				UpdatesVO u = (UpdatesVO) o;
-				u.setFirstNm(se.decrypt(u.getFirstNm()));
-				u.setLastNm(se.decrypt(u.getLastNm()));
-			} catch (Exception e) {
-				//ignoreable
-			}
-		}
+	@SuppressWarnings("unchecked")
+	protected void decryptNames(List<Object> data) {
+		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)data, (String)getAttribute(Constants.ENCRYPT_KEY));
 	}
 
 	/**
-	 * loads a list of profileId|Names for the BiomedGPS Staff role level - these are their Account Managers
+	 * Load the Section Tree so that Hierarchies can be generated.
 	 * @param req
 	 * @throws ActionException
 	 */
-	protected void loadSections(ActionRequest req, String schema) throws ActionException {
-		ContentHierarchyAction cha = new ContentHierarchyAction(this.actionInit);
-		cha.setDBConnection(dbConn);
-		cha.setAttributes(getAttributes());
-		cha.retrieve(req);
+	public Tree loadSections() {
+		//load the section hierarchy Tree from superclass
+		Tree t = loadDefaultTree();
 
-		req.setAttribute("sections", ((ModuleVO)getAttribute(Constants.MODULE_DATA)).getActionData());	
+		//Generate the Node Paths using Node Names.
+		t.buildNodePaths(t.getRootNode(), "~", true);
+		return t;
 	}
 
 	/* (non-Javadoc)
@@ -173,16 +185,117 @@ public class UpdatesAction extends SBActionAdapter {
 	 */
 	protected void saveRecord(ActionRequest req, boolean isDelete) throws ActionException {
 		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		UpdatesVO u = new UpdatesVO(req);
+
 		try {
 			if (isDelete) {
-				db.delete(new UpdatesVO(req));
+				u.setUpdateId("pkId");
+				db.delete(u);
+				deleteFromSolr(u);
 			} else {
-				db.save(new UpdatesVO(req));
+				db.save(u);
 
-				//TODO Save Sections.
+				fixPkids(u, db.getGeneratedPKId());
+
+				//Save Update Sections.
+				saveSections(u);
+
+				//Add hierarchies to the Section
+				u.setHierarchies(loadSections());
+
+				//Save the Update Document to Solr
+				saveToSolr(u);
 			}
 		} catch (InvalidDataException | DatabaseException e) {
 			throw new ActionException(e);
 		}
+	}
+
+	/**
+	 * Manages updating given UpdatesVO with generated PKID and updates sections
+	 * to match.
+	 * @param u
+	 * @param generatedPKId
+	 */
+	private void fixPkids(UpdatesVO u, String generatedPKId) {
+		//Set the UpdateId on UpdatesXRVOs
+		if(StringUtil.isEmpty(u.getUpdateId())) {
+
+			//Ensure proper UpdateId and Publish Dt are set.
+			u.setUpdateId(generatedPKId);
+
+			for(UpdatesXRVO uxr : u.getUpdateSections()) {
+				uxr.setUpdateId(u.getUpdateId());
+			}
+		}
+	}
+
+	/**
+	 * Removes an Updates Record from Solr.
+	 * @param u
+	 */
+	protected void deleteFromSolr(UpdatesVO u) {
+		try(SolrActionUtil sau = new SolrActionUtil(getAttributes())) {
+			sau.removeDocument(u.getUpdateId());
+		} catch (Exception e) {
+			log.error("Error Deleting from Solr.", e);
+		}
+		log.debug("removed document from solr");
+	}
+
+	/**
+	 * Save an UpdatesVO to solr.
+	 * @param u
+	 */
+	protected void saveToSolr(UpdatesVO u) {
+		try(SolrActionUtil sau = new SolrActionUtil(getAttributes())) {
+			sau.addDocument(u);
+		} catch (Exception e) {
+			log.error("Error Saving to Solr.", e);
+		}
+		log.debug("added document to solr");
+	}
+
+	/**
+	 * Delete old Update Sections and save new ones.
+	 * @param u
+	 * @throws ActionException
+	 * @throws InvalidDataException
+	 * @throws DatabaseException
+	 */
+	protected void saveSections(UpdatesVO u) throws ActionException, InvalidDataException, DatabaseException {
+
+		//Delete old Update Section XRs
+		deleteSections(u.getUpdateId());
+
+		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
+
+		//Save new Sections.
+		for(UpdatesXRVO uxr : u.getUpdateSections()) {
+			db.save(uxr);
+		}
+	}
+
+	/**
+	 * Delete old Update Section XRs 
+	 * @param updateId
+	 * @throws ActionException 
+	 */
+	protected void deleteSections(String updateId) throws ActionException {
+		StringBuilder sql = new StringBuilder(100);
+		sql.append("delete from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("biomedgps_update_section where update_id = ?");
+
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, updateId);
+			ps.executeUpdate();
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
+	}
+
+	@Override
+	public String getCacheKey() {
+		return null;
 	}
 }

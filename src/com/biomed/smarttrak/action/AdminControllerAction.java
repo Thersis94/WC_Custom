@@ -6,9 +6,10 @@ import org.apache.commons.lang.StringEscapeUtils;
 import com.biomed.smarttrak.FinancialDashAction;
 import com.biomed.smarttrak.FinancialDashScenarioAction;
 import com.biomed.smarttrak.admin.AccountAction;
+import com.biomed.smarttrak.admin.AccountPermissionAction;
 import com.biomed.smarttrak.admin.AccountUserAction;
 import com.biomed.smarttrak.admin.CompanyManagementAction;
-import com.biomed.smarttrak.admin.ContentHierarchyAction;
+import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.admin.GapAnalysisAdminAction;
 import com.biomed.smarttrak.admin.ListAction;
 import com.biomed.smarttrak.admin.MarketManagementAction;
@@ -29,6 +30,7 @@ import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.SecurityController;
 
 /****************************************************************************
  * <b>Title</b>: AdminControllerAction.java
@@ -44,9 +46,27 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class AdminControllerAction extends SimpleActionAdapter {
 
 	// application constants  - these could be moved to sb_config if subject to change
+	public static final String BIOMED_ORG_ID = "BMG_SMARTTRAK"; 
 	public static final String PUBLIC_SITE_ID = "BMG_SMARTTRAK_1";
 	public static final String STAFF_ROLE_ID = "3eef678eb39e87277f000101dfd4f140";
 	public static final String REGISTRATION_GRP_ID = "ea884793b2ef163f7f0001011a253456";
+
+	public static final int DEFAULT_ROLE_LEVEL = SecurityController.PUBLIC_REGISTERED_LEVEL;
+	
+	public enum Section {
+		MARKET("market/"), PRODUCT("products/"), COMPANY("companies/");
+
+		private String path;
+
+		Section(String path) {
+			this.path = path;
+		}
+
+		public String getURLToken() {
+			return path;
+		}
+	}
+	
 
 	public AdminControllerAction() {
 		super();
@@ -118,7 +138,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		ActionInterface action;
 		switch (StringUtil.checkVal(actionType)) {
 			case "hierarchy":
-				action = new ContentHierarchyAction();
+				action = new SectionHierarchyAction();
 				break;
 			case "agap":
 				action = new GapAnalysisAdminAction();
@@ -137,6 +157,9 @@ public class AdminControllerAction extends SimpleActionAdapter {
 				break;
 			case "accounts":
 				action = new AccountAction();
+				break;
+			case "account-permissions":
+				action = new AccountPermissionAction();
 				break;
 			case "users":
 				action = new AccountUserAction();
@@ -176,6 +199,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	public static String urlEncode(String value) {
+		if (StringUtil.isEmpty(value)) return ""; //going in a URL, we don't want to return a null
 		return StringEncoder.urlEncode(StringEscapeUtils.unescapeHtml(value)).replace("+", "%20");
 	}
 }

@@ -29,15 +29,15 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @version 1.0
  * @since Jan 6, 2017
  ****************************************************************************/
-public class ContentHierarchyAction extends AbstractTreeAction {
+public class SectionHierarchyAction extends AbstractTreeAction {
 
 	public static final String CONTENT_HIERARCHY_CACHE_KEY = "BIOMED_CONTENT_HIERARCHY";
 
 	/**
 	 * @param init
 	 */
-	public ContentHierarchyAction(ActionInitVO init) {super(init);}
-	public ContentHierarchyAction() {super();}
+	public SectionHierarchyAction(ActionInitVO init) {super(init);}
+	public SectionHierarchyAction() {super();}
 
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#copy(com.siliconmtn.http.ActionRequest)
@@ -90,7 +90,7 @@ public class ContentHierarchyAction extends AbstractTreeAction {
 		Tree t;
 
 		//Attempt to read ContentHierarchy Data from Cache.
-		ModuleVO mod = super.readFromCache(CONTENT_HIERARCHY_CACHE_KEY);
+		ModuleVO mod = readFromCache(CONTENT_HIERARCHY_CACHE_KEY);
 
 		//If not found in cache Load data.
 		if(mod == null) {
@@ -102,6 +102,8 @@ public class ContentHierarchyAction extends AbstractTreeAction {
 		}
 
 		t.calculateTotalChildren(t.getRootNode());
+
+		t.buildNodePaths();
 
 		//Place requested data on the request.
 		if(!StringUtil.isEmpty(sectionId)) {
@@ -135,8 +137,8 @@ public class ContentHierarchyAction extends AbstractTreeAction {
 	public void update(ActionRequest req) throws ActionException {
 		super.update(req);
 
-		 // Redirect after the update
-        sbUtil.adminRedirect(req, attributes.get(Constants.ACTION_SUCCESS_KEY), (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH));
+		// Redirect after the update
+		sbUtil.adminRedirect(req, attributes.get(Constants.ACTION_SUCCESS_KEY), (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH));
 	}
 
 	/**
