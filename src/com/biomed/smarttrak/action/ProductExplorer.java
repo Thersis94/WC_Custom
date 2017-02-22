@@ -9,7 +9,7 @@ import java.util.List;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
 
-import com.biomed.smarttrak.admin.ContentHierarchyAction;
+import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.util.BiomedProductIndexer;
 import com.biomed.smarttrak.vo.ProductExplorerReportVO;
 import com.siliconmtn.action.ActionException;
@@ -52,16 +52,15 @@ import com.smt.sitebuilder.util.MessageSender;
  * @since Feb 17, 2017<p/>
  * <b>Changes: </b>
  ****************************************************************************/
-
 public class ProductExplorer extends SBActionAdapter {
-	
-	private List<String> enumNames;
+
+	private static final List<String> enumNames = buildEnumList();
 	private static final String SAVED_QUERIES = "savedQueries";
-	
+
 	private enum BuildType {
 		EXPORT, SAVE, SHARE
 	}
-	
+
 	/**
 	 * Keep track of all solr compliant form fields and thier
 	 * solr equivalents
@@ -82,68 +81,68 @@ public class ProductExplorer extends SBActionAdapter {
 		USSTAT(false, "usstatus_ss", "US Status"),
 		ALLY(true, "ally_ss", "Ally"),
 		ID(false, SearchDocumentHandler.DOCUMENT_ID, "Product Id");
-		
+
 		private boolean contains;
 		private String solrField;
 		private String fieldName;
-		
+
 		SearchField(boolean contains, String solrField, String fieldName) {
 			this.contains = contains;
 			this.solrField = solrField;
 			this.fieldName = fieldName;
 		}
-		
+
 		public String getSolrField() {
 			return solrField;
 		}
-		
+
 		public String getFieldname() {
 			return fieldName;
 		}
-		
+
 		public boolean isContains() {
 			return contains;
 		}
 	}
-	
+
 	public ProductExplorer() {
 		super();
-		buildEnumList();
 	}
 
 	public ProductExplorer(ActionInitVO init) {
 		super(init);
-		buildEnumList();
 	}
-	
-	
+
+
 	/**
 	 * Build the list of parameters that can be made into enums so that
 	 * they can be caught before throwing exceptions
+	 * this can be done statically, since a List based on an enum can never change at runtime.
 	 */
-	protected void buildEnumList() {
+	protected static List<String> buildEnumList() {
 		SearchField[] enums = SearchField.values();
-		enumNames = new ArrayList<>(enums.length);
+		List<String> enumNames = new ArrayList<>(enums.length);
 		for (SearchField s : enums) {
 			enumNames.add(s.toString());
 		}
+		return enumNames;
 	}
-	
-	
+
+
 	@Override
 	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
-	
-	
+
+
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		super.putModuleData(retrieveProducts(req));
+		putModuleData(retrieveProducts(req));
 		if (req.getSession().getAttribute(SAVED_QUERIES) == null)
 			retrieveSavedQueries(req);
 	}
-	
-	
+
+
 	/**
 	 * Build a text representation of the filters applied to the search
 	 */
@@ -164,17 +163,18 @@ public class ProductExplorer extends SBActionAdapter {
 		req.getSession().setAttribute("filterList", text.toString());
 	}
 
-	
+
 	/**
 	 * Build the textual represtation of the hierarchies selected 
 	 * for the supplied search.
 	 */
 	private String buildHierarchyFilters(ActionRequest req) {
-		ContentHierarchyAction c = new ContentHierarchyAction();
+		SectionHierarchyAction c = new SectionHierarchyAction();
 		c.setActionInit(actionInit);
 		c.setAttributes(attributes);
 		c.setDBConnection(dbConn);
-		Tree t = new Tree(c.getHierarchy(null));
+		Tree t = c.loadDefaultTree();
+
 		StringBuilder part = new StringBuilder(128);
 		for (String s : req.getParameterValues("selNodes")) {
 			Node n = t.findNode(s);
@@ -190,7 +190,7 @@ public class ProductExplorer extends SBActionAdapter {
 		return part.toString();
 	}
 
-	
+
 	/**
 	 * Build the textual representation of the form elements of the supplied
 	 * search
@@ -200,7 +200,7 @@ public class ProductExplorer extends SBActionAdapter {
 			// If this value is not in the list of enums skip it.
 			if (!enumNames.contains(name) || StringUtil.isEmpty(req.getParameter(name))) continue;
 			StringBuilder part = new StringBuilder(128);
-			
+
 			for (String value : req.getParameterValues(name)) {
 				if (part.length() > 0) {
 					part.append(" or ");
@@ -209,12 +209,12 @@ public class ProductExplorer extends SBActionAdapter {
 				}
 				part.append(value);
 			}
-			
+
 			text.append(part).append(". ");
 		}
 	}
 
-	
+
 	/**
 	 * Get all saved queries for this user
 	 * @param req
@@ -224,26 +224,26 @@ public class ProductExplorer extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(125);
 		sql.append("SELECT * FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("BIOMEDGPS_EXPLORER_QUERY WHERE PROFILE_ID = ? ");
-		
+
 		List<GenericVO> queries = new ArrayList<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			UserDataVO user = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
 			ps.setString(1, user.getProfileId());
-			
+
 			ResultSet rs = ps.executeQuery();
-			
+
 			while (rs.next()) {
 				queries.add(new GenericVO(rs.getString("QUERY_NM"), rs.getString("QUERY_TXT")));
 			}
-			
+
 		} catch (SQLException e) {
 			throw new ActionException(e);
 		}
-		
+
 		req.getSession().setAttribute(SAVED_QUERIES, queries);
 	}
 
-	
+
 	/**
 	 * Get all products according to supplied filters
 	 * @param req
@@ -257,14 +257,14 @@ public class ProductExplorer extends SBActionAdapter {
 		qData.setStartLocation(Convert.formatInteger(req.getParameter("page"))*100);
 		qData.setOrganizationId(((SiteVO)req.getAttribute(Constants.SITE_DATA)).getOrganizationId());
 		qData.setRoleLevel(0);
-		
+
 		buildSearchParams(req, qData);
 		if (req.hasParameter("selNodes")) buildNodeParams(req, qData);
 
 		qData.addIndexType(new SolrActionIndexVO("", BiomedProductIndexer.INDEX_TYPE));
-		
+
 		addFacetFields(req, qData);
-		
+
 		qData.setFieldSort(SearchDocumentHandler.TITLE_LCASE);
 		qData.setSortDirection(ORDER.asc);
 		SolrResponseVO vo = sqp.processQuery(qData);
@@ -272,8 +272,8 @@ public class ProductExplorer extends SBActionAdapter {
 		buildFilterList(req, vo);
 		return vo;
 	}
-	
-	
+
+
 	/**
 	 * Add the facet filters to the qData. 
 	 * @param compare
@@ -302,7 +302,7 @@ public class ProductExplorer extends SBActionAdapter {
 		qData.addSolrField(new SolrFieldVO(FieldType.FACET, "technology_ss", null, null));
 	}
 
-	
+
 	/**
 	 * Loop over the selected nodes in the hierarchy list and add them to 
 	 * the solr request.
@@ -320,7 +320,7 @@ public class ProductExplorer extends SBActionAdapter {
 		qData.addSolrField(new SolrFieldVO(FieldType.FILTER, SearchDocumentHandler.SECTION, selected.toString(), BooleanType.AND));
 	}
 
-	
+
 	/**
 	 * Loop over parameters in the request object and, if they are listed as a 
 	 * search param, create a filter field using that value and the matching
@@ -332,14 +332,14 @@ public class ProductExplorer extends SBActionAdapter {
 		for (String name : req.getParameterMap().keySet()) {
 			// If this value is not in the list of enums skip it.
 			if (!enumNames.contains(name) || StringUtil.isEmpty(req.getParameter(name))) continue;
-			
+
 			SearchField search = SearchField.valueOf(name);
 			String value = buildValues(req.getParameterValues(name), search.isContains());
 			qData.addSolrField(new SolrFieldVO(FieldType.FILTER, search.getSolrField(), value, BooleanType.AND));
 		}
 	}
 
-	
+
 	/**
 	 * Build a solr compatible value field out of the supplied value array
 	 * @param parameterValues
@@ -347,7 +347,7 @@ public class ProductExplorer extends SBActionAdapter {
 	 * @return
 	 */
 	protected String buildValues(String[] parameterValues, boolean contains) {
-		
+
 		if (contains) {
 			return buildContainsValue(parameterValues);
 		} else {
@@ -362,7 +362,7 @@ public class ProductExplorer extends SBActionAdapter {
 	 * @return
 	 */
 	protected String buildContainsValue(String[] parameterValues) {
-		
+
 		StringBuilder value = new StringBuilder(50);
 		if (parameterValues.length == 1) {
 			String singleValue = parameterValues[0];
@@ -379,18 +379,18 @@ public class ProductExplorer extends SBActionAdapter {
 			value.append("*").append(StringEscapeUtils.unescapeHtml(s).replace(" ", "\\ ")).append("*");
 		}
 		value.append(")");
-		
+
 		return value.toString();
 	}
 
-	
+
 	/**
 	 * Format the parameter properly for an exact match search
 	 * @param parameterValues
 	 * @return
 	 */
 	protected String buildExactValue(String[] parameterValues) {
-		
+
 		if (parameterValues.length == 1) return "\"" + parameterValues[0] + "\"";
 
 		StringBuilder value = new StringBuilder(50);
@@ -400,11 +400,11 @@ public class ProductExplorer extends SBActionAdapter {
 			value.append("\"").append(StringEscapeUtils.unescapeHtml(s)).append("\"");
 		}
 		value.append(")");
-		
+
 		return value.toString();
 	}
 
-	
+
 	/**
 	 * Get the solr information 
 	 * @param req
@@ -415,15 +415,15 @@ public class ProductExplorer extends SBActionAdapter {
 		SolrAction sa = new SolrAction(actionInit);
 		sa.setDBConnection(dbConn);
 		sa.setAttributes(attributes);
-	    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
-	    	actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
+		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 		return sa.retrieveActionData(req);
 	}
-	
+
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		BuildType type = BuildType.valueOf(req.getParameter("buildType"));
-		
+
 		switch (type) {
 			case EXPORT:
 				exportResults(req);
@@ -436,8 +436,8 @@ public class ProductExplorer extends SBActionAdapter {
 				break;
 		}
 	}
-	
-	
+
+
 	/**
 	 * Create a report vo that can be used to return an excel document
 	 * containing all currently displayed products.
@@ -451,8 +451,8 @@ public class ProductExplorer extends SBActionAdapter {
 		req.setAttribute(Constants.BINARY_DOCUMENT, report);
 		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, true);
 	}
-	
-	
+
+
 	/**
 	 * Send an email with the supplied query to the supplied individual
 	 * @param req
@@ -464,12 +464,12 @@ public class ProductExplorer extends SBActionAdapter {
 			EmailMessageVO msg = new EmailMessageVO();
 			msg.setSubject("Smarttrak Products");
 			msg.addRecipient(req.getParameter("recipient"));
-			
+
 			StringBuilder body = new StringBuilder(250);
 			body.append(user.getFullName()).append(" has shared a product set with you.</br>");
 			body.append("You can view the product set <a href='").append(buildUrl(req));
 			body.append(">here</a>.");
-			
+
 			msg.setHtmlBody(body.toString());
 			MessageSender ms = new MessageSender(attributes, dbConn);
 			ms.sendMessage(msg);
@@ -477,8 +477,8 @@ public class ProductExplorer extends SBActionAdapter {
 			throw new ActionException(e);
 		}
 	}
-	
-	
+
+
 	/**
 	 * Save the supplied query to the database.
 	 * @param req
@@ -498,21 +498,21 @@ public class ProductExplorer extends SBActionAdapter {
 			ps.setString(3, req.getParameter("queryName"));
 			ps.setString(4, url);
 			ps.setTimestamp(5, Convert.getCurrentTimestamp());
-			
+
 			ps.executeUpdate();
 		} catch (SQLException e) {
 			throw new ActionException(e);
 		}
 		GenericVO vo = new GenericVO(req.getParameter("queryName"), url);
 		super.putModuleData(vo);
-		
+
 		if (req.getSession().getAttribute(SAVED_QUERIES) == null)
 			req.getSession().setAttribute(SAVED_QUERIES, new ArrayList<GenericVO>());
-		
+
 		((List<GenericVO>)req.getSession().getAttribute(SAVED_QUERIES)).add(vo);
 	}
 
-	
+
 	/**
 	 * Build a url that can be used to reload a saved product set from solr.
 	 * @param req
@@ -529,19 +529,19 @@ public class ProductExplorer extends SBActionAdapter {
 		for (String name : req.getParameterMap().keySet()) {
 			// If this value is not in the list of enums skip it.
 			if (!enumNames.contains(name) || StringUtil.isEmpty(req.getParameter(name))) continue;
-			
+
 			for (String value : req.getParameterValues(name)) {
 				url.append("&").append(name).append("=").append(value);
 			}
 		}
-		
+
 		if (req.hasParameter("selNodes")) {
 			buildHierarchyUrl(req, url);
 		}
-		
+
 		return url.toString();
 	}
-	
+
 
 	/**
 	 * Append the selected hierarchy nodes to the url
