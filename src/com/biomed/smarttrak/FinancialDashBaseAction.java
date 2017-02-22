@@ -74,7 +74,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		
 		// Get the paramters required to generate the requested table
 		String displayType = StringUtil.checkVal(req.getParameter("displayType"), FinancialDashColumnSet.DEFAULT_DISPLAY_TYPE);
-		Integer calendarYear = Convert.formatInteger(req.getParameter("calendarYear"), Convert.getCurrentYear());
+		Integer calendarYear = Convert.formatInteger(req.getParameter("calendarYear"), 2016); // TODO: How do I know which year to default to?
 		String tableType = StringUtil.checkVal(req.getParameter("tableType"), FinancialDashVO.DEFAULT_TABLE_TYPE);
 		String[] countryTypes = req.getParameterValues("countryTypes[]") == null ? new String[]{FinancialDashVO.DEFAULT_COUNTRY_TYPE} : req.getParameterValues("countryTypes[]");
 		String sectionId = StringUtil.checkVal(req.getParameter("sectionId"), "MASTER_ROOT");
