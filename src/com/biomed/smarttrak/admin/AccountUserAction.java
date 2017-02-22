@@ -208,7 +208,8 @@ public class AccountUserAction extends SBActionAdapter {
 	protected String formatRetrieveQuery(String schema, String userId) {
 		StringBuilder sql = new StringBuilder(300);
 		sql.append("select u.account_id, u.profile_id, u.user_id, u.register_submittal_id, u.status_cd, ");
-		sql.append("u.expiration_dt, p.first_nm, p.last_nm, p.email_address_txt, cast(max(al.login_dt) as date) as login_dt ");
+		sql.append("u.expiration_dt, p.first_nm, p.last_nm, p.email_address_txt, cast(max(al.login_dt) as date) as login_dt, ");
+		sql.append("u.fd_auth_flg, u.ga_auth_flg, u.mkt_auth_flg ");
 		sql.append("from ").append(schema).append("biomedgps_user u ");
 		sql.append("left outer join profile p on u.profile_id=p.profile_id ");
 		sql.append("left outer join authentication_log al on p.authentication_id=al.authentication_id and al.site_id=? and al.status_cd=1 ");

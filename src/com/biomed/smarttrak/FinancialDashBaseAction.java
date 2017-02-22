@@ -11,7 +11,7 @@ import java.util.Map;
 
 import com.biomed.smarttrak.FinancialDashColumnSet.DisplayType;
 import com.biomed.smarttrak.FinancialDashVO.TableType;
-import com.biomed.smarttrak.admin.ContentHierarchyAction;
+import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -130,7 +130,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	 */
 	@SuppressWarnings("unchecked")
 	protected List<Node> getHierarchy(ActionRequest req) throws ActionException {
-		ContentHierarchyAction cha = new ContentHierarchyAction(this.actionInit);
+		SectionHierarchyAction cha = new SectionHierarchyAction(this.actionInit);
 		cha.setAttributes(this.attributes);
 		cha.setDBConnection(dbConn);
 		cha.retrieve(req);

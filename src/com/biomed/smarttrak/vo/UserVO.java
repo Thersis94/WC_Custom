@@ -37,6 +37,9 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	private Date loginDate;
 	private Date createDate;
 	private Date updateDate;
+	private int fdAuthFlg;
+	private int gaAuthFlg;
+	private int mktAuthFlg;
 
 	/**
 	 * Smarttrak status dropdowns - stored in the DB using code, label displayed on user mgmt screens.
@@ -116,6 +119,9 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		setRegisterSubmittalId(req.getParameter("registerSubmittalId"));
 		setStatusCode(req.getParameter("statusCode"));
 		setExpirationDate(Convert.formatDate(Convert.DATE_SLASH_PATTERN, req.getParameter("expirationDate")));
+		setFdAuthFlg(Convert.formatInteger(req.getParameter("fdAuthFlg")));
+		setGaAuthFlg(Convert.formatInteger(req.getParameter("gaAuthFlg")));
+		setMktAuthFlg(Convert.formatInteger(req.getParameter("mktAuthFlg")));
 	}
 
 
@@ -302,8 +308,8 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		}
 		return data;
 	}
-	
-	
+
+
 	/**
 	 * returns a list of fields presented on the public side of registration, so we know which fields to manage 
 	 * when the user submits their form.  These fields will get deleted in SubmittalAction of registration, before 
@@ -316,6 +322,33 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		data.add(RegistrationMap.UPDATES);
 		data.add(RegistrationMap.FAVORITEUPDATES);
 		return data;
+	}
+
+	@Column(name="fd_auth_flg")
+	public int getFdAuthFlg() {
+		return fdAuthFlg;
+	}
+
+	public void setFdAuthFlg(int fdAuthFlg) {
+		this.fdAuthFlg = fdAuthFlg;
+	}
+
+	@Column(name="ga_auth_flg")
+	public int getGaAuthFlg() {
+		return gaAuthFlg;
+	}
+
+	public void setGaAuthFlg(int gaAuthFlg) {
+		this.gaAuthFlg = gaAuthFlg;
+	}
+
+	@Column(name="mkt_auth_flg")
+	public int getMktAuthFlg() {
+		return mktAuthFlg;
+	}
+
+	public void setMktAuthFlg(int mktAuthFlg) {
+		this.mktAuthFlg = mktAuthFlg;
 	}
 
 	/*********************
