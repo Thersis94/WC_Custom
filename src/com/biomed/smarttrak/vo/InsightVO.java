@@ -11,7 +11,6 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.annotations.SolrField;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
-import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
@@ -114,27 +113,6 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 		setData(req);
 	}
 	
-	protected void setData(ResultSet rs) {
-		
-		DBUtil util = new DBUtil();
-
-		setCreatorProfileId(util.getStringVal("PROFILE_ID", rs));
-		setInsightId(util.getStringVal("INSIGHT_ID", rs));
-		setTitleTxt(util.getStringVal("TITLE_TXT", rs));
-		setTypeCd(util.getIntVal("TYPE_CD", rs));
-		setAbstractTxt(util.getStringVal("ABSTRACT_TXT", rs));
-		setBylineTxt(util.getStringVal("BYLINE_TXT", rs));
-		setContentTxt(util.getStringVal("CONTENT_TXT", rs));
-		setFeaturedFlg(util.getIntVal("FEATURED_FLG", rs));
-		setFeaturedImageTxt(util.getStringVal("FEATURED_IMAGE_TXT", rs));
-		setStatusCd(util.getStringVal("STATUS_CD", rs));
-		setOrderNo(util.getIntVal("ORDER_NO", rs));
-		if(InsightStatusCd.R.toString().equals(statusCd)) {
-			setPublishDt(new Date());
-		}
-
-	}
-
 	protected void setData(ActionRequest req) {
 		SMTSession ses = req.getSession();
 		UserVO vo = (UserVO) ses.getAttribute(Constants.USER_DATA);

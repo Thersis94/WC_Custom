@@ -19,7 +19,7 @@ import com.siliconmtn.db.orm.Table;
  * @version 1.0
  * @since Feb 15, 2017
  ****************************************************************************/
-@Table(name="BIOMEDGPS_INSIGHT_SECTION")
+@Table(name="biomedgps_insight_section")
 public class InsightXRVO {
 
 	private String insightSectionXrId;
@@ -42,7 +42,7 @@ public class InsightXRVO {
 	/**
 	 * @return the insightSectionXrId
 	 */
-	@Column(name="INSIGHT_SECTION_XR_ID", isPrimaryKey=true)
+	@Column(name="insight_section_xr_id", isPrimaryKey=true)
 	public String getInsightSectionXrId() {
 		return insightSectionXrId;
 	}
@@ -50,7 +50,7 @@ public class InsightXRVO {
 	/**
 	 * @return the sectionId
 	 */
-	@Column(name="SECTION_ID")
+	@Column(name="section_id")
 	public String getSectionId() {
 		return sectionId;
 	}
@@ -58,7 +58,7 @@ public class InsightXRVO {
 	/**
 	 * @return the insightId
 	 */
-	@Column(name="INSIGHT_ID")
+	@Column(name="insight_id")
 	public String getInsightId() {
 		return insightId;
 	}
@@ -66,7 +66,7 @@ public class InsightXRVO {
 	/**
 	 * @return the createDt
 	 */
-	@Column(name="CREATE_DT", isAutoGen=true, isInsertOnly=true)
+	@Column(name="create_dt", isAutoGen=true, isInsertOnly=true)
 	public Date getCreateDt() {
 		return createDt;
 	}
