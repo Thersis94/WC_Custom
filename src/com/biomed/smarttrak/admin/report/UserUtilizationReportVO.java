@@ -100,10 +100,10 @@ public class UserUtilizationReportVO extends AbstractSBReportVO {
 			rows.add(formatAccountHeader(a.getAccountName(),monthHeaders));
 
 			// user vals
-			Map<String,Object> row = null;
-			Map<Integer,Integer> counts = null;
+			Map<String,Object> row;
+			Map<Integer,Integer> counts;
 			int userTotal = 0;
-			//int finalTotal = 0;
+			// for final total impl: int finalTotal = 0;
 			for (UserVO user : acct.getValue()) {
 				row = new HashMap<>();
 				row.put("NAME", user.getFullName());
@@ -136,8 +136,14 @@ public class UserUtilizationReportVO extends AbstractSBReportVO {
 		}
 		return rows;
 	}
-	
-	private Map<String,Object> formatAccountFooter(String acctNm, Map<Integer,Integer> acctTotals) {
+
+	/**
+	 * 
+	 * @param acctNm
+	 * @param acctTotals
+	 * @return
+	 */
+	protected Map<String,Object> formatAccountFooter(String acctNm, Map<Integer,Integer> acctTotals) {
 		Map<String,Object> row = new HashMap<>();
 		row.put("NAME","Total for " + acctNm);
 		row.put("TITLE","");
@@ -151,7 +157,13 @@ public class UserUtilizationReportVO extends AbstractSBReportVO {
 		return row;
 	}
 	
-	private Map<String,Object> formatAccountHeader(String acctNm, List<String> monthHeaders) {
+	/**
+	 * 
+	 * @param acctNm
+	 * @param monthHeaders
+	 * @return
+	 */
+	protected Map<String,Object> formatAccountHeader(String acctNm, List<String> monthHeaders) {
 		Map<String,Object> row = new HashMap<>();
 		row.put("NAME",acctNm);
 		row.put("TITLE","");
@@ -169,7 +181,7 @@ public class UserUtilizationReportVO extends AbstractSBReportVO {
 	 * Formats the month headers for the past 12 months inclusive.
 	 * @return
 	 */
-	private List<String> formatMonthHeaders() {
+	protected List<String> formatMonthHeaders() {
 		List<String> monthHeaders = new ArrayList<>();
 		Locale loc = Locale.US;
 		Calendar cal = Calendar.getInstance();
@@ -186,7 +198,7 @@ public class UserUtilizationReportVO extends AbstractSBReportVO {
 	 * builds the header map for the excel report
 	 * @return
 	 */
-	private HashMap<String, String> getHeader() {
+	protected HashMap<String, String> getHeader() {
 
 		HashMap<String, String> headerMap = new LinkedHashMap<String, String>();
 		headerMap.put("NAME","");

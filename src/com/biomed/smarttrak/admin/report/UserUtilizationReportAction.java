@@ -129,9 +129,9 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 	protected Map<AccountVO,List<UserVO>> parseResults(ResultSet rs, 
 			StringEncrypter se) throws SQLException {
 		String prevAcct = null;
-		String currAcct = null;
+		String currAcct;
 		String prevPid = null;
-		String currPid = null;
+		String currPid;
 		AccountVO acct = null;
 		List<UserVO> users = null;
 		Map<AccountVO, List<UserVO>> accounts = new LinkedHashMap<>();
@@ -145,9 +145,7 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 				// first time through or changed accounts
 
 				if (acct != null) {
-					if (users != null) 
-						users.add(user);
-
+					users.add(user);
 					accounts.put(acct, users);
 				}
 				
@@ -166,7 +164,7 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 				// same account, check for same user
 				if (! currPid.equalsIgnoreCase(prevPid)) {
 					// changed users, add prev user to list
-					users.add(user);
+					if (user != null) users.add(user);
 					// init this user
 					user = formatNextUser(se,rs,currPid);
 
@@ -275,71 +273,82 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 			ps.setDate(2, Convert.formatSQLDate(checkStartDate(dateStart)));
 			ResultSet rs = ps.executeQuery();
 			
-			String prevId = null;
-			String currId;
-			int prevMonthNo = -1;
-			int currMonthNo = -1;
-			int monthPageCnt = 0;
-
-			// Map of month number to pageviews
-			Map<Integer,Integer> userMonths =  null;
-			// Map of profileId to Map of Month, pageCount
-			Map< String, Map<Integer,Integer> > userPageViewsByMonth = new HashMap<>();
-			Calendar cal = Calendar.getInstance();
-
-			while (rs.next()) {
-				currId = rs.getString("profile_id");
-				currMonthNo = parseMonthFromDate(cal, rs.getDate("visit_dt"));
-				
-				if (! currId.equalsIgnoreCase(prevId)) {
-
-					// changed users or first time through.
-					if (userMonths != null) {
-						// put month count on map
-						userMonths.put(prevMonthNo, monthPageCnt);
-						// put list on map of user|user's months
-						userPageViewsByMonth.put(prevId, userMonths);
-					}
-
-					// init userMonths map
-					userMonths = new HashMap<>();
-					
-					// init current month's view count.
-					monthPageCnt = 1;
-					
-				} else {
-					// process record for current user
-					if (currMonthNo != prevMonthNo) {
-						// month changed, put previous month page count on map
-						userMonths.put(prevMonthNo, monthPageCnt);
-						
-						// reset monthCnt to 1.
-						monthPageCnt = 1;
-						
-					} else {
-						// incr this month's count
-						monthPageCnt++;
-					}
-
-				}
-				// capture previous vals for comparison
-				prevId = currId;
-				prevMonthNo = currMonthNo;
-			}
-			
-			// pick up the last record/user.
-			if (userMonths != null) {
-				userMonths.put(prevMonthNo, monthPageCnt);
-				userPageViewsByMonth.put(prevId,userMonths);
-			}
-			
-			return userPageViewsByMonth;
+			return this.parseMonthlyPageCountResults(rs);
 			
 		} catch (SQLException sqle) {
 			log.error("Error retrieving user page views, ", sqle);
 			return new HashMap<>();
 		}
 		
+	}
+	
+	/**
+	 * Parses the monthly page count results.
+	 * @param rs
+	 * @return
+	 * @throws SQLException
+	 */
+	protected Map<String, Map<Integer,Integer>> parseMonthlyPageCountResults(ResultSet rs) 
+			throws SQLException {
+		String prevId = null;
+		String currId;
+		int prevMonthNo = -1;
+		int currMonthNo = -1;
+		int monthPageCnt = 0;
+
+		// Map of month number to pageviews
+		Map<Integer,Integer> userMonths =  null;
+		// Map of profileId to Map of Month, pageCount
+		Map< String, Map<Integer,Integer> > userPageViewsByMonth = new HashMap<>();
+		Calendar cal = Calendar.getInstance();
+
+		while (rs.next()) {
+			currId = rs.getString("profile_id");
+			currMonthNo = parseMonthFromDate(cal, rs.getDate("visit_dt"));
+			
+			if (! currId.equalsIgnoreCase(prevId)) {
+
+				// changed users or first time through.
+				if (userMonths != null) {
+					// put month count on map
+					userMonths.put(prevMonthNo, monthPageCnt);
+					// put list on map of user|user's months
+					userPageViewsByMonth.put(prevId, userMonths);
+				}
+
+				// init userMonths map
+				userMonths = new HashMap<>();
+				
+				// init current month's view count.
+				monthPageCnt = 1;
+				
+			} else {
+				// process record for current user
+				if (currMonthNo != prevMonthNo) {
+					// month changed, put previous month page count on map
+					if (userMonths != null) 
+						userMonths.put(prevMonthNo, monthPageCnt);
+					
+					// reset monthCnt to 1.
+					monthPageCnt = 1;
+					
+				} else {
+					// incr this month's count
+					monthPageCnt++;
+				}
+
+			}
+			// capture previous vals for comparison
+			prevId = currId;
+			prevMonthNo = currMonthNo;
+		}
+		
+		// pick up the last record/user.
+		if (userMonths != null) {
+			userMonths.put(prevMonthNo, monthPageCnt);
+			userPageViewsByMonth.put(prevId,userMonths);
+		}
+		return userPageViewsByMonth;
 	}
 	
 	/**
