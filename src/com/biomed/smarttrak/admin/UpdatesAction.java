@@ -6,7 +6,6 @@ package com.biomed.smarttrak.admin;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import com.biomed.smarttrak.admin.user.HumanNameIntfc;
@@ -67,13 +66,8 @@ public class UpdatesAction extends AbstractTreeAction {
 		}
 	}
 
-	public UpdatesAction() {
-		super();
-	}
-
-	public UpdatesAction(ActionInitVO actionInit) {
-		super(actionInit);
-	}
+	public UpdatesAction() {super();}
+	public UpdatesAction(ActionInitVO actionInit) {super(actionInit);}
 
 	public void retrieve(ActionRequest req) throws ActionException {
 		//loadData gets passed on the ajax call.  If we're not loading data simply go to view to render the bootstrap 
@@ -91,6 +85,14 @@ public class UpdatesAction extends AbstractTreeAction {
 		putModuleData(updates);
 	}
 
+	/**
+	 * Retrieve all the updates
+	 * @param updateId
+	 * @param statusCd
+	 * @param typeCd
+	 * @param dateRange
+	 * @return
+	 */
 	public List<Object> getUpdates(String updateId, String statusCd, String typeCd, String dateRange) {
 
 		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
@@ -193,17 +195,7 @@ public class UpdatesAction extends AbstractTreeAction {
 			} else {
 				db.save(u);
 
-				//Set the UpdateId on UpdatesXRVOs
-				if(StringUtil.isEmpty(u.getUpdateId())) {
-
-					//Ensure proper UpdateId and Publish Dt are set.
-					u.setUpdateId(db.getGeneratedPKId());
-					u.setPublishDt(new Date());
-
-					for(UpdatesXRVO uxr : u.getUpdateSections()) {
-						uxr.setUpdateId(u.getUpdateId());
-					}
-				}
+				fixPkids(u, db.getGeneratedPKId());
 
 				//Save Update Sections.
 				saveSections(u);
@@ -216,6 +208,25 @@ public class UpdatesAction extends AbstractTreeAction {
 			}
 		} catch (InvalidDataException | DatabaseException e) {
 			throw new ActionException(e);
+		}
+	}
+
+	/**
+	 * Manages updating given UpdatesVO with generated PKID and updates sections
+	 * to match.
+	 * @param u
+	 * @param generatedPKId
+	 */
+	private void fixPkids(UpdatesVO u, String generatedPKId) {
+		//Set the UpdateId on UpdatesXRVOs
+		if(StringUtil.isEmpty(u.getUpdateId())) {
+
+			//Ensure proper UpdateId and Publish Dt are set.
+			u.setUpdateId(generatedPKId);
+
+			for(UpdatesXRVO uxr : u.getUpdateSections()) {
+				uxr.setUpdateId(u.getUpdateId());
+			}
 		}
 	}
 
