@@ -89,10 +89,6 @@ public class UpdatesVO extends SolrDocumentVO implements HumanNameIntfc {
 		setData(req);
 	}
 
-	protected void setData(ResultSet rs) {
-		
-	}
-
 	protected void setData(ActionRequest req) {
 		SMTSession ses = req.getSession();
 		UserVO vo = (UserVO) ses.getAttribute(Constants.USER_DATA);
@@ -108,9 +104,7 @@ public class UpdatesVO extends SolrDocumentVO implements HumanNameIntfc {
 		this.messageTxt = req.getParameter("messageTxt");
 		this.twitterTxt = req.getParameter("twitterTxt");
 		this.statusCd = req.getParameter("statusCd");
-		if(UpdateStatusCd.R.toString().equals(statusCd)) {
-			setPublishDt(new Date());
-		}
+		this.publishDt = Convert.formatDate(req.getParameter("publishDt"));
 		if(req.hasParameter("sectionId")) {
 			String [] s = req.getParameterValues("sectionId");
 			for(String sec : s) {
@@ -238,10 +232,25 @@ public class UpdatesVO extends SolrDocumentVO implements HumanNameIntfc {
 	}
 
 	/**
+	 * Get Full Status Nm.
+	 * @return
+	 */
+	public String getStatusNm() {
+		String nm = "";
+		try {
+			nm = UpdateStatusCd.valueOf(statusCd).getStatusName();
+		} catch(Exception e) {
+			//If fail, no problem.  Means no status.
+		}
+
+		return nm;
+	}
+
+	/**
 	 * @return the publishDt
 	 */
 	@SolrField(name=SearchDocumentHandler.UPDATE_DATE)
-	@Column(name="publish_dt")
+	@Column(name="publish_dt", isAutoGen=true, isInsertOnly=true)
 	public Date getPublishDt() {
 		return publishDt;
 	}
@@ -379,28 +388,14 @@ public class UpdatesVO extends SolrDocumentVO implements HumanNameIntfc {
 	 * @return
 	 */
 	public UpdateType getType() {
-		switch(typeCd) {
-			case 12 :
-				return UpdateType.MARKET;
-			case 15 :
-				return UpdateType.REVENUES;
-			case 17 :
-				return UpdateType.NEW_PRODUCTS;
-			case 20 :
-				return UpdateType.DEALS_FINANCING;
-			case 30 :
-				return UpdateType.CLINICAL_REGULATORY;
-			case 35 :
-				return UpdateType.PATENTS;
-			case 37 :
-				return UpdateType.REIMBURSEMENT;
-			case 38 :
-				return UpdateType.ANNOUNCEMENTS;
-			case 40 :
-				return UpdateType.STUDIES;
-			default :
-				return null;
+		UpdateType t = null;
+		for(UpdateType u : UpdateType.values()) {
+			if(u.getVal() == typeCd) {
+				t = u;
+			}
 		}
+
+		return t;
 	}
 
 	/* (non-Javadoc)

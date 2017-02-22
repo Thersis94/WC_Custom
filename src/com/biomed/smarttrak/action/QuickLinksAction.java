@@ -4,7 +4,6 @@ package com.biomed.smarttrak.action;
 import java.util.List;
 import java.util.Map;
 
-import com.biomed.smarttrak.action.AdminControllerAction.Section;
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -33,11 +32,17 @@ import com.smt.sitebuilder.util.PageViewVO;
 public class QuickLinksAction extends SBActionAdapter {
 
 	public static final String MY_RECENTLY_VIEWED = "myRecentlyViewed";
+	public static final char CHAR_SLASH = '/';
 	public static final String LINK_TYPE = "type";
 	public static final String LINK_TYPE_FAVORITES = "fv";
 	public static final String LINK_TYPE_RECENTLY_VIEWED = "rv";
 	public static final String URL_STUB = "qs/";
-	public static final int MAX_LIST_SIZE = 10;
+	public static final String PARAM_KEY_SECTION = "section";
+	public static final String PARAM_KEY_NAME = "name";
+	public static final String PARAM_KEY_URI_TXT = "uriTxt";
+	public static final String PARAM_KEY_TYPE_CD = "typeCd";
+	public static final String PARAM_KEY_REL_ID = "relId";
+	public static final int MAX_LIST_SIZE = 3;
 
 	/**
 	 * Constructor
@@ -87,12 +92,14 @@ public class QuickLinksAction extends SBActionAdapter {
 	 */
 	@SuppressWarnings("unchecked")
 	protected void loadFavorites(ActionRequest req) throws ActionException {
+		log.debug("loadFavorites...");
 		// call FavoritesAction
 		ActionInterface ai = new FavoritesAction(actionInit);
 		ai.setAttributes(getAttributes());
 		ai.setDBConnection(dbConn);
 		ai.retrieve(req);
 		ModuleVO mod = (ModuleVO)getAttribute(Constants.MODULE_DATA);
+		log.debug("favorites mod error condition: " + mod.getErrorCondition());
 		if (! mod.getErrorCondition()) {
 			SMTSession sess = req.getSession();
 			Map<String, List<PageViewVO>> fv = (Map<String, List<PageViewVO>>) mod.getActionData();
@@ -156,17 +163,28 @@ public class QuickLinksAction extends SBActionAdapter {
 		super.retrieve(req);
 	}
 
-
 	/**
 	 * iterates the session-stored List<PageViewVO> to see if the given ID for the given Section is on the list.
 	 * Used in views to set button colors for 'Favorite' buttons.
+	 * @param data
 	 * @param sec
 	 * @param pkId
 	 * @return
 	 */
-	public static boolean isFavorite(Map<String, List<PageViewVO>> data, Section sec, String pkId) {
-		//TODO iterate session object, see if we have a match;
-
+	public static boolean isFavorite(Map<String, List<PageViewVO>> data, String sec, String pkId) {
+		log.debug("isFavorite...");
+		// no data, no match.
+		if (data == null) return false;
+		// unpack target section
+		List<PageViewVO> section = data.get(sec);
+		// invalid section key, or empty list, no match.
+		if (section == null || section.isEmpty()) return false;
+		// loop pageviews looking for match.
+		for (PageViewVO page : section) {
+			if (pkId.equalsIgnoreCase(page.getPageId())) {
+				return true;
+			}
+		}
 		return false;
 	}
 

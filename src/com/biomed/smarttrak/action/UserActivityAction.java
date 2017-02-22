@@ -317,4 +317,14 @@ public class UserActivityAction extends SBActionAdapter {
 			return encrypted;
 		}
 	}
+
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
+	public void list(ActionRequest req) throws ActionException {
+		super.retrieve(req);
+	}
+	
+	
 }
