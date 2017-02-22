@@ -87,11 +87,6 @@ public class InsightAction extends SBActionAdapter {
 		DBProcessor db = new DBProcessor(dbConn, schema);
 		List<Object>  insights = db.executeSelect(sql, params, new InsightVO());
 		log.debug("loaded " + insights.size() + " insights");
-		if (insights != null && !insights.isEmpty()){
-			//TODO pull this out when done bug testing
-			InsightVO vo2 = (InsightVO) insights.get(0);
-			log.debug("vo2: " + vo2);
-		}
 		return insights;
 	}
 
@@ -178,12 +173,8 @@ public class InsightAction extends SBActionAdapter {
 			} else {
 				db.save(u);
 
-				if(StringUtil.isEmpty(u.getInsightId())) {
-					u.setInsightId(db.getGeneratedPKId());
-					for(InsightXRVO uxr : u.getInsightSections()) {
-						uxr.setInsightId(u.getInsightId());
-					}
-				}
+				setInsightIdOnInsert(u, db);
+				
 				//Save Insight Sections.
 				saveSections(u);
 
@@ -192,9 +183,25 @@ public class InsightAction extends SBActionAdapter {
 					saveToSolr(u);
 				}
 			}
-		} catch (InvalidDataException | DatabaseException e) {
+		} catch (Exception e) {
 			throw new ActionException(e);
 		}
+	}
+
+	/**
+	 * sets the new insight vo on insert
+	 * @param db 
+	 * @param u 
+	 */
+	private void setInsightIdOnInsert(InsightVO u, DBProcessor db) {
+		
+		if(StringUtil.isEmpty(u.getInsightId())) {
+			u.setInsightId(db.getGeneratedPKId());
+			for(InsightXRVO uxr : u.getInsightSections()) {
+				uxr.setInsightId(u.getInsightId());
+			}
+		}
+		
 	}
 
 	/**
@@ -217,7 +224,7 @@ public class InsightAction extends SBActionAdapter {
 	 * @throws InvalidDataException
 	 * @throws DatabaseException
 	 */
-	protected void saveSections(InsightVO u) throws ActionException, InvalidDataException, DatabaseException {
+	protected void saveSections(InsightVO u) throws Exception {
 
 		//Delete old Insight Section XRs
 		deleteSections(u.getInsightId());

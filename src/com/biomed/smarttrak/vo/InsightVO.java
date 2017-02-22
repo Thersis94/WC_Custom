@@ -7,7 +7,6 @@ import java.util.List;
 
 import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.admin.user.HumanNameIntfc;
-import com.biomed.smarttrak.solr.BiomedUpdateIndexer;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.annotations.SolrField;
 import com.siliconmtn.data.Node;

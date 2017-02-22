@@ -137,10 +137,11 @@ public class InsightXRVO {
 	public InsightSection getInsightSection() {
 
 		for(InsightSection sec : InsightSection.values()){
-			if (sec.getText().equals("sectionId")){
+			if (sec.getText().equals(sectionId)){
 				return sec;
 			}
 		}
+
 		return null;
 	}
 }
