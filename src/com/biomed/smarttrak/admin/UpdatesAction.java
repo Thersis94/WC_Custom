@@ -6,13 +6,13 @@ package com.biomed.smarttrak.admin;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import com.biomed.smarttrak.admin.user.HumanNameIntfc;
 import com.biomed.smarttrak.admin.user.NameComparator;
 import com.biomed.smarttrak.vo.UpdatesVO;
 import com.biomed.smarttrak.vo.UpdatesXRVO;
-import com.biomed.smarttrak.vo.UpdatesVO.UpdateStatusCd;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -188,6 +188,7 @@ public class UpdatesAction extends AbstractTreeAction {
 
 		try {
 			if (isDelete) {
+				u.setUpdateId("pkId");
 				db.delete(u);
 				deleteFromSolr(u);
 			} else {
@@ -195,23 +196,24 @@ public class UpdatesAction extends AbstractTreeAction {
 
 				//Set the UpdateId on UpdatesXRVOs
 				if(StringUtil.isEmpty(u.getUpdateId())) {
+
+					//Ensure proper UpdateId and Publish Dt are set.
 					u.setUpdateId(db.getGeneratedPKId());
+					u.setPublishDt(new Date());
+
 					for(UpdatesXRVO uxr : u.getUpdateSections()) {
 						uxr.setUpdateId(u.getUpdateId());
 					}
 				}
+
 				//Save Update Sections.
 				saveSections(u);
 
-				//Add to Solr if published
-				if(UpdateStatusCd.R.toString().equals(u.getStatusCd())) {
+				//Add hierarchies to the Section
+				u.setHierarchies(loadSections());
 
-					//Add hierarchies to the Section
-					u.setHierarchies(loadSections());
-
-					//Save the Update Document to Solr
-					saveToSolr(u);
-				}
+				//Save the Update Document to Solr
+				saveToSolr(u);
 			}
 		} catch (InvalidDataException | DatabaseException e) {
 			throw new ActionException(e);

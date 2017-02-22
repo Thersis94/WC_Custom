@@ -108,9 +108,7 @@ public class UpdatesVO extends SolrDocumentVO implements HumanNameIntfc {
 		this.messageTxt = req.getParameter("messageTxt");
 		this.twitterTxt = req.getParameter("twitterTxt");
 		this.statusCd = req.getParameter("statusCd");
-		if(UpdateStatusCd.R.toString().equals(statusCd)) {
-			setPublishDt(new Date());
-		}
+		this.publishDt = Convert.formatDate(req.getParameter("publishDt"));
 		if(req.hasParameter("sectionId")) {
 			String [] s = req.getParameterValues("sectionId");
 			for(String sec : s) {
@@ -241,7 +239,7 @@ public class UpdatesVO extends SolrDocumentVO implements HumanNameIntfc {
 	 * @return the publishDt
 	 */
 	@SolrField(name=SearchDocumentHandler.UPDATE_DATE)
-	@Column(name="publish_dt")
+	@Column(name="publish_dt", isAutoGen=true, isInsertOnly=true)
 	public Date getPublishDt() {
 		return publishDt;
 	}
