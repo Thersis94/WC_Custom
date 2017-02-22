@@ -35,67 +35,8 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
  * @since Feb 14, 2017
  ****************************************************************************/
 public class InsightAction extends SBActionAdapter {
-	protected static final String INSIGHT_ID = "insightId"; //req param
+	protected static final String INSIGHT_ID = "insightsId"; //req param
 	public static final String ROOT_NODE_ID = "MASTER_ROOT";
-
-	public enum InsightCategory {
-		EXTREMITIES(12, "Extremities"),
-		TOTAL_JOINT(15, "Total Joint"),
-		TRAUMA(17, "Trauma"),
-		EU_TRAUMA(20, "EU Trauma"),
-		SPINE(30, "Spine"),
-		ORTHOBIO(35, "Ortho-Bio"),
-		SOFT_TISSUE(37, "Soft Tissue"),
-		ADV_WOUND_CARE(38, "Adv. Wound Care"),
-		EU_ADV_WOUND_CARE(40, "EU Adv. Wound Care"),
-		SURGICAL_MATRICIES(45, "Surgical Matricies"),
-		INF_PREV(50, "Inf Prev"),
-		GLUES_AND_SEALANTS(55, "Glues & Sealants"),
-		WND_MGMT_STD_OF_CARE(60, "Wnd Mgmt - Std of Care"),
-		REGEN_MED(65, "Regen Med"),
-		NEUROVASCULAR(70, "Neurovascular"),
-		NEUROMODULATION(75, "Neuromodulation");
-
-		private int val;
-		private String text;
-
-		InsightCategory(int val, String text) {
-			this.val = val;
-			this.text = text;
-		}
-
-		public int getVal() {
-			return this.val;
-		}
-		public String getText() {
-			return this.text;
-		}
-	}
-	
-	public enum InsightSection {
-		ALL_COMMENTARY(1, "All Commentary"),
-		PERSPECTIVE(10, "Perspective"),
-		MARKET_RECAP(20, "Market Recap"),
-		MARKET_OUTLOOK(25, "Market Outlook"),
-		STARTUP_SPOTLIGHT(30, "Start-up Spotlight");
-
-		private int val;
-		private String text;
-
-		InsightSection(int val, String text) {
-			this.val = val;
-			this.text = text;
-		}
-
-		public int getVal() {
-			return this.val;
-		}
-		public String getText() {
-			return this.text;
-		}
-	}
-	
-	
 
 	public InsightAction() {
 		super();
@@ -106,6 +47,7 @@ public class InsightAction extends SBActionAdapter {
 	}
 
 	public void retrieve(ActionRequest req) throws ActionException {
+		log.debug("insight retrieve called");
 		//TODO Class altered to include insight vos rather then update
 		
 		//loadData gets passed on the ajax call.  If we're not loading data simply go to view to render the bootstrap 
@@ -118,6 +60,15 @@ public class InsightAction extends SBActionAdapter {
 		String dateRange = req.getParameter("dateRange");
 		List<Object> insights = getInsights(insightId, statusCd, typeCd, dateRange);
 
+		
+		
+		//gets the staff list
+		AccountAction aa = new AccountAction();
+		aa.setActionInit(actionInit);
+		aa.setAttributes(attributes);
+		aa.setDBConnection(dbConn);
+		aa.loadManagerList(req, (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA));
+		
 		decryptNames(insights);
 
 		putModuleData(insights);
@@ -136,6 +87,11 @@ public class InsightAction extends SBActionAdapter {
 		DBProcessor db = new DBProcessor(dbConn, schema);
 		List<Object>  insights = db.executeSelect(sql, params, new InsightVO());
 		log.debug("loaded " + insights.size() + " insights");
+		if (insights != null && !insights.isEmpty()){
+			//TODO pull this out when done bug testing
+			InsightVO vo2 = (InsightVO) insights.get(0);
+			log.debug("vo2: " + vo2);
+		}
 		return insights;
 	}
 
