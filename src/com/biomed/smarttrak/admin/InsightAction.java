@@ -48,7 +48,6 @@ public class InsightAction extends SBActionAdapter {
 
 	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("insight retrieve called");
-		//TODO Class altered to include insight vos rather then update
 		
 		//loadData gets passed on the ajax call.  If we're not loading data simply go to view to render the bootstrap 
 		//table into the view (which will come back for the data).
@@ -86,7 +85,7 @@ public class InsightAction extends SBActionAdapter {
 
 		DBProcessor db = new DBProcessor(dbConn, schema);
 		List<Object>  insights = db.executeSelect(sql, params, new InsightVO());
-		log.debug("loaded " + insights.size() + " insights");
+		log.debug("loaded " + insights.size());
 		return insights;
 	}
 
@@ -119,7 +118,7 @@ public class InsightAction extends SBActionAdapter {
 	}
 
 	/**
-	 * loop and decrypt owner names, which came from the profile table
+	 * loop and de-crypt owner names, which came from the profile table
 	 * @param accounts
 	 */
 	@SuppressWarnings("unchecked")
@@ -133,7 +132,7 @@ public class InsightAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	protected void loadSections(ActionRequest req, String schema) throws ActionException {
-		ContentHierarchyAction cha = new ContentHierarchyAction(this.actionInit);
+		SectionHierarchyAction cha = new SectionHierarchyAction(this.actionInit);
 		cha.setDBConnection(dbConn);
 		cha.setAttributes(getAttributes());
 		cha.retrieve(req);

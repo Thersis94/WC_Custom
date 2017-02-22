@@ -37,7 +37,7 @@ public class InsightXRVO {
 		SOFT_TISSUE(35, "Soft Tissue"),
 		ADV_WOUND_CARE(40, "Adv. Wound Care"),
 		EU_ADV_WOUND_CARE(45, "EU Adv. Wound Care"),
-		SURGICAL_MATRICIES(505, "Surgical Matricies"),
+		SURGICAL_MATRICIES(50, "Surgical Matricies"),
 		INF_PREV(55, "Inf Prev"),
 		GLUES_AND_SEALANTS(60, "Glues & Sealants"),
 		WND_MGMT_STD_OF_CARE(65, "Wnd Mgmt - Std of Care"),
@@ -47,10 +47,12 @@ public class InsightXRVO {
 
 		private int val;
 		private String text;
+		private String id;
 
 		InsightSection(int val, String text) {
 			this.val = val;
 			this.text = text;
+			this.id = id;
 		}
 
 		public int getVal() {
@@ -58,6 +60,9 @@ public class InsightXRVO {
 		}
 		public String getText() {
 			return this.text;
+		}
+		public String getId() {
+			return this.id;
 		}
 	}
 

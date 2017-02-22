@@ -96,7 +96,7 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 	 * @param solrIndex
 	 */
 	public InsightVO() {
-		//TODO replace this with a insite indexer when it exists
+		//TODO replace this with a insight indexer when it exists
 		super("");
 		sections = new ArrayList<>();
 		super.addOrganization(AdminControllerAction.BIOMED_ORG_ID);
@@ -157,13 +157,12 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 		if(InsightStatusCd.R.toString().equals(statusCd)) {
 			setPublishDt(new Date());
 		}
-		//TODO uncomment after sections tied to biomed sections
-//		if(req.hasParameter("sectionId")) {
-//			String [] s = req.getParameterValues("sectionId");
-//			for(String sec : s) {
-//				sections.add(new InsightXRVO(insightId, sec));
-//			}
-//		}
+		if(req.hasParameter("sectionId")) {
+			String [] s = req.getParameterValues("sectionId");
+			for(String sec : s) {
+				sections.add(new InsightXRVO(insightId, sec));
+			}
+		}
 	}
 	
 	/**
@@ -259,12 +258,26 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 	}
 	
 	/**
+	 * gets the numeric type code
 	 * @return the typeNm
 	 */
 	@SolrField(name=SearchDocumentHandler.MODULE_TYPE)
-	@Column(name="TYPE_CD")
+	@Column(name="type_cd")
 	public int getTypeCd() {
 		return typeCd;
+	}
+	
+	/**
+	 * looks at the type code and returns the string name
+	 * @return
+	 */
+	public String getTypeNm() {
+		InsightType t = getInsightType();
+		if(t != null){
+			return t.getText();
+		}
+		else
+			return "";
 	}
 	
 	/**
@@ -464,7 +477,7 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 	 * Helper method gets the InsightSection for the internal typeCd.
 	 * @return
 	 */
-	public InsightType getInsightSection() {
+	public InsightType getInsightType() {
 
 		for(InsightType type : InsightType.values()){
 			if (type.getVal() == typeCd){
