@@ -51,6 +51,8 @@ public class ReportFacadeAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		if (! req.hasParameter("reportType")) return;
+		
 		String reportType = StringUtil.checkVal(req.getParameter("reportType"));
 		ReportType rType = checkReportType(reportType);
 		

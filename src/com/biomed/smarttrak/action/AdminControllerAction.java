@@ -186,6 +186,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 				break;
 			case "reports":
 				action = new ReportFacadeAction();
+				break;
 			default:
 				throw new ActionException("unknown action type:" + actionType);
 		}
