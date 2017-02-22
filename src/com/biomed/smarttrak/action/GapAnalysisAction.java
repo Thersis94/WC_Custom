@@ -14,7 +14,7 @@ import java.util.Map;
 
 import org.apache.commons.lang.ArrayUtils;
 
-import com.biomed.smarttrak.admin.ContentHierarchyAction;
+import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.admin.vo.GapColumnVO;
 import com.biomed.smarttrak.vo.GapCompanyVO;
 import com.biomed.smarttrak.vo.GapProductVO;
@@ -46,7 +46,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @version 1.0
  * @since Jan 13, 2017
  ****************************************************************************/
-public class GapAnalysisAction extends ContentHierarchyAction {
+public class GapAnalysisAction extends SectionHierarchyAction {
 
 	public static final String GAP_ROOT_ID = "GAP_ANALYSIS_ROOT";
 	public static final String GAP_CACHE_KEY = "GAP_ANALYSIS_TREE_CACHE_KEY";

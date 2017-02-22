@@ -1,5 +1,7 @@
 package com.biomed.smarttrak.admin;
 
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 //Java 7
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,7 +20,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
-
+import com.siliconmtn.util.Convert;
 // WebCrescendo
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -36,7 +38,7 @@ import com.smt.sitebuilder.security.SecurityController;
  ***************************************************************************/
 public class AccountAction extends SBActionAdapter {
 
-	protected static final String ACCOUNT_ID = "accountId"; //req param
+	public static final String ACCOUNT_ID = "accountId"; //req param
 
 	public AccountAction() {
 		super();
@@ -126,8 +128,8 @@ public class AccountAction extends SBActionAdapter {
 		sql.append("select a.account_id, a.company_id, a.account_nm, a.type_id, ");
 		sql.append("a.start_dt, a.expiration_dt, a.owner_profile_id, a.address_txt, ");
 		sql.append("a.address2_txt, a.city_nm, a.state_cd, a.zip_cd, a.country_cd, ");
-		sql.append("a.status_no, a.create_dt, a.update_dt, p.first_nm, p.last_nm ");
-		sql.append("from ").append(schema).append("biomedgps_account a ");
+		sql.append("a.status_no, a.create_dt, a.update_dt, a.fd_auth_flg, a.ga_auth_flg, a.mkt_auth_flg, ");
+		sql.append("p.first_nm, p.last_nm from ").append(schema).append("biomedgps_account a ");
 		sql.append("left outer join profile p on a.owner_profile_id=p.profile_id ");		
 		if (accountId != null) sql.append("where a.account_id=? ");
 		sql.append("order by a.account_nm");
@@ -171,6 +173,32 @@ public class AccountAction extends SBActionAdapter {
 			}
 		} catch (InvalidDataException | DatabaseException e) {
 			throw new ActionException(e);
+		}
+	}
+
+
+	/**
+	 * saves the 3-4 fields we store on the account record for global-scope overrides
+	 * @param req
+	 * @throws ActionException
+	 */
+	protected void saveGlobalPermissions(ActionRequest req) throws ActionException {
+		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(100);
+		sql.append("update ").append(schema).append("BIOMEDGPS_ACCOUNT ");
+		sql.append("set ga_auth_flg=?, fd_auth_flg=?, mkt_auth_flg=?, update_dt=? where account_id=?");
+		log.debug(sql);
+
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setInt(1, req.hasParameter("accountGA") ? 1 : 0);
+			ps.setInt(2, req.hasParameter("accountFD") ? 1 : 0);
+			ps.setInt(3, req.hasParameter("accountMkt") ? 1 : 0);
+			ps.setTimestamp(4,  Convert.getCurrentTimestamp());
+			ps.setString(5,  req.getParameter(ACCOUNT_ID));
+			ps.executeUpdate();
+
+		} catch (SQLException sqle) {
+			throw new ActionException("could not save account ACLs", sqle);
 		}
 	}
 }

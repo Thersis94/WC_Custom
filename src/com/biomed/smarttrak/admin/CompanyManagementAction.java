@@ -150,12 +150,12 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 	 * @throws ActionException
 	 */
 	protected void retrieveSections(ActionRequest req) throws ActionException {
-		ContentHierarchyAction c = new ContentHierarchyAction();
+		SectionHierarchyAction c = new SectionHierarchyAction();
 		c.setActionInit(actionInit);
 		c.setAttributes(attributes);
 		c.setDBConnection(dbConn);
 		
-		List<Node> hierarchy = new Tree(c.getHierarchy(null)).preorderList();
+		List<Node> hierarchy = c.loadDefaultTree().preorderList();
 		List<String> activeNodes = getActiveSections(req.getParameter("companyId"));
 		
 		// Loop over all sections and set the leaf property to 
