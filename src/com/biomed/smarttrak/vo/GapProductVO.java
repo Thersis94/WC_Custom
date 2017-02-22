@@ -31,7 +31,7 @@ public class GapProductVO {
 	private List<ProductVO> products;
 
 	public GapProductVO() {
-		this.products = new ArrayList<ProductVO>();
+		this.products = new ArrayList<>();
 	}
 
 	/**
