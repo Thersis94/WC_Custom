@@ -31,7 +31,7 @@ import com.smt.sitebuilder.action.AbstractSBReportVO;
 * <b>Company:</b> Silicon Mountain Technologies<p/>
 * @author Eric Damschroder
 * @version 1.0
-* @since Feb 20, 2011
+* @since Feb 20, 2017
 ****************************************************************************/
 public class ProductExplorerReportVO extends AbstractSBReportVO {
 	private static final long serialVersionUID = 1L;
@@ -75,7 +75,6 @@ public class ProductExplorerReportVO extends AbstractSBReportVO {
 	 * @param sheet
 	 */
 	private void buildWorkbook(Sheet sheet) {
-		System.out.println("Somethin");
 		if (data == null) return;
 		// Loop the queries until all rows have been retrieved
 		int i = 1;
