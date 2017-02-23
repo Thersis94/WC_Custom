@@ -154,6 +154,7 @@ public class InsightAction extends SBActionAdapter {
 	 */
 	@Override
 	public void delete(ActionRequest req) throws ActionException {
+		log.debug("delete called");
 		saveRecord(req, true);
 	}
 
@@ -168,6 +169,7 @@ public class InsightAction extends SBActionAdapter {
 		InsightVO u = new InsightVO(req);
 		try {
 			if (isDelete) {
+				log.debug("deleting " + u);
 				db.delete(u);
 			} else {
 				if (req.hasParameter("listSave")){
