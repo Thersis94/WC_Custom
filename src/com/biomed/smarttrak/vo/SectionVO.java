@@ -9,6 +9,8 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.RandomAlphaNumeric;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: SectionVO.java
@@ -32,6 +34,7 @@ public class SectionVO implements Serializable {
 	private String solrTokenTxt;
 	private Date createDt;
 	private Date updateDt;
+	private boolean isSelected;
 
 	public SectionVO() {
 		super();
@@ -69,6 +72,10 @@ public class SectionVO implements Serializable {
 		setSectionNm(req.getParameter("sectionNm"));
 		setOrderNo(Convert.formatInteger(req.getParameter("orderNo")));
 		setSolrTokenTxt(req.getParameter("solrTokenTxt"));
+		
+		//if this is an insert, randomly generate the solr token.  This only happens once, ever.
+		if (StringUtil.isEmpty(getSectionId()))
+			setSolrTokenTxt(RandomAlphaNumeric.generateRandom(5));
 	}
 
 	/**
@@ -96,13 +103,14 @@ public class SectionVO implements Serializable {
 	 * @return the orderNo
 	 */
 	@Column(name="ORDER_NO")
-	public Integer getOrderNo() {
-		return Integer.valueOf(orderNo);
+	public int getOrderNo() {
+		return orderNo;
 	}
 	/**
 	 * @return the solrTokenTxt
+	 * This gets generated once, at insertion time, and never changes again.  Used for enforcing permissions
 	 */
-	@Column(name="SOLR_TOKEN_TXT")
+	@Column(name="SOLR_TOKEN_TXT", isInsertOnly=true)
 	public String getSolrTokenTxt() {
 		return solrTokenTxt;
 	}
@@ -144,10 +152,11 @@ public class SectionVO implements Serializable {
 	public void setOrderNo(int orderNo) {
 		this.orderNo = orderNo;
 	}
+	
 	/**
 	 * @param solrTokenTxt the solrTokenTxt to set.
 	 */
-	public void setSolrTokenTxt(String solrTokenTxt) {
+	private void setSolrTokenTxt(String solrTokenTxt) {
 		this.solrTokenTxt = solrTokenTxt;
 	}
 	/**
@@ -161,5 +170,13 @@ public class SectionVO implements Serializable {
 	 */
 	public void setUpdateDt(Date updateDt) {
 		this.updateDt = updateDt;
+	}
+
+	public boolean isSelected() {
+		return isSelected;
+	}
+
+	public void setSelected(boolean isSelected) {
+		this.isSelected = isSelected;
 	}
 }

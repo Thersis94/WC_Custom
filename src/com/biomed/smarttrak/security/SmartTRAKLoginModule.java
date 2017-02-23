@@ -99,12 +99,8 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 	 * @throws AuthenticationException
 	 */
 	public UserDataVO loadSmarttrakUser(UserDataVO user) {
-		log.debug("loadSmarttrakUser");
 		UserVO stUser = initializeSmarttrakUser(user);
 		loadCustomData(stUser);
-
-		//TODO load ACLs
-
 		return stUser;
 	}
 
@@ -115,7 +111,6 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 	 * @return
 	 */
 	protected UserVO initializeSmarttrakUser(UserDataVO userData) {
-		log.debug("initializeSmarttrakUser");
 		UserVO user = new UserVO();
 		user.setData(userData.getDataMap());
 		user.setAttributes(userData.getAttributes());
@@ -134,13 +129,12 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 	 * @throws AuthenticationException
 	 */
 	private void loadCustomData(UserVO user) {
-		log.debug("loadCustomData");
 		Connection dbConn = (Connection)getAttribute(GlobalConfig.KEY_DB_CONN);
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 
 		// use profile ID as that is all we have at the moment.
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("select u.user_id, u.account_id, u.register_submittal_id, ");
+		sql.append("select u.user_id, u.account_id, u.register_submittal_id, u.fd_auth_flg, u.ga_auth_flg, u.mkt_auth_flg, ");
 		sql.append("t.team_id, t.account_id, t.team_nm, t.default_flg, t.private_flg ");
 		sql.append("from ").append(schema).append("biomedgps_user u ");
 		sql.append("left outer join ").append(schema).append("biomedgps_user_team_xr xr on u.user_id=xr.user_id ");
@@ -157,6 +151,9 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 					user.setUserId(rs.getString("user_id"));
 					user.setAccountId(rs.getString("account_id"));
 					user.setRegisterSubmittalId(rs.getString("register_submittal_id"));
+					user.setFdAuthFlg(rs.getInt("fd_auth_flg"));
+					user.setGaAuthFlg(rs.getInt("ga_auth_flg"));
+					user.setMktAuthFlg(rs.getInt("mkt_auth_flg"));
 					iter = 1;
 				}
 				user.addTeam(new TeamVO(rs));
@@ -226,15 +223,5 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 		} catch (DatabaseException de) {
 			throw new InvalidDataException(de);
 		}
-	}
-
-
-	/* (non-Javadoc)
-	 * @see com.siliconmtn.security.AbstractLoginModule#resetPassword(java.lang.String, com.siliconmtn.security.UserDataVO)
-	 */
-	@Override
-	public boolean resetPassword(String pwd, UserDataVO user) {
-		// TODO Auto-generated method stub
-		return false;
 	}
 }

@@ -1,12 +1,12 @@
 package com.biomed.smarttrak.security;
 
+//Java 8
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.log4j.Logger;
-
+//WC Custom
 import com.biomed.smarttrak.vo.PermissionVO;
 import com.siliconmtn.data.Node;
 import com.smt.sitebuilder.admin.action.data.RoleAttributeVO;
@@ -24,10 +24,11 @@ import com.smt.sitebuilder.security.SBUserRole;
  * @since Feb 21, 2017
  ****************************************************************************/
 public class SmarttrakRoleVO extends SBUserRole {
-
-	private transient Logger log = Logger.getLogger(SmarttrakRoleVO.class);
-
 	private static final long serialVersionUID = 5759752076778089016L;
+
+	private boolean isFdAuth;
+	private boolean isGaAuth;
+	private boolean isMktAuth;
 
 	/**
 	 * the WC role VO this object decorates.
@@ -35,29 +36,9 @@ public class SmarttrakRoleVO extends SBUserRole {
 	private SBUserRole wcRole;
 
 	/**
-	 * the permissions we load from Smarttrak for the user's ACCOUNT.  Used to enforce access rights.
+	 * the section permissions loaded for Smarttrak for the user's ACCOUNT.  Used to enforce access rights.
 	 */
 	private List<PermissionVO> accountRoles;
-
-
-	public SmarttrakRoleVO() {
-		super();
-	}
-
-	/**
-	 * @param siteId
-	 * @param roleName
-	 */
-	public SmarttrakRoleVO(String siteId, String roleName) {
-		super(siteId, roleName);
-	}
-
-	/**
-	 * @param siteId
-	 */
-	public SmarttrakRoleVO(String siteId) {
-		super(siteId);
-	}
 
 	/**
 	 * @param role
@@ -71,18 +52,70 @@ public class SmarttrakRoleVO extends SBUserRole {
 		return accountRoles;
 	}
 
-	public void setAccountRoles(List<Node> nodes) {
-		List<PermissionVO> perms = new ArrayList<>(nodes.size());
+	/**
+	 * sets the section permissions for the user's account into their role vo.
+	 * package access modifier - only SmarttrakRoleModule should be setting this value
+	 * @param nodes
+	 */
+	void setAccountRoles(List<Node> nodes) {
+		accountRoles = new ArrayList<>();
 		for (Node n : nodes) {
 			PermissionVO vo = (PermissionVO) n.getUserObject();
 			//we only care about level 4 nodes, which is where permissions are set.  Also toss any VOs that don't have permissions in them
 			if (n.getDepthLevel() != 4 || vo.isUnauthorized()) continue;
-			perms.add(vo);
+			vo.setHierarchyToken(n.getFullPath()); //transpose the value compiled in SmartTrakRoleModule
+			//System.err.println("user authorized for hierarchy: " + vo.getHierarchyToken())
+			accountRoles.add(vo);
 		}
-		log.debug("loaded " + perms.size() + " account permissions into the roleVO");
 	}
 
+	public boolean isFdAuthorized() {
+		return isFdAuth;
+	}
 
+	/**
+	 * the user is authorized for FD if either their personal record or the account's record is authorized
+	 * package access modifier - only SmarttrakRoleModule should be setting this value
+	 * @param userAuth
+	 * @param acctAuth
+	 */
+	void setFdAuthorized(int userAuth, int acctAuth) {
+		this.isFdAuth = userAuth == 1 || acctAuth == 1;
+	}
+
+	public boolean isGaAuthorized() {
+		return isGaAuth;
+	}
+
+	/**
+	 * the user is authorized for FD if either their personal record or the account's record is authorized
+	 * package access modifier - only SmarttrakRoleModule should be setting this value
+	 * @param userAuth
+	 * @param acctAuth
+	 */
+	void setGaAuthorized(int userAuth, int acctAuth) {
+		this.isGaAuth = userAuth == 1 || acctAuth == 1;
+	}
+
+	public boolean isMktAuthorized() {
+		return isMktAuth;
+	}
+
+	/**
+	 * the user is authorized for FD if either their personal record or the account's record is authorized
+	 * package access modifier - only SmarttrakRoleModule should be setting this value
+	 * @param userAuth
+	 * @param acctAuth
+	 */
+	void setMktAuthorized(int userAuth, int acctAuth) {
+		this.isMktAuth = userAuth == 1 || acctAuth == 1;
+	}
+
+	
+
+	/**************************************************************
+	 * 		BELOW METHOD ARE OVERLOADED FOR THE DECORATOR PATTERN   *
+	 **************************************************************/
 
 	@Override
 	public String toString() {

@@ -2,6 +2,9 @@ package com.biomed.smarttrak.security;
 
 //JDK
 import java.util.Map;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 // SMTBaseLibs 2.0
 import com.siliconmtn.security.AuthorizationException;
@@ -52,34 +55,91 @@ public class SmartTRAKRoleModule extends DBRoleModule {
 	@Override
 	public SBUserRole getUserRole(String profileId, String siteId) throws AuthorizationException {
 		SmarttrakRoleVO role = new SmarttrakRoleVO(super.getUserRole(profileId, siteId));
-		loadSmarttrakAccountPermissions(role);
+		loadSmarttrakRoles(role);
 		return role;
 	}
 
 
 	/**
+	 * facades the calls we need to make to load account, user, and ACL permissions
 	 * @param role
 	 * @throws AuthorizationException 
 	 */
-	protected void loadSmarttrakAccountPermissions(SmarttrakRoleVO role) throws AuthorizationException {
+	protected void loadSmarttrakRoles(SmarttrakRoleVO role) throws AuthorizationException {
 		UserVO user = (UserVO) getAttribute(Constants.USER_DATA);
 		ActionRequest req = (ActionRequest) getAttribute(HTTP_REQUEST);
 
 		if (user == null || StringUtil.isEmpty(user.getAccountId()) || req == null)
-			throw new AuthorizationException("invalid data, could not run");
+			throw new AuthorizationException("invalid data, could not load roles");
 
 		req.setParameter(AccountAction.ACCOUNT_ID, user.getAccountId());
 
+		loadAccountPermissions(user, role);
+		loadSectionPermissions(req, role);
+	}
+
+
+	/**
+	 * calls for the AccountVO to be loaded, so we can see which features are enabled.
+	 * @param req
+	 * @param role
+	 * @throws AuthorizationException
+	 */
+	protected void loadAccountPermissions(UserVO user, SmarttrakRoleVO role) throws AuthorizationException {
+		SMTDBConnection dbConn = (SMTDBConnection)getAttribute(DB_CONN);
+		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(100);
+		sql.append("select fd_auth_flg, ga_auth_flg, mkt_auth_flg from ").append(schema);
+		sql.append("BIOMEDGPS_ACCOUNT where account_id=?");
+		log.debug(sql);
+
+		int fdAuth = 0, gaAuth = 0, mktAuth = 0;
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, user.getAccountId());
+			ResultSet rs = ps.executeQuery();
+			if (rs.next()) {
+				//determine if the user is authorized for each tool, either at the account level or user (personal) level
+				fdAuth = rs.getInt("fd_auth_flg");
+				gaAuth = rs.getInt("ga_auth_flg");
+				mktAuth = rs.getInt("mkt_auth_flg");
+			}
+
+		} catch (SQLException sqle) {
+			throw new AuthorizationException(sqle);
+		}
+
+		//set the 3 section permissions into the role VO
+		role.setFdAuthorized(user.getFdAuthFlg(), fdAuth);
+		role.setGaAuthorized(user.getGaAuthFlg(), gaAuth);
+		role.setMktAuthorized(user.getMktAuthFlg(), mktAuth);
+	}
+
+
+	/**
+	 * loads the permission matrix (based on hierarchy sections) for the user's account
+	 * @param req
+	 * @param role
+	 * @throws AuthorizationException
+	 */
+	protected void loadSectionPermissions(ActionRequest req, SmarttrakRoleVO role) throws AuthorizationException {
 		AccountPermissionAction apa = new AccountPermissionAction();
 		apa.setDBConnection((SMTDBConnection)getAttribute(DB_CONN));
 		apa.setAttributes(getInitVals());
 		try {
+			//retrieve the permission tree for this account
 			apa.retrieve(req);
 			ModuleVO mod = (ModuleVO) apa.getAttribute(Constants.MODULE_DATA);
-			Tree perms = (Tree) mod.getActionData();
-			role.setAccountRoles(perms.preorderList());
+			Tree t = (Tree) mod.getActionData();
+
+			//iterate the nodes and attach parent level tokens to each, at each level.  spine.  spine~bone.  spine~bone~fragment.  etc.
+			SecurityController.buildNodePaths(t.getRootNode());
+
+			//attach the list of permissions to the user's role object
+			role.setAccountRoles(t.preorderList());
+
 		} catch (Exception e) {
 			throw new AuthorizationException("could not load Smartrak permissions", e);
 		}
+		log.debug("loaded " + role.getAccountRoles().size() + " account permissions into the roleVO");
 	}
 }

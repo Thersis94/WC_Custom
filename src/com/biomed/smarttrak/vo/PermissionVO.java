@@ -25,6 +25,7 @@ public class PermissionVO extends SectionVO {
 	private boolean updatesAuth;
 	private boolean fdAuth;
 	private boolean gaAuth;
+	private String roleToken;
 
 	/**
 	 * no-args constructor
@@ -48,7 +49,8 @@ public class PermissionVO extends SectionVO {
 	 * @throws SQLException 
 	 */
 	public PermissionVO(ResultSet rs) throws SQLException {
-		super(rs);
+		this();
+		setData(rs); //setData locally will call to the superclass for us
 	}
 
 	/**
@@ -118,8 +120,8 @@ public class PermissionVO extends SectionVO {
 		else if (value.startsWith("ga~")) setGaAuth(true);
 		else if (value.startsWith("updates~")) setUpdatesAuth(true);
 		else if (value.startsWith("browse~")) setBrowseAuth(true);
-
 	}
+
 
 	/**
 	 * a helper used during login (RoleModule) to "toss out" this VO if there are no permissions set in it.
@@ -127,5 +129,13 @@ public class PermissionVO extends SectionVO {
 	 */
 	public boolean isUnauthorized() {
 		return !isBrowseAuth() && !isUpdatesAuth() && !isFdAuth() && !isGaAuth();
+	}
+
+	public String getHierarchyToken() {
+		return roleToken;
+	}
+
+	public void setHierarchyToken(String roleToken) {
+		this.roleToken = roleToken;
 	}
 }

@@ -199,7 +199,7 @@ public abstract class AbstractTreeAction extends SBActionAdapter {
 			SectionVO p2 = (SectionVO) o2.getUserObject();
 			if (p1 == null || p2 == null) return 0;
 
-			return p1.getOrderNo().compareTo(p2.getOrderNo());
+			return p1.getOrderNo() - p2.getOrderNo();
 		}
 	}
 }
