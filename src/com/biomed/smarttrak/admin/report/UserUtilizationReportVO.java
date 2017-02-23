@@ -230,7 +230,7 @@ public class UserUtilizationReportVO extends AbstractSBReportVO {
 	 */
 	protected HashMap<String, String> getHeader() {
 
-		HashMap<String, String> headerMap = new LinkedHashMap<String, String>();
+		HashMap<String, String> headerMap = new LinkedHashMap<>();
 		headerMap.put(NAME,"");
 		headerMap.put(TITLE,"");
 		headerMap.put(EMAIL,"");

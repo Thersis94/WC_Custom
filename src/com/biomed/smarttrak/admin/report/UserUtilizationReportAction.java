@@ -111,7 +111,7 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 			}
 			
 			ResultSet rs = ps.executeQuery();
-			return parseResults(rs,se);
+			return parseAccountsUsersResults(rs,se);
 		} catch (Exception e) {
 			log.error("Error retrieving accounts users, ", e);
 			return new LinkedHashMap<>();
@@ -126,7 +126,7 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 	 * @return
 	 * @throws SQLException
 	 */
-	protected Map<AccountVO,List<UserVO>> parseResults(ResultSet rs, 
+	protected Map<AccountVO,List<UserVO>> parseAccountsUsersResults(ResultSet rs, 
 			StringEncrypter se) throws SQLException {
 		
 		String prevAcct = null;
@@ -143,7 +143,9 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 
 			currAcct = rs.getString("account_id");
 			currPid = rs.getString("profile_id");
-
+			if (currAcct == null || currPid == null)
+				continue;
+			
 			if (! currAcct.equalsIgnoreCase(prevAcct)) {
 				// first time through or changed accounts
 
