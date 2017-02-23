@@ -104,7 +104,9 @@ public class FinancialDashVO extends SBModuleVO {
 				row = new FinancialDashDataRowVO(rs);
 				row.setAncestry(tree);
 
-				this.addRow(row);
+				if (!row.isInactive()) {
+					addRow(row);
+				}
 			}
 		} catch (SQLException sqle) {
 			log.error("Unable to set financial dashboard row data", sqle);
