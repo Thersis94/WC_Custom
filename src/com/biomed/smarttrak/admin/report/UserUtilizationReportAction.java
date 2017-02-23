@@ -147,7 +147,7 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 			if (! currAcct.equalsIgnoreCase(prevAcct)) {
 				// first time through or changed accounts
 
-				if (acct != null && users != null) {
+				if (acct != null) {
 					users.add(user);
 					accounts.put(acct, users);
 				}
@@ -342,12 +342,11 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 			prevId = currId;
 			prevMonthNo = currMonthNo;
 		}
-		
+
 		// pick up the last record/user.
-		if (userMonths != null) {
-			userMonths.put(prevMonthNo, monthPageCnt);
-			userPageViewsByMonth.put(prevId,userMonths);
-		}
+		userMonths.put(prevMonthNo, monthPageCnt);
+		userPageViewsByMonth.put(prevId,userMonths);
+
 		return userPageViewsByMonth;
 	}
 	

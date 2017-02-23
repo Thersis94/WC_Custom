@@ -33,7 +33,7 @@ import com.smt.sitebuilder.action.AbstractSBReportVO;
 public class UserUtilizationReportVO extends AbstractSBReportVO {
 
 	private Map<AccountVO, List<UserVO>> accounts;
-	private static final String reportTitle = "Activity Rollup Report";
+	private static final String REPORT_TITLE = "Activity Rollup Report";
 	private static final String MONTH = "MONTH";
 	private static final String NAME = "NAME";
 	private static final String TITLE = "TITLE";
@@ -72,7 +72,7 @@ public class UserUtilizationReportVO extends AbstractSBReportVO {
 		log.debug("generateReport...");
 
 		ExcelReport rpt = new ExcelReport(getHeader());
-		rpt.setTitleCell(reportTitle);
+		rpt.setTitleCell(REPORT_TITLE);
 
 		List<Map<String, Object>> rows = new ArrayList<>(accounts.size() * 5);
 		rows = generateDataRows(rows);
@@ -127,15 +127,8 @@ public class UserUtilizationReportVO extends AbstractSBReportVO {
 
 				// add monthly counts to user's row
 				counts = (Map<Integer,Integer>)user.getUserExtendedInfo();
-				int mCnt = 0;
 				for (int i = 0; i < HEADER_MONTHS_SIZE; i++) {
-					if (counts.get(i) != null) {
-						mCnt = counts.get(i);
-						userTotal += mCnt;
-						updateAccountTotal(acctTotals,i,mCnt);
-					}
-					row.put(MONTH+i, mCnt);
-					mCnt = 0;
+					userTotal += manageTotals(acctTotals,row,i,counts.get(i));
 				}
 				row.put(TOTAL, userTotal);
 
@@ -148,6 +141,17 @@ public class UserUtilizationReportVO extends AbstractSBReportVO {
 			rows.add(formatAccountFooter(a.getAccountName(), acctTotals));
 		}
 		return rows;
+	}
+	
+	protected int manageTotals(Map<Integer,Integer>acctTotals, 
+			Map<String,Object> currRow, Integer currPageCount, int currIdx) {
+		int mCnt = 0;
+		if (currPageCount != null) {
+			mCnt = currPageCount;
+			updateAccountTotal(acctTotals,currIdx,mCnt);
+		}
+		currRow.put(MONTH+currIdx,mCnt);
+		return mCnt;
 	}
 
 	protected void updateAccountTotal(Map<Integer,Integer> acctTotals, int index, int countVal) {
