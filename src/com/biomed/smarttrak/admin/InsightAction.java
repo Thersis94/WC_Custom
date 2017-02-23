@@ -179,7 +179,7 @@ public class InsightAction extends SBActionAdapter {
 				}
 				
 				//Add to Solr if published
-				if(InsightStatusCd.R.toString().equals(u.getStatusCd())) {
+				if(InsightStatusCd.P.toString().equals(u.getStatusCd())) {
 					saveToSolr(u);
 				}
 			}
