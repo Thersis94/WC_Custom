@@ -119,7 +119,7 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 		if(vo != null) {
 			this.setCreatorProfileId(StringUtil.checkVal(req.getParameter("creatorProfileId"), vo.getProfileId()));
 		}
-		setInsightId(req.getParameter("insightId"));
+		setInsightId(req.getParameter("insightsId"));
 		setTitleTxt(req.getParameter("titleTxt"));
 		setTypeCd(Convert.formatInteger(req.getParameter("typeCd")));
 		setAbstractTxt(req.getParameter("abstractTxt"));

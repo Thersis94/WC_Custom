@@ -170,19 +170,58 @@ public class InsightAction extends SBActionAdapter {
 			if (isDelete) {
 				db.delete(u);
 			} else {
-				db.save(u);
-
-				setInsightIdOnInsert(u, db);
+				if (req.hasParameter("listSave")){
+					updateFeatureOrder(u);
+				}else {
+					saveInsight(db, u);
+				}
 				
-				//Save Insight Sections.
-				saveSections(u);
-
 				//Add to Solr if published
 				if(InsightStatusCd.R.toString().equals(u.getStatusCd())) {
 					saveToSolr(u);
 				}
 			}
 		} catch (Exception e) {
+			throw new ActionException(e);
+		}
+	}
+
+	/**
+	 * uses db util to do a full update or insert on the passed vo
+	 * @param u 
+	 * @param db 
+	 * @throws Exception 
+	 * 
+	 */
+	private void saveInsight(DBProcessor db, InsightVO u) throws Exception {
+		db.save(u);
+
+		setInsightIdOnInsert(u, db);
+		
+		//Save Insight Sections.
+		saveSections(u);
+		
+	}
+
+	/**
+	 * does a quick update issued from the list view.
+	 * @param u
+	 * @throws ActionException 
+	 */
+	private void updateFeatureOrder(InsightVO u) throws ActionException {
+		StringBuilder sb = new StringBuilder(50);
+		sb.append("update ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_insight ");
+		sb.append("set FEATURED_FLG= ?, ORDER_NO = ? ");
+		sb.append("where insight_id = ? ");
+		
+		log.debug(" sql " + sb.toString() +"|"+ u.getFeaturedFlg() +"|"+u.getOrderNo()+"|"+u.getInsightId());
+		
+		try(PreparedStatement ps = dbConn.prepareStatement(sb.toString())) {
+			ps.setInt(1, u.getFeaturedFlg());
+			ps.setInt(2, u.getOrderNo());
+			ps.setString(3,u.getInsightId());
+			ps.executeUpdate();
+		} catch (SQLException e) {
 			throw new ActionException(e);
 		}
 	}
