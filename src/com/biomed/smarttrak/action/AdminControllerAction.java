@@ -30,6 +30,7 @@ import com.siliconmtn.util.StringUtil;
 
 // WC core
 import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.smt.sitebuilder.action.solr.management.SolrSynonymAction;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -193,6 +194,9 @@ public class AdminControllerAction extends SimpleActionAdapter {
 				break;
 			case "reports":
 				action = new ReportFacadeAction();
+				break;
+			case "synonyms":
+				action = new SolrSynonymAction();
 				break;
 			default:
 				throw new ActionException("unknown action type:" + actionType);
