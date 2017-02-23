@@ -48,28 +48,29 @@ import com.smt.sitebuilder.security.SecurityController;
  ****************************************************************************/
 public class AdminControllerAction extends SimpleActionAdapter {
 
+	protected static final String ACTION_TYPE = "actionType"; //reqParam this class executes around
+
 	// application constants  - these could be moved to sb_config if subject to change
 	public static final String BIOMED_ORG_ID = "BMG_SMARTTRAK"; 
 	public static final String PUBLIC_SITE_ID = "BMG_SMARTTRAK_1";
 	public static final String STAFF_ROLE_ID = "3eef678eb39e87277f000101dfd4f140";
 	public static final String REGISTRATION_GRP_ID = "ea884793b2ef163f7f0001011a253456";
 
+	// All logged-in users are Registered Users or Site Administrators.  
+	// Roles, as they apply to the site's section hierarchy, are administered by the SecurityController
 	public static final int DEFAULT_ROLE_LEVEL = SecurityController.PUBLIC_REGISTERED_LEVEL;
-	
+
+	/*
+	 * 'sections' of the SmartTRAK website - used for Solr as well as Recently Viewed/Favorites
+	 */
 	public enum Section {
 		MARKET("market/"), PRODUCT("products/"), COMPANY("companies/");
 
 		private String path;
-
-		Section(String path) {
-			this.path = path;
-		}
-
-		public String getURLToken() {
-			return path;
-		}
+		Section(String path) { this.path = path; }
+		public String getURLToken() { return path; }
 	}
-	
+
 
 	public AdminControllerAction() {
 		super();
@@ -79,6 +80,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		super(arg0);
 	}
 
+
 	@Override
 	public void list(ActionRequest req) throws ActionException {
 		//pass to superclass for portlet registration (WC admintool)
@@ -86,11 +88,11 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		super.retrieve(req);
 	}
 
+
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		String actionType = req.getParameter("actionType");
+		String actionType = req.getParameter(ACTION_TYPE);
 		String msg;
-
 		try {
 			ActionInterface action = loadAction(actionType);
 
@@ -123,7 +125,12 @@ public class AdminControllerAction extends SimpleActionAdapter {
 
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		loadAction(req.getParameter("actionType")).retrieve(req);
+		if (req.hasParameter(ACTION_TYPE)) {
+			loadAction(req.getParameter(ACTION_TYPE)).retrieve(req);
+		} else {
+			//go to view, display the content from the WYSWIYG in /admintool
+			super.retrieve(req);
+		}
 	}
 
 
@@ -134,10 +141,6 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	 * @throws ActionException
 	 */
 	private ActionInterface loadAction(String actionType) throws ActionException {
-		/*
-		 * TODO add some means of verifying user role/permission before executing
-		 * Actions.  Need to protect Admin functionality from the public side.
-		 */
 		ActionInterface action;
 		switch (StringUtil.checkVal(actionType)) {
 			case "hierarchy":
