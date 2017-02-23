@@ -143,9 +143,7 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 
 			currAcct = rs.getString("account_id");
 			currPid = rs.getString("profile_id");
-			if (currAcct == null || currPid == null)
-				continue;
-			
+
 			if (! currAcct.equalsIgnoreCase(prevAcct)) {
 				// first time through or changed accounts
 
@@ -166,18 +164,22 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 				user = formatNextUser(se,rs,currPid);
 				
 			} else {
-				// same account, check for user change
+				// ensure non-null objects.
+				if (users == null) users = new ArrayList<>();
+				if (user == null) user = formatNextUser(se,rs,currPid);
+				
+				// check for user change
 				if (! currPid.equalsIgnoreCase(prevPid)) {
 					// changed users, add prev user to list
 					users.add(user);
 					// init new user
 					user = formatNextUser(se,rs,currPid);
-				} else {
-					// same user, just add reg field value
-					user.addAttribute(rs.getString("register_field_id"), rs.getString("value_txt"));
 				}
 			}
-
+			
+			// add registration field attribute here.
+			user.addAttribute(rs.getString("register_field_id"), rs.getString("value_txt"));
+			
 			// capture values for comparison
 			prevAcct = currAcct;
 			prevPid = currPid;
@@ -200,7 +202,6 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 			user.setLastName(se.decrypt(rs.getString("last_nm")));
 			user.setEmailAddress(se.decrypt(rs.getString("email_address_txt")));
 			user.setMainPhone(se.decrypt(rs.getString("phone_number_txt")));
-			user.addAttribute(rs.getString("register_field_id"), rs.getString("value_txt"));
 		} catch (Exception e) {
 			log.error("Error formatting user, " + profileId + ", " + e.getMessage());
 		}
