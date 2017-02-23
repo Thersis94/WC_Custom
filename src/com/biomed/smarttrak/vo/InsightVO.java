@@ -37,7 +37,7 @@ import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 
 
-	public enum InsightStatusCd {N("New"), R("Reviewed"), A("Archived");
+	public enum InsightStatusCd {P("Published"), D("Deleted"), E("Edit");
 
 	private String statusName;
 	InsightStatusCd(String statusName) {
@@ -68,10 +68,21 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 	private Date updateDt;
 	
 	public enum InsightType {
-		PERSPECTIVE(10, "Perspective"),
-		MARKET_RECAP(20, "Market Recap"),
-		MARKET_OUTLOOK(25, "Market Outlook"),
-		STARTUP_SPOTLIGHT(30, "Start-up Spotlight");
+		CLINICAL(12, "Clinical"),
+		COMPLIANCE(11, "Compliance"),
+		HEALTHCARE_REFORM(13,"Healthcare Reform"),
+		INSIGHTS(4, "Insights"),
+		INTELLECTUAL_PROPERTY(14,"Intellectual Property"),
+		MARKET_ANALYSIS(5, "Market Analysis"),
+		MARKET_OUTLOOK(9, "Market Outlook"),
+		MARKET_RECAP(10, "Market Recap"),
+		PERSPECTIVE(1, "Perspective"),
+		REGULATORY(8, "Regulatory"),
+		REIMBURSEMENT(7, "Reimbursement"),
+		SMARTTRAK_VIDEO_TIPS(15, "SmartTRAK Video Tips"),
+		STARTUP_SPOTLIGHT(2, "Start-up Spotlight"),
+		UC_VIEWPOINT(3, "U.C. Viewpoints"),
+		UNCATIGORIZED(6, "Uncatigorized");
 
 		private int val;
 		private String text;
@@ -135,7 +146,9 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 		setOrderNo(Convert.formatInteger(req.getParameter("orderNo")));
 		setPublishDt(Convert.formatDate(Convert.DATE_SLASH_PATTERN, req.getParameter("publishDt")));	
 		
-		if(InsightStatusCd.R.toString().equals(statusCd)) {
+		//only want to see the publish date to today if the status is publish and the 
+		//date feild is null
+		if(InsightStatusCd.P.toString().equals(statusCd) && publishDt == null) {
 			setPublishDt(new Date());
 		}
 		if(req.hasParameter("sectionId")) {
