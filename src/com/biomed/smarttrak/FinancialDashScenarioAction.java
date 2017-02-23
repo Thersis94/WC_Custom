@@ -6,10 +6,13 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.biomed.smarttrak.vo.TeamVO;
+import com.biomed.smarttrak.vo.UserVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.http.session.SMTSession;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -26,6 +29,13 @@ import com.smt.sitebuilder.common.constants.Constants;
 
 public class FinancialDashScenarioAction extends SBActionAdapter {
 
+	public static final String PRIVATE = "private";
+	
+	/**
+	 * P = Private, T = Team, L = Locked;
+	 */
+	private enum StatusLevel {P, T, L}
+	
 	public FinancialDashScenarioAction() {
 		super();
 	}
@@ -38,29 +48,40 @@ public class FinancialDashScenarioAction extends SBActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 
-		// TODO: Where do I get the team/user values from?
-		List<FinancialDashScenarioVO> scenarios = getScenarios("3", "6614");
+		SMTSession ses = req.getSession();
+		UserVO vo = (UserVO) ses.getAttribute(Constants.USER_DATA);
+		
+		List<FinancialDashScenarioVO> scenarios = getScenarios(vo.getTeams(), vo.getUserId());
 		this.putModuleData(scenarios);
 	}
 	
 	/**
-	 * Gets the scenarios available to the user
+	 * Gets the scenarios available to the user.
 	 * 
 	 * @param scenarios
 	 */
-	private List<FinancialDashScenarioVO> getScenarios(String teamId, String userId) {
+	private List<FinancialDashScenarioVO> getScenarios(List<TeamVO> teams, String userId) {
 		List<FinancialDashScenarioVO> scenarios = new ArrayList<>();
-		boolean getAll = teamId == null && userId == null;
+		boolean getAll = teams == null && userId == null;
 		
-		String sql = getScenarioSql(getAll);
+		// Teams could be null from the overloaded method below
+		int teamsCount = 0;
+		if (teams != null) {
+			teamsCount = teams.size();
+		}
+
+		String sql = getScenarioSql(getAll, teamsCount);
 		FinancialDashScenarioVO svo = null;
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			int idx = 0;
 			
 			if (!getAll) {
-				ps.setString(++idx, teamId);
 				ps.setString(++idx, userId);
+				
+				for (TeamVO team : teams) {
+					ps.setString(++idx, team.getTeamId());
+				}
 			}
 			
 			ResultSet rs = ps.executeQuery();
@@ -76,7 +97,8 @@ public class FinancialDashScenarioAction extends SBActionAdapter {
 	}
 	
 	/**
-	 * Gets all of the existing scenarios
+	 * Gets all of the existing scenarios, for data updates & such.
+	 * This should never be used to display a list to a user!!
 	 * 
 	 * @return
 	 */
@@ -89,7 +111,7 @@ public class FinancialDashScenarioAction extends SBActionAdapter {
 	 * 
 	 * @return
 	 */
-	private String getScenarioSql(boolean getAll) {
+	private String getScenarioSql(boolean getAll, int teamsCount) {
 		String custom = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(200);
 		
@@ -97,7 +119,17 @@ public class FinancialDashScenarioAction extends SBActionAdapter {
 		sql.append("from ").append(custom).append("BIOMEDGPS_FD_SCENARIO s ");
 		
 		if (!getAll) {
-			sql.append("where team_id = ? or user_id = ? ");
+			sql.append("where user_id = ? ");
+			
+			for (int i = 1; i <= teamsCount; i++) {
+				if (i == 1) {
+					sql.append("or team_id in (? ");
+				} else if (i < teamsCount) {
+					sql.append(",? ");
+				} else {
+					sql.append(",?) ");
+				}
+			}
 		}
 		
 		sql.append("order by scenario_nm ");
@@ -108,10 +140,29 @@ public class FinancialDashScenarioAction extends SBActionAdapter {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		super.build(req);
-		String scenarioName = StringUtil.checkVal(req.getParameter("scenarioName"));
-		String scenarioRole = StringUtil.checkVal(req.getParameter("scenarioRole"));
-		String updateType = StringUtil.checkVal(req.getParameter("type")); 
-
-		log.debug("Editing Scenario: Name - " + scenarioName + " | Role - " + scenarioRole + " | Update Type: " + updateType);
+		
+		FinancialDashScenarioVO svo = new FinancialDashScenarioVO(req);
+		DBProcessor dbp = new DBProcessor(dbConn, (String) attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		
+		SMTSession ses = req.getSession();
+		UserVO uvo = (UserVO) ses.getAttribute(Constants.USER_DATA);
+		svo.setUserId(uvo.getUserId());
+		
+		if (svo.getTeamId().equals(PRIVATE)) {
+			svo.setTeamId(null);
+			svo.setStatusFlg(StatusLevel.P.toString());
+		} else {
+			svo.setStatusFlg(StatusLevel.T.toString());
+		}
+		
+		try {
+			if (req.hasParameter("isDelete")) {
+				dbp.delete(svo);
+			} else {
+				dbp.save(svo);
+			}
+		} catch (Exception e) {
+			throw new ActionException("Couldn't update/create scenario record.", e);
+		}
 	}
 }
