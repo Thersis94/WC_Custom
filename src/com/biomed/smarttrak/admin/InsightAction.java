@@ -7,9 +7,9 @@ import java.util.List;
 
 import com.biomed.smarttrak.admin.user.HumanNameIntfc;
 import com.biomed.smarttrak.admin.user.NameComparator;
-import com.biomed.smarttrak.vo.UpdatesVO;
-import com.biomed.smarttrak.vo.UpdatesXRVO;
-import com.biomed.smarttrak.vo.UpdatesVO.UpdateStatusCd;
+import com.biomed.smarttrak.vo.InsightVO;
+import com.biomed.smarttrak.vo.InsightVO.InsightStatusCd;
+import com.biomed.smarttrak.vo.InsightXRVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -30,40 +30,13 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
  * 
- * @author Billy Larsen
+ * @author Ryan Riker
  * @version 1.0
  * @since Feb 14, 2017
  ****************************************************************************/
 public class InsightAction extends SBActionAdapter {
-	protected static final String UPDATE_ID = "updateId"; //req param
+	protected static final String INSIGHT_ID = "insightsId"; //req param
 	public static final String ROOT_NODE_ID = "MASTER_ROOT";
-
-	public enum UpdateType {
-		MARKET(12, "Market"),
-		REVENUES(15, "Revenues"),
-		NEW_PRODUCTS(17, "New Products"),
-		DEALS_FINANCING(20, "Deals/Financing"),
-		CLINICAL_REGULATORY(30, "Clinical/Regulatory"),
-		PATENTS(35, "Patents"),
-		REIMBURSEMENT(37, "Reimbursement"),
-		ANNOUNCEMENTS(38, "Announcements"),
-		STUDIES(40, "Studies");
-
-		private int val;
-		private String text;
-
-		UpdateType(int val, String text) {
-			this.val = val;
-			this.text = text;
-		}
-
-		public int getVal() {
-			return this.val;
-		}
-		public String getText() {
-			return this.text;
-		}
-	}
 
 	public InsightAction() {
 		super();
@@ -74,51 +47,60 @@ public class InsightAction extends SBActionAdapter {
 	}
 
 	public void retrieve(ActionRequest req) throws ActionException {
-		//TODO whole class copied directly from updates will need altered for insights
+		log.debug("insight retrieve called");
 		
 		//loadData gets passed on the ajax call.  If we're not loading data simply go to view to render the bootstrap 
 		//table into the view (which will come back for the data).
-		if (!req.hasParameter("loadData") && !req.hasParameter(UPDATE_ID) ) return;
+		if (!req.hasParameter("loadData") && !req.hasParameter(INSIGHT_ID) ) return;
 
-		String updateId = req.hasParameter(UPDATE_ID) ? req.getParameter(UPDATE_ID) : null;
+		String insightId = req.hasParameter(INSIGHT_ID) ? req.getParameter(INSIGHT_ID) : null;
 		String statusCd = req.getParameter("statusCd");
 		String typeCd = req.getParameter("typeCd");
 		String dateRange = req.getParameter("dateRange");
-		List<Object> updates = getUpdates(updateId, statusCd, typeCd, dateRange);
+		List<Object> insights = getInsights(insightId, statusCd, typeCd, dateRange);
 
-		decryptNames(updates);
+		
+		
+		//gets the staff list
+		AccountAction aa = new AccountAction();
+		aa.setActionInit(actionInit);
+		aa.setAttributes(attributes);
+		aa.setDBConnection(dbConn);
+		aa.loadManagerList(req, (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA));
+		
+		decryptNames(insights);
 
-		putModuleData(updates);
+		putModuleData(insights);
 	}
 
-	public List<Object> getUpdates(String updateId, String statusCd, String typeCd, String dateRange) {
+	public List<Object> getInsights(String insightId, String statusCd, String typeCd, String dateRange) {
 
 		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
-		String sql = formatRetrieveQuery(updateId, statusCd, typeCd, dateRange, schema);
+		String sql = formatRetrieveQuery(insightId, statusCd, typeCd, dateRange, schema);
 
 		List<Object> params = new ArrayList<>();
-		if (!StringUtil.isEmpty(updateId)) params.add(updateId);
+		if (!StringUtil.isEmpty(insightId)) params.add(insightId);
 		if (!StringUtil.isEmpty(statusCd)) params.add(statusCd);
 		if (!StringUtil.isEmpty(typeCd)) params.add(Convert.formatInteger(typeCd));
 
 		DBProcessor db = new DBProcessor(dbConn, schema);
-		List<Object>  updates = db.executeSelect(sql, params, new UpdatesVO());
-		log.debug("loaded " + updates.size() + " updates");
-		return updates;
+		List<Object>  insights = db.executeSelect(sql, params, new InsightVO());
+		log.debug("loaded " + insights.size());
+		return insights;
 	}
 
 	/**
 	 * Formats the account retrieval query.
 	 * @return
 	 */
-	public static String formatRetrieveQuery(String updateId, String statusCd, String typeCd, String dateRange, String schema) {
+	public static String formatRetrieveQuery(String insightId, String statusCd, String typeCd, String dateRange, String schema) {
 		StringBuilder sql = new StringBuilder(400);
 		sql.append("select a.*, p.first_nm, p.last_nm, b.section_id ");
-		sql.append("from ").append(schema).append("biomedgps_update a ");
+		sql.append("from ").append(schema).append("biomedgps_insight a ");
 		sql.append("inner join profile p on a.creator_profile_id=p.profile_id ");
-		sql.append("left outer join ").append(schema).append("biomedgps_update_section b ");
-		sql.append("on a.update_id=b.update_id where 1=1 ");
-		if (!StringUtil.isEmpty(updateId)) sql.append("and a.update_id=? ");
+		sql.append("left outer join ").append(schema).append("biomedgps_insight_section b ");
+		sql.append("on a.insight_id=b.insight_id where 1=1 ");
+		if (!StringUtil.isEmpty(insightId)) sql.append("and a.insight_id=? ");
 		if (!StringUtil.isEmpty(statusCd)) sql.append("and a.status_cd=? ");
 		if (!StringUtil.isEmpty(typeCd)) sql.append("and a.type_cd=? ");
 		if (!StringUtil.isEmpty(dateRange)) {
@@ -136,7 +118,7 @@ public class InsightAction extends SBActionAdapter {
 	}
 
 	/**
-	 * loop and decrypt owner names, which came from the profile table
+	 * loop and de-crypt owner names, which came from the profile table
 	 * @param accounts
 	 */
 	@SuppressWarnings("unchecked")
@@ -150,7 +132,7 @@ public class InsightAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	protected void loadSections(ActionRequest req, String schema) throws ActionException {
-		ContentHierarchyAction cha = new ContentHierarchyAction(this.actionInit);
+		SectionHierarchyAction cha = new SectionHierarchyAction(this.actionInit);
 		cha.setDBConnection(dbConn);
 		cha.setAttributes(getAttributes());
 		cha.retrieve(req);
@@ -183,37 +165,49 @@ public class InsightAction extends SBActionAdapter {
 	 */
 	protected void saveRecord(ActionRequest req, boolean isDelete) throws ActionException {
 		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		UpdatesVO u = new UpdatesVO(req);
+		InsightVO u = new InsightVO(req);
 		try {
 			if (isDelete) {
 				db.delete(u);
 			} else {
 				db.save(u);
 
-				if(StringUtil.isEmpty(u.getUpdateId())) {
-					u.setUpdateId(db.getGeneratedPKId());
-					for(UpdatesXRVO uxr : u.getUpdateSections()) {
-						uxr.setUpdateId(u.getUpdateId());
-					}
-				}
-				//Save Update Sections.
+				setInsightIdOnInsert(u, db);
+				
+				//Save Insight Sections.
 				saveSections(u);
 
 				//Add to Solr if published
-				if(UpdateStatusCd.R.toString().equals(u.getStatusCd())) {
+				if(InsightStatusCd.R.toString().equals(u.getStatusCd())) {
 					saveToSolr(u);
 				}
 			}
-		} catch (InvalidDataException | DatabaseException e) {
+		} catch (Exception e) {
 			throw new ActionException(e);
 		}
 	}
 
 	/**
-	 * Save an UpdatesVO to solr.
+	 * sets the new insight vo on insert
+	 * @param db 
+	 * @param u 
+	 */
+	private void setInsightIdOnInsert(InsightVO u, DBProcessor db) {
+		
+		if(StringUtil.isEmpty(u.getInsightId())) {
+			u.setInsightId(db.getGeneratedPKId());
+			for(InsightXRVO uxr : u.getInsightSections()) {
+				uxr.setInsightId(u.getInsightId());
+			}
+		}
+		
+	}
+
+	/**
+	 * Save an InsightVO to solr.
 	 * @param u
 	 */
-	protected void saveToSolr(UpdatesVO u) {
+	protected void saveToSolr(InsightVO u) {
 		try(SolrActionUtil sau = new SolrActionUtil(getAttributes())) {
 			sau.addDocument(u);
 		} catch (Exception e) {
@@ -223,37 +217,37 @@ public class InsightAction extends SBActionAdapter {
 	}
 
 	/**
-	 * Delete old Update Sections and save new ones.
+	 * Delete old Insight Sections and save new ones.
 	 * @param u
 	 * @throws ActionException
 	 * @throws InvalidDataException
 	 * @throws DatabaseException
 	 */
-	protected void saveSections(UpdatesVO u) throws ActionException, InvalidDataException, DatabaseException {
+	protected void saveSections(InsightVO u) throws Exception {
 
-		//Delete old Update Section XRs
-		deleteSections(u.getUpdateId());
+		//Delete old Insight Section XRs
+		deleteSections(u.getInsightId());
 
 		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 
 		//Save new Sections.
-		for(UpdatesXRVO uxr : u.getUpdateSections()) {
+		for(InsightXRVO uxr : u.getInsightSections()) {
 			db.save(uxr);
 		}
 	}
 
 	/**
-	 * Delete old Update Section XRs 
-	 * @param updateId
+	 * Delete old Insight Section XRs 
+	 * @param insightId
 	 * @throws ActionException 
 	 */
-	protected void deleteSections(String updateId) throws ActionException {
+	protected void deleteSections(String insightId) throws ActionException {
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("delete from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("biomedgps_update_section where update_id = ?");
+		sql.append("biomedgps_insight_section where insight_id = ?");
 
 		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, updateId);
+			ps.setString(1, insightId);
 			ps.executeUpdate();
 		} catch (SQLException e) {
 			throw new ActionException(e);
