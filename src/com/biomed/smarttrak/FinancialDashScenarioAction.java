@@ -11,8 +11,8 @@ import com.biomed.smarttrak.vo.UserVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.http.session.SMTSession;
-import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -29,6 +29,13 @@ import com.smt.sitebuilder.common.constants.Constants;
 
 public class FinancialDashScenarioAction extends SBActionAdapter {
 
+	public static final String PRIVATE = "private";
+	
+	/**
+	 * P = Private, T = Team, L = Locked;
+	 */
+	private enum StatusLevel {P, T, L}
+	
 	public FinancialDashScenarioAction() {
 		super();
 	}
@@ -133,10 +140,29 @@ public class FinancialDashScenarioAction extends SBActionAdapter {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		super.build(req);
-		String scenarioName = StringUtil.checkVal(req.getParameter("scenarioName"));
-		String scenarioRole = StringUtil.checkVal(req.getParameter("scenarioRole"));
-		String updateType = StringUtil.checkVal(req.getParameter("type")); 
-
-		log.debug("Editing Scenario: Name - " + scenarioName + " | Role - " + scenarioRole + " | Update Type: " + updateType);
+		
+		FinancialDashScenarioVO svo = new FinancialDashScenarioVO(req);
+		DBProcessor dbp = new DBProcessor(dbConn, (String) attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		
+		SMTSession ses = req.getSession();
+		UserVO uvo = (UserVO) ses.getAttribute(Constants.USER_DATA);
+		svo.setUserId(uvo.getUserId());
+		
+		if (svo.getTeamId().equals(PRIVATE)) {
+			svo.setTeamId(null);
+			svo.setStatusFlg(StatusLevel.P.toString());
+		} else {
+			svo.setStatusFlg(StatusLevel.T.toString());
+		}
+		
+		try {
+			if (req.hasParameter("isDelete")) {
+				dbp.delete(svo);
+			} else {
+				dbp.save(svo);
+			}
+		} catch (Exception e) {
+			throw new ActionException("Couldn't update/create scenario record.", e);
+		}
 	}
 }
