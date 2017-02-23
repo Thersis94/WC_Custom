@@ -67,12 +67,38 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 		
-		// Filter out invalid requests (i.e initial page load vs. json call)
-		if (!req.hasParameter("tableType")) {
-			return;
+		FinancialDashVO dash = processRequestOptions(req);
+		
+		// Filter out financial data requests (i.e initial page load vs. json call).
+		// Financial data is only needed on a json call or report request.
+		// Default data/options are required for initial page load.
+		if (req.hasParameter("isJson") || req.hasParameter("isReport")) {
+			// Get the hierarchy at the requested level
+			List<Node> sections = this.getHierarchy(req);
+			dash.setHierarchy(sections);
+			
+			// Get the data for the table/chart/report
+			getFinancialData(dash);
 		}
 		
-		// Get the paramters required to generate the requested table
+		if (req.hasParameter("isReport")) {
+			processReport(req, dash);
+		}
+		
+		this.putModuleData(dash);
+	}
+	
+	/**
+	 * Processes the request's options needed for generating the
+	 * requested table, chart, or report. Sets defaults where needed.
+	 * 
+	 * @param req
+	 * @return
+	 */
+	protected FinancialDashVO processRequestOptions(ActionRequest req) {
+		FinancialDashVO dash = new FinancialDashVO();
+		
+		// Get the paramters required to generate the requested table/chart/report
 		String displayType = StringUtil.checkVal(req.getParameter("displayType"), FinancialDashColumnSet.DEFAULT_DISPLAY_TYPE);
 		Integer calendarYear = Convert.formatInteger(req.getParameter("calendarYear"), 2016); // TODO: How do I know which year to default to?
 		String tableType = StringUtil.checkVal(req.getParameter("tableType"), FinancialDashVO.DEFAULT_TABLE_TYPE);
@@ -83,7 +109,6 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		String companyId = StringUtil.checkVal(req.getParameter("companyId"));
 		
 		// Set the parameters so they can be used to generate the query/table
-		FinancialDashVO dash = new FinancialDashVO();
 		dash.setTableType(tableType);
 		dash.setColHeaders(displayType, calendarYear);
 		for(String countryType : countryTypes) {
@@ -94,18 +119,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		dash.setScenarioId(scenarioId);
 		dash.setCompanyId(companyId);
 		
-		// Get the hierarchy at the requested level
-		List<Node> sections = this.getHierarchy(req);
-		dash.setHierarchy(sections);
-		
-		// Get the data for the table/chart/report
-		this.getFinancialData(dash);
-		
-		if (req.hasParameter("report")) {
-			processReport(req, dash);
-		}
-		
-		this.putModuleData(dash);
+		return dash;
 	}
 	
 	/**
