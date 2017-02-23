@@ -12,6 +12,7 @@ import org.apache.solr.client.solrj.SolrQuery.ORDER;
 import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.util.BiomedProductIndexer;
 import com.biomed.smarttrak.vo.ProductExplorerReportVO;
+import com.biomed.smarttrak.vo.UserVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -223,12 +224,12 @@ public class ProductExplorer extends SBActionAdapter {
 	private void retrieveSavedQueries(ActionRequest req) throws ActionException {
 		StringBuilder sql = new StringBuilder(125);
 		sql.append("SELECT * FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("BIOMEDGPS_EXPLORER_QUERY WHERE PROFILE_ID = ? ");
+		sql.append("BIOMEDGPS_EXPLORER_QUERY WHERE USER_ID = ? ");
 
 		List<GenericVO> queries = new ArrayList<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			UserDataVO user = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
-			ps.setString(1, user.getProfileId());
+			UserVO user = (UserVO) req.getSession().getAttribute(Constants.USER_DATA);
+			ps.setString(1, user.getUserId());
 
 			ResultSet rs = ps.executeQuery();
 
@@ -488,13 +489,13 @@ public class ProductExplorer extends SBActionAdapter {
 	protected void saveQuery(ActionRequest req) throws ActionException {
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("INSERT INTO ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("BIOMEDGPS_EXPLORER_QUERY (EXPLORER_QUERY_ID, PROFILE_ID, QUERY_NM, QUERY_TXT, CREATE_DT) ");
+		sql.append("BIOMEDGPS_EXPLORER_QUERY (EXPLORER_QUERY_ID, USER_ID, QUERY_NM, QUERY_TXT, CREATE_DT) ");
 		sql.append("VALUES(?,?,?,?,?)");
 		String url = buildUrl(req);
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			UserDataVO user = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
+			UserVO user = (UserVO) req.getSession().getAttribute(Constants.USER_DATA);
 			ps.setString(1, new UUIDGenerator().getUUID());
-			ps.setString(2, user.getProfileId());
+			ps.setString(2, user.getUserId());
 			ps.setString(3, req.getParameter("queryName"));
 			ps.setString(4, url);
 			ps.setTimestamp(5, Convert.getCurrentTimestamp());
