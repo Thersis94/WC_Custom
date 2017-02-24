@@ -17,7 +17,8 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.RandomAlphaNumeric;
 import com.siliconmtn.util.StringUtil;
-
+import com.siliconmtn.util.user.HumanNameIntfc;
+import com.siliconmtn.util.user.NameComparator;
 // WebCrescendo
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.registration.RegistrationAction;
@@ -38,8 +39,6 @@ import com.smt.sitebuilder.security.UserLogin;
 import com.biomed.smarttrak.vo.UserVO;
 import com.biomed.smarttrak.vo.UserVO.RegistrationMap;
 import com.biomed.smarttrak.action.AdminControllerAction;
-import com.biomed.smarttrak.admin.user.HumanNameIntfc;
-import com.biomed.smarttrak.admin.user.NameComparator;
 
 /*****************************************************************************
  <p><b>Title</b>: AccountUserAction.java</p>
