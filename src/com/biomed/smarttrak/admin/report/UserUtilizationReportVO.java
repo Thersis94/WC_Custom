@@ -216,7 +216,7 @@ public class UserUtilizationReportVO extends AbstractSBReportVO {
 		row.put(EMAIL,"");
 		row.put(PHONE,"");
 		row.put(UPDATES,"");
-		//int acctTotal = 0;
+
 		Integer monthVal;
 		int acctTotal = 0;
 		int monthTotal = 0;

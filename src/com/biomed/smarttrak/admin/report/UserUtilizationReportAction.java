@@ -179,7 +179,6 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 			}
 			// capture previous vals for comparison
 			prevId = currId;
-			//prevMonthNo = currMonthNo;
 			prevMonth = currMonth;
 		}
 
