@@ -10,6 +10,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 // WC custom
@@ -44,12 +45,14 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class UserUtilizationReportAction extends SimpleActionAdapter {
 	
 	public static final String STATUS_NO_INACTIVE = "I";
+	private Map<Integer,String> monthKeyMap;
 		
 	/**
 	* Constructor
 	*/
 	public UserUtilizationReportAction() {
 		super();
+		monthKeyMap = new HashMap<>();
 	}
 
 	/**
@@ -57,6 +60,7 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 	*/
 	public UserUtilizationReportAction(ActionInitVO arg0) {
 		super(arg0);
+		monthKeyMap = new HashMap<>();
 	}
 
 	/**
@@ -69,18 +73,146 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 	public Map<AccountVO, List<UserVO>> retrieveUserUtilization(ActionRequest req) throws ActionException {
 		StringEncrypter se = initStringEncrypter((String)attributes.get(Constants.ENCRYPT_KEY));
 		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
-
+		String siteId = site.getAliasPathParentId() != null ? site.getAliasPathParentId() : site.getSiteId();
 		// 1. get user page views for the given time interval
-		Map<String,Map<Integer,Integer>> userPageCounts = retrieveMonthlyPageCount(site.getSiteId(), req.getParameter("dateStart"));
-
-		// 2. get accounts data
-		Map<AccountVO, List<UserVO>> accounts = retrieveAccountsUsers(se, userPageCounts, site.getSiteId());
-
-		// 3. merge
+		Map<String,Map<String,Integer>> userPageCounts = retrieveMonthlyPageCount(siteId);
+		log.debug("userPageCounts map size: " + userPageCounts.size());
+		
+		// 2. if we retrieved nothing, return emptiness.
+		if (userPageCounts.size() == 0) return new HashMap<>();
+		
+		// 3. get accounts data
+		Map<AccountVO, List<UserVO>> accounts = retrieveAccountsUsers(se, userPageCounts, siteId);
+		log.debug("accounts map size: " + accounts.size());
+		
+		// 4. merge data
 		mergeData(accounts, userPageCounts);
 
 		return accounts;
 
+	}
+	
+	/**
+	 * Retrieves the monthly page view counts for all logged in users who have accessed the given
+	 * site since the given starting date.
+	 * @param siteId
+	 * @return
+	 */
+	protected Map<String, Map<String,Integer>> retrieveMonthlyPageCount(String siteId) {
+		log.debug("retrieveMonthlyPageCount...");
+		StringBuilder sql = new StringBuilder(300);
+		sql.append("select profile_id, visit_dt from pageview_user ");
+		sql.append("where site_id = ? and profile_id is not null and visit_dt > ? ");
+		sql.append("order by profile_id, visit_dt ");
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, siteId);
+			ps.setDate(2, Convert.formatSQLDate(formatStartDate()));
+			ResultSet rs = ps.executeQuery();
+
+			return this.parseMonthlyPageCountResults(rs);
+
+		} catch (SQLException sqle) {
+			log.error("Error retrieving user page views, ", sqle);
+			return new HashMap<>();
+		}
+		
+	}
+
+	/**
+	 * Parses the monthly page count results into a Map of profile IDs that are mapped 
+	 * to another map representing the month (key = Integer) and page count for that 
+	 * month (value = Integer). The Integer keys represent the Calendar.MONTH values
+	 * (e.g. January = 0, February = 1, etc.). 
+	 * @param rs
+	 * @return
+	 * @throws SQLException
+	 */
+	protected Map<String, Map<String,Integer>> parseMonthlyPageCountResults(ResultSet rs) 
+			throws SQLException {
+		String prevId = null;
+		String currId;
+
+		String prevMonth = null;
+		String currMonth;
+		int monthPageCnt = 0;
+
+		// Map of month number to pageviews
+		Map<String,Integer> userCounts =  new HashMap<>();
+		// Map of profileId to Map of Month, pageCount
+		Map< String, Map<String,Integer> > pageCountsByMonth = new HashMap<>();
+		Calendar cal = Calendar.getInstance();
+
+		while (rs.next()) {
+			currId = rs.getString("profile_id");
+			currMonth = parseMonthKeyFromDate(cal,rs.getDate("visit_dt"));
+
+			if (! currId.equalsIgnoreCase(prevId)) {
+				// changed users or first time through.
+				if (prevId != null) {
+					// put month count on map
+					userCounts.put(prevMonth, monthPageCnt);
+					
+					// put list on map of user|user's months
+					pageCountsByMonth.put(prevId, userCounts);
+				}
+
+				// init userMonths map
+				userCounts = new HashMap<>();
+				
+				// init current month's view count.
+				monthPageCnt = 1;
+				
+			} else {
+				// process record for current user
+				if (! currMonth.equalsIgnoreCase(prevMonth)) {
+					// month changed, put previous month page count on map
+					userCounts.put(prevMonth, monthPageCnt);
+					
+					// reset monthCnt to 1.
+					monthPageCnt = 1;
+					
+				} else {
+					// incr this month's count
+					monthPageCnt++;
+				}
+
+			}
+			// capture previous vals for comparison
+			prevId = currId;tF
+			prevMonth = currMonth;
+		}
+
+		// If we processed records, pick up the last record.
+		if (prevId != null) {
+			userCounts.put(prevMonth, monthPageCnt);
+			pageCountsByMonth.put(prevId, userCounts);
+		}
+		log.debug("pageCountsByMonth size: " + pageCountsByMonth.size());
+		return pageCountsByMonth;
+
+	}
+
+	/**
+	 * Parses the month integer from the given date, checks the month
+	 * map for the corresponding key, and returns the key.  If the key is
+	 * not found, the key is built, put on the map for the given month integer
+	 * and the built key is returned.
+	 * @param cal
+	 * @param date
+	 * @return
+	 */
+	protected String parseMonthKeyFromDate(Calendar cal, Date date) {
+		cal.setTime(date);
+		int monthVal = cal.get(Calendar.MONTH);
+		String monthKey;
+		if (monthKeyMap.get(monthVal) != null) {
+			monthKey = monthKeyMap.get(monthVal);
+		} else {
+			monthKey = cal.getDisplayName(Calendar.MONTH, Calendar.SHORT, Locale.US);
+			monthKey += " " + (cal.get(Calendar.YEAR)%100);
+			monthKeyMap.put(monthVal,monthKey);
+		}
+		return monthKey;
 	}
 
 	/**
@@ -92,11 +224,13 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	protected Map<AccountVO, List<UserVO>> retrieveAccountsUsers(StringEncrypter se, 
-			Map<String,Map<Integer,Integer>> userPageCounts, String siteId) {
+			Map<String,Map<String,Integer>> userPageCounts, String siteId) {
+		log.debug("retrieveAccountsUsers...");
 		Map<String,String> fieldMap = buildFieldMap();
 		String[] profileIds = userPageCounts.keySet().toArray(new String[]{});
 		StringBuilder sql = buildAccountsQuery(profileIds.length, fieldMap.size());
 		log.debug("accounts SQL: " + sql.toString());
+		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			int idx = 0;
 			ps.setString(++idx, STATUS_NO_INACTIVE);
@@ -109,9 +243,11 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 			for (Map.Entry<String,String> field : fieldMap.entrySet()) {
 				ps.setString(++idx, field.getKey());
 			}
-			
+
 			ResultSet rs = ps.executeQuery();
+
 			return parseAccountsUsersResults(rs,se);
+
 		} catch (Exception e) {
 			log.error("Error retrieving accounts users, ", e);
 			return new LinkedHashMap<>();
@@ -146,12 +282,10 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 
 			if (! currAcct.equalsIgnoreCase(prevAcct)) {
 				// first time through or changed accounts
-
 				if (acct != null) {
 					users.add(user);
 					accounts.put(acct, users);
 				}
-				
 				// init new acct
 				acct = new AccountVO();
 				acct.setAccountId(rs.getString("account_id"));
@@ -184,7 +318,7 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 			prevAcct = currAcct;
 			prevPid = currPid;
 		}
-
+		log.debug("accounts map size: " + accounts.size());
 		return accounts;
 	}
 		
@@ -198,6 +332,7 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 	protected UserVO formatNextUser(StringEncrypter se, ResultSet rs, String profileId) {
 		UserVO user = new UserVO();
 		try {
+			user.setProfileId(profileId);
 			user.setFirstName(se.decrypt(rs.getString("first_nm")));
 			user.setLastName(se.decrypt(rs.getString("last_nm")));
 			user.setEmailAddress(se.decrypt(rs.getString("email_address_txt")));
@@ -253,140 +388,26 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 	protected Map<String,String> buildFieldMap() {
 		Map<String,String> fieldMap = new HashMap<>();
 		fieldMap.put(RegistrationMap.TITLE.getFieldId(), "Title");
-		fieldMap.put(RegistrationMap.FAVORITEUPDATES.getFieldId(), "Favorites Updates");
 		fieldMap.put(RegistrationMap.UPDATES.getFieldId(), "Updates");
 		return fieldMap;
 	}
-	
+
 	/**
-	 * Retrieves the monthly page view counts for all logged in users who have accessed the given
-	 * site since the given starting date.
-	 * @param siteId
-	 * @param dateStart
+	 * Builds the start date for this report.
 	 * @return
 	 */
-	protected Map<String, Map<Integer,Integer>> retrieveMonthlyPageCount(String siteId, String dateStart) {
-		StringBuilder sql = new StringBuilder(300);
-		sql.append("select profile_id, visit_dt from pageview_user ");
-		sql.append("where site_id = ? and profile_id is not null and visit_dt > ? ");
-		sql.append("order by profile_id, visit_dt ");
-		log.debug("pageview user SQL: " + sql.toString());
-
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, siteId);
-			ps.setDate(2, Convert.formatSQLDate(checkStartDate(dateStart)));
-			ResultSet rs = ps.executeQuery();
-			
-			return this.parseMonthlyPageCountResults(rs);
-			
-		} catch (SQLException sqle) {
-			log.error("Error retrieving user page views, ", sqle);
-			return new HashMap<>();
-		}
-		
-	}
-	
-	/**
-	 * Parses the monthly page count results.
-	 * @param rs
-	 * @return
-	 * @throws SQLException
-	 */
-	protected Map<String, Map<Integer,Integer>> parseMonthlyPageCountResults(ResultSet rs) 
-			throws SQLException {
-		String prevId = null;
-		String currId;
-		int prevMonthNo = -1;
-		int currMonthNo;
-		int monthPageCnt = 0;
-
-		// Map of month number to pageviews
-		Map<Integer,Integer> userMonths =  new HashMap<>();
-		// Map of profileId to Map of Month, pageCount
-		Map< String, Map<Integer,Integer> > userPageViewsByMonth = new HashMap<>();
+	protected Date formatStartDate() {
 		Calendar cal = Calendar.getInstance();
-
-		while (rs.next()) {
-			currId = rs.getString("profile_id");
-			currMonthNo = parseMonthFromDate(cal, rs.getDate("visit_dt"));
-			
-			if (! currId.equalsIgnoreCase(prevId)) {
-
-				// changed users or first time through.
-				if (! userMonths.isEmpty()) {
-					// put month count on map
-					userMonths.put(prevMonthNo, monthPageCnt);
-					// put list on map of user|user's months
-					userPageViewsByMonth.put(prevId, userMonths);
-				}
-
-				// init userMonths map
-				userMonths = new HashMap<>();
-				
-				// init current month's view count.
-				monthPageCnt = 1;
-				
-			} else {
-				// process record for current user
-				if (currMonthNo != prevMonthNo) {
-					// month changed, put previous month page count on map
-					userMonths.put(prevMonthNo, monthPageCnt);
-					
-					// reset monthCnt to 1.
-					monthPageCnt = 1;
-					
-				} else {
-					// incr this month's count
-					monthPageCnt++;
-				}
-
-			}
-			// capture previous vals for comparison
-			prevId = currId;
-			prevMonthNo = currMonthNo;
-		}
-
-		// pick up the last record/user.
-		userMonths.put(prevMonthNo, monthPageCnt);
-		userPageViewsByMonth.put(prevId,userMonths);
-
-		return userPageViewsByMonth;
-	}
-	
-	/**
-	 * Formats the given date into a start date.
-	 * @param date
-	 * @return
-	 */
-	protected Date checkStartDate(String date) {
-		Date d;
-		if (date == null) {
-			Calendar cal = Calendar.getInstance();
-			cal.add(Calendar.DAY_OF_YEAR, -365);
-			d = Convert.formatStartDate(cal.getTime());
-		} else {
-			d = Convert.formatStartDate(date);
-		}
-		return d;
+		cal.add(Calendar.MONTH, -11);
+		return Convert.formatStartDate(cal.getTime());
 	}
 
-	/**
-	 * Parses the int value of the month for the given date.
-	 * @param cal
-	 * @param date
-	 * @return
-	 */
-	protected int parseMonthFromDate(Calendar cal, Date date) {
-		cal.setTime(date);
-		return cal.get(Calendar.MONTH);
-	}
-	
 	/**
 	 * Merges user page view history with accounts' user data.
 	 * @param accounts
 	 * @param userData
 	 */
-	protected void mergeData(Map<AccountVO,List<UserVO>> accounts, Map<String,Map<Integer,Integer>> userData) {
+	protected void mergeData(Map<AccountVO,List<UserVO>> accounts, Map<String,Map<String,Integer>> userData) {
 		for (Map.Entry<AccountVO, List<UserVO>> acct : accounts.entrySet()) {
 			List<UserVO> acctUsers = acct.getValue();
 			for (UserVO user : acctUsers) {
