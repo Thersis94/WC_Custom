@@ -7,6 +7,7 @@ import java.util.List;
 
 import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.admin.user.HumanNameIntfc;
+import com.biomed.smarttrak.solr.BiomedInsightIndexer;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.annotations.SolrField;
 import com.siliconmtn.data.Node;
@@ -107,7 +108,7 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 	 */
 	public InsightVO() {
 		//TODO replace this with a insight indexer when it exists
-		super("");
+		super(BiomedInsightIndexer.INDEX_TYPE);
 		sections = new ArrayList<>();
 		super.addOrganization(AdminControllerAction.BIOMED_ORG_ID);
 		super.addRole(AdminControllerAction.DEFAULT_ROLE_LEVEL);

@@ -13,12 +13,12 @@ import com.biomed.smarttrak.vo.InsightXRVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
@@ -34,7 +34,7 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
  * @version 1.0
  * @since Feb 14, 2017
  ****************************************************************************/
-public class InsightAction extends SBActionAdapter {
+public class InsightAction extends AbstractTreeAction {
 	protected static final String INSIGHT_ID = "insightsId"; //req param
 	public static final String ROOT_NODE_ID = "MASTER_ROOT";
 
@@ -126,6 +126,8 @@ public class InsightAction extends SBActionAdapter {
 		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)data, (String)getAttribute(Constants.ENCRYPT_KEY));
 	}
 
+
+	
 	/**
 	 * loads a list of profileId|Names for the BiomedGPS Staff role level - these are their Account Managers
 	 * @param req
@@ -293,5 +295,27 @@ public class InsightAction extends SBActionAdapter {
 		} catch (SQLException e) {
 			throw new ActionException(e);
 		}
+	}
+	
+	/**
+	 * Load the Section Tree so that Hierarchies can be generated.
+	 * @param req
+	 * @throws ActionException
+	 */
+	public Tree loadSections() {
+		//load the section hierarchy Tree from superclass
+		Tree t = loadDefaultTree();
+
+		//Generate the Node Paths using Node Names.
+		t.buildNodePaths(t.getRootNode(), "~", true);
+		return t;
+	}
+
+	/* (non-Javadoc)
+	 * @see com.biomed.smarttrak.admin.AbstractTreeAction#getCacheKey()
+	 */
+	@Override
+	public String getCacheKey() {
+		return null;
 	}
 }

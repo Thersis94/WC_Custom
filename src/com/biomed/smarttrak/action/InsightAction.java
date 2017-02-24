@@ -5,7 +5,7 @@ package com.biomed.smarttrak.action;
 
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
 
-import com.biomed.smarttrak.solr.BiomedUpdateIndexer;
+import com.biomed.smarttrak.solr.BiomedInsightIndexer;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
@@ -26,11 +26,11 @@ import com.smt.sitebuilder.search.SearchDocumentHandler;
 /****************************************************************************
  * <b>Title</b>: InsightAction.java
  * <b>Project</b>: WC_Custom
- * <b>Description: </b> Public Updates Action that talks to Solr.
+ * <b>Description: </b> Public Insights Action that talks to Solr.
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
  * 
- * @author Billy Larsen
+ * @author Ryan Riker
  * @version 1.0
  * @since Feb 16, 2017
  ****************************************************************************/
@@ -38,7 +38,7 @@ public class InsightAction extends SBActionAdapter {
 
 	public void retrieve(ActionRequest req) throws ActionException {
 		//TODO copied code directly from update action
-		putModuleData(retrieveUpdates(req));
+		putModuleData(retrieveInsights(req));
 	}
 
 	/**
@@ -49,9 +49,10 @@ public class InsightAction extends SBActionAdapter {
 	 */
 	private SolrActionVO buildSolrAction(ActionRequest req) throws ActionException {
 
+		
 		//Set SolrSearch ActionId on actionInit
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
-    	//TODO commented out 
+		//TODO
 		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 
     	//Get SolrSearch ActionVO.
@@ -66,7 +67,8 @@ public class InsightAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException
 	 */
-	protected SolrResponseVO retrieveUpdates(ActionRequest req) throws ActionException {
+	protected SolrResponseVO retrieveInsights(ActionRequest req) throws ActionException {
+		log.debug("######### retrieve insights called");
 		SolrActionVO qData = buildSolrAction(req);
 		SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, qData.getSolrCollectionPath());
 		qData.setNumberResponses(15);
@@ -105,8 +107,8 @@ public class InsightAction extends SBActionAdapter {
 		if(req.hasParameter("typeId")) {
 			qData.addSolrField(new SolrFieldVO(FieldType.FILTER, SearchDocumentHandler.MODULE_TYPE, req.getParameter("typeId"), BooleanType.AND));
 		}
-
-		qData.addIndexType(new SolrActionIndexVO("", BiomedUpdateIndexer.INDEX_TYPE));
+		//TODO need to chage this index when it exists
+		qData.addIndexType(new SolrActionIndexVO("", BiomedInsightIndexer.INDEX_TYPE));
 
 		qData.setFieldSort(SearchDocumentHandler.UPDATE_DATE);
 		qData.setSortDirection(ORDER.desc);
