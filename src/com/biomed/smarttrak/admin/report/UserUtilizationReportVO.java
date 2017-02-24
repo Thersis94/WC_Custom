@@ -15,9 +15,11 @@ import com.biomed.smarttrak.vo.UserVO;
 
 // SMTBaseLibs
 import com.siliconmtn.data.report.ExcelReport;
-
+import com.siliconmtn.util.PhoneNumberFormat;
 // WebCrescendo
 import com.smt.sitebuilder.action.AbstractSBReportVO;
+
+import freemarker.template.utility.StringUtil;
 
 /*****************************************************************************
  <p><b>Title</b>: UserUtilizationReportVO.java</p>
@@ -33,8 +35,8 @@ import com.smt.sitebuilder.action.AbstractSBReportVO;
 public class UserUtilizationReportVO extends AbstractSBReportVO {
 
 	private Map<AccountVO, List<UserVO>> accounts;
-	private static final String REPORT_TITLE = "Activity Rollup Report";
-	private static final String MONTH = "MONTH";
+	private List<String> monthHeaders;
+	private static final String REPORT_TITLE = "Utilization Report";
 	private static final String NAME = "NAME";
 	private static final String TITLE = "TITLE";
 	private static final String EMAIL = "EMAIL_ADDRESS";
@@ -42,8 +44,7 @@ public class UserUtilizationReportVO extends AbstractSBReportVO {
 	private static final String UPDATES = "UPDATES";
 	private static final String TOTAL = "TOTAL";
 	private static final int HEADER_MONTHS_SIZE = 12;
-	
-	
+
 	/**
 	 * 
 	 */
@@ -53,15 +54,12 @@ public class UserUtilizationReportVO extends AbstractSBReportVO {
 	* Constructor
 	*/
 	public UserUtilizationReportVO() {
-		/* Sorted by company, showing:
-		 * User Name
-		 * User Title
-		 * User Phone
-		 * User Email
-		 * User Update Email Preferences
-		 * Monthly page views for last 12 months
-		 * Summary at bottom of totals.
-		 */
+        super();
+        setContentType("application/vnd.ms-excel");
+        isHeaderAttachment(Boolean.TRUE);
+        setFileName(REPORT_TITLE.replace(' ', '-')+".xls");
+        accounts = new HashMap<>();
+        monthHeaders = new ArrayList<>();
 	}
 
 	/* (non-Javadoc)
@@ -88,6 +86,7 @@ public class UserUtilizationReportVO extends AbstractSBReportVO {
 	@Override
 	public void setData(Object o) {
 		this.accounts =  (Map<AccountVO,List<UserVO>>) o;
+		formatMonthHeaders();
 	}
 	
 	/**
@@ -99,129 +98,166 @@ public class UserUtilizationReportVO extends AbstractSBReportVO {
 	private List<Map<String, Object>> generateDataRows(
 			List<Map<String, Object>> rows) {
 
-		// gen the month/yr headers (e.g. Mar 17, etc.)
-		List<String> monthHeaders = formatMonthHeaders();
-		
+		PhoneNumberFormat pnf = new PhoneNumberFormat();
+		pnf.setFormatType(PhoneNumberFormat.DASH_FORMATTING);
+				
 		// loop the account map
 		for (Map.Entry<AccountVO, List<UserVO>> acct : accounts.entrySet()) {
-			
-			Map<Integer,Integer> acctTotals = new HashMap<>();
+
+			Map<String,Integer> acctTotals = new HashMap<>();
 			AccountVO a = acct.getKey();
-			
-			// add acct header row
-			rows.add(formatAccountHeader(a.getAccountName(),monthHeaders));
+
+			// add acct header row(s)
+			addAccountHeader(rows,a.getAccountName(),monthHeaders);
 
 			// user vals
 			Map<String,Object> row;
-			Map<Integer,Integer> counts;
+			Map<String,Integer> counts;
 			int userTotal = 0;
-			
+
 			// loop account users
 			for (UserVO user : acct.getValue()) {
 				row = new HashMap<>();
 				row.put(NAME, user.getFullName());
 				row.put(TITLE, user.getTitle());
 				row.put(EMAIL,user.getEmailAddress());
-				row.put(PHONE, user.getMainPhone());
-				row.put(UPDATES, user.getUpdates());
-
-				// add monthly counts to user's row
-				counts = (Map<Integer,Integer>)user.getUserExtendedInfo();
-				for (int i = 0; i < HEADER_MONTHS_SIZE; i++) {
-					userTotal += manageTotals(acctTotals,row,i,counts.get(i));
+				pnf.setPhoneNumber(user.getMainPhone());
+				row.put(PHONE, pnf.getFormattedNumber());
+				row.put(UPDATES, StringUtil.capitalize(user.getUpdates()));
+				
+				/* Add monthly counts to user's row. We loop the month headers
+				 * List using the values as keys to retrieve a user's counts for a
+				 * given month.  If no key/value exists on the user's map, we 
+				 * use a count value of zero. */
+				counts = (Map<String,Integer>)user.getUserExtendedInfo();
+				for (String monthKey : monthHeaders) {
+					userTotal += manageTotals(acctTotals,row,counts,monthKey);
 				}
 				row.put(TOTAL, userTotal);
-
-				// add row to list
 				rows.add(row);
 				userTotal = 0;
+
 			}
 
-			// acct footer row
-			rows.add(formatAccountFooter(a.getAccountName(), acctTotals));
+			// acct footer row(s)
+			addAccountFooter(rows, a.getAccountName(), acctTotals);
 		}
 		return rows;
 	}
 	
-	protected int manageTotals(Map<Integer,Integer>acctTotals, 
-			Map<String,Object> currRow, Integer currPageCount, int currIdx) {
+	/**
+	 * Manages the monthly page view totals for an account.
+	 * @param acctTotals
+	 * @param currRow
+	 * @param currIdx
+	 * @param currPageCount
+	 * @return
+	 */
+	protected int manageTotals(Map<String,Integer>acctTotals, 
+			Map<String,Object> currRow, Map<String,Integer> counts, String monthKey) {
 		int mCnt = 0;
-		if (currPageCount != null) {
-			mCnt = currPageCount;
-			updateAccountTotal(acctTotals,currIdx,mCnt);
+		if (counts == null) return mCnt;
+		if (counts.get(monthKey) != null) {
+			mCnt = counts.get(monthKey);
+			updateAccountTotal(acctTotals,monthKey,mCnt);
 		}
-		currRow.put(MONTH+currIdx,mCnt);
+		currRow.put(monthKey,mCnt);
 		return mCnt;
 	}
 
-	protected void updateAccountTotal(Map<Integer,Integer> acctTotals, int index, int countVal) {
-		if (acctTotals.get(index) != null) {
-			acctTotals.put(index, acctTotals.get(index) + countVal);
-		} else {
-			acctTotals.put(index, countVal);
-		}
-	}
-	
 	/**
-	 * 
-	 * @param acctNm
+	 * Updates the page view totals for an account.
 	 * @param acctTotals
-	 * @return
+	 * @param index
+	 * @param countVal
 	 */
-	protected Map<String,Object> formatAccountFooter(String acctNm, Map<Integer,Integer> acctTotals) {
-		Map<String,Object> row = new HashMap<>();
-		row.put(NAME,"Total for " + acctNm);
-		row.put(TITLE,"");
-		row.put(EMAIL,"");
-		row.put(PHONE,"");
-		row.put(UPDATES,"");
-		int acctTotal = 0;
-		for (int i = 0; i < acctTotals.size(); i++) {
-			if (acctTotals.get(i) != null) {
-				int tot = acctTotals.get(i);
-				row.put(MONTH+i, tot);
-				acctTotal += tot;
-			}
+	protected void updateAccountTotal(Map<String,Integer> acctTotals, String monthKey, int countVal) {
+		if (acctTotals.get(monthKey) != null) {
+			acctTotals.put(monthKey, acctTotals.get(monthKey) + countVal);
+		} else {
+			acctTotals.put(monthKey, countVal);
 		}
-		row.put(TOTAL, acctTotal);
-		return row;
 	}
-	
+
 	/**
-	 * 
+	 * Formats the account's header row.
+	 * @param rows
 	 * @param acctNm
 	 * @param monthHeaders
-	 * @return
 	 */
-	protected Map<String,Object> formatAccountHeader(String acctNm, List<String> monthHeaders) {
+	protected void addAccountHeader(List<Map<String,Object>> rows, 
+			String acctNm, List<String> monthHeaders) {
+		
+		// add account name row.
 		Map<String,Object> row = new HashMap<>();
 		row.put(NAME,acctNm);
 		row.put(TITLE,"");
 		row.put(EMAIL,"");
 		row.put(PHONE,"");
 		row.put(UPDATES,"");
-		for (int i = 0; i < monthHeaders.size(); i++) {
-			row.put(MONTH+i, monthHeaders.get(i));
+		for (String monthKey : monthHeaders) {
+			row.put(monthKey, "");
 		}
-		row.put(TOTAL,"Total");
-		return row;
+		row.put(TOTAL,"");
+		rows.add(row);
 	}
-	
+
 	/**
-	 * Formats the month headers for the past 12 months inclusive.
+	 * Builds the account's footer row.
+	 * @param acctNm
+	 * @param acctTotals
 	 * @return
 	 */
-	protected List<String> formatMonthHeaders() {
-		List<String> monthHeaders = new ArrayList<>();
+	protected void addAccountFooter(List<Map<String,Object>> rows, String acctNm, 
+			Map<String,Integer> acctTotals) {
+		Map<String,Object> row = new HashMap<>();
+		row.put(NAME,"Total");
+		row.put(TITLE,"");
+		row.put(EMAIL,"");
+		row.put(PHONE,"");
+		row.put(UPDATES,"");
+
+		Integer monthVal;
+		int acctTotal = 0;
+		int monthTotal = 0;
+		for (String monthKey : monthHeaders) {
+			monthVal = acctTotals.get(monthKey);
+			if (monthVal != null) monthTotal = monthVal;
+			row.put(monthKey, monthTotal);
+			acctTotal += monthTotal;
+			monthTotal = 0;
+		}
+		row.put(TOTAL, acctTotal);
+		rows.add(row);
+		
+		row = new HashMap<>();
+		row.put(NAME,"");
+		row.put(TITLE,"");
+		row.put(EMAIL,"");
+		row.put(PHONE,"");
+		row.put(UPDATES,"");
+		for (String monthKey : monthHeaders) {
+			row.put(monthKey, "");
+		}
+		row.put(TOTAL,"");
+		rows.add(row);
+	}
+
+	/**
+	 * Formats the month headers for the past 12 months inclusive. Header
+	 * format is 'MMM YY' (e.g. Dec 16, Jan 17, etc.). The headers are added
+	 * to the List in proper data order (e.g. Dec 16, Jan 17, Feb 17, etc.).
+	 * @return
+	 */
+	protected void formatMonthHeaders() {
 		Locale loc = Locale.US;
 		Calendar cal = Calendar.getInstance();
-		cal.add(Calendar.MONTH, -11);
-		for (int i = 0; i < 12; i++) {
+		cal.add(Calendar.MONTH, 1 - HEADER_MONTHS_SIZE);
+		for (int idx = 0; idx < HEADER_MONTHS_SIZE; idx++) {
 			monthHeaders.add(cal.getDisplayName(Calendar.MONTH, Calendar.SHORT, loc) + 
 					" " + cal.get(Calendar.YEAR)%100);
 			cal.add(Calendar.MONTH, 1);
 		}
-		return monthHeaders;
 	}
 	
 	/**
@@ -229,26 +265,17 @@ public class UserUtilizationReportVO extends AbstractSBReportVO {
 	 * @return
 	 */
 	protected HashMap<String, String> getHeader() {
-
+		// this header is intentionally left blank.
 		HashMap<String, String> headerMap = new LinkedHashMap<>();
-		headerMap.put(NAME,"");
-		headerMap.put(TITLE,"");
-		headerMap.put(EMAIL,"");
-		headerMap.put(PHONE,"");
-		headerMap.put(UPDATES,"");
-		headerMap.put("MONTH0","");
-		headerMap.put("MONTH1","");
-		headerMap.put("MONTH2","");
-		headerMap.put("MONTH3","");
-		headerMap.put("MONTH4","");
-		headerMap.put("MONTH5","");
-		headerMap.put("MONTH6","");
-		headerMap.put("MONTH7","");
-		headerMap.put("MONTH8","");
-		headerMap.put("MONTH9","");
-		headerMap.put("MONTH10","");
-		headerMap.put("MONTH11","");
-		headerMap.put(TOTAL,"");
+		headerMap.put(NAME,"Name");
+		headerMap.put(TITLE,"Title");
+		headerMap.put(EMAIL,"Email Address");
+		headerMap.put(PHONE,"Phone");
+		headerMap.put(UPDATES,"Update Frequency");
+		for (String monthKey : monthHeaders) {
+			headerMap.put(monthKey, monthKey);
+		}
+		headerMap.put(TOTAL,"Total");
 		return headerMap;
 	} 
 	
