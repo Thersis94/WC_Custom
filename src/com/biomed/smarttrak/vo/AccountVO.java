@@ -3,13 +3,13 @@ package com.biomed.smarttrak.vo;
 //Java 7
 import java.util.Date;
 
-import com.biomed.smarttrak.admin.user.HumanNameIntfc;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 
 import com.siliconmtn.gis.Location;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.user.HumanNameIntfc;
 
 /*****************************************************************************
  <p><b>Title</b>: AccountVO.java</p>

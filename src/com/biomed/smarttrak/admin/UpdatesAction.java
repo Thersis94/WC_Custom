@@ -8,8 +8,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.biomed.smarttrak.admin.user.HumanNameIntfc;
-import com.biomed.smarttrak.admin.user.NameComparator;
 import com.biomed.smarttrak.vo.UpdatesVO;
 import com.biomed.smarttrak.vo.UpdatesXRVO;
 import com.siliconmtn.action.ActionException;
@@ -21,6 +19,8 @@ import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.user.HumanNameIntfc;
+import com.siliconmtn.util.user.NameComparator;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
 
@@ -36,7 +36,7 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
  * @since Feb 14, 2017
  ****************************************************************************/
 public class UpdatesAction extends AbstractTreeAction {
-	protected static final String UPDATE_ID = "updateId"; //req param
+	public static final String UPDATE_ID = "updateId"; //req param
 	public static final String ROOT_NODE_ID = "MASTER_ROOT";
 
 	public enum UpdateType {

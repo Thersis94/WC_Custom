@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import com.biomed.smarttrak.admin.user.HumanNameIntfc;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
@@ -13,6 +12,7 @@ import com.siliconmtn.db.orm.Table;
 // SMTBaseLibs
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.user.HumanNameIntfc;
 
 /*****************************************************************************
  <p><b>Title</b>: SmarttrakUserVO.java</p>
