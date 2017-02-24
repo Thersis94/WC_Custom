@@ -184,7 +184,7 @@ public class AnsADLoginModule extends AbstractLoginModule {
 		return auth;
 	}
 
-	
+
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.security.AbstractLoginModule#retrievePasswordAge(java.lang.String)
 	 */
@@ -325,7 +325,7 @@ public class AnsADLoginModule extends AbstractLoginModule {
 	 * @see com.siliconmtn.security.AbstractLoginModule#recordLogin(java.lang.String, java.lang.String, java.util.Date)
 	 */
 	@Override
-	public void recordLogin(UserDataVO user, String siteId, Date loginDt) {
+	public void recordLogin(UserDataVO user, String siteId, String userAgent, String ipAddr, Date d) {
 		// not implemented
 	}
 }
