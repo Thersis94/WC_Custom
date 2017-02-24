@@ -29,7 +29,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class ReportFacadeAction extends SBActionAdapter {
 
 	public enum ReportType {
-		USER_UTILIZATION
+		UTILIZATION
 	}
 	
 	/**
@@ -59,7 +59,7 @@ public class ReportFacadeAction extends SBActionAdapter {
 		AbstractSBReportVO rpt = null;
 		
 		switch (rType) {
-			case USER_UTILIZATION:
+			case UTILIZATION:
 				//do utilization report.
 				rpt = generateUserUtilizationReport(req);
 			break;
@@ -77,8 +77,9 @@ public class ReportFacadeAction extends SBActionAdapter {
 	 */
 	protected AbstractSBReportVO generateUserUtilizationReport(ActionRequest req) 
 			throws ActionException {
-		UserUtilizationReportAction uu = new UserUtilizationReportAction(actionInit);
+		UserUtilizationReportAction uu = new UserUtilizationReportAction();
 		uu.setDBConnection(dbConn);
+		uu.setAttributes(getAttributes());
 		AbstractSBReportVO rpt = new UserUtilizationReportVO();
 		rpt.setData(uu.retrieveUserUtilization(req));
 		return rpt;
