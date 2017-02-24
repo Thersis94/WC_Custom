@@ -6,6 +6,7 @@ import java.util.Date;
 import java.util.List;
 
 import com.biomed.smarttrak.action.AdminControllerAction;
+import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.admin.user.HumanNameIntfc;
 import com.biomed.smarttrak.solr.BiomedInsightIndexer;
 import com.siliconmtn.action.ActionRequest;
@@ -199,6 +200,7 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 	 * @see com.biomed.smarttrak.admin.user.HumanNameIntfc#getFirstName()
 	 */
 	@Override
+	@SolrField(name="firstNm_s")
 	@Column(name="first_nm", isReadOnly=true)
 	public String getFirstName() {
 		return firstNm;
@@ -207,6 +209,7 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 	/**
 	 * @return the lastNm
 	 */
+	@SolrField(name="lastNm_s")
 	@Column(name="last_nm", isReadOnly=true)
 	public String getLastName() {
 		return lastNm;
@@ -233,6 +236,7 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 	 */
 	@Column(name="insight_id", isPrimaryKey=true)
 	public String getInsightId() {
+		//doesnt have a solr tag as it is set to doc 
 		return insightId;
 	}
 
@@ -247,6 +251,7 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 	/**
 	 * @return the titleTxt
 	 */
+	@SolrField(name=SearchDocumentHandler.TITLE)
 	@Column(name="title_txt")
 	public String getTitleTxt() {
 		return titleTxt;
@@ -278,6 +283,7 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 	/**
 	 * @return the abstractTxt
 	 */
+	@SolrField(name=SearchDocumentHandler.SUMMARY)
 	@Column(name="abstract_txt")
 	public String getAbstractTxt() {
 		return abstractTxt;
@@ -310,6 +316,7 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 	/**
 	 * @return the featuredFlg
 	 */
+	@SolrField(name="featuredFlg_i")
 	@Column(name="featured_flg")
 	public int getFeaturedFlg() {
 		return featuredFlg;
@@ -318,6 +325,7 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 	/**
 	 * @return the featuredImageTxt
 	 */
+	@SolrField(name="featuredImageTxt_s")
 	@Column(name="featured_image_txt")
 	public String getFeaturedImageTxt() {
 		return featuredImageTxt;
@@ -333,6 +341,7 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 	/**
 	 * @return the orderNo
 	 */
+	@SolrField(name="orderNo_i")
 	@Column(name="order_no")
 	public int getOrderNo() {
 		return orderNo;
@@ -341,6 +350,7 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 	/**
 	 * @return the publishDt
 	 */
+	@SolrField(name="publishDt_s")
 	@Column(name="publish_dt")
 	public Date getPublishDt() {
 		return publishDt;
@@ -357,6 +367,7 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 	/**
 	 * @return the updateDt
 	 */
+	@SolrField(name=SearchDocumentHandler.UPDATE_DATE)
 	@Column(name="update_dt", isAutoGen=true, isUpdateOnly=true)
 	public Date getUpdateDt() {
 		return updateDt;
@@ -364,9 +375,21 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 
 	
 	/**
+	 * used on the list view to trigger a retrieve of one particular insight
+	 */
+	@Override
+	@SolrField(name=SearchDocumentHandler.DOCUMENT_URL)
+	public String getDocumentUrl() {
+		StringBuilder url = new StringBuilder(50);
+		url.append("?requestType=reqRetrieve&insightId=").append(this.insightId);
+		return url.toString();
+	}
+	
+	/**
 	 * @param insightId the insightId to set
 	 */
 	public void setInsightId(String insightId) {
+		super.setDocumentId(insightId);
 		this.insightId = insightId;
 	}
 
