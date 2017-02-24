@@ -178,7 +178,7 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 
 			}
 			// capture previous vals for comparison
-			prevId = currId;
+			prevId = currId;tF
 			prevMonth = currMonth;
 		}
 
@@ -230,6 +230,7 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 		String[] profileIds = userPageCounts.keySet().toArray(new String[]{});
 		StringBuilder sql = buildAccountsQuery(profileIds.length, fieldMap.size());
 		log.debug("accounts SQL: " + sql.toString());
+		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			int idx = 0;
 			ps.setString(++idx, STATUS_NO_INACTIVE);
