@@ -178,7 +178,7 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 
 			}
 			// capture previous vals for comparison
-			prevId = currId;tF
+			prevId = currId;
 			prevMonth = currMonth;
 		}
 
