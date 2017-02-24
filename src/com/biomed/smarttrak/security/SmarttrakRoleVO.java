@@ -62,7 +62,7 @@ public class SmarttrakRoleVO extends SBUserRole {
 		for (Node n : nodes) {
 			PermissionVO vo = (PermissionVO) n.getUserObject();
 			//we only care about level 4 nodes, which is where permissions are set.  Also toss any VOs that don't have permissions in them
-			if (n.getDepthLevel() != 4 || vo.isUnauthorized()) continue;
+			if (SecurityController.PERMISSION_DEPTH_LVL != n.getDepthLevel() || vo.isUnauthorized()) continue;
 			vo.setHierarchyToken(n.getFullPath()); //transpose the value compiled in SmartTrakRoleModule
 			//System.err.println("user authorized for hierarchy: " + vo.getHierarchyToken())
 			accountRoles.add(vo);

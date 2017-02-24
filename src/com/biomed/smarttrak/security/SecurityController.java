@@ -25,7 +25,13 @@ import com.smt.sitebuilder.search.SearchDocumentHandler;
  ****************************************************************************/
 public class SecurityController {
 
-	private static final Logger log = Logger.getLogger(SecurityController.class);
+	protected static final Logger log = Logger.getLogger(SecurityController.class);
+	
+	/**
+	 * how far down the hierarchy tree are permissions applied.  
+	 * Put in a constant in-case Smarttrak ever changes their hierarchy structure.
+	 */
+	public static final int PERMISSION_DEPTH_LVL = 4;
 
 	private SmarttrakRoleVO role;
 
@@ -35,7 +41,7 @@ public class SecurityController {
 	}
 
 	/**
-	 * statis factory method.  useful for inline applications: SecurityController.getInstance(roleData).getSolrACL();
+	 * static factory method.  useful for inline applications: SecurityController.getInstance(roleData).getSolrACL();
 	 * @param role
 	 * @return
 	 */
@@ -96,7 +102,7 @@ public class SecurityController {
 		for (Node n : nodes) {
 			SectionVO vo = (SectionVO) n.getUserObject();
 			//we only care about level 4 nodes, which is where permissions are set.  Also toss any VOs that don't have permissions in them
-			if (n.getDepthLevel() != 4 || !vo.isSelected()) continue;
+			if (PERMISSION_DEPTH_LVL != n.getDepthLevel() || !vo.isSelected()) continue;
 
 			groups.add(n.getFullPath());
 
