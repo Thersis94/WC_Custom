@@ -11,6 +11,7 @@ import com.biomed.smarttrak.admin.AccountUserAction;
 import com.biomed.smarttrak.admin.CompanyManagementAction;
 import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.admin.GapAnalysisAdminAction;
+import com.biomed.smarttrak.admin.GridChartAction;
 import com.biomed.smarttrak.admin.ListAction;
 import com.biomed.smarttrak.admin.MarketManagementAction;
 import com.biomed.smarttrak.admin.ProductManagementAction;
@@ -197,6 +198,9 @@ public class AdminControllerAction extends SimpleActionAdapter {
 				break;
 			case "synonyms":
 				action = new SolrSynonymAction();
+				break;
+			case "grid":
+				action = new GridChartAction();
 				break;
 			default:
 				throw new ActionException("unknown action type:" + actionType);
