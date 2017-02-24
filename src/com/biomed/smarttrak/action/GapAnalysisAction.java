@@ -14,15 +14,23 @@ import java.util.Map;
 
 import org.apache.commons.lang.ArrayUtils;
 
-import com.biomed.smarttrak.admin.ContentHierarchyAction;
+import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.admin.vo.GapColumnVO;
 import com.biomed.smarttrak.vo.GapCompanyVO;
+import com.biomed.smarttrak.vo.GapProductVO;
 import com.biomed.smarttrak.vo.GapTableVO;
+import com.biomed.smarttrak.vo.SaveStateVO;
+import com.biomed.smarttrak.vo.UserVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
+import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.util.DatabaseException;
+import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.http.session.SMTSession;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -38,7 +46,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @version 1.0
  * @since Jan 13, 2017
  ****************************************************************************/
-public class GapAnalysisAction extends ContentHierarchyAction {
+public class GapAnalysisAction extends SectionHierarchyAction {
 
 	public static final String GAP_ROOT_ID = "GAP_ANALYSIS_ROOT";
 	public static final String GAP_CACHE_KEY = "GAP_ANALYSIS_TREE_CACHE_KEY";
@@ -69,9 +77,117 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 			loadGapTableData(gtv);
 
 			super.putModuleData(gtv);
-		} else if(req.hasParameter("saveState")) {
-			//TODO add code to handle SaveState Retrieval.
+		} else if(req.hasParameter("getProducts")) {
+			String regionId = req.getParameter("regionId");
+			String companyId = req.getParameter("companyId");
+			String columnId = req.getParameter("columnId");
+			super.putModuleData(getProductList(regionId, companyId, columnId));
+		} else {
+
+			SMTSession ses = req.getSession();
+			UserVO vo = (UserVO) ses.getAttribute(Constants.USER_DATA);
+			String userId = StringUtil.checkVal(vo.getUserId());
+
+			String saveStateId = req.getParameter("saveStateId");
+			super.putModuleData(getSaveStates(userId, saveStateId));
 		}
+	}
+
+	/**
+	 * Return list of products that are of a given regionId, companyId and columnId
+	 * @param regionId
+	 * @param companyId
+	 * @param columnId
+	 * @return
+	 */
+	private List<Object> getProductList(String regionId, String companyId, String columnId) {
+
+		List<Object> params = new ArrayList<>();
+		params.add(companyId);
+		params.add(columnId);
+		params.add("1");
+
+		log.debug(this.getProductListSql("usa".equalsIgnoreCase(regionId)));
+		DBProcessor db = new DBProcessor(dbConn, (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA));
+		List<Object>  data = db.executeSelect(getProductListSql("usa".equalsIgnoreCase(regionId)), params, new GapProductVO());
+		log.debug("loaded " + data.size() + " products");
+
+		return data;
+	}
+
+	/**
+	 * @param isUSRegion 
+	 * @return
+	 */
+	private String getProductListSql(boolean isUSRegion) {
+		StringBuilder sql = new StringBuilder(750);
+		String custom = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		sql.append("select distinct f.product_nm, f.product_id, c.column_nm, g.company_nm, a.section_nm ");
+		sql.append("from ").append(custom).append("biomedgps_section a ");
+		sql.append("inner join ").append(custom).append("biomedgps_ga_column c ");
+		sql.append("on a.section_id = c.section_id ");
+		sql.append("inner join ").append(custom).append("biomedgps_ga_column_attribute_xr d ");
+		sql.append("on d.ga_column_id = c.ga_column_id ");
+		sql.append("inner join ").append(custom).append("biomedgps_product_attribute_xr e ");
+		sql.append("on d.attribute_id = e.attribute_id ");
+		sql.append("inner join ").append(custom).append("biomedgps_product f ");
+		sql.append("on e.product_id = f.product_id ");
+		sql.append("inner join ").append(custom).append("biomedgps_product_regulatory r ");
+		sql.append("on f.product_id = r.product_id ");
+		sql.append("inner join ").append(custom).append("biomedgps_company g ");
+		sql.append("on f.company_id = g.company_id ");
+		sql.append("where g.company_id = ? and c.ga_column_id = ? ");
+		if(isUSRegion) {
+			sql.append("and r.region_id = ? ");
+		} else {
+			sql.append("and r.region_id != ? ");
+		}
+
+		return sql.toString();
+	}
+
+	/**
+	 * Helper method returns list of SaveStates.
+	 * @param req
+	 * @return
+	 */
+	private List<SaveStateVO> getSaveStates(String userId, String saveStateId) {
+		List<SaveStateVO> saveStates = new ArrayList<>();
+		boolean hasSaveStateId = !StringUtil.isEmpty(saveStateId);
+		try(PreparedStatement ps = dbConn.prepareStatement(getSaveStateSql(hasSaveStateId))) {
+			ps.setString(1, userId);
+
+			if(hasSaveStateId) {
+				ps.setString(2, saveStateId);
+			}
+
+			ResultSet rs = ps.executeQuery();
+
+			while(rs.next()) {
+				saveStates.add(new SaveStateVO(rs));
+			}
+		} catch (SQLException e) {
+			log.error(e);
+		}
+		return saveStates;
+	}
+
+	/**
+	 * Helper method retrieves Gap Analysis Save States.
+	 * @param hasSaveStateId
+	 * @return
+	 */
+	private String getSaveStateSql(boolean hasSaveStateId) {
+		StringBuilder sql = new StringBuilder(200);
+		sql.append("select * from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("biomedgps_ga_savestate where user_id = ? ");
+
+		if(hasSaveStateId) {
+			sql.append("and save_state_id = ? ");
+		}
+
+		sql.append("order by order_no");
+		return sql.toString();
 	}
 
 	/**
@@ -241,6 +357,25 @@ public class GapAnalysisAction extends ContentHierarchyAction {
 		return sql.toString();
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see com.biomed.smarttrak.admin.ContentHierarchyAction#build(com.siliconmtn.action.ActionRequest)
+	 */
+	public void build(ActionRequest req) {
+		SaveStateVO ss = new SaveStateVO(req);
+
+		DBProcessor dbp = new DBProcessor(dbConn, (String) getAttribute(Constants.CUSTOM_DB_SCHEMA));
+
+		try {
+			dbp.save(ss);
+		} catch (InvalidDataException | DatabaseException e) {
+			log.error("Problem Saving State Object.", e.getCause());
+		}
+	}
+
+	/**
+	 * Helper method returns cache key for Content Hierarchy Object.
+	 */
 	public String getCacheKey() {
 		return GAP_CACHE_KEY;
 	}

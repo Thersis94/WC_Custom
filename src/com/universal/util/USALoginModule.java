@@ -2,18 +2,19 @@ package com.universal.util;
 
 // JDK 1.6.x
 import java.util.Map;
+import java.util.Date;
 
 // Dom4j
 import org.dom4j.Element;
 
-import com.siliconmtn.action.ActionRequest;
 // SMT Base Libs
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.security.AbstractLoginModule;
 import com.siliconmtn.security.AuthenticationException;
-import com.siliconmtn.security.EmailAddressNotFoundException;
 import com.siliconmtn.security.UserDataVO;
+
 // WC libs
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -33,34 +34,28 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class USALoginModule extends AbstractLoginModule {
 
-	/**
-	 * 
-	 */
 	public USALoginModule() {
-		this.setUserProfile(true);
+		super();
 	}
 
-	/**
-	 * @param initVals
-	 */
 	public USALoginModule(Map<String, Object> initVals) {
 		super(initVals);
-		this.setUserProfile(true);
 	}
 
 	/*
 	 * (non-Javadoc)
 	 * @see com.siliconmtn.security.AbstractLoginModule#retrieveUserData(java.lang.String, java.lang.String)
 	 */
-	public UserDataVO retrieveUserData(String loginName, String password) 
-	throws AuthenticationException {
+	@Override
+	public UserDataVO authenticateUser(String loginName, String password) 
+			throws AuthenticationException {
 		WebServiceAction wsa = new WebServiceAction(null);
-		wsa.setAttributes(initVals);
+		wsa.setAttributes(getAttributes());
 		UserDataVO user = null;
-		String catalogSiteId = this.retrieveLoginSiteId();
+		String siteId = getSiteId();
 		Element userElem = null;
 		try {
-			userElem = wsa.authenticateMember(loginName, password, catalogSiteId);
+			userElem = wsa.authenticateMember(loginName, password, siteId);
 			user = wsa.parseUserData(userElem);
 		} catch (Exception e) {
 			user = new UserDataVO();
@@ -68,49 +63,29 @@ public class USALoginModule extends AbstractLoginModule {
 		}
 		return user;
 	}
-	
-	
-	/* (non-Javadoc)
-	 * @see com.siliconmtn.security.AbstractLoginModule#authenticate(java.lang.String, java.lang.String)
+
+
+	/**
+	 * Retrieves the login site ID which will be used by the WebServiceAction to determine
+	 * which site to authenticate against.
+	 * @return
 	 */
-	@Override
-	public String authenticate(String loginName, String password)
-	throws AuthenticationException {
-		return null;
-	}
-	
-	/* (non-Javadoc)
-	 * @see com.siliconmtn.security.AbstractLoginModule#authenticateUser(java.lang.String, java.lang.String)
-	 */
-	@Override
-	public UserDataVO authenticateUser(String loginName, String password)
-	throws AuthenticationException {
-		return null;
+	private String getSiteId() {
+		ActionRequest req = (ActionRequest) getAttribute(GlobalConfig.ACTION_REQUEST);
+		if (req != null) {
+			SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
+			return site.getSiteId();
+		} else {
+			return null;
+		}
 	}
 
-	/* (non-Javadoc)
-	 * @see com.siliconmtn.security.AbstractLoginModule#retrievePassword(java.lang.String)
-	 */
-	@Override
-	public String retrievePassword(String emailAddress)
-	throws EmailAddressNotFoundException {
-		return null;
-	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.security.AbstractLoginModule#retrievePasswordAge(java.lang.String)
 	 */
 	@Override
 	public Long retrievePasswordAge(String authenticationId) {
-		return null;
-	}
-
-	/* (non-Javadoc)
-	 * @see com.siliconmtn.security.AbstractLoginModule#manageUser(java.lang.String, java.lang.String, java.lang.String, java.lang.Integer)
-	 */
-	@Override
-	public String manageUser(String authId, String emailAddress, String password, Integer pwdResetFlag) 
-	throws InvalidDataException {
 		return null;
 	}
 
@@ -131,38 +106,38 @@ public class USALoginModule extends AbstractLoginModule {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.siliconmtn.security.AbstractLoginModule#retrieveAuthIdByCookie(java.lang.String)
+	 * @see com.siliconmtn.security.AbstractLoginModule#resetPassword(java.lang.String,java.lang.String)
 	 */
-	@Override
-	public String retrieveAuthIdByCookie(String profileId) {
-		return null;
-	}
-	
-	/**
-	 * Retrieves the login site ID which will be used by the WebServiceAction to determine
-	 * which site to authenticate against.
-	 * @return
-	 */
-	private String retrieveLoginSiteId() {
-		String catalogSiteId = null;
-		ActionRequest req = (ActionRequest) initVals.get(GlobalConfig.ACTION_REQUEST);
-		if (req != null) {
-			SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
-			catalogSiteId = site.getSiteId();
-		}
-		log.debug("login module catalogSiteId: " + catalogSiteId);
-		return catalogSiteId;
-	}
-
 	@Override
 	public boolean resetPassword(String pwd, UserDataVO user) {
+		//not implemented
 		return false;
 	}
 
+	/* (non-Javadoc)
+	 * @see com.siliconmtn.security.AbstractLoginModule#authenticateUser(java.lang.String)
+	 */
 	@Override
-	public UserDataVO retrieveUserData(String encProfileId)
-			throws AuthenticationException {
+	public UserDataVO authenticateUser(String encProfileId) throws AuthenticationException {
+		//not implemented
 		return null;
 	}
 
+	/* (non-Javadoc)
+	 * @see com.siliconmtn.security.AbstractLoginModule#saveAuthRecord(java.lang.String, java.lang.String, java.lang.String, java.lang.Integer)
+	 */
+	@Override
+	public String saveAuthRecord(String authId, String username, String password, Integer pwdResetFlag)
+			throws InvalidDataException {
+		//not implemented
+		return null;
+	}
+
+	/* (non-Javadoc)
+	 * @see com.siliconmtn.security.AbstractLoginModule#recordLogin(java.lang.String, java.lang.String, java.util.Date)
+	 */
+	@Override
+	public void recordLogin(UserDataVO user, String siteId, String userAgent, String ipAddr, Date d) {
+		// not implemented
+	}
 }

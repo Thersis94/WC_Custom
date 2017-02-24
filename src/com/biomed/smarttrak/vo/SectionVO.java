@@ -2,13 +2,15 @@ package com.biomed.smarttrak.vo;
 
 import java.io.Serializable;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Date;
 
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.RandomAlphaNumeric;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: SectionVO.java
@@ -32,12 +34,17 @@ public class SectionVO implements Serializable {
 	private String solrTokenTxt;
 	private Date createDt;
 	private Date updateDt;
+	private boolean isSelected;
 
-	public SectionVO() {super();}
-	public SectionVO(ResultSet rs) {
+	public SectionVO() {
+		super();
+	}
+
+	public SectionVO(ResultSet rs) throws SQLException {
 		this();
 		setData(rs);
 	}
+
 	public SectionVO(ActionRequest req) {
 		this();
 		setData(req);
@@ -47,15 +54,12 @@ public class SectionVO implements Serializable {
 	 * Helper method that sets data from the ResultSet.
 	 * @param rs
 	 */
-	public void setData(ResultSet rs) {
-		DBUtil util = new DBUtil();
-		this.sectionId = util.getStringVal("SECTION_ID", rs);
-		this.parentId = util.getStringVal("PARENT_ID", rs);
-		this.sectionNm = util.getStringVal("SECTION_NM", rs);
-		this.orderNo = util.getIntVal("ORDER_NO", rs);
-		this.solrTokenTxt = util.getStringVal("SOLR_TOKEN_TXT", rs);
-		this.createDt = util.getDateVal("CREATE_DT", rs);
-		this.updateDt = util.getDateVal("UPDATE_DT", rs);
+	public void setData(ResultSet rs) throws SQLException {
+		setSectionId(rs.getString("SECTION_ID"));
+		setParentId(rs.getString("PARENT_ID"));
+		setSectionNm(rs.getString("SECTION_NM"));
+		setOrderNo(rs.getInt("ORDER_NO"));
+		setSolrTokenTxt(rs.getString("SOLR_TOKEN_TXT"));
 	}
 
 	/**
@@ -63,11 +67,15 @@ public class SectionVO implements Serializable {
 	 * @param req
 	 */
 	public void setData(ActionRequest req) {
-		this.sectionId = req.getParameter("sectionId");
-		this.parentId = req.getParameter("parentId");
-		this.sectionNm = req.getParameter("sectionNm");
-		this.orderNo = Convert.formatInteger(req.getParameter("orderNo"));
-		this.solrTokenTxt = req.getParameter("solrTokenTxt");
+		setSectionId(req.getParameter("sectionId"));
+		setParentId(req.getParameter("parentId"));
+		setSectionNm(req.getParameter("sectionNm"));
+		setOrderNo(Convert.formatInteger(req.getParameter("orderNo")));
+		setSolrTokenTxt(req.getParameter("solrTokenTxt"));
+		
+		//if this is an insert, randomly generate the solr token.  This only happens once, ever.
+		if (StringUtil.isEmpty(getSectionId()))
+			setSolrTokenTxt(RandomAlphaNumeric.generateRandom(5));
 	}
 
 	/**
@@ -95,13 +103,14 @@ public class SectionVO implements Serializable {
 	 * @return the orderNo
 	 */
 	@Column(name="ORDER_NO")
-	public Integer getOrderNo() {
-		return Integer.valueOf(orderNo);
+	public int getOrderNo() {
+		return orderNo;
 	}
 	/**
 	 * @return the solrTokenTxt
+	 * This gets generated once, at insertion time, and never changes again.  Used for enforcing permissions
 	 */
-	@Column(name="SOLR_TOKEN_TXT")
+	@Column(name="SOLR_TOKEN_TXT", isInsertOnly=true)
 	public String getSolrTokenTxt() {
 		return solrTokenTxt;
 	}
@@ -143,10 +152,11 @@ public class SectionVO implements Serializable {
 	public void setOrderNo(int orderNo) {
 		this.orderNo = orderNo;
 	}
+	
 	/**
 	 * @param solrTokenTxt the solrTokenTxt to set.
 	 */
-	public void setSolrTokenTxt(String solrTokenTxt) {
+	private void setSolrTokenTxt(String solrTokenTxt) {
 		this.solrTokenTxt = solrTokenTxt;
 	}
 	/**
@@ -160,5 +170,13 @@ public class SectionVO implements Serializable {
 	 */
 	public void setUpdateDt(Date updateDt) {
 		this.updateDt = updateDt;
+	}
+
+	public boolean isSelected() {
+		return isSelected;
+	}
+
+	public void setSelected(boolean isSelected) {
+		this.isSelected = isSelected;
 	}
 }

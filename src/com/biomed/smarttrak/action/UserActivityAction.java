@@ -1,6 +1,6 @@
-package com.biomed.smarttrak.admin.user;
+package com.biomed.smarttrak.action;
 
-//Java 7
+//Java 8
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -8,12 +8,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+// WC custom
+import com.biomed.smarttrak.vo.UserActivityVO;
+
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.security.StringEncrypter;
+import com.siliconmtn.security.UserDataVO;
+import com.siliconmtn.util.StringUtil;
+
 // WebCrescendo libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -56,21 +62,14 @@ public class UserActivityAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		
+
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
-		
 		Map<String,UserActivityVO> userActivity;
-		String siteId = parseSiteId(req);
-		String profileId = req.hasParameter("profileId") ? req.getParameter("profileId") : null;
-		String dateStart = req.hasParameter("dateStart") ? req.getParameter("dateStart") : null;
-		String dateEnd = req.hasParameter("dateEnd") ? req.getParameter("dateEnd") : null;
-		log.debug("siteId | profileId: " + siteId + " | " + profileId);
-		log.debug("dateStart | dateEnd: " + dateStart + " | " + dateEnd);
-		
 		try {
-			/* Check caller security here so that we can gracefully catch/set the error 
-			 * on the module response if the caller has an insufficient role level. */
-			checkSecurity(req, siteId);
+			String siteId = parseSiteId(req);
+			String profileId = checkProfileId(req, siteId);
+			String dateStart = req.hasParameter("dateStart") ? req.getParameter("dateStart") : null;
+			String dateEnd = req.hasParameter("dateEnd") ? req.getParameter("dateEnd") : null;
 			
 			userActivity = retrieveUserPageViews(siteId, profileId, dateStart, dateEnd);
 			// merge certain profile data (first/last names) with user activity data
@@ -87,28 +86,56 @@ public class UserActivityAction extends SBActionAdapter {
 	}
 	
 	/**
-	 * Checks caller's security role and throws an exception if insufficient role level is found.
+	 * Validates a user's security role and then returns a profile ID or null value based
+	 * on the role of the of the logged in user.
 	 * @param req
 	 * @param siteId
+	 * @return
 	 * @throws ActionException
 	 */
-	private void checkSecurity(ActionRequest req, String siteId) throws ActionException {
+	private String checkProfileId(ActionRequest req, String siteId) throws ActionException {
+		SMTSession sess = (SMTSession)req.getSession();
+		/* Check caller security here so that we can gracefully catch/set the error 
+		 * on the module response if the caller has an insufficient role level. */
+		int roleLevel = checkRoleLevel(sess, siteId);
+		if (roleLevel == SecurityController.ADMIN_ROLE_LEVEL) {
+			return StringUtil.checkVal(req.getParameter("profileId"), null);
+		}
+
+		UserDataVO user = (UserDataVO)sess.getAttribute(Constants.USER_DATA);
+		return user.getProfileId();
+
+	}
+
+	/**
+	 * Checks for null session and then checks caller's security role level.  If minimal role
+	 * level is not found, throws an exception. Otherwise returns role level.
+	 * @param sess
+	 * @param siteId
+	 * @return
+	 * @throws ActionException
+	 */
+	private int checkRoleLevel(SMTSession sess, String siteId) throws ActionException {
 		StringBuilder errMsg = new StringBuilder(100);
-		errMsg.append("Active session monitoring access not authorized.");
-		SMTSession sess = req.getSession();
+		errMsg.append("User activity access not authorized. ");
+		// if no session, we go no further.
 		if (sess == null) {
-			errMsg.append(" Invalid session.");
+			errMsg.append("Session is Invalid.");
 			throw new ActionException(errMsg.toString());
 		}
 
+		// obtain user role(s)
 		SBUserRole roles = (SBUserRole)sess.getAttribute(Constants.ROLE_DATA);
 
+		// check access
 		if (roles == null || 
 				! roles.getSiteId().equalsIgnoreCase(siteId) ||
-				roles.getRoleLevel() < SecurityController.ADMIN_ROLE_LEVEL) {
+				roles.getRoleLevel() == SecurityController.PUBLIC_ROLE_LEVEL) {
 			errMsg.append(" Administrative access required for the site data requested.");
 			throw new ActionException(errMsg.toString());
 		}
+
+		return roles.getRoleLevel();
 
 	}
 	
@@ -122,7 +149,7 @@ public class UserActivityAction extends SBActionAdapter {
 			return req.getParameter("siteId");
 		} else {
 			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-			return site.getSiteId();
+			return site.getAliasPathParentId() != null ? site.getAliasPathParentId() : site.getSiteId();
 		}
 	}
 
@@ -186,7 +213,7 @@ public class UserActivityAction extends SBActionAdapter {
 			prevPid = currPid;
 		}
 		
-		// tie off the dangling user
+		// pick up the dangling user record(s).
 		if (user != null) {
 			userActivity.put(user.getProfileId(), user);
 		}
@@ -290,4 +317,14 @@ public class UserActivityAction extends SBActionAdapter {
 			return encrypted;
 		}
 	}
+
+	/* (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
+	public void list(ActionRequest req) throws ActionException {
+		super.retrieve(req);
+	}
+	
+	
 }

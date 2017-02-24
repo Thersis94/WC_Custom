@@ -361,7 +361,7 @@ public class UserAction extends SimpleActionAdapter {
 				vo.setAuthenticationId(loginModule.retrieveAuthenticationId(vo.getEmailAddress()));
 
 			//insert or update the AUTHENTICATION table, returns the pkId
-			String authId = loginModule.manageUser(vo.getAuthenticationId(), 
+			String authId = loginModule.saveAuthRecord(vo.getAuthenticationId(), 
 								vo.getEmailAddress(),	vo.getPassword(), resetFlg);
 			vo.setAuthenticationId(authId);
 			log.debug("done saving auth info");

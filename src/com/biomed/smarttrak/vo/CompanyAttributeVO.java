@@ -3,8 +3,8 @@ package com.biomed.smarttrak.vo;
 import java.util.Date;
 import java.util.List;
 
+import com.biomed.smarttrak.vo.NoteInterface;
 import com.biomed.smarttrak.vo.NoteVO;
-import com.bmg.admin.vo.NoteInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
@@ -31,6 +31,8 @@ public class CompanyAttributeVO implements NoteInterface  {
 	private String attributeId;
 	private String valueText;
 	private String titleText;
+	private String attributeName;
+	private String groupName;
 	private List<NoteVO> notes;
 	
 	private int orderNo;
@@ -109,6 +111,17 @@ public class CompanyAttributeVO implements NoteInterface  {
 	}
 	
 
+	@Column(name="attribute_nm", isReadOnly=true)
+	public String getAttributeName() {
+		return attributeName;
+	}
+
+
+	public void setAttributeName(String attributeName) {
+		this.attributeName = attributeName;
+	}
+
+
 	// These functions exists only to give the DBProcessor a hook to autogenerate dates on
 	@Column(name="UPDATE_DT", isAutoGen=true, isUpdateOnly=true)
 	public Date getUpdateDate() {return null;}
@@ -140,6 +153,16 @@ public class CompanyAttributeVO implements NoteInterface  {
 	@Override
 	public List<NoteVO> getNotes() {
 		return this.notes;
+	}
+
+
+	public String getGroupName() {
+		return groupName;
+	}
+
+
+	public void setGroupName(String groupName) {
+		this.groupName = groupName;
 	}
 
 }

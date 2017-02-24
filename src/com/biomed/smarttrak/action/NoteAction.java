@@ -5,30 +5,43 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+
+
+
+
 //WC custom
 import com.biomed.smarttrak.vo.NoteVO;
-
+import com.biomed.smarttrak.vo.TeamVO;
+import com.biomed.smarttrak.vo.UserVO;
 //STM baselibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.exception.NotAuthorizedException;
+import com.siliconmtn.http.filter.fileupload.ProfileDocumentFileManagerStructureImpl;
+import com.siliconmtn.http.parser.StringEncoder;
+import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.StringEncrypter;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.SBActionAdapter;
-
+import com.smt.sitebuilder.action.file.transfer.ProfileDocumentAction;
+import com.smt.sitebuilder.action.file.transfer.ProfileDocumentVO;
 //WebCrescendo
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -50,8 +63,16 @@ public class NoteAction extends SBActionAdapter {
 		COMPANY,
 		PRODUCT,
 		MARKET,
-
 	}
+
+	private static final String PRODUCT_ID = "productId" ;
+	private static final String MARKET_ID = "marketId";
+	private static final String COMPANY_ID = "companyId";
+	private static final String ATTRIBUTE_ID = "attributeId";
+	private static final String NOTE_TYPE = "noteType";
+	private static final String NOTE_ENTITY_ID = "noteEntityId";
+	private static final String CUSTOM_SCHEMA = "custom.";
+	private static final String NOTES_DIRECTORY_PATH = "/note/";
 
 	public NoteAction() {
 		super();
@@ -72,23 +93,307 @@ public class NoteAction extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("Notes Action Retrieve called");
-		String encKey = (String) getAttribute(Constants.ENCRYPT_KEY);
-		Calendar cal = Calendar.getInstance();
-		cal.setTime(new Date()); 
-		cal.add(Calendar.HOUR_OF_DAY, 3);
 
-		try  {
-			StringEncrypter se = new StringEncrypter(encKey);
+		SMTSession ses = req.getSession();
+		UserVO uvo = (UserVO) ses.getAttribute(Constants.USER_DATA);
 
-			String fileToken = se.encrypt(cal.getTime().toString());
-			log.debug("note lode time " + cal.getTime().toString());
-			ModuleVO modVo = (ModuleVO) attributes.get(Constants.MODULE_DATA);
-			modVo.setAttribute("noteToken", fileToken );
-			attributes.put(Constants.MODULE_DATA, modVo);
+		//this section of the retrieve is used by file handler to process and send back
+		//the correct vo
 
-		} catch (EncryptionException e) {
-			log.error("error during string encryption " , e);
+		if (!StringUtil.isEmpty(req.getParameter("profileDocumentId"))){
+			String profileDocumentId = req.getParameter("profileDocumentId");
+
+			try {
+				if (isAuthorTeam(uvo,profileDocumentId)){
+
+					ProfileDocumentAction pda = new ProfileDocumentAction();
+					pda.setActionInit(actionInit);
+					pda.setDBConnection(dbConn);
+					pda.setAttributes(attributes);
+
+					ProfileDocumentVO pvo = pda.getDocumentByProfileDocumentId(profileDocumentId);
+
+
+
+					//will need a module data vo to send data back to the file handler
+					ModuleVO modVo = new ModuleVO();
+					modVo.setActionData(pvo);
+					attributes.put(Constants.MODULE_DATA, modVo);
+				}
+			} catch (NotAuthorizedException e) {
+				log.error("error in authorizing use of note ", e);
+			}
+
+		}else{
+
+			String encKey = (String) getAttribute(Constants.ENCRYPT_KEY);
+			String productId = StringUtil.checkVal(req.getParameter(PRODUCT_ID));
+			String companyId = StringUtil.checkVal(req.getParameter(COMPANY_ID));
+			String marketId = StringUtil.checkVal(req.getParameter(MARKET_ID));
+			String attributeId = StringUtil.checkVal(req.getParameter(ATTRIBUTE_ID));
+			String noteId = StringUtil.checkVal(req.getParameter("noteId"));
+			String noteType = StringUtil.checkVal(req.getParameter(NOTE_TYPE));
+			String noteEntityId = StringUtil.checkVal(req.getParameter(NOTE_ENTITY_ID));
+			String orgId = ((SiteVO)req.getAttribute(Constants.SITE_DATA)).getOrganizationId();
+			
+			StringBuilder filePrefix = new StringBuilder(65);
+			filePrefix.append(StringUtil.checkVal(attributes.get(Constants.PROFILE_DOCUMENT_DIR)));
+			filePrefix.append(orgId).append(NOTES_DIRECTORY_PATH);
+			
+			
+			Date cal = Convert.formatDate(new Date(), Calendar.HOUR_OF_DAY, 3);
+
+			try  {
+				ModuleVO modVo = (ModuleVO) attributes.get(Constants.MODULE_DATA);
+				StringEncrypter se = new StringEncrypter(encKey);
+				
+				String fileToken = se.encrypt(Long.toString(cal.getTime()));
+				fileToken = StringEncoder.urlEncode(fileToken);
+				
+				log.debug("file token " + fileToken);
+				//if the request is for a particular note get that note
+				if (!noteId.isEmpty()){
+					//send the userId so we are sure the requester can see the note.
+					NoteVO vo = getNote(noteId, uvo.getUserId());
+					modVo.setActionData(vo);
+				}
+
+				//if there is an id for a list of notes ret that list of notes
+				if (!productId.isEmpty() || !marketId.isEmpty()|| !companyId.isEmpty()){
+					modVo.setActionData(refreshNoteList(productId, marketId,companyId, attributeId,ses));
+				}
+
+				modVo.setAttribute(ProfileDocumentFileManagerStructureImpl.DOC_TOKEN, fileToken );
+				modVo.setAttribute("filePrefix", filePrefix.toString() );
+				modVo.setAttribute("primaryId", setPrimaryId(productId, companyId, marketId, attributeId));
+				modVo.setAttribute(NOTE_TYPE, noteType.isEmpty()? getNoteType(productId, companyId, marketId) : noteType);
+				modVo.setAttribute(ATTRIBUTE_ID, attributeId);
+				modVo.setAttribute(NOTE_ENTITY_ID, noteEntityId.isEmpty()? setEntityId(productId, companyId, marketId) : noteEntityId);
+				attributes.put(Constants.MODULE_DATA, modVo);
+
+			} catch (EncryptionException e) {
+				log.error("error during string encryption " , e);
+			}
+
 		}
+
+	}
+
+	/**
+	 * takes the profile document id and it back to the original note 
+	 * this is done to ensure that whoever requests that file is the owner of the note or 
+	 * on the team.
+	 * @param uvo
+	 * @param profileDocumentId
+	 * @throws NotAuthorizedException 
+	 */
+	private boolean isAuthorTeam(UserVO uvo, String profileDocumentId) throws NotAuthorizedException {
+
+		if (dbConn == null || uvo == null) {
+			throw new NotAuthorizedException("NOT_AUTHORIZED - user null or data base connect null");
+		}
+
+
+		//this doesn't go through the standard path so attributes are not set here
+
+		StringBuilder sb = new StringBuilder(181);
+		sb.append("select n.user_id, n.team_id from profile_document pd ");
+		sb.append("inner join ").append(CUSTOM_SCHEMA).append("biomedgps_note n ");
+		sb.append("on n.note_id = pd.feature_id ");
+		sb.append("where profile_document_id = ? ");
+
+		log.debug("sql: " + sb.toString() +"|" + profileDocumentId );
+
+		try (PreparedStatement ps = dbConn.prepareStatement(sb.toString())) {
+
+			ps.setString(1, profileDocumentId);
+
+			ResultSet rs = ps.executeQuery();
+
+			if (rs.next()) {
+
+				String userId = StringUtil.checkVal(rs.getString("user_id"));
+				String teamId = StringUtil.checkVal(rs.getString("team_id"));
+
+				if (!StringUtil.isEmpty(userId) && userId.equals(uvo.getUserId())){
+					return true;
+				}
+
+				if(!StringUtil.isEmpty(teamId)&& uvo.getTeams() != null  && uvo.getTeams().contains(teamId)){
+					return true;
+				}
+
+			}
+
+		} catch(SQLException sqle) {
+			log.error("could not confirm security by id ", sqle);
+		}
+
+		return false;
+	}
+
+	/**
+	 * gets the id of the main object in this case the main company product or market
+	 * @param productId
+	 * @param companyId
+	 * @param marketId
+	 * @return
+	 */
+	private Object setEntityId(String productId, String companyId, String marketId) {
+		return StringUtil.checkVal(productId, StringUtil.checkVal(companyId, marketId));
+	}
+
+	/**
+	 * used the ids to tell which note type it is and mark it on the mod vo
+	 * @param productId
+	 * @param companyId
+	 * @param marketId
+	 * @return
+	 */
+	private String getNoteType(String productId, String companyId, String marketId) {
+		if (!StringUtil.isEmpty(productId)) {
+			return NoteType.PRODUCT.name();
+		}
+		if (!StringUtil.isEmpty(companyId)){
+			return NoteType.COMPANY.name();
+		}
+		if (!StringUtil.isEmpty(marketId)){
+			return NoteType.MARKET.name();
+		}
+
+		return null;
+	}
+
+	/**
+	 * looks up a note by id and user
+	 * @param noteId
+	 * @param teams 
+	 * @param userId 
+	 * @return
+	 */
+	protected NoteVO getNote(String noteId, String userId) {
+
+		StringBuilder sb = new StringBuilder(32);
+		sb.append("select * from ").append((String)attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_note n ");
+		sb.append("where note_id = ? and user_id = ?");
+
+		log.debug(sb.toString() +"|" + noteId +"|"+ userId );
+
+		try (PreparedStatement ps = dbConn.prepareStatement(sb.toString())) {
+
+			ps.setString(1, noteId);
+			ps.setString(2, userId);
+
+			ResultSet rs = ps.executeQuery();
+			ProfileDocumentAction pda = new ProfileDocumentAction();
+			pda.setAttributes(attributes);
+			pda.setDBConnection(dbConn);
+			pda.setActionInit(actionInit);
+			if (rs.next()) {
+
+				NoteVO vo =  new NoteVO(rs);
+
+				vo.setProfileDocuments(pda.getDocumentByFeatureId(vo.getNoteId()));
+
+				return vo;
+			}
+		} catch(SQLException | ActionException sqle) {
+			log.error("could not select notes by id ", sqle);
+		}
+
+
+		return null;
+	}
+
+	/**
+	 * looks at the ids, and sets a primary id for use in the jsp files.  if there attr id exists
+	 * it has priority.
+	 * @param attributeId 
+	 * @param marketId 
+	 * @param companyId 
+	 * @param productId 
+	 * @return
+	 */
+	private String setPrimaryId(String productId, String companyId, String marketId, String attributeId) {
+		if (StringUtil.isEmpty(attributeId)){
+
+			return StringUtil.checkVal(productId, 
+					StringUtil.checkVal(companyId, marketId));
+
+		}
+		return attributeId;
+	}
+
+	/**
+	 * used to return a single directly requested list of notes
+	 * @param productId
+	 * @param marketId
+	 * @param companyId
+	 * @param attributeId
+	 * @param ses2 
+	 * @return
+	 */
+	private List<NoteVO> refreshNoteList(String productId, String marketId,	String companyId, String attributeId, SMTSession ses) {
+
+		//in the generic note the key is the target id and the value is the note type
+		GenericVO type = calculateNoteType(marketId, productId, companyId);
+
+		log.debug("note type: " + type);
+		
+		UserVO uvo = (UserVO) ses.getAttribute(Constants.USER_DATA);
+		//if no user return an empty list
+		if (uvo == null){
+			log.debug("no logged in user");
+			return new ArrayList<>();
+		}
+
+		log.debug("teams=" + uvo.getTeams().size());
+		log.debug("user id = " + uvo.getUserId());
+
+		String userId = uvo.getUserId();
+		List<String> teams = new ArrayList<>();
+
+		for (TeamVO tvo : uvo.getTeams()){
+			teams.add(tvo.getTeamId());
+		}
+
+		List<String> attributes = Arrays.asList(attributeId);
+		List<String> targetIds = Arrays.asList((String)type.getKey());
+		if (targetIds == null){
+			return new ArrayList<>();
+		}
+
+		getNoteList(targetIds, NoteType.COMPANY, userId, teams);
+
+		Map<String, List<NoteVO>> targetNotes = getNotes(userId, teams,attributes, targetIds, (NoteType)type.getValue() );		
+
+
+		if (targetNotes != null && targetNotes.containsKey(attributes.get(0))) {
+			log.debug("sending back a list of notes with the attribute id " + attributes.get(0));
+			return targetNotes.get(attributes.get(0));
+		}
+
+		if (targetNotes != null && targetNotes.containsKey(targetIds.get(0)) && StringUtil.isEmpty(attributes.get(0))){
+			log.debug("sending back a list of notes with the company id ");
+			return targetNotes.get(targetIds.get(0));
+		}
+
+		log.debug("The target list was not located empty list returned");
+		return new ArrayList<>();
+	}
+
+	/**
+	 * looks at the ids sent and returns the correct note type
+	 * @param marketId
+	 * @param productId
+	 * @param companyId
+	 * @return
+	 */
+	private GenericVO calculateNoteType(String marketId, String productId,String companyId) {
+
+		if (!StringUtil.isEmpty(productId))return new GenericVO(productId,NoteType.PRODUCT);
+		if (!StringUtil.isEmpty(companyId))return new GenericVO(companyId,NoteType.COMPANY);
+		else return new GenericVO(marketId,NoteType.MARKET);
 	}
 
 	/*
@@ -99,14 +404,23 @@ public class NoteAction extends SBActionAdapter {
 	public void build(ActionRequest req) throws ActionException {
 		log.debug("Notes Action Build called");
 
+		String noteType = StringUtil.checkVal(req.getParameter(NOTE_TYPE));
+		String attributeId = StringUtil.checkVal(req.getParameter(ATTRIBUTE_ID));
+		String noteEntityId = StringUtil.checkVal(req.getParameter(NOTE_ENTITY_ID));
+
+
 		DBProcessor db = new DBProcessor(dbConn, (String) attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		NoteVO vo= new NoteVO(req);
 
-		//TODO biomed user data vo not present on request
-		vo.setUserId("8080");
-		//TODO no company, product, or market to test it in yet
-		vo.setCompanyId("2792");
+		SMTSession ses = req.getSession();
+		UserVO uvo = (UserVO) ses.getAttribute(Constants.USER_DATA);
+		log.debug("user id = " + uvo.getUserId());
 
+		vo.setUserId(uvo.getUserId());
+
+		log.debug("companyId " + vo.getCompanyId());
+
+		setTargetId(req, vo);
 
 		//if a user decided to not share the note, then the team id is set to null 
 		//  to stop everyone else in the same team from seeing it
@@ -117,14 +431,104 @@ public class NoteAction extends SBActionAdapter {
 		ModuleVO modVo = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 
 		if(req.hasParameter("isDelete")) {
-			deleteNote(vo, db);	
-		} else {			
-			saveNote(vo, db);
+			if (!StringUtil.isEmpty(vo.getNoteId())) {
+
+				ProfileDocumentAction pda = new ProfileDocumentAction();
+				pda.setAttributes(attributes);
+				pda.setDBConnection(dbConn);
+				pda.setActionInit(actionInit);
+				//goes looking for documents to delete
+				vo.setProfileDocuments(pda.getDocumentByFeatureId(vo.getNoteId()));
+				//deletes the note
+				deleteNote(vo, db);	
+				
+				//if there are files to delete remove then and they document record
+				if (vo.getProfileDocuments() != null && vo.getProfileDocuments().size() >0){
+					deleteProfileDocuments(pda , vo.getProfileDocuments());
+
+				}
+
+			}
+
+		} else {		
+			log.debug("save note with id: " + vo.getNoteId() + " is it savable " + vo.isNoteSaveable() );
+			if (vo.isNoteSaveable()) {
+				saveNote(vo, db);
+			}
+			vo.setNoteId(db.getGeneratedPKId());
+
+			if(!StringUtil.isEmpty(vo.getFilePathText())){
+				processProfileDocumentCreation(vo, req, uvo.getProfileId());
+			}
+
+
 			modVo.setAttribute("newNoteId", vo.getNoteId() );
 			modVo.setAttribute("newNote", vo);
 			log.debug("added new note " + vo);
 		}
+
+		modVo.setAttribute(NOTE_TYPE, noteType);
+		modVo.setAttribute(ATTRIBUTE_ID, attributeId);
+		modVo.setAttribute(NOTE_ENTITY_ID, noteEntityId);
 		attributes.put(Constants.MODULE_DATA, modVo);
+	}
+
+	
+	/**
+	 * loops the profile documemts deleting each one from the file system.
+	 * @param pda 
+	 * @param profileDocuments
+	 * @throws ActionException 
+	 */
+	protected void deleteProfileDocuments(ProfileDocumentAction pda, List<ProfileDocumentVO> profileDocuments) throws ActionException {
+		for (ProfileDocumentVO pvo : profileDocuments){
+			pda.deleteFileFromDisk(pvo);
+		}
+	}
+
+	/**
+	 * this method will make and save a profile document entry for the new note.
+	 * @param vo
+	 * @param req
+	 * @param profileId 
+	 */
+	protected void processProfileDocumentCreation(NoteVO vo, ActionRequest req, String profileId) {
+		log.debug("process profile document creation called ");
+		ProfileDocumentAction pda = new ProfileDocumentAction();
+		pda.setAttributes(attributes);
+		pda.setDBConnection(dbConn);
+		pda.setActionInit(actionInit);
+
+		String orgId = ((SiteVO)req.getAttribute(Constants.SITE_DATA)).getOrganizationId();
+
+		req.setParameter("profileId", profileId);
+		req.setParameter("featureId", vo.getNoteId());
+		req.setParameter("organizationId", orgId);
+		req.setParameter("actionId", actionInit.getActionId());
+
+		try {
+			pda.build(req);
+		} catch (ActionException e) {
+			log.error("error occcured during profile document generation " , e);
+		}
+	}
+
+	/**
+	 * looks for the different params on the request and sets the id needed
+	 * 
+	 * @param req
+	 * @param vo 
+	 */
+	private void setTargetId(ActionRequest req, NoteVO vo) {
+
+		if (!StringUtil.checkVal(req.getParameter(COMPANY_ID)).isEmpty()){
+			vo.setCompanyId(StringUtil.checkVal(req.getParameter(COMPANY_ID)));
+		}else if (!StringUtil.checkVal(req.getParameter(PRODUCT_ID)).isEmpty()){
+			vo.setProductId(StringUtil.checkVal(req.getParameter(PRODUCT_ID)));
+		}else if (!StringUtil.checkVal(req.getParameter(MARKET_ID)).isEmpty()){
+			vo.setMarketId(StringUtil.checkVal(req.getParameter(MARKET_ID)));
+		}
+
 	}
 
 	/**
@@ -137,10 +541,7 @@ public class NoteAction extends SBActionAdapter {
 		log.debug("Notes Action insert note called ");
 
 		try {
-			log.debug("save note with id: " + vo.getNoteId() + " is it savable " + vo.isNoteSaveable() );
-			if (vo.isNoteSaveable()) {
-				db.save(vo);
-			}
+			db.save(vo);
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}
@@ -155,16 +556,18 @@ public class NoteAction extends SBActionAdapter {
 		log.debug("Notes Action delete note called");
 
 		try {
-			if (!StringUtil.isEmpty(vo.getNoteId())) {
-				db.delete(vo);
-			}
-
+			db.delete(vo);
 		}catch(Exception e) {
 			throw new ActionException(e);
 		}
 	}
 
 	/**
+				if( vo.getProfileDocuments() != null){
+					for(ProfileDocumentVO pvo : vo.getProfileDocuments()){
+
+					}
+				}
 	 * based on the note request type and the size of the attributes list returns the where clause.
 	 * @param vo
 	 * @param noteRequestType
@@ -195,7 +598,7 @@ public class NoteAction extends SBActionAdapter {
 			appendSqlPlaceholder(teams.size(), sb);
 		}
 
-		sb.append(") and (EXPIRATION_DT > CURRENT_TIMESTAMP or EXPIRATION_DT is null) ");
+		sb.append(") and (n.EXPIRATION_DT > CURRENT_TIMESTAMP or n.EXPIRATION_DT is null) ");
 
 		return sb.toString();
 	}
@@ -236,7 +639,7 @@ public class NoteAction extends SBActionAdapter {
 	}
 
 	/**
-	 * pulls every note with the accompanying company id
+	 * pulls every note with the accompanying  id
 	 * @param companyId 
 	 * @param companyAttrIds 
 	 * @param teams 
@@ -250,8 +653,8 @@ public class NoteAction extends SBActionAdapter {
 		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
 		Map<String, List<NoteVO>> data = new HashMap<>();
 
-		sql.append("select * from ").append((String)attributes.get("customDbSchema")).append("biomedgps_note n ");
-		sql.append("inner join ").append((String)attributes.get("customDbSchema")).append("BIOMEDGPS_USER u on u.user_id = n.user_id ");
+		sql.append("select * from ").append((String)attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_note n ");
+		sql.append("inner join ").append((String)attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("BIOMEDGPS_USER u on u.user_id = n.user_id ");
 		sql.append("inner join PROFILE p  on p.profile_id = u.profile_id ");
 
 		sql.append(getWhereSql(targetIds, teams, noteType));
@@ -279,20 +682,26 @@ public class NoteAction extends SBActionAdapter {
 
 			ResultSet rs = ps.executeQuery();
 
+			ProfileDocumentAction pda = new ProfileDocumentAction();
+			pda.setActionInit(actionInit);
+			pda.setDBConnection(dbConn);
+			pda.setAttributes(attributes);
+
 			while (rs.next()) {
 
 				NoteVO vo = new NoteVO(rs);
-
 				String firstName = pm.getStringValue("FIRST_NM", rs.getString("FIRST_NM"));
 				String lastName = pm.getStringValue("LAST_NM", rs.getString("LAST_NM"));
 
 				vo.setUserName(firstName +" "+ lastName);
 
+				vo.setProfileDocuments(pda.getDocumentByFeatureId(vo.getNoteId()));
+
 				processNote(noteType, data, vo);
 			}
 
-		}catch(SQLException sqle) {
-			log.error("could not select company notes ", sqle);
+		}catch(SQLException | ActionException sqle) {
+			log.error("could not select notes ", sqle);
 		}
 
 		log.debug("data size " + data.size());

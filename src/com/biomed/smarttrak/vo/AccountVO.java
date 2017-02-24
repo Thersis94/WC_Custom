@@ -3,6 +3,7 @@ package com.biomed.smarttrak.vo;
 //Java 7
 import java.util.Date;
 
+import com.biomed.smarttrak.admin.user.HumanNameIntfc;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
@@ -22,7 +23,7 @@ import com.siliconmtn.util.Convert;
  <b>Changes:</b> 
  ***************************************************************************/
 @Table(name="BIOMEDGPS_ACCOUNT")
-public class AccountVO {
+public class AccountVO implements HumanNameIntfc {
 	private String accountId;
 	private String companyId;
 	private String accountName;
@@ -36,6 +37,9 @@ public class AccountVO {
 	private Date updateDate;
 	private String firstName;
 	private String lastName;
+	private int fdAuthFlg;
+	private int gaAuthFlg;
+	private int mktAuthFlg;
 
 	/*
 	 * Account Type enum - not to be confused with status, which is Active or Inactive only.  (e.g. Inactive Staff account)
@@ -85,6 +89,9 @@ public class AccountVO {
 		setState(req.getParameter("stateCode"));
 		setZipCode(req.getParameter("zipCode"));
 		setCountry(req.getParameter("countryCode"));
+		setFdAuthFlg(Convert.formatInteger(req.getParameter("fdAuthFlg")));
+		setGaAuthFlg(Convert.formatInteger(req.getParameter("gaAuthFlg")));
+		setMktAuthFlg(Convert.formatInteger(req.getParameter("mktAuthFlg")));
 	}
 
 
@@ -347,5 +354,32 @@ public class AccountVO {
 
 	public void setLastName(String lastName) {
 		this.lastName = lastName;
+	}
+
+	@Column(name="fd_auth_flg")
+	public int getFdAuthFlg() {
+		return fdAuthFlg;
+	}
+
+	public void setFdAuthFlg(int fdAuthFlg) {
+		this.fdAuthFlg = fdAuthFlg;
+	}
+
+	@Column(name="ga_auth_flg")
+	public int getGaAuthFlg() {
+		return gaAuthFlg;
+	}
+
+	public void setGaAuthFlg(int gaAuthFlg) {
+		this.gaAuthFlg = gaAuthFlg;
+	}
+
+	@Column(name="mkt_auth_flg")
+	public int getMktAuthFlg() {
+		return mktAuthFlg;
+	}
+
+	public void setMktAuthFlg(int mktAuthFlg) {
+		this.mktAuthFlg = mktAuthFlg;
 	}
 }

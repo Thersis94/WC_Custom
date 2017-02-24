@@ -2,16 +2,23 @@ package com.biomed.smarttrak.action;
 
 import org.apache.commons.lang.StringEscapeUtils;
 
+// WC custom
 import com.biomed.smarttrak.FinancialDashAction;
 import com.biomed.smarttrak.FinancialDashScenarioAction;
 import com.biomed.smarttrak.admin.AccountAction;
+import com.biomed.smarttrak.admin.AccountPermissionAction;
+import com.biomed.smarttrak.admin.AccountUserAction;
 import com.biomed.smarttrak.admin.CompanyManagementAction;
-import com.biomed.smarttrak.admin.ContentHierarchyAction;
+import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.admin.GapAnalysisAdminAction;
+import com.biomed.smarttrak.admin.ListAction;
 import com.biomed.smarttrak.admin.MarketManagementAction;
 import com.biomed.smarttrak.admin.ProductManagementAction;
+import com.biomed.smarttrak.admin.ReportFacadeAction;
 import com.biomed.smarttrak.admin.TeamAction;
 import com.biomed.smarttrak.admin.TeamMemberAction;
+import com.biomed.smarttrak.admin.UpdatesAction;
+import com.biomed.smarttrak.admin.InsightAction;
 
 //SMT base libs
 import com.siliconmtn.action.ActionException;
@@ -23,9 +30,11 @@ import com.siliconmtn.util.StringUtil;
 
 // WC core
 import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.smt.sitebuilder.action.solr.management.SolrSynonymAction;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.SecurityController;
 
 /****************************************************************************
  * <b>Title</b>: AdminControllerAction.java
@@ -40,9 +49,29 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class AdminControllerAction extends SimpleActionAdapter {
 
+	protected static final String ACTION_TYPE = "actionType"; //reqParam this class executes around
+
 	// application constants  - these could be moved to sb_config if subject to change
+	public static final String BIOMED_ORG_ID = "BMG_SMARTTRAK"; 
 	public static final String PUBLIC_SITE_ID = "BMG_SMARTTRAK_1";
 	public static final String STAFF_ROLE_ID = "3eef678eb39e87277f000101dfd4f140";
+	public static final String REGISTRATION_GRP_ID = "ea884793b2ef163f7f0001011a253456";
+
+	// All logged-in users are Registered Users or Site Administrators.  
+	// Roles, as they apply to the site's section hierarchy, are administered by the SecurityController
+	public static final int DEFAULT_ROLE_LEVEL = SecurityController.PUBLIC_REGISTERED_LEVEL;
+
+	/*
+	 * 'sections' of the SmartTRAK website - used for Solr as well as Recently Viewed/Favorites
+	 */
+	public enum Section {
+		MARKET("market/"), PRODUCT("products/"), COMPANY("companies/");
+
+		private String path;
+		Section(String path) { this.path = path; }
+		public String getURLToken() { return path; }
+	}
+
 
 	public AdminControllerAction() {
 		super();
@@ -52,6 +81,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		super(arg0);
 	}
 
+
 	@Override
 	public void list(ActionRequest req) throws ActionException {
 		//pass to superclass for portlet registration (WC admintool)
@@ -59,11 +89,11 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		super.retrieve(req);
 	}
 
+
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		String actionType = req.getParameter("actionType");
+		String actionType = req.getParameter(ACTION_TYPE);
 		String msg;
-
 		try {
 			ActionInterface action = loadAction(actionType);
 
@@ -96,7 +126,12 @@ public class AdminControllerAction extends SimpleActionAdapter {
 
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		loadAction(req.getParameter("actionType")).retrieve(req);
+		if (req.hasParameter(ACTION_TYPE)) {
+			loadAction(req.getParameter(ACTION_TYPE)).retrieve(req);
+		} else {
+			//go to view, display the content from the WYSWIYG in /admintool
+			super.retrieve(req);
+		}
 	}
 
 
@@ -107,22 +142,18 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	 * @throws ActionException
 	 */
 	private ActionInterface loadAction(String actionType) throws ActionException {
-		/*
-		 * TODO add some means of verifying user role/permission before executing
-		 * Actions.  Need to protect Admin functionality from the public side.
-		 */
 		ActionInterface action;
 		switch (StringUtil.checkVal(actionType)) {
 			case "hierarchy":
-				action = new ContentHierarchyAction();
+				action = new SectionHierarchyAction();
 				break;
 			case "agap":
 				action = new GapAnalysisAdminAction();
 				break;
-			case "financialDashboard":
+			case "fd":
 				action = new FinancialDashAction();
 				break;
-			case "financialDashScenario":
+			case "fdScenario":
 				action = new FinancialDashScenarioAction();
 				break;
 			case "productAdmin":
@@ -134,6 +165,15 @@ public class AdminControllerAction extends SimpleActionAdapter {
 			case "accounts":
 				action = new AccountAction();
 				break;
+			case "account-permissions":
+				action = new AccountPermissionAction();
+				break;
+			case "users":
+				action = new AccountUserAction();
+				break;
+			case "insights":
+				action = new InsightAction();
+				break;
 			case "teams":
 				action = new TeamAction();
 				break;
@@ -142,6 +182,21 @@ public class AdminControllerAction extends SimpleActionAdapter {
 				break;
 			case "marketAdmin":
 				action = new MarketManagementAction();
+				break;
+			case "updates":
+				action = new UpdatesAction();
+				break;
+			case "list":
+				action = new ListAction();
+				break;
+			case "activityLog":
+				action = new UserActivityAction();
+				break;
+			case "reports":
+				action = new ReportFacadeAction();
+				break;
+			case "synonyms":
+				action = new SolrSynonymAction();
 				break;
 			default:
 				throw new ActionException("unknown action type:" + actionType);
@@ -160,6 +215,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	public static String urlEncode(String value) {
+		if (StringUtil.isEmpty(value)) return ""; //going in a URL, we don't want to return a null
 		return StringEncoder.urlEncode(StringEscapeUtils.unescapeHtml(value)).replace("+", "%20");
 	}
 }

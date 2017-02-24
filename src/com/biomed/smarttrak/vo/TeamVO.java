@@ -1,5 +1,8 @@
 package com.biomed.smarttrak.vo;
 
+import java.io.Serializable;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 // Java 7
 import java.util.Date;
 
@@ -20,7 +23,8 @@ import com.siliconmtn.util.Convert;
  <b>Changes:</b> 
  ***************************************************************************/
 @Table(name="BIOMEDGPS_TEAM")
-public class TeamVO {
+public class TeamVO implements Serializable {
+	private static final long serialVersionUID = 2439528902387069016L;
 	private String accountId;
 	private String teamId;
 	private String teamName;
@@ -45,6 +49,16 @@ public class TeamVO {
 		setDefaultFlg(Convert.formatInteger(req.getParameter("defaultFlag")));
 		setPrivateFlg(Convert.formatInteger(req.getParameter("privateFlag")));
 	}
+
+	public TeamVO(ResultSet rs) throws SQLException {
+		this();
+		setTeamId(rs.getString("team_id"));
+		setAccountId(rs.getString("account_id"));
+		setTeamName(rs.getString("team_nm"));
+		setDefaultFlg(rs.getInt("default_flg"));
+		setPrivateFlg(rs.getInt("private_flg"));
+	}
+
 
 	/**
 	 * @return the teamId

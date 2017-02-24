@@ -5,22 +5,28 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-
-//WC_Custom libs
-import com.biomed.smarttrak.vo.TeamVO;
-import com.biomed.smarttrak.vo.UserVO;
+import java.util.Map;
 
 //SMTBaseLibs
 import com.siliconmtn.common.constants.GlobalConfig;
+import com.siliconmtn.exception.DatabaseException;
+import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.security.AuthenticationException;
+import com.siliconmtn.security.DjangoPasswordHasher;
+import com.siliconmtn.security.SHAEncrypt;
+import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.common.constants.Constants;
 
 //WebCrescendo libs
 import com.smt.sitebuilder.common.constants.ErrorCodes;
 import com.smt.sitebuilder.security.DBLoginModule;
+import com.smt.sitebuilder.security.UserLogin;
+
+//WC_Custom libs
+import com.biomed.smarttrak.vo.TeamVO;
+import com.biomed.smarttrak.vo.UserVO;
 
 /*****************************************************************************
  <p><b>Title</b>: SmartTRAKLoginModule</p>
@@ -37,122 +43,185 @@ import com.smt.sitebuilder.security.DBLoginModule;
  ***************************************************************************/
 public class SmartTRAKLoginModule extends DBLoginModule {
 
-	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.security.DBLoginModule#retrieveUserData(java.lang.String, java.lang.String)
+	public SmartTRAKLoginModule() {
+		super();
+	}
+
+	public SmartTRAKLoginModule(Map<String, Object> config) {
+		super(config);
+	}
+
+
+	/**
+	 * test Smartrak passwords against 2 encryption schemes, pbkdf2_sha256 with fallback to SHA1
 	 */
 	@Override
-	public UserDataVO retrieveUserData(String userNm, String pwd) 
-			throws AuthenticationException {
-		// 1. retrieve SmartTRAK-specific acct info
-		log.debug("Starting authenticateUser: " + userNm + "/" + pwd);
-
-		if (StringUtil.checkVal(userNm,null) == null || 
-				StringUtil.checkVal(pwd,null) == null)
-			throw new AuthenticationException("No login information was supplied for authentication.");
-
-		// 1. Authenticate against WC core and load WC profile
-		UserDataVO wcUser = authenticateUser(userNm, pwd);
-		
-		// 2. If authenticated, load full profile and user registration, otherwise reject login.
-		if (wcUser.isAuthenticated()) {
-			retrieveFullUserProfile(wcUser);
-			retrieveUserRegistration(wcUser);
-		} else if (wcUser.isLockedOut()) {
-			throw new AuthenticationException(ErrorCodes.ERR_ACCOUNT_LOCKOUT);
-		} else {
+	public UserDataVO authenticateUser(String username, String password) throws AuthenticationException {
+		if (StringUtil.isEmpty(username) || StringUtil.isEmpty(password))
 			throw new AuthenticationException(ErrorCodes.ERR_INVALID_LOGIN);
-		}
+		log.debug("Starting authenticateUser: " + username + "/" + password);
 
-		// 3. create/populate SmarttrakUserVO based on the WC user data
-		UserVO tkUser = initializeSmartTRAKUser(wcUser, new UserVO());
+		// call UserLogin to load the authentication record
+		Connection dbConn = (Connection)getAttribute(GlobalConfig.KEY_DB_CONN);
+		String encKey = (String)getAttribute(Constants.ENCRYPT_KEY);
+		UserLogin ul = new UserLogin(dbConn, encKey);
+		UserDataVO authUser = ul.getAuthRecord(null, username);
 
-		// 4. Retrieve SmartTRAK-specific user data
-		Connection conn = (Connection)initVals.get(GlobalConfig.KEY_DB_CONN);
-		retrieveBaseUser(conn, tkUser);
-		log.debug("Retrieved SmartTRAK user and user-teams data...");
+		//getAuthRecord never returns null.  Test the VO for authenticationId, throw if not found
+		if (StringUtil.isEmpty(authUser.getAuthenticationId()))
+			throw new AuthenticationException(ErrorCodes.ERR_INVALID_LOGIN);
 
-		return tkUser;
+		testUserPassword(authUser, password); //this will throw if the password can't be verified
+
+		// Return user authented user, after loading their Smarttrak data
+		return loadSmarttrakUser(loadUserData(null, authUser.getAuthenticationId()));
 	}
+
+
+	/**
+	 * Retrieves user data based on the encrypted profile ID passed in.
+	 * Called when the user goes through automatic login using a saved cookie
+	 * @param encProfileId
+	 */
+	@Override
+	public UserDataVO authenticateUser(String encProfileId) throws AuthenticationException {
+		UserDataVO user = super.authenticateUser(encProfileId);
+		//Return user authented user, after loading their Smarttrak data
+		return loadSmarttrakUser(user);
+	}
+
+
+	/**
+	 * since we authenticated the user, take their UserDataVO and enhance it into a SmarttrakUserVO.
+	 * Load their Smarttrak User account and their list of Teams.
+	 * @param user
+	 * @return
+	 * @throws AuthenticationException
+	 */
+	public UserDataVO loadSmarttrakUser(UserDataVO user) {
+		UserVO stUser = initializeSmarttrakUser(user);
+		loadCustomData(stUser);
+		return stUser;
+	}
+
 
 	/**
 	 * Populates the SmartTRAK user object with WebCrescendo user data.
-	 * @param wcUser
-	 * @param tkUser
+	 * @param authrecord
 	 * @return
 	 */
-	private UserVO initializeSmartTRAKUser(UserDataVO wcUser, UserVO tkUser) {
-		// set fields from the WC UserDataVO data map
-		tkUser.setData(wcUser.getDataMap());
-		// set attributes
-		tkUser.setAttributes(wcUser.getAttributes());
-		// set authentication values.
-		tkUser.setAuthenticationId(wcUser.getAuthenticationId());
-		tkUser.setAuthenticated(wcUser.isAuthenticated());
-		tkUser.setLockedOut(wcUser.isLockedOut());
-		tkUser.setAuthenticationLogId(wcUser.getAuthenticationLogId());
-		tkUser.setPasswordChangeDate(wcUser.getPasswordChangeDate());
-		tkUser.setPasswordResetFlag(wcUser.getPasswordResetFlag());
-		tkUser.setPasswordHistory(wcUser.getPasswordHistory());
-		return tkUser;
+	protected UserVO initializeSmarttrakUser(UserDataVO userData) {
+		UserVO user = new UserVO();
+		user.setData(userData.getDataMap());
+		user.setAttributes(userData.getAttributes());
+		user.setAuthenticated(userData.isAuthenticated());
+		return user;
 	}
-	
+
+
 	/**
 	 * Retrieves base SmartTRAK-specific user data for a user based on 
 	 * the user ID field or the profile ID field populated
 	 * WC profile ID and populates the ST user bean with that data.
 	 * @param conn
-	 * @param tkUser
+	 * @param user
 	 * @return
 	 * @throws AuthenticationException
 	 */
-	private void retrieveBaseUser(Connection conn, 
-			UserVO tkUser) throws AuthenticationException {
+	private void loadCustomData(UserVO user) {
+		Connection dbConn = (Connection)getAttribute(GlobalConfig.KEY_DB_CONN);
+		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+
 		// use profile ID as that is all we have at the moment.
-		StringBuilder sql = new StringBuilder(410);
-		sql.append("select u.user_id, u.profile_id, u.account_id, u.register_submittal_id, ");
-		sql.append("u.create_dt, u.update_dt, 	xr.create_dt as assigned_dt, 	t.team_nm, ");
-		sql.append("t.default_flg, t.private_flg from custom.biomedgps_user u ");
-		sql.append("left outer join custom.biomedgps_user_team_xr xr on u.user_id = xr.user_id ");
-		sql.append("inner join custom.biomedgps_team t on xr.team_id = t.team_id ");
-		sql.append("where u.profile_id = ? 	order by t.team_nm");
-		log.debug("Retrieve base user w/teams SQL: " + sql.toString());
-		log.debug("Using profileId: " + tkUser.getProfileId());
-		
-		try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
-			ps.setString(1, tkUser.getProfileId());
+		StringBuilder sql = new StringBuilder(200);
+		sql.append("select u.user_id, u.account_id, u.register_submittal_id, u.fd_auth_flg, u.ga_auth_flg, u.mkt_auth_flg, ");
+		sql.append("t.team_id, t.account_id, t.team_nm, t.default_flg, t.private_flg ");
+		sql.append("from ").append(schema).append("biomedgps_user u ");
+		sql.append("left outer join ").append(schema).append("biomedgps_user_team_xr xr on u.user_id=xr.user_id ");
+		sql.append("inner join ").append(schema).append("biomedgps_team t on xr.team_id=t.team_id ");
+		sql.append("where u.account_id=t.account_id and u.profile_id=? order by t.team_nm");
+		log.debug(sql + user.getProfileId());
+
+		int iter = 0;
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, user.getProfileId());
 			ResultSet rs = ps.executeQuery();
-
-			UserVO resultUser = null;
-			List<TeamVO> teams = new ArrayList<>();
 			while (rs.next()) {
-				if (resultUser == null) {
-					resultUser = new UserVO(rs);
-					tkUser.setUserId(resultUser.getUserId());
-					tkUser.setAccountId(resultUser.getAccountId());
-					tkUser.setRegisterSubmittalId(resultUser.getRegisterSubmittalId());
-					tkUser.setCreateDate(resultUser.getCreateDate());
-					tkUser.setUpdateDate(resultUser.getUpdateDate());
-					log.debug("resultUser userId: " + resultUser.getUserId());
+				if (iter == 0) { //first run, get the fields from the _user table.  They're the same each time by.
+					user.setUserId(rs.getString("user_id"));
+					user.setAccountId(rs.getString("account_id"));
+					user.setRegisterSubmittalId(rs.getString("register_submittal_id"));
+					user.setFdAuthFlg(rs.getInt("fd_auth_flg"));
+					user.setGaAuthFlg(rs.getInt("ga_auth_flg"));
+					user.setMktAuthFlg(rs.getInt("mkt_auth_flg"));
+					iter = 1;
 				}
-				//TODO - change all of this to DBProcessor
-//				TeamVO team = new TeamVO(rs);
-//				teams.add(team);
+				user.addTeam(new TeamVO(rs));
 			}
-
-			if (resultUser == null || resultUser.getUserId() == null) {
-				throw new SQLException(ErrorCodes.ERR_INVALID_LOGIN);
-			}
-		} catch(SQLException ae) {
-			throw new AuthenticationException(ae.getMessage());
+		} catch (SQLException sqle) {
+			log.error("could not query Smarttrak user/teams", sqle);
 		}
+
+		if (log.isDebugEnabled() && user.getTeams() != null)
+			log.debug("loaded " + user.getTeams().size() + " teams for " + user.getEmailAddress());
 	}
-	
-	/* (non-Javadoc)
-	 * @see com.siliconmtn.security.AbstractLoginModule#hasUserProfile()
+
+
+	/**
+	 * tests the password obtained from the visitor against the auth record's password using
+	 * a waterfall of encryption schemes.
+	 * @param authUser
+	 * @param proclaimedPassword
+	 * @throws AuthenticationException
+	 */
+	protected void testUserPassword(UserDataVO authUser, String allegedPswd) throws AuthenticationException {
+		//test the password against the Django scheme.  If it matches we're done
+		DjangoPasswordHasher hasher = new DjangoPasswordHasher();
+		if (hasher.checkPassword(allegedPswd, authUser.getPassword()))
+			return;
+
+		//test the password against SHA1 - the legacy Smarttrak scheme.  if it matches we're done
+		SHAEncrypt sha = new SHAEncrypt();
+		try {
+			if (sha.encrypt(allegedPswd).equals(authUser.getPassword()))
+				return;
+		} catch (Exception e) {
+			log.warn("password is not SHA1, or didn't match the stored value", e);
+		}
+
+		//finally, test the password against SMT's 3DES encryption scheme
+		StringEncrypter se;
+		try {
+			se = new StringEncrypter((String)getAttribute(Constants.ENCRYPT_KEY));
+			if (se.encrypt(allegedPswd).equals(authUser.getPassword()))
+				return;
+		} catch (Exception e) {
+			log.warn("password is not 3DES, or didn't match the stored value", e);
+		}
+
+		throw new AuthenticationException(ErrorCodes.ERR_INVALID_LOGIN);
+	}
+
+
+	/**
+	 * saves the auth record to the database.  Encrypts the user's password with the custom scheme first.
+	 * Does not currently preserve password history, but could be added off of this method.  Database field would need to be lengthened.
 	 */
 	@Override
-	public Boolean hasUserProfile() {
-		return Boolean.TRUE;
-	}
+	public String saveAuthRecord(String authId, String userName, String password, Integer resetFlag) 
+			throws InvalidDataException {
+		if (StringUtil.isEmpty(userName) || StringUtil.isEmpty(password)) 
+			throw new InvalidDataException();
 
+		// Get the database Connection
+		Connection dbConn = (Connection)getAttribute(GlobalConfig.KEY_DB_CONN);
+		String encKey = (String)getAttribute(Constants.ENCRYPT_KEY);
+		UserLogin ul = new UserLogin(dbConn, encKey);
+
+		try {
+			return ul.modifyUser(authId, userName, password, resetFlag);
+		} catch (DatabaseException de) {
+			throw new InvalidDataException(de);
+		}
+	}
 }

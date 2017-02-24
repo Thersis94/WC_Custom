@@ -26,10 +26,12 @@ public class ProductAttributeVO {
 	
 	private String productAttributeId;
 	private String attributeId;
+	private String attributeName;
 	private String productId;
 	private String valueText;
 	private String titleText;
 	private String attributeTypeCd;
+	private String groupName;
 	private int orderNo;
 	
 	public ProductAttributeVO() {
@@ -73,6 +75,17 @@ public class ProductAttributeVO {
 	public void setAttributeId(String attributeId) {
 		this.attributeId = attributeId;
 	}
+	@Column(name="attribute_nm", isReadOnly=true)
+	public String getAttributeName() {
+		return attributeName;
+	}
+
+
+	public void setAttributeName(String attributeName) {
+		this.attributeName = attributeName;
+	}
+
+
 	@Column(name="value_txt")
 	public String getValueText() {
 		return valueText;
@@ -95,6 +108,16 @@ public class ProductAttributeVO {
 
 	public void setAttributeTypeCd(String attributeTypeCd) {
 		this.attributeTypeCd = attributeTypeCd;
+	}
+
+
+	public String getGroupName() {
+		return groupName;
+	}
+
+
+	public void setGroupName(String groupName) {
+		this.groupName = groupName;
 	}
 
 
