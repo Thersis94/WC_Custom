@@ -7,6 +7,7 @@ import org.apache.solr.client.solrj.SolrQuery.ORDER;
 
 import com.biomed.smarttrak.solr.BiomedUpdateIndexer;
 import com.siliconmtn.action.ActionException;
+import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -37,6 +38,12 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
  * @since Feb 16, 2017
  ****************************************************************************/
 public class UpdatesAction extends SBActionAdapter {
+
+	/**
+	 * @param actionInit
+	 */
+	public UpdatesAction() { super();}
+	public UpdatesAction(ActionInitVO actionInit) { super(actionInit);}
 
 	public void retrieve(ActionRequest req) throws ActionException {
 		putModuleData(retrieveUpdates(req));

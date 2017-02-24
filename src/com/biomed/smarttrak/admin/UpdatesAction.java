@@ -36,7 +36,7 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
  * @since Feb 14, 2017
  ****************************************************************************/
 public class UpdatesAction extends AbstractTreeAction {
-	protected static final String UPDATE_ID = "updateId"; //req param
+	public static final String UPDATE_ID = "updateId"; //req param
 	public static final String ROOT_NODE_ID = "MASTER_ROOT";
 
 	public enum UpdateType {
