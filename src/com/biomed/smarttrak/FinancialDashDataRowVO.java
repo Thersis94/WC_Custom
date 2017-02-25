@@ -145,6 +145,7 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 	 * @param util
 	 * @param rs
 	 */
+	@SuppressWarnings("incomplete-switch")
 	public void setColumns(DBUtil util, ResultSet rs) {
 		
 		try {
@@ -269,6 +270,7 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 	 * @param yearIdx
 	 * @param dollarValue
 	 */
+	@SuppressWarnings("incomplete-switch")
 	private void calculateInactivity(String qtr, int yearIdx, DBUtil util, ResultSet rs) {
 		// Inactivity only applies to company rows, not market rows
 		// Inactivity is only determined from the first two years of data
