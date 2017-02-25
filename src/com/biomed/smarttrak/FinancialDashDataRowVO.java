@@ -12,6 +12,7 @@ import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBModuleVO;
 
 /****************************************************************************
@@ -34,6 +35,8 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 	private String grandparentId;
 	private String companyId;
 	private String regionCd;
+	private boolean inactiveFlg;
+	private int inactiveCnt; // internal value used to calculate overall inactivity
 	private Map<String, FinancialDashDataColumnVO> columns;
 	
 	/**
@@ -42,6 +45,7 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 	protected static Logger log;
 	
 	public FinancialDashDataRowVO() {
+		super();
 		columns = new HashMap<>();
 		log = Logger.getLogger(getClass());
 	}
@@ -101,6 +105,13 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 	}
 
 	/**
+	 * @return the inactiveFlg
+	 */
+	public boolean isInactive() {
+		return inactiveFlg;
+	}
+
+	/**
 	 * @return the parentId
 	 */
 	public String getParentId() {
@@ -156,9 +167,9 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 					case FinancialDashBaseAction.QUARTER_4:
 						addColumn(qtr, yearIdx, maxYear, util, rs);
 						incrementTotal(totals, yearIdx, util.getIntVal(colName, rs));
+						calculateInactivity(qtr, yearIdx, util, rs);
 						break;
 					default:
-						break;
 				}
 			}
 			
@@ -187,6 +198,13 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 	 */
 	public void setRegionCd(String regionCd) {
 		this.regionCd = regionCd;
+	}
+
+	/**
+	 * @param inactiveFlg the inactiveFlg to set
+	 */
+	public void setInactive(boolean inactiveFlg) {
+		this.inactiveFlg = inactiveFlg;
 	}
 
 	/**
@@ -242,6 +260,41 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 		// gives the year for that column. One row in the returned data could
 		// represent data from more than one year.
 		this.addColumn(qtr + "-" + (maxYear - yearIdx), dollarValue, pctChange);
+	}
+	
+	/**
+	 * Makes determination as to whether the company is inactive. When inactive,
+	 * the row should not be returned back to the client.
+	 * 
+	 * @param qtr
+	 * @param yearIdx
+	 * @param dollarValue
+	 */
+	private void calculateInactivity(String qtr, int yearIdx, DBUtil util, ResultSet rs) {
+		// Inactivity only applies to company rows, not market rows
+		// Inactivity is only determined from the first two years of data
+		if (StringUtil.isEmpty(getCompanyId()) || yearIdx > 1)
+			return;
+		
+		int dollarValue = util.getIntVal(qtr + "_" + yearIdx, rs);
+		
+		switch (qtr) {
+			case FinancialDashBaseAction.QUARTER_1:
+			case FinancialDashBaseAction.QUARTER_2:
+				if (yearIdx == 1)
+					break;
+			case FinancialDashBaseAction.QUARTER_3:
+			case FinancialDashBaseAction.QUARTER_4:
+				if (dollarValue == 0)
+					inactiveCnt += 1;
+				break;
+			default:
+		}
+		
+		// If all 6 of the past quarters are zero, this company is inactive
+		if (inactiveCnt == 6) {
+			setInactive(true);
+		}
 	}
 	
 	/**

@@ -5,6 +5,7 @@ import org.apache.commons.lang.StringEscapeUtils;
 // WC custom
 import com.biomed.smarttrak.FinancialDashAction;
 import com.biomed.smarttrak.FinancialDashScenarioAction;
+import com.biomed.smarttrak.admin.FinancialDashHierarchyAction;
 import com.biomed.smarttrak.admin.AccountAction;
 import com.biomed.smarttrak.admin.AccountPermissionAction;
 import com.biomed.smarttrak.admin.AccountUserAction;
@@ -154,6 +155,9 @@ public class AdminControllerAction extends SimpleActionAdapter {
 				break;
 			case "fdScenario":
 				action = new FinancialDashScenarioAction();
+				break;
+			case "fdHierarchy":
+				action = new FinancialDashHierarchyAction();
 				break;
 			case "productAdmin":
 				action = new ProductManagementAction();
