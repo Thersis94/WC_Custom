@@ -45,6 +45,7 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 	protected static Logger log;
 	
 	public FinancialDashDataRowVO() {
+		super();
 		columns = new HashMap<>();
 		log = Logger.getLogger(getClass());
 	}
@@ -168,8 +169,6 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 						incrementTotal(totals, yearIdx, util.getIntVal(colName, rs));
 						calculateInactivity(qtr, yearIdx, util, rs);
 						break;
-					default:
-						break;
 				}
 			}
 			
@@ -273,9 +272,8 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 	private void calculateInactivity(String qtr, int yearIdx, DBUtil util, ResultSet rs) {
 		// Inactivity only applies to company rows, not market rows
 		// Inactivity is only determined from the first two years of data
-		if (StringUtil.checkVal(getCompanyId()).length() == 0 || yearIdx > 1) {
+		if (StringUtil.isEmpty(getCompanyId()) || yearIdx > 1)
 			return;
-		}
 		
 		int dollarValue = util.getIntVal(qtr + "_" + yearIdx, rs);
 		
@@ -288,8 +286,6 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 			case FinancialDashBaseAction.QUARTER_4:
 				if (dollarValue == 0)
 					inactiveCnt += 1;
-				break;
-			default:
 				break;
 		}
 		
