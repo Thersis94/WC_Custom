@@ -145,7 +145,6 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 	 * @param util
 	 * @param rs
 	 */
-	@SuppressWarnings("incomplete-switch")
 	public void setColumns(DBUtil util, ResultSet rs) {
 		
 		try {
@@ -170,6 +169,7 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 						incrementTotal(totals, yearIdx, util.getIntVal(colName, rs));
 						calculateInactivity(qtr, yearIdx, util, rs);
 						break;
+					default:
 				}
 			}
 			
@@ -270,7 +270,6 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 	 * @param yearIdx
 	 * @param dollarValue
 	 */
-	@SuppressWarnings("incomplete-switch")
 	private void calculateInactivity(String qtr, int yearIdx, DBUtil util, ResultSet rs) {
 		// Inactivity only applies to company rows, not market rows
 		// Inactivity is only determined from the first two years of data
@@ -289,6 +288,7 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 				if (dollarValue == 0)
 					inactiveCnt += 1;
 				break;
+			default:
 		}
 		
 		// If all 6 of the past quarters are zero, this company is inactive
