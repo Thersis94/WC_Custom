@@ -74,6 +74,10 @@ public class FinancialDashHierarchyAction extends SBActionAdapter {
 		sha.setDBConnection(dbConn);
 		sha.retrieve(req);
 		
+		// TODO: This is a temporary fix... for some reason, updating the nodes below updates the cached version of
+		// the tree that comes from the Section Hierarchy, maybe the object reference is cached???
+		this.clearCacheByKey(SectionHierarchyAction.CONTENT_HIERARCHY_CACHE_KEY);
+		
 		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 		List<Node> hierarchy = (List<Node>) mod.getActionData();
 		
@@ -138,8 +142,6 @@ public class FinancialDashHierarchyAction extends SBActionAdapter {
 	
 	/**
 	 * Removes nodes without a direct relationship to the user's subscribed sections
-	 * 
-	 * TODO: For some reason this modifies the cached version of the tree coming from the Section Hierarchy, maybe the object reference is cached???
 	 * 
 	 * @param searchNodes
 	 * @param parentNodeIds
