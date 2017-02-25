@@ -6,7 +6,6 @@ import java.util.Date;
 import java.util.List;
 
 import com.biomed.smarttrak.action.AdminControllerAction;
-import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.admin.user.HumanNameIntfc;
 import com.biomed.smarttrak.solr.BiomedInsightIndexer;
 import com.siliconmtn.action.ActionRequest;
@@ -68,7 +67,7 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 	private Date publishDt;
 	private Date createDt;
 	private Date updateDt;
-	
+
 	public enum InsightType {
 		CLINICAL(12, "Clinical"),
 		COMPLIANCE(11, "Compliance"),
@@ -101,7 +100,7 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 			return this.text;
 		}
 	}
-	
+
 	private List<InsightXRVO> sections;
 
 	/**
@@ -115,7 +114,7 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 		super.addRole(AdminControllerAction.DEFAULT_ROLE_LEVEL);
 	}
 
-	
+
 	public InsightVO(ResultSet rs) {
 		this();
 		setData(rs);
@@ -125,7 +124,7 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 		this();
 		setData(req);
 	}
-	
+
 	protected void setData(ActionRequest req) {
 		SMTSession ses = req.getSession();
 		UserVO vo = (UserVO) ses.getAttribute(Constants.USER_DATA);
@@ -133,9 +132,9 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 			this.setCreatorProfileId(StringUtil.checkVal(req.getParameter("creatorProfileId"), vo.getProfileId()));
 		}
 		setInsightId(req.getParameter("insightsId"));
-		
+
 		if (StringUtil.isEmpty(insightId)) setInsightId(req.getParameter("pkId"));
-		
+
 		setTitleTxt(req.getParameter("titleTxt"));
 		setTypeCd(Convert.formatInteger(req.getParameter("typeCd")));
 		setAbstractTxt(req.getParameter("abstractTxt"));
@@ -147,7 +146,7 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 		setStatusCd(req.getParameter("statusCd"));
 		setOrderNo(Convert.formatInteger(req.getParameter("orderNo")));
 		setPublishDt(Convert.formatDate(Convert.DATE_SLASH_PATTERN, req.getParameter("publishDt")));	
-		
+
 		//only want to see the publish date to today if the status is publish and the 
 		//date feild is null
 		if(InsightStatusCd.P.toString().equals(statusCd) && publishDt == null) {
@@ -160,7 +159,7 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 			}
 		}
 	}
-	
+
 	/**
 	 * @return the sections
 	 */
@@ -173,14 +172,14 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 		if(u != null)
 			this.sections.add(u);
 	}
-	
+
 	/**
 	 * @param sections the sections to set.
 	 */
 	public void setSections(List<InsightXRVO> sections) {
 		this.sections = sections;
 	}
-	
+
 	/**
 	 * Helper method that builds hierarchy path.
 	 * 
@@ -189,13 +188,15 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 	 */
 	public void setHierarchies(Tree t) {
 		for(InsightXRVO uxr : sections) {
-			Node n = t.findNode(uxr.getSectionId());
+
+			Node n = t.findNode(StringUtil.checkVal(uxr.getSectionId()));
 			if(n != null && !StringUtil.isEmpty(n.getFullPath())) {
 				super.addHierarchies(n.getFullPath().replaceAll(" ", "_").replaceAll("&", "and"));
 			}
 		}
+
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.biomed.smarttrak.admin.user.HumanNameIntfc#getFirstName()
 	 */
@@ -256,7 +257,7 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 	public String getTitleTxt() {
 		return titleTxt;
 	}
-	
+
 	/**
 	 * gets the numeric type code
 	 * @return the typeNm
@@ -266,7 +267,7 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 	public int getTypeCd() {
 		return typeCd;
 	}
-	
+
 	/**
 	 * looks at the type code and returns the string name
 	 * @return
@@ -279,7 +280,7 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 		else
 			return "";
 	}
-	
+
 	/**
 	 * @return the abstractTxt
 	 */
@@ -312,7 +313,7 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 	public String getSideContentTxt() {
 		return sideContentTxt;
 	}
-	
+
 	/**
 	 * @return the featuredFlg
 	 */
@@ -321,7 +322,7 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 	public int getFeaturedFlg() {
 		return featuredFlg;
 	}
-	
+
 	/**
 	 * @return the featuredImageTxt
 	 */
@@ -330,7 +331,7 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 	public String getFeaturedImageTxt() {
 		return featuredImageTxt;
 	}
-	
+
 	/**
 	 * @return the statusCd
 	 */
@@ -346,7 +347,7 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 	public int getOrderNo() {
 		return orderNo;
 	}
-	
+
 	/**
 	 * @return the publishDt
 	 */
@@ -355,7 +356,7 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 	public Date getPublishDt() {
 		return publishDt;
 	}
-	
+
 	/**
 	 * @return the createDt
 	 */
@@ -373,7 +374,7 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 		return updateDt;
 	}
 
-	
+
 	/**
 	 * used on the list view to trigger a retrieve of one particular insight
 	 */
@@ -384,7 +385,7 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 		url.append("?requestType=reqRetrieve&insightId=").append(this.insightId);
 		return url.toString();
 	}
-	
+
 	/**
 	 * @param insightId the insightId to set
 	 */
@@ -406,91 +407,91 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 	public void setTitleTxt(String titleTxt) {
 		this.titleTxt = titleTxt;
 	}
-	
+
 	/**
 	 * @param typeNm the typeNm to set.
 	 */
 	public void setTypeCd(int typeCd) {
 		this.typeCd = typeCd;
 	}
-	
+
 	/**
 	 * @param abstractTxt the abstractTxt to set
 	 */
 	public void setAbstractTxt(String abstractTxt) {
 		this.abstractTxt = abstractTxt;
 	}
-	
+
 	/**
 	 * @param bylineTxt the bylineTxt to set
 	 */
 	public void setBylineTxt(String bylineTxt) {
 		this.bylineTxt = bylineTxt;
 	}
-	
+
 	/**
 	 * @param contentTxt the contentTxt to set
 	 */
 	public void setContentTxt(String contentTxt) {
 		this.contentTxt = contentTxt;
 	}
-	
+
 	/**
 	 * @param sideContentTxt the sideContentTxt to set
 	 */
 	public void setSideContentTxt(String sideContentTxt) {
 		this.sideContentTxt = sideContentTxt;
 	}
-	
+
 	/**
 	 * @param featuredFlg the featuredFlg to set
 	 */
 	public void setFeaturedFlg(int featuredFlg) {
 		this.featuredFlg = featuredFlg;
 	}
-	
+
 	/**
 	 * @param featuredImageTxt the featuredImageTxt to set
 	 */
 	public void setFeaturedImageTxt(String featuredImageTxt) {
 		this.featuredImageTxt = featuredImageTxt;
 	}
-	
+
 	/**
 	 * @param statusCd the statusCd to set
 	 */
 	public void setStatusCd(String statusCd) {
 		this.statusCd = statusCd;
 	}
-	
+
 	/**
 	 * @param orderNo the orderNo to set
 	 */
 	public void setOrderNo(int orderNo) {
 		this.orderNo = orderNo;
 	}
-	
+
 	/**
 	 * @param publishDt the publishDt to set
 	 */
 	public void setPublishDt(Date publishDt) {
 		this.publishDt = publishDt;
 	}
-	
+
 	/**
 	 * @param createDt the createDt to set
 	 */
 	public void setCreateDt(Date createDt) {
 		this.createDt = createDt;
 	}
-	
+
 	/**
 	 * @param createDt the createDt to set
 	 */
 	public void setUpdateDt(Date updateDt) {
 		this.updateDt = updateDt;
 	}
-	
+
 	/**
 	 * Helper method gets the InsightSection for the internal typeCd.
 	 * @return

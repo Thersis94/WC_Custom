@@ -85,7 +85,6 @@ public class InsightAction extends AbstractTreeAction {
 
 		DBProcessor db = new DBProcessor(dbConn, schema);
 		List<Object>  insights = db.executeSelect(sql, params, new InsightVO());
-		log.debug("loaded " + insights.size());
 		return insights;
 	}
 
