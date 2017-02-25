@@ -167,6 +167,7 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 						addColumn(qtr, yearIdx, maxYear, util, rs);
 						incrementTotal(totals, yearIdx, util.getIntVal(colName, rs));
 						calculateInactivity(qtr, yearIdx, util, rs);
+						break;
 					default:
 						break;
 				}
@@ -281,14 +282,13 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 		switch (qtr) {
 			case FinancialDashBaseAction.QUARTER_1:
 			case FinancialDashBaseAction.QUARTER_2:
-				if (yearIdx == 1) {
+				if (yearIdx == 1)
 					break;
-				}
 			case FinancialDashBaseAction.QUARTER_3:
 			case FinancialDashBaseAction.QUARTER_4:
-				if (dollarValue == 0) {
+				if (dollarValue == 0)
 					inactiveCnt += 1;
-				}
+				break;
 			default:
 				break;
 		}
