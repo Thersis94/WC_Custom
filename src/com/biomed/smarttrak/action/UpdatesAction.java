@@ -1,17 +1,16 @@
-/**
- *
- */
 package com.biomed.smarttrak.action;
 
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
 
-import com.biomed.smarttrak.solr.BiomedUpdateIndexer;
+import com.biomed.smarttrak.security.SmarttrakRoleVO;
+import com.biomed.smarttrak.util.UpdateIndexer;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.action.search.ACLSolrFieldVO;
 import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrActionIndexVO;
 import com.smt.sitebuilder.action.search.SolrActionVO;
@@ -59,9 +58,9 @@ public class UpdatesAction extends SBActionAdapter {
 
 		//Set SolrSearch ActionId on actionInit
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
-    	actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
+		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 
-    	//Get SolrSearch ActionVO.
+		//Get SolrSearch ActionVO.
 		SolrAction sa = new SolrAction(actionInit);
 		sa.setDBConnection(dbConn);
 		sa.setAttributes(attributes);
@@ -113,10 +112,16 @@ public class UpdatesAction extends SBActionAdapter {
 			qData.addSolrField(new SolrFieldVO(FieldType.FILTER, SearchDocumentHandler.MODULE_TYPE, req.getParameter("typeId"), BooleanType.AND));
 		}
 
-		qData.addIndexType(new SolrActionIndexVO("", BiomedUpdateIndexer.INDEX_TYPE));
+		qData.addIndexType(new SolrActionIndexVO("", UpdateIndexer.INDEX_TYPE));
 
 		qData.setFieldSort(SearchDocumentHandler.UPDATE_DATE);
 		qData.setSortDirection(ORDER.desc);
+		
+		//set roles - test
+		//TODO move this to a more global scope.
+		SmarttrakRoleVO role = (SmarttrakRoleVO) req.getSession().getAttribute(Constants.ROLE_DATA);
+		SolrFieldVO acls = new ACLSolrFieldVO(FieldType.FILTER, SearchDocumentHandler.ACL, role.getACL(), BooleanType.AND);
+		qData.addSolrField(acls);
 
 		return sqp.processQuery(qData);
 	}

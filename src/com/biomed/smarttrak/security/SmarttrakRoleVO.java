@@ -3,13 +3,17 @@ package com.biomed.smarttrak.security;
 //Java 8
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 //WC Custom
 import com.biomed.smarttrak.vo.PermissionVO;
 import com.siliconmtn.data.Node;
+import com.siliconmtn.util.solr.AccessControlListGenerator;
 import com.smt.sitebuilder.admin.action.data.RoleAttributeVO;
+import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.security.SBUserRole;
 
 /****************************************************************************
@@ -29,6 +33,7 @@ public class SmarttrakRoleVO extends SBUserRole {
 	private boolean isFdAuth;
 	private boolean isGaAuth;
 	private boolean isMktAuth;
+	private String roleACL;
 
 	/**
 	 * the WC role VO this object decorates.
@@ -52,6 +57,36 @@ public class SmarttrakRoleVO extends SBUserRole {
 		return accountRoles;
 	}
 
+	public String getACL() {
+		return roleACL;
+	}
+
+
+	/**
+	 * builds the roleACL string once, when accountRoles are set.  Then stores it in a member variable so we don't
+	 * have to recalculate it every time we run a query to Solr.
+	 * @return
+	 */
+	private void buildACL() {
+		AccessControlListGenerator gen = new AccessControlListGenerator();
+		if (accountRoles == null || accountRoles.size() == 0) return;
+
+		Set<String> groups = new HashSet<>(accountRoles.size());
+		//back-trace the approved hierarchies and authorize all parent levels as well
+		for (PermissionVO vo : getAccountRoles()) {
+			String[] tok = vo.getSolrTokenTxt().split(SearchDocumentHandler.HIERARCHY_DELIMITER);
+			String key = "";
+			for (int x=0; x < tok.length; x++) {
+				if (key.length() > 0) key += SearchDocumentHandler.HIERARCHY_DELIMITER;
+				key += tok[x];
+				//System.err.println(key)
+				groups.add(key);
+			}
+		}
+
+		roleACL = gen.getQueryACL(null, groups.toArray(new String[groups.size()]));
+	}
+
 	/**
 	 * sets the section permissions for the user's account into their role vo.
 	 * package access modifier - only SmarttrakRoleModule should be setting this value
@@ -67,6 +102,7 @@ public class SmarttrakRoleVO extends SBUserRole {
 			//System.err.println("user authorized for hierarchy: " + vo.getHierarchyToken())
 			accountRoles.add(vo);
 		}
+		buildACL();
 	}
 
 	public boolean isFdAuthorized() {
@@ -111,7 +147,7 @@ public class SmarttrakRoleVO extends SBUserRole {
 		this.isMktAuth = userAuth == 1 || acctAuth == 1;
 	}
 
-	
+
 
 	/**************************************************************
 	 * 		BELOW METHOD ARE OVERLOADED FOR THE DECORATOR PATTERN   *

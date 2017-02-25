@@ -1,6 +1,3 @@
-/**
- *
- */
 package com.biomed.smarttrak.admin;
 
 import java.sql.PreparedStatement;
@@ -8,12 +5,14 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.biomed.smarttrak.util.SmarttrakSolrUtil;
+import com.biomed.smarttrak.util.SmarttrakTree;
+import com.biomed.smarttrak.util.UpdateIndexer;
 import com.biomed.smarttrak.vo.UpdatesVO;
 import com.biomed.smarttrak.vo.UpdatesXRVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
@@ -22,6 +21,7 @@ import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
 import com.siliconmtn.util.user.NameComparator;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
 
 /****************************************************************************
@@ -37,7 +37,7 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
  ****************************************************************************/
 public class UpdatesAction extends AbstractTreeAction {
 	public static final String UPDATE_ID = "updateId"; //req param
-	public static final String ROOT_NODE_ID = "MASTER_ROOT";
+	public static final String ROOT_NODE_ID = MASTER_ROOT;
 
 	public enum UpdateType {
 		MARKET(12, "Market"),
@@ -66,8 +66,12 @@ public class UpdatesAction extends AbstractTreeAction {
 		}
 	}
 
-	public UpdatesAction() {super();}
-	public UpdatesAction(ActionInitVO actionInit) {super(actionInit);}
+	public UpdatesAction() {
+		super();
+	}
+	public UpdatesAction(ActionInitVO actionInit) {
+		super(actionInit);
+	}
 
 	public void retrieve(ActionRequest req) throws ActionException {
 		//loadData gets passed on the ajax call.  If we're not loading data simply go to view to render the bootstrap 
@@ -81,9 +85,9 @@ public class UpdatesAction extends AbstractTreeAction {
 		List<Object> updates = getUpdates(updateId, statusCd, typeCd, dateRange);
 
 		decryptNames(updates);
-
 		putModuleData(updates);
 	}
+
 
 	/**
 	 * Retrieve all the updates
@@ -94,8 +98,7 @@ public class UpdatesAction extends AbstractTreeAction {
 	 * @return
 	 */
 	public List<Object> getUpdates(String updateId, String statusCd, String typeCd, String dateRange) {
-
-		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
+		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		String sql = formatRetrieveQuery(updateId, statusCd, typeCd, dateRange, schema);
 
 		List<Object> params = new ArrayList<>();
@@ -108,6 +111,7 @@ public class UpdatesAction extends AbstractTreeAction {
 		log.debug("loaded " + updates.size() + " updates");
 		return updates;
 	}
+
 
 	/**
 	 * Formats the account retrieval query.
@@ -124,18 +128,18 @@ public class UpdatesAction extends AbstractTreeAction {
 		if (!StringUtil.isEmpty(statusCd)) sql.append("and a.status_cd=? ");
 		if (!StringUtil.isEmpty(typeCd)) sql.append("and a.type_cd=? ");
 		if (!StringUtil.isEmpty(dateRange)) {
-			if("1".equals(dateRange)) {
-				sql.append("and a.create_Dt > CURRENT_DATE - INTERVAL '6 months' ");
+			if ("1".equals(dateRange)) {
+				sql.append("and a.create_dt > CURRENT_DATE - INTERVAL '6 months' ");
 			} else if ("2".equals(dateRange)) {
-				sql.append("and a.create_Dt < CURRENT_DATE - INTERVAL '6 months' ");
+				sql.append("and a.create_dt < CURRENT_DATE - INTERVAL '6 months' ");
 			}
 		}
-
 		sql.append("order by a.create_dt");
 
 		log.debug(sql);
 		return sql.toString();
 	}
+
 
 	/**
 	 * loop and decrypt owner names, which came from the profile table
@@ -146,19 +150,21 @@ public class UpdatesAction extends AbstractTreeAction {
 		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)data, (String)getAttribute(Constants.ENCRYPT_KEY));
 	}
 
+
 	/**
 	 * Load the Section Tree so that Hierarchies can be generated.
 	 * @param req
 	 * @throws ActionException
 	 */
-	public Tree loadSections() {
+	public SmarttrakTree loadSections() {
 		//load the section hierarchy Tree from superclass
-		Tree t = loadDefaultTree();
+		SmarttrakTree t = loadDefaultTree();
 
 		//Generate the Node Paths using Node Names.
-		t.buildNodePaths(t.getRootNode(), "~", true);
+		t.buildNodePaths(t.getRootNode(), SearchDocumentHandler.HIERARCHY_DELIMITER, true);
 		return t;
 	}
+
 
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
@@ -169,6 +175,7 @@ public class UpdatesAction extends AbstractTreeAction {
 	}
 
 
+
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#delete(com.siliconmtn.action.ActionRequest)
 	 */
@@ -176,6 +183,7 @@ public class UpdatesAction extends AbstractTreeAction {
 	public void delete(ActionRequest req) throws ActionException {
 		saveRecord(req, true);
 	}
+
 
 	/**
 	 * reusable internal method for invoking DBProcessor
@@ -200,16 +208,14 @@ public class UpdatesAction extends AbstractTreeAction {
 				//Save Update Sections.
 				saveSections(u);
 
-				//Add hierarchies to the Section
-				u.setHierarchies(loadSections());
-
 				//Save the Update Document to Solr
-				saveToSolr(u);
+				writeToSolr(u);
 			}
 		} catch (InvalidDataException | DatabaseException e) {
 			throw new ActionException(e);
 		}
 	}
+
 
 	/**
 	 * Manages updating given UpdatesVO with generated PKID and updates sections
@@ -219,23 +225,22 @@ public class UpdatesAction extends AbstractTreeAction {
 	 */
 	private void fixPkids(UpdatesVO u, String generatedPKId) {
 		//Set the UpdateId on UpdatesXRVOs
-		if(StringUtil.isEmpty(u.getUpdateId())) {
-
+		if (StringUtil.isEmpty(u.getUpdateId())) {
 			//Ensure proper UpdateId and Publish Dt are set.
 			u.setUpdateId(generatedPKId);
 
-			for(UpdatesXRVO uxr : u.getUpdateSections()) {
+			for (UpdatesXRVO uxr : u.getUpdateSections())
 				uxr.setUpdateId(u.getUpdateId());
-			}
 		}
 	}
+
 
 	/**
 	 * Removes an Updates Record from Solr.
 	 * @param u
 	 */
 	protected void deleteFromSolr(UpdatesVO u) {
-		try(SolrActionUtil sau = new SolrActionUtil(getAttributes())) {
+		try (SolrActionUtil sau = new SmarttrakSolrUtil(getAttributes())) {
 			sau.removeDocument(u.getUpdateId());
 		} catch (Exception e) {
 			log.error("Error Deleting from Solr.", e);
@@ -243,18 +248,17 @@ public class UpdatesAction extends AbstractTreeAction {
 		log.debug("removed document from solr");
 	}
 
+
 	/**
 	 * Save an UpdatesVO to solr.
 	 * @param u
 	 */
-	protected void saveToSolr(UpdatesVO u) {
-		try(SolrActionUtil sau = new SolrActionUtil(getAttributes())) {
-			sau.addDocument(u);
-		} catch (Exception e) {
-			log.error("Error Saving to Solr.", e);
-		}
-		log.debug("added document to solr");
+	protected void writeToSolr(UpdatesVO u) {
+		UpdateIndexer idx = UpdateIndexer.makeInstance(getAttributes());
+		idx.setDBConnection(dbConn);
+		idx.addSingleItem(u.getUpdateId());
 	}
+
 
 	/**
 	 * Delete old Update Sections and save new ones.
@@ -264,17 +268,15 @@ public class UpdatesAction extends AbstractTreeAction {
 	 * @throws DatabaseException
 	 */
 	protected void saveSections(UpdatesVO u) throws ActionException, InvalidDataException, DatabaseException {
-
 		//Delete old Update Section XRs
 		deleteSections(u.getUpdateId());
 
-		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
-
 		//Save new Sections.
-		for(UpdatesXRVO uxr : u.getUpdateSections()) {
+		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		for(UpdatesXRVO uxr : u.getUpdateSections())
 			db.save(uxr);
-		}
 	}
+
 
 	/**
 	 * Delete old Update Section XRs 
@@ -286,13 +288,14 @@ public class UpdatesAction extends AbstractTreeAction {
 		sql.append("delete from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("biomedgps_update_section where update_id = ?");
 
-		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, updateId);
 			ps.executeUpdate();
 		} catch (SQLException e) {
 			throw new ActionException(e);
 		}
 	}
+
 
 	@Override
 	public String getCacheKey() {

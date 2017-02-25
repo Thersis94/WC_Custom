@@ -7,22 +7,22 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 // SMTBaseLibs 2.0
+import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.security.AuthorizationException;
 import com.siliconmtn.util.StringUtil;
-import com.smt.sitebuilder.common.ModuleVO;
-import com.smt.sitebuilder.common.constants.Constants;
 
 // WebCrescendo 3.0
 import com.smt.sitebuilder.security.DBRoleModule;
 import com.smt.sitebuilder.security.SBUserRole;
+import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.constants.Constants;
 
 //WC Custom
 import com.biomed.smarttrak.admin.AccountAction;
 import com.biomed.smarttrak.admin.AccountPermissionAction;
+import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.UserVO;
-import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.data.Tree;
-import com.siliconmtn.db.pool.SMTDBConnection;
 
 /*****************************************************************************
  <p><b>Title</b>: SmartTRAKRoleModule</p>
@@ -129,10 +129,10 @@ public class SmartTRAKRoleModule extends DBRoleModule {
 			//retrieve the permission tree for this account
 			apa.retrieve(req);
 			ModuleVO mod = (ModuleVO) apa.getAttribute(Constants.MODULE_DATA);
-			Tree t = (Tree) mod.getActionData();
+			SmarttrakTree t = (SmarttrakTree) mod.getActionData();
 
 			//iterate the nodes and attach parent level tokens to each, at each level.  spine.  spine~bone.  spine~bone~fragment.  etc.
-			SecurityController.buildNodePaths(t.getRootNode());
+			t.buildNodePaths();
 
 			//attach the list of permissions to the user's role object
 			role.setAccountRoles(t.preorderList());
