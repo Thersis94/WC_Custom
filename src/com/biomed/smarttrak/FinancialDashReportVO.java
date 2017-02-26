@@ -1,5 +1,6 @@
 package com.biomed.smarttrak;
 
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Locale;
@@ -35,7 +36,7 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
     private static final long serialVersionUID = 1l;
     
     private static final String NAME = "NAME";
-    private enum CellStyleName {TITLE, HEADER_LEFT, HEADER_RIGHT, RIGHT, PERCENT_POS, PERCENT_NEG};
+    private enum CellStyleName {TITLE, HEADER_LEFT, HEADER_RIGHT, RIGHT, PERCENT_POS, PERCENT_NEG}
     
     private String reportTitle = "SmartTRAK - Financial Dashboard";
     private FinancialDashVO dash;
@@ -103,7 +104,7 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 	 * Sets the special cell styles used by this report
 	 */
 	protected void setCellStyles() {
-		cellStyles = new HashMap<>();
+		cellStyles = new EnumMap<>(CellStyleName.class);
 		
 		cellStyles.put(CellStyleName.TITLE, setTitleStyle());
 		cellStyles.put(CellStyleName.HEADER_LEFT, setHeaderLeftStyle());
@@ -254,7 +255,7 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 			Cell cell = row.createCell(cellCount++);
 			cell.setCellType(Cell.CELL_TYPE_STRING);
 			
-			String value = "";
+			String value;
 			if (NAME.equals(key)) {
 				value = (String) dollarRow.get(key);
 			} else {
