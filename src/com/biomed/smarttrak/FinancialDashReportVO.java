@@ -189,8 +189,8 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 		// Setup to increment totals for the totals row
 		Map<String, Integer> totals = initTotals(dash.getRows().get(0));
 		
-		for (FinancialDashDataRowVO row : dash.getRows()) {
-			addExcelRowsFromFdRow(row, totals, curFormat, pctFormat);
+		for (FinancialDashDataRowVO fdRow : dash.getRows()) {
+			addExcelRowsFromFdRow(fdRow, totals, curFormat, pctFormat);
 		}
 		
 		// Generate the totals row
@@ -205,13 +205,13 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 	/**
 	 * Initializes a set of totals from data in an existing row.
 	 * 
-	 * @param row
+	 * @param fdRow
 	 * @return
 	 */
-	protected Map<String, Integer> initTotals(FinancialDashDataRowVO row) {
+	protected Map<String, Integer> initTotals(FinancialDashDataRowVO fdRow) {
 		Map<String, Integer> totals = new HashMap<>();
 		
-		for (Entry<String, FinancialDashDataColumnVO> entry : row.getColumns().entrySet()) {
+		for (Entry<String, FinancialDashDataColumnVO> entry : fdRow.getColumns().entrySet()) {
 			totals.put(entry.getKey(), 0);
 		}
 		
@@ -221,20 +221,20 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 	/**
 	 * Breaks the single financial dash rows into multiple excel rows (one for dollar, other for percent)
 	 * 
-	 * @param row
+	 * @param fdRow
 	 * @param totals
 	 * @param curFormat
 	 * @param pctFormat
 	 * @return
 	 */
-	protected void addExcelRowsFromFdRow(FinancialDashDataRowVO row, Map<String, Integer> totals, NumberFormat curFormat, NumberFormat pctFormat) {
+	protected void addExcelRowsFromFdRow(FinancialDashDataRowVO fdRow, Map<String, Integer> totals, NumberFormat curFormat, NumberFormat pctFormat) {
 		Map<String, Object> dollarRow = new HashMap<>();
 		Map<String, Object> percentRow = new HashMap<>();
 		
-		dollarRow.put(NAME, row.getName());
+		dollarRow.put(NAME, fdRow.getName());
 		percentRow.put(NAME, "");
 
-		for (Entry<String, FinancialDashDataColumnVO> entry : row.getColumns().entrySet()) {
+		for (Entry<String, FinancialDashDataColumnVO> entry : fdRow.getColumns().entrySet()) {
 			dollarRow.put(entry.getKey(), entry.getValue().getDollarValue());
 			percentRow.put(entry.getKey(), entry.getValue().getPctDiff());
 			totals.put(entry.getKey(), totals.get(entry.getKey()) + entry.getValue().getDollarValue());
