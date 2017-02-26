@@ -2,16 +2,24 @@ package com.biomed.smarttrak;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Locale;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.text.NumberFormat;
-import java.util.ArrayList;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import com.smt.sitebuilder.action.AbstractSBReportVO;
+import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.util.CellRangeAddress;
 
-import com.siliconmtn.data.report.ExcelReport;
+import com.smt.sitebuilder.action.AbstractSBReportVO;
 
 /*****************************************************************************
  <p><b>Title</b>: FinancialDashReportVO.java</p>
@@ -25,7 +33,17 @@ import com.siliconmtn.data.report.ExcelReport;
 
 public class FinancialDashReportVO extends AbstractSBReportVO {
     private static final long serialVersionUID = 1l;
+    
+    private static final String NAME = "NAME";
+    private enum CellStyleName {TITLE, HEADER_LEFT, HEADER_RIGHT, RIGHT, PERCENT_POS, PERCENT_NEG};
+    
+    private String reportTitle = "SmartTRAK - Financial Dashboard";
     private FinancialDashVO dash;
+    private Workbook wb;
+    private Sheet sheet;
+    private Row row;
+    private int rowCount;
+    private Map<CellStyleName, CellStyle> cellStyles;
 
     public FinancialDashReportVO() {
         super();
@@ -39,21 +57,76 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
      * 
      * @param data (FinancialDashVO)
      */
-    public void setData(Object data) {
+    @Override
+	public void setData(Object data) {
     	dash = (FinancialDashVO) data;
     }
     
+	@Override
 	public byte[] generateReport() {
 		log.debug("Starting FinancialDashReport generateReport()");
+		if (dash == null) return new byte[0];
+
+		// Create Excel Object
+		wb = new HSSFWorkbook();
+		sheet = wb.createSheet();
+		setCellStyles();
 		
-		ExcelReport rpt = new ExcelReport(this.getHeader());
-		rpt.setTitleCell("SmartTRAK - Financial Dashboard");
+		// Add the rows
+		addTitleRow();
+		addEmptyRow();
+		addHeaderRow();
+		addDataRows();
+
+		// Format so everthing can be seen when opened
+		for (Cell cell : row)
+			sheet.autoSizeColumn(cell.getColumnIndex());
+
+		// Stream the workbook back to the browser
+		try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+			wb.write(baos);
+			return baos.toByteArray();
+		} catch (IOException ioe) {
+			log.error("could not write output stream", ioe);
+		} finally {
+			try { 
+				wb.close(); 
+			} catch (Exception e) {
+				log.error("could not close ", e );
+			}
+		}
+
+		return new byte[0];
+	}
+	
+	/**
+	 * Sets the special cell styles used by this report
+	 */
+	protected void setCellStyles() {
+		cellStyles = new HashMap<>();
 		
-		List<Map<String, Object>> rows = new ArrayList<>();
-		rows = generateDataRows(rows);
-		rpt.setData(rows);
+		cellStyles.put(CellStyleName.TITLE, setTitleStyle());
+		cellStyles.put(CellStyleName.HEADER_LEFT, setHeaderLeftStyle());
+		cellStyles.put(CellStyleName.HEADER_RIGHT, setHeaderRightStyle());
+		cellStyles.put(CellStyleName.RIGHT, setRightStyle());
+		cellStyles.put(CellStyleName.PERCENT_POS, setPercentStyle(IndexedColors.GREEN.getIndex()));
+		cellStyles.put(CellStyleName.PERCENT_NEG, setPercentStyle(IndexedColors.RED.getIndex()));
+	}
+	
+	/**
+	 * Adds the title row to the excel report
+	 */
+	protected void addTitleRow() {		
+		row = sheet.createRow(rowCount++);
+		row.setHeightInPoints((short) 24);
 		
-		return rpt.generateReport();
+		Cell cell = row.createCell(0);
+		cell.setCellType(Cell.CELL_TYPE_STRING);
+		cell.setCellValue(reportTitle);
+		cell.setCellStyle(cellStyles.get(CellStyleName.TITLE));
+
+		// Merge the title cell across additional cells to display full title
+		sheet.addMergedRegion(new CellRangeAddress(0,0,0,8));
 	}
 	
 	/**
@@ -61,21 +134,49 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 	 * 
 	 * @return
 	 */
-	private HashMap<String, String> getHeader() {
+	protected HashMap<String, String> getHeaderData() {
 		HashMap<String, String> headers = new LinkedHashMap<>();
-		headers.put("NAME", dash.getTableTypeName());
+		headers.put(NAME, dash.getTableTypeName());
 		headers.putAll(dash.getColHeaders().getColumns());
 		
 		return headers;
 	}
+	
+	/**
+	 * Adds the header row to the Excel report
+	 */
+	protected void addHeaderRow() {
+		row = sheet.createRow(rowCount++);
+		CellStyle style;
+		
+		int cellCount = 0;		
+		for (Map.Entry<String, String> entry : getHeaderData().entrySet()) {
+			style = cellStyles.get(CellStyleName.HEADER_RIGHT);
+			if (NAME.equals(entry.getKey())) {
+				style = cellStyles.get(CellStyleName.HEADER_LEFT);
+			}
+			
+			Cell cell = row.createCell(cellCount++);
+			cell.setCellType(Cell.CELL_TYPE_STRING);
+			cell.setCellValue(entry.getValue());
+			cell.setCellStyle(style);
+		}
+	}
+	
+	/**
+	 * Adds an empty row when needed
+	 */
+	protected void addEmptyRow() {
+		row = sheet.createRow(rowCount++);
+	}
 
 	/**
-	 * Generates the data rows of the Excel report.
+	 * Adds the data rows of the Excel report.
 	 * 
 	 * @param rows
 	 * @return
 	 */
-	private List<Map<String, Object>> generateDataRows(List<Map<String, Object>> rows) {
+	protected void addDataRows() {
 		// All values are in US dollars
 		Locale usLocale = new Locale.Builder().setLanguage("en").setRegion("US").build();
 		NumberFormat curFormat = NumberFormat.getCurrencyInstance(usLocale);
@@ -88,18 +189,16 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 		Map<String, Integer> totals = initTotals(dash.getRows().get(0));
 		
 		for (FinancialDashDataRowVO row : dash.getRows()) {
-			rows.addAll(getExcelRowsFromFdRow(row, totals, curFormat, pctFormat));
+			addExcelRowsFromFdRow(row, totals, curFormat, pctFormat);
 		}
 		
 		// Generate the totals row
 		Map<String, Object> totalRow = new HashMap<>();
-		totalRow.put("NAME", "Total");
+		totalRow.put(NAME, "Total");
 		for (Entry<String, Integer> entry : totals.entrySet()) {
-			totalRow.put(entry.getKey(), curFormat.format(entry.getValue()));
+			totalRow.put(entry.getKey(), entry.getValue());
 		}
-		rows.add(totalRow);
-
-		return rows;
+		addDollarRow(totalRow, curFormat);
 	}
 	
 	/**
@@ -108,7 +207,7 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 	 * @param row
 	 * @return
 	 */
-	private Map<String, Integer> initTotals(FinancialDashDataRowVO row) {
+	protected Map<String, Integer> initTotals(FinancialDashDataRowVO row) {
 		Map<String, Integer> totals = new HashMap<>();
 		
 		for (Entry<String, FinancialDashDataColumnVO> entry : row.getColumns().entrySet()) {
@@ -127,29 +226,141 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 	 * @param pctFormat
 	 * @return
 	 */
-	private List<Map<String, Object>> getExcelRowsFromFdRow(FinancialDashDataRowVO row, Map<String, Integer> totals, NumberFormat curFormat, NumberFormat pctFormat) {
-		List<Map<String, Object>> excelRows = new ArrayList<>();
-		
+	protected void addExcelRowsFromFdRow(FinancialDashDataRowVO row, Map<String, Integer> totals, NumberFormat curFormat, NumberFormat pctFormat) {
 		Map<String, Object> dollarRow = new HashMap<>();
 		Map<String, Object> percentRow = new HashMap<>();
 		
-		dollarRow.put("NAME", row.getName());
-		percentRow.put("NAME", "");
+		dollarRow.put(NAME, row.getName());
+		percentRow.put(NAME, "");
 
 		for (Entry<String, FinancialDashDataColumnVO> entry : row.getColumns().entrySet()) {
-			dollarRow.put(entry.getKey(), curFormat.format(entry.getValue().getDollarValue()));
+			dollarRow.put(entry.getKey(), entry.getValue().getDollarValue());
+			percentRow.put(entry.getKey(), entry.getValue().getPctDiff());
 			totals.put(entry.getKey(), totals.get(entry.getKey()) + entry.getValue().getDollarValue());
-			
-			if (entry.getValue().getPctDiff() == null) {
-				percentRow.put(entry.getKey(), "");
-			} else {
-				percentRow.put(entry.getKey(), pctFormat.format(entry.getValue().getPctDiff()));
-			}
 		}
 	
-		excelRows.add(dollarRow);
-		excelRows.add(percentRow);
+		addDollarRow(dollarRow, curFormat);
+		addPercentRow(percentRow, pctFormat);
+	}
+	
+	/**
+	 * Adds/formats the data in the dollar rows
+	 */
+	protected void addDollarRow(Map<String, Object> dollarRow, NumberFormat curFormat) {
+		row = sheet.createRow(rowCount++);
 		
-		return excelRows;
+		int cellCount = 0;
+		for(String key : getHeaderData().keySet()) {
+			Cell cell = row.createCell(cellCount++);
+			cell.setCellType(Cell.CELL_TYPE_STRING);
+			
+			String value = "";
+			if (NAME.equals(key)) {
+				value = (String) dollarRow.get(key);
+			} else {
+				cell.setCellStyle(cellStyles.get(CellStyleName.RIGHT));
+				value = curFormat.format((int) dollarRow.get(key));
+			}
+			
+			cell.setCellValue(value);
+		}
+	}
+	
+	/**
+	 * Adds/formats the data in the percentage rows. The percentage rows have special formatting requirements such
+	 * that, negative values are red, positive values are green, and zero values are black.
+	 */
+	protected void addPercentRow(Map<String, Object> percentRow, NumberFormat pctFormat) {
+		row = sheet.createRow(rowCount++);
+		
+		int cellCount = 0;
+		for(String key : getHeaderData().keySet()) {
+			Cell cell = row.createCell(cellCount++);
+			cell.setCellType(Cell.CELL_TYPE_STRING);
+			
+			String value = "";
+			if (percentRow.get(key) != null && !NAME.equals(key)) {
+				Double dblValue = (Double) percentRow.get(key);
+				value = pctFormat.format(dblValue);
+				
+				if (dblValue > 0) {
+					cell.setCellStyle(cellStyles.get(CellStyleName.PERCENT_POS));
+				} else if (dblValue < 0) {
+					cell.setCellStyle(cellStyles.get(CellStyleName.PERCENT_NEG));
+				}
+			}
+			
+			cell.setCellValue(value);
+		}
+	}
+	
+	/**
+	 * Creates the Report Title style
+	 * 
+	 * @return
+	 */
+	protected CellStyle setTitleStyle() {
+		CellStyle style = wb.createCellStyle();
+		
+		Font font = wb.createFont();
+		font.setBoldweight(Font.BOLDWEIGHT_BOLD);
+		font.setFontHeightInPoints((short) 18);
+		style.setFont(font);
+		
+		return style;
+	}
+	
+	/**
+	 * Creates the Left Aligned Header style
+	 * 
+	 * @return
+	 */
+	protected CellStyle setHeaderLeftStyle() {
+		CellStyle style = wb.createCellStyle();
+		
+		Font font = wb.createFont();
+		font.setBoldweight(Font.BOLDWEIGHT_BOLD);
+		style.setFont(font);
+		
+		return style;
+	}
+	
+	/**
+	 * Creates the Right Aligned Header style
+	 * 
+	 * @return
+	 */
+	protected CellStyle setHeaderRightStyle() {
+		CellStyle style = setHeaderLeftStyle();
+		style.setAlignment(CellStyle.ALIGN_RIGHT);
+		
+		return style;
+	}
+	
+	/**
+	 * Creates the Right Aligned style
+	 * 
+	 * @return
+	 */
+	protected CellStyle setRightStyle() {
+		CellStyle style = wb.createCellStyle();
+		style.setAlignment(CellStyle.ALIGN_RIGHT);
+		
+		return style;
+	}
+	
+	/**
+	 * Creates a Percent style with configurable color for positive/negative values
+	 * 
+	 * @return
+	 */
+	protected CellStyle setPercentStyle(short color) {
+		CellStyle style = setRightStyle();
+		Font font = wb.createFont();
+		font.setBoldweight(Font.BOLDWEIGHT_BOLD);
+		font.setColor(color);
+		style.setFont(font);
+		
+		return style;
 	}
 }
