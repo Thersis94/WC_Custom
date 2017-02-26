@@ -14,6 +14,10 @@ import org.apache.log4j.Logger;
 
 // Google GSON 2.3
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
@@ -37,7 +41,41 @@ import com.siliconmtn.util.StringUtil;
  *******************************************************************/
 @Table(name="biomedgps_grid")
 public class GridVO extends BeanDataVO {
-
+	/**
+	 * 
+	 */
+	public enum RowStyle {
+		DATA("bs-data"),
+		UNCHARTED_DATA("bs-nochart-data"),
+		HEADING("bs-heading"),
+		SUB_TOTAL("bs--sub-total"),
+		TOTAL("bs-total");
+		
+		private final String name;
+		private RowStyle(String name) {
+			this.name = name;
+		}
+		
+		public String getName() {
+			return name;
+		}
+		
+		/**
+		 * Allows the enum to be returned by its value
+		 * @param key
+		 * @return
+		 */
+		public static String getEnumKey(String key) {
+			if (StringUtil.isEmpty(key)) return null;
+			
+			for (RowStyle rs : RowStyle.values()) {
+				if (key.equalsIgnoreCase(rs.getName())) return rs.name();
+			}
+			
+			return null;
+		}
+	}
+	
 	/**
 	 * 
 	 */
@@ -48,6 +86,21 @@ public class GridVO extends BeanDataVO {
 	 * Label utilized to match the columns and row data
 	 */
 	public static final String FIELD_LABEL = "field_";
+	
+	/**
+	 * Defines the key used to send the json data in the request
+	 */
+	public static final String JSON_DATA_KEY = "gridData";
+	
+	/**
+	 * Key used in the JSON data to designate the columns in the BS Table
+	 */
+	public static final String JSON_COLUMN_KEY = "columns";
+	
+	/**
+	 * Key used in the JSON data to designate the rows in the BS Table
+	 */
+	public static final String JSON_ROW_KEY = "rows";
 	
 	// Member Variables
 	private String gridId;
@@ -86,6 +139,11 @@ public class GridVO extends BeanDataVO {
 	public GridVO(ActionRequest req) {
 		this();
 		this.populateData(req);
+		
+		// Convert JSON data if it exists
+		if(! StringUtil.isEmpty(req.getParameter(JSON_DATA_KEY))) {
+			convertJson(req.getParameter(JSON_DATA_KEY));
+		}
 	}
 	
 	/**
@@ -511,14 +569,110 @@ public class GridVO extends BeanDataVO {
 	}
 	
 	/**
+	 * Takes the json data and builds the series and details
+	 * @param json
+	 */
+	public void convertJson(String json) {
+		
+		try {
+			JsonElement element = new JsonParser().parse(json);
+			JsonObject obj = element.getAsJsonObject();
+			processColumns(obj.get(JSON_COLUMN_KEY));
+			processRows(obj.get("data"));
+			
+		} catch(Exception e) { log.error("issue", e); }
+		
+	}
+	
+	/**
+	 * JSON parses the data and updates the details
+	 * @param ele
+	 */
+	@SuppressWarnings("unchecked")
+	protected void processColumns(JsonElement ele) {
+		Gson g = new Gson();
+		JsonArray jArray = ele.getAsJsonArray();
+		
+		try {
+			for (Object object : jArray) {
+				JsonArray jsonObject = (JsonArray) object;
+				
+				for(Object data : jsonObject) {
+					updateColumn(g.fromJson(data.toString(), Map.class));
+				}
+				
+			}
+		} catch(Exception e) {
+			log.error("unable to parse JSON for grid data", e);
+		}
+	}
+	
+	/**
+	 * Updates the appropriate series column information
+	 * @param column
+	 */
+	protected void updateColumn(Map<String, String> column) {
+		// Get the data elements, make sure they are populated
+		String field = column.get("field");
+		String title = column.get("title");
+		if (StringUtil.isEmpty(field)) return;
+
+		// Parse out the index from the field and store the data in the series array
+		String val = field.substring(field.lastIndexOf("_") + 1);
+		int index = Convert.formatInteger(val);
+		series[index] = title;
+	}
+	
+	/**
+	 * Parses the JSON element and loads the data into the gridDetailVO
+	 * @param ele JSON Element to be parsed
+	 */
+	@SuppressWarnings("unchecked")
+	protected void processRows(JsonElement ele) {
+		Gson g = new Gson();
+		JsonArray jArray = ele.getAsJsonArray();
+		
+		try {
+			for (Object object : jArray) {
+				updateRow(g.fromJson(object.toString(), Map.class));
+			}
+		} catch(Exception e) {
+			log.error("unable to parse JSON for grid data", e);
+		}
+	}
+	
+	/**
+	 * Parses the data into a detail object and adds to the collection
+	 * @param row
+	 */
+	protected void updateRow(Map<String, String> row) {
+		// Load up the details
+		GridDetailVO detail = new GridDetailVO();
+		detail.setLabel(row.get("field_0"));
+		detail.setGridId(gridId);
+		detail.setGridDetailId(row.get("id"));
+		detail.setDetailType(RowStyle.getEnumKey(row.get("class")));
+		
+		//detail.setDetailType(RowStyle.));
+		String[] values = detail.getValues();
+		for(int i=0; i < 10; i++) {
+			values[i] = row.get("field_" + (i + 1));
+		}
+		
+		// Add to the local collection
+		details.add(detail);
+	}
+	
+	/**
 	 * Converts the Grid into JSON tables formatted for Bootstrap
 	 * @return
 	 */
 	public String getTableJson() {
+		
 		Map<String, List<Map<String, String>>> tableData = new HashMap<>();
 		Gson g = new Gson();
-		tableData.put("rows", getRows());
-		tableData.put("columns", getColumns());
+		tableData.put(JSON_ROW_KEY, getRows());
+		tableData.put(JSON_COLUMN_KEY, getColumns());
 
 		return g.toJson(g.toJson(tableData));
 	}
@@ -555,7 +709,10 @@ public class GridVO extends BeanDataVO {
 		return rows;
 	}
 	
-	
+	/**
+	 * Builds the column objects for the JSON Stream
+	 * @return
+	 */
 	protected List<Map<String, String>> getColumns() {
 		// Create the columns
 		List<Map<String, String>> columns = new ArrayList<>();

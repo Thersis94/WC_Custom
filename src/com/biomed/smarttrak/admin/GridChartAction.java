@@ -10,15 +10,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+// App Libs
+import com.biomed.smarttrak.admin.vo.GridDetailVO;
 import com.biomed.smarttrak.admin.vo.GridVO;
-import com.google.gson.Gson;
+
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -55,7 +59,6 @@ public class GridChartAction extends SBActionAdapter {
 	 */
 	public GridChartAction(ActionInitVO actionInit) {
 		super(actionInit);
-		log.info("here: ");
 	}
 
 	/*
@@ -81,8 +84,32 @@ public class GridChartAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		log.info("Building Data From grid");
 		log.info("Grid Data: " + req.getParameter("gridData"));
+		
+		GridVO grid = new GridVO(req);
+		String msg = "";
+		boolean error = false;
+		
+		DBProcessor db = new DBProcessor(dbConn, getAttribute(Constants.CUSTOM_DB_SCHEMA) + "");
+		try {
+			// Make sure the new grid id is assigned when creating a new grid
+			//db.save(grid);
+			
+			for(GridDetailVO detail : grid.getDetails()) {
+				// If we are adding a new grid, the grid ID does not exist when parsed.  Add it
+				detail.setGridId(grid.getGridId());
+				
+				//db.save(detail);
+			}
+		} catch (Exception e) {
+			log.error("unable to save the grid data", e);
+			msg = e.getLocalizedMessage();
+			error = true;
+		}
+		
+		// Return the data
+		putModuleData("You have successfuly saved the grid data", 0, false, msg, error);
+		
 	}
 	
 	/**
