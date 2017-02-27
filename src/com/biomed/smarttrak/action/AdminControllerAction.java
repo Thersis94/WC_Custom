@@ -5,6 +5,7 @@ import org.apache.commons.lang.StringEscapeUtils;
 // WC custom
 import com.biomed.smarttrak.FinancialDashAction;
 import com.biomed.smarttrak.FinancialDashScenarioAction;
+import com.biomed.smarttrak.admin.FinancialDashHierarchyAction;
 import com.biomed.smarttrak.admin.AccountAction;
 import com.biomed.smarttrak.admin.AccountPermissionAction;
 import com.biomed.smarttrak.admin.AccountUserAction;
@@ -16,6 +17,7 @@ import com.biomed.smarttrak.admin.MarketManagementAction;
 import com.biomed.smarttrak.admin.ProductManagementAction;
 import com.biomed.smarttrak.admin.ReportFacadeAction;
 import com.biomed.smarttrak.admin.SectionHierarchyAction;
+import com.biomed.smarttrak.admin.SupportFacadeAction;
 import com.biomed.smarttrak.admin.TeamAction;
 import com.biomed.smarttrak.admin.TeamMemberAction;
 import com.biomed.smarttrak.admin.UpdatesAction;
@@ -28,7 +30,6 @@ import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.StringUtil;
 // WC core
 import com.smt.sitebuilder.action.SimpleActionAdapter;
-import com.smt.sitebuilder.action.support.SupportTicketFacadeAction;
 import com.smt.sitebuilder.action.solr.management.SolrSynonymAction;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
@@ -155,6 +156,9 @@ public class AdminControllerAction extends SimpleActionAdapter {
 			case "fdScenario":
 				action = new FinancialDashScenarioAction();
 				break;
+			case "fdHierarchy":
+				action = new FinancialDashHierarchyAction();
+				break;
 			case "productAdmin":
 				action = new ProductManagementAction();
 				break;
@@ -195,7 +199,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 				action = new ReportFacadeAction();
 				break;
 			case "support":
-				action = new SupportTicketFacadeAction();
+				action = new SupportFacadeAction();
 				break;
 			case "synonyms":
 				action = new SolrSynonymAction();

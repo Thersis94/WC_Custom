@@ -48,6 +48,9 @@ public class UpdatesAction extends SBActionAdapter {
 		putModuleData(retrieveUpdates(req));
 	}
 
+	public void list(ActionRequest req) throws ActionException {
+		super.retrieve(req);
+	}
 	/**
 	 * Get the solr information 
 	 * @param req
