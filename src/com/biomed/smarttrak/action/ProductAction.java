@@ -26,6 +26,7 @@ import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrActionIndexVO;
@@ -98,10 +99,47 @@ public class ProductAction extends SBActionAdapter {
 		addSections(product);
 		addAlliances(product);
 		addRegulatory(product);
+		// Related products are based on company, no id no related companies.
+		if (!StringUtil.isEmpty(product.getCompanyId()))
+			addRelatedProducts(product);
 		
 		super.putModuleData(product);
 	}
 
+	/**
+	 * Add all products from the owning company to the vo
+	 */
+	protected void addRelatedProducts(ProductVO product) throws ActionException {
+		StringBuilder sql = new StringBuilder(375);
+		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		sql.append("SELECT p.PRODUCT_ID, p.PRODUCT_NM, s.SECTION_NM FROM ");
+		sql.append(customDb).append("BIOMEDGPS_PRODUCT p ");
+		sql.append("INNER JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT_SECTION xr ");
+		sql.append("ON xr.PRODUCT_ID = p.PRODUCT_ID ");
+		sql.append("INNER JOIN ").append(customDb).append("BIOMEDGPS_SECTION s ");
+		sql.append("ON xr.SECTION_ID = s.SECTION_ID ");
+		sql.append("WHERE p.COMPANY_ID = ? ");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, product.getCompanyId());
+			
+			ResultSet rs = ps.executeQuery();
+
+			DBProcessor db = new DBProcessor(dbConn);
+			while(rs.next()) {
+				ProductVO p = new ProductVO();
+				db.executePopulate(p, rs);
+				product.addRelatedProduct(rs.getString("SECTION_NM"), p);
+			}
+			
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
+	}
+
+	/**
+	 * Add all regulations to the product
+	 */
 	protected void addRegulatory(ProductVO product) {
 		StringBuilder sql = new StringBuilder(475);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
@@ -209,14 +247,11 @@ public class ProductAction extends SBActionAdapter {
 			return;
 		}
 		Node head = attributeTree.findNode(path[1]);
-		log.debug("Group of " + path[1]);
 		if (n.getFullPath().contains(DETAILS_ID)) {
-			log.debug("Detail Attribute");
 			String[] name = head.getNodeName().split("\\|");
 			product.addDetail(name[name.length-1], attr);
 		} else {
 			if (!attrMap.keySet().contains(path[1])) {
-				log.debug("Added group" + path[1]);
 				attrMap.put(path[1], new ArrayList<ProductAttributeVO>());
 			}
 
@@ -360,7 +395,6 @@ public class ProductAction extends SBActionAdapter {
 		if (!"P".equals(doc.get(SearchDocumentHandler.CONTENT_TYPE))) {
 			return "Unpublished";
 		}
-		log.debug(doc.get(SearchDocumentHandler.UPDATE_DATE));
 		Date d = (Date) doc.get(SearchDocumentHandler.UPDATE_DATE);
 		long diff = Convert.getCurrentTimestamp().getTime() -d.getTime();
 		long diffDays = diff / (1000 * 60 * 60 * 24);
