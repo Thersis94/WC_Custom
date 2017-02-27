@@ -1,6 +1,3 @@
-/**
- *
- */
 package com.biomed.smarttrak.vo;
 
 import java.sql.ResultSet;
@@ -11,21 +8,21 @@ import java.util.List;
 import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.admin.UpdatesAction.UpdateType;
-import com.biomed.smarttrak.admin.user.HumanNameIntfc;
-import com.biomed.smarttrak.solr.BiomedUpdateIndexer;
+import com.biomed.smarttrak.util.SmarttrakTree;
+import com.biomed.smarttrak.util.UpdateIndexer;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.annotations.SolrField;
 import com.siliconmtn.data.Node;
-import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.user.HumanNameIntfc;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
-import com.smt.sitebuilder.util.solr.SolrDocumentVO;
+import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
 
 /****************************************************************************
  * <b>Title</b>: UpdatesVO.java
@@ -39,21 +36,19 @@ import com.smt.sitebuilder.util.solr.SolrDocumentVO;
  * @since Feb 14, 2017
  ****************************************************************************/
 @Table(name="biomedgps_update")
-public class UpdatesVO extends SolrDocumentVO implements HumanNameIntfc {
+public class UpdatesVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 
-	public enum UpdateStatusCd {N("New"), R("Reviewed"), A("Archived");
+	public enum UpdateStatusCd {
+		N("New"), 
+		R("Reviewed"), 
+		A("Archived");
+
 		private String statusName;
-		UpdateStatusCd(String statusName) {
-			this.statusName = statusName;
-		}
-
-		public String getStatusName() {
-			return statusName;
-		}
+		UpdateStatusCd (String statusName) { this.statusName = statusName; }
+		public String getStatusName() { return statusName; }
 	}
 
 	private String updateId;
-	//Create single point url or field for id/type
 	private String marketId;
 	private String productId;
 	private String companyId;
@@ -68,11 +63,10 @@ public class UpdatesVO extends SolrDocumentVO implements HumanNameIntfc {
 	private Date publishDt;
 	private Date createDt;
 	private Date updateDt;
-
 	private List<UpdatesXRVO> sections;
 
 	public UpdatesVO() {
-		super(BiomedUpdateIndexer.INDEX_TYPE);
+		super(UpdateIndexer.INDEX_TYPE);
 		sections = new ArrayList<>();
 		super.addOrganization(AdminControllerAction.BIOMED_ORG_ID);
 		super.addRole(AdminControllerAction.DEFAULT_ROLE_LEVEL);
@@ -92,7 +86,7 @@ public class UpdatesVO extends SolrDocumentVO implements HumanNameIntfc {
 	protected void setData(ActionRequest req) {
 		SMTSession ses = req.getSession();
 		UserVO vo = (UserVO) ses.getAttribute(Constants.USER_DATA);
-		if(vo != null) {
+		if (vo != null) {
 			this.creatorProfileId = StringUtil.checkVal(req.getParameter("creatorProfileId"), vo.getProfileId());
 		}
 		setUpdateId(req.getParameter("updateId"));
@@ -105,9 +99,9 @@ public class UpdatesVO extends SolrDocumentVO implements HumanNameIntfc {
 		this.twitterTxt = req.getParameter("twitterTxt");
 		this.statusCd = req.getParameter("statusCd");
 		this.publishDt = Convert.formatDate(req.getParameter("publishDt"));
-		if(req.hasParameter("sectionId")) {
+		if (req.hasParameter("sectionId")) {
 			String [] s = req.getParameterValues("sectionId");
-			for(String sec : s) {
+			for (String sec : s) {
 				sections.add(new UpdatesXRVO(updateId, sec));
 			}
 		}
@@ -117,11 +111,11 @@ public class UpdatesVO extends SolrDocumentVO implements HumanNameIntfc {
 	@SolrField(name=SearchDocumentHandler.DOCUMENT_URL)
 	public String getDocumentUrl() {
 		StringBuilder url = new StringBuilder(50);
-		if(!StringUtil.isEmpty(marketId)) {
+		if (!StringUtil.isEmpty(marketId)) {
 			url.append(Section.MARKET.getURLToken()).append("qs/").append(marketId);
-		} else if(!StringUtil.isEmpty(productId)) {
+		} else if (!StringUtil.isEmpty(productId)) {
 			url.append(Section.PRODUCT.getURLToken()).append("qs/").append(productId);
-		} else if(!StringUtil.isEmpty(companyId)) {
+		} else if (!StringUtil.isEmpty(companyId)) {
 			url.append(Section.COMPANY.getURLToken()).append("qs/").append(companyId);
 		}
 
@@ -131,11 +125,11 @@ public class UpdatesVO extends SolrDocumentVO implements HumanNameIntfc {
 	@Override
 	@SolrField(name=SearchDocumentHandler.CONTENT_TYPE)
 	public String getContentType() {
-		if(!StringUtil.isEmpty(marketId)) {
+		if (!StringUtil.isEmpty(marketId)) {
 			super.setContentType(Section.MARKET.toString());
-		} else if(!StringUtil.isEmpty(productId)) {
+		} else if (!StringUtil.isEmpty(productId)) {
 			super.setContentType(Section.PRODUCT.toString());
-		} else if(!StringUtil.isEmpty(companyId)) {
+		} else if (!StringUtil.isEmpty(companyId)) {
 			super.setContentType(Section.COMPANY.toString());
 		}
 		return super.getContentType();
@@ -280,8 +274,8 @@ public class UpdatesVO extends SolrDocumentVO implements HumanNameIntfc {
 
 	@BeanSubElement()
 	public void addUpdateXrVO(UpdatesXRVO u) {
-		if(u != null)
-			this.sections.add(u);
+		if (u == null) return;
+		sections.add(u);
 	}
 
 	/**
@@ -438,11 +432,14 @@ public class UpdatesVO extends SolrDocumentVO implements HumanNameIntfc {
 	 * Replace spaces with _ and replace & and and
 	 * @param loadSections
 	 */
-	public void setHierarchies(Tree t) {
-		for(UpdatesXRVO uxr : sections) {
+	public void configureSolrHierarchies(SmarttrakTree t) {
+		//loop through the selected sections, and add them to the Solr record as 1) hierarchy. 2) ACL.
+		for (UpdatesXRVO uxr : sections) {
 			Node n = t.findNode(uxr.getSectionId());
-			if(n != null && !StringUtil.isEmpty(n.getFullPath())) {
-				super.addHierarchies(n.getFullPath().replaceAll(" ", "_").replaceAll("&", "and"));
+			if (n != null && !StringUtil.isEmpty(n.getFullPath())) {
+				super.addHierarchies(n.getFullPath());
+				SectionVO sec = (SectionVO) n.getUserObject();
+				super.addACLGroup(Permission.GRANT, sec.getSolrTokenTxt());
 			}
 		}
 	}

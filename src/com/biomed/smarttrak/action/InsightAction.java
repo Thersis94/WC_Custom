@@ -8,6 +8,7 @@ import org.apache.solr.client.solrj.SolrQuery.ORDER;
 
 import com.biomed.smarttrak.solr.BiomedInsightIndexer;
 import com.biomed.smarttrak.vo.InsightVO;
+import com.biomed.smarttrak.util.UpdateIndexer;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;

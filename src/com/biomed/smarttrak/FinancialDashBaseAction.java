@@ -12,12 +12,14 @@ import java.util.Map;
 import com.biomed.smarttrak.FinancialDashColumnSet.DisplayType;
 import com.biomed.smarttrak.FinancialDashVO.TableType;
 import com.biomed.smarttrak.admin.SectionHierarchyAction;
+import com.biomed.smarttrak.vo.UserVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
+import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -38,6 +40,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class FinancialDashBaseAction extends SBActionAdapter {
 	
 	DBProcessor dbp;
+	UserVO user;
 
 	public static final int MAX_DATA_YEARS = 4;
 	
@@ -66,6 +69,9 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		super.retrieve(req);
+		
+		SMTSession ses = req.getSession();
+		user = (UserVO) ses.getAttribute(Constants.USER_DATA);
 		
 		FinancialDashVO dash = processRequestOptions(req);
 		
@@ -163,14 +169,20 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		TableType tt = dash.getTableType();
 		int regionCnt = dash.getCountryTypes().size();
 		
-		int sectionCnt = 7;
+		int sectionCnt = 0;
 		if (tt == TableType.MARKET) {
-			sectionCnt = 21;
+			sectionCnt = 14;
 		}
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			int idx = 0;
 			for (int i = 0; i < sectionCnt; i++) {
+				ps.setString(++idx, dash.getSectionId());
+			}
+			for (int i = 0; i < 7; i++) {
+				ps.setString(++idx, user.getAccountId());
+			}
+			for (int i = 0; i < 7; i++) {
 				ps.setString(++idx, dash.getSectionId());
 			}
 			for (int i = 0; i < regionCnt; i++) {
@@ -307,13 +319,22 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		
 		sql.append("inner join ").append(custom).append("BIOMEDGPS_COMPANY c on r.COMPANY_ID = c.COMPANY_ID ");
 		sql.append("inner join ").append(custom).append("BIOMEDGPS_SECTION s1 on r.SECTION_ID = s1.SECTION_ID ");
+		sql.append("left join ").append(custom).append("BIOMEDGPS_ACCOUNT_ACL aa1 on s1.SECTION_ID = aa1.SECTION_ID and aa1.FD_NO = 1 and aa1.ACCOUNT_ID = ? ");
 		sql.append("left join ").append(custom).append("BIOMEDGPS_SECTION s2 on s1.PARENT_ID = s2.SECTION_ID ");
+		sql.append("left join ").append(custom).append("BIOMEDGPS_ACCOUNT_ACL aa2 on s2.SECTION_ID = aa2.SECTION_ID and aa2.FD_NO = 1 and aa2.ACCOUNT_ID = ? ");
 		sql.append("left join ").append(custom).append("BIOMEDGPS_SECTION s3 on s2.PARENT_ID = s3.SECTION_ID ");
+		sql.append("left join ").append(custom).append("BIOMEDGPS_ACCOUNT_ACL aa3 on s3.SECTION_ID = aa3.SECTION_ID and aa3.FD_NO = 1 and aa3.ACCOUNT_ID = ? ");
 		sql.append("left join ").append(custom).append("BIOMEDGPS_SECTION s4 on s3.PARENT_ID = s4.SECTION_ID ");
+		sql.append("left join ").append(custom).append("BIOMEDGPS_ACCOUNT_ACL aa4 on s4.SECTION_ID = aa4.SECTION_ID and aa4.FD_NO = 1 and aa4.ACCOUNT_ID = ? ");
 		sql.append("left join ").append(custom).append("BIOMEDGPS_SECTION s5 on s4.PARENT_ID = s5.SECTION_ID ");
+		sql.append("left join ").append(custom).append("BIOMEDGPS_ACCOUNT_ACL aa5 on s5.SECTION_ID = aa5.SECTION_ID and aa5.FD_NO = 1 and aa5.ACCOUNT_ID = ? ");
 		sql.append("left join ").append(custom).append("BIOMEDGPS_SECTION s6 on s5.PARENT_ID = s6.SECTION_ID ");
+		sql.append("left join ").append(custom).append("BIOMEDGPS_ACCOUNT_ACL aa6 on s6.SECTION_ID = aa6.SECTION_ID and aa6.FD_NO = 1 and aa6.ACCOUNT_ID = ? ");
 		sql.append("left join ").append(custom).append("BIOMEDGPS_SECTION s7 on s6.PARENT_ID = s7.SECTION_ID ");
+		sql.append("left join ").append(custom).append("BIOMEDGPS_ACCOUNT_ACL aa7 on s7.SECTION_ID = aa7.SECTION_ID and aa7.FD_NO = 1 and aa7.ACCOUNT_ID = ? ");
+
 		sql.append("where (s1.SECTION_ID = ? OR s2.SECTION_ID = ? OR s3.SECTION_ID = ? OR s4.SECTION_ID = ? OR s5.SECTION_ID = ? OR s6.SECTION_ID = ? OR s7.SECTION_ID = ?) ");
+		sql.append("and (aa1.SECTION_ID is not null or aa2.SECTION_ID is not null or aa3.SECTION_ID is not null or aa4.SECTION_ID is not null or aa5.SECTION_ID is not null or aa6.SECTION_ID is not null or aa7.SECTION_ID is not null) ");
 		
 		sql.append("and r.REGION_CD in (");
 		for (int i = 1; i <= regionCnt; i++) {
