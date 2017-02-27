@@ -122,7 +122,6 @@ public class UserActivityReportVO extends AbstractSBReportVO {
 	 * @return
 	 */
 	protected HashMap<String, String> getHeader() {
-		// this header is intentionally left blank.
 		HashMap<String, String> headerMap = new LinkedHashMap<>();
 		headerMap.put(NAME,"Name");
 		headerMap.put(PAGE,"Page");
