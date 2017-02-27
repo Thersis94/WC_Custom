@@ -169,8 +169,8 @@ public class TeamAction extends SBActionAdapter {
 		try {
 			if (isDelete) {
 				//move the generic pkId in to the teamId field, so the VO picks it up
-				if (req.hasParameter("pkId") && !req.hasParameter("teamId"))
-					req.setParameter("teamId", req.getParameter("pkId"));
+				if (req.hasParameter("pkId") && !req.hasParameter(TEAM_ID))
+					req.setParameter(TEAM_ID, req.getParameter("pkId"));
 				db.delete(new TeamVO(req));
 			} else {
 				db.save(new TeamVO(req));
