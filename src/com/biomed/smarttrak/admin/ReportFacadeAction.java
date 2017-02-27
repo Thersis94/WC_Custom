@@ -1,6 +1,8 @@
 package com.biomed.smarttrak.admin;
 
-// WC custom
+//WC custom
+import com.biomed.smarttrak.admin.report.UserActivityAction;
+import com.biomed.smarttrak.admin.report.UserActivityReportVO;
 import com.biomed.smarttrak.admin.report.UserUtilizationReportAction;
 import com.biomed.smarttrak.admin.report.UserUtilizationReportVO;
 
@@ -29,6 +31,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class ReportFacadeAction extends SBActionAdapter {
 
 	public enum ReportType {
+		ACTIVITY_LOG,
 		UTILIZATION
 	}
 	
@@ -52,21 +55,40 @@ public class ReportFacadeAction extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		if (! req.hasParameter("reportType")) return;
-		
-		String reportType = StringUtil.checkVal(req.getParameter("reportType"));
-		ReportType rType = checkReportType(reportType);
-		
+
+		ReportType rType = checkReportType(req.getParameter("reportType"));
 		AbstractSBReportVO rpt = null;
-		
+
 		switch (rType) {
+			case ACTIVITY_LOG:
+				rpt = generateActivityLogReport(req);
+				break;
 			case UTILIZATION:
-				//do utilization report.
 				rpt = generateUserUtilizationReport(req);
-			break;
+				break;
+			default:
+				break;
 		}
 
 		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, Boolean.TRUE);
 		req.setAttribute(Constants.BINARY_DOCUMENT, rpt);
+	}
+	
+	/**
+	 * Generates the user utilization roll-up report.
+	 * @param req
+	 * @return
+	 * @throws ActionException
+	 */
+	protected AbstractSBReportVO generateActivityLogReport(ActionRequest req) 
+			throws ActionException {
+		log.debug("generateActivityLogReport...");
+		UserActivityAction uaa = new UserActivityAction();
+		uaa.setDBConnection(dbConn);
+		uaa.setAttributes(getAttributes());
+		AbstractSBReportVO rpt = new UserActivityReportVO();
+		rpt.setData(uaa.retrieveUserActivity(req));
+		return rpt;
 	}
 	
 	/**
@@ -93,7 +115,7 @@ public class ReportFacadeAction extends SBActionAdapter {
 	 */
 	protected ReportType checkReportType(String reportType) throws ActionException {
 		try {
-			return ReportType.valueOf(reportType);
+			return ReportType.valueOf(StringUtil.checkVal(reportType).toUpperCase());
 		} catch (Exception e) {
 			throw new ActionException("Unknown report type, " + reportType);
 		}
