@@ -32,7 +32,7 @@ import com.smt.sitebuilder.action.AbstractSBReportVO;
  @since Feb 21, 2017
  <b>Changes:</b> 
  ***************************************************************************/
-public class UserUtilizationReportVO extends AbstractSBReportVO {
+public class UserUtilizationDailyRollupReportVO extends AbstractSBReportVO {
 
 	private Map<AccountVO, List<UserVO>> accounts;
 	private List<String> monthHeaders;
@@ -53,7 +53,7 @@ public class UserUtilizationReportVO extends AbstractSBReportVO {
 	/**
 	* Constructor
 	*/
-	public UserUtilizationReportVO() {
+	public UserUtilizationDailyRollupReportVO() {
         super();
         setContentType("application/vnd.ms-excel");
         isHeaderAttachment(Boolean.TRUE);

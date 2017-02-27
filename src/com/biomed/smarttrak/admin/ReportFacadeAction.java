@@ -3,8 +3,10 @@ package com.biomed.smarttrak.admin;
 //WC custom
 import com.biomed.smarttrak.admin.report.UserActivityAction;
 import com.biomed.smarttrak.admin.report.UserActivityReportVO;
+import com.biomed.smarttrak.admin.report.UserUtilizationDailyRollupReportVO;
+import com.biomed.smarttrak.admin.report.UserUtilizationMonthlyRollupReportVO;
 import com.biomed.smarttrak.admin.report.UserUtilizationReportAction;
-import com.biomed.smarttrak.admin.report.UserUtilizationReportVO;
+import com.biomed.smarttrak.admin.report.UserUtilizationReportAction.UtilizationReportType;
 
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
@@ -102,7 +104,27 @@ public class ReportFacadeAction extends SBActionAdapter {
 		UserUtilizationReportAction uu = new UserUtilizationReportAction();
 		uu.setDBConnection(dbConn);
 		uu.setAttributes(getAttributes());
-		AbstractSBReportVO rpt = new UserUtilizationReportVO();
+		
+		String uReportType = StringUtil.checkVal(req.getParameter("utilizationReportType")).toUpperCase();
+		UtilizationReportType urt = null;
+		try {
+			urt = UtilizationReportType.valueOf(uReportType);
+		} catch (Exception e) {
+			urt = UtilizationReportType.MONTHS_12;
+		}
+		
+		AbstractSBReportVO rpt;
+		
+		switch(urt){
+			case DAYS_14:
+			case DAYS_90:
+				rpt = new UserUtilizationDailyRollupReportVO();
+				break;
+			default:
+				rpt = new UserUtilizationMonthlyRollupReportVO();
+				break;
+		}
+		
 		rpt.setData(uu.retrieveUserUtilization(req));
 		return rpt;
 	}
