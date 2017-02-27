@@ -2,7 +2,6 @@ package com.biomed.smarttrak.action;
 
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
 
-import com.biomed.smarttrak.security.SmarttrakRoleVO;
 import com.biomed.smarttrak.util.UpdateIndexer;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -10,7 +9,6 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.action.search.ACLSolrFieldVO;
 import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrActionIndexVO;
 import com.smt.sitebuilder.action.search.SolrActionVO;
@@ -41,16 +39,25 @@ public class UpdatesAction extends SBActionAdapter {
 	/**
 	 * @param actionInit
 	 */
-	public UpdatesAction() { super();}
-	public UpdatesAction(ActionInitVO actionInit) { super(actionInit);}
+	public UpdatesAction() { 
+		super();
+	}
+	public UpdatesAction(ActionInitVO actionInit) { 
+		super(actionInit);
+	}
 
+	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		putModuleData(retrieveUpdates(req));
 	}
 
+	
+	@Override
 	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
+	
+	
 	/**
 	 * Get the solr information 
 	 * @param req
@@ -70,6 +77,7 @@ public class UpdatesAction extends SBActionAdapter {
 		return sa.retrieveActionData(req);
 	}
 
+	
 	/**
 	 * Retrieve all products from solr according to the search terms
 	 * @param req
@@ -119,12 +127,6 @@ public class UpdatesAction extends SBActionAdapter {
 
 		qData.setFieldSort(SearchDocumentHandler.UPDATE_DATE);
 		qData.setSortDirection(ORDER.desc);
-		
-		//set roles - test
-		//TODO move this to a more global scope.
-		SmarttrakRoleVO role = (SmarttrakRoleVO) req.getSession().getAttribute(Constants.ROLE_DATA);
-		SolrFieldVO acls = new ACLSolrFieldVO(FieldType.FILTER, SearchDocumentHandler.ACL, role.getACL(), BooleanType.AND);
-		qData.addSolrField(acls);
 
 		return sqp.processQuery(qData);
 	}

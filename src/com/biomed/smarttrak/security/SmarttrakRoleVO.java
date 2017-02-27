@@ -33,7 +33,6 @@ public class SmarttrakRoleVO extends SBUserRole {
 	private boolean isFdAuth;
 	private boolean isGaAuth;
 	private boolean isMktAuth;
-	private String roleACL;
 
 	/**
 	 * the WC role VO this object decorates.
@@ -55,10 +54,6 @@ public class SmarttrakRoleVO extends SBUserRole {
 
 	public List<PermissionVO> getAccountRoles() {
 		return accountRoles;
-	}
-
-	public String getACL() {
-		return roleACL;
 	}
 
 
@@ -84,7 +79,7 @@ public class SmarttrakRoleVO extends SBUserRole {
 			}
 		}
 
-		roleACL = gen.getQueryACL(null, groups.toArray(new String[groups.size()]));
+		setAccessControlList(gen.getQueryACL(null, groups.toArray(new String[groups.size()])));
 	}
 
 	/**
