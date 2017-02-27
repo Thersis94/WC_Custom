@@ -5,7 +5,7 @@ package com.biomed.smarttrak.action;
 
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
 
-import com.biomed.smarttrak.solr.BiomedUpdateIndexer;
+import com.biomed.smarttrak.util.UpdateIndexer;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
@@ -106,7 +106,7 @@ public class InsightAction extends SBActionAdapter {
 			qData.addSolrField(new SolrFieldVO(FieldType.FILTER, SearchDocumentHandler.MODULE_TYPE, req.getParameter("typeId"), BooleanType.AND));
 		}
 
-		qData.addIndexType(new SolrActionIndexVO("", BiomedUpdateIndexer.INDEX_TYPE));
+		qData.addIndexType(new SolrActionIndexVO("", UpdateIndexer.INDEX_TYPE));
 
 		qData.setFieldSort(SearchDocumentHandler.UPDATE_DATE);
 		qData.setSortDirection(ORDER.desc);
