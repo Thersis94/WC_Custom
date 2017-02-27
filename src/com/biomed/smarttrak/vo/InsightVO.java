@@ -62,6 +62,7 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 	private String sideContentTxt;
 	private int featuredFlg;
 	private String featuredImageTxt;
+	private String profileImg;
 	private String statusCd;
 	private int orderNo;
 	private Date publishDt;
@@ -107,7 +108,6 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 	 * @param solrIndex
 	 */
 	public InsightVO() {
-		//TODO replace this with a insight indexer when it exists
 		super(BiomedInsightIndexer.INDEX_TYPE);
 		sections = new ArrayList<>();
 		super.addOrganization(AdminControllerAction.BIOMED_ORG_ID);
@@ -143,6 +143,7 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 		setSideContentTxt(req.getParameter("sideContentTxt"));
 		setFeaturedFlg(Convert.formatInteger(req.getParameter("featuredFlg")));
 		setFeaturedImageTxt(req.getParameter("featuredImageTxt"));
+		setProfileImg(req.getParameter("profileImg"));
 		setStatusCd(req.getParameter("statusCd"));
 		setOrderNo(Convert.formatInteger(req.getParameter("orderNo")));
 		setPublishDt(Convert.formatDate(Convert.DATE_SLASH_PATTERN, req.getParameter("publishDt")));	
@@ -188,8 +189,13 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 	 */
 	public void setHierarchies(Tree t) {
 		for(InsightXRVO uxr : sections) {
-
-			Node n = t.findNode(StringUtil.checkVal(uxr.getSectionId()));
+			
+			if (uxr.getSectionId() == null){
+				uxr.setSectionId("MASTER_ROOT");
+			}
+			
+			Node n = t.findNode(uxr.getSectionId());
+			
 			if(n != null && !StringUtil.isEmpty(n.getFullPath())) {
 				super.addHierarchies(n.getFullPath().replaceAll(" ", "_").replaceAll("&", "and"));
 			}
@@ -382,10 +388,27 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 	@SolrField(name=SearchDocumentHandler.DOCUMENT_URL)
 	public String getDocumentUrl() {
 		StringBuilder url = new StringBuilder(50);
-		url.append("?requestType=reqRetrieve&insightId=").append(this.insightId);
+		url.append("insights/qs/").append(this.insightId);
 		return url.toString();
 	}
 
+	/**
+	 * @return the profileImg
+	 */
+	@SolrField(name="profileImg_s")
+	@Column(name="profile_img", isReadOnly=true)
+	public String getProfileImg() {
+		return profileImg;
+	}
+
+
+	/**
+	 * @param authorImageTxt the authorImageTxt to set
+	 */
+	public void setProfileImg(String profileImg) {
+		this.profileImg = profileImg;
+	}
+	
 	/**
 	 * @param insightId the insightId to set
 	 */
@@ -513,5 +536,5 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 	public String toString() {
 		return StringUtil.getToString(this);
 	}
-
 }
+

@@ -1,6 +1,3 @@
-/**
- *
- */
 package com.biomed.smarttrak.solr;
 
 import java.io.IOException;
@@ -96,12 +93,14 @@ public class BiomedInsightIndexer extends SMTAbstractIndex {
 		ia.setDBConnection(new SMTDBConnection(this.dbConn));
 		ia.setAttribute(Constants.CUSTOM_DB_SCHEMA, config.getProperty(Constants.CUSTOM_DB_SCHEMA));
 		ia.setAttribute(Constants.QS_PATH, config.getProperty(Constants.QS_PATH));
+		ia.setAttribute(Constants.ENCRYPT_KEY, config.getProperty(Constants.ENCRYPT_KEY));
 		List<Object> list = ia.getInsights(documentId, null, null, null);
 
 		//Load the Section Tree and set all the Hierarchies.
 		Tree t = ia.loadSections();
 		for(Object o : list) {
 			InsightVO u = (InsightVO)o;
+			
 			u.setHierarchies(t);
 		}
 		return(List<SolrDocumentVO>)(List<?>) list;

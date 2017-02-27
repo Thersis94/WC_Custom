@@ -17,6 +17,8 @@ import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.security.EncryptionException;
+import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -85,6 +87,23 @@ public class InsightAction extends AbstractTreeAction {
 
 		DBProcessor db = new DBProcessor(dbConn, schema);
 		List<Object>  insights = db.executeSelect(sql, params, new InsightVO());
+		
+		try {
+			StringEncrypter sc = new StringEncrypter((String)attributes.get(Constants.ENCRYPT_KEY));
+			
+			for (Object ob : insights){
+				InsightVO vo = (InsightVO)ob;
+				vo.setFirstName(sc.decrypt(vo.getFirstName()));
+				vo.setLastName(sc.decrypt(vo.getLastName()));
+			}
+		} catch (EncryptionException e) {
+			log.error("could not un encrypt name ");
+		}
+		
+		
+		
+		
+		
 		return insights;
 	}
 
@@ -94,7 +113,7 @@ public class InsightAction extends AbstractTreeAction {
 	 */
 	public static String formatRetrieveQuery(String insightId, String statusCd, String typeCd, String dateRange, String schema) {
 		StringBuilder sql = new StringBuilder(400);
-		sql.append("select a.*, p.first_nm, p.last_nm, b.section_id ");
+		sql.append("select a.*, p.first_nm, p.last_nm, p.profile_img, b.section_id ");
 		sql.append("from ").append(schema).append("biomedgps_insight a ");
 		sql.append("inner join profile p on a.creator_profile_id=p.profile_id ");
 		sql.append("left outer join ").append(schema).append("biomedgps_insight_section b ");

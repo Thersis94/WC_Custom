@@ -1,14 +1,18 @@
-/**
- *
- */
+
 package com.biomed.smarttrak.action;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
 
 import com.biomed.smarttrak.solr.BiomedInsightIndexer;
+import com.biomed.smarttrak.vo.InsightVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrActionIndexVO;
@@ -22,6 +26,7 @@ import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
+import com.smt.sitebuilder.util.solr.SolrActionUtil;
 
 /****************************************************************************
  * <b>Title</b>: InsightAction.java
@@ -35,10 +40,43 @@ import com.smt.sitebuilder.search.SearchDocumentHandler;
  * @since Feb 16, 2017
  ****************************************************************************/
 public class InsightAction extends SBActionAdapter {
+	private static final String INSIGHT_ID = "insightId";
 
 	public void retrieve(ActionRequest req) throws ActionException {
-		//TODO copied code directly from update action
-		putModuleData(retrieveInsights(req));
+
+		if(req.hasParameter(INSIGHT_ID)){
+			getInsightById(StringUtil.checkVal(req.getParameter(INSIGHT_ID)));
+		}else{
+			putModuleData(retrieveInsights(req));
+		}
+	}
+
+	/**
+	 * @param checkVal
+	 */
+	private void getInsightById(String insightId) {
+		log.debug("start get insight by id");
+		
+		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
+		
+		StringBuilder sb = new StringBuilder(50);
+		sb.append("select a.*, p.first_nm, p.last_nm, b.section_id ");
+		sb.append("from ").append(schema).append("biomedgps_insight a ");
+		sb.append("inner join profile p on a.creator_profile_id=p.profile_id ");
+		sb.append("left outer join ").append(schema).append("biomedgps_insight_section b ");
+		sb.append("on a.insight_id=b.insight_id ");
+		sb.append("where a.insight_id = ? ");
+		
+		List<Object> params = new ArrayList<>();
+		 params.add(insightId);
+
+		DBProcessor db = new DBProcessor(dbConn, schema);
+		List<Object>  insight = db.executeSelect(sb.toString(), params, new InsightVO());
+		log.debug("loaded " + insight.size() + " insight");
+		
+		log.debug("placed vo on mod data: " + (InsightVO)insight.get(0));
+		
+		putModuleData((InsightVO)insight.get(0));
 	}
 
 	/**
@@ -49,13 +87,13 @@ public class InsightAction extends SBActionAdapter {
 	 */
 	private SolrActionVO buildSolrAction(ActionRequest req) throws ActionException {
 
-		
+
 		//Set SolrSearch ActionId on actionInit
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		//TODO
 		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 
-    	//Get SolrSearch ActionVO.
+		//Get SolrSearch ActionVO.
 		SolrAction sa = new SolrAction(actionInit);
 		sa.setDBConnection(dbConn);
 		sa.setAttributes(attributes);
@@ -74,40 +112,40 @@ public class InsightAction extends SBActionAdapter {
 		qData.setNumberResponses(15);
 		qData.setStartLocation(Convert.formatInteger(req.getParameter("pageNo"), 0) * 15);
 		qData.setOrganizationId(((SiteVO)req.getAttribute(Constants.SITE_DATA)).getOrganizationId());
-		qData.setRoleLevel(0);
+		qData.setRoleLevel(10);
 		qData.addSolrField(new SolrFieldVO(FieldType.BOOST, SearchDocumentHandler.TITLE, "", BooleanType.AND));
-		qData.addSolrField(new SolrFieldVO(FieldType.BOOST, "section", "", BooleanType.AND));
+		qData.addSolrField(new SolrFieldVO(FieldType.BOOST, SearchDocumentHandler.HIERARCHY, "", BooleanType.AND));
+		qData.addSolrField(new SolrFieldVO(FieldType.FACET, SearchDocumentHandler.HIERARCHY, null, null));
 
 		//Add Search Parameters.
 		if (req.hasParameter("searchData")) 
 			qData.setSearchData("*"+req.getParameter("searchData")+"*");
 
 		//Add Sections Check.
-		if (req.hasParameter("sectionId")) {
+		if (req.hasParameter("hierarchyId")) {
 			StringBuilder selected = new StringBuilder(50);
 			selected.append("(");
-			for (String s : req.getParameterValues("sectionId")) {
+			for (String s : req.getParameterValues("hierarchyId")) {
 				if (selected.length() > 2) selected.append(" OR ");
 				selected.append("*").append(s);
 			}
 			selected.append(")");
-			qData.addSolrField(new SolrFieldVO(FieldType.FILTER, SearchDocumentHandler.SECTION, selected.toString(), BooleanType.AND));
+			qData.addSolrField(new SolrFieldVO(FieldType.FILTER, SearchDocumentHandler.HIERARCHY, selected.toString(), BooleanType.AND));
 		}
 
-		//Add Start - End Date Range
-		if (req.hasParameter("startDt") && req.hasParameter("endDt")) {
-			StringBuilder dates = new StringBuilder(50);
-			dates.append("[").append(req.getParameter("startDt"));
-			dates.append("-").append(req.getParameter("endDt"));
-			dates.append("]");
-			qData.addSolrField(new SolrFieldVO(FieldType.FILTER, SearchDocumentHandler.UPDATE_DATE, dates.toString(), BooleanType.AND));
+		//Get a Date Range String.
+		String dates = SolrActionUtil.makeRangeQuery(FieldType.DATE, req.getParameter("startDt"), req.getParameter("endDt"));
+
+		//If we have a date range, add it as a solr field.
+		if(!StringUtil.isEmpty(dates)) {
+			qData.addSolrField(new SolrFieldVO(FieldType.FILTER, SearchDocumentHandler.UPDATE_DATE, dates, BooleanType.AND));
 		}
 
 		//Add TypeId
 		if(req.hasParameter("typeId")) {
 			qData.addSolrField(new SolrFieldVO(FieldType.FILTER, SearchDocumentHandler.MODULE_TYPE, req.getParameter("typeId"), BooleanType.AND));
 		}
-		//TODO need to chage this index when it exists
+
 		qData.addIndexType(new SolrActionIndexVO("", BiomedInsightIndexer.INDEX_TYPE));
 
 		qData.setFieldSort(SearchDocumentHandler.UPDATE_DATE);
