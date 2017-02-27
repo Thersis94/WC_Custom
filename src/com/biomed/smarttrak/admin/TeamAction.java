@@ -37,7 +37,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class TeamAction extends SBActionAdapter {
 
 	protected static final String ACCOUNT_ID = AccountAction.ACCOUNT_ID; //req param
-	protected static final String TEAM_ID = "teamId"; //req param
+	public static final String TEAM_ID = "teamId"; //req param
 
 	public TeamAction() {
 		super();
@@ -168,6 +168,9 @@ public class TeamAction extends SBActionAdapter {
 		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		try {
 			if (isDelete) {
+				//move the generic pkId in to the teamId field, so the VO picks it up
+				if (req.hasParameter("pkId") && !req.hasParameter("teamId"))
+					req.setParameter("teamId", req.getParameter("pkId"));
 				db.delete(new TeamVO(req));
 			} else {
 				db.save(new TeamVO(req));
