@@ -111,14 +111,13 @@ public class MyTeamsAction extends SimpleActionAdapter {
 	 * it on the request, so it cannot be spoofed from the browser.
 	 * @param req
 	 */
-	private void verifyRole(ActionRequest req) {
+	private void verifyRole(ActionRequest req) throws ActionException {
 		SmarttrakRoleVO role = (SmarttrakRoleVO) req.getSession().getAttribute(Constants.ROLE_DATA);
 		UserVO user = (UserVO) req.getSession().getAttribute(Constants.USER_DATA);
-		if (role == null || user == null) return;
 
 		//restrict access to account owners
-		if (!role.isAccountOwner())
-			return;
+		if (role == null || user == null || !role.isAccountOwner())
+			throw new ActionException("not authorized");
 
 		//set the accountId - note this cannot be altered from the browser, we take from session
 		req.setParameter(ACCOUNT_ID, user.getAccountId());
