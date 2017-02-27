@@ -64,18 +64,18 @@ public class SmarttrakRoleVO extends SBUserRole {
 	 */
 	private void buildACL() {
 		AccessControlListGenerator gen = new AccessControlListGenerator();
-		if (accountRoles == null || accountRoles.size() == 0) return;
+		if (accountRoles == null || accountRoles.isEmpty()) return;
 
 		Set<String> groups = new HashSet<>(accountRoles.size());
 		//back-trace the approved hierarchies and authorize all parent levels as well
 		for (PermissionVO vo : getAccountRoles()) {
 			String[] tok = vo.getSolrTokenTxt().split(SearchDocumentHandler.HIERARCHY_DELIMITER);
-			String key = "";
+			StringBuilder key = new StringBuilder(50);
 			for (int x=0; x < tok.length; x++) {
-				if (key.length() > 0) key += SearchDocumentHandler.HIERARCHY_DELIMITER;
-				key += tok[x];
+				if (key.length() > 0) key.append(SearchDocumentHandler.HIERARCHY_DELIMITER);
+				key.append(tok[x]);
 				//System.err.println(key)
-				groups.add(key);
+				groups.add(key.toString());
 			}
 		}
 
