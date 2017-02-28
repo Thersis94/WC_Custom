@@ -91,12 +91,10 @@ public class UserActivityAction extends SimpleActionAdapter {
 	 */
 	protected String formatReportDate(String date, boolean isStartDate) {
 		String tmpDate = StringUtil.checkVal(date,null);
-		if (tmpDate == null) {
-			if (isStartDate) {
-				Calendar cal = GregorianCalendar.getInstance();
-				cal.add(Calendar.HOUR_OF_DAY, DEFAULT_START_DATE_OFFSET);
-				tmpDate = Convert.formatDate(cal.getTime(),Convert.DATE_TIME_DASH_PATTERN);
-			}
+		if (tmpDate == null && isStartDate) {
+			Calendar cal = GregorianCalendar.getInstance();
+			cal.add(Calendar.HOUR_OF_DAY, DEFAULT_START_DATE_OFFSET);
+			tmpDate = Convert.formatDate(cal.getTime(),Convert.DATE_TIME_DASH_PATTERN);
 		}
 		return tmpDate;
 	}
