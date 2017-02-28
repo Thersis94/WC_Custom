@@ -48,7 +48,7 @@ public class GridVO extends BeanDataVO {
 		DATA("bs-data"),
 		UNCHARTED_DATA("bs-nochart-data"),
 		HEADING("bs-heading"),
-		SUB_TOTAL("bs--sub-total"),
+		SUB_TOTAL("bs-sub-total"),
 		TOTAL("bs-total");
 		
 		private final String name;
@@ -110,6 +110,7 @@ public class GridVO extends BeanDataVO {
 	private String disclaimer;
 	private String primaryYTitle;
 	private String secondaryYTitle;
+	private String primaryXTitle;
 	private String slug;
 	private boolean approved;
 	private int decimalDisplay;
@@ -218,6 +219,21 @@ public class GridVO extends BeanDataVO {
 	@Column(name="y_title_sec_nm")
 	public String getSecondaryYTitle() {
 		return secondaryYTitle;
+	}
+
+	/**
+	 * @return the primaryXTitle
+	 */
+	@Column(name="X_TITLE_NM")
+	public String getPrimaryXTitle() {
+		return primaryXTitle;
+	}
+
+	/**
+	 * @param xTitle the xTitle to set
+	 */
+	public void setPrimaryXTitle(String primaryXTitle) {
+		this.primaryXTitle = primaryXTitle;
 	}
 
 	/**
@@ -619,8 +635,8 @@ public class GridVO extends BeanDataVO {
 
 		// Parse out the index from the field and store the data in the series array
 		String val = field.substring(field.lastIndexOf("_") + 1);
-		int index = Convert.formatInteger(val);
-		series[index] = title;
+		int index = Convert.formatInteger(val) - 1;
+		if(index >= 0) series[index] = title;
 	}
 	
 	/**
@@ -633,8 +649,9 @@ public class GridVO extends BeanDataVO {
 		JsonArray jArray = ele.getAsJsonArray();
 		
 		try {
+			int i=0;
 			for (Object object : jArray) {
-				updateRow(g.fromJson(object.toString(), Map.class));
+				updateRow(g.fromJson(object.toString(), Map.class), i++);
 			}
 		} catch(Exception e) {
 			log.error("unable to parse JSON for grid data", e);
@@ -645,18 +662,21 @@ public class GridVO extends BeanDataVO {
 	 * Parses the data into a detail object and adds to the collection
 	 * @param row
 	 */
-	protected void updateRow(Map<String, String> row) {
+	protected void updateRow(Map<String, Object> row, int ctr) {
 		// Load up the details
 		GridDetailVO detail = new GridDetailVO();
-		detail.setLabel(row.get("field_0"));
+		detail.setOrder(ctr);
+		detail.setLabel(row.get("field_0") + "");
 		detail.setGridId(gridId);
-		detail.setGridDetailId(row.get("id"));
-		detail.setDetailType(RowStyle.getEnumKey(row.get("class")));
+		detail.setGridDetailId(row.get("id") + "");
 		
-		//detail.setDetailType(RowStyle.));
+		detail.setDetailType(RowStyle.getEnumKey(row.get("class") + ""));
+		detail.setCreateDate(new Date());
+		detail.setUpdateDate(new Date());
+
 		String[] values = detail.getValues();
 		for(int i=0; i < 10; i++) {
-			values[i] = row.get("field_" + (i + 1));
+			values[i] = row.get("field_" + (i + 1)) + "";
 		}
 		
 		// Add to the local collection

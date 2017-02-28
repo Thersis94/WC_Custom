@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +27,7 @@ import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.common.constants.ErrorCodes;
 
 /********************************************************************
  * <b>Title: </b>GridChartAction.java<br/>
@@ -73,9 +75,8 @@ public class GridChartAction extends SBActionAdapter {
 		if (StringUtil.isEmpty(gridId)) {
 			retrieveList(req, schema);
 		} else if (! "ADD".equalsIgnoreCase(gridId)){
-			retrieveData(req, schema);
+			retrieveData(req.getParameter("gridId"), schema, false);
 		}
-		
 	}
 	
 	/*
@@ -84,22 +85,35 @@ public class GridChartAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		log.info("Grid Data: " + req.getParameter("gridData"));
-		
 		GridVO grid = new GridVO(req);
-		String msg = "";
-		boolean error = false;
+		grid.setCreateDate(new Date());
+		grid.setUpdateDate(new Date());
 		
+		String msg = "You have successfuly saved the grid data";
+		boolean error = false;
+		Map<String, String> columnMatch = new HashMap<>(grid.getDetails().size());
 		DBProcessor db = new DBProcessor(dbConn, getAttribute(Constants.CUSTOM_DB_SCHEMA) + "");
 		try {
 			// Make sure the new grid id is assigned when creating a new grid
-			//db.save(grid);
+			// otherwise use the existing
+			db.save(grid);
+			if (StringUtil.isEmpty(req.getParameter("gridId")))
+					grid.setGridId(db.getGeneratedPKId());
+			
+			log.info("Grid ID: " + grid.getGridId());
 			
 			for(GridDetailVO detail : grid.getDetails()) {
 				// If we are adding a new grid, the grid ID does not exist when parsed.  Add it
 				detail.setGridId(grid.getGridId());
 				
-				//db.save(detail);
+				// Any row that starts with BIO_ will be inserted.  We need to send the mapping back
+				// so the table row ids can be updated
+				String gridDetailId = StringUtil.checkVal(detail.getGridDetailId());
+				if (gridDetailId.startsWith("BIO_")) detail.setGridDetailId(null);
+				
+				// Save the data.  If the data is an insert, add to the column xref
+				db.save(detail);
+				if (gridDetailId.startsWith("BIO_")) columnMatch.put(gridDetailId, db.getGeneratedPKId());
 			}
 		} catch (Exception e) {
 			log.error("unable to save the grid data", e);
@@ -108,7 +122,14 @@ public class GridChartAction extends SBActionAdapter {
 		}
 		
 		// Return the data
-		putModuleData("You have successfuly saved the grid data", 0, false, msg, error);
+		Map<String, Object> response = new HashMap<>(8);
+		response.put("gridId", grid.getGridId());
+		response.put(GlobalConfig.SUCCESS_KEY, !error);
+		response.put(ErrorCodes.ERR_JSON_ACTION, msg);
+		response.put(ErrorCodes.ERR_JSON_ACTION, msg);
+		response.put(GlobalConfig.ACTION_DATA_KEY, columnMatch);
+		response.put(GlobalConfig.ACTION_DATA_COUNT, columnMatch.size());
+		putModuleData(response, 0, false, msg, error);
 		
 	}
 	
@@ -117,18 +138,19 @@ public class GridChartAction extends SBActionAdapter {
 	 * @param req
 	 * @param schema
 	 */
-	public void retrieveData(ActionRequest req, String schema) {
+	public void retrieveData(String gridId, String schema, boolean display) {
 		StringBuilder sql = new StringBuilder(164);
 		sql.append("select * from ").append(schema).append("biomedgps_grid a ");
 		sql.append("inner join ").append(schema).append("biomedgps_grid_detail b ");
 		sql.append("on a.grid_id = b.grid_id where a.grid_id = ? ");
+		if (display) sql.append("and grid_detail_type_cd = 'DATA' ");
 		sql.append("order by b.order_no");
-		log.debug(sql);
+		log.info(sql);
 		
 		DBProcessor db = new DBProcessor(dbConn);
-		List<Object> params = Arrays.asList(new Object[]{req.getParameter("gridId")});
+		List<Object> params = Arrays.asList(new Object[]{gridId});
 		List<?> data = db.executeSelect(sql.toString(), params, new GridVO(), null);
-		
+		log.info("Data: " + data);
 		// Add the vo only.  Add a blank bean if nothing found
 		putModuleData(data.size() > 0 ? data.get(0) : new GridVO());
 	}
@@ -138,15 +160,13 @@ public class GridChartAction extends SBActionAdapter {
 	 * @param req
 	 */
 	public void retrieveList(ActionRequest req, String schema) {
-		
-		log.info("Retrieving ...");
 		List<GridVO> data = new ArrayList<>(); int count = 0;
 		String msg = ""; 
 		boolean error = false; 
 		
 		try {
 			data = getGridList(req, schema);
-			log.info("Data Size: " + data.size());
+			log.debug("Data Size: " + data.size());
 			
 			// Get the count
 			count = getGridCount(req, schema);

@@ -25,6 +25,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.StringEncoder;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
 // WC core
@@ -89,7 +90,10 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		super.retrieve(req);
 	}
 
-
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
+	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		String actionType = req.getParameter(ACTION_TYPE);
@@ -120,7 +124,10 @@ public class AdminControllerAction extends SimpleActionAdapter {
 			if (!StringUtil.isEmpty(actionType)) url.append("?actionType=").append(actionType);
 			redirUrl = url.toString();
 		}
-		sendRedirect(redirUrl, msg, req);
+		
+		// Only redirect if it not a json request (?json=true)
+		boolean json = Convert.formatBoolean(req.getParameter("json"), false);
+		if (! json) sendRedirect(redirUrl, msg, req);
 	}
 
 

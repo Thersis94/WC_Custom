@@ -306,7 +306,6 @@ public class GridDetailVO extends BeanDataVO {
 	/**
 	 * @param gridId the gridId to set
 	 */
-	@Column(name="grid_id")
 	public void setGridId(String gridId) {
 		this.gridId = gridId;
 	}
