@@ -47,6 +47,8 @@ public class UpdatesAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		if (!req.hasParameter("loadSolrUpdates")) return;
+
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 

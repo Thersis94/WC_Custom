@@ -283,7 +283,9 @@ public class UpdatesVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 	 */
 	public void setUpdateId(String updateId) {
 		this.updateId = updateId;
-		setDocumentId(updateId);
+		StringBuilder docId = new StringBuilder(32);
+		docId.append(UpdateIndexer.INDEX_TYPE).append("_").append(updateId);
+		setDocumentId(docId.toString());
 	}
 
 	/**
