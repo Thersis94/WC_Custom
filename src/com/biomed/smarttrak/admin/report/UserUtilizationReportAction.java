@@ -27,6 +27,7 @@ import com.siliconmtn.security.PhoneVO;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+
 // WebCrescendo
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.SiteVO;
@@ -145,6 +146,7 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 				break;
 			default:
 				cal.add(Calendar.MONTH, -1*urt.getUnitVal());
+				break;
 		}
 		return Convert.formatDate(cal.getTime(),Convert.DATE_DASH_PATTERN);
 	}
@@ -237,7 +239,7 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 		int pageCnt = 0;
 
 		// Map of month number to pageviews
-		Map<String,Integer> userCounts =  new HashMap<>();
+		Map<String,Integer> userCounts =  new LinkedHashMap<>();
 		// Map of profileId to Map of Month, pageCount
 		Map< String, Map<String,Integer> > pageCounts = new HashMap<>();
 		Calendar cal = Calendar.getInstance();
@@ -257,7 +259,7 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 				}
 
 				// init userMonths map
-				userCounts = new HashMap<>();
+				userCounts = new LinkedHashMap<>();
 				
 				// init current month's view count.
 				pageCnt = 1;
