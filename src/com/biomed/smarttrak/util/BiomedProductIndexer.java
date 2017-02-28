@@ -16,6 +16,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import com.biomed.smarttrak.vo.ProductAllianceVO;
 import com.biomed.smarttrak.vo.ProductAttributeVO;
 import com.biomed.smarttrak.vo.RegulationVO;
+import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
@@ -74,7 +75,7 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 	private Map<String, SecureSolrDocumentVO> retreiveProducts(String id) {
 		Map<String, SecureSolrDocumentVO> products = new HashMap<>();
 		String sql = buildRetrieveSql(id);
-		Map<String, String> hierarchies = createHierarchies();
+		SmarttrakTree hierarchies = createHierarchies();
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			if (id != null) ps.setString(1, id);
@@ -91,7 +92,7 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 					currentProduct = rs.getString("PRODUCT_ID");
 				}
 				if (!StringUtil.isEmpty(rs.getString("SECTION_ID")) && product != null) {
-					addSection(product, rs, hierarchies);
+					addSection(product, hierarchies.findNode(rs.getString("SECTION_ID")));
 				}
 				
 			}
@@ -113,15 +114,15 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 	 * Add section id, name, and acl to document
 	 */
 	@SuppressWarnings("unchecked")
-	protected void addSection(SecureSolrDocumentVO product, ResultSet rs,
-			Map<String, String> hierarchies) throws SQLException {
-		product.addHierarchies(hierarchies.get(rs.getString("SECTION_ID")));
-		product.addSection(rs.getString("SECTION_NM"));
-		product.addACLGroup(Permission.GRANT, rs.getString("SOLR_TOKEN_TXT"));
+	protected void addSection(SecureSolrDocumentVO product, Node n) throws SQLException {
+		SectionVO sec = ((SectionVO)n.getUserObject());
+		product.addHierarchies(n.getFullPath());
+		product.addSection(sec.getSectionNm());
+		product.addACLGroup(Permission.GRANT, sec.getSolrTokenTxt());
 		if (!product.getAttributes().containsKey("sectionId")) {
 			product.addAttribute("sectionId", new ArrayList<String>());
 		}
-		((List<String>)product.getAttribute("sectionId")).add(rs.getString("SECTION_ID"));
+		((List<String>)product.getAttribute("sectionId")).add(sec.getSectionId());
 	}
 	
 	
@@ -378,36 +379,32 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 	
 	
 	/**
-	 * Create a full hierarchy list
+	 * Get a full hierarchy list
 	 * @return
 	 */
-	private Map<String, String> createHierarchies() {
-		Map<String, String> hierarchies = new HashMap<>();
+	private SmarttrakTree createHierarchies() {
 		StringBuilder sql = new StringBuilder(125);
 		sql.append("SELECT * FROM ").append(config.getProperty(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("BIOMEDGPS_SECTION ");
 		log.info(sql);
-		List<Node> companies = new ArrayList<>();
+		List<Node> markets = new ArrayList<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ResultSet rs = ps.executeQuery();
 			while(rs.next()) {
-				Node n = new Node(rs.getString("SECTION_ID"), rs.getString("PARENT_ID"));
-				n.setNodeName(rs.getString("SECTION_NM"));
-				n.setUserObject(rs.getString("SOLR_TOKEN_TXT"));
-				companies.add(n);
+				SectionVO sec = new SectionVO(rs);
+				Node n = new Node(sec.getSectionId(), sec.getParentId());
+				n.setNodeName(sec.getSectionNm());
+				n.setUserObject(sec);
+				markets.add(n);
 			}
 		} catch (SQLException e) {
 			log.error(e);
 		}
 		
-		Tree t = new Tree(companies);
-		t.buildNodePaths(t.getRootNode(), "~", true);
+		SmarttrakTree t = new SmarttrakTree(markets);
+		t.buildNodePaths();
 		
-		for (Node n : t.preorderList()) {
-			hierarchies.put(n.getNodeId(),n.getFullPath());
-		}
-		
-		return hierarchies;
+		return t;
 	}
 
 	/* (non-Javadoc)
