@@ -33,6 +33,7 @@ public class SmarttrakRoleVO extends SBUserRole {
 	private boolean isFdAuth;
 	private boolean isGaAuth;
 	private boolean isMktAuth;
+	private boolean acctOwnerFlg;
 
 	/**
 	 * the WC role VO this object decorates.
@@ -346,5 +347,20 @@ public class SmarttrakRoleVO extends SBUserRole {
 	@Override
 	public boolean hasRoleAttribute(String id) {
 		return wcRole.hasRoleAttribute(id);
+	}
+
+	/**
+	 * @param acctOwnerFlg
+	 */
+	public void setAccountOwner(int acctOwnerFlg) {
+		this.acctOwnerFlg = 1 == acctOwnerFlg;
+	}
+	
+	/**
+	 * you are or are-not an account owner.  This drives whether you see "My Teams" in the pulldown menu.
+	 * @return
+	 */
+	public boolean isAccountOwner() {
+		return acctOwnerFlg;
 	}
 }

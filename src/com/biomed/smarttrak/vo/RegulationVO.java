@@ -6,6 +6,7 @@ package com.biomed.smarttrak.vo;
 import java.sql.ResultSet;
 import java.util.Date;
 
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
@@ -21,7 +22,7 @@ import com.siliconmtn.db.orm.Table;
  * @version 1.0
  * @since Feb 6, 2017
  ****************************************************************************/
-@Table(name="BIOMEDGPS_REGULATORY_PRODUCT")
+@Table(name="BIOMEDGPS_PRODUCT_REGULATORY")
 public class RegulationVO {
 
 	private String regulatorId;
@@ -40,6 +41,18 @@ public class RegulationVO {
 	public RegulationVO(ResultSet rs) {
 		this();
 		setData(rs);
+	}
+	
+	public RegulationVO(ActionRequest req) {
+		regulatorId = req.getParameter("regulationId");
+		regionId = req.getParameter("regionId");
+		pathId = req.getParameter("pathId");
+		productId = req.getParameter("productId");
+		statusId = req.getParameter("statusId");
+		regionName = req.getParameter("regionName");
+		pathName = req.getParameter("pathName");
+		statusName = req.getParameter("statusName");
+		
 	}
 
 	public void setData(ResultSet rs) {

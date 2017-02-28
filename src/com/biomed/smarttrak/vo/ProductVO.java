@@ -49,6 +49,7 @@ public class ProductVO {
 	private List<ProductAllianceVO> alliances;
 	private List<RegulationVO> regulations;
 	private Map<String, List<ProductAttributeVO>> details;
+	private Map<String, List<ProductVO>> relatedProducts;
 	
 	public ProductVO () {
 		attributes = new ArrayList<>();
@@ -56,6 +57,7 @@ public class ProductVO {
 		alliances = new ArrayList<>();
 		regulations = new ArrayList<>();
 		details = new HashMap<>();
+		relatedProducts = new HashMap<>();
 	}
 	
 	
@@ -269,6 +271,21 @@ public class ProductVO {
 	public void addDetail(String key, ProductAttributeVO detail) {
 		if (!details.containsKey(key)) details.put(key, new ArrayList<ProductAttributeVO>());
 		details.get(key).add(detail);
+	}
+
+
+	public Map<String, List<ProductVO>> getRelatedProducts() {
+		return relatedProducts;
+	}
+
+
+	public void setRelatedProducts(Map<String, List<ProductVO>> relatedProducts) {
+		this.relatedProducts = relatedProducts;
+	}
+	
+	public void addRelatedProduct(String key, ProductVO product) {
+		if (!relatedProducts.containsKey(key)) relatedProducts.put(key, new ArrayList<ProductVO>());
+		relatedProducts.get(key).add(product);
 	}
 
 

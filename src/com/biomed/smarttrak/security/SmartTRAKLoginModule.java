@@ -135,7 +135,7 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 		// use profile ID as that is all we have at the moment.
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select u.user_id, u.account_id, u.register_submittal_id, u.fd_auth_flg, u.ga_auth_flg, u.mkt_auth_flg, ");
-		sql.append("t.team_id, t.account_id, t.team_nm, t.default_flg, t.private_flg ");
+		sql.append("u.acct_owner_flg, t.team_id, t.account_id, t.team_nm, t.default_flg, t.private_flg ");
 		sql.append("from ").append(schema).append("biomedgps_user u ");
 		sql.append("left outer join ").append(schema).append("biomedgps_user_team_xr xr on u.user_id=xr.user_id ");
 		sql.append("inner join ").append(schema).append("biomedgps_team t on xr.team_id=t.team_id ");
@@ -154,6 +154,7 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 					user.setFdAuthFlg(rs.getInt("fd_auth_flg"));
 					user.setGaAuthFlg(rs.getInt("ga_auth_flg"));
 					user.setMktAuthFlg(rs.getInt("mkt_auth_flg"));
+					user.setAcctOwnerFlg(rs.getInt("acct_owner_flg"));
 					iter = 1;
 				}
 				user.addTeam(new TeamVO(rs));

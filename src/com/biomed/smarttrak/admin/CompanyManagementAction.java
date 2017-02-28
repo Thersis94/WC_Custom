@@ -155,7 +155,7 @@ public class CompanyManagementAction extends SimpleActionAdapter {
 		c.setAttributes(attributes);
 		c.setDBConnection(dbConn);
 		
-		List<Node> hierarchy = c.loadDefaultTree().preorderList();
+		List<Node> hierarchy = new Tree(c.getHierarchy()).preorderList();
 		List<String> activeNodes = getActiveSections(req.getParameter("companyId"));
 		
 		// Loop over all sections and set the leaf property to 
