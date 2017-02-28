@@ -194,9 +194,6 @@ public class AdminControllerAction extends SimpleActionAdapter {
 			case "list":
 				action = new ListAction();
 				break;
-			case "activityLog":
-				action = new UserActivityAction();
-				break;
 			case "reports":
 				action = new ReportFacadeAction();
 				break;
