@@ -19,12 +19,14 @@ import com.biomed.smarttrak.vo.RegulationVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SMTAbstractIndex;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.security.SecurityController;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
-import com.smt.sitebuilder.util.solr.SolrDocumentVO;
+import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
+import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO.Permission;
 
 /****************************************************************************
  * <b>Title</b>: BiomedProductIndexer.java <p/>
@@ -56,10 +58,10 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 	@Override
 	public void addIndexItems(SolrClient server) {
 		SolrActionUtil solrUtil = new SolrActionUtil(server);
-		Map<String, SolrDocumentVO> products = retreiveProducts(null);
+		Map<String, SecureSolrDocumentVO> products = retreiveProducts(null);
 		
 		// Loop over each form transaction and turn it into a SolrStoryVO for processing
-		for (Entry<String, SolrDocumentVO> entry : products.entrySet()) {
+		for (Entry<String, SecureSolrDocumentVO> entry : products.entrySet()) {
 			try {
 				solrUtil.addDocument(entry.getValue());
 			} catch (Exception e) {
@@ -68,17 +70,18 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		}
 	}
 	
-	@SuppressWarnings("unchecked")
-	private Map<String, SolrDocumentVO> retreiveProducts(String id) {
-		Map<String, SolrDocumentVO> products = new HashMap<>();
+	
+	private Map<String, SecureSolrDocumentVO> retreiveProducts(String id) {
+		Map<String, SecureSolrDocumentVO> products = new HashMap<>();
 		String sql = buildRetrieveSql(id);
+		Map<String, String> hierarchies = createHierarchies();
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			if (id != null) ps.setString(1, id);
 			
 			ResultSet rs = ps.executeQuery();
 			String currentProduct = "";
-			SolrDocumentVO product = null;
+			SecureSolrDocumentVO product = null;
 			while (rs.next()) {
 				if (!currentProduct.equals(rs.getString("PRODUCT_ID"))) {
 					if (product != null) {
@@ -87,12 +90,8 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 					product = buildSolrDocument(rs);
 					currentProduct = rs.getString("PRODUCT_ID");
 				}
-				if (rs.getString("SECTION_ID") != null && product != null) {
-					product.addSection(rs.getString("SECTION_ID"));
-					if (!product.getAttributes().keySet().contains("sectionName")) {
-						product.addAttribute("sectionName", new ArrayList<String>());
-					}
-					((List<String>)product.getAttribute("sectionName")).add(rs.getString("SECTION_NM"));
+				if (!StringUtil.isEmpty(rs.getString("SECTION_ID")) && product != null) {
+					addSection(product, rs, hierarchies);
 				}
 				
 			}
@@ -109,16 +108,32 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		return products;
 	}
 	
+
+	/**
+	 * Add section id, name, and acl to document
+	 */
+	@SuppressWarnings("unchecked")
+	protected void addSection(SecureSolrDocumentVO product, ResultSet rs,
+			Map<String, String> hierarchies) throws SQLException {
+		product.addHierarchies(hierarchies.get(rs.getString("SECTION_ID")));
+		product.addSection(rs.getString("SECTION_NM"));
+		product.addACLGroup(Permission.GRANT, rs.getString("SOLR_TOKEN_TXT"));
+		if (!product.getAttributes().containsKey("sectionId")) {
+			product.addAttribute("sectionId", new ArrayList<String>());
+		}
+		((List<String>)product.getAttribute("sectionId")).add(rs.getString("SECTION_ID"));
+	}
+	
 	
 	/**
 	 * Add all alliances to the products
 	 * @param products
 	 */
 	@SuppressWarnings("unchecked")
-	protected void buildAlliances(Map<String, SolrDocumentVO> products) {
+	protected void buildAlliances(Map<String, SecureSolrDocumentVO> products) {
 		Map<String, List<ProductAllianceVO>> alliances = retrieveAlliances();
 		for (Entry<String, List<ProductAllianceVO>> entry : alliances.entrySet()) {
-			SolrDocumentVO p = products.get(entry.getKey());
+			SecureSolrDocumentVO p = products.get(entry.getKey());
 			p.addAttribute("ally", new ArrayList<String>());
 			p.addAttribute("alliance", new ArrayList<String>());
 			p.addAttribute("allyId", new ArrayList<String>());
@@ -168,10 +183,10 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 	 * @param products
 	 */
 	@SuppressWarnings("unchecked")
-	private void buildRegulatory(Map<String, SolrDocumentVO> products) {
+	private void buildRegulatory(Map<String, SecureSolrDocumentVO> products) {
 		Map<String, List<RegulationVO>> regulatoryList = retrieveRegulatory();
 		for (Entry<String, List<RegulationVO>> entry : regulatoryList.entrySet()) {
-			SolrDocumentVO p = products.get(entry.getKey());
+			SecureSolrDocumentVO p = products.get(entry.getKey());
 			p.addAttribute("usPathNm", new ArrayList<String>());
 			p.addAttribute("usStatusNm", new ArrayList<String>());
 			p.addAttribute("intRegionNm", new ArrayList<String>());
@@ -239,7 +254,7 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 	 * @param products
 	 */
 	@SuppressWarnings("unchecked")
-	private void buildDetails(Map<String, SolrDocumentVO> products) {
+	private void buildDetails(Map<String, SecureSolrDocumentVO> products) {
 		Tree t = retrieveAttributes();
 		// The root node contains the root of the details attributes.
 		for (Node parent : t.findNode(DETAILS_ROOT).getChildren()) {
@@ -252,7 +267,7 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 				List<ProductAttributeVO> attrs = (List<ProductAttributeVO>) child.getUserObject();
 				for (ProductAttributeVO attr : attrs) {
 					if (attr.getProductId() == null) continue;
-					SolrDocumentVO p = products.get(attr.getProductId());
+					SecureSolrDocumentVO p = products.get(attr.getProductId());
 					if (!p.getAttributes().containsKey(parent.getNodeName())) {
 						// Two fields are needed for the details, one to search against
 						// and one to display in the product explorer
@@ -274,8 +289,8 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 	 * @return
 	 * @throws SQLException
 	 */
-	private SolrDocumentVO buildSolrDocument(ResultSet rs) throws SQLException {
-		SolrDocumentVO product = new SolrDocumentVO(INDEX_TYPE);
+	private SecureSolrDocumentVO buildSolrDocument(ResultSet rs) throws SQLException {
+		SecureSolrDocumentVO product = new SecureSolrDocumentVO(INDEX_TYPE);
 		product.setDocumentId(rs.getString("PRODUCT_ID"));
 		product.setTitle(rs.getString("PRODUCT_NM"));
 		product.setContentType(rs.getString("STATUS_NO"));
@@ -349,7 +364,7 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 	private String buildRetrieveSql(String id) {
 		StringBuilder sql = new StringBuilder(275);
 		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("SELECT p.*, s.SECTION_ID, s.SECTION_NM, c.COMPANY_NM FROM ").append(customDb).append("BIOMEDGPS_PRODUCT p ");
+		sql.append("SELECT p.*, s.SECTION_ID, s.SECTION_NM, s.SOLR_TOKEN_TXT, c.COMPANY_NM FROM ").append(customDb).append("BIOMEDGPS_PRODUCT p ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT_SECTION ps ");
 		sql.append("ON ps.PRODUCT_ID = p.PRODUCT_ID ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_SECTION s ");
@@ -359,6 +374,40 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		if (id != null) sql.append("WHERE p.PRODUCT_ID = ? ");
 		log.info(sql);
 		return sql.toString();
+	}
+	
+	
+	/**
+	 * Create a full hierarchy list
+	 * @return
+	 */
+	private Map<String, String> createHierarchies() {
+		Map<String, String> hierarchies = new HashMap<>();
+		StringBuilder sql = new StringBuilder(125);
+		sql.append("SELECT * FROM ").append(config.getProperty(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("BIOMEDGPS_SECTION ");
+		log.info(sql);
+		List<Node> companies = new ArrayList<>();
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ResultSet rs = ps.executeQuery();
+			while(rs.next()) {
+				Node n = new Node(rs.getString("SECTION_ID"), rs.getString("PARENT_ID"));
+				n.setNodeName(rs.getString("SECTION_NM"));
+				n.setUserObject(rs.getString("SOLR_TOKEN_TXT"));
+				companies.add(n);
+			}
+		} catch (SQLException e) {
+			log.error(e);
+		}
+		
+		Tree t = new Tree(companies);
+		t.buildNodePaths(t.getRootNode(), "~", true);
+		
+		for (Node n : t.preorderList()) {
+			hierarchies.put(n.getNodeId(),n.getFullPath());
+		}
+		
+		return hierarchies;
 	}
 
 	/* (non-Javadoc)
@@ -385,9 +434,9 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 	
 	@Override
 	public void addSingleItem(String id) {
-		Map<String, SolrDocumentVO> company = retreiveProducts(id);
+		Map<String, SecureSolrDocumentVO> company = retreiveProducts(id);
 		try (SolrActionUtil util = new SolrActionUtil(super.makeServer())) {
-			for (Entry<String, SolrDocumentVO> entry : company.entrySet()) {
+			for (Entry<String, SecureSolrDocumentVO> entry : company.entrySet()) {
 				util.addDocument(entry.getValue());
 			}
 		} catch (Exception e) {
