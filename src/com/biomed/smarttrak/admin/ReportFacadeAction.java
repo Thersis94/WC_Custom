@@ -110,7 +110,7 @@ public class ReportFacadeAction extends SBActionAdapter {
 		try {
 			urt = UtilizationReportType.valueOf(uReportType);
 		} catch (Exception e) {
-			urt = UtilizationReportType.MONTHS_12;
+			urt = UtilizationReportType.DAYS_365;
 		}
 		
 		AbstractSBReportVO rpt;
@@ -125,6 +125,7 @@ public class ReportFacadeAction extends SBActionAdapter {
 				break;
 		}
 		
+		rpt.addAttributes(UserUtilizationReportAction.ATTRIB_REPORT_SUFFIX, urt.getReportSuffix());
 		rpt.setData(uu.retrieveUserUtilization(req));
 		return rpt;
 	}

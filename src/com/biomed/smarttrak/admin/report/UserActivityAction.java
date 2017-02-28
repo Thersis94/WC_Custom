@@ -4,6 +4,8 @@ package com.biomed.smarttrak.admin.report;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +20,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
 // WebCrescendo libs
@@ -42,6 +45,8 @@ import com.smt.sitebuilder.util.PageViewVO;
  ***************************************************************************/
 public class UserActivityAction extends SimpleActionAdapter {
 
+	private static final int DEFAULT_START_DATE_OFFSET = -12;
+	
 	/**
 	 * Constructor
 	 */
@@ -62,9 +67,9 @@ public class UserActivityAction extends SimpleActionAdapter {
 		try {
 			String siteId = parseSiteId(req);
 			String profileId = checkProfileId(req, siteId);
-			String dateStart = req.hasParameter("dateStart") ? req.getParameter("dateStart") : null;
-			String dateEnd = req.hasParameter("dateEnd") ? req.getParameter("dateEnd") : null;
-			
+			String dateStart = formatReportDate(req.getParameter("dateStart"), true);
+			String dateEnd = formatReportDate(req.getParameter("dateEnd"), false);
+			log.debug("dateStart|dateEnd: " + dateStart + "|" + dateEnd);
 			userActivity = retrieveUserPageViews(siteId, profileId, dateStart, dateEnd);
 			// merge certain profile data (first/last names) with user activity data
 			mergeUserNames(userActivity);
@@ -75,6 +80,25 @@ public class UserActivityAction extends SimpleActionAdapter {
 		log.debug("userActivity map size: " + userActivity.size());
 		return userActivity;
 		
+	}
+	
+	/**
+	 * Checks the String date valued passed in.  If the String is null or empty, a null 
+	 * value is returned, otherwise the value of the String date is returned.
+	 * @param date
+	 * @param isStartDate
+	 * @return
+	 */
+	protected String formatReportDate(String date, boolean isStartDate) {
+		String tmpDate = StringUtil.checkVal(date,null);
+		if (tmpDate == null) {
+			if (isStartDate) {
+				Calendar cal = GregorianCalendar.getInstance();
+				cal.add(Calendar.HOUR_OF_DAY, DEFAULT_START_DATE_OFFSET);
+				tmpDate = Convert.formatDate(cal.getTime(),Convert.DATE_TIME_DASH_PATTERN);
+			}
+		}
+		return tmpDate;
 	}
 	
 	/**

@@ -49,19 +49,22 @@ import com.smt.sitebuilder.util.PageViewVO;
 public class UserUtilizationReportAction extends SimpleActionAdapter {
 	
 	public static final String STATUS_NO_INACTIVE = "I";
+	public static final String ATTRIB_REPORT_SUFFIX = "reportSuffix";
 	private Map<Integer,String> monthKeyMap;
 	
 	public enum UtilizationReportType {
-		DAYS_14(-14),
-		DAYS_90(-90),
-		/* The enum for the months-based rollup report uses an offset value
-		 * of -11 indicating "the preceding 11 months". We return data for 
-		 * 12 months, i.e. the past 11 months plus the current month. */
-		MONTHS_12(-11);
+		DAYS_14(-14, "14-Day"),
+		DAYS_90(-90, "90-Day"),
+		DAYS_365(-365, "12-Months");
 		
 		private int startDateOffset;
-		UtilizationReportType(int startDateOffset) { this.startDateOffset = startDateOffset; }
+		private String reportSuffix;
+		UtilizationReportType(int startDateOffset,String reportSuffix) { 
+			this.startDateOffset = startDateOffset;
+			this.reportSuffix = reportSuffix;
+		}
 		public int getStartDateOffset() { return startDateOffset; }
+		public String getReportSuffix() { return reportSuffix; }
 	}
 		
 	/**
@@ -125,31 +128,36 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 	 */
 	protected UtilizationReportType parseReportType(String reportTypeParam) {
 		UtilizationReportType urt;
-		// determine enum.
+		// determine enum to use.
 		try {
 			urt = UtilizationReportType.valueOf(StringUtil.checkVal(reportTypeParam).toUpperCase());
 		} catch (Exception e) {
-			urt = UtilizationReportType.MONTHS_12;
+			urt = UtilizationReportType.DAYS_365;
 		}
 		return urt;
 	}
 	
 	/**
-	 * Builds the report start date based on the UtilizationReportType enum passed in.
+	 * Builds the report start date based on the value of the start date offset of the UtilizationReportType 
+	 * enum passed in.  The start date is calculated as 'today' minus the number of days specified
+	 * by the start date offset.
+	 * 
+	 * If the start date offset is 365 days (i.e. monthly rollup), the start date is calculated as
+	 * the first day of the month following 'today minus 365 days'.  For example if today is 
+	 * Feb 14, 2017, the start date is calculated as Mar 01, 2016.  The monthly rollup then returns data
+	 * for Mar 01, 2016 thru Feb 14, 2017.
 	 * @param urt
 	 * @return
 	 */
 	protected String buildReportStartDate(UtilizationReportType urt) {
 		// build start date from enum.
 		Calendar cal = GregorianCalendar.getInstance();
-		switch(urt) {
-			case DAYS_14:
-			case DAYS_90:
-				cal.add(Calendar.DAY_OF_YEAR, urt.getStartDateOffset());
-				break;
-			default:
-				cal.add(Calendar.MONTH, urt.getStartDateOffset());
-				break;
+		cal.add(Calendar.DAY_OF_YEAR, urt.getStartDateOffset());
+		/* if rollup for past year, add 1 to month value, 
+		 * set day of month to first day. */
+		if (urt.equals(UtilizationReportType.DAYS_365)) {
+			cal.add(Calendar.MONTH, 1);
+			cal.set(Calendar.DAY_OF_MONTH, 1);
 		}
 		return Convert.formatDate(cal.getTime(),Convert.DATE_DASH_PATTERN);
 	}
