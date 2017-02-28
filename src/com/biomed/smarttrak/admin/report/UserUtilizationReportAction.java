@@ -52,13 +52,16 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 	private Map<Integer,String> monthKeyMap;
 	
 	public enum UtilizationReportType {
-		DAYS_14(14),
-		DAYS_90(90),
-		MONTHS_12(11); // report using months value has a unit val of 11.
+		DAYS_14(-14),
+		DAYS_90(-90),
+		/* The enum for the months-based rollup report uses an offset value
+		 * of -11 indicating "the preceding 11 months". We return data for 
+		 * 12 months, i.e. the past 11 months plus the current month. */
+		MONTHS_12(-11);
 		
-		private int unitVal;
-		UtilizationReportType(int unitVal) { this.unitVal = unitVal; }
-		public int getUnitVal() { return unitVal; }
+		private int startDateOffset;
+		UtilizationReportType(int startDateOffset) { this.startDateOffset = startDateOffset; }
+		public int getStartDateOffset() { return startDateOffset; }
 	}
 		
 	/**
@@ -94,21 +97,21 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 		UtilizationReportType urt = parseReportType(req.getParameter("utilizationReportType"));
 		String dateStart = buildReportStartDate(urt);
 		
-		// 1. get user page views for the given start date.
+		// 1. get user pageviews for the given start date.
 		List<PageViewVO> pageViews = retrieveBasePageViews(siteId,dateStart);
 		log.debug("raw pageViews size: " + pageViews.size());
 		
-		// parse the pageviews into the appropriate map
+		// 2. parse the pageviews into a map of page counts for each user
 		Map<String,Map<String,Integer>> pageCounts = parsePageCounts(pageViews,urt);
 
-		// 2. if we retrieved nothing, return emptiness.
+		// 3. if we retrieved nothing, return emptiness.
 		if (pageCounts.size() == 0) return new HashMap<>();
 
-		// 3. get accounts data
+		// 4. get accounts and account users data for the profile IDs for which we found page views.
 		Map<AccountVO, List<UserVO>> accounts = retrieveAccountsUsers(se, pageCounts, siteId);
 		log.debug("accounts map size: " + accounts.size());
 
-		// 4. merge accounts data and user page counts
+		// 5. merge accounts data and user page counts
 		mergeData(accounts, pageCounts);
 
 		return accounts;
@@ -142,10 +145,10 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 		switch(urt) {
 			case DAYS_14:
 			case DAYS_90:
-				cal.add(Calendar.DAY_OF_YEAR, -1*urt.getUnitVal());
+				cal.add(Calendar.DAY_OF_YEAR, urt.getStartDateOffset());
 				break;
 			default:
-				cal.add(Calendar.MONTH, -1*urt.getUnitVal());
+				cal.add(Calendar.MONTH, urt.getStartDateOffset());
 				break;
 		}
 		return Convert.formatDate(cal.getTime(),Convert.DATE_DASH_PATTERN);
