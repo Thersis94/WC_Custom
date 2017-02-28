@@ -5,11 +5,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-
 import com.biomed.smarttrak.vo.InsightVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.security.EncryptionException;
+import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
@@ -31,12 +32,15 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
  * @since Feb 16, 2017
  ****************************************************************************/
 public class InsightAction extends SBActionAdapter {
-	private static final String INSIGHT_ID = "insightId";
+	private static final String REQ_PARAM_1 = "reqParam_1";
 
 	public void retrieve(ActionRequest req) throws ActionException {
 		//check to see if we are getting an insite or a solr list
-		if(req.hasParameter(INSIGHT_ID)){
-			getInsightById(StringUtil.checkVal(req.getParameter(INSIGHT_ID)));
+		
+		
+			
+		if(req.hasParameter(REQ_PARAM_1)){
+			getInsightById(StringUtil.checkVal(req.getParameter(REQ_PARAM_1)));
 		}else{
 			ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 			actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
@@ -109,6 +113,8 @@ public class InsightAction extends SBActionAdapter {
 		sb.append("on a.insight_id=b.insight_id ");
 		sb.append("where a.insight_id = ? ");
 		
+		log.debug("sql: " + sb.toString() + "|" + insightId);
+		
 		List<Object> params = new ArrayList<>();
 		 params.add(insightId);
 
@@ -117,6 +123,19 @@ public class InsightAction extends SBActionAdapter {
 		log.debug("loaded " + insight.size() + " insight");
 		
 		log.debug("placed vo on mod data: " + (InsightVO)insight.get(0));
+		
+		try {
+			StringEncrypter sc = new StringEncrypter((String)attributes.get(Constants.ENCRYPT_KEY));
+			
+			for (Object ob : insight){
+				InsightVO vo = (InsightVO)ob;
+				vo.setFirstName(sc.decrypt(vo.getFirstName()));
+				vo.setLastName(sc.decrypt(vo.getLastName()));
+			}
+		} catch (EncryptionException e) {
+			log.error("could not un encrypt name ");
+		}
+		
 		
 		putModuleData((InsightVO)insight.get(0));
 	}
