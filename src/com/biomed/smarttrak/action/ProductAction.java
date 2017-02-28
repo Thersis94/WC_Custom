@@ -10,10 +10,8 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.Map.Entry;
 
-import org.apache.solr.client.solrj.SolrQuery.ORDER;
 import org.apache.solr.common.SolrDocument;
 
-import com.biomed.smarttrak.util.BiomedProductIndexer;
 import com.biomed.smarttrak.vo.ProductAllianceVO;
 import com.biomed.smarttrak.vo.ProductAttributeVO;
 import com.biomed.smarttrak.vo.ProductVO;
@@ -29,7 +27,6 @@ import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
-import com.smt.sitebuilder.action.search.SolrActionIndexVO;
 import com.smt.sitebuilder.action.search.SolrActionVO;
 import com.smt.sitebuilder.action.search.SolrFieldVO;
 import com.smt.sitebuilder.action.search.SolrQueryProcessor;
@@ -37,7 +34,6 @@ import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.action.search.SolrFieldVO.BooleanType;
 import com.smt.sitebuilder.action.search.SolrFieldVO.FieldType;
 import com.smt.sitebuilder.common.ModuleVO;
-import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 
@@ -350,13 +346,6 @@ public class ProductAction extends SBActionAdapter {
 	 */
 	protected void retrieveProducts(ActionRequest req) throws ActionException {
 		SolrActionVO qData = buildSolrAction(req);
-		SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, qData.getSolrCollectionPath());
-		qData.setNumberResponses(5000);
-		qData.setStartLocation(0);
-		qData.setOrganizationId(((SiteVO)req.getAttribute(Constants.SITE_DATA)).getOrganizationId());
-		qData.setRoleLevel(0);
-		qData.addSolrField(new SolrFieldVO(FieldType.BOOST, SearchDocumentHandler.TITLE, "", BooleanType.AND));
-		qData.addSolrField(new SolrFieldVO(FieldType.BOOST, "company_s", "", BooleanType.AND));
 		
 		if (req.hasParameter("searchData")) 
 			qData.setSearchData("*"+req.getParameter("searchData")+"*");
@@ -371,11 +360,8 @@ public class ProductAction extends SBActionAdapter {
 			selected.append(")");
 			qData.addSolrField(new SolrFieldVO(FieldType.FILTER, SearchDocumentHandler.SECTION, selected.toString(), BooleanType.AND));
 		}
-
-		qData.addIndexType(new SolrActionIndexVO("", BiomedProductIndexer.INDEX_TYPE));
 		
-		qData.setFieldSort(SearchDocumentHandler.TITLE_LCASE);
-		qData.setSortDirection(ORDER.asc);
+		SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, qData.getSolrCollectionPath());
 		SolrResponseVO vo = sqp.processQuery(qData);
 		for (SolrDocument doc : vo.getResultDocuments()) {
 			doc.setField("updateMsg", buildUpdateMsg(doc));

@@ -10,10 +10,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 
-import org.apache.solr.client.solrj.SolrQuery.ORDER;
 import org.apache.solr.common.SolrDocument;
 
-import com.biomed.smarttrak.util.BiomedCompanyIndexer;
 import com.biomed.smarttrak.vo.AllianceVO;
 import com.biomed.smarttrak.vo.CompanyAttributeVO;
 import com.biomed.smarttrak.vo.CompanyVO;
@@ -29,7 +27,6 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
-import com.smt.sitebuilder.action.search.SolrActionIndexVO;
 import com.smt.sitebuilder.action.search.SolrActionVO;
 import com.smt.sitebuilder.action.search.SolrFieldVO;
 import com.smt.sitebuilder.action.search.SolrQueryProcessor;
@@ -37,7 +34,6 @@ import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.action.search.SolrFieldVO.BooleanType;
 import com.smt.sitebuilder.action.search.SolrFieldVO.FieldType;
 import com.smt.sitebuilder.common.ModuleVO;
-import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 
@@ -357,12 +353,6 @@ public class CompanyAction extends SBActionAdapter {
 	protected void retrieveCompanies(ActionRequest req) throws ActionException {
 		SolrActionVO qData = buildSolrAction(req);
 		SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, qData.getSolrCollectionPath());
-		qData.setNumberResponses(5000);
-		qData.setStartLocation(0);
-		qData.setOrganizationId(((SiteVO)req.getAttribute(Constants.SITE_DATA)).getOrganizationId());
-		qData.setRoleLevel(0);
-		qData.addSolrField(new SolrFieldVO(FieldType.BOOST, SearchDocumentHandler.TITLE, "", BooleanType.AND));
-		qData.addSolrField(new SolrFieldVO(FieldType.BOOST, "ticker_s", "", BooleanType.AND));
 		
 		if (req.hasParameter("searchData")) 
 			qData.setSearchData("*"+req.getParameter("searchData")+"*");
@@ -377,11 +367,7 @@ public class CompanyAction extends SBActionAdapter {
 			selected.append(")");
 			qData.addSolrField(new SolrFieldVO(FieldType.FILTER, SearchDocumentHandler.SECTION, selected.toString(), BooleanType.AND));
 		}
-
-		qData.addIndexType(new SolrActionIndexVO("", BiomedCompanyIndexer.INDEX_TYPE));
 		
-		qData.setFieldSort(SearchDocumentHandler.TITLE_LCASE);
-		qData.setSortDirection(ORDER.asc);
 		SolrResponseVO vo = sqp.processQuery(qData);
 		for (SolrDocument doc : vo.getResultDocuments()) {
 			doc.setField("updateMsg", buildUpdateMsg(doc));
