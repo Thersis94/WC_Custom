@@ -33,13 +33,18 @@ import com.smt.sitebuilder.util.MessageSender;
  ****************************************************************************/
 public class AnalystPostProcessor extends SBActionAdapter {
 
+	//TODO Move these to a config File.
 	public static final String ZOHO_TICKET_EMAIL = "siliconmtn_967168000000017005@bugs.zohoprojects.com";
 	public static final String ASK_AN_ANALYST_MESSAGE_ID = "con_a3000f703d63b1da0a00142186c0cd47";
 	public static final String ASK_AN_ANALYST_TYPE_ID = "con_6ce79b3d3d64f3980a00142169629ed6";
 	public static final String ASK_AN_ANALYST_REFERRER_URL_ID = "con_f7315485834cf9b20a00141327be70a1";
 	public static final String SMARTTRAK_EMAIL = "info.smarttrak@siliconmtn.com";
-	public AnalystPostProcessor() {super();}
-	public AnalystPostProcessor(ActionInitVO actionInit) {super(actionInit);}
+	public AnalystPostProcessor() {
+		super();
+	}
+	public AnalystPostProcessor(ActionInitVO actionInit) {
+		super(actionInit);
+	}
 
 	@Override
 	public void build(ActionRequest req) throws ActionException {

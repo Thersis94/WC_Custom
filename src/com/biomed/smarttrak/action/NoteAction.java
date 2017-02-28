@@ -125,11 +125,9 @@ public class NoteAction extends SBActionAdapter {
 			String noteId = StringUtil.checkVal(req.getParameter("noteId"));
 			String noteType = StringUtil.checkVal(req.getParameter(NOTE_TYPE));
 			String noteEntityId = StringUtil.checkVal(req.getParameter(NOTE_ENTITY_ID));
-			String orgId = ((SiteVO)req.getAttribute(Constants.SITE_DATA)).getOrganizationId();
 			
 			StringBuilder filePrefix = new StringBuilder(65);
-			filePrefix.append(StringUtil.checkVal(attributes.get(Constants.PROFILE_DOCUMENT_DIR)));
-			filePrefix.append(orgId).append(NOTES_DIRECTORY_PATH);
+			filePrefix.append(NOTES_DIRECTORY_PATH);
 			
 			
 
