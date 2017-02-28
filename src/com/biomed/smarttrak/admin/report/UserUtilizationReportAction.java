@@ -305,25 +305,32 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	protected String buildUnitKey(UtilizationReportType urt, Calendar cal, Date date) {
-		String unitKey;
 		switch(urt) {
 			case DAYS_14:
 			case DAYS_90:
-				unitKey = Convert.formatDate(date,Convert.DATE_SLASH_PATTERN);
-				break;
+				return Convert.formatDate(date,Convert.DATE_SLASH_PATTERN);
 			default:
-				cal.setTime(date);
-				int monthVal = cal.get(Calendar.MONTH);
-				if (monthKeyMap.get(monthVal) != null) {
-					unitKey = monthKeyMap.get(monthVal);
-				} else {
-					unitKey = cal.getDisplayName(Calendar.MONTH, Calendar.SHORT, Locale.US);
-					unitKey += " " + (cal.get(Calendar.YEAR)%100);
-					monthKeyMap.put(monthVal,unitKey);
-				}
-				break;
+				return formatMonthlyUnitKey(cal,date);
 		}
-		return unitKey;
+	}
+
+	/**
+	 * Formats the unit key used for the user's monthly page counts map.
+	 * @param cal
+	 * @param date
+	 * @return
+	 */
+	protected String formatMonthlyUnitKey(Calendar cal, Date date) {
+		cal.setTime(date);
+		int monthVal = cal.get(Calendar.MONTH);
+		if (monthKeyMap.get(monthVal) != null) {
+			return monthKeyMap.get(monthVal);
+		} else {
+			String unitKey = cal.getDisplayName(Calendar.MONTH, Calendar.SHORT, Locale.US);
+			unitKey += " " + (cal.get(Calendar.YEAR)%100);
+			monthKeyMap.put(monthVal,unitKey);
+			return unitKey;
+		}
 	}
 
 	/**
