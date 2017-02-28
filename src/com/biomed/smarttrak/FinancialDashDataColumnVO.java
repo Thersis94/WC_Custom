@@ -1,8 +1,6 @@
 package com.biomed.smarttrak;
 
-import java.sql.ResultSet;
-
-import com.smt.sitebuilder.action.SBModuleVO;
+import java.io.Serializable;
 
 /****************************************************************************
  * <b>Title</b>: FinancialDashDataColumnVO.java<p/>
@@ -15,9 +13,9 @@ import com.smt.sitebuilder.action.SBModuleVO;
  * @since Jan 04, 2017
  ****************************************************************************/
 
-public class FinancialDashDataColumnVO extends SBModuleVO {
+public class FinancialDashDataColumnVO implements Serializable {
 
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 6516888074396410665L;
 	private String colId;
 	private int dollarValue;
 	private Double pctDiff;
@@ -26,18 +24,6 @@ public class FinancialDashDataColumnVO extends SBModuleVO {
 		super();
 	}
 	
-	public FinancialDashDataColumnVO(ResultSet rs) {
-		setData(rs);
-	}
-	
-	/**
-	 * Sets data from a ResultSet
-	 * @param rs
-	 */
-	public void setData(ResultSet rs) {
-		// TODO - Complete this method
-	}
-
 	/**
 	 * @return the colId
 	 */

@@ -1,5 +1,6 @@
 package com.biomed.smarttrak;
 
+import java.io.Serializable;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -13,7 +14,6 @@ import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-import com.smt.sitebuilder.action.SBModuleVO;
 
 /****************************************************************************
  * <b>Title</b>: FinancialDashDataRowVO.java<p/>
@@ -26,9 +26,9 @@ import com.smt.sitebuilder.action.SBModuleVO;
  * @since Jan 04, 2017
  ****************************************************************************/
 
-public class FinancialDashDataRowVO extends SBModuleVO {
+public class FinancialDashDataRowVO implements Serializable {
 
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = -1858035677710604733L;
 	private String name;
 	private String primaryKey;
 	private String parentId;
