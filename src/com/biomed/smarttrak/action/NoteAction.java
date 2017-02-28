@@ -6,15 +6,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-
-
-
 
 //WC custom
 import com.biomed.smarttrak.vo.NoteVO;
@@ -28,11 +22,8 @@ import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.exception.NotAuthorizedException;
 import com.siliconmtn.http.filter.fileupload.ProfileDocumentFileManagerStructureImpl;
-import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.security.EncryptionException;
-import com.siliconmtn.security.StringEncrypter;
-import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.file.transfer.ProfileDocumentAction;
@@ -141,15 +132,12 @@ public class NoteAction extends SBActionAdapter {
 			filePrefix.append(orgId).append(NOTES_DIRECTORY_PATH);
 			
 			
-			Date cal = Convert.formatDate(new Date(), Calendar.HOUR_OF_DAY, 3);
 
 			try  {
 				ModuleVO modVo = (ModuleVO) attributes.get(Constants.MODULE_DATA);
-				StringEncrypter se = new StringEncrypter(encKey);
-				
-				String fileToken = se.encrypt(Long.toString(cal.getTime()));
-				fileToken = StringEncoder.urlEncode(fileToken);
-				
+
+				String fileToken = ProfileDocumentFileManagerStructureImpl.makeDocToken(encKey);
+
 				log.debug("file token " + fileToken);
 				//if the request is for a particular note get that note
 				if (!noteId.isEmpty()){
