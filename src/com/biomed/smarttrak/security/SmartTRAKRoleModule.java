@@ -112,6 +112,7 @@ public class SmartTRAKRoleModule extends DBRoleModule {
 		role.setFdAuthorized(user.getFdAuthFlg(), fdAuth);
 		role.setGaAuthorized(user.getGaAuthFlg(), gaAuth);
 		role.setMktAuthorized(user.getMktAuthFlg(), mktAuth);
+		role.setAccountOwner(user.getAcctOwnerFlg());
 	}
 
 

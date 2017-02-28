@@ -88,7 +88,7 @@ public class CompanyVO  implements NoteEntityInterface {
 		currencyTypeId = req.getParameter("currencyId");
 		holdingText = req.getParameter("holdingText");
 		stockAbbr = req.getParameter("stockAbbr");
-		exchangeId = req.getParameter("exchangeId");
+		exchangeId = StringUtil.checkVal(req.getParameter("exchangeId"), null);
 		archiveReason = req.getParameter("archiveReason");
 		startupFlag = Convert.formatInteger(req.getParameter("startupFlag"));
 		statusNo = req.getParameter("statusNo");
