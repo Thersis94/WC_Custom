@@ -61,6 +61,8 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	// Roles, as they apply to the site's section hierarchy, are administered by the SecurityController
 	public static final int DEFAULT_ROLE_LEVEL = SecurityController.PUBLIC_REGISTERED_LEVEL;
 
+	public static final int DOC_ID_MIN_LEN = 15;
+
 	/*
 	 * 'sections' of the SmartTRAK website - used for Solr as well as Recently Viewed/Favorites
 	 */
