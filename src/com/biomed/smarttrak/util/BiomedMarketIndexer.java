@@ -112,7 +112,7 @@ public class BiomedMarketIndexer  extends SMTAbstractIndex {
 	 */
 	@SuppressWarnings("unchecked")
 	protected void addSection(MarketVO market, Node n) throws SQLException {
-		SectionVO sec = ((SectionVO)n.getUserObject());
+		SectionVO sec = (SectionVO)n.getUserObject();
 		market.addHierarchies(n.getFullPath());
 		market.addSection(sec.getSectionNm());
 		market.addACLGroup(Permission.GRANT, sec.getSolrTokenTxt());

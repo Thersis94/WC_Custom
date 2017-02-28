@@ -115,7 +115,7 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 	 */
 	@SuppressWarnings("unchecked")
 	protected void addSection(SecureSolrDocumentVO product, Node n) throws SQLException {
-		SectionVO sec = ((SectionVO)n.getUserObject());
+		SectionVO sec = (SectionVO)n.getUserObject();
 		product.addHierarchies(n.getFullPath());
 		product.addSection(sec.getSectionNm());
 		product.addACLGroup(Permission.GRANT, sec.getSolrTokenTxt());
