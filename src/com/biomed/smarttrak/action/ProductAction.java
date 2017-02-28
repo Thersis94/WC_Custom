@@ -28,11 +28,7 @@ import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrActionVO;
-import com.smt.sitebuilder.action.search.SolrFieldVO;
-import com.smt.sitebuilder.action.search.SolrQueryProcessor;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
-import com.smt.sitebuilder.action.search.SolrFieldVO.BooleanType;
-import com.smt.sitebuilder.action.search.SolrFieldVO.FieldType;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
@@ -71,7 +67,7 @@ public class ProductAction extends SBActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		if (req.hasParameter("reqParam_1")) {
 			retrieveProduct(req.getParameter("reqParam_1"));
-		} else if (req.hasParameter("searchData") || req.hasParameter("selNodes")){
+		} else if (req.hasParameter("searchData") || req.hasParameter("fq")){
 			retrieveProducts(req);
 		}
 	}
@@ -345,28 +341,24 @@ public class ProductAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	protected void retrieveProducts(ActionRequest req) throws ActionException {
-		SolrActionVO qData = buildSolrAction(req);
+
+		// Pass along the proper information for a search to be done.
+	    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+	    	actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
+	    	req.setParameter("pmid", mod.getPageModuleId());
 		
-		if (req.hasParameter("searchData")) 
-			qData.setSearchData("*"+req.getParameter("searchData")+"*");
-		
-		StringBuilder selected = new StringBuilder(50);
-		if (req.hasParameter("selNodes")) {
-			selected.append("(");
-			for (String s : req.getParameterValues("selNodes")) {
-				if (selected.length() > 2) selected.append(" OR ");
-				selected.append("*").append(s);
-			}
-			selected.append(")");
-			qData.addSolrField(new SolrFieldVO(FieldType.FILTER, SearchDocumentHandler.SECTION, selected.toString(), BooleanType.AND));
-		}
-		
-		SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, qData.getSolrCollectionPath());
-		SolrResponseVO vo = sqp.processQuery(qData);
+	    	// Build the solr action
+		SolrAction sa = new SolrAction(actionInit);
+		sa.setDBConnection(dbConn);
+		sa.setAttributes(attributes);
+		sa.retrieve(req);
+
+		// Creatae the update messages for the responses
+	    	mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+		SolrResponseVO vo = (SolrResponseVO) mod.getActionData();
 		for (SolrDocument doc : vo.getResultDocuments()) {
 			doc.setField("updateMsg", buildUpdateMsg(doc));
 		}
-		
 		super.putModuleData(vo);
 	}
 	
