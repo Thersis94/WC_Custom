@@ -2,29 +2,19 @@
 package com.biomed.smarttrak.action;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
-import org.apache.solr.client.solrj.SolrQuery.ORDER;
 
-import com.biomed.smarttrak.solr.BiomedInsightIndexer;
 import com.biomed.smarttrak.vo.InsightVO;
-import com.biomed.smarttrak.util.UpdateIndexer;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
-import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
-import com.smt.sitebuilder.action.search.SolrActionIndexVO;
-import com.smt.sitebuilder.action.search.SolrActionVO;
-import com.smt.sitebuilder.action.search.SolrFieldVO;
-import com.smt.sitebuilder.action.search.SolrFieldVO.BooleanType;
 import com.smt.sitebuilder.action.search.SolrFieldVO.FieldType;
-import com.smt.sitebuilder.action.search.SolrQueryProcessor;
-import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.common.ModuleVO;
-import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
@@ -44,14 +34,65 @@ public class InsightAction extends SBActionAdapter {
 	private static final String INSIGHT_ID = "insightId";
 
 	public void retrieve(ActionRequest req) throws ActionException {
-
+		//check to see if we are getting an insite or a solr list
 		if(req.hasParameter(INSIGHT_ID)){
 			getInsightById(StringUtil.checkVal(req.getParameter(INSIGHT_ID)));
 		}else{
-			putModuleData(retrieveInsights(req));
+			ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+			actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
+
+			//transform some incoming reqParams to where Solr expects to see them
+			transposeRequest(req);
+
+			//Get SolrSearch ActionVO.
+			SolrAction sa = new SolrAction(actionInit);
+			sa.setDBConnection(dbConn);
+			sa.setAttributes(attributes);
+			sa.retrieve(req);
 		}
 	}
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
+	public void list(ActionRequest req) throws ActionException {
+		super.retrieve(req);
+	}
+	
+	/**
+	 * transpose incoming request parameters into values Solr understands, so they get executed for us.
+	 * @param req
+	 * @throws ActionException
+	 */
+	protected void transposeRequest(ActionRequest req) throws ActionException {
+		//get the filter queries already on the request.  Add ours to the stack, and put the String[] back on the request for Solr
+		String[] fqs = req.getParameterValues("fq");
+		if (fqs == null) fqs = new String[0];
+		List<String> data = new ArrayList<>(Arrays.asList(fqs));
 
+		//Add Sections Check.  Append a filter query for each section requested
+		if (req.hasParameter("hierarchyId")) {
+			for (String s : req.getParameterValues("hierarchyId")){
+				log.debug("########## hierarchyId" + s);
+				data.add(SearchDocumentHandler.HIERARCHY + ":" + s);
+			}
+		}
+
+		//Get a Date Range String.
+		String dates = SolrActionUtil.makeRangeQuery(FieldType.DATE, req.getParameter("startDt"), req.getParameter("endDt"));
+		if (!StringUtil.isEmpty(dates))
+			data.add(SearchDocumentHandler.UPDATE_DATE + ":" + dates);
+
+		//Add a ModuleType filter if typeId was passed
+		if (req.hasParameter("typeId"))
+			data.add(SearchDocumentHandler.MODULE_TYPE + ":" + req.getParameter("typeId"));
+
+		//put the new list of filter queries back on the request
+		req.setParameter("fq", data.toArray(new String[data.size()]), true);
+	}
+	
+	
 	/**
 	 * @param checkVal
 	 */
@@ -80,78 +121,5 @@ public class InsightAction extends SBActionAdapter {
 		putModuleData((InsightVO)insight.get(0));
 	}
 
-	/**
-	 * Get the solr information 
-	 * @param req
-	 * @return
-	 * @throws ActionException
-	 */
-	private SolrActionVO buildSolrAction(ActionRequest req) throws ActionException {
 
-
-		//Set SolrSearch ActionId on actionInit
-		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
-		//TODO
-		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
-
-		//Get SolrSearch ActionVO.
-		SolrAction sa = new SolrAction(actionInit);
-		sa.setDBConnection(dbConn);
-		sa.setAttributes(attributes);
-		return sa.retrieveActionData(req);
-	}
-
-	/**
-	 * Retrieve all products from solr according to the search terms
-	 * @param req
-	 * @throws ActionException
-	 */
-	protected SolrResponseVO retrieveInsights(ActionRequest req) throws ActionException {
-		log.debug("######### retrieve insights called");
-		SolrActionVO qData = buildSolrAction(req);
-		SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, qData.getSolrCollectionPath());
-		qData.setNumberResponses(15);
-		qData.setStartLocation(Convert.formatInteger(req.getParameter("pageNo"), 0) * 15);
-		qData.setOrganizationId(((SiteVO)req.getAttribute(Constants.SITE_DATA)).getOrganizationId());
-		qData.setRoleLevel(10);
-		qData.addSolrField(new SolrFieldVO(FieldType.BOOST, SearchDocumentHandler.TITLE, "", BooleanType.AND));
-		qData.addSolrField(new SolrFieldVO(FieldType.BOOST, SearchDocumentHandler.HIERARCHY, "", BooleanType.AND));
-		qData.addSolrField(new SolrFieldVO(FieldType.FACET, SearchDocumentHandler.HIERARCHY, null, null));
-
-		//Add Search Parameters.
-		if (req.hasParameter("searchData")) 
-			qData.setSearchData("*"+req.getParameter("searchData")+"*");
-
-		//Add Sections Check.
-		if (req.hasParameter("hierarchyId")) {
-			StringBuilder selected = new StringBuilder(50);
-			selected.append("(");
-			for (String s : req.getParameterValues("hierarchyId")) {
-				if (selected.length() > 2) selected.append(" OR ");
-				selected.append("*").append(s);
-			}
-			selected.append(")");
-			qData.addSolrField(new SolrFieldVO(FieldType.FILTER, SearchDocumentHandler.HIERARCHY, selected.toString(), BooleanType.AND));
-		}
-
-		//Get a Date Range String.
-		String dates = SolrActionUtil.makeRangeQuery(FieldType.DATE, req.getParameter("startDt"), req.getParameter("endDt"));
-
-		//If we have a date range, add it as a solr field.
-		if(!StringUtil.isEmpty(dates)) {
-			qData.addSolrField(new SolrFieldVO(FieldType.FILTER, SearchDocumentHandler.UPDATE_DATE, dates, BooleanType.AND));
-		}
-
-		//Add TypeId
-		if(req.hasParameter("typeId")) {
-			qData.addSolrField(new SolrFieldVO(FieldType.FILTER, SearchDocumentHandler.MODULE_TYPE, req.getParameter("typeId"), BooleanType.AND));
-		}
-
-		qData.addIndexType(new SolrActionIndexVO("", BiomedInsightIndexer.INDEX_TYPE));
-
-		qData.setFieldSort(SearchDocumentHandler.UPDATE_DATE);
-		qData.setSortDirection(ORDER.desc);
-
-		return sqp.processQuery(qData);
-	}
 }

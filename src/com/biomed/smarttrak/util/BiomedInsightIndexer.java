@@ -1,4 +1,4 @@
-package com.biomed.smarttrak.solr;
+package com.biomed.smarttrak.util;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -12,7 +12,6 @@ import org.apache.solr.common.SolrException.ErrorCode;
 
 import com.biomed.smarttrak.admin.InsightAction;
 import com.biomed.smarttrak.vo.InsightVO;
-import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SMTAbstractIndex;
@@ -48,11 +47,10 @@ public class BiomedInsightIndexer extends SMTAbstractIndex {
 	public void addIndexItems(SolrClient server) throws SolrException {
 		try (SolrActionUtil util = new SolrActionUtil(makeServer())) {
 			List<SolrDocumentVO> docs = getDocuments(null);
-			if (docs.isEmpty()) {
+			if (docs.isEmpty()) 
 				throw new Exception("No Documents found");
-			}
+			
 			util.addDocuments(docs);
-			util.commitSolr();
 		} catch (Exception e) {
 			throw new SolrException(ErrorCode.BAD_REQUEST, e);
 		}
@@ -60,14 +58,13 @@ public class BiomedInsightIndexer extends SMTAbstractIndex {
 
 	@Override
 	public void addSingleItem(String itemId) throws SolrException {
-		log.debug("Adding single item.");
+		log.debug("Adding single insight: " + itemId);
 		try (SolrActionUtil util = new SolrActionUtil(makeServer())) {
 			List<SolrDocumentVO> docs = getDocuments(itemId);
-			if (docs.isEmpty()) {
+			if (docs.isEmpty()) 
 				throw new Exception("Document " + itemId + " not found");
-			}
+			
 			util.addDocuments(docs);
-			util.commitSolr();
 		} catch (Exception e) {
 			throw new SolrException(ErrorCode.BAD_REQUEST, e);
 		}
@@ -97,11 +94,10 @@ public class BiomedInsightIndexer extends SMTAbstractIndex {
 		List<Object> list = ia.getInsights(documentId, null, null, null);
 
 		//Load the Section Tree and set all the Hierarchies.
-		Tree t = ia.loadSections();
+		SmarttrakTree t = ia.loadSections();
 		for(Object o : list) {
-			InsightVO u = (InsightVO)o;
-			
-			u.setHierarchies(t);
+			InsightVO i = (InsightVO)o;
+			i.configureSolrHierarchies(t);
 		}
 		return(List<SolrDocumentVO>)(List<?>) list;
 	}

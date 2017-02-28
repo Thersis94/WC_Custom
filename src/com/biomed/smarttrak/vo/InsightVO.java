@@ -6,8 +6,7 @@ import java.util.Date;
 import java.util.List;
 
 import com.biomed.smarttrak.action.AdminControllerAction;
-import com.biomed.smarttrak.admin.user.HumanNameIntfc;
-import com.biomed.smarttrak.solr.BiomedInsightIndexer;
+import com.biomed.smarttrak.util.BiomedInsightIndexer;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.annotations.SolrField;
 import com.siliconmtn.data.Node;
@@ -21,7 +20,8 @@ import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
-import com.smt.sitebuilder.util.solr.SolrDocumentVO;
+import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
+
 
 /****************************************************************************
  * <b>Title</b>: InsightVO.java <p/>
@@ -36,7 +36,7 @@ import com.smt.sitebuilder.util.solr.SolrDocumentVO;
  * @updates:
  ****************************************************************************/
 @Table(name="biomedgps_insight")
-public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
+public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 
 
 	public enum InsightStatusCd {P("Published"), D("Deleted"), E("Edit");
@@ -188,17 +188,19 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 	 * Replace spaces with _ and replace & and and
 	 * @param loadSections
 	 */
-	public void setHierarchies(Tree t) {
+	public void configureSolrHierarchies(Tree t) {
 		for(InsightXRVO uxr : sections) {
 			
 			if (uxr.getSectionId() == null){
-				uxr.setSectionId("MASTER_ROOT");
+				uxr.setSectionId("");
 			}
 			
 			Node n = t.findNode(uxr.getSectionId());
 			
 			if(n != null && !StringUtil.isEmpty(n.getFullPath())) {
-				super.addHierarchies(n.getFullPath().replaceAll(" ", "_").replaceAll("&", "and"));
+				super.addHierarchies(n.getFullPath());
+				SectionVO sec = (SectionVO) n.getUserObject();
+				super.addACLGroup(Permission.GRANT, sec.getSolrTokenTxt());
 			}
 		}
 
@@ -389,7 +391,7 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 	@SolrField(name=SearchDocumentHandler.DOCUMENT_URL)
 	public String getDocumentUrl() {
 		StringBuilder url = new StringBuilder(50);
-		url.append("insights/qs/").append(this.insightId);
+		url.append(AdminControllerAction.Section.INSIGHTS.getURLToken()).append("qs/").append(this.insightId);
 		return url.toString();
 	}
 
@@ -414,7 +416,7 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 	 * @param insightId the insightId to set
 	 */
 	public void setInsightId(String insightId) {
-		super.setDocumentId(insightId);
+		super.setDocumentId("ins_"+insightId);
 		this.insightId = insightId;
 	}
 
