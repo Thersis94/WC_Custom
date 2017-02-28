@@ -39,8 +39,12 @@ public class AnalystPostProcessor extends SBActionAdapter {
 	public static final String ASK_AN_ANALYST_TYPE_ID = "con_6ce79b3d3d64f3980a00142169629ed6";
 	public static final String ASK_AN_ANALYST_REFERRER_URL_ID = "con_f7315485834cf9b20a00141327be70a1";
 	public static final String SMARTTRAK_EMAIL = "info.smarttrak@siliconmtn.com";
-	public AnalystPostProcessor() {super();}
-	public AnalystPostProcessor(ActionInitVO actionInit) {super(actionInit);}
+	public AnalystPostProcessor() {
+		super();
+	}
+	public AnalystPostProcessor(ActionInitVO actionInit) {
+		super(actionInit);
+	}
 
 	@Override
 	public void build(ActionRequest req) throws ActionException {
