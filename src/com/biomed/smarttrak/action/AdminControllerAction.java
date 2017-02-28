@@ -2,6 +2,7 @@ package com.biomed.smarttrak.action;
 
 import org.apache.commons.lang.StringEscapeUtils;
 
+
 // WC custom
 import com.biomed.smarttrak.FinancialDashAction;
 import com.biomed.smarttrak.FinancialDashScenarioAction;
@@ -30,6 +31,7 @@ import com.siliconmtn.util.StringUtil;
 
 // WC core
 import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.smt.sitebuilder.action.emailcampaign.CampaignInstanceAction;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -140,6 +142,8 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
+	//TODO Refactor this switch to use a collection(map) to store the action type
+	//with it's class name as value to dynamically load each action.
 	private ActionInterface loadAction(String actionType) throws ActionException {
 		ActionInterface action;
 		switch (StringUtil.checkVal(actionType)) {
@@ -193,6 +197,9 @@ public class AdminControllerAction extends SimpleActionAdapter {
 				break;
 			case "reports":
 				action = new ReportFacadeAction();
+				break;
+			case "marketingCampaigns":
+				action = new CampaignInstanceAction();
 				break;
 			default:
 				throw new ActionException("unknown action type:" + actionType);
