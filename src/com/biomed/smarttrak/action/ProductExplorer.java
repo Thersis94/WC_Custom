@@ -66,7 +66,7 @@ public class ProductExplorer extends SBActionAdapter {
 	private enum SearchField {
 		PRODUCT(true, SearchDocumentHandler.TITLE, "Product Name"),
 		COMPANY(true, "company_s", "Company Name"),
-		SEGMENT(false, "sectionname_ss", "Segment"),
+		SEGMENT(false, SearchDocumentHandler.SECTION, "Segment"),
 		MARKET(false, "target_market_ss", "Target Market"),
 		INDICATION(false, "indication_ss", "Indication"),
 		TECH(false, "technology_ss", "Technology"),
@@ -279,7 +279,7 @@ public class ProductExplorer extends SBActionAdapter {
 
 			//Text compare only uses five
 			if (!Convert.formatBoolean(req.getParameter("textCompare"))) {
-				qData.addSolrField(new SolrFieldVO(FieldType.FACET, "sectionname_ss", null, null));
+				qData.addSolrField(new SolrFieldVO(FieldType.FACET, SearchDocumentHandler.SECTION, null, null));
 				qData.addSolrField(new SolrFieldVO(FieldType.FACET, "intregionnm_ss", null, null));
 				qData.addSolrField(new SolrFieldVO(FieldType.FACET, "intstatusnm_ss", null, null));
 				qData.addSolrField(new SolrFieldVO(FieldType.FACET, "intpathnm_ss", null, null));
@@ -307,7 +307,7 @@ public class ProductExplorer extends SBActionAdapter {
 			selected.append("*").append(s);
 		}
 		selected.append(")");
-		qData.addSolrField(new SolrFieldVO(FieldType.FILTER, SearchDocumentHandler.SECTION, selected.toString(), BooleanType.AND));
+		qData.addSolrField(new SolrFieldVO(FieldType.FILTER, "sectionid_ss", selected.toString(), BooleanType.AND));
 	}
 
 
