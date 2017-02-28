@@ -33,6 +33,7 @@ import com.smt.sitebuilder.util.MessageSender;
  ****************************************************************************/
 public class AnalystPostProcessor extends SBActionAdapter {
 
+	//TODO Move these to a config File.
 	public static final String ZOHO_TICKET_EMAIL = "siliconmtn_967168000000017005@bugs.zohoprojects.com";
 	public static final String ASK_AN_ANALYST_MESSAGE_ID = "con_a3000f703d63b1da0a00142186c0cd47";
 	public static final String ASK_AN_ANALYST_TYPE_ID = "con_6ce79b3d3d64f3980a00142169629ed6";
