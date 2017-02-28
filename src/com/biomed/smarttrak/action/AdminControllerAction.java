@@ -3,6 +3,7 @@ package com.biomed.smarttrak.action;
 import org.apache.commons.lang.StringEscapeUtils;
 
 
+
 // WC custom
 import com.biomed.smarttrak.FinancialDashAction;
 import com.biomed.smarttrak.FinancialDashScenarioAction;
@@ -32,6 +33,7 @@ import com.siliconmtn.util.StringUtil;
 // WC core
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.emailcampaign.CampaignInstanceAction;
+import com.smt.sitebuilder.action.emailcampaign.InstanceReport;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -101,7 +103,9 @@ public class AdminControllerAction extends SimpleActionAdapter {
 			//allow either deletes or saves (build) to be called directly from the controller
 			if (AdminConstants.REQ_DELETE.equals(req.getParameter("actionPerform"))) {
 				action.delete(req);
-			} else {
+			} else if(AdminConstants.REQ_COPY.equals(req.getParameter("actionPerform"))){
+				action.copy(req);
+			}else {
 				action.build(req);
 			}
 			msg = (String) attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
@@ -201,6 +205,9 @@ public class AdminControllerAction extends SimpleActionAdapter {
 			case "marketingCampaigns":
 				action = new CampaignInstanceAction();
 				break;
+			case "marketingInstanceReport":
+				action = new InstanceReport();
+				break;				
 			default:
 				throw new ActionException("unknown action type:" + actionType);
 		}
