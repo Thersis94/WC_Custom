@@ -119,7 +119,7 @@ public class UpdatesAction extends AbstractTreeAction {
 	 */
 	public static String formatRetrieveQuery(String updateId, String statusCd, String typeCd, String dateRange, String schema) {
 		StringBuilder sql = new StringBuilder(400);
-		sql.append("select a.*, p.first_nm, p.last_nm, b.section_id ");
+		sql.append("select a.*, p.first_nm, p.last_nm, b.section_id, b.update_section_xr_id ");
 		sql.append("from ").append(schema).append("biomedgps_update a ");
 		sql.append("inner join profile p on a.creator_profile_id=p.profile_id ");
 		sql.append("left outer join ").append(schema).append("biomedgps_update_section b ");
