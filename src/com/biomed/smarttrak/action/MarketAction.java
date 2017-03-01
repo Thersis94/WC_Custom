@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import com.biomed.smarttrak.security.SecurityController;
 import com.biomed.smarttrak.vo.MarketAttributeVO;
 import com.biomed.smarttrak.vo.MarketVO;
 import com.siliconmtn.action.ActionException;
@@ -54,7 +55,7 @@ public class MarketAction extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		if (req.hasParameter("reqParam_1")) {
-			retrieveMarket(req.getParameter("reqParam_1"));
+			retrieveMarket(req.getParameter("reqParam_1"), req);
 		} else {
 			retrieveMarkets(req);
 		}
@@ -66,7 +67,7 @@ public class MarketAction extends SBActionAdapter {
 	 * @param marketId
 	 * @throws ActionException
 	 */
-	protected void retrieveMarket(String marketId) throws ActionException {
+	protected void retrieveMarket(String marketId, ActionRequest req) throws ActionException {
 		DBProcessor db = new DBProcessor(dbConn, (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		MarketVO market = new MarketVO();
 		market.setMarketId(marketId);
@@ -77,6 +78,11 @@ public class MarketAction extends SBActionAdapter {
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}
+		
+		//TODO turn this on once complete and ready for testing
+		//verify user has access to this market
+		//SecurityController.getInstance(req).isUserAuthorized(market, req);
+		
 		super.putModuleData(market);
 	}
 
