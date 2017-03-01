@@ -129,7 +129,6 @@ public class InsightAction extends SBActionAdapter {
 		
 		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)insight, (String)getAttribute(Constants.ENCRYPT_KEY));
 		
-		
 		putModuleData((InsightVO)insight.get(0));
 	}
 
