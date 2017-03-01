@@ -9,8 +9,6 @@ import com.biomed.smarttrak.vo.InsightVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
-import com.siliconmtn.security.EncryptionException;
-import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
 import com.siliconmtn.util.user.NameComparator;
