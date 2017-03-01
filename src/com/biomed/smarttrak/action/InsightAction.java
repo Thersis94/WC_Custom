@@ -127,6 +127,7 @@ public class InsightAction extends SBActionAdapter {
 		
 		log.debug("placed vo on mod data: " + (InsightVO)insight.get(0));
 		
+		
 		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)insight, (String)getAttribute(Constants.ENCRYPT_KEY));
 		
 		putModuleData((InsightVO)insight.get(0));
