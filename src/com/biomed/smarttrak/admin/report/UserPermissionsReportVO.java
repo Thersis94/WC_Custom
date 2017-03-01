@@ -190,24 +190,11 @@ public class UserPermissionsReportVO extends AbstractSBReportVO {
 	 * @param sTree
 	 */
 	protected void addPermissions(Map<String,Object>row, SmarttrakTree sTree) {
-		boolean col2selected = false;
-		boolean col3selected = false;
 		for (Node n : sTree.getPreorderList()) {
-			if (n.getDepthLevel() > MAX_DEPTH_LEVEL) continue;
+			if (n.getDepthLevel() != MAX_DEPTH_LEVEL) continue;
+			// Permissions are authoritative at level 4 so we use the level 4 perm
 			PermissionVO perm = (PermissionVO)n.getUserObject();
-			switch(n.getDepthLevel()) {
-				case 2:
-					col2selected = perm.isSelected();
-					break;
-				case 3:
-					col3selected = perm.isSelected();
-					break;
-				case 4:
-					row.put(n.getNodeId(), perm.isSelected() || col2selected || col3selected);
-					break;
-				default:
-					break;
-			}
+			row.put(n.getNodeId(), perm.isSelected());
 		}
 	}
 	
