@@ -448,8 +448,6 @@ public class UpdatesVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 					SectionVO sec = (SectionVO) n.getUserObject();
 					super.addACLGroup(Permission.GRANT, sec.getSolrTokenTxt());
 				}
-			} else {
-				System.out.println("Bad XR for " + updateId);
 			}
 		}
 	}
