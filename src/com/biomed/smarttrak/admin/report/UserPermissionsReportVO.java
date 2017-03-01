@@ -125,7 +125,13 @@ public class UserPermissionsReportVO extends AbstractSBReportVO {
 		return rows;
 	}
 
-	private Boolean checkFlag(int acctFlag, int userFlag) {
+	/**
+	 * Compares account's flag value to user's flag value.
+	 * @param acctFlag
+	 * @param userFlag
+	 * @return
+	 */
+	protected Boolean checkFlag(int acctFlag, int userFlag) {
 		if (userFlag == 0) {
 			return Convert.formatBoolean(acctFlag);
 		} else {
@@ -147,7 +153,7 @@ public class UserPermissionsReportVO extends AbstractSBReportVO {
 		headerMap.put(HAS_FD,"Has FD");
 		headerMap.put(HAS_GA,"Has GA");
 		// loop the first account's SmarttrakTree to get the hierarchy
-		if (accounts.size() > 0) {
+		if (! accounts.isEmpty()) {
 			SmarttrakTree tree = accounts.get(0).getPermissions();
 			for (Node n : tree.getPreorderList()) {
 				headerMap.put(n.getNodeId(), n.getNodeName());
