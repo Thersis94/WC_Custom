@@ -178,6 +178,8 @@ public class UserPermissionsReportVO extends AbstractSBReportVO {
 				case 4:
 					headerMap.put(n.getNodeId(), colStub3 + COLUMN_NAME_SPACER + n.getNodeName());
 					break;
+				default:
+					break;
 			}
 		}
 	}
@@ -202,6 +204,8 @@ public class UserPermissionsReportVO extends AbstractSBReportVO {
 					break;
 				case 4:
 					row.put(n.getNodeId(), perm.isSelected() || col2selected || col3selected);
+					break;
+				default:
 					break;
 			}
 		}
