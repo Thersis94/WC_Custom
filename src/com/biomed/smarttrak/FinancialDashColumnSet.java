@@ -1,9 +1,8 @@
 package com.biomed.smarttrak;
 
+import java.io.Serializable;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
-import com.smt.sitebuilder.action.SBModuleVO;
 
 /****************************************************************************
  * <b>Title</b>: FinancialDashColumnSet.java<p/>
@@ -16,7 +15,7 @@ import com.smt.sitebuilder.action.SBModuleVO;
  * @since Jan 17, 2017
  ****************************************************************************/
 
-public class FinancialDashColumnSet extends SBModuleVO {
+public class FinancialDashColumnSet implements Serializable {
 
 	private static final long serialVersionUID = -7706158396915419770L;
 

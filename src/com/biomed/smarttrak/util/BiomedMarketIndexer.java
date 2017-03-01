@@ -38,6 +38,8 @@ import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO.Permission;
 public class BiomedMarketIndexer  extends SMTAbstractIndex {
 	private static final String ORG_ID = "BMG_SMARTTRAK";
 
+	public static final String INDEX_TYPE = "BIOMEDGPS_MARKET";
+
 	public BiomedMarketIndexer(Properties config) {
 		this.config = config;
 	}
@@ -188,7 +190,7 @@ public class BiomedMarketIndexer  extends SMTAbstractIndex {
 	 */
 	@Override
 	public String getIndexType() {
-		return MarketVO.SOLR_INDEX;
+		return INDEX_TYPE;
 	}
 	
 	

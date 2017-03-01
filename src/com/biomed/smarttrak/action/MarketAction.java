@@ -2,29 +2,26 @@ package com.biomed.smarttrak.action;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import org.apache.solr.common.SolrDocument;
-
+import com.biomed.smarttrak.security.SecurityController;
+import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.MarketAttributeVO;
 import com.biomed.smarttrak.vo.MarketVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
+import com.siliconmtn.data.Node;
+import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
-import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.action.search.SolrAction;
-import com.smt.sitebuilder.action.search.SolrResponseVO;
-import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
-import com.smt.sitebuilder.search.SearchDocumentHandler;
 
 /****************************************************************************
  * <b>Title</b>: MarketAction.java <p/>
@@ -39,10 +36,9 @@ import com.smt.sitebuilder.search.SearchDocumentHandler;
  * @since Feb 15, 2017<p/>
  * <b>Changes: </b>
  ****************************************************************************/
-
 public class MarketAction extends SBActionAdapter {
-	private final static String DEFAULT_GROUP = "Other";
-	
+	private static final String DEFAULT_GROUP = "Other";
+
 	public MarketAction() {
 		super();
 	}
@@ -50,28 +46,36 @@ public class MarketAction extends SBActionAdapter {
 	public MarketAction(ActionInitVO init) {
 		super(init);
 	}
-	
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
+	 */
 	@Override
 	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
-	
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
+	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		if (req.hasParameter("reqParam_1")) {
-			retrieveMarket(req.getParameter("reqParam_1"));
+			retrieveMarket(req.getParameter("reqParam_1"), req);
 		} else {
 			retrieveMarkets(req);
 		}
 	}
 
-	
+
 	/**
 	 * Get the indicated market
 	 * @param marketId
 	 * @throws ActionException
 	 */
-	protected void retrieveMarket(String marketId) throws ActionException {
+	protected void retrieveMarket(String marketId, ActionRequest req) throws ActionException {
 		DBProcessor db = new DBProcessor(dbConn, (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		MarketVO market = new MarketVO();
 		market.setMarketId(marketId);
@@ -82,42 +86,44 @@ public class MarketAction extends SBActionAdapter {
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}
-		super.putModuleData(market);
+
+		//TODO turn this on once complete and ready for testing
+		//verify user has access to this market
+		//SecurityController.getInstance(req).isUserAuthorized(market, req);
+
+		putModuleData(market);
 	}
 
-	
+
 	/**
 	 * Build the time since last updated message
 	 * @param market
 	 */
-	private void buildUpdateMsg(SolrDocument market) {
+	//TODO replace this method with javascript running at the browser; talk to Billy (libraries are already loaded and running at page-load)
+	private void buildUpdateMsg(MarketVO market) {
 		// Unpublished markets can be skipped
-		if (!"P".equals(market.get(SearchDocumentHandler.CONTENT_TYPE))) {
+		if (!"P".equals(market.getStatusNo())) {
 			return;
 		}
-		Date d  = (Date)market.getFieldValue(SearchDocumentHandler.UPDATE_DATE);
-		
-		long diff = Convert.getCurrentTimestamp().getTime() - d.getTime();
+		long diff = Convert.getCurrentTimestamp().getTime() - market.getUpdateDt().getTime();
 		long diffDays = diff / (1000 * 60 * 60 * 24);
 		long diffHours = diff / (1000 * 60 * 60);
 		if (diffDays > 365) {
 			int years = (int) (diffDays/365);
-			market.setField("updateMsg", years + " year(s) ago");
+			market.setUpdateMsg(years + " year(s) ago");
 		} else if (diffDays > 30) {
 			int months = (int) (diffDays/30);
-			market.setField("updateMsg", months + " month(s) ago");
+			market.setUpdateMsg(months + " month(s) ago");
 		} else if (diffDays > 7) {
 			int weeks = (int) (diffDays/7);
-			market.setField("updateMsg", weeks + " week(s) ago");
+			market.setUpdateMsg(weeks + " week(s) ago");
 		} else if (diffDays > 0) {
-			market.setField("updateMsg", diffDays + " day(s) ago");
+			market.setUpdateMsg(diffDays + " day(s) ago");
 		} else if (diffHours > 0) {
-			market.setField("updateMsg", diffHours + " hour(s) ago");
+			market.setUpdateMsg(diffHours + " hour(s) ago");
 		} else {
-			market.setField("updateMsg", "less than an hour ago");
+			market.setUpdateMsg("less than an hour ago");
 		}
-		
-		
 	}
 
 	/**
@@ -126,27 +132,24 @@ public class MarketAction extends SBActionAdapter {
 	 */
 	protected void addAttributes(MarketVO market) {
 		StringBuilder sql = new StringBuilder(150);
-		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_MARKET_ATTRIBUTE_XR xr ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_MARKET_ATTRIBUTE a ");
 		sql.append("ON a.ATTRIBUTE_ID = xr.ATTRIBUTE_ID ");
 		sql.append("WHERE MARKET_ID = ? ");
 		sql.append("ORDER BY xr.ORDER_NO");
 		log.debug(sql+"|"+market.getMarketId());
-		
+
 		List<Object> params = new ArrayList<>();
 		params.add(market.getMarketId());
 		DBProcessor db = new DBProcessor(dbConn);
-		
+
 		List<Object> results = db.executeSelect(sql.toString(), params, new MarketAttributeVO());
-		
-		for (Object o : results) {
+		for (Object o : results)
 			market.addMarketAttribute((MarketAttributeVO)o);
-		}
-		
 	}
 
-	
+
 	/**
 	 * Get all sections for supplied market
 	 * @param market
@@ -162,20 +165,19 @@ public class MarketAction extends SBActionAdapter {
 		sql.append("ON s.SECTION_ID = ms.SECTION_ID ");
 		sql.append("WHERE m.MARKET_ID = ? ");
 		log.debug(sql);
+
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, market.getMarketId());
-			
 			ResultSet rs = ps.executeQuery();
-			
-			while(rs.next()) {
+			while(rs.next())
 				market.addSection(new GenericVO(rs.getString("MARKET_SECTION_XR_ID"), rs.getString("SECTION_NM")));
-			}
+
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}
 	}
 
-	
+
 	/**
 	 * Get all markets from the database
 	 * @param req
@@ -199,15 +201,13 @@ public class MarketAction extends SBActionAdapter {
 	    	orderMarkets(res);
 	}
 
-	
+
 	/**
 	 * Sort all returned markets into groups based on thier hierarchies.
 	 * @param res
 	 */
 	protected void orderMarkets(SolrResponseVO res) {
 		Map<String, List<SolrDocument>> groups = new TreeMap<>();
-		log.debug(res.getTotalResponses());
-		log.debug(res.getResultDocuments().size());
 		for (SolrDocument doc : res.getResultDocuments()) {
 			log.debug(doc.getFieldValue("hierarchy"));
 			buildUpdateMsg(doc);
@@ -219,7 +219,6 @@ public class MarketAction extends SBActionAdapter {
 			
 			addMarket(doc, groups, hierarchy[2]);
 		}
-		log.debug(groups.keySet().size());
 		super.putModuleData(groups);
 	}
 
@@ -238,5 +237,4 @@ public class MarketAction extends SBActionAdapter {
 		
 		groups.get(groupName).add(doc);
 	}
-
 }

@@ -1,5 +1,6 @@
 package com.biomed.smarttrak;
 
+import java.io.Serializable;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -8,12 +9,9 @@ import java.util.Map;
 
 import org.apache.log4j.Logger;
 
-import com.siliconmtn.data.Node;
-import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-import com.smt.sitebuilder.action.SBModuleVO;
 
 /****************************************************************************
  * <b>Title</b>: FinancialDashDataRowVO.java<p/>
@@ -26,13 +24,11 @@ import com.smt.sitebuilder.action.SBModuleVO;
  * @since Jan 04, 2017
  ****************************************************************************/
 
-public class FinancialDashDataRowVO extends SBModuleVO {
+public class FinancialDashDataRowVO implements Serializable {
 
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = -1858035677710604733L;
 	private String name;
 	private String primaryKey;
-	private String parentId;
-	private String grandparentId;
 	private String companyId;
 	private String regionCd;
 	private boolean inactiveFlg;
@@ -109,20 +105,6 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 	 */
 	public boolean isInactive() {
 		return inactiveFlg;
-	}
-
-	/**
-	 * @return the parentId
-	 */
-	public String getParentId() {
-		return parentId;
-	}
-
-	/**
-	 * @return the grandparentId
-	 */
-	public String getGrandparentId() {
-		return grandparentId;
 	}
 
 	/**
@@ -332,42 +314,5 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 		}
 		
 		totals.put(key, totals.get(key) + dollarValue);
-	}
-
-	/**
-	 * @param parentId the parentId to set
-	 */
-	public void setParentId(String parentId) {
-		this.parentId = parentId;
-	}
-
-	/**
-	 * @param grandparentId the grandparentId to set
-	 */
-	public void setGrandparentId(String grandparentId) {
-		this.grandparentId = grandparentId;
-	}
-	
-	/**
-	 * Sets the parent/grandparent in the hierarchy applicable to this particular data row
-	 * 
-	 * @param tree
-	 */
-	public void setAncestry(Tree tree) {
-		String pId = null;
-		String gpId = null;
-		
-		Node childNode = tree.findNode(this.getPrimaryKey());
-		if (childNode != null) {
-			pId = childNode.getParentId();
-			
-			Node parentNode = tree.findNode(pId);
-			if (parentNode != null) {
-				gpId = parentNode.getParentId();
-			}
-		}
-		
-		this.setParentId(pId);
-		this.setGrandparentId(gpId);
 	}
 }

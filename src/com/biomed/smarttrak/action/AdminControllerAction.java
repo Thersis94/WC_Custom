@@ -35,7 +35,9 @@ import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SecurityController;
-
+//WC Email Campaigns
+import com.smt.sitebuilder.action.emailcampaign.CampaignInstanceAction;
+import com.smt.sitebuilder.action.emailcampaign.InstanceReport;
 /****************************************************************************
  * <b>Title</b>: AdminControllerAction.java
  * <b>Project</b>: WC_Custom
@@ -61,15 +63,23 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	// Roles, as they apply to the site's section hierarchy, are administered by the SecurityController
 	public static final int DEFAULT_ROLE_LEVEL = SecurityController.PUBLIC_REGISTERED_LEVEL;
 
+	public static final int DOC_ID_MIN_LEN = 15;
+
+	public static final String PUBLIC_401_PG = "/subscribe";
+	
+
 	/*
 	 * 'sections' of the SmartTRAK website - used for Solr as well as Recently Viewed/Favorites
 	 */
 	public enum Section {
-		MARKET("market/"), PRODUCT("products/"), COMPANY("companies/");
+		MARKET("market/"), PRODUCT("products/"), COMPANY("companies/"), INSIGHTS("insights/");
 
 		private String path;
 		Section(String path) { this.path = path; }
 		public String getURLToken() { return path; }
+		public String getPageURL() { //reverses the slash to the front of the urlToken, making it a relative URL to the given page
+			return "/" + getURLToken().substring(0, getURLToken().length());
+		}
 	}
 
 
@@ -100,7 +110,9 @@ public class AdminControllerAction extends SimpleActionAdapter {
 			//allow either deletes or saves (build) to be called directly from the controller
 			if (AdminConstants.REQ_DELETE.equals(req.getParameter("actionPerform"))) {
 				action.delete(req);
-			} else {
+			} else if(AdminConstants.REQ_COPY.equals(req.getParameter("actionPerform"))){
+				action.copy(req);
+			}else {
 				action.build(req);
 			}
 			msg = (String) attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
@@ -141,6 +153,8 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
+	//TODO Refactor this switch to use a collection(map) to store the action type
+	//with it's class name as value to dynamically load each action.
 	private ActionInterface loadAction(String actionType) throws ActionException {
 		ActionInterface action;
 		switch (StringUtil.checkVal(actionType)) {
@@ -192,9 +206,6 @@ public class AdminControllerAction extends SimpleActionAdapter {
 			case "list":
 				action = new ListAction();
 				break;
-			case "activityLog":
-				action = new UserActivityAction();
-				break;
 			case "reports":
 				action = new ReportFacadeAction();
 				break;
@@ -204,6 +215,12 @@ public class AdminControllerAction extends SimpleActionAdapter {
 			case "synonyms":
 				action = new SolrSynonymAction();
 				break;
+			case "marketingCampaigns":
+				action = new CampaignInstanceAction();
+				break;
+			case "marketingInstanceReport":
+				action = new InstanceReport();
+				break;								
 			default:
 				throw new ActionException("unknown action type:" + actionType);
 		}

@@ -1,9 +1,11 @@
-package com.biomed.smarttrak.action;
+package com.biomed.smarttrak.admin.report;
 
 //Java 8
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,11 +20,11 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
 // WebCrescendo libs
-import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
@@ -41,8 +43,10 @@ import com.smt.sitebuilder.util.PageViewVO;
  @since Jan 17, 2017
  <b>Changes:</b> 
  ***************************************************************************/
-public class UserActivityAction extends SBActionAdapter {
+public class UserActivityAction extends SimpleActionAdapter {
 
+	private static final int DEFAULT_START_DATE_OFFSET = -12;
+	
 	/**
 	 * Constructor
 	 */
@@ -57,32 +61,42 @@ public class UserActivityAction extends SBActionAdapter {
 		super(actionInit);
 	}
 	
-	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.http.ActionRequest)
-	 */
-	@Override
-	public void retrieve(ActionRequest req) throws ActionException {
-
-		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
+	public Map<String,UserActivityVO> retrieveUserActivity(ActionRequest req) throws ActionException {
+		log.debug("retrieveUserActivity...");
 		Map<String,UserActivityVO> userActivity;
 		try {
 			String siteId = parseSiteId(req);
 			String profileId = checkProfileId(req, siteId);
-			String dateStart = req.hasParameter("dateStart") ? req.getParameter("dateStart") : null;
-			String dateEnd = req.hasParameter("dateEnd") ? req.getParameter("dateEnd") : null;
-			
+			String dateStart = formatReportDate(req.getParameter("dateStart"), true);
+			String dateEnd = formatReportDate(req.getParameter("dateEnd"), false);
+			log.debug("dateStart|dateEnd: " + dateStart + "|" + dateEnd);
 			userActivity = retrieveUserPageViews(siteId, profileId, dateStart, dateEnd);
 			// merge certain profile data (first/last names) with user activity data
 			mergeUserNames(userActivity);
 			
 		} catch (ActionException ae) {
 			userActivity = new HashMap<>();
-			mod.setError(ae.getMessage(), ae);
 		}
+		log.debug("userActivity map size: " + userActivity.size());
+		return userActivity;
 		
-		this.putModuleData(userActivity, userActivity.size(), false, mod.getErrorMessage(), mod.getErrorCondition());
-		log.debug("error condition | message: " + mod.getErrorCondition() + "|" + mod.getErrorMessage());
-		
+	}
+	
+	/**
+	 * Checks the String date valued passed in.  If the String is null or empty, a null 
+	 * value is returned, otherwise the value of the String date is returned.
+	 * @param date
+	 * @param isStartDate
+	 * @return
+	 */
+	protected String formatReportDate(String date, boolean isStartDate) {
+		String tmpDate = StringUtil.checkVal(date,null);
+		if (tmpDate == null && isStartDate) {
+			Calendar cal = GregorianCalendar.getInstance();
+			cal.add(Calendar.HOUR_OF_DAY, DEFAULT_START_DATE_OFFSET);
+			tmpDate = Convert.formatDate(cal.getTime(),Convert.DATE_TIME_DASH_PATTERN);
+		}
+		return tmpDate;
 	}
 	
 	/**
@@ -118,11 +132,6 @@ public class UserActivityAction extends SBActionAdapter {
 	private int checkRoleLevel(SMTSession sess, String siteId) throws ActionException {
 		StringBuilder errMsg = new StringBuilder(100);
 		errMsg.append("User activity access not authorized. ");
-		// if no session, we go no further.
-		if (sess == null) {
-			errMsg.append("Session is Invalid.");
-			throw new ActionException(errMsg.toString());
-		}
 
 		// obtain user role(s)
 		SBUserRole roles = (SBUserRole)sess.getAttribute(Constants.ROLE_DATA);

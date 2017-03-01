@@ -26,7 +26,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class MyTeamsAction extends SimpleActionAdapter {
 
-	private final static String ACCOUNT_ID = AccountAction.ACCOUNT_ID;
+	private static final String ACCOUNT_ID = AccountAction.ACCOUNT_ID;
 
 	public MyTeamsAction() {
 		super();

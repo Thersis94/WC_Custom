@@ -1,116 +1,147 @@
-/**
- *
- */
+
 package com.biomed.smarttrak.action;
 
-import org.apache.solr.client.solrj.SolrQuery.ORDER;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
-import com.biomed.smarttrak.util.UpdateIndexer;
+import com.biomed.smarttrak.vo.InsightVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.util.Convert;
+import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.user.HumanNameIntfc;
+import com.siliconmtn.util.user.NameComparator;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
-import com.smt.sitebuilder.action.search.SolrActionIndexVO;
-import com.smt.sitebuilder.action.search.SolrActionVO;
-import com.smt.sitebuilder.action.search.SolrFieldVO;
-import com.smt.sitebuilder.action.search.SolrFieldVO.BooleanType;
 import com.smt.sitebuilder.action.search.SolrFieldVO.FieldType;
-import com.smt.sitebuilder.action.search.SolrQueryProcessor;
-import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.common.ModuleVO;
-import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
+import com.smt.sitebuilder.util.solr.SolrActionUtil;
 
 /****************************************************************************
  * <b>Title</b>: InsightAction.java
  * <b>Project</b>: WC_Custom
- * <b>Description: </b> Public Updates Action that talks to Solr.
+ * <b>Description: </b> Public Insights Action that talks to Solr.
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
  * 
- * @author Billy Larsen
+ * @author Ryan Riker
  * @version 1.0
  * @since Feb 16, 2017
  ****************************************************************************/
 public class InsightAction extends SBActionAdapter {
+	private static final String REQ_PARAM_1 = "reqParam_1";
 
 	public void retrieve(ActionRequest req) throws ActionException {
-		//TODO copied code directly from update action
-		putModuleData(retrieveUpdates(req));
-	}
+		//check to see if we are getting an insite or a solr list
+		
+		
+			
+		if(req.hasParameter(REQ_PARAM_1)){
+			getInsightById(StringUtil.checkVal(req.getParameter(REQ_PARAM_1)));
+		}else{
+			ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+			actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
+			req.setParameter("pmid", mod.getPageModuleId());
+			//transform some incoming reqParams to where Solr expects to see them
+			transposeRequest(req);
 
+			//Get SolrSearch ActionVO.
+			SolrAction sa = new SolrAction(actionInit);
+			sa.setDBConnection(dbConn);
+			sa.setAttributes(attributes);
+			sa.retrieve(req);
+		}
+	}
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
+	public void list(ActionRequest req) throws ActionException {
+		log.debug("insights list called");		
+		super.retrieve(req);
+	
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
+	public void update(ActionRequest req) throws ActionException {
+		log.debug("insights update called");		
+		super.update(req);
+	}
+	
 	/**
-	 * Get the solr information 
+	 * transpose incoming request parameters into values Solr understands, so they get executed for us.
 	 * @param req
-	 * @return
 	 * @throws ActionException
 	 */
-	private SolrActionVO buildSolrAction(ActionRequest req) throws ActionException {
+	protected void transposeRequest(ActionRequest req) throws ActionException {
+		//get the filter queries already on the request.  Add ours to the stack, and put the String[] back on the request for Solr
+		String[] fqs = req.getParameterValues("fq");
+		if (fqs == null) fqs = new String[0];
+		List<String> data = new ArrayList<>(Arrays.asList(fqs));
 
-		//Set SolrSearch ActionId on actionInit
-		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
-    	//TODO commented out 
-		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
-
-    	//Get SolrSearch ActionVO.
-		SolrAction sa = new SolrAction(actionInit);
-		sa.setDBConnection(dbConn);
-		sa.setAttributes(attributes);
-		return sa.retrieveActionData(req);
-	}
-
-	/**
-	 * Retrieve all products from solr according to the search terms
-	 * @param req
-	 * @throws ActionException
-	 */
-	protected SolrResponseVO retrieveUpdates(ActionRequest req) throws ActionException {
-		SolrActionVO qData = buildSolrAction(req);
-		SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, qData.getSolrCollectionPath());
-		qData.setNumberResponses(15);
-		qData.setStartLocation(Convert.formatInteger(req.getParameter("pageNo"), 0) * 15);
-		qData.setOrganizationId(((SiteVO)req.getAttribute(Constants.SITE_DATA)).getOrganizationId());
-		qData.setRoleLevel(0);
-		qData.addSolrField(new SolrFieldVO(FieldType.BOOST, SearchDocumentHandler.TITLE, "", BooleanType.AND));
-		qData.addSolrField(new SolrFieldVO(FieldType.BOOST, "section", "", BooleanType.AND));
-
-		//Add Search Parameters.
-		if (req.hasParameter("searchData")) 
-			qData.setSearchData("*"+req.getParameter("searchData")+"*");
-
-		//Add Sections Check.
-		if (req.hasParameter("sectionId")) {
-			StringBuilder selected = new StringBuilder(50);
-			selected.append("(");
-			for (String s : req.getParameterValues("sectionId")) {
-				if (selected.length() > 2) selected.append(" OR ");
-				selected.append("*").append(s);
+		//Add Sections Check.  Append a filter query for each section requested
+		if (req.hasParameter("hierarchyId")) {
+			for (String s : req.getParameterValues("hierarchyId")){
+				log.debug(" hierarchyId" + s);
+				data.add(SearchDocumentHandler.HIERARCHY + ":" + s);
 			}
-			selected.append(")");
-			qData.addSolrField(new SolrFieldVO(FieldType.FILTER, SearchDocumentHandler.SECTION, selected.toString(), BooleanType.AND));
 		}
 
-		//Add Start - End Date Range
-		if (req.hasParameter("startDt") && req.hasParameter("endDt")) {
-			StringBuilder dates = new StringBuilder(50);
-			dates.append("[").append(req.getParameter("startDt"));
-			dates.append("-").append(req.getParameter("endDt"));
-			dates.append("]");
-			qData.addSolrField(new SolrFieldVO(FieldType.FILTER, SearchDocumentHandler.UPDATE_DATE, dates.toString(), BooleanType.AND));
-		}
+		//Get a Date Range String.
+		String dates = SolrActionUtil.makeRangeQuery(FieldType.DATE, req.getParameter("startDt"), req.getParameter("endDt"));
+		if (!StringUtil.isEmpty(dates))
+			data.add(SearchDocumentHandler.UPDATE_DATE + ":" + dates);
 
-		//Add TypeId
-		if(req.hasParameter("typeId")) {
-			qData.addSolrField(new SolrFieldVO(FieldType.FILTER, SearchDocumentHandler.MODULE_TYPE, req.getParameter("typeId"), BooleanType.AND));
-		}
+		//Add a ModuleType filter if typeId was passed
+		if (req.hasParameter("typeId"))
+			data.add(SearchDocumentHandler.MODULE_TYPE + ":" + req.getParameter("typeId"));
 
-		qData.addIndexType(new SolrActionIndexVO("", UpdateIndexer.INDEX_TYPE));
-
-		qData.setFieldSort(SearchDocumentHandler.UPDATE_DATE);
-		qData.setSortDirection(ORDER.desc);
-
-		return sqp.processQuery(qData);
+		//put the new list of filter queries back on the request
+		req.setParameter("fq", data.toArray(new String[data.size()]), true);
 	}
+	
+	
+	/**
+	 * @param checkVal
+	 */
+	@SuppressWarnings("unchecked")
+	protected void getInsightById(String insightId) {
+		log.debug("start get insight by id");
+		
+		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
+		
+		StringBuilder sb = new StringBuilder(50);
+		sb.append("select a.*, p.first_nm, p.last_nm, b.section_id ");
+		sb.append("from ").append(schema).append("biomedgps_insight a ");
+		sb.append("inner join profile p on a.creator_profile_id=p.profile_id ");
+		sb.append("left outer join ").append(schema).append("biomedgps_insight_section b ");
+		sb.append("on a.insight_id=b.insight_id ");
+		sb.append("where a.insight_id = ? ");
+		
+		log.debug("sql: " + sb.toString() + "|" + insightId);
+		
+		List<Object> params = new ArrayList<>();
+		 params.add(insightId);
+
+		DBProcessor db = new DBProcessor(dbConn, schema);
+		List<Object>  insight = db.executeSelect(sb.toString(), params, new InsightVO());
+		log.debug("loaded " + insight.size() + " insight");
+		
+		log.debug("placed vo on mod data: " + (InsightVO)insight.get(0));
+		
+		
+		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)insight, (String)getAttribute(Constants.ENCRYPT_KEY));
+		
+		putModuleData((InsightVO)insight.get(0));
+	}
+
+
 }

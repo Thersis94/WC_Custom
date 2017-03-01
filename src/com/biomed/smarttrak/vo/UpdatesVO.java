@@ -274,7 +274,7 @@ public class UpdatesVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 
 	@BeanSubElement()
 	public void addUpdateXrVO(UpdatesXRVO u) {
-		if (u == null) return;
+		if (u == null || u.getUpdateSectionXrId() == null) return;
 		sections.add(u);
 	}
 
@@ -283,7 +283,13 @@ public class UpdatesVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 	 */
 	public void setUpdateId(String updateId) {
 		this.updateId = updateId;
-		setDocumentId(updateId);
+		StringBuilder docId = new StringBuilder(updateId);
+		if (docId.length() < AdminControllerAction.DOC_ID_MIN_LEN) {
+
+			//Insert separator and then insert Index Type
+			docId.insert(0, "_").insert(0, UpdateIndexer.INDEX_TYPE);
+		}
+		setDocumentId(docId.toString());
 	}
 
 	/**
@@ -435,11 +441,13 @@ public class UpdatesVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 	public void configureSolrHierarchies(SmarttrakTree t) {
 		//loop through the selected sections, and add them to the Solr record as 1) hierarchy. 2) ACL.
 		for (UpdatesXRVO uxr : sections) {
-			Node n = t.findNode(uxr.getSectionId());
-			if (n != null && !StringUtil.isEmpty(n.getFullPath())) {
-				super.addHierarchies(n.getFullPath());
-				SectionVO sec = (SectionVO) n.getUserObject();
-				super.addACLGroup(Permission.GRANT, sec.getSolrTokenTxt());
+			if(uxr.getSectionId() != null) {
+				Node n = t.findNode(uxr.getSectionId());
+				if (n != null && !StringUtil.isEmpty(n.getFullPath())) {
+					super.addHierarchies(n.getFullPath());
+					SectionVO sec = (SectionVO) n.getUserObject();
+					super.addACLGroup(Permission.GRANT, sec.getSolrTokenTxt());
+				}
 			}
 		}
 	}

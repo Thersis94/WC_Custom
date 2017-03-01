@@ -1,5 +1,7 @@
 package com.biomed.smarttrak;
 
+import java.lang.reflect.Constructor;
+
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionInterface;
@@ -19,6 +21,25 @@ import com.smt.sitebuilder.action.SBActionAdapter;
  ****************************************************************************/
 
 public class FinancialDashAction extends SBActionAdapter {
+	
+	private static final String FD = "fd";
+	
+	private enum FdActionType {
+		fd("com.biomed.smarttrak.FinancialDashBaseAction"),
+		fdOverlay("com.biomed.smarttrak.FinancialDashScenarioOverlayAction"),
+		fdHierarchy("com.biomed.smarttrak.admin.FinancialDashHierarchyAction"),
+		fdScenario("com.biomed.smarttrak.FinancialDashScenarioAction");
+		
+		private String klass;
+		
+		FdActionType(String klass) {
+			this.klass = klass;
+		}
+		
+		public String getKlass() {
+			return klass;
+		}
+	}
 	
 	public FinancialDashAction() {
 		super();
@@ -56,18 +77,34 @@ public class FinancialDashAction extends SBActionAdapter {
 	 */
 	private ActionInterface getAction(ActionRequest req) throws ActionException {
 		String scenarioId = StringUtil.checkVal(req.getParameter("scenarioId"));
-		ActionInterface ai;
+		String actionType = StringUtil.checkVal(req.getParameter("actionType"), FD);
 		
-		// Determine the request type and forward to the appropriate action
-		if (scenarioId.length() > 0) {
-			ai = new FinancialDashScenarioOverlayAction(this.actionInit);
+		// Determine the request type
+		FdActionType action;
+		if (scenarioId.length() > 0 && FD.equals(actionType)) {
+			action = FdActionType.fdOverlay;
 		} else {
-			ai = new FinancialDashBaseAction(this.actionInit);
+			action = FdActionType.valueOf(actionType);
+		}
+		
+		log.debug("Starting FD Action: " + action.getKlass());
+
+		// Forward to the appropriate action
+		ActionInterface ai;
+		try {
+			Class<?> klass = Class.forName(action.getKlass());
+			Constructor<?> constructor = klass.getConstructor(ActionInitVO.class);
+			ai = (ActionInterface) constructor.newInstance(this.actionInit);
+		} catch (Exception e) {
+			throw new ActionException("Could not instantiate FD class.", e);
 		}
 
 		// Set the appropriate attributes for the action
 		ai.setAttributes(this.attributes);
 		ai.setDBConnection(dbConn);
+		
+		// In case default was used
+		req.setParameter("actionType", actionType);
 
 		return ai;
 	}
