@@ -6,6 +6,7 @@ import java.util.Date;
 import java.util.List;
 
 import com.biomed.smarttrak.action.AdminControllerAction;
+import com.biomed.smarttrak.util.BiomedInsightIndexer;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.annotations.SolrField;
 import com.siliconmtn.data.Node;
@@ -19,7 +20,8 @@ import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
-import com.smt.sitebuilder.util.solr.SolrDocumentVO;
+import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
+
 
 /****************************************************************************
  * <b>Title</b>: InsightVO.java <p/>
@@ -34,7 +36,7 @@ import com.smt.sitebuilder.util.solr.SolrDocumentVO;
  * @updates:
  ****************************************************************************/
 @Table(name="biomedgps_insight")
-public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
+public class InsightVO extends SecureSolrDocumentVO implements HumanNameIntfc {
 
 
 	public enum InsightStatusCd {P("Published"), D("Deleted"), E("Edit");
@@ -61,12 +63,13 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 	private String sideContentTxt;
 	private int featuredFlg;
 	private String featuredImageTxt;
+	private String profileImg;
 	private String statusCd;
 	private int orderNo;
 	private Date publishDt;
 	private Date createDt;
 	private Date updateDt;
-	
+
 	public enum InsightType {
 		CLINICAL(12, "Clinical"),
 		COMPLIANCE(11, "Compliance"),
@@ -99,21 +102,20 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 			return this.text;
 		}
 	}
-	
+
 	private List<InsightXRVO> sections;
 
 	/**
 	 * @param solrIndex
 	 */
 	public InsightVO() {
-		//TODO replace this with a insight indexer when it exists
-		super("");
+		super(BiomedInsightIndexer.INDEX_TYPE);
 		sections = new ArrayList<>();
 		super.addOrganization(AdminControllerAction.BIOMED_ORG_ID);
 		super.addRole(AdminControllerAction.DEFAULT_ROLE_LEVEL);
 	}
 
-	
+
 	public InsightVO(ResultSet rs) {
 		this();
 		setData(rs);
@@ -123,7 +125,7 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 		this();
 		setData(req);
 	}
-	
+
 	protected void setData(ActionRequest req) {
 		SMTSession ses = req.getSession();
 		UserVO vo = (UserVO) ses.getAttribute(Constants.USER_DATA);
@@ -131,9 +133,9 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 			this.setCreatorProfileId(StringUtil.checkVal(req.getParameter("creatorProfileId"), vo.getProfileId()));
 		}
 		setInsightId(req.getParameter("insightsId"));
-		
+
 		if (StringUtil.isEmpty(insightId)) setInsightId(req.getParameter("pkId"));
-		
+
 		setTitleTxt(req.getParameter("titleTxt"));
 		setTypeCd(Convert.formatInteger(req.getParameter("typeCd")));
 		setAbstractTxt(req.getParameter("abstractTxt"));
@@ -142,10 +144,11 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 		setSideContentTxt(req.getParameter("sideContentTxt"));
 		setFeaturedFlg(Convert.formatInteger(req.getParameter("featuredFlg")));
 		setFeaturedImageTxt(req.getParameter("featuredImageTxt"));
+		setProfileImg(req.getParameter("profileImg"));
 		setStatusCd(req.getParameter("statusCd"));
 		setOrderNo(Convert.formatInteger(req.getParameter("orderNo")));
 		setPublishDt(Convert.formatDate(Convert.DATE_SLASH_PATTERN, req.getParameter("publishDt")));	
-		
+
 		//only want to see the publish date to today if the status is publish and the 
 		//date feild is null
 		if(InsightStatusCd.P.toString().equals(statusCd) && publishDt == null) {
@@ -158,7 +161,7 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 			}
 		}
 	}
-	
+
 	/**
 	 * @return the sections
 	 */
@@ -171,33 +174,43 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 		if(u != null)
 			this.sections.add(u);
 	}
-	
+
 	/**
 	 * @param sections the sections to set.
 	 */
 	public void setSections(List<InsightXRVO> sections) {
 		this.sections = sections;
 	}
-	
+
 	/**
 	 * Helper method that builds hierarchy path.
 	 * 
 	 * Replace spaces with _ and replace & and and
 	 * @param loadSections
 	 */
-	public void setHierarchies(Tree t) {
+	public void configureSolrHierarchies(Tree t) {
 		for(InsightXRVO uxr : sections) {
+			
+			if (uxr.getSectionId() == null){
+				uxr.setSectionId("");
+			}
+			
 			Node n = t.findNode(uxr.getSectionId());
+			
 			if(n != null && !StringUtil.isEmpty(n.getFullPath())) {
-				super.addHierarchies(n.getFullPath().replaceAll(" ", "_").replaceAll("&", "and"));
+				super.addHierarchies(n.getFullPath());
+				SectionVO sec = (SectionVO) n.getUserObject();
+				super.addACLGroup(Permission.GRANT, sec.getSolrTokenTxt());
 			}
 		}
+
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.biomed.smarttrak.admin.user.HumanNameIntfc#getFirstName()
 	 */
 	@Override
+	@SolrField(name="firstNm_s")
 	@Column(name="first_nm", isReadOnly=true)
 	public String getFirstName() {
 		return firstNm;
@@ -206,6 +219,7 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 	/**
 	 * @return the lastNm
 	 */
+	@SolrField(name="lastNm_s")
 	@Column(name="last_nm", isReadOnly=true)
 	public String getLastName() {
 		return lastNm;
@@ -232,6 +246,7 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 	 */
 	@Column(name="insight_id", isPrimaryKey=true)
 	public String getInsightId() {
+		//doesnt have a solr tag as it is set to doc 
 		return insightId;
 	}
 
@@ -246,11 +261,12 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 	/**
 	 * @return the titleTxt
 	 */
+	@SolrField(name=SearchDocumentHandler.TITLE)
 	@Column(name="title_txt")
 	public String getTitleTxt() {
 		return titleTxt;
 	}
-	
+
 	/**
 	 * gets the numeric type code
 	 * @return the typeNm
@@ -260,7 +276,7 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 	public int getTypeCd() {
 		return typeCd;
 	}
-	
+
 	/**
 	 * looks at the type code and returns the string name
 	 * @return
@@ -273,10 +289,11 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 		else
 			return "";
 	}
-	
+
 	/**
 	 * @return the abstractTxt
 	 */
+	@SolrField(name=SearchDocumentHandler.SUMMARY)
 	@Column(name="abstract_txt")
 	public String getAbstractTxt() {
 		return abstractTxt;
@@ -305,23 +322,25 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 	public String getSideContentTxt() {
 		return sideContentTxt;
 	}
-	
+
 	/**
 	 * @return the featuredFlg
 	 */
+	@SolrField(name="featuredFlg_i")
 	@Column(name="featured_flg")
 	public int getFeaturedFlg() {
 		return featuredFlg;
 	}
-	
+
 	/**
 	 * @return the featuredImageTxt
 	 */
+	@SolrField(name="featuredImageTxt_s")
 	@Column(name="featured_image_txt")
 	public String getFeaturedImageTxt() {
 		return featuredImageTxt;
 	}
-	
+
 	/**
 	 * @return the statusCd
 	 */
@@ -332,19 +351,21 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 	/**
 	 * @return the orderNo
 	 */
+	@SolrField(name="orderNo_i")
 	@Column(name="order_no")
 	public int getOrderNo() {
 		return orderNo;
 	}
-	
+
 	/**
 	 * @return the publishDt
 	 */
+	@SolrField(name="publishDt_s")
 	@Column(name="publish_dt")
 	public Date getPublishDt() {
 		return publishDt;
 	}
-	
+
 	/**
 	 * @return the createDt
 	 */
@@ -356,16 +377,46 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 	/**
 	 * @return the updateDt
 	 */
+	@SolrField(name=SearchDocumentHandler.UPDATE_DATE)
 	@Column(name="update_dt", isAutoGen=true, isUpdateOnly=true)
 	public Date getUpdateDt() {
 		return updateDt;
 	}
 
+
+	/**
+	 * used on the list view to trigger a retrieve of one particular insight
+	 */
+	@Override
+	@SolrField(name=SearchDocumentHandler.DOCUMENT_URL)
+	public String getDocumentUrl() {
+		StringBuilder url = new StringBuilder(50);
+		url.append(AdminControllerAction.Section.INSIGHTS.getURLToken()).append("qs/").append(this.insightId);
+		return url.toString();
+	}
+
+	/**
+	 * @return the profileImg
+	 */
+	@SolrField(name="profileImg_s")
+	@Column(name="profile_img", isReadOnly=true)
+	public String getProfileImg() {
+		return profileImg;
+	}
+
+
+	/**
+	 * @param authorImageTxt the authorImageTxt to set
+	 */
+	public void setProfileImg(String profileImg) {
+		this.profileImg = profileImg;
+	}
 	
 	/**
 	 * @param insightId the insightId to set
 	 */
 	public void setInsightId(String insightId) {
+		super.setDocumentId("ins_"+insightId);
 		this.insightId = insightId;
 	}
 
@@ -382,91 +433,91 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 	public void setTitleTxt(String titleTxt) {
 		this.titleTxt = titleTxt;
 	}
-	
+
 	/**
 	 * @param typeNm the typeNm to set.
 	 */
 	public void setTypeCd(int typeCd) {
 		this.typeCd = typeCd;
 	}
-	
+
 	/**
 	 * @param abstractTxt the abstractTxt to set
 	 */
 	public void setAbstractTxt(String abstractTxt) {
 		this.abstractTxt = abstractTxt;
 	}
-	
+
 	/**
 	 * @param bylineTxt the bylineTxt to set
 	 */
 	public void setBylineTxt(String bylineTxt) {
 		this.bylineTxt = bylineTxt;
 	}
-	
+
 	/**
 	 * @param contentTxt the contentTxt to set
 	 */
 	public void setContentTxt(String contentTxt) {
 		this.contentTxt = contentTxt;
 	}
-	
+
 	/**
 	 * @param sideContentTxt the sideContentTxt to set
 	 */
 	public void setSideContentTxt(String sideContentTxt) {
 		this.sideContentTxt = sideContentTxt;
 	}
-	
+
 	/**
 	 * @param featuredFlg the featuredFlg to set
 	 */
 	public void setFeaturedFlg(int featuredFlg) {
 		this.featuredFlg = featuredFlg;
 	}
-	
+
 	/**
 	 * @param featuredImageTxt the featuredImageTxt to set
 	 */
 	public void setFeaturedImageTxt(String featuredImageTxt) {
 		this.featuredImageTxt = featuredImageTxt;
 	}
-	
+
 	/**
 	 * @param statusCd the statusCd to set
 	 */
 	public void setStatusCd(String statusCd) {
 		this.statusCd = statusCd;
 	}
-	
+
 	/**
 	 * @param orderNo the orderNo to set
 	 */
 	public void setOrderNo(int orderNo) {
 		this.orderNo = orderNo;
 	}
-	
+
 	/**
 	 * @param publishDt the publishDt to set
 	 */
 	public void setPublishDt(Date publishDt) {
 		this.publishDt = publishDt;
 	}
-	
+
 	/**
 	 * @param createDt the createDt to set
 	 */
 	public void setCreateDt(Date createDt) {
 		this.createDt = createDt;
 	}
-	
+
 	/**
 	 * @param createDt the createDt to set
 	 */
 	public void setUpdateDt(Date updateDt) {
 		this.updateDt = updateDt;
 	}
-	
+
 	/**
 	 * Helper method gets the InsightSection for the internal typeCd.
 	 * @return
@@ -488,5 +539,5 @@ public class InsightVO extends SolrDocumentVO implements HumanNameIntfc {
 	public String toString() {
 		return StringUtil.getToString(this);
 	}
-
 }
+
