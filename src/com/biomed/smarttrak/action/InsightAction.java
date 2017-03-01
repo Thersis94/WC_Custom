@@ -12,6 +12,8 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.user.HumanNameIntfc;
+import com.siliconmtn.util.user.NameComparator;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrFieldVO.FieldType;
@@ -78,7 +80,7 @@ public class InsightAction extends SBActionAdapter {
 		//Add Sections Check.  Append a filter query for each section requested
 		if (req.hasParameter("hierarchyId")) {
 			for (String s : req.getParameterValues("hierarchyId")){
-				log.debug("########## hierarchyId" + s);
+				log.debug(" hierarchyId" + s);
 				data.add(SearchDocumentHandler.HIERARCHY + ":" + s);
 			}
 		}
@@ -100,7 +102,8 @@ public class InsightAction extends SBActionAdapter {
 	/**
 	 * @param checkVal
 	 */
-	private void getInsightById(String insightId) {
+	@SuppressWarnings("unchecked")
+	protected void getInsightById(String insightId) {
 		log.debug("start get insight by id");
 		
 		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
@@ -124,17 +127,7 @@ public class InsightAction extends SBActionAdapter {
 		
 		log.debug("placed vo on mod data: " + (InsightVO)insight.get(0));
 		
-		try {
-			StringEncrypter sc = new StringEncrypter((String)attributes.get(Constants.ENCRYPT_KEY));
-			
-			for (Object ob : insight){
-				InsightVO vo = (InsightVO)ob;
-				vo.setFirstName(sc.decrypt(vo.getFirstName()));
-				vo.setLastName(sc.decrypt(vo.getLastName()));
-			}
-		} catch (EncryptionException e) {
-			log.error("could not un encrypt name ");
-		}
+		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)insight, (String)getAttribute(Constants.ENCRYPT_KEY));
 		
 		
 		putModuleData((InsightVO)insight.get(0));
