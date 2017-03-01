@@ -223,7 +223,7 @@ public class UpdatesAction extends AbstractTreeAction {
 	 * @param u
 	 * @param generatedPKId
 	 */
-	private void fixPkids(UpdatesVO u, String generatedPKId) {
+	protected void fixPkids(UpdatesVO u, String generatedPKId) {
 		//Set the UpdateId on UpdatesXRVOs
 		if (StringUtil.isEmpty(u.getUpdateId())) {
 			//Ensure proper UpdateId and Publish Dt are set.

@@ -78,11 +78,11 @@ public class UpdatesAction extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	private List<String> loadFavoriteDocs(ActionRequest req) {
+	protected List<String> loadFavoriteDocs(ActionRequest req) {
 		SMTSession ses = req.getSession();
 		UserVO vo = (UserVO) ses.getAttribute(Constants.USER_DATA);
 
-		List<String> docIds = new ArrayList<String>();
+		List<String> docIds = new ArrayList<>();
 		try(PreparedStatement ps = dbConn.prepareStatement(getFavoriteUpdatesSql())) {
 			int i = 1;
 			ps.setString(i++, AdminControllerAction.Section.MARKET.toString());
@@ -115,7 +115,7 @@ public class UpdatesAction extends SBActionAdapter {
 	 * Build sql query for Favorited Items in Updates.
 	 * @return
 	 */
-	private String getFavoriteUpdatesSql() {
+	protected String getFavoriteUpdatesSql() {
 		String custom = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(500);
 		sql.append("select b.update_id from profile_favorite a ");
