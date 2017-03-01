@@ -8,15 +8,14 @@ import java.util.List;
 import java.util.Set;
 
 import com.biomed.smarttrak.security.SmarttrakRoleVO;
+import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.PermissionVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
-import com.siliconmtn.data.Tree;
 import com.siliconmtn.http.session.SMTSession;
 import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -52,11 +51,12 @@ public class FinancialDashHierarchyAction extends SBActionAdapter {
 
 		// Get the data necessary to trim down the tree to only the nodes
 		// applicable for the user's subscription/permissions. 
-		Tree tree = getTree(req);
+		SmarttrakTree tree = getTree(req);
 		List<String> sectionIds = getPermittedSectionIds(req);
+		String rootId = req.getParameter("sectionId");
 		
 		// Trim the tree down to only nodes with a direct relation to the permitted ids.
-		List<Node> sections = cleanTree(tree, sectionIds);
+		List<Node> sections = cleanTree(tree, sectionIds, rootId);
 		
 		this.putModuleData(sections);
 	}
@@ -67,21 +67,12 @@ public class FinancialDashHierarchyAction extends SBActionAdapter {
 	 * @return
 	 * @throws ActionException 
 	 */
-	@SuppressWarnings("unchecked")
-	protected Tree getTree(ActionRequest req) throws ActionException {
+	protected SmarttrakTree getTree(ActionRequest req) throws ActionException {
 		SectionHierarchyAction sha = new SectionHierarchyAction(this.actionInit);
 		sha.setAttributes(this.attributes);
 		sha.setDBConnection(dbConn);
-		sha.retrieve(req);
 		
-		// TODO: This is a temporary fix... for some reason, updating the nodes below updates the cached version of
-		// the tree that comes from the Section Hierarchy, maybe the object reference is cached???
-		this.clearCacheByKey(SectionHierarchyAction.CONTENT_HIERARCHY_CACHE_KEY);
-		
-		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
-		List<Node> hierarchy = (List<Node>) mod.getActionData();
-		
-		Tree tree = new Tree(hierarchy, hierarchy.get(0));
+		SmarttrakTree tree = sha.loadTree(null);
 		tree.calculateTotalChildren(tree.getRootNode());
 		
 		return tree;
@@ -116,11 +107,12 @@ public class FinancialDashHierarchyAction extends SBActionAdapter {
 	 * 
 	 * @param tree
 	 * @param sectionIds
+	 * @param rootId
 	 * @return
 	 */
-	protected List<Node> cleanTree(Tree tree, List<String> sectionIds) {
+	protected List<Node> cleanTree(SmarttrakTree tree, List<String> sectionIds, String rootId) {
 		Set<String> parentNodeIds = new HashSet<>();
-		tree.buildNodePaths();
+		tree.buildNodePaths(tree.getRootNode(), "/", false);
 
 		// Get the list of parent node ids to keep
 		for (String sectionId : sectionIds) {
@@ -131,7 +123,7 @@ public class FinancialDashHierarchyAction extends SBActionAdapter {
 			}
 		}
 
-		Node n = tree.getRootNode();
+		Node n = tree.findNode(rootId);
 		List<Node> sections = new ArrayList<>();
 		sections.add(n);
 		

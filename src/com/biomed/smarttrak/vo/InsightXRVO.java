@@ -1,12 +1,10 @@
-/**
- *
- */
 package com.biomed.smarttrak.vo;
 
 import java.util.Date;
 
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: InsightXRVO.java
@@ -94,5 +92,13 @@ public class InsightXRVO {
 
 	public void setCreateDt(Date createDt) {
 		this.createDt = createDt;
+	}
+	/*
+	 * (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		return StringUtil.getToString(this);
 	}
 }

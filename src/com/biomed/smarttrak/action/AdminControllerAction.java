@@ -63,15 +63,21 @@ public class AdminControllerAction extends SimpleActionAdapter {
 
 	public static final int DOC_ID_MIN_LEN = 15;
 
+	public static final String PUBLIC_401_PG = "/subscribe";
+	
+
 	/*
 	 * 'sections' of the SmartTRAK website - used for Solr as well as Recently Viewed/Favorites
 	 */
 	public enum Section {
-		MARKET("market/"), PRODUCT("products/"), COMPANY("companies/");
+		MARKET("market/"), PRODUCT("products/"), COMPANY("companies/"), INSIGHTS("insights/");
 
 		private String path;
 		Section(String path) { this.path = path; }
 		public String getURLToken() { return path; }
+		public String getPageURL() { //reverses the slash to the front of the urlToken, making it a relative URL to the given page
+			return "/" + getURLToken().substring(0, getURLToken().length());
+		}
 	}
 
 
