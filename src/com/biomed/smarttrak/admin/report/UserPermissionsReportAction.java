@@ -63,22 +63,16 @@ public class UserPermissionsReportAction extends SimpleActionAdapter {
 	 * @throws ActionException
 	 */
 	public List<AccountPermissionsVO> retrieveUserPermissions(ActionRequest req) throws ActionException {
-
 		StringEncrypter se = initStringEncrypter((String)attributes.get(Constants.ENCRYPT_KEY));
 		
-		/* Report fields.
-		 * account ID, account name, user ID, username (email addr), user full name, has fd, has ga
-		 * section hierarchy.
-		 */
-
 		// 1. retrieve accounts/users
-		List<AccountPermissionsVO> accounts = this.retrieveAccountsAndUsers(se);
+		List<AccountPermissionsVO> accounts = retrieveAccountsAndUsers(se);
+		log.debug("accounts size: " + accounts.size());
 		
 		// 2. retrieve acct permissions
 		retrieveAccountPermissions(req,accounts);
 		
 		return accounts;
-		
 	}
 	
 	/**
@@ -95,10 +89,10 @@ public class UserPermissionsReportAction extends SimpleActionAdapter {
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, STATUS_EXCLUDE_INACTIVE);
 			ps.setString(2, STATUS_EXCLUDE_INACTIVE);
-			
+
 			ResultSet rs = ps.executeQuery();
 			accounts = parseAccountsAndUsers(se,rs);
-			
+
 		} catch (SQLException sqle) {
 			accounts = new ArrayList<>();
 		}
@@ -106,8 +100,16 @@ public class UserPermissionsReportAction extends SimpleActionAdapter {
 		return accounts;
 	}
 	
+	/**
+	 * Parses the accounts and users query results into a List of AccountPermissionsVO.
+	 * @param se
+	 * @param rs
+	 * @return
+	 * @throws SQLException
+	 */
 	protected List<AccountPermissionsVO> parseAccountsAndUsers(StringEncrypter se, ResultSet rs) 
 			throws SQLException {
+		log.debug("parseAccountsAndUsers...");
 		String prevAcctId = null;
 		String currAcctId;
 		AccountPermissionsVO acctPermVO = null;
@@ -123,18 +125,12 @@ public class UserPermissionsReportAction extends SimpleActionAdapter {
 				}
 
 				// create new acct vo.
-				AccountVO account = new AccountVO();
-				account.setAccountId(rs.getString("account_id"));
-				account.setAccountName(rs.getString("account_nm"));
-
-				// init acctPermVO, add acct vo and this user.
-				acctPermVO = new AccountPermissionsVO();
-				acctPermVO.setAccount(account);
-				parseAccountUser(se,rs,acctPermVO);
+				acctPermVO = createAccount(rs);
+				createAccountUser(se,rs,acctPermVO);
 
 			} else {
 				// add this user to acctPermVO
-				parseAccountUser(se,rs,acctPermVO);
+				createAccountUser(se,rs,acctPermVO);
 			}
 			prevAcctId = currAcctId;
 		}
@@ -147,6 +143,11 @@ public class UserPermissionsReportAction extends SimpleActionAdapter {
 		return acctPerms;
 	}
 	
+	/**
+	 * Calls AccountPermissionAction to retrieve accounts permissions.
+	 * @param req
+	 * @param accounts
+	 */
 	protected void retrieveAccountPermissions(ActionRequest req, 
 			List<AccountPermissionsVO> accounts) {
 		log.debug("retrieveAccountPermissions...");
@@ -174,7 +175,26 @@ public class UserPermissionsReportAction extends SimpleActionAdapter {
 			// reset the req param.
 			req.setParameter(AccountAction.ACCOUNT_ID, null);
 		}
-		log.debug("retrieveAccountPermissions end (seconds): " + (start - Calendar.getInstance().getTimeInMillis()));
+		log.debug("retrieveAccountPermissions finished in: " + (Calendar.getInstance().getTimeInMillis() - start) + "ms");
+	}
+	
+	/**
+	 * Creates an AccountVO from the result set record.  Creates an AccountPermissionVO
+	 * and sets the AccountVO on the AccountPermissionVO.
+	 * @param rs
+	 * @return
+	 * @throws SQLException
+	 */
+	protected AccountPermissionsVO createAccount(ResultSet rs) 
+			throws SQLException {
+		AccountVO account = new AccountVO();
+		account.setAccountId(rs.getString("account_id"));
+		account.setAccountName(rs.getString("account_nm"));
+
+		// init acctPermVO, add acct vo and this user.
+		AccountPermissionsVO acctPermVO = new AccountPermissionsVO();
+		acctPermVO.setAccount(account);
+		return acctPermVO;
 	}
 	
 	/**
@@ -183,7 +203,7 @@ public class UserPermissionsReportAction extends SimpleActionAdapter {
 	 * @param rs
 	 * @param acctPermVO
 	 */
-	protected void parseAccountUser(StringEncrypter se, 
+	protected void createAccountUser(StringEncrypter se, 
 			ResultSet rs, AccountPermissionsVO acctPermVO) {
 		try {
 			UserVO user = new UserVO();

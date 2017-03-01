@@ -3,6 +3,8 @@ package com.biomed.smarttrak.admin;
 //WC custom
 import com.biomed.smarttrak.admin.report.UserActivityAction;
 import com.biomed.smarttrak.admin.report.UserActivityReportVO;
+import com.biomed.smarttrak.admin.report.UserPermissionsReportAction;
+import com.biomed.smarttrak.admin.report.UserPermissionsReportVO;
 import com.biomed.smarttrak.admin.report.UserUtilizationDailyRollupReportVO;
 import com.biomed.smarttrak.admin.report.UserUtilizationMonthlyRollupReportVO;
 import com.biomed.smarttrak.admin.report.UserUtilizationReportAction;
@@ -34,7 +36,8 @@ public class ReportFacadeAction extends SBActionAdapter {
 
 	public enum ReportType {
 		ACTIVITY_LOG,
-		UTILIZATION
+		USER_PERMISSIONS,
+		UTILIZATION,
 	}
 	
 	/**
@@ -65,6 +68,9 @@ public class ReportFacadeAction extends SBActionAdapter {
 			case ACTIVITY_LOG:
 				rpt = generateActivityLogReport(req);
 				break;
+			case USER_PERMISSIONS:
+				rpt = generateUserPermissionsReport(req);
+				break;
 			case UTILIZATION:
 				rpt = generateUserUtilizationReport(req);
 				break;
@@ -91,6 +97,24 @@ public class ReportFacadeAction extends SBActionAdapter {
 		AbstractSBReportVO rpt = new UserActivityReportVO();
 		rpt.setData(uaa.retrieveUserActivity(req));
 		return rpt;
+	}
+	
+	/**
+	 * Generates the user permissions report
+	 * @param req
+	 * @return
+	 * @throws ActionException
+	 */
+	protected AbstractSBReportVO generateUserPermissionsReport(ActionRequest req) 
+			throws ActionException {
+		UserPermissionsReportAction upra = new UserPermissionsReportAction();
+		upra.setDBConnection(dbConn);
+		upra.setAttributes(getAttributes());
+		
+		AbstractSBReportVO rpt = new UserPermissionsReportVO();
+		rpt.setData(upra.retrieveUserPermissions(req));
+		return rpt;
+		
 	}
 	
 	/**
