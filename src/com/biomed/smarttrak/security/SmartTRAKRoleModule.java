@@ -10,6 +10,7 @@ import java.sql.SQLException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.security.AuthorizationException;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
 // WebCrescendo 3.0
@@ -71,6 +72,9 @@ public class SmartTRAKRoleModule extends DBRoleModule {
 
 		if (user == null || StringUtil.isEmpty(user.getAccountId()) || req == null)
 			throw new AuthorizationException("invalid data, could not load roles");
+
+		if (user.getExpirationDate() != null && user.getExpirationDate().before(Convert.getCurrentTimestamp()))
+			throw new AuthorizationException("account is expired");
 
 		req.setParameter(AccountAction.ACCOUNT_ID, user.getAccountId());
 
