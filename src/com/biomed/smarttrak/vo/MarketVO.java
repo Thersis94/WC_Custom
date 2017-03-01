@@ -10,6 +10,7 @@ import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 
@@ -39,14 +40,14 @@ public class MarketVO extends SolrDocumentVO {
 	private String statusNo;
 	private String shortName;
 	private String aliasName;
-	private List<MarketAttributeVO> attributes;
+	private List<MarketAttributeVO> marketAttributes;
 	private List<GenericVO> sections;
 	private String updateMsg;
 	private Date updateDate;
 	
 	public MarketVO () {
 		super(SOLR_INDEX);
-		attributes = new ArrayList<>();
+		marketAttributes = new ArrayList<>();
 		sections = new ArrayList<>();
 	}
 	
@@ -59,7 +60,7 @@ public class MarketVO extends SolrDocumentVO {
 
 	private void setData(ActionRequest req) {
 		marketId = req.getParameter("marketId");
-		parentId = req.getParameter("parentId");
+		parentId = StringUtil.checkVal(req.getParameter("parentId"), null);
 		marketName = req.getParameter("marketName");
 		shortName = req.getParameter("shortName");
 		aliasName = req.getParameter("aliasName");
@@ -129,16 +130,16 @@ public class MarketVO extends SolrDocumentVO {
 	
 
 	public List<MarketAttributeVO> getMarketAttributes() {
-		return attributes;
+		return marketAttributes;
 	}
 
 
 	public void setMarketAttributes(List<MarketAttributeVO> attributes) {
-		this.attributes = attributes;
+		this.marketAttributes = attributes;
 	}
 	
 	public void addMarketAttribute(MarketAttributeVO attribute) {
-		this.attributes.add(attribute);
+		marketAttributes.add(attribute);
 	}
 
 	public List<GenericVO> getMarketSections() {
@@ -151,7 +152,7 @@ public class MarketVO extends SolrDocumentVO {
 	}
 	
 	public void addSection(GenericVO section) {
-		this.sections.add(section);
+		sections.add(section);
 	}
 	
 	/**
@@ -174,7 +175,6 @@ public class MarketVO extends SolrDocumentVO {
 		return updateDate;
 	}
 	
-	@Column(name="UPDATE_DT", isAutoGen=true, isUpdateOnly=true)
 	public void setUpdateDt(Date updateDate) {
 		this.updateDate = updateDate;
 	}

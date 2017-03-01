@@ -10,9 +10,6 @@ import java.util.List;
 // WC_Custom
 import com.biomed.smarttrak.vo.AccountVO;
 import com.biomed.smarttrak.action.AdminControllerAction;
-import com.biomed.smarttrak.admin.user.HumanNameIntfc;
-import com.biomed.smarttrak.admin.user.NameComparator;
-
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -21,6 +18,8 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.user.HumanNameIntfc;
+import com.siliconmtn.util.user.NameComparator;
 // WebCrescendo
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;

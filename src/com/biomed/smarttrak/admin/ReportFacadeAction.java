@@ -1,8 +1,12 @@
 package com.biomed.smarttrak.admin;
 
-// WC custom
+//WC custom
+import com.biomed.smarttrak.admin.report.UserActivityAction;
+import com.biomed.smarttrak.admin.report.UserActivityReportVO;
+import com.biomed.smarttrak.admin.report.UserUtilizationDailyRollupReportVO;
+import com.biomed.smarttrak.admin.report.UserUtilizationMonthlyRollupReportVO;
 import com.biomed.smarttrak.admin.report.UserUtilizationReportAction;
-import com.biomed.smarttrak.admin.report.UserUtilizationReportVO;
+import com.biomed.smarttrak.admin.report.UserUtilizationReportAction.UtilizationReportType;
 
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
@@ -29,7 +33,8 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class ReportFacadeAction extends SBActionAdapter {
 
 	public enum ReportType {
-		USER_UTILIZATION
+		ACTIVITY_LOG,
+		UTILIZATION
 	}
 	
 	/**
@@ -52,17 +57,19 @@ public class ReportFacadeAction extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		if (! req.hasParameter("reportType")) return;
-		
-		String reportType = StringUtil.checkVal(req.getParameter("reportType"));
-		ReportType rType = checkReportType(reportType);
-		
+
+		ReportType rType = checkReportType(req.getParameter("reportType"));
 		AbstractSBReportVO rpt = null;
-		
+
 		switch (rType) {
-			case USER_UTILIZATION:
-				//do utilization report.
+			case ACTIVITY_LOG:
+				rpt = generateActivityLogReport(req);
+				break;
+			case UTILIZATION:
 				rpt = generateUserUtilizationReport(req);
-			break;
+				break;
+			default:
+				break;
 		}
 
 		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, Boolean.TRUE);
@@ -75,11 +82,50 @@ public class ReportFacadeAction extends SBActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
+	protected AbstractSBReportVO generateActivityLogReport(ActionRequest req) 
+			throws ActionException {
+		log.debug("generateActivityLogReport...");
+		UserActivityAction uaa = new UserActivityAction();
+		uaa.setDBConnection(dbConn);
+		uaa.setAttributes(getAttributes());
+		AbstractSBReportVO rpt = new UserActivityReportVO();
+		rpt.setData(uaa.retrieveUserActivity(req));
+		return rpt;
+	}
+	
+	/**
+	 * Generates the user utilization roll-up report.
+	 * @param req
+	 * @return
+	 * @throws ActionException
+	 */
 	protected AbstractSBReportVO generateUserUtilizationReport(ActionRequest req) 
 			throws ActionException {
-		UserUtilizationReportAction uu = new UserUtilizationReportAction(actionInit);
+		UserUtilizationReportAction uu = new UserUtilizationReportAction();
 		uu.setDBConnection(dbConn);
-		AbstractSBReportVO rpt = new UserUtilizationReportVO();
+		uu.setAttributes(getAttributes());
+		
+		String uReportType = StringUtil.checkVal(req.getParameter("utilizationReportType")).toUpperCase();
+		UtilizationReportType urt = null;
+		try {
+			urt = UtilizationReportType.valueOf(uReportType);
+		} catch (Exception e) {
+			urt = UtilizationReportType.DAYS_365;
+		}
+		
+		AbstractSBReportVO rpt;
+		
+		switch(urt){
+			case DAYS_14:
+			case DAYS_90:
+				rpt = new UserUtilizationDailyRollupReportVO();
+				break;
+			default:
+				rpt = new UserUtilizationMonthlyRollupReportVO();
+				break;
+		}
+		
+		rpt.addAttributes(UserUtilizationReportAction.ATTRIB_REPORT_SUFFIX, urt.getReportSuffix());
 		rpt.setData(uu.retrieveUserUtilization(req));
 		return rpt;
 	}
@@ -92,7 +138,7 @@ public class ReportFacadeAction extends SBActionAdapter {
 	 */
 	protected ReportType checkReportType(String reportType) throws ActionException {
 		try {
-			return ReportType.valueOf(reportType);
+			return ReportType.valueOf(StringUtil.checkVal(reportType).toUpperCase());
 		} catch (Exception e) {
 			throw new ActionException("Unknown report type, " + reportType);
 		}

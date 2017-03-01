@@ -74,6 +74,9 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 				ps.setString(++idx, dash.getScenarioId());
 			}
 			for (int i = 0; i < 7; i++) {
+				ps.setString(++idx, user.getAccountId());
+			}
+			for (int i = 0; i < 7; i++) {
 				ps.setString(++idx, dash.getSectionId());
 			}
 			for (int i = 0; i < regionCnt; i++) {

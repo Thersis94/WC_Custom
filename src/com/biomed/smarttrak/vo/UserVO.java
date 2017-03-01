@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import com.biomed.smarttrak.admin.user.HumanNameIntfc;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
@@ -13,6 +12,7 @@ import com.siliconmtn.db.orm.Table;
 // SMTBaseLibs
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.user.HumanNameIntfc;
 
 /*****************************************************************************
  <p><b>Title</b>: SmarttrakUserVO.java</p>
@@ -40,6 +40,7 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	private int fdAuthFlg;
 	private int gaAuthFlg;
 	private int mktAuthFlg;
+	private int acctOwnerFlg;
 
 	/**
 	 * Smarttrak status dropdowns - stored in the DB using code, label displayed on user mgmt screens.
@@ -122,6 +123,7 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		setFdAuthFlg(Convert.formatInteger(req.getParameter("fdAuthFlg")));
 		setGaAuthFlg(Convert.formatInteger(req.getParameter("gaAuthFlg")));
 		setMktAuthFlg(Convert.formatInteger(req.getParameter("mktAuthFlg")));
+		setAcctOwnerFlg(Convert.formatInteger(req.getParameter("acctOwnerFlg")));
 	}
 
 
@@ -373,5 +375,14 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	@Column(name="email_address_txt", isReadOnly=true)
 	public String getEmailAddress() {
 		return super.getEmailAddress();
+	}
+
+	@Column(name="acct_owner_flg")
+	public int getAcctOwnerFlg() {
+		return acctOwnerFlg;
+	}
+
+	public void setAcctOwnerFlg(int acctOwnerFlg) {
+		this.acctOwnerFlg = acctOwnerFlg;
 	}
 }

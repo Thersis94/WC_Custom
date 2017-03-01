@@ -10,10 +10,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.data.Node;
-import com.siliconmtn.data.Tree;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -138,7 +138,7 @@ public abstract class AbstractTreeAction extends SBActionAdapter {
 	 * Loads the List<SectionVO> and transposes the data into a Tree struture.
 	 * @return
 	 */
-	public Tree loadDefaultTree(String... params) {
+	public SmarttrakTree loadDefaultTree(String... params) {
 		return loadTree(MASTER_ROOT, params);
 	}
 
@@ -147,7 +147,7 @@ public abstract class AbstractTreeAction extends SBActionAdapter {
 	 * Loads the List<SectionVO> and transposes the data into a Tree struture.
 	 * @return
 	 */
-	public Tree loadTree(String sectionId, String... params) {
+	public SmarttrakTree loadTree(String sectionId, String... params) {
 		return loadTree(sectionId, new SectionVO().getClass(), params);
 	}
 
@@ -160,9 +160,9 @@ public abstract class AbstractTreeAction extends SBActionAdapter {
 	 * @param params
 	 * @return
 	 */
-	public Tree loadTree(String sectionId, Class<? extends SectionVO> klass, String... params) {
+	public SmarttrakTree loadTree(String sectionId, Class<? extends SectionVO> klass, String... params) {
 		List<Node> sections = loadHierarchy(klass, params);
-		Tree t = new Tree(sections);
+		SmarttrakTree t = new SmarttrakTree(sections);
 
 		//find the requested root node and prune the tree
 		if (!StringUtil.isEmpty(sectionId)) {

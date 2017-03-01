@@ -1,6 +1,6 @@
 package com.biomed.smarttrak.admin;
 
-//Java 7
+//Java 8
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Collection;
@@ -9,12 +9,12 @@ import java.util.Map;
 
 // WC_Custom
 import com.biomed.smarttrak.vo.PermissionVO;
+import com.biomed.smarttrak.util.SmarttrakTree;
 
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.data.Tree;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.common.PageVO;
@@ -54,7 +54,7 @@ public class AccountPermissionAction extends AbstractTreeAction {
 		String accountId = req.hasParameter(ACCOUNT_ID) ? req.getParameter(ACCOUNT_ID) : null;
 		if (accountId == null) return;
 
-		Tree t = loadTree(MASTER_ROOT, new PermissionVO().getClass(), accountId);
+		SmarttrakTree t = loadTree(MASTER_ROOT, new PermissionVO().getClass(), accountId);
 		putModuleData(t);
 	}
 

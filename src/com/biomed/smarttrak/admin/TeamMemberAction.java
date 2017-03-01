@@ -12,15 +12,14 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
-
+import com.siliconmtn.util.user.HumanNameIntfc;
+import com.siliconmtn.util.user.NameComparator;
 // WebCrescendo
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
 
 //WC_Custom
 import com.biomed.smarttrak.vo.TeamMemberVO;
-import com.biomed.smarttrak.admin.user.HumanNameIntfc;
-import com.biomed.smarttrak.admin.user.NameComparator;
 
 /*****************************************************************************
  <p><b>Title</b>: TeamMemberAction.java</p>

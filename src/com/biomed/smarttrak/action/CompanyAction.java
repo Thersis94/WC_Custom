@@ -425,13 +425,12 @@ public class CompanyAction extends SBActionAdapter {
 		
 		Node n = attributeTree.findNode(path[1]);
 		
-		if (!attrMap.keySet().contains(path[1])) {
+		if (!attrMap.keySet().contains(n.getNodeName())) {
 			attrMap.put(n.getNodeName(), new ArrayList<CompanyAttributeVO>());
 		}
 
 		attr.setGroupName(n.getNodeName());
 		attrMap.get(n.getNodeName()).add(attr);
-		log.debug("Added to " + n.getNodeName()+"|"+n.getNodeId());
 	}
 	
 
@@ -443,25 +442,23 @@ public class CompanyAction extends SBActionAdapter {
 	 */
 	private Tree buildAttributeTree(String attrType) throws ActionException {
 		StringBuilder sql = new StringBuilder(100);
-		sql.append("SELECT ATTRIBUTE_ID, PARENT_ID, ATTRIBUTE_NM, ");
+		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		sql.append("SELECT c.ATTRIBUTE_ID, c.PARENT_ID, c.ATTRIBUTE_NM, p.ATTRIBUTE_NM as PARENT_NM, ");
 		if ("PRODUCT".equals(attrType)) {
-			sql.append("ORDER_NO ");
+			sql.append("c.ORDER_NO ");
 		} else {
-			sql.append("DISPLAY_ORDER_NO ");
+			sql.append("c.DISPLAY_ORDER_NO ");
 		}
-		sql.append("FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("BIOMEDGPS_").append(attrType).append("_ATTRIBUTE ");
+		sql.append("FROM ").append(customDb).append("BIOMEDGPS_").append(attrType).append("_ATTRIBUTE c ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_").append(attrType).append("_ATTRIBUTE p ");
+		sql.append("ON c.PARENT_ID = p.ATTRIBUTE_ID ");
 		log.debug(sql);
 		List<Node> attributes = new ArrayList<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				Node n = new Node(rs.getString("ATTRIBUTE_ID"), rs.getString("PARENT_ID"));
-				if ("PRODUCT".equals(attrType)) {
-					n.setNodeName(rs.getInt("ORDER_NO") + "|" + rs.getString("ATTRIBUTE_NM"));
-				} else {
-					n.setNodeName(rs.getInt("DISPLAY_ORDER_NO") + "|" + rs.getString("ATTRIBUTE_NM"));
-				}
+				setNodeName(n, rs, attrType);
 				attributes.add(n);
 			}
 			
@@ -471,5 +468,20 @@ public class CompanyAction extends SBActionAdapter {
 		Tree t = new Tree(attributes);
 		t.buildNodePaths();
 		return t;
+	}
+
+	/**
+	 * Set the name of the supplied node based on the passed attribute type.
+	 */
+	protected void setNodeName(Node n, ResultSet rs, String attrType) throws SQLException {
+		if ("PRODUCT".equals(attrType)) {
+			n.setNodeName(rs.getInt("ORDER_NO") + "|" + rs.getString("ATTRIBUTE_NM"));
+		} else {
+			if ("profile".equals(rs.getString("ATTRIBUTE_NM"))) {
+				n.setNodeName(rs.getInt("DISPLAY_ORDER_NO") + "|" + rs.getString("PARENT_NM"));
+			} else {
+				n.setNodeName(rs.getInt("DISPLAY_ORDER_NO") + "|" + rs.getString("ATTRIBUTE_NM"));
+			}
+		}
 	}
 }

@@ -137,7 +137,7 @@ public class USALoginModule extends AbstractLoginModule {
 	 * @see com.siliconmtn.security.AbstractLoginModule#recordLogin(java.lang.String, java.lang.String, java.util.Date)
 	 */
 	@Override
-	public void recordLogin(UserDataVO user, String siteId, Date loginDt) {
-		//not implemented
+	public void recordLogin(UserDataVO user, String siteId, String userAgent, String ipAddr, Date d) {
+		// not implemented
 	}
 }

@@ -2,26 +2,25 @@ package com.biomed.smarttrak.action;
 
 import org.apache.commons.lang.StringEscapeUtils;
 
-
-
 // WC custom
 import com.biomed.smarttrak.FinancialDashAction;
 import com.biomed.smarttrak.FinancialDashScenarioAction;
+import com.biomed.smarttrak.admin.FinancialDashHierarchyAction;
 import com.biomed.smarttrak.admin.AccountAction;
 import com.biomed.smarttrak.admin.AccountPermissionAction;
 import com.biomed.smarttrak.admin.AccountUserAction;
 import com.biomed.smarttrak.admin.CompanyManagementAction;
-import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.admin.GapAnalysisAdminAction;
+import com.biomed.smarttrak.admin.InsightAction;
 import com.biomed.smarttrak.admin.ListAction;
 import com.biomed.smarttrak.admin.MarketManagementAction;
 import com.biomed.smarttrak.admin.ProductManagementAction;
 import com.biomed.smarttrak.admin.ReportFacadeAction;
+import com.biomed.smarttrak.admin.SectionHierarchyAction;
+import com.biomed.smarttrak.admin.SupportFacadeAction;
 import com.biomed.smarttrak.admin.TeamAction;
 import com.biomed.smarttrak.admin.TeamMemberAction;
 import com.biomed.smarttrak.admin.UpdatesAction;
-import com.biomed.smarttrak.admin.InsightAction;
-
 //SMT base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -29,16 +28,16 @@ import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.StringUtil;
-
 // WC core
 import com.smt.sitebuilder.action.SimpleActionAdapter;
-import com.smt.sitebuilder.action.emailcampaign.CampaignInstanceAction;
-import com.smt.sitebuilder.action.emailcampaign.InstanceReport;
+import com.smt.sitebuilder.action.solr.management.SolrSynonymAction;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SecurityController;
-
+//WC Email Campaigns
+import com.smt.sitebuilder.action.emailcampaign.CampaignInstanceAction;
+import com.smt.sitebuilder.action.emailcampaign.InstanceReport;
 /****************************************************************************
  * <b>Title</b>: AdminControllerAction.java
  * <b>Project</b>: WC_Custom
@@ -63,6 +62,8 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	// All logged-in users are Registered Users or Site Administrators.  
 	// Roles, as they apply to the site's section hierarchy, are administered by the SecurityController
 	public static final int DEFAULT_ROLE_LEVEL = SecurityController.PUBLIC_REGISTERED_LEVEL;
+
+	public static final int DOC_ID_MIN_LEN = 15;
 
 	/*
 	 * 'sections' of the SmartTRAK website - used for Solr as well as Recently Viewed/Favorites
@@ -163,6 +164,9 @@ public class AdminControllerAction extends SimpleActionAdapter {
 			case "fdScenario":
 				action = new FinancialDashScenarioAction();
 				break;
+			case "fdHierarchy":
+				action = new FinancialDashHierarchyAction();
+				break;
 			case "productAdmin":
 				action = new ProductManagementAction();
 				break;
@@ -196,18 +200,21 @@ public class AdminControllerAction extends SimpleActionAdapter {
 			case "list":
 				action = new ListAction();
 				break;
-			case "activityLog":
-				action = new UserActivityAction();
-				break;
 			case "reports":
 				action = new ReportFacadeAction();
+				break;
+			case "support":
+				action = new SupportFacadeAction();
+				break;
+			case "synonyms":
+				action = new SolrSynonymAction();
 				break;
 			case "marketingCampaigns":
 				action = new CampaignInstanceAction();
 				break;
 			case "marketingInstanceReport":
 				action = new InstanceReport();
-				break;				
+				break;								
 			default:
 				throw new ActionException("unknown action type:" + actionType);
 		}
