@@ -2,11 +2,13 @@ package com.biomed.smarttrak.action;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+
+import org.apache.solr.common.SolrDocument;
 
 import com.biomed.smarttrak.vo.MarketAttributeVO;
 import com.biomed.smarttrak.vo.MarketVO;
@@ -14,12 +16,15 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
-import com.siliconmtn.data.Node;
-import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.action.search.SolrAction;
+import com.smt.sitebuilder.action.search.SolrResponseVO;
+import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.search.SearchDocumentHandler;
 
 /****************************************************************************
  * <b>Title</b>: MarketAction.java <p/>
@@ -85,29 +90,31 @@ public class MarketAction extends SBActionAdapter {
 	 * Build the time since last updated message
 	 * @param market
 	 */
-	private void buildUpdateMsg(MarketVO market) {
+	private void buildUpdateMsg(SolrDocument market) {
 		// Unpublished markets can be skipped
-		if (!"P".equals(market.getStatusNo())) {
+		if (!"P".equals(market.get(SearchDocumentHandler.CONTENT_TYPE))) {
 			return;
 		}
-		long diff = Convert.getCurrentTimestamp().getTime() - market.getUpdateDt().getTime();
+		Date d  = (Date)market.getFieldValue(SearchDocumentHandler.UPDATE_DATE);
+		
+		long diff = Convert.getCurrentTimestamp().getTime() - d.getTime();
 		long diffDays = diff / (1000 * 60 * 60 * 24);
 		long diffHours = diff / (1000 * 60 * 60);
 		if (diffDays > 365) {
 			int years = (int) (diffDays/365);
-			market.setUpdateMsg(years + " year(s) ago");
+			market.setField("updateMsg", years + " year(s) ago");
 		} else if (diffDays > 30) {
 			int months = (int) (diffDays/30);
-			market.setUpdateMsg(months + " month(s) ago");
+			market.setField("updateMsg", months + " month(s) ago");
 		} else if (diffDays > 7) {
 			int weeks = (int) (diffDays/7);
-			market.setUpdateMsg(weeks + " week(s) ago");
+			market.setField("updateMsg", weeks + " week(s) ago");
 		} else if (diffDays > 0) {
-			market.setUpdateMsg(diffDays + " day(s) ago");
+			market.setField("updateMsg", diffDays + " day(s) ago");
 		} else if (diffHours > 0) {
-			market.setUpdateMsg(diffHours + " hour(s) ago");
+			market.setField("updateMsg", diffHours + " hour(s) ago");
 		} else {
-			market.setUpdateMsg("less than an hour ago");
+			market.setField("updateMsg", "less than an hour ago");
 		}
 		
 		
@@ -175,109 +182,61 @@ public class MarketAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	protected void retrieveMarkets(ActionRequest req) throws ActionException {
-		StringBuilder sql = new StringBuilder(275);
-		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("SELECT m.*, a.ATTRIBUTE_ID FROM ").append(customDb).append("BIOMEDGPS_MARKET m ");
-		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_MARKET_ATTRIBUTE_XR a ");
-		sql.append("ON m.MARKET_ID = a.MARKET_ID ");
-		sql.append("ORDER BY m.MARKET_ID ");
-		log.debug(sql);
-		Map<String, List<MarketVO>> markets = new TreeMap<>();
-		// Add the default group here.
-		markets.put(DEFAULT_GROUP, new ArrayList<MarketVO>());
-		Tree attributeTree = buildAttributeTree();
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			
-			ResultSet rs = ps.executeQuery();
-			String currentMarket = "";
-			MarketVO market = null;
-			DBProcessor db = new DBProcessor(dbConn);
-			while(rs.next()) {
-				if (!currentMarket.equals(rs.getString("MARKET_ID"))) {
-					if (market != null) {
-						addMarket(markets, attributeTree, market);
-					}
-					market = new MarketVO();
-					db.executePopulate(market, rs);
-					market.setUpdateDt(rs.getDate("UPDATE_DT"));
-					buildUpdateMsg(market);
-					currentMarket = rs.getString("MARKET_ID");
-				}
-				MarketAttributeVO attr = new MarketAttributeVO();
-				db.executePopulate(attr, rs);
-				market.addMarketAttribute(attr);
-			}
-			if (market == null) {
-				addMarket(markets, attributeTree, market);
-			}
-		} catch (Exception e) {
-			throw new ActionException(e);
-		}
-		super.putModuleData(markets);
-	}
-	
-	
-	/**
-	 * Group the markets by thier attribute groups
-	 * @param markets
-	 * @param attributeTree
-	 * @param market
-	 */
-	private void addMarket(Map<String, List<MarketVO>> markets, Tree attributeTree, MarketVO market) {
-		// Markets use attributes from one branch of the tree
-		// and are sorted accordingly. Markets without those attributes are
-		// placed into the extras group.
-		if (market.getMarketAttributes().isEmpty()) {
-			markets.get(DEFAULT_GROUP).add(market);
-			return;
-		}
+		// Pass along the proper information for a search to be done.
+	    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+	    	actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
+	    	req.setParameter("pmid", mod.getPageModuleId());
 		
-		String attrId = market.getMarketAttributes().get(0).getAttributeId();
-		String[] path = attributeTree.findNode(attrId).getFullPath().split("/");
+	    	// Build the solr action
+		SolrAction sa = new SolrAction(actionInit);
+		sa.setDBConnection(dbConn);
+		sa.setAttributes(attributes);
+		sa.retrieve(req);
 		
-		// Markets using attributes too high up in the tree do not have enough
-		// information to be sorted properly and are placed in the extras group.
-		if (path.length < 2) {
-			markets.get(DEFAULT_GROUP).add(market);
-			return;
-		}
-		
-		Node n = attributeTree.findNode(path[1]);
-		
-		if (!markets.keySet().contains(n.getNodeName())) {
-			markets.put(n.getNodeName(), new ArrayList<MarketVO>());
-		}
-		
-		markets.get(n.getNodeName()).add(market);
+
+	    	mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+	    	SolrResponseVO res = (SolrResponseVO) mod.getActionData();
+	    	orderMarkets(res);
 	}
 
 	
 	/**
-	 * Create the full attribute tree in order to determine the full ancestry of each attribute
-	 * @return
-	 * @throws ActionException
+	 * Sort all returned markets into groups based on thier hierarchies.
+	 * @param res
 	 */
-	private Tree buildAttributeTree() throws ActionException {
-		StringBuilder sql = new StringBuilder(100);
-		sql.append("SELECT * FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("BIOMEDGPS_MARKET_ATTRIBUTE ");
-		log.debug(sql);
-		List<Node> attributes = new ArrayList<>();
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ResultSet rs = ps.executeQuery();
-			
-			while (rs.next()) {
-				Node n = new Node(rs.getString("ATTRIBUTE_ID"), rs.getString("PARENT_ID"));
-				n.setNodeName(rs.getString("ATTRIBUTE_NM"));
-				attributes.add(n);
+	protected void orderMarkets(SolrResponseVO res) {
+		Map<String, List<SolrDocument>> groups = new TreeMap<>();
+		log.debug(res.getTotalResponses());
+		log.debug(res.getResultDocuments().size());
+		for (SolrDocument doc : res.getResultDocuments()) {
+			log.debug(doc.getFieldValue("hierarchy"));
+			buildUpdateMsg(doc);
+			String[] hierarchy = StringUtil.checkVal(doc.get(SearchDocumentHandler.HIERARCHY)).split(SearchDocumentHandler.HIERARCHY_DELIMITER);
+			if (hierarchy.length < 3) {
+				addMarket(doc, groups, DEFAULT_GROUP);
+				continue;
 			}
 			
-		} catch (SQLException e) {
-			throw new ActionException(e);
+			addMarket(doc, groups, hierarchy[2]);
 		}
-		Tree t = new Tree(attributes);
-		t.buildNodePaths();
-		return t;
+		log.debug(groups.keySet().size());
+		super.putModuleData(groups);
+	}
+
+	
+	/**
+	 * Add the current market to the supplied group.
+	 * @param doc
+	 * @param groups
+	 * @param groupName
+	 */
+	protected void addMarket(SolrDocument doc,
+			Map<String, List<SolrDocument>> groups, String groupName) {
+		if (!groups.containsKey(groupName)) {
+			groups.put(groupName, new ArrayList<SolrDocument>());
+		}
+		
+		groups.get(groupName).add(doc);
 	}
 
 }
