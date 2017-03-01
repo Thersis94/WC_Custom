@@ -38,7 +38,9 @@ public class UserPermissionsReportVO extends AbstractSBReportVO {
 	 * 
 	 */
 	private static final long serialVersionUID = 1335600957611516160L;
-	
+	private static final int MAX_DEPTH_LEVEL = 4;
+	private static final String COLUMN_NAME_SPACER = " - ";
+
 	private List<AccountPermissionsVO> accounts;
 	private static final String REPORT_TITLE = "User Permissions Report";
 	private static final String ACCT_ID = "ACCT_ID";
@@ -113,11 +115,7 @@ public class UserPermissionsReportVO extends AbstractSBReportVO {
 				row.put(HAS_FD, checkFlag(a.getFdAuthFlg(),user.getFdAuthFlg()));
 				row.put(HAS_GA, checkFlag(a.getGaAuthFlg(),user.getGaAuthFlg()));
 				// loop hierarchy.
-				SmarttrakTree sTree = acct.getPermissions();
-				for (Node n : sTree.getPreorderList()) {
-					PermissionVO acctPerm = (PermissionVO)n.getUserObject();
-					row.put(n.getNodeId(), acctPerm.isSelected());
-				}
+				addPermissions(row, acct.getPermissions());
 				rows.add(row);
 			}
 		}
@@ -154,13 +152,59 @@ public class UserPermissionsReportVO extends AbstractSBReportVO {
 		headerMap.put(HAS_GA,"Has GA");
 		// loop the first account's SmarttrakTree to get the hierarchy
 		if (! accounts.isEmpty()) {
-			SmarttrakTree tree = accounts.get(0).getPermissions();
-			for (Node n : tree.getPreorderList()) {
-				headerMap.put(n.getNodeId(), n.getNodeName());
+			addSectionColumnHeaders(headerMap,accounts.get(0).getPermissions());
+		}
+		return headerMap;
+	}
+	
+	/**
+	 * Formats the section column headers in the main header.  Section column header
+	 * names are "Level2 Name - Level3 Name - Level4 Name".
+	 * @param headerMap
+	 * @param sTree
+	 */
+	protected void addSectionColumnHeaders(Map<String,String> headerMap, SmarttrakTree sTree) {
+		String colStub2 = "";
+		String colStub3 = "";
+		for (Node n : sTree.getPreorderList()) {
+			if (n.getDepthLevel() > MAX_DEPTH_LEVEL) continue;
+			switch(n.getDepthLevel()) {
+				case 2:
+					colStub2 = n.getNodeName();
+					break;
+				case 3:
+					colStub3 = colStub2 + COLUMN_NAME_SPACER + n.getNodeName();
+					break;
+				case 4:
+					headerMap.put(n.getNodeId(), colStub3 + COLUMN_NAME_SPACER + n.getNodeName());
+					break;
 			}
 		}
-
-		return headerMap;
-	} 
+	}
+	
+	/**
+	 * Adds section permission values to each section column.
+	 * @param row
+	 * @param sTree
+	 */
+	protected void addPermissions(Map<String,Object>row, SmarttrakTree sTree) {
+		boolean col2selected = false;
+		boolean col3selected = false;
+		for (Node n : sTree.getPreorderList()) {
+			if (n.getDepthLevel() > MAX_DEPTH_LEVEL) continue;
+			PermissionVO perm = (PermissionVO)n.getUserObject();
+			switch(n.getDepthLevel()) {
+				case 2:
+					col2selected = perm.isSelected();
+					break;
+				case 3:
+					col3selected = perm.isSelected();
+					break;
+				case 4:
+					row.put(n.getNodeId(), perm.isSelected() || col2selected || col3selected);
+					break;
+			}
+		}
+	}
 	
 }
