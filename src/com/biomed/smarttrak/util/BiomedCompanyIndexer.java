@@ -5,23 +5,21 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
-
-import opennlp.tools.util.StringUtil;
 
 import org.apache.solr.client.solrj.SolrClient;
 
+import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.data.Node;
-import com.siliconmtn.data.Tree;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SMTAbstractIndex;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.security.SecurityController;
+import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
+import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO.Permission;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
-import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 
 /****************************************************************************
  * <b>Title</b>: BiomedCompanyIndexer.java <p/>
@@ -51,10 +49,10 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 	@Override
 	public void addIndexItems(SolrClient server) {
 		SolrActionUtil solrUtil = new SolrActionUtil(server);
-		List<SolrDocumentVO> companies = retreiveCompanies(null);
+		List<SecureSolrDocumentVO> companies = retreiveCompanies(null);
 		
 		// Loop over each form transaction and turn it into a SolrStoryVO for processing
-		for (SolrDocumentVO vo : companies) {
+		for (SecureSolrDocumentVO vo : companies) {
 			try {
 				solrUtil.addDocument(vo);
 			} catch (Exception e) {
@@ -69,17 +67,17 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 	 * @param id
 	 * @return
 	 */
-	private List<SolrDocumentVO> retreiveCompanies(String id) {
-		List<SolrDocumentVO> companies = new ArrayList<>();
-		Map<String, String> hierarchies = createHierarchies();
+	private List<SecureSolrDocumentVO> retreiveCompanies(String id) {
+		List<SecureSolrDocumentVO> companies = new ArrayList<>();
 		String sql = buildRetrieveSql(id);
+		SmarttrakTree hierarchies = createHierarchies();
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			if (id != null) ps.setString(1, id);
 			
 			ResultSet rs = ps.executeQuery();
 			String currentCompany = "";
-			SolrDocumentVO company = null;
+			SecureSolrDocumentVO company = null;
 			while (rs.next()) {
 				if (!currentCompany.equals(rs.getString("COMPANY_ID"))) {
 					if (company != null) companies.add(company);
@@ -87,7 +85,7 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 					currentCompany = rs.getString("COMPANY_ID");
 				}
 				if (!StringUtil.isEmpty(rs.getString("SECTION_ID")) && company != null) {
-					company.addSection(hierarchies.get(rs.getString("SECTION_ID")));
+					addSection(company, hierarchies.findNode(rs.getString("SECTION_ID")));
 				}
 				
 			}
@@ -98,16 +96,30 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 		
 		return companies;
 	}
-	
-	
+
+	/**
+	 * Add section id, name, and acl to document
+	 */
+	@SuppressWarnings("unchecked")
+	protected void addSection(SecureSolrDocumentVO company, Node n) throws SQLException {
+		SectionVO sec = (SectionVO)n.getUserObject();
+		company.addHierarchies(n.getFullPath());
+		company.addSection(sec.getSectionNm());
+		company.addACLGroup(Permission.GRANT, sec.getSolrTokenTxt());
+		if (!company.getAttributes().containsKey("sectionId")) {
+			company.addAttribute("sectionId", new ArrayList<String>());
+		}
+		((List<String>)company.getAttribute("sectionId")).add(sec.getSectionId());
+	}
+
 	/**
 	 * Build a solr document from the supplied resltset
 	 * @param rs
 	 * @return
 	 * @throws SQLException
 	 */
-	private SolrDocumentVO buildSolrDocument(ResultSet rs) throws SQLException {
-		SolrDocumentVO company = new SolrDocumentVO(INDEX_TYPE);
+	private SecureSolrDocumentVO buildSolrDocument(ResultSet rs) throws SQLException {
+		SecureSolrDocumentVO company = new SecureSolrDocumentVO(INDEX_TYPE);
 		company.setDocumentId(rs.getString("COMPANY_ID"));
 		company.setTitle(rs.getString("COMPANY_NM"));
 		company.setContentType(rs.getString("STATUS_NO"));
@@ -133,46 +145,45 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 	private String buildRetrieveSql(String id) {
 		StringBuilder sql = new StringBuilder(275);
 		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("SELECT c.*, cs.SECTION_ID, e.NAME_TXT FROM ").append(customDb).append("BIOMEDGPS_COMPANY c ");
+		sql.append("SELECT c.*, cs.SECTION_ID, s.SOLR_TOKEN_TXT, e.NAME_TXT FROM ").append(customDb).append("BIOMEDGPS_COMPANY c ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY_SECTION cs ");
 		sql.append("ON cs.COMPANY_ID = c.COMPANY_ID ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_STOCK_EXCHANGE e ");
 		sql.append("ON e.EXCHANGE_ID = c.EXCHANGE_ID ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_SECTION s ");
+		sql.append("ON cs.SECTION_ID = s.SECTION_ID ");
 		if (id != null) sql.append("WHERE c.COMPANY_ID = ? ");
 		return sql.toString();
 	}
 	
 	
 	/**
-	 * Create a full hierarchy list
+	 * Get a full hierarchy list
 	 * @return
 	 */
-	private Map<String, String> createHierarchies() {
-		Map<String, String> hierarchies = new HashMap<>();
+	private SmarttrakTree createHierarchies() {
 		StringBuilder sql = new StringBuilder(125);
 		sql.append("SELECT * FROM ").append(config.getProperty(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("BIOMEDGPS_SECTION ");
 		log.info(sql);
-		List<Node> companies = new ArrayList<>();
+		List<Node> markets = new ArrayList<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ResultSet rs = ps.executeQuery();
 			while(rs.next()) {
-				Node n = new Node(rs.getString("SECTION_ID"), rs.getString("PARENT_ID"));
-				n.setNodeName(rs.getString("SECTION_NM"));
-				companies.add(n);
+				SectionVO sec = new SectionVO(rs);
+				Node n = new Node(sec.getSectionId(), sec.getParentId());
+				n.setNodeName(sec.getSectionNm());
+				n.setUserObject(sec);
+				markets.add(n);
 			}
 		} catch (SQLException e) {
 			log.error(e);
 		}
 		
-		Tree t = new Tree(companies);
-		t.buildNodePaths("~");
+		SmarttrakTree t = new SmarttrakTree(markets);
+		t.buildNodePaths();
 		
-		for (Node n : t.preorderList()) {
-			hierarchies.put(n.getNodeId(), n.getFullPath());
-		}
-		
-		return hierarchies;
+		return t;
 	}
 
 	/* (non-Javadoc)
@@ -199,9 +210,9 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 	
 	@Override
 	public void addSingleItem(String id) {
-		List<SolrDocumentVO> company = retreiveCompanies(id);
+		List<SecureSolrDocumentVO> company = retreiveCompanies(id);
 		try (SolrActionUtil util = new SolrActionUtil(super.makeServer())) {
-			for (SolrDocumentVO vo : company) {
+			for (SecureSolrDocumentVO vo : company) {
 				util.addDocument(vo);
 			}
 		} catch (Exception e) {

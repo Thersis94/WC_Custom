@@ -1,7 +1,20 @@
 package com.biomed.smarttrak.security;
 
-
+// Log4j
 import org.apache.log4j.Logger;
+
+// SMTBaseLibs
+import com.biomed.smarttrak.action.AdminControllerAction;
+import com.siliconmtn.action.ActionException;
+import com.siliconmtn.action.ActionNotAuthorizedException;
+import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.solr.AccessControlQuery;
+
+// WC core
+import com.smt.sitebuilder.common.SiteBuilderUtil;
+import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
 
 /****************************************************************************
  * <b>Title</b>: SecurityController.java<p/>
@@ -17,7 +30,7 @@ import org.apache.log4j.Logger;
 public class SecurityController {
 
 	protected static final Logger log = Logger.getLogger(SecurityController.class);
-	
+
 	/**
 	 * how far down the hierarchy tree are permissions applied.  
 	 * Put in a constant in-case Smarttrak ever changes their hierarchy structure.
@@ -38,6 +51,15 @@ public class SecurityController {
 	 */
 	public static SecurityController getInstance(SmarttrakRoleVO role) {
 		return new SecurityController(role);
+	}
+
+	/**
+	 * overloaded static factory method. useful when the calling doesn't already have the RoleVO off of session yet.
+	 * @param req
+	 * @return
+	 */
+	public static SecurityController getInstance(ActionRequest req) {
+		return new SecurityController((SmarttrakRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA));
 	}
 
 	/**
@@ -62,5 +84,31 @@ public class SecurityController {
 	 */
 	public boolean isMktAuthorized() {
 		return role.isMktAuthorized();
+	}
+
+
+	/**
+	 * Called from within the SmartTRAK actions to ensure the data about to be presented to the user is 
+	 * something they have permissions to view.  Unfortunately we have to load the data before we can make 
+	 * this determination.
+	 * @param object (a Market, a Company, a Product, an Insight, an Update)
+	 * @throws ActionException
+	 */
+	public void isUserAuthorized(SecureSolrDocumentVO object, ActionRequest req) 
+			throws ActionNotAuthorizedException {
+		//use the same mechanisms solr is using to verify data access permissions.
+		String assetAcl = object.getACLPermissions();
+		String roleAcl = role.getAccessControlList();
+		log.debug("user ACL=" + roleAcl);
+
+		if (StringUtil.isEmpty(roleAcl) || !AccessControlQuery.isAllowed(assetAcl, null, roleAcl.split(" "))) {
+			log.debug("user is not authorized.  Setting up redirect, then throwing exception");
+			StringBuilder url = new StringBuilder(150);
+			url.append(AdminControllerAction.PUBLIC_401_PG).append("?ref=").append(req.getRequestURL());
+			new SiteBuilderUtil().manualRedirect(req, url.toString());
+			throw new ActionNotAuthorizedException("not authorized");
+		}
+
+		log.debug("user is authorized");
 	}
 }

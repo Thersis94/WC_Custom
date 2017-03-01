@@ -12,7 +12,7 @@ import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
-import com.smt.sitebuilder.util.solr.SolrDocumentVO;
+import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
 
 /****************************************************************************
  * <b>Title</b>: MarketVO.java <p/>
@@ -29,7 +29,7 @@ import com.smt.sitebuilder.util.solr.SolrDocumentVO;
  ****************************************************************************/
 
 @Table(name="BIOMEDGPS_MARKET")
-public class MarketVO extends SolrDocumentVO {
+public class MarketVO extends SecureSolrDocumentVO {
 	
 	public static final String SOLR_INDEX = "BIOMEDGPS_MARKET";
 	

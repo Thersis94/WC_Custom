@@ -61,6 +61,11 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	// Roles, as they apply to the site's section hierarchy, are administered by the SecurityController
 	public static final int DEFAULT_ROLE_LEVEL = SecurityController.PUBLIC_REGISTERED_LEVEL;
 
+	public static final int DOC_ID_MIN_LEN = 15;
+
+	public static final String PUBLIC_401_PG = "/subscribe";
+	
+
 	/*
 	 * 'sections' of the SmartTRAK website - used for Solr as well as Recently Viewed/Favorites
 	 */
@@ -70,6 +75,9 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		private String path;
 		Section(String path) { this.path = path; }
 		public String getURLToken() { return path; }
+		public String getPageURL() { //reverses the slash to the front of the urlToken, making it a relative URL to the given page
+			return "/" + getURLToken().substring(0, getURLToken().length());
+		}
 	}
 
 
@@ -191,9 +199,6 @@ public class AdminControllerAction extends SimpleActionAdapter {
 				break;
 			case "list":
 				action = new ListAction();
-				break;
-			case "activityLog":
-				action = new UserActivityAction();
 				break;
 			case "reports":
 				action = new ReportFacadeAction();
