@@ -10,10 +10,8 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.Map.Entry;
 
-import org.apache.solr.client.solrj.SolrQuery.ORDER;
 import org.apache.solr.common.SolrDocument;
 
-import com.biomed.smarttrak.util.BiomedProductIndexer;
 import com.biomed.smarttrak.vo.ProductAllianceVO;
 import com.biomed.smarttrak.vo.ProductAttributeVO;
 import com.biomed.smarttrak.vo.ProductVO;
@@ -29,15 +27,9 @@ import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
-import com.smt.sitebuilder.action.search.SolrActionIndexVO;
 import com.smt.sitebuilder.action.search.SolrActionVO;
-import com.smt.sitebuilder.action.search.SolrFieldVO;
-import com.smt.sitebuilder.action.search.SolrQueryProcessor;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
-import com.smt.sitebuilder.action.search.SolrFieldVO.BooleanType;
-import com.smt.sitebuilder.action.search.SolrFieldVO.FieldType;
 import com.smt.sitebuilder.common.ModuleVO;
-import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 
@@ -75,7 +67,7 @@ public class ProductAction extends SBActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		if (req.hasParameter("reqParam_1")) {
 			retrieveProduct(req.getParameter("reqParam_1"));
-		} else if (req.hasParameter("searchData") || req.hasParameter("selNodes")){
+		} else if (req.hasParameter("searchData") || req.hasParameter("fq")){
 			retrieveProducts(req);
 		}
 	}
@@ -349,38 +341,24 @@ public class ProductAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	protected void retrieveProducts(ActionRequest req) throws ActionException {
-		SolrActionVO qData = buildSolrAction(req);
-		SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, qData.getSolrCollectionPath());
-		qData.setNumberResponses(5000);
-		qData.setStartLocation(0);
-		qData.setOrganizationId(((SiteVO)req.getAttribute(Constants.SITE_DATA)).getOrganizationId());
-		qData.setRoleLevel(0);
-		qData.addSolrField(new SolrFieldVO(FieldType.BOOST, SearchDocumentHandler.TITLE, "", BooleanType.AND));
-		qData.addSolrField(new SolrFieldVO(FieldType.BOOST, "company_s", "", BooleanType.AND));
-		
-		if (req.hasParameter("searchData")) 
-			qData.setSearchData("*"+req.getParameter("searchData")+"*");
-		
-		StringBuilder selected = new StringBuilder(50);
-		if (req.hasParameter("selNodes")) {
-			selected.append("(");
-			for (String s : req.getParameterValues("selNodes")) {
-				if (selected.length() > 2) selected.append(" OR ");
-				selected.append("*").append(s);
-			}
-			selected.append(")");
-			qData.addSolrField(new SolrFieldVO(FieldType.FILTER, SearchDocumentHandler.SECTION, selected.toString(), BooleanType.AND));
-		}
 
-		qData.addIndexType(new SolrActionIndexVO("", BiomedProductIndexer.INDEX_TYPE));
+		// Pass along the proper information for a search to be done.
+	    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+	    	actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
+	    	req.setParameter("pmid", mod.getPageModuleId());
 		
-		qData.setFieldSort(SearchDocumentHandler.TITLE_LCASE);
-		qData.setSortDirection(ORDER.asc);
-		SolrResponseVO vo = sqp.processQuery(qData);
+	    	// Build the solr action
+		SolrAction sa = new SolrAction(actionInit);
+		sa.setDBConnection(dbConn);
+		sa.setAttributes(attributes);
+		sa.retrieve(req);
+
+		// Creatae the update messages for the responses
+	    	mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+		SolrResponseVO vo = (SolrResponseVO) mod.getActionData();
 		for (SolrDocument doc : vo.getResultDocuments()) {
 			doc.setField("updateMsg", buildUpdateMsg(doc));
 		}
-		
 		super.putModuleData(vo);
 	}
 	
