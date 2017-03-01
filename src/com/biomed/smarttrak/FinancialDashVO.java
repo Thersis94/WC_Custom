@@ -97,12 +97,12 @@ public class FinancialDashVO extends SBModuleVO {
 	 */
 	public void setData(ResultSet rs) {
 		FinancialDashDataRowVO row;
-		Tree tree = new Tree(this.getHierarchy(), this.getHierarchy().get(0));
+		Tree tree = new Tree(hierarchy, hierarchy.get(0));
 		
 		try {
 			while (rs.next()) {
 				row = new FinancialDashDataRowVO(rs);
-				row.setAncestry(tree);
+				row.setParentId(tree);
 
 				if (!row.isInactive()) {
 					addRow(row);
@@ -186,13 +186,6 @@ public class FinancialDashVO extends SBModuleVO {
 	 */
 	public String getCompanyId() {
 		return companyId;
-	}
-
-	/**
-	 * @return the hierarchy
-	 */
-	public List<Node> getHierarchy() {
-		return hierarchy;
 	}
 
 	/**

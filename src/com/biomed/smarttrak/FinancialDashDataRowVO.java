@@ -32,7 +32,6 @@ public class FinancialDashDataRowVO implements Serializable {
 	private String name;
 	private String primaryKey;
 	private String parentId;
-	private String grandparentId;
 	private String companyId;
 	private String regionCd;
 	private boolean inactiveFlg;
@@ -116,13 +115,6 @@ public class FinancialDashDataRowVO implements Serializable {
 	 */
 	public String getParentId() {
 		return parentId;
-	}
-
-	/**
-	 * @return the grandparentId
-	 */
-	public String getGrandparentId() {
-		return grandparentId;
 	}
 
 	/**
@@ -342,32 +334,18 @@ public class FinancialDashDataRowVO implements Serializable {
 	}
 
 	/**
-	 * @param grandparentId the grandparentId to set
-	 */
-	public void setGrandparentId(String grandparentId) {
-		this.grandparentId = grandparentId;
-	}
-	
-	/**
-	 * Sets the parent/grandparent in the hierarchy applicable to this particular data row
+	 * Sets the parent in the hierarchy applicable to this particular data row
 	 * 
 	 * @param tree
 	 */
-	public void setAncestry(Tree tree) {
+	public void setParentId(Tree tree) {
 		String pId = null;
-		String gpId = null;
 		
 		Node childNode = tree.findNode(this.getPrimaryKey());
 		if (childNode != null) {
 			pId = childNode.getParentId();
-			
-			Node parentNode = tree.findNode(pId);
-			if (parentNode != null) {
-				gpId = parentNode.getParentId();
-			}
 		}
 		
 		this.setParentId(pId);
-		this.setGrandparentId(gpId);
 	}
 }
