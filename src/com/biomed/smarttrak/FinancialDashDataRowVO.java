@@ -9,8 +9,6 @@ import java.util.Map;
 
 import org.apache.log4j.Logger;
 
-import com.siliconmtn.data.Node;
-import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -31,7 +29,6 @@ public class FinancialDashDataRowVO implements Serializable {
 	private static final long serialVersionUID = -1858035677710604733L;
 	private String name;
 	private String primaryKey;
-	private String parentId;
 	private String companyId;
 	private String regionCd;
 	private boolean inactiveFlg;
@@ -108,13 +105,6 @@ public class FinancialDashDataRowVO implements Serializable {
 	 */
 	public boolean isInactive() {
 		return inactiveFlg;
-	}
-
-	/**
-	 * @return the parentId
-	 */
-	public String getParentId() {
-		return parentId;
 	}
 
 	/**
@@ -324,28 +314,5 @@ public class FinancialDashDataRowVO implements Serializable {
 		}
 		
 		totals.put(key, totals.get(key) + dollarValue);
-	}
-
-	/**
-	 * @param parentId the parentId to set
-	 */
-	public void setParentId(String parentId) {
-		this.parentId = parentId;
-	}
-
-	/**
-	 * Sets the parent in the hierarchy applicable to this particular data row
-	 * 
-	 * @param tree
-	 */
-	public void setParentId(Tree tree) {
-		String pId = null;
-		
-		Node childNode = tree.findNode(this.getPrimaryKey());
-		if (childNode != null) {
-			pId = childNode.getParentId();
-		}
-		
-		this.setParentId(pId);
 	}
 }
