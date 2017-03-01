@@ -11,19 +11,16 @@ import java.util.Map;
 
 import com.biomed.smarttrak.FinancialDashColumnSet.DisplayType;
 import com.biomed.smarttrak.FinancialDashVO.TableType;
-import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.vo.UserVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.data.Node;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -79,10 +76,6 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		// Financial data is only needed on a json call or report request.
 		// Default data/options are required for initial page load.
 		if (req.hasParameter("isJson") || req.hasParameter("isReport")) {
-			// Get the hierarchy at the requested level
-			List<Node> sections = this.getHierarchy(req);
-			dash.setHierarchy(sections);
-			
 			// Get the data for the table/chart/report
 			getFinancialData(dash);
 		}
@@ -139,24 +132,6 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		rpt.setData(dash);
 		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, true);
 		req.setAttribute(Constants.BINARY_DOCUMENT, rpt);
-	}
-	
-	/**
-	 * Gets the hierarchy for the requested level
-	 * 
-	 * @param req
-	 * @return
-	 * @throws ActionException
-	 */
-	@SuppressWarnings("unchecked")
-	protected List<Node> getHierarchy(ActionRequest req) throws ActionException {
-		SectionHierarchyAction cha = new SectionHierarchyAction(this.actionInit);
-		cha.setAttributes(this.attributes);
-		cha.setDBConnection(dbConn);
-		cha.retrieve(req);
-		
-		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
-		return (List<Node>) mod.getActionData();
 	}
 	
 	/**
@@ -229,10 +204,10 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 			sql.append("select ").append(dash.getLeafMode() ? "r.REVENUE_ID " : "r.COMPANY_ID ").append("as ROW_ID, c.COMPANY_NM as ROW_NM, r.COMPANY_ID, r.REGION_CD, ");
 		} else { // TableType.MARKET
 			
-			// When viewing market data for a specific company, we always list/summarize 3 levels lower in the heirarchy
+			// When viewing market data for a specific company, we always list/summarize 4 levels down in the heirarchy
 			int offset = 0;
 			if (!"".equals(dash.getCompanyId())) {
-				offset = 3;
+				offset = 4;
 			}
 			
 			// Group by the appropriate parent in the heirarchy
