@@ -5,6 +5,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.InsightVO;
 import com.biomed.smarttrak.vo.InsightVO.InsightStatusCd;
 import com.biomed.smarttrak.vo.InsightXRVO;
@@ -14,13 +15,15 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.security.EncryptionException;
+import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
 import com.siliconmtn.util.user.NameComparator;
-import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
 
 /****************************************************************************
@@ -34,7 +37,7 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
  * @version 1.0
  * @since Feb 14, 2017
  ****************************************************************************/
-public class InsightAction extends SBActionAdapter {
+public class InsightAction extends AbstractTreeAction {
 	protected static final String INSIGHT_ID = "insightsId"; //req param
 	public static final String ROOT_NODE_ID = "MASTER_ROOT";
 
@@ -85,7 +88,23 @@ public class InsightAction extends SBActionAdapter {
 
 		DBProcessor db = new DBProcessor(dbConn, schema);
 		List<Object>  insights = db.executeSelect(sql, params, new InsightVO());
-		log.debug("loaded " + insights.size());
+		
+		try {
+			StringEncrypter sc = new StringEncrypter((String)attributes.get(Constants.ENCRYPT_KEY));
+			
+			for (Object ob : insights){
+				InsightVO vo = (InsightVO)ob;
+				vo.setFirstName(sc.decrypt(vo.getFirstName()));
+				vo.setLastName(sc.decrypt(vo.getLastName()));
+			}
+		} catch (EncryptionException e) {
+			log.error("could not un encrypt name ");
+		}
+		
+		
+		
+		
+		
 		return insights;
 	}
 
@@ -95,7 +114,7 @@ public class InsightAction extends SBActionAdapter {
 	 */
 	public static String formatRetrieveQuery(String insightId, String statusCd, String typeCd, String dateRange, String schema) {
 		StringBuilder sql = new StringBuilder(400);
-		sql.append("select a.*, p.first_nm, p.last_nm, b.section_id ");
+		sql.append("select a.*, p.first_nm, p.last_nm, p.profile_img, b.section_id ");
 		sql.append("from ").append(schema).append("biomedgps_insight a ");
 		sql.append("inner join profile p on a.creator_profile_id=p.profile_id ");
 		sql.append("left outer join ").append(schema).append("biomedgps_insight_section b ");
@@ -126,6 +145,8 @@ public class InsightAction extends SBActionAdapter {
 		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)data, (String)getAttribute(Constants.ENCRYPT_KEY));
 	}
 
+
+	
 	/**
 	 * loads a list of profileId|Names for the BiomedGPS Staff role level - these are their Account Managers
 	 * @param req
@@ -293,5 +314,27 @@ public class InsightAction extends SBActionAdapter {
 		} catch (SQLException e) {
 			throw new ActionException(e);
 		}
+	}
+	
+	/**
+	 * Load the Section Tree so that Hierarchies can be generated.
+	 * @param req
+	 * @throws ActionException
+	 */
+	public SmarttrakTree loadSections() {
+		//load the section hierarchy Tree from superclass
+		SmarttrakTree t = loadDefaultTree();
+
+		//Generate the Node Paths using Node Names.
+		t.buildNodePaths(t.getRootNode(), SearchDocumentHandler.HIERARCHY_DELIMITER, true);
+		return t;
+	}
+
+	/* (non-Javadoc)
+	 * @see com.biomed.smarttrak.admin.AbstractTreeAction#getCacheKey()
+	 */
+	@Override
+	public String getCacheKey() {
+		return null;
 	}
 }
