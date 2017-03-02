@@ -67,7 +67,7 @@ public class CompanyAction extends SBActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		if (req.hasParameter("reqParam_1")) {
 			retrieveCompany(req.getParameter("reqParam_1"));
-		} else if (req.hasParameter("searchData") || req.hasParameter("fq")){
+		} else if (req.hasParameter("searchData") || req.hasParameter("fq") || req.hasParameter("hierarchyList")){
 			retrieveCompanies(req);
 		}
 	}
