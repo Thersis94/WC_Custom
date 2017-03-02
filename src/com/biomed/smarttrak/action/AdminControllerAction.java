@@ -1,15 +1,19 @@
 package com.biomed.smarttrak.action;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.commons.lang.StringEscapeUtils;
 
 // WC custom
 import com.biomed.smarttrak.FinancialDashAction;
 import com.biomed.smarttrak.FinancialDashScenarioAction;
-import com.biomed.smarttrak.admin.FinancialDashHierarchyAction;
 import com.biomed.smarttrak.admin.AccountAction;
 import com.biomed.smarttrak.admin.AccountPermissionAction;
 import com.biomed.smarttrak.admin.AccountUserAction;
 import com.biomed.smarttrak.admin.CompanyManagementAction;
+import com.biomed.smarttrak.admin.FinancialDashHierarchyAction;
 import com.biomed.smarttrak.admin.GapAnalysisAdminAction;
 import com.biomed.smarttrak.admin.InsightAction;
 import com.biomed.smarttrak.admin.ListAction;
@@ -35,6 +39,7 @@ import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SecurityController;
+
 //WC Email Campaigns
 import com.smt.sitebuilder.action.emailcampaign.CampaignInstanceAction;
 import com.smt.sitebuilder.action.emailcampaign.InstanceReport;
@@ -82,6 +87,36 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		}
 	}
 
+	public static final Map<String, Class<?>> ACTIONS;
+
+	//Instantiate the ACTIONS Map with actionType -> Class
+	static {
+		Map<String, Class<?>> actions = new HashMap<>();
+		actions.put("hierarchy", SectionHierarchyAction.class);
+		actions.put("agap", GapAnalysisAdminAction.class);
+		actions.put("fd", FinancialDashAction.class);
+		actions.put("fdScenario", FinancialDashScenarioAction.class);
+		actions.put("fdHierarchy", FinancialDashHierarchyAction.class);
+		actions.put("productAdmin", ProductManagementAction.class);
+		actions.put("companyAdmin", CompanyManagementAction.class);
+		actions.put("accounts", AccountAction.class);
+		actions.put("account-permissions", AccountPermissionAction.class);
+		actions.put("users", AccountUserAction.class);
+		actions.put("insights", InsightAction.class);
+		actions.put("teams", TeamAction.class);
+		actions.put("team-members", TeamMemberAction.class);
+		actions.put("marketAdmin", MarketManagementAction.class);
+		actions.put("updates", UpdatesAction.class);
+		actions.put("list", ListAction.class);
+		actions.put("reports", ReportFacadeAction.class);
+		actions.put("support", SupportFacadeAction.class);
+		actions.put("synonyms", SolrSynonymAction.class);
+		actions.put("marketingCampaigns", CampaignInstanceAction.class);
+		actions.put("marketingInstanceReport", InstanceReport.class);
+		actions.put("uwr", UpdatesWeeklyReportAction.class);
+
+		ACTIONS = Collections.unmodifiableMap(actions);
+	}
 
 	public AdminControllerAction() {
 		super();
@@ -153,81 +188,31 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	//TODO Refactor this switch to use a collection(map) to store the action type
-	//with it's class name as value to dynamically load each action.
 	private ActionInterface loadAction(String actionType) throws ActionException {
-		ActionInterface action;
-		switch (StringUtil.checkVal(actionType)) {
-			case "hierarchy":
-				action = new SectionHierarchyAction();
-				break;
-			case "agap":
-				action = new GapAnalysisAdminAction();
-				break;
-			case "fd":
-				action = new FinancialDashAction();
-				break;
-			case "fdScenario":
-				action = new FinancialDashScenarioAction();
-				break;
-			case "fdHierarchy":
-				action = new FinancialDashHierarchyAction();
-				break;
-			case "productAdmin":
-				action = new ProductManagementAction();
-				break;
-			case "companyAdmin":
-				action = new CompanyManagementAction();
-				break;
-			case "accounts":
-				action = new AccountAction();
-				break;
-			case "account-permissions":
-				action = new AccountPermissionAction();
-				break;
-			case "users":
-				action = new AccountUserAction();
-				break;
-			case "insights":
-				action = new InsightAction();
-				break;
-			case "teams":
-				action = new TeamAction();
-				break;
-			case "team-members":
-				action = new TeamMemberAction();
-				break;
-			case "marketAdmin":
-				action = new MarketManagementAction();
-				break;
-			case "updates":
-				action = new UpdatesAction();
-				break;
-			case "list":
-				action = new ListAction();
-				break;
-			case "reports":
-				action = new ReportFacadeAction();
-				break;
-			case "support":
-				action = new SupportFacadeAction();
-				break;
-			case "synonyms":
-				action = new SolrSynonymAction();
-				break;
-			case "marketingCampaigns":
-				action = new CampaignInstanceAction();
-				break;
-			case "marketingInstanceReport":
-				action = new InstanceReport();
-				break;								
-			default:
+
+		//Check if ACTIONS contains a key for our actionType.
+		if(ACTIONS.containsKey(actionType)) {
+
+			//Get the Class
+			Class<?> c = ACTIONS.get(actionType);
+			try {
+
+				/*
+				 * Instantiate an ActionInterface using the given Class and
+				 * set DBConnection and Attributes.
+				 */
+				ActionInterface action = (ActionInterface) c.newInstance();
+				action.setDBConnection(dbConn);
+				action.setAttributes(getAttributes());
+
+				//Return action we made.
+				return action;
+			} catch (InstantiationException | IllegalAccessException e) {
+				throw new ActionException("Problem Instantiating type: " + actionType);
+			}
+		} else {
 				throw new ActionException("unknown action type:" + actionType);
 		}
-
-		action.setDBConnection(dbConn);
-		action.setAttributes(getAttributes());
-		return action;
 	}
 
 
