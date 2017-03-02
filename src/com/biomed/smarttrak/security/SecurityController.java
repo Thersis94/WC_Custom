@@ -101,7 +101,7 @@ public class SecurityController {
 		String roleAcl = role.getAccessControlList();
 		log.debug("user ACL=" + roleAcl);
 
-		if (StringUtil.isEmpty(roleAcl) || !AccessControlQuery.isAllowed(assetAcl, null, roleAcl.split(" "))) {
+		if (StringUtil.isEmpty(roleAcl) || !AccessControlQuery.isAllowed(assetAcl, null, roleAcl.split(","))) {
 			log.debug("user is not authorized.  Setting up redirect, then throwing exception");
 			StringBuilder url = new StringBuilder(150);
 			url.append(AdminControllerAction.PUBLIC_401_PG).append("?ref=").append(req.getRequestURL());
