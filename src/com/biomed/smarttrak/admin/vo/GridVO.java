@@ -18,7 +18,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-
+import com.google.gson.annotations.Expose;
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
@@ -121,7 +121,10 @@ public class GridVO extends BeanDataVO {
 	private int maxCols;
 	
 	// Data containers
+	@Expose(serialize = false, deserialize = false)
 	private String[] series;
+	
+	@Expose(serialize = false, deserialize = false)
 	private List<GridDetailVO> details;
 	
 	/**
@@ -756,6 +759,13 @@ public class GridVO extends BeanDataVO {
 		
 		return columns;
 		
+	}
+
+	/**
+	 * @return the series
+	 */
+	public String[] getSeries() {
+		return series;
 	}
 
 }
