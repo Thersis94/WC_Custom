@@ -239,17 +239,15 @@ public class UserListReportAction extends SimpleActionAdapter {
 				// same account, check for user change
 				if (! currPid.equals(prevPid)) {
 					// user changed, capture 'previous' user
-					if (prevPid != null) {
-						account.addUser(user);
-					}
+					account.addUser(user);
 
 					// now create new user
 					user = createBaseUser(se,rs);
-					
+
 				} else {
 					// same user, check to see if phone type changed.
 					checkUserPhoneType(se,user,rs.getString("phone_number_txt"),prevPhoneCd,currPhoneCd);
-					
+
 				}	
 
 				// add registration record

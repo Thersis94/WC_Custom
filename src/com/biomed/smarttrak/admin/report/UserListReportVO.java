@@ -80,9 +80,9 @@ public class UserListReportVO extends AbstractSBReportVO {
 
 	// other fields
 	private static final String LAST_LOGIN = "LAST_LOGIN";
-	// TODO: add private static final String OS = "OS";
-	// TODO: add private static final String BROWSER = "BROWSER";
-	// TODO: add private static final String HITS = "HITS";
+	protected static final String OS = "OS";
+	protected static final String BROWSER = "BROWSER";
+	protected static final String HITS = "HITS";
 
 	private static final String EMPTY_STRING = "";
 	private static final String LIST_DELIMITER = ",";
@@ -153,7 +153,7 @@ public class UserListReportVO extends AbstractSBReportVO {
 				row.put(LAST_NM,user.getLastName());
 				row.put(EMAIL,user.getEmailAddress());
 				row.put(LAST_LOGIN, formatDate(user.getLoginDate(),true));
-				// TODO: row.put(HITS,user.getHits());
+				/* row.put(HITS,user.getHits()); */
 				row.put(MAIN_PHONE,formatPhoneNumber(pnf,user.getMainPhone(),user.getCountryCode()));
 				row.put(MOBILE_PHONE,formatPhoneNumber(pnf,user.getMobilePhone(),user.getCountryCode()));
 				row.put(ADDRESS1,user.getAddress());
@@ -168,8 +168,8 @@ public class UserListReportVO extends AbstractSBReportVO {
 				row.put(FAV_UPDATES, StringUtil.capitalize(user.getFavoriteUpdates()));
 				row.put(DATE_JOINED, formatDate(user.getCreateDate()));
 				row.put(DIVISION, formatUserDivisions(user.getDivisions()));
-				// TODO: row.put(OS, user.getOs());
-				// TODO: row.put(BROWSER, user.getBrowser());
+				/* row.put(OS, user.getOs()); */
+				/* row.put(BROWSER, user.getBrowser()); */
 				row.put(HAS_FD, formatUserFDFlag(user.getFdAuthFlg()));
 				row.put(NOTES, user.getNotes());
 				row.put(COMPANY_URL, user.getCompanyUrl());
@@ -266,7 +266,7 @@ public class UserListReportVO extends AbstractSBReportVO {
 		headerMap.put(LAST_NM,"Last");
 		headerMap.put(EMAIL,"Email Address");
 		headerMap.put(LAST_LOGIN,"Last Login");
-		//headerMap.put(HITS,"Hits");
+		/* headerMap.put(HITS,"Hits"); */
 		headerMap.put(MAIN_PHONE,"Phone");
 		headerMap.put(MOBILE_PHONE,"Mobile Phone");
 		headerMap.put(ADDRESS1,"Address 1");
@@ -281,8 +281,8 @@ public class UserListReportVO extends AbstractSBReportVO {
 		headerMap.put(FAV_UPDATES,"Favorite Notifications");
 		headerMap.put(DATE_JOINED,"Date Joined");
 		headerMap.put(DIVISION,"Division");
-		//headerMap.put(OS,"OS");
-		//headerMap.put(BROWSER,"Browser");
+		/* headerMap.put(OS,"OS"); */
+		/* headerMap.put(BROWSER,"Browser"); */
 		headerMap.put(HAS_FD, USER_FD_VAL);
 		headerMap.put(NOTES,"Notes");
 		headerMap.put(COMPANY_URL,"Company URL");
