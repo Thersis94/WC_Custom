@@ -220,7 +220,10 @@ public class AdminControllerAction extends SimpleActionAdapter {
 				break;
 			case "marketingInstanceReport":
 				action = new InstanceReport();
-				break;								
+				break;
+			case "uwr":
+				action = new UpdatesWeeklyReportAction();
+				break;
 			default:
 				throw new ActionException("unknown action type:" + actionType);
 		}
