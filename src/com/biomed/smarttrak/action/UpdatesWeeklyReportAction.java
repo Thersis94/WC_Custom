@@ -68,10 +68,6 @@ public class UpdatesWeeklyReportAction extends SBActionAdapter {
 		this.putModuleData(msg.toString());
 	}
 
-	public void update(ActionRequest req) throws ActionException {
-		super.update(req);
-	}
-
 	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
