@@ -7,10 +7,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.lang.StringEscapeUtils;
-import org.apache.solr.client.solrj.SolrQuery.ORDER;
 
 import com.biomed.smarttrak.admin.SectionHierarchyAction;
-import com.biomed.smarttrak.util.BiomedProductIndexer;
 import com.biomed.smarttrak.vo.ProductExplorerReportVO;
 import com.biomed.smarttrak.vo.UserVO;
 import com.siliconmtn.action.ActionException;
@@ -28,7 +26,6 @@ import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
-import com.smt.sitebuilder.action.search.SolrActionIndexVO;
 import com.smt.sitebuilder.action.search.SolrActionVO;
 import com.smt.sitebuilder.action.search.SolrFieldVO;
 import com.smt.sitebuilder.action.search.SolrQueryProcessor;
@@ -69,7 +66,7 @@ public class ProductExplorer extends SBActionAdapter {
 	private enum SearchField {
 		PRODUCT(true, SearchDocumentHandler.TITLE, "Product Name"),
 		COMPANY(true, "company_s", "Company Name"),
-		SEGMENT(false, "sectionname_ss", "Segment"),
+		SEGMENT(false, SearchDocumentHandler.SECTION, "Segment"),
 		MARKET(false, "target_market_ss", "Target Market"),
 		INDICATION(false, "indication_ss", "Indication"),
 		TECH(false, "technology_ss", "Technology"),
@@ -77,9 +74,9 @@ public class ProductExplorer extends SBActionAdapter {
 		CLASSIFICATION(false, "classification_ss", "Classification"),
 		INTREG(false, "intregionnm_ss", "International Region"),
 		INTPATH(false, "intpathnm_ss", "International Path"),
-		INTSTAT(false, "intstatusnm_ss", "International Status"),
+		INTSTATUS(false, "intstatusnm_ss", "International Status"),
 		USPATH(false, "uspathnm_ss", "US Path"),
-		USSTAT(false, "usstatus_ss", "US Status"),
+		USSTATUS(false, "usstatusnm_ss", "US Status"),
 		ALLY(true, "ally_ss", "Ally"),
 		ID(false, SearchDocumentHandler.DOCUMENT_ID, "Product Id");
 
@@ -254,20 +251,12 @@ public class ProductExplorer extends SBActionAdapter {
 	protected SolrResponseVO retrieveProducts(ActionRequest req) throws ActionException {
 		SolrActionVO qData = buildSolrAction(req);
 		SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, qData.getSolrCollectionPath());
-		qData.setNumberResponses(100);
-		qData.setStartLocation(Convert.formatInteger(req.getParameter("page"))*100);
-		qData.setOrganizationId(((SiteVO)req.getAttribute(Constants.SITE_DATA)).getOrganizationId());
-		qData.setRoleLevel(0);
 
 		buildSearchParams(req, qData);
 		if (req.hasParameter("selNodes")) buildNodeParams(req, qData);
 
-		qData.addIndexType(new SolrActionIndexVO("", BiomedProductIndexer.INDEX_TYPE));
-
 		addFacetFields(req, qData);
-
-		qData.setFieldSort(SearchDocumentHandler.TITLE_LCASE);
-		qData.setSortDirection(ORDER.asc);
+		
 		SolrResponseVO vo = sqp.processQuery(qData);
 
 		buildFilterList(req, vo);
@@ -290,13 +279,14 @@ public class ProductExplorer extends SBActionAdapter {
 
 			//Text compare only uses five
 			if (!Convert.formatBoolean(req.getParameter("textCompare"))) {
-				qData.addSolrField(new SolrFieldVO(FieldType.FACET, "sectionname_ss", null, null));
+				qData.addSolrField(new SolrFieldVO(FieldType.FACET, SearchDocumentHandler.SECTION, null, null));
 				qData.addSolrField(new SolrFieldVO(FieldType.FACET, "intregionnm_ss", null, null));
 				qData.addSolrField(new SolrFieldVO(FieldType.FACET, "intstatusnm_ss", null, null));
 				qData.addSolrField(new SolrFieldVO(FieldType.FACET, "intpathnm_ss", null, null));
 				qData.addSolrField(new SolrFieldVO(FieldType.FACET, "usstatusnm_ss", null, null));
 				qData.addSolrField(new SolrFieldVO(FieldType.FACET, "uspathnm_ss", null, null));
 				qData.addSolrField(new SolrFieldVO(FieldType.FACET, "company_s", null, null));
+				qData.addSolrField(new SolrFieldVO(FieldType.FACET, SearchDocumentHandler.HIERARCHY, null, null));
 			}
 		}
 		qData.addSolrField(new SolrFieldVO(FieldType.FACET, "classification_ss", null, null));
@@ -315,10 +305,10 @@ public class ProductExplorer extends SBActionAdapter {
 		selected.append("(");
 		for (String s : req.getParameterValues("selNodes")) {
 			if (selected.length() > 2) selected.append(" OR ");
-			selected.append("*").append(s);
+			selected.append(s.replace("~", "\\~")).append("*");
 		}
 		selected.append(")");
-		qData.addSolrField(new SolrFieldVO(FieldType.FILTER, SearchDocumentHandler.SECTION, selected.toString(), BooleanType.AND));
+		qData.addSolrField(new SolrFieldVO(FieldType.FILTER, SearchDocumentHandler.HIERARCHY, selected.toString(), BooleanType.AND));
 	}
 
 
@@ -392,13 +382,13 @@ public class ProductExplorer extends SBActionAdapter {
 	 */
 	protected String buildExactValue(String[] parameterValues) {
 
-		if (parameterValues.length == 1) return "\"" + parameterValues[0] + "\"";
+		if (parameterValues.length == 1) return "\"" + StringEscapeUtils.unescapeHtml(parameterValues[0]).replace("(", "\\(").replace(")", "\\)") + "\"";
 
 		StringBuilder value = new StringBuilder(50);
 		value.append("(");
 		for (String s : parameterValues) {
 			if (value.length() > 2) value.append(" or ");
-			value.append("\"").append(StringEscapeUtils.unescapeHtml(s)).append("\"");
+			value.append("\"").append(StringEscapeUtils.unescapeHtml(s).replace("(", "\\(").replace("(", "\\)")).append("\"");
 		}
 		value.append(")");
 

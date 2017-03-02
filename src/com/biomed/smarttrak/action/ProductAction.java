@@ -10,10 +10,8 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.Map.Entry;
 
-import org.apache.solr.client.solrj.SolrQuery.ORDER;
 import org.apache.solr.common.SolrDocument;
 
-import com.biomed.smarttrak.util.BiomedProductIndexer;
 import com.biomed.smarttrak.vo.ProductAllianceVO;
 import com.biomed.smarttrak.vo.ProductAttributeVO;
 import com.biomed.smarttrak.vo.ProductVO;
@@ -26,17 +24,12 @@ import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
-import com.smt.sitebuilder.action.search.SolrActionIndexVO;
 import com.smt.sitebuilder.action.search.SolrActionVO;
-import com.smt.sitebuilder.action.search.SolrFieldVO;
-import com.smt.sitebuilder.action.search.SolrQueryProcessor;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
-import com.smt.sitebuilder.action.search.SolrFieldVO.BooleanType;
-import com.smt.sitebuilder.action.search.SolrFieldVO.FieldType;
 import com.smt.sitebuilder.common.ModuleVO;
-import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 
@@ -74,7 +67,7 @@ public class ProductAction extends SBActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		if (req.hasParameter("reqParam_1")) {
 			retrieveProduct(req.getParameter("reqParam_1"));
-		} else if (req.hasParameter("searchData") || req.hasParameter("selNodes")){
+		} else if (req.hasParameter("searchData") || req.hasParameter("fq") || req.hasParameter("hierarchyList")){
 			retrieveProducts(req);
 		}
 	}
@@ -98,10 +91,47 @@ public class ProductAction extends SBActionAdapter {
 		addSections(product);
 		addAlliances(product);
 		addRegulatory(product);
+		// Related products are based on company, no id no related companies.
+		if (!StringUtil.isEmpty(product.getCompanyId()))
+			addRelatedProducts(product);
 		
 		super.putModuleData(product);
 	}
 
+	/**
+	 * Add all products from the owning company to the vo
+	 */
+	protected void addRelatedProducts(ProductVO product) throws ActionException {
+		StringBuilder sql = new StringBuilder(375);
+		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		sql.append("SELECT p.PRODUCT_ID, p.PRODUCT_NM, s.SECTION_NM FROM ");
+		sql.append(customDb).append("BIOMEDGPS_PRODUCT p ");
+		sql.append("INNER JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT_SECTION xr ");
+		sql.append("ON xr.PRODUCT_ID = p.PRODUCT_ID ");
+		sql.append("INNER JOIN ").append(customDb).append("BIOMEDGPS_SECTION s ");
+		sql.append("ON xr.SECTION_ID = s.SECTION_ID ");
+		sql.append("WHERE p.COMPANY_ID = ? ");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, product.getCompanyId());
+			
+			ResultSet rs = ps.executeQuery();
+
+			DBProcessor db = new DBProcessor(dbConn);
+			while(rs.next()) {
+				ProductVO p = new ProductVO();
+				db.executePopulate(p, rs);
+				product.addRelatedProduct(rs.getString("SECTION_NM"), p);
+			}
+			
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
+	}
+
+	/**
+	 * Add all regulations to the product
+	 */
 	protected void addRegulatory(ProductVO product) {
 		StringBuilder sql = new StringBuilder(475);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
@@ -209,14 +239,11 @@ public class ProductAction extends SBActionAdapter {
 			return;
 		}
 		Node head = attributeTree.findNode(path[1]);
-		log.debug("Group of " + path[1]);
 		if (n.getFullPath().contains(DETAILS_ID)) {
-			log.debug("Detail Attribute");
 			String[] name = head.getNodeName().split("\\|");
 			product.addDetail(name[name.length-1], attr);
 		} else {
 			if (!attrMap.keySet().contains(path[1])) {
-				log.debug("Added group" + path[1]);
 				attrMap.put(path[1], new ArrayList<ProductAttributeVO>());
 			}
 
@@ -314,38 +341,24 @@ public class ProductAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	protected void retrieveProducts(ActionRequest req) throws ActionException {
-		SolrActionVO qData = buildSolrAction(req);
-		SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, qData.getSolrCollectionPath());
-		qData.setNumberResponses(5000);
-		qData.setStartLocation(0);
-		qData.setOrganizationId(((SiteVO)req.getAttribute(Constants.SITE_DATA)).getOrganizationId());
-		qData.setRoleLevel(0);
-		qData.addSolrField(new SolrFieldVO(FieldType.BOOST, SearchDocumentHandler.TITLE, "", BooleanType.AND));
-		qData.addSolrField(new SolrFieldVO(FieldType.BOOST, "company_s", "", BooleanType.AND));
-		
-		if (req.hasParameter("searchData")) 
-			qData.setSearchData("*"+req.getParameter("searchData")+"*");
-		
-		StringBuilder selected = new StringBuilder(50);
-		if (req.hasParameter("selNodes")) {
-			selected.append("(");
-			for (String s : req.getParameterValues("selNodes")) {
-				if (selected.length() > 2) selected.append(" OR ");
-				selected.append("*").append(s);
-			}
-			selected.append(")");
-			qData.addSolrField(new SolrFieldVO(FieldType.FILTER, SearchDocumentHandler.SECTION, selected.toString(), BooleanType.AND));
-		}
 
-		qData.addIndexType(new SolrActionIndexVO("", BiomedProductIndexer.INDEX_TYPE));
+		// Pass along the proper information for a search to be done.
+	    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+	    	actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
+	    	req.setParameter("pmid", mod.getPageModuleId());
 		
-		qData.setFieldSort(SearchDocumentHandler.TITLE_LCASE);
-		qData.setSortDirection(ORDER.asc);
-		SolrResponseVO vo = sqp.processQuery(qData);
+	    	// Build the solr action
+		SolrAction sa = new SolrAction(actionInit);
+		sa.setDBConnection(dbConn);
+		sa.setAttributes(attributes);
+		sa.retrieve(req);
+
+		// Creatae the update messages for the responses
+	    	mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+		SolrResponseVO vo = (SolrResponseVO) mod.getActionData();
 		for (SolrDocument doc : vo.getResultDocuments()) {
 			doc.setField("updateMsg", buildUpdateMsg(doc));
 		}
-		
 		super.putModuleData(vo);
 	}
 	
@@ -360,7 +373,6 @@ public class ProductAction extends SBActionAdapter {
 		if (!"P".equals(doc.get(SearchDocumentHandler.CONTENT_TYPE))) {
 			return "Unpublished";
 		}
-		log.debug(doc.get(SearchDocumentHandler.UPDATE_DATE));
 		Date d = (Date) doc.get(SearchDocumentHandler.UPDATE_DATE);
 		long diff = Convert.getCurrentTimestamp().getTime() -d.getTime();
 		long diffDays = diff / (1000 * 60 * 60 * 24);

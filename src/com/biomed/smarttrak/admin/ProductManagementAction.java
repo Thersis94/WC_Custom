@@ -9,6 +9,7 @@ import com.biomed.smarttrak.vo.ProductAllianceVO;
 import com.biomed.smarttrak.vo.ProductAttributeTypeVO;
 import com.biomed.smarttrak.vo.ProductAttributeVO;
 import com.biomed.smarttrak.vo.ProductVO;
+import com.biomed.smarttrak.vo.RegulationVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
@@ -43,7 +44,7 @@ public class ProductManagementAction extends SimpleActionAdapter {
 	
 	private enum ActionTarget {
 		PRODUCT, PRODUCTATTRIBUTE, ATTRIBUTE, SECTION, 
-		ATTRIBUTELIST, ALLIANCE, DETAILSATTRIBUTE
+		ATTRIBUTELIST, ALLIANCE, DETAILSATTRIBUTE, REGULATION
 	}
 
 	@Override
@@ -84,10 +85,46 @@ public class ProductManagementAction extends SimpleActionAdapter {
 			case DETAILSATTRIBUTE:
 				retrieveModuleSets(req);
 				break;
+			case REGULATION:
+				retrieveRegulatory(req);
+				break;
 		}
 	}
 	
 	
+	/**
+	 * Get regulations associated with a product or an id
+	 */
+	protected void retrieveRegulatory(ActionRequest req) {
+		StringBuilder sql = new StringBuilder(475);
+		String customDb = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		List<Object> params = new ArrayList<>();
+		
+		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_PRODUCT_REGULATORY r ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_REGULATORY_STATUS s ");
+		sql.append("ON s.STATUS_ID = r.STATUS_ID ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_REGULATORY_REGION re ");
+		sql.append("ON re.REGION_ID = r.REGION_ID ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_REGULATORY_PATH p ");
+		sql.append("ON p.PATH_ID = r.PATH_ID ");
+		sql.append("WHERE r.PRODUCT_ID = ? ");
+		if (req.hasParameter("regulatoryId")) {
+			sql.append("and r.REGULATORY_ID = ? ");
+			params.add(req.getParameter("regulatoryId"));
+		}
+		
+		DBProcessor db = new DBProcessor(dbConn);
+		
+		List<Object> results = db.executeSelect(sql.toString(), params, new RegulationVO());
+		
+		if (results.isEmpty()) {
+			super.putModuleData(new RegulationVO());
+		} else {
+			super.putModuleData(results.get(0));
+		}
+	}
+
+
 	/**
 	 * Get information neccesary to populate product attribute pages
 	 * @param req
@@ -406,11 +443,40 @@ public class ProductManagementAction extends SimpleActionAdapter {
 		addAttributes(product);
 		addSections(product);
 		addAlliances(product);
+		addRegulations(product);
 		
 		super.putModuleData(product);
 	}
 	
 	
+	/**
+	 * Get all regulations associated to this product and add them
+	 * @param product
+	 */
+	protected void addRegulations(ProductVO product) {
+		StringBuilder sql = new StringBuilder(475);
+		String customDb = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		
+		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_PRODUCT_REGULATORY r ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_REGULATORY_STATUS s ");
+		sql.append("ON s.STATUS_ID = r.STATUS_ID ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_REGULATORY_REGION re ");
+		sql.append("ON re.REGION_ID = r.REGION_ID ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_REGULATORY_PATH p ");
+		sql.append("ON p.PATH_ID = r.PATH_ID ");
+		sql.append("WHERE r.PRODUCT_ID = ? ");
+		log.debug(sql);
+		List<Object> params = new ArrayList<>();
+		params.add(product.getProductId());
+		
+		DBProcessor db = new DBProcessor(dbConn);
+		
+		List<Object> results = db.executeSelect(sql.toString(), params, new RegulationVO());
+		
+		for (Object o : results) product.addRegulation((RegulationVO)o);
+	}
+
+
 	/**
 	 * Get all alliances the supplied product is in and add them to the vo
 	 * @param product
@@ -591,11 +657,41 @@ public class ProductManagementAction extends SimpleActionAdapter {
 			case DETAILSATTRIBUTE:
 				saveDetailsAttribute(req);
 				break;
+			case REGULATION:
+				RegulationVO reg = new RegulationVO(req);
+				saveRegulation(reg, db);
+				break;
 			default:break;
 		}
 	}
 
 
+	/**
+	 * Save the supplied regulation
+	 * @param reg
+	 * @param db
+	 * @throws ActionException
+	 */
+	protected void saveRegulation(RegulationVO reg, DBProcessor db) throws ActionException {
+		try {
+			if (StringUtil.isEmpty(reg.getRegulatorId())) {
+				reg.setRegulatorId(new UUIDGenerator().getUUID());
+				db.insert(reg);
+			} else {
+				db.update(reg);
+			}
+		} catch (Exception e) {
+			throw new ActionException(e);
+		}
+	}
+
+
+	/**
+	 * Delete the currently saved detail attributes and save the supplied list
+	 * of attributes
+	 * @param req
+	 * @throws ActionException
+	 */
 	protected void saveDetailsAttribute(ActionRequest req) throws ActionException {
 		deleteCurrentDetails(req);
 		
@@ -791,6 +887,10 @@ public class ProductManagementAction extends SimpleActionAdapter {
 			case ALLIANCE:
 				ProductAllianceVO a = new ProductAllianceVO(req);
 				db.delete(a);
+				break;
+			case REGULATION:
+				RegulationVO reg = new RegulationVO(req);
+				db.delete(reg);
 				break;
 			default:break;
 		}

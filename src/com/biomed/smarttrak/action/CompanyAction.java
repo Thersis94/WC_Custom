@@ -10,10 +10,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 
-import org.apache.solr.client.solrj.SolrQuery.ORDER;
 import org.apache.solr.common.SolrDocument;
 
-import com.biomed.smarttrak.util.BiomedCompanyIndexer;
 import com.biomed.smarttrak.vo.AllianceVO;
 import com.biomed.smarttrak.vo.CompanyAttributeVO;
 import com.biomed.smarttrak.vo.CompanyVO;
@@ -29,15 +27,8 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
-import com.smt.sitebuilder.action.search.SolrActionIndexVO;
-import com.smt.sitebuilder.action.search.SolrActionVO;
-import com.smt.sitebuilder.action.search.SolrFieldVO;
-import com.smt.sitebuilder.action.search.SolrQueryProcessor;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
-import com.smt.sitebuilder.action.search.SolrFieldVO.BooleanType;
-import com.smt.sitebuilder.action.search.SolrFieldVO.FieldType;
 import com.smt.sitebuilder.common.ModuleVO;
-import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 
@@ -76,7 +67,7 @@ public class CompanyAction extends SBActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		if (req.hasParameter("reqParam_1")) {
 			retrieveCompany(req.getParameter("reqParam_1"));
-		} else if (req.hasParameter("searchData") || req.hasParameter("selNodes")){
+		} else if (req.hasParameter("searchData") || req.hasParameter("fq") || req.hasParameter("hierarchyList")){
 			retrieveCompanies(req);
 		}
 	}
@@ -355,54 +346,24 @@ public class CompanyAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	protected void retrieveCompanies(ActionRequest req) throws ActionException {
-		SolrActionVO qData = buildSolrAction(req);
-		SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, qData.getSolrCollectionPath());
-		qData.setNumberResponses(5000);
-		qData.setStartLocation(0);
-		qData.setOrganizationId(((SiteVO)req.getAttribute(Constants.SITE_DATA)).getOrganizationId());
-		qData.setRoleLevel(0);
-		qData.addSolrField(new SolrFieldVO(FieldType.BOOST, SearchDocumentHandler.TITLE, "", BooleanType.AND));
-		qData.addSolrField(new SolrFieldVO(FieldType.BOOST, "ticker_s", "", BooleanType.AND));
+		// Pass along the proper information for a search to be done.
+	    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+	    	actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
+	    	req.setParameter("pmid", mod.getPageModuleId());
 		
-		if (req.hasParameter("searchData")) 
-			qData.setSearchData("*"+req.getParameter("searchData")+"*");
-		
-		StringBuilder selected = new StringBuilder(50);
-		if (req.hasParameter("selNodes")) {
-			selected.append("(");
-			for (String s : req.getParameterValues("selNodes")) {
-				if (selected.length() > 2) selected.append(" OR ");
-				selected.append("*").append(s);
-			}
-			selected.append(")");
-			qData.addSolrField(new SolrFieldVO(FieldType.FILTER, SearchDocumentHandler.SECTION, selected.toString(), BooleanType.AND));
-		}
+	    	// Build the solr action
+		SolrAction sa = new SolrAction(actionInit);
+		sa.setDBConnection(dbConn);
+		sa.setAttributes(attributes);
+		sa.retrieve(req);
 
-		qData.addIndexType(new SolrActionIndexVO("", BiomedCompanyIndexer.INDEX_TYPE));
-		
-		qData.setFieldSort(SearchDocumentHandler.TITLE_LCASE);
-		qData.setSortDirection(ORDER.asc);
-		SolrResponseVO vo = sqp.processQuery(qData);
+		// Creatae the update messages for the responses
+	    	mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+		SolrResponseVO vo = (SolrResponseVO) mod.getActionData();
 		for (SolrDocument doc : vo.getResultDocuments()) {
 			doc.setField("updateMsg", buildUpdateMsg(doc));
 		}
 		super.putModuleData(vo);
-	}
-	
-	
-	/**
-	 * Get solr information 
-	 * @param req
-	 * @return
-	 * @throws ActionException
-	 */
-	private SolrActionVO buildSolrAction(ActionRequest req) throws ActionException {
-		SolrAction sa = new SolrAction(actionInit);
-		sa.setDBConnection(dbConn);
-		sa.setAttributes(attributes);
-	    	ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
-	    	actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
-		return sa.retrieveActionData(req);
 	}
 
 
@@ -425,13 +386,12 @@ public class CompanyAction extends SBActionAdapter {
 		
 		Node n = attributeTree.findNode(path[1]);
 		
-		if (!attrMap.keySet().contains(path[1])) {
+		if (!attrMap.keySet().contains(n.getNodeName())) {
 			attrMap.put(n.getNodeName(), new ArrayList<CompanyAttributeVO>());
 		}
 
 		attr.setGroupName(n.getNodeName());
 		attrMap.get(n.getNodeName()).add(attr);
-		log.debug("Added to " + n.getNodeName()+"|"+n.getNodeId());
 	}
 	
 
@@ -443,25 +403,23 @@ public class CompanyAction extends SBActionAdapter {
 	 */
 	private Tree buildAttributeTree(String attrType) throws ActionException {
 		StringBuilder sql = new StringBuilder(100);
-		sql.append("SELECT ATTRIBUTE_ID, PARENT_ID, ATTRIBUTE_NM, ");
+		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		sql.append("SELECT c.ATTRIBUTE_ID, c.PARENT_ID, c.ATTRIBUTE_NM, p.ATTRIBUTE_NM as PARENT_NM, ");
 		if ("PRODUCT".equals(attrType)) {
-			sql.append("ORDER_NO ");
+			sql.append("c.ORDER_NO ");
 		} else {
-			sql.append("DISPLAY_ORDER_NO ");
+			sql.append("c.DISPLAY_ORDER_NO ");
 		}
-		sql.append("FROM ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("BIOMEDGPS_").append(attrType).append("_ATTRIBUTE ");
+		sql.append("FROM ").append(customDb).append("BIOMEDGPS_").append(attrType).append("_ATTRIBUTE c ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_").append(attrType).append("_ATTRIBUTE p ");
+		sql.append("ON c.PARENT_ID = p.ATTRIBUTE_ID ");
 		log.debug(sql);
 		List<Node> attributes = new ArrayList<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				Node n = new Node(rs.getString("ATTRIBUTE_ID"), rs.getString("PARENT_ID"));
-				if ("PRODUCT".equals(attrType)) {
-					n.setNodeName(rs.getInt("ORDER_NO") + "|" + rs.getString("ATTRIBUTE_NM"));
-				} else {
-					n.setNodeName(rs.getInt("DISPLAY_ORDER_NO") + "|" + rs.getString("ATTRIBUTE_NM"));
-				}
+				setNodeName(n, rs, attrType);
 				attributes.add(n);
 			}
 			
@@ -471,5 +429,20 @@ public class CompanyAction extends SBActionAdapter {
 		Tree t = new Tree(attributes);
 		t.buildNodePaths();
 		return t;
+	}
+
+	/**
+	 * Set the name of the supplied node based on the passed attribute type.
+	 */
+	protected void setNodeName(Node n, ResultSet rs, String attrType) throws SQLException {
+		if ("PRODUCT".equals(attrType)) {
+			n.setNodeName(rs.getInt("ORDER_NO") + "|" + rs.getString("ATTRIBUTE_NM"));
+		} else {
+			if ("profile".equals(rs.getString("ATTRIBUTE_NM"))) {
+				n.setNodeName(rs.getInt("DISPLAY_ORDER_NO") + "|" + rs.getString("PARENT_NM"));
+			} else {
+				n.setNodeName(rs.getInt("DISPLAY_ORDER_NO") + "|" + rs.getString("ATTRIBUTE_NM"));
+			}
+		}
 	}
 }

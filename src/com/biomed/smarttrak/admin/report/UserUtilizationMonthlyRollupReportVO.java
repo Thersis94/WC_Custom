@@ -32,7 +32,7 @@ import com.smt.sitebuilder.action.AbstractSBReportVO;
  @since Feb 21, 2017
  <b>Changes:</b> 
  ***************************************************************************/
-public class UserUtilizationReportVO extends AbstractSBReportVO {
+public class UserUtilizationMonthlyRollupReportVO extends AbstractSBReportVO {
 
 	private Map<AccountVO, List<UserVO>> accounts;
 	private List<String> monthHeaders;
@@ -53,7 +53,7 @@ public class UserUtilizationReportVO extends AbstractSBReportVO {
 	/**
 	* Constructor
 	*/
-	public UserUtilizationReportVO() {
+	public UserUtilizationMonthlyRollupReportVO() {
         super();
         setContentType("application/vnd.ms-excel");
         isHeaderAttachment(Boolean.TRUE);
@@ -70,13 +70,29 @@ public class UserUtilizationReportVO extends AbstractSBReportVO {
 		log.debug("generateReport...");
 
 		ExcelReport rpt = new ExcelReport(getHeader());
-		rpt.setTitleCell(REPORT_TITLE);
+		rpt.setTitleCell(buildReportTitle());
 
 		List<Map<String, Object>> rows = new ArrayList<>(accounts.size() * 5);
 		rows = generateDataRows(rows);
 
 		rpt.setData(rows);
 		return rpt.generateReport();
+	}
+
+	/**
+	 * Builds the report title.
+	 * @param title
+	 * @param suffix
+	 * @return
+	 */
+	protected String buildReportTitle() {
+		String suffix = StringUtil.checkVal(attributes.get(UserUtilizationReportAction.ATTRIB_REPORT_SUFFIX));
+		StringBuilder sb = new StringBuilder(40);
+		sb.append(REPORT_TITLE);
+		if (! StringUtil.isEmpty(suffix)) {
+			sb.append(" (").append(suffix).append(")");
+		}
+		return sb.toString();
 	}
 
 	/* (non-Javadoc)

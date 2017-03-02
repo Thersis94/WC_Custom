@@ -1,27 +1,23 @@
-/**
- *
- */
 package com.biomed.smarttrak.action;
 
-import org.apache.solr.client.solrj.SolrQuery.ORDER;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
-import com.biomed.smarttrak.solr.BiomedUpdateIndexer;
+import com.biomed.smarttrak.util.UpdateIndexer;
+import com.biomed.smarttrak.vo.UserVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.util.Convert;
+import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
-import com.smt.sitebuilder.action.search.SolrActionIndexVO;
-import com.smt.sitebuilder.action.search.SolrActionVO;
-import com.smt.sitebuilder.action.search.SolrFieldVO;
-import com.smt.sitebuilder.action.search.SolrFieldVO.BooleanType;
 import com.smt.sitebuilder.action.search.SolrFieldVO.FieldType;
-import com.smt.sitebuilder.action.search.SolrQueryProcessor;
-import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.common.ModuleVO;
-import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
@@ -39,85 +35,148 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
  ****************************************************************************/
 public class UpdatesAction extends SBActionAdapter {
 
+	public UpdatesAction() { 
+		super();
+	}
+
 	/**
 	 * @param actionInit
 	 */
-	public UpdatesAction() { super();}
-	public UpdatesAction(ActionInitVO actionInit) { super(actionInit);}
-
-	public void retrieve(ActionRequest req) throws ActionException {
-		putModuleData(retrieveUpdates(req));
+	public UpdatesAction(ActionInitVO actionInit) { 
+		super(actionInit);
 	}
 
-	/**
-	 * Get the solr information 
-	 * @param req
-	 * @return
-	 * @throws ActionException
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
 	 */
-	private SolrActionVO buildSolrAction(ActionRequest req) throws ActionException {
+	@Override
+	public void retrieve(ActionRequest req) throws ActionException {
+		if (!req.hasParameter("loadSolrUpdates")) return;
 
-		//Set SolrSearch ActionId on actionInit
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
-    	actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
+		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
+		List<String> docIds = null;
+		if("favorites".equals(req.getParameter("filter"))) {
+			docIds = loadFavoriteDocs(req);
+		}
+		//transform some incoming reqParams to where Solr expects to see them
+		transposeRequest(req, docIds);
 
-    	//Get SolrSearch ActionVO.
+		//Get SolrSearch ActionVO.
 		SolrAction sa = new SolrAction(actionInit);
 		sa.setDBConnection(dbConn);
 		sa.setAttributes(attributes);
-		return sa.retrieveActionData(req);
+		sa.retrieve(req);
+	}
+
+
+	/**
+	 * Helper method loads all the Document Ids for Updates that the user has
+	 * favorited.
+	 * @param req
+	 * @return
+	 */
+	protected List<String> loadFavoriteDocs(ActionRequest req) {
+		SMTSession ses = req.getSession();
+		UserVO vo = (UserVO) ses.getAttribute(Constants.USER_DATA);
+
+		List<String> docIds = new ArrayList<>();
+		try(PreparedStatement ps = dbConn.prepareStatement(getFavoriteUpdatesSql())) {
+			int i = 1;
+			ps.setString(i++, AdminControllerAction.Section.MARKET.toString());
+			ps.setString(i++, vo.getProfileId());
+			ps.setString(i++, AdminControllerAction.Section.PRODUCT.toString());
+			ps.setString(i++, vo.getProfileId());
+			ps.setString(i++, AdminControllerAction.Section.COMPANY.toString());
+			ps.setString(i++, vo.getProfileId());
+
+			ResultSet rs = ps.executeQuery();
+
+			//Convert Update Id to DocumentId
+			while(rs.next()) {
+				StringBuilder docId = new StringBuilder(rs.getString("update_id"));
+				if (docId.length() < AdminControllerAction.DOC_ID_MIN_LEN) {
+
+					//Insert separator and then insert Index Type
+					docId.insert(0, "_").insert(0, UpdateIndexer.INDEX_TYPE);
+				}
+				docIds.add(docId.toString());
+			}
+		} catch (SQLException e) {
+			log.error(e);
+		}
+
+		return docIds;
 	}
 
 	/**
-	 * Retrieve all products from solr according to the search terms
+	 * Build sql query for Favorited Items in Updates.
+	 * @return
+	 */
+	protected String getFavoriteUpdatesSql() {
+		String custom = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(500);
+		sql.append("select b.update_id from profile_favorite a ");
+		sql.append("inner join ").append(custom).append("biomedgps_update b ");
+		sql.append("on a.rel_id = b.market_id and a.type_cd = ? and a.profile_id = ? ");
+		sql.append("union ");
+		sql.append("select b.update_id from profile_favorite a ");
+		sql.append("inner join ").append(custom).append("biomedgps_update b ");
+		sql.append("on a.rel_id = b.product_id and a.type_cd = ? and a.profile_id = ? ");
+		sql.append("union ");
+		sql.append("select b.update_id from profile_favorite a ");
+		sql.append("inner join ").append(custom).append("biomedgps_update b ");
+		sql.append("on a.rel_id = b.company_id and a.type_cd = ? and a.profile_id = ? ");
+		return sql.toString();
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
+	public void list(ActionRequest req) throws ActionException {
+		super.retrieve(req);
+	}
+
+
+	/**
+	 * transpose incoming request parameters into values Solr understands, so they get executed for us.
 	 * @param req
+	 * @param docIds 
 	 * @throws ActionException
 	 */
-	protected SolrResponseVO retrieveUpdates(ActionRequest req) throws ActionException {
-		SolrActionVO qData = buildSolrAction(req);
-		SolrQueryProcessor sqp = new SolrQueryProcessor(attributes, qData.getSolrCollectionPath());
-		qData.setNumberResponses(15);
-		qData.setStartLocation(Convert.formatInteger(req.getParameter("pageNo"), 0) * 15);
-		qData.setOrganizationId(((SiteVO)req.getAttribute(Constants.SITE_DATA)).getOrganizationId());
-		qData.setRoleLevel(AdminControllerAction.DEFAULT_ROLE_LEVEL);
-		qData.addSolrField(new SolrFieldVO(FieldType.BOOST, SearchDocumentHandler.TITLE, "", BooleanType.AND));
-		qData.addSolrField(new SolrFieldVO(FieldType.BOOST, SearchDocumentHandler.HIERARCHY, "", BooleanType.AND));
-		qData.addSolrField(new SolrFieldVO(FieldType.FACET, SearchDocumentHandler.HIERARCHY, null, null));
+	protected void transposeRequest(ActionRequest req, List<String> docIds) throws ActionException {
+		//get the filter queries already on the request.  Add ours to the stack, and put the String[] back on the request for Solr
+		String[] fqs = req.getParameterValues("fq");
+		if (fqs == null) fqs = new String[0];
+		List<String> data = new ArrayList<>(Arrays.asList(fqs));
 
-		//Add Search Parameters.
-		if (req.hasParameter("searchData"))
-			qData.setSearchData("*"+req.getParameter("searchData")+"*");
-
-		//Add Sections Check.
+		//Add Sections Check.  Append a filter query for each section requested
 		if (req.hasParameter("hierarchyId")) {
-			StringBuilder selected = new StringBuilder(50);
-			selected.append("(");
-			for (String s : req.getParameterValues("hierarchyId")) {
-				if (selected.length() > 2) selected.append(" OR ");
-				selected.append("*").append(s);
+			for (String s : req.getParameterValues("hierarchyId"))
+				data.add(SearchDocumentHandler.HIERARCHY + ":" + s);
+		}
+
+		//Add Favorites Filter if applicable.
+		if(docIds != null && !docIds.isEmpty()) {
+			for(String s : docIds) {
+				data.add(SearchDocumentHandler.DOCUMENT_ID + ":" + s);
 			}
-			selected.append(")");
-			qData.addSolrField(new SolrFieldVO(FieldType.FILTER, SearchDocumentHandler.HIERARCHY, selected.toString(), BooleanType.AND));
 		}
 
 		//Get a Date Range String.
 		String dates = SolrActionUtil.makeRangeQuery(FieldType.DATE, req.getParameter("startDt"), req.getParameter("endDt"));
+		if (!StringUtil.isEmpty(dates))
+			data.add(SearchDocumentHandler.UPDATE_DATE + ":" + dates);
 
-		//If we have a date range, add it as a solr field.
-		if(!StringUtil.isEmpty(dates)) {
-			qData.addSolrField(new SolrFieldVO(FieldType.FILTER, SearchDocumentHandler.UPDATE_DATE, dates, BooleanType.AND));
-		}
+		//Add a ModuleType filter if typeId was passed
+		if (req.hasParameter("typeId"))
+			data.add(SearchDocumentHandler.MODULE_TYPE + ":" + req.getParameter("typeId"));
 
-		//Add TypeId
-		if(req.hasParameter("typeId")) {
-			qData.addSolrField(new SolrFieldVO(FieldType.FILTER, SearchDocumentHandler.MODULE_TYPE, req.getParameter("typeId"), BooleanType.AND));
-		}
-
-		qData.addIndexType(new SolrActionIndexVO("", BiomedUpdateIndexer.INDEX_TYPE));
-
-		qData.setFieldSort(SearchDocumentHandler.UPDATE_DATE);
-		qData.setSortDirection(ORDER.desc);
-
-		return sqp.processQuery(qData);
+		//put the new list of filter queries back on the request
+		req.setParameter("fq", data.toArray(new String[data.size()]), true);
 	}
 }

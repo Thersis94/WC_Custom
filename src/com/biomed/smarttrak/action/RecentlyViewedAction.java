@@ -15,8 +15,8 @@ import org.apache.solr.common.SolrDocument;
 // WC custom
 import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.util.BiomedCompanyIndexer;
+import com.biomed.smarttrak.util.BiomedMarketIndexer;
 import com.biomed.smarttrak.util.BiomedProductIndexer;
-import com.biomed.smarttrak.vo.MarketVO;
 
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
@@ -55,14 +55,14 @@ import com.smt.sitebuilder.util.PageViewVO;
  <b>Changes:</b> 
  ***************************************************************************/
 public class RecentlyViewedAction extends SBActionAdapter {
-	
+
 	/**
 	 * Constructor
 	 */
 	public RecentlyViewedAction() {
 		super();
 	}
-	
+
 	/**
 	 * Constructor
 	 */
@@ -84,13 +84,13 @@ public class RecentlyViewedAction extends SBActionAdapter {
 		Map<String, List<PageViewVO>> recentActivity;
 		try {
 			recentActivity = retrieveRecentlyViewedPages(req, user.getProfileId());
-			
+
 		} catch (ActionException ae) {
 			recentActivity = new HashMap<>();
 			mod.setError(ae.getMessage(), ae);
 			log.debug("UserRecentActivityAction retrieve error condition | message: " + mod.getErrorCondition() + "|" + mod.getErrorMessage());
 		}
-		
+
 		this.putModuleData(recentActivity, recentActivity.size(), false, mod.getErrorMessage(), mod.getErrorCondition());
 	}
 
@@ -104,10 +104,10 @@ public class RecentlyViewedAction extends SBActionAdapter {
 	protected Map<String, List<PageViewVO>> retrieveRecentlyViewedPages(ActionRequest req, 
 			String profileId) throws ActionException {
 		/* Retrieve page views from db, parse into PageViewVO and return list */
-		
+
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		UserRoleVO userRole = (UserRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
-		
+
 		List<PageViewVO> pages = new ArrayList<>();
 
 		StringBuilder sql = formatRecentlyViewedQuery();
@@ -124,7 +124,7 @@ public class RecentlyViewedAction extends SBActionAdapter {
 				page = new PageViewVO();
 				page.setReferenceCode(rs.getString("reference_cd"));
 				page.setRequestUri(rs.getString("request_uri_txt"));
-				
+
 				/* Use page bean's page ID field to represent entity ID 
 				 * (e.g. market ID, company ID, etc.) */
 				setPageId(page);
@@ -163,7 +163,7 @@ public class RecentlyViewedAction extends SBActionAdapter {
 
 		return recentViewed;
 	}
-	
+
 	/**
 	 * Separates pages into their respective bucket.
 	 * @param pages
@@ -182,7 +182,7 @@ public class RecentlyViewedAction extends SBActionAdapter {
 		}
 		return pageMap;
 	}
-	
+
 	/**
 	 * Initialize a Map of List of PageViewVO based on the key types enum.
 	 * @return
@@ -253,14 +253,14 @@ public class RecentlyViewedAction extends SBActionAdapter {
 		Map<String,String> names = new HashMap<>();
 		SolrResponseVO resp = sqp.processQuery(qData);
 		if (resp == null) return names;
-		
+
 		for (SolrDocument doc : resp.getResultDocuments()) {
 			names.put(doc.getFieldValue(SearchDocumentHandler.DOCUMENT_ID).toString(), doc.getFieldValue(SearchDocumentHandler.TITLE).toString());
 		}
 		log.debug("names size: " + names.size());
 		return names;
 	}
-	
+
 	/**
 	 * Helper method to return index type based on a key.
 	 * @param key
@@ -270,7 +270,7 @@ public class RecentlyViewedAction extends SBActionAdapter {
 		Section s = Section.valueOf(key);
 		switch(s) {
 			case MARKET:
-				return MarketVO.SOLR_INDEX;
+				return BiomedMarketIndexer.INDEX_TYPE;
 			case COMPANY:
 				return BiomedCompanyIndexer.INDEX_TYPE;
 			case PRODUCT:
@@ -307,7 +307,7 @@ public class RecentlyViewedAction extends SBActionAdapter {
 		if (pages == null) {
 			pages = new ArrayList<>();
 		}
-		
+
 		log.debug("pages is size: " + pages.size());
 		PageViewVO page = new PageViewVO();
 		page.setPageDisplayName(req.getParameter(QuickLinksAction.PARAM_KEY_NAME));
@@ -350,7 +350,7 @@ public class RecentlyViewedAction extends SBActionAdapter {
 		}
 		return key;
 	}
-	
+
 	/**
 	 * Checks to see if the page being viewed is already on the list for the given collection.
 	 * @param pages
@@ -365,7 +365,7 @@ public class RecentlyViewedAction extends SBActionAdapter {
 		}
 		return false;
 	}
-	
+
 	/**
 	 * Formats the query to retrieve the top 10 rows from each entity type.
 	 * @return
@@ -385,7 +385,7 @@ public class RecentlyViewedAction extends SBActionAdapter {
 
 			if (count < Section.values().length)
 				sql.append("union all ");
-			
+
 			count++;
 		}
 		sql.append("order by visit_dt desc ");

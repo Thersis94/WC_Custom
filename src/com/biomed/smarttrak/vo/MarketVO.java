@@ -4,14 +4,16 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import com.biomed.smarttrak.util.BiomedMarketIndexer;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.annotations.SolrField;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
-import com.smt.sitebuilder.util.solr.SolrDocumentVO;
+import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
 
 /****************************************************************************
  * <b>Title</b>: MarketVO.java <p/>
@@ -26,12 +28,8 @@ import com.smt.sitebuilder.util.solr.SolrDocumentVO;
  * @since Feb 6, 2017<p/>
  * <b>Changes: </b>
  ****************************************************************************/
-
 @Table(name="BIOMEDGPS_MARKET")
-public class MarketVO extends SolrDocumentVO {
-	
-	public static final String SOLR_INDEX = "BIOMEDGPS_MARKET";
-	
+public class MarketVO extends SecureSolrDocumentVO {
 	private String marketId;
 	private String parentId;
 	private String marketName;
@@ -39,32 +37,34 @@ public class MarketVO extends SolrDocumentVO {
 	private String statusNo;
 	private String shortName;
 	private String aliasName;
-	private List<MarketAttributeVO> attributes;
+	private List<MarketAttributeVO> marketAttributes;
 	private List<GenericVO> sections;
 	private String updateMsg;
 	private Date updateDate;
-	
+	private String regionCode;
+
 	public MarketVO () {
-		super(SOLR_INDEX);
-		attributes = new ArrayList<>();
+		super(BiomedMarketIndexer.INDEX_TYPE);
+		marketAttributes = new ArrayList<>();
 		sections = new ArrayList<>();
 	}
-	
-	
+
+
 	public MarketVO(ActionRequest req) {
 		this();
 		setData(req);
 	}
-	
+
 
 	private void setData(ActionRequest req) {
 		marketId = req.getParameter("marketId");
-		parentId = req.getParameter("parentId");
+		parentId = StringUtil.checkVal(req.getParameter("parentId"), null);
 		marketName = req.getParameter("marketName");
 		shortName = req.getParameter("shortName");
 		aliasName = req.getParameter("aliasName");
 		orderNo = Convert.formatInteger(req.getParameter("orderNo"));
 		statusNo = req.getParameter("statusNo");
+		setRegionCode(req.getParameter("regionCode"));
 	}
 
 
@@ -126,19 +126,19 @@ public class MarketVO extends SolrDocumentVO {
 	public void setAliasName(String aliasName) {
 		this.aliasName = aliasName;
 	}
-	
+
 
 	public List<MarketAttributeVO> getMarketAttributes() {
-		return attributes;
+		return marketAttributes;
 	}
 
 
 	public void setMarketAttributes(List<MarketAttributeVO> attributes) {
-		this.attributes = attributes;
+		this.marketAttributes = attributes;
 	}
-	
+
 	public void addMarketAttribute(MarketAttributeVO attribute) {
-		this.attributes.add(attribute);
+		marketAttributes.add(attribute);
 	}
 
 	public List<GenericVO> getMarketSections() {
@@ -149,11 +149,11 @@ public class MarketVO extends SolrDocumentVO {
 	public void setSections(List<GenericVO> sections) {
 		this.sections = sections;
 	}
-	
+
 	public void addSection(GenericVO section) {
-		this.sections.add(section);
+		sections.add(section);
 	}
-	
+
 	/**
 	 * Turn the list of generic vos
 	 * @return
@@ -166,15 +166,14 @@ public class MarketVO extends SolrDocumentVO {
 		}
 		return nameList;
 	}
-	
+
 	@Override
 	@SolrField(name=SearchDocumentHandler.UPDATE_DATE)
 	@Column(name="UPDATE_DT", isAutoGen=true, isUpdateOnly=true)
 	public Date getUpdateDt() {
 		return updateDate;
 	}
-	
-	@Column(name="UPDATE_DT", isAutoGen=true, isUpdateOnly=true)
+
 	public void setUpdateDt(Date updateDate) {
 		this.updateDate = updateDate;
 	}
@@ -194,5 +193,16 @@ public class MarketVO extends SolrDocumentVO {
 		this.updateMsg = updateMsg;
 	}
 
-	
+
+	@Column(name="region_cd")
+	public String getRegionCode() {
+		return regionCode;
+	}
+
+
+	public void setRegionCode(String regionCode) {
+		this.regionCode = regionCode;
+	}
+
+
 }

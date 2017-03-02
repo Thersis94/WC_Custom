@@ -7,8 +7,6 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
-import com.siliconmtn.data.Node;
-import com.siliconmtn.data.Tree;
 import com.smt.sitebuilder.action.SBModuleVO;
 
 /****************************************************************************
@@ -34,7 +32,6 @@ public class FinancialDashVO extends SBModuleVO {
 	private boolean leafMode;
 	private String scenarioId;
 	private String companyId;
-	private List<Node> hierarchy;
 	
 	/**
 	 * Provides a logger
@@ -97,14 +94,14 @@ public class FinancialDashVO extends SBModuleVO {
 	 */
 	public void setData(ResultSet rs) {
 		FinancialDashDataRowVO row;
-		Tree tree = new Tree(this.getHierarchy(), this.getHierarchy().get(0));
 		
 		try {
 			while (rs.next()) {
 				row = new FinancialDashDataRowVO(rs);
-				row.setAncestry(tree);
 
-				this.addRow(row);
+				if (!row.isInactive()) {
+					addRow(row);
+				}
 			}
 		} catch (SQLException sqle) {
 			log.error("Unable to set financial dashboard row data", sqle);
@@ -184,13 +181,6 @@ public class FinancialDashVO extends SBModuleVO {
 	 */
 	public String getCompanyId() {
 		return companyId;
-	}
-
-	/**
-	 * @return the hierarchy
-	 */
-	public List<Node> getHierarchy() {
-		return hierarchy;
 	}
 
 	/**
@@ -298,12 +288,5 @@ public class FinancialDashVO extends SBModuleVO {
 	 */
 	public void setCompanyId(String companyId) {
 		this.companyId = companyId;
-	}
-
-	/**
-	 * @param hierarchy the hierarchy to set
-	 */
-	public void setHierarchy(List<Node> hierarchy) {
-		this.hierarchy = hierarchy;
 	}
 }

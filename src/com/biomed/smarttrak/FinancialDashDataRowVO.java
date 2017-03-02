@@ -1,5 +1,6 @@
 package com.biomed.smarttrak;
 
+import java.io.Serializable;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -8,11 +9,9 @@ import java.util.Map;
 
 import org.apache.log4j.Logger;
 
-import com.siliconmtn.data.Node;
-import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.util.Convert;
-import com.smt.sitebuilder.action.SBModuleVO;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: FinancialDashDataRowVO.java<p/>
@@ -25,15 +24,15 @@ import com.smt.sitebuilder.action.SBModuleVO;
  * @since Jan 04, 2017
  ****************************************************************************/
 
-public class FinancialDashDataRowVO extends SBModuleVO {
+public class FinancialDashDataRowVO implements Serializable {
 
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = -1858035677710604733L;
 	private String name;
 	private String primaryKey;
-	private String parentId;
-	private String grandparentId;
 	private String companyId;
 	private String regionCd;
+	private boolean inactiveFlg;
+	private int inactiveCnt; // internal value used to calculate overall inactivity
 	private Map<String, FinancialDashDataColumnVO> columns;
 	
 	/**
@@ -42,6 +41,7 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 	protected static Logger log;
 	
 	public FinancialDashDataRowVO() {
+		super();
 		columns = new HashMap<>();
 		log = Logger.getLogger(getClass());
 	}
@@ -101,17 +101,10 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 	}
 
 	/**
-	 * @return the parentId
+	 * @return the inactiveFlg
 	 */
-	public String getParentId() {
-		return parentId;
-	}
-
-	/**
-	 * @return the grandparentId
-	 */
-	public String getGrandparentId() {
-		return grandparentId;
+	public boolean isInactive() {
+		return inactiveFlg;
 	}
 
 	/**
@@ -156,9 +149,9 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 					case FinancialDashBaseAction.QUARTER_4:
 						addColumn(qtr, yearIdx, maxYear, util, rs);
 						incrementTotal(totals, yearIdx, util.getIntVal(colName, rs));
+						calculateInactivity(qtr, yearIdx, util, rs);
 						break;
 					default:
-						break;
 				}
 			}
 			
@@ -187,6 +180,13 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 	 */
 	public void setRegionCd(String regionCd) {
 		this.regionCd = regionCd;
+	}
+
+	/**
+	 * @param inactiveFlg the inactiveFlg to set
+	 */
+	public void setInactive(boolean inactiveFlg) {
+		this.inactiveFlg = inactiveFlg;
 	}
 
 	/**
@@ -245,6 +245,41 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 	}
 	
 	/**
+	 * Makes determination as to whether the company is inactive. When inactive,
+	 * the row should not be returned back to the client.
+	 * 
+	 * @param qtr
+	 * @param yearIdx
+	 * @param dollarValue
+	 */
+	private void calculateInactivity(String qtr, int yearIdx, DBUtil util, ResultSet rs) {
+		// Inactivity only applies to company rows, not market rows
+		// Inactivity is only determined from the first two years of data
+		if (StringUtil.isEmpty(getCompanyId()) || yearIdx > 1)
+			return;
+		
+		int dollarValue = util.getIntVal(qtr + "_" + yearIdx, rs);
+		
+		switch (qtr) {
+			case FinancialDashBaseAction.QUARTER_1:
+			case FinancialDashBaseAction.QUARTER_2:
+				if (yearIdx == 1)
+					break;
+			case FinancialDashBaseAction.QUARTER_3:
+			case FinancialDashBaseAction.QUARTER_4:
+				if (dollarValue == 0)
+					inactiveCnt += 1;
+				break;
+			default:
+		}
+		
+		// If all 6 of the past quarters are zero, this company is inactive
+		if (inactiveCnt == 6) {
+			setInactive(true);
+		}
+	}
+	
+	/**
 	 * Creates the summary YTD/CY columns.
 	 * 
 	 * @param totals
@@ -279,42 +314,5 @@ public class FinancialDashDataRowVO extends SBModuleVO {
 		}
 		
 		totals.put(key, totals.get(key) + dollarValue);
-	}
-
-	/**
-	 * @param parentId the parentId to set
-	 */
-	public void setParentId(String parentId) {
-		this.parentId = parentId;
-	}
-
-	/**
-	 * @param grandparentId the grandparentId to set
-	 */
-	public void setGrandparentId(String grandparentId) {
-		this.grandparentId = grandparentId;
-	}
-	
-	/**
-	 * Sets the parent/grandparent in the hierarchy applicable to this particular data row
-	 * 
-	 * @param tree
-	 */
-	public void setAncestry(Tree tree) {
-		String pId = null;
-		String gpId = null;
-		
-		Node childNode = tree.findNode(this.getPrimaryKey());
-		if (childNode != null) {
-			pId = childNode.getParentId();
-			
-			Node parentNode = tree.findNode(pId);
-			if (parentNode != null) {
-				gpId = parentNode.getParentId();
-			}
-		}
-		
-		this.setParentId(pId);
-		this.setGrandparentId(gpId);
 	}
 }

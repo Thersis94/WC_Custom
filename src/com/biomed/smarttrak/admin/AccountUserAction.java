@@ -74,34 +74,69 @@ public class AccountUserAction extends SBActionAdapter {
 		//table into the view (which will come back for the data).
 		if (!req.hasParameter("loadData") && !req.hasParameter(USER_ID)) return;
 
-		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
-		List<Object> users = loadAccountUsers(req, schema);
-
-		//get more information about this one user, so we can display the edit screen.
-		//If this is an ADD, we don't need the additional lookups
-		if (req.hasParameter(USER_ID))
-			loadRegistration(req, schema, users);
+		List<Object> users = loadAccountUsers(req, null);
 
 		//do this last, because loading the registration actions will collide with ModuleVO.actionData
 		putModuleData(users);
 	}
 
-
 	/**
-	 * loads the list of users tied to this account.  Called via ajax.  This data populates the bootstrap table on the list page
+	 * loads the list of users tied to this account.
+	 * This data populates the bootstrap table on the list page
+	 * Can pass an optional profileId in order to retrieve via profileId rather
+	 * than USER_ID.
 	 * @param req
 	 * @param schema
+	 * @param profileId
+	 * @return
 	 * @throws ActionException
 	 */
-	protected List<Object> loadAccountUsers(ActionRequest req, String schema) throws ActionException {
+	protected List<Object> loadAccountUsers(ActionRequest req, String profileId) throws ActionException {
+		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
 		String accountId = req.hasParameter(ACCOUNT_ID) ? req.getParameter(ACCOUNT_ID) : null;
 		String userId = req.hasParameter(USER_ID) ? req.getParameter(USER_ID) : null;
-		String sql = formatRetrieveQuery(schema, userId);
+		boolean loadProfileData = false;
 
+		//Build Sql
+		String sql = formatRetrieveQuery(schema, userId, profileId);
+
+		//Build Params
 		List<Object> params = new ArrayList<>();
 		params.add(AdminControllerAction.PUBLIC_SITE_ID);
-		params.add(accountId);
-		if (userId != null) params.add(userId);
+		if(StringUtil.isEmpty(profileId)) {
+			params.add(accountId);
+			if (userId != null) {
+				params.add(userId);
+				loadProfileData = true;
+			}
+		} else {
+			params.add(profileId);
+			loadProfileData = true;
+		}
+
+		//Call Execute the Query with given params.
+		List<Object> users = executeUserQuery(req, sql, params);
+
+		//get more information about this one user, so we can display the edit screen.
+		//If this is an ADD, we don't need the additional lookups
+		if (loadProfileData) {
+			loadRegistration(req, schema, users);
+		}
+
+		return users;
+	}
+
+	/**
+	 * Helper method that manages talking to DBProcessor and decrypting UserData.
+	 * @param req
+	 * @param sql
+	 * @param params
+	 * @param loadProfileData
+	 * @return
+	 * @throws ActionException
+	 */
+	protected List<Object> executeUserQuery(ActionRequest req, String sql, List<Object> params) throws ActionException {
+		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
 
 		DBProcessor db = new DBProcessor(dbConn, schema);
 		List<Object>  data = db.executeSelect(sql, params, new UserVO());
@@ -113,7 +148,6 @@ public class AccountUserAction extends SBActionAdapter {
 
 		return data;
 	}
-
 
 	/**
 	 * loads everything we need to know about a single user so we can edit their registration, profile, or user database records.
@@ -204,16 +238,20 @@ public class AccountUserAction extends SBActionAdapter {
 	 * Formats the account retrieval query.
 	 * @return
 	 */
-	protected String formatRetrieveQuery(String schema, String userId) {
+	protected String formatRetrieveQuery(String schema, String userId, String profileId) {
 		StringBuilder sql = new StringBuilder(300);
-		sql.append("select u.account_id, u.profile_id, u.user_id, u.register_submittal_id, u.status_cd, ");
+		sql.append("select u.account_id, u.profile_id, u.user_id, u.register_submittal_id, u.status_cd, u.acct_owner_flg, ");
 		sql.append("u.expiration_dt, p.first_nm, p.last_nm, p.email_address_txt, cast(max(al.login_dt) as date) as login_dt, ");
 		sql.append("u.fd_auth_flg, u.ga_auth_flg, u.mkt_auth_flg ");
 		sql.append("from ").append(schema).append("biomedgps_user u ");
 		sql.append("left outer join profile p on u.profile_id=p.profile_id ");
 		sql.append("left outer join authentication_log al on p.authentication_id=al.authentication_id and al.site_id=? and al.status_cd=1 ");
-		sql.append("where u.account_id=? ");
-		if (userId != null) sql.append("and u.user_id=? ");
+		if(StringUtil.isEmpty(profileId)) {
+			sql.append("where u.account_id=? ");
+			if (userId != null) sql.append("and u.user_id=? ");
+		} else {
+			sql.append("where p.profile_id=? ");
+		}
 		sql.append("group by u.account_id, u.profile_id, u.user_id, u.register_submittal_id, u.status_cd, ");
 		sql.append("u.expiration_dt, p.first_nm, p.last_nm, p.email_address_txt ");
 
@@ -265,8 +303,9 @@ public class AccountUserAction extends SBActionAdapter {
 				prm.removeRole(user.getAuthenticationId(), dbConn);
 				return;
 			}
-			//check, then add
-			if (prm.roleExists(user.getProfileId(), siteId, roleId, dbConn))
+			//check for ANY existing role.  Only add if no roles currently exist.
+			String authId = prm.checkRole(user.getProfileId(), siteId, null, null, dbConn);
+			if (!StringUtil.isEmpty(authId))
 				return;
 
 			prm.addRole(user.getProfileId(), siteId, roleId, status, dbConn);

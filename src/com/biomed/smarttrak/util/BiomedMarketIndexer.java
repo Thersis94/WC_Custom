@@ -5,25 +5,22 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
-
-import opennlp.tools.util.StringUtil;
 
 import org.apache.solr.client.solrj.SolrClient;
 
 import com.biomed.smarttrak.vo.MarketVO;
-import com.siliconmtn.data.GenericVO;
+import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.data.Node;
-import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SMTAbstractIndex;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.security.SecurityController;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
+import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO.Permission;
 
 /****************************************************************************
  * <b>Title</b>: BiomedMarketIndexer.java <p/>
@@ -40,6 +37,8 @@ import com.smt.sitebuilder.util.solr.SolrActionUtil;
 
 public class BiomedMarketIndexer  extends SMTAbstractIndex {
 	private static final String ORG_ID = "BMG_SMARTTRAK";
+
+	public static final String INDEX_TYPE = "BIOMEDGPS_MARKET";
 
 	public BiomedMarketIndexer(Properties config) {
 		this.config = config;
@@ -71,7 +70,7 @@ public class BiomedMarketIndexer  extends SMTAbstractIndex {
 	 */
 	private List<MarketVO> retreiveMarkets(String id) {
 		List<MarketVO> markets = new ArrayList<>();
-		Map<String, String> hierarchies = createHierarchies();
+		SmarttrakTree hierarchies = createHierarchies();
 		String sql = buildRetrieveSql(id);
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
@@ -95,9 +94,8 @@ public class BiomedMarketIndexer  extends SMTAbstractIndex {
 					market.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
 					currentMarket = rs.getString("MARKET_ID");
 				}
-				if (StringUtil.isEmpty(rs.getString("SECTION_ID"))) {
-					market.addSection(new GenericVO(rs.getString("SECTION_ID"),
-							hierarchies.get(rs.getString("SECTION_ID"))));
+				if (!StringUtil.isEmpty(rs.getString("SECTION_ID"))) {
+					addSection(market, hierarchies.findNode(rs.getString("SECTION_ID")));
 				}
 				
 			}
@@ -109,6 +107,22 @@ public class BiomedMarketIndexer  extends SMTAbstractIndex {
 		
 		return markets;
 	}
+	
+
+	/**
+	 * Add section id, name, and acl to document
+	 */
+	@SuppressWarnings("unchecked")
+	protected void addSection(MarketVO market, Node n) throws SQLException {
+		SectionVO sec = (SectionVO)n.getUserObject();
+		market.addHierarchies(n.getFullPath());
+		market.addSection(sec.getSectionNm());
+		market.addACLGroup(Permission.GRANT, sec.getSolrTokenTxt());
+		if (!market.getAttributes().containsKey("sectionId")) {
+			market.addAttribute("sectionId", new ArrayList<String>());
+		}
+		((List<String>)market.getAttribute("sectionId")).add(sec.getSectionId());
+	}
 
 	
 	/**
@@ -119,9 +133,11 @@ public class BiomedMarketIndexer  extends SMTAbstractIndex {
 	private String buildRetrieveSql(String id) {
 		StringBuilder sql = new StringBuilder(275);
 		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("SELECT m.*, ms.SECTION_ID FROM ").append(customDb).append("BIOMEDGPS_MARKET m ");
+		sql.append("SELECT m.*, ms.SECTION_ID, s.SOLR_TOKEN_TXT FROM ").append(customDb).append("BIOMEDGPS_MARKET m ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_MARKET_SECTION ms ");
 		sql.append("ON ms.MARKET_ID = m.MARKET_ID ");
+		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_SECTION s ");
+		sql.append("ON ms.SECTION_ID = s.SECTION_ID ");
 		if (id != null) sql.append("WHERE m.MARKET_ID = ? ");
 		return sql.toString();
 	}
@@ -131,8 +147,7 @@ public class BiomedMarketIndexer  extends SMTAbstractIndex {
 	 * Get a full hierarchy list
 	 * @return
 	 */
-	private Map<String, String> createHierarchies() {
-		Map<String, String> hierarchies = new HashMap<>();
+	private SmarttrakTree createHierarchies() {
 		StringBuilder sql = new StringBuilder(125);
 		sql.append("SELECT * FROM ").append(config.getProperty(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("BIOMEDGPS_SECTION ");
@@ -141,22 +156,20 @@ public class BiomedMarketIndexer  extends SMTAbstractIndex {
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ResultSet rs = ps.executeQuery();
 			while(rs.next()) {
-				Node n = new Node(rs.getString("SECTION_ID"), rs.getString("PARENT_ID"));
-				n.setNodeName(rs.getString("SECTION_NM"));
+				SectionVO sec = new SectionVO(rs);
+				Node n = new Node(sec.getSectionId(), sec.getParentId());
+				n.setNodeName(sec.getSectionNm());
+				n.setUserObject(sec);
 				markets.add(n);
 			}
 		} catch (SQLException e) {
 			log.error(e);
 		}
 		
-		Tree t = new Tree(markets);
-		t.buildNodePaths("~");
+		SmarttrakTree t = new SmarttrakTree(markets);
+		t.buildNodePaths();
 		
-		for (Node n : t.preorderList()) {
-			hierarchies.put(n.getNodeId(), n.getFullPath());
-		}
-		
-		return hierarchies;
+		return t;
 	}
 
 	/* (non-Javadoc)
@@ -177,7 +190,7 @@ public class BiomedMarketIndexer  extends SMTAbstractIndex {
 	 */
 	@Override
 	public String getIndexType() {
-		return MarketVO.SOLR_INDEX;
+		return INDEX_TYPE;
 	}
 	
 	

@@ -156,7 +156,7 @@ public class SectionVO implements Serializable {
 	/**
 	 * @param solrTokenTxt the solrTokenTxt to set.
 	 */
-	private void setSolrTokenTxt(String solrTokenTxt) {
+	public void setSolrTokenTxt(String solrTokenTxt) {
 		this.solrTokenTxt = solrTokenTxt;
 	}
 	/**
