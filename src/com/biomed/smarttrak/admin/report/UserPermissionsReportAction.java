@@ -12,7 +12,6 @@ import java.util.List;
 import com.biomed.smarttrak.admin.AccountAction;
 import com.biomed.smarttrak.admin.AccountPermissionAction;
 import com.biomed.smarttrak.util.SmarttrakTree;
-import com.biomed.smarttrak.vo.AccountVO;
 import com.biomed.smarttrak.vo.UserVO;
 
 // SMTBaseLibs
@@ -62,11 +61,11 @@ public class UserPermissionsReportAction extends SimpleActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	public List<AccountPermissionsVO> retrieveUserPermissions(ActionRequest req) throws ActionException {
+	public List<AccountUsersVO> retrieveUserPermissions(ActionRequest req) throws ActionException {
 		StringEncrypter se = initStringEncrypter((String)attributes.get(Constants.ENCRYPT_KEY));
 		
 		// 1. retrieve accounts/users
-		List<AccountPermissionsVO> accounts = retrieveAccountsAndUsers(se);
+		List<AccountUsersVO> accounts = retrieveAccountsAndUsers(se);
 		log.debug("accounts size: " + accounts.size());
 		
 		// 2. retrieve acct permissions
@@ -76,14 +75,14 @@ public class UserPermissionsReportAction extends SimpleActionAdapter {
 	}
 	
 	/**
-	 * Retrieves a List of AccountPermissionsVO comprised of an AccountVO and 
+	 * Retrieves a List of AccountUsersVO comprised of an AccountVO and 
 	 * a list of UserVO for that account.
 	 * @param se
 	 * @return
 	 * @throws ActionException
 	 */
-	protected List<AccountPermissionsVO> retrieveAccountsAndUsers(StringEncrypter se) throws ActionException {
-		List<AccountPermissionsVO> accounts;
+	protected List<AccountUsersVO> retrieveAccountsAndUsers(StringEncrypter se) throws ActionException {
+		List<AccountUsersVO> accounts;
 		StringBuilder sql = buildAccountsAndUsersQuery();
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -101,19 +100,19 @@ public class UserPermissionsReportAction extends SimpleActionAdapter {
 	}
 	
 	/**
-	 * Parses the accounts and users query results into a List of AccountPermissionsVO.
+	 * Parses the accounts and users query results into a List of AccountUsersVO.
 	 * @param se
 	 * @param rs
 	 * @return
 	 * @throws SQLException
 	 */
-	protected List<AccountPermissionsVO> parseAccountsAndUsers(StringEncrypter se, ResultSet rs) 
+	protected List<AccountUsersVO> parseAccountsAndUsers(StringEncrypter se, ResultSet rs) 
 			throws SQLException {
 		log.debug("parseAccountsAndUsers...");
 		String prevAcctId = null;
 		String currAcctId;
-		AccountPermissionsVO acctPermVO = null;
-		List<AccountPermissionsVO> acctPerms = new ArrayList<>();
+		AccountUsersVO acctUsersVO = null;
+		List<AccountUsersVO> acctPerms = new ArrayList<>();
 		while (rs.next()) {
 
 			currAcctId = rs.getString("account_id");
@@ -121,23 +120,23 @@ public class UserPermissionsReportAction extends SimpleActionAdapter {
 			if (! currAcctId.equals(prevAcctId)) {
 				
 				if (prevAcctId != null) {
-					acctPerms.add(acctPermVO);
+					acctPerms.add(acctUsersVO);
 				}
 
 				// create new acct vo.
-				acctPermVO = createAccount(rs);
-				createAccountUser(se,rs,acctPermVO);
+				acctUsersVO = createAccount(rs);
+				createAccountUser(se,rs,acctUsersVO);
 
 			} else {
-				// add this user to acctPermVO
-				createAccountUser(se,rs,acctPermVO);
+				// add this user to acctUsersVO
+				createAccountUser(se,rs,acctUsersVO);
 			}
 			prevAcctId = currAcctId;
 		}
 
 		// catch the dangler
 		if (prevAcctId != null) {
-			acctPerms.add(acctPermVO);
+			acctPerms.add(acctUsersVO);
 		}
 
 		return acctPerms;
@@ -149,22 +148,22 @@ public class UserPermissionsReportAction extends SimpleActionAdapter {
 	 * @param accounts
 	 */
 	protected void retrieveAccountPermissions(ActionRequest req, 
-			List<AccountPermissionsVO> accounts) {
+			List<AccountUsersVO> accounts) {
 		log.debug("retrieveAccountPermissions...");
 		long start = Calendar.getInstance().getTimeInMillis();
 		AccountPermissionAction apa;
 		ModuleVO mod;
-		for (AccountPermissionsVO acctPerms : accounts) {
+		for (AccountUsersVO acctPerms : accounts) {
 			apa = new AccountPermissionAction();
 			apa.setDBConnection(dbConn);
 			apa.setAttributes(attributes);
 			// set the curr acct ID on the req
-			req.setParameter(AccountAction.ACCOUNT_ID, acctPerms.getAccount().getAccountId());
+			req.setParameter(AccountAction.ACCOUNT_ID, acctPerms.getAccountId());
 			// retrieve stuff
 			try {
 				apa.retrieve(req);
 			} catch (Exception e) {
-				log.error("Could not retrieve account permissions for account ID: " + acctPerms.getAccount().getAccountId());
+				log.error("Could not retrieve account permissions for account ID: " + acctPerms.getAccountId());
 			}
 			// try to get to it
 			mod = (ModuleVO)getAttribute(Constants.MODULE_DATA);
@@ -179,32 +178,31 @@ public class UserPermissionsReportAction extends SimpleActionAdapter {
 	}
 	
 	/**
-	 * Creates an AccountVO from the result set record.  Creates an AccountPermissionVO
-	 * and sets the AccountVO on the AccountPermissionVO.
+	 * Creates an AccountUsersVO from the result set record.
 	 * @param rs
 	 * @return
 	 * @throws SQLException
 	 */
-	protected AccountPermissionsVO createAccount(ResultSet rs) 
+	protected AccountUsersVO createAccount(ResultSet rs) 
 			throws SQLException {
-		AccountVO account = new AccountVO();
-		account.setAccountId(rs.getString("account_id"));
-		account.setAccountName(rs.getString("account_nm"));
-
-		// init acctPermVO, add acct vo and this user.
-		AccountPermissionsVO acctPermVO = new AccountPermissionsVO();
-		acctPermVO.setAccount(account);
-		return acctPermVO;
+		// init acctUsersVO, add acct vo and this user.
+		AccountUsersVO acct = new AccountUsersVO();
+		acct.setAccountId(rs.getString("account_id"));
+		acct.setAccountName(rs.getString("account_nm"));
+		// use Convert util in case of nulls.
+		acct.setFdAuthFlg(Convert.formatInteger(rs.getInt("acct_fd_auth_flg")));
+		acct.setGaAuthFlg(Convert.formatInteger(rs.getInt("acct_ga_auth_flg")));
+		return acct;
 	}
 	
 	/**
 	 * Parses an account user from the result set record. 
 	 * @param se
 	 * @param rs
-	 * @param acctPermVO
+	 * @param acctUsersVO
 	 */
 	protected void createAccountUser(StringEncrypter se, 
-			ResultSet rs, AccountPermissionsVO acctPermVO) {
+			ResultSet rs, AccountUsersVO acctUsersVO) {
 		try {
 			UserVO user = new UserVO();
 			user.setProfileId(rs.getString("profile_id"));
@@ -212,9 +210,10 @@ public class UserPermissionsReportAction extends SimpleActionAdapter {
 			user.setLastName(se.decrypt(rs.getString("last_nm")));
 			user.setEmailAddress(se.decrypt(rs.getString("email_address_txt")));
 			user.setUserId(rs.getString("user_id"));
+			// use Convert util in case of nulls.
 			user.setGaAuthFlg(Convert.formatInteger(rs.getInt("ga_auth_flg")));
 			user.setFdAuthFlg(Convert.formatInteger(rs.getInt("fd_auth_flg")));
-			acctPermVO.addUser(user);
+			acctUsersVO.addUser(user);
 		} catch (Exception e) {
 			log.error("Error parsing user from result set.");
 		}
@@ -226,7 +225,8 @@ public class UserPermissionsReportAction extends SimpleActionAdapter {
 	 */
 	protected StringBuilder buildAccountsAndUsersQuery() {
 		StringBuilder sql = new StringBuilder(350);
-		sql.append("select ac.account_id, ac.account_nm, ");
+		sql.append("select ac.account_id, ac.account_nm, ac.fd_auth_flg as acct_fd_auth_flg, ");
+		sql.append("ac.ga_auth_flg as acct_ga_auth_flg, ");
 		sql.append("us.profile_id, us.user_id, us.fd_auth_flg, us.ga_auth_flg, ");
 		sql.append("pf.first_nm, pf.last_nm, pf.email_address_txt ");
 		sql.append("from custom.biomedgps_account ac ");

@@ -3,6 +3,8 @@ package com.biomed.smarttrak.admin;
 //WC custom
 import com.biomed.smarttrak.admin.report.UserActivityAction;
 import com.biomed.smarttrak.admin.report.UserActivityReportVO;
+import com.biomed.smarttrak.admin.report.UserListReportAction;
+import com.biomed.smarttrak.admin.report.UserListReportVO;
 import com.biomed.smarttrak.admin.report.UserPermissionsReportAction;
 import com.biomed.smarttrak.admin.report.UserPermissionsReportVO;
 import com.biomed.smarttrak.admin.report.UserUtilizationDailyRollupReportVO;
@@ -36,6 +38,7 @@ public class ReportFacadeAction extends SBActionAdapter {
 
 	public enum ReportType {
 		ACTIVITY_LOG,
+		USER_LIST,
 		USER_PERMISSIONS,
 		UTILIZATION,
 	}
@@ -67,6 +70,9 @@ public class ReportFacadeAction extends SBActionAdapter {
 		switch (rType) {
 			case ACTIVITY_LOG:
 				rpt = generateActivityLogReport(req);
+				break;
+			case USER_LIST:
+				rpt = generateUserListReport(req);
 				break;
 			case USER_PERMISSIONS:
 				rpt = generateUserPermissionsReport(req);
@@ -100,6 +106,24 @@ public class ReportFacadeAction extends SBActionAdapter {
 	}
 	
 	/**
+	 * Generates the user list report
+	 * @param req
+	 * @return
+	 * @throws ActionException
+	 */
+	protected AbstractSBReportVO generateUserListReport(ActionRequest req) 
+			throws ActionException {
+		UserListReportAction ul = new UserListReportAction();
+		ul.setDBConnection(dbConn);
+		ul.setAttributes(getAttributes());
+		
+		AbstractSBReportVO rpt = new UserListReportVO();
+		rpt.setData(ul.retrieveUserList(req));
+		return rpt;
+		
+	}
+	
+	/**
 	 * Generates the user permissions report
 	 * @param req
 	 * @return
@@ -114,7 +138,7 @@ public class ReportFacadeAction extends SBActionAdapter {
 		AbstractSBReportVO rpt = new UserPermissionsReportVO();
 		rpt.setData(upra.retrieveUserPermissions(req));
 		return rpt;
-		
+
 	}
 	
 	/**
