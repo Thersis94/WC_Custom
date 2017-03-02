@@ -90,7 +90,7 @@ public class UpdatesWeeklyReportAction extends SBActionAdapter {
 			}
 			ps.executeBatch();
 		} catch (SQLException e) {
-			log.error(e);
+			log.error("Error Saving Weekly Updates Report", e);
 		}
 	}
 
